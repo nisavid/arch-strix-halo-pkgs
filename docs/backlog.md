@@ -4,9 +4,11 @@
 
 - Convert remaining scripted source edits into durable patch files where
   practical.
-- Fix the current packaged `vllm --version` failure on the reference host,
-  including the `torchao/_C.abi3.so` load failure, missing
-  `triton.language.target_info`, and missing `openai_harmony`.
+- Audit the remaining vLLM dependency closure beyond `--version`,
+  including whether this repo should package `openai-harmony`, how to treat
+  the host `torchao` extension failure, and whether the vendored Triton-kernel
+  paths that expect `triton.language.target_info` should be patched or gated
+  on the ROCm lane.
 - Tighten package hygiene for embedded build paths in PyTorch, TorchVision, and
   vLLM.
 - Rebuild TorchVision without the temporary build-only ROCm soname shim.

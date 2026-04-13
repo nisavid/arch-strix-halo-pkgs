@@ -6,7 +6,7 @@
 
 pkgname=python-vllm-rocm-gfx1151
 pkgver=0.19.0.r8.d20260317.gad42886
-pkgrel=1
+pkgrel=3
 pkgdesc='High-throughput and memory-efficient inference engine for LLMs with ROCm, rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://github.com/vllm-project/vllm
@@ -18,17 +18,41 @@ options=()
 provides=(python-vllm-rocm python-vllm)
 conflicts=(python-vllm-rocm python-vllm)
 replaces=()
-source=(https://github.com/vllm-project/vllm/archive/refs/tags/v0.19.0.tar.gz 0001-python-3.14-version-gates.patch)
-sha256sums=(SKIP SKIP)
+source=(https://github.com/vllm-project/vllm/archive/refs/tags/v0.19.0.tar.gz 0001-python-3.14-version-gates.patch 0002-cli-version-avoids-eager-runtime-imports.patch)
+sha256sums=(SKIP SKIP SKIP)
+
+_apply_patch_if_needed() {
+  local _patch_name="$1"
+  local _patch=""
+
+  if [[ -f "${srcdir}/${_patch_name}" ]]; then
+    _patch="${srcdir}/${_patch_name}"
+  elif [[ -f "${startdir}/${_patch_name}" ]]; then
+    _patch="${startdir}/${_patch_name}"
+  else
+    printf 'missing patch file: %s\n' "${_patch_name}" >&2
+    return 1
+  fi
+
+  if patch --dry-run -R -Np1 -i "${_patch}" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  patch -Np1 -i "${_patch}"
+}
 
 prepare() {
   cd "$srcdir/vllm-0.19.0"
 
-  patch -Np1 -i "$srcdir/0001-python-3.14-version-gates.patch"
+  _apply_patch_if_needed "0001-python-3.14-version-gates.patch"
+  _apply_patch_if_needed "0002-cli-version-avoids-eager-runtime-imports.patch"
 }
 
 build() {
   cd "$srcdir/vllm-0.19.0"
+
+  _apply_patch_if_needed "0001-python-3.14-version-gates.patch"
+  _apply_patch_if_needed "0002-cli-version-avoids-eager-runtime-imports.patch"
 
   _setup_compiler_env() {
   local _compiler_root="/opt/rocm/lib/llvm/bin"
@@ -58,9 +82,12 @@ build() {
   export CPPFLAGS="${CPPFLAGS:-} -DGLOG_USE_GLOG_EXPORT"
   export ROCM_HOME="/opt/rocm"
   export HIP_PATH="/opt/rocm"
+  export PYTORCH_ROCM_ARCH="gfx1151"
   export CMAKE_PREFIX_PATH="/opt/rocm"
   export VLLM_VERSION_OVERRIDE="0.19.0"
   export VLLM_ROCM_USE_AITER=1
+
+  rm -rf .deps/triton_kernels-*
 
   local _rocm_compat="$srcdir/.torch-rocm-compat"
   rm -rf "${_rocm_compat}"
@@ -74,6 +101,7 @@ build() {
   export LD_LIBRARY_PATH="${_rocm_compat}:/opt/rocm/lib:${LD_LIBRARY_PATH:-}"
 
   mkdir -p dist
+  rm -f dist/*.whl
 
   if ! pip wheel . --no-build-isolation --no-deps --wheel-dir dist -v; then
     unset VLLM_ROCM_USE_AITER

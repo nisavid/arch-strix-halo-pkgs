@@ -26,6 +26,12 @@ system.
   - This is a packaging-facing compatibility patch, not a Strix Halo–specific
     optimization, so it is the clearest current upstreaming candidate in the
     repo.
+- [Keep `vllm --version` on a metadata-only path](../packages/python-vllm-rocm-gfx1151/0002-cli-version-avoids-eager-runtime-imports.patch)
+  - Removes eager benchmark imports from `vllm.entrypoints.cli.__init__` and
+    short-circuits `--version` before the CLI reaches optional OpenAI and
+    Triton runtime modules.
+  - This keeps the version smoke test useful on the packaged ROCm lane even
+    when unrelated optional runtime deps are absent or intentionally patched.
 
 ## AITER
 
