@@ -1,0 +1,14 @@
+--- a/src/cpp/server/system_info.cpp
++++ b/src/cpp/server/system_info.cpp
+@@ -123,10 +123,7 @@
+ //
+ // Empty family set {} means "all families of that device type"
+ static const std::vector<RecipeBackendDef> RECIPE_DEFS = {
+-    // llamacpp with multiple backends (order = preference: system > metal > vulkan > rocm > cpu)
+-    {"llamacpp", "system", {"linux"}, {
+-        {"cpu", {"x86_64"}}, // Placeholder, actual check is PATH-based
+-    }},
++    // llamacpp with multiple backends (order = preference: metal > vulkan > rocm > cpu)
+     {"llamacpp", "metal", {"macos"},
+     {
+         {"metal", {}},

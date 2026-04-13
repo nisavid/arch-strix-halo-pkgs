@@ -1,0 +1,4 @@
+opt/rocm/bin/clinfo
+opt/rocm/lib/opencl/libamdocl64.so
+opt/rocm/lib/opencl/libamdocl64.so.
+opt/rocm/lib/opencl/libamdocl64.so.2

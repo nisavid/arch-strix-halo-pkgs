@@ -1,0 +1,131 @@
+{
+  "maintenance": {
+    "advisory_references": [
+      "aur/lemonade-desktop"
+    ],
+    "authoritative_reference": "aur/lemonade-server",
+    "divergence_notes": [
+      "This custom build treats the ROCm and Vulkan llama.cpp backends as packaged system-managed backends rather than Lemonade-managed runtime downloads.",
+      "Carries local patches for Linux XDNA2 detection and the system-managed llama.cpp backend story that are specific to this Strix Halo packaging lane."
+    ],
+    "source_patches": [
+      "0001-linux-npu-fallback-to-pci-id-when-accel-open-fails.patch",
+      "0002-llamacpp-external-backends-are-system-managed.patch",
+      "0003-remove-llamacpp-system-backend.patch"
+    ],
+    "update_notes": [
+      "Update against the current upstream monorepo release and the AUR server package first, then re-check whether any local backend-management or NPU-detection patches are still needed.",
+      "Keep packaging and app/server split aligned with upstream naming changes; do not drift back toward the old lemonade-desktop era naming model.",
+      "Re-test that LEMONADE_LLAMACPP_*_BIN service overrides still apply even when /var/lib/lemonade/config.json already exists."
+    ]
+  },
+  "name": "lemonade-server",
+  "optional_backends": [
+    "llama.cpp-hip-gfx1151",
+    "llama.cpp-vulkan-gfx1151"
+  ],
+  "package_name": "lemonade-server",
+  "pkgver": "10.2.0.r8.d20260317.gad42886",
+  "policy": {
+    "advisory_references": [
+      "aur/lemonade-desktop"
+    ],
+    "arch_reference": [
+      "aur/lemonade-server",
+      "aur/lemonade-desktop"
+    ],
+    "authoritative_reference": "aur/lemonade-server",
+    "baseline_kind": "closest-upstream",
+    "conflicts": [],
+    "depends": [
+      "glibc"
+    ],
+    "divergence_notes": [
+      "This custom build treats the ROCm and Vulkan llama.cpp backends as packaged system-managed backends rather than Lemonade-managed runtime downloads.",
+      "Carries local patches for Linux XDNA2 detection and the system-managed llama.cpp backend story that are specific to this Strix Halo packaging lane."
+    ],
+    "extra_sha256sums": [
+      "SKIP",
+      "SKIP",
+      "SKIP"
+    ],
+    "extra_sources": [
+      "0001-linux-npu-fallback-to-pci-id-when-accel-open-fails.patch",
+      "0002-llamacpp-external-backends-are-system-managed.patch",
+      "0003-remove-llamacpp-system-backend.patch"
+    ],
+    "license": [
+      "Apache-2.0"
+    ],
+    "makedepends": [
+      "cmake",
+      "ninja",
+      "nodejs",
+      "npm",
+      "rocm-llvm-gfx1151"
+    ],
+    "optdepends": [
+      "llama.cpp-hip-gfx1151: llama.cpp ROCm backend",
+      "llama.cpp-vulkan-gfx1151: llama.cpp Vulkan backend"
+    ],
+    "patches_dir": "packages/lemonade-server",
+    "pkgdesc": "Local AI server runtime rebuilt for Strix Halo gfx1151",
+    "provides": [
+      "lemonade-server"
+    ],
+    "recipe_key": "lemonade",
+    "scaffold_notes": [
+      "Server/runtime package; llama.cpp backends are optdepends, not hard deps.",
+      "Pinned to the v10.2.0 upstream release tarball to keep the first-pass metadata reproducible.",
+      "Installs /etc/lemonade/conf.d/10-llamacpp-gfx1151.conf so the packaged ROCm and Vulkan llama.cpp wrapper binaries are exposed to the service as system-managed backends.",
+      "The system-managed backend patch also folds in the config-load and CLI/backend-table changes needed for those service-provided overrides to stay visible after config.json already exists."
+    ],
+    "sha256sums": [
+      "SKIP"
+    ],
+    "source_patches": [
+      "0001-linux-npu-fallback-to-pci-id-when-accel-open-fails.patch",
+      "0002-llamacpp-external-backends-are-system-managed.patch",
+      "0003-remove-llamacpp-system-backend.patch"
+    ],
+    "source_refs": [
+      "https://github.com/lemonade-sdk/lemonade/archive/refs/tags/v10.2.0.tar.gz"
+    ],
+    "src_subdir": "lemonade-10.2.0",
+    "template": "lemonade-server",
+    "update_notes": [
+      "Update against the current upstream monorepo release and the AUR server package first, then re-check whether any local backend-management or NPU-detection patches are still needed.",
+      "Keep packaging and app/server split aligned with upstream naming changes; do not drift back toward the old lemonade-desktop era naming model.",
+      "Re-test that LEMONADE_LLAMACPP_*_BIN service overrides still apply even when /var/lib/lemonade/config.json already exists."
+    ],
+    "upstream_name": "lemonade-server",
+    "upstream_version": "10.2.0",
+    "url": "https://github.com/lemonade-sdk/lemonade"
+  },
+  "provenance": {
+    "output_root": "packages",
+    "recipe_author": "Blackcat Informatics Inc.",
+    "recipe_repo": "https://github.com/paudley/ai-notes",
+    "recipe_subdir": "strix-halo",
+    "repo_subpath": "."
+  },
+  "recipe": {
+    "branch": "v10.0.0",
+    "depends_on": [
+      "therock",
+      "llamacpp"
+    ],
+    "method": "pip",
+    "notes": "Lemonade is a unified inference server wrapping llama.cpp (GPU/CPU),\nFLM (NPU), and ONNX backends behind an OpenAI-compatible API.\n\nThe project split in v10: the git repo (v10.0.0) is a C++ server,\nwhile the Python SDK is published separately as lemonade-sdk on PyPI\n(v9.1.4). The SDK handles llama-server process management, model\ndownloads, .env loading, and hardware detection.\n\nVersion pin fixes: lemonade-sdk pins huggingface-hub==0.33.0,\nonnx==1.18.0, transformers<=4.53.2 which conflict with vLLM.\nReinstalling at compatible versions resolves conflicts.",
+    "patches": [],
+    "phase": "I",
+    "repo": "https://github.com/lemonade-sdk/lemonade.git",
+    "src_dir": "lemonade",
+    "steps": [
+      33,
+      34,
+      35
+    ]
+  },
+  "role": "server-runtime"
+}

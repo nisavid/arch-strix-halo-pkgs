@@ -1,0 +1,16 @@
+opt/rocm/include/amd_comgr/amd_comgr.h
+opt/rocm/lib/cmake/amd_comgr/amd_comgr-config-version.cmake
+opt/rocm/lib/cmake/amd_comgr/amd_comgr-config.cmake
+opt/rocm/lib/cmake/amd_comgr/amd_comgr-targets-release.cmake
+opt/rocm/lib/cmake/amd_comgr/amd_comgr-targets.cmake
+opt/rocm/lib/cmake/amd_comgr_stub/amd_comgr-config-version.cmake
+opt/rocm/lib/cmake/amd_comgr_stub/amd_comgr-config.cmake
+opt/rocm/lib/cmake/amd_comgr_stub/amd_comgr-targets-release.cmake
+opt/rocm/lib/cmake/amd_comgr_stub/amd_comgr-targets.cmake
+opt/rocm/lib/libamd_comgr.so
+opt/rocm/lib/libamd_comgr.so.3
+opt/rocm/lib/libamd_comgr.so.3.0.0
+opt/rocm/lib/libamd_comgr_loader.so
+opt/rocm/lib/libamd_comgr_loader.so.1
+opt/rocm/lib/libamd_comgr_loader.so.1.0
+opt/rocm/lib/libamd_comgr_stub.a

@@ -1,0 +1,17 @@
+opt/rocm/include/hiprand/hiprand.h
+opt/rocm/include/hiprand/hiprand.hpp
+opt/rocm/include/hiprand/hiprand_kernel.h
+opt/rocm/include/hiprand/hiprand_kernel_nvcc.h
+opt/rocm/include/hiprand/hiprand_kernel_rocm.h
+opt/rocm/include/hiprand/hiprand_mtgp32_host.h
+opt/rocm/include/hiprand/hiprand_nvcc.h
+opt/rocm/include/hiprand/hiprand_rocm.h
+opt/rocm/include/hiprand/hiprand_version.h
+opt/rocm/lib/cmake/hiprand/hiprand-config-version.cmake
+opt/rocm/lib/cmake/hiprand/hiprand-config.cmake
+opt/rocm/lib/cmake/hiprand/hiprand-fortran-config.cmake
+opt/rocm/lib/cmake/hiprand/hiprand-targets-release.cmake
+opt/rocm/lib/cmake/hiprand/hiprand-targets.cmake
+opt/rocm/lib/libhiprand.so
+opt/rocm/lib/libhiprand.so.1
+opt/rocm/lib/libhiprand.so.1.1

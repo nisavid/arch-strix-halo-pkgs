@@ -1,0 +1,4 @@
+opt/rocm/lib/cmake/hip-lang/hip-lang-config-version.cmake
+opt/rocm/lib/cmake/hip-lang/hip-lang-config.cmake
+opt/rocm/lib/cmake/hip-lang/hip-lang-targets-release.cmake
+opt/rocm/lib/cmake/hip-lang/hip-lang-targets.cmake

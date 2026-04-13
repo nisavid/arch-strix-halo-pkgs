@@ -1,0 +1,4 @@
+opt/rocm/lib/librocm-debug-agent-no-dbginfo.a
+opt/rocm/lib/librocm-debug-agent.so
+opt/rocm/lib/librocm-debug-agent.so.2
+opt/rocm/lib/librocm-debug-agent.so.2.1.0

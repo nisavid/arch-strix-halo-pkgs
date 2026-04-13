@@ -1,0 +1,96 @@
+{
+  "maintenance": {
+    "advisory_references": [
+      "aur/lemonade-server",
+      "aur/lemonade-desktop"
+    ],
+    "authoritative_reference": "none",
+    "divergence_notes": [
+      "This is a convenience meta package for the full local Lemonade plus packaged llama.cpp backend experience.",
+      "It intentionally does not encode backend routing logic; that belongs in runtime policy, not package dependencies."
+    ],
+    "source_patches": [],
+    "update_notes": [
+      "Keep this meta package aligned with the intended first-pass user story and revisit its dependency set after benchmarking determines whether both packaged llama.cpp backends remain worth shipping.",
+      "Do not let this meta package obscure the standalone update story for lemonade-server, lemonade-app, or the backend packages."
+    ]
+  },
+  "name": "lemonade",
+  "optional_backends": [
+    "llama.cpp-hip-gfx1151",
+    "llama.cpp-vulkan-gfx1151"
+  ],
+  "package_name": "lemonade",
+  "pkgver": "10.2.0.r8.d20260317.gad42886",
+  "policy": {
+    "advisory_references": [
+      "aur/lemonade-server",
+      "aur/lemonade-desktop"
+    ],
+    "arch_reference": [
+      "aur/lemonade-server",
+      "aur/lemonade-desktop"
+    ],
+    "authoritative_reference": "none",
+    "baseline_kind": "meta-aggregate",
+    "conflicts": [],
+    "depends": [
+      "lemonade-server",
+      "lemonade-app",
+      "llama.cpp-hip-gfx1151",
+      "llama.cpp-vulkan-gfx1151"
+    ],
+    "divergence_notes": [
+      "This is a convenience meta package for the full local Lemonade plus packaged llama.cpp backend experience.",
+      "It intentionally does not encode backend routing logic; that belongs in runtime policy, not package dependencies."
+    ],
+    "license": [
+      "Apache-2.0"
+    ],
+    "makedepends": [],
+    "pkgdesc": "Meta package for Lemonade and llama.cpp backend packages",
+    "provides": [
+      "lemonade"
+    ],
+    "recipe_key": "lemonade",
+    "scaffold_notes": [
+      "Meta package for server, app, and both llama.cpp backend packages.",
+      "Keep routing logic out of this package; it is a convenience install only."
+    ],
+    "src_subdir": "lemonade",
+    "template": "meta-package",
+    "update_notes": [
+      "Keep this meta package aligned with the intended first-pass user story and revisit its dependency set after benchmarking determines whether both packaged llama.cpp backends remain worth shipping.",
+      "Do not let this meta package obscure the standalone update story for lemonade-server, lemonade-app, or the backend packages."
+    ],
+    "upstream_name": "lemonade",
+    "upstream_version": "10.2.0",
+    "url": "https://github.com/lemonade-sdk/lemonade"
+  },
+  "provenance": {
+    "output_root": "packages",
+    "recipe_author": "Blackcat Informatics Inc.",
+    "recipe_repo": "https://github.com/paudley/ai-notes",
+    "recipe_subdir": "strix-halo",
+    "repo_subpath": "."
+  },
+  "recipe": {
+    "branch": "v10.0.0",
+    "depends_on": [
+      "therock",
+      "llamacpp"
+    ],
+    "method": "pip",
+    "notes": "Lemonade is a unified inference server wrapping llama.cpp (GPU/CPU),\nFLM (NPU), and ONNX backends behind an OpenAI-compatible API.\n\nThe project split in v10: the git repo (v10.0.0) is a C++ server,\nwhile the Python SDK is published separately as lemonade-sdk on PyPI\n(v9.1.4). The SDK handles llama-server process management, model\ndownloads, .env loading, and hardware detection.\n\nVersion pin fixes: lemonade-sdk pins huggingface-hub==0.33.0,\nonnx==1.18.0, transformers<=4.53.2 which conflict with vLLM.\nReinstalling at compatible versions resolves conflicts.",
+    "patches": [],
+    "phase": "I",
+    "repo": "https://github.com/lemonade-sdk/lemonade.git",
+    "src_dir": "lemonade",
+    "steps": [
+      33,
+      34,
+      35
+    ]
+  },
+  "role": "meta-package"
+}

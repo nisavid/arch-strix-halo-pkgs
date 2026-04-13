@@ -1,0 +1,97 @@
+{
+  "maintenance": {
+    "advisory_references": [
+      "cachyos-extra-znver4/python-cryptography"
+    ],
+    "authoritative_reference": "extra/python-cryptography",
+    "divergence_notes": [
+      "Follows the recipe's Rust-wheel compiler lane instead of the default distro compiler toolchain.",
+      "Uses the optimized Python package as the interpreter baseline while otherwise tracking Arch's package shape closely."
+    ],
+    "source_patches": [],
+    "update_notes": [
+      "Always confirm the current Arch build backend requirements before updating this package; cryptography regularly changes Rust/setuptools details.",
+      "Treat any OpenSSL dependency drift in Arch as authoritative unless the recipe provides a concrete reason to diverge."
+    ]
+  },
+  "name": "python-cryptography-gfx1151",
+  "package_name": "python-cryptography-gfx1151",
+  "pkgver": "46.0.7.r8.d20260317.gad42886",
+  "policy": {
+    "advisory_references": [
+      "cachyos-extra-znver4/python-cryptography"
+    ],
+    "arch_reference": [
+      "extra/python-cryptography",
+      "cachyos-extra-znver4/python-cryptography"
+    ],
+    "authoritative_reference": "extra/python-cryptography",
+    "conflicts": [
+      "python-cryptography"
+    ],
+    "depends": [
+      "glibc",
+      "libgcc",
+      "openssl",
+      "python-cffi",
+      "python-gfx1151"
+    ],
+    "divergence_notes": [
+      "Follows the recipe's Rust-wheel compiler lane instead of the default distro compiler toolchain.",
+      "Uses the optimized Python package as the interpreter baseline while otherwise tracking Arch's package shape closely."
+    ],
+    "license": [
+      "Apache-2.0",
+      "BSD-3-Clause"
+    ],
+    "makedepends": [
+      "cargo",
+      "python-build",
+      "python-installer",
+      "python-setuptools-rust",
+      "python-wheel",
+      "rocm-llvm-gfx1151",
+      "rust"
+    ],
+    "patches_dir": "patches/python-cryptography-gfx1151",
+    "pkgdesc": "Cryptographic recipes and primitives for Python rebuilt for Strix Halo gfx1151",
+    "provides": [
+      "python-cryptography"
+    ],
+    "pypi_name": "cryptography",
+    "recipe_key": "rust_wheels",
+    "scaffold_notes": [
+      "This follows the recipe's Rust wheel build rules but still needs confirmation of the exact Arch build backend requirements on the current release."
+    ],
+    "src_subdir": "cryptography-46.0.7",
+    "template": "rust-wheel-pypi",
+    "update_notes": [
+      "Always confirm the current Arch build backend requirements before updating this package; cryptography regularly changes Rust/setuptools details.",
+      "Treat any OpenSSL dependency drift in Arch as authoritative unless the recipe provides a concrete reason to diverge."
+    ],
+    "upstream_version": "46.0.7",
+    "url": "https://github.com/pyca/cryptography"
+  },
+  "provenance": {
+    "output_root": "packages",
+    "recipe_author": "Blackcat Informatics Inc.",
+    "recipe_repo": "https://github.com/paudley/ai-notes",
+    "recipe_subdir": "strix-halo",
+    "repo_subpath": "."
+  },
+  "recipe": {
+    "branch": null,
+    "depends_on": [
+      "cpython"
+    ],
+    "method": "cargo",
+    "notes": "Builds and installs orjson and cryptography from source with Rust flags:\n  RUSTFLAGS=\"-C target-cpu=znver5 -C opt-level=3\"\nThis enables full AVX-512 + VAES codegen for Zen 5.\n\nDo NOT add -C lto=thin here -- maturin adds -C embed-bitcode=no\nwhich conflicts with -C lto. Maturin manages its own LTO.\n\nRust's linker invokes `cc` which resolves to the amdclang symlink,\nbut AMD's wrapper rejects binaries not prefixed with \"amd\". Fix:\nCARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=amdclang\n\nMust unset CFLAGS/CXXFLAGS/LDFLAGS during Rust builds because\nthey contain clang-specific flags (-famd-opt, -mllvm) that rustc's\ninternal cc invocations for build scripts don't understand.",
+    "patches": [],
+    "phase": "H",
+    "repo": null,
+    "src_dir": null,
+    "steps": [
+      30
+    ]
+  }
+}

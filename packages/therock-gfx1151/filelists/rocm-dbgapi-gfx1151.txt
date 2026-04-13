@@ -1,0 +1,8 @@
+opt/rocm/include/amd-dbgapi/amd-dbgapi.h
+opt/rocm/lib/cmake/amd-dbgapi/amd-dbgapi-config.cmake
+opt/rocm/lib/cmake/amd-dbgapi/amd-dbgapi-targets-release.cmake
+opt/rocm/lib/cmake/amd-dbgapi/amd-dbgapi-targets.cmake
+opt/rocm/lib/librocm-dbgapi.so
+opt/rocm/lib/librocm-dbgapi.so.0
+opt/rocm/lib/librocm-dbgapi.so.0.78.0
+opt/rocm/share/pkgconfig/amd-dbgapi.pc

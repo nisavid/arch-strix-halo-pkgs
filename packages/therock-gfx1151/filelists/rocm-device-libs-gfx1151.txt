@@ -1,0 +1,2 @@
+opt/rocm/amdgcn
+opt/rocm/lib/cmake/AMDDeviceLibs/AMDDeviceLibsConfig.cmake

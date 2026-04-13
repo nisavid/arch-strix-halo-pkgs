@@ -1,0 +1,761 @@
+{
+  "packages": {
+    "amdsmi-gfx1151": {
+      "depends": [
+        "rocm-smi-lib-gfx1151"
+      ],
+      "fileless": false,
+      "files": 157,
+      "provides": [
+        "amdsmi",
+        "amd-smi-lib"
+      ],
+      "rendered": true
+    },
+    "comgr-gfx1151": {
+      "depends": [],
+      "fileless": false,
+      "files": 16,
+      "provides": [
+        "comgr"
+      ],
+      "rendered": true
+    },
+    "composable-kernel-gfx1151": {
+      "depends": [],
+      "fileless": false,
+      "files": 1856,
+      "provides": [
+        "composable-kernel"
+      ],
+      "rendered": true
+    },
+    "half-gfx1151": {
+      "depends": [],
+      "fileless": false,
+      "files": 0,
+      "provides": [
+        "half"
+      ],
+      "rendered": false
+    },
+    "hip-gfx1151": {
+      "depends": [
+        "rocm-hip-gfx1151"
+      ],
+      "fileless": false,
+      "files": 2775,
+      "provides": [
+        "hip"
+      ],
+      "rendered": true
+    },
+    "hip-runtime-amd-gfx1151": {
+      "depends": [
+        "hsa-rocr-gfx1151",
+        "comgr-gfx1151",
+        "rocm-device-libs-gfx1151"
+      ],
+      "fileless": false,
+      "files": 14,
+      "provides": [
+        "hip-runtime-amd"
+      ],
+      "rendered": true
+    },
+    "hipblas-common-gfx1151": {
+      "depends": [],
+      "fileless": false,
+      "files": 4,
+      "provides": [
+        "hipblas-common"
+      ],
+      "rendered": true
+    },
+    "hipblas-gfx1151": {
+      "depends": [
+        "rocblas-gfx1151",
+        "hipblas-common-gfx1151"
+      ],
+      "fileless": false,
+      "files": 11,
+      "provides": [
+        "hipblas"
+      ],
+      "rendered": true
+    },
+    "hipblaslt-gfx1151": {
+      "depends": [
+        "rocblas-gfx1151",
+        "hipblas-gfx1151",
+        "composable-kernel-gfx1151"
+      ],
+      "fileless": false,
+      "files": 188,
+      "provides": [
+        "hipblaslt"
+      ],
+      "rendered": true
+    },
+    "hipcc-gfx1151": {
+      "depends": [
+        "rocm-llvm-gfx1151",
+        "hip-runtime-amd-gfx1151"
+      ],
+      "fileless": false,
+      "files": 3,
+      "provides": [
+        "hipcc"
+      ],
+      "rendered": true
+    },
+    "hipcub-gfx1151": {
+      "depends": [
+        "rocprim-gfx1151"
+      ],
+      "fileless": false,
+      "files": 177,
+      "provides": [
+        "hipcub"
+      ],
+      "rendered": true
+    },
+    "hipfft-gfx1151": {
+      "depends": [
+        "rocfft-gfx1151"
+      ],
+      "fileless": false,
+      "files": 17,
+      "provides": [
+        "hipfft"
+      ],
+      "rendered": true
+    },
+    "hipfort-gfx1151": {
+      "depends": [],
+      "fileless": false,
+      "files": 0,
+      "provides": [
+        "hipfort"
+      ],
+      "rendered": false
+    },
+    "hipify-clang-gfx1151": {
+      "depends": [
+        "rocm-llvm-gfx1151"
+      ],
+      "fileless": false,
+      "files": 0,
+      "provides": [
+        "hipify-clang"
+      ],
+      "rendered": false
+    },
+    "hiprand-gfx1151": {
+      "depends": [
+        "rocrand-gfx1151"
+      ],
+      "fileless": false,
+      "files": 17,
+      "provides": [
+        "hiprand"
+      ],
+      "rendered": true
+    },
+    "hipsolver-gfx1151": {
+      "depends": [
+        "rocsolver-gfx1151"
+      ],
+      "fileless": false,
+      "files": 20,
+      "provides": [
+        "hipsolver"
+      ],
+      "rendered": true
+    },
+    "hipsparse-gfx1151": {
+      "depends": [
+        "rocsparse-gfx1151"
+      ],
+      "fileless": false,
+      "files": 91,
+      "provides": [
+        "hipsparse"
+      ],
+      "rendered": true
+    },
+    "hipsparselt-gfx1151": {
+      "depends": [
+        "rocsparse-gfx1151"
+      ],
+      "fileless": false,
+      "files": 10,
+      "provides": [
+        "hipsparselt"
+      ],
+      "rendered": true
+    },
+    "hiptensor-gfx1151": {
+      "depends": [],
+      "fileless": true,
+      "files": 0,
+      "provides": [
+        "hiptensor"
+      ],
+      "rendered": true
+    },
+    "hsa-amd-aqlprofile-gfx1151": {
+      "depends": [],
+      "fileless": false,
+      "files": 32,
+      "provides": [
+        "hsa-amd-aqlprofile"
+      ],
+      "rendered": true
+    },
+    "hsa-rocr-gfx1151": {
+      "depends": [
+        "rocprofiler-register-gfx1151"
+      ],
+      "fileless": false,
+      "files": 40,
+      "provides": [
+        "hsa-rocr"
+      ],
+      "rendered": true
+    },
+    "magma-gfx1151": {
+      "depends": [
+        "rocblas-gfx1151"
+      ],
+      "fileless": false,
+      "files": 80,
+      "provides": [
+        "magma-hip"
+      ],
+      "rendered": true
+    },
+    "migraphx-gfx1151": {
+      "depends": [],
+      "fileless": false,
+      "files": 42,
+      "provides": [
+        "migraphx"
+      ],
+      "rendered": true
+    },
+    "miopen-gfx1151": {
+      "depends": [],
+      "fileless": false,
+      "files": 75,
+      "provides": [
+        "miopen"
+      ],
+      "rendered": true
+    },
+    "miopen-hip-gfx1151": {
+      "depends": [
+        "miopen-gfx1151"
+      ],
+      "fileless": false,
+      "files": 271,
+      "provides": [
+        "miopen-hip"
+      ],
+      "rendered": true
+    },
+    "mivisionx-gfx1151": {
+      "depends": [],
+      "fileless": false,
+      "files": 0,
+      "provides": [
+        "mivisionx"
+      ],
+      "rendered": false
+    },
+    "rccl-gfx1151": {
+      "depends": [],
+      "fileless": false,
+      "files": 29,
+      "provides": [
+        "rccl"
+      ],
+      "rendered": true
+    },
+    "rocblas-gfx1151": {
+      "depends": [],
+      "fileless": false,
+      "files": 174,
+      "provides": [
+        "rocblas"
+      ],
+      "rendered": true
+    },
+    "rocdecode-gfx1151": {
+      "depends": [],
+      "fileless": false,
+      "files": 0,
+      "provides": [
+        "rocdecode"
+      ],
+      "rendered": false
+    },
+    "rocfft-gfx1151": {
+      "depends": [],
+      "fileless": false,
+      "files": 39,
+      "provides": [
+        "rocfft"
+      ],
+      "rendered": true
+    },
+    "rocjpeg-gfx1151": {
+      "depends": [],
+      "fileless": false,
+      "files": 0,
+      "provides": [
+        "rocjpeg"
+      ],
+      "rendered": false
+    },
+    "rocm-cmake-gfx1151": {
+      "depends": [],
+      "fileless": false,
+      "files": 26,
+      "provides": [
+        "rocm-cmake"
+      ],
+      "rendered": true
+    },
+    "rocm-core-gfx1151": {
+      "depends": [],
+      "fileless": false,
+      "files": 69,
+      "provides": [
+        "rocm-core"
+      ],
+      "rendered": true
+    },
+    "rocm-dbgapi-gfx1151": {
+      "depends": [],
+      "fileless": false,
+      "files": 8,
+      "provides": [
+        "rocm-dbgapi"
+      ],
+      "rendered": true
+    },
+    "rocm-debug-agent-gfx1151": {
+      "depends": [
+        "rocm-dbgapi-gfx1151"
+      ],
+      "fileless": false,
+      "files": 4,
+      "provides": [
+        "rocm-debug-agent"
+      ],
+      "rendered": true
+    },
+    "rocm-developer-tools-gfx1151": {
+      "depends": [
+        "rocm-llvm-gfx1151",
+        "rocm-cmake-gfx1151",
+        "rocm-gdb-gfx1151",
+        "rocprofiler-systems-gfx1151",
+        "rocprofiler-sdk-gfx1151",
+        "rocprofiler-compute-gfx1151",
+        "roctracer-gfx1151"
+      ],
+      "fileless": true,
+      "files": 0,
+      "provides": [
+        "rocm-developer-tools"
+      ],
+      "rendered": true
+    },
+    "rocm-device-libs-gfx1151": {
+      "depends": [],
+      "fileless": false,
+      "files": 2,
+      "provides": [
+        "rocm-device-libs"
+      ],
+      "rendered": true
+    },
+    "rocm-gdb-gfx1151": {
+      "depends": [
+        "rocm-dbgapi-gfx1151",
+        "rocm-debug-agent-gfx1151"
+      ],
+      "fileless": false,
+      "files": 89,
+      "provides": [
+        "rocm-gdb"
+      ],
+      "rendered": true
+    },
+    "rocm-gfx1151": {
+      "depends": [
+        "rocm-core-gfx1151",
+        "rocm-sysdeps-gfx1151",
+        "rocminfo-gfx1151",
+        "rocm-hip-sdk-gfx1151",
+        "rocm-opencl-gfx1151",
+        "rocm-ml-sdk-gfx1151",
+        "rocm-developer-tools-gfx1151"
+      ],
+      "fileless": true,
+      "files": 0,
+      "provides": [
+        "rocm"
+      ],
+      "rendered": true
+    },
+    "rocm-hip-gfx1151": {
+      "depends": [
+        "hip-runtime-amd-gfx1151",
+        "hipcc-gfx1151"
+      ],
+      "fileless": false,
+      "files": 4,
+      "provides": [
+        "rocm-hip"
+      ],
+      "rendered": true
+    },
+    "rocm-hip-libraries-gfx1151": {
+      "depends": [
+        "hipblas-gfx1151",
+        "hipblaslt-gfx1151",
+        "hipfft-gfx1151",
+        "hiprand-gfx1151",
+        "hipsolver-gfx1151",
+        "hipsparse-gfx1151",
+        "hipsparselt-gfx1151",
+        "hiptensor-gfx1151",
+        "hipcub-gfx1151",
+        "rocthrust-gfx1151",
+        "rocwmma-gfx1151"
+      ],
+      "fileless": true,
+      "files": 0,
+      "provides": [
+        "rocm-hip-libraries"
+      ],
+      "rendered": true
+    },
+    "rocm-hip-runtime-gfx1151": {
+      "depends": [
+        "hip-runtime-amd-gfx1151",
+        "rocm-language-runtime-gfx1151"
+      ],
+      "fileless": true,
+      "files": 0,
+      "provides": [
+        "rocm-hip-runtime"
+      ],
+      "rendered": true
+    },
+    "rocm-hip-sdk-gfx1151": {
+      "depends": [
+        "rocm-hip-gfx1151",
+        "hip-gfx1151",
+        "hipcc-gfx1151",
+        "rocm-hip-runtime-gfx1151",
+        "rocm-hip-libraries-gfx1151"
+      ],
+      "fileless": true,
+      "files": 0,
+      "provides": [
+        "rocm-hip-sdk"
+      ],
+      "rendered": true
+    },
+    "rocm-host-math-gfx1151": {
+      "depends": [],
+      "fileless": false,
+      "files": 0,
+      "provides": [
+        "rocm-host-math"
+      ],
+      "rendered": false
+    },
+    "rocm-language-runtime-gfx1151": {
+      "depends": [],
+      "fileless": false,
+      "files": 1487,
+      "provides": [
+        "rocm-language-runtime"
+      ],
+      "rendered": true
+    },
+    "rocm-llvm-gfx1151": {
+      "depends": [
+        "rocm-sysdeps-gfx1151"
+      ],
+      "fileless": false,
+      "files": 9168,
+      "provides": [
+        "rocm-llvm"
+      ],
+      "rendered": true
+    },
+    "rocm-ml-libraries-gfx1151": {
+      "depends": [
+        "miopen-gfx1151",
+        "migraphx-gfx1151",
+        "rpp-gfx1151"
+      ],
+      "fileless": true,
+      "files": 0,
+      "provides": [
+        "rocm-ml-libraries"
+      ],
+      "rendered": true
+    },
+    "rocm-ml-sdk-gfx1151": {
+      "depends": [
+        "rocm-ml-libraries-gfx1151"
+      ],
+      "fileless": true,
+      "files": 0,
+      "provides": [
+        "rocm-ml-sdk"
+      ],
+      "rendered": true
+    },
+    "rocm-opencl-gfx1151": {
+      "depends": [
+        "rocm-opencl-runtime-gfx1151",
+        "rocm-opencl-sdk-gfx1151"
+      ],
+      "fileless": true,
+      "files": 0,
+      "provides": [
+        "rocm-opencl"
+      ],
+      "rendered": true
+    },
+    "rocm-opencl-runtime-gfx1151": {
+      "depends": [
+        "rocm-core-gfx1151"
+      ],
+      "fileless": false,
+      "files": 4,
+      "provides": [
+        "rocm-opencl-runtime",
+        "rocm-ocl-icd",
+        "rocm-opencl-icd-loader",
+        "opencl-driver"
+      ],
+      "rendered": true
+    },
+    "rocm-opencl-sdk-gfx1151": {
+      "depends": [
+        "rocm-opencl-runtime-gfx1151"
+      ],
+      "fileless": false,
+      "files": 19,
+      "provides": [
+        "rocm-opencl-sdk"
+      ],
+      "rendered": true
+    },
+    "rocm-openmp-gfx1151": {
+      "depends": [
+        "rocm-llvm-gfx1151"
+      ],
+      "fileless": true,
+      "files": 0,
+      "provides": [
+        "rocm-openmp",
+        "openmp-extras-runtime",
+        "openmp-extras-dev"
+      ],
+      "rendered": true
+    },
+    "rocm-smi-lib-gfx1151": {
+      "depends": [
+        "rocm-sysdeps-gfx1151"
+      ],
+      "fileless": false,
+      "files": 14,
+      "provides": [
+        "rocm-smi-lib"
+      ],
+      "rendered": true
+    },
+    "rocm-sysdeps-gfx1151": {
+      "depends": [],
+      "fileless": false,
+      "files": 3170,
+      "provides": [
+        "rocm-sysdeps"
+      ],
+      "rendered": true
+    },
+    "rocminfo-gfx1151": {
+      "depends": [
+        "hsa-rocr-gfx1151"
+      ],
+      "fileless": false,
+      "files": 1,
+      "provides": [
+        "rocminfo"
+      ],
+      "rendered": true
+    },
+    "rocprim-gfx1151": {
+      "depends": [],
+      "fileless": false,
+      "files": 214,
+      "provides": [
+        "rocprim"
+      ],
+      "rendered": true
+    },
+    "rocprofiler-compute-gfx1151": {
+      "depends": [],
+      "fileless": false,
+      "files": 4140,
+      "provides": [
+        "rocprofiler-compute"
+      ],
+      "rendered": true
+    },
+    "rocprofiler-register-gfx1151": {
+      "depends": [],
+      "fileless": false,
+      "files": 43,
+      "provides": [
+        "rocprofiler-register"
+      ],
+      "rendered": true
+    },
+    "rocprofiler-sdk-gfx1151": {
+      "depends": [],
+      "fileless": false,
+      "files": 609,
+      "provides": [
+        "rocprofiler-sdk"
+      ],
+      "rendered": true
+    },
+    "rocprofiler-sdk-rocpd-gfx1151": {
+      "depends": [
+        "rocprofiler-sdk-gfx1151"
+      ],
+      "fileless": false,
+      "files": 0,
+      "provides": [
+        "rocprofiler-sdk-rocpd"
+      ],
+      "rendered": false
+    },
+    "rocprofiler-sdk-roctx-gfx1151": {
+      "depends": [
+        "rocprofiler-sdk-gfx1151"
+      ],
+      "fileless": false,
+      "files": 0,
+      "provides": [
+        "rocprofiler-sdk-roctx"
+      ],
+      "rendered": false
+    },
+    "rocprofiler-systems-gfx1151": {
+      "depends": [],
+      "fileless": false,
+      "files": 205,
+      "provides": [
+        "rocprofiler-systems",
+        "rocprofiler"
+      ],
+      "rendered": true
+    },
+    "rocrand-gfx1151": {
+      "depends": [],
+      "fileless": false,
+      "files": 49,
+      "provides": [
+        "rocrand"
+      ],
+      "rendered": true
+    },
+    "rocshmem-gfx1151": {
+      "depends": [],
+      "fileless": false,
+      "files": 0,
+      "provides": [
+        "rocshmem"
+      ],
+      "rendered": false
+    },
+    "rocsolver-gfx1151": {
+      "depends": [
+        "rocblas-gfx1151"
+      ],
+      "fileless": false,
+      "files": 13,
+      "provides": [
+        "rocsolver"
+      ],
+      "rendered": true
+    },
+    "rocsparse-gfx1151": {
+      "depends": [],
+      "fileless": false,
+      "files": 127,
+      "provides": [
+        "rocsparse"
+      ],
+      "rendered": true
+    },
+    "rocthrust-gfx1151": {
+      "depends": [],
+      "fileless": false,
+      "files": 916,
+      "provides": [
+        "rocthrust"
+      ],
+      "rendered": true
+    },
+    "roctracer-gfx1151": {
+      "depends": [],
+      "fileless": false,
+      "files": 25,
+      "provides": [
+        "roctracer"
+      ],
+      "rendered": true
+    },
+    "rocwmma-gfx1151": {
+      "depends": [],
+      "fileless": false,
+      "files": 0,
+      "provides": [
+        "rocwmma"
+      ],
+      "rendered": false
+    },
+    "rpp-gfx1151": {
+      "depends": [],
+      "fileless": true,
+      "files": 0,
+      "provides": [
+        "rpp"
+      ],
+      "rendered": true
+    }
+  },
+  "pkgbase": "therock-gfx1151",
+  "pkgver": "7.13.0pre.r8.d20260317.gad42886",
+  "recipe": {
+    "author": "Blackcat Informatics Inc.",
+    "commit": "ad42886",
+    "date": "20260317",
+    "repo_url": "https://github.com/paudley/ai-notes",
+    "subdir": "strix-halo"
+  },
+  "upstream_pkgver": "7.13.0pre"
+}

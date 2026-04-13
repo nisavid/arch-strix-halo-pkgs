@@ -1,0 +1,52 @@
+# python-vllm-rocm-gfx1151
+
+## Maintenance Snapshot
+
+- Recipe package key: `vllm`
+- Scaffold template: `python-project-vllm`
+- Recipe build method: `pip`
+- Upstream repo: `https://github.com/vllm-project/vllm.git`
+- Derived pkgver seed: `0.19.0.r8.d20260317.gad42886`
+- Recipe steps: `19, 20, 21, 22, 23, 24`
+- Recipe dependencies: `pytorch, triton, aotriton`
+- Recorded reference packages: `aur/python-vllm`
+- Authoritative reference package: `aur/python-vllm`
+- Advisory reference packages: `none`
+- Applied source patch files/actions: `28`
+
+## Recipe notes
+
+Upstream vLLM (not ROCm fork). AITER integration comes from
+PyTorch's third_party/aiter/ which has full gfx1151 support.
+
+Build attempts AITER first (VLLM_ROCM_USE_AITER=1). If AITER
+compilation fails, falls back to Triton-only build. Result is
+recorded in .aiter-status file ("enabled" or "disabled").
+
+## Scaffold notes
+
+- There does not appear to be a current dedicated python-vllm-rocm AUR package; the closest package baseline is the generic AUR python-vllm package, with ROCm-specific integration coming from this recipe.
+- Use the latest stable upstream release tarball (v0.19.0) instead of a floating full Git clone. Upstream currently exposes a 0.19.1 release candidate but not a final 0.19.1 release, so the stable tag is the safer packaging baseline.
+- This scaffold carries the minimal Python-3.14 source patch needed to build from the stable tarball: relax the Python upper bound and extend the hard-coded CMake supported-version list through 3.14.
+- Do not treat a successful build as sufficient for system-Python cutover; the gate is a real vLLM smoke test after the TheRock ROCm split packages are installed coherently.
+- Keep the gfx1151 ROCm/AITER recipe patches in the source package, but evaluate Python-3.14 compatibility separately from ROCm runtime/linker issues.
+- The earlier numba-pin idea is not currently part of the actual built package story; treat any numba change as a separate follow-up until it is backed by a real source patch.
+
+## Intentional Divergences
+
+- This package is ROCm-specific even though the closest Arch-family baseline is the generic aur/python-vllm package.
+- Carries a deliberate Python-3.14 compatibility delta and recipe-specific ROCm/AITER integration that are not part of the generic baseline.
+
+## Update Notes
+
+- Check upstream vllm release notes and pyproject metadata first, then reconcile the Python upper-bound and hard-coded supported-version list with the current state of Python 3.14 support.
+- If numba remains part of the Python 3.14 story, capture it as a real source patch or package dependency decision rather than a no-op scripted edit.
+- Treat runtime validation against the live ROCm stack as mandatory; a successful wheel build is not enough.
+
+## Maintainer Starting Points
+
+- Diff the package against its recorded authoritative reference first.
+- Use the advisory references to scout neighboring packaging conventions without silently changing the baseline story.
+- Keep reusable source changes in sibling patch files rather than leaving them as ad hoc PKGBUILD shell edits.
+- Re-run `tools/render_recipe_scaffolds.py` after policy or recipe-manifest changes so the package-local docs stay in sync.
+- Reconfirm the chosen upstream source artifact and build lane before treating the scaffold as release-ready.

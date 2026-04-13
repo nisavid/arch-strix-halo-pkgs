@@ -1,0 +1,195 @@
+{
+  "maintenance": {
+    "advisory_references": [
+      "extra/python-pytorch-rocm",
+      "cachyos-extra-znver4/python-pytorch-opt-rocm"
+    ],
+    "authoritative_reference": "extra/python-pytorch-opt-rocm",
+    "divergence_notes": [
+      "Uses the Arch split-package structure as the integration baseline but deliberately tracks ROCm/pytorch release/2.11 rather than upstream pytorch/pytorch.",
+      "Carries recipe-specific ROCm fixes such as the HIPGraph stub rewrite, gfx1151 CK enablement, and post-install patchelf/linker cleanup."
+    ],
+    "source_patches": [],
+    "update_notes": [
+      "When updating, inspect the current Arch python-pytorch pkgbase first, then re-evaluate every carried recipe/source patch against the chosen ROCm fork.",
+      "Keep the package version aligned with the built wheel version; do not repeat the earlier mismatch where the package claimed 2.11.0 but the built wheel came from develop."
+    ]
+  },
+  "name": "python-pytorch-opt-rocm-gfx1151",
+  "package_name": "python-pytorch-opt-rocm-gfx1151",
+  "pkgver": "2.11.0.r8.d20260317.gad42886",
+  "policy": {
+    "advisory_references": [
+      "extra/python-pytorch-rocm",
+      "cachyos-extra-znver4/python-pytorch-opt-rocm"
+    ],
+    "arch_reference": [
+      "extra/python-pytorch-opt-rocm",
+      "extra/python-pytorch-rocm",
+      "cachyos-extra-znver4/python-pytorch-opt-rocm"
+    ],
+    "authoritative_reference": "extra/python-pytorch-opt-rocm",
+    "conflicts": [
+      "python-pytorch-opt-rocm",
+      "python-pytorch-rocm",
+      "python-pytorch"
+    ],
+    "depends": [
+      "amdsmi-gfx1151",
+      "composable-kernel-gfx1151",
+      "hsa-amd-aqlprofile-gfx1151",
+      "hipblaslt-gfx1151",
+      "miopen-hip-gfx1151",
+      "python-aotriton-gfx1151",
+      "python-filelock",
+      "python-fsspec",
+      "python-gfx1151",
+      "python-jinja",
+      "python-networkx",
+      "python-numpy-gfx1151",
+      "python-sympy",
+      "python-typing_extensions",
+      "python-yaml",
+      "rccl-gfx1151",
+      "rocblas-gfx1151",
+      "rocm-hip-sdk-gfx1151",
+      "rocm-openmp-gfx1151"
+    ],
+    "divergence_notes": [
+      "Uses the Arch split-package structure as the integration baseline but deliberately tracks ROCm/pytorch release/2.11 rather than upstream pytorch/pytorch.",
+      "Carries recipe-specific ROCm fixes such as the HIPGraph stub rewrite, gfx1151 CK enablement, and post-install patchelf/linker cleanup."
+    ],
+    "license": [
+      "BSD-3-Clause-Modification"
+    ],
+    "makedepends": [
+      "cmake",
+      "git",
+      "ninja",
+      "python-build",
+      "python-cffi",
+      "python-installer",
+      "python-pip",
+      "python-requests",
+      "python-setuptools",
+      "python-six",
+      "python-triton-gfx1151",
+      "python-yaml",
+      "patchelf",
+      "rocm-llvm-gfx1151",
+      "unzip"
+    ],
+    "patches_dir": "patches/python-pytorch-opt-rocm-gfx1151",
+    "pkgdesc": "Tensors and dynamic neural networks in Python with ROCm acceleration, rebuilt for Strix Halo gfx1151",
+    "provides": [
+      "python-pytorch-opt-rocm=2.11.0",
+      "python-pytorch-rocm=2.11.0",
+      "python-pytorch=2.11.0"
+    ],
+    "recipe_key": "pytorch",
+    "scaffold_notes": [
+      "Authoritative base: Arch split package python-pytorch-opt-rocm 2.11.0-3, with python-pytorch-rocm kept as an advisory sibling because the same pkgbase carries both variants.",
+      "The recipe intentionally tracks the ROCm/pytorch fork rather than upstream pytorch/pytorch because AMD validates that branch and carries ROCm-specific integration fixes not yet upstreamed.",
+      "Keep nearby Cachy packaging as advisory input for compiler defaults and dependency polish, but use the Arch split-package structure as the distro-integration baseline.",
+      "The first real build must preserve the recipe's ROCm-specific fixes: HIPGraph.hip stub rewrite, NumPy 2 target C-API define, clang ABI flag removal, gfx1151 CK enablement, and post-install patchelf fixes for torch/lib and libtorch_hip.so."
+    ],
+    "source_refs": [
+      "pytorch::git+https://github.com/ROCm/pytorch.git#commit=0446f7ba2fd"
+    ],
+    "src_subdir": "pytorch",
+    "template": "python-project-pytorch-rocm",
+    "update_notes": [
+      "When updating, inspect the current Arch python-pytorch pkgbase first, then re-evaluate every carried recipe/source patch against the chosen ROCm fork.",
+      "Keep the package version aligned with the built wheel version; do not repeat the earlier mismatch where the package claimed 2.11.0 but the built wheel came from develop."
+    ],
+    "upstream_version": "2.11.0",
+    "url": "https://pytorch.org"
+  },
+  "provenance": {
+    "output_root": "packages",
+    "recipe_author": "Blackcat Informatics Inc.",
+    "recipe_repo": "https://github.com/paudley/ai-notes",
+    "recipe_subdir": "strix-halo",
+    "repo_subpath": "."
+  },
+  "recipe": {
+    "branch": "develop",
+    "depends_on": [
+      "therock",
+      "cpython"
+    ],
+    "method": "pip",
+    "notes": "ROCm fork carries AMD-specific fixes (hipify, Tensile, rocm_smi\nlinkage) not yet upstreamed. The upstream pytorch/pytorch works with\nUSE_ROCM=1 but AMD's CI tests against this fork.\n\nUSE_ROCM_CK_GEMM=ON enables Composable Kernel GEMM for ROCm.",
+    "patches": [
+      {
+        "description": "Set NPY_TARGET_VERSION to numpy 2.0 C-API (0x12). Without this, numpy 2.x headers compile against oldest compatible API (1.20), producing a .so that crashes at import with numpy 2.x installed.\n",
+        "file": "torch/csrc/utils/numpy_stub.h",
+        "marker": "NPY_TARGET_VERSION",
+        "marker_absent": true,
+        "sed_command": "s|#include <numpy/arrayobject.h>|// Target numpy 2.0 C-API (0x12) for ABI compatibility with numpy >= 2.0.\\n#ifndef NPY_TARGET_VERSION\\n#define NPY_TARGET_VERSION 0x00000012\\n#endif\\n\\n#include <numpy/arrayobject.h>|",
+        "type": "sed"
+      },
+      {
+        "description": "Remove -fclang-abi-compat=17 from HIPCC flags. PyTorch adds it for compat with newer hip-clang C++20 mangling rules, but it forces HIP device code to use Clang 17 ABI while host code uses amdclang 22 ABI, causing undefined symbol errors.\n",
+        "file": "cmake/Dependencies.cmake",
+        "marker": "fclang-abi-compat=17",
+        "sed_command": "s/list(APPEND HIP_HIPCC_FLAGS -fclang-abi-compat=17)/# Removed: causes ABI mismatch with host amdclang 22/",
+        "type": "sed"
+      },
+      {
+        "description": "Add gfx1151 to Composable Kernel GEMM supported architectures. Without this, PyTorch logs \"Attempting to use CK on an unsupported architecture!\" and TunableOp cannot include CK kernels in its autotuning candidates. The gate is a hardcoded vector of arch strings.\n",
+        "file": "aten/src/ATen/Context.cpp",
+        "marker": "gfx1151",
+        "marker_absent": true,
+        "sed_command": "s/\"gfx90a\", \"gfx942\", \"gfx950\"/\"gfx90a\", \"gfx942\", \"gfx950\", \"gfx1151\"/",
+        "type": "sed"
+      },
+      {
+        "description": "Replace HIPGraph.hip entirely. hipify creates a set_conditional_handle() function referencing cudaGraphConditionalHandle (CUDA 12.4+ type with no HIP equivalent). The header doesn't declare it, nothing calls it on ROCm -- dead code that fails to compile. Replaced with minimal stub containing only the namespace declaration.\n",
+        "file": "aten/src/ATen/hip/HIPGraph.hip",
+        "marker": "cudaGraphConditionalHandle",
+        "note": "Content is a heredoc in build-vllm.sh (too complex for YAML inline)",
+        "type": "file_rewrite"
+      },
+      {
+        "action": "set",
+        "condition": "RUNPATH contains 'pytorch/build'",
+        "description": "Fix RPATHs inside PyTorch wheel. cmake bakes build tree path (e.g. /opt/src/vllm/pytorch/build/lib) into RUNPATH, causing the dynamic linker to load unpatched .so files from the build tree instead of the wheel's copies.\n",
+        "rpath": "${LOCAL_PREFIX}/lib:$ORIGIN",
+        "target": "torch/lib/lib*.so",
+        "type": "patchelf_rpath"
+      },
+      {
+        "action": "add",
+        "condition": "NEEDED contains libalm.so, libamdhip64, or librocm_smi",
+        "description": "Add ROCm lib path to .so files that dynamically link ROCm libraries (libalm.so, libamdhip64, librocm_smi64) so they resolve without LD_LIBRARY_PATH at runtime.\n",
+        "rpath": "${LOCAL_PREFIX}/lib",
+        "target": "torch/lib/lib*.so",
+        "type": "patchelf_rpath"
+      },
+      {
+        "action": "set",
+        "condition": "RUNPATH contains 'pytorch/build'",
+        "description": "Fix the _C extension module RPATH. Same build tree path issue as torch/lib/*.so but needs $ORIGIN/lib to find sibling .so files in the wheel's lib/ subdirectory.\n",
+        "rpath": "${LOCAL_PREFIX}/lib:$ORIGIN/lib",
+        "target": "torch/_C*.so",
+        "type": "patchelf_rpath"
+      },
+      {
+        "condition": "NEEDED does not contain librocm_smi64",
+        "description": "Add librocm_smi64.so to libtorch_hip.so NEEDED list. PyTorch's build system omits it from the link line despite using rsmi_* symbols -- upstream bug that causes \"undefined symbol: rsmi_init\" at runtime.\n",
+        "library": "librocm_smi64.so",
+        "target": "torch/lib/libtorch_hip.so",
+        "type": "patchelf_needed"
+      }
+    ],
+    "phase": "C",
+    "repo": "https://github.com/ROCm/pytorch.git",
+    "src_dir": "pytorch",
+    "steps": [
+      9,
+      10,
+      11
+    ]
+  }
+}

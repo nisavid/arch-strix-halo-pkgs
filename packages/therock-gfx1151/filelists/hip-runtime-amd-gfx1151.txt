@@ -1,0 +1,14 @@
+opt/rocm/bin/hipRTC_gemm
+opt/rocm/lib/cmake/hiprtc/hiprtc-config-version.cmake
+opt/rocm/lib/cmake/hiprtc/hiprtc-config.cmake
+opt/rocm/lib/cmake/hiprtc/hiprtc-targets-release.cmake
+opt/rocm/lib/cmake/hiprtc/hiprtc-targets.cmake
+opt/rocm/lib/libamdhip64.so
+opt/rocm/lib/libamdhip64.so.7
+opt/rocm/lib/libamdhip64.so.7.12.60610-2bd1678d3d
+opt/rocm/lib/libhiprtc-builtins.so
+opt/rocm/lib/libhiprtc-builtins.so.7
+opt/rocm/lib/libhiprtc-builtins.so.7.12.60610-2bd1678d3d
+opt/rocm/lib/libhiprtc.so
+opt/rocm/lib/libhiprtc.so.7
+opt/rocm/lib/libhiprtc.so.7.12.60610-2bd1678d3d

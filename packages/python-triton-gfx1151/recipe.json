@@ -1,0 +1,121 @@
+{
+  "maintenance": {
+    "advisory_references": [
+      "cachyos-extra-znver4/python-triton"
+    ],
+    "authoritative_reference": "extra/python-triton",
+    "divergence_notes": [
+      "Uses Arch's Python packaging and integration baseline but deliberately swaps in ROCm/triton main_perf for the source lane.",
+      "Builds Triton's compatible sidecar LLVM instead of trying to force the ROCm fork onto TheRock's installed LLVM API line."
+    ],
+    "source_patches": [],
+    "update_notes": [
+      "Check Arch's current Triton Python packaging first for Python-version fixes and install layout changes, then re-evaluate whether ROCm/triton still needs its separate LLVM lane.",
+      "Keep any source edits as patch files once they stabilize; this package is a likely upstream-candidate area."
+    ]
+  },
+  "name": "python-triton-gfx1151",
+  "package_name": "python-triton-gfx1151",
+  "pkgver": "3.5.1.r8.d20260317.gad42886",
+  "policy": {
+    "advisory_references": [
+      "cachyos-extra-znver4/python-triton"
+    ],
+    "arch_reference": [
+      "extra/python-triton",
+      "cachyos-extra-znver4/python-triton"
+    ],
+    "authoritative_reference": "extra/python-triton",
+    "conflicts": [
+      "python-triton"
+    ],
+    "depends": [
+      "glibc",
+      "libgcc",
+      "python-gfx1151"
+    ],
+    "divergence_notes": [
+      "Uses Arch's Python packaging and integration baseline but deliberately swaps in ROCm/triton main_perf for the source lane.",
+      "Builds Triton's compatible sidecar LLVM instead of trying to force the ROCm fork onto TheRock's installed LLVM API line."
+    ],
+    "license": [
+      "MIT"
+    ],
+    "makedepends": [
+      "cmake",
+      "git",
+      "ninja",
+      "pybind11",
+      "python-build",
+      "python-installer",
+      "python-setuptools",
+      "python-wheel"
+    ],
+    "patches_dir": "patches/python-triton-gfx1151",
+    "pkgdesc": "Language and compiler for custom deep-learning primitives, rebuilt from the ROCm performance fork for Strix Halo gfx1151",
+    "provides": [
+      "python-triton=3.5.1"
+    ],
+    "recipe_key": "triton",
+    "scaffold_notes": [
+      "Authoritative base: Arch python-triton 3.5.1-4 for distro integration and Python-3.14 carry patches.",
+      "The recipe intentionally swaps in ROCm/triton main_perf instead of upstream triton-lang/triton. That makes Arch's package an advisory base rather than a source-identical one.",
+      "Do not point Triton at TheRock's LLVM. The recipe notes that this ROCm fork still expects an older LLVM API line and must use its own compatible LLVM path instead."
+    ],
+    "sha256sums": [
+      "SKIP"
+    ],
+    "source_refs": [
+      "triton::git+https://github.com/ROCm/triton.git#branch=main_perf"
+    ],
+    "src_subdir": "triton",
+    "template": "python-project-triton-rocm",
+    "update_notes": [
+      "Check Arch's current Triton Python packaging first for Python-version fixes and install layout changes, then re-evaluate whether ROCm/triton still needs its separate LLVM lane.",
+      "Keep any source edits as patch files once they stabilize; this package is a likely upstream-candidate area."
+    ],
+    "upstream_version": "3.5.1",
+    "url": "https://triton-lang.org/main/index.html"
+  },
+  "provenance": {
+    "output_root": "packages",
+    "recipe_author": "Blackcat Informatics Inc.",
+    "recipe_repo": "https://github.com/paudley/ai-notes",
+    "recipe_subdir": "strix-halo",
+    "repo_subpath": "."
+  },
+  "recipe": {
+    "branch": "main_perf",
+    "depends_on": [
+      "therock",
+      "pytorch"
+    ],
+    "method": "pip",
+    "notes": "ROCm performance fork of Triton.\n\nCRITICAL: Does NOT use TheRock's LLVM. TheRock ships LLVM 22 but\nTriton's codebase expects ~LLVM 19 APIs. Triton downloads and builds\nits own LLVM internally. Do NOT set LLVM_SYSPATH.\n\ngfx11 support: warp_size=32 configured in backends/amd/compiler.py.\n\ntarget_info and gluon are CUDA-only features -- NOT available in\nthe ROCm fork. This is expected and not a gap.\n\nTriton compiler bug on gfx1151: the unified attention kernel\n(triton_unified_attention.py:239) previously produced \"operation\nscheduled before its operands\" errors. With Patch 2 below\n(AttrsDescriptor __repr__) applied, torch.compile with Inductor\nworks correctly on gfx1151 \u2014 --enforce-eager is NOT required.\nVerified with Qwen2.5-7B-Instruct: all AITER optimizations active,\ncorrect output across multiple inference tests.\n\nInductor codegen bug: AttrsDescriptor in triton/backends/compiler.py\nhas no __repr__ method. torch Inductor codegen uses {triton_meta!r}\nto serialize kernel metadata into generated Python source files.\nWithout __repr__, Python produces angle-bracket object repr\n(<triton.backends.compiler.AttrsDescriptor object at 0x...>) which\nis invalid Python syntax, causing SyntaxError at import time.\nFixed by Patch 2 below.\n\nIMPORTANT: When switching between compilation configurations\n(e.g., changing custom_ops, enabling/disabling AITER), stale\nInductor caches (/tmp/torchinductor_$USER/) and Triton caches\n(~/.triton/cache/) must be cleared to avoid KeyError crashes\nfrom mismatched guard expressions. The vLLM compile cache\n(~/.cache/vllm/torch_compile_cache/) is config-hash-keyed and\ndoes not require manual clearing.",
+    "patches": [
+      {
+        "description": "Remove -Werror from Triton's CMakeLists.txt. Our TheRock-built LLVM headers trigger warnings that upstream Triton doesn't see because they use a different LLVM version.\n",
+        "file": "CMakeLists.txt",
+        "marker": " -Werror ",
+        "sed_command": "s/ -Werror / /",
+        "type": "sed"
+      },
+      {
+        "description": "Add __repr__ method to AttrsDescriptor so torch Inductor can serialize it into generated Triton kernel source files as valid Python. Uses the existing to_dict()/from_dict() round-trip. Without this fix, --enforce-eager is required as a workaround which disables CUDAGraph capture and kernel fusion optimizations.\n",
+        "file": "triton/backends/compiler.py",
+        "marker": "__repr__",
+        "marker_absent": true,
+        "sed_command": "/def to_dict(self):/i\\    def __repr__(self):\\n        return f'AttrsDescriptor.from_dict({self.to_dict()!r})'",
+        "type": "sed"
+      }
+    ],
+    "phase": "D",
+    "repo": "https://github.com/ROCm/triton.git",
+    "src_dir": "triton",
+    "steps": [
+      14,
+      15,
+      16
+    ]
+  }
+}

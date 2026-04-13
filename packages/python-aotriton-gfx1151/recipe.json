@@ -1,0 +1,129 @@
+{
+  "maintenance": {
+    "advisory_references": [
+      "cachyos-extra-znver4/python-aotriton"
+    ],
+    "authoritative_reference": "extra/python-aotriton",
+    "divergence_notes": [
+      "This package stays close to the Arch baseline but deliberately narrows the target arch set to gfx1151 and reuses the recipe's amdclang build lane.",
+      "The nested vendored Triton build is part of the package story here and must carry the same Python-3.14 compatibility patching as the standalone Triton package."
+    ],
+    "source_patches": [],
+    "update_notes": [
+      "When updating, compare against Arch first because this is one of the closest recipe-to-baseline packages in the stack.",
+      "Preserve the reuse-build logic and stale-build-tree cleanup; interrupted AOTriton builds otherwise leave a misleading broken state behind."
+    ]
+  },
+  "name": "python-aotriton-gfx1151",
+  "package_name": "python-aotriton-gfx1151",
+  "pkgver": "0.11.2b.r8.d20260317.gad42886",
+  "policy": {
+    "advisory_references": [
+      "cachyos-extra-znver4/python-aotriton"
+    ],
+    "arch_reference": [
+      "extra/python-aotriton",
+      "cachyos-extra-znver4/python-aotriton"
+    ],
+    "authoritative_reference": "extra/python-aotriton",
+    "conflicts": [
+      "python-aotriton"
+    ],
+    "depends": [
+      "gcc-libs",
+      "glibc",
+      "hip-runtime-amd-gfx1151",
+      "hipsparselt-gfx1151",
+      "python-gfx1151",
+      "python-triton-gfx1151",
+      "rocm-core-gfx1151"
+    ],
+    "divergence_notes": [
+      "This package stays close to the Arch baseline but deliberately narrows the target arch set to gfx1151 and reuses the recipe's amdclang build lane.",
+      "The nested vendored Triton build is part of the package story here and must carry the same Python-3.14 compatibility patching as the standalone Triton package."
+    ],
+    "license": [
+      "MIT"
+    ],
+    "makedepends": [
+      "cmake",
+      "git",
+      "ninja",
+      "pybind11",
+      "python-filelock",
+      "python-iniconfig",
+      "python-msgpack",
+      "python-numpy-gfx1151",
+      "python-packaging",
+      "python-pandas",
+      "python-pluggy",
+      "python-setuptools",
+      "python-wheel",
+      "python-yaml",
+      "rocm-llvm-gfx1151"
+    ],
+    "patches_dir": "patches/python-aotriton-gfx1151",
+    "pkgdesc": "Ahead-of-time Triton math library rebuilt for Strix Halo gfx1151",
+    "provides": [
+      "python-aotriton=0.11.2b"
+    ],
+    "recipe_key": "aotriton",
+    "scaffold_notes": [
+      "Authoritative base: Arch python-aotriton 0.11.2b-1, which already carries system-pybind11 and system-Python integration patches plus explicit gfx1151 targeting.",
+      "The recipe and Arch baseline are unusually close here, so preserve Arch's patching approach wherever possible and only layer on the recipe's compiler and install details.",
+      "Do not carry forward Arch's broader multi-arch target matrix here. The Strix Halo recipe intentionally narrows AOTRITON_TARGET_ARCH to gfx1151 only so the build does not waste time compiling irrelevant kernels.",
+      "The nested vendored Triton build must explicitly disable TRITON_BUILD_UT, otherwise it spends time linking irrelevant C++ unit-test binaries and can fail there before the Python runtime package is produced.",
+      "The nested vendored Triton build must also inherit amdclang via CC/CXX and start from a fresh triton_build directory. Reusing a stale g++-configured build tree can reproduce GCC 15 LTO warning-as-error failures in GenericSwizzling.cpp even after the PKGBUILD is fixed.",
+      "The vendored Triton submodule also needs the same Python-3.14 ast.Num compatibility cherry-pick used by python-triton-gfx1151, otherwise AOTriton kernel generation fails inside v3python/compile.py after the nested Triton wheel already built successfully."
+    ],
+    "sha256sums": [
+      "SKIP",
+      "SKIP",
+      "SKIP"
+    ],
+    "source_refs": [
+      "aotriton::git+https://github.com/ROCm/aotriton#tag=0.11.2b",
+      "aotriton-aiter::git+https://github.com/ROCm/aiter.git",
+      "aotriton-incbin::git+https://github.com/graphitemaster/incbin.git"
+    ],
+    "src_subdir": "aotriton",
+    "template": "python-project-aotriton",
+    "update_notes": [
+      "When updating, compare against Arch first because this is one of the closest recipe-to-baseline packages in the stack.",
+      "Preserve the reuse-build logic and stale-build-tree cleanup; interrupted AOTriton builds otherwise leave a misleading broken state behind."
+    ],
+    "upstream_version": "0.11.2b",
+    "url": "https://github.com/ROCm/aotriton"
+  },
+  "provenance": {
+    "output_root": "packages",
+    "recipe_author": "Blackcat Informatics Inc.",
+    "recipe_repo": "https://github.com/paudley/ai-notes",
+    "recipe_subdir": "strix-halo",
+    "repo_subpath": "."
+  },
+  "recipe": {
+    "branch": null,
+    "depends_on": [
+      "triton"
+    ],
+    "method": "cmake",
+    "notes": "Pre-compiles Triton attention kernels to HSACO (ahead-of-time),\neliminating JIT compilation at inference time. v2 with Python\nbindings. gfx1151 explicitly targeted via AOTRITON_TARGET_ARCH.",
+    "patches": [
+      {
+        "description": "Remove stray git rebase 'pick' line from CMakeLists.txt. The AOTriton repo occasionally has rebase artifacts that break cmake parsing.\n",
+        "file": "CMakeLists.txt",
+        "marker": "^pick ",
+        "sed_command": "/^pick /d",
+        "type": "sed"
+      }
+    ],
+    "phase": "D",
+    "repo": "https://github.com/ROCm/aotriton.git",
+    "src_dir": "aotriton",
+    "steps": [
+      17,
+      18
+    ]
+  }
+}

@@ -1,0 +1,189 @@
+--- a/src/cpp/server/system_info.cpp
++++ b/src/cpp/server/system_info.cpp
+@@ -346,9 +346,59 @@
+     return false;
+ }
+ 
++static bool is_system_managed_external_backend(const std::string& recipe, const std::string& backend) {
++    if (recipe != "llamacpp") {
++        return false;
++    }
++    if (backend != "rocm" && backend != "vulkan") {
++        return false;
++    }
++    return !BackendUtils::find_external_backend_binary(recipe, backend).empty();
++}
++
++static std::string get_llamacpp_version_from_executable(const std::string& executable) {
++    std::string output;
++#ifdef _WIN32
++    std::string command = "\"" + executable + "\" --version 2>&1";
++    int rc = lemon::utils::ProcessManager::run_command(command, output);
++#else
++    std::string command = "\"" + executable + "\" --version 2>&1";
++    FILE* pipe = popen(command.c_str(), "r");
++    if (!pipe) {
++        return "unknown";
++    }
++
++    char buffer[256];
++    if (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
++        output = buffer;
++    }
++
++    pclose(pipe);
++#endif
++
++    if (!output.empty()) {
++        std::regex version_regex(R"(version:\s*(\d+)|version\s+b?(\d+))");
++        std::smatch match;
++        if (std::regex_search(output, match, version_regex)) {
++            for (size_t i = 1; i < match.size(); ++i) {
++                if (match[i].matched) {
++                    return "b" + match[i].str();
++                }
++            }
++        }
++        return "detected";
++    }
++
++    return "unknown";
++}
++
+ static std::string get_recipe_version(const std::string& recipe, const std::string& backend) {
+     if (recipe == "llamacpp" && backend == "system") {
+-        return SystemInfo::get_system_llamacpp_version();
++        return get_llamacpp_version_from_executable("llama-server");
++    }
++    if (is_system_managed_external_backend(recipe, backend)) {
++        std::string external_binary = BackendUtils::find_external_backend_binary(recipe, backend);
++        return get_llamacpp_version_from_executable(external_binary);
+     }
+     auto* spec = try_get_spec_for_recipe(recipe);
+     if (spec) {
+@@ -420,6 +470,24 @@
+     return "lemonade backends install " + recipe + ":" + backend;
+ }
+ 
++static std::string get_system_managed_backend_message(const std::string& recipe, const std::string& backend) {
++    if (recipe == "llamacpp" && (backend == "rocm" || backend == "vulkan")) {
++        const char* label_env = std::getenv(
++            backend == "rocm" ? "LEMONADE_LLAMACPP_ROCM_LABEL" : "LEMONADE_LLAMACPP_VULKAN_LABEL");
++        if (label_env && *label_env) {
++            return label_env;
++        }
++        std::string external_binary = BackendUtils::find_external_backend_binary(recipe, backend);
++        std::string binary_name = external_binary.empty() ? "backend" : fs::path(external_binary).filename().string();
++        std::string version = get_recipe_version(recipe, backend);
++        if (!version.empty() && version != "unknown") {
++            return "System " + binary_name + " " + version;
++        }
++        return "System " + binary_name;
++    }
++    return "system-managed backend";
++}
++
+ static std::string get_expected_backend_version(const std::string& recipe, const std::string& backend) {
+     static json backend_versions = []() -> json {
+         try {
+@@ -945,7 +1013,8 @@
+ 
+             bool version_known = !installed_version.empty() && installed_version != "unknown";
+             bool has_expected = !expected_version.empty();
+-            bool needs_update = has_expected && (!version_known || installed_version != expected_version);
++            bool externally_managed = is_system_managed_external_backend(def.recipe, def.backend);
++            bool needs_update = !externally_managed && has_expected && (!version_known || installed_version != expected_version);
+ 
+             if (needs_update) {
+                 backend["state"] = "update_required";
+@@ -996,7 +1065,11 @@
+                 backend["action"] = get_install_command(def.recipe, def.backend);
+             } else {
+                 backend["state"] = "installed";
+-                backend["message"] = "";
++                if (externally_managed) {
++                    backend["message"] = get_system_managed_backend_message(def.recipe, def.backend);
++                } else {
++                    backend["message"] = "";
++                }
+                 backend["action"] = "";
+             }
+         }
+@@ -1094,40 +1167,7 @@
+ }
+ 
+ std::string SystemInfo::get_system_llamacpp_version() {
+-    std::string output;
+-    #ifdef _WIN32
+-    std::string command = "llama-server --version 2>NUL";
+-    int rc = lemon::utils::ProcessManager::run_command(command, output);
+-    #else
+-    FILE* pipe = popen("llama-server --version 2>/dev/null", "r");
+-    if (!pipe) {
+-        return "unknown";
+-    }
+-
+-    char buffer[256];
+-    if (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
+-        output = buffer;
+-    }
+-
+-    pclose(pipe);
+-    #endif
+-
+-    // Parse version from output like "version: 3432 (e2b2a632)" or "llama.cpp version b3432"
+-    if (!output.empty()) {
+-        // Try to find a version number
+-        std::regex version_regex(R"(version:\s*(\d+)|version\s+b?(\d+))");
+-        std::smatch match;
+-        if (std::regex_search(output, match, version_regex)) {
+-            for (size_t i = 1; i < match.size(); ++i) {
+-                if (match[i].matched) {
+-                    return "b" + match[i].str();
+-                }
+-            }
+-        }
+-        return "detected";
+-    }
+-
+-    return "unknown";
++    return get_llamacpp_version_from_executable("llama-server");
+ }
+ 
+ // Helper to identify ROCm architecture from GPU name.
+--- a/src/cpp/cli/lemonade_client.cpp
++++ b/src/cpp/cli/lemonade_client.cpp
+@@ -704,9 +704,11 @@ int LemonadeClient::list_backends() {
+                     std::string status_str = backend.state.empty() ? "unsupported" : backend.state;
+ 
+                     std::string info_col;
+-                    if (status_str == "installed" && !backend.version.empty() && backend.version != "unknown") {
+-                        info_col = backend.version;
+-                    } else if (!backend.message.empty()) {
++                    if (status_str == "installed" && !backend.message.empty()) {
++                        info_col = backend.message;
++                    } else if (status_str == "installed" && !backend.version.empty() && backend.version != "unknown") {
++                        info_col = backend.version;
++                    } else if (!backend.message.empty()) {
+                         info_col = backend.message;
+                     } else {
+                         info_col = "-";
+--- a/src/cpp/server/config_file.cpp
++++ b/src/cpp/server/config_file.cpp
+@@ -45,6 +45,7 @@ json ConfigFile::get_defaults() {
+ 
+ json ConfigFile::load(const std::string& cache_dir) {
+     json defaults = get_defaults();
++    json env_overlay = migrate_from_env(defaults);
+     fs::path config_path = utils::path_from_utf8(cache_dir) / "config.json";
+ 
+     if (!fs::exists(config_path)) {
+@@ -97,7 +98,7 @@ json ConfigFile::load(const std::string& cache_dir) {
+         return defaults;
+     }
+ 
+-    return utils::JsonUtils::merge(defaults, loaded);
++    return utils::JsonUtils::merge(utils::JsonUtils::merge(defaults, loaded), env_overlay);
+ }
+ 
+ void ConfigFile::save(const std::string& cache_dir, const json& config) {

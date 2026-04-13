@@ -1,0 +1,111 @@
+{
+  "maintenance": {
+    "advisory_references": [
+      "aur/python-torchvision-rocm-bin",
+      "extra/python-torchvision"
+    ],
+    "authoritative_reference": "aur/python-torchvision-rocm",
+    "divergence_notes": [
+      "Builds against the paired optimized PyTorch package tree rather than an arbitrary preinstalled torch wheel.",
+      "Follows the recipe's ROCm wheel-build environment instead of the generic upstream CUDA-oriented defaults."
+    ],
+    "source_patches": [],
+    "update_notes": [
+      "Re-check the package against the current AUR ROCm variant first, then compare any generic Arch torchvision changes that affect Python packaging or dependency handling.",
+      "Keep the temporary build-only rocsolver soname shim out of the final package story; if it reappears, fix the true build dependency lane instead."
+    ]
+  },
+  "name": "python-torchvision-rocm-gfx1151",
+  "package_name": "python-torchvision-rocm-gfx1151",
+  "pkgver": "0.26.0.r8.d20260317.gad42886",
+  "policy": {
+    "advisory_references": [
+      "aur/python-torchvision-rocm-bin",
+      "extra/python-torchvision"
+    ],
+    "arch_reference": [
+      "aur/python-torchvision-rocm",
+      "aur/python-torchvision-rocm-bin",
+      "extra/python-torchvision"
+    ],
+    "authoritative_reference": "aur/python-torchvision-rocm",
+    "conflicts": [
+      "python-torchvision-rocm",
+      "python-torchvision"
+    ],
+    "depends": [
+      "ffmpeg",
+      "libjpeg-turbo",
+      "libpng",
+      "python-numpy-gfx1151",
+      "python-pillow",
+      "python-pytorch-opt-rocm-gfx1151",
+      "python-requests",
+      "python-scipy",
+      "python-sympy"
+    ],
+    "divergence_notes": [
+      "Builds against the paired optimized PyTorch package tree rather than an arbitrary preinstalled torch wheel.",
+      "Follows the recipe's ROCm wheel-build environment instead of the generic upstream CUDA-oriented defaults."
+    ],
+    "license": [
+      "BSD-3-Clause"
+    ],
+    "makedepends": [
+      "cmake",
+      "miopen-hip-gfx1151",
+      "ninja",
+      "python-gfx1151",
+      "python-installer",
+      "python-pip",
+      "python-setuptools",
+      "rocm-llvm-gfx1151"
+    ],
+    "patches_dir": "patches/python-torchvision-rocm-gfx1151",
+    "pkgdesc": "Datasets, transforms, and models for computer vision with ROCm support, rebuilt for Strix Halo gfx1151",
+    "provides": [
+      "python-torchvision-rocm=0.26.0",
+      "python-torchvision=0.26.0"
+    ],
+    "recipe_key": "torchvision",
+    "scaffold_notes": [
+      "Authoritative base: AUR python-torchvision-rocm 0.26.0-1 because it is the closest maintained ROCm packaging lane for torchvision.",
+      "Advisory references: python-torchvision-rocm-bin for packaging shape around the ROCm variant and repo python-torchvision for generic Arch Python packaging conventions.",
+      "The recipe must build against the source-tree torch headers from the paired PyTorch package, not against an arbitrary preinstalled wheel.",
+      "Keep the recipe's TorchVision environment intact: FORCE_CUDA=0, FORCE_MPS=0, empty TORCH_CUDA_ARCH_LIST, and pip-wheel packaging without build isolation."
+    ],
+    "source_type": "tarball",
+    "source_url": "https://github.com/pytorch/vision/archive/refs/tags/v0.26.0.tar.gz",
+    "src_subdir": "vision-0.26.0",
+    "template": "python-project-torchvision-rocm",
+    "update_notes": [
+      "Re-check the package against the current AUR ROCm variant first, then compare any generic Arch torchvision changes that affect Python packaging or dependency handling.",
+      "Keep the temporary build-only rocsolver soname shim out of the final package story; if it reappears, fix the true build dependency lane instead."
+    ],
+    "upstream_version": "0.26.0",
+    "url": "https://github.com/pytorch/vision"
+  },
+  "provenance": {
+    "output_root": "packages",
+    "recipe_author": "Blackcat Informatics Inc.",
+    "recipe_repo": "https://github.com/paudley/ai-notes",
+    "recipe_subdir": "strix-halo",
+    "repo_subpath": "."
+  },
+  "recipe": {
+    "branch": null,
+    "depends_on": [
+      "pytorch"
+    ],
+    "method": "pip",
+    "notes": "Built against source PyTorch (must find torch headers in pytorch/\nsource tree, not from a pip install).",
+    "patches": [],
+    "phase": "C",
+    "repo": "https://github.com/pytorch/vision.git",
+    "src_dir": "torchvision",
+    "steps": [
+      12,
+      13
+    ]
+  }
+}

@@ -1,0 +1,4 @@
+opt/rocm/include/hipblas-common/hipblas-common.h
+opt/rocm/lib/cmake/hipblas-common/hipblas-common-config-version.cmake
+opt/rocm/lib/cmake/hipblas-common/hipblas-common-config.cmake
+opt/rocm/lib/cmake/hipblas-common/hipblas-common-targets.cmake

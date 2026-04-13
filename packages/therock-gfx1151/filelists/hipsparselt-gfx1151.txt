@@ -1,0 +1,10 @@
+opt/rocm/include/hipsparselt/hipsparselt-export.h
+opt/rocm/include/hipsparselt/hipsparselt-version.h
+opt/rocm/include/hipsparselt/hipsparselt.h
+opt/rocm/lib/cmake/hipsparselt/hipsparselt-config-version.cmake
+opt/rocm/lib/cmake/hipsparselt/hipsparselt-config.cmake
+opt/rocm/lib/cmake/hipsparselt/hipsparselt-targets-release.cmake
+opt/rocm/lib/cmake/hipsparselt/hipsparselt-targets.cmake
+opt/rocm/lib/libhipsparselt.so
+opt/rocm/lib/libhipsparselt.so.0
+opt/rocm/lib/libhipsparselt.so.0.2

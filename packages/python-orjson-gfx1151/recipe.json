@@ -1,0 +1,96 @@
+{
+  "maintenance": {
+    "advisory_references": [
+      "cachyos-extra-znver4/python-orjson"
+    ],
+    "authoritative_reference": "extra/python-orjson",
+    "divergence_notes": [
+      "Uses the recipe's explicit Rust linker selection and path-remapping rules so AMD's toolchain wrappers behave correctly.",
+      "Pins Rust target-cpu to znver5 instead of plain native because the recipe documents a rustc native-detection issue on this platform."
+    ],
+    "source_patches": [],
+    "update_notes": [
+      "Compare against Arch first for maturin/backend changes, then keep Cachy as a secondary reference for CPU-targeting differences.",
+      "Retain CycloneDX/debug-path rewriting in package() unless upstream or Arch resolves the path leakage directly."
+    ]
+  },
+  "name": "python-orjson-gfx1151",
+  "package_name": "python-orjson-gfx1151",
+  "pkgver": "3.11.8.r8.d20260317.gad42886",
+  "policy": {
+    "advisory_references": [
+      "cachyos-extra-znver4/python-orjson"
+    ],
+    "arch_reference": [
+      "extra/python-orjson",
+      "cachyos-extra-znver4/python-orjson"
+    ],
+    "authoritative_reference": "extra/python-orjson",
+    "conflicts": [
+      "python-orjson"
+    ],
+    "depends": [
+      "glibc",
+      "libgcc",
+      "python-gfx1151"
+    ],
+    "divergence_notes": [
+      "Uses the recipe's explicit Rust linker selection and path-remapping rules so AMD's toolchain wrappers behave correctly.",
+      "Pins Rust target-cpu to znver5 instead of plain native because the recipe documents a rustc native-detection issue on this platform."
+    ],
+    "license": [
+      "Apache-2.0",
+      "MIT"
+    ],
+    "makedepends": [
+      "cargo",
+      "python-build",
+      "python-installer",
+      "python-maturin",
+      "python-wheel",
+      "rocm-llvm-gfx1151",
+      "rust"
+    ],
+    "patches_dir": "patches/python-orjson-gfx1151",
+    "pkgdesc": "Fast, correct Python JSON library rebuilt for Strix Halo gfx1151",
+    "provides": [
+      "python-orjson"
+    ],
+    "pypi_name": "orjson",
+    "recipe_key": "rust_wheels",
+    "scaffold_notes": [
+      "The recipe forces explicit Rust linker selection because AMD's cc wrapper rejects non-amd-prefixed frontend names.",
+      "Keep RUSTFLAGS pinned to znver5 rather than native; the recipe documents a rustc native-detection issue on this platform."
+    ],
+    "src_subdir": "orjson-3.11.8",
+    "template": "rust-wheel-pypi",
+    "update_notes": [
+      "Compare against Arch first for maturin/backend changes, then keep Cachy as a secondary reference for CPU-targeting differences.",
+      "Retain CycloneDX/debug-path rewriting in package() unless upstream or Arch resolves the path leakage directly."
+    ],
+    "upstream_version": "3.11.8",
+    "url": "https://github.com/ijl/orjson"
+  },
+  "provenance": {
+    "output_root": "packages",
+    "recipe_author": "Blackcat Informatics Inc.",
+    "recipe_repo": "https://github.com/paudley/ai-notes",
+    "recipe_subdir": "strix-halo",
+    "repo_subpath": "."
+  },
+  "recipe": {
+    "branch": null,
+    "depends_on": [
+      "cpython"
+    ],
+    "method": "cargo",
+    "notes": "Builds and installs orjson and cryptography from source with Rust flags:\n  RUSTFLAGS=\"-C target-cpu=znver5 -C opt-level=3\"\nThis enables full AVX-512 + VAES codegen for Zen 5.\n\nDo NOT add -C lto=thin here -- maturin adds -C embed-bitcode=no\nwhich conflicts with -C lto. Maturin manages its own LTO.\n\nRust's linker invokes `cc` which resolves to the amdclang symlink,\nbut AMD's wrapper rejects binaries not prefixed with \"amd\". Fix:\nCARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=amdclang\n\nMust unset CFLAGS/CXXFLAGS/LDFLAGS during Rust builds because\nthey contain clang-specific flags (-famd-opt, -mllvm) that rustc's\ninternal cc invocations for build scripts don't understand.",
+    "patches": [],
+    "phase": "H",
+    "repo": null,
+    "src_dir": null,
+    "steps": [
+      30
+    ]
+  }
+}

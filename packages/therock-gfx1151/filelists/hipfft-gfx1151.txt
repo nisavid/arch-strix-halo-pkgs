@@ -1,0 +1,17 @@
+opt/rocm/include/hipfft/hipfft-export.h
+opt/rocm/include/hipfft/hipfft-version.h
+opt/rocm/include/hipfft/hipfft.h
+opt/rocm/include/hipfft/hipfftMp.h
+opt/rocm/include/hipfft/hipfftXt.h
+opt/rocm/include/hipfft/hipfftw.h
+opt/rocm/include/hipfft/hiplibxt.h
+opt/rocm/lib/cmake/hipfft/hipfft-config-version.cmake
+opt/rocm/lib/cmake/hipfft/hipfft-config.cmake
+opt/rocm/lib/cmake/hipfft/hipfft-targets-release.cmake
+opt/rocm/lib/cmake/hipfft/hipfft-targets.cmake
+opt/rocm/lib/libhipfft.so
+opt/rocm/lib/libhipfft.so.0
+opt/rocm/lib/libhipfft.so.0.1
+opt/rocm/lib/libhipfftw.so
+opt/rocm/lib/libhipfftw.so.0
+opt/rocm/lib/libhipfftw.so.0.1

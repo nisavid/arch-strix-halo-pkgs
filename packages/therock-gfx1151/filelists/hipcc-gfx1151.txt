@@ -1,0 +1,3 @@
+opt/rocm/bin/hipcc
+opt/rocm/bin/hipcc_cmake_linker_helper
+opt/rocm/bin/hipconfig

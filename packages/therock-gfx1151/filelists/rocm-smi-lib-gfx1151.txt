@@ -1,0 +1,14 @@
+opt/rocm/include/rocm_smi/kfd_ioctl.h
+opt/rocm/include/rocm_smi/rocm_smi.h
+opt/rocm/include/rocm_smi/rocm_smi64Config.h
+opt/rocm/include/rocm_smi/rocm_smi_logger.h
+opt/rocm/lib/cmake/rocm_smi/rocm_smi-config-version.cmake
+opt/rocm/lib/cmake/rocm_smi/rocm_smi-config.cmake
+opt/rocm/lib/cmake/rocm_smi/rocm_smiTargets-release.cmake
+opt/rocm/lib/cmake/rocm_smi/rocm_smiTargets.cmake
+opt/rocm/lib/librocm_smi64.so
+opt/rocm/lib/librocm_smi64.so.1
+opt/rocm/lib/librocm_smi64.so.1.0
+opt/rocm/libexec/rocm_smi/rocm_smi.py
+opt/rocm/libexec/rocm_smi/rsmiBindings.py
+opt/rocm/libexec/rocm_smi/rsmiBindingsInit.py

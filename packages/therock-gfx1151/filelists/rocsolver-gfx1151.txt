@@ -1,0 +1,13 @@
+opt/rocm/include/rocsolver/rocsolver-aliases.h
+opt/rocm/include/rocsolver/rocsolver-export.h
+opt/rocm/include/rocsolver/rocsolver-extra-types.h
+opt/rocm/include/rocsolver/rocsolver-functions.h
+opt/rocm/include/rocsolver/rocsolver-version.h
+opt/rocm/include/rocsolver/rocsolver.h
+opt/rocm/lib/cmake/rocsolver/rocsolver-config-version.cmake
+opt/rocm/lib/cmake/rocsolver/rocsolver-config.cmake
+opt/rocm/lib/cmake/rocsolver/rocsolver-targets-release.cmake
+opt/rocm/lib/cmake/rocsolver/rocsolver-targets.cmake
+opt/rocm/lib/librocsolver.so
+opt/rocm/lib/librocsolver.so.1
+opt/rocm/lib/librocsolver.so.1.0

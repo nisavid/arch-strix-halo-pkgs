@@ -1,0 +1,107 @@
+{
+  "maintenance": {
+    "advisory_references": [
+      "cachyos-extra-znver4/python-numpy"
+    ],
+    "authoritative_reference": "extra/python-numpy",
+    "divergence_notes": [
+      "Keeps the Arch package shape but carries the recipe's clang/meson flag rewrite so AMD-specific driver flags survive meson compiler probing.",
+      "Uses the optimized Python package as the interpreter baseline rather than the distro python package."
+    ],
+    "source_patches": [],
+    "update_notes": [
+      "Re-check BLAS/LAPACK provider handling and any Arch downstream patches whenever numpy or Python major/minor changes.",
+      "If future recipe changes add real source patches, keep them as patch files instead of further growing shell flag transforms."
+    ]
+  },
+  "name": "python-numpy-gfx1151",
+  "package_name": "python-numpy-gfx1151",
+  "pkgver": "2.4.4.r8.d20260317.gad42886",
+  "policy": {
+    "advisory_references": [
+      "cachyos-extra-znver4/python-numpy"
+    ],
+    "arch_reference": [
+      "extra/python-numpy",
+      "cachyos-extra-znver4/python-numpy"
+    ],
+    "authoritative_reference": "extra/python-numpy",
+    "conflicts": [
+      "python-numpy"
+    ],
+    "depends": [
+      "cblas",
+      "lapack",
+      "python-gfx1151"
+    ],
+    "divergence_notes": [
+      "Keeps the Arch package shape but carries the recipe's clang/meson flag rewrite so AMD-specific driver flags survive meson compiler probing.",
+      "Uses the optimized Python package as the interpreter baseline rather than the distro python package."
+    ],
+    "license": [
+      "custom"
+    ],
+    "makedepends": [
+      "meson",
+      "ninja",
+      "patchelf",
+      "python-build",
+      "python-installer",
+      "python-meson-python",
+      "python-wheel",
+      "rocm-llvm-gfx1151"
+    ],
+    "optdepends": [
+      "blas-openblas: faster linear algebra"
+    ],
+    "patches_dir": "patches/python-numpy-gfx1151",
+    "pkgdesc": "Scientific tools for Python rebuilt for Strix Halo gfx1151",
+    "provides": [
+      "python-numpy"
+    ],
+    "pypi_name": "numpy",
+    "recipe_key": "native_wheels",
+    "scaffold_notes": [
+      "The recipe's key fix here is the meson/clang flag rewrite: convert driver-level -mllvm flags to -Xclang pairs and move -famd-opt to LDFLAGS.",
+      "This scaffold still needs comparison against the current Arch python-numpy PKGBUILD for BLAS provider handling and any distro-specific patches."
+    ],
+    "src_subdir": "numpy-2.4.4",
+    "template": "native-wheel-pypi",
+    "update_notes": [
+      "Re-check BLAS/LAPACK provider handling and any Arch downstream patches whenever numpy or Python major/minor changes.",
+      "If future recipe changes add real source patches, keep them as patch files instead of further growing shell flag transforms."
+    ],
+    "upstream_version": "2.4.4",
+    "url": "https://www.numpy.org/"
+  },
+  "provenance": {
+    "output_root": "packages",
+    "recipe_author": "Blackcat Informatics Inc.",
+    "recipe_repo": "https://github.com/paudley/ai-notes",
+    "recipe_subdir": "strix-halo",
+    "repo_subpath": "."
+  },
+  "recipe": {
+    "branch": null,
+    "depends_on": [
+      "cpython",
+      "pytorch"
+    ],
+    "method": "pip",
+    "notes": "Builds and installs numpy, sentencepiece, zstandard, asyncpg from\nsource with Zen 5 optimization flags.\n\nnumpy: cmake pip wrapper breaks in build isolation; replaced with\nsymlink to system cmake.\n\nmeson-based packages (numpy, zstandard): -mllvm flags must be\nrewritten as -Xclang -mllvm -Xclang pairs because meson's compiler\nprobing rejects -mllvm as \"unused command line argument\".\n-famd-opt moved to LDFLAGS (link-time-only driver flag, no-op at\ncompile time -- triggers -Werror=unused in compile-only probes).",
+    "patches": [
+      {
+        "description": "Replace broken Python cmake wrapper with symlink to real system cmake. The cmake pip package installs a Python wrapper that does `from cmake import cmake`, which fails inside pip's build isolation where the cmake Python module isn't available.\n",
+        "dst": "${VLLM_DIR}/.venv/bin/cmake",
+        "src": "system cmake binary",
+        "type": "file_copy"
+      }
+    ],
+    "phase": "H",
+    "repo": null,
+    "src_dir": null,
+    "steps": [
+      31
+    ]
+  }
+}

@@ -1,0 +1,755 @@
+[defaults]
+recipe_repo = "https://github.com/paudley/ai-notes"
+recipe_subdir = "strix-halo"
+recipe_author = "Blackcat Informatics Inc."
+repo_subpath = "."
+output_root = "packages"
+
+[packages.aocl-utils-gfx1151]
+recipe_key = "aocl_utils"
+template = "cmake"
+upstream_version = "5.2.2"
+pkgdesc = "AOCL CPU feature detection library rebuilt for Strix Halo gfx1151"
+url = "https://github.com/amd/aocl-utils"
+license = ["BSD"]
+arch_reference = ["aur/aocl-utils", "aur/aocl-utils-aocc"]
+authoritative_reference = "aur/aocl-utils"
+advisory_references = ["aur/aocl-utils-aocc"]
+divergence_notes = [
+  "Uses amdclang as the compiler baseline but intentionally leaves AOCL-Utils itself off the more aggressive recipe flag bundle because build testing showed -famd-opt is a no-op here.",
+  "Tracks the upstream 5.2.2 release tarball rather than a floating branch so pkgver tracks the real upstream release plus the local recipe revision."
+]
+update_notes = [
+  "When the AUR baseline changes, re-check license packaging and install layout against aur/aocl-utils first, then compare any AOCC-specific drift from aur/aocl-utils-aocc.",
+  "If the recipe starts carrying source patches here, convert them into patch files under patches/aocl-utils-gfx1151 rather than inline shell edits."
+]
+provides = ["aocl-utils"]
+conflicts = ["aocl-utils"]
+depends = []
+makedepends = ["cmake", "ninja", "rocm-llvm-gfx1151"]
+options = ["staticlibs", "!lto"]
+compiler_dep = "rocm-llvm-gfx1151"
+source_type = "tarball"
+source_url = "https://github.com/amd/aocl-utils/archive/refs/tags/5.2.2.tar.gz"
+src_subdir = "aocl-utils-5.2.2"
+install_prefix = "/usr"
+patches_dir = "patches/aocl-utils-gfx1151"
+scaffold_notes = [
+  "This scaffold is rebased onto the current AUR aocl-utils 5.2.2 package rather than the older aocc-specific variant.",
+  "The older AUR aocl-utils-aocc package remains an advisory sibling because it captures the AOCC-specific lane, even though the current non-AOCC aocl-utils package is the closer baseline for this toolchain.",
+  "The recipe intentionally disables LTO because AOCL-LibM links AOCL-Utils archives with GNU ld.",
+  "Build testing showed -famd-opt is a compile-time no-op here, so the scaffold keeps it out of the AOCL-Utils compile flags while still using amdclang as the compiler baseline."
+]
+
+[packages.aocl-libm-gfx1151]
+recipe_key = "aocl_libm"
+template = "scons-aocl-libm"
+upstream_version = "5.2.1"
+pkgdesc = "AMD AOCL-LibM rebuilt with Zen 5 tuning for Strix Halo gfx1151"
+url = "https://github.com/amd/aocl-libm-ose.git"
+license = ["BSD-3-Clause", "MIT", "Apache-2.0"]
+arch_reference = ["aur/aocl"]
+authoritative_reference = "none"
+advisory_references = ["aur/aocl"]
+divergence_notes = [
+  "There is no standalone Arch-family AOCL-LibM package, so this package is recipe-first and uses the broader aur/aocl bundle only for install-layout and metadata expectations.",
+  "The package keeps AOCL-LibM out of CPython's own link line; it is intended as a downstream math library, not part of Python's PGO training path."
+]
+update_notes = [
+  "When updating, audit upstream AOCL-LibM licensing and bundled notices directly from source rather than assuming the advisory aur/aocl metadata is sufficient.",
+  "If AOCL-Utils packaging changes, re-check the runtime dependency and any RPATH or SONAME assumptions here."
+]
+provides = ["aocl-libm"]
+conflicts = ["aocl-libm"]
+depends = ["aocl-utils-gfx1151", "gcc-libs", "glibc"]
+makedepends = ["git", "patchelf", "python", "rocm-llvm-gfx1151", "scons"]
+compiler_dep = "rocm-llvm-gfx1151"
+src_subdir = "aocl-libm"
+install_prefix = "/usr"
+patches_dir = "patches/aocl-libm-gfx1151"
+scaffold_notes = [
+  "There is no standalone AOCL-LibM package in Arch, CachyOS, or AUR; the closest packaging lane is the broader AUR aocl bundle, which is only advisory for install-layout cleanup patterns.",
+  "The recipe carries three upstream-compatibility patch steps plus a post-install RPATH fix; those are rendered into prepare() and package().",
+  "Keep AOCL-LibM out of the CPython link line. It is intended for downstream numerical libraries, not Python's own PGO run.",
+  "Build testing showed libalm.so does not advertise a versioned SONAME, so the scaffold does not export it in provides()."
+]
+
+[packages.python-gfx1151]
+recipe_key = "cpython"
+template = "autoconf-python"
+upstream_version = "3.14.4"
+pkgdesc = "The Python programming language rebuilt with amdclang for Strix Halo gfx1151"
+url = "https://www.python.org/"
+license = ["PSF-2.0"]
+arch_reference = ["core/python", "cachyos-znver4/python"]
+authoritative_reference = "core/python"
+advisory_references = ["cachyos-znver4/python"]
+divergence_notes = [
+  "Uses the Arch system-Python package shape as the integration baseline while layering in the recipe's amdclang plus PGO/LTO approach.",
+  "Intentionally keeps pip/setuptools split out of the base interpreter package and preserves Arch's externally managed environment behavior."
+]
+update_notes = [
+  "Always diff against the current Arch python PKGBUILD first, then inspect CachyOS for any CPU-tuning or toolchain deltas worth carrying.",
+  "Treat system-Python replacement as gated on a fresh torch/vllm smoke run after any major Python, ROCm, or recipe change."
+]
+provides = ["python=3.14.4", "python3", "python-externally-managed"]
+conflicts = ["python"]
+replaces = ["python"]
+depends = ["bzip2", "expat", "gdbm", "libffi", "libnsl", "libxcrypt", "mpdecimal", "openssl", "tzdata", "zlib", "zstd"]
+makedepends = ["bluez-libs", "gdb", "rocm-llvm-gfx1151", "sqlite", "tk", "ttf-font", "xorg-server-xvfb", "xz"]
+optdepends = [
+  "python-setuptools: for building Python packages using tooling that is usually bundled with Python",
+  "python-pip: for installing Python packages using tooling that is usually bundled with Python",
+  "python-pipx: for installing Python software not packaged on Arch Linux",
+  "sqlite: for a default database integration",
+  "xz: for lzma",
+  "tk: for tkinter"
+]
+compiler_dep = "rocm-llvm-gfx1151"
+source_type = "tarball"
+source_url = "https://www.python.org/ftp/python/3.14.4/Python-3.14.4.tar.xz"
+src_subdir = "Python-3.14.4"
+install_prefix = "/usr"
+patches_dir = "patches/python-gfx1151"
+scaffold_notes = [
+  "This scaffold is intentionally rebased onto current Arch/Cachy Python 3.14.x instead of the recipe's older CPython 3.13.12 pin.",
+  "The scaffold preserves the recipe's rule that all vllm-env.sh compiler flags must be unset before configure so AOCL-LibM does not contaminate the PGO training run.",
+  "Before production cutover, verify feature parity with the current Arch python package, especially tkinter, sqlite extension loading, PEP 668, and debug-path sanitization.",
+  "The scaffold intentionally disables ensurepip so pip stays split into separate packages, matching Arch system integration more closely.",
+  "The scaffold uses the official CPython release tarball rather than a git mirror because the package is pinned to a tagged release and full VCS fetches are unnecessarily expensive here.",
+  "Treat the system-Python replacement as gated on a successful Python-3.14 vLLM smoke test against the coherent TheRock ROCm stack."
+]
+
+[packages.python-vllm-rocm-gfx1151]
+recipe_key = "vllm"
+template = "python-project-vllm"
+upstream_version = "0.19.0"
+pkgdesc = "High-throughput and memory-efficient inference engine for LLMs with ROCm, rebuilt for Strix Halo gfx1151"
+url = "https://github.com/vllm-project/vllm"
+license = ["Apache-2.0"]
+arch_reference = ["aur/python-vllm"]
+authoritative_reference = "aur/python-vllm"
+advisory_references = []
+divergence_notes = [
+  "This package is ROCm-specific even though the closest Arch-family baseline is the generic aur/python-vllm package.",
+  "Carries a deliberate Python-3.14 compatibility delta and recipe-specific ROCm/AITER integration that are not part of the generic baseline."
+]
+update_notes = [
+  "Check upstream vllm release notes and pyproject metadata first, then reconcile the Python upper-bound and hard-coded supported-version list with the current state of Python 3.14 support.",
+  "If numba remains part of the Python 3.14 story, capture it as a real source patch or package dependency decision rather than a no-op scripted edit.",
+  "Treat runtime validation against the live ROCm stack as mandatory; a successful wheel build is not enough."
+]
+provides = ["python-vllm-rocm", "python-vllm"]
+conflicts = ["python-vllm-rocm", "python-vllm"]
+depends = ["amdsmi-gfx1151", "numactl", "python-aiohttp", "python-blake3", "python-cachetools", "python-cbor2", "python-cloudpickle", "python-diskcache", "python-einops", "python-fastapi", "python-gguf", "python-gfx1151", "python-huggingface-hub", "python-ijson", "python-importlib-metadata", "python-mistral-common", "python-msgspec", "python-openai", "python-opencv", "python-prometheus-fastapi-instrumentator", "python-psutil", "python-py-cpuinfo", "python-pybase64", "python-pydantic", "python-pytorch-opt-rocm-gfx1151", "python-pyzmq", "python-soundfile", "python-starlette", "python-sympy", "python-torchvision-rocm-gfx1151", "python-tqdm", "python-transformers", "python-triton-gfx1151", "python-uvloop", "python-watchfiles", "rocblas-gfx1151", "uvicorn"]
+makedepends = ["cmake", "ninja", "python-installer", "python-pip", "python-setuptools", "python-setuptools-scm", "python-wheel", "rocm-llvm-gfx1151"]
+source_type = "tarball"
+source_url = "https://github.com/vllm-project/vllm/archive/refs/tags/v0.19.0.tar.gz"
+extra_sources = ["0001-python-3.14-version-gates.patch"]
+extra_sha256sums = ["SKIP"]
+source_patches = ["0001-python-3.14-version-gates.patch"]
+src_subdir = "vllm-0.19.0"
+patches_dir = "patches/python-vllm-rocm-gfx1151"
+scaffold_notes = [
+  "There does not appear to be a current dedicated python-vllm-rocm AUR package; the closest package baseline is the generic AUR python-vllm package, with ROCm-specific integration coming from this recipe.",
+  "Use the latest stable upstream release tarball (v0.19.0) instead of a floating full Git clone. Upstream currently exposes a 0.19.1 release candidate but not a final 0.19.1 release, so the stable tag is the safer packaging baseline.",
+  "This scaffold carries the minimal Python-3.14 source patch needed to build from the stable tarball: relax the Python upper bound and extend the hard-coded CMake supported-version list through 3.14.",
+  "Do not treat a successful build as sufficient for system-Python cutover; the gate is a real vLLM smoke test after the TheRock ROCm split packages are installed coherently.",
+  "Keep the gfx1151 ROCm/AITER recipe patches in the source package, but evaluate Python-3.14 compatibility separately from ROCm runtime/linker issues.",
+  "The earlier numba-pin idea is not currently part of the actual built package story; treat any numba change as a separate follow-up until it is backed by a real source patch."
+]
+
+[packages.python-pytorch-opt-rocm-gfx1151]
+recipe_key = "pytorch"
+template = "python-project-pytorch-rocm"
+upstream_version = "2.11.0"
+source_refs = ["pytorch::git+https://github.com/ROCm/pytorch.git#commit=0446f7ba2fd"]
+pkgdesc = "Tensors and dynamic neural networks in Python with ROCm acceleration, rebuilt for Strix Halo gfx1151"
+url = "https://pytorch.org"
+license = ["BSD-3-Clause-Modification"]
+arch_reference = ["extra/python-pytorch-opt-rocm", "extra/python-pytorch-rocm", "cachyos-extra-znver4/python-pytorch-opt-rocm"]
+authoritative_reference = "extra/python-pytorch-opt-rocm"
+advisory_references = ["extra/python-pytorch-rocm", "cachyos-extra-znver4/python-pytorch-opt-rocm"]
+divergence_notes = [
+  "Uses the Arch split-package structure as the integration baseline but deliberately tracks ROCm/pytorch release/2.11 rather than upstream pytorch/pytorch.",
+  "Carries recipe-specific ROCm fixes such as the HIPGraph stub rewrite, gfx1151 CK enablement, and post-install patchelf/linker cleanup."
+]
+update_notes = [
+  "When updating, inspect the current Arch python-pytorch pkgbase first, then re-evaluate every carried recipe/source patch against the chosen ROCm fork.",
+  "Keep the package version aligned with the built wheel version; do not repeat the earlier mismatch where the package claimed 2.11.0 but the built wheel came from develop."
+]
+provides = ["python-pytorch-opt-rocm=2.11.0", "python-pytorch-rocm=2.11.0", "python-pytorch=2.11.0"]
+conflicts = ["python-pytorch-opt-rocm", "python-pytorch-rocm", "python-pytorch"]
+depends = [
+  "amdsmi-gfx1151",
+  "composable-kernel-gfx1151",
+  "hsa-amd-aqlprofile-gfx1151",
+  "hipblaslt-gfx1151",
+  "miopen-hip-gfx1151",
+  "python-aotriton-gfx1151",
+  "python-filelock",
+  "python-fsspec",
+  "python-gfx1151",
+  "python-jinja",
+  "python-networkx",
+  "python-numpy-gfx1151",
+  "python-sympy",
+  "python-typing_extensions",
+  "python-yaml",
+  "rccl-gfx1151",
+  "rocblas-gfx1151",
+  "rocm-hip-sdk-gfx1151",
+  "rocm-openmp-gfx1151"
+]
+makedepends = [
+  "cmake",
+  "git",
+  "ninja",
+  "python-build",
+  "python-cffi",
+  "python-installer",
+  "python-pip",
+  "python-requests",
+  "python-setuptools",
+  "python-six",
+  "python-triton-gfx1151",
+  "python-yaml",
+  "patchelf",
+  "rocm-llvm-gfx1151",
+  "unzip"
+]
+src_subdir = "pytorch"
+patches_dir = "patches/python-pytorch-opt-rocm-gfx1151"
+scaffold_notes = [
+  "Authoritative base: Arch split package python-pytorch-opt-rocm 2.11.0-3, with python-pytorch-rocm kept as an advisory sibling because the same pkgbase carries both variants.",
+  "The recipe intentionally tracks the ROCm/pytorch fork rather than upstream pytorch/pytorch because AMD validates that branch and carries ROCm-specific integration fixes not yet upstreamed.",
+  "Keep nearby Cachy packaging as advisory input for compiler defaults and dependency polish, but use the Arch split-package structure as the distro-integration baseline.",
+  "The first real build must preserve the recipe's ROCm-specific fixes: HIPGraph.hip stub rewrite, NumPy 2 target C-API define, clang ABI flag removal, gfx1151 CK enablement, and post-install patchelf fixes for torch/lib and libtorch_hip.so."
+]
+
+[packages.python-torchvision-rocm-gfx1151]
+recipe_key = "torchvision"
+template = "python-project-torchvision-rocm"
+upstream_version = "0.26.0"
+pkgdesc = "Datasets, transforms, and models for computer vision with ROCm support, rebuilt for Strix Halo gfx1151"
+url = "https://github.com/pytorch/vision"
+license = ["BSD-3-Clause"]
+arch_reference = ["aur/python-torchvision-rocm", "aur/python-torchvision-rocm-bin", "extra/python-torchvision"]
+authoritative_reference = "aur/python-torchvision-rocm"
+advisory_references = ["aur/python-torchvision-rocm-bin", "extra/python-torchvision"]
+divergence_notes = [
+  "Builds against the paired optimized PyTorch package tree rather than an arbitrary preinstalled torch wheel.",
+  "Follows the recipe's ROCm wheel-build environment instead of the generic upstream CUDA-oriented defaults."
+]
+update_notes = [
+  "Re-check the package against the current AUR ROCm variant first, then compare any generic Arch torchvision changes that affect Python packaging or dependency handling.",
+  "Keep the temporary build-only rocsolver soname shim out of the final package story; if it reappears, fix the true build dependency lane instead."
+]
+provides = ["python-torchvision-rocm=0.26.0", "python-torchvision=0.26.0"]
+conflicts = ["python-torchvision-rocm", "python-torchvision"]
+depends = [
+  "ffmpeg",
+  "libjpeg-turbo",
+  "libpng",
+  "python-numpy-gfx1151",
+  "python-pillow",
+  "python-pytorch-opt-rocm-gfx1151",
+  "python-requests",
+  "python-scipy",
+  "python-sympy"
+]
+makedepends = ["cmake", "miopen-hip-gfx1151", "ninja", "python-gfx1151", "python-installer", "python-pip", "python-setuptools", "rocm-llvm-gfx1151"]
+source_type = "tarball"
+source_url = "https://github.com/pytorch/vision/archive/refs/tags/v0.26.0.tar.gz"
+src_subdir = "vision-0.26.0"
+patches_dir = "patches/python-torchvision-rocm-gfx1151"
+scaffold_notes = [
+  "Authoritative base: AUR python-torchvision-rocm 0.26.0-1 because it is the closest maintained ROCm packaging lane for torchvision.",
+  "Advisory references: python-torchvision-rocm-bin for packaging shape around the ROCm variant and repo python-torchvision for generic Arch Python packaging conventions.",
+  "The recipe must build against the source-tree torch headers from the paired PyTorch package, not against an arbitrary preinstalled wheel.",
+  "Keep the recipe's TorchVision environment intact: FORCE_CUDA=0, FORCE_MPS=0, empty TORCH_CUDA_ARCH_LIST, and pip-wheel packaging without build isolation."
+]
+
+[packages.python-triton-gfx1151]
+recipe_key = "triton"
+template = "python-project-triton-rocm"
+upstream_version = "3.5.1"
+pkgdesc = "Language and compiler for custom deep-learning primitives, rebuilt from the ROCm performance fork for Strix Halo gfx1151"
+url = "https://triton-lang.org/main/index.html"
+license = ["MIT"]
+arch_reference = ["extra/python-triton", "cachyos-extra-znver4/python-triton"]
+authoritative_reference = "extra/python-triton"
+advisory_references = ["cachyos-extra-znver4/python-triton"]
+divergence_notes = [
+  "Uses Arch's Python packaging and integration baseline but deliberately swaps in ROCm/triton main_perf for the source lane.",
+  "Builds Triton's compatible sidecar LLVM instead of trying to force the ROCm fork onto TheRock's installed LLVM API line."
+]
+update_notes = [
+  "Check Arch's current Triton Python packaging first for Python-version fixes and install layout changes, then re-evaluate whether ROCm/triton still needs its separate LLVM lane.",
+  "Keep any source edits as patch files once they stabilize; this package is a likely upstream-candidate area."
+]
+provides = ["python-triton=3.5.1"]
+conflicts = ["python-triton"]
+depends = ["glibc", "libgcc", "python-gfx1151"]
+makedepends = ["cmake", "git", "ninja", "pybind11", "python-build", "python-installer", "python-setuptools", "python-wheel"]
+source_refs = ["triton::git+https://github.com/ROCm/triton.git#branch=main_perf"]
+sha256sums = ["SKIP"]
+src_subdir = "triton"
+patches_dir = "patches/python-triton-gfx1151"
+scaffold_notes = [
+  "Authoritative base: Arch python-triton 3.5.1-4 for distro integration and Python-3.14 carry patches.",
+  "The recipe intentionally swaps in ROCm/triton main_perf instead of upstream triton-lang/triton. That makes Arch's package an advisory base rather than a source-identical one.",
+  "Do not point Triton at TheRock's LLVM. The recipe notes that this ROCm fork still expects an older LLVM API line and must use its own compatible LLVM path instead."
+]
+
+[packages.python-aotriton-gfx1151]
+recipe_key = "aotriton"
+template = "python-project-aotriton"
+upstream_version = "0.11.2b"
+pkgdesc = "Ahead-of-time Triton math library rebuilt for Strix Halo gfx1151"
+url = "https://github.com/ROCm/aotriton"
+license = ["MIT"]
+arch_reference = ["extra/python-aotriton", "cachyos-extra-znver4/python-aotriton"]
+authoritative_reference = "extra/python-aotriton"
+advisory_references = ["cachyos-extra-znver4/python-aotriton"]
+divergence_notes = [
+  "This package stays close to the Arch baseline but deliberately narrows the target arch set to gfx1151 and reuses the recipe's amdclang build lane.",
+  "The nested vendored Triton build is part of the package story here and must carry the same Python-3.14 compatibility patching as the standalone Triton package."
+]
+update_notes = [
+  "When updating, compare against Arch first because this is one of the closest recipe-to-baseline packages in the stack.",
+  "Preserve the reuse-build logic and stale-build-tree cleanup; interrupted AOTriton builds otherwise leave a misleading broken state behind."
+]
+provides = ["python-aotriton=0.11.2b"]
+conflicts = ["python-aotriton"]
+depends = ["gcc-libs", "glibc", "hip-runtime-amd-gfx1151", "hipsparselt-gfx1151", "python-gfx1151", "python-triton-gfx1151", "rocm-core-gfx1151"]
+makedepends = [
+  "cmake",
+  "git",
+  "ninja",
+  "pybind11",
+  "python-filelock",
+  "python-iniconfig",
+  "python-msgpack",
+  "python-numpy-gfx1151",
+  "python-packaging",
+  "python-pandas",
+  "python-pluggy",
+  "python-setuptools",
+  "python-wheel",
+  "python-yaml",
+  "rocm-llvm-gfx1151"
+]
+source_refs = [
+  "aotriton::git+https://github.com/ROCm/aotriton#tag=0.11.2b",
+  "aotriton-aiter::git+https://github.com/ROCm/aiter.git",
+  "aotriton-incbin::git+https://github.com/graphitemaster/incbin.git"
+]
+sha256sums = ["SKIP", "SKIP", "SKIP"]
+src_subdir = "aotriton"
+patches_dir = "patches/python-aotriton-gfx1151"
+scaffold_notes = [
+  "Authoritative base: Arch python-aotriton 0.11.2b-1, which already carries system-pybind11 and system-Python integration patches plus explicit gfx1151 targeting.",
+  "The recipe and Arch baseline are unusually close here, so preserve Arch's patching approach wherever possible and only layer on the recipe's compiler and install details.",
+  "Do not carry forward Arch's broader multi-arch target matrix here. The Strix Halo recipe intentionally narrows AOTRITON_TARGET_ARCH to gfx1151 only so the build does not waste time compiling irrelevant kernels.",
+  "The nested vendored Triton build must explicitly disable TRITON_BUILD_UT, otherwise it spends time linking irrelevant C++ unit-test binaries and can fail there before the Python runtime package is produced.",
+  "The nested vendored Triton build must also inherit amdclang via CC/CXX and start from a fresh triton_build directory. Reusing a stale g++-configured build tree can reproduce GCC 15 LTO warning-as-error failures in GenericSwizzling.cpp even after the PKGBUILD is fixed.",
+  "The vendored Triton submodule also needs the same Python-3.14 ast.Num compatibility cherry-pick used by python-triton-gfx1151, otherwise AOTriton kernel generation fails inside v3python/compile.py after the nested Triton wheel already built successfully."
+]
+
+[packages.python-amd-aiter-gfx1151]
+recipe_key = "aiter"
+template = "python-project-aiter"
+upstream_version = "0.1.0"
+pkgdesc = "AMD AITER kernels rebuilt for Strix Halo gfx1151"
+url = "https://github.com/ROCm/aiter"
+license = ["MIT"]
+arch_reference = ["extra/python-pytorch-opt-rocm", "extra/python-pytorch-rocm"]
+authoritative_reference = "none"
+advisory_references = ["extra/python-pytorch-opt-rocm", "extra/python-pytorch-rocm"]
+divergence_notes = [
+  "There is no standalone AITER package in Arch-family packaging; this package is recipe-first and aligned to the vendored PyTorch submodule lane.",
+  "Carries an explicit package-local source patch for gfx1151 RDNA 3.5 header compatibility rather than leaving those fixes as manual post-build mutations."
+]
+update_notes = [
+  "Update AITER in lockstep with the paired PyTorch source lane so CK and generated kernel expectations stay aligned.",
+  "Treat FlyDSL as a separate tracked package story; do not silently fold an unpublished wheel into this package."
+]
+provides = ["python-amd-aiter"]
+conflicts = ["python-amd-aiter"]
+depends = ["python-gfx1151", "python-pandas", "python-pytorch-opt-rocm-gfx1151", "python-triton-gfx1151"]
+makedepends = ["git", "python-build", "python-installer", "python-setuptools", "python-wheel", "rocm-llvm-gfx1151"]
+optdepends = ["python-flydsl-gfx1151: optional FlyDSL MLIR kernels for AITER fused MoE paths (blocked on rocm-llvm MLIR Python SDK completeness)"]
+src_subdir = "aiter"
+source_patches = ["0001-gfx1151-rdna35-header-compat.patch"]
+patches_dir = "packages/python-amd-aiter-gfx1151"
+scaffold_notes = [
+  "There is no standalone Arch, CachyOS, or AUR aiter package. The closest packaging lane is the PyTorch ROCm pkgbase that vendors the same submodule, so that pkgbase is advisory only.",
+  "The recipe rebuilds AITER from PyTorch's vendored third_party/aiter copy so its CK ABI stays aligned with the paired PyTorch tree.",
+  "Upstream AITER declares pandas as a real dependency and FlyDSL as an optional acceleration path. Keep pandas in the package metadata, and package FlyDSL separately rather than silently depending on an unpublished wheel.",
+  "Keep the gfx1151 RDNA 3.5 header fixes as a package-local source patch applied before wheel build, not as post-install file replacement."
+]
+
+[packages.python-numpy-gfx1151]
+recipe_key = "native_wheels"
+template = "native-wheel-pypi"
+upstream_version = "2.4.4"
+pkgdesc = "Scientific tools for Python rebuilt for Strix Halo gfx1151"
+url = "https://www.numpy.org/"
+license = ["custom"]
+arch_reference = ["extra/python-numpy", "cachyos-extra-znver4/python-numpy"]
+authoritative_reference = "extra/python-numpy"
+advisory_references = ["cachyos-extra-znver4/python-numpy"]
+divergence_notes = [
+  "Keeps the Arch package shape but carries the recipe's clang/meson flag rewrite so AMD-specific driver flags survive meson compiler probing.",
+  "Uses the optimized Python package as the interpreter baseline rather than the distro python package."
+]
+update_notes = [
+  "Re-check BLAS/LAPACK provider handling and any Arch downstream patches whenever numpy or Python major/minor changes.",
+  "If future recipe changes add real source patches, keep them as patch files instead of further growing shell flag transforms."
+]
+provides = ["python-numpy"]
+conflicts = ["python-numpy"]
+depends = ["cblas", "lapack", "python-gfx1151"]
+makedepends = ["meson", "ninja", "patchelf", "python-build", "python-installer", "python-meson-python", "python-wheel", "rocm-llvm-gfx1151"]
+optdepends = ["blas-openblas: faster linear algebra"]
+pypi_name = "numpy"
+src_subdir = "numpy-2.4.4"
+patches_dir = "patches/python-numpy-gfx1151"
+scaffold_notes = [
+  "The recipe's key fix here is the meson/clang flag rewrite: convert driver-level -mllvm flags to -Xclang pairs and move -famd-opt to LDFLAGS.",
+  "This scaffold still needs comparison against the current Arch python-numpy PKGBUILD for BLAS provider handling and any distro-specific patches."
+]
+
+[packages.python-orjson-gfx1151]
+recipe_key = "rust_wheels"
+template = "rust-wheel-pypi"
+upstream_version = "3.11.8"
+pkgdesc = "Fast, correct Python JSON library rebuilt for Strix Halo gfx1151"
+url = "https://github.com/ijl/orjson"
+license = ["Apache-2.0", "MIT"]
+arch_reference = ["extra/python-orjson", "cachyos-extra-znver4/python-orjson"]
+authoritative_reference = "extra/python-orjson"
+advisory_references = ["cachyos-extra-znver4/python-orjson"]
+divergence_notes = [
+  "Uses the recipe's explicit Rust linker selection and path-remapping rules so AMD's toolchain wrappers behave correctly.",
+  "Pins Rust target-cpu to znver5 instead of plain native because the recipe documents a rustc native-detection issue on this platform."
+]
+update_notes = [
+  "Compare against Arch first for maturin/backend changes, then keep Cachy as a secondary reference for CPU-targeting differences.",
+  "Retain CycloneDX/debug-path rewriting in package() unless upstream or Arch resolves the path leakage directly."
+]
+provides = ["python-orjson"]
+conflicts = ["python-orjson"]
+depends = ["glibc", "libgcc", "python-gfx1151"]
+makedepends = ["cargo", "python-build", "python-installer", "python-maturin", "python-wheel", "rocm-llvm-gfx1151", "rust"]
+pypi_name = "orjson"
+src_subdir = "orjson-3.11.8"
+patches_dir = "patches/python-orjson-gfx1151"
+scaffold_notes = [
+  "The recipe forces explicit Rust linker selection because AMD's cc wrapper rejects non-amd-prefixed frontend names.",
+  "Keep RUSTFLAGS pinned to znver5 rather than native; the recipe documents a rustc native-detection issue on this platform."
+]
+
+[packages.python-cryptography-gfx1151]
+recipe_key = "rust_wheels"
+template = "rust-wheel-pypi"
+upstream_version = "46.0.7"
+pkgdesc = "Cryptographic recipes and primitives for Python rebuilt for Strix Halo gfx1151"
+url = "https://github.com/pyca/cryptography"
+license = ["Apache-2.0", "BSD-3-Clause"]
+arch_reference = ["extra/python-cryptography", "cachyos-extra-znver4/python-cryptography"]
+authoritative_reference = "extra/python-cryptography"
+advisory_references = ["cachyos-extra-znver4/python-cryptography"]
+divergence_notes = [
+  "Follows the recipe's Rust-wheel compiler lane instead of the default distro compiler toolchain.",
+  "Uses the optimized Python package as the interpreter baseline while otherwise tracking Arch's package shape closely."
+]
+update_notes = [
+  "Always confirm the current Arch build backend requirements before updating this package; cryptography regularly changes Rust/setuptools details.",
+  "Treat any OpenSSL dependency drift in Arch as authoritative unless the recipe provides a concrete reason to diverge."
+]
+provides = ["python-cryptography"]
+conflicts = ["python-cryptography"]
+depends = ["glibc", "libgcc", "openssl", "python-cffi", "python-gfx1151"]
+makedepends = ["cargo", "python-build", "python-installer", "python-setuptools-rust", "python-wheel", "rocm-llvm-gfx1151", "rust"]
+pypi_name = "cryptography"
+src_subdir = "cryptography-46.0.7"
+patches_dir = "patches/python-cryptography-gfx1151"
+scaffold_notes = [
+  "This follows the recipe's Rust wheel build rules but still needs confirmation of the exact Arch build backend requirements on the current release."
+]
+
+[packages.python-sentencepiece-gfx1151]
+recipe_key = "native_wheels"
+template = "native-wheel-pypi"
+upstream_version = "0.2.1"
+pkgdesc = "Python wrapper for SentencePiece rebuilt for Strix Halo gfx1151"
+url = "https://github.com/google/sentencepiece"
+license = ["Apache-2.0"]
+arch_reference = ["cachyos/python-sentencepiece", "aur/python-sentencepiece", "aur/python-sentencepiece-git"]
+authoritative_reference = "cachyos/python-sentencepiece"
+advisory_references = ["aur/python-sentencepiece", "aur/python-sentencepiece-git"]
+divergence_notes = [
+  "Uses the closest maintained Cachy baseline but applies the recipe's system-cmake packaging translation instead of relying on a pip-installed cmake wrapper.",
+  "Stays on a source-build path even though a git variant exists, because the release package is the primary maintenance lane."
+]
+update_notes = [
+  "Re-check against Cachy first, then consult the AUR source and git variants if the maintained package lags a needed upstream change.",
+  "If the upstream build backend changes, keep the package metadata focused on the system cmake/toolchain story rather than reviving venv-local wrapper assumptions."
+]
+provides = ["python-sentencepiece"]
+conflicts = ["python-sentencepiece"]
+depends = ["gcc-libs", "glibc", "python-gfx1151", "sentencepiece"]
+makedepends = ["cmake", "ninja", "python-build", "python-installer", "python-wheel", "rocm-llvm-gfx1151"]
+optdepends = ["python-protobuf"]
+pypi_name = "sentencepiece"
+src_subdir = "sentencepiece-0.2.1"
+patches_dir = "patches/python-sentencepiece-gfx1151"
+scaffold_notes = [
+  "The current CachyOS python-sentencepiece package is the closest maintained baseline, while the AUR python-sentencepiece and python-sentencepiece-git packages remain advisory references for patching and split-package expectations.",
+  "The original recipe fixes a broken pip-installed cmake wrapper inside the venv. In Arch packaging that should translate to using the system cmake toolchain directly."
+]
+
+[packages.python-zstandard-gfx1151]
+recipe_key = "native_wheels"
+template = "native-wheel-pypi"
+upstream_version = "0.25.0"
+pkgdesc = "Python bindings to Zstandard rebuilt for Strix Halo gfx1151"
+url = "https://github.com/indygreg/python-zstandard"
+license = ["BSD-3-Clause"]
+arch_reference = ["extra/python-zstandard", "cachyos-extra-znver4/python-zstandard"]
+authoritative_reference = "extra/python-zstandard"
+advisory_references = ["cachyos-extra-znver4/python-zstandard"]
+divergence_notes = [
+  "Mostly follows the Arch package shape while staying in the recipe's generic native-wheel compiler lane.",
+  "Uses the optimized Python package as the interpreter baseline."
+]
+update_notes = [
+  "Check Arch first for backend or dependency changes, then keep Cachy only as a secondary packaging reference.",
+  "If this package starts probing compiler features more aggressively, ensure the recipe's flag-rewrite logic still keeps the build deterministic."
+]
+provides = ["python-zstandard"]
+conflicts = ["python-zstandard"]
+depends = ["glibc", "python-gfx1151"]
+makedepends = ["python-build", "python-installer", "python-wheel", "rocm-llvm-gfx1151"]
+optdepends = ["python-cffi"]
+pypi_name = "zstandard"
+src_subdir = "zstandard-0.25.0"
+patches_dir = "patches/python-zstandard-gfx1151"
+scaffold_notes = [
+  "Treat this like the recipe's native wheel class so the same clang flag rewrite is available if the backend performs compiler probes."
+]
+
+[packages.python-asyncpg-gfx1151]
+recipe_key = "native_wheels"
+template = "native-wheel-pypi"
+upstream_version = "0.31.0"
+pkgdesc = "Async PostgreSQL client for Python rebuilt for Strix Halo gfx1151"
+url = "https://github.com/MagicStack/asyncpg"
+license = ["Apache-2.0"]
+arch_reference = ["extra/python-asyncpg", "cachyos-extra-znver4/python-asyncpg"]
+authoritative_reference = "extra/python-asyncpg"
+advisory_references = ["cachyos-extra-znver4/python-asyncpg"]
+divergence_notes = [
+  "Uses the recipe's generic native-wheel compiler lane even though asyncpg's backend differs from meson-based packages in the same group.",
+  "Uses the optimized Python package as the interpreter baseline."
+]
+update_notes = [
+  "Check Arch first for Cython/backend drift and ABI expectations, then use Cachy as a secondary reference.",
+  "If asyncpg starts requiring PostgreSQL client headers or additional runtime linkage, record that change explicitly in package metadata."
+]
+provides = ["python-asyncpg"]
+conflicts = ["python-asyncpg"]
+depends = ["glibc", "python-gfx1151"]
+makedepends = ["cython", "python-build", "python-installer", "python-setuptools", "python-wheel", "rocm-llvm-gfx1151"]
+pypi_name = "asyncpg"
+src_subdir = "asyncpg-0.31.0"
+patches_dir = "patches/python-asyncpg-gfx1151"
+scaffold_notes = [
+  "This package is grouped under the recipe's native wheel build step even though its build backend differs from meson-based numpy."
+]
+
+[packages."llama.cpp-hip-gfx1151"]
+recipe_key = "llamacpp"
+template = "llama-cpp"
+upstream_version = "b8611"
+pkgdesc = "llama.cpp ROCm backend rebuilt for Strix Halo gfx1151"
+url = "https://github.com/ggml-org/llama.cpp"
+license = ["MIT"]
+arch_reference = ["aur/llama.cpp-hip", "aur/llama.cpp"]
+authoritative_reference = "aur/llama.cpp-hip"
+advisory_references = ["aur/llama.cpp"]
+divergence_notes = [
+  "Installs into /opt/llama.cpp-hip-gfx1151 with suffixed wrapper binaries instead of taking over the generic /usr/bin names directly.",
+  "Uses the recipe's amdclang plus gfx1151-targeted HIP build lane and private-library RPATH handling."
+]
+update_notes = [
+  "Diff against aur/llama.cpp-hip first during updates, then consult aur/llama.cpp for shared install/dependency conventions outside the ROCm-specific split.",
+  "Keep the backend-specific package split explicit until benchmarking proves a routing wrapper is worth maintaining."
+]
+provides = ["llama.cpp-hip-gfx1151", "llama.cpp-hip"]
+conflicts = ["llama.cpp-hip"]
+depends = ["gcc-libs", "glibc", "hip-runtime-amd-gfx1151", "rocm-core-gfx1151"]
+makedepends = ["cmake", "ninja", "rocm-llvm-gfx1151"]
+src_subdir = "llama.cpp-9aa2807769253fad8b3aa065e9a7c2a0ac35fe0a"
+upstream_name = "llama.cpp"
+baseline_kind = "closest-upstream"
+source_refs = ["llama.cpp-9aa2807769253fad8b3aa065e9a7c2a0ac35fe0a.tar.gz::https://github.com/ggml-org/llama.cpp/archive/9aa2807769253fad8b3aa065e9a7c2a0ac35fe0a.tar.gz"]
+sha256sums = ["SKIP"]
+patches_dir = "patches/llama.cpp-hip-gfx1151"
+scaffold_notes = [
+  "ROCm/hip backend package; backend-specific runtime package, no shared common package in first pass.",
+  "Authoritative base: AUR llama.cpp-hip, because it is the closest maintained ROCm packaging lane for llama.cpp on Arch.",
+  "Advisory reference: generic AUR llama.cpp for shared install/dependency conventions outside the ROCm-specific package split.",
+  "Pinned to a concrete upstream commit tarball so the first-pass metadata stays reproducible without a full Git history clone."
+]
+
+[packages."llama.cpp-vulkan-gfx1151"]
+recipe_key = "llamacpp"
+template = "llama-cpp"
+upstream_version = "b8611"
+pkgdesc = "llama.cpp Vulkan backend rebuilt for Strix Halo gfx1151"
+url = "https://github.com/ggml-org/llama.cpp"
+license = ["MIT"]
+arch_reference = ["aur/llama.cpp-vulkan-bin", "aur/llama.cpp"]
+authoritative_reference = "aur/llama.cpp-vulkan-bin"
+advisory_references = ["aur/llama.cpp"]
+divergence_notes = [
+  "Uses a source-build path even though the closest backend-specific AUR reference is currently a binary package.",
+  "Keeps the recipe's amdclang and ThinLTO lane for consistency with the rest of the stack while using Vulkan rather than HIP."
+]
+update_notes = [
+  "If a maintained source-built aur/llama.cpp-vulkan package appears, switch to it as the authoritative baseline.",
+  "Until then, compare runtime/package expectations against the -bin package and source-build conventions against aur/llama.cpp."
+]
+provides = ["llama.cpp-vulkan-gfx1151", "llama.cpp-vulkan"]
+conflicts = ["llama.cpp-vulkan"]
+depends = ["gcc-libs", "glibc", "vulkan-icd-loader"]
+makedepends = ["cmake", "ninja", "rocm-llvm-gfx1151", "shaderc", "vulkan-headers"]
+src_subdir = "llama.cpp-9aa2807769253fad8b3aa065e9a7c2a0ac35fe0a"
+upstream_name = "llama.cpp"
+baseline_kind = "closest-upstream"
+source_refs = ["llama.cpp-9aa2807769253fad8b3aa065e9a7c2a0ac35fe0a.tar.gz::https://github.com/ggml-org/llama.cpp/archive/9aa2807769253fad8b3aa065e9a7c2a0ac35fe0a.tar.gz"]
+sha256sums = ["SKIP"]
+patches_dir = "patches/llama.cpp-vulkan-gfx1151"
+scaffold_notes = [
+  "Vulkan backend package; backend-specific runtime package, no shared common package in first pass.",
+  "Closest current Vulkan reference: AUR llama.cpp-vulkan-bin for backend-specific packaging expectations, with generic AUR llama.cpp kept as the source-build advisory baseline.",
+  "Pinned to a concrete upstream commit tarball so the first-pass metadata stays reproducible without a full Git history clone.",
+  "This scaffold still uses amdclang from rocm-llvm-gfx1151 for consistency with the recipe toolchain even though the Vulkan build does not use HIP offload."
+]
+
+[packages."lemonade-server"]
+recipe_key = "lemonade"
+template = "lemonade-server"
+upstream_version = "10.2.0"
+pkgdesc = "Local AI server runtime rebuilt for Strix Halo gfx1151"
+url = "https://github.com/lemonade-sdk/lemonade"
+license = ["Apache-2.0"]
+arch_reference = ["aur/lemonade-server", "aur/lemonade-desktop"]
+authoritative_reference = "aur/lemonade-server"
+advisory_references = ["aur/lemonade-desktop"]
+divergence_notes = [
+  "This custom build treats the ROCm and Vulkan llama.cpp backends as packaged system-managed backends rather than Lemonade-managed runtime downloads.",
+  "Carries local patches for Linux XDNA2 detection and the system-managed llama.cpp backend story that are specific to this Strix Halo packaging lane."
+]
+update_notes = [
+  "Update against the current upstream monorepo release and the AUR server package first, then re-check whether any local backend-management or NPU-detection patches are still needed.",
+  "Keep packaging and app/server split aligned with upstream naming changes; do not drift back toward the old lemonade-desktop era naming model.",
+  "Re-test that LEMONADE_LLAMACPP_*_BIN service overrides still apply even when /var/lib/lemonade/config.json already exists."
+]
+provides = ["lemonade-server"]
+conflicts = []
+depends = ["glibc"]
+makedepends = ["cmake", "ninja", "nodejs", "npm", "rocm-llvm-gfx1151"]
+optdepends = [
+  "llama.cpp-hip-gfx1151: llama.cpp ROCm backend",
+  "llama.cpp-vulkan-gfx1151: llama.cpp Vulkan backend"
+]
+src_subdir = "lemonade-10.2.0"
+upstream_name = "lemonade-server"
+baseline_kind = "closest-upstream"
+source_refs = ["https://github.com/lemonade-sdk/lemonade/archive/refs/tags/v10.2.0.tar.gz"]
+sha256sums = ["SKIP"]
+extra_sources = [
+  "0001-linux-npu-fallback-to-pci-id-when-accel-open-fails.patch",
+  "0002-llamacpp-external-backends-are-system-managed.patch",
+  "0003-remove-llamacpp-system-backend.patch",
+]
+extra_sha256sums = ["SKIP", "SKIP", "SKIP"]
+source_patches = [
+  "0001-linux-npu-fallback-to-pci-id-when-accel-open-fails.patch",
+  "0002-llamacpp-external-backends-are-system-managed.patch",
+  "0003-remove-llamacpp-system-backend.patch",
+]
+patches_dir = "packages/lemonade-server"
+scaffold_notes = [
+  "Server/runtime package; llama.cpp backends are optdepends, not hard deps.",
+  "Pinned to the v10.2.0 upstream release tarball to keep the first-pass metadata reproducible.",
+  "Installs /etc/lemonade/conf.d/10-llamacpp-gfx1151.conf so the packaged ROCm and Vulkan llama.cpp wrapper binaries are exposed to the service as system-managed backends.",
+  "The system-managed backend patch also folds in the config-load and CLI/backend-table changes needed for those service-provided overrides to stay visible after config.json already exists."
+]
+
+[packages."lemonade-app"]
+recipe_key = "lemonade"
+template = "lemonade-app"
+upstream_version = "10.2.0"
+pkgdesc = "Lemonade desktop app rebuilt for Strix Halo gfx1151"
+url = "https://github.com/lemonade-sdk/lemonade"
+license = ["Apache-2.0"]
+arch_reference = ["aur/lemonade-desktop", "aur/lemonade-server"]
+authoritative_reference = "aur/lemonade-desktop"
+advisory_references = ["aur/lemonade-server"]
+divergence_notes = [
+  "Tracks the renamed upstream lemonade-app payload while still providing lemonade-desktop compatibility for local package replacement.",
+  "Builds the Electron app from the upstream monorepo release tarball rather than relying on an auto-updated runtime payload."
+]
+update_notes = [
+  "Update against the closest desktop/app packaging lane first, then re-check any server-side shared assets the app package expects from the monorepo build.",
+  "Keep the provides/conflicts story accurate while Arch/AUR naming remains in transition."
+]
+provides = ["lemonade-desktop"]
+conflicts = ["lemonade-desktop"]
+depends = ["lemonade-server"]
+makedepends = ["cmake", "ninja", "nodejs", "npm", "rocm-llvm-gfx1151"]
+src_subdir = "lemonade-10.2.0"
+upstream_name = "lemonade-app"
+baseline_kind = "closest-upstream"
+source_refs = ["https://github.com/lemonade-sdk/lemonade/archive/refs/tags/v10.2.0.tar.gz"]
+sha256sums = ["SKIP"]
+patches_dir = "patches/lemonade-app"
+scaffold_notes = [
+  "Electron desktop package split from the same lemonade monorepo.",
+  "Pinned to the v10.2.0 upstream release tarball to keep the first-pass metadata reproducible."
+]
+
+[packages."lemonade"]
+recipe_key = "lemonade"
+template = "meta-package"
+upstream_version = "10.2.0"
+pkgdesc = "Meta package for Lemonade and llama.cpp backend packages"
+url = "https://github.com/lemonade-sdk/lemonade"
+license = ["Apache-2.0"]
+arch_reference = ["aur/lemonade-server", "aur/lemonade-desktop"]
+authoritative_reference = "none"
+advisory_references = ["aur/lemonade-server", "aur/lemonade-desktop"]
+divergence_notes = [
+  "This is a convenience meta package for the full local Lemonade plus packaged llama.cpp backend experience.",
+  "It intentionally does not encode backend routing logic; that belongs in runtime policy, not package dependencies."
+]
+update_notes = [
+  "Keep this meta package aligned with the intended first-pass user story and revisit its dependency set after benchmarking determines whether both packaged llama.cpp backends remain worth shipping.",
+  "Do not let this meta package obscure the standalone update story for lemonade-server, lemonade-app, or the backend packages."
+]
+provides = ["lemonade"]
+conflicts = []
+depends = ["lemonade-server", "lemonade-app", "llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"]
+makedepends = []
+src_subdir = "lemonade"
+upstream_name = "lemonade"
+baseline_kind = "meta-aggregate"
+scaffold_notes = [
+  "Meta package for server, app, and both llama.cpp backend packages.",
+  "Keep routing logic out of this package; it is a convenience install only."
+]

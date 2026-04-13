@@ -1,0 +1,104 @@
+{
+  "maintenance": {
+    "advisory_references": [
+      "aur/llama.cpp"
+    ],
+    "authoritative_reference": "aur/llama.cpp-vulkan-bin",
+    "divergence_notes": [
+      "Uses a source-build path even though the closest backend-specific AUR reference is currently a binary package.",
+      "Keeps the recipe's amdclang and ThinLTO lane for consistency with the rest of the stack while using Vulkan rather than HIP."
+    ],
+    "source_patches": [],
+    "update_notes": [
+      "If a maintained source-built aur/llama.cpp-vulkan package appears, switch to it as the authoritative baseline.",
+      "Until then, compare runtime/package expectations against the -bin package and source-build conventions against aur/llama.cpp."
+    ]
+  },
+  "name": "llama.cpp-vulkan-gfx1151",
+  "package_name": "llama.cpp-vulkan-gfx1151",
+  "pkgver": "b8611.r8.d20260317.gad42886",
+  "policy": {
+    "advisory_references": [
+      "aur/llama.cpp"
+    ],
+    "arch_reference": [
+      "aur/llama.cpp-vulkan-bin",
+      "aur/llama.cpp"
+    ],
+    "authoritative_reference": "aur/llama.cpp-vulkan-bin",
+    "baseline_kind": "closest-upstream",
+    "conflicts": [
+      "llama.cpp-vulkan"
+    ],
+    "depends": [
+      "gcc-libs",
+      "glibc",
+      "vulkan-icd-loader"
+    ],
+    "divergence_notes": [
+      "Uses a source-build path even though the closest backend-specific AUR reference is currently a binary package.",
+      "Keeps the recipe's amdclang and ThinLTO lane for consistency with the rest of the stack while using Vulkan rather than HIP."
+    ],
+    "license": [
+      "MIT"
+    ],
+    "makedepends": [
+      "cmake",
+      "ninja",
+      "rocm-llvm-gfx1151",
+      "shaderc",
+      "vulkan-headers"
+    ],
+    "patches_dir": "patches/llama.cpp-vulkan-gfx1151",
+    "pkgdesc": "llama.cpp Vulkan backend rebuilt for Strix Halo gfx1151",
+    "provides": [
+      "llama.cpp-vulkan-gfx1151",
+      "llama.cpp-vulkan"
+    ],
+    "recipe_key": "llamacpp",
+    "scaffold_notes": [
+      "Vulkan backend package; backend-specific runtime package, no shared common package in first pass.",
+      "Closest current Vulkan reference: AUR llama.cpp-vulkan-bin for backend-specific packaging expectations, with generic AUR llama.cpp kept as the source-build advisory baseline.",
+      "Pinned to a concrete upstream commit tarball so the first-pass metadata stays reproducible without a full Git history clone.",
+      "This scaffold still uses amdclang from rocm-llvm-gfx1151 for consistency with the recipe toolchain even though the Vulkan build does not use HIP offload."
+    ],
+    "sha256sums": [
+      "SKIP"
+    ],
+    "source_refs": [
+      "llama.cpp-9aa2807769253fad8b3aa065e9a7c2a0ac35fe0a.tar.gz::https://github.com/ggml-org/llama.cpp/archive/9aa2807769253fad8b3aa065e9a7c2a0ac35fe0a.tar.gz"
+    ],
+    "src_subdir": "llama.cpp-9aa2807769253fad8b3aa065e9a7c2a0ac35fe0a",
+    "template": "llama-cpp",
+    "update_notes": [
+      "If a maintained source-built aur/llama.cpp-vulkan package appears, switch to it as the authoritative baseline.",
+      "Until then, compare runtime/package expectations against the -bin package and source-build conventions against aur/llama.cpp."
+    ],
+    "upstream_name": "llama.cpp",
+    "upstream_version": "b8611",
+    "url": "https://github.com/ggml-org/llama.cpp"
+  },
+  "provenance": {
+    "output_root": "packages",
+    "recipe_author": "Blackcat Informatics Inc.",
+    "recipe_repo": "https://github.com/paudley/ai-notes",
+    "recipe_subdir": "strix-halo",
+    "repo_subpath": "."
+  },
+  "recipe": {
+    "branch": null,
+    "depends_on": [
+      "therock"
+    ],
+    "method": "cmake",
+    "notes": "llama.cpp built with TWO backends for Lemonade:\n\nROCm (hipBLAS): Primary backend. Best prefill <32K context. Uses\namdclang from TheRock with full Zen 5 + gfx1151 HIP optimization\nflags. Binaries placed where Lemonade SDK expects them.\n\nVulkan: Secondary backend. +22% generation speed (44 vs 39 tok/s)\nand handles >32K context prefill (no VMM limitation on gfx1151).\nCPU-only optimization flags, no HIP offload.\n\nBoth backends get .env files with gfx1151 runtime optimizations\n(batch sizing, hipBLASLt, THP). RPATH patched via patchelf so\nbinaries find their shared libraries without LD_LIBRARY_PATH.",
+    "patches": [],
+    "phase": "I",
+    "repo": "https://github.com/ggml-org/llama.cpp.git",
+    "src_dir": "llama.cpp",
+    "steps": [
+      33
+    ]
+  },
+  "role": "backend-runtime"
+}

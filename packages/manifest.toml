@@ -1,0 +1,99 @@
+[[package]]
+name = "aocl-utils-gfx1151"
+upstream = "https://github.com/amd/aocl-utils.git"
+kind = "source-build"
+
+[[package]]
+name = "aocl-libm-gfx1151"
+upstream = "https://github.com/amd/aocl-libm-ose.git"
+kind = "source-build"
+
+[[package]]
+name = "python-gfx1151"
+upstream = "https://github.com/python/cpython.git"
+kind = "source-build"
+
+[[package]]
+name = "python-numpy-gfx1151"
+upstream = "https://github.com/numpy/numpy.git"
+kind = "rebuilt-wheel"
+
+[[package]]
+name = "python-orjson-gfx1151"
+upstream = "https://github.com/ijl/orjson.git"
+kind = "rebuilt-wheel"
+
+[[package]]
+name = "python-cryptography-gfx1151"
+upstream = "https://github.com/pyca/cryptography.git"
+kind = "rebuilt-wheel"
+
+[[package]]
+name = "python-sentencepiece-gfx1151"
+upstream = "https://github.com/google/sentencepiece.git"
+kind = "rebuilt-wheel"
+
+[[package]]
+name = "python-zstandard-gfx1151"
+upstream = "https://github.com/indygreg/python-zstandard.git"
+kind = "rebuilt-wheel"
+
+[[package]]
+name = "python-asyncpg-gfx1151"
+upstream = "https://github.com/MagicStack/asyncpg.git"
+kind = "rebuilt-wheel"
+
+[[package]]
+name = "python-pytorch-opt-rocm-gfx1151"
+upstream = "https://github.com/ROCm/pytorch.git"
+kind = "source-build"
+
+[[package]]
+name = "python-torchvision-rocm-gfx1151"
+upstream = "https://github.com/pytorch/vision.git"
+kind = "source-build"
+
+[[package]]
+name = "python-triton-gfx1151"
+upstream = "https://github.com/ROCm/triton.git"
+kind = "source-build"
+
+[[package]]
+name = "python-aotriton-gfx1151"
+upstream = "https://github.com/ROCm/aotriton.git"
+kind = "source-build"
+
+[[package]]
+name = "python-amd-aiter-gfx1151"
+upstream = "https://github.com/ROCm/aiter.git"
+kind = "source-build"
+
+[[package]]
+name = "python-vllm-rocm-gfx1151"
+upstream = "https://github.com/vllm-project/vllm.git"
+kind = "source-build"
+
+[[package]]
+name = "llama.cpp-hip-gfx1151"
+upstream = "https://github.com/ggml-org/llama.cpp.git"
+kind = "source-build"
+
+[[package]]
+name = "llama.cpp-vulkan-gfx1151"
+upstream = "https://github.com/ggml-org/llama.cpp.git"
+kind = "source-build"
+
+[[package]]
+name = "lemonade"
+upstream = "https://github.com/lemonade-sdk/lemonade.git"
+kind = "meta-package"
+
+[[package]]
+name = "lemonade-server"
+upstream = "https://github.com/lemonade-sdk/lemonade.git"
+kind = "source-build"
+
+[[package]]
+name = "lemonade-app"
+upstream = "https://github.com/lemonade-sdk/lemonade.git"
+kind = "source-build"

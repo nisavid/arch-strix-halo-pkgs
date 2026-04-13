@@ -1,0 +1,12 @@
+opt/rocm/bin/hipify-clang
+opt/rocm/bin/hipify-perl
+opt/rocm/libexec/hipify/findcode.sh
+opt/rocm/libexec/hipify/findcode_custom.sh
+opt/rocm/libexec/hipify/findcode_headers.sh
+opt/rocm/libexec/hipify/findcode_sources.sh
+opt/rocm/libexec/hipify/finduncodep.sh
+opt/rocm/libexec/hipify/hipconvertinplace-perl.sh
+opt/rocm/libexec/hipify/hipconvertinplace.sh
+opt/rocm/libexec/hipify/hipexamine-perl.sh
+opt/rocm/libexec/hipify/hipexamine.sh
+opt/rocm/libexec/hipify/hipify-perl

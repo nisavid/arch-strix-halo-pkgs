@@ -1,0 +1,103 @@
+{
+  "maintenance": {
+    "advisory_references": [
+      "aur/llama.cpp"
+    ],
+    "authoritative_reference": "aur/llama.cpp-hip",
+    "divergence_notes": [
+      "Installs into /opt/llama.cpp-hip-gfx1151 with suffixed wrapper binaries instead of taking over the generic /usr/bin names directly.",
+      "Uses the recipe's amdclang plus gfx1151-targeted HIP build lane and private-library RPATH handling."
+    ],
+    "source_patches": [],
+    "update_notes": [
+      "Diff against aur/llama.cpp-hip first during updates, then consult aur/llama.cpp for shared install/dependency conventions outside the ROCm-specific split.",
+      "Keep the backend-specific package split explicit until benchmarking proves a routing wrapper is worth maintaining."
+    ]
+  },
+  "name": "llama.cpp-hip-gfx1151",
+  "package_name": "llama.cpp-hip-gfx1151",
+  "pkgver": "b8611.r8.d20260317.gad42886",
+  "policy": {
+    "advisory_references": [
+      "aur/llama.cpp"
+    ],
+    "arch_reference": [
+      "aur/llama.cpp-hip",
+      "aur/llama.cpp"
+    ],
+    "authoritative_reference": "aur/llama.cpp-hip",
+    "baseline_kind": "closest-upstream",
+    "conflicts": [
+      "llama.cpp-hip"
+    ],
+    "depends": [
+      "gcc-libs",
+      "glibc",
+      "hip-runtime-amd-gfx1151",
+      "rocm-core-gfx1151"
+    ],
+    "divergence_notes": [
+      "Installs into /opt/llama.cpp-hip-gfx1151 with suffixed wrapper binaries instead of taking over the generic /usr/bin names directly.",
+      "Uses the recipe's amdclang plus gfx1151-targeted HIP build lane and private-library RPATH handling."
+    ],
+    "license": [
+      "MIT"
+    ],
+    "makedepends": [
+      "cmake",
+      "ninja",
+      "rocm-llvm-gfx1151"
+    ],
+    "patches_dir": "patches/llama.cpp-hip-gfx1151",
+    "pkgdesc": "llama.cpp ROCm backend rebuilt for Strix Halo gfx1151",
+    "provides": [
+      "llama.cpp-hip-gfx1151",
+      "llama.cpp-hip"
+    ],
+    "recipe_key": "llamacpp",
+    "scaffold_notes": [
+      "ROCm/hip backend package; backend-specific runtime package, no shared common package in first pass.",
+      "Authoritative base: AUR llama.cpp-hip, because it is the closest maintained ROCm packaging lane for llama.cpp on Arch.",
+      "Advisory reference: generic AUR llama.cpp for shared install/dependency conventions outside the ROCm-specific package split.",
+      "Pinned to a concrete upstream commit tarball so the first-pass metadata stays reproducible without a full Git history clone."
+    ],
+    "sha256sums": [
+      "SKIP"
+    ],
+    "source_refs": [
+      "llama.cpp-9aa2807769253fad8b3aa065e9a7c2a0ac35fe0a.tar.gz::https://github.com/ggml-org/llama.cpp/archive/9aa2807769253fad8b3aa065e9a7c2a0ac35fe0a.tar.gz"
+    ],
+    "src_subdir": "llama.cpp-9aa2807769253fad8b3aa065e9a7c2a0ac35fe0a",
+    "template": "llama-cpp",
+    "update_notes": [
+      "Diff against aur/llama.cpp-hip first during updates, then consult aur/llama.cpp for shared install/dependency conventions outside the ROCm-specific split.",
+      "Keep the backend-specific package split explicit until benchmarking proves a routing wrapper is worth maintaining."
+    ],
+    "upstream_name": "llama.cpp",
+    "upstream_version": "b8611",
+    "url": "https://github.com/ggml-org/llama.cpp"
+  },
+  "provenance": {
+    "output_root": "packages",
+    "recipe_author": "Blackcat Informatics Inc.",
+    "recipe_repo": "https://github.com/paudley/ai-notes",
+    "recipe_subdir": "strix-halo",
+    "repo_subpath": "."
+  },
+  "recipe": {
+    "branch": null,
+    "depends_on": [
+      "therock"
+    ],
+    "method": "cmake",
+    "notes": "llama.cpp built with TWO backends for Lemonade:\n\nROCm (hipBLAS): Primary backend. Best prefill <32K context. Uses\namdclang from TheRock with full Zen 5 + gfx1151 HIP optimization\nflags. Binaries placed where Lemonade SDK expects them.\n\nVulkan: Secondary backend. +22% generation speed (44 vs 39 tok/s)\nand handles >32K context prefill (no VMM limitation on gfx1151).\nCPU-only optimization flags, no HIP offload.\n\nBoth backends get .env files with gfx1151 runtime optimizations\n(batch sizing, hipBLASLt, THP). RPATH patched via patchelf so\nbinaries find their shared libraries without LD_LIBRARY_PATH.",
+    "patches": [],
+    "phase": "I",
+    "repo": "https://github.com/ggml-org/llama.cpp.git",
+    "src_dir": "llama.cpp",
+    "steps": [
+      33
+    ]
+  },
+  "role": "backend-runtime"
+}

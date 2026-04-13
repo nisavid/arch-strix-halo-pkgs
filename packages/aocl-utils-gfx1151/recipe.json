@@ -1,0 +1,96 @@
+{
+  "maintenance": {
+    "advisory_references": [
+      "aur/aocl-utils-aocc"
+    ],
+    "authoritative_reference": "aur/aocl-utils",
+    "divergence_notes": [
+      "Uses amdclang as the compiler baseline but intentionally leaves AOCL-Utils itself off the more aggressive recipe flag bundle because build testing showed -famd-opt is a no-op here.",
+      "Tracks the upstream 5.2.2 release tarball rather than a floating branch so pkgver tracks the real upstream release plus the local recipe revision."
+    ],
+    "source_patches": [],
+    "update_notes": [
+      "When the AUR baseline changes, re-check license packaging and install layout against aur/aocl-utils first, then compare any AOCC-specific drift from aur/aocl-utils-aocc.",
+      "If the recipe starts carrying source patches here, convert them into patch files under patches/aocl-utils-gfx1151 rather than inline shell edits."
+    ]
+  },
+  "name": "aocl-utils-gfx1151",
+  "package_name": "aocl-utils-gfx1151",
+  "pkgver": "5.2.2.r8.d20260317.gad42886",
+  "policy": {
+    "advisory_references": [
+      "aur/aocl-utils-aocc"
+    ],
+    "arch_reference": [
+      "aur/aocl-utils",
+      "aur/aocl-utils-aocc"
+    ],
+    "authoritative_reference": "aur/aocl-utils",
+    "compiler_dep": "rocm-llvm-gfx1151",
+    "conflicts": [
+      "aocl-utils"
+    ],
+    "depends": [],
+    "divergence_notes": [
+      "Uses amdclang as the compiler baseline but intentionally leaves AOCL-Utils itself off the more aggressive recipe flag bundle because build testing showed -famd-opt is a no-op here.",
+      "Tracks the upstream 5.2.2 release tarball rather than a floating branch so pkgver tracks the real upstream release plus the local recipe revision."
+    ],
+    "install_prefix": "/usr",
+    "license": [
+      "BSD"
+    ],
+    "makedepends": [
+      "cmake",
+      "ninja",
+      "rocm-llvm-gfx1151"
+    ],
+    "options": [
+      "staticlibs",
+      "!lto"
+    ],
+    "patches_dir": "patches/aocl-utils-gfx1151",
+    "pkgdesc": "AOCL CPU feature detection library rebuilt for Strix Halo gfx1151",
+    "provides": [
+      "aocl-utils"
+    ],
+    "recipe_key": "aocl_utils",
+    "scaffold_notes": [
+      "This scaffold is rebased onto the current AUR aocl-utils 5.2.2 package rather than the older aocc-specific variant.",
+      "The older AUR aocl-utils-aocc package remains an advisory sibling because it captures the AOCC-specific lane, even though the current non-AOCC aocl-utils package is the closer baseline for this toolchain.",
+      "The recipe intentionally disables LTO because AOCL-LibM links AOCL-Utils archives with GNU ld.",
+      "Build testing showed -famd-opt is a compile-time no-op here, so the scaffold keeps it out of the AOCL-Utils compile flags while still using amdclang as the compiler baseline."
+    ],
+    "source_type": "tarball",
+    "source_url": "https://github.com/amd/aocl-utils/archive/refs/tags/5.2.2.tar.gz",
+    "src_subdir": "aocl-utils-5.2.2",
+    "template": "cmake",
+    "update_notes": [
+      "When the AUR baseline changes, re-check license packaging and install layout against aur/aocl-utils first, then compare any AOCC-specific drift from aur/aocl-utils-aocc.",
+      "If the recipe starts carrying source patches here, convert them into patch files under patches/aocl-utils-gfx1151 rather than inline shell edits."
+    ],
+    "upstream_version": "5.2.2",
+    "url": "https://github.com/amd/aocl-utils"
+  },
+  "provenance": {
+    "output_root": "packages",
+    "recipe_author": "Blackcat Informatics Inc.",
+    "recipe_repo": "https://github.com/paudley/ai-notes",
+    "recipe_subdir": "strix-halo",
+    "repo_subpath": "."
+  },
+  "recipe": {
+    "branch": null,
+    "depends_on": [
+      "therock"
+    ],
+    "method": "cmake",
+    "notes": "CPU feature detection library for AOCL-LibM.\n\nBuilt WITHOUT LTO: AOCL-LibM links this .a with GNU ld (needed for\nits hand-written AVX assembly), and GNU ld cannot read LLVM bitcode\nobjects that LTO produces.\n\nBuilt WITHOUT clang-tidy: TheRock's clang-tidy crashes on AOCL-Utils\ncleanup phase, and system clang-tidy doesn't understand -famd-opt.\nCMAKE_CXX_CLANG_TIDY=/bin/true prevents auto-detection.",
+    "patches": [],
+    "phase": "B",
+    "repo": "https://github.com/amd/aocl-utils.git",
+    "src_dir": "aocl-utils",
+    "steps": [
+      5
+    ]
+  }
+}

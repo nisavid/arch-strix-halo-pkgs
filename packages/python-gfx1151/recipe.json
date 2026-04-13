@@ -1,0 +1,124 @@
+{
+  "maintenance": {
+    "advisory_references": [
+      "cachyos-znver4/python"
+    ],
+    "authoritative_reference": "core/python",
+    "divergence_notes": [
+      "Uses the Arch system-Python package shape as the integration baseline while layering in the recipe's amdclang plus PGO/LTO approach.",
+      "Intentionally keeps pip/setuptools split out of the base interpreter package and preserves Arch's externally managed environment behavior."
+    ],
+    "source_patches": [],
+    "update_notes": [
+      "Always diff against the current Arch python PKGBUILD first, then inspect CachyOS for any CPU-tuning or toolchain deltas worth carrying.",
+      "Treat system-Python replacement as gated on a fresh torch/vllm smoke run after any major Python, ROCm, or recipe change."
+    ]
+  },
+  "name": "python-gfx1151",
+  "package_name": "python-gfx1151",
+  "pkgver": "3.14.4.r8.d20260317.gad42886",
+  "policy": {
+    "advisory_references": [
+      "cachyos-znver4/python"
+    ],
+    "arch_reference": [
+      "core/python",
+      "cachyos-znver4/python"
+    ],
+    "authoritative_reference": "core/python",
+    "compiler_dep": "rocm-llvm-gfx1151",
+    "conflicts": [
+      "python"
+    ],
+    "depends": [
+      "bzip2",
+      "expat",
+      "gdbm",
+      "libffi",
+      "libnsl",
+      "libxcrypt",
+      "mpdecimal",
+      "openssl",
+      "tzdata",
+      "zlib",
+      "zstd"
+    ],
+    "divergence_notes": [
+      "Uses the Arch system-Python package shape as the integration baseline while layering in the recipe's amdclang plus PGO/LTO approach.",
+      "Intentionally keeps pip/setuptools split out of the base interpreter package and preserves Arch's externally managed environment behavior."
+    ],
+    "install_prefix": "/usr",
+    "license": [
+      "PSF-2.0"
+    ],
+    "makedepends": [
+      "bluez-libs",
+      "gdb",
+      "rocm-llvm-gfx1151",
+      "sqlite",
+      "tk",
+      "ttf-font",
+      "xorg-server-xvfb",
+      "xz"
+    ],
+    "optdepends": [
+      "python-setuptools: for building Python packages using tooling that is usually bundled with Python",
+      "python-pip: for installing Python packages using tooling that is usually bundled with Python",
+      "python-pipx: for installing Python software not packaged on Arch Linux",
+      "sqlite: for a default database integration",
+      "xz: for lzma",
+      "tk: for tkinter"
+    ],
+    "patches_dir": "patches/python-gfx1151",
+    "pkgdesc": "The Python programming language rebuilt with amdclang for Strix Halo gfx1151",
+    "provides": [
+      "python=3.14.4",
+      "python3",
+      "python-externally-managed"
+    ],
+    "recipe_key": "cpython",
+    "replaces": [
+      "python"
+    ],
+    "scaffold_notes": [
+      "This scaffold is intentionally rebased onto current Arch/Cachy Python 3.14.x instead of the recipe's older CPython 3.13.12 pin.",
+      "The scaffold preserves the recipe's rule that all vllm-env.sh compiler flags must be unset before configure so AOCL-LibM does not contaminate the PGO training run.",
+      "Before production cutover, verify feature parity with the current Arch python package, especially tkinter, sqlite extension loading, PEP 668, and debug-path sanitization.",
+      "The scaffold intentionally disables ensurepip so pip stays split into separate packages, matching Arch system integration more closely.",
+      "The scaffold uses the official CPython release tarball rather than a git mirror because the package is pinned to a tagged release and full VCS fetches are unnecessarily expensive here.",
+      "Treat the system-Python replacement as gated on a successful Python-3.14 vLLM smoke test against the coherent TheRock ROCm stack."
+    ],
+    "source_type": "tarball",
+    "source_url": "https://www.python.org/ftp/python/3.14.4/Python-3.14.4.tar.xz",
+    "src_subdir": "Python-3.14.4",
+    "template": "autoconf-python",
+    "update_notes": [
+      "Always diff against the current Arch python PKGBUILD first, then inspect CachyOS for any CPU-tuning or toolchain deltas worth carrying.",
+      "Treat system-Python replacement as gated on a fresh torch/vllm smoke run after any major Python, ROCm, or recipe change."
+    ],
+    "upstream_version": "3.14.4",
+    "url": "https://www.python.org/"
+  },
+  "provenance": {
+    "output_root": "packages",
+    "recipe_author": "Blackcat Informatics Inc.",
+    "recipe_repo": "https://github.com/paudley/ai-notes",
+    "recipe_subdir": "strix-halo",
+    "repo_subpath": "."
+  },
+  "recipe": {
+    "branch": "v3.13.12",
+    "depends_on": [
+      "therock"
+    ],
+    "method": "autoconf",
+    "notes": "Python 3.13 built with PGO + LTO + amdclang for Zen 5.\n\nPGO (Profile-Guided Optimization): runs the test suite as training\ndata, then recompiles with branch prediction hints. LTO (thin):\nwhole-program optimization across translation units.\n\nCRITICAL: Must unset ALL vllm-env.sh flags before configure.\nvllm-env.sh sets LDFLAGS=-lalm which autoconf merges with configure\nLDFLAGS, causing AOCL-LibM to be linked, which breaks PGO training\n(test_math fails on signed zero and subnormal number handling).\n\nvllm-env.sh is re-sourced after build to restore flags.",
+    "patches": [],
+    "phase": "B",
+    "repo": "https://github.com/python/cpython.git",
+    "src_dir": "cpython",
+    "steps": [
+      7
+    ]
+  }
+}

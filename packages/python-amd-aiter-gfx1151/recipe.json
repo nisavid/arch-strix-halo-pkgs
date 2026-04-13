@@ -1,0 +1,134 @@
+{
+  "maintenance": {
+    "advisory_references": [
+      "extra/python-pytorch-opt-rocm",
+      "extra/python-pytorch-rocm"
+    ],
+    "authoritative_reference": "none",
+    "divergence_notes": [
+      "There is no standalone AITER package in Arch-family packaging; this package is recipe-first and aligned to the vendored PyTorch submodule lane.",
+      "Carries an explicit package-local source patch for gfx1151 RDNA 3.5 header compatibility rather than leaving those fixes as manual post-build mutations."
+    ],
+    "source_patches": [
+      "0001-gfx1151-rdna35-header-compat.patch"
+    ],
+    "update_notes": [
+      "Update AITER in lockstep with the paired PyTorch source lane so CK and generated kernel expectations stay aligned.",
+      "Treat FlyDSL as a separate tracked package story; do not silently fold an unpublished wheel into this package."
+    ]
+  },
+  "name": "python-amd-aiter-gfx1151",
+  "package_name": "python-amd-aiter-gfx1151",
+  "pkgver": "0.1.0.r8.d20260317.gad42886",
+  "policy": {
+    "advisory_references": [
+      "extra/python-pytorch-opt-rocm",
+      "extra/python-pytorch-rocm"
+    ],
+    "arch_reference": [
+      "extra/python-pytorch-opt-rocm",
+      "extra/python-pytorch-rocm"
+    ],
+    "authoritative_reference": "none",
+    "conflicts": [
+      "python-amd-aiter"
+    ],
+    "depends": [
+      "python-gfx1151",
+      "python-pandas",
+      "python-pytorch-opt-rocm-gfx1151",
+      "python-triton-gfx1151"
+    ],
+    "divergence_notes": [
+      "There is no standalone AITER package in Arch-family packaging; this package is recipe-first and aligned to the vendored PyTorch submodule lane.",
+      "Carries an explicit package-local source patch for gfx1151 RDNA 3.5 header compatibility rather than leaving those fixes as manual post-build mutations."
+    ],
+    "license": [
+      "MIT"
+    ],
+    "makedepends": [
+      "git",
+      "python-build",
+      "python-installer",
+      "python-setuptools",
+      "python-wheel",
+      "rocm-llvm-gfx1151"
+    ],
+    "optdepends": [
+      "python-flydsl-gfx1151: optional FlyDSL MLIR kernels for AITER fused MoE paths (blocked on rocm-llvm MLIR Python SDK completeness)"
+    ],
+    "patches_dir": "packages/python-amd-aiter-gfx1151",
+    "pkgdesc": "AMD AITER kernels rebuilt for Strix Halo gfx1151",
+    "provides": [
+      "python-amd-aiter"
+    ],
+    "recipe_key": "aiter",
+    "scaffold_notes": [
+      "There is no standalone Arch, CachyOS, or AUR aiter package. The closest packaging lane is the PyTorch ROCm pkgbase that vendors the same submodule, so that pkgbase is advisory only.",
+      "The recipe rebuilds AITER from PyTorch's vendored third_party/aiter copy so its CK ABI stays aligned with the paired PyTorch tree.",
+      "Upstream AITER declares pandas as a real dependency and FlyDSL as an optional acceleration path. Keep pandas in the package metadata, and package FlyDSL separately rather than silently depending on an unpublished wheel.",
+      "Keep the gfx1151 RDNA 3.5 header fixes as a package-local source patch applied before wheel build, not as post-install file replacement."
+    ],
+    "source_patches": [
+      "0001-gfx1151-rdna35-header-compat.patch"
+    ],
+    "src_subdir": "aiter",
+    "template": "python-project-aiter",
+    "update_notes": [
+      "Update AITER in lockstep with the paired PyTorch source lane so CK and generated kernel expectations stay aligned.",
+      "Treat FlyDSL as a separate tracked package story; do not silently fold an unpublished wheel into this package."
+    ],
+    "upstream_version": "0.1.0",
+    "url": "https://github.com/ROCm/aiter"
+  },
+  "provenance": {
+    "output_root": "packages",
+    "recipe_author": "Blackcat Informatics Inc.",
+    "recipe_repo": "https://github.com/paudley/ai-notes",
+    "recipe_subdir": "strix-halo",
+    "repo_subpath": "."
+  },
+  "recipe": {
+    "branch": null,
+    "depends_on": [
+      "pytorch",
+      "vllm"
+    ],
+    "method": "pip",
+    "notes": "Rebuilt from PyTorch's third_party/aiter/ submodule to align CK ABI\nwith the CK headers used by AITER's JIT at runtime.\n\nPREBUILD_KERNELS=0: skip 45-minute full kernel precompilation.\nKernels are JIT-compiled on first use instead.\n\nAfter wheel install, two header patches are applied to the installed\naiter_meta/csrc/include/ files for gfx1151 RDNA 3.5 compatibility.",
+    "patches": [
+      {
+        "description": "Add RDNA 3/3.5 scalar C++ fallbacks for three CDNA-only packed instructions: v_pk_mul_f32 (packed FP32 multiply, gfx940+), v_cvt_pk_fp8_f32 (packed FP8 conversion, gfx942+), and v_cvt_pk_bf8_f32 (packed BF8 conversion, gfx942+). On gfx11xx, these are replaced with scalar multiply/clamp+convert operations guarded by CK_TILE_RDNA3_NO_PK_FP8. Applied to installed site-packages, not source tree (JIT reads installed headers).\n",
+        "file": "aiter_meta/csrc/include/ck_tile/vec_convert.h",
+        "marker": "CK_TILE_RDNA3_NO_PK_FP8",
+        "marker_absent": true,
+        "note": "Content is a heredoc in build-vllm.sh (multi-line C++ with preprocessor guards)",
+        "type": "file_rewrite"
+      },
+      {
+        "description": "Replace DPP row_bcast:15 (0x142) and row_bcast:31 (0x143) with ds_swizzle (warp_swizzle<T, 0x1e0>) on RDNA 3/3.5. DPP broadcast instructions are CDNA-only (gfx9); RDNA uses the ds_swizzle equivalent that maps lane_id & 15 \u2014 functionally identical after intra-row reduction makes all lanes in a row hold the same value. This is the same fix rocprim applies in warp_reduce_dpp.hpp when ROCPRIM_HAS_PERMLANE() is true. Also guards the thread_num==64 path in multithread_reduce with #if !defined(AITER_RDNA_NO_DPP_BCAST) since RDNA wave size is 32, not 64.\n",
+        "file": "aiter_meta/csrc/include/hip_reduce.h",
+        "marker": "AITER_RDNA_NO_DPP_BCAST",
+        "marker_absent": true,
+        "note": "Content is a heredoc in build-vllm.sh (multi-line C++ with preprocessor guards)",
+        "type": "file_rewrite"
+      },
+      {
+        "description": "Cap TILE_SIZE to min(block_size, 128) in both select_2d_config (decode branch) and select_3d_config. Defense-in-depth for hybrid models with large non-power-of-2 block_size (e.g. 576). Without the cap, TILE_SIZE=576 would require 576 * head_size * elem_size bytes of shared memory per K/V tile, blowing the 64 KiB LDS on all AMD GPUs. For standard block_size (64/128) this is a no-op.\n",
+        "file": "aiter/ops/triton/attention/unified_attention.py",
+        "marker": "min(block_size, 128)",
+        "marker_absent": true,
+        "note": "Primary protection comes from vLLM patches 26-27 which route hybrid models away from AITER attention entirely. This cap is defense-in-depth for any code path that reaches the AITER kernel with a non-standard block_size.\n",
+        "sed_command": "s/TILE_SIZE = block_size/TILE_SIZE = min(block_size, 128)/",
+        "status": "testing",
+        "type": "sed"
+      }
+    ],
+    "phase": "F",
+    "repo": "https://github.com/ROCm/aiter.git",
+    "src_dir": "pytorch/third_party/aiter",
+    "steps": [
+      28
+    ]
+  }
+}

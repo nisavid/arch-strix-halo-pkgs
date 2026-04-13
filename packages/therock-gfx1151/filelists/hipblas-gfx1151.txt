@@ -1,0 +1,11 @@
+opt/rocm/include/hipblas/hipblas-export.h
+opt/rocm/include/hipblas/hipblas-version.h
+opt/rocm/include/hipblas/hipblas.h
+opt/rocm/include/hipblas/hipblas_module.f90
+opt/rocm/lib/cmake/hipblas/hipblas-config-version.cmake
+opt/rocm/lib/cmake/hipblas/hipblas-config.cmake
+opt/rocm/lib/cmake/hipblas/hipblas-targets-release.cmake
+opt/rocm/lib/cmake/hipblas/hipblas-targets.cmake
+opt/rocm/lib/libhipblas.so
+opt/rocm/lib/libhipblas.so.3
+opt/rocm/lib/libhipblas.so.3.3
