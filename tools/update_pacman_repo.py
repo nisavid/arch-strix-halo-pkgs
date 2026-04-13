@@ -19,6 +19,12 @@ class PackageInfo(NamedTuple):
 
 def link_or_copy(src: Path, dst: Path) -> None:
     if dst.exists() or dst.is_symlink():
+        try:
+            if src.exists() and src.samefile(dst):
+                return
+        except OSError:
+            pass
+    if dst.exists() or dst.is_symlink():
         dst.unlink()
     try:
         os.link(src, dst)
@@ -55,6 +61,27 @@ def vercmp(a: str, b: str) -> int:
     return int(result.stdout.strip())
 
 
+def select_latest_by_name(package_infos: list[PackageInfo]) -> dict[str, PackageInfo]:
+    selected: dict[str, PackageInfo] = {}
+    for pkg in package_infos:
+        current = selected.get(pkg.pkgname)
+        if current is None or vercmp(pkg.pkgver, current.pkgver) > 0:
+            selected[pkg.pkgname] = pkg
+    return selected
+
+
+def merge_package_sets(
+    incoming: list[PackageInfo],
+    existing: list[PackageInfo],
+) -> dict[str, PackageInfo]:
+    selected = select_latest_by_name(existing)
+    for pkg in incoming:
+        current = selected.get(pkg.pkgname)
+        if current is None or vercmp(pkg.pkgver, current.pkgver) > 0:
+            selected[pkg.pkgname] = pkg
+    return selected
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Populate a local pacman repo from built package archives")
     parser.add_argument("--package-dir", required=True, help="directory containing built .pkg.tar.* archives")
@@ -86,11 +113,13 @@ def main() -> int:
         print("HINT: build the package base first so .pkg.tar.zst artifacts exist.", file=sys.stderr)
         return 2
 
-    selected: dict[str, PackageInfo] = {}
-    for pkg in package_infos:
-        current = selected.get(pkg.pkgname)
-        if current is None or vercmp(pkg.pkgver, current.pkgver) > 0:
-            selected[pkg.pkgname] = pkg
+    existing_infos = [
+        read_pkginfo(pkg) for pkg in sorted(
+            pkg for pkg in repo_dir.glob("*.pkg.tar.*")
+            if pkg.is_file() and ".db.tar." not in pkg.name and ".files.tar." not in pkg.name
+        )
+    ]
+    selected = merge_package_sets(package_infos, existing_infos)
 
     staged = []
     selected_names = {pkg.path.name for pkg in selected.values()}
