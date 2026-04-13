@@ -2,6 +2,7 @@ generators/__pycache__/
 tools/__pycache__/
 generated/
 .remember/
+.codex
 .agents/session/
 packages/*/src/
 packages/*/pkg/
