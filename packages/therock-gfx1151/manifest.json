@@ -2,7 +2,8 @@
   "packages": {
     "amdsmi-gfx1151": {
       "depends": [
-        "rocm-smi-lib-gfx1151"
+        "rocm-smi-lib-gfx1151",
+        "python-gfx1151"
       ],
       "fileless": false,
       "files": 157,

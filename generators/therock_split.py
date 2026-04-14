@@ -321,6 +321,7 @@ def render_pkgbuild(
         template.replace("{{pkgbase}}", policy["repo"]["pkgbase"])
         .replace("{{pkgname_block}}", pkgname_block)
         .replace("{{pkgver}}", render_meta["pkgver"])
+        .replace("{{pkgrel}}", str(policy["repo"].get("pkgrel", 1)))
         .replace("{{license_block}}", license_block)
         .replace("{{url}}", policy["repo"]["url"])
         .replace("{{recipe_repo_url}}", render_meta["recipe_repo_url"])

@@ -66,7 +66,7 @@ pkgname=(
   'rpp-gfx1151'
 )
 pkgver='7.13.0pre.r8.d20260317.gad42886'
-pkgrel=1
+pkgrel=2
 arch=('x86_64')
 license=('custom:AMD')
 url='https://github.com/ROCm/TheRock'
@@ -98,7 +98,7 @@ _copy_from_filelist() {
     while IFS= read -r rel; do
         [[ -n "${rel}" ]] || continue
         mkdir -p "${pkgdir}/$(dirname "${rel}")"
-        cp --parents -a "${_therock_root}/${rel}" "${pkgdir}"
+        cp --parents -a --no-preserve=ownership "${_therock_root}/${rel}" "${pkgdir}"
     done < "${filelist}"
 }
 
@@ -106,9 +106,12 @@ package_amdsmi-gfx1151() {
     pkgdesc='AMD SMI library and tools from TheRock for gfx1151'
     provides=('amdsmi' 'amd-smi-lib')
     conflicts=('amd-smi-lib' 'amdsmi' 'rocm-gfx1151-bin')
-    depends=('rocm-smi-lib-gfx1151')
+    depends=('rocm-smi-lib-gfx1151' 'python-gfx1151')
     _require_therock_root
     _copy_from_filelist 'amdsmi-gfx1151'
+    install -Dm644 /dev/stdin "${pkgdir}/usr/lib/python3.14/site-packages/amd_smi.pth" <<'EOF'
+/opt/rocm/share/amd_smi
+EOF
 }
 
 package_comgr-gfx1151() {

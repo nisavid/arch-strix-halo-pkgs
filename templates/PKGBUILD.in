@@ -8,7 +8,7 @@ pkgname=(
 {{pkgname_block}}
 )
 pkgver='{{pkgver}}'
-pkgrel=1
+pkgrel={{pkgrel}}
 arch=('x86_64')
 license=({{license_block}})
 url='{{url}}'
@@ -40,7 +40,7 @@ _copy_from_filelist() {
     while IFS= read -r rel; do
         [[ -n "${rel}" ]] || continue
         mkdir -p "${pkgdir}/$(dirname "${rel}")"
-        cp --parents -a "${_therock_root}/${rel}" "${pkgdir}"
+        cp --parents -a --no-preserve=ownership "${_therock_root}/${rel}" "${pkgdir}"
     done < "${filelist}"
 }
 

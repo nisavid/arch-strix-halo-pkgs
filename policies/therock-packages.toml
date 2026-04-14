@@ -1,6 +1,7 @@
 [repo]
 pkgbase = "therock-gfx1151"
 pkgver = "7.13.0pre"
+pkgrel = 2
 suffix = "-gfx1151"
 url = "https://github.com/ROCm/TheRock"
 license = ["custom:AMD"]
@@ -157,7 +158,7 @@ post_copy_commands = [
 [packages."amdsmi-gfx1151"]
 desc = "AMD SMI library and tools from TheRock for gfx1151"
 provides = ["amdsmi", "amd-smi-lib"]
-depends = ["rocm-smi-lib-gfx1151"]
+depends = ["rocm-smi-lib-gfx1151", "python-gfx1151"]
 
 [packages."rocm-opencl-runtime-gfx1151"]
 desc = "ROCm OpenCL runtime from TheRock for gfx1151"
@@ -660,6 +661,9 @@ fileless = true
 "opt/rocm/tests/rocgdb" = "rocm-gdb-gfx1151"
 
 [synthetic_files]
+"amdsmi-gfx1151" = [
+  { path = "usr/lib/python3.14/site-packages/amd_smi.pth", text = "/opt/rocm/share/amd_smi\n" },
+]
 "rocm-opencl-runtime-gfx1151" = [
   { path = "etc/OpenCL/vendors/amdocl64.icd", text = "/opt/rocm/lib/libamdocl64.so\n" },
 ]
