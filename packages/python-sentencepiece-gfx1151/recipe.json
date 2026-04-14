@@ -14,7 +14,8 @@
     ],
     "update_notes": [
       "Re-check against Cachy first, then consult the AUR source and git variants if the maintained package lags a needed upstream change.",
-      "If the upstream build backend changes, keep the package metadata focused on the system cmake/toolchain story rather than reviving venv-local wrapper assumptions."
+      "If the upstream build backend changes, keep the package metadata focused on the system cmake/toolchain story rather than reviving venv-local wrapper assumptions.",
+      "After publishing a rebuilt package, verify the installed host extension with readelf or ldd so the live system is not still carrying the older pre-bundle artifact."
     ]
   },
   "name": "python-sentencepiece-gfx1151",

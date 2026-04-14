@@ -29,9 +29,14 @@ probing rejects -mllvm as "unused command line argument".
 -famd-opt moved to LDFLAGS (link-time-only driver flag, no-op at
 compile time -- triggers -Werror=unused in compile-only probes).
 
-`python-sentencepiece` now builds its bundled C++ core during wheel build unless
-`SENTENCEPIECE_USE_SYSTEM=1` is explicitly requested, preventing hard runtime
-links to host `sentencepiece` libraries with unstable external ABI boundaries.
+The repo-built package artifacts show the bundled-build patch is effective: the
+current built `_sentencepiece` extension under `packages/.../pkg/` no longer
+depends on `libsentencepiece.so.0` or `libsentencepiece_train.so.0`.
+
+The concrete host Gemma 4 failure happened because the host still had the older
+installed `python-sentencepiece-gfx1151 0.2.1.r8.d20260317.gad42886-1` package,
+whose installed extension still resolved stale host `sentencepiece` shared
+libraries.
 
 ## Scaffold notes
 
@@ -47,6 +52,9 @@ links to host `sentencepiece` libraries with unstable external ABI boundaries.
 
 - Re-check against Cachy first, then consult the AUR source and git variants if the maintained package lags a needed upstream change.
 - If the upstream build backend changes, keep the package metadata focused on the system cmake/toolchain story rather than reviving venv-local wrapper assumptions.
+- After publishing a rebuilt package, verify the installed host extension with
+  `readelf -d` or `ldd` so the live system is not still carrying the older
+  pre-bundle artifact.
 
 ## Maintainer Starting Points
 

@@ -12,6 +12,11 @@
   `python-mistral-common-gfx1151` closure lanes aligned. The current Gemma 4
   processor path needs both `transformers.models.gemma4` and
   `mistral_common.protocol.instruct.request.ReasoningEffort`.
+- Publish or reinstall the current repo-built `python-sentencepiece-gfx1151`
+  artifact and rerun the host Gemma 4 safetensors vLLM smoke. The current
+  concrete host failure is from the older installed
+  `python-sentencepiece-gfx1151 0.2.1.r8.d20260317.gad42886-1`, whose live
+  extension still linked stale host `sentencepiece` shared libraries.
 - Revisit vLLM HIP build-path sanitization only after the gfx1151 sampler-kernel
   compile failure is understood. A trial patch that routed quoted
   `CMAKE_HIP_FLAGS` through `setup.py` (`shlex.split` on `CMAKE_ARGS`) pushed

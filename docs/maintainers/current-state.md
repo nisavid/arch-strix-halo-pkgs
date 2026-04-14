@@ -73,6 +73,10 @@ The following smoke checks have already passed on the reference host:
   Gemma 4 / Transformers `5.5.x` processor path because the older host
   `python-mistral-common 1.8.6-1` package did not export
   `mistral_common.protocol.instruct.request.ReasoningEffort`.
+- `python-sentencepiece-gfx1151` already carries the bundled-build patch needed
+  to avoid host `sentencepiece` shared-library ABI drift, and the current
+  built package artifact under `packages/python-sentencepiece-gfx1151/pkg/`
+  is self-contained at the ELF level.
 - `python-transformers-gfx1151` is now the local closure package for Gemma 4
   support on this stack because the host `python-transformers 5.2.0-1` lane
   did not ship `transformers.models.gemma4`; the repo currently tracks PyPI
@@ -83,6 +87,11 @@ The following smoke checks have already passed on the reference host:
   `python-openai-harmony-gfx1151`, `python-transformers-gfx1151`, and
   `python-mistral-common-gfx1151` packages for Harmony and Gemma-4-capable
   runtime closure.
+- The current host Gemma 4 tokenizer failure is not a repo-package design gap;
+  it is a live-system drift issue. The host still had
+  `python-sentencepiece-gfx1151 0.2.1.r8.d20260317.gad42886-1` installed, and
+  that older installed extension still linked against stale host
+  `sentencepiece` / `protobuf` / `abseil` shared libraries.
 - `python-vllm-rocm-gfx1151` also carries a ROCm-specific compatibility gate
   for the vendored `triton_kernels` tree, so the `gfx1151` lane falls back
   cleanly when the installed Triton runtime lacks CUDA-only APIs such as
