@@ -32,6 +32,7 @@ Reinstalling at compatible versions resolves conflicts.
 ## Scaffold notes
 
 - Electron desktop package split from the same lemonade monorepo.
+- Install a /usr/bin/lemonade-app wrapper that launches the packaged Electron binary from /usr/share/lemonade-app so the shipped desktop entry resolves on PATH.
 - Pinned to the v10.2.0 upstream release tarball to keep the first-pass metadata reproducible.
 
 ## Intentional Divergences

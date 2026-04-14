@@ -6,7 +6,7 @@
 
 pkgname=lemonade-app
 pkgver=10.2.0.r8.d20260317.gad42886
-pkgrel=1
+pkgrel=2
 pkgdesc='Lemonade desktop app rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://github.com/lemonade-sdk/lemonade
@@ -52,6 +52,7 @@ build() {
   local build_root="$srcdir/build-lemonade-app"
   local install_root="/usr"
 
+  rm -rf "${build_root}"
   cmake -B "${build_root}" -GNinja .     -DCMAKE_C_COMPILER="${amdclang}"     -DCMAKE_CXX_COMPILER="${amdclangxx}"     -DCMAKE_BUILD_TYPE=Release     -DCMAKE_INSTALL_PREFIX="${install_root}"     -DCMAKE_C_FLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument"     -DCMAKE_CXX_FLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument"     -DBUILD_ELECTRON_APP=OFF     -DBUILD_WEB_APP=OFF
 
   cmake --build "${build_root}" --target electron-app -j"$(nproc)"
@@ -71,6 +72,11 @@ package() {
     echo "HINT: lemonade electron-app currently writes to CMAKE_BINARY_DIR/app/linux-unpacked on Linux; adjust the renderer if upstream changes this." >&2
     return 1
   fi
+
+  install -Dm755 /dev/stdin "$pkgdir/usr/bin/lemonade-app" <<'EOF'
+#!/bin/sh
+exec /usr/share/lemonade-app/lemonade "$@"
+EOF
 
   if [[ -f data/lemonade-app.desktop ]]; then
     install -Dm644 data/lemonade-app.desktop "$pkgdir/usr/share/applications/lemonade-app.desktop"

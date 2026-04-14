@@ -416,6 +416,7 @@ build() {{
   local build_root="$srcdir/build-{package_name}"
   local install_root="/usr"
 
+  rm -rf "${{build_root}}"
   cmake -B "${{build_root}}" -GNinja . \
     -DCMAKE_C_COMPILER="${{amdclang}}" \
     -DCMAKE_CXX_COMPILER="${{amdclangxx}}" \
@@ -443,6 +444,11 @@ package() {{
     echo "HINT: lemonade electron-app currently writes to CMAKE_BINARY_DIR/app/linux-unpacked on Linux; adjust the renderer if upstream changes this." >&2
     return 1
   fi
+
+  install -Dm755 /dev/stdin "$pkgdir/usr/bin/lemonade-app" <<'EOF'
+#!/bin/sh
+exec /usr/share/lemonade-app/lemonade "$@"
+EOF
 
   if [[ -f data/lemonade-app.desktop ]]; then
     install -Dm644 data/lemonade-app.desktop "$pkgdir/usr/share/applications/lemonade-app.desktop"
