@@ -78,6 +78,14 @@ Use when the recipe grows a new component that is not yet represented here.
 Use this when a repo-managed package starts referencing a Python or system
 package that is not already part of the local-repo closure.
 
+New local packages should default to this repo's applicable Strix optimization
+lane: target the current Zen 5 / `znver5` host CPU (using explicit `znver5`
+flags where a toolchain's plain `native` autodetection is unreliable), `-O3`
+or the build system's equivalent, LTO when compatible, and PGO when the build
+system exposes a maintainable training path. The decision about whether a
+package belongs in this repo is separate from whether it should inherit that
+default tuned build lane once it is here.
+
 Prefer a normal dependency on an existing package when all of the following are
 true:
 
@@ -87,7 +95,8 @@ true:
 3. the package metadata is complete enough to model the real runtime closure
 4. this repo does not need compatibility patches, package-shape changes, or a
    different source lane
-5. there is no defensible local optimization story beyond "we can rebuild it"
+5. this repo does not need to carry the package locally just to keep the stack
+   coherent, publishable, and reproducible through the documented pacman flow
 
 Prefer a local package in this repo when any of the following are true:
 
@@ -99,9 +108,6 @@ Prefer a local package in this repo when any of the following are true:
    library lane this repo maintains
 4. the package needs a deliberate filesystem layout, dependency shape, or
    publish story that differs from the baseline package
-5. the package has a real, measured optimization story that matters for this
-   stack rather than a purely hypothetical "native flags might help" story
-
 Prefer an optdepend only when the feature is genuinely optional in this repo's
 supported behavior:
 
@@ -111,10 +117,12 @@ supported behavior:
    optdepend is installed
 
 For small helper libraries with native code, published manylinux wheels, and no
-ROCm- or host-specific compatibility delta, lack of an official Arch package is
-usually a closure problem, not an optimization problem. In that case the local
-package story should focus on a correct Arch package baseline and complete
-dependency metadata, not custom tuning.
+ROCm-specific compatibility delta, lack of an official Arch package is usually
+still a closure problem rather than evidence that the package needs a special
+ROCm lane. If this repo packages such a helper locally, it should still inherit
+the repo's default applicable Strix tuning; the key question is whether the
+package belongs in the local-repo closure at all, not whether it deserves a
+"no optimization" exception.
 
 ## Required Outputs
 
