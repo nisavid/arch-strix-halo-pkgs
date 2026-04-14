@@ -15,7 +15,8 @@
       "0006-setup.py-forward-host-and-hip-flags-into-cmake.patch",
       "0007-rocm-enable-gfx1x-aiter-and-prefer-it-for-gemma4.patch",
       "0008-torchao-version-check-stays-metadata-only.patch",
-      "0009-lazy-import-torchao-config-only-for-torchao-quantization.patch"
+      "0009-lazy-import-torchao-config-only-for-torchao-quantization.patch",
+      "0010-cli-help-avoids-eager-benchmark-imports.patch"
     ],
     "update_notes": [
       "Check upstream vllm release notes and pyproject metadata first, then reconcile the Python upper-bound and hard-coded supported-version list with the current state of Python 3.14 support.",
@@ -115,7 +116,8 @@
       "0006-setup.py-forward-host-and-hip-flags-into-cmake.patch",
       "0007-rocm-enable-gfx1x-aiter-and-prefer-it-for-gemma4.patch",
       "0008-torchao-version-check-stays-metadata-only.patch",
-      "0009-lazy-import-torchao-config-only-for-torchao-quantization.patch"
+      "0009-lazy-import-torchao-config-only-for-torchao-quantization.patch",
+      "0010-cli-help-avoids-eager-benchmark-imports.patch"
     ],
     "license": [
       "Apache-2.0"
@@ -148,6 +150,7 @@
       "Carries a ROCm Triton unified-attention tile-size patch so large-head prefill paths such as Gemma 4 global attention do not request more than 64 KiB of LDS/shared memory on gfx1151.",
       "Carries a TorchAO-import patch so generic vLLM startup paths do not import the full TorchAO quantization module just to check an installed version. This keeps optional broken host python-torchao-rocm packages from emitting startup warning noise on non-TorchAO code paths.",
       "Carries a follow-up TorchAO-registry patch so the quantization registry only imports TorchAOConfig when torchao quantization is actually requested. Generic config-validation and CLI/help flows still probe the quantization registry, so this second lazy-import boundary is required to suppress the same host warning completely.",
+      "Carries a third CLI-help patch so plain `vllm --help` does not eagerly import the benchmark latency command tree. That benchmark module imports EngineArgs at module import time, which is enough to drag generic config/model startup back across the broken optional host TorchAO package.",
       "Depends on the local python-transformers-gfx1151 closure package rather than the distro python-transformers lane because Gemma 4 support first appears in upstream transformers 5.5.x and the older host package did not ship transformers.models.gemma4.",
       "Depends on the local python-mistral-common-gfx1151 closure package rather than the stale host python-mistral-common 1.8.x lane because Transformers 5.5.x imports ReasoningEffort from mistral_common.protocol.instruct.request.",
       "The currently installed external python-torchao-rocm package is still not import-clean at the native extension layer on this host, but generic vLLM startup should no longer import TorchAO eagerly on non-TorchAO code paths. Treat the remaining host TorchAO breakage as an optional-feature defect to revisit only if this repo needs working TorchAO custom ops or actual --quantization torchao support.",
@@ -188,6 +191,7 @@
       "Keep the gfx1x AITER enablement and Gemma 4 ROCM_AITER_UNIFIED_ATTN preference unless upstream lands a ROCm-safe single-backend path for heterogeneous-head Gemma 4 models. The concrete host failure was successful Gemma 4 initialization followed by Triton unified-attention decode miscompilation (`operation scheduled before its operands`) and garbage output on gfx1151.",
       "Keep TorchAO version checks metadata-only on generic startup paths unless upstream reorganizes its quantization imports. The concrete host failure was an external python-torchao-rocm package whose optional _C.abi3.so extension was both missing a usable torch/lib runpath and built against an incompatible PyTorch ABI, causing warning noise during unrelated vLLM startup when vLLM imported the TorchAO quantization module just to ask a version question.",
       "Keep the quantization registry importing TorchAOConfig lazily unless upstream stops probing every quantization backend during generic config validation. The concrete host failure after the first TorchAO patch was `vllm --help` still importing vllm.model_executor.layers.quantization and then pulling in .torchao through get_quantization_config().",
+      "Keep plain `vllm --help` off the benchmark latency import path unless upstream makes the benchmark CLI import-clean on generic startup. The concrete host failure after the second TorchAO patch was `vllm --help` still emitting the warning because CLI setup imported `vllm.entrypoints.cli.benchmark.latency`, which reaches EngineArgs at module import time.",
       "Keep the inherited makepkg compile flags when layering Strix tuning flags. Overwriting CFLAGS/CXXFLAGS drops Arch's build-path prefix maps and can leak $srcdir paths into the shipped ROCm extension modules.",
       "Keep HIP build-path prefix-map flags explicit and forwarded through setup.py. The ROCm extension build does not automatically inherit the host C/C++ prefix-map settings into CMAKE_HIP_FLAGS, so sanitization has to be carried through HIPFLAGS and then bridged into CMake.",
       "Keep SageMaker integration optional unless this repo intentionally packages model_hosting_container_standards; missing SageMaker helpers should disable only SageMaker-specific routes, not the base CLI or local server startup paths.",

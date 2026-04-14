@@ -127,7 +127,12 @@ The following smoke checks have already passed on the reference host:
   boundaries until generic CLI/help/server startup no longer surfaces the
   warning. The TorchAO Python-level APIs vLLM actually touches
   (`config_from_dict`, `quantize_`, and packed-tensor conversion) still work
-  on the reference host.
+  on the reference host. A third startup-noise fix is also required on this
+  lane: plain `vllm --help` must stay off the benchmark latency import path,
+  because `vllm.entrypoints.cli.benchmark.latency` imports
+  `vllm.benchmarks.latency` at module import time and that path drags in
+  `EngineArgs` plus enough generic config/model code to resurface the same
+  optional TorchAO warning.
 - The current Gemma 4 / vLLM smoke story is now split cleanly:
   - the earlier ROCm runtime blocker was real and is now fixed on the host:
     vLLM selects `ROCM_AITER_UNIFIED_ATTN`, and AITER imports its compiled JIT
@@ -211,6 +216,9 @@ The following smoke checks have already passed on the reference host:
     generic registry as well; vLLM currently probes quantization backends
     during config validation, and that path must not import TorchAO unless
     `quantization == "torchao"`
+  - keep plain `vllm --help` off the benchmark latency import path too; the
+    benchmark command tree should only load when the user actually invokes
+    `vllm bench ...`
   - keep package patch application idempotent across reused `src/` trees as
     well; repeated `makepkg -f` runs during this lane left partially patched
     trees behind and caused `prepare()` to fail when a file-adding patch was
