@@ -16,7 +16,7 @@
 - Recorded reference packages: `aur/lemonade-server, aur/lemonade-desktop`
 - Authoritative reference package: `aur/lemonade-server`
 - Advisory reference packages: `aur/lemonade-desktop`
-- Applied source patch files/actions: `3`
+- Applied source patch files/actions: `4`
 
 ## Recipe notes
 
@@ -38,6 +38,7 @@ Reinstalling at compatible versions resolves conflicts.
 - Pinned to the v10.2.0 upstream release tarball to keep the first-pass metadata reproducible.
 - Installs /etc/lemonade/conf.d/10-llamacpp-gfx1151.conf so the packaged ROCm and Vulkan llama.cpp wrapper binaries are exposed to the service as system-managed backends.
 - The system-managed backend patch also folds in the config-load and CLI/backend-table changes needed for those service-provided overrides to stay visible after config.json already exists.
+- Export the packaged llama.cpp revision and ggml release URL in the system-managed backend env overlay so the GUI shows the packaged backend metadata instead of upstream downloader defaults.
 
 ## Intentional Divergences
 

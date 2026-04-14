@@ -1,0 +1,136 @@
+--- a/src/cpp/server/backend_manager.cpp
++++ b/src/cpp/server/backend_manager.cpp
+@@ -7,12 +7,53 @@
+ #include <filesystem>
+ #include <thread>
+ #include <chrono>
++#include <cstdlib>
+ #include <lemon/utils/aixlog.hpp>
+ 
+ namespace fs = std::filesystem;
+ 
+ namespace lemon {
+ 
++namespace {
++
++bool is_system_managed_external_backend(const std::string& recipe, const std::string& backend) {
++    if (recipe != "llamacpp") {
++        return false;
++    }
++    if (backend != "rocm" && backend != "vulkan") {
++        return false;
++    }
++    return !backends::BackendUtils::find_external_backend_binary(recipe, backend).empty();
++}
++
++std::string get_system_managed_backend_version_override(const std::string& recipe, const std::string& backend) {
++    if (recipe != "llamacpp") {
++        return "";
++    }
++    const char* version_env = nullptr;
++    if (backend == "rocm") {
++        version_env = std::getenv("LEMONADE_LLAMACPP_ROCM_VERSION");
++    } else if (backend == "vulkan") {
++        version_env = std::getenv("LEMONADE_LLAMACPP_VULKAN_VERSION");
++    }
++    return (version_env && *version_env) ? version_env : "";
++}
++
++std::string get_system_managed_backend_release_url_override(const std::string& recipe, const std::string& backend) {
++    if (recipe != "llamacpp") {
++        return "";
++    }
++    const char* release_env = nullptr;
++    if (backend == "rocm") {
++        release_env = std::getenv("LEMONADE_LLAMACPP_ROCM_RELEASE_URL");
++    } else if (backend == "vulkan") {
++        release_env = std::getenv("LEMONADE_LLAMACPP_VULKAN_RELEASE_URL");
++    }
++    return (release_env && *release_env) ? release_env : "";
++}
++
++}  // namespace
++
+ BackendManager::BackendManager() {
+     try {
+         std::string config_path = utils::get_resource_path("resources/backend_versions.json");
+@@ -118,6 +159,10 @@
+ 
+ std::string BackendManager::get_latest_version(const std::string& recipe, const std::string& backend) {
+     try {
++        std::string version_override = get_system_managed_backend_version_override(recipe, backend);
++        if (!version_override.empty()) {
++            return version_override;
++        }
+         return get_version_from_config(recipe, backend);
+     } catch (...) {
+         return "";
+@@ -160,6 +205,10 @@
+ 
+ std::string BackendManager::get_release_url(const std::string& recipe, const std::string& backend) {
+     try {
++        std::string release_url_override = get_system_managed_backend_release_url_override(recipe, backend);
++        if (!release_url_override.empty()) {
++            return release_url_override;
++        }
+         auto params = get_install_params(recipe, backend);
+         return "https://github.com/" + params.repo + "/releases/tag/" + params.version;
+     } catch (...) {
+@@ -169,6 +218,9 @@
+ 
+ std::string BackendManager::get_download_filename(const std::string& recipe, const std::string& backend) {
+     try {
++        if (is_system_managed_external_backend(recipe, backend)) {
++            return "";
++        }
+         auto params = get_install_params(recipe, backend);
+         return params.filename;
+     } catch (...) {
+@@ -179,6 +231,14 @@
+ BackendManager::BackendEnrichment BackendManager::get_backend_enrichment(const std::string& recipe, const std::string& backend) {
+     BackendEnrichment result;
+     try {
++        std::string version_override = get_system_managed_backend_version_override(recipe, backend);
++        std::string release_url_override = get_system_managed_backend_release_url_override(recipe, backend);
++        if (!version_override.empty() || !release_url_override.empty()) {
++            result.version = version_override;
++            result.release_url = release_url_override;
++            result.download_filename = "";
++            return result;
++        }
+         auto params = get_install_params(recipe, backend);
+         result.release_url = "https://github.com/" + params.repo + "/releases/tag/" + params.version;
+         result.download_filename = params.filename;
+--- a/src/cpp/server/system_info.cpp
++++ b/src/cpp/server/system_info.cpp
+@@ -348,6 +348,19 @@
+     return !BackendUtils::find_external_backend_binary(recipe, backend).empty();
+ }
+ 
++static std::string get_system_managed_backend_version_override(const std::string& recipe, const std::string& backend) {
++    if (recipe != "llamacpp") {
++        return "";
++    }
++    const char* version_env = nullptr;
++    if (backend == "rocm") {
++        version_env = std::getenv("LEMONADE_LLAMACPP_ROCM_VERSION");
++    } else if (backend == "vulkan") {
++        version_env = std::getenv("LEMONADE_LLAMACPP_VULKAN_VERSION");
++    }
++    return (version_env && *version_env) ? version_env : "";
++}
++
+ static std::string get_llamacpp_version_from_executable(const std::string& executable) {
+     std::string output;
+ #ifdef _WIN32
+@@ -389,6 +402,10 @@
+         return get_llamacpp_version_from_executable("llama-server");
+     }
+     if (is_system_managed_external_backend(recipe, backend)) {
++        std::string version_override = get_system_managed_backend_version_override(recipe, backend);
++        if (!version_override.empty()) {
++            return version_override;
++        }
+         std::string external_binary = BackendUtils::find_external_backend_binary(recipe, backend);
+         return get_llamacpp_version_from_executable(external_binary);
+     }

@@ -11,7 +11,8 @@
     "source_patches": [
       "0001-linux-npu-fallback-to-pci-id-when-accel-open-fails.patch",
       "0002-llamacpp-external-backends-are-system-managed.patch",
-      "0003-remove-llamacpp-system-backend.patch"
+      "0003-remove-llamacpp-system-backend.patch",
+      "0004-system-managed-llamacpp-metadata.patch"
     ],
     "update_notes": [
       "Update against the current upstream monorepo release and the AUR server package first, then re-check whether any local backend-management or NPU-detection patches are still needed.",
@@ -47,12 +48,14 @@
     "extra_sha256sums": [
       "SKIP",
       "SKIP",
+      "SKIP",
       "SKIP"
     ],
     "extra_sources": [
       "0001-linux-npu-fallback-to-pci-id-when-accel-open-fails.patch",
       "0002-llamacpp-external-backends-are-system-managed.patch",
-      "0003-remove-llamacpp-system-backend.patch"
+      "0003-remove-llamacpp-system-backend.patch",
+      "0004-system-managed-llamacpp-metadata.patch"
     ],
     "license": [
       "Apache-2.0"
@@ -78,7 +81,8 @@
       "Server/runtime package; llama.cpp backends are optdepends, not hard deps.",
       "Pinned to the v10.2.0 upstream release tarball to keep the first-pass metadata reproducible.",
       "Installs /etc/lemonade/conf.d/10-llamacpp-gfx1151.conf so the packaged ROCm and Vulkan llama.cpp wrapper binaries are exposed to the service as system-managed backends.",
-      "The system-managed backend patch also folds in the config-load and CLI/backend-table changes needed for those service-provided overrides to stay visible after config.json already exists."
+      "The system-managed backend patch also folds in the config-load and CLI/backend-table changes needed for those service-provided overrides to stay visible after config.json already exists.",
+      "Export the packaged llama.cpp revision and ggml release URL in the system-managed backend env overlay so the GUI shows the packaged backend metadata instead of upstream downloader defaults."
     ],
     "sha256sums": [
       "SKIP"
@@ -86,7 +90,8 @@
     "source_patches": [
       "0001-linux-npu-fallback-to-pci-id-when-accel-open-fails.patch",
       "0002-llamacpp-external-backends-are-system-managed.patch",
-      "0003-remove-llamacpp-system-backend.patch"
+      "0003-remove-llamacpp-system-backend.patch",
+      "0004-system-managed-llamacpp-metadata.patch"
     ],
     "source_refs": [
       "https://github.com/lemonade-sdk/lemonade/archive/refs/tags/v10.2.0.tar.gz"

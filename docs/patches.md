@@ -17,6 +17,11 @@ system.
 - [Remove the generic `llamacpp:system` backend](../packages/lemonade-server/0003-remove-llamacpp-system-backend.patch)
   - Keeps this custom build focused on the explicit HIP and Vulkan lanes that
     this repo actually packages.
+- [Override system-managed `llama.cpp` metadata for packaged backends](../packages/lemonade-server/0004-system-managed-llamacpp-metadata.patch)
+  - Makes the Lemonade GUI and backend API report the packaged `llama.cpp`
+    revision and the upstream `ggml-org/llama.cpp` release URL for the
+    system-managed ROCm and Vulkan lanes instead of Lemonade's downloader
+    defaults.
 
 ## vLLM
 

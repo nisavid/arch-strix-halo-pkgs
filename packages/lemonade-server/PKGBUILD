@@ -6,7 +6,7 @@
 
 pkgname=lemonade-server
 pkgver=10.2.0.r8.d20260317.gad42886
-pkgrel=1
+pkgrel=2
 pkgdesc='Local AI server runtime rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://github.com/lemonade-sdk/lemonade
@@ -18,8 +18,8 @@ options=()
 provides=(lemonade-server)
 conflicts=()
 replaces=()
-source=(https://github.com/lemonade-sdk/lemonade/archive/refs/tags/v10.2.0.tar.gz 0001-linux-npu-fallback-to-pci-id-when-accel-open-fails.patch 0002-llamacpp-external-backends-are-system-managed.patch 0003-remove-llamacpp-system-backend.patch)
-sha256sums=(SKIP SKIP SKIP SKIP)
+source=(https://github.com/lemonade-sdk/lemonade/archive/refs/tags/v10.2.0.tar.gz 0001-linux-npu-fallback-to-pci-id-when-accel-open-fails.patch 0002-llamacpp-external-backends-are-system-managed.patch 0003-remove-llamacpp-system-backend.patch 0004-system-managed-llamacpp-metadata.patch)
+sha256sums=(SKIP SKIP SKIP SKIP SKIP)
 
 prepare() {
   cd "$srcdir/lemonade-10.2.0"
@@ -27,6 +27,7 @@ prepare() {
   patch -Np1 -i "$srcdir/0001-linux-npu-fallback-to-pci-id-when-accel-open-fails.patch"
   patch -Np1 -i "$srcdir/0002-llamacpp-external-backends-are-system-managed.patch"
   patch -Np1 -i "$srcdir/0003-remove-llamacpp-system-backend.patch"
+  patch -Np1 -i "$srcdir/0004-system-managed-llamacpp-metadata.patch"
 }
 
 build() {
@@ -92,6 +93,10 @@ package() {
   install -Dm644 /dev/stdin "$pkgdir/etc/lemonade/conf.d/10-llamacpp-gfx1151.conf" <<'EOF'
 LEMONADE_LLAMACPP_ROCM_BIN=/usr/bin/llama-server-hip-gfx1151
 LEMONADE_LLAMACPP_VULKAN_BIN=/usr/bin/llama-server-vulkan-gfx1151
+LEMONADE_LLAMACPP_ROCM_VERSION=b8611
+LEMONADE_LLAMACPP_VULKAN_VERSION=b8611
+LEMONADE_LLAMACPP_ROCM_RELEASE_URL=https://github.com/ggml-org/llama.cpp/releases/tag/b8611
+LEMONADE_LLAMACPP_VULKAN_RELEASE_URL=https://github.com/ggml-org/llama.cpp/releases/tag/b8611
 LEMONADE_LLAMACPP_ROCM_LABEL=System llama-server-hip-gfx1151 llama.cpp b8611
 LEMONADE_LLAMACPP_VULKAN_LABEL=System llama-server-vulkan-gfx1151 llama.cpp b8611
 EOF

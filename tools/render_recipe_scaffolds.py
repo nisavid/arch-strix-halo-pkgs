@@ -192,6 +192,10 @@ def lemonade_llamacpp_env_lines() -> list[str]:
     return [
         "LEMONADE_LLAMACPP_ROCM_BIN=/usr/bin/llama-server-hip-gfx1151",
         "LEMONADE_LLAMACPP_VULKAN_BIN=/usr/bin/llama-server-vulkan-gfx1151",
+        f"LEMONADE_LLAMACPP_ROCM_VERSION={hip_rev}",
+        f"LEMONADE_LLAMACPP_VULKAN_VERSION={vulkan_rev}",
+        f"LEMONADE_LLAMACPP_ROCM_RELEASE_URL=https://github.com/ggml-org/llama.cpp/releases/tag/{hip_rev}",
+        f"LEMONADE_LLAMACPP_VULKAN_RELEASE_URL=https://github.com/ggml-org/llama.cpp/releases/tag/{vulkan_rev}",
         f"LEMONADE_LLAMACPP_ROCM_LABEL=System llama-server-hip-gfx1151 llama.cpp {hip_rev}",
         f"LEMONADE_LLAMACPP_VULKAN_LABEL=System llama-server-vulkan-gfx1151 llama.cpp {vulkan_rev}",
     ]
