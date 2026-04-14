@@ -69,6 +69,10 @@ The following smoke checks have already passed on the reference host:
 - `python-openai-harmony-gfx1151` is now the local closure package for vLLM's
   GPT-OSS/Harmony path, using `aur/python-openai-harmony` as the baseline but
   carrying upstream's missing `python-pydantic` runtime dependency.
+- `python-mistral-common-gfx1151` is now the local closure package for the
+  Gemma 4 / Transformers `5.5.x` processor path because the older host
+  `python-mistral-common 1.8.6-1` package did not export
+  `mistral_common.protocol.instruct.request.ReasoningEffort`.
 - `python-transformers-gfx1151` is now the local closure package for Gemma 4
   support on this stack because the host `python-transformers 5.2.0-1` lane
   did not ship `transformers.models.gemma4`; the repo currently tracks PyPI
@@ -76,8 +80,9 @@ The following smoke checks have already passed on the reference host:
   that module.
 - `python-vllm-rocm-gfx1151` uses upstream `v0.19.0` tarball plus the local
   Python-3.14 compatibility delta and now depends on the local
-  `python-openai-harmony-gfx1151` and `python-transformers-gfx1151` packages
-  for Harmony and Gemma-4-capable runtime closure.
+  `python-openai-harmony-gfx1151`, `python-transformers-gfx1151`, and
+  `python-mistral-common-gfx1151` packages for Harmony and Gemma-4-capable
+  runtime closure.
 - `python-vllm-rocm-gfx1151` also carries a ROCm-specific compatibility gate
   for the vendored `triton_kernels` tree, so the `gfx1151` lane falls back
   cleanly when the installed Triton runtime lacks CUDA-only APIs such as

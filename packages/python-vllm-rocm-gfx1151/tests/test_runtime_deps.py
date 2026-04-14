@@ -9,3 +9,9 @@ def test_vllm_depends_on_local_transformers_lane():
     text = PKGBUILD.read_text()
     assert "python-transformers-gfx1151" in text
     assert "python-transformers " not in text
+
+
+def test_vllm_depends_on_local_mistral_common_lane():
+    text = PKGBUILD.read_text()
+    assert "python-mistral-common-gfx1151" in text
+    assert "python-mistral-common " not in text

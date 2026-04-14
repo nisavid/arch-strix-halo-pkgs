@@ -8,6 +8,10 @@
 - Publish the rebuilt `python-pytorch-opt-rocm-gfx1151` lane, then rerun the
   host Gemma 4 safetensors vLLM smoke so the next remaining runtime blocker,
   if any, is recorded with a concrete traceback.
+- Keep the local `python-transformers-gfx1151` and
+  `python-mistral-common-gfx1151` closure lanes aligned. The current Gemma 4
+  processor path needs both `transformers.models.gemma4` and
+  `mistral_common.protocol.instruct.request.ReasoningEffort`.
 - Revisit vLLM HIP build-path sanitization only after the gfx1151 sampler-kernel
   compile failure is understood. A trial patch that routed quoted
   `CMAKE_HIP_FLAGS` through `setup.py` (`shlex.split` on `CMAKE_ARGS`) pushed

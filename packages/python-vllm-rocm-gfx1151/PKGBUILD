@@ -6,12 +6,12 @@
 
 pkgname=python-vllm-rocm-gfx1151
 pkgver=0.19.0.r8.d20260317.gad42886
-pkgrel=7
+pkgrel=8
 pkgdesc='High-throughput and memory-efficient inference engine for LLMs with ROCm, rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://github.com/vllm-project/vllm
 license=(Apache-2.0)
-depends=(amdsmi-gfx1151 numactl python-aiohttp python-blake3 python-cachetools python-cbor2 python-cloudpickle python-diskcache python-einops python-fastapi python-gguf python-gfx1151 python-huggingface-hub python-ijson python-importlib-metadata python-mistral-common python-msgspec python-openai python-openai-harmony-gfx1151 python-opencv python-prometheus-fastapi-instrumentator python-psutil python-py-cpuinfo python-pybase64 python-pydantic python-pytorch-opt-rocm-gfx1151 python-pyzmq python-soundfile python-starlette python-sympy python-torchvision-rocm-gfx1151 python-tqdm python-transformers-gfx1151 python-triton-gfx1151 python-uvloop python-watchfiles rocblas-gfx1151 uvicorn)
+depends=(amdsmi-gfx1151 numactl python-aiohttp python-blake3 python-cachetools python-cbor2 python-cloudpickle python-diskcache python-einops python-fastapi python-gguf python-gfx1151 python-huggingface-hub python-ijson python-importlib-metadata python-mistral-common-gfx1151 python-msgspec python-openai python-openai-harmony-gfx1151 python-opencv python-prometheus-fastapi-instrumentator python-psutil python-py-cpuinfo python-pybase64 python-pydantic python-pytorch-opt-rocm-gfx1151 python-pyzmq python-soundfile python-starlette python-sympy python-torchvision-rocm-gfx1151 python-tqdm python-transformers-gfx1151 python-triton-gfx1151 python-uvloop python-watchfiles rocblas-gfx1151 uvicorn)
 makedepends=(cmake ninja python-installer python-pip python-setuptools python-setuptools-scm python-wheel rocm-llvm-gfx1151)
 optdepends=()
 options=()

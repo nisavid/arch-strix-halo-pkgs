@@ -36,6 +36,11 @@ recorded in .aiter-status file ("enabled" or "disabled").
   the distro `python-transformers` lane because Gemma 4 support first appears
   in upstream `transformers 5.5.x` and the older host package did not ship
   `transformers.models.gemma4`.
+- Depends on the local `python-mistral-common-gfx1151` closure package rather
+  than the stale host `python-mistral-common 1.8.x` lane because Transformers
+  `5.5.x` imports `ReasoningEffort` from
+  `mistral_common.protocol.instruct.request`, and that symbol is missing from
+  the older package.
 - The currently installed external python-torchao-rocm package is not import-clean at the native extension layer on this host, but vLLM's current TorchAO-facing Python APIs still work. Treat that as an external package defect to revisit only if this repo needs functioning TorchAO custom ops rather than the existing Python-level quantization helpers.
 - makepkg -e reuses src/, so build() intentionally reapplies the carried source patches before wheel generation instead of assuming prepare() already ran in the current tree.
 - Upstream openai-harmony is a small Rust/PyO3 helper library with published manylinux wheels, not a ROCm-specific component. If Arch still lacks an official package, the right local story is a closure package derived from aur/python-openai-harmony. If this repo ingests it locally, it should still inherit the normal Strix build lane for applicable native code: Zen 5 / znver5 CPU tuning, -O3 or equivalent, LTO when compatible, and PGO when the build system exposes a maintainable path.
@@ -57,6 +62,10 @@ recorded in .aiter-status file ("enabled" or "disabled").
 - Keep the local Transformers lane new enough to ship `transformers.models.gemma4`.
   The concrete host failure was a stale `python-transformers 5.2.0-1` package
   that did not recognize `model_type: gemma4`.
+- Keep the local Mistral Common lane new enough to export
+  `mistral_common.protocol.instruct.request.ReasoningEffort`. The concrete
+  host failure was `python-mistral-common 1.8.6-1`, which let Gemma 4 load all
+  the way through model weights before processor initialization failed.
 - Keep the vendored triton_kernels path gated on the installed Triton runtime rather than forcing python-triton-gfx1151 to emulate CUDA-only APIs such as triton.language.target_info. On this ROCm lane, treat unavailable vendored Triton kernels as a clean fallback, not as a hard runtime error.
 - Keep SageMaker integration optional unless this repo intentionally packages `model_hosting_container_standards`; missing SageMaker helpers should disable only SageMaker-specific routes, not the base CLI or local server startup paths.
 - Keep the ROCm GCN-arch fallback import-safe on Strix Halo. AMDSMI ASIC-info probes can fail even when the device is visible; that must degrade to `torch.cuda` probing rather than crashing during module import.

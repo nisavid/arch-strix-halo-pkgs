@@ -1,0 +1,50 @@
+# Maintainer: nisavid
+
+pkgname=python-mistral-common-gfx1151
+pkgver=1.10.0
+pkgrel=1
+pkgdesc='Set of tools to help you work with Mistral models rebuilt for Strix Halo gfx1151'
+arch=('any')
+url='https://github.com/mistralai/mistral-common'
+license=(Apache-2.0)
+depends=(
+  python-gfx1151
+  python-jsonschema
+  python-numpy-gfx1151
+  python-pillow
+  python-pydantic
+  python-pydantic-extra-types
+  python-requests
+  python-tiktoken
+  python-typing_extensions
+)
+makedepends=(
+  python-build
+  python-installer
+  python-poetry-core
+  python-setuptools
+  python-wheel
+)
+optdepends=(
+  'python-huggingface-hub: Hugging Face Hub helpers'
+  'python-opencv: image extra used by Transformers/vLLM multimodal processors'
+  'python-sentencepiece: sentencepiece tokenizer support'
+  'python-soundfile: audio extra'
+  'python-soxr: audio resampling extra'
+)
+options=()
+provides=(python-mistral-common)
+conflicts=(python-mistral-common)
+replaces=()
+source=(https://files.pythonhosted.org/packages/source/m/mistral_common/mistral_common-${pkgver}.tar.gz)
+sha256sums=(SKIP)
+
+build() {
+  cd "$srcdir/mistral_common-${pkgver}"
+  python -m build --wheel --no-isolation
+}
+
+package() {
+  cd "$srcdir/mistral_common-${pkgver}"
+  python -m installer --destdir="$pkgdir" dist/*.whl
+}
