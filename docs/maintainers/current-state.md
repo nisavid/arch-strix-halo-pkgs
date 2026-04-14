@@ -116,10 +116,14 @@ The following smoke checks have already passed on the reference host:
     no longer hard-fail on that extra package being absent
 - The host `python-torchao-rocm` package currently fails to load its optional
   `_C.abi3.so` extension because the shipped binary is not import-clean
-  against the installed PyTorch runtime. For the current vLLM lane this is
-  treated as harmless warning noise: `import vllm` is clean, and the TorchAO
-  Python-level APIs vLLM actually touches (`config_from_dict`, `quantize_`,
-  and packed-tensor conversion) still work on the reference host.
+  against the installed PyTorch runtime: it is missing a usable `torch/lib`
+  runpath and still fails on unresolved `at::TensorBase::const_data_ptr`
+  symbols once the torch shared libraries are made visible. Generic vLLM
+  startup should now avoid importing TorchAO eagerly on non-TorchAO code
+  paths, so the remaining TorchAO defect is optional-feature debt rather than
+  expected ambient warning noise. The TorchAO Python-level APIs vLLM actually
+  touches (`config_from_dict`, `quantize_`, and packed-tensor conversion)
+  still work on the reference host.
 - The current Gemma 4 / vLLM smoke story is now split cleanly:
   - the earlier ROCm runtime blocker was real and is now fixed on the host:
     vLLM selects `ROCM_AITER_UNIFIED_ATTN`, and AITER imports its compiled JIT
@@ -196,6 +200,9 @@ The following smoke checks have already passed on the reference host:
   - only revisit the external `python-torchao-rocm` package if this repo needs
     working TorchAO custom ops or `--quantization torchao` paths that truly
     depend on the native `_C` extension rather than the Python-level APIs
+  - keep TorchAO version checks metadata-only on generic vLLM startup paths so
+    broken optional host TorchAO packages do not emit warning noise during
+    unrelated CLI or server flows
 - vLLM/Gemma follow-up
   - extend the current verified offline `-it` smoke path into API-server,
     reasoning-parser, and tool-calling validation using the official Gemma 4

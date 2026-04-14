@@ -1,0 +1,104 @@
+diff --git a/vllm/model_executor/layers/quantization/torchao.py b/vllm/model_executor/layers/quantization/torchao.py
+--- a/vllm/model_executor/layers/quantization/torchao.py
++++ b/vllm/model_executor/layers/quantization/torchao.py
+@@ -1,26 +1,26 @@
+ # SPDX-License-Identifier: Apache-2.0
+ # SPDX-FileCopyrightText: Copyright contributors to the vLLM project
+-import importlib
+ import json
+ import types
+-from importlib.util import find_spec
+ from typing import Any
+ 
+ import regex as re
+ import torch
+ import torch.nn.functional as F
+-from packaging import version
+ from torch.nn.parameter import Parameter
+ 
+ from vllm.logger import init_logger
+ from vllm.model_executor.layers.linear import (
+     LinearBase,
+     LinearMethodBase,
+     UnquantizedLinearMethod,
+ )
+ from vllm.model_executor.layers.quantization import QuantizationMethods
+ from vllm.model_executor.layers.quantization.base_config import (
+     QuantizationConfig,
+     QuantizeMethodBase,
+ )
++from vllm.model_executor.layers.quantization.torchao_utils import (
++    torchao_version_at_least,
++)
+ from vllm.model_executor.utils import set_weight_attrs
+ 
+ logger = init_logger(__name__)
+@@ -58,19 +58,7 @@ def _restore_weight_attrs(param, recorded_weight_attr):
+     for attr_name, attr in recorded_weight_attr.items():
+         if not hasattr(param, attr_name):
+             setattr(param, attr_name, _bond_method_to_cls(attr, param))
+-
+-
+-def torchao_version_at_least(torchao_version: str) -> bool:
+-    if find_spec("torchao"):
+-        try:
+-            if version.parse(importlib.metadata.version("torchao")) >= version.parse(
+-                torchao_version
+-            ):
+-                return True
+-        except (ImportError, version.InvalidVersion):
+-            return False
+-    return False
+ 
+ 
+ def should_skip(prefix: str, skip_modules: list[str]) -> bool:
+diff --git a/vllm/model_executor/layers/quantization/torchao_utils.py b/vllm/model_executor/layers/quantization/torchao_utils.py
+--- /dev/null
++++ b/vllm/model_executor/layers/quantization/torchao_utils.py
+@@ -0,0 +1,19 @@
++# SPDX-License-Identifier: Apache-2.0
++# SPDX-FileCopyrightText: Copyright contributors to the vLLM project
++
++import importlib
++from importlib.util import find_spec
++
++from packaging import version
++
++
++def torchao_version_at_least(torchao_version: str) -> bool:
++    """Check installed torchao version without importing the torchao package."""
++    if find_spec("torchao"):
++        try:
++            installed_version = importlib.metadata.version("torchao")
++            if version.parse(installed_version) >= version.parse(torchao_version):
++                return True
++        except (ImportError, version.InvalidVersion):
++            return False
++    return False
+diff --git a/vllm/model_executor/model_loader/default_loader.py b/vllm/model_executor/model_loader/default_loader.py
+--- a/vllm/model_executor/model_loader/default_loader.py
++++ b/vllm/model_executor/model_loader/default_loader.py
+@@ -14,7 +14,9 @@
+ from vllm.config import ModelConfig
+ from vllm.config.load import LoadConfig
+ from vllm.logger import init_logger
+-from vllm.model_executor.layers.quantization.torchao import torchao_version_at_least
++from vllm.model_executor.layers.quantization.torchao_utils import (
++    torchao_version_at_least,
++)
+ from vllm.model_executor.model_loader.base_loader import BaseModelLoader
+ from vllm.model_executor.model_loader.ep_weight_filter import (
+     compute_local_expert_ids,
+diff --git a/vllm/model_executor/model_loader/weight_utils.py b/vllm/model_executor/model_loader/weight_utils.py
+--- a/vllm/model_executor/model_loader/weight_utils.py
++++ b/vllm/model_executor/model_loader/weight_utils.py
+@@ -62,7 +62,9 @@
+     SafeTensorsFileLoader = fastsafetensors.placeholder_attr("SafeTensorsFileLoader")
+     SingleGroup = fastsafetensors.placeholder_attr("SingleGroup")
+ 
+-from vllm.model_executor.layers.quantization.torchao import torchao_version_at_least
++from vllm.model_executor.layers.quantization.torchao_utils import (
++    torchao_version_at_least,
++)
+ 
+ logger = init_logger(__name__)

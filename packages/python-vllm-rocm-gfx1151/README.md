@@ -46,6 +46,10 @@ recorded in .aiter-status file ("enabled" or "disabled").
   so heterogeneous-head Gemma 4 models can prefer
   `ROCM_AITER_UNIFIED_ATTN` on Strix Halo instead of forcing the Triton
   unified-attention backend that currently miscompiles during decode.
+- Carries a TorchAO-import patch so generic vLLM startup paths do not import
+  the full TorchAO quantization module just to check an installed version.
+  This keeps optional broken host `python-torchao-rocm` packages from emitting
+  startup warning noise on non-TorchAO code paths.
 - Depends on the local `python-transformers-gfx1151` closure package rather than
   the distro `python-transformers` lane because Gemma 4 support first appears
   in upstream `transformers 5.5.x` and the older host package did not ship
@@ -55,7 +59,12 @@ recorded in .aiter-status file ("enabled" or "disabled").
   `5.5.x` imports `ReasoningEffort` from
   `mistral_common.protocol.instruct.request`, and that symbol is missing from
   the older package.
-- The currently installed external python-torchao-rocm package is not import-clean at the native extension layer on this host, but vLLM's current TorchAO-facing Python APIs still work. Treat that as an external package defect to revisit only if this repo needs functioning TorchAO custom ops rather than the existing Python-level quantization helpers.
+- The currently installed external `python-torchao-rocm` package is still not
+  import-clean at the native extension layer on this host, but generic vLLM
+  startup should no longer import TorchAO eagerly on non-TorchAO code paths.
+  Treat the remaining host TorchAO breakage as an optional-feature defect to
+  revisit only if this repo needs working TorchAO custom ops or actual
+  `--quantization torchao` support.
 - makepkg -e reuses src/, so build() intentionally reapplies the carried source patches before wheel generation instead of assuming prepare() already ran in the current tree.
 - Preserve makepkg's inherited `CFLAGS`/`CXXFLAGS` when layering Strix tuning
   flags, and feed the same prefix-map flags into `HIPFLAGS`, so Arch's
@@ -102,6 +111,13 @@ recorded in .aiter-status file ("enabled" or "disabled").
   Gemma 4 initialization followed by Triton unified-attention decode
   miscompilation (`operation scheduled before its operands`) and garbage output
   on gfx1151.
+- Keep TorchAO version checks metadata-only on generic startup paths unless
+  upstream reorganizes its quantization imports. The concrete host failure was
+  an external `python-torchao-rocm` package whose optional `_C.abi3.so`
+  extension was both missing a usable `torch/lib` runpath and built against an
+  incompatible PyTorch ABI, causing warning noise during unrelated vLLM
+  startup when vLLM imported the TorchAO quantization module just to ask a
+  version question.
 - Keep the inherited makepkg compile flags when adding Strix tuning flags.
   Overwriting `CFLAGS`/`CXXFLAGS` drops Arch's build-path prefix maps and can
   leak `$srcdir` paths into the shipped ROCm extension modules.
@@ -111,7 +127,11 @@ recorded in .aiter-status file ("enabled" or "disabled").
   through `HIPFLAGS` and then bridged into CMake.
 - Keep SageMaker integration optional unless this repo intentionally packages `model_hosting_container_standards`; missing SageMaker helpers should disable only SageMaker-specific routes, not the base CLI or local server startup paths.
 - Keep the ROCm GCN-arch fallback import-safe on Strix Halo. AMDSMI ASIC-info probes can fail even when the device is visible; that must degrade to `torch.cuda` probing rather than crashing during module import.
-- Treat the current external python-torchao-rocm _C-extension failure as a host-package defect, not a blocker for this vLLM lane. import vllm stays clean, and the TorchAO Python-level APIs vLLM touches still work on the reference host; only revisit this if TorchAO custom ops or torchao-backed serving paths actually require the native extension.
+- Treat the current external `python-torchao-rocm` `_C`-extension failure as
+  a host-package defect, not a blocker for this vLLM lane. Generic startup
+  should stay clean after the local TorchAO-import patch, and the remaining
+  follow-up only matters if this repo needs actual TorchAO custom ops or
+  torchao-backed serving paths that truly require the native extension.
 - Treat runtime validation against the live ROCm stack as mandatory; a successful wheel build is not enough.
 - Follow the official vLLM Gemma 4 recipe for operational behavior, but only
   carry the parts that apply to this local Strix Halo ROCm lane. In practice
