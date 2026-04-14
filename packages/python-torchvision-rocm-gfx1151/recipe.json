@@ -9,7 +9,9 @@
       "Builds against the paired optimized PyTorch package tree rather than an arbitrary preinstalled torch wheel.",
       "Follows the recipe's ROCm wheel-build environment instead of the generic upstream CUDA-oriented defaults."
     ],
-    "source_patches": [],
+    "source_patches": [
+      "0001-setup-relative-sources.patch"
+    ],
     "update_notes": [
       "Re-check the package against the current AUR ROCm variant first, then compare any generic Arch torchvision changes that affect Python packaging or dependency handling.",
       "Keep the paired PyTorch package import-clean enough that TorchVision does not need any build-only rocsolver soname shim. If a shim becomes necessary again, treat that as a PyTorch/runtime-lane regression rather than reintroducing the workaround here."
@@ -48,6 +50,12 @@
       "Builds against the paired optimized PyTorch package tree rather than an arbitrary preinstalled torch wheel.",
       "Follows the recipe's ROCm wheel-build environment instead of the generic upstream CUDA-oriented defaults."
     ],
+    "extra_sha256sums": [
+      "SKIP"
+    ],
+    "extra_sources": [
+      "0001-setup-relative-sources.patch"
+    ],
     "license": [
       "BSD-3-Clause"
     ],
@@ -72,8 +80,12 @@
       "Authoritative base: AUR python-torchvision-rocm 0.26.0-1 because it is the closest maintained ROCm packaging lane for torchvision.",
       "Advisory references: python-torchvision-rocm-bin for packaging shape around the ROCm variant and repo python-torchvision for generic Arch Python packaging conventions.",
       "The recipe must build against the source-tree torch headers from the paired PyTorch package, not against an arbitrary preinstalled wheel.",
+      "Carry the setup.py source patch that makes ROCm HIP builds honor NVCC_FLAGS so the package-level source-path sanitizer also applies to .hip translation units.",
       "The paired PyTorch package is now import-clean against librocsolver.so.1, so this scaffold should not reintroduce the earlier build-only librocsolver.so.0 shim.",
       "Keep the recipe's TorchVision environment intact: FORCE_CUDA=0, FORCE_MPS=0, empty TORCH_CUDA_ARCH_LIST, and pip-wheel packaging without build isolation."
+    ],
+    "source_patches": [
+      "0001-setup-relative-sources.patch"
     ],
     "source_type": "tarball",
     "source_url": "https://github.com/pytorch/vision/archive/refs/tags/v0.26.0.tar.gz",

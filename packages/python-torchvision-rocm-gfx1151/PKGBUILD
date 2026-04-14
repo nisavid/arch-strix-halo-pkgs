@@ -6,7 +6,7 @@
 
 pkgname=python-torchvision-rocm-gfx1151
 pkgver=0.26.0.r8.d20260317.gad42886
-pkgrel=2
+pkgrel=3
 pkgdesc='Datasets, transforms, and models for computer vision with ROCm support, rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://github.com/pytorch/vision
@@ -18,11 +18,39 @@ options=()
 provides=(python-torchvision-rocm=0.26.0 python-torchvision=0.26.0)
 conflicts=(python-torchvision-rocm python-torchvision)
 replaces=()
-source=(https://github.com/pytorch/vision/archive/refs/tags/v0.26.0.tar.gz)
-sha256sums=(SKIP)
+source=(https://github.com/pytorch/vision/archive/refs/tags/v0.26.0.tar.gz 0001-setup-relative-sources.patch)
+sha256sums=(SKIP SKIP)
+
+_apply_patch_if_needed() {
+  local _patch_name="$1"
+  local _patch=""
+
+  if [[ -f "${srcdir}/${_patch_name}" ]]; then
+    _patch="${srcdir}/${_patch_name}"
+  elif [[ -f "${startdir}/${_patch_name}" ]]; then
+    _patch="${startdir}/${_patch_name}"
+  else
+    printf 'missing patch file: %s\n' "${_patch_name}" >&2
+    return 1
+  fi
+
+  if patch --dry-run -R -Np1 -i "${_patch}" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  patch -Np1 -i "${_patch}"
+}
+
+prepare() {
+  cd "$srcdir/vision-0.26.0"
+
+  _apply_patch_if_needed "0001-setup-relative-sources.patch"
+}
 
 build() {
   cd "$srcdir/vision-0.26.0"
+
+    _apply_patch_if_needed "0001-setup-relative-sources.patch"
 
   _setup_compiler_env() {
   local _compiler_root="/opt/rocm/lib/llvm/bin"
@@ -47,8 +75,11 @@ build() {
 }
 
   _setup_compiler_env
-  export CFLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument -DGLOG_USE_GLOG_EXPORT"
-  export CXXFLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument -DGLOG_USE_GLOG_EXPORT"
+  local _debug_prefix="/usr/src/debug/python-torchvision-rocm-gfx1151"
+  local _debug_map="-ffile-prefix-map=$srcdir=${_debug_prefix} -fdebug-prefix-map=$srcdir=${_debug_prefix} -fmacro-prefix-map=$srcdir=${_debug_prefix}"
+  export CFLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument -DGLOG_USE_GLOG_EXPORT ${_debug_map}"
+  export CXXFLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument -DGLOG_USE_GLOG_EXPORT ${_debug_map}"
+  export NVCC_FLAGS="${_debug_map}"
   export CPPFLAGS="${CPPFLAGS:-} -DGLOG_USE_GLOG_EXPORT"
   export ROCM_HOME="/opt/rocm"
   export ROCM_PATH="/opt/rocm"
@@ -57,16 +88,6 @@ build() {
   export TORCH_CUDA_ARCH_LIST=""
   export FORCE_CUDA=0
   export FORCE_MPS=0
-  python - <<'PY'
-from pathlib import Path
-path = Path("setup.py")
-text = path.read_text()
-old = '            nvcc_flags = []'
-new = '            nvcc_flags = ["-DGLOG_USE_GLOG_EXPORT"]'
-if old in text:
-    text = text.replace(old, new, 1)
-path.write_text(text)
-PY
 
   mkdir -p dist
   pip wheel . --no-build-isolation --no-deps --wheel-dir dist -v

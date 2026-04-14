@@ -42,6 +42,9 @@ The following smoke checks have already passed on the reference host:
   PyTorch lane without the earlier build-only `librocsolver.so.0` shim; if
   that workaround ever becomes necessary again, treat it as a PyTorch/runtime
   regression rather than reintroducing the shim in TorchVision.
+- `python-torchvision-rocm-gfx1151` also now sanitizes embedded HIP source
+  paths correctly: the rebuilt `_C.so` no longer leaks repo-local `$srcdir`
+  paths and instead points at `/usr/src/debug/python-torchvision-rocm-gfx1151`.
 - `python-openai-harmony-gfx1151` is now the local closure package for vLLM's
   GPT-OSS/Harmony path, using `aur/python-openai-harmony` as the baseline but
   carrying upstream's missing `python-pydantic` runtime dependency.
@@ -77,9 +80,18 @@ The following smoke checks have already passed on the reference host:
   - blocked on the current `rocm-llvm-gfx1151` MLIR development surface being
     insufficient for downstream FlyDSL packaging
 - package hygiene
-  - remove remaining embedded build-path leakage where still present
+  - remove remaining embedded build-path leakage where still present in
+    PyTorch and vLLM
   - convert remaining scripted source edits into durable patch files where
     practical
+- vLLM build-path follow-up
+  - a trial patch that taught `setup.py` to `shlex.split()` quoted
+    `CMAKE_ARGS` and injected `CMAKE_HIP_FLAGS` did route source-prefix maps
+    into the HIP compile lane, but it also made both vLLM build attempts fail
+    in `csrc/sampler.hip` on gfx1151 with:
+    `Invalid dpp_ctrl value: wavefront shifts are not supported on GFX10+`
+  - treat that as the current blocker before attempting any further vLLM
+    build-path sanitization
 - vLLM/TorchAO follow-up
   - only revisit the external `python-torchao-rocm` package if this repo needs
     working TorchAO custom ops or `--quantization torchao` paths that truly

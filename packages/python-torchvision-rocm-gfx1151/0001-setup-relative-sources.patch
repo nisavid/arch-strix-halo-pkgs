@@ -1,0 +1,11 @@
+--- a/setup.py
++++ b/setup.py
+@@ -120,6 +120,8 @@
+         if IS_ROCM:
+             define_macros += [("WITH_HIP", None)]
+             nvcc_flags = []
++            if NVCC_FLAGS is not None:
++                nvcc_flags += shlex.split(NVCC_FLAGS)
+         else:
+             define_macros += [("WITH_CUDA", None)]
+             if NVCC_FLAGS is None:

@@ -12,7 +12,7 @@
 - Recorded reference packages: `aur/python-torchvision-rocm, aur/python-torchvision-rocm-bin, extra/python-torchvision`
 - Authoritative reference package: `aur/python-torchvision-rocm`
 - Advisory reference packages: `aur/python-torchvision-rocm-bin, extra/python-torchvision`
-- Applied source patch files/actions: `0`
+- Applied source patch files/actions: `1`
 
 ## Recipe notes
 
@@ -24,6 +24,7 @@ source tree, not from a pip install).
 - Authoritative base: AUR python-torchvision-rocm 0.26.0-1 because it is the closest maintained ROCm packaging lane for torchvision.
 - Advisory references: python-torchvision-rocm-bin for packaging shape around the ROCm variant and repo python-torchvision for generic Arch Python packaging conventions.
 - The recipe must build against the source-tree torch headers from the paired PyTorch package, not against an arbitrary preinstalled wheel.
+- Carry the setup.py source patch that makes ROCm HIP builds honor NVCC_FLAGS so the package-level source-path sanitizer also applies to .hip translation units.
 - The paired PyTorch package is now import-clean against librocsolver.so.1, so this scaffold should not reintroduce the earlier build-only librocsolver.so.0 shim.
 - Keep the recipe's TorchVision environment intact: FORCE_CUDA=0, FORCE_MPS=0, empty TORCH_CUDA_ARCH_LIST, and pip-wheel packaging without build isolation.
 

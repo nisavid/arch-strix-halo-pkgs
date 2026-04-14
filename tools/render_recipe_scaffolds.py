@@ -764,13 +764,55 @@ package() {{
   fi
 }}"""
     elif template == "python-project-torchvision-rocm":
+        source_patches = policy_pkg.get("source_patches", [])
+        patch_helper = ""
+        patch_prepare_cmds = ""
+        patch_build_cmds = ""
+        if source_patches:
+            patch_helper = """\
+_apply_patch_if_needed() {
+  local _patch_name="$1"
+  local _patch=""
+
+  if [[ -f "${srcdir}/${_patch_name}" ]]; then
+    _patch="${srcdir}/${_patch_name}"
+  elif [[ -f "${startdir}/${_patch_name}" ]]; then
+    _patch="${startdir}/${_patch_name}"
+  else
+    printf 'missing patch file: %s\\n' "${_patch_name}" >&2
+    return 1
+  fi
+
+  if patch --dry-run -R -Np1 -i "${_patch}" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  patch -Np1 -i "${_patch}"
+}
+
+"""
+            patch_prepare_cmds = "".join(
+                f'  _apply_patch_if_needed "{patch_name}"\n' for patch_name in source_patches
+            )
+            patch_build_cmds = patch_prepare_cmds
         build_body = f"""\
+{patch_helper}prepare() {{
+  cd "$srcdir/{src_subdir}"
+
+{patch_prepare_cmds.rstrip()}
+}}
+
 build() {{
   cd "$srcdir/{src_subdir}"
 
+  {patch_build_cmds.rstrip()}
+
   {compiler_env_snippet(compiler_root)}  _setup_compiler_env
-  export CFLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument -DGLOG_USE_GLOG_EXPORT"
-  export CXXFLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument -DGLOG_USE_GLOG_EXPORT"
+  local _debug_prefix="/usr/src/debug/{package_name}"
+  local _debug_map="-ffile-prefix-map=$srcdir=${{_debug_prefix}} -fdebug-prefix-map=$srcdir=${{_debug_prefix}} -fmacro-prefix-map=$srcdir=${{_debug_prefix}}"
+  export CFLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument -DGLOG_USE_GLOG_EXPORT ${{_debug_map}}"
+  export CXXFLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument -DGLOG_USE_GLOG_EXPORT ${{_debug_map}}"
+  export NVCC_FLAGS="${{_debug_map}}"
   export CPPFLAGS="${{CPPFLAGS:-}} -DGLOG_USE_GLOG_EXPORT"
   export ROCM_HOME="/opt/rocm"
   export ROCM_PATH="/opt/rocm"
@@ -779,16 +821,6 @@ build() {{
   export TORCH_CUDA_ARCH_LIST=""
   export FORCE_CUDA=0
   export FORCE_MPS=0
-  python - <<'PY'
-from pathlib import Path
-path = Path("setup.py")
-text = path.read_text()
-old = '            nvcc_flags = []'
-new = '            nvcc_flags = ["-DGLOG_USE_GLOG_EXPORT"]'
-if old in text:
-    text = text.replace(old, new, 1)
-path.write_text(text)
-PY
 
   mkdir -p dist
   pip wheel . --no-build-isolation --no-deps --wheel-dir dist -v

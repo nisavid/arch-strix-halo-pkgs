@@ -4,8 +4,13 @@
 
 - Convert remaining scripted source edits into durable patch files where
   practical.
-- Tighten package hygiene for embedded build paths in PyTorch, TorchVision, and
-  vLLM.
+- Tighten package hygiene for embedded build paths in PyTorch and vLLM.
+- Revisit vLLM HIP build-path sanitization only after the gfx1151 sampler-kernel
+  compile failure is understood. A trial patch that routed quoted
+  `CMAKE_HIP_FLAGS` through `setup.py` (`shlex.split` on `CMAKE_ARGS`) pushed
+  the prefix maps into the HIP compile lane, but both build attempts then died
+  in `csrc/sampler.hip` with `Invalid dpp_ctrl value: wavefront shifts are not
+  supported on GFX10+`.
 - Revisit `python-flydsl-gfx1151` once the MLIR development-surface story is
   clear.
 - Benchmark whether the custom `llama.cpp` builds still justify their
