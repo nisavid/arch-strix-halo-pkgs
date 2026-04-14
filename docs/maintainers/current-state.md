@@ -31,6 +31,10 @@ The following smoke checks have already passed on the reference host:
 - `llama-cli-vulkan-gfx1151 --help`
 - `lemonade --help`
 - `lemond --help`
+- `google/gemma-4-E2B-it` offline vLLM smoke on ROCm with text-only multimodal
+  limits and recipe-style chat-template prompting
+- `google/gemma-4-31B-it` offline vLLM smoke on ROCm with text-only multimodal
+  limits and recipe-style chat-template prompting
 
 ## Important Package Decisions
 
@@ -87,6 +91,12 @@ The following smoke checks have already passed on the reference host:
   `python-openai-harmony-gfx1151`, `python-transformers-gfx1151`, and
   `python-mistral-common-gfx1151` packages for Harmony and Gemma-4-capable
   runtime closure.
+- `python-amd-aiter-gfx1151` now carries an installed-system JIT runtime fix
+  so the compiled HIP helper module can be imported from the user JIT cache
+  under `~/.aiter/jit/` without requiring a manually exported `AITER_JIT_DIR`.
+  The same patch also teaches the runtime to find `hipcc` via
+  `/opt/rocm/bin/hipcc` and the standard ROCm env vars instead of relying on
+  interactive-shell `PATH` setup.
 - The current host Gemma 4 tokenizer failure is not a repo-package design gap;
   it is a live-system drift issue. The host still had
   `python-sentencepiece-gfx1151 0.2.1.r8.d20260317.gad42886-1` installed, and
@@ -110,6 +120,47 @@ The following smoke checks have already passed on the reference host:
   treated as harmless warning noise: `import vllm` is clean, and the TorchAO
   Python-level APIs vLLM actually touches (`config_from_dict`, `quantize_`,
   and packed-tensor conversion) still work on the reference host.
+- The current Gemma 4 / vLLM smoke story is now split cleanly:
+  - the earlier ROCm runtime blocker was real and is now fixed on the host:
+    vLLM selects `ROCM_AITER_UNIFIED_ATTN`, and AITER imports its compiled JIT
+    helper from `~/.aiter/jit/module_aiter_core.so`
+  - the remaining "empty output" result came from using base Gemma 4
+    checkpoints (`google/gemma-4-E2B`, `google/gemma-4-31B`) for
+    assistant-style chat smokes rather than the instruction-tuned `-it`
+    checkpoints recommended by the official vLLM Gemma 4 recipe
+  - a host debug run against base `google/gemma-4-E2B` showed the stack is
+    capable of real generation on Strix Halo: plain completion prompts emit
+    tokens, but assistant/chat-style prompts degrade into prompt echo, EOS,
+    and whitespace rather than useful assistant responses
+- The official vLLM Gemma 4 recipe adds several workflow rules that apply to
+  this repo's local ROCm lane even though its AMD deployment examples target
+  MI300X/MI325X/MI350X/MI355X and Docker:
+  - use instruction-tuned `google/gemma-4-*-it` checkpoints for assistant,
+    chat, reasoning, tool-calling, and OpenAI-compatible server smokes
+  - for text-only offline inference, render prompts with
+    `tokenizer.apply_chat_template(..., add_generation_prompt=True)` before
+    calling `LLM.generate()`
+  - for multimodal offline inference, use `AutoProcessor.apply_chat_template`
+    and pass multimodal payloads explicitly via `multi_modal_data`
+  - for text-only workloads, set `--limit-mm-per-prompt image=0,audio=0` to
+    skip unnecessary multimodal profiling and encoder reservations
+  - for image-only workloads, set `--limit-mm-per-prompt audio=0`
+  - for throughput-oriented serving, `--async-scheduling` is recommended
+  - for benchmark runs, disable prefix caching with
+    `--no-enable-prefix-caching` to get more consistent measurements
+  - for Gemma 4 thinking/tool-calling server flows, pair
+    `--reasoning-parser gemma4`, `--tool-call-parser gemma4`,
+    `--enable-auto-tool-choice`, and the
+    `examples/tool_chat_template_gemma4.jinja` template instead of assuming
+    the model's default chat template is sufficient
+- The current validated Gemma 4 local smoke workflow on Strix Halo is:
+  - use `google/gemma-4-E2B-it` or `google/gemma-4-31B-it`
+  - render the prompt with the checkpoint's chat template
+  - run vLLM in text-only mode with
+    `limit_mm_per_prompt={"image": 0, "audio": 0, "video": 0}`
+  - keep `enforce_eager=True` for the current local smoke path
+  - expect the 31B instruction-tuned checkpoint to emit an empty thought block
+    prefix when thinking is disabled, matching the upstream Gemma 4 model card
 - `llama.cpp-hip-gfx1151` uses `aur/llama.cpp-hip` as the authoritative
   baseline reference.
 - `llama.cpp-vulkan-gfx1151` currently uses `aur/llama.cpp-vulkan-bin` as the
@@ -146,10 +197,9 @@ The following smoke checks have already passed on the reference host:
     working TorchAO custom ops or `--quantization torchao` paths that truly
     depend on the native `_C` extension rather than the Python-level APIs
 - vLLM/Gemma follow-up
-  - publish the rebuilt `python-pytorch-opt-rocm-gfx1151` lane to the host
-    and rerun the Gemma 4 safetensors smoke test now that the earlier
-    `amdsmi`, optional-SageMaker, stale-Transformers, and oneMKL-linked NumPy
-    blockers are fixed in the repo
+  - extend the current verified offline `-it` smoke path into API-server,
+    reasoning-parser, and tool-calling validation using the official Gemma 4
+    recipe flags and chat template
 - Lemonade presentation polish
   - keep the backend table explicit about packaged ROCm/Vulkan backends after
     each relevant package rebuild

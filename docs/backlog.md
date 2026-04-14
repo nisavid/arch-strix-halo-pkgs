@@ -5,9 +5,6 @@
 - Convert remaining scripted source edits into durable patch files where
   practical.
 - Tighten package hygiene for embedded build paths in PyTorch and vLLM.
-- Publish the rebuilt `python-pytorch-opt-rocm-gfx1151` lane, then rerun the
-  host Gemma 4 safetensors vLLM smoke so the next remaining runtime blocker,
-  if any, is recorded with a concrete traceback.
 - Keep the local `python-transformers-gfx1151` and
   `python-mistral-common-gfx1151` closure lanes aligned. The current Gemma 4
   processor path needs both `transformers.models.gemma4` and
@@ -23,6 +20,14 @@
   the prefix maps into the HIP compile lane, but both build attempts then died
   in `csrc/sampler.hip` with `Invalid dpp_ctrl value: wavefront shifts are not
   supported on GFX10+`.
+- Extend the now-validated Gemma 4 `-it` offline smoke path into:
+  - OpenAI-compatible server validation
+  - reasoning-parser validation (`--reasoning-parser gemma4`)
+  - tool-calling validation (`--tool-call-parser gemma4`,
+    `--enable-auto-tool-choice`, Gemma 4 tool chat template)
+- Decide whether this repo should carry a canonical local Gemma 4 smoke script
+  under version control now that the non-interactive, text-only `-it` workflow
+  is stable enough to reuse.
 - Revisit `python-flydsl-gfx1151` once the MLIR development-surface story is
   clear.
 - Benchmark whether the custom `llama.cpp` builds still justify their
@@ -83,3 +88,15 @@
   - `unsloth/Qwen3.5-122B-A10B-GGUF:UD-Q4_K_XL`
 - Capture benchmark methodology and results in repo docs before any public AUR
   publication attempt.
+
+## Deferred Host Ergonomics
+
+- After the current packaging and Gemma/vLLM smoke blockers are resolved,
+  standardize host smoke invocations so they do not depend on interactive shell
+  initialization. Prefer absolute interpreter and binary paths plus explicit
+  environment setup over `PATH` mutations inherited from login-shell state.
+- After the current packaging and Gemma/vLLM smoke blockers are resolved,
+  decide whether some ROCm package in the local stack should add
+  `/opt/rocm/bin` to interactive-shell `PATH` via `/etc/profile.d/`. Treat
+  that only as host ergonomics, not as a required runtime dependency for
+  scripts, services, or smoke tests.
