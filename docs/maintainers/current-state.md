@@ -48,6 +48,12 @@ The following smoke checks have already passed on the reference host:
   for the vendored `triton_kernels` tree, so the `gfx1151` lane falls back
   cleanly when the installed Triton runtime lacks CUDA-only APIs such as
   `triton.language.target_info`.
+- The host `python-torchao-rocm` package currently fails to load its optional
+  `_C.abi3.so` extension because the shipped binary is not import-clean
+  against the installed PyTorch runtime. For the current vLLM lane this is
+  treated as harmless warning noise: `import vllm` is clean, and the TorchAO
+  Python-level APIs vLLM actually touches (`config_from_dict`, `quantize_`,
+  and packed-tensor conversion) still work on the reference host.
 - `llama.cpp-hip-gfx1151` uses `aur/llama.cpp-hip` as the authoritative
   baseline reference.
 - `llama.cpp-vulkan-gfx1151` currently uses `aur/llama.cpp-vulkan-bin` as the
@@ -70,9 +76,10 @@ The following smoke checks have already passed on the reference host:
   - remove remaining embedded build-path leakage where still present
   - convert remaining scripted source edits into durable patch files where
     practical
-- vLLM runtime follow-up
-  - decide whether the host `torchao` extension failure is harmless warning
-    noise or needs package-level remediation on this lane
+- vLLM/TorchAO follow-up
+  - only revisit the external `python-torchao-rocm` package if this repo needs
+    working TorchAO custom ops or `--quantization torchao` paths that truly
+    depend on the native `_C` extension rather than the Python-level APIs
 - TorchVision cleanup
   - rebuild cleanly without the temporary build-only ROCm soname shim
 - Lemonade presentation polish

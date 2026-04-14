@@ -4,9 +4,6 @@
 
 - Convert remaining scripted source edits into durable patch files where
   practical.
-- Close the remaining vLLM runtime issues beyond the new `openai-harmony`
-  closure package:
-  - decide how to treat the host `torchao` extension failure
 - Tighten package hygiene for embedded build paths in PyTorch, TorchVision, and
   vLLM.
 - Rebuild TorchVision without the temporary build-only ROCm soname shim.
