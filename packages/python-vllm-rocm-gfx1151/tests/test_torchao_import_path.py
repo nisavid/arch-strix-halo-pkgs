@@ -11,12 +11,16 @@ BENCH_PATCH = (
     REPO_ROOT
     / "packages/python-vllm-rocm-gfx1151/0010-cli-help-avoids-eager-benchmark-imports.patch"
 )
+OPENAI_PROTOCOL_PATCH = (
+    REPO_ROOT
+    / "packages/python-vllm-rocm-gfx1151/0011-openai-protocol-lazifies-chat-utils-import.patch"
+)
 
 
 def test_pkgbuild_carries_torchao_import_patch():
     text = PKGBUILD.read_text()
 
-    assert "pkgrel=15" in text
+    assert "pkgrel=16" in text
     assert PATCH.name in text
     assert f'_apply_patch_if_needed "{PATCH.name}"' in text
     assert (
@@ -26,6 +30,8 @@ def test_pkgbuild_carries_torchao_import_patch():
     )
     assert BENCH_PATCH.name in text
     assert f'_apply_patch_if_needed "{BENCH_PATCH.name}"' in text
+    assert OPENAI_PROTOCOL_PATCH.name in text
+    assert f'_apply_patch_if_needed "{OPENAI_PROTOCOL_PATCH.name}"' in text
 
 
 def test_patch_moves_generic_version_checks_to_metadata_only_helper():
@@ -63,3 +69,12 @@ def test_patch_keeps_top_level_help_off_the_benchmark_import_path():
     assert '+        benchmark_module = _BenchHelpModule()' in text
     assert '+class _BenchHelpSubcommand:' in text
     assert '+            usage=\"vllm bench <bench_type> [options]\",' in text
+
+
+def test_patch_keeps_openai_protocol_off_chat_utils_import_path():
+    text = OPENAI_PROTOCOL_PATCH.read_text()
+
+    assert "-from vllm.entrypoints.chat_utils import make_tool_call_id" in text
+    assert "+def _make_tool_call_id() -> str:" in text
+    assert '+    from vllm.entrypoints.chat_utils import make_tool_call_id' in text
+    assert "+    id: str = Field(default_factory=_make_tool_call_id)" in text

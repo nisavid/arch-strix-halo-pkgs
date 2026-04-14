@@ -60,6 +60,12 @@ recorded in .aiter-status file ("enabled" or "disabled").
   `EngineArgs` at module import time, which can still reach model/quantization
   setup and surface optional TorchAO warning noise even after the two
   TorchAO-specific lazy-import patches.
+- Carries a fourth startup-noise patch so
+  `vllm.entrypoints.openai.engine.protocol` no longer imports
+  `vllm.entrypoints.chat_utils` at module import time just to build tool-call
+  IDs. That chat-utils path pulls in Transformers model/chat helpers and can
+  still reach `transformers.quantizers.quantizer_torchao` during plain CLI
+  startup on hosts with a broken optional TorchAO package.
 - Depends on the local `python-transformers-gfx1151` closure package rather than
   the distro `python-transformers` lane because Gemma 4 support first appears
   in upstream `transformers 5.5.x` and the older host package did not ship
@@ -142,6 +148,13 @@ recorded in .aiter-status file ("enabled" or "disabled").
   generic startup. The concrete host failure after the second TorchAO patch
   was `vllm --help` still emitting the warning because CLI setup imported the
   benchmark latency subcommand just to register `bench`.
+- Keep the OpenAI engine protocol module off the `chat_utils` import path on
+  generic startup too. The concrete host failure after the benchmark fix was
+  `vllm.entrypoints.utils` still importing
+  `vllm.entrypoints.openai.engine.protocol`, which imported
+  `make_tool_call_id` from `chat_utils` at module import time and thereby
+  pulled in Transformers quantizer registration including the broken optional
+  TorchAO backend.
 - Keep the inherited makepkg compile flags when adding Strix tuning flags.
   Overwriting `CFLAGS`/`CXXFLAGS` drops Arch's build-path prefix maps and can
   leak `$srcdir` paths into the shipped ROCm extension modules.

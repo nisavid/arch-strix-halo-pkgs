@@ -132,7 +132,12 @@ The following smoke checks have already passed on the reference host:
   because `vllm.entrypoints.cli.benchmark.latency` imports
   `vllm.benchmarks.latency` at module import time and that path drags in
   `EngineArgs` plus enough generic config/model code to resurface the same
-  optional TorchAO warning.
+  optional TorchAO warning. A fourth startup-noise fix is also required on
+  this lane: `vllm.entrypoints.openai.engine.protocol` must not import
+  `vllm.entrypoints.chat_utils` at module import time just to build tool-call
+  IDs, because that chat-utils path drags in Transformers chat/model helpers
+  and can still reach `transformers.quantizers.quantizer_torchao` during
+  otherwise generic CLI startup.
 - The current Gemma 4 / vLLM smoke story is now split cleanly:
   - the earlier ROCm runtime blocker was real and is now fixed on the host:
     vLLM selects `ROCM_AITER_UNIFIED_ATTN`, and AITER imports its compiled JIT
@@ -219,6 +224,9 @@ The following smoke checks have already passed on the reference host:
   - keep plain `vllm --help` off the benchmark latency import path too; the
     benchmark command tree should only load when the user actually invokes
     `vllm bench ...`
+  - keep the OpenAI engine protocol module off the `chat_utils` import path on
+    generic startup too; tool-call ID helpers can be imported lazily when a
+    tool call is actually serialized
   - keep package patch application idempotent across reused `src/` trees as
     well; repeated `makepkg -f` runs during this lane left partially patched
     trees behind and caused `prepare()` to fail when a file-adding patch was
