@@ -24,6 +24,8 @@ sha256sums=(SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP)
 _apply_patch_if_needed() {
   local _patch_name="$1"
   local _patch=""
+  local _stamp_dir="${srcdir}/.patch-state"
+  local _stamp="${_stamp_dir}/${_patch_name}.applied"
 
   if [[ -f "${srcdir}/${_patch_name}" ]]; then
     _patch="${srcdir}/${_patch_name}"
@@ -34,11 +36,18 @@ _apply_patch_if_needed() {
     return 1
   fi
 
+  mkdir -p "${_stamp_dir}"
+  if [[ -f "${_stamp}" ]]; then
+    return 0
+  fi
+
   if patch --dry-run -R -Np1 -i "${_patch}" >/dev/null 2>&1; then
+    : >"${_stamp}"
     return 0
   fi
 
   patch -Np1 -i "${_patch}"
+  : >"${_stamp}"
 }
 
 prepare() {

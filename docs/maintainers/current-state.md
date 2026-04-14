@@ -211,6 +211,10 @@ The following smoke checks have already passed on the reference host:
     generic registry as well; vLLM currently probes quantization backends
     during config validation, and that path must not import TorchAO unless
     `quantization == "torchao"`
+  - keep package patch application idempotent across reused `src/` trees as
+    well; repeated `makepkg -f` runs during this lane left partially patched
+    trees behind and caused `prepare()` to fail when a file-adding patch was
+    reapplied without per-patch state
 - vLLM/Gemma follow-up
   - extend the current verified offline `-it` smoke path into API-server,
     reasoning-parser, and tool-calling validation using the official Gemma 4

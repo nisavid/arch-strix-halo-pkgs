@@ -71,6 +71,10 @@ recorded in .aiter-status file ("enabled" or "disabled").
   revisit only if this repo needs working TorchAO custom ops or actual
   `--quantization torchao` support.
 - makepkg -e reuses src/, so build() intentionally reapplies the carried source patches before wheel generation instead of assuming prepare() already ran in the current tree.
+- `makepkg -f` can also reuse a partially patched `src/` tree across failed
+  iterations, so patch application is tracked with per-patch stamp files under
+  `src/.patch-state`. Keep that idempotency layer unless the package starts
+  forcing a clean source tree for every build.
 - Preserve makepkg's inherited `CFLAGS`/`CXXFLAGS` when layering Strix tuning
   flags, and feed the same prefix-map flags into `HIPFLAGS`, so Arch's
   build-path sanitization survives the ROCm/HIP compile lane too.
@@ -143,6 +147,10 @@ recorded in .aiter-status file ("enabled" or "disabled").
   follow-up only matters if this repo needs actual TorchAO custom ops or
   torchao-backed serving paths that truly require the native extension.
 - Treat runtime validation against the live ROCm stack as mandatory; a successful wheel build is not enough.
+- Keep patch application idempotent across reused `src/` trees. The concrete
+  host failure while cutting `pkgrel=14` was `0008` aborting in `prepare()`
+  with `torchao_utils.py already exists` after a previous failed build left a
+  partially patched source tree behind.
 - Follow the official vLLM Gemma 4 recipe for operational behavior, but only
   carry the parts that apply to this local Strix Halo ROCm lane. In practice
   that currently means:
