@@ -1,6 +1,6 @@
 # Current State
 
-Status as of 2026-04-13.
+Status as of 2026-04-14.
 
 ## Live Host State
 
@@ -53,9 +53,15 @@ The following smoke checks have already passed on the reference host:
 - `python-openai-harmony-gfx1151` is now the local closure package for vLLM's
   GPT-OSS/Harmony path, using `aur/python-openai-harmony` as the baseline but
   carrying upstream's missing `python-pydantic` runtime dependency.
+- `python-transformers-gfx1151` is now the local closure package for Gemma 4
+  support on this stack because the host `python-transformers 5.2.0-1` lane
+  did not ship `transformers.models.gemma4`; the repo currently tracks PyPI
+  `transformers 5.5.4`, which is the first verified published lane to include
+  that module.
 - `python-vllm-rocm-gfx1151` uses upstream `v0.19.0` tarball plus the local
   Python-3.14 compatibility delta and now depends on the local
-  `python-openai-harmony-gfx1151` package for Harmony runtime closure.
+  `python-openai-harmony-gfx1151` and `python-transformers-gfx1151` packages
+  for Harmony and Gemma-4-capable runtime closure.
 - `python-vllm-rocm-gfx1151` also carries a ROCm-specific compatibility gate
   for the vendored `triton_kernels` tree, so the `gfx1151` lane falls back
   cleanly when the installed Triton runtime lacks CUDA-only APIs such as
@@ -110,9 +116,9 @@ The following smoke checks have already passed on the reference host:
     working TorchAO custom ops or `--quantization torchao` paths that truly
     depend on the native `_C` extension rather than the Python-level APIs
 - vLLM/Gemma follow-up
-  - after the current `amdsmi` and optional-SageMaker fixes land on the host,
-    rerun the Gemma 4 safetensors smoke test and record whether any remaining
-    blocker is a real model-load/runtime issue rather than platform detection
+  - publish the local `python-transformers-gfx1151` lane to the host and rerun
+    the Gemma 4 safetensors smoke test now that the earlier `amdsmi` and
+    optional-SageMaker blockers are fixed
 - Lemonade presentation polish
   - keep the backend table explicit about packaged ROCm/Vulkan backends after
     each relevant package rebuild

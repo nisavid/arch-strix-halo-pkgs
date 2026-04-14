@@ -1,0 +1,48 @@
+# Maintainer: nisavid
+
+pkgname=python-transformers-gfx1151
+pkgver=5.5.4
+pkgrel=1
+pkgdesc='State-of-the-art pretrained models for inference and training rebuilt for Strix Halo gfx1151'
+arch=('any')
+url='https://github.com/huggingface/transformers'
+license=(Apache-2.0)
+depends=(
+  python-gfx1151
+  python-huggingface-hub
+  python-numpy-gfx1151
+  python-packaging
+  python-regex
+  python-safetensors
+  python-tokenizers
+  python-tqdm
+  python-typer
+  python-yaml
+)
+makedepends=(
+  python-build
+  python-installer
+  python-setuptools
+  python-wheel
+)
+optdepends=(
+  'python-bitsandbytes: 8-bit support for PyTorch'
+  'python-keras: support for models in Keras 3'
+  'python-pytorch-opt-rocm-gfx1151: PyTorch support on the local ROCm lane'
+)
+options=()
+provides=(python-transformers)
+conflicts=(python-transformers)
+replaces=()
+source=(https://files.pythonhosted.org/packages/source/t/transformers/transformers-5.5.4.tar.gz)
+sha256sums=(SKIP)
+
+build() {
+  cd "$srcdir/transformers-5.5.4"
+  python -m build --wheel --no-isolation
+}
+
+package() {
+  cd "$srcdir/transformers-5.5.4"
+  python -m installer --destdir="$pkgdir" dist/*.whl
+}
