@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import shlex
 import subprocess
 import sys
@@ -165,6 +166,24 @@ def sibling_package_upstream_revision(package_name: str) -> str:
     except Exception:
         return "unknown"
     return pkgver.split(".", 1)[0] if pkgver else "unknown"
+
+
+def preserved_pkgrel(package_name: str, version: str) -> int:
+    packaging_root = Path(__file__).resolve().parents[1]
+    pkgbuild = packaging_root / "packages" / package_name / "PKGBUILD"
+    if not pkgbuild.exists():
+        return 1
+    try:
+        content = pkgbuild.read_text(encoding="utf-8")
+    except OSError:
+        return 1
+    pkgver_match = re.search(r"^pkgver=(.+)$", content, re.MULTILINE)
+    pkgrel_match = re.search(r"^pkgrel=(\d+)$", content, re.MULTILINE)
+    if not pkgver_match or not pkgrel_match:
+        return 1
+    if pkgver_match.group(1).strip() != version:
+        return 1
+    return int(pkgrel_match.group(1))
 
 
 def lemonade_llamacpp_env_lines() -> list[str]:
@@ -568,20 +587,48 @@ EOF
 }}"""
     elif template == "python-project-vllm":
         upstream_version = policy_pkg["upstream_version"]
-        source_patch_cmds = "".join(
-            f'  patch -Np1 -i "$srcdir/{patch_name}"\n'
-            for patch_name in policy_pkg.get("source_patches", [])
-        )
-        prepare_body = source_patch_cmds or ""
+        source_patches = policy_pkg.get("source_patches", [])
+        patch_helper = ""
+        patch_prepare_cmds = ""
+        patch_build_cmds = ""
+        if source_patches:
+            patch_helper = """\
+_apply_patch_if_needed() {
+  local _patch_name="$1"
+  local _patch=""
+
+  if [[ -f "${srcdir}/${_patch_name}" ]]; then
+    _patch="${srcdir}/${_patch_name}"
+  elif [[ -f "${startdir}/${_patch_name}" ]]; then
+    _patch="${startdir}/${_patch_name}"
+  else
+    printf 'missing patch file: %s\\n' "${_patch_name}" >&2
+    return 1
+  fi
+
+  if patch --dry-run -R -Np1 -i "${_patch}" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  patch -Np1 -i "${_patch}"
+}
+
+"""
+            patch_prepare_cmds = "".join(
+                f'  _apply_patch_if_needed "{patch_name}"\n' for patch_name in source_patches
+            )
+            patch_build_cmds = patch_prepare_cmds
         build_body = f"""\
-prepare() {{
+{patch_helper}prepare() {{
   cd "$srcdir/{src_subdir}"
 
-{prepare_body.rstrip()}
+{patch_prepare_cmds.rstrip()}
 }}
 
 build() {{
   cd "$srcdir/{src_subdir}"
+
+{patch_build_cmds.rstrip()}
 
   {compiler_env_snippet(compiler_root)}  _setup_compiler_env
   export CFLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument -DGLOG_USE_GLOG_EXPORT"
@@ -589,9 +636,12 @@ build() {{
   export CPPFLAGS="${{CPPFLAGS:-}} -DGLOG_USE_GLOG_EXPORT"
   export ROCM_HOME="/opt/rocm"
   export HIP_PATH="/opt/rocm"
+  export PYTORCH_ROCM_ARCH="gfx1151"
   export CMAKE_PREFIX_PATH="/opt/rocm"
   export VLLM_VERSION_OVERRIDE="{upstream_version}"
   export VLLM_ROCM_USE_AITER=1
+
+  rm -rf .deps/triton_kernels-*
 
   local _rocm_compat="$srcdir/.torch-rocm-compat"
   rm -rf "${{_rocm_compat}}"
@@ -605,6 +655,7 @@ build() {{
   export LD_LIBRARY_PATH="${{_rocm_compat}}:/opt/rocm/lib:${{LD_LIBRARY_PATH:-}}"
 
   mkdir -p dist
+  rm -f dist/*.whl
 
   if ! pip wheel . --no-build-isolation --no-deps --wheel-dir dist -v; then
     unset VLLM_ROCM_USE_AITER
@@ -955,6 +1006,7 @@ def render_pkgbuild(package_name: str, policy_pkg: dict, recipe_pkg: dict, versi
     prepare_body, method_body, _ = render_method_body(package_name, policy_pkg, recipe_pkg)
     source_refs, sha256sums = render_source_refs(policy_pkg, recipe_pkg)
 
+    pkgrel = preserved_pkgrel(package_name, version)
     header = textwrap.dedent(
         f"""\
         # Maintainer: nisavid
@@ -969,7 +1021,7 @@ def render_pkgbuild(package_name: str, policy_pkg: dict, recipe_pkg: dict, versi
 
 pkgname={package_name}
 pkgver={version}
-pkgrel=1
+pkgrel={pkgrel}
 pkgdesc={shell_quote(policy_pkg['pkgdesc'])}
 arch=('x86_64')
 url={shell_quote(policy_pkg['url'])}
@@ -1020,6 +1072,7 @@ def render_recipe_json(package_name: str, policy_pkg: dict, recipe_pkg: dict, ve
     if advisory_references is None:
         references = policy_pkg.get("arch_reference", [])
         advisory_references = references[1:] if len(references) > 1 else []
+    recipe_notes = policy_pkg.get("recipe_notes_override", recipe_pkg.get("notes", "").strip())
     payload = {
         "name": package_name,
         "package_name": package_name,
@@ -1033,7 +1086,7 @@ def render_recipe_json(package_name: str, policy_pkg: dict, recipe_pkg: dict, ve
             "phase": recipe_pkg.get("phase"),
             "steps": recipe_pkg.get("steps", []),
             "depends_on": recipe_pkg.get("depends_on", []),
-            "notes": recipe_pkg.get("notes", "").strip(),
+            "notes": recipe_notes,
             "patches": recipe_pkg.get("patches", []),
         },
         "provenance": defaults,
@@ -1056,7 +1109,7 @@ def render_recipe_json(package_name: str, policy_pkg: dict, recipe_pkg: dict, ve
 
 def render_readme(package_name: str, policy_pkg: dict, recipe_pkg: dict, version: str) -> str:
     notes = policy_pkg.get("scaffold_notes", [])
-    recipe_notes = recipe_pkg.get("notes", "").strip()
+    recipe_notes = policy_pkg.get("recipe_notes_override", recipe_pkg.get("notes", "").strip())
     patch_count = len(recipe_pkg.get("patches", [])) + len(policy_pkg.get("source_patches", []))
     steps = ", ".join(str(step) for step in recipe_pkg.get("steps", []))
     depends_on = ", ".join(recipe_pkg.get("depends_on", [])) or "none"
