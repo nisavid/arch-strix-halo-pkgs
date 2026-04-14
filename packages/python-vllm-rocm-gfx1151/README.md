@@ -50,6 +50,11 @@ recorded in .aiter-status file ("enabled" or "disabled").
   the full TorchAO quantization module just to check an installed version.
   This keeps optional broken host `python-torchao-rocm` packages from emitting
   startup warning noise on non-TorchAO code paths.
+- Carries a follow-up TorchAO-registry patch so the quantization registry only
+  imports `TorchAOConfig` when `torchao` quantization is actually requested.
+  Generic config-validation and CLI/help flows still probe the quantization
+  registry, so this second lazy-import boundary is required to suppress the
+  same host warning completely.
 - Depends on the local `python-transformers-gfx1151` closure package rather than
   the distro `python-transformers` lane because Gemma 4 support first appears
   in upstream `transformers 5.5.x` and the older host package did not ship
@@ -118,6 +123,11 @@ recorded in .aiter-status file ("enabled" or "disabled").
   incompatible PyTorch ABI, causing warning noise during unrelated vLLM
   startup when vLLM imported the TorchAO quantization module just to ask a
   version question.
+- Keep the quantization registry importing `TorchAOConfig` lazily unless
+  upstream stops probing every quantization backend during generic config
+  validation. The concrete host failure after the first TorchAO patch was
+  `vllm --help` still importing `vllm.model_executor.layers.quantization`
+  and then pulling in `.torchao` through `get_quantization_config()`.
 - Keep the inherited makepkg compile flags when adding Strix tuning flags.
   Overwriting `CFLAGS`/`CXXFLAGS` drops Arch's build-path prefix maps and can
   leak `$srcdir` paths into the shipped ROCm extension modules.
