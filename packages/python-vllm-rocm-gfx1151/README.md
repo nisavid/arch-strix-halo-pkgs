@@ -32,6 +32,9 @@ recorded in .aiter-status file ("enabled" or "disabled").
 - Carries a ROCm-specific Triton compatibility patch so the vendored triton_kernels tree is treated as unavailable when the installed Triton runtime lacks CUDA-only APIs such as triton.language.target_info or triton.constexpr_function.
 - Carries a ROCm-platform fallback patch so Strix Halo can fall back from AMDSMI ASIC-info lookup to torch.cuda without tripping the import-time `warning_once` circular import path.
 - Carries an optional-SageMaker patch so `vllm --help` and the base OpenAI server routes stay usable when `model_hosting_container_standards` is not installed.
+- Carries a ROCm Triton unified-attention tile-size patch so large-head prefill
+  paths such as Gemma 4 global attention do not request more than 64 KiB of
+  LDS/shared memory on gfx1151.
 - Depends on the local `python-transformers-gfx1151` closure package rather than
   the distro `python-transformers` lane because Gemma 4 support first appears
   in upstream `transformers 5.5.x` and the older host package did not ship
@@ -67,6 +70,10 @@ recorded in .aiter-status file ("enabled" or "disabled").
   host failure was `python-mistral-common 1.8.6-1`, which let Gemma 4 load all
   the way through model weights before processor initialization failed.
 - Keep the vendored triton_kernels path gated on the installed Triton runtime rather than forcing python-triton-gfx1151 to emulate CUDA-only APIs such as triton.language.target_info. On this ROCm lane, treat unavailable vendored Triton kernels as a clean fallback, not as a hard runtime error.
+- Keep the ROCm large-head unified-attention prefill tile reduction unless
+  upstream vLLM or Triton lands a fix for the 64 KiB LDS overflow. The concrete
+  host failure was Gemma 4 global attention on gfx1151 requesting 66560 bytes
+  of shared memory from the Triton 2D unified-attention kernel.
 - Keep SageMaker integration optional unless this repo intentionally packages `model_hosting_container_standards`; missing SageMaker helpers should disable only SageMaker-specific routes, not the base CLI or local server startup paths.
 - Keep the ROCm GCN-arch fallback import-safe on Strix Halo. AMDSMI ASIC-info probes can fail even when the device is visible; that must degrade to `torch.cuda` probing rather than crashing during module import.
 - Treat the current external python-torchao-rocm _C-extension failure as a host-package defect, not a blocker for this vLLM lane. import vllm stays clean, and the TorchAO Python-level APIs vLLM touches still work on the reference host; only revisit this if TorchAO custom ops or torchao-backed serving paths actually require the native extension.
