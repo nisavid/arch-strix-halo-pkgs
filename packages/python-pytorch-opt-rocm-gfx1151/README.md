@@ -33,11 +33,15 @@ USE_ROCM_CK_GEMM=ON enables Composable Kernel GEMM for ROCm.
 
 - Uses the Arch split-package structure as the integration baseline but deliberately tracks ROCm/pytorch release/2.11 rather than upstream pytorch/pytorch.
 - Carries recipe-specific ROCm fixes such as the HIPGraph stub rewrite, gfx1151 CK enablement, and post-install patchelf/linker cleanup.
+- Forces OpenBLAS as the BLAS/LAPACK provider instead of relying on ambient host auto-detection; allowing oneMKL to win on the build host produced a broken wheel with `/opt/intel/oneapi` runpaths and NumPy import failures.
+- Carries a small `setup.py` patch so wheel assembly can skip `build_deps()` after the CMake build has already completed; this is part of the Arch Python 3.14 packaging workaround below, not a generic upstream preference.
 
 ## Update Notes
 
 - When updating, inspect the current Arch python-pytorch pkgbase first, then re-evaluate every carried recipe/source patch against the chosen ROCm fork.
 - Keep the package version aligned with the built wheel version; do not repeat the earlier mismatch where the package claimed 2.11.0 but the built wheel came from develop.
+- Keep `openblas` explicit in both `depends` and `makedepends`. This lane should not float back to generic BLAS discovery while `intel-oneapi-mkl` is present on the build host.
+- Preserve the two-stage wheel flow on Arch's Python 3.14 lane unless upstream changes materially: build the CMake artifacts first, tolerate the known `_sysconfigdata__linux_x86_64-linux-gnu.cpython-314.pyc` install failure, restage the built libs into `torch/`, then run `SKIP_BUILD_DEPS=1 python setup.py bdist_wheel`. The raw `cmake --build --target install` path mirrors `/usr/lib` and `/usr/include` into the source tree and contaminates the staged wheel with host packages.
 
 ## Maintainer Starting Points
 

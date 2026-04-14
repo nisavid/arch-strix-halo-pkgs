@@ -1,0 +1,13 @@
+diff --git a/setup.py b/setup.py
+index 952f26b..29c233f 100644
+--- a/setup.py
++++ b/setup.py
+@@ -396,6 +396,8 @@ MAIN_LIB = "torch_python"
+ 
+ # cmake_only: only run cmake, do not build or install
+ RUN_BUILD_DEPS = True
++if os.getenv("SKIP_BUILD_DEPS", "").lower() in {"1", "true", "yes", "on"}:
++    RUN_BUILD_DEPS = False
+ 
+ # Python 3.13+ nogil build
+ PY_GIL_DISABLED = sysconfig.get_config_var("Py_GIL_DISABLED") == 1

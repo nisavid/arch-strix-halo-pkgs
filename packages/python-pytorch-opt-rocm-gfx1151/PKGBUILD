@@ -6,20 +6,22 @@
 
 pkgname=python-pytorch-opt-rocm-gfx1151
 pkgver=2.11.0.r8.d20260317.gad42886
-pkgrel=1
+pkgrel=2
 pkgdesc='Tensors and dynamic neural networks in Python with ROCm acceleration, rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://pytorch.org
 license=(BSD-3-Clause-Modification)
-depends=(amdsmi-gfx1151 composable-kernel-gfx1151 hsa-amd-aqlprofile-gfx1151 hipblaslt-gfx1151 miopen-hip-gfx1151 python-aotriton-gfx1151 python-filelock python-fsspec python-gfx1151 python-jinja python-networkx python-numpy-gfx1151 python-sympy python-typing_extensions python-yaml rccl-gfx1151 rocblas-gfx1151 rocm-hip-sdk-gfx1151 rocm-openmp-gfx1151)
-makedepends=(cmake git ninja python-build python-cffi python-installer python-pip python-requests python-setuptools python-six python-triton-gfx1151 python-yaml patchelf rocm-llvm-gfx1151 unzip)
+depends=(amdsmi-gfx1151 composable-kernel-gfx1151 hsa-amd-aqlprofile-gfx1151 hipblaslt-gfx1151 miopen-hip-gfx1151 openblas python-aotriton-gfx1151 python-filelock python-fsspec python-gfx1151 python-jinja python-networkx python-numpy-gfx1151 python-sympy python-typing_extensions python-yaml rccl-gfx1151 rocblas-gfx1151 rocm-hip-sdk-gfx1151 rocm-openmp-gfx1151)
+makedepends=(cmake git ninja openblas python-build python-cffi python-installer python-numpy-gfx1151 python-pip python-requests python-setuptools python-six python-triton-gfx1151 python-yaml patchelf rocm-llvm-gfx1151 unzip)
 optdepends=()
 options=()
 provides=(python-pytorch-opt-rocm=2.11.0 python-pytorch-rocm=2.11.0 python-pytorch=2.11.0)
 conflicts=(python-pytorch-opt-rocm python-pytorch-rocm python-pytorch)
 replaces=()
-source=('pytorch::git+https://github.com/ROCm/pytorch.git#commit=0446f7ba2fd')
-sha256sums=(SKIP)
+source=('pytorch::git+https://github.com/ROCm/pytorch.git#commit=0446f7ba2fd'
+        '0001-setup-allow-skipping-build-deps.patch')
+sha256sums=(SKIP
+            '0fc03afcb0501849e08dfd8dafe07578fa0e7337025e1ab80f59bb9be9a3560c')
 
 prepare() {
   cd "$srcdir/pytorch"
@@ -27,6 +29,8 @@ prepare() {
 # PyTorch's ROCm fork relies on vendored submodules and local hipify-generated sources.
   git -C "$srcdir/pytorch" submodule sync --recursive
   git -C "$srcdir/pytorch" submodule update --init --recursive --force
+  patch --dry-run -Np1 -i "$srcdir/0001-setup-allow-skipping-build-deps.patch" >/dev/null &&
+    patch -Np1 -i "$srcdir/0001-setup-allow-skipping-build-deps.patch"
   # Match the recipe's ABI/runtime fixes on top of the Arch split-package baseline.
   sed -i 's|#include <numpy/arrayobject.h>|// Target numpy 2.0 C-API (0x12) for ABI compatibility with numpy >= 2.0.\n#ifndef NPY_TARGET_VERSION\n#define NPY_TARGET_VERSION 0x00000012\n#endif\n\n#include <numpy/arrayobject.h>|' torch/csrc/utils/numpy_stub.h
   sed -i 's/list(APPEND HIP_HIPCC_FLAGS -fclang-abi-compat=17)/# Removed: causes ABI mismatch with host amdclang 22/' cmake/Dependencies.cmake
@@ -36,6 +40,18 @@ prepare() {
 
 build() {
   cd "$srcdir/pytorch"
+  local _install_log="$srcdir/pytorch-install.log"
+  local _torch_lib="$srcdir/pytorch/torch/lib"
+  local _torch_bin="$srcdir/pytorch/torch/bin"
+  local _torch_include="$srcdir/pytorch/torch/include"
+
+  # Rebuild from a fresh local CMake state so workspace moves do not poison
+  # subsequent wheel builds with stale absolute paths.
+  rm -rf build
+  rm -rf dist "${_torch_bin}" "${_torch_include}"
+  if [[ -d "${_torch_lib}" ]]; then
+    find "${_torch_lib}" -mindepth 1 -maxdepth 1 ! -name libshm ! -name libshm_windows -exec rm -rf {} +
+  fi
 
   _setup_compiler_env() {
   local _compiler_root="/opt/rocm/lib/llvm/bin"
@@ -49,6 +65,7 @@ build() {
     done
     export PATH="${_ccache_dir}:$PATH"
     export CCACHE_BASEDIR="${CCACHE_BASEDIR:-$srcdir}"
+    export CCACHE_DIR="${_ccache_dir}/store"
     export CCACHE_NOCPP2=1
     export CCACHE_PATH="${_compiler_root}:/opt/rocm/bin:/usr/bin"
     export CC=amdclang
@@ -65,7 +82,12 @@ build() {
   export LDFLAGS="-fuse-ld=lld"
   export PYTORCH_ROCM_ARCH="gfx1151"
   export USE_ROCM=1
+  export USE_NUMPY=1
+  export BLAS="OpenBLAS"
+  export OpenBLAS_HOME="${OpenBLAS_HOME:-/usr}"
+  export USE_LAPACK=1
   export USE_ROCM_CK_GEMM=1
+  export AOTRITON_INSTALLED_PREFIX="/usr"
   export USE_CUDA=0
   export USE_NCCL=0
   export USE_SYSTEM_NCCL=0
@@ -74,7 +96,7 @@ build() {
   export USE_BENCHMARK=0
   export HIP_PATH="/opt/rocm"
   export ROCM_HOME="/opt/rocm"
-  export CMAKE_PREFIX_PATH="/opt/rocm"
+  export CMAKE_PREFIX_PATH="${OpenBLAS_HOME}:/opt/rocm"
   export MAX_JOBS="$(nproc)"
   export PYTORCH_BUILD_VERSION="2.11.0"
   export PYTORCH_BUILD_NUMBER=1
@@ -101,7 +123,23 @@ EOF
   fi
 
   mkdir -p dist
-  pip wheel . --no-build-isolation --no-deps --wheel-dir dist -v
+  CMAKE_ONLY=1 python setup.py build
+  cmake --build build --config Release -j "${MAX_JOBS}"
+
+  if ! cmake --build build --target install --config Release -j 1 >"${_install_log}" 2>&1; then
+    grep -q '_sysconfigdata__linux_x86_64-linux-gnu.cpython-314.pyc' "${_install_log}" || {
+      cat "${_install_log}"
+      return 1
+    }
+  fi
+
+  find "${_torch_lib}" -mindepth 1 -maxdepth 1 ! -name libshm ! -name libshm_windows -exec rm -rf {} +
+  mkdir -p "${_torch_bin}"
+  cp build/lib/lib*.so* "${_torch_lib}/"
+  cp build/bin/torch_shm_manager build/bin/protoc-3.13.0.0 "${_torch_bin}/"
+  ln -sf protoc-3.13.0.0 "${_torch_bin}/protoc"
+
+  SKIP_BUILD_DEPS=1 python setup.py bdist_wheel --dist-dir dist
 }
 
 package() {
