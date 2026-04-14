@@ -43,6 +43,14 @@ system.
     `triton.language.target_info` or `triton.constexpr_function`.
   - This keeps the ROCm `gfx1151` lane on a clean fallback path instead of
     surfacing import-time failures from vendored CDNA/CUDA-oriented kernels.
+- [Keep ROCm fallback and SageMaker routes import-safe on the packaged lane](../packages/python-vllm-rocm-gfx1151/0004-rocm-fallback-and-optional-sagemaker-standards.patch)
+  - Makes the ROCm GCN-arch fallback use normal logging instead of
+    `warning_once`, avoiding the import-time circular path that showed up when
+    `amdsmi` could not provide ASIC info on the reference host.
+  - Treats `model_hosting_container_standards` as optional for the packaged
+    SageMaker and runtime-LoRA API routers, so `vllm --help` and other
+    non-SageMaker entrypoints no longer fail just because that extra package is
+    absent.
 
 ## AITER
 

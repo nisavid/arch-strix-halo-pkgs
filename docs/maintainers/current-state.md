@@ -26,6 +26,7 @@ The following smoke checks have already passed on the reference host:
 - `amdclang --version`
 - `python -c 'import torch; ...'`
 - `python -c 'import vllm; ...'`
+- `python -c 'import amdsmi; ...'`
 - `llama-cli-hip-gfx1151 --help`
 - `llama-cli-vulkan-gfx1151 --help`
 - `lemonade --help`
@@ -35,6 +36,10 @@ The following smoke checks have already passed on the reference host:
 
 - `python-gfx1151` is rebased onto Arch/Cachy Python `3.14.4`, not the
   recipe's older Python `3.13.x` pin.
+- `amdsmi-gfx1151` now installs an `amd_smi.pth` import hook into Python
+  `site-packages`, so Python `3.14` can import the ROCm-shipped `amdsmi`
+  module from `/opt/rocm/share/amd_smi` without extra `PYTHONPATH` glue on the
+  host.
 - `python-pytorch-opt-rocm-gfx1151` tracks `ROCm/pytorch` `release/2.11`,
   pinned to commit `0446f7ba2fd`, with package version aligned to the built
   wheel version.
@@ -55,6 +60,14 @@ The following smoke checks have already passed on the reference host:
   for the vendored `triton_kernels` tree, so the `gfx1151` lane falls back
   cleanly when the installed Triton runtime lacks CUDA-only APIs such as
   `triton.language.target_info`.
+- `python-vllm-rocm-gfx1151` also now carries two small host-facing runtime
+  compatibility fixes:
+  - the ROCm GCN-arch fallback no longer crashes in an import-time
+    `warning_once` circular path when `amdsmi` cannot return ASIC info and
+    vLLM falls back to `torch.cuda`
+  - SageMaker-specific API routers now treat
+    `model_hosting_container_standards` as optional, so base CLI and API usage
+    no longer hard-fail on that extra package being absent
 - The host `python-torchao-rocm` package currently fails to load its optional
   `_C.abi3.so` extension because the shipped binary is not import-clean
   against the installed PyTorch runtime. For the current vLLM lane this is
@@ -96,6 +109,10 @@ The following smoke checks have already passed on the reference host:
   - only revisit the external `python-torchao-rocm` package if this repo needs
     working TorchAO custom ops or `--quantization torchao` paths that truly
     depend on the native `_C` extension rather than the Python-level APIs
+- vLLM/Gemma follow-up
+  - after the current `amdsmi` and optional-SageMaker fixes land on the host,
+    rerun the Gemma 4 safetensors smoke test and record whether any remaining
+    blocker is a real model-load/runtime issue rather than platform detection
 - Lemonade presentation polish
   - keep the backend table explicit about packaged ROCm/Vulkan backends after
     each relevant package rebuild

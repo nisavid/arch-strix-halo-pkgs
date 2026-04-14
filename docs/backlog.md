@@ -5,6 +5,9 @@
 - Convert remaining scripted source edits into durable patch files where
   practical.
 - Tighten package hygiene for embedded build paths in PyTorch and vLLM.
+- Rerun the host Gemma 4 safetensors vLLM smoke after the current `amdsmi`
+  import-path and optional-SageMaker fixes are published, then record any
+  remaining runtime blocker with a concrete traceback.
 - Revisit vLLM HIP build-path sanitization only after the gfx1151 sampler-kernel
   compile failure is understood. A trial patch that routed quoted
   `CMAKE_HIP_FLAGS` through `setup.py` (`shlex.split` on `CMAKE_ARGS`) pushed
