@@ -6,7 +6,7 @@
 
 pkgname=python-vllm-rocm-gfx1151
 pkgver=0.19.0.r8.d20260317.gad42886
-pkgrel=4
+pkgrel=5
 pkgdesc='High-throughput and memory-efficient inference engine for LLMs with ROCm, rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://github.com/vllm-project/vllm
@@ -18,8 +18,8 @@ options=()
 provides=(python-vllm-rocm python-vllm)
 conflicts=(python-vllm-rocm python-vllm)
 replaces=()
-source=(https://github.com/vllm-project/vllm/archive/refs/tags/v0.19.0.tar.gz 0001-python-3.14-version-gates.patch 0002-cli-version-avoids-eager-runtime-imports.patch)
-sha256sums=(SKIP SKIP SKIP)
+source=(https://github.com/vllm-project/vllm/archive/refs/tags/v0.19.0.tar.gz 0001-python-3.14-version-gates.patch 0002-cli-version-avoids-eager-runtime-imports.patch 0003-rocm-gate-vendored-triton-kernels-on-runtime-support.patch)
+sha256sums=(SKIP SKIP SKIP SKIP)
 
 _apply_patch_if_needed() {
   local _patch_name="$1"
@@ -46,6 +46,7 @@ prepare() {
 
   _apply_patch_if_needed "0001-python-3.14-version-gates.patch"
   _apply_patch_if_needed "0002-cli-version-avoids-eager-runtime-imports.patch"
+  _apply_patch_if_needed "0003-rocm-gate-vendored-triton-kernels-on-runtime-support.patch"
 }
 
 build() {
@@ -53,6 +54,7 @@ build() {
 
   _apply_patch_if_needed "0001-python-3.14-version-gates.patch"
   _apply_patch_if_needed "0002-cli-version-avoids-eager-runtime-imports.patch"
+  _apply_patch_if_needed "0003-rocm-gate-vendored-triton-kernels-on-runtime-support.patch"
 
   _setup_compiler_env() {
   local _compiler_root="/opt/rocm/lib/llvm/bin"

@@ -44,6 +44,10 @@ The following smoke checks have already passed on the reference host:
 - `python-vllm-rocm-gfx1151` uses upstream `v0.19.0` tarball plus the local
   Python-3.14 compatibility delta and now depends on the local
   `python-openai-harmony-gfx1151` package for Harmony runtime closure.
+- `python-vllm-rocm-gfx1151` also carries a ROCm-specific compatibility gate
+  for the vendored `triton_kernels` tree, so the `gfx1151` lane falls back
+  cleanly when the installed Triton runtime lacks CUDA-only APIs such as
+  `triton.language.target_info`.
 - `llama.cpp-hip-gfx1151` uses `aur/llama.cpp-hip` as the authoritative
   baseline reference.
 - `llama.cpp-vulkan-gfx1151` currently uses `aur/llama.cpp-vulkan-bin` as the
@@ -66,6 +70,9 @@ The following smoke checks have already passed on the reference host:
   - remove remaining embedded build-path leakage where still present
   - convert remaining scripted source edits into durable patch files where
     practical
+- vLLM runtime follow-up
+  - decide whether the host `torchao` extension failure is harmless warning
+    noise or needs package-level remediation on this lane
 - TorchVision cleanup
   - rebuild cleanly without the temporary build-only ROCm soname shim
 - Lemonade presentation polish

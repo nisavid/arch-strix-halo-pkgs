@@ -32,6 +32,12 @@ system.
     Triton runtime modules.
   - This keeps the version smoke test useful on the packaged ROCm lane even
     when unrelated optional runtime deps are absent or intentionally patched.
+- [Gate vendored Triton kernels on ROCm runtime support](../packages/python-vllm-rocm-gfx1151/0003-rocm-gate-vendored-triton-kernels-on-runtime-support.patch)
+  - Treats vLLM's vendored `triton_kernels` tree as unavailable when the
+    installed Triton runtime lacks CUDA-only APIs such as
+    `triton.language.target_info` or `triton.constexpr_function`.
+  - This keeps the ROCm `gfx1151` lane on a clean fallback path instead of
+    surfacing import-time failures from vendored CDNA/CUDA-oriented kernels.
 
 ## AITER
 
