@@ -38,8 +38,12 @@ The following smoke checks have already passed on the reference host:
 - `python-pytorch-opt-rocm-gfx1151` tracks `ROCm/pytorch` `release/2.11`,
   pinned to commit `0446f7ba2fd`, with package version aligned to the built
   wheel version.
+- `python-openai-harmony-gfx1151` is now the local closure package for vLLM's
+  GPT-OSS/Harmony path, using `aur/python-openai-harmony` as the baseline but
+  carrying upstream's missing `python-pydantic` runtime dependency.
 - `python-vllm-rocm-gfx1151` uses upstream `v0.19.0` tarball plus the local
-  Python-3.14 compatibility delta.
+  Python-3.14 compatibility delta and now depends on the local
+  `python-openai-harmony-gfx1151` package for Harmony runtime closure.
 - `llama.cpp-hip-gfx1151` uses `aur/llama.cpp-hip` as the authoritative
   baseline reference.
 - `llama.cpp-vulkan-gfx1151` currently uses `aur/llama.cpp-vulkan-bin` as the

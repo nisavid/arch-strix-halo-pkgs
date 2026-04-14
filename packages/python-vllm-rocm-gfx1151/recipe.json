@@ -50,6 +50,7 @@
       "python-mistral-common",
       "python-msgspec",
       "python-openai",
+      "python-openai-harmony-gfx1151",
       "python-opencv",
       "python-prometheus-fastapi-instrumentator",
       "python-psutil",
@@ -75,6 +76,7 @@
       "Carries a deliberate Python-3.14 compatibility delta and recipe-specific ROCm/AITER integration that are not part of the generic baseline."
     ],
     "extra_sha256sums": [
+      "SKIP",
       "SKIP"
     ],
     "extra_sources": [

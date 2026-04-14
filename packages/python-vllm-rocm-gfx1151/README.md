@@ -28,9 +28,9 @@ recorded in .aiter-status file ("enabled" or "disabled").
 - There does not appear to be a current dedicated python-vllm-rocm AUR package; the closest package baseline is the generic AUR python-vllm package, with ROCm-specific integration coming from this recipe.
 - Use the latest stable upstream release tarball (v0.19.0) instead of a floating full Git clone. Upstream currently exposes a 0.19.1 release candidate but not a final 0.19.1 release, so the stable tag is the safer packaging baseline.
 - This scaffold carries the minimal Python-3.14 source patch needed to build from the stable tarball: relax the Python upper bound and extend the hard-coded CMake supported-version list through 3.14.
-- Carries a package-local CLI import patch so `vllm --version` stays a metadata-only path instead of failing on optional OpenAI/Triton runtime imports during startup.
-- `makepkg -e` reuses `src/`, so `build()` intentionally reapplies the carried source patches before wheel generation instead of assuming `prepare()` already ran in the current tree.
-- Upstream `openai-harmony` is a small Rust/PyO3 helper library with published manylinux wheels, not a ROCm-specific component. If Arch still lacks an official package, the right local story is a closure package derived from `aur/python-openai-harmony`. If this repo ingests it locally, it should still inherit the normal Strix build lane for applicable native code: Zen 5 / `znver5` CPU tuning, `-O3` or equivalent, LTO when compatible, and PGO when the build system exposes a maintainable path.
+- Carries a package-local CLI import patch so vllm --version remains a metadata-only path instead of importing optional OpenAI and Triton runtime modules at startup.
+- makepkg -e reuses src/, so build() intentionally reapplies the carried source patches before wheel generation instead of assuming prepare() already ran in the current tree.
+- Upstream openai-harmony is a small Rust/PyO3 helper library with published manylinux wheels, not a ROCm-specific component. If Arch still lacks an official package, the right local story is a closure package derived from aur/python-openai-harmony. If this repo ingests it locally, it should still inherit the normal Strix build lane for applicable native code: Zen 5 / znver5 CPU tuning, -O3 or equivalent, LTO when compatible, and PGO when the build system exposes a maintainable path.
 - Do not treat a successful build as sufficient for system-Python cutover; the gate is a real vLLM smoke test after the TheRock ROCm split packages are installed coherently.
 - Keep the gfx1151 ROCm/AITER recipe patches in the source package, but evaluate Python-3.14 compatibility separately from ROCm runtime/linker issues.
 - The earlier numba-pin idea is not currently part of the actual built package story; treat any numba change as a separate follow-up until it is backed by a real source patch.
@@ -44,8 +44,8 @@ recorded in .aiter-status file ("enabled" or "disabled").
 
 - Check upstream vllm release notes and pyproject metadata first, then reconcile the Python upper-bound and hard-coded supported-version list with the current state of Python 3.14 support.
 - If numba remains part of the Python 3.14 story, capture it as a real source patch or package dependency decision rather than a no-op scripted edit.
-- Keep `vllm --version` as a metadata-only smoke path. If a future upstream CLI refactor reintroduces eager imports, patch or upstream the lazy import boundary instead of papering over it with extra runtime deps.
-- Treat `openai-harmony` as a normal runtime-closure package, not an optdepend, if this repo wants GPT-OSS/Harmony paths to work. The current AUR baseline is a good starting point, but it omits the upstream `python-pydantic` runtime dependency and should not be copied blindly. The reason to package it locally is closure and metadata correctness, not a ROCm-specific patch lane.
+- Keep vllm --version as a metadata-only smoke path. If upstream CLI imports optional OpenAI or Triton modules eagerly again, prefer restoring a lazy import boundary over adding unrelated hard runtime dependencies just for version output.
+- Treat openai-harmony as a normal runtime-closure package, not an optdepend, if this repo wants GPT-OSS/Harmony paths to work. The current AUR baseline is a good starting point, but it omits the upstream python-pydantic runtime dependency and should not be copied blindly. The reason to package it locally is closure and metadata correctness, not a ROCm-specific patch lane.
 - Treat runtime validation against the live ROCm stack as mandatory; a successful wheel build is not enough.
 
 ## Maintainer Starting Points

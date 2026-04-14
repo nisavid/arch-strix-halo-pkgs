@@ -137,26 +137,76 @@ divergence_notes = [
 update_notes = [
   "Check upstream vllm release notes and pyproject metadata first, then reconcile the Python upper-bound and hard-coded supported-version list with the current state of Python 3.14 support.",
   "If numba remains part of the Python 3.14 story, capture it as a real source patch or package dependency decision rather than a no-op scripted edit.",
+  "Keep vllm --version as a metadata-only smoke path. If upstream CLI imports optional OpenAI or Triton modules eagerly again, prefer restoring a lazy import boundary over adding unrelated hard runtime dependencies just for version output.",
+  "Treat openai-harmony as a normal runtime-closure package, not an optdepend, if this repo wants GPT-OSS/Harmony paths to work. The current AUR baseline is a good starting point, but it omits the upstream python-pydantic runtime dependency and should not be copied blindly. The reason to package it locally is closure and metadata correctness, not a ROCm-specific patch lane.",
   "Treat runtime validation against the live ROCm stack as mandatory; a successful wheel build is not enough."
 ]
 provides = ["python-vllm-rocm", "python-vllm"]
 conflicts = ["python-vllm-rocm", "python-vllm"]
-depends = ["amdsmi-gfx1151", "numactl", "python-aiohttp", "python-blake3", "python-cachetools", "python-cbor2", "python-cloudpickle", "python-diskcache", "python-einops", "python-fastapi", "python-gguf", "python-gfx1151", "python-huggingface-hub", "python-ijson", "python-importlib-metadata", "python-mistral-common", "python-msgspec", "python-openai", "python-opencv", "python-prometheus-fastapi-instrumentator", "python-psutil", "python-py-cpuinfo", "python-pybase64", "python-pydantic", "python-pytorch-opt-rocm-gfx1151", "python-pyzmq", "python-soundfile", "python-starlette", "python-sympy", "python-torchvision-rocm-gfx1151", "python-tqdm", "python-transformers", "python-triton-gfx1151", "python-uvloop", "python-watchfiles", "rocblas-gfx1151", "uvicorn"]
+depends = ["amdsmi-gfx1151", "numactl", "python-aiohttp", "python-blake3", "python-cachetools", "python-cbor2", "python-cloudpickle", "python-diskcache", "python-einops", "python-fastapi", "python-gguf", "python-gfx1151", "python-huggingface-hub", "python-ijson", "python-importlib-metadata", "python-mistral-common", "python-msgspec", "python-openai", "python-openai-harmony-gfx1151", "python-opencv", "python-prometheus-fastapi-instrumentator", "python-psutil", "python-py-cpuinfo", "python-pybase64", "python-pydantic", "python-pytorch-opt-rocm-gfx1151", "python-pyzmq", "python-soundfile", "python-starlette", "python-sympy", "python-torchvision-rocm-gfx1151", "python-tqdm", "python-transformers", "python-triton-gfx1151", "python-uvloop", "python-watchfiles", "rocblas-gfx1151", "uvicorn"]
 makedepends = ["cmake", "ninja", "python-installer", "python-pip", "python-setuptools", "python-setuptools-scm", "python-wheel", "rocm-llvm-gfx1151"]
 source_type = "tarball"
 source_url = "https://github.com/vllm-project/vllm/archive/refs/tags/v0.19.0.tar.gz"
-extra_sources = ["0001-python-3.14-version-gates.patch"]
-extra_sha256sums = ["SKIP"]
-source_patches = ["0001-python-3.14-version-gates.patch"]
+extra_sources = ["0001-python-3.14-version-gates.patch", "0002-cli-version-avoids-eager-runtime-imports.patch"]
+extra_sha256sums = ["SKIP", "SKIP"]
+source_patches = ["0001-python-3.14-version-gates.patch", "0002-cli-version-avoids-eager-runtime-imports.patch"]
 src_subdir = "vllm-0.19.0"
 patches_dir = "patches/python-vllm-rocm-gfx1151"
 scaffold_notes = [
   "There does not appear to be a current dedicated python-vllm-rocm AUR package; the closest package baseline is the generic AUR python-vllm package, with ROCm-specific integration coming from this recipe.",
   "Use the latest stable upstream release tarball (v0.19.0) instead of a floating full Git clone. Upstream currently exposes a 0.19.1 release candidate but not a final 0.19.1 release, so the stable tag is the safer packaging baseline.",
   "This scaffold carries the minimal Python-3.14 source patch needed to build from the stable tarball: relax the Python upper bound and extend the hard-coded CMake supported-version list through 3.14.",
+  "Carries a package-local CLI import patch so vllm --version remains a metadata-only path instead of importing optional OpenAI and Triton runtime modules at startup.",
+  "makepkg -e reuses src/, so build() intentionally reapplies the carried source patches before wheel generation instead of assuming prepare() already ran in the current tree.",
+  "Upstream openai-harmony is a small Rust/PyO3 helper library with published manylinux wheels, not a ROCm-specific component. If Arch still lacks an official package, the right local story is a closure package derived from aur/python-openai-harmony. If this repo ingests it locally, it should still inherit the normal Strix build lane for applicable native code: Zen 5 / znver5 CPU tuning, -O3 or equivalent, LTO when compatible, and PGO when the build system exposes a maintainable path.",
   "Do not treat a successful build as sufficient for system-Python cutover; the gate is a real vLLM smoke test after the TheRock ROCm split packages are installed coherently.",
   "Keep the gfx1151 ROCm/AITER recipe patches in the source package, but evaluate Python-3.14 compatibility separately from ROCm runtime/linker issues.",
   "The earlier numba-pin idea is not currently part of the actual built package story; treat any numba change as a separate follow-up until it is backed by a real source patch."
+]
+
+[packages.python-openai-harmony-gfx1151]
+recipe_key = "rust_wheels"
+template = "rust-wheel-pypi"
+upstream_version = "0.0.8"
+pkgdesc = "OpenAI Harmony response-format library rebuilt for Strix Halo gfx1151"
+url = "https://github.com/openai/harmony"
+license = ["Apache-2.0"]
+arch_reference = ["aur/python-openai-harmony", "aur/python-openai-harmony-git"]
+authoritative_reference = "aur/python-openai-harmony"
+advisory_references = ["aur/python-openai-harmony-git"]
+divergence_notes = [
+  "Follows the repo's Rust-wheel compiler lane with explicit AMD toolchain selection and znver5 CPU targeting instead of the generic distro compiler defaults.",
+  "Uses the published PyPI sdist and upstream maturin build metadata rather than the AUR package's git+tag source fetch, while still treating the AUR package as the authoritative Arch-family baseline."
+]
+update_notes = [
+  "Check the current AUR python-openai-harmony package first, then confirm upstream pyproject.toml build-backend and dependency metadata before carrying any build changes forward.",
+  "Keep python-pydantic as a hard runtime dependency unless upstream removes it from the published project metadata.",
+  "Treat extra Rust LTO or PGO tuning as opt-in only after verifying the current maturin/cargo lane exposes a maintainable configuration; today the applicable default is explicit znver5 plus opt-level=3."
+]
+provides = ["python-openai-harmony"]
+conflicts = ["python-openai-harmony"]
+depends = ["glibc", "libgcc", "python-gfx1151", "python-pydantic"]
+makedepends = ["cargo", "gcc", "nasm", "perl", "python-build", "python-installer", "python-maturin", "python-wheel", "rocm-llvm-gfx1151", "rust"]
+pypi_name = "openai_harmony"
+src_subdir = "openai_harmony-0.0.8"
+patches_dir = "patches/python-openai-harmony-gfx1151"
+recipe_notes_override = """
+Builds openai-harmony from the published PyPI sdist using upstream's maturin
+PEP 517 backend and thin PyO3 bindings over the Rust core.
+
+Keep explicit znver5 CPU targeting and opt-level=3 in RUSTFLAGS because the
+repo documents rustc native-detection drift on this host class. Do not force
+extra -C lto flags through RUSTFLAGS unless the current maturin/cargo lane is
+verified compatible.
+
+No maintainable package-level PGO flow is exposed upstream today, so this
+package currently stops at the applicable CPU-tuning and release-profile
+settings.
+"""
+scaffold_notes = [
+  "The AUR baseline currently omits upstream's python-pydantic runtime dependency, so this scaffold carries the complete closure from the published project metadata instead of copying the PKGBUILD blindly.",
+  "The package uses the PyPI sdist rather than a git+tag source fetch because upstream publishes matching source archives and the pyproject.toml build metadata is authoritative there.",
+  "Keep the Rust linker pinned to the AMD toolchain lane and the CPU target pinned to znver5; if future rustc native detection becomes trustworthy here, that can be re-evaluated package by package."
 ]
 
 [packages.python-pytorch-opt-rocm-gfx1151]

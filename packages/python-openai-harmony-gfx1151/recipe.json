@@ -1,0 +1,103 @@
+{
+  "maintenance": {
+    "advisory_references": [
+      "aur/python-openai-harmony-git"
+    ],
+    "authoritative_reference": "aur/python-openai-harmony",
+    "divergence_notes": [
+      "Follows the repo's Rust-wheel compiler lane with explicit AMD toolchain selection and znver5 CPU targeting instead of the generic distro compiler defaults.",
+      "Uses the published PyPI sdist and upstream maturin build metadata rather than the AUR package's git+tag source fetch, while still treating the AUR package as the authoritative Arch-family baseline."
+    ],
+    "source_patches": [],
+    "update_notes": [
+      "Check the current AUR python-openai-harmony package first, then confirm upstream pyproject.toml build-backend and dependency metadata before carrying any build changes forward.",
+      "Keep python-pydantic as a hard runtime dependency unless upstream removes it from the published project metadata.",
+      "Treat extra Rust LTO or PGO tuning as opt-in only after verifying the current maturin/cargo lane exposes a maintainable configuration; today the applicable default is explicit znver5 plus opt-level=3."
+    ]
+  },
+  "name": "python-openai-harmony-gfx1151",
+  "package_name": "python-openai-harmony-gfx1151",
+  "pkgver": "0.0.8.r8.d20260317.gad42886",
+  "policy": {
+    "advisory_references": [
+      "aur/python-openai-harmony-git"
+    ],
+    "arch_reference": [
+      "aur/python-openai-harmony",
+      "aur/python-openai-harmony-git"
+    ],
+    "authoritative_reference": "aur/python-openai-harmony",
+    "conflicts": [
+      "python-openai-harmony"
+    ],
+    "depends": [
+      "glibc",
+      "libgcc",
+      "python-gfx1151",
+      "python-pydantic"
+    ],
+    "divergence_notes": [
+      "Follows the repo's Rust-wheel compiler lane with explicit AMD toolchain selection and znver5 CPU targeting instead of the generic distro compiler defaults.",
+      "Uses the published PyPI sdist and upstream maturin build metadata rather than the AUR package's git+tag source fetch, while still treating the AUR package as the authoritative Arch-family baseline."
+    ],
+    "license": [
+      "Apache-2.0"
+    ],
+    "makedepends": [
+      "cargo",
+      "gcc",
+      "nasm",
+      "perl",
+      "python-build",
+      "python-installer",
+      "python-maturin",
+      "python-wheel",
+      "rocm-llvm-gfx1151",
+      "rust"
+    ],
+    "patches_dir": "patches/python-openai-harmony-gfx1151",
+    "pkgdesc": "OpenAI Harmony response-format library rebuilt for Strix Halo gfx1151",
+    "provides": [
+      "python-openai-harmony"
+    ],
+    "pypi_name": "openai_harmony",
+    "recipe_key": "rust_wheels",
+    "recipe_notes_override": "Builds openai-harmony from the published PyPI sdist using upstream's maturin\nPEP 517 backend and thin PyO3 bindings over the Rust core.\n\nKeep explicit znver5 CPU targeting and opt-level=3 in RUSTFLAGS because the\nrepo documents rustc native-detection drift on this host class. Do not force\nextra -C lto flags through RUSTFLAGS unless the current maturin/cargo lane is\nverified compatible.\n\nNo maintainable package-level PGO flow is exposed upstream today, so this\npackage currently stops at the applicable CPU-tuning and release-profile\nsettings.\n",
+    "scaffold_notes": [
+      "The AUR baseline currently omits upstream's python-pydantic runtime dependency, so this scaffold carries the complete closure from the published project metadata instead of copying the PKGBUILD blindly.",
+      "The package uses the PyPI sdist rather than a git+tag source fetch because upstream publishes matching source archives and the pyproject.toml build metadata is authoritative there.",
+      "Keep the Rust linker pinned to the AMD toolchain lane and the CPU target pinned to znver5; if future rustc native detection becomes trustworthy here, that can be re-evaluated package by package."
+    ],
+    "src_subdir": "openai_harmony-0.0.8",
+    "template": "rust-wheel-pypi",
+    "update_notes": [
+      "Check the current AUR python-openai-harmony package first, then confirm upstream pyproject.toml build-backend and dependency metadata before carrying any build changes forward.",
+      "Keep python-pydantic as a hard runtime dependency unless upstream removes it from the published project metadata.",
+      "Treat extra Rust LTO or PGO tuning as opt-in only after verifying the current maturin/cargo lane exposes a maintainable configuration; today the applicable default is explicit znver5 plus opt-level=3."
+    ],
+    "upstream_version": "0.0.8",
+    "url": "https://github.com/openai/harmony"
+  },
+  "provenance": {
+    "output_root": "packages",
+    "recipe_author": "Blackcat Informatics Inc.",
+    "recipe_repo": "https://github.com/paudley/ai-notes",
+    "recipe_subdir": "strix-halo",
+    "repo_subpath": "."
+  },
+  "recipe": {
+    "branch": null,
+    "depends_on": [
+      "cpython"
+    ],
+    "method": "cargo",
+    "notes": "Builds openai-harmony from the published PyPI sdist using upstream's maturin\nPEP 517 backend and thin PyO3 bindings over the Rust core.\n\nKeep explicit znver5 CPU targeting and opt-level=3 in RUSTFLAGS because the\nrepo documents rustc native-detection drift on this host class. Do not force\nextra -C lto flags through RUSTFLAGS unless the current maturin/cargo lane is\nverified compatible.\n\nNo maintainable package-level PGO flow is exposed upstream today, so this\npackage currently stops at the applicable CPU-tuning and release-profile\nsettings.\n",
+    "patches": [],
+    "phase": "H",
+    "repo": null,
+    "src_dir": null,
+    "steps": [
+      30
+    ]
+  }
+}
