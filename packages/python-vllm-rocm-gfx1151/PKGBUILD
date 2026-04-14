@@ -6,7 +6,7 @@
 
 pkgname=python-vllm-rocm-gfx1151
 pkgver=0.19.0.r8.d20260317.gad42886
-pkgrel=9
+pkgrel=11
 pkgdesc='High-throughput and memory-efficient inference engine for LLMs with ROCm, rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://github.com/vllm-project/vllm
@@ -14,12 +14,12 @@ license=(Apache-2.0)
 depends=(amdsmi-gfx1151 numactl python-aiohttp python-blake3 python-cachetools python-cbor2 python-cloudpickle python-diskcache python-einops python-fastapi python-gguf python-gfx1151 python-huggingface-hub python-ijson python-importlib-metadata python-mistral-common-gfx1151 python-msgspec python-openai python-openai-harmony-gfx1151 python-opencv python-prometheus-fastapi-instrumentator python-psutil python-py-cpuinfo python-pybase64 python-pydantic python-pytorch-opt-rocm-gfx1151 python-pyzmq python-soundfile python-starlette python-sympy python-torchvision-rocm-gfx1151 python-tqdm python-transformers-gfx1151 python-triton-gfx1151 python-uvloop python-watchfiles rocblas-gfx1151 uvicorn)
 makedepends=(cmake ninja python-installer python-pip python-setuptools python-setuptools-scm python-wheel rocm-llvm-gfx1151)
 optdepends=()
-options=()
+options=(!lto)
 provides=(python-vllm-rocm python-vllm)
 conflicts=(python-vllm-rocm python-vllm)
 replaces=()
-source=(https://github.com/vllm-project/vllm/archive/refs/tags/v0.19.0.tar.gz 0001-python-3.14-version-gates.patch 0002-cli-version-avoids-eager-runtime-imports.patch 0003-rocm-gate-vendored-triton-kernels-on-runtime-support.patch 0004-rocm-fallback-and-optional-sagemaker-standards.patch 0005-rocm-reduce-triton-unified-attention-prefill-tile-for-large-heads.patch)
-sha256sums=(SKIP SKIP SKIP SKIP SKIP SKIP)
+source=(https://github.com/vllm-project/vllm/archive/refs/tags/v0.19.0.tar.gz 0001-python-3.14-version-gates.patch 0002-cli-version-avoids-eager-runtime-imports.patch 0003-rocm-gate-vendored-triton-kernels-on-runtime-support.patch 0004-rocm-fallback-and-optional-sagemaker-standards.patch 0005-rocm-reduce-triton-unified-attention-prefill-tile-for-large-heads.patch 0006-setup.py-forward-host-and-hip-flags-into-cmake.patch)
+sha256sums=(SKIP SKIP SKIP SKIP SKIP SKIP SKIP)
 
 _apply_patch_if_needed() {
   local _patch_name="$1"
@@ -49,6 +49,7 @@ prepare() {
   _apply_patch_if_needed "0003-rocm-gate-vendored-triton-kernels-on-runtime-support.patch"
   _apply_patch_if_needed "0004-rocm-fallback-and-optional-sagemaker-standards.patch"
   _apply_patch_if_needed "0005-rocm-reduce-triton-unified-attention-prefill-tile-for-large-heads.patch"
+  _apply_patch_if_needed "0006-setup.py-forward-host-and-hip-flags-into-cmake.patch"
 }
 
 build() {
@@ -59,6 +60,7 @@ build() {
   _apply_patch_if_needed "0003-rocm-gate-vendored-triton-kernels-on-runtime-support.patch"
   _apply_patch_if_needed "0004-rocm-fallback-and-optional-sagemaker-standards.patch"
   _apply_patch_if_needed "0005-rocm-reduce-triton-unified-attention-prefill-tile-for-large-heads.patch"
+  _apply_patch_if_needed "0006-setup.py-forward-host-and-hip-flags-into-cmake.patch"
 
   _setup_compiler_env() {
   local _compiler_root="/opt/rocm/lib/llvm/bin"
@@ -83,8 +85,31 @@ build() {
 }
 
   _setup_compiler_env
-  export CFLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument -DGLOG_USE_GLOG_EXPORT"
-  export CXXFLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument -DGLOG_USE_GLOG_EXPORT"
+  _strip_incompatible_lto_flags() {
+    local _value="$1"
+    local _out=()
+    local _token
+    read -r -a _tokens <<<"${_value}"
+    for _token in "${_tokens[@]}"; do
+      case "${_token}" in
+        -flto|-flto=*|-fuse-linker-plugin) ;;
+        *) _out+=("${_token}") ;;
+      esac
+    done
+    printf '%s' "${_out[*]}"
+  }
+
+  local _debug_root="/usr/src/debug/${pkgname}"
+  local _prefix_map_flags="-ffile-prefix-map=${srcdir}=${_debug_root} -fdebug-prefix-map=${srcdir}=${_debug_root} -fmacro-prefix-map=${srcdir}=${_debug_root}"
+  local _strix_opt_flags="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument -DGLOG_USE_GLOG_EXPORT"
+  local _base_cflags="$(_strip_incompatible_lto_flags "${CFLAGS:-}")"
+  local _base_cxxflags="$(_strip_incompatible_lto_flags "${CXXFLAGS:-}")"
+  local _base_hipflags="$(_strip_incompatible_lto_flags "${HIPFLAGS:-}")"
+  local _base_ldflags="$(_strip_incompatible_lto_flags "${LDFLAGS:-}")"
+  export CFLAGS="${_base_cflags} ${_prefix_map_flags} ${_strix_opt_flags}"
+  export CXXFLAGS="${_base_cxxflags} ${_prefix_map_flags} ${_strix_opt_flags}"
+  export HIPFLAGS="${_base_hipflags} ${_prefix_map_flags} ${_strix_opt_flags}"
+  export LDFLAGS="${_base_ldflags}"
   export CPPFLAGS="${CPPFLAGS:-} -DGLOG_USE_GLOG_EXPORT"
   export ROCM_HOME="/opt/rocm"
   export HIP_PATH="/opt/rocm"

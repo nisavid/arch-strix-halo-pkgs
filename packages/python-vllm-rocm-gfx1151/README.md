@@ -35,6 +35,13 @@ recorded in .aiter-status file ("enabled" or "disabled").
 - Carries a ROCm Triton unified-attention tile-size patch so large-head prefill
   paths such as Gemma 4 global attention do not request more than 64 KiB of
   LDS/shared memory on gfx1151.
+- Carries a setup.py flag-forwarding patch so host `CFLAGS`/`CXXFLAGS` and
+  `HIPFLAGS` are passed into the CMake ROCm extension build explicitly. This
+  keeps Arch prefix-map sanitization and Strix tuning flags active in the
+  shipped HIP extension modules.
+- Disables LTO for this package. Re-enabling inherited `-flto=*` flags makes
+  ROCm shared-module links such as `_moe_C.abi3.so` and `_rocm_C.abi3.so`
+  fail with `LLVM gold plugin has failed to create LTO module: Invalid record`.
 - Depends on the local `python-transformers-gfx1151` closure package rather than
   the distro `python-transformers` lane because Gemma 4 support first appears
   in upstream `transformers 5.5.x` and the older host package did not ship
@@ -46,6 +53,9 @@ recorded in .aiter-status file ("enabled" or "disabled").
   the older package.
 - The currently installed external python-torchao-rocm package is not import-clean at the native extension layer on this host, but vLLM's current TorchAO-facing Python APIs still work. Treat that as an external package defect to revisit only if this repo needs functioning TorchAO custom ops rather than the existing Python-level quantization helpers.
 - makepkg -e reuses src/, so build() intentionally reapplies the carried source patches before wheel generation instead of assuming prepare() already ran in the current tree.
+- Preserve makepkg's inherited `CFLAGS`/`CXXFLAGS` when layering Strix tuning
+  flags, and feed the same prefix-map flags into `HIPFLAGS`, so Arch's
+  build-path sanitization survives the ROCm/HIP compile lane too.
 - Upstream openai-harmony is a small Rust/PyO3 helper library with published manylinux wheels, not a ROCm-specific component. If Arch still lacks an official package, the right local story is a closure package derived from aur/python-openai-harmony. If this repo ingests it locally, it should still inherit the normal Strix build lane for applicable native code: Zen 5 / znver5 CPU tuning, -O3 or equivalent, LTO when compatible, and PGO when the build system exposes a maintainable path.
 - Do not treat a successful build as sufficient for system-Python cutover; the gate is a real vLLM smoke test after the TheRock ROCm split packages are installed coherently.
 - Keep the gfx1151 ROCm/AITER recipe patches in the source package, but evaluate Python-3.14 compatibility separately from ROCm runtime/linker issues.
@@ -74,6 +84,21 @@ recorded in .aiter-status file ("enabled" or "disabled").
   upstream vLLM or Triton lands a fix for the 64 KiB LDS overflow. The concrete
   host failure was Gemma 4 global attention on gfx1151 requesting 66560 bytes
   of shared memory from the Triton 2D unified-attention kernel.
+- Keep the setup.py compiler-flag forwarding patch unless upstream starts
+  passing `CFLAGS`/`CXXFLAGS`/`HIPFLAGS` into the CMake ROCm build itself.
+  The concrete packaging failure was `$srcdir` leaking into shipped extension
+  modules because the HIP lane was built without Arch prefix-map flags.
+- Keep LTO disabled for this package unless the ROCm HIP shared-module link
+  path becomes compatible with it. The concrete host failure was
+  `_moe_C.abi3.so` / `_rocm_C.abi3.so` link failure with
+  `LLVM gold plugin has failed to create LTO module: Invalid record`.
+- Keep the inherited makepkg compile flags when adding Strix tuning flags.
+  Overwriting `CFLAGS`/`CXXFLAGS` drops Arch's build-path prefix maps and can
+  leak `$srcdir` paths into the shipped ROCm extension modules.
+- Keep HIP build-path prefix-map flags explicit and forwarded through setup.py.
+  The ROCm extension build does not automatically inherit the host C/C++
+  prefix-map settings into `CMAKE_HIP_FLAGS`, so sanitization has to be carried
+  through `HIPFLAGS` and then bridged into CMake.
 - Keep SageMaker integration optional unless this repo intentionally packages `model_hosting_container_standards`; missing SageMaker helpers should disable only SageMaker-specific routes, not the base CLI or local server startup paths.
 - Keep the ROCm GCN-arch fallback import-safe on Strix Halo. AMDSMI ASIC-info probes can fail even when the device is visible; that must degrade to `torch.cuda` probing rather than crashing during module import.
 - Treat the current external python-torchao-rocm _C-extension failure as a host-package defect, not a blocker for this vLLM lane. import vllm stays clean, and the TorchAO Python-level APIs vLLM touches still work on the reference host; only revisit this if TorchAO custom ops or torchao-backed serving paths actually require the native extension.
