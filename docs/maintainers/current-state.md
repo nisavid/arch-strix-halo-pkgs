@@ -38,6 +38,10 @@ The following smoke checks have already passed on the reference host:
 - `python-pytorch-opt-rocm-gfx1151` tracks `ROCm/pytorch` `release/2.11`,
   pinned to commit `0446f7ba2fd`, with package version aligned to the built
   wheel version.
+- `python-torchvision-rocm-gfx1151` now rebuilds cleanly against the paired
+  PyTorch lane without the earlier build-only `librocsolver.so.0` shim; if
+  that workaround ever becomes necessary again, treat it as a PyTorch/runtime
+  regression rather than reintroducing the shim in TorchVision.
 - `python-openai-harmony-gfx1151` is now the local closure package for vLLM's
   GPT-OSS/Harmony path, using `aur/python-openai-harmony` as the baseline but
   carrying upstream's missing `python-pydantic` runtime dependency.
@@ -80,8 +84,6 @@ The following smoke checks have already passed on the reference host:
   - only revisit the external `python-torchao-rocm` package if this repo needs
     working TorchAO custom ops or `--quantization torchao` paths that truly
     depend on the native `_C` extension rather than the Python-level APIs
-- TorchVision cleanup
-  - rebuild cleanly without the temporary build-only ROCm soname shim
 - Lemonade presentation polish
   - keep the backend table explicit about packaged ROCm/Vulkan backends after
     each relevant package rebuild

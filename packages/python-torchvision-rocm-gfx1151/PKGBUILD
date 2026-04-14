@@ -6,7 +6,7 @@
 
 pkgname=python-torchvision-rocm-gfx1151
 pkgver=0.26.0.r8.d20260317.gad42886
-pkgrel=1
+pkgrel=2
 pkgdesc='Datasets, transforms, and models for computer vision with ROCm support, rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://github.com/pytorch/vision
@@ -67,10 +67,6 @@ if old in text:
     text = text.replace(old, new, 1)
 path.write_text(text)
 PY
-  local _compat_libdir="$srcdir/.torch-rocm-compat"
-  mkdir -p "${_compat_libdir}"
-  ln -sf /opt/rocm/lib/librocsolver.so.1 "${_compat_libdir}/librocsolver.so.0"
-  export LD_LIBRARY_PATH="${_compat_libdir}:/opt/rocm/lib:${LD_LIBRARY_PATH:-}"
 
   mkdir -p dist
   pip wheel . --no-build-isolation --no-deps --wheel-dir dist -v

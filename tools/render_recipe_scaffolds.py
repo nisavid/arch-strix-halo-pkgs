@@ -789,10 +789,6 @@ if old in text:
     text = text.replace(old, new, 1)
 path.write_text(text)
 PY
-  local _compat_libdir="$srcdir/.torch-rocm-compat"
-  mkdir -p "${{_compat_libdir}}"
-  ln -sf /opt/rocm/lib/librocsolver.so.1 "${{_compat_libdir}}/librocsolver.so.0"
-  export LD_LIBRARY_PATH="${{_compat_libdir}}:/opt/rocm/lib:${{LD_LIBRARY_PATH:-}}"
 
   mkdir -p dist
   pip wheel . --no-build-isolation --no-deps --wheel-dir dist -v

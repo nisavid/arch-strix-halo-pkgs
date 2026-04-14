@@ -6,7 +6,6 @@
   practical.
 - Tighten package hygiene for embedded build paths in PyTorch, TorchVision, and
   vLLM.
-- Rebuild TorchVision without the temporary build-only ROCm soname shim.
 - Revisit `python-flydsl-gfx1151` once the MLIR development-surface story is
   clear.
 - Benchmark whether the custom `llama.cpp` builds still justify their
