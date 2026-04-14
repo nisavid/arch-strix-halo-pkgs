@@ -4,11 +4,13 @@
 
 - Convert remaining scripted source edits into durable patch files where
   practical.
-- Audit the remaining vLLM dependency closure beyond `--version`,
-  including whether this repo should package `openai-harmony`, how to treat
-  the host `torchao` extension failure, and whether the vendored Triton-kernel
-  paths that expect `triton.language.target_info` should be patched or gated
-  on the ROCm lane.
+- Close the remaining vLLM dependency closure beyond `--version`:
+  - add a local `python-openai-harmony` package using `aur/python-openai-harmony`
+    as the authoritative baseline, but carry the missing `python-pydantic`
+    runtime dependency so the local repo exposes a complete closure
+  - decide how to treat the host `torchao` extension failure
+  - decide whether the vendored Triton-kernel paths that expect
+    `triton.language.target_info` should be patched or gated on the ROCm lane
 - Tighten package hygiene for embedded build paths in PyTorch, TorchVision, and
   vLLM.
 - Rebuild TorchVision without the temporary build-only ROCm soname shim.

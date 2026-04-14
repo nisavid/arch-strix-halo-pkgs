@@ -73,6 +73,49 @@ Use when the recipe grows a new component that is not yet represented here.
 5. Convert reusable source changes into patch files when practical.
 6. Build, publish to the local repo, and test.
 
+## 5. Choosing Local Package vs Dependency vs Optdepend
+
+Use this when a repo-managed package starts referencing a Python or system
+package that is not already part of the local-repo closure.
+
+Prefer a normal dependency on an existing package when all of the following are
+true:
+
+1. the package is present in a supported repo lane the host can consume
+   directly through pacman or the configured local repo workflow
+2. the package is current enough for the upstream version lane in use here
+3. the package metadata is complete enough to model the real runtime closure
+4. this repo does not need compatibility patches, package-shape changes, or a
+   different source lane
+5. there is no defensible local optimization story beyond "we can rebuild it"
+
+Prefer a local package in this repo when any of the following are true:
+
+1. the package is absent from official repos and the supported local-repo story
+   would otherwise rely on pip or an AUR side-install for a hard runtime dep
+2. the available baseline package is stale, incomplete, or otherwise wrong for
+   this repo's update lane
+3. the package needs compatibility patching for the Python, ROCm, or system
+   library lane this repo maintains
+4. the package needs a deliberate filesystem layout, dependency shape, or
+   publish story that differs from the baseline package
+5. the package has a real, measured optimization story that matters for this
+   stack rather than a purely hypothetical "native flags might help" story
+
+Prefer an optdepend only when the feature is genuinely optional in this repo's
+supported behavior:
+
+1. upstream treats the feature as optional or extra-gated
+2. imports are guarded so the base package remains import-clean and smoke-clean
+3. this repo is comfortable treating the feature as unsupported until the
+   optdepend is installed
+
+For small helper libraries with native code, published manylinux wheels, and no
+ROCm- or host-specific compatibility delta, lack of an official Arch package is
+usually a closure problem, not an optimization problem. In that case the local
+package story should focus on a correct Arch package baseline and complete
+dependency metadata, not custom tuning.
+
 ## Required Outputs
 
 For any of the above, the end state should leave behind:
