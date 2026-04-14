@@ -6,7 +6,7 @@
 
 pkgname=python-amd-aiter-gfx1151
 pkgver=0.1.0.r8.d20260317.gad42886
-pkgrel=1
+pkgrel=2
 pkgdesc='AMD AITER kernels rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://github.com/ROCm/aiter
@@ -18,13 +18,14 @@ options=()
 provides=(python-amd-aiter)
 conflicts=(python-amd-aiter)
 replaces=()
-source=(aiter::git+https://github.com/ROCm/aiter.git)
-sha256sums=(SKIP)
+source=(aiter::git+https://github.com/ROCm/aiter.git 0001-gfx1151-rdna35-header-compat.patch 0002-jit-runtime-finds-hipcc-and-user-jit-modules.patch)
+sha256sums=(SKIP SKIP SKIP)
 
 prepare() {
   cd "$srcdir/aiter"
 
   patch -Np1 -i "$srcdir/0001-gfx1151-rdna35-header-compat.patch"
+  patch -Np1 -i "$srcdir/0002-jit-runtime-finds-hipcc-and-user-jit-modules.patch"
 }
 
 build() {
@@ -53,6 +54,9 @@ build() {
 }
 
   _setup_compiler_env
+  export PATH="/opt/rocm/bin:${PATH}"
+  export ROCM_HOME="/opt/rocm"
+  export HIP_PATH="/opt/rocm"
   export PREBUILD_KERNELS=0
   export AITER_GPU_ARCH=gfx1151
   export CFLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument"

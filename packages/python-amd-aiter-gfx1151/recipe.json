@@ -7,14 +7,18 @@
     "authoritative_reference": "none",
     "divergence_notes": [
       "There is no standalone AITER package in Arch-family packaging; this package is recipe-first and aligned to the vendored PyTorch submodule lane.",
-      "Carries an explicit package-local source patch for gfx1151 RDNA 3.5 header compatibility rather than leaving those fixes as manual post-build mutations."
+      "Carries an explicit package-local source patch for gfx1151 RDNA 3.5 header compatibility rather than leaving those fixes as manual post-build mutations.",
+      "Carries an installed-system JIT runtime patch so AITER can find hipcc and import JIT-built modules from the writable user cache on read-only site-packages systems."
     ],
     "source_patches": [
-      "0001-gfx1151-rdna35-header-compat.patch"
+      "0001-gfx1151-rdna35-header-compat.patch",
+      "0002-jit-runtime-finds-hipcc-and-user-jit-modules.patch"
     ],
     "update_notes": [
       "Update AITER in lockstep with the paired PyTorch source lane so CK and generated kernel expectations stay aligned.",
-      "Treat FlyDSL as a separate tracked package story; do not silently fold an unpublished wheel into this package."
+      "Treat FlyDSL as a separate tracked package story; do not silently fold an unpublished wheel into this package.",
+      "Keep the installed-system JIT runtime patch until upstream AITER stops assuming hipcc is on the ambient PATH and correctly imports modules copied to the writable user JIT cache from read-only site-packages installs.",
+      "Keep the package's explicit ROCm toolchain exports in build() until upstream AITER stops probing hipconfig/hipcc through ambient shell state. The concrete build failure was `Could not find hipconfig in PATH or ROCM_HOME(/usr)`."
     ]
   },
   "name": "python-amd-aiter-gfx1151",
@@ -41,7 +45,8 @@
     ],
     "divergence_notes": [
       "There is no standalone AITER package in Arch-family packaging; this package is recipe-first and aligned to the vendored PyTorch submodule lane.",
-      "Carries an explicit package-local source patch for gfx1151 RDNA 3.5 header compatibility rather than leaving those fixes as manual post-build mutations."
+      "Carries an explicit package-local source patch for gfx1151 RDNA 3.5 header compatibility rather than leaving those fixes as manual post-build mutations.",
+      "Carries an installed-system JIT runtime patch so AITER can find hipcc and import JIT-built modules from the writable user cache on read-only site-packages systems."
     ],
     "license": [
       "MIT"
@@ -70,13 +75,16 @@
       "Keep the gfx1151 RDNA 3.5 header fixes as a package-local source patch applied before wheel build, not as post-install file replacement."
     ],
     "source_patches": [
-      "0001-gfx1151-rdna35-header-compat.patch"
+      "0001-gfx1151-rdna35-header-compat.patch",
+      "0002-jit-runtime-finds-hipcc-and-user-jit-modules.patch"
     ],
     "src_subdir": "aiter",
     "template": "python-project-aiter",
     "update_notes": [
       "Update AITER in lockstep with the paired PyTorch source lane so CK and generated kernel expectations stay aligned.",
-      "Treat FlyDSL as a separate tracked package story; do not silently fold an unpublished wheel into this package."
+      "Treat FlyDSL as a separate tracked package story; do not silently fold an unpublished wheel into this package.",
+      "Keep the installed-system JIT runtime patch until upstream AITER stops assuming hipcc is on the ambient PATH and correctly imports modules copied to the writable user JIT cache from read-only site-packages installs.",
+      "Keep the package's explicit ROCm toolchain exports in build() until upstream AITER stops probing hipconfig/hipcc through ambient shell state. The concrete build failure was `Could not find hipconfig in PATH or ROCM_HOME(/usr)`."
     ],
     "upstream_version": "0.1.0",
     "url": "https://github.com/ROCm/aiter"

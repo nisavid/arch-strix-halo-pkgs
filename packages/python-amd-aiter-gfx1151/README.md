@@ -31,6 +31,16 @@ aiter_meta/csrc/include/ files for gfx1151 RDNA 3.5 compatibility.
 - The recipe rebuilds AITER from PyTorch's vendored third_party/aiter copy so its CK ABI stays aligned with the paired PyTorch tree.
 - Upstream AITER declares pandas as a real dependency and FlyDSL as an optional acceleration path. Keep pandas in the package metadata, and package FlyDSL separately rather than silently depending on an unpublished wheel.
 - Keep the gfx1151 RDNA 3.5 header fixes as a package-local source patch applied before wheel build, not as post-install file replacement.
+- Keep the installed-system JIT runtime patch unless upstream fixes both
+  assumptions itself: `hipcc` on the ambient `PATH`, and package-relative
+  import of JIT-built modules even after copying the writable JIT tree out of
+  read-only site-packages. The concrete host failure was successful
+  `module_aiter_core.so` compilation under `~/.aiter/jit/build/...` followed by
+  `No module named 'aiter.jit.module_aiter_core'`.
+- Keep the package's explicit ROCm toolchain exports in `build()`. AITER's own
+  Python build helpers probe `hipconfig`/`hipcc` during wheel build and can
+  incorrectly fall back to `ROCM_HOME=/usr` when the shell environment does
+  not already expose `/opt/rocm/bin`.
 
 ## Intentional Divergences
 
@@ -41,6 +51,15 @@ aiter_meta/csrc/include/ files for gfx1151 RDNA 3.5 compatibility.
 
 - Update AITER in lockstep with the paired PyTorch source lane so CK and generated kernel expectations stay aligned.
 - Treat FlyDSL as a separate tracked package story; do not silently fold an unpublished wheel into this package.
+- Keep the `hipcc` resolution fallback until ROCm packaging or upstream AITER
+  guarantees `/opt/rocm/bin` visibility for non-login and service-style
+  runtimes. The concrete host failure was `ROCm/HIP JIT runtime not available:
+  [Errno 2] No such file or directory: 'hipcc'` unless `/opt/rocm/bin` was
+  added manually to `PATH`.
+- Keep `PATH=/opt/rocm/bin:$PATH`, `ROCM_HOME=/opt/rocm`, and `HIP_PATH=/opt/rocm`
+  explicit in the package build environment unless upstream AITER stops
+  probing the ROCm toolchain through ambient shell state. The concrete build
+  failure was `Could not find hipconfig in PATH or ROCM_HOME(/usr)`.
 
 ## Maintainer Starting Points
 

@@ -1,0 +1,104 @@
+diff --git a/aiter/jit/core.py b/aiter/jit/core.py
+--- a/aiter/jit/core.py
++++ b/aiter/jit/core.py
+@@ -383,7 +383,8 @@
+     if "AITER_JIT_DIR" in os.environ:
+         path = os.getenv("AITER_JIT_DIR", "")
+         os.makedirs(path, exist_ok=True)
+-        sys.path.insert(0, path)
++        if path not in sys.path:
++            sys.path.insert(0, path)
+         return path
+     else:
+         if os.access(this_dir, os.W_OK):
+@@ -391,6 +392,8 @@
+     home_jit_dir = f"{os.path.expanduser('~')}/.aiter/{os.path.basename(this_dir)}"
+     if not os.path.exists(home_jit_dir):
+         shutil.copytree(this_dir, home_jit_dir)
++    if home_jit_dir not in sys.path:
++        sys.path.insert(0, home_jit_dir)
+     return home_jit_dir
+ 
+ 
+@@ -436,16 +439,42 @@
+ 
+ 
+ @functools.lru_cache()
++def get_hipcc_path() -> str:
++    candidates = [
++        os.environ.get("HIPCC"),
++        shutil.which("hipcc"),
++        (
++            os.path.join(os.environ["ROCM_HOME"], "bin", "hipcc")
++            if os.environ.get("ROCM_HOME")
++            else None
++        ),
++        (
++            os.path.join(os.environ["HIP_PATH"], "bin", "hipcc")
++            if os.environ.get("HIP_PATH")
++            else None
++        ),
++        "/opt/rocm/bin/hipcc",
++    ]
++    for candidate in candidates:
++        if candidate and os.path.exists(candidate):
++            return candidate
++    return "hipcc"
++
++
++@functools.lru_cache()
+ def hip_flag_checker(flag_hip: str) -> bool:
+     import subprocess
+ 
+     cmd = (
+-        ["hipcc"]
++        [get_hipcc_path()]
+         + flag_hip.split()
+         + ["-x", "hip", "-E", "-P", "/dev/null", "-o", "/dev/null"]
+     )
+     try:
+         subprocess.check_output(cmd, stderr=subprocess.DEVNULL)
++    except FileNotFoundError:
++        logger.warning("hipcc not found while probing AITER flags.")
++        return False
+     except subprocess.CalledProcessError:
+         logger.warning(f"Current hipcc not support: {flag_hip}, skip it.")
+         return False
+@@ -462,10 +491,21 @@
+     #define CK_TILE_HOST_DEVICE_EXTERN"""
+     import subprocess
+ 
+-    cmd = """echo "#include <tuple>
+-__host__ __device__ void func(){std::tuple<int, int> t = std::tuple(1, 1);}" | hipcc -x hip -P -c -Wno-unused-command-line-argument -o /dev/null -"""
++    cmd = [
++        get_hipcc_path(),
++        "-x",
++        "hip",
++        "-P",
++        "-c",
++        "-Wno-unused-command-line-argument",
++        "-o",
++        "/dev/null",
++        "-",
++    ]
+     try:
+-        subprocess.check_output(cmd, shell=True, text=True, stderr=subprocess.STDOUT)
++        subprocess.check_output(cmd, input='#include <tuple>\n__host__ __device__ void func(){std::tuple<int, int> t = std::tuple(1, 1);}', text=True, stderr=subprocess.STDOUT)
++    except FileNotFoundError:
++        return 554785
+     except subprocess.CalledProcessError:
+         return 554785
+     return 554785 - 1
+@@ -550,7 +590,11 @@
+ def get_module_custom_op(md_name: str) -> None:
+     global __mds
+     if md_name not in __mds:
+-        if "AITER_JIT_DIR" in os.environ:
++        user_jit_dir = get_user_jit_dir()
++        if (
++            "AITER_JIT_DIR" in os.environ
++            or user_jit_dir != this_dir
++        ):
+             __mds[md_name] = importlib.import_module(md_name)
+         else:
+             __mds[md_name] = importlib.import_module(f"{__package__}.{md_name}")
