@@ -31,16 +31,24 @@ compile time -- triggers -Werror=unused in compile-only probes).
 ## Scaffold notes
 
 - The recipe's key fix here is the meson/clang flag rewrite: convert driver-level -mllvm flags to -Xclang pairs and move -famd-opt to LDFLAGS.
-- This scaffold still needs comparison against the current Arch python-numpy PKGBUILD for BLAS provider handling and any distro-specific patches.
+- BLAS/LAPACK selection is now pinned explicitly to the distro `blas` and
+  `lapack` pkg-config providers. Do not let NumPy auto-detect a higher-priority
+  provider such as oneMKL just because it is installed on the build host.
 
 ## Intentional Divergences
 
 - Keeps the Arch package shape but carries the recipe's clang/meson flag rewrite so AMD-specific driver flags survive meson compiler probing.
 - Uses the optimized Python package as the interpreter baseline rather than the distro python package.
+- Forces `-Dblas=blas -Dlapack=lapack -Dallow-noblas=false` during the Meson
+  wheel build so the package stays portable across hosts and does not embed
+  `/opt/intel/oneapi` runpaths into NumPy extensions.
 
 ## Update Notes
 
-- Re-check BLAS/LAPACK provider handling and any Arch downstream patches whenever numpy or Python major/minor changes.
+- Re-check BLAS/LAPACK provider handling and any Arch downstream patches whenever
+  NumPy or Python major/minor changes. The concrete failure here was a wheel
+  that auto-selected oneMKL on the build host, then crashed on import with
+  `undefined symbol: mkl_blas_dgemm`.
 - If future recipe changes add real source patches, keep them as patch files instead of further growing shell flag transforms.
 
 ## Maintainer Starting Points

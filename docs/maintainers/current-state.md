@@ -43,6 +43,11 @@ The following smoke checks have already passed on the reference host:
 - `python-pytorch-opt-rocm-gfx1151` tracks `ROCm/pytorch` `release/2.11`,
   pinned to commit `0446f7ba2fd`, with package version aligned to the built
   wheel version.
+- `python-numpy-gfx1151` now pins NumPy's Meson BLAS/LAPACK selection to the
+  distro `blas` and `lapack` pkg-config providers. Do not let the wheel build
+  auto-detect oneMKL just because `intel-oneapi-mkl` is installed on the
+  build host; that produced a broken wheel with `/opt/intel/oneapi` runpaths
+  and `undefined symbol: mkl_blas_dgemm` at import time.
 - `python-torchvision-rocm-gfx1151` now rebuilds cleanly against the paired
   PyTorch lane without the earlier build-only `librocsolver.so.0` shim; if
   that workaround ever becomes necessary again, treat it as a PyTorch/runtime
@@ -116,9 +121,10 @@ The following smoke checks have already passed on the reference host:
     working TorchAO custom ops or `--quantization torchao` paths that truly
     depend on the native `_C` extension rather than the Python-level APIs
 - vLLM/Gemma follow-up
-  - publish the local `python-transformers-gfx1151` lane to the host and rerun
-    the Gemma 4 safetensors smoke test now that the earlier `amdsmi` and
-    optional-SageMaker blockers are fixed
+  - publish the rebuilt `python-numpy-gfx1151` plus the local
+    `python-transformers-gfx1151` lane to the host and rerun the Gemma 4
+    safetensors smoke test now that the earlier `amdsmi`,
+    optional-SageMaker, and stale-Transformers blockers are fixed
 - Lemonade presentation polish
   - keep the backend table explicit about packaged ROCm/Vulkan backends after
     each relevant package rebuild

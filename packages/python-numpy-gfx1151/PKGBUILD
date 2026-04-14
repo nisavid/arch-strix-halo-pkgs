@@ -6,7 +6,7 @@
 
 pkgname=python-numpy-gfx1151
 pkgver=2.4.4.r8.d20260317.gad42886
-pkgrel=1
+pkgrel=2
 pkgdesc='Scientific tools for Python rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://www.numpy.org/
@@ -55,7 +55,10 @@ build() {
   export CXXFLAGS="${_wheel_flags}"
   export LDFLAGS="-famd-opt"
 
-  python -m build --wheel --no-isolation
+  python -m build --wheel --no-isolation \
+    -Csetup-args=-Dblas=blas \
+    -Csetup-args=-Dlapack=lapack \
+    -Csetup-args=-Dallow-noblas=false
 }
 
 package() {

@@ -5,9 +5,10 @@
 - Convert remaining scripted source edits into durable patch files where
   practical.
 - Tighten package hygiene for embedded build paths in PyTorch and vLLM.
-- Publish the local `python-transformers-gfx1151` lane and rerun the host
-  Gemma 4 safetensors vLLM smoke so the next remaining runtime blocker, if
-  any, is recorded with a concrete traceback.
+- Publish the rebuilt `python-numpy-gfx1151` and local
+  `python-transformers-gfx1151` lanes, then rerun the host Gemma 4
+  safetensors vLLM smoke so the next remaining runtime blocker, if any, is
+  recorded with a concrete traceback.
 - Revisit vLLM HIP build-path sanitization only after the gfx1151 sampler-kernel
   compile failure is understood. A trial patch that routed quoted
   `CMAKE_HIP_FLAGS` through `setup.py` (`shlex.split` on `CMAKE_ARGS`) pushed
