@@ -9,7 +9,9 @@
       "Uses the closest maintained Cachy baseline but applies the recipe's system-cmake packaging translation instead of relying on a pip-installed cmake wrapper.",
       "Stays on a source-build path even though a git variant exists, because the release package is the primary maintenance lane."
     ],
-    "source_patches": [],
+    "source_patches": [
+      "0001-bundle-sentencepiece-by-default.patch"
+    ],
     "update_notes": [
       "Re-check against Cachy first, then consult the AUR source and git variants if the maintained package lags a needed upstream change.",
       "If the upstream build backend changes, keep the package metadata focused on the system cmake/toolchain story rather than reviving venv-local wrapper assumptions."
@@ -35,8 +37,7 @@
     "depends": [
       "gcc-libs",
       "glibc",
-      "python-gfx1151",
-      "sentencepiece"
+      "python-gfx1151"
     ],
     "divergence_notes": [
       "Uses the closest maintained Cachy baseline but applies the recipe's system-cmake packaging translation instead of relying on a pip-installed cmake wrapper.",

@@ -564,7 +564,7 @@ update_notes = [
 ]
 provides = ["python-sentencepiece"]
 conflicts = ["python-sentencepiece"]
-depends = ["gcc-libs", "glibc", "python-gfx1151", "sentencepiece"]
+depends = ["gcc-libs", "glibc", "python-gfx1151"]
 makedepends = ["cmake", "ninja", "python-build", "python-installer", "python-wheel", "rocm-llvm-gfx1151"]
 optdepends = ["python-protobuf"]
 pypi_name = "sentencepiece"

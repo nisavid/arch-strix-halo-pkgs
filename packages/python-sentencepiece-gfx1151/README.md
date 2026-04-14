@@ -13,6 +13,7 @@
 - Authoritative reference package: `cachyos/python-sentencepiece`
 - Advisory reference packages: `aur/python-sentencepiece, aur/python-sentencepiece-git`
 - Applied source patch files/actions: `1`
+- Active source patch: `0001-bundle-sentencepiece-by-default.patch` (prefers bundled sentencepiece build by default, only uses system `pkg-config sentencepiece` when `SENTENCEPIECE_USE_SYSTEM=1` is explicitly set)
 
 ## Recipe notes
 
@@ -27,6 +28,10 @@ rewritten as -Xclang -mllvm -Xclang pairs because meson's compiler
 probing rejects -mllvm as "unused command line argument".
 -famd-opt moved to LDFLAGS (link-time-only driver flag, no-op at
 compile time -- triggers -Werror=unused in compile-only probes).
+
+`python-sentencepiece` now builds its bundled C++ core during wheel build unless
+`SENTENCEPIECE_USE_SYSTEM=1` is explicitly requested, preventing hard runtime
+links to host `sentencepiece` libraries with unstable external ABI boundaries.
 
 ## Scaffold notes
 

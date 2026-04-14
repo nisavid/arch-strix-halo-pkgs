@@ -1,0 +1,31 @@
+--- a/setup.py	2026-04-14 11:08:47.885639447 -0400
++++ b/setup.py	2026-04-14 11:08:47.887639348 -0400
+@@ -61,6 +61,10 @@
+     return False
+ 
+ 
++def should_use_system_sentencepiece():
++  return os.environ.get('SENTENCEPIECE_USE_SYSTEM', '').lower() in ('1', 'true', 'yes', 'on')
++
++
+ def is_gil_disabled():
+   return sysconfig.get_config_var('Py_GIL_DISABLED')
+ 
+@@ -88,7 +92,7 @@
+     cflags, libs = get_cflags_and_libs('../build/root')
+ 
+     if len(libs) == 0:
+-      if is_sentencepiece_installed():
++      if should_use_system_sentencepiece() and is_sentencepiece_installed():
+         cflags = cflags + run_pkg_config('cflags')
+         libs = run_pkg_config('libs')
+       else:
+@@ -141,7 +145,7 @@
+       '../data',
+   ])
+ 
+-  if not data and is_sentencepiece_installed():
++  if not data and should_use_system_sentencepiece() and is_sentencepiece_installed():
+     data = find_targets(run_pkg_config('datadir'))
+ 
+   for filename in data:
