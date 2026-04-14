@@ -466,23 +466,25 @@ authoritative_reference = "extra/python-numpy"
 advisory_references = ["cachyos-extra-znver4/python-numpy"]
 divergence_notes = [
   "Keeps the Arch package shape but carries the recipe's clang/meson flag rewrite so AMD-specific driver flags survive meson compiler probing.",
-  "Uses the optimized Python package as the interpreter baseline rather than the distro python package."
+  "Uses the optimized Python package as the interpreter baseline rather than the distro python package.",
+  "Pins NumPy BLAS/LAPACK to OpenBLAS explicitly to avoid oneMKL provider auto-selection on mixed-provider hosts."
 ]
 update_notes = [
   "Re-check BLAS/LAPACK provider handling and any Arch downstream patches whenever numpy or Python major/minor changes.",
+  "Validate that OpenBLAS remains the active Meson provider after toolchain or Intel oneMKL updates, and keep the explicit provider pins if contamination returns.",
   "If future recipe changes add real source patches, keep them as patch files instead of further growing shell flag transforms."
 ]
 provides = ["python-numpy"]
 conflicts = ["python-numpy"]
-depends = ["cblas", "lapack", "python-gfx1151"]
+depends = ["openblas", "python-gfx1151"]
 makedepends = ["meson", "ninja", "patchelf", "python-build", "python-installer", "python-meson-python", "python-wheel", "rocm-llvm-gfx1151"]
-optdepends = ["blas-openblas: faster linear algebra"]
+optdepends = []
 pypi_name = "numpy"
 src_subdir = "numpy-2.4.4"
 patches_dir = "patches/python-numpy-gfx1151"
 scaffold_notes = [
   "The recipe's key fix here is the meson/clang flag rewrite: convert driver-level -mllvm flags to -Xclang pairs and move -famd-opt to LDFLAGS.",
-  "This scaffold still needs comparison against the current Arch python-numpy PKGBUILD for BLAS provider handling and any distro-specific patches."
+  "Pins Meson BLAS and LAPACK to OpenBLAS so upstream NumPy does not auto-detect and link Intel oneMKL on mixed-provider hosts."
 ]
 
 [packages.python-orjson-gfx1151]

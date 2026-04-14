@@ -6,14 +6,13 @@
 
 pkgname=python-numpy-gfx1151
 pkgver=2.4.4.r8.d20260317.gad42886
-pkgrel=2
+pkgrel=3
 pkgdesc='Scientific tools for Python rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://www.numpy.org/
 license=(custom)
-depends=(cblas lapack python-gfx1151)
+depends=(openblas python-gfx1151)
 makedepends=(meson ninja patchelf python-build python-installer python-meson-python python-wheel rocm-llvm-gfx1151)
-optdepends=('blas-openblas: faster linear algebra')
 options=()
 provides=(python-numpy)
 conflicts=(python-numpy)
@@ -56,8 +55,8 @@ build() {
   export LDFLAGS="-famd-opt"
 
   python -m build --wheel --no-isolation \
-    -Csetup-args=-Dblas=blas \
-    -Csetup-args=-Dlapack=lapack \
+    -Csetup-args=-Dblas=openblas \
+    -Csetup-args=-Dlapack=openblas \
     -Csetup-args=-Dallow-noblas=false
 }
 

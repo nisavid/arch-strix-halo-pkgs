@@ -14,9 +14,9 @@ MULTIARRAY = (
 
 def test_pkgbuild_pins_system_blas_and_lapack() -> None:
     text = PKGBUILD.read_text()
-    assert "pkgrel=2" in text
-    assert "-Csetup-args=-Dblas=blas" in text
-    assert "-Csetup-args=-Dlapack=lapack" in text
+    assert "pkgrel=3" in text
+    assert "-Csetup-args=-Dblas=openblas" in text
+    assert "-Csetup-args=-Dlapack=openblas" in text
     assert "-Csetup-args=-Dallow-noblas=false" in text
 
 
@@ -31,4 +31,3 @@ def test_built_numpy_extension_avoids_mkl_runtime_linkage() -> None:
     output = result.stdout
     assert "/opt/intel/oneapi" not in output
     assert "libmkl_" not in output
-
