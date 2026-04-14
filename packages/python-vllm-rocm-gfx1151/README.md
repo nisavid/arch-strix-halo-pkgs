@@ -42,6 +42,10 @@ recorded in .aiter-status file ("enabled" or "disabled").
 - Disables LTO for this package. Re-enabling inherited `-flto=*` flags makes
   ROCm shared-module links such as `_moe_C.abi3.so` and `_rocm_C.abi3.so`
   fail with `LLVM gold plugin has failed to create LTO module: Invalid record`.
+- Carries a gfx1x AITER enablement patch and a Gemma 4 backend-selection patch
+  so heterogeneous-head Gemma 4 models can prefer
+  `ROCM_AITER_UNIFIED_ATTN` on Strix Halo instead of forcing the Triton
+  unified-attention backend that currently miscompiles during decode.
 - Depends on the local `python-transformers-gfx1151` closure package rather than
   the distro `python-transformers` lane because Gemma 4 support first appears
   in upstream `transformers 5.5.x` and the older host package did not ship
@@ -92,6 +96,12 @@ recorded in .aiter-status file ("enabled" or "disabled").
   path becomes compatible with it. The concrete host failure was
   `_moe_C.abi3.so` / `_rocm_C.abi3.so` link failure with
   `LLVM gold plugin has failed to create LTO module: Invalid record`.
+- Keep the gfx1x AITER enablement and Gemma 4 ROCM_AITER_UNIFIED_ATTN
+  preference unless upstream lands a ROCm-safe single-backend path for
+  heterogeneous-head Gemma 4 models. The concrete host failure was successful
+  Gemma 4 initialization followed by Triton unified-attention decode
+  miscompilation (`operation scheduled before its operands`) and garbage output
+  on gfx1151.
 - Keep the inherited makepkg compile flags when adding Strix tuning flags.
   Overwriting `CFLAGS`/`CXXFLAGS` drops Arch's build-path prefix maps and can
   leak `$srcdir` paths into the shipped ROCm extension modules.
@@ -103,6 +113,27 @@ recorded in .aiter-status file ("enabled" or "disabled").
 - Keep the ROCm GCN-arch fallback import-safe on Strix Halo. AMDSMI ASIC-info probes can fail even when the device is visible; that must degrade to `torch.cuda` probing rather than crashing during module import.
 - Treat the current external python-torchao-rocm _C-extension failure as a host-package defect, not a blocker for this vLLM lane. import vllm stays clean, and the TorchAO Python-level APIs vLLM touches still work on the reference host; only revisit this if TorchAO custom ops or torchao-backed serving paths actually require the native extension.
 - Treat runtime validation against the live ROCm stack as mandatory; a successful wheel build is not enough.
+- Follow the official vLLM Gemma 4 recipe for operational behavior, but only
+  carry the parts that apply to this local Strix Halo ROCm lane. In practice
+  that currently means:
+  - use `google/gemma-4-*-it` checkpoints for assistant/chat/reasoning/tool
+    smokes; base checkpoints can generate but are not a reliable assistant
+    validation target
+  - for text-only offline inference, render prompts with
+    `tokenizer.apply_chat_template(..., add_generation_prompt=True)` before
+    `LLM.generate()` instead of assuming a raw instruction string is a valid
+    assistant smoke
+  - for text-only serving or benchmarking, prefer
+    `--limit-mm-per-prompt image=0,audio=0`; for image-only workloads, prefer
+    `--limit-mm-per-prompt audio=0`
+  - use `--async-scheduling` for throughput-oriented server runs, and disable
+    prefix caching during benchmarks if you want measurements that line up
+    with the recipe guidance
+  - only apply the Gemma 4 thinking/tool-calling parser flags when the smoke
+    or server flow actually exercises those features:
+    `--reasoning-parser gemma4`, `--tool-call-parser gemma4`,
+    `--enable-auto-tool-choice`, and
+    `--chat-template examples/tool_chat_template_gemma4.jinja`
 
 ## Maintainer Starting Points
 

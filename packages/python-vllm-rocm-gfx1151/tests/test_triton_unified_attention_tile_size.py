@@ -11,6 +11,10 @@ SETUP_FLAGS_PATCH = (
     REPO_ROOT
     / "packages/python-vllm-rocm-gfx1151/0006-setup.py-forward-host-and-hip-flags-into-cmake.patch"
 )
+GEMMA4_AITER_PATCH = (
+    REPO_ROOT
+    / "packages/python-vllm-rocm-gfx1151/0007-rocm-enable-gfx1x-aiter-and-prefer-it-for-gemma4.patch"
+)
 
 
 def test_pkgbuild_carries_rocm_large_head_tile_patch():
@@ -24,6 +28,14 @@ def test_pkgbuild_carries_rocm_large_head_tile_patch():
 def test_pkgbuild_carries_setup_flag_forwarding_patch():
     text = PKGBUILD.read_text()
     patch_name = SETUP_FLAGS_PATCH.name
+
+    assert patch_name in text
+    assert f'_apply_patch_if_needed "{patch_name}"' in text
+
+
+def test_pkgbuild_carries_gemma4_aiter_patch():
+    text = PKGBUILD.read_text()
+    patch_name = GEMMA4_AITER_PATCH.name
 
     assert patch_name in text
     assert f'_apply_patch_if_needed "{patch_name}"' in text
@@ -68,3 +80,12 @@ def test_setup_patch_forwards_host_and_hip_flags_into_cmake():
     assert '("CXXFLAGS", "CMAKE_CXX_FLAGS")' in text
     assert '("HIPFLAGS", "CMAKE_HIP_FLAGS")' in text
     assert 'cmake_args += [f"-D{cmake_name}={env_value}"]' in text
+
+
+def test_gemma4_patch_enables_gfx1x_aiter_and_prefers_it():
+    text = GEMMA4_AITER_PATCH.read_text()
+
+    assert "from vllm.platforms.rocm import on_gfx1x, on_mi3xx" in text
+    assert "return on_mi3xx() or on_gfx1x()" in text
+    assert "AttentionBackendEnum.ROCM_AITER_UNIFIED_ATTN" in text
+    assert "decode miscompilation" in text
