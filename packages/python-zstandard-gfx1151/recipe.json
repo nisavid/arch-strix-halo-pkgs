@@ -85,9 +85,9 @@
     "notes": "Builds and installs numpy, sentencepiece, zstandard, asyncpg from\nsource with Zen 5 optimization flags.\n\nnumpy: cmake pip wrapper breaks in build isolation; replaced with\nsymlink to system cmake.\n\nmeson-based packages (numpy, zstandard): -mllvm flags must be\nrewritten as -Xclang -mllvm -Xclang pairs because meson's compiler\nprobing rejects -mllvm as \"unused command line argument\".\n-famd-opt moved to LDFLAGS (link-time-only driver flag, no-op at\ncompile time -- triggers -Werror=unused in compile-only probes).",
     "patches": [
       {
-        "description": "Replace broken Python cmake wrapper with symlink to real system cmake. The cmake pip package installs a Python wrapper that does `from cmake import cmake`, which fails inside pip's build isolation where the cmake Python module isn't available.\n",
-        "dst": "${VLLM_DIR}/.venv/bin/cmake",
-        "src": "system cmake binary",
+        "description": "Replace the recipe's broken venv-local Python cmake wrapper with the real system cmake binary. The cmake pip package installs a Python wrapper that does `from cmake import cmake`, which fails inside pip's build isolation where the cmake Python module is unavailable.\n",
+        "dst": "<build-venv>/.venv/bin/cmake",
+        "src": "/usr/bin/cmake",
         "type": "file_copy"
       }
     ],

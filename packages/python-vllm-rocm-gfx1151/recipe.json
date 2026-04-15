@@ -16,7 +16,10 @@
       "0007-rocm-enable-gfx1x-aiter-and-prefer-it-for-gemma4.patch",
       "0008-torchao-version-check-stays-metadata-only.patch",
       "0009-lazy-import-torchao-config-only-for-torchao-quantization.patch",
-      "0010-cli-help-avoids-eager-benchmark-imports.patch"
+      "0010-cli-help-avoids-eager-benchmark-imports.patch",
+      "0011-openai-protocol-lazifies-chat-utils-import.patch",
+      "0012-arg-utils-lazifies-transformers-utils-imports.patch",
+      "0013-cli-help-keeps-top-level-path-runtime-light.patch"
     ],
     "update_notes": [
       "Check upstream vllm release notes and pyproject metadata first, then reconcile the Python upper-bound and hard-coded supported-version list with the current state of Python 3.14 support.",
@@ -36,7 +39,7 @@
       "Keep HIP build-path prefix-map flags explicit and forwarded through setup.py. The ROCm extension build does not automatically inherit the host C/C++ prefix-map settings into CMAKE_HIP_FLAGS, so sanitization has to be carried through HIPFLAGS and then bridged into CMake.",
       "Keep SageMaker integration optional unless this repo intentionally packages model_hosting_container_standards; missing SageMaker helpers should disable only SageMaker-specific routes, not the base CLI or local server startup paths.",
       "Keep the ROCm GCN-arch fallback import-safe on Strix Halo. AMDSMI ASIC-info probes can fail even when the device is visible; that must degrade to torch.cuda probing rather than crashing during module import.",
-      "Treat the current external python-torchao-rocm _C-extension failure as a host-package defect, not a blocker for this vLLM lane. Generic startup should stay clean after the local TorchAO-import patch, and the remaining follow-up only matters if this repo needs actual TorchAO custom ops or torchao-backed serving paths that truly require the native extension.",
+      "Treat the old external python-torchao-rocm _C-extension failure as a host-package defect, not as a blocker for this vLLM lane. The reference host now uses the local python-torchao-rocm-gfx1151 package and the tiny TorchAO round-trip helper passes end to end; the remaining follow-up is warning investigation plus at least one real-model TorchAO workload.",
       "Treat runtime validation against the live ROCm stack as mandatory; a successful wheel build is not enough."
     ]
   },
@@ -215,7 +218,7 @@
       "Keep HIP build-path prefix-map flags explicit and forwarded through setup.py. The ROCm extension build does not automatically inherit the host C/C++ prefix-map settings into CMAKE_HIP_FLAGS, so sanitization has to be carried through HIPFLAGS and then bridged into CMake.",
       "Keep SageMaker integration optional unless this repo intentionally packages model_hosting_container_standards; missing SageMaker helpers should disable only SageMaker-specific routes, not the base CLI or local server startup paths.",
       "Keep the ROCm GCN-arch fallback import-safe on Strix Halo. AMDSMI ASIC-info probes can fail even when the device is visible; that must degrade to torch.cuda probing rather than crashing during module import.",
-      "Treat the current external python-torchao-rocm _C-extension failure as a host-package defect, not a blocker for this vLLM lane. Generic startup should stay clean after the local TorchAO-import patch, and the remaining follow-up only matters if this repo needs actual TorchAO custom ops or torchao-backed serving paths that truly require the native extension.",
+      "Treat the old external python-torchao-rocm _C-extension failure as a host-package defect, not as a blocker for this vLLM lane. The reference host now uses the local python-torchao-rocm-gfx1151 package and the tiny TorchAO round-trip helper passes end to end; the remaining follow-up is warning investigation plus at least one real-model TorchAO workload.",
       "Treat runtime validation against the live ROCm stack as mandatory; a successful wheel build is not enough."
     ],
     "upstream_version": "0.19.0",

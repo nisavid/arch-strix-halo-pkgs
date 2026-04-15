@@ -30,6 +30,13 @@ The staged package was verified locally with:
 - `ldd -r` resolving cleanly against `/usr/lib/python3.14/site-packages/torch/lib`
 - `PYTHONPATH=<pkgdir>/site-packages python -c 'import torchao'` succeeding
 
+The reference host has now also validated the installed package with a clean
+`import torchao` path and the repo-local `tools/torchao_vllm_smoke.py`
+round-trip helper. The remaining follow-up on that lane is warning
+investigation rather than basic import or serialized-load breakage:
+- `Stored version is not the same as current default version`
+- `Cannot use ROCm custom paged attention kernel, falling back to Triton implementation`
+
 ## Scaffold notes
 
 - This package follows the repo's native wheel lane but needs two TorchAO-specific corrections: export `VERSION_SUFFIX=` so the wheel advertises a real release version, and patch the installed `_C` extension RPATH to include the sibling `torch/lib` directory.
@@ -49,6 +56,10 @@ The staged package was verified locally with:
 - Keep `VERSION_SUFFIX` empty for release builds unless upstream changes its versioning model; `+git` local versions bypass TorchAO's own compatibility gate and recreate avoidable import-time warnings.
 - Keep `ROCM_HOME=/opt/rocm` in the build environment unless the local ROCm packaging layout changes. The host-visible `hipcc` wrapper may live under `/usr/bin`, but the headers and shared libraries still come from `/opt/rocm`.
 - Re-verify the installed extension with `readelf -d` and `ldd -r` after each update. A clean package needs both a usable `torch/lib` runpath and zero unresolved ATen/Torch symbols once `torch/lib` is visible.
+- Keep the repo-local `tools/torchao_vllm_smoke.py` round-trip helper passing.
+  That path now covers a raw GPU `copy_` probe plus a real
+  `quantization="torchao"` vLLM load/generate cycle, so it is the first check
+  to rerun before assuming a TorchAO regression is only in import hygiene.
 
 ## Maintainer Starting Points
 

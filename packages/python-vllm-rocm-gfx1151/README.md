@@ -199,11 +199,11 @@ recorded in .aiter-status file ("enabled" or "disabled").
   through `HIPFLAGS` and then bridged into CMake.
 - Keep SageMaker integration optional unless this repo intentionally packages `model_hosting_container_standards`; missing SageMaker helpers should disable only SageMaker-specific routes, not the base CLI or local server startup paths.
 - Keep the ROCm GCN-arch fallback import-safe on Strix Halo. AMDSMI ASIC-info probes can fail even when the device is visible; that must degrade to `torch.cuda` probing rather than crashing during module import.
-- Treat the current external `python-torchao-rocm` `_C`-extension failure as
-  a host-package defect, not a blocker for this vLLM lane. Generic startup
-  should stay clean after the local TorchAO-import patch, and the remaining
-  follow-up only matters if this repo needs actual TorchAO custom ops or
-  torchao-backed serving paths that truly require the native extension.
+- Treat the old external `python-torchao-rocm` `_C`-extension failure as a
+  host-package defect, not as a blocker for this vLLM lane. The reference host
+  now uses the local `python-torchao-rocm-gfx1151` package and the tiny
+  TorchAO round-trip helper passes end to end; the remaining follow-up is
+  warning investigation plus at least one real-model TorchAO workload.
 - Treat runtime validation against the live ROCm stack as mandatory; a successful wheel build is not enough.
 - Keep patch application idempotent across reused `src/` trees. The concrete
   host failure while cutting `pkgrel=14` was `0008` aborting in `prepare()`

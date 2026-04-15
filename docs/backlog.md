@@ -9,11 +9,6 @@
   `python-mistral-common-gfx1151` closure lanes aligned. The current Gemma 4
   processor path needs both `transformers.models.gemma4` and
   `mistral_common.protocol.instruct.request.ReasoningEffort`.
-- Publish or reinstall the current repo-built `python-sentencepiece-gfx1151`
-  artifact and rerun the host Gemma 4 safetensors vLLM smoke. The current
-  concrete host failure is from the older installed
-  `python-sentencepiece-gfx1151 0.2.1.r8.d20260317.gad42886-1`, whose live
-  extension still linked stale host `sentencepiece` shared libraries.
 - Revisit vLLM HIP build-path sanitization only after the gfx1151 sampler-kernel
   compile failure is understood. A trial patch that routed quoted
   `CMAKE_HIP_FLAGS` through `setup.py` (`shlex.split` on `CMAKE_ARGS`) pushed
@@ -25,6 +20,14 @@
   - reasoning-parser validation (`--reasoning-parser gemma4`)
   - tool-calling validation (`--tool-call-parser gemma4`,
     `--enable-auto-tool-choice`, Gemma 4 tool chat template)
+- Investigate the two remaining warnings on the now-passing TorchAO helper path:
+  - `Stored version is not the same as current default version`
+  - `Cannot use ROCm custom paged attention kernel, falling back to Triton implementation`
+- After those warning investigations, validate at least one real-model TorchAO
+  workload instead of stopping at the tiny local Llama helper. Prefer either:
+  - an upstream TorchAO-quantized checkpoint, or
+  - a local quantized real small model exercised through `vllm serve` /
+    OpenAI-compatible API flow
 - Revisit `python-flydsl-gfx1151` once the MLIR development-surface story is
   clear.
 - Benchmark whether the custom `llama.cpp` builds still justify their
@@ -88,12 +91,10 @@
 
 ## Deferred Host Ergonomics
 
-- After the current packaging and Gemma/vLLM smoke blockers are resolved,
-  standardize host smoke invocations so they do not depend on interactive shell
+- Standardize host smoke invocations so they do not depend on interactive shell
   initialization. Prefer absolute interpreter and binary paths plus explicit
   environment setup over `PATH` mutations inherited from login-shell state.
-- After the current packaging and Gemma/vLLM smoke blockers are resolved,
-  decide whether some ROCm package in the local stack should add
+- Decide whether some ROCm package in the local stack should add
   `/opt/rocm/bin` to interactive-shell `PATH` via `/etc/profile.d/`. Treat
   that only as host ergonomics, not as a required runtime dependency for
   scripts, services, or smoke tests.

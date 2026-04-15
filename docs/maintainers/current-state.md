@@ -1,6 +1,6 @@
 # Current State
 
-Status as of 2026-04-14.
+Status as of 2026-04-15.
 
 ## Live Host State
 
@@ -97,11 +97,12 @@ The following smoke checks have already passed on the reference host:
   The same patch also teaches the runtime to find `hipcc` via
   `/opt/rocm/bin/hipcc` and the standard ROCm env vars instead of relying on
   interactive-shell `PATH` setup.
-- The current host Gemma 4 tokenizer failure is not a repo-package design gap;
-  it is a live-system drift issue. The host still had
+- The earlier host Gemma 4 tokenizer failure was not a repo-package design
+  gap; it was live-system drift. The host had
   `python-sentencepiece-gfx1151 0.2.1.r8.d20260317.gad42886-1` installed, and
   that older installed extension still linked against stale host
-  `sentencepiece` / `protobuf` / `abseil` shared libraries.
+  `sentencepiece` / `protobuf` / `abseil` shared libraries. The rebuilt local
+  package lane is now the validated reference state.
 - `python-vllm-rocm-gfx1151` also carries a ROCm-specific compatibility gate
   for the vendored `triton_kernels` tree, so the `gfx1151` lane falls back
   cleanly when the installed Triton runtime lacks CUDA-only APIs such as
@@ -115,8 +116,8 @@ The following smoke checks have already passed on the reference host:
     `model_hosting_container_standards` as optional, so base CLI and API usage
     no longer hard-fail on that extra package being absent
 - The old external `python-torchao-rocm 0.16.0-1` package on the reference
-  host currently fails to load its optional `_C.abi3.so` extension because the
-  shipped binary is not import-clean against the installed PyTorch runtime: it
+  host failed to load its optional `_C.abi3.so` extension because the shipped
+  binary was not import-clean against the installed PyTorch runtime: it
   is missing a usable `torch/lib` runpath and still fails on unresolved
   `at::TensorBase::const_data_ptr` symbols once the torch shared libraries are
   made visible. Generic vLLM startup is now clean on non-TorchAO code paths:
@@ -137,9 +138,8 @@ The following smoke checks have already passed on the reference host:
   post-install RPATH fix so the shipped `_C` extension can resolve
   `torch/lib`. The staged package now builds locally, shows
   `RUNPATH [$ORIGIN:$ORIGIN/../torch/lib:/opt/rocm/lib]`, resolves cleanly
-  under `ldd -r` against the current torch/ROCm stack, and imports cleanly
-  from the staged payload. Host install verification of that local TorchAO
-  package is still pending.
+  under `ldd -r` against the current torch/ROCm stack, imports cleanly from
+  the staged payload, and is now the installed validated host lane.
 - The current Gemma 4 / vLLM smoke story is now split cleanly:
   - the earlier ROCm runtime blocker was real and is now fixed on the host:
     vLLM selects `ROCM_AITER_UNIFIED_ATTN`, and AITER imports its compiled JIT
@@ -238,6 +238,12 @@ The following smoke checks have already passed on the reference host:
   - the first real TorchAO-dependent validation path has now passed on the
     reference host via `tools/torchao_vllm_smoke.py`, including the raw GPU
     `copy_` probe and the vLLM `quantization="torchao"` load/generate path
+  - investigate the remaining TorchAO config warning on that path:
+    `Stored version is not the same as current default version`
+  - investigate the remaining generation-path warning on that path:
+    `Cannot use ROCm custom paged attention kernel, falling back to Triton implementation`
+  - after those two warning investigations, validate at least one real-model
+    TorchAO workload rather than stopping at the tiny local Llama helper
   - keep TorchAO version checks metadata-only on generic vLLM startup paths so
     broken optional host TorchAO packages do not emit warning noise during
     unrelated CLI or server flows

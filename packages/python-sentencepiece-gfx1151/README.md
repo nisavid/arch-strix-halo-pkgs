@@ -33,10 +33,11 @@ The repo-built package artifacts show the bundled-build patch is effective: the
 current built `_sentencepiece` extension under `packages/.../pkg/` no longer
 depends on `libsentencepiece.so.0` or `libsentencepiece_train.so.0`.
 
-The concrete host Gemma 4 failure happened because the host still had the older
+The earlier host Gemma 4 failure happened because the host still had the older
 installed `python-sentencepiece-gfx1151 0.2.1.r8.d20260317.gad42886-1` package,
 whose installed extension still resolved stale host `sentencepiece` shared
-libraries.
+libraries. The rebuilt local package lane is now the validated reference
+state.
 
 ## Scaffold notes
 
