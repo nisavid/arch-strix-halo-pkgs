@@ -89,10 +89,17 @@ recorded in .aiter-status file ("enabled" or "disabled").
 - The previously installed external `python-torchao-rocm 0.16.0-1` package was
   not import-clean at the native extension layer on the reference host: its
   `_C` extension lacked a usable `torch/lib` runpath and still had unresolved
-  ATen symbols even after `torch/lib` was made visible. Generic vLLM startup
-  should now stay TorchAO-clean on non-TorchAO code paths, and this repo now
-  also carries a local `python-torchao-rocm-gfx1151 0.17.0` replacement lane
-  for actual TorchAO features or `--quantization torchao` validation.
+  ATen symbols even after `torch/lib` was made visible. This repo now carries
+  a local `python-torchao-rocm-gfx1151 0.17.0` replacement lane, and the
+  reference host has already been moved over to it with clean `import torchao`
+  behavior. The tracked round-trip helper for actual TorchAO features or
+  `--quantization torchao` validation is `tools/torchao_vllm_smoke.py`, which
+  prepares a tiny TorchAO-serialized checkpoint locally and can then load it
+  through vLLM without relying on tokenizer initialization. Keep that helper's
+  quantized checkpoint in bfloat16: TorchAO includes the serialized tensor
+  dtype in its metadata contract, and an earlier float32 helper variant failed
+  even before vLLM model init because raw GPU `copy_` rejected the mismatch
+  against vLLM's bfloat16 destination tensors.
 - makepkg -e reuses src/, so build() intentionally reapplies the carried source patches before wheel generation instead of assuming prepare() already ran in the current tree.
 - `makepkg -f` can also reuse a partially patched `src/` tree across failed
   iterations, so patch application is tracked with per-patch stamp files under
@@ -150,6 +157,11 @@ recorded in .aiter-status file ("enabled" or "disabled").
   incompatible PyTorch ABI, causing warning noise during unrelated vLLM
   startup when vLLM imported the TorchAO quantization module just to ask a
   version question.
+- Keep the `0008` TorchAO metadata patch as a valid multi-hunk patch too. The
+  first real TorchAO round-trip on the repaired host package exposed a malformed
+  carry variant that removed the top-level imports from `torchao.py` but left
+  the local `torchao_version_at_least()` helper behind, breaking
+  `quantization="torchao"` loads with `NameError: find_spec`.
 - Keep the quantization registry importing `TorchAOConfig` lazily unless
   upstream stops probing every quantization backend during generic config
   validation. The concrete host failure after the first TorchAO patch was

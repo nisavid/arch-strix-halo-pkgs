@@ -28,7 +28,7 @@ CLI_HELP_LIGHT_PATCH = (
 def test_pkgbuild_carries_torchao_import_patch():
     text = PKGBUILD.read_text()
 
-    assert "pkgrel=18" in text
+    assert "pkgrel=19" in text
     assert PATCH.name in text
     assert f'_apply_patch_if_needed "{PATCH.name}"' in text
     assert (
@@ -51,10 +51,13 @@ def test_patch_moves_generic_version_checks_to_metadata_only_helper():
 
     assert "torchao_utils.py" in text
     assert "Check installed torchao version without importing the torchao package" in text
+    assert "@@ -60,17 +60,6 @@" in text
     assert (
         "from vllm.model_executor.layers.quantization.torchao_utils import ("
         in text
     )
+    assert "-def torchao_version_at_least(torchao_version: str) -> bool:" in text
+    assert "-    if find_spec(\"torchao\"):" in text
     assert (
         "-from vllm.model_executor.layers.quantization.torchao import "
         "torchao_version_at_least" in text

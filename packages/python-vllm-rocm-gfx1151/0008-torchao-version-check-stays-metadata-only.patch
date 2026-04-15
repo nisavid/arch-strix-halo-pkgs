@@ -1,7 +1,7 @@
 diff --git a/vllm/model_executor/layers/quantization/torchao.py b/vllm/model_executor/layers/quantization/torchao.py
 --- a/vllm/model_executor/layers/quantization/torchao.py
 +++ b/vllm/model_executor/layers/quantization/torchao.py
-@@ -1,26 +1,26 @@
+@@ -1,15 +1,12 @@
  # SPDX-License-Identifier: Apache-2.0
  # SPDX-FileCopyrightText: Copyright contributors to the vLLM project
 -import importlib
@@ -17,27 +17,20 @@ diff --git a/vllm/model_executor/layers/quantization/torchao.py b/vllm/model_exe
  from torch.nn.parameter import Parameter
  
  from vllm.logger import init_logger
- from vllm.model_executor.layers.linear import (
-     LinearBase,
-     LinearMethodBase,
-     UnquantizedLinearMethod,
- )
- from vllm.model_executor.layers.quantization import QuantizationMethods
+@@ -22,6 +19,9 @@
  from vllm.model_executor.layers.quantization.base_config import (
      QuantizationConfig,
      QuantizeMethodBase,
- )
++)
 +from vllm.model_executor.layers.quantization.torchao_utils import (
 +    torchao_version_at_least,
-+)
+ )
  from vllm.model_executor.utils import set_weight_attrs
  
- logger = init_logger(__name__)
-@@ -58,19 +58,7 @@ def _restore_weight_attrs(param, recorded_weight_attr):
-     for attr_name, attr in recorded_weight_attr.items():
+@@ -60,17 +60,6 @@
          if not hasattr(param, attr_name):
              setattr(param, attr_name, _bond_method_to_cls(attr, param))
--
+ 
 -
 -def torchao_version_at_least(torchao_version: str) -> bool:
 -    if find_spec("torchao"):

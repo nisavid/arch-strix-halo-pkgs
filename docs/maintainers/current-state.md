@@ -183,6 +183,22 @@ The following smoke checks have already passed on the reference host:
   - keep `enforce_eager=True` for the current local smoke path
   - expect the 31B instruction-tuned checkpoint to emit an empty thought block
     prefix when thinking is disabled, matching the upstream Gemma 4 model card
+- The tracked TorchAO-dependent validation tool is now
+  `tools/torchao_vllm_smoke.py`.
+  - `--prepare-only` builds a tiny local Llama checkpoint, reloads it through
+    `transformers.TorchAoConfig(Int8WeightOnlyConfig(version=2))`, and saves a
+    TorchAO-serialized safetensors checkpoint without needing a tokenizer or
+    network download.
+  - the full mode has now passed on the reference host: it first runs a raw
+    GPU `copy_` probe that mirrors vLLM's TorchAO weight-loading contract, then
+    loads the same local checkpoint through vLLM with `skip_tokenizer_init=True`
+    and generates from raw `prompt_token_ids`, which exercises the serialized
+    TorchAO path rather than the BF16 Gemma path.
+  - keep the helper checkpoint in bfloat16. The first failing helper variant
+    serialized TorchAO weights with `dtype=torch.float32`, while vLLM's
+    destination tensors were created with `dtype=torch.bfloat16`; TorchAO
+    treats that dtype as part of tensor metadata and rejects `copy_` before
+    vLLM reaches model init.
 - `llama.cpp-hip-gfx1151` uses `aur/llama.cpp-hip` as the authoritative
   baseline reference.
 - `llama.cpp-vulkan-gfx1151` currently uses `aur/llama.cpp-vulkan-bin` as the
@@ -215,14 +231,21 @@ The following smoke checks have already passed on the reference host:
   - treat that as the current blocker before attempting any further vLLM
     build-path sanitization
 - vLLM/TorchAO follow-up
-  - replace the old external `python-torchao-rocm 0.16.0-1` install on the
-    reference host with the local `python-torchao-rocm-gfx1151 0.17.0` package
-    and verify that `import torchao` becomes warning-free
-  - after the host package swap, validate at least one real TorchAO-dependent
-    path such as `--quantization torchao` before calling the lane done
+  - the reference host is now on the local
+    `python-torchao-rocm-gfx1151 0.17.0` package, and `import torchao` is
+    warning-free aside from an upstream Python `SyntaxWarning` in
+    `torchao/quantization/quant_api.py`
+  - the first real TorchAO-dependent validation path has now passed on the
+    reference host via `tools/torchao_vllm_smoke.py`, including the raw GPU
+    `copy_` probe and the vLLM `quantization="torchao"` load/generate path
   - keep TorchAO version checks metadata-only on generic vLLM startup paths so
     broken optional host TorchAO packages do not emit warning noise during
     unrelated CLI or server flows
+  - keep the `0008` TorchAO metadata patch as a valid multi-hunk patch too;
+    an earlier malformed carry variant removed the imports from
+    `vllm.model_executor.layers.quantization.torchao` but left the local
+    `torchao_version_at_least()` helper behind, which broke actual
+    `quantization="torchao"` config verification with `NameError: find_spec`
   - keep `TorchAOConfig` behind a quantization-specific lazy import in the
     generic registry as well; vLLM currently probes quantization backends
     during config validation, and that path must not import TorchAO unless
