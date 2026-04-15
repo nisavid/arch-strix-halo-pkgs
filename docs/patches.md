@@ -60,6 +60,13 @@ system.
   - Adds RDNA-safe fallbacks for packed FP8 and reduction paths that assume
     CDNA-only instructions.
 
+## TorchAO
+
+- [Honor `PYTORCH_ROCM_ARCH` instead of hard-coding `gfx942`](../packages/python-torchao-rocm-gfx1151/0001-setup.py-honor-pytorch-rocm-arch.patch)
+  - Makes the upstream ROCm build use an explicit environment-selected target
+    arch so the local package can build for `gfx1151` instead of compiling only
+    for MI300-class `gfx942`.
+
 ## Patch Hygiene
 
 - Keep patches narrowly scoped when they may plausibly be reused in another

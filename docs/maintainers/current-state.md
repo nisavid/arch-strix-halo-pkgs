@@ -114,38 +114,32 @@ The following smoke checks have already passed on the reference host:
   - SageMaker-specific API routers now treat
     `model_hosting_container_standards` as optional, so base CLI and API usage
     no longer hard-fail on that extra package being absent
-- The host `python-torchao-rocm` package currently fails to load its optional
-  `_C.abi3.so` extension because the shipped binary is not import-clean
-  against the installed PyTorch runtime: it is missing a usable `torch/lib`
-  runpath and still fails on unresolved `at::TensorBase::const_data_ptr`
-  symbols once the torch shared libraries are made visible. Generic vLLM
-  startup is still being tightened to avoid importing TorchAO eagerly on
-  non-TorchAO code paths. The first lazy-import boundary removed the
-  model-loader version-check import, but `vllm --help` still reached
-  `TorchAOConfig` through the generic quantization registry. Treat the host
-  TorchAO defect as optional-feature debt, but keep carrying lazy-import
-  boundaries until generic CLI/help/server startup no longer surfaces the
-  warning. The TorchAO Python-level APIs vLLM actually touches
+- The old external `python-torchao-rocm 0.16.0-1` package on the reference
+  host currently fails to load its optional `_C.abi3.so` extension because the
+  shipped binary is not import-clean against the installed PyTorch runtime: it
+  is missing a usable `torch/lib` runpath and still fails on unresolved
+  `at::TensorBase::const_data_ptr` symbols once the torch shared libraries are
+  made visible. Generic vLLM startup is now clean on non-TorchAO code paths:
+  plain `vllm --help` no longer surfaces the warning after the local
+  lazy-import boundaries on the version path, quantization registry, benchmark
+  CLI, OpenAI protocol, engine arg utils, and top-level help registration.
+  The remaining warning on the old text-only Gemma smoke was traced instead to
+  the smoke harness importing `transformers.AutoProcessor`, which reaches
+  `transformers.quantizers.quantizer_torchao`; `AutoTokenizer` is clean on the
+  same host. The TorchAO Python-level APIs vLLM actually touches
   (`config_from_dict`, `quantize_`, and packed-tensor conversion) still work
-  on the reference host. A third startup-noise fix is also required on this
-  lane: plain `vllm --help` must stay off the benchmark latency import path,
-  because `vllm.entrypoints.cli.benchmark.latency` imports
-  `vllm.benchmarks.latency` at module import time and that path drags in
-  `EngineArgs` plus enough generic config/model code to resurface the same
-  optional TorchAO warning. A fourth startup-noise fix is also required on
-  this lane: `vllm.entrypoints.openai.engine.protocol` must not import
-  `vllm.entrypoints.chat_utils` at module import time just to build tool-call
-  IDs, because that chat-utils path drags in Transformers chat/model helpers
-  and can still reach `transformers.quantizers.quantizer_torchao` during
-  otherwise generic CLI startup. A fifth startup-noise fix is also required on
-  this lane: `vllm.engine.arg_utils` must not import
-  `vllm.transformers_utils.config`, `gguf_utils`, `repo_utils`, and `utils`
-  at module import time, because those helpers are only needed in runtime
-  methods but their eager import immediately pulls in Hugging Face
-  `transformers` and its quantizer registry. A sixth startup-noise fix is
-  also required here: plain top-level `vllm --help` must not import
-  `vllm.entrypoints.utils` runtime helpers or the heavy `serve`/`launch`/
-  `run-batch` command trees just to print the subcommand list.
+  on the reference host. This repo now also carries a local
+  `python-torchao-rocm-gfx1151` `0.17.0` lane aligned to torch `2.11.0+`, with
+  `VERSION_SUFFIX=` to avoid TorchAO's `+git` compatibility bypass,
+  `ROCM_HOME=/opt/rocm` so PyTorch's extension helper uses the real
+  split-layout ROCm headers instead of falling back to `/usr`, a local ROCm
+  arch patch so source builds honor `PYTORCH_ROCM_ARCH=gfx1151`, and a
+  post-install RPATH fix so the shipped `_C` extension can resolve
+  `torch/lib`. The staged package now builds locally, shows
+  `RUNPATH [$ORIGIN:$ORIGIN/../torch/lib:/opt/rocm/lib]`, resolves cleanly
+  under `ldd -r` against the current torch/ROCm stack, and imports cleanly
+  from the staged payload. Host install verification of that local TorchAO
+  package is still pending.
 - The current Gemma 4 / vLLM smoke story is now split cleanly:
   - the earlier ROCm runtime blocker was real and is now fixed on the host:
     vLLM selects `ROCM_AITER_UNIFIED_ATTN`, and AITER imports its compiled JIT
@@ -181,7 +175,9 @@ The following smoke checks have already passed on the reference host:
     the model's default chat template is sufficient
 - The current validated Gemma 4 local smoke workflow on Strix Halo is:
   - use `google/gemma-4-E2B-it` or `google/gemma-4-31B-it`
-  - render the prompt with the checkpoint's chat template
+  - render the prompt with the checkpoint's tokenizer chat template for
+    text-only smokes; the tracked tool is `tools/gemma4_text_smoke.py`
+  - reserve `AutoProcessor.apply_chat_template` for multimodal Gemma 4 smokes
   - run vLLM in text-only mode with
     `limit_mm_per_prompt={"image": 0, "audio": 0, "video": 0}`
   - keep `enforce_eager=True` for the current local smoke path
@@ -219,9 +215,11 @@ The following smoke checks have already passed on the reference host:
   - treat that as the current blocker before attempting any further vLLM
     build-path sanitization
 - vLLM/TorchAO follow-up
-  - only revisit the external `python-torchao-rocm` package if this repo needs
-    working TorchAO custom ops or `--quantization torchao` paths that truly
-    depend on the native `_C` extension rather than the Python-level APIs
+  - replace the old external `python-torchao-rocm 0.16.0-1` install on the
+    reference host with the local `python-torchao-rocm-gfx1151 0.17.0` package
+    and verify that `import torchao` becomes warning-free
+  - after the host package swap, validate at least one real TorchAO-dependent
+    path such as `--quantization torchao` before calling the lane done
   - keep TorchAO version checks metadata-only on generic vLLM startup paths so
     broken optional host TorchAO packages do not emit warning noise during
     unrelated CLI or server flows

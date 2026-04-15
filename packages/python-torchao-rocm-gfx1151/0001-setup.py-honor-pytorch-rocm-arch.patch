@@ -1,0 +1,12 @@
+--- a/setup.py
++++ b/setup.py
+@@ -656,7 +656,8 @@ def get_extensions():
+     # TOOD: Remove this and use what CUDA has once we fix all the builds.
+     # TODO: Add support for other ROCm GPUs
+     if use_rocm:
+-        extra_compile_args["nvcc"].append("--offload-arch=gfx942")
++        rocm_arch = os.getenv("PYTORCH_ROCM_ARCH", "gfx942")
++        extra_compile_args["nvcc"].append(f"--offload-arch={rocm_arch}")
+         sources += rocm_sources
+     else:
+         # Remove ROCm-based sources from the sources list.

@@ -86,12 +86,13 @@ recorded in .aiter-status file ("enabled" or "disabled").
   `5.5.x` imports `ReasoningEffort` from
   `mistral_common.protocol.instruct.request`, and that symbol is missing from
   the older package.
-- The currently installed external `python-torchao-rocm` package is still not
-  import-clean at the native extension layer on this host, but generic vLLM
-  startup should no longer import TorchAO eagerly on non-TorchAO code paths.
-  Treat the remaining host TorchAO breakage as an optional-feature defect to
-  revisit only if this repo needs working TorchAO custom ops or actual
-  `--quantization torchao` support.
+- The previously installed external `python-torchao-rocm 0.16.0-1` package was
+  not import-clean at the native extension layer on the reference host: its
+  `_C` extension lacked a usable `torch/lib` runpath and still had unresolved
+  ATen symbols even after `torch/lib` was made visible. Generic vLLM startup
+  should now stay TorchAO-clean on non-TorchAO code paths, and this repo now
+  also carries a local `python-torchao-rocm-gfx1151 0.17.0` replacement lane
+  for actual TorchAO features or `--quantization torchao` validation.
 - makepkg -e reuses src/, so build() intentionally reapplies the carried source patches before wheel generation instead of assuming prepare() already ran in the current tree.
 - `makepkg -f` can also reuse a partially patched `src/` tree across failed
   iterations, so patch application is tracked with per-patch stamp files under

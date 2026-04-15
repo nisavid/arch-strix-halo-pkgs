@@ -25,9 +25,10 @@
   - reasoning-parser validation (`--reasoning-parser gemma4`)
   - tool-calling validation (`--tool-call-parser gemma4`,
     `--enable-auto-tool-choice`, Gemma 4 tool chat template)
-- Decide whether this repo should carry a canonical local Gemma 4 smoke script
-  under version control now that the non-interactive, text-only `-it` workflow
-  is stable enough to reuse.
+- Install and verify the local `python-torchao-rocm-gfx1151` package on the
+  reference host, then run at least one real TorchAO-dependent validation path
+  so the old external `python-torchao-rocm 0.16.0-1` package can stop being
+  the reference state for TorchAO behavior.
 - Revisit `python-flydsl-gfx1151` once the MLIR development-surface story is
   clear.
 - Benchmark whether the custom `llama.cpp` builds still justify their

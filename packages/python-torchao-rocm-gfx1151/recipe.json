@@ -1,0 +1,128 @@
+{
+  "maintenance": {
+    "advisory_references": [
+      "extra/python-pytorch-opt-rocm",
+      "extra/python-pytorch-rocm"
+    ],
+    "authoritative_reference": "none",
+    "divergence_notes": [
+      "There is no standalone TorchAO package in Arch-family repositories, so this package is closure-first and tracks the upstream TorchAO compatibility matrix against the local PyTorch ROCm lane.",
+      "Carries a package-local ROCm patch so the source build honors PYTORCH_ROCM_ARCH instead of hard-coding gfx942, exports ROCM_HOME=/opt/rocm so PyTorch picks up the real split-layout HIP headers, and carries a post-install RPATH fix so the optional _C extension can resolve torch/lib at runtime."
+    ],
+    "source_patches": [
+      "0001-setup.py-honor-pytorch-rocm-arch.patch"
+    ],
+    "update_notes": [
+      "Check the upstream TorchAO compatibility table first during updates; this package must stay on the release line built for the local PyTorch lane rather than a nearby +git snapshot.",
+      "Keep VERSION_SUFFIX empty for release builds unless upstream changes its versioning model; +git local versions bypass TorchAO's own compatibility gate and recreate avoidable import-time warnings.",
+      "Keep ROCM_HOME=/opt/rocm in the build environment unless the local ROCm packaging layout changes. The host-visible hipcc wrapper may live under /usr/bin, but the headers and shared libraries still come from /opt/rocm.",
+      "Re-verify the installed extension with readelf -d and ldd -r after each update. A clean package needs both a usable torch/lib runpath and zero unresolved ATen/Torch symbols once torch/lib is visible."
+    ]
+  },
+  "name": "python-torchao-rocm-gfx1151",
+  "package_name": "python-torchao-rocm-gfx1151",
+  "pkgver": "0.17.0.r8.d20260317.gad42886",
+  "policy": {
+    "advisory_references": [
+      "extra/python-pytorch-opt-rocm",
+      "extra/python-pytorch-rocm"
+    ],
+    "arch_reference": [
+      "extra/python-pytorch-opt-rocm",
+      "extra/python-pytorch-rocm"
+    ],
+    "authoritative_reference": "none",
+    "conflicts": [
+      "python-torchao",
+      "python-torchao-rocm"
+    ],
+    "depends": [
+      "glibc",
+      "python-gfx1151",
+      "python-pytorch-opt-rocm-gfx1151"
+    ],
+    "divergence_notes": [
+      "There is no standalone TorchAO package in Arch-family repositories, so this package is closure-first and tracks the upstream TorchAO compatibility matrix against the local PyTorch ROCm lane.",
+      "Carries a package-local ROCm patch so the source build honors PYTORCH_ROCM_ARCH instead of hard-coding gfx942, and carries a post-install RPATH fix so the optional _C extension can resolve torch/lib at runtime."
+    ],
+    "extra_sources": [
+      "0001-setup.py-honor-pytorch-rocm-arch.patch"
+    ],
+    "license": [
+      "BSD-3-Clause"
+    ],
+    "makedepends": [
+      "cmake",
+      "git",
+      "ninja",
+      "patchelf",
+      "python-build",
+      "python-installer",
+      "python-setuptools",
+      "python-wheel",
+      "python-pytorch-opt-rocm-gfx1151",
+      "rocm-llvm-gfx1151"
+    ],
+    "patches_dir": "patches/python-torchao-rocm-gfx1151",
+    "pkgdesc": "Package for applying ao techniques to GPU models with ROCm, rebuilt for Strix Halo gfx1151",
+    "provides": [
+      "python-torchao",
+      "python-torchao-rocm"
+    ],
+    "recipe_key": "native_wheels",
+    "scaffold_notes": [
+      "This package follows the repo's native wheel lane but needs two TorchAO-specific corrections: export VERSION_SUFFIX= so the wheel advertises a real release version, and patch the installed _C extension RPATH to include the sibling torch/lib directory.",
+      "TorchAO 0.17.0 does not publish an sdist on PyPI, so the local source-build lane follows the upstream git tag and lets setup.py initialize the pinned cutlass submodule as needed.",
+      "The upstream 0.17.0 setup.py still hard-codes --offload-arch=gfx942 on ROCm, so keep the local source patch that makes the ROCm target arch configurable via PYTORCH_ROCM_ARCH.",
+      "The local build must also export ROCM_HOME=/opt/rocm. On this host, hipcc is visible under /usr/bin, but the actual HIP headers live under /opt/rocm/include; without the explicit prefix, PyTorch's extension helper falls back to ROCM_HOME=/usr and the build dies on hip/hip_runtime.h."
+    ],
+    "source_patches": [
+      "0001-setup.py-honor-pytorch-rocm-arch.patch"
+    ],
+    "sha256sums": [
+      "SKIP"
+    ],
+    "source_refs": [
+      "torchao::git+https://github.com/pytorch/ao.git#tag=v0.17.0"
+    ],
+    "src_subdir": "torchao",
+    "template": "native-wheel-pypi",
+    "update_notes": [
+      "Check the upstream TorchAO compatibility table first during updates; this package must stay on the release line built for the local PyTorch lane rather than a nearby +git snapshot.",
+      "Keep VERSION_SUFFIX empty for release builds unless upstream changes its versioning model; +git local versions bypass TorchAO's own compatibility gate and recreate avoidable import-time warnings.",
+      "Re-verify the installed extension with readelf -d and ldd -r after each update. A clean package needs both a usable torch/lib runpath and zero unresolved ATen/Torch symbols once torch/lib is visible."
+    ],
+    "upstream_version": "0.17.0",
+    "url": "https://github.com/pytorch/ao"
+  },
+  "provenance": {
+    "output_root": "packages",
+    "recipe_author": "Blackcat Informatics Inc.",
+    "recipe_repo": "https://github.com/paudley/ai-notes",
+    "recipe_subdir": "strix-halo",
+    "repo_subpath": "."
+  },
+  "recipe": {
+    "branch": null,
+    "depends_on": [
+      "cpython",
+      "pytorch"
+    ],
+    "method": "pip",
+    "notes": "Builds TorchAO 0.17.0 from the upstream git tag because that release\ndoes not publish an sdist on PyPI.\n\nTorchAO imports torch at build time and still hard-codes gfx942 for ROCm\nextension builds. The local package exports VERSION_SUFFIX= to keep the\nwheel on the stable release version, exports ROCM_HOME=/opt/rocm so\nPyTorch's extension helpers use the real split-layout ROCm headers, and\npatches setup.py so the ROCm target arch follows PYTORCH_ROCM_ARCH.\n\nThe staged package was verified locally with readelf -d showing RUNPATH\n[$ORIGIN:$ORIGIN/../torch/lib:/opt/rocm/lib], ldd -r resolving cleanly\nagainst /usr/lib/python3.14/site-packages/torch/lib, and a PYTHONPATH-based\nimport of torchao succeeding from the staged payload.",
+    "patches": [
+      {
+        "description": "Replace broken Python cmake wrapper with symlink to real system cmake. The cmake pip package installs a Python wrapper that does `from cmake import cmake`, which fails inside pip's build isolation where the cmake Python module isn't available.\n",
+        "dst": "${VLLM_DIR}/.venv/bin/cmake",
+        "src": "system cmake binary",
+        "type": "file_copy"
+      }
+    ],
+    "phase": "H",
+    "repo": "https://github.com/pytorch/ao",
+    "src_dir": null,
+    "steps": [
+      31
+    ]
+  }
+}
