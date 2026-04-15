@@ -6,7 +6,7 @@
 
 pkgname=python-vllm-rocm-gfx1151
 pkgver=0.19.0.r8.d20260317.gad42886
-pkgrel=19
+pkgrel=20
 pkgdesc='High-throughput and memory-efficient inference engine for LLMs with ROCm, rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://github.com/vllm-project/vllm
@@ -18,8 +18,8 @@ options=(!lto)
 provides=(python-vllm-rocm python-vllm)
 conflicts=(python-vllm-rocm python-vllm)
 replaces=()
-source=(https://github.com/vllm-project/vllm/archive/refs/tags/v0.19.0.tar.gz 0001-python-3.14-version-gates.patch 0002-cli-version-avoids-eager-runtime-imports.patch 0003-rocm-gate-vendored-triton-kernels-on-runtime-support.patch 0004-rocm-fallback-and-optional-sagemaker-standards.patch 0005-rocm-reduce-triton-unified-attention-prefill-tile-for-large-heads.patch 0006-setup.py-forward-host-and-hip-flags-into-cmake.patch 0007-rocm-enable-gfx1x-aiter-and-prefer-it-for-gemma4.patch 0008-torchao-version-check-stays-metadata-only.patch 0009-lazy-import-torchao-config-only-for-torchao-quantization.patch 0010-cli-help-avoids-eager-benchmark-imports.patch 0011-openai-protocol-lazifies-chat-utils-import.patch 0012-arg-utils-lazifies-transformers-utils-imports.patch 0013-cli-help-keeps-top-level-path-runtime-light.patch)
-sha256sums=(SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP)
+source=(https://github.com/vllm-project/vllm/archive/refs/tags/v0.19.0.tar.gz 0001-python-3.14-version-gates.patch 0002-cli-version-avoids-eager-runtime-imports.patch 0003-rocm-gate-vendored-triton-kernels-on-runtime-support.patch 0004-rocm-fallback-and-optional-sagemaker-standards.patch 0005-rocm-reduce-triton-unified-attention-prefill-tile-for-large-heads.patch 0006-setup.py-forward-host-and-hip-flags-into-cmake.patch 0007-rocm-enable-gfx1x-aiter-and-prefer-it-for-gemma4.patch 0008-torchao-startup-stays-lazy.patch 0009-cli-startup-stays-runtime-light.patch)
+sha256sums=(SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP)
 
 _apply_patch_if_needed() {
   local _patch_name="$1"
@@ -50,9 +50,7 @@ _apply_patch_if_needed() {
   : >"${_stamp}"
 }
 
-prepare() {
-  cd "$srcdir/vllm-0.19.0"
-
+_apply_all_source_patches() {
   _apply_patch_if_needed "0001-python-3.14-version-gates.patch"
   _apply_patch_if_needed "0002-cli-version-avoids-eager-runtime-imports.patch"
   _apply_patch_if_needed "0003-rocm-gate-vendored-triton-kernels-on-runtime-support.patch"
@@ -60,30 +58,20 @@ prepare() {
   _apply_patch_if_needed "0005-rocm-reduce-triton-unified-attention-prefill-tile-for-large-heads.patch"
   _apply_patch_if_needed "0006-setup.py-forward-host-and-hip-flags-into-cmake.patch"
   _apply_patch_if_needed "0007-rocm-enable-gfx1x-aiter-and-prefer-it-for-gemma4.patch"
-  _apply_patch_if_needed "0008-torchao-version-check-stays-metadata-only.patch"
-  _apply_patch_if_needed "0009-lazy-import-torchao-config-only-for-torchao-quantization.patch"
-  _apply_patch_if_needed "0010-cli-help-avoids-eager-benchmark-imports.patch"
-  _apply_patch_if_needed "0011-openai-protocol-lazifies-chat-utils-import.patch"
-  _apply_patch_if_needed "0012-arg-utils-lazifies-transformers-utils-imports.patch"
-  _apply_patch_if_needed "0013-cli-help-keeps-top-level-path-runtime-light.patch"
+  _apply_patch_if_needed "0008-torchao-startup-stays-lazy.patch"
+  _apply_patch_if_needed "0009-cli-startup-stays-runtime-light.patch"
+}
+
+prepare() {
+  cd "$srcdir/vllm-0.19.0"
+
+  _apply_all_source_patches
 }
 
 build() {
   cd "$srcdir/vllm-0.19.0"
 
-  _apply_patch_if_needed "0001-python-3.14-version-gates.patch"
-  _apply_patch_if_needed "0002-cli-version-avoids-eager-runtime-imports.patch"
-  _apply_patch_if_needed "0003-rocm-gate-vendored-triton-kernels-on-runtime-support.patch"
-  _apply_patch_if_needed "0004-rocm-fallback-and-optional-sagemaker-standards.patch"
-  _apply_patch_if_needed "0005-rocm-reduce-triton-unified-attention-prefill-tile-for-large-heads.patch"
-  _apply_patch_if_needed "0006-setup.py-forward-host-and-hip-flags-into-cmake.patch"
-  _apply_patch_if_needed "0007-rocm-enable-gfx1x-aiter-and-prefer-it-for-gemma4.patch"
-  _apply_patch_if_needed "0008-torchao-version-check-stays-metadata-only.patch"
-  _apply_patch_if_needed "0009-lazy-import-torchao-config-only-for-torchao-quantization.patch"
-  _apply_patch_if_needed "0010-cli-help-avoids-eager-benchmark-imports.patch"
-  _apply_patch_if_needed "0011-openai-protocol-lazifies-chat-utils-import.patch"
-  _apply_patch_if_needed "0012-arg-utils-lazifies-transformers-utils-imports.patch"
-  _apply_patch_if_needed "0013-cli-help-keeps-top-level-path-runtime-light.patch"
+  _apply_all_source_patches
 
   _setup_compiler_env() {
   local _compiler_root="/opt/rocm/lib/llvm/bin"
@@ -142,17 +130,6 @@ build() {
   export VLLM_ROCM_USE_AITER=1
 
   rm -rf .deps/triton_kernels-*
-
-  local _rocm_compat="$srcdir/.torch-rocm-compat"
-  rm -rf "${_rocm_compat}"
-  mkdir -p "${_rocm_compat}"
-  if [[ -f /opt/rocm/lib/librocsolver.so.1 ]] && [[ ! -e /opt/rocm/lib/librocsolver.so.0 ]]; then
-    # Temporary build-only shim for host torch import. Final integration
-    # should rebuild torchvision/vllm against the local PyTorch package
-    # once its ROCm linkage is import-clean.
-    ln -sf /opt/rocm/lib/librocsolver.so.1 "${_rocm_compat}/librocsolver.so.0"
-  fi
-  export LD_LIBRARY_PATH="${_rocm_compat}:/opt/rocm/lib:${LD_LIBRARY_PATH:-}"
 
   mkdir -p dist
   rm -f dist/*.whl

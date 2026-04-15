@@ -247,27 +247,18 @@ The following smoke checks have already passed on the reference host:
   - keep TorchAO version checks metadata-only on generic vLLM startup paths so
     broken optional host TorchAO packages do not emit warning noise during
     unrelated CLI or server flows
-  - keep the `0008` TorchAO metadata patch as a valid multi-hunk patch too;
-    an earlier malformed carry variant removed the imports from
-    `vllm.model_executor.layers.quantization.torchao` but left the local
-    `torchao_version_at_least()` helper behind, which broke actual
-    `quantization="torchao"` config verification with `NameError: find_spec`
-  - keep `TorchAOConfig` behind a quantization-specific lazy import in the
-    generic registry as well; vLLM currently probes quantization backends
-    during config validation, and that path must not import TorchAO unless
-    `quantization == "torchao"`
-  - keep plain `vllm --help` off the benchmark latency import path too; the
-    benchmark command tree should only load when the user actually invokes
-    `vllm bench ...`
-  - keep the OpenAI engine protocol module off the `chat_utils` import path on
-    generic startup too; tool-call ID helpers can be imported lazily when a
-    tool call is actually serialized
-  - keep `vllm.engine.arg_utils` off the `vllm.transformers_utils.*` import
-    path on generic startup too; those helpers should load only inside the
-    methods that actually need them
-  - keep top-level `vllm --help` off the shared `entrypoints.utils` runtime
-    path and off heavy subcommand registration imports too; generic help only
-    needs static command metadata, not the serving/runtime trees
+  - keep the merged
+    `0008-torchao-startup-stays-lazy.patch` valid as a multi-hunk patch; it
+    now carries both the metadata-only version check path and the
+    quantization-registry lazy import, and an earlier malformed carry variant
+    broke real `quantization="torchao"` config verification with
+    `NameError: find_spec`
+  - keep the merged `0009-cli-startup-stays-runtime-light.patch` unless
+    upstream makes the generic startup path import-clean on its own; it keeps
+    plain `vllm --help` off the benchmark tree, the OpenAI `chat_utils`
+    tool-call path, Transformers-backed `arg_utils` helpers, and the heavy
+    `serve`/`launch`/`run-batch` runtime imports unless the user actually
+    selected those flows
   - keep package patch application idempotent across reused `src/` trees as
     well; repeated `makepkg -f` runs during this lane left partially patched
     trees behind and caused `prepare()` to fail when a file-adding patch was

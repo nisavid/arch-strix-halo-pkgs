@@ -35,9 +35,18 @@ def test_pkgbuild_cleans_stale_triton_fetchcontent_state():
 def test_pkgbuild_reapplies_source_patches_for_noextract_rebuilds():
     text = PKGBUILD.read_text()
     assert "_apply_patch_if_needed" in text
+    assert "_apply_all_source_patches" in text
     assert 'build() {' in text
     assert '[[ -f "${startdir}/${_patch_name}" ]]' in text
-    assert '_apply_patch_if_needed "0002-cli-version-avoids-eager-runtime-imports.patch"' in text
+    assert '_apply_all_source_patches' in text
+
+
+def test_pkgbuild_drops_old_build_only_librocsolver_shim():
+    text = PKGBUILD.read_text()
+
+    assert "librocsolver.so.0" not in text
+    assert ".torch-rocm-compat" not in text
+    assert 'export LD_LIBRARY_PATH="${_rocm_compat}:/opt/rocm/lib:${LD_LIBRARY_PATH:-}"' not in text
 
 
 def test_vllm_version_is_metadata_only():

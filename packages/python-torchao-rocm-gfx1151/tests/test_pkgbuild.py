@@ -42,5 +42,24 @@ def test_package_docs_record_compatibility_and_runpath_story():
     assert "VERSION_SUFFIX" in readme
     assert "ROCM_HOME=/opt/rocm" in readme
     assert "torch/lib" in readme
+    assert "tools/torchao_vllm_smoke.py" in readme
+    assert "Stored version is not the same as current default version" in readme
     assert "0.17.0" in recipe
     assert "ROCM_HOME=/opt/rocm" in recipe
+    assert "tools/torchao_vllm_smoke.py" in recipe
+
+
+def test_native_wheel_recipe_patch_metadata_uses_generic_build_venv_paths():
+    recipes = [
+        REPO_ROOT / "packages/python-asyncpg-gfx1151/recipe.json",
+        REPO_ROOT / "packages/python-numpy-gfx1151/recipe.json",
+        REPO_ROOT / "packages/python-sentencepiece-gfx1151/recipe.json",
+        REPO_ROOT / "packages/python-torchao-rocm-gfx1151/recipe.json",
+        REPO_ROOT / "packages/python-zstandard-gfx1151/recipe.json",
+    ]
+
+    for recipe_path in recipes:
+        text = recipe_path.read_text()
+        assert "${VLLM_DIR}" not in text, recipe_path
+        assert "<build-venv>/.venv/bin/cmake" in text, recipe_path
+        assert '"/usr/bin/cmake"' in text, recipe_path

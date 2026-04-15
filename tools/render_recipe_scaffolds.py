@@ -606,6 +606,8 @@ EOF
 _apply_patch_if_needed() {
   local _patch_name="$1"
   local _patch=""
+  local _stamp_dir="${srcdir}/.patch-state"
+  local _stamp="${_stamp_dir}/${_patch_name}.applied"
 
   if [[ -f "${srcdir}/${_patch_name}" ]]; then
     _patch="${srcdir}/${_patch_name}"
@@ -616,17 +618,32 @@ _apply_patch_if_needed() {
     return 1
   fi
 
+  mkdir -p "${_stamp_dir}"
+  if [[ -f "${_stamp}" ]]; then
+    return 0
+  fi
+
   if patch --dry-run -R -Np1 -i "${_patch}" >/dev/null 2>&1; then
+    : >"${_stamp}"
     return 0
   fi
 
   patch -Np1 -i "${_patch}"
+  : >"${_stamp}"
 }
 
-"""
-            patch_prepare_cmds = "".join(
-                f'  _apply_patch_if_needed "{patch_name}"\n' for patch_name in source_patches
+_apply_all_source_patches() {
+__PATCH_APPLY_LINES__
+}
+
+""".replace(
+                "__PATCH_APPLY_LINES__",
+                "".join(
+                    f'  _apply_patch_if_needed "{patch_name}"\n'
+                    for patch_name in source_patches
+                ),
             )
+            patch_prepare_cmds = "  _apply_all_source_patches\n"
             patch_build_cmds = patch_prepare_cmds
         build_body = f"""\
 {patch_helper}prepare() {{
@@ -652,17 +669,6 @@ build() {{
   export VLLM_ROCM_USE_AITER=1
 
   rm -rf .deps/triton_kernels-*
-
-  local _rocm_compat="$srcdir/.torch-rocm-compat"
-  rm -rf "${{_rocm_compat}}"
-  mkdir -p "${{_rocm_compat}}"
-  if [[ -f /opt/rocm/lib/librocsolver.so.1 ]] && [[ ! -e /opt/rocm/lib/librocsolver.so.0 ]]; then
-    # Temporary build-only shim for host torch import. Final integration
-    # should rebuild torchvision/vllm against the local PyTorch package
-    # once its ROCm linkage is import-clean.
-    ln -sf /opt/rocm/lib/librocsolver.so.1 "${{_rocm_compat}}/librocsolver.so.0"
-  fi
-  export LD_LIBRARY_PATH="${{_rocm_compat}}:/opt/rocm/lib:${{LD_LIBRARY_PATH:-}}"
 
   mkdir -p dist
   rm -f dist/*.whl
@@ -1101,6 +1107,28 @@ def optional_backends(package_name: str, policy_pkg: dict) -> list[str]:
     return []
 
 
+def normalize_recipe_patches(recipe_patches: list[dict]) -> list[dict]:
+    normalized: list[dict] = []
+    for patch in recipe_patches:
+        item = dict(patch)
+        if (
+            item.get("type") == "file_copy"
+            and item.get("dst") == "${VLLM_DIR}/.venv/bin/cmake"
+            and item.get("src") == "system cmake binary"
+        ):
+            item["description"] = (
+                "Replace the recipe's broken venv-local Python cmake wrapper "
+                "with the real system cmake binary. The cmake pip package "
+                "installs a Python wrapper that does `from cmake import "
+                "cmake`, which fails inside pip's build isolation where the "
+                "cmake Python module is unavailable.\n"
+            )
+            item["dst"] = "<build-venv>/.venv/bin/cmake"
+            item["src"] = "/usr/bin/cmake"
+        normalized.append(item)
+    return normalized
+
+
 def render_recipe_json(package_name: str, policy_pkg: dict, recipe_pkg: dict, version: str, defaults: dict) -> str:
     authoritative_reference = policy_pkg.get("authoritative_reference")
     if authoritative_reference is None:
@@ -1125,7 +1153,7 @@ def render_recipe_json(package_name: str, policy_pkg: dict, recipe_pkg: dict, ve
             "steps": recipe_pkg.get("steps", []),
             "depends_on": recipe_pkg.get("depends_on", []),
             "notes": recipe_notes,
-            "patches": recipe_pkg.get("patches", []),
+            "patches": normalize_recipe_patches(recipe_pkg.get("patches", [])),
         },
         "provenance": defaults,
     }

@@ -46,37 +46,16 @@ recorded in .aiter-status file ("enabled" or "disabled").
   so heterogeneous-head Gemma 4 models can prefer
   `ROCM_AITER_UNIFIED_ATTN` on Strix Halo instead of forcing the Triton
   unified-attention backend that currently miscompiles during decode.
-- Carries a TorchAO-import patch so generic vLLM startup paths do not import
-  the full TorchAO quantization module just to check an installed version.
-  This keeps optional broken host `python-torchao-rocm` packages from emitting
-  startup warning noise on non-TorchAO code paths.
-- Carries a follow-up TorchAO-registry patch so the quantization registry only
-  imports `TorchAOConfig` when `torchao` quantization is actually requested.
-  Generic config-validation and CLI/help flows still probe the quantization
-  registry, so this second lazy-import boundary is required to suppress the
-  same host warning completely.
-- Carries a follow-up CLI-help patch so plain `vllm --help` does not eagerly
-  import the benchmark command tree. The benchmark latency subcommand imports
-  `EngineArgs` at module import time, which can still reach model/quantization
-  setup and surface optional TorchAO warning noise even after the two
-  TorchAO-specific lazy-import patches.
-- Carries a fourth startup-noise patch so
-  `vllm.entrypoints.openai.engine.protocol` no longer imports
-  `vllm.entrypoints.chat_utils` at module import time just to build tool-call
-  IDs. That chat-utils path pulls in Transformers model/chat helpers and can
-  still reach `transformers.quantizers.quantizer_torchao` during plain CLI
-  startup on hosts with a broken optional TorchAO package.
-- Carries a fifth startup-noise patch so `vllm.engine.arg_utils` no longer
-  imports `vllm.transformers_utils.config`, `gguf_utils`, `repo_utils`, and
-  `utils` at module import time. Those helpers are only needed inside specific
-  runtime methods, but on generic CLI startup they were enough to import
-  Hugging Face `transformers`, which registers `quantizer_torchao` and
-  surfaces the same host warning.
-- Carries a sixth startup-noise patch so plain top-level `vllm --help` no
-  longer imports `vllm.entrypoints.utils` runtime helpers or the heavy
-  `serve`/`launch`/`run-batch` command trees just to print the subcommand list.
-  The help path now uses static subcommand stubs unless a real subcommand was
-  actually selected.
+- Carries a merged TorchAO startup-laziness patch so generic vLLM startup
+  paths keep TorchAO version checks metadata-only and only import
+  `TorchAOConfig` when `quantization == "torchao"`. This keeps optional
+  broken host TorchAO packages off unrelated CLI/help/server startup paths
+  while still preserving real `--quantization torchao` loads.
+- Carries a merged CLI/runtime-light startup patch so plain `vllm --help`
+  stays off the benchmark tree, the OpenAI `chat_utils` tool-call path,
+  Transformers-backed `arg_utils` helpers, and the heavy
+  `serve`/`launch`/`run-batch` command trees unless the user actually
+  selected those flows.
 - Depends on the local `python-transformers-gfx1151` closure package rather than
   the distro `python-transformers` lane because Gemma 4 support first appears
   in upstream `transformers 5.5.x` and the older host package did not ship
@@ -105,6 +84,10 @@ recorded in .aiter-status file ("enabled" or "disabled").
   iterations, so patch application is tracked with per-patch stamp files under
   `src/.patch-state`. Keep that idempotency layer unless the package starts
   forcing a clean source tree for every build.
+- Do not restore the earlier build-only `librocsolver.so.0` shim unless the
+  paired PyTorch lane regresses again. The current `python-pytorch-opt-rocm`
+  lane imports cleanly against `librocsolver.so.1`, so the extra compatibility
+  directory is just stale maintenance debt now.
 - Preserve makepkg's inherited `CFLAGS`/`CXXFLAGS` when layering Strix tuning
   flags, and feed the same prefix-map flags into `HIPFLAGS`, so Arch's
   build-path sanitization survives the ROCm/HIP compile lane too.
@@ -157,39 +140,17 @@ recorded in .aiter-status file ("enabled" or "disabled").
   incompatible PyTorch ABI, causing warning noise during unrelated vLLM
   startup when vLLM imported the TorchAO quantization module just to ask a
   version question.
-- Keep the `0008` TorchAO metadata patch as a valid multi-hunk patch too. The
-  first real TorchAO round-trip on the repaired host package exposed a malformed
-  carry variant that removed the top-level imports from `torchao.py` but left
-  the local `torchao_version_at_least()` helper behind, breaking
-  `quantization="torchao"` loads with `NameError: find_spec`.
-- Keep the quantization registry importing `TorchAOConfig` lazily unless
-  upstream stops probing every quantization backend during generic config
-  validation. The concrete host failure after the first TorchAO patch was
-  `vllm --help` still importing `vllm.model_executor.layers.quantization`
-  and then pulling in `.torchao` through `get_quantization_config()`.
-- Keep the benchmark CLI tree off the plain top-level help path unless
-  upstream makes `vllm.entrypoints.cli.benchmark.latency` import-clean on
-  generic startup. The concrete host failure after the second TorchAO patch
-  was `vllm --help` still emitting the warning because CLI setup imported the
-  benchmark latency subcommand just to register `bench`.
-- Keep the OpenAI engine protocol module off the `chat_utils` import path on
-  generic startup too. The concrete host failure after the benchmark fix was
-  `vllm.entrypoints.utils` still importing
-  `vllm.entrypoints.openai.engine.protocol`, which imported
-  `make_tool_call_id` from `chat_utils` at module import time and thereby
-  pulled in Transformers quantizer registration including the broken optional
-  TorchAO backend.
-- Keep `vllm.engine.arg_utils` off the `vllm.transformers_utils.*` import path
-  on generic startup too. The concrete host failure after the OpenAI protocol
-  fix was a fresh `import vllm.engine.arg_utils` still importing
-  `vllm.transformers_utils.config`, which immediately imported Hugging Face
-  `transformers` and its quantizer registry, including `quantizer_torchao`.
-- Keep top-level `vllm --help` off the shared `entrypoints.utils` runtime path
-  and off heavy subcommand registration imports too. The concrete host failure
-  after the `arg_utils` fix was plain `/usr/bin/vllm --help` still importing
-  `vllm.entrypoints.utils`, which imported `EngineArgs`, while
-  `_load_cmd_modules()` also eagerly imported `serve`, `launch`, and
-  `run-batch` even when the user only asked for the top-level command list.
+- Keep the merged `0008-torchao-startup-stays-lazy.patch` valid as a
+  multi-hunk patch. It now carries both the metadata-only version-check path
+  and the quantization-registry lazy import, and an earlier malformed carry
+  variant broke real `quantization="torchao"` loads with `NameError: find_spec`
+  by removing the imports from `torchao.py` without deleting the local helper.
+- Keep the merged `0009-cli-startup-stays-runtime-light.patch` unless upstream
+  makes the whole generic startup path import-clean on its own. That carry now
+  keeps plain `vllm --help` off the benchmark tree, the OpenAI `chat_utils`
+  tool-call path, Transformers-backed `arg_utils` helpers, and the heavy
+  `serve`/`launch`/`run-batch` command imports unless the user actually picked
+  those flows.
 - Keep the inherited makepkg compile flags when adding Strix tuning flags.
   Overwriting `CFLAGS`/`CXXFLAGS` drops Arch's build-path prefix maps and can
   leak `$srcdir` paths into the shipped ROCm extension modules.
@@ -197,6 +158,9 @@ recorded in .aiter-status file ("enabled" or "disabled").
   The ROCm extension build does not automatically inherit the host C/C++
   prefix-map settings into `CMAKE_HIP_FLAGS`, so sanitization has to be carried
   through `HIPFLAGS` and then bridged into CMake.
+- Keep the old build-only `librocsolver.so.0` shim removed unless a future
+  PyTorch import regression proves it is needed again. The paired Strix Halo
+  PyTorch lane now imports cleanly against `librocsolver.so.1`.
 - Keep SageMaker integration optional unless this repo intentionally packages `model_hosting_container_standards`; missing SageMaker helpers should disable only SageMaker-specific routes, not the base CLI or local server startup paths.
 - Keep the ROCm GCN-arch fallback import-safe on Strix Halo. AMDSMI ASIC-info probes can fail even when the device is visible; that must degrade to `torch.cuda` probing rather than crashing during module import.
 - Treat the old external `python-torchao-rocm` `_C`-extension failure as a

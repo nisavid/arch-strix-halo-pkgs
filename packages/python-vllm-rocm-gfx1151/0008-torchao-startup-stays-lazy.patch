@@ -95,3 +95,33 @@ diff --git a/vllm/model_executor/model_loader/weight_utils.py b/vllm/model_execu
 +)
  
  logger = init_logger(__name__)
+diff --git a/vllm/model_executor/layers/quantization/__init__.py b/vllm/model_executor/layers/quantization/__init__.py
+--- a/vllm/model_executor/layers/quantization/__init__.py
++++ b/vllm/model_executor/layers/quantization/__init__.py
+@@ -130,8 +130,6 @@
+     from .mxfp4 import Mxfp4Config
+     from .mxfp8 import Mxfp8Config
+     from .petit import PetitNvFp4Config
+-    from .torchao import TorchAOConfig
+-
+     method_to_config: dict[str, type[QuantizationConfig]] = {
+         "awq": AWQConfig,
+         "fp8": Fp8Config,
+@@ -150,7 +148,6 @@
+         "experts_int8": ExpertsInt8Config,
+         "quark": QuarkConfig,
+         "moe_wna16": MoeWNA16Config,
+-        "torchao": TorchAOConfig,
+         "auto-round": INCConfig,
+         "inc": INCConfig,
+         "mxfp4": Mxfp4Config,
+@@ -158,6 +155,10 @@
+         "petit_nvfp4": PetitNvFp4Config,
+         "cpu_awq": CPUAWQConfig,
+     }
++    if quantization == "torchao":
++        from .torchao import TorchAOConfig
++
++        method_to_config["torchao"] = TorchAOConfig
+     # Update the `method_to_config` with customized quantization methods.
+     method_to_config.update(_CUSTOMIZED_METHOD_TO_QUANT_CONFIG)
