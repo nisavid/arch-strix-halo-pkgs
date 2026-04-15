@@ -19,12 +19,16 @@ ARG_UTILS_PATCH = (
     REPO_ROOT
     / "packages/python-vllm-rocm-gfx1151/0012-arg-utils-lazifies-transformers-utils-imports.patch"
 )
+CLI_HELP_LIGHT_PATCH = (
+    REPO_ROOT
+    / "packages/python-vllm-rocm-gfx1151/0013-cli-help-keeps-top-level-path-runtime-light.patch"
+)
 
 
 def test_pkgbuild_carries_torchao_import_patch():
     text = PKGBUILD.read_text()
 
-    assert "pkgrel=17" in text
+    assert "pkgrel=18" in text
     assert PATCH.name in text
     assert f'_apply_patch_if_needed "{PATCH.name}"' in text
     assert (
@@ -38,6 +42,8 @@ def test_pkgbuild_carries_torchao_import_patch():
     assert f'_apply_patch_if_needed "{OPENAI_PROTOCOL_PATCH.name}"' in text
     assert ARG_UTILS_PATCH.name in text
     assert f'_apply_patch_if_needed "{ARG_UTILS_PATCH.name}"' in text
+    assert CLI_HELP_LIGHT_PATCH.name in text
+    assert f'_apply_patch_if_needed "{CLI_HELP_LIGHT_PATCH.name}"' in text
 
 
 def test_patch_moves_generic_version_checks_to_metadata_only_helper():
@@ -97,3 +103,20 @@ def test_patch_keeps_engine_args_off_transformers_utils_import_path():
     assert "+        from vllm.transformers_utils.gguf_utils import is_gguf" in text
     assert "+        from vllm.transformers_utils.config import (" in text
     assert "+        from vllm.transformers_utils.utils import is_cloud_storage" in text
+
+
+def test_patch_keeps_top_level_help_off_runtime_paths():
+    text = CLI_HELP_LIGHT_PATCH.read_text()
+
+    assert "+class _StaticSubcommand:" in text
+    assert "+class _StaticHelpModule:" in text
+    assert "+def _selected_subcommand() -> str | None:" in text
+    assert '+        openai_module = _StaticHelpModule(' in text
+    assert '+        serve_module = _StaticHelpModule(' in text
+    assert '+        launch_module = _StaticHelpModule(' in text
+    assert '+        collect_env_module = _StaticHelpModule(' in text
+    assert '+        run_batch_module = _StaticHelpModule(' in text
+    assert "-from vllm.engine.arg_utils import EngineArgs" in text
+    assert "-from vllm.platforms import current_platform" in text
+    assert "+    from vllm.engine.arg_utils import EngineArgs" in text
+    assert "+    from vllm.platforms import current_platform" in text

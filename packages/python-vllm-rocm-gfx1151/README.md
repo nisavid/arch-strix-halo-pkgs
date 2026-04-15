@@ -72,6 +72,11 @@ recorded in .aiter-status file ("enabled" or "disabled").
   runtime methods, but on generic CLI startup they were enough to import
   Hugging Face `transformers`, which registers `quantizer_torchao` and
   surfaces the same host warning.
+- Carries a sixth startup-noise patch so plain top-level `vllm --help` no
+  longer imports `vllm.entrypoints.utils` runtime helpers or the heavy
+  `serve`/`launch`/`run-batch` command trees just to print the subcommand list.
+  The help path now uses static subcommand stubs unless a real subcommand was
+  actually selected.
 - Depends on the local `python-transformers-gfx1151` closure package rather than
   the distro `python-transformers` lane because Gemma 4 support first appears
   in upstream `transformers 5.5.x` and the older host package did not ship
@@ -166,6 +171,12 @@ recorded in .aiter-status file ("enabled" or "disabled").
   fix was a fresh `import vllm.engine.arg_utils` still importing
   `vllm.transformers_utils.config`, which immediately imported Hugging Face
   `transformers` and its quantizer registry, including `quantizer_torchao`.
+- Keep top-level `vllm --help` off the shared `entrypoints.utils` runtime path
+  and off heavy subcommand registration imports too. The concrete host failure
+  after the `arg_utils` fix was plain `/usr/bin/vllm --help` still importing
+  `vllm.entrypoints.utils`, which imported `EngineArgs`, while
+  `_load_cmd_modules()` also eagerly imported `serve`, `launch`, and
+  `run-batch` even when the user only asked for the top-level command list.
 - Keep the inherited makepkg compile flags when adding Strix tuning flags.
   Overwriting `CFLAGS`/`CXXFLAGS` drops Arch's build-path prefix maps and can
   leak `$srcdir` paths into the shipped ROCm extension modules.

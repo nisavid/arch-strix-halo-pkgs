@@ -1,0 +1,233 @@
+--- a/vllm/entrypoints/cli/main.py
++++ b/vllm/entrypoints/cli/main.py
+@@ -62,26 +62,149 @@
+         return [_BenchHelpSubcommand()]
+ 
+ 
++class _StaticSubcommand:
++    def __init__(
++        self,
++        name: str,
++        help: str,
++        description: str | None = None,
++        usage: str | None = None,
++    ) -> None:
++        self.name = name
++        self.help = help
++        self.description = description or help
++        self.usage = usage
++
++    @staticmethod
++    def cmd(args: argparse.Namespace) -> None:
++        raise RuntimeError("Static help subcommands should never be dispatched")
++
++    def validate(self, args: argparse.Namespace) -> None:
++        return None
++
++    def subparser_init(
++        self, subparsers: argparse._SubParsersAction
++    ) -> argparse.ArgumentParser:
++        return subparsers.add_parser(
++            self.name,
++            help=self.help,
++            description=self.description,
++            usage=self.usage,
++        )
++
++
++class _StaticHelpModule:
++    def __init__(self, *subcommands: _StaticSubcommand):
++        self._subcommands = list(subcommands)
++
++    def cmd_init(self):
++        return self._subcommands
++
++
++def _selected_subcommand() -> str | None:
++    if len(sys.argv) < 2:
++        return None
++
++    first_arg = sys.argv[1]
++    if first_arg in {"-h", "--help"} or first_arg.startswith("--help="):
++        return None
++
++    return first_arg
++
++
+ def _load_cmd_modules():
++    selected = _selected_subcommand()
++
++    if selected in {"chat", "complete"}:
++        import vllm.entrypoints.cli.openai
++
++        openai_module = vllm.entrypoints.cli.openai
++    else:
++        openai_module = _StaticHelpModule(
++            _StaticSubcommand(
++                "chat",
++                "Generate chat completions via the running API server.",
++                "Generate chat completions via the running API server.",
++                "vllm chat [options]",
++            ),
++            _StaticSubcommand(
++                "complete",
++                "Generate text completions based on the given prompt via the running API server.",
++                "Generate text completions based on the given prompt via the running API server.",
++                "vllm complete [options]",
++            ),
++        )
++
++    if selected == "serve":
++        import vllm.entrypoints.cli.serve
++
++        serve_module = vllm.entrypoints.cli.serve
++    else:
++        serve_module = _StaticHelpModule(
++            _StaticSubcommand(
++                "serve",
++                "Launch a local OpenAI-compatible API server to serve LLM completions via HTTP.",
++                "Launch a local OpenAI-compatible API server to serve LLM completions via HTTP.",
++                "vllm serve [model_tag] [options]",
++            ),
++        )
++
++    if selected == "launch":
++        import vllm.entrypoints.cli.launch
++
++        launch_module = vllm.entrypoints.cli.launch
++    else:
++        launch_module = _StaticHelpModule(
++            _StaticSubcommand(
++                "launch",
++                "Launch individual vLLM components.",
++                "Launch individual vLLM components.",
++                "vllm launch <component> [options]",
++            ),
++        )
++
+     if _should_load_benchmark_module():
+         import vllm.entrypoints.cli.benchmark.main
+ 
+         benchmark_module = vllm.entrypoints.cli.benchmark.main
+     else:
+         benchmark_module = _BenchHelpModule()
+-    import vllm.entrypoints.cli.collect_env
+-    import vllm.entrypoints.cli.launch
+-    import vllm.entrypoints.cli.openai
+-    import vllm.entrypoints.cli.run_batch
+-    import vllm.entrypoints.cli.serve
++
++    if selected == "collect-env":
++        import vllm.entrypoints.cli.collect_env
++
++        collect_env_module = vllm.entrypoints.cli.collect_env
++    else:
++        collect_env_module = _StaticHelpModule(
++            _StaticSubcommand(
++                "collect-env",
++                "Start collecting environment information.",
++                "Start collecting environment information.",
++                "vllm collect-env",
++            ),
++        )
++
++    if selected == "run-batch":
++        import vllm.entrypoints.cli.run_batch
++
++        run_batch_module = vllm.entrypoints.cli.run_batch
++    else:
++        run_batch_module = _StaticHelpModule(
++            _StaticSubcommand(
++                "run-batch",
++                "Run batch prompts and write results to file.",
++                "Run batch prompts using vLLM's OpenAI-compatible API.\nSupports local or HTTP input/output files.",
++                "vllm run-batch -i INPUT.jsonl -o OUTPUT.jsonl --model <model>",
++            ),
++        )
+ 
+     return [
+-        vllm.entrypoints.cli.openai,
+-        vllm.entrypoints.cli.serve,
+-        vllm.entrypoints.cli.launch,
++        openai_module,
++        serve_module,
++        launch_module,
+         benchmark_module,
+-        vllm.entrypoints.cli.collect_env,
+-        vllm.entrypoints.cli.run_batch,
++        collect_env_module,
++        run_batch_module,
+     ]
+ 
+ 
+--- a/vllm/entrypoints/utils.py
++++ b/vllm/entrypoints/utils.py
+@@ -15,19 +15,29 @@
+ from fastapi.responses import JSONResponse, StreamingResponse
+ from starlette.background import BackgroundTask, BackgroundTasks
+ 
++from typing import TYPE_CHECKING, Any
++
+ from vllm import envs
+-from vllm.engine.arg_utils import EngineArgs
+-from vllm.entrypoints.openai.engine.protocol import (
+-    ErrorInfo,
+-    ErrorResponse,
+-    GenerationError,
+-    StreamOptions,
+-)
+-from vllm.entrypoints.openai.models.protocol import LoRAModulePath
+ from vllm.logger import current_formatter_type, init_logger
+-from vllm.platforms import current_platform
+ from vllm.utils.argparse_utils import FlexibleArgumentParser
+ 
++if TYPE_CHECKING:
++    from vllm.engine.arg_utils import EngineArgs
++    from vllm.entrypoints.openai.engine.protocol import (
++        ErrorInfo,
++        ErrorResponse,
++        GenerationError,
++        StreamOptions,
++    )
++    from vllm.entrypoints.openai.models.protocol import LoRAModulePath
++else:
++    EngineArgs = Any
++    ErrorInfo = Any
++    ErrorResponse = Any
++    GenerationError = Any
++    StreamOptions = Any
++    LoRAModulePath = Any
++
+ logger = init_logger(__name__)
+ 
+ VLLM_SUBCMD_PARSER_EPILOG = (
+@@ -184,6 +194,8 @@
+             f"context length ({max_model_len})."
+         )
+     model_max_tokens = max_model_len - input_length
++    from vllm.platforms import current_platform
++
+     platform_max_tokens = current_platform.get_max_output_tokens(input_length)
+     fallback_max_tokens = (
+         max_tokens
+@@ -204,6 +216,7 @@
+ 
+ 
+ def log_non_default_args(args: Namespace | EngineArgs):
++    from vllm.engine.arg_utils import EngineArgs
+     from vllm.entrypoints.openai.cli_args import make_arg_parser
+ 
+     non_default_args = {}
+@@ -305,6 +318,12 @@
+     status_code: HTTPStatus = HTTPStatus.BAD_REQUEST,
+     param: str | None = None,
+ ) -> ErrorResponse:
++    from vllm.entrypoints.openai.engine.protocol import (
++        ErrorInfo,
++        ErrorResponse,
++        GenerationError,
++    )
++
+     exc: Exception | None = None
+ 
+     if isinstance(message, Exception):

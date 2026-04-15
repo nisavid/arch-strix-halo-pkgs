@@ -142,7 +142,10 @@ The following smoke checks have already passed on the reference host:
   `vllm.transformers_utils.config`, `gguf_utils`, `repo_utils`, and `utils`
   at module import time, because those helpers are only needed in runtime
   methods but their eager import immediately pulls in Hugging Face
-  `transformers` and its quantizer registry.
+  `transformers` and its quantizer registry. A sixth startup-noise fix is
+  also required here: plain top-level `vllm --help` must not import
+  `vllm.entrypoints.utils` runtime helpers or the heavy `serve`/`launch`/
+  `run-batch` command trees just to print the subcommand list.
 - The current Gemma 4 / vLLM smoke story is now split cleanly:
   - the earlier ROCm runtime blocker was real and is now fixed on the host:
     vLLM selects `ROCM_AITER_UNIFIED_ATTN`, and AITER imports its compiled JIT
@@ -235,6 +238,9 @@ The following smoke checks have already passed on the reference host:
   - keep `vllm.engine.arg_utils` off the `vllm.transformers_utils.*` import
     path on generic startup too; those helpers should load only inside the
     methods that actually need them
+  - keep top-level `vllm --help` off the shared `entrypoints.utils` runtime
+    path and off heavy subcommand registration imports too; generic help only
+    needs static command metadata, not the serving/runtime trees
   - keep package patch application idempotent across reused `src/` trees as
     well; repeated `makepkg -f` runs during this lane left partially patched
     trees behind and caused `prepare()` to fail when a file-adding patch was
