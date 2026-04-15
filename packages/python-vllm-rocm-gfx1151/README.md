@@ -66,6 +66,12 @@ recorded in .aiter-status file ("enabled" or "disabled").
   IDs. That chat-utils path pulls in Transformers model/chat helpers and can
   still reach `transformers.quantizers.quantizer_torchao` during plain CLI
   startup on hosts with a broken optional TorchAO package.
+- Carries a fifth startup-noise patch so `vllm.engine.arg_utils` no longer
+  imports `vllm.transformers_utils.config`, `gguf_utils`, `repo_utils`, and
+  `utils` at module import time. Those helpers are only needed inside specific
+  runtime methods, but on generic CLI startup they were enough to import
+  Hugging Face `transformers`, which registers `quantizer_torchao` and
+  surfaces the same host warning.
 - Depends on the local `python-transformers-gfx1151` closure package rather than
   the distro `python-transformers` lane because Gemma 4 support first appears
   in upstream `transformers 5.5.x` and the older host package did not ship
@@ -155,6 +161,11 @@ recorded in .aiter-status file ("enabled" or "disabled").
   `make_tool_call_id` from `chat_utils` at module import time and thereby
   pulled in Transformers quantizer registration including the broken optional
   TorchAO backend.
+- Keep `vllm.engine.arg_utils` off the `vllm.transformers_utils.*` import path
+  on generic startup too. The concrete host failure after the OpenAI protocol
+  fix was a fresh `import vllm.engine.arg_utils` still importing
+  `vllm.transformers_utils.config`, which immediately imported Hugging Face
+  `transformers` and its quantizer registry, including `quantizer_torchao`.
 - Keep the inherited makepkg compile flags when adding Strix tuning flags.
   Overwriting `CFLAGS`/`CXXFLAGS` drops Arch's build-path prefix maps and can
   leak `$srcdir` paths into the shipped ROCm extension modules.

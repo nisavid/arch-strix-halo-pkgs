@@ -15,12 +15,16 @@ OPENAI_PROTOCOL_PATCH = (
     REPO_ROOT
     / "packages/python-vllm-rocm-gfx1151/0011-openai-protocol-lazifies-chat-utils-import.patch"
 )
+ARG_UTILS_PATCH = (
+    REPO_ROOT
+    / "packages/python-vllm-rocm-gfx1151/0012-arg-utils-lazifies-transformers-utils-imports.patch"
+)
 
 
 def test_pkgbuild_carries_torchao_import_patch():
     text = PKGBUILD.read_text()
 
-    assert "pkgrel=16" in text
+    assert "pkgrel=17" in text
     assert PATCH.name in text
     assert f'_apply_patch_if_needed "{PATCH.name}"' in text
     assert (
@@ -32,6 +36,8 @@ def test_pkgbuild_carries_torchao_import_patch():
     assert f'_apply_patch_if_needed "{BENCH_PATCH.name}"' in text
     assert OPENAI_PROTOCOL_PATCH.name in text
     assert f'_apply_patch_if_needed "{OPENAI_PROTOCOL_PATCH.name}"' in text
+    assert ARG_UTILS_PATCH.name in text
+    assert f'_apply_patch_if_needed "{ARG_UTILS_PATCH.name}"' in text
 
 
 def test_patch_moves_generic_version_checks_to_metadata_only_helper():
@@ -78,3 +84,16 @@ def test_patch_keeps_openai_protocol_off_chat_utils_import_path():
     assert "+def _make_tool_call_id() -> str:" in text
     assert '+    from vllm.entrypoints.chat_utils import make_tool_call_id' in text
     assert "+    id: str = Field(default_factory=_make_tool_call_id)" in text
+
+
+def test_patch_keeps_engine_args_off_transformers_utils_import_path():
+    text = ARG_UTILS_PATCH.read_text()
+
+    assert "-from vllm.transformers_utils.config import (" in text
+    assert "-from vllm.transformers_utils.gguf_utils import is_gguf" in text
+    assert "-from vllm.transformers_utils.repo_utils import get_model_path" in text
+    assert "-from vllm.transformers_utils.utils import is_cloud_storage" in text
+    assert "+            from vllm.transformers_utils.repo_utils import get_model_path" in text
+    assert "+        from vllm.transformers_utils.gguf_utils import is_gguf" in text
+    assert "+        from vllm.transformers_utils.config import (" in text
+    assert "+        from vllm.transformers_utils.utils import is_cloud_storage" in text
