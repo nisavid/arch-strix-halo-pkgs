@@ -162,9 +162,10 @@ The following smoke checks have already passed on the reference host:
     calling `LLM.generate()`
   - for multimodal offline inference, use `AutoProcessor.apply_chat_template`
     and pass multimodal payloads explicitly via `multi_modal_data`
-  - for text-only workloads, set `--limit-mm-per-prompt image=0,audio=0` to
+  - for text-only workloads, set
+    `--limit-mm-per-prompt {"image":0,"audio":0}` to
     skip unnecessary multimodal profiling and encoder reservations
-  - for image-only workloads, set `--limit-mm-per-prompt audio=0`
+  - for image-only workloads, set `--limit-mm-per-prompt {"audio":0}`
   - for throughput-oriented serving, `--async-scheduling` is recommended
   - for benchmark runs, disable prefix caching with
     `--no-enable-prefix-caching` to get more consistent measurements
@@ -172,7 +173,9 @@ The following smoke checks have already passed on the reference host:
     `--reasoning-parser gemma4`, `--tool-call-parser gemma4`,
     `--enable-auto-tool-choice`, and the
     `examples/tool_chat_template_gemma4.jinja` template instead of assuming
-    the model's default chat template is sufficient
+    the model's default chat template is sufficient; this repo now vendors the
+    upstream template at
+    `packages/python-vllm-rocm-gfx1151/examples/tool_chat_template_gemma4.jinja`
 - The current validated Gemma 4 local smoke workflow on Strix Halo is:
   - use `google/gemma-4-E2B-it` or `google/gemma-4-31B-it`
   - render the prompt with the checkpoint's tokenizer chat template for
@@ -183,6 +186,36 @@ The following smoke checks have already passed on the reference host:
   - keep `enforce_eager=True` for the current local smoke path
   - expect the 31B instruction-tuned checkpoint to emit an empty thought block
     prefix when thinking is disabled, matching the upstream Gemma 4 model card
+- The tracked host-side follow-up helper for OpenAI-compatible server smokes is
+  now `tools/gemma4_server_smoke.py`.
+  - `--mode basic` launches
+    `python -m vllm.entrypoints.openai.api_server` from the active interpreter
+    and sends a plain `/v1/chat/completions` request, so the smoke does not
+    depend on interactive-shell `PATH` setup
+  - `--mode reasoning` adds `--reasoning-parser gemma4` and sends
+    `chat_template_kwargs={"enable_thinking": true}` plus
+    `skip_special_tokens=false` in the OpenAI-compatible request body
+  - the helper now defaults `--max-model-len` to `1024` for `reasoning` and
+    `tool` modes; the earlier `512`-token default was enough for plain chat
+    but truncated Gemma 4 reasoning before the parser could finish
+  - `--mode tool` adds `--tool-call-parser gemma4`,
+    `--reasoning-parser gemma4`, `--enable-auto-tool-choice`, and the
+    vendored Gemma 4 tool chat template at
+    `packages/python-vllm-rocm-gfx1151/examples/tool_chat_template_gemma4.jinja`,
+    then validates both the initial tool call and the follow-up tool response
+    round trip
+- The reference host has now verified all three OpenAI-compatible Gemma 4
+  server flows with `google/gemma-4-E2B-it`:
+  - basic chat completion passes with the helper's default `--max-model-len 512`
+  - reasoning parsing passes with `--mode reasoning`, `--reasoning-parser gemma4`,
+    `skip_special_tokens=false`, and `--max-model-len 1024`; the returned
+    OpenAI message now splits cleanly into `message.reasoning` and
+    `message.content`
+  - tool-calling passes with `--mode tool`, `--reasoning-parser gemma4`,
+    `--tool-call-parser gemma4`, `--enable-auto-tool-choice`, and the vendored
+    Gemma 4 tool chat template; the first response returns a `get_weather`
+    tool call and the follow-up tool response round trip returns a normal
+    assistant answer
 - The tracked TorchAO-dependent validation tool is now
   `tools/torchao_vllm_smoke.py`.
   - `--prepare-only` builds a tiny local Llama checkpoint, reloads it through
@@ -263,10 +296,6 @@ The following smoke checks have already passed on the reference host:
     well; repeated `makepkg -f` runs during this lane left partially patched
     trees behind and caused `prepare()` to fail when a file-adding patch was
     reapplied without per-patch state
-- vLLM/Gemma follow-up
-  - extend the current verified offline `-it` smoke path into API-server,
-    reasoning-parser, and tool-calling validation using the official Gemma 4
-    recipe flags and chat template
 - Lemonade presentation polish
   - keep the backend table explicit about packaged ROCm/Vulkan backends after
     each relevant package rebuild

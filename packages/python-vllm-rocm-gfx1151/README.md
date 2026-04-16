@@ -184,8 +184,8 @@ recorded in .aiter-status file ("enabled" or "disabled").
     `LLM.generate()` instead of assuming a raw instruction string is a valid
     assistant smoke
   - for text-only serving or benchmarking, prefer
-    `--limit-mm-per-prompt image=0,audio=0`; for image-only workloads, prefer
-    `--limit-mm-per-prompt audio=0`
+    `--limit-mm-per-prompt {"image":0,"audio":0}`; for image-only workloads,
+    prefer `--limit-mm-per-prompt {"audio":0}`
   - use `--async-scheduling` for throughput-oriented server runs, and disable
     prefix caching during benchmarks if you want measurements that line up
     with the recipe guidance
@@ -193,7 +193,27 @@ recorded in .aiter-status file ("enabled" or "disabled").
     or server flow actually exercises those features:
     `--reasoning-parser gemma4`, `--tool-call-parser gemma4`,
     `--enable-auto-tool-choice`, and
-    `--chat-template examples/tool_chat_template_gemma4.jinja`
+    `--chat-template examples/tool_chat_template_gemma4.jinja`; this repo now
+    vendors the upstream template at
+    `packages/python-vllm-rocm-gfx1151/examples/tool_chat_template_gemma4.jinja`
+    and should refresh that copy when the vLLM lane or the upstream Gemma 4
+    recipe changes
+  - use `tools/gemma4_server_smoke.py` for host-side OpenAI-compatible server
+    validation instead of relying on ad hoc shell snippets. The helper launches
+    `python -m vllm.entrypoints.openai.api_server` from the active interpreter,
+    so the smoke is not coupled to interactive-shell `PATH` setup.
+    `--mode basic` covers the plain chat path, `--mode reasoning` adds
+    `--reasoning-parser gemma4` plus
+    `chat_template_kwargs={"enable_thinking": true}` and
+    `skip_special_tokens=false`; the helper defaults `--max-model-len` to
+    `1024` for reasoning/tool flows because the earlier `512`-token default
+    truncated Gemma 4 reasoning before the parser could finish. `--mode tool`
+    adds `--tool-call-parser gemma4`, `--reasoning-parser gemma4`,
+    `--enable-auto-tool-choice`, auto-resolves the vendored
+    `packages/python-vllm-rocm-gfx1151/examples/tool_chat_template_gemma4.jinja`
+    template, and validates a full tool-call round trip. The reference host
+    has now passed all three helper modes with `google/gemma-4-E2B-it`:
+    basic chat, reasoning parsing, and tool-calling
 
 ## Maintainer Starting Points
 

@@ -15,11 +15,6 @@
   the prefix maps into the HIP compile lane, but both build attempts then died
   in `csrc/sampler.hip` with `Invalid dpp_ctrl value: wavefront shifts are not
   supported on GFX10+`.
-- Extend the now-validated Gemma 4 `-it` offline smoke path into:
-  - OpenAI-compatible server validation
-  - reasoning-parser validation (`--reasoning-parser gemma4`)
-  - tool-calling validation (`--tool-call-parser gemma4`,
-    `--enable-auto-tool-choice`, Gemma 4 tool chat template)
 - Investigate the two remaining warnings on the now-passing TorchAO helper path:
   - `Stored version is not the same as current default version`
   - `Cannot use ROCm custom paged attention kernel, falling back to Triton implementation`
