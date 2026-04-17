@@ -6,7 +6,7 @@
 
 pkgname=python-amd-aiter-gfx1151
 pkgver=0.1.0.r8.d20260317.gad42886
-pkgrel=2
+pkgrel=7
 pkgdesc='AMD AITER kernels rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://github.com/ROCm/aiter
@@ -18,14 +18,17 @@ options=()
 provides=(python-amd-aiter)
 conflicts=(python-amd-aiter)
 replaces=()
-source=(aiter::git+https://github.com/ROCm/aiter.git 0001-gfx1151-rdna35-header-compat.patch 0002-jit-runtime-finds-hipcc-and-user-jit-modules.patch)
-sha256sums=(SKIP SKIP SKIP)
+source=(aiter::git+https://github.com/ROCm/aiter.git 0001-gfx1151-rdna35-header-compat.patch 0002-jit-runtime-finds-hipcc-and-user-jit-modules.patch 0003-fused-moe-unknown-gfx-falls-back-to-2stage.patch 0004-moe-tuner-skips-missing-1stage-asm-metadata.patch 0005-ck-moe-normalizes-zero-splitk-and-forwards-stage2.patch)
+sha256sums=(SKIP SKIP SKIP SKIP SKIP SKIP)
 
 prepare() {
   cd "$srcdir/aiter"
 
   patch -Np1 -i "$srcdir/0001-gfx1151-rdna35-header-compat.patch"
   patch -Np1 -i "$srcdir/0002-jit-runtime-finds-hipcc-and-user-jit-modules.patch"
+  patch -Np1 -i "$srcdir/0003-fused-moe-unknown-gfx-falls-back-to-2stage.patch"
+  patch -Np1 -i "$srcdir/0004-moe-tuner-skips-missing-1stage-asm-metadata.patch"
+  patch -Np1 -i "$srcdir/0005-ck-moe-normalizes-zero-splitk-and-forwards-stage2.patch"
 }
 
 build() {

@@ -1,0 +1,84 @@
+--- a/aiter/ops/moe_op.py
++++ b/aiter/ops/moe_op.py
+@@ -568,7 +568,7 @@
+         sorted_weights,
+         quant_type.value,
+         activation.value,
+-        int(splitk) if splitk is not None else splitk,
++        _normalize_splitk(splitk),
+         use_non_temporal_load,
+         None if dst_type is None else dtype2str_dict[dst_type],
+         is_shuffled=getattr(w1, "is_shuffled", False),
+@@ -576,6 +576,10 @@
+     return out
+ 
+ 
++def _normalize_splitk(splitk: Optional[int]) -> int:
++    return 1 if splitk in (None, 0) else int(splitk)
++
++
+ def ck_moe_stage2_fwd(
+     inter_states: Tensor,
+     w1: Tensor,
+@@ -592,6 +596,7 @@
+     sorted_weights: Optional[Tensor] = None,
+     quant_type: QuantType = QuantType.No,
+     activation: ActivationType = ActivationType.Silu,
++    splitk: Optional[int] = 1,
+     use_non_temporal_load: Optional[bool] = False,
+ ):
+     ck_moe_stage2(
+@@ -610,6 +615,7 @@
+         sorted_weights,
+         quant_type.value,
+         activation.value,
++        _normalize_splitk(splitk),
+         use_non_temporal_load=use_non_temporal_load,
+         is_shuffled=getattr(w2, "is_shuffled", False),
+     )
+--- a/aiter/fused_moe.py
++++ b/aiter/fused_moe.py
+@@ -987,6 +987,7 @@
+                 kernelName=kernelName2,
+                 activation=activation,
+                 quant_type=q_type,
++                splitk=ksplit,
+                 use_non_temporal_load=use_non_temporal_load,
+             )
+ 
+@@ -1081,6 +1082,7 @@
+                 kernelName=kernelName2,
+                 activation=activation,
+                 quant_type=q_type,
++                splitk=ksplit,
+                 use_non_temporal_load=use_non_temporal_load,
+             )
+         return MOEMetadata(
+@@ -1117,6 +1119,7 @@
+             kernelName=kernelName2,
+             activation=activation,
+             quant_type=q_type,
++            splitk=ksplit,
+         ),
+         block_m,
+         ksplit,
+--- a/csrc/ck_gemm_moe_2stages_codegen/gemm_moe_ck2stages.cu
++++ b/csrc/ck_gemm_moe_2stages_codegen/gemm_moe_ck2stages.cu
+@@ -66,7 +66,7 @@
+     // std::cerr << __FILE__ << ":" << __LINE__ << " ck_moe_stage1 called!" << nt << " " << block_m.value() << std::endl;
+     const at::hip::OptionalHIPGuardMasqueradingAsCUDA device_guard(device_of(out));
+     at::hip::getCurrentHIPStream();
+-    int32_t splitk_local = splitk.has_value() ? splitk.value() : 1;
++    int32_t splitk_local = splitk.value_or(0) ?: 1;
+ 
+     if (splitk_local > 1)
+     {
+@@ -141,7 +141,7 @@
+     TORCH_CHECK(out.dtype() == at::ScalarType::BFloat16 || out.dtype() == at::ScalarType::Half,
+                 "Out dtype only support BFloat16/Float16!")
+ 
+-    int32_t splitk_local = splitk.has_value() ? splitk.value() : 1;
++    int32_t splitk_local = splitk.value_or(0) ?: 1;
+ 
+     int tokens = inter_states.size(0);
+     int sorted_size = std::min(int64_t(tokens * topk * block_m.value()), sorted_token_ids.size(0));

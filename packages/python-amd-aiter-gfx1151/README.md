@@ -12,7 +12,7 @@
 - Recorded reference packages: `extra/python-pytorch-opt-rocm, extra/python-pytorch-rocm`
 - Authoritative reference package: `none`
 - Advisory reference packages: `extra/python-pytorch-opt-rocm, extra/python-pytorch-rocm`
-- Applied source patch files/actions: `4`
+- Applied source patch files/actions: `8`
 
 ## Recipe notes
 
@@ -41,11 +41,23 @@ aiter_meta/csrc/include/ files for gfx1151 RDNA 3.5 compatibility.
   Python build helpers probe `hipconfig`/`hipcc` during wheel build and can
   incorrectly fall back to `ROCM_HOME=/usr` when the shell environment does
   not already expose `/opt/rocm/bin`.
+- Keep the gfx1x MoE compatibility patches that are genuinely AITER-local:
+  unknown-gfx probing, missing 1-stage ASM metadata, and the CK 2-stage
+  splitk normalization/forwarding fix. Do not restore the removed post-shuffle
+  `torch_moe` fallback here; unsupported unquantized MoE shapes such as
+  `google/gemma-4-26B-A4B-it` need to be fixed in vLLM before AITER shuffles
+  the expert weights.
 
 ## Intentional Divergences
 
 - There is no standalone AITER package in Arch-family packaging; this package is recipe-first and aligned to the vendored PyTorch submodule lane.
 - Carries an explicit package-local source patch for gfx1151 RDNA 3.5 header compatibility rather than leaving those fixes as manual post-build mutations.
+- Carries an installed-system JIT runtime patch so AITER can find `hipcc` and
+  import JIT-built modules from the writable user cache on read-only
+  site-packages installs.
+- Carries the gfx1x AITER-side MoE compatibility patches that are safe to keep
+  local: unknown-gfx probing, missing 1-stage ASM metadata handling, and CK
+  2-stage splitk normalization/forwarding for the unquantized MoE path.
 
 ## Update Notes
 
@@ -60,6 +72,13 @@ aiter_meta/csrc/include/ files for gfx1151 RDNA 3.5 compatibility.
   explicit in the package build environment unless upstream AITER stops
   probing the ROCm toolchain through ambient shell state. The concrete build
   failure was `Could not find hipconfig in PATH or ROCM_HOME(/usr)`.
+- Keep the unknown-gfx 2-stage fallback, missing-1-stage-metadata tuner skip,
+  and CK 2-stage splitk normalization/forwarding fix until upstream AITER
+  handles those gfx1x cases directly. Do not reintroduce the removed
+  unquantized `torch_moe` fallback here: the concrete failure on the reference
+  host was `google/gemma-4-26B-A4B-it` generating corrupted text after the
+  fallback ran on AITER-shuffled weights. Unsupported unquantized shapes now
+  belong in the vLLM-side padding/selection story.
 
 ## Maintainer Starting Points
 

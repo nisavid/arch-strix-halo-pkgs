@@ -4,7 +4,8 @@
     "authoritative_reference": "aur/python-vllm",
     "divergence_notes": [
       "This package is ROCm-specific even though the closest Arch-family baseline is the generic aur/python-vllm package.",
-      "Carries a deliberate Python-3.14 compatibility delta and recipe-specific ROCm/AITER integration that are not part of the generic baseline."
+      "Carries a deliberate Python-3.14 compatibility delta and recipe-specific ROCm/AITER integration that are not part of the generic baseline.",
+      "Carries a repo-owned Gemma 4 26B-A4B text-only repair lane plus a ROCm-specific MoE padding fix for Strix Halo rather than assuming the upstream multimodal defaults are safe on this host."
     ],
     "source_patches": [
       "0001-python-3.14-version-gates.patch",
@@ -15,10 +16,12 @@
       "0006-setup.py-forward-host-and-hip-flags-into-cmake.patch",
       "0007-rocm-enable-gfx1x-aiter-and-prefer-it-for-gemma4.patch",
       "0008-torchao-startup-stays-lazy.patch",
-      "0009-cli-startup-stays-runtime-light.patch"
+      "0009-cli-startup-stays-runtime-light.patch",
+      "0010-rocm-pad-gemma4-moe-intermediate-for-aiter.patch"
     ],
     "update_notes": [
       "Check upstream vllm release notes and pyproject metadata first, then reconcile the Python upper-bound and hard-coded supported-version list with the current state of Python 3.14 support.",
+      "When validating a new model, usage pattern, or stable-tag gap, scout upstream release notes, open issues, open PRs, and recent commits before freezing local patch carry. Gemma 4 needed exactly that: the current lane depends on post-0.19.0 follow-up work for ROCm MoE padding and separate reasoning/tool/template fixes.",
       "If numba remains part of the Python 3.14 story, capture it as a real source patch or package dependency decision rather than a no-op scripted edit.",
       "Keep vllm --version as a metadata-only smoke path. If upstream CLI imports optional OpenAI or Triton modules eagerly again, prefer restoring a lazy import boundary over adding unrelated hard runtime dependencies just for version output.",
       "Treat openai-harmony as a normal runtime-closure package, not an optdepend, if this repo wants GPT-OSS/Harmony paths to work. The current AUR baseline is a good starting point, but it omits the upstream python-pydantic runtime dependency and should not be copied blindly. The reason to package it locally is closure and metadata correctness, not a ROCm-specific patch lane.",
@@ -28,6 +31,8 @@
       "Keep the setup.py compiler-flag forwarding patch unless upstream starts passing CFLAGS/CXXFLAGS/HIPFLAGS into the CMake ROCm build itself. The concrete packaging failure was $srcdir leaking into shipped extension modules because the HIP lane was built without Arch prefix-map flags.",
       "Keep LTO disabled for this package unless the ROCm HIP shared-module link path becomes compatible with it. The concrete host failure was _moe_C.abi3.so / _rocm_C.abi3.so link failure with `LLVM gold plugin has failed to create LTO module: Invalid record`.",
       "Keep the gfx1x AITER enablement and Gemma 4 ROCM_AITER_UNIFIED_ATTN preference unless upstream lands a ROCm-safe single-backend path for heterogeneous-head Gemma 4 models. The concrete host failure was successful Gemma 4 initialization followed by Triton unified-attention decode miscompilation (`operation scheduled before its operands`) and garbage output on gfx1151.",
+      "Keep the Gemma 4 ROCm AITER MoE intermediate-padding patch until an upstream release includes an equivalent fix. The concrete reference-host failure after removing the GPU fault was corrupted `google/gemma-4-26B-A4B-it` output because the old AITER-side `torch_moe` fallback ran only after vLLM had already shuffled expert weights into AITER runtime layout.",
+      "Keep Gemma 4 text-only serving fully text-only by zeroing image, audio, and video in --limit-mm-per-prompt. The concrete Gemma 4 26B-A4B server failure was vLLM still entering multimodal warmup and then faulting the GPU during engine initialization when video remained implicit.",
       "Keep TorchAO version checks metadata-only on generic startup paths unless upstream reorganizes its quantization imports. The concrete host failure was an external python-torchao-rocm package whose optional _C.abi3.so extension was both missing a usable torch/lib runpath and built against an incompatible PyTorch ABI, causing warning noise during unrelated vLLM startup when vLLM imported the TorchAO quantization module just to ask a version question.",
       "Keep the merged 0008 TorchAO startup-laziness patch valid as a multi-hunk carry. It now covers both the metadata-only version-check path and the quantization-registry lazy import, and an earlier malformed variant broke real quantization=torchao loads with NameError: find_spec.",
       "Keep the merged 0009 CLI/runtime-light startup patch unless upstream makes the generic startup path import-clean on its own. It keeps plain `vllm --help` off the benchmark tree, the OpenAI chat_utils path, Transformers-backed arg_utils helpers, and the heavy serve/launch/run-batch imports unless the user actually selected those flows.",
@@ -96,9 +101,11 @@
     ],
     "divergence_notes": [
       "This package is ROCm-specific even though the closest Arch-family baseline is the generic aur/python-vllm package.",
-      "Carries a deliberate Python-3.14 compatibility delta and recipe-specific ROCm/AITER integration that are not part of the generic baseline."
+      "Carries a deliberate Python-3.14 compatibility delta and recipe-specific ROCm/AITER integration that are not part of the generic baseline.",
+      "Carries a repo-owned Gemma 4 26B-A4B text-only repair lane plus a ROCm-specific MoE padding fix for Strix Halo rather than assuming the upstream multimodal defaults are safe on this host."
     ],
     "extra_sha256sums": [
+      "SKIP",
       "SKIP",
       "SKIP",
       "SKIP",
@@ -118,7 +125,8 @@
       "0006-setup.py-forward-host-and-hip-flags-into-cmake.patch",
       "0007-rocm-enable-gfx1x-aiter-and-prefer-it-for-gemma4.patch",
       "0008-torchao-startup-stays-lazy.patch",
-      "0009-cli-startup-stays-runtime-light.patch"
+      "0009-cli-startup-stays-runtime-light.patch",
+      "0010-rocm-pad-gemma4-moe-intermediate-for-aiter.patch"
     ],
     "license": [
       "Apache-2.0"
@@ -149,13 +157,14 @@
       "Carries a ROCm-platform fallback patch so Strix Halo can fall back from AMDSMI ASIC-info lookup to torch.cuda without tripping the import-time warning_once circular import path.",
       "Carries an optional-SageMaker patch so vllm --help and the base OpenAI server routes stay usable when model_hosting_container_standards is not installed.",
       "Carries a ROCm Triton unified-attention tile-size patch so large-head prefill paths such as Gemma 4 global attention do not request more than 64 KiB of LDS/shared memory on gfx1151.",
+      "The current repo-owned google/gemma-4-26B-A4B-it repair lane is text-only basic serving with --limit-mm-per-prompt {\"image\":0,\"audio\":0,\"video\":0}, --max-model-len 128, and --max-num-batched-tokens 32. Keep those defaults in the repo-owned helper until fresh host validation proves the narrower MoE/output-correctness failure is gone too.",
       "Carries a merged TorchAO startup-laziness patch so generic vLLM startup paths keep TorchAO version checks metadata-only and only import TorchAOConfig when quantization == torchao. This keeps optional broken host TorchAO packages off unrelated CLI/help/server startup paths while still preserving real --quantization torchao loads.",
       "Depends on the local python-transformers-gfx1151 closure package rather than the distro python-transformers lane because Gemma 4 support first appears in upstream transformers 5.5.x and the older host package did not ship transformers.models.gemma4.",
       "Depends on the local python-mistral-common-gfx1151 closure package rather than the stale host python-mistral-common 1.8.x lane because Transformers 5.5.x imports ReasoningEffort from mistral_common.protocol.instruct.request.",
       "Carries a merged CLI/runtime-light startup patch so plain `vllm --help` stays off the benchmark tree, the OpenAI chat_utils tool-call path, Transformers-backed arg_utils helpers, and the heavy serve/launch/run-batch command trees unless the user actually selected those flows.",
       "The old external python-torchao-rocm 0.16.0-1 package was not import-clean at the native extension layer on the reference host, but this repo now carries a local python-torchao-rocm-gfx1151 0.17.0 replacement lane and the reference host has already moved over to it. Generic vLLM startup should stay TorchAO-clean on non-TorchAO code paths, and the tracked real round-trip helper for actual --quantization torchao support is tools/torchao_vllm_smoke.py. Keep that helper's quantized checkpoint in bfloat16, because TorchAO includes the serialized tensor dtype in its metadata contract and the earlier float32 helper variant failed before vLLM model init on raw GPU copy_.",
       "makepkg -e reuses src/, so build() intentionally reapplies the carried source patches before wheel generation instead of assuming prepare() already ran in the current tree.",
-      "makepkg -f can also reuse a partially patched src/ tree across failed iterations, so patch application is tracked with per-patch stamp files under src/.patch-state. Keep that idempotency layer unless the package starts forcing a clean source tree for every build.",
+      "makepkg -f can also reuse a partially patched src/ tree across failed iterations. The PKGBUILD now re-extracts v0.19.0.tar.gz and reapplies the full carried patch series on a known-clean tree whenever its source-patch sentinels are missing, instead of relying on per-patch stamp files under src/.patch-state.",
       "Do not restore the earlier build-only librocsolver.so.0 shim unless the paired PyTorch lane regresses again. The current python-pytorch-opt-rocm-gfx1151 package imports cleanly against librocsolver.so.1, so the extra compatibility directory is just stale maintenance debt now.",
       "Preserve makepkg's inherited CFLAGS/CXXFLAGS when layering Strix tuning flags, and feed the same prefix-map flags into HIPFLAGS, so Arch's build-path sanitization survives the ROCm/HIP compile lane too.",
       "Upstream openai-harmony is a small Rust/PyO3 helper library with published manylinux wheels, not a ROCm-specific component. If Arch still lacks an official package, the right local story is a closure package derived from aur/python-openai-harmony. If this repo ingests it locally, it should still inherit the normal Strix build lane for applicable native code: Zen 5 / znver5 CPU tuning, -O3 or equivalent, LTO when compatible, and PGO when the build system exposes a maintainable path.",
@@ -172,7 +181,8 @@
       "0006-setup.py-forward-host-and-hip-flags-into-cmake.patch",
       "0007-rocm-enable-gfx1x-aiter-and-prefer-it-for-gemma4.patch",
       "0008-torchao-startup-stays-lazy.patch",
-      "0009-cli-startup-stays-runtime-light.patch"
+      "0009-cli-startup-stays-runtime-light.patch",
+      "0010-rocm-pad-gemma4-moe-intermediate-for-aiter.patch"
     ],
     "source_type": "tarball",
     "source_url": "https://github.com/vllm-project/vllm/archive/refs/tags/v0.19.0.tar.gz",
@@ -180,6 +190,7 @@
     "template": "python-project-vllm",
     "update_notes": [
       "Check upstream vllm release notes and pyproject metadata first, then reconcile the Python upper-bound and hard-coded supported-version list with the current state of Python 3.14 support.",
+      "When validating a new model, usage pattern, or stable-tag gap, scout upstream release notes, open issues, open PRs, and recent commits before freezing local patch carry. Gemma 4 needed exactly that: the current lane depends on post-0.19.0 follow-up work for ROCm MoE padding and separate reasoning/tool/template fixes.",
       "If numba remains part of the Python 3.14 story, capture it as a real source patch or package dependency decision rather than a no-op scripted edit.",
       "Keep vllm --version as a metadata-only smoke path. If upstream CLI imports optional OpenAI or Triton modules eagerly again, prefer restoring a lazy import boundary over adding unrelated hard runtime dependencies just for version output.",
       "Treat openai-harmony as a normal runtime-closure package, not an optdepend, if this repo wants GPT-OSS/Harmony paths to work. The current AUR baseline is a good starting point, but it omits the upstream python-pydantic runtime dependency and should not be copied blindly. The reason to package it locally is closure and metadata correctness, not a ROCm-specific patch lane.",
@@ -190,6 +201,8 @@
       "Keep the setup.py compiler-flag forwarding patch unless upstream starts passing CFLAGS/CXXFLAGS/HIPFLAGS into the CMake ROCm build itself. The concrete packaging failure was $srcdir leaking into shipped extension modules because the HIP lane was built without Arch prefix-map flags.",
       "Keep LTO disabled for this package unless the ROCm HIP shared-module link path becomes compatible with it. The concrete host failure was _moe_C.abi3.so / _rocm_C.abi3.so link failure with `LLVM gold plugin has failed to create LTO module: Invalid record`.",
       "Keep the gfx1x AITER enablement and Gemma 4 ROCM_AITER_UNIFIED_ATTN preference unless upstream lands a ROCm-safe single-backend path for heterogeneous-head Gemma 4 models. The concrete host failure was successful Gemma 4 initialization followed by Triton unified-attention decode miscompilation (`operation scheduled before its operands`) and garbage output on gfx1151.",
+      "Keep the Gemma 4 ROCm AITER MoE intermediate-padding patch until an upstream release includes an equivalent fix. The concrete reference-host failure after removing the GPU fault was corrupted google/gemma-4-26B-A4B-it output because the old AITER-side torch_moe fallback ran only after vLLM had already shuffled expert weights into AITER runtime layout.",
+      "Keep Gemma 4 text-only serving fully text-only by zeroing image, audio, and video in --limit-mm-per-prompt. The concrete Gemma 4 26B-A4B server failure was vLLM still entering multimodal warmup and then faulting the GPU during engine initialization when video remained implicit.",
       "Keep TorchAO version checks metadata-only on generic startup paths unless upstream reorganizes its quantization imports. The concrete host failure was an external python-torchao-rocm package whose optional _C.abi3.so extension was both missing a usable torch/lib runpath and built against an incompatible PyTorch ABI, causing warning noise during unrelated vLLM startup when vLLM imported the TorchAO quantization module just to ask a version question.",
       "Keep the merged 0008 TorchAO startup-laziness patch valid as a multi-hunk carry. It now covers both the metadata-only version-check path and the quantization-registry lazy import, and an earlier malformed variant broke real quantization=torchao loads with NameError: find_spec.",
       "Keep the merged 0009 CLI/runtime-light startup patch unless upstream makes the generic startup path import-clean on its own. It keeps plain `vllm --help` off the benchmark tree, the OpenAI chat_utils path, Transformers-backed arg_utils helpers, and the heavy serve/launch/run-batch imports unless the user actually selected those flows.",

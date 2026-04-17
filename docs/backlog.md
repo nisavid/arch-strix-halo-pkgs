@@ -15,6 +15,26 @@
   the prefix maps into the HIP compile lane, but both build attempts then died
   in `csrc/sampler.hip` with `Invalid dpp_ctrl value: wavefront shifts are not
   supported on GFX10+`.
+- Revisit full multimodal Gemma 4 serving on the `google/gemma-4-26B-A4B-it`
+  lane. The current repo-owned local vLLM repair path is intentionally
+  text-only with
+  `--limit-mm-per-prompt {"image":0,"audio":0,"video":0}` because leaving
+  `video` implicit was enough to send vLLM back into multimodal warmup and
+  reproduce the earlier GPU memory-access fault during engine initialization on
+  the reference host.
+- Re-audit the current Gemma 4 26B-A4B carry set before treating it as a
+  settled root-cause fix. The 2026-04-17 source audit left three carries
+  needing fresh scrutiny:
+  - `python-amd-aiter-gfx1151/0001-gfx1151-rdna35-header-compat.patch`
+  - `python-amd-aiter-gfx1151/0005-ck-moe-normalizes-zero-splitk-and-forwards-stage2.patch`
+  - `python-vllm-rocm-gfx1151/0007-rocm-enable-gfx1x-aiter-and-prefer-it-for-gemma4.patch`
+- After the basic `google/gemma-4-26B-A4B-it` repair lane is clean again,
+  extend coverage across trustworthy Gemma 4 usage recipes instead of stopping
+  at one smoke:
+  - vLLM Recipes throughput-vs-latency examples
+  - relevant Hugging Face model-card usage patterns
+  - reasoning/tool-calling flows where the checkpoint and upstream guidance
+    actually support them
 - Investigate the two remaining warnings on the now-passing TorchAO helper path:
   - `Stored version is not the same as current default version`
   - `Cannot use ROCm custom paged attention kernel, falling back to Triton implementation`

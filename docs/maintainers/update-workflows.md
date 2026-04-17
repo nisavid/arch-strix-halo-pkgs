@@ -9,13 +9,16 @@ to adopt.
 
 1. Read the package's `recipe.json` and `README.md`.
 2. Confirm the authoritative base package and advisory references.
-3. Update the package policy entry in `policies/recipe-packages.toml`.
-4. Re-render the package scaffold.
-5. Rebase or refresh patch files as needed.
-6. Rebuild the package.
-7. Refresh `repo/x86_64`.
-8. Run package-specific smoke tests.
-9. Update docs if the behavior, baseline, or maintenance story changed.
+3. Scout upstream release notes, open issues, open PRs, and recent commits for
+   fixes relevant to the lane you are touching, especially when validating a
+   new model, feature, or usage pattern on a packaged stable release.
+4. Update the package policy entry in `policies/recipe-packages.toml`.
+5. Re-render the package scaffold.
+6. Rebase or refresh patch files as needed.
+7. Rebuild the package.
+8. Refresh `repo/x86_64`.
+9. Run package-specific smoke tests.
+10. Update docs if the behavior, baseline, or maintenance story changed.
 
 Scout starting points:
 

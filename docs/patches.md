@@ -51,6 +51,12 @@ system.
     SageMaker and runtime-LoRA API routers, so `vllm --help` and other
     non-SageMaker entrypoints no longer fail just because that extra package is
     absent.
+- [Pad Gemma 4 26B-A4B MoE intermediates for ROCm AITER alignment](../packages/python-vllm-rocm-gfx1151/0010-rocm-pad-gemma4-moe-intermediate-for-aiter.patch)
+  - Pads the unquantized Gemma 4 MoE intermediate size to a multiple of 128
+    before vLLM shuffles expert weights into AITER runtime layout.
+  - Keeps `google/gemma-4-26B-A4B-it` on the intended AITER fused-MoE path for
+    the 704-wide expert shape instead of relying on a later fallback after the
+    weights have already been converted.
 
 ## AITER
 
@@ -59,6 +65,24 @@ system.
     source patch instead of post-install file replacement.
   - Adds RDNA-safe fallbacks for packed FP8 and reduction paths that assume
     CDNA-only instructions.
+- [Find `hipcc` and user-cache JIT modules on installed systems](../packages/python-amd-aiter-gfx1151/0002-jit-runtime-finds-hipcc-and-user-jit-modules.patch)
+  - Makes the installed AITER runtime resolve `/opt/rocm/bin/hipcc` without
+    depending on an ambient login-shell `PATH`.
+  - Lets the read-only site-packages install import JIT-built modules copied
+    into the writable `~/.aiter/jit/` cache instead of assuming a
+    package-relative import path.
+- [Unknown gfx targets fall back to the 2-stage MoE heuristics](../packages/python-amd-aiter-gfx1151/0003-fused-moe-unknown-gfx-falls-back-to-2stage.patch)
+  - Avoids a `KeyError` while probing the 1-stage config table on gfx targets
+    that do not ship explicit 1-stage metadata.
+- [Skip missing 1-stage ASM metadata during MoE tuning](../packages/python-amd-aiter-gfx1151/0004-moe-tuner-skips-missing-1stage-asm-metadata.patch)
+  - Keeps the 2-stage CK tuner usable even when the current gfx target has no
+    architecture-specific 1-stage ASM metadata.
+- [Normalize zero splitk and forward stage-2 splitk on CK MoE launches](../packages/python-amd-aiter-gfx1151/0005-ck-moe-normalizes-zero-splitk-and-forwards-stage2.patch)
+  - Makes the AITER CK MoE wrappers treat `splitk=0` as the existing
+    no-split sentinel (`1` at kernel launch) instead of passing a raw zero into
+    the CK entrypoint.
+  - Propagates the computed `ksplit` into stage 2 so both halves of the
+    unquantized MoE path use the same launch semantics.
 
 ## TorchAO
 

@@ -1,0 +1,21 @@
+diff --git a/csrc/ck_gemm_moe_2stages_codegen/gemm_moe_tune.py b/csrc/ck_gemm_moe_2stages_codegen/gemm_moe_tune.py
+index ac0540e76..0567561f9 100644
+--- a/csrc/ck_gemm_moe_2stages_codegen/gemm_moe_tune.py
++++ b/csrc/ck_gemm_moe_2stages_codegen/gemm_moe_tune.py
+@@ -1546,9 +1546,15 @@ class FmoeTuner(TunerCommon):
+         elif act_type == ActivationType.Gelu:
+             acti_dir = "gelu"
+         up = 1 if use_g1u1 else 0
+-        quantDtype_1stage, extraInfo_1stage = self.get_1stage_file_info(
++        asm_info = self.get_1stage_file_info(
+             q_type, q_dtype_a, doweight_stage1
+         )
++        # Skip 1-stage ASM tuning when the current gfx target has no
++        # architecture-specific metadata; the 2-stage CK tuner can still
++        # search viable kernels for the same MoE shape.
++        if asm_info is None:
++            return task_1stage
++        quantDtype_1stage, extraInfo_1stage = asm_info
+         kernels_list_csv_1stage = f"{get_asm_dir()}/fmoe/{acti_dir}/fmoe_bf16_{{quantDtype_1stage}}_g1u{up}_{acti_dir}{{extraInfo_1stage}}.csv"
+         asm_kernels_1stage = {}
+         if (
