@@ -34,11 +34,13 @@ def test_pkgbuild_cleans_stale_triton_fetchcontent_state():
 
 def test_pkgbuild_reapplies_source_patches_for_noextract_rebuilds():
     text = PKGBUILD.read_text()
+
     assert "_apply_patch_if_needed" in text
     assert "_apply_all_source_patches" in text
-    assert 'build() {' in text
     assert '[[ -f "${startdir}/${_patch_name}" ]]' in text
-    assert '_apply_all_source_patches' in text
+    assert ".patch-state" not in text
+    assert "_reset_source_tree()" in text
+    assert "_source_tree_has_all_source_patches()" in text
 
 
 def test_pkgbuild_drops_old_build_only_librocsolver_shim():

@@ -29,6 +29,24 @@ diff --git a/vllm/_aiter_ops.py b/vllm/_aiter_ops.py
      """
  
      @functools.wraps(func)
+@@ -1183,8 +1183,15 @@
+     @classmethod
+     @if_aiter_supported
+     def is_fused_moe_enabled(cls) -> bool:
+-        return cls._AITER_ENABLED and cls._FMOE_ENABLED
++        # Keep explicit environment overrides authoritative, but default to
++        # the ROCm AITER fused-MoE path on supported systems when the user did
++        # not request a different AITER policy explicitly. This keeps local
++        # ROCm package installs on the intended MoE backend without requiring a
++        # manual VLLM_ROCM_USE_AITER=1 export just to avoid the Triton fallback.
++        if envs.is_set("VLLM_ROCM_USE_AITER") or envs.is_set("VLLM_ROCM_USE_AITER_MOE"):
++            return cls._AITER_ENABLED and cls._FMOE_ENABLED
++        return cls._FMOE_ENABLED
+ 
+     @classmethod
+     @if_aiter_supported
+     def is_fusion_moe_shared_experts_enabled(cls) -> bool:
+
 diff --git a/vllm/model_executor/models/config.py b/vllm/model_executor/models/config.py
 --- a/vllm/model_executor/models/config.py
 +++ b/vllm/model_executor/models/config.py

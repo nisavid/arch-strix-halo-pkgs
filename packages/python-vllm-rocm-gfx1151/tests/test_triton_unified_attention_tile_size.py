@@ -15,6 +15,10 @@ GEMMA4_AITER_PATCH = (
     REPO_ROOT
     / "packages/python-vllm-rocm-gfx1151/0007-rocm-enable-gfx1x-aiter-and-prefer-it-for-gemma4.patch"
 )
+GEMMA4_MOE_PADDING_PATCH = (
+    REPO_ROOT
+    / "packages/python-vllm-rocm-gfx1151/0010-rocm-pad-gemma4-moe-intermediate-for-aiter.patch"
+)
 
 
 def test_pkgbuild_carries_rocm_large_head_tile_patch():
@@ -36,6 +40,14 @@ def test_pkgbuild_carries_setup_flag_forwarding_patch():
 def test_pkgbuild_carries_gemma4_aiter_patch():
     text = PKGBUILD.read_text()
     patch_name = GEMMA4_AITER_PATCH.name
+
+    assert patch_name in text
+    assert f'_apply_patch_if_needed "{patch_name}"' in text
+
+
+def test_pkgbuild_carries_gemma4_moe_padding_patch():
+    text = PKGBUILD.read_text()
+    patch_name = GEMMA4_MOE_PADDING_PATCH.name
 
     assert patch_name in text
     assert f'_apply_patch_if_needed "{patch_name}"' in text
@@ -89,3 +101,22 @@ def test_gemma4_patch_enables_gfx1x_aiter_and_prefers_it():
     assert "return on_mi3xx() or on_gfx1x()" in text
     assert "AttentionBackendEnum.ROCM_AITER_UNIFIED_ATTN" in text
     assert "decode miscompilation" in text
+
+
+def test_gemma4_patch_auto_enables_fused_moe_when_not_explicitly_disabled():
+    text = GEMMA4_AITER_PATCH.read_text()
+
+    assert 'envs.is_set("VLLM_ROCM_USE_AITER")' in text
+    assert 'envs.is_set("VLLM_ROCM_USE_AITER_MOE")' in text
+    assert "return cls._AITER_ENABLED and cls._FMOE_ENABLED" in text
+    assert "return cls._FMOE_ENABLED" in text
+
+
+def test_gemma4_moe_padding_patch_aligns_704_intermediate_for_aiter():
+    text = GEMMA4_MOE_PADDING_PATCH.read_text()
+
+    assert "_maybe_pad_intermediate_for_aiter(" in text
+    assert "Padding MoE intermediate dimension from %d to %d for AITER CK GEMM alignment." in text
+    assert "aiter_moe_align = 128" in text
+    assert "layer.moe_config" in text
+    assert "rocm_aiter_ops.shuffle_weights(" in text

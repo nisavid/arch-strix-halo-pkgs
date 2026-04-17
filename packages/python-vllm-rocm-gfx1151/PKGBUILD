@@ -6,7 +6,7 @@
 
 pkgname=python-vllm-rocm-gfx1151
 pkgver=0.19.0.r8.d20260317.gad42886
-pkgrel=20
+pkgrel=23
 pkgdesc='High-throughput and memory-efficient inference engine for LLMs with ROCm, rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://github.com/vllm-project/vllm
@@ -18,14 +18,12 @@ options=(!lto)
 provides=(python-vllm-rocm python-vllm)
 conflicts=(python-vllm-rocm python-vllm)
 replaces=()
-source=(https://github.com/vllm-project/vllm/archive/refs/tags/v0.19.0.tar.gz 0001-python-3.14-version-gates.patch 0002-cli-version-avoids-eager-runtime-imports.patch 0003-rocm-gate-vendored-triton-kernels-on-runtime-support.patch 0004-rocm-fallback-and-optional-sagemaker-standards.patch 0005-rocm-reduce-triton-unified-attention-prefill-tile-for-large-heads.patch 0006-setup.py-forward-host-and-hip-flags-into-cmake.patch 0007-rocm-enable-gfx1x-aiter-and-prefer-it-for-gemma4.patch 0008-torchao-startup-stays-lazy.patch 0009-cli-startup-stays-runtime-light.patch)
-sha256sums=(SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP)
+source=(https://github.com/vllm-project/vllm/archive/refs/tags/v0.19.0.tar.gz 0001-python-3.14-version-gates.patch 0002-cli-version-avoids-eager-runtime-imports.patch 0003-rocm-gate-vendored-triton-kernels-on-runtime-support.patch 0004-rocm-fallback-and-optional-sagemaker-standards.patch 0005-rocm-reduce-triton-unified-attention-prefill-tile-for-large-heads.patch 0006-setup.py-forward-host-and-hip-flags-into-cmake.patch 0007-rocm-enable-gfx1x-aiter-and-prefer-it-for-gemma4.patch 0008-torchao-startup-stays-lazy.patch 0009-cli-startup-stays-runtime-light.patch 0010-rocm-pad-gemma4-moe-intermediate-for-aiter.patch)
+sha256sums=(SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP)
 
 _apply_patch_if_needed() {
   local _patch_name="$1"
   local _patch=""
-  local _stamp_dir="${srcdir}/.patch-state"
-  local _stamp="${_stamp_dir}/${_patch_name}.applied"
 
   if [[ -f "${srcdir}/${_patch_name}" ]]; then
     _patch="${srcdir}/${_patch_name}"
@@ -36,21 +34,38 @@ _apply_patch_if_needed() {
     return 1
   fi
 
-  mkdir -p "${_stamp_dir}"
-  if [[ -f "${_stamp}" ]]; then
-    return 0
-  fi
-
-  if patch --dry-run -R -Np1 -i "${_patch}" >/dev/null 2>&1; then
-    : >"${_stamp}"
-    return 0
-  fi
-
   patch -Np1 -i "${_patch}"
-  : >"${_stamp}"
+}
+
+_reset_source_tree() {
+  rm -rf "${srcdir}/vllm-0.19.0"
+  bsdtar -xf "${srcdir}/v0.19.0.tar.gz" -C "${srcdir}"
+}
+
+_source_tree_has_all_source_patches() {
+  [[ -f pyproject.toml ]] || return 1
+  grep -Fq 'requires-python = ">=3.10,<3.15"' pyproject.toml &&
+    grep -Fq 'def _selected_subcommand() -> str | None:' vllm/entrypoints/cli/main.py &&
+    grep -Fq '_maybe_pad_intermediate_for_aiter(' \
+      vllm/model_executor/layers/fused_moe/oracle/unquantized.py
 }
 
 _apply_all_source_patches() {
+  if [[ ! -d "${srcdir}/vllm-0.19.0" ]]; then
+    _reset_source_tree
+  fi
+
+  cd "${srcdir}/vllm-0.19.0"
+  if _source_tree_has_all_source_patches; then
+    return 0
+  fi
+
+  # Later source patches touch files changed by earlier ones, so reverse-dry-run
+  # checks are not reliable on an already-patched tree. Re-extract and apply the
+  # series once on a known-clean source tree whenever any sentinel is missing.
+  _reset_source_tree
+  cd "${srcdir}/vllm-0.19.0"
+
   _apply_patch_if_needed "0001-python-3.14-version-gates.patch"
   _apply_patch_if_needed "0002-cli-version-avoids-eager-runtime-imports.patch"
   _apply_patch_if_needed "0003-rocm-gate-vendored-triton-kernels-on-runtime-support.patch"
@@ -60,6 +75,7 @@ _apply_all_source_patches() {
   _apply_patch_if_needed "0007-rocm-enable-gfx1x-aiter-and-prefer-it-for-gemma4.patch"
   _apply_patch_if_needed "0008-torchao-startup-stays-lazy.patch"
   _apply_patch_if_needed "0009-cli-startup-stays-runtime-light.patch"
+  _apply_patch_if_needed "0010-rocm-pad-gemma4-moe-intermediate-for-aiter.patch"
 }
 
 prepare() {
