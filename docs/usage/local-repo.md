@@ -128,7 +128,7 @@ That script:
   `python-amd-aiter-gfx1151` and `python-vllm-rocm-gfx1151` archives
 - republishes the local repo to `/srv/pacman/strix-halo-gfx1151/x86_64`
 - reinstalls those packages through pacman
-- runs `python -m vllm --version`
+- runs `vllm --version`
 - runs the tracked Gemma 4 text and basic server smokes
 
 Logs go to:

@@ -60,7 +60,7 @@ run sudo pacman -Sy
 run sudo pacman -S python-amd-aiter-gfx1151 python-vllm-rocm-gfx1151
 run pacman -Qi python-amd-aiter-gfx1151 python-vllm-rocm-gfx1151
 
-run python -m vllm --version
+run vllm --version
 run python "${repo_root}/tools/gemma4_text_smoke.py" "${model}"
 run python "${repo_root}/tools/gemma4_server_smoke.py" \
   "${model}" \
