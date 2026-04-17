@@ -1,0 +1,11 @@
+from pathlib import Path
+
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+SCRIPT = REPO_ROOT / "tools/run_patch_audit_host_checks.sh"
+
+
+def test_patch_audit_host_checks_reinstalls_target_packages():
+    text = SCRIPT.read_text()
+    assert "sudo pacman -S --needed python-amd-aiter-gfx1151 python-vllm-rocm-gfx1151" not in text
+    assert "sudo pacman -S python-amd-aiter-gfx1151 python-vllm-rocm-gfx1151" in text

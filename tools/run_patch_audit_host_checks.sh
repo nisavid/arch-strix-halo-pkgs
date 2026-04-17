@@ -57,7 +57,7 @@ run python "${repo_root}/tools/update_pacman_repo.py" \
 run sudo install -d "${publish_root}"
 run sudo rsync -a --delete "${repo_root}/repo/x86_64/" "${publish_root}/"
 run sudo pacman -Sy
-run sudo pacman -S --needed python-amd-aiter-gfx1151 python-vllm-rocm-gfx1151
+run sudo pacman -S python-amd-aiter-gfx1151 python-vllm-rocm-gfx1151
 run pacman -Qi python-amd-aiter-gfx1151 python-vllm-rocm-gfx1151
 
 run python -m vllm --version
