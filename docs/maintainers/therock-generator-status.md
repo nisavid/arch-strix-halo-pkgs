@@ -13,10 +13,10 @@ live TheRock package family in this repo. The current policy is sufficient to:
 
 The canonical rendered output is produced with:
 
-`python tools/render_therock_pkgbase.py --recipe-root /path/to/ai-notes`
+`python tools/render_therock_pkgbase.py --therock-root /`
 
 That writes the buildable split `pkgbase` into `packages/therock-gfx1151/` and
-stamps `pkgver` from the recipe repo's folder-local git history.
+stamps `pkgver` from the repo-local `upstream/ai-notes/strix-halo` git history.
 
 The generated family now includes the expected ROCm runtime, math, profiling,
 debugging, OpenCL, and ML package surface, plus two internal support packages

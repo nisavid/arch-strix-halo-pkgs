@@ -1,6 +1,6 @@
 # Current State
 
-Status as of 2026-04-15.
+Status as of 2026-04-17.
 
 ## Live Host State
 
@@ -44,6 +44,13 @@ The following smoke checks have already passed on the reference host:
   `site-packages`, so Python `3.14` can import the ROCm-shipped `amdsmi`
   module from `/opt/rocm/share/amd_smi` without extra `PYTHONPATH` glue on the
   host.
+- `rocm-core-gfx1151` now uses CachyOS `rocm-core` as its distro-integration
+  baseline while still shipping the newer TheRock 7.13 core payload. The
+  rebuilt split package now carries the expected `ld.so`/shell integration
+  files, `rdhc` wrapper/docs, and license copies; the remaining file-list
+  delta against Cachy is limited to intentional TheRock-owned additions such
+  as `nlohmann`, `.hipInfo`, `share/modulefiles`, and `share/therock`, plus
+  the expected versioned `rocmCoreTargets` / `librocm-core.so` filenames.
 - `python-pytorch-opt-rocm-gfx1151` tracks `ROCm/pytorch` `release/2.11`,
   pinned to commit `0446f7ba2fd`, with package version aligned to the built
   wheel version.
@@ -214,12 +221,33 @@ The following smoke checks have already passed on the reference host:
     launch boundary and keep stage 2 aligned with the computed `ksplit`
   - host revalidation is still required before treating the 26B-A4B lane as
     solved
-  - a 2026-04-17 source audit also left three carries needing re-review
-    before they should be treated as proven root-cause fixes:
-    `python-amd-aiter-gfx1151/0001-gfx1151-rdna35-header-compat.patch`,
-    `python-amd-aiter-gfx1151/0005-ck-moe-normalizes-zero-splitk-and-forwards-stage2.patch`,
-    and
-    `python-vllm-rocm-gfx1151/0007-rocm-enable-gfx1x-aiter-and-prefer-it-for-gemma4.patch`
+  - a same-day follow-up on 2026-04-17 narrowed the disposition of the three
+    questioned carries:
+    - keep
+      `python-amd-aiter-gfx1151/0005-ck-moe-normalizes-zero-splitk-and-forwards-stage2.patch`
+      for now because current upstream AITER still lacks the full no-split
+      normalization plus stage-2 `splitk` forwarding that matched the
+      documented `ksplit=0` fault
+    - the AITER RDNA header carry is now split:
+      `python-amd-aiter-gfx1151/0001-gfx1151-rdna35-header-compat.patch`
+      keeps only the `vec_convert.h` gfx11 packed-op fallbacks, while
+      `python-amd-aiter-gfx1151/0006-rdna35-hip-reduce-wave32-dpp-compat.patch`
+      carries the broader `hip_reduce.h` wave32/DPP rewrite
+    - the vLLM Gemma 4 / AITER carry is now split too:
+      `python-vllm-rocm-gfx1151/0007-rocm-enable-gfx1x-aiter-and-prefer-it-for-gemma4.patch`
+      keeps the gfx1x AITER support plus the Gemma 4
+      `ROCM_AITER_UNIFIED_ATTN` override, and
+      `python-vllm-rocm-gfx1151/0011-rocm-default-fused-moe-to-aiter-on-supported-systems.patch`
+      carries the separate fused-MoE default-policy change
+  - the repo now carries a reproducible privileged handoff at
+    `tools/run_patch_audit_host_checks.sh`
+    - it refreshes the local repo from the latest built AITER/vLLM package
+      archives, republishes `/srv/pacman/strix-halo-gfx1151/x86_64`, reinstalls
+      those packages through pacman, and runs the tracked Gemma 4 text/basic
+      server smokes
+    - logs land under the ignored
+      `docs/worklog/patch-audit-final-checks/<timestamp>/` directory so the
+      follow-up loop does not depend on copy-pasted terminal output
 - The tracked host-side follow-up helper for OpenAI-compatible server smokes is
   now `tools/gemma4_server_smoke.py`.
   - `--mode basic` launches

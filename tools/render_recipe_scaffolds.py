@@ -13,6 +13,7 @@ import tomllib
 from pathlib import Path
 
 from compute_recipe_version import compute_version
+from recipe_repo import RECIPE_ROOT_ENV_VAR, resolve_recipe_dir, resolve_recipe_root
 
 try:
     import yaml
@@ -37,7 +38,14 @@ def load_recipe_manifest(recipe_dir: Path) -> dict:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Render hand-maintained package scaffolds from the recipe manifest")
-    parser.add_argument("--recipe-root", required=True, help="git repo root containing the recipe")
+    parser.add_argument(
+        "--recipe-root",
+        help=(
+            "git repo root containing the recipe; defaults to the repo-local "
+            "upstream/ai-notes submodule or the "
+            f"{RECIPE_ROOT_ENV_VAR} environment variable"
+        ),
+    )
     parser.add_argument("--recipe-subdir", default="strix-halo", help="path within the recipe repo")
     parser.add_argument("--policy", default="policies/recipe-packages.toml", help="policy file relative to the packaging repo root")
     parser.add_argument("--output-root", default="packages", help="package output root relative to the packaging repo root")
@@ -89,7 +97,9 @@ def render_source_refs(policy_pkg: dict, recipe_pkg: dict) -> tuple[str, str]:
     template = policy_pkg["template"]
     if template == "meta-package":
         return bash_array([]), bash_array([])
-    extra_sources = policy_pkg.get("extra_sources", [])
+    extra_sources = policy_pkg.get("extra_sources")
+    if extra_sources is None:
+        extra_sources = list(policy_pkg.get("source_patches", []))
     extra_sha256sums = policy_pkg.get("extra_sha256sums", ["SKIP"] * len(extra_sources))
     if len(extra_sha256sums) != len(extra_sources):
         print("EXTRA_SOURCE_MISMATCH: extra_sources and extra_sha256sums lengths differ", file=sys.stderr)
@@ -606,8 +616,6 @@ EOF
 _apply_patch_if_needed() {
   local _patch_name="$1"
   local _patch=""
-  local _stamp_dir="${srcdir}/.patch-state"
-  local _stamp="${_stamp_dir}/${_patch_name}.applied"
 
   if [[ -f "${srcdir}/${_patch_name}" ]]; then
     _patch="${srcdir}/${_patch_name}"
@@ -618,25 +626,43 @@ _apply_patch_if_needed() {
     return 1
   fi
 
-  mkdir -p "${_stamp_dir}"
-  if [[ -f "${_stamp}" ]]; then
-    return 0
-  fi
-
-  if patch --dry-run -R -Np1 -i "${_patch}" >/dev/null 2>&1; then
-    : >"${_stamp}"
-    return 0
-  fi
-
   patch -Np1 -i "${_patch}"
-  : >"${_stamp}"
+}
+
+_reset_source_tree() {
+  rm -rf "${srcdir}/__SRC_SUBDIR__"
+  bsdtar -xf "${srcdir}/v__UPSTREAM_VERSION__.tar.gz" -C "${srcdir}"
+}
+
+_source_tree_has_all_source_patches() {
+  [[ -f pyproject.toml ]] || return 1
+  grep -Fq 'requires-python = ">=3.10,<3.15"' pyproject.toml &&
+    grep -Fq 'def _selected_subcommand() -> str | None:' vllm/entrypoints/cli/main.py &&
+    grep -Fq 'VLLM_ROCM_USE_AITER_MOE' vllm/_aiter_ops.py &&
+    grep -Fq '_maybe_pad_intermediate_for_aiter(' \
+      vllm/model_executor/layers/fused_moe/oracle/unquantized.py
 }
 
 _apply_all_source_patches() {
+  if [[ ! -d "${srcdir}/__SRC_SUBDIR__" ]]; then
+    _reset_source_tree
+  fi
+
+  cd "${srcdir}/__SRC_SUBDIR__"
+  if _source_tree_has_all_source_patches; then
+    return 0
+  fi
+
+  # Later source patches touch files changed by earlier ones, so reverse-dry-run
+  # checks are not reliable on an already-patched tree. Re-extract and apply the
+  # series once on a known-clean source tree whenever any sentinel is missing.
+  _reset_source_tree
+  cd "${srcdir}/__SRC_SUBDIR__"
+
 __PATCH_APPLY_LINES__
 }
 
-""".replace(
+""".replace("__SRC_SUBDIR__", src_subdir).replace("__UPSTREAM_VERSION__", upstream_version).replace(
                 "__PATCH_APPLY_LINES__",
                 "".join(
                     f'  _apply_patch_if_needed "{patch_name}"\n'
@@ -655,11 +681,34 @@ __PATCH_APPLY_LINES__
 build() {{
   cd "$srcdir/{src_subdir}"
 
-{patch_build_cmds.rstrip()}
+  {patch_build_cmds.rstrip()}
 
   {compiler_env_snippet(compiler_root)}  _setup_compiler_env
-  export CFLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument -DGLOG_USE_GLOG_EXPORT"
-  export CXXFLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument -DGLOG_USE_GLOG_EXPORT"
+  _strip_incompatible_lto_flags() {{
+    local _value="$1"
+    local _out=()
+    local _token
+    read -r -a _tokens <<<"${{_value}}"
+    for _token in "${{_tokens[@]}}"; do
+      case "${{_token}}" in
+        -flto|-flto=*|-fuse-linker-plugin) ;;
+        *) _out+=("${{_token}}") ;;
+      esac
+    done
+    printf '%s' "${{_out[*]}}"
+  }}
+
+  local _debug_root="/usr/src/debug/{package_name}"
+  local _prefix_map_flags="-ffile-prefix-map=${{srcdir}}=${{_debug_root}} -fdebug-prefix-map=${{srcdir}}=${{_debug_root}} -fmacro-prefix-map=${{srcdir}}=${{_debug_root}}"
+  local _strix_opt_flags="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument -DGLOG_USE_GLOG_EXPORT"
+  local _base_cflags="$(_strip_incompatible_lto_flags "${{CFLAGS:-}}")"
+  local _base_cxxflags="$(_strip_incompatible_lto_flags "${{CXXFLAGS:-}}")"
+  local _base_hipflags="$(_strip_incompatible_lto_flags "${{HIPFLAGS:-}}")"
+  local _base_ldflags="$(_strip_incompatible_lto_flags "${{LDFLAGS:-}}")"
+  export CFLAGS="${{_base_cflags}} ${{_prefix_map_flags}} ${{_strix_opt_flags}}"
+  export CXXFLAGS="${{_base_cxxflags}} ${{_prefix_map_flags}} ${{_strix_opt_flags}}"
+  export HIPFLAGS="${{_base_hipflags}} ${{_prefix_map_flags}} ${{_strix_opt_flags}}"
+  export LDFLAGS="${{_base_ldflags}}"
   export CPPFLAGS="${{CPPFLAGS:-}} -DGLOG_USE_GLOG_EXPORT"
   export ROCM_HOME="/opt/rocm"
   export HIP_PATH="/opt/rocm"
@@ -943,6 +992,9 @@ build() {{
   cd "$srcdir/{src_subdir}"
 
   {compiler_env_snippet(compiler_root)}  _setup_compiler_env
+  export PATH="/opt/rocm/bin:${{PATH}}"
+  export ROCM_HOME="/opt/rocm"
+  export HIP_PATH="/opt/rocm"
   export PREBUILD_KERNELS=0
   export AITER_GPU_ARCH=gfx1151
   export CFLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument"
@@ -1266,8 +1318,12 @@ def main() -> int:
     packaging_root = Path(__file__).resolve().parents[1]
     policy_path = packaging_root / args.policy
     output_root = packaging_root / args.output_root
-    recipe_root = Path(args.recipe_root).resolve()
-    recipe_dir = recipe_root / args.recipe_subdir
+    try:
+        recipe_root = resolve_recipe_root(args.recipe_root, packaging_root=packaging_root)
+        recipe_dir = resolve_recipe_dir(recipe_root, args.recipe_subdir)
+    except RuntimeError as exc:
+        print(exc, file=sys.stderr)
+        return 2
 
     policy = load_toml(policy_path)
     defaults = dict(policy.get("defaults", {}))

@@ -147,6 +147,7 @@ update_notes = [
   "Keep the setup.py compiler-flag forwarding patch unless upstream starts passing CFLAGS/CXXFLAGS/HIPFLAGS into the CMake ROCm build itself. The concrete packaging failure was $srcdir leaking into shipped extension modules because the HIP lane was built without Arch prefix-map flags.",
   "Keep LTO disabled for this package unless the ROCm HIP shared-module link path becomes compatible with it. The concrete host failure was _moe_C.abi3.so / _rocm_C.abi3.so link failure with `LLVM gold plugin has failed to create LTO module: Invalid record`.",
   "Keep the gfx1x AITER enablement and Gemma 4 ROCM_AITER_UNIFIED_ATTN preference unless upstream lands a ROCm-safe single-backend path for heterogeneous-head Gemma 4 models. The concrete host failure was successful Gemma 4 initialization followed by Triton unified-attention decode miscompilation (`operation scheduled before its operands`) and garbage output on gfx1151.",
+  "Keep `0007-rocm-enable-gfx1x-aiter-and-prefer-it-for-gemma4.patch` limited to gfx1x AITER support plus the Gemma 4 backend override, and carry the fused-MoE default flip separately in `0011-rocm-default-fused-moe-to-aiter-on-supported-systems.patch` so that default-policy decision can be revalidated independently of the Gemma 4 decode workaround.",
   "Keep the Gemma 4 ROCm AITER MoE intermediate-padding patch until an upstream release includes an equivalent fix. The concrete reference-host failure after removing the GPU fault was corrupted `google/gemma-4-26B-A4B-it` output because the old AITER-side `torch_moe` fallback ran only after vLLM had already shuffled expert weights into AITER runtime layout.",
   "Keep Gemma 4 text-only serving fully text-only by zeroing `image`, `audio`, and `video` in `--limit-mm-per-prompt`. The concrete Gemma 4 26B-A4B server failure was vLLM still entering multimodal warmup and then faulting the GPU during engine initialization when `video` remained implicit.",
   "Keep TorchAO version checks metadata-only on generic startup paths unless upstream reorganizes its quantization imports. The concrete host failure was an external python-torchao-rocm package whose optional _C.abi3.so extension was both missing a usable torch/lib runpath and built against an incompatible PyTorch ABI, causing warning noise during unrelated vLLM startup when vLLM imported the TorchAO quantization module just to ask a version question.",
@@ -164,11 +165,12 @@ provides = ["python-vllm-rocm", "python-vllm"]
 conflicts = ["python-vllm-rocm", "python-vllm"]
 depends = ["amdsmi-gfx1151", "numactl", "python-aiohttp", "python-blake3", "python-cachetools", "python-cbor2", "python-cloudpickle", "python-diskcache", "python-einops", "python-fastapi", "python-gguf", "python-gfx1151", "python-huggingface-hub", "python-ijson", "python-importlib-metadata", "python-mistral-common-gfx1151", "python-msgspec", "python-openai", "python-openai-harmony-gfx1151", "python-opencv", "python-prometheus-fastapi-instrumentator", "python-psutil", "python-py-cpuinfo", "python-pybase64", "python-pydantic", "python-pytorch-opt-rocm-gfx1151", "python-pyzmq", "python-soundfile", "python-starlette", "python-sympy", "python-torchvision-rocm-gfx1151", "python-tqdm", "python-transformers-gfx1151", "python-triton-gfx1151", "python-uvloop", "python-watchfiles", "rocblas-gfx1151", "uvicorn"]
 makedepends = ["cmake", "ninja", "python-installer", "python-pip", "python-setuptools", "python-setuptools-scm", "python-wheel", "rocm-llvm-gfx1151"]
+options = ["!lto"]
 source_type = "tarball"
 source_url = "https://github.com/vllm-project/vllm/archive/refs/tags/v0.19.0.tar.gz"
-extra_sources = ["0001-python-3.14-version-gates.patch", "0002-cli-version-avoids-eager-runtime-imports.patch", "0003-rocm-gate-vendored-triton-kernels-on-runtime-support.patch", "0004-rocm-fallback-and-optional-sagemaker-standards.patch", "0005-rocm-reduce-triton-unified-attention-prefill-tile-for-large-heads.patch", "0006-setup.py-forward-host-and-hip-flags-into-cmake.patch", "0007-rocm-enable-gfx1x-aiter-and-prefer-it-for-gemma4.patch", "0008-torchao-startup-stays-lazy.patch", "0009-cli-startup-stays-runtime-light.patch", "0010-rocm-pad-gemma4-moe-intermediate-for-aiter.patch"]
-extra_sha256sums = ["SKIP", "SKIP", "SKIP", "SKIP", "SKIP", "SKIP", "SKIP", "SKIP", "SKIP", "SKIP"]
-source_patches = ["0001-python-3.14-version-gates.patch", "0002-cli-version-avoids-eager-runtime-imports.patch", "0003-rocm-gate-vendored-triton-kernels-on-runtime-support.patch", "0004-rocm-fallback-and-optional-sagemaker-standards.patch", "0005-rocm-reduce-triton-unified-attention-prefill-tile-for-large-heads.patch", "0006-setup.py-forward-host-and-hip-flags-into-cmake.patch", "0007-rocm-enable-gfx1x-aiter-and-prefer-it-for-gemma4.patch", "0008-torchao-startup-stays-lazy.patch", "0009-cli-startup-stays-runtime-light.patch", "0010-rocm-pad-gemma4-moe-intermediate-for-aiter.patch"]
+extra_sources = ["0001-python-3.14-version-gates.patch", "0002-cli-version-avoids-eager-runtime-imports.patch", "0003-rocm-gate-vendored-triton-kernels-on-runtime-support.patch", "0004-rocm-fallback-and-optional-sagemaker-standards.patch", "0005-rocm-reduce-triton-unified-attention-prefill-tile-for-large-heads.patch", "0006-setup.py-forward-host-and-hip-flags-into-cmake.patch", "0007-rocm-enable-gfx1x-aiter-and-prefer-it-for-gemma4.patch", "0008-torchao-startup-stays-lazy.patch", "0009-cli-startup-stays-runtime-light.patch", "0010-rocm-pad-gemma4-moe-intermediate-for-aiter.patch", "0011-rocm-default-fused-moe-to-aiter-on-supported-systems.patch"]
+extra_sha256sums = ["SKIP", "SKIP", "SKIP", "SKIP", "SKIP", "SKIP", "SKIP", "SKIP", "SKIP", "SKIP", "SKIP"]
+source_patches = ["0001-python-3.14-version-gates.patch", "0002-cli-version-avoids-eager-runtime-imports.patch", "0003-rocm-gate-vendored-triton-kernels-on-runtime-support.patch", "0004-rocm-fallback-and-optional-sagemaker-standards.patch", "0005-rocm-reduce-triton-unified-attention-prefill-tile-for-large-heads.patch", "0006-setup.py-forward-host-and-hip-flags-into-cmake.patch", "0007-rocm-enable-gfx1x-aiter-and-prefer-it-for-gemma4.patch", "0008-torchao-startup-stays-lazy.patch", "0009-cli-startup-stays-runtime-light.patch", "0010-rocm-pad-gemma4-moe-intermediate-for-aiter.patch", "0011-rocm-default-fused-moe-to-aiter-on-supported-systems.patch"]
 src_subdir = "vllm-0.19.0"
 patches_dir = "patches/python-vllm-rocm-gfx1151"
 scaffold_notes = [
@@ -183,7 +185,8 @@ scaffold_notes = [
   "Carries a setup.py flag-forwarding patch so host CFLAGS/CXXFLAGS and HIPFLAGS are passed into the CMake ROCm extension build explicitly. This keeps Arch prefix-map sanitization and Strix tuning flags active in the shipped HIP extension modules.",
   "Disables LTO for this package. Re-enabling inherited -flto=* flags makes ROCm shared-module links such as _moe_C.abi3.so and _rocm_C.abi3.so fail with `LLVM gold plugin has failed to create LTO module: Invalid record`.",
   "Carries a gfx1x AITER enablement patch and a Gemma 4 backend-selection patch so heterogeneous-head Gemma 4 models can prefer ROCM_AITER_UNIFIED_ATTN on Strix Halo instead of forcing the Triton unified-attention backend that currently miscompiles during decode.",
-  "The current repo-owned `google/gemma-4-26B-A4B-it` repair lane is text-only basic serving with `--limit-mm-per-prompt {\"image\":0,\"audio\":0,\"video\":0}`, `--max-model-len 128`, and `--max-num-batched-tokens 32`. Keep those defaults in the repo-owned helper until fresh host validation proves the narrower MoE/output-correctness failure is gone too.",
+  "Carries a separate fused-MoE default-policy patch so supported ROCm systems stay on the intended AITER fused-MoE path unless users explicitly override VLLM_ROCM_USE_AITER or VLLM_ROCM_USE_AITER_MOE. Keep that policy carry separate from the Gemma 4 backend-selection patch so it can be revalidated independently.",
+  "The current repo-owned `google/gemma-4-26B-A4B-it` repair lane is tracked through `tools/gemma4_server_smoke.py` and is text-only basic serving with `--limit-mm-per-prompt {\"image\":0,\"audio\":0,\"video\":0}`, `--max-model-len 128`, and `--max-num-batched-tokens 32`. Keep those defaults in the repo-owned helper until fresh host validation proves the narrower MoE/output-correctness failure is gone too.",
   "Depends on the local python-transformers-gfx1151 closure package rather than the distro python-transformers lane because Gemma 4 support first appears in upstream transformers 5.5.x and the older host package did not ship transformers.models.gemma4.",
   "Depends on the local python-mistral-common-gfx1151 closure package rather than the stale host python-mistral-common 1.8.x lane because Transformers 5.5.x imports ReasoningEffort from mistral_common.protocol.instruct.request.",
   "Carries a merged TorchAO startup-laziness patch so generic vLLM startup paths keep TorchAO version checks metadata-only and only import `TorchAOConfig` when `quantization == torchao`. This keeps optional broken host python-torchao-rocm packages from surfacing warning noise on unrelated code paths.",
@@ -458,7 +461,7 @@ authoritative_reference = "none"
 advisory_references = ["extra/python-pytorch-opt-rocm", "extra/python-pytorch-rocm"]
 divergence_notes = [
   "There is no standalone AITER package in Arch-family packaging; this package is recipe-first and aligned to the vendored PyTorch submodule lane.",
-  "Carries an explicit package-local source patch for gfx1151 RDNA 3.5 header compatibility rather than leaving those fixes as manual post-build mutations.",
+  "Carries explicit package-local source patches for gfx1151 RDNA 3.5 header compatibility, split between vec_convert packed-op fallbacks and hip_reduce wave32/DPP compatibility, rather than leaving those fixes as manual post-build mutations.",
   "Carries an installed-system JIT runtime patch so AITER can find `hipcc` and import JIT-built modules from the writable user cache on read-only site-packages installs.",
   "Carries the gfx1x AITER-side MoE compatibility patches that are safe to keep local: unknown-gfx probing, missing 1-stage ASM metadata handling, and CK 2-stage splitk normalization/forwarding for the unquantized MoE path."
 ]
@@ -467,6 +470,7 @@ update_notes = [
   "Treat FlyDSL as a separate tracked package story; do not silently fold an unpublished wheel into this package.",
   "Keep the installed-system JIT runtime patch until upstream AITER stops assuming `hipcc` is on the ambient PATH and correctly imports modules copied to the writable user JIT cache from read-only site-packages installs.",
   "Keep the package's explicit ROCm toolchain exports in `build()` until upstream AITER stops probing `hipconfig` and `hipcc` through ambient shell state. The concrete build failure was `Could not find hipconfig in PATH or ROCM_HOME(/usr)`.",
+  "Keep the split RDNA header carries narrow: `0001-gfx1151-rdna35-header-compat.patch` now covers only the `vec_convert.h` gfx11 packed-op fallbacks, while `0006-rdna35-hip-reduce-wave32-dpp-compat.patch` carries the broader `hip_reduce.h` wave32/DPP rewrite. If that area is revisited, re-verify `hip_reduce.h` on its own instead of recombining unrelated header edits.",
   "Keep the unknown-gfx 2-stage fallback, missing-1-stage-metadata tuner skip, and CK 2-stage splitk normalization/forwarding fix until upstream AITER handles those gfx1x cases directly. Do not reintroduce an unquantized `torch_moe` fallback here: the concrete reference-host failure was `google/gemma-4-26B-A4B-it` generating corrupted text after such a fallback ran on AITER-shuffled weights."
 ]
 provides = ["python-amd-aiter"]
@@ -480,14 +484,15 @@ source_patches = [
   "0002-jit-runtime-finds-hipcc-and-user-jit-modules.patch",
   "0003-fused-moe-unknown-gfx-falls-back-to-2stage.patch",
   "0004-moe-tuner-skips-missing-1stage-asm-metadata.patch",
-  "0005-ck-moe-normalizes-zero-splitk-and-forwards-stage2.patch"
+  "0005-ck-moe-normalizes-zero-splitk-and-forwards-stage2.patch",
+  "0006-rdna35-hip-reduce-wave32-dpp-compat.patch"
 ]
 patches_dir = "packages/python-amd-aiter-gfx1151"
 scaffold_notes = [
   "There is no standalone Arch, CachyOS, or AUR aiter package. The closest packaging lane is the PyTorch ROCm pkgbase that vendors the same submodule, so that pkgbase is advisory only.",
   "The recipe rebuilds AITER from PyTorch's vendored third_party/aiter copy so its CK ABI stays aligned with the paired PyTorch tree.",
   "Upstream AITER declares pandas as a real dependency and FlyDSL as an optional acceleration path. Keep pandas in the package metadata, and package FlyDSL separately rather than silently depending on an unpublished wheel.",
-  "Keep the gfx1151 RDNA 3.5 header fixes as a package-local source patch applied before wheel build, not as post-install file replacement.",
+  "Keep the gfx1151 RDNA 3.5 header fixes as package-local source patches applied before wheel build, split between the `vec_convert.h` packed-op fallbacks and the `hip_reduce.h` wave32/DPP compatibility rewrite.",
   "Keep the installed-system JIT runtime patch unless upstream fixes both assumptions itself: `hipcc` on the ambient PATH, and package-relative import of JIT-built modules even after copying the writable JIT tree out of read-only site-packages.",
   "Keep the gfx1x AITER-side MoE compatibility patches that are genuinely local: unknown-gfx probing, missing 1-stage ASM metadata, and CK 2-stage splitk normalization/forwarding. Unsupported unquantized shapes such as Gemma 4 26B-A4B belong in the vLLM-side padding/selection story, not in a post-shuffle AITER fallback."
 ]

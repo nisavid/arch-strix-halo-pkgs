@@ -96,7 +96,7 @@ repository.
 1. Clone the repo and publish its package repo to `/srv/pacman`.
 
 ```bash
-git clone https://github.com/nisavid/arch-strix-halo-pkgs.git
+git clone --recurse-submodules https://github.com/nisavid/arch-strix-halo-pkgs.git
 cd arch-strix-halo-pkgs
 sudo install -d /srv/pacman/strix-halo-gfx1151/x86_64
 sudo rsync -a --delete repo/x86_64/ /srv/pacman/strix-halo-gfx1151/x86_64/
@@ -126,6 +126,13 @@ paru -S rocm-gfx1151 python-vllm-rocm-gfx1151 llama.cpp-hip-gfx1151 lemonade
 
 For the full publish, update, and repair workflow, use the
 [local repo guide](docs/usage/local-repo.md).
+
+If you already cloned without submodules and need the canonical recipe input
+for scaffold rendering, run:
+
+```bash
+git submodule update --init --recursive
+```
 
 ## Upstream Projects
 

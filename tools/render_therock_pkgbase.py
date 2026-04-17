@@ -7,6 +7,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from recipe_repo import RECIPE_ROOT_ENV_VAR, resolve_recipe_root
+
 
 def repo_root() -> Path:
     return Path(__file__).resolve().parents[1]
@@ -25,7 +27,14 @@ def git_output(repo: Path, *args: str) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Render the TheRock split package base into packages/therock-gfx1151")
     parser.add_argument("--therock-root", default="/", help="filesystem root containing the staged opt/rocm tree")
-    parser.add_argument("--recipe-root", required=True, help="git repo root containing the Strix Halo recipe")
+    parser.add_argument(
+        "--recipe-root",
+        help=(
+            "git repo root containing the Strix Halo recipe; defaults to the "
+            "repo-local upstream/ai-notes submodule or the "
+            f"{RECIPE_ROOT_ENV_VAR} environment variable"
+        ),
+    )
     parser.add_argument("--recipe-subdir", default="strix-halo", help="path within the recipe repo used for pkgver tracking")
     parser.add_argument("--recipe-repo-url", default="https://github.com/paudley/ai-notes", help="canonical recipe repository URL")
     parser.add_argument("--recipe-author", default="Blackcat Informatics Inc.", help="recipe attribution string")
@@ -38,9 +47,9 @@ def main() -> int:
     policy_path = here / args.policy
     template_path = here / args.template
     output_path = here / args.output
-    recipe_root = Path(args.recipe_root).resolve()
 
     try:
+        recipe_root = resolve_recipe_root(args.recipe_root, packaging_root=here)
         upstream_version = None
         for line in policy_path.read_text().splitlines():
             if line.startswith('pkgver = "'):

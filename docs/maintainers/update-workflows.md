@@ -47,16 +47,22 @@ explicit.
 
 ## 3. Paudley Recipe Update
 
-Use when `ai-notes/strix-halo` changed and the change should flow into this
+Use when `upstream/ai-notes/strix-halo` changed and the change should flow into this
 package repo.
 
+The repo-local `upstream/ai-notes` submodule is the canonical recipe input.
+Read `docs/maintainers/recipe-inputs.md` before bumping it or overriding the
+recipe root.
+
 1. Identify which package families the recipe change affects.
-2. Re-render affected scaffolds from the updated recipe input.
-3. Compare the rendered result against the current maintained PKGBUILD and
+2. Update the local `upstream/ai-notes` submodule if the repo should adopt the
+   newer recipe input.
+3. Re-render affected scaffolds from the updated recipe input.
+4. Compare the rendered result against the current maintained PKGBUILD and
    patch set.
-4. Keep the repo's local policy choices explicit; do not assume every recipe
+5. Keep the repo's local policy choices explicit; do not assume every recipe
    change should be adopted verbatim.
-5. Rebuild, refresh the local repo, and smoke test.
+6. Rebuild, refresh the local repo, and smoke test.
 
 If the recipe change only adds temporary bring-up knowledge, capture the stable
 part in canonical docs and leave the transient part behind.

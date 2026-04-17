@@ -31,6 +31,12 @@ silently assigning new TheRock content to the wrong package.
 The policy currently assumes the actual TheRock payload lives under
 `opt/rocm/`.
 
+Package-added integration overlays that also live under `opt/rocm/` are not
+part of the upstream TheRock payload and must be represented either as
+synthetic files or post-copy commands plus matching ignore rules. Otherwise a
+rerender against a live installed root will try to classify this repo's own
+overlay files as new upstream content.
+
 ## Failure codes
 
 The generator exits non-zero if it cannot classify the tree cleanly.
@@ -52,12 +58,14 @@ Each failure also includes a short hint explaining whether the fix belongs in:
 ## Typical update workflow
 
 1. Build or stage a new TheRock tree.
-2. Run `python tools/render_therock_pkgbase.py --recipe-root /path/to/ai-notes`.
-3. If it fails:
+2. Ensure the repo-local `upstream/ai-notes` submodule is initialized and up to
+   date for the recipe change you intend to adopt.
+3. Run `python tools/render_therock_pkgbase.py --therock-root /`.
+4. If it fails:
    - add aliases for known new component directories or file prefixes
    - add explicit path ownership overrides for outliers
    - add package metadata if a package name is new
-4. Re-run until ownership is total and unambiguous.
-5. Build the rendered package base under `packages/therock-gfx1151/`.
-6. Publish refreshed artifacts through the local repo workflow in
+5. Re-run until ownership is total and unambiguous.
+6. Build the rendered package base under `packages/therock-gfx1151/`.
+7. Publish refreshed artifacts through the local repo workflow in
    `docs/usage/local-repo.md`.

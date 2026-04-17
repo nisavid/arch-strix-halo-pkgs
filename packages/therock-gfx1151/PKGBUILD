@@ -63,10 +63,11 @@ pkgname=(
   'rocsparse-gfx1151'
   'rocthrust-gfx1151'
   'roctracer-gfx1151'
+  'rocwmma-gfx1151'
   'rpp-gfx1151'
 )
 pkgver='7.13.0pre.r8.d20260317.gad42886'
-pkgrel=2
+pkgrel=4
 arch=('x86_64')
 license=('custom:AMD')
 url='https://github.com/ROCm/TheRock'
@@ -344,9 +345,156 @@ package_rocm-core-gfx1151() {
     pkgdesc='ROCm core runtime files from TheRock for gfx1151'
     provides=('rocm-core')
     conflicts=('rocm-core' 'rocm-gfx1151-bin')
-    depends=()
+    depends=('gcc-libs' 'glibc' 'python-gfx1151' 'python-prettytable' 'python-pyelftools' 'python-yaml')
     _require_therock_root
     _copy_from_filelist 'rocm-core-gfx1151'
+    install -d "${pkgdir}/opt/rocm/bin"
+    ln -s ../libexec/rocm-core/rdhc.py "${pkgdir}/opt/rocm/bin/rdhc"
+    install -Dm644 /dev/stdin "${pkgdir}/etc/ld.so.conf.d/rocm.conf" <<'EOF'
+/opt/rocm/lib
+EOF
+    install -Dm644 /dev/stdin "${pkgdir}/etc/profile.d/rocm.sh" <<'EOF'
+export ROCM_PATH=/opt/rocm
+append_path '/opt/rocm/bin'
+export PATH
+EOF
+    install -Dm644 /dev/stdin "${pkgdir}/usr/share/fish/vendor_conf.d/rocm.fish" <<'EOF'
+set --export --global ROCM_PATH /opt/rocm
+fish_add_path --append --global /opt/rocm/bin
+EOF
+    install -Dm644 /dev/stdin "${pkgdir}/opt/rocm/share/doc/rocm-core/LICENSE.md" <<'EOF'
+MIT License
+
+Copyright (C) Advanced Micro Devices, Inc.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+EOF
+    install -Dm644 /dev/stdin "${pkgdir}/opt/rocm/share/rdhc/README.md" <<'EOF'
+# rdhc
+Rocm Deployment Health Check Tool
+
+
+## Features of the ROCm Deployment Health Check Tool
+
+1. **Cross-Platform Support**: Works on Ubuntu, RHEL, and SLES distributions
+2. **Comprehensive Testing**:
+   - Default tests (GPU presence, driver status, rocminfo, rocm-smi)
+   - Library dependency verification
+   - Check some kernel parameters and ENV variables presence
+   - Component-specific tests
+     - Build and test the test program available from rocm-examples git repo dynamically.
+3. **Dynamic Component Detection**: Identifies installed ROCm components using distribution-specific package manager commands
+4. **Flexible Reporting**:
+   - Pretty table output for terminal display
+   - JSON export for further analysis or integration
+5. **Configurable Verbosity**: Through command-line options (`-v` for verbose, `-s` for silent)
+
+## Install dependency pip packages
+
+```bash
+sudo pip3 install -r requirements.txt
+
+```
+## Usage
+
+```bash
+./rdhc.py -h
+usage: sudo -E rdhc.py [options]
+
+ROCm Deployment Health Check Tool
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --quick               Run quick tests only (default)
+  --all                 Default tests + Compile and executes simple program for each component.
+  -v, --verbose         Enable verbose output
+  -s, --silent          Silent mode (errors only)
+  -j FILE, --json FILE  Export results to JSON file
+  -d DIR, --dir DIR     Directory path for temporary files (default: /tmp/rdhc/)
+
+Usage examples:
+# Run quick test (default tests only)
+sudo -E ./rdhc.py
+
+# Run all tests including compile and execute the rocm-example program for each component
+sudo -E ./rdhc.py --all
+
+# Run all tests with verbose output
+sudo -E ./rdhc.py --all -v
+
+# Enable verbose output
+sudo -E ./rdhc.py -v
+
+# Run in silent mode (only errors shown)
+sudo -E ./rdhc.py -s
+
+# Export results to a specific JSON file
+sudo -E ./rdhc.py --all --json rdhc-results.json
+
+# Specify a directory for temp files and logs (default: /tmp/rdhc/)
+sudo -E ./rdhc.py -d /home/user/rdhc-dir/
+
+```
+## RDHC Environment VARIABLES
+RDHC tool will use the following ENV varaibles and act accordingly if they are set.
+```bash
+# ROCm installation path can be set by the below ENV varaible. Default is "/opt/rocm/"
+export ROCM_PATH="/opt/rocm"
+
+# For library dependency validation, the lib search depth can be set by the below ENV.
+# Default is full depth. It checks for all the lib files in ROCM_PATH/lib/ folder recursively.
+export LIBDIR_MAX_DEPTH=""
+
+# if you want to check the libs only from the ROCM_PATH/lib/ folder set the depth as 1.
+export LIBDIR_MAX_DEPTH=1
+
+```
+The tool is designed to be easily extended with additional component tests by
+adding new test methods following the naming convention `test_check_component_name()`.
+EOF
+    install -Dm644 /dev/stdin "${pkgdir}/opt/rocm/share/rdhc/requirements.txt" <<'EOF'
+prettytable>=3.14.0
+PyYAML>=5.4.1
+EOF
+    install -Dm644 /dev/stdin "${pkgdir}/usr/share/licenses/rocm-core/LICENSE" <<'EOF'
+MIT License
+
+Copyright (C) Advanced Micro Devices, Inc.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+EOF
 }
 
 package_rocm-dbgapi-gfx1151() {
@@ -623,6 +771,15 @@ package_roctracer-gfx1151() {
     depends=()
     _require_therock_root
     _copy_from_filelist 'roctracer-gfx1151'
+}
+
+package_rocwmma-gfx1151() {
+    pkgdesc='rocWMMA from TheRock for gfx1151'
+    provides=('rocwmma')
+    conflicts=('rocm-gfx1151-bin' 'rocwmma')
+    depends=()
+    _require_therock_root
+    _copy_from_filelist 'rocwmma-gfx1151'
 }
 
 package_rpp-gfx1151() {

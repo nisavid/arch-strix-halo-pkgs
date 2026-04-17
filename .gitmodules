@@ -1,0 +1,4 @@
+[submodule "upstream/ai-notes"]
+	path = upstream/ai-notes
+	url = https://github.com/paudley/ai-notes.git
+	branch = main

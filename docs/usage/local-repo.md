@@ -112,3 +112,29 @@ paru -S <pkgname>
 ```
 
 Then rerun only the smoke tests that matter for the repaired package.
+
+## Final Patch-Audit Host Checks
+
+For the AITER/vLLM patch-audit lane, the canonical privileged host check entry
+point is:
+
+```bash
+tools/run_patch_audit_host_checks.sh /path/to/google/gemma-4-26B-A4B-it
+```
+
+That script:
+
+- refreshes `repo/x86_64` from the latest built
+  `python-amd-aiter-gfx1151` and `python-vllm-rocm-gfx1151` archives
+- republishes the local repo to `/srv/pacman/strix-halo-gfx1151/x86_64`
+- reinstalls those packages through pacman
+- runs `python -m vllm --version`
+- runs the tracked Gemma 4 text and basic server smokes
+
+Logs go to:
+
+- `docs/worklog/patch-audit-final-checks/<timestamp>/host-checks.log`
+- `docs/worklog/patch-audit-final-checks/<timestamp>/gemma4-server.log`
+
+`docs/worklog/` is intentionally ignored, so the full transcript can stay on
+disk for iteration without polluting tracked docs.

@@ -1,7 +1,7 @@
 [repo]
 pkgbase = "therock-gfx1151"
 pkgver = "7.13.0pre"
-pkgrel = 2
+pkgrel = 4
 suffix = "-gfx1151"
 url = "https://github.com/ROCm/TheRock"
 license = ["custom:AMD"]
@@ -20,6 +20,7 @@ ignore_globs = [
   "opt/rocm/bin/*test*",
   "opt/rocm/bin/*bench*",
   "opt/rocm/bin/*validate*",
+  "opt/rocm/bin/rdhc",
   "opt/rocm/bin/bn_*",
   "opt/rocm/bin/conv_*",
   "opt/rocm/bin/fused_*",
@@ -56,6 +57,7 @@ ignore_globs = [
   "opt/rocm/share/doc/**",
   "opt/rocm/share/man/**",
   "opt/rocm/share/magma/testing/**",
+  "opt/rocm/share/rdhc/**",
   "opt/rocm/src/**",
   "opt/rocm/tests/**",
 ]
@@ -77,6 +79,11 @@ fileless = true
 [packages."rocm-core-gfx1151"]
 desc = "ROCm core runtime files from TheRock for gfx1151"
 provides = ["rocm-core"]
+depends = ["gcc-libs", "glibc", "python-gfx1151", "python-prettytable", "python-pyelftools", "python-yaml"]
+post_copy_commands = [
+  "install -d \"${pkgdir}/opt/rocm/bin\"",
+  "ln -s ../libexec/rocm-core/rdhc.py \"${pkgdir}/opt/rocm/bin/rdhc\"",
+]
 
 [packages."comgr-gfx1151"]
 desc = "ROCm code object manager from TheRock for gfx1151"
@@ -663,6 +670,145 @@ fileless = true
 [synthetic_files]
 "amdsmi-gfx1151" = [
   { path = "usr/lib/python3.14/site-packages/amd_smi.pth", text = "/opt/rocm/share/amd_smi\n" },
+]
+"rocm-core-gfx1151" = [
+  { path = "etc/ld.so.conf.d/rocm.conf", text = "/opt/rocm/lib\n" },
+  { path = "etc/profile.d/rocm.sh", text = """export ROCM_PATH=/opt/rocm
+append_path '/opt/rocm/bin'
+export PATH
+""" },
+  { path = "usr/share/fish/vendor_conf.d/rocm.fish", text = """set --export --global ROCM_PATH /opt/rocm
+fish_add_path --append --global /opt/rocm/bin
+""" },
+  { path = "opt/rocm/share/doc/rocm-core/LICENSE.md", text = """MIT License
+
+Copyright (C) Advanced Micro Devices, Inc.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+""" },
+  { path = "opt/rocm/share/rdhc/README.md", text = """# rdhc
+Rocm Deployment Health Check Tool
+
+
+## Features of the ROCm Deployment Health Check Tool
+
+1. **Cross-Platform Support**: Works on Ubuntu, RHEL, and SLES distributions
+2. **Comprehensive Testing**:
+   - Default tests (GPU presence, driver status, rocminfo, rocm-smi)
+   - Library dependency verification
+   - Check some kernel parameters and ENV variables presence
+   - Component-specific tests
+     - Build and test the test program available from rocm-examples git repo dynamically.
+3. **Dynamic Component Detection**: Identifies installed ROCm components using distribution-specific package manager commands
+4. **Flexible Reporting**:
+   - Pretty table output for terminal display
+   - JSON export for further analysis or integration
+5. **Configurable Verbosity**: Through command-line options (`-v` for verbose, `-s` for silent)
+
+## Install dependency pip packages
+
+```bash
+sudo pip3 install -r requirements.txt
+
+```
+## Usage
+
+```bash
+./rdhc.py -h
+usage: sudo -E rdhc.py [options]
+
+ROCm Deployment Health Check Tool
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --quick               Run quick tests only (default)
+  --all                 Default tests + Compile and executes simple program for each component.
+  -v, --verbose         Enable verbose output
+  -s, --silent          Silent mode (errors only)
+  -j FILE, --json FILE  Export results to JSON file
+  -d DIR, --dir DIR     Directory path for temporary files (default: /tmp/rdhc/)
+
+Usage examples:
+# Run quick test (default tests only)
+sudo -E ./rdhc.py
+
+# Run all tests including compile and execute the rocm-example program for each component
+sudo -E ./rdhc.py --all
+
+# Run all tests with verbose output
+sudo -E ./rdhc.py --all -v
+
+# Enable verbose output
+sudo -E ./rdhc.py -v
+
+# Run in silent mode (only errors shown)
+sudo -E ./rdhc.py -s
+
+# Export results to a specific JSON file
+sudo -E ./rdhc.py --all --json rdhc-results.json
+
+# Specify a directory for temp files and logs (default: /tmp/rdhc/)
+sudo -E ./rdhc.py -d /home/user/rdhc-dir/
+
+```
+## RDHC Environment VARIABLES
+RDHC tool will use the following ENV varaibles and act accordingly if they are set.
+```bash
+# ROCm installation path can be set by the below ENV varaible. Default is "/opt/rocm/"
+export ROCM_PATH="/opt/rocm"
+
+# For library dependency validation, the lib search depth can be set by the below ENV.
+# Default is full depth. It checks for all the lib files in ROCM_PATH/lib/ folder recursively.
+export LIBDIR_MAX_DEPTH=""
+
+# if you want to check the libs only from the ROCM_PATH/lib/ folder set the depth as 1.
+export LIBDIR_MAX_DEPTH=1
+
+```
+The tool is designed to be easily extended with additional component tests by
+adding new test methods following the naming convention `test_check_component_name()`.
+""" },
+  { path = "opt/rocm/share/rdhc/requirements.txt", text = """prettytable>=3.14.0
+PyYAML>=5.4.1
+""" },
+  { path = "usr/share/licenses/rocm-core/LICENSE", text = """MIT License
+
+Copyright (C) Advanced Micro Devices, Inc.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+""" },
 ]
 "rocm-opencl-runtime-gfx1151" = [
   { path = "etc/OpenCL/vendors/amdocl64.icd", text = "/opt/rocm/lib/libamdocl64.so\n" },

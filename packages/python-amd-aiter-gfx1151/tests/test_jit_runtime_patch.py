@@ -3,6 +3,14 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 PKGBUILD = REPO_ROOT / "packages/python-amd-aiter-gfx1151/PKGBUILD"
+HEADER_PATCH = (
+    REPO_ROOT
+    / "packages/python-amd-aiter-gfx1151/0001-gfx1151-rdna35-header-compat.patch"
+)
+HIP_REDUCE_PATCH = (
+    REPO_ROOT
+    / "packages/python-amd-aiter-gfx1151/0006-rdna35-hip-reduce-wave32-dpp-compat.patch"
+)
 RUNTIME_PATCH = (
     REPO_ROOT
     / "packages/python-amd-aiter-gfx1151/0002-jit-runtime-finds-hipcc-and-user-jit-modules.patch"
@@ -25,6 +33,10 @@ def test_pkgbuild_carries_jit_runtime_patch():
     text = PKGBUILD.read_text()
 
     assert "pkgrel=7" in text
+    assert HEADER_PATCH.name in text
+    assert f'patch -Np1 -i "$srcdir/{HEADER_PATCH.name}"' in text
+    assert HIP_REDUCE_PATCH.name in text
+    assert f'patch -Np1 -i "$srcdir/{HIP_REDUCE_PATCH.name}"' in text
     assert RUNTIME_PATCH.name in text
     assert f'patch -Np1 -i "$srcdir/{RUNTIME_PATCH.name}"' in text
     assert FUSED_MOE_PATCH.name in text
@@ -37,6 +49,29 @@ def test_pkgbuild_carries_jit_runtime_patch():
     assert 'export PATH="/opt/rocm/bin:${PATH}"' in text
     assert 'export ROCM_HOME="/opt/rocm"' in text
     assert 'export HIP_PATH="/opt/rocm"' in text
+
+
+def test_header_patch_only_carries_vec_convert_rdna_fallbacks():
+    text = HEADER_PATCH.read_text()
+
+    assert "vec_convert.h" in text
+    assert "CK_TILE_RDNA3_NO_PK_FP8" in text
+    assert "type_convert<fp8_t>(a)" in text
+    assert "type_convert<fp8_t>(b)" in text
+    assert "hip_reduce.h" not in text
+    assert "AITER_RDNA_NO_DPP_BCAST" not in text
+    assert 'asm volatile("v_cvt_scalef32_pk_fp4_f32 %0, %1, %2, %3" : "=v"(c) : "v"(b), "v"(a), "v"(scale));' not in text
+
+
+def test_hip_reduce_patch_isolated_from_vec_convert_changes():
+    text = HIP_REDUCE_PATCH.read_text()
+
+    assert "hip_reduce.h" in text
+    assert "AITER_RDNA_NO_DPP_BCAST" in text
+    assert "warp_swizzle<T, 0x1e0>" in text
+    assert "static_assert(WarpSize <= 32" in text
+    assert "vec_convert.h" not in text
+    assert "CK_TILE_RDNA3_NO_PK_FP8" not in text
 
 
 def test_runtime_patch_fixes_user_jit_import_and_hipcc_resolution():

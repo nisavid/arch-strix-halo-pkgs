@@ -18,8 +18,8 @@ options=()
 provides=(python-amd-aiter)
 conflicts=(python-amd-aiter)
 replaces=()
-source=(aiter::git+https://github.com/ROCm/aiter.git 0001-gfx1151-rdna35-header-compat.patch 0002-jit-runtime-finds-hipcc-and-user-jit-modules.patch 0003-fused-moe-unknown-gfx-falls-back-to-2stage.patch 0004-moe-tuner-skips-missing-1stage-asm-metadata.patch 0005-ck-moe-normalizes-zero-splitk-and-forwards-stage2.patch)
-sha256sums=(SKIP SKIP SKIP SKIP SKIP SKIP)
+source=(aiter::git+https://github.com/ROCm/aiter.git 0001-gfx1151-rdna35-header-compat.patch 0002-jit-runtime-finds-hipcc-and-user-jit-modules.patch 0003-fused-moe-unknown-gfx-falls-back-to-2stage.patch 0004-moe-tuner-skips-missing-1stage-asm-metadata.patch 0005-ck-moe-normalizes-zero-splitk-and-forwards-stage2.patch 0006-rdna35-hip-reduce-wave32-dpp-compat.patch)
+sha256sums=(SKIP SKIP SKIP SKIP SKIP SKIP SKIP)
 
 prepare() {
   cd "$srcdir/aiter"
@@ -29,6 +29,7 @@ prepare() {
   patch -Np1 -i "$srcdir/0003-fused-moe-unknown-gfx-falls-back-to-2stage.patch"
   patch -Np1 -i "$srcdir/0004-moe-tuner-skips-missing-1stage-asm-metadata.patch"
   patch -Np1 -i "$srcdir/0005-ck-moe-normalizes-zero-splitk-and-forwards-stage2.patch"
+  patch -Np1 -i "$srcdir/0006-rdna35-hip-reduce-wave32-dpp-compat.patch"
 }
 
 build() {

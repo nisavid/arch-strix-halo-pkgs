@@ -2,6 +2,8 @@
 
 ## Packaging And Build Hygiene
 
+- Resume auditing the rest of the TheRock split-package family against the
+  best current CachyOS / Arch baselines.
 - Convert remaining scripted source edits into durable patch files where
   practical.
 - Tighten package hygiene for embedded build paths in PyTorch and vLLM.
@@ -22,12 +24,22 @@
   `video` implicit was enough to send vLLM back into multimodal warmup and
   reproduce the earlier GPU memory-access fault during engine initialization on
   the reference host.
-- Re-audit the current Gemma 4 26B-A4B carry set before treating it as a
-  settled root-cause fix. The 2026-04-17 source audit left three carries
-  needing fresh scrutiny:
-  - `python-amd-aiter-gfx1151/0001-gfx1151-rdna35-header-compat.patch`
-  - `python-amd-aiter-gfx1151/0005-ck-moe-normalizes-zero-splitk-and-forwards-stage2.patch`
-  - `python-vllm-rocm-gfx1151/0007-rocm-enable-gfx1x-aiter-and-prefer-it-for-gemma4.patch`
+- Rebuild and host-validate the 2026-04-17 split patch lanes for the Gemma 4
+  26B-A4B repair story instead of stopping at static audit plus repo tests:
+  - use `tools/run_patch_audit_host_checks.sh` as the canonical privileged
+    entry point so repo refresh, pacman reinstall, and Gemma 4 smoke logs all
+    land under `docs/worklog/patch-audit-final-checks/<timestamp>/`
+  - keep
+    `python-amd-aiter-gfx1151/0005-ck-moe-normalizes-zero-splitk-and-forwards-stage2.patch`
+    for now, but add a behavioral regression if that path is touched again
+  - re-verify whether
+    `python-amd-aiter-gfx1151/0006-rdna35-hip-reduce-wave32-dpp-compat.patch`
+    is still the minimal durable `hip_reduce.h` carry after a fresh live-host
+    rebuild and runtime pass
+  - revalidate whether
+    `python-vllm-rocm-gfx1151/0011-rocm-default-fused-moe-to-aiter-on-supported-systems.patch`
+    belongs as default policy across broader ROCm-model coverage, or whether
+    only the narrower `0007` + `0010` Gemma 4 repair lane should remain
 - After the basic `google/gemma-4-26B-A4B-it` repair lane is clean again,
   extend coverage across trustworthy Gemma 4 usage recipes instead of stopping
   at one smoke:

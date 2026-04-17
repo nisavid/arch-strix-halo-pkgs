@@ -42,6 +42,7 @@ without chat history.
 - When changing package baselines, recipe metadata, update policy, or patch
   provenance, read:
   - `docs/policies/reference-packages.md`
+  - `docs/maintainers/recipe-inputs.md`
   - `docs/maintainers/update-workflows.md`
 - When changing local-repo publishing, installation, repair, or onboarding
   flow, read:

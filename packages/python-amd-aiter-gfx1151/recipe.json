@@ -7,8 +7,8 @@
     "authoritative_reference": "none",
     "divergence_notes": [
       "There is no standalone AITER package in Arch-family packaging; this package is recipe-first and aligned to the vendored PyTorch submodule lane.",
-      "Carries an explicit package-local source patch for gfx1151 RDNA 3.5 header compatibility rather than leaving those fixes as manual post-build mutations.",
-      "Carries an installed-system JIT runtime patch so AITER can find hipcc and import JIT-built modules from the writable user cache on read-only site-packages systems.",
+      "Carries explicit package-local source patches for gfx1151 RDNA 3.5 header compatibility, split between vec_convert packed-op fallbacks and hip_reduce wave32/DPP compatibility, rather than leaving those fixes as manual post-build mutations.",
+      "Carries an installed-system JIT runtime patch so AITER can find `hipcc` and import JIT-built modules from the writable user cache on read-only site-packages installs.",
       "Carries the gfx1x AITER-side MoE compatibility patches that are safe to keep local: unknown-gfx probing, missing 1-stage ASM metadata handling, and CK 2-stage splitk normalization/forwarding for the unquantized MoE path."
     ],
     "source_patches": [
@@ -16,14 +16,16 @@
       "0002-jit-runtime-finds-hipcc-and-user-jit-modules.patch",
       "0003-fused-moe-unknown-gfx-falls-back-to-2stage.patch",
       "0004-moe-tuner-skips-missing-1stage-asm-metadata.patch",
-      "0005-ck-moe-normalizes-zero-splitk-and-forwards-stage2.patch"
+      "0005-ck-moe-normalizes-zero-splitk-and-forwards-stage2.patch",
+      "0006-rdna35-hip-reduce-wave32-dpp-compat.patch"
     ],
     "update_notes": [
       "Update AITER in lockstep with the paired PyTorch source lane so CK and generated kernel expectations stay aligned.",
       "Treat FlyDSL as a separate tracked package story; do not silently fold an unpublished wheel into this package.",
-      "Keep the installed-system JIT runtime patch until upstream AITER stops assuming hipcc is on the ambient PATH and correctly imports modules copied to the writable user JIT cache from read-only site-packages installs.",
-      "Keep the package's explicit ROCm toolchain exports in build() until upstream AITER stops probing hipconfig/hipcc through ambient shell state. The concrete build failure was `Could not find hipconfig in PATH or ROCM_HOME(/usr)`.",
-      "Keep the unknown-gfx 2-stage fallback, missing-1-stage-metadata tuner skip, and CK 2-stage splitk normalization/forwarding fix until upstream AITER handles those gfx1x cases directly. Do not reintroduce an unquantized torch_moe fallback here: the concrete reference-host failure was google/gemma-4-26B-A4B-it generating corrupted text after such a fallback ran on AITER-shuffled weights."
+      "Keep the installed-system JIT runtime patch until upstream AITER stops assuming `hipcc` is on the ambient PATH and correctly imports modules copied to the writable user JIT cache from read-only site-packages installs.",
+      "Keep the package's explicit ROCm toolchain exports in `build()` until upstream AITER stops probing `hipconfig` and `hipcc` through ambient shell state. The concrete build failure was `Could not find hipconfig in PATH or ROCM_HOME(/usr)`.",
+      "Keep the split RDNA header carries narrow: `0001-gfx1151-rdna35-header-compat.patch` now covers only the `vec_convert.h` gfx11 packed-op fallbacks, while `0006-rdna35-hip-reduce-wave32-dpp-compat.patch` carries the broader `hip_reduce.h` wave32/DPP rewrite. If that area is revisited, re-verify `hip_reduce.h` on its own instead of recombining unrelated header edits.",
+      "Keep the unknown-gfx 2-stage fallback, missing-1-stage-metadata tuner skip, and CK 2-stage splitk normalization/forwarding fix until upstream AITER handles those gfx1x cases directly. Do not reintroduce an unquantized `torch_moe` fallback here: the concrete reference-host failure was `google/gemma-4-26B-A4B-it` generating corrupted text after such a fallback ran on AITER-shuffled weights."
     ]
   },
   "name": "python-amd-aiter-gfx1151",
@@ -50,8 +52,8 @@
     ],
     "divergence_notes": [
       "There is no standalone AITER package in Arch-family packaging; this package is recipe-first and aligned to the vendored PyTorch submodule lane.",
-      "Carries an explicit package-local source patch for gfx1151 RDNA 3.5 header compatibility rather than leaving those fixes as manual post-build mutations.",
-      "Carries an installed-system JIT runtime patch so AITER can find hipcc and import JIT-built modules from the writable user cache on read-only site-packages systems.",
+      "Carries explicit package-local source patches for gfx1151 RDNA 3.5 header compatibility, split between vec_convert packed-op fallbacks and hip_reduce wave32/DPP compatibility, rather than leaving those fixes as manual post-build mutations.",
+      "Carries an installed-system JIT runtime patch so AITER can find `hipcc` and import JIT-built modules from the writable user cache on read-only site-packages installs.",
       "Carries the gfx1x AITER-side MoE compatibility patches that are safe to keep local: unknown-gfx probing, missing 1-stage ASM metadata handling, and CK 2-stage splitk normalization/forwarding for the unquantized MoE path."
     ],
     "license": [
@@ -78,8 +80,8 @@
       "There is no standalone Arch, CachyOS, or AUR aiter package. The closest packaging lane is the PyTorch ROCm pkgbase that vendors the same submodule, so that pkgbase is advisory only.",
       "The recipe rebuilds AITER from PyTorch's vendored third_party/aiter copy so its CK ABI stays aligned with the paired PyTorch tree.",
       "Upstream AITER declares pandas as a real dependency and FlyDSL as an optional acceleration path. Keep pandas in the package metadata, and package FlyDSL separately rather than silently depending on an unpublished wheel.",
-      "Keep the gfx1151 RDNA 3.5 header fixes as a package-local source patch applied before wheel build, not as post-install file replacement.",
-      "Keep the installed-system JIT runtime patch unless upstream fixes both assumptions itself: hipcc on the ambient PATH, and package-relative import of JIT-built modules even after copying the writable JIT tree out of read-only site-packages.",
+      "Keep the gfx1151 RDNA 3.5 header fixes as package-local source patches applied before wheel build, split between the `vec_convert.h` packed-op fallbacks and the `hip_reduce.h` wave32/DPP compatibility rewrite.",
+      "Keep the installed-system JIT runtime patch unless upstream fixes both assumptions itself: `hipcc` on the ambient PATH, and package-relative import of JIT-built modules even after copying the writable JIT tree out of read-only site-packages.",
       "Keep the gfx1x AITER-side MoE compatibility patches that are genuinely local: unknown-gfx probing, missing 1-stage ASM metadata, and CK 2-stage splitk normalization/forwarding. Unsupported unquantized shapes such as Gemma 4 26B-A4B belong in the vLLM-side padding/selection story, not in a post-shuffle AITER fallback."
     ],
     "source_patches": [
@@ -87,16 +89,18 @@
       "0002-jit-runtime-finds-hipcc-and-user-jit-modules.patch",
       "0003-fused-moe-unknown-gfx-falls-back-to-2stage.patch",
       "0004-moe-tuner-skips-missing-1stage-asm-metadata.patch",
-      "0005-ck-moe-normalizes-zero-splitk-and-forwards-stage2.patch"
+      "0005-ck-moe-normalizes-zero-splitk-and-forwards-stage2.patch",
+      "0006-rdna35-hip-reduce-wave32-dpp-compat.patch"
     ],
     "src_subdir": "aiter",
     "template": "python-project-aiter",
     "update_notes": [
       "Update AITER in lockstep with the paired PyTorch source lane so CK and generated kernel expectations stay aligned.",
       "Treat FlyDSL as a separate tracked package story; do not silently fold an unpublished wheel into this package.",
-      "Keep the installed-system JIT runtime patch until upstream AITER stops assuming hipcc is on the ambient PATH and correctly imports modules copied to the writable user JIT cache from read-only site-packages installs.",
-      "Keep the package's explicit ROCm toolchain exports in build() until upstream AITER stops probing hipconfig/hipcc through ambient shell state. The concrete build failure was `Could not find hipconfig in PATH or ROCM_HOME(/usr)`.",
-      "Keep the unknown-gfx 2-stage fallback, missing-1-stage-metadata tuner skip, and CK 2-stage splitk normalization/forwarding fix until upstream AITER handles those gfx1x cases directly. Do not reintroduce an unquantized torch_moe fallback here: the concrete reference-host failure was google/gemma-4-26B-A4B-it generating corrupted text after such a fallback ran on AITER-shuffled weights."
+      "Keep the installed-system JIT runtime patch until upstream AITER stops assuming `hipcc` is on the ambient PATH and correctly imports modules copied to the writable user JIT cache from read-only site-packages installs.",
+      "Keep the package's explicit ROCm toolchain exports in `build()` until upstream AITER stops probing `hipconfig` and `hipcc` through ambient shell state. The concrete build failure was `Could not find hipconfig in PATH or ROCM_HOME(/usr)`.",
+      "Keep the split RDNA header carries narrow: `0001-gfx1151-rdna35-header-compat.patch` now covers only the `vec_convert.h` gfx11 packed-op fallbacks, while `0006-rdna35-hip-reduce-wave32-dpp-compat.patch` carries the broader `hip_reduce.h` wave32/DPP rewrite. If that area is revisited, re-verify `hip_reduce.h` on its own instead of recombining unrelated header edits.",
+      "Keep the unknown-gfx 2-stage fallback, missing-1-stage-metadata tuner skip, and CK 2-stage splitk normalization/forwarding fix until upstream AITER handles those gfx1x cases directly. Do not reintroduce an unquantized `torch_moe` fallback here: the concrete reference-host failure was `google/gemma-4-26B-A4B-it` generating corrupted text after such a fallback ran on AITER-shuffled weights."
     ],
     "upstream_version": "0.1.0",
     "url": "https://github.com/ROCm/aiter"

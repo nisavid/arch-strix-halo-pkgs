@@ -18,6 +18,7 @@ Use this index when you need the deeper project docs.
 ## Maintain Or Update The Repo
 
 - [Current state](maintainers/current-state.md)
+- [Recipe input repo](maintainers/recipe-inputs.md)
 - [Update workflows](maintainers/update-workflows.md)
 - [TheRock generator status](maintainers/therock-generator-status.md)
 

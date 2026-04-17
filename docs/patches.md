@@ -51,20 +51,29 @@ system.
     SageMaker and runtime-LoRA API routers, so `vllm --help` and other
     non-SageMaker entrypoints no longer fail just because that extra package is
     absent.
+- [Enable gfx1x AITER and prefer it for Gemma 4 heterogeneous-head attention](../packages/python-vllm-rocm-gfx1151/0007-rocm-enable-gfx1x-aiter-and-prefer-it-for-gemma4.patch)
+  - Extends ROCm AITER discovery to gfx1x and lets Gemma 4 prefer
+    `ROCM_AITER_UNIFIED_ATTN` instead of the Triton unified-attention backend
+    that miscompiled on gfx1151 decode.
 - [Pad Gemma 4 26B-A4B MoE intermediates for ROCm AITER alignment](../packages/python-vllm-rocm-gfx1151/0010-rocm-pad-gemma4-moe-intermediate-for-aiter.patch)
   - Pads the unquantized Gemma 4 MoE intermediate size to a multiple of 128
     before vLLM shuffles expert weights into AITER runtime layout.
   - Keeps `google/gemma-4-26B-A4B-it` on the intended AITER fused-MoE path for
     the 704-wide expert shape instead of relying on a later fallback after the
     weights have already been converted.
+- [Default fused-MoE to AITER on supported ROCm systems](../packages/python-vllm-rocm-gfx1151/0011-rocm-default-fused-moe-to-aiter-on-supported-systems.patch)
+  - Keeps explicit environment overrides authoritative, but otherwise leaves
+    supported ROCm installs on the intended fused-MoE AITER path without
+    requiring a manual `VLLM_ROCM_USE_AITER=1` export.
 
 ## AITER
 
-- [RDNA 3.5 header compatibility for `gfx1151`](../packages/python-amd-aiter-gfx1151/0001-gfx1151-rdna35-header-compat.patch)
-  - Converts the current `gfx1151` include-tree fixes into a package-local
-    source patch instead of post-install file replacement.
-  - Adds RDNA-safe fallbacks for packed FP8 and reduction paths that assume
-    CDNA-only instructions.
+- [RDNA 3.5 packed-op fallback compatibility for `gfx1151`](../packages/python-amd-aiter-gfx1151/0001-gfx1151-rdna35-header-compat.patch)
+  - Converts the `vec_convert.h` packed FP32/FP8/BF8 helpers into gfx11-safe
+    scalar fallbacks when CDNA-only packed instructions are unavailable.
+- [RDNA 3.5 wave32/DPP compatibility for `hip_reduce.h`](../packages/python-amd-aiter-gfx1151/0006-rdna35-hip-reduce-wave32-dpp-compat.patch)
+  - Reworks the reduction helpers to avoid CDNA-only row-broadcast DPP paths
+    on gfx11 and to keep the wave32 assumptions explicit.
 - [Find `hipcc` and user-cache JIT modules on installed systems](../packages/python-amd-aiter-gfx1151/0002-jit-runtime-finds-hipcc-and-user-jit-modules.patch)
   - Makes the installed AITER runtime resolve `/opt/rocm/bin/hipcc` without
     depending on an ambient login-shell `PATH`.

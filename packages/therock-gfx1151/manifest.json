@@ -329,7 +329,14 @@
       "rendered": true
     },
     "rocm-core-gfx1151": {
-      "depends": [],
+      "depends": [
+        "gcc-libs",
+        "glibc",
+        "python-gfx1151",
+        "python-prettytable",
+        "python-pyelftools",
+        "python-yaml"
+      ],
       "fileless": false,
       "files": 69,
       "provides": [
@@ -733,11 +740,11 @@
     "rocwmma-gfx1151": {
       "depends": [],
       "fileless": false,
-      "files": 0,
+      "files": 117,
       "provides": [
         "rocwmma"
       ],
-      "rendered": false
+      "rendered": true
     },
     "rpp-gfx1151": {
       "depends": [],

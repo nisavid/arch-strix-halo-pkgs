@@ -310,7 +310,7 @@ def render_pkgbuild(
                 body.append(f"    {command}")
             synthetic = policy.get("synthetic_files", {}).get(pkg, [])
             for entry in synthetic:
-                text = entry["text"].replace("'", "'\"'\"'")
+                text = entry["text"]
                 body.append(f"    install -Dm644 /dev/stdin \"${{pkgdir}}/{entry['path']}\" <<'EOF'")
                 body.append(text.rstrip("\n"))
                 body.append("EOF")

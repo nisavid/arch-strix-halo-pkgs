@@ -14,13 +14,13 @@ It is generated from:
 Run:
 
 ```bash
-python tools/render_therock_pkgbase.py --recipe-root /path/to/ai-notes
+python tools/render_therock_pkgbase.py --therock-root /
 ```
 
 That command:
 
 - scans the staged or installed `opt/rocm` tree
-- computes `pkgver` from the recipe repo history for `strix-halo/`
+- computes `pkgver` from the repo-local `upstream/ai-notes/strix-halo` history
 - stamps recipe provenance into the generated `PKGBUILD`
 - rewrites the file lists and manifest in this directory
 
@@ -29,3 +29,23 @@ That command:
 The generated `PKGBUILD` expects `_THEROCK_ROOT` to point at a filesystem root
 that contains `opt/rocm`. For a live local tree, `_THEROCK_ROOT=/` is valid.
 For a staged install tree, point it at that staging root instead.
+
+## rocm-core baseline
+
+`rocm-core-gfx1151` now treats CachyOS `rocm-core` as the distro-integration
+baseline while still packaging the newer TheRock 7.13 payload.
+
+That means the split package intentionally carries the small Cachy-style
+integration surface on top of the scanned TheRock files:
+
+- `etc/ld.so.conf.d/rocm.conf`
+- shell path setup in `etc/profile.d/rocm.sh` and
+  `usr/share/fish/vendor_conf.d/rocm.fish`
+- the `opt/rocm/bin/rdhc` wrapper plus `opt/rocm/share/rdhc/*`
+- license copies under `opt/rocm/share/doc/rocm-core/` and
+  `usr/share/licenses/rocm-core/`
+
+The remaining file-list delta against Cachy should be TheRock-owned additions
+or version-lane differences only: `nlohmann` headers, `.hipInfo`,
+`share/modulefiles`, `share/therock`, and the expected `rocmCoreTargets` /
+`librocm-core.so` version suffix changes.

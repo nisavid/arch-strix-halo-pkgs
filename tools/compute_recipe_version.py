@@ -7,6 +7,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from recipe_repo import RECIPE_ROOT_ENV_VAR, resolve_recipe_root
+
 
 def git_output(repo: Path, *args: str) -> str:
     result = subprocess.run(
@@ -29,7 +31,14 @@ def compute_version(repo: Path, subdir: str, upstream_version: str) -> str:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Compute recipe-derived pkgver suffixes")
-    parser.add_argument("--recipe-root", required=True, help="git repo root containing the recipe")
+    parser.add_argument(
+        "--recipe-root",
+        help=(
+            "git repo root containing the recipe; defaults to the repo-local "
+            "upstream/ai-notes submodule or the "
+            f"{RECIPE_ROOT_ENV_VAR} environment variable"
+        ),
+    )
     parser.add_argument("--recipe-subdir", default=".", help="path within the recipe repo to version against")
     parser.add_argument("--upstream-version", required=True, help="upstream/base version to prefix")
     return parser.parse_args()
@@ -37,8 +46,9 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
-    repo = Path(args.recipe_root).resolve()
     try:
+        packaging_root = Path(__file__).resolve().parents[1]
+        repo = resolve_recipe_root(args.recipe_root, packaging_root=packaging_root)
         print(compute_version(repo, args.recipe_subdir, args.upstream_version))
     except subprocess.CalledProcessError as exc:
         print(f"VERSION_COMPUTE_FAILED: git {' '.join(exc.cmd)}", file=sys.stderr)
