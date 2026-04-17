@@ -10,12 +10,11 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
+TOOLS_DIR = Path(__file__).resolve().parent
+if str(TOOLS_DIR) not in sys.path:
+    sys.path.insert(0, str(TOOLS_DIR))
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
-VENDORED_TOOL_CHAT_TEMPLATE = (
-    REPO_ROOT
-    / "packages/python-vllm-rocm-gfx1151/examples/tool_chat_template_gemma4.jinja"
-)
+from gemma4_smoke_common import validate_basic_chat_text
 
 
 def parse_args() -> argparse.Namespace:
@@ -43,8 +42,8 @@ def parse_args() -> argparse.Namespace:
         "--chat-template",
         type=Path,
         help=(
-            "Gemma 4 tool chat template path; defaults to the vendored upstream "
-            "template for --mode=tool"
+            "Gemma 4 tool chat template path; if omitted, --mode=tool requires "
+            "a local model path that already ships chat_template.jinja"
         ),
     )
     parser.add_argument("--host", default="127.0.0.1")
@@ -52,12 +51,22 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--api-key", default="EMPTY")
     parser.add_argument("--gpu-memory-utilization", type=float, default=0.75)
     parser.add_argument(
+        "--max-num-batched-tokens",
+        type=int,
+        default=None,
+        help=(
+            "optional vLLM scheduler cap for model profiling and prefill batching; "
+            "defaults to 32 for the validated Gemma 4 26B-A4B basic smoke lane"
+        ),
+    )
+    parser.add_argument(
         "--max-model-len",
         type=int,
         default=None,
         help=(
-            "server max model length; defaults to 512 for basic mode and 1024 "
-            "for reasoning/tool modes"
+            "server max model length; defaults to 512 for generic basic mode, "
+            "128 for the validated Gemma 4 26B-A4B basic smoke lane, and "
+            "1024 for reasoning/tool modes"
         ),
     )
     parser.add_argument("--startup-timeout", type=float, default=180.0)
@@ -76,7 +85,7 @@ def parse_args() -> argparse.Namespace:
     args = parser.parse_args()
 
     if args.mode == "tool" and args.chat_template is None:
-        args.chat_template = VENDORED_TOOL_CHAT_TEMPLATE
+        args.chat_template = default_tool_chat_template(args)
     if args.chat_template is not None:
         args.chat_template = args.chat_template.resolve()
     if args.mode == "tool" and not args.chat_template.is_file():
@@ -89,21 +98,56 @@ def served_model_name(args: argparse.Namespace) -> str:
     return args.served_model_name or args.model
 
 
+def default_tool_chat_template(args: argparse.Namespace) -> Path:
+    model_path = Path(args.model)
+    if model_path.exists():
+        bundled_template = model_path / "chat_template.jinja"
+        if bundled_template.is_file():
+            return bundled_template.resolve()
+    raise SystemExit(
+        "--mode tool requires either --chat-template or a local model path "
+        "that includes chat_template.jinja"
+    )
+
+
 def server_base_url(args: argparse.Namespace) -> str:
     return f"http://{args.host}:{args.port}"
+
+
+def is_gemma4_26b_a4b(args: argparse.Namespace) -> bool:
+    identifiers = (args.model, served_model_name(args))
+    return any("gemma-4-26B-A4B-it" in identifier for identifier in identifiers)
+
+
+def use_gemma4_26b_a4b_text_only_defaults(args: argparse.Namespace) -> bool:
+    return args.mode == "basic" and is_gemma4_26b_a4b(args)
 
 
 def effective_max_model_len(args: argparse.Namespace) -> int:
     if args.max_model_len is not None:
         return args.max_model_len
+    if use_gemma4_26b_a4b_text_only_defaults(args):
+        return 128
     if args.mode in {"reasoning", "tool"}:
         return 1024
     return 512
 
 
+def effective_max_num_batched_tokens(args: argparse.Namespace) -> int | None:
+    if args.max_num_batched_tokens is not None:
+        return args.max_num_batched_tokens
+    if use_gemma4_26b_a4b_text_only_defaults(args):
+        return 32
+    return None
+
+
 def build_server_command(args: argparse.Namespace) -> list[str]:
-    limit_mm_per_prompt = json.dumps({"image": 0, "audio": 0}, separators=(",", ":"))
+    limit_mm_per_prompt = json.dumps(
+        {"image": 0, "audio": 0, "video": 0},
+        separators=(",", ":"),
+    )
     max_model_len = effective_max_model_len(args)
+    max_num_batched_tokens = effective_max_num_batched_tokens(args)
     command = [
         sys.executable,
         "-m",
@@ -128,6 +172,13 @@ def build_server_command(args: argparse.Namespace) -> list[str]:
         limit_mm_per_prompt,
         "--disable-log-stats",
     ]
+    if max_num_batched_tokens is not None:
+        command.extend(
+            [
+                "--max-num-batched-tokens",
+                str(max_num_batched_tokens),
+            ]
+        )
     if args.mode == "reasoning":
         command.extend(["--reasoning-parser", "gemma4"])
     if args.mode == "tool":
@@ -173,7 +224,8 @@ def build_tool_spec() -> list[dict[str, object]]:
 
 
 def request_max_tokens(args: argparse.Namespace, desired: int) -> int:
-    budget = max(1, effective_max_model_len(args) - 128)
+    reserve = 64 if args.mode == "basic" else 128
+    budget = max(1, effective_max_model_len(args) - reserve)
     return max(1, min(desired, budget))
 
 
@@ -181,7 +233,7 @@ def build_request_payload(args: argparse.Namespace) -> dict[str, object]:
     payload: dict[str, object] = {
         "model": served_model_name(args),
         "messages": [],
-        "max_tokens": request_max_tokens(args, 64),
+        "max_tokens": request_max_tokens(args, 16),
         "temperature": 0.0,
     }
     if args.mode == "basic":
@@ -339,9 +391,7 @@ def extract_message(response: dict[str, Any]) -> dict[str, Any]:
 
 def validate_basic_response(response: dict[str, Any]) -> dict[str, Any]:
     message = extract_message(response)
-    content = (message.get("content") or "").strip()
-    if not content:
-        raise RuntimeError("basic mode response content was empty")
+    validate_basic_chat_text(message.get("content") or "")
     return message
 
 

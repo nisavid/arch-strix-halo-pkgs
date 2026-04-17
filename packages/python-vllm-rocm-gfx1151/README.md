@@ -46,6 +46,19 @@ recorded in .aiter-status file ("enabled" or "disabled").
   so heterogeneous-head Gemma 4 models can prefer
   `ROCM_AITER_UNIFIED_ATTN` on Strix Halo instead of forcing the Triton
   unified-attention backend that currently miscompiles during decode.
+- The current repo-owned `google/gemma-4-26B-A4B-it` repair lane is still
+  text-only basic serving with
+  `--limit-mm-per-prompt {"image":0,"audio":0,"video":0}`,
+  `--max-model-len 128`, and `--max-num-batched-tokens 32`. Leaving `video`
+  implicit still lets vLLM enter multimodal warmup on this host and was enough
+  to reproduce the earlier GPU fault during engine initialization.
+- The latest host rerun before the current patch refresh showed a narrower
+  remaining failure: engine init and `/v1/models` succeeded, but both offline
+  and basic-server smokes emitted corrupted text for
+  `google/gemma-4-26B-A4B-it`. The repo now carries the upstream-style
+  Gemma 4 AITER MoE intermediate-padding fix in
+  `0010-rocm-pad-gemma4-moe-intermediate-for-aiter.patch`; revalidate the host
+  before treating the 26B-A4B lane as solved.
 - Carries a merged TorchAO startup-laziness patch so generic vLLM startup
   paths keep TorchAO version checks metadata-only and only import
   `TorchAOConfig` when `quantization == "torchao"`. This keeps optional
@@ -81,9 +94,10 @@ recorded in .aiter-status file ("enabled" or "disabled").
   against vLLM's bfloat16 destination tensors.
 - makepkg -e reuses src/, so build() intentionally reapplies the carried source patches before wheel generation instead of assuming prepare() already ran in the current tree.
 - `makepkg -f` can also reuse a partially patched `src/` tree across failed
-  iterations, so patch application is tracked with per-patch stamp files under
-  `src/.patch-state`. Keep that idempotency layer unless the package starts
-  forcing a clean source tree for every build.
+  iterations. The PKGBUILD now re-extracts `v0.19.0.tar.gz` and reapplies the
+  full carried patch series on a known-clean tree whenever its source-patch
+  sentinels are missing, instead of relying on per-patch stamp files under
+  `src/.patch-state`.
 - Do not restore the earlier build-only `librocsolver.so.0` shim unless the
   paired PyTorch lane regresses again. The current `python-pytorch-opt-rocm`
   lane imports cleanly against `librocsolver.so.1`, so the extra compatibility
@@ -133,6 +147,11 @@ recorded in .aiter-status file ("enabled" or "disabled").
   Gemma 4 initialization followed by Triton unified-attention decode
   miscompilation (`operation scheduled before its operands`) and garbage output
   on gfx1151.
+- When investigating a new model, usage pattern, or upstream version lane,
+  scout the relevant upstream release notes, open issues, open PRs, and recent
+  commits before freezing local patch carry. Gemma 4 needed exactly that:
+  upstream follow-up fixes landed after `v0.19.0`, including ROCm MoE padding
+  for `google/gemma-4-26B-A4B-it` and separate reasoning/tool/template fixes.
 - Keep TorchAO version checks metadata-only on generic startup paths unless
   upstream reorganizes its quantization imports. The concrete host failure was
   an external `python-torchao-rocm` package whose optional `_C.abi3.so`
@@ -184,7 +203,7 @@ recorded in .aiter-status file ("enabled" or "disabled").
     `LLM.generate()` instead of assuming a raw instruction string is a valid
     assistant smoke
   - for text-only serving or benchmarking, prefer
-    `--limit-mm-per-prompt {"image":0,"audio":0}`; for image-only workloads,
+    `--limit-mm-per-prompt {"image":0,"audio":0,"video":0}`; for image-only workloads,
     prefer `--limit-mm-per-prompt {"audio":0}`
   - use `--async-scheduling` for throughput-oriented server runs, and disable
     prefix caching during benchmarks if you want measurements that line up
@@ -192,12 +211,10 @@ recorded in .aiter-status file ("enabled" or "disabled").
   - only apply the Gemma 4 thinking/tool-calling parser flags when the smoke
     or server flow actually exercises those features:
     `--reasoning-parser gemma4`, `--tool-call-parser gemma4`,
-    `--enable-auto-tool-choice`, and
-    `--chat-template examples/tool_chat_template_gemma4.jinja`; this repo now
-    vendors the upstream template at
-    `packages/python-vllm-rocm-gfx1151/examples/tool_chat_template_gemma4.jinja`
-    and should refresh that copy when the vLLM lane or the upstream Gemma 4
-    recipe changes
+    `--enable-auto-tool-choice`, and an appropriate Gemma 4 chat template
+  - prefer a model-bundled `chat_template.jinja` when the checkpoint ships
+    one; `tools/gemma4_server_smoke.py` now auto-resolves that first for
+    `--mode tool`
   - use `tools/gemma4_server_smoke.py` for host-side OpenAI-compatible server
     validation instead of relying on ad hoc shell snippets. The helper launches
     `python -m vllm.entrypoints.openai.api_server` from the active interpreter,
@@ -207,12 +224,18 @@ recorded in .aiter-status file ("enabled" or "disabled").
     `chat_template_kwargs={"enable_thinking": true}` and
     `skip_special_tokens=false`; the helper defaults `--max-model-len` to
     `1024` for reasoning/tool flows because the earlier `512`-token default
-    truncated Gemma 4 reasoning before the parser could finish. `--mode tool`
+    truncated Gemma 4 reasoning before the parser could finish. For the
+    current `google/gemma-4-26B-A4B-it` basic repair lane, the helper also
+    defaults `--max-model-len` to `128`, `--max-num-batched-tokens` to `32`,
+    and `--limit-mm-per-prompt` to
+    `{"image":0,"audio":0,"video":0}` so the host stays on the intended
+    text-only path. `--mode tool`
     adds `--tool-call-parser gemma4`, `--reasoning-parser gemma4`,
-    `--enable-auto-tool-choice`, auto-resolves the vendored
-    `packages/python-vllm-rocm-gfx1151/examples/tool_chat_template_gemma4.jinja`
-    template, and validates a full tool-call round trip. The reference host
-    has now passed all three helper modes with `google/gemma-4-E2B-it`:
+    `--enable-auto-tool-choice`, auto-resolves a bundled
+    `chat_template.jinja` from the local checkpoint when present and otherwise
+    requires an explicit `--chat-template`, and validates a full tool-call
+    round trip. The reference host
+    has passed all three helper modes with `google/gemma-4-E2B-it`:
     basic chat, reasoning parsing, and tool-calling
 
 ## Maintainer Starting Points
