@@ -113,38 +113,76 @@ paru -S <pkgname>
 
 Then rerun only the smoke tests that matter for the repaired package.
 
-## Rebuild Publish And Install With The Repo Tool
+## Merge Packages With Amerge
 
-Use the repo-owned Zsh tool when you want one command to rebuild repo package
-closures, refresh `repo/x86_64`, republish the local pacman repo, and reinstall
-through pacman in dependency order.
+Use `amerge` when you want one command to plan package work, rebuild selected
+source packages, refresh `repo/x86_64`, republish the local pacman repo, and
+reinstall through pacman.
 
 ```bash
-tools/rebuild_publish_install.zsh python-amd-aiter-gfx1151 python-vllm-rocm-gfx1151
+tools/amerge run python-amd-aiter-gfx1151 python-vllm-rocm-gfx1151
 ```
 
 Other common entry points:
 
-- installed repo packages only:
+- rebuild every package root:
 
 ```bash
-tools/rebuild_publish_install.zsh --install-scope installed
+tools/amerge run --all
 ```
 
-- every repo package:
+- rebuild outputs currently installed from this repo:
 
 ```bash
-tools/rebuild_publish_install.zsh --install-scope all
+tools/amerge run --installed
 ```
 
-If no package args and no `--install-scope` are given, the tool prompts on a
-TTY and fails fast otherwise.
+- include dependencies in the rebuild:
+
+```bash
+tools/amerge run --deps python-amd-aiter-gfx1151 python-vllm-rocm-gfx1151
+```
+
+- include reverse dependencies in the rebuild:
+
+```bash
+tools/amerge run --rdeps python-amd-aiter-gfx1151
+```
+
+By default, explicit targets rebuild only those targets. Dependencies are used
+for ordering and can be opted into with `--deps`. If no targets or selectors are
+given, `amerge` prompts on a TTY and fails fast otherwise. `run` executes each
+root in merge order as build, publish, then install for that root's selected
+outputs plus selected-root dependency outputs so later builds see earlier
+rebuilt dependencies.
+
+`amerge` has separate subcommands for phase-specific work:
+
+```bash
+tools/amerge build python-amd-aiter-gfx1151
+tools/amerge publish python-amd-aiter-gfx1151
+tools/amerge install python-amd-aiter-gfx1151
+```
+
+Interactive runs preview the merge plan and ask for confirmation unless
+`-y/--noconfirm` is given. Noninteractive runs skip the prompt and preview
+unless `--preview=flat` or `--preview=tree` is requested.
+
+Resume and inspect retained plans:
+
+```bash
+tools/amerge resume latest
+tools/amerge resume latest --skip
+tools/amerge history
+tools/amerge logs latest --path
+```
 
 Logs go to:
 
-- `docs/worklog/rebuild-install-runs/<timestamp>/run.log`
-- `docs/worklog/rebuild-install-runs/<timestamp>/build-order.txt`
-- `docs/worklog/rebuild-install-runs/<timestamp>/selected-install-scope.json`
+- `docs/worklog/amerge/<plan-id>/plan.json`
+- `docs/worklog/amerge/<plan-id>/state.json`
+- `docs/worklog/amerge/<plan-id>/<run-id>.log`
+- `docs/worklog/amerge/<plan-id>/logs/<step-id>/`
 
 ## Run Inference Scenarios
 

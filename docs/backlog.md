@@ -113,9 +113,8 @@
 - Document the current reference-host configuration concretely.
 - Scrutinize the workflow after the first pass and reduce it to the fewest
   reasonable steps without hiding important customization points.
-- Keep the split rebuild/install and inference-scenario tooling pleasant to use
-  as the default host workflow; avoid drifting back toward one-off wrapper
-  scripts.
+- Keep `amerge` and the inference-scenario tooling pleasant to use as the
+  default host workflow; avoid drifting back toward one-off wrapper scripts.
 
 ## Benchmarks
 

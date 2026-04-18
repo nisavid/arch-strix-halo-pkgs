@@ -38,4 +38,4 @@ otherwise.
   `stderr.log`, and `server.log` when applicable.
 - vLLM scenarios also capture `amd-smi` process tables and fail early on a
   preexisting stale `VLLM::EngineCore`.
-- For fresh package validation, run `tools/rebuild_publish_install.zsh` first.
+- For fresh package validation, run `tools/amerge run ...` first.

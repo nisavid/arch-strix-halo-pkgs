@@ -47,7 +47,7 @@
       "patchelf",
       "python-build",
       "python-installer",
-      "python-meson-python",
+      "meson-python",
       "python-wheel",
       "rocm-llvm-gfx1151"
     ],

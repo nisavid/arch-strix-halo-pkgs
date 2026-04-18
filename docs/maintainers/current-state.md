@@ -222,7 +222,7 @@ The following smoke checks have already passed on the reference host:
     leave an orphaned `VLLM::EngineCore` holding roughly `89 GiB` of VRAM
     after an otherwise successful basic-server smoke
   - the reusable host-side validation path is now split cleanly:
-    - rebuild and reinstall with `tools/rebuild_publish_install.zsh`
+    - rebuild and reinstall with `tools/amerge`
     - run tracked validations with `tools/run_inference_scenarios.py`
   - `tools/run_inference_scenarios.py` now logs `amd-smi process -G --json`
     before and after `vllm` scenarios when available, and fails a `vllm`
@@ -258,9 +258,9 @@ The following smoke checks have already passed on the reference host:
       all, so the padding fix was a dormant carry rather than part of the
       validated default
   - the repo keeps a reproducible two-step handoff for this lane:
-    - `tools/rebuild_publish_install.zsh python-amd-aiter-gfx1151 python-vllm-rocm-gfx1151`
+    - `tools/amerge run python-amd-aiter-gfx1151 python-vllm-rocm-gfx1151`
     - `python tools/run_inference_scenarios.py --scenario vllm.gemma4.26b-a4b.text.basic --scenario vllm.gemma4.26b-a4b.server.basic --model-path google/gemma-4-26B-A4B-it=/absolute/path/to/google/gemma-4-26B-A4B-it`
-    - logs land under ignored `docs/worklog/rebuild-install-runs/<timestamp>/`
+    - logs land under ignored `docs/worklog/amerge/<plan-id>/`
       and `docs/worklog/inference-runs/<timestamp>/` directories so the
       follow-up loop does not depend on copy-pasted terminal output
 - There is still no repo-owned validation for Qwen3.5 hybrid-attention/GDN or

@@ -5,38 +5,53 @@ description: Use when rebuilding repo packages, republishing the local pacman re
 
 # Rebuild Publish Install Local Packages
 
-Use `tools/rebuild_publish_install.zsh` as the canonical repo-side host
-workflow for rebuild, publish, and reinstall.
+Use `tools/amerge` as the canonical repo-side host workflow for merge planning,
+rebuild, publish, install, resume, history, and logs.
 
 ## Default Use
 
 - For a narrow package lane:
 
 ```bash
-tools/rebuild_publish_install.zsh python-amd-aiter-gfx1151 python-vllm-rocm-gfx1151
+tools/amerge run python-amd-aiter-gfx1151 python-vllm-rocm-gfx1151
 ```
 
-- For repo packages already installed on the host:
+- Also rebuild dependencies:
 
 ```bash
-tools/rebuild_publish_install.zsh --install-scope installed
+tools/amerge run --deps python-amd-aiter-gfx1151 python-vllm-rocm-gfx1151
 ```
 
-- For the full repo package set:
+- Rebuild all repo roots or only installed repo outputs:
 
 ```bash
-tools/rebuild_publish_install.zsh --install-scope all
+tools/amerge run --all
+tools/amerge run --installed
 ```
 
-If no package args and no `--install-scope` are given, the tool prompts on a
-TTY and fails fast otherwise.
+- Resume a failed run:
+
+```bash
+tools/amerge resume latest
+```
+
+Use `tools/amerge history` and `tools/amerge logs latest --path` to inspect
+retained state and logs.
 
 ## Operator Notes
 
 - Hand the command to the user for privileged execution.
 - The tool keeps one sudo session alive, uses sudo only for publish/install
-  operations, and logs under `docs/worklog/rebuild-install-runs/<timestamp>/`.
+  operations, and logs under `docs/worklog/amerge/<plan-id>/`. It also keeps
+  sudo warm during build-only plans because `makepkg -s` may need sudo for
+  missing build dependencies.
+- With `run`, each package root is built, published, and installed before the
+  next root, preserving dependency-order fast iteration. Selected split roots
+  also install any outputs required by later selected package roots.
+- If no targets or selectors are given, hand the command to the user only for an
+  interactive session; noninteractive use should pass targets, `--all`, or
+  `--installed`.
 - For the common rebuild -> install -> test flow, follow with
   `python tools/run_inference_scenarios.py ...`.
-- If you need to write or edit repo shell tooling while working here, use the
-  `idiomatic-zsh` skill.
+- If shell glue is still needed around this Python CLI, use the `idiomatic-zsh`
+  skill.

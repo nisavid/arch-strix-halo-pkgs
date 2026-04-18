@@ -18,9 +18,9 @@ def test_repo_local_workflow_skills_exist_and_cross_reference():
     inference_text = inference_skill.read_text(encoding="utf-8")
 
     assert "zsh" in zsh_text.lower()
-    assert "tools/rebuild_publish_install.zsh" in rebuild_text
+    assert "tools/amerge" in rebuild_text
     assert "tools/run_inference_scenarios.py" in rebuild_text
-    assert "docs/worklog/rebuild-install-runs" in rebuild_text
+    assert "docs/worklog/amerge" in rebuild_text
     assert "tools/run_inference_scenarios.py" in inference_text
-    assert "tools/rebuild_publish_install.zsh" in inference_text
+    assert "tools/amerge" in inference_text
     assert "docs/worklog/inference-runs" in inference_text

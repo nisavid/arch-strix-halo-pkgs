@@ -16,7 +16,8 @@ def test_docs_reference_new_rebuild_and_inference_entrypoints():
     current_state = CURRENT_STATE.read_text(encoding="utf-8")
     backlog = BACKLOG.read_text(encoding="utf-8")
 
-    assert "tools/rebuild_publish_install.zsh" in local_repo
+    assert "tools/amerge" in local_repo
+    assert "tools/rebuild_publish_install.zsh" not in local_repo
     assert "tools/run_inference_scenarios.py" in local_repo
     assert "tools/run_patch_audit_host_checks.sh" not in local_repo
     assert "tools/run_inference_scenarios.py" in current_state
