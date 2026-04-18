@@ -480,6 +480,7 @@ conflicts = ["python-amd-aiter"]
 depends = ["python-gfx1151", "python-pandas", "python-pytorch-opt-rocm-gfx1151", "python-triton-gfx1151"]
 makedepends = ["git", "python-build", "python-installer", "python-setuptools", "python-wheel", "rocm-llvm-gfx1151"]
 optdepends = ["python-flydsl-gfx1151: optional FlyDSL MLIR kernels for AITER fused MoE paths (blocked on rocm-llvm MLIR Python SDK completeness)"]
+options = ["!strip"]
 src_subdir = "aiter"
 source_patches = [
   "0001-gfx1151-rdna35-header-compat.patch",

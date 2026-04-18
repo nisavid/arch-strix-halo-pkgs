@@ -349,6 +349,27 @@ def test_build_steps_request_sudo_keepalive_without_wrapping_makepkg(tmp_path: P
     assert plan["steps"][0]["commands"][0]["argv"][0] == "makepkg"
 
 
+def test_command_environment_removes_user_python_state(monkeypatch):
+    module = load_module()
+    monkeypatch.setenv("PYTHONPYCACHEPREFIX", "/home/demo/.cache/python")
+    monkeypatch.setenv("PYTHONSTARTUP", "/home/demo/.config/python/startup.py")
+    monkeypatch.setenv("PYTHONUSERBASE", "/home/demo/.local/share/python")
+    monkeypatch.setenv("PYTHON_EGG_CACHE", "/home/demo/.cache/python-eggs")
+    monkeypatch.setenv("PYTHONPATH", "/home/demo/python")
+    monkeypatch.setenv("TERM", "xterm-256color")
+
+    env = module.sanitized_command_env()
+
+    for key in module.SANITIZED_COMMAND_ENV_KEYS:
+        assert key not in env
+    assert env["TERM"] == "xterm-256color"
+    assert module.sanitized_command_env_note() == (
+        "# amerge unset Python user environment: "
+        "PYTHON_EGG_CACHE, PYTHONPATH, PYTHONPYCACHEPREFIX, "
+        "PYTHONSTARTUP, PYTHONUSERBASE\n"
+    )
+
+
 def test_failed_plan_records_logs_and_resume_skip_continues(
     tmp_path: Path,
     capsys,

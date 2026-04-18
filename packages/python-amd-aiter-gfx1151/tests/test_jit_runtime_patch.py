@@ -51,6 +51,19 @@ def test_pkgbuild_carries_jit_runtime_patch():
     assert 'export HIP_PATH="/opt/rocm"' in text
 
 
+def test_pkgbuild_clears_stale_wheels_before_building():
+    text = PKGBUILD.read_text()
+
+    assert "rm -f dist/*.whl" in text
+    assert text.index("rm -f dist/*.whl") < text.index("pip wheel . --no-build-isolation")
+
+
+def test_pkgbuild_disables_makepkg_strip_for_rocm_code_objects():
+    text = PKGBUILD.read_text()
+
+    assert "options=('!strip')" in text
+
+
 def test_header_patch_only_carries_vec_convert_rdna_fallbacks():
     text = HEADER_PATCH.read_text()
 

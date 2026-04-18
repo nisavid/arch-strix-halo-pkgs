@@ -1011,6 +1011,7 @@ build() {{
   export CK_DIR="${{_ck_submodule}}"
 
   mkdir -p dist
+  rm -f dist/*.whl
   pip wheel . --no-build-isolation --no-deps --wheel-dir dist -v
 }}
 

@@ -27,6 +27,13 @@ DEFAULT_PUBLISH_ROOT = Path(
     os.environ.get("PUBLISH_ROOT", "/srv/pacman/strix-halo-gfx1151/x86_64")
 )
 DEFAULT_STATE_ROOT = REPO_ROOT / "docs/worklog/amerge"
+SANITIZED_COMMAND_ENV_KEYS = (
+    "PYTHON_EGG_CACHE",
+    "PYTHONPATH",
+    "PYTHONPYCACHEPREFIX",
+    "PYTHONSTARTUP",
+    "PYTHONUSERBASE",
+)
 
 RESET = "\033[0m"
 BOLD = "\033[1m"
@@ -799,6 +806,20 @@ def append_run_log(plan_dir: Path, run_id: str, text: str) -> None:
         handle.write(text)
 
 
+def sanitized_command_env() -> dict[str, str]:
+    env = os.environ.copy()
+    for key in SANITIZED_COMMAND_ENV_KEYS:
+        env.pop(key, None)
+    return env
+
+
+def sanitized_command_env_note() -> str | None:
+    removed = [key for key in SANITIZED_COMMAND_ENV_KEYS if key in os.environ]
+    if not removed:
+        return None
+    return f"# amerge unset Python user environment: {', '.join(removed)}\n"
+
+
 def execute_command(
     command: dict[str, object],
     *,
@@ -809,6 +830,9 @@ def execute_command(
     argv = [str(part) for part in command["argv"]]
     cwd = command.get("cwd")
     header = f"$ {' '.join(argv)}\n"
+    env_note = sanitized_command_env_note()
+    if env_note:
+        header += env_note
     log_path.write_text(header, encoding="utf-8")
     with log_path.open("a", encoding="utf-8") as step_log, run_log_path.open(
         "a", encoding="utf-8"
@@ -822,6 +846,7 @@ def execute_command(
             stderr=subprocess.STDOUT,
             text=True,
             bufsize=1,
+            env=sanitized_command_env(),
         )
         assert process.stdout is not None
         for line in process.stdout:

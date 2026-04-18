@@ -156,6 +156,11 @@ root in merge order as build, publish, then install for that root's selected
 outputs plus selected-root dependency outputs so later builds see earlier
 rebuilt dependencies.
 
+`amerge` also sanitizes user Python environment variables such as
+`PYTHONPYCACHEPREFIX`, `PYTHONSTARTUP`, `PYTHONUSERBASE`, `PYTHON_EGG_CACHE`,
+and `PYTHONPATH` before running plan commands, and records that in the step log
+when any were present.
+
 `amerge` has separate subcommands for phase-specific work:
 
 ```bash

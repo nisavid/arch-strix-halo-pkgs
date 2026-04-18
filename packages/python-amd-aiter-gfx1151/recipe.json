@@ -70,6 +70,9 @@
     "optdepends": [
       "python-flydsl-gfx1151: optional FlyDSL MLIR kernels for AITER fused MoE paths (blocked on rocm-llvm MLIR Python SDK completeness)"
     ],
+    "options": [
+      "!strip"
+    ],
     "patches_dir": "packages/python-amd-aiter-gfx1151",
     "pkgdesc": "AMD AITER kernels rebuilt for Strix Halo gfx1151",
     "provides": [
