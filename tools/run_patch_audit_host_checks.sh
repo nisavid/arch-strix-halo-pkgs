@@ -19,9 +19,10 @@ run() {
 
 latest_pkg() {
   local pkgdir="$1"
-  find "${pkgdir}" -maxdepth 1 -type f -name '*.pkg.tar.*' \
-    ! -name '*.db.tar.*' ! -name '*.files.tar.*' \
-    | sort | tail -n 1
+  local pkgname="$2"
+  python "${repo_root}/tools/select_latest_package.py" \
+    --package-dir "${pkgdir}" \
+    --pkgname "${pkgname}"
 }
 
 printf 'repo_root=%s\n' "${repo_root}"
@@ -35,8 +36,8 @@ run git -C "${repo_root}" submodule status -- upstream/ai-notes
 run python --version
 run uname -a
 
-aiter_pkg="$(latest_pkg "${repo_root}/packages/python-amd-aiter-gfx1151")"
-vllm_pkg="$(latest_pkg "${repo_root}/packages/python-vllm-rocm-gfx1151")"
+aiter_pkg="$(latest_pkg "${repo_root}/packages/python-amd-aiter-gfx1151" python-amd-aiter-gfx1151)"
+vllm_pkg="$(latest_pkg "${repo_root}/packages/python-vllm-rocm-gfx1151" python-vllm-rocm-gfx1151)"
 
 if [[ -z "${aiter_pkg}" || -z "${vllm_pkg}" ]]; then
   echo "PATCH_AUDIT_HOST_CHECK_FAILED: expected built package archives for python-amd-aiter-gfx1151 and python-vllm-rocm-gfx1151" >&2

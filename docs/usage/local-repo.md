@@ -125,7 +125,8 @@ tools/run_patch_audit_host_checks.sh /path/to/google/gemma-4-26B-A4B-it
 That script:
 
 - refreshes `repo/x86_64` from the latest built
-  `python-amd-aiter-gfx1151` and `python-vllm-rocm-gfx1151` archives
+  `python-amd-aiter-gfx1151` and `python-vllm-rocm-gfx1151` archives,
+  selected by pacman version rather than filename order
 - republishes the local repo to `/srv/pacman/strix-halo-gfx1151/x86_64`
 - reinstalls those packages through pacman
 - runs `vllm --version`
@@ -136,6 +137,8 @@ That script:
   - `--limit-mm-per-prompt {"image":0,"audio":0,"video":0}`
   - `--max-model-len 128`
   - `--max-num-batched-tokens 32`
+  - a `300`-second server startup timeout for the current
+    `google/gemma-4-26B-A4B-it` lane
 
 Logs go to:
 

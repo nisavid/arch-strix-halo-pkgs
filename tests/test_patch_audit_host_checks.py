@@ -15,3 +15,9 @@ def test_patch_audit_host_checks_uses_vllm_cli_for_version_probe():
     text = SCRIPT.read_text()
     assert "python -m vllm --version" not in text
     assert "vllm --version" in text
+
+
+def test_patch_audit_host_checks_does_not_pick_archives_lexicographically():
+    text = SCRIPT.read_text()
+    assert "sort | tail -n 1" not in text
+    assert "tools/select_latest_package.py" in text

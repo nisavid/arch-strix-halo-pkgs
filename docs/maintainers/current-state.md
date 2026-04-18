@@ -212,6 +212,11 @@ The following smoke checks have already passed on the reference host:
     `--enforce-eager` on this lane. vLLM documents eager mode as disabling
     compilation and cudagraph capture, so the current helper defaults are a
     correctness/isolation choice rather than a performance recommendation
+  - the privileged host-check helper now selects the newest built package
+    archives by pacman version rather than filename order, and
+    `tools/gemma4_server_smoke.py` now uses a `300`-second startup budget for
+    this lane because cold `google/gemma-4-26B-A4B-it` server loads on the
+    reference host can exceed the earlier `180`-second default
   - leaving `video` implicit in `--limit-mm-per-prompt` is still enough to
     send vLLM back into multimodal warmup on this host and reproduce the older
     GPU memory-access fault during engine initialization
@@ -249,6 +254,18 @@ The following smoke checks have already passed on the reference host:
     - logs land under the ignored
       `docs/worklog/patch-audit-final-checks/<timestamp>/` directory so the
       follow-up loop does not depend on copy-pasted terminal output
+- There is still no repo-owned validation for Qwen3.5 hybrid-attention/GDN or
+  Qwen3.5 MoE/shared-expert lanes on gfx1151.
+  - the current local `vllm` source tree does contain the relevant model
+    surfaces: Qwen3Next hybrid attention via `GatedDeltaNetAttention`, plus
+    `SharedFusedMoE` for the sparse/shared-expert path
+  - the imported Blackcat recipe notes also describe testing patches and at
+    least one successful Qwen3.5-MoE eager benchmark on Strix Halo, but those
+    hybrid/GDN patch decisions have not yet been reconciled into the
+    maintained local package carry
+  - treat Qwen3.5 AITER attention/MoE viability as plausible but unverified in
+    this repo until a repo-owned host run records the chosen backend split and
+    any required hybrid/GDN guards explicitly
 - The tracked host-side follow-up helper for OpenAI-compatible server smokes is
   now `tools/gemma4_server_smoke.py`.
   - `--mode basic` launches

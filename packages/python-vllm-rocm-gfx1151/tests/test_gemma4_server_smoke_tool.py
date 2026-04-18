@@ -165,6 +165,18 @@ def test_26b_a4b_basic_dry_run_defaults_to_constrained_text_only_lane() -> None:
     assert payload_max_tokens(plan) == 16
 
 
+def test_26b_a4b_basic_dry_run_uses_extended_startup_timeout() -> None:
+    plan = run_dry_run(
+        "--mode",
+        "basic",
+        "--served-model-name",
+        "google/gemma-4-26B-A4B-it",
+        "/models/google/gemma-4-26B-A4B-it",
+    )
+
+    assert plan["startup_timeout"] == 300.0
+
+
 def test_tool_dry_run_without_template_errors_for_nonlocal_model() -> None:
     result = subprocess.run(
         [

@@ -24,15 +24,26 @@
   `video` implicit was enough to send vLLM back into multimodal warmup and
   reproduce the earlier GPU memory-access fault during engine initialization on
   the reference host.
-- Re-run `tools/run_patch_audit_host_checks.sh` after trimming the dormant
-  Gemma 4 AITER-MoE padding carry so the post-prune
-  `python-vllm-rocm-gfx1151` package is host-validated, not just
-  statically/audit validated.
 - Validate a non-eager Gemma 4 26B-A4B lane separately from the current eager
   correctness lane.
   - keep the repo-owned helper defaults eager until this passes
   - when testing, record whether the failure surface is torch.compile,
     cudagraph capture, or another compiled-path interaction
+- Reconcile Blackcat's Qwen3.5 hybrid-attention/GDN patch lane against the
+  maintained `python-vllm-rocm-gfx1151` and `python-amd-aiter-gfx1151`
+  package story.
+  - identify which imported recipe/build-script patches have already landed
+    upstream, which still need local carry, and which are stale
+  - specifically review the hybrid block-size alignment rules, the
+    hybrid-model exclusion from AITER unified attention, and the AMD-specific
+    FLA/GDN fixes
+- Add repo-owned validation for Qwen3.5 hybrid/GDN and Qwen3.5 MoE or
+  shared-expert lanes on gfx1151.
+  - cover at least one Qwen3.5 hybrid-attention model and one Qwen3.5
+    MoE/shared-expert model
+  - record whether attention can stay on AITER or must remain on Triton,
+    whether GDN needs extra env toggles or source fixes, and whether AITER
+    fused/shared-expert MoE is actually safe on the maintained stack
 - Only revisit Gemma 4 on AITER fused-MoE if there is a concrete reason to
   move off the current TRITON unquantized-MoE lane.
   - treat any such attempt as a fresh experiment

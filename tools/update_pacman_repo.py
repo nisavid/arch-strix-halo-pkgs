@@ -5,16 +5,11 @@ from __future__ import annotations
 import argparse
 import os
 import shutil
-import subprocess
 import sys
+import subprocess
 from pathlib import Path
-from typing import NamedTuple
 
-
-class PackageInfo(NamedTuple):
-    path: Path
-    pkgname: str
-    pkgver: str
+from package_archives import PackageInfo, read_package_infos, select_latest_by_name, vercmp
 
 
 def link_or_copy(src: Path, dst: Path) -> None:
@@ -30,44 +25,6 @@ def link_or_copy(src: Path, dst: Path) -> None:
         os.link(src, dst)
     except OSError:
         shutil.copy2(src, dst)
-
-
-def read_pkginfo(path: Path) -> PackageInfo:
-    result = subprocess.run(
-        ["bsdtar", "-xOf", str(path), ".PKGINFO"],
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    pkgname = None
-    pkgver = None
-    for line in result.stdout.splitlines():
-        if line.startswith("pkgname = "):
-            pkgname = line.split(" = ", 1)[1]
-        elif line.startswith("pkgver = "):
-            pkgver = line.split(" = ", 1)[1]
-    if not pkgname or not pkgver:
-        raise RuntimeError(f"PACKAGE_METADATA_MISSING: {path}")
-    return PackageInfo(path=path, pkgname=pkgname, pkgver=pkgver)
-
-
-def vercmp(a: str, b: str) -> int:
-    result = subprocess.run(
-        ["vercmp", a, b],
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return int(result.stdout.strip())
-
-
-def select_latest_by_name(package_infos: list[PackageInfo]) -> dict[str, PackageInfo]:
-    selected: dict[str, PackageInfo] = {}
-    for pkg in package_infos:
-        current = selected.get(pkg.pkgname)
-        if current is None or vercmp(pkg.pkgver, current.pkgver) > 0:
-            selected[pkg.pkgname] = pkg
-    return selected
 
 
 def merge_package_sets(
@@ -102,23 +59,13 @@ def main() -> int:
     repo_dir.mkdir(parents=True, exist_ok=True)
 
     package_iter = package_dir.rglob("*.pkg.tar.*") if args.recursive else package_dir.glob("*.pkg.tar.*")
-    package_infos = [
-        read_pkginfo(pkg) for pkg in sorted(
-            pkg for pkg in package_iter
-            if pkg.is_file() and ".db.tar." not in pkg.name and ".files.tar." not in pkg.name
-        )
-    ]
+    package_infos = read_package_infos(package_iter)
     if not package_infos:
         print(f"PACMAN_REPO_UPDATE_FAILED: no package archives found in {package_dir}", file=sys.stderr)
         print("HINT: build the package base first so .pkg.tar.zst artifacts exist.", file=sys.stderr)
         return 2
 
-    existing_infos = [
-        read_pkginfo(pkg) for pkg in sorted(
-            pkg for pkg in repo_dir.glob("*.pkg.tar.*")
-            if pkg.is_file() and ".db.tar." not in pkg.name and ".files.tar." not in pkg.name
-        )
-    ]
+    existing_infos = read_package_infos(repo_dir.glob("*.pkg.tar.*"))
     selected = merge_package_sets(package_infos, existing_infos)
 
     staged = []

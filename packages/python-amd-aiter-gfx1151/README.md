@@ -32,14 +32,14 @@ aiter_meta/csrc/include/ files for gfx1151 RDNA 3.5 compatibility.
 - Upstream AITER declares pandas as a real dependency and FlyDSL as an optional acceleration path. Keep pandas in the package metadata, and package FlyDSL separately rather than silently depending on an unpublished wheel.
 - Keep the gfx1151 RDNA 3.5 header fixes as package-local source patches applied before wheel build, split between the `vec_convert.h` packed-op fallbacks and the `hip_reduce.h` wave32/DPP compatibility rewrite.
 - Keep the installed-system JIT runtime patch unless upstream fixes both assumptions itself: `hipcc` on the ambient PATH, and package-relative import of JIT-built modules even after copying the writable JIT tree out of read-only site-packages.
-- Keep the gfx1x AITER-side MoE compatibility patches that are genuinely local: unknown-gfx probing, missing 1-stage ASM metadata, and CK 2-stage splitk normalization/forwarding. The current validated Gemma 4 26B-A4B lane uses TRITON backend for Unquantized MoE, so any attempt to move that model back onto AITER fused-MoE should be treated as fresh validation work, not as a presumed padding/fallback carry.
+- Keep the gfx1x AITER-side MoE compatibility patches that are genuinely local: unknown-gfx probing, missing 1-stage ASM metadata, and CK 2-stage splitk normalization/forwarding. The current validated Gemma 4 26B-A4B lane uses TRITON backend for Unquantized MoE, so any attempt to move that model back onto AITER fused-MoE should be treated as fresh validation work, not as a presumed default-lane dependency.
 
 ## Intentional Divergences
 
 - There is no standalone AITER package in Arch-family packaging; this package is recipe-first and aligned to the vendored PyTorch submodule lane.
 - Carries explicit package-local source patches for gfx1151 RDNA 3.5 header compatibility, split between vec_convert packed-op fallbacks and hip_reduce wave32/DPP compatibility, rather than leaving those fixes as manual post-build mutations.
 - Carries an installed-system JIT runtime patch so AITER can find `hipcc` and import JIT-built modules from the writable user cache on read-only site-packages installs.
-- Carries the gfx1x AITER-side MoE compatibility patches that are safe to keep local: unknown-gfx probing, missing 1-stage ASM metadata handling, and CK 2-stage splitk normalization/forwarding for the unquantized MoE path.
+- Carries the gfx1x AITER-side MoE compatibility patches that are safe to keep local: unknown-gfx probing, missing 1-stage ASM metadata handling, and CK 2-stage splitk normalization/forwarding for AITER fused-MoE experiments and other non-Gemma lanes. The current validated Gemma 4 default path still uses TRITON for unquantized MoE.
 
 ## Update Notes
 

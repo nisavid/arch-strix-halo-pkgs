@@ -69,7 +69,15 @@ def parse_args() -> argparse.Namespace:
             "1024 for reasoning/tool modes"
         ),
     )
-    parser.add_argument("--startup-timeout", type=float, default=180.0)
+    parser.add_argument(
+        "--startup-timeout",
+        type=float,
+        default=None,
+        help=(
+            "seconds to wait for /v1/models; defaults to 300 for the validated "
+            "Gemma 4 26B-A4B basic lane and 180 otherwise"
+        ),
+    )
     parser.add_argument("--request-timeout", type=float, default=60.0)
     parser.add_argument(
         "--server-log",
@@ -139,6 +147,14 @@ def effective_max_num_batched_tokens(args: argparse.Namespace) -> int | None:
     if use_gemma4_26b_a4b_text_only_defaults(args):
         return 32
     return None
+
+
+def effective_startup_timeout(args: argparse.Namespace) -> float:
+    if args.startup_timeout is not None:
+        return args.startup_timeout
+    if use_gemma4_26b_a4b_text_only_defaults(args):
+        return 300.0
+    return 180.0
 
 
 def build_server_command(args: argparse.Namespace) -> list[str]:
@@ -309,6 +325,7 @@ def build_plan(args: argparse.Namespace) -> dict[str, object]:
         "model": args.model,
         "served_model_name": served_model_name(args),
         "server_command": build_server_command(args),
+        "startup_timeout": effective_startup_timeout(args),
         "models_url": f"{server_base_url(args)}/v1/models",
         "request_url": f"{server_base_url(args)}/v1/chat/completions",
         "request_payload": request_payload,
@@ -442,6 +459,7 @@ def run_smoke(args: argparse.Namespace) -> None:
     print("model", args.model)
     print("served_model_name", served_model_name(args))
     print("server_log", str(args.server_log))
+    print("startup_timeout", plan["startup_timeout"])
     print("server_command", json.dumps(plan["server_command"]))
 
     args.server_log.parent.mkdir(parents=True, exist_ok=True)
@@ -456,7 +474,7 @@ def run_smoke(args: argparse.Namespace) -> None:
             models_payload = wait_for_server(
                 process,
                 str(plan["models_url"]),
-                args.startup_timeout,
+                float(plan["startup_timeout"]),
             )
             print("server_ready")
             print("models_payload", json.dumps(models_payload, sort_keys=True))

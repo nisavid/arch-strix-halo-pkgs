@@ -83,8 +83,8 @@ system.
   - Makes the AITER CK MoE wrappers treat `splitk=0` as the existing
     no-split sentinel (`1` at kernel launch) instead of passing a raw zero into
     the CK entrypoint.
-  - Propagates the computed `ksplit` into stage 2 so both halves of the
-    unquantized MoE path use the same launch semantics.
+  - Propagates the computed `ksplit` into stage 2 so both halves of the AITER
+    CK MoE launch use the same launch semantics.
 
 ## TorchAO
 
