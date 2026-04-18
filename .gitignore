@@ -18,6 +18,7 @@ packages/*/pytorch/
 packages/*/triton/
 packages/*/vllm/
 packages/*/aotriton/
+packages/*/aiter/
 packages/*/aotriton-aiter/
 packages/*/aotriton-incbin/
 packages/*/python-triton-gfx1151-llvm-*/
