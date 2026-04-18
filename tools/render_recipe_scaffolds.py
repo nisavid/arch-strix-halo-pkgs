@@ -638,7 +638,7 @@ _source_tree_has_all_source_patches() {
   [[ -f pyproject.toml ]] || return 1
   grep -Fq 'requires-python = ">=3.10,<3.15"' pyproject.toml &&
     grep -Fq 'def _selected_subcommand() -> str | None:' vllm/entrypoints/cli/main.py &&
-    grep -Fq 'VLLM_ROCM_USE_AITER_MOE' vllm/_aiter_ops.py &&
+    grep -Fq 'return on_mi3xx() or on_gfx1x()' vllm/_aiter_ops.py &&
     grep -Fq '_maybe_pad_intermediate_for_aiter(' \
       vllm/model_executor/layers/fused_moe/oracle/unquantized.py
 }

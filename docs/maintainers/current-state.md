@@ -233,12 +233,21 @@ The following smoke checks have already passed on the reference host:
       keeps only the `vec_convert.h` gfx11 packed-op fallbacks, while
       `python-amd-aiter-gfx1151/0006-rdna35-hip-reduce-wave32-dpp-compat.patch`
       carries the broader `hip_reduce.h` wave32/DPP rewrite
-    - the vLLM Gemma 4 / AITER carry is now split too:
+    - the vLLM Gemma 4 / AITER carry is now narrowed to the validated repair
+      lane:
       `python-vllm-rocm-gfx1151/0007-rocm-enable-gfx1x-aiter-and-prefer-it-for-gemma4.patch`
       keeps the gfx1x AITER support plus the Gemma 4
-      `ROCM_AITER_UNIFIED_ATTN` override, and
-      `python-vllm-rocm-gfx1151/0011-rocm-default-fused-moe-to-aiter-on-supported-systems.patch`
-      carries the separate fused-MoE default-policy change
+      `ROCM_AITER_UNIFIED_ATTN` override, while
+      `python-vllm-rocm-gfx1151/0010-rocm-pad-gemma4-moe-intermediate-for-aiter.patch`
+      keeps the 704-wide Gemma 4 MoE intermediate aligned before the AITER
+      shuffle
+    - the separate fused-MoE default-policy carry was dropped after the
+      2026-04-17 reference-host rerun:
+      `tools/run_patch_audit_host_checks.sh` made it through the package
+      reinstall and `vllm --version` checks, then
+      `tools/gemma4_text_smoke.py` faulted the GPU immediately after AITER
+      selected the unquantized CK 2-stage fused-MoE path by default on
+      `google/gemma-4-26B-A4B-it`
   - the repo now carries a reproducible privileged handoff at
     `tools/run_patch_audit_host_checks.sh`
     - it refreshes the local repo from the latest built AITER/vLLM package

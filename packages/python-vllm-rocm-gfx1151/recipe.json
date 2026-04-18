@@ -17,8 +17,7 @@
       "0007-rocm-enable-gfx1x-aiter-and-prefer-it-for-gemma4.patch",
       "0008-torchao-startup-stays-lazy.patch",
       "0009-cli-startup-stays-runtime-light.patch",
-      "0010-rocm-pad-gemma4-moe-intermediate-for-aiter.patch",
-      "0011-rocm-default-fused-moe-to-aiter-on-supported-systems.patch"
+      "0010-rocm-pad-gemma4-moe-intermediate-for-aiter.patch"
     ],
     "update_notes": [
       "Check upstream vllm release notes and pyproject metadata first, then reconcile the Python upper-bound and hard-coded supported-version list with the current state of Python 3.14 support.",
@@ -32,7 +31,7 @@
       "Keep the setup.py compiler-flag forwarding patch unless upstream starts passing CFLAGS/CXXFLAGS/HIPFLAGS into the CMake ROCm build itself. The concrete packaging failure was $srcdir leaking into shipped extension modules because the HIP lane was built without Arch prefix-map flags.",
       "Keep LTO disabled for this package unless the ROCm HIP shared-module link path becomes compatible with it. The concrete host failure was _moe_C.abi3.so / _rocm_C.abi3.so link failure with `LLVM gold plugin has failed to create LTO module: Invalid record`.",
       "Keep the gfx1x AITER enablement and Gemma 4 ROCM_AITER_UNIFIED_ATTN preference unless upstream lands a ROCm-safe single-backend path for heterogeneous-head Gemma 4 models. The concrete host failure was successful Gemma 4 initialization followed by Triton unified-attention decode miscompilation (`operation scheduled before its operands`) and garbage output on gfx1151.",
-      "Keep `0007-rocm-enable-gfx1x-aiter-and-prefer-it-for-gemma4.patch` limited to gfx1x AITER support plus the Gemma 4 backend override, and carry the fused-MoE default flip separately in `0011-rocm-default-fused-moe-to-aiter-on-supported-systems.patch` so that default-policy decision can be revalidated independently of the Gemma 4 decode workaround.",
+      "Keep `0007-rocm-enable-gfx1x-aiter-and-prefer-it-for-gemma4.patch` limited to gfx1x AITER support plus the Gemma 4 backend override, and do not reintroduce the broader fused-MoE default flip unless fresh host validation across real ROCm models proves it safe. The 2026-04-17 reference-host `google/gemma-4-26B-A4B-it` text smoke faulted the GPU when that policy forced the AITER fused-MoE 2-stage path without an explicit runtime override.",
       "Keep the Gemma 4 ROCm AITER MoE intermediate-padding patch until an upstream release includes an equivalent fix. The concrete reference-host failure after removing the GPU fault was corrupted `google/gemma-4-26B-A4B-it` output because the old AITER-side `torch_moe` fallback ran only after vLLM had already shuffled expert weights into AITER runtime layout.",
       "Keep Gemma 4 text-only serving fully text-only by zeroing `image`, `audio`, and `video` in `--limit-mm-per-prompt`. The concrete Gemma 4 26B-A4B server failure was vLLM still entering multimodal warmup and then faulting the GPU during engine initialization when `video` remained implicit.",
       "Keep TorchAO version checks metadata-only on generic startup paths unless upstream reorganizes its quantization imports. The concrete host failure was an external python-torchao-rocm package whose optional _C.abi3.so extension was both missing a usable torch/lib runpath and built against an incompatible PyTorch ABI, causing warning noise during unrelated vLLM startup when vLLM imported the TorchAO quantization module just to ask a version question.",
@@ -115,7 +114,6 @@
       "SKIP",
       "SKIP",
       "SKIP",
-      "SKIP",
       "SKIP"
     ],
     "extra_sources": [
@@ -128,8 +126,7 @@
       "0007-rocm-enable-gfx1x-aiter-and-prefer-it-for-gemma4.patch",
       "0008-torchao-startup-stays-lazy.patch",
       "0009-cli-startup-stays-runtime-light.patch",
-      "0010-rocm-pad-gemma4-moe-intermediate-for-aiter.patch",
-      "0011-rocm-default-fused-moe-to-aiter-on-supported-systems.patch"
+      "0010-rocm-pad-gemma4-moe-intermediate-for-aiter.patch"
     ],
     "license": [
       "Apache-2.0"
@@ -166,7 +163,7 @@
       "Carries a setup.py flag-forwarding patch so host CFLAGS/CXXFLAGS and HIPFLAGS are passed into the CMake ROCm extension build explicitly. This keeps Arch prefix-map sanitization and Strix tuning flags active in the shipped HIP extension modules.",
       "Disables LTO for this package. Re-enabling inherited -flto=* flags makes ROCm shared-module links such as _moe_C.abi3.so and _rocm_C.abi3.so fail with `LLVM gold plugin has failed to create LTO module: Invalid record`.",
       "Carries a gfx1x AITER enablement patch and a Gemma 4 backend-selection patch so heterogeneous-head Gemma 4 models can prefer ROCM_AITER_UNIFIED_ATTN on Strix Halo instead of forcing the Triton unified-attention backend that currently miscompiles during decode.",
-      "Carries a separate fused-MoE default-policy patch so supported ROCm systems stay on the intended AITER fused-MoE path unless users explicitly override VLLM_ROCM_USE_AITER or VLLM_ROCM_USE_AITER_MOE. Keep that policy carry separate from the Gemma 4 backend-selection patch so it can be revalidated independently.",
+      "Does not carry the broader fused-MoE default-policy flip. The 2026-04-17 reference-host `google/gemma-4-26B-A4B-it` text smoke faulted the GPU during AITER fused-MoE 2-stage initialization when that policy forced the path on without an explicit runtime override, so the durable carry stays limited to the narrower Gemma 4 repair lane.",
       "The current repo-owned `google/gemma-4-26B-A4B-it` repair lane is tracked through `tools/gemma4_server_smoke.py` and is text-only basic serving with `--limit-mm-per-prompt {\"image\":0,\"audio\":0,\"video\":0}`, `--max-model-len 128`, and `--max-num-batched-tokens 32`. Keep those defaults in the repo-owned helper until fresh host validation proves the narrower MoE/output-correctness failure is gone too.",
       "Depends on the local python-transformers-gfx1151 closure package rather than the distro python-transformers lane because Gemma 4 support first appears in upstream transformers 5.5.x and the older host package did not ship transformers.models.gemma4.",
       "Depends on the local python-mistral-common-gfx1151 closure package rather than the stale host python-mistral-common 1.8.x lane because Transformers 5.5.x imports ReasoningEffort from mistral_common.protocol.instruct.request.",
@@ -191,8 +188,7 @@
       "0007-rocm-enable-gfx1x-aiter-and-prefer-it-for-gemma4.patch",
       "0008-torchao-startup-stays-lazy.patch",
       "0009-cli-startup-stays-runtime-light.patch",
-      "0010-rocm-pad-gemma4-moe-intermediate-for-aiter.patch",
-      "0011-rocm-default-fused-moe-to-aiter-on-supported-systems.patch"
+      "0010-rocm-pad-gemma4-moe-intermediate-for-aiter.patch"
     ],
     "source_type": "tarball",
     "source_url": "https://github.com/vllm-project/vllm/archive/refs/tags/v0.19.0.tar.gz",
@@ -210,7 +206,7 @@
       "Keep the setup.py compiler-flag forwarding patch unless upstream starts passing CFLAGS/CXXFLAGS/HIPFLAGS into the CMake ROCm build itself. The concrete packaging failure was $srcdir leaking into shipped extension modules because the HIP lane was built without Arch prefix-map flags.",
       "Keep LTO disabled for this package unless the ROCm HIP shared-module link path becomes compatible with it. The concrete host failure was _moe_C.abi3.so / _rocm_C.abi3.so link failure with `LLVM gold plugin has failed to create LTO module: Invalid record`.",
       "Keep the gfx1x AITER enablement and Gemma 4 ROCM_AITER_UNIFIED_ATTN preference unless upstream lands a ROCm-safe single-backend path for heterogeneous-head Gemma 4 models. The concrete host failure was successful Gemma 4 initialization followed by Triton unified-attention decode miscompilation (`operation scheduled before its operands`) and garbage output on gfx1151.",
-      "Keep `0007-rocm-enable-gfx1x-aiter-and-prefer-it-for-gemma4.patch` limited to gfx1x AITER support plus the Gemma 4 backend override, and carry the fused-MoE default flip separately in `0011-rocm-default-fused-moe-to-aiter-on-supported-systems.patch` so that default-policy decision can be revalidated independently of the Gemma 4 decode workaround.",
+      "Keep `0007-rocm-enable-gfx1x-aiter-and-prefer-it-for-gemma4.patch` limited to gfx1x AITER support plus the Gemma 4 backend override, and do not reintroduce the broader fused-MoE default flip unless fresh host validation across real ROCm models proves it safe. The 2026-04-17 reference-host `google/gemma-4-26B-A4B-it` text smoke faulted the GPU when that policy forced the AITER fused-MoE 2-stage path without an explicit runtime override.",
       "Keep the Gemma 4 ROCm AITER MoE intermediate-padding patch until an upstream release includes an equivalent fix. The concrete reference-host failure after removing the GPU fault was corrupted `google/gemma-4-26B-A4B-it` output because the old AITER-side `torch_moe` fallback ran only after vLLM had already shuffled expert weights into AITER runtime layout.",
       "Keep Gemma 4 text-only serving fully text-only by zeroing `image`, `audio`, and `video` in `--limit-mm-per-prompt`. The concrete Gemma 4 26B-A4B server failure was vLLM still entering multimodal warmup and then faulting the GPU during engine initialization when `video` remained implicit.",
       "Keep TorchAO version checks metadata-only on generic startup paths unless upstream reorganizes its quantization imports. The concrete host failure was an external python-torchao-rocm package whose optional _C.abi3.so extension was both missing a usable torch/lib runpath and built against an incompatible PyTorch ABI, causing warning noise during unrelated vLLM startup when vLLM imported the TorchAO quantization module just to ask a version question.",

@@ -36,10 +36,11 @@
     `python-amd-aiter-gfx1151/0006-rdna35-hip-reduce-wave32-dpp-compat.patch`
     is still the minimal durable `hip_reduce.h` carry after a fresh live-host
     rebuild and runtime pass
-  - revalidate whether
-    `python-vllm-rocm-gfx1151/0011-rocm-default-fused-moe-to-aiter-on-supported-systems.patch`
-    belongs as default policy across broader ROCm-model coverage, or whether
-    only the narrower `0007` + `0010` Gemma 4 repair lane should remain
+  - confirm the narrowed `0007` + `0010` Gemma 4 repair lane is clean after
+    dropping the broader fused-MoE default-policy carry; the 2026-04-17
+    reference-host text smoke faulted the GPU as soon as the old `0011`
+    policy forced the AITER CK 2-stage fused-MoE path without an explicit
+    runtime override
 - After the basic `google/gemma-4-26B-A4B-it` repair lane is clean again,
   extend coverage across trustworthy Gemma 4 usage recipes instead of stopping
   at one smoke:

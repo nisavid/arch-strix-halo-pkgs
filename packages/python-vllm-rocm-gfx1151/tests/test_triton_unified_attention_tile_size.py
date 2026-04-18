@@ -15,10 +15,6 @@ GEMMA4_AITER_PATCH = (
     REPO_ROOT
     / "packages/python-vllm-rocm-gfx1151/0007-rocm-enable-gfx1x-aiter-and-prefer-it-for-gemma4.patch"
 )
-FUSED_MOE_POLICY_PATCH = (
-    REPO_ROOT
-    / "packages/python-vllm-rocm-gfx1151/0011-rocm-default-fused-moe-to-aiter-on-supported-systems.patch"
-)
 GEMMA4_MOE_PADDING_PATCH = (
     REPO_ROOT
     / "packages/python-vllm-rocm-gfx1151/0010-rocm-pad-gemma4-moe-intermediate-for-aiter.patch"
@@ -49,12 +45,11 @@ def test_pkgbuild_carries_gemma4_aiter_patch():
     assert f'_apply_patch_if_needed "{patch_name}"' in text
 
 
-def test_pkgbuild_carries_fused_moe_policy_patch():
+def test_pkgbuild_drops_fused_moe_policy_patch():
     text = PKGBUILD.read_text()
-    patch_name = FUSED_MOE_POLICY_PATCH.name
+    patch_name = "0011-rocm-default-fused-moe-to-aiter-on-supported-systems.patch"
 
-    assert patch_name in text
-    assert f'_apply_patch_if_needed "{patch_name}"' in text
+    assert patch_name not in text
 
 
 def test_pkgbuild_carries_gemma4_moe_padding_patch():
@@ -114,17 +109,6 @@ def test_gemma4_patch_enables_gfx1x_aiter_and_prefers_it():
     assert "AttentionBackendEnum.ROCM_AITER_UNIFIED_ATTN" in text
     assert "decode miscompilation" in text
     assert "def is_fused_moe_enabled(cls) -> bool:" not in text
-
-
-def test_fused_moe_policy_patch_keeps_default_flip_separate():
-    text = FUSED_MOE_POLICY_PATCH.read_text()
-
-    assert "def is_fused_moe_enabled(cls) -> bool:" in text
-    assert 'envs.is_set("VLLM_ROCM_USE_AITER")' in text
-    assert 'envs.is_set("VLLM_ROCM_USE_AITER_MOE")' in text
-    assert "return cls._AITER_ENABLED and cls._FMOE_ENABLED" in text
-    assert "return cls._FMOE_ENABLED" in text
-    assert "AttentionBackendEnum.ROCM_AITER_UNIFIED_ATTN" not in text
 
 
 def test_gemma4_moe_padding_patch_aligns_704_intermediate_for_aiter():

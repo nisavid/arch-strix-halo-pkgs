@@ -85,7 +85,7 @@ diff --git a/vllm/model_executor/model_loader/default_loader.py b/vllm/model_exe
 diff --git a/vllm/model_executor/model_loader/weight_utils.py b/vllm/model_executor/model_loader/weight_utils.py
 --- a/vllm/model_executor/model_loader/weight_utils.py
 +++ b/vllm/model_executor/model_loader/weight_utils.py
-@@ -62,7 +62,9 @@
+@@ -62,6 +62,8 @@
      SafeTensorsFileLoader = fastsafetensors.placeholder_attr("SafeTensorsFileLoader")
      SingleGroup = fastsafetensors.placeholder_attr("SingleGroup")
  

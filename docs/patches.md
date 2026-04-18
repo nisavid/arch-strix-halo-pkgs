@@ -61,10 +61,6 @@ system.
   - Keeps `google/gemma-4-26B-A4B-it` on the intended AITER fused-MoE path for
     the 704-wide expert shape instead of relying on a later fallback after the
     weights have already been converted.
-- [Default fused-MoE to AITER on supported ROCm systems](../packages/python-vllm-rocm-gfx1151/0011-rocm-default-fused-moe-to-aiter-on-supported-systems.patch)
-  - Keeps explicit environment overrides authoritative, but otherwise leaves
-    supported ROCm installs on the intended fused-MoE AITER path without
-    requiring a manual `VLLM_ROCM_USE_AITER=1` export.
 
 ## AITER
 
