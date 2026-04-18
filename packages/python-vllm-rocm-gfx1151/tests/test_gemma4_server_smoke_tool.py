@@ -197,6 +197,10 @@ def test_docs_reference_server_smoke_tool() -> None:
     assert "tools/gemma4_server_smoke.py" in package_readme
     assert '`--limit-mm-per-prompt {"image":0,"audio":0,"video":0}`' in current_state
     assert '`--limit-mm-per-prompt {"image":0,"audio":0,"video":0}`' in package_readme
+    assert "`ROCM_AITER_UNIFIED_ATTN`" in current_state
+    assert "TRITON backend for Unquantized MoE" in current_state
+    assert "`enforce_eager=True`" in current_state
+    assert "TRITON unquantized MoE" in package_readme
 
 
 def test_reasoning_validation_rejects_truncated_thought_block() -> None:

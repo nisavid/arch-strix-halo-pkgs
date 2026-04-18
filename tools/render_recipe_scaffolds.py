@@ -639,8 +639,8 @@ _source_tree_has_all_source_patches() {
   grep -Fq 'requires-python = ">=3.10,<3.15"' pyproject.toml &&
     grep -Fq 'def _selected_subcommand() -> str | None:' vllm/entrypoints/cli/main.py &&
     grep -Fq 'return on_mi3xx() or on_gfx1x()' vllm/_aiter_ops.py &&
-    grep -Fq '_maybe_pad_intermediate_for_aiter(' \
-      vllm/model_executor/layers/fused_moe/oracle/unquantized.py
+    grep -Fq 'def torchao_version_at_least(torchao_version: str) -> bool:' \
+      vllm/model_executor/layers/quantization/torchao_utils.py
 }
 
 _apply_all_source_patches() {

@@ -82,7 +82,7 @@
       "Upstream AITER declares pandas as a real dependency and FlyDSL as an optional acceleration path. Keep pandas in the package metadata, and package FlyDSL separately rather than silently depending on an unpublished wheel.",
       "Keep the gfx1151 RDNA 3.5 header fixes as package-local source patches applied before wheel build, split between the `vec_convert.h` packed-op fallbacks and the `hip_reduce.h` wave32/DPP compatibility rewrite.",
       "Keep the installed-system JIT runtime patch unless upstream fixes both assumptions itself: `hipcc` on the ambient PATH, and package-relative import of JIT-built modules even after copying the writable JIT tree out of read-only site-packages.",
-      "Keep the gfx1x AITER-side MoE compatibility patches that are genuinely local: unknown-gfx probing, missing 1-stage ASM metadata, and CK 2-stage splitk normalization/forwarding. Unsupported unquantized shapes such as Gemma 4 26B-A4B belong in the vLLM-side padding/selection story, not in a post-shuffle AITER fallback."
+      "Keep the gfx1x AITER-side MoE compatibility patches that are genuinely local: unknown-gfx probing, missing 1-stage ASM metadata, and CK 2-stage splitk normalization/forwarding. The current validated Gemma 4 26B-A4B lane uses TRITON backend for Unquantized MoE, so any attempt to move that model back onto AITER fused-MoE should be treated as fresh validation work, not as a presumed padding/fallback carry."
     ],
     "source_patches": [
       "0001-gfx1151-rdna35-header-compat.patch",

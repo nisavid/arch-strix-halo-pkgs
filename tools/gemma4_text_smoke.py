@@ -79,6 +79,8 @@ def main() -> None:
         "max_model_len": args.max_model_len,
         "gpu_memory_utilization": args.gpu_memory_utilization,
         "tensor_parallel_size": 1,
+        # Keep the tracked smoke on the validated eager correctness lane until
+        # the compiled/cudagraph ROCm path is revalidated separately.
         "enforce_eager": True,
         "limit_mm_per_prompt": {"image": 0, "audio": 0, "video": 0},
         "disable_log_stats": True,

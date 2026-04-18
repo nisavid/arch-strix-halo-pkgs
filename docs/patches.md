@@ -55,12 +55,9 @@ system.
   - Extends ROCm AITER discovery to gfx1x and lets Gemma 4 prefer
     `ROCM_AITER_UNIFIED_ATTN` instead of the Triton unified-attention backend
     that miscompiled on gfx1151 decode.
-- [Pad Gemma 4 26B-A4B MoE intermediates for ROCm AITER alignment](../packages/python-vllm-rocm-gfx1151/0010-rocm-pad-gemma4-moe-intermediate-for-aiter.patch)
-  - Pads the unquantized Gemma 4 MoE intermediate size to a multiple of 128
-    before vLLM shuffles expert weights into AITER runtime layout.
-  - Keeps `google/gemma-4-26B-A4B-it` on the intended AITER fused-MoE path for
-    the 704-wide expert shape instead of relying on a later fallback after the
-    weights have already been converted.
+  - The current validated `google/gemma-4-26B-A4B-it` lane still uses Triton
+    for unquantized MoE, so this remains the only retained Gemma 4/AITER carry
+    on the maintained default path.
 
 ## AITER
 

@@ -6,7 +6,7 @@
 
 pkgname=python-vllm-rocm-gfx1151
 pkgver=0.19.0.r8.d20260317.gad42886
-pkgrel=24
+pkgrel=25
 pkgdesc='High-throughput and memory-efficient inference engine for LLMs with ROCm, rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://github.com/vllm-project/vllm
@@ -18,8 +18,8 @@ options=('!lto')
 provides=(python-vllm-rocm python-vllm)
 conflicts=(python-vllm-rocm python-vllm)
 replaces=()
-source=(https://github.com/vllm-project/vllm/archive/refs/tags/v0.19.0.tar.gz 0001-python-3.14-version-gates.patch 0002-cli-version-avoids-eager-runtime-imports.patch 0003-rocm-gate-vendored-triton-kernels-on-runtime-support.patch 0004-rocm-fallback-and-optional-sagemaker-standards.patch 0005-rocm-reduce-triton-unified-attention-prefill-tile-for-large-heads.patch 0006-setup.py-forward-host-and-hip-flags-into-cmake.patch 0007-rocm-enable-gfx1x-aiter-and-prefer-it-for-gemma4.patch 0008-torchao-startup-stays-lazy.patch 0009-cli-startup-stays-runtime-light.patch 0010-rocm-pad-gemma4-moe-intermediate-for-aiter.patch)
-sha256sums=(SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP)
+source=(https://github.com/vllm-project/vllm/archive/refs/tags/v0.19.0.tar.gz 0001-python-3.14-version-gates.patch 0002-cli-version-avoids-eager-runtime-imports.patch 0003-rocm-gate-vendored-triton-kernels-on-runtime-support.patch 0004-rocm-fallback-and-optional-sagemaker-standards.patch 0005-rocm-reduce-triton-unified-attention-prefill-tile-for-large-heads.patch 0006-setup.py-forward-host-and-hip-flags-into-cmake.patch 0007-rocm-enable-gfx1x-aiter-and-prefer-it-for-gemma4.patch 0008-torchao-startup-stays-lazy.patch 0009-cli-startup-stays-runtime-light.patch)
+sha256sums=(SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP)
 
 _apply_patch_if_needed() {
   local _patch_name="$1"
@@ -47,7 +47,7 @@ _source_tree_has_all_source_patches() {
   grep -Fq 'requires-python = ">=3.10,<3.15"' pyproject.toml &&
     grep -Fq 'def _selected_subcommand() -> str | None:' vllm/entrypoints/cli/main.py &&
     grep -Fq 'return on_mi3xx() or on_gfx1x()' vllm/_aiter_ops.py &&
-    grep -Fq '_maybe_pad_intermediate_for_aiter('       vllm/model_executor/layers/fused_moe/oracle/unquantized.py
+    grep -Fq 'def torchao_version_at_least(torchao_version: str) -> bool:'       vllm/model_executor/layers/quantization/torchao_utils.py
 }
 
 _apply_all_source_patches() {
@@ -75,7 +75,6 @@ _apply_all_source_patches() {
   _apply_patch_if_needed "0007-rocm-enable-gfx1x-aiter-and-prefer-it-for-gemma4.patch"
   _apply_patch_if_needed "0008-torchao-startup-stays-lazy.patch"
   _apply_patch_if_needed "0009-cli-startup-stays-runtime-light.patch"
-  _apply_patch_if_needed "0010-rocm-pad-gemma4-moe-intermediate-for-aiter.patch"
 
 }
 

@@ -129,7 +129,13 @@ That script:
 - republishes the local repo to `/srv/pacman/strix-halo-gfx1151/x86_64`
 - reinstalls those packages through pacman
 - runs `vllm --version`
-- runs the tracked Gemma 4 text and basic server smokes
+- runs the tracked Gemma 4 text and basic server smokes on the current eager
+  correctness lane
+  - AITER unified attention
+  - TRITON backend for unquantized MoE
+  - `--limit-mm-per-prompt {"image":0,"audio":0,"video":0}`
+  - `--max-model-len 128`
+  - `--max-num-batched-tokens 32`
 
 Logs go to:
 

@@ -192,63 +192,55 @@ The following smoke checks have already passed on the reference host:
   - keep `enforce_eager=True` for the current local smoke path
   - expect the 31B instruction-tuned checkpoint to emit an empty thought block
     prefix when thinking is disabled, matching the upstream Gemma 4 model card
-- The local package/default ROCm lane no longer treats
-  `google/gemma-4-26B-A4B-it` as fully validated:
-  - the text-only repair lane is still the same one operationally:
+- The `google/gemma-4-26B-A4B-it` local ROCm lane is now validated for the
+  repo-owned basic text/basic-server workflow:
+  - the 2026-04-17 run of `tools/run_patch_audit_host_checks.sh` completed
+    successfully and ended with `PATCH_AUDIT_HOST_CHECK_OK`
+  - the current validated shape is still the constrained text-only lane:
     `--limit-mm-per-prompt {"image":0,"audio":0,"video":0}`,
     `--max-model-len 128`, `--max-num-batched-tokens 32`, and
     `--gpu-memory-utilization 0.75`
-  - leaving `video` implicit in `--limit-mm-per-prompt` was enough to send
-    vLLM back into multimodal warmup on this host and reproduce the earlier
+  - the passing host logs show the split that matters:
+    `ROCM_AITER_UNIFIED_ATTN` for attention, successful import of AITER's JIT
+    helper from `~/.aiter/jit/module_aiter_core.so`, and
+    `Using TRITON backend for Unquantized MoE`
+  - the tracked outputs on that passing lane are now concrete:
+    `tools/gemma4_text_smoke.py` returned `These are exactly five words.`, and
+    `tools/gemma4_server_smoke.py --mode basic` returned
+    `Deep blue waves crash endlessly.`
+  - the repo-owned helpers intentionally keep `enforce_eager=True` /
+    `--enforce-eager` on this lane. vLLM documents eager mode as disabling
+    compilation and cudagraph capture, so the current helper defaults are a
+    correctness/isolation choice rather than a performance recommendation
+  - leaving `video` implicit in `--limit-mm-per-prompt` is still enough to
+    send vLLM back into multimodal warmup on this host and reproduce the older
     GPU memory-access fault during engine initialization
-  - the latest host rerun on 2026-04-16 showed the narrower remaining failure:
-    engine init and `/v1/models` succeeded, but both offline and basic-server
-    smokes emitted corrupted text
-  - root cause points at the 704-wide Gemma 4 MoE intermediate shape on the
-    ROCm AITER fused-MoE path: the local AITER-side `torch_moe` fallback was
-    firing only after vLLM had already shuffled the expert weights into AITER
-    runtime layout, which is not a safe place to switch execution kernels
-  - the repo now carries the upstream-style vLLM-side fix in
-    `0010-rocm-pad-gemma4-moe-intermediate-for-aiter.patch`, which pads the
-    intermediate size before the AITER weight shuffle so
-    `google/gemma-4-26B-A4B-it` can stay on the intended fused-MoE path
-  - the next live rerun on 2026-04-16 narrowed the remaining fault again:
-    AITER selected the unquantized CK 2-stage path, JIT-built the stage-2
-    kernel successfully, then faulted on first use with `ksplit=0`
-  - the repo now also carries
-    `0005-ck-moe-normalizes-zero-splitk-and-forwards-stage2.patch` in
-    `python-amd-aiter-gfx1151` to normalize that no-split sentinel at the CK
-    launch boundary and keep stage 2 aligned with the computed `ksplit`
-  - host revalidation is still required before treating the 26B-A4B lane as
-    solved
-  - a same-day follow-up on 2026-04-17 narrowed the disposition of the three
-    questioned carries:
+  - the questioned carries are now split cleanly by evidence:
     - keep
       `python-amd-aiter-gfx1151/0005-ck-moe-normalizes-zero-splitk-and-forwards-stage2.patch`
-      for now because current upstream AITER still lacks the full no-split
-      normalization plus stage-2 `splitk` forwarding that matched the
-      documented `ksplit=0` fault
-    - the AITER RDNA header carry is now split:
+      because the earlier forced AITER fused-MoE lane directly reproduced a
+      `ksplit=0` fault, and current upstream AITER still lacks the full
+      no-split normalization plus stage-2 `splitk` forwarding
+    - keep the split RDNA header carries:
       `python-amd-aiter-gfx1151/0001-gfx1151-rdna35-header-compat.patch`
-      keeps only the `vec_convert.h` gfx11 packed-op fallbacks, while
+      for the `vec_convert.h` gfx11 packed-op fallbacks, and
       `python-amd-aiter-gfx1151/0006-rdna35-hip-reduce-wave32-dpp-compat.patch`
-      carries the broader `hip_reduce.h` wave32/DPP rewrite
-    - the vLLM Gemma 4 / AITER carry is now narrowed to the validated repair
-      lane:
+      for the broader `hip_reduce.h` wave32/DPP rewrite
+    - keep
       `python-vllm-rocm-gfx1151/0007-rocm-enable-gfx1x-aiter-and-prefer-it-for-gemma4.patch`
-      keeps the gfx1x AITER support plus the Gemma 4
-      `ROCM_AITER_UNIFIED_ATTN` override, while
+      because the validated lane still depends on the gfx1x AITER support plus
+      the Gemma 4 `ROCM_AITER_UNIFIED_ATTN` override
+    - keep the broader fused-MoE default-policy carry dropped: the
+      2026-04-17 reference-host rerun faulted the GPU as soon as that policy
+      forced the AITER CK 2-stage fused-MoE path without an explicit runtime
+      override
+    - drop the earlier
       `python-vllm-rocm-gfx1151/0010-rocm-pad-gemma4-moe-intermediate-for-aiter.patch`
-      keeps the 704-wide Gemma 4 MoE intermediate aligned before the AITER
-      shuffle
-    - the separate fused-MoE default-policy carry was dropped after the
-      2026-04-17 reference-host rerun:
-      `tools/run_patch_audit_host_checks.sh` made it through the package
-      reinstall and `vllm --version` checks, then
-      `tools/gemma4_text_smoke.py` faulted the GPU immediately after AITER
-      selected the unquantized CK 2-stage fused-MoE path by default on
-      `google/gemma-4-26B-A4B-it`
-  - the repo now carries a reproducible privileged handoff at
+      carry from the maintained package story: once the fused-MoE default
+      policy was gone, the passing host lane no longer exercised AITER MoE at
+      all, so the padding fix was a dormant carry rather than part of the
+      validated default
+  - the repo keeps a reproducible privileged handoff at
     `tools/run_patch_audit_host_checks.sh`
     - it refreshes the local repo from the latest built AITER/vLLM package
       archives, republishes `/srv/pacman/strix-halo-gfx1151/x86_64`, reinstalls
@@ -263,7 +255,8 @@ The following smoke checks have already passed on the reference host:
     `python -m vllm.entrypoints.openai.api_server` from the active interpreter
     and sends a plain `/v1/chat/completions` request, so the smoke does not
     depend on interactive-shell `PATH` setup
-  - for the current `google/gemma-4-26B-A4B-it` repair lane, the helper now
+  - for the current `google/gemma-4-26B-A4B-it` validation lane, the helper
+    now
     defaults `--max-model-len` to `128`,
     `--max-num-batched-tokens` to `32`, and
     `--limit-mm-per-prompt` to `{"image":0,"audio":0,"video":0}` so the

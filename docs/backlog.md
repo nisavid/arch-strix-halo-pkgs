@@ -24,24 +24,20 @@
   `video` implicit was enough to send vLLM back into multimodal warmup and
   reproduce the earlier GPU memory-access fault during engine initialization on
   the reference host.
-- Rebuild and host-validate the 2026-04-17 split patch lanes for the Gemma 4
-  26B-A4B repair story instead of stopping at static audit plus repo tests:
-  - use `tools/run_patch_audit_host_checks.sh` as the canonical privileged
-    entry point so repo refresh, pacman reinstall, and Gemma 4 smoke logs all
-    land under `docs/worklog/patch-audit-final-checks/<timestamp>/`
-  - keep
-    `python-amd-aiter-gfx1151/0005-ck-moe-normalizes-zero-splitk-and-forwards-stage2.patch`
-    for now, but add a behavioral regression if that path is touched again
-  - re-verify whether
-    `python-amd-aiter-gfx1151/0006-rdna35-hip-reduce-wave32-dpp-compat.patch`
-    is still the minimal durable `hip_reduce.h` carry after a fresh live-host
-    rebuild and runtime pass
-  - confirm the narrowed `0007` + `0010` Gemma 4 repair lane is clean after
-    dropping the broader fused-MoE default-policy carry; the 2026-04-17
-    reference-host text smoke faulted the GPU as soon as the old `0011`
-    policy forced the AITER CK 2-stage fused-MoE path without an explicit
-    runtime override
-- After the basic `google/gemma-4-26B-A4B-it` repair lane is clean again,
+- Re-run `tools/run_patch_audit_host_checks.sh` after trimming the dormant
+  Gemma 4 AITER-MoE padding carry so the post-prune
+  `python-vllm-rocm-gfx1151` package is host-validated, not just
+  statically/audit validated.
+- Validate a non-eager Gemma 4 26B-A4B lane separately from the current eager
+  correctness lane.
+  - keep the repo-owned helper defaults eager until this passes
+  - when testing, record whether the failure surface is torch.compile,
+    cudagraph capture, or another compiled-path interaction
+- Only revisit Gemma 4 on AITER fused-MoE if there is a concrete reason to
+  move off the current TRITON unquantized-MoE lane.
+  - treat any such attempt as a fresh experiment
+  - do not restore the dropped vLLM-side AITER MoE padding carry by default
+- After the basic `google/gemma-4-26B-A4B-it` validation lane is stable,
   extend coverage across trustworthy Gemma 4 usage recipes instead of stopping
   at one smoke:
   - vLLM Recipes throughput-vs-latency examples

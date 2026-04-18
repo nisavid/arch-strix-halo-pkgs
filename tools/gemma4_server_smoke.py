@@ -167,6 +167,8 @@ def build_server_command(args: argparse.Namespace) -> list[str]:
         str(args.gpu_memory_utilization),
         "--max-model-len",
         str(max_model_len),
+        # Keep the tracked smoke on the validated eager correctness lane until
+        # the compiled/cudagraph ROCm path is revalidated separately.
         "--enforce-eager",
         "--limit-mm-per-prompt",
         limit_mm_per_prompt,
