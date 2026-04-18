@@ -28,6 +28,32 @@ DEFAULT_PUBLISH_ROOT = Path(
 )
 DEFAULT_STATE_ROOT = REPO_ROOT / "docs/worklog/amerge"
 
+RESET = "\033[0m"
+BOLD = "\033[1m"
+DIM = "\033[2m"
+BLUE = "\033[34m"
+CYAN = "\033[36m"
+GREEN = "\033[32m"
+YELLOW = "\033[33m"
+MAGENTA = "\033[35m"
+RED = "\033[31m"
+
+
+def colorize(text: object, enabled: bool, *codes: str) -> str:
+    value = str(text)
+    if not enabled or not codes:
+        return value
+    return "".join(codes) + value + RESET
+
+
+def preview_uses_color(args: argparse.Namespace) -> bool:
+    choice = getattr(args, "color", "auto")
+    if choice == "always":
+        return True
+    if choice == "never" or os.environ.get("NO_COLOR"):
+        return False
+    return sys.stdout.isatty()
+
 
 @dataclass(frozen=True)
 class CommandSpec:
@@ -91,8 +117,8 @@ def installed_repo_outputs(roots: dict[str, RepoPackageRoot]) -> list[str]:
     )
     if result.returncode != 0:
         raise SystemExit(
-            "AMERGE_INSTALLED_QUERY_FAILED: pacman -Qq exited "
-            f"{result.returncode}"
+            "Could not list installed packages: pacman -Qq exited "
+            f"with status {result.returncode}."
         )
     return sorted(output for output in result.stdout.splitlines() if output in repo_outputs)
 
@@ -111,10 +137,10 @@ def parse_menu_selection(selection: str, count: int) -> list[int]:
             else:
                 indexes.add(int(chunk))
         except ValueError as exc:
-            raise SystemExit(f"AMERGE_MENU_SELECTION_INVALID: {chunk}") from exc
+            raise SystemExit(f"Invalid menu selection: {chunk}") from exc
     invalid = sorted(index for index in indexes if index < 1 or index > count)
     if invalid:
-        raise SystemExit(f"AMERGE_MENU_SELECTION_OUT_OF_RANGE: {invalid[0]}")
+        raise SystemExit(f"Menu selection is out of range: {invalid[0]}")
     return sorted(indexes)
 
 
@@ -130,17 +156,17 @@ def prompt_for_targets(roots: dict[str, RepoPackageRoot]) -> list[str]:
     if answer == "2":
         outputs = installed_repo_outputs(roots)
         if not outputs:
-            raise SystemExit("AMERGE_NO_INSTALLED_REPO_PACKAGES")
+            raise SystemExit("No installed repo packages were found.")
         return outputs
     if answer != "3":
-        raise SystemExit("AMERGE_MENU_ABORTED")
+        raise SystemExit("No package selection was made.")
 
     for index, root_name in enumerate(root_names, start=1):
         outputs = ", ".join(roots[root_name].outputs)
         print(f"  {index}. {root_name} ({outputs})")
     selection = input("Select package roots by number or range: ").strip()
     if not selection:
-        raise SystemExit("AMERGE_MENU_ABORTED")
+        raise SystemExit("No package selection was made.")
     return [root_names[index - 1] for index in parse_menu_selection(selection, len(root_names))]
 
 
@@ -156,7 +182,7 @@ def resolve_targets(
         elif target in outputs:
             resolved.add(outputs[target])
         else:
-            raise SystemExit(f"UNKNOWN_REPO_TARGET: {target}")
+            raise SystemExit(f"Unknown repo package or output: {target}")
     return resolved
 
 
@@ -172,7 +198,7 @@ def requested_outputs_for_targets(
         elif target in roots:
             requested.setdefault(target, set()).update(roots[target].outputs)
         else:
-            raise SystemExit(f"UNKNOWN_REPO_TARGET: {target}")
+            raise SystemExit(f"Unknown repo package or output: {target}")
     return requested
 
 
@@ -182,7 +208,7 @@ def resolve_initial_targets(
 ) -> list[str]:
     targets = list(args.targets)
     if targets and (args.all or args.installed):
-        raise SystemExit("AMERGE_SELECTOR_CONFLICT: pass targets or a selector, not both")
+        raise SystemExit("Choose package names or a selector, not both.")
     if targets:
         return targets
     if args.all:
@@ -190,12 +216,12 @@ def resolve_initial_targets(
     if args.installed:
         outputs = installed_repo_outputs(roots)
         if not outputs:
-            raise SystemExit("AMERGE_NO_INSTALLED_REPO_PACKAGES")
+            raise SystemExit("No installed repo packages were found.")
         return outputs
     if sys.stdin.isatty() and sys.stdout.isatty():
         return prompt_for_targets(roots)
     raise SystemExit(
-        "AMERGE_TARGETS_REQUIRED: pass package names, --all, or --installed"
+        "Choose packages to merge: pass package names, --all, or --installed."
     )
 
 
@@ -262,7 +288,10 @@ def topo_sort_selected(
 
     if len(ordered) != len(selected):
         unresolved = sorted(root_name for root_name, deps in incoming.items() if deps)
-        raise SystemExit(f"PACKAGE_GRAPH_CYCLE: {', '.join(unresolved)}")
+        raise SystemExit(
+            "The package dependency graph contains a cycle involving: "
+            f"{', '.join(unresolved)}"
+        )
     return ordered
 
 
@@ -547,35 +576,67 @@ def create_merge_plan(args: argparse.Namespace, *, command: str) -> dict[str, ob
     }
 
 
-def render_flat_preview(plan: dict[str, object]) -> str:
+def render_flat_preview(plan: dict[str, object], *, color: bool = False) -> str:
     roots = plan["merge_plan"]["build_roots"]
-    lines = [f"Merge plan {plan['plan_id']}", "Build order:"]
+    lines = [
+        f"{colorize('Merge plan', color, BOLD, CYAN)} "
+        f"{colorize(plan['plan_id'], color, DIM)}",
+        colorize("Build order:", color, BOLD, BLUE),
+    ]
     for index, root_name in enumerate(roots, start=1):
-        lines.append(f"  [{index}] {root_name}")
-    lines.append("Steps:")
+        lines.append(
+            f"  {colorize(f'[{index}]', color, YELLOW)} "
+            f"{colorize(root_name, color, GREEN)}"
+        )
+    lines.append(colorize("Steps:", color, BOLD, BLUE))
     for index, step in enumerate(plan["steps"], start=1):
-        lines.append(f"  {index}. {step['label']}")
+        lines.append(
+            f"  {colorize(f'{index}.', color, YELLOW)} "
+            f"{colorize(step['label'], color, step_color(str(step['kind'])))}"
+        )
     return "\n".join(lines)
 
 
-def render_tree_preview(plan: dict[str, object]) -> str:
+def step_color(kind: str) -> str:
+    if kind == "build":
+        return MAGENTA
+    if kind == "publish":
+        return CYAN
+    if kind == "install":
+        return GREEN
+    return BLUE
+
+
+def render_tree_preview(plan: dict[str, object], *, color: bool = False) -> str:
     roots = list(plan["merge_plan"]["build_roots"])
-    lines = [f"Merge plan {plan['plan_id']}", "└── Build order"]
+    lines = [
+        f"{colorize('Merge plan', color, BOLD, CYAN)} "
+        f"{colorize(plan['plan_id'], color, DIM)}",
+        f"{colorize('├──', color, DIM)} {colorize('Build order', color, BOLD, BLUE)}",
+    ]
     for index, root_name in enumerate(roots, start=1):
         branch = "└──" if index == len(roots) else "├──"
-        lines.append(f"    {branch} [{index}] {root_name}")
-    lines.append("└── Steps")
+        lines.append(
+            f"    {colorize(branch, color, DIM)} "
+            f"{colorize(f'[{index}]', color, YELLOW)} "
+            f"{colorize(root_name, color, GREEN)}"
+        )
+    lines.append(f"{colorize('└──', color, DIM)} {colorize('Steps', color, BOLD, BLUE)}")
     steps = list(plan["steps"])
     for index, step in enumerate(steps, start=1):
         branch = "└──" if index == len(steps) else "├──"
-        lines.append(f"    {branch} {index}. {step['label']}")
+        lines.append(
+            f"    {colorize(branch, color, DIM)} "
+            f"{colorize(f'{index}.', color, YELLOW)} "
+            f"{colorize(step['label'], color, step_color(str(step['kind'])))}"
+        )
     return "\n".join(lines)
 
 
-def render_preview(plan: dict[str, object], preview: str) -> str:
+def render_preview(plan: dict[str, object], preview: str, *, color: bool = False) -> str:
     if preview == "tree":
-        return render_tree_preview(plan)
-    return render_flat_preview(plan)
+        return render_tree_preview(plan, color=color)
+    return render_flat_preview(plan, color=color)
 
 
 def plan_requires_sudo_keepalive(plan: dict[str, object]) -> bool:
@@ -676,13 +737,13 @@ def resolve_plan_dir(state_root: Path, plan: str | None) -> Path:
     if plan in {None, "latest"}:
         latest = latest_plan_dir(state_root)
         if latest is None:
-            raise SystemExit("AMERGE_NO_HISTORY")
+            raise SystemExit("No amerge history was found.")
         return latest
     candidate = state_root / str(plan)
     if not candidate.is_dir():
         matches = sorted(path for path in state_root.glob(f"{plan}*") if path.is_dir())
         if not matches:
-            raise SystemExit(f"AMERGE_PLAN_NOT_FOUND: {plan}")
+            raise SystemExit(f"No amerge plan matched: {plan}")
         candidate = matches[-1]
     return candidate
 
@@ -788,13 +849,13 @@ def print_failure_summary(
     ]
     remaining = step_ids[failed_index + 1 :]
     print("", file=sys.stderr)
-    print("AMERGE_FAILED", file=sys.stderr)
-    print(f"failed_step={failed_step_id}", file=sys.stderr)
-    print(f"failed_command={' '.join(str(x) for x in failed_command['argv'])}", file=sys.stderr)
-    print(f"exit_status={exit_status}", file=sys.stderr)
-    print(f"log={log_path}", file=sys.stderr)
-    print(f"completed_steps={', '.join(completed) if completed else '(none)'}", file=sys.stderr)
-    print(f"remaining_steps={', '.join(remaining) if remaining else '(none)'}", file=sys.stderr)
+    print(f"{RED}{BOLD}Merge failed{RESET}", file=sys.stderr)
+    print(f"Failed step: {failed_step_id}", file=sys.stderr)
+    print(f"Failed command: {' '.join(str(x) for x in failed_command['argv'])}", file=sys.stderr)
+    print(f"Exit status: {exit_status}", file=sys.stderr)
+    print(f"Log: {log_path}", file=sys.stderr)
+    print(f"Completed steps: {', '.join(completed) if completed else '(none)'}", file=sys.stderr)
+    print(f"Remaining steps: {', '.join(remaining) if remaining else '(none)'}", file=sys.stderr)
 
 
 def run_plan(
@@ -916,7 +977,11 @@ def run_plan(
             run_id,
             f"unexpected amerge failure: {type(exc).__name__}: {exc}\n",
         )
-        print(f"AMERGE_UNEXPECTED_FAILURE: {type(exc).__name__}: {exc}", file=sys.stderr)
+        print(
+            f"{RED}{BOLD}Amerge hit an unexpected error:{RESET} "
+            f"{type(exc).__name__}: {exc}",
+            file=sys.stderr,
+        )
         return finish("failed", "unexpected_exception")
 
 
@@ -933,11 +998,11 @@ def maybe_confirm(plan: dict[str, object], args: argparse.Namespace) -> None:
     if preview is None and interactive and not args.noconfirm:
         preview = "tree"
     if preview:
-        print(render_preview(plan, preview))
+        print(render_preview(plan, preview, color=preview_uses_color(args)))
     if interactive and not args.noconfirm:
         answer = input("Proceed with this merge plan? [Y/n] ").strip().lower()
         if answer in {"n", "no"}:
-            raise SystemExit("AMERGE_ABORTED")
+            raise SystemExit("Merge aborted.")
 
 
 def print_history(records: list[dict[str, object]]) -> None:
@@ -972,6 +1037,12 @@ def add_common_plan_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--json", action="store_true")
     parser.add_argument("-y", "--noconfirm", action="store_true")
     parser.add_argument("--preview", choices=("tree", "flat"), default=None)
+    parser.add_argument(
+        "--color",
+        choices=("auto", "always", "never"),
+        default="auto",
+        help="colorize human preview output",
+    )
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -1009,7 +1080,13 @@ def main(argv: list[str] | None = None) -> int:
             if args.json:
                 print(json.dumps(plan, indent=2, sort_keys=True))
             else:
-                print(render_preview(plan, args.preview or "flat"))
+                print(
+                    render_preview(
+                        plan,
+                        args.preview or "flat",
+                        color=preview_uses_color(args),
+                    )
+                )
             return 0
         maybe_confirm(plan, args)
         plan_dir = save_new_plan(plan, args.state_root.resolve())

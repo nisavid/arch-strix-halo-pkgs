@@ -130,7 +130,8 @@ def test_no_target_noninteractive_requires_selector(tmp_path: Path):
     )
 
     assert result.returncode != 0
-    assert "AMERGE_TARGETS_REQUIRED" in result.stderr
+    assert "Choose packages to merge" in result.stderr
+    assert "AMERGE_" not in result.stderr
 
 
 def test_all_selector_expands_to_every_root(tmp_path: Path):
@@ -268,6 +269,40 @@ def test_tree_preview_uses_unicode_tree_characters(tmp_path: Path):
     assert "[1] python-app-gfx1151" in result.stdout
 
 
+def test_tree_preview_can_be_colored(tmp_path: Path):
+    packages_root = graph_fixture(tmp_path)
+    result = run_amerge(
+        "run",
+        "--dry-run",
+        "--preview=tree",
+        "--color=always",
+        "--packages-root",
+        str(packages_root),
+        "python-app-gfx1151",
+    )
+
+    assert result.returncode == 0
+    assert "\x1b[" in result.stdout
+    assert "Build order" in result.stdout
+    assert "python-app-gfx1151" in result.stdout
+
+
+def test_color_never_keeps_preview_plain(tmp_path: Path):
+    packages_root = graph_fixture(tmp_path)
+    result = run_amerge(
+        "run",
+        "--dry-run",
+        "--preview=tree",
+        "--color=never",
+        "--packages-root",
+        str(packages_root),
+        "python-app-gfx1151",
+    )
+
+    assert result.returncode == 0
+    assert "\x1b[" not in result.stdout
+
+
 def test_history_and_logs_report_persisted_runs(tmp_path: Path):
     module = load_module()
     state_root = tmp_path / "state"
@@ -314,7 +349,10 @@ def test_build_steps_request_sudo_keepalive_without_wrapping_makepkg(tmp_path: P
     assert plan["steps"][0]["commands"][0]["argv"][0] == "makepkg"
 
 
-def test_failed_plan_records_logs_and_resume_skip_continues(tmp_path: Path):
+def test_failed_plan_records_logs_and_resume_skip_continues(
+    tmp_path: Path,
+    capsys,
+):
     module = load_module()
     plan = {
         "schema_version": 1,
@@ -362,6 +400,10 @@ def test_failed_plan_records_logs_and_resume_skip_continues(tmp_path: Path):
     plan_dir = module.save_new_plan(plan, tmp_path / "state")
 
     assert module.run_plan(plan_dir) == 1
+    captured = capsys.readouterr()
+    assert "Merge failed" in captured.err
+    assert "Failed step: 0001-fail" in captured.err
+    assert "AMERGE_" not in captured.err
     failed_state = json.loads((plan_dir / "state.json").read_text(encoding="utf-8"))
     assert failed_state["status"] == "failed"
     assert failed_state["steps"]["0001-fail"]["status"] == "failed"

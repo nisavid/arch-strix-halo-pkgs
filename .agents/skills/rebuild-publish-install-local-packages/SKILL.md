@@ -37,6 +37,8 @@ tools/amerge resume latest
 
 Use `tools/amerge history` and `tools/amerge logs latest --path` to inspect
 retained state and logs.
+Use `--preview=tree --color=always` when the user wants a colorized plan
+captured in logs or chat; leave the default `--color=auto` for normal terminals.
 
 ## Operator Notes
 

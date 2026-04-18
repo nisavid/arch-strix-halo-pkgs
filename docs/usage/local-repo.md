@@ -166,7 +166,9 @@ tools/amerge install python-amd-aiter-gfx1151
 
 Interactive runs preview the merge plan and ask for confirmation unless
 `-y/--noconfirm` is given. Noninteractive runs skip the prompt and preview
-unless `--preview=flat` or `--preview=tree` is requested.
+unless `--preview=flat` or `--preview=tree` is requested. Preview colors default
+to `--color=auto`; use `--color=always` when capturing a colored preview and
+`--color=never` for plain text.
 
 Resume and inspect retained plans:
 
