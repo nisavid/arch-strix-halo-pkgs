@@ -139,6 +139,10 @@ That script:
   - `--max-num-batched-tokens 32`
   - a `300`-second server startup timeout for the current
     `google/gemma-4-26B-A4B-it` lane
+- logs the live AMD SMI compute-process table before the smokes and again
+  after a successful run
+- fails early if a preexisting stale `VLLM::EngineCore` process is already
+  holding VRAM from an older run
 
 Logs go to:
 
@@ -147,3 +151,9 @@ Logs go to:
 
 `docs/worklog/` is intentionally ignored, so the full transcript can stay on
 disk for iteration without polluting tracked docs.
+
+If a run fails immediately with a preexisting `VLLM::EngineCore`, the prior
+server smoke leaked its engine worker. The current `tools/gemma4_server_smoke.py`
+now launches the API server in its own process group and tears down that whole
+group, so new runs should not leave that orphan behind once the old PID is
+cleared.

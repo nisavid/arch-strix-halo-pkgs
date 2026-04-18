@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import signal
 import subprocess
 import sys
 import time
@@ -390,11 +392,21 @@ def wait_for_server(
 def terminate_process(process: subprocess.Popen[str]) -> None:
     if process.poll() is not None:
         return
-    process.terminate()
+    try:
+        pgid = os.getpgid(process.pid)
+    except ProcessLookupError:
+        return
+    try:
+        os.killpg(pgid, signal.SIGTERM)
+    except ProcessLookupError:
+        return
     try:
         process.wait(timeout=10.0)
     except subprocess.TimeoutExpired:
-        process.kill()
+        try:
+            os.killpg(pgid, signal.SIGKILL)
+        except ProcessLookupError:
+            return
         process.wait(timeout=10.0)
 
 
@@ -469,6 +481,7 @@ def run_smoke(args: argparse.Namespace) -> None:
             stdout=log_handle,
             stderr=subprocess.STDOUT,
             text=True,
+            start_new_session=True,
         )
         try:
             models_payload = wait_for_server(

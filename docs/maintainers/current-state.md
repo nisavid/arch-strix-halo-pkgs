@@ -217,6 +217,15 @@ The following smoke checks have already passed on the reference host:
     `tools/gemma4_server_smoke.py` now uses a `300`-second startup budget for
     this lane because cold `google/gemma-4-26B-A4B-it` server loads on the
     reference host can exceed the earlier `180`-second default
+  - `tools/gemma4_server_smoke.py` now launches vLLM in its own process group
+    and tears down that whole group on exit; an older helper revision could
+    leave an orphaned `VLLM::EngineCore` holding roughly `89 GiB` of VRAM
+    after an otherwise successful basic-server smoke
+  - `tools/run_patch_audit_host_checks.sh` now logs `amd-smi process -G --json`
+    before the Gemma smokes and fails early if a preexisting
+    `VLLM::EngineCore` is already squatting on VRAM, so the failure mode is
+    explicit instead of surfacing later as a generic
+    `gpu_memory_utilization` startup error
   - leaving `video` implicit in `--limit-mm-per-prompt` is still enough to
     send vLLM back into multimodal warmup on this host and reproduce the older
     GPU memory-access fault during engine initialization

@@ -21,3 +21,10 @@ def test_patch_audit_host_checks_does_not_pick_archives_lexicographically():
     text = SCRIPT.read_text()
     assert "sort | tail -n 1" not in text
     assert "tools/select_latest_package.py" in text
+
+
+def test_patch_audit_host_checks_logs_gpu_process_preflight_and_detects_stale_vllm():
+    text = SCRIPT.read_text()
+    assert 'run "${amd_smi}" process -G --json' in text
+    assert "VLLM::EngineCore" in text
+    assert "preexisting stale VLLM::EngineCore" in text

@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 
@@ -177,6 +179,38 @@ def test_26b_a4b_basic_dry_run_uses_extended_startup_timeout() -> None:
     assert plan["startup_timeout"] == 300.0
 
 
+def test_terminate_process_kills_spawned_child_process_group(tmp_path: Path) -> None:
+    module = load_smoke_module()
+    child_pid_file = tmp_path / "child.pid"
+    process = subprocess.Popen(
+        [
+            sys.executable,
+            "-c",
+            (
+                "from pathlib import Path; "
+                "import subprocess, sys, time; "
+                "child = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(600)']); "
+                "Path(sys.argv[1]).write_text(str(child.pid)); "
+                "time.sleep(600)"
+            ),
+            str(child_pid_file),
+        ],
+        start_new_session=True,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        text=True,
+    )
+    child_pid = wait_for_child_pid(child_pid_file)
+
+    try:
+        module.terminate_process(process)
+        assert process.poll() is not None
+        wait_for_process_exit(child_pid)
+    finally:
+        force_kill_pid(process.pid)
+        force_kill_pid(child_pid)
+
+
 def test_tool_dry_run_without_template_errors_for_nonlocal_model() -> None:
     result = subprocess.run(
         [
@@ -272,3 +306,35 @@ def load_smoke_module():
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+def wait_for_child_pid(path: Path) -> int:
+    deadline = time.monotonic() + 5.0
+    while time.monotonic() < deadline:
+        if path.exists():
+            return int(path.read_text().strip())
+        time.sleep(0.05)
+    raise AssertionError("timed out waiting for child pid file")
+
+
+def wait_for_process_exit(pid: int) -> None:
+    deadline = time.monotonic() + 5.0
+    while time.monotonic() < deadline:
+        if not process_exists(pid):
+            return
+        time.sleep(0.05)
+    raise AssertionError(f"expected pid {pid} to exit")
+
+
+def process_exists(pid: int) -> bool:
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    return True
+
+
+def force_kill_pid(pid: int) -> None:
+    if pid <= 0 or not process_exists(pid):
+        return
+    os.kill(pid, 9)

@@ -25,6 +25,42 @@ latest_pkg() {
     --pkgname "${pkgname}"
 }
 
+amd_smi_bin() {
+  if command -v amd-smi >/dev/null 2>&1; then
+    command -v amd-smi
+    return 0
+  fi
+  if [[ -x /opt/rocm/bin/amd-smi ]]; then
+    printf '%s\n' /opt/rocm/bin/amd-smi
+    return 0
+  fi
+  return 1
+}
+
+log_gpu_processes() {
+  local amd_smi
+  if ! amd_smi="$(amd_smi_bin)"; then
+    echo "gpu_processes_unavailable: amd-smi not found"
+    return 0
+  fi
+  run "${amd_smi}" process -G --json
+}
+
+ensure_no_stale_vllm_engine_cores() {
+  local stale
+  stale="$(
+    ps -eo pid=,ppid=,etimes=,comm=,cmd= \
+      | awk '$4 == "VLLM::EngineCore" {print}'
+  )"
+  if [[ -z "${stale}" ]]; then
+    return 0
+  fi
+  echo "preexisting stale VLLM::EngineCore processes detected:" >&2
+  printf '%s\n' "${stale}" >&2
+  echo "PATCH_AUDIT_HOST_CHECK_FAILED: kill the preexisting stale VLLM::EngineCore process(es) above and rerun." >&2
+  exit 3
+}
+
 printf 'repo_root=%s\n' "${repo_root}"
 printf 'run_root=%s\n' "${run_root}"
 printf 'main_log=%s\n' "${main_log}"
@@ -61,12 +97,17 @@ run sudo pacman -Sy
 run sudo pacman -S python-amd-aiter-gfx1151 python-vllm-rocm-gfx1151
 run pacman -Qi python-amd-aiter-gfx1151 python-vllm-rocm-gfx1151
 
+log_gpu_processes
+ensure_no_stale_vllm_engine_cores
+
 run vllm --version
 run python "${repo_root}/tools/gemma4_text_smoke.py" "${model}"
 run python "${repo_root}/tools/gemma4_server_smoke.py" \
   "${model}" \
   --mode basic \
   --server-log "${server_log}"
+
+log_gpu_processes
 
 printf '\nPATCH_AUDIT_HOST_CHECK_OK\n'
 printf 'main_log=%s\n' "${main_log}"
