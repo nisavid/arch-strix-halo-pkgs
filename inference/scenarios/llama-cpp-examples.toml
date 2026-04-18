@@ -1,0 +1,41 @@
+[[scenario]]
+id = "llama.cpp.hip.help"
+summary = "Verify the packaged HIP llama.cpp CLI is installed and callable"
+tags = ["smoke", "llama.cpp", "hip"]
+
+[scenario.given]
+engine = "llama.cpp"
+model = "builtin"
+entrypoint = "llama-cli-hip-gfx1151"
+
+[scenario.when]
+argv = ["--help"]
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "output.contains"
+value = "usage"
+
+[[scenario]]
+id = "llama.cpp.vulkan.help"
+summary = "Verify the packaged Vulkan llama.cpp CLI is installed and callable"
+tags = ["smoke", "llama.cpp", "vulkan"]
+
+[scenario.given]
+engine = "llama.cpp"
+model = "builtin"
+entrypoint = "llama-cli-vulkan-gfx1151"
+
+[scenario.when]
+argv = ["--help"]
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "output.contains"
+value = "usage"

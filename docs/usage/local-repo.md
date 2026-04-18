@@ -113,47 +113,80 @@ paru -S <pkgname>
 
 Then rerun only the smoke tests that matter for the repaired package.
 
-## Final Patch-Audit Host Checks
+## Rebuild Publish And Install With The Repo Tool
 
-For the AITER/vLLM patch-audit lane, the canonical privileged host check entry
-point is:
+Use the repo-owned Zsh tool when you want one command to rebuild repo package
+closures, refresh `repo/x86_64`, republish the local pacman repo, and reinstall
+through pacman in dependency order.
 
 ```bash
-tools/run_patch_audit_host_checks.sh /path/to/google/gemma-4-26B-A4B-it
+tools/rebuild_publish_install.zsh python-amd-aiter-gfx1151 python-vllm-rocm-gfx1151
 ```
 
-That script:
+Other common entry points:
 
-- refreshes `repo/x86_64` from the latest built
-  `python-amd-aiter-gfx1151` and `python-vllm-rocm-gfx1151` archives,
-  selected by pacman version rather than filename order
-- republishes the local repo to `/srv/pacman/strix-halo-gfx1151/x86_64`
-- reinstalls those packages through pacman
-- runs `vllm --version`
-- runs the tracked Gemma 4 text and basic server smokes on the current eager
-  correctness lane
-  - AITER unified attention
-  - TRITON backend for unquantized MoE
-  - `--limit-mm-per-prompt {"image":0,"audio":0,"video":0}`
-  - `--max-model-len 128`
-  - `--max-num-batched-tokens 32`
-  - a `300`-second server startup timeout for the current
-    `google/gemma-4-26B-A4B-it` lane
-- logs the live AMD SMI compute-process table before the smokes and again
-  after a successful run
-- fails early if a preexisting stale `VLLM::EngineCore` process is already
-  holding VRAM from an older run
+- installed repo packages only:
+
+```bash
+tools/rebuild_publish_install.zsh --install-scope installed
+```
+
+- every repo package:
+
+```bash
+tools/rebuild_publish_install.zsh --install-scope all
+```
+
+If no package args and no `--install-scope` are given, the tool prompts on a
+TTY and fails fast otherwise.
 
 Logs go to:
 
-- `docs/worklog/patch-audit-final-checks/<timestamp>/host-checks.log`
-- `docs/worklog/patch-audit-final-checks/<timestamp>/gemma4-server.log`
+- `docs/worklog/rebuild-install-runs/<timestamp>/run.log`
+- `docs/worklog/rebuild-install-runs/<timestamp>/build-order.txt`
+- `docs/worklog/rebuild-install-runs/<timestamp>/selected-install-scope.json`
+
+## Run Inference Scenarios
+
+Use the Python harness to run tracked inference scenarios serially across
+`vllm`, `llama.cpp`, and Lemonade.
+
+Validated Gemma 4 26B A4B lane:
+
+```bash
+python tools/run_inference_scenarios.py \
+  --scenario vllm.gemma4.26b-a4b.text.basic \
+  --scenario vllm.gemma4.26b-a4b.server.basic \
+  --model-path google/gemma-4-26B-A4B-it=/path/to/google/gemma-4-26B-A4B-it
+```
+
+The scenario catalog lives under `inference/scenarios/`.
+
+You can also narrow by engine or model:
+
+```bash
+python tools/run_inference_scenarios.py --engine vllm
+python tools/run_inference_scenarios.py --engine lemonade
+```
+
+If no selectors are given, the tool prompts on a TTY and fails fast otherwise.
+
+The harness:
+
+- writes a predictable run root under `docs/worklog/inference-runs/<timestamp>/`
+- stores `run.json` plus per-scenario `plan.json`, `result.json`, `stdout.log`,
+  `stderr.log`, and `server.log` when applicable
+- resolves logical model ids to local filesystem paths through repeated
+  `--model-path MODEL=PATH` bindings
+- captures `amd-smi process -G --json` before and after `vllm` scenarios when
+  `amd-smi` is available
+- fails a `vllm` scenario early if a stale `VLLM::EngineCore` is already
+  holding VRAM from an earlier run
+
+Logs go to:
+
+- `docs/worklog/inference-runs/<timestamp>/summary.json`
+- `docs/worklog/inference-runs/<timestamp>/scenarios/<scenario-id>/`
 
 `docs/worklog/` is intentionally ignored, so the full transcript can stay on
 disk for iteration without polluting tracked docs.
-
-If a run fails immediately with a preexisting `VLLM::EngineCore`, the prior
-server smoke leaked its engine worker. The current `tools/gemma4_server_smoke.py`
-now launches the API server in its own process group and tears down that whole
-group, so new runs should not leave that orphan behind once the old PID is
-cleared.

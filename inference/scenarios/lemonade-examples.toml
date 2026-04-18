@@ -1,0 +1,41 @@
+[[scenario]]
+id = "lemonade.cli.help"
+summary = "Verify the packaged Lemonade CLI is installed and callable"
+tags = ["smoke", "lemonade"]
+
+[scenario.given]
+engine = "lemonade"
+model = "builtin"
+entrypoint = "lemonade"
+
+[scenario.when]
+argv = ["--help"]
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "output.contains"
+value = "usage"
+
+[[scenario]]
+id = "lemonade.server.help"
+summary = "Verify the packaged Lemonade server entrypoint is installed and callable"
+tags = ["smoke", "lemonade", "server"]
+
+[scenario.given]
+engine = "lemonade"
+model = "builtin"
+entrypoint = "lemond"
+
+[scenario.when]
+argv = ["--help"]
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "output.contains"
+value = "usage"

@@ -1,0 +1,68 @@
+[[scenario]]
+id = "vllm.gemma4.26b-a4b.text.basic"
+summary = "Gemma 4 26B A4B text-only offline smoke on the validated eager lane"
+tags = ["smoke", "gemma4", "aiter"]
+
+[scenario.given]
+engine = "vllm"
+model = "google/gemma-4-26B-A4B-it"
+tool = "gemma4_text_smoke"
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "generation_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "basic_ok"
+
+[[scenario]]
+id = "vllm.gemma4.26b-a4b.server.basic"
+summary = "Gemma 4 26B A4B OpenAI-compatible server smoke with AITER attention and Triton MoE"
+tags = ["smoke", "gemma4", "aiter", "server"]
+
+[scenario.given]
+engine = "vllm"
+model = "google/gemma-4-26B-A4B-it"
+tool = "gemma4_server_smoke.basic"
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "basic_ok"
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "ROCM_AITER_UNIFIED_ATTN"
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Using TRITON backend for Unquantized MoE"
+
+[[scenario]]
+id = "vllm.torchao.tiny.prepare"
+summary = "Prepare the tiny local TorchAO checkpoint without running a GPU generation pass"
+tags = ["smoke", "torchao"]
+
+[scenario.given]
+engine = "vllm"
+model = "internal/tiny-llama-torchao"
+tool = "torchao_vllm_smoke"
+
+[scenario.when]
+argv = ["--prepare-only"]
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "prepare_ok"

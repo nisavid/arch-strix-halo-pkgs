@@ -29,6 +29,8 @@
   - keep the repo-owned helper defaults eager until this passes
   - when testing, record whether the failure surface is torch.compile,
     cudagraph capture, or another compiled-path interaction
+  - add tracked non-eager scenario variants under `inference/scenarios/`
+    instead of treating the experiment as an ad hoc terminal-only rehearsal
 - Reconcile Blackcat's Qwen3.5 hybrid-attention/GDN patch lane against the
   maintained `python-vllm-rocm-gfx1151` and `python-amd-aiter-gfx1151`
   package story.
@@ -44,6 +46,8 @@
   - record whether attention can stay on AITER or must remain on Triton,
     whether GDN needs extra env toggles or source fixes, and whether AITER
     fused/shared-expert MoE is actually safe on the maintained stack
+  - encode each retained lane as tracked `tools/run_inference_scenarios.py`
+    scenarios once the required model artifacts and expectations are clear
 - Only revisit Gemma 4 on AITER fused-MoE if there is a concrete reason to
   move off the current TRITON unquantized-MoE lane.
   - treat any such attempt as a fresh experiment
@@ -109,6 +113,9 @@
 - Document the current reference-host configuration concretely.
 - Scrutinize the workflow after the first pass and reduce it to the fewest
   reasonable steps without hiding important customization points.
+- Keep the split rebuild/install and inference-scenario tooling pleasant to use
+  as the default host workflow; avoid drifting back toward one-off wrapper
+  scripts.
 
 ## Benchmarks
 

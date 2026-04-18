@@ -1,6 +1,6 @@
 # Current State
 
-Status as of 2026-04-17.
+Status as of 2026-04-18.
 
 ## Live Host State
 
@@ -194,8 +194,10 @@ The following smoke checks have already passed on the reference host:
     prefix when thinking is disabled, matching the upstream Gemma 4 model card
 - The `google/gemma-4-26B-A4B-it` local ROCm lane is now validated for the
   repo-owned basic text/basic-server workflow:
-  - the 2026-04-17 run of `tools/run_patch_audit_host_checks.sh` completed
-    successfully and ended with `PATCH_AUDIT_HOST_CHECK_OK`
+  - the 2026-04-17 reference-host run of the current tracked lane completed
+    successfully for both
+    `vllm.gemma4.26b-a4b.text.basic` and
+    `vllm.gemma4.26b-a4b.server.basic`
   - the current validated shape is still the constrained text-only lane:
     `--limit-mm-per-prompt {"image":0,"audio":0,"video":0}`,
     `--max-model-len 128`, `--max-num-batched-tokens 32`, and
@@ -212,20 +214,21 @@ The following smoke checks have already passed on the reference host:
     `--enforce-eager` on this lane. vLLM documents eager mode as disabling
     compilation and cudagraph capture, so the current helper defaults are a
     correctness/isolation choice rather than a performance recommendation
-  - the privileged host-check helper now selects the newest built package
-    archives by pacman version rather than filename order, and
-    `tools/gemma4_server_smoke.py` now uses a `300`-second startup budget for
+  - `tools/gemma4_server_smoke.py` now uses a `300`-second startup budget for
     this lane because cold `google/gemma-4-26B-A4B-it` server loads on the
     reference host can exceed the earlier `180`-second default
   - `tools/gemma4_server_smoke.py` now launches vLLM in its own process group
     and tears down that whole group on exit; an older helper revision could
     leave an orphaned `VLLM::EngineCore` holding roughly `89 GiB` of VRAM
     after an otherwise successful basic-server smoke
-  - `tools/run_patch_audit_host_checks.sh` now logs `amd-smi process -G --json`
-    before the Gemma smokes and fails early if a preexisting
-    `VLLM::EngineCore` is already squatting on VRAM, so the failure mode is
-    explicit instead of surfacing later as a generic
-    `gpu_memory_utilization` startup error
+  - the reusable host-side validation path is now split cleanly:
+    - rebuild and reinstall with `tools/rebuild_publish_install.zsh`
+    - run tracked validations with `tools/run_inference_scenarios.py`
+  - `tools/run_inference_scenarios.py` now logs `amd-smi process -G --json`
+    before and after `vllm` scenarios when available, and fails a `vllm`
+    scenario early if a preexisting stale `VLLM::EngineCore` is already
+    squatting on VRAM, so the failure mode is explicit instead of surfacing
+    later as a generic `gpu_memory_utilization` startup error
   - leaving `video` implicit in `--limit-mm-per-prompt` is still enough to
     send vLLM back into multimodal warmup on this host and reproduce the older
     GPU memory-access fault during engine initialization
@@ -254,14 +257,11 @@ The following smoke checks have already passed on the reference host:
       policy was gone, the passing host lane no longer exercised AITER MoE at
       all, so the padding fix was a dormant carry rather than part of the
       validated default
-  - the repo keeps a reproducible privileged handoff at
-    `tools/run_patch_audit_host_checks.sh`
-    - it refreshes the local repo from the latest built AITER/vLLM package
-      archives, republishes `/srv/pacman/strix-halo-gfx1151/x86_64`, reinstalls
-      those packages through pacman, and runs the tracked Gemma 4 text/basic
-      server smokes
-    - logs land under the ignored
-      `docs/worklog/patch-audit-final-checks/<timestamp>/` directory so the
+  - the repo keeps a reproducible two-step handoff for this lane:
+    - `tools/rebuild_publish_install.zsh python-amd-aiter-gfx1151 python-vllm-rocm-gfx1151`
+    - `python tools/run_inference_scenarios.py --scenario vllm.gemma4.26b-a4b.text.basic --scenario vllm.gemma4.26b-a4b.server.basic --model-path google/gemma-4-26B-A4B-it=/absolute/path/to/google/gemma-4-26B-A4B-it`
+    - logs land under ignored `docs/worklog/rebuild-install-runs/<timestamp>/`
+      and `docs/worklog/inference-runs/<timestamp>/` directories so the
       follow-up loop does not depend on copy-pasted terminal output
 - There is still no repo-owned validation for Qwen3.5 hybrid-attention/GDN or
   Qwen3.5 MoE/shared-expert lanes on gfx1151.
