@@ -26,6 +26,7 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     assert "vllm.gemma4.e2b.server.structured" in ids
     assert "vllm.gemma4.e2b.server.benchmark-lite" in ids
     assert "vllm.gemma4.e2b.server.image" in ids
+    assert "vllm.gemma4.e2b.server.attn-triton" in ids
     assert "vllm.gemma4.26b-a4b.text.compiled" in ids
     assert "vllm.gemma4.26b-a4b.server.moe-aiter" in ids
     assert "vllm.torchao.tiny.generate" in ids
@@ -37,5 +38,7 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     assert engines == {"vllm", "llama.cpp", "lemonade"}
     assert "smoke" in tags_by_id["vllm.gemma4.26b-a4b.text.basic"]
     assert "exploratory" in tags_by_id["vllm.gemma4.e2b.server.image"]
+    assert "kernel-probe" in tags_by_id["vllm.gemma4.e2b.server.attn-triton"]
+    assert "exploratory" in tags_by_id["vllm.gemma4.e2b.server.attn-triton"]
     assert "kernel-probe" in tags_by_id["vllm.gemma4.26b-a4b.server.moe-aiter"]
     assert "quantization-probe" in tags_by_id["vllm.gemma4.e2b.torchao.real-model"]

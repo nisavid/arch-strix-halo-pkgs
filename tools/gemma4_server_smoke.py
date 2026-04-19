@@ -135,6 +135,10 @@ def parse_args() -> argparse.Namespace:
         default="auto",
         help="optional vLLM MoE backend override",
     )
+    parser.add_argument(
+        "--attention-backend",
+        help="optional vLLM attention backend override, for example TRITON_ATTN",
+    )
     parser.add_argument("--async-scheduling", action="store_true")
     parser.add_argument("--kv-cache-dtype")
     parser.add_argument("--no-enable-prefix-caching", action="store_true")
@@ -305,6 +309,8 @@ def build_server_command(args: argparse.Namespace) -> list[str]:
         )
     if args.moe_backend != "auto":
         command.extend(["--moe-backend", args.moe_backend])
+    if args.attention_backend:
+        command.extend(["--attention-backend", args.attention_backend])
     if args.async_scheduling:
         command.append("--async-scheduling")
     if args.kv_cache_dtype:

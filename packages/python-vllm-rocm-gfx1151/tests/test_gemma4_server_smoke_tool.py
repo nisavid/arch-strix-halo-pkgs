@@ -207,6 +207,21 @@ def test_compiled_dry_run_omits_enforce_eager_and_forwards_kernel_flags() -> Non
     assert command[command.index("--max-num-seqs") + 1] == "1"
 
 
+def test_dry_run_forwards_attention_backend_probe() -> None:
+    plan = run_dry_run(
+        "--mode",
+        "basic",
+        "--attention-backend",
+        "TRITON_ATTN",
+        "--served-model-name",
+        "gemma4-it",
+        "/models/google/gemma-4-E2B-it",
+    )
+
+    command = plan["server_command"]
+    assert command[command.index("--attention-backend") + 1] == "TRITON_ATTN"
+
+
 def test_no_enforce_eager_alias_selects_compiled_execution() -> None:
     plan = run_dry_run(
         "--mode",

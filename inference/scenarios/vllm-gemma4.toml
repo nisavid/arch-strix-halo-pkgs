@@ -65,6 +65,31 @@ kind = "stdout.contains"
 value = "basic_ok"
 
 [[scenario]]
+id = "vllm.gemma4.e2b.server.attn-triton"
+summary = "Gemma 4 E2B OpenAI-compatible text chat smoke with forced Triton attention"
+tags = ["smoke", "gemma4", "server", "kernel-probe", "exploratory"]
+
+[scenario.given]
+engine = "vllm"
+model = "google/gemma-4-E2B-it"
+tool = "gemma4_server_smoke.basic"
+
+[scenario.when]
+argv = ["--attention-backend", "TRITON_ATTN"]
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "basic_ok"
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Using TRITON_ATTN backend"
+
+[[scenario]]
 id = "vllm.gemma4.e2b.server.reasoning"
 summary = "Gemma 4 E2B reasoning parser smoke following the vLLM Gemma 4 recipe"
 tags = ["smoke", "gemma4", "server", "recipe", "reasoning"]

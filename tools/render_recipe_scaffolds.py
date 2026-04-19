@@ -133,8 +133,9 @@ def slugify_step(step: int) -> str:
     return f"step-{step}"
 
 
-def render_patch_prepare(recipe_pkg: dict) -> str:
+def render_patch_prepare(recipe_pkg: dict, file_rewrites: dict[str, str] | None = None) -> str:
     lines: list[str] = []
+    file_rewrites = file_rewrites or {}
     for patch in recipe_pkg.get("patches", []):
         patch_type = patch.get("type")
         if patch_type != "sed":
@@ -143,7 +144,7 @@ def render_patch_prepare(recipe_pkg: dict) -> str:
             print(f"UNSUPPORTED_PATCH_TYPE: {patch_type}", file=sys.stderr)
             print("HINT: extend render_recipe_scaffolds.py to translate this patch type into PKGBUILD logic.", file=sys.stderr)
             raise SystemExit(2)
-        file_name = patch["file"]
+        file_name = file_rewrites.get(patch["file"], patch["file"])
         marker = patch.get("marker")
         sed_command = patch["sed_command"]
         marker_absent = bool(patch.get("marker_absent"))
@@ -477,7 +478,9 @@ EOF
   install -Dm644 "$srcdir/{src_subdir}/LICENSE" "$pkgdir/usr/share/licenses/{package_name}/LICENSE"
 }}"""
     elif template == "scons-aocl-libm":
-        prepare_lines.append(render_patch_prepare(recipe_pkg))
+        prepare_lines.append(
+            render_patch_prepare(recipe_pkg, policy_pkg.get("recipe_patch_file_rewrites"))
+        )
         post_package_lines.append(
             textwrap.dedent(
                 """\
@@ -907,6 +910,11 @@ package() {{
                 "git cherry-pick -n c44b870bdd9e1ea8933fd4057b6b59a5e6e5407b || true",
             ]
         )
+        rendered_recipe_patches = render_patch_prepare(
+            recipe_pkg, policy_pkg.get("recipe_patch_file_rewrites")
+        )
+        if rendered_recipe_patches:
+            prepare_lines.append(rendered_recipe_patches)
         build_body = f"""\
 build() {{
   cd "$srcdir/{python_subdir}"

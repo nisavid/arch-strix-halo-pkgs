@@ -26,9 +26,20 @@
   the reference host.
 - Run and validate the tracked non-eager Gemma 4 lanes separately from the
   current eager correctness lane.
-  - keep the repo-owned helper defaults eager until this passes
-  - when testing, record whether the failure surface is torch.compile,
-    cudagraph capture, or another compiled-path interaction
+  - keep the repo-owned helper defaults eager; the 2026-04-19
+    `google/gemma-4-E2B-it` compiled probe is not safe enough to promote
+  - the first failure surface on the installed host was torch.compile /
+    Inductor code generation, because the installed Triton package still
+    lacked `AttrsDescriptor.__repr__`
+  - the packaging branch now renders the recipe sed patch that adds that
+    `__repr__`, but the package still needs to be rebuilt and installed before
+    treating the host as repaired
+  - with a temporary `AttrsDescriptor.__repr__` shim, the E2B compiled +
+    cudagraph path initialized but produced corrupted output; a no-cudagraph
+    compiled probe then faulted the GPU during initialization/warmup
+  - rerun the 26B-A4B and 31B compiled probes only after the repaired Triton
+    package is installed; the 31B checkpoint was not locally available during
+    the 2026-04-19 pass
   - start from the `compiled-probe` scenarios under `inference/scenarios/`
     instead of treating the experiment as an ad hoc terminal-only rehearsal
 - Reconcile Blackcat's Qwen3.5 hybrid-attention/GDN patch lane against the
@@ -56,21 +67,39 @@
   validation instead of stopping at one smoke:
   - vLLM recipe-aligned reasoning, tool-calling, structured-output, and
     benchmark-lite server flows
+  - the 2026-04-19 broad non-exploratory run did not promote the E2B server
+    flows: every `google/gemma-4-E2B-it` server scenario failed during
+    AsyncLLM/server initialization with a ROCm GPU memory-access fault, and an
+    isolated `--attention-backend TRITON_ATTN` probe reproduced the same fault
+    after proving the server selected `TRITON_ATTN`
+  - keep a dedicated follow-up for the E2B server/AsyncLLM startup fault; the
+    offline eager `tools/gemma4_text_smoke.py` path for the same E2B checkpoint
+    still passes, so the failure is not a model-artifact or tokenizer-path
+    blocker
   - multimodal image/audio/video flows, which remain exploratory until the
     previous multimodal warmup fault is proven absent on the maintained stack
   - relevant Hugging Face model-card usage patterns that are not already
     covered by the vLLM recipe scenarios
 - Immediate Gemma 4 live-validation sequence before moving to Qwen3.5:
-  - first run the non-exploratory vLLM matrix to verify the newly tracked
-    recipe-aligned text/server and tiny TorchAO scenarios still pass as broad
-    validation defaults
-  - then run `compiled-probe` scenarios with `--include-exploratory` to decide
-    whether eager mode can be removed for E2B, 31B, or 26B-A4B
-  - document each compiled-path result as one of: clean, torch.compile
-    failure, cudagraph/capture failure, startup/profiling failure, or another
-    ROCm interaction
-  - only after the eager-mode question is documented, continue to MoE backend
-    probes, real-model TorchAO, and multimodal exploratory scenarios
+  - done for the first broad pass on 2026-04-19: the non-exploratory vLLM
+    matrix passed 26B-A4B offline text basic plus the tiny TorchAO
+    prepare/generate helper scenarios, but failed the 26B-A4B server startup
+    by timeout while loading checkpoint shards and failed all E2B server flows
+    with ROCm GPU memory-access faults
+  - done for the first E2B eager-mode decision: do not remove eager mode for
+    `google/gemma-4-E2B-it`
+  - next rebuild/install `python-triton-gfx1151` so the host has the rendered
+    `AttrsDescriptor.__repr__` patch, then rerun the 26B-A4B compiled probe
+    and any locally available 31B compiled probe; `makepkg -C -o` now
+    validates the corrected prepare-time patch application, but the canonical
+    `tools/amerge run python-triton-gfx1151` install step still requires
+    operator sudo
+  - next keep the new E2B `kernel-probe` scenario around as a tracked
+    regression probe for the server fault, because the forced Triton attention
+    lane still faults and therefore rules out an AITER-only explanation
+  - after the Triton package and compiled-lane status are recorded, continue
+    to MoE backend probes, real-model TorchAO, and multimodal exploratory
+    scenarios
 - Investigate the two remaining warnings on the now-passing TorchAO helper path:
   - `Stored version is not the same as current default version`
   - `Cannot use ROCm custom paged attention kernel, falling back to Triton implementation`

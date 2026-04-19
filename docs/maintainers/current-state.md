@@ -1,6 +1,6 @@
 # Current State
 
-Status as of 2026-04-18.
+Status as of 2026-04-19.
 
 ## Live Host State
 
@@ -35,6 +35,10 @@ The following smoke checks have already passed on the reference host:
   limits and recipe-style chat-template prompting
 - `google/gemma-4-31B-it` offline vLLM smoke on ROCm with text-only multimodal
   limits and recipe-style chat-template prompting
+- `google/gemma-4-E2B-it` offline eager vLLM smoke on 2026-04-19 with
+  `tools/gemma4_text_smoke.py`, `--max-model-len 128`, and text-only
+  multimodal limits; the same checkpoint's server/AsyncLLM path currently
+  fails separately during initialization
 
 ## Important Package Decisions
 
@@ -290,6 +294,49 @@ The following smoke checks have already passed on the reference host:
   scenarios to answer the eager-mode question, then MoE backend probes,
   real-model TorchAO, and multimodal exploratory scenarios. Do not move to
   Qwen3.5 validation until the eager-mode result is recorded.
+- The 2026-04-19 Gemma 4 broad vLLM pass is recorded but not promotable as a
+  default server matrix:
+  - passed:
+    `vllm.gemma4.26b-a4b.text.basic`,
+    `vllm.torchao.tiny.prepare`, and `vllm.torchao.tiny.generate`
+  - `vllm.gemma4.26b-a4b.text.basic` produced
+    `These are exactly five words.` and selected
+    `ROCM_AITER_UNIFIED_ATTN` plus `Using TRITON backend for Unquantized MoE`
+  - `vllm.gemma4.26b-a4b.server.basic` timed out after the helper's
+    300-second startup budget while still loading safetensors checkpoint
+    shards; no stale `VLLM::EngineCore` process remained afterward
+  - every non-exploratory `google/gemma-4-E2B-it` server scenario failed
+    during server/AsyncLLM initialization with a ROCm GPU memory-access fault
+  - an isolated E2B server basic rerun reproduced the same fault, while a
+    direct offline eager E2B text smoke passed and returned
+    `The quick brown fox jumps.`
+  - an explicit `--attention-backend TRITON_ATTN` E2B server probe proved vLLM
+    selected `Using TRITON_ATTN backend` and still hit the same GPU
+    memory-access fault, so the E2B server fault is not explained by AITER
+    unified attention alone
+- The 2026-04-19 compiled-path investigation keeps eager mode as the supported
+  Gemma 4 helper default:
+  - the installed host Triton package still lacked
+    `AttrsDescriptor.__repr__`, causing torch.compile / Inductor generated
+    Python to contain an invalid angle-bracket object repr and fail with
+    `SyntaxError`
+  - this branch fixes the package renderer so the recipe's Triton sed patch is
+    present in `packages/python-triton-gfx1151/PKGBUILD`, but the host still
+    needs `python-triton-gfx1151` rebuilt and installed before the normal
+    compiled probes can be trusted
+  - `makepkg -C -o --noconfirm` now validates the generated PKGBUILD's
+    prepare-time patch application and the prepared source contains
+    `AttrsDescriptor.__repr__`; the full `tools/amerge run
+    python-triton-gfx1151` publish/install path still requires operator sudo
+  - with a temporary `AttrsDescriptor.__repr__` shim, the E2B compiled +
+    cudagraph path got through `torch.compile` and CUDAGraph capture but
+    generated corrupted text, so it is not promotable
+  - with the same shim and CUDAGraph disabled, the E2B compiled path faulted
+    the GPU during initialization/warmup
+  - do not remove eager mode for `google/gemma-4-E2B-it`; rerun the
+    `google/gemma-4-26B-A4B-it` compiled probe after the repaired Triton
+    package is installed, and rerun `google/gemma-4-31B-it` only once the
+    checkpoint is locally available
 - There is still no repo-owned validation for Qwen3.5 hybrid-attention/GDN or
   Qwen3.5 MoE/shared-expert lanes on gfx1151.
   - the current local `vllm` source tree does contain the relevant model
@@ -325,14 +372,16 @@ The following smoke checks have already passed on the reference host:
     chat template resolved from the local checkpoint when available or
     otherwise required explicitly via `--chat-template`, then validates both
     the initial tool call and the follow-up tool response round trip
-- The reference host has now verified all three OpenAI-compatible Gemma 4
-  server flows with `google/gemma-4-E2B-it`:
-  - basic chat completion passes with the helper's default `--max-model-len 512`
-  - reasoning parsing passes with `--mode reasoning`, `--reasoning-parser gemma4`,
+- An earlier reference-host pass verified three OpenAI-compatible Gemma 4
+  server flows with `google/gemma-4-E2B-it`, but the 2026-04-19 broad matrix
+  currently reproduces a server/AsyncLLM GPU memory-access fault before those
+  flows can be promoted as maintained defaults:
+  - basic chat completion passed with the helper's default `--max-model-len 512`
+  - reasoning parsing passed with `--mode reasoning`, `--reasoning-parser gemma4`,
     `skip_special_tokens=false`, and `--max-model-len 1024`; the returned
     OpenAI message now splits cleanly into `message.reasoning` and
     `message.content`
-  - tool-calling passes with `--mode tool`, `--reasoning-parser gemma4`,
+  - tool-calling passed with `--mode tool`, `--reasoning-parser gemma4`,
     `--tool-call-parser gemma4`, `--enable-auto-tool-choice`, and a compatible
     Gemma 4 chat template; the first response returns a `get_weather` tool
     call and the follow-up tool response round trip returns a normal assistant
