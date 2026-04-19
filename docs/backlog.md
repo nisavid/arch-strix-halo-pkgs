@@ -24,12 +24,12 @@
   `video` implicit was enough to send vLLM back into multimodal warmup and
   reproduce the earlier GPU memory-access fault during engine initialization on
   the reference host.
-- Validate a non-eager Gemma 4 26B-A4B lane separately from the current eager
-  correctness lane.
+- Run and validate the tracked non-eager Gemma 4 lanes separately from the
+  current eager correctness lane.
   - keep the repo-owned helper defaults eager until this passes
   - when testing, record whether the failure surface is torch.compile,
     cudagraph capture, or another compiled-path interaction
-  - add tracked non-eager scenario variants under `inference/scenarios/`
+  - start from the `compiled-probe` scenarios under `inference/scenarios/`
     instead of treating the experiment as an ad hoc terminal-only rehearsal
 - Reconcile Blackcat's Qwen3.5 hybrid-attention/GDN patch lane against the
   maintained `python-vllm-rocm-gfx1151` and `python-amd-aiter-gfx1151`
@@ -52,18 +52,21 @@
   move off the current TRITON unquantized-MoE lane.
   - treat any such attempt as a fresh experiment
   - do not restore the dropped vLLM-side AITER MoE padding carry by default
-- After the basic `google/gemma-4-26B-A4B-it` validation lane is stable,
-  extend coverage across trustworthy Gemma 4 usage recipes instead of stopping
-  at one smoke:
-  - vLLM Recipes throughput-vs-latency examples
-  - relevant Hugging Face model-card usage patterns
-  - reasoning/tool-calling flows where the checkpoint and upstream guidance
-    actually support them
+- Run and promote the newly tracked Gemma 4 usage scenarios after reference-host
+  validation instead of stopping at one smoke:
+  - vLLM recipe-aligned reasoning, tool-calling, structured-output, and
+    benchmark-lite server flows
+  - multimodal image/audio/video flows, which remain exploratory until the
+    previous multimodal warmup fault is proven absent on the maintained stack
+  - relevant Hugging Face model-card usage patterns that are not already
+    covered by the vLLM recipe scenarios
 - Investigate the two remaining warnings on the now-passing TorchAO helper path:
   - `Stored version is not the same as current default version`
   - `Cannot use ROCm custom paged attention kernel, falling back to Triton implementation`
-- After those warning investigations, validate at least one real-model TorchAO
-  workload instead of stopping at the tiny local Llama helper. Prefer either:
+- After those warning investigations, run and evaluate the tracked
+  `vllm.gemma4.e2b.torchao.real-model` scenario instead of stopping at the tiny
+  local Llama helper. If it is too large for routine use, replace or supplement
+  it with either:
   - an upstream TorchAO-quantized checkpoint, or
   - a local quantized real small model exercised through `vllm serve` /
     OpenAI-compatible API flow

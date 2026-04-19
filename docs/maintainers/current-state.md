@@ -263,6 +263,28 @@ The following smoke checks have already passed on the reference host:
     - logs land under ignored `docs/worklog/amerge/<plan-id>/`
       and `docs/worklog/inference-runs/<timestamp>/` directories so the
       follow-up loop does not depend on copy-pasted terminal output
+- The tracked Gemma 4 / vLLM scenario matrix now includes the usage surfaces
+  from the official vLLM Gemma 4 recipe:
+  - basic chat, reasoning, tool calling, tool calling with thinking,
+    structured output, structured output with thinking, benchmark-lite, and a
+    full-feature text-only server smoke for `google/gemma-4-E2B-it`
+  - multimodal image, multi-image, dynamic-resolution image, audio, video, and
+    multimodal-tool server smokes for `google/gemma-4-E2B-it`
+  - compiled-path probes for `google/gemma-4-E2B-it`,
+    `google/gemma-4-31B-it`, and `google/gemma-4-26B-A4B-it`
+  - forced Triton, automatic, and forced AITER MoE backend probes for
+    `google/gemma-4-26B-A4B-it`
+  - tiny and real-model TorchAO probes
+- Scenario selection now treats `tags = ["exploratory"]` as opt-in for broad
+  selections. `python tools/run_inference_scenarios.py --engine vllm` skips
+  the exploratory multimodal, compiled-path, forced-kernel, and real-model
+  TorchAO probes by default; use `--include-exploratory` with any broad or
+  `--tag` selector, or use explicit `--scenario` selectors, when deliberately
+  running those investigations.
+- The newly tracked recipe, compiled, MoE-backend, multimodal, and real-model
+  TorchAO scenarios are not new validated defaults yet. Promote any of them
+  only after a reference-host run records the exact model binding, backend
+  split, warning surface, and logs under `docs/worklog/inference-runs/`.
 - There is still no repo-owned validation for Qwen3.5 hybrid-attention/GDN or
   Qwen3.5 MoE/shared-expert lanes on gfx1151.
   - the current local `vllm` source tree does contain the relevant model
@@ -326,6 +348,14 @@ The following smoke checks have already passed on the reference host:
     destination tensors were created with `dtype=torch.bfloat16`; TorchAO
     treats that dtype as part of tensor metadata and rejects `copy_` before
     vLLM reaches model init.
+  - the helper now also has a real-model path:
+    `--source-model <model-id-or-path>` quantizes with
+    `TorchAoConfig(Int8WeightOnlyConfig(version=2))`, saves the tokenizer, and
+    runs a tokenizer-backed vLLM generation pass; use `--dry-run` first to
+    inspect the chosen quantized output directory and execution mode.
+  - the helper can classify the two known warning markers on TorchAO/vLLM
+    paths, but the currently committed classifier is only a support surface;
+    live warning conclusions still need to come from a real host run log.
 - `llama.cpp-hip-gfx1151` uses `aur/llama.cpp-hip` as the authoritative
   baseline reference.
 - `llama.cpp-vulkan-gfx1151` currently uses `aur/llama.cpp-vulkan-bin` as the
@@ -369,7 +399,8 @@ The following smoke checks have already passed on the reference host:
     `Stored version is not the same as current default version`
   - investigate the remaining generation-path warning on that path:
     `Cannot use ROCm custom paged attention kernel, falling back to Triton implementation`
-  - after those two warning investigations, validate at least one real-model
+  - after those two warning investigations, run the tracked
+    `vllm.gemma4.e2b.torchao.real-model` scenario or another real-model
     TorchAO workload rather than stopping at the tiny local Llama helper
   - keep TorchAO version checks metadata-only on generic vLLM startup paths so
     broken optional host TorchAO packages do not emit warning noise during

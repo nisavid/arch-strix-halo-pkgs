@@ -80,6 +80,57 @@ def test_vllm_adapter_assigns_server_log_for_basic_server_smoke(tmp_path: Path):
     )
 
 
+def test_vllm_adapter_carries_scenario_environment(tmp_path: Path):
+    plan = build_execution_plan(
+        scenario(
+            {
+                "id": "vllm.gemma4.aiter-moe",
+                "given": {
+                    "engine": "vllm",
+                    "model": "google/gemma-4-26B-A4B-it",
+                    "tool": "gemma4_server_smoke.basic",
+                },
+                "when": {"env": {"VLLM_ROCM_USE_AITER_MOE": "1"}},
+            }
+        ),
+        repo_root=REPO_ROOT,
+        scenario_run_root=tmp_path,
+        model_bindings={},
+    )
+
+    assert plan.env == {"VLLM_ROCM_USE_AITER_MOE": "1"}
+
+
+def test_vllm_adapter_builds_torchao_real_model_command(tmp_path: Path):
+    plan = build_execution_plan(
+        scenario(
+            {
+                "id": "vllm.gemma4.e2b.torchao.real-model",
+                "given": {
+                    "engine": "vllm",
+                    "model": "google/gemma-4-E2B-it",
+                    "tool": "torchao_vllm_smoke.real-model",
+                },
+                "when": {"argv": ["--max-model-len", "128"]},
+            }
+        ),
+        repo_root=REPO_ROOT,
+        scenario_run_root=tmp_path,
+        model_bindings={"google/gemma-4-E2B-it": "/models/google/gemma-4-E2B-it"},
+    )
+
+    assert plan.command == [
+        sys.executable,
+        str(REPO_ROOT / "tools/torchao_vllm_smoke.py"),
+        "--source-model",
+        "/models/google/gemma-4-E2B-it",
+        "--work-dir",
+        str(tmp_path / "torchao"),
+        "--max-model-len",
+        "128",
+    ]
+
+
 def test_llamacpp_adapter_builds_generic_cli_command(tmp_path: Path):
     plan = build_execution_plan(
         scenario(

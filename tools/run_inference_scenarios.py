@@ -30,6 +30,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--model", action="append", default=[])
     parser.add_argument("--scenario", action="append", default=[])
     parser.add_argument(
+        "--tag",
+        action="append",
+        default=[],
+        help="select scenarios that include this tag; repeat for multiple tags",
+    )
+    parser.add_argument(
+        "--include-exploratory",
+        action="store_true",
+        help="include exploratory scenarios in broad engine/model/tag selections",
+    )
+    parser.add_argument(
         "--model-path",
         action="append",
         default=[],
@@ -66,8 +77,10 @@ def main() -> int:
         engines=set(args.engine),
         models=set(args.model),
         scenario_ids=set(args.scenario),
+        tags=set(args.tag),
+        include_exploratory=args.include_exploratory,
     )
-    if not (args.engine or args.model or args.scenario):
+    if not (args.engine or args.model or args.scenario or args.tag):
         if sys.stdin.isatty() and sys.stdout.isatty():
             selected = prompt_for_scenarios(scenarios)
         else:

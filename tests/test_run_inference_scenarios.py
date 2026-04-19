@@ -41,6 +41,16 @@ entrypoint = "lemonade"
 
 [scenario.when]
 argv = ["--help"]
+
+[[scenario]]
+id = "vllm.demo.exploratory"
+summary = "demo exploratory"
+tags = ["smoke", "exploratory"]
+
+[scenario.given]
+engine = "vllm"
+model = "demo-model"
+tool = "gemma4_text_smoke"
 """,
         encoding="utf-8",
     )
@@ -82,6 +92,69 @@ def test_selector_filters_scenarios_and_preserves_serial_order(tmp_path: Path):
     assert payload["selected_ids"] == ["vllm.demo.text"]
 
 
+def test_tag_selector_filters_scenarios(tmp_path: Path):
+    scenario_dir = write_scenarios(tmp_path)
+    result = run_runner(
+        "--scenario-dir",
+        str(scenario_dir),
+        "--dry-run",
+        "--tag",
+        "smoke",
+        "--engine",
+        "lemonade",
+    )
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    assert payload["selected_ids"] == ["lemonade.demo.server"]
+
+
+def test_engine_selector_excludes_exploratory_scenarios_by_default(tmp_path: Path):
+    scenario_dir = write_scenarios(tmp_path)
+    result = run_runner(
+        "--scenario-dir",
+        str(scenario_dir),
+        "--dry-run",
+        "--engine",
+        "vllm",
+    )
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    assert payload["selected_ids"] == ["vllm.demo.text"]
+
+
+def test_engine_selector_can_include_exploratory_scenarios(tmp_path: Path):
+    scenario_dir = write_scenarios(tmp_path)
+    result = run_runner(
+        "--scenario-dir",
+        str(scenario_dir),
+        "--dry-run",
+        "--engine",
+        "vllm",
+        "--include-exploratory",
+    )
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    assert payload["selected_ids"] == ["vllm.demo.text", "vllm.demo.exploratory"]
+
+
+def test_explicit_scenario_selector_includes_exploratory_scenario(tmp_path: Path):
+    scenario_dir = write_scenarios(tmp_path)
+    result = run_runner(
+        "--scenario-dir",
+        str(scenario_dir),
+        "--dry-run",
+        "--scenario",
+        "vllm.demo.exploratory",
+    )
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    assert payload["selected_ids"] == ["vllm.demo.exploratory"]
+
+
 def test_selector_supports_model_filtering(tmp_path: Path):
     scenario_dir = write_scenarios(tmp_path)
     result = run_runner(
@@ -94,10 +167,7 @@ def test_selector_supports_model_filtering(tmp_path: Path):
 
     assert result.returncode == 0
     payload = json.loads(result.stdout)
-    assert payload["selected_ids"] == [
-        "vllm.demo.text",
-        "lemonade.demo.server",
-    ]
+    assert payload["selected_ids"] == ["vllm.demo.text", "lemonade.demo.server"]
 
 
 def write_fake_command_script(tmp_path: Path) -> Path:
@@ -165,6 +235,39 @@ tool = "gemma4_text_smoke"
         str(REPO_ROOT / "tools/gemma4_text_smoke.py"),
         "/models/google/gemma-4-26B-A4B-it",
     ]
+
+
+def test_dry_run_includes_scenario_environment(tmp_path: Path):
+    scenario_dir = tmp_path / "inference" / "scenarios"
+    scenario_dir.mkdir(parents=True)
+    (scenario_dir / "vllm.toml").write_text(
+        """
+[[scenario]]
+id = "vllm.gemma4.aiter-moe"
+summary = "Gemma AITER MoE probe"
+
+[scenario.given]
+engine = "vllm"
+model = "google/gemma-4-26B-A4B-it"
+tool = "gemma4_server_smoke.basic"
+
+[scenario.when.env]
+VLLM_ROCM_USE_AITER_MOE = "1"
+""",
+        encoding="utf-8",
+    )
+
+    result = run_runner(
+        "--scenario-dir",
+        str(scenario_dir),
+        "--dry-run",
+        "--scenario",
+        "vllm.gemma4.aiter-moe",
+    )
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    assert payload["planned"][0]["env"] == {"VLLM_ROCM_USE_AITER_MOE": "1"}
 
 
 def test_runner_executes_scenario_and_writes_logs(tmp_path: Path):

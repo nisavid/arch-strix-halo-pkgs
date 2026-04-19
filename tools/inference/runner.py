@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import os
 import re
 import shutil
 import subprocess
@@ -39,6 +40,7 @@ def build_run_plan(
                 "server_log_path": (
                     str(plan.server_log_path) if plan.server_log_path is not None else None
                 ),
+                "env": plan.env or {},
             }
         )
     return {
@@ -213,6 +215,7 @@ def run_scenarios(
                     "server_log_path": (
                         str(plan.server_log_path) if plan.server_log_path is not None else None
                     ),
+                    "env": plan.env or {},
                 },
                 indent=2,
                 sort_keys=True,
@@ -261,6 +264,7 @@ def run_scenarios(
             capture_output=True,
             text=True,
             cwd=repo_root,
+            env={**os.environ, **(plan.env or {})},
         )
         duration_seconds = time.monotonic() - start
 

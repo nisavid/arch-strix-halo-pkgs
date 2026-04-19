@@ -21,6 +21,14 @@ def _extra_argv(definition: dict[str, Any]) -> list[str]:
     return [str(value) for value in when.get("argv", [])]
 
 
+def _env(definition: dict[str, Any]) -> dict[str, str] | None:
+    when = definition.get("when") or {}
+    raw_env = when.get("env") or {}
+    if not raw_env:
+        return None
+    return {str(key): str(value) for key, value in raw_env.items()}
+
+
 def build_execution_plan(
     definition: dict[str, Any],
     *,
@@ -31,6 +39,7 @@ def build_execution_plan(
     tool = str(definition["given"]["tool"])
     model = _resolved_model(definition, model_bindings=model_bindings)
     extra_argv = _extra_argv(definition)
+    env = _env(definition)
 
     if tool == "gemma4_text_smoke":
         return ExecutionPlan(
@@ -39,7 +48,8 @@ def build_execution_plan(
                 str(repo_root / "tools/gemma4_text_smoke.py"),
                 model,
                 *extra_argv,
-            ]
+            ],
+            env=env,
         )
     if tool.startswith("gemma4_server_smoke."):
         mode = tool.rsplit(".", 1)[1]
@@ -56,6 +66,7 @@ def build_execution_plan(
                 *extra_argv,
             ],
             server_log_path=server_log_path,
+            env=env,
         )
     if tool == "torchao_vllm_smoke":
         return ExecutionPlan(
@@ -63,6 +74,20 @@ def build_execution_plan(
                 sys.executable,
                 str(repo_root / "tools/torchao_vllm_smoke.py"),
                 *extra_argv,
-            ]
+            ],
+            env=env,
+        )
+    if tool == "torchao_vllm_smoke.real-model":
+        return ExecutionPlan(
+            command=[
+                sys.executable,
+                str(repo_root / "tools/torchao_vllm_smoke.py"),
+                "--source-model",
+                model,
+                "--work-dir",
+                str(scenario_run_root / "torchao"),
+                *extra_argv,
+            ],
+            env=env,
         )
     raise ValueError(f"UNSUPPORTED_VLLM_TOOL: {tool}")

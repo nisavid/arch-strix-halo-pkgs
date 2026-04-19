@@ -27,6 +27,14 @@ def test_text_only_smoke_tool_uses_tokenizer_not_processor():
     assert 'llm = LLM(**llm_kwargs)' in text
 
 
+def test_text_smoke_supports_compiled_execution_mode():
+    text = SMOKE_TOOL.read_text()
+
+    assert "--execution-mode" in text
+    assert '"compiled"' in text
+    assert 'if args.execution_mode == "eager":' in text
+
+
 def test_current_state_documents_tokenizer_only_text_smokes():
     text = CURRENT_STATE.read_text()
 
