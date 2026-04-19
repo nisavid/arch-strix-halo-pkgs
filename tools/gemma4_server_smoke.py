@@ -111,7 +111,7 @@ def parse_args() -> argparse.Namespace:
         type=float,
         default=None,
         help=(
-            "seconds to wait for /v1/models; defaults to 300 for the validated "
+            "seconds to wait for /v1/models; defaults to 420 for the validated "
             "Gemma 4 26B-A4B basic lane and 180 otherwise"
         ),
     )
@@ -245,7 +245,7 @@ def effective_startup_timeout(args: argparse.Namespace) -> float:
     if args.startup_timeout is not None:
         return args.startup_timeout
     if use_gemma4_26b_a4b_text_only_defaults(args):
-        return 300.0
+        return 420.0
     return 180.0
 
 

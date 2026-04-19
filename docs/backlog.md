@@ -37,9 +37,12 @@
   - with a temporary `AttrsDescriptor.__repr__` shim, the E2B compiled +
     cudagraph path initialized but produced corrupted output; a no-cudagraph
     compiled probe then faulted the GPU during initialization/warmup
-  - rerun the 26B-A4B and 31B compiled probes only after the repaired Triton
-    package is installed; the 31B checkpoint was not locally available during
-    the 2026-04-19 pass
+  - after the repaired Triton package was installed, the 26B-A4B offline text
+    compiled probe passed with torch.compile and CUDAGraph capture, while the
+    E2B compiled+cudagraph probe still generated corrupted output instead of a
+    valid five-word answer
+  - rerun the 31B compiled probe once the checkpoint is locally available; the
+    31B checkpoint was not locally available during the 2026-04-19 pass
   - start from the `compiled-probe` scenarios under `inference/scenarios/`
     instead of treating the experiment as an ad hoc terminal-only rehearsal
 - Reconcile Blackcat's Qwen3.5 hybrid-attention/GDN patch lane against the
@@ -88,18 +91,26 @@
     with ROCm GPU memory-access faults
   - done for the first E2B eager-mode decision: do not remove eager mode for
     `google/gemma-4-E2B-it`
-  - next rebuild/install `python-triton-gfx1151` so the host has the rendered
-    `AttrsDescriptor.__repr__` patch, then rerun the 26B-A4B compiled probe
-    and any locally available 31B compiled probe; `makepkg -C -o` now
-    validates the corrected prepare-time patch application, but the canonical
-    `tools/amerge run python-triton-gfx1151` install step still requires
-    operator sudo
+  - done for the first 26B-A4B offline text compiled decision after the
+    repaired Triton package was installed: `vllm.gemma4.26b-a4b.text.compiled`
+    passed in 350.33213 seconds with `ROCM_AITER_UNIFIED_ATTN`, `Using TRITON
+    backend for Unquantized MoE`, `torch.compile took 27.34 s`, CUDAGraph
+    capture, and output `These are exactly five words.`
+  - done for the installed-Triton E2B compiled+cudagraph rerun:
+    `vllm.gemma4.e2b.text.compiled` initialized, compiled, captured graphs,
+    and generated, but failed validation with corrupted output; do not remove
+    eager mode for E2B
+  - next rerun the 31B compiled probe once a 31B checkpoint is locally
+    available
   - next keep the new E2B `kernel-probe` scenario around as a tracked
     regression probe for the server fault, because the forced Triton attention
     lane still faults and therefore rules out an AITER-only explanation
-  - after the Triton package and compiled-lane status are recorded, continue
-    to MoE backend probes, real-model TorchAO, and multimodal exploratory
-    scenarios
+  - done for 26B-A4B MoE backend probes: automatic/default MoE and forced
+    `--moe-backend triton` both passed the server smoke with
+    `Using TRITON backend for Unquantized MoE`; forced
+    `--moe-backend aiter` failed fast with
+    `ValueError: ROCm AITer MoE backend is not available for this configuration`
+  - next continue to real-model TorchAO and multimodal exploratory scenarios
 - Investigate the two remaining warnings on the now-passing TorchAO helper path:
   - `Stored version is not the same as current default version`
   - `Cannot use ROCm custom paged attention kernel, falling back to Triton implementation`

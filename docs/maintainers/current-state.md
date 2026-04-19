@@ -214,13 +214,22 @@ The following smoke checks have already passed on the reference host:
     `tools/gemma4_text_smoke.py` returned `These are exactly five words.`, and
     `tools/gemma4_server_smoke.py --mode basic` returned
     `Deep blue waves crash endlessly.`
-  - the repo-owned helpers intentionally keep `enforce_eager=True` /
-    `--enforce-eager` on this lane. vLLM documents eager mode as disabling
-    compilation and cudagraph capture, so the current helper defaults are a
-    correctness/isolation choice rather than a performance recommendation
-  - `tools/gemma4_server_smoke.py` now uses a `300`-second startup budget for
+  - the repo-owned basic text/server helpers still default to
+    `enforce_eager=True` / `--enforce-eager` as a conservative
+    correctness/isolation choice. The separate tracked
+    `vllm.gemma4.26b-a4b.text.compiled` probe now validates that the 26B-A4B
+    offline text path can run with torch.compile and CUDAGraph after the
+    Triton `AttrsDescriptor.__repr__` repair
+  - `tools/gemma4_server_smoke.py` now uses a `420`-second startup budget for
     this lane because cold `google/gemma-4-26B-A4B-it` server loads on the
-    reference host can exceed the earlier `180`-second default
+    reference host can exceed both the earlier `180`-second default and a
+    `300`-second budget when checkpoint loading is slow
+  - the 2026-04-19 MoE backend probes keep the maintained MoE lane on
+    Triton: the automatic/default server probe and the forced
+    `--moe-backend triton` probe both passed with
+    `Using TRITON backend for Unquantized MoE`; the forced
+    `--moe-backend aiter` probe failed during model construction with
+    `ValueError: ROCm AITer MoE backend is not available for this configuration`
   - `tools/gemma4_server_smoke.py` now launches vLLM in its own process group
     and tears down that whole group on exit; an older helper revision could
     leave an orphaned `VLLM::EngineCore` holding roughly `89 GiB` of VRAM
@@ -286,14 +295,16 @@ The following smoke checks have already passed on the reference host:
   `--tag` selector, or use explicit `--scenario` selectors, when deliberately
   running those investigations.
 - The newly tracked recipe, compiled, MoE-backend, multimodal, and real-model
-  TorchAO scenarios are not new validated defaults yet. Promote any of them
-  only after a reference-host run records the exact model binding, backend
-  split, warning surface, and logs under `docs/worklog/inference-runs/`.
+  TorchAO scenarios are not all new validated defaults yet. Promote any
+  remaining exploratory lane only after a reference-host run records the exact
+  model binding, backend split, warning surface, and logs under
+  `docs/worklog/inference-runs/`.
 - The next Gemma 4 live-validation order is intentionally staged:
   non-exploratory broad `vllm` scenarios first, then `compiled-probe`
-  scenarios to answer the eager-mode question, then MoE backend probes,
-  real-model TorchAO, and multimodal exploratory scenarios. Do not move to
-  Qwen3.5 validation until the eager-mode result is recorded.
+  scenarios to answer the eager-mode question, MoE backend probes after that,
+  and finally real-model TorchAO plus multimodal exploratory scenarios. The
+  first compiled and MoE decisions are now recorded; finish the TorchAO and
+  multimodal probes before moving to Qwen3.5 validation.
 - The 2026-04-19 Gemma 4 broad vLLM pass is recorded but not promotable as a
   default server matrix:
   - passed:
@@ -305,6 +316,9 @@ The following smoke checks have already passed on the reference host:
   - `vllm.gemma4.26b-a4b.server.basic` timed out after the helper's
     300-second startup budget while still loading safetensors checkpoint
     shards; no stale `VLLM::EngineCore` process remained afterward
+  - the helper startup budget was then raised to 420 seconds, and the later
+    26B-A4B MoE server probes reached readiness and completed within that
+    budget
   - every non-exploratory `google/gemma-4-E2B-it` server scenario failed
     during server/AsyncLLM initialization with a ROCm GPU memory-access fault
   - an isolated E2B server basic rerun reproduced the same fault, while a
@@ -315,28 +329,53 @@ The following smoke checks have already passed on the reference host:
     memory-access fault, so the E2B server fault is not explained by AITER
     unified attention alone
 - The 2026-04-19 compiled-path investigation keeps eager mode as the supported
-  Gemma 4 helper default:
-  - the installed host Triton package still lacked
+  Gemma 4 helper default for E2B, but no longer for every Gemma 4 checkpoint:
+  - the pre-repair host Triton package lacked
     `AttrsDescriptor.__repr__`, causing torch.compile / Inductor generated
     Python to contain an invalid angle-bracket object repr and fail with
     `SyntaxError`
-  - this branch fixes the package renderer so the recipe's Triton sed patch is
-    present in `packages/python-triton-gfx1151/PKGBUILD`, but the host still
-    needs `python-triton-gfx1151` rebuilt and installed before the normal
-    compiled probes can be trusted
+  - this branch fixed the package renderer so the recipe's Triton sed patch is
+    present in `packages/python-triton-gfx1151/PKGBUILD`; after rebuilding and
+    installing `python-triton-gfx1151`, the normal compiled probes no longer
+    need a temporary runtime shim
   - `makepkg -C -o --noconfirm` now validates the generated PKGBUILD's
     prepare-time patch application and the prepared source contains
     `AttrsDescriptor.__repr__`; the full `tools/amerge run
     python-triton-gfx1151` publish/install path still requires operator sudo
+  - after the repaired Triton package was installed,
+    `vllm.gemma4.26b-a4b.text.compiled` passed on the reference host in
+    `350.33213` seconds with `enforce_eager=False`,
+    `ROCM_AITER_UNIFIED_ATTN`, `Using TRITON backend for Unquantized MoE`,
+    torch.compile, and CUDAGraph capture; the output was
+    `These are exactly five words.`
+  - the same run showed `torch.compile took 27.34 s in total`, graph capture
+    completed, and the model generated the expected basic smoke output, so the
+    26B-A4B offline text lane can be treated as compiled-capable after the
+    Triton `AttrsDescriptor.__repr__` repair
+  - after the repaired Triton package was installed,
+    `vllm.gemma4.e2b.text.compiled` no longer failed with the old SyntaxError:
+    it initialized, compiled, captured graphs, and generated, but the output
+    was corrupted (`docked calcS ...`) and failed the basic smoke assertion
   - with a temporary `AttrsDescriptor.__repr__` shim, the E2B compiled +
     cudagraph path got through `torch.compile` and CUDAGraph capture but
     generated corrupted text, so it is not promotable
   - with the same shim and CUDAGraph disabled, the E2B compiled path faulted
     the GPU during initialization/warmup
-  - do not remove eager mode for `google/gemma-4-E2B-it`; rerun the
-    `google/gemma-4-26B-A4B-it` compiled probe after the repaired Triton
-    package is installed, and rerun `google/gemma-4-31B-it` only once the
-    checkpoint is locally available
+  - do not remove eager mode for `google/gemma-4-E2B-it`; rerun
+    `google/gemma-4-31B-it` only once the checkpoint is locally available
+- The 2026-04-19 26B-A4B MoE backend investigation confirms that the current
+  package should stay on Triton for sparse MoE execution:
+  - `vllm.gemma4.26b-a4b.server.moe-auto` passed in `288.508121` seconds with
+    the default backend selection, `ROCM_AITER_UNIFIED_ATTN`, and
+    `Using TRITON backend for Unquantized MoE`
+  - `vllm.gemma4.26b-a4b.server.moe-triton` passed in `344.765496` seconds
+    with explicit `--moe-backend triton`, `ROCM_AITER_UNIFIED_ATTN`, and
+    `Using TRITON backend for Unquantized MoE`
+  - `vllm.gemma4.26b-a4b.server.moe-aiter` failed in `24.091119` seconds
+    before weight loading with
+    `ValueError: ROCm AITer MoE backend is not available for this configuration`
+  - do not restore the broader fused-MoE default-policy carry or the dormant
+    Gemma 4 AITER MoE padding carry on the basis of the current evidence
 - There is still no repo-owned validation for Qwen3.5 hybrid-attention/GDN or
   Qwen3.5 MoE/shared-expert lanes on gfx1151.
   - the current local `vllm` source tree does contain the relevant model

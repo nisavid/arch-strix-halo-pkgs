@@ -176,7 +176,7 @@ def test_26b_a4b_basic_dry_run_uses_extended_startup_timeout() -> None:
         "/models/google/gemma-4-26B-A4B-it",
     )
 
-    assert plan["startup_timeout"] == 300.0
+    assert plan["startup_timeout"] == 420.0
 
 
 def test_compiled_dry_run_omits_enforce_eager_and_forwards_kernel_flags() -> None:
