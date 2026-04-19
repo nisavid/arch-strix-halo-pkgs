@@ -496,6 +496,35 @@ def test_history_does_not_treat_reused_pid_as_active_without_lock(tmp_path: Path
     assert record["active"] is False
 
 
+def test_history_can_read_plan_state_without_write_permission(tmp_path: Path):
+    module = load_module()
+    state_root = tmp_path / "state"
+    run_dir = state_root / "20260418T120000-demo"
+    run_dir.mkdir(parents=True)
+    (run_dir / "plan.json").write_text(
+        json.dumps({"plan_id": "demo", "command": "build", "targets": ["pkg"]}),
+        encoding="utf-8",
+    )
+    (run_dir / "state.json").write_text(
+        json.dumps({"status": "completed", "run_ids": ["run-1"], "active_pid": None}),
+        encoding="utf-8",
+    )
+    lock_path = run_dir / module.LOCK_FILE
+    lock_path.write_text("12345\n", encoding="utf-8")
+
+    try:
+        lock_path.chmod(0o444)
+        run_dir.chmod(0o555)
+
+        [record] = module.history_records(state_root)
+    finally:
+        run_dir.chmod(0o755)
+        lock_path.chmod(0o644)
+
+    assert record["status"] == "completed"
+    assert record["active"] is False
+
+
 def test_run_plan_refuses_when_plan_lock_is_already_held(tmp_path: Path):
     module = load_module()
     plan = {

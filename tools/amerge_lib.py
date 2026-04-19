@@ -799,9 +799,9 @@ def plan_lock_is_held(plan_dir: Path) -> bool:
     lock_path = plan_dir / LOCK_FILE
     if not lock_path.exists():
         return False
-    with lock_path.open("a+", encoding="utf-8") as handle:
+    with lock_path.open("r", encoding="utf-8") as handle:
         try:
-            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            fcntl.flock(handle.fileno(), fcntl.LOCK_SH | fcntl.LOCK_NB)
         except BlockingIOError:
             return True
         fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
