@@ -68,8 +68,11 @@
     `tools/amerge build -y python-vllm-rocm-gfx1151` produced pkgrel `-26`,
     and the package-local vLLM test suite passed against the built `pkg/`
     tree
-  - still needs privileged publish/install of pkgrel `-26` before any
-    installed-host Qwen3.5 live validation can use this carry
+  - done for installed-host smoke coverage after pkgrel `-26` was installed:
+    `vllm.gemma4.26b-a4b.text.basic` and
+    `vllm.gemma4.26b-a4b.server.basic` both passed against
+    `/bulk/hf/hub/models--google--gemma-4-26B-A4B-it/snapshots/7d4c97e54145f8ffd1a4dd1b4986a5015a517842`
+    with `ROCM_AITER_UNIFIED_ATTN` and Triton unquantized MoE
 - Add repo-owned validation for Qwen3.5 hybrid/GDN and Qwen3.5 MoE or
   shared-expert lanes on gfx1151.
   - cover at least one Qwen3.5 hybrid-attention model and one Qwen3.5

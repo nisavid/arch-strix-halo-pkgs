@@ -402,11 +402,14 @@ The following smoke checks have already passed on the reference host:
     `python-vllm-rocm-gfx1151-0.19.0.r8.d20260317.gad42886-26-x86_64.pkg.tar.zst`;
     `pytest packages/python-vllm-rocm-gfx1151/tests -q` then passed against
     the freshly populated `pkg/` tree
-  - privileged publish/install of pkgrel `-26` has not been run from this
-    branch yet; use `tools/amerge publish python-vllm-rocm-gfx1151` and
-    `tools/amerge install python-vllm-rocm-gfx1151`, or the equivalent
-    `tools/amerge run python-vllm-rocm-gfx1151`, before installed-host
-    validation
+  - after pkgrel `-26` was installed, the existing Gemma 4 26B-A4B
+    installed-host lane still passed with the package:
+    `vllm.gemma4.26b-a4b.text.basic` passed in `195.710255` seconds, and
+    `vllm.gemma4.26b-a4b.server.basic` passed in `309.115382` seconds against
+    `/bulk/hf/hub/models--google--gemma-4-26B-A4B-it/snapshots/7d4c97e54145f8ffd1a4dd1b4986a5015a517842`;
+    the logs selected `ROCM_AITER_UNIFIED_ATTN`, imported AITER's JIT helper,
+    used `Using TRITON backend for Unquantized MoE`, and ended with no
+    running GPU processes detected
   - there is still no repo-owned live validation for Qwen3.5 hybrid/GDN or
     Qwen3.5 MoE/shared-expert lanes on gfx1151; the local Hugging Face cache
     only exposed GGUF Qwen3.5 artifacts during the 2026-04-19 reconciliation
