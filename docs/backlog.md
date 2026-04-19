@@ -64,6 +64,12 @@
   - AITER-side unified attention already uses a safer
     `min(64, triton.next_power_of_2(block_size))` tile expression in the
     installed package, so no new AITER package patch is carried for that note
+  - done for package-side build/test validation: unprivileged
+    `tools/amerge build -y python-vllm-rocm-gfx1151` produced pkgrel `-26`,
+    and the package-local vLLM test suite passed against the built `pkg/`
+    tree
+  - still needs privileged publish/install of pkgrel `-26` before any
+    installed-host Qwen3.5 live validation can use this carry
 - Add repo-owned validation for Qwen3.5 hybrid/GDN and Qwen3.5 MoE or
   shared-expert lanes on gfx1151.
   - cover at least one Qwen3.5 hybrid-attention model and one Qwen3.5
@@ -195,6 +201,9 @@
   reasonable steps without hiding important customization points.
 - Keep `amerge` and the inference-scenario tooling pleasant to use as the
   default host workflow; avoid drifting back toward one-off wrapper scripts.
+  - done for the first unprivileged package-build pass: `amerge build` no
+    longer starts sudo keepalive for build-only plans, and `amerge history`
+    can inspect retained plan state without write access to plan directories
 
 ## Benchmarks
 

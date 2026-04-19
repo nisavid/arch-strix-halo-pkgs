@@ -397,6 +397,16 @@ The following smoke checks have already passed on the reference host:
     advisory unified-attention tile note because the installed AITER source
     already uses a safer `min(64, triton.next_power_of_2(block_size))` tile
     expression
+  - unprivileged `tools/amerge build -y python-vllm-rocm-gfx1151` completed
+    for pkgrel `0.19.0.r8.d20260317.gad42886-26`, producing
+    `python-vllm-rocm-gfx1151-0.19.0.r8.d20260317.gad42886-26-x86_64.pkg.tar.zst`;
+    `pytest packages/python-vllm-rocm-gfx1151/tests -q` then passed against
+    the freshly populated `pkg/` tree
+  - privileged publish/install of pkgrel `-26` has not been run from this
+    branch yet; use `tools/amerge publish python-vllm-rocm-gfx1151` and
+    `tools/amerge install python-vllm-rocm-gfx1151`, or the equivalent
+    `tools/amerge run python-vllm-rocm-gfx1151`, before installed-host
+    validation
   - there is still no repo-owned live validation for Qwen3.5 hybrid/GDN or
     Qwen3.5 MoE/shared-expert lanes on gfx1151; the local Hugging Face cache
     only exposed GGUF Qwen3.5 artifacts during the 2026-04-19 reconciliation
