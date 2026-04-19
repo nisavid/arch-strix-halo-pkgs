@@ -131,6 +131,34 @@ def test_vllm_adapter_builds_torchao_real_model_command(tmp_path: Path):
     ]
 
 
+def test_vllm_adapter_builds_qwen_text_smoke_command(tmp_path: Path):
+    plan = build_execution_plan(
+        scenario(
+            {
+                "id": "vllm.qwen3_5.0_8b.text.basic",
+                "given": {
+                    "engine": "vllm",
+                    "model": "Qwen/Qwen3.5-0.8B",
+                    "tool": "qwen_text_smoke",
+                },
+                "when": {"argv": ["--max-model-len", "128"]},
+            }
+        ),
+        repo_root=REPO_ROOT,
+        scenario_run_root=tmp_path,
+        model_bindings={"Qwen/Qwen3.5-0.8B": "/models/Qwen/Qwen3.5-0.8B"},
+    )
+
+    assert plan.command == [
+        sys.executable,
+        str(REPO_ROOT / "tools/qwen_text_smoke.py"),
+        "/models/Qwen/Qwen3.5-0.8B",
+        "--max-model-len",
+        "128",
+    ]
+    assert plan.server_log_path is None
+
+
 def test_llamacpp_adapter_builds_generic_cli_command(tmp_path: Path):
     plan = build_execution_plan(
         scenario(

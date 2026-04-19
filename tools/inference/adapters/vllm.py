@@ -51,6 +51,16 @@ def build_execution_plan(
             ],
             env=env,
         )
+    if tool == "qwen_text_smoke":
+        return ExecutionPlan(
+            command=[
+                sys.executable,
+                str(repo_root / "tools/qwen_text_smoke.py"),
+                model,
+                *extra_argv,
+            ],
+            env=env,
+        )
     if tool.startswith("gemma4_server_smoke."):
         mode = tool.rsplit(".", 1)[1]
         server_log_path = scenario_run_root / "server.log"

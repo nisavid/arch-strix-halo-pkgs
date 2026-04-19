@@ -31,6 +31,8 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     assert "vllm.gemma4.26b-a4b.server.moe-aiter" in ids
     assert "vllm.torchao.tiny.generate" in ids
     assert "vllm.gemma4.e2b.torchao.real-model" in ids
+    assert "vllm.qwen3_5.0_8b.text.basic" in ids
+    assert "vllm.qwen3_6.35b-a3b-fp8.text.basic" in ids
     assert "llama.cpp.hip.help" in ids
     assert "llama.cpp.vulkan.help" in ids
     assert "lemonade.cli.help" in ids
@@ -42,3 +44,6 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     assert "exploratory" in tags_by_id["vllm.gemma4.e2b.server.attn-triton"]
     assert "kernel-probe" in tags_by_id["vllm.gemma4.26b-a4b.server.moe-aiter"]
     assert "quantization-probe" in tags_by_id["vllm.gemma4.e2b.torchao.real-model"]
+    assert "qwen3.5" in tags_by_id["vllm.qwen3_5.0_8b.text.basic"]
+    assert "qwen3.6" in tags_by_id["vllm.qwen3_6.35b-a3b-fp8.text.basic"]
+    assert "moe" in tags_by_id["vllm.qwen3_6.35b-a3b-fp8.text.basic"]
