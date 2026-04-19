@@ -11,6 +11,9 @@ without chat history.
 
 - Never commit private filesystem paths, private hostnames, private network
   addresses, machine-specific IDs, tokens, or keys.
+- When a task needs upstream recipe or reference source from submodules, update
+  submodules recursively in the active worktree before treating missing source
+  as unavailable.
 - Keep durable project documentation under `docs/`.
 - Keep package-specific maintenance context in `packages/*/README.md` and
   `packages/*/recipe.json`.
