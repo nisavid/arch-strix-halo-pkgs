@@ -39,6 +39,8 @@ Use `tools/amerge history` and `tools/amerge logs latest --path` to inspect
 retained state and logs.
 Use `--preview=tree --color=always` when the user wants a colorized plan
 captured in logs or chat; leave the default `--color=auto` for normal terminals.
+Use `--preview=commands` when the user wants to inspect exact `makepkg`,
+publish, and pacman commands before privileged execution.
 
 ## Operator Notes
 
@@ -50,6 +52,10 @@ captured in logs or chat; leave the default `--color=auto` for normal terminals.
 - With `run`, each package root is built, published, and installed before the
   next root, preserving dependency-order fast iteration. Selected split roots
   also install any outputs required by later selected package roots.
+- Publish steps require package archives matching the current PKGBUILD
+  `makepkg --packagelist`, so stale built artifacts fail before republishing.
+- A plan holds `active.lock` while running; do not start a second resume or run
+  against the same plan if `history` reports it active.
 - If no targets or selectors are given, hand the command to the user only for an
   interactive session; noninteractive use should pass targets, `--all`, or
   `--installed`.

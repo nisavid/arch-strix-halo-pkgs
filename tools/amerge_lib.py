@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import argparse
+import fcntl
 import json
 import os
+import shlex
 import subprocess
 import sys
 import threading
-import time
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
@@ -34,6 +35,7 @@ SANITIZED_COMMAND_ENV_KEYS = (
     "PYTHONSTARTUP",
     "PYTHONUSERBASE",
 )
+LOCK_FILE = "active.lock"
 
 RESET = "\033[0m"
 BOLD = "\033[1m"
@@ -92,6 +94,10 @@ class StepSpec:
             "root": self.root,
             "commands": [command.to_json() for command in self.commands],
         }
+
+
+class PlanAlreadyActive(RuntimeError):
+    pass
 
 
 def utc_now() -> str:
@@ -365,6 +371,20 @@ def build_steps(
     python = sys.executable
     update_repo = str(REPO_ROOT / "tools/update_pacman_repo.py")
 
+    def update_repo_command(root: RepoPackageRoot) -> CommandSpec:
+        return CommandSpec(
+            argv=(
+                python,
+                update_repo,
+                "--package-dir",
+                str(root.package_dir),
+                "--repo-dir",
+                str(repo_dir),
+                "--recursive",
+                "--require-packagelist",
+            )
+        )
+
     if command in {"run", "build"}:
         for index, root_name in enumerate(build_roots, start=1):
             root = roots[root_name]
@@ -390,17 +410,7 @@ def build_steps(
                         kind="publish",
                         root=root_name,
                         commands=(
-                            CommandSpec(
-                                argv=(
-                                    python,
-                                    update_repo,
-                                    "--package-dir",
-                                    str(root.package_dir),
-                                    "--repo-dir",
-                                    str(repo_dir),
-                                    "--recursive",
-                                )
-                            ),
+                            update_repo_command(root),
                             CommandSpec(
                                 argv=("sudo", "install", "-d", str(publish_root)),
                                 privileged=True,
@@ -452,17 +462,7 @@ def build_steps(
                     kind="publish",
                     root=root_name,
                     commands=(
-                        CommandSpec(
-                            argv=(
-                                python,
-                                update_repo,
-                                "--package-dir",
-                                str(root.package_dir),
-                                "--repo-dir",
-                                str(repo_dir),
-                                "--recursive",
-                            )
-                        ),
+                        update_repo_command(root),
                         CommandSpec(
                             argv=("sudo", "install", "-d", str(publish_root)),
                             privileged=True,
@@ -614,13 +614,50 @@ def step_color(kind: str) -> str:
     return BLUE
 
 
+def render_dependency_forest(plan: dict[str, object], *, color: bool = False) -> list[str]:
+    build_order = list(plan["merge_plan"]["build_roots"])
+    order_index = {root_name: index for index, root_name in enumerate(build_order)}
+    dependencies_by_root = {
+        str(item["root_name"]): [
+            dependency
+            for dependency in item.get("dependencies", [])
+            if dependency in order_index
+        ]
+        for item in plan.get("dependency_graph", [])
+    }
+    lines: list[str] = []
+    for index, root_name in enumerate(build_order):
+        branch = "└──" if index == len(build_order) - 1 else "├──"
+        child_prefix = "│       " if index == len(build_order) - 1 else "│   │   "
+        lines.append(
+            f"│   {colorize(branch, color, DIM)} "
+            f"{colorize(f'[{index + 1}]', color, YELLOW)} "
+            f"{colorize(root_name, color, GREEN)}"
+        )
+        dependencies = sorted(
+            dependencies_by_root.get(root_name, []),
+            key=lambda dependency: order_index[dependency],
+        )
+        for dep_index, dependency in enumerate(dependencies):
+            dep_branch = "└──" if dep_index == len(dependencies) - 1 else "├──"
+            lines.append(
+                f"{child_prefix}{colorize(dep_branch, color, DIM)} "
+                f"{colorize('needs', color, DIM)} "
+                f"{colorize(f'[{order_index[dependency] + 1}]', color, YELLOW)} "
+                f"{colorize(dependency, color, GREEN)}"
+            )
+    return lines
+
+
 def render_tree_preview(plan: dict[str, object], *, color: bool = False) -> str:
     roots = list(plan["merge_plan"]["build_roots"])
     lines = [
         f"{colorize('Merge plan', color, BOLD, CYAN)} "
         f"{colorize(plan['plan_id'], color, DIM)}",
-        f"{colorize('├──', color, DIM)} {colorize('Build order', color, BOLD, BLUE)}",
+        f"{colorize('├──', color, DIM)} {colorize('Dependency forest', color, BOLD, BLUE)}",
     ]
+    lines.extend(render_dependency_forest(plan, color=color))
+    lines.append(f"{colorize('├──', color, DIM)} {colorize('Build order', color, BOLD, BLUE)}")
     for index, root_name in enumerate(roots, start=1):
         branch = "└──" if index == len(roots) else "├──"
         lines.append(
@@ -640,9 +677,24 @@ def render_tree_preview(plan: dict[str, object], *, color: bool = False) -> str:
     return "\n".join(lines)
 
 
+def render_commands_preview(plan: dict[str, object], *, color: bool = False) -> str:
+    lines = [
+        f"{colorize('Merge plan', color, BOLD, CYAN)} "
+        f"{colorize(plan['plan_id'], color, DIM)}",
+        colorize("Commands:", color, BOLD, BLUE),
+    ]
+    for step in plan["steps"]:
+        lines.append(f"  {colorize(str(step['label']), color, step_color(str(step['kind'])))}")
+        for command in step["commands"]:
+            lines.append(f"    $ {shlex.join(str(part) for part in command['argv'])}")
+    return "\n".join(lines)
+
+
 def render_preview(plan: dict[str, object], preview: str, *, color: bool = False) -> str:
     if preview == "tree":
         return render_tree_preview(plan, color=color)
+    if preview == "commands":
+        return render_commands_preview(plan, color=color)
     return render_flat_preview(plan, color=color)
 
 
@@ -689,7 +741,72 @@ def read_json(path: Path) -> dict[str, Any]:
 
 def write_json(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    text = json.dumps(payload, indent=2, sort_keys=True) + "\n"
+    tmp_path = path.with_name(f".{path.name}.{os.getpid()}.{uuid.uuid4().hex}.tmp")
+    try:
+        with tmp_path.open("w", encoding="utf-8") as handle:
+            handle.write(text)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(tmp_path, path)
+        try:
+            directory_fd = os.open(path.parent, os.O_DIRECTORY)
+        except OSError:
+            return
+        try:
+            os.fsync(directory_fd)
+        finally:
+            os.close(directory_fd)
+    finally:
+        try:
+            tmp_path.unlink()
+        except FileNotFoundError:
+            pass
+
+
+class PlanRunLock:
+    def __init__(self, plan_dir: Path):
+        self.plan_dir = plan_dir
+        self.path = plan_dir / LOCK_FILE
+        self.handle: Any | None = None
+
+    def __enter__(self) -> "PlanRunLock":
+        self.plan_dir.mkdir(parents=True, exist_ok=True)
+        self.handle = self.path.open("a+", encoding="utf-8")
+        try:
+            fcntl.flock(self.handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as exc:
+            self.handle.close()
+            self.handle = None
+            raise PlanAlreadyActive(f"Plan is already running: {self.plan_dir}") from exc
+        self.handle.seek(0)
+        self.handle.truncate()
+        self.handle.write(f"{os.getpid()}\n")
+        self.handle.flush()
+        os.fsync(self.handle.fileno())
+        return self
+
+    def __exit__(self, exc_type: object, exc: object, tb: object) -> None:
+        if self.handle is None:
+            return
+        try:
+            fcntl.flock(self.handle.fileno(), fcntl.LOCK_UN)
+        finally:
+            self.handle.close()
+            self.handle = None
+
+
+def plan_lock_is_held(plan_dir: Path) -> bool:
+    lock_path = plan_dir / LOCK_FILE
+    if not lock_path.exists():
+        return False
+    with lock_path.open("a+", encoding="utf-8") as handle:
+        try:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return True
+        fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+    return False
 
 
 def save_new_plan(plan: dict[str, object], state_root: Path) -> Path:
@@ -722,8 +839,7 @@ def history_records(state_root: Path) -> list[dict[str, object]]:
             continue
         plan = read_json(directory / "plan.json")
         state = read_json(directory / "state.json") if (directory / "state.json").is_file() else {}
-        active_pid = state.get("active_pid")
-        active = bool(active_pid and Path(f"/proc/{active_pid}").exists())
+        active = plan_lock_is_held(directory)
         records.append(
             {
                 "plan_id": plan.get("plan_id", directory.name),
@@ -849,11 +965,61 @@ def execute_command(
             env=sanitized_command_env(),
         )
         assert process.stdout is not None
-        for line in process.stdout:
-            print(line, end="")
-            step_log.write(line)
-            run_log.write(line)
-        return process.wait()
+        try:
+            for line in process.stdout:
+                print(line, end="")
+                step_log.write(line)
+                run_log.write(line)
+            return process.wait()
+        except KeyboardInterrupt:
+            process.terminate()
+            try:
+                process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait()
+            raise
+
+
+def append_command_attempt(
+    state: dict[str, Any],
+    *,
+    step_id: str,
+    command: dict[str, object],
+    run_id: str,
+    log_path: Path,
+) -> None:
+    state["steps"][step_id]["commands"].append(
+        {
+            "argv": command["argv"],
+            "cwd": command.get("cwd"),
+            "status": "running",
+            "exit_status": None,
+            "log_path": str(log_path),
+            "run_id": run_id,
+            "started_at": utc_now(),
+            "ended_at": None,
+        }
+    )
+
+
+def finish_command_attempt(
+    state: dict[str, Any],
+    *,
+    step_id: str,
+    run_id: str,
+    log_path: Path,
+    exit_status: int | None,
+    status: str,
+) -> None:
+    log_path_text = str(log_path)
+    for command in reversed(state["steps"][step_id]["commands"]):
+        if command.get("run_id") == run_id and command.get("log_path") == log_path_text:
+            command["status"] = status
+            command["exit_status"] = exit_status
+            command["ended_at"] = utc_now()
+            return
+    raise RuntimeError(f"COMMAND_ATTEMPT_MISSING: {step_id} {run_id} {log_path}")
 
 
 def print_failure_summary(
@@ -889,6 +1055,24 @@ def run_plan(
     start_index: int = 0,
     skip_first: bool = False,
 ) -> int:
+    try:
+        with PlanRunLock(plan_dir):
+            return _run_plan_locked(
+                plan_dir,
+                start_index=start_index,
+                skip_first=skip_first,
+            )
+    except PlanAlreadyActive as exc:
+        print(f"{YELLOW}{BOLD}Merge already running:{RESET} {exc}", file=sys.stderr)
+        return 1
+
+
+def _run_plan_locked(
+    plan_dir: Path,
+    *,
+    start_index: int = 0,
+    skip_first: bool = False,
+) -> int:
     plan = read_json(plan_dir / "plan.json")
     state = read_json(plan_dir / "state.json")
     run_id = f"{timestamp_id()}-{uuid.uuid4().hex[:8]}"
@@ -914,6 +1098,7 @@ def run_plan(
         return 0 if status == "completed" else 1
 
     current_step_id: str | None = None
+    current_command_log_path: Path | None = None
 
     def mark_current_step(status: str) -> None:
         if current_step_id is None:
@@ -924,6 +1109,20 @@ def run_plan(
             step_state["status"] = status
             step_state["ended_at"] = utc_now()
             write_json(plan_dir / "state.json", latest)
+
+    def mark_current_command(status: str) -> None:
+        if current_step_id is None or current_command_log_path is None:
+            return
+        latest = read_json(plan_dir / "state.json")
+        finish_command_attempt(
+            latest,
+            step_id=current_step_id,
+            run_id=run_id,
+            log_path=current_command_log_path,
+            exit_status=None,
+            status=status,
+        )
+        write_json(plan_dir / "state.json", latest)
 
     try:
         with SudoKeepalive(plan_requires_sudo_keepalive(plan)):
@@ -952,21 +1151,29 @@ def run_plan(
                 print(f"\033[36m==> {step['label']}\033[0m")
                 for command_index, command in enumerate(step["commands"], start=1):
                     log_path = plan_dir / "logs" / step_id / f"{run_id}-{command_index}.log"
+                    current_command_log_path = log_path
+                    state = read_json(plan_dir / "state.json")
+                    append_command_attempt(
+                        state,
+                        step_id=step_id,
+                        command=command,
+                        run_id=run_id,
+                        log_path=log_path,
+                    )
+                    write_json(plan_dir / "state.json", state)
                     exit_status = execute_command(
                         command,
                         log_path=log_path,
                         run_log_path=run_log_path,
                     )
                     state = read_json(plan_dir / "state.json")
-                    state["steps"][step_id]["commands"].append(
-                        {
-                            "argv": command["argv"],
-                            "cwd": command.get("cwd"),
-                            "exit_status": exit_status,
-                            "log_path": str(log_path),
-                            "run_id": run_id,
-                            "ended_at": utc_now(),
-                        }
+                    finish_command_attempt(
+                        state,
+                        step_id=step_id,
+                        run_id=run_id,
+                        log_path=log_path,
+                        exit_status=exit_status,
+                        status="completed" if exit_status == 0 else "failed",
                     )
                     write_json(plan_dir / "state.json", state)
                     if exit_status != 0:
@@ -982,6 +1189,7 @@ def run_plan(
                             log_path=log_path,
                         )
                         return finish("failed", "error_exit")
+                    current_command_log_path = None
 
                 state = read_json(plan_dir / "state.json")
                 state["steps"][step_id]["status"] = "completed"
@@ -990,6 +1198,7 @@ def run_plan(
                 current_step_id = None
         return finish("completed", None)
     except KeyboardInterrupt:
+        mark_current_command("interrupted")
         mark_current_step("interrupted")
         return finish("interrupted", "interrupt")
     except subprocess.CalledProcessError as exc:
@@ -1061,7 +1270,7 @@ def add_common_plan_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--json", action="store_true")
     parser.add_argument("-y", "--noconfirm", action="store_true")
-    parser.add_argument("--preview", choices=("tree", "flat"), default=None)
+    parser.add_argument("--preview", choices=("tree", "flat", "commands"), default=None)
     parser.add_argument(
         "--color",
         choices=("auto", "always", "never"),

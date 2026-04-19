@@ -39,6 +39,35 @@ def merge_package_sets(
     return selected
 
 
+def expected_package_paths(package_dir: Path) -> list[Path]:
+    result = subprocess.run(
+        ["makepkg", "--packagelist"],
+        cwd=str(package_dir),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(
+            "PACKAGE_PACKAGELIST_FAILED: makepkg --packagelist exited "
+            f"with status {result.returncode}: {result.stderr.strip()}"
+        )
+    paths = [
+        (Path(line) if Path(line).is_absolute() else package_dir / line)
+        for line in result.stdout.splitlines()
+        if line.strip()
+    ]
+    if not paths:
+        raise RuntimeError(f"PACKAGE_PACKAGELIST_EMPTY: {package_dir}")
+    missing = [path for path in paths if not path.is_file()]
+    if missing:
+        raise RuntimeError(
+            "PACKAGE_ARCHIVE_MISSING: current PKGBUILD expects missing archive(s): "
+            + ", ".join(str(path) for path in missing)
+        )
+    return paths
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Populate a local pacman repo from built package archives")
     parser.add_argument("--package-dir", required=True, help="directory containing built .pkg.tar.* archives")
@@ -49,6 +78,11 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="search recursively under --package-dir for built package archives",
     )
+    parser.add_argument(
+        "--require-packagelist",
+        action="store_true",
+        help="publish only archives named by makepkg --packagelist for the current PKGBUILD",
+    )
     return parser.parse_args()
 
 
@@ -58,8 +92,15 @@ def main() -> int:
     repo_dir = Path(args.repo_dir).resolve()
     repo_dir.mkdir(parents=True, exist_ok=True)
 
-    package_iter = package_dir.rglob("*.pkg.tar.*") if args.recursive else package_dir.glob("*.pkg.tar.*")
-    package_infos = read_package_infos(package_iter)
+    if args.require_packagelist:
+        try:
+            package_infos = read_package_infos(expected_package_paths(package_dir))
+        except RuntimeError as exc:
+            print(exc, file=sys.stderr)
+            return 2
+    else:
+        package_iter = package_dir.rglob("*.pkg.tar.*") if args.recursive else package_dir.glob("*.pkg.tar.*")
+        package_infos = read_package_infos(package_iter)
     if not package_infos:
         print(f"PACMAN_REPO_UPDATE_FAILED: no package archives found in {package_dir}", file=sys.stderr)
         print("HINT: build the package base first so .pkg.tar.zst artifacts exist.", file=sys.stderr)

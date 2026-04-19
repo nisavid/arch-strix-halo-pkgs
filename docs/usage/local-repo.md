@@ -171,9 +171,12 @@ tools/amerge install python-amd-aiter-gfx1151
 
 Interactive runs preview the merge plan and ask for confirmation unless
 `-y/--noconfirm` is given. Noninteractive runs skip the prompt and preview
-unless `--preview=flat` or `--preview=tree` is requested. Preview colors default
-to `--color=auto`; use `--color=always` when capturing a colored preview and
-`--color=never` for plain text.
+unless `--preview=flat`, `--preview=tree`, or `--preview=commands` is requested.
+The tree preview includes both a dependency-forest projection and the linearized
+build order. Use the commands preview when you want to inspect the exact
+`makepkg`, publish, and install commands before running privileged operations.
+Preview colors default to `--color=auto`; use `--color=always` when capturing a
+colored preview and `--color=never` for plain text.
 
 Resume and inspect retained plans:
 
@@ -190,6 +193,11 @@ Logs go to:
 - `docs/worklog/amerge/<plan-id>/state.json`
 - `docs/worklog/amerge/<plan-id>/<run-id>.log`
 - `docs/worklog/amerge/<plan-id>/logs/<step-id>/`
+
+Each active plan also holds `docs/worklog/amerge/<plan-id>/active.lock`, which
+prevents concurrent resumes or duplicate runs of the same plan. State files are
+written through atomic replacement so interrupted runs remain inspectable and
+resumable.
 
 ## Run Inference Scenarios
 

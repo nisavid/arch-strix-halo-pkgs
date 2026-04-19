@@ -2,9 +2,14 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import subprocess
 import sys
+import threading
+import time
 from pathlib import Path
+
+import pytest
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -269,6 +274,51 @@ def test_tree_preview_uses_unicode_tree_characters(tmp_path: Path):
     assert "[1] python-app-gfx1151" in result.stdout
 
 
+def test_tree_preview_renders_dependency_forest_for_dependency_expansion(tmp_path: Path):
+    packages_root = graph_fixture(tmp_path)
+    result = run_amerge(
+        "run",
+        "--dry-run",
+        "--preview=tree",
+        "--deps",
+        "--packages-root",
+        str(packages_root),
+        "python-app-gfx1151",
+    )
+
+    assert result.returncode == 0
+    assert "Dependency forest" in result.stdout
+    assert "[1] therock-gfx1151" in result.stdout
+    assert "[2] python-core-gfx1151" in result.stdout
+    assert "[3] python-leaf-gfx1151" in result.stdout
+    assert "[4] python-app-gfx1151" in result.stdout
+    assert result.stdout.index("[1] therock-gfx1151") < result.stdout.index(
+        "[2] python-core-gfx1151"
+    )
+    assert result.stdout.index("[2] python-core-gfx1151") < result.stdout.index(
+        "[3] python-leaf-gfx1151"
+    )
+    assert result.stdout.index("[3] python-leaf-gfx1151") < result.stdout.index(
+        "[4] python-app-gfx1151"
+    )
+
+
+def test_commands_preview_includes_concrete_commands(tmp_path: Path):
+    packages_root = graph_fixture(tmp_path)
+    result = run_amerge(
+        "run",
+        "--dry-run",
+        "--preview=commands",
+        "--packages-root",
+        str(packages_root),
+        "python-app-gfx1151",
+    )
+
+    assert result.returncode == 0
+    assert "$ makepkg -sf --noconfirm" in result.stdout
+    assert "$ sudo pacman -Sy --noconfirm python-app-gfx1151" in result.stdout
+
+
 def test_tree_preview_can_be_colored(tmp_path: Path):
     packages_root = graph_fixture(tmp_path)
     result = run_amerge(
@@ -349,6 +399,23 @@ def test_build_steps_request_sudo_keepalive_without_wrapping_makepkg(tmp_path: P
     assert plan["steps"][0]["commands"][0]["argv"][0] == "makepkg"
 
 
+def test_publish_steps_require_current_packagelist_artifacts(tmp_path: Path):
+    packages_root = graph_fixture(tmp_path)
+    result = run_amerge(
+        "publish",
+        "--dry-run",
+        "--json",
+        "--packages-root",
+        str(packages_root),
+        "python-app-gfx1151",
+    )
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    update_command = payload["steps"][0]["commands"][0]["argv"]
+    assert "--require-packagelist" in update_command
+
+
 def test_command_environment_removes_user_python_state(monkeypatch):
     module = load_module()
     monkeypatch.setenv("PYTHONPYCACHEPREFIX", "/home/demo/.cache/python")
@@ -368,6 +435,135 @@ def test_command_environment_removes_user_python_state(monkeypatch):
         "PYTHON_EGG_CACHE, PYTHONPATH, PYTHONPYCACHEPREFIX, "
         "PYTHONSTARTUP, PYTHONUSERBASE\n"
     )
+
+
+def test_write_json_preserves_existing_file_when_atomic_replace_fails(
+    tmp_path: Path,
+    monkeypatch,
+):
+    module = load_module()
+    path = tmp_path / "state.json"
+    path.write_text('{"old": true}\n', encoding="utf-8")
+
+    def fail_replace(src: str | os.PathLike[str], dst: str | os.PathLike[str]) -> None:
+        raise OSError("simulated replace failure")
+
+    monkeypatch.setattr(module.os, "replace", fail_replace)
+
+    with pytest.raises(OSError, match="simulated replace failure"):
+        module.write_json(path, {"old": False})
+
+    assert path.read_text(encoding="utf-8") == '{"old": true}\n'
+    assert not list(tmp_path.glob(".state.json.*.tmp"))
+
+
+def test_history_does_not_treat_reused_pid_as_active_without_lock(tmp_path: Path):
+    module = load_module()
+    state_root = tmp_path / "state"
+    run_dir = state_root / "20260418T120000-demo"
+    run_dir.mkdir(parents=True)
+    (run_dir / "plan.json").write_text(
+        json.dumps({"plan_id": "demo", "command": "run", "targets": ["pkg"]}),
+        encoding="utf-8",
+    )
+    (run_dir / "state.json").write_text(
+        json.dumps({"status": "running", "run_ids": ["run-1"], "active_pid": os.getpid()}),
+        encoding="utf-8",
+    )
+
+    [record] = module.history_records(state_root)
+
+    assert record["active"] is False
+
+
+def test_run_plan_refuses_when_plan_lock_is_already_held(tmp_path: Path):
+    module = load_module()
+    plan = {
+        "schema_version": 1,
+        "plan_id": "locked-demo",
+        "created_at": "2026-04-18T12:00:00-04:00",
+        "command": "run",
+        "targets": ["demo"],
+        "flags": {"deps": False, "rdeps": False},
+        "config": {},
+        "merge_plan": {"build_roots": ["demo"], "install_outputs": ["demo"]},
+        "dependency_graph": [],
+        "steps": [
+            {
+                "id": "0001-ok",
+                "label": "ok",
+                "kind": "test",
+                "root": "demo",
+                "commands": [{"argv": [sys.executable, "-c", "print('ok')"], "cwd": None}],
+            }
+        ],
+    }
+    plan_dir = module.save_new_plan(plan, tmp_path / "state")
+
+    with module.PlanRunLock(plan_dir):
+        assert module.run_plan(plan_dir) == 1
+
+    state = json.loads((plan_dir / "state.json").read_text(encoding="utf-8"))
+    assert state["status"] == "pending"
+    assert state["steps"]["0001-ok"]["status"] == "pending"
+
+
+def test_running_command_is_recorded_before_it_exits(tmp_path: Path):
+    module = load_module()
+    plan = {
+        "schema_version": 1,
+        "plan_id": "running-command-demo",
+        "created_at": "2026-04-18T12:00:00-04:00",
+        "command": "run",
+        "targets": ["demo"],
+        "flags": {"deps": False, "rdeps": False},
+        "config": {},
+        "merge_plan": {"build_roots": ["demo"], "install_outputs": ["demo"]},
+        "dependency_graph": [],
+        "steps": [
+            {
+                "id": "0001-sleep",
+                "label": "sleep",
+                "kind": "test",
+                "root": "demo",
+                "commands": [
+                    {
+                        "argv": [
+                            sys.executable,
+                            "-c",
+                            "import time; print('started', flush=True); time.sleep(1)",
+                        ],
+                        "cwd": None,
+                    }
+                ],
+            }
+        ],
+    }
+    plan_dir = module.save_new_plan(plan, tmp_path / "state")
+    result: dict[str, int] = {}
+    thread = threading.Thread(
+        target=lambda: result.setdefault("exit_status", module.run_plan(plan_dir))
+    )
+    thread.start()
+    try:
+        deadline = time.monotonic() + 5
+        command_record = None
+        while time.monotonic() < deadline:
+            state = json.loads((plan_dir / "state.json").read_text(encoding="utf-8"))
+            commands = state["steps"]["0001-sleep"]["commands"]
+            if commands:
+                command_record = commands[0]
+                break
+            time.sleep(0.05)
+
+        assert command_record is not None
+        assert command_record["status"] == "running"
+        assert command_record["exit_status"] is None
+        assert Path(command_record["log_path"]).is_file()
+    finally:
+        thread.join(timeout=5)
+
+    assert result == {"exit_status": 0}
 
 
 def test_failed_plan_records_logs_and_resume_skip_continues(
