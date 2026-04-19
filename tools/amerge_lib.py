@@ -700,8 +700,7 @@ def render_preview(plan: dict[str, object], preview: str, *, color: bool = False
 
 def plan_requires_sudo_keepalive(plan: dict[str, object]) -> bool:
     return any(
-        step.get("kind") == "build"
-        or any(command.get("privileged") for command in step["commands"])
+        any(command.get("privileged") for command in step["commands"])
         for step in plan["steps"]
     )
 

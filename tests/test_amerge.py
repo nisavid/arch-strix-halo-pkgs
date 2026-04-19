@@ -377,7 +377,7 @@ def test_history_and_logs_report_persisted_runs(tmp_path: Path):
     ]
 
 
-def test_build_steps_request_sudo_keepalive_without_wrapping_makepkg(tmp_path: Path):
+def test_build_steps_do_not_request_sudo_keepalive(tmp_path: Path):
     module = load_module()
     plan = {
         "steps": [
@@ -395,8 +395,28 @@ def test_build_steps_request_sudo_keepalive_without_wrapping_makepkg(tmp_path: P
         ],
     }
 
-    assert module.plan_requires_sudo_keepalive(plan)
+    assert not module.plan_requires_sudo_keepalive(plan)
     assert plan["steps"][0]["commands"][0]["argv"][0] == "makepkg"
+
+
+def test_privileged_steps_request_sudo_keepalive(tmp_path: Path):
+    module = load_module()
+    plan = {
+        "steps": [
+            {
+                "id": "0001-publish-demo",
+                "kind": "publish",
+                "commands": [
+                    {
+                        "argv": ["sudo", "install", "-d", "/srv/pacman/demo"],
+                        "privileged": True,
+                    }
+                ],
+            }
+        ],
+    }
+
+    assert module.plan_requires_sudo_keepalive(plan)
 
 
 def test_publish_steps_require_current_packagelist_artifacts(tmp_path: Path):

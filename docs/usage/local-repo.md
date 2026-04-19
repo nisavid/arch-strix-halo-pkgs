@@ -169,6 +169,11 @@ tools/amerge publish python-amd-aiter-gfx1151
 tools/amerge install python-amd-aiter-gfx1151
 ```
 
+`build` runs only package builds and does not pre-warm sudo. Use it for
+unprivileged/autonomous rebuild attempts when the host already has build
+dependencies installed. `run`, `publish`, and `install` still use sudo for
+repo publication and pacman installation steps.
+
 Interactive runs preview the merge plan and ask for confirmation unless
 `-y/--noconfirm` is given. Noninteractive runs skip the prompt and preview
 unless `--preview=flat`, `--preview=tree`, or `--preview=commands` is requested.
