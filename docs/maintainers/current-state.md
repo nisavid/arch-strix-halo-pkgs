@@ -303,8 +303,9 @@ The following smoke checks have already passed on the reference host:
   non-exploratory broad `vllm` scenarios first, then `compiled-probe`
   scenarios to answer the eager-mode question, MoE backend probes after that,
   and finally real-model TorchAO plus multimodal exploratory scenarios. The
-  first compiled and MoE decisions are now recorded; finish the TorchAO and
-  multimodal probes before moving to Qwen3.5 validation.
+  first compiled, MoE, TorchAO, and representative multimodal decisions are
+  now recorded; keep the remaining multimodal scenarios exploratory until the
+  shared E2B server/AsyncLLM warmup fault is fixed.
 - The 2026-04-19 Gemma 4 broad vLLM pass is recorded but not promotable as a
   default server matrix:
   - passed:
@@ -328,6 +329,12 @@ The following smoke checks have already passed on the reference host:
     selected `Using TRITON_ATTN backend` and still hit the same GPU
     memory-access fault, so the E2B server fault is not explained by AITER
     unified attention alone
+  - a representative exploratory multimodal probe,
+    `vllm.gemma4.e2b.server.image`, failed on 2026-04-19 before any image
+    request was sent: the server selected `ROCM_AITER_UNIFIED_ATTN`, loaded
+    weights, initialized the encoder cache with an image budget, profiled 29
+    maximum-size image items, and then hit the same ROCm GPU memory-access
+    fault during engine initialization
 - The 2026-04-19 compiled-path investigation keeps eager mode as the supported
   Gemma 4 helper default for E2B, but no longer for every Gemma 4 checkpoint:
   - the pre-repair host Triton package lacked

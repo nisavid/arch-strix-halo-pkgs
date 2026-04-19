@@ -80,6 +80,11 @@
     AsyncLLM/server initialization with a ROCm GPU memory-access fault, and an
     isolated `--attention-backend TRITON_ATTN` probe reproduced the same fault
     after proving the server selected `TRITON_ATTN`
+  - a representative exploratory image-input run on 2026-04-19 confirmed the
+    multimodal server group is still blocked at engine initialization: vLLM
+    loaded the E2B weights, began encoder-cache profiling with image items, and
+    then hit the same ROCm GPU memory-access fault before any request was
+    served
   - keep a dedicated follow-up for the E2B server/AsyncLLM startup fault; the
     offline eager `tools/gemma4_text_smoke.py` path for the same E2B checkpoint
     still passes, so the failure is not a model-artifact or tokenizer-path
@@ -128,7 +133,11 @@
     TorchAO/vLLM metadata mismatch is fixed; it now writes processor files but
     still fails during weight loading with
     `AttributeError: 'Tensor' object has no attribute 'tensor_data_names'`
-  - next continue to multimodal exploratory scenarios
+  - done for representative multimodal probing:
+    `vllm.gemma4.e2b.server.image` failed before request serving during
+    encoder-cache image profiling with the same ROCm GPU memory-access fault;
+    leave the remaining multimodal scenarios exploratory and blocked behind
+    the shared E2B server/AsyncLLM startup fault
 - Revisit `python-flydsl-gfx1151` once the MLIR development-surface story is
   clear.
 - Benchmark whether the custom `llama.cpp` builds still justify their
