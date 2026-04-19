@@ -643,7 +643,8 @@ _source_tree_has_all_source_patches() {
     grep -Fq 'def _selected_subcommand() -> str | None:' vllm/entrypoints/cli/main.py &&
     grep -Fq 'return on_mi3xx() or on_gfx1x()' vllm/_aiter_ops.py &&
     grep -Fq 'def torchao_version_at_least(torchao_version: str) -> bool:' \
-      vllm/model_executor/layers/quantization/torchao_utils.py
+      vllm/model_executor/layers/quantization/torchao_utils.py &&
+    grep -Fq 'Hybrid models need TRITON_ATTN' vllm/platforms/rocm.py
 }
 
 _apply_all_source_patches() {

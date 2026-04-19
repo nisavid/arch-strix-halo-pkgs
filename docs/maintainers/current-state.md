@@ -383,18 +383,24 @@ The following smoke checks have already passed on the reference host:
     `ValueError: ROCm AITer MoE backend is not available for this configuration`
   - do not restore the broader fused-MoE default-policy carry or the dormant
     Gemma 4 AITER MoE padding carry on the basis of the current evidence
-- There is still no repo-owned validation for Qwen3.5 hybrid-attention/GDN or
-  Qwen3.5 MoE/shared-expert lanes on gfx1151.
-  - the current local `vllm` source tree does contain the relevant model
-    surfaces: Qwen3Next hybrid attention via `GatedDeltaNetAttention`, plus
-    `SharedFusedMoE` for the sparse/shared-expert path
-  - the imported Blackcat recipe notes also describe testing patches and at
-    least one successful Qwen3.5-MoE eager benchmark on Strix Halo, but those
-    hybrid/GDN patch decisions have not yet been reconciled into the
-    maintained local package carry
-  - treat Qwen3.5 AITER attention/MoE viability as plausible but unverified in
-    this repo until a repo-owned host run records the chosen backend split and
-    any required hybrid/GDN guards explicitly
+- The first Qwen3.5 hybrid-attention/GDN package-carry reconciliation is now
+  represented in `python-vllm-rocm-gfx1151`.
+  - `0010-rocm-support-qwen35-hybrid-gdn.patch` carries the missing vLLM-side
+    pieces from Blackcat Informatics' advisory lane: AMD-restricted FLA
+    autotune grids, float32 GDN exponent operands, GDN warmup at `T=64`, hybrid
+    block-size realignment after ROCm platform updates, and hybrid
+    full-attention fallback away from AITER attention
+  - the imported warmup note's `qwen3_next.py` path is stale for vLLM 0.19.0;
+    the maintained patch applies the guard in
+    `vllm/model_executor/layers/mamba/gdn_linear_attn.py`
+  - no new `python-amd-aiter-gfx1151` patch is currently carried for the
+    advisory unified-attention tile note because the installed AITER source
+    already uses a safer `min(64, triton.next_power_of_2(block_size))` tile
+    expression
+  - there is still no repo-owned live validation for Qwen3.5 hybrid/GDN or
+    Qwen3.5 MoE/shared-expert lanes on gfx1151; the local Hugging Face cache
+    only exposed GGUF Qwen3.5 artifacts during the 2026-04-19 reconciliation
+    pass, so add non-GGUF checkpoints before promoting scenarios
 - The tracked host-side follow-up helper for OpenAI-compatible server smokes is
   now `tools/gemma4_server_smoke.py`.
   - `--mode basic` launches

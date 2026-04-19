@@ -53,15 +53,24 @@
 - Reconcile Blackcat's Qwen3.5 hybrid-attention/GDN patch lane against the
   maintained `python-vllm-rocm-gfx1151` and `python-amd-aiter-gfx1151`
   package story.
-  - identify which imported recipe/build-script patches have already landed
-    upstream, which still need local carry, and which are stale
-  - specifically review the hybrid block-size alignment rules, the
-    hybrid-model exclusion from AITER unified attention, and the AMD-specific
-    FLA/GDN fixes
+  - done for the first package-carry pass: `python-vllm-rocm-gfx1151` now
+    carries `0010-rocm-support-qwen35-hybrid-gdn.patch`, covering the
+    still-missing AMD FLA/GDN autotune restrictions, float32 exponent
+    operands, hybrid block-size realignment after ROCm platform updates, and
+    hybrid full-attention fallback away from AITER attention
+  - the imported GDN warmup note's `qwen3_next.py` path was stale for vLLM
+    0.19.0; the maintained patch applies that guard at
+    `vllm/model_executor/layers/mamba/gdn_linear_attn.py`
+  - AITER-side unified attention already uses a safer
+    `min(64, triton.next_power_of_2(block_size))` tile expression in the
+    installed package, so no new AITER package patch is carried for that note
 - Add repo-owned validation for Qwen3.5 hybrid/GDN and Qwen3.5 MoE or
   shared-expert lanes on gfx1151.
   - cover at least one Qwen3.5 hybrid-attention model and one Qwen3.5
     MoE/shared-expert model
+  - blocked for live vLLM validation until a non-GGUF Qwen3.5 checkpoint is
+    locally available; the current local Hugging Face cache only showed
+    GGUF Qwen3.5 artifacts during the 2026-04-19 reconciliation pass
   - record whether attention can stay on AITER or must remain on Triton,
     whether GDN needs extra env toggles or source fixes, and whether AITER
     fused/shared-expert MoE is actually safe on the maintained stack
