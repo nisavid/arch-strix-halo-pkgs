@@ -6,6 +6,23 @@ Status as of 2026-04-19.
 
 The first full live cutover completed successfully on the reference Arch host.
 
+The reference host's active Hugging Face cache for current validation work is
+`/var/cache/hf`, not the older `/bulk/hf` cache. Current local non-GGUF model
+snapshots relevant to this branch are:
+
+- `google/gemma-4-31B-it` at
+  `/var/cache/hf/hub/models--google--gemma-4-31B-it/snapshots/439edf5652646a0d1bd8b46bfdc1d3645761a445`
+- `Qwen/Qwen3.5-0.8B` at
+  `/var/cache/hf/hub/models--Qwen--Qwen3.5-0.8B/snapshots/2fc06364715b967f1860aea9cf38778875588b17`
+- `Qwen/Qwen3.6-35B-A3B-FP8` at
+  `/var/cache/hf/hub/models--Qwen--Qwen3.6-35B-A3B-FP8/snapshots/61a5771f218894aaacf97551e24a25b866750fc2`
+
+Use `Qwen/Qwen3.6-35B-A3B-FP8` as the main Qwen MoE/shared-expert target for
+this dev arc; it replaces the earlier Qwen3.5 122B-A10B testing and usage
+target. Its local config advertises `Qwen3_5MoeForConditionalGeneration` /
+`qwen3_5_moe`, so the maintained Qwen3.5/GDN package carry is still relevant
+to this lane.
+
 Installed and validated at least once on the live host:
 
 - generated TheRock/ROCm split package family
@@ -368,8 +385,9 @@ The following smoke checks have already passed on the reference host:
     generated corrupted text, so it is not promotable
   - with the same shim and CUDAGraph disabled, the E2B compiled path faulted
     the GPU during initialization/warmup
-  - do not remove eager mode for `google/gemma-4-E2B-it`; rerun
-    `google/gemma-4-31B-it` only once the checkpoint is locally available
+  - do not remove eager mode for `google/gemma-4-E2B-it`; the
+    `google/gemma-4-31B-it` checkpoint is now locally available under
+    `/var/cache/hf` and should be rerun before closing the branch
 - The 2026-04-19 26B-A4B MoE backend investigation confirms that the current
   package should stay on Triton for sparse MoE execution:
   - `vllm.gemma4.26b-a4b.server.moe-auto` passed in `288.508121` seconds with
@@ -410,10 +428,14 @@ The following smoke checks have already passed on the reference host:
     the logs selected `ROCM_AITER_UNIFIED_ATTN`, imported AITER's JIT helper,
     used `Using TRITON backend for Unquantized MoE`, and ended with no
     running GPU processes detected
-  - there is still no repo-owned live validation for Qwen3.5 hybrid/GDN or
-    Qwen3.5 MoE/shared-expert lanes on gfx1151; the local Hugging Face cache
-    only exposed GGUF Qwen3.5 artifacts during the 2026-04-19 reconciliation
-    pass, so add non-GGUF checkpoints before promoting scenarios
+  - the old non-GGUF checkpoint blocker is cleared by the `/var/cache/hf`
+    cache move: use `Qwen/Qwen3.5-0.8B` for tiny Qwen3.5 hybrid/GDN smoke
+    coverage and `Qwen/Qwen3.6-35B-A3B-FP8` for the main Qwen
+    MoE/shared-expert lane
+  - there is still no repo-owned live validation for either Qwen lane on
+    gfx1151; add tracked scenarios and record whether attention must stay on
+    Triton for hybrid layers, whether GDN needs any extra runtime toggles, and
+    whether the maintained MoE path is viable for Qwen3.6
 - The tracked host-side follow-up helper for OpenAI-compatible server smokes is
   now `tools/gemma4_server_smoke.py`.
   - `--mode basic` launches

@@ -46,8 +46,8 @@
     compiled probe passed with torch.compile and CUDAGraph capture, while the
     E2B compiled+cudagraph probe still generated corrupted output instead of a
     valid five-word answer
-  - rerun the 31B compiled probe once the checkpoint is locally available; the
-    31B checkpoint was not locally available during the 2026-04-19 pass
+  - rerun the 31B compiled probe now that `google/gemma-4-31B-it` is locally
+    available under `/var/cache/hf`
   - start from the `compiled-probe` scenarios under `inference/scenarios/`
     instead of treating the experiment as an ad hoc terminal-only rehearsal
 - Reconcile Blackcat's Qwen3.5 hybrid-attention/GDN patch lane against the
@@ -73,13 +73,15 @@
     `vllm.gemma4.26b-a4b.server.basic` both passed against
     `/bulk/hf/hub/models--google--gemma-4-26B-A4B-it/snapshots/7d4c97e54145f8ffd1a4dd1b4986a5015a517842`
     with `ROCM_AITER_UNIFIED_ATTN` and Triton unquantized MoE
-- Add repo-owned validation for Qwen3.5 hybrid/GDN and Qwen3.5 MoE or
-  shared-expert lanes on gfx1151.
-  - cover at least one Qwen3.5 hybrid-attention model and one Qwen3.5
-    MoE/shared-expert model
-  - blocked for live vLLM validation until a non-GGUF Qwen3.5 checkpoint is
-    locally available; the current local Hugging Face cache only showed
-    GGUF Qwen3.5 artifacts during the 2026-04-19 reconciliation pass
+- Add repo-owned validation for Qwen hybrid/GDN and MoE or shared-expert lanes
+  on gfx1151.
+  - cover `Qwen/Qwen3.5-0.8B` as the tiny non-MoE Qwen3.5 hybrid/GDN smoke
+  - cover `Qwen/Qwen3.6-35B-A3B-FP8` as the main Qwen MoE/shared-expert smoke;
+    this replaces the earlier Qwen3.5 122B-A10B target in local testing and
+    usage plans
+  - the old non-GGUF checkpoint blocker is cleared: the reference host's
+    current `HF_HOME` is `/var/cache/hf`, with local snapshots for
+    `Qwen/Qwen3.5-0.8B` and `Qwen/Qwen3.6-35B-A3B-FP8`
   - record whether attention can stay on AITER or must remain on Triton,
     whether GDN needs extra env toggles or source fixes, and whether AITER
     fused/shared-expert MoE is actually safe on the maintained stack
@@ -111,7 +113,7 @@
     previous multimodal warmup fault is proven absent on the maintained stack
   - relevant Hugging Face model-card usage patterns that are not already
     covered by the vLLM recipe scenarios
-- Immediate Gemma 4 live-validation sequence before moving to Qwen3.5:
+- Immediate Gemma 4 live-validation sequence before moving to Qwen:
   - done for the first broad pass on 2026-04-19: the non-exploratory vLLM
     matrix passed 26B-A4B offline text basic plus the tiny TorchAO
     prepare/generate helper scenarios, but failed the 26B-A4B server startup
@@ -128,8 +130,8 @@
     `vllm.gemma4.e2b.text.compiled` initialized, compiled, captured graphs,
     and generated, but failed validation with corrupted output; do not remove
     eager mode for E2B
-  - next rerun the 31B compiled probe once a 31B checkpoint is locally
-    available
+  - next rerun the 31B compiled probe against the newly local
+    `google/gemma-4-31B-it` checkpoint under `/var/cache/hf`
   - next keep the new E2B `kernel-probe` scenario around as a tracked
     regression probe for the server fault, because the forced Triton attention
     lane still faults and therefore rules out an AITER-only explanation
@@ -214,11 +216,13 @@
 - Include a `llama.cpp` long-context sweep using the Strix Halo Home Lab wiki
   method as a reference point:
   - <https://strixhalo.wiki/AI/llamacpp-performance#long-context-length-testing>
-- Use at least these GGUF models:
+- Use at least these model families:
   - `unsloth/gemma-4-E2B-it-GGUF:UD-Q6_K_XL`
   - `unsloth/gemma-4-26B-A4B-it-GGUF:UD-Q4_K_XL`
-  - `unsloth/Qwen3.5-2B-GGUF:UD-Q6_K_XL`
-  - `unsloth/Qwen3.5-122B-A10B-GGUF:UD-Q4_K_XL`
+  - `Qwen/Qwen3.5-0.8B` for tiny non-GGUF vLLM Qwen smoke coverage
+  - `Qwen/Qwen3.6-35B-A3B-FP8` for the main non-GGUF vLLM Qwen MoE lane,
+    replacing the earlier Qwen3.5 122B-A10B target in local testing plans
+  - use a Qwen3.6 GGUF quantization for llama.cpp once one is chosen locally
 - Capture benchmark methodology and results in repo docs before any public AUR
   publication attempt.
 
