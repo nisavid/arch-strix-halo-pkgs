@@ -9,12 +9,14 @@ from pathlib import Path
 
 import torch
 from safetensors import safe_open
+from torchao.core.config import config_to_dict
 from torchao.prototype.safetensors.safetensors_support import (
     unflatten_tensor_state_dict,
 )
 from torchao.quantization import Int8WeightOnlyConfig
 from transformers import (
     AutoModelForCausalLM,
+    AutoProcessor,
     AutoTokenizer,
     LlamaConfig,
     LlamaForCausalLM,
@@ -55,13 +57,23 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-model-len", type=int, default=128)
     parser.add_argument("--gpu-memory-utilization", type=float, default=0.5)
     parser.add_argument(
+        "--online-quantization",
+        action="store_true",
+        help="serve --source-model directly and let vLLM apply TorchAO after loading high-precision weights",
+    )
+    parser.add_argument(
         "--execution-mode",
         choices=("eager", "compiled"),
         default="eager",
         help="use eager correctness mode or allow vLLM compilation/cudagraph paths",
     )
     parser.add_argument("--dry-run", action="store_true")
-    return parser.parse_args()
+    args = parser.parse_args()
+    if args.online_quantization and args.source_model is None:
+        parser.error("--online-quantization requires --source-model")
+    if args.online_quantization and args.quantized_model is not None:
+        parser.error("--online-quantization cannot be combined with --quantized-model")
+    return args
 
 
 def real_quant_dir(work_dir: Path) -> Path:
@@ -83,15 +95,23 @@ def build_plan(args: argparse.Namespace) -> dict[str, object]:
         else real_quant_dir(work_dir)
     )
     mode = "real-model" if args.source_model is not None or args.quantized_model is not None else "tiny"
+    if args.source_model is not None and args.online_quantization:
+        mode = "real-model-online"
+    quantized_model_ref = {
+        "real-model": str(quantized_model),
+        "real-model-online": None,
+        "tiny": str(work_dir / "tiny-llama-torchao"),
+    }[mode]
     return {
         "mode": mode,
         "work_dir": str(work_dir),
         "source_model": display_model_ref(args.source_model) if args.source_model else None,
-        "quantized_model": str(quantized_model) if mode == "real-model" else str(work_dir / "tiny-llama-torchao"),
+        "quantized_model": quantized_model_ref,
         "prepare_only": args.prepare_only,
         "quantization": "torchao-int8-weight-only",
         "max_model_len": args.max_model_len,
         "gpu_memory_utilization": args.gpu_memory_utilization,
+        "online_quantization": args.online_quantization,
         "execution_mode": args.execution_mode,
         "warning_markers": WARNING_MARKERS,
     }
@@ -152,6 +172,16 @@ def prepare_checkpoint(work_dir: Path) -> Path:
     return quant_dir
 
 
+def save_processor_or_tokenizer(source_model: str, quant_dir: Path) -> None:
+    try:
+        processor = AutoProcessor.from_pretrained(source_model, trust_remote_code=True)
+    except (OSError, ValueError):
+        tokenizer = AutoTokenizer.from_pretrained(source_model, trust_remote_code=True)
+        tokenizer.save_pretrained(quant_dir)
+    else:
+        processor.save_pretrained(quant_dir)
+
+
 def prepare_real_checkpoint(source_model: str, quant_dir: Path) -> Path:
     if quant_dir.exists():
         shutil.rmtree(quant_dir)
@@ -169,8 +199,7 @@ def prepare_real_checkpoint(source_model: str, quant_dir: Path) -> Path:
         trust_remote_code=True,
     )
     quantized_model.save_pretrained(quant_dir, safe_serialization=True)
-    tokenizer = AutoTokenizer.from_pretrained(source_model, trust_remote_code=True)
-    tokenizer.save_pretrained(quant_dir)
+    save_processor_or_tokenizer(source_model, quant_dir)
 
     print("prepare_real_ok")
     print("source_model", display_model_ref(source_model))
@@ -313,6 +342,7 @@ def run_vllm_smoke(
     gpu_memory_utilization: float = 0.2,
     execution_mode: str = "eager",
     skip_tokenizer_init: bool = True,
+    online_torchao: bool = False,
 ) -> None:
     from vllm import LLM, SamplingParams
 
@@ -332,6 +362,13 @@ def run_vllm_smoke(
         "tensor_parallel_size": 1,
         "disable_log_stats": True,
     }
+    if online_torchao:
+        llm_kwargs["quantization"] = "torchao"
+        llm_kwargs["hf_overrides"] = {
+            "quantization_config_dict_json": json.dumps(
+                config_to_dict(Int8WeightOnlyConfig(version=2))
+            )
+        }
     if execution_mode == "eager":
         llm_kwargs["enforce_eager"] = True
     llm = LLM(**llm_kwargs)
@@ -367,7 +404,10 @@ def main() -> None:
         return
 
     work_dir = args.work_dir.resolve()
-    if args.source_model is not None:
+    if args.source_model is not None and args.online_quantization:
+        quant_dir = Path(args.source_model)
+        print("using_online_source_model", display_model_ref(args.source_model))
+    elif args.source_model is not None:
         quant_dir = prepare_real_checkpoint(args.source_model, real_quant_dir(work_dir))
     elif args.quantized_model is not None:
         quant_dir = args.quantized_model.resolve()
@@ -386,8 +426,9 @@ def main() -> None:
                 gpu_memory_utilization=args.gpu_memory_utilization,
                 execution_mode=args.execution_mode,
                 skip_tokenizer_init=False,
+                online_torchao=args.online_quantization,
             )
-        print("warning_summary", json.dumps(classify_warning_text(""), sort_keys=True))
+        print("warning_markers", json.dumps(WARNING_MARKERS, sort_keys=True))
 
 
 if __name__ == "__main__":

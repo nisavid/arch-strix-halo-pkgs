@@ -7,6 +7,11 @@
 - Convert remaining scripted source edits into durable patch files where
   practical.
 - Tighten package hygiene for embedded build paths in PyTorch and vLLM.
+- Fix `tools/render_recipe_scaffolds.py` before relying on it for
+  `python-torchao-rocm-gfx1151` PKGBUILD regeneration. A 2026-04-19 render
+  trial would have dropped the package's manual submodule initialization,
+  `ROCM_HOME`, `PYTORCH_ROCM_ARCH`, `VERSION_SUFFIX`, and post-install RPATH
+  logic, so package-local docs were updated narrowly instead.
 - Keep the local `python-transformers-gfx1151` and
   `python-mistral-common-gfx1151` closure lanes aligned. The current Gemma 4
   processor path needs both `transformers.models.gemma4` and
@@ -110,17 +115,20 @@
     `Using TRITON backend for Unquantized MoE`; forced
     `--moe-backend aiter` failed fast with
     `ValueError: ROCm AITer MoE backend is not available for this configuration`
-  - next continue to real-model TorchAO and multimodal exploratory scenarios
-- Investigate the two remaining warnings on the now-passing TorchAO helper path:
-  - `Stored version is not the same as current default version`
-  - `Cannot use ROCm custom paged attention kernel, falling back to Triton implementation`
-- After those warning investigations, run and evaluate the tracked
-  `vllm.gemma4.e2b.torchao.real-model` scenario instead of stopping at the tiny
-  local Llama helper. If it is too large for routine use, replace or supplement
-  it with either:
-  - an upstream TorchAO-quantized checkpoint, or
-  - a local quantized real small model exercised through `vllm serve` /
-    OpenAI-compatible API flow
+  - done for TorchAO warning triage: the TorchAO config-version warning is
+    expected with the required version-2 int8 weight-only config on TorchAO
+    0.17.0, and the ROCm custom paged-attention fallback warning is a vLLM
+    shape/config selector warning that did not appear in the Gemma 4 E2B
+    online TorchAO run
+  - done for real-model TorchAO viability: the tracked
+    `vllm.gemma4.e2b.torchao.online-real-model` scenario passed on 2026-04-19
+    with `quantization=torchao`, `ROCM_AITER_UNIFIED_ATTN`, and `generation_ok`
+  - next keep the serialized
+    `vllm.gemma4.e2b.torchao.real-model` scenario exploratory until the
+    TorchAO/vLLM metadata mismatch is fixed; it now writes processor files but
+    still fails during weight loading with
+    `AttributeError: 'Tensor' object has no attribute 'tensor_data_names'`
+  - next continue to multimodal exploratory scenarios
 - Revisit `python-flydsl-gfx1151` once the MLIR development-surface story is
   clear.
 - Benchmark whether the custom `llama.cpp` builds still justify their

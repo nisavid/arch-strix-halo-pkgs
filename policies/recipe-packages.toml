@@ -198,8 +198,8 @@ scaffold_notes = [
   "Depends on the local python-mistral-common-gfx1151 closure package rather than the stale host python-mistral-common 1.8.x lane because Transformers 5.5.x imports ReasoningEffort from mistral_common.protocol.instruct.request.",
   "Carries a merged TorchAO startup-laziness patch so generic vLLM startup paths keep TorchAO version checks metadata-only and only import `TorchAOConfig` when `quantization == torchao`. This keeps optional broken host python-torchao-rocm packages from surfacing warning noise on unrelated code paths.",
   "Carries a merged CLI/runtime-light startup patch so plain `vllm --help` stays off the benchmark latency tree, OpenAI chat-utils tool-call path, Transformers-backed `arg_utils` helpers, and heavy `serve`/`launch`/`run-batch` runtime imports unless the user actually selected those flows.",
-  "The reference host now uses the local python-torchao-rocm-gfx1151 replacement lane, so the old external python-torchao-rocm failure is historical rather than current state. Generic vLLM startup should still stay TorchAO-clean on non-TorchAO code paths, and the tracked real round-trip helper for actual --quantization torchao support remains tools/torchao_vllm_smoke.py.",
-  "`tools/torchao_vllm_smoke.py` now covers both the tiny no-download checkpoint and a real-model path that quantizes `--source-model` with TorchAO int8 weight-only before serving it through vLLM. Treat the real-model scenario as exploratory until its warning surface and memory profile are captured on the reference host.",
+  "The reference host now uses the local python-torchao-rocm-gfx1151 replacement lane, so the old external python-torchao-rocm failure is historical rather than current state. Generic vLLM startup should still stay TorchAO-clean on non-TorchAO code paths, and the tracked helpers for actual --quantization torchao support remain tools/torchao_vllm_smoke.py plus the Gemma 4 TorchAO scenarios.",
+  "`tools/torchao_vllm_smoke.py` now covers the tiny no-download checkpoint, a serialized real-model probe, and a real-model online quantization path. On 2026-04-19, `vllm.gemma4.e2b.torchao.online-real-model` passed on the reference host with `quantization=torchao`, `ROCM_AITER_UNIFIED_ATTN`, and 10.62 GiB model-loading memory. Keep the serialized real-model scenario exploratory: it now writes processor files correctly, but still fails in TorchAO/vLLM weight loading with `AttributeError: 'Tensor' object has no attribute 'tensor_data_names'`.",
   "makepkg -e reuses src/, so build() intentionally reapplies the carried source patches before wheel generation instead of assuming prepare() already ran in the current tree.",
   "makepkg -f can also reuse a partially patched src/ tree across failed iterations. The PKGBUILD now re-extracts v0.19.0.tar.gz and reapplies the full carried patch series on a known-clean tree whenever its source-patch sentinels are missing, instead of relying on per-patch stamp files under src/.patch-state.",
   "Preserve makepkg's inherited CFLAGS/CXXFLAGS when layering Strix tuning flags, and feed the same prefix-map flags into HIPFLAGS, so Arch's build-path sanitization survives the ROCm/HIP compile lane too.",
@@ -712,8 +712,41 @@ update_notes = [
   "Check the upstream TorchAO compatibility table first during updates; this package must stay on the release line built for the local PyTorch lane rather than a nearby +git snapshot.",
   "Keep VERSION_SUFFIX empty for release builds unless upstream changes its versioning model; +git local versions bypass TorchAO's own compatibility gate and recreate avoidable import-time warnings.",
   "Keep ROCM_HOME=/opt/rocm in the build environment unless the local ROCm packaging layout changes. The host-visible hipcc wrapper may live under /usr/bin, but the headers and shared libraries still come from /opt/rocm.",
-  "Re-verify the installed extension with readelf -d and ldd -r after each update. A clean package needs both a usable torch/lib runpath and zero unresolved ATen/Torch symbols once torch/lib is visible."
+  "Re-verify the installed extension with readelf -d and ldd -r after each update. A clean package needs both a usable torch/lib runpath and zero unresolved ATen/Torch symbols once torch/lib is visible.",
+  "Keep the repo-local tools/torchao_vllm_smoke.py helper passing for both the tiny serialized checkpoint and the Gemma 4 online quantization path. Treat the serialized Gemma 4 real-model checkpoint path as blocked until the TorchAO/vLLM tensor metadata mismatch is fixed."
 ]
+recipe_notes_override = """
+Builds TorchAO `0.17.0` from the upstream git tag because that release does
+not publish an sdist on PyPI.
+
+TorchAO imports `torch` at build time and still hard-codes `gfx942` for ROCm
+extension builds. The local package exports `VERSION_SUFFIX=` to keep the
+wheel on the stable release version, exports `ROCM_HOME=/opt/rocm` so
+PyTorch's extension helpers use the real split-layout ROCm headers, and
+patches `setup.py` so the ROCm target arch follows `PYTORCH_ROCM_ARCH`.
+
+The staged package was verified locally with:
+- `readelf -d` showing `RUNPATH [$ORIGIN:$ORIGIN/../torch/lib:/opt/rocm/lib]`
+- `ldd -r` resolving cleanly against `/usr/lib/python3.14/site-packages/torch/lib`
+- `PYTHONPATH=<pkgdir>/site-packages python -c 'import torchao'` succeeding
+
+The reference host has now validated the installed package with a clean
+`import torchao` path, the tiny serialized-checkpoint
+`tools/torchao_vllm_smoke.py` round trip, and the tracked
+`vllm.gemma4.e2b.torchao.online-real-model` scenario. The Gemma 4 online path
+loaded `google/gemma-4-E2B-it` with vLLM `quantization=torchao`, selected
+`ROCM_AITER_UNIFIED_ATTN`, and generated successfully.
+
+The serialized Gemma 4 real-model path now writes processor files correctly,
+but remains blocked during vLLM weight loading by TorchAO tensor metadata:
+`AttributeError: 'Tensor' object has no attribute 'tensor_data_names'`.
+
+The `Stored version is not the same as current default version` warning is
+expected with TorchAO `0.17.0` when using `Int8WeightOnlyConfig(version=2)`;
+that version is still required for the serialized safetensors path. The ROCm
+custom paged-attention fallback warning is vLLM shape-gated and did not appear
+in the Gemma 4 online TorchAO run.
+"""
 provides = ["python-torchao", "python-torchao-rocm"]
 conflicts = ["python-torchao", "python-torchao-rocm"]
 depends = ["glibc", "python-gfx1151", "python-pytorch-opt-rocm-gfx1151"]

@@ -31,11 +31,21 @@ The staged package was verified locally with:
 - `PYTHONPATH=<pkgdir>/site-packages python -c 'import torchao'` succeeding
 
 The reference host has now also validated the installed package with a clean
-`import torchao` path and the repo-local `tools/torchao_vllm_smoke.py`
-round-trip helper. The remaining follow-up on that lane is warning
-investigation rather than basic import or serialized-load breakage:
-- `Stored version is not the same as current default version`
-- `Cannot use ROCm custom paged attention kernel, falling back to Triton implementation`
+`import torchao` path, the tiny serialized-checkpoint
+`tools/torchao_vllm_smoke.py` round trip, and the tracked
+`vllm.gemma4.e2b.torchao.online-real-model` scenario. The Gemma 4 online path
+loaded `google/gemma-4-E2B-it` with vLLM `quantization=torchao`, selected
+`ROCM_AITER_UNIFIED_ATTN`, and generated successfully.
+
+The serialized Gemma 4 real-model path now writes processor files correctly,
+but remains blocked during vLLM weight loading by TorchAO tensor metadata:
+`AttributeError: 'Tensor' object has no attribute 'tensor_data_names'`.
+
+The `Stored version is not the same as current default version` warning is
+expected with TorchAO `0.17.0` when using `Int8WeightOnlyConfig(version=2)`;
+that version is still required for the serialized safetensors path. The ROCm
+custom paged-attention fallback warning is vLLM shape-gated and did not appear
+in the Gemma 4 online TorchAO run.
 
 ## Scaffold notes
 
@@ -60,6 +70,9 @@ investigation rather than basic import or serialized-load breakage:
   That path now covers a raw GPU `copy_` probe plus a real
   `quantization="torchao"` vLLM load/generate cycle, so it is the first check
   to rerun before assuming a TorchAO regression is only in import hygiene.
+- Keep the Gemma 4 online TorchAO scenario passing, and treat serialized Gemma
+  4 real-model checkpoints as blocked until the TorchAO/vLLM tensor metadata
+  mismatch is fixed.
 
 ## Maintainer Starting Points
 

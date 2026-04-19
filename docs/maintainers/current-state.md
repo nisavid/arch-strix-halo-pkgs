@@ -443,9 +443,14 @@ The following smoke checks have already passed on the reference host:
     vLLM reaches model init.
   - the helper now also has a real-model path:
     `--source-model <model-id-or-path>` quantizes with
-    `TorchAoConfig(Int8WeightOnlyConfig(version=2))`, saves the tokenizer, and
-    runs a tokenizer-backed vLLM generation pass; use `--dry-run` first to
-    inspect the chosen quantized output directory and execution mode.
+    `TorchAoConfig(Int8WeightOnlyConfig(version=2))`, saves the processor or
+    tokenizer files, and runs a tokenizer-backed vLLM generation pass; use
+    `--dry-run` first to inspect the chosen quantized output directory and
+    execution mode.
+  - the helper also supports `--online-quantization` with `--source-model`;
+    that path serves the source model directly and passes the same TorchAO
+    int8 weight-only config through vLLM `hf_overrides`, so it avoids writing a
+    serialized quantized checkpoint.
   - the helper can classify the two known warning markers on TorchAO/vLLM
     paths, but the currently committed classifier is only a support surface;
     live warning conclusions still need to come from a real host run log.
@@ -488,13 +493,24 @@ The following smoke checks have already passed on the reference host:
   - the first real TorchAO-dependent validation path has now passed on the
     reference host via `tools/torchao_vllm_smoke.py`, including the raw GPU
     `copy_` probe and the vLLM `quantization="torchao"` load/generate path
-  - investigate the remaining TorchAO config warning on that path:
-    `Stored version is not the same as current default version`
-  - investigate the remaining generation-path warning on that path:
+  - warning investigation completed on 2026-04-19:
+    `Stored version is not the same as current default version` comes from
+    TorchAO config deserialization with stored version 2 while the current
+    `Int8WeightOnlyConfig` default is version 1; version 2 remains required
+    for the serialized safetensors path, so this warning is expected with
+    TorchAO 0.17.0 unless upstream changes the default
+  - warning investigation completed on 2026-04-19:
     `Cannot use ROCm custom paged attention kernel, falling back to Triton implementation`
-  - after those two warning investigations, run the tracked
-    `vllm.gemma4.e2b.torchao.real-model` scenario or another real-model
-    TorchAO workload rather than stopping at the tiny local Llama helper
+    is emitted by vLLM only when its ROCm custom paged-attention selector
+    rejects a shape/configuration; it was not present in the Gemma 4 E2B
+    online TorchAO run, which selected `ROCM_AITER_UNIFIED_ATTN`
+  - real-model TorchAO validation now has two tracked outcomes:
+    `vllm.gemma4.e2b.torchao.online-real-model` passed on 2026-04-19 with
+    `quantization=torchao`, `ROCM_AITER_UNIFIED_ATTN`, 10.62 GiB
+    model-loading memory, and `generation_ok`; the serialized
+    `vllm.gemma4.e2b.torchao.real-model` scenario still fails after
+    `prepare_real_ok` during vLLM weight loading with
+    `AttributeError: 'Tensor' object has no attribute 'tensor_data_names'`
   - keep TorchAO version checks metadata-only on generic vLLM startup paths so
     broken optional host TorchAO packages do not emit warning noise during
     unrelated CLI or server flows

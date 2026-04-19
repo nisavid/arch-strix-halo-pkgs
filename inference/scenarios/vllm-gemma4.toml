@@ -534,3 +534,34 @@ value = "prepare_real_ok"
 [[scenario.then.assert]]
 kind = "stdout.contains"
 value = "generation_ok"
+
+[[scenario]]
+id = "vllm.gemma4.e2b.torchao.online-real-model"
+summary = "Serve Gemma 4 E2B through vLLM with online TorchAO int8 weight-only quantization"
+tags = ["smoke", "gemma4", "torchao", "quantization-probe", "exploratory"]
+
+[scenario.given]
+engine = "vllm"
+model = "google/gemma-4-E2B-it"
+tool = "torchao_vllm_smoke.real-model"
+
+[scenario.when]
+argv = [
+  "--online-quantization",
+  "--max-model-len",
+  "128",
+  "--gpu-memory-utilization",
+  "0.5",
+]
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "using_online_source_model"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "generation_ok"
