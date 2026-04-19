@@ -285,6 +285,11 @@ The following smoke checks have already passed on the reference host:
   TorchAO scenarios are not new validated defaults yet. Promote any of them
   only after a reference-host run records the exact model binding, backend
   split, warning surface, and logs under `docs/worklog/inference-runs/`.
+- The next Gemma 4 live-validation order is intentionally staged:
+  non-exploratory broad `vllm` scenarios first, then `compiled-probe`
+  scenarios to answer the eager-mode question, then MoE backend probes,
+  real-model TorchAO, and multimodal exploratory scenarios. Do not move to
+  Qwen3.5 validation until the eager-mode result is recorded.
 - There is still no repo-owned validation for Qwen3.5 hybrid-attention/GDN or
   Qwen3.5 MoE/shared-expert lanes on gfx1151.
   - the current local `vllm` source tree does contain the relevant model

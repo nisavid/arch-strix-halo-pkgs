@@ -60,6 +60,17 @@
     previous multimodal warmup fault is proven absent on the maintained stack
   - relevant Hugging Face model-card usage patterns that are not already
     covered by the vLLM recipe scenarios
+- Immediate Gemma 4 live-validation sequence before moving to Qwen3.5:
+  - first run the non-exploratory vLLM matrix to verify the newly tracked
+    recipe-aligned text/server and tiny TorchAO scenarios still pass as broad
+    validation defaults
+  - then run `compiled-probe` scenarios with `--include-exploratory` to decide
+    whether eager mode can be removed for E2B, 31B, or 26B-A4B
+  - document each compiled-path result as one of: clean, torch.compile
+    failure, cudagraph/capture failure, startup/profiling failure, or another
+    ROCm interaction
+  - only after the eager-mode question is documented, continue to MoE backend
+    probes, real-model TorchAO, and multimodal exploratory scenarios
 - Investigate the two remaining warnings on the now-passing TorchAO helper path:
   - `Stored version is not the same as current default version`
   - `Cannot use ROCm custom paged attention kernel, falling back to Triton implementation`
