@@ -377,12 +377,67 @@ def install_outputs_by_root_for_plan(
     }
 
 
+def build_prerequisite_outputs_by_root_for_plan(
+    roots: dict[str, RepoPackageRoot],
+    build_roots: list[str],
+) -> dict[str, list[str]]:
+    build_root_set = set(build_roots)
+    outputs = output_to_root_map(roots)
+    installed_outputs: set[str] = set()
+    by_consumer: dict[str, list[str]] = {}
+
+    for root_name in build_roots:
+        root = roots[root_name]
+        root_prerequisites = {
+            dependency
+            for dependency in (*root.depends, *root.makedepends)
+            if outputs.get(dependency) in build_root_set
+            and outputs[dependency] != root_name
+            and dependency not in installed_outputs
+        }
+        if root_prerequisites:
+            sorted_prerequisites = sorted(root_prerequisites)
+            by_consumer[root_name] = sorted_prerequisites
+            installed_outputs.update(sorted_prerequisites)
+
+    return by_consumer
+
+
+def flatten_install_outputs(
+    build_roots: list[str],
+    install_outputs_by_root: dict[str, list[str]],
+) -> list[str]:
+    return [
+        output
+        for root_name in build_roots
+        for output in install_outputs_by_root.get(root_name, [])
+    ]
+
+
+def final_run_install_outputs(
+    build_roots: list[str],
+    install_outputs_by_root: dict[str, list[str]],
+    build_prerequisite_outputs_by_root: dict[str, list[str]],
+) -> list[str]:
+    prerequisite_outputs = {
+        output
+        for outputs in build_prerequisite_outputs_by_root.values()
+        for output in outputs
+    }
+    return [
+        output
+        for output in flatten_install_outputs(build_roots, install_outputs_by_root)
+        if output not in prerequisite_outputs
+    ]
+
+
 def build_steps(
     *,
     command: str,
     roots: dict[str, RepoPackageRoot],
     build_roots: list[str],
-    install_outputs_by_root: dict[str, list[str]],
+    build_prerequisite_outputs_by_root: dict[str, list[str]],
+    final_install_outputs: list[str],
     repo_dir: Path,
     publish_root: Path,
 ) -> list[StepSpec]:
@@ -407,9 +462,33 @@ def build_steps(
             )
         )
 
+    def install_command(outputs: list[str]) -> CommandSpec:
+        return CommandSpec(
+            argv=sudo_argv(
+                "pacman",
+                "-Sy",
+                "--noconfirm",
+                PACMAN_ASK_CONFLICT_PKG,
+                *outputs,
+            ),
+            privileged=True,
+        )
+
     if command in {"run", "build"}:
         for index, root_name in enumerate(build_roots, start=1):
             root = roots[root_name]
+            if command == "run":
+                root_prerequisites = build_prerequisite_outputs_by_root.get(root_name, [])
+                if root_prerequisites:
+                    steps.append(
+                        StepSpec(
+                            id=f"{index:04d}-install-prerequisites-{root_name}",
+                            label=f"install build prerequisites for {root_name}",
+                            kind="install",
+                            root=root_name,
+                            commands=(install_command(root_prerequisites),),
+                        )
+                    )
             steps.append(
                 StepSpec(
                     id=f"{index:04d}-build-{root_name}",
@@ -450,28 +529,16 @@ def build_steps(
                         ),
                     )
                 )
-                root_install_outputs = install_outputs_by_root.get(root_name, [])
-                if root_install_outputs:
-                    steps.append(
-                        StepSpec(
-                            id=f"{index:04d}-install-{root_name}",
-                            label=f"install {root_name} outputs",
-                            kind="install",
-                            root=root_name,
-                            commands=(
-                                CommandSpec(
-                                    argv=sudo_argv(
-                                        "pacman",
-                                        "-Sy",
-                                        "--noconfirm",
-                                        PACMAN_ASK_CONFLICT_PKG,
-                                        *root_install_outputs,
-                                    ),
-                                    privileged=True,
-                                ),
-                            ),
-                        )
-                    )
+        if command == "run" and final_install_outputs:
+            steps.append(
+                StepSpec(
+                    id=f"{len(build_roots) + 1:04d}-install-selected",
+                    label="install selected outputs",
+                    kind="install",
+                    root=None,
+                    commands=(install_command(final_install_outputs),),
+                )
+            )
 
     if command in {"publish", "deploy"}:
         for index, root_name in enumerate(build_roots, start=1):
@@ -503,29 +570,13 @@ def build_steps(
             )
 
     if command in {"install", "deploy"}:
-        install_outputs = [
-            output
-            for root_name in build_roots
-            for output in install_outputs_by_root.get(root_name, [])
-        ]
         steps.append(
             StepSpec(
                 id=f"{len(steps) + 1:04d}-install-selected",
                 label="install selected outputs",
                 kind="install",
                 root=None,
-                commands=(
-                    CommandSpec(
-                        argv=sudo_argv(
-                            "pacman",
-                            "-Sy",
-                            "--noconfirm",
-                            PACMAN_ASK_CONFLICT_PKG,
-                            *install_outputs,
-                        ),
-                        privileged=True,
-                    ),
-                ),
+                commands=(install_command(final_install_outputs),),
             )
         )
     return steps
@@ -556,16 +607,27 @@ def create_merge_plan(args: argparse.Namespace, *, command: str) -> dict[str, ob
             include_rdeps=args.rdeps,
         )
     )
-    install_outputs = [
-        output
-        for root_name in build_roots
-        for output in install_outputs_by_root.get(root_name, [])
-    ]
+    install_outputs = flatten_install_outputs(build_roots, install_outputs_by_root)
+    build_prerequisite_outputs_by_root = (
+        build_prerequisite_outputs_by_root_for_plan(roots, build_roots)
+        if command == "run"
+        else {}
+    )
+    final_install_outputs = (
+        final_run_install_outputs(
+            build_roots,
+            install_outputs_by_root,
+            build_prerequisite_outputs_by_root,
+        )
+        if command == "run"
+        else install_outputs
+    )
     steps = build_steps(
         command=command,
         roots=roots,
         build_roots=build_roots,
-        install_outputs_by_root=install_outputs_by_root,
+        build_prerequisite_outputs_by_root=build_prerequisite_outputs_by_root,
+        final_install_outputs=final_install_outputs,
         repo_dir=repo_dir,
         publish_root=publish_root,
     )

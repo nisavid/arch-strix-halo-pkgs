@@ -85,8 +85,10 @@ user wants a colorized plan captured in logs or chat.
 - The tool validates sudo once for plans containing privileged steps, keeps the
   sudo validation timestamp fresh, runs privileged commands with
   noninteractive sudo, and logs under `docs/worklog/amerge/<plan-id>/`.
-- With `run`, each package root is built, published, and installed before the
-  next root. Selected split roots also install outputs needed by later roots.
+- With `run`, each package root is built and published immediately. Rebuilt
+  repo outputs are installed just before a later selected build needs them via
+  `depends` or `makedepends`, and remaining selected outputs are installed in a
+  final transaction.
 - Publish steps require package archives matching the current PKGBUILD
   `makepkg --packagelist`, so stale built artifacts fail before republishing.
 - A `--require-packagelist` publish treats current PKGBUILD outputs as

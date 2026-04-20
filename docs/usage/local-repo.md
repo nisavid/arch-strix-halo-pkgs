@@ -162,10 +162,11 @@ tools/amerge run --rdeps python-amd-aiter-gfx1151
 
 By default, explicit targets rebuild only those targets. Dependencies are used
 for ordering and can be opted into with `--deps`. If no targets or selectors are
-given, `amerge` prompts on a TTY and fails fast otherwise. `run` executes each
-root in merge order as build, publish, then install for that root's selected
-outputs plus selected-root dependency outputs so later builds see earlier
-rebuilt dependencies.
+given, `amerge` prompts on a TTY and fails fast otherwise. `run` builds roots
+in merge order and publishes each root immediately after a successful build.
+Rebuilt repo outputs are installed just before the next selected build that
+needs them through `depends` or `makedepends`; any remaining selected outputs
+are installed together at the end.
 
 `amerge` also sanitizes user Python environment variables such as
 `PYTHONPYCACHEPREFIX`, `PYTHONSTARTUP`, `PYTHONUSERBASE`, `PYTHON_EGG_CACHE`,
