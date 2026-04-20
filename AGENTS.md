@@ -28,6 +28,9 @@ without chat history.
   multiple files and verification steps. Use a sibling
   `<repo>.wt/<branch-or-task>` directory by default, and do not switch the
   user's active checkout to a different branch just to start new work.
+- Close out local branches by rebasing the branch onto `main`, then merging
+  into `main` with `git merge --ff-only <branch>`. Do not create merge commits
+  for routine local closeout, and do not switch the main worktree off `main`.
 - Use Conventional Commits. A scope is preferred, not required, when it says
   something useful that would otherwise take more room in the summary. Use
   lowercase scopes, and use slashes for nested scopes such as `docs/usage` or
