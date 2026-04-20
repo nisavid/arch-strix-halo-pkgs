@@ -64,7 +64,8 @@ def shell_quote(value: str) -> str:
     return shlex.quote(value)
 
 
-def compiler_env_snippet(compiler_root: str) -> str:
+def compiler_env_snippet(compiler_root: str, *, ccache_store: bool = False) -> str:
+    ccache_dir_line = '    export CCACHE_DIR="${_ccache_dir}/store"\n' if ccache_store else ""
     return textwrap.dedent(
         """\
 _setup_compiler_env() {
@@ -79,7 +80,7 @@ _setup_compiler_env() {
     done
     export PATH="${_ccache_dir}:$PATH"
     export CCACHE_BASEDIR="${CCACHE_BASEDIR:-$srcdir}"
-    export CCACHE_NOCPP2=1
+__CCACHE_DIR_LINE__    export CCACHE_NOCPP2=1
     export CCACHE_PATH="${_compiler_root}:/opt/rocm/bin:/usr/bin"
     export CC=amdclang
     export CXX=amdclang++
@@ -89,7 +90,7 @@ _setup_compiler_env() {
   fi
 }
 
-""".replace("__COMPILER_ROOT__", compiler_root)
+""".replace("__COMPILER_ROOT__", compiler_root).replace("__CCACHE_DIR_LINE__", ccache_dir_line)
     )
 
 
@@ -742,6 +743,13 @@ package() {{
 }}"""
     elif template == "python-project-pytorch-rocm":
         upstream_version = policy_pkg["upstream_version"]
+        for patch_name in policy_pkg.get("source_patches", []):
+            prepare_lines.extend(
+                [
+                    f'patch --dry-run -Np1 -i "$srcdir/{patch_name}" >/dev/null &&',
+                    f'  patch -Np1 -i "$srcdir/{patch_name}"',
+                ]
+            )
         prepare_lines.extend(
             [
                 "# PyTorch's ROCm fork relies on vendored submodules and local hipify-generated sources.",
@@ -757,14 +765,31 @@ package() {{
         build_body = f"""\
 build() {{
   cd "$srcdir/{src_subdir}"
+  local _install_log="$srcdir/pytorch-install.log"
+  local _torch_lib="$srcdir/pytorch/torch/lib"
+  local _torch_bin="$srcdir/pytorch/torch/bin"
+  local _torch_include="$srcdir/pytorch/torch/include"
 
-  {compiler_env_snippet(compiler_root)}  _setup_compiler_env
+  # Rebuild from a fresh local CMake state so workspace moves do not poison
+  # subsequent wheel builds with stale absolute paths.
+  rm -rf build
+  rm -rf dist "${{_torch_bin}}" "${{_torch_include}}"
+  if [[ -d "${{_torch_lib}}" ]]; then
+    find "${{_torch_lib}}" -mindepth 1 -maxdepth 1 ! -name libshm ! -name libshm_windows -exec rm -rf {{}} +
+  fi
+
+  {compiler_env_snippet(compiler_root, ccache_store=True)}  _setup_compiler_env
   export CFLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument"
   export CXXFLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument"
   export LDFLAGS="-fuse-ld=lld"
   export PYTORCH_ROCM_ARCH="gfx1151"
   export USE_ROCM=1
+  export USE_NUMPY=1
+  export BLAS="OpenBLAS"
+  export OpenBLAS_HOME="${{OpenBLAS_HOME:-/usr}}"
+  export USE_LAPACK=1
   export USE_ROCM_CK_GEMM=1
+  export AOTRITON_INSTALLED_PREFIX="/usr"
   export USE_CUDA=0
   export USE_NCCL=0
   export USE_SYSTEM_NCCL=0
@@ -773,7 +798,7 @@ build() {{
   export USE_BENCHMARK=0
   export HIP_PATH="/opt/rocm"
   export ROCM_HOME="/opt/rocm"
-  export CMAKE_PREFIX_PATH="/opt/rocm"
+  export CMAKE_PREFIX_PATH="${{OpenBLAS_HOME}}:/opt/rocm"
   export MAX_JOBS="$(nproc)"
   export PYTORCH_BUILD_VERSION="{upstream_version}"
   export PYTORCH_BUILD_NUMBER=1
@@ -800,7 +825,23 @@ EOF
   fi
 
   mkdir -p dist
-  pip wheel . --no-build-isolation --no-deps --wheel-dir dist -v
+  CMAKE_ONLY=1 python setup.py build
+  cmake --build build --config Release -j "${{MAX_JOBS}}"
+
+  if ! cmake --build build --target install --config Release -j 1 >"${{_install_log}}" 2>&1; then
+    grep -q '_sysconfigdata__linux_x86_64-linux-gnu.cpython-314.pyc' "${{_install_log}}" || {{
+      cat "${{_install_log}}"
+      return 1
+    }}
+  fi
+
+  find "${{_torch_lib}}" -mindepth 1 -maxdepth 1 ! -name libshm ! -name libshm_windows -exec rm -rf {{}} +
+  mkdir -p "${{_torch_bin}}"
+  cp build/lib/lib*.so* "${{_torch_lib}}/"
+  cp build/bin/torch_shm_manager build/bin/protoc-3.13.0.0 "${{_torch_bin}}/"
+  ln -sf protoc-3.13.0.0 "${{_torch_bin}}/protoc"
+
+  SKIP_BUILD_DEPS=1 python setup.py bdist_wheel --dist-dir dist
 }}
 
 package() {{
@@ -1008,6 +1049,7 @@ build() {{
   export HIP_PATH="/opt/rocm"
   export PREBUILD_KERNELS=0
   export AITER_GPU_ARCH=gfx1151
+  export SETUPTOOLS_SCM_PRETEND_VERSION="{policy_pkg['upstream_version']}"
   export CFLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument"
   export CXXFLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument"
   local _ck_submodule="$srcdir/{src_subdir}/3rdparty/composable_kernel"

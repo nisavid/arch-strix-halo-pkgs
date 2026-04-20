@@ -5,7 +5,7 @@
 - Package origin: local closure package
 - Build method: `python -m build`
 - Upstream repo: `https://github.com/mistralai/mistral-common`
-- Upstream version: `1.10.0`
+- Upstream version: `1.11.0`
 - Recorded reference packages: `aur/python-mistral-common`
 - Authoritative reference package: `aur/python-mistral-common`
 - Advisory reference packages: `none`
@@ -16,14 +16,16 @@
 The host `python-mistral-common 1.8.6-1` package is too old for the local
 `python-transformers-gfx1151 5.5.4` lane. Transformers now imports
 `ReasoningEffort` from `mistral_common.protocol.instruct.request`, and that
-symbol first appears in the `mistral-common >= 1.10.0` lane.
+symbol first appears in the `mistral-common >= 1.10.0` lane. The package now
+tracks the newer PyPI `1.11.0` release while preserving that compatibility
+boundary.
 
 Without a local closure package, Gemma 4 safetensors smoke tests in vLLM get
 all the way through model load and then fail during processor initialization.
 
 ## Intentional Divergences
 
-- Tracks upstream `mistral-common 1.10.0` from PyPI instead of the older AUR
+- Tracks upstream `mistral-common 1.11.0` from PyPI instead of the older AUR
   baseline because the older lane does not export `ReasoningEffort`.
 - Keeps the package pure-Python and architecture-independent; there are no
   applicable Strix-specific native optimization flags to carry here.

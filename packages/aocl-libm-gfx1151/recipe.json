@@ -16,7 +16,7 @@
   },
   "name": "aocl-libm-gfx1151",
   "package_name": "aocl-libm-gfx1151",
-  "pkgver": "5.2.1.r8.d20260317.gad42886",
+  "pkgver": "5.2.2.r8.d20260317.gad42886",
   "policy": {
     "advisory_references": [
       "aur/aocl"
@@ -63,13 +63,19 @@
       "Keep AOCL-LibM out of the CPython link line. It is intended for downstream numerical libraries, not Python's own PGO run.",
       "Build testing showed libalm.so does not advertise a versioned SONAME, so the scaffold does not export it in provides()."
     ],
+    "sha256sums": [
+      "SKIP"
+    ],
+    "source_refs": [
+      "aocl-libm::git+https://github.com/amd/aocl-libm-ose.git#tag=5.2.2"
+    ],
     "src_subdir": "aocl-libm",
     "template": "scons-aocl-libm",
     "update_notes": [
       "When updating, audit upstream AOCL-LibM licensing and bundled notices directly from source rather than assuming the advisory aur/aocl metadata is sufficient.",
       "If AOCL-Utils packaging changes, re-check the runtime dependency and any RPATH or SONAME assumptions here."
     ],
-    "upstream_version": "5.2.1",
+    "upstream_version": "5.2.2",
     "url": "https://github.com/amd/aocl-libm-ose.git"
   },
   "provenance": {

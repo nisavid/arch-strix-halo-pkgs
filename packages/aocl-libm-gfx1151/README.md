@@ -6,7 +6,7 @@
 - Scaffold template: `scons-aocl-libm`
 - Recipe build method: `scons`
 - Upstream repo: `https://github.com/amd/aocl-libm-ose.git`
-- Derived pkgver seed: `5.2.1.r8.d20260317.gad42886`
+- Derived pkgver seed: `5.2.2.r8.d20260317.gad42886`
 - Recipe steps: `6`
 - Recipe dependencies: `therock, aocl_utils`
 - Recorded reference packages: `aur/aocl`

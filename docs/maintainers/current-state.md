@@ -59,6 +59,31 @@ Installed Qwen closeout state for this branch:
   directory was session-scoped and is not retained in Git; this section records
   the durable result.
 
+Current package freshness integration state, checked on 2026-04-20:
+
+- `aocl-libm-gfx1151` tracks upstream AOCL-LibM `5.2.2`; source metadata is
+  updated, but local build verification is blocked until host build dependency
+  `scons` is installed.
+- `llama.cpp-hip-gfx1151` and `llama.cpp-vulkan-gfx1151` track upstream
+  llama.cpp `b8851` at commit `e365e658f07b63371489570dfde597f199b26c23`.
+  The HIP package built successfully. The Vulkan package metadata now includes
+  `spirv-headers` because b8851 includes `spirv/unified1/spirv.hpp` directly;
+  full local Vulkan build verification is blocked until that host dependency
+  is installed.
+- `python-mistral-common-gfx1151` tracks PyPI `1.11.0` and rebuilt
+  successfully.
+- `python-pytorch-opt-rocm-gfx1151` tracks ROCm/pytorch `release/2.11` at
+  commit `8543095e3275db694084a6679bd5b61f7d2ece76`; this heavy source build
+  was not rerun during the freshness metadata integration.
+- `python-amd-aiter-gfx1151` remains pinned to upstream AITER main commit
+  `cf12b1381dcdec4b5d90d136a5403e718c7541ec`, which is past the latest
+  released tag `v0.1.12.post1`; the package exports
+  `SETUPTOOLS_SCM_PRETEND_VERSION=0.1.12.post2.dev69+gcf12b1381` so wheel
+  metadata is stable. This heavy source build was not rerun during the
+  freshness metadata integration.
+- `lemonade-server` was rebuilt so its system-managed llama.cpp backend
+  metadata points at `b8851`.
+
 ## Live Smoke Coverage
 
 The following smoke checks have already passed on the reference host:
@@ -98,8 +123,8 @@ The following smoke checks have already passed on the reference host:
   as `nlohmann`, `.hipInfo`, `share/modulefiles`, and `share/therock`, plus
   the expected versioned `rocmCoreTargets` / `librocm-core.so` filenames.
 - `python-pytorch-opt-rocm-gfx1151` tracks `ROCm/pytorch` `release/2.11`,
-  pinned to commit `0446f7ba2fd`, with package version aligned to the built
-  wheel version.
+  pinned to commit `8543095e3275db694084a6679bd5b61f7d2ece76`, with package
+  version aligned to the built wheel version.
 - `python-pytorch-opt-rocm-gfx1151` now also pins its BLAS/LAPACK provider to
   `openblas` and assembles the wheel in two stages on Arch Python `3.14`:
   build the CMake artifacts first, tolerate the known
@@ -127,7 +152,8 @@ The following smoke checks have already passed on the reference host:
   GPT-OSS/Harmony path, using `aur/python-openai-harmony` as the baseline but
   carrying upstream's missing `python-pydantic` runtime dependency.
 - `python-mistral-common-gfx1151` is now the local closure package for the
-  Gemma 4 / Transformers `5.5.x` processor path because the older host
+  Gemma 4 / Transformers `5.5.x` processor path and currently tracks PyPI
+  `1.11.0` because the older host
   `python-mistral-common 1.8.6-1` package did not export
   `mistral_common.protocol.instruct.request.ReasoningEffort`.
 - `python-sentencepiece-gfx1151` already carries the bundled-build patch needed
@@ -157,6 +183,11 @@ The following smoke checks have already passed on the reference host:
   The same patch also teaches the runtime to find `hipcc` via
   `/opt/rocm/bin/hipcc` and the standard ROCm env vars instead of relying on
   interactive-shell `PATH` setup.
+- `python-amd-aiter-gfx1151` intentionally tracks upstream AITER main at
+  `cf12b1381dcdec4b5d90d136a5403e718c7541ec` rather than rolling back to the
+  latest release tag. The package records upstream freshness against
+  `v0.1.12.post1` but builds the post-release main lane as
+  `0.1.12.post2.dev69+gcf12b1381`.
 - The earlier host Gemma 4 tokenizer failure was not a repo-package design
   gap; it was live-system drift. The host had
   `python-sentencepiece-gfx1151 0.2.1.r8.d20260317.gad42886-1` installed, and
@@ -612,8 +643,8 @@ The following smoke checks have already passed on the reference host:
   - `llamacpp:cpu` remains Lemonade-managed and downloadable
   - `llamacpp:system` is removed from this custom variant
   - the backend table identifies the packaged backends explicitly as:
-    - `System llama-server-hip-gfx1151 llama.cpp b8611`
-    - `System llama-server-vulkan-gfx1151 llama.cpp b8611`
+    - `System llama-server-hip-gfx1151 llama.cpp b8851`
+    - `System llama-server-vulkan-gfx1151 llama.cpp b8851`
 
 ## Known Deferred Follow-up Work
 

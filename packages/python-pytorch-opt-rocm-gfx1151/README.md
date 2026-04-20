@@ -12,7 +12,7 @@
 - Recorded reference packages: `extra/python-pytorch-opt-rocm, extra/python-pytorch-rocm, cachyos-extra-znver4/python-pytorch-opt-rocm`
 - Authoritative reference package: `extra/python-pytorch-opt-rocm`
 - Advisory reference packages: `extra/python-pytorch-rocm, cachyos-extra-znver4/python-pytorch-opt-rocm`
-- Applied source patch files/actions: `8`
+- Applied source patch files/actions: `9`
 
 ## Recipe notes
 
@@ -28,20 +28,21 @@ USE_ROCM_CK_GEMM=ON enables Composable Kernel GEMM for ROCm.
 - The recipe intentionally tracks the ROCm/pytorch fork rather than upstream pytorch/pytorch because AMD validates that branch and carries ROCm-specific integration fixes not yet upstreamed.
 - Keep nearby Cachy packaging as advisory input for compiler defaults and dependency polish, but use the Arch split-package structure as the distro-integration baseline.
 - The first real build must preserve the recipe's ROCm-specific fixes: HIPGraph.hip stub rewrite, NumPy 2 target C-API define, clang ABI flag removal, gfx1151 CK enablement, and post-install patchelf fixes for torch/lib and libtorch_hip.so.
+- Use OpenBLAS explicitly for this lane. Letting the build auto-detect host oneMKL produced a broken wheel with /opt/intel/oneapi runpaths and NumPy import failures.
+- On Arch Python 3.14, the CMake install target currently mirrors /usr/lib and /usr/include into the source tree and then fails on a root-owned _sysconfigdata pyc. The maintained workaround is to build first, accept that known install failure, restage the built torch/lib and torch/bin artifacts, and assemble the wheel with SKIP_BUILD_DEPS=1.
 
 ## Intentional Divergences
 
 - Uses the Arch split-package structure as the integration baseline but deliberately tracks ROCm/pytorch release/2.11 rather than upstream pytorch/pytorch.
 - Carries recipe-specific ROCm fixes such as the HIPGraph stub rewrite, gfx1151 CK enablement, and post-install patchelf/linker cleanup.
-- Forces OpenBLAS as the BLAS/LAPACK provider instead of relying on ambient host auto-detection; allowing oneMKL to win on the build host produced a broken wheel with `/opt/intel/oneapi` runpaths and NumPy import failures.
-- Carries a small `setup.py` patch so wheel assembly can skip `build_deps()` after the CMake build has already completed; this is part of the Arch Python 3.14 packaging workaround below, not a generic upstream preference.
+- Pins PyTorch's BLAS/LAPACK provider to OpenBLAS and uses a two-stage wheel assembly flow on Arch Python 3.14 to avoid host oneMKL contamination and the broken install target that mirrors /usr/lib into the source tree.
 
 ## Update Notes
 
 - When updating, inspect the current Arch python-pytorch pkgbase first, then re-evaluate every carried recipe/source patch against the chosen ROCm fork.
 - Keep the package version aligned with the built wheel version; do not repeat the earlier mismatch where the package claimed 2.11.0 but the built wheel came from develop.
-- Keep `openblas` explicit in both `depends` and `makedepends`. This lane should not float back to generic BLAS discovery while `intel-oneapi-mkl` is present on the build host.
-- Preserve the two-stage wheel flow on Arch's Python 3.14 lane unless upstream changes materially: build the CMake artifacts first, tolerate the known `_sysconfigdata__linux_x86_64-linux-gnu.cpython-314.pyc` install failure, restage the built libs into `torch/`, then run `SKIP_BUILD_DEPS=1 python setup.py bdist_wheel`. The raw `cmake --build --target install` path mirrors `/usr/lib` and `/usr/include` into the source tree and contaminates the staged wheel with host packages.
+- Keep openblas explicit in both depends and makedepends so the build does not drift back to generic host BLAS auto-detection.
+- Preserve the current Arch Python 3.14 wheel flow unless upstream changes materially: build CMake artifacts first, tolerate the known _sysconfigdata__linux_x86_64-linux-gnu.cpython-314.pyc install failure, restage the built torch/lib and torch/bin payloads, then run SKIP_BUILD_DEPS=1 python setup.py bdist_wheel.
 
 ## Maintainer Starting Points
 

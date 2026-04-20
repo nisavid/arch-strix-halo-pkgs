@@ -5,24 +5,24 @@
 # Package recipe key: llamacpp
 
 pkgname=llama.cpp-vulkan-gfx1151
-pkgver=b8611.r8.d20260317.gad42886
+pkgver=b8851.r8.d20260317.gad42886
 pkgrel=1
 pkgdesc='llama.cpp Vulkan backend rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://github.com/ggml-org/llama.cpp
 license=(MIT)
 depends=(gcc-libs glibc vulkan-icd-loader)
-makedepends=(cmake ninja rocm-llvm-gfx1151 shaderc vulkan-headers)
+makedepends=(cmake ninja rocm-llvm-gfx1151 shaderc spirv-headers vulkan-headers)
 optdepends=()
 options=()
 provides=(llama.cpp-vulkan-gfx1151 llama.cpp-vulkan)
 conflicts=(llama.cpp-vulkan)
 replaces=()
-source=(llama.cpp-9aa2807769253fad8b3aa065e9a7c2a0ac35fe0a.tar.gz::https://github.com/ggml-org/llama.cpp/archive/9aa2807769253fad8b3aa065e9a7c2a0ac35fe0a.tar.gz)
+source=(llama.cpp-e365e658f07b63371489570dfde597f199b26c23.tar.gz::https://github.com/ggml-org/llama.cpp/archive/e365e658f07b63371489570dfde597f199b26c23.tar.gz)
 sha256sums=(SKIP)
 
 build() {
-  cd "$srcdir/llama.cpp-9aa2807769253fad8b3aa065e9a7c2a0ac35fe0a"
+  cd "$srcdir/llama.cpp-e365e658f07b63371489570dfde597f199b26c23"
 
   _setup_compiler_env() {
   local _compiler_root="/opt/rocm/lib/llvm/bin"
@@ -93,7 +93,7 @@ build() {
 }
 
 package() {
-  cd "$srcdir/llama.cpp-9aa2807769253fad8b3aa065e9a7c2a0ac35fe0a"
+  cd "$srcdir/llama.cpp-e365e658f07b63371489570dfde597f199b26c23"
   local build_root="$srcdir/build-vulkan"
   local install_root="/opt/llama.cpp-vulkan-gfx1151"
 
@@ -119,5 +119,5 @@ exec /opt/llama.cpp-vulkan-gfx1151/bin/${_base} "\$@"
 EOF
     done
   fi
-  install -Dm644 "$srcdir/llama.cpp-9aa2807769253fad8b3aa065e9a7c2a0ac35fe0a/LICENSE" "$pkgdir/usr/share/licenses/llama.cpp-vulkan-gfx1151/LICENSE"
+  install -Dm644 "$srcdir/llama.cpp-e365e658f07b63371489570dfde597f199b26c23/LICENSE" "$pkgdir/usr/share/licenses/llama.cpp-vulkan-gfx1151/LICENSE"
 }

@@ -18,19 +18,17 @@ options=()
 provides=(python-pytorch-opt-rocm=2.11.0 python-pytorch-rocm=2.11.0 python-pytorch=2.11.0)
 conflicts=(python-pytorch-opt-rocm python-pytorch-rocm python-pytorch)
 replaces=()
-source=('pytorch::git+https://github.com/ROCm/pytorch.git#commit=0446f7ba2fd'
-        '0001-setup-allow-skipping-build-deps.patch')
-sha256sums=(SKIP
-            '0fc03afcb0501849e08dfd8dafe07578fa0e7337025e1ab80f59bb9be9a3560c')
+source=('pytorch::git+https://github.com/ROCm/pytorch.git#commit=8543095e3275db694084a6679bd5b61f7d2ece76' 0001-setup-allow-skipping-build-deps.patch)
+sha256sums=(SKIP 0fc03afcb0501849e08dfd8dafe07578fa0e7337025e1ab80f59bb9be9a3560c)
 
 prepare() {
   cd "$srcdir/pytorch"
 
-# PyTorch's ROCm fork relies on vendored submodules and local hipify-generated sources.
+patch --dry-run -Np1 -i "$srcdir/0001-setup-allow-skipping-build-deps.patch" >/dev/null &&
+    patch -Np1 -i "$srcdir/0001-setup-allow-skipping-build-deps.patch"
+  # PyTorch's ROCm fork relies on vendored submodules and local hipify-generated sources.
   git -C "$srcdir/pytorch" submodule sync --recursive
   git -C "$srcdir/pytorch" submodule update --init --recursive --force
-  patch --dry-run -Np1 -i "$srcdir/0001-setup-allow-skipping-build-deps.patch" >/dev/null &&
-    patch -Np1 -i "$srcdir/0001-setup-allow-skipping-build-deps.patch"
   # Match the recipe's ABI/runtime fixes on top of the Arch split-package baseline.
   sed -i 's|#include <numpy/arrayobject.h>|// Target numpy 2.0 C-API (0x12) for ABI compatibility with numpy >= 2.0.\n#ifndef NPY_TARGET_VERSION\n#define NPY_TARGET_VERSION 0x00000012\n#endif\n\n#include <numpy/arrayobject.h>|' torch/csrc/utils/numpy_stub.h
   sed -i 's/list(APPEND HIP_HIPCC_FLAGS -fclang-abi-compat=17)/# Removed: causes ABI mismatch with host amdclang 22/' cmake/Dependencies.cmake

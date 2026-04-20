@@ -44,7 +44,7 @@ scaffold_notes = [
 [packages.aocl-libm-gfx1151]
 recipe_key = "aocl_libm"
 template = "scons-aocl-libm"
-upstream_version = "5.2.1"
+upstream_version = "5.2.2"
 pkgdesc = "AMD AOCL-LibM rebuilt with Zen 5 tuning for Strix Halo gfx1151"
 url = "https://github.com/amd/aocl-libm-ose.git"
 license = ["BSD-3-Clause", "MIT", "Apache-2.0"]
@@ -64,6 +64,8 @@ conflicts = ["aocl-libm"]
 depends = ["aocl-utils-gfx1151", "gcc-libs", "glibc"]
 makedepends = ["git", "patchelf", "python", "rocm-llvm-gfx1151", "scons"]
 compiler_dep = "rocm-llvm-gfx1151"
+source_refs = ["aocl-libm::git+https://github.com/amd/aocl-libm-ose.git#tag=5.2.2"]
+sha256sums = ["SKIP"]
 src_subdir = "aocl-libm"
 install_prefix = "/usr"
 patches_dir = "patches/aocl-libm-gfx1151"
@@ -266,7 +268,9 @@ scaffold_notes = [
 recipe_key = "pytorch"
 template = "python-project-pytorch-rocm"
 upstream_version = "2.11.0"
-source_refs = ["pytorch::git+https://github.com/ROCm/pytorch.git#commit=0446f7ba2fd"]
+source_refs = ["pytorch::git+https://github.com/ROCm/pytorch.git#commit=8543095e3275db694084a6679bd5b61f7d2ece76"]
+source_patches = ["0001-setup-allow-skipping-build-deps.patch"]
+extra_sha256sums = ["0fc03afcb0501849e08dfd8dafe07578fa0e7337025e1ab80f59bb9be9a3560c"]
 pkgdesc = "Tensors and dynamic neural networks in Python with ROCm acceleration, rebuilt for Strix Halo gfx1151"
 url = "https://pytorch.org"
 license = ["BSD-3-Clause-Modification"]
@@ -275,11 +279,14 @@ authoritative_reference = "extra/python-pytorch-opt-rocm"
 advisory_references = ["extra/python-pytorch-rocm", "cachyos-extra-znver4/python-pytorch-opt-rocm"]
 divergence_notes = [
   "Uses the Arch split-package structure as the integration baseline but deliberately tracks ROCm/pytorch release/2.11 rather than upstream pytorch/pytorch.",
-  "Carries recipe-specific ROCm fixes such as the HIPGraph stub rewrite, gfx1151 CK enablement, and post-install patchelf/linker cleanup."
+  "Carries recipe-specific ROCm fixes such as the HIPGraph stub rewrite, gfx1151 CK enablement, and post-install patchelf/linker cleanup.",
+  "Pins PyTorch's BLAS/LAPACK provider to OpenBLAS and uses a two-stage wheel assembly flow on Arch Python 3.14 to avoid host oneMKL contamination and the broken install target that mirrors /usr/lib into the source tree."
 ]
 update_notes = [
   "When updating, inspect the current Arch python-pytorch pkgbase first, then re-evaluate every carried recipe/source patch against the chosen ROCm fork.",
-  "Keep the package version aligned with the built wheel version; do not repeat the earlier mismatch where the package claimed 2.11.0 but the built wheel came from develop."
+  "Keep the package version aligned with the built wheel version; do not repeat the earlier mismatch where the package claimed 2.11.0 but the built wheel came from develop.",
+  "Keep openblas explicit in both depends and makedepends so the build does not drift back to generic host BLAS auto-detection.",
+  "Preserve the current Arch Python 3.14 wheel flow unless upstream changes materially: build CMake artifacts first, tolerate the known _sysconfigdata__linux_x86_64-linux-gnu.cpython-314.pyc install failure, restage the built torch/lib and torch/bin payloads, then run SKIP_BUILD_DEPS=1 python setup.py bdist_wheel."
 ]
 provides = ["python-pytorch-opt-rocm=2.11.0", "python-pytorch-rocm=2.11.0", "python-pytorch=2.11.0"]
 conflicts = ["python-pytorch-opt-rocm", "python-pytorch-rocm", "python-pytorch"]
@@ -289,6 +296,7 @@ depends = [
   "hsa-amd-aqlprofile-gfx1151",
   "hipblaslt-gfx1151",
   "miopen-hip-gfx1151",
+  "openblas",
   "python-aotriton-gfx1151",
   "python-filelock",
   "python-fsspec",
@@ -308,9 +316,11 @@ makedepends = [
   "cmake",
   "git",
   "ninja",
+  "openblas",
   "python-build",
   "python-cffi",
   "python-installer",
+  "python-numpy-gfx1151",
   "python-pip",
   "python-requests",
   "python-setuptools",
@@ -327,7 +337,9 @@ scaffold_notes = [
   "Authoritative base: Arch split package python-pytorch-opt-rocm 2.11.0-3, with python-pytorch-rocm kept as an advisory sibling because the same pkgbase carries both variants.",
   "The recipe intentionally tracks the ROCm/pytorch fork rather than upstream pytorch/pytorch because AMD validates that branch and carries ROCm-specific integration fixes not yet upstreamed.",
   "Keep nearby Cachy packaging as advisory input for compiler defaults and dependency polish, but use the Arch split-package structure as the distro-integration baseline.",
-  "The first real build must preserve the recipe's ROCm-specific fixes: HIPGraph.hip stub rewrite, NumPy 2 target C-API define, clang ABI flag removal, gfx1151 CK enablement, and post-install patchelf fixes for torch/lib and libtorch_hip.so."
+  "The first real build must preserve the recipe's ROCm-specific fixes: HIPGraph.hip stub rewrite, NumPy 2 target C-API define, clang ABI flag removal, gfx1151 CK enablement, and post-install patchelf fixes for torch/lib and libtorch_hip.so.",
+  "Use OpenBLAS explicitly for this lane. Letting the build auto-detect host oneMKL produced a broken wheel with /opt/intel/oneapi runpaths and NumPy import failures.",
+  "On Arch Python 3.14, the CMake install target currently mirrors /usr/lib and /usr/include into the source tree and then fails on a root-owned _sysconfigdata pyc. The maintained workaround is to build first, accept that known install failure, restage the built torch/lib and torch/bin artifacts, and assemble the wheel with SKIP_BUILD_DEPS=1."
 ]
 
 [packages.python-torchvision-rocm-gfx1151]
@@ -474,7 +486,7 @@ scaffold_notes = [
 [packages.python-amd-aiter-gfx1151]
 recipe_key = "aiter"
 template = "python-project-aiter"
-upstream_version = "0.1.0"
+upstream_version = "0.1.12.post2.dev69+gcf12b1381"
 pkgdesc = "AMD AITER kernels rebuilt for Strix Halo gfx1151"
 url = "https://github.com/ROCm/aiter"
 license = ["MIT"]
@@ -503,6 +515,8 @@ depends = ["python-gfx1151", "python-pandas", "python-pytorch-opt-rocm-gfx1151",
 makedepends = ["git", "python-build", "python-installer", "python-setuptools", "python-wheel", "rocm-llvm-gfx1151"]
 optdepends = ["python-flydsl-gfx1151: optional FlyDSL MLIR kernels for AITER fused MoE paths (blocked on rocm-llvm MLIR Python SDK completeness)"]
 options = ["!strip"]
+source_refs = ["aiter::git+https://github.com/ROCm/aiter.git#commit=cf12b1381dcdec4b5d90d136a5403e718c7541ec"]
+sha256sums = ["SKIP"]
 src_subdir = "aiter"
 source_patches = [
   "0001-gfx1151-rdna35-header-compat.patch",
@@ -515,7 +529,9 @@ source_patches = [
 patches_dir = "packages/python-amd-aiter-gfx1151"
 scaffold_notes = [
   "There is no standalone Arch, CachyOS, or AUR aiter package. The closest packaging lane is the PyTorch ROCm pkgbase that vendors the same submodule, so that pkgbase is advisory only.",
-  "The recipe rebuilds AITER from PyTorch's vendored third_party/aiter copy so its CK ABI stays aligned with the paired PyTorch tree.",
+  "The package pins upstream AITER main at cf12b1381dcdec4b5d90d136a5403e718c7541ec rather than rolling back to the v0.1.12.post1 release tag, because the current validated local build already consumed the post-release main lane that pairs with the ROCm PyTorch 2.11 source update.",
+  "The package exports SETUPTOOLS_SCM_PRETEND_VERSION so the wheel metadata is stable even though the source is a git commit past the latest release tag.",
+  "The recipe rebuilds AITER from the upstream AITER source lane while keeping it aligned with the paired PyTorch ROCm lane's CK ABI expectations.",
   "Upstream AITER declares pandas as a real dependency and FlyDSL as an optional acceleration path. Keep pandas in the package metadata, and package FlyDSL separately rather than silently depending on an unpublished wheel.",
   "Keep the gfx1151 RDNA 3.5 header fixes as package-local source patches applied before wheel build, split between the `vec_convert.h` packed-op fallbacks and the `hip_reduce.h` wave32/DPP compatibility rewrite.",
   "Keep the installed-system JIT runtime patch unless upstream fixes both assumptions itself: `hipcc` on the ambient PATH, and package-relative import of JIT-built modules even after copying the writable JIT tree out of read-only site-packages.",
@@ -777,7 +793,7 @@ scaffold_notes = [
 [packages."llama.cpp-hip-gfx1151"]
 recipe_key = "llamacpp"
 template = "llama-cpp"
-upstream_version = "b8611"
+upstream_version = "b8851"
 pkgdesc = "llama.cpp ROCm backend rebuilt for Strix Halo gfx1151"
 url = "https://github.com/ggml-org/llama.cpp"
 license = ["MIT"]
@@ -796,10 +812,10 @@ provides = ["llama.cpp-hip-gfx1151", "llama.cpp-hip"]
 conflicts = ["llama.cpp-hip"]
 depends = ["gcc-libs", "glibc", "hip-runtime-amd-gfx1151", "rocm-core-gfx1151"]
 makedepends = ["cmake", "ninja", "rocm-llvm-gfx1151"]
-src_subdir = "llama.cpp-9aa2807769253fad8b3aa065e9a7c2a0ac35fe0a"
+src_subdir = "llama.cpp-e365e658f07b63371489570dfde597f199b26c23"
 upstream_name = "llama.cpp"
 baseline_kind = "closest-upstream"
-source_refs = ["llama.cpp-9aa2807769253fad8b3aa065e9a7c2a0ac35fe0a.tar.gz::https://github.com/ggml-org/llama.cpp/archive/9aa2807769253fad8b3aa065e9a7c2a0ac35fe0a.tar.gz"]
+source_refs = ["llama.cpp-e365e658f07b63371489570dfde597f199b26c23.tar.gz::https://github.com/ggml-org/llama.cpp/archive/e365e658f07b63371489570dfde597f199b26c23.tar.gz"]
 sha256sums = ["SKIP"]
 patches_dir = "patches/llama.cpp-hip-gfx1151"
 scaffold_notes = [
@@ -812,7 +828,7 @@ scaffold_notes = [
 [packages."llama.cpp-vulkan-gfx1151"]
 recipe_key = "llamacpp"
 template = "llama-cpp"
-upstream_version = "b8611"
+upstream_version = "b8851"
 pkgdesc = "llama.cpp Vulkan backend rebuilt for Strix Halo gfx1151"
 url = "https://github.com/ggml-org/llama.cpp"
 license = ["MIT"]
@@ -830,16 +846,17 @@ update_notes = [
 provides = ["llama.cpp-vulkan-gfx1151", "llama.cpp-vulkan"]
 conflicts = ["llama.cpp-vulkan"]
 depends = ["gcc-libs", "glibc", "vulkan-icd-loader"]
-makedepends = ["cmake", "ninja", "rocm-llvm-gfx1151", "shaderc", "vulkan-headers"]
-src_subdir = "llama.cpp-9aa2807769253fad8b3aa065e9a7c2a0ac35fe0a"
+makedepends = ["cmake", "ninja", "rocm-llvm-gfx1151", "shaderc", "spirv-headers", "vulkan-headers"]
+src_subdir = "llama.cpp-e365e658f07b63371489570dfde597f199b26c23"
 upstream_name = "llama.cpp"
 baseline_kind = "closest-upstream"
-source_refs = ["llama.cpp-9aa2807769253fad8b3aa065e9a7c2a0ac35fe0a.tar.gz::https://github.com/ggml-org/llama.cpp/archive/9aa2807769253fad8b3aa065e9a7c2a0ac35fe0a.tar.gz"]
+source_refs = ["llama.cpp-e365e658f07b63371489570dfde597f199b26c23.tar.gz::https://github.com/ggml-org/llama.cpp/archive/e365e658f07b63371489570dfde597f199b26c23.tar.gz"]
 sha256sums = ["SKIP"]
 patches_dir = "patches/llama.cpp-vulkan-gfx1151"
 scaffold_notes = [
   "Vulkan backend package; backend-specific runtime package, no shared common package in first pass.",
   "Closest current Vulkan reference: AUR llama.cpp-vulkan-bin for backend-specific packaging expectations, with generic AUR llama.cpp kept as the source-build advisory baseline.",
+  "llama.cpp b8851 includes SPIR-V headers directly from ggml-vulkan.cpp, so source builds require spirv-headers in addition to shaderc and vulkan-headers.",
   "Pinned to a concrete upstream commit tarball so the first-pass metadata stays reproducible without a full Git history clone.",
   "This scaffold still uses amdclang from rocm-llvm-gfx1151 for consistency with the recipe toolchain even though the Vulkan build does not use HIP offload."
 ]

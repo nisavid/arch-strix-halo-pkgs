@@ -7,7 +7,7 @@
 - Scaffold template: `llama-cpp`
 - Recipe build method: `cmake`
 - Upstream repo: `https://github.com/ggml-org/llama.cpp.git`
-- Derived pkgver seed: `b8611.r8.d20260317.gad42886`
+- Derived pkgver seed: `b8851.r8.d20260317.gad42886`
 - Recipe steps: `33`
 - Recipe dependencies: `therock`
 - Recorded reference packages: `aur/llama.cpp-vulkan-bin, aur/llama.cpp`
@@ -35,6 +35,7 @@ binaries find their shared libraries without LD_LIBRARY_PATH.
 
 - Vulkan backend package; backend-specific runtime package, no shared common package in first pass.
 - Closest current Vulkan reference: AUR llama.cpp-vulkan-bin for backend-specific packaging expectations, with generic AUR llama.cpp kept as the source-build advisory baseline.
+- llama.cpp b8851 includes SPIR-V headers directly from ggml-vulkan.cpp, so source builds require spirv-headers in addition to shaderc and vulkan-headers.
 - Pinned to a concrete upstream commit tarball so the first-pass metadata stays reproducible without a full Git history clone.
 - This scaffold still uses amdclang from rocm-llvm-gfx1151 for consistency with the recipe toolchain even though the Vulkan build does not use HIP offload.
 

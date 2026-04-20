@@ -6,7 +6,7 @@
 - Scaffold template: `python-project-aiter`
 - Recipe build method: `pip`
 - Upstream repo: `https://github.com/ROCm/aiter.git`
-- Derived pkgver seed: `0.1.0.r8.d20260317.gad42886`
+- Derived pkgver seed: `0.1.12.post2.dev69+gcf12b1381.r8.d20260317.gad42886`
 - Recipe steps: `28`
 - Recipe dependencies: `pytorch, vllm`
 - Recorded reference packages: `extra/python-pytorch-opt-rocm, extra/python-pytorch-rocm`
@@ -28,7 +28,9 @@ aiter_meta/csrc/include/ files for gfx1151 RDNA 3.5 compatibility.
 ## Scaffold notes
 
 - There is no standalone Arch, CachyOS, or AUR aiter package. The closest packaging lane is the PyTorch ROCm pkgbase that vendors the same submodule, so that pkgbase is advisory only.
-- The recipe rebuilds AITER from PyTorch's vendored third_party/aiter copy so its CK ABI stays aligned with the paired PyTorch tree.
+- The package pins upstream AITER main at cf12b1381dcdec4b5d90d136a5403e718c7541ec rather than rolling back to the v0.1.12.post1 release tag, because the current validated local build already consumed the post-release main lane that pairs with the ROCm PyTorch 2.11 source update.
+- The package exports SETUPTOOLS_SCM_PRETEND_VERSION so the wheel metadata is stable even though the source is a git commit past the latest release tag.
+- The recipe rebuilds AITER from the upstream AITER source lane while keeping it aligned with the paired PyTorch ROCm lane's CK ABI expectations.
 - Upstream AITER declares pandas as a real dependency and FlyDSL as an optional acceleration path. Keep pandas in the package metadata, and package FlyDSL separately rather than silently depending on an unpublished wheel.
 - Keep the gfx1151 RDNA 3.5 header fixes as package-local source patches applied before wheel build, split between the `vec_convert.h` packed-op fallbacks and the `hip_reduce.h` wave32/DPP compatibility rewrite.
 - Keep the installed-system JIT runtime patch unless upstream fixes both assumptions itself: `hipcc` on the ambient PATH, and package-relative import of JIT-built modules even after copying the writable JIT tree out of read-only site-packages.

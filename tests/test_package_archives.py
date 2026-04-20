@@ -29,9 +29,9 @@ def test_select_latest_by_name_uses_pacman_version_order_not_filename_order() ->
 
 def test_select_latest_by_name_keeps_each_package_independent() -> None:
     aiter = PackageInfo(
-        path=Path("python-amd-aiter-gfx1151-0.1.0.r8.d20260317.gad42886-7-x86_64.pkg.tar.zst"),
+        path=Path("python-amd-aiter-gfx1151-0.1.12.post2.dev69+gcf12b1381.r8.d20260317.gad42886-1-x86_64.pkg.tar.zst"),
         pkgname="python-amd-aiter-gfx1151",
-        pkgver="0.1.0.r8.d20260317.gad42886-7",
+        pkgver="0.1.12.post2.dev69+gcf12b1381.r8.d20260317.gad42886-1",
     )
     vllm = PackageInfo(
         path=Path("python-vllm-rocm-gfx1151-0.19.0.r8.d20260317.gad42886-25-x86_64.pkg.tar.zst"),

@@ -20,7 +20,7 @@ def test_pkgbuild_exports_system_managed_llamacpp_metadata():
 
 def test_built_package_installs_system_managed_llamacpp_metadata():
     text = CONF.read_text()
-    assert "LEMONADE_LLAMACPP_ROCM_VERSION=b8611" in text
-    assert "LEMONADE_LLAMACPP_VULKAN_VERSION=b8611" in text
-    assert "LEMONADE_LLAMACPP_ROCM_RELEASE_URL=https://github.com/ggml-org/llama.cpp/releases/tag/b8611" in text
-    assert "LEMONADE_LLAMACPP_VULKAN_RELEASE_URL=https://github.com/ggml-org/llama.cpp/releases/tag/b8611" in text
+    assert "LEMONADE_LLAMACPP_ROCM_VERSION=b8851" in text
+    assert "LEMONADE_LLAMACPP_VULKAN_VERSION=b8851" in text
+    assert "LEMONADE_LLAMACPP_ROCM_RELEASE_URL=https://github.com/ggml-org/llama.cpp/releases/tag/b8851" in text
+    assert "LEMONADE_LLAMACPP_VULKAN_RELEASE_URL=https://github.com/ggml-org/llama.cpp/releases/tag/b8851" in text

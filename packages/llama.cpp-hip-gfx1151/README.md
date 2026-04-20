@@ -7,7 +7,7 @@
 - Scaffold template: `llama-cpp`
 - Recipe build method: `cmake`
 - Upstream repo: `https://github.com/ggml-org/llama.cpp.git`
-- Derived pkgver seed: `b8611.r8.d20260317.gad42886`
+- Derived pkgver seed: `b8851.r8.d20260317.gad42886`
 - Recipe steps: `33`
 - Recipe dependencies: `therock`
 - Recorded reference packages: `aur/llama.cpp-hip, aur/llama.cpp`

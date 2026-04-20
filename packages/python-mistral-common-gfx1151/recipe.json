@@ -3,7 +3,7 @@
     "advisory_references": [],
     "authoritative_reference": "aur/python-mistral-common",
     "divergence_notes": [
-      "Tracks upstream mistral-common 1.10.0 from PyPI instead of the older AUR baseline because the older lane does not export ReasoningEffort.",
+      "Tracks upstream mistral-common 1.11.0 from PyPI instead of the older AUR baseline because the older lane does not export ReasoningEffort.",
       "Keeps the package pure-Python and architecture-independent; there are no applicable Strix-specific native optimization flags to carry here.",
       "Depends explicitly on python-gfx1151 and python-numpy-gfx1151 so the local inference stack stays on the repo-managed Python lane."
     ],
@@ -16,7 +16,7 @@
   },
   "name": "python-mistral-common-gfx1151",
   "package_name": "python-mistral-common-gfx1151",
-  "pkgver": "1.10.0",
+  "pkgver": "1.11.0",
   "policy": {
     "advisory_references": [],
     "arch_reference": [
@@ -38,7 +38,7 @@
       "python-typing_extensions"
     ],
     "divergence_notes": [
-      "Tracks upstream mistral-common 1.10.0 from PyPI instead of the older AUR baseline because the older lane does not export ReasoningEffort.",
+      "Tracks upstream mistral-common 1.11.0 from PyPI instead of the older AUR baseline because the older lane does not export ReasoningEffort.",
       "Keeps the package pure-Python and architecture-independent; there are no applicable Strix-specific native optimization flags to carry here.",
       "Depends explicitly on python-gfx1151 and python-numpy-gfx1151 so the local inference stack stays on the repo-managed Python lane."
     ],
@@ -65,14 +65,14 @@
       "python-mistral-common"
     ],
     "pypi_name": "mistral_common",
-    "src_subdir": "mistral_common-1.10.0",
+    "src_subdir": "mistral_common-1.11.0",
     "template": "manual-python-wheel",
     "update_notes": [
       "Before updating, confirm that the chosen release still exports mistral_common.protocol.instruct.request.ReasoningEffort; that is the concrete compatibility boundary that blocked Gemma 4 on the host.",
       "Re-check runtime dependency metadata against the chosen baseline package and the published PyPI metadata. Keep optional extras such as opencv, sentencepiece, soundfile, and soxr optional unless the local closure story intentionally changes.",
       "After any update, rerun the Gemma 4 vLLM smoke test on the host rather than stopping at import mistral_common."
     ],
-    "upstream_version": "1.10.0",
+    "upstream_version": "1.11.0",
     "url": "https://github.com/mistralai/mistral-common"
   },
   "provenance": {
