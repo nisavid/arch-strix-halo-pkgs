@@ -6,7 +6,7 @@
     "authoritative_reference": "aur/aocl-utils",
     "divergence_notes": [
       "Uses amdclang as the compiler baseline but intentionally leaves AOCL-Utils itself off the more aggressive recipe flag bundle because build testing showed -famd-opt is a no-op here.",
-      "Tracks the upstream 5.2.2 release tarball rather than a floating branch so pkgver tracks the real upstream release plus the local recipe revision."
+      "Uses the upstream 5.2.2 release tarball; recipe commit, date, and path-history count are recorded as provenance."
     ],
     "source_patches": [],
     "update_notes": [
@@ -16,7 +16,7 @@
   },
   "name": "aocl-utils-gfx1151",
   "package_name": "aocl-utils-gfx1151",
-  "pkgver": "5.2.2.r8.d20260317.gad42886",
+  "pkgver": "5.2.2",
   "policy": {
     "advisory_references": [
       "aur/aocl-utils-aocc"
@@ -33,7 +33,7 @@
     "depends": [],
     "divergence_notes": [
       "Uses amdclang as the compiler baseline but intentionally leaves AOCL-Utils itself off the more aggressive recipe flag bundle because build testing showed -famd-opt is a no-op here.",
-      "Tracks the upstream 5.2.2 release tarball rather than a floating branch so pkgver tracks the real upstream release plus the local recipe revision."
+      "Uses the upstream 5.2.2 release tarball; recipe commit, date, and path-history count are recorded as provenance."
     ],
     "install_prefix": "/usr",
     "license": [
@@ -74,6 +74,9 @@
   "provenance": {
     "output_root": "packages",
     "recipe_author": "Blackcat Informatics Inc.",
+    "recipe_commit": "ad42886",
+    "recipe_date": "20260317",
+    "recipe_history_count": 8,
     "recipe_repo": "https://github.com/paudley/ai-notes",
     "recipe_subdir": "strix-halo",
     "repo_subpath": "."

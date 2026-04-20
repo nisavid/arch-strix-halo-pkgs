@@ -12,9 +12,8 @@ scaffolds or TheRock metadata.
 
 - `python tools/render_recipe_scaffolds.py`
 - `python tools/render_therock_pkgbase.py ...`
-- `python tools/compute_recipe_version.py ...`
 
-all resolve the recipe root in this order:
+resolve the recipe root in this order:
 
 1. explicit `--recipe-root`
 2. `STRIX_HALO_RECIPE_ROOT`
@@ -28,7 +27,7 @@ recipe checkout.
 Update `upstream/ai-notes` when:
 
 - a relevant `strix-halo/` recipe change should flow into this repo
-- you want rendered `pkgver` data to reflect newer recipe history
+- you want rendered recipe provenance to reflect newer recipe history
 - a package audit or scaffold diff needs to be compared against newer recipe
   inputs
 

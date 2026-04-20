@@ -5,7 +5,7 @@
 # Package recipe key: triton
 
 pkgname=python-triton-gfx1151
-pkgver=3.5.1.r8.d20260317.gad42886
+pkgver=3.5.1
 pkgrel=1
 pkgdesc='Language and compiler for custom deep-learning primitives, rebuilt from the ROCm performance fork for Strix Halo gfx1151'
 arch=('x86_64')
@@ -24,7 +24,7 @@ sha256sums=(SKIP)
 prepare() {
   cd "$srcdir/triton"
 
-# Keep Arch's Python-3.14 and setuptools compatibility deltas on top of the ROCm performance fork.
+  # Keep Arch's Python-3.14 and setuptools compatibility deltas on top of the ROCm performance fork.
   sed -i '/requires = \[/s/.*/requires = ["setuptools", "wheel", "pybind11>=2.13.1"]/' python/pyproject.toml
   sed -i 's/-Werror//' CMakeLists.txt
   git cherry-pick -n c44b870bdd9e1ea8933fd4057b6b59a5e6e5407b || true

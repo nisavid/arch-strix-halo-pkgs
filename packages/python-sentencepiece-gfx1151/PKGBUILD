@@ -5,7 +5,7 @@
 # Package recipe key: native_wheels
 
 pkgname=python-sentencepiece-gfx1151
-pkgver=0.2.1.r8.d20260317.gad42886
+pkgver=0.2.1
 pkgrel=2
 pkgdesc='Python wrapper for SentencePiece rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
@@ -21,30 +21,12 @@ replaces=()
 source=(https://files.pythonhosted.org/packages/source/s/sentencepiece/sentencepiece-0.2.1.tar.gz 0001-bundle-sentencepiece-by-default.patch)
 sha256sums=(SKIP SKIP)
 
-_apply_patch_if_needed() {
-  local _patch_name="$1"
-  local _patch=""
-
-  if [[ -f "${srcdir}/${_patch_name}" ]]; then
-    _patch="${srcdir}/${_patch_name}"
-  elif [[ -f "${startdir}/${_patch_name}" ]]; then
-    _patch="${startdir}/${_patch_name}"
-  else
-    printf 'missing patch file: %s\n' "${_patch_name}" >&2
-    return 1
-  fi
-
-  if patch --dry-run -R -Np1 -i "${_patch}" >/dev/null 2>&1; then
-    return 0
-  fi
-
-  patch -Np1 -i "${_patch}"
-}
-
 prepare() {
   cd "$srcdir/sentencepiece-0.2.1"
 
-  _apply_patch_if_needed "0001-bundle-sentencepiece-by-default.patch"
+  if ! patch --dry-run -R -Np1 -i "$srcdir/0001-bundle-sentencepiece-by-default.patch" >/dev/null 2>&1; then
+    patch -Np1 -i "$srcdir/0001-bundle-sentencepiece-by-default.patch"
+  fi
 }
 
 build() {

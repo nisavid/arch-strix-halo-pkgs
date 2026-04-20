@@ -5,7 +5,7 @@
 # Package recipe key: aotriton
 
 pkgname=python-aotriton-gfx1151
-pkgver=0.11.2b.r8.d20260317.gad42886
+pkgver=0.11.2b
 pkgrel=1
 pkgdesc='Ahead-of-time Triton math library rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
@@ -24,7 +24,7 @@ sha256sums=(SKIP SKIP SKIP)
 prepare() {
   cd "$srcdir/aotriton"
 
-# Arch-style source prep: AOTriton expects its bundled submodules to be initialized before configure.
+  # Arch-style source prep: AOTriton expects its bundled submodules to be initialized before configure.
   git -C "$srcdir/aotriton" submodule sync --recursive
   git -C "$srcdir/aotriton" submodule update --init --recursive --force
   # Keep vendored Triton aligned with the standalone Python-3.14 compatibility fix we already apply in python-triton-gfx1151.

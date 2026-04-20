@@ -6,8 +6,9 @@
 family from a staged TheRock install tree.
 
 `tools/render_therock_pkgbase.py` is the normal operator entrypoint. It wraps
-the generator, computes the recipe-derived `pkgver`, stamps attribution, and
-renders the package base into `packages/therock-gfx1151/`.
+the generator, takes `pkgver` from `policies/therock-packages.toml`, stamps
+recipe attribution/provenance, and renders the package base into
+`packages/therock-gfx1151/`.
 
 The design goal is:
 
@@ -25,7 +26,8 @@ silently assigning new TheRock content to the wrong package.
 - `--root`: filesystem root containing the staged install tree, default `/`
 - `--policy`: policy file, default `policies/therock-packages.toml`
 - `--output`: generated output directory
-- `--pkgver-override`: rendered package version override
+- `--pkgver-override`: rendered package version override, normally supplied
+  from policy by `tools/render_therock_pkgbase.py`
 - recipe attribution flags used by `render_therock_pkgbase.py`
 
 The policy currently assumes the actual TheRock payload lives under

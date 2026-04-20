@@ -5,7 +5,7 @@
 # Package recipe key: torchvision
 
 pkgname=python-torchvision-rocm-gfx1151
-pkgver=0.26.0.r8.d20260317.gad42886
+pkgver=0.26.0
 pkgrel=3
 pkgdesc='Datasets, transforms, and models for computer vision with ROCm support, rebuilt for Strix Halo gfx1151'
 arch=('x86_64')

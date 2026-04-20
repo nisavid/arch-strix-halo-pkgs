@@ -7,7 +7,8 @@
 - Scaffold template: `llama-cpp`
 - Recipe build method: `cmake`
 - Upstream repo: `https://github.com/ggml-org/llama.cpp.git`
-- Derived pkgver seed: `b8851.r8.d20260317.gad42886`
+- Package version: `b8851`
+- Recipe revision: `ad42886 (20260317, 8 path commits)`
 - Recipe steps: `33`
 - Recipe dependencies: `therock`
 - Recorded reference packages: `aur/llama.cpp-vulkan-bin, aur/llama.cpp`

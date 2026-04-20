@@ -32,7 +32,7 @@
   },
   "name": "python-amd-aiter-gfx1151",
   "package_name": "python-amd-aiter-gfx1151",
-  "pkgver": "0.1.12.post2.dev69+gcf12b1381.r8.d20260317.gad42886",
+  "pkgver": "0.1.12.post2.dev69+gcf12b1381",
   "policy": {
     "advisory_references": [
       "extra/python-pytorch-opt-rocm",
@@ -123,6 +123,9 @@
   "provenance": {
     "output_root": "packages",
     "recipe_author": "Blackcat Informatics Inc.",
+    "recipe_commit": "ad42886",
+    "recipe_date": "20260317",
+    "recipe_history_count": 8,
     "recipe_repo": "https://github.com/paudley/ai-notes",
     "recipe_subdir": "strix-halo",
     "repo_subpath": "."

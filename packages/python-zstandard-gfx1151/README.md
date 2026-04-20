@@ -6,7 +6,8 @@
 - Scaffold template: `native-wheel-pypi`
 - Recipe build method: `pip`
 - Upstream repo: ``
-- Derived pkgver seed: `0.25.0.r8.d20260317.gad42886`
+- Package version: `0.25.0`
+- Recipe revision: `ad42886 (20260317, 8 path commits)`
 - Recipe steps: `31`
 - Recipe dependencies: `cpython, pytorch`
 - Recorded reference packages: `extra/python-zstandard, cachyos-extra-znver4/python-zstandard`

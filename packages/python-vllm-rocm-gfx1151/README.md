@@ -6,7 +6,8 @@
 - Scaffold template: `python-project-vllm`
 - Recipe build method: `pip`
 - Upstream repo: `https://github.com/vllm-project/vllm.git`
-- Derived pkgver seed: `0.19.1.r8.d20260317.gad42886`
+- Package version: `0.19.1`
+- Recipe revision: `ad42886 (20260317, 8 path commits)`
 - Recipe steps: `19, 20, 21, 22, 23, 24`
 - Recipe dependencies: `pytorch, triton, aotriton`
 - Recorded reference packages: `aur/python-vllm`
@@ -27,7 +28,7 @@ recorded in .aiter-status file ("enabled" or "disabled").
 
 - There does not appear to be a current dedicated python-vllm-rocm AUR package; the closest package baseline is the generic AUR python-vllm package, with ROCm-specific integration coming from this recipe.
 - Use the latest stable upstream release tarball (v0.19.1) instead of a floating full Git clone. Upstream released v0.19.1 as a patch release on top of v0.19.0, so the package now follows the final stable tag rather than the earlier v0.19.1 release candidate.
-- The v0.19.1 impact review found no dropped local patch lane: upstream mainly added Gemma 4 model/tooling coverage, relaxed the Transformers 5.x upper-bound shape while excluding known bad 5.x minors, and bumped compressed-tensors. The carried local patches were refreshed against the final tag and the build produced `python-vllm-rocm-gfx1151-0.19.1.r8.d20260317.gad42886-1-x86_64.pkg.tar.zst`.
+- The v0.19.1 impact review found no dropped local patch lane: upstream mainly added Gemma 4 model/tooling coverage, relaxed the Transformers 5.x upper-bound shape while excluding known bad 5.x minors, and bumped compressed-tensors. The carried local patches were refreshed against the final tag.
 - This scaffold carries the minimal Python-3.14 source patch needed to build from the stable tarball: relax the Python upper bound and extend the hard-coded CMake supported-version list through 3.14.
 - Carries a package-local CLI import patch so vllm --version remains a metadata-only path instead of importing optional OpenAI and Triton runtime modules at startup.
 - Carries a ROCm-specific Triton compatibility patch so the vendored triton_kernels tree is treated as unavailable when the installed Triton runtime lacks CUDA-only APIs such as triton.language.target_info or triton.constexpr_function.

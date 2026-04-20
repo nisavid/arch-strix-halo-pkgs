@@ -5,7 +5,7 @@
 # Package recipe key: aiter
 
 pkgname=python-amd-aiter-gfx1151
-pkgver=0.1.12.post2.dev69+gcf12b1381.r8.d20260317.gad42886
+pkgver=0.1.12.post2.dev69+gcf12b1381
 pkgrel=1
 pkgdesc='AMD AITER kernels rebuilt for Strix Halo gfx1151'
 arch=('x86_64')

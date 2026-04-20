@@ -60,7 +60,7 @@ def test_render_pkgbuild_preserves_literal_quotes_in_synthetic_file_text(tmp_pat
         tmp_path,
         template,
         {
-            "pkgver": "7.13.0pre.r8.d20260317.gad42886",
+            "pkgver": "7.13.0pre",
             "recipe_repo_url": "https://github.com/paudley/ai-notes",
             "recipe_subdir": "strix-halo",
             "recipe_author": "Blackcat Informatics Inc.",

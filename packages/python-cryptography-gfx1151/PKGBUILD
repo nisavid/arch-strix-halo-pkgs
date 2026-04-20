@@ -5,7 +5,7 @@
 # Package recipe key: rust_wheels
 
 pkgname=python-cryptography-gfx1151
-pkgver=46.0.7.r8.d20260317.gad42886
+pkgver=46.0.7
 pkgrel=1
 pkgdesc='Cryptographic recipes and primitives for Python rebuilt for Strix Halo gfx1151'
 arch=('x86_64')

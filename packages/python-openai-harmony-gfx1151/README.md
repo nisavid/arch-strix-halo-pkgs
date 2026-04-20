@@ -6,7 +6,8 @@
 - Scaffold template: `rust-wheel-pypi`
 - Recipe build method: `cargo`
 - Upstream repo: ``
-- Derived pkgver seed: `0.0.8.r8.d20260317.gad42886`
+- Package version: `0.0.8`
+- Recipe revision: `ad42886 (20260317, 8 path commits)`
 - Recipe steps: `30`
 - Recipe dependencies: `cpython`
 - Recorded reference packages: `aur/python-openai-harmony, aur/python-openai-harmony-git`

@@ -6,14 +6,14 @@
 - Scaffold template: `native-wheel-pypi`
 - Recipe build method: `pip`
 - Upstream repo: ``
-- Derived pkgver seed: `0.2.1.r8.d20260317.gad42886`
+- Package version: `0.2.1`
+- Recipe revision: `ad42886 (20260317, 8 path commits)`
 - Recipe steps: `31`
 - Recipe dependencies: `cpython, pytorch`
 - Recorded reference packages: `cachyos/python-sentencepiece, aur/python-sentencepiece, aur/python-sentencepiece-git`
 - Authoritative reference package: `cachyos/python-sentencepiece`
 - Advisory reference packages: `aur/python-sentencepiece, aur/python-sentencepiece-git`
-- Applied source patch files/actions: `1`
-- Active source patch: `0001-bundle-sentencepiece-by-default.patch` (prefers bundled sentencepiece build by default, only uses system `pkg-config sentencepiece` when `SENTENCEPIECE_USE_SYSTEM=1` is explicitly set)
+- Applied source patch files/actions: `2`
 
 ## Recipe notes
 
@@ -29,20 +29,17 @@ probing rejects -mllvm as "unused command line argument".
 -famd-opt moved to LDFLAGS (link-time-only driver flag, no-op at
 compile time -- triggers -Werror=unused in compile-only probes).
 
-The repo-built package artifacts show the bundled-build patch is effective: the
-current built `_sentencepiece` extension under `packages/.../pkg/` no longer
-depends on `libsentencepiece.so.0` or `libsentencepiece_train.so.0`.
+The bundled-build patch is effective when the built `_sentencepiece` extension
+has no dynamic dependency on host `libsentencepiece.so.0` or
+`libsentencepiece_train.so.0`. Treat the repo-built package lane as current
+only after the installed host extension matches that dependency shape.
 
-The earlier host Gemma 4 failure happened because the host still had the older
-installed `python-sentencepiece-gfx1151 0.2.1.r8.d20260317.gad42886-1` package,
-whose installed extension still resolved stale host `sentencepiece` shared
-libraries. The rebuilt local package lane is now the validated reference
-state.
 
 ## Scaffold notes
 
 - The current CachyOS python-sentencepiece package is the closest maintained baseline, while the AUR python-sentencepiece and python-sentencepiece-git packages remain advisory references for patching and split-package expectations.
 - The original recipe fixes a broken pip-installed cmake wrapper inside the venv. In Arch packaging that should translate to using the system cmake toolchain directly.
+- The bundled-build patch prefers the bundled SentencePiece library by default and only uses the system pkg-config sentencepiece path when SENTENCEPIECE_USE_SYSTEM=1 is explicitly set.
 
 ## Intentional Divergences
 
@@ -53,9 +50,7 @@ state.
 
 - Re-check against Cachy first, then consult the AUR source and git variants if the maintained package lags a needed upstream change.
 - If the upstream build backend changes, keep the package metadata focused on the system cmake/toolchain story rather than reviving venv-local wrapper assumptions.
-- After publishing a rebuilt package, verify the installed host extension with
-  `readelf -d` or `ldd` so the live system is not still carrying the older
-  pre-bundle artifact.
+- After publishing a rebuilt package, verify the installed host extension with readelf or ldd before treating the host lane as current.
 
 ## Maintainer Starting Points
 

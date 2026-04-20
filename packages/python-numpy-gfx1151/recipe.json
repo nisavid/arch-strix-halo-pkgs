@@ -7,17 +7,18 @@
     "divergence_notes": [
       "Keeps the Arch package shape but carries the recipe's clang/meson flag rewrite so AMD-specific driver flags survive meson compiler probing.",
       "Uses the optimized Python package as the interpreter baseline rather than the distro python package.",
-      "Forces -Dblas=openblas -Dlapack=openblas -Dallow-noblas=false during the Meson wheel build so the package stays portable across hosts and does not embed /opt/intel/oneapi runpaths into NumPy extensions."
+      "Pins NumPy BLAS/LAPACK to OpenBLAS explicitly to avoid oneMKL provider auto-selection on mixed-provider hosts."
     ],
     "source_patches": [],
     "update_notes": [
       "Re-check BLAS/LAPACK provider handling and any Arch downstream patches whenever numpy or Python major/minor changes.",
+      "Validate that OpenBLAS remains the active Meson provider after toolchain or Intel oneMKL updates, and keep the explicit provider pins if contamination returns.",
       "If future recipe changes add real source patches, keep them as patch files instead of further growing shell flag transforms."
     ]
   },
   "name": "python-numpy-gfx1151",
   "package_name": "python-numpy-gfx1151",
-  "pkgver": "2.4.4.r8.d20260317.gad42886",
+  "pkgver": "2.4.4",
   "policy": {
     "advisory_references": [
       "cachyos-extra-znver4/python-numpy"
@@ -27,6 +28,11 @@
       "cachyos-extra-znver4/python-numpy"
     ],
     "authoritative_reference": "extra/python-numpy",
+    "build_config_settings": [
+      "setup-args=-Dblas=openblas",
+      "setup-args=-Dlapack=openblas",
+      "setup-args=-Dallow-noblas=false"
+    ],
     "conflicts": [
       "python-numpy"
     ],
@@ -36,7 +42,8 @@
     ],
     "divergence_notes": [
       "Keeps the Arch package shape but carries the recipe's clang/meson flag rewrite so AMD-specific driver flags survive meson compiler probing.",
-      "Uses the optimized Python package as the interpreter baseline rather than the distro python package."
+      "Uses the optimized Python package as the interpreter baseline rather than the distro python package.",
+      "Pins NumPy BLAS/LAPACK to OpenBLAS explicitly to avoid oneMKL provider auto-selection on mixed-provider hosts."
     ],
     "license": [
       "custom"
@@ -61,12 +68,13 @@
     "recipe_key": "native_wheels",
     "scaffold_notes": [
       "The recipe's key fix here is the meson/clang flag rewrite: convert driver-level -mllvm flags to -Xclang pairs and move -famd-opt to LDFLAGS.",
-      "BLAS/LAPACK selection is now pinned explicitly to OpenBLAS. Do not let NumPy auto-detect a higher-priority provider such as oneMKL just because it is installed on the build host."
+      "Pins Meson BLAS and LAPACK to OpenBLAS so upstream NumPy does not auto-detect and link Intel oneMKL on mixed-provider hosts."
     ],
     "src_subdir": "numpy-2.4.4",
     "template": "native-wheel-pypi",
     "update_notes": [
-      "Re-check BLAS/LAPACK provider handling and any Arch downstream patches whenever NumPy or Python major/minor changes. The concrete failure here was a wheel that auto-selected oneMKL on the build host, then crashed on import with undefined symbol: mkl_blas_dgemm.",
+      "Re-check BLAS/LAPACK provider handling and any Arch downstream patches whenever numpy or Python major/minor changes.",
+      "Validate that OpenBLAS remains the active Meson provider after toolchain or Intel oneMKL updates, and keep the explicit provider pins if contamination returns.",
       "If future recipe changes add real source patches, keep them as patch files instead of further growing shell flag transforms."
     ],
     "upstream_version": "2.4.4",
@@ -75,6 +83,9 @@
   "provenance": {
     "output_root": "packages",
     "recipe_author": "Blackcat Informatics Inc.",
+    "recipe_commit": "ad42886",
+    "recipe_date": "20260317",
+    "recipe_history_count": 8,
     "recipe_repo": "https://github.com/paudley/ai-notes",
     "recipe_subdir": "strix-halo",
     "repo_subpath": "."

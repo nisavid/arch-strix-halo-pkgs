@@ -6,7 +6,8 @@
 - Scaffold template: `rust-wheel-pypi`
 - Recipe build method: `cargo`
 - Upstream repo: ``
-- Derived pkgver seed: `46.0.7.r8.d20260317.gad42886`
+- Package version: `46.0.7`
+- Recipe revision: `ad42886 (20260317, 8 path commits)`
 - Recipe steps: `30`
 - Recipe dependencies: `cpython`
 - Recorded reference packages: `extra/python-cryptography, cachyos-extra-znver4/python-cryptography`

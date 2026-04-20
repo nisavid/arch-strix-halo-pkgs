@@ -10,7 +10,8 @@
 - Scaffold template: `meta-package`
 - Recipe build method: `pip`
 - Upstream repo: `https://github.com/lemonade-sdk/lemonade.git`
-- Derived pkgver seed: `10.2.0.r8.d20260317.gad42886`
+- Package version: `10.2.0`
+- Recipe revision: `ad42886 (20260317, 8 path commits)`
 - Recipe steps: `33, 34, 35`
 - Recipe dependencies: `therock, llamacpp`
 - Recorded reference packages: `aur/lemonade-server, aur/lemonade-desktop`

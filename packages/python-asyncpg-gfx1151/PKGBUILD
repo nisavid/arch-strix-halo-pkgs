@@ -5,7 +5,7 @@
 # Package recipe key: native_wheels
 
 pkgname=python-asyncpg-gfx1151
-pkgver=0.31.0.r8.d20260317.gad42886
+pkgver=0.31.0
 pkgrel=1
 pkgdesc='Async PostgreSQL client for Python rebuilt for Strix Halo gfx1151'
 arch=('x86_64')

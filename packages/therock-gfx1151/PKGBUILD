@@ -66,7 +66,7 @@ pkgname=(
   'rocwmma-gfx1151'
   'rpp-gfx1151'
 )
-pkgver='7.13.0pre.r8.d20260317.gad42886'
+pkgver='7.13.0pre'
 pkgrel=4
 arch=('x86_64')
 license=('custom:AMD')

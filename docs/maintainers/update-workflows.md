@@ -3,6 +3,17 @@
 This repository has four main update stories, plus a freshness sweep that
 decides whether any of those stories must preempt ordinary backlog work.
 
+## Package Versioning
+
+Use the packaged upstream or source version as `pkgver`. Rendered
+`recipe.json`, package READMEs, and TheRock manifests record the Blackcat
+Informatics recipe commit, date, and path-history count as provenance.
+
+Use `pkgrel` for local packaging changes, patch carry refreshes, rebuilds, and
+recipe-input changes that do not change the packaged upstream/source version.
+The local repo has a single operator, so a direct migration to this versioning
+shape may use a one-time pacman downgrade.
+
 ## 0. Dependency Freshness Sweep
 
 Run this sweep after closing a development arc and before starting a new one

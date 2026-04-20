@@ -5,7 +5,7 @@
 # Package recipe key: lemonade
 
 pkgname=lemonade
-pkgver=10.2.0.r8.d20260317.gad42886
+pkgver=10.2.0
 pkgrel=1
 pkgdesc='Meta package for Lemonade and llama.cpp backend packages'
 arch=('x86_64')

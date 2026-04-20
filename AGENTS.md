@@ -28,14 +28,6 @@ without chat history.
   lowercase scopes, and use slashes for nested scopes such as `docs/usage` or
   `packages/lemonade-server`.
 
-## Attribute Upstream Work Precisely
-
-- Refer to the upstream Strix Halo recipe work as Blackcat Informatics in
-  general prose.
-- Refer to `@paudley` only when you mean the GitHub account.
-- Refer to Patrick Audley only when you mean the person rather than the company
-  or the account.
-
 ## Read These Documents When Their Trigger Applies
 
 - When changing TheRock split-package generation, manifest ownership, or output

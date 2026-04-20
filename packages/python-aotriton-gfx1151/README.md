@@ -6,7 +6,8 @@
 - Scaffold template: `python-project-aotriton`
 - Recipe build method: `cmake`
 - Upstream repo: `https://github.com/ROCm/aotriton.git`
-- Derived pkgver seed: `0.11.2b.r8.d20260317.gad42886`
+- Package version: `0.11.2b`
+- Recipe revision: `ad42886 (20260317, 8 path commits)`
 - Recipe steps: `17, 18`
 - Recipe dependencies: `triton`
 - Recorded reference packages: `extra/python-aotriton, cachyos-extra-znver4/python-aotriton`

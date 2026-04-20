@@ -6,7 +6,8 @@
 - Scaffold template: `python-project-triton-rocm`
 - Recipe build method: `pip`
 - Upstream repo: `https://github.com/ROCm/triton.git`
-- Derived pkgver seed: `3.5.1.r8.d20260317.gad42886`
+- Package version: `3.5.1`
+- Recipe revision: `ad42886 (20260317, 8 path commits)`
 - Recipe steps: `14, 15, 16`
 - Recipe dependencies: `therock, pytorch`
 - Recorded reference packages: `extra/python-triton, cachyos-extra-znver4/python-triton`

@@ -5,7 +5,7 @@
 # Package recipe key: aocl_libm
 
 pkgname=aocl-libm-gfx1151
-pkgver=5.2.2.r8.d20260317.gad42886
+pkgver=5.2.2
 pkgrel=1
 pkgdesc='AMD AOCL-LibM rebuilt with Zen 5 tuning for Strix Halo gfx1151'
 arch=('x86_64')
@@ -24,7 +24,7 @@ sha256sums=(SKIP)
 prepare() {
   cd "$srcdir/aocl-libm"
 
-# Remove -muse-unaligned-vector-move flag. This is AOCC-only; TheRock's open-source amdclang doesn't support it. The -famd-opt flag covers equivalent optimizations.
+    # Remove -muse-unaligned-vector-move flag. This is AOCC-only; TheRock's open-source amdclang doesn't support it. The -famd-opt flag covers equivalent optimizations.
 
     if grep -Fq muse-unaligned-vector-move src/SConscript; then
       sed -i 's/ccflags.append('"'"'-muse-unaligned-vector-move'"'"')/pass  # patched: AOCC-only flag removed for amdclang/' src/SConscript

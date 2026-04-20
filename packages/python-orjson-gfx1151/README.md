@@ -6,7 +6,8 @@
 - Scaffold template: `rust-wheel-pypi`
 - Recipe build method: `cargo`
 - Upstream repo: ``
-- Derived pkgver seed: `3.11.8.r8.d20260317.gad42886`
+- Package version: `3.11.8`
+- Recipe revision: `ad42886 (20260317, 8 path commits)`
 - Recipe steps: `30`
 - Recipe dependencies: `cpython`
 - Recorded reference packages: `extra/python-orjson, cachyos-extra-znver4/python-orjson`

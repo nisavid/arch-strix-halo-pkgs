@@ -5,7 +5,7 @@
 # Package recipe key: lemonade
 
 pkgname=lemonade-server
-pkgver=10.2.0.r8.d20260317.gad42886
+pkgver=10.2.0
 pkgrel=2
 pkgdesc='Local AI server runtime rebuilt for Strix Halo gfx1151'
 arch=('x86_64')

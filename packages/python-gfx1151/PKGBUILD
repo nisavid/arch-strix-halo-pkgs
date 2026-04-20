@@ -5,7 +5,7 @@
 # Package recipe key: cpython
 
 pkgname=python-gfx1151
-pkgver=3.14.4.r8.d20260317.gad42886
+pkgver=3.14.4
 pkgrel=1
 pkgdesc='The Python programming language rebuilt with amdclang for Strix Halo gfx1151'
 arch=('x86_64')

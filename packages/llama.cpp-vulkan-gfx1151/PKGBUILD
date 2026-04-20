@@ -5,7 +5,7 @@
 # Package recipe key: llamacpp
 
 pkgname=llama.cpp-vulkan-gfx1151
-pkgver=b8851.r8.d20260317.gad42886
+pkgver=b8851
 pkgrel=1
 pkgdesc='llama.cpp Vulkan backend rebuilt for Strix Halo gfx1151'
 arch=('x86_64')

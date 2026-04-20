@@ -6,7 +6,8 @@
 - Scaffold template: `python-project-torchvision-rocm`
 - Recipe build method: `pip`
 - Upstream repo: `https://github.com/pytorch/vision.git`
-- Derived pkgver seed: `0.26.0.r8.d20260317.gad42886`
+- Package version: `0.26.0`
+- Recipe revision: `ad42886 (20260317, 8 path commits)`
 - Recipe steps: `12, 13`
 - Recipe dependencies: `pytorch`
 - Recorded reference packages: `aur/python-torchvision-rocm, aur/python-torchvision-rocm-bin, extra/python-torchvision`

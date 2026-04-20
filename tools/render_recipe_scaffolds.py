@@ -12,7 +12,6 @@ import textwrap
 import tomllib
 from pathlib import Path
 
-from compute_recipe_version import compute_version
 from recipe_repo import RECIPE_ROOT_ENV_VAR, resolve_recipe_dir, resolve_recipe_root
 
 try:
@@ -62,6 +61,29 @@ def bash_array(items: list[str]) -> str:
 
 def shell_quote(value: str) -> str:
     return shlex.quote(value)
+
+
+def git_output(repo: Path, *args: str) -> str:
+    result = subprocess.run(
+        ["git", "-C", str(repo), *args],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return result.stdout.strip()
+
+
+def recipe_revision(repo: Path, subdir: str) -> dict[str, int | str]:
+    commit_count = git_output(repo, "rev-list", "--count", "HEAD", "--", subdir)
+    latest = git_output(repo, "log", "-1", "--date=format:%Y%m%d", "--format=%cd %h", "--", subdir)
+    if not latest:
+        raise RuntimeError(f"no git history found for path '{subdir}' in {repo}")
+    commit_date, short_sha = latest.split()
+    return {
+        "recipe_commit": short_sha,
+        "recipe_date": commit_date,
+        "recipe_history_count": int(commit_count),
+    }
 
 
 def compiler_env_snippet(compiler_root: str, *, ccache_store: bool = False) -> str:
@@ -1090,6 +1112,23 @@ package() {{
   done
 }}"""
     elif template == "native-wheel-pypi":
+        for patch_name in policy_pkg.get("source_patches", []):
+            prepare_lines.extend(
+                [
+                    f'if ! patch --dry-run -R -Np1 -i "$srcdir/{patch_name}" >/dev/null 2>&1; then',
+                    f'  patch -Np1 -i "$srcdir/{patch_name}"',
+                    "fi",
+                ]
+            )
+        config_settings = policy_pkg.get("build_config_settings", [])
+        if config_settings:
+            build_command_lines = ["python -m build --wheel --no-isolation \\"]
+            for idx, setting in enumerate(config_settings):
+                suffix = " \\" if idx < len(config_settings) - 1 else ""
+                build_command_lines.append(f"    -C{shell_quote(setting)}{suffix}")
+            build_command = "\n".join(build_command_lines)
+        else:
+            build_command = "python -m build --wheel --no-isolation"
         build_body = f"""\
 build() {{
   cd "$srcdir/{src_subdir}"
@@ -1103,7 +1142,7 @@ build() {{
   export CXXFLAGS="${{_wheel_flags}}"
   export LDFLAGS="-famd-opt"
 
-  python -m build --wheel --no-isolation
+  {build_command}
 }}
 
 package() {{
@@ -1129,7 +1168,7 @@ package() {{
     if prepare_lines:
         prepare_body = "prepare() {\n  cd \"$srcdir/%s\"\n\n%s\n}\n\n" % (
             src_subdir,
-            textwrap.indent("\n".join(line for line in prepare_lines if line), "  ").lstrip(),
+            textwrap.indent("\n".join(line for line in prepare_lines if line), "  "),
         )
     return prepare_body, build_body, "\n".join(post_package_lines)
 
@@ -1269,7 +1308,7 @@ def render_recipe_json(package_name: str, policy_pkg: dict, recipe_pkg: dict, ve
     return json.dumps(payload, indent=2, sort_keys=True) + "\n"
 
 
-def render_readme(package_name: str, policy_pkg: dict, recipe_pkg: dict, version: str) -> str:
+def render_readme(package_name: str, policy_pkg: dict, recipe_pkg: dict, version: str, defaults: dict) -> str:
     notes = policy_pkg.get("scaffold_notes", [])
     recipe_notes = policy_pkg.get("recipe_notes_override", recipe_pkg.get("notes", "").strip())
     patch_count = len(recipe_pkg.get("patches", [])) + len(policy_pkg.get("source_patches", []))
@@ -1287,6 +1326,13 @@ def render_readme(package_name: str, policy_pkg: dict, recipe_pkg: dict, version
     role = package_role(package_name, policy_pkg)
     backends = optional_backends(package_name, policy_pkg)
 
+    recipe_revision_text = "unknown"
+    if defaults.get("recipe_commit") and defaults.get("recipe_date"):
+        recipe_revision_text = f"{defaults['recipe_commit']} ({defaults['recipe_date']}"
+        if defaults.get("recipe_history_count") is not None:
+            recipe_revision_text += f", {defaults['recipe_history_count']} path commits"
+        recipe_revision_text += ")"
+
     lines = [f"# {package_name}", "", "## Maintenance Snapshot", ""]
     if role:
         lines.append(f"- Role: `{role}`")
@@ -1300,7 +1346,8 @@ def render_readme(package_name: str, policy_pkg: dict, recipe_pkg: dict, version
         f"- Scaffold template: `{policy_pkg['template']}`",
         f"- Recipe build method: `{recipe_pkg.get('method', 'unknown')}`",
         f"- Upstream repo: `{recipe_pkg.get('repo', '')}`",
-        f"- Derived pkgver seed: `{version}`",
+        f"- Package version: `{version}`",
+        f"- Recipe revision: `{recipe_revision_text}`",
         f"- Recipe steps: `{steps}`",
         f"- Recipe dependencies: `{depends_on}`",
         f"- Recorded reference packages: `{references}`",
@@ -1372,6 +1419,7 @@ def main() -> int:
     policy = load_toml(policy_path)
     defaults = dict(policy.get("defaults", {}))
     recipe_manifest = load_recipe_manifest(recipe_dir)
+    defaults.update(recipe_revision(recipe_root, args.recipe_subdir))
     selected = set(args.only)
     available = set(policy.get("packages", {}).keys())
     unknown = sorted(selected - available)
@@ -1384,7 +1432,7 @@ def main() -> int:
         if selected and package_name not in selected:
             continue
         recipe_pkg = ensure_recipe_package(recipe_manifest, policy_pkg["recipe_key"])
-        version = compute_version(recipe_root, args.recipe_subdir, policy_pkg["upstream_version"])
+        version = policy_pkg["upstream_version"]
         package_dir = output_root / package_name
         package_dir.mkdir(parents=True, exist_ok=True)
 
@@ -1397,7 +1445,7 @@ def main() -> int:
             encoding="utf-8",
         )
         (package_dir / "README.md").write_text(
-            render_readme(package_name, policy_pkg, recipe_pkg, version),
+            render_readme(package_name, policy_pkg, recipe_pkg, version, defaults),
             encoding="utf-8",
         )
         print(f"rendered {package_name}")

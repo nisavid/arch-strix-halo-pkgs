@@ -19,7 +19,7 @@
   },
   "name": "python-torchvision-rocm-gfx1151",
   "package_name": "python-torchvision-rocm-gfx1151",
-  "pkgver": "0.26.0.r8.d20260317.gad42886",
+  "pkgver": "0.26.0",
   "policy": {
     "advisory_references": [
       "aur/python-torchvision-rocm-bin",
@@ -101,6 +101,9 @@
   "provenance": {
     "output_root": "packages",
     "recipe_author": "Blackcat Informatics Inc.",
+    "recipe_commit": "ad42886",
+    "recipe_date": "20260317",
+    "recipe_history_count": 8,
     "recipe_repo": "https://github.com/paudley/ai-notes",
     "recipe_subdir": "strix-halo",
     "repo_subpath": "."

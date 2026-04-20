@@ -20,8 +20,9 @@ python tools/render_therock_pkgbase.py --therock-root /
 That command:
 
 - scans the staged or installed `opt/rocm` tree
-- computes `pkgver` from the repo-local `upstream/ai-notes/strix-halo` history
-- stamps recipe provenance into the generated `PKGBUILD`
+- uses `pkgver` from `policies/therock-packages.toml`
+- stamps repo-local `upstream/ai-notes/strix-halo` recipe provenance into the
+  generated `PKGBUILD` and manifest
 - rewrites the file lists and manifest in this directory
 
 ## Build expectation

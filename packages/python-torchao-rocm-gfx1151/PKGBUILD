@@ -1,7 +1,7 @@
 # Maintainer: nisavid
 
 pkgname=python-torchao-rocm-gfx1151
-pkgver=0.17.0.r8.d20260317.gad42886
+pkgver=0.17.0
 pkgrel=1
 pkgdesc='Package for applying ao techniques to GPU models with ROCm, rebuilt for Strix Halo gfx1151'
 arch=('x86_64')

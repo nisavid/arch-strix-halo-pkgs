@@ -58,21 +58,7 @@ def main() -> int:
         if not upstream_version:
             raise RuntimeError(f"could not determine upstream pkgver from {policy_path}")
 
-        pkgver = subprocess.run(
-            [
-                sys.executable,
-                str(here / "tools" / "compute_recipe_version.py"),
-                "--recipe-root",
-                str(recipe_root),
-                "--recipe-subdir",
-                args.recipe_subdir,
-                "--upstream-version",
-                upstream_version,
-            ],
-            check=True,
-            capture_output=True,
-            text=True,
-        ).stdout.strip()
+        pkgver = upstream_version
         latest = git_output(recipe_root, "log", "-1", "--date=format:%Y%m%d", "--format=%cd %h", "--", args.recipe_subdir)
         recipe_date, recipe_commit = latest.split()
 

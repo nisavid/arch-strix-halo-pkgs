@@ -17,7 +17,7 @@ authoritative_reference = "aur/aocl-utils"
 advisory_references = ["aur/aocl-utils-aocc"]
 divergence_notes = [
   "Uses amdclang as the compiler baseline but intentionally leaves AOCL-Utils itself off the more aggressive recipe flag bundle because build testing showed -famd-opt is a no-op here.",
-  "Tracks the upstream 5.2.2 release tarball rather than a floating branch so pkgver tracks the real upstream release plus the local recipe revision."
+  "Uses the upstream 5.2.2 release tarball; recipe commit, date, and path-history count are recorded as provenance."
 ]
 update_notes = [
   "When the AUR baseline changes, re-check license packaging and install layout against aur/aocl-utils first, then compare any AOCC-specific drift from aur/aocl-utils-aocc.",
@@ -188,7 +188,7 @@ patches_dir = "patches/python-vllm-rocm-gfx1151"
 scaffold_notes = [
   "There does not appear to be a current dedicated python-vllm-rocm AUR package; the closest package baseline is the generic AUR python-vllm package, with ROCm-specific integration coming from this recipe.",
   "Use the latest stable upstream release tarball (v0.19.1) instead of a floating full Git clone. Upstream released v0.19.1 as a patch release on top of v0.19.0, so the package now follows the final stable tag rather than the earlier v0.19.1 release candidate.",
-  "The v0.19.1 impact review found no dropped local patch lane: upstream mainly added Gemma 4 model/tooling coverage, relaxed the Transformers 5.x upper-bound shape while excluding known bad 5.x minors, and bumped compressed-tensors. The carried local patches were refreshed against the final tag and the build produced `python-vllm-rocm-gfx1151-0.19.1.r8.d20260317.gad42886-1-x86_64.pkg.tar.zst`.",
+  "The v0.19.1 impact review found no dropped local patch lane: upstream mainly added Gemma 4 model/tooling coverage, relaxed the Transformers 5.x upper-bound shape while excluding known bad 5.x minors, and bumped compressed-tensors. The carried local patches were refreshed against the final tag.",
   "This scaffold carries the minimal Python-3.14 source patch needed to build from the stable tarball: relax the Python upper bound and extend the hard-coded CMake supported-version list through 3.14.",
   "Carries a package-local CLI import patch so vllm --version remains a metadata-only path instead of importing optional OpenAI and Triton runtime modules at startup.",
   "Carries a ROCm-specific Triton compatibility patch so the vendored triton_kernels tree is treated as unavailable when the installed Triton runtime lacks CUDA-only APIs such as triton.language.target_info or triton.constexpr_function.",
@@ -565,6 +565,7 @@ conflicts = ["python-numpy"]
 depends = ["openblas", "python-gfx1151"]
 makedepends = ["meson", "ninja", "patchelf", "python-build", "python-installer", "meson-python", "python-wheel", "rocm-llvm-gfx1151"]
 optdepends = []
+build_config_settings = ["setup-args=-Dblas=openblas", "setup-args=-Dlapack=openblas", "setup-args=-Dallow-noblas=false"]
 pypi_name = "numpy"
 src_subdir = "numpy-2.4.4"
 patches_dir = "patches/python-numpy-gfx1151"
@@ -648,20 +649,41 @@ divergence_notes = [
 ]
 update_notes = [
   "Re-check against Cachy first, then consult the AUR source and git variants if the maintained package lags a needed upstream change.",
-  "If the upstream build backend changes, keep the package metadata focused on the system cmake/toolchain story rather than reviving venv-local wrapper assumptions."
+  "If the upstream build backend changes, keep the package metadata focused on the system cmake/toolchain story rather than reviving venv-local wrapper assumptions.",
+  "After publishing a rebuilt package, verify the installed host extension with readelf or ldd before treating the host lane as current."
 ]
 provides = ["python-sentencepiece"]
 conflicts = ["python-sentencepiece"]
 depends = ["gcc-libs", "glibc", "python-gfx1151"]
 makedepends = ["cmake", "ninja", "python-build", "python-installer", "python-wheel", "rocm-llvm-gfx1151"]
 optdepends = ["python-protobuf"]
+source_patches = ["0001-bundle-sentencepiece-by-default.patch"]
 pypi_name = "sentencepiece"
 src_subdir = "sentencepiece-0.2.1"
 patches_dir = "patches/python-sentencepiece-gfx1151"
 scaffold_notes = [
   "The current CachyOS python-sentencepiece package is the closest maintained baseline, while the AUR python-sentencepiece and python-sentencepiece-git packages remain advisory references for patching and split-package expectations.",
-  "The original recipe fixes a broken pip-installed cmake wrapper inside the venv. In Arch packaging that should translate to using the system cmake toolchain directly."
+  "The original recipe fixes a broken pip-installed cmake wrapper inside the venv. In Arch packaging that should translate to using the system cmake toolchain directly.",
+  "The bundled-build patch prefers the bundled SentencePiece library by default and only uses the system pkg-config sentencepiece path when SENTENCEPIECE_USE_SYSTEM=1 is explicitly set."
 ]
+recipe_notes_override = """
+Builds and installs numpy, sentencepiece, zstandard, asyncpg from
+source with Zen 5 optimization flags.
+
+numpy: cmake pip wrapper breaks in build isolation; replaced with
+symlink to system cmake.
+
+meson-based packages (numpy, zstandard): -mllvm flags must be
+rewritten as -Xclang -mllvm -Xclang pairs because meson's compiler
+probing rejects -mllvm as "unused command line argument".
+-famd-opt moved to LDFLAGS (link-time-only driver flag, no-op at
+compile time -- triggers -Werror=unused in compile-only probes).
+
+The bundled-build patch is effective when the built `_sentencepiece` extension
+has no dynamic dependency on host `libsentencepiece.so.0` or
+`libsentencepiece_train.so.0`. Treat the repo-built package lane as current
+only after the installed host extension matches that dependency shape.
+"""
 
 [packages.python-zstandard-gfx1151]
 recipe_key = "native_wheels"

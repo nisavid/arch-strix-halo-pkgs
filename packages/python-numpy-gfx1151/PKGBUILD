@@ -5,7 +5,7 @@
 # Package recipe key: native_wheels
 
 pkgname=python-numpy-gfx1151
-pkgver=2.4.4.r8.d20260317.gad42886
+pkgver=2.4.4
 pkgrel=3
 pkgdesc='Scientific tools for Python rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
@@ -13,6 +13,7 @@ url=https://www.numpy.org/
 license=(custom)
 depends=(openblas python-gfx1151)
 makedepends=(meson ninja patchelf python-build python-installer meson-python python-wheel rocm-llvm-gfx1151)
+optdepends=()
 options=()
 provides=(python-numpy)
 conflicts=(python-numpy)

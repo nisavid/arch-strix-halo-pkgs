@@ -6,7 +6,8 @@
 - Scaffold template: `cmake`
 - Recipe build method: `cmake`
 - Upstream repo: `https://github.com/amd/aocl-utils.git`
-- Derived pkgver seed: `5.2.2.r8.d20260317.gad42886`
+- Package version: `5.2.2`
+- Recipe revision: `ad42886 (20260317, 8 path commits)`
 - Recipe steps: `5`
 - Recipe dependencies: `therock`
 - Recorded reference packages: `aur/aocl-utils, aur/aocl-utils-aocc`
@@ -36,7 +37,7 @@ CMAKE_CXX_CLANG_TIDY=/bin/true prevents auto-detection.
 ## Intentional Divergences
 
 - Uses amdclang as the compiler baseline but intentionally leaves AOCL-Utils itself off the more aggressive recipe flag bundle because build testing showed -famd-opt is a no-op here.
-- Tracks the upstream 5.2.2 release tarball rather than a floating branch so pkgver tracks the real upstream release plus the local recipe revision.
+- Uses the upstream 5.2.2 release tarball; recipe commit, date, and path-history count are recorded as provenance.
 
 ## Update Notes
 

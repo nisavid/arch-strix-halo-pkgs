@@ -5,7 +5,7 @@
 # Package recipe key: pytorch
 
 pkgname=python-pytorch-opt-rocm-gfx1151
-pkgver=2.11.0.r8.d20260317.gad42886
+pkgver=2.11.0
 pkgrel=2
 pkgdesc='Tensors and dynamic neural networks in Python with ROCm acceleration, rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
@@ -24,7 +24,7 @@ sha256sums=(SKIP 0fc03afcb0501849e08dfd8dafe07578fa0e7337025e1ab80f59bb9be9a3560
 prepare() {
   cd "$srcdir/pytorch"
 
-patch --dry-run -Np1 -i "$srcdir/0001-setup-allow-skipping-build-deps.patch" >/dev/null &&
+  patch --dry-run -Np1 -i "$srcdir/0001-setup-allow-skipping-build-deps.patch" >/dev/null &&
     patch -Np1 -i "$srcdir/0001-setup-allow-skipping-build-deps.patch"
   # PyTorch's ROCm fork relies on vendored submodules and local hipify-generated sources.
   git -C "$srcdir/pytorch" submodule sync --recursive

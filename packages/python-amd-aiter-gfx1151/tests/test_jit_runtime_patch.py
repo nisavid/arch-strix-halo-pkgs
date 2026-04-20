@@ -33,7 +33,7 @@ def test_pkgbuild_carries_jit_runtime_patch():
     text = PKGBUILD.read_text()
 
     assert "pkgrel=1" in text
-    assert "pkgver=0.1.12.post2.dev69+gcf12b1381.r8.d20260317.gad42886" in text
+    assert "pkgver=0.1.12.post2.dev69+gcf12b1381" in text
     assert "cf12b1381dcdec4b5d90d136a5403e718c7541ec" in text
     assert 'export SETUPTOOLS_SCM_PRETEND_VERSION="0.1.12.post2.dev69+gcf12b1381"' in text
     assert HEADER_PATCH.name in text

@@ -6,7 +6,8 @@
 - Scaffold template: `python-project-pytorch-rocm`
 - Recipe build method: `pip`
 - Upstream repo: `https://github.com/ROCm/pytorch.git`
-- Derived pkgver seed: `2.11.0.r8.d20260317.gad42886`
+- Package version: `2.11.0`
+- Recipe revision: `ad42886 (20260317, 8 path commits)`
 - Recipe steps: `9, 10, 11`
 - Recipe dependencies: `therock, cpython`
 - Recorded reference packages: `extra/python-pytorch-opt-rocm, extra/python-pytorch-rocm, cachyos-extra-znver4/python-pytorch-opt-rocm`
