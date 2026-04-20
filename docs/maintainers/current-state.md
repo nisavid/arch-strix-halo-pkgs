@@ -371,14 +371,18 @@ The following smoke checks have already passed on the reference host:
     scenario early if a preexisting stale `VLLM::EngineCore` is already
     squatting on VRAM, so the failure mode is explicit instead of surfacing
     later as a generic `gpu_memory_utilization` startup error
-  - leaving `video` implicit in `--limit-mm-per-prompt` is still enough to
-    send vLLM back into multimodal warmup on this host and reproduce the older
-    GPU memory-access fault during engine initialization
+  - before the self-hosted rebuild, leaving `video` implicit in
+    `--limit-mm-per-prompt` was enough to send vLLM back into multimodal warmup
+    on this host and reproduce the older GPU memory-access fault during engine
+    initialization
   - the questioned carries are now split cleanly by evidence:
-    - keep
-      `python-amd-aiter-gfx1151/0005-ck-moe-normalizes-zero-splitk-and-forwards-stage2.patch`
-      because the earlier forced AITER fused-MoE lane directly reproduced a
-      `ksplit=0` fault, and current upstream AITER still lacks the full
+    - keep the AITER fused-MoE experiment guards:
+      `python-amd-aiter-gfx1151/0003-fused-moe-unknown-gfx-falls-back-to-2stage.patch`,
+      `python-amd-aiter-gfx1151/0004-moe-tuner-skips-missing-1stage-asm-metadata.patch`,
+      and
+      `python-amd-aiter-gfx1151/0005-ck-moe-normalizes-zero-splitk-and-forwards-stage2.patch`;
+      on 2026-04-20, package-local tests passed `10 passed`, including
+      unknown-gfx fallback, missing 1-stage ASM metadata handling, and
       no-split normalization plus stage-2 `splitk` forwarding
     - keep the split RDNA header carries:
       `python-amd-aiter-gfx1151/0001-gfx1151-rdna35-header-compat.patch`

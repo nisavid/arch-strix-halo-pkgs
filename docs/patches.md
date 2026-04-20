@@ -52,9 +52,18 @@ patches and expected-failure findings that still need confirmation after the
 
 ## AITER
 
-- Provisional runtime-sensitive AITER carries are tracked in
-  [the rebuild revalidation ledger](maintainers/rebuild-revalidation.md) until
-  post-rebuild build and scenario evidence promotes or retires them.
+- [gfx1x fused-MoE experiment compatibility](../packages/python-amd-aiter-gfx1151/0003-fused-moe-unknown-gfx-falls-back-to-2stage.patch)
+  - Keeps unknown gfx targets from keying directly into missing 1-stage fused
+    MoE metadata and lets them fall back to the 2-stage path.
+- [Missing 1-stage ASM metadata skip](../packages/python-amd-aiter-gfx1151/0004-moe-tuner-skips-missing-1stage-asm-metadata.patch)
+  - Lets the MoE tuner skip unavailable 1-stage ASM metadata instead of
+    treating it as a hard failure.
+- [CK MoE splitk normalization and forwarding](../packages/python-amd-aiter-gfx1151/0005-ck-moe-normalizes-zero-splitk-and-forwards-stage2.patch)
+  - Normalizes `splitk` values of `None` or `0` to `1` and forwards the chosen
+    value through the CK 2-stage path.
+  - These patches are retained for explicit AITER fused-MoE experiments, not as
+    evidence that the maintained Gemma 4 lane should leave Triton unquantized
+    MoE.
 
 ## TorchAO
 
