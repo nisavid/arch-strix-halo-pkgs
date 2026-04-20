@@ -260,7 +260,7 @@ value = "tool_ok"
 
 [[scenario]]
 id = "vllm.gemma4.e2b.server.image"
-summary = "Gemma 4 E2B image-input recipe smoke; exploratory until Strix Halo multimodal warmup is validated"
+summary = "Gemma 4 E2B image-input recipe smoke and representative multimodal warmup check"
 tags = ["smoke", "gemma4", "server", "recipe", "multimodal", "exploratory"]
 
 [scenario.given]
@@ -278,7 +278,7 @@ value = "image_ok"
 
 [[scenario]]
 id = "vllm.gemma4.e2b.server.multi-image"
-summary = "Gemma 4 E2B multiple-image recipe smoke; exploratory until Strix Halo multimodal warmup is validated"
+summary = "Gemma 4 E2B multiple-image recipe smoke; exploratory until this mode is validated"
 tags = ["smoke", "gemma4", "server", "recipe", "multimodal", "exploratory"]
 
 [scenario.given]
@@ -296,7 +296,7 @@ value = "multi-image_ok"
 
 [[scenario]]
 id = "vllm.gemma4.e2b.server.image-dynamic"
-summary = "Gemma 4 E2B dynamic-resolution image recipe smoke; exploratory until Strix Halo multimodal warmup is validated"
+summary = "Gemma 4 E2B dynamic-resolution image recipe smoke; exploratory until this mode is validated"
 tags = ["smoke", "gemma4", "server", "recipe", "multimodal", "exploratory"]
 
 [scenario.given]
@@ -317,7 +317,7 @@ value = "image-dynamic_ok"
 
 [[scenario]]
 id = "vllm.gemma4.e2b.server.audio"
-summary = "Gemma 4 E2B audio-input recipe smoke; exploratory until Strix Halo multimodal warmup is validated"
+summary = "Gemma 4 E2B audio-input recipe smoke; exploratory until this mode is validated"
 tags = ["smoke", "gemma4", "server", "recipe", "multimodal", "exploratory"]
 
 [scenario.given]
@@ -335,7 +335,7 @@ value = "audio_ok"
 
 [[scenario]]
 id = "vllm.gemma4.e2b.server.video"
-summary = "Gemma 4 E2B video-input recipe smoke; exploratory until Strix Halo multimodal warmup is validated"
+summary = "Gemma 4 E2B video-input recipe smoke; exploratory until this mode is validated"
 tags = ["smoke", "gemma4", "server", "recipe", "multimodal", "exploratory"]
 
 [scenario.given]
@@ -353,7 +353,7 @@ value = "video_ok"
 
 [[scenario]]
 id = "vllm.gemma4.e2b.server.multimodal-tool"
-summary = "Gemma 4 E2B multimodal tool-use recipe smoke; exploratory until Strix Halo multimodal warmup is validated"
+summary = "Gemma 4 E2B multimodal tool-use recipe smoke; exploratory until this mode is validated"
 tags = ["smoke", "gemma4", "server", "recipe", "multimodal", "tool", "exploratory"]
 
 [scenario.given]

@@ -434,9 +434,9 @@ The following smoke checks have already passed on the reference host:
   non-exploratory broad `vllm` scenarios first, then `compiled-probe`
   scenarios to answer the eager-mode question, MoE backend probes after that,
   and finally real-model TorchAO plus multimodal exploratory scenarios. The
-  first compiled, MoE, TorchAO, and representative multimodal decisions are
-  now recorded; keep the remaining multimodal scenarios exploratory until the
-  shared E2B server/AsyncLLM warmup fault is fixed.
+  first compiled, MoE, TorchAO, forced-attention, and representative
+  multimodal decisions are now recorded; keep the remaining multimodal modes
+  exploratory until each mode has its own reference-host pass.
 - The 2026-04-19 Gemma 4 broad vLLM pass is recorded but not promotable as a
   default server matrix:
   - passed:
@@ -452,14 +452,15 @@ The following smoke checks have already passed on the reference host:
     26B-A4B MoE server probes reached readiness and completed within that
     budget
   - every non-exploratory `google/gemma-4-E2B-it` server scenario failed
-    during server/AsyncLLM initialization with a ROCm GPU memory-access fault
-  - an isolated E2B server basic rerun reproduced the same fault, while a
-    direct offline eager E2B text smoke passed and returned
+    during server/AsyncLLM initialization with a ROCm GPU memory-access fault;
+    this was later retired by the 2026-04-20 self-hosted rebuild revalidation
+  - an isolated E2B server basic rerun reproduced the same fault before the
+    rebuild, while a direct offline eager E2B text smoke passed and returned
     `The quick brown fox jumps.`
-  - an explicit `--attention-backend TRITON_ATTN` E2B server probe proved vLLM
-    selected `Using TRITON_ATTN backend` and still hit the same GPU
-    memory-access fault, so the E2B server fault is not explained by AITER
-    unified attention alone
+  - an explicit pre-rebuild `--attention-backend TRITON_ATTN` E2B server probe
+    proved vLLM selected `Using TRITON_ATTN backend` and still hit the same GPU
+    memory-access fault, so the stale-stack E2B server fault was not explained
+    by AITER unified attention alone
   - a later explicit `--attention-backend ROCM_AITER_FA` E2B server probe on
     2026-04-20 failed earlier than the Triton-attention probe: vLLM rejected
     `AttentionBackendEnum.ROCM_AITER_FA` with `compute capability not
@@ -471,6 +472,28 @@ The following smoke checks have already passed on the reference host:
     weights, initialized the encoder cache with an image budget, profiled 29
     maximum-size image items, and then hit the same ROCm GPU memory-access
     fault during engine initialization
+- The 2026-04-20 rebuilt-stack E2B server revalidation retires the old
+  server/AsyncLLM initialization fault:
+  - `vllm.gemma4.e2b.server.basic` passed in `45.623171` seconds with
+    `--enforce-eager`, text-only multimodal limits, `ROCM_AITER_UNIFIED_ATTN`,
+    and `basic_ok`
+  - `vllm.gemma4.e2b.server.attn-triton` passed in `44.833574` seconds with
+    explicit `--attention-backend TRITON_ATTN`, text-only multimodal limits,
+    `Using TRITON_ATTN backend`, and `basic_ok`
+  - the forced Triton-attention pass also revalidates the carried large-head
+    Triton unified-attention tile reduction as the current accepted guard for
+    the gfx1151 64 KiB LDS overflow
+  - `vllm.gemma4.e2b.server.image` passed in `59.030087` seconds with
+    `ROCM_AITER_UNIFIED_ATTN`, encoder-cache profiling, a completed
+    multi-modal warmup in `0.493s`, an HTTP 200 image request, response text
+    `Solid bright blue color.`, and `image_ok`
+  - the image scenario required a smoke-helper fix, not a package-runtime
+    patch: the embedded PNG data URL was corrupt, and image caption validation
+    needed to accept a nonempty descriptive caption instead of reusing the
+    exact-five-word text smoke assertion
+  - only the image-input E2B multimodal path is represented by this pass; keep
+    multi-image, dynamic image, audio, video, and multimodal-tool scenarios
+    exploratory until each has its own run
 - The 2026-04-20 compiled-path revalidation keeps eager mode as the supported
   Gemma 4 helper default for E2B, but no longer for every Gemma 4 checkpoint:
   - the pre-repair host Triton package lacked

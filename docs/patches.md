@@ -39,6 +39,13 @@ patches and expected-failure findings that still need confirmation after the
   - This is a packaging-facing compatibility patch, not a Strix Halo–specific
     optimization, so it is the clearest current upstreaming candidate in the
     repo.
+- [ROCm large-head Triton unified-attention tile reduction](../packages/python-vllm-rocm-gfx1151/0005-rocm-reduce-triton-unified-attention-prefill-tile-for-large-heads.patch)
+  - Keeps large-head ROCm prefill paths such as Gemma 4 global attention under
+    the gfx1151 LDS/shared-memory limit by reducing the Triton unified-attention
+    prefill tile to `16` when `head_size >= 512`.
+  - Revalidated after the 2026-04-20 self-hosted rebuild with the forced
+    `TRITON_ATTN` Gemma 4 E2B server scenario and the package-local tile-size
+    guard.
 - Provisional runtime-sensitive vLLM carries are tracked in
   [the rebuild revalidation ledger](maintainers/rebuild-revalidation.md) until
   post-rebuild scenario evidence promotes or retires them.

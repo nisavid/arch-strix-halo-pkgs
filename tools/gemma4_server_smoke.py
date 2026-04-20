@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import signal
 import subprocess
 import sys
@@ -52,6 +53,10 @@ MULTIMODAL_MODES = {
     "video",
     "multimodal-tool",
 }
+TINY_PNG_DATA_URL = (
+    "data:image/png;base64,"
+    "iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEklEQVR4nGNkSDjAwMDAxAAGAAzqASQOf3rKAAAAAElFTkSuQmCC"
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -394,7 +399,7 @@ def multimodal_content(args: argparse.Namespace) -> list[dict[str, object]]:
             {
                 "type": "image_url",
                 "image_url": {
-                    "url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMB/axX6n4AAAAASUVORK5CYII="
+                    "url": TINY_PNG_DATA_URL
                 },
             },
         ]
@@ -404,13 +409,13 @@ def multimodal_content(args: argparse.Namespace) -> list[dict[str, object]]:
             {
                 "type": "image_url",
                 "image_url": {
-                    "url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMB/axX6n4AAAAASUVORK5CYII="
+                    "url": TINY_PNG_DATA_URL
                 },
             },
             {
                 "type": "image_url",
                 "image_url": {
-                    "url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMB/axX6n4AAAAASUVORK5CYII="
+                    "url": TINY_PNG_DATA_URL
                 },
             },
         ]
@@ -642,6 +647,16 @@ def validate_basic_response(response: dict[str, Any]) -> dict[str, Any]:
     return message
 
 
+def validate_multimodal_response(response: dict[str, Any]) -> dict[str, Any]:
+    message = extract_message(response)
+    content = (message.get("content") or "").strip()
+    if not content:
+        raise RuntimeError("multimodal mode response did not include text content")
+    if not re.search(r"[A-Za-z]", content):
+        raise RuntimeError(f"multimodal mode response did not include Latin text: {content!r}")
+    return message
+
+
 def validate_reasoning_response(response: dict[str, Any]) -> dict[str, Any]:
     choices = response.get("choices") or []
     if not choices:
@@ -752,7 +767,7 @@ def run_smoke(args: argparse.Namespace) -> None:
                 validate_basic_response(followup)
                 print("tool_ok")
             else:
-                validate_basic_response(response)
+                validate_multimodal_response(response)
                 print(f"{args.mode}_ok")
         except Exception:
             print("server_log_tail_start", file=sys.stderr)

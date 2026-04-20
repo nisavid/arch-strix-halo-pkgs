@@ -114,13 +114,10 @@
   validation:
   - vLLM recipe-aligned reasoning, tool-calling, structured-output, and
     benchmark-lite server flows
-  - keep a dedicated follow-up for the E2B server/AsyncLLM startup fault; the
-    offline eager `tools/gemma4_text_smoke.py` path for the same E2B checkpoint
-    still passes, so the failure is not a model-artifact or tokenizer-path
-    blocker
   - keep the E2B `kernel-probe` scenario as a tracked regression probe for the
-    server fault; the forced Triton attention lane still faults and rules out
-    an AITER-only explanation
+    retired server/AsyncLLM startup fault; after the 2026-04-20 self-hosted
+    rebuild, the forced Triton attention lane passes and revalidates the
+    carried large-head tile-size guard
   - keep `vllm.gemma4.e2b.text.compiled` as an expected blocked compiled probe:
     with fresh cache roots on 2026-04-20 it initialized, compiled, captured
     graphs, and generated corrupted non-ASCII output instead of the expected
@@ -129,8 +126,9 @@
     when run with fresh compile caches or after deliberate cache invalidation
   - keep the serialized `vllm.gemma4.e2b.torchao.real-model` scenario
     exploratory until the TorchAO/vLLM metadata mismatch is fixed
-  - multimodal image/audio/video flows, which remain exploratory until the
-    shared E2B server/AsyncLLM warmup fault is fixed
+  - multi-image, dynamic image, audio, video, and multimodal-tool flows remain
+    exploratory until each mode has its own reference-host pass; the E2B image
+    server smoke now passes as the representative multimodal warmup check
   - relevant Hugging Face model-card usage patterns that are not already
     covered by the vLLM recipe scenarios
 - Revisit `python-flydsl-gfx1151` once the MLIR development-surface story is
