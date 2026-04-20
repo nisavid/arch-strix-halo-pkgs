@@ -43,8 +43,8 @@ classifying FP8-specific failures. Both local Qwen3.6 configs advertise
 `Qwen3_5MoeForConditionalGeneration` / `qwen3_5_moe`, so the maintained
 Qwen3.5/GDN package carry is still relevant to this lane. The FP8 model
 remains a target and blocked-probe lane, not an accepted passing smoke lane,
-until the rebuilt native stack reproduces or retires the expected Qwen3.6
-probe outcomes in the revalidation ledger.
+because the rebuilt native stack reproduces the expected Qwen3.6 FP8 probe
+failures in the revalidation ledger.
 
 The rebuilt installed stack passed the unquantized Qwen3.6 control on
 2026-04-20 with the `/var/cache/hf` `Qwen/Qwen3.6-35B-A3B` snapshot,
@@ -579,35 +579,27 @@ The following smoke checks have already passed on the reference host:
     during FP8 MoE backend selection with
     `No FP8 MoE backend supports the deployment configuration`; the vLLM
     Triton and batched Triton FP8 MoE gates currently advertise ROCm FP8
-    support for `gfx9`, not `gfx1151`. The tracked no-AITER blocked probe
-    passed on 2026-04-19 in `20.962591` seconds against built package
-    payloads and in `22.226842` seconds after pkgrel `-27` and AITER pkgrel
-    `-8` were installed, by asserting that failure mode rather than treating
-    it as a generation smoke.
+    support for `gfx9`, not `gfx1151`. The rebuilt installed stack reproduced
+    this finding on 2026-04-20 in `22.765256` seconds against the `/var/cache/hf`
+    FP8 snapshot, with `config_quantization_config_present true` and the same
+    backend-selection error.
   - The 2026-04-20 rebuilt-stack control for `Qwen/Qwen3.6-35B-A3B` passed
     unquantized with AITER disabled, `--max-num-batched-tokens 32`, and
     `--gpu-memory-utilization 0.9`; the tracked scenario completed in
     `85.054242` seconds and generated `ready`. Treat this as the current
     same-family control when comparing FP8-specific failures.
-  - The forced-AITER Qwen3.6 path is also blocked. Before the pkgrel `-8`
-    install, the 2026-04-19 run selected `Using AITER Fp8 MoE
-    backend`, loaded all 42 checkpoint shards, and then failed during
-    `module_quant` JIT compilation because installed `hip_reduce.h` included
-    nonexistent `hip_compat.h`.
-  - `python-amd-aiter-gfx1151` pkgrel `-8` is the package-side fix for that
-    Qwen3.6 blocker: `0006-rdna35-hip-reduce-wave32-dpp-compat.patch` keeps
-    the shipped `aiter_hip_common.h` include, the package-local tests pass,
-    `tools/amerge build python-amd-aiter-gfx1151` completed, and the built
-    package's `aiter_meta/csrc/include/hip_reduce.h` no longer references
-    `hip_compat.h`. The package is now installed on the live host.
-  - A built-payload rerun of the forced-AITER Qwen3.6 probe with AITER pkgrel
-    `-8` and vLLM pkgrel `-27` cleared the earlier `hip_compat.h` blocker,
-    selected the AITER FP8 MoE path, and then failed during
-    `aiter.jit.module_quant` compilation with
+  - The forced-AITER Qwen3.6 FP8 path is also blocked. The rebuilt installed
+    stack selected `Using AITER Fp8 MoE backend` on 2026-04-20, then failed
+    during `aiter.jit.module_quant` compilation with
     `aiter_meta/csrc/include/opus/opus.hpp:3001:24: error: unknown type name
-    'mfma_adaptor'`. After installing both package rels, the installed-host
-    forced-AITER blocked probe passed in `74.664373` seconds by asserting the
-    same failure mode.
+    'mfma_adaptor'`; the tracked expected-failure scenario completed in
+    `54.760926` seconds by asserting that failure mode.
+  - `python-amd-aiter-gfx1151` carries the package-side header compatibility
+    needed to reach the current forced-AITER Qwen3.6 FP8 blocker:
+    `0006-rdna35-hip-reduce-wave32-dpp-compat.patch` keeps the shipped
+    `aiter_hip_common.h` include, the package-local tests pass, and the
+    installed package's `aiter_meta/csrc/include/hip_reduce.h` no longer
+    references `hip_compat.h`.
   - The first AITER gfx1151 MFMA/WMMA root-cause pass found that `gfx1151`
     defines `__GFX11__` and `__gfx1151__`, while AITER's `opus.hpp` defines
     `mfma_adaptor` only for `__GFX9__` device builds and chooses that default
