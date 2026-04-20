@@ -91,6 +91,11 @@ Current installed native package state, checked on 2026-04-20 after the full
 
 ## Live Smoke Coverage
 
+This section includes both current installed-host checks and historical smoke
+records. When a result was recorded before the 2026-04-20 rebuild boundary,
+the rebuild revalidation ledger controls whether that result can be promoted
+as current accepted behavior.
+
 The following smoke checks have already passed on the reference host:
 
 - `rocminfo`
@@ -674,14 +679,14 @@ Current smoke gap:
     PyTorch and vLLM
   - convert remaining scripted source edits into durable patch files where
     practical
-- vLLM build-path follow-up
+- vLLM HIP `CMAKE_ARGS` flag-forwarding follow-up
   - a trial patch that taught `setup.py` to `shlex.split()` quoted
-    `CMAKE_ARGS` and injected `CMAKE_HIP_FLAGS` did route source-prefix maps
-    into the HIP compile lane, but it also made both vLLM build attempts fail
-    in `csrc/sampler.hip` on gfx1151 with:
+    `CMAKE_ARGS` and injected `CMAKE_HIP_FLAGS` did route extra compiler
+    flags into the HIP compile lane, but it also made both vLLM build attempts
+    fail in `csrc/sampler.hip` on gfx1151 with:
     `Invalid dpp_ctrl value: wavefront shifts are not supported on GFX10+`
-  - treat that as the current blocker before attempting any further vLLM
-    build-path sanitization
+  - treat that compile failure as the current blocker before attempting any
+    further quoted-`CMAKE_ARGS` HIP flag forwarding
 - vLLM/TorchAO follow-up
   - the reference host is now on the local
     `python-torchao-rocm-gfx1151 0.17.0` package, and `import torchao` is

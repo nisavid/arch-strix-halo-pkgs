@@ -74,7 +74,9 @@ findings, expected-failure tests, backlog findings, or local-origin runtime
 patch rationale as accepted. Promote findings that reproduce after the rebuilt
 stack is installed, retire findings that no longer reproduce, and make sure
 each retained local-origin patch ends with a test or tracked scenario that
-guards the behavior it fixes.
+guards the behavior it fixes. When a patch has no obvious executable spec,
+search package READMEs, recipe metadata, git history, and available session
+transcripts before inferring the best retained-patch guard from context.
 
 Current package-lane catalog:
 
