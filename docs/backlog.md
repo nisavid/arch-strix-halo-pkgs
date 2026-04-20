@@ -77,15 +77,24 @@
     flow, OpenAI-compatible multimodal API consumption, and ultra-long-context
     / YaRN override flow
   - next, add reduced local Qwen server scenarios for Qwen3.6 base serving with
-    `--reasoning-parser qwen3` and its MTP speculative-decoding variant; do not
-    use upstream `tp=8`, `dp=8`, or `--max-model-len 262144` shapes as local
-    gfx1151 smoke defaults
+    `--reasoning-parser qwen3` and its MTP speculative-decoding variant; keep
+    large throughput, high parallelism, and long-context stress shapes separate
+    from default smoke scenarios so their failures do not obscure base
+    correctness
   - record the NVIDIA GB200 and AMD MI355X deployment shapes only as advisory
     recipe references, while adapting runnable local scenarios to the Arch
     gfx1151 package lane and current host model cache
   - include recipe configuration checks for thinking disablement, Mamba/prefix
     caching caveats, multimodal processor kwargs, and the Mamba cache versus
     CUDAGraph capture-size failure mode
+  - use the recipe coverage worklist in
+    `docs/maintainers/rebuild-revalidation-plan.md` as the concrete scope for
+    which Qwen recipe surfaces are runnable, planned, or advisory-only
+  - include the interactive Qwen3.6 recipe selectors for tool calling,
+    reasoning, speculative decoding, `max_batched_8k`, and
+    `max_num_seqs_256` as planned local probes after base server reasoning
+    passes; use stress and throughput scenarios for full context or large
+    batch shapes rather than folding them into the default smoke set
 - Only revisit Gemma 4 on AITER fused-MoE if there is a concrete reason to
   move off the current TRITON unquantized-MoE lane.
   - treat any such attempt as a fresh experiment
@@ -118,6 +127,15 @@
   validation:
   - vLLM recipe-aligned reasoning, tool-calling, structured-output, and
     benchmark-lite server flows
+  - use the recipe coverage worklist in
+    `docs/maintainers/rebuild-revalidation-plan.md` as the concrete scope for
+    which Gemma 4 recipe surfaces are validated, tracked, planned, or
+    advisory-only
+  - add reduced probes for the interactive Gemma 4 `max_batched_8k` and
+    `max_num_seqs_256` selectors only after the base feature lanes pass and the
+    host memory fit is known
+  - add an FP8 KV-cache smoke for Gemma 4 when the base server lane is stable,
+    because the recipe lists `--kv-cache-dtype fp8` as a memory-tuning option
   - keep the E2B `kernel-probe` scenario as a tracked regression probe for the
     retired server/AsyncLLM startup fault; after the 2026-04-20 self-hosted
     rebuild, the forced Triton attention lane passes and revalidates the
