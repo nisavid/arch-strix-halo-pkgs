@@ -193,6 +193,12 @@ publish/install half remains. It refreshes `repo/x86_64` from the selected
 package roots, republishes the local pacman repo, and installs the selected
 package outputs in one retained plan. It does not run `makepkg`.
 
+Noninteractive `amerge` install steps pass pacman's conflict-removal answer bit
+so packages that intentionally conflict with an installed baseline package can
+replace it in the same transaction. The package metadata must still declare the
+relationship with `conflicts` and, for renamed or superseded packages,
+`replaces`.
+
 Interactive runs preview the merge plan and ask for confirmation unless
 `-y/--noconfirm` is given. Noninteractive runs skip the prompt and preview
 unless `--preview=flat`, `--preview=tree`, or `--preview=commands` is requested.

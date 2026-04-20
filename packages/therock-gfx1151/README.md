@@ -50,3 +50,10 @@ The remaining file-list delta against Cachy should be TheRock-owned additions
 or version-lane differences only: `nlohmann` headers, `.hipInfo`,
 `share/modulefiles`, `share/therock`, and the expected `rocmCoreTargets` /
 `librocm-core.so` version suffix changes.
+
+## magma baseline
+
+`magma-gfx1151` follows Arch `magma-hip` package metadata for its public
+package interface while using the TheRock payload. It provides and replaces
+both `magma-hip` and the legacy `hipmagma` name, and maps Arch's ROCm runtime
+dependencies to the local gfx1151 split packages.

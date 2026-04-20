@@ -348,9 +348,10 @@ desc = "MIGraphX from TheRock for gfx1151"
 provides = ["migraphx"]
 
 [packages."magma-gfx1151"]
-desc = "MAGMA libraries from TheRock for gfx1151"
-provides = ["magma-hip"]
-depends = ["rocblas-gfx1151"]
+desc = "Matrix Algebra on GPU and Multicore Architectures from TheRock for gfx1151"
+provides = ["magma-hip", "hipmagma"]
+replaces = ["magma-hip", "hipmagma"]
+depends = ["blas", "lapack", "hip-runtime-amd-gfx1151", "hipblas-gfx1151", "hipsparse-gfx1151", "rocm-openmp-gfx1151"]
 
 [packages."miopen-gfx1151"]
 desc = "MIOpen from TheRock for gfx1151"

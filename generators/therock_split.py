@@ -288,6 +288,7 @@ def render_pkgbuild(
     for pkg in pkg_names:
         meta = pkg_defs[pkg]
         provides = meta.get("provides", [])
+        replaces = meta.get("replaces", [])
         depends = meta.get("depends", [])
         conflicts = derive_pkg_conflicts(pkg, meta, bundle_conflict)
         body = [
@@ -295,8 +296,10 @@ def render_pkgbuild(
             f"    pkgdesc='{meta['desc']}'",
             f"    provides=({render_array(provides)})" if provides else "    provides=()",
             f"    conflicts=({render_array(conflicts)})" if conflicts else "    conflicts=()",
-            f"    depends=({render_array(depends)})" if depends else "    depends=()",
         ]
+        if replaces:
+            body.append(f"    replaces=({render_array(replaces)})")
+        body.append(f"    depends=({render_array(depends)})" if depends else "    depends=()")
         if meta.get("fileless"):
             body.append("    return 0")
         else:
@@ -351,6 +354,18 @@ def write_manifest(
     output_dir: Path,
     render_meta: dict[str, str],
 ) -> None:
+    def package_entry(meta: dict, *, files: int, rendered: bool) -> dict[str, object]:
+        entry: dict[str, object] = {
+            "files": files,
+            "provides": meta.get("provides", []),
+            "depends": meta.get("depends", []),
+            "fileless": bool(meta.get("fileless")),
+            "rendered": rendered,
+        }
+        if meta.get("replaces"):
+            entry["replaces"] = meta["replaces"]
+        return entry
+
     manifest = {
         "pkgbase": policy["repo"]["pkgbase"],
         "pkgver": render_meta["pkgver"],
@@ -363,25 +378,17 @@ def write_manifest(
             "date": render_meta["recipe_date"],
         },
         "packages": {
-            pkg: {
-                "files": len(files),
-                "provides": policy["packages"][pkg].get("provides", []),
-                "depends": policy["packages"][pkg].get("depends", []),
-                "fileless": bool(policy["packages"][pkg].get("fileless")),
-                "rendered": True,
-            }
+            pkg: package_entry(policy["packages"][pkg], files=len(files), rendered=True)
             for pkg, files in sorted(package_files.items())
         },
     }
     for pkg, meta in sorted(policy["packages"].items()):
         if pkg not in manifest["packages"]:
-            manifest["packages"][pkg] = {
-                "files": 0,
-                "provides": meta.get("provides", []),
-                "depends": meta.get("depends", []),
-                "fileless": bool(meta.get("fileless")),
-                "rendered": bool(meta.get("fileless")),
-            }
+            manifest["packages"][pkg] = package_entry(
+                meta,
+                files=0,
+                rendered=bool(meta.get("fileless")),
+            )
     (output_dir / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
 
 

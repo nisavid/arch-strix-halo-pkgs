@@ -17,6 +17,7 @@ def test_render_pkgbuild_preserves_literal_quotes_in_synthetic_file_text(tmp_pat
     policy = {
         "repo": {
             "pkgbase": "therock-gfx1151",
+            "pkgver": "7.13.0pre",
             "pkgrel": 1,
             "license": ["custom:AMD"],
             "url": "https://github.com/ROCm/TheRock",
@@ -73,6 +74,51 @@ def test_render_pkgbuild_preserves_literal_quotes_in_synthetic_file_text(tmp_pat
     text = (tmp_path / "PKGBUILD").read_text()
     assert "append_path '/opt/rocm/bin'" in text
     assert """append_path '"'"'/opt/rocm/bin'"'"'""" not in text
+
+
+def test_render_pkgbuild_and_manifest_include_declared_replacements(tmp_path: Path):
+    policy = {
+        "repo": {
+            "pkgbase": "therock-gfx1151",
+            "pkgver": "7.13.0pre",
+            "pkgrel": 1,
+            "license": ["custom:AMD"],
+            "url": "https://github.com/ROCm/TheRock",
+            "bundle_conflict": "rocm-gfx1151-bin",
+        },
+        "packages": {
+            "magma-gfx1151": {
+                "desc": "MAGMA from TheRock for gfx1151",
+                "provides": ["magma-hip", "hipmagma"],
+                "replaces": ["magma-hip", "hipmagma"],
+            }
+        },
+    }
+    package_files = {"magma-gfx1151": ["opt/rocm/lib/libmagma.so"]}
+    render_meta = {
+        "pkgver": "7.13.0pre",
+        "recipe_repo_url": "https://github.com/paudley/ai-notes",
+        "recipe_subdir": "strix-halo",
+        "recipe_author": "Blackcat Informatics Inc.",
+        "recipe_commit": "ad42886",
+        "recipe_date": "20260317",
+    }
+
+    therock_split.render_pkgbuild(
+        policy,
+        package_files,
+        tmp_path,
+        REPO_ROOT / "templates/PKGBUILD.in",
+        render_meta,
+    )
+    therock_split.write_manifest(policy, package_files, tmp_path, render_meta)
+
+    text = (tmp_path / "PKGBUILD").read_text()
+    assert "    provides=('magma-hip' 'hipmagma')" in text
+    assert "    replaces=('magma-hip' 'hipmagma')" in text
+
+    manifest = (tmp_path / "manifest.json").read_text()
+    assert '"replaces": [\n        "magma-hip",\n        "hipmagma"\n      ]' in manifest
 
 
 def test_live_root_render_ignores_rocm_core_overlay_files():

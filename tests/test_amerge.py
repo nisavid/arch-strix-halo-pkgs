@@ -284,6 +284,7 @@ def test_deploy_subcommand_publishes_then_installs_selected_outputs(tmp_path: Pa
         "pacman",
         "-Sy",
         "--noconfirm",
+        "--ask=4",
         "python-app-gfx1151",
     ]
 
@@ -392,7 +393,7 @@ def test_commands_preview_includes_concrete_commands(tmp_path: Path):
 
     assert result.returncode == 0
     assert "$ makepkg -Csf --noconfirm" in result.stdout
-    assert "$ sudo -n pacman -Sy --noconfirm python-app-gfx1151" in result.stdout
+    assert "$ sudo -n pacman -Sy --noconfirm --ask=4 python-app-gfx1151" in result.stdout
 
 
 def test_tree_preview_can_be_colored(tmp_path: Path):

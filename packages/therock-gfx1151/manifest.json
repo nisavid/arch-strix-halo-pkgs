@@ -227,14 +227,24 @@
     },
     "magma-gfx1151": {
       "depends": [
-        "rocblas-gfx1151"
+        "blas",
+        "lapack",
+        "hip-runtime-amd-gfx1151",
+        "hipblas-gfx1151",
+        "hipsparse-gfx1151",
+        "rocm-openmp-gfx1151"
       ],
       "fileless": false,
       "files": 80,
       "provides": [
-        "magma-hip"
+        "magma-hip",
+        "hipmagma"
       ],
-      "rendered": true
+      "rendered": true,
+      "replaces": [
+        "magma-hip",
+        "hipmagma"
+      ]
     },
     "migraphx-gfx1151": {
       "depends": [],

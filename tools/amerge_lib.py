@@ -28,6 +28,8 @@ DEFAULT_PUBLISH_ROOT = Path(
     os.environ.get("PUBLISH_ROOT", "/srv/pacman/strix-halo-gfx1151/x86_64")
 )
 DEFAULT_STATE_ROOT = REPO_ROOT / "docs/worklog/amerge"
+# libalpm question bit for "Should a conflicting package be removed?"
+PACMAN_ASK_CONFLICT_PKG = "--ask=4"
 SANITIZED_COMMAND_ENV_KEYS = (
     "PYTHON_EGG_CACHE",
     "PYTHONPATH",
@@ -462,6 +464,7 @@ def build_steps(
                                         "pacman",
                                         "-Sy",
                                         "--noconfirm",
+                                        PACMAN_ASK_CONFLICT_PKG,
                                         *root_install_outputs,
                                     ),
                                     privileged=True,
@@ -513,7 +516,13 @@ def build_steps(
                 root=None,
                 commands=(
                     CommandSpec(
-                        argv=sudo_argv("pacman", "-Sy", "--noconfirm", *install_outputs),
+                        argv=sudo_argv(
+                            "pacman",
+                            "-Sy",
+                            "--noconfirm",
+                            PACMAN_ASK_CONFLICT_PKG,
+                            *install_outputs,
+                        ),
                         privileged=True,
                     ),
                 ),

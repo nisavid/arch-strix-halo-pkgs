@@ -296,10 +296,11 @@ package_hsa-rocr-gfx1151() {
 }
 
 package_magma-gfx1151() {
-    pkgdesc='MAGMA libraries from TheRock for gfx1151'
-    provides=('magma-hip')
-    conflicts=('magma' 'magma-hip' 'rocm-gfx1151-bin')
-    depends=('rocblas-gfx1151')
+    pkgdesc='Matrix Algebra on GPU and Multicore Architectures from TheRock for gfx1151'
+    provides=('magma-hip' 'hipmagma')
+    conflicts=('hipmagma' 'magma' 'magma-hip' 'rocm-gfx1151-bin')
+    replaces=('magma-hip' 'hipmagma')
+    depends=('blas' 'lapack' 'hip-runtime-amd-gfx1151' 'hipblas-gfx1151' 'hipsparse-gfx1151' 'rocm-openmp-gfx1151')
     _require_therock_root
     _copy_from_filelist 'magma-gfx1151'
 }

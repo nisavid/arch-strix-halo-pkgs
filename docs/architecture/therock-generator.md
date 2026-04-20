@@ -52,6 +52,11 @@ not rendered, but the generator does not keep empty package functions or stale
 file lists for them. To package more upstream projects, build or stage a
 TheRock root that actually contains their installed payloads, then rerender.
 
+Package `provides`, `conflicts`, `replaces`, and `depends` metadata comes from
+`policies/therock-packages.toml`. Use those policy fields to model distro
+package compatibility, replacement of old package names, and local split-package
+runtime edges instead of editing generated `PKGBUILD` functions.
+
 ## Failure codes
 
 The generator exits non-zero if it cannot classify the tree cleanly.
