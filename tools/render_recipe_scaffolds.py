@@ -86,8 +86,7 @@ def recipe_revision(repo: Path, subdir: str) -> dict[str, int | str]:
     }
 
 
-def compiler_env_snippet(compiler_root: str, *, ccache_store: bool = False) -> str:
-    ccache_dir_line = '    export CCACHE_DIR="${_ccache_dir}/store"\n' if ccache_store else ""
+def compiler_env_snippet(compiler_root: str) -> str:
     return textwrap.dedent(
         """\
 _setup_compiler_env() {
@@ -102,7 +101,7 @@ _setup_compiler_env() {
     done
     export PATH="${_ccache_dir}:$PATH"
     export CCACHE_BASEDIR="${CCACHE_BASEDIR:-$srcdir}"
-__CCACHE_DIR_LINE__    export CCACHE_NOCPP2=1
+    export CCACHE_NOCPP2=1
     export CCACHE_PATH="${_compiler_root}:/opt/rocm/bin:/usr/bin"
     export CC=amdclang
     export CXX=amdclang++
@@ -112,7 +111,7 @@ __CCACHE_DIR_LINE__    export CCACHE_NOCPP2=1
   fi
 }
 
-""".replace("__COMPILER_ROOT__", compiler_root).replace("__CCACHE_DIR_LINE__", ccache_dir_line)
+""".replace("__COMPILER_ROOT__", compiler_root)
     )
 
 
@@ -790,7 +789,7 @@ build() {{
     find "${{_torch_lib}}" -mindepth 1 -maxdepth 1 ! -name libshm ! -name libshm_windows -exec rm -rf {{}} +
   fi
 
-  {compiler_env_snippet(compiler_root, ccache_store=True)}  _setup_compiler_env
+  {compiler_env_snippet(compiler_root)}  _setup_compiler_env
   export CFLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument"
   export CXXFLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument"
   export LDFLAGS="-fuse-ld=lld"
@@ -1085,6 +1084,14 @@ package() {{
   python -m installer --destdir="$pkgdir" dist/*.whl
 }}"""
     elif template == "rust-wheel-pypi":
+        for patch_name in policy_pkg.get("source_patches", []):
+            prepare_lines.extend(
+                [
+                    f'if ! patch --dry-run -R -Np1 -i "$srcdir/{patch_name}" >/dev/null 2>&1; then',
+                    f'  patch -Np1 -i "$srcdir/{patch_name}"',
+                    "fi",
+                ]
+            )
         build_body = f"""\
 build() {{
   cd "$srcdir/{src_subdir}"

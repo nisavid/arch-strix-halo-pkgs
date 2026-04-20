@@ -155,3 +155,38 @@ def test_native_wheel_renderer_applies_source_patches_and_build_config_settings(
     assert "python -m build --wheel --no-isolation \\\n" in pkgbuild
     assert "    -Csetup-args=-Dblas=openblas \\\n" in pkgbuild
     assert "    -Csetup-args=-Dlapack=openblas\n" in pkgbuild
+
+
+def test_rust_wheel_renderer_applies_source_patches() -> None:
+    pkgbuild = render_recipe_scaffolds.render_pkgbuild(
+        "sample-rust-gfx1151",
+        {
+            "recipe_key": "sample",
+            "template": "rust-wheel-pypi",
+            "upstream_version": "1.2.3",
+            "pkgdesc": "Sample rust wheel",
+            "url": "https://example.invalid/sample-rust",
+            "license": ["MIT"],
+            "pypi_name": "sample-rust",
+            "src_subdir": "sample-rust-1.2.3",
+            "source_patches": ["0001-sample.patch"],
+        },
+        {
+            "repo": "",
+            "method": "cargo",
+            "phase": "package",
+            "steps": [],
+            "depends_on": [],
+            "notes": "",
+        },
+        "1.2.3",
+        {
+            "recipe_repo": "https://github.com/paudley/ai-notes",
+            "recipe_subdir": "strix-halo",
+            "recipe_author": "Blackcat Informatics Inc.",
+        },
+    )
+
+    assert "0001-sample.patch" in pkgbuild
+    assert 'patch --dry-run -R -Np1 -i "$srcdir/0001-sample.patch"' in pkgbuild
+    assert 'patch -Np1 -i "$srcdir/0001-sample.patch"' in pkgbuild

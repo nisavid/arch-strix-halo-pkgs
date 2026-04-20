@@ -1,0 +1,27 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: nisavid <nisavid@users.noreply.github.com>
+Date: Mon, 20 Apr 2026 03:10:00 -0400
+Subject: [PATCH] Check rustc cold_path support by capability
+
+---
+ build.rs | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/build.rs b/build.rs
+index 5b7d978..2c30aa7 100644
+--- a/build.rs
++++ b/build.rs
+@@ -63,9 +63,7 @@ fn main() {
+         println!("cargo:rustc-cfg=feature=\"generic_simd\"");
+     }
+ 
+-    if version_check::is_min_version("1.95.0")
+-        .unwrap_or(version_check::supports_feature("cold_path").unwrap_or(false))
+-    {
++    if version_check::supports_feature("cold_path").unwrap_or(false) {
+         println!("cargo:rustc-cfg=feature=\"cold_path\"");
+     }
+ 
+-- 
+2.51.2
+

@@ -586,11 +586,13 @@ authoritative_reference = "extra/python-orjson"
 advisory_references = ["cachyos-extra-znver4/python-orjson"]
 divergence_notes = [
   "Uses the recipe's explicit Rust linker selection and path-remapping rules so AMD's toolchain wrappers behave correctly.",
-  "Pins Rust target-cpu to znver5 instead of plain native because the recipe documents a rustc native-detection issue on this platform."
+  "Pins Rust target-cpu to znver5 instead of plain native because the recipe documents a rustc native-detection issue on this platform.",
+  "Carries a build.rs capability probe patch so orjson enables the `cold_path` optimization only when rustc reports support for it."
 ]
 update_notes = [
   "Compare against Arch first for maturin/backend changes, then keep Cachy as a secondary reference for CPU-targeting differences.",
-  "Retain CycloneDX/debug-path rewriting in package() unless upstream or Arch resolves the path leakage directly."
+  "Retain CycloneDX/debug-path rewriting in package() unless upstream or Arch resolves the path leakage directly.",
+  "Recheck `cold_path` feature detection when adopting a newer orjson or Rust lane."
 ]
 provides = ["python-orjson"]
 conflicts = ["python-orjson"]
@@ -599,6 +601,7 @@ makedepends = ["cargo", "python-build", "python-installer", "python-maturin", "p
 pypi_name = "orjson"
 src_subdir = "orjson-3.11.8"
 patches_dir = "patches/python-orjson-gfx1151"
+source_patches = ["0001-cold-path-feature-check-uses-rustc-capability.patch"]
 scaffold_notes = [
   "The recipe forces explicit Rust linker selection because AMD's cc wrapper rejects non-amd-prefixed frontend names.",
   "Keep RUSTFLAGS pinned to znver5 rather than native; the recipe documents a rustc native-detection issue on this platform."

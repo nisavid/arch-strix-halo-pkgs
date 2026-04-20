@@ -31,7 +31,7 @@ def test_pkgbuild_makes_numpy_available_at_build_time():
     assert 'export CMAKE_PREFIX_PATH="${OpenBLAS_HOME}:/opt/rocm"' in text
     assert 'export AOTRITON_INSTALLED_PREFIX="/usr"' in text
     assert 'rm -rf build' in text
-    assert 'export CCACHE_DIR="${_ccache_dir}/store"' in text
+    assert "CCACHE_DIR" not in text
     assert "CMAKE_ONLY=1 python setup.py build" in text
     assert 'cmake --build build --config Release -j "${MAX_JOBS}"' in text
     assert "_sysconfigdata__linux_x86_64-linux-gnu.cpython-314.pyc" in text

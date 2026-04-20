@@ -13,7 +13,7 @@
 - Recorded reference packages: `extra/python-orjson, cachyos-extra-znver4/python-orjson`
 - Authoritative reference package: `extra/python-orjson`
 - Advisory reference packages: `cachyos-extra-znver4/python-orjson`
-- Applied source patch files/actions: `0`
+- Applied source patch files/actions: `1`
 
 ## Recipe notes
 
@@ -41,11 +41,13 @@ internal cc invocations for build scripts don't understand.
 
 - Uses the recipe's explicit Rust linker selection and path-remapping rules so AMD's toolchain wrappers behave correctly.
 - Pins Rust target-cpu to znver5 instead of plain native because the recipe documents a rustc native-detection issue on this platform.
+- Carries a build.rs capability probe patch so orjson enables the `cold_path` optimization only when rustc reports support for it.
 
 ## Update Notes
 
 - Compare against Arch first for maturin/backend changes, then keep Cachy as a secondary reference for CPU-targeting differences.
 - Retain CycloneDX/debug-path rewriting in package() unless upstream or Arch resolves the path leakage directly.
+- Recheck `cold_path` feature detection when adopting a newer orjson or Rust lane.
 
 ## Maintainer Starting Points
 

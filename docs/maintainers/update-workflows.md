@@ -170,6 +170,10 @@ system exposes a maintainable training path. The decision about whether a
 package belongs in this repo is separate from whether it should inherit that
 default tuned build lane once it is here.
 
+When a package needs ccache compiler wrappers, keep the wrapper directory local
+to the package build tree and leave the cache store to the host ccache
+configuration. Do not set `CCACHE_DIR` in PKGBUILDs or renderer templates.
+
 Prefer a normal dependency on an existing package when all of the following are
 true:
 
