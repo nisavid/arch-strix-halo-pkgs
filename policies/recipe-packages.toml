@@ -271,8 +271,8 @@ recipe_key = "pytorch"
 template = "python-project-pytorch-rocm"
 upstream_version = "2.11.0"
 source_refs = ["pytorch::git+https://github.com/ROCm/pytorch.git#commit=8543095e3275db694084a6679bd5b61f7d2ece76"]
-source_patches = ["0001-setup-allow-skipping-build-deps.patch"]
-extra_sha256sums = ["0fc03afcb0501849e08dfd8dafe07578fa0e7337025e1ab80f59bb9be9a3560c"]
+source_patches = ["0001-setup-allow-skipping-build-deps.patch", "0002-use-wide-magma-version-encoding.patch"]
+extra_sha256sums = ["0fc03afcb0501849e08dfd8dafe07578fa0e7337025e1ab80f59bb9be9a3560c", "944e0fb4db31da678993acd3104709083ef28dcee58fcc24ab1675d880c39846"]
 pkgdesc = "Tensors and dynamic neural networks in Python with ROCm acceleration, rebuilt for Strix Halo gfx1151"
 url = "https://pytorch.org"
 license = ["BSD-3-Clause-Modification"]
@@ -340,6 +340,7 @@ scaffold_notes = [
   "The recipe intentionally tracks the ROCm/pytorch fork rather than upstream pytorch/pytorch because AMD validates that branch and carries ROCm-specific integration fixes not yet upstreamed.",
   "Keep nearby Cachy packaging as advisory input for compiler defaults and dependency polish, but use the Arch split-package structure as the distro-integration baseline.",
   "The first real build must preserve the recipe's ROCm-specific fixes: HIPGraph.hip stub rewrite, NumPy 2 target C-API define, clang ABI flag removal, gfx1151 CK enablement, and post-install patchelf fixes for torch/lib and libtorch_hip.so.",
+  "The MAGMA version-encoding fix is carried as a source patch on the canonical CUDA linalg input; ROCm hipify derives the HIP source from that patched input during build.",
   "Use OpenBLAS explicitly for this lane. Letting the build auto-detect host oneMKL produced a broken wheel with /opt/intel/oneapi runpaths and NumPy import failures.",
   "On Arch Python 3.14, the CMake install target currently mirrors /usr/lib and /usr/include into the source tree and then fails on a root-owned _sysconfigdata pyc. The maintained workaround is to build first, accept that known install failure, restage the built torch/lib and torch/bin artifacts, and assemble the wheel with SKIP_BUILD_DEPS=1."
 ]

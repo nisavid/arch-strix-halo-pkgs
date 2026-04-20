@@ -6,7 +6,7 @@
 
 pkgname=python-pytorch-opt-rocm-gfx1151
 pkgver=2.11.0
-pkgrel=2
+pkgrel=3
 pkgdesc='Tensors and dynamic neural networks in Python with ROCm acceleration, rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://pytorch.org
@@ -18,14 +18,16 @@ options=()
 provides=(python-pytorch-opt-rocm=2.11.0 python-pytorch-rocm=2.11.0 python-pytorch=2.11.0)
 conflicts=(python-pytorch-opt-rocm python-pytorch-rocm python-pytorch)
 replaces=()
-source=('pytorch::git+https://github.com/ROCm/pytorch.git#commit=8543095e3275db694084a6679bd5b61f7d2ece76' 0001-setup-allow-skipping-build-deps.patch)
-sha256sums=(SKIP 0fc03afcb0501849e08dfd8dafe07578fa0e7337025e1ab80f59bb9be9a3560c)
+source=('pytorch::git+https://github.com/ROCm/pytorch.git#commit=8543095e3275db694084a6679bd5b61f7d2ece76' 0001-setup-allow-skipping-build-deps.patch 0002-use-wide-magma-version-encoding.patch)
+sha256sums=(SKIP 0fc03afcb0501849e08dfd8dafe07578fa0e7337025e1ab80f59bb9be9a3560c 944e0fb4db31da678993acd3104709083ef28dcee58fcc24ab1675d880c39846)
 
 prepare() {
   cd "$srcdir/pytorch"
 
   patch --dry-run -Np1 -i "$srcdir/0001-setup-allow-skipping-build-deps.patch" >/dev/null &&
     patch -Np1 -i "$srcdir/0001-setup-allow-skipping-build-deps.patch"
+  patch --dry-run -Np1 -i "$srcdir/0002-use-wide-magma-version-encoding.patch" >/dev/null &&
+    patch -Np1 -i "$srcdir/0002-use-wide-magma-version-encoding.patch"
   # PyTorch's ROCm fork relies on vendored submodules and local hipify-generated sources.
   git -C "$srcdir/pytorch" submodule sync --recursive
   git -C "$srcdir/pytorch" submodule update --init --recursive --force
@@ -33,7 +35,6 @@ prepare() {
   sed -i 's|#include <numpy/arrayobject.h>|// Target numpy 2.0 C-API (0x12) for ABI compatibility with numpy >= 2.0.\n#ifndef NPY_TARGET_VERSION\n#define NPY_TARGET_VERSION 0x00000012\n#endif\n\n#include <numpy/arrayobject.h>|' torch/csrc/utils/numpy_stub.h
   sed -i 's/list(APPEND HIP_HIPCC_FLAGS -fclang-abi-compat=17)/# Removed: causes ABI mismatch with host amdclang 22/' cmake/Dependencies.cmake
   sed -i 's/"gfx90a", "gfx942", "gfx950"/"gfx90a", "gfx942", "gfx950", "gfx1151"/' aten/src/ATen/Context.cpp
-  python -c 'from pathlib import Path; paths=["aten/src/ATen/native/hip/linalg/BatchLinearAlgebra.cpp","aten/src/ATen/native/cuda/linalg/BatchLinearAlgebra.cpp"]; old="""#define AT_MAGMA_VERSION MAGMA_VERSION_MAJOR*100 + MAGMA_VERSION_MINOR*10 + MAGMA_VERSION_MICRO\n\n// Check that MAGMA never releases MAGMA_VERSION_MINOR >= 10 or MAGMA_VERSION_MICRO >= 10\n#if MAGMA_VERSION_MINOR >= 10 || MAGMA_VERSION_MICRO >= 10\n#error \"MAGMA release minor or micro version >= 10, please correct AT_MAGMA_VERSION\"\n#endif\n"""; new="""#define AT_MAGMA_VERSION_ENCODE(major, minor, micro) ((major) * 10000 + (minor) * 100 + (micro))\n#define AT_MAGMA_VERSION AT_MAGMA_VERSION_ENCODE(MAGMA_VERSION_MAJOR, MAGMA_VERSION_MINOR, MAGMA_VERSION_MICRO)\n#define AT_MAGMA_2_5_4 AT_MAGMA_VERSION_ENCODE(2, 5, 4)\n"""; [p.write_text(p.read_text().replace(old, new).replace("AT_MAGMA_VERSION >= 254", "AT_MAGMA_VERSION >= AT_MAGMA_2_5_4")) for p in map(Path, paths)]'
 }
 
 build() {

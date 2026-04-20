@@ -190,3 +190,43 @@ def test_rust_wheel_renderer_applies_source_patches() -> None:
     assert "0001-sample.patch" in pkgbuild
     assert 'patch --dry-run -R -Np1 -i "$srcdir/0001-sample.patch"' in pkgbuild
     assert 'patch -Np1 -i "$srcdir/0001-sample.patch"' in pkgbuild
+
+
+def test_pytorch_rocm_renderer_uses_source_patches_for_magma_fix() -> None:
+    pkgbuild = render_recipe_scaffolds.render_pkgbuild(
+        "python-pytorch-opt-rocm-gfx1151",
+        {
+            "recipe_key": "pytorch",
+            "template": "python-project-pytorch-rocm",
+            "upstream_version": "2.11.0",
+            "pkgdesc": "PyTorch ROCm",
+            "url": "https://pytorch.org",
+            "license": ["BSD-3-Clause-Modification"],
+            "src_subdir": "pytorch",
+            "source_refs": [
+                "pytorch::git+https://github.com/ROCm/pytorch.git#commit=8543095e3275db694084a6679bd5b61f7d2ece76"
+            ],
+            "source_patches": [
+                "0001-setup-allow-skipping-build-deps.patch",
+                "0002-use-wide-magma-version-encoding.patch",
+            ],
+        },
+        {
+            "repo": "https://github.com/ROCm/pytorch.git",
+            "method": "pip",
+            "phase": "package",
+            "steps": [],
+            "depends_on": [],
+            "notes": "",
+        },
+        "2.11.0",
+        {
+            "recipe_repo": "https://github.com/paudley/ai-notes",
+            "recipe_subdir": "strix-halo",
+            "recipe_author": "Blackcat Informatics Inc.",
+        },
+    )
+
+    assert "0002-use-wide-magma-version-encoding.patch" in pkgbuild
+    assert 'patch -Np1 -i "$srcdir/0002-use-wide-magma-version-encoding.patch"' in pkgbuild
+    assert "aten/src/ATen/native/hip/linalg/BatchLinearAlgebra.cpp" not in pkgbuild

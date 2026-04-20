@@ -13,7 +13,7 @@
 - Recorded reference packages: `extra/python-pytorch-opt-rocm, extra/python-pytorch-rocm, cachyos-extra-znver4/python-pytorch-opt-rocm`
 - Authoritative reference package: `extra/python-pytorch-opt-rocm`
 - Advisory reference packages: `extra/python-pytorch-rocm, cachyos-extra-znver4/python-pytorch-opt-rocm`
-- Applied source patch files/actions: `9`
+- Applied source patch files/actions: `10`
 
 ## Recipe notes
 
@@ -29,6 +29,7 @@ USE_ROCM_CK_GEMM=ON enables Composable Kernel GEMM for ROCm.
 - The recipe intentionally tracks the ROCm/pytorch fork rather than upstream pytorch/pytorch because AMD validates that branch and carries ROCm-specific integration fixes not yet upstreamed.
 - Keep nearby Cachy packaging as advisory input for compiler defaults and dependency polish, but use the Arch split-package structure as the distro-integration baseline.
 - The first real build must preserve the recipe's ROCm-specific fixes: HIPGraph.hip stub rewrite, NumPy 2 target C-API define, clang ABI flag removal, gfx1151 CK enablement, and post-install patchelf fixes for torch/lib and libtorch_hip.so.
+- The MAGMA version-encoding fix is carried as a source patch on the canonical CUDA linalg input; ROCm hipify derives the HIP source from that patched input during build.
 - Use OpenBLAS explicitly for this lane. Letting the build auto-detect host oneMKL produced a broken wheel with /opt/intel/oneapi runpaths and NumPy import failures.
 - On Arch Python 3.14, the CMake install target currently mirrors /usr/lib and /usr/include into the source tree and then fails on a root-owned _sysconfigdata pyc. The maintained workaround is to build first, accept that known install failure, restage the built torch/lib and torch/bin artifacts, and assemble the wheel with SKIP_BUILD_DEPS=1.
 
