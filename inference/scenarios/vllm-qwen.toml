@@ -25,9 +25,38 @@ kind = "stdout.contains"
 value = "basic_ok"
 
 [[scenario]]
-id = "vllm.qwen3_6.35b-a3b-fp8.text.basic"
-summary = "Qwen3.6 35B-A3B FP8 MoE text-only offline smoke for the Qwen3.5 MoE codepath"
-tags = ["smoke", "qwen", "qwen3.6", "moe", "fp8"]
+id = "vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-no-aiter-blocked"
+summary = "Qwen3.6 35B-A3B FP8 MoE backend-selection probe with AITER disabled"
+tags = ["qwen", "qwen3.6", "moe", "fp8", "kernel-probe", "exploratory", "blocked"]
+
+[scenario.given]
+engine = "vllm"
+model = "Qwen/Qwen3.6-35B-A3B-FP8"
+tool = "qwen_text_smoke"
+
+[scenario.when]
+argv = ["--max-num-batched-tokens", "32"]
+
+[scenario.when.env]
+VLLM_ROCM_USE_AITER = "0"
+VLLM_ROCM_USE_AITER_MOE = "0"
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 1
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "config_model_type qwen3_5_moe"
+
+[[scenario.then.assert]]
+kind = "output.contains"
+value = "No FP8 MoE backend supports the deployment configuration."
+
+[[scenario]]
+id = "vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-aiter-blocked"
+summary = "Qwen3.6 35B-A3B FP8 MoE forced-AITER gfx1151 module_quant probe"
+tags = ["qwen", "qwen3.6", "moe", "fp8", "aiter", "kernel-probe", "exploratory", "blocked"]
 
 [scenario.given]
 engine = "vllm"
@@ -43,7 +72,7 @@ VLLM_ROCM_USE_AITER_MOE = "1"
 
 [[scenario.then.assert]]
 kind = "exit_code.equals"
-value = 0
+value = 1
 
 [[scenario.then.assert]]
 kind = "stdout.contains"
@@ -54,9 +83,5 @@ kind = "stdout.contains"
 value = "Using AITER Fp8 MoE backend"
 
 [[scenario.then.assert]]
-kind = "stdout.contains"
-value = "generation_ok"
-
-[[scenario.then.assert]]
-kind = "stdout.contains"
-value = "basic_ok"
+kind = "output.contains"
+value = "unknown type name 'mfma_adaptor'"

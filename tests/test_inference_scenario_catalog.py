@@ -32,7 +32,8 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     assert "vllm.torchao.tiny.generate" in ids
     assert "vllm.gemma4.e2b.torchao.real-model" in ids
     assert "vllm.qwen3_5.0_8b.text.basic" in ids
-    assert "vllm.qwen3_6.35b-a3b-fp8.text.basic" in ids
+    assert "vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-no-aiter-blocked" in ids
+    assert "vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-aiter-blocked" in ids
     assert "llama.cpp.hip.help" in ids
     assert "llama.cpp.vulkan.help" in ids
     assert "lemonade.cli.help" in ids
@@ -45,20 +46,37 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     assert "kernel-probe" in tags_by_id["vllm.gemma4.26b-a4b.server.moe-aiter"]
     assert "quantization-probe" in tags_by_id["vllm.gemma4.e2b.torchao.real-model"]
     assert "qwen3.5" in tags_by_id["vllm.qwen3_5.0_8b.text.basic"]
-    assert "qwen3.6" in tags_by_id["vllm.qwen3_6.35b-a3b-fp8.text.basic"]
-    assert "moe" in tags_by_id["vllm.qwen3_6.35b-a3b-fp8.text.basic"]
+    assert "qwen3.6" in tags_by_id[
+        "vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-no-aiter-blocked"
+    ]
+    assert "moe" in tags_by_id[
+        "vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-aiter-blocked"
+    ]
+    assert "blocked" in tags_by_id[
+        "vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-aiter-blocked"
+    ]
 
 
-def test_qwen3_6_fp8_moe_smoke_uses_aiter_backend_env():
+def test_qwen3_6_fp8_moe_probes_record_backend_modes():
     scenarios = load_scenarios(REPO_ROOT / "inference/scenarios")
 
-    qwen3_6 = next(
+    no_aiter = next(
         scenario
         for scenario in scenarios
-        if scenario.id == "vllm.qwen3_6.35b-a3b-fp8.text.basic"
+        if scenario.id
+        == "vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-no-aiter-blocked"
+    )
+    forced_aiter = next(
+        scenario
+        for scenario in scenarios
+        if scenario.id == "vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-aiter-blocked"
     )
 
-    assert qwen3_6.definition["when"]["env"] == {
+    assert no_aiter.definition["when"]["env"] == {
+        "VLLM_ROCM_USE_AITER": "0",
+        "VLLM_ROCM_USE_AITER_MOE": "0",
+    }
+    assert forced_aiter.definition["when"]["env"] == {
         "VLLM_ROCM_USE_AITER": "1",
         "VLLM_ROCM_USE_AITER_MOE": "1",
     }

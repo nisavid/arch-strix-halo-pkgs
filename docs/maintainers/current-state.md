@@ -21,7 +21,13 @@ Use `Qwen/Qwen3.6-35B-A3B-FP8` as the main Qwen MoE/shared-expert target for
 this dev arc; it replaces the earlier Qwen3.5 122B-A10B testing and usage
 target. Its local config advertises `Qwen3_5MoeForConditionalGeneration` /
 `qwen3_5_moe`, so the maintained Qwen3.5/GDN package carry is still relevant
-to this lane.
+to this lane. This is a target and blocked probe lane, not a passing smoke
+lane yet: with AITER disabled, vLLM has no FP8 MoE backend that advertises
+support for this deployment on gfx1151, and with AITER forced the built
+`python-amd-aiter-gfx1151` pkgrel `-8` plus `python-vllm-rocm-gfx1151` pkgrel
+`-27` payload gets past the earlier `hip_compat.h` header issue but fails
+JIT-building `aiter.jit.module_quant` in `opus.hpp` with
+`unknown type name 'mfma_adaptor'`.
 
 Installed and validated at least once on the live host:
 
@@ -33,6 +39,16 @@ Installed and validated at least once on the live host:
 - PyTorch, TorchVision, AITER, and vLLM
 - `llama.cpp` HIP and Vulkan backends
 - Lemonade server/app/meta packages
+
+Pending install/publish closeout for this branch:
+
+- `python-vllm-rocm-gfx1151` pkgrel `-27` is built but not installed; the live
+  host still has pkgrel `-26`.
+- `python-amd-aiter-gfx1151` pkgrel `-8` is built but not installed; the live
+  host still has pkgrel `-7`.
+- After those installs, rerun the installed-host Qwen3.5 sampler-fix smoke and
+  the two Qwen3.6 blocked FP8 MoE probes before treating the branch as ready
+  to merge.
 
 ## Live Smoke Coverage
 
@@ -437,7 +453,8 @@ The following smoke checks have already passed on the reference host:
     MoE/shared-expert lane
   - tracked Qwen scenarios now exist:
     `vllm.qwen3_5.0_8b.text.basic` for the tiny hybrid/GDN smoke and
-    `vllm.qwen3_6.35b-a3b-fp8.text.basic` for the Qwen3.6 FP8 MoE smoke
+    blocked Qwen3.6 FP8 MoE kernel probes for the non-AITER backend-selection
+    path and the forced-AITER `module_quant` path
   - `vllm.qwen3_5.0_8b.text.basic` failed on 2026-04-19 after model loading
     with a ROCm GPU memory-access fault. The failure is now localized past GDN
     warmup, GDN prefill/recurrent kernels, full-attention kernels,
@@ -456,12 +473,19 @@ The following smoke checks have already passed on the reference host:
     `/var/cache/hf` Qwen3.5 snapshot in 42.948777 seconds. Publishing and
     installing pkgrel `-27` still need an operator step before installed-host
     rerun coverage.
-  - `vllm.qwen3_6.35b-a3b-fp8.text.basic` defaults to the AITER FP8 MoE path
-    through `VLLM_ROCM_USE_AITER=1` and `VLLM_ROCM_USE_AITER_MOE=1`. On the
-    currently installed AITER pkgrel `-7`, the 2026-04-19 run selected
-    `Using AITER Fp8 MoE backend`, loaded all 42 checkpoint shards, and then
-    failed during `module_quant` JIT compilation because installed
-    `hip_reduce.h` included nonexistent `hip_compat.h`.
+  - Qwen3.6 FP8 MoE is not a passing smoke lane on gfx1151 yet. With
+    `VLLM_ROCM_USE_AITER=0` and `VLLM_ROCM_USE_AITER_MOE=0`, vLLM fails
+    during FP8 MoE backend selection with
+    `No FP8 MoE backend supports the deployment configuration`; the vLLM
+    Triton and batched Triton FP8 MoE gates currently advertise ROCm FP8
+    support for `gfx9`, not `gfx1151`. The tracked no-AITER blocked probe
+    passed on 2026-04-19 in `20.962591` seconds by asserting that failure
+    mode rather than treating it as a generation smoke.
+  - The forced-AITER Qwen3.6 path is also blocked. On the currently installed
+    AITER pkgrel `-7`, the 2026-04-19 run selected `Using AITER Fp8 MoE
+    backend`, loaded all 42 checkpoint shards, and then failed during
+    `module_quant` JIT compilation because installed `hip_reduce.h` included
+    nonexistent `hip_compat.h`.
   - `python-amd-aiter-gfx1151` pkgrel `-8` is the package-side fix for that
     Qwen3.6 blocker: `0006-rdna35-hip-reduce-wave32-dpp-compat.patch` keeps
     the shipped `aiter_hip_common.h` include, the package-local tests pass,
@@ -470,14 +494,20 @@ The following smoke checks have already passed on the reference host:
     `hip_compat.h`. Publishing/installing pkgrel `-8` still needs operator
     sudo; `tools/amerge publish python-amd-aiter-gfx1151` could not run
     autonomously because sudo requested an interactive password.
-  - A built-payload rerun of `vllm.qwen3_6.35b-a3b-fp8.text.basic` with AITER
-    pkgrel `-8` and vLLM pkgrel `-27` cleared the earlier `hip_compat.h`
-    blocker, selected the AITER FP8 MoE path, and then failed during
+  - A built-payload rerun of the forced-AITER Qwen3.6 probe with AITER pkgrel
+    `-8` and vLLM pkgrel `-27` cleared the earlier `hip_compat.h` blocker,
+    selected the AITER FP8 MoE path, and then failed during
     `aiter.jit.module_quant` compilation with
     `aiter_meta/csrc/include/opus/opus.hpp:3001:24: error: unknown type name
-    'mfma_adaptor'`. The next Qwen3.6 decision is whether AITER's gfx1151
-    MFMA/WMMA guard path has a narrow package fix or whether this AITER FP8
-    MoE lane should remain a documented follow-up rather than a merge blocker.
+    'mfma_adaptor'`.
+  - The first AITER gfx1151 MFMA/WMMA root-cause pass found that `gfx1151`
+    defines `__GFX11__` and `__gfx1151__`, while AITER's `opus.hpp` defines
+    `mfma_adaptor` only for `__GFX9__` device builds and chooses that default
+    for every non-`__gfx1250__` target. AITER's alternate `wmma_adaptor` path
+    is not a narrow fix: a standalone compile probe showed the relevant
+    gfx1250 FP8 WMMA builtin is rejected for gfx1151 with `needs target
+    feature gfx1250-insts`. Treat Qwen3.6 FP8 MoE as a documented follow-up,
+    not a merge blocker for the Gemma 4 branch.
 - The tracked host-side follow-up helper for OpenAI-compatible server smokes is
   now `tools/gemma4_server_smoke.py`.
   - `--mode basic` launches

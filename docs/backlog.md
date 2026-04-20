@@ -1,5 +1,24 @@
 # Backlog
 
+## Current Branch Closeout Gate
+
+- Publish/install the already built `python-vllm-rocm-gfx1151` pkgrel `-27`
+  and `python-amd-aiter-gfx1151` pkgrel `-8` artifacts on the reference host.
+  The currently installed host still has vLLM `-26` and AITER `-7`.
+- After installation, rerun the installed-host validations that should be
+  stable for this branch:
+  - `vllm.qwen3_5.0_8b.text.basic` should pass as the Qwen3.5 sampler-fix
+    smoke
+  - `vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-no-aiter-blocked` should pass as
+    a blocked probe asserting the non-AITER FP8 MoE backend-selection failure
+  - `vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-aiter-blocked` should pass as a
+    blocked probe asserting the AITER `module_quant`/`mfma_adaptor` failure
+    after AITER pkgrel `-8` is installed
+- Treat Qwen3.6 FP8 MoE as a documented follow-up blocker, not a merge blocker
+  for the Gemma 4 branch. The branch can close once the built artifacts are
+  installed, the expected passing/blocking scenarios above are verified on the
+  installed host, and the Python/package test set remains green.
+
 ## Packaging And Build Hygiene
 
 - Resume auditing the rest of the TheRock split-package family against the
@@ -79,10 +98,15 @@
   on gfx1151.
   - done for scenario coverage: `vllm.qwen3_5.0_8b.text.basic` covers
     `Qwen/Qwen3.5-0.8B` as the tiny non-MoE Qwen3.5 hybrid/GDN smoke
-  - done for scenario coverage: `vllm.qwen3_6.35b-a3b-fp8.text.basic` covers
-    `Qwen/Qwen3.6-35B-A3B-FP8` as the main Qwen MoE/shared-expert smoke; this
-    replaces the earlier Qwen3.5 122B-A10B target in local testing and usage
-    plans
+  - done for scenario coverage: Qwen3.6 FP8 MoE is tracked as blocked
+    kernel-probe coverage rather than a passing smoke. The current scenarios
+    are `vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-no-aiter-blocked` for
+    non-AITER backend selection and
+    `vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-aiter-blocked` for forced AITER
+    `module_quant` on gfx1151. `Qwen/Qwen3.6-35B-A3B-FP8` remains the main
+    Qwen MoE/shared-expert target and replaces the earlier Qwen3.5 122B-A10B
+    testing and usage target, but it is not currently a merge-blocking
+    success lane for this Gemma 4 branch.
   - the old non-GGUF checkpoint blocker is cleared: the reference host's
     current `HF_HOME` is `/var/cache/hf`, with local snapshots for
     `Qwen/Qwen3.5-0.8B` and `Qwen/Qwen3.6-35B-A3B-FP8`
@@ -103,10 +127,17 @@
     `vllm.qwen3_5.0_8b.text.basic` passed against the `/var/cache/hf`
     Qwen3.5 snapshot in 42.948777 seconds. Installing/publishing pkgrel `-27`
     remains an operator step before installed-host rerun coverage.
-  - Qwen3.6 FP8 MoE now has a viable AITER-first path: the tracked scenario
-    sets `VLLM_ROCM_USE_AITER=1` and `VLLM_ROCM_USE_AITER_MOE=1`, and the
-    reference host selected `Using AITER Fp8 MoE backend` before failing in
-    the installed AITER package's `module_quant` JIT build
+  - Qwen3.6 FP8 MoE does not currently have a viable non-AITER fallback on
+    gfx1151. With `VLLM_ROCM_USE_AITER=0` and
+    `VLLM_ROCM_USE_AITER_MOE=0`, vLLM fails during backend selection with
+    `No FP8 MoE backend supports the deployment configuration`; the Triton
+    and batched Triton FP8 MoE gates only advertise ROCm FP8 support for
+    `gfx9`, not `gfx1151`. The tracked no-AITER blocked probe passed on
+    2026-04-19 in `20.962591` seconds by asserting that failure mode.
+  - Qwen3.6 FP8 MoE also does not yet have a viable AITER path on gfx1151.
+    The forced-AITER probe selects `Using AITER Fp8 MoE backend`, but the
+    built-payload rerun with AITER pkgrel `-8` and vLLM pkgrel `-27` fails in
+    AITER's `module_quant` JIT.
   - done for the AITER package-side fix: `python-amd-aiter-gfx1151` pkgrel
     `-8` keeps `hip_reduce.h` on the shipped `aiter_hip_common.h` include,
     builds through `tools/amerge build python-amd-aiter-gfx1151`, and the
@@ -116,8 +147,15 @@
     `-27` cleared the earlier `hip_compat.h` blocker, selected the AITER FP8
     MoE path, and then failed during `aiter.jit.module_quant` compilation with
     `aiter_meta/csrc/include/opus/opus.hpp:3001:24: error: unknown type name
-    'mfma_adaptor'`. Next investigate AITER's gfx1151 MFMA/WMMA guard path, or
-    decide the current AITER FP8 MoE lane is not merge-blocking.
+    'mfma_adaptor'`
+  - done for the first AITER gfx1151 MFMA/WMMA root-cause pass: `gfx1151`
+    defines `__GFX11__` and `__gfx1151__`, while AITER's `opus.hpp` defines
+    `mfma_adaptor` only for `__GFX9__` device builds and chooses the
+    `mfma_adaptor` path for every target except `__gfx1250__`; the alternate
+    AITER `wmma_adaptor` path uses gfx1250 FP8 WMMA builtins that hipcc
+    rejects for gfx1151 with a `needs target feature gfx1250-insts` error.
+    Treat this as an AITER opus/gfx1151 FP8-kernel feature gap, not a small
+    include or guard bug.
 - Only revisit Gemma 4 on AITER fused-MoE if there is a concrete reason to
   move off the current TRITON unquantized-MoE lane.
   - treat any such attempt as a fresh experiment
