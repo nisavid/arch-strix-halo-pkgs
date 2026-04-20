@@ -414,6 +414,8 @@ The following smoke checks have already passed on the reference host:
     multimodal-tool server smokes for `google/gemma-4-E2B-it`
   - compiled-path probes for `google/gemma-4-E2B-it`,
     `google/gemma-4-31B-it`, and `google/gemma-4-26B-A4B-it`
+  - forced Triton and forced AITER FlashAttention attention-backend probes for
+    `google/gemma-4-E2B-it`
   - forced Triton, automatic, and forced AITER MoE backend probes for
     `google/gemma-4-26B-A4B-it`
   - tiny and real-model TorchAO probes
@@ -458,6 +460,11 @@ The following smoke checks have already passed on the reference host:
     selected `Using TRITON_ATTN backend` and still hit the same GPU
     memory-access fault, so the E2B server fault is not explained by AITER
     unified attention alone
+  - a later explicit `--attention-backend ROCM_AITER_FA` E2B server probe on
+    2026-04-20 failed earlier than the Triton-attention probe: vLLM rejected
+    `AttentionBackendEnum.ROCM_AITER_FA` with `compute capability not
+    supported` in 25.068717 seconds, so AITER FlashAttention remains a tracked
+    feasibility blocker rather than a runnable fault-isolation lane
   - a representative exploratory multimodal probe,
     `vllm.gemma4.e2b.server.image`, failed on 2026-04-19 before any image
     request was sent: the server selected `ROCM_AITER_UNIFIED_ATTN`, loaded

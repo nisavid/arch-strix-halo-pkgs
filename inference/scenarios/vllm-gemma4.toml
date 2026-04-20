@@ -90,6 +90,49 @@ kind = "server_log.contains"
 value = "Using TRITON_ATTN backend"
 
 [[scenario]]
+id = "vllm.gemma4.e2b.server.attn-aiter-fa-blocked"
+summary = "Gemma 4 E2B OpenAI-compatible text chat smoke with forced AITER FlashAttention"
+tags = [
+  "smoke",
+  "gemma4",
+  "server",
+  "kernel-probe",
+  "flash-attention",
+  "aiter",
+  "blocked",
+  "exploratory",
+]
+
+[scenario.given]
+engine = "vllm"
+model = "google/gemma-4-E2B-it"
+tool = "gemma4_server_smoke.basic"
+
+[scenario.when]
+argv = [
+  "--attention-backend",
+  "ROCM_AITER_FA",
+  "--max-model-len",
+  "128",
+  "--max-num-batched-tokens",
+  "32",
+  "--startup-timeout",
+  "90",
+]
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 1
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Selected backend AttentionBackendEnum.ROCM_AITER_FA is not valid"
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "compute capability not supported"
+
+[[scenario]]
 id = "vllm.gemma4.e2b.server.reasoning"
 summary = "Gemma 4 E2B reasoning parser smoke following the vLLM Gemma 4 recipe"
 tags = ["smoke", "gemma4", "server", "recipe", "reasoning"]

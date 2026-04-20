@@ -27,6 +27,7 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     assert "vllm.gemma4.e2b.server.benchmark-lite" in ids
     assert "vllm.gemma4.e2b.server.image" in ids
     assert "vllm.gemma4.e2b.server.attn-triton" in ids
+    assert "vllm.gemma4.e2b.server.attn-aiter-fa-blocked" in ids
     assert "vllm.gemma4.26b-a4b.text.compiled" in ids
     assert "vllm.gemma4.26b-a4b.server.moe-aiter" in ids
     assert "vllm.torchao.tiny.generate" in ids
@@ -44,6 +45,15 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     assert "exploratory" in tags_by_id["vllm.gemma4.e2b.server.image"]
     assert "kernel-probe" in tags_by_id["vllm.gemma4.e2b.server.attn-triton"]
     assert "exploratory" in tags_by_id["vllm.gemma4.e2b.server.attn-triton"]
+    assert "kernel-probe" in tags_by_id[
+        "vllm.gemma4.e2b.server.attn-aiter-fa-blocked"
+    ]
+    assert "flash-attention" in tags_by_id[
+        "vllm.gemma4.e2b.server.attn-aiter-fa-blocked"
+    ]
+    assert "blocked" in tags_by_id[
+        "vllm.gemma4.e2b.server.attn-aiter-fa-blocked"
+    ]
     assert "kernel-probe" in tags_by_id["vllm.gemma4.26b-a4b.server.moe-aiter"]
     assert "quantization-probe" in tags_by_id["vllm.gemma4.e2b.torchao.real-model"]
     assert "qwen3.5" in tags_by_id["vllm.qwen3_5.0_8b.text.basic"]
@@ -59,6 +69,47 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     assert "blocked" in tags_by_id[
         "vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-aiter-blocked"
     ]
+
+
+def test_gemma4_aiter_flash_attention_probe_records_current_blocker():
+    scenarios = load_scenarios(REPO_ROOT / "inference/scenarios")
+    by_id = {scenario.id: scenario for scenario in scenarios}
+
+    probe = by_id["vllm.gemma4.e2b.server.attn-aiter-fa-blocked"]
+
+    assert probe.model == "google/gemma-4-E2B-it"
+    assert set(probe.tags) >= {
+        "smoke",
+        "gemma4",
+        "server",
+        "kernel-probe",
+        "flash-attention",
+        "aiter",
+        "blocked",
+        "exploratory",
+    }
+    assert probe.definition["given"]["tool"] == "gemma4_server_smoke.basic"
+    assert probe.definition["when"]["argv"] == [
+        "--attention-backend",
+        "ROCM_AITER_FA",
+        "--max-model-len",
+        "128",
+        "--max-num-batched-tokens",
+        "32",
+        "--startup-timeout",
+        "90",
+    ]
+
+    assertions = probe.definition["then"]["assert"]
+    for expected in (
+        {"kind": "exit_code.equals", "value": 1},
+        {
+            "kind": "server_log.contains",
+            "value": "Selected backend AttentionBackendEnum.ROCM_AITER_FA is not valid",
+        },
+        {"kind": "server_log.contains", "value": "compute capability not supported"},
+    ):
+        assert expected in assertions
 
 
 def test_qwen3_6_fp8_moe_probes_record_backend_modes():

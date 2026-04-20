@@ -86,13 +86,17 @@
   move off the current TRITON unquantized-MoE lane.
   - treat any such attempt as a fresh experiment
   - do not restore the dropped vLLM-side AITER MoE padding carry by default
-- Evaluate FlashAttention through AITER as a separate experiment when the
-  attention backend lane needs another candidate.
+- Revisit FlashAttention through AITER as a separate attention experiment when
+  the backend lane needs another candidate.
   - use FlashAttention's AMD ROCm support notes as advisory input:
     <https://github.com/Dao-AILab/flash-attention#amd-rocm-support>
-  - keep this distinct from the Gemma 4 AITER fused-MoE lane; validate import,
-    build flags, backend selection, and at least one tracked vLLM scenario
-    locally before promoting any instruction or explanation
+  - keep this distinct from the Gemma 4 AITER fused-MoE lane
+  - `vllm.gemma4.e2b.server.attn-aiter-fa-blocked` now tracks the current
+    first gate: on 2026-04-20, forcing `ROCM_AITER_FA` failed before serving
+    because vLLM reported `compute capability not supported`
+  - before promoting any FlashAttention instruction or explanation, validate
+    import/build flags, backend selection, and at least one tracked vLLM
+    scenario locally after the backend gate changes
 - Promote the remaining Gemma 4 usage scenarios only after reference-host
   validation:
   - vLLM recipe-aligned reasoning, tool-calling, structured-output, and
