@@ -6,7 +6,7 @@
 
 pkgname=python-amd-aiter-gfx1151
 pkgver=0.1.0.r8.d20260317.gad42886
-pkgrel=7
+pkgrel=8
 pkgdesc='AMD AITER kernels rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://github.com/ROCm/aiter

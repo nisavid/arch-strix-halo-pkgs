@@ -37,6 +37,10 @@ tool = "qwen_text_smoke"
 [scenario.when]
 argv = ["--max-num-batched-tokens", "32"]
 
+[scenario.when.env]
+VLLM_ROCM_USE_AITER = "1"
+VLLM_ROCM_USE_AITER_MOE = "1"
+
 [[scenario.then.assert]]
 kind = "exit_code.equals"
 value = 0
@@ -44,6 +48,10 @@ value = 0
 [[scenario.then.assert]]
 kind = "stdout.contains"
 value = "config_model_type qwen3_5_moe"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "Using AITER Fp8 MoE backend"
 
 [[scenario.then.assert]]
 kind = "stdout.contains"

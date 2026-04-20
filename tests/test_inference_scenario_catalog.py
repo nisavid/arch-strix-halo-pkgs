@@ -47,3 +47,18 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     assert "qwen3.5" in tags_by_id["vllm.qwen3_5.0_8b.text.basic"]
     assert "qwen3.6" in tags_by_id["vllm.qwen3_6.35b-a3b-fp8.text.basic"]
     assert "moe" in tags_by_id["vllm.qwen3_6.35b-a3b-fp8.text.basic"]
+
+
+def test_qwen3_6_fp8_moe_smoke_uses_aiter_backend_env():
+    scenarios = load_scenarios(REPO_ROOT / "inference/scenarios")
+
+    qwen3_6 = next(
+        scenario
+        for scenario in scenarios
+        if scenario.id == "vllm.qwen3_6.35b-a3b-fp8.text.basic"
+    )
+
+    assert qwen3_6.definition["when"]["env"] == {
+        "VLLM_ROCM_USE_AITER": "1",
+        "VLLM_ROCM_USE_AITER_MOE": "1",
+    }

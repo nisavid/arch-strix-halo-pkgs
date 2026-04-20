@@ -386,8 +386,11 @@ The following smoke checks have already passed on the reference host:
   - with the same shim and CUDAGraph disabled, the E2B compiled path faulted
     the GPU during initialization/warmup
   - do not remove eager mode for `google/gemma-4-E2B-it`; the
-    `google/gemma-4-31B-it` checkpoint is now locally available under
-    `/var/cache/hf` and should be rerun before closing the branch
+    E2B compiled path still generates invalid text after the Triton repair
+  - `vllm.gemma4.31b.text.compiled` passed on 2026-04-19 against
+    `/var/cache/hf/hub/models--google--gemma-4-31B-it/snapshots/439edf5652646a0d1bd8b46bfdc1d3645761a445`
+    in `360.390323` seconds, so the dense 31B instruction-tuned checkpoint is
+    compiled-capable on the current installed Triton/vLLM stack
 - The 2026-04-19 26B-A4B MoE backend investigation confirms that the current
   package should stay on Triton for sparse MoE execution:
   - `vllm.gemma4.26b-a4b.server.moe-auto` passed in `288.508121` seconds with
@@ -432,10 +435,29 @@ The following smoke checks have already passed on the reference host:
     cache move: use `Qwen/Qwen3.5-0.8B` for tiny Qwen3.5 hybrid/GDN smoke
     coverage and `Qwen/Qwen3.6-35B-A3B-FP8` for the main Qwen
     MoE/shared-expert lane
-  - there is still no repo-owned live validation for either Qwen lane on
-    gfx1151; add tracked scenarios and record whether attention must stay on
-    Triton for hybrid layers, whether GDN needs any extra runtime toggles, and
-    whether the maintained MoE path is viable for Qwen3.6
+  - tracked Qwen scenarios now exist:
+    `vllm.qwen3_5.0_8b.text.basic` for the tiny hybrid/GDN smoke and
+    `vllm.qwen3_6.35b-a3b-fp8.text.basic` for the Qwen3.6 FP8 MoE smoke
+  - `vllm.qwen3_5.0_8b.text.basic` failed on 2026-04-19 after model loading
+    with a ROCm GPU memory-access fault. The failure still reproduced with
+    `FLA_GDN_FIX_BT=1`, with `--max-num-batched-tokens 32`, with forced
+    `TRITON_ATTN`, and after skipping
+    `GatedDeltaNetAttention._warmup_prefill_kernels`, so the remaining blocker
+    is deeper than the known `T < 64` GDN warmup/autotune issue.
+  - `vllm.qwen3_6.35b-a3b-fp8.text.basic` defaults to the AITER FP8 MoE path
+    through `VLLM_ROCM_USE_AITER=1` and `VLLM_ROCM_USE_AITER_MOE=1`. On the
+    currently installed AITER pkgrel `-7`, the 2026-04-19 run selected
+    `Using AITER Fp8 MoE backend`, loaded all 42 checkpoint shards, and then
+    failed during `module_quant` JIT compilation because installed
+    `hip_reduce.h` included nonexistent `hip_compat.h`.
+  - `python-amd-aiter-gfx1151` pkgrel `-8` is the package-side fix for that
+    Qwen3.6 blocker: `0006-rdna35-hip-reduce-wave32-dpp-compat.patch` keeps
+    the shipped `aiter_hip_common.h` include, the package-local tests pass,
+    `tools/amerge build python-amd-aiter-gfx1151` completed, and the built
+    package's `aiter_meta/csrc/include/hip_reduce.h` no longer references
+    `hip_compat.h`. Publishing/installing pkgrel `-8` still needs operator
+    sudo; `tools/amerge publish python-amd-aiter-gfx1151` could not run
+    autonomously because sudo requested an interactive password.
 - The tracked host-side follow-up helper for OpenAI-compatible server smokes is
   now `tools/gemma4_server_smoke.py`.
   - `--mode basic` launches

@@ -46,8 +46,10 @@
     compiled probe passed with torch.compile and CUDAGraph capture, while the
     E2B compiled+cudagraph probe still generated corrupted output instead of a
     valid five-word answer
-  - rerun the 31B compiled probe now that `google/gemma-4-31B-it` is locally
-    available under `/var/cache/hf`
+  - done for the 31B dense checkpoint: `vllm.gemma4.31b.text.compiled` passed
+    on 2026-04-19 against
+    `/var/cache/hf/hub/models--google--gemma-4-31B-it/snapshots/439edf5652646a0d1bd8b46bfdc1d3645761a445`
+    in `360.390323` seconds with torch.compile and CUDAGraph capture
   - start from the `compiled-probe` scenarios under `inference/scenarios/`
     instead of treating the experiment as an ad hoc terminal-only rehearsal
 - Reconcile Blackcat's Qwen3.5 hybrid-attention/GDN patch lane against the
@@ -75,18 +77,33 @@
     with `ROCM_AITER_UNIFIED_ATTN` and Triton unquantized MoE
 - Add repo-owned validation for Qwen hybrid/GDN and MoE or shared-expert lanes
   on gfx1151.
-  - cover `Qwen/Qwen3.5-0.8B` as the tiny non-MoE Qwen3.5 hybrid/GDN smoke
-  - cover `Qwen/Qwen3.6-35B-A3B-FP8` as the main Qwen MoE/shared-expert smoke;
-    this replaces the earlier Qwen3.5 122B-A10B target in local testing and
-    usage plans
+  - done for scenario coverage: `vllm.qwen3_5.0_8b.text.basic` covers
+    `Qwen/Qwen3.5-0.8B` as the tiny non-MoE Qwen3.5 hybrid/GDN smoke
+  - done for scenario coverage: `vllm.qwen3_6.35b-a3b-fp8.text.basic` covers
+    `Qwen/Qwen3.6-35B-A3B-FP8` as the main Qwen MoE/shared-expert smoke; this
+    replaces the earlier Qwen3.5 122B-A10B target in local testing and usage
+    plans
   - the old non-GGUF checkpoint blocker is cleared: the reference host's
     current `HF_HOME` is `/var/cache/hf`, with local snapshots for
     `Qwen/Qwen3.5-0.8B` and `Qwen/Qwen3.6-35B-A3B-FP8`
-  - record whether attention can stay on AITER or must remain on Triton,
-    whether GDN needs extra env toggles or source fixes, and whether AITER
-    fused/shared-expert MoE is actually safe on the maintained stack
-  - encode each retained lane as tracked `tools/run_inference_scenarios.py`
-    scenarios once the required model artifacts and expectations are clear
+  - Qwen3.5 0.8B still fails during vLLM engine initialization with a ROCm GPU
+    memory-access fault after model loading; `FLA_GDN_FIX_BT=1`,
+    `--max-num-batched-tokens 32`, forced `TRITON_ATTN`, and skipping GDN
+    prefill warmup did not clear it, so this remains a deeper GDN/profile-run
+    follow-up
+  - Qwen3.6 FP8 MoE now has a viable AITER-first path: the tracked scenario
+    sets `VLLM_ROCM_USE_AITER=1` and `VLLM_ROCM_USE_AITER_MOE=1`, and the
+    reference host selected `Using AITER Fp8 MoE backend` before failing in
+    the installed AITER package's `module_quant` JIT build
+  - done for the AITER package-side fix: `python-amd-aiter-gfx1151` pkgrel
+    `-8` keeps `hip_reduce.h` on the shipped `aiter_hip_common.h` include,
+    builds through `tools/amerge build python-amd-aiter-gfx1151`, and the
+    built package's installed header no longer references missing
+    `hip_compat.h`
+  - next install/publish `python-amd-aiter-gfx1151` pkgrel `-8` and rerun
+    `vllm.qwen3_6.35b-a3b-fp8.text.basic`; the agent could build the package
+    but `tools/amerge publish python-amd-aiter-gfx1151` required an
+    interactive sudo password
 - Only revisit Gemma 4 on AITER fused-MoE if there is a concrete reason to
   move off the current TRITON unquantized-MoE lane.
   - treat any such attempt as a fresh experiment
@@ -130,8 +147,9 @@
     `vllm.gemma4.e2b.text.compiled` initialized, compiled, captured graphs,
     and generated, but failed validation with corrupted output; do not remove
     eager mode for E2B
-  - next rerun the 31B compiled probe against the newly local
-    `google/gemma-4-31B-it` checkpoint under `/var/cache/hf`
+  - done for the 31B compiled probe: `vllm.gemma4.31b.text.compiled` passed
+    in `360.390323` seconds against the `/var/cache/hf` snapshot for
+    `google/gemma-4-31B-it`
   - next keep the new E2B `kernel-probe` scenario around as a tracked
     regression probe for the server fault, because the forced Triton attention
     lane still faults and therefore rules out an AITER-only explanation
