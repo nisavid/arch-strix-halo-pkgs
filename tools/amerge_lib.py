@@ -377,30 +377,85 @@ def install_outputs_by_root_for_plan(
     }
 
 
-def build_prerequisite_outputs_by_root_for_plan(
+def dependency_outputs_for_root(
     roots: dict[str, RepoPackageRoot],
-    build_roots: list[str],
-) -> dict[str, list[str]]:
-    build_root_set = set(build_roots)
+    output_roots: dict[str, str],
+    selected: set[str],
+    root_name: str,
+) -> set[str]:
+    root = roots[root_name]
+    return {
+        dependency
+        for dependency in (*root.depends, *root.makedepends)
+        if output_roots.get(dependency) in selected
+        and output_roots[dependency] != root_name
+    }
+
+
+def run_build_schedule(
+    roots: dict[str, RepoPackageRoot],
+    selected: set[str],
+) -> tuple[list[str], dict[str, list[str]]]:
     outputs = output_to_root_map(roots)
+    remaining = set(selected)
+    built_roots: set[str] = set()
     installed_outputs: set[str] = set()
-    by_consumer: dict[str, list[str]] = {}
+    build_roots: list[str] = []
+    prerequisite_outputs_by_root: dict[str, list[str]] = {}
 
-    for root_name in build_roots:
-        root = roots[root_name]
-        root_prerequisites = {
-            dependency
-            for dependency in (*root.depends, *root.makedepends)
-            if outputs.get(dependency) in build_root_set
-            and outputs[dependency] != root_name
-            and dependency not in installed_outputs
-        }
-        if root_prerequisites:
-            sorted_prerequisites = sorted(root_prerequisites)
-            by_consumer[root_name] = sorted_prerequisites
-            installed_outputs.update(sorted_prerequisites)
+    def selected_dependency_roots(root_name: str) -> set[str]:
+        return set(roots[root_name].repo_dependency_roots) & selected
 
-    return by_consumer
+    def ready_to_build(root_name: str) -> bool:
+        dependency_roots = selected_dependency_roots(root_name)
+        dependency_outputs = dependency_outputs_for_root(
+            roots,
+            outputs,
+            selected,
+            root_name,
+        )
+        return dependency_roots <= built_roots and dependency_outputs <= installed_outputs
+
+    while remaining:
+        ready_roots = sorted(root_name for root_name in remaining if ready_to_build(root_name))
+        if ready_roots:
+            for root_name in ready_roots:
+                remaining.remove(root_name)
+                built_roots.add(root_name)
+                build_roots.append(root_name)
+            continue
+
+        frontier_roots = sorted(
+            root_name
+            for root_name in remaining
+            if selected_dependency_roots(root_name) <= built_roots
+        )
+        if not frontier_roots:
+            unresolved = sorted(remaining)
+            raise SystemExit(
+                "The package dependency graph contains a cycle involving: "
+                f"{', '.join(unresolved)}"
+            )
+
+        missing_outputs = sorted(
+            {
+                output
+                for root_name in frontier_roots
+                for output in dependency_outputs_for_root(
+                    roots,
+                    outputs,
+                    selected,
+                    root_name,
+                )
+                if output not in installed_outputs
+            }
+        )
+        if not missing_outputs:
+            raise RuntimeError("RUN_BUILD_SCHEDULE_STALLED")
+        prerequisite_outputs_by_root[frontier_roots[0]] = missing_outputs
+        installed_outputs.update(missing_outputs)
+
+    return build_roots, prerequisite_outputs_by_root
 
 
 def flatten_install_outputs(
@@ -482,10 +537,10 @@ def build_steps(
                 if root_prerequisites:
                     steps.append(
                         StepSpec(
-                            id=f"{index:04d}-install-prerequisites-{root_name}",
-                            label=f"install build prerequisites for {root_name}",
+                            id=f"{index:04d}-install-prerequisites",
+                            label="install build prerequisites",
                             kind="install",
-                            root=root_name,
+                            root=None,
                             commands=(install_command(root_prerequisites),),
                         )
                     )
@@ -595,7 +650,14 @@ def create_merge_plan(args: argparse.Namespace, *, command: str) -> dict[str, ob
         include_deps=args.deps,
         include_rdeps=args.rdeps,
     )
-    build_roots = topo_sort_selected(roots, selected)
+    if command == "run":
+        build_roots, build_prerequisite_outputs_by_root = run_build_schedule(
+            roots,
+            selected,
+        )
+    else:
+        build_roots = topo_sort_selected(roots, selected)
+        build_prerequisite_outputs_by_root = {}
     install_outputs_by_root = (
         {}
         if command in {"build", "publish"}
@@ -608,11 +670,6 @@ def create_merge_plan(args: argparse.Namespace, *, command: str) -> dict[str, ob
         )
     )
     install_outputs = flatten_install_outputs(build_roots, install_outputs_by_root)
-    build_prerequisite_outputs_by_root = (
-        build_prerequisite_outputs_by_root_for_plan(roots, build_roots)
-        if command == "run"
-        else {}
-    )
     final_install_outputs = (
         final_run_install_outputs(
             build_roots,

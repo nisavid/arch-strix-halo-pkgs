@@ -164,9 +164,10 @@ By default, explicit targets rebuild only those targets. Dependencies are used
 for ordering and can be opted into with `--deps`. If no targets or selectors are
 given, `amerge` prompts on a TTY and fails fast otherwise. `run` builds roots
 in merge order and publishes each root immediately after a successful build.
-Rebuilt repo outputs are installed just before the next selected build that
-needs them through `depends` or `makedepends`; any remaining selected outputs
-are installed together at the end.
+When the next group of selected builds needs rebuilt repo outputs through
+`depends` or `makedepends`, `amerge` installs the needed outputs in one
+prerequisite transaction; any remaining selected outputs are installed together
+at the end.
 
 `amerge` also sanitizes user Python environment variables such as
 `PYTHONPYCACHEPREFIX`, `PYTHONSTARTUP`, `PYTHONUSERBASE`, `PYTHON_EGG_CACHE`,

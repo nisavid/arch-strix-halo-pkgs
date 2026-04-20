@@ -185,31 +185,25 @@ def test_deps_expands_rebuild_selection_to_dependencies(tmp_path: Path):
     assert step_labels == [
         "build therock-gfx1151",
         "publish therock-gfx1151",
-        "install build prerequisites for python-core-gfx1151",
+        "install build prerequisites",
         "build python-core-gfx1151",
         "publish python-core-gfx1151",
-        "install build prerequisites for python-leaf-gfx1151",
+        "install build prerequisites",
         "build python-leaf-gfx1151",
         "publish python-leaf-gfx1151",
-        "install build prerequisites for python-app-gfx1151",
+        "install build prerequisites",
         "build python-app-gfx1151",
         "publish python-app-gfx1151",
         "install selected outputs",
     ]
-    prerequisite_commands = {
-        step["label"]: step["commands"][0]["argv"]
+    prerequisite_commands = [
+        step["commands"][0]["argv"]
         for step in payload["steps"]
-        if step["label"].startswith("install build prerequisites")
-    }
-    assert prerequisite_commands[
-        "install build prerequisites for python-core-gfx1151"
-    ][-1:] == ["rocm-core-gfx1151"]
-    assert prerequisite_commands[
-        "install build prerequisites for python-leaf-gfx1151"
-    ][-2:] == ["python-core-gfx1151", "rocblas-gfx1151"]
-    assert prerequisite_commands[
-        "install build prerequisites for python-app-gfx1151"
-    ][-1:] == ["python-leaf-gfx1151"]
+        if step["label"] == "install build prerequisites"
+    ]
+    assert prerequisite_commands[0][-1:] == ["rocm-core-gfx1151"]
+    assert prerequisite_commands[1][-2:] == ["python-core-gfx1151", "rocblas-gfx1151"]
+    assert prerequisite_commands[2][-1:] == ["python-leaf-gfx1151"]
     assert payload["steps"][-1]["commands"][0]["argv"][-1:] == ["python-app-gfx1151"]
     assert payload["merge_plan"]["install_outputs_by_root"]["therock-gfx1151"] == [
         "rocblas-gfx1151",
@@ -243,7 +237,7 @@ def test_selected_split_root_installs_dependency_outputs_for_later_builds(tmp_pa
     assert step_labels == [
         "build therock-gfx1151",
         "publish therock-gfx1151",
-        "install build prerequisites for python-leaf-gfx1151",
+        "install build prerequisites",
         "build python-leaf-gfx1151",
         "publish python-leaf-gfx1151",
         "install selected outputs",
@@ -252,6 +246,40 @@ def test_selected_split_root_installs_dependency_outputs_for_later_builds(tmp_pa
     assert payload["steps"][-1]["commands"][0]["argv"][-2:] == [
         "rocm-core-gfx1151",
         "python-leaf-gfx1151",
+    ]
+
+
+def test_run_batches_prerequisites_for_ready_build_frontier(tmp_path: Path):
+    packages_root = graph_fixture(tmp_path)
+    write_recipe_package(tmp_path, "python-alpha-gfx1151", makedepends=["rocm-core-gfx1151"])
+    write_recipe_package(tmp_path, "python-beta-gfx1151", makedepends=["rocblas-gfx1151"])
+
+    result = run_amerge(
+        "run",
+        "--dry-run",
+        "--json",
+        "--deps",
+        "--packages-root",
+        str(packages_root),
+        "python-alpha-gfx1151",
+        "python-beta-gfx1151",
+    )
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    assert [step["label"] for step in payload["steps"]] == [
+        "build therock-gfx1151",
+        "publish therock-gfx1151",
+        "install build prerequisites",
+        "build python-alpha-gfx1151",
+        "publish python-alpha-gfx1151",
+        "build python-beta-gfx1151",
+        "publish python-beta-gfx1151",
+        "install selected outputs",
+    ]
+    assert payload["steps"][2]["commands"][0]["argv"][-2:] == [
+        "rocblas-gfx1151",
+        "rocm-core-gfx1151",
     ]
 
 
@@ -308,10 +336,10 @@ def test_rdeps_expands_rebuild_selection_to_reverse_dependencies(tmp_path: Path)
     assert step_labels == [
         "build python-core-gfx1151",
         "publish python-core-gfx1151",
-        "install build prerequisites for python-leaf-gfx1151",
+        "install build prerequisites",
         "build python-leaf-gfx1151",
         "publish python-leaf-gfx1151",
-        "install build prerequisites for python-app-gfx1151",
+        "install build prerequisites",
         "build python-app-gfx1151",
         "publish python-app-gfx1151",
         "install selected outputs",

@@ -86,9 +86,9 @@ user wants a colorized plan captured in logs or chat.
   sudo validation timestamp fresh, runs privileged commands with
   noninteractive sudo, and logs under `docs/worklog/amerge/<plan-id>/`.
 - With `run`, each package root is built and published immediately. Rebuilt
-  repo outputs are installed just before a later selected build needs them via
-  `depends` or `makedepends`, and remaining selected outputs are installed in a
-  final transaction.
+  repo outputs are installed in prerequisite transactions when the next build
+  group needs them via `depends` or `makedepends`, and remaining selected
+  outputs are installed in a final transaction.
 - Publish steps require package archives matching the current PKGBUILD
   `makepkg --packagelist`, so stale built artifacts fail before republishing.
 - A `--require-packagelist` publish treats current PKGBUILD outputs as
