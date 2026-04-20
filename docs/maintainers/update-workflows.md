@@ -6,28 +6,45 @@ decides whether any of those stories must preempt ordinary backlog work.
 ## 0. Dependency Freshness Sweep
 
 Run this sweep after closing a development arc and before starting a new one
-when no sweep has been recorded in the previous 24 hours. Use ignored session
-notes for a no-change sweep, and move only durable conclusions into tracked
-docs.
+when no successful sweep has been recorded in the previous 24 hours. The
+freshness policy lives in `policies/package-freshness.toml`; keep every
+`packages/*/PKGBUILD` directory covered by exactly one freshness family.
 
-1. List recipe-managed packages from `policies/recipe-packages.toml`.
-2. For each package, check its package-specific upstream lane:
-   - tagged release tarballs: upstream release page or tag list
-   - PyPI sdists/wheels: PyPI release metadata
-   - git tag or commit lanes: upstream tag list and recorded commit/ref
-   - ROCm or framework branches: upstream branch head and release notes
-   - recipe-derived inputs: `upstream/ai-notes` only when the recipe change is
-     relevant to this repo
-   - Arch/CachyOS/AUR baselines: the recorded authoritative reference first,
-     then advisory references
-3. If a newer upstream or baseline exists, classify it as one of the update
-   stories below and run that story before unrelated backlog work.
-4. If no relevant updates exist, record the sweep timestamp and package groups
-   checked in an ignored session note such as
-   `.agents/session/dependency-freshness-YYYYMMDDTHHMM.md`.
-5. If the sweep changes package policy, patch carry, validation status, or a
-   known blocker, update canonical docs under `docs/` and delete any
-   session-only input once its durable content has been extracted.
+Use the read-only checker instead of manually visiting release pages:
+
+```sh
+tools/check_package_updates.py --refresh
+tools/check_package_updates.py --json
+```
+
+The checker writes only ignored cache/report data under `.agents/session/`.
+It does not upgrade packages, update submodules, edit policy, or modify docs.
+
+Status handling:
+
+- `current`: no upstream or baseline drift was found for that package family.
+- `stable_update_available`: run the upstream source update story before
+  unrelated backlog work.
+- `branch_head_ahead`: review the VCS source lane and run the upstream source
+  update story if the newer head belongs in this repo.
+- `baseline_drift`: run the baseline package update story, then decide whether
+  the drift should change local package policy.
+- `metadata_mismatch`: fix the freshness policy or package source metadata
+  before trusting the sweep result.
+- `query_failed`: the sweep is not clean; rerun or diagnose the failed provider
+  check instead of treating the package as current.
+- `prerelease_only`: record as informational unless the package family opts
+  into prerelease adoption.
+- `manual_review_required`: the family deliberately has no complete automated
+  freshness check; inspect the documented lane before ordinary backlog work.
+
+Use cached results only when the checker reports that the cache is still valid.
+Force a new network sweep with `--refresh` after changing package policy,
+package directories, or freshness logic.
+
+If the sweep changes package policy, patch carry, validation status, or a known
+blocker, update canonical docs under `docs/` and delete any session-only input
+once its durable content has been extracted.
 
 Current package-lane catalog:
 

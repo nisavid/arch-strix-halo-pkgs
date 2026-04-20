@@ -405,3 +405,13 @@ def test_submodule_client_uses_gitmodules_url_not_parent_repo(tmp_path, monkeypa
             "refs/heads/main",
         ]
     ]
+
+
+def test_update_workflow_references_freshness_checker():
+    repo = Path(__file__).resolve().parents[1]
+    doc = (repo / "docs/maintainers/update-workflows.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "tools/check_package_updates.py" in doc
+    assert "policies/package-freshness.toml" in doc
