@@ -315,7 +315,7 @@ def test_commands_preview_includes_concrete_commands(tmp_path: Path):
     )
 
     assert result.returncode == 0
-    assert "$ makepkg -sf --noconfirm" in result.stdout
+    assert "$ makepkg -Csf --noconfirm" in result.stdout
     assert "$ sudo pacman -Sy --noconfirm python-app-gfx1151" in result.stdout
 
 
@@ -386,7 +386,7 @@ def test_build_steps_do_not_request_sudo_keepalive(tmp_path: Path):
                 "kind": "build",
                 "commands": [
                     {
-                        "argv": ["makepkg", "-sf", "--noconfirm"],
+                        "argv": ["makepkg", "-Csf", "--noconfirm"],
                         "cwd": "/tmp/demo",
                         "privileged": False,
                     }
@@ -396,7 +396,7 @@ def test_build_steps_do_not_request_sudo_keepalive(tmp_path: Path):
     }
 
     assert not module.plan_requires_sudo_keepalive(plan)
-    assert plan["steps"][0]["commands"][0]["argv"][0] == "makepkg"
+    assert plan["steps"][0]["commands"][0]["argv"] == ["makepkg", "-Csf", "--noconfirm"]
 
 
 def test_privileged_steps_request_sudo_keepalive(tmp_path: Path):

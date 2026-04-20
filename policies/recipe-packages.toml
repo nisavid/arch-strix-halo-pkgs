@@ -72,6 +72,8 @@ patches_dir = "patches/aocl-libm-gfx1151"
 scaffold_notes = [
   "There is no standalone AOCL-LibM package in Arch, CachyOS, or AUR; the closest packaging lane is the broader AUR aocl bundle, which is only advisory for install-layout cleanup patterns.",
   "The recipe carries three upstream-compatibility patch steps plus a post-install RPATH fix; those are rendered into prepare() and package().",
+  "Use Arch's system scons from makedepends directly. Do not recreate the recipe's venv-local pip bootstrap inside PKGBUILD; that makes package builds network-dependent.",
+  "Pass resolved compiler paths to SCons through ALM_CC and ALM_CXX because AOCL-LibM validates those variables as existing paths.",
   "Keep AOCL-LibM out of the CPython link line. It is intended for downstream numerical libraries, not Python's own PGO run.",
   "Build testing showed libalm.so does not advertise a versioned SONAME, so the scaffold does not export it in provides()."
 ]

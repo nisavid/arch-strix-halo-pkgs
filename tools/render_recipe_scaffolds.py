@@ -495,16 +495,8 @@ build() {{
   cd "$srcdir/{src_subdir}"
 
   {compiler_env_snippet(compiler_root)}  _setup_compiler_env
-  local amdclang="$CC"
-  local amdclangxx="$CXX"
-
-  if [[ ! -d .scons-venv ]]; then
-    python -m venv .scons-venv
-  fi
-
-  source .scons-venv/bin/activate
-  python -m pip install --upgrade pip
-  python -m pip install scons
+  local amdclang="$(command -v "$CC")"
+  local amdclangxx="$(command -v "$CXX")"
 
   scons -j"$(nproc)" \\
     ALM_CC="${{amdclang}}" \\
@@ -512,8 +504,6 @@ build() {{
     --arch_config=avx512 \\
     --aocl_utils_install_path=/usr \\
     --aocl_utils_link=0
-
-  deactivate
 }}
 
 package() {{

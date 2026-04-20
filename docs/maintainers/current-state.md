@@ -61,15 +61,16 @@ Installed Qwen closeout state for this branch:
 
 Current package freshness integration state, checked on 2026-04-20:
 
-- `aocl-libm-gfx1151` tracks upstream AOCL-LibM `5.2.2`; source metadata is
-  updated, but local build verification is blocked until host build dependency
-  `scons` is installed.
+- `aocl-libm-gfx1151` tracks upstream AOCL-LibM `5.2.2` and built
+  successfully after installing host build dependency `scons`. The scaffold
+  uses Arch's system `scons` directly and passes resolved compiler paths to
+  AOCL-LibM's SCons variables rather than using the recipe's venv-local pip
+  bootstrap.
 - `llama.cpp-hip-gfx1151` and `llama.cpp-vulkan-gfx1151` track upstream
   llama.cpp `b8851` at commit `e365e658f07b63371489570dfde597f199b26c23`.
   The HIP package built successfully. The Vulkan package metadata now includes
   `spirv-headers` because b8851 includes `spirv/unified1/spirv.hpp` directly;
-  full local Vulkan build verification is blocked until that host dependency
-  is installed.
+  the Vulkan package built successfully after installing that host dependency.
 - `python-mistral-common-gfx1151` tracks PyPI `1.11.0` and rebuilt
   successfully.
 - `python-pytorch-opt-rocm-gfx1151` tracks ROCm/pytorch `release/2.11` at

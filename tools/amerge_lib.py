@@ -396,7 +396,7 @@ def build_steps(
                     root=root_name,
                     commands=(
                         CommandSpec(
-                            argv=("makepkg", "-sf", "--noconfirm"),
+                            argv=("makepkg", "-Csf", "--noconfirm"),
                             cwd=str(root.package_dir),
                         ),
                     ),
