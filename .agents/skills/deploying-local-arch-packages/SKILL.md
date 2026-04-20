@@ -88,6 +88,8 @@ user wants a colorized plan captured in logs or chat.
   next root. Selected split roots also install outputs needed by later roots.
 - Publish steps require package archives matching the current PKGBUILD
   `makepkg --packagelist`, so stale built artifacts fail before republishing.
+- A `--require-packagelist` publish treats current PKGBUILD outputs as
+  authoritative for their package names and preserves unrelated repo packages.
 - A plan holds `active.lock` while running; do not start a second resume or run
   against the same plan if `history` reports it active.
 - If no targets or selectors are given, hand the command to the user only for an

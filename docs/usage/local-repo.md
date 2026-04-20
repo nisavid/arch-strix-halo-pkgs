@@ -78,8 +78,15 @@ to raw `pacman` only when you need low-level repair or rehearsal behavior.
 After rebuilding a package, refresh the canonical repo metadata:
 
 ```bash
-python tools/update_pacman_repo.py --package-dir packages/<pkgname> --repo-dir repo/x86_64
+python tools/update_pacman_repo.py \
+  --package-dir packages/<pkgname> \
+  --repo-dir repo/x86_64 \
+  --require-packagelist
 ```
+
+That refresh treats the package archives named by the current PKGBUILD as the
+authoritative repo entries for those package names, while preserving unrelated
+packages already present in `repo/x86_64`.
 
 Then republish:
 
@@ -106,7 +113,10 @@ stack.
 For a narrow post-cutover fix:
 
 ```bash
-python tools/update_pacman_repo.py --package-dir packages/<pkgname> --repo-dir repo/x86_64
+python tools/update_pacman_repo.py \
+  --package-dir packages/<pkgname> \
+  --repo-dir repo/x86_64 \
+  --require-packagelist
 sudo rsync -a --delete repo/x86_64/ /srv/pacman/strix-halo-gfx1151/x86_64/
 sudo pacman -Sy
 paru -S <pkgname>

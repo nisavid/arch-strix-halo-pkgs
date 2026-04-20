@@ -30,9 +30,15 @@ def link_or_copy(src: Path, dst: Path) -> None:
 def merge_package_sets(
     incoming: list[PackageInfo],
     existing: list[PackageInfo],
+    *,
+    incoming_authoritative: bool = False,
 ) -> dict[str, PackageInfo]:
     selected = select_latest_by_name(existing)
-    for pkg in incoming:
+    incoming_selected = select_latest_by_name(incoming)
+    if incoming_authoritative:
+        selected.update(incoming_selected)
+        return selected
+    for pkg in incoming_selected.values():
         current = selected.get(pkg.pkgname)
         if current is None or vercmp(pkg.pkgver, current.pkgver) > 0:
             selected[pkg.pkgname] = pkg
@@ -107,7 +113,11 @@ def main() -> int:
         return 2
 
     existing_infos = read_package_infos(repo_dir.glob("*.pkg.tar.*"))
-    selected = merge_package_sets(package_infos, existing_infos)
+    selected = merge_package_sets(
+        package_infos,
+        existing_infos,
+        incoming_authoritative=args.require_packagelist,
+    )
 
     staged = []
     selected_names = {pkg.path.name for pkg in selected.values()}

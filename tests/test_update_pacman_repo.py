@@ -63,6 +63,31 @@ def test_merge_keeps_newer_existing_version_when_incoming_is_stale(tmp_path: Pat
     assert selected["python-vllm-rocm-gfx1151"].path == existing[0].path
 
 
+def test_merge_can_treat_current_outputs_as_authoritative(tmp_path: Path):
+    incoming = [
+        pkg(
+            tmp_path / "python-vllm-rocm-gfx1151-0.19.0-1-x86_64.pkg.tar.zst",
+            "python-vllm-rocm-gfx1151",
+            "0.19.0-1",
+        )
+    ]
+    existing = [
+        pkg(
+            tmp_path / "python-vllm-rocm-gfx1151-0.19.0-2-x86_64.pkg.tar.zst",
+            "python-vllm-rocm-gfx1151",
+            "0.19.0-2",
+        )
+    ]
+
+    selected = update_pacman_repo.merge_package_sets(
+        incoming,
+        existing,
+        incoming_authoritative=True,
+    )
+
+    assert selected["python-vllm-rocm-gfx1151"].path == incoming[0].path
+
+
 def test_link_or_copy_noops_when_repo_file_is_already_selected(tmp_path: Path):
     package_path = tmp_path / "python-vllm-rocm-gfx1151-0.19.0-2-x86_64.pkg.tar.zst"
     package_path.write_text("package")
@@ -141,3 +166,59 @@ def test_main_reports_missing_current_archive_without_traceback(
     captured = capsys.readouterr()
     assert "PACKAGE_ARCHIVE_MISSING" in captured.err
     assert "Traceback" not in captured.err
+
+
+def test_main_packagelist_publish_replaces_same_name_repo_entry(
+    tmp_path: Path,
+    monkeypatch,
+):
+    package_dir = tmp_path / "pkg"
+    repo_dir = tmp_path / "repo"
+    package_dir.mkdir()
+    repo_dir.mkdir()
+    current_archive = package_dir / "demo-1-1-x86_64.pkg.tar.zst"
+    current_archive.write_text("current")
+    repo_archive = repo_dir / "demo-2-1-x86_64.pkg.tar.zst"
+    repo_archive.write_text("repo")
+    unrelated_archive = repo_dir / "helper-1-1-x86_64.pkg.tar.zst"
+    unrelated_archive.write_text("helper")
+
+    def fake_expected_package_paths(path):
+        assert path == package_dir.resolve()
+        return [current_archive]
+
+    def fake_read_package_infos(paths):
+        infos = []
+        for path in paths:
+            if path.name.startswith("demo-1-"):
+                infos.append(update_pacman_repo.PackageInfo(path, "demo", "1-1"))
+            elif path.name.startswith("demo-2-"):
+                infos.append(update_pacman_repo.PackageInfo(path, "demo", "2-1"))
+            elif path.name.startswith("helper-"):
+                infos.append(update_pacman_repo.PackageInfo(path, "helper", "1-1"))
+        return infos
+
+    def fake_run(argv, **kwargs):
+        assert argv[0] == "repo-add"
+        return subprocess.CompletedProcess(argv, 0)
+
+    monkeypatch.setattr(update_pacman_repo, "expected_package_paths", fake_expected_package_paths)
+    monkeypatch.setattr(update_pacman_repo, "read_package_infos", fake_read_package_infos)
+    monkeypatch.setattr(update_pacman_repo.subprocess, "run", fake_run)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "update_pacman_repo.py",
+            "--package-dir",
+            str(package_dir),
+            "--repo-dir",
+            str(repo_dir),
+            "--require-packagelist",
+        ],
+    )
+
+    assert update_pacman_repo.main() == 0
+    assert (repo_dir / current_archive.name).read_text() == "current"
+    assert not repo_archive.exists()
+    assert unrelated_archive.read_text() == "helper"
