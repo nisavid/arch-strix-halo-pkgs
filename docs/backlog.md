@@ -2,22 +2,23 @@
 
 ## Current Branch Closeout Gate
 
-- Publish/install the already built `python-vllm-rocm-gfx1151` pkgrel `-27`
-  and `python-amd-aiter-gfx1151` pkgrel `-8` artifacts on the reference host.
-  The currently installed host still has vLLM `-26` and AITER `-7`.
-- After installation, rerun the installed-host validations that should be
-  stable for this branch:
-  - `vllm.qwen3_5.0_8b.text.basic` should pass as the Qwen3.5 sampler-fix
-    smoke
-  - `vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-no-aiter-blocked` should pass as
-    a blocked probe asserting the non-AITER FP8 MoE backend-selection failure
-  - `vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-aiter-blocked` should pass as a
-    blocked probe asserting the AITER `module_quant`/`mfma_adaptor` failure
-    after AITER pkgrel `-8` is installed
+- Done for installed-host Qwen closeout after publishing/installing
+  `python-vllm-rocm-gfx1151` pkgrel `-27` and
+  `python-amd-aiter-gfx1151` pkgrel `-8`: the 2026-04-19 run rooted at
+  `docs/worklog/inference-runs/20260419T211521` passed all three expected
+  outcomes.
+- The validated installed-host Qwen outcomes were:
+  - `vllm.qwen3_5.0_8b.text.basic` passed as the Qwen3.5 sampler-fix smoke in
+    `42.52507` seconds
+  - `vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-no-aiter-blocked` passed as a
+    blocked probe asserting the non-AITER FP8 MoE backend-selection failure in
+    `22.226842` seconds
+  - `vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-aiter-blocked` passed as a blocked
+    probe asserting the AITER `module_quant`/`mfma_adaptor` failure in
+    `74.664373` seconds
 - Treat Qwen3.6 FP8 MoE as a documented follow-up blocker, not a merge blocker
-  for the Gemma 4 branch. The branch can close once the built artifacts are
-  installed, the expected passing/blocking scenarios above are verified on the
-  installed host, and the Python/package test set remains green.
+  for the Gemma 4 branch. The remaining closeout requirement is keeping the
+  Python/package test set green.
 
 ## Packaging And Build Hygiene
 
@@ -125,8 +126,10 @@
     contains the ROCm sampler fallback, the standalone `(32, 248320)` sampler
     repro completed through that payload, and
     `vllm.qwen3_5.0_8b.text.basic` passed against the `/var/cache/hf`
-    Qwen3.5 snapshot in 42.948777 seconds. Installing/publishing pkgrel `-27`
-    remains an operator step before installed-host rerun coverage.
+    Qwen3.5 snapshot in 42.948777 seconds
+  - done for installed-host validation after pkgrel `-27` was installed:
+    `vllm.qwen3_5.0_8b.text.basic` passed against the `/var/cache/hf`
+    Qwen3.5 snapshot in 42.52507 seconds
   - Qwen3.6 FP8 MoE does not currently have a viable non-AITER fallback on
     gfx1151. With `VLLM_ROCM_USE_AITER=0` and
     `VLLM_ROCM_USE_AITER_MOE=0`, vLLM fails during backend selection with

@@ -40,15 +40,15 @@ Installed and validated at least once on the live host:
 - `llama.cpp` HIP and Vulkan backends
 - Lemonade server/app/meta packages
 
-Pending install/publish closeout for this branch:
+Installed Qwen closeout state for this branch:
 
-- `python-vllm-rocm-gfx1151` pkgrel `-27` is built but not installed; the live
-  host still has pkgrel `-26`.
-- `python-amd-aiter-gfx1151` pkgrel `-8` is built but not installed; the live
-  host still has pkgrel `-7`.
-- After those installs, rerun the installed-host Qwen3.5 sampler-fix smoke and
-  the two Qwen3.6 blocked FP8 MoE probes before treating the branch as ready
-  to merge.
+- `python-vllm-rocm-gfx1151` pkgrel `-27` and
+  `python-amd-aiter-gfx1151` pkgrel `-8` are installed on the live host.
+- The 2026-04-19 installed-host Qwen validation run rooted at
+  `docs/worklog/inference-runs/20260419T211521` passed all three expected
+  outcomes: Qwen3.5 sampler-fix smoke passed, Qwen3.6 non-AITER FP8 MoE
+  backend-selection blocked probe passed, and Qwen3.6 forced-AITER
+  `module_quant`/`mfma_adaptor` blocked probe passed.
 
 ## Live Smoke Coverage
 
@@ -470,17 +470,18 @@ The following smoke checks have already passed on the reference host:
     python-vllm-rocm-gfx1151` produced pkgrel `-27`; using that built package
     payload on `PYTHONPATH`, the standalone `(32, 248320)` sampler repro
     completed and `vllm.qwen3_5.0_8b.text.basic` passed against the
-    `/var/cache/hf` Qwen3.5 snapshot in 42.948777 seconds. Publishing and
-    installing pkgrel `-27` still need an operator step before installed-host
-    rerun coverage.
+    `/var/cache/hf` Qwen3.5 snapshot in 42.948777 seconds. After installing
+    pkgrel `-27`, the installed-host rerun passed in `42.52507` seconds.
   - Qwen3.6 FP8 MoE is not a passing smoke lane on gfx1151 yet. With
     `VLLM_ROCM_USE_AITER=0` and `VLLM_ROCM_USE_AITER_MOE=0`, vLLM fails
     during FP8 MoE backend selection with
     `No FP8 MoE backend supports the deployment configuration`; the vLLM
     Triton and batched Triton FP8 MoE gates currently advertise ROCm FP8
     support for `gfx9`, not `gfx1151`. The tracked no-AITER blocked probe
-    passed on 2026-04-19 in `20.962591` seconds by asserting that failure
-    mode rather than treating it as a generation smoke.
+    passed on 2026-04-19 in `20.962591` seconds against built package
+    payloads and in `22.226842` seconds after pkgrel `-27` and AITER pkgrel
+    `-8` were installed, by asserting that failure mode rather than treating
+    it as a generation smoke.
   - The forced-AITER Qwen3.6 path is also blocked. On the currently installed
     AITER pkgrel `-7`, the 2026-04-19 run selected `Using AITER Fp8 MoE
     backend`, loaded all 42 checkpoint shards, and then failed during
@@ -491,15 +492,15 @@ The following smoke checks have already passed on the reference host:
     the shipped `aiter_hip_common.h` include, the package-local tests pass,
     `tools/amerge build python-amd-aiter-gfx1151` completed, and the built
     package's `aiter_meta/csrc/include/hip_reduce.h` no longer references
-    `hip_compat.h`. Publishing/installing pkgrel `-8` still needs operator
-    sudo; `tools/amerge publish python-amd-aiter-gfx1151` could not run
-    autonomously because sudo requested an interactive password.
+    `hip_compat.h`. The package is now installed on the live host.
   - A built-payload rerun of the forced-AITER Qwen3.6 probe with AITER pkgrel
     `-8` and vLLM pkgrel `-27` cleared the earlier `hip_compat.h` blocker,
     selected the AITER FP8 MoE path, and then failed during
     `aiter.jit.module_quant` compilation with
     `aiter_meta/csrc/include/opus/opus.hpp:3001:24: error: unknown type name
-    'mfma_adaptor'`.
+    'mfma_adaptor'`. After installing both package rels, the installed-host
+    forced-AITER blocked probe passed in `74.664373` seconds by asserting the
+    same failure mode.
   - The first AITER gfx1151 MFMA/WMMA root-cause pass found that `gfx1151`
     defines `__GFX11__` and `__gfx1151__`, while AITER's `opus.hpp` defines
     `mfma_adaptor` only for `__GFX9__` device builds and chooses that default
