@@ -34,6 +34,7 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     assert "vllm.torchao.tiny.generate" in ids
     assert "vllm.gemma4.e2b.torchao.real-model" in ids
     assert "vllm.qwen3_5.0_8b.text.basic" in ids
+    assert "vllm.qwen3_5.0_8b.text.compiled" in ids
     assert "vllm.qwen3_6.35b-a3b.text.unquantized-moe-no-aiter-control" in ids
     assert "vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-no-aiter-blocked" in ids
     assert "vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-aiter-blocked" in ids
@@ -59,6 +60,7 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     assert "kernel-probe" in tags_by_id["vllm.gemma4.26b-a4b.server.moe-aiter"]
     assert "quantization-probe" in tags_by_id["vllm.gemma4.e2b.torchao.real-model"]
     assert "qwen3.5" in tags_by_id["vllm.qwen3_5.0_8b.text.basic"]
+    assert "compiled-probe" in tags_by_id["vllm.qwen3_5.0_8b.text.compiled"]
     assert "qwen3.6" in tags_by_id[
         "vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-no-aiter-blocked"
     ]
@@ -179,6 +181,35 @@ def test_qwen3_6_fp8_moe_probes_record_backend_modes():
         "kind": "stdout.contains",
         "value": "config_quantization_config_present true",
     } in forced_aiter.definition["then"]["assert"]
+
+
+def test_qwen3_5_compiled_probe_records_validation_contract():
+    scenarios = load_scenarios(REPO_ROOT / "inference/scenarios")
+    by_id = {scenario.id: scenario for scenario in scenarios}
+
+    probe = by_id["vllm.qwen3_5.0_8b.text.compiled"]
+
+    assert probe.model == "Qwen/Qwen3.5-0.8B"
+    assert set(probe.tags) >= {
+        "smoke",
+        "qwen",
+        "qwen3.5",
+        "hybrid",
+        "gdn",
+        "compiled-probe",
+        "exploratory",
+    }
+    assert probe.definition["given"]["tool"] == "qwen_text_smoke"
+    assert probe.definition["when"]["argv"] == ["--execution-mode", "compiled"]
+
+    assertions = probe.definition["then"]["assert"]
+    for expected in (
+        {"kind": "exit_code.equals", "value": 0},
+        {"kind": "stdout.contains", "value": "config_model_type qwen3_5"},
+        {"kind": "stdout.contains", "value": "generation_ok"},
+        {"kind": "stdout.contains", "value": "basic_ok"},
+    ):
+        assert expected in assertions
 
 
 def test_qwen3_6_unquantized_moe_control_records_validation_contract():

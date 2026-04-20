@@ -575,7 +575,8 @@ The following smoke checks have already passed on the reference host:
     coverage and `Qwen/Qwen3.6-35B-A3B-FP8` for the main Qwen
     MoE/shared-expert lane
   - tracked Qwen scenarios now exist:
-    `vllm.qwen3_5.0_8b.text.basic` for the tiny hybrid/GDN smoke and
+    `vllm.qwen3_5.0_8b.text.basic`,
+    `vllm.qwen3_5.0_8b.text.compiled`, and
     blocked Qwen3.6 FP8 MoE kernel probes for the non-AITER backend-selection
     path and the forced-AITER `module_quant` path
   - `vllm.qwen3_5.0_8b.text.basic` failed on 2026-04-19 after model loading
@@ -595,6 +596,22 @@ The following smoke checks have already passed on the reference host:
     completed and `vllm.qwen3_5.0_8b.text.basic` passed against the
     `/var/cache/hf` Qwen3.5 snapshot in 42.948777 seconds. After installing
     pkgrel `-27`, the installed-host rerun passed in `42.52507` seconds.
+  - after the self-hosted rebuild, `vllm.qwen3_5.0_8b.text.basic` passed
+    again on 2026-04-20 in `72.408359` seconds with `enforce_eager=True`,
+    `Using Triton/FLA GDN prefill kernel`, `Using ROCM_ATTN backend`,
+    `generation_ok`, output `Ready.`, and `basic_ok`
+  - the new exploratory `vllm.qwen3_5.0_8b.text.compiled` scenario passed on
+    2026-04-20 in `114.935893` seconds with fresh compile caches,
+    `enforce_eager=False`, `Using Triton/FLA GDN prefill kernel`,
+    `Using ROCM_ATTN backend`, `torch.compile took 30.89 s in total`, graph
+    capture in 7 seconds, output `Ready.`, and `basic_ok`; the Qwen3.5 text
+    smoke therefore does not require eager mode under the current installed
+    stack
+  - the Qwen3.5 compiled run still logged
+    `Cannot use ROCm custom paged attention kernel, falling back to Triton implementation`
+    and the underlying `operation scheduled before its operands` diagnostic;
+    because the run completed and generated the expected output, keep that as
+    a non-fatal fallback marker for this lane
   - Qwen3.6 FP8 MoE is not a passing smoke lane on gfx1151 yet. With
     `VLLM_ROCM_USE_AITER=0` and `VLLM_ROCM_USE_AITER_MOE=0`, vLLM fails
     during FP8 MoE backend selection with
@@ -695,6 +712,17 @@ The following smoke checks have already passed on the reference host:
   - the helper can classify the two known warning markers on TorchAO/vLLM
     paths, but the currently committed classifier is only a support surface;
     live warning conclusions still need to come from a real host run log.
+  - after the self-hosted rebuild, the tracked tiny TorchAO scenarios passed
+    on 2026-04-20: `vllm.torchao.tiny.prepare` in `4.86572` seconds and
+    `vllm.torchao.tiny.generate` in `21.412559` seconds. The generate run
+    recorded `prepare_ok`, `copy_probe_ok`, `quantization=torchao`,
+    `llm_init_ok`, `generation_ok`, and the expected warning markers.
+  - do not treat `--execution-mode compiled` as validated for TorchAO yet. A
+    direct tiny TorchAO run with `--execution-mode compiled` still initialized
+    vLLM with `quantization=torchao` and `enforce_eager=True`; vLLM disabled
+    torch.compile and CUDAGraphs for that quantization path, so eager remains
+    effectively required unless a lower-level vLLM/TorchAO change removes that
+    forced eager behavior.
 - `llama.cpp-hip-gfx1151` uses `aur/llama.cpp-hip` as the authoritative
   baseline reference.
 - `llama.cpp-vulkan-gfx1151` currently uses `aur/llama.cpp-vulkan-bin` as the

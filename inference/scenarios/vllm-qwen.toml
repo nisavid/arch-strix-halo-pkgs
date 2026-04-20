@@ -25,6 +25,35 @@ kind = "stdout.contains"
 value = "basic_ok"
 
 [[scenario]]
+id = "vllm.qwen3_5.0_8b.text.compiled"
+summary = "Qwen3.5 0.8B text-only offline smoke without enforce_eager"
+tags = ["smoke", "qwen", "qwen3.5", "hybrid", "gdn", "compiled-probe", "exploratory"]
+
+[scenario.given]
+engine = "vllm"
+model = "Qwen/Qwen3.5-0.8B"
+tool = "qwen_text_smoke"
+
+[scenario.when]
+argv = ["--execution-mode", "compiled"]
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "config_model_type qwen3_5"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "generation_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "basic_ok"
+
+[[scenario]]
 id = "vllm.qwen3_6.35b-a3b.text.unquantized-moe-no-aiter-control"
 summary = "Qwen3.6 35B-A3B unquantized MoE control with AITER disabled"
 tags = ["smoke", "qwen", "qwen3.6", "moe", "unquantized", "control", "exploratory"]
