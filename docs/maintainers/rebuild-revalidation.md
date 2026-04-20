@@ -67,6 +67,21 @@ summary. For patch revalidation, start from the actual applied patch metadata:
   mark the item `retired`, remove the patch in a separate change, and update
   the accepted docs.
 
+## Advisory References
+
+Use Hugging Face model cards, vLLM model usage recipes, vLLM issues and PRs,
+vLLM commit history, release notes, and current vLLM docs as pointers for what
+to inspect or try during runtime revalidation. Especially relevant vLLM docs
+include:
+
+- <https://docs.vllm.ai/en/latest/getting_started/installation/gpu/>
+- <https://docs.vllm.ai/en/latest/features/>
+
+Treat online reports and documentation as advisory until a local run validates
+the explanation or instruction against this TheRock/AITER stack. Older ROCm
+material can still provide useful search terms, but do not promote it as an
+accepted rationale unless the rebuilt local stack reproduces the behavior.
+
 ## Work Plan Expansion Rules
 
 Before executing a revalidation item, expand the ledger row into a concrete
@@ -104,6 +119,7 @@ comprehensively responsible for the same failure condition.
 | pending | Triton Inductor metadata rendering | `python-triton-gfx1151` generated `AttrsDescriptor.__repr__` inline edit | Package-local docs record that missing `AttrsDescriptor.__repr__` made torch.compile/Inductor generate syntactically invalid Python and forced `--enforce-eager` as a workaround. | Verify the generated edit remains in the package, run the package-local guard, and re-run a compiled vLLM probe that exercises Inductor without relying on `--enforce-eager`. | `packages/python-triton-gfx1151/README.md` and `docs/maintainers/current-state.md` |
 | pending | Gemma 4 compiled E2B path | `vllm.gemma4.e2b.text.compiled` and related compiled probes | The compiled+CUDAGraph path initialized but generated corrupted text; an earlier no-CUDAGraph compiled probe faulted during warmup. | Re-run the compiled E2B probe after the rebuilt stack is installed and keep it exploratory unless it produces the expected output. Use the Triton `AttrsDescriptor.__repr__` guard as part of the compiled-lane retained evidence. | `docs/maintainers/current-state.md` |
 | pending | Gemma 4 multimodal warmup | Gemma 4 multimodal server scenarios and 26B-A4B text-only limits | Multimodal warmup could trigger ROCm GPU memory faults when text-only limits were incomplete or when E2B server initialized encoder caches. | Re-run representative multimodal exploratory scenarios and confirm promoted text-only lanes still zero `image`, `audio`, and `video`. | `docs/maintainers/current-state.md` |
+| pending | Qwen3.6 unquantized control | `vllm.qwen3_6.35b-a3b.text.unquantized-moe-no-aiter-control` | The FP8 Qwen3.6 probes are blocked, but no current unquantized same-family control has been promoted after the self-hosted rebuild. | Run the no-AITER unquantized control against the rebuilt installed stack and record the model binding, config markers, TRITON unquantized-MoE backend marker, generation result, and duration. Compare both FP8 rows against this control before classifying a Qwen3.6 failure as FP8-specific. | `docs/maintainers/current-state.md` |
 | pending | Qwen3.6 blocked probe | `vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-no-aiter-blocked` | The non-AITER FP8 MoE path reported no backend support for gfx1151. | Run the blocked probe after the rebuilt stack is installed and confirm the same backend-selection failure class. | `docs/maintainers/current-state.md` |
 | pending | Qwen3.6 forced AITER probe | `vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-aiter-blocked` | The forced AITER path reached `module_quant` and failed on `mfma_adaptor`. | Run the blocked probe after the rebuilt stack is installed and confirm the same or updated AITER feature-gap signature. | `docs/maintainers/current-state.md` |
 | pending | Qwen3.5 smoke and sampler | `vllm.qwen3_5.0_8b.text.basic` and the sampler fallback finding | Qwen3.5 0.8B failed after model forward on the Triton top-k/top-p sampler, then passed with the PyTorch fallback patch before the current native rebuild finished. | Re-run `vllm.qwen3_5.0_8b.text.basic` and any focused sampler repro needed to confirm the failure remains fixed. | `docs/maintainers/current-state.md` |

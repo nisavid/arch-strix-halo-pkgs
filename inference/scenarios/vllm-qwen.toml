@@ -25,6 +25,71 @@ kind = "stdout.contains"
 value = "basic_ok"
 
 [[scenario]]
+id = "vllm.qwen3_6.35b-a3b.text.unquantized-moe-no-aiter-control"
+summary = "Qwen3.6 35B-A3B unquantized MoE control with AITER disabled"
+tags = ["smoke", "qwen", "qwen3.6", "moe", "unquantized", "control", "exploratory"]
+
+[scenario.given]
+engine = "vllm"
+model = "Qwen/Qwen3.6-35B-A3B"
+tool = "qwen_text_smoke"
+
+[scenario.when]
+argv = ["--max-num-batched-tokens", "32"]
+
+[scenario.when.env]
+VLLM_ROCM_USE_AITER = "0"
+VLLM_ROCM_USE_AITER_MOE = "0"
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "config_quantization_config_present false"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "config_model_type qwen3_5_moe"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "text_config_model_type qwen3_5_moe_text"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "config_num_hidden_layers 40"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "config_num_experts 256"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "config_num_experts_per_tok 8"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "config_layer_types full_attention:10,linear_attention:30"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "llm_init_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "generation_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "basic_ok"
+
+[[scenario.then.assert]]
+kind = "output.contains"
+value = "Using TRITON backend for Unquantized MoE"
+
+[[scenario]]
 id = "vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-no-aiter-blocked"
 summary = "Qwen3.6 35B-A3B FP8 MoE backend-selection probe with AITER disabled"
 tags = ["qwen", "qwen3.6", "moe", "fp8", "kernel-probe", "exploratory", "blocked"]
@@ -48,6 +113,10 @@ value = 1
 [[scenario.then.assert]]
 kind = "stdout.contains"
 value = "config_model_type qwen3_5_moe"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "config_quantization_config_present true"
 
 [[scenario.then.assert]]
 kind = "output.contains"
@@ -77,6 +146,10 @@ value = 1
 [[scenario.then.assert]]
 kind = "stdout.contains"
 value = "config_model_type qwen3_5_moe"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "config_quantization_config_present true"
 
 [[scenario.then.assert]]
 kind = "stdout.contains"

@@ -62,7 +62,9 @@ def print_config_summary(config: Any) -> None:
         print("config_layer_types", summary)
 
     quantization_config = getattr(config, "quantization_config", None)
-    if quantization_config:
+    quantization_config_present = quantization_config is not None
+    print("config_quantization_config_present", str(quantization_config_present).lower())
+    if quantization_config_present:
         print("config_quantization_config", repr(quantization_config))
 
 

@@ -32,6 +32,7 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     assert "vllm.torchao.tiny.generate" in ids
     assert "vllm.gemma4.e2b.torchao.real-model" in ids
     assert "vllm.qwen3_5.0_8b.text.basic" in ids
+    assert "vllm.qwen3_6.35b-a3b.text.unquantized-moe-no-aiter-control" in ids
     assert "vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-no-aiter-blocked" in ids
     assert "vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-aiter-blocked" in ids
     assert "llama.cpp.hip.help" in ids
@@ -48,6 +49,9 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     assert "qwen3.5" in tags_by_id["vllm.qwen3_5.0_8b.text.basic"]
     assert "qwen3.6" in tags_by_id[
         "vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-no-aiter-blocked"
+    ]
+    assert "control" in tags_by_id[
+        "vllm.qwen3_6.35b-a3b.text.unquantized-moe-no-aiter-control"
     ]
     assert "moe" in tags_by_id[
         "vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-aiter-blocked"
@@ -80,6 +84,69 @@ def test_qwen3_6_fp8_moe_probes_record_backend_modes():
         "VLLM_ROCM_USE_AITER": "1",
         "VLLM_ROCM_USE_AITER_MOE": "1",
     }
+    assert {
+        "kind": "stdout.contains",
+        "value": "config_quantization_config_present true",
+    } in no_aiter.definition["then"]["assert"]
+    assert {
+        "kind": "stdout.contains",
+        "value": "config_quantization_config_present true",
+    } in forced_aiter.definition["then"]["assert"]
+
+
+def test_qwen3_6_unquantized_moe_control_records_validation_contract():
+    scenarios = load_scenarios(REPO_ROOT / "inference/scenarios")
+    by_id = {scenario.id: scenario for scenario in scenarios}
+
+    control = by_id[
+        "vllm.qwen3_6.35b-a3b.text.unquantized-moe-no-aiter-control"
+    ]
+
+    assert control.model == "Qwen/Qwen3.6-35B-A3B"
+    assert set(control.tags) >= {
+        "smoke",
+        "qwen",
+        "qwen3.6",
+        "moe",
+        "unquantized",
+        "control",
+        "exploratory",
+    }
+    assert control.definition["given"]["tool"] == "qwen_text_smoke"
+    assert control.definition["when"]["argv"] == ["--max-num-batched-tokens", "32"]
+    assert control.definition["when"]["env"] == {
+        "VLLM_ROCM_USE_AITER": "0",
+        "VLLM_ROCM_USE_AITER_MOE": "0",
+    }
+
+    assertions = control.definition["then"]["assert"]
+    for expected in (
+        {"kind": "exit_code.equals", "value": 0},
+        {
+            "kind": "stdout.contains",
+            "value": "config_quantization_config_present false",
+        },
+        {"kind": "stdout.contains", "value": "config_model_type qwen3_5_moe"},
+        {
+            "kind": "stdout.contains",
+            "value": "text_config_model_type qwen3_5_moe_text",
+        },
+        {"kind": "stdout.contains", "value": "config_num_hidden_layers 40"},
+        {"kind": "stdout.contains", "value": "config_num_experts 256"},
+        {"kind": "stdout.contains", "value": "config_num_experts_per_tok 8"},
+        {
+            "kind": "stdout.contains",
+            "value": "config_layer_types full_attention:10,linear_attention:30",
+        },
+        {"kind": "stdout.contains", "value": "llm_init_ok"},
+        {"kind": "stdout.contains", "value": "generation_ok"},
+        {"kind": "stdout.contains", "value": "basic_ok"},
+        {
+            "kind": "output.contains",
+            "value": "Using TRITON backend for Unquantized MoE",
+        },
+    ):
+        assert expected in assertions
 
 
 def test_lemonade_help_smokes_assert_current_help_markers():

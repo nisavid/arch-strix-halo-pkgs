@@ -31,16 +31,20 @@ snapshots relevant to this branch are:
   `/var/cache/hf/hub/models--google--gemma-4-31B-it/snapshots/439edf5652646a0d1bd8b46bfdc1d3645761a445`
 - `Qwen/Qwen3.5-0.8B` at
   `/var/cache/hf/hub/models--Qwen--Qwen3.5-0.8B/snapshots/2fc06364715b967f1860aea9cf38778875588b17`
+- `Qwen/Qwen3.6-35B-A3B` at
+  `/var/cache/hf/hub/models--Qwen--Qwen3.6-35B-A3B/snapshots/7da1103448ba36029c34ce1a9a741dfe93ee0c50`
 - `Qwen/Qwen3.6-35B-A3B-FP8` at
   `/var/cache/hf/hub/models--Qwen--Qwen3.6-35B-A3B-FP8/snapshots/61a5771f218894aaacf97551e24a25b866750fc2`
 
 Use `Qwen/Qwen3.6-35B-A3B-FP8` as the main Qwen MoE/shared-expert target for
 this dev arc; it replaces the earlier Qwen3.5 122B-A10B testing and usage
-target. Its local config advertises `Qwen3_5MoeForConditionalGeneration` /
-`qwen3_5_moe`, so the maintained Qwen3.5/GDN package carry is still relevant
-to this lane. This remains a target and blocked-probe lane, not an accepted
-passing smoke lane, until the rebuilt native stack reproduces or retires the
-expected Qwen3.6 probe outcomes in the revalidation ledger.
+target. Use `Qwen/Qwen3.6-35B-A3B` as the unquantized no-AITER control before
+classifying FP8-specific failures. Both local Qwen3.6 configs advertise
+`Qwen3_5MoeForConditionalGeneration` / `qwen3_5_moe`, so the maintained
+Qwen3.5/GDN package carry is still relevant to this lane. The FP8 model
+remains a target and blocked-probe lane, not an accepted passing smoke lane,
+until the rebuilt native stack reproduces or retires the expected Qwen3.6
+probe outcomes in the revalidation ledger.
 
 Installed and validated at least once on the live host:
 

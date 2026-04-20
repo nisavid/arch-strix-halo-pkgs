@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import sys
+import pytest
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -131,30 +132,46 @@ def test_vllm_adapter_builds_torchao_real_model_command(tmp_path: Path):
     ]
 
 
-def test_vllm_adapter_builds_qwen_text_smoke_command(tmp_path: Path):
+@pytest.mark.parametrize(
+    ("scenario_id", "model", "argv"),
+    [
+        (
+            "vllm.qwen3_5.0_8b.text.basic",
+            "Qwen/Qwen3.5-0.8B",
+            ["--max-model-len", "128"],
+        ),
+        (
+            "vllm.qwen3_6.35b-a3b.text.unquantized-moe-no-aiter-control",
+            "Qwen/Qwen3.6-35B-A3B",
+            ["--max-num-batched-tokens", "32"],
+        ),
+    ],
+)
+def test_vllm_adapter_builds_qwen_text_smoke_command(
+    tmp_path: Path, scenario_id: str, model: str, argv: list[str]
+):
     plan = build_execution_plan(
         scenario(
             {
-                "id": "vllm.qwen3_5.0_8b.text.basic",
+                "id": scenario_id,
                 "given": {
                     "engine": "vllm",
-                    "model": "Qwen/Qwen3.5-0.8B",
+                    "model": model,
                     "tool": "qwen_text_smoke",
                 },
-                "when": {"argv": ["--max-model-len", "128"]},
+                "when": {"argv": argv},
             }
         ),
         repo_root=REPO_ROOT,
         scenario_run_root=tmp_path,
-        model_bindings={"Qwen/Qwen3.5-0.8B": "/models/Qwen/Qwen3.5-0.8B"},
+        model_bindings={model: f"/models/{model}"},
     )
 
     assert plan.command == [
         sys.executable,
         str(REPO_ROOT / "tools/qwen_text_smoke.py"),
-        "/models/Qwen/Qwen3.5-0.8B",
-        "--max-model-len",
-        "128",
+        f"/models/{model}",
+        *argv,
     ]
     assert plan.server_log_path is None
 
