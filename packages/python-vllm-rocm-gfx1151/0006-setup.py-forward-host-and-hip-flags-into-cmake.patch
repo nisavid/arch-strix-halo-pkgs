@@ -1,11 +1,11 @@
-diff --git a/setup.py b/setup.py
-index 0bbf165..94deff4 100644
---- a/setup.py
-+++ b/setup.py
+diff --git i/setup.py w/setup.py
+index 7499770..77e1649 100644
+--- i/setup.py
++++ w/setup.py
 @@ -273,6 +273,19 @@ class cmake_build_ext(build_ext):
          elif _is_hip() and ROCM_HOME is not None:
              cmake_args += [f"-DROCM_PATH={ROCM_HOME}"]
- 
+
 +        # setuptools environment flags are not forwarded into the ROCm/HIP
 +        # CMake lane automatically. Pass them through explicitly so distro
 +        # sanitization flags (prefix maps) and host tuning flags reach both the

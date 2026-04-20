@@ -1,6 +1,39 @@
-diff --git a/vllm/model_executor/layers/quantization/torchao.py b/vllm/model_executor/layers/quantization/torchao.py
---- a/vllm/model_executor/layers/quantization/torchao.py
-+++ b/vllm/model_executor/layers/quantization/torchao.py
+diff --git i/vllm/model_executor/layers/quantization/__init__.py w/vllm/model_executor/layers/quantization/__init__.py
+index 9aceb3b..65f32a8 100644
+--- i/vllm/model_executor/layers/quantization/__init__.py
++++ w/vllm/model_executor/layers/quantization/__init__.py
+@@ -130,8 +130,6 @@ def get_quantization_config(quantization: str) -> type[QuantizationConfig]:
+     from .mxfp4 import Mxfp4Config
+     from .mxfp8 import Mxfp8Config
+     from .petit import PetitNvFp4Config
+-    from .torchao import TorchAOConfig
+-
+     method_to_config: dict[str, type[QuantizationConfig]] = {
+         "awq": AWQConfig,
+         "fp8": Fp8Config,
+@@ -150,7 +148,6 @@ def get_quantization_config(quantization: str) -> type[QuantizationConfig]:
+         "experts_int8": ExpertsInt8Config,
+         "quark": QuarkConfig,
+         "moe_wna16": MoeWNA16Config,
+-        "torchao": TorchAOConfig,
+         "auto-round": INCConfig,
+         "inc": INCConfig,
+         "mxfp4": Mxfp4Config,
+@@ -158,6 +155,10 @@ def get_quantization_config(quantization: str) -> type[QuantizationConfig]:
+         "petit_nvfp4": PetitNvFp4Config,
+         "cpu_awq": CPUAWQConfig,
+     }
++    if quantization == "torchao":
++        from .torchao import TorchAOConfig
++
++        method_to_config["torchao"] = TorchAOConfig
+     # Update the `method_to_config` with customized quantization methods.
+     method_to_config.update(_CUSTOMIZED_METHOD_TO_QUANT_CONFIG)
+
+diff --git i/vllm/model_executor/layers/quantization/torchao.py w/vllm/model_executor/layers/quantization/torchao.py
+index 3c6fdf0..07315a1 100644
+--- i/vllm/model_executor/layers/quantization/torchao.py
++++ w/vllm/model_executor/layers/quantization/torchao.py
 @@ -1,15 +1,12 @@
  # SPDX-License-Identifier: Apache-2.0
  # SPDX-FileCopyrightText: Copyright contributors to the vLLM project
@@ -9,29 +42,28 @@ diff --git a/vllm/model_executor/layers/quantization/torchao.py b/vllm/model_exe
  import types
 -from importlib.util import find_spec
  from typing import Any
- 
+
  import regex as re
  import torch
  import torch.nn.functional as F
 -from packaging import version
  from torch.nn.parameter import Parameter
- 
+
  from vllm.logger import init_logger
-@@ -22,6 +19,9 @@
- from vllm.model_executor.layers.quantization.base_config import (
+@@ -23,6 +20,9 @@ from vllm.model_executor.layers.quantization.base_config import (
      QuantizationConfig,
      QuantizeMethodBase,
-+)
+ )
 +from vllm.model_executor.layers.quantization.torchao_utils import (
 +    torchao_version_at_least,
- )
++)
  from vllm.model_executor.utils import set_weight_attrs
- 
-@@ -60,17 +60,6 @@
-         if not hasattr(param, attr_name):
+
+ logger = init_logger(__name__)
+@@ -61,17 +61,6 @@ def _restore_weight_attrs(param, recorded_weight_attr):
              setattr(param, attr_name, _bond_method_to_cls(attr, param))
- 
--
+
+
 -def torchao_version_at_least(torchao_version: str) -> bool:
 -    if find_spec("torchao"):
 -        try:
@@ -42,12 +74,14 @@ diff --git a/vllm/model_executor/layers/quantization/torchao.py b/vllm/model_exe
 -        except (ImportError, version.InvalidVersion):
 -            return False
 -    return False
- 
- 
+-
+
  def should_skip(prefix: str, skip_modules: list[str]) -> bool:
-diff --git a/vllm/model_executor/layers/quantization/torchao_utils.py b/vllm/model_executor/layers/quantization/torchao_utils.py
+     """
+diff --git i/vllm/model_executor/layers/quantization/torchao_utils.py w/vllm/model_executor/layers/quantization/torchao_utils.py
+new file mode 100644
 --- /dev/null
-+++ b/vllm/model_executor/layers/quantization/torchao_utils.py
++++ w/vllm/model_executor/layers/quantization/torchao_utils.py
 @@ -0,0 +1,19 @@
 +# SPDX-License-Identifier: Apache-2.0
 +# SPDX-FileCopyrightText: Copyright contributors to the vLLM project
@@ -68,10 +102,11 @@ diff --git a/vllm/model_executor/layers/quantization/torchao_utils.py b/vllm/mod
 +        except (ImportError, version.InvalidVersion):
 +            return False
 +    return False
-diff --git a/vllm/model_executor/model_loader/default_loader.py b/vllm/model_executor/model_loader/default_loader.py
---- a/vllm/model_executor/model_loader/default_loader.py
-+++ b/vllm/model_executor/model_loader/default_loader.py
-@@ -14,7 +14,9 @@
+diff --git i/vllm/model_executor/model_loader/default_loader.py w/vllm/model_executor/model_loader/default_loader.py
+index 5c9c97f..f13daab 100644
+--- i/vllm/model_executor/model_loader/default_loader.py
++++ w/vllm/model_executor/model_loader/default_loader.py
+@@ -14,7 +14,9 @@ from transformers.utils import SAFE_WEIGHTS_INDEX_NAME
  from vllm.config import ModelConfig
  from vllm.config.load import LoadConfig
  from vllm.logger import init_logger
@@ -82,46 +117,17 @@ diff --git a/vllm/model_executor/model_loader/default_loader.py b/vllm/model_exe
  from vllm.model_executor.model_loader.base_loader import BaseModelLoader
  from vllm.model_executor.model_loader.ep_weight_filter import (
      compute_local_expert_ids,
-diff --git a/vllm/model_executor/model_loader/weight_utils.py b/vllm/model_executor/model_loader/weight_utils.py
---- a/vllm/model_executor/model_loader/weight_utils.py
-+++ b/vllm/model_executor/model_loader/weight_utils.py
-@@ -62,6 +62,8 @@
+diff --git i/vllm/model_executor/model_loader/weight_utils.py w/vllm/model_executor/model_loader/weight_utils.py
+index 37023d3..a0851e2 100644
+--- i/vllm/model_executor/model_loader/weight_utils.py
++++ w/vllm/model_executor/model_loader/weight_utils.py
+@@ -62,7 +62,9 @@ except ImportError:
      SafeTensorsFileLoader = fastsafetensors.placeholder_attr("SafeTensorsFileLoader")
      SingleGroup = fastsafetensors.placeholder_attr("SingleGroup")
- 
+
 -from vllm.model_executor.layers.quantization.torchao import torchao_version_at_least
 +from vllm.model_executor.layers.quantization.torchao_utils import (
 +    torchao_version_at_least,
 +)
- 
+
  logger = init_logger(__name__)
-diff --git a/vllm/model_executor/layers/quantization/__init__.py b/vllm/model_executor/layers/quantization/__init__.py
---- a/vllm/model_executor/layers/quantization/__init__.py
-+++ b/vllm/model_executor/layers/quantization/__init__.py
-@@ -130,8 +130,6 @@
-     from .mxfp4 import Mxfp4Config
-     from .mxfp8 import Mxfp8Config
-     from .petit import PetitNvFp4Config
--    from .torchao import TorchAOConfig
--
-     method_to_config: dict[str, type[QuantizationConfig]] = {
-         "awq": AWQConfig,
-         "fp8": Fp8Config,
-@@ -150,7 +148,6 @@
-         "experts_int8": ExpertsInt8Config,
-         "quark": QuarkConfig,
-         "moe_wna16": MoeWNA16Config,
--        "torchao": TorchAOConfig,
-         "auto-round": INCConfig,
-         "inc": INCConfig,
-         "mxfp4": Mxfp4Config,
-@@ -158,6 +155,10 @@
-         "petit_nvfp4": PetitNvFp4Config,
-         "cpu_awq": CPUAWQConfig,
-     }
-+    if quantization == "torchao":
-+        from .torchao import TorchAOConfig
-+
-+        method_to_config["torchao"] = TorchAOConfig
-     # Update the `method_to_config` with customized quantization methods.
-     method_to_config.update(_CUSTOMIZED_METHOD_TO_QUANT_CONFIG)

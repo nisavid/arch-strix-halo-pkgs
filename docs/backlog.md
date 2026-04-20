@@ -82,7 +82,7 @@
     operands, hybrid block-size realignment after ROCm platform updates, and
     hybrid full-attention fallback away from AITER attention
   - the imported GDN warmup note's `qwen3_next.py` path was stale for vLLM
-    0.19.0; the maintained patch applies that guard at
+    0.19.1; the maintained patch applies that guard at
     `vllm/model_executor/layers/mamba/gdn_linear_attn.py`
   - AITER-side unified attention already uses a safer
     `min(64, triton.next_power_of_2(block_size))` tile expression in the
@@ -91,6 +91,16 @@
     `tools/amerge build -y python-vllm-rocm-gfx1151` produced pkgrel `-26`,
     and the package-local vLLM test suite passed against the built `pkg/`
     tree
+  - done for the vLLM 0.19.1 source refresh: the package now tracks upstream
+    `v0.19.1`, the local patch series was refreshed against the final tag, and
+    `tools/amerge build -y python-vllm-rocm-gfx1151` produced
+    `python-vllm-rocm-gfx1151-0.19.1.r8.d20260317.gad42886-1-x86_64.pkg.tar.zst`;
+    the tracked repo/package pytest set passed against the built `pkg/` tree
+  - done for installed-host smoke coverage after vLLM
+    `0.19.1.r8.d20260317.gad42886-1` was installed: the tracked Gemma 4
+    26B-A4B text and server scenarios both passed, the Qwen3.5 sampler-fix
+    smoke passed, and both Qwen3.6 FP8 MoE blocked probes passed by asserting
+    their expected failure modes
   - done for installed-host smoke coverage after pkgrel `-26` was installed:
     `vllm.gemma4.26b-a4b.text.basic` and
     `vllm.gemma4.26b-a4b.server.basic` both passed against

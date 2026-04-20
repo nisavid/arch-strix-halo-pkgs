@@ -1,11 +1,11 @@
 diff --git i/vllm/v1/sample/ops/topk_topp_sampler.py w/vllm/v1/sample/ops/topk_topp_sampler.py
-index 53d6af6..3a482a7 100644
+index 33f7090..22309b3 100644
 --- i/vllm/v1/sample/ops/topk_topp_sampler.py
 +++ w/vllm/v1/sample/ops/topk_topp_sampler.py
-@@ -249,6 +249,14 @@ def apply_top_k_top_p(
+@@ -248,6 +248,14 @@ def apply_top_k_top_p(
      if p is None and k is None:
          return logits
- 
+
 +    if current_platform.is_rocm():
 +        # Use PyTorch top-k/top-p filtering on ROCm. The Triton filter path
 +        # can fault on gfx1151 for large Qwen3.5-family vocabularies; a
@@ -16,4 +16,3 @@ index 53d6af6..3a482a7 100644
 +
      if HAS_TRITON and logits.shape[0] >= 8:
          return apply_top_k_top_p_triton(logits, k, p)
- 

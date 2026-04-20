@@ -1,31 +1,22 @@
---- a/vllm/platforms/rocm.py
-+++ b/vllm/platforms/rocm.py
-@@ -131,7 +131,7 @@ def _get_gcn_arch() -> str:
-         return _query_gcn_arch_from_amdsmi()
-     except Exception as e:
-         logger.debug("Failed to get GCN arch via amdsmi: %s", e)
--        logger.warning_once(
-+        logger.warning(
-             "Failed to get GCN arch via amdsmi, falling back to torch.cuda. "
-             "This will initialize CUDA and may cause "
-             "issues if CUDA_VISIBLE_DEVICES is not set yet."
---- a/vllm/entrypoints/sagemaker/api_router.py
-+++ b/vllm/entrypoints/sagemaker/api_router.py
-@@ -5,7 +5,6 @@ import json
+diff --git i/vllm/entrypoints/sagemaker/api_router.py w/vllm/entrypoints/sagemaker/api_router.py
+index e8c48d1..bf6a115 100644
+--- i/vllm/entrypoints/sagemaker/api_router.py
++++ w/vllm/entrypoints/sagemaker/api_router.py
+@@ -5,7 +5,6 @@ from collections.abc import Awaitable, Callable
  from http import HTTPStatus
  from typing import Any
- 
+
 -import model_hosting_container_standards.sagemaker as sagemaker_standards
  import pydantic
  from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request
  from fastapi.responses import JSONResponse, Response
-@@ -18,8 +17,16 @@ from vllm.config import ModelConfig
+@@ -18,8 +17,16 @@ from vllm.entrypoints.pooling import enable_scoring_api
  from vllm.entrypoints.pooling.base.serving import PoolingServing
  from vllm.entrypoints.serve.instrumentator.basic import base
  from vllm.entrypoints.serve.instrumentator.health import health
 +from vllm.logger import init_logger
  from vllm.tasks import POOLING_TASKS, SupportedTask
- 
+
 +logger = init_logger(__name__)
 +
 +try:
@@ -48,36 +39,38 @@
 +        return
 +
      router = APIRouter()
- 
+
      # NOTE: Construct the TypeAdapters only once
 @@ -170,4 +184,6 @@ def attach_router(
- 
- 
+
+
  def sagemaker_standards_bootstrap(app: FastAPI) -> FastAPI:
 +    if sagemaker_standards is None:
 +        return app
      return sagemaker_standards.bootstrap(app)
---- a/vllm/entrypoints/serve/lora/api_router.py
-+++ b/vllm/entrypoints/serve/lora/api_router.py
+diff --git i/vllm/entrypoints/serve/lora/api_router.py w/vllm/entrypoints/serve/lora/api_router.py
+index 057bf5c..fe04bab 100644
+--- i/vllm/entrypoints/serve/lora/api_router.py
++++ w/vllm/entrypoints/serve/lora/api_router.py
 @@ -1,8 +1,6 @@
  # SPDX-License-Identifier: Apache-2.0
  # SPDX-FileCopyrightText: Copyright contributors to the vLLM project
- 
+
 -
 -import model_hosting_container_standards.sagemaker as sagemaker_standards
  from fastapi import APIRouter, Depends, FastAPI, Request
  from fastapi.responses import JSONResponse, Response
- 
+
 @@ -22,11 +20,22 @@ from vllm.logger import init_logger
  logger = init_logger(__name__)
  router = APIRouter()
- 
+
 +try:
 +    import model_hosting_container_standards.sagemaker as sagemaker_standards
 +except ModuleNotFoundError:
 +    sagemaker_standards = None
 +
- 
+
  def attach_router(app: FastAPI):
      if not envs.VLLM_ALLOW_RUNTIME_LORA_UPDATING:
          """If LoRA dynamic loading & unloading is not enabled, do nothing."""
@@ -91,3 +84,16 @@
      logger.warning(
          "LoRA dynamic loading & unloading is enabled in the API server. "
          "This should ONLY be used for local development!"
+diff --git i/vllm/platforms/rocm.py w/vllm/platforms/rocm.py
+index d3836a4..3949a20 100644
+--- i/vllm/platforms/rocm.py
++++ w/vllm/platforms/rocm.py
+@@ -131,7 +131,7 @@ def _get_gcn_arch() -> str:
+         return _query_gcn_arch_from_amdsmi()
+     except Exception as e:
+         logger.debug("Failed to get GCN arch via amdsmi: %s", e)
+-        logger.warning_once(
++        logger.warning(
+             "Failed to get GCN arch via amdsmi, falling back to torch.cuda. "
+             "This will initialize CUDA and may cause "
+             "issues if CUDA_VISIBLE_DEVICES is not set yet."

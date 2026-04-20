@@ -1,6 +1,6 @@
 # Current State
 
-Status as of 2026-04-19.
+Status as of 2026-04-20.
 
 ## Live Host State
 
@@ -42,8 +42,16 @@ Installed and validated at least once on the live host:
 
 Installed Qwen closeout state for this branch:
 
-- `python-vllm-rocm-gfx1151` pkgrel `-27` and
-  `python-amd-aiter-gfx1151` pkgrel `-8` are installed on the live host.
+- `python-vllm-rocm-gfx1151 0.19.1.r8.d20260317.gad42886-1` and
+  `python-amd-aiter-gfx1151 0.1.0.r8.d20260317.gad42886-8` are installed on
+  the live host.
+- After the vLLM 0.19.1 upgrade was installed, the tracked installed-host
+  validation run passed all five selected outcomes: Gemma 4 26B-A4B text smoke,
+  Gemma 4 26B-A4B server smoke, Qwen3.5 sampler-fix smoke, Qwen3.6 non-AITER
+  FP8 MoE backend-selection blocked probe, and Qwen3.6 forced-AITER
+  `module_quant`/`mfma_adaptor` blocked probe. The run durations were
+  126.656176, 277.153321, 39.836885, 23.311548, and 63.515031 seconds,
+  respectively.
 - The 2026-04-19 installed-host Qwen validation run passed all three expected
   outcomes: Qwen3.5 sampler-fix smoke passed, Qwen3.6 non-AITER FP8 MoE
   backend-selection blocked probe passed, and Qwen3.6 forced-AITER
@@ -131,11 +139,18 @@ The following smoke checks have already passed on the reference host:
   did not ship `transformers.models.gemma4`; the repo currently tracks PyPI
   `transformers 5.5.4`, which is the first verified published lane to include
   that module.
-- `python-vllm-rocm-gfx1151` uses upstream `v0.19.0` tarball plus the local
+- `python-vllm-rocm-gfx1151` uses upstream `v0.19.1` tarball plus the local
   Python-3.14 compatibility delta and now depends on the local
   `python-openai-harmony-gfx1151`, `python-transformers-gfx1151`, and
   `python-mistral-common-gfx1151` packages for Harmony and Gemma-4-capable
   runtime closure.
+  - The v0.19.1 refresh replaced the v0.19.0 tarball, reset pkgrel to `-1`,
+    and produced
+    `python-vllm-rocm-gfx1151-0.19.1.r8.d20260317.gad42886-1-x86_64.pkg.tar.zst`.
+    The upstream tarball diff from v0.19.0 to v0.19.1 was 82 files changed
+    with 5061 insertions and 269 deletions, mostly Gemma 4 model/tooling
+    additions plus dependency metadata updates for `transformers` and
+    `compressed-tensors`. The refreshed local patch series applies cleanly.
 - `python-amd-aiter-gfx1151` now carries an installed-system JIT runtime fix
   so the compiled HIP helper module can be imported from the user JIT cache
   under `~/.aiter/jit/` without requiring a manually exported `AITER_JIT_DIR`.
@@ -428,7 +443,7 @@ The following smoke checks have already passed on the reference host:
     autotune grids, float32 GDN exponent operands, GDN warmup at `T=64`, hybrid
     block-size realignment after ROCm platform updates, and hybrid
     full-attention fallback away from AITER attention
-  - the imported warmup note's `qwen3_next.py` path is stale for vLLM 0.19.0;
+  - the imported warmup note's `qwen3_next.py` path is stale for vLLM 0.19.1;
     the maintained patch applies the guard in
     `vllm/model_executor/layers/mamba/gdn_linear_attn.py`
   - no new `python-amd-aiter-gfx1151` patch is currently carried for the
@@ -440,6 +455,17 @@ The following smoke checks have already passed on the reference host:
     `python-vllm-rocm-gfx1151-0.19.0.r8.d20260317.gad42886-26-x86_64.pkg.tar.zst`;
     `pytest packages/python-vllm-rocm-gfx1151/tests -q` then passed against
     the freshly populated `pkg/` tree
+  - after the v0.19.1 upstream refresh,
+    `tools/amerge build -y python-vllm-rocm-gfx1151` completed for pkgrel
+    `0.19.1.r8.d20260317.gad42886-1`, producing
+    `python-vllm-rocm-gfx1151-0.19.1.r8.d20260317.gad42886-1-x86_64.pkg.tar.zst`;
+    `pytest packages/python-vllm-rocm-gfx1151/tests -q` and
+    `pytest tests packages/python-vllm-rocm-gfx1151/tests -q` passed against
+    the freshly populated `pkg/` tree
+  - after pkgrel `0.19.1.r8.d20260317.gad42886-1` was installed, the installed
+    Gemma 4 26B-A4B text/server lanes and Qwen3.5/Qwen3.6 validation lanes
+    passed with the same expected outcomes as the prior vLLM 0.19.0 package
+    lane
   - after pkgrel `-26` was installed, the existing Gemma 4 26B-A4B
     installed-host lane still passed with the package:
     `vllm.gemma4.26b-a4b.text.basic` passed in `195.710255` seconds, and

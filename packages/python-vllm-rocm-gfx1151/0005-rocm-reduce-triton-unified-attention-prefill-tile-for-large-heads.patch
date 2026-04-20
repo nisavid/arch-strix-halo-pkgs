@@ -1,11 +1,11 @@
---- a/vllm/v1/attention/ops/triton_unified_attention.py
-+++ b/vllm/v1/attention/ops/triton_unified_attention.py
-@@ -874,8 +874,19 @@ def _get_tile_size(
-     if _is_gemma3_attention(head_size, sliding_window):
+diff --git i/vllm/v1/attention/ops/triton_unified_attention.py w/vllm/v1/attention/ops/triton_unified_attention.py
+index ca5d0e3..08eaa11 100644
+--- i/vllm/v1/attention/ops/triton_unified_attention.py
++++ w/vllm/v1/attention/ops/triton_unified_attention.py
+@@ -875,6 +875,17 @@ def _get_tile_size(
          # Gemma3: use 32 for decode (default is 16)
          return 32
--
-+
+
 +    if (
 +        current_platform.is_rocm()
 +        and is_prefill
@@ -20,4 +20,3 @@
      # Default behavior
      if is_prefill:
          return 32
-     return 16 if element_size >= 2 else 32

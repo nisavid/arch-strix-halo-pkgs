@@ -26,7 +26,7 @@ system.
 ## vLLM
 
 - [Python 3.14 compatibility on the packaged stable lane](../packages/python-vllm-rocm-gfx1151/0001-python-3.14-version-gates.patch)
-  - Extends the packaged `v0.19.0` lane to accept Python `3.14` by relaxing
+  - Extends the packaged `v0.19.1` lane to accept Python `3.14` by relaxing
     the Python upper bound and extending the hard-coded CMake version gate.
   - This is a packaging-facing compatibility patch, not a Strix Halo–specific
     optimization, so it is the clearest current upstreaming candidate in the

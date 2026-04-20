@@ -5,8 +5,8 @@
 # Package recipe key: vllm
 
 pkgname=python-vllm-rocm-gfx1151
-pkgver=0.19.0.r8.d20260317.gad42886
-pkgrel=27
+pkgver=0.19.1.r8.d20260317.gad42886
+pkgrel=1
 pkgdesc='High-throughput and memory-efficient inference engine for LLMs with ROCm, rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://github.com/vllm-project/vllm
@@ -18,7 +18,7 @@ options=('!lto')
 provides=(python-vllm-rocm python-vllm)
 conflicts=(python-vllm-rocm python-vllm)
 replaces=()
-source=(https://github.com/vllm-project/vllm/archive/refs/tags/v0.19.0.tar.gz 0001-python-3.14-version-gates.patch 0002-cli-version-avoids-eager-runtime-imports.patch 0003-rocm-gate-vendored-triton-kernels-on-runtime-support.patch 0004-rocm-fallback-and-optional-sagemaker-standards.patch 0005-rocm-reduce-triton-unified-attention-prefill-tile-for-large-heads.patch 0006-setup.py-forward-host-and-hip-flags-into-cmake.patch 0007-rocm-enable-gfx1x-aiter-and-prefer-it-for-gemma4.patch 0008-torchao-startup-stays-lazy.patch 0009-cli-startup-stays-runtime-light.patch 0010-rocm-support-qwen35-hybrid-gdn.patch 0011-rocm-avoid-triton-topk-topp-sampler.patch)
+source=(https://github.com/vllm-project/vllm/archive/refs/tags/v0.19.1.tar.gz 0001-python-3.14-version-gates.patch 0002-cli-version-avoids-eager-runtime-imports.patch 0003-rocm-gate-vendored-triton-kernels-on-runtime-support.patch 0004-rocm-fallback-and-optional-sagemaker-standards.patch 0005-rocm-reduce-triton-unified-attention-prefill-tile-for-large-heads.patch 0006-setup.py-forward-host-and-hip-flags-into-cmake.patch 0007-rocm-enable-gfx1x-aiter-and-prefer-it-for-gemma4.patch 0008-torchao-startup-stays-lazy.patch 0009-cli-startup-stays-runtime-light.patch 0010-rocm-support-qwen35-hybrid-gdn.patch 0011-rocm-avoid-triton-topk-topp-sampler.patch)
 sha256sums=(SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP)
 
 _apply_patch_if_needed() {
@@ -38,8 +38,8 @@ _apply_patch_if_needed() {
 }
 
 _reset_source_tree() {
-  rm -rf "${srcdir}/vllm-0.19.0"
-  bsdtar -xf "${srcdir}/v0.19.0.tar.gz" -C "${srcdir}"
+  rm -rf "${srcdir}/vllm-0.19.1"
+  bsdtar -xf "${srcdir}/v0.19.1.tar.gz" -C "${srcdir}"
 }
 
 _source_tree_has_all_source_patches() {
@@ -53,11 +53,11 @@ _source_tree_has_all_source_patches() {
 }
 
 _apply_all_source_patches() {
-  if [[ ! -d "${srcdir}/vllm-0.19.0" ]]; then
+  if [[ ! -d "${srcdir}/vllm-0.19.1" ]]; then
     _reset_source_tree
   fi
 
-  cd "${srcdir}/vllm-0.19.0"
+  cd "${srcdir}/vllm-0.19.1"
   if _source_tree_has_all_source_patches; then
     return 0
   fi
@@ -66,7 +66,7 @@ _apply_all_source_patches() {
   # checks are not reliable on an already-patched tree. Re-extract and apply the
   # series once on a known-clean source tree whenever any sentinel is missing.
   _reset_source_tree
-  cd "${srcdir}/vllm-0.19.0"
+  cd "${srcdir}/vllm-0.19.1"
 
   _apply_patch_if_needed "0001-python-3.14-version-gates.patch"
   _apply_patch_if_needed "0002-cli-version-avoids-eager-runtime-imports.patch"
@@ -83,13 +83,13 @@ _apply_all_source_patches() {
 }
 
 prepare() {
-  cd "$srcdir/vllm-0.19.0"
+  cd "$srcdir/vllm-0.19.1"
 
   _apply_all_source_patches
 }
 
 build() {
-  cd "$srcdir/vllm-0.19.0"
+  cd "$srcdir/vllm-0.19.1"
 
     _apply_all_source_patches
 
@@ -146,7 +146,7 @@ build() {
   export HIP_PATH="/opt/rocm"
   export PYTORCH_ROCM_ARCH="gfx1151"
   export CMAKE_PREFIX_PATH="/opt/rocm"
-  export VLLM_VERSION_OVERRIDE="0.19.0"
+  export VLLM_VERSION_OVERRIDE="0.19.1"
   export VLLM_ROCM_USE_AITER=1
 
   rm -rf .deps/triton_kernels-*
@@ -163,6 +163,6 @@ build() {
 }
 
 package() {
-  cd "$srcdir/vllm-0.19.0"
+  cd "$srcdir/vllm-0.19.1"
   python -m installer --destdir="$pkgdir" dist/*.whl
 }

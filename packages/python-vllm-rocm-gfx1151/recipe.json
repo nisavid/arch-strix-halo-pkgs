@@ -6,7 +6,7 @@
       "This package is ROCm-specific even though the closest Arch-family baseline is the generic aur/python-vllm package.",
       "Carries a deliberate Python-3.14 compatibility delta and recipe-specific ROCm/AITER integration that are not part of the generic baseline.",
       "Carries repo-owned Gemma 4 validation lanes for Strix Halo because the host-proven path is narrower than upstream defaults: AITER unified attention, TRITON unquantized MoE, text-only multimodal limits, and per-checkpoint eager/compiled decisions.",
-      "Carries a repo-owned Qwen3.5 hybrid/GDN patch lane for the parts of Blackcat Informatics' advisory recipe that are still missing from the maintained vLLM 0.19.0 package source."
+      "Carries a repo-owned Qwen3.5 hybrid/GDN patch lane for the parts of Blackcat Informatics' advisory recipe that are still missing from the maintained vLLM 0.19.1 package source."
     ],
     "source_patches": [
       "0001-python-3.14-version-gates.patch",
@@ -23,6 +23,7 @@
     ],
     "update_notes": [
       "Check upstream vllm release notes and pyproject metadata first, then reconcile the Python upper-bound and hard-coded supported-version list with the current state of Python 3.14 support.",
+      "For the v0.19.1 upgrade, the upstream v0.19.0..v0.19.1 tarball diff was mostly additive (82 files changed, 5061 insertions, 269 deletions). The impact review focused on dependency metadata (`transformers` and `compressed-tensors` constraints), Gemma 4 model/tooling additions, and the local patch touchpoints; the carried ROCm/platform, Qwen3.5/GDN, sampler, and startup-laziness patches still apply after refresh.",
       "When validating a new model, usage pattern, or stable-tag gap, scout upstream release notes, open issues, open PRs, and recent commits before freezing local patch carry. Gemma 4 needed exactly that: the durable fixes were the unified-attention backend selection and server/template follow-ups, while the earlier AITER fused-MoE carries were later pruned once the validated default lane stayed on TRITON MoE.",
       "If numba remains part of the Python 3.14 story, capture it as a real source patch or package dependency decision rather than a no-op scripted edit.",
       "Keep vllm --version as a metadata-only smoke path. If upstream CLI imports optional OpenAI or Triton modules eagerly again, prefer restoring a lazy import boundary over adding unrelated hard runtime dependencies just for version output.",
@@ -37,7 +38,7 @@
       "Keep the repo-owned Gemma 4 text-only smoke lanes on `enforce_eager=True` / `--enforce-eager` until separate host validation proves the compiled/cudagraph ROCm path is clean for each promoted checkpoint. vLLM documents eager mode as disabling compilation and cudagraph capture, so treat relaxing it as a follow-up performance lane rather than a silent default change. After installing the repaired Triton package on 2026-04-19, `google/gemma-4-26B-A4B-it` passed the tracked offline text compiled probe with AITER unified attention, TRITON unquantized MoE, torch.compile, and CUDAGraph capture. The same installed-Triton pass did not promote `google/gemma-4-E2B-it`: compiled+cudagraph initialized and generated, but returned corrupted text instead of the expected five-word answer; a no-cudagraph E2B compiled probe had previously faulted the GPU during initialization/warmup.",
       "Keep Gemma 4 26B-A4B server startup timeouts long enough for cold reference-host loads. A 300-second budget killed the server while it was still loading safetensors shards; the helper now defaults this constrained 26B-A4B lane to 420 seconds.",
       "Use the tracked `compiled-probe`, `kernel-probe`, `multimodal`, and `quantization-probe` scenario tags for future investigations instead of adding terminal-only one-offs; keep `exploratory` on any scenario that should not run as part of broad package validation.",
-      "Keep `0010-rocm-support-qwen35-hybrid-gdn.patch` until upstream vLLM lands equivalent ROCm-safe Qwen3.5/GDN handling. The patch carries the still-missing pieces from Blackcat Informatics' advisory lane: AMD-restricted FLA autotune grids, float32 GDN exponent operands, GDN warmup at T=64 only, hybrid block-size realignment after ROCm platform updates, and hybrid full-attention fallback away from AITER attention. In vLLM 0.19.0, the GDN warmup loop lives in `vllm/model_executor/layers/mamba/gdn_linear_attn.py`, not the older advisory `qwen3_next.py` path.",
+      "Keep `0010-rocm-support-qwen35-hybrid-gdn.patch` until upstream vLLM lands equivalent ROCm-safe Qwen3.5/GDN handling. The patch carries the still-missing pieces from Blackcat Informatics' advisory lane: AMD-restricted FLA autotune grids, float32 GDN exponent operands, GDN warmup at T=64 only, hybrid block-size realignment after ROCm platform updates, and hybrid full-attention fallback away from AITER attention. In vLLM 0.19.1, the GDN warmup loop still lives in `vllm/model_executor/layers/mamba/gdn_linear_attn.py`, not the older advisory `qwen3_next.py` path.",
       "Do not restore the dropped Gemma 4 ROCm AITER MoE intermediate-padding carry unless a future explicit AITER fused-MoE lane reproduces a real alignment failure after the AITER backend is re-enabled on purpose. The 2026-04-17 validated reference-host lane used TRITON backend for Unquantized MoE, so that patch was removed as dormant carry. The 2026-04-19 forced AITER MoE server probe failed earlier with `ValueError: ROCm AITer MoE backend is not available for this configuration`, while default/automatic and forced Triton MoE server probes passed.",
       "Keep Gemma 4 text-only serving fully text-only by zeroing `image`, `audio`, and `video` in `--limit-mm-per-prompt`. The concrete Gemma 4 26B-A4B server failure was vLLM still entering multimodal warmup and then faulting the GPU during engine initialization when `video` remained implicit.",
       "Keep TorchAO version checks metadata-only on generic startup paths unless upstream reorganizes its quantization imports. The concrete host failure was an external python-torchao-rocm package whose optional _C.abi3.so extension was both missing a usable torch/lib runpath and built against an incompatible PyTorch ABI, causing warning noise during unrelated vLLM startup when vLLM imported the TorchAO quantization module just to ask a version question.",
@@ -56,7 +57,7 @@
   },
   "name": "python-vllm-rocm-gfx1151",
   "package_name": "python-vllm-rocm-gfx1151",
-  "pkgver": "0.19.0.r8.d20260317.gad42886",
+  "pkgver": "0.19.1.r8.d20260317.gad42886",
   "policy": {
     "advisory_references": [],
     "arch_reference": [
@@ -111,7 +112,7 @@
       "This package is ROCm-specific even though the closest Arch-family baseline is the generic aur/python-vllm package.",
       "Carries a deliberate Python-3.14 compatibility delta and recipe-specific ROCm/AITER integration that are not part of the generic baseline.",
       "Carries repo-owned Gemma 4 validation lanes for Strix Halo because the host-proven path is narrower than upstream defaults: AITER unified attention, TRITON unquantized MoE, text-only multimodal limits, and per-checkpoint eager/compiled decisions.",
-      "Carries a repo-owned Qwen3.5 hybrid/GDN patch lane for the parts of Blackcat Informatics' advisory recipe that are still missing from the maintained vLLM 0.19.0 package source."
+      "Carries a repo-owned Qwen3.5 hybrid/GDN patch lane for the parts of Blackcat Informatics' advisory recipe that are still missing from the maintained vLLM 0.19.1 package source."
     ],
     "extra_sha256sums": [
       "SKIP",
@@ -164,7 +165,8 @@
     "recipe_key": "vllm",
     "scaffold_notes": [
       "There does not appear to be a current dedicated python-vllm-rocm AUR package; the closest package baseline is the generic AUR python-vllm package, with ROCm-specific integration coming from this recipe.",
-      "Use the latest stable upstream release tarball (v0.19.0) instead of a floating full Git clone. Upstream currently exposes a 0.19.1 release candidate but not a final 0.19.1 release, so the stable tag is the safer packaging baseline.",
+      "Use the latest stable upstream release tarball (v0.19.1) instead of a floating full Git clone. Upstream released v0.19.1 as a patch release on top of v0.19.0, so the package now follows the final stable tag rather than the earlier v0.19.1 release candidate.",
+      "The v0.19.1 impact review found no dropped local patch lane: upstream mainly added Gemma 4 model/tooling coverage, relaxed the Transformers 5.x upper-bound shape while excluding known bad 5.x minors, and bumped compressed-tensors. The carried local patches were refreshed against the final tag and the build produced `python-vllm-rocm-gfx1151-0.19.1.r8.d20260317.gad42886-1-x86_64.pkg.tar.zst`.",
       "This scaffold carries the minimal Python-3.14 source patch needed to build from the stable tarball: relax the Python upper bound and extend the hard-coded CMake supported-version list through 3.14.",
       "Carries a package-local CLI import patch so vllm --version remains a metadata-only path instead of importing optional OpenAI and Triton runtime modules at startup.",
       "Carries a ROCm-specific Triton compatibility patch so the vendored triton_kernels tree is treated as unavailable when the installed Triton runtime lacks CUDA-only APIs such as triton.language.target_info or triton.constexpr_function.",
@@ -189,7 +191,7 @@
       "The reference host now uses the local python-torchao-rocm-gfx1151 replacement lane, so the old external python-torchao-rocm failure is historical rather than current state. Generic vLLM startup should still stay TorchAO-clean on non-TorchAO code paths, and the tracked helpers for actual --quantization torchao support remain tools/torchao_vllm_smoke.py plus the Gemma 4 TorchAO scenarios.",
       "`tools/torchao_vllm_smoke.py` now covers the tiny no-download checkpoint, a serialized real-model probe, and a real-model online quantization path. On 2026-04-19, `vllm.gemma4.e2b.torchao.online-real-model` passed on the reference host with `quantization=torchao`, `ROCM_AITER_UNIFIED_ATTN`, and 10.62 GiB model-loading memory. Keep the serialized real-model scenario exploratory: it now writes processor files correctly, but still fails in TorchAO/vLLM weight loading with `AttributeError: 'Tensor' object has no attribute 'tensor_data_names'`.",
       "makepkg -e reuses src/, so build() intentionally reapplies the carried source patches before wheel generation instead of assuming prepare() already ran in the current tree.",
-      "makepkg -f can also reuse a partially patched src/ tree across failed iterations. The PKGBUILD now re-extracts v0.19.0.tar.gz and reapplies the full carried patch series on a known-clean tree whenever its source-patch sentinels are missing, instead of relying on per-patch stamp files under src/.patch-state.",
+      "makepkg -f can also reuse a partially patched src/ tree across failed iterations. The PKGBUILD now re-extracts v0.19.1.tar.gz and reapplies the full carried patch series on a known-clean tree whenever its source-patch sentinels are missing, instead of relying on per-patch stamp files under src/.patch-state.",
       "Preserve makepkg's inherited CFLAGS/CXXFLAGS when layering Strix tuning flags, and feed the same prefix-map flags into HIPFLAGS, so Arch's build-path sanitization survives the ROCm/HIP compile lane too.",
       "Upstream openai-harmony is a small Rust/PyO3 helper library with published manylinux wheels, not a ROCm-specific component. If Arch still lacks an official package, the right local story is a closure package derived from aur/python-openai-harmony. If this repo ingests it locally, it should still inherit the normal Strix build lane for applicable native code: Zen 5 / znver5 CPU tuning, -O3 or equivalent, LTO when compatible, and PGO when the build system exposes a maintainable path.",
       "Do not treat a successful build as sufficient for system-Python cutover; the gate is a real vLLM smoke test after the TheRock ROCm split packages are installed coherently.",
@@ -210,11 +212,12 @@
       "0011-rocm-avoid-triton-topk-topp-sampler.patch"
     ],
     "source_type": "tarball",
-    "source_url": "https://github.com/vllm-project/vllm/archive/refs/tags/v0.19.0.tar.gz",
-    "src_subdir": "vllm-0.19.0",
+    "source_url": "https://github.com/vllm-project/vllm/archive/refs/tags/v0.19.1.tar.gz",
+    "src_subdir": "vllm-0.19.1",
     "template": "python-project-vllm",
     "update_notes": [
       "Check upstream vllm release notes and pyproject metadata first, then reconcile the Python upper-bound and hard-coded supported-version list with the current state of Python 3.14 support.",
+      "For the v0.19.1 upgrade, the upstream v0.19.0..v0.19.1 tarball diff was mostly additive (82 files changed, 5061 insertions, 269 deletions). The impact review focused on dependency metadata (`transformers` and `compressed-tensors` constraints), Gemma 4 model/tooling additions, and the local patch touchpoints; the carried ROCm/platform, Qwen3.5/GDN, sampler, and startup-laziness patches still apply after refresh.",
       "When validating a new model, usage pattern, or stable-tag gap, scout upstream release notes, open issues, open PRs, and recent commits before freezing local patch carry. Gemma 4 needed exactly that: the durable fixes were the unified-attention backend selection and server/template follow-ups, while the earlier AITER fused-MoE carries were later pruned once the validated default lane stayed on TRITON MoE.",
       "If numba remains part of the Python 3.14 story, capture it as a real source patch or package dependency decision rather than a no-op scripted edit.",
       "Keep vllm --version as a metadata-only smoke path. If upstream CLI imports optional OpenAI or Triton modules eagerly again, prefer restoring a lazy import boundary over adding unrelated hard runtime dependencies just for version output.",
@@ -229,7 +232,7 @@
       "Keep the repo-owned Gemma 4 text-only smoke lanes on `enforce_eager=True` / `--enforce-eager` until separate host validation proves the compiled/cudagraph ROCm path is clean for each promoted checkpoint. vLLM documents eager mode as disabling compilation and cudagraph capture, so treat relaxing it as a follow-up performance lane rather than a silent default change. After installing the repaired Triton package on 2026-04-19, `google/gemma-4-26B-A4B-it` passed the tracked offline text compiled probe with AITER unified attention, TRITON unquantized MoE, torch.compile, and CUDAGraph capture. The same installed-Triton pass did not promote `google/gemma-4-E2B-it`: compiled+cudagraph initialized and generated, but returned corrupted text instead of the expected five-word answer; a no-cudagraph E2B compiled probe had previously faulted the GPU during initialization/warmup.",
       "Keep Gemma 4 26B-A4B server startup timeouts long enough for cold reference-host loads. A 300-second budget killed the server while it was still loading safetensors shards; the helper now defaults this constrained 26B-A4B lane to 420 seconds.",
       "Use the tracked `compiled-probe`, `kernel-probe`, `multimodal`, and `quantization-probe` scenario tags for future investigations instead of adding terminal-only one-offs; keep `exploratory` on any scenario that should not run as part of broad package validation.",
-      "Keep `0010-rocm-support-qwen35-hybrid-gdn.patch` until upstream vLLM lands equivalent ROCm-safe Qwen3.5/GDN handling. The patch carries the still-missing pieces from Blackcat Informatics' advisory lane: AMD-restricted FLA autotune grids, float32 GDN exponent operands, GDN warmup at T=64 only, hybrid block-size realignment after ROCm platform updates, and hybrid full-attention fallback away from AITER attention. In vLLM 0.19.0, the GDN warmup loop lives in `vllm/model_executor/layers/mamba/gdn_linear_attn.py`, not the older advisory `qwen3_next.py` path.",
+      "Keep `0010-rocm-support-qwen35-hybrid-gdn.patch` until upstream vLLM lands equivalent ROCm-safe Qwen3.5/GDN handling. The patch carries the still-missing pieces from Blackcat Informatics' advisory lane: AMD-restricted FLA autotune grids, float32 GDN exponent operands, GDN warmup at T=64 only, hybrid block-size realignment after ROCm platform updates, and hybrid full-attention fallback away from AITER attention. In vLLM 0.19.1, the GDN warmup loop still lives in `vllm/model_executor/layers/mamba/gdn_linear_attn.py`, not the older advisory `qwen3_next.py` path.",
       "Do not restore the dropped Gemma 4 ROCm AITER MoE intermediate-padding carry unless a future explicit AITER fused-MoE lane reproduces a real alignment failure after the AITER backend is re-enabled on purpose. The 2026-04-17 validated reference-host lane used TRITON backend for Unquantized MoE, so that patch was removed as dormant carry. The 2026-04-19 forced AITER MoE server probe failed earlier with `ValueError: ROCm AITer MoE backend is not available for this configuration`, while default/automatic and forced Triton MoE server probes passed.",
       "Keep Gemma 4 text-only serving fully text-only by zeroing `image`, `audio`, and `video` in `--limit-mm-per-prompt`. The concrete Gemma 4 26B-A4B server failure was vLLM still entering multimodal warmup and then faulting the GPU during engine initialization when `video` remained implicit.",
       "Keep TorchAO version checks metadata-only on generic startup paths unless upstream reorganizes its quantization imports. The concrete host failure was an external python-torchao-rocm package whose optional _C.abi3.so extension was both missing a usable torch/lib runpath and built against an incompatible PyTorch ABI, causing warning noise during unrelated vLLM startup when vLLM imported the TorchAO quantization module just to ask a version question.",
@@ -245,7 +248,7 @@
       "Treat the current external python-torchao-rocm _C-extension failure as a host-package defect, not a blocker for this vLLM lane. Generic startup should stay clean after the local TorchAO-import patch, and the remaining follow-up only matters if this repo needs actual TorchAO custom ops or torchao-backed serving paths that truly require the native extension.",
       "Treat runtime validation against the live ROCm stack as mandatory; a successful wheel build is not enough."
     ],
-    "upstream_version": "0.19.0",
+    "upstream_version": "0.19.1",
     "url": "https://github.com/vllm-project/vllm"
   },
   "provenance": {

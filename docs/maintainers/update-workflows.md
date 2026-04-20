@@ -1,6 +1,46 @@
 # Update Workflows
 
-This repository has four main update stories.
+This repository has four main update stories, plus a freshness sweep that
+decides whether any of those stories must preempt ordinary backlog work.
+
+## 0. Dependency Freshness Sweep
+
+Run this sweep after closing a development arc and before starting a new one
+when no sweep has been recorded in the previous 24 hours. Use ignored session
+notes for a no-change sweep, and move only durable conclusions into tracked
+docs.
+
+1. List recipe-managed packages from `policies/recipe-packages.toml`.
+2. For each package, check its package-specific upstream lane:
+   - tagged release tarballs: upstream release page or tag list
+   - PyPI sdists/wheels: PyPI release metadata
+   - git tag or commit lanes: upstream tag list and recorded commit/ref
+   - ROCm or framework branches: upstream branch head and release notes
+   - recipe-derived inputs: `upstream/ai-notes` only when the recipe change is
+     relevant to this repo
+   - Arch/CachyOS/AUR baselines: the recorded authoritative reference first,
+     then advisory references
+3. If a newer upstream or baseline exists, classify it as one of the update
+   stories below and run that story before unrelated backlog work.
+4. If no relevant updates exist, record the sweep timestamp and package groups
+   checked in an ignored session note such as
+   `.agents/session/dependency-freshness-YYYYMMDDTHHMM.md`.
+5. If the sweep changes package policy, patch carry, validation status, or a
+   known blocker, update canonical docs under `docs/` and delete any
+   session-only input once its durable content has been extracted.
+
+Current package-lane catalog:
+
+| Lane | Packages | Scout first |
+| --- | --- | --- |
+| Tagged upstream tarball | `aocl-utils-gfx1151`, `python-gfx1151`, `python-vllm-rocm-gfx1151`, `python-torchvision-rocm-gfx1151` | upstream release notes, tag list, `source_url`, package README |
+| PyPI source/wheel with native build | `python-numpy-gfx1151`, `python-sentencepiece-gfx1151`, `python-zstandard-gfx1151`, `python-asyncpg-gfx1151`, `python-openai-harmony-gfx1151`, `python-orjson-gfx1151`, `python-cryptography-gfx1151`, `python-torchao-rocm-gfx1151` | PyPI metadata, upstream changelog, Arch/AUR baseline |
+| ROCm/framework source lane | `python-pytorch-opt-rocm-gfx1151`, `python-triton-gfx1151`, `python-aotriton-gfx1151`, `python-amd-aiter-gfx1151` | upstream branch/tag, ROCm compatibility notes, package patches |
+| Monorepo commit/release lane | `llama.cpp-hip-gfx1151`, `llama.cpp-vulkan-gfx1151`, `lemonade-server`, `lemonade-app` | upstream release/tag, recorded source revision, backend/runtime docs |
+| Recipe-first or meta lane | `aocl-libm-gfx1151`, `lemonade` | Blackcat Informatics recipe input, local package closure, generated metadata |
+
+Keep this table open-ended. When a new package class appears, add the lane
+here at the same time as the package policy entry.
 
 ## 1. Upstream Source Update
 
@@ -12,13 +52,20 @@ to adopt.
 3. Scout upstream release notes, open issues, open PRs, and recent commits for
    fixes relevant to the lane you are touching, especially when validating a
    new model, feature, or usage pattern on a packaged stable release.
-4. Update the package policy entry in `policies/recipe-packages.toml`.
-5. Re-render the package scaffold.
-6. Rebase or refresh patch files as needed.
-7. Rebuild the package.
-8. Refresh `repo/x86_64`.
-9. Run package-specific smoke tests.
-10. Update docs if the behavior, baseline, or maintenance story changed.
+4. Record the upstream release summary and a diff stat against the currently
+   packaged source before editing. Pay special attention to files touched by
+   local patch files, package-local tests, and smoke helpers.
+5. Check whether upstream dependency metadata changed and reconcile it against
+   the local pacman dependency closure.
+6. Update the package policy entry in `policies/recipe-packages.toml`.
+7. Re-render the package scaffold.
+8. Apply the carried patch series to a clean new source tree. Refresh patches
+   when they apply with fuzz or when nearby upstream context changed.
+9. Rebuild the package.
+10. Refresh `repo/x86_64`.
+11. Run package-specific tests plus every tracked smoke or blocked-probe lane
+    that used to be part of the package's validated behavior.
+12. Update docs if the behavior, baseline, or maintenance story changed.
 
 Scout starting points:
 
