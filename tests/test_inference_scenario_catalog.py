@@ -113,7 +113,12 @@ def test_qwen3_6_unquantized_moe_control_records_validation_contract():
         "exploratory",
     }
     assert control.definition["given"]["tool"] == "qwen_text_smoke"
-    assert control.definition["when"]["argv"] == ["--max-num-batched-tokens", "32"]
+    assert control.definition["when"]["argv"] == [
+        "--max-num-batched-tokens",
+        "32",
+        "--gpu-memory-utilization",
+        "0.9",
+    ]
     assert control.definition["when"]["env"] == {
         "VLLM_ROCM_USE_AITER": "0",
         "VLLM_ROCM_USE_AITER_MOE": "0",

@@ -195,6 +195,8 @@ Run `vllm.qwen3_6.35b-a3b.text.unquantized-moe-no-aiter-control` before
 classifying either Qwen3.6 FP8 probe as FP8-specific. The control must capture:
 
 - model binding for `Qwen/Qwen3.6-35B-A3B`
+- the tracked control arguments, including `--max-num-batched-tokens 32` and
+  `--gpu-memory-utilization 0.9`
 - `config_quantization_config_present false`
 - `config_model_type qwen3_5_moe`
 - `text_config_model_type qwen3_5_moe_text`

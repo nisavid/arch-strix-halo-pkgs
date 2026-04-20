@@ -54,10 +54,9 @@
 - Continue Qwen3.6 FP8 MoE/shared-expert follow-up on gfx1151.
   - Qwen3.5 sampler/GDN package carry, tiny smoke coverage, and blocked-probe
     coverage for Qwen3.6 are already tracked and validated
-  - run the unquantized no-AITER `Qwen/Qwen3.6-35B-A3B` control before
-    classifying either FP8 blocked probe as FP8-specific; the FP8 findings
-    must be compared against this control's config markers, backend marker,
-    and generation outcome
+  - compare FP8 probe outcomes against the accepted unquantized no-AITER
+    `Qwen/Qwen3.6-35B-A3B` control, which currently passes with
+    `--max-num-batched-tokens 32` and `--gpu-memory-utilization 0.9`
   - treat the non-AITER path as blocked until a backend advertises gfx1151 FP8
     MoE support; the current failure is
     `No FP8 MoE backend supports the deployment configuration`

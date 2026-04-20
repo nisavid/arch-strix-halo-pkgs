@@ -46,6 +46,22 @@ remains a target and blocked-probe lane, not an accepted passing smoke lane,
 until the rebuilt native stack reproduces or retires the expected Qwen3.6
 probe outcomes in the revalidation ledger.
 
+The rebuilt installed stack passed the unquantized Qwen3.6 control on
+2026-04-20 with the `/var/cache/hf` `Qwen/Qwen3.6-35B-A3B` snapshot,
+`VLLM_ROCM_USE_AITER=0`, `VLLM_ROCM_USE_AITER_MOE=0`,
+`--max-num-batched-tokens 32`, and `--gpu-memory-utilization 0.9`; the tracked
+`run_inference_scenarios.py` run completed in `85.054242` seconds. The run
+recorded `cuda_device_0 Radeon 8060S Graphics`,
+`config_quantization_config_present false`,
+`config_model_type qwen3_5_moe`, `text_config_model_type qwen3_5_moe_text`,
+40 hidden layers, 256 experts, 8 experts per token, the
+`full_attention:10,linear_attention:30` layer split, `Using TRITON backend for
+Unquantized MoE`, `Available KV cache memory: 12.31 GiB`, `llm_init_ok`,
+`generation_ok`, output text `ready`, and `basic_ok`. The same
+control at the previous default `--gpu-memory-utilization 0.75` failed before
+`llm_init_ok` with no available KV-cache memory, so the tracked control pins
+`0.9` for this host.
+
 Installed and validated at least once on the live host:
 
 - generated TheRock/ROCm split package family
@@ -568,6 +584,11 @@ The following smoke checks have already passed on the reference host:
     payloads and in `22.226842` seconds after pkgrel `-27` and AITER pkgrel
     `-8` were installed, by asserting that failure mode rather than treating
     it as a generation smoke.
+  - The 2026-04-20 rebuilt-stack control for `Qwen/Qwen3.6-35B-A3B` passed
+    unquantized with AITER disabled, `--max-num-batched-tokens 32`, and
+    `--gpu-memory-utilization 0.9`; the tracked scenario completed in
+    `85.054242` seconds and generated `ready`. Treat this as the current
+    same-family control when comparing FP8-specific failures.
   - The forced-AITER Qwen3.6 path is also blocked. Before the pkgrel `-8`
     install, the 2026-04-19 run selected `Using AITER Fp8 MoE
     backend`, loaded all 42 checkpoint shards, and then failed during

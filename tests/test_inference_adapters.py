@@ -143,7 +143,7 @@ def test_vllm_adapter_builds_torchao_real_model_command(tmp_path: Path):
         (
             "vllm.qwen3_6.35b-a3b.text.unquantized-moe-no-aiter-control",
             "Qwen/Qwen3.6-35B-A3B",
-            ["--max-num-batched-tokens", "32"],
+            ["--max-num-batched-tokens", "32", "--gpu-memory-utilization", "0.9"],
         ),
     ],
 )
