@@ -486,6 +486,10 @@ def final_run_install_outputs(
     ]
 
 
+def install_step_label(prefix: str, outputs: list[str]) -> str:
+    return f"{prefix}: {' '.join(outputs)}" if outputs else prefix
+
+
 def build_steps(
     *,
     command: str,
@@ -538,9 +542,9 @@ def build_steps(
                     steps.append(
                         StepSpec(
                             id=f"{index:04d}-install-prerequisites",
-                            label=(
-                                "install build prerequisites: "
-                                + " ".join(root_prerequisites)
+                            label=install_step_label(
+                                "install build prerequisites",
+                                root_prerequisites,
                             ),
                             kind="install",
                             root=None,
@@ -591,7 +595,10 @@ def build_steps(
             steps.append(
                 StepSpec(
                     id=f"{len(build_roots) + 1:04d}-install-selected",
-                    label="install selected outputs",
+                    label=install_step_label(
+                        "install selected outputs",
+                        final_install_outputs,
+                    ),
                     kind="install",
                     root=None,
                     commands=(install_command(final_install_outputs),),
@@ -631,7 +638,10 @@ def build_steps(
         steps.append(
             StepSpec(
                 id=f"{len(steps) + 1:04d}-install-selected",
-                label="install selected outputs",
+                label=install_step_label(
+                    "install selected outputs",
+                    final_install_outputs,
+                ),
                 kind="install",
                 root=None,
                 commands=(install_command(final_install_outputs),),

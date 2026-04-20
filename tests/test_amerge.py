@@ -194,7 +194,7 @@ def test_deps_expands_rebuild_selection_to_dependencies(tmp_path: Path):
         "install build prerequisites: python-leaf-gfx1151",
         "build python-app-gfx1151",
         "publish python-app-gfx1151",
-        "install selected outputs",
+        "install selected outputs: python-app-gfx1151",
     ]
     prerequisite_commands = [
         step["commands"][0]["argv"]
@@ -240,7 +240,7 @@ def test_selected_split_root_installs_dependency_outputs_for_later_builds(tmp_pa
         "install build prerequisites: rocblas-gfx1151",
         "build python-leaf-gfx1151",
         "publish python-leaf-gfx1151",
-        "install selected outputs",
+        "install selected outputs: rocm-core-gfx1151 python-leaf-gfx1151",
     ]
     assert payload["steps"][2]["commands"][0]["argv"][-1:] == ["rocblas-gfx1151"]
     assert payload["steps"][-1]["commands"][0]["argv"][-2:] == [
@@ -275,7 +275,7 @@ def test_run_batches_prerequisites_for_ready_build_frontier(tmp_path: Path):
         "publish python-alpha-gfx1151",
         "build python-beta-gfx1151",
         "publish python-beta-gfx1151",
-        "install selected outputs",
+        "install selected outputs: python-alpha-gfx1151 python-beta-gfx1151",
     ]
     assert payload["steps"][2]["commands"][0]["argv"][-2:] == [
         "rocblas-gfx1151",
@@ -305,7 +305,7 @@ def test_run_batches_independent_targets_into_final_install(tmp_path: Path):
         "publish python-alpha-gfx1151",
         "build python-beta-gfx1151",
         "publish python-beta-gfx1151",
-        "install selected outputs",
+        "install selected outputs: python-alpha-gfx1151 python-beta-gfx1151",
     ]
     assert payload["steps"][-1]["commands"][0]["argv"][-2:] == [
         "python-alpha-gfx1151",
@@ -342,7 +342,7 @@ def test_rdeps_expands_rebuild_selection_to_reverse_dependencies(tmp_path: Path)
         "install build prerequisites: python-leaf-gfx1151",
         "build python-app-gfx1151",
         "publish python-app-gfx1151",
-        "install selected outputs",
+        "install selected outputs: python-app-gfx1151",
     ]
     assert payload["steps"][2]["commands"][0]["argv"][-1:] == ["python-core-gfx1151"]
     assert payload["steps"][5]["commands"][0]["argv"][-1:] == ["python-leaf-gfx1151"]
@@ -388,7 +388,10 @@ def test_deploy_subcommand_publishes_then_installs_selected_outputs(tmp_path: Pa
     assert payload["merge_plan"]["build_roots"] == ["python-app-gfx1151"]
     assert payload["merge_plan"]["install_outputs"] == ["python-app-gfx1151"]
     step_labels = [step["label"] for step in payload["steps"]]
-    assert step_labels == ["publish python-app-gfx1151", "install selected outputs"]
+    assert step_labels == [
+        "publish python-app-gfx1151",
+        "install selected outputs: python-app-gfx1151",
+    ]
     assert payload["steps"][0]["kind"] == "publish"
     assert payload["steps"][1]["kind"] == "install"
     assert "--require-packagelist" in payload["steps"][0]["commands"][0]["argv"]
@@ -443,7 +446,7 @@ def test_deploy_subcommand_keeps_explicit_split_output_precise(tmp_path: Path):
     assert payload["merge_plan"]["install_outputs"] == ["rocm-core-gfx1151"]
     assert [step["label"] for step in payload["steps"]] == [
         "publish therock-gfx1151",
-        "install selected outputs",
+        "install selected outputs: rocm-core-gfx1151",
     ]
     assert payload["steps"][1]["commands"][0]["argv"][-1] == "rocm-core-gfx1151"
 
