@@ -68,7 +68,7 @@
       "Pins PyTorch's BLAS/LAPACK provider to OpenBLAS and uses a two-stage wheel assembly flow on Arch Python 3.14 to avoid host oneMKL contamination and the broken install target that mirrors /usr/lib into the source tree."
     ],
     "extra_sha256sums": [
-      "0fc03afcb0501849e08dfd8dafe07578fa0e7337025e1ab80f59bb9be9a3560c",
+      "95a46381bedcff873f9765c9b103877aa36f649e649c5b223582732b2ee61cac",
       "944e0fb4db31da678993acd3104709083ef28dcee58fcc24ab1675d880c39846"
     ],
     "license": [
@@ -108,7 +108,8 @@
       "The first real build must preserve the recipe's ROCm-specific fixes: HIPGraph.hip stub rewrite, NumPy 2 target C-API define, clang ABI flag removal, gfx1151 CK enablement, and post-install patchelf fixes for torch/lib and libtorch_hip.so.",
       "The MAGMA version-encoding fix is carried as a source patch on the canonical CUDA linalg input; ROCm hipify derives the HIP source from that patched input during build.",
       "Use OpenBLAS explicitly for this lane. Letting the build auto-detect host oneMKL produced a broken wheel with /opt/intel/oneapi runpaths and NumPy import failures.",
-      "On Arch Python 3.14, the CMake install target currently mirrors /usr/lib and /usr/include into the source tree and then fails on a root-owned _sysconfigdata pyc. The maintained workaround is to build first, accept that known install failure, restage the built torch/lib and torch/bin artifacts, and assemble the wheel with SKIP_BUILD_DEPS=1."
+      "On Arch Python 3.14, the CMake install target currently mirrors /usr/lib and /usr/include into the source tree and then fails on a root-owned _sysconfigdata pyc. The maintained workaround is to build first, accept that known install failure, restage the built torch/lib and torch/bin artifacts, and assemble the wheel with SKIP_BUILD_DEPS=1.",
+      "The SKIP_BUILD_DEPS source patch must apply before wheel assembly so bdist_wheel uses the already staged artifacts instead of re-running the CMake install target."
     ],
     "source_patches": [
       "0001-setup-allow-skipping-build-deps.patch",

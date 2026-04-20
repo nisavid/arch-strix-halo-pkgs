@@ -228,5 +228,7 @@ def test_pytorch_rocm_renderer_uses_source_patches_for_magma_fix() -> None:
     )
 
     assert "0002-use-wide-magma-version-encoding.patch" in pkgbuild
-    assert 'patch -Np1 -i "$srcdir/0002-use-wide-magma-version-encoding.patch"' in pkgbuild
+    assert '_apply_patch_if_needed "0001-setup-allow-skipping-build-deps.patch"' in pkgbuild
+    assert '_apply_patch_if_needed "0002-use-wide-magma-version-encoding.patch"' in pkgbuild
+    assert "patch --dry-run -R -Np1" in pkgbuild
     assert "aten/src/ATen/native/hip/linalg/BatchLinearAlgebra.cpp" not in pkgbuild

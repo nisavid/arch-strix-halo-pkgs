@@ -754,13 +754,28 @@ package() {{
 }}"""
     elif template == "python-project-pytorch-rocm":
         upstream_version = policy_pkg["upstream_version"]
-        for patch_name in policy_pkg.get("source_patches", []):
+        source_patches = policy_pkg.get("source_patches", [])
+        if source_patches:
             prepare_lines.extend(
                 [
-                    f'patch --dry-run -Np1 -i "$srcdir/{patch_name}" >/dev/null &&',
-                    f'  patch -Np1 -i "$srcdir/{patch_name}"',
+                    "_apply_patch_if_needed() {",
+                    '  local _patch="$srcdir/$1"',
+                    "",
+                    '  if [[ ! -f "${_patch}" ]]; then',
+                    "    printf 'missing patch file: %s\\n' \"$1\" >&2",
+                    "    return 1",
+                    "  fi",
+                    "",
+                    '  if patch --dry-run -R -Np1 -i "${_patch}" >/dev/null 2>&1; then',
+                    "    return 0",
+                    "  fi",
+                    "",
+                    '  patch -Np1 -i "${_patch}"',
+                    "}",
+                    "",
                 ]
             )
+            prepare_lines.extend(f'_apply_patch_if_needed "{patch_name}"' for patch_name in source_patches)
         prepare_lines.extend(
             [
                 "# PyTorch's ROCm fork relies on vendored submodules and local hipify-generated sources.",
