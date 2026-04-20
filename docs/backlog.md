@@ -58,6 +58,25 @@
   - treat the forced-AITER path as blocked on AITER opus/gfx1151 FP8-kernel
     feature work; the current `module_quant` failure is
     `unknown type name 'mfma_adaptor'`
+- Extract the official vLLM Qwen3.5/Qwen3.6 recipe scenarios into the tracked
+  Qwen test plan, using
+  <https://docs.vllm.ai/projects/recipes/en/latest/Qwen/Qwen3.5.html> as the
+  current upstream reference.
+  - keep the existing tiny Qwen3.5 smoke and blocked Qwen3.6 FP8 MoE probes,
+    but extend `inference/scenarios/vllm-qwen.toml` and catalog tests with the
+    recipe-level serving surfaces rather than leaving them as chat-only notes
+  - cover Qwen3.6 base serving with `--reasoning-parser qwen3` and its MTP
+    speculative-decoding variant
+  - cover Qwen3.5 throughput text-only serving, throughput multimodal serving,
+    latency-focused MTP serving, tool-calling with `qwen3_coder`, benchmark
+    client flow, OpenAI-compatible multimodal API consumption, and
+    ultra-long-context / YaRN override flow
+  - record the NVIDIA GB200 and AMD MI355X deployment shapes as advisory
+    recipe references, while adapting runnable local scenarios to the Arch
+    gfx1151 package lane and current host model cache
+  - include recipe configuration checks for thinking disablement, Mamba/prefix
+    caching caveats, multimodal processor kwargs, and the Mamba cache versus
+    CUDAGraph capture-size failure mode
 - Only revisit Gemma 4 on AITER fused-MoE if there is a concrete reason to
   move off the current TRITON unquantized-MoE lane.
   - treat any such attempt as a fresh experiment
