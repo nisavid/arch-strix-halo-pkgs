@@ -337,6 +337,10 @@ def render_pkgbuild(
 def write_filelists(package_files: dict[str, list[str]], output_dir: Path) -> None:
     filelist_dir = output_dir / "filelists"
     filelist_dir.mkdir(parents=True, exist_ok=True)
+    expected = {f"{pkg}.txt" for pkg in package_files}
+    for path in filelist_dir.glob("*.txt"):
+        if path.name not in expected:
+            path.unlink()
     for pkg, files in sorted(package_files.items()):
         (filelist_dir / f"{pkg}.txt").write_text("\n".join(sorted(files)) + "\n")
 

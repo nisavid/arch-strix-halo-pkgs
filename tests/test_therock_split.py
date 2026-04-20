@@ -81,3 +81,17 @@ def test_live_root_render_ignores_rocm_core_overlay_files():
     assert classifier.classify("opt/rocm/bin/rdhc") == "__ignored__"
     assert classifier.classify("opt/rocm/share/rdhc/README.md") == "__ignored__"
     assert classifier.classify("opt/rocm/share/rdhc/requirements.txt") == "__ignored__"
+
+
+def test_write_filelists_removes_stale_package_filelists(tmp_path: Path):
+    filelist_dir = tmp_path / "filelists"
+    filelist_dir.mkdir()
+    (filelist_dir / "stale-gfx1151.txt").write_text("opt/rocm/lib/libstale.so\n")
+
+    therock_split.write_filelists(
+        {"current-gfx1151": ["opt/rocm/lib/libcurrent.so"]},
+        tmp_path,
+    )
+
+    assert not (filelist_dir / "stale-gfx1151.txt").exists()
+    assert (filelist_dir / "current-gfx1151.txt").read_text() == "opt/rocm/lib/libcurrent.so\n"

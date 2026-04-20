@@ -26,6 +26,15 @@
 - Render `amerge --preview=tree` dependency forests as visual parent/child
   trees using box-drawing branches, similar to `dust` or `lsd --tree`, instead
   of listing build-order nodes with symbolic dependency references.
+- Audit full upstream TheRock project coverage from a complete staged root.
+  Current policy already has metadata for the unrendered packages
+  `half-gfx1151`, `hipfort-gfx1151`, `hipify-clang-gfx1151`,
+  `mivisionx-gfx1151`, `rocdecode-gfx1151`, `rocjpeg-gfx1151`,
+  `rocm-host-math-gfx1151`, `rocprofiler-sdk-rocpd-gfx1151`,
+  `rocprofiler-sdk-roctx-gfx1151`, and `rocshmem-gfx1151`; the current live
+  root simply lacks their expected installed payloads. The upstream recipe also
+  disables TheRock profiler options, so full-stack packaging needs a deliberate
+  build-configuration pass before rerendering and publishing.
 - Resume auditing the rest of the TheRock split-package family against the
   best current CachyOS / Arch baselines.
 - Done for live-host install parity for already-built freshness artifacts:

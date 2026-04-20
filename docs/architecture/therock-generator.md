@@ -39,6 +39,19 @@ synthetic files or post-copy commands plus matching ignore rules. Otherwise a
 rerender against a live installed root will try to classify this repo's own
 overlay files as new upstream content.
 
+## Output authority
+
+The rendered `packages/therock-gfx1151/` tree is authoritative for the staged
+root used by the render. Each run rewrites the split `PKGBUILD`, manifest, and
+current per-package file lists, and removes per-package file lists for packages
+whose payload is no longer present in that staged root.
+
+Package metadata may exist for upstream TheRock projects that are not present
+in a particular staged root. Those packages stay recorded in the manifest as
+not rendered, but the generator does not keep empty package functions or stale
+file lists for them. To package more upstream projects, build or stage a
+TheRock root that actually contains their installed payloads, then rerender.
+
 ## Failure codes
 
 The generator exits non-zero if it cannot classify the tree cleanly.

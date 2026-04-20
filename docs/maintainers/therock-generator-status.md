@@ -19,16 +19,26 @@ That writes the buildable split `pkgbase` into `packages/therock-gfx1151/` and
 stamps `pkgver` from `policies/therock-packages.toml`. The repo-local
 `upstream/ai-notes/strix-halo` git history is recorded as recipe provenance.
 
-The generated family now includes the expected ROCm runtime, math, profiling,
-debugging, OpenCL, and ML package surface, plus two internal support packages
-that emerged from the TheRock tree itself:
+The generated family is payload-driven. The current live root renders 60 of
+the 70 policy-defined packages. Ten packages are present in policy metadata but
+not rendered because their expected installed payloads are absent from the root
+used for the render:
 
+- `half-gfx1151`
+- `hipfort-gfx1151`
+- `hipify-clang-gfx1151`
+- `mivisionx-gfx1151`
+- `rocdecode-gfx1151`
+- `rocjpeg-gfx1151`
 - `rocm-host-math-gfx1151`
-- `rocm-sysdeps-gfx1151`
+- `rocprofiler-sdk-rocpd-gfx1151`
+- `rocprofiler-sdk-roctx-gfx1151`
+- `rocshmem-gfx1151`
 
-These do not correspond neatly to standard Arch packages, so they are being
-treated as local TheRock support packages rather than replacements for
-system-wide `openblas`, `suitesparse`, or other distro packages.
+`rocm-sysdeps-gfx1151` is rendered as an internal TheRock support package. It
+does not correspond neatly to a standard Arch package, so it is treated as
+local TheRock support payload rather than a replacement for system-wide
+`openblas`, `suitesparse`, or other distro packages.
 
 ## What changed
 
@@ -44,6 +54,8 @@ The generator and policy now handle:
 - vendored `libhipcxx` header and CMake payloads while ignoring its source/test
   debris
 - structured ignore rules for known sample and test artifacts
+- removal of stale per-package file lists when a rerender no longer contains
+  that package's payload
 
 ## Current caveat
 
@@ -62,3 +74,5 @@ The generator is no longer exploratory. The follow-up work is maintenance:
 - keep policy current when TheRock adds or reshapes components
 - keep dependency and replacement metadata healthy
 - keep the generated family aligned with the local repo and live cutover story
+- audit complete upstream TheRock project coverage by rendering from a staged
+  root built with the desired upstream project set enabled
