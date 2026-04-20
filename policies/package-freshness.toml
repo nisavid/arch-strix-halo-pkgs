@@ -1,0 +1,204 @@
+# Read-only package freshness policy.
+#
+# Each package directory with a PKGBUILD must appear in exactly one family.
+# Recorded values are the last reviewed upstream or baseline state, not
+# necessarily the local package version.
+
+[families.therock]
+packages = ["therock-gfx1151"]
+priority = "high"
+workflow = "recipe_update"
+checks = [
+  { id = "ai-notes", role = "primary", kind = "submodule", path = "upstream/ai-notes", ref = "refs/heads/main", recorded = "ad428861b726f6bd0e0a533e9e2fccdef43d0709", comparison = "sha" },
+]
+
+[families.aocl_utils]
+packages = ["aocl-utils-gfx1151"]
+priority = "medium"
+workflow = "upstream_source_update"
+checks = [
+  { id = "release", role = "primary", kind = "github_release", repo = "amd/aocl-utils", recorded = "5.2.2", comparison = "pep440" },
+  { id = "aur", role = "baseline", kind = "aur", package = "aocl-utils", recorded = "5.2.2-1", comparison = "pkgver" },
+]
+
+[families.aocl_libm]
+packages = ["aocl-libm-gfx1151"]
+priority = "medium"
+workflow = "upstream_source_update"
+checks = [
+  { id = "release", role = "primary", kind = "github_release", repo = "amd/aocl-libm-ose", recorded = "5.2.1", comparison = "pep440" },
+  { id = "master", role = "primary", kind = "git_ref", repo = "https://github.com/amd/aocl-libm-ose.git", ref = "refs/heads/master", recorded = "9e33942012291e345ccfd1ebdbe35988e19c79b2", comparison = "sha" },
+]
+
+[families.python]
+packages = ["python-gfx1151"]
+priority = "high"
+workflow = "upstream_source_update"
+checks = [
+  { id = "arch", role = "primary", kind = "arch_package", package = "python", recorded = "3.14.4-1", comparison = "pkgver" },
+  { id = "cpython", role = "baseline", kind = "python_ftp", recorded = "3.14.4", comparison = "pep440" },
+]
+
+[families.vllm]
+packages = ["python-vllm-rocm-gfx1151"]
+priority = "high"
+workflow = "upstream_source_update"
+checks = [
+  { id = "release", role = "primary", kind = "github_release", repo = "vllm-project/vllm", recorded = "0.19.1", tag_prefix = "v", comparison = "pep440", include_prereleases = false },
+  { id = "aur", role = "baseline", kind = "aur", package = "python-vllm", recorded = "0.12.0-1", comparison = "pkgver" },
+]
+
+[families.openai_harmony]
+packages = ["python-openai-harmony-gfx1151"]
+priority = "medium"
+workflow = "upstream_source_update"
+checks = [
+  { id = "pypi", role = "primary", kind = "pypi", package = "openai_harmony", recorded = "0.0.8", comparison = "pep440" },
+  { id = "aur", role = "baseline", kind = "aur", package = "python-openai-harmony", recorded = "0.0.8-1", comparison = "pkgver" },
+]
+
+[families.rocm_pytorch]
+packages = ["python-pytorch-opt-rocm-gfx1151"]
+priority = "high"
+workflow = "upstream_source_update"
+checks = [
+  { id = "release-branch", role = "primary", kind = "git_ref", repo = "https://github.com/ROCm/pytorch.git", ref = "refs/heads/release/2.11", recorded = "0446f7ba2fd", comparison = "sha" },
+  { id = "arch", role = "baseline", kind = "arch_package", package = "python-pytorch-opt-rocm", recorded = "2.11.0-3", comparison = "pkgver" },
+]
+
+[families.torchvision]
+packages = ["python-torchvision-rocm-gfx1151"]
+priority = "medium"
+workflow = "upstream_source_update"
+checks = [
+  { id = "release", role = "primary", kind = "github_release", repo = "pytorch/vision", recorded = "0.26.0", tag_prefix = "v", comparison = "pep440", include_prereleases = false },
+  { id = "aur", role = "baseline", kind = "aur", package = "python-torchvision-rocm", recorded = "0.26.0-1", comparison = "pkgver" },
+]
+
+[families.triton]
+packages = ["python-triton-gfx1151"]
+priority = "high"
+workflow = "upstream_source_update"
+checks = [
+  { id = "main-perf", role = "primary", kind = "git_ref", repo = "https://github.com/ROCm/triton.git", ref = "refs/heads/main_perf", recorded = "0ec280cf80dd91e9a86887981a670f2d4541a32b", comparison = "sha" },
+  { id = "arch", role = "baseline", kind = "arch_package", package = "python-triton", recorded = "3.5.1-4", comparison = "pkgver" },
+]
+
+[families.aotriton]
+packages = ["python-aotriton-gfx1151"]
+priority = "medium"
+workflow = "upstream_source_update"
+checks = [
+  { id = "release", role = "primary", kind = "github_release", repo = "ROCm/aotriton", recorded = "0.11.2b", comparison = "pep440" },
+  { id = "arch", role = "baseline", kind = "arch_package", package = "python-aotriton", recorded = "0.11.2b-1", comparison = "pkgver" },
+]
+
+[families.aiter]
+packages = ["python-amd-aiter-gfx1151"]
+priority = "high"
+workflow = "upstream_source_update"
+checks = [
+  { id = "release", role = "primary", kind = "github_release", repo = "ROCm/aiter", recorded = "0.1.0", tag_prefix = "v", comparison = "pep440" },
+  { id = "main", role = "primary", kind = "git_ref", repo = "https://github.com/ROCm/aiter.git", ref = "refs/heads/main", recorded = "cf12b1381dcdec4b5d90d136a5403e718c7541ec", comparison = "sha" },
+]
+
+[families.numpy]
+packages = ["python-numpy-gfx1151"]
+priority = "medium"
+workflow = "upstream_source_update"
+checks = [
+  { id = "pypi", role = "primary", kind = "pypi", package = "numpy", recorded = "2.4.4", comparison = "pep440" },
+  { id = "arch", role = "baseline", kind = "arch_package", package = "python-numpy", recorded = "2.4.4-1", comparison = "pkgver" },
+]
+
+[families.orjson]
+packages = ["python-orjson-gfx1151"]
+priority = "medium"
+workflow = "upstream_source_update"
+checks = [
+  { id = "pypi", role = "primary", kind = "pypi", package = "orjson", recorded = "3.11.8", comparison = "pep440" },
+  { id = "arch", role = "baseline", kind = "arch_package", package = "python-orjson", recorded = "3.11.8-1", comparison = "pkgver" },
+]
+
+[families.cryptography]
+packages = ["python-cryptography-gfx1151"]
+priority = "medium"
+workflow = "upstream_source_update"
+checks = [
+  { id = "pypi", role = "primary", kind = "pypi", package = "cryptography", recorded = "46.0.7", comparison = "pep440" },
+  { id = "arch", role = "baseline", kind = "arch_package", package = "python-cryptography", recorded = "46.0.7-1", comparison = "pkgver" },
+]
+
+[families.sentencepiece]
+packages = ["python-sentencepiece-gfx1151"]
+priority = "medium"
+workflow = "upstream_source_update"
+checks = [
+  { id = "pypi", role = "primary", kind = "pypi", package = "sentencepiece", recorded = "0.2.1", comparison = "pep440" },
+  { id = "aur", role = "baseline", kind = "aur", package = "python-sentencepiece", recorded = "0.2.1-2", comparison = "pkgver" },
+]
+
+[families.zstandard]
+packages = ["python-zstandard-gfx1151"]
+priority = "medium"
+workflow = "upstream_source_update"
+checks = [
+  { id = "pypi", role = "primary", kind = "pypi", package = "zstandard", recorded = "0.25.0", comparison = "pep440" },
+  { id = "arch", role = "baseline", kind = "arch_package", package = "python-zstandard", recorded = "0.25.0-2", comparison = "pkgver" },
+]
+
+[families.asyncpg]
+packages = ["python-asyncpg-gfx1151"]
+priority = "medium"
+workflow = "upstream_source_update"
+checks = [
+  { id = "pypi", role = "primary", kind = "pypi", package = "asyncpg", recorded = "0.31.0", comparison = "pep440" },
+  { id = "arch", role = "baseline", kind = "arch_package", package = "python-asyncpg", recorded = "0.31.0-2", comparison = "pkgver" },
+]
+
+[families.torchao]
+packages = ["python-torchao-rocm-gfx1151"]
+priority = "medium"
+workflow = "upstream_source_update"
+checks = [
+  { id = "pypi", role = "primary", kind = "pypi", package = "torchao", recorded = "0.17.0", comparison = "pep440" },
+  { id = "tag", role = "primary", kind = "github_tags", repo = "pytorch/ao", recorded = "0.17.0", tag_prefix = "v", comparison = "pep440", include_prereleases = false },
+]
+
+[families.mistral_common]
+packages = ["python-mistral-common-gfx1151"]
+priority = "medium"
+workflow = "upstream_source_update"
+checks = [
+  { id = "pypi", role = "primary", kind = "pypi", package = "mistral_common", recorded = "1.10.0", comparison = "pep440" },
+  { id = "aur", role = "baseline", kind = "aur", package = "python-mistral-common", recorded = "1.8.6-1", comparison = "pkgver" },
+]
+
+[families.transformers]
+packages = ["python-transformers-gfx1151"]
+priority = "medium"
+workflow = "upstream_source_update"
+checks = [
+  { id = "pypi", role = "primary", kind = "pypi", package = "transformers", recorded = "5.5.4", comparison = "pep440" },
+  { id = "tag", role = "primary", kind = "github_tags", repo = "huggingface/transformers", recorded = "5.5.4", tag_prefix = "v", comparison = "pep440", include_prereleases = false },
+]
+
+[families.llama_cpp]
+packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"]
+priority = "high"
+workflow = "upstream_source_update"
+checks = [
+  { id = "release", role = "primary", kind = "github_release", repo = "ggml-org/llama.cpp", recorded = "b8611", comparison = "prefixed_integer" },
+  { id = "aur-hip", role = "baseline", kind = "aur", package = "llama.cpp-hip", recorded = "b8851-1", comparison = "pkgver" },
+  { id = "aur-vulkan", role = "baseline", kind = "aur", package = "llama.cpp-vulkan-bin", recorded = "b7376-1", comparison = "pkgver" },
+]
+
+[families.lemonade]
+packages = ["lemonade-server", "lemonade-app", "lemonade"]
+priority = "medium"
+workflow = "upstream_source_update"
+checks = [
+  { id = "release", role = "primary", kind = "github_release", repo = "lemonade-sdk/lemonade", recorded = "10.2.0", tag_prefix = "v", comparison = "pep440" },
+  { id = "aur-server", role = "baseline", kind = "aur", package = "lemonade-server", recorded = "10.2.0-1", comparison = "pkgver" },
+  { id = "aur-desktop", role = "baseline", kind = "aur", package = "lemonade-desktop", recorded = "10.2.0-1", comparison = "pkgver" },
+]

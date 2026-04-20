@@ -279,3 +279,16 @@ def test_cache_is_reused_when_policy_digest_matches(tmp_path):
 
     assert second["cache"]["used"] is True
     assert second["families"] == first["families"]
+
+
+def test_real_freshness_policy_covers_every_pkgbuild_dir():
+    repo = Path(__file__).resolve().parents[1]
+
+    report = updates.run_check(
+        repo,
+        refresh=True,
+        clients=updates.FakeClients(allow_missing=True),
+        validate_only=True,
+    )
+
+    assert report["summary"].get("metadata_mismatch", 0) == 0
