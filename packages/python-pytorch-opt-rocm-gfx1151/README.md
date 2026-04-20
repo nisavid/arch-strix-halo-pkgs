@@ -46,7 +46,7 @@ USE_ROCM_CK_GEMM=ON enables Composable Kernel GEMM for ROCm.
 - When updating, inspect the current Arch python-pytorch pkgbase first, then re-evaluate every carried recipe/source patch against the chosen ROCm fork.
 - Keep the package version aligned with the built wheel version; do not repeat the earlier mismatch where the package claimed 2.11.0 but the built wheel came from develop.
 - Keep openblas explicit in both depends and makedepends so the build does not drift back to generic host BLAS auto-detection.
-- Preserve the current Arch Python 3.14 wheel flow unless upstream changes materially: build CMake artifacts first, tolerate the known _sysconfigdata__linux_x86_64-linux-gnu.cpython-314.pyc install failure, run the safe CMake subdirectory install scripts that stage PyTorch C++ extension headers, restage the built torch/lib and torch/bin payloads, then run SKIP_BUILD_DEPS=1 python setup.py bdist_wheel.
+- Preserve the current Arch Python 3.14 wheel flow unless upstream changes materially: build CMake artifacts first, tolerate the known _sysconfigdata__linux_x86_64-linux-gnu.cpython-314.pyc install failure, run the safe CMake install scripts that stage PyTorch C++ extension headers and Caffe2 package metadata, restage the built torch/lib and torch/bin payloads, then run SKIP_BUILD_DEPS=1 python setup.py bdist_wheel.
 
 ## Maintainer Starting Points
 

@@ -235,3 +235,4 @@ def test_pytorch_rocm_renderer_uses_source_patches_for_magma_fix() -> None:
     assert "cmake -P build/torch/headeronly/cmake_install.cmake" in pkgbuild
     assert "cmake -P build/c10/cmake_install.cmake" in pkgbuild
     assert "cmake -P build/caffe2/cmake_install.cmake" in pkgbuild
+    assert "cmake -DCMAKE_INSTALL_COMPONENT=dev -P build/cmake_install.cmake" in pkgbuild
