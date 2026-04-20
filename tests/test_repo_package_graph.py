@@ -112,6 +112,27 @@ def test_discover_repo_package_roots_reads_single_and_multi_output_roots(tmp_pat
     }
 
 
+def test_discover_repo_package_roots_ignores_unrendered_therock_manifest_entries(tmp_path: Path):
+    package_dir = write_therock_pkgbase(tmp_path)
+    manifest = json.loads((package_dir / "manifest.json").read_text(encoding="utf-8"))
+    manifest["packages"]["hipfort-gfx1151"] = {
+        "depends": [],
+        "files": 0,
+        "rendered": False,
+    }
+    (package_dir / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+
+    module = load_module()
+    roots = module.discover_repo_package_roots(tmp_path / "packages")
+
+    assert "hipfort-gfx1151" not in roots["therock-gfx1151"].outputs
+    assert roots["therock-gfx1151"].outputs == (
+        "rocblas-gfx1151",
+        "rocm-core-gfx1151",
+        "rocm-llvm-gfx1151",
+    )
+
+
 def test_topologically_sort_package_roots_orders_repo_dependencies_first(tmp_path: Path):
     write_therock_pkgbase(tmp_path)
     write_recipe_package(

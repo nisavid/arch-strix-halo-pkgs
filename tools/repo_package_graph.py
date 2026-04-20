@@ -50,13 +50,6 @@ def _strip_inline_comment(line: str) -> str:
     return "".join(chars)
 
 
-def _parse_scalar(value: str) -> str:
-    parsed = shlex.split(value, comments=False)
-    if not parsed:
-        raise RuntimeError(f"PKGBUILD_SCALAR_PARSE_FAILED: {value!r}")
-    return parsed[0]
-
-
 def _parse_array(body: str) -> tuple[str, ...]:
     parts = shlex.split(body, comments=False)
     return tuple(parts)
@@ -95,14 +88,7 @@ def read_pkgbuild_metadata(path: Path) -> dict[str, tuple[str, ...] | str]:
         raise RuntimeError(f"PKGBUILD_METADATA_MISSING: {path}")
     depends_value = _extract_assignment(lines, "depends") or ""
     makedepends_value = _extract_assignment(lines, "makedepends") or ""
-    if pkgname_value.startswith("(") or "\n" in pkgname_value:
-        outputs = _parse_array(pkgname_value)
-    elif pkgname_value.startswith("'") or pkgname_value.startswith('"'):
-        outputs = (_parse_scalar(pkgname_value),)
-    elif " " in pkgname_value:
-        outputs = _parse_array(pkgname_value)
-    else:
-        outputs = (pkgname_value.strip().strip("'\""),)
+    outputs = _parse_array(pkgname_value)
     return {
         "outputs": tuple(sorted(output for output in outputs if output)),
         "depends": _parse_array(depends_value),
@@ -119,11 +105,6 @@ def _load_recipe_output(path: Path) -> tuple[str, ...]:
 
 
 def _load_therock_outputs(package_dir: Path) -> tuple[str, ...]:
-    manifest_path = package_dir / "manifest.json"
-    if manifest_path.is_file():
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        packages = manifest.get("packages") or {}
-        return tuple(sorted(str(name) for name in packages))
     metadata = read_pkgbuild_metadata(package_dir / "PKGBUILD")
     return tuple(metadata["outputs"])
 
