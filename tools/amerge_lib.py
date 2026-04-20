@@ -452,7 +452,7 @@ def build_steps(
                         )
                     )
 
-    if command == "publish":
+    if command in {"publish", "deploy"}:
         for index, root_name in enumerate(build_roots, start=1):
             root = roots[root_name]
             steps.append(
@@ -482,7 +482,7 @@ def build_steps(
                 )
             )
 
-    if command == "install":
+    if command in {"install", "deploy"}:
         install_outputs = [
             output
             for root_name in build_roots
@@ -1150,6 +1150,8 @@ def _run_plan_locked(
                 print(f"\033[36m==> {step['label']}\033[0m")
                 for command_index, command in enumerate(step["commands"], start=1):
                     log_path = plan_dir / "logs" / step_id / f"{run_id}-{command_index}.log"
+                    log_path.parent.mkdir(parents=True, exist_ok=True)
+                    log_path.touch(exist_ok=True)
                     current_command_log_path = log_path
                     state = read_json(plan_dir / "state.json")
                     append_command_attempt(
@@ -1281,7 +1283,7 @@ def add_common_plan_args(parser: argparse.ArgumentParser) -> None:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Source-based Arch addon repo merge runner")
     subparsers = parser.add_subparsers(dest="command", required=True)
-    for command in ("run", "build", "publish", "install"):
+    for command in ("run", "build", "publish", "install", "deploy"):
         add_common_plan_args(subparsers.add_parser(command))
 
     resume = subparsers.add_parser("resume")
@@ -1307,7 +1309,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
 
-    if args.command in {"run", "build", "publish", "install"}:
+    if args.command in {"run", "build", "publish", "install", "deploy"}:
         plan = create_merge_plan(args, command=args.command)
         if args.dry_run:
             if args.json:

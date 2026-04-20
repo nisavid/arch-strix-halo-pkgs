@@ -168,12 +168,18 @@ when any were present.
 tools/amerge build python-amd-aiter-gfx1151
 tools/amerge publish python-amd-aiter-gfx1151
 tools/amerge install python-amd-aiter-gfx1151
+tools/amerge deploy python-amd-aiter-gfx1151
 ```
 
 `build` runs only package builds and does not pre-warm sudo. Use it for
 unprivileged/autonomous rebuild attempts when the host already has build
 dependencies installed. `run`, `publish`, and `install` still use sudo for
 repo publication and pacman installation steps.
+
+Use `deploy` after a package has already been built and only the host-facing
+publish/install half remains. It refreshes `repo/x86_64` from the selected
+package roots, republishes the local pacman repo, and installs the selected
+package outputs in one retained plan. It does not run `makepkg`.
 
 Interactive runs preview the merge plan and ask for confirmation unless
 `-y/--noconfirm` is given. Noninteractive runs skip the prompt and preview

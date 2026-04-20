@@ -35,6 +35,12 @@ tools/amerge run --installed
 tools/amerge resume latest
 ```
 
+- Deploy already-built package artifacts:
+
+```bash
+tools/amerge deploy python-amd-aiter-gfx1151 python-vllm-rocm-gfx1151
+```
+
 Use `tools/amerge history` and `tools/amerge logs latest --path` to inspect
 retained state and logs.
 Use `--preview=tree --color=always` when the user wants a colorized plan
@@ -44,8 +50,16 @@ publish, and pacman commands before privileged execution.
 
 ## Operator Notes
 
-- Hand `run`, `publish`, and `install` commands to the user when they need
-  privileged publish/install execution.
+- Hand `run`, `publish`, `install`, and `deploy` commands to the user when
+  they need privileged publish/install execution.
+- When autonomous work produces package artifacts but cannot complete the
+  privileged host mutation, close with the exact `tools/amerge deploy ...`
+  command needed to publish and install those artifacts. Do not leave the user
+  to infer the deployment step from build output or package drift notes.
+- After the user reports the privileged command has completed, run the
+  applicable `pacman -Q ...` and smoke checks yourself when the host is
+  accessible. Ask the user to run verification only when you cannot perform it
+  from the current environment.
 - `tools/amerge build ...` is intentionally unprivileged and should be usable
   autonomously when package build dependencies are already installed. If
   `makepkg` needs missing dependencies, handle that as a host setup blocker

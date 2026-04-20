@@ -257,6 +257,57 @@ def test_install_subcommand_keeps_explicit_split_output_precise(tmp_path: Path):
     assert payload["steps"][0]["commands"][0]["argv"][-1] == "rocm-core-gfx1151"
 
 
+def test_deploy_subcommand_publishes_then_installs_selected_outputs(tmp_path: Path):
+    packages_root = graph_fixture(tmp_path)
+    result = run_amerge(
+        "deploy",
+        "--dry-run",
+        "--json",
+        "--packages-root",
+        str(packages_root),
+        "python-app-gfx1151",
+    )
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    assert payload["merge_plan"]["build_roots"] == ["python-app-gfx1151"]
+    assert payload["merge_plan"]["install_outputs"] == ["python-app-gfx1151"]
+    step_labels = [step["label"] for step in payload["steps"]]
+    assert step_labels == ["publish python-app-gfx1151", "install selected outputs"]
+    assert payload["steps"][0]["kind"] == "publish"
+    assert payload["steps"][1]["kind"] == "install"
+    assert "--require-packagelist" in payload["steps"][0]["commands"][0]["argv"]
+    assert payload["steps"][1]["commands"][0]["argv"] == [
+        "sudo",
+        "pacman",
+        "-Sy",
+        "--noconfirm",
+        "python-app-gfx1151",
+    ]
+
+
+def test_deploy_subcommand_keeps_explicit_split_output_precise(tmp_path: Path):
+    packages_root = graph_fixture(tmp_path)
+    result = run_amerge(
+        "deploy",
+        "--dry-run",
+        "--json",
+        "--packages-root",
+        str(packages_root),
+        "rocm-core-gfx1151",
+    )
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    assert payload["merge_plan"]["build_roots"] == ["therock-gfx1151"]
+    assert payload["merge_plan"]["install_outputs"] == ["rocm-core-gfx1151"]
+    assert [step["label"] for step in payload["steps"]] == [
+        "publish therock-gfx1151",
+        "install selected outputs",
+    ]
+    assert payload["steps"][1]["commands"][0]["argv"][-1] == "rocm-core-gfx1151"
+
+
 def test_tree_preview_uses_unicode_tree_characters(tmp_path: Path):
     packages_root = graph_fixture(tmp_path)
     result = run_amerge(
