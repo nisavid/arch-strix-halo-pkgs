@@ -12,12 +12,6 @@
   TheRock build or staged install that includes those projects.
 - Resume auditing the rest of the TheRock split-package family against the
   best current CachyOS / Arch baselines.
-- Add a repo-owned AOCL post-install runtime smoke. The current package lane
-  has build/test coverage, but no installed-host scenario equivalent to the
-  `llama.cpp` and Lemonade help-entrypoint smokes. Prefer a small check that
-  proves the installed AOCL-LibM library and headers are discoverable and that
-  a tiny linked program or equivalent runtime probe resolves against the
-  packaged library.
 - Convert remaining scripted source edits into durable patch files where
   practical.
 - Revalidate provisional local-origin runtime patches, expected-failure tests,

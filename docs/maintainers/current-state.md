@@ -127,12 +127,13 @@ The following smoke checks have already passed on the reference host:
   AOCL runtime behavior. After the later deploy of `llama.cpp-hip-gfx1151`
   b8851 and `python-mistral-common-gfx1151` 1.11.0, the same tracked smoke
   selection passed again with 4/4 scenarios.
-
-Current smoke gap:
-
-- There is no repo-owned AOCL post-install runtime smoke scenario yet. AOCL has
-  package/build validation, but no tracked installed-host check equivalent to
-  the `llama.cpp` and Lemonade entrypoint smokes.
+- On 2026-04-20, `aocl-libm-gfx1151 5.2.2-1` and
+  `aocl-utils-gfx1151 5.2.2-1` passed the package-local installed-runtime
+  guard:
+  `pytest packages/aocl-libm-gfx1151/tests -q -o cache_dir=/tmp/aocl-package-tests-cache`.
+  The guard checks installed `libalm.so`, `libau_cpuid.so`, AOCL-LibM headers,
+  `libalm.so` RUNPATH `/usr/lib`, the dynamic `libau_cpuid.so` dependency,
+  and a `ctypes` call to `amd_sin(0.5)`.
 
 ## Important Package Decisions
 
