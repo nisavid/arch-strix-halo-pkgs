@@ -1,5 +1,6 @@
 from pathlib import Path
 import importlib.util
+import json
 import textwrap
 
 
@@ -198,3 +199,83 @@ def test_given_query_failure_when_checked_then_not_current(tmp_path):
     report = updates.run_check(tmp_path, refresh=True, clients=clients)
 
     assert report["families"][0]["status"] == "query_failed"
+
+
+def test_cli_json_output_is_parseable(tmp_path, capsys):
+    write_pkg(tmp_path, "python-numpy-gfx1151")
+    write_policy(
+        tmp_path,
+        """
+        [families.numpy]
+        packages = ["python-numpy-gfx1151"]
+        priority = "medium"
+        workflow = "upstream_source_update"
+        checks = [{ id = "manual", role = "primary", kind = "manual", recorded = "n/a" }]
+        """,
+    )
+
+    code = updates.main(
+        ["--repo-root", str(tmp_path), "--json", "--refresh"],
+        clients=updates.FakeClients(),
+    )
+
+    assert code == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["families"][0]["family"] == "numpy"
+
+
+def test_fail_on_actionable_returns_10_for_stable_update(tmp_path):
+    write_pkg(tmp_path, "python-mistral-common-gfx1151")
+    write_policy(
+        tmp_path,
+        """
+        [families.mistral_common]
+        packages = ["python-mistral-common-gfx1151"]
+        priority = "medium"
+        workflow = "upstream_source_update"
+        checks = [{ id = "pypi", role = "primary", kind = "pypi", package = "mistral_common", recorded = "1.10.0", comparison = "pep440" }]
+        """,
+    )
+    clients = updates.FakeClients(
+        pypi={"mistral_common": {"version": "1.11.0"}}
+    )
+
+    code = updates.main(
+        [
+            "--repo-root",
+            str(tmp_path),
+            "--refresh",
+            "--fail-on",
+            "actionable",
+        ],
+        clients=clients,
+    )
+
+    assert code == 10
+
+
+def test_cache_is_reused_when_policy_digest_matches(tmp_path):
+    write_pkg(tmp_path, "python-numpy-gfx1151")
+    write_policy(
+        tmp_path,
+        """
+        [families.numpy]
+        packages = ["python-numpy-gfx1151"]
+        priority = "medium"
+        workflow = "upstream_source_update"
+        checks = [{ id = "pypi", role = "primary", kind = "pypi", package = "numpy", recorded = "2.4.4", comparison = "pep440" }]
+        """,
+    )
+    first = updates.run_check(
+        tmp_path,
+        refresh=True,
+        clients=updates.FakeClients(pypi={"numpy": {"version": "2.4.4"}}),
+    )
+    second = updates.run_check(
+        tmp_path,
+        refresh=False,
+        clients=updates.FakeClients(fail={"pypi:numpy": "should not query"}),
+    )
+
+    assert second["cache"]["used"] is True
+    assert second["families"] == first["families"]

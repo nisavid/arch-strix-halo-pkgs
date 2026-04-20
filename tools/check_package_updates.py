@@ -2,9 +2,15 @@
 
 from __future__ import annotations
 
+import argparse
 from collections import Counter, defaultdict
+import hashlib
+import json
+import os
 from pathlib import Path
 import re
+import sys
+import time
 import tomllib
 
 
@@ -29,6 +35,14 @@ STATUS_PRECEDENCE = [
     "manual_review_required",
     "current",
 ]
+TOOL_VERSION = 1
+CACHE_PATH = Path(".agents/session/dependency-freshness-cache.json")
+ACTIONABLE_STATUSES = {
+    "stable_update_available",
+    "branch_head_ahead",
+    "baseline_drift",
+    "metadata_mismatch",
+}
 
 
 class QueryFailed(RuntimeError):
@@ -131,11 +145,15 @@ def discover_package_dirs(repo_root: Path) -> set[str]:
 
 
 def policy_families(repo_root: Path) -> dict:
-    policy = repo_root / "policies/package-freshness.toml"
+    policy = default_policy_path(repo_root)
     if not policy.exists():
         return {}
     payload = load_toml(policy)
     return payload.get("families", {})
+
+
+def default_policy_path(repo_root: Path) -> Path:
+    return repo_root / "policies/package-freshness.toml"
 
 
 def metadata_mismatch(message: str) -> dict:
@@ -355,28 +373,174 @@ def summarize(families: list[dict]) -> dict:
     return dict(Counter(family["status"] for family in families))
 
 
+def policy_digest(repo_root: Path, only: list[str] | None = None) -> str:
+    hasher = hashlib.sha256()
+    policy = default_policy_path(repo_root)
+    hasher.update(f"tool-version:{TOOL_VERSION}\n".encode())
+    if policy.exists():
+        hasher.update(policy.read_bytes())
+    for package in sorted(discover_package_dirs(repo_root)):
+        hasher.update(f"package:{package}\n".encode())
+    for selector in sorted(only or []):
+        hasher.update(f"only:{selector}\n".encode())
+    return hasher.hexdigest()
+
+
+def cache_file(repo_root: Path) -> Path:
+    return repo_root / CACHE_PATH
+
+
+def read_cache(repo_root: Path, digest: str, max_age_hours: float) -> dict | None:
+    path = cache_file(repo_root)
+    if not path.exists():
+        return None
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    cache = payload.get("cache", {})
+    if cache.get("policy_digest") != digest:
+        return None
+    checked_at = float(cache.get("checked_at", 0))
+    if time.time() - checked_at > max_age_hours * 3600:
+        return None
+    payload["cache"] = cache | {"used": True}
+    return payload
+
+
+def write_cache(repo_root: Path, report: dict) -> None:
+    path = cache_file(repo_root)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    tmp_path.write_text(json.dumps(report, indent=2, sort_keys=True), encoding="utf-8")
+    os.replace(tmp_path, path)
+
+
+def filtered_families(families: dict, only: list[str] | None) -> dict:
+    if not only:
+        return families
+    selectors = set(only)
+    result = {}
+    for name, family in families.items():
+        packages = set(family.get("packages", []))
+        if name in selectors or packages & selectors:
+            result[name] = family
+    return result
+
+
 def run_check(
     repo_root: str | Path,
     *,
     refresh: bool = False,
     clients: FakeClients | None = None,
     only: list[str] | None = None,
+    max_age_hours: float = 24,
+    validate_only: bool = False,
 ) -> dict:
-    del refresh, only
     root = Path(repo_root)
+    digest = policy_digest(root, only)
+    if not refresh and not validate_only:
+        cached = read_cache(root, digest, max_age_hours)
+        if cached is not None:
+            return cached
+
     clients = clients or FakeClients(allow_missing=True)
-    families = policy_families(root)
+    families = filtered_families(policy_families(root), only)
     reports = validate_coverage(root, families)
     if not reports:
         reports.extend(
             family_report(name, family, clients)
             for name, family in sorted(families.items())
         )
-    return {
+    report = {
         "summary": summarize(reports),
         "families": reports,
+        "cache": {
+            "used": False,
+            "checked_at": time.time(),
+            "policy_digest": digest,
+            "tool_version": TOOL_VERSION,
+        },
     }
+    if not validate_only:
+        write_cache(root, report)
+    return report
+
+
+def has_status(report: dict, statuses: set[str]) -> bool:
+    return any(family.get("status") in statuses for family in report["families"])
+
+
+def format_table(report: dict) -> str:
+    rows = [
+        ("priority", "status", "family", "packages", "recorded", "latest", "workflow")
+    ]
+    for family in report["families"]:
+        checks = family.get("checks", [])
+        recorded = ",".join(str(check.get("recorded", "")) for check in checks)
+        latest = ",".join(str(check.get("latest", "")) for check in checks)
+        rows.append(
+            (
+                family.get("priority", ""),
+                family.get("status", ""),
+                family.get("family", ""),
+                ",".join(family.get("packages", [])),
+                recorded,
+                latest,
+                family.get("workflow", ""),
+            )
+        )
+    widths = [max(len(row[index]) for row in rows) for index in range(len(rows[0]))]
+    lines = []
+    for row in rows:
+        lines.append(
+            "  ".join(value.ljust(widths[index]) for index, value in enumerate(row))
+        )
+    return "\n".join(lines)
+
+
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Check repo package upstream and baseline freshness"
+    )
+    parser.add_argument("--repo-root", default=".")
+    parser.add_argument("--policy", default="policies/package-freshness.toml")
+    parser.add_argument("--only", action="append", default=[])
+    parser.add_argument("--json", action="store_true")
+    parser.add_argument("--refresh", action="store_true")
+    parser.add_argument("--max-age-hours", type=float, default=24)
+    parser.add_argument("--fail-on", choices=["actionable"])
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None, *, clients: FakeClients | None = None) -> int:
+    args = parse_args(argv)
+    repo_root = Path(args.repo_root)
+    if args.policy != "policies/package-freshness.toml":
+        # The option is reserved for callers; run_check uses repo-relative policy.
+        policy = repo_root / args.policy
+        if not policy.exists():
+            print(f"POLICY_NOT_FOUND: {policy}", file=sys.stderr)
+            return 2
+
+    report = run_check(
+        repo_root,
+        refresh=args.refresh,
+        clients=clients,
+        only=args.only,
+        max_age_hours=args.max_age_hours,
+    )
+    if args.json:
+        print(json.dumps(report, indent=2, sort_keys=True))
+    else:
+        print(format_table(report))
+
+    if has_status(report, {"query_failed"}):
+        return 3
+    if args.fail_on == "actionable" and has_status(report, ACTIONABLE_STATUSES):
+        return 10
+    return 0
 
 
 if __name__ == "__main__":  # pragma: no cover
-    raise SystemExit(0)
+    raise SystemExit(main())
