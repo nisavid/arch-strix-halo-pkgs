@@ -439,11 +439,23 @@ The following smoke checks have already passed on the reference host:
     `vllm.qwen3_5.0_8b.text.basic` for the tiny hybrid/GDN smoke and
     `vllm.qwen3_6.35b-a3b-fp8.text.basic` for the Qwen3.6 FP8 MoE smoke
   - `vllm.qwen3_5.0_8b.text.basic` failed on 2026-04-19 after model loading
-    with a ROCm GPU memory-access fault. The failure still reproduced with
-    `FLA_GDN_FIX_BT=1`, with `--max-num-batched-tokens 32`, with forced
-    `TRITON_ATTN`, and after skipping
-    `GatedDeltaNetAttention._warmup_prefill_kernels`, so the remaining blocker
-    is deeper than the known `T < 64` GDN warmup/autotune issue.
+    with a ROCm GPU memory-access fault. The failure is now localized past GDN
+    warmup, GDN prefill/recurrent kernels, full-attention kernels,
+    decoder-layer execution, model forward, logits computation, and
+    hidden-state indexing.
+  - the Qwen3.5 0.8B fault has a standalone sampler repro: vLLM's Triton
+    `apply_top_k_top_p` filter faults on ROCm/gfx1151 for logits shaped
+    `(32, 248320)` with top-k enabled and top-p `0.9`, while vLLM's existing
+    PyTorch fallback completes on the same tensor.
+  - `python-vllm-rocm-gfx1151` pkgrel `-27` now carries
+    `0011-rocm-avoid-triton-topk-topp-sampler.patch`, routing ROCm
+    top-k/top-p filtering through that PyTorch fallback. `tools/amerge build
+    python-vllm-rocm-gfx1151` produced pkgrel `-27`; using that built package
+    payload on `PYTHONPATH`, the standalone `(32, 248320)` sampler repro
+    completed and `vllm.qwen3_5.0_8b.text.basic` passed against the
+    `/var/cache/hf` Qwen3.5 snapshot in 42.948777 seconds. Publishing and
+    installing pkgrel `-27` still need an operator step before installed-host
+    rerun coverage.
   - `vllm.qwen3_6.35b-a3b-fp8.text.basic` defaults to the AITER FP8 MoE path
     through `VLLM_ROCM_USE_AITER=1` and `VLLM_ROCM_USE_AITER_MOE=1`. On the
     currently installed AITER pkgrel `-7`, the 2026-04-19 run selected
@@ -458,6 +470,14 @@ The following smoke checks have already passed on the reference host:
     `hip_compat.h`. Publishing/installing pkgrel `-8` still needs operator
     sudo; `tools/amerge publish python-amd-aiter-gfx1151` could not run
     autonomously because sudo requested an interactive password.
+  - A built-payload rerun of `vllm.qwen3_6.35b-a3b-fp8.text.basic` with AITER
+    pkgrel `-8` and vLLM pkgrel `-27` cleared the earlier `hip_compat.h`
+    blocker, selected the AITER FP8 MoE path, and then failed during
+    `aiter.jit.module_quant` compilation with
+    `aiter_meta/csrc/include/opus/opus.hpp:3001:24: error: unknown type name
+    'mfma_adaptor'`. The next Qwen3.6 decision is whether AITER's gfx1151
+    MFMA/WMMA guard path has a narrow package fix or whether this AITER FP8
+    MoE lane should remain a documented follow-up rather than a merge blocker.
 - The tracked host-side follow-up helper for OpenAI-compatible server smokes is
   now `tools/gemma4_server_smoke.py`.
   - `--mode basic` launches

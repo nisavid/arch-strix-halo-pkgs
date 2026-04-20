@@ -58,6 +58,14 @@ system.
   - The current validated `google/gemma-4-26B-A4B-it` lane still uses Triton
     for unquantized MoE, so this remains the only retained Gemma 4/AITER carry
     on the maintained default path.
+- [Support Qwen3.5 hybrid/GDN on ROCm](../packages/python-vllm-rocm-gfx1151/0010-rocm-support-qwen35-hybrid-gdn.patch)
+  - Restricts AMD FLA/GDN autotune shapes, casts GDN exponent operands through
+    float32, preserves hybrid block-size alignment after ROCm platform updates,
+    and keeps hybrid full-attention layers away from AITER attention.
+- [Avoid the Triton top-k/top-p sampler filter on ROCm](../packages/python-vllm-rocm-gfx1151/0011-rocm-avoid-triton-topk-topp-sampler.patch)
+  - Routes ROCm top-k/top-p filtering through vLLM's existing PyTorch fallback
+    because the Triton filter path faults on gfx1151 for the Qwen3.5-family
+    `(32, 248320)` logits shape, while the PyTorch fallback completes.
 
 ## AITER
 

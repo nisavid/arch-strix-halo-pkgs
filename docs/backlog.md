@@ -86,11 +86,23 @@
   - the old non-GGUF checkpoint blocker is cleared: the reference host's
     current `HF_HOME` is `/var/cache/hf`, with local snapshots for
     `Qwen/Qwen3.5-0.8B` and `Qwen/Qwen3.6-35B-A3B-FP8`
-  - Qwen3.5 0.8B still fails during vLLM engine initialization with a ROCm GPU
-    memory-access fault after model loading; `FLA_GDN_FIX_BT=1`,
-    `--max-num-batched-tokens 32`, forced `TRITON_ATTN`, and skipping GDN
-    prefill warmup did not clear it, so this remains a deeper GDN/profile-run
-    follow-up
+  - done for Qwen3.5 0.8B root-cause localization: the profile-run memory
+    fault is not in GDN warmup, GDN prefill/recurrent kernels, full-attention
+    kernels, decoder-layer execution, model forward, logits computation, or
+    hidden-state indexing. A standalone repro faults in vLLM's Triton
+    `apply_top_k_top_p` sampler filter for logits shaped `(32, 248320)` with
+    top-k enabled and top-p `0.9`; the existing PyTorch fallback completes on
+    the same tensor.
+  - done for the package-side Qwen3.5 sampler fix: `python-vllm-rocm-gfx1151`
+    now carries `0011-rocm-avoid-triton-topk-topp-sampler.patch`, which routes
+    ROCm top-k/top-p filtering through vLLM's existing PyTorch fallback.
+  - done for built-package validation: `tools/amerge build
+    python-vllm-rocm-gfx1151` produced pkgrel `-27`, the built package payload
+    contains the ROCm sampler fallback, the standalone `(32, 248320)` sampler
+    repro completed through that payload, and
+    `vllm.qwen3_5.0_8b.text.basic` passed against the `/var/cache/hf`
+    Qwen3.5 snapshot in 42.948777 seconds. Installing/publishing pkgrel `-27`
+    remains an operator step before installed-host rerun coverage.
   - Qwen3.6 FP8 MoE now has a viable AITER-first path: the tracked scenario
     sets `VLLM_ROCM_USE_AITER=1` and `VLLM_ROCM_USE_AITER_MOE=1`, and the
     reference host selected `Using AITER Fp8 MoE backend` before failing in
@@ -100,10 +112,12 @@
     builds through `tools/amerge build python-amd-aiter-gfx1151`, and the
     built package's installed header no longer references missing
     `hip_compat.h`
-  - next install/publish `python-amd-aiter-gfx1151` pkgrel `-8` and rerun
-    `vllm.qwen3_6.35b-a3b-fp8.text.basic`; the agent could build the package
-    but `tools/amerge publish python-amd-aiter-gfx1151` required an
-    interactive sudo password
+  - the built-payload Qwen3.6 rerun with AITER pkgrel `-8` and vLLM pkgrel
+    `-27` cleared the earlier `hip_compat.h` blocker, selected the AITER FP8
+    MoE path, and then failed during `aiter.jit.module_quant` compilation with
+    `aiter_meta/csrc/include/opus/opus.hpp:3001:24: error: unknown type name
+    'mfma_adaptor'`. Next investigate AITER's gfx1151 MFMA/WMMA guard path, or
+    decide the current AITER FP8 MoE lane is not merge-blocking.
 - Only revisit Gemma 4 on AITER fused-MoE if there is a concrete reason to
   move off the current TRITON unquantized-MoE lane.
   - treat any such attempt as a fresh experiment

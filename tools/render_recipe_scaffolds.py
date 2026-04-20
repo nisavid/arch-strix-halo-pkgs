@@ -644,7 +644,9 @@ _source_tree_has_all_source_patches() {
     grep -Fq 'return on_mi3xx() or on_gfx1x()' vllm/_aiter_ops.py &&
     grep -Fq 'def torchao_version_at_least(torchao_version: str) -> bool:' \
       vllm/model_executor/layers/quantization/torchao_utils.py &&
-    grep -Fq 'Hybrid models need TRITON_ATTN' vllm/platforms/rocm.py
+    grep -Fq 'Hybrid models need TRITON_ATTN' vllm/platforms/rocm.py &&
+    grep -Fq 'Use PyTorch top-k/top-p filtering on ROCm' \
+      vllm/v1/sample/ops/topk_topp_sampler.py
 }
 
 _apply_all_source_patches() {

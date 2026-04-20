@@ -12,7 +12,7 @@
 - Recorded reference packages: `aur/python-vllm`
 - Authoritative reference package: `aur/python-vllm`
 - Advisory reference packages: `none`
-- Applied source patch files/actions: `37`
+- Applied source patch files/actions: `38`
 
 ## Recipe notes
 
@@ -47,6 +47,7 @@ recorded in .aiter-status file ("enabled" or "disabled").
 - Depends on the local python-mistral-common-gfx1151 closure package rather than the stale host python-mistral-common 1.8.x lane because Transformers 5.5.x imports ReasoningEffort from mistral_common.protocol.instruct.request.
 - Carries a merged TorchAO startup-laziness patch so generic vLLM startup paths keep TorchAO version checks metadata-only and only import `TorchAOConfig` when `quantization == torchao`. This keeps optional broken host python-torchao-rocm packages from surfacing warning noise on unrelated code paths.
 - Carries a merged CLI/runtime-light startup patch so plain `vllm --help` stays off the benchmark latency tree, OpenAI chat-utils tool-call path, Transformers-backed `arg_utils` helpers, and heavy `serve`/`launch`/`run-batch` runtime imports unless the user actually selected those flows.
+- Carries a ROCm top-k/top-p sampler guard so large-vocabulary Qwen3.5-family runs use vLLM's existing PyTorch filtering fallback instead of the Triton filter path that faulted the GPU on gfx1151.
 - The reference host now uses the local python-torchao-rocm-gfx1151 replacement lane, so the old external python-torchao-rocm failure is historical rather than current state. Generic vLLM startup should still stay TorchAO-clean on non-TorchAO code paths, and the tracked helpers for actual --quantization torchao support remain tools/torchao_vllm_smoke.py plus the Gemma 4 TorchAO scenarios.
 - `tools/torchao_vllm_smoke.py` now covers the tiny no-download checkpoint, a serialized real-model probe, and a real-model online quantization path. On 2026-04-19, `vllm.gemma4.e2b.torchao.online-real-model` passed on the reference host with `quantization=torchao`, `ROCM_AITER_UNIFIED_ATTN`, and 10.62 GiB model-loading memory. Keep the serialized real-model scenario exploratory: it now writes processor files correctly, but still fails in TorchAO/vLLM weight loading with `AttributeError: 'Tensor' object has no attribute 'tensor_data_names'`.
 - makepkg -e reuses src/, so build() intentionally reapplies the carried source patches before wheel generation instead of assuming prepare() already ran in the current tree.
@@ -87,6 +88,7 @@ recorded in .aiter-status file ("enabled" or "disabled").
 - Keep TorchAO version checks metadata-only on generic startup paths unless upstream reorganizes its quantization imports. The concrete host failure was an external python-torchao-rocm package whose optional _C.abi3.so extension was both missing a usable torch/lib runpath and built against an incompatible PyTorch ABI, causing warning noise during unrelated vLLM startup when vLLM imported the TorchAO quantization module just to ask a version question.
 - Keep the merged TorchAO startup-laziness patch intact unless upstream reorganizes its quantization imports. That carry now covers both metadata-only version checks and quantization-registry lazy imports, which are jointly required to keep generic startup paths off the full TorchAO module unless `quantization == "torchao"`.
 - Keep the merged CLI/runtime-light startup patch intact unless upstream makes the generic startup path import-clean on its own. That carry now keeps plain `vllm --help` off the benchmark tree, OpenAI chat-utils path, Transformers-backed `arg_utils` helpers, and the heavy shared runtime command imports.
+- Keep the ROCm top-k/top-p sampler patch unless upstream or the local Triton lane proves `apply_top_k_top_p_triton` safe for large Qwen-family vocabularies on gfx1151. The 2026-04-19 standalone repro faulted the GPU with logits shaped `(32, 248320)`, top-k enabled, and top-p `0.9`, while vLLM's existing PyTorch fallback completed on the same tensor.
 - Keep patch application idempotent across reused src/ trees. The concrete host failure while cutting pkgrel=14 was a file-adding patch aborting in `prepare()` after a previous failed build left a partially patched source tree behind.
 - Keep the inherited makepkg compile flags when layering Strix tuning flags. Overwriting CFLAGS/CXXFLAGS drops Arch's build-path prefix maps and can leak $srcdir paths into the shipped ROCm extension modules.
 - Keep HIP build-path prefix-map flags explicit and forwarded through setup.py. The ROCm extension build does not automatically inherit the host C/C++ prefix-map settings into CMAKE_HIP_FLAGS, so sanitization has to be carried through HIPFLAGS and then bridged into CMake.
