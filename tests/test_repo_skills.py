@@ -6,7 +6,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 
 def test_repo_local_workflow_skills_exist_and_cross_reference():
     zsh_skill = REPO_ROOT / ".agents/skills/idiomatic-zsh/SKILL.md"
-    rebuild_skill = REPO_ROOT / ".agents/skills/rebuild-publish-install-local-packages/SKILL.md"
+    rebuild_skill = REPO_ROOT / ".agents/skills/deploying-local-arch-packages/SKILL.md"
     inference_skill = REPO_ROOT / ".agents/skills/run-local-inference-scenarios/SKILL.md"
 
     assert zsh_skill.is_file()
