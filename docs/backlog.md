@@ -25,13 +25,12 @@
 
 - Resume auditing the rest of the TheRock split-package family against the
   best current CachyOS / Arch baselines.
-- Finish live-host install parity for already-built freshness artifacts before
-  treating the 2026-04-20 package update as fully installed. During the docs
-  sweep, package definitions/artifacts were current for `llama.cpp` b8851 and
-  `python-mistral-common-gfx1151` 1.11.0, but the live host still reported
-  `llama.cpp-hip-gfx1151 b8611.r8.d20260317.gad42886-1` and
-  `python-mistral-common-gfx1151 1.10.0-1`; install those refreshed packages
-  and rerun the relevant smokes before claiming installed-host parity.
+- Done for live-host install parity for already-built freshness artifacts:
+  `tools/amerge deploy -y llama.cpp-hip-gfx1151 python-mistral-common-gfx1151`
+  completed on 2026-04-20, `pacman -Q` reports
+  `llama.cpp-hip-gfx1151 b8851.r8.d20260317.gad42886-1` and
+  `python-mistral-common-gfx1151 1.11.0-1`, and the tracked `llama.cpp` plus
+  Lemonade help-entrypoint smokes passed afterward.
 - Add a repo-owned AOCL post-install runtime smoke. The current package lane
   has build/test coverage, but no installed-host scenario equivalent to the
   `llama.cpp` and Lemonade help-entrypoint smokes. Prefer a small check that

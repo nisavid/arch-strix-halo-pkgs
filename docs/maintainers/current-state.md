@@ -69,19 +69,16 @@ Current package freshness integration state, checked on 2026-04-20:
 - `llama.cpp-hip-gfx1151` and `llama.cpp-vulkan-gfx1151` package definitions
   track upstream llama.cpp `b8851` at commit
   `e365e658f07b63371489570dfde597f199b26c23`. Both b8851 package artifacts
-  exist and the ignored local repo metadata has been refreshed. As of the
-  docs sweep on 2026-04-20, the live host still reported
-  `llama.cpp-hip-gfx1151 b8611.r8.d20260317.gad42886-1` while Vulkan reported
-  `b8851.r8.d20260317.gad42886-1`; install the HIP package before treating
-  installed-host smokes or Lemonade HIP backend metadata as b8851 validation.
-  The Vulkan package metadata now includes `spirv-headers` because b8851
-  includes `spirv/unified1/spirv.hpp` directly.
+  exist, the ignored local repo metadata has been refreshed, and after
+  `tools/amerge deploy -y llama.cpp-hip-gfx1151 python-mistral-common-gfx1151`
+  completed on 2026-04-20 the live host reports both HIP and Vulkan llama.cpp
+  packages at `b8851.r8.d20260317.gad42886-1`. The Vulkan package metadata now
+  includes `spirv-headers` because b8851 includes `spirv/unified1/spirv.hpp`
+  directly.
 - `python-mistral-common-gfx1151` tracks PyPI `1.11.0`, rebuilt successfully,
-  and has been refreshed into the ignored local repo. As of the docs sweep on
-  2026-04-20, the live host still reported
-  `python-mistral-common-gfx1151 1.10.0-1`; that remains new enough for the
-  `ReasoningEffort` compatibility boundary, but install `1.11.0-1` before
-  claiming installed-host parity with the package definition.
+  has been refreshed into the ignored local repo, and was installed on the
+  live host through the same 2026-04-20 deploy plan. The live host now reports
+  `python-mistral-common-gfx1151 1.11.0-1`.
 - `python-pytorch-opt-rocm-gfx1151` tracks ROCm/pytorch `release/2.11` at
   commit `8543095e3275db694084a6679bd5b61f7d2ece76`; this heavy source build
   was not rerun during the freshness metadata integration.
@@ -121,8 +118,9 @@ The following smoke checks have already passed on the reference host:
   `python tools/run_inference_scenarios.py --engine llama.cpp --engine lemonade --tag smoke`
   passed the tracked help-entrypoint scenarios for both `llama.cpp` backends
   and Lemonade CLI/server. That confirms installed command availability, not
-  AOCL runtime behavior and not the uninstalled b8851 HIP artifact noted
-  above.
+  AOCL runtime behavior. After the later deploy of `llama.cpp-hip-gfx1151`
+  b8851 and `python-mistral-common-gfx1151` 1.11.0, the same tracked smoke
+  selection passed again with 4/4 scenarios.
 
 Current smoke gap:
 
