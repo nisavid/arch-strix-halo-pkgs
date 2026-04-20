@@ -322,6 +322,13 @@ def metadata_mismatch(message: str) -> dict:
     }
 
 
+def selector_mismatch(unmatched: set[str]) -> dict:
+    selectors = ", ".join(sorted(unmatched))
+    return metadata_mismatch(
+        f"Freshness --only selectors do not match a package family or package: {selectors}"
+    ) | {"family": "policy-selector"}
+
+
 def validate_coverage(repo_root: Path, families: dict) -> list[dict]:
     package_dirs = discover_package_dirs(repo_root)
     package_to_families: dict[str, list[str]] = defaultdict(list)
@@ -605,6 +612,15 @@ def filtered_families(families: dict, only: list[str] | None) -> dict:
     return result
 
 
+def unmatched_selectors(families: dict, only: list[str] | None) -> set[str]:
+    if not only:
+        return set()
+    known = set(families)
+    for family in families.values():
+        known.update(family.get("packages", []))
+    return set(only) - known
+
+
 def run_check(
     repo_root: str | Path,
     *,
@@ -625,6 +641,9 @@ def run_check(
     all_families = policy_families(root)
     reports = validate_coverage(root, all_families)
     families = filtered_families(all_families, only)
+    unmatched = unmatched_selectors(all_families, only)
+    if not reports and unmatched:
+        reports.append(selector_mismatch(unmatched))
     if not reports:
         reports.extend(
             family_report(name, family, clients)

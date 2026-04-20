@@ -243,6 +243,43 @@ def test_only_selector_does_not_turn_unselected_covered_packages_into_mismatches
     assert [family["family"] for family in report["families"]] == ["aiter"]
 
 
+def test_unknown_only_selector_reports_metadata_mismatch(tmp_path):
+    write_pkg(tmp_path, "python-amd-aiter-gfx1151")
+    write_pkg(tmp_path, "python-numpy-gfx1151")
+    write_policy(
+        tmp_path,
+        """
+        [families.aiter]
+        packages = ["python-amd-aiter-gfx1151"]
+        priority = "high"
+        workflow = "upstream_source_update"
+        checks = [{ id = "main", role = "candidate", kind = "git_ref", repo = "https://github.com/ROCm/aiter.git", ref = "refs/heads/main", recorded = "afddcbf4", comparison = "sha" }]
+
+        [families.numpy]
+        packages = ["python-numpy-gfx1151"]
+        priority = "medium"
+        workflow = "upstream_source_update"
+        checks = [{ id = "pypi", role = "primary", kind = "pypi", package = "numpy", recorded = "2.4.4", comparison = "pep440" }]
+        """,
+    )
+    clients = updates.FakeClients(
+        fail={
+            "git_ref:https://github.com/ROCm/aiter.git:refs/heads/main": "selected families should not be queried when a selector is invalid"
+        }
+    )
+
+    report = updates.run_check(
+        tmp_path,
+        refresh=True,
+        clients=clients,
+        only=["python-amd-aiter-gfx1151", "does-not-exist"],
+    )
+
+    assert report["summary"] == {"metadata_mismatch": 1}
+    assert report["families"][0]["family"] == "policy-selector"
+    assert "does-not-exist" in report["families"][0]["message"]
+
+
 def test_given_candidate_ref_ahead_when_checked_then_candidate_head_ahead(tmp_path):
     write_pkg(tmp_path, "python-amd-aiter-gfx1151")
     write_policy(
@@ -385,7 +422,10 @@ def test_candidate_and_scout_roles_require_sha_ref_checks(tmp_path):
         packages = ["python-amd-aiter-gfx1151"]
         priority = "high"
         workflow = "upstream_source_update"
-        checks = [{ id = "release", role = "candidate", kind = "github_release", repo = "ROCm/aiter", recorded = "0.1.12.post1", comparison = "pep440" }]
+        checks = [
+          { id = "candidate-release", role = "candidate", kind = "github_release", repo = "ROCm/aiter", recorded = "0.1.12.post1", comparison = "pep440" },
+          { id = "scout-release", role = "scout", kind = "github_release", repo = "ROCm/aiter", recorded = "0.1.12.post1", comparison = "pep440" },
+        ]
         """,
     )
 
@@ -395,6 +435,7 @@ def test_candidate_and_scout_roles_require_sha_ref_checks(tmp_path):
 
     assert report["families"][0]["status"] == "metadata_mismatch"
     assert "candidate checks must use sha ref kinds" in report["families"][0]["checks"][0]["message"]
+    assert "scout checks must use sha ref kinds" in report["families"][0]["checks"][1]["message"]
 
 
 def test_primary_sha_ref_drift_keeps_legacy_branch_head_status(tmp_path):
@@ -445,6 +486,33 @@ def test_candidate_drift_precedes_baseline_drift(tmp_path):
     report = updates.run_check(tmp_path, refresh=True, clients=clients)
 
     assert report["families"][0]["status"] == "candidate_head_ahead"
+
+
+def test_stable_update_precedes_candidate_drift(tmp_path):
+    write_pkg(tmp_path, "python-amd-aiter-gfx1151")
+    write_policy(
+        tmp_path,
+        """
+        [families.aiter]
+        packages = ["python-amd-aiter-gfx1151"]
+        priority = "high"
+        workflow = "upstream_source_update"
+        checks = [
+          { id = "release", role = "primary", kind = "pypi", package = "amd-aiter", recorded = "0.1.12", comparison = "pep440" },
+          { id = "main", role = "candidate", kind = "git_ref", repo = "https://github.com/ROCm/aiter.git", ref = "refs/heads/main", recorded = "cf12b138", comparison = "sha" },
+        ]
+        """,
+    )
+    clients = updates.FakeClients(
+        pypi={"amd-aiter": {"version": "0.1.13"}},
+        git_refs={
+            "https://github.com/ROCm/aiter.git:refs/heads/main": "afddcbf4"
+        },
+    )
+
+    report = updates.run_check(tmp_path, refresh=True, clients=clients)
+
+    assert report["families"][0]["status"] == "stable_update_available"
 
 
 def test_baseline_drift_precedes_scout_drift(tmp_path):
