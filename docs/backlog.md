@@ -21,11 +21,12 @@
 - Convert remaining scripted source edits into durable patch files where
   practical.
 - Revalidate provisional local-origin runtime patches, expected-failure tests,
-  and backlog findings after the self-hosted rebuild completes. Use
-  `docs/maintainers/rebuild-revalidation.md` as the source of pending items,
-  rerun the named inference scenarios against the rebuilt installed stack, then
-  promote reproduced items into accepted docs or retire items that no longer
-  reproduce.
+  and backlog findings now that the self-hosted native rebuild is complete.
+  Use `docs/maintainers/rebuild-revalidation.md` as the source of pending
+  items, rerun the named inference scenarios against the rebuilt installed
+  stack, discover missing patch backstories from git history and Codex session
+  transcripts where needed, then promote reproduced items into accepted docs or
+  retire items that no longer reproduce.
 - Tighten package hygiene for embedded build paths in PyTorch and vLLM.
 - Fix `tools/render_recipe_scaffolds.py` before relying on it for
   `python-torchao-rocm-gfx1151` PKGBUILD regeneration. A 2026-04-19 render

@@ -9,6 +9,10 @@ stack build. The confidence boundary is 2026-04-20, when the repo started
 treating self-hosted rebuild validation as the source of truth for accepted
 runtime behavior.
 
+The self-hosted native rebuild completed on 2026-04-20. Items still marked
+`pending` are waiting on post-rebuild runtime or patch-specific revalidation,
+not on another full stack rebuild.
+
 Do not use `docs/patches.md` as the exhaustive patch source. It is a curated
 summary. For patch revalidation, start from the actual applied patch metadata:
 `policies/recipe-packages.toml`, `packages/*/recipe.json`, and the generated
@@ -35,8 +39,20 @@ summary. For patch revalidation, start from the actual applied patch metadata:
   same failure class and the assertion is tracked as an expected outcome.
 - Patches sourced directly from upstream, Blackcat Informatics' recipe work, or
   recipe dynamic-patching scripts are not revalidated as local-origin patch
-  carry. Revalidate the local runtime finding only when the repo also records a
-  dependency-sensitive expected failure or backlog item around that behavior.
+  carry. Local runtime findings around those patches can still need
+  revalidation when the repo records, or can discover, a dependency-sensitive
+  behavior that the patch affects.
+- Prefer existing executable specs, inference scenarios, package-local tests,
+  and backlog notes as revalidation entrypoints. If none exist for a
+  local-origin patch, search git history and available Codex session
+  transcripts for the patch backstory. If that still does not identify the
+  original failure, infer the best likely resolution from the patch, package
+  context, and neighboring docs.
+- Revalidation may start from a discovered resolution rather than a preexisting
+  test. A local-origin patch that remains accepted after revalidation must end
+  with a test or tracked scenario that is addressed by the patch: it should
+  fail without the patch and pass with it, or document why an exact
+  patch-off reproduction is impractical and what equivalent guard covers it.
 - If the post-rebuild stack behaves correctly without a provisional patch,
   mark the item `retired`, remove the patch in a separate change, and update
   the accepted docs.
