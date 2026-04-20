@@ -23,6 +23,9 @@
 
 ## Packaging And Build Hygiene
 
+- Render `amerge --preview=tree` dependency forests as visual parent/child
+  trees using box-drawing branches, similar to `dust` or `lsd --tree`, instead
+  of listing build-order nodes with symbolic dependency references.
 - Resume auditing the rest of the TheRock split-package family against the
   best current CachyOS / Arch baselines.
 - Done for live-host install parity for already-built freshness artifacts:
