@@ -34,11 +34,11 @@
     "half-gfx1151": {
       "depends": [],
       "fileless": false,
-      "files": 0,
+      "files": 1,
       "provides": [
         "half"
       ],
-      "rendered": false
+      "rendered": true
     },
     "hip-gfx1151": {
       "depends": [
@@ -146,11 +146,11 @@
         "rocm-llvm-gfx1151"
       ],
       "fileless": false,
-      "files": 0,
+      "files": 12,
       "provides": [
         "hipify-clang"
       ],
-      "rendered": false
+      "rendered": true
     },
     "hiprand-gfx1151": {
       "depends": [
@@ -295,11 +295,11 @@
     "rocdecode-gfx1151": {
       "depends": [],
       "fileless": false,
-      "files": 0,
+      "files": 108,
       "provides": [
         "rocdecode"
       ],
-      "rendered": false
+      "rendered": true
     },
     "rocfft-gfx1151": {
       "depends": [],
@@ -313,11 +313,11 @@
     "rocjpeg-gfx1151": {
       "depends": [],
       "fileless": false,
-      "files": 0,
+      "files": 22,
       "provides": [
         "rocjpeg"
       ],
-      "rendered": false
+      "rendered": true
     },
     "rocm-cmake-gfx1151": {
       "depends": [],
@@ -482,11 +482,11 @@
     "rocm-host-math-gfx1151": {
       "depends": [],
       "fileless": false,
-      "files": 0,
+      "files": 97,
       "provides": [
         "rocm-host-math"
       ],
-      "rendered": false
+      "rendered": true
     },
     "rocm-language-runtime-gfx1151": {
       "depends": [],
@@ -654,22 +654,22 @@
         "rocprofiler-sdk-gfx1151"
       ],
       "fileless": false,
-      "files": 0,
+      "files": 24,
       "provides": [
         "rocprofiler-sdk-rocpd"
       ],
-      "rendered": false
+      "rendered": true
     },
     "rocprofiler-sdk-roctx-gfx1151": {
       "depends": [
         "rocprofiler-sdk-gfx1151"
       ],
       "fileless": false,
-      "files": 0,
+      "files": 13,
       "provides": [
         "rocprofiler-sdk-roctx"
       ],
-      "rendered": false
+      "rendered": true
     },
     "rocprofiler-systems-gfx1151": {
       "depends": [],
@@ -693,11 +693,11 @@
     "rocshmem-gfx1151": {
       "depends": [],
       "fileless": false,
-      "files": 0,
+      "files": 17,
       "provides": [
         "rocshmem"
       ],
-      "rendered": false
+      "rendered": true
     },
     "rocsolver-gfx1151": {
       "depends": [

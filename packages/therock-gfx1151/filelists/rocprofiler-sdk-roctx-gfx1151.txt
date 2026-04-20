@@ -1,0 +1,13 @@
+opt/rocm/include/rocprofiler-sdk-roctx/api_trace.h
+opt/rocm/include/rocprofiler-sdk-roctx/defines.h
+opt/rocm/include/rocprofiler-sdk-roctx/roctx.h
+opt/rocm/include/rocprofiler-sdk-roctx/types.h
+opt/rocm/include/rocprofiler-sdk-roctx/version.h
+opt/rocm/lib/cmake/rocprofiler-sdk-roctx/rocprofiler-sdk-roctx-config-version.cmake
+opt/rocm/lib/cmake/rocprofiler-sdk-roctx/rocprofiler-sdk-roctx-config.cmake
+opt/rocm/lib/cmake/rocprofiler-sdk-roctx/rocprofiler-sdk-roctx-targets-release.cmake
+opt/rocm/lib/cmake/rocprofiler-sdk-roctx/rocprofiler-sdk-roctx-targets.cmake
+opt/rocm/lib/librocprofiler-sdk-roctx.so
+opt/rocm/lib/librocprofiler-sdk-roctx.so.1
+opt/rocm/lib/librocprofiler-sdk-roctx.so.1.2.0
+opt/rocm/share/rocprofiler-sdk-roctx/setup-env.sh

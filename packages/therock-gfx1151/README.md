@@ -14,7 +14,7 @@ It is generated from:
 Run:
 
 ```bash
-python tools/render_therock_pkgbase.py --therock-root /
+python tools/render_therock_pkgbase.py --therock-root <staged-root>
 ```
 
 That command:
@@ -28,8 +28,8 @@ That command:
 ## Build expectation
 
 The generated `PKGBUILD` expects `_THEROCK_ROOT` to point at a filesystem root
-that contains `opt/rocm`. For a live local tree, `_THEROCK_ROOT=/` is valid.
-For a staged install tree, point it at that staging root instead.
+that contains `opt/rocm`. For a complete live local tree, `_THEROCK_ROOT=/` is
+valid. For a staged install tree, point it at that staging root instead.
 
 ## rocm-core baseline
 

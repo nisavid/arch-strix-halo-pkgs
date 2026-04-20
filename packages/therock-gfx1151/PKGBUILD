@@ -8,6 +8,7 @@ pkgname=(
   'amdsmi-gfx1151'
   'comgr-gfx1151'
   'composable-kernel-gfx1151'
+  'half-gfx1151'
   'hip-gfx1151'
   'hip-runtime-amd-gfx1151'
   'hipblas-common-gfx1151'
@@ -16,6 +17,7 @@ pkgname=(
   'hipcc-gfx1151'
   'hipcub-gfx1151'
   'hipfft-gfx1151'
+  'hipify-clang-gfx1151'
   'hiprand-gfx1151'
   'hipsolver-gfx1151'
   'hipsparse-gfx1151'
@@ -29,7 +31,9 @@ pkgname=(
   'miopen-hip-gfx1151'
   'rccl-gfx1151'
   'rocblas-gfx1151'
+  'rocdecode-gfx1151'
   'rocfft-gfx1151'
+  'rocjpeg-gfx1151'
   'rocm-cmake-gfx1151'
   'rocm-core-gfx1151'
   'rocm-dbgapi-gfx1151'
@@ -42,6 +46,7 @@ pkgname=(
   'rocm-hip-libraries-gfx1151'
   'rocm-hip-runtime-gfx1151'
   'rocm-hip-sdk-gfx1151'
+  'rocm-host-math-gfx1151'
   'rocm-language-runtime-gfx1151'
   'rocm-llvm-gfx1151'
   'rocm-ml-libraries-gfx1151'
@@ -57,8 +62,11 @@ pkgname=(
   'rocprofiler-compute-gfx1151'
   'rocprofiler-register-gfx1151'
   'rocprofiler-sdk-gfx1151'
+  'rocprofiler-sdk-rocpd-gfx1151'
+  'rocprofiler-sdk-roctx-gfx1151'
   'rocprofiler-systems-gfx1151'
   'rocrand-gfx1151'
+  'rocshmem-gfx1151'
   'rocsolver-gfx1151'
   'rocsparse-gfx1151'
   'rocthrust-gfx1151'
@@ -99,7 +107,7 @@ _copy_from_filelist() {
     while IFS= read -r rel; do
         [[ -n "${rel}" ]] || continue
         mkdir -p "${pkgdir}/$(dirname "${rel}")"
-        cp --parents -a --no-preserve=ownership "${_therock_root}/${rel}" "${pkgdir}"
+        (cd "${_therock_root}" && cp --parents -a --no-preserve=ownership "${rel}" "${pkgdir}")
     done < "${filelist}"
 }
 
@@ -133,6 +141,15 @@ package_composable-kernel-gfx1151() {
     depends=()
     _require_therock_root
     _copy_from_filelist 'composable-kernel-gfx1151'
+}
+
+package_half-gfx1151() {
+    pkgdesc='half headers from TheRock for gfx1151'
+    provides=('half')
+    conflicts=('half' 'rocm-gfx1151-bin')
+    depends=()
+    _require_therock_root
+    _copy_from_filelist 'half-gfx1151'
 }
 
 package_hip-gfx1151() {
@@ -205,6 +222,15 @@ package_hipfft-gfx1151() {
     depends=('rocfft-gfx1151')
     _require_therock_root
     _copy_from_filelist 'hipfft-gfx1151'
+}
+
+package_hipify-clang-gfx1151() {
+    pkgdesc='hipify-clang from TheRock for gfx1151'
+    provides=('hipify-clang')
+    conflicts=('hipify-clang' 'rocm-gfx1151-bin')
+    depends=('rocm-llvm-gfx1151')
+    _require_therock_root
+    _copy_from_filelist 'hipify-clang-gfx1151'
 }
 
 package_hiprand-gfx1151() {
@@ -323,6 +349,15 @@ package_rocblas-gfx1151() {
     _copy_from_filelist 'rocblas-gfx1151'
 }
 
+package_rocdecode-gfx1151() {
+    pkgdesc='rocDecode from TheRock for gfx1151'
+    provides=('rocdecode')
+    conflicts=('rocdecode' 'rocm-gfx1151-bin')
+    depends=()
+    _require_therock_root
+    _copy_from_filelist 'rocdecode-gfx1151'
+}
+
 package_rocfft-gfx1151() {
     pkgdesc='rocFFT from TheRock for gfx1151'
     provides=('rocfft')
@@ -330,6 +365,15 @@ package_rocfft-gfx1151() {
     depends=()
     _require_therock_root
     _copy_from_filelist 'rocfft-gfx1151'
+}
+
+package_rocjpeg-gfx1151() {
+    pkgdesc='rocJPEG from TheRock for gfx1151'
+    provides=('rocjpeg')
+    conflicts=('rocjpeg' 'rocm-gfx1151-bin')
+    depends=()
+    _require_therock_root
+    _copy_from_filelist 'rocjpeg-gfx1151'
 }
 
 package_rocm-cmake-gfx1151() {
@@ -582,6 +626,15 @@ package_rocm-hip-sdk-gfx1151() {
     return 0
 }
 
+package_rocm-host-math-gfx1151() {
+    pkgdesc='Bundled host math support libraries from TheRock for gfx1151'
+    provides=('rocm-host-math')
+    conflicts=('rocm-gfx1151-bin' 'rocm-host-math')
+    depends=()
+    _require_therock_root
+    _copy_from_filelist 'rocm-host-math-gfx1151'
+}
+
 package_rocm-language-runtime-gfx1151() {
     pkgdesc='ROCm language runtime from TheRock for gfx1151'
     provides=('rocm-language-runtime')
@@ -719,6 +772,24 @@ package_rocprofiler-sdk-gfx1151() {
     _copy_from_filelist 'rocprofiler-sdk-gfx1151'
 }
 
+package_rocprofiler-sdk-rocpd-gfx1151() {
+    pkgdesc='rocprofiler SDK rocpd component from TheRock for gfx1151'
+    provides=('rocprofiler-sdk-rocpd')
+    conflicts=('rocm-gfx1151-bin' 'rocprofiler-sdk-rocpd')
+    depends=('rocprofiler-sdk-gfx1151')
+    _require_therock_root
+    _copy_from_filelist 'rocprofiler-sdk-rocpd-gfx1151'
+}
+
+package_rocprofiler-sdk-roctx-gfx1151() {
+    pkgdesc='rocprofiler SDK roctx component from TheRock for gfx1151'
+    provides=('rocprofiler-sdk-roctx')
+    conflicts=('rocm-gfx1151-bin' 'rocprofiler-sdk-roctx')
+    depends=('rocprofiler-sdk-gfx1151')
+    _require_therock_root
+    _copy_from_filelist 'rocprofiler-sdk-roctx-gfx1151'
+}
+
 package_rocprofiler-systems-gfx1151() {
     pkgdesc='rocprofiler-systems from TheRock for gfx1151'
     provides=('rocprofiler-systems' 'rocprofiler')
@@ -735,6 +806,15 @@ package_rocrand-gfx1151() {
     depends=()
     _require_therock_root
     _copy_from_filelist 'rocrand-gfx1151'
+}
+
+package_rocshmem-gfx1151() {
+    pkgdesc='rocSHMEM from TheRock for gfx1151'
+    provides=('rocshmem')
+    conflicts=('rocm-gfx1151-bin' 'rocshmem')
+    depends=()
+    _require_therock_root
+    _copy_from_filelist 'rocshmem-gfx1151'
 }
 
 package_rocsolver-gfx1151() {

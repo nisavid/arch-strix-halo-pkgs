@@ -40,7 +40,7 @@ _copy_from_filelist() {
     while IFS= read -r rel; do
         [[ -n "${rel}" ]] || continue
         mkdir -p "${pkgdir}/$(dirname "${rel}")"
-        cp --parents -a --no-preserve=ownership "${_therock_root}/${rel}" "${pkgdir}"
+        (cd "${_therock_root}" && cp --parents -a --no-preserve=ownership "${rel}" "${pkgdir}")
     done < "${filelist}"
 }
 

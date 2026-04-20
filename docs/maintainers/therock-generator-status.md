@@ -11,29 +11,23 @@ live TheRock package family in this repo. The current policy is sufficient to:
 
 ## Current result
 
-The canonical rendered output is produced with:
+The canonical rendered output is produced from a complete staged root:
 
-`python tools/render_therock_pkgbase.py --therock-root /`
+`python tools/render_therock_pkgbase.py --therock-root <staged-root>`
 
 That writes the buildable split `pkgbase` into `packages/therock-gfx1151/` and
 stamps `pkgver` from `policies/therock-packages.toml`. The repo-local
 `upstream/ai-notes/strix-halo` git history is recorded as recipe provenance.
+Using `/` is valid only when the live install root contains every payload that
+should remain rendered.
 
-The generated family is payload-driven. The current live root renders 60 of
-the 70 policy-defined packages. Ten packages are present in policy metadata but
-not rendered because their expected installed payloads are absent from the root
-used for the render:
+The generated family is payload-driven. The current rendered output includes
+68 of the 70 policy-defined packages. Two packages are present in policy
+metadata but not rendered because their expected installed payloads are absent
+from the staged root used for the render:
 
-- `half-gfx1151`
 - `hipfort-gfx1151`
-- `hipify-clang-gfx1151`
 - `mivisionx-gfx1151`
-- `rocdecode-gfx1151`
-- `rocjpeg-gfx1151`
-- `rocm-host-math-gfx1151`
-- `rocprofiler-sdk-rocpd-gfx1151`
-- `rocprofiler-sdk-roctx-gfx1151`
-- `rocshmem-gfx1151`
 
 `rocm-sysdeps-gfx1151` is rendered as an internal TheRock support package. It
 does not correspond neatly to a standard Arch package, so it is treated as
@@ -56,6 +50,8 @@ The generator and policy now handle:
 - structured ignore rules for known sample and test artifacts
 - removal of stale per-package file lists when a rerender no longer contains
   that package's payload
+- package copy from staged roots outside `/` without embedding the staging path
+  in packaged file paths
 
 ## Current caveat
 
@@ -74,5 +70,5 @@ The generator is no longer exploratory. The follow-up work is maintenance:
 - keep policy current when TheRock adds or reshapes components
 - keep dependency and replacement metadata healthy
 - keep the generated family aligned with the local repo and live cutover story
-- audit complete upstream TheRock project coverage by rendering from a staged
-  root built with the desired upstream project set enabled
+- audit `hipfort-gfx1151` and `mivisionx-gfx1151` when a staged TheRock root
+  contains those payloads

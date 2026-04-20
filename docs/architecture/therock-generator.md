@@ -72,15 +72,17 @@ Each failure also includes a short hint explaining whether the fix belongs in:
 
 ## Typical update workflow
 
-1. Build or stage a new TheRock tree.
+1. Build or stage a new TheRock tree that contains every payload package you
+   intend to render.
 2. Ensure the repo-local `upstream/ai-notes` submodule is initialized and up to
    date for the recipe change you intend to adopt.
-3. Run `python tools/render_therock_pkgbase.py --therock-root /`.
+3. Run `python tools/render_therock_pkgbase.py --therock-root <staged-root>`.
 4. If it fails:
    - add aliases for known new component directories or file prefixes
    - add explicit path ownership overrides for outliers
    - add package metadata if a package name is new
 5. Re-run until ownership is total and unambiguous.
-6. Build the rendered package base under `packages/therock-gfx1151/`.
+6. Build the rendered package base under `packages/therock-gfx1151/`, with
+   `_THEROCK_ROOT=<staged-root>` when the payload is not in `/`.
 7. Publish refreshed artifacts through the local repo workflow in
    `docs/usage/local-repo.md`.
