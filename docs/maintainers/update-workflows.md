@@ -70,9 +70,9 @@ once its durable content has been extracted.
 
 After rebuilding a dependency lane that can affect runtime behavior, consult
 `docs/maintainers/rebuild-revalidation.md` before treating previous inference
-findings or runtime patch rationale as accepted. Promote only findings that
-reproduce after the rebuilt stack is installed, and retire findings that no
-longer reproduce.
+findings, expected-failure tests, backlog findings, or local-origin runtime
+patch rationale as accepted. Promote only findings that reproduce after the
+rebuilt stack is installed, and retire findings that no longer reproduce.
 
 Current package-lane catalog:
 

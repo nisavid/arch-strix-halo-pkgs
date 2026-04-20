@@ -4,11 +4,13 @@ This repo keeps source changes as patch files when the change is expected to
 persist, deserves independent review, or may be useful outside this exact
 system.
 
-This file is the accepted patch inventory. Runtime-sensitive findings and
-patch rationale that still need confirmation after the 2026-04-20 self-hosted
-rebuild confidence boundary live in
-[the rebuild revalidation ledger](maintainers/rebuild-revalidation.md) until
-they are reproduced or retired.
+This file is a curated summary of notable accepted original patches, not an
+exhaustive applied-patch inventory. For the complete package patch list, start
+from `policies/recipe-packages.toml`, `packages/*/recipe.json`, and generated
+`packages/*/PKGBUILD` patch application blocks. Runtime-sensitive local-origin
+patches and expected-failure findings that still need confirmation after the
+2026-04-20 self-hosted rebuild confidence boundary live in
+[the rebuild revalidation ledger](maintainers/rebuild-revalidation.md).
 
 ## Lemonade
 
@@ -37,12 +39,6 @@ they are reproduced or retired.
   - This is a packaging-facing compatibility patch, not a Strix Halo–specific
     optimization, so it is the clearest current upstreaming candidate in the
     repo.
-- [Keep `vllm --version` on a metadata-only path](../packages/python-vllm-rocm-gfx1151/0002-cli-version-avoids-eager-runtime-imports.patch)
-  - Removes eager benchmark imports from `vllm.entrypoints.cli.__init__` and
-    short-circuits `--version` before the CLI reaches optional OpenAI and
-    Triton runtime modules.
-  - This keeps the version smoke test useful on the packaged ROCm lane even
-    when unrelated optional runtime deps are absent or intentionally patched.
 - Provisional runtime-sensitive vLLM carries are tracked in
   [the rebuild revalidation ledger](maintainers/rebuild-revalidation.md) until
   post-rebuild scenario evidence promotes or retires them.
