@@ -18,6 +18,41 @@ if str(TOOLS_DIR) not in sys.path:
 
 from gemma4_smoke_common import validate_basic_chat_text
 
+SERVER_MODES = (
+    "basic",
+    "reasoning",
+    "tool",
+    "tool-thinking",
+    "structured",
+    "structured-thinking",
+    "image",
+    "multi-image",
+    "image-dynamic",
+    "audio",
+    "video",
+    "multimodal-tool",
+    "full-feature-text-only",
+    "benchmark-lite",
+)
+TOOL_MODES = {"tool", "tool-thinking", "multimodal-tool", "full-feature-text-only"}
+REASONING_MODES = {
+    "reasoning",
+    "tool",
+    "tool-thinking",
+    "structured-thinking",
+    "multimodal-tool",
+    "full-feature-text-only",
+}
+STRUCTURED_MODES = {"structured", "structured-thinking"}
+MULTIMODAL_MODES = {
+    "image",
+    "multi-image",
+    "image-dynamic",
+    "audio",
+    "video",
+    "multimodal-tool",
+}
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -32,7 +67,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--mode",
-        choices=("basic", "reasoning", "tool"),
+        choices=SERVER_MODES,
         default="basic",
         help="which OpenAI-compatible server flow to validate",
     )
@@ -76,11 +111,46 @@ def parse_args() -> argparse.Namespace:
         type=float,
         default=None,
         help=(
-            "seconds to wait for /v1/models; defaults to 300 for the validated "
+            "seconds to wait for /v1/models; defaults to 420 for the validated "
             "Gemma 4 26B-A4B basic lane and 180 otherwise"
         ),
     )
     parser.add_argument("--request-timeout", type=float, default=60.0)
+    parser.add_argument(
+        "--execution-mode",
+        choices=("eager", "compiled"),
+        default="eager",
+        help="use eager correctness mode or allow vLLM compilation/cudagraph paths",
+    )
+    parser.add_argument(
+        "--no-enforce-eager",
+        dest="execution_mode",
+        action="store_const",
+        const="compiled",
+        help="alias for --execution-mode compiled",
+    )
+    parser.add_argument(
+        "--moe-backend",
+        choices=("auto", "triton", "aiter"),
+        default="auto",
+        help="optional vLLM MoE backend override",
+    )
+    parser.add_argument(
+        "--attention-backend",
+        help="optional vLLM attention backend override, for example TRITON_ATTN",
+    )
+    parser.add_argument("--async-scheduling", action="store_true")
+    parser.add_argument("--kv-cache-dtype")
+    parser.add_argument("--no-enable-prefix-caching", action="store_true")
+    parser.add_argument("--max-num-seqs", type=int)
+    parser.add_argument(
+        "--limit-mm-per-prompt",
+        help="JSON limit map passed to vLLM; defaults stay text-only except multimodal modes",
+    )
+    parser.add_argument(
+        "--processor-kwargs",
+        help="JSON object forwarded as --mm-processor-kwargs",
+    )
     parser.add_argument(
         "--server-log",
         type=Path,
@@ -94,14 +164,34 @@ def parse_args() -> argparse.Namespace:
     )
     args = parser.parse_args()
 
-    if args.mode == "tool" and args.chat_template is None:
+    if args.mode in TOOL_MODES and args.chat_template is None:
         args.chat_template = default_tool_chat_template(args)
     if args.chat_template is not None:
         args.chat_template = args.chat_template.resolve()
-    if args.mode == "tool" and not args.chat_template.is_file():
+    if args.mode in TOOL_MODES and not args.chat_template.is_file():
         parser.error(f"Gemma 4 tool chat template not found: {args.chat_template}")
+    args.limit_mm_per_prompt_map = parse_json_object(
+        args.limit_mm_per_prompt,
+        option_name="--limit-mm-per-prompt",
+    )
+    args.processor_kwargs_map = parse_json_object(
+        args.processor_kwargs,
+        option_name="--processor-kwargs",
+    )
     args.server_log = args.server_log.resolve()
     return args
+
+
+def parse_json_object(raw: str | None, *, option_name: str) -> dict[str, object] | None:
+    if raw is None:
+        return None
+    try:
+        value = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise SystemExit(f"{option_name} must be valid JSON: {exc}") from exc
+    if not isinstance(value, dict):
+        raise SystemExit(f"{option_name} must decode to a JSON object")
+    return value
 
 
 def served_model_name(args: argparse.Namespace) -> str:
@@ -138,7 +228,7 @@ def effective_max_model_len(args: argparse.Namespace) -> int:
         return args.max_model_len
     if use_gemma4_26b_a4b_text_only_defaults(args):
         return 128
-    if args.mode in {"reasoning", "tool"}:
+    if args.mode in REASONING_MODES or args.mode in STRUCTURED_MODES:
         return 1024
     return 512
 
@@ -155,15 +245,32 @@ def effective_startup_timeout(args: argparse.Namespace) -> float:
     if args.startup_timeout is not None:
         return args.startup_timeout
     if use_gemma4_26b_a4b_text_only_defaults(args):
-        return 300.0
+        return 420.0
     return 180.0
 
 
+def effective_limit_mm_per_prompt(args: argparse.Namespace) -> dict[str, object]:
+    if args.limit_mm_per_prompt_map is not None:
+        return args.limit_mm_per_prompt_map
+    if args.mode in {"image", "image-dynamic"}:
+        return {"image": 1, "audio": 0, "video": 0}
+    if args.mode == "multi-image":
+        return {"image": 2, "audio": 0, "video": 0}
+    if args.mode == "audio":
+        return {"image": 0, "audio": 1, "video": 0}
+    if args.mode == "video":
+        return {"image": 0, "audio": 0, "video": 1}
+    if args.mode == "multimodal-tool":
+        return {"image": 1, "audio": 0, "video": 0}
+    return {"image": 0, "audio": 0, "video": 0}
+
+
+def compact_json(value: dict[str, object]) -> str:
+    return json.dumps(value, separators=(",", ":"), sort_keys=True)
+
+
 def build_server_command(args: argparse.Namespace) -> list[str]:
-    limit_mm_per_prompt = json.dumps(
-        {"image": 0, "audio": 0, "video": 0},
-        separators=(",", ":"),
-    )
+    limit_mm_per_prompt = compact_json(effective_limit_mm_per_prompt(args))
     max_model_len = effective_max_model_len(args)
     max_num_batched_tokens = effective_max_num_batched_tokens(args)
     command = [
@@ -185,13 +292,14 @@ def build_server_command(args: argparse.Namespace) -> list[str]:
         str(args.gpu_memory_utilization),
         "--max-model-len",
         str(max_model_len),
-        # Keep the tracked smoke on the validated eager correctness lane until
-        # the compiled/cudagraph ROCm path is revalidated separately.
-        "--enforce-eager",
         "--limit-mm-per-prompt",
         limit_mm_per_prompt,
         "--disable-log-stats",
     ]
+    if args.execution_mode == "eager":
+        # Keep the tracked smoke on the validated eager correctness lane until
+        # the compiled/cudagraph ROCm path is revalidated separately.
+        command.append("--enforce-eager")
     if max_num_batched_tokens is not None:
         command.extend(
             [
@@ -199,13 +307,25 @@ def build_server_command(args: argparse.Namespace) -> list[str]:
                 str(max_num_batched_tokens),
             ]
         )
-    if args.mode == "reasoning":
+    if args.moe_backend != "auto":
+        command.extend(["--moe-backend", args.moe_backend])
+    if args.attention_backend:
+        command.extend(["--attention-backend", args.attention_backend])
+    if args.async_scheduling:
+        command.append("--async-scheduling")
+    if args.kv_cache_dtype:
+        command.extend(["--kv-cache-dtype", args.kv_cache_dtype])
+    if args.no_enable_prefix_caching or args.mode == "benchmark-lite":
+        command.append("--no-enable-prefix-caching")
+    if args.max_num_seqs is not None:
+        command.extend(["--max-num-seqs", str(args.max_num_seqs)])
+    if args.processor_kwargs_map is not None:
+        command.extend(["--mm-processor-kwargs", compact_json(args.processor_kwargs_map)])
+    if args.mode in REASONING_MODES:
         command.extend(["--reasoning-parser", "gemma4"])
-    if args.mode == "tool":
+    if args.mode in TOOL_MODES:
         command.extend(
             [
-                "--reasoning-parser",
-                "gemma4",
                 "--tool-call-parser",
                 "gemma4",
                 "--enable-auto-tool-choice",
@@ -249,14 +369,83 @@ def request_max_tokens(args: argparse.Namespace, desired: int) -> int:
     return max(1, min(desired, budget))
 
 
+def structured_response_format() -> dict[str, object]:
+    return {
+        "type": "json_schema",
+        "json_schema": {
+            "name": "gemma4_smoke_answer",
+            "schema": {
+                "type": "object",
+                "properties": {
+                    "topic": {"type": "string"},
+                    "answer": {"type": "string"},
+                },
+                "required": ["topic", "answer"],
+                "additionalProperties": False,
+            },
+        },
+    }
+
+
+def multimodal_content(args: argparse.Namespace) -> list[dict[str, object]]:
+    if args.mode in {"image", "image-dynamic", "multimodal-tool"}:
+        return [
+            {"type": "text", "text": "Describe the image in five words."},
+            {
+                "type": "image_url",
+                "image_url": {
+                    "url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMB/axX6n4AAAAASUVORK5CYII="
+                },
+            },
+        ]
+    if args.mode == "multi-image":
+        return [
+            {"type": "text", "text": "Compare these two tiny images in five words."},
+            {
+                "type": "image_url",
+                "image_url": {
+                    "url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMB/axX6n4AAAAASUVORK5CYII="
+                },
+            },
+            {
+                "type": "image_url",
+                "image_url": {
+                    "url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMB/axX6n4AAAAASUVORK5CYII="
+                },
+            },
+        ]
+    if args.mode == "audio":
+        return [
+            {"type": "text", "text": "Transcribe or summarize this audio briefly."},
+            {
+                "type": "input_audio",
+                "input_audio": {
+                    "data": "UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=",
+                    "format": "wav",
+                },
+            },
+        ]
+    if args.mode == "video":
+        return [
+            {"type": "text", "text": "Describe this video in five words."},
+            {
+                "type": "video_url",
+                "video_url": {
+                    "url": "data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28ybXA0MQ=="
+                },
+            },
+        ]
+    raise ValueError(f"mode is not multimodal: {args.mode}")
+
+
 def build_request_payload(args: argparse.Namespace) -> dict[str, object]:
     payload: dict[str, object] = {
         "model": served_model_name(args),
         "messages": [],
-        "max_tokens": request_max_tokens(args, 16),
+        "max_tokens": request_max_tokens(args, 8 if args.mode == "benchmark-lite" else 16),
         "temperature": 0.0,
     }
-    if args.mode == "basic":
+    if args.mode in {"basic", "benchmark-lite"}:
         payload["messages"] = [
             {"role": "user", "content": "Write exactly five words about the ocean."}
         ]
@@ -276,6 +465,28 @@ def build_request_payload(args: argparse.Namespace) -> dict[str, object]:
         payload["max_tokens"] = request_max_tokens(args, 1024)
         payload["skip_special_tokens"] = False
         return payload
+    if args.mode in STRUCTURED_MODES:
+        payload["messages"] = [
+            {
+                "role": "user",
+                "content": "Return JSON about the ocean with topic and answer fields.",
+            }
+        ]
+        payload["response_format"] = structured_response_format()
+        if args.mode == "structured-thinking":
+            payload["chat_template_kwargs"] = {"enable_thinking": True}
+            payload["skip_special_tokens"] = False
+            payload["max_tokens"] = request_max_tokens(args, 1024)
+        return payload
+    if args.mode in MULTIMODAL_MODES:
+        payload["messages"] = [{"role": "user", "content": multimodal_content(args)}]
+        if args.mode == "multimodal-tool":
+            payload["tools"] = build_tool_spec()
+            payload["tool_choice"] = "auto"
+            payload["chat_template_kwargs"] = {"enable_thinking": True}
+            payload["max_tokens"] = request_max_tokens(args, 512)
+            payload["skip_special_tokens"] = False
+        return payload
 
     payload["messages"] = [
         {"role": "user", "content": "What is the weather in Tokyo today? Use the tool."}
@@ -284,6 +495,10 @@ def build_request_payload(args: argparse.Namespace) -> dict[str, object]:
     payload["tool_choice"] = "auto"
     payload["max_tokens"] = request_max_tokens(args, 512)
     payload["skip_special_tokens"] = False
+    if args.mode in {"tool-thinking", "full-feature-text-only"}:
+        payload["chat_template_kwargs"] = {"enable_thinking": True}
+    if args.mode == "full-feature-text-only":
+        payload["response_format"] = structured_response_format()
     return payload
 
 
@@ -326,6 +541,7 @@ def build_plan(args: argparse.Namespace) -> dict[str, object]:
         "mode": args.mode,
         "model": args.model,
         "served_model_name": served_model_name(args),
+        "execution_mode": args.execution_mode,
         "server_command": build_server_command(args),
         "startup_timeout": effective_startup_timeout(args),
         "models_url": f"{server_base_url(args)}/v1/models",
@@ -333,7 +549,7 @@ def build_plan(args: argparse.Namespace) -> dict[str, object]:
         "request_payload": request_payload,
         "server_log": str(args.server_log),
     }
-    if args.mode == "tool":
+    if args.mode in TOOL_MODES:
         plan["followup_request_payload"] = build_tool_followup_payload(
             args,
             {
@@ -458,6 +674,18 @@ def validate_tool_response(response: dict[str, Any]) -> dict[str, Any]:
     return message
 
 
+def validate_structured_response(response: dict[str, Any]) -> dict[str, Any]:
+    message = extract_message(response)
+    raw_content = message.get("content") or ""
+    try:
+        payload = json.loads(raw_content)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"structured response was not JSON: {raw_content!r}") from exc
+    if not isinstance(payload, dict) or not {"topic", "answer"}.issubset(payload):
+        raise RuntimeError(f"structured response did not match smoke schema: {payload!r}")
+    return message
+
+
 def tail_log(path: Path, lines: int = 80) -> str:
     if not path.exists():
         return ""
@@ -500,14 +728,18 @@ def run_smoke(args: argparse.Namespace) -> None:
             )
             print("initial_response", json.dumps(response, sort_keys=True))
 
-            if args.mode == "basic":
+            if args.mode in {"basic", "benchmark-lite"}:
                 validate_basic_response(response)
-                print("basic_ok")
+                print("benchmark_lite_ok" if args.mode == "benchmark-lite" else "basic_ok")
             elif args.mode == "reasoning":
                 message = validate_reasoning_response(response)
                 print("reasoning_field_present", bool(message.get("reasoning") or message.get("reasoning_content")))
                 print("reasoning_ok")
-            else:
+            elif args.mode in STRUCTURED_MODES:
+                message = validate_structured_response(response)
+                print("reasoning_field_present", bool(message.get("reasoning") or message.get("reasoning_content")))
+                print("structured_ok")
+            elif args.mode in TOOL_MODES:
                 assistant_message = validate_tool_response(response)
                 followup_payload = build_tool_followup_payload(args, assistant_message)
                 followup = post_json(
@@ -519,6 +751,9 @@ def run_smoke(args: argparse.Namespace) -> None:
                 print("followup_response", json.dumps(followup, sort_keys=True))
                 validate_basic_response(followup)
                 print("tool_ok")
+            else:
+                validate_basic_response(response)
+                print(f"{args.mode}_ok")
         except Exception:
             print("server_log_tail_start", file=sys.stderr)
             tail = tail_log(args.server_log)

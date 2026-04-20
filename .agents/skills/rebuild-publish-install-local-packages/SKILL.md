@@ -44,11 +44,14 @@ publish, and pacman commands before privileged execution.
 
 ## Operator Notes
 
-- Hand the command to the user for privileged execution.
-- The tool keeps one sudo session alive, uses sudo only for publish/install
-  operations, and logs under `docs/worklog/amerge/<plan-id>/`. It also keeps
-  sudo warm during build-only plans because `makepkg -s` may need sudo for
-  missing build dependencies.
+- Hand `run`, `publish`, and `install` commands to the user when they need
+  privileged publish/install execution.
+- `tools/amerge build ...` is intentionally unprivileged and should be usable
+  autonomously when package build dependencies are already installed. If
+  `makepkg` needs missing dependencies, handle that as a host setup blocker
+  rather than warming sudo up front.
+- The tool keeps one sudo session alive only for plans containing privileged
+  publish/install commands, and logs under `docs/worklog/amerge/<plan-id>/`.
 - With `run`, each package root is built, published, and installed before the
   next root, preserving dependency-order fast iteration. Selected split roots
   also install any outputs required by later selected package roots.

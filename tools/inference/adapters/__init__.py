@@ -11,6 +11,7 @@ from ..scenario_loader import Scenario
 class ExecutionPlan:
     command: list[str]
     server_log_path: Path | None = None
+    env: dict[str, str] | None = None
 
 
 def _definition_for(scenario: Scenario | dict[str, Any]) -> dict[str, Any]:

@@ -6,7 +6,7 @@
 -#pragma once
 -#include "aiter_hip_common.h"
 +// Copyright (C) 2024-2025, Advanced Micro Devices, Inc. All rights reserved.
-+#include "hip_compat.h"
++#include "aiter_hip_common.h"
  #include <rocprim/rocprim.hpp>
  
 +// Detect RDNA 3/3.5 (gfx11xx) which lack DPP row broadcast instructions

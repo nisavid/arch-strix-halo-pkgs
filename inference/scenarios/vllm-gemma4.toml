@@ -47,6 +47,427 @@ kind = "server_log.contains"
 value = "Using TRITON backend for Unquantized MoE"
 
 [[scenario]]
+id = "vllm.gemma4.e2b.server.basic"
+summary = "Gemma 4 E2B OpenAI-compatible text chat smoke"
+tags = ["smoke", "gemma4", "server", "recipe"]
+
+[scenario.given]
+engine = "vllm"
+model = "google/gemma-4-E2B-it"
+tool = "gemma4_server_smoke.basic"
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "basic_ok"
+
+[[scenario]]
+id = "vllm.gemma4.e2b.server.attn-triton"
+summary = "Gemma 4 E2B OpenAI-compatible text chat smoke with forced Triton attention"
+tags = ["smoke", "gemma4", "server", "kernel-probe", "exploratory"]
+
+[scenario.given]
+engine = "vllm"
+model = "google/gemma-4-E2B-it"
+tool = "gemma4_server_smoke.basic"
+
+[scenario.when]
+argv = ["--attention-backend", "TRITON_ATTN"]
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "basic_ok"
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Using TRITON_ATTN backend"
+
+[[scenario]]
+id = "vllm.gemma4.e2b.server.reasoning"
+summary = "Gemma 4 E2B reasoning parser smoke following the vLLM Gemma 4 recipe"
+tags = ["smoke", "gemma4", "server", "recipe", "reasoning"]
+
+[scenario.given]
+engine = "vllm"
+model = "google/gemma-4-E2B-it"
+tool = "gemma4_server_smoke.reasoning"
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "reasoning_ok"
+
+[[scenario]]
+id = "vllm.gemma4.e2b.server.tool"
+summary = "Gemma 4 E2B tool-calling parser smoke following the vLLM Gemma 4 recipe"
+tags = ["smoke", "gemma4", "server", "recipe", "tool"]
+
+[scenario.given]
+engine = "vllm"
+model = "google/gemma-4-E2B-it"
+tool = "gemma4_server_smoke.tool"
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "tool_ok"
+
+[[scenario]]
+id = "vllm.gemma4.e2b.server.tool-thinking"
+summary = "Gemma 4 E2B combined thinking and tool-calling smoke"
+tags = ["smoke", "gemma4", "server", "recipe", "tool", "reasoning"]
+
+[scenario.given]
+engine = "vllm"
+model = "google/gemma-4-E2B-it"
+tool = "gemma4_server_smoke.tool-thinking"
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "tool_ok"
+
+[[scenario]]
+id = "vllm.gemma4.e2b.server.structured"
+summary = "Gemma 4 E2B structured JSON output smoke"
+tags = ["smoke", "gemma4", "server", "recipe", "structured"]
+
+[scenario.given]
+engine = "vllm"
+model = "google/gemma-4-E2B-it"
+tool = "gemma4_server_smoke.structured"
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "structured_ok"
+
+[[scenario]]
+id = "vllm.gemma4.e2b.server.structured-thinking"
+summary = "Gemma 4 E2B structured JSON output with thinking enabled"
+tags = ["smoke", "gemma4", "server", "recipe", "structured", "reasoning"]
+
+[scenario.given]
+engine = "vllm"
+model = "google/gemma-4-E2B-it"
+tool = "gemma4_server_smoke.structured-thinking"
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "structured_ok"
+
+[[scenario]]
+id = "vllm.gemma4.e2b.server.benchmark-lite"
+summary = "Gemma 4 E2B benchmark-style smoke with prefix caching disabled"
+tags = ["smoke", "gemma4", "server", "recipe", "benchmark"]
+
+[scenario.given]
+engine = "vllm"
+model = "google/gemma-4-E2B-it"
+tool = "gemma4_server_smoke.benchmark-lite"
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "benchmark_lite_ok"
+
+[[scenario]]
+id = "vllm.gemma4.e2b.server.full-feature-text-only"
+summary = "Gemma 4 E2B full-feature text-only smoke with tools, thinking, and structured output"
+tags = ["smoke", "gemma4", "server", "recipe", "tool", "reasoning", "structured"]
+
+[scenario.given]
+engine = "vllm"
+model = "google/gemma-4-E2B-it"
+tool = "gemma4_server_smoke.full-feature-text-only"
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "tool_ok"
+
+[[scenario]]
+id = "vllm.gemma4.e2b.server.image"
+summary = "Gemma 4 E2B image-input recipe smoke; exploratory until Strix Halo multimodal warmup is validated"
+tags = ["smoke", "gemma4", "server", "recipe", "multimodal", "exploratory"]
+
+[scenario.given]
+engine = "vllm"
+model = "google/gemma-4-E2B-it"
+tool = "gemma4_server_smoke.image"
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "image_ok"
+
+[[scenario]]
+id = "vllm.gemma4.e2b.server.multi-image"
+summary = "Gemma 4 E2B multiple-image recipe smoke; exploratory until Strix Halo multimodal warmup is validated"
+tags = ["smoke", "gemma4", "server", "recipe", "multimodal", "exploratory"]
+
+[scenario.given]
+engine = "vllm"
+model = "google/gemma-4-E2B-it"
+tool = "gemma4_server_smoke.multi-image"
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "multi-image_ok"
+
+[[scenario]]
+id = "vllm.gemma4.e2b.server.image-dynamic"
+summary = "Gemma 4 E2B dynamic-resolution image recipe smoke; exploratory until Strix Halo multimodal warmup is validated"
+tags = ["smoke", "gemma4", "server", "recipe", "multimodal", "exploratory"]
+
+[scenario.given]
+engine = "vllm"
+model = "google/gemma-4-E2B-it"
+tool = "gemma4_server_smoke.image-dynamic"
+
+[scenario.when]
+argv = ["--processor-kwargs", "{\"do_pan_and_scan\":true}"]
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "image-dynamic_ok"
+
+[[scenario]]
+id = "vllm.gemma4.e2b.server.audio"
+summary = "Gemma 4 E2B audio-input recipe smoke; exploratory until Strix Halo multimodal warmup is validated"
+tags = ["smoke", "gemma4", "server", "recipe", "multimodal", "exploratory"]
+
+[scenario.given]
+engine = "vllm"
+model = "google/gemma-4-E2B-it"
+tool = "gemma4_server_smoke.audio"
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "audio_ok"
+
+[[scenario]]
+id = "vllm.gemma4.e2b.server.video"
+summary = "Gemma 4 E2B video-input recipe smoke; exploratory until Strix Halo multimodal warmup is validated"
+tags = ["smoke", "gemma4", "server", "recipe", "multimodal", "exploratory"]
+
+[scenario.given]
+engine = "vllm"
+model = "google/gemma-4-E2B-it"
+tool = "gemma4_server_smoke.video"
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "video_ok"
+
+[[scenario]]
+id = "vllm.gemma4.e2b.server.multimodal-tool"
+summary = "Gemma 4 E2B multimodal tool-use recipe smoke; exploratory until Strix Halo multimodal warmup is validated"
+tags = ["smoke", "gemma4", "server", "recipe", "multimodal", "tool", "exploratory"]
+
+[scenario.given]
+engine = "vllm"
+model = "google/gemma-4-E2B-it"
+tool = "gemma4_server_smoke.multimodal-tool"
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "tool_ok"
+
+[[scenario]]
+id = "vllm.gemma4.e2b.text.compiled"
+summary = "Gemma 4 E2B text-only offline smoke without enforce_eager"
+tags = ["smoke", "gemma4", "compiled-probe", "exploratory"]
+
+[scenario.given]
+engine = "vllm"
+model = "google/gemma-4-E2B-it"
+tool = "gemma4_text_smoke"
+
+[scenario.when]
+argv = ["--execution-mode", "compiled", "--max-model-len", "512"]
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "basic_ok"
+
+[[scenario]]
+id = "vllm.gemma4.31b.text.compiled"
+summary = "Gemma 4 31B text-only offline smoke without enforce_eager"
+tags = ["smoke", "gemma4", "compiled-probe", "exploratory"]
+
+[scenario.given]
+engine = "vllm"
+model = "google/gemma-4-31B-it"
+tool = "gemma4_text_smoke"
+
+[scenario.when]
+argv = ["--execution-mode", "compiled", "--max-model-len", "512"]
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "basic_ok"
+
+[[scenario]]
+id = "vllm.gemma4.26b-a4b.text.compiled"
+summary = "Gemma 4 26B A4B text-only offline smoke without enforce_eager"
+tags = ["smoke", "gemma4", "compiled-probe", "exploratory"]
+
+[scenario.given]
+engine = "vllm"
+model = "google/gemma-4-26B-A4B-it"
+tool = "gemma4_text_smoke"
+
+[scenario.when]
+argv = ["--execution-mode", "compiled"]
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "basic_ok"
+
+[[scenario]]
+id = "vllm.gemma4.26b-a4b.server.moe-triton"
+summary = "Gemma 4 26B A4B forced Triton MoE backend probe"
+tags = ["smoke", "gemma4", "server", "kernel-probe", "exploratory"]
+
+[scenario.given]
+engine = "vllm"
+model = "google/gemma-4-26B-A4B-it"
+tool = "gemma4_server_smoke.basic"
+
+[scenario.when]
+argv = ["--moe-backend", "triton"]
+
+[scenario.when.env]
+VLLM_ROCM_USE_AITER_MOE = "0"
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "basic_ok"
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Using TRITON backend for Unquantized MoE"
+
+[[scenario]]
+id = "vllm.gemma4.26b-a4b.server.moe-auto"
+summary = "Gemma 4 26B A4B automatic MoE backend probe"
+tags = ["smoke", "gemma4", "server", "kernel-probe", "exploratory"]
+
+[scenario.given]
+engine = "vllm"
+model = "google/gemma-4-26B-A4B-it"
+tool = "gemma4_server_smoke.basic"
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "basic_ok"
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "backend for Unquantized MoE"
+
+[[scenario]]
+id = "vllm.gemma4.26b-a4b.server.moe-aiter"
+summary = "Gemma 4 26B A4B forced AITER MoE backend probe"
+tags = ["smoke", "gemma4", "server", "kernel-probe", "exploratory"]
+
+[scenario.given]
+engine = "vllm"
+model = "google/gemma-4-26B-A4B-it"
+tool = "gemma4_server_smoke.basic"
+
+[scenario.when]
+argv = ["--moe-backend", "aiter"]
+
+[scenario.when.env]
+VLLM_ROCM_USE_AITER_MOE = "1"
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "basic_ok"
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Using ROCm AITER backend for Unquantized MoE"
+
+[[scenario]]
 id = "vllm.torchao.tiny.prepare"
 summary = "Prepare the tiny local TorchAO checkpoint without running a GPU generation pass"
 tags = ["smoke", "torchao"]
@@ -66,3 +487,81 @@ value = 0
 [[scenario.then.assert]]
 kind = "stdout.contains"
 value = "prepare_ok"
+
+[[scenario]]
+id = "vllm.torchao.tiny.generate"
+summary = "Prepare and serve the tiny local TorchAO checkpoint through vLLM"
+tags = ["smoke", "torchao"]
+
+[scenario.given]
+engine = "vllm"
+model = "internal/tiny-llama-torchao"
+tool = "torchao_vllm_smoke"
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "copy_probe_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "generation_ok"
+
+[[scenario]]
+id = "vllm.gemma4.e2b.torchao.real-model"
+summary = "Quantize Gemma 4 E2B with TorchAO int8 weight-only and serve it through vLLM"
+tags = ["smoke", "gemma4", "torchao", "quantization-probe", "exploratory"]
+
+[scenario.given]
+engine = "vllm"
+model = "google/gemma-4-E2B-it"
+tool = "torchao_vllm_smoke.real-model"
+
+[scenario.when]
+argv = ["--max-model-len", "128", "--gpu-memory-utilization", "0.5"]
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "prepare_real_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "generation_ok"
+
+[[scenario]]
+id = "vllm.gemma4.e2b.torchao.online-real-model"
+summary = "Serve Gemma 4 E2B through vLLM with online TorchAO int8 weight-only quantization"
+tags = ["smoke", "gemma4", "torchao", "quantization-probe", "exploratory"]
+
+[scenario.given]
+engine = "vllm"
+model = "google/gemma-4-E2B-it"
+tool = "torchao_vllm_smoke.real-model"
+
+[scenario.when]
+argv = [
+  "--online-quantization",
+  "--max-model-len",
+  "128",
+  "--gpu-memory-utilization",
+  "0.5",
+]
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "using_online_source_model"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "generation_ok"

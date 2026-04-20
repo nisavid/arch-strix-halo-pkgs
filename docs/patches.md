@@ -58,6 +58,14 @@ system.
   - The current validated `google/gemma-4-26B-A4B-it` lane still uses Triton
     for unquantized MoE, so this remains the only retained Gemma 4/AITER carry
     on the maintained default path.
+- [Support Qwen3.5 hybrid/GDN on ROCm](../packages/python-vllm-rocm-gfx1151/0010-rocm-support-qwen35-hybrid-gdn.patch)
+  - Restricts AMD FLA/GDN autotune shapes, casts GDN exponent operands through
+    float32, preserves hybrid block-size alignment after ROCm platform updates,
+    and keeps hybrid full-attention layers away from AITER attention.
+- [Avoid the Triton top-k/top-p sampler filter on ROCm](../packages/python-vllm-rocm-gfx1151/0011-rocm-avoid-triton-topk-topp-sampler.patch)
+  - Routes ROCm top-k/top-p filtering through vLLM's existing PyTorch fallback
+    because the Triton filter path faults on gfx1151 for the Qwen3.5-family
+    `(32, 248320)` logits shape, while the PyTorch fallback completes.
 
 ## AITER
 
@@ -67,6 +75,9 @@ system.
 - [RDNA 3.5 wave32/DPP compatibility for `hip_reduce.h`](../packages/python-amd-aiter-gfx1151/0006-rdna35-hip-reduce-wave32-dpp-compat.patch)
   - Reworks the reduction helpers to avoid CDNA-only row-broadcast DPP paths
     on gfx11 and to keep the wave32 assumptions explicit.
+  - Keeps the existing `aiter_hip_common.h` include because the installed
+    AITER wheel ships that header; an earlier `hip_compat.h` include variant
+    blocked Qwen3.6 FP8 MoE by breaking the JIT build for `module_quant`.
 - [Find `hipcc` and user-cache JIT modules on installed systems](../packages/python-amd-aiter-gfx1151/0002-jit-runtime-finds-hipcc-and-user-jit-modules.patch)
   - Makes the installed AITER runtime resolve `/opt/rocm/bin/hipcc` without
     depending on an ambient login-shell `PATH`.

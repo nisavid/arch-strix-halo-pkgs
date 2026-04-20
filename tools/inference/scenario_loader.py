@@ -11,6 +11,7 @@ class Scenario:
     summary: str
     engine: str
     model: str
+    tags: tuple[str, ...]
     definition: dict
     source_path: Path
 
@@ -32,6 +33,7 @@ def load_scenarios(scenario_dir: Path) -> list[Scenario]:
                     summary=str(raw["summary"]),
                     engine=str(given["engine"]),
                     model=str(given["model"]),
+                    tags=tuple(str(tag) for tag in raw.get("tags", [])),
                     definition=raw,
                     source_path=path,
                 )
@@ -45,7 +47,10 @@ def select_scenarios(
     engines: set[str],
     models: set[str],
     scenario_ids: set[str],
+    tags: set[str] | None = None,
+    include_exploratory: bool = False,
 ) -> list[Scenario]:
+    requested_tags = tags or set()
     selected: list[Scenario] = []
     for scenario in scenarios:
         if engines and scenario.engine not in engines:
@@ -53,6 +58,14 @@ def select_scenarios(
         if models and scenario.model not in models:
             continue
         if scenario_ids and scenario.id not in scenario_ids:
+            continue
+        if requested_tags and not requested_tags.issubset(set(scenario.tags)):
+            continue
+        if (
+            not include_exploratory
+            and not scenario_ids
+            and "exploratory" in scenario.tags
+        ):
             continue
         selected.append(scenario)
     return selected

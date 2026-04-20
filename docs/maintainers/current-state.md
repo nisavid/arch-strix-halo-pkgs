@@ -1,10 +1,33 @@
 # Current State
 
-Status as of 2026-04-18.
+Status as of 2026-04-19.
 
 ## Live Host State
 
 The first full live cutover completed successfully on the reference Arch host.
+
+The reference host's active Hugging Face cache for current validation work is
+`/var/cache/hf`, not the older `/bulk/hf` cache. Current local non-GGUF model
+snapshots relevant to this branch are:
+
+- `google/gemma-4-31B-it` at
+  `/var/cache/hf/hub/models--google--gemma-4-31B-it/snapshots/439edf5652646a0d1bd8b46bfdc1d3645761a445`
+- `Qwen/Qwen3.5-0.8B` at
+  `/var/cache/hf/hub/models--Qwen--Qwen3.5-0.8B/snapshots/2fc06364715b967f1860aea9cf38778875588b17`
+- `Qwen/Qwen3.6-35B-A3B-FP8` at
+  `/var/cache/hf/hub/models--Qwen--Qwen3.6-35B-A3B-FP8/snapshots/61a5771f218894aaacf97551e24a25b866750fc2`
+
+Use `Qwen/Qwen3.6-35B-A3B-FP8` as the main Qwen MoE/shared-expert target for
+this dev arc; it replaces the earlier Qwen3.5 122B-A10B testing and usage
+target. Its local config advertises `Qwen3_5MoeForConditionalGeneration` /
+`qwen3_5_moe`, so the maintained Qwen3.5/GDN package carry is still relevant
+to this lane. This is a target and blocked probe lane, not a passing smoke
+lane yet: with AITER disabled, vLLM has no FP8 MoE backend that advertises
+support for this deployment on gfx1151, and with AITER forced the built
+`python-amd-aiter-gfx1151` pkgrel `-8` plus `python-vllm-rocm-gfx1151` pkgrel
+`-27` payload gets past the earlier `hip_compat.h` header issue but fails
+JIT-building `aiter.jit.module_quant` in `opus.hpp` with
+`unknown type name 'mfma_adaptor'`.
 
 Installed and validated at least once on the live host:
 
@@ -16,6 +39,16 @@ Installed and validated at least once on the live host:
 - PyTorch, TorchVision, AITER, and vLLM
 - `llama.cpp` HIP and Vulkan backends
 - Lemonade server/app/meta packages
+
+Installed Qwen closeout state for this branch:
+
+- `python-vllm-rocm-gfx1151` pkgrel `-27` and
+  `python-amd-aiter-gfx1151` pkgrel `-8` are installed on the live host.
+- The 2026-04-19 installed-host Qwen validation run rooted at
+  `docs/worklog/inference-runs/20260419T211521` passed all three expected
+  outcomes: Qwen3.5 sampler-fix smoke passed, Qwen3.6 non-AITER FP8 MoE
+  backend-selection blocked probe passed, and Qwen3.6 forced-AITER
+  `module_quant`/`mfma_adaptor` blocked probe passed.
 
 ## Live Smoke Coverage
 
@@ -35,6 +68,10 @@ The following smoke checks have already passed on the reference host:
   limits and recipe-style chat-template prompting
 - `google/gemma-4-31B-it` offline vLLM smoke on ROCm with text-only multimodal
   limits and recipe-style chat-template prompting
+- `google/gemma-4-E2B-it` offline eager vLLM smoke on 2026-04-19 with
+  `tools/gemma4_text_smoke.py`, `--max-model-len 128`, and text-only
+  multimodal limits; the same checkpoint's server/AsyncLLM path currently
+  fails separately during initialization
 
 ## Important Package Decisions
 
@@ -210,13 +247,22 @@ The following smoke checks have already passed on the reference host:
     `tools/gemma4_text_smoke.py` returned `These are exactly five words.`, and
     `tools/gemma4_server_smoke.py --mode basic` returned
     `Deep blue waves crash endlessly.`
-  - the repo-owned helpers intentionally keep `enforce_eager=True` /
-    `--enforce-eager` on this lane. vLLM documents eager mode as disabling
-    compilation and cudagraph capture, so the current helper defaults are a
-    correctness/isolation choice rather than a performance recommendation
-  - `tools/gemma4_server_smoke.py` now uses a `300`-second startup budget for
+  - the repo-owned basic text/server helpers still default to
+    `enforce_eager=True` / `--enforce-eager` as a conservative
+    correctness/isolation choice. The separate tracked
+    `vllm.gemma4.26b-a4b.text.compiled` probe now validates that the 26B-A4B
+    offline text path can run with torch.compile and CUDAGraph after the
+    Triton `AttrsDescriptor.__repr__` repair
+  - `tools/gemma4_server_smoke.py` now uses a `420`-second startup budget for
     this lane because cold `google/gemma-4-26B-A4B-it` server loads on the
-    reference host can exceed the earlier `180`-second default
+    reference host can exceed both the earlier `180`-second default and a
+    `300`-second budget when checkpoint loading is slow
+  - the 2026-04-19 MoE backend probes keep the maintained MoE lane on
+    Triton: the automatic/default server probe and the forced
+    `--moe-backend triton` probe both passed with
+    `Using TRITON backend for Unquantized MoE`; the forced
+    `--moe-backend aiter` probe failed during model construction with
+    `ValueError: ROCm AITer MoE backend is not available for this configuration`
   - `tools/gemma4_server_smoke.py` now launches vLLM in its own process group
     and tears down that whole group on exit; an older helper revision could
     leave an orphaned `VLLM::EngineCore` holding roughly `89 GiB` of VRAM
@@ -263,18 +309,206 @@ The following smoke checks have already passed on the reference host:
     - logs land under ignored `docs/worklog/amerge/<plan-id>/`
       and `docs/worklog/inference-runs/<timestamp>/` directories so the
       follow-up loop does not depend on copy-pasted terminal output
-- There is still no repo-owned validation for Qwen3.5 hybrid-attention/GDN or
-  Qwen3.5 MoE/shared-expert lanes on gfx1151.
-  - the current local `vllm` source tree does contain the relevant model
-    surfaces: Qwen3Next hybrid attention via `GatedDeltaNetAttention`, plus
-    `SharedFusedMoE` for the sparse/shared-expert path
-  - the imported Blackcat recipe notes also describe testing patches and at
-    least one successful Qwen3.5-MoE eager benchmark on Strix Halo, but those
-    hybrid/GDN patch decisions have not yet been reconciled into the
-    maintained local package carry
-  - treat Qwen3.5 AITER attention/MoE viability as plausible but unverified in
-    this repo until a repo-owned host run records the chosen backend split and
-    any required hybrid/GDN guards explicitly
+- The tracked Gemma 4 / vLLM scenario matrix now includes the usage surfaces
+  from the official vLLM Gemma 4 recipe:
+  - basic chat, reasoning, tool calling, tool calling with thinking,
+    structured output, structured output with thinking, benchmark-lite, and a
+    full-feature text-only server smoke for `google/gemma-4-E2B-it`
+  - multimodal image, multi-image, dynamic-resolution image, audio, video, and
+    multimodal-tool server smokes for `google/gemma-4-E2B-it`
+  - compiled-path probes for `google/gemma-4-E2B-it`,
+    `google/gemma-4-31B-it`, and `google/gemma-4-26B-A4B-it`
+  - forced Triton, automatic, and forced AITER MoE backend probes for
+    `google/gemma-4-26B-A4B-it`
+  - tiny and real-model TorchAO probes
+- Scenario selection now treats `tags = ["exploratory"]` as opt-in for broad
+  selections. `python tools/run_inference_scenarios.py --engine vllm` skips
+  the exploratory multimodal, compiled-path, forced-kernel, and real-model
+  TorchAO probes by default; use `--include-exploratory` with any broad or
+  `--tag` selector, or use explicit `--scenario` selectors, when deliberately
+  running those investigations.
+- The newly tracked recipe, compiled, MoE-backend, multimodal, and real-model
+  TorchAO scenarios are not all new validated defaults yet. Promote any
+  remaining exploratory lane only after a reference-host run records the exact
+  model binding, backend split, warning surface, and logs under
+  `docs/worklog/inference-runs/`.
+- The next Gemma 4 live-validation order is intentionally staged:
+  non-exploratory broad `vllm` scenarios first, then `compiled-probe`
+  scenarios to answer the eager-mode question, MoE backend probes after that,
+  and finally real-model TorchAO plus multimodal exploratory scenarios. The
+  first compiled, MoE, TorchAO, and representative multimodal decisions are
+  now recorded; keep the remaining multimodal scenarios exploratory until the
+  shared E2B server/AsyncLLM warmup fault is fixed.
+- The 2026-04-19 Gemma 4 broad vLLM pass is recorded but not promotable as a
+  default server matrix:
+  - passed:
+    `vllm.gemma4.26b-a4b.text.basic`,
+    `vllm.torchao.tiny.prepare`, and `vllm.torchao.tiny.generate`
+  - `vllm.gemma4.26b-a4b.text.basic` produced
+    `These are exactly five words.` and selected
+    `ROCM_AITER_UNIFIED_ATTN` plus `Using TRITON backend for Unquantized MoE`
+  - `vllm.gemma4.26b-a4b.server.basic` timed out after the helper's
+    300-second startup budget while still loading safetensors checkpoint
+    shards; no stale `VLLM::EngineCore` process remained afterward
+  - the helper startup budget was then raised to 420 seconds, and the later
+    26B-A4B MoE server probes reached readiness and completed within that
+    budget
+  - every non-exploratory `google/gemma-4-E2B-it` server scenario failed
+    during server/AsyncLLM initialization with a ROCm GPU memory-access fault
+  - an isolated E2B server basic rerun reproduced the same fault, while a
+    direct offline eager E2B text smoke passed and returned
+    `The quick brown fox jumps.`
+  - an explicit `--attention-backend TRITON_ATTN` E2B server probe proved vLLM
+    selected `Using TRITON_ATTN backend` and still hit the same GPU
+    memory-access fault, so the E2B server fault is not explained by AITER
+    unified attention alone
+  - a representative exploratory multimodal probe,
+    `vllm.gemma4.e2b.server.image`, failed on 2026-04-19 before any image
+    request was sent: the server selected `ROCM_AITER_UNIFIED_ATTN`, loaded
+    weights, initialized the encoder cache with an image budget, profiled 29
+    maximum-size image items, and then hit the same ROCm GPU memory-access
+    fault during engine initialization
+- The 2026-04-19 compiled-path investigation keeps eager mode as the supported
+  Gemma 4 helper default for E2B, but no longer for every Gemma 4 checkpoint:
+  - the pre-repair host Triton package lacked
+    `AttrsDescriptor.__repr__`, causing torch.compile / Inductor generated
+    Python to contain an invalid angle-bracket object repr and fail with
+    `SyntaxError`
+  - this branch fixed the package renderer so the recipe's Triton sed patch is
+    present in `packages/python-triton-gfx1151/PKGBUILD`; after rebuilding and
+    installing `python-triton-gfx1151`, the normal compiled probes no longer
+    need a temporary runtime shim
+  - `makepkg -C -o --noconfirm` now validates the generated PKGBUILD's
+    prepare-time patch application and the prepared source contains
+    `AttrsDescriptor.__repr__`; the full `tools/amerge run
+    python-triton-gfx1151` publish/install path still requires operator sudo
+  - after the repaired Triton package was installed,
+    `vllm.gemma4.26b-a4b.text.compiled` passed on the reference host in
+    `350.33213` seconds with `enforce_eager=False`,
+    `ROCM_AITER_UNIFIED_ATTN`, `Using TRITON backend for Unquantized MoE`,
+    torch.compile, and CUDAGraph capture; the output was
+    `These are exactly five words.`
+  - the same run showed `torch.compile took 27.34 s in total`, graph capture
+    completed, and the model generated the expected basic smoke output, so the
+    26B-A4B offline text lane can be treated as compiled-capable after the
+    Triton `AttrsDescriptor.__repr__` repair
+  - after the repaired Triton package was installed,
+    `vllm.gemma4.e2b.text.compiled` no longer failed with the old SyntaxError:
+    it initialized, compiled, captured graphs, and generated, but the output
+    was corrupted (`docked calcS ...`) and failed the basic smoke assertion
+  - with a temporary `AttrsDescriptor.__repr__` shim, the E2B compiled +
+    cudagraph path got through `torch.compile` and CUDAGraph capture but
+    generated corrupted text, so it is not promotable
+  - with the same shim and CUDAGraph disabled, the E2B compiled path faulted
+    the GPU during initialization/warmup
+  - do not remove eager mode for `google/gemma-4-E2B-it`; the
+    E2B compiled path still generates invalid text after the Triton repair
+  - `vllm.gemma4.31b.text.compiled` passed on 2026-04-19 against
+    `/var/cache/hf/hub/models--google--gemma-4-31B-it/snapshots/439edf5652646a0d1bd8b46bfdc1d3645761a445`
+    in `360.390323` seconds, so the dense 31B instruction-tuned checkpoint is
+    compiled-capable on the current installed Triton/vLLM stack
+- The 2026-04-19 26B-A4B MoE backend investigation confirms that the current
+  package should stay on Triton for sparse MoE execution:
+  - `vllm.gemma4.26b-a4b.server.moe-auto` passed in `288.508121` seconds with
+    the default backend selection, `ROCM_AITER_UNIFIED_ATTN`, and
+    `Using TRITON backend for Unquantized MoE`
+  - `vllm.gemma4.26b-a4b.server.moe-triton` passed in `344.765496` seconds
+    with explicit `--moe-backend triton`, `ROCM_AITER_UNIFIED_ATTN`, and
+    `Using TRITON backend for Unquantized MoE`
+  - `vllm.gemma4.26b-a4b.server.moe-aiter` failed in `24.091119` seconds
+    before weight loading with
+    `ValueError: ROCm AITer MoE backend is not available for this configuration`
+  - do not restore the broader fused-MoE default-policy carry or the dormant
+    Gemma 4 AITER MoE padding carry on the basis of the current evidence
+- The first Qwen3.5 hybrid-attention/GDN package-carry reconciliation is now
+  represented in `python-vllm-rocm-gfx1151`.
+  - `0010-rocm-support-qwen35-hybrid-gdn.patch` carries the missing vLLM-side
+    pieces from Blackcat Informatics' advisory lane: AMD-restricted FLA
+    autotune grids, float32 GDN exponent operands, GDN warmup at `T=64`, hybrid
+    block-size realignment after ROCm platform updates, and hybrid
+    full-attention fallback away from AITER attention
+  - the imported warmup note's `qwen3_next.py` path is stale for vLLM 0.19.0;
+    the maintained patch applies the guard in
+    `vllm/model_executor/layers/mamba/gdn_linear_attn.py`
+  - no new `python-amd-aiter-gfx1151` patch is currently carried for the
+    advisory unified-attention tile note because the installed AITER source
+    already uses a safer `min(64, triton.next_power_of_2(block_size))` tile
+    expression
+  - unprivileged `tools/amerge build -y python-vllm-rocm-gfx1151` completed
+    for pkgrel `0.19.0.r8.d20260317.gad42886-26`, producing
+    `python-vllm-rocm-gfx1151-0.19.0.r8.d20260317.gad42886-26-x86_64.pkg.tar.zst`;
+    `pytest packages/python-vllm-rocm-gfx1151/tests -q` then passed against
+    the freshly populated `pkg/` tree
+  - after pkgrel `-26` was installed, the existing Gemma 4 26B-A4B
+    installed-host lane still passed with the package:
+    `vllm.gemma4.26b-a4b.text.basic` passed in `195.710255` seconds, and
+    `vllm.gemma4.26b-a4b.server.basic` passed in `309.115382` seconds against
+    `/bulk/hf/hub/models--google--gemma-4-26B-A4B-it/snapshots/7d4c97e54145f8ffd1a4dd1b4986a5015a517842`;
+    the logs selected `ROCM_AITER_UNIFIED_ATTN`, imported AITER's JIT helper,
+    used `Using TRITON backend for Unquantized MoE`, and ended with no
+    running GPU processes detected
+  - the old non-GGUF checkpoint blocker is cleared by the `/var/cache/hf`
+    cache move: use `Qwen/Qwen3.5-0.8B` for tiny Qwen3.5 hybrid/GDN smoke
+    coverage and `Qwen/Qwen3.6-35B-A3B-FP8` for the main Qwen
+    MoE/shared-expert lane
+  - tracked Qwen scenarios now exist:
+    `vllm.qwen3_5.0_8b.text.basic` for the tiny hybrid/GDN smoke and
+    blocked Qwen3.6 FP8 MoE kernel probes for the non-AITER backend-selection
+    path and the forced-AITER `module_quant` path
+  - `vllm.qwen3_5.0_8b.text.basic` failed on 2026-04-19 after model loading
+    with a ROCm GPU memory-access fault. The failure is now localized past GDN
+    warmup, GDN prefill/recurrent kernels, full-attention kernels,
+    decoder-layer execution, model forward, logits computation, and
+    hidden-state indexing.
+  - the Qwen3.5 0.8B fault has a standalone sampler repro: vLLM's Triton
+    `apply_top_k_top_p` filter faults on ROCm/gfx1151 for logits shaped
+    `(32, 248320)` with top-k enabled and top-p `0.9`, while vLLM's existing
+    PyTorch fallback completes on the same tensor.
+  - `python-vllm-rocm-gfx1151` pkgrel `-27` now carries
+    `0011-rocm-avoid-triton-topk-topp-sampler.patch`, routing ROCm
+    top-k/top-p filtering through that PyTorch fallback. `tools/amerge build
+    python-vllm-rocm-gfx1151` produced pkgrel `-27`; using that built package
+    payload on `PYTHONPATH`, the standalone `(32, 248320)` sampler repro
+    completed and `vllm.qwen3_5.0_8b.text.basic` passed against the
+    `/var/cache/hf` Qwen3.5 snapshot in 42.948777 seconds. After installing
+    pkgrel `-27`, the installed-host rerun passed in `42.52507` seconds.
+  - Qwen3.6 FP8 MoE is not a passing smoke lane on gfx1151 yet. With
+    `VLLM_ROCM_USE_AITER=0` and `VLLM_ROCM_USE_AITER_MOE=0`, vLLM fails
+    during FP8 MoE backend selection with
+    `No FP8 MoE backend supports the deployment configuration`; the vLLM
+    Triton and batched Triton FP8 MoE gates currently advertise ROCm FP8
+    support for `gfx9`, not `gfx1151`. The tracked no-AITER blocked probe
+    passed on 2026-04-19 in `20.962591` seconds against built package
+    payloads and in `22.226842` seconds after pkgrel `-27` and AITER pkgrel
+    `-8` were installed, by asserting that failure mode rather than treating
+    it as a generation smoke.
+  - The forced-AITER Qwen3.6 path is also blocked. On the currently installed
+    AITER pkgrel `-7`, the 2026-04-19 run selected `Using AITER Fp8 MoE
+    backend`, loaded all 42 checkpoint shards, and then failed during
+    `module_quant` JIT compilation because installed `hip_reduce.h` included
+    nonexistent `hip_compat.h`.
+  - `python-amd-aiter-gfx1151` pkgrel `-8` is the package-side fix for that
+    Qwen3.6 blocker: `0006-rdna35-hip-reduce-wave32-dpp-compat.patch` keeps
+    the shipped `aiter_hip_common.h` include, the package-local tests pass,
+    `tools/amerge build python-amd-aiter-gfx1151` completed, and the built
+    package's `aiter_meta/csrc/include/hip_reduce.h` no longer references
+    `hip_compat.h`. The package is now installed on the live host.
+  - A built-payload rerun of the forced-AITER Qwen3.6 probe with AITER pkgrel
+    `-8` and vLLM pkgrel `-27` cleared the earlier `hip_compat.h` blocker,
+    selected the AITER FP8 MoE path, and then failed during
+    `aiter.jit.module_quant` compilation with
+    `aiter_meta/csrc/include/opus/opus.hpp:3001:24: error: unknown type name
+    'mfma_adaptor'`. After installing both package rels, the installed-host
+    forced-AITER blocked probe passed in `74.664373` seconds by asserting the
+    same failure mode.
+  - The first AITER gfx1151 MFMA/WMMA root-cause pass found that `gfx1151`
+    defines `__GFX11__` and `__gfx1151__`, while AITER's `opus.hpp` defines
+    `mfma_adaptor` only for `__GFX9__` device builds and chooses that default
+    for every non-`__gfx1250__` target. AITER's alternate `wmma_adaptor` path
+    is not a narrow fix: a standalone compile probe showed the relevant
+    gfx1250 FP8 WMMA builtin is rejected for gfx1151 with `needs target
+    feature gfx1250-insts`. Treat Qwen3.6 FP8 MoE as a documented follow-up,
+    not a merge blocker for the Gemma 4 branch.
 - The tracked host-side follow-up helper for OpenAI-compatible server smokes is
   now `tools/gemma4_server_smoke.py`.
   - `--mode basic` launches
@@ -298,14 +532,16 @@ The following smoke checks have already passed on the reference host:
     chat template resolved from the local checkpoint when available or
     otherwise required explicitly via `--chat-template`, then validates both
     the initial tool call and the follow-up tool response round trip
-- The reference host has now verified all three OpenAI-compatible Gemma 4
-  server flows with `google/gemma-4-E2B-it`:
-  - basic chat completion passes with the helper's default `--max-model-len 512`
-  - reasoning parsing passes with `--mode reasoning`, `--reasoning-parser gemma4`,
+- An earlier reference-host pass verified three OpenAI-compatible Gemma 4
+  server flows with `google/gemma-4-E2B-it`, but the 2026-04-19 broad matrix
+  currently reproduces a server/AsyncLLM GPU memory-access fault before those
+  flows can be promoted as maintained defaults:
+  - basic chat completion passed with the helper's default `--max-model-len 512`
+  - reasoning parsing passed with `--mode reasoning`, `--reasoning-parser gemma4`,
     `skip_special_tokens=false`, and `--max-model-len 1024`; the returned
     OpenAI message now splits cleanly into `message.reasoning` and
     `message.content`
-  - tool-calling passes with `--mode tool`, `--reasoning-parser gemma4`,
+  - tool-calling passed with `--mode tool`, `--reasoning-parser gemma4`,
     `--tool-call-parser gemma4`, `--enable-auto-tool-choice`, and a compatible
     Gemma 4 chat template; the first response returns a `get_weather` tool
     call and the follow-up tool response round trip returns a normal assistant
@@ -326,6 +562,19 @@ The following smoke checks have already passed on the reference host:
     destination tensors were created with `dtype=torch.bfloat16`; TorchAO
     treats that dtype as part of tensor metadata and rejects `copy_` before
     vLLM reaches model init.
+  - the helper now also has a real-model path:
+    `--source-model <model-id-or-path>` quantizes with
+    `TorchAoConfig(Int8WeightOnlyConfig(version=2))`, saves the processor or
+    tokenizer files, and runs a tokenizer-backed vLLM generation pass; use
+    `--dry-run` first to inspect the chosen quantized output directory and
+    execution mode.
+  - the helper also supports `--online-quantization` with `--source-model`;
+    that path serves the source model directly and passes the same TorchAO
+    int8 weight-only config through vLLM `hf_overrides`, so it avoids writing a
+    serialized quantized checkpoint.
+  - the helper can classify the two known warning markers on TorchAO/vLLM
+    paths, but the currently committed classifier is only a support surface;
+    live warning conclusions still need to come from a real host run log.
 - `llama.cpp-hip-gfx1151` uses `aur/llama.cpp-hip` as the authoritative
   baseline reference.
 - `llama.cpp-vulkan-gfx1151` currently uses `aur/llama.cpp-vulkan-bin` as the
@@ -365,12 +614,24 @@ The following smoke checks have already passed on the reference host:
   - the first real TorchAO-dependent validation path has now passed on the
     reference host via `tools/torchao_vllm_smoke.py`, including the raw GPU
     `copy_` probe and the vLLM `quantization="torchao"` load/generate path
-  - investigate the remaining TorchAO config warning on that path:
-    `Stored version is not the same as current default version`
-  - investigate the remaining generation-path warning on that path:
+  - warning investigation completed on 2026-04-19:
+    `Stored version is not the same as current default version` comes from
+    TorchAO config deserialization with stored version 2 while the current
+    `Int8WeightOnlyConfig` default is version 1; version 2 remains required
+    for the serialized safetensors path, so this warning is expected with
+    TorchAO 0.17.0 unless upstream changes the default
+  - warning investigation completed on 2026-04-19:
     `Cannot use ROCm custom paged attention kernel, falling back to Triton implementation`
-  - after those two warning investigations, validate at least one real-model
-    TorchAO workload rather than stopping at the tiny local Llama helper
+    is emitted by vLLM only when its ROCm custom paged-attention selector
+    rejects a shape/configuration; it was not present in the Gemma 4 E2B
+    online TorchAO run, which selected `ROCM_AITER_UNIFIED_ATTN`
+  - real-model TorchAO validation now has two tracked outcomes:
+    `vllm.gemma4.e2b.torchao.online-real-model` passed on 2026-04-19 with
+    `quantization=torchao`, `ROCM_AITER_UNIFIED_ATTN`, 10.62 GiB
+    model-loading memory, and `generation_ok`; the serialized
+    `vllm.gemma4.e2b.torchao.real-model` scenario still fails after
+    `prepare_real_ok` during vLLM weight loading with
+    `AttributeError: 'Tensor' object has no attribute 'tensor_data_names'`
   - keep TorchAO version checks metadata-only on generic vLLM startup paths so
     broken optional host TorchAO packages do not emit warning noise during
     unrelated CLI or server flows

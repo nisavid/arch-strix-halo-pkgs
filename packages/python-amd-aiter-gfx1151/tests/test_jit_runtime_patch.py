@@ -32,7 +32,7 @@ SPLITK_PATCH = (
 def test_pkgbuild_carries_jit_runtime_patch():
     text = PKGBUILD.read_text()
 
-    assert "pkgrel=7" in text
+    assert "pkgrel=8" in text
     assert HEADER_PATCH.name in text
     assert f'patch -Np1 -i "$srcdir/{HEADER_PATCH.name}"' in text
     assert HIP_REDUCE_PATCH.name in text
@@ -85,6 +85,13 @@ def test_hip_reduce_patch_isolated_from_vec_convert_changes():
     assert "static_assert(WarpSize <= 32" in text
     assert "vec_convert.h" not in text
     assert "CK_TILE_RDNA3_NO_PK_FP8" not in text
+
+
+def test_hip_reduce_patch_keeps_installed_aiter_common_header():
+    text = HIP_REDUCE_PATCH.read_text()
+
+    assert '+#include "aiter_hip_common.h"' in text
+    assert '+#include "hip_compat.h"' not in text
 
 
 def test_runtime_patch_fixes_user_jit_import_and_hipcc_resolution():

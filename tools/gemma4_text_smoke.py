@@ -28,6 +28,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-model-len", type=int, default=128)
     parser.add_argument("--max-tokens", type=int, default=16)
     parser.add_argument("--max-num-batched-tokens", type=int, default=None)
+    parser.add_argument(
+        "--execution-mode",
+        choices=("eager", "compiled"),
+        default="eager",
+        help="use eager correctness mode or allow vLLM compilation/cudagraph paths",
+    )
     return parser.parse_args()
 
 
@@ -79,12 +85,13 @@ def main() -> None:
         "max_model_len": args.max_model_len,
         "gpu_memory_utilization": args.gpu_memory_utilization,
         "tensor_parallel_size": 1,
-        # Keep the tracked smoke on the validated eager correctness lane until
-        # the compiled/cudagraph ROCm path is revalidated separately.
-        "enforce_eager": True,
         "limit_mm_per_prompt": {"image": 0, "audio": 0, "video": 0},
         "disable_log_stats": True,
     }
+    if args.execution_mode == "eager":
+        # Keep the tracked smoke on the validated eager correctness lane until
+        # the compiled/cudagraph ROCm path is revalidated separately.
+        llm_kwargs["enforce_eager"] = True
     if max_num_batched_tokens is not None:
         llm_kwargs["max_num_batched_tokens"] = max_num_batched_tokens
 

@@ -16,7 +16,7 @@ CLI_STARTUP_PATCH = (
 def test_pkgbuild_carries_merged_torchao_and_cli_startup_patches():
     text = PKGBUILD.read_text()
 
-    assert "pkgrel=23" in text
+    assert "pkgrel=27" in text
     assert PATCH.name in text
     assert f'_apply_patch_if_needed "{PATCH.name}"' in text
     assert CLI_STARTUP_PATCH.name in text

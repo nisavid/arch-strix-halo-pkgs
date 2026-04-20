@@ -176,7 +176,142 @@ def test_26b_a4b_basic_dry_run_uses_extended_startup_timeout() -> None:
         "/models/google/gemma-4-26B-A4B-it",
     )
 
-    assert plan["startup_timeout"] == 300.0
+    assert plan["startup_timeout"] == 420.0
+
+
+def test_compiled_dry_run_omits_enforce_eager_and_forwards_kernel_flags() -> None:
+    plan = run_dry_run(
+        "--mode",
+        "basic",
+        "--execution-mode",
+        "compiled",
+        "--moe-backend",
+        "aiter",
+        "--async-scheduling",
+        "--kv-cache-dtype",
+        "fp8",
+        "--no-enable-prefix-caching",
+        "--max-num-seqs",
+        "1",
+        "--served-model-name",
+        "google/gemma-4-26B-A4B-it",
+        "/models/google/gemma-4-26B-A4B-it",
+    )
+
+    command = plan["server_command"]
+    assert "--enforce-eager" not in command
+    assert command[command.index("--moe-backend") + 1] == "aiter"
+    assert "--async-scheduling" in command
+    assert command[command.index("--kv-cache-dtype") + 1] == "fp8"
+    assert "--no-enable-prefix-caching" in command
+    assert command[command.index("--max-num-seqs") + 1] == "1"
+
+
+def test_dry_run_forwards_attention_backend_probe() -> None:
+    plan = run_dry_run(
+        "--mode",
+        "basic",
+        "--attention-backend",
+        "TRITON_ATTN",
+        "--served-model-name",
+        "gemma4-it",
+        "/models/google/gemma-4-E2B-it",
+    )
+
+    command = plan["server_command"]
+    assert command[command.index("--attention-backend") + 1] == "TRITON_ATTN"
+
+
+def test_no_enforce_eager_alias_selects_compiled_execution() -> None:
+    plan = run_dry_run(
+        "--mode",
+        "basic",
+        "--no-enforce-eager",
+        "--served-model-name",
+        "gemma4-it",
+        "/models/google/gemma-4-E2B-it",
+    )
+
+    assert plan["execution_mode"] == "compiled"
+    assert "--enforce-eager" not in plan["server_command"]
+
+
+def test_structured_dry_run_requests_json_schema() -> None:
+    plan = run_dry_run(
+        "--mode",
+        "structured",
+        "--served-model-name",
+        "gemma4-it",
+        "/models/google/gemma-4-E2B-it",
+    )
+
+    payload = plan["request_payload"]
+    assert payload["response_format"]["type"] == "json_schema"
+    schema = payload["response_format"]["json_schema"]["schema"]
+    assert sorted(schema["properties"]) == ["answer", "topic"]
+    assert payload["max_tokens"] > 0
+
+
+def test_tool_thinking_dry_run_combines_tool_and_thinking(tmp_path: Path) -> None:
+    model_dir = tmp_path / "google-gemma-4-E2B-it"
+    model_dir.mkdir()
+    (model_dir / "chat_template.jinja").write_text("{{ messages }}")
+
+    plan = run_dry_run(
+        "--mode",
+        "tool-thinking",
+        "--served-model-name",
+        "gemma4-it",
+        str(model_dir),
+    )
+
+    command = plan["server_command"]
+    payload = plan["request_payload"]
+    assert "--tool-call-parser" in command
+    assert "--reasoning-parser" in command
+    assert payload["chat_template_kwargs"] == {"enable_thinking": True}
+    assert payload["tools"][0]["function"]["name"] == "get_weather"
+
+
+def test_multimodal_dry_run_forwards_limits_and_processor_kwargs() -> None:
+    plan = run_dry_run(
+        "--mode",
+        "image",
+        "--limit-mm-per-prompt",
+        '{"image":1,"audio":0,"video":0}',
+        "--processor-kwargs",
+        '{"do_pan_and_scan":true}',
+        "--served-model-name",
+        "gemma4-it",
+        "/models/google/gemma-4-E2B-it",
+    )
+
+    command = plan["server_command"]
+    payload = plan["request_payload"]
+    assert json.loads(command[command.index("--limit-mm-per-prompt") + 1]) == {
+        "image": 1,
+        "audio": 0,
+        "video": 0,
+    }
+    assert json.loads(command[command.index("--mm-processor-kwargs") + 1]) == {
+        "do_pan_and_scan": True,
+    }
+    content = payload["messages"][0]["content"]
+    assert content[0]["type"] == "text"
+    assert content[1]["type"] == "image_url"
+
+
+def test_benchmark_lite_dry_run_disables_prefix_caching() -> None:
+    plan = run_dry_run(
+        "--mode",
+        "benchmark-lite",
+        "--served-model-name",
+        "gemma4-it",
+        "/models/google/gemma-4-E2B-it",
+    )
+
+    assert "--no-enable-prefix-caching" in plan["server_command"]
+    assert plan["request_payload"]["max_tokens"] == 8
 
 
 def test_terminate_process_kills_spawned_child_process_group(tmp_path: Path) -> None:

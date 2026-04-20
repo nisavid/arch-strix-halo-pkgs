@@ -11,7 +11,8 @@
     "source_patches": [],
     "update_notes": [
       "Check Arch's current Triton Python packaging first for Python-version fixes and install layout changes, then re-evaluate whether ROCm/triton still needs its separate LLVM lane.",
-      "Keep any source edits as patch files once they stabilize; this package is a likely upstream-candidate area."
+      "Keep any source edits as patch files once they stabilize; this package is a likely upstream-candidate area.",
+      "Keep recipe inline source edits wired into `prepare()` until each one has moved to a patch file. The 2026-04-19 host compiled-probe failure showed the installed package lacked the recorded `AttrsDescriptor.__repr__` sed edit, which made torch.compile / Inductor emit syntactically invalid generated Python."
     ]
   },
   "name": "python-triton-gfx1151",
@@ -57,10 +58,15 @@
       "python-triton=3.5.1"
     ],
     "recipe_key": "triton",
+    "recipe_patch_file_rewrites": {
+      "triton/backends/compiler.py": "python/triton/backends/compiler.py"
+    },
     "scaffold_notes": [
       "Authoritative base: Arch python-triton 3.5.1-4 for distro integration and Python-3.14 carry patches.",
       "The recipe intentionally swaps in ROCm/triton main_perf instead of upstream triton-lang/triton. That makes Arch's package an advisory base rather than a source-identical one.",
-      "Do not point Triton at TheRock's LLVM. The recipe notes that this ROCm fork still expects an older LLVM API line and must use its own compatible LLVM path instead."
+      "Do not point Triton at TheRock's LLVM. The recipe notes that this ROCm fork still expects an older LLVM API line and must use its own compatible LLVM path instead.",
+      "The renderer must include recipe inline source edits in `prepare()` for this package. The `AttrsDescriptor.__repr__` edit is a runtime correctness patch, not cosmetic metadata; if it is absent from the installed package, torch.compile / Inductor can emit syntactically invalid generated Python.",
+      "The 2026-04-19 branch fixes the renderer and generated PKGBUILD so the recipe sed patch for `AttrsDescriptor.__repr__` is present again. Rebuild and reinstall `python-triton-gfx1151` before treating compiled vLLM probes as repaired on the host."
     ],
     "sha256sums": [
       "SKIP"
@@ -72,7 +78,8 @@
     "template": "python-project-triton-rocm",
     "update_notes": [
       "Check Arch's current Triton Python packaging first for Python-version fixes and install layout changes, then re-evaluate whether ROCm/triton still needs its separate LLVM lane.",
-      "Keep any source edits as patch files once they stabilize; this package is a likely upstream-candidate area."
+      "Keep any source edits as patch files once they stabilize; this package is a likely upstream-candidate area.",
+      "Keep recipe inline source edits wired into `prepare()` until each one has moved to a patch file. The 2026-04-19 host compiled-probe failure showed the installed package lacked the recorded `AttrsDescriptor.__repr__` sed edit, which made torch.compile / Inductor emit syntactically invalid generated Python."
     ],
     "upstream_version": "3.5.1",
     "url": "https://triton-lang.org/main/index.html"
