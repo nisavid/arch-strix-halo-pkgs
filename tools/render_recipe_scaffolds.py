@@ -860,6 +860,13 @@ EOF
     }}
   fi
 
+  # The known install-target failure happens before CMake reaches the core
+  # PyTorch header install scripts. Run the safe subdirectory installers so
+  # downstream C++/ROCm extension packages can build against this wheel.
+  cmake -P build/torch/headeronly/cmake_install.cmake
+  cmake -P build/c10/cmake_install.cmake
+  cmake -P build/caffe2/cmake_install.cmake
+
   find "${{_torch_lib}}" -mindepth 1 -maxdepth 1 ! -name libshm ! -name libshm_windows -exec rm -rf {{}} +
   mkdir -p "${{_torch_bin}}"
   cp build/lib/lib*.so* "${{_torch_lib}}/"

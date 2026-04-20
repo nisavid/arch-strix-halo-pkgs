@@ -18,7 +18,7 @@
       "When updating, inspect the current Arch python-pytorch pkgbase first, then re-evaluate every carried recipe/source patch against the chosen ROCm fork.",
       "Keep the package version aligned with the built wheel version; do not repeat the earlier mismatch where the package claimed 2.11.0 but the built wheel came from develop.",
       "Keep openblas explicit in both depends and makedepends so the build does not drift back to generic host BLAS auto-detection.",
-      "Preserve the current Arch Python 3.14 wheel flow unless upstream changes materially: build CMake artifacts first, tolerate the known _sysconfigdata__linux_x86_64-linux-gnu.cpython-314.pyc install failure, restage the built torch/lib and torch/bin payloads, then run SKIP_BUILD_DEPS=1 python setup.py bdist_wheel."
+      "Preserve the current Arch Python 3.14 wheel flow unless upstream changes materially: build CMake artifacts first, tolerate the known _sysconfigdata__linux_x86_64-linux-gnu.cpython-314.pyc install failure, run the safe CMake subdirectory install scripts that stage PyTorch C++ extension headers, restage the built torch/lib and torch/bin payloads, then run SKIP_BUILD_DEPS=1 python setup.py bdist_wheel."
     ]
   },
   "name": "python-pytorch-opt-rocm-gfx1151",
@@ -108,7 +108,8 @@
       "The first real build must preserve the recipe's ROCm-specific fixes: HIPGraph.hip stub rewrite, NumPy 2 target C-API define, clang ABI flag removal, gfx1151 CK enablement, and post-install patchelf fixes for torch/lib and libtorch_hip.so.",
       "The MAGMA version-encoding fix is carried as a source patch on the canonical CUDA linalg input; ROCm hipify derives the HIP source from that patched input during build.",
       "Use OpenBLAS explicitly for this lane. Letting the build auto-detect host oneMKL produced a broken wheel with /opt/intel/oneapi runpaths and NumPy import failures.",
-      "On Arch Python 3.14, the CMake install target currently mirrors /usr/lib and /usr/include into the source tree and then fails on a root-owned _sysconfigdata pyc. The maintained workaround is to build first, accept that known install failure, restage the built torch/lib and torch/bin artifacts, and assemble the wheel with SKIP_BUILD_DEPS=1.",
+      "On Arch Python 3.14, the CMake install target currently mirrors /usr/lib and /usr/include into the source tree and then fails on a root-owned _sysconfigdata pyc. The maintained workaround is to build first, accept that known install failure, run the safe header/CMake metadata install scripts, restage the built torch/lib and torch/bin artifacts, and assemble the wheel with SKIP_BUILD_DEPS=1.",
+      "After the known CMake install-target failure, the package must still run the torch/headeronly, c10, and caffe2 install scripts before wheel assembly so the wheel ships ATen, c10, torch/csrc, and CMake metadata for downstream extension builds.",
       "The SKIP_BUILD_DEPS source patch must apply before wheel assembly so bdist_wheel uses the already staged artifacts instead of re-running the CMake install target."
     ],
     "source_patches": [
@@ -124,7 +125,7 @@
       "When updating, inspect the current Arch python-pytorch pkgbase first, then re-evaluate every carried recipe/source patch against the chosen ROCm fork.",
       "Keep the package version aligned with the built wheel version; do not repeat the earlier mismatch where the package claimed 2.11.0 but the built wheel came from develop.",
       "Keep openblas explicit in both depends and makedepends so the build does not drift back to generic host BLAS auto-detection.",
-      "Preserve the current Arch Python 3.14 wheel flow unless upstream changes materially: build CMake artifacts first, tolerate the known _sysconfigdata__linux_x86_64-linux-gnu.cpython-314.pyc install failure, restage the built torch/lib and torch/bin payloads, then run SKIP_BUILD_DEPS=1 python setup.py bdist_wheel."
+      "Preserve the current Arch Python 3.14 wheel flow unless upstream changes materially: build CMake artifacts first, tolerate the known _sysconfigdata__linux_x86_64-linux-gnu.cpython-314.pyc install failure, run the safe CMake subdirectory install scripts that stage PyTorch C++ extension headers, restage the built torch/lib and torch/bin payloads, then run SKIP_BUILD_DEPS=1 python setup.py bdist_wheel."
     ],
     "upstream_version": "2.11.0",
     "url": "https://pytorch.org"

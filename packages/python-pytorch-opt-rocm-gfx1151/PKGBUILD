@@ -6,7 +6,7 @@
 
 pkgname=python-pytorch-opt-rocm-gfx1151
 pkgver=2.11.0
-pkgrel=4
+pkgrel=5
 pkgdesc='Tensors and dynamic neural networks in Python with ROCm acceleration, rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://pytorch.org
@@ -139,6 +139,13 @@ EOF
       return 1
     }
   fi
+
+  # The known install-target failure happens before CMake reaches the core
+  # PyTorch header install scripts. Run the safe subdirectory installers so
+  # downstream C++/ROCm extension packages can build against this wheel.
+  cmake -P build/torch/headeronly/cmake_install.cmake
+  cmake -P build/c10/cmake_install.cmake
+  cmake -P build/caffe2/cmake_install.cmake
 
   find "${_torch_lib}" -mindepth 1 -maxdepth 1 ! -name libshm ! -name libshm_windows -exec rm -rf {} +
   mkdir -p "${_torch_bin}"
