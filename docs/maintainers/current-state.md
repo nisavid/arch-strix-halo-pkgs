@@ -76,15 +76,14 @@ Current installed native package state, checked on 2026-04-20 after the full
   host reports `python-amd-aiter-gfx1151 0.1.12.post2.dev69+gcf12b1381-1`.
 - The rebuilt wheel layer installed with simplified native package versions:
   `python-aotriton-gfx1151 0.11.2b-1`,
+  `python-triton-gfx1151 3.0.0+git0ec280cf-1`,
   `python-torchvision-rocm-gfx1151 0.26.0-3`,
   `python-torchao-rocm-gfx1151 0.17.0-1`,
   `python-transformers-gfx1151 5.5.4-1`, and
   `python-vllm-rocm-gfx1151 0.19.1-1`.
-- The full rebuild installed `python-triton-gfx1151 3.5.1-1`, but the built
-  Python wheel metadata reports `triton 3.0.0+git0ec280cf`. The repo package
-  policy has been corrected to `python-triton-gfx1151 3.0.0+git0ec280cf-1`;
-  deploy that narrow package before treating package-manager and Python
-  metadata as fully aligned.
+- `python-triton-gfx1151` package-manager metadata and Python wheel metadata
+  now agree: pacman reports `3.0.0+git0ec280cf-1`, while
+  `importlib.metadata.version("triton")` reports `3.0.0+git0ec280cf`.
 - `lemonade-server` was rebuilt so its system-managed llama.cpp backend
   metadata points at `b8851`; the live host reports `lemonade-server 10.2.0-2`.
 
