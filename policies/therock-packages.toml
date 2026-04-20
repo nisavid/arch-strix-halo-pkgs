@@ -95,7 +95,8 @@ post_copy_commands = [
 
 [packages."hsa-rocr-gfx1151"]
 desc = "HSA runtime from TheRock for gfx1151"
-provides = ["hsa-rocr"]
+provides = ["hsa-rocr", "hsakmt-roct"]
+replaces = ["hsakmt-roct"]
 depends = ["rocprofiler-register-gfx1151"]
 
 [packages."rocminfo-gfx1151"]
@@ -120,6 +121,7 @@ fileless = true
 [packages."hip-runtime-amd-gfx1151"]
 desc = "HIP runtime libraries from TheRock for gfx1151"
 provides = ["hip-runtime-amd"]
+replaces = ["hip"]
 depends = ["hsa-rocr-gfx1151", "comgr-gfx1151", "rocm-device-libs-gfx1151"]
 
 [packages."rocm-hip-gfx1151"]
@@ -231,6 +233,7 @@ provides = ["roctracer"]
 [packages."hsa-amd-aqlprofile-gfx1151"]
 desc = "HSA AQL profiling runtime from TheRock for gfx1151"
 provides = ["hsa-amd-aqlprofile"]
+replaces = ["hsa-amd-aqlprofile-bin"]
 
 [packages."rocblas-gfx1151"]
 desc = "rocBLAS from TheRock for gfx1151"

@@ -98,7 +98,7 @@ update_notes = [
 ]
 provides = ["python=3.14.4", "python3", "python-externally-managed"]
 conflicts = ["python"]
-replaces = ["python"]
+replaces = ["python", "python3", "python-externally-managed"]
 depends = ["bzip2", "expat", "gdbm", "libffi", "libnsl", "libxcrypt", "mpdecimal", "openssl", "tzdata", "zlib", "zstd"]
 makedepends = ["bluez-libs", "gdb", "rocm-llvm-gfx1151", "sqlite", "tk", "ttf-font", "xorg-server-xvfb", "xz"]
 optdepends = [
@@ -962,6 +962,7 @@ update_notes = [
 ]
 provides = ["lemonade-desktop"]
 conflicts = ["lemonade-desktop"]
+replaces = ["lemonade-desktop"]
 depends = ["lemonade-server"]
 makedepends = ["cmake", "ninja", "nodejs", "npm", "rocm-llvm-gfx1151"]
 src_subdir = "lemonade-10.2.0"

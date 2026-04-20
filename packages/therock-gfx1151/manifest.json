@@ -62,7 +62,10 @@
       "provides": [
         "hip-runtime-amd"
       ],
-      "rendered": true
+      "rendered": true,
+      "replaces": [
+        "hip"
+      ]
     },
     "hipblas-common-gfx1151": {
       "depends": [],
@@ -212,7 +215,10 @@
       "provides": [
         "hsa-amd-aqlprofile"
       ],
-      "rendered": true
+      "rendered": true,
+      "replaces": [
+        "hsa-amd-aqlprofile-bin"
+      ]
     },
     "hsa-rocr-gfx1151": {
       "depends": [
@@ -221,9 +227,13 @@
       "fileless": false,
       "files": 40,
       "provides": [
-        "hsa-rocr"
+        "hsa-rocr",
+        "hsakmt-roct"
       ],
-      "rendered": true
+      "rendered": true,
+      "replaces": [
+        "hsakmt-roct"
+      ]
     },
     "magma-gfx1151": {
       "depends": [

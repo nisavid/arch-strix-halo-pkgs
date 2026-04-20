@@ -78,7 +78,9 @@
     ],
     "recipe_key": "cpython",
     "replaces": [
-      "python"
+      "python",
+      "python3",
+      "python-externally-managed"
     ],
     "scaffold_notes": [
       "This scaffold is intentionally rebased onto current Arch/Cachy Python 3.14.x instead of the recipe's older CPython 3.13.12 pin.",

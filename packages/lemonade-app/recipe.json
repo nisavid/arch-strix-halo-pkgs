@@ -53,6 +53,9 @@
       "lemonade-desktop"
     ],
     "recipe_key": "lemonade",
+    "replaces": [
+      "lemonade-desktop"
+    ],
     "scaffold_notes": [
       "Electron desktop package split from the same lemonade monorepo.",
       "Install a /usr/bin/lemonade-app wrapper that launches the packaged Electron binary from /usr/share/lemonade-app so the shipped desktop entry resolves on PATH.",

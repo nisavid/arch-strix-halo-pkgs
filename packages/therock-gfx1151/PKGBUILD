@@ -165,6 +165,7 @@ package_hip-runtime-amd-gfx1151() {
     pkgdesc='HIP runtime libraries from TheRock for gfx1151'
     provides=('hip-runtime-amd')
     conflicts=('hip-runtime-amd' 'rocm-gfx1151-bin')
+    replaces=('hip')
     depends=('hsa-rocr-gfx1151' 'comgr-gfx1151' 'rocm-device-libs-gfx1151')
     _require_therock_root
     _copy_from_filelist 'hip-runtime-amd-gfx1151'
@@ -281,6 +282,7 @@ package_hsa-amd-aqlprofile-gfx1151() {
     pkgdesc='HSA AQL profiling runtime from TheRock for gfx1151'
     provides=('hsa-amd-aqlprofile')
     conflicts=('hsa-amd-aqlprofile' 'rocm-gfx1151-bin')
+    replaces=('hsa-amd-aqlprofile-bin')
     depends=()
     _require_therock_root
     _copy_from_filelist 'hsa-amd-aqlprofile-gfx1151'
@@ -288,8 +290,9 @@ package_hsa-amd-aqlprofile-gfx1151() {
 
 package_hsa-rocr-gfx1151() {
     pkgdesc='HSA runtime from TheRock for gfx1151'
-    provides=('hsa-rocr')
-    conflicts=('hsa-rocr' 'rocm-gfx1151-bin')
+    provides=('hsa-rocr' 'hsakmt-roct')
+    conflicts=('hsa-rocr' 'hsakmt-roct' 'rocm-gfx1151-bin')
+    replaces=('hsakmt-roct')
     depends=('rocprofiler-register-gfx1151')
     _require_therock_root
     _copy_from_filelist 'hsa-rocr-gfx1151'

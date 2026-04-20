@@ -17,7 +17,7 @@ optdepends=('python-setuptools: for building Python packages using tooling that 
 options=()
 provides=(python=3.14.4 python3 python-externally-managed)
 conflicts=(python)
-replaces=(python)
+replaces=(python python3 python-externally-managed)
 source=(https://www.python.org/ftp/python/3.14.4/Python-3.14.4.tar.xz)
 sha256sums=(SKIP)
 
