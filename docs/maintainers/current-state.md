@@ -626,6 +626,19 @@ The following smoke checks have already passed on the reference host:
     `--gpu-memory-utilization 0.9`; the tracked scenario completed in
     `85.054242` seconds and generated `ready`. Treat this as the current
     same-family control when comparing FP8-specific failures.
+  - the new compiled same-family control
+    `vllm.qwen3_6.35b-a3b.text.unquantized-moe-no-aiter-compiled` passed on
+    2026-04-20 in `147.699736` seconds with fresh compile caches,
+    `enforce_eager=False`, `Using Triton/FLA GDN prefill kernel`,
+    `Using TRITON backend for Unquantized MoE`, `Using ROCM_ATTN backend`,
+    `torch.compile took 22.75 s in total`, graph capture in 6 seconds, output
+    `ready`, and `basic_ok`
+  - the Qwen3.6 compiled control still logged the same non-fatal
+    `Cannot use ROCm custom paged attention kernel, falling back to Triton implementation`
+    marker and underlying `operation scheduled before its operands`
+    diagnostic seen in the smaller Qwen3.5 compiled probe; because generation
+    completed, this remains a fallback diagnostic rather than a blocker for the
+    tracked Qwen unquantized controls
   - The forced-AITER Qwen3.6 FP8 path is also blocked. The rebuilt installed
     stack selected `Using AITER Fp8 MoE backend` on 2026-04-20, then failed
     during `aiter.jit.module_quant` compilation with

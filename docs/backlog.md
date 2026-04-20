@@ -97,9 +97,16 @@
   - `vllm.gemma4.e2b.server.attn-aiter-fa-blocked` now tracks the current
     first gate: on 2026-04-20, forcing `ROCM_AITER_FA` failed before serving
     because vLLM reported `compute capability not supported`
-  - if this becomes a package experiment, start with the ROCm
-    FlashAttention `main_perf` / AMD Triton path and validate import/build
-    flags before adding it to any promoted scenario lane
+  - package FlashAttention as an explicit experiment, using the current ROCm
+    FlashAttention `main_perf` / AMD Triton path documented for
+    `FLASH_ATTENTION_TRITON_AMD_ENABLE="TRUE"` builds
+  - if the package builds and imports, keep it as a patchable local package and
+    add smoke coverage for every local engine that can plausibly use it:
+    direct `flash_attn` AMD Triton tests first, then Transformers or vLLM
+    backend-selection probes only where the installed engine can actually route
+    to that package
+  - treat `FLASH_ATTENTION_TRITON_AMD_AUTOTUNE="TRUE"` as a later performance
+    experiment after the non-autotuned import/kernel smoke passes
   - before promoting any FlashAttention instruction or explanation, validate
     import/build flags, backend selection, and at least one tracked vLLM
     scenario locally after the backend gate changes
