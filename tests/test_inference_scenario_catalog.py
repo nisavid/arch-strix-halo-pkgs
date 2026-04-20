@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import sys
+import tomllib
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -121,6 +122,51 @@ def test_gemma4_aiter_flash_attention_probe_records_current_blocker():
         {"kind": "server_log.contains", "value": "compute capability not supported"},
     ):
         assert expected in assertions
+
+
+def test_qwen_recipe_surfaces_are_advisory_not_runnable_scenarios():
+    scenario_path = REPO_ROOT / "inference/scenarios/vllm-qwen.toml"
+    document = tomllib.loads(scenario_path.read_text(encoding="utf-8"))
+    surfaces = {surface["id"]: surface for surface in document["recipe_surface"]}
+    runnable_ids = {
+        scenario.id for scenario in load_scenarios(REPO_ROOT / "inference/scenarios")
+    }
+
+    expected_ids = {
+        "vllm.qwen.recipe.qwen3_6.server.reasoning",
+        "vllm.qwen.recipe.qwen3_6.server.mtp",
+        "vllm.qwen.recipe.qwen3_5.server.throughput_text",
+        "vllm.qwen.recipe.qwen3_5.server.throughput_multimodal",
+        "vllm.qwen.recipe.qwen3_5.server.latency_mtp",
+        "vllm.qwen.recipe.qwen3_5.server.tool_calling",
+        "vllm.qwen.recipe.qwen3_5.benchmark.openai_chat",
+        "vllm.qwen.recipe.qwen3_5.client.openai_multimodal",
+        "vllm.qwen.recipe.qwen3_5.server.long_context_yarn",
+    }
+
+    assert expected_ids <= set(surfaces)
+    assert not expected_ids & runnable_ids
+    assert surfaces["vllm.qwen.recipe.qwen3_6.server.reasoning"]["status"] == (
+        "adapt-before-running"
+    )
+    assert surfaces["vllm.qwen.recipe.qwen3_5.server.throughput_text"][
+        "status"
+    ] == "advisory-only"
+    assert "--reasoning-parser qwen3" in surfaces[
+        "vllm.qwen.recipe.qwen3_6.server.reasoning"
+    ]["required_flags"]
+    assert "--language-model-only" in surfaces[
+        "vllm.qwen.recipe.qwen3_5.server.throughput_text"
+    ]["required_flags"]
+    assert "--mm-encoder-tp-mode data" in surfaces[
+        "vllm.qwen.recipe.qwen3_5.server.throughput_multimodal"
+    ]["required_flags"]
+    assert "--tool-call-parser qwen3_coder" in surfaces[
+        "vllm.qwen.recipe.qwen3_5.server.tool_calling"
+    ]["required_flags"]
+    assert "VLLM_ALLOW_LONG_MAX_MODEL_LEN=1" in surfaces[
+        "vllm.qwen.recipe.qwen3_5.server.long_context_yarn"
+    ]["required_flags"]
 
 
 def test_gemma4_e2b_compiled_probe_records_current_blocker():

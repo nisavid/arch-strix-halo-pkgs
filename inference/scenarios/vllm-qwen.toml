@@ -273,3 +273,152 @@ value = "Using AITER Fp8 MoE backend"
 [[scenario.then.assert]]
 kind = "output.contains"
 value = "unknown type name 'mfma_adaptor'"
+
+[[recipe_surface]]
+id = "vllm.qwen.recipe.qwen3_6.server.reasoning"
+summary = "Official Qwen3.6 serving shape with qwen3 reasoning parser"
+source_url = "https://docs.vllm.ai/projects/recipes/en/latest/Qwen/Qwen3.5.html#running-qwen3-6"
+model = "Qwen/Qwen3.6-35B-A3B"
+status = "adapt-before-running"
+local_target = "Qwen/Qwen3.6-35B-A3B"
+required_flags = [
+  "--reasoning-parser qwen3",
+  "--max-model-len 262144",
+  "--tensor-parallel-size 8",
+]
+caveats = [
+  "The recipe shape targets large multi-GPU deployments; local gfx1151 smokes must use reduced max_model_len and tensor_parallel_size=1.",
+  "Compare against the accepted unquantized Qwen3.6 controls before classifying FP8-specific failures.",
+]
+
+[[recipe_surface]]
+id = "vllm.qwen.recipe.qwen3_6.server.mtp"
+summary = "Official Qwen3.6 serving shape with MTP speculative decoding"
+source_url = "https://docs.vllm.ai/projects/recipes/en/latest/Qwen/Qwen3.5.html#running-qwen3-6"
+model = "Qwen/Qwen3.6-35B-A3B"
+status = "adapt-before-running"
+local_target = "Qwen/Qwen3.6-35B-A3B"
+required_flags = [
+  "--reasoning-parser qwen3",
+  "--speculative-config {\"method\":\"mtp\",\"num_speculative_tokens\":2}",
+]
+caveats = [
+  "Speculative decoding consumes KV capacity and should remain exploratory on gfx1151 until a reduced local probe passes.",
+]
+
+[[recipe_surface]]
+id = "vllm.qwen.recipe.qwen3_5.server.throughput_text"
+summary = "Official Qwen3.5 FP8 throughput text-only serving shape"
+source_url = "https://docs.vllm.ai/projects/recipes/en/latest/Qwen/Qwen3.5.html#text-only"
+model = "Qwen/Qwen3.5-397B-A17B-FP8"
+status = "advisory-only"
+required_flags = [
+  "-dp 8",
+  "--enable-expert-parallel",
+  "--language-model-only",
+  "--reasoning-parser qwen3",
+  "--enable-prefix-caching",
+]
+caveats = [
+  "The official recipe was verified on 8x H200 and 8x MI300X/MI355X, not gfx1151.",
+  "Do not encode this as a passing local scenario without a local model binding and reduced host-safe shape.",
+]
+
+[[recipe_surface]]
+id = "vllm.qwen.recipe.qwen3_5.server.throughput_multimodal"
+summary = "Official Qwen3.5 FP8 throughput multimodal serving shape"
+source_url = "https://docs.vllm.ai/projects/recipes/en/latest/Qwen/Qwen3.5.html#multimodal"
+model = "Qwen/Qwen3.5-397B-A17B-FP8"
+status = "advisory-only"
+required_flags = [
+  "-dp 8",
+  "--enable-expert-parallel",
+  "--mm-encoder-tp-mode data",
+  "--mm-processor-cache-type shm",
+  "--reasoning-parser qwen3",
+  "--enable-prefix-caching",
+]
+caveats = [
+  "Multimodal Qwen should stay advisory until a local multimodal checkpoint and request helper exist.",
+  "Gemma 4 showed that multimodal warmup behavior must be validated locally on this stack.",
+]
+
+[[recipe_surface]]
+id = "vllm.qwen.recipe.qwen3_5.server.latency_mtp"
+summary = "Official Qwen3.5 FP8 latency-focused MTP serving shape"
+source_url = "https://docs.vllm.ai/projects/recipes/en/latest/Qwen/Qwen3.5.html#latency-focused-serving"
+model = "Qwen/Qwen3.5-397B-A17B-FP8"
+status = "advisory-only"
+required_flags = [
+  "--tensor-parallel-size 8",
+  "--speculative-config {\"method\":\"mtp\",\"num_speculative_tokens\":1}",
+  "--reasoning-parser qwen3",
+]
+caveats = [
+  "The recipe states MTP-1 speculative decoding for AMD GPUs is under development.",
+  "Do not promote on gfx1151 without a reduced local MTP probe.",
+]
+
+[[recipe_surface]]
+id = "vllm.qwen.recipe.qwen3_5.server.tool_calling"
+summary = "Official Qwen3.5 tool-calling parser addition"
+source_url = "https://docs.vllm.ai/projects/recipes/en/latest/Qwen/Qwen3.5.html#multimodal"
+model = "Qwen/Qwen3.5-397B-A17B-FP8"
+status = "advisory-only"
+required_flags = [
+  "--enable-auto-tool-choice",
+  "--tool-call-parser qwen3_coder",
+]
+caveats = [
+  "Requires a Qwen server helper with a compatible tool payload and chat template before it can become a local passing scenario.",
+]
+
+[[recipe_surface]]
+id = "vllm.qwen.recipe.qwen3_5.benchmark.openai_chat"
+summary = "Official Qwen3.5 OpenAI-compatible benchmark-client shape"
+source_url = "https://docs.vllm.ai/projects/recipes/en/latest/Qwen/Qwen3.5.html#benchmarking"
+model = "Qwen/Qwen3.5-397B-A17B"
+status = "advisory-only"
+required_flags = [
+  "vllm bench serve",
+  "--backend openai-chat",
+  "--endpoint /v1/chat/completions",
+  "--dataset-name random",
+  "--random-input-len 2048",
+  "--random-output-len 512",
+  "--num-prompts 1000",
+  "--request-rate 20",
+]
+caveats = [
+  "Convert to a benchmark-lite local scenario only after a Qwen server helper exists.",
+]
+
+[[recipe_surface]]
+id = "vllm.qwen.recipe.qwen3_5.client.openai_multimodal"
+summary = "Official Qwen3.5 OpenAI-compatible multimodal client shape"
+source_url = "https://docs.vllm.ai/projects/recipes/en/latest/Qwen/Qwen3.5.html#consume-the-openai-api-compatible-server"
+model = "Qwen/Qwen3.5-397B-A17B"
+status = "advisory-only"
+required_flags = [
+  "OpenAI chat.completions.create",
+  "image_url content",
+  "max_tokens 2048",
+]
+caveats = [
+  "Use a local embedded image fixture for any future executable scenario.",
+]
+
+[[recipe_surface]]
+id = "vllm.qwen.recipe.qwen3_5.server.long_context_yarn"
+summary = "Official Qwen3.5 ultra-long-context YaRN override shape"
+source_url = "https://docs.vllm.ai/projects/recipes/en/latest/Qwen/Qwen3.5.html#processing-ultra-long-texts"
+model = "Qwen/Qwen3.5-397B-A17B"
+status = "advisory-only"
+required_flags = [
+  "VLLM_ALLOW_LONG_MAX_MODEL_LEN=1",
+  "--hf-overrides rope_parameters.yarn",
+  "--max-model-len 1010000",
+]
+caveats = [
+  "The recipe context length is not a gfx1151 smoke-test shape; keep local tests reduced unless deliberately stress-testing long context.",
+]

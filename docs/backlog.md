@@ -68,15 +68,19 @@
   <https://docs.vllm.ai/projects/recipes/en/latest/Qwen/Qwen3.5.html> as the
   current upstream reference.
   - keep the existing tiny Qwen3.5 smoke and blocked Qwen3.6 FP8 MoE probes,
-    but extend `inference/scenarios/vllm-qwen.toml` and catalog tests with the
-    recipe-level serving surfaces rather than leaving them as chat-only notes
-  - cover Qwen3.6 base serving with `--reasoning-parser qwen3` and its MTP
-    speculative-decoding variant
-  - cover Qwen3.5 throughput text-only serving, throughput multimodal serving,
-    latency-focused MTP serving, tool-calling with `qwen3_coder`, benchmark
-    client flow, OpenAI-compatible multimodal API consumption, and
-    ultra-long-context / YaRN override flow
-  - record the NVIDIA GB200 and AMD MI355X deployment shapes as advisory
+    while keeping official recipe surfaces distinct from runnable local
+    scenarios
+  - the official recipe surfaces are now recorded as non-executable
+    `recipe_surface` entries in `inference/scenarios/vllm-qwen.toml`, including
+    Qwen3.6 reasoning and MTP, Qwen3.5 throughput text-only and multimodal,
+    latency-focused MTP, tool-calling with `qwen3_coder`, benchmark client
+    flow, OpenAI-compatible multimodal API consumption, and ultra-long-context
+    / YaRN override flow
+  - next, add reduced local Qwen server scenarios for Qwen3.6 base serving with
+    `--reasoning-parser qwen3` and its MTP speculative-decoding variant; do not
+    use upstream `tp=8`, `dp=8`, or `--max-model-len 262144` shapes as local
+    gfx1151 smoke defaults
+  - record the NVIDIA GB200 and AMD MI355X deployment shapes only as advisory
     recipe references, while adapting runnable local scenarios to the Arch
     gfx1151 package lane and current host model cache
   - include recipe configuration checks for thinking disablement, Mamba/prefix
