@@ -10,7 +10,7 @@ import sys
 import threading
 import uuid
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -101,7 +101,7 @@ class PlanAlreadyActive(RuntimeError):
 
 
 def utc_now() -> str:
-    return datetime.now().astimezone().isoformat(timespec="seconds")
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
 def timestamp_id() -> str:
@@ -110,6 +110,23 @@ def timestamp_id() -> str:
 
 def new_plan_id() -> str:
     return f"{timestamp_id()}-{uuid.uuid4().hex[:8]}"
+
+
+def short_plan_id(plan_id: object) -> str:
+    text = str(plan_id)
+    suffix = text.rsplit("-", 1)[-1]
+    return suffix or text
+
+
+def format_history_time(value: object) -> str:
+    if not value:
+        return ""
+    text = str(value)
+    try:
+        parsed = datetime.fromisoformat(text)
+    except ValueError:
+        return text
+    return parsed.astimezone().strftime("%Y-%m-%d %H:%M:%S")
 
 
 def output_to_root_map(roots: dict[str, RepoPackageRoot]) -> dict[str, str]:
@@ -829,19 +846,27 @@ def latest_plan_dir(state_root: Path) -> Path | None:
     return sorted(candidates)[-1]
 
 
+def plan_history_dirs(state_root: Path) -> list[Path]:
+    if not state_root.is_dir():
+        return []
+    return sorted(
+        path
+        for path in state_root.iterdir()
+        if path.is_dir() and (path / "plan.json").is_file()
+    )
+
+
 def history_records(state_root: Path) -> list[dict[str, object]]:
     records: list[dict[str, object]] = []
-    if not state_root.is_dir():
-        return records
-    for directory in sorted(state_root.iterdir()):
-        if not directory.is_dir() or not (directory / "plan.json").is_file():
-            continue
+    for directory in plan_history_dirs(state_root):
         plan = read_json(directory / "plan.json")
         state = read_json(directory / "state.json") if (directory / "state.json").is_file() else {}
         active = plan_lock_is_held(directory)
+        plan_id = plan.get("plan_id", directory.name)
         records.append(
             {
-                "plan_id": plan.get("plan_id", directory.name),
+                "plan_id": plan_id,
+                "short_id": short_plan_id(plan_id),
                 "command": plan.get("command"),
                 "targets": plan.get("targets", []),
                 "status": state.get("status", "unknown"),
@@ -861,11 +886,21 @@ def resolve_plan_dir(state_root: Path, plan: str | None) -> Path:
         if latest is None:
             raise SystemExit("No amerge history was found.")
         return latest
-    candidate = state_root / str(plan)
+    plan_text = str(plan)
+    candidate = state_root / plan_text
     if not candidate.is_dir():
-        matches = sorted(path for path in state_root.glob(f"{plan}*") if path.is_dir())
+        matches = sorted(path for path in state_root.glob(f"{plan_text}*") if path.is_dir())
         if not matches:
-            raise SystemExit(f"No amerge plan matched: {plan}")
+            matches = [
+                path
+                for path in plan_history_dirs(state_root)
+                if short_plan_id(path.name).startswith(plan_text)
+            ]
+            if len(matches) > 1:
+                matched = ", ".join(path.name for path in matches)
+                raise SystemExit(f"Ambiguous amerge plan ID {plan_text}: {matched}")
+        if not matches:
+            raise SystemExit(f"No amerge plan matched: {plan_text}")
         candidate = matches[-1]
     return candidate
 
@@ -1240,17 +1275,165 @@ def maybe_confirm(plan: dict[str, object], args: argparse.Namespace) -> None:
             raise SystemExit("Merge aborted.")
 
 
-def print_history(records: list[dict[str, object]]) -> None:
+def history_uses_color(args: argparse.Namespace) -> bool:
+    choice = getattr(args, "color", "auto")
+    if choice == "always":
+        return True
+    if choice == "never" or os.environ.get("NO_COLOR"):
+        return False
+    return sys.stdout.isatty()
+
+
+def status_color(record: dict[str, object]) -> str:
+    if record.get("active"):
+        return YELLOW
+    status = str(record.get("status", "unknown"))
+    if status == "completed":
+        return GREEN
+    if status == "failed":
+        return RED
+    if status in {"running", "pending"}:
+        return YELLOW
+    if status == "interrupted":
+        return MAGENTA
+    return DIM
+
+
+def display_status(record: dict[str, object]) -> str:
+    status = str(record.get("status", "unknown"))
+    if record.get("active"):
+        return f"{status} active"
+    return status
+
+
+def elide_words(values: object, *, limit: int = 2) -> str:
+    words = [str(value) for value in values] if isinstance(values, list) else []
+    if len(words) <= limit:
+        return " ".join(words)
+    shown = " ".join(words[:limit])
+    return f"{shown} ... (+{len(words) - limit})"
+
+
+def padded(
+    value: object,
+    width: int,
+    *,
+    color: bool = False,
+    color_code: str | None = None,
+) -> str:
+    text = str(value).ljust(width)
+    if color and color_code:
+        return colorize(text, True, color_code)
+    return text
+
+
+def print_history(records: list[dict[str, object]], *, color: bool = False) -> None:
     if not records:
         print("No amerge history.")
         return
+    rows = [
+        {
+            "ID": str(record.get("short_id") or short_plan_id(record.get("plan_id"))),
+            "Created": format_history_time(record.get("created_at")),
+            "Status": display_status(record),
+            "Command": str(record.get("command") or ""),
+            "Targets": elide_words(record.get("targets", [])),
+            "record": record,
+        }
+        for record in records
+    ]
+    headers = ["ID", "Created", "Status", "Command", "Targets"]
+    widths = {
+        header: max(len(header), *(len(str(row[header])) for row in rows))
+        for header in headers
+    }
+    print("  ".join(header.ljust(widths[header]) for header in headers))
     for record in records:
-        active = " active" if record["active"] else ""
-        targets = " ".join(str(target) for target in record.get("targets", []))
+        row = next(row for row in rows if row["record"] is record)
         print(
-            f"{record['plan_id']} {record['status']}{active} "
-            f"{record['command']} {targets}".rstrip()
+            "  ".join(
+                (
+                    padded(
+                        row["Status"],
+                        widths["Status"],
+                        color=color,
+                        color_code=status_color(record),
+                    )
+                    if header == "Status"
+                    else padded(row[header], widths[header])
+                )
+                for header in headers
+            ).rstrip()
         )
+
+
+def history_show_records(state_root: Path, plan_ids: list[str]) -> list[dict[str, object]]:
+    if not plan_ids:
+        raise SystemExit("Choose one or more amerge history IDs to show.")
+    records = []
+    for plan_id in plan_ids:
+        plan_dir = resolve_plan_dir(state_root, plan_id)
+        plan = read_json(plan_dir / "plan.json")
+        state = read_json(plan_dir / "state.json") if (plan_dir / "state.json").is_file() else {}
+        full_plan_id = str(plan.get("plan_id", plan_dir.name))
+        records.append(
+            {
+                "plan_id": full_plan_id,
+                "short_id": short_plan_id(full_plan_id),
+                "path": str(plan_dir),
+                "active": plan_lock_is_held(plan_dir),
+                "plan": plan,
+                "state": state,
+            }
+        )
+    return records
+
+
+def print_history_show(records: list[dict[str, object]], *, color: bool = False) -> None:
+    for index, record in enumerate(records):
+        if index:
+            print()
+        plan = record["plan"]
+        state = record["state"]
+        status_record = {"status": state.get("status", "unknown"), "active": record["active"]}
+        print(f"Plan: {colorize(record['plan_id'], color, BOLD, CYAN)}")
+        print(f"Short ID: {record['short_id']}")
+        print(
+            "Status: "
+            f"{colorize(display_status(status_record), color, status_color(status_record))}"
+        )
+        print(f"Command: {plan.get('command', '')}")
+        print(f"Created: {format_history_time(plan.get('created_at'))}")
+        print(f"Started: {format_history_time(state.get('started_at'))}")
+        print(f"Ended: {format_history_time(state.get('ended_at'))}")
+        print(f"Path: {record['path']}")
+        print(f"Targets: {' '.join(str(target) for target in plan.get('targets', []))}")
+        merge_plan = plan.get("merge_plan", {})
+        if isinstance(merge_plan, dict):
+            print(
+                "Build roots: "
+                f"{' '.join(str(root) for root in merge_plan.get('build_roots', []))}"
+            )
+            print(
+                "Install outputs: "
+                f"{' '.join(str(output) for output in merge_plan.get('install_outputs', []))}"
+            )
+        print(f"Run IDs: {' '.join(str(run_id) for run_id in state.get('run_ids', []))}")
+        print("Steps:")
+        for step in plan.get("steps", []):
+            if not isinstance(step, dict):
+                continue
+            step_id = str(step.get("id", ""))
+            step_state = state.get("steps", {}).get(step_id, {})
+            step_status = str(step_state.get("status", "unknown"))
+            attempts = step_state.get("attempts", 0)
+            print(
+                "  "
+                f"{step_id}  "
+                f"{colorize(step_status, color, status_color({'status': step_status}))}  "
+                f"attempts={attempts}  "
+                f"{step.get('label', '')}"
+            )
 
 
 def add_common_plan_args(parser: argparse.ArgumentParser) -> None:
@@ -1292,9 +1475,22 @@ def build_parser() -> argparse.ArgumentParser:
     resume.add_argument("--skip", action="store_true")
 
     history = subparsers.add_parser("history")
+    history.add_argument(
+        "history_action",
+        nargs="?",
+        choices=("list", "show"),
+        default="list",
+    )
+    history.add_argument("plans", nargs="*")
     history.add_argument("--state-root", type=Path, default=DEFAULT_STATE_ROOT)
     history.add_argument("--json", action="store_true")
     history.add_argument("--status")
+    history.add_argument(
+        "--color",
+        choices=("auto", "always", "never"),
+        default="auto",
+        help="colorize human history output",
+    )
 
     logs = subparsers.add_parser("logs")
     logs.add_argument("plan", nargs="?", default="latest")
@@ -1335,13 +1531,25 @@ def main(argv: list[str] | None = None) -> int:
         return run_plan(plan_dir, start_index=start_index, skip_first=args.skip)
 
     if args.command == "history":
-        records = history_records(args.state_root.resolve())
+        state_root = args.state_root.resolve()
+        if args.history_action == "show":
+            if args.status:
+                parser.error("history show does not accept --status; use 'history list --status'.")
+            records = history_show_records(state_root, args.plans)
+            if args.json:
+                print(json.dumps(records, indent=2, sort_keys=True))
+            else:
+                print_history_show(records, color=history_uses_color(args))
+            return 0
+        if args.plans:
+            parser.error("history list does not accept plan IDs; use 'history show <id>'.")
+        records = history_records(state_root)
         if args.status:
             records = [record for record in records if record["status"] == args.status]
         if args.json:
             print(json.dumps(records, indent=2, sort_keys=True))
         else:
-            print_history(records)
+            print_history(records, color=history_uses_color(args))
         return 0
 
     if args.command == "logs":

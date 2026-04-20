@@ -208,6 +208,7 @@ Resume and inspect retained plans:
 tools/amerge resume latest
 tools/amerge resume latest --skip
 tools/amerge history
+tools/amerge history show <short-id>
 tools/amerge logs latest --path
 ```
 
@@ -222,6 +223,15 @@ Each active plan also holds `docs/worklog/amerge/<plan-id>/active.lock`, which
 prevents concurrent resumes or duplicate runs of the same plan. State files are
 written through atomic replacement so interrupted runs remain inspectable and
 resumable.
+
+`amerge history` is an alias for `amerge history list`. It renders retained
+plans as a compact table with the short hex ID, local creation time, status,
+command, and an elided target list. Use `amerge history show <short-id>` for the
+full target list, run IDs, step status, and retained plan path. The short hex ID
+is the suffix of `<plan-id>` and can also be used with `amerge resume` and
+`amerge logs` when it uniquely identifies a retained plan. Retained JSON
+timestamps are persisted in UTC and rendered in local time for human history
+output.
 
 ## Run Inference Scenarios
 

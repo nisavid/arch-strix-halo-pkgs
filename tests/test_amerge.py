@@ -7,6 +7,7 @@ import subprocess
 import sys
 import threading
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -450,6 +451,223 @@ def test_history_and_logs_report_persisted_runs(tmp_path: Path):
     assert module.resolve_log_paths(run_dir, step_id=None, run_id=None) == [
         run_dir / "run-1.log"
     ]
+
+
+def test_utc_now_persists_utc_timestamp(monkeypatch):
+    module = load_module()
+
+    class FakeDateTime:
+        seen_tz = None
+
+        @classmethod
+        def now(cls, tz=None):
+            cls.seen_tz = tz
+            return datetime(2026, 4, 18, 16, 34, 56, tzinfo=tz)
+
+    monkeypatch.setattr(module, "datetime", FakeDateTime)
+
+    assert module.utc_now() == "2026-04-18T16:34:56+00:00"
+    assert FakeDateTime.seen_tz is timezone.utc
+
+
+def write_history_plan(
+    state_root: Path,
+    plan_id: str,
+    *,
+    command: str = "build",
+    targets: list[str] | None = None,
+    status: str = "completed",
+) -> Path:
+    targets = targets or ["pkg"]
+    run_dir = state_root / plan_id
+    run_dir.mkdir(parents=True)
+    (run_dir / "plan.json").write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "plan_id": plan_id,
+                "created_at": "2026-04-18T12:34:56",
+                "command": command,
+                "targets": targets,
+                "flags": {"deps": False, "rdeps": False, "all": False, "installed": False},
+                "config": {"state_root": str(state_root)},
+                "merge_plan": {
+                    "build_roots": targets,
+                    "install_outputs": ["pkg-output"],
+                    "install_outputs_by_root": {"pkg": ["pkg-output"]},
+                },
+                "dependency_graph": [],
+                "steps": [
+                    {
+                        "id": "0001-build-pkg",
+                        "label": "build pkg",
+                        "kind": "build",
+                        "root": "pkg",
+                        "commands": [{"argv": ["makepkg"], "cwd": None}],
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    (run_dir / "state.json").write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "plan_id": plan_id,
+                "status": status,
+                "created_at": "2026-04-18T12:34:56",
+                "started_at": "2026-04-18T12:35:01",
+                "ended_at": "2026-04-18T12:35:10",
+                "run_ids": ["20260418T123501-deadbeef"],
+                "active_pid": None,
+                "steps": {
+                    "0001-build-pkg": {
+                        "status": status,
+                        "attempts": 1,
+                        "started_at": "2026-04-18T12:35:01",
+                        "ended_at": "2026-04-18T12:35:10",
+                        "run_ids": ["20260418T123501-deadbeef"],
+                        "commands": [],
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    return run_dir
+
+
+def test_history_records_include_short_id_and_resolve_hex_suffix(tmp_path: Path):
+    module = load_module()
+    state_root = tmp_path / "state"
+    run_dir = write_history_plan(state_root, "20260418T123456-deadbeef")
+
+    [record] = module.history_records(state_root)
+
+    assert record["short_id"] == "deadbeef"
+    assert module.resolve_plan_dir(state_root, "deadbeef") == run_dir
+    assert module.resolve_plan_dir(state_root, "20260418T123456") == run_dir
+
+
+def test_history_list_renders_table_with_elided_targets(tmp_path: Path):
+    state_root = tmp_path / "state"
+    write_history_plan(
+        state_root,
+        "20260418T123456-deadbeef",
+        command="run",
+        targets=["pkg-a", "pkg-b", "pkg-c", "pkg-d"],
+        status="failed",
+    )
+
+    result = run_amerge("history", "--state-root", str(state_root), "--color=never")
+
+    assert result.returncode == 0
+    assert "ID" in result.stdout
+    assert "Created" in result.stdout
+    assert "Status" in result.stdout
+    assert "deadbeef" in result.stdout
+    assert "2026-04-18 12:34:56" in result.stdout
+    assert "pkg-a pkg-b ... (+2)" in result.stdout
+    assert "pkg-c pkg-d" not in result.stdout
+    assert "\x1b[" not in result.stdout
+
+
+def test_history_list_json_keeps_full_targets_and_short_id(tmp_path: Path):
+    state_root = tmp_path / "state"
+    write_history_plan(
+        state_root,
+        "20260418T123456-deadbeef",
+        targets=["pkg-a", "pkg-b", "pkg-c", "pkg-d"],
+    )
+
+    result = run_amerge("history", "--state-root", str(state_root), "--json")
+
+    assert result.returncode == 0
+    [record] = json.loads(result.stdout)
+    assert record["short_id"] == "deadbeef"
+    assert record["targets"] == ["pkg-a", "pkg-b", "pkg-c", "pkg-d"]
+
+
+def test_history_list_can_color_status(tmp_path: Path):
+    state_root = tmp_path / "state"
+    write_history_plan(state_root, "20260418T123456-deadbeef", status="failed")
+
+    result = run_amerge("history", "--state-root", str(state_root), "--color=always")
+
+    assert result.returncode == 0
+    assert "\x1b[" in result.stdout
+    assert "failed" in result.stdout
+
+
+def test_history_show_reports_full_plan_details_for_short_ids(tmp_path: Path):
+    state_root = tmp_path / "state"
+    write_history_plan(
+        state_root,
+        "20260418T123456-deadbeef",
+        command="run",
+        targets=["pkg-a", "pkg-b", "pkg-c", "pkg-d"],
+        status="completed",
+    )
+
+    result = run_amerge("history", "show", "deadbeef", "--state-root", str(state_root))
+
+    assert result.returncode == 0
+    assert "Plan: 20260418T123456-deadbeef" in result.stdout
+    assert "Short ID: deadbeef" in result.stdout
+    assert "Created: 2026-04-18 12:34:56" in result.stdout
+    assert "Targets: pkg-a pkg-b pkg-c pkg-d" in result.stdout
+    assert "Run IDs: 20260418T123501-deadbeef" in result.stdout
+    assert "0001-build-pkg" in result.stdout
+    assert "completed" in result.stdout
+
+
+def test_history_show_json_returns_plan_and_state_for_short_ids(tmp_path: Path):
+    state_root = tmp_path / "state"
+    write_history_plan(state_root, "20260418T123456-deadbeef")
+
+    result = run_amerge(
+        "history",
+        "show",
+        "deadbeef",
+        "--state-root",
+        str(state_root),
+        "--json",
+    )
+
+    assert result.returncode == 0
+    [payload] = json.loads(result.stdout)
+    assert payload["short_id"] == "deadbeef"
+    assert payload["plan"]["plan_id"] == "20260418T123456-deadbeef"
+    assert payload["state"]["run_ids"] == ["20260418T123501-deadbeef"]
+
+
+def test_history_show_rejects_status_filter(tmp_path: Path):
+    state_root = tmp_path / "state"
+    write_history_plan(state_root, "20260418T123456-deadbeef")
+
+    result = run_amerge(
+        "history",
+        "show",
+        "deadbeef",
+        "--status",
+        "completed",
+        "--state-root",
+        str(state_root),
+    )
+
+    assert result.returncode == 2
+    assert "history show does not accept --status" in result.stderr
+
+
+def test_short_plan_id_resolution_rejects_ambiguous_suffix(tmp_path: Path):
+    module = load_module()
+    state_root = tmp_path / "state"
+    write_history_plan(state_root, "20260418T123456-deadbeef")
+    write_history_plan(state_root, "20260418T123457-deadbead")
+
+    with pytest.raises(SystemExit, match="Ambiguous amerge plan ID"):
+        module.resolve_plan_dir(state_root, "dead")
 
 
 def test_build_steps_do_not_request_sudo_keepalive(tmp_path: Path):
