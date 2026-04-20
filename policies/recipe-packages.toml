@@ -398,7 +398,7 @@ scaffold_notes = [
 [packages.python-triton-gfx1151]
 recipe_key = "triton"
 template = "python-project-triton-rocm"
-upstream_version = "3.5.1"
+upstream_version = "3.0.0+git0ec280cf"
 pkgdesc = "Language and compiler for custom deep-learning primitives, rebuilt from the ROCm performance fork for Strix Halo gfx1151"
 url = "https://triton-lang.org/main/index.html"
 license = ["MIT"]
@@ -411,14 +411,15 @@ divergence_notes = [
 ]
 update_notes = [
   "Check Arch's current Triton Python packaging first for Python-version fixes and install layout changes, then re-evaluate whether ROCm/triton still needs its separate LLVM lane.",
+  "Keep pkgver and provides aligned with the ROCm fork's generated wheel metadata from python/setup.py; do not reuse Arch's triton-lang release version when the source lane is ROCm/triton main_perf.",
   "Keep any source edits as patch files once they stabilize; this package is a likely upstream-candidate area.",
   "Keep recipe inline source edits wired into `prepare()` until each one has moved to a patch file. The 2026-04-19 host compiled-probe failure showed the installed package lacked the recorded `AttrsDescriptor.__repr__` sed edit, which made torch.compile / Inductor emit syntactically invalid generated Python."
 ]
-provides = ["python-triton=3.5.1"]
+provides = ["python-triton=3.0.0+git0ec280cf"]
 conflicts = ["python-triton"]
 depends = ["glibc", "libgcc", "python-gfx1151"]
 makedepends = ["cmake", "git", "ninja", "pybind11", "python-build", "python-installer", "python-setuptools", "python-wheel"]
-source_refs = ["triton::git+https://github.com/ROCm/triton.git#branch=main_perf"]
+source_refs = ["triton::git+https://github.com/ROCm/triton.git#commit=0ec280cf80dd91e9a86887981a670f2d4541a32b"]
 sha256sums = ["SKIP"]
 src_subdir = "triton"
 patches_dir = "patches/python-triton-gfx1151"

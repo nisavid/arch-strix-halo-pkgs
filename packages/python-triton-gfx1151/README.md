@@ -6,7 +6,7 @@
 - Scaffold template: `python-project-triton-rocm`
 - Recipe build method: `pip`
 - Upstream repo: `https://github.com/ROCm/triton.git`
-- Package version: `3.5.1`
+- Package version: `3.0.0+git0ec280cf`
 - Recipe revision: `ad42886 (20260317, 8 path commits)`
 - Recipe steps: `14, 15, 16`
 - Recipe dependencies: `therock, pytorch`
@@ -68,6 +68,7 @@ does not require manual clearing.
 ## Update Notes
 
 - Check Arch's current Triton Python packaging first for Python-version fixes and install layout changes, then re-evaluate whether ROCm/triton still needs its separate LLVM lane.
+- Keep pkgver and provides aligned with the ROCm fork's generated wheel metadata from python/setup.py; do not reuse Arch's triton-lang release version when the source lane is ROCm/triton main_perf.
 - Keep any source edits as patch files once they stabilize; this package is a likely upstream-candidate area.
 - Keep recipe inline source edits wired into `prepare()` until each one has moved to a patch file. The 2026-04-19 host compiled-probe failure showed the installed package lacked the recorded `AttrsDescriptor.__repr__` sed edit, which made torch.compile / Inductor emit syntactically invalid generated Python.
 

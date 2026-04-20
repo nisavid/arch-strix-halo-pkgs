@@ -11,9 +11,15 @@ against the rebuilt stack. Provisional findings and patch rationale live in
 into this file or `docs/patches.md` only after post-rebuild validation records
 the scenario, model binding, backend split, and failure or pass signature.
 
+The full native package rebuild and install completed on 2026-04-20 through
+`tools/amerge` plan `20260420T045008-685264b1`, with 75 completed steps and no
+remaining failed steps. Build/deploy closeout for the native stack is complete;
+runtime closeout now means working through the revalidation ledger.
+
 ## Live Host State
 
-The first full live cutover completed successfully on the reference Arch host.
+The first full live cutover and subsequent native package rebuild completed
+successfully on the reference Arch host.
 
 The reference host's active Hugging Face cache for current validation work is
 `/var/cache/hf`, not the older `/bulk/hf` cache. Current local non-GGUF model
@@ -30,13 +36,9 @@ Use `Qwen/Qwen3.6-35B-A3B-FP8` as the main Qwen MoE/shared-expert target for
 this dev arc; it replaces the earlier Qwen3.5 122B-A10B testing and usage
 target. Its local config advertises `Qwen3_5MoeForConditionalGeneration` /
 `qwen3_5_moe`, so the maintained Qwen3.5/GDN package carry is still relevant
-to this lane. This is a target and blocked probe lane, not a passing smoke
-lane yet: with AITER disabled, vLLM has no FP8 MoE backend that advertises
-support for this deployment on gfx1151, and with AITER forced the built
-`python-amd-aiter-gfx1151` pkgrel `-8` plus `python-vllm-rocm-gfx1151` pkgrel
-`-27` payload gets past the earlier `hip_compat.h` header issue but fails
-JIT-building `aiter.jit.module_quant` in `opus.hpp` with
-`unknown type name 'mfma_adaptor'`.
+to this lane. This remains a target and blocked-probe lane, not an accepted
+passing smoke lane, until the rebuilt native stack reproduces or retires the
+expected Qwen3.6 probe outcomes in the revalidation ledger.
 
 Installed and validated at least once on the live host:
 
@@ -49,26 +51,8 @@ Installed and validated at least once on the live host:
 - `llama.cpp` HIP and Vulkan backends
 - Lemonade server/app/meta packages
 
-Installed Qwen closeout state for this branch:
-
-- `python-vllm-rocm-gfx1151 0.19.1.r8.d20260317.gad42886-1` and
-  `python-amd-aiter-gfx1151 0.1.0.r8.d20260317.gad42886-8` are installed on
-  the live host.
-- After the vLLM 0.19.1 upgrade was installed, the tracked installed-host
-  validation run passed all five selected outcomes: Gemma 4 26B-A4B text smoke,
-  Gemma 4 26B-A4B server smoke, Qwen3.5 sampler-fix smoke, Qwen3.6 non-AITER
-  FP8 MoE backend-selection blocked probe, and Qwen3.6 forced-AITER
-  `module_quant`/`mfma_adaptor` blocked probe. The run durations were
-  126.656176, 277.153321, 39.836885, 23.311548, and 63.515031 seconds,
-  respectively.
-- The 2026-04-19 installed-host Qwen validation run passed all three expected
-  outcomes: Qwen3.5 sampler-fix smoke passed, Qwen3.6 non-AITER FP8 MoE
-  backend-selection blocked probe passed, and Qwen3.6 forced-AITER
-  `module_quant`/`mfma_adaptor` blocked probe passed. The raw ignored worklog
-  directory was session-scoped and is not retained in Git; this section records
-  the durable result.
-
-Current package freshness integration state, checked on 2026-04-20:
+Current installed native package state, checked on 2026-04-20 after the full
+`amerge` run completed:
 
 - `aocl-libm-gfx1151` tracks upstream AOCL-LibM `5.2.2` and built
   successfully after installing host build dependency `scons`. The scaffold
@@ -77,29 +61,32 @@ Current package freshness integration state, checked on 2026-04-20:
   bootstrap.
 - `llama.cpp-hip-gfx1151` and `llama.cpp-vulkan-gfx1151` package definitions
   track upstream llama.cpp `b8851` at commit
-  `e365e658f07b63371489570dfde597f199b26c23`. Both b8851 package artifacts
-  exist, the ignored local repo metadata has been refreshed, and after
-  `tools/amerge deploy -y llama.cpp-hip-gfx1151 python-mistral-common-gfx1151`
-  completed on 2026-04-20 the live host reports both HIP and Vulkan llama.cpp
-  packages at `b8851.r8.d20260317.gad42886-1`. The Vulkan package metadata now
-  includes `spirv-headers` because b8851 includes `spirv/unified1/spirv.hpp`
-  directly.
-- `python-mistral-common-gfx1151` tracks PyPI `1.11.0`, rebuilt successfully,
-  has been refreshed into the ignored local repo, and was installed on the
-  live host through the same 2026-04-20 deploy plan. The live host now reports
+  `e365e658f07b63371489570dfde597f199b26c23`. The live host reports both HIP
+  and Vulkan packages at `b8851-1`. The Vulkan package metadata includes
+  `spirv-headers` because b8851 includes `spirv/unified1/spirv.hpp` directly.
+- `python-mistral-common-gfx1151` tracks PyPI `1.11.0`; the live host reports
   `python-mistral-common-gfx1151 1.11.0-1`.
 - `python-pytorch-opt-rocm-gfx1151` tracks ROCm/pytorch `release/2.11` at
-  commit `8543095e3275db694084a6679bd5b61f7d2ece76`; this heavy source build
-  was not rerun during the freshness metadata integration.
+  commit `8543095e3275db694084a6679bd5b61f7d2ece76`; the live host reports
+  `python-pytorch-opt-rocm-gfx1151 2.11.0-6`.
 - `python-amd-aiter-gfx1151` remains pinned to upstream AITER main commit
   `cf12b1381dcdec4b5d90d136a5403e718c7541ec`, which is past the latest
   released tag `v0.1.12.post1`; the package exports
-  `SETUPTOOLS_SCM_PRETEND_VERSION=0.1.12.post2.dev69+gcf12b1381` so wheel
-  metadata is stable. This heavy source build was not rerun during the
-  freshness metadata integration, and the live host remains on the earlier
-  installed Qwen closeout package until that rebuild is intentionally run.
+  `SETUPTOOLS_SCM_PRETEND_VERSION=0.1.12.post2.dev69+gcf12b1381`, and the live
+  host reports `python-amd-aiter-gfx1151 0.1.12.post2.dev69+gcf12b1381-1`.
+- The rebuilt wheel layer installed with simplified native package versions:
+  `python-aotriton-gfx1151 0.11.2b-1`,
+  `python-torchvision-rocm-gfx1151 0.26.0-3`,
+  `python-torchao-rocm-gfx1151 0.17.0-1`,
+  `python-transformers-gfx1151 5.5.4-1`, and
+  `python-vllm-rocm-gfx1151 0.19.1-1`.
+- The full rebuild installed `python-triton-gfx1151 3.5.1-1`, but the built
+  Python wheel metadata reports `triton 3.0.0+git0ec280cf`. The repo package
+  policy has been corrected to `python-triton-gfx1151 3.0.0+git0ec280cf-1`;
+  deploy that narrow package before treating package-manager and Python
+  metadata as fully aligned.
 - `lemonade-server` was rebuilt so its system-managed llama.cpp backend
-  metadata points at `b8851`.
+  metadata points at `b8851`; the live host reports `lemonade-server 10.2.0-2`.
 
 ## Live Smoke Coverage
 
@@ -201,8 +188,8 @@ Current smoke gap:
   `python-mistral-common-gfx1151` packages for Harmony and Gemma-4-capable
   runtime closure.
   - The v0.19.1 refresh replaced the v0.19.0 tarball, reset pkgrel to `-1`,
-    and produced
-    `python-vllm-rocm-gfx1151-0.19.1.r8.d20260317.gad42886-1-x86_64.pkg.tar.zst`.
+    and the simplified native versioning lane now produces
+    `python-vllm-rocm-gfx1151-0.19.1-1-x86_64.pkg.tar.zst`.
     The upstream tarball diff from v0.19.0 to v0.19.1 was 82 files changed
     with 5061 insertions and 269 deletions, mostly Gemma 4 model/tooling
     additions plus dependency metadata updates for `transformers` and
@@ -523,10 +510,10 @@ Current smoke gap:
     `pytest packages/python-vllm-rocm-gfx1151/tests -q` and
     `pytest tests packages/python-vllm-rocm-gfx1151/tests -q` passed against
     the freshly populated `pkg/` tree
-  - after pkgrel `0.19.1.r8.d20260317.gad42886-1` was installed, the installed
-    Gemma 4 26B-A4B text/server lanes and Qwen3.5/Qwen3.6 validation lanes
-    passed with the same expected outcomes as the prior vLLM 0.19.0 package
-    lane
+  - the simplified native package lane is now installed as
+    `python-vllm-rocm-gfx1151 0.19.1-1`; use the revalidation ledger before
+    treating earlier Gemma 4 and Qwen scenario results as accepted evidence for
+    the current installed stack
   - after pkgrel `-26` was installed, the existing Gemma 4 26B-A4B
     installed-host lane still passed with the package:
     `vllm.gemma4.26b-a4b.text.basic` passed in `195.710255` seconds, and
