@@ -36,7 +36,7 @@ priority = "high"
 workflow = "upstream_source_update"
 checks = [
   { id = "arch", role = "primary", kind = "arch_package", package = "python", recorded = "3.14.4-1", comparison = "pkgver" },
-  { id = "cpython", role = "baseline", kind = "python_ftp", recorded = "3.14.4", comparison = "pep440" },
+  { id = "cpython", role = "baseline", kind = "python_ftp", recorded = "3.14.4", comparison = "pep440", series = "3.14" },
 ]
 
 [families.vllm]

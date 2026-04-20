@@ -9,9 +9,12 @@ import json
 import os
 from pathlib import Path
 import re
+import subprocess
 import sys
 import time
 import tomllib
+from urllib.parse import quote
+from urllib.request import Request, urlopen
 
 
 PUBLIC_STATUSES = {
@@ -126,6 +129,150 @@ class FakeClients:
             f"submodule:{path}:{remote_ref}",
             "",
         )
+
+
+class StaticTransport:
+    def __init__(self, responses: dict[str, str]) -> None:
+        self.responses = responses
+
+    def get_text(self, url: str) -> str:
+        if url not in self.responses:
+            raise QueryFailed(f"missing static response for {url}")
+        return self.responses[url]
+
+
+class UrlTransport:
+    def __init__(self, *, timeout: float = 10, retries: int = 2) -> None:
+        self.timeout = timeout
+        self.retries = retries
+
+    def get_text(self, url: str) -> str:
+        last_error: Exception | None = None
+        for _attempt in range(self.retries + 1):
+            try:
+                request = Request(
+                    url,
+                    headers={
+                        "User-Agent": "arch-strix-halo-pkgs-freshness-checker/1"
+                    },
+                )
+                with urlopen(request, timeout=self.timeout) as response:
+                    return response.read().decode("utf-8")
+            except Exception as exc:  # pragma: no cover - network dependent
+                last_error = exc
+        raise QueryFailed(str(last_error))
+
+
+class RealClients:
+    def __init__(
+        self,
+        *,
+        transport: StaticTransport | UrlTransport | None = None,
+        repo_root: str | Path = ".",
+    ) -> None:
+        self.transport = transport or UrlTransport()
+        self.repo_root = Path(repo_root)
+
+    def _json(self, url: str):
+        try:
+            return json.loads(self.transport.get_text(url))
+        except json.JSONDecodeError as exc:
+            raise QueryFailed(f"invalid JSON from {url}: {exc}") from exc
+
+    def pypi_project(self, package: str) -> dict:
+        payload = self._json(f"https://pypi.org/pypi/{quote(package)}/json")
+        return {"version": payload.get("info", {}).get("version", "")}
+
+    def github_releases(self, repo: str) -> list[dict]:
+        payload = self._json(f"https://api.github.com/repos/{repo}/releases")
+        releases = []
+        for item in payload:
+            if item.get("draft"):
+                continue
+            releases.append(
+                {
+                    "tag": item.get("tag_name", ""),
+                    "prerelease": bool(item.get("prerelease")),
+                    "published_at": item.get("published_at", ""),
+                }
+            )
+        return releases
+
+    def github_tags(self, repo: str) -> list[str]:
+        payload = self._json(f"https://api.github.com/repos/{repo}/tags?per_page=100")
+        return [item.get("name", "") for item in payload]
+
+    def git_ref(self, repo: str, ref: str) -> str:
+        result = subprocess.run(
+            ["git", "ls-remote", repo, ref],
+            check=False,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        if result.returncode != 0:
+            raise QueryFailed(result.stderr.strip() or "git ls-remote failed")
+        first = result.stdout.splitlines()[0] if result.stdout.splitlines() else ""
+        return first.split()[0] if first else ""
+
+    def aur_package(self, package: str) -> dict:
+        url = f"https://aur.archlinux.org/rpc/v5/info?arg[]={quote(package)}"
+        payload = self._json(url)
+        for item in payload.get("results", []):
+            if item.get("Name") == package:
+                return {"version": item.get("Version", "")}
+        raise QueryFailed(f"AUR package not found: {package}")
+
+    def arch_package(self, package: str) -> dict:
+        url = f"https://archlinux.org/packages/search/json/?name={quote(package)}"
+        payload = self._json(url)
+        for item in payload.get("results", []):
+            if item.get("pkgname") == package:
+                return {
+                    "version": f"{item.get('pkgver', '')}-{item.get('pkgrel', '')}"
+                }
+        raise QueryFailed(f"Arch package not found: {package}")
+
+    def python_ftp_versions(self) -> list[str]:
+        html = self.transport.get_text("https://www.python.org/ftp/python/")
+        return re.findall(r'href="([0-9]+\.[0-9]+\.[0-9]+)/"', html)
+
+    def submodule_ref(self, path: str, remote_ref: str) -> str:
+        url = self.submodule_url(path)
+        result = subprocess.run(
+            ["git", "ls-remote", url, remote_ref],
+            check=False,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        if result.returncode != 0:
+            raise QueryFailed(result.stderr.strip() or "git ls-remote failed")
+        first = result.stdout.splitlines()[0] if result.stdout.splitlines() else ""
+        return first.split()[0] if first else ""
+
+    def submodule_url(self, path: str) -> str:
+        gitmodules = self.repo_root / ".gitmodules"
+        if not gitmodules.exists():
+            raise QueryFailed(".gitmodules not found")
+        current_path = None
+        current_url = None
+        for line in gitmodules.read_text(encoding="utf-8").splitlines():
+            stripped = line.strip()
+            if stripped.startswith("[submodule "):
+                current_path = None
+                current_url = None
+                continue
+            if "=" not in stripped:
+                continue
+            key, value = [part.strip() for part in stripped.split("=", 1)]
+            if key == "path":
+                current_path = value
+            elif key == "url":
+                current_url = value
+            if current_path == path and current_url:
+                return current_url
+        raise QueryFailed(f"submodule path not found in .gitmodules: {path}")
 
 
 def load_toml(path: Path) -> dict:
@@ -290,6 +437,13 @@ def query_check(check: dict, clients: FakeClients) -> dict:
             latest = str(clients.arch_package(check["package"]).get("version", ""))
         elif kind == "python_ftp":
             versions = clients.python_ftp_versions()
+            if check.get("series"):
+                series_prefix = f"{check['series']}."
+                versions = [
+                    version
+                    for version in versions
+                    if version.startswith(series_prefix)
+                ]
             latest = sorted(versions, key=version_key)[-1] if versions else ""
         elif kind == "submodule":
             latest = clients.submodule_ref(check["path"], check["ref"])
@@ -444,7 +598,7 @@ def run_check(
         if cached is not None:
             return cached
 
-    clients = clients or FakeClients(allow_missing=True)
+    clients = clients or RealClients(repo_root=root)
     families = filtered_families(policy_families(root), only)
     reports = validate_coverage(root, families)
     if not reports:
@@ -526,7 +680,7 @@ def main(argv: list[str] | None = None, *, clients: FakeClients | None = None) -
     report = run_check(
         repo_root,
         refresh=args.refresh,
-        clients=clients,
+        clients=clients or RealClients(repo_root=repo_root),
         only=args.only,
         max_age_hours=args.max_age_hours,
     )

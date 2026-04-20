@@ -1,6 +1,7 @@
 from pathlib import Path
 import importlib.util
 import json
+import subprocess
 import textwrap
 
 
@@ -201,6 +202,26 @@ def test_given_query_failure_when_checked_then_not_current(tmp_path):
     assert report["families"][0]["status"] == "query_failed"
 
 
+def test_python_ftp_check_can_track_one_minor_series(tmp_path):
+    write_pkg(tmp_path, "python-gfx1151")
+    write_policy(
+        tmp_path,
+        """
+        [families.python]
+        packages = ["python-gfx1151"]
+        priority = "high"
+        workflow = "upstream_source_update"
+        checks = [{ id = "cpython", role = "primary", kind = "python_ftp", recorded = "3.14.4", comparison = "pep440", series = "3.14" }]
+        """,
+    )
+    clients = updates.FakeClients(python_ftp=["3.14.3", "3.14.4", "3.15.0"])
+
+    report = updates.run_check(tmp_path, refresh=True, clients=clients)
+
+    assert report["families"][0]["status"] == "current"
+    assert report["families"][0]["checks"][0]["latest"] == "3.14.4"
+
+
 def test_cli_json_output_is_parseable(tmp_path, capsys):
     write_pkg(tmp_path, "python-numpy-gfx1151")
     write_policy(
@@ -292,3 +313,95 @@ def test_real_freshness_policy_covers_every_pkgbuild_dir():
     )
 
     assert report["summary"].get("metadata_mismatch", 0) == 0
+
+
+def test_github_release_client_ignores_drafts_and_respects_prerelease_flag():
+    client = updates.RealClients(
+        transport=updates.StaticTransport(
+            {
+                "https://api.github.com/repos/vllm-project/vllm/releases": json.dumps(
+                    [
+                        {
+                            "tag_name": "v0.19.2rc0",
+                            "draft": False,
+                            "prerelease": True,
+                            "published_at": "2026-04-20T00:00:00Z",
+                        },
+                        {
+                            "tag_name": "v0.19.1",
+                            "draft": False,
+                            "prerelease": False,
+                            "published_at": "2026-04-19T00:00:00Z",
+                        },
+                        {
+                            "tag_name": "v0.20.0",
+                            "draft": True,
+                            "prerelease": False,
+                            "published_at": "2026-04-21T00:00:00Z",
+                        },
+                    ]
+                )
+            }
+        )
+    )
+
+    releases = client.github_releases("vllm-project/vllm")
+
+    assert [release["tag"] for release in releases] == ["v0.19.2rc0", "v0.19.1"]
+
+
+def test_aur_client_reads_rpc_version():
+    client = updates.RealClients(
+        transport=updates.StaticTransport(
+            {
+                "https://aur.archlinux.org/rpc/v5/info?arg[]=python-vllm": json.dumps(
+                    {
+                        "results": [
+                            {"Name": "python-vllm", "Version": "0.12.0-1"}
+                        ]
+                    }
+                )
+            }
+        )
+    )
+
+    assert client.aur_package("python-vllm")["version"] == "0.12.0-1"
+
+
+def test_submodule_client_uses_gitmodules_url_not_parent_repo(tmp_path, monkeypatch):
+    (tmp_path / ".gitmodules").write_text(
+        textwrap.dedent(
+            """
+            [submodule "upstream/ai-notes"]
+              path = upstream/ai-notes
+              url = https://github.com/paudley/ai-notes.git
+            """
+        ),
+        encoding="utf-8",
+    )
+    calls = []
+
+    def fake_run(argv, **kwargs):
+        calls.append(argv)
+        return subprocess.CompletedProcess(
+            argv,
+            0,
+            stdout="ad428861b726f6bd0e0a533e9e2fccdef43d0709\trefs/heads/main\n",
+            stderr="",
+        )
+
+    monkeypatch.setattr(updates.subprocess, "run", fake_run)
+    client = updates.RealClients(repo_root=tmp_path)
+
+    assert (
+        client.submodule_ref("upstream/ai-notes", "refs/heads/main")
+        == "ad428861b726f6bd0e0a533e9e2fccdef43d0709"
+    )
+    assert calls == [
+        [
+            "git",
+            "ls-remote",
+            "https://github.com/paudley/ai-notes.git",
+            "refs/heads/main",
+        ]
+    ]
