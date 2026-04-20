@@ -538,7 +538,10 @@ def build_steps(
                     steps.append(
                         StepSpec(
                             id=f"{index:04d}-install-prerequisites",
-                            label="install build prerequisites",
+                            label=(
+                                "install build prerequisites: "
+                                + " ".join(root_prerequisites)
+                            ),
                             kind="install",
                             root=None,
                             commands=(install_command(root_prerequisites),),

@@ -185,13 +185,13 @@ def test_deps_expands_rebuild_selection_to_dependencies(tmp_path: Path):
     assert step_labels == [
         "build therock-gfx1151",
         "publish therock-gfx1151",
-        "install build prerequisites",
+        "install build prerequisites: rocm-core-gfx1151",
         "build python-core-gfx1151",
         "publish python-core-gfx1151",
-        "install build prerequisites",
+        "install build prerequisites: python-core-gfx1151 rocblas-gfx1151",
         "build python-leaf-gfx1151",
         "publish python-leaf-gfx1151",
-        "install build prerequisites",
+        "install build prerequisites: python-leaf-gfx1151",
         "build python-app-gfx1151",
         "publish python-app-gfx1151",
         "install selected outputs",
@@ -199,7 +199,7 @@ def test_deps_expands_rebuild_selection_to_dependencies(tmp_path: Path):
     prerequisite_commands = [
         step["commands"][0]["argv"]
         for step in payload["steps"]
-        if step["label"] == "install build prerequisites"
+        if step["label"].startswith("install build prerequisites:")
     ]
     assert prerequisite_commands[0][-1:] == ["rocm-core-gfx1151"]
     assert prerequisite_commands[1][-2:] == ["python-core-gfx1151", "rocblas-gfx1151"]
@@ -237,7 +237,7 @@ def test_selected_split_root_installs_dependency_outputs_for_later_builds(tmp_pa
     assert step_labels == [
         "build therock-gfx1151",
         "publish therock-gfx1151",
-        "install build prerequisites",
+        "install build prerequisites: rocblas-gfx1151",
         "build python-leaf-gfx1151",
         "publish python-leaf-gfx1151",
         "install selected outputs",
@@ -270,7 +270,7 @@ def test_run_batches_prerequisites_for_ready_build_frontier(tmp_path: Path):
     assert [step["label"] for step in payload["steps"]] == [
         "build therock-gfx1151",
         "publish therock-gfx1151",
-        "install build prerequisites",
+        "install build prerequisites: rocblas-gfx1151 rocm-core-gfx1151",
         "build python-alpha-gfx1151",
         "publish python-alpha-gfx1151",
         "build python-beta-gfx1151",
@@ -336,10 +336,10 @@ def test_rdeps_expands_rebuild_selection_to_reverse_dependencies(tmp_path: Path)
     assert step_labels == [
         "build python-core-gfx1151",
         "publish python-core-gfx1151",
-        "install build prerequisites",
+        "install build prerequisites: python-core-gfx1151",
         "build python-leaf-gfx1151",
         "publish python-leaf-gfx1151",
-        "install build prerequisites",
+        "install build prerequisites: python-leaf-gfx1151",
         "build python-app-gfx1151",
         "publish python-app-gfx1151",
         "install selected outputs",
