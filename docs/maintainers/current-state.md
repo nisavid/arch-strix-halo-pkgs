@@ -814,11 +814,14 @@ The following smoke checks have already passed on the reference host:
     rejects a shape/configuration; it was not present in the Gemma 4 E2B
     online TorchAO run, which selected `ROCM_AITER_UNIFIED_ATTN`
   - real-model TorchAO validation now has two tracked outcomes:
-    `vllm.gemma4.e2b.torchao.online-real-model` passed on 2026-04-19 with
-    `quantization=torchao`, `ROCM_AITER_UNIFIED_ATTN`, 10.62 GiB
-    model-loading memory, and `generation_ok`; the serialized
-    `vllm.gemma4.e2b.torchao.real-model` scenario still fails after
-    `prepare_real_ok` during vLLM weight loading with
+    `vllm.gemma4.e2b.torchao.online-real-model` passed after the self-hosted
+    rebuild on 2026-04-20 in `58.446559` seconds with
+    `using_online_source_model`, `quantization=torchao`, `enforce_eager=True`,
+    `ROCM_AITER_UNIFIED_ATTN`, 10.62 GiB model-loading memory, `llm_init_ok`,
+    and `generation_ok`; the serialized
+    `vllm.gemma4.e2b.torchao.real-model` scenario is now an expected blocked
+    probe and reproduced after the rebuild in `58.503875` seconds with
+    `prepare_real_ok` followed by vLLM weight loading failure:
     `AttributeError: 'Tensor' object has no attribute 'tensor_data_names'`
   - keep TorchAO version checks metadata-only on generic vLLM startup paths so
     broken optional host TorchAO packages do not emit warning noise during

@@ -62,6 +62,7 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     assert "blocked" in tags_by_id["vllm.gemma4.e2b.text.compiled"]
     assert "kernel-probe" in tags_by_id["vllm.gemma4.26b-a4b.server.moe-aiter"]
     assert "quantization-probe" in tags_by_id["vllm.gemma4.e2b.torchao.real-model"]
+    assert "blocked" in tags_by_id["vllm.gemma4.e2b.torchao.real-model"]
     assert "qwen3.5" in tags_by_id["vllm.qwen3_5.0_8b.text.basic"]
     assert "compiled-probe" in tags_by_id["vllm.qwen3_5.0_8b.text.compiled"]
     assert "qwen3.6" in tags_by_id[
