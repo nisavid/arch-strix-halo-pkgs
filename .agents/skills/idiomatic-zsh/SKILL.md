@@ -18,7 +18,7 @@ compatibility or strict POSIX `sh`.
 - Keep trap cleanup explicit and avoid leaking globals across helper functions.
 - Quote only where shell expansion or whitespace rules actually require it.
 - If a script performs privileged package installs in this repo, pair it with
-  the local workflow guidance in `rebuild-publish-install-local-packages`.
+  the local workflow guidance in `deploying-local-arch-packages`.
 
 ## Common Fit
 

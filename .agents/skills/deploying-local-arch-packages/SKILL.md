@@ -1,32 +1,55 @@
 ---
-name: rebuild-publish-install-local-packages
-description: Use when rebuilding repo packages, republishing the local pacman repo, or reinstalling local package outputs on a host through the tracked repo workflow.
+name: deploying-local-arch-packages
+description: Use when Arch package changes need a host handoff, rebuild, publish, install, deploy, reinstall, downgrade, local pacman repo refresh, or post-change package verification in this repo.
 ---
 
-# Rebuild Publish Install Local Packages
+# Deploying Local Arch Packages
 
 Use `tools/amerge` as the canonical repo-side host workflow for merge planning,
 rebuild, publish, install, resume, history, and logs.
 
-## Default Use
+## Completion Rule
 
-- For a narrow package lane:
+When package files, PKGBUILDs, repo metadata, or package versions changed and
+the privileged host mutation was not run, the final response must include the
+exact `tools/amerge ...` handoff command.
+
+Default handoff after broad package changes:
+
+```bash
+tools/amerge run --installed
+```
+
+If package artifacts are already built and only publish/install remains:
+
+```bash
+tools/amerge deploy <package-root>...
+```
+
+If the user wants to inspect the privileged commands first:
+
+```bash
+tools/amerge run --installed --preview=commands
+```
+
+## Command Selection
+
+- Narrow package lane:
 
 ```bash
 tools/amerge run python-amd-aiter-gfx1151 python-vllm-rocm-gfx1151
 ```
 
-- Also rebuild dependencies:
+- Include dependencies:
 
 ```bash
 tools/amerge run --deps python-amd-aiter-gfx1151 python-vllm-rocm-gfx1151
 ```
 
-- Rebuild all repo roots or only installed repo outputs:
+- Rebuild all repo roots:
 
 ```bash
 tools/amerge run --all
-tools/amerge run --installed
 ```
 
 - Resume a failed run:
@@ -41,21 +64,16 @@ tools/amerge resume latest
 tools/amerge deploy python-amd-aiter-gfx1151 python-vllm-rocm-gfx1151
 ```
 
-Use `tools/amerge history` and `tools/amerge logs latest --path` to inspect
-retained state and logs.
-Use `--preview=tree --color=always` when the user wants a colorized plan
-captured in logs or chat; leave the default `--color=auto` for normal terminals.
-Use `--preview=commands` when the user wants to inspect exact `makepkg`,
-publish, and pacman commands before privileged execution.
+Inspect retained state with `tools/amerge history` and
+`tools/amerge logs latest --path`. Use `--preview=tree --color=always` when the
+user wants a colorized plan captured in logs or chat.
 
 ## Operator Notes
 
 - Hand `run`, `publish`, `install`, and `deploy` commands to the user when
-  they need privileged publish/install execution.
-- When autonomous work produces package artifacts but cannot complete the
-  privileged host mutation, close with the exact `tools/amerge deploy ...`
-  command needed to publish and install those artifacts. Do not leave the user
-  to infer the deployment step from build output or package drift notes.
+  privileged publish/install execution is needed and you have not run it.
+- When artifacts are built but host mutation is pending, close with the exact
+  `tools/amerge deploy ...` command. Do not leave the deployment step implicit.
 - After the user reports the privileged command has completed, run the
   applicable `pacman -Q ...` and smoke checks yourself when the host is
   accessible. Ask the user to run verification only when you cannot perform it
@@ -64,11 +82,10 @@ publish, and pacman commands before privileged execution.
   autonomously when package build dependencies are already installed. If
   `makepkg` needs missing dependencies, handle that as a host setup blocker
   rather than warming sudo up front.
-- The tool keeps one sudo session alive only for plans containing privileged
-  publish/install commands, and logs under `docs/worklog/amerge/<plan-id>/`.
+- The tool keeps sudo alive only for plans containing privileged steps, and
+  logs under `docs/worklog/amerge/<plan-id>/`.
 - With `run`, each package root is built, published, and installed before the
-  next root, preserving dependency-order fast iteration. Selected split roots
-  also install any outputs required by later selected package roots.
+  next root. Selected split roots also install outputs needed by later roots.
 - Publish steps require package archives matching the current PKGBUILD
   `makepkg --packagelist`, so stale built artifacts fail before republishing.
 - A plan holds `active.lock` while running; do not start a second resume or run
