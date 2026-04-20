@@ -25,6 +25,19 @@
 
 - Resume auditing the rest of the TheRock split-package family against the
   best current CachyOS / Arch baselines.
+- Finish live-host install parity for already-built freshness artifacts before
+  treating the 2026-04-20 package update as fully installed. During the docs
+  sweep, package definitions/artifacts were current for `llama.cpp` b8851 and
+  `python-mistral-common-gfx1151` 1.11.0, but the live host still reported
+  `llama.cpp-hip-gfx1151 b8611.r8.d20260317.gad42886-1` and
+  `python-mistral-common-gfx1151 1.10.0-1`; install those refreshed packages
+  and rerun the relevant smokes before claiming installed-host parity.
+- Add a repo-owned AOCL post-install runtime smoke. The current package lane
+  has build/test coverage, but no installed-host scenario equivalent to the
+  `llama.cpp` and Lemonade help-entrypoint smokes. Prefer a small check that
+  proves the installed AOCL-LibM library and headers are discoverable and that
+  a tiny linked program or equivalent runtime probe resolves against the
+  packaged library.
 - Convert remaining scripted source edits into durable patch files where
   practical.
 - Tighten package hygiene for embedded build paths in PyTorch and vLLM.
@@ -259,7 +272,7 @@
 - Harden the package-update story so a fresh agent can safely handle:
   - upstream source updates
   - baseline package updates
-  - Paudley recipe updates
+  - Blackcat Informatics recipe updates
   - new recipe entries entering the stack
 
 ## Repository Migration

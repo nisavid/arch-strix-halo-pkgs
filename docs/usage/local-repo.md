@@ -18,9 +18,10 @@ Do that for each package you want to publish into the local repo.
 
 ## Publish The Repo
 
-The canonical package output inside the checkout is `repo/x86_64`. Pacman
-should consume a world-traversable published copy, not a path buried inside a
-private home directory.
+The working package repo inside the checkout is `repo/x86_64`. It is
+intentionally ignored and can be stale on a given machine; rebuild or refresh
+it before treating it as current. Pacman should consume a world-traversable
+published copy, not a path buried inside a private home directory.
 
 Recommended published path:
 
@@ -225,6 +226,13 @@ You can also narrow by engine or model:
 ```bash
 python tools/run_inference_scenarios.py --engine vllm
 python tools/run_inference_scenarios.py --engine lemonade
+```
+
+For the package-entrypoint smokes that cover the current `llama.cpp` and
+Lemonade scenarios:
+
+```bash
+python tools/run_inference_scenarios.py --engine llama.cpp --engine lemonade --tag smoke
 ```
 
 If no selectors are given, the tool prompts on a TTY and fails fast otherwise.

@@ -51,7 +51,7 @@ Current package-lane catalog:
 | Lane | Packages | Scout first |
 | --- | --- | --- |
 | Tagged upstream tarball | `aocl-utils-gfx1151`, `python-gfx1151`, `python-vllm-rocm-gfx1151`, `python-torchvision-rocm-gfx1151` | upstream release notes, tag list, `source_url`, package README |
-| PyPI source/wheel with native build | `python-numpy-gfx1151`, `python-sentencepiece-gfx1151`, `python-zstandard-gfx1151`, `python-asyncpg-gfx1151`, `python-openai-harmony-gfx1151`, `python-orjson-gfx1151`, `python-cryptography-gfx1151`, `python-torchao-rocm-gfx1151` | PyPI metadata, upstream changelog, Arch/AUR baseline |
+| PyPI source/wheel local closure | `python-numpy-gfx1151`, `python-sentencepiece-gfx1151`, `python-zstandard-gfx1151`, `python-asyncpg-gfx1151`, `python-openai-harmony-gfx1151`, `python-orjson-gfx1151`, `python-cryptography-gfx1151`, `python-torchao-rocm-gfx1151`, `python-mistral-common-gfx1151`, `python-transformers-gfx1151` | PyPI metadata, upstream changelog, Arch/AUR baseline |
 | ROCm/framework source lane | `python-pytorch-opt-rocm-gfx1151`, `python-triton-gfx1151`, `python-aotriton-gfx1151`, `python-amd-aiter-gfx1151` | upstream branch/tag, ROCm compatibility notes, package patches |
 | Monorepo commit/release lane | `llama.cpp-hip-gfx1151`, `llama.cpp-vulkan-gfx1151`, `lemonade-server`, `lemonade-app` | upstream release/tag, recorded source revision, backend/runtime docs |
 | Recipe-first or meta lane | `aocl-libm-gfx1151`, `lemonade` | Blackcat Informatics recipe input, local package closure, generated metadata |
@@ -109,7 +109,7 @@ Do not treat every baseline-package change as mandatory carry work. This repo
 is allowed to diverge intentionally. The point is to keep those divergences
 explicit.
 
-## 3. Paudley Recipe Update
+## 3. Blackcat Informatics Recipe Update
 
 Use when `upstream/ai-notes/strix-halo` changed and the change should flow into this
 package repo.

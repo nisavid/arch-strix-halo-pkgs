@@ -17,7 +17,11 @@ value = 0
 
 [[scenario.then.assert]]
 kind = "output.contains"
-value = "usage"
+value = "Lemonade CLI"
+
+[[scenario.then.assert]]
+kind = "output.contains"
+value = "OPTIONS:"
 
 [[scenario]]
 id = "lemonade.server.help"
@@ -38,4 +42,8 @@ value = 0
 
 [[scenario.then.assert]]
 kind = "output.contains"
-value = "usage"
+value = "Lightweight LLM server"
+
+[[scenario.then.assert]]
+kind = "output.contains"
+value = "OPTIONS:"

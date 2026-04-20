@@ -31,12 +31,12 @@ It is developed and validated on a Strix Halo system running CachyOS.
 - ROCm PyTorch `2.11`
 - ROCm Triton `3.5.1`
 - AOTriton `0.11.2b`
-- AITER `0.1.0`
-- vLLM `0.19.0`
+- AITER post-`0.1.12.post1` main snapshot
+- vLLM `0.19.1`
 
 ### Model Runners
 
-- `llama.cpp` `b8611` built in two flavors:
+- `llama.cpp` `b8851` built in two flavors:
   - HIP for ROCm
   - Vulkan
 
@@ -66,7 +66,7 @@ and flags that are not typical of the generic Arch packages:
 The repo also carries compatibility and integration patches that upstream source
 trees do not currently provide in the form needed here:
 
-- vLLM `0.19.0` Python `3.14` compatibility on the packaged stable lane
+- vLLM `0.19.1` Python `3.14` compatibility on the packaged stable lane
 - AITER `gfx1151` header compatibility for RDNA 3.5
 - Lemonade fixes for Linux XDNA2 detection on this class of system
 - Lemonade changes so packaged HIP and Vulkan `llama.cpp` backends are treated
@@ -156,13 +156,15 @@ Implemented in the repo:
 - the local pacman repo workflow
 - package-local maintenance metadata for update and audit work
 - durable patch files for the main source-level deltas
+- read-only upstream freshness checks and the `amerge` build/publish/install
+  workflow
 
 Verified on the development machine:
 
 - live cutover from the earlier monolithic ROCm replacement to the split stack
 - `torch` import and GPU visibility
 - `vllm` import
-- both packaged `llama.cpp` backends
+- packaged `llama.cpp` and Lemonade entrypoint smokes
 - Lemonade packaging and backend presentation, including system-managed HIP and
   Vulkan `llama.cpp` rows
 

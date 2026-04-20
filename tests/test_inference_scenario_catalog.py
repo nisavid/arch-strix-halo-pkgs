@@ -80,3 +80,16 @@ def test_qwen3_6_fp8_moe_probes_record_backend_modes():
         "VLLM_ROCM_USE_AITER": "1",
         "VLLM_ROCM_USE_AITER_MOE": "1",
     }
+
+
+def test_lemonade_help_smokes_assert_current_help_markers():
+    scenarios = load_scenarios(REPO_ROOT / "inference/scenarios")
+    by_id = {scenario.id: scenario for scenario in scenarios}
+
+    cli_assertions = by_id["lemonade.cli.help"].definition["then"]["assert"]
+    server_assertions = by_id["lemonade.server.help"].definition["then"]["assert"]
+
+    assert {"kind": "output.contains", "value": "Lemonade CLI"} in cli_assertions
+    assert {"kind": "output.contains", "value": "Lightweight LLM server"} in server_assertions
+    assert {"kind": "output.contains", "value": "OPTIONS:"} in cli_assertions
+    assert {"kind": "output.contains", "value": "OPTIONS:"} in server_assertions
