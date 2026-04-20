@@ -27,6 +27,10 @@ without chat history.
   something useful that would otherwise take more room in the summary. Use
   lowercase scopes, and use slashes for nested scopes such as `docs/usage` or
   `packages/lemonade-server`.
+- When you make a focused repo change and verify it, commit it before your
+  final response unless the user asked you not to commit, verification failed,
+  the scope is ambiguous, or unrelated worktree changes make a clean commit
+  unsafe. Do not leave a verified change as an uncommitted handoff item.
 
 ## Read These Documents When Their Trigger Applies
 
