@@ -38,8 +38,14 @@ Status handling:
   unrelated backlog work.
 - `branch_head_ahead`: review the VCS source lane and run the upstream source
   update story if the newer head belongs in this repo.
+- `candidate_head_ahead`: review a branch lane that can become the next pinned
+  package source snapshot, then either adopt a new pinned commit or record the
+  reviewed head if the range does not belong in the package.
 - `baseline_drift`: run the baseline package update story, then decide whether
   the drift should change local package policy.
+- `scout_head_ahead`: review a branch lane used for fix discovery or patch
+  reduction; this is advisory unless the review changes package policy or patch
+  carry.
 - `metadata_mismatch`: fix the freshness policy or package source metadata
   before trusting the sweep result.
 - `query_failed`: the sweep is not clean; rerun or diagnose the failed provider
@@ -53,6 +59,11 @@ Use cached results only when the checker reports that the cache is still valid.
 Force a new network sweep with `--refresh` after changing package policy,
 package directories, or freshness logic.
 
+Freshness `recorded` values are the last reviewed upstream or baseline values.
+For branch checks, the recorded value may be newer than the packaged source
+when the reviewed branch range did not justify changing the pinned package
+commit.
+
 If the sweep changes package policy, patch carry, validation status, or a known
 blocker, update canonical docs under `docs/` and delete any session-only input
 once its durable content has been extracted.
@@ -63,7 +74,7 @@ Current package-lane catalog:
 | --- | --- | --- |
 | Tagged upstream tarball | `aocl-utils-gfx1151`, `python-gfx1151`, `python-vllm-rocm-gfx1151`, `python-torchvision-rocm-gfx1151` | upstream release notes, tag list, `source_url`, package README |
 | PyPI source/wheel local closure | `python-numpy-gfx1151`, `python-sentencepiece-gfx1151`, `python-zstandard-gfx1151`, `python-asyncpg-gfx1151`, `python-openai-harmony-gfx1151`, `python-orjson-gfx1151`, `python-cryptography-gfx1151`, `python-torchao-rocm-gfx1151`, `python-mistral-common-gfx1151`, `python-transformers-gfx1151` | PyPI metadata, upstream changelog, Arch/AUR baseline |
-| ROCm/framework source lane | `python-pytorch-opt-rocm-gfx1151`, `python-triton-gfx1151`, `python-aotriton-gfx1151`, `python-amd-aiter-gfx1151` | upstream branch/tag, ROCm compatibility notes, package patches |
+| ROCm/framework source lane | `python-pytorch-opt-rocm-gfx1151`, `python-triton-gfx1151`, `python-aotriton-gfx1151`, `python-amd-aiter-gfx1151` | upstream branch/tag, candidate or scout branch refs, ROCm compatibility notes, package patches |
 | Monorepo commit/release lane | `llama.cpp-hip-gfx1151`, `llama.cpp-vulkan-gfx1151`, `lemonade-server`, `lemonade-app` | upstream release/tag, recorded source revision, backend/runtime docs |
 | Recipe-first or meta lane | `aocl-libm-gfx1151`, `lemonade` | Blackcat Informatics recipe input, local package closure, generated metadata |
 
@@ -80,6 +91,9 @@ to adopt.
 3. Scout upstream release notes, open issues, open PRs, and recent commits for
    fixes relevant to the lane you are touching, especially when validating a
    new model, feature, or usage pattern on a packaged stable release.
+   Treat candidate branch refs as possible pinned-source snapshots after review;
+   treat scout branch refs as fix-discovery inputs unless the review changes
+   the source lane decision.
 4. Record the upstream release summary and a diff stat against the currently
    packaged source before editing. Pay special attention to files touched by
    local patch files, package-local tests, and smoke helpers.

@@ -6,7 +6,7 @@
     ],
     "authoritative_reference": "none",
     "divergence_notes": [
-      "There is no standalone AITER package in Arch-family packaging; this package is recipe-first and aligned to the vendored PyTorch submodule lane.",
+      "There is no standalone AITER package in Arch-family packaging; this package is recipe-first and follows a reviewed upstream AITER snapshot lane.",
       "Carries explicit package-local source patches for gfx1151 RDNA 3.5 header compatibility, split between vec_convert packed-op fallbacks and hip_reduce wave32/DPP compatibility, rather than leaving those fixes as manual post-build mutations.",
       "Carries an installed-system JIT runtime patch so AITER can find `hipcc` and import JIT-built modules from the writable user cache on read-only site-packages installs.",
       "Carries the gfx1x AITER-side MoE compatibility patches that are safe to keep local: unknown-gfx probing, missing 1-stage ASM metadata handling, and CK 2-stage splitk normalization/forwarding for AITER fused-MoE experiments and other non-Gemma lanes. The current validated Gemma 4 default path still uses TRITON for unquantized MoE."
@@ -20,7 +20,7 @@
       "0006-rdna35-hip-reduce-wave32-dpp-compat.patch"
     ],
     "update_notes": [
-      "Update AITER in lockstep with the paired PyTorch source lane so CK and generated kernel expectations stay aligned.",
+      "Review upstream AITER main as a freshness candidate branch. Adopt a new pinned snapshot when the reviewed range is relevant to local build/runtime behavior, known blockers, or patch reduction; otherwise record the reviewed head without changing the packaged source commit.",
       "Treat FlyDSL as a separate tracked package story; do not silently fold an unpublished wheel into this package.",
       "Keep the installed-system JIT runtime patch until upstream AITER stops assuming `hipcc` is on the ambient PATH and correctly imports modules copied to the writable user JIT cache from read-only site-packages installs.",
       "Keep the package's explicit ROCm toolchain exports in `build()` until upstream AITER stops probing `hipconfig` and `hipcc` through ambient shell state. The concrete build failure was `Could not find hipconfig in PATH or ROCM_HOME(/usr)`.",
@@ -53,7 +53,7 @@
       "python-triton-gfx1151"
     ],
     "divergence_notes": [
-      "There is no standalone AITER package in Arch-family packaging; this package is recipe-first and aligned to the vendored PyTorch submodule lane.",
+      "There is no standalone AITER package in Arch-family packaging; this package is recipe-first and follows a reviewed upstream AITER snapshot lane.",
       "Carries explicit package-local source patches for gfx1151 RDNA 3.5 header compatibility, split between vec_convert packed-op fallbacks and hip_reduce wave32/DPP compatibility, rather than leaving those fixes as manual post-build mutations.",
       "Carries an installed-system JIT runtime patch so AITER can find `hipcc` and import JIT-built modules from the writable user cache on read-only site-packages installs.",
       "Carries the gfx1x AITER-side MoE compatibility patches that are safe to keep local: unknown-gfx probing, missing 1-stage ASM metadata handling, and CK 2-stage splitk normalization/forwarding for AITER fused-MoE experiments and other non-Gemma lanes. The current validated Gemma 4 default path still uses TRITON for unquantized MoE."
@@ -83,9 +83,9 @@
     "recipe_key": "aiter",
     "scaffold_notes": [
       "There is no standalone Arch, CachyOS, or AUR aiter package. The closest packaging lane is the PyTorch ROCm pkgbase that vendors the same submodule, so that pkgbase is advisory only.",
-      "The package pins upstream AITER main at cf12b1381dcdec4b5d90d136a5403e718c7541ec rather than rolling back to the v0.1.12.post1 release tag, because the current validated local build already consumed the post-release main lane that pairs with the ROCm PyTorch 2.11 source update.",
+      "The package pins reviewed upstream AITER main snapshot cf12b1381dcdec4b5d90d136a5403e718c7541ec rather than rolling back to the v0.1.12.post1 release tag, because the reviewed post-release range carries local-lane-relevant MoE, quant, JIT, and architecture-dispatch changes.",
       "The package exports SETUPTOOLS_SCM_PRETEND_VERSION so the wheel metadata is stable even though the source is a git commit past the latest release tag.",
-      "The recipe rebuilds AITER from the upstream AITER source lane while keeping it aligned with the paired PyTorch ROCm lane's CK ABI expectations.",
+      "The recipe rebuilds AITER from the pinned upstream AITER source lane while keeping CK and generated kernel expectations explicit in the package.",
       "Upstream AITER declares pandas as a real dependency and FlyDSL as an optional acceleration path. Keep pandas in the package metadata, and package FlyDSL separately rather than silently depending on an unpublished wheel.",
       "Keep the gfx1151 RDNA 3.5 header fixes as package-local source patches applied before wheel build, split between the `vec_convert.h` packed-op fallbacks and the `hip_reduce.h` wave32/DPP compatibility rewrite.",
       "Keep the installed-system JIT runtime patch unless upstream fixes both assumptions itself: `hipcc` on the ambient PATH, and package-relative import of JIT-built modules even after copying the writable JIT tree out of read-only site-packages.",
@@ -108,7 +108,7 @@
     "src_subdir": "aiter",
     "template": "python-project-aiter",
     "update_notes": [
-      "Update AITER in lockstep with the paired PyTorch source lane so CK and generated kernel expectations stay aligned.",
+      "Review upstream AITER main as a freshness candidate branch. Adopt a new pinned snapshot when the reviewed range is relevant to local build/runtime behavior, known blockers, or patch reduction; otherwise record the reviewed head without changing the packaged source commit.",
       "Treat FlyDSL as a separate tracked package story; do not silently fold an unpublished wheel into this package.",
       "Keep the installed-system JIT runtime patch until upstream AITER stops assuming `hipcc` is on the ambient PATH and correctly imports modules copied to the writable user JIT cache from read-only site-packages installs.",
       "Keep the package's explicit ROCm toolchain exports in `build()` until upstream AITER stops probing `hipconfig` and `hipcc` through ambient shell state. The concrete build failure was `Could not find hipconfig in PATH or ROCM_HOME(/usr)`.",

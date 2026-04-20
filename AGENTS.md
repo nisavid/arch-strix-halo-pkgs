@@ -23,6 +23,11 @@ without chat history.
   ending the work.
 - Delete session-only inputs once their durable content has been extracted.
 - Do not consider a work plan finished until its session-only inputs are gone.
+- Start nontrivial feature, packaging, or tooling work in a dedicated branch
+  worktree when the active checkout has existing changes or the task spans
+  multiple files and verification steps. Use a sibling
+  `<repo>.wt/<branch-or-task>` directory by default, and do not switch the
+  user's active checkout to a different branch just to start new work.
 - Use Conventional Commits. A scope is preferred, not required, when it says
   something useful that would otherwise take more room in the summary. Use
   lowercase scopes, and use slashes for nested scopes such as `docs/usage` or

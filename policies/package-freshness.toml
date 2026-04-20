@@ -3,6 +3,12 @@
 # Each package directory with a PKGBUILD must appear in exactly one family.
 # Recorded values are the last reviewed upstream or baseline state, not
 # necessarily the local package version.
+#
+# Roles:
+# - primary: packaged source or release lane
+# - candidate: reviewed branch lane that may become a pinned package source
+# - scout: reviewed branch lane used for fix discovery or patch reduction
+# - baseline: Arch-family package reference
 
 [families.therock]
 packages = ["therock-gfx1151"]
@@ -99,7 +105,7 @@ priority = "high"
 workflow = "upstream_source_update"
 checks = [
   { id = "release", role = "primary", kind = "github_release", repo = "ROCm/aiter", recorded = "0.1.12.post1", tag_prefix = "v", comparison = "pep440" },
-  { id = "main", role = "primary", kind = "git_ref", repo = "https://github.com/ROCm/aiter.git", ref = "refs/heads/main", recorded = "cf12b1381dcdec4b5d90d136a5403e718c7541ec", comparison = "sha" },
+  { id = "main", role = "candidate", kind = "git_ref", repo = "https://github.com/ROCm/aiter.git", ref = "refs/heads/main", recorded = "afddcbf4e61611014021631311981dd2b9a59415", comparison = "sha" },
 ]
 
 [families.numpy]

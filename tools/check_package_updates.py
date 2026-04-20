@@ -23,6 +23,8 @@ PUBLIC_STATUSES = {
     "prerelease_only",
     "baseline_drift",
     "branch_head_ahead",
+    "candidate_head_ahead",
+    "scout_head_ahead",
     "metadata_mismatch",
     "manual_review_required",
     "query_failed",
@@ -32,20 +34,25 @@ STATUS_PRECEDENCE = [
     "metadata_mismatch",
     "query_failed",
     "stable_update_available",
+    "candidate_head_ahead",
     "branch_head_ahead",
     "baseline_drift",
+    "scout_head_ahead",
     "prerelease_only",
     "manual_review_required",
     "current",
 ]
-TOOL_VERSION = 1
+TOOL_VERSION = 2
 CACHE_PATH = Path(".agents/session/dependency-freshness-cache.json")
 ACTIONABLE_STATUSES = {
     "stable_update_available",
+    "candidate_head_ahead",
     "branch_head_ahead",
     "baseline_drift",
     "metadata_mismatch",
 }
+ALLOWED_ROLES = {"primary", "candidate", "scout", "baseline"}
+SHA_REF_KINDS = {"git_ref", "submodule"}
 
 
 class QueryFailed(RuntimeError):
@@ -386,6 +393,10 @@ def check_status(role: str, recorded: str, latest: str, comparison: str) -> str:
     if role == "baseline":
         return "baseline_drift"
     if comparison == "sha":
+        if role == "candidate":
+            return "candidate_head_ahead"
+        if role == "scout":
+            return "scout_head_ahead"
         return "branch_head_ahead"
     return "stable_update_available"
 
@@ -404,6 +415,18 @@ def query_check(check: dict, clients: FakeClients) -> dict:
         "recorded": recorded,
         "latest": recorded,
     }
+    if role not in ALLOWED_ROLES:
+        return base | {
+            "status": "metadata_mismatch",
+            "message": f"Unsupported check role: {role}",
+        }
+    if role in {"candidate", "scout"} and (
+        kind not in SHA_REF_KINDS or comparison != "sha"
+    ):
+        return base | {
+            "status": "metadata_mismatch",
+            "message": f"{role} checks must use sha ref kinds.",
+        }
     if kind == "manual":
         return base | {"status": "manual_review_required"}
     if not recorded:
@@ -599,8 +622,9 @@ def run_check(
             return cached
 
     clients = clients or RealClients(repo_root=root)
-    families = filtered_families(policy_families(root), only)
-    reports = validate_coverage(root, families)
+    all_families = policy_families(root)
+    reports = validate_coverage(root, all_families)
+    families = filtered_families(all_families, only)
     if not reports:
         reports.extend(
             family_report(name, family, clients)

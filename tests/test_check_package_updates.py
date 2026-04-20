@@ -84,6 +84,8 @@ def test_statuses_are_stable_public_api():
         "prerelease_only",
         "baseline_drift",
         "branch_head_ahead",
+        "candidate_head_ahead",
+        "scout_head_ahead",
         "metadata_mismatch",
         "manual_review_required",
         "query_failed",
@@ -195,6 +197,303 @@ def test_given_query_failure_when_checked_then_not_current(tmp_path):
         fail={
             "git_ref:https://github.com/ROCm/triton.git:refs/heads/main_perf": "timeout"
         }
+    )
+
+    report = updates.run_check(tmp_path, refresh=True, clients=clients)
+
+    assert report["families"][0]["status"] == "query_failed"
+
+
+def test_only_selector_does_not_turn_unselected_covered_packages_into_mismatches(
+    tmp_path,
+):
+    write_pkg(tmp_path, "python-amd-aiter-gfx1151")
+    write_pkg(tmp_path, "python-numpy-gfx1151")
+    write_policy(
+        tmp_path,
+        """
+        [families.aiter]
+        packages = ["python-amd-aiter-gfx1151"]
+        priority = "high"
+        workflow = "upstream_source_update"
+        checks = [{ id = "main", role = "candidate", kind = "git_ref", repo = "https://github.com/ROCm/aiter.git", ref = "refs/heads/main", recorded = "afddcbf4", comparison = "sha" }]
+
+        [families.numpy]
+        packages = ["python-numpy-gfx1151"]
+        priority = "medium"
+        workflow = "upstream_source_update"
+        checks = [{ id = "pypi", role = "primary", kind = "pypi", package = "numpy", recorded = "2.4.4", comparison = "pep440" }]
+        """,
+    )
+    clients = updates.FakeClients(
+        git_refs={
+            "https://github.com/ROCm/aiter.git:refs/heads/main": "afddcbf4"
+        },
+        fail={"pypi:numpy": "unselected family should not be queried"},
+    )
+
+    report = updates.run_check(
+        tmp_path,
+        refresh=True,
+        clients=clients,
+        only=["python-amd-aiter-gfx1151"],
+    )
+
+    assert report["summary"] == {"current": 1}
+    assert [family["family"] for family in report["families"]] == ["aiter"]
+
+
+def test_given_candidate_ref_ahead_when_checked_then_candidate_head_ahead(tmp_path):
+    write_pkg(tmp_path, "python-amd-aiter-gfx1151")
+    write_policy(
+        tmp_path,
+        """
+        [families.aiter]
+        packages = ["python-amd-aiter-gfx1151"]
+        priority = "high"
+        workflow = "upstream_source_update"
+        checks = [{ id = "main", role = "candidate", kind = "git_ref", repo = "https://github.com/ROCm/aiter.git", ref = "refs/heads/main", recorded = "cf12b138", comparison = "sha" }]
+        """,
+    )
+    clients = updates.FakeClients(
+        git_refs={
+            "https://github.com/ROCm/aiter.git:refs/heads/main": "afddcbf4"
+        }
+    )
+
+    report = updates.run_check(tmp_path, refresh=True, clients=clients)
+
+    assert report["families"][0]["status"] == "candidate_head_ahead"
+    assert report["families"][0]["checks"][0]["status"] == "candidate_head_ahead"
+
+
+def test_candidate_head_ahead_is_actionable(tmp_path):
+    write_pkg(tmp_path, "python-amd-aiter-gfx1151")
+    write_policy(
+        tmp_path,
+        """
+        [families.aiter]
+        packages = ["python-amd-aiter-gfx1151"]
+        priority = "high"
+        workflow = "upstream_source_update"
+        checks = [{ id = "main", role = "candidate", kind = "git_ref", repo = "https://github.com/ROCm/aiter.git", ref = "refs/heads/main", recorded = "cf12b138", comparison = "sha" }]
+        """,
+    )
+    clients = updates.FakeClients(
+        git_refs={
+            "https://github.com/ROCm/aiter.git:refs/heads/main": "afddcbf4"
+        }
+    )
+
+    code = updates.main(
+        [
+            "--repo-root",
+            str(tmp_path),
+            "--refresh",
+            "--fail-on",
+            "actionable",
+        ],
+        clients=clients,
+    )
+
+    assert code == 10
+
+
+def test_given_scout_ref_ahead_when_checked_then_scout_head_ahead(tmp_path):
+    write_pkg(tmp_path, "python-pytorch-opt-rocm-gfx1151")
+    write_policy(
+        tmp_path,
+        """
+        [families.rocm_pytorch]
+        packages = ["python-pytorch-opt-rocm-gfx1151"]
+        priority = "high"
+        workflow = "upstream_source_update"
+        checks = [{ id = "main", role = "scout", kind = "git_ref", repo = "https://github.com/ROCm/pytorch.git", ref = "refs/heads/main", recorded = "8543095", comparison = "sha" }]
+        """,
+    )
+    clients = updates.FakeClients(
+        git_refs={
+            "https://github.com/ROCm/pytorch.git:refs/heads/main": "1234567"
+        }
+    )
+
+    report = updates.run_check(tmp_path, refresh=True, clients=clients)
+
+    assert report["families"][0]["status"] == "scout_head_ahead"
+    assert report["families"][0]["checks"][0]["status"] == "scout_head_ahead"
+
+
+def test_scout_head_ahead_is_not_actionable(tmp_path):
+    write_pkg(tmp_path, "python-pytorch-opt-rocm-gfx1151")
+    write_policy(
+        tmp_path,
+        """
+        [families.rocm_pytorch]
+        packages = ["python-pytorch-opt-rocm-gfx1151"]
+        priority = "high"
+        workflow = "upstream_source_update"
+        checks = [{ id = "main", role = "scout", kind = "git_ref", repo = "https://github.com/ROCm/pytorch.git", ref = "refs/heads/main", recorded = "8543095", comparison = "sha" }]
+        """,
+    )
+    clients = updates.FakeClients(
+        git_refs={
+            "https://github.com/ROCm/pytorch.git:refs/heads/main": "1234567"
+        }
+    )
+
+    code = updates.main(
+        [
+            "--repo-root",
+            str(tmp_path),
+            "--refresh",
+            "--fail-on",
+            "actionable",
+        ],
+        clients=clients,
+    )
+
+    assert code == 0
+
+
+def test_unknown_role_reports_metadata_mismatch(tmp_path):
+    write_pkg(tmp_path, "python-amd-aiter-gfx1151")
+    write_policy(
+        tmp_path,
+        """
+        [families.aiter]
+        packages = ["python-amd-aiter-gfx1151"]
+        priority = "high"
+        workflow = "upstream_source_update"
+        checks = [{ id = "main", role = "candiate", kind = "git_ref", repo = "https://github.com/ROCm/aiter.git", ref = "refs/heads/main", recorded = "cf12b138", comparison = "sha" }]
+        """,
+    )
+
+    report = updates.run_check(
+        tmp_path, refresh=True, clients=updates.FakeClients()
+    )
+
+    assert report["families"][0]["status"] == "metadata_mismatch"
+    assert "Unsupported check role" in report["families"][0]["checks"][0]["message"]
+
+
+def test_candidate_and_scout_roles_require_sha_ref_checks(tmp_path):
+    write_pkg(tmp_path, "python-amd-aiter-gfx1151")
+    write_policy(
+        tmp_path,
+        """
+        [families.aiter]
+        packages = ["python-amd-aiter-gfx1151"]
+        priority = "high"
+        workflow = "upstream_source_update"
+        checks = [{ id = "release", role = "candidate", kind = "github_release", repo = "ROCm/aiter", recorded = "0.1.12.post1", comparison = "pep440" }]
+        """,
+    )
+
+    report = updates.run_check(
+        tmp_path, refresh=True, clients=updates.FakeClients()
+    )
+
+    assert report["families"][0]["status"] == "metadata_mismatch"
+    assert "candidate checks must use sha ref kinds" in report["families"][0]["checks"][0]["message"]
+
+
+def test_primary_sha_ref_drift_keeps_legacy_branch_head_status(tmp_path):
+    write_pkg(tmp_path, "python-triton-gfx1151")
+    write_policy(
+        tmp_path,
+        """
+        [families.triton]
+        packages = ["python-triton-gfx1151"]
+        priority = "high"
+        workflow = "upstream_source_update"
+        checks = [{ id = "main-perf", role = "primary", kind = "git_ref", repo = "https://github.com/ROCm/triton.git", ref = "refs/heads/main_perf", recorded = "0ec280c", comparison = "sha" }]
+        """,
+    )
+    clients = updates.FakeClients(
+        git_refs={
+            "https://github.com/ROCm/triton.git:refs/heads/main_perf": "1111111"
+        }
+    )
+
+    report = updates.run_check(tmp_path, refresh=True, clients=clients)
+
+    assert report["families"][0]["status"] == "branch_head_ahead"
+
+
+def test_candidate_drift_precedes_baseline_drift(tmp_path):
+    write_pkg(tmp_path, "python-amd-aiter-gfx1151")
+    write_policy(
+        tmp_path,
+        """
+        [families.aiter]
+        packages = ["python-amd-aiter-gfx1151"]
+        priority = "high"
+        workflow = "upstream_source_update"
+        checks = [
+          { id = "main", role = "candidate", kind = "git_ref", repo = "https://github.com/ROCm/aiter.git", ref = "refs/heads/main", recorded = "cf12b138", comparison = "sha" },
+          { id = "aur", role = "baseline", kind = "aur", package = "python-amd-aiter", recorded = "0.1.0-1", comparison = "pkgver" },
+        ]
+        """,
+    )
+    clients = updates.FakeClients(
+        git_refs={
+            "https://github.com/ROCm/aiter.git:refs/heads/main": "afddcbf4"
+        },
+        aur={"python-amd-aiter": {"version": "0.1.1-1"}},
+    )
+
+    report = updates.run_check(tmp_path, refresh=True, clients=clients)
+
+    assert report["families"][0]["status"] == "candidate_head_ahead"
+
+
+def test_baseline_drift_precedes_scout_drift(tmp_path):
+    write_pkg(tmp_path, "python-pytorch-opt-rocm-gfx1151")
+    write_policy(
+        tmp_path,
+        """
+        [families.rocm_pytorch]
+        packages = ["python-pytorch-opt-rocm-gfx1151"]
+        priority = "high"
+        workflow = "upstream_source_update"
+        checks = [
+          { id = "main", role = "scout", kind = "git_ref", repo = "https://github.com/ROCm/pytorch.git", ref = "refs/heads/main", recorded = "8543095", comparison = "sha" },
+          { id = "arch", role = "baseline", kind = "arch_package", package = "python-pytorch-opt-rocm", recorded = "2.11.0-3", comparison = "pkgver" },
+        ]
+        """,
+    )
+    clients = updates.FakeClients(
+        git_refs={
+            "https://github.com/ROCm/pytorch.git:refs/heads/main": "1234567"
+        },
+        arch={"python-pytorch-opt-rocm": {"version": "2.11.0-4"}},
+    )
+
+    report = updates.run_check(tmp_path, refresh=True, clients=clients)
+
+    assert report["families"][0]["status"] == "baseline_drift"
+
+
+def test_query_failure_precedes_candidate_drift(tmp_path):
+    write_pkg(tmp_path, "python-amd-aiter-gfx1151")
+    write_policy(
+        tmp_path,
+        """
+        [families.aiter]
+        packages = ["python-amd-aiter-gfx1151"]
+        priority = "high"
+        workflow = "upstream_source_update"
+        checks = [
+          { id = "main", role = "candidate", kind = "git_ref", repo = "https://github.com/ROCm/aiter.git", ref = "refs/heads/main", recorded = "cf12b138", comparison = "sha" },
+          { id = "release", role = "primary", kind = "github_release", repo = "ROCm/aiter", recorded = "0.1.12.post1", comparison = "pep440" },
+        ]
+        """,
+    )
+    clients = updates.FakeClients(
+        git_refs={
+            "https://github.com/ROCm/aiter.git:refs/heads/main": "afddcbf4"
+        },
+        fail={"github_release:ROCm/aiter": "timeout"},
     )
 
     report = updates.run_check(tmp_path, refresh=True, clients=clients)
