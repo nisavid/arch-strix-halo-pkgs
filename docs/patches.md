@@ -4,6 +4,12 @@ This repo keeps source changes as patch files when the change is expected to
 persist, deserves independent review, or may be useful outside this exact
 system.
 
+This file is the accepted patch inventory. Runtime-sensitive findings and
+patch rationale that still need confirmation after the 2026-04-20 self-hosted
+rebuild confidence boundary live in
+[the rebuild revalidation ledger](maintainers/rebuild-revalidation.md) until
+they are reproduced or retired.
+
 ## Lemonade
 
 - [Linux NPU fallback when accel-device opens fail](../packages/lemonade-server/0001-linux-npu-fallback-to-pci-id-when-accel-open-fails.patch)
@@ -37,65 +43,15 @@ system.
     Triton runtime modules.
   - This keeps the version smoke test useful on the packaged ROCm lane even
     when unrelated optional runtime deps are absent or intentionally patched.
-- [Gate vendored Triton kernels on ROCm runtime support](../packages/python-vllm-rocm-gfx1151/0003-rocm-gate-vendored-triton-kernels-on-runtime-support.patch)
-  - Treats vLLM's vendored `triton_kernels` tree as unavailable when the
-    installed Triton runtime lacks CUDA-only APIs such as
-    `triton.language.target_info` or `triton.constexpr_function`.
-  - This keeps the ROCm `gfx1151` lane on a clean fallback path instead of
-    surfacing import-time failures from vendored CDNA/CUDA-oriented kernels.
-- [Keep ROCm fallback and SageMaker routes import-safe on the packaged lane](../packages/python-vllm-rocm-gfx1151/0004-rocm-fallback-and-optional-sagemaker-standards.patch)
-  - Makes the ROCm GCN-arch fallback use normal logging instead of
-    `warning_once`, avoiding the import-time circular path that showed up when
-    `amdsmi` could not provide ASIC info on the reference host.
-  - Treats `model_hosting_container_standards` as optional for the packaged
-    SageMaker and runtime-LoRA API routers, so `vllm --help` and other
-    non-SageMaker entrypoints no longer fail just because that extra package is
-    absent.
-- [Enable gfx1x AITER and prefer it for Gemma 4 heterogeneous-head attention](../packages/python-vllm-rocm-gfx1151/0007-rocm-enable-gfx1x-aiter-and-prefer-it-for-gemma4.patch)
-  - Extends ROCm AITER discovery to gfx1x and lets Gemma 4 prefer
-    `ROCM_AITER_UNIFIED_ATTN` instead of the Triton unified-attention backend
-    that miscompiled on gfx1151 decode.
-  - The current validated `google/gemma-4-26B-A4B-it` lane still uses Triton
-    for unquantized MoE, so this remains the only retained Gemma 4/AITER carry
-    on the maintained default path.
-- [Support Qwen3.5 hybrid/GDN on ROCm](../packages/python-vllm-rocm-gfx1151/0010-rocm-support-qwen35-hybrid-gdn.patch)
-  - Restricts AMD FLA/GDN autotune shapes, casts GDN exponent operands through
-    float32, preserves hybrid block-size alignment after ROCm platform updates,
-    and keeps hybrid full-attention layers away from AITER attention.
-- [Avoid the Triton top-k/top-p sampler filter on ROCm](../packages/python-vllm-rocm-gfx1151/0011-rocm-avoid-triton-topk-topp-sampler.patch)
-  - Routes ROCm top-k/top-p filtering through vLLM's existing PyTorch fallback
-    because the Triton filter path faults on gfx1151 for the Qwen3.5-family
-    `(32, 248320)` logits shape, while the PyTorch fallback completes.
+- Provisional runtime-sensitive vLLM carries are tracked in
+  [the rebuild revalidation ledger](maintainers/rebuild-revalidation.md) until
+  post-rebuild scenario evidence promotes or retires them.
 
 ## AITER
 
-- [RDNA 3.5 packed-op fallback compatibility for `gfx1151`](../packages/python-amd-aiter-gfx1151/0001-gfx1151-rdna35-header-compat.patch)
-  - Converts the `vec_convert.h` packed FP32/FP8/BF8 helpers into gfx11-safe
-    scalar fallbacks when CDNA-only packed instructions are unavailable.
-- [RDNA 3.5 wave32/DPP compatibility for `hip_reduce.h`](../packages/python-amd-aiter-gfx1151/0006-rdna35-hip-reduce-wave32-dpp-compat.patch)
-  - Reworks the reduction helpers to avoid CDNA-only row-broadcast DPP paths
-    on gfx11 and to keep the wave32 assumptions explicit.
-  - Keeps the existing `aiter_hip_common.h` include because the installed
-    AITER wheel ships that header; an earlier `hip_compat.h` include variant
-    blocked Qwen3.6 FP8 MoE by breaking the JIT build for `module_quant`.
-- [Find `hipcc` and user-cache JIT modules on installed systems](../packages/python-amd-aiter-gfx1151/0002-jit-runtime-finds-hipcc-and-user-jit-modules.patch)
-  - Makes the installed AITER runtime resolve `/opt/rocm/bin/hipcc` without
-    depending on an ambient login-shell `PATH`.
-  - Lets the read-only site-packages install import JIT-built modules copied
-    into the writable `~/.aiter/jit/` cache instead of assuming a
-    package-relative import path.
-- [Unknown gfx targets fall back to the 2-stage MoE heuristics](../packages/python-amd-aiter-gfx1151/0003-fused-moe-unknown-gfx-falls-back-to-2stage.patch)
-  - Avoids a `KeyError` while probing the 1-stage config table on gfx targets
-    that do not ship explicit 1-stage metadata.
-- [Skip missing 1-stage ASM metadata during MoE tuning](../packages/python-amd-aiter-gfx1151/0004-moe-tuner-skips-missing-1stage-asm-metadata.patch)
-  - Keeps the 2-stage CK tuner usable even when the current gfx target has no
-    architecture-specific 1-stage ASM metadata.
-- [Normalize zero splitk and forward stage-2 splitk on CK MoE launches](../packages/python-amd-aiter-gfx1151/0005-ck-moe-normalizes-zero-splitk-and-forwards-stage2.patch)
-  - Makes the AITER CK MoE wrappers treat `splitk=0` as the existing
-    no-split sentinel (`1` at kernel launch) instead of passing a raw zero into
-    the CK entrypoint.
-  - Propagates the computed `ksplit` into stage 2 so both halves of the AITER
-    CK MoE launch use the same launch semantics.
+- Provisional runtime-sensitive AITER carries are tracked in
+  [the rebuild revalidation ledger](maintainers/rebuild-revalidation.md) until
+  post-rebuild build and scenario evidence promotes or retires them.
 
 ## TorchAO
 

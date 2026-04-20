@@ -68,6 +68,12 @@ If the sweep changes package policy, patch carry, validation status, or a known
 blocker, update canonical docs under `docs/` and delete any session-only input
 once its durable content has been extracted.
 
+After rebuilding a dependency lane that can affect runtime behavior, consult
+`docs/maintainers/rebuild-revalidation.md` before treating previous inference
+findings or runtime patch rationale as accepted. Promote only findings that
+reproduce after the rebuilt stack is installed, and retire findings that no
+longer reproduce.
+
 Current package-lane catalog:
 
 | Lane | Packages | Scout first |

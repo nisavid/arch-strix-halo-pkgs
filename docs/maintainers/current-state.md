@@ -2,6 +2,15 @@
 
 Status as of 2026-04-20.
 
+## Rebuild Revalidation Boundary
+
+Runtime and inference findings recorded before the 2026-04-20 self-hosted
+rebuild confidence boundary are historical evidence until they are reproduced
+against the rebuilt stack. Provisional findings and patch rationale live in
+[the rebuild revalidation ledger](rebuild-revalidation.md). Promote them back
+into this file or `docs/patches.md` only after post-rebuild validation records
+the scenario, model binding, backend split, and failure or pass signature.
+
 ## Live Host State
 
 The first full live cutover completed successfully on the reference Arch host.
