@@ -92,6 +92,21 @@ vLLM references include:
 - <https://docs.vllm.ai/en/latest/getting_started/installation/gpu/>
 - <https://docs.vllm.ai/en/latest/features/>
 
+AMD ROCm documentation can also provide useful conceptual guidance, but most
+AI optimization material is written for MI-series/Instinct GPUs or preview
+Ryzen enablement rather than this Arch/TheRock `gfx1151` stack. Treat these as
+candidate checklists and tuning hypotheses, not as direct instructions:
+
+- <https://rocm.docs.amd.com/en/7.12.0-preview/compatibility/compatibility-matrix.html?fam=ryzen&gpu=max-395&os=ubuntu&i=docker>
+- <https://rocm.docs.amd.com/en/7.12.0-preview/rocm-for-ai/vllm.html?fam=ryzen&gpu=max-395&i=pip&os=linux&os-version=24.04>
+- <https://rocm.docs.amd.com/en/latest/how-to/rocm-for-ai/inference-optimization/workload.html>
+- <https://rocm.docs.amd.com/en/latest/how-to/rocm-for-ai/inference-optimization/vllm-optimization.html>
+
+FlashAttention's AMD ROCm support notes are relevant when considering an AITER
+FlashAttention experiment:
+
+- <https://github.com/Dao-AILab/flash-attention#amd-rocm-support>
+
 Treat external material as advisory. Older ROCm reports can suggest search
 terms or repro ideas, but they do not become accepted explanations or
 instructions until a local rebuilt-stack run validates them.

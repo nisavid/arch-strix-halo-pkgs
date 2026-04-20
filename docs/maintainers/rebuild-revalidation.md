@@ -84,6 +84,17 @@ Treat online reports and documentation as advisory until a local run validates
 the explanation or instruction against this TheRock/AITER stack. Older ROCm
 material can still provide useful search terms, but do not promote it as an
 accepted rationale unless the rebuilt local stack reproduces the behavior.
+AMD's ROCm documentation can also provide conceptual guidance for system
+validation, vLLM setup, workload optimization, and vLLM V1 optimization, but
+the AI optimization guidance is largely MI-series/Instinct-oriented or preview
+Ryzen enablement. Consider these references as candidate checklists rather
+than direct `gfx1151` instructions:
+
+- <https://rocm.docs.amd.com/en/7.12.0-preview/compatibility/compatibility-matrix.html?fam=ryzen&gpu=max-395&os=ubuntu&i=docker>
+- <https://rocm.docs.amd.com/en/7.12.0-preview/rocm-for-ai/vllm.html?fam=ryzen&gpu=max-395&i=pip&os=linux&os-version=24.04>
+- <https://rocm.docs.amd.com/en/latest/how-to/rocm-for-ai/inference-optimization/workload.html>
+- <https://rocm.docs.amd.com/en/latest/how-to/rocm-for-ai/inference-optimization/vllm-optimization.html>
+- <https://github.com/Dao-AILab/flash-attention#amd-rocm-support>
 
 ## Work Plan Expansion Rules
 
