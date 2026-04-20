@@ -13,6 +13,9 @@ The self-hosted native rebuild completed on 2026-04-20. Items still marked
 `pending` are waiting on post-rebuild runtime or patch-specific revalidation,
 not on another full stack rebuild.
 
+Use `docs/maintainers/rebuild-revalidation-plan.md` for the execution order,
+decision tree, outcome criteria, and Qwen3.6 control rule.
+
 Do not use `docs/patches.md` as the exhaustive patch source. It is a curated
 summary. For patch revalidation, start from the actual applied patch metadata:
 `policies/recipe-packages.toml`, `packages/*/recipe.json`,
