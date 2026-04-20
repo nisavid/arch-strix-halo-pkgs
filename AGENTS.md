@@ -27,6 +27,9 @@ without chat history.
   something useful that would otherwise take more room in the summary. Use
   lowercase scopes, and use slashes for nested scopes such as `docs/usage` or
   `packages/lemonade-server`.
+- Bare `pytest` is the repo-owned test suite and should collect only `tests/`.
+  Run package-local tests by explicit path, such as
+  `pytest tests packages/<name>/tests -q`, when a package change needs them.
 - When you make a focused repo change and verify it, commit it before your
   final response unless the user asked you not to commit, verification failed,
   the scope is ambiguous, or unrelated worktree changes make a clean commit
