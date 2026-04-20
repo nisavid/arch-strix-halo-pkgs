@@ -279,11 +279,35 @@ def test_deploy_subcommand_publishes_then_installs_selected_outputs(tmp_path: Pa
     assert "--require-packagelist" in payload["steps"][0]["commands"][0]["argv"]
     assert payload["steps"][1]["commands"][0]["argv"] == [
         "sudo",
+        "-n",
         "pacman",
         "-Sy",
         "--noconfirm",
         "python-app-gfx1151",
     ]
+
+
+def test_privileged_plan_commands_use_noninteractive_sudo(tmp_path: Path):
+    packages_root = graph_fixture(tmp_path)
+    result = run_amerge(
+        "deploy",
+        "--dry-run",
+        "--json",
+        "--packages-root",
+        str(packages_root),
+        "python-app-gfx1151",
+    )
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    sudo_commands = [
+        command["argv"]
+        for step in payload["steps"]
+        for command in step["commands"]
+        if command["argv"][0] == "sudo"
+    ]
+    assert sudo_commands
+    assert all(argv[:2] == ["sudo", "-n"] for argv in sudo_commands)
 
 
 def test_deploy_subcommand_keeps_explicit_split_output_precise(tmp_path: Path):
@@ -367,7 +391,7 @@ def test_commands_preview_includes_concrete_commands(tmp_path: Path):
 
     assert result.returncode == 0
     assert "$ makepkg -Csf --noconfirm" in result.stdout
-    assert "$ sudo pacman -Sy --noconfirm python-app-gfx1151" in result.stdout
+    assert "$ sudo -n pacman -Sy --noconfirm python-app-gfx1151" in result.stdout
 
 
 def test_tree_preview_can_be_colored(tmp_path: Path):
@@ -468,6 +492,34 @@ def test_privileged_steps_request_sudo_keepalive(tmp_path: Path):
     }
 
     assert module.plan_requires_sudo_keepalive(plan)
+
+
+def test_sudo_keepalive_refreshes_validation_timestamp(monkeypatch):
+    module = load_module()
+    keepalive = module.SudoKeepalive(enabled=True)
+    waits = iter([False, True])
+    calls = []
+
+    monkeypatch.setattr(keepalive.stop_event, "wait", lambda timeout: next(waits))
+
+    def fake_run(argv, **kwargs):
+        calls.append((argv, kwargs))
+        return subprocess.CompletedProcess(argv, 0)
+
+    monkeypatch.setattr(module.subprocess, "run", fake_run)
+
+    keepalive.keepalive()
+
+    assert calls == [
+        (
+            ["sudo", "-n", "-v"],
+            {
+                "stdout": subprocess.DEVNULL,
+                "stderr": subprocess.DEVNULL,
+                "check": False,
+            },
+        )
+    ]
 
 
 def test_publish_steps_require_current_packagelist_artifacts(tmp_path: Path):

@@ -82,8 +82,9 @@ user wants a colorized plan captured in logs or chat.
   autonomously when package build dependencies are already installed. If
   `makepkg` needs missing dependencies, handle that as a host setup blocker
   rather than warming sudo up front.
-- The tool keeps sudo alive only for plans containing privileged steps, and
-  logs under `docs/worklog/amerge/<plan-id>/`.
+- The tool validates sudo once for plans containing privileged steps, keeps the
+  sudo validation timestamp fresh, runs privileged commands with
+  noninteractive sudo, and logs under `docs/worklog/amerge/<plan-id>/`.
 - With `run`, each package root is built, published, and installed before the
   next root. Selected split roots also install outputs needed by later roots.
 - Publish steps require package archives matching the current PKGBUILD

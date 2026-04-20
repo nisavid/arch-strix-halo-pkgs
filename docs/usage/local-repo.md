@@ -183,8 +183,10 @@ tools/amerge deploy python-amd-aiter-gfx1151
 
 `build` runs only package builds and does not pre-warm sudo. Use it for
 unprivileged/autonomous rebuild attempts when the host already has build
-dependencies installed. `run`, `publish`, and `install` still use sudo for
-repo publication and pacman installation steps.
+dependencies installed. `run`, `publish`, and `install` validate sudo once
+before step execution, keep the sudo validation timestamp fresh during the
+plan, and execute privileged commands with noninteractive sudo so mid-run
+commands fail instead of prompting.
 
 Use `deploy` after a package has already been built and only the host-facing
 publish/install half remains. It refreshes `repo/x86_64` from the selected

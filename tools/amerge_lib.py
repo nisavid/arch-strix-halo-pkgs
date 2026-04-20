@@ -371,6 +371,9 @@ def build_steps(
     python = sys.executable
     update_repo = str(REPO_ROOT / "tools/update_pacman_repo.py")
 
+    def sudo_argv(*args: str) -> tuple[str, ...]:
+        return ("sudo", "-n", *args)
+
     def update_repo_command(root: RepoPackageRoot) -> CommandSpec:
         return CommandSpec(
             argv=(
@@ -412,12 +415,11 @@ def build_steps(
                         commands=(
                             update_repo_command(root),
                             CommandSpec(
-                                argv=("sudo", "install", "-d", str(publish_root)),
+                                argv=sudo_argv("install", "-d", str(publish_root)),
                                 privileged=True,
                             ),
                             CommandSpec(
-                                argv=(
-                                    "sudo",
+                                argv=sudo_argv(
                                     "rsync",
                                     "-a",
                                     "--delete",
@@ -439,8 +441,7 @@ def build_steps(
                             root=root_name,
                             commands=(
                                 CommandSpec(
-                                    argv=(
-                                        "sudo",
+                                    argv=sudo_argv(
                                         "pacman",
                                         "-Sy",
                                         "--noconfirm",
@@ -464,12 +465,11 @@ def build_steps(
                     commands=(
                         update_repo_command(root),
                         CommandSpec(
-                            argv=("sudo", "install", "-d", str(publish_root)),
+                            argv=sudo_argv("install", "-d", str(publish_root)),
                             privileged=True,
                         ),
                         CommandSpec(
-                            argv=(
-                                "sudo",
+                            argv=sudo_argv(
                                 "rsync",
                                 "-a",
                                 "--delete",
@@ -496,7 +496,7 @@ def build_steps(
                 root=None,
                 commands=(
                     CommandSpec(
-                        argv=("sudo", "pacman", "-Sy", "--noconfirm", *install_outputs),
+                        argv=sudo_argv("pacman", "-Sy", "--noconfirm", *install_outputs),
                         privileged=True,
                     ),
                 ),
@@ -903,7 +903,7 @@ class SudoKeepalive:
     def keepalive(self) -> None:
         while not self.stop_event.wait(30):
             subprocess.run(
-                ["sudo", "-n", "true"],
+                ["sudo", "-n", "-v"],
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
                 check=False,
