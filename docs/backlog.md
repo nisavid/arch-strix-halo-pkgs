@@ -4,9 +4,10 @@
 
 - Done for installed-host Qwen closeout after publishing/installing
   `python-vllm-rocm-gfx1151` pkgrel `-27` and
-  `python-amd-aiter-gfx1151` pkgrel `-8`: the 2026-04-19 run rooted at
-  `docs/worklog/inference-runs/20260419T211521` passed all three expected
-  outcomes.
+  `python-amd-aiter-gfx1151` pkgrel `-8`: the 2026-04-19 installed-host run
+  passed all three expected outcomes. The raw ignored worklog directory was
+  session-scoped and is not retained in Git; the durable results are recorded
+  below.
 - The validated installed-host Qwen outcomes were:
   - `vllm.qwen3_5.0_8b.text.basic` passed as the Qwen3.5 sampler-fix smoke in
     `42.52507` seconds

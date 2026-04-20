@@ -44,11 +44,12 @@ Installed Qwen closeout state for this branch:
 
 - `python-vllm-rocm-gfx1151` pkgrel `-27` and
   `python-amd-aiter-gfx1151` pkgrel `-8` are installed on the live host.
-- The 2026-04-19 installed-host Qwen validation run rooted at
-  `docs/worklog/inference-runs/20260419T211521` passed all three expected
+- The 2026-04-19 installed-host Qwen validation run passed all three expected
   outcomes: Qwen3.5 sampler-fix smoke passed, Qwen3.6 non-AITER FP8 MoE
   backend-selection blocked probe passed, and Qwen3.6 forced-AITER
-  `module_quant`/`mfma_adaptor` blocked probe passed.
+  `module_quant`/`mfma_adaptor` blocked probe passed. The raw ignored worklog
+  directory was session-scoped and is not retained in Git; this section records
+  the durable result.
 
 ## Live Smoke Coverage
 
