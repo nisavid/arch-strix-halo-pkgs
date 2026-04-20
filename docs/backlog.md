@@ -90,10 +90,16 @@
   the backend lane needs another candidate.
   - use FlashAttention's AMD ROCm support notes as advisory input:
     <https://github.com/Dao-AILab/flash-attention#amd-rocm-support>
+  - this repo does not currently build a standalone `flash_attn` package; it
+    has PyTorch/AOTriton, vLLM, and AITER FlashAttention-adjacent code paths,
+    plus an unrendered upstream `ai-notes` FlashAttention recipe to consider
   - keep this distinct from the Gemma 4 AITER fused-MoE lane
   - `vllm.gemma4.e2b.server.attn-aiter-fa-blocked` now tracks the current
     first gate: on 2026-04-20, forcing `ROCM_AITER_FA` failed before serving
     because vLLM reported `compute capability not supported`
+  - if this becomes a package experiment, start with the ROCm
+    FlashAttention `main_perf` / AMD Triton path and validate import/build
+    flags before adding it to any promoted scenario lane
   - before promoting any FlashAttention instruction or explanation, validate
     import/build flags, backend selection, and at least one tracked vLLM
     scenario locally after the backend gate changes
@@ -108,6 +114,12 @@
   - keep the E2B `kernel-probe` scenario as a tracked regression probe for the
     server fault; the forced Triton attention lane still faults and rules out
     an AITER-only explanation
+  - keep `vllm.gemma4.e2b.text.compiled` as an expected blocked compiled probe:
+    with fresh cache roots on 2026-04-20 it initialized, compiled, captured
+    graphs, and generated corrupted non-ASCII output instead of the expected
+    five-word response
+  - treat the 26B-A4B and 31B compiled text probes as compiled-capable only
+    when run with fresh compile caches or after deliberate cache invalidation
   - keep the serialized `vllm.gemma4.e2b.torchao.real-model` scenario
     exploratory until the TorchAO/vLLM metadata mismatch is fixed
   - multimodal image/audio/video flows, which remain exploratory until the

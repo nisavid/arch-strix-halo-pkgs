@@ -28,6 +28,7 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     assert "vllm.gemma4.e2b.server.image" in ids
     assert "vllm.gemma4.e2b.server.attn-triton" in ids
     assert "vllm.gemma4.e2b.server.attn-aiter-fa-blocked" in ids
+    assert "vllm.gemma4.e2b.text.compiled" in ids
     assert "vllm.gemma4.26b-a4b.text.compiled" in ids
     assert "vllm.gemma4.26b-a4b.server.moe-aiter" in ids
     assert "vllm.torchao.tiny.generate" in ids
@@ -54,6 +55,7 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     assert "blocked" in tags_by_id[
         "vllm.gemma4.e2b.server.attn-aiter-fa-blocked"
     ]
+    assert "blocked" in tags_by_id["vllm.gemma4.e2b.text.compiled"]
     assert "kernel-probe" in tags_by_id["vllm.gemma4.26b-a4b.server.moe-aiter"]
     assert "quantization-probe" in tags_by_id["vllm.gemma4.e2b.torchao.real-model"]
     assert "qwen3.5" in tags_by_id["vllm.qwen3_5.0_8b.text.basic"]
@@ -108,6 +110,40 @@ def test_gemma4_aiter_flash_attention_probe_records_current_blocker():
             "value": "Selected backend AttentionBackendEnum.ROCM_AITER_FA is not valid",
         },
         {"kind": "server_log.contains", "value": "compute capability not supported"},
+    ):
+        assert expected in assertions
+
+
+def test_gemma4_e2b_compiled_probe_records_current_blocker():
+    scenarios = load_scenarios(REPO_ROOT / "inference/scenarios")
+    by_id = {scenario.id: scenario for scenario in scenarios}
+
+    probe = by_id["vllm.gemma4.e2b.text.compiled"]
+
+    assert probe.model == "google/gemma-4-E2B-it"
+    assert set(probe.tags) >= {
+        "smoke",
+        "gemma4",
+        "compiled-probe",
+        "blocked",
+        "exploratory",
+    }
+    assert probe.definition["given"]["tool"] == "gemma4_text_smoke"
+    assert probe.definition["when"]["argv"] == [
+        "--execution-mode",
+        "compiled",
+        "--max-model-len",
+        "512",
+    ]
+
+    assertions = probe.definition["then"]["assert"]
+    for expected in (
+        {"kind": "exit_code.equals", "value": 1},
+        {"kind": "stdout.contains", "value": "generation_ok"},
+        {
+            "kind": "output.contains",
+            "value": "basic mode response included unexpected non-ASCII content",
+        },
     ):
         assert expected in assertions
 

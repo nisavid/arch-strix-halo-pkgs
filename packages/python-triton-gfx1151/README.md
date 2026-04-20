@@ -46,11 +46,14 @@ Fixed by Patch 2 below.
 
 IMPORTANT: When switching between compilation configurations
 (e.g., changing custom_ops, enabling/disabling AITER), stale
-Inductor caches (/tmp/torchinductor_$USER/) and Triton caches
-(~/.triton/cache/) must be cleared to avoid KeyError crashes
-from mismatched guard expressions. The vLLM compile cache
-(~/.cache/vllm/torch_compile_cache/) is config-hash-keyed and
-does not require manual clearing.
+Inductor caches (/tmp/torchinductor_$USER/), Triton caches
+(~/.triton/cache/), and vLLM compile caches can make compiled
+probes report unrelated failures. Use fresh `VLLM_CACHE_ROOT`,
+`TORCHINDUCTOR_CACHE_DIR`, and `TRITON_CACHE_DIR` paths for
+compiled-lane revalidation. A 2026-04-20 Gemma 4 26B-A4B rerun
+reused a stale Apr19 Inductor artifact and failed with
+`mat1 and mat2 shapes cannot be multiplied (32x5376 and
+2816x8192)`, while the same scenario passed with fresh cache roots.
 
 ## Scaffold notes
 
@@ -58,7 +61,7 @@ does not require manual clearing.
 - The recipe intentionally swaps in ROCm/triton main_perf instead of upstream triton-lang/triton. That makes Arch's package an advisory base rather than a source-identical one.
 - Do not point Triton at TheRock's LLVM. The recipe notes that this ROCm fork still expects an older LLVM API line and must use its own compatible LLVM path instead.
 - The renderer must include recipe inline source edits in `prepare()` for this package. The `AttrsDescriptor.__repr__` edit is a runtime correctness patch, not cosmetic metadata; if it is absent from the installed package, torch.compile / Inductor can emit syntactically invalid generated Python.
-- The 2026-04-19 branch fixes the renderer and generated PKGBUILD so the recipe sed patch for `AttrsDescriptor.__repr__` is present again. Rebuild and reinstall `python-triton-gfx1151` before treating compiled vLLM probes as repaired on the host.
+- The 2026-04-19 branch fixes the renderer and generated PKGBUILD so the recipe sed patch for `AttrsDescriptor.__repr__` is present again. Rebuild and reinstall `python-triton-gfx1151` before treating compiled vLLM probes as repaired on the host. On 2026-04-20, the installed repr guard and fresh-cache Gemma 4 26B-A4B/31B compiled probes passed without `enforce_eager`, while E2B still failed by output corruption rather than by the old Inductor syntax failure.
 
 ## Intentional Divergences
 

@@ -371,8 +371,8 @@ value = "tool_ok"
 
 [[scenario]]
 id = "vllm.gemma4.e2b.text.compiled"
-summary = "Gemma 4 E2B text-only offline smoke without enforce_eager"
-tags = ["smoke", "gemma4", "compiled-probe", "exploratory"]
+summary = "Gemma 4 E2B text-only compiled probe blocked by corrupted output"
+tags = ["smoke", "gemma4", "compiled-probe", "blocked", "exploratory"]
 
 [scenario.given]
 engine = "vllm"
@@ -384,11 +384,15 @@ argv = ["--execution-mode", "compiled", "--max-model-len", "512"]
 
 [[scenario.then.assert]]
 kind = "exit_code.equals"
-value = 0
+value = 1
 
 [[scenario.then.assert]]
 kind = "stdout.contains"
-value = "basic_ok"
+value = "generation_ok"
+
+[[scenario.then.assert]]
+kind = "output.contains"
+value = "basic mode response included unexpected non-ASCII content"
 
 [[scenario]]
 id = "vllm.gemma4.31b.text.compiled"

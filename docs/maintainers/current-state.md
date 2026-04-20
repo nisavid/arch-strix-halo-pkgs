@@ -471,7 +471,7 @@ The following smoke checks have already passed on the reference host:
     weights, initialized the encoder cache with an image budget, profiled 29
     maximum-size image items, and then hit the same ROCm GPU memory-access
     fault during engine initialization
-- The 2026-04-19 compiled-path investigation keeps eager mode as the supported
+- The 2026-04-20 compiled-path revalidation keeps eager mode as the supported
   Gemma 4 helper default for E2B, but no longer for every Gemma 4 checkpoint:
   - the pre-repair host Triton package lacked
     `AttrsDescriptor.__repr__`, causing torch.compile / Inductor generated
@@ -485,20 +485,25 @@ The following smoke checks have already passed on the reference host:
     prepare-time patch application and the prepared source contains
     `AttrsDescriptor.__repr__`; the full `tools/amerge run
     python-triton-gfx1151` publish/install path still requires operator sudo
-  - after the repaired Triton package was installed,
-    `vllm.gemma4.26b-a4b.text.compiled` passed on the reference host in
-    `350.33213` seconds with `enforce_eager=False`,
+  - compiled-lane revalidation must use fresh `VLLM_CACHE_ROOT`,
+    `TORCHINDUCTOR_CACHE_DIR`, and `TRITON_CACHE_DIR` paths or explicitly clear
+    the old caches; one 26B-A4B rerun reused an Apr19 Inductor artifact from
+    `/tmp/torchinductor_$USER` and failed falsely with
+    `mat1 and mat2 shapes cannot be multiplied (32x5376 and 2816x8192)`
+  - with fresh cache roots, `vllm.gemma4.26b-a4b.text.compiled` passed on the
+    reference host in `199.338261` seconds with `enforce_eager=False`,
     `ROCM_AITER_UNIFIED_ATTN`, `Using TRITON backend for Unquantized MoE`,
     torch.compile, and CUDAGraph capture; the output was
     `These are exactly five words.`
-  - the same run showed `torch.compile took 27.34 s in total`, graph capture
+  - the same run showed `torch.compile took 26.77 s in total`, graph capture
     completed, and the model generated the expected basic smoke output, so the
     26B-A4B offline text lane can be treated as compiled-capable after the
     Triton `AttrsDescriptor.__repr__` repair
-  - after the repaired Triton package was installed,
-    `vllm.gemma4.e2b.text.compiled` no longer failed with the old SyntaxError:
-    it initialized, compiled, captured graphs, and generated, but the output
-    was corrupted (`docked calcS ...`) and failed the basic smoke assertion
+  - with fresh cache roots, `vllm.gemma4.e2b.text.compiled` no longer failed
+    with the old SyntaxError: it initialized in `507.662803` seconds, selected
+    `ROCM_AITER_UNIFIED_ATTN`, spent `427.27 s` in torch.compile, captured
+    graphs, reached `generation_ok`, then generated corrupted non-ASCII text
+    (`docked calcS ...`) and failed the basic smoke assertion
   - with a temporary `AttrsDescriptor.__repr__` shim, the E2B compiled +
     cudagraph path got through `torch.compile` and CUDAGraph capture but
     generated corrupted text, so it is not promotable
@@ -506,10 +511,14 @@ The following smoke checks have already passed on the reference host:
     the GPU during initialization/warmup
   - do not remove eager mode for `google/gemma-4-E2B-it`; the
     E2B compiled path still generates invalid text after the Triton repair
-  - `vllm.gemma4.31b.text.compiled` passed on 2026-04-19 against
+  - `vllm.gemma4.31b.text.compiled` passed on 2026-04-20 with fresh cache roots
+    against
     `/var/cache/hf/hub/models--google--gemma-4-31B-it/snapshots/439edf5652646a0d1bd8b46bfdc1d3645761a445`
-    in `360.390323` seconds, so the dense 31B instruction-tuned checkpoint is
-    compiled-capable on the current installed Triton/vLLM stack
+    in `382.161305` seconds with `enforce_eager=False`,
+    `ROCM_AITER_UNIFIED_ATTN`, `torch.compile took 55.14 s in total`, graph
+    capture in 103 seconds, and output `I have written five words.`, so the
+    dense 31B instruction-tuned checkpoint is compiled-capable on the current
+    installed Triton/vLLM stack
 - The 2026-04-19 26B-A4B MoE backend investigation confirms that the current
   package should stay on Triton for sparse MoE execution:
   - `vllm.gemma4.26b-a4b.server.moe-auto` passed in `288.508121` seconds with
