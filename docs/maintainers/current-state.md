@@ -326,6 +326,11 @@ The following smoke checks have already passed on the reference host:
     successfully for both
     `vllm.gemma4.26b-a4b.text.basic` and
     `vllm.gemma4.26b-a4b.server.basic`
+  - the 2026-04-20 rebuilt installed stack revalidated the same two promoted
+    scenarios against
+    `/var/cache/hf/hub/models--google--gemma-4-26B-A4B-it/snapshots/7d4c97e54145f8ffd1a4dd1b4986a5015a517842`;
+    the text scenario passed in `109.092445` seconds, and the server scenario
+    passed in `201.40131` seconds
   - the current validated shape is still the constrained text-only lane:
     `--limit-mm-per-prompt {"image":0,"audio":0,"video":0}`,
     `--max-model-len 128`, `--max-num-batched-tokens 32`, and
