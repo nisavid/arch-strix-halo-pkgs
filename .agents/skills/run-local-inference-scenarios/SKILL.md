@@ -30,6 +30,18 @@ python tools/run_inference_scenarios.py --engine lemonade
 If no selector args are given, the tool prompts on a TTY and fails fast
 otherwise.
 
+## Host Access
+
+Run live vLLM, PyTorch HIP, ROCm, `rocminfo`, `amd-smi`, and server-smoke
+scenarios outside the Codex bwrap sandbox. In Codex, request
+`sandbox_permissions=require_escalated` for commands that need to open
+`/dev/kfd` or `/dev/dri/renderD*`; adding those paths as writable roots is not
+enough proof of usable device access.
+
+The sandbox is fine for unit tests, catalog tests, adapter tests, and runner
+dry-runs that do not initialize ROCm. Do not classify a live vLLM scenario as
+GPU-unavailable until the command has been retried with host device access.
+
 ## Operator Notes
 
 - Hand the command to the user when it exercises the live host.

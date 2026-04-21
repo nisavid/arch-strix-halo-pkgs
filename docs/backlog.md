@@ -55,12 +55,11 @@
     feature work; the current `module_quant` failure is
     `unknown type name 'mfma_adaptor'`
 - Validate the tracked Qwen3.6 server recipe scenarios on the reference host.
-  - run `vllm.qwen3_6.35b-a3b.server.reasoning` first; the 2026-04-20 local
-    execution attempt failed before `server_ready` because this execution
-    environment exposed no GPU to PyTorch while vLLM resolved the ROCm platform
-  - if base reasoning passes on the GPU host, run `reasoning-disabled`, `mtp`,
-    `tool`, `benchmark-lite`, `advanced-selectors`, `long-context-reduced`, and
-    `media-embedding` one at a time
+  - base `vllm.qwen3_6.35b-a3b.server.reasoning` passed on 2026-04-20 with
+    `server_ready` and `reasoning_ok`
+  - run `reasoning-disabled`, `mtp`, `tool`, `benchmark-lite`,
+    `advanced-selectors`, `long-context-reduced`, and `media-embedding` one at
+    a time
   - promote only passing reference-host scenarios to `validated`; keep unrun or
     blocked Qwen server surfaces `tracked`, `planned`, or `advisory-only`
   - keep GB200, MI355X, Qwen3.5 397B throughput, FP8 blocked paths, and full

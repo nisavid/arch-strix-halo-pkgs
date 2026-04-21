@@ -63,7 +63,7 @@ rendered command keeps the base shape.
 
 | Surface | Recipe flags or request shape | Current coverage | Planned action |
 | --- | --- | --- | --- |
-| Qwen3.6 BF16 reasoning | `Qwen/Qwen3.6-35B-A3B`, `--tensor-parallel-size 8` or interactive TP2, `--max-model-len 262144`, `--reasoning-parser qwen3` | `tracked` by reduced `reasoning` and `reasoning-disabled` server scenarios; unquantized eager and compiled text controls remain validated | Run the base server reasoning scenario on the reference host with a visible GPU, then run the remaining Qwen server modes one at a time. |
+| Qwen3.6 BF16 reasoning | `Qwen/Qwen3.6-35B-A3B`, `--tensor-parallel-size 8` or interactive TP2, `--max-model-len 262144`, `--reasoning-parser qwen3` | `validated` by reduced `reasoning`; `reasoning-disabled` remains tracked; unquantized eager and compiled text controls remain validated | Run the remaining Qwen server modes one at a time. |
 | Qwen3.6 FP8 AMD | `VLLM_ROCM_USE_AITER=1`, `Qwen/Qwen3.6-35B-A3B-FP8`, `--max-model-len 262144`, `--reasoning-parser qwen3`, `--trust-remote-code` | `validated` as blocked for non-AITER and forced-AITER FP8 MoE paths | Keep blocked probes; re-run only after a backend advertises gfx1151 FP8 MoE support. |
 | Qwen3.6 MTP/spec decoding | `--speculative-config '{"method":"mtp","num_speculative_tokens":2}'` | `tracked` by reduced `mtp` server scenario | Run only after base server reasoning passes; keep the KV-cache capacity note with the result. |
 | Qwen3.6 tool calling | interactive feature selector plus Qwen parser family; Qwen3.5 guide names `--enable-auto-tool-choice --tool-call-parser qwen3_coder` | `tracked` by reduced `tool` server scenario | Run after base reasoning passes and record whether `qwen3_coder` emits a tool call plus follow-up completion. |
@@ -91,9 +91,9 @@ The Qwen server helper now covers the reduced local scenario set with
 - `vllm.qwen3_6.35b-a3b.server.long-context-reduced`
 - `vllm.qwen3_6.35b-a3b.server.media-embedding`
 
-All eight are exploratory until a reference-host run reaches `server_ready` and
-passes its mode-specific marker. The 2026-04-20 local attempt to run
-`vllm.qwen3_6.35b-a3b.server.reasoning` failed before `server_ready` because
-the execution environment exposed no GPU to PyTorch while vLLM resolved the
-ROCm platform. The remaining Qwen server scenarios were not run after that base
-failure.
+Base reasoning is validated: the 2026-04-20
+`vllm.qwen3_6.35b-a3b.server.reasoning` run completed in `132.196358` seconds
+with `server_ready`, `reasoning_ok`, `reasoning_parser qwen3`, and `Using TRITON
+backend for Unquantized MoE`. The other seven server scenarios remain
+exploratory until each reaches `server_ready` and passes its mode-specific
+marker on the host.

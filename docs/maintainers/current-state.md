@@ -63,12 +63,13 @@ control at the previous default `--gpu-memory-utilization 0.75` failed before
 
 Reduced OpenAI-compatible Qwen3.6 server scenarios now exist for reasoning,
 reasoning-disabled, MTP, tool calling, benchmark-lite, advanced selectors,
-long-context-reduced, and media-embedding flows. They are tracked but not
-validated. A 2026-04-20 local attempt to run
-`vllm.qwen3_6.35b-a3b.server.reasoning` failed before `server_ready` because
-the execution environment exposed no GPU to PyTorch while vLLM resolved the
-ROCm platform. The remaining Qwen server scenarios were intentionally not run
-after that base failure.
+long-context-reduced, and media-embedding flows. Base reasoning is validated:
+the 2026-04-20 `vllm.qwen3_6.35b-a3b.server.reasoning` run completed in
+`132.196358` seconds with `server_ready`, `reasoning_ok`, `reasoning_parser
+qwen3`, `Using TRITON backend for Unquantized MoE`, `Available KV cache memory:
+12.31 GiB`, and a populated OpenAI-compatible `reasoning` field. The other
+seven Qwen server scenarios remain tracked and exploratory until each has its
+own host result.
 
 Installed and validated at least once on the live host:
 
@@ -78,6 +79,7 @@ Installed and validated at least once on the live host:
 - rebuilt wheel layer
 - Triton and AOTriton
 - PyTorch, TorchVision, AITER, and vLLM
+- `vllm.qwen3_6.35b-a3b.server.reasoning`
 - `llama.cpp` HIP and Vulkan backends
 - Lemonade server/app/meta packages
 
