@@ -8,8 +8,8 @@ This file is a curated summary of notable accepted original patches, not an
 exhaustive applied-patch inventory. For the complete package patch list, start
 from `policies/recipe-packages.toml`, `packages/*/recipe.json`, and generated
 `packages/*/PKGBUILD` patch application blocks. Runtime-sensitive local-origin
-patches and expected-failure findings that still need confirmation after the
-2026-04-20 self-hosted rebuild confidence boundary live in
+patches and expected-failure findings that were quarantined after the
+2026-04-20 self-hosted rebuild confidence boundary are recorded in
 [the rebuild revalidation ledger](maintainers/rebuild-revalidation.md).
 
 ## Lemonade
@@ -46,9 +46,9 @@ patches and expected-failure findings that still need confirmation after the
   - Revalidated after the 2026-04-20 self-hosted rebuild with the forced
     `TRITON_ATTN` Gemma 4 E2B server scenario and the package-local tile-size
     guard.
-- Provisional runtime-sensitive vLLM carries are tracked in
-  [the rebuild revalidation ledger](maintainers/rebuild-revalidation.md) until
-  post-rebuild scenario evidence promotes or retires them.
+- Runtime-sensitive vLLM carries that needed post-rebuild confirmation are
+  recorded in
+  [the rebuild revalidation ledger](maintainers/rebuild-revalidation.md).
 
 ## AITER
 

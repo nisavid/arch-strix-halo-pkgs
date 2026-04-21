@@ -14,13 +14,6 @@
   best current CachyOS / Arch baselines.
 - Convert remaining scripted source edits into durable patch files where
   practical.
-- Revalidate provisional local-origin runtime patches, expected-failure tests,
-  and backlog findings now that the self-hosted native rebuild is complete.
-  Use `docs/maintainers/rebuild-revalidation.md` as the source of pending
-  items, rerun the named inference scenarios against the rebuilt installed
-  stack, discover missing patch backstories from git history and Codex session
-  transcripts where needed, then promote reproduced items into accepted docs or
-  retire items that no longer reproduce.
 - Tighten package hygiene for embedded build paths in PyTorch and vLLM.
 - Fix `tools/render_recipe_scaffolds.py` before relying on it for
   `python-torchao-rocm-gfx1151` PKGBUILD regeneration. A 2026-04-19 render
@@ -86,7 +79,7 @@
     caching caveats, multimodal processor kwargs, and the Mamba cache versus
     CUDAGraph capture-size failure mode
   - use the recipe coverage worklist in
-    `docs/maintainers/rebuild-revalidation-plan.md` as the concrete scope for
+    `docs/maintainers/vllm-recipe-coverage.md` as the concrete scope for
     which Qwen recipe surfaces are runnable, planned, or advisory-only
   - include the interactive Qwen3.6 recipe selectors for tool calling,
     reasoning, speculative decoding, `max_batched_8k`, and
@@ -126,7 +119,7 @@
   - vLLM recipe-aligned reasoning, tool-calling, structured-output, and
     benchmark-lite server flows
   - use the recipe coverage worklist in
-    `docs/maintainers/rebuild-revalidation-plan.md` as the concrete scope for
+    `docs/maintainers/vllm-recipe-coverage.md` as the concrete scope for
     which Gemma 4 recipe surfaces are validated, tracked, planned, or
     advisory-only
   - add reduced probes for the interactive Gemma 4 `max_batched_8k` and

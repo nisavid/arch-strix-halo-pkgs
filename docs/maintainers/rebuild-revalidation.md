@@ -2,7 +2,8 @@
 
 Status as of 2026-04-20.
 
-This ledger is the quarantine bucket for locally originated patch carry,
+This ledger records the closed 2026-04-20 quarantine bucket for locally
+originated patch carry,
 expected-failure tests, backlog findings, and runtime conclusions that may
 have depended on stale build-time or runtime dependencies from the first full
 stack build. The confidence boundary is 2026-04-20, when the repo started
@@ -10,11 +11,14 @@ treating self-hosted rebuild validation as the source of truth for accepted
 runtime behavior.
 
 The self-hosted native rebuild completed on 2026-04-20. Items still marked
-`pending` are waiting on post-rebuild runtime or patch-specific revalidation,
-not on another full stack rebuild.
+`pending` would be waiting on post-rebuild runtime or patch-specific
+revalidation, not on another full stack rebuild. No pending rebuild
+revalidation rows remain.
 
 Use `docs/maintainers/rebuild-revalidation-plan.md` for the execution order,
-decision tree, outcome criteria, and Qwen3.6 control rule.
+decision tree, outcome criteria, and Qwen3.6 control rule used for this
+closeout. Use `docs/maintainers/vllm-recipe-coverage.md` for follow-up vLLM
+recipe coverage; recipe extraction is not part of this revalidation ledger.
 
 Do not use `docs/patches.md` as the exhaustive patch source. It is a curated
 summary. For patch revalidation, start from the actual applied patch metadata:
@@ -111,7 +115,7 @@ work item with:
 The retained-patch guard can cover a patch group when the group is
 comprehensively responsible for the same failure condition.
 
-## Pending Revalidation
+## Revalidation Results
 
 | Status | Area | Finding or patch | Pre-boundary evidence | Required post-rebuild evidence | Promotion target |
 | --- | --- | --- | --- | --- | --- |
@@ -138,7 +142,6 @@ comprehensively responsible for the same failure condition.
 | accepted | Qwen3.6 blocked probe | `vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-no-aiter-blocked` | The non-AITER FP8 MoE path reported no backend support for gfx1151. | On 2026-04-20, the rebuilt installed stack reproduced the same backend-selection failure in `22.765256` seconds against the `/var/cache/hf` FP8 snapshot, while the same-family unquantized control passed. Keep the expected-failure scenario until a backend advertises gfx1151 FP8 MoE support. | `docs/maintainers/current-state.md` |
 | accepted | Qwen3.6 forced AITER probe | `vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-aiter-blocked` | The forced AITER path reached `module_quant` and failed on `mfma_adaptor`. | On 2026-04-20, the rebuilt installed stack selected `Using AITER Fp8 MoE backend`, then reproduced the `module_quant` JIT failure with `unknown type name 'mfma_adaptor'` in `54.760926` seconds. Keep the expected-failure scenario until AITER has a gfx1151-compatible FP8 quantization path. | `docs/maintainers/current-state.md` |
 | accepted | Qwen3.5 smoke and sampler | `vllm.qwen3_5.0_8b.text.basic` and the sampler fallback finding | Qwen3.5 0.8B failed after model forward on the Triton top-k/top-p sampler, then passed with the PyTorch fallback patch before the current native rebuild finished. | On 2026-04-20, the rebuilt installed stack passed `vllm.qwen3_5.0_8b.text.basic` in `72.408359` seconds and `vllm.qwen3_5.0_8b.text.compiled` in `114.935893` seconds. Both generated `Ready.` and reached `basic_ok`; the compiled run proved the tracked Qwen3.5 smoke does not require eager under the current installed stack. | `docs/maintainers/current-state.md` |
-| pending | Official Qwen recipe scenario extraction | Backlog item for vLLM Qwen3.5/Qwen3.6 recipe-aligned serving scenarios | The repo tracks a tiny Qwen3.5 smoke and blocked Qwen3.6 FP8 MoE probes, but the upstream recipe surfaces were backlog-only. | The upstream recipe surfaces are now recorded as non-executable `recipe_surface` entries with catalog guards so they cannot be selected as runnable local scenarios. Complete this row by adding reduced local Qwen server scenarios for the feasible Qwen3.6 reasoning and MTP controls, then promote only after those scenario definitions and adapter/helper tests land. | `inference/scenarios/vllm-qwen.toml` and `docs/backlog.md` |
 | accepted | TorchAO tiny runtime lane | `vllm.torchao.tiny.prepare` and `vllm.torchao.tiny.generate` | Generic startup was separated from actual TorchAO quantization behavior, and the tiny local checkpoint helper had a pre-boundary host pass. | On 2026-04-20, the rebuilt installed stack passed `vllm.torchao.tiny.prepare` in `4.86572` seconds and `vllm.torchao.tiny.generate` in `21.412559` seconds. The generate run recorded `prepare_ok`, `copy_probe_ok`, `quantization=torchao`, `enforce_eager=True`, `llm_init_ok`, `generation_ok`, and the two expected warning markers. | `docs/maintainers/current-state.md` |
 | accepted | TorchAO real-model online lane | `vllm.gemma4.e2b.torchao.online-real-model` | Online real-model TorchAO quantization passed before the current native rebuild finished. | On 2026-04-20, the rebuilt installed stack passed `vllm.gemma4.e2b.torchao.online-real-model` in `58.446559` seconds with `using_online_source_model`, `quantization=torchao`, `enforce_eager=True`, `ROCM_AITER_UNIFIED_ATTN`, 10.62 GiB model-loading memory, `llm_init_ok`, `generation_ok`, and newline output token IDs `[107, 100, 107, 100, 107, 100, 107, 100]`. | `docs/maintainers/current-state.md` |
 | accepted | TorchAO real-model serialized lane | `vllm.gemma4.e2b.torchao.real-model` | The serialized real-model path remained exploratory and failed after `prepare_real_ok` with a TorchAO/vLLM metadata mismatch. | On 2026-04-20, the rebuilt installed stack reproduced the same serialized TorchAO/vLLM metadata mismatch. The scenario now tracks this as an expected blocked probe: it passed in `58.503875` seconds with expected exit code `1`, `prepare_real_ok`, and `AttributeError: 'Tensor' object has no attribute 'tensor_data_names'` during vLLM weight loading. | `docs/maintainers/current-state.md` |
@@ -157,7 +160,7 @@ rather than local-origin runtime findings.
 | Lemonade | `lemonade-server/0001` through `0004` | Local policy and presentation changes for NPU probing and system-managed backends; the local-repo rebuild does not make these unnecessary. |
 | vLLM | `0001-python-3.14-version-gates.patch` | Python-version build compatibility, validated by package build/tests rather than runtime dependency freshness. |
 | vLLM | `0006-setup.py-forward-host-and-hip-flags-into-cmake.patch` | Committed environment flag forwarding for `CFLAGS`, `CXXFLAGS`, and `HIPFLAGS`; this is build hygiene for Arch prefix maps and Strix tuning flags, not an inference failure that stale runtime deps can explain. The separate quoted-`CMAKE_ARGS` HIP flag experiment no longer carries a reproducible post-rebuild compiler blocker. |
-| vLLM | `0010-rocm-support-qwen35-hybrid-gdn.patch` | Carries Blackcat Informatics advisory-lane behavior. The patch itself is not local-origin revalidation scope, but Qwen3.5/Qwen3.6 scenario outcomes remain pending above. |
+| vLLM | `0010-rocm-support-qwen35-hybrid-gdn.patch` | Carries Blackcat Informatics advisory-lane behavior. The patch itself is not local-origin revalidation scope, and the Qwen3.5/Qwen3.6 scenario outcomes that were dependency-sensitive are accepted above. Follow-up official recipe coverage lives in `docs/maintainers/vllm-recipe-coverage.md`. |
 | PyTorch | `0001-setup-allow-skipping-build-deps.patch`, `0002-use-wide-magma-version-encoding.patch`, and recipe-derived inline edits in `PKGBUILD` | Package build and toolchain compatibility around Arch Python/CMake/MAGMA, plus recipe-derived ROCm package-shape edits such as the HIPGraph stub rewrite, gfx1151 CK gate, and post-install RPATH/`libtorch_hip.so` cleanup. These are not local-origin runtime patches, but package-local build/import checks and downstream vLLM/TorchAO smokes should remain the acceptance guard for the installed PyTorch lane. |
 | TorchVision | `0001-setup-relative-sources.patch` | Build-path sanitation for ROCm HIP sources; validated by package-local build/path checks. |
 | TorchAO | `0001-setup.py-honor-pytorch-rocm-arch.patch` | Build target selection for ROCm source builds; a full local dependency rebuild does not remove the need to avoid upstream's hard-coded `gfx942`. |

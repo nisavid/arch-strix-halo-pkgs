@@ -5,18 +5,17 @@ Status as of 2026-04-20.
 ## Rebuild Revalidation Boundary
 
 Runtime and inference findings recorded before the 2026-04-20 self-hosted
-rebuild confidence boundary are historical evidence until they are reproduced
-against the rebuilt stack. Provisional local-origin patch rationale,
-expected-failure tests, and backlog findings live in
-[the rebuild revalidation ledger](rebuild-revalidation.md). Promote them back
-into this file, `docs/patches.md`, or package-local docs only after
-post-rebuild validation records the scenario, model binding, backend split, and
-failure or pass signature.
+rebuild confidence boundary were treated as historical evidence until they
+were reproduced against the rebuilt stack. The closed quarantine record for
+local-origin patch rationale, expected-failure tests, and backlog findings
+lives in [the rebuild revalidation ledger](rebuild-revalidation.md).
 
 The full native package rebuild and install completed on 2026-04-20 through
 `tools/amerge` plan `20260420T045008-685264b1`, with 75 completed steps and no
 remaining failed steps. Build/deploy closeout for the native stack is complete;
-runtime closeout now means working through the revalidation ledger.
+post-rebuild revalidation closeout is recorded in the revalidation ledger.
+Follow-up official vLLM recipe coverage now lives in
+`docs/maintainers/vllm-recipe-coverage.md`.
 
 ## Live Host State
 
@@ -113,8 +112,8 @@ Current installed native package state, checked on 2026-04-20 after the full
 
 This section includes both current installed-host checks and historical smoke
 records. When a result was recorded before the 2026-04-20 rebuild boundary,
-the rebuild revalidation ledger controls whether that result can be promoted
-as current accepted behavior.
+the rebuild revalidation ledger records whether that result was promoted or
+retired.
 
 The following smoke checks have already passed on the reference host:
 
