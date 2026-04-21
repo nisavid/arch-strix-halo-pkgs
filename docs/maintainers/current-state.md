@@ -91,13 +91,15 @@ scenarios are validated; the first six passed on 2026-04-20:
 The two remaining reduced scenarios passed after targeted root-cause fixes on
 2026-04-21:
 
-- `vllm.qwen3_6.35b-a3b.server.mtp` completed in `112.647863` seconds with
-  `server_ready`, `mtp_ok`, `--speculative-config
-  {"disable_padded_drafter_batch":true,"method":"mtp","num_speculative_tokens":2}`,
-  `Using TRITON backend for Unquantized MoE`, and `Available KV cache memory:
-  8.26 GiB`. The previous MTP failure was isolated to vLLM's padded drafter
-  batch path, which hit a Triton compile assertion in
-  `vllm/v1/spec_decode/eagle.py`.
+- `vllm.qwen3_6.35b-a3b.server.mtp` first completed in `112.647863` seconds
+  with the non-padded workaround. The root fix is now carried as
+  `python-vllm-rocm-gfx1151` `0.19.1-2`: the rebuilt package payload completed
+  the same scenario in `128.156851` seconds with `server_ready`, `mtp_ok`,
+  `--speculative-config {"method":"mtp","num_speculative_tokens":2}`, no
+  `disable_padded_drafter_batch` workaround, `Using TRITON backend for
+  Unquantized MoE`, and the padded EAGLE/MTP drafter `valid_count` typing patch.
+  The live host still reports installed `python-vllm-rocm-gfx1151 0.19.1-1`
+  until the built `0.19.1-2` package is deployed.
 - `vllm.qwen3_6.35b-a3b.server.media-embedding` completed in `112.851312`
   seconds with `server_ready`, `media_embedding_ok`, `Using
   AttentionBackendEnum.TORCH_SDPA for MMEncoderAttention`, `Using TRITON backend

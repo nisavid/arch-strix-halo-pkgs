@@ -242,7 +242,6 @@ def build_server_command(args: argparse.Namespace) -> list[str]:
                 "--speculative-config",
                 compact_json(
                     {
-                        "disable_padded_drafter_batch": True,
                         "method": "mtp",
                         "num_speculative_tokens": 2,
                     }

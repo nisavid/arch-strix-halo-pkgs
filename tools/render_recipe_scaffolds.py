@@ -658,7 +658,9 @@ _source_tree_has_all_source_patches() {
       vllm/model_executor/layers/quantization/torchao_utils.py &&
     grep -Fq 'Hybrid models need TRITON_ATTN' vllm/platforms/rocm.py &&
     grep -Fq 'Use PyTorch top-k/top-p filtering on ROCm' \
-      vllm/v1/sample/ops/topk_topp_sampler.py
+      vllm/v1/sample/ops/topk_topp_sampler.py &&
+    grep -Fq 'Keep valid_count type stable across branches' \
+      vllm/v1/spec_decode/utils.py
 }
 
 _apply_all_source_patches() {

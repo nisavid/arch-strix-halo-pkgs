@@ -1,0 +1,26 @@
+from pathlib import Path
+
+
+REPO_ROOT = Path(__file__).resolve().parents[3]
+PKGBUILD = REPO_ROOT / "packages/python-vllm-rocm-gfx1151/PKGBUILD"
+PATCH = (
+    REPO_ROOT
+    / "packages/python-vllm-rocm-gfx1151/0012-rocm-keep-eagle-padded-drafter-count-int32.patch"
+)
+
+
+def test_pkgbuild_carries_padded_drafter_count_patch():
+    text = PKGBUILD.read_text()
+
+    assert PATCH.name in text
+    assert f'_apply_patch_if_needed "{PATCH.name}"' in text
+    assert "Keep valid_count type stable across branches" in text
+
+
+def test_padded_drafter_patch_keeps_valid_count_int32():
+    text = PATCH.read_text()
+
+    assert "vllm/v1/spec_decode/utils.py" in text
+    assert "valid_count = tl.full((), 0, dtype=tl.int32)" in text
+    assert "valid_count = tl.sum(is_valid_mask.to(tl.int32))" in text
+    assert "Mismatched type for valid_count" not in text

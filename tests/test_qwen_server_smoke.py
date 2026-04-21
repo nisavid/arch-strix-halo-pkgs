@@ -67,7 +67,7 @@ def test_qwen_server_smoke_mode_specific_server_args():
         '{"enable_thinking":false}'
     )
     assert command_value(mtp_command, "--speculative-config") == (
-        '{"disable_padded_drafter_batch":true,"method":"mtp","num_speculative_tokens":2}'
+        '{"method":"mtp","num_speculative_tokens":2}'
     )
     assert "--speculative-tokens" not in mtp_command
     assert "--enable-auto-tool-choice" in tool_command

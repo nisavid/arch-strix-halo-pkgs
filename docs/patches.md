@@ -46,6 +46,11 @@ patches and expected-failure findings that were quarantined after the
   - Revalidated after the 2026-04-20 self-hosted rebuild with the forced
     `TRITON_ATTN` Gemma 4 E2B server scenario and the package-local tile-size
     guard.
+- [ROCm padded EAGLE/MTP drafter count typing](../packages/python-vllm-rocm-gfx1151/0012-rocm-keep-eagle-padded-drafter-count-int32.patch)
+  - Keeps `eagle_prepare_next_token_padded_kernel` compiling on ROCm/Triton by
+    forcing `valid_count` to `int32` in both Triton branches.
+  - Covers the Qwen MTP server failure where the padded drafter batch path
+    rejected the branch merge with mismatched `uint32` and `int1` scalar types.
 - Runtime-sensitive vLLM carries that needed post-rebuild confirmation are
   recorded in
   [the rebuild revalidation ledger](maintainers/rebuild-revalidation.md).

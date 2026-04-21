@@ -56,9 +56,9 @@
     `unknown type name 'mfma_adaptor'`
 - Follow up Qwen server coverage beyond the reduced local smokes.
   - all eight reduced Qwen3.6 server smokes now pass on the host
-  - keep the MTP padded-drafter Triton compile assertion as a performance-path
-    follow-up; the validated local MTP smoke uses
-    `disable_padded_drafter_batch=true`
+  - deploy the built `python-vllm-rocm-gfx1151` `0.19.1-2` package so the
+    installed host package carries the padded EAGLE/MTP drafter `valid_count`
+    typing fix validated by the temporary package-payload smoke
   - keep broader Qwen media sizes exploratory; the validated local media smoke
     bounds image dummy profiling to the tiny embedded fixture
   - keep GB200, MI355X, Qwen3.5 397B throughput, FP8 blocked paths, and full

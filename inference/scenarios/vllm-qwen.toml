@@ -550,7 +550,7 @@ required_flags = [
 ]
 caveats = [
   "Speculative decoding consumes KV capacity and uses less KV cache memory than the non-speculative reduced server shape.",
-  "The reduced local MTP probe passed on 2026-04-21 after disabling vLLM's padded drafter batch path; the padded path hit a Triton speculative-decoding compile assertion in vllm/v1/spec_decode/eagle.py.",
+  "The reduced local MTP probe exercises vLLM's padded drafter batch path with the local ROCm valid_count typing patch.",
 ]
 
 [[recipe_surface]]
@@ -606,7 +606,7 @@ required_flags = [
 caveats = [
   "The recipe states MTP-1 speculative decoding for AMD GPUs is under development.",
   "Do not promote on gfx1151 without a reduced local MTP probe.",
-  "The reduced Qwen3.6 MTP probe now passes with disable_padded_drafter_batch=true; the full Qwen3.5 FP8 latency shape remains advisory.",
+  "The reduced Qwen3.6 MTP probe now passes through the padded drafter batch path with the local ROCm valid_count typing patch; the full Qwen3.5 FP8 latency shape remains advisory.",
 ]
 
 [[recipe_surface]]
