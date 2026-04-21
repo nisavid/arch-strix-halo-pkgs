@@ -1,6 +1,6 @@
 # Current State
 
-Status as of 2026-04-20.
+Status as of 2026-04-21.
 
 ## Rebuild Revalidation Boundary
 
@@ -760,6 +760,23 @@ The following smoke checks have already passed on the reference host:
     gfx1250 FP8 WMMA builtin is rejected for gfx1151 with `needs target
     feature gfx1250-insts`. Treat Qwen3.6 FP8 MoE as a documented follow-up,
     not a merge blocker for the Gemma 4 branch.
+  - Task 4 quantization-lane coverage now includes three additional tracked
+    exploratory probes under `inference/scenarios/vllm-qwen.toml`:
+    `vllm.qwen3.0_6b-fp8-kv.text.fp8-dense-quark`,
+    `vllm.qwen2_5.0_5b-gptq-int4.text.basic`, and
+    `vllm.qwen3_5.2b-nvfp4.text.unsupported-rocm-gfx1151`.
+    The dense FP8 lane uses an AMD Quark-exported Qwen3 FP8 checkpoint with
+    `quantization="quark"` and `kv_cache_dtype="fp8"`. The GPTQ-Int4 lane uses
+    the small official Qwen2.5 GPTQ-Int4 checkpoint with `dtype="float16"`,
+    matching vLLM's GPTQ activation dtype contract. Both are expected runnable
+    probes, but not promoted smokes until they pass on the reference host.
+  - The current NVFP4 default-backend probe is expected to fail on ROCm/gfx1151
+    with `No NVFP4 GEMM backend selected`. The installed vLLM source advertises
+    `petit_nvfp4` on ROCm, but its production NVFP4 linear backend selection is
+    built around FlashInfer/CUTLASS/Marlin-style FP4 kernels rather than a
+    gfx1151 ROCm production kernel. The correctness-only
+    `VLLM_USE_NVFP4_CT_EMULATIONS=1` path is a possible future experiment, not
+    current deployment evidence.
 - The tracked host-side follow-up helper for OpenAI-compatible server smokes is
   now `tools/gemma4_server_smoke.py`.
   - `--mode basic` launches

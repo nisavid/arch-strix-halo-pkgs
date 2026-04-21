@@ -54,6 +54,9 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     assert "vllm.pooling.jina-reranker-v3.rerank" in ids
     assert "vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-no-aiter-blocked" in ids
     assert "vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-aiter-blocked" in ids
+    assert "vllm.qwen3.0_6b-fp8-kv.text.fp8-dense-quark" in ids
+    assert "vllm.qwen2_5.0_5b-gptq-int4.text.basic" in ids
+    assert "vllm.qwen3_5.2b-nvfp4.text.unsupported-rocm-gfx1151" in ids
     assert "llama.cpp.hip.help" in ids
     assert "llama.cpp.vulkan.help" in ids
     assert "lemonade.cli.help" in ids
@@ -120,6 +123,13 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     ]
     assert "blocked" in tags_by_id[
         "vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-aiter-blocked"
+    ]
+    assert "quark" in tags_by_id[
+        "vllm.qwen3.0_6b-fp8-kv.text.fp8-dense-quark"
+    ]
+    assert "gptq" in tags_by_id["vllm.qwen2_5.0_5b-gptq-int4.text.basic"]
+    assert "blocked" in tags_by_id[
+        "vllm.qwen3_5.2b-nvfp4.text.unsupported-rocm-gfx1151"
     ]
     assert "pooling" in tags_by_id["vllm.pooling.multilingual-e5-small.embeddings"]
     assert "embeddings" in tags_by_id[
@@ -409,6 +419,103 @@ def test_qwen3_6_fp8_moe_probes_record_backend_modes():
         "kind": "stdout.contains",
         "value": "config_quantization_config_present true",
     } in forced_aiter.definition["then"]["assert"]
+
+
+def test_quantization_lane_probes_record_root_cause_contracts():
+    scenarios = load_scenarios(REPO_ROOT / "inference/scenarios")
+    by_id = {scenario.id: scenario for scenario in scenarios}
+
+    fp8_dense = by_id["vllm.qwen3.0_6b-fp8-kv.text.fp8-dense-quark"]
+    assert fp8_dense.model == "EliovpAI/Qwen3-0.6B-FP8-KV"
+    assert set(fp8_dense.tags) >= {
+        "qwen",
+        "qwen3",
+        "fp8",
+        "quark",
+        "kv-cache-fp8",
+        "quantization-probe",
+        "exploratory",
+    }
+    assert fp8_dense.definition["given"]["tool"] == "qwen_text_smoke"
+    assert fp8_dense.definition["when"]["argv"] == [
+        "--quantization",
+        "quark",
+        "--kv-cache-dtype",
+        "fp8",
+        "--max-model-len",
+        "128",
+    ]
+    for expected in (
+        {"kind": "exit_code.equals", "value": 0},
+        {"kind": "stdout.contains", "value": "quantization quark"},
+        {"kind": "stdout.contains", "value": "kv_cache_dtype fp8"},
+        {
+            "kind": "stdout.contains",
+            "value": "config_quantization_config_present true",
+        },
+        {"kind": "stdout.contains", "value": "generation_ok"},
+        {"kind": "stdout.contains", "value": "basic_ok"},
+    ):
+        assert expected in fp8_dense.definition["then"]["assert"]
+
+    gptq = by_id["vllm.qwen2_5.0_5b-gptq-int4.text.basic"]
+    assert gptq.model == "Qwen/Qwen2.5-0.5B-Instruct-GPTQ-Int4"
+    assert set(gptq.tags) >= {
+        "qwen",
+        "qwen2.5",
+        "gptq",
+        "int4",
+        "quantization-probe",
+        "exploratory",
+    }
+    assert gptq.definition["when"]["argv"] == [
+        "--dtype",
+        "float16",
+        "--max-model-len",
+        "128",
+    ]
+    for expected in (
+        {"kind": "exit_code.equals", "value": 0},
+        {"kind": "stdout.contains", "value": "dtype float16"},
+        {
+            "kind": "stdout.contains",
+            "value": "config_quantization_config_present true",
+        },
+        {"kind": "stdout.contains", "value": "config_model_type qwen2"},
+        {"kind": "stdout.contains", "value": "generation_ok"},
+        {"kind": "stdout.contains", "value": "basic_ok"},
+    ):
+        assert expected in gptq.definition["then"]["assert"]
+
+    nvfp4 = by_id["vllm.qwen3_5.2b-nvfp4.text.unsupported-rocm-gfx1151"]
+    assert nvfp4.model == "AxionML/Qwen3.5-2B-NVFP4"
+    assert set(nvfp4.tags) >= {
+        "qwen",
+        "qwen3.5",
+        "nvfp4",
+        "kernel-probe",
+        "quantization-probe",
+        "blocked",
+        "exploratory",
+    }
+    assert nvfp4.definition["when"]["argv"] == [
+        "--quantization",
+        "petit_nvfp4",
+        "--max-model-len",
+        "128",
+    ]
+    for expected in (
+        {"kind": "exit_code.equals", "value": 1},
+        {
+            "kind": "stdout.contains",
+            "value": "config_quantization_config_present true",
+        },
+        {
+            "kind": "output.contains",
+            "value": "No NVFP4 GEMM backend selected",
+        },
+    ):
+        assert expected in nvfp4.definition["then"]["assert"]
 
 
 def test_qwen3_5_compiled_probe_records_validation_contract():

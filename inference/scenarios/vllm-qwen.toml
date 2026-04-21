@@ -514,6 +514,125 @@ value = "Using AITER Fp8 MoE backend"
 kind = "output.contains"
 value = "unknown type name 'mfma_adaptor'"
 
+[[scenario]]
+id = "vllm.qwen3.0_6b-fp8-kv.text.fp8-dense-quark"
+summary = "Qwen3 0.6B dense FP8/Quark text-only probe with FP8 KV cache"
+tags = ["qwen", "qwen3", "fp8", "quark", "kv-cache-fp8", "quantization-probe", "exploratory"]
+source_url = "https://huggingface.co/EliovpAI/Qwen3-0.6B-FP8-KV"
+
+[scenario.given]
+engine = "vllm"
+model = "EliovpAI/Qwen3-0.6B-FP8-KV"
+tool = "qwen_text_smoke"
+
+[scenario.when]
+argv = [
+  "--quantization",
+  "quark",
+  "--kv-cache-dtype",
+  "fp8",
+  "--max-model-len",
+  "128",
+]
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "quantization quark"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "kv_cache_dtype fp8"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "config_quantization_config_present true"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "generation_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "basic_ok"
+
+[[scenario]]
+id = "vllm.qwen2_5.0_5b-gptq-int4.text.basic"
+summary = "Qwen2.5 0.5B GPTQ-Int4 text-only probe"
+tags = ["qwen", "qwen2.5", "gptq", "int4", "quantization-probe", "exploratory"]
+source_url = "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GPTQ-Int4"
+
+[scenario.given]
+engine = "vllm"
+model = "Qwen/Qwen2.5-0.5B-Instruct-GPTQ-Int4"
+tool = "qwen_text_smoke"
+
+[scenario.when]
+argv = [
+  "--dtype",
+  "float16",
+  "--max-model-len",
+  "128",
+]
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "dtype float16"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "config_quantization_config_present true"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "config_model_type qwen2"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "generation_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "basic_ok"
+
+[[scenario]]
+id = "vllm.qwen3_5.2b-nvfp4.text.unsupported-rocm-gfx1151"
+summary = "Qwen3.5 2B NVFP4 default-backend probe blocked on ROCm/gfx1151 FP4 kernels"
+tags = ["qwen", "qwen3.5", "nvfp4", "kernel-probe", "quantization-probe", "exploratory", "blocked"]
+source_url = "https://huggingface.co/AxionML/Qwen3.5-2B-NVFP4"
+
+[scenario.given]
+engine = "vllm"
+model = "AxionML/Qwen3.5-2B-NVFP4"
+tool = "qwen_text_smoke"
+
+[scenario.when]
+argv = [
+  "--quantization",
+  "petit_nvfp4",
+  "--max-model-len",
+  "128",
+]
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 1
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "config_quantization_config_present true"
+
+[[scenario.then.assert]]
+kind = "output.contains"
+value = "No NVFP4 GEMM backend selected"
+
 [[recipe_surface]]
 id = "vllm.qwen.recipe.qwen3_6.server.reasoning"
 summary = "Official Qwen3.6 serving shape with qwen3 reasoning parser"

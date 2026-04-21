@@ -560,6 +560,40 @@ VLLM_ROCM_USE_AITER_MOE = "0"
     }
 
 
+def test_quantized_qwen_text_dry_run_includes_probe_options_and_binding(
+    tmp_path: Path,
+):
+    run_root = tmp_path / "run"
+    result = run_runner(
+        "--scenario-dir",
+        str(REPO_ROOT / "inference/scenarios"),
+        "--run-root",
+        str(run_root),
+        "--dry-run",
+        "--scenario",
+        "vllm.qwen3.0_6b-fp8-kv.text.fp8-dense-quark",
+        "--model-path",
+        "EliovpAI/Qwen3-0.6B-FP8-KV=/models/qwen3-fp8",
+    )
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    assert payload["selected_ids"] == [
+        "vllm.qwen3.0_6b-fp8-kv.text.fp8-dense-quark"
+    ]
+    assert payload["planned"][0]["command"] == [
+        sys.executable,
+        str(REPO_ROOT / "tools/qwen_text_smoke.py"),
+        "/models/qwen3-fp8",
+        "--quantization",
+        "quark",
+        "--kv-cache-dtype",
+        "fp8",
+        "--max-model-len",
+        "128",
+    ]
+
+
 def test_runner_executes_scenario_and_writes_logs(tmp_path: Path):
     script = write_fake_command_script(tmp_path)
     scenario_dir = tmp_path / "inference" / "scenarios"

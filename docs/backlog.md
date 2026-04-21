@@ -45,6 +45,10 @@
 - Continue Qwen3.6 FP8 MoE/shared-expert follow-up on gfx1151.
   - Qwen3.5 sampler/GDN package carry, tiny smoke coverage, and blocked-probe
     coverage for Qwen3.6 are already tracked and validated
+  - validate the new dense FP8/Quark and GPTQ-Int4 exploratory probes before
+    promoting either lane to smoke coverage:
+    `vllm.qwen3.0_6b-fp8-kv.text.fp8-dense-quark` and
+    `vllm.qwen2_5.0_5b-gptq-int4.text.basic`
   - compare FP8 probe outcomes against the accepted unquantized no-AITER
     `Qwen/Qwen3.6-35B-A3B` control, which currently passes with
     `--max-num-batched-tokens 32` and `--gpu-memory-utilization 0.9`
@@ -54,6 +58,10 @@
   - treat the forced-AITER path as blocked on AITER opus/gfx1151 FP8-kernel
     feature work; the current `module_quant` failure is
     `unknown type name 'mfma_adaptor'`
+  - keep the default NVFP4 probe blocked on gfx1151 production-kernel support;
+    the current expected failure is `No NVFP4 GEMM backend selected`, with
+    `VLLM_USE_NVFP4_CT_EMULATIONS=1` left as a separate correctness-only
+    experiment rather than deployment evidence
 - Follow up Qwen server coverage beyond the reduced local smokes.
   - all eight reduced Qwen3.6 server smokes now pass on the host
   - optionally add a tracked `ngram_gpu` speculative-decoding scenario; the

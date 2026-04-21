@@ -17,6 +17,21 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-tokens", type=int, default=16)
     parser.add_argument("--max-num-batched-tokens", type=int, default=None)
     parser.add_argument(
+        "--quantization",
+        default=None,
+        help="optional vLLM quantization method override, such as quark",
+    )
+    parser.add_argument(
+        "--kv-cache-dtype",
+        default=None,
+        help="optional vLLM KV cache dtype override, such as fp8",
+    )
+    parser.add_argument(
+        "--dtype",
+        default=None,
+        help="optional vLLM model dtype override, such as float16",
+    )
+    parser.add_argument(
         "--execution-mode",
         choices=("eager", "compiled"),
         default="eager",
@@ -94,6 +109,29 @@ def validate_nonempty_text(text: str) -> None:
         raise AssertionError("empty model output")
 
 
+def build_llm_kwargs(model: str, args: argparse.Namespace) -> dict[str, Any]:
+    llm_kwargs: dict[str, Any] = {
+        "model": model,
+        "trust_remote_code": True,
+        "max_model_len": args.max_model_len,
+        "gpu_memory_utilization": args.gpu_memory_utilization,
+        "tensor_parallel_size": 1,
+        "limit_mm_per_prompt": {"image": 0, "audio": 0, "video": 0},
+        "disable_log_stats": True,
+    }
+    if args.execution_mode == "eager":
+        llm_kwargs["enforce_eager"] = True
+    if args.max_num_batched_tokens is not None:
+        llm_kwargs["max_num_batched_tokens"] = args.max_num_batched_tokens
+    if args.quantization:
+        llm_kwargs["quantization"] = args.quantization
+    if args.kv_cache_dtype:
+        llm_kwargs["kv_cache_dtype"] = args.kv_cache_dtype
+    if args.dtype:
+        llm_kwargs["dtype"] = args.dtype
+    return llm_kwargs
+
+
 def main() -> None:
     args = parse_args()
     model = resolved_model_arg(args.model)
@@ -113,6 +151,9 @@ def main() -> None:
     print("max_model_len", args.max_model_len)
     print("max_tokens", args.max_tokens)
     print("max_num_batched_tokens", args.max_num_batched_tokens)
+    print("quantization", args.quantization)
+    print("kv_cache_dtype", args.kv_cache_dtype)
+    print("dtype", args.dtype)
 
     config = AutoConfig.from_pretrained(model, trust_remote_code=True)
     print_config_summary(config)
@@ -121,20 +162,7 @@ def main() -> None:
     prompt = render_prompt(tokenizer)
     print("rendered_prompt:", repr(prompt))
 
-    llm_kwargs = {
-        "model": model,
-        "trust_remote_code": True,
-        "max_model_len": args.max_model_len,
-        "gpu_memory_utilization": args.gpu_memory_utilization,
-        "tensor_parallel_size": 1,
-        "limit_mm_per_prompt": {"image": 0, "audio": 0, "video": 0},
-        "disable_log_stats": True,
-    }
-    if args.execution_mode == "eager":
-        llm_kwargs["enforce_eager"] = True
-    if args.max_num_batched_tokens is not None:
-        llm_kwargs["max_num_batched_tokens"] = args.max_num_batched_tokens
-
+    llm_kwargs = build_llm_kwargs(model, args)
     llm = LLM(**llm_kwargs)
     print("llm_init_ok")
 

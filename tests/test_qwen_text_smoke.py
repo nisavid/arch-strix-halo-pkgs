@@ -11,7 +11,7 @@ TOOLS_DIR = REPO_ROOT / "tools"
 if str(TOOLS_DIR) not in sys.path:
     sys.path.insert(0, str(TOOLS_DIR))
 
-from qwen_text_smoke import print_config_summary
+from qwen_text_smoke import build_llm_kwargs, print_config_summary
 
 
 def test_qwen_text_smoke_exposes_help_without_importing_vllm():
@@ -25,6 +25,30 @@ def test_qwen_text_smoke_exposes_help_without_importing_vllm():
     assert result.returncode == 0
     assert "Run a text-only offline Qwen smoke through vLLM" in result.stdout
     assert "--execution-mode" in result.stdout
+    assert "--quantization" in result.stdout
+    assert "--kv-cache-dtype" in result.stdout
+    assert "--dtype" in result.stdout
+
+
+def test_build_llm_kwargs_carries_quantization_probe_options():
+    args = SimpleNamespace(
+        execution_mode="eager",
+        gpu_memory_utilization=0.72,
+        kv_cache_dtype="fp8",
+        max_model_len=256,
+        max_num_batched_tokens=64,
+        quantization="quark",
+        dtype="float16",
+    )
+
+    kwargs = build_llm_kwargs("Qwen/Qwen3-0.6B-FP8-KV", args)
+
+    assert kwargs["model"] == "Qwen/Qwen3-0.6B-FP8-KV"
+    assert kwargs["quantization"] == "quark"
+    assert kwargs["kv_cache_dtype"] == "fp8"
+    assert kwargs["dtype"] == "float16"
+    assert kwargs["max_num_batched_tokens"] == 64
+    assert kwargs["enforce_eager"] is True
 
 
 def test_print_config_summary_reports_quantization_presence(capsys):
