@@ -107,6 +107,27 @@ The two remaining reduced scenarios passed after targeted root-cause fixes on
   The previous media failure was isolated to unbounded Qwen3 VL dummy image
   profiling, which attempted a `256.00 GiB` allocation before `server_ready`.
 
+An additional one-off speculative decoding sweep on 2026-04-21 found one more
+locally viable method for the reduced Qwen3.6 server shape:
+
+- `ngram_gpu` with `--speculative-config
+  {"method":"ngram_gpu","num_speculative_tokens":2,"prompt_lookup_min":2,"prompt_lookup_max":5}`
+  started the OpenAI-compatible server and returned a valid chat completion in
+  `106.56` seconds with thinking disabled.
+- CPU `ngram` with the same prompt lookup settings started the server but
+  killed `EngineCore` during generation and returned HTTP 500, both with
+  thinking enabled and disabled; no Python root-cause traceback was emitted
+  before `EngineDeadError`.
+- `draft_model` using `Qwen/Qwen3.5-0.8B` did not behave as a plain two-model
+  draft path in this vLLM build. vLLM remapped the draft checkpoint to
+  `Qwen3_5MTP`, then failed loading the draft weights with `The size of tensor
+  a (2048) must match the size of tensor b (1024) at non-singleton dimension 1`.
+- forcing `eagle` or `eagle3` with `Qwen/Qwen3.5-0.8B` is not a valid local
+  EAGLE test; both configurations failed during `EAGLEConfig` construction
+  with `AttributeError: 'Qwen3_5Config' object has no attribute 'vocab_size`.
+- `suffix` failed at config validation because `arctic-inference==0.1.1` is
+  not installed.
+
 Installed and validated at least once on the live host:
 
 - generated TheRock/ROCm split package family

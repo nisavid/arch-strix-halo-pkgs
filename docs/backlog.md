@@ -56,6 +56,14 @@
     `unknown type name 'mfma_adaptor'`
 - Follow up Qwen server coverage beyond the reduced local smokes.
   - all eight reduced Qwen3.6 server smokes now pass on the host
+  - optionally add a tracked `ngram_gpu` speculative-decoding scenario; the
+    one-off 2026-04-21 sweep passed with `prompt_lookup_min=2`,
+    `prompt_lookup_max=5`, and `num_speculative_tokens=2`
+  - keep CPU `ngram` blocked until its generation-time `EngineCore` death is
+    explained or fixed
+  - keep `draft_model` with `Qwen/Qwen3.5-0.8B` exploratory; current vLLM
+    remaps that checkpoint into the Qwen3.5 MTP loader and fails on hidden-size
+    mismatch instead of running a plain draft-model path
   - keep broader Qwen media sizes exploratory; the validated local media smoke
     bounds image dummy profiling to the tiny embedded fixture
   - keep GB200, MI355X, Qwen3.5 397B throughput, FP8 blocked paths, and full

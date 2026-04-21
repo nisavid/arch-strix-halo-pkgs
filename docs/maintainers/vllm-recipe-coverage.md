@@ -100,3 +100,11 @@ validated system-package server command used
 `disable_padded_drafter_batch` workaround. `media-embedding` passed on
 2026-04-21 after bounding image dummy profiling with structured
 `--limit-mm-per-prompt` options for the tiny local fixture.
+
+A later one-off speculative sweep found `ngram_gpu` usable on the same reduced
+Qwen3.6 server shape with `prompt_lookup_min=2`, `prompt_lookup_max=5`, and
+`num_speculative_tokens=2`. Do not promote CPU `ngram`, `draft_model` with
+`Qwen/Qwen3.5-0.8B`, forced EAGLE/EAGLE3 with a normal Qwen checkpoint, or
+`suffix` without new evidence: those paths currently fail at generation,
+draft-weight loading, EAGLE config construction, and missing Arctic Inference,
+respectively.
