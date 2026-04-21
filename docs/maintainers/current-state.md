@@ -47,6 +47,13 @@ remains a target and blocked-probe lane, not an accepted passing smoke lane,
 because the rebuilt native stack reproduces the expected Qwen3.6 FP8 probe
 failures in the revalidation ledger.
 
+The `intfloat/multilingual-e5-small` vLLM pooling embedding scenario passed on
+2026-04-21 with `HF_HOME=/var/cache/hf`, ROCm `FLEX_ATTENTION`, and
+`vllm.pooling.multilingual-e5-small.embeddings`; the tracked run completed in
+`28.677313` seconds with finite embedding vectors and the fixed related-passage
+ranking fixture. Keep tracked scenarios on model IDs plus runtime
+`--model-path` bindings rather than new committed cache snapshot paths.
+
 The Jina v3 reranker lane is a blocked vLLM pooling probe, not a passing
 rerank smoke. Keep `vllm.pooling.jina-reranker-v3.rerank` on explicit
 classification pooling (`--convert classify` / `PoolerConfig(task="classify")`)
