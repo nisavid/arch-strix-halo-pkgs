@@ -46,8 +46,8 @@ value = "embeddings_ok"
 
 [[scenario]]
 id = "vllm.pooling.jina-reranker-v3.rerank"
-summary = "vLLM pooling rerank smoke for Jina reranker v3 with ROCm FlexAttention"
-tags = ["smoke", "vllm", "pooling", "rerank", "rocm", "flex-attention"]
+summary = "Jina reranker v3 vLLM pooling probe blocked by remote-code ranking head"
+tags = ["smoke", "vllm", "pooling", "rerank", "rocm", "flex-attention", "blocked"]
 
 [scenario.given]
 engine = "vllm"
@@ -64,7 +64,7 @@ argv = [
 
 [[scenario.then.assert]]
 kind = "exit_code.equals"
-value = 0
+value = 1
 
 [[scenario.then.assert]]
 kind = "stdout.contains"
@@ -76,16 +76,24 @@ value = "attention_backend FLEX_ATTENTION"
 
 [[scenario.then.assert]]
 kind = "stdout.contains"
-value = "score_count 3"
+value = "pooling_task classify"
 
 [[scenario.then.assert]]
 kind = "stdout.contains"
-value = "scores_finite_ok"
+value = "convert classify"
 
 [[scenario.then.assert]]
 kind = "stdout.contains"
-value = "rerank_order_ok"
+value = "TransformersForSequenceClassification"
 
 [[scenario.then.assert]]
-kind = "stdout.contains"
-value = "rerank_ok"
+kind = "stderr.contains"
+value = "Following weights were not initialized from checkpoint"
+
+[[scenario.then.assert]]
+kind = "stderr.contains"
+value = "model.lm_head.weight"
+
+[[scenario.then.assert]]
+kind = "stderr.contains"
+value = "score.weight"

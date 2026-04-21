@@ -151,9 +151,18 @@ def _llm_kwargs(args: argparse.Namespace, model: str) -> dict[str, Any]:
         "enforce_eager": True,
         "attention_config": {"backend": args.attention_backend},
     }
+    if args.mode == "rerank":
+        kwargs["convert"] = "classify"
+        kwargs["pooler_config"] = {"task": "classify"}
     if args.max_num_batched_tokens is not None:
         kwargs["max_num_batched_tokens"] = args.max_num_batched_tokens
     return kwargs
+
+
+def classification_pooling_params() -> Any:
+    from vllm.pooling_params import PoolingParams
+
+    return PoolingParams(task="classify")
 
 
 def run_embeddings(llm: Any) -> None:
@@ -164,7 +173,12 @@ def run_embeddings(llm: Any) -> None:
 
 
 def run_rerank(llm: Any) -> None:
-    outputs = llm.score(RERANK_QUERY, RERANK_DOCUMENTS, use_tqdm=False)
+    outputs = llm.score(
+        RERANK_QUERY,
+        RERANK_DOCUMENTS,
+        use_tqdm=False,
+        pooling_params=classification_pooling_params(),
+    )
     scores = [score_value(output) for output in outputs]
     validate_rerank_fixture(scores)
     print("rerank_ok")
@@ -190,6 +204,9 @@ def main() -> None:
     print("gpu_memory_utilization", args.gpu_memory_utilization)
     print("max_model_len", args.max_model_len)
     print("max_num_batched_tokens", args.max_num_batched_tokens)
+    if args.mode == "rerank":
+        print("pooling_task classify")
+        print("convert classify")
 
     llm = LLM(**_llm_kwargs(args, model))
     print("llm_init_ok")

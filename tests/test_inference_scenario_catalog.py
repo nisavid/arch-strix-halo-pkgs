@@ -136,6 +136,7 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
         "vllm.pooling.multilingual-e5-small.embeddings"
     ]
     assert "rerank" in tags_by_id["vllm.pooling.jina-reranker-v3.rerank"]
+    assert "blocked" in tags_by_id["vllm.pooling.jina-reranker-v3.rerank"]
     assert "flex-attention" in tags_by_id[
         "vllm.pooling.jina-reranker-v3.rerank"
     ]
@@ -591,6 +592,7 @@ def test_vllm_pooling_scenarios_record_validation_contracts():
         "rerank",
         "rocm",
         "flex-attention",
+        "blocked",
     }
     assert rerank.definition["when"]["argv"] == [
         "--attention-backend",
@@ -600,13 +602,18 @@ def test_vllm_pooling_scenarios_record_validation_contracts():
     ]
 
     for expected in (
-        {"kind": "exit_code.equals", "value": 0},
+        {"kind": "exit_code.equals", "value": 1},
         {"kind": "stdout.contains", "value": "runner pooling"},
         {"kind": "stdout.contains", "value": "attention_backend FLEX_ATTENTION"},
-        {"kind": "stdout.contains", "value": "score_count 3"},
-        {"kind": "stdout.contains", "value": "scores_finite_ok"},
-        {"kind": "stdout.contains", "value": "rerank_order_ok"},
-        {"kind": "stdout.contains", "value": "rerank_ok"},
+        {"kind": "stdout.contains", "value": "pooling_task classify"},
+        {"kind": "stdout.contains", "value": "convert classify"},
+        {"kind": "stdout.contains", "value": "TransformersForSequenceClassification"},
+        {
+            "kind": "stderr.contains",
+            "value": "Following weights were not initialized from checkpoint",
+        },
+        {"kind": "stderr.contains", "value": "model.lm_head.weight"},
+        {"kind": "stderr.contains", "value": "score.weight"},
     ):
         assert expected in rerank.definition["then"]["assert"]
 

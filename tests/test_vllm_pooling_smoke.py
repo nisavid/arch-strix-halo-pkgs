@@ -12,8 +12,12 @@ if str(TOOLS_DIR) not in sys.path:
     sys.path.insert(0, str(TOOLS_DIR))
 
 from vllm_pooling_smoke import (
+    RERANK_DOCUMENTS,
+    RERANK_QUERY,
     embedding_vector,
+    _llm_kwargs,
     score_value,
+    run_rerank,
     validate_embedding_fixture,
     validate_rerank_fixture,
 )
@@ -43,6 +47,50 @@ def test_score_value_accepts_vllm_scoring_output_shape():
     output = SimpleNamespace(outputs=SimpleNamespace(score=0.875))
 
     assert score_value(output) == 0.875
+
+
+def test_llm_kwargs_for_rerank_selects_classification_conversion():
+    args = SimpleNamespace(
+        mode="rerank",
+        attention_backend="FLEX_ATTENTION",
+        gpu_memory_utilization=0.5,
+        max_model_len=512,
+        max_num_batched_tokens=None,
+    )
+
+    kwargs = _llm_kwargs(args, "jinaai/jina-reranker-v3")
+
+    assert kwargs["convert"] == "classify"
+    assert kwargs["pooler_config"] == {"task": "classify"}
+
+
+def test_run_rerank_scores_pairs_with_classification_pooling(monkeypatch):
+    pooling_params = object()
+    monkeypatch.setattr(
+        "vllm_pooling_smoke.classification_pooling_params",
+        lambda: pooling_params,
+    )
+    output = SimpleNamespace(outputs=SimpleNamespace(score=0.875))
+
+    class FakeLLM:
+        def __init__(self) -> None:
+            self.score_calls = []
+
+        def score(self, query, documents, **kwargs):
+            self.score_calls.append((query, documents, kwargs))
+            return [output, output, output]
+
+    llm = FakeLLM()
+
+    run_rerank(llm)
+
+    assert llm.score_calls == [
+        (
+            RERANK_QUERY,
+            RERANK_DOCUMENTS,
+            {"use_tqdm": False, "pooling_params": pooling_params},
+        )
+    ]
 
 
 def test_validate_embedding_fixture_checks_shape_finite_values_and_ranking(capsys):

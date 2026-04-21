@@ -34,6 +34,8 @@ snapshots relevant to this branch are:
   `/var/cache/hf/hub/models--Qwen--Qwen3.6-35B-A3B/snapshots/7da1103448ba36029c34ce1a9a741dfe93ee0c50`
 - `Qwen/Qwen3.6-35B-A3B-FP8` at
   `/var/cache/hf/hub/models--Qwen--Qwen3.6-35B-A3B-FP8/snapshots/61a5771f218894aaacf97551e24a25b866750fc2`
+- `jinaai/jina-reranker-v3` at
+  `/var/cache/hf/hub/models--jinaai--jina-reranker-v3/snapshots/10fb694fc21f7a710a563ff1eb977a460f3868e4`
 
 Use `Qwen/Qwen3.6-35B-A3B-FP8` as the main Qwen MoE/shared-expert target for
 this dev arc; it replaces the earlier Qwen3.5 122B-A10B testing and usage
@@ -44,6 +46,22 @@ Qwen3.5/GDN package carry is still relevant to this lane. The FP8 model
 remains a target and blocked-probe lane, not an accepted passing smoke lane,
 because the rebuilt native stack reproduces the expected Qwen3.6 FP8 probe
 failures in the revalidation ledger.
+
+The Jina v3 reranker lane is a blocked vLLM pooling probe, not a passing
+rerank smoke. Keep `vllm.pooling.jina-reranker-v3.rerank` on explicit
+classification pooling (`--convert classify` / `PoolerConfig(task="classify")`)
+so vLLM does not auto-convert the Qwen3-based checkpoint to an embedding
+model. The current upstream model shape remains incompatible with vLLM's
+linear sequence-classification conversion: the model card identifies local
+inference as Transformers remote code, and its `JinaForRanking` class uses a
+projector plus cosine scoring over query/document embed tokens. On the
+reference host with vLLM `0.19.1`, the corrected vLLM probe reaches
+`TransformersForSequenceClassification` conversion and then fails during load
+because `model.lm_head.weight` and `score.weight` are not initialized from the
+checkpoint. Do not treat this as a ROCm/FlexAttention failure, and do not
+promote the scenario to a passing vLLM smoke unless vLLM gains support for
+this remote-code ranking head or the lane switches to a vLLM-supported
+cross-encoder model.
 
 The rebuilt installed stack passed the unquantized Qwen3.6 control on
 2026-04-20 with the `/var/cache/hf` `Qwen/Qwen3.6-35B-A3B` snapshot,
