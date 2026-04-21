@@ -78,6 +78,23 @@ def build_execution_plan(
             server_log_path=server_log_path,
             env=env,
         )
+    if tool.startswith("qwen_server_smoke."):
+        mode = tool.rsplit(".", 1)[1]
+        server_log_path = scenario_run_root / "server.log"
+        return ExecutionPlan(
+            command=[
+                sys.executable,
+                str(repo_root / "tools/qwen_server_smoke.py"),
+                model,
+                "--mode",
+                mode,
+                "--server-log",
+                str(server_log_path),
+                *extra_argv,
+            ],
+            server_log_path=server_log_path,
+            env=env,
+        )
     if tool == "torchao_vllm_smoke":
         return ExecutionPlan(
             command=[

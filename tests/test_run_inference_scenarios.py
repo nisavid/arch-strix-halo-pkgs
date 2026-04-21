@@ -270,6 +270,63 @@ VLLM_ROCM_USE_AITER_MOE = "1"
     assert payload["planned"][0]["env"] == {"VLLM_ROCM_USE_AITER_MOE": "1"}
 
 
+def test_qwen_server_dry_run_includes_server_log_and_environment(tmp_path: Path):
+    scenario_dir = tmp_path / "inference" / "scenarios"
+    scenario_dir.mkdir(parents=True)
+    run_root = tmp_path / "run"
+    (scenario_dir / "vllm-qwen.toml").write_text(
+        """
+[[scenario]]
+id = "vllm.qwen3_6.35b-a3b.server.reasoning"
+summary = "Qwen server reasoning smoke"
+
+[scenario.given]
+engine = "vllm"
+model = "Qwen/Qwen3.6-35B-A3B"
+tool = "qwen_server_smoke.reasoning"
+
+[scenario.when.env]
+VLLM_ROCM_USE_AITER = "0"
+VLLM_ROCM_USE_AITER_MOE = "0"
+""",
+        encoding="utf-8",
+    )
+
+    result = run_runner(
+        "--scenario-dir",
+        str(scenario_dir),
+        "--run-root",
+        str(run_root),
+        "--dry-run",
+        "--scenario",
+        "vllm.qwen3_6.35b-a3b.server.reasoning",
+    )
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    planned = payload["planned"][0]
+    server_log_path = (
+        run_root
+        / "scenarios"
+        / "vllm.qwen3_6.35b-a3b.server.reasoning"
+        / "server.log"
+    )
+    assert planned["command"] == [
+        sys.executable,
+        str(REPO_ROOT / "tools/qwen_server_smoke.py"),
+        "Qwen/Qwen3.6-35B-A3B",
+        "--mode",
+        "reasoning",
+        "--server-log",
+        str(server_log_path),
+    ]
+    assert planned["server_log_path"] == str(server_log_path)
+    assert planned["env"] == {
+        "VLLM_ROCM_USE_AITER": "0",
+        "VLLM_ROCM_USE_AITER_MOE": "0",
+    }
+
+
 def test_runner_executes_scenario_and_writes_logs(tmp_path: Path):
     script = write_fake_command_script(tmp_path)
     scenario_dir = tmp_path / "inference" / "scenarios"

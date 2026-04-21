@@ -81,6 +81,39 @@ def test_vllm_adapter_assigns_server_log_for_basic_server_smoke(tmp_path: Path):
     )
 
 
+def test_vllm_adapter_assigns_server_log_for_qwen_server_smoke(tmp_path: Path):
+    plan = build_execution_plan(
+        scenario(
+            {
+                "id": "vllm.qwen3_6.35b-a3b.server.reasoning",
+                "given": {
+                    "engine": "vllm",
+                    "model": "Qwen/Qwen3.6-35B-A3B",
+                    "tool": "qwen_server_smoke.reasoning",
+                },
+                "when": {"env": {"VLLM_ROCM_USE_AITER_MOE": "0"}},
+            }
+        ),
+        repo_root=REPO_ROOT,
+        scenario_run_root=tmp_path,
+        model_bindings={"Qwen/Qwen3.6-35B-A3B": "/models/qwen"},
+    )
+
+    assert plan.command[:3] == [
+        sys.executable,
+        str(REPO_ROOT / "tools/qwen_server_smoke.py"),
+        "/models/qwen",
+    ]
+    assert "--mode" in plan.command
+    assert plan.command[plan.command.index("--mode") + 1] == "reasoning"
+    assert "--server-log" in plan.command
+    assert plan.command[plan.command.index("--server-log") + 1] == str(
+        tmp_path / "server.log"
+    )
+    assert plan.server_log_path == tmp_path / "server.log"
+    assert plan.env == {"VLLM_ROCM_USE_AITER_MOE": "0"}
+
+
 def test_vllm_adapter_carries_scenario_environment(tmp_path: Path):
     plan = build_execution_plan(
         scenario(
