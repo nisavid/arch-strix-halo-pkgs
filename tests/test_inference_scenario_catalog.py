@@ -71,7 +71,8 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     assert "blocked" in tags_by_id["vllm.gemma4.e2b.text.compiled"]
     assert "kernel-probe" in tags_by_id["vllm.gemma4.26b-a4b.server.moe-aiter"]
     assert "quantization-probe" in tags_by_id["vllm.gemma4.e2b.torchao.real-model"]
-    assert "blocked" in tags_by_id["vllm.gemma4.e2b.torchao.real-model"]
+    assert "exploratory" in tags_by_id["vllm.gemma4.e2b.torchao.real-model"]
+    assert "blocked" not in tags_by_id["vllm.gemma4.e2b.torchao.real-model"]
     assert "qwen3.5" in tags_by_id["vllm.qwen3_5.0_8b.text.basic"]
     assert "compiled-probe" in tags_by_id["vllm.qwen3_5.0_8b.text.compiled"]
     assert "qwen3.6" in tags_by_id[
@@ -486,6 +487,35 @@ def test_qwen3_6_unquantized_moe_compiled_control_records_validation_contract():
             "kind": "output.contains",
             "value": "Using TRITON backend for Unquantized MoE",
         },
+    ):
+        assert expected in assertions
+
+
+def test_gemma4_real_model_torchao_serialized_scenario_records_skip_contract():
+    scenarios = load_scenarios(REPO_ROOT / "inference/scenarios")
+    by_id = {scenario.id: scenario for scenario in scenarios}
+
+    scenario = by_id["vllm.gemma4.e2b.torchao.real-model"]
+
+    assert scenario.model == "google/gemma-4-E2B-it"
+    assert scenario.definition["given"]["tool"] == "torchao_vllm_smoke.real-model"
+    assert set(scenario.tags) >= {
+        "smoke",
+        "gemma4",
+        "torchao",
+        "quantization-probe",
+        "exploratory",
+    }
+    assert "blocked" not in scenario.tags
+
+    assertions = scenario.definition["then"]["assert"]
+    for expected in (
+        {"kind": "exit_code.equals", "value": 0},
+        {"kind": "stdout.contains", "value": "prepare_real_ok"},
+        {"kind": "stdout.contains", "value": "skip_quantized_modules"},
+        {"kind": "stdout.contains", "value": "quantized_patterns"},
+        {"kind": "stdout.contains", "value": "llm_init_ok"},
+        {"kind": "stdout.contains", "value": "generation_ok"},
     ):
         assert expected in assertions
 

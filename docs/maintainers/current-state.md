@@ -814,11 +814,19 @@ The following smoke checks have already passed on the reference host:
     treats that dtype as part of tensor metadata and rejects `copy_` before
     vLLM reaches model init.
   - the helper now also has a real-model path:
-    `--source-model <model-id-or-path>` quantizes with
-    `TorchAoConfig(Int8WeightOnlyConfig(version=2))`, saves the processor or
-    tokenizer files, and runs a tokenizer-backed vLLM generation pass; use
-    `--dry-run` first to inspect the chosen quantized output directory and
-    execution mode.
+    `--source-model <model-id-or-path>` loads the source in BF16, applies
+    TorchAO int8 weight-only quantization only to the Gemma 4 language model,
+    saves TorchAO safetensors plus processor or tokenizer files, and runs a
+    tokenizer-backed vLLM generation pass; use `--dry-run` first to inspect
+    the chosen quantized output directory and execution mode.
+  - keep the real-model serialized path language-only. Full-model TorchAO
+    serialization quantizes HF-managed multimodal tower weights such as
+    `vision_tower.patch_embedder.input_proj.weight`; vLLM instantiates those
+    towers as plain HF parameters, so loading an `Int8Tensor` there fails
+    during `copy_` with
+    `AttributeError: 'Tensor' object has no attribute 'tensor_data_names'`.
+    The helper now writes those multimodal weights as BF16 `Tensor` entries
+    while keeping language projection weights as TorchAO `Int8Tensor` entries.
   - the helper also supports `--online-quantization` with `--source-model`;
     that path serves the source model directly and passes the same TorchAO
     int8 weight-only config through vLLM `hf_overrides`, so it avoids writing a
@@ -896,10 +904,10 @@ The following smoke checks have already passed on the reference host:
     `using_online_source_model`, `quantization=torchao`, `enforce_eager=True`,
     `ROCM_AITER_UNIFIED_ATTN`, 10.62 GiB model-loading memory, `llm_init_ok`,
     and `generation_ok`; the serialized
-    `vllm.gemma4.e2b.torchao.real-model` scenario is now an expected blocked
-    probe and reproduced after the rebuild in `58.503875` seconds with
-    `prepare_real_ok` followed by vLLM weight loading failure:
-    `AttributeError: 'Tensor' object has no attribute 'tensor_data_names'`
+    `vllm.gemma4.e2b.torchao.real-model` scenario passed on 2026-04-21 in
+    `76.655479` seconds with `prepare_real_ok`, `skip_quantized_modules`,
+    `quantized_patterns`, `quantization=torchao`, `enforce_eager=True`,
+    `llm_init_ok`, and `generation_ok`.
   - keep TorchAO version checks metadata-only on generic vLLM startup paths so
     broken optional host TorchAO packages do not emit warning noise during
     unrelated CLI or server flows

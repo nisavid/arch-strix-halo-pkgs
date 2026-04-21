@@ -121,7 +121,8 @@
   - treat the 26B-A4B and 31B compiled text probes as compiled-capable only
     when run with fresh compile caches or after deliberate cache invalidation
   - keep the serialized `vllm.gemma4.e2b.torchao.real-model` scenario
-    exploratory until the TorchAO/vLLM metadata mismatch is fixed
+    exploratory until language-only TorchAO serialization has repeated passes
+    and an upstream path exists for fully quantized Gemma 4 multimodal towers
   - multi-image, dynamic image, audio, video, and multimodal-tool flows remain
     exploratory until each mode has its own reference-host pass; the E2B image
     server smoke now passes as the representative multimodal warmup check

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+from collections import OrderedDict
 import json
 import shutil
 import sys
@@ -9,11 +10,13 @@ from pathlib import Path
 
 import torch
 from safetensors import safe_open
+from safetensors.torch import save_file
 from torchao.core.config import config_to_dict
 from torchao.prototype.safetensors.safetensors_support import (
+    flatten_tensor_state_dict,
     unflatten_tensor_state_dict,
 )
-from torchao.quantization import Int8WeightOnlyConfig
+from torchao.quantization import FqnToConfig, Int8WeightOnlyConfig, quantize_
 from transformers import (
     AutoModelForCausalLM,
     AutoProcessor,
@@ -28,6 +31,20 @@ ROCM_PAGED_ATTENTION_WARNING = (
     "Cannot use ROCm custom paged attention kernel, falling back to Triton implementation"
 )
 WARNING_MARKERS = [TORCHAO_VERSION_WARNING, ROCM_PAGED_ATTENTION_WARNING]
+REAL_MODEL_SKIP_MODULES = [
+    "model.vision_tower",
+    "model.audio_tower",
+    "model.embed_vision",
+    "model.embed_audio",
+    "vision_tower",
+    "audio_tower",
+    "embed_vision",
+    "embed_audio",
+]
+REAL_MODEL_LANGUAGE_QUANT_PATTERNS = [
+    r"re:(model\.)?language_model\..*",
+    r"re:lm_head\..*",
+]
 
 
 def parse_args() -> argparse.Namespace:
@@ -113,6 +130,12 @@ def build_plan(args: argparse.Namespace) -> dict[str, object]:
         "gpu_memory_utilization": args.gpu_memory_utilization,
         "online_quantization": args.online_quantization,
         "execution_mode": args.execution_mode,
+        "serialized_skip_modules": REAL_MODEL_SKIP_MODULES
+        if mode == "real-model"
+        else [],
+        "serialized_quant_patterns": REAL_MODEL_LANGUAGE_QUANT_PATTERNS
+        if mode == "real-model"
+        else [],
         "warning_markers": WARNING_MARKERS,
     }
 
@@ -187,23 +210,44 @@ def prepare_real_checkpoint(source_model: str, quant_dir: Path) -> Path:
         shutil.rmtree(quant_dir)
     quant_dir.parent.mkdir(parents=True, exist_ok=True)
 
+    int8_config = Int8WeightOnlyConfig(version=2)
     quantization_config = TorchAoConfig(
-        Int8WeightOnlyConfig(version=2),
+        FqnToConfig(
+            OrderedDict(
+                (pattern, int8_config)
+                for pattern in REAL_MODEL_LANGUAGE_QUANT_PATTERNS
+            )
+        ),
+        modules_to_not_convert=REAL_MODEL_SKIP_MODULES,
         untie_embedding_weights=True,
     )
     quantized_model = AutoModelForCausalLM.from_pretrained(
         source_model,
-        quantization_config=quantization_config,
         dtype=torch.bfloat16,
         device_map="cpu",
         trust_remote_code=True,
     )
-    quantized_model.save_pretrained(quant_dir, safe_serialization=True)
+    quantize_(quantized_model.model.language_model, int8_config)
+    quantized_model.config.quantization_config = quantization_config
+    quantized_model.config.save_pretrained(quant_dir)
+    if getattr(quantized_model, "generation_config", None) is not None:
+        quantized_model.generation_config.save_pretrained(quant_dir)
+    tensors, tensor_metadata = flatten_tensor_state_dict(quantized_model.state_dict())
+    cloned_tensors = {
+        name: tensor.detach().cpu().contiguous().clone()
+        for name, tensor in tensors.items()
+    }
+    save_file(cloned_tensors, quant_dir / "model.safetensors", metadata=tensor_metadata)
     save_processor_or_tokenizer(source_model, quant_dir)
 
     print("prepare_real_ok")
     print("source_model", display_model_ref(source_model))
     print("quant_dir", str(quant_dir))
+    print("skip_quantized_modules", json.dumps(REAL_MODEL_SKIP_MODULES, sort_keys=True))
+    print(
+        "quantized_patterns",
+        json.dumps(REAL_MODEL_LANGUAGE_QUANT_PATTERNS, sort_keys=True),
+    )
     return quant_dir
 
 

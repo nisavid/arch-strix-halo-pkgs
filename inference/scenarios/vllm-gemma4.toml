@@ -559,8 +559,8 @@ value = "generation_ok"
 
 [[scenario]]
 id = "vllm.gemma4.e2b.torchao.real-model"
-summary = "Gemma 4 E2B serialized TorchAO real-model probe blocked by vLLM weight metadata mismatch"
-tags = ["smoke", "gemma4", "torchao", "quantization-probe", "blocked", "exploratory"]
+summary = "Gemma 4 E2B serialized TorchAO real-model smoke with multimodal towers kept in BF16"
+tags = ["smoke", "gemma4", "torchao", "quantization-probe", "exploratory"]
 
 [scenario.given]
 engine = "vllm"
@@ -572,15 +572,27 @@ argv = ["--max-model-len", "128", "--gpu-memory-utilization", "0.5"]
 
 [[scenario.then.assert]]
 kind = "exit_code.equals"
-value = 1
+value = 0
 
 [[scenario.then.assert]]
 kind = "stdout.contains"
 value = "prepare_real_ok"
 
 [[scenario.then.assert]]
-kind = "output.contains"
-value = "AttributeError: 'Tensor' object has no attribute 'tensor_data_names'"
+kind = "stdout.contains"
+value = "skip_quantized_modules"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "quantized_patterns"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "llm_init_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "generation_ok"
 
 [[scenario]]
 id = "vllm.gemma4.e2b.torchao.online-real-model"
