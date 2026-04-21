@@ -160,7 +160,7 @@ def test_vllm_adapter_resolves_speculative_config_model_binding_for_qwen_server_
                 "id": "vllm.speculative.eagle3.llama3_1_8b.server.basic",
                 "given": {
                     "engine": "vllm",
-                    "model": "meta-llama/Meta-Llama-3-8B-Instruct",
+                    "model": "meta-llama/Llama-3.1-8B-Instruct",
                     "tool": "qwen_server_smoke.benchmark-lite",
                     "speculative_config": {
                         "method": "eagle3",
@@ -174,7 +174,7 @@ def test_vllm_adapter_resolves_speculative_config_model_binding_for_qwen_server_
         repo_root=REPO_ROOT,
         scenario_run_root=tmp_path,
         model_bindings={
-            "meta-llama/Meta-Llama-3-8B-Instruct": "/models/llama31",
+            "meta-llama/Llama-3.1-8B-Instruct": "/models/llama31",
             "RedHatAI/Llama-3.1-8B-Instruct-speculator.eagle3": (
                 "/models/eagle3"
             ),

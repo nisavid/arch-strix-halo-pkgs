@@ -214,7 +214,7 @@ tags = ["smoke"]
 
 [scenario.given]
 engine = "vllm"
-model = "meta-llama/Meta-Llama-3-8B-Instruct"
+model = "meta-llama/Llama-3.1-8B-Instruct"
 tool = "qwen_server_smoke.benchmark-lite"
 
 [scenario.given.speculative_config]
@@ -372,7 +372,7 @@ summary = "Llama EAGLE3 speculative server smoke"
 
 [scenario.given]
 engine = "vllm"
-model = "meta-llama/Meta-Llama-3-8B-Instruct"
+model = "meta-llama/Llama-3.1-8B-Instruct"
 tool = "qwen_server_smoke.benchmark-lite"
 
 [scenario.given.speculative_config]
@@ -393,7 +393,7 @@ num_speculative_tokens = 2
         "--scenario",
         "vllm.speculative.eagle3.llama",
         "--model-path",
-        "meta-llama/Meta-Llama-3-8B-Instruct=/models/llama31",
+        "meta-llama/Llama-3.1-8B-Instruct=/models/llama31",
         "--model-path",
         "RedHatAI/Llama-3.1-8B-Instruct-speculator.eagle3=/models/eagle3",
     )
@@ -404,7 +404,7 @@ num_speculative_tokens = 2
     server_log_path = (
         run_root / "scenarios" / "vllm.speculative.eagle3.llama" / "server.log"
     )
-    assert planned["model"] == "meta-llama/Meta-Llama-3-8B-Instruct"
+    assert planned["model"] == "meta-llama/Llama-3.1-8B-Instruct"
     assert planned["speculative_model"] == (
         "RedHatAI/Llama-3.1-8B-Instruct-speculator.eagle3"
     )

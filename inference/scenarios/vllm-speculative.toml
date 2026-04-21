@@ -6,7 +6,7 @@ tags = ["vllm", "speculative-decoding", "eagle3", "llama", "server", "explorator
 
 [scenario.given]
 engine = "vllm"
-model = "meta-llama/Meta-Llama-3-8B-Instruct"
+model = "meta-llama/Llama-3.1-8B-Instruct"
 tool = "qwen_server_smoke.benchmark-lite"
 
 [scenario.given.speculative_config]

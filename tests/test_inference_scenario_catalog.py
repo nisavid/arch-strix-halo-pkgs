@@ -300,7 +300,7 @@ def test_speculative_decoding_scenarios_record_upstream_evidence():
     eagle3 = by_id["vllm.speculative.eagle3.llama3_1_8b.server.basic"]
     dflash = by_id["vllm.speculative.dflash.qwen3_8b-speculators.server.blocked"]
 
-    assert eagle3.model == "meta-llama/Meta-Llama-3-8B-Instruct"
+    assert eagle3.model == "meta-llama/Llama-3.1-8B-Instruct"
     assert eagle3.speculative_model == (
         "RedHatAI/Llama-3.1-8B-Instruct-speculator.eagle3"
     )

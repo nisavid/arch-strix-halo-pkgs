@@ -111,7 +111,7 @@ respectively.
 
 Task 3 adds tracked speculative-decoding scenarios for the documented EAGLE3
 shape and the DFlash speculators-format path. The EAGLE3 scenario uses the
-official Llama 3.1 target plus
+official verifier `meta-llama/Llama-3.1-8B-Instruct` plus
 `RedHatAI/Llama-3.1-8B-Instruct-speculator.eagle3`; do not replace that with a
 normal Qwen checkpoint and call it EAGLE coverage. The DFlash scenario stays
 blocked: the package now carries the narrow speculators config parser from
