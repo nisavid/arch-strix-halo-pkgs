@@ -92,14 +92,13 @@ The two remaining reduced scenarios passed after targeted root-cause fixes on
 2026-04-21:
 
 - `vllm.qwen3_6.35b-a3b.server.mtp` first completed in `112.647863` seconds
-  with the non-padded workaround. The root fix is now carried as
-  `python-vllm-rocm-gfx1151` `0.19.1-2`: the rebuilt package payload completed
-  the same scenario in `128.156851` seconds with `server_ready`, `mtp_ok`,
-  `--speculative-config {"method":"mtp","num_speculative_tokens":2}`, no
+  with the non-padded workaround. The root fix is now installed as
+  `python-vllm-rocm-gfx1151` `0.19.1-2`: the system-package rerun completed in
+  `119.066554` seconds with `server_ready`, `mtp_ok`, `--speculative-config
+  {"method":"mtp","num_speculative_tokens":2}`, no
   `disable_padded_drafter_batch` workaround, `Using TRITON backend for
-  Unquantized MoE`, and the padded EAGLE/MTP drafter `valid_count` typing patch.
-  The live host still reports installed `python-vllm-rocm-gfx1151 0.19.1-1`
-  until the built `0.19.1-2` package is deployed.
+  Unquantized MoE`, `Available KV cache memory: 8.26 GiB`, and the padded
+  EAGLE/MTP drafter `valid_count` typing patch.
 - `vllm.qwen3_6.35b-a3b.server.media-embedding` completed in `112.851312`
   seconds with `server_ready`, `media_embedding_ok`, `Using
   AttentionBackendEnum.TORCH_SDPA for MMEncoderAttention`, `Using TRITON backend
@@ -156,7 +155,7 @@ Current installed native package state, checked on 2026-04-20 after the full
   `python-torchvision-rocm-gfx1151 0.26.0-3`,
   `python-torchao-rocm-gfx1151 0.17.0-1`,
   `python-transformers-gfx1151 5.5.4-1`, and
-  `python-vllm-rocm-gfx1151 0.19.1-1`.
+  `python-vllm-rocm-gfx1151 0.19.1-2`.
 - `python-triton-gfx1151` package-manager metadata and Python wheel metadata
   now agree: pacman reports `3.0.0+git0ec280cf-1`, while
   `importlib.metadata.version("triton")` reports `3.0.0+git0ec280cf`.
@@ -640,7 +639,7 @@ The following smoke checks have already passed on the reference host:
     `pytest tests packages/python-vllm-rocm-gfx1151/tests -q` passed against
     the freshly populated `pkg/` tree
   - the simplified native package lane is now installed as
-    `python-vllm-rocm-gfx1151 0.19.1-1`; use the revalidation ledger before
+    `python-vllm-rocm-gfx1151 0.19.1-2`; use the revalidation ledger before
     treating earlier Gemma 4 and Qwen scenario results as accepted evidence for
     the current installed stack
   - after pkgrel `-26` was installed, the existing Gemma 4 26B-A4B

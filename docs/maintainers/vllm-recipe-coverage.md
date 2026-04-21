@@ -65,7 +65,7 @@ rendered command keeps the base shape.
 | --- | --- | --- | --- |
 | Qwen3.6 BF16 reasoning | `Qwen/Qwen3.6-35B-A3B`, `--tensor-parallel-size 8` or interactive TP2, `--max-model-len 262144`, `--reasoning-parser qwen3` | `validated` by reduced `reasoning` and `reasoning-disabled`; unquantized eager and compiled text controls remain validated | Keep the large TP/context recipe shape advisory unless the host gains matching hardware. |
 | Qwen3.6 FP8 AMD | `VLLM_ROCM_USE_AITER=1`, `Qwen/Qwen3.6-35B-A3B-FP8`, `--max-model-len 262144`, `--reasoning-parser qwen3`, `--trust-remote-code` | `validated` as blocked for non-AITER and forced-AITER FP8 MoE paths | Keep blocked probes; re-run only after a backend advertises gfx1151 FP8 MoE support. |
-| Qwen3.6 MTP/spec decoding | `--speculative-config '{"method":"mtp","num_speculative_tokens":2}'` | `validated` by reduced `mtp` through the padded drafter batch path with the local ROCm `valid_count` patch | Deploy `python-vllm-rocm-gfx1151` `0.19.1-2` before treating the installed host package as carrying this fix. |
+| Qwen3.6 MTP/spec decoding | `--speculative-config '{"method":"mtp","num_speculative_tokens":2}'` | `validated` by reduced `mtp` through the padded drafter batch path with the installed ROCm `valid_count` patch | No remaining local MTP workaround; keep only full Qwen3.5 FP8 latency shape advisory. |
 | Qwen3.6 tool calling | interactive feature selector plus Qwen parser family; Qwen3.5 guide names `--enable-auto-tool-choice --tool-call-parser qwen3_coder` | `validated` by reduced `tool` server scenario | Keep the Qwen3.5 FP8 deployment shape advisory; the local result validates parser behavior on Qwen3.6. |
 | Qwen3.6 advanced selectors | interactive `max_batched_8k` and `max_num_seqs_256` | `validated` by reduced `advanced-selectors` server scenario | Treat this as memory-fit evidence for the reduced local server shape, not the full MI-series deployment. |
 | Qwen3.5 throughput text-only | `Qwen/Qwen3.5-397B-A17B-FP8`, `-dp 8`, `--enable-expert-parallel`, `--language-model-only`, `--reasoning-parser qwen3`, `--enable-prefix-caching` | `advisory-only`; tiny Qwen3.5 smoke is validated | Keep large FP8 397B shape advisory; do not conflate it with the tiny smoke. |
@@ -92,9 +92,10 @@ The Qwen server helper now covers the reduced local scenario set with
 - `vllm.qwen3_6.35b-a3b.server.media-embedding`
 
 All eight reduced Qwen3.6 server scenarios are validated. `mtp` passed on
-2026-04-21 through the padded drafter batch path after adding the local
-`eagle_prepare_next_token_padded_kernel` `valid_count` typing patch to the
-rebuilt vLLM package payload; the validated server command used
+2026-04-21 through the padded drafter batch path after installing
+`python-vllm-rocm-gfx1151` `0.19.1-2`, which carries the local
+`eagle_prepare_next_token_padded_kernel` `valid_count` typing patch. The
+validated system-package server command used
 `--speculative-config {"method":"mtp","num_speculative_tokens":2}` with no
 `disable_padded_drafter_batch` workaround. `media-embedding` passed on
 2026-04-21 after bounding image dummy profiling with structured
