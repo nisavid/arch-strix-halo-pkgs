@@ -88,6 +88,19 @@ def build_execution_plan(
             ],
             env=env,
         )
+    if tool.startswith("vllm_pooling_smoke."):
+        mode = tool.rsplit(".", 1)[1]
+        return ExecutionPlan(
+            command=[
+                sys.executable,
+                str(repo_root / "tools/vllm_pooling_smoke.py"),
+                model,
+                "--mode",
+                mode,
+                *extra_argv,
+            ],
+            env=env,
+        )
     if tool.startswith("gemma4_server_smoke."):
         mode = tool.rsplit(".", 1)[1]
         server_log_path = scenario_run_root / "server.log"

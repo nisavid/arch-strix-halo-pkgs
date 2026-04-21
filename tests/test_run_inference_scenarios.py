@@ -323,6 +323,52 @@ tool = "qwen_server_smoke.reasoning"
     ]
 
 
+def test_dry_run_includes_resolved_pooling_smoke_command(tmp_path: Path):
+    scenario_dir = tmp_path / "inference" / "scenarios"
+    scenario_dir.mkdir(parents=True)
+    (scenario_dir / "vllm-pooling.toml").write_text(
+        """
+[[scenario]]
+id = "vllm.pooling.jina-reranker-v3.rerank"
+summary = "Jina reranker pooling smoke"
+
+[scenario.given]
+engine = "vllm"
+model = "jinaai/jina-reranker-v3"
+tool = "vllm_pooling_smoke.rerank"
+
+[scenario.when]
+argv = ["--attention-backend", "FLEX_ATTENTION", "--max-model-len", "512"]
+""",
+        encoding="utf-8",
+    )
+
+    result = run_runner(
+        "--scenario-dir",
+        str(scenario_dir),
+        "--dry-run",
+        "--scenario",
+        "vllm.pooling.jina-reranker-v3.rerank",
+        "--model-path",
+        "jinaai/jina-reranker-v3=/models/jina",
+    )
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    assert payload["selected_ids"] == ["vllm.pooling.jina-reranker-v3.rerank"]
+    assert payload["planned"][0]["command"] == [
+        sys.executable,
+        str(REPO_ROOT / "tools/vllm_pooling_smoke.py"),
+        "/models/jina",
+        "--mode",
+        "rerank",
+        "--attention-backend",
+        "FLEX_ATTENTION",
+        "--max-model-len",
+        "512",
+    ]
+
+
 def test_dry_run_includes_scenario_environment(tmp_path: Path):
     scenario_dir = tmp_path / "inference" / "scenarios"
     scenario_dir.mkdir(parents=True)

@@ -1,0 +1,91 @@
+[[scenario]]
+id = "vllm.pooling.multilingual-e5-small.embeddings"
+summary = "vLLM pooling embeddings smoke for intfloat multilingual E5 with ROCm FlexAttention"
+tags = ["smoke", "vllm", "pooling", "embeddings", "rocm", "flex-attention"]
+
+[scenario.given]
+engine = "vllm"
+model = "intfloat/multilingual-e5-small"
+tool = "vllm_pooling_smoke.embeddings"
+
+[scenario.when]
+argv = [
+  "--attention-backend",
+  "FLEX_ATTENTION",
+  "--max-model-len",
+  "256",
+]
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "runner pooling"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "attention_backend FLEX_ATTENTION"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "embedding_count 3"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "embeddings_finite_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "embedding_ranking_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "embeddings_ok"
+
+[[scenario]]
+id = "vllm.pooling.jina-reranker-v3.rerank"
+summary = "vLLM pooling rerank smoke for Jina reranker v3 with ROCm FlexAttention"
+tags = ["smoke", "vllm", "pooling", "rerank", "rocm", "flex-attention"]
+
+[scenario.given]
+engine = "vllm"
+model = "jinaai/jina-reranker-v3"
+tool = "vllm_pooling_smoke.rerank"
+
+[scenario.when]
+argv = [
+  "--attention-backend",
+  "FLEX_ATTENTION",
+  "--max-model-len",
+  "512",
+]
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "runner pooling"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "attention_backend FLEX_ATTENTION"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "score_count 3"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "scores_finite_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "rerank_order_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "rerank_ok"

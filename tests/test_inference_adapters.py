@@ -246,6 +246,45 @@ def test_vllm_adapter_builds_qwen_text_smoke_command(
     assert plan.server_log_path is None
 
 
+def test_vllm_adapter_builds_pooling_smoke_command(tmp_path: Path):
+    plan = build_execution_plan(
+        scenario(
+            {
+                "id": "vllm.pooling.multilingual-e5-small.embeddings",
+                "given": {
+                    "engine": "vllm",
+                    "model": "intfloat/multilingual-e5-small",
+                    "tool": "vllm_pooling_smoke.embeddings",
+                },
+                "when": {
+                    "argv": [
+                        "--attention-backend",
+                        "FLEX_ATTENTION",
+                        "--max-model-len",
+                        "256",
+                    ]
+                },
+            }
+        ),
+        repo_root=REPO_ROOT,
+        scenario_run_root=tmp_path,
+        model_bindings={"intfloat/multilingual-e5-small": "/models/e5"},
+    )
+
+    assert plan.command == [
+        sys.executable,
+        str(REPO_ROOT / "tools/vllm_pooling_smoke.py"),
+        "/models/e5",
+        "--mode",
+        "embeddings",
+        "--attention-backend",
+        "FLEX_ATTENTION",
+        "--max-model-len",
+        "256",
+    ]
+    assert plan.server_log_path is None
+
+
 def test_llamacpp_adapter_builds_generic_cli_command(tmp_path: Path):
     plan = build_execution_plan(
         scenario(

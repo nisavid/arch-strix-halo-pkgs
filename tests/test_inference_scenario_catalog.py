@@ -48,6 +48,8 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     assert "vllm.qwen3_6.35b-a3b.server.advanced-selectors" in ids
     assert "vllm.qwen3_6.35b-a3b.server.long-context-reduced" in ids
     assert "vllm.qwen3_6.35b-a3b.server.media-embedding" in ids
+    assert "vllm.pooling.multilingual-e5-small.embeddings" in ids
+    assert "vllm.pooling.jina-reranker-v3.rerank" in ids
     assert "vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-no-aiter-blocked" in ids
     assert "vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-aiter-blocked" in ids
     assert "llama.cpp.hip.help" in ids
@@ -107,6 +109,14 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     ]
     assert "blocked" in tags_by_id[
         "vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-aiter-blocked"
+    ]
+    assert "pooling" in tags_by_id["vllm.pooling.multilingual-e5-small.embeddings"]
+    assert "embeddings" in tags_by_id[
+        "vllm.pooling.multilingual-e5-small.embeddings"
+    ]
+    assert "rerank" in tags_by_id["vllm.pooling.jina-reranker-v3.rerank"]
+    assert "flex-attention" in tags_by_id[
+        "vllm.pooling.jina-reranker-v3.rerank"
     ]
 
 
@@ -366,6 +376,70 @@ def test_qwen3_5_compiled_probe_records_validation_contract():
         {"kind": "stdout.contains", "value": "basic_ok"},
     ):
         assert expected in assertions
+
+
+def test_vllm_pooling_scenarios_record_validation_contracts():
+    scenarios = load_scenarios(REPO_ROOT / "inference/scenarios")
+    by_id = {scenario.id: scenario for scenario in scenarios}
+
+    embeddings = by_id["vllm.pooling.multilingual-e5-small.embeddings"]
+    rerank = by_id["vllm.pooling.jina-reranker-v3.rerank"]
+
+    assert embeddings.model == "intfloat/multilingual-e5-small"
+    assert embeddings.definition["given"]["tool"] == "vllm_pooling_smoke.embeddings"
+    assert set(embeddings.tags) >= {
+        "smoke",
+        "vllm",
+        "pooling",
+        "embeddings",
+        "rocm",
+        "flex-attention",
+    }
+    assert embeddings.definition["when"]["argv"] == [
+        "--attention-backend",
+        "FLEX_ATTENTION",
+        "--max-model-len",
+        "256",
+    ]
+
+    for expected in (
+        {"kind": "exit_code.equals", "value": 0},
+        {"kind": "stdout.contains", "value": "runner pooling"},
+        {"kind": "stdout.contains", "value": "attention_backend FLEX_ATTENTION"},
+        {"kind": "stdout.contains", "value": "embedding_count 3"},
+        {"kind": "stdout.contains", "value": "embeddings_finite_ok"},
+        {"kind": "stdout.contains", "value": "embedding_ranking_ok"},
+        {"kind": "stdout.contains", "value": "embeddings_ok"},
+    ):
+        assert expected in embeddings.definition["then"]["assert"]
+
+    assert rerank.model == "jinaai/jina-reranker-v3"
+    assert rerank.definition["given"]["tool"] == "vllm_pooling_smoke.rerank"
+    assert set(rerank.tags) >= {
+        "smoke",
+        "vllm",
+        "pooling",
+        "rerank",
+        "rocm",
+        "flex-attention",
+    }
+    assert rerank.definition["when"]["argv"] == [
+        "--attention-backend",
+        "FLEX_ATTENTION",
+        "--max-model-len",
+        "512",
+    ]
+
+    for expected in (
+        {"kind": "exit_code.equals", "value": 0},
+        {"kind": "stdout.contains", "value": "runner pooling"},
+        {"kind": "stdout.contains", "value": "attention_backend FLEX_ATTENTION"},
+        {"kind": "stdout.contains", "value": "score_count 3"},
+        {"kind": "stdout.contains", "value": "scores_finite_ok"},
+        {"kind": "stdout.contains", "value": "rerank_order_ok"},
+        {"kind": "stdout.contains", "value": "rerank_ok"},
+    ):
+        assert expected in rerank.definition["then"]["assert"]
 
 
 def test_qwen3_6_unquantized_moe_control_records_validation_contract():
