@@ -770,13 +770,11 @@ The following smoke checks have already passed on the reference host:
     the small official Qwen2.5 GPTQ-Int4 checkpoint with `dtype="float16"`,
     matching vLLM's GPTQ activation dtype contract. Both are expected runnable
     probes, but not promoted smokes until they pass on the reference host.
-  - The current NVFP4 default-backend probe is expected to fail on ROCm/gfx1151
-    with `No NVFP4 GEMM backend selected`. The installed vLLM source advertises
-    `petit_nvfp4` on ROCm, but its production NVFP4 linear backend selection is
-    built around FlashInfer/CUTLASS/Marlin-style FP4 kernels rather than a
-    gfx1151 ROCm production kernel. The correctness-only
-    `VLLM_USE_NVFP4_CT_EMULATIONS=1` path is a possible future experiment, not
-    current deployment evidence.
+  - The AxionML NVFP4 probe is expected to fail on ROCm/gfx1151 with
+    `modelopt_fp4 quantization is currently not supported in rocm.` The
+    checkpoint is ModelOpt NVFP4, so the scenario uses `modelopt_fp4` and fails
+    in the local vLLM ROCm platform quantization gate before Petit NVFP4 backend
+    selection is relevant.
 - The tracked host-side follow-up helper for OpenAI-compatible server smokes is
   now `tools/gemma4_server_smoke.py`.
   - `--mode basic` launches

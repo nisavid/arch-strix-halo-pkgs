@@ -58,10 +58,9 @@
   - treat the forced-AITER path as blocked on AITER opus/gfx1151 FP8-kernel
     feature work; the current `module_quant` failure is
     `unknown type name 'mfma_adaptor'`
-  - keep the default NVFP4 probe blocked on gfx1151 production-kernel support;
-    the current expected failure is `No NVFP4 GEMM backend selected`, with
-    `VLLM_USE_NVFP4_CT_EMULATIONS=1` left as a separate correctness-only
-    experiment rather than deployment evidence
+  - keep the AxionML NVFP4 probe blocked on local ROCm vLLM ModelOpt FP4
+    support; the checkpoint is ModelOpt NVFP4, and the current expected failure
+    is `modelopt_fp4 quantization is currently not supported in rocm.`
 - Follow up Qwen server coverage beyond the reduced local smokes.
   - all eight reduced Qwen3.6 server smokes now pass on the host
   - optionally add a tracked `ngram_gpu` speculative-decoding scenario; the

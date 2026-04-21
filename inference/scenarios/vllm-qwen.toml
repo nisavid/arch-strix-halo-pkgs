@@ -604,8 +604,8 @@ value = "basic_ok"
 
 [[scenario]]
 id = "vllm.qwen3_5.2b-nvfp4.text.unsupported-rocm-gfx1151"
-summary = "Qwen3.5 2B NVFP4 default-backend probe blocked on ROCm/gfx1151 FP4 kernels"
-tags = ["qwen", "qwen3.5", "nvfp4", "kernel-probe", "quantization-probe", "exploratory", "blocked"]
+summary = "Qwen3.5 2B ModelOpt NVFP4 probe blocked by ROCm vLLM quantization support"
+tags = ["qwen", "qwen3.5", "nvfp4", "modelopt", "quantization-probe", "exploratory", "blocked"]
 source_url = "https://huggingface.co/AxionML/Qwen3.5-2B-NVFP4"
 
 [scenario.given]
@@ -616,7 +616,7 @@ tool = "qwen_text_smoke"
 [scenario.when]
 argv = [
   "--quantization",
-  "petit_nvfp4",
+  "modelopt_fp4",
   "--max-model-len",
   "128",
 ]
@@ -631,7 +631,7 @@ value = "config_quantization_config_present true"
 
 [[scenario.then.assert]]
 kind = "output.contains"
-value = "No NVFP4 GEMM backend selected"
+value = "modelopt_fp4 quantization is currently not supported in rocm."
 
 [[recipe_surface]]
 id = "vllm.qwen.recipe.qwen3_6.server.reasoning"

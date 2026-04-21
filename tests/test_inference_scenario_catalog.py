@@ -493,14 +493,14 @@ def test_quantization_lane_probes_record_root_cause_contracts():
         "qwen",
         "qwen3.5",
         "nvfp4",
-        "kernel-probe",
+        "modelopt",
         "quantization-probe",
         "blocked",
         "exploratory",
     }
     assert nvfp4.definition["when"]["argv"] == [
         "--quantization",
-        "petit_nvfp4",
+        "modelopt_fp4",
         "--max-model-len",
         "128",
     ]
@@ -512,7 +512,7 @@ def test_quantization_lane_probes_record_root_cause_contracts():
         },
         {
             "kind": "output.contains",
-            "value": "No NVFP4 GEMM backend selected",
+            "value": "modelopt_fp4 quantization is currently not supported in rocm.",
         },
     ):
         assert expected in nvfp4.definition["then"]["assert"]
