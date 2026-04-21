@@ -63,13 +63,41 @@ control at the previous default `--gpu-memory-utilization 0.75` failed before
 
 Reduced OpenAI-compatible Qwen3.6 server scenarios now exist for reasoning,
 reasoning-disabled, MTP, tool calling, benchmark-lite, advanced selectors,
-long-context-reduced, and media-embedding flows. Base reasoning is validated:
-the 2026-04-20 `vllm.qwen3_6.35b-a3b.server.reasoning` run completed in
-`132.196358` seconds with `server_ready`, `reasoning_ok`, `reasoning_parser
-qwen3`, `Using TRITON backend for Unquantized MoE`, `Available KV cache memory:
-12.31 GiB`, and a populated OpenAI-compatible `reasoning` field. The other
-seven Qwen server scenarios remain tracked and exploratory until each has its
-own host result.
+long-context-reduced, and media-embedding flows. Six reduced server scenarios
+passed on 2026-04-20:
+
+- `vllm.qwen3_6.35b-a3b.server.reasoning` completed in `132.196358` seconds
+  with `server_ready`, `reasoning_ok`, `reasoning_parser qwen3`, `Using TRITON
+  backend for Unquantized MoE`, `Available KV cache memory: 12.31 GiB`, and a
+  populated OpenAI-compatible `reasoning` field.
+- `vllm.qwen3_6.35b-a3b.server.reasoning-disabled` completed in `106.799851`
+  seconds with `server_ready`, `reasoning_disabled_ok`, and no populated
+  reasoning field.
+- `vllm.qwen3_6.35b-a3b.server.tool` completed in `115.812169` seconds with
+  `server_ready`, `--enable-auto-tool-choice`, `--tool-call-parser
+  qwen3_coder`, a `get_weather` tool call, a tool-response follow-up, and
+  `tool_ok`.
+- `vllm.qwen3_6.35b-a3b.server.benchmark-lite` completed in `96.436773`
+  seconds with `server_ready` and `benchmark_lite_ok`; this is correctness
+  coverage only, not a throughput measurement.
+- `vllm.qwen3_6.35b-a3b.server.advanced-selectors` completed in `109.937614`
+  seconds with `server_ready`, `advanced_selectors_ok`,
+  `--max-num-batched-tokens 8192`, `--max-num-seqs 256`, and `Available KV
+  cache memory: 9.91 GiB`.
+- `vllm.qwen3_6.35b-a3b.server.long-context-reduced` completed in
+  `112.418584` seconds with `server_ready` and `long_context_reduced_ok`; the
+  full 1,010,000-token YaRN shape remains advisory-only.
+
+Two reduced Qwen server scenarios remain tracked with concrete blockers:
+
+- `vllm.qwen3_6.35b-a3b.server.mtp` reached `server_ready` on 2026-04-20, then
+  the first chat request returned HTTP 500 after EngineCore hit a Triton
+  speculative-decoding compile assertion in `vllm/v1/spec_decode/eagle.py`:
+  `Mismatched type for valid_count between then block (uint32) and else block
+  (int1)`.
+- `vllm.qwen3_6.35b-a3b.server.media-embedding` failed before `server_ready`
+  on 2026-04-20 while Qwen3 VL multimodal warmup used TORCH_SDPA and attempted
+  a `256.00 GiB` allocation during dummy image profiling.
 
 Installed and validated at least once on the live host:
 
@@ -80,6 +108,11 @@ Installed and validated at least once on the live host:
 - Triton and AOTriton
 - PyTorch, TorchVision, AITER, and vLLM
 - `vllm.qwen3_6.35b-a3b.server.reasoning`
+- `vllm.qwen3_6.35b-a3b.server.reasoning-disabled`
+- `vllm.qwen3_6.35b-a3b.server.tool`
+- `vllm.qwen3_6.35b-a3b.server.benchmark-lite`
+- `vllm.qwen3_6.35b-a3b.server.advanced-selectors`
+- `vllm.qwen3_6.35b-a3b.server.long-context-reduced`
 - `llama.cpp` HIP and Vulkan backends
 - Lemonade server/app/meta packages
 

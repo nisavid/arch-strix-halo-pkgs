@@ -63,21 +63,21 @@ rendered command keeps the base shape.
 
 | Surface | Recipe flags or request shape | Current coverage | Planned action |
 | --- | --- | --- | --- |
-| Qwen3.6 BF16 reasoning | `Qwen/Qwen3.6-35B-A3B`, `--tensor-parallel-size 8` or interactive TP2, `--max-model-len 262144`, `--reasoning-parser qwen3` | `validated` by reduced `reasoning`; `reasoning-disabled` remains tracked; unquantized eager and compiled text controls remain validated | Run the remaining Qwen server modes one at a time. |
+| Qwen3.6 BF16 reasoning | `Qwen/Qwen3.6-35B-A3B`, `--tensor-parallel-size 8` or interactive TP2, `--max-model-len 262144`, `--reasoning-parser qwen3` | `validated` by reduced `reasoning` and `reasoning-disabled`; unquantized eager and compiled text controls remain validated | Keep the large TP/context recipe shape advisory unless the host gains matching hardware. |
 | Qwen3.6 FP8 AMD | `VLLM_ROCM_USE_AITER=1`, `Qwen/Qwen3.6-35B-A3B-FP8`, `--max-model-len 262144`, `--reasoning-parser qwen3`, `--trust-remote-code` | `validated` as blocked for non-AITER and forced-AITER FP8 MoE paths | Keep blocked probes; re-run only after a backend advertises gfx1151 FP8 MoE support. |
-| Qwen3.6 MTP/spec decoding | `--speculative-config '{"method":"mtp","num_speculative_tokens":2}'` | `tracked` by reduced `mtp` server scenario | Run only after base server reasoning passes; keep the KV-cache capacity note with the result. |
-| Qwen3.6 tool calling | interactive feature selector plus Qwen parser family; Qwen3.5 guide names `--enable-auto-tool-choice --tool-call-parser qwen3_coder` | `tracked` by reduced `tool` server scenario | Run after base reasoning passes and record whether `qwen3_coder` emits a tool call plus follow-up completion. |
-| Qwen3.6 advanced selectors | interactive `max_batched_8k` and `max_num_seqs_256` | `tracked` by reduced `advanced-selectors` server scenario | Keep this exploratory so memory-fit failures do not obscure basic correctness. |
+| Qwen3.6 MTP/spec decoding | `--speculative-config '{"method":"mtp","num_speculative_tokens":2}'` | `tracked`; reduced `mtp` reaches `server_ready` but fails on first request | Track the Triton speculative-decoding compile assertion in `vllm/v1/spec_decode/eagle.py`. |
+| Qwen3.6 tool calling | interactive feature selector plus Qwen parser family; Qwen3.5 guide names `--enable-auto-tool-choice --tool-call-parser qwen3_coder` | `validated` by reduced `tool` server scenario | Keep the Qwen3.5 FP8 deployment shape advisory; the local result validates parser behavior on Qwen3.6. |
+| Qwen3.6 advanced selectors | interactive `max_batched_8k` and `max_num_seqs_256` | `validated` by reduced `advanced-selectors` server scenario | Treat this as memory-fit evidence for the reduced local server shape, not the full MI-series deployment. |
 | Qwen3.5 throughput text-only | `Qwen/Qwen3.5-397B-A17B-FP8`, `-dp 8`, `--enable-expert-parallel`, `--language-model-only`, `--reasoning-parser qwen3`, `--enable-prefix-caching` | `advisory-only`; tiny Qwen3.5 smoke is validated | Keep large FP8 397B shape advisory; do not conflate it with the tiny smoke. |
-| Qwen3.5 throughput multimodal | `--mm-encoder-tp-mode data`, `--mm-processor-cache-type shm`, expert parallel, prefix caching | `advisory-only` for the 397B FP8 recipe shape | Reuse the Qwen3.6 local model and generated fixtures for reduced multimodal validation where the architecture permits; keep only the 397B/DP8 recipe shape advisory. |
-| Qwen3.5 latency MTP | `--speculative-config '{"method":"mtp","num_speculative_tokens":1}'`; guide notes AMD MTP-1 is under development | `advisory-only` | Keep advisory until reduced MTP behavior is validated on Qwen3.6 or a local Qwen3.5-family model. |
-| Qwen3.5 tool calling | `--enable-auto-tool-choice --tool-call-parser qwen3_coder` | `advisory-only` | Share the future Qwen tool helper with Qwen3.6 if model compatibility allows. |
-| Qwen3.5 benchmark client | `vllm bench serve --backend openai-chat --endpoint /v1/chat/completions --random-input-len 2048 --random-output-len 512 --num-prompts 1000 --request-rate 20` | `tracked` by reduced `benchmark-lite` server scenario, not full benchmark coverage | Use the smoke for server correctness only; keep throughput measurement as a separate benchmark task. |
-| Qwen3.5 OpenAI multimodal client | `image_url` chat content, `max_tokens 2048` | `tracked` by reduced `media-embedding` server scenario | Use only local embedded media fixtures; do not depend on remote media. |
-| Qwen ultra-long context | `VLLM_ALLOW_LONG_MAX_MODEL_LEN=1`, YaRN `--hf-overrides`, `--max-model-len 1010000` | `advisory-only` for full YaRN shape; reduced long-context smoke is tracked separately | Treat the full 1,010,000-token shape as an explicit stress lane after base server behavior passes. |
-| Qwen reasoning disablement | `--reasoning-parser qwen3` with `--default-chat-template-kwargs '{"enable_thinking": false}'` | `tracked` by reduced `reasoning-disabled` server scenario | Run after base reasoning passes and check that the response does not include reasoning output. |
+| Qwen3.5 throughput multimodal | `--mm-encoder-tp-mode data`, `--mm-processor-cache-type shm`, expert parallel, prefix caching | `advisory-only` for the 397B FP8 recipe shape; reduced media probe is blocked | Rework the reduced media probe to avoid Qwen3 VL dummy-profile OOM before deriving local multimodal coverage. |
+| Qwen3.5 latency MTP | `--speculative-config '{"method":"mtp","num_speculative_tokens":1}'`; guide notes AMD MTP-1 is under development | `advisory-only`; reduced Qwen3.6 MTP currently fails | Keep advisory until speculative decoding passes on a reduced local Qwen lane. |
+| Qwen3.5 tool calling | `--enable-auto-tool-choice --tool-call-parser qwen3_coder` | `validated` by reduced Qwen3.6 parser scenario; full Qwen3.5 FP8 deployment shape remains advisory | Re-run only if parser behavior changes or a local Qwen3.5-family target is added. |
+| Qwen3.5 benchmark client | `vllm bench serve --backend openai-chat --endpoint /v1/chat/completions --random-input-len 2048 --random-output-len 512 --num-prompts 1000 --request-rate 20` | `tracked` by passing reduced `benchmark-lite` server scenario, not full benchmark coverage | Use the smoke for server correctness only; keep throughput measurement as a separate benchmark task. |
+| Qwen3.5 OpenAI multimodal client | `image_url` chat content, `max_tokens 2048` | `tracked`; reduced `media-embedding` fails before `server_ready` | Use only local embedded media fixtures and reduce the warmup profile enough to fit. |
+| Qwen ultra-long context | `VLLM_ALLOW_LONG_MAX_MODEL_LEN=1`, YaRN `--hf-overrides`, `--max-model-len 1010000` | `advisory-only` for full YaRN shape; reduced long-context smoke is validated separately | Treat the full 1,010,000-token shape as an explicit stress lane after reduced server behavior passes. |
+| Qwen reasoning disablement | `--reasoning-parser qwen3` with `--default-chat-template-kwargs '{"enable_thinking": false}'` | `validated` by reduced `reasoning-disabled` server scenario | No new reduced smoke needed unless chat-template behavior changes upstream. |
 | Qwen prefix/Mamba/CUDAGraph caveat | prefix caching experimental for Mamba align; reduce `--max-cudagraph-capture-size` when capture size exceeds Mamba cache size | `planned` | Add to classification criteria for Qwen compiled failures; create a focused probe only if the failure reproduces locally. |
-| Qwen media embedding tuning | `--mm-processor-kwargs '{"videos_kwargs":{"size":{"longest_edge":469762048,"shortest_edge":4096}}}'` | `tracked` by reduced `media-embedding` server scenario | Keep exploratory until a reference-host server run passes. |
+| Qwen media embedding tuning | `--mm-processor-kwargs '{"videos_kwargs":{"size":{"longest_edge":469762048,"shortest_edge":4096}}}'` | `tracked`; reduced `media-embedding` fails during Qwen3 VL multimodal warmup | Rework the reduced media shape before promoting local multimodal recipe coverage. |
 
 The Qwen server helper now covers the reduced local scenario set with
 `python -m vllm.entrypoints.openai.api_server`:
@@ -91,9 +91,10 @@ The Qwen server helper now covers the reduced local scenario set with
 - `vllm.qwen3_6.35b-a3b.server.long-context-reduced`
 - `vllm.qwen3_6.35b-a3b.server.media-embedding`
 
-Base reasoning is validated: the 2026-04-20
-`vllm.qwen3_6.35b-a3b.server.reasoning` run completed in `132.196358` seconds
-with `server_ready`, `reasoning_ok`, `reasoning_parser qwen3`, and `Using TRITON
-backend for Unquantized MoE`. The other seven server scenarios remain
-exploratory until each reaches `server_ready` and passes its mode-specific
-marker on the host.
+Six reduced Qwen3.6 server scenarios are validated on the 2026-04-20 host:
+`reasoning`, `reasoning-disabled`, `tool`, `benchmark-lite`,
+`advanced-selectors`, and `long-context-reduced`. `mtp` remains tracked because
+it reaches `server_ready` but the first chat request kills EngineCore with a
+Triton speculative-decoding compile assertion. `media-embedding` remains
+tracked because server startup fails during Qwen3 VL multimodal warmup with a
+`256.00 GiB` allocation attempt.

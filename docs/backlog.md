@@ -54,14 +54,15 @@
   - treat the forced-AITER path as blocked on AITER opus/gfx1151 FP8-kernel
     feature work; the current `module_quant` failure is
     `unknown type name 'mfma_adaptor'`
-- Validate the tracked Qwen3.6 server recipe scenarios on the reference host.
-  - base `vllm.qwen3_6.35b-a3b.server.reasoning` passed on 2026-04-20 with
-    `server_ready` and `reasoning_ok`
-  - run `reasoning-disabled`, `mtp`, `tool`, `benchmark-lite`,
-    `advanced-selectors`, `long-context-reduced`, and `media-embedding` one at
-    a time
-  - promote only passing reference-host scenarios to `validated`; keep unrun or
-    blocked Qwen server surfaces `tracked`, `planned`, or `advisory-only`
+- Follow up the remaining blocked Qwen3.6 server recipe scenarios.
+  - `reasoning`, `reasoning-disabled`, `tool`, `benchmark-lite`,
+    `advanced-selectors`, and `long-context-reduced` passed on 2026-04-20
+  - `mtp` reaches `server_ready`, then fails the first chat request with a
+    Triton speculative-decoding compile assertion in
+    `vllm/v1/spec_decode/eagle.py`
+  - `media-embedding` fails before `server_ready` during Qwen3 VL multimodal
+    warmup with a `256.00 GiB` allocation attempt
+  - keep blocked Qwen server surfaces `tracked`, `planned`, or `advisory-only`
   - keep GB200, MI355X, Qwen3.5 397B throughput, FP8 blocked paths, and full
     ultra-long-context recipe shapes advisory until local gfx1151 evidence
     justifies a narrower executable probe
