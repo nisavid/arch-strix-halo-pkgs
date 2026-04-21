@@ -22,6 +22,8 @@ def _scenario_metadata(scenario: Scenario) -> dict[str, object]:
     }
     if scenario.draft_model is not None:
         metadata["draft_model"] = scenario.draft_model
+    if scenario.speculative_model is not None:
+        metadata["speculative_model"] = scenario.speculative_model
     return metadata
 
 

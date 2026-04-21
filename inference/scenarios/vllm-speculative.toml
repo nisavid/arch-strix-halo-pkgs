@@ -1,0 +1,76 @@
+[[scenario]]
+id = "vllm.speculative.eagle3.llama3_1_8b.server.basic"
+summary = "Llama 3.1 8B server smoke with the official EAGLE3 speculator shape"
+source_url = "https://docs.vllm.ai/en/latest/features/speculative_decoding/eagle/"
+tags = ["vllm", "speculative-decoding", "eagle3", "llama", "server", "exploratory"]
+
+[scenario.given]
+engine = "vllm"
+model = "meta-llama/Meta-Llama-3-8B-Instruct"
+tool = "qwen_server_smoke.benchmark-lite"
+
+[scenario.given.speculative_config]
+method = "eagle3"
+model = "RedHatAI/Llama-3.1-8B-Instruct-speculator.eagle3"
+draft_tensor_parallel_size = 2
+num_speculative_tokens = 2
+
+[scenario.when]
+argv = ["--max-model-len", "1024", "--max-num-batched-tokens", "32"]
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "server_ready"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "benchmark_lite_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "\"method\":\"eagle3\""
+
+[[scenario]]
+id = "vllm.speculative.dflash.qwen3_8b-speculators.server.blocked"
+summary = "DFlash speculators-format Qwen3 server probe blocked on local vLLM DFlash runtime support"
+source_url = "https://github.com/vllm-project/vllm/pull/38300"
+tags = [
+  "vllm",
+  "speculative-decoding",
+  "dflash",
+  "qwen",
+  "qwen3",
+  "server",
+  "blocked",
+  "exploratory",
+]
+
+[scenario.given]
+engine = "vllm"
+model = "nm-testing/dflash-qwen3-8b-speculators"
+speculative_model = "nm-testing/dflash-qwen3-8b-speculators"
+tool = "qwen_server_smoke.benchmark-lite"
+
+[scenario.when]
+argv = [
+  "--execution-mode",
+  "compiled",
+  "--max-model-len",
+  "4096",
+  "--max-num-seqs",
+  "128",
+  "--gpu-memory-utilization",
+  "0.85",
+]
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 1
+
+[[scenario.then.assert]]
+kind = "output.contains"
+value = "DFlashDraftModel"

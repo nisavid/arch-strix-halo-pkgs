@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 import sys
 from typing import Any
@@ -39,6 +40,27 @@ def _draft_model_argv(
     return ["--draft-model", draft_model]
 
 
+def _speculative_config_argv(
+    definition: dict[str, Any],
+    *,
+    model_bindings: dict[str, str],
+) -> list[str]:
+    given = definition["given"]
+    when = definition.get("when") or {}
+    raw_config = given.get("speculative_config") or when.get("speculative_config")
+    if raw_config is None:
+        return []
+    config = dict(raw_config)
+    speculative_model = config.get("model")
+    if speculative_model is not None:
+        speculative_model_id = str(speculative_model)
+        config["model"] = model_bindings.get(speculative_model_id, speculative_model_id)
+    return [
+        "--speculative-config-json",
+        json.dumps(config, separators=(",", ":"), sort_keys=True),
+    ]
+
+
 def _extra_argv(definition: dict[str, Any]) -> list[str]:
     when = definition.get("when") or {}
     return [str(value) for value in when.get("argv", [])]
@@ -62,6 +84,10 @@ def build_execution_plan(
     tool = str(definition["given"]["tool"])
     model = _resolved_model(definition, model_bindings=model_bindings)
     draft_model_argv = _draft_model_argv(
+        definition,
+        model_bindings=model_bindings,
+    )
+    speculative_config_argv = _speculative_config_argv(
         definition,
         model_bindings=model_bindings,
     )
@@ -114,6 +140,7 @@ def build_execution_plan(
                 "--server-log",
                 str(server_log_path),
                 *draft_model_argv,
+                *speculative_config_argv,
                 *extra_argv,
             ],
             server_log_path=server_log_path,
@@ -132,6 +159,7 @@ def build_execution_plan(
                 "--server-log",
                 str(server_log_path),
                 *draft_model_argv,
+                *speculative_config_argv,
                 *extra_argv,
             ],
             server_log_path=server_log_path,

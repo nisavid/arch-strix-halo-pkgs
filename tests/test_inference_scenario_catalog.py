@@ -48,6 +48,8 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     assert "vllm.qwen3_6.35b-a3b.server.advanced-selectors" in ids
     assert "vllm.qwen3_6.35b-a3b.server.long-context-reduced" in ids
     assert "vllm.qwen3_6.35b-a3b.server.media-embedding" in ids
+    assert "vllm.speculative.eagle3.llama3_1_8b.server.basic" in ids
+    assert "vllm.speculative.dflash.qwen3_8b-speculators.server.blocked" in ids
     assert "vllm.pooling.multilingual-e5-small.embeddings" in ids
     assert "vllm.pooling.jina-reranker-v3.rerank" in ids
     assert "vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-no-aiter-blocked" in ids
@@ -103,6 +105,15 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     ]
     assert "multimodal" in tags_by_id[
         "vllm.qwen3_6.35b-a3b.server.media-embedding"
+    ]
+    assert "eagle3" in tags_by_id[
+        "vllm.speculative.eagle3.llama3_1_8b.server.basic"
+    ]
+    assert "dflash" in tags_by_id[
+        "vllm.speculative.dflash.qwen3_8b-speculators.server.blocked"
+    ]
+    assert "blocked" in tags_by_id[
+        "vllm.speculative.dflash.qwen3_8b-speculators.server.blocked"
     ]
     assert "moe" in tags_by_id[
         "vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-aiter-blocked"
@@ -280,6 +291,57 @@ def test_qwen_server_scenarios_record_reduced_local_contract():
             },
         ):
             assert expected in assertions
+
+
+def test_speculative_decoding_scenarios_record_upstream_evidence():
+    scenarios = load_scenarios(REPO_ROOT / "inference/scenarios")
+    by_id = {scenario.id: scenario for scenario in scenarios}
+
+    eagle3 = by_id["vllm.speculative.eagle3.llama3_1_8b.server.basic"]
+    dflash = by_id["vllm.speculative.dflash.qwen3_8b-speculators.server.blocked"]
+
+    assert eagle3.model == "meta-llama/Meta-Llama-3-8B-Instruct"
+    assert eagle3.speculative_model == (
+        "RedHatAI/Llama-3.1-8B-Instruct-speculator.eagle3"
+    )
+    assert set(eagle3.tags) >= {
+        "vllm",
+        "speculative-decoding",
+        "eagle3",
+        "server",
+        "exploratory",
+    }
+    assert eagle3.definition["given"]["tool"] == "qwen_server_smoke.benchmark-lite"
+    assert eagle3.definition["given"]["speculative_config"] == {
+        "method": "eagle3",
+        "model": "RedHatAI/Llama-3.1-8B-Instruct-speculator.eagle3",
+        "draft_tensor_parallel_size": 2,
+        "num_speculative_tokens": 2,
+    }
+    assert eagle3.definition["source_url"] == (
+        "https://docs.vllm.ai/en/latest/features/speculative_decoding/eagle/"
+    )
+
+    assert dflash.model == "nm-testing/dflash-qwen3-8b-speculators"
+    assert dflash.speculative_model == "nm-testing/dflash-qwen3-8b-speculators"
+    assert set(dflash.tags) >= {
+        "vllm",
+        "speculative-decoding",
+        "dflash",
+        "qwen",
+        "qwen3",
+        "server",
+        "blocked",
+        "exploratory",
+    }
+    assert dflash.definition["source_url"] == (
+        "https://github.com/vllm-project/vllm/pull/38300"
+    )
+    for expected in (
+        {"kind": "exit_code.equals", "value": 1},
+        {"kind": "output.contains", "value": "DFlashDraftModel"},
+    ):
+        assert expected in dflash.definition["then"]["assert"]
 
 
 def test_gemma4_e2b_compiled_probe_records_current_blocker():

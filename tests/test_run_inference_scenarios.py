@@ -202,6 +202,43 @@ tool = "qwen_server_smoke.reasoning"
     assert payload["selected_ids"] == ["vllm.qwen.server.draft-model"]
 
 
+def test_model_selector_matches_speculative_config_model(tmp_path: Path):
+    scenario_dir = tmp_path / "inference" / "scenarios"
+    scenario_dir.mkdir(parents=True)
+    (scenario_dir / "vllm.toml").write_text(
+        """
+[[scenario]]
+id = "vllm.speculative.eagle3.llama"
+summary = "Llama EAGLE3 speculative server smoke"
+tags = ["smoke"]
+
+[scenario.given]
+engine = "vllm"
+model = "meta-llama/Meta-Llama-3-8B-Instruct"
+tool = "qwen_server_smoke.benchmark-lite"
+
+[scenario.given.speculative_config]
+method = "eagle3"
+model = "RedHatAI/Llama-3.1-8B-Instruct-speculator.eagle3"
+draft_tensor_parallel_size = 2
+num_speculative_tokens = 2
+""",
+        encoding="utf-8",
+    )
+
+    result = run_runner(
+        "--scenario-dir",
+        str(scenario_dir),
+        "--dry-run",
+        "--model",
+        "RedHatAI/Llama-3.1-8B-Instruct-speculator.eagle3",
+    )
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    assert payload["selected_ids"] == ["vllm.speculative.eagle3.llama"]
+
+
 def write_fake_command_script(tmp_path: Path) -> Path:
     script = tmp_path / "fake_command.py"
     script.write_text(
@@ -320,6 +357,70 @@ tool = "qwen_server_smoke.reasoning"
         str(server_log_path),
         "--draft-model",
         "/models/qwen35",
+    ]
+
+
+def test_dry_run_includes_resolved_speculative_config_model_binding(tmp_path: Path):
+    scenario_dir = tmp_path / "inference" / "scenarios"
+    scenario_dir.mkdir(parents=True)
+    run_root = tmp_path / "run"
+    (scenario_dir / "vllm.toml").write_text(
+        """
+[[scenario]]
+id = "vllm.speculative.eagle3.llama"
+summary = "Llama EAGLE3 speculative server smoke"
+
+[scenario.given]
+engine = "vllm"
+model = "meta-llama/Meta-Llama-3-8B-Instruct"
+tool = "qwen_server_smoke.benchmark-lite"
+
+[scenario.given.speculative_config]
+method = "eagle3"
+model = "RedHatAI/Llama-3.1-8B-Instruct-speculator.eagle3"
+draft_tensor_parallel_size = 2
+num_speculative_tokens = 2
+""",
+        encoding="utf-8",
+    )
+
+    result = run_runner(
+        "--scenario-dir",
+        str(scenario_dir),
+        "--run-root",
+        str(run_root),
+        "--dry-run",
+        "--scenario",
+        "vllm.speculative.eagle3.llama",
+        "--model-path",
+        "meta-llama/Meta-Llama-3-8B-Instruct=/models/llama31",
+        "--model-path",
+        "RedHatAI/Llama-3.1-8B-Instruct-speculator.eagle3=/models/eagle3",
+    )
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    planned = payload["planned"][0]
+    server_log_path = (
+        run_root / "scenarios" / "vllm.speculative.eagle3.llama" / "server.log"
+    )
+    assert planned["model"] == "meta-llama/Meta-Llama-3-8B-Instruct"
+    assert planned["speculative_model"] == (
+        "RedHatAI/Llama-3.1-8B-Instruct-speculator.eagle3"
+    )
+    assert planned["command"] == [
+        sys.executable,
+        str(REPO_ROOT / "tools/qwen_server_smoke.py"),
+        "/models/llama31",
+        "--mode",
+        "benchmark-lite",
+        "--server-log",
+        str(server_log_path),
+        "--speculative-config-json",
+        (
+            '{"draft_tensor_parallel_size":2,"method":"eagle3",'
+            '"model":"/models/eagle3","num_speculative_tokens":2}'
+        ),
     ]
 
 

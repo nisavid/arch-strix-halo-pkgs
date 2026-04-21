@@ -13,7 +13,7 @@
 - Recorded reference packages: `aur/python-vllm`
 - Authoritative reference package: `aur/python-vllm`
 - Advisory reference packages: `none`
-- Applied source patch files/actions: `39`
+- Applied source patch files/actions: `40`
 
 ## Recipe notes
 
@@ -52,6 +52,7 @@ recorded in .aiter-status file ("enabled" or "disabled").
 - Carries a merged CLI/runtime-light startup patch so plain `vllm --help` stays off the benchmark latency tree, OpenAI chat-utils tool-call path, Transformers-backed `arg_utils` helpers, and heavy `serve`/`launch`/`run-batch` runtime imports unless the user actually selected those flows.
 - Carries a ROCm top-k/top-p sampler guard so large-vocabulary Qwen3.5-family runs use vLLM's existing PyTorch filtering fallback instead of the Triton filter path that faulted the GPU on gfx1151.
 - Carries a padded EAGLE/MTP drafter-count typing patch so Qwen speculative decoding can compile the padded drafter batch Triton kernel on ROCm.
+- Carries the narrow DFlash speculators config parser from vLLM PR #38300 so speculators-format DFlash configs resolve to `DFlashDraftModel`; the package still intentionally stops before the upstream-scale DFlash runtime/model backport.
 - The reference host now uses the local python-torchao-rocm-gfx1151 replacement lane, so the old external python-torchao-rocm failure is historical rather than current state. Generic vLLM startup should still stay TorchAO-clean on non-TorchAO code paths, and the tracked helpers for actual --quantization torchao support remain tools/torchao_vllm_smoke.py plus the Gemma 4 TorchAO scenarios.
 - `tools/torchao_vllm_smoke.py` now covers the tiny no-download checkpoint, a serialized real-model probe, and a real-model online quantization path. After the 2026-04-20 self-hosted rebuild, `vllm.gemma4.e2b.torchao.online-real-model` passed with `quantization=torchao`, `enforce_eager=True`, `ROCM_AITER_UNIFIED_ATTN`, and 10.62 GiB model-loading memory. The serialized real-model scenario is an expected blocked probe: it writes processor files correctly, then fails in TorchAO/vLLM weight loading with `AttributeError: 'Tensor' object has no attribute 'tensor_data_names'`.
 - makepkg -e reuses src/, so build() intentionally reapplies the carried source patches before wheel generation instead of assuming prepare() already ran in the current tree.
@@ -69,6 +70,7 @@ recorded in .aiter-status file ("enabled" or "disabled").
 - Carries repo-owned Gemma 4 validation lanes for Strix Halo because the host-proven path is narrower than upstream defaults: AITER unified attention, TRITON unquantized MoE, text-only multimodal limits, and per-checkpoint eager/compiled decisions.
 - Carries a repo-owned Qwen3.5 hybrid/GDN patch lane for the parts of Blackcat Informatics' advisory recipe that are still missing from the maintained vLLM 0.19.1 package source.
 - Carries a repo-owned Qwen speculative-decoding patch lane for the padded EAGLE/MTP drafter batch Triton kernel on ROCm.
+- Carries the narrow upstream DFlash speculators config parser from vLLM PR #38300, while the DFlash runtime/model backport remains outside this package carry.
 
 ## Update Notes
 
@@ -99,6 +101,7 @@ recorded in .aiter-status file ("enabled" or "disabled").
 - Keep the merged CLI/runtime-light startup patch intact unless upstream makes the generic startup path import-clean on its own. That carry now keeps plain `vllm --help` off the benchmark tree, OpenAI chat-utils path, Transformers-backed `arg_utils` helpers, and the heavy shared runtime command imports.
 - Keep the ROCm top-k/top-p sampler patch unless upstream or the local Triton lane proves `apply_top_k_top_p_triton` safe for large Qwen-family vocabularies on gfx1151. The 2026-04-19 standalone repro faulted the GPU with logits shaped `(32, 248320)`, top-k enabled, and top-p `0.9`, while vLLM's existing PyTorch fallback completed on the same tensor.
 - Keep the padded EAGLE/MTP drafter count patch unless upstream makes `eagle_prepare_next_token_padded_kernel` keep `valid_count` in one scalar dtype across Triton branches. The concrete ROCm/Triton failure is `Mismatched type for valid_count between then block (uint32) and else block (int1)` when the Qwen MTP server path uses the padded drafter batch.
+- Keep the DFlash speculators config parser patch only as a narrow parser backport. Do not promote DFlash scenarios as runnable until the package also has upstream `qwen3_dflash.py`, the DFlash proposer/runtime support, and registry integration.
 - Treat `Qwen/Qwen3.6-35B-A3B-FP8` as a blocked FP8 MoE probe, not a passing smoke, until a ROCm/gfx1151 FP8 MoE backend exists. With AITER disabled, vLLM reports `No FP8 MoE backend supports the deployment configuration`; the Triton and batched Triton FP8 MoE gates only advertise ROCm FP8 support for gfx9, not gfx1151.
 - Keep patch application idempotent across reused src/ trees. The concrete host failure while cutting pkgrel=14 was a file-adding patch aborting in `prepare()` after a previous failed build left a partially patched source tree behind.
 - Keep the inherited makepkg compile flags when layering Strix tuning flags. Overwriting CFLAGS/CXXFLAGS drops Arch's build-path prefix maps and can leak $srcdir paths into the shipped ROCm extension modules.

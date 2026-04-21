@@ -51,6 +51,12 @@ patches and expected-failure findings that were quarantined after the
     forcing `valid_count` to `int32` in both Triton branches.
   - Covers the Qwen MTP server failure where the padded drafter batch path
     rejected the branch merge with mismatched `uint32` and `int1` scalar types.
+- [DFlash speculators config parsing](../packages/python-vllm-rocm-gfx1151/0013-speculators-dflash-config-parsing.patch)
+  - Backports the narrow `speculators` parser addition from vLLM PR #38300 so
+    DFlash speculators-format configs map to `DFlashDraftModel`.
+  - This is not full DFlash runtime support; upstream `qwen3_dflash.py`, DFlash
+    proposer/runtime code, and registry integration remain separate follow-up
+    work before the blocked DFlash scenario can be promoted.
 - Runtime-sensitive vLLM carries that needed post-rebuild confirmation are
   recorded in
   [the rebuild revalidation ledger](maintainers/rebuild-revalidation.md).

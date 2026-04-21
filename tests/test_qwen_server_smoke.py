@@ -94,6 +94,54 @@ def test_qwen_server_smoke_draft_model_uses_draft_speculative_config():
     )
 
 
+def test_qwen_server_smoke_explicit_speculative_config_json():
+    plan = dry_run(
+        "benchmark-lite",
+        "--speculative-config-json",
+        json.dumps(
+            {
+                "method": "eagle3",
+                "model": "RedHatAI/Llama-3.1-8B-Instruct-speculator.eagle3",
+                "draft_tensor_parallel_size": 2,
+                "num_speculative_tokens": 2,
+            }
+        ),
+    )
+    command = plan["server_command"]
+
+    assert plan["draft_model"] is None
+    assert plan["speculative_config"] == {
+        "draft_tensor_parallel_size": 2,
+        "method": "eagle3",
+        "model": "RedHatAI/Llama-3.1-8B-Instruct-speculator.eagle3",
+        "num_speculative_tokens": 2,
+    }
+    assert command_value(command, "--speculative-config") == (
+        '{"draft_tensor_parallel_size":2,"method":"eagle3",'
+        '"model":"RedHatAI/Llama-3.1-8B-Instruct-speculator.eagle3",'
+        '"num_speculative_tokens":2}'
+    )
+
+
+def test_qwen_server_smoke_rejects_ambiguous_speculative_config_sources():
+    result = run_helper(
+        "Qwen/Qwen3.6-35B-A3B",
+        "--mode",
+        "reasoning",
+        "--draft-model",
+        "Qwen/Qwen3.5-0.8B",
+        "--speculative-config-json",
+        '{"method":"ngram_gpu","num_speculative_tokens":2}',
+        "--dry-run",
+    )
+
+    assert result.returncode != 0
+    assert "--speculative-config-json cannot be combined with --draft-model" in (
+        result.stderr
+    )
+    assert not result.stdout
+
+
 def test_qwen_server_smoke_mtp_rejects_draft_model():
     result = run_helper(
         "Qwen/Qwen3.6-35B-A3B",

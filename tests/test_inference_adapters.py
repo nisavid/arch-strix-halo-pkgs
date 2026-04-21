@@ -151,6 +151,53 @@ def test_vllm_adapter_resolves_draft_model_binding_for_qwen_server_smoke(
     assert plan.server_log_path == tmp_path / "server.log"
 
 
+def test_vllm_adapter_resolves_speculative_config_model_binding_for_qwen_server_smoke(
+    tmp_path: Path,
+):
+    plan = build_execution_plan(
+        scenario(
+            {
+                "id": "vllm.speculative.eagle3.llama3_1_8b.server.basic",
+                "given": {
+                    "engine": "vllm",
+                    "model": "meta-llama/Meta-Llama-3-8B-Instruct",
+                    "tool": "qwen_server_smoke.benchmark-lite",
+                    "speculative_config": {
+                        "method": "eagle3",
+                        "model": "RedHatAI/Llama-3.1-8B-Instruct-speculator.eagle3",
+                        "draft_tensor_parallel_size": 2,
+                        "num_speculative_tokens": 2,
+                    },
+                },
+            }
+        ),
+        repo_root=REPO_ROOT,
+        scenario_run_root=tmp_path,
+        model_bindings={
+            "meta-llama/Meta-Llama-3-8B-Instruct": "/models/llama31",
+            "RedHatAI/Llama-3.1-8B-Instruct-speculator.eagle3": (
+                "/models/eagle3"
+            ),
+        },
+    )
+
+    assert plan.command == [
+        sys.executable,
+        str(REPO_ROOT / "tools/qwen_server_smoke.py"),
+        "/models/llama31",
+        "--mode",
+        "benchmark-lite",
+        "--server-log",
+        str(tmp_path / "server.log"),
+        "--speculative-config-json",
+        (
+            '{"draft_tensor_parallel_size":2,"method":"eagle3",'
+            '"model":"/models/eagle3","num_speculative_tokens":2}'
+        ),
+    ]
+    assert plan.server_log_path == tmp_path / "server.log"
+
+
 def test_vllm_adapter_carries_scenario_environment(tmp_path: Path):
     plan = build_execution_plan(
         scenario(

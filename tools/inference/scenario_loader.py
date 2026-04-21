@@ -12,9 +12,19 @@ class Scenario:
     engine: str
     model: str
     draft_model: str | None
+    speculative_model: str | None
     tags: tuple[str, ...]
     definition: dict
     source_path: Path
+
+
+def _speculative_model(given: dict) -> str | None:
+    if "speculative_model" in given:
+        return str(given["speculative_model"])
+    speculative_config = given.get("speculative_config")
+    if isinstance(speculative_config, dict) and "model" in speculative_config:
+        return str(speculative_config["model"])
+    return None
 
 
 def load_scenarios(scenario_dir: Path) -> list[Scenario]:
@@ -37,6 +47,7 @@ def load_scenarios(scenario_dir: Path) -> list[Scenario]:
                     draft_model=(
                         str(given["draft_model"]) if "draft_model" in given else None
                     ),
+                    speculative_model=_speculative_model(given),
                     tags=tuple(str(tag) for tag in raw.get("tags", [])),
                     definition=raw,
                     source_path=path,
@@ -62,6 +73,8 @@ def select_scenarios(
         scenario_models = {scenario.model}
         if scenario.draft_model is not None:
             scenario_models.add(scenario.draft_model)
+        if scenario.speculative_model is not None:
+            scenario_models.add(scenario.speculative_model)
         if models and not (scenario_models & models):
             continue
         if scenario_ids and scenario.id not in scenario_ids:

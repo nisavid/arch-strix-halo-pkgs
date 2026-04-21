@@ -108,3 +108,13 @@ Qwen3.6 server shape with `prompt_lookup_min=2`, `prompt_lookup_max=5`, and
 `suffix` without new evidence: those paths currently fail at generation,
 draft-weight loading, EAGLE config construction, and missing Arctic Inference,
 respectively.
+
+Task 3 adds tracked speculative-decoding scenarios for the documented EAGLE3
+shape and the DFlash speculators-format path. The EAGLE3 scenario uses the
+official Llama 3.1 target plus
+`RedHatAI/Llama-3.1-8B-Instruct-speculator.eagle3`; do not replace that with a
+normal Qwen checkpoint and call it EAGLE coverage. The DFlash scenario stays
+blocked: the package now carries the narrow speculators config parser from
+vLLM PR #38300, but the stable `v0.19.1` source package still lacks the
+upstream DFlash model/proposer/runtime pieces needed to run
+`nm-testing/dflash-qwen3-8b-speculators`.

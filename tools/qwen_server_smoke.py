@@ -58,6 +58,13 @@ def parse_args() -> argparse.Namespace:
         "--draft-model",
         help="optional draft model path or Hugging Face id for draft-model speculative decoding",
     )
+    parser.add_argument(
+        "--speculative-config-json",
+        help=(
+            "JSON object passed to vLLM as --speculative-config; use for "
+            "explicit EAGLE3, DFlash, ngram_gpu, or other speculative configs"
+        ),
+    )
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--api-key", default="EMPTY")
@@ -120,6 +127,14 @@ def parse_args() -> argparse.Namespace:
         help="print the derived server command and request payload as JSON without launching the server",
     )
     args = parser.parse_args()
+    args.speculative_config_map = parse_json_object(
+        args.speculative_config_json,
+        option_name="--speculative-config-json",
+    )
+    if args.speculative_config_map is not None and args.draft_model:
+        parser.error("--speculative-config-json cannot be combined with --draft-model")
+    if args.speculative_config_map is not None and args.mode == "mtp":
+        parser.error("--speculative-config-json cannot be used with --mode mtp")
     if args.mode == "mtp" and args.draft_model:
         parser.error(
             "--draft-model cannot be used with --mode mtp; use --mode reasoning "
@@ -245,7 +260,14 @@ def build_server_command(args: argparse.Namespace) -> list[str]:
                 compact_json({"enable_thinking": False}),
             ]
         )
-    if args.draft_model:
+    if args.speculative_config_map is not None:
+        command.extend(
+            [
+                "--speculative-config",
+                compact_json(args.speculative_config_map),
+            ]
+        )
+    elif args.draft_model:
         command.extend(
             [
                 "--speculative-config",
@@ -436,6 +458,7 @@ def build_plan(args: argparse.Namespace) -> dict[str, object]:
         "mode": args.mode,
         "model": args.model,
         "draft_model": args.draft_model,
+        "speculative_config": args.speculative_config_map,
         "served_model_name": served_model_name(args),
         "execution_mode": args.execution_mode,
         "server_command": build_server_command(args),
