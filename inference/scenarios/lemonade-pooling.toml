@@ -1,11 +1,11 @@
 [[scenario]]
-id = "lemonade.pooling.ms-marco-minilm-l6-v2.embeddings"
-summary = "Lemonade embeddings endpoint probe blocked by the downloaded MiniLM GGUF pooling metadata"
-tags = ["smoke", "lemonade", "pooling", "embeddings", "llamacpp", "blocked"]
+id = "lemonade.pooling.zembed-1-q4-k-m.embeddings"
+summary = "Lemonade embeddings endpoint smoke for downloaded zembed-1 Q4_K_M GGUF"
+tags = ["smoke", "lemonade", "pooling", "embeddings", "llamacpp", "zembed"]
 
 [scenario.given]
 engine = "lemonade"
-model = "user.ms-marco-MiniLM-L6-v2-F16-GGUF"
+model = "user.zembed-1-Q4_K_M-GGUF-Q4_K_M"
 tool = "lemonade_pooling_smoke.embeddings"
 
 [scenario.when]
@@ -16,7 +16,7 @@ argv = [
 
 [[scenario.then.assert]]
 kind = "exit_code.equals"
-value = 1
+value = 0
 
 [[scenario.then.assert]]
 kind = "stdout.contains"
@@ -24,15 +24,15 @@ value = "mode embeddings"
 
 [[scenario.then.assert]]
 kind = "stdout.contains"
-value = "\"type\": \"backend_error\""
+value = "embedding_count 3"
 
 [[scenario.then.assert]]
 kind = "stdout.contains"
-value = "Pooling type 'none' is not OAI compatible"
+value = "embeddings_finite_ok"
 
 [[scenario.then.assert]]
-kind = "stderr.contains"
-value = "lemonade_error: llama-server request failed"
+kind = "stdout.contains"
+value = "embeddings_ok"
 
 [[scenario]]
 id = "lemonade.pooling.bge-reranker-v2-m3.rerank"

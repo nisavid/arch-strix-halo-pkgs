@@ -63,7 +63,7 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     assert "llama.cpp.vulkan.help" in ids
     assert "lemonade.cli.help" in ids
     assert "lemonade.server.help" in ids
-    assert "lemonade.pooling.ms-marco-minilm-l6-v2.embeddings" in ids
+    assert "lemonade.pooling.zembed-1-q4-k-m.embeddings" in ids
     assert "lemonade.pooling.bge-reranker-v2-m3.rerank" in ids
     assert engines == {"vllm", "llama.cpp", "lemonade", "transformers"}
     assert "smoke" in tags_by_id["vllm.gemma4.26b-a4b.text.basic"]

@@ -70,17 +70,17 @@ promote the scenario to a passing vLLM smoke unless vLLM gains support for
 this remote-code ranking head or the lane switches to a vLLM-supported
 cross-encoder model.
 
-Lemonade has a conventional reranking endpoint for registered `llamacpp`
-reranker models, and the tracked `lemonade.pooling.bge-reranker-v2-m3.rerank`
-scenario now covers it. On 2026-04-21 the downloaded
-`user.bge-reranker-v2-m3-Q8_0-GGUF` registration passed through
+Lemonade has conventional embedding and reranking endpoints for registered
+`llamacpp` models, and the tracked Lemonade pooling scenarios now cover both.
+On 2026-04-21 the downloaded `user.zembed-1-Q4_K_M-GGUF-Q4_K_M` registration
+passed through `/api/v1/embeddings`, returned three finite 2560-dimensional
+vectors, and completed `lemonade.pooling.zembed-1-q4-k-m.embeddings`. The
+downloaded `user.bge-reranker-v2-m3-Q8_0-GGUF` registration passed through
 `/api/v1/reranking`, returned three finite scores, and produced the fixed
-Paris, Berlin, unrelated ordering. The only downloaded Lemonade embedding
-registration checked in this pass,
-`user.ms-marco-MiniLM-L6-v2-F16-GGUF`, is tracked as a blocked endpoint probe:
-llama-server returns `Pooling type 'none' is not OAI compatible`, so the
-scenario keeps that exact error instead of pretending the endpoint has a
-passing downloaded embedding model.
+Paris, Berlin, unrelated ordering in
+`lemonade.pooling.bge-reranker-v2-m3.rerank`. A prior MiniLM GGUF embedding
+probe returned `Pooling type 'none' is not OAI compatible`; keep zembed-1 as
+the current passing Lemonade embedding endpoint smoke.
 
 The ZeroEntropy target models are covered by Hugging Face model-ID scenarios
 rather than the Lemonade GGUF registrations. `transformers.zeroentropy.zembed-1.embeddings`
