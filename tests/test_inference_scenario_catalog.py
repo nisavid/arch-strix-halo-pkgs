@@ -40,6 +40,14 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     assert (
         "vllm.qwen3_6.35b-a3b.text.unquantized-moe-no-aiter-compiled" in ids
     )
+    assert "vllm.qwen3_6.35b-a3b.server.reasoning" in ids
+    assert "vllm.qwen3_6.35b-a3b.server.reasoning-disabled" in ids
+    assert "vllm.qwen3_6.35b-a3b.server.mtp" in ids
+    assert "vllm.qwen3_6.35b-a3b.server.tool" in ids
+    assert "vllm.qwen3_6.35b-a3b.server.benchmark-lite" in ids
+    assert "vllm.qwen3_6.35b-a3b.server.advanced-selectors" in ids
+    assert "vllm.qwen3_6.35b-a3b.server.long-context-reduced" in ids
+    assert "vllm.qwen3_6.35b-a3b.server.media-embedding" in ids
     assert "vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-no-aiter-blocked" in ids
     assert "vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-aiter-blocked" in ids
     assert "llama.cpp.hip.help" in ids
@@ -74,6 +82,24 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     ]
     assert "compiled-probe" in tags_by_id[
         "vllm.qwen3_6.35b-a3b.text.unquantized-moe-no-aiter-compiled"
+    ]
+    assert "server" in tags_by_id["vllm.qwen3_6.35b-a3b.server.reasoning"]
+    assert "exploratory" in tags_by_id[
+        "vllm.qwen3_6.35b-a3b.server.reasoning"
+    ]
+    assert "mtp" in tags_by_id["vllm.qwen3_6.35b-a3b.server.mtp"]
+    assert "tool" in tags_by_id["vllm.qwen3_6.35b-a3b.server.tool"]
+    assert "benchmark-lite" in tags_by_id[
+        "vllm.qwen3_6.35b-a3b.server.benchmark-lite"
+    ]
+    assert "advanced-selectors" in tags_by_id[
+        "vllm.qwen3_6.35b-a3b.server.advanced-selectors"
+    ]
+    assert "long-context" in tags_by_id[
+        "vllm.qwen3_6.35b-a3b.server.long-context-reduced"
+    ]
+    assert "multimodal" in tags_by_id[
+        "vllm.qwen3_6.35b-a3b.server.media-embedding"
     ]
     assert "moe" in tags_by_id[
         "vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-aiter-blocked"
@@ -124,7 +150,7 @@ def test_gemma4_aiter_flash_attention_probe_records_current_blocker():
         assert expected in assertions
 
 
-def test_qwen_recipe_surfaces_are_advisory_not_runnable_scenarios():
+def test_qwen_recipe_surfaces_link_runnable_local_scenarios():
     scenario_path = REPO_ROOT / "inference/scenarios/vllm-qwen.toml"
     document = tomllib.loads(scenario_path.read_text(encoding="utf-8"))
     surfaces = {surface["id"]: surface for surface in document["recipe_surface"]}
@@ -143,12 +169,35 @@ def test_qwen_recipe_surfaces_are_advisory_not_runnable_scenarios():
         "vllm.qwen.recipe.qwen3_5.client.openai_multimodal",
         "vllm.qwen.recipe.qwen3_5.server.long_context_yarn",
     }
+    allowed_statuses = {"validated", "tracked", "planned", "advisory-only"}
 
     assert expected_ids <= set(surfaces)
-    assert not expected_ids & runnable_ids
+    assert all(surface["status"] in allowed_statuses for surface in surfaces.values())
+    assert not set(surfaces) & runnable_ids
     assert surfaces["vllm.qwen.recipe.qwen3_6.server.reasoning"]["status"] == (
-        "adapt-before-running"
+        "tracked"
     )
+    assert surfaces["vllm.qwen.recipe.qwen3_6.server.reasoning"][
+        "local_scenarios"
+    ] == [
+        "vllm.qwen3_6.35b-a3b.server.reasoning",
+        "vllm.qwen3_6.35b-a3b.server.reasoning-disabled",
+    ]
+    assert surfaces["vllm.qwen.recipe.qwen3_6.server.mtp"]["local_scenarios"] == [
+        "vllm.qwen3_6.35b-a3b.server.mtp"
+    ]
+    assert surfaces["vllm.qwen.recipe.qwen3_5.server.tool_calling"][
+        "local_scenarios"
+    ] == ["vllm.qwen3_6.35b-a3b.server.tool"]
+    assert surfaces["vllm.qwen.recipe.qwen3_5.benchmark.openai_chat"][
+        "local_scenarios"
+    ] == ["vllm.qwen3_6.35b-a3b.server.benchmark-lite"]
+    assert surfaces["vllm.qwen.recipe.qwen3_5.client.openai_multimodal"][
+        "local_scenarios"
+    ] == ["vllm.qwen3_6.35b-a3b.server.media-embedding"]
+    assert surfaces["vllm.qwen.recipe.qwen3_5.server.long_context_yarn"][
+        "local_scenarios"
+    ] == ["vllm.qwen3_6.35b-a3b.server.long-context-reduced"]
     assert surfaces["vllm.qwen.recipe.qwen3_5.server.throughput_text"][
         "status"
     ] == "advisory-only"
@@ -167,6 +216,46 @@ def test_qwen_recipe_surfaces_are_advisory_not_runnable_scenarios():
     assert "VLLM_ALLOW_LONG_MAX_MODEL_LEN=1" in surfaces[
         "vllm.qwen.recipe.qwen3_5.server.long_context_yarn"
     ]["required_flags"]
+
+
+def test_qwen_server_scenarios_record_reduced_local_contract():
+    scenarios = load_scenarios(REPO_ROOT / "inference/scenarios")
+    by_id = {scenario.id: scenario for scenario in scenarios}
+
+    expected_modes = {
+        "vllm.qwen3_6.35b-a3b.server.reasoning": "reasoning_ok",
+        "vllm.qwen3_6.35b-a3b.server.reasoning-disabled": "reasoning_disabled_ok",
+        "vllm.qwen3_6.35b-a3b.server.mtp": "mtp_ok",
+        "vllm.qwen3_6.35b-a3b.server.tool": "tool_ok",
+        "vllm.qwen3_6.35b-a3b.server.benchmark-lite": "benchmark_lite_ok",
+        "vllm.qwen3_6.35b-a3b.server.advanced-selectors": "advanced_selectors_ok",
+        "vllm.qwen3_6.35b-a3b.server.long-context-reduced": (
+            "long_context_reduced_ok"
+        ),
+        "vllm.qwen3_6.35b-a3b.server.media-embedding": "media_embedding_ok",
+    }
+
+    for scenario_id, ok_marker in expected_modes.items():
+        scenario = by_id[scenario_id]
+        mode = scenario_id.rsplit(".", 1)[1]
+        assert scenario.model == "Qwen/Qwen3.6-35B-A3B"
+        assert set(scenario.tags) >= {"smoke", "qwen", "qwen3.6", "server", "exploratory"}
+        assert scenario.definition["given"]["tool"] == f"qwen_server_smoke.{mode}"
+        assert scenario.definition["when"]["env"] == {
+            "VLLM_ROCM_USE_AITER": "0",
+            "VLLM_ROCM_USE_AITER_MOE": "0",
+        }
+        assertions = scenario.definition["then"]["assert"]
+        for expected in (
+            {"kind": "exit_code.equals", "value": 0},
+            {"kind": "stdout.contains", "value": "server_ready"},
+            {"kind": "stdout.contains", "value": ok_marker},
+            {
+                "kind": "server_log.contains",
+                "value": "Using TRITON backend for Unquantized MoE",
+            },
+        ):
+            assert expected in assertions
 
 
 def test_gemma4_e2b_compiled_probe_records_current_blocker():

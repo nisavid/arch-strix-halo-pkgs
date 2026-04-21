@@ -205,6 +205,246 @@ kind = "output.contains"
 value = "Using TRITON backend for Unquantized MoE"
 
 [[scenario]]
+id = "vllm.qwen3_6.35b-a3b.server.reasoning"
+summary = "Qwen3.6 35B-A3B reduced OpenAI server reasoning smoke"
+tags = ["smoke", "qwen", "qwen3.6", "moe", "unquantized", "server", "reasoning", "exploratory"]
+
+[scenario.given]
+engine = "vllm"
+model = "Qwen/Qwen3.6-35B-A3B"
+tool = "qwen_server_smoke.reasoning"
+
+[scenario.when.env]
+VLLM_ROCM_USE_AITER = "0"
+VLLM_ROCM_USE_AITER_MOE = "0"
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "server_ready"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "reasoning_ok"
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Using TRITON backend for Unquantized MoE"
+
+[[scenario]]
+id = "vllm.qwen3_6.35b-a3b.server.reasoning-disabled"
+summary = "Qwen3.6 35B-A3B reduced server reasoning-disabled smoke"
+tags = ["smoke", "qwen", "qwen3.6", "moe", "unquantized", "server", "reasoning", "exploratory"]
+
+[scenario.given]
+engine = "vllm"
+model = "Qwen/Qwen3.6-35B-A3B"
+tool = "qwen_server_smoke.reasoning-disabled"
+
+[scenario.when.env]
+VLLM_ROCM_USE_AITER = "0"
+VLLM_ROCM_USE_AITER_MOE = "0"
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "server_ready"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "reasoning_disabled_ok"
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Using TRITON backend for Unquantized MoE"
+
+[[scenario]]
+id = "vllm.qwen3_6.35b-a3b.server.mtp"
+summary = "Qwen3.6 35B-A3B reduced server MTP speculative-decoding smoke"
+tags = ["smoke", "qwen", "qwen3.6", "moe", "unquantized", "server", "mtp", "exploratory"]
+
+[scenario.given]
+engine = "vllm"
+model = "Qwen/Qwen3.6-35B-A3B"
+tool = "qwen_server_smoke.mtp"
+
+[scenario.when.env]
+VLLM_ROCM_USE_AITER = "0"
+VLLM_ROCM_USE_AITER_MOE = "0"
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "server_ready"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "mtp_ok"
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Using TRITON backend for Unquantized MoE"
+
+[[scenario]]
+id = "vllm.qwen3_6.35b-a3b.server.tool"
+summary = "Qwen3.6 35B-A3B reduced server tool-calling parser smoke"
+tags = ["smoke", "qwen", "qwen3.6", "moe", "unquantized", "server", "tool", "exploratory"]
+
+[scenario.given]
+engine = "vllm"
+model = "Qwen/Qwen3.6-35B-A3B"
+tool = "qwen_server_smoke.tool"
+
+[scenario.when.env]
+VLLM_ROCM_USE_AITER = "0"
+VLLM_ROCM_USE_AITER_MOE = "0"
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "server_ready"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "tool_ok"
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Using TRITON backend for Unquantized MoE"
+
+[[scenario]]
+id = "vllm.qwen3_6.35b-a3b.server.benchmark-lite"
+summary = "Qwen3.6 35B-A3B reduced server benchmark-lite smoke"
+tags = ["smoke", "qwen", "qwen3.6", "moe", "unquantized", "server", "benchmark-lite", "exploratory"]
+
+[scenario.given]
+engine = "vllm"
+model = "Qwen/Qwen3.6-35B-A3B"
+tool = "qwen_server_smoke.benchmark-lite"
+
+[scenario.when.env]
+VLLM_ROCM_USE_AITER = "0"
+VLLM_ROCM_USE_AITER_MOE = "0"
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "server_ready"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "benchmark_lite_ok"
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Using TRITON backend for Unquantized MoE"
+
+[[scenario]]
+id = "vllm.qwen3_6.35b-a3b.server.advanced-selectors"
+summary = "Qwen3.6 35B-A3B reduced server smoke for advanced recipe selectors"
+tags = ["smoke", "qwen", "qwen3.6", "moe", "unquantized", "server", "advanced-selectors", "exploratory"]
+
+[scenario.given]
+engine = "vllm"
+model = "Qwen/Qwen3.6-35B-A3B"
+tool = "qwen_server_smoke.advanced-selectors"
+
+[scenario.when.env]
+VLLM_ROCM_USE_AITER = "0"
+VLLM_ROCM_USE_AITER_MOE = "0"
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "server_ready"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "advanced_selectors_ok"
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Using TRITON backend for Unquantized MoE"
+
+[[scenario]]
+id = "vllm.qwen3_6.35b-a3b.server.long-context-reduced"
+summary = "Qwen3.6 35B-A3B reduced server long-context recipe smoke"
+tags = ["smoke", "qwen", "qwen3.6", "moe", "unquantized", "server", "long-context", "exploratory"]
+
+[scenario.given]
+engine = "vllm"
+model = "Qwen/Qwen3.6-35B-A3B"
+tool = "qwen_server_smoke.long-context-reduced"
+
+[scenario.when.env]
+VLLM_ROCM_USE_AITER = "0"
+VLLM_ROCM_USE_AITER_MOE = "0"
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "server_ready"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "long_context_reduced_ok"
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Using TRITON backend for Unquantized MoE"
+
+[[scenario]]
+id = "vllm.qwen3_6.35b-a3b.server.media-embedding"
+summary = "Qwen3.6 35B-A3B reduced server media processor-kwargs smoke"
+tags = ["smoke", "qwen", "qwen3.6", "moe", "unquantized", "server", "multimodal", "media-embedding", "exploratory"]
+
+[scenario.given]
+engine = "vllm"
+model = "Qwen/Qwen3.6-35B-A3B"
+tool = "qwen_server_smoke.media-embedding"
+
+[scenario.when.env]
+VLLM_ROCM_USE_AITER = "0"
+VLLM_ROCM_USE_AITER_MOE = "0"
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "server_ready"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "media_embedding_ok"
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Using TRITON backend for Unquantized MoE"
+
+[[scenario]]
 id = "vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-no-aiter-blocked"
 summary = "Qwen3.6 35B-A3B FP8 MoE backend-selection probe with AITER disabled"
 tags = ["qwen", "qwen3.6", "moe", "fp8", "kernel-probe", "exploratory", "blocked"]
@@ -279,8 +519,12 @@ id = "vllm.qwen.recipe.qwen3_6.server.reasoning"
 summary = "Official Qwen3.6 serving shape with qwen3 reasoning parser"
 source_url = "https://docs.vllm.ai/projects/recipes/en/latest/Qwen/Qwen3.5.html#running-qwen3-6"
 model = "Qwen/Qwen3.6-35B-A3B"
-status = "adapt-before-running"
+status = "tracked"
 local_target = "Qwen/Qwen3.6-35B-A3B"
+local_scenarios = [
+  "vllm.qwen3_6.35b-a3b.server.reasoning",
+  "vllm.qwen3_6.35b-a3b.server.reasoning-disabled",
+]
 required_flags = [
   "--reasoning-parser qwen3",
   "--max-model-len 262144",
@@ -296,8 +540,9 @@ id = "vllm.qwen.recipe.qwen3_6.server.mtp"
 summary = "Official Qwen3.6 serving shape with MTP speculative decoding"
 source_url = "https://docs.vllm.ai/projects/recipes/en/latest/Qwen/Qwen3.5.html#running-qwen3-6"
 model = "Qwen/Qwen3.6-35B-A3B"
-status = "adapt-before-running"
+status = "tracked"
 local_target = "Qwen/Qwen3.6-35B-A3B"
+local_scenarios = ["vllm.qwen3_6.35b-a3b.server.mtp"]
 required_flags = [
   "--reasoning-parser qwen3",
   "--speculative-config {\"method\":\"mtp\",\"num_speculative_tokens\":2}",
@@ -330,6 +575,7 @@ summary = "Official Qwen3.5 FP8 throughput multimodal serving shape"
 source_url = "https://docs.vllm.ai/projects/recipes/en/latest/Qwen/Qwen3.5.html#multimodal"
 model = "Qwen/Qwen3.5-397B-A17B-FP8"
 status = "advisory-only"
+local_scenarios = ["vllm.qwen3_6.35b-a3b.server.media-embedding"]
 required_flags = [
   "-dp 8",
   "--enable-expert-parallel",
@@ -364,7 +610,9 @@ id = "vllm.qwen.recipe.qwen3_5.server.tool_calling"
 summary = "Official Qwen3.5 tool-calling parser addition"
 source_url = "https://docs.vllm.ai/projects/recipes/en/latest/Qwen/Qwen3.5.html#multimodal"
 model = "Qwen/Qwen3.5-397B-A17B-FP8"
-status = "advisory-only"
+status = "tracked"
+local_target = "Qwen/Qwen3.6-35B-A3B"
+local_scenarios = ["vllm.qwen3_6.35b-a3b.server.tool"]
 required_flags = [
   "--enable-auto-tool-choice",
   "--tool-call-parser qwen3_coder",
@@ -378,7 +626,9 @@ id = "vllm.qwen.recipe.qwen3_5.benchmark.openai_chat"
 summary = "Official Qwen3.5 OpenAI-compatible benchmark-client shape"
 source_url = "https://docs.vllm.ai/projects/recipes/en/latest/Qwen/Qwen3.5.html#benchmarking"
 model = "Qwen/Qwen3.5-397B-A17B"
-status = "advisory-only"
+status = "tracked"
+local_target = "Qwen/Qwen3.6-35B-A3B"
+local_scenarios = ["vllm.qwen3_6.35b-a3b.server.benchmark-lite"]
 required_flags = [
   "vllm bench serve",
   "--backend openai-chat",
@@ -398,7 +648,9 @@ id = "vllm.qwen.recipe.qwen3_5.client.openai_multimodal"
 summary = "Official Qwen3.5 OpenAI-compatible multimodal client shape"
 source_url = "https://docs.vllm.ai/projects/recipes/en/latest/Qwen/Qwen3.5.html#consume-the-openai-api-compatible-server"
 model = "Qwen/Qwen3.5-397B-A17B"
-status = "advisory-only"
+status = "tracked"
+local_target = "Qwen/Qwen3.6-35B-A3B"
+local_scenarios = ["vllm.qwen3_6.35b-a3b.server.media-embedding"]
 required_flags = [
   "OpenAI chat.completions.create",
   "image_url content",
@@ -414,6 +666,8 @@ summary = "Official Qwen3.5 ultra-long-context YaRN override shape"
 source_url = "https://docs.vllm.ai/projects/recipes/en/latest/Qwen/Qwen3.5.html#processing-ultra-long-texts"
 model = "Qwen/Qwen3.5-397B-A17B"
 status = "advisory-only"
+local_target = "Qwen/Qwen3.6-35B-A3B"
+local_scenarios = ["vllm.qwen3_6.35b-a3b.server.long-context-reduced"]
 required_flags = [
   "VLLM_ALLOW_LONG_MAX_MODEL_LEN=1",
   "--hf-overrides rope_parameters.yarn",
@@ -421,4 +675,78 @@ required_flags = [
 ]
 caveats = [
   "The recipe context length is not a gfx1151 smoke-test shape; keep local tests reduced unless deliberately stress-testing long context.",
+]
+
+[[recipe_surface]]
+id = "vllm.qwen.recipe.qwen3_6.server.advanced_selectors"
+summary = "Interactive Qwen3.6 advanced selectors for max batched tokens and max sequences"
+source_url = "https://recipes.vllm.ai/Qwen/Qwen3.6-35B-A3B?hardware=mi355x&features=tool_calling%2Creasoning%2Cspec_decoding&advanced=max_batched_8k%2Cmax_num_seqs_256"
+model = "Qwen/Qwen3.6-35B-A3B"
+status = "tracked"
+local_target = "Qwen/Qwen3.6-35B-A3B"
+local_scenarios = ["vllm.qwen3_6.35b-a3b.server.advanced-selectors"]
+required_flags = [
+  "--max-num-batched-tokens 8192",
+  "--max-num-seqs 256",
+]
+caveats = [
+  "This is a memory-fit probe and remains exploratory until the reference host records a passing server run.",
+]
+
+[[recipe_surface]]
+id = "vllm.qwen.recipe.qwen3_6.deployment.gb200"
+summary = "Qwen3.6 GB200 deployment recipe shape"
+source_url = "https://recipes.vllm.ai/Qwen/Qwen3.6-35B-A3B?hardware=gb200"
+model = "Qwen/Qwen3.6-35B-A3B"
+status = "advisory-only"
+required_flags = [
+  "GB200 hardware selector",
+  "multi-GPU deployment shape",
+]
+caveats = [
+  "This is a nonlocal hardware deployment shape and is not a gfx1151 scenario.",
+]
+
+[[recipe_surface]]
+id = "vllm.qwen.recipe.qwen3_6.deployment.mi355x"
+summary = "Qwen3.6 MI355X deployment recipe shape"
+source_url = "https://recipes.vllm.ai/Qwen/Qwen3.6-35B-A3B?hardware=mi355x"
+model = "Qwen/Qwen3.6-35B-A3B"
+status = "advisory-only"
+required_flags = [
+  "MI355X hardware selector",
+  "multi-GPU deployment shape",
+]
+caveats = [
+  "This is an MI-series deployment shape; local gfx1151 scenarios must keep tensor parallelism and context reduced.",
+]
+
+[[recipe_surface]]
+id = "vllm.qwen.recipe.qwen3_6.fp8.no_aiter_blocked"
+summary = "Qwen3.6 FP8 MoE non-AITER gfx1151 blocked backend path"
+source_url = "https://docs.vllm.ai/projects/recipes/en/latest/Qwen/Qwen3.5.html#running-qwen3-6"
+model = "Qwen/Qwen3.6-35B-A3B-FP8"
+status = "advisory-only"
+local_scenarios = ["vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-no-aiter-blocked"]
+required_flags = [
+  "VLLM_ROCM_USE_AITER=0",
+  "VLLM_ROCM_USE_AITER_MOE=0",
+]
+caveats = [
+  "The local probe records the current gfx1151 backend blocker; do not treat it as passing recipe coverage.",
+]
+
+[[recipe_surface]]
+id = "vllm.qwen.recipe.qwen3_6.fp8.aiter_blocked"
+summary = "Qwen3.6 FP8 MoE forced-AITER gfx1151 blocked kernel path"
+source_url = "https://docs.vllm.ai/projects/recipes/en/latest/Qwen/Qwen3.5.html#running-qwen3-6"
+model = "Qwen/Qwen3.6-35B-A3B-FP8"
+status = "advisory-only"
+local_scenarios = ["vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-aiter-blocked"]
+required_flags = [
+  "VLLM_ROCM_USE_AITER=1",
+  "VLLM_ROCM_USE_AITER_MOE=1",
+]
+caveats = [
+  "The local probe records the current AITER gfx1151 kernel compile blocker; do not promote without new backend evidence.",
 ]
