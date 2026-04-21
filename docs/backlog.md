@@ -54,38 +54,18 @@
   - treat the forced-AITER path as blocked on AITER opus/gfx1151 FP8-kernel
     feature work; the current `module_quant` failure is
     `unknown type name 'mfma_adaptor'`
-- Extract the official vLLM Qwen3.5/Qwen3.6 recipe scenarios into the tracked
-  Qwen test plan, using
-  <https://docs.vllm.ai/projects/recipes/en/latest/Qwen/Qwen3.5.html> as the
-  current upstream reference.
-  - keep the existing tiny Qwen3.5 smoke and blocked Qwen3.6 FP8 MoE probes,
-    while keeping official recipe surfaces distinct from runnable local
-    scenarios
-  - the official recipe surfaces are now recorded as non-executable
-    `recipe_surface` entries in `inference/scenarios/vllm-qwen.toml`, including
-    Qwen3.6 reasoning and MTP, Qwen3.5 throughput text-only and multimodal,
-    latency-focused MTP, tool-calling with `qwen3_coder`, benchmark client
-    flow, OpenAI-compatible multimodal API consumption, and ultra-long-context
-    / YaRN override flow
-  - next, add reduced local Qwen server scenarios for Qwen3.6 base serving with
-    `--reasoning-parser qwen3` and its MTP speculative-decoding variant; keep
-    large throughput, high parallelism, and long-context stress shapes separate
-    from default smoke scenarios so their failures do not obscure base
-    correctness
-  - record the NVIDIA GB200 and AMD MI355X deployment shapes only as advisory
-    recipe references, while adapting runnable local scenarios to the Arch
-    gfx1151 package lane and current host model cache
-  - include recipe configuration checks for thinking disablement, Mamba/prefix
-    caching caveats, multimodal processor kwargs, and the Mamba cache versus
-    CUDAGraph capture-size failure mode
-  - use the recipe coverage worklist in
-    `docs/maintainers/vllm-recipe-coverage.md` as the concrete scope for
-    which Qwen recipe surfaces are runnable, planned, or advisory-only
-  - include the interactive Qwen3.6 recipe selectors for tool calling,
-    reasoning, speculative decoding, `max_batched_8k`, and
-    `max_num_seqs_256` as planned local probes after base server reasoning
-    passes; use stress and throughput scenarios for full context or large
-    batch shapes rather than folding them into the default smoke set
+- Validate the tracked Qwen3.6 server recipe scenarios on the reference host.
+  - run `vllm.qwen3_6.35b-a3b.server.reasoning` first; the 2026-04-20 local
+    execution attempt failed before `server_ready` because this execution
+    environment exposed no GPU to PyTorch while vLLM resolved the ROCm platform
+  - if base reasoning passes on the GPU host, run `reasoning-disabled`, `mtp`,
+    `tool`, `benchmark-lite`, `advanced-selectors`, `long-context-reduced`, and
+    `media-embedding` one at a time
+  - promote only passing reference-host scenarios to `validated`; keep unrun or
+    blocked Qwen server surfaces `tracked`, `planned`, or `advisory-only`
+  - keep GB200, MI355X, Qwen3.5 397B throughput, FP8 blocked paths, and full
+    ultra-long-context recipe shapes advisory until local gfx1151 evidence
+    justifies a narrower executable probe
 - Only revisit Gemma 4 on AITER fused-MoE if there is a concrete reason to
   move off the current TRITON unquantized-MoE lane.
   - treat any such attempt as a fresh experiment

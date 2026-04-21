@@ -61,6 +61,15 @@ control at the previous default `--gpu-memory-utilization 0.75` failed before
 `llm_init_ok` with no available KV-cache memory, so the tracked control pins
 `0.9` for this host.
 
+Reduced OpenAI-compatible Qwen3.6 server scenarios now exist for reasoning,
+reasoning-disabled, MTP, tool calling, benchmark-lite, advanced selectors,
+long-context-reduced, and media-embedding flows. They are tracked but not
+validated. A 2026-04-20 local attempt to run
+`vllm.qwen3_6.35b-a3b.server.reasoning` failed before `server_ready` because
+the execution environment exposed no GPU to PyTorch while vLLM resolved the
+ROCm platform. The remaining Qwen server scenarios were intentionally not run
+after that base failure.
+
 Installed and validated at least once on the live host:
 
 - generated TheRock/ROCm split package family
