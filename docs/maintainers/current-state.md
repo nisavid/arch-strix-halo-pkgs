@@ -787,13 +787,16 @@ The following smoke checks have already passed on the reference host:
   - convert remaining scripted source edits into durable patch files where
     practical
 - vLLM HIP `CMAKE_ARGS` flag-forwarding follow-up
-  - a trial patch that taught `setup.py` to `shlex.split()` quoted
-    `CMAKE_ARGS` and injected `CMAKE_HIP_FLAGS` did route extra compiler
-    flags into the HIP compile lane, but it also made both vLLM build attempts
-    fail in `csrc/sampler.hip` on gfx1151 with:
-    `Invalid dpp_ctrl value: wavefront shifts are not supported on GFX10+`
-  - treat that compile failure as the current blocker before attempting any
-    further quoted-`CMAKE_ARGS` HIP flag forwarding
+  - the post-rebuild `shlex.split(CMAKE_ARGS)` probe no longer reproduces the
+    earlier gfx1151 `csrc/sampler.hip` compiler failure
+  - on 2026-04-20, a focused `makepkg -ef --noarchive --nocheck` run with a
+    nested quoted `CMAKE_HIP_FLAGS` value containing `--offload-arch=gfx1151`,
+    `-mllvm -amdgpu-function-calls=false`,
+    `-mllvm -amdgpu-early-inline-all=true`, and `-famd-opt` completed
+    successfully and produced the vLLM wheel/package directory
+  - keep the committed direct `CFLAGS`/`CXXFLAGS`/`HIPFLAGS` forwarding patch;
+    treat quoted `CMAKE_ARGS` parsing as optional build plumbing, not as a
+    retained runtime-finding patch
 - vLLM/TorchAO follow-up
   - the reference host is now on the local
     `python-torchao-rocm-gfx1151 0.17.0` package, and `import torchao` is

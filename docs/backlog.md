@@ -31,13 +31,11 @@
   `python-mistral-common-gfx1151` closure lanes aligned. The current Gemma 4
   processor path needs both `transformers.models.gemma4` and
   `mistral_common.protocol.instruct.request.ReasoningEffort`.
-- Revisit the vLLM HIP `CMAKE_ARGS` flag-forwarding experiment only after the
-  gfx1151 sampler-kernel compile failure is understood. The committed vLLM
-  flag-forwarding patch handles direct `CFLAGS`, `CXXFLAGS`, and `HIPFLAGS`
-  environment values; this separate unlanded trial parsed quoted `CMAKE_ARGS`
-  and pushed additional `CMAKE_HIP_FLAGS` into the HIP compile lane, but both
-  build attempts then died in `csrc/sampler.hip` with
-  `Invalid dpp_ctrl value: wavefront shifts are not supported on GFX10+`.
+- Optionally harden vLLM's quoted `CMAKE_ARGS` parsing as build plumbing if a
+  future package lane needs nested quoted CMake values. The current PKGBUILD
+  uses direct `CFLAGS`, `CXXFLAGS`, and `HIPFLAGS` forwarding, and the
+  post-rebuild `shlex.split(CMAKE_ARGS)` probe no longer reproduces the old
+  gfx1151 `csrc/sampler.hip` compiler failure.
 - Revisit full multimodal Gemma 4 serving on the `google/gemma-4-26B-A4B-it`
   lane. The current repo-owned local vLLM repair path is intentionally
   text-only with
