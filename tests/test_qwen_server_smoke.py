@@ -94,6 +94,21 @@ def test_qwen_server_smoke_draft_model_uses_draft_speculative_config():
     )
 
 
+def test_qwen_server_smoke_mtp_rejects_draft_model():
+    result = run_helper(
+        "Qwen/Qwen3.6-35B-A3B",
+        "--mode",
+        "mtp",
+        "--draft-model",
+        "Qwen/Qwen3.5-0.8B",
+        "--dry-run",
+    )
+
+    assert result.returncode != 0
+    assert "--draft-model cannot be used with --mode mtp" in result.stderr
+    assert not result.stdout
+
+
 def test_qwen_server_smoke_payload_modes():
     reasoning = dry_run("reasoning")["request_payload"]
     disabled = dry_run("reasoning-disabled")["request_payload"]

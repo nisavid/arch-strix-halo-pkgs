@@ -120,6 +120,11 @@ def parse_args() -> argparse.Namespace:
         help="print the derived server command and request payload as JSON without launching the server",
     )
     args = parser.parse_args()
+    if args.mode == "mtp" and args.draft_model:
+        parser.error(
+            "--draft-model cannot be used with --mode mtp; use --mode reasoning "
+            "for draft-model speculative decoding"
+        )
     args.limit_mm_per_prompt_map = parse_json_object(
         args.limit_mm_per_prompt,
         option_name="--limit-mm-per-prompt",
