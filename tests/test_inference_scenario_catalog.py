@@ -201,11 +201,17 @@ def test_qwen_recipe_surfaces_link_runnable_local_scenarios():
     assert surfaces["vllm.qwen.recipe.qwen3_5.server.throughput_text"][
         "status"
     ] == "advisory-only"
-    assert surfaces["vllm.qwen.recipe.qwen3_6.server.mtp"]["status"] == "tracked"
+    assert surfaces["vllm.qwen.recipe.qwen3_6.server.mtp"]["status"] == "validated"
     assert surfaces["vllm.qwen.recipe.qwen3_5.server.tool_calling"]["status"] == (
         "validated"
     )
     assert surfaces["vllm.qwen.recipe.qwen3_6.server.advanced_selectors"][
+        "status"
+    ] == "validated"
+    assert surfaces["vllm.qwen.recipe.qwen3_5.benchmark.openai_chat"][
+        "status"
+    ] == "validated"
+    assert surfaces["vllm.qwen.recipe.qwen3_5.client.openai_multimodal"][
         "status"
     ] == "validated"
     assert "--reasoning-parser qwen3" in surfaces[

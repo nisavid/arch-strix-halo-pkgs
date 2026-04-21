@@ -63,8 +63,8 @@ control at the previous default `--gpu-memory-utilization 0.75` failed before
 
 Reduced OpenAI-compatible Qwen3.6 server scenarios now exist for reasoning,
 reasoning-disabled, MTP, tool calling, benchmark-lite, advanced selectors,
-long-context-reduced, and media-embedding flows. Six reduced server scenarios
-passed on 2026-04-20:
+long-context-reduced, and media-embedding flows. All eight reduced server
+scenarios are validated; the first six passed on 2026-04-20:
 
 - `vllm.qwen3_6.35b-a3b.server.reasoning` completed in `132.196358` seconds
   with `server_ready`, `reasoning_ok`, `reasoning_parser qwen3`, `Using TRITON
@@ -88,16 +88,23 @@ passed on 2026-04-20:
   `112.418584` seconds with `server_ready` and `long_context_reduced_ok`; the
   full 1,010,000-token YaRN shape remains advisory-only.
 
-Two reduced Qwen server scenarios remain tracked with concrete blockers:
+The two remaining reduced scenarios passed after targeted root-cause fixes on
+2026-04-21:
 
-- `vllm.qwen3_6.35b-a3b.server.mtp` reached `server_ready` on 2026-04-20, then
-  the first chat request returned HTTP 500 after EngineCore hit a Triton
-  speculative-decoding compile assertion in `vllm/v1/spec_decode/eagle.py`:
-  `Mismatched type for valid_count between then block (uint32) and else block
-  (int1)`.
-- `vllm.qwen3_6.35b-a3b.server.media-embedding` failed before `server_ready`
-  on 2026-04-20 while Qwen3 VL multimodal warmup used TORCH_SDPA and attempted
-  a `256.00 GiB` allocation during dummy image profiling.
+- `vllm.qwen3_6.35b-a3b.server.mtp` completed in `112.647863` seconds with
+  `server_ready`, `mtp_ok`, `--speculative-config
+  {"disable_padded_drafter_batch":true,"method":"mtp","num_speculative_tokens":2}`,
+  `Using TRITON backend for Unquantized MoE`, and `Available KV cache memory:
+  8.26 GiB`. The previous MTP failure was isolated to vLLM's padded drafter
+  batch path, which hit a Triton compile assertion in
+  `vllm/v1/spec_decode/eagle.py`.
+- `vllm.qwen3_6.35b-a3b.server.media-embedding` completed in `112.851312`
+  seconds with `server_ready`, `media_embedding_ok`, `Using
+  AttentionBackendEnum.TORCH_SDPA for MMEncoderAttention`, `Using TRITON backend
+  for Unquantized MoE`, `Available KV cache memory: 11.44 GiB`, and structured
+  `--limit-mm-per-prompt {"audio":0,"image":{"count":1,"height":2,"width":2},"video":0}`.
+  The previous media failure was isolated to unbounded Qwen3 VL dummy image
+  profiling, which attempted a `256.00 GiB` allocation before `server_ready`.
 
 Installed and validated at least once on the live host:
 
@@ -113,6 +120,8 @@ Installed and validated at least once on the live host:
 - `vllm.qwen3_6.35b-a3b.server.benchmark-lite`
 - `vllm.qwen3_6.35b-a3b.server.advanced-selectors`
 - `vllm.qwen3_6.35b-a3b.server.long-context-reduced`
+- `vllm.qwen3_6.35b-a3b.server.mtp`
+- `vllm.qwen3_6.35b-a3b.server.media-embedding`
 - `llama.cpp` HIP and Vulkan backends
 - Lemonade server/app/meta packages
 

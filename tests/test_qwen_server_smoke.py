@@ -67,7 +67,7 @@ def test_qwen_server_smoke_mode_specific_server_args():
         '{"enable_thinking":false}'
     )
     assert command_value(mtp_command, "--speculative-config") == (
-        '{"method":"mtp","num_speculative_tokens":2}'
+        '{"disable_padded_drafter_batch":true,"method":"mtp","num_speculative_tokens":2}'
     )
     assert "--speculative-tokens" not in mtp_command
     assert "--enable-auto-tool-choice" in tool_command
@@ -78,6 +78,9 @@ def test_qwen_server_smoke_mode_specific_server_args():
     assert command_value(selectors_command, "--max-num-seqs") == "256"
     assert command_value(media_command, "--mm-processor-kwargs") == (
         '{"videos_kwargs":{"size":{"longest_edge":469762048,"shortest_edge":4096}}}'
+    )
+    assert command_value(media_command, "--limit-mm-per-prompt") == (
+        '{"audio":0,"image":{"count":1,"height":2,"width":2},"video":0}'
     )
 
 

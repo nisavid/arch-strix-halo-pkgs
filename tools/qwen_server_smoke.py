@@ -179,6 +179,8 @@ def effective_limit_mm_per_prompt(args: argparse.Namespace) -> dict[str, object]
         return args.limit_mm_per_prompt_map
     if args.mode in TEXT_ONLY_MODES:
         return {"audio": 0, "image": 0, "video": 0}
+    if args.mode == "media-embedding":
+        return {"audio": 0, "image": {"count": 1, "width": 2, "height": 2}, "video": 0}
     return {"audio": 0, "image": 1, "video": 0}
 
 
@@ -238,7 +240,13 @@ def build_server_command(args: argparse.Namespace) -> list[str]:
         command.extend(
             [
                 "--speculative-config",
-                compact_json({"method": "mtp", "num_speculative_tokens": 2}),
+                compact_json(
+                    {
+                        "disable_padded_drafter_batch": True,
+                        "method": "mtp",
+                        "num_speculative_tokens": 2,
+                    }
+                ),
             ]
         )
     if args.mode == "tool":

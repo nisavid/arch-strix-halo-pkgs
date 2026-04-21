@@ -541,7 +541,7 @@ id = "vllm.qwen.recipe.qwen3_6.server.mtp"
 summary = "Official Qwen3.6 serving shape with MTP speculative decoding"
 source_url = "https://docs.vllm.ai/projects/recipes/en/latest/Qwen/Qwen3.5.html#running-qwen3-6"
 model = "Qwen/Qwen3.6-35B-A3B"
-status = "tracked"
+status = "validated"
 local_target = "Qwen/Qwen3.6-35B-A3B"
 local_scenarios = ["vllm.qwen3_6.35b-a3b.server.mtp"]
 required_flags = [
@@ -549,8 +549,8 @@ required_flags = [
   "--speculative-config {\"method\":\"mtp\",\"num_speculative_tokens\":2}",
 ]
 caveats = [
-  "Speculative decoding consumes KV capacity and should remain exploratory on gfx1151 until a reduced local probe passes.",
-  "The 2026-04-20 reduced local MTP run reached server_ready, then the first chat request killed EngineCore with a Triton speculative-decoding compile assertion in vllm/v1/spec_decode/eagle.py.",
+  "Speculative decoding consumes KV capacity and uses less KV cache memory than the non-speculative reduced server shape.",
+  "The reduced local MTP probe passed on 2026-04-21 after disabling vLLM's padded drafter batch path; the padded path hit a Triton speculative-decoding compile assertion in vllm/v1/spec_decode/eagle.py.",
 ]
 
 [[recipe_surface]]
@@ -589,7 +589,7 @@ required_flags = [
 caveats = [
   "Multimodal Qwen should stay advisory until a local multimodal checkpoint and request helper exist.",
   "Gemma 4 showed that multimodal warmup behavior must be validated locally on this stack.",
-  "The 2026-04-20 reduced media-embedding probe failed before server_ready with a Qwen3 VL multimodal warmup out-of-memory allocation.",
+  "The reduced media-embedding probe passed on 2026-04-21 after bounding the image dummy profile to the tiny local fixture; the full Qwen3.5 FP8 multimodal throughput shape remains advisory.",
 ]
 
 [[recipe_surface]]
@@ -606,7 +606,7 @@ required_flags = [
 caveats = [
   "The recipe states MTP-1 speculative decoding for AMD GPUs is under development.",
   "Do not promote on gfx1151 without a reduced local MTP probe.",
-  "The reduced Qwen3.6 MTP probe currently fails with a Triton speculative-decoding compile assertion after server_ready.",
+  "The reduced Qwen3.6 MTP probe now passes with disable_padded_drafter_batch=true; the full Qwen3.5 FP8 latency shape remains advisory.",
 ]
 
 [[recipe_surface]]
@@ -631,7 +631,7 @@ id = "vllm.qwen.recipe.qwen3_5.benchmark.openai_chat"
 summary = "Official Qwen3.5 OpenAI-compatible benchmark-client shape"
 source_url = "https://docs.vllm.ai/projects/recipes/en/latest/Qwen/Qwen3.5.html#benchmarking"
 model = "Qwen/Qwen3.5-397B-A17B"
-status = "tracked"
+status = "validated"
 local_target = "Qwen/Qwen3.6-35B-A3B"
 local_scenarios = ["vllm.qwen3_6.35b-a3b.server.benchmark-lite"]
 required_flags = [
@@ -653,7 +653,7 @@ id = "vllm.qwen.recipe.qwen3_5.client.openai_multimodal"
 summary = "Official Qwen3.5 OpenAI-compatible multimodal client shape"
 source_url = "https://docs.vllm.ai/projects/recipes/en/latest/Qwen/Qwen3.5.html#consume-the-openai-api-compatible-server"
 model = "Qwen/Qwen3.5-397B-A17B"
-status = "tracked"
+status = "validated"
 local_target = "Qwen/Qwen3.6-35B-A3B"
 local_scenarios = ["vllm.qwen3_6.35b-a3b.server.media-embedding"]
 required_flags = [
@@ -662,8 +662,8 @@ required_flags = [
   "max_tokens 2048",
 ]
 caveats = [
-  "Use a local embedded image fixture for any future executable scenario.",
-  "The current reduced media-embedding probe fails during server startup with Qwen3 VL multimodal warmup out of memory.",
+  "The reduced Qwen3.6 media-embedding probe passed on 2026-04-21 with a local embedded image fixture and bounded image dummy profiling.",
+  "The full Qwen3.5 model and deployment size remain outside the local validation target.",
 ]
 
 [[recipe_surface]]
