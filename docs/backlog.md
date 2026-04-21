@@ -58,9 +58,18 @@
   - treat the forced-AITER path as blocked on AITER opus/gfx1151 FP8-kernel
     feature work; the current `module_quant` failure is
     `unknown type name 'mfma_adaptor'`
+  - do not paper over the AITER OPUS gap by selecting the gfx1250 WMMA path:
+    gfx1151 rejects the relevant FP8 WMMA builtin with
+    `needs target feature gfx1250-insts`. The current upstream AITER release
+    has RDNA registration/config-selection work, but no small gfx11 OPUS FP8
+    adaptor patch to carry locally.
   - keep the AxionML NVFP4 probe blocked on local ROCm vLLM ModelOpt FP4
     support; the checkpoint is ModelOpt NVFP4, and the current expected failure
     is `modelopt_fp4 quantization is currently not supported in rocm.`
+  - treat Petit as out of scope for Strix Halo unless its support matrix
+    changes beyond AMD CDNA2/CDNA3; the next plausible NVFP4 path is upstream
+    vLLM/ROCm support for `modelopt_fp4` on ROCm or a different accepted
+    checkpoint format, not a Petit backend patch for gfx1151.
 - Follow up Qwen server coverage beyond the reduced local smokes.
   - all eight reduced Qwen3.6 server smokes now pass on the host
   - optionally add a tracked `ngram_gpu` speculative-decoding scenario; the
@@ -68,6 +77,14 @@
     `prompt_lookup_max=5`, and `num_speculative_tokens=2`
   - keep CPU `ngram` blocked until its generation-time `EngineCore` death is
     explained or fixed
+- Keep DFlash speculative decoding gated on an upstream vLLM source release
+  that carries the merged DFlash support from PR #38300.
+  - the local package should keep only the narrow speculators parser backport
+    until the release source also includes the DFlash model, proposer/runtime,
+    and registry integration
+  - as of 2026-04-21, upstream tags include `v0.19.2rc0`, but not a final
+    `v0.19.2` or `v0.20.0`; recheck upstream tags before deciding which package
+    bump should carry the full lane
   - keep `draft_model` with `Qwen/Qwen3.5-0.8B` exploratory; current vLLM
     remaps that checkpoint into the Qwen3.5 MTP loader and fails on hidden-size
     mismatch instead of running a plain draft-model path

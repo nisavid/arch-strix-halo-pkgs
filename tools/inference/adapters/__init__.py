@@ -57,4 +57,13 @@ def build_execution_plan(
             scenario_run_root=scenario_run_root,
             model_bindings=model_bindings,
         )
+    if engine == "transformers":
+        from .transformers import build_execution_plan as build_transformers_execution_plan
+
+        return build_transformers_execution_plan(
+            definition,
+            repo_root=repo_root,
+            scenario_run_root=scenario_run_root,
+            model_bindings=model_bindings,
+        )
     raise ValueError(f"UNSUPPORTED_ENGINE: {engine}")

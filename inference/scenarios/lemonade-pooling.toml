@@ -1,0 +1,75 @@
+[[scenario]]
+id = "lemonade.pooling.ms-marco-minilm-l6-v2.embeddings"
+summary = "Lemonade embeddings endpoint probe blocked by the downloaded MiniLM GGUF pooling metadata"
+tags = ["smoke", "lemonade", "pooling", "embeddings", "llamacpp", "blocked"]
+
+[scenario.given]
+engine = "lemonade"
+model = "user.ms-marco-MiniLM-L6-v2-F16-GGUF"
+tool = "lemonade_pooling_smoke.embeddings"
+
+[scenario.when]
+argv = [
+  "--base-url",
+  "http://127.0.0.1:13305/api/v1",
+]
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 1
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "mode embeddings"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "\"type\": \"backend_error\""
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "Pooling type 'none' is not OAI compatible"
+
+[[scenario.then.assert]]
+kind = "stderr.contains"
+value = "lemonade_error: llama-server request failed"
+
+[[scenario]]
+id = "lemonade.pooling.bge-reranker-v2-m3.rerank"
+summary = "Lemonade reranking endpoint smoke for a downloaded BGE reranker model"
+tags = ["smoke", "lemonade", "pooling", "rerank", "reranking", "llamacpp"]
+
+[scenario.given]
+engine = "lemonade"
+model = "user.bge-reranker-v2-m3-Q8_0-GGUF"
+tool = "lemonade_pooling_smoke.rerank"
+
+[scenario.when]
+argv = [
+  "--base-url",
+  "http://127.0.0.1:13305/api/v1",
+]
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "mode rerank"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "score_count 3"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "scores_finite_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "rerank_order 0,1,2"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "rerank_ok"

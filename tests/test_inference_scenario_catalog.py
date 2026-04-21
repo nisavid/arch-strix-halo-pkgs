@@ -52,6 +52,8 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     assert "vllm.speculative.dflash.qwen3_8b-speculators.server.blocked" in ids
     assert "vllm.pooling.multilingual-e5-small.embeddings" in ids
     assert "vllm.pooling.jina-reranker-v3.rerank" in ids
+    assert "transformers.zeroentropy.zembed-1.embeddings" in ids
+    assert "transformers.zeroentropy.zerank-2.rerank" in ids
     assert "vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-no-aiter-blocked" in ids
     assert "vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-aiter-blocked" in ids
     assert "vllm.qwen3.0_6b-fp8-kv.text.fp8-dense-quark" in ids
@@ -61,7 +63,9 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     assert "llama.cpp.vulkan.help" in ids
     assert "lemonade.cli.help" in ids
     assert "lemonade.server.help" in ids
-    assert engines == {"vllm", "llama.cpp", "lemonade"}
+    assert "lemonade.pooling.ms-marco-minilm-l6-v2.embeddings" in ids
+    assert "lemonade.pooling.bge-reranker-v2-m3.rerank" in ids
+    assert engines == {"vllm", "llama.cpp", "lemonade", "transformers"}
     assert "smoke" in tags_by_id["vllm.gemma4.26b-a4b.text.basic"]
     assert "exploratory" in tags_by_id["vllm.gemma4.e2b.server.image"]
     assert "kernel-probe" in tags_by_id["vllm.gemma4.e2b.server.attn-triton"]

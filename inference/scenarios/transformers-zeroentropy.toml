@@ -1,0 +1,79 @@
+[[scenario]]
+id = "transformers.zeroentropy.zembed-1.embeddings"
+summary = "ZeroEntropy zembed-1 embeddings smoke using the cached Hugging Face model"
+tags = ["smoke", "transformers", "zeroentropy", "embeddings", "zembed"]
+
+[scenario.given]
+engine = "transformers"
+model = "zeroentropy/zembed-1"
+tool = "zeroentropy_pooling_smoke.embeddings"
+
+[scenario.when]
+argv = [
+  "--max-length",
+  "512",
+]
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "mode embeddings"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "embedding_count 3"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "embeddings_finite_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "embedding_ranking_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "embeddings_ok"
+
+[[scenario]]
+id = "transformers.zeroentropy.zerank-2.rerank"
+summary = "ZeroEntropy zerank-2 rerank smoke using the cached Hugging Face model"
+tags = ["smoke", "transformers", "zeroentropy", "rerank", "zerank"]
+
+[scenario.given]
+engine = "transformers"
+model = "zeroentropy/zerank-2"
+tool = "zeroentropy_pooling_smoke.rerank"
+
+[scenario.when]
+argv = [
+  "--max-length",
+  "512",
+]
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "mode rerank"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "score_count 3"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "scores_finite_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "rerank_order 0,1,2"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "rerank_ok"

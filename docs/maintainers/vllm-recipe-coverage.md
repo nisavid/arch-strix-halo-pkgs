@@ -117,4 +117,7 @@ normal Qwen checkpoint and call it EAGLE coverage. The DFlash scenario stays
 blocked: the package now carries the narrow speculators config parser from
 vLLM PR #38300, but the stable `v0.19.1` source package still lacks the
 upstream DFlash model/proposer/runtime pieces needed to run
-`nm-testing/dflash-qwen3-8b-speculators`.
+`nm-testing/dflash-qwen3-8b-speculators`. PR #38300 merged upstream on
+2026-04-15, so promote this lane only after a tagged source release carries
+that full support; as of 2026-04-21, `git ls-remote --tags` shows
+`v0.19.2rc0` but no final `v0.19.2` or `v0.20.0` tag.

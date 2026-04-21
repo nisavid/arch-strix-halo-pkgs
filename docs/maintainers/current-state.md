@@ -70,6 +70,30 @@ promote the scenario to a passing vLLM smoke unless vLLM gains support for
 this remote-code ranking head or the lane switches to a vLLM-supported
 cross-encoder model.
 
+Lemonade has a conventional reranking endpoint for registered `llamacpp`
+reranker models, and the tracked `lemonade.pooling.bge-reranker-v2-m3.rerank`
+scenario now covers it. On 2026-04-21 the downloaded
+`user.bge-reranker-v2-m3-Q8_0-GGUF` registration passed through
+`/api/v1/reranking`, returned three finite scores, and produced the fixed
+Paris, Berlin, unrelated ordering. The only downloaded Lemonade embedding
+registration checked in this pass,
+`user.ms-marco-MiniLM-L6-v2-F16-GGUF`, is tracked as a blocked endpoint probe:
+llama-server returns `Pooling type 'none' is not OAI compatible`, so the
+scenario keeps that exact error instead of pretending the endpoint has a
+passing downloaded embedding model.
+
+The ZeroEntropy target models are covered by Hugging Face model-ID scenarios
+rather than the Lemonade GGUF registrations. `transformers.zeroentropy.zembed-1.embeddings`
+passed on 2026-04-21 with the cached `zeroentropy/zembed-1` model bound at
+runtime by `--model-path`, finite normalized vectors, and a backpropagation
+related-passage ranking fixture. `transformers.zeroentropy.zerank-2.rerank`
+passed on the same host with the cached `zeroentropy/zerank-2` model bound at
+runtime, finite Yes-logit scores, and the model-card arithmetic ranking
+fixture. The helper uses Transformers directly because these model cards
+document `SentenceTransformer` and `CrossEncoder` usage, while Lemonade's
+documented local endpoints require registered `llamacpp` or `flm` recipes for
+embeddings and `llamacpp` for reranking.
+
 The rebuilt installed stack passed the unquantized Qwen3.6 control on
 2026-04-20 with the `/var/cache/hf` `Qwen/Qwen3.6-35B-A3B` snapshot,
 `VLLM_ROCM_USE_AITER=0`, `VLLM_ROCM_USE_AITER_MOE=0`,
@@ -785,6 +809,13 @@ The following smoke checks have already passed on the reference host:
     gfx1250 FP8 WMMA builtin is rejected for gfx1151 with `needs target
     feature gfx1250-insts`. Treat Qwen3.6 FP8 MoE as a documented follow-up,
     not a merge blocker for the Gemma 4 branch.
+  - The deeper upstream pass did not find a small upstream gfx11
+    `mfma_adaptor` carry to backport. AITER v0.1.12 release notes list OPUS
+    migration work and RDNA registration/config selection for gfx1150/1151,
+    but the prebuilt kernel support in that release remains gfx942/gfx950, and
+    the installed OPUS header still has only the gfx9 MFMA adaptor and gfx1250
+    WMMA adaptor choices for this code path. Treat a gfx11 OPUS FP8 adaptor as
+    new kernel feature work unless upstream lands it.
   - Task 4 quantization-lane coverage now includes three additional tracked
     exploratory probes under `inference/scenarios/vllm-qwen.toml`:
     `vllm.qwen3.0_6b-fp8-kv.text.fp8-dense-quark`,
@@ -799,7 +830,9 @@ The following smoke checks have already passed on the reference host:
     `modelopt_fp4 quantization is currently not supported in rocm.` The
     checkpoint is ModelOpt NVFP4, so the scenario uses `modelopt_fp4` and fails
     in the local vLLM ROCm platform quantization gate before Petit NVFP4 backend
-    selection is relevant.
+    selection is relevant. Petit is not a current gfx1151 answer: its published
+    support target is AMD CDNA2/CDNA3, so it is useful evidence for MI-class
+    hardware, not a Strix Halo/RDNA 3.5 package patch.
 - The tracked host-side follow-up helper for OpenAI-compatible server smokes is
   now `tools/gemma4_server_smoke.py`.
   - `--mode basic` launches

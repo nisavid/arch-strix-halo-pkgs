@@ -374,3 +374,73 @@ def test_lemonade_adapter_builds_generic_cli_command(tmp_path: Path):
 
     assert plan.command == ["lemonade", "--help"]
     assert plan.server_log_path is None
+
+
+def test_lemonade_adapter_builds_pooling_endpoint_smoke_command(tmp_path: Path):
+    plan = build_execution_plan(
+        scenario(
+            {
+                "id": "lemonade.pooling.bge-reranker-v2-m3.rerank",
+                "given": {
+                    "engine": "lemonade",
+                    "model": "user.bge-reranker-v2-m3-Q8_0-GGUF",
+                    "tool": "lemonade_pooling_smoke.rerank",
+                },
+                "when": {
+                    "argv": [
+                        "--base-url",
+                        "http://127.0.0.1:13305/api/v1",
+                    ]
+                },
+            }
+        ),
+        repo_root=REPO_ROOT,
+        scenario_run_root=tmp_path,
+        model_bindings={},
+    )
+
+    assert plan.command == [
+        sys.executable,
+        str(REPO_ROOT / "tools/lemonade_pooling_smoke.py"),
+        "user.bge-reranker-v2-m3-Q8_0-GGUF",
+        "--mode",
+        "rerank",
+        "--base-url",
+        "http://127.0.0.1:13305/api/v1",
+    ]
+    assert plan.server_log_path is None
+
+
+def test_transformers_adapter_builds_zeroentropy_pooling_smoke_command(tmp_path: Path):
+    plan = build_execution_plan(
+        scenario(
+            {
+                "id": "transformers.zeroentropy.zembed-1.embeddings",
+                "given": {
+                    "engine": "transformers",
+                    "model": "zeroentropy/zembed-1",
+                    "tool": "zeroentropy_pooling_smoke.embeddings",
+                },
+                "when": {
+                    "argv": [
+                        "--max-length",
+                        "512",
+                    ]
+                },
+            }
+        ),
+        repo_root=REPO_ROOT,
+        scenario_run_root=tmp_path,
+        model_bindings={"zeroentropy/zembed-1": "/models/zembed-1"},
+    )
+
+    assert plan.command == [
+        sys.executable,
+        str(REPO_ROOT / "tools/zeroentropy_pooling_smoke.py"),
+        "/models/zembed-1",
+        "--mode",
+        "embeddings",
+        "--max-length",
+        "512",
+    ]
+    assert plan.server_log_path is None
