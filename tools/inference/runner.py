@@ -7,10 +7,22 @@ import re
 import shutil
 import subprocess
 import time
+from typing import Any
 
 from .adapters import build_execution_plan
 from .logging import default_run_root
 from .scenario_loader import Scenario
+
+
+def _scenario_metadata(scenario: Scenario) -> dict[str, object]:
+    metadata: dict[str, object] = {
+        "id": scenario.id,
+        "engine": scenario.engine,
+        "model": scenario.model,
+    }
+    if scenario.draft_model is not None:
+        metadata["draft_model"] = scenario.draft_model
+    return metadata
 
 
 def build_run_plan(
@@ -33,9 +45,7 @@ def build_run_plan(
         )
         planned.append(
             {
-                "id": scenario.id,
-                "engine": scenario.engine,
-                "model": scenario.model,
+                **_scenario_metadata(scenario),
                 "command": plan.command,
                 "server_log_path": (
                     str(plan.server_log_path) if plan.server_log_path is not None else None
@@ -115,11 +125,30 @@ def _assertion_failures(
     server_log: str,
     duration_seconds: float,
 ) -> list[str]:
-    combined = stdout + stderr
+    sources = {
+        "stdout": stdout,
+        "stderr": stderr,
+        "output": stdout + stderr,
+        "server_log": server_log,
+    }
+    combined = sources["output"]
     failures: list[str] = []
     for assertion in assertions:
         kind = str(assertion["kind"])
         expected = assertion.get("value")
+        if kind.endswith(".json_path.equals"):
+            source_name = kind.removesuffix(".json_path.equals")
+            if source_name not in sources:
+                raise ValueError(f"UNKNOWN_ASSERTION_KIND: {kind}")
+            failure = _json_path_equals_failure(
+                assertion,
+                source=sources[source_name],
+                source_name=source_name,
+                expected=expected,
+            )
+            if failure is not None:
+                failures.append(f"{kind}: {failure}")
+            continue
         if kind == "exit_code.equals":
             if exit_code != int(expected):
                 failures.append(f"{kind}: expected {expected}, got {exit_code}")
@@ -166,6 +195,78 @@ def _assertion_failures(
     return failures
 
 
+def _json_path_equals_failure(
+    assertion: dict[str, object],
+    *,
+    source: str,
+    source_name: str,
+    expected: object,
+) -> str | None:
+    payload, failure = _json_payload_for_assertion(
+        assertion,
+        source=source,
+        source_name=source_name,
+    )
+    if failure is not None:
+        return failure
+    actual, failure = _value_at_json_path(payload, assertion.get("path"))
+    if failure is not None:
+        return failure
+    if actual != expected:
+        return f"path {assertion.get('path')!r} expected {expected!r}, got {actual!r}"
+    return None
+
+
+def _json_payload_for_assertion(
+    assertion: dict[str, object],
+    *,
+    source: str,
+    source_name: str,
+) -> tuple[Any, str | None]:
+    label = assertion.get("label")
+    if label is None:
+        raw_json = source.strip()
+        context = source_name
+    else:
+        label_text = str(label)
+        prefix = f"{label_text} "
+        raw_json = ""
+        context = f"{source_name} label {label_text!r}"
+        for line in source.splitlines():
+            if line.startswith(prefix):
+                raw_json = line[len(prefix) :].strip()
+                break
+        if not raw_json:
+            return None, f"missing {context}"
+    try:
+        return json.loads(raw_json), None
+    except json.JSONDecodeError as exc:
+        return None, f"{context} was not valid JSON: {exc}"
+
+
+def _value_at_json_path(payload: Any, path: object) -> tuple[Any, str | None]:
+    if path is None or str(path) == "":
+        return payload, None
+    current = payload
+    for raw_part in str(path).split("."):
+        if isinstance(current, dict):
+            if raw_part not in current:
+                return None, f"path {path!r} missing key {raw_part!r}"
+            current = current[raw_part]
+            continue
+        if isinstance(current, list):
+            try:
+                index = int(raw_part)
+            except ValueError:
+                return None, f"path {path!r} expected list index, got {raw_part!r}"
+            if index < 0 or index >= len(current):
+                return None, f"path {path!r} missing index {index}"
+            current = current[index]
+            continue
+        return None, f"path {path!r} cannot descend into {current!r}"
+    return current, None
+
+
 def _scenario_assertions(scenario: Scenario) -> list[dict[str, object]]:
     then = scenario.definition.get("then") or {}
     raw_assertions = then.get("assert") or []
@@ -208,9 +309,7 @@ def run_scenarios(
             scenario_run_root / "plan.json",
             json.dumps(
                 {
-                    "id": scenario.id,
-                    "engine": scenario.engine,
-                    "model": scenario.model,
+                    **_scenario_metadata(scenario),
                     "command": plan.command,
                     "server_log_path": (
                         str(plan.server_log_path) if plan.server_log_path is not None else None
@@ -232,9 +331,7 @@ def run_scenarios(
                     *stale_cores,
                 ]
                 result = {
-                    "id": scenario.id,
-                    "engine": scenario.engine,
-                    "model": scenario.model,
+                    **_scenario_metadata(scenario),
                     "ok": False,
                     "exit_code": None,
                     "duration_seconds": 0.0,
@@ -294,9 +391,7 @@ def run_scenarios(
             failed += 1
 
         result = {
-            "id": scenario.id,
-            "engine": scenario.engine,
-            "model": scenario.model,
+            **_scenario_metadata(scenario),
             "ok": ok,
             "exit_code": completed.returncode,
             "duration_seconds": round(duration_seconds, 6),

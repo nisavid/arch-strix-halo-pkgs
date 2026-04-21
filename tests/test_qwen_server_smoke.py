@@ -84,6 +84,16 @@ def test_qwen_server_smoke_mode_specific_server_args():
     )
 
 
+def test_qwen_server_smoke_draft_model_uses_draft_speculative_config():
+    plan = dry_run("reasoning", "--draft-model", "Qwen/Qwen3.5-0.8B")
+    command = plan["server_command"]
+
+    assert plan["draft_model"] == "Qwen/Qwen3.5-0.8B"
+    assert command_value(command, "--speculative-config") == (
+        '{"method":"draft_model","model":"Qwen/Qwen3.5-0.8B","num_speculative_tokens":2}'
+    )
+
+
 def test_qwen_server_smoke_payload_modes():
     reasoning = dry_run("reasoning")["request_payload"]
     disabled = dry_run("reasoning-disabled")["request_payload"]

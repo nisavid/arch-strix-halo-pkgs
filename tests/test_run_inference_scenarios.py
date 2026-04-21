@@ -170,6 +170,38 @@ def test_selector_supports_model_filtering(tmp_path: Path):
     assert payload["selected_ids"] == ["vllm.demo.text", "lemonade.demo.server"]
 
 
+def test_model_selector_matches_draft_model(tmp_path: Path):
+    scenario_dir = tmp_path / "inference" / "scenarios"
+    scenario_dir.mkdir(parents=True)
+    (scenario_dir / "vllm.toml").write_text(
+        """
+[[scenario]]
+id = "vllm.qwen.server.draft-model"
+summary = "Qwen draft-model server smoke"
+tags = ["smoke"]
+
+[scenario.given]
+engine = "vllm"
+model = "Qwen/Qwen3.6-35B-A3B"
+draft_model = "Qwen/Qwen3.5-0.8B"
+tool = "qwen_server_smoke.reasoning"
+""",
+        encoding="utf-8",
+    )
+
+    result = run_runner(
+        "--scenario-dir",
+        str(scenario_dir),
+        "--dry-run",
+        "--model",
+        "Qwen/Qwen3.5-0.8B",
+    )
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    assert payload["selected_ids"] == ["vllm.qwen.server.draft-model"]
+
+
 def write_fake_command_script(tmp_path: Path) -> Path:
     script = tmp_path / "fake_command.py"
     script.write_text(
@@ -234,6 +266,60 @@ tool = "gemma4_text_smoke"
         sys.executable,
         str(REPO_ROOT / "tools/gemma4_text_smoke.py"),
         "/models/google/gemma-4-26B-A4B-it",
+    ]
+
+
+def test_dry_run_includes_resolved_draft_model_binding(tmp_path: Path):
+    scenario_dir = tmp_path / "inference" / "scenarios"
+    scenario_dir.mkdir(parents=True)
+    run_root = tmp_path / "run"
+    (scenario_dir / "vllm.toml").write_text(
+        """
+[[scenario]]
+id = "vllm.qwen.server.draft-model"
+summary = "Qwen draft-model server smoke"
+
+[scenario.given]
+engine = "vllm"
+model = "Qwen/Qwen3.6-35B-A3B"
+draft_model = "Qwen/Qwen3.5-0.8B"
+tool = "qwen_server_smoke.reasoning"
+""",
+        encoding="utf-8",
+    )
+
+    result = run_runner(
+        "--scenario-dir",
+        str(scenario_dir),
+        "--run-root",
+        str(run_root),
+        "--dry-run",
+        "--scenario",
+        "vllm.qwen.server.draft-model",
+        "--model-path",
+        "Qwen/Qwen3.6-35B-A3B=/models/qwen36",
+        "--model-path",
+        "Qwen/Qwen3.5-0.8B=/models/qwen35",
+    )
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    planned = payload["planned"][0]
+    server_log_path = (
+        run_root / "scenarios" / "vllm.qwen.server.draft-model" / "server.log"
+    )
+    assert planned["model"] == "Qwen/Qwen3.6-35B-A3B"
+    assert planned["draft_model"] == "Qwen/Qwen3.5-0.8B"
+    assert planned["command"] == [
+        sys.executable,
+        str(REPO_ROOT / "tools/qwen_server_smoke.py"),
+        "/models/qwen36",
+        "--mode",
+        "reasoning",
+        "--server-log",
+        str(server_log_path),
+        "--draft-model",
+        "/models/qwen35",
     ]
 
 
@@ -381,6 +467,55 @@ value = 0
     assert result_file.is_file()
     assert stdout_log.read_text(encoding="utf-8").strip() == "hello from fake"
     assert stderr_log.read_text(encoding="utf-8").strip() == "warn from fake"
+
+
+def test_runner_asserts_labeled_stdout_json_path(tmp_path: Path):
+    script = write_fake_command_script(tmp_path)
+    scenario_dir = tmp_path / "inference" / "scenarios"
+    scenario_dir.mkdir(parents=True)
+    run_root = tmp_path / "run"
+    (scenario_dir / "generic.toml").write_text(
+        f"""
+[[scenario]]
+id = "lemonade.fake.structured-output"
+summary = "fake structured output succeeds"
+
+[scenario.given]
+engine = "lemonade"
+model = "builtin"
+entrypoint = "{sys.executable}"
+
+[scenario.when]
+argv = ["{script}", "--stdout", "initial_response {{\\"choices\\":[{{\\"message\\":{{\\"content\\":{{\\"topic\\":\\"ocean\\",\\"answer\\":\\"blue\\"}},\\"tool_calls\\":[{{\\"function\\":{{\\"name\\":\\"get_weather\\"}}}}]}}}}]}}"]
+
+[[scenario.then.assert]]
+kind = "stdout.json_path.equals"
+label = "initial_response"
+path = "choices.0.message.tool_calls.0.function.name"
+value = "get_weather"
+
+[[scenario.then.assert]]
+kind = "stdout.json_path.equals"
+label = "initial_response"
+path = "choices.0.message.content"
+value = {{topic = "ocean", answer = "blue"}}
+""",
+        encoding="utf-8",
+    )
+
+    result = run_runner(
+        "--scenario-dir",
+        str(scenario_dir),
+        "--run-root",
+        str(run_root),
+        "--scenario",
+        "lemonade.fake.structured-output",
+    )
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    assert payload["passed"] == 1
+    assert payload["failed"] == 0
 
 
 def test_runner_returns_nonzero_when_assertion_fails(tmp_path: Path):

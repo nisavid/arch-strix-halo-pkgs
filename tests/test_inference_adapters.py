@@ -114,6 +114,43 @@ def test_vllm_adapter_assigns_server_log_for_qwen_server_smoke(tmp_path: Path):
     assert plan.env == {"VLLM_ROCM_USE_AITER_MOE": "0"}
 
 
+def test_vllm_adapter_resolves_draft_model_binding_for_qwen_server_smoke(
+    tmp_path: Path,
+):
+    plan = build_execution_plan(
+        scenario(
+            {
+                "id": "vllm.qwen3_6.35b-a3b.server.draft-model",
+                "given": {
+                    "engine": "vllm",
+                    "model": "Qwen/Qwen3.6-35B-A3B",
+                    "draft_model": "Qwen/Qwen3.5-0.8B",
+                    "tool": "qwen_server_smoke.reasoning",
+                },
+            }
+        ),
+        repo_root=REPO_ROOT,
+        scenario_run_root=tmp_path,
+        model_bindings={
+            "Qwen/Qwen3.6-35B-A3B": "/models/qwen36",
+            "Qwen/Qwen3.5-0.8B": "/models/qwen35",
+        },
+    )
+
+    assert plan.command == [
+        sys.executable,
+        str(REPO_ROOT / "tools/qwen_server_smoke.py"),
+        "/models/qwen36",
+        "--mode",
+        "reasoning",
+        "--server-log",
+        str(tmp_path / "server.log"),
+        "--draft-model",
+        "/models/qwen35",
+    ]
+    assert plan.server_log_path == tmp_path / "server.log"
+
+
 def test_vllm_adapter_carries_scenario_environment(tmp_path: Path):
     plan = build_execution_plan(
         scenario(

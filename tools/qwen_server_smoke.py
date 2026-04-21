@@ -54,6 +54,10 @@ def parse_args() -> argparse.Namespace:
         "--served-model-name",
         help="served model name exposed through /v1/models; defaults to the model argument",
     )
+    parser.add_argument(
+        "--draft-model",
+        help="optional draft model path or Hugging Face id for draft-model speculative decoding",
+    )
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--api-key", default="EMPTY")
@@ -236,7 +240,20 @@ def build_server_command(args: argparse.Namespace) -> list[str]:
                 compact_json({"enable_thinking": False}),
             ]
         )
-    if args.mode == "mtp":
+    if args.draft_model:
+        command.extend(
+            [
+                "--speculative-config",
+                compact_json(
+                    {
+                        "method": "draft_model",
+                        "model": args.draft_model,
+                        "num_speculative_tokens": 2,
+                    }
+                ),
+            ]
+        )
+    elif args.mode == "mtp":
         command.extend(
             [
                 "--speculative-config",
@@ -413,6 +430,7 @@ def build_plan(args: argparse.Namespace) -> dict[str, object]:
     plan: dict[str, object] = {
         "mode": args.mode,
         "model": args.model,
+        "draft_model": args.draft_model,
         "served_model_name": served_model_name(args),
         "execution_mode": args.execution_mode,
         "server_command": build_server_command(args),

@@ -81,6 +81,10 @@ def parse_args() -> argparse.Namespace:
         help="served model name exposed through /v1/models; defaults to the model argument",
     )
     parser.add_argument(
+        "--draft-model",
+        help="optional draft model path or Hugging Face id for draft-model speculative decoding",
+    )
+    parser.add_argument(
         "--chat-template",
         type=Path,
         help=(
@@ -326,6 +330,19 @@ def build_server_command(args: argparse.Namespace) -> list[str]:
         command.extend(["--max-num-seqs", str(args.max_num_seqs)])
     if args.processor_kwargs_map is not None:
         command.extend(["--mm-processor-kwargs", compact_json(args.processor_kwargs_map)])
+    if args.draft_model:
+        command.extend(
+            [
+                "--speculative-config",
+                compact_json(
+                    {
+                        "method": "draft_model",
+                        "model": args.draft_model,
+                        "num_speculative_tokens": 2,
+                    }
+                ),
+            ]
+        )
     if args.mode in REASONING_MODES:
         command.extend(["--reasoning-parser", "gemma4"])
     if args.mode in TOOL_MODES:
@@ -545,6 +562,7 @@ def build_plan(args: argparse.Namespace) -> dict[str, object]:
     plan: dict[str, object] = {
         "mode": args.mode,
         "model": args.model,
+        "draft_model": args.draft_model,
         "served_model_name": served_model_name(args),
         "execution_mode": args.execution_mode,
         "server_command": build_server_command(args),

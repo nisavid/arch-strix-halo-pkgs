@@ -16,6 +16,29 @@ def _resolved_model(
     return model_bindings.get(model, model)
 
 
+def _resolved_draft_model(
+    definition: dict[str, Any],
+    *,
+    model_bindings: dict[str, str],
+) -> str | None:
+    draft_model = definition["given"].get("draft_model")
+    if draft_model is None:
+        return None
+    draft_model_id = str(draft_model)
+    return model_bindings.get(draft_model_id, draft_model_id)
+
+
+def _draft_model_argv(
+    definition: dict[str, Any],
+    *,
+    model_bindings: dict[str, str],
+) -> list[str]:
+    draft_model = _resolved_draft_model(definition, model_bindings=model_bindings)
+    if draft_model is None:
+        return []
+    return ["--draft-model", draft_model]
+
+
 def _extra_argv(definition: dict[str, Any]) -> list[str]:
     when = definition.get("when") or {}
     return [str(value) for value in when.get("argv", [])]
@@ -38,6 +61,10 @@ def build_execution_plan(
 ) -> ExecutionPlan:
     tool = str(definition["given"]["tool"])
     model = _resolved_model(definition, model_bindings=model_bindings)
+    draft_model_argv = _draft_model_argv(
+        definition,
+        model_bindings=model_bindings,
+    )
     extra_argv = _extra_argv(definition)
     env = _env(definition)
 
@@ -73,6 +100,7 @@ def build_execution_plan(
                 mode,
                 "--server-log",
                 str(server_log_path),
+                *draft_model_argv,
                 *extra_argv,
             ],
             server_log_path=server_log_path,
@@ -90,6 +118,7 @@ def build_execution_plan(
                 mode,
                 "--server-log",
                 str(server_log_path),
+                *draft_model_argv,
                 *extra_argv,
             ],
             server_log_path=server_log_path,

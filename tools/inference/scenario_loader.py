@@ -11,6 +11,7 @@ class Scenario:
     summary: str
     engine: str
     model: str
+    draft_model: str | None
     tags: tuple[str, ...]
     definition: dict
     source_path: Path
@@ -33,6 +34,9 @@ def load_scenarios(scenario_dir: Path) -> list[Scenario]:
                     summary=str(raw["summary"]),
                     engine=str(given["engine"]),
                     model=str(given["model"]),
+                    draft_model=(
+                        str(given["draft_model"]) if "draft_model" in given else None
+                    ),
                     tags=tuple(str(tag) for tag in raw.get("tags", [])),
                     definition=raw,
                     source_path=path,
@@ -55,7 +59,10 @@ def select_scenarios(
     for scenario in scenarios:
         if engines and scenario.engine not in engines:
             continue
-        if models and scenario.model not in models:
+        scenario_models = {scenario.model}
+        if scenario.draft_model is not None:
+            scenario_models.add(scenario.draft_model)
+        if models and not (scenario_models & models):
             continue
         if scenario_ids and scenario.id not in scenario_ids:
             continue
