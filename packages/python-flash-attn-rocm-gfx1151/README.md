@@ -63,6 +63,6 @@ The tracked installed scenarios
 `python tools/run_inference_scenarios.py --scenario
 flash-attn.triton-amd.backend-import --scenario
 flash-attn.triton-amd.qkvpacked-tiny` at run root
-`docs/worklog/inference-runs/20260422T164653`. The bounded GPU smoke ran
+`docs/worklog/inference-runs/20260422T165857`. The bounded GPU smoke ran
 `flash_attn_qkvpacked_func` on a `(1, 16, 3, 2, 32)` float16 CUDA tensor and
 returned finite `(1, 16, 2, 32)` output.
