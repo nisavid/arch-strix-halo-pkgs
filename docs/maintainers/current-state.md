@@ -28,11 +28,16 @@ ideas from that reference as planned or advisory until source audit, package
 work, and local gfx1151 validation update this file or the recipe coverage
 ledger.
 
-The preflight freshness sweep for this docs pass was not clean: AITER had a
-candidate head ahead, llama.cpp had stable `b8882` available over recorded
-`b8881`, and ROCm PyTorch had a branch head ahead. This pass does not adopt
-those package updates; handle them through `docs/maintainers/update-workflows.md`
-before unrelated package backlog work.
+The preflight freshness sweep for this docs pass was triaged on 2026-04-22.
+No package source was repinned during that triage: AITER main through
+`bf4cd5b1703e05544383a8cb81f5e7ed387d8b2c` did not provide a gfx1151 OPUS FP8
+fix; llama.cpp `b8882` at `ca7f7b7b947842384cd8dda4a17a1868f1493a3e` was a
+WebGPU-only update outside the maintained HIP/Vulkan package outputs; and ROCm
+PyTorch release/2.11 through `141ba657575b42e5d0869002b509af4a75899edc` only
+changed Windows int4mm handling and FP64 hipBLASLt TunableOp support, with no
+local patch overlap. The reviewed values are recorded in
+`policies/package-freshness.toml`; rerun the daily checker before the next
+development arc.
 
 ## Live Host State
 

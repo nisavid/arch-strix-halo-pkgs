@@ -150,10 +150,12 @@ def test_rocm_inference_backlog_and_state_are_guarded():
     assert "python-torch-migraphx-gfx1151" in backlog
     assert "FlashAttention CK" in backlog
     assert "FlashAttention Triton" in backlog
-    assert "Freshness sweep triage gate" in backlog
+    assert "Freshness sweep triage gate" not in backlog
     assert "requires host validation" in backlog
     assert "ROCm inference reference boundary" in current_state
     assert "does not change validated host behavior" in current_state
+    assert "triaged on 2026-04-22" in current_state
+    assert "policies/package-freshness.toml" in current_state
     assert "Quark" in coverage
     assert "AWQ" in coverage
     assert "GPTQ" in coverage

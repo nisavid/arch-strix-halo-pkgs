@@ -68,7 +68,7 @@ packages = ["python-pytorch-opt-rocm-gfx1151"]
 priority = "high"
 workflow = "upstream_source_update"
 checks = [
-  { id = "release-branch", role = "primary", kind = "git_ref", repo = "https://github.com/ROCm/pytorch.git", ref = "refs/heads/release/2.11", recorded = "8543095e3275db694084a6679bd5b61f7d2ece76", comparison = "sha" },
+  { id = "release-branch", role = "primary", kind = "git_ref", repo = "https://github.com/ROCm/pytorch.git", ref = "refs/heads/release/2.11", recorded = "141ba657575b42e5d0869002b509af4a75899edc", comparison = "sha" },
   { id = "arch", role = "baseline", kind = "arch_package", package = "python-pytorch-opt-rocm", recorded = "2.11.0-3", comparison = "pkgver" },
 ]
 
@@ -105,7 +105,7 @@ priority = "high"
 workflow = "upstream_source_update"
 checks = [
   { id = "release", role = "primary", kind = "github_release", repo = "ROCm/aiter", recorded = "0.1.12.post1", tag_prefix = "v", comparison = "pep440" },
-  { id = "main", role = "candidate", kind = "git_ref", repo = "https://github.com/ROCm/aiter.git", ref = "refs/heads/main", recorded = "afddcbf4e61611014021631311981dd2b9a59415", comparison = "sha" },
+  { id = "main", role = "candidate", kind = "git_ref", repo = "https://github.com/ROCm/aiter.git", ref = "refs/heads/main", recorded = "bf4cd5b1703e05544383a8cb81f5e7ed387d8b2c", comparison = "sha" },
 ]
 
 [families.numpy]
@@ -194,7 +194,7 @@ packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"]
 priority = "high"
 workflow = "upstream_source_update"
 checks = [
-  { id = "release", role = "primary", kind = "github_release", repo = "ggml-org/llama.cpp", recorded = "b8881", comparison = "prefixed_integer" },
+  { id = "release", role = "primary", kind = "github_release", repo = "ggml-org/llama.cpp", recorded = "b8882", comparison = "prefixed_integer" },
   { id = "aur-hip", role = "baseline", kind = "aur", package = "llama.cpp-hip", recorded = "b8875-1", comparison = "pkgver" },
   { id = "aur-vulkan", role = "baseline", kind = "aur", package = "llama.cpp-vulkan-bin", recorded = "b7376-1", comparison = "pkgver" },
 ]

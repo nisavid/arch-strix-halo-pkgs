@@ -296,6 +296,7 @@ divergence_notes = [
 ]
 update_notes = [
   "When updating, inspect the current Arch python-pytorch pkgbase first, then re-evaluate every carried recipe/source patch against the chosen ROCm fork.",
+  "On 2026-04-22, reviewed ROCm/pytorch release/2.11 through 141ba657575b42e5d0869002b509af4a75899edc. The reviewed range only changed Windows int4mm device memcpy handling and FP64 hipBLASLt TunableOp support, with no overlap against the local Python 3.14 wheel flow, HIPGraph stub, NumPy target define, MAGMA version encoding, gfx1151 CK enablement, or BLAS/provider carry. Record the reviewed branch head without repinning the package source until a local workload needs those fixes or a broader PyTorch rebuild lane is already open.",
   "Keep the package version aligned with the built wheel version; do not repeat the earlier mismatch where the package claimed 2.11.0 but the built wheel came from develop.",
   "Keep openblas explicit in both depends and makedepends so the build does not drift back to generic host BLAS auto-detection.",
   "Preserve the current Arch Python 3.14 wheel flow unless upstream changes materially: build CMake artifacts first, tolerate the known _sysconfigdata__linux_x86_64-linux-gnu.cpython-314.pyc install failure, run the safe CMake install scripts that stage PyTorch C++ extension headers and Caffe2 package metadata, restage the built torch/lib and torch/bin payloads, then run SKIP_BUILD_DEPS=1 python setup.py bdist_wheel."
@@ -517,6 +518,7 @@ divergence_notes = [
 ]
 update_notes = [
   "Review upstream AITER main as a freshness candidate branch. Adopt a new pinned snapshot when the reviewed range is relevant to local build/runtime behavior, known blockers, or patch reduction; otherwise record the reviewed head without changing the packaged source commit.",
+  "On 2026-04-22, reviewed AITER main through bf4cd5b1703e05544383a8cb81f5e7ed387d8b2c. The reviewed range is mostly FlyDSL, tuning, CI, Qwen3.5/397B tuned GEMM/FMoE configs, CK_TILE tuning fixes, and vcs_versioning metadata; it does not provide a gfx1151-compatible OPUS FP8 path because `csrc/include/opus/opus.hpp` still keeps the relevant `make_tiled_mma` default under the gfx1250 WMMA branch. Record the reviewed candidate head without repinning the package source.",
   "Treat FlyDSL as a separate tracked package story; do not silently fold an unpublished wheel into this package.",
   "Keep the installed-system JIT runtime patch until upstream AITER stops assuming `hipcc` is on the ambient PATH and correctly imports modules copied to the writable user JIT cache from read-only site-packages installs.",
   "Keep the package's explicit ROCm toolchain exports in `build()` until upstream AITER stops probing `hipconfig` and `hipcc` through ambient shell state. The concrete build failure was `Could not find hipconfig in PATH or ROCM_HOME(/usr)`.",
@@ -847,6 +849,7 @@ divergence_notes = [
 ]
 update_notes = [
   "Diff against aur/llama.cpp-hip first during updates, then consult aur/llama.cpp for shared install/dependency conventions outside the ROCm-specific split.",
+  "On 2026-04-22, reviewed upstream llama.cpp b8882 at ca7f7b7b947842384cd8dda4a17a1868f1493a3e. The b8881..b8882 range only adds WebGPU conv2d shader support under `ggml/src/ggml-webgpu`, outside the maintained HIP and Vulkan backend package outputs. Record freshness b8882 without repinning the package source until a supported backend diff or planned rebuild lane exists.",
   "Keep the backend-specific package split explicit until benchmarking proves a routing wrapper is worth maintaining."
 ]
 provides = ["llama.cpp-hip-gfx1151", "llama.cpp-hip"]
@@ -882,6 +885,7 @@ divergence_notes = [
 ]
 update_notes = [
   "If a maintained source-built aur/llama.cpp-vulkan package appears, switch to it as the authoritative baseline.",
+  "On 2026-04-22, reviewed upstream llama.cpp b8882 at ca7f7b7b947842384cd8dda4a17a1868f1493a3e. The b8881..b8882 range only adds WebGPU conv2d shader support under `ggml/src/ggml-webgpu`, outside the maintained HIP and Vulkan backend package outputs. Record freshness b8882 without repinning the package source until a supported backend diff or planned rebuild lane exists.",
   "Until then, compare runtime/package expectations against the -bin package and source-build conventions against aur/llama.cpp."
 ]
 provides = ["llama.cpp-vulkan-gfx1151", "llama.cpp-vulkan"]

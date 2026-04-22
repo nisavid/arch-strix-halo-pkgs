@@ -48,6 +48,7 @@ binaries find their shared libraries without LD_LIBRARY_PATH.
 ## Update Notes
 
 - If a maintained source-built aur/llama.cpp-vulkan package appears, switch to it as the authoritative baseline.
+- On 2026-04-22, reviewed upstream llama.cpp b8882 at ca7f7b7b947842384cd8dda4a17a1868f1493a3e. The b8881..b8882 range only adds WebGPU conv2d shader support under `ggml/src/ggml-webgpu`, outside the maintained HIP and Vulkan backend package outputs. Record freshness b8882 without repinning the package source until a supported backend diff or planned rebuild lane exists.
 - Until then, compare runtime/package expectations against the -bin package and source-build conventions against aur/llama.cpp.
 
 ## Maintainer Starting Points

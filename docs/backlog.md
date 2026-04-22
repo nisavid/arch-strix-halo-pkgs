@@ -2,11 +2,6 @@
 
 ## Packaging And Build Hygiene
 
-- Freshness sweep triage gate: the 2026-04-22 preflight sweep for the ROCm
-  reference-ingestion pass found AITER `candidate_head_ahead`, llama.cpp
-  `stable_update_available` for `b8882`, and ROCm PyTorch `branch_head_ahead`.
-  Handle those through `docs/maintainers/update-workflows.md` before unrelated
-  package backlog work.
 - Newly discovered ROCm inference candidates from
   `docs/maintainers/rocm-inference-reference.md` belong near the top of this
   backlog, but they are not validated package commitments until their source
