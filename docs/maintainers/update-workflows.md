@@ -16,20 +16,32 @@ shape may use a one-time pacman downgrade.
 
 ## 0. Dependency Freshness Sweep
 
-Run this sweep after closing a development arc and before starting a new one
-when no successful sweep has been recorded in the previous 24 hours. The
+Run this daily sweep after closing a development arc and before starting a new
+one unless the checker reports a cache entry from the previous 24 hours. The
 freshness policy lives in `policies/package-freshness.toml`; keep every
 `packages/*/PKGBUILD` directory covered by exactly one freshness family.
 
-Use the read-only checker instead of manually visiting release pages:
+Use the read-only checker instead of manually visiting release pages. For the
+ordinary daily cadence, let the checker reuse a still-valid cache entry:
 
 ```sh
-tools/check_package_updates.py --refresh
-tools/check_package_updates.py --json
+tools/check_package_updates.py --json --fail-on actionable
 ```
 
-The checker writes only ignored cache/report data under `.agents/session/`.
-It does not upgrade packages, update submodules, edit policy, or modify docs.
+Force a new network sweep after changing package policy, package directories,
+or freshness logic:
+
+```sh
+tools/check_package_updates.py --refresh --json --fail-on actionable
+```
+
+The checker writes only an ignored cache file under `.agents/session/`. It does
+not upgrade packages, update submodules, edit policy, or modify docs.
+
+With `--fail-on actionable`, the CLI exits `10` when an actionable status is
+present and exits `3` when any provider query failed. A zero exit means the
+report has no actionable statuses or query failures, but still read the JSON
+summary before moving on.
 
 Status handling:
 
@@ -55,9 +67,10 @@ Status handling:
 - `manual_review_required`: the family deliberately has no complete automated
   freshness check; inspect the documented lane before ordinary backlog work.
 
-Use cached results only when the checker reports that the cache is still valid.
-Force a new network sweep with `--refresh` after changing package policy,
-package directories, or freshness logic.
+The cache is valid only when the policy digest still matches and the cached
+report is younger than `--max-age-hours` (24 by default). The digest includes
+the checker version, freshness policy, discovered package directories, and any
+`--only` selectors.
 
 Freshness `recorded` values are the last reviewed upstream or baseline values.
 For branch checks, the recorded value may be newer than the packaged source

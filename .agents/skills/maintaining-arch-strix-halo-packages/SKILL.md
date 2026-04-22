@@ -1,6 +1,6 @@
 ---
 name: maintaining-arch-strix-halo-packages
-description: Use when updating, auditing, or extending this repo's package set, especially when upstream sources, baseline Arch or AUR packages, or Blackcat Informatics' Strix Halo recipe inputs changed.
+description: Use when updating, auditing, or extending this repo's package set, checking the 24-hour dependency freshness sweep, or reconciling upstream, Arch, AUR, CachyOS, or Blackcat Informatics recipe drift.
 ---
 
 # Maintaining Arch Strix Halo Packages
@@ -15,6 +15,7 @@ which divergences are intentional, and where reusable source changes live.
 ## Use When
 
 - update an upstream source lane
+- check whether the 24-hour dependency freshness sweep is due
 - reconcile drift against Arch, CachyOS, or AUR baselines
 - absorb changes from Blackcat Informatics' Strix Halo recipe work
 - add a new recipe-managed package
@@ -29,6 +30,9 @@ which divergences are intentional, and where reusable source changes live.
 - When changing the package-update workflow or metadata model, open:
   - `docs/maintainers/update-workflows.md`
   - `policies/recipe-packages.toml`
+- When checking the freshness cadence, open:
+  - `docs/maintainers/update-workflows.md`
+  - `policies/package-freshness.toml`
 - When changing TheRock-generated package output, open:
   - `docs/architecture/therock-generator.md`
   - `docs/maintainers/therock-generator-status.md`
@@ -52,15 +56,17 @@ which divergences are intentional, and where reusable source changes live.
 
 ## Default Package-Update Loop
 
-1. Identify the change lane.
+1. Check the dependency freshness sweep in `docs/maintainers/update-workflows.md`
+   before unrelated backlog work when the 24-hour cadence is due.
+2. Identify the change lane.
    Use one of: upstream source change, baseline package change, recipe change,
    or new package.
-2. Confirm the package's authoritative and advisory references.
-3. Update repo policy first if the maintenance story changed.
-4. Re-render generated metadata before making narrow manual edits.
-5. Keep durable source changes in patch files when practical.
-6. Rebuild, refresh the local repo metadata, and run the relevant smoke tests.
-7. Update tracked docs if the change altered policy, workflow, or verified
+3. Confirm the package's authoritative and advisory references.
+4. Update repo policy first if the maintenance story changed.
+5. Re-render generated metadata before making narrow manual edits.
+6. Keep durable source changes in patch files when practical.
+7. Rebuild, refresh the local repo metadata, and run the relevant smoke tests.
+8. Update tracked docs if the change altered policy, workflow, or verified
    behavior.
 
 ## Guardrails

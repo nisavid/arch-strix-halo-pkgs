@@ -17,6 +17,7 @@ Use this index when you need the deeper project docs.
 
 ## Maintain Or Update The Repo
 
+- [Dependency freshness sweep](maintainers/update-workflows.md#0-dependency-freshness-sweep)
 - [Current state](maintainers/current-state.md)
 - [Recipe input repo](maintainers/recipe-inputs.md)
 - [Update workflows](maintainers/update-workflows.md)

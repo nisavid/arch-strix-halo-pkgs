@@ -23,6 +23,11 @@ without chat history.
   ending the work.
 - Delete session-only inputs once their durable content has been extracted.
 - Do not consider a work plan finished until its session-only inputs are gone.
+- When beginning repo work or closing a development arc, enforce the 24-hour
+  dependency freshness sweep in `docs/maintainers/update-workflows.md` before
+  unrelated backlog work. Use the checker's cache-aware `--fail-on actionable`
+  mode, and treat actionable or failed statuses as work to triage before moving
+  on.
 - Start nontrivial feature, packaging, or tooling work in a dedicated branch
   worktree when the active checkout has existing changes or the task spans
   multiple files and verification steps. Use a sibling

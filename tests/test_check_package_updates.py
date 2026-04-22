@@ -3,6 +3,7 @@ import importlib.util
 import json
 import subprocess
 import textwrap
+import time
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -669,6 +670,69 @@ def test_cache_is_reused_when_policy_digest_matches(tmp_path):
     assert second["families"] == first["families"]
 
 
+def test_refresh_bypasses_matching_cache(tmp_path):
+    write_pkg(tmp_path, "python-numpy-gfx1151")
+    write_policy(
+        tmp_path,
+        """
+        [families.numpy]
+        packages = ["python-numpy-gfx1151"]
+        priority = "medium"
+        workflow = "upstream_source_update"
+        checks = [{ id = "pypi", role = "primary", kind = "pypi", package = "numpy", recorded = "2.4.4", comparison = "pep440" }]
+        """,
+    )
+    updates.run_check(
+        tmp_path,
+        refresh=True,
+        clients=updates.FakeClients(pypi={"numpy": {"version": "2.4.4"}}),
+    )
+
+    refreshed = updates.run_check(
+        tmp_path,
+        refresh=True,
+        clients=updates.FakeClients(pypi={"numpy": {"version": "2.4.5"}}),
+    )
+
+    assert refreshed["cache"]["used"] is False
+    assert refreshed["families"][0]["status"] == "stable_update_available"
+    assert refreshed["families"][0]["checks"][0]["latest"] == "2.4.5"
+
+
+def test_cache_expires_when_max_age_is_exceeded(tmp_path):
+    write_pkg(tmp_path, "python-numpy-gfx1151")
+    write_policy(
+        tmp_path,
+        """
+        [families.numpy]
+        packages = ["python-numpy-gfx1151"]
+        priority = "medium"
+        workflow = "upstream_source_update"
+        checks = [{ id = "pypi", role = "primary", kind = "pypi", package = "numpy", recorded = "2.4.4", comparison = "pep440" }]
+        """,
+    )
+    updates.run_check(
+        tmp_path,
+        refresh=True,
+        clients=updates.FakeClients(pypi={"numpy": {"version": "2.4.4"}}),
+    )
+    cache_path = updates.cache_file(tmp_path)
+    cached = json.loads(cache_path.read_text(encoding="utf-8"))
+    cached["cache"]["checked_at"] = time.time() - (25 * 3600)
+    cache_path.write_text(json.dumps(cached), encoding="utf-8")
+
+    expired = updates.run_check(
+        tmp_path,
+        refresh=False,
+        max_age_hours=24,
+        clients=updates.FakeClients(pypi={"numpy": {"version": "2.4.5"}}),
+    )
+
+    assert expired["cache"]["used"] is False
+    assert expired["families"][0]["status"] == "stable_update_available"
+    assert expired["families"][0]["checks"][0]["latest"] == "2.4.5"
+
+
 def test_real_freshness_policy_covers_every_pkgbuild_dir():
     repo = Path(__file__).resolve().parents[1]
 
@@ -782,3 +846,29 @@ def test_update_workflow_references_freshness_checker():
 
     assert "tools/check_package_updates.py" in doc
     assert "policies/package-freshness.toml" in doc
+    assert "tools/check_package_updates.py --json --fail-on actionable" in doc
+    assert (
+        "tools/check_package_updates.py --refresh --json --fail-on actionable"
+        in doc
+    )
+    assert "exits `10`" in doc
+    assert "exits `3`" in doc
+
+
+def test_agent_instructions_expose_freshness_cadence():
+    repo = Path(__file__).resolve().parents[1]
+    agents = (repo / "AGENTS.md").read_text(encoding="utf-8")
+
+    assert "24-hour" in agents
+    assert "dependency freshness sweep" in agents
+    assert "docs/maintainers/update-workflows.md" in agents
+
+
+def test_package_maintenance_skill_triggers_on_freshness_sweep():
+    repo = Path(__file__).resolve().parents[1]
+    skill = (
+        repo / ".agents/skills/maintaining-arch-strix-halo-packages/SKILL.md"
+    ).read_text(encoding="utf-8")
+
+    assert "24-hour dependency freshness sweep" in skill
+    assert "policies/package-freshness.toml" in skill
