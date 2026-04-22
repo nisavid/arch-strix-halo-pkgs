@@ -6,6 +6,11 @@ import importlib
 import sys
 
 
+_VALIDATED_BACKEND_MODULE = (
+    "aiter.ops.triton._triton_kernels.flash_attn_triton_amd.interface_v2"
+)
+
+
 def _positive_int(value: str) -> int:
     parsed = int(value)
     if parsed <= 0:
@@ -34,27 +39,25 @@ def _import_flash_attn():
 
 
 def _backend_module(flash_attn):
-    candidates = (
-        "aiter.ops.triton._triton_kernels.flash_attn_triton_amd.interface_v2",
-        "flash_attn.flash_attn_interface",
-        "flash_attn.ops.triton.flash_attn_interface",
-        "flash_attn.ops.triton.backend",
-    )
-    for name in candidates:
-        try:
-            module = importlib.import_module(name)
-        except Exception as exc:
-            print(
-                f"backend_probe_skipped {name} {type(exc).__name__}: {exc}",
-                file=sys.stderr,
-            )
-            continue
-        if getattr(module, "USE_TRITON_ROCM", False) is True:
-            return module
-    backend = getattr(flash_attn, "flash_attn_interface", None)
-    if backend is not None and getattr(backend, "USE_TRITON_ROCM", False) is True:
-        return backend
-    raise RuntimeError("FLASH_ATTN_BACKEND_NOT_FOUND")
+    wrapper = getattr(flash_attn, "flash_attn_interface", None)
+    if wrapper is None:
+        raise RuntimeError("FLASH_ATTN_BACKEND_NOT_FOUND")
+
+    if getattr(wrapper, "USE_TRITON_ROCM", False) is not True:
+        raise RuntimeError("flash_attn.flash_attn_interface USE_TRITON_ROCM != True")
+
+    backend = getattr(wrapper, "flash_attn_gpu", None)
+    if backend is None:
+        raise RuntimeError("flash_attn.flash_attn_interface.flash_attn_gpu missing")
+
+    backend_name = getattr(backend, "__name__", None)
+    if backend_name != _VALIDATED_BACKEND_MODULE:
+        raise RuntimeError(
+            "flash_attn.flash_attn_interface.flash_attn_gpu "
+            f"{backend_name} != {_VALIDATED_BACKEND_MODULE}"
+        )
+
+    return wrapper, backend
 
 
 def _run_backend_import() -> int:
@@ -65,15 +68,12 @@ def _run_backend_import() -> int:
         return 1
 
     try:
-        backend = _backend_module(flash_attn)
+        wrapper, backend = _backend_module(flash_attn)
     except RuntimeError as exc:
         print(f"flash_attn_backend_error {exc}")
         return 1
-    except (ImportError, ModuleNotFoundError) as exc:
-        print(f"flash_attn_import_error {exc}")
-        return 1
 
-    use_triton_rocm = bool(getattr(backend, "USE_TRITON_ROCM", False))
+    use_triton_rocm = bool(getattr(wrapper, "USE_TRITON_ROCM", False))
     print("mode backend-import")
     print(f"flash_attn_version {getattr(flash_attn, '__version__', 'unknown')}")
     print(f"use_triton_rocm {use_triton_rocm}")
