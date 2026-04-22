@@ -6,9 +6,12 @@
   `docs/maintainers/rocm-inference-reference.md` belong near the top of this
   backlog, but they are not validated package commitments until their source
   audit and host gates pass.
-  - Package candidate: `python-torch-migraphx-gfx1151`; requires source audit,
-    build/import proof, and a tiny Torch-MIGraphX FX/Dynamo or PT2E smoke
-    before package policy is added.
+  - Package candidate: `python-torch-migraphx-gfx1151`; source audit and
+    wheel-build proof now exist for current upstream `master`, but import and
+    runtime proof are blocked until the local MIGraphX lane exposes the Python
+    `migraphx` module. Do not add package policy for
+    `python-torch-migraphx-gfx1151` until MIGraphX Python binding proof exists,
+    then run a tiny Torch-MIGraphX FX/Dynamo or PT2E smoke before promotion.
   - Package experiment: FlashAttention CK; requires source audit, build/import
     proof, and direct CK smoke coverage before any engine integration claim.
   - Package experiment: FlashAttention Triton; requires

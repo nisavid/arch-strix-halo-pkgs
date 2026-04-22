@@ -28,6 +28,23 @@ ideas from that reference as planned or advisory until source audit, package
 work, and local gfx1151 validation update this file or the recipe coverage
 ledger.
 
+The `python-torch-migraphx-gfx1151` package candidate has source-audit and
+wheel-build proof, but is not ready for package policy. On 2026-04-22,
+ROCm/torch_migraphx `master` at
+`6b2cd2237e83b675ae671650d08343dfbb0be5f3` reported package version `1.2`,
+while PyPI and the only upstream tag remained at `1.1`. A throwaway source
+checkout under `/tmp` built
+`torch_migraphx-1.2-cp314-cp314-linux_x86_64.whl` only after binding the build
+to the ROCm compiler lane with `CC=/opt/rocm/lib/llvm/bin/amdclang` and
+`CXX=/opt/rocm/lib/llvm/bin/amdclang++`; the default generic `c++` path failed
+on inherited `-famd-opt` flags. Import proof remains blocked because the
+installed `migraphx-gfx1151` package does not provide a Python `migraphx`
+module. The installed wheel import failed with `Unable to import migraphx`, and
+`pacman -Ql migraphx-gfx1151` showed only FlatBuffers files from the current
+TheRock split. Treat the next gate as adding or splitting the MIGraphX Python
+binding first, then rerun the Torch-MIGraphX import and a tiny FX/Dynamo or
+PT2E smoke before adding `python-torch-migraphx-gfx1151` package policy.
+
 The preflight freshness sweep for this docs pass was triaged on 2026-04-22.
 No package source was repinned during that triage: AITER main through
 `bf4cd5b1703e05544383a8cb81f5e7ed387d8b2c` did not provide a gfx1151 OPUS FP8
