@@ -15,11 +15,11 @@
   - Package experiment: FlashAttention CK; requires source audit, build/import
     proof, and direct CK smoke coverage before any engine integration claim.
   - Package experiment: FlashAttention Triton; `python-flash-attn-rocm-gfx1151`
-    now has build proof, staged import proof, runtime backend-selection proof,
-    and a bounded non-autotuned Triton AMD smoke from the built package image.
-    Next gate is sudo-enabled deploy, `pacman -Q`, and the same smoke against
-    the installed package. Treat `FLASH_ATTENTION_TRITON_AMD_AUTOTUNE=TRUE` as
-    a later performance task.
+    now has build proof, installed import proof, runtime backend-selection
+    proof, and a bounded non-autotuned Triton AMD smoke from the installed
+    package. Next gate is an installed-engine backend-selection probe for a
+    consumer that can actually route to the package. Treat
+    `FLASH_ATTENTION_TRITON_AMD_AUTOTUNE=TRUE` as a later performance task.
   - Candidate follow-ups: Quark, AWQ, GPTQ, bitsandbytes, xFormers, and
     FBGEMM. Keep each marked as requires host validation and source audit
     before adding a package or promoting a scenario.
@@ -134,14 +134,13 @@
     first gate: on 2026-04-20, forcing `ROCM_AITER_FA` failed before serving
     because vLLM reported `compute capability not supported`
   - current package evidence: `tools/amerge build python-flash-attn-rocm-gfx1151`
-    builds `2.8.4-1`; the staged package image imports `flash_attn`, selects
-    AITER's Triton AMD backend with `FLASH_ATTENTION_TRITON_AMD_ENABLE=TRUE`,
-    and passes a bounded `flash_attn_qkvpacked_func` GPU smoke
-  - next gate: deploy `python-flash-attn-rocm-gfx1151`, verify `pacman -Q`, and
-    rerun the direct installed smoke without `PYTHONPATH`
-  - after the installed direct smoke passes, add smoke coverage for every local
-    engine that can plausibly use it: Transformers or vLLM backend-selection
-    probes only where the installed engine can actually route to that package
+    builds `2.8.4-1`; `tools/amerge deploy python-flash-attn-rocm-gfx1151`
+    installs it; the installed package imports `flash_attn`, selects AITER's
+    Triton AMD backend with `FLASH_ATTENTION_TRITON_AMD_ENABLE=TRUE`, and
+    passes a bounded `flash_attn_qkvpacked_func` GPU smoke
+  - next gate: add smoke coverage for every local engine that can plausibly use
+    it: Transformers or vLLM backend-selection probes only where the installed
+    engine can actually route to that package
   - treat `FLASH_ATTENTION_TRITON_AMD_AUTOTUNE="TRUE"` as a later performance
     experiment after the non-autotuned import/kernel smoke passes
   - before promoting any FlashAttention instruction or explanation, validate

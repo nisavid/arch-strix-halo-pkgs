@@ -45,20 +45,16 @@ print("finite", bool(torch.isfinite(out).all().item()))
 PY
 ```
 
-Keep any vLLM scenario exploratory until direct `flash_attn` import and
-bounded Triton AMD tests pass on the reference host.
+Keep any vLLM scenario exploratory until an installed engine proves it can route
+to this package.
 
 ## Current Evidence
 
 On 2026-04-22, `tools/amerge build python-flash-attn-rocm-gfx1151` built
-`2.8.4-1`. A staged import from the built package image selected
-`aiter.ops.triton._triton_kernels.flash_attn_triton_amd.interface_v2` with
-`FLASH_ATTENTION_TRITON_AMD_ENABLE=TRUE`. A bounded host GPU smoke from the
-built image ran `flash_attn_qkvpacked_func` on a `(1, 16, 3, 2, 32)` float16
-CUDA tensor and returned finite `(1, 16, 2, 32)` output.
-
-The install gate is still pending:
-
-```sh
-tools/amerge deploy python-flash-attn-rocm-gfx1151
-```
+`2.8.4-1`, and `tools/amerge deploy python-flash-attn-rocm-gfx1151` installed
+it on the reference host. `pacman -Q python-flash-attn-rocm-gfx1151` reports
+`2.8.4-1`. Installed import with `FLASH_ATTENTION_TRITON_AMD_ENABLE=TRUE`
+reports `flash_attn_version 2.8.4`, `use_triton_rocm True`, and backend module
+`aiter.ops.triton._triton_kernels.flash_attn_triton_amd.interface_v2`. A direct
+installed GPU smoke ran `flash_attn_qkvpacked_func` on a `(1, 16, 3, 2, 32)`
+float16 CUDA tensor and returned finite `(1, 16, 2, 32)` output.

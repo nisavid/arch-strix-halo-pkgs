@@ -108,16 +108,16 @@ FlashAttention reaches `torch`, and relaxes wheel metadata from
 `python-triton-gfx1151`.
 
 On 2026-04-22, `tools/amerge build python-flash-attn-rocm-gfx1151` produced
-`python-flash-attn-rocm-gfx1151 2.8.4-1`. A staged import using the built
-package image and `FLASH_ATTENTION_TRITON_AMD_ENABLE=TRUE` reported
-`flash_attn_version 2.8.4`, `use_triton_rocm True`, and backend module
-`aiter.ops.triton._triton_kernels.flash_attn_triton_amd.interface_v2`. A
-bounded host GPU smoke from that same built package image ran
-`flash_attn_qkvpacked_func` on a `(1, 16, 3, 2, 32)` float16 CUDA tensor,
-returned shape `(1, 16, 2, 32)`, and reported finite output. Installing the
-package is still pending because `tools/amerge deploy
-python-flash-attn-rocm-gfx1151` reached sudo and failed without an interactive
-password.
+`python-flash-attn-rocm-gfx1151 2.8.4-1`, and `tools/amerge deploy
+python-flash-attn-rocm-gfx1151` installed it on the reference host. `pacman -Q
+python-flash-attn-rocm-gfx1151` reports `2.8.4-1`. Installed import with
+`FLASH_ATTENTION_TRITON_AMD_ENABLE=TRUE` reports `flash_attn_version 2.8.4`,
+`use_triton_rocm True`, and backend module
+`aiter.ops.triton._triton_kernels.flash_attn_triton_amd.interface_v2`. A direct
+installed GPU smoke ran `flash_attn_qkvpacked_func` on a `(1, 16, 3, 2, 32)`
+float16 CUDA tensor, returned shape `(1, 16, 2, 32)`, and reported finite
+output. Keep vLLM or Transformers promotion behind an installed-engine
+backend-selection proof.
 
 ## Live Host State
 
