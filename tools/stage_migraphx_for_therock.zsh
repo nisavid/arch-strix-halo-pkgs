@@ -58,10 +58,10 @@ require_cmds() {
 
 clean_path() {
   emulate -L zsh
-  local path=$1
-  [[ -n $path ]] || fail "refusing to remove empty path"
-  [[ $path == /tmp/* ]] || fail "refusing to clean non-/tmp path: $path"
-  run rm -rf -- $path
+  local target_path=$1
+  [[ -n $target_path ]] || fail "refusing to remove empty path"
+  [[ $target_path == /tmp/* ]] || fail "refusing to clean non-/tmp path: $target_path"
+  run rm -rf -- $target_path
 }
 
 python_disable_versions() {
