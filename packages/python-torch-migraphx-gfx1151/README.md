@@ -13,7 +13,7 @@
 - Recorded reference packages: `none`
 - Authoritative reference package: `none`
 - Advisory reference packages: `none`
-- Applied source patch files/actions: `4`
+- Applied source patch files/actions: `5`
 
 ## Recipe notes
 
@@ -26,11 +26,17 @@ provides the Python `migraphx` extension under `/opt/rocm/lib`, PyTorch and
 TorchAO come from the local `gfx1151` package family, and the wheel build uses
 the ROCm clang lane explicitly.
 
-The promoted runtime lane is FX lowering. The installed host imports MIGraphX,
-TorchAO PT2E, and Torch-MIGraphX from package-owned paths, and lowers a tiny
-`x + 1` module to a MIGraphX-backed `SplitModule` on the `gfx1151` GPU with
-matching PyTorch output. Dynamo backend registration stays lazy because
-importing PyTorch AOTAutograd after `_torch_migraphx` currently segfaults on
+The promoted runtime lanes are FX lowering and a tiny Dynamo named-backend
+smoke. The installed `1.2-2` host package imports MIGraphX, TorchAO PT2E, and
+Torch-MIGraphX from package-owned paths and lowers a tiny `x + 1` module to a
+MIGraphX-backed `SplitModule` on the `gfx1151` GPU with matching PyTorch
+output. The built `1.2-3` package overlay imports `torch_migraphx.dynamo`,
+imports `sqlite3` after Torch-MIGraphX, and compiles the same module through
+`torch.compile(..., backend="migraphx")`.
+
+Dynamo registration stays lazy on base import, and the package preloads
+PyTorch AOTAutograd before MIGraphX native modules because importing
+AOTAutograd or `sqlite3` after the MIGraphX Python extension can segfault on
 the local Python 3.14 and PyTorch 2.11 stack.
 
 
@@ -40,13 +46,13 @@ the local Python 3.14 and PyTorch 2.11 stack.
 - Uses the ROCm compiler lane explicitly and strips the unsupported -famd-opt flag from wheel C/C++ flags.
 - Depends on the local MIGraphX split package because the Python binding is installed under /opt/rocm/lib with migraphx.pth.
 - Relaxes upstream's numpy metadata cap for the repo's numpy 2.x lane.
-- The package is promoted on an FX smoke, not Dynamo, until the Dynamo backend import no longer segfaults after _torch_migraphx loads.
+- Preloads PyTorch AOTAutograd before MIGraphX native modules so torch.compile(..., backend="migraphx") can use the named backend without the import-order segfault.
 
 ## Intentional Divergences
 
 - There is no current Arch-family Torch-MIGraphX package baseline, so this package is closure-first and tracks the audited upstream master commit that reports package version 1.2.
 - Carries a PT2E compatibility patch because PyTorch 2.11 documents PT2E quantization through TorchAO while current Torch-MIGraphX still imports the removed torch.ao.quantization.quantize_pt2e module.
-- Keeps Dynamo registration lazy because importing the Dynamo backend after the native _torch_migraphx extension currently segfaults on the local Python 3.14 and PyTorch 2.11 stack; FX lowering is the promoted smoke lane.
+- Keeps Dynamo registration lazy on base import and preloads PyTorch AOTAutograd before MIGraphX native modules so named-backend registration can import safely on the local Python 3.14 and PyTorch 2.11 stack.
 - Relaxes upstream's numpy <2.0 wheel metadata because the local runtime and FX smoke use the repo's python-numpy-gfx1151 2.x lane.
 
 ## Update Notes
@@ -56,7 +62,7 @@ the local Python 3.14 and PyTorch 2.11 stack.
 - Keep the installed _torch_migraphx extension RPATH pointed at the sibling torch/lib directory so libc10, libtorch_cpu, and libtorch_python resolve without LD_LIBRARY_PATH.
 - Keep the numpy metadata patch while the local package depends on the repo's numpy 2.x lane.
 - Re-run host-device FX lowering after every MIGraphX, PyTorch, TorchAO, or Torch-MIGraphX rebuild.
-- Do not promote Dynamo or torch.compile backend coverage until explicit host validation proves import and a tiny compile no longer segfault.
+- Re-run the tiny torch.compile backend smoke after every PyTorch or Torch-MIGraphX rebuild because the current fix depends on PyTorch AOTAutograd import ordering.
 
 ## Maintainer Starting Points
 

@@ -42,21 +42,24 @@ ROCm/torch_migraphx `master` commit
 `6b2cd2237e83b675ae671650d08343dfbb0be5f3`, which reports package version
 `1.2` while PyPI and the only upstream tag remain at `1.1`. The local package
 binds builds to the ROCm compiler lane, carries a PT2E import patch for the
-PyTorch 2.11 and TorchAO layout, and keeps Dynamo registration lazy because
-importing PyTorch AOTAutograd after `_torch_migraphx` currently segfaults on
-the Python 3.14 stack. `tools/amerge build python-torchao-rocm-gfx1151
-python-torch-migraphx-gfx1151` produced
+PyTorch 2.11 and TorchAO layout, keeps Dynamo registration lazy on base import,
+and preloads PyTorch AOTAutograd before MIGraphX native modules so
+named-backend registration avoids the local import-order segfault. `tools/amerge build
+python-torchao-rocm-gfx1151 python-torch-migraphx-gfx1151` produced
 `python-torchao-rocm-gfx1151 0.17.0-2` and
 `python-torch-migraphx-gfx1151 1.2-2` package artifacts on 2026-04-22. The
 reference host then installed `python-torchao-rocm-gfx1151 0.17.0-2` and
 `python-torch-migraphx-gfx1151 1.2-2`; installed-system imports for TorchAO
 PT2E, Torch-MIGraphX, and MIGraphX resolve from package-owned paths, and a
 host-device FX smoke lowered a tiny `x + 1` module to a MIGraphX-backed
-`SplitModule` on the Radeon 8060S with matching PyTorch output.
+`SplitModule` on the Radeon 8060S with matching PyTorch output. A follow-up
+`python-torch-migraphx-gfx1151 1.2-3` build adds the AOTAutograd preload patch;
+an extracted `1.2-3` package overlay imports `torch_migraphx.dynamo`, imports
+`sqlite3` after Torch-MIGraphX, and passes the same tiny module through
+`torch.compile(..., backend="migraphx")` on the reference host. Privileged
+install of `1.2-3` is still pending.
 
-Dynamo and `torch.compile(..., backend="migraphx")` coverage remains blocked
-until a host run proves that backend registration no longer segfaults. Keep
-Composable Kernel and rocMLIR integration disabled unless explicitly
+Keep Composable Kernel and rocMLIR integration disabled unless explicitly
 requested, because the current staged root is intentionally self-consistent
 with the installed split packages before those optional integration gates are
 promoted.

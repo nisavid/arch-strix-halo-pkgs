@@ -93,11 +93,15 @@ patches and expected-failure findings that were quarantined after the
     PyTorch 2.11 stack, where PT2E quantization lives under TorchAO.
 - [Keep Dynamo registration lazy](../packages/python-torch-migraphx-gfx1151/0002-keep-dynamo-registration-lazy.patch)
   - Keeps base import and the FX lowering path usable while Dynamo backend
-    registration still segfaults after loading `_torch_migraphx` on this Python
-    3.14 and PyTorch 2.11 stack.
+    registration remains opt-in on this Python 3.14 and PyTorch 2.11 stack.
 - [Relax numpy runtime metadata cap](../packages/python-torch-migraphx-gfx1151/0003-relax-numpy-runtime-cap.patch)
   - Matches the wheel metadata to the repo's numpy 2.x lane after host FX
     lowering validation with `python-numpy-gfx1151`.
+- [Preload AOTAutograd before MIGraphX native modules](../packages/python-torch-migraphx-gfx1151/0004-preload-aot-autograd-before-native-extension.patch)
+  - Avoids the local import-order segfault where importing `sqlite3`, including
+    through PyTorch AOTAutograd's filelock path, after the MIGraphX Python
+    extension crashes, and lets `torch.compile(..., backend="migraphx")`
+    register the named backend.
 
 ## Patch Hygiene
 

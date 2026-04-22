@@ -1,0 +1,18 @@
+diff --git a/py/torch_migraphx/__init__.py b/py/torch_migraphx/__init__.py
+index 53630a0..c853a47 100644
+--- a/py/torch_migraphx/__init__.py
++++ b/py/torch_migraphx/__init__.py
+@@ -10,6 +10,13 @@ except ModuleNotFoundError:
+         name="torch",
+     ) from None
+ 
++if version.parse(_torch_version) >= version.parse("2.1.0"):
++    # Importing sqlite3 after the MIGraphX Python extension loads can crash
++    # this Python 3.14 / PyTorch 2.11 ROCm stack. AOTAutograd reaches sqlite3
++    # through PyTorch's filelock path, so preload it before any MIGraphX native
++    # module to keep Dynamo's documented custom-backend path usable.
++    import torch._functorch.aot_autograd
++
+ try:
+     import migraphx
+ except ModuleNotFoundError:

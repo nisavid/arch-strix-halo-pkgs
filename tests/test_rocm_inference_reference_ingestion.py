@@ -100,8 +100,8 @@ def test_rocm_inference_reference_preserves_source_disposition():
     assert "FlashAttention Triton" in flash_attention["gate"]
 
     torch_migraphx = rows["https://github.com/ROCm/torch_migraphx/"]
-    assert torch_migraphx["status"] == "`planned`"
-    assert "python-torch-migraphx-gfx1151" in torch_migraphx["gate"]
+    assert torch_migraphx["status"] == "`validated`"
+    assert "python-torch-migraphx-gfx1151 1.2-3" in torch_migraphx["gate"]
 
 
 def test_rocm_inference_ingestion_skill_covers_required_sinks():
@@ -149,13 +149,14 @@ def test_rocm_inference_backlog_and_state_are_guarded():
 
     assert "Newly discovered ROCm inference candidates" in backlog
     assert "python-torch-migraphx-gfx1151" in backlog
-    assert "MIGraphX Python binding" in backlog
-    assert "package policy" in backlog
-    assert "build proof" in backlog
+    assert "torch.compile(..., backend=\"migraphx\")" in backlog
+    assert "ResNet50 PT2E quantization" in backlog
     assert "python-torchao-rocm-gfx1151 0.17.0-2" in current_state
     assert "python-torch-migraphx-gfx1151 1.2-2" in current_state
-    assert "MIGraphX-backed `SplitModule`" in current_state
-    assert "publish/install of the built TorchAO and Torch-MIGraphX packages" in reference
+    assert "python-torch-migraphx-gfx1151 1.2-3" in current_state
+    assert "MIGraphX-backed" in current_state
+    assert "`SplitModule`" in current_state
+    assert "built `1.2-3` package overlay" in reference
     assert "FlashAttention CK" in backlog
     assert "FlashAttention Triton" in backlog
     assert "Freshness sweep triage gate" not in backlog

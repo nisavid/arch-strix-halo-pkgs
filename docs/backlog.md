@@ -6,11 +6,11 @@
   `docs/maintainers/rocm-inference-reference.md` belong near the top of this
   backlog, but they are not validated package commitments until their source
   audit and host gates pass.
-  - Torch-MIGraphX Dynamo follow-up: keep FX lowering as the promoted
-    `python-torch-migraphx-gfx1151` runtime lane. Treat Dynamo backend
-    registration and `torch.compile(..., backend="migraphx")` as blocked until
-    a host run proves the `_torch_migraphx` plus PyTorch AOTAutograd segfault
-    is gone.
+  - Torch-MIGraphX PT2E follow-up: FX lowering and a tiny
+    `torch.compile(..., backend="migraphx")` smoke are promoted
+    `python-torch-migraphx-gfx1151` package lanes. Add a bounded
+    ResNet50 PT2E quantization flow if its model/data dependencies are
+    available.
   - Package experiment: FlashAttention CK; requires source audit, build/import
     proof, and direct CK smoke coverage before any engine integration claim.
   - Package experiment: FlashAttention Triton; requires

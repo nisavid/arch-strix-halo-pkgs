@@ -6,7 +6,7 @@
 
 pkgname=python-torch-migraphx-gfx1151
 pkgver=1.2
-pkgrel=2
+pkgrel=3
 pkgdesc='PyTorch integration for MIGraphX on the local ROCm gfx1151 stack'
 arch=('x86_64')
 url=https://github.com/ROCm/torch_migraphx
@@ -18,8 +18,8 @@ options=()
 provides=(python-torch-migraphx torch-migraphx)
 conflicts=(python-torch-migraphx torch-migraphx)
 replaces=()
-source=('torch_migraphx::git+https://github.com/ROCm/torch_migraphx.git#commit=6b2cd2237e83b675ae671650d08343dfbb0be5f3' 0001-import-pt2e-quantization-from-torchao.patch 0002-keep-dynamo-registration-lazy.patch 0003-relax-numpy-runtime-cap.patch)
-sha256sums=(SKIP SKIP SKIP SKIP)
+source=('torch_migraphx::git+https://github.com/ROCm/torch_migraphx.git#commit=6b2cd2237e83b675ae671650d08343dfbb0be5f3' 0001-import-pt2e-quantization-from-torchao.patch 0002-keep-dynamo-registration-lazy.patch 0003-relax-numpy-runtime-cap.patch 0004-preload-aot-autograd-before-native-extension.patch)
+sha256sums=(SKIP SKIP SKIP SKIP SKIP)
 
 prepare() {
   cd "$srcdir/torch_migraphx"
@@ -32,6 +32,9 @@ prepare() {
   fi
   if ! patch --dry-run -R -Np1 -i "$srcdir/0003-relax-numpy-runtime-cap.patch" >/dev/null 2>&1; then
     patch -Np1 -i "$srcdir/0003-relax-numpy-runtime-cap.patch"
+  fi
+  if ! patch --dry-run -R -Np1 -i "$srcdir/0004-preload-aot-autograd-before-native-extension.patch" >/dev/null 2>&1; then
+    patch -Np1 -i "$srcdir/0004-preload-aot-autograd-before-native-extension.patch"
   fi
 }
 
