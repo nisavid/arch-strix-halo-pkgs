@@ -9,6 +9,11 @@ Use `python tools/run_inference_scenarios.py` for repo-owned inference
 validation. The harness is serial, scenario-driven, and logs to a predictable
 run root.
 
+When a scenario comes from ROCm inference optimization, quantization,
+profiling, MIGraphX, Torch-MIGraphX, FlashAttention, AITER, Triton, or
+Composable Kernel references, open
+`docs/maintainers/rocm-inference-reference.md` before creating TOML coverage.
+
 ## Default Use
 
 - Run the validated Gemma 4 26B A4B lane:

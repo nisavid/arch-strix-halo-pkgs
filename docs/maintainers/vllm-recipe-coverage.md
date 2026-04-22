@@ -1,6 +1,6 @@
 # vLLM Recipe Coverage
 
-Status as of 2026-04-21.
+Status as of 2026-04-22.
 
 This worklist tracks how official vLLM Gemma and Qwen recipe surfaces map onto
 the local Arch/TheRock `gfx1151` validation stack. These recipes are advisory
@@ -15,6 +15,8 @@ Current recipe references:
 - <https://recipes.vllm.ai/Google/gemma-4-31B-it?hardware=mi355x&advanced=max_batched_8k%2Cmax_num_seqs_256>
 - <https://docs.vllm.ai/projects/recipes/en/latest/Qwen/Qwen3.5.html>
 - <https://recipes.vllm.ai/Qwen/Qwen3.6-35B-A3B?hardware=mi355x&features=tool_calling%2Creasoning%2Cspec_decoding&advanced=max_batched_8k%2Cmax_num_seqs_256>
+- <https://rocm.docs.amd.com/en/latest/how-to/rocm-for-ai/inference-optimization/vllm-optimization.html>
+- <https://rocm.docs.amd.com/en/latest/how-to/rocm-for-ai/inference-optimization/model-quantization.html>
 
 Recipe coverage uses these states:
 
@@ -35,6 +37,13 @@ When an interactive recipe URL includes selectors such as
 `advanced=max_batched_8k,max_num_seqs_256`, treat those as candidate flags
 (`--max-num-batched-tokens 8192` and `--max-num-seqs 256`) even when the
 rendered command keeps the base shape.
+
+ROCm vLLM optimization references add planned probe families, not new
+validated behavior: FP8 KV-cache, Quark, AWQ, GPTQ, AITER feature switches,
+bounded `--max-num-seqs` / `--max-num-batched-tokens` tuning, and speculative
+decode limits. Keep each probe requires-host-validation until a local scenario
+passes. These probes are adjacent to the Qwen3.6 FP8 MoE blocker; they do not
+unblock it by themselves.
 
 ## Gemma 4
 

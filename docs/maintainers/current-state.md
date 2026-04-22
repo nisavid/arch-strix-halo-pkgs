@@ -1,6 +1,6 @@
 # Current State
 
-Status as of 2026-04-21.
+Status as of 2026-04-22.
 
 ## Rebuild Revalidation Boundary
 
@@ -16,6 +16,23 @@ remaining failed steps. Build/deploy closeout for the native stack is complete;
 post-rebuild revalidation closeout is recorded in the revalidation ledger.
 Follow-up official vLLM recipe coverage now lives in
 `docs/maintainers/vllm-recipe-coverage.md`.
+
+## ROCm inference reference boundary
+
+`docs/maintainers/rocm-inference-reference.md` records ROCm examples,
+MIGraphX, Torch-MIGraphX, FlashAttention, profiling, quantization, and vLLM
+optimization references retrieved on 2026-04-22.
+
+This does not change validated host behavior. Treat new package and scenario
+ideas from that reference as planned or advisory until source audit, package
+work, and local gfx1151 validation update this file or the recipe coverage
+ledger.
+
+The preflight freshness sweep for this docs pass was not clean: AITER had a
+candidate head ahead, llama.cpp had stable `b8882` available over recorded
+`b8881`, and ROCm PyTorch had a branch head ahead. This pass does not adopt
+those package updates; handle them through `docs/maintainers/update-workflows.md`
+before unrelated package backlog work.
 
 ## Live Host State
 

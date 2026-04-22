@@ -20,6 +20,8 @@ which divergences are intentional, and where reusable source changes live.
 - absorb changes from Blackcat Informatics' Strix Halo recipe work
 - add a new recipe-managed package
 - audit patch carry or package metadata clarity
+- triage ROCm inference package candidates such as MIGraphX,
+  Torch-MIGraphX, FlashAttention, AITER, Triton, quantization, or profiling
 
 ## Open References Only When They Match The Task
 
@@ -44,6 +46,10 @@ which divergences are intentional, and where reusable source changes live.
 - When checking deferred blockers or previously verified behavior, open:
   - `docs/maintainers/current-state.md`
   - `docs/backlog.md`
+- When triaging ROCm inference optimization, quantization, profiling,
+  MIGraphX, Torch-MIGraphX, FlashAttention, AITER, Triton, or Composable
+  Kernel package candidates, open:
+  - `docs/maintainers/rocm-inference-reference.md`
 
 ## Start Discovery Here
 

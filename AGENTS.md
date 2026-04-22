@@ -68,6 +68,10 @@ without chat history.
   work, read:
   - `docs/maintainers/current-state.md`
   - `docs/backlog.md`
+- When troubleshooting ROCm inference behavior, quantization, profiling,
+  MIGraphX, Torch-MIGraphX, FlashAttention, AITER, Triton, Composable Kernel,
+  or vLLM optimization references, read:
+  - `docs/maintainers/rocm-inference-reference.md`
 
 ## Start Scouting Here
 

@@ -2,6 +2,31 @@
 
 ## Packaging And Build Hygiene
 
+- Freshness sweep triage gate: the 2026-04-22 preflight sweep for the ROCm
+  reference-ingestion pass found AITER `candidate_head_ahead`, llama.cpp
+  `stable_update_available` for `b8882`, and ROCm PyTorch `branch_head_ahead`.
+  Handle those through `docs/maintainers/update-workflows.md` before unrelated
+  package backlog work.
+- Newly discovered ROCm inference candidates from
+  `docs/maintainers/rocm-inference-reference.md` belong near the top of this
+  backlog, but they are not validated package commitments until their source
+  audit and host gates pass.
+  - Package candidate: `python-torch-migraphx-gfx1151`; requires source audit,
+    build/import proof, and a tiny Torch-MIGraphX FX/Dynamo or PT2E smoke
+    before package policy is added.
+  - Package experiment: FlashAttention CK; requires source audit, build/import
+    proof, and direct CK smoke coverage before any engine integration claim.
+  - Package experiment: FlashAttention Triton; requires
+    `FLASH_ATTENTION_TRITON_AMD_ENABLE=TRUE` build/import proof, runtime
+    backend-selection proof, and a bounded Triton AMD smoke. Treat
+    `FLASH_ATTENTION_TRITON_AMD_AUTOTUNE=TRUE` as a later performance task.
+  - Candidate follow-ups: Quark, AWQ, GPTQ, bitsandbytes, xFormers, and
+    FBGEMM. Keep each marked as requires host validation and source audit
+    before adding a package or promoting a scenario.
+  - Existing affected failures audited on 2026-04-22: Qwen3.6 FP8 MoE remains
+    blocked, Gemma 4 AITER FlashAttention remains blocked, and MIGraphX
+    creates a separate compiled graph/quantization lane rather than a vLLM
+    backend replacement.
 - Render `amerge --preview=tree` dependency forests as visual parent/child
   trees using box-drawing branches, similar to `dust` or `lsd --tree`, instead
   of listing build-order nodes with symbolic dependency references.
