@@ -6,12 +6,11 @@
   `docs/maintainers/rocm-inference-reference.md` belong near the top of this
   backlog, but they are not validated package commitments until their source
   audit and host gates pass.
-  - Torch-MIGraphX PT2E follow-up: FX lowering, PT2E quantizer imports, a
-    bounded ResNet-style `torch.compile(..., backend="migraphx")` smoke, and a
-    bounded PT2E ResNet-style smoke are now tracked package/scenario lanes.
-    Install `python-torch-migraphx-gfx1151 1.2-4` and run the tracked
-    Torch-MIGraphX scenarios before treating the installed host as closed.
-    Keep a full ResNet50 PT2E quantization flow as optional follow-up if its
+  - Torch-MIGraphX PT2E follow-up: `python-torch-migraphx-gfx1151` now tracks
+    FX lowering, PT2E quantizer imports, a bounded ResNet-style
+    `torch.compile(..., backend="migraphx")` smoke, and a bounded PT2E
+    ResNet-style smoke as installed-validated package/scenario lanes. Keep a
+    full ResNet50 PT2E quantization flow as optional follow-up if its
     model/data dependencies are needed.
   - Package experiment: FlashAttention CK; requires source audit, build/import
     proof, and direct CK smoke coverage before any engine integration claim.
