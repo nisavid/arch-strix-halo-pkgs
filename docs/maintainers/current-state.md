@@ -22,20 +22,16 @@ Follow-up official vLLM recipe coverage now lives in
 The first full live cutover and subsequent native package rebuild completed
 successfully on the reference Arch host.
 
-The reference host's active Hugging Face cache for current validation work is
-`/var/cache/hf`, not the older `/bulk/hf` cache. Current local non-GGUF model
-snapshots relevant to this branch are:
+The reference host's active Hugging Face cache root for current validation work
+is `HF_HOME=/var/cache/hf`. Keep durable docs on model IDs and runtime
+`--model-path` bindings, not committed cache snapshot subpaths. Current local
+non-GGUF model IDs relevant to this branch are:
 
-- `google/gemma-4-31B-it` at
-  `/var/cache/hf/hub/models--google--gemma-4-31B-it/snapshots/439edf5652646a0d1bd8b46bfdc1d3645761a445`
-- `Qwen/Qwen3.5-0.8B` at
-  `/var/cache/hf/hub/models--Qwen--Qwen3.5-0.8B/snapshots/2fc06364715b967f1860aea9cf38778875588b17`
-- `Qwen/Qwen3.6-35B-A3B` at
-  `/var/cache/hf/hub/models--Qwen--Qwen3.6-35B-A3B/snapshots/7da1103448ba36029c34ce1a9a741dfe93ee0c50`
-- `Qwen/Qwen3.6-35B-A3B-FP8` at
-  `/var/cache/hf/hub/models--Qwen--Qwen3.6-35B-A3B-FP8/snapshots/61a5771f218894aaacf97551e24a25b866750fc2`
-- `jinaai/jina-reranker-v3` at
-  `/var/cache/hf/hub/models--jinaai--jina-reranker-v3/snapshots/10fb694fc21f7a710a563ff1eb977a460f3868e4`
+- `google/gemma-4-31B-it`
+- `Qwen/Qwen3.5-0.8B`
+- `Qwen/Qwen3.6-35B-A3B`
+- `Qwen/Qwen3.6-35B-A3B-FP8`
+- `jinaai/jina-reranker-v3`
 
 Use `Qwen/Qwen3.6-35B-A3B-FP8` as the main Qwen MoE/shared-expert target for
 this dev arc; it replaces the earlier Qwen3.5 122B-A10B testing and usage
@@ -95,7 +91,7 @@ documented local endpoints require registered `llamacpp` or `flm` recipes for
 embeddings and `llamacpp` for reranking.
 
 The rebuilt installed stack passed the unquantized Qwen3.6 control on
-2026-04-20 with the `/var/cache/hf` `Qwen/Qwen3.6-35B-A3B` snapshot,
+2026-04-20 with `HF_HOME=/var/cache/hf` and `Qwen/Qwen3.6-35B-A3B`,
 `VLLM_ROCM_USE_AITER=0`, `VLLM_ROCM_USE_AITER_MOE=0`,
 `--max-num-batched-tokens 32`, and `--gpu-memory-utilization 0.9`; the tracked
 `run_inference_scenarios.py` run completed in `85.054242` seconds. The run
@@ -450,8 +446,8 @@ The following smoke checks have already passed on the reference host:
     `vllm.gemma4.26b-a4b.text.basic` and
     `vllm.gemma4.26b-a4b.server.basic`
   - the 2026-04-20 rebuilt installed stack revalidated the same two promoted
-    scenarios against
-    `/var/cache/hf/hub/models--google--gemma-4-26B-A4B-it/snapshots/7d4c97e54145f8ffd1a4dd1b4986a5015a517842`;
+    scenarios against `google/gemma-4-26B-A4B-it` through the runtime cache
+    binding;
     the text scenario passed in `109.092445` seconds, and the server scenario
     passed in `201.40131` seconds
   - the current validated shape is still the constrained text-only lane:
@@ -662,8 +658,7 @@ The following smoke checks have already passed on the reference host:
   - do not remove eager mode for `google/gemma-4-E2B-it`; the
     E2B compiled path still generates invalid text after the Triton repair
   - `vllm.gemma4.31b.text.compiled` passed on 2026-04-20 with fresh cache roots
-    against
-    `/var/cache/hf/hub/models--google--gemma-4-31B-it/snapshots/439edf5652646a0d1bd8b46bfdc1d3645761a445`
+    against `google/gemma-4-31B-it`
     in `382.161305` seconds with `enforce_eager=False`,
     `ROCM_AITER_UNIFIED_ATTN`, `torch.compile took 55.14 s in total`, graph
     capture in 103 seconds, and output `I have written five words.`, so the
@@ -716,7 +711,7 @@ The following smoke checks have already passed on the reference host:
     installed-host lane still passed with the package:
     `vllm.gemma4.26b-a4b.text.basic` passed in `195.710255` seconds, and
     `vllm.gemma4.26b-a4b.server.basic` passed in `309.115382` seconds against
-    `/bulk/hf/hub/models--google--gemma-4-26B-A4B-it/snapshots/7d4c97e54145f8ffd1a4dd1b4986a5015a517842`;
+    the older local cache binding for `google/gemma-4-26B-A4B-it`;
     the logs selected `ROCM_AITER_UNIFIED_ATTN`, imported AITER's JIT helper,
     used `Using TRITON backend for Unquantized MoE`, and ended with no
     running GPU processes detected
@@ -768,9 +763,9 @@ The following smoke checks have already passed on the reference host:
     `No FP8 MoE backend supports the deployment configuration`; the vLLM
     Triton and batched Triton FP8 MoE gates currently advertise ROCm FP8
     support for `gfx9`, not `gfx1151`. The rebuilt installed stack reproduced
-    this finding on 2026-04-20 in `22.765256` seconds against the `/var/cache/hf`
-    FP8 snapshot, with `config_quantization_config_present true` and the same
-    backend-selection error.
+    this finding on 2026-04-20 in `22.765256` seconds against
+    `Qwen/Qwen3.6-35B-A3B-FP8`, with `config_quantization_config_present true`
+    and the same backend-selection error.
   - The 2026-04-20 rebuilt-stack control for `Qwen/Qwen3.6-35B-A3B` passed
     unquantized with AITER disabled, `--max-num-batched-tokens 32`, and
     `--gpu-memory-utilization 0.9`; the tracked scenario completed in
