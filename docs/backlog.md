@@ -6,15 +6,11 @@
   `docs/maintainers/rocm-inference-reference.md` belong near the top of this
   backlog, but they are not validated package commitments until their source
   audit and host gates pass.
-  - Package follow-up: `python-torch-migraphx-gfx1151`; package policy and
-    build proof now exist for current upstream `master`, and the reference host
-    has `migraphx-gfx1151 7.13.0pre-5` MIGraphX Python binding proof with the
-    real Python extension. The remaining package gate is publish/install of
-    `python-torchao-rocm-gfx1151 0.17.0-2` and
-    `python-torch-migraphx-gfx1151 1.2-2`, then installed-system TorchAO PT2E
-    import, Torch-MIGraphX import, and a tiny FX lowering smoke. Keep Dynamo
-    backend registration as a blocked follow-up until a host run proves the
-    `_torch_migraphx` plus PyTorch AOTAutograd segfault is gone.
+  - Torch-MIGraphX Dynamo follow-up: keep FX lowering as the promoted
+    `python-torch-migraphx-gfx1151` runtime lane. Treat Dynamo backend
+    registration and `torch.compile(..., backend="migraphx")` as blocked until
+    a host run proves the `_torch_migraphx` plus PyTorch AOTAutograd segfault
+    is gone.
   - Package experiment: FlashAttention CK; requires source audit, build/import
     proof, and direct CK smoke coverage before any engine integration claim.
   - Package experiment: FlashAttention Triton; requires

@@ -47,21 +47,19 @@ importing PyTorch AOTAutograd after `_torch_migraphx` currently segfaults on
 the Python 3.14 stack. `tools/amerge build python-torchao-rocm-gfx1151
 python-torch-migraphx-gfx1151` produced
 `python-torchao-rocm-gfx1151 0.17.0-2` and
-`python-torch-migraphx-gfx1151 1.2-2` package artifacts on 2026-04-22. Before
-installing those artifacts, a temporary target using the same patches imported
-TorchAO PT2E and Torch-MIGraphX, and a host-device FX smoke lowered a tiny
-`x + 1` module to a MIGraphX-backed `SplitModule`.
+`python-torch-migraphx-gfx1151 1.2-2` package artifacts on 2026-04-22. The
+reference host then installed `python-torchao-rocm-gfx1151 0.17.0-2` and
+`python-torch-migraphx-gfx1151 1.2-2`; installed-system imports for TorchAO
+PT2E, Torch-MIGraphX, and MIGraphX resolve from package-owned paths, and a
+host-device FX smoke lowered a tiny `x + 1` module to a MIGraphX-backed
+`SplitModule` on the Radeon 8060S with matching PyTorch output.
 
-The next gate is privileged publish/install of
-`python-torchao-rocm-gfx1151 0.17.0-2` and
-`python-torch-migraphx-gfx1151 1.2-2`, followed by installed-system
-`import torchao.quantization.pt2e.quantize_pt2e`, `import torch_migraphx`, and
-the same tiny FX smoke without temporary `PYTHONPATH` overlays. Dynamo and
-`torch.compile(..., backend="migraphx")` coverage remains blocked until a host
-run proves that backend registration no longer segfaults. Keep Composable
-Kernel and rocMLIR integration disabled unless explicitly requested, because
-the current staged root is intentionally self-consistent with the installed
-split packages before those optional integration gates are promoted.
+Dynamo and `torch.compile(..., backend="migraphx")` coverage remains blocked
+until a host run proves that backend registration no longer segfaults. Keep
+Composable Kernel and rocMLIR integration disabled unless explicitly
+requested, because the current staged root is intentionally self-consistent
+with the installed split packages before those optional integration gates are
+promoted.
 
 The preflight freshness sweep for this docs pass was triaged on 2026-04-22.
 No package source was repinned during that triage: AITER main through
