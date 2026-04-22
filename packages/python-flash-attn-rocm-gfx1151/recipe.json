@@ -29,5 +29,5 @@
     "Keep direct flash_attn Triton AMD build/import smoke as the first validation gate before any vLLM integration scenario.",
     "Treat FLASH_ATTENTION_TRITON_AMD_AUTOTUNE=TRUE as a performance follow-up, not part of the initial correctness gate."
   ],
-  "status": "requires-host-validation"
+  "status": "validated"
 }

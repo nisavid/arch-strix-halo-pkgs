@@ -17,8 +17,8 @@
   - Package experiment: FlashAttention Triton; `python-flash-attn-rocm-gfx1151`
     now has build proof, installed import proof, runtime backend-selection
     proof, and a bounded non-autotuned Triton AMD smoke from the installed
-    package. Next gate is an installed-engine backend-selection probe for a
-    consumer that can actually route to the package. Treat
+    package. Next gate is the first consumer backend-selection probe that can
+    actually route to the package. Treat
     `FLASH_ATTENTION_TRITON_AMD_AUTOTUNE=TRUE` as a later performance task.
   - Candidate follow-ups: Quark, AWQ, GPTQ, bitsandbytes, xFormers, and
     FBGEMM. Keep each marked as requires host validation and source audit
@@ -138,9 +138,9 @@
     installs it; the installed package imports `flash_attn`, selects AITER's
     Triton AMD backend with `FLASH_ATTENTION_TRITON_AMD_ENABLE=TRUE`, and
     passes a bounded `flash_attn_qkvpacked_func` GPU smoke
-  - next gate: add smoke coverage for every local engine that can plausibly use
-    it: Transformers or vLLM backend-selection probes only where the installed
-    engine can actually route to that package
+  - next gate: add smoke coverage for the first local consumer engine that can
+    plausibly route to it; keep Transformers or vLLM backend-selection probes
+    only where the installed engine can actually route to that package
   - treat `FLASH_ATTENTION_TRITON_AMD_AUTOTUNE="TRUE"` as a later performance
     experiment after the non-autotuned import/kernel smoke passes
   - before promoting any FlashAttention instruction or explanation, validate

@@ -55,6 +55,14 @@ On 2026-04-22, `tools/amerge build python-flash-attn-rocm-gfx1151` built
 it on the reference host. `pacman -Q python-flash-attn-rocm-gfx1151` reports
 `2.8.4-1`. Installed import with `FLASH_ATTENTION_TRITON_AMD_ENABLE=TRUE`
 reports `flash_attn_version 2.8.4`, `use_triton_rocm True`, and backend module
-`aiter.ops.triton._triton_kernels.flash_attn_triton_amd.interface_v2`. A direct
-installed GPU smoke ran `flash_attn_qkvpacked_func` on a `(1, 16, 3, 2, 32)`
-float16 CUDA tensor and returned finite `(1, 16, 2, 32)` output.
+`aiter.ops.triton._triton_kernels.flash_attn_triton_amd.interface_v2`.
+
+The tracked installed scenarios
+`flash-attn.triton-amd.backend-import` and
+`flash-attn.triton-amd.qkvpacked-tiny` passed from
+`python tools/run_inference_scenarios.py --scenario
+flash-attn.triton-amd.backend-import --scenario
+flash-attn.triton-amd.qkvpacked-tiny` at run root
+`docs/worklog/inference-runs/20260422T164653`. The bounded GPU smoke ran
+`flash_attn_qkvpacked_func` on a `(1, 16, 3, 2, 32)` float16 CUDA tensor and
+returned finite `(1, 16, 2, 32)` output.
