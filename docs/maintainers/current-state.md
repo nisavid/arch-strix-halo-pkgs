@@ -37,13 +37,17 @@ checkout under `/tmp` built
 `torch_migraphx-1.2-cp314-cp314-linux_x86_64.whl` only after binding the build
 to the ROCm compiler lane with `CC=/opt/rocm/lib/llvm/bin/amdclang` and
 `CXX=/opt/rocm/lib/llvm/bin/amdclang++`; the default generic `c++` path failed
-on inherited `-famd-opt` flags. Import proof remains blocked because the
-installed `migraphx-gfx1151` package does not provide a Python `migraphx`
-module. The installed wheel import failed with `Unable to import migraphx`, and
-`pacman -Ql migraphx-gfx1151` showed only FlatBuffers files from the current
-TheRock split. Treat the next gate as adding or splitting the MIGraphX Python
-binding first, then rerun the Torch-MIGraphX import and a tiny FX/Dynamo or
-PT2E smoke before adding `python-torch-migraphx-gfx1151` package policy.
+on inherited `-famd-opt` flags. Import proof remains blocked on host payload:
+the current installed `migraphx-gfx1151` package showed only FlatBuffers files
+with `pacman -Ql migraphx-gfx1151`, and the installed Torch-MIGraphX wheel
+failed with `Unable to import migraphx`. The package policy now owns future
+MIGraphX binaries, shared libraries, and Python `migraphx*` modules under
+`migraphx-gfx1151`, and the rendered package installs `migraphx.pth` pointing
+Python at `/opt/rocm/lib`, matching upstream AMDMIGraphX's Python module
+guidance. Treat the next gate as rendering and deploying from a staged TheRock
+root that contains real MIGraphX payloads, then rerun the Torch-MIGraphX import
+and a tiny FX/Dynamo or PT2E smoke before adding
+`python-torch-migraphx-gfx1151` package policy.
 
 The preflight freshness sweep for this docs pass was triaged on 2026-04-22.
 No package source was repinned during that triage: AITER main through

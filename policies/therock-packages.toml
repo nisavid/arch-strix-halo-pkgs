@@ -349,6 +349,7 @@ provides = ["rocshmem"]
 [packages."migraphx-gfx1151"]
 desc = "MIGraphX from TheRock for gfx1151"
 provides = ["migraphx"]
+depends = ["gcc-libs", "glibc", "python-gfx1151"]
 
 [packages."magma-gfx1151"]
 desc = "Matrix Algebra on GPU and Multicore Architectures from TheRock for gfx1151"
@@ -490,6 +491,7 @@ fileless = true
 "magma" = "magma-gfx1151"
 "llvm" = "rocm-llvm-gfx1151"
 "miopen" = "miopen-gfx1151"
+"migraphx" = "migraphx-gfx1151"
 "rocgdb" = "rocm-gdb-gfx1151"
 "rocprofiler-compute" = "rocprofiler-compute-gfx1151"
 "rocm" = "rocm-core-gfx1151"
@@ -542,6 +544,7 @@ fileless = true
 "hipRTC" = "hip-runtime-amd-gfx1151"
 "hipify-clang" = "hipify-clang-gfx1151"
 "MIOpenDriver" = "miopen-gfx1151"
+"migraphx" = "migraphx-gfx1151"
 "offload-arch" = "rocm-llvm-gfx1151"
 "rccl" = "rccl-gfx1151"
 "rdc" = "rocm-language-runtime-gfx1151"
@@ -573,6 +576,7 @@ fileless = true
 "goamdsmi" = "amdsmi-gfx1151"
 "hip_prof_str" = "hip-gfx1151"
 "MIOpen" = "miopen-gfx1151"
+"migraphx" = "migraphx-gfx1151"
 "hipblas" = "hipblas-gfx1151"
 "hipblaslt" = "hipblaslt-gfx1151"
 "hipfft" = "hipfft-gfx1151"
@@ -674,6 +678,9 @@ fileless = true
 [synthetic_files]
 "amdsmi-gfx1151" = [
   { path = "usr/lib/python3.14/site-packages/amd_smi.pth", text = "/opt/rocm/share/amd_smi\n" },
+]
+"migraphx-gfx1151" = [
+  { path = "usr/lib/python3.14/site-packages/migraphx.pth", text = "/opt/rocm/lib\n" },
 ]
 "rocm-core-gfx1151" = [
   { path = "etc/ld.so.conf.d/rocm.conf", text = "/opt/rocm/lib\n" },

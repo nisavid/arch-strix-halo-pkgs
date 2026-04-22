@@ -257,7 +257,11 @@
       ]
     },
     "migraphx-gfx1151": {
-      "depends": [],
+      "depends": [
+        "gcc-libs",
+        "glibc",
+        "python-gfx1151"
+      ],
       "fileless": false,
       "files": 42,
       "provides": [

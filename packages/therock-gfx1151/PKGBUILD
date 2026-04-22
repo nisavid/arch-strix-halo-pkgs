@@ -312,9 +312,12 @@ package_migraphx-gfx1151() {
     pkgdesc='MIGraphX from TheRock for gfx1151'
     provides=('migraphx')
     conflicts=('migraphx' 'rocm-gfx1151-bin')
-    depends=()
+    depends=('gcc-libs' 'glibc' 'python-gfx1151')
     _require_therock_root
     _copy_from_filelist 'migraphx-gfx1151'
+    install -Dm644 /dev/stdin "${pkgdir}/usr/lib/python3.14/site-packages/migraphx.pth" <<'EOF'
+/opt/rocm/lib
+EOF
 }
 
 package_miopen-gfx1151() {

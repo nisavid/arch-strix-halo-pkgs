@@ -130,6 +130,20 @@ def test_live_root_render_ignores_rocm_core_overlay_files():
     assert classifier.classify("opt/rocm/share/rdhc/requirements.txt") == "__ignored__"
 
 
+def test_migraphx_payloads_map_to_migraphx_split_package():
+    policy = therock_split.load_policy(REPO_ROOT / "policies/therock-packages.toml")
+    classifier = therock_split.Classifier(policy)
+    site_module = "opt/rocm/lib/python3.14/site-packages/migraphx.cpython-314-x86_64-linux-gnu.so"
+
+    assert classifier.classify("opt/rocm/bin/migraphx-driver") == "migraphx-gfx1151"
+    assert classifier.classify("opt/rocm/lib/libmigraphx.so") == "migraphx-gfx1151"
+    assert classifier.classify("opt/rocm/lib/libmigraphx_py.so") == "migraphx-gfx1151"
+    assert classifier.classify("opt/rocm/lib/libmigraphx_py_3.14.so") == "migraphx-gfx1151"
+    assert classifier.classify("opt/rocm/lib/migraphx.cpython-314-x86_64-linux-gnu.so") == "migraphx-gfx1151"
+    assert classifier.classify(site_module) == "migraphx-gfx1151"
+    assert classifier.failures == []
+
+
 def test_write_filelists_removes_stale_package_filelists(tmp_path: Path):
     filelist_dir = tmp_path / "filelists"
     filelist_dir.mkdir()

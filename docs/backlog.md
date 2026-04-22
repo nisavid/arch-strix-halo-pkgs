@@ -8,10 +8,14 @@
   audit and host gates pass.
   - Package candidate: `python-torch-migraphx-gfx1151`; source audit and
     wheel-build proof now exist for current upstream `master`, but import and
-    runtime proof are blocked until the local MIGraphX lane exposes the Python
-    `migraphx` module. Do not add package policy for
-    `python-torch-migraphx-gfx1151` until MIGraphX Python binding proof exists,
-    then run a tiny Torch-MIGraphX FX/Dynamo or PT2E smoke before promotion.
+    runtime proof are blocked until a staged TheRock root contains real
+    MIGraphX shared-library and Python-extension payloads. The TheRock split
+    policy now maps MIGraphX binaries, libraries, and Python `migraphx*`
+    modules to `migraphx-gfx1151`, and the package installs `migraphx.pth` so
+    Python can import modules from `/opt/rocm/lib`. Do not add package policy
+    for `python-torch-migraphx-gfx1151` until MIGraphX Python binding proof
+    exists on the host, then run a tiny Torch-MIGraphX FX/Dynamo or PT2E smoke
+    before promotion.
   - Package experiment: FlashAttention CK; requires source audit, build/import
     proof, and direct CK smoke coverage before any engine integration claim.
   - Package experiment: FlashAttention Triton; requires

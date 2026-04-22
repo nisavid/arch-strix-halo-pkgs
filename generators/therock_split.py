@@ -123,6 +123,8 @@ class Classifier:
                 basename = path.name
                 if "amd_smi" in relpath or "amdsmi" in basename:
                     candidates.add("amdsmi-gfx1151")
+                elif basename.startswith("migraphx"):
+                    candidates.add("migraphx-gfx1151")
                 else:
                     self._record_new_class(
                         relpath,
