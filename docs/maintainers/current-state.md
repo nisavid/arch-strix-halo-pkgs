@@ -47,14 +47,14 @@ importing PyTorch AOTAutograd after `_torch_migraphx` currently segfaults on
 the Python 3.14 stack. `tools/amerge build python-torchao-rocm-gfx1151
 python-torch-migraphx-gfx1151` produced
 `python-torchao-rocm-gfx1151 0.17.0-2` and
-`python-torch-migraphx-gfx1151 1.2-1` package artifacts on 2026-04-22. Before
+`python-torch-migraphx-gfx1151 1.2-2` package artifacts on 2026-04-22. Before
 installing those artifacts, a temporary target using the same patches imported
 TorchAO PT2E and Torch-MIGraphX, and a host-device FX smoke lowered a tiny
 `x + 1` module to a MIGraphX-backed `SplitModule`.
 
 The next gate is privileged publish/install of
 `python-torchao-rocm-gfx1151 0.17.0-2` and
-`python-torch-migraphx-gfx1151 1.2-1`, followed by installed-system
+`python-torch-migraphx-gfx1151 1.2-2`, followed by installed-system
 `import torchao.quantization.pt2e.quantize_pt2e`, `import torch_migraphx`, and
 the same tiny FX smoke without temporary `PYTHONPATH` overlays. Dynamo and
 `torch.compile(..., backend="migraphx")` coverage remains blocked until a host

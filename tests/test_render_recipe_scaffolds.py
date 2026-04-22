@@ -209,6 +209,7 @@ def test_torch_migraphx_renderer_keeps_rocm_compiler_and_rpath() -> None:
             "source_patches": [
                 "0001-import-pt2e-quantization-from-torchao.patch",
                 "0002-keep-dynamo-registration-lazy.patch",
+                "0003-relax-numpy-runtime-cap.patch",
             ],
             "makedepends": ["patchelf"],
         },
@@ -234,6 +235,83 @@ def test_torch_migraphx_renderer_keeps_rocm_compiler_and_rpath() -> None:
     assert "-famd-opt" not in pkgbuild
     assert "patchelf --set-rpath" in pkgbuild
     assert "$ORIGIN/torch/lib" in pkgbuild
+    assert "0003-relax-numpy-runtime-cap.patch" in pkgbuild
+
+
+def test_torchao_renderer_preserves_source_build_shape() -> None:
+    pkgbuild = render_recipe_scaffolds.render_pkgbuild(
+        "python-torchao-rocm-gfx1151",
+        {
+            "recipe_key": "native_wheels",
+            "template": "python-project-torchao",
+            "upstream_version": "0.17.0",
+            "pkgdesc": "TorchAO",
+            "url": "https://github.com/pytorch/ao",
+            "license": ["BSD-3-Clause"],
+            "src_subdir": "torchao",
+            "source_refs": ["torchao::git+https://github.com/pytorch/ao.git#tag=v0.17.0"],
+            "source_patches": [
+                "0001-setup.py-honor-pytorch-rocm-arch.patch",
+                "0002-python-3.14-pt2e-union-aliases.patch",
+            ],
+            "makedepends": ["git", "patchelf"],
+        },
+        {
+            "repo": "https://github.com/pytorch/ao",
+            "method": "pip",
+            "phase": "package",
+            "steps": [],
+            "depends_on": [],
+            "notes": "",
+        },
+        "0.17.0",
+        {
+            "recipe_repo": "https://github.com/paudley/ai-notes",
+            "recipe_subdir": "strix-halo",
+            "recipe_author": "Blackcat Informatics Inc.",
+        },
+    )
+
+    assert "git submodule update --init --recursive" in pkgbuild
+    assert "ROCM_HOME=/opt/rocm" in pkgbuild
+    assert "PYTORCH_ROCM_ARCH=gfx1151" in pkgbuild
+    assert "VERSION_SUFFIX=" in pkgbuild
+    assert "patchelf --set-rpath" in pkgbuild
+    assert "$ORIGIN/../torch/lib" in pkgbuild
+
+
+def test_torch_migraphx_readme_uses_policy_notes_override() -> None:
+    readme = render_recipe_scaffolds.render_readme(
+        "python-torch-migraphx-gfx1151",
+        {
+            "recipe_key": "native_wheels",
+            "template": "python-project-torch-migraphx",
+            "upstream_version": "1.2",
+            "recipe_notes_override": "host-device FX lowering smoke",
+            "pkgdesc": "Torch-MIGraphX",
+            "url": "https://github.com/ROCm/torch_migraphx",
+            "license": ["BSD-3-Clause"],
+            "arch_reference": [],
+            "source_patches": ["0001.patch"],
+        },
+        {
+            "repo": "https://github.com/ROCm/torch_migraphx",
+            "method": "pip",
+            "phase": "package",
+            "steps": [],
+            "depends_on": [],
+            "notes": "unrelated native wheel recipe notes",
+        },
+        "1.2",
+        {
+            "recipe_repo": "https://github.com/paudley/ai-notes",
+            "recipe_subdir": "strix-halo",
+            "recipe_author": "Blackcat Informatics Inc.",
+        },
+    )
+
+    assert "host-device FX lowering smoke" in readme
+    assert "unrelated native wheel recipe notes" not in readme
 
 
 def test_pytorch_rocm_renderer_uses_source_patches_for_magma_fix() -> None:

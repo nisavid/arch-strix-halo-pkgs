@@ -82,6 +82,22 @@ patches and expected-failure findings that were quarantined after the
   - Makes the upstream ROCm build use an explicit environment-selected target
     arch so the local package can build for `gfx1151` instead of compiling only
     for MI300-class `gfx942`.
+- [Python 3.14 PT2E union aliases](../packages/python-torchao-rocm-gfx1151/0002-python-3.14-pt2e-union-aliases.patch)
+  - Keeps `torchao.quantization.pt2e` importable on Python 3.14 by guarding
+    `__module__` assignment on `typing.Union` aliases that no longer accept it.
+
+## Torch-MIGraphX
+
+- [Import migrated PT2E quantization from TorchAO](../packages/python-torch-migraphx-gfx1151/0001-import-pt2e-quantization-from-torchao.patch)
+  - Lets Torch-MIGraphX populate `torch.ops.quantized_decomposed` on the local
+    PyTorch 2.11 stack, where PT2E quantization lives under TorchAO.
+- [Keep Dynamo registration lazy](../packages/python-torch-migraphx-gfx1151/0002-keep-dynamo-registration-lazy.patch)
+  - Keeps base import and the FX lowering path usable while Dynamo backend
+    registration still segfaults after loading `_torch_migraphx` on this Python
+    3.14 and PyTorch 2.11 stack.
+- [Relax numpy runtime metadata cap](../packages/python-torch-migraphx-gfx1151/0003-relax-numpy-runtime-cap.patch)
+  - Matches the wheel metadata to the repo's numpy 2.x lane after host FX
+    lowering validation with `python-numpy-gfx1151`.
 
 ## Patch Hygiene
 

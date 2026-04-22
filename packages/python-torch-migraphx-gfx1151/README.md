@@ -1,63 +1,69 @@
 # python-torch-migraphx-gfx1151
 
-- Upstream: <https://github.com/ROCm/torch_migraphx>
+## Maintenance Snapshot
+
+- Recipe package key: `native_wheels`
+- Scaffold template: `python-project-torch-migraphx`
+- Recipe build method: `pip`
+- Upstream repo: ``
 - Package version: `1.2`
-- Source commit: `6b2cd2237e83b675ae671650d08343dfbb0be5f3`
-- Local role: package the Torch-MIGraphX FX lane against the coherent
-  `gfx1151` ROCm, PyTorch, TorchAO, and MIGraphX package family.
+- Recipe revision: `ad42886 (20260317, 8 path commits)`
+- Recipe steps: `31`
+- Recipe dependencies: `cpython, pytorch`
+- Recorded reference packages: `none`
+- Authoritative reference package: `none`
+- Advisory reference packages: `none`
+- Applied source patch files/actions: `4`
 
-This package depends on the local `migraphx-gfx1151` split exposing the real
-MIGraphX Python module. The import path also depends on PyTorch 2.11's PT2E
-layout, where current docs route PT2E quantization through TorchAO rather than
-`torch.ao.quantization.quantize_pt2e`.
+## Recipe notes
 
-## Local Patch Carry
+Builds Torch-MIGraphX from audited upstream `master` at
+`6b2cd2237e83b675ae671650d08343dfbb0be5f3` because PyPI and the only upstream
+tag remain at `1.1` while current upstream reports package version `1.2`.
 
-- `0001-import-pt2e-quantization-from-torchao.patch` keeps Torch-MIGraphX
-  compatible with the installed PyTorch 2.11 and TorchAO 0.17 package layout.
-- `0002-keep-dynamo-registration-lazy.patch` keeps base `import torch_migraphx`
-  and the FX lowering path importable. Eager Dynamo backend registration loads
-  PyTorch AOTAutograd after the `_torch_migraphx` extension and currently
-  segfaults on this Python 3.14 stack, so Dynamo remains an explicit follow-up
-  lane rather than a package-import side effect.
+The package is bound to the coherent local ROCm stack: `migraphx-gfx1151`
+provides the Python `migraphx` extension under `/opt/rocm/lib`, PyTorch and
+TorchAO come from the local `gfx1151` package family, and the wheel build uses
+the ROCm clang lane explicitly.
 
-## Validation
+The promoted runtime lane is FX lowering. A staged target imported MIGraphX,
+TorchAO PT2E, and Torch-MIGraphX, then a host-device smoke lowered a tiny
+`x + 1` module to a MIGraphX-backed `SplitModule`. Dynamo backend registration
+stays lazy because importing PyTorch AOTAutograd after `_torch_migraphx`
+currently segfaults on the local Python 3.14 and PyTorch 2.11 stack.
 
-The current package shape was validated from a staged target with MIGraphX,
-TorchAO PT2E, Torch-MIGraphX import, and a host-device FX lowering smoke. The
-equivalent installed-system import checks are:
+The installed-system gate is publish/install with the matching TorchAO pkgrel,
+then rerun the import and FX smoke without temporary `PYTHONPATH` overlays.
 
-```bash
-python -c 'import migraphx; print(migraphx.__file__)'
-python -c 'import torchao.quantization.pt2e.quantize_pt2e; import torch_migraphx'
-```
 
-The equivalent installed-system FX smoke is:
+## Scaffold notes
 
-```bash
-python - <<'PY'
-import torch
-import torch_migraphx
+- Builds from upstream master at 6b2cd2237e83b675ae671650d08343dfbb0be5f3 because PyPI and the only upstream tag remain at 1.1 while current master reports version 1.2.
+- Uses the ROCm compiler lane explicitly and strips the unsupported -famd-opt flag from wheel C/C++ flags.
+- Depends on the local MIGraphX split package because the Python binding is installed under /opt/rocm/lib with migraphx.pth.
+- Relaxes upstream's numpy metadata cap for the repo's numpy 2.x lane.
+- The package is promoted on an FX smoke, not Dynamo, until the Dynamo backend import no longer segfaults after _torch_migraphx loads.
 
-class M(torch.nn.Module):
-    def forward(self, x):
-        return x + 1
+## Intentional Divergences
 
-mgx = torch_migraphx.fx.lower_to_mgx(
-    M().eval(),
-    [torch.randn(1, 4)],
-    min_acc_module_size=1,
-    suppress_accuracy_check=True,
-)
-print(type(mgx).__name__)
-PY
-```
+- There is no current Arch-family Torch-MIGraphX package baseline, so this package is closure-first and tracks the audited upstream master commit that reports package version 1.2.
+- Carries a PT2E compatibility patch because PyTorch 2.11 documents PT2E quantization through TorchAO while current Torch-MIGraphX still imports the removed torch.ao.quantization.quantize_pt2e module.
+- Keeps Dynamo registration lazy because importing the Dynamo backend after the native _torch_migraphx extension currently segfaults on the local Python 3.14 and PyTorch 2.11 stack; FX lowering is the promoted smoke lane.
+- Relaxes upstream's numpy <2.0 wheel metadata because the local runtime and FX smoke use the repo's python-numpy-gfx1151 2.x lane.
 
-The smoke produced a MIGraphX-backed `SplitModule` on a host run with GPU
-device access.
+## Update Notes
 
-The package artifact builds as
-`python-torch-migraphx-gfx1151-1.2-1-x86_64.pkg.tar.zst`. The installed-system
-gate is publish/install with the matching `python-torchao-rocm-gfx1151`
-pkgrel, then rerun the import and FX smoke without temporary `PYTHONPATH`
-overlays.
+- Track the upstream master commit until ROCm publishes a post-1.1 tag containing the version 1.2 Python package metadata.
+- Keep CC and CXX bound to /opt/rocm/lib/llvm/bin/amdclang and amdclang++ during builds; the generic c++ path failed on inherited Strix tuning flags.
+- Keep the installed _torch_migraphx extension RPATH pointed at the sibling torch/lib directory so libc10, libtorch_cpu, and libtorch_python resolve without LD_LIBRARY_PATH.
+- Keep the numpy metadata patch while the local package depends on the repo's numpy 2.x lane.
+- Re-run host-device FX lowering after every MIGraphX, PyTorch, TorchAO, or Torch-MIGraphX rebuild.
+- Do not promote Dynamo or torch.compile backend coverage until explicit host validation proves import and a tiny compile no longer segfault.
+
+## Maintainer Starting Points
+
+- Diff the package against its recorded authoritative reference first.
+- Use the advisory references to scout neighboring packaging conventions without silently changing the baseline story.
+- Keep reusable source changes in sibling patch files rather than leaving them as ad hoc PKGBUILD shell edits.
+- Re-run `tools/render_recipe_scaffolds.py` after policy or recipe-manifest changes so the package-local docs stay in sync.
+- Reconfirm the chosen upstream source artifact and build lane before treating the scaffold as release-ready.

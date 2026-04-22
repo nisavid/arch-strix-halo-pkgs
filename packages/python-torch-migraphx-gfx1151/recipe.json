@@ -1,21 +1,38 @@
 {
   "maintenance": {
+    "advisory_references": [],
+    "authoritative_reference": "none",
+    "divergence_notes": [
+      "There is no current Arch-family Torch-MIGraphX package baseline, so this package is closure-first and tracks the audited upstream master commit that reports package version 1.2.",
+      "Carries a PT2E compatibility patch because PyTorch 2.11 documents PT2E quantization through TorchAO while current Torch-MIGraphX still imports the removed torch.ao.quantization.quantize_pt2e module.",
+      "Keeps Dynamo registration lazy because importing the Dynamo backend after the native _torch_migraphx extension currently segfaults on the local Python 3.14 and PyTorch 2.11 stack; FX lowering is the promoted smoke lane.",
+      "Relaxes upstream's numpy <2.0 wheel metadata because the local runtime and FX smoke use the repo's python-numpy-gfx1151 2.x lane."
+    ],
     "source_patches": [
       "0001-import-pt2e-quantization-from-torchao.patch",
-      "0002-keep-dynamo-registration-lazy.patch"
+      "0002-keep-dynamo-registration-lazy.patch",
+      "0003-relax-numpy-runtime-cap.patch"
     ],
     "update_notes": [
       "Track the upstream master commit until ROCm publishes a post-1.1 tag containing the version 1.2 Python package metadata.",
-      "Keep the PT2E import patch until Torch-MIGraphX accepts TorchAO's migrated PT2E quantization module directly.",
-      "Keep Dynamo registration explicit until a host smoke proves importing torch_migraphx.dynamo after the native extension no longer segfaults on the local Python 3.14 and PyTorch 2.11 stack.",
-      "Re-run host-device FX lowering after every MIGraphX, PyTorch, TorchAO, or Torch-MIGraphX rebuild."
+      "Keep CC and CXX bound to /opt/rocm/lib/llvm/bin/amdclang and amdclang++ during builds; the generic c++ path failed on inherited Strix tuning flags.",
+      "Keep the installed _torch_migraphx extension RPATH pointed at the sibling torch/lib directory so libc10, libtorch_cpu, and libtorch_python resolve without LD_LIBRARY_PATH.",
+      "Keep the numpy metadata patch while the local package depends on the repo's numpy 2.x lane.",
+      "Re-run host-device FX lowering after every MIGraphX, PyTorch, TorchAO, or Torch-MIGraphX rebuild.",
+      "Do not promote Dynamo or torch.compile backend coverage until explicit host validation proves import and a tiny compile no longer segfault."
     ]
   },
   "name": "python-torch-migraphx-gfx1151",
   "package_name": "python-torch-migraphx-gfx1151",
   "pkgver": "1.2",
   "policy": {
+    "advisory_references": [],
+    "arch_reference": [],
     "authoritative_reference": "none",
+    "conflicts": [
+      "python-torch-migraphx",
+      "torch-migraphx"
+    ],
     "depends": [
       "gcc-libs",
       "glibc",
@@ -27,6 +44,15 @@
       "python-tabulate",
       "python-torchao-rocm-gfx1151"
     ],
+    "divergence_notes": [
+      "There is no current Arch-family Torch-MIGraphX package baseline, so this package is closure-first and tracks the audited upstream master commit that reports package version 1.2.",
+      "Carries a PT2E compatibility patch because PyTorch 2.11 documents PT2E quantization through TorchAO while current Torch-MIGraphX still imports the removed torch.ao.quantization.quantize_pt2e module.",
+      "Keeps Dynamo registration lazy because importing the Dynamo backend after the native _torch_migraphx extension currently segfaults on the local Python 3.14 and PyTorch 2.11 stack; FX lowering is the promoted smoke lane.",
+      "Relaxes upstream's numpy <2.0 wheel metadata because the local runtime and FX smoke use the repo's python-numpy-gfx1151 2.x lane."
+    ],
+    "license": [
+      "BSD-3-Clause"
+    ],
     "makedepends": [
       "git",
       "patchelf",
@@ -36,14 +62,76 @@
       "python-wheel",
       "rocm-llvm-gfx1151"
     ],
+    "patches_dir": "packages/python-torch-migraphx-gfx1151",
+    "pkgdesc": "PyTorch integration for MIGraphX on the local ROCm gfx1151 stack",
+    "provides": [
+      "python-torch-migraphx",
+      "torch-migraphx"
+    ],
+    "recipe_key": "native_wheels",
+    "recipe_notes_override": "Builds Torch-MIGraphX from audited upstream `master` at\n`6b2cd2237e83b675ae671650d08343dfbb0be5f3` because PyPI and the only upstream\ntag remain at `1.1` while current upstream reports package version `1.2`.\n\nThe package is bound to the coherent local ROCm stack: `migraphx-gfx1151`\nprovides the Python `migraphx` extension under `/opt/rocm/lib`, PyTorch and\nTorchAO come from the local `gfx1151` package family, and the wheel build uses\nthe ROCm clang lane explicitly.\n\nThe promoted runtime lane is FX lowering. A staged target imported MIGraphX,\nTorchAO PT2E, and Torch-MIGraphX, then a host-device smoke lowered a tiny\n`x + 1` module to a MIGraphX-backed `SplitModule`. Dynamo backend registration\nstays lazy because importing PyTorch AOTAutograd after `_torch_migraphx`\ncurrently segfaults on the local Python 3.14 and PyTorch 2.11 stack.\n\nThe installed-system gate is publish/install with the matching TorchAO pkgrel,\nthen rerun the import and FX smoke without temporary `PYTHONPATH` overlays.\n",
+    "scaffold_notes": [
+      "Builds from upstream master at 6b2cd2237e83b675ae671650d08343dfbb0be5f3 because PyPI and the only upstream tag remain at 1.1 while current master reports version 1.2.",
+      "Uses the ROCm compiler lane explicitly and strips the unsupported -famd-opt flag from wheel C/C++ flags.",
+      "Depends on the local MIGraphX split package because the Python binding is installed under /opt/rocm/lib with migraphx.pth.",
+      "Relaxes upstream's numpy metadata cap for the repo's numpy 2.x lane.",
+      "The package is promoted on an FX smoke, not Dynamo, until the Dynamo backend import no longer segfaults after _torch_migraphx loads."
+    ],
+    "sha256sums": [
+      "SKIP"
+    ],
     "source_patches": [
       "0001-import-pt2e-quantization-from-torchao.patch",
-      "0002-keep-dynamo-registration-lazy.patch"
+      "0002-keep-dynamo-registration-lazy.patch",
+      "0003-relax-numpy-runtime-cap.patch"
     ],
     "source_refs": [
       "torch_migraphx::git+https://github.com/ROCm/torch_migraphx.git#commit=6b2cd2237e83b675ae671650d08343dfbb0be5f3"
     ],
+    "src_subdir": "torch_migraphx",
+    "template": "python-project-torch-migraphx",
+    "update_notes": [
+      "Track the upstream master commit until ROCm publishes a post-1.1 tag containing the version 1.2 Python package metadata.",
+      "Keep CC and CXX bound to /opt/rocm/lib/llvm/bin/amdclang and amdclang++ during builds; the generic c++ path failed on inherited Strix tuning flags.",
+      "Keep the installed _torch_migraphx extension RPATH pointed at the sibling torch/lib directory so libc10, libtorch_cpu, and libtorch_python resolve without LD_LIBRARY_PATH.",
+      "Keep the numpy metadata patch while the local package depends on the repo's numpy 2.x lane.",
+      "Re-run host-device FX lowering after every MIGraphX, PyTorch, TorchAO, or Torch-MIGraphX rebuild.",
+      "Do not promote Dynamo or torch.compile backend coverage until explicit host validation proves import and a tiny compile no longer segfault."
+    ],
     "upstream_version": "1.2",
     "url": "https://github.com/ROCm/torch_migraphx"
+  },
+  "provenance": {
+    "output_root": "packages",
+    "recipe_author": "Blackcat Informatics Inc.",
+    "recipe_commit": "ad42886",
+    "recipe_date": "20260317",
+    "recipe_history_count": 8,
+    "recipe_repo": "https://github.com/paudley/ai-notes",
+    "recipe_subdir": "strix-halo",
+    "repo_subpath": "."
+  },
+  "recipe": {
+    "branch": null,
+    "depends_on": [
+      "cpython",
+      "pytorch"
+    ],
+    "method": "pip",
+    "notes": "Builds Torch-MIGraphX from audited upstream `master` at\n`6b2cd2237e83b675ae671650d08343dfbb0be5f3` because PyPI and the only upstream\ntag remain at `1.1` while current upstream reports package version `1.2`.\n\nThe package is bound to the coherent local ROCm stack: `migraphx-gfx1151`\nprovides the Python `migraphx` extension under `/opt/rocm/lib`, PyTorch and\nTorchAO come from the local `gfx1151` package family, and the wheel build uses\nthe ROCm clang lane explicitly.\n\nThe promoted runtime lane is FX lowering. A staged target imported MIGraphX,\nTorchAO PT2E, and Torch-MIGraphX, then a host-device smoke lowered a tiny\n`x + 1` module to a MIGraphX-backed `SplitModule`. Dynamo backend registration\nstays lazy because importing PyTorch AOTAutograd after `_torch_migraphx`\ncurrently segfaults on the local Python 3.14 and PyTorch 2.11 stack.\n\nThe installed-system gate is publish/install with the matching TorchAO pkgrel,\nthen rerun the import and FX smoke without temporary `PYTHONPATH` overlays.\n",
+    "patches": [
+      {
+        "description": "Replace the recipe's broken venv-local Python cmake wrapper with the real system cmake binary. The cmake pip package installs a Python wrapper that does `from cmake import cmake`, which fails inside pip's build isolation where the cmake Python module is unavailable.\n",
+        "dst": "<build-venv>/.venv/bin/cmake",
+        "src": "/usr/bin/cmake",
+        "type": "file_copy"
+      }
+    ],
+    "phase": "H",
+    "repo": null,
+    "src_dir": null,
+    "steps": [
+      31
+    ]
   }
 }

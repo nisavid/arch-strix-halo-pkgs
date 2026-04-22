@@ -1145,6 +1145,55 @@ package() {{
       "$_file" 2>/dev/null || true
   done
 }}"""
+    elif template == "python-project-torchao":
+        prepare_lines.extend(
+            [
+                "if [[ ! -d third_party/cutlass/include ]]; then",
+                "  git submodule sync --recursive",
+                "  git submodule update --init --recursive",
+                "fi",
+                "",
+            ]
+        )
+        for patch_name in policy_pkg.get("source_patches", []):
+            prepare_lines.extend(
+                [
+                    f'if ! patch --dry-run -R -Np1 -i "$srcdir/{patch_name}" >/dev/null 2>&1; then',
+                    f'  patch -Np1 -i "$srcdir/{patch_name}"',
+                    "fi",
+                ]
+            )
+        build_body = f"""\
+build() {{
+  cd "$srcdir/{src_subdir}"
+
+  {compiler_env_snippet(compiler_root)}  _setup_compiler_env
+  local _base_flags="-O3 -march=native -mprefer-vector-width=512 -mavx512f -mavx512dq -mavx512vl -mavx512bw -mllvm -enable-gvn-hoist -mllvm -enable-gvn-sink -famd-opt -Wno-error=unused-command-line-argument"
+  local _wheel_flags
+  _wheel_flags="$(printf '%s' "${{_base_flags}}" | sed -E 's/-mllvm (-[^ ]+)/-Xclang -mllvm -Xclang \\1/g; s/-famd-opt//g; s/  +/ /g; s/^ +| +$//g')"
+
+  export CFLAGS="${{_wheel_flags}}"
+  export CXXFLAGS="${{_wheel_flags}}"
+  export LDFLAGS="-famd-opt"
+  export ROCM_HOME=/opt/rocm
+  export PYTORCH_ROCM_ARCH=gfx1151
+  export VERSION_SUFFIX=
+
+  python -m build --wheel --no-isolation
+}}
+
+package() {{
+  cd "$srcdir/{src_subdir}"
+  python -m installer --destdir="$pkgdir" dist/*.whl
+
+  local _rpath='$ORIGIN:$ORIGIN/../torch/lib:/opt/rocm/lib'
+  local _so
+  shopt -s nullglob
+  for _so in "$pkgdir"/usr/lib/python3.14/site-packages/torchao/_C*.so; do
+    patchelf --set-rpath "${{_rpath}}" "${{_so}}"
+  done
+  shopt -u nullglob
+}}"""
     elif template == "native-wheel-pypi":
         for patch_name in policy_pkg.get("source_patches", []):
             prepare_lines.extend(

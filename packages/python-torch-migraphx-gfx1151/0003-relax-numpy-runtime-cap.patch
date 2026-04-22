@@ -1,0 +1,24 @@
+diff --git a/py/requirements.txt b/py/requirements.txt
+index 08e35d0..1a104cb 100644
+--- a/py/requirements.txt
++++ b/py/requirements.txt
+@@ -1,4 +1,4 @@
+ torch>=1.11.0
+ tabulate
+-numpy>=1.20.0,<2.0
++numpy>=1.20.0
+ packaging
+\ No newline at end of file
+diff --git a/py/setup.py b/py/setup.py
+index 37b42be..c08dcc9 100644
+--- a/py/setup.py
++++ b/py/setup.py
+@@ -65,7 +65,7 @@ setup(
+     long_description=long_description,
+     install_requires=[
+     "torch>=1.11.0",
+-    "numpy>=1.20.0,<2.0",
++    "numpy>=1.20.0",
+     "packaging",
+     "tabulate",
+     ],

@@ -153,7 +153,7 @@ def test_rocm_inference_backlog_and_state_are_guarded():
     assert "package policy" in backlog
     assert "build proof" in backlog
     assert "python-torchao-rocm-gfx1151 0.17.0-2" in current_state
-    assert "python-torch-migraphx-gfx1151 1.2-1" in current_state
+    assert "python-torch-migraphx-gfx1151 1.2-2" in current_state
     assert "MIGraphX-backed `SplitModule`" in current_state
     assert "publish/install of the built TorchAO and Torch-MIGraphX packages" in reference
     assert "FlashAttention CK" in backlog

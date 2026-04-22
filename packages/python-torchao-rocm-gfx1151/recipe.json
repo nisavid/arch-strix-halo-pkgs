@@ -76,26 +76,26 @@
       "python-torchao-rocm"
     ],
     "recipe_key": "native_wheels",
+    "recipe_notes_override": "Builds TorchAO `0.17.0` from the upstream git tag because that release does\nnot publish an sdist on PyPI. This release is the local TorchAO compatibility\nlane for `torch 2.11.0+`.\n\nTorchAO imports `torch` at build time and still hard-codes `gfx942` for ROCm\nextension builds. The local package exports `VERSION_SUFFIX=` to keep the\nwheel on the stable release version, exports `ROCM_HOME=/opt/rocm` so\nPyTorch's extension helpers use the real split-layout ROCm headers, and\npatches `setup.py` so the ROCm target arch follows `PYTORCH_ROCM_ARCH`.\n\nThe staged package was verified locally with:\n- `readelf -d` showing `RUNPATH [$ORIGIN:$ORIGIN/../torch/lib:/opt/rocm/lib]`\n- `ldd -r` resolving cleanly against `/usr/lib/python3.14/site-packages/torch/lib`\n- `PYTHONPATH=<pkgdir>/site-packages python -c 'import torchao'` succeeding\n\nThe reference host has now validated the installed package with a clean\n`import torchao` path, the tiny serialized-checkpoint\n`tools/torchao_vllm_smoke.py` round trip, and the tracked\n`vllm.gemma4.e2b.torchao.online-real-model` scenario. The Gemma 4 online path\nloaded `google/gemma-4-E2B-it` with vLLM `quantization=torchao`, selected\n`ROCM_AITER_UNIFIED_ATTN`, and generated successfully.\n\nThe serialized Gemma 4 real-model path now writes processor files correctly,\nbut remains blocked during vLLM weight loading by TorchAO tensor metadata:\n`AttributeError: 'Tensor' object has no attribute 'tensor_data_names'`.\n\nThe `Stored version is not the same as current default version` warning is\nexpected with TorchAO `0.17.0` when using `Int8WeightOnlyConfig(version=2)`;\nthat version is still required for the serialized safetensors path. The ROCm\ncustom paged-attention fallback warning is vLLM shape-gated and did not appear\nin the Gemma 4 online TorchAO run.\n",
     "scaffold_notes": [
       "This package follows the repo's native wheel lane but needs two TorchAO-specific corrections: export VERSION_SUFFIX= so the wheel advertises a real release version, and patch the installed _C extension RPATH to include the sibling torch/lib directory.",
       "TorchAO 0.17.0 does not publish an sdist on PyPI, so the local source-build lane follows the upstream git tag and lets setup.py initialize the pinned cutlass submodule as needed.",
       "The upstream 0.17.0 setup.py still hard-codes --offload-arch=gfx942 on ROCm, so keep the local source patch that makes the ROCm target arch configurable via PYTORCH_ROCM_ARCH.",
       "The local build must also export ROCM_HOME=/opt/rocm. On this host, hipcc is visible under /usr/bin, but the actual HIP headers live under /opt/rocm/include; without the explicit prefix, PyTorch's extension helper falls back to ROCM_HOME=/usr and the build dies on hip/hip_runtime.h.",
-      "TorchAO 0.17.0's PT2E package assigns __module__ to typing.Union aliases. Python 3.14 rejects that assignment, so the local package carries a narrow import-compatibility patch.",
-      "The reference host has validated the local package lane with clean import torchao behavior, the tiny serialized-checkpoint tools/torchao_vllm_smoke.py round trip, and the vllm.gemma4.e2b.torchao.online-real-model scenario. The serialized Gemma 4 real-model checkpoint path remains blocked by a TorchAO/vLLM tensor metadata mismatch."
+      "TorchAO 0.17.0's PT2E package assigns __module__ to typing.Union aliases. Python 3.14 rejects that assignment, so the local package carries a narrow import-compatibility patch."
+    ],
+    "sha256sums": [
+      "SKIP"
     ],
     "source_patches": [
       "0001-setup.py-honor-pytorch-rocm-arch.patch",
       "0002-python-3.14-pt2e-union-aliases.patch"
     ],
-    "sha256sums": [
-      "SKIP"
-    ],
     "source_refs": [
       "torchao::git+https://github.com/pytorch/ao.git#tag=v0.17.0"
     ],
     "src_subdir": "torchao",
-    "template": "native-wheel-pypi",
+    "template": "python-project-torchao",
     "update_notes": [
       "Check the upstream TorchAO compatibility table first during updates; this package must stay on the release line built for the local PyTorch lane rather than a nearby +git snapshot.",
       "Keep VERSION_SUFFIX empty for release builds unless upstream changes its versioning model; +git local versions bypass TorchAO's own compatibility gate and recreate avoidable import-time warnings.",
@@ -124,7 +124,7 @@
       "pytorch"
     ],
     "method": "pip",
-    "notes": "Builds TorchAO 0.17.0 from the upstream git tag because that release\ndoes not publish an sdist on PyPI.\n\nTorchAO imports torch at build time and still hard-codes gfx942 for ROCm\nextension builds. The local package exports VERSION_SUFFIX= to keep the\nwheel on the stable release version, exports ROCM_HOME=/opt/rocm so\nPyTorch's extension helpers use the real split-layout ROCm headers, and\npatches setup.py so the ROCm target arch follows PYTORCH_ROCM_ARCH.\n\nThe staged package was verified locally with readelf -d showing RUNPATH\n[$ORIGIN:$ORIGIN/../torch/lib:/opt/rocm/lib], ldd -r resolving cleanly\nagainst /usr/lib/python3.14/site-packages/torch/lib, and a PYTHONPATH-based\nimport of torchao succeeding from the staged payload.",
+    "notes": "Builds TorchAO `0.17.0` from the upstream git tag because that release does\nnot publish an sdist on PyPI. This release is the local TorchAO compatibility\nlane for `torch 2.11.0+`.\n\nTorchAO imports `torch` at build time and still hard-codes `gfx942` for ROCm\nextension builds. The local package exports `VERSION_SUFFIX=` to keep the\nwheel on the stable release version, exports `ROCM_HOME=/opt/rocm` so\nPyTorch's extension helpers use the real split-layout ROCm headers, and\npatches `setup.py` so the ROCm target arch follows `PYTORCH_ROCM_ARCH`.\n\nThe staged package was verified locally with:\n- `readelf -d` showing `RUNPATH [$ORIGIN:$ORIGIN/../torch/lib:/opt/rocm/lib]`\n- `ldd -r` resolving cleanly against `/usr/lib/python3.14/site-packages/torch/lib`\n- `PYTHONPATH=<pkgdir>/site-packages python -c 'import torchao'` succeeding\n\nThe reference host has now validated the installed package with a clean\n`import torchao` path, the tiny serialized-checkpoint\n`tools/torchao_vllm_smoke.py` round trip, and the tracked\n`vllm.gemma4.e2b.torchao.online-real-model` scenario. The Gemma 4 online path\nloaded `google/gemma-4-E2B-it` with vLLM `quantization=torchao`, selected\n`ROCM_AITER_UNIFIED_ATTN`, and generated successfully.\n\nThe serialized Gemma 4 real-model path now writes processor files correctly,\nbut remains blocked during vLLM weight loading by TorchAO tensor metadata:\n`AttributeError: 'Tensor' object has no attribute 'tensor_data_names'`.\n\nThe `Stored version is not the same as current default version` warning is\nexpected with TorchAO `0.17.0` when using `Int8WeightOnlyConfig(version=2)`;\nthat version is still required for the serialized safetensors path. The ROCm\ncustom paged-attention fallback warning is vLLM shape-gated and did not appear\nin the Gemma 4 online TorchAO run.\n",
     "patches": [
       {
         "description": "Replace the recipe's broken venv-local Python cmake wrapper with the real system cmake binary. The cmake pip package installs a Python wrapper that does `from cmake import cmake`, which fails inside pip's build isolation where the cmake Python module is unavailable.\n",
@@ -134,7 +134,7 @@
       }
     ],
     "phase": "H",
-    "repo": "https://github.com/pytorch/ao",
+    "repo": null,
     "src_dir": null,
     "steps": [
       31
