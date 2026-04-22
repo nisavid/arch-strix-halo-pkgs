@@ -219,6 +219,100 @@ def test_vllm_adapter_carries_scenario_environment(tmp_path: Path):
     assert plan.env == {"VLLM_ROCM_USE_AITER_MOE": "1"}
 
 
+def test_flash_attn_adapter_builds_smoke_command(tmp_path: Path):
+    plan = build_execution_plan(
+        scenario(
+            {
+                "id": "flash-attn.qkvpacked-tiny",
+                "given": {
+                    "engine": "flash-attn",
+                    "tool": "flash_attn_smoke.qkvpacked-tiny",
+                },
+                "when": {"argv": ["--max-length", "128"]},
+            }
+        ),
+        repo_root=REPO_ROOT,
+        scenario_run_root=tmp_path,
+        model_bindings={},
+    )
+
+    assert plan.command == [
+        sys.executable,
+        str(REPO_ROOT / "tools/flash_attn_smoke.py"),
+        "--mode",
+        "qkvpacked-tiny",
+        "--max-length",
+        "128",
+    ]
+    assert plan.server_log_path is None
+    assert plan.env is None
+
+
+def test_flash_attn_adapter_carries_scenario_environment(tmp_path: Path):
+    plan = build_execution_plan(
+        scenario(
+            {
+                "id": "flash-attn.backend-import",
+                "given": {
+                    "engine": "flash-attn",
+                    "tool": "flash_attn_smoke.backend-import",
+                },
+                "when": {
+                    "env": {
+                        "FLASH_ATTN_MODE": "1",
+                        123: 456,
+                    }
+                },
+            }
+        ),
+        repo_root=REPO_ROOT,
+        scenario_run_root=tmp_path,
+        model_bindings={},
+    )
+
+    assert plan.env == {"FLASH_ATTN_MODE": "1", "123": "456"}
+
+
+def test_flash_attn_adapter_rejects_unsupported_mode_and_tool(tmp_path: Path):
+    with pytest.raises(
+        ValueError,
+        match=r"^UNSUPPORTED_FLASH_ATTN_SMOKE_MODE: invalid$",
+    ):
+        build_execution_plan(
+            scenario(
+                {
+                    "id": "flash-attn.invalid",
+                    "given": {
+                        "engine": "flash-attn",
+                        "tool": "flash_attn_smoke.invalid",
+                    },
+                }
+            ),
+            repo_root=REPO_ROOT,
+            scenario_run_root=tmp_path,
+            model_bindings={},
+        )
+
+    with pytest.raises(
+        ValueError,
+        match=r"^UNSUPPORTED_FLASH_ATTN_TOOL: invalid_tool$",
+    ):
+        build_execution_plan(
+            scenario(
+                {
+                    "id": "flash-attn.invalid-tool",
+                    "given": {
+                        "engine": "flash-attn",
+                        "tool": "invalid_tool",
+                    },
+                }
+            ),
+            repo_root=REPO_ROOT,
+            scenario_run_root=tmp_path,
+            model_bindings={},
+        )
+
+
 def test_vllm_adapter_builds_torchao_real_model_command(tmp_path: Path):
     plan = build_execution_plan(
         scenario(
