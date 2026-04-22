@@ -28,41 +28,51 @@ ideas from that reference as planned or advisory until source audit, package
 work, and local gfx1151 validation update this file or the recipe coverage
 ledger.
 
-The `python-torch-migraphx-gfx1151` package candidate has source-audit and
-wheel-build proof, but is not ready for package policy. On 2026-04-22,
-ROCm/torch_migraphx `master` at
-`6b2cd2237e83b675ae671650d08343dfbb0be5f3` reported package version `1.2`,
-while PyPI and the only upstream tag remained at `1.1`. A throwaway source
-checkout under `/tmp` built
-`torch_migraphx-1.2-cp314-cp314-linux_x86_64.whl` only after binding the build
-to the ROCm compiler lane with `CC=/opt/rocm/lib/llvm/bin/amdclang` and
-`CXX=/opt/rocm/lib/llvm/bin/amdclang++`; the default generic `c++` path failed
-on inherited `-famd-opt` flags. Import proof remains gated on host deployment:
-before the staged MIGraphX package build, Torch-MIGraphX import failed with
-`Unable to import migraphx` against the FlatBuffers-only deployed payload.
-`tools/stage_migraphx_for_therock.zsh` now builds AMDMIGraphX with Python
-bindings for `gfx1151`, patches current upstream's no-rocMLIR build gaps, and
-renders `migraphx-gfx1151` with real MIGraphX binaries, shared libraries,
-private headers, and Python extension payloads. The rendered TheRock package
-family is `7.13.0pre-5`, with `migraphx-gfx1151` expanding from a
-FlatBuffers-only payload to 513 files; an unprivileged `tools/amerge build
-therock-gfx1151` passed against the staged root on 2026-04-22. The next gate is
-privileged publish/install with
-`tools/stage_migraphx_for_therock.zsh --clean --deploy`, followed by host
-`import migraphx`, Torch-MIGraphX import, and a tiny FX/Dynamo or PT2E smoke
-before adding `python-torch-migraphx-gfx1151` package policy. Keep Composable
+The `migraphx-gfx1151` split now exposes a real MIGraphX payload on the
+reference host. On 2026-04-22, `pacman -Q migraphx-gfx1151` reported
+`7.13.0pre-5`, and `import migraphx` loaded
+`/opt/rocm/lib/migraphx.cpython-314-x86_64-linux-gnu.so` with MIGraphX
+package version `2.16.0.dev+479da6b`. The staged TheRock path that produced
+that package builds AMDMIGraphX for `gfx1151`, patches current upstream's
+no-rocMLIR build gaps, and renders real MIGraphX binaries, shared libraries,
+private headers, Python extension payloads, and `migraphx.pth`.
+
+The `python-torch-migraphx-gfx1151` package policy now exists for the audited
+ROCm/torch_migraphx `master` commit
+`6b2cd2237e83b675ae671650d08343dfbb0be5f3`, which reports package version
+`1.2` while PyPI and the only upstream tag remain at `1.1`. The local package
+binds builds to the ROCm compiler lane, carries a PT2E import patch for the
+PyTorch 2.11 and TorchAO layout, and keeps Dynamo registration lazy because
+importing PyTorch AOTAutograd after `_torch_migraphx` currently segfaults on
+the Python 3.14 stack. `tools/amerge build python-torchao-rocm-gfx1151
+python-torch-migraphx-gfx1151` produced
+`python-torchao-rocm-gfx1151 0.17.0-2` and
+`python-torch-migraphx-gfx1151 1.2-1` package artifacts on 2026-04-22. Before
+installing those artifacts, a temporary target using the same patches imported
+TorchAO PT2E and Torch-MIGraphX, and a host-device FX smoke lowered a tiny
+`x + 1` module to a MIGraphX-backed `SplitModule`.
+
+The next gate is privileged publish/install of
+`python-torchao-rocm-gfx1151 0.17.0-2` and
+`python-torch-migraphx-gfx1151 1.2-1`, followed by installed-system
+`import torchao.quantization.pt2e.quantize_pt2e`, `import torch_migraphx`, and
+the same tiny FX smoke without temporary `PYTHONPATH` overlays. Dynamo and
+`torch.compile(..., backend="migraphx")` coverage remains blocked until a host
+run proves that backend registration no longer segfaults. Keep Composable
 Kernel and rocMLIR integration disabled unless explicitly requested, because
-the current staged root must be self-consistent with the installed split
-packages before those optional integration gates can be promoted.
+the current staged root is intentionally self-consistent with the installed
+split packages before those optional integration gates are promoted.
 
 The preflight freshness sweep for this docs pass was triaged on 2026-04-22.
 No package source was repinned during that triage: AITER main through
-`bf4cd5b1703e05544383a8cb81f5e7ed387d8b2c` did not provide a gfx1151 OPUS FP8
-fix; llama.cpp `b8882` at `ca7f7b7b947842384cd8dda4a17a1868f1493a3e` was a
-WebGPU-only update outside the maintained HIP/Vulkan package outputs; and ROCm
-PyTorch release/2.11 through `141ba657575b42e5d0869002b509af4a75899edc` only
-changed Windows int4mm handling and FP64 hipBLASLt TunableOp support, with no
-local patch overlap. The reviewed values are recorded in
+`0814370ae833c768894ae68d22dbf0210508e8cd` only added the manylinux2_28 ROCm
+builder path with an auditwheel gate and did not provide a gfx1151 OPUS FP8
+fix; llama.cpp `b8883` at `134d6e54d4cd1311360bf6beeb6c779d90e09b87` was a
+common/chat and server conversion refactor outside the maintained HIP/Vulkan
+package outputs; and ROCm PyTorch release/2.11 through
+`141ba657575b42e5d0869002b509af4a75899edc` only changed Windows int4mm
+handling and FP64 hipBLASLt TunableOp support, with no local patch overlap.
+The reviewed values are recorded in
 `policies/package-freshness.toml`; rerun the daily checker before the next
 development arc.
 

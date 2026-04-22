@@ -775,13 +775,15 @@ authoritative_reference = "none"
 advisory_references = ["extra/python-pytorch-opt-rocm", "extra/python-pytorch-rocm"]
 divergence_notes = [
   "There is no standalone TorchAO package in Arch-family repositories, so this package is closure-first and tracks the upstream TorchAO compatibility matrix against the local PyTorch ROCm lane.",
-  "Carries a package-local ROCm patch so the source build honors PYTORCH_ROCM_ARCH instead of hard-coding gfx942, exports ROCM_HOME=/opt/rocm so PyTorch picks up the real split-layout HIP headers, and carries a post-install RPATH fix so the optional _C extension can resolve torch/lib at runtime."
+  "Carries a package-local ROCm patch so the source build honors PYTORCH_ROCM_ARCH instead of hard-coding gfx942, exports ROCM_HOME=/opt/rocm so PyTorch picks up the real split-layout HIP headers, and carries a post-install RPATH fix so the optional _C extension can resolve torch/lib at runtime.",
+  "Carries a Python 3.14 PT2E compatibility patch so torchao.quantization.pt2e can import after Python made typing.Union aliases immutable for __module__ assignment."
 ]
 update_notes = [
   "Check the upstream TorchAO compatibility table first during updates; this package must stay on the release line built for the local PyTorch lane rather than a nearby +git snapshot.",
   "Keep VERSION_SUFFIX empty for release builds unless upstream changes its versioning model; +git local versions bypass TorchAO's own compatibility gate and recreate avoidable import-time warnings.",
   "Keep ROCM_HOME=/opt/rocm in the build environment unless the local ROCm packaging layout changes. The host-visible hipcc wrapper may live under /usr/bin, but the headers and shared libraries still come from /opt/rocm.",
   "Re-verify the installed extension with readelf -d and ldd -r after each update. A clean package needs both a usable torch/lib runpath and zero unresolved ATen/Torch symbols once torch/lib is visible.",
+  "Keep the PT2E union-alias patch until upstream TorchAO handles Python 3.14 typing.Union objects without assigning __module__ directly.",
   "Keep the repo-local tools/torchao_vllm_smoke.py helper passing for both the tiny serialized checkpoint and the Gemma 4 online quantization path. Treat the serialized Gemma 4 real-model checkpoint path as blocked until the TorchAO/vLLM tensor metadata mismatch is fixed."
 ]
 recipe_notes_override = """
@@ -824,13 +826,55 @@ source_refs = ["torchao::git+https://github.com/pytorch/ao.git#tag=v0.17.0"]
 sha256sums = ["SKIP"]
 src_subdir = "torchao"
 patches_dir = "patches/python-torchao-rocm-gfx1151"
-extra_sources = ["0001-setup.py-honor-pytorch-rocm-arch.patch"]
-source_patches = ["0001-setup.py-honor-pytorch-rocm-arch.patch"]
+extra_sources = ["0001-setup.py-honor-pytorch-rocm-arch.patch", "0002-python-3.14-pt2e-union-aliases.patch"]
+source_patches = ["0001-setup.py-honor-pytorch-rocm-arch.patch", "0002-python-3.14-pt2e-union-aliases.patch"]
 scaffold_notes = [
   "This package follows the repo's native wheel lane but needs two TorchAO-specific corrections: export VERSION_SUFFIX= so the wheel advertises a real release version, and patch the installed _C extension RPATH to include the sibling torch/lib directory.",
   "TorchAO 0.17.0 does not publish an sdist on PyPI, so the local source-build lane follows the upstream git tag and lets setup.py initialize the pinned cutlass submodule as needed.",
   "The upstream 0.17.0 setup.py still hard-codes --offload-arch=gfx942 on ROCm, so keep the local source patch that makes the ROCm target arch configurable via PYTORCH_ROCM_ARCH.",
-  "The local build must also export ROCM_HOME=/opt/rocm. On this host, hipcc is visible under /usr/bin, but the actual HIP headers live under /opt/rocm/include; without the explicit prefix, PyTorch's extension helper falls back to ROCM_HOME=/usr and the build dies on hip/hip_runtime.h."
+  "The local build must also export ROCM_HOME=/opt/rocm. On this host, hipcc is visible under /usr/bin, but the actual HIP headers live under /opt/rocm/include; without the explicit prefix, PyTorch's extension helper falls back to ROCM_HOME=/usr and the build dies on hip/hip_runtime.h.",
+  "TorchAO 0.17.0's PT2E package assigns __module__ to typing.Union aliases. Python 3.14 rejects that assignment, so the local package carries a narrow import-compatibility patch."
+]
+
+[packages.python-torch-migraphx-gfx1151]
+recipe_key = "native_wheels"
+template = "python-project-torch-migraphx"
+upstream_version = "1.2"
+pkgdesc = "PyTorch integration for MIGraphX on the local ROCm gfx1151 stack"
+url = "https://github.com/ROCm/torch_migraphx"
+license = ["BSD-3-Clause"]
+arch_reference = []
+authoritative_reference = "none"
+advisory_references = []
+divergence_notes = [
+  "There is no current Arch-family Torch-MIGraphX package baseline, so this package is closure-first and tracks the audited upstream master commit that reports package version 1.2.",
+  "Carries a PT2E compatibility patch because PyTorch 2.11 documents PT2E quantization through TorchAO while current Torch-MIGraphX still imports the removed torch.ao.quantization.quantize_pt2e module.",
+  "Keeps Dynamo registration lazy because importing the Dynamo backend after the native _torch_migraphx extension currently segfaults on the local Python 3.14 and PyTorch 2.11 stack; FX lowering is the promoted smoke lane."
+]
+update_notes = [
+  "Track the upstream master commit until ROCm publishes a post-1.1 tag containing the version 1.2 Python package metadata.",
+  "Keep CC and CXX bound to /opt/rocm/lib/llvm/bin/amdclang and amdclang++ during builds; the generic c++ path failed on inherited Strix tuning flags.",
+  "Keep the installed _torch_migraphx extension RPATH pointed at the sibling torch/lib directory so libc10, libtorch_cpu, and libtorch_python resolve without LD_LIBRARY_PATH.",
+  "Re-run host-device FX lowering after every MIGraphX, PyTorch, TorchAO, or Torch-MIGraphX rebuild.",
+  "Do not promote Dynamo or torch.compile backend coverage until explicit host validation proves import and a tiny compile no longer segfault."
+]
+provides = ["python-torch-migraphx", "torch-migraphx"]
+conflicts = ["python-torch-migraphx", "torch-migraphx"]
+depends = ["gcc-libs", "glibc", "migraphx-gfx1151", "python-gfx1151", "python-numpy-gfx1151", "python-packaging", "python-pytorch-opt-rocm-gfx1151", "python-tabulate", "python-torchao-rocm-gfx1151"]
+makedepends = ["git", "patchelf", "python-build", "python-installer", "python-setuptools", "python-wheel", "rocm-llvm-gfx1151"]
+source_refs = ["torch_migraphx::git+https://github.com/ROCm/torch_migraphx.git#commit=6b2cd2237e83b675ae671650d08343dfbb0be5f3"]
+sha256sums = ["SKIP"]
+src_subdir = "torch_migraphx"
+patches_dir = "packages/python-torch-migraphx-gfx1151"
+source_patches = [
+  "0001-import-pt2e-quantization-from-torchao.patch",
+  "0002-keep-dynamo-registration-lazy.patch",
+]
+scaffold_notes = [
+  "Builds from upstream master at 6b2cd2237e83b675ae671650d08343dfbb0be5f3 because PyPI and the only upstream tag remain at 1.1 while current master reports version 1.2.",
+  "Uses the ROCm compiler lane explicitly and strips the unsupported -famd-opt flag from wheel C/C++ flags.",
+  "Depends on the local MIGraphX split package because the Python binding is installed under /opt/rocm/lib with migraphx.pth.",
+  "The package is promoted on an FX smoke, not Dynamo, until the Dynamo backend import no longer segfaults after _torch_migraphx loads."
 ]
 
 [packages."llama.cpp-hip-gfx1151"]

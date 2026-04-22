@@ -105,7 +105,7 @@ priority = "high"
 workflow = "upstream_source_update"
 checks = [
   { id = "release", role = "primary", kind = "github_release", repo = "ROCm/aiter", recorded = "0.1.12.post1", tag_prefix = "v", comparison = "pep440" },
-  { id = "main", role = "candidate", kind = "git_ref", repo = "https://github.com/ROCm/aiter.git", ref = "refs/heads/main", recorded = "bf4cd5b1703e05544383a8cb81f5e7ed387d8b2c", comparison = "sha" },
+  { id = "main", role = "candidate", kind = "git_ref", repo = "https://github.com/ROCm/aiter.git", ref = "refs/heads/main", recorded = "0814370ae833c768894ae68d22dbf0210508e8cd", comparison = "sha" },
 ]
 
 [families.numpy]
@@ -171,6 +171,15 @@ checks = [
   { id = "tag", role = "primary", kind = "github_tags", repo = "pytorch/ao", recorded = "0.17.0", tag_prefix = "v", comparison = "pep440", include_prereleases = false },
 ]
 
+[families.torch_migraphx]
+packages = ["python-torch-migraphx-gfx1151"]
+priority = "medium"
+workflow = "upstream_source_update"
+checks = [
+  { id = "master", role = "primary", kind = "git_ref", repo = "https://github.com/ROCm/torch_migraphx.git", ref = "refs/heads/master", recorded = "6b2cd2237e83b675ae671650d08343dfbb0be5f3", comparison = "sha" },
+  { id = "tag", role = "baseline", kind = "github_tags", repo = "ROCm/torch_migraphx", recorded = "1.1", comparison = "pep440", include_prereleases = false },
+]
+
 [families.mistral_common]
 packages = ["python-mistral-common-gfx1151"]
 priority = "medium"
@@ -194,7 +203,7 @@ packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"]
 priority = "high"
 workflow = "upstream_source_update"
 checks = [
-  { id = "release", role = "primary", kind = "github_release", repo = "ggml-org/llama.cpp", recorded = "b8882", comparison = "prefixed_integer" },
+  { id = "release", role = "primary", kind = "github_release", repo = "ggml-org/llama.cpp", recorded = "b8883", comparison = "prefixed_integer" },
   { id = "aur-hip", role = "baseline", kind = "aur", package = "llama.cpp-hip", recorded = "b8875-1", comparison = "pkgver" },
   { id = "aur-vulkan", role = "baseline", kind = "aur", package = "llama.cpp-vulkan-bin", recorded = "b7376-1", comparison = "pkgver" },
 ]

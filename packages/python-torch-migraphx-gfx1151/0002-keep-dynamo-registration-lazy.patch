@@ -1,0 +1,28 @@
+diff --git a/py/torch_migraphx/__init__.py b/py/torch_migraphx/__init__.py
+index 4f9b695..53630a0 100644
+--- a/py/torch_migraphx/__init__.py
++++ b/py/torch_migraphx/__init__.py
+@@ -24,8 +24,21 @@ except ModuleNotFoundError:
+ 
+ from torch_migraphx import fx, _C
+ 
+-if version.parse(_torch_version) >= version.parse("2.1.0"):
+-    from torch_migraphx import dynamo
++import importlib
++
++def __getattr__(name):
++    if name == "dynamo":
++        if version.parse(_torch_version) < version.parse("2.1.0"):
++            raise AttributeError(
++                "torch_migraphx.dynamo requires PyTorch 2.1 or newer"
++            )
++        dynamo = importlib.import_module("torch_migraphx.dynamo")
++        globals()["dynamo"] = dynamo
++        return dynamo
++    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
++
++
++__all__ = ["fx", "_C"]
+ 
+ import logging
+ import os

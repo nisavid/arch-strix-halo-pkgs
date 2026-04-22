@@ -1,0 +1,25 @@
+diff --git a/torchao/quantization/pt2e/__init__.py b/torchao/quantization/pt2e/__init__.py
+index 8ebd8d0..4fb71b5 100644
+--- a/torchao/quantization/pt2e/__init__.py
++++ b/torchao/quantization/pt2e/__init__.py
+@@ -91,12 +91,18 @@ for _f in [
+ 
+ # ensure __module__ is set correctly for public APIs
+ ObserverOrFakeQuantize = Union[ObserverBase, FakeQuantizeBase]
+-ObserverOrFakeQuantize.__module__ = "torchao.quantization.pt2e"
++try:
++    ObserverOrFakeQuantize.__module__ = "torchao.quantization.pt2e"
++except AttributeError:
++    pass
+ 
+ ObserverOrFakeQuantizeConstructor = Union[
+     PartialWrapper, type[ObserverBase], type[FakeQuantizeBase]
+ ]
+-ObserverOrFakeQuantizeConstructor.__module__ = "torchao.quantization.pt2e"
++try:
++    ObserverOrFakeQuantizeConstructor.__module__ = "torchao.quantization.pt2e"
++except AttributeError:
++    pass
+ 
+ 
+ __all__ = [

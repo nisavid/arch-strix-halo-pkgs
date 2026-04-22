@@ -13,7 +13,7 @@
 - Recorded reference packages: `extra/python-pytorch-opt-rocm, extra/python-pytorch-rocm`
 - Authoritative reference package: `none`
 - Advisory reference packages: `extra/python-pytorch-opt-rocm, extra/python-pytorch-rocm`
-- Applied source patch files/actions: `1`
+- Applied source patch files/actions: `2`
 
 ## Recipe notes
 
@@ -25,6 +25,9 @@ extension builds. The local package exports `VERSION_SUFFIX=` to keep the
 wheel on the stable release version, exports `ROCM_HOME=/opt/rocm` so
 PyTorch's extension helpers use the real split-layout ROCm headers, and
 patches `setup.py` so the ROCm target arch follows `PYTORCH_ROCM_ARCH`.
+The package also carries a Python 3.14 PT2E import patch: TorchAO `0.17.0`
+assigns `__module__` to `typing.Union` aliases in
+`torchao.quantization.pt2e`, which Python 3.14 rejects.
 
 The staged package was verified locally with:
 - `readelf -d` showing `RUNPATH [$ORIGIN:$ORIGIN/../torch/lib:/opt/rocm/lib]`
@@ -59,7 +62,7 @@ in the Gemma 4 online TorchAO run.
 
 - There is no standalone TorchAO package in Arch-family repositories, so this package is closure-first and tracks the upstream TorchAO compatibility matrix against the local PyTorch ROCm lane.
 - This local package intentionally follows the upstream `torchao 0.17.0` lane because TorchAO's compatibility table marks that release as the first stable line built for `torch 2.11.0+`.
-- Carries a package-local ROCm patch so the source build honors `PYTORCH_ROCM_ARCH` instead of hard-coding `gfx942`, exports `ROCM_HOME=/opt/rocm` so PyTorch picks up the real split-layout HIP headers, and carries a post-install RPATH fix so the optional `_C` extension can resolve `torch/lib` at runtime.
+- Carries package-local ROCm and Python 3.14 compatibility patches so the source build honors `PYTORCH_ROCM_ARCH`, the PT2E package imports cleanly, and the optional `_C` extension resolves `torch/lib` at runtime.
 
 ## Update Notes
 
@@ -67,6 +70,8 @@ in the Gemma 4 online TorchAO run.
 - Keep `VERSION_SUFFIX` empty for release builds unless upstream changes its versioning model; `+git` local versions bypass TorchAO's own compatibility gate and recreate avoidable import-time warnings.
 - Keep `ROCM_HOME=/opt/rocm` in the build environment unless the local ROCm packaging layout changes. The host-visible `hipcc` wrapper may live under `/usr/bin`, but the headers and shared libraries still come from `/opt/rocm`.
 - Re-verify the installed extension with `readelf -d` and `ldd -r` after each update. A clean package needs both a usable `torch/lib` runpath and zero unresolved ATen/Torch symbols once `torch/lib` is visible.
+- Keep the PT2E union-alias patch until upstream TorchAO handles Python 3.14
+  `typing.Union` objects without assigning `__module__` directly.
 - Keep the repo-local `tools/torchao_vllm_smoke.py` round-trip helper passing.
   That path now covers a raw GPU `copy_` probe plus a real
   `quantization="torchao"` vLLM load/generate cycle, so it is the first check

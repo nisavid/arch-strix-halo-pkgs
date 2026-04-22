@@ -16,6 +16,8 @@ packages/*/aocl-libm/
 packages/*/lemonade/
 packages/*/llama.cpp/
 packages/*/pytorch/
+packages/*/torch_migraphx/
+packages/*/torchao/
 packages/*/triton/
 packages/*/vllm/
 packages/*/aotriton/

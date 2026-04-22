@@ -7,16 +7,19 @@
     "authoritative_reference": "none",
     "divergence_notes": [
       "There is no standalone TorchAO package in Arch-family repositories, so this package is closure-first and tracks the upstream TorchAO compatibility matrix against the local PyTorch ROCm lane.",
-      "Carries a package-local ROCm patch so the source build honors PYTORCH_ROCM_ARCH instead of hard-coding gfx942, exports ROCM_HOME=/opt/rocm so PyTorch picks up the real split-layout HIP headers, and carries a post-install RPATH fix so the optional _C extension can resolve torch/lib at runtime."
+      "Carries a package-local ROCm patch so the source build honors PYTORCH_ROCM_ARCH instead of hard-coding gfx942, exports ROCM_HOME=/opt/rocm so PyTorch picks up the real split-layout HIP headers, and carries a post-install RPATH fix so the optional _C extension can resolve torch/lib at runtime.",
+      "Carries a Python 3.14 PT2E compatibility patch so torchao.quantization.pt2e can import after Python made typing.Union aliases immutable for __module__ assignment."
     ],
     "source_patches": [
-      "0001-setup.py-honor-pytorch-rocm-arch.patch"
+      "0001-setup.py-honor-pytorch-rocm-arch.patch",
+      "0002-python-3.14-pt2e-union-aliases.patch"
     ],
     "update_notes": [
       "Check the upstream TorchAO compatibility table first during updates; this package must stay on the release line built for the local PyTorch lane rather than a nearby +git snapshot.",
       "Keep VERSION_SUFFIX empty for release builds unless upstream changes its versioning model; +git local versions bypass TorchAO's own compatibility gate and recreate avoidable import-time warnings.",
       "Keep ROCM_HOME=/opt/rocm in the build environment unless the local ROCm packaging layout changes. The host-visible hipcc wrapper may live under /usr/bin, but the headers and shared libraries still come from /opt/rocm.",
       "Re-verify the installed extension with readelf -d and ldd -r after each update. A clean package needs both a usable torch/lib runpath and zero unresolved ATen/Torch symbols once torch/lib is visible.",
+      "Keep the PT2E union-alias patch until upstream TorchAO handles Python 3.14 typing.Union objects without assigning __module__ directly.",
       "Keep the repo-local tools/torchao_vllm_smoke.py helper passing for both the tiny serialized checkpoint and the Gemma 4 online quantization path. Treat the serialized Gemma 4 real-model checkpoint path as blocked until the TorchAO/vLLM tensor metadata mismatch is fixed."
     ]
   },
@@ -44,10 +47,12 @@
     ],
     "divergence_notes": [
       "There is no standalone TorchAO package in Arch-family repositories, so this package is closure-first and tracks the upstream TorchAO compatibility matrix against the local PyTorch ROCm lane.",
-      "Carries a package-local ROCm patch so the source build honors PYTORCH_ROCM_ARCH instead of hard-coding gfx942, exports ROCM_HOME=/opt/rocm so PyTorch picks up the real split-layout HIP headers, and carries a post-install RPATH fix so the optional _C extension can resolve torch/lib at runtime."
+      "Carries a package-local ROCm patch so the source build honors PYTORCH_ROCM_ARCH instead of hard-coding gfx942, exports ROCM_HOME=/opt/rocm so PyTorch picks up the real split-layout HIP headers, and carries a post-install RPATH fix so the optional _C extension can resolve torch/lib at runtime.",
+      "Carries a Python 3.14 PT2E compatibility patch so torchao.quantization.pt2e can import after Python made typing.Union aliases immutable for __module__ assignment."
     ],
     "extra_sources": [
-      "0001-setup.py-honor-pytorch-rocm-arch.patch"
+      "0001-setup.py-honor-pytorch-rocm-arch.patch",
+      "0002-python-3.14-pt2e-union-aliases.patch"
     ],
     "license": [
       "BSD-3-Clause"
@@ -76,10 +81,12 @@
       "TorchAO 0.17.0 does not publish an sdist on PyPI, so the local source-build lane follows the upstream git tag and lets setup.py initialize the pinned cutlass submodule as needed.",
       "The upstream 0.17.0 setup.py still hard-codes --offload-arch=gfx942 on ROCm, so keep the local source patch that makes the ROCm target arch configurable via PYTORCH_ROCM_ARCH.",
       "The local build must also export ROCM_HOME=/opt/rocm. On this host, hipcc is visible under /usr/bin, but the actual HIP headers live under /opt/rocm/include; without the explicit prefix, PyTorch's extension helper falls back to ROCM_HOME=/usr and the build dies on hip/hip_runtime.h.",
+      "TorchAO 0.17.0's PT2E package assigns __module__ to typing.Union aliases. Python 3.14 rejects that assignment, so the local package carries a narrow import-compatibility patch.",
       "The reference host has validated the local package lane with clean import torchao behavior, the tiny serialized-checkpoint tools/torchao_vllm_smoke.py round trip, and the vllm.gemma4.e2b.torchao.online-real-model scenario. The serialized Gemma 4 real-model checkpoint path remains blocked by a TorchAO/vLLM tensor metadata mismatch."
     ],
     "source_patches": [
-      "0001-setup.py-honor-pytorch-rocm-arch.patch"
+      "0001-setup.py-honor-pytorch-rocm-arch.patch",
+      "0002-python-3.14-pt2e-union-aliases.patch"
     ],
     "sha256sums": [
       "SKIP"
@@ -94,6 +101,7 @@
       "Keep VERSION_SUFFIX empty for release builds unless upstream changes its versioning model; +git local versions bypass TorchAO's own compatibility gate and recreate avoidable import-time warnings.",
       "Keep ROCM_HOME=/opt/rocm in the build environment unless the local ROCm packaging layout changes. The host-visible hipcc wrapper may live under /usr/bin, but the headers and shared libraries still come from /opt/rocm.",
       "Re-verify the installed extension with readelf -d and ldd -r after each update. A clean package needs both a usable torch/lib runpath and zero unresolved ATen/Torch symbols once torch/lib is visible.",
+      "Keep the PT2E union-alias patch until upstream TorchAO handles Python 3.14 typing.Union objects without assigning __module__ directly.",
       "Keep the repo-local tools/torchao_vllm_smoke.py helper passing for both the tiny serialized checkpoint and the Gemma 4 online quantization path. Treat the serialized Gemma 4 real-model checkpoint path as blocked until the TorchAO/vLLM tensor metadata mismatch is fixed."
     ],
     "upstream_version": "0.17.0",

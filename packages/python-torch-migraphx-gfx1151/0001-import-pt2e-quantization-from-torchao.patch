@@ -1,0 +1,16 @@
+diff --git a/py/torch_migraphx/fx/converters/quant_ops_converters.py b/py/torch_migraphx/fx/converters/quant_ops_converters.py
+index 94f5423..3d92d30 100644
+--- a/py/torch_migraphx/fx/converters/quant_ops_converters.py
++++ b/py/torch_migraphx/fx/converters/quant_ops_converters.py
+@@ -46,7 +46,10 @@ from ..mgx_module import MGXInstruction
+ from torch_migraphx.fx.converters import acc_ops_converters
+ 
+ # Import required to populate torch.ops.quantized_decomposed
+-import torch.ao.quantization.quantize_pt2e
++try:
++    import torch.ao.quantization.quantize_pt2e
++except ModuleNotFoundError:
++    import torchao.quantization.pt2e.quantize_pt2e
+ 
+ _LOGGER = logging.getLogger(__name__)
+ 

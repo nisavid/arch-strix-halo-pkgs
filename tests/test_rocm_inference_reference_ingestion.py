@@ -150,12 +150,12 @@ def test_rocm_inference_backlog_and_state_are_guarded():
     assert "Newly discovered ROCm inference candidates" in backlog
     assert "python-torch-migraphx-gfx1151" in backlog
     assert "MIGraphX Python binding" in backlog
-    assert "Do not add package policy" in backlog
-    assert "torch_migraphx-1.2-cp314-cp314-linux_x86_64.whl" in current_state
-    assert "CC=/opt/rocm/lib/llvm/bin/amdclang" in current_state
-    assert "CXX=/opt/rocm/lib/llvm/bin/amdclang++" in current_state
-    assert "Unable to import migraphx" in current_state
-    assert "MIGraphX Python binding proof" in reference
+    assert "package policy" in backlog
+    assert "build proof" in backlog
+    assert "python-torchao-rocm-gfx1151 0.17.0-2" in current_state
+    assert "python-torch-migraphx-gfx1151 1.2-1" in current_state
+    assert "MIGraphX-backed `SplitModule`" in current_state
+    assert "publish/install of the built TorchAO and Torch-MIGraphX packages" in reference
     assert "FlashAttention CK" in backlog
     assert "FlashAttention Triton" in backlog
     assert "Freshness sweep triage gate" not in backlog

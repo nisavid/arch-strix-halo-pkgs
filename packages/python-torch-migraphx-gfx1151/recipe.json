@@ -1,0 +1,49 @@
+{
+  "maintenance": {
+    "source_patches": [
+      "0001-import-pt2e-quantization-from-torchao.patch",
+      "0002-keep-dynamo-registration-lazy.patch"
+    ],
+    "update_notes": [
+      "Track the upstream master commit until ROCm publishes a post-1.1 tag containing the version 1.2 Python package metadata.",
+      "Keep the PT2E import patch until Torch-MIGraphX accepts TorchAO's migrated PT2E quantization module directly.",
+      "Keep Dynamo registration explicit until a host smoke proves importing torch_migraphx.dynamo after the native extension no longer segfaults on the local Python 3.14 and PyTorch 2.11 stack.",
+      "Re-run host-device FX lowering after every MIGraphX, PyTorch, TorchAO, or Torch-MIGraphX rebuild."
+    ]
+  },
+  "name": "python-torch-migraphx-gfx1151",
+  "package_name": "python-torch-migraphx-gfx1151",
+  "pkgver": "1.2",
+  "policy": {
+    "authoritative_reference": "none",
+    "depends": [
+      "gcc-libs",
+      "glibc",
+      "migraphx-gfx1151",
+      "python-gfx1151",
+      "python-numpy-gfx1151",
+      "python-packaging",
+      "python-pytorch-opt-rocm-gfx1151",
+      "python-tabulate",
+      "python-torchao-rocm-gfx1151"
+    ],
+    "makedepends": [
+      "git",
+      "patchelf",
+      "python-build",
+      "python-installer",
+      "python-setuptools",
+      "python-wheel",
+      "rocm-llvm-gfx1151"
+    ],
+    "source_patches": [
+      "0001-import-pt2e-quantization-from-torchao.patch",
+      "0002-keep-dynamo-registration-lazy.patch"
+    ],
+    "source_refs": [
+      "torch_migraphx::git+https://github.com/ROCm/torch_migraphx.git#commit=6b2cd2237e83b675ae671650d08343dfbb0be5f3"
+    ],
+    "upstream_version": "1.2",
+    "url": "https://github.com/ROCm/torch_migraphx"
+  }
+}

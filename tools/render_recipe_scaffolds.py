@@ -101,6 +101,8 @@ _setup_compiler_env() {
     done
     export PATH="${_ccache_dir}:$PATH"
     export CCACHE_BASEDIR="${CCACHE_BASEDIR:-$srcdir}"
+    export CCACHE_DIR="${CCACHE_DIR:-$srcdir/.ccache/store}"
+    export CCACHE_TEMPDIR="${CCACHE_TEMPDIR:-$srcdir/.ccache/tmp}"
     export CCACHE_NOCPP2=1
     export CCACHE_PATH="${_compiler_root}:/opt/rocm/bin:/usr/bin"
     export CC=amdclang
@@ -1180,6 +1182,40 @@ build() {{
 package() {{
   cd "$srcdir/{src_subdir}"
   python -m installer --destdir="$pkgdir" dist/*.whl
+}}"""
+    elif template == "python-project-torch-migraphx":
+        for patch_name in policy_pkg.get("source_patches", []):
+            prepare_lines.extend(
+                [
+                    f'if ! patch --dry-run -R -Np1 -i "$srcdir/{patch_name}" >/dev/null 2>&1; then',
+                    f'  patch -Np1 -i "$srcdir/{patch_name}"',
+                    "fi",
+                ]
+            )
+        build_body = f"""\
+build() {{
+  cd "$srcdir/{src_subdir}/py"
+
+  {compiler_env_snippet(compiler_root)}  _setup_compiler_env
+  export CFLAGS="-O3 -march=native -mprefer-vector-width=512 -mavx512f -mavx512dq -mavx512vl -mavx512bw -Wno-error=unused-command-line-argument"
+  export CXXFLAGS="${{CFLAGS}}"
+  export ROCM_HOME=/opt/rocm
+  export HIP_PATH=/opt/rocm
+  export PYTORCH_ROCM_ARCH=gfx1151
+
+  python -m build --wheel --no-isolation
+}}
+
+package() {{
+  cd "$srcdir/{src_subdir}/py"
+
+  python -m installer --destdir="$pkgdir" dist/*.whl
+
+  local _site="$pkgdir/usr/lib/python3.14/site-packages"
+  local _rpath='$ORIGIN:$ORIGIN/torch/lib:/opt/rocm/lib'
+  patchelf --set-rpath "${{_rpath}}" "${{_site}}"/_torch_migraphx*.so
+  install -Dm644 "$srcdir/{src_subdir}/LICENSE" \\
+    "$pkgdir/usr/share/licenses/{package_name}/LICENSE"
 }}"""
     elif template == "meta-package":
         build_body = f"""\

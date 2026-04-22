@@ -10,6 +10,11 @@ PATCH = (
     / "packages/python-torchao-rocm-gfx1151/"
     / "0001-setup.py-honor-pytorch-rocm-arch.patch"
 )
+PT2E_PATCH = (
+    REPO_ROOT
+    / "packages/python-torchao-rocm-gfx1151/"
+    / "0002-python-3.14-pt2e-union-aliases.patch"
+)
 
 
 def test_pkgbuild_uses_torch_2_11_compatible_torchao_lane():
@@ -23,6 +28,7 @@ def test_pkgbuild_uses_torch_2_11_compatible_torchao_lane():
     assert "PYTORCH_ROCM_ARCH=gfx1151" in text
     assert "patchelf" in text
     assert PATCH.name in text
+    assert PT2E_PATCH.name in text
 
 
 def test_patch_makes_rocm_arch_configurable():
@@ -31,6 +37,13 @@ def test_patch_makes_rocm_arch_configurable():
     assert '--offload-arch=gfx942' in text
     assert '+        rocm_arch = os.getenv("PYTORCH_ROCM_ARCH", "gfx942")' in text
     assert '+        extra_compile_args["nvcc"].append(f"--offload-arch={rocm_arch}")' in text
+
+
+def test_pt2e_patch_handles_python_3_14_union_aliases():
+    text = PT2E_PATCH.read_text()
+
+    assert "ObserverOrFakeQuantize.__module__" in text
+    assert "except AttributeError" in text
 
 
 def test_package_docs_record_compatibility_and_runpath_story():
@@ -42,10 +55,12 @@ def test_package_docs_record_compatibility_and_runpath_story():
     assert "VERSION_SUFFIX" in readme
     assert "ROCM_HOME=/opt/rocm" in readme
     assert "torch/lib" in readme
+    assert "PT2E" in readme
     assert "tools/torchao_vllm_smoke.py" in readme
     assert "Stored version is not the same as current default version" in readme
     assert "0.17.0" in recipe
     assert "ROCM_HOME=/opt/rocm" in recipe
+    assert PT2E_PATCH.name in recipe
     assert "tools/torchao_vllm_smoke.py" in recipe
 
 
