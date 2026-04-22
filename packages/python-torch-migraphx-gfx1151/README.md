@@ -27,11 +27,11 @@ TorchAO come from the local `gfx1151` package family, and the wheel build uses
 the ROCm clang lane explicitly.
 
 The promoted runtime lanes are FX lowering and a tiny Dynamo named-backend
-smoke. The installed `1.2-2` host package imports MIGraphX, TorchAO PT2E, and
-Torch-MIGraphX from package-owned paths and lowers a tiny `x + 1` module to a
+smoke. The installed host package imports MIGraphX, TorchAO PT2E, and
+Torch-MIGraphX from package-owned paths, lowers a tiny `x + 1` module to a
 MIGraphX-backed `SplitModule` on the `gfx1151` GPU with matching PyTorch
-output. The built `1.2-3` package overlay imports `torch_migraphx.dynamo`,
-imports `sqlite3` after Torch-MIGraphX, and compiles the same module through
+output, imports `torch_migraphx.dynamo`, imports `sqlite3` after
+Torch-MIGraphX, and compiles the same module through
 `torch.compile(..., backend="migraphx")`.
 
 Dynamo registration stays lazy on base import, and the package preloads

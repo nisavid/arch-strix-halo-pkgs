@@ -53,11 +53,10 @@ reference host then installed `python-torchao-rocm-gfx1151 0.17.0-2` and
 PT2E, Torch-MIGraphX, and MIGraphX resolve from package-owned paths, and a
 host-device FX smoke lowered a tiny `x + 1` module to a MIGraphX-backed
 `SplitModule` on the Radeon 8060S with matching PyTorch output. A follow-up
-`python-torch-migraphx-gfx1151 1.2-3` build adds the AOTAutograd preload patch;
-an extracted `1.2-3` package overlay imports `torch_migraphx.dynamo`, imports
-`sqlite3` after Torch-MIGraphX, and passes the same tiny module through
-`torch.compile(..., backend="migraphx")` on the reference host. Privileged
-install of `1.2-3` is still pending.
+`python-torch-migraphx-gfx1151 1.2-3` adds the AOTAutograd preload patch; the
+installed package imports `torch_migraphx.dynamo`, imports `sqlite3` after
+Torch-MIGraphX, and passes the same tiny module through
+`torch.compile(..., backend="migraphx")` on the reference host.
 
 Keep Composable Kernel and rocMLIR integration disabled unless explicitly
 requested, because the current staged root is intentionally self-consistent
