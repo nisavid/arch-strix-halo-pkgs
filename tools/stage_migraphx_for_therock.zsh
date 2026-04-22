@@ -11,6 +11,8 @@ typeset targets=gfx1151
 typeset clean=0
 typeset deploy=0
 typeset skip_build=0
+typeset with_composable_kernel=0
+typeset with_mlir=0
 
 usage() {
   cat <<'EOF'
@@ -26,6 +28,8 @@ Options:
   -j, --jobs N       parallel build jobs (default: nproc)
   --clean            remove the stage and source dirs before starting
   --skip-build       reuse an existing source build and only install/render/deploy
+  --with-ck          enable AMDMIGraphX Composable Kernel integration
+  --with-mlir        enable AMDMIGraphX rocMLIR integration
   --deploy           run the privileged amerge deployment after preview
   -h, --help         show this help
 
@@ -45,7 +49,7 @@ status() {
 
 run() {
   print -P "%F{blue}$%f ${(q-)@}"
-  "$@"
+  "$@" || fail "command failed: ${(q-)@}"
 }
 
 require_cmds() {
@@ -105,29 +109,41 @@ build_and_install_migraphx() {
   emulate -L zsh
   local disable_versions
   disable_versions=$(python_disable_versions)
+  local ck=OFF
+  local mlir=OFF
+  (( with_composable_kernel )) && ck=ON
+  (( with_mlir )) && mlir=ON
+  local -a configure_args=(
+    -S $src
+    -B $src/build
+    -G Ninja
+    -DCMAKE_BUILD_TYPE=Release
+    -DCMAKE_INSTALL_PREFIX=/opt/rocm
+    "-DCMAKE_PREFIX_PATH=$stage/opt/rocm;/opt/rocm"
+    -DCMAKE_C_COMPILER=/opt/rocm/lib/llvm/bin/amdclang
+    -DCMAKE_CXX_COMPILER=/opt/rocm/lib/llvm/bin/amdclang++
+    -DGPU_TARGETS=$targets
+    -DMIGRAPHX_ENABLE_PYTHON=ON
+    -DMIGRAPHX_USE_COMPOSABLEKERNEL=$ck
+    -DMIGRAPHX_ENABLE_MLIR=$mlir
+    -DROCM_ENABLE_CLANG_TIDY=OFF
+    -DPYTHON_DISABLE_VERSIONS=$disable_versions
+  )
 
   status "configuring AMDMIGraphX for $targets"
-  run cmake -S $src -B $src/build -G Ninja \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_INSTALL_PREFIX=/opt/rocm \
-    "-DCMAKE_PREFIX_PATH=$stage/opt/rocm;/opt/rocm" \
-    -DCMAKE_C_COMPILER=/opt/rocm/lib/llvm/bin/amdclang \
-    -DCMAKE_CXX_COMPILER=/opt/rocm/lib/llvm/bin/amdclang++ \
-    -DGPU_TARGETS=$targets \
-    -DMIGRAPHX_ENABLE_PYTHON=ON \
-    -DPYTHON_DISABLE_VERSIONS=$disable_versions
+  run cmake $configure_args
 
   status "building AMDMIGraphX"
   run cmake --build $src/build -j$jobs
 
   status "installing AMDMIGraphX into $stage"
-  env DESTDIR=$stage cmake --install $src/build
+  run env DESTDIR=$stage cmake --install $src/build
 }
 
 validate_stage() {
   emulate -L zsh
   status "checking staged MIGraphX payload"
-  find $stage/opt/rocm \( \
+  run find $stage/opt/rocm \( \
     -name migraphx-driver -o \
     -name 'libmigraphx*.so*' -o \
     -name 'migraphx.cpython-*.so' \
@@ -142,7 +158,7 @@ validate_stage() {
   (( found_count > 0 )) || fail "staged root still has no MIGraphX payload"
 
   status "checking staged Python import"
-  env LD_LIBRARY_PATH=$stage/opt/rocm/lib:${LD_LIBRARY_PATH-} \
+  run env LD_LIBRARY_PATH=$stage/opt/rocm/lib:${LD_LIBRARY_PATH-} \
     PYTHONPATH=$stage/opt/rocm/lib \
     python - <<'PY'
 import migraphx
@@ -157,13 +173,13 @@ render_and_deploy() {
   run python tools/render_therock_pkgbase.py --therock-root $stage
 
   status "previewing amerge plan"
-  env _THEROCK_ROOT=$stage tools/amerge run therock-gfx1151 --preview=tree --color=never
+  run env _THEROCK_ROOT=$stage tools/amerge run therock-gfx1151 --preview=tree --color=never
 
   if (( deploy )); then
     status "deploying therock-gfx1151"
-    env _THEROCK_ROOT=$stage tools/amerge run therock-gfx1151
+    run env _THEROCK_ROOT=$stage tools/amerge run therock-gfx1151
     status "checking installed MIGraphX import"
-    python - <<'PY'
+    run python - <<'PY'
 import migraphx
 print(migraphx.__file__)
 PY
@@ -200,6 +216,12 @@ while (( $# )); do
     --skip-build)
       skip_build=1
       ;;
+    --with-ck)
+      with_composable_kernel=1
+      ;;
+    --with-mlir)
+      with_mlir=1
+      ;;
     --deploy)
       deploy=1
       ;;
@@ -226,7 +248,7 @@ if (( skip_build )); then
   [[ -d $src/build ]] || fail "--skip-build needs an existing build dir: $src/build"
   copy_current_rocm_into_stage
   status "installing existing AMDMIGraphX build into $stage"
-  env DESTDIR=$stage cmake --install $src/build
+  run env DESTDIR=$stage cmake --install $src/build
 else
   copy_current_rocm_into_stage
   clone_or_update_source
