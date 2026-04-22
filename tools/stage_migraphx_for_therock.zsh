@@ -97,12 +97,95 @@ clone_or_update_source() {
   fi
 }
 
+patch_migraphx_source_for_staged_root() {
+  emulate -L zsh
+  (( with_mlir )) && return
+
+  local mlir_cpp=$src/src/targets/gpu/mlir.cpp
+  [[ -f $mlir_cpp ]] || fail "missing AMDMIGraphX source file: $mlir_cpp"
+
+  status "patching AMDMIGraphX no-MLIR build stubs for the staged root"
+  run python - $mlir_cpp <<'PY'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+text = path.read_text()
+
+def replace_once(old: str, new: str) -> None:
+    global text
+    if new in text:
+        return
+    if old not in text:
+        raise SystemExit(f"expected MLIR source block not found in {path}")
+    text = text.replace(old, new, 1)
+
+replace_once("""#include <migraphx/gpu/prepare_mlir.hpp>
+#include <mlir-c/Dialect/RockEnums.h>
+#include <numeric>
+""", """#include <migraphx/gpu/prepare_mlir.hpp>
+#ifdef MIGRAPHX_MLIR
+#include <mlir-c/Dialect/RockEnums.h>
+#endif
+#include <numeric>
+""")
+
+replace_once("""std::string dump_mlir(module m, const std::vector<shape>& inputs)
+{
+    use(m);
+    use(inputs);
+    return {};
+}
+
+// Disabling clang-tidy warning on non-real useage.
+""", """std::string dump_mlir(module m, const std::vector<shape>& inputs)
+{
+    use(m);
+    use(inputs);
+    return {};
+}
+
+void dump_mlir_to_file(module m, const std::vector<shape>& inputs, const fs::path& location)
+{
+    use(m);
+    use(inputs);
+    use(location);
+}
+
+bool is_module_fusible(const module& m, const context& migraphx_ctx, const value& solution)
+{
+    use(m);
+    use(migraphx_ctx);
+    use(solution);
+    return false;
+}
+
+void adjust_param_shapes(module& m, const std::vector<shape>& inputs)
+{
+    use(m);
+    use(inputs);
+}
+
+void dump_mlir_to_mxr(module m, const std::vector<instruction_ref>& inputs, const fs::path& location)
+{
+    use(m);
+    use(inputs);
+    use(location);
+}
+
+// Disabling clang-tidy warning on non-real useage.
+""")
+
+path.write_text(text)
+PY
+}
+
 copy_current_rocm_into_stage() {
   emulate -L zsh
   [[ -d /opt/rocm ]] || fail "/opt/rocm is missing"
   status "copying current /opt/rocm into $stage"
   run mkdir -p $stage/opt
-  run rsync -aH --delete /opt/rocm/ $stage/opt/rocm/
+  run rsync -aH --no-owner --no-group --delete /opt/rocm/ $stage/opt/rocm/
 }
 
 build_and_install_migraphx() {
@@ -133,11 +216,8 @@ build_and_install_migraphx() {
   status "configuring AMDMIGraphX for $targets"
   run cmake $configure_args
 
-  status "building AMDMIGraphX"
-  run cmake --build $src/build -j$jobs
-
-  status "installing AMDMIGraphX into $stage"
-  run env DESTDIR=$stage cmake --install $src/build
+  status "building and installing AMDMIGraphX into $stage"
+  run env DESTDIR=$stage cmake --build $src/build --target install -j$jobs
 }
 
 validate_stage() {
@@ -173,7 +253,7 @@ render_and_deploy() {
   run python tools/render_therock_pkgbase.py --therock-root $stage
 
   status "previewing amerge plan"
-  run env _THEROCK_ROOT=$stage tools/amerge run therock-gfx1151 --preview=tree --color=never
+  run env _THEROCK_ROOT=$stage tools/amerge run therock-gfx1151 --dry-run --preview=tree --color=never
 
   if (( deploy )); then
     status "deploying therock-gfx1151"
@@ -248,10 +328,11 @@ if (( skip_build )); then
   [[ -d $src/build ]] || fail "--skip-build needs an existing build dir: $src/build"
   copy_current_rocm_into_stage
   status "installing existing AMDMIGraphX build into $stage"
-  run env DESTDIR=$stage cmake --install $src/build
+  run env DESTDIR=$stage cmake --build $src/build --target install -j$jobs
 else
   copy_current_rocm_into_stage
   clone_or_update_source
+  patch_migraphx_source_for_staged_root
   build_and_install_migraphx
 fi
 

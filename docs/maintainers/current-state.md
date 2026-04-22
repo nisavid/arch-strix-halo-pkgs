@@ -37,23 +37,23 @@ checkout under `/tmp` built
 `torch_migraphx-1.2-cp314-cp314-linux_x86_64.whl` only after binding the build
 to the ROCm compiler lane with `CC=/opt/rocm/lib/llvm/bin/amdclang` and
 `CXX=/opt/rocm/lib/llvm/bin/amdclang++`; the default generic `c++` path failed
-on inherited `-famd-opt` flags. Import proof remains blocked on host payload:
-the current installed `migraphx-gfx1151` package showed only FlatBuffers files
-with `pacman -Ql migraphx-gfx1151`, and the installed Torch-MIGraphX wheel
-failed with `Unable to import migraphx`. The package policy now owns future
-MIGraphX binaries, shared libraries, and Python `migraphx*` modules under
-`migraphx-gfx1151`, and the rendered package installs `migraphx.pth` pointing
-Python at `/opt/rocm/lib`, matching upstream AMDMIGraphX's Python module
-guidance. Treat the next gate as rendering and deploying from a staged TheRock
-root that contains real MIGraphX payloads, then rerun the Torch-MIGraphX import
-and a tiny FX/Dynamo or PT2E smoke before adding
-`python-torch-migraphx-gfx1151` package policy. Use
-`tools/stage_migraphx_for_therock.zsh --clean --deploy` for that staged-root
-flow. The helper builds AMDMIGraphX with Python bindings while keeping
-Composable Kernel and rocMLIR integration disabled unless explicitly requested,
-because the current staged TheRock root must be self-consistent with the
-installed split packages before those optional integration gates can be
-promoted.
+on inherited `-famd-opt` flags. Import proof remains gated on host deployment:
+before the staged MIGraphX package build, Torch-MIGraphX import failed with
+`Unable to import migraphx` against the FlatBuffers-only deployed payload.
+`tools/stage_migraphx_for_therock.zsh` now builds AMDMIGraphX with Python
+bindings for `gfx1151`, patches current upstream's no-rocMLIR build gaps, and
+renders `migraphx-gfx1151` with real MIGraphX binaries, shared libraries,
+private headers, and Python extension payloads. The rendered TheRock package
+family is `7.13.0pre-5`, with `migraphx-gfx1151` expanding from a
+FlatBuffers-only payload to 513 files; an unprivileged `tools/amerge build
+therock-gfx1151` passed against the staged root on 2026-04-22. The next gate is
+privileged publish/install with
+`tools/stage_migraphx_for_therock.zsh --clean --deploy`, followed by host
+`import migraphx`, Torch-MIGraphX import, and a tiny FX/Dynamo or PT2E smoke
+before adding `python-torch-migraphx-gfx1151` package policy. Keep Composable
+Kernel and rocMLIR integration disabled unless explicitly requested, because
+the current staged root must be self-consistent with the installed split
+packages before those optional integration gates can be promoted.
 
 The preflight freshness sweep for this docs pass was triaged on 2026-04-22.
 No package source was repinned during that triage: AITER main through

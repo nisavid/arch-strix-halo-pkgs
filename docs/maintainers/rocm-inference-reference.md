@@ -36,15 +36,16 @@ Status labels:
 
 - `migraphx-gfx1151` is the local TheRock split for MIGraphX. Do not add a
   duplicate MIGraphX package. The split policy maps real MIGraphX binaries,
-  shared libraries, and Python `migraphx*` modules to this package, and the
-  rendered package installs `migraphx.pth` so Python can import
-  `/opt/rocm/lib` modules.
+  shared libraries, private headers, and Python `migraphx*` modules to this
+  package, and the rendered package installs `migraphx.pth` so Python can
+  import `/opt/rocm/lib` modules.
 - Keep `python-torch-migraphx-gfx1151` as a package candidate, but do not add
   package policy until a deployed `migraphx-gfx1151` artifact exposes the
   Python `migraphx` module. Current upstream Torch-MIGraphX builds as a Python
-  3.14 wheel with explicit ROCm compiler bindings, but import fails before
-  backend registration with `Unable to import migraphx` against the current
-  FlatBuffers-only deployed payload.
+  3.14 wheel with explicit ROCm compiler bindings. The staged
+  `migraphx-gfx1151` package build now contains the MIGraphX Python binding;
+  host deployment and import proof remain before backend registration can be
+  promoted.
 - After the MIGraphX Python binding is present, rerun Torch-MIGraphX import, a
   tiny FX/Dynamo lowering smoke, and the ResNet50 PT2E quantization flow if its
   dependencies are available.

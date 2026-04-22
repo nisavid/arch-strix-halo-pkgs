@@ -1,7 +1,7 @@
 [repo]
 pkgbase = "therock-gfx1151"
 pkgver = "7.13.0pre"
-pkgrel = 4
+pkgrel = 5
 suffix = "-gfx1151"
 url = "https://github.com/ROCm/TheRock"
 license = ["custom:AMD"]
@@ -635,6 +635,7 @@ fileless = true
 "opt/rocm/lib/libutility.a" = "composable-kernel-gfx1151"
 "opt/rocm/lib/hipdnn_plugins" = "miopen-hip-gfx1151"
 "opt/rocm/lib/hipblaslt" = "hipblaslt-gfx1151"
+"opt/rocm/lib/migraphx" = "migraphx-gfx1151"
 "opt/rocm/lib/opencl" = "rocm-opencl-runtime-gfx1151"
 "opt/rocm/lib/rdc" = "rocm-language-runtime-gfx1151"
 "opt/rocm/lib/rocblas" = "rocblas-gfx1151"

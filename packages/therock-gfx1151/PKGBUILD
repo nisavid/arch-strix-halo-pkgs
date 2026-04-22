@@ -75,7 +75,7 @@ pkgname=(
   'rpp-gfx1151'
 )
 pkgver='7.13.0pre'
-pkgrel=4
+pkgrel=5
 arch=('x86_64')
 license=('custom:AMD')
 url='https://github.com/ROCm/TheRock'

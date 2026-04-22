@@ -263,7 +263,7 @@
         "python-gfx1151"
       ],
       "fileless": false,
-      "files": 42,
+      "files": 513,
       "provides": [
         "migraphx"
       ],

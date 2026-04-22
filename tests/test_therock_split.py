@@ -140,6 +140,8 @@ def test_migraphx_payloads_map_to_migraphx_split_package():
     assert classifier.classify("opt/rocm/lib/libmigraphx_py.so") == "migraphx-gfx1151"
     assert classifier.classify("opt/rocm/lib/libmigraphx_py_3.14.so") == "migraphx-gfx1151"
     assert classifier.classify("opt/rocm/lib/migraphx.cpython-314-x86_64-linux-gnu.so") == "migraphx-gfx1151"
+    assert classifier.classify("opt/rocm/lib/migraphx/include/migraphx/program.hpp") == "migraphx-gfx1151"
+    assert classifier.classify("opt/rocm/lib/migraphx/lib/libmigraphx_gpu.so") == "migraphx-gfx1151"
     assert classifier.classify(site_module) == "migraphx-gfx1151"
     assert classifier.failures == []
 
