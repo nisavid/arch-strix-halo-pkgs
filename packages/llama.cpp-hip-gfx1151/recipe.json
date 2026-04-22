@@ -16,7 +16,7 @@
   },
   "name": "llama.cpp-hip-gfx1151",
   "package_name": "llama.cpp-hip-gfx1151",
-  "pkgver": "b8851",
+  "pkgver": "b8881",
   "policy": {
     "advisory_references": [
       "aur/llama.cpp"
@@ -65,16 +65,16 @@
       "SKIP"
     ],
     "source_refs": [
-      "llama.cpp-e365e658f07b63371489570dfde597f199b26c23.tar.gz::https://github.com/ggml-org/llama.cpp/archive/e365e658f07b63371489570dfde597f199b26c23.tar.gz"
+      "llama.cpp-0dedb9ef7a71fcebfa6fb17e0d6e6abd6e893376.tar.gz::https://github.com/ggml-org/llama.cpp/archive/0dedb9ef7a71fcebfa6fb17e0d6e6abd6e893376.tar.gz"
     ],
-    "src_subdir": "llama.cpp-e365e658f07b63371489570dfde597f199b26c23",
+    "src_subdir": "llama.cpp-0dedb9ef7a71fcebfa6fb17e0d6e6abd6e893376",
     "template": "llama-cpp",
     "update_notes": [
       "Diff against aur/llama.cpp-hip first during updates, then consult aur/llama.cpp for shared install/dependency conventions outside the ROCm-specific split.",
       "Keep the backend-specific package split explicit until benchmarking proves a routing wrapper is worth maintaining."
     ],
     "upstream_name": "llama.cpp",
-    "upstream_version": "b8851",
+    "upstream_version": "b8881",
     "url": "https://github.com/ggml-org/llama.cpp"
   },
   "provenance": {

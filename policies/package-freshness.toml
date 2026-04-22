@@ -194,8 +194,8 @@ packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"]
 priority = "high"
 workflow = "upstream_source_update"
 checks = [
-  { id = "release", role = "primary", kind = "github_release", repo = "ggml-org/llama.cpp", recorded = "b8851", comparison = "prefixed_integer" },
-  { id = "aur-hip", role = "baseline", kind = "aur", package = "llama.cpp-hip", recorded = "b8851-1", comparison = "pkgver" },
+  { id = "release", role = "primary", kind = "github_release", repo = "ggml-org/llama.cpp", recorded = "b8881", comparison = "prefixed_integer" },
+  { id = "aur-hip", role = "baseline", kind = "aur", package = "llama.cpp-hip", recorded = "b8875-1", comparison = "pkgver" },
   { id = "aur-vulkan", role = "baseline", kind = "aur", package = "llama.cpp-vulkan-bin", recorded = "b7376-1", comparison = "pkgver" },
 ]
 

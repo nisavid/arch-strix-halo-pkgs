@@ -16,7 +16,7 @@
   },
   "name": "llama.cpp-vulkan-gfx1151",
   "package_name": "llama.cpp-vulkan-gfx1151",
-  "pkgver": "b8851",
+  "pkgver": "b8881",
   "policy": {
     "advisory_references": [
       "aur/llama.cpp"
@@ -60,7 +60,7 @@
     "scaffold_notes": [
       "Vulkan backend package; backend-specific runtime package, no shared common package in first pass.",
       "Closest current Vulkan reference: AUR llama.cpp-vulkan-bin for backend-specific packaging expectations, with generic AUR llama.cpp kept as the source-build advisory baseline.",
-      "llama.cpp b8851 includes SPIR-V headers directly from ggml-vulkan.cpp, so source builds require spirv-headers in addition to shaderc and vulkan-headers.",
+      "llama.cpp b8881 still includes SPIR-V headers directly from ggml-vulkan.cpp, so source builds require spirv-headers in addition to shaderc and vulkan-headers.",
       "Pinned to a concrete upstream commit tarball so the first-pass metadata stays reproducible without a full Git history clone.",
       "This scaffold still uses amdclang from rocm-llvm-gfx1151 for consistency with the recipe toolchain even though the Vulkan build does not use HIP offload."
     ],
@@ -68,16 +68,16 @@
       "SKIP"
     ],
     "source_refs": [
-      "llama.cpp-e365e658f07b63371489570dfde597f199b26c23.tar.gz::https://github.com/ggml-org/llama.cpp/archive/e365e658f07b63371489570dfde597f199b26c23.tar.gz"
+      "llama.cpp-0dedb9ef7a71fcebfa6fb17e0d6e6abd6e893376.tar.gz::https://github.com/ggml-org/llama.cpp/archive/0dedb9ef7a71fcebfa6fb17e0d6e6abd6e893376.tar.gz"
     ],
-    "src_subdir": "llama.cpp-e365e658f07b63371489570dfde597f199b26c23",
+    "src_subdir": "llama.cpp-0dedb9ef7a71fcebfa6fb17e0d6e6abd6e893376",
     "template": "llama-cpp",
     "update_notes": [
       "If a maintained source-built aur/llama.cpp-vulkan package appears, switch to it as the authoritative baseline.",
       "Until then, compare runtime/package expectations against the -bin package and source-build conventions against aur/llama.cpp."
     ],
     "upstream_name": "llama.cpp",
-    "upstream_version": "b8851",
+    "upstream_version": "b8881",
     "url": "https://github.com/ggml-org/llama.cpp"
   },
   "provenance": {

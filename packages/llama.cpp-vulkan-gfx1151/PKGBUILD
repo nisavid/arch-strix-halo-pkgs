@@ -5,7 +5,7 @@
 # Package recipe key: llamacpp
 
 pkgname=llama.cpp-vulkan-gfx1151
-pkgver=b8851
+pkgver=b8881
 pkgrel=1
 pkgdesc='llama.cpp Vulkan backend rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
@@ -18,11 +18,11 @@ options=()
 provides=(llama.cpp-vulkan-gfx1151 llama.cpp-vulkan)
 conflicts=(llama.cpp-vulkan)
 replaces=()
-source=(llama.cpp-e365e658f07b63371489570dfde597f199b26c23.tar.gz::https://github.com/ggml-org/llama.cpp/archive/e365e658f07b63371489570dfde597f199b26c23.tar.gz)
+source=(llama.cpp-0dedb9ef7a71fcebfa6fb17e0d6e6abd6e893376.tar.gz::https://github.com/ggml-org/llama.cpp/archive/0dedb9ef7a71fcebfa6fb17e0d6e6abd6e893376.tar.gz)
 sha256sums=(SKIP)
 
 build() {
-  cd "$srcdir/llama.cpp-e365e658f07b63371489570dfde597f199b26c23"
+  cd "$srcdir/llama.cpp-0dedb9ef7a71fcebfa6fb17e0d6e6abd6e893376"
 
   _setup_compiler_env() {
   local _compiler_root="/opt/rocm/lib/llvm/bin"
@@ -93,7 +93,7 @@ build() {
 }
 
 package() {
-  cd "$srcdir/llama.cpp-e365e658f07b63371489570dfde597f199b26c23"
+  cd "$srcdir/llama.cpp-0dedb9ef7a71fcebfa6fb17e0d6e6abd6e893376"
   local build_root="$srcdir/build-vulkan"
   local install_root="/opt/llama.cpp-vulkan-gfx1151"
 
@@ -119,5 +119,5 @@ exec /opt/llama.cpp-vulkan-gfx1151/bin/${_base} "\$@"
 EOF
     done
   fi
-  install -Dm644 "$srcdir/llama.cpp-e365e658f07b63371489570dfde597f199b26c23/LICENSE" "$pkgdir/usr/share/licenses/llama.cpp-vulkan-gfx1151/LICENSE"
+  install -Dm644 "$srcdir/llama.cpp-0dedb9ef7a71fcebfa6fb17e0d6e6abd6e893376/LICENSE" "$pkgdir/usr/share/licenses/llama.cpp-vulkan-gfx1151/LICENSE"
 }

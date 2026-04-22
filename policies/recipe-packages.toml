@@ -834,7 +834,7 @@ scaffold_notes = [
 [packages."llama.cpp-hip-gfx1151"]
 recipe_key = "llamacpp"
 template = "llama-cpp"
-upstream_version = "b8851"
+upstream_version = "b8881"
 pkgdesc = "llama.cpp ROCm backend rebuilt for Strix Halo gfx1151"
 url = "https://github.com/ggml-org/llama.cpp"
 license = ["MIT"]
@@ -853,10 +853,10 @@ provides = ["llama.cpp-hip-gfx1151", "llama.cpp-hip"]
 conflicts = ["llama.cpp-hip"]
 depends = ["gcc-libs", "glibc", "hip-runtime-amd-gfx1151", "rocm-core-gfx1151"]
 makedepends = ["cmake", "ninja", "rocm-llvm-gfx1151"]
-src_subdir = "llama.cpp-e365e658f07b63371489570dfde597f199b26c23"
+src_subdir = "llama.cpp-0dedb9ef7a71fcebfa6fb17e0d6e6abd6e893376"
 upstream_name = "llama.cpp"
 baseline_kind = "closest-upstream"
-source_refs = ["llama.cpp-e365e658f07b63371489570dfde597f199b26c23.tar.gz::https://github.com/ggml-org/llama.cpp/archive/e365e658f07b63371489570dfde597f199b26c23.tar.gz"]
+source_refs = ["llama.cpp-0dedb9ef7a71fcebfa6fb17e0d6e6abd6e893376.tar.gz::https://github.com/ggml-org/llama.cpp/archive/0dedb9ef7a71fcebfa6fb17e0d6e6abd6e893376.tar.gz"]
 sha256sums = ["SKIP"]
 patches_dir = "patches/llama.cpp-hip-gfx1151"
 scaffold_notes = [
@@ -869,7 +869,7 @@ scaffold_notes = [
 [packages."llama.cpp-vulkan-gfx1151"]
 recipe_key = "llamacpp"
 template = "llama-cpp"
-upstream_version = "b8851"
+upstream_version = "b8881"
 pkgdesc = "llama.cpp Vulkan backend rebuilt for Strix Halo gfx1151"
 url = "https://github.com/ggml-org/llama.cpp"
 license = ["MIT"]
@@ -888,16 +888,16 @@ provides = ["llama.cpp-vulkan-gfx1151", "llama.cpp-vulkan"]
 conflicts = ["llama.cpp-vulkan"]
 depends = ["gcc-libs", "glibc", "vulkan-icd-loader"]
 makedepends = ["cmake", "ninja", "rocm-llvm-gfx1151", "shaderc", "spirv-headers", "vulkan-headers"]
-src_subdir = "llama.cpp-e365e658f07b63371489570dfde597f199b26c23"
+src_subdir = "llama.cpp-0dedb9ef7a71fcebfa6fb17e0d6e6abd6e893376"
 upstream_name = "llama.cpp"
 baseline_kind = "closest-upstream"
-source_refs = ["llama.cpp-e365e658f07b63371489570dfde597f199b26c23.tar.gz::https://github.com/ggml-org/llama.cpp/archive/e365e658f07b63371489570dfde597f199b26c23.tar.gz"]
+source_refs = ["llama.cpp-0dedb9ef7a71fcebfa6fb17e0d6e6abd6e893376.tar.gz::https://github.com/ggml-org/llama.cpp/archive/0dedb9ef7a71fcebfa6fb17e0d6e6abd6e893376.tar.gz"]
 sha256sums = ["SKIP"]
 patches_dir = "patches/llama.cpp-vulkan-gfx1151"
 scaffold_notes = [
   "Vulkan backend package; backend-specific runtime package, no shared common package in first pass.",
   "Closest current Vulkan reference: AUR llama.cpp-vulkan-bin for backend-specific packaging expectations, with generic AUR llama.cpp kept as the source-build advisory baseline.",
-  "llama.cpp b8851 includes SPIR-V headers directly from ggml-vulkan.cpp, so source builds require spirv-headers in addition to shaderc and vulkan-headers.",
+  "llama.cpp b8881 still includes SPIR-V headers directly from ggml-vulkan.cpp, so source builds require spirv-headers in addition to shaderc and vulkan-headers.",
   "Pinned to a concrete upstream commit tarball so the first-pass metadata stays reproducible without a full Git history clone.",
   "This scaffold still uses amdclang from rocm-llvm-gfx1151 for consistency with the recipe toolchain even though the Vulkan build does not use HIP offload."
 ]

@@ -7,7 +7,7 @@
 - Scaffold template: `llama-cpp`
 - Recipe build method: `cmake`
 - Upstream repo: `https://github.com/ggml-org/llama.cpp.git`
-- Package version: `b8851`
+- Package version: `b8881`
 - Recipe revision: `ad42886 (20260317, 8 path commits)`
 - Recipe steps: `33`
 - Recipe dependencies: `therock`
