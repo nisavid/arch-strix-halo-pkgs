@@ -6,7 +6,7 @@
 
 pkgname=python-torch-migraphx-gfx1151
 pkgver=1.2
-pkgrel=3
+pkgrel=4
 pkgdesc='PyTorch integration for MIGraphX on the local ROCm gfx1151 stack'
 arch=('x86_64')
 url=https://github.com/ROCm/torch_migraphx

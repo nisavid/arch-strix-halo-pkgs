@@ -20,7 +20,7 @@ Status labels:
 | <https://github.com/ROCm/rocm-examples/tree/amd-staging> | upstream GitHub tree, `amd-staging` | 2026-04-22 | `planned` | `docs/maintainers/rocm-inference-reference.md`; `docs/backlog.md` | pick a concrete package or scenario experiment | Wide reference for HIP, MIGraphX, hipBLASLt, Composable Kernel, rocWMMA, rocProfiler, decode, and preprocessing examples. |
 | <https://github.com/ROCm/rocm-examples/tree/amd-staging/AI/MIGraphX/Quantization> | upstream GitHub tree, `amd-staging` | 2026-04-22 | `planned` | `docs/backlog.md`; `docs/maintainers/rocm-inference-reference.md` | Torch-MIGraphX source audit | PT2E quantization examples route PyTorch-exported graphs through Torch-MIGraphX and MIGraphX. |
 | <https://github.com/ROCm/rocm-examples/blob/amd-staging/AI/MIGraphX/Quantization/Running-Quantized-ResNet50-via-MIGraphX.md> | upstream GitHub doc, `amd-staging` | 2026-04-22 | `requires-host-validation` | `docs/backlog.md`; `docs/maintainers/rocm-inference-reference.md` | ResNet50 PT2E smoke after package exists | Uses `capture_pre_autograd_graph`, `MGXQuantizer`, calibration, `convert_pt2e`, and `torch.compile(..., backend="migraphx")`; not LLM/vLLM proof. |
-| <https://github.com/ROCm/torch_migraphx/> | upstream GitHub repo | 2026-04-22 | `validated` | `packages/python-torch-migraphx-gfx1151`; `docs/backlog.md`; `docs/maintainers/rocm-inference-reference.md` | add bounded ResNet50 PT2E quantization flow if model/data dependencies are available | Current upstream builds with explicit ROCm compilers. The local package carries PT2E, lazy-Dynamo, AOTAutograd preload, and numpy-metadata patches; installed FX lowering and a tiny `torch.compile(..., backend="migraphx")` smoke pass on the reference host. |
+| <https://github.com/ROCm/torch_migraphx/> | upstream GitHub repo | 2026-04-22 | `validated` | `packages/python-torch-migraphx-gfx1151`; `inference/scenarios/torch-migraphx.toml`; `docs/backlog.md`; `docs/maintainers/rocm-inference-reference.md` | install `python-torch-migraphx-gfx1151 1.2-4`; optional full ResNet50 PT2E quantization if model/data dependencies are needed | Current upstream builds with explicit ROCm compilers. The local package carries PT2E, lazy-Dynamo, AOTAutograd preload, and numpy-metadata patches; installed FX lowering and a tiny `torch.compile(..., backend="migraphx")` smoke pass on the reference host. The built `1.2-4` payload also passes the PT2E quantizer import and bounded PT2E ResNet-style compile probes. |
 | <https://rocm.docs.amd.com/projects/AMDMIGraphX/en/latest/conceptual/deep-learning-compilation.html> | upstream ROCm docs | 2026-04-22 | `advisory-only` | `docs/maintainers/rocm-inference-reference.md` | local MIGraphX smoke before runtime claims | Concept source for graph analysis, optimization, fusion, lowering, and PyTorch/ONNX/ORT entry points. |
 | <https://github.com/paudley/ai-notes/tree/main/strix-halo> | third-party GitHub notes | 2026-04-22 | `requires-host-validation` | `docs/backlog.md`; `docs/maintainers/current-state.md`; `docs/maintainers/rocm-inference-reference.md` | audit package flags against current PKGBUILDs | Candidate flag reference for `-march=native`, `-famd-opt`, `PYTORCH_ROCM_ARCH`, `ROCM_HOME`, and runtime backend knobs. |
 | <https://rocm.docs.amd.com/en/latest/how-to/rocm-for-ai/inference-optimization/model-quantization.html> | upstream ROCm docs | 2026-04-22 | `planned` | `docs/backlog.md`; `docs/maintainers/vllm-recipe-coverage.md`; `docs/maintainers/rocm-inference-reference.md` | add bounded quantization probes | Quark, GPTQ, bitsandbytes, FP8 KV cache, and vLLM quantization entry points. |
@@ -45,9 +45,11 @@ Status labels:
   explicit ROCm compiler bindings. The reference host imports the MIGraphX
   Python module from `migraphx-gfx1151`, lowers a tiny module through FX, and
   runs the same module through `torch.compile(..., backend="migraphx")` from
-  the installed `1.2-3` package.
-- Add a bounded ResNet50 PT2E quantization flow if its model/data dependencies
-  are available.
+  the installed `1.2-3` package. The built `1.2-4` payload adds PT2E quantizer
+  compatibility and passes bounded ResNet-style Dynamo and PT2E compile probes;
+  install it before treating the installed host as closed.
+- Keep a full ResNet50 PT2E quantization flow as optional follow-up if its
+  model/data dependencies are needed.
 - Treat ROCm FlashAttention as two experiments:
   - FlashAttention CK: import/build smoke first, then direct CK tests.
   - FlashAttention Triton: build with `FLASH_ATTENTION_TRITON_AMD_ENABLE=TRUE`,

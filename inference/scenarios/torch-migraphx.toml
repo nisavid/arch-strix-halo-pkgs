@@ -1,0 +1,125 @@
+[[scenario]]
+id = "torch-migraphx.pt2e.quantizer-import"
+summary = "Verify Torch-MIGraphX PT2E quantizer imports against the TorchAO PT2E API"
+tags = ["smoke", "torch-migraphx", "migraphx", "pt2e", "quantization-probe"]
+
+[scenario.given]
+engine = "torch-migraphx"
+model = "builtin"
+tool = "torch_migraphx_smoke.pt2e-quantizer-import"
+
+[scenario.when]
+argv = []
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "mode pt2e-quantizer-import"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "pt2e_quantizer_import_ok"
+
+[[scenario]]
+id = "torch-migraphx.resnet-tiny.dynamo"
+summary = "Run a bounded ResNet-style CNN through torch.compile with the MIGraphX backend"
+tags = ["smoke", "torch-migraphx", "migraphx", "dynamo", "resnet", "compiled-probe"]
+
+[scenario.given]
+engine = "torch-migraphx"
+model = "resnet-tiny"
+tool = "torch_migraphx_smoke.dynamo-resnet-tiny"
+
+[scenario.when]
+argv = ["--iterations", "5", "--warmup", "2", "--height", "32", "--width", "32"]
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "mode dynamo-resnet-tiny"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "baseline_latency_ms"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "compiled_latency_ms"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "peak_memory_bytes"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "output_close_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "torch_migraphx_ok"
+
+[[scenario]]
+id = "torch-migraphx.resnet-tiny.pt2e"
+summary = "Run a bounded PT2E-quantized ResNet-style CNN through the MIGraphX backend"
+tags = [
+  "smoke",
+  "torch-migraphx",
+  "migraphx",
+  "pt2e",
+  "quantization-probe",
+  "resnet",
+  "compiled-probe",
+]
+
+[scenario.given]
+engine = "torch-migraphx"
+model = "resnet-tiny"
+tool = "torch_migraphx_smoke.pt2e-resnet-tiny"
+
+[scenario.when]
+argv = [
+  "--iterations",
+  "5",
+  "--warmup",
+  "2",
+  "--calibration-batches",
+  "2",
+  "--height",
+  "32",
+  "--width",
+  "32",
+]
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "mode pt2e-resnet-tiny"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "baseline_latency_ms"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "compiled_latency_ms"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "peak_memory_bytes"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "output_close_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "torch_migraphx_ok"

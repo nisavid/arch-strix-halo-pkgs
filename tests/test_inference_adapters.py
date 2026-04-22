@@ -444,3 +444,32 @@ def test_transformers_adapter_builds_zeroentropy_pooling_smoke_command(tmp_path:
         "512",
     ]
     assert plan.server_log_path is None
+
+
+def test_torch_migraphx_adapter_builds_smoke_command(tmp_path: Path):
+    plan = build_execution_plan(
+        scenario(
+            {
+                "id": "torch-migraphx.resnet-tiny.dynamo",
+                "given": {
+                    "engine": "torch-migraphx",
+                    "model": "resnet-tiny",
+                    "tool": "torch_migraphx_smoke.dynamo-resnet-tiny",
+                },
+                "when": {"argv": ["--iterations", "5"]},
+            }
+        ),
+        repo_root=REPO_ROOT,
+        scenario_run_root=tmp_path,
+        model_bindings={},
+    )
+
+    assert plan.command == [
+        sys.executable,
+        str(REPO_ROOT / "tools/torch_migraphx_smoke.py"),
+        "--mode",
+        "dynamo-resnet-tiny",
+        "--iterations",
+        "5",
+    ]
+    assert plan.server_log_path is None

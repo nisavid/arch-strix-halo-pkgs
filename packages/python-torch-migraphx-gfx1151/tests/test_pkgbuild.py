@@ -13,7 +13,7 @@ def test_pkgbuild_tracks_audited_upstream_commit_and_local_rocm_stack():
 
     assert "pkgname=python-torch-migraphx-gfx1151" in text
     assert "pkgver=1.2" in text
-    assert "pkgrel=3" in text
+    assert "pkgrel=4" in text
     assert "6b2cd2237e83b675ae671650d08343dfbb0be5f3" in text
     assert "migraphx-gfx1151" in text
     assert "python-pytorch-opt-rocm-gfx1151" in text
@@ -32,6 +32,9 @@ def test_patch_carry_records_pt2e_dynamo_and_numpy_boundaries():
     recipe = RECIPE_JSON.read_text()
 
     assert "torchao.quantization.pt2e.quantize_pt2e" in pt2e_patch
+    assert "torchao.quantization.pt2e.quantizer.quantizer" in pt2e_patch
+    assert "annotate_input_qspec_map as _annotate_input_qspec_map" in pt2e_patch
+    assert "torchao.quantization.pt2e.observer" in pt2e_patch
     assert "def __getattr__(name):" in dynamo_patch
     assert '"numpy>=1.20.0,<2.0"' in numpy_patch
     assert '"numpy>=1.20.0"' in numpy_patch

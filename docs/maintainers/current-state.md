@@ -58,6 +58,24 @@ installed package imports `torch_migraphx.dynamo`, imports `sqlite3` after
 Torch-MIGraphX, and passes the same tiny module through
 `torch.compile(..., backend="migraphx")` on the reference host.
 
+The next package artifact, `python-torch-migraphx-gfx1151 1.2-4`, extends the
+PT2E compatibility patch to Torch-MIGraphX's `MGXQuantizer`, quantizer utility
+imports, and TorchAO observer wrappers. The artifact built on 2026-04-22, and
+its package payload passes the repo helper's PT2E quantizer import gate through
+`PYTHONPATH=<pkgdir>/usr/lib/python3.14/site-packages`. Against that built
+payload, a bounded PT2E ResNet-style CNN compiles through
+`torch.compile(..., backend="migraphx")` on the Radeon 8060S with matching
+PyTorch output. The built-payload scenario run
+`docs/worklog/inference-runs/20260422T144614` passed
+`torch-migraphx.pt2e.quantizer-import` and `torch-migraphx.resnet-tiny.pt2e`;
+the installed-package Dynamo run
+`docs/worklog/inference-runs/20260422T143834` passed
+`torch-migraphx.resnet-tiny.dynamo`. The tracked installed-package scenarios are
+`torch-migraphx.pt2e.quantizer-import`, `torch-migraphx.resnet-tiny.dynamo`,
+and `torch-migraphx.resnet-tiny.pt2e`; the installed host still reports
+`python-torch-migraphx-gfx1151 1.2-3` until the privileged deploy step installs
+`1.2-4`.
+
 Keep Composable Kernel and rocMLIR integration disabled unless explicitly
 requested, because the current staged root is intentionally self-consistent
 with the installed split packages before those optional integration gates are

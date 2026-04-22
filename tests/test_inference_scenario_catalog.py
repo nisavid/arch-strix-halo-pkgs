@@ -65,7 +65,16 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     assert "lemonade.server.help" in ids
     assert "lemonade.pooling.zembed-1-q4-k-m.embeddings" in ids
     assert "lemonade.pooling.bge-reranker-v2-m3.rerank" in ids
-    assert engines == {"vllm", "llama.cpp", "lemonade", "transformers"}
+    assert "torch-migraphx.pt2e.quantizer-import" in ids
+    assert "torch-migraphx.resnet-tiny.dynamo" in ids
+    assert "torch-migraphx.resnet-tiny.pt2e" in ids
+    assert engines == {
+        "vllm",
+        "llama.cpp",
+        "lemonade",
+        "transformers",
+        "torch-migraphx",
+    }
     assert "smoke" in tags_by_id["vllm.gemma4.26b-a4b.text.basic"]
     assert "exploratory" in tags_by_id["vllm.gemma4.e2b.server.image"]
     assert "kernel-probe" in tags_by_id["vllm.gemma4.e2b.server.attn-triton"]
@@ -84,6 +93,15 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     assert "quantization-probe" in tags_by_id["vllm.gemma4.e2b.torchao.real-model"]
     assert "exploratory" in tags_by_id["vllm.gemma4.e2b.torchao.real-model"]
     assert "blocked" not in tags_by_id["vllm.gemma4.e2b.torchao.real-model"]
+    assert "pt2e" in tags_by_id["torch-migraphx.pt2e.quantizer-import"]
+    assert "quantization-probe" in tags_by_id[
+        "torch-migraphx.pt2e.quantizer-import"
+    ]
+    assert "compiled-probe" in tags_by_id["torch-migraphx.resnet-tiny.dynamo"]
+    assert "resnet" in tags_by_id["torch-migraphx.resnet-tiny.dynamo"]
+    assert "pt2e" in tags_by_id["torch-migraphx.resnet-tiny.pt2e"]
+    assert "compiled-probe" in tags_by_id["torch-migraphx.resnet-tiny.pt2e"]
+    assert "quantization-probe" in tags_by_id["torch-migraphx.resnet-tiny.pt2e"]
     assert "qwen3.5" in tags_by_id["vllm.qwen3_5.0_8b.text.basic"]
     assert "compiled-probe" in tags_by_id["vllm.qwen3_5.0_8b.text.compiled"]
     assert "qwen3.6" in tags_by_id[
