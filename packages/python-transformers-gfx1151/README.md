@@ -36,6 +36,10 @@ Gemma-4-capable without waiting on distro repo timing.
 - Before updating, verify the candidate Transformers release actually ships
   `transformers.models.gemma4`; do not assume the version number alone is
   enough.
+- On 2026-04-22, reviewed upstream Transformers `5.6.0`. It adds broader
+  model, rotary-kernel, serve, and Gemma cache/training changes, but the
+  package remains pinned to the validated `5.5.4` Gemma 4 closure lane until a
+  Transformers/Gemma update arc reruns the host smokes.
 - Re-check dependency metadata against the chosen baseline package and the
   published PyPI metadata. The package is intentionally thin and should not
   grow optional extras into hard runtime dependencies.

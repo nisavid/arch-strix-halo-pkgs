@@ -24,6 +24,7 @@ packages/*/aotriton/
 packages/*/aiter/
 packages/*/aotriton-aiter/
 packages/*/aotriton-incbin/
+packages/*/flash-attention/
 packages/*/python-triton-gfx1151-llvm-*/
 repo/
 docs/superpowers/

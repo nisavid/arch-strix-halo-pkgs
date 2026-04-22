@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: nisavid <nisavid@users.noreply.github.com>
+Date: Wed, 22 Apr 2026 00:00:00 -0400
+Subject: [PATCH] skip bundled AITER install
+
+---
+ setup.py | 10 +---------
+ 1 file changed, 1 insertion(+), 9 deletions(-)
+
+diff --git a/setup.py b/setup.py
+index 1111111..2222222 100644
+--- a/setup.py
++++ b/setup.py
+@@ -214,14 +214,5 @@ if IS_ROCM:
+     if ROCM_BACKEND == "triton":
+-        if os.path.isdir(".git"):
+-            subprocess.run(["git", "submodule", "update", "--init", "third_party/aiter"], check=True)
+-        else:
+-            assert os.path.isdir("third_party/aiter"), (
+-                "third_party/aiter is missing, please use source distribution or git clone"
+-            )
+-        subprocess.run(
+-            [sys.executable, "-m", "pip", "install", "--no-build-isolation", "third_party/aiter"],
+-            check=True,
+-        )
++        pass  # PATCHED: skip bundled AITER install; use python-amd-aiter-gfx1151
+     elif ROCM_BACKEND == "ck":
+         if os.path.isdir(".git"):
+             subprocess.run(["git", "submodule", "update", "--init", "csrc/composable_kernel"], check=True)

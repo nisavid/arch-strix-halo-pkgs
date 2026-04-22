@@ -1,0 +1,57 @@
+# Maintainer: nisavid
+# Package experiment for the ROCm FlashAttention Triton backend on gfx1151
+
+pkgname=python-flash-attn-rocm-gfx1151
+pkgver=2.8.4
+pkgrel=1
+pkgdesc='FlashAttention ROCm Triton backend experiment for the local gfx1151 stack'
+arch=('x86_64')
+url=https://github.com/ROCm/flash-attention
+license=(BSD-3-Clause)
+depends=(python-amd-aiter-gfx1151 python-einops python-gfx1151 python-pytorch-opt-rocm-gfx1151 python-triton-gfx1151)
+makedepends=(git ninja python-installer python-packaging python-pip python-psutil python-setuptools python-wheel)
+optdepends=('python-vllm-rocm-gfx1151: local engine probe candidate after direct flash_attn smoke passes')
+options=(!lto)
+provides=(python-flash-attn python-flash-attention)
+conflicts=(python-flash-attn python-flash-attention)
+replaces=()
+source=('flash-attention::git+https://github.com/ROCm/flash-attention.git#commit=3f94643fb41bcedded28c85185a8e11d42ef1592'
+        0001-skip-bundled-aiter-install.patch
+        0002-import-amdsmi-before-torch.patch
+        0003-use-system-triton-package.patch)
+sha256sums=(SKIP SKIP SKIP SKIP)
+
+prepare() {
+  cd "$srcdir/flash-attention"
+
+  for _patch in \
+    0001-skip-bundled-aiter-install.patch \
+    0002-import-amdsmi-before-torch.patch \
+    0003-use-system-triton-package.patch; do
+    if ! patch --dry-run -R -Np1 -i "$srcdir/${_patch}" >/dev/null 2>&1; then
+      patch -Np1 -i "$srcdir/${_patch}"
+    fi
+  done
+}
+
+build() {
+  cd "$srcdir/flash-attention"
+
+  export FLASH_ATTENTION_TRITON_AMD_ENABLE=TRUE
+  export FLASH_ATTENTION_SKIP_CUDA_BUILD=TRUE
+  export FLASH_ATTENTION_FORCE_BUILD=TRUE
+  export GPU_ARCHS=gfx1151
+  export ROCM_HOME=/opt/rocm
+  export HIP_PATH=/opt/rocm
+
+  mkdir -p dist
+  rm -f dist/*.whl
+  pip wheel . --no-build-isolation --no-deps --wheel-dir dist -v
+}
+
+package() {
+  cd "$srcdir/flash-attention"
+
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/python-flash-attn-rocm-gfx1151/LICENSE"
+}

@@ -94,10 +94,10 @@ def test_rocm_inference_reference_preserves_source_disposition():
         assert term in text
 
     flash_attention = rows["https://github.com/ROCm/flash-attention"]
-    assert flash_attention["status"] == "`planned`"
+    assert flash_attention["status"] == "`validated`"
     assert "docs/backlog.md" in flash_attention["destination"]
-    assert "FlashAttention CK" in flash_attention["gate"]
-    assert "FlashAttention Triton" in flash_attention["gate"]
+    assert "installed-package deploy" in flash_attention["gate"]
+    assert "direct installed smoke" in flash_attention["gate"]
 
     torch_migraphx = rows["https://github.com/ROCm/torch_migraphx/"]
     assert torch_migraphx["status"] == "`validated`"

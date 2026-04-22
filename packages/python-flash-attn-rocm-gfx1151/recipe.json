@@ -1,0 +1,33 @@
+{
+  "package_name": "python-flash-attn-rocm-gfx1151",
+  "pkgver": "2.8.4",
+  "pkgrel": 1,
+  "description": "FlashAttention ROCm Triton backend experiment for the local gfx1151 stack",
+  "upstream": {
+    "repo": "https://github.com/ROCm/flash-attention",
+    "branch": "main_perf",
+    "commit": "3f94643fb41bcedded28c85185a8e11d42ef1592",
+    "version": "2.8.4"
+  },
+  "authoritative_reference": "https://github.com/ROCm/flash-attention",
+  "advisory_references": [
+    "https://github.com/Dao-AILab/flash-attention#amd-rocm-support",
+    "upstream/ai-notes/strix-halo/vllm-packages.yaml"
+  ],
+  "source_patches": [
+    "0001-skip-bundled-aiter-install.patch",
+    "0002-import-amdsmi-before-torch.patch",
+    "0003-use-system-triton-package.patch"
+  ],
+  "divergence_notes": [
+    "Uses the ROCm FlashAttention main_perf branch because the documented Triton AMD backend path lives there.",
+    "Builds the pure Python Triton AMD lane with FLASH_ATTENTION_TRITON_AMD_ENABLE=TRUE and FLASH_ATTENTION_SKIP_CUDA_BUILD=TRUE.",
+    "Uses repo-owned python-amd-aiter-gfx1151, python-triton-gfx1151, and python-pytorch-opt-rocm-gfx1151 instead of letting setup.py install bundled or PyPI runtime pieces."
+  ],
+  "update_notes": [
+    "Recheck the ROCm FlashAttention main_perf branch and CK-tile tags before bumping this package.",
+    "Keep direct flash_attn Triton AMD build/import smoke as the first validation gate before any vLLM integration scenario.",
+    "Treat FLASH_ATTENTION_TRITON_AMD_AUTOTUNE=TRUE as a performance follow-up, not part of the initial correctness gate."
+  ],
+  "status": "requires-host-validation"
+}

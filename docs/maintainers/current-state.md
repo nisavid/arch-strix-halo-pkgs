@@ -76,18 +76,48 @@ requested, because the current staged root is intentionally self-consistent
 with the installed split packages before those optional integration gates are
 promoted.
 
-The preflight freshness sweep for this docs pass was triaged on 2026-04-22.
-No package source was repinned during that triage: AITER main through
-`0814370ae833c768894ae68d22dbf0210508e8cd` only added the manylinux2_28 ROCm
-builder path with an auditwheel gate and did not provide a gfx1151 OPUS FP8
-fix; llama.cpp `b8883` at `134d6e54d4cd1311360bf6beeb6c779d90e09b87` was a
-common/chat and server conversion refactor outside the maintained HIP/Vulkan
-package outputs; and ROCm PyTorch release/2.11 through
-`141ba657575b42e5d0869002b509af4a75899edc` only changed Windows int4mm
-handling and FP64 hipBLASLt TunableOp support, with no local patch overlap.
-The reviewed values are recorded in
-`policies/package-freshness.toml`; rerun the daily checker before the next
-development arc.
+The preflight freshness sweep for the FlashAttention package experiment was
+triaged on 2026-04-22. No existing package source was repinned during that
+triage: AITER main through `5162472c87d0cb18b1a9fc0ee85949881073593c` added
+gfx942/gfx950 tuning, logging, MHA test coverage changes, and GLM-shaped A8W8
+configs, with no change to the gfx1151 OPUS FP8, RDNA header, JIT, or AITER
+MoE patch touchpoints; ROCm PyTorch release/2.11 through
+`50bfde7c08dc92b69b71d2b76d3b2d3709cf28f6` added ROCm Inductor GEMM,
+pointwise, and reduction config coverage without overlapping the local Python
+3.14 wheel flow, HIPGraph stub, NumPy target define, MAGMA version encoding,
+gfx1151 CK enablement, or BLAS/provider carry; llama.cpp `b8884` at
+`750579ff14198fe964ab7fc5565b1d77600deab4` was a sampler-parameter
+front-end refactor in common/CLI/server code, not a HIP/Vulkan backend change;
+and Transformers `5.6.0` was reviewed as a broader Gemma/model/rotary-kernel
+release that belongs to the Transformers/Gemma closure lane, not the direct
+FlashAttention build/import gate. The new
+`python-flash-attn-rocm-gfx1151` freshness family records ROCm
+FlashAttention `main_perf` at `3f94643fb41bcedded28c85185a8e11d42ef1592`.
+The reviewed values are recorded in `policies/package-freshness.toml`; rerun
+the daily checker before the next development arc.
+
+The `python-flash-attn-rocm-gfx1151` package experiment now tracks ROCm
+FlashAttention `main_perf` commit `3f94643fb41bcedded28c85185a8e11d42ef1592`
+with package version `2.8.4`. The package builds the Triton AMD path with
+`FLASH_ATTENTION_TRITON_AMD_ENABLE=TRUE`,
+`FLASH_ATTENTION_SKIP_CUDA_BUILD=TRUE`, `FLASH_ATTENTION_FORCE_BUILD=TRUE`,
+and `GPU_ARCHS=gfx1151`, skips upstream setup's bundled `third_party/aiter`
+install in favor of `python-amd-aiter-gfx1151`, imports `amdsmi` before
+FlashAttention reaches `torch`, and relaxes wheel metadata from
+`triton==3.5.1` to `triton` so Arch dependencies stay on
+`python-triton-gfx1151`.
+
+On 2026-04-22, `tools/amerge build python-flash-attn-rocm-gfx1151` produced
+`python-flash-attn-rocm-gfx1151 2.8.4-1`. A staged import using the built
+package image and `FLASH_ATTENTION_TRITON_AMD_ENABLE=TRUE` reported
+`flash_attn_version 2.8.4`, `use_triton_rocm True`, and backend module
+`aiter.ops.triton._triton_kernels.flash_attn_triton_amd.interface_v2`. A
+bounded host GPU smoke from that same built package image ran
+`flash_attn_qkvpacked_func` on a `(1, 16, 3, 2, 32)` float16 CUDA tensor,
+returned shape `(1, 16, 2, 32)`, and reported finite output. Installing the
+package is still pending because `tools/amerge deploy
+python-flash-attn-rocm-gfx1151` reached sudo and failed without an interactive
+password.
 
 ## Live Host State
 

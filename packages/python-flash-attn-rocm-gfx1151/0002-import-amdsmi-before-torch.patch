@@ -1,0 +1,23 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: nisavid <nisavid@users.noreply.github.com>
+Date: Wed, 22 Apr 2026 00:00:00 -0400
+Subject: [PATCH] import amdsmi before torch
+
+---
+ flash_attn/__init__.py | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/flash_attn/__init__.py b/flash_attn/__init__.py
+index 1111111..2222222 100644
+--- a/flash_attn/__init__.py
++++ b/flash_attn/__init__.py
+@@ -1,3 +1,9 @@
++# PATCHED: import amdsmi before torch on the local ROCm stack.
++try:
++    import amdsmi  # noqa: F401
++except ImportError:
++    pass
++
+ from pkgutil import extend_path
+ 
+ # look for every subdir with flash_attn base name such that fa2 and fa4 can be co-installed

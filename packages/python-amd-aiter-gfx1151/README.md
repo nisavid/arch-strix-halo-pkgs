@@ -47,7 +47,7 @@ aiter_meta/csrc/include/ files for gfx1151 RDNA 3.5 compatibility.
 ## Update Notes
 
 - Review upstream AITER main as a freshness candidate branch. Adopt a new pinned snapshot when the reviewed range is relevant to local build/runtime behavior, known blockers, or patch reduction; otherwise record the reviewed head without changing the packaged source commit.
-- On 2026-04-22, reviewed AITER main through bf4cd5b1703e05544383a8cb81f5e7ed387d8b2c. The reviewed range is mostly FlyDSL, tuning, CI, Qwen3.5/397B tuned GEMM/FMoE configs, CK_TILE tuning fixes, and vcs_versioning metadata; it does not provide a gfx1151-compatible OPUS FP8 path because `csrc/include/opus/opus.hpp` still keeps the relevant `make_tiled_mma` default under the gfx1250 WMMA branch. Record the reviewed candidate head without repinning the package source.
+- On 2026-04-22, reviewed AITER main through 5162472c87d0cb18b1a9fc0ee85949881073593c. The latest reviewed delta is gfx942/gfx950 tuning, logging, MHA test coverage changes, and GLM-shaped A8W8 configs; it does not touch the gfx1151 OPUS FP8, RDNA header, JIT, or AITER MoE patch points. Record the reviewed candidate head without repinning the package source.
 - Treat FlyDSL as a separate tracked package story; do not silently fold an unpublished wheel into this package.
 - Keep the installed-system JIT runtime patch until upstream AITER stops assuming `hipcc` is on the ambient PATH and correctly imports modules copied to the writable user JIT cache from read-only site-packages installs.
 - Keep the package's explicit ROCm toolchain exports in `build()` until upstream AITER stops probing `hipconfig` and `hipcc` through ambient shell state. The concrete build failure was `Could not find hipconfig in PATH or ROCM_HOME(/usr)`.
