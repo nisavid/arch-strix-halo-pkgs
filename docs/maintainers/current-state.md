@@ -193,7 +193,8 @@ Installed and validated at least once on the live host:
 - Lemonade server/app/meta packages
 
 Current installed native package state, checked on 2026-04-20 after the full
-`amerge` run completed:
+`amerge` run completed and refreshed on 2026-04-22 for the llama.cpp/Lemonade
+package update:
 
 - `aocl-libm-gfx1151` tracks upstream AOCL-LibM `5.2.2` and built
   successfully after installing host build dependency `scons`. The scaffold
@@ -202,9 +203,8 @@ Current installed native package state, checked on 2026-04-20 after the full
   bootstrap.
 - `llama.cpp-hip-gfx1151` and `llama.cpp-vulkan-gfx1151` package definitions
   track upstream llama.cpp `b8881` at commit
-  `0dedb9ef7a71fcebfa6fb17e0d6e6abd6e893376`. The latest installed-host
-  check still reports both HIP and Vulkan packages at `b8851-1` until the
-  b8881 packages are built and deployed. The Vulkan package metadata includes
+  `0dedb9ef7a71fcebfa6fb17e0d6e6abd6e893376`; the live host reports both HIP
+  and Vulkan packages at `b8881-1`. The Vulkan package metadata includes
   `spirv-headers` because b8881 includes `spirv/unified1/spirv.hpp` directly.
 - `python-mistral-common-gfx1151` tracks PyPI `1.11.0`; the live host reports
   `python-mistral-common-gfx1151 1.11.0-1`.
@@ -227,8 +227,7 @@ Current installed native package state, checked on 2026-04-20 after the full
   now agree: pacman reports `3.0.0+git0ec280cf-1`, while
   `importlib.metadata.version("triton")` reports `3.0.0+git0ec280cf`.
 - `lemonade-server` package metadata points its system-managed llama.cpp
-  backends at `b8881`; the latest installed-host check still reports
-  `lemonade-server 10.2.0-2` until the rebuilt `10.2.0-3` package is deployed.
+  backends at `b8881`; the live host reports `lemonade-server 10.2.0-3`.
 
 ## Live Smoke Coverage
 
@@ -264,6 +263,12 @@ The following smoke checks have already passed on the reference host:
   AOCL runtime behavior. After the later deploy of `llama.cpp-hip-gfx1151`
   b8851 and `python-mistral-common-gfx1151` 1.11.0, the same tracked smoke
   selection passed again with 4/4 scenarios.
+- On 2026-04-22, after deploying `llama.cpp-hip-gfx1151 b8881-1`,
+  `llama.cpp-vulkan-gfx1151 b8881-1`, and `lemonade-server 10.2.0-3`,
+  `python tools/run_inference_scenarios.py --engine llama.cpp --engine lemonade --tag smoke`
+  passed 6/6 selected scenarios: Lemonade CLI/server help, Lemonade embedding
+  and rerank pooling smokes, and both llama.cpp HIP/Vulkan help scenarios. The
+  run root was `docs/worklog/inference-runs/20260422T003259`.
 - On 2026-04-20, `aocl-libm-gfx1151 5.2.2-1` and
   `aocl-utils-gfx1151 5.2.2-1` passed the package-local installed-runtime
   guard:
@@ -925,11 +930,8 @@ The following smoke checks have already passed on the reference host:
   - `llamacpp:cpu` remains Lemonade-managed and downloadable
   - `llamacpp:system` is removed from this custom variant
   - the deployed backend table identifies the packaged backends explicitly as:
-    - `System llama-server-hip-gfx1151 llama.cpp b8851`
-    - `System llama-server-vulkan-gfx1151 llama.cpp b8851`
-
-After the pending `lemonade-server 10.2.0-3` deploy, the backend table should
-identify those packaged backends as llama.cpp `b8881`.
+    - `System llama-server-hip-gfx1151 llama.cpp b8881`
+    - `System llama-server-vulkan-gfx1151 llama.cpp b8881`
 
 ## Known Deferred Follow-up Work
 
