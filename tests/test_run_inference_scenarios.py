@@ -560,6 +560,73 @@ VLLM_ROCM_USE_AITER_MOE = "0"
     }
 
 
+def test_flash_attn_qkvpacked_tiny_dry_run_resolves_command_and_env():
+    result = run_runner(
+        "--scenario-dir",
+        str(REPO_ROOT / "inference/scenarios"),
+        "--dry-run",
+        "--scenario",
+        "flash-attn.triton-amd.qkvpacked-tiny",
+    )
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    planned = payload["planned"][0]
+    assert payload["selected_ids"] == ["flash-attn.triton-amd.qkvpacked-tiny"]
+    assert planned["command"] == [
+        sys.executable,
+        str(REPO_ROOT / "tools/flash_attn_smoke.py"),
+        "--mode",
+        "qkvpacked-tiny",
+        "--seqlen",
+        "16",
+        "--heads",
+        "2",
+        "--head-dim",
+        "32",
+    ]
+    assert planned["env"] == {"FLASH_ATTENTION_TRITON_AMD_ENABLE": "TRUE"}
+
+
+def test_flash_attn_backend_import_dry_run_resolves_command_and_env():
+    result = run_runner(
+        "--scenario-dir",
+        str(REPO_ROOT / "inference/scenarios"),
+        "--dry-run",
+        "--scenario",
+        "flash-attn.triton-amd.backend-import",
+    )
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    planned = payload["planned"][0]
+    assert payload["selected_ids"] == ["flash-attn.triton-amd.backend-import"]
+    assert planned["command"] == [
+        sys.executable,
+        str(REPO_ROOT / "tools/flash_attn_smoke.py"),
+        "--mode",
+        "backend-import",
+    ]
+    assert planned["env"] == {"FLASH_ATTENTION_TRITON_AMD_ENABLE": "TRUE"}
+
+
+def test_flash_attn_engine_selector_includes_all_triton_amd_scenarios():
+    result = run_runner(
+        "--scenario-dir",
+        str(REPO_ROOT / "inference/scenarios"),
+        "--dry-run",
+        "--engine",
+        "flash-attn",
+    )
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    assert payload["selected_ids"] == [
+        "flash-attn.triton-amd.backend-import",
+        "flash-attn.triton-amd.qkvpacked-tiny",
+    ]
+
+
 def test_quantized_qwen_text_dry_run_includes_probe_options_and_binding(
     tmp_path: Path,
 ):

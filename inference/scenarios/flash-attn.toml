@@ -1,0 +1,52 @@
+[[scenario]]
+id = "flash-attn.triton-amd.backend-import"
+summary = "FlashAttention backend import smoke on the Triton AMD path"
+tags = ["smoke", "flash-attention", "triton-amd"]
+
+[scenario.given]
+engine = "flash-attn"
+model = "builtin"
+tool = "flash_attn_smoke.backend-import"
+
+[scenario.when.env]
+FLASH_ATTENTION_TRITON_AMD_ENABLE = "TRUE"
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "mode backend-import"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "flash_attn_import_ok"
+
+[[scenario]]
+id = "flash-attn.triton-amd.qkvpacked-tiny"
+summary = "FlashAttention qkvpacked smoke on the Triton AMD path"
+tags = ["smoke", "flash-attention", "triton-amd", "kernel-probe"]
+
+[scenario.given]
+engine = "flash-attn"
+model = "builtin"
+tool = "flash_attn_smoke.qkvpacked-tiny"
+
+[scenario.when]
+argv = ["--seqlen", "16", "--heads", "2", "--head-dim", "32"]
+
+[scenario.when.env]
+FLASH_ATTENTION_TRITON_AMD_ENABLE = "TRUE"
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "mode qkvpacked-tiny"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "flash_attn_qkvpacked_ok"

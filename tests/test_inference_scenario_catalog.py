@@ -50,6 +50,8 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     assert "vllm.qwen3_6.35b-a3b.server.media-embedding" in ids
     assert "vllm.speculative.eagle3.llama3_1_8b.server.basic" in ids
     assert "vllm.speculative.dflash.qwen3_8b-speculators.server.blocked" in ids
+    assert "flash-attn.triton-amd.backend-import" in ids
+    assert "flash-attn.triton-amd.qkvpacked-tiny" in ids
     assert "vllm.pooling.multilingual-e5-small.embeddings" in ids
     assert "vllm.pooling.jina-reranker-v3.rerank" in ids
     assert "transformers.zeroentropy.zembed-1.embeddings" in ids
@@ -74,6 +76,7 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
         "lemonade",
         "transformers",
         "torch-migraphx",
+        "flash-attn",
     }
     assert "smoke" in tags_by_id["vllm.gemma4.26b-a4b.text.basic"]
     assert "exploratory" in tags_by_id["vllm.gemma4.e2b.server.image"]
@@ -140,6 +143,17 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     assert "blocked" in tags_by_id[
         "vllm.speculative.dflash.qwen3_8b-speculators.server.blocked"
     ]
+    assert tags_by_id["flash-attn.triton-amd.backend-import"] >= {
+        "smoke",
+        "flash-attention",
+        "triton-amd",
+    }
+    assert tags_by_id["flash-attn.triton-amd.qkvpacked-tiny"] >= {
+        "smoke",
+        "flash-attention",
+        "triton-amd",
+        "kernel-probe",
+    }
     assert "moe" in tags_by_id[
         "vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-aiter-blocked"
     ]
@@ -375,6 +389,47 @@ def test_speculative_decoding_scenarios_record_upstream_evidence():
         {"kind": "output.contains", "value": "DFlashDraftModel"},
     ):
         assert expected in dflash.definition["then"]["assert"]
+
+
+def test_flash_attn_scenarios_record_triton_amd_contract():
+    scenarios = load_scenarios(REPO_ROOT / "inference/scenarios")
+    by_id = {scenario.id: scenario for scenario in scenarios}
+
+    backend_import = by_id["flash-attn.triton-amd.backend-import"]
+    qkvpacked_tiny = by_id["flash-attn.triton-amd.qkvpacked-tiny"]
+
+    assert backend_import.engine == "flash-attn"
+    assert backend_import.model == "builtin"
+    assert backend_import.definition["given"]["tool"] == "flash_attn_smoke.backend-import"
+    assert backend_import.definition["when"]["env"] == {
+        "FLASH_ATTENTION_TRITON_AMD_ENABLE": "TRUE",
+    }
+    assert set(backend_import.tags) >= {
+        "smoke",
+        "flash-attention",
+        "triton-amd",
+    }
+
+    assert qkvpacked_tiny.engine == "flash-attn"
+    assert qkvpacked_tiny.model == "builtin"
+    assert qkvpacked_tiny.definition["given"]["tool"] == "flash_attn_smoke.qkvpacked-tiny"
+    assert qkvpacked_tiny.definition["when"]["env"] == {
+        "FLASH_ATTENTION_TRITON_AMD_ENABLE": "TRUE",
+    }
+    assert qkvpacked_tiny.definition["when"]["argv"] == [
+        "--seqlen",
+        "16",
+        "--heads",
+        "2",
+        "--head-dim",
+        "32",
+    ]
+    assert set(qkvpacked_tiny.tags) >= {
+        "smoke",
+        "flash-attention",
+        "triton-amd",
+        "kernel-probe",
+    }
 
 
 def test_gemma4_e2b_compiled_probe_records_current_blocker():
