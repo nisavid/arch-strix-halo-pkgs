@@ -38,6 +38,11 @@ without chat history.
   multiple files and verification steps. Use a sibling
   `<repo>.wt/<branch-or-task>` directory by default, and do not switch the
   user's active checkout to a different branch just to start new work.
+- If sibling worktree creation or `git worktree` metadata writes need approval
+  because the sibling path sits outside the writable roots, request escalation
+  and keep the persistent worktree under `<repo>.wt/`. Do not move persistent
+  coding worktrees to `/tmp`, cache directories, or other automatically
+  cleaned locations just because they are writable.
 - Close out local branches by rebasing the branch onto `main`, then merging
   into `main` with `git merge --ff-only <branch>`. Do not create merge commits
   for routine local closeout, and do not switch the main worktree off `main`.
@@ -69,6 +74,9 @@ without chat history.
   - `docs/usage/local-repo.md`
 - When ending a session or deciding whether notes belong in Git, read:
   - `docs/policies/documentation-and-session-artifacts.md`
+- When starting substantial branch work in a dedicated worktree, or when
+  auditing, moving, or cleaning up a worktree, read:
+  - `.agents/skills/using-persistent-git-worktrees/SKILL.md`
 - When checking verified behavior, deferred blockers, or near-term follow-up
   work, read:
   - `docs/maintainers/current-state.md`
