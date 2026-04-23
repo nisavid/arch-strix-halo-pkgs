@@ -155,6 +155,24 @@ shape `(1, 16, 2, 32)`, and reported finite output. Keep broader
 FlashAttention consumer claims behind a real model route that actually selects
 and validates this installed backend.
 
+The first FlashAttention CK package lane is installed-validated. On
+2026-04-23, `tools/amerge build python-flash-attn-rocm-gfx1151` completed plan
+`2697cc6b` and produced `python-flash-attn-rocm-gfx1151 2.8.4-2`; `pacman -Q
+python-flash-attn-rocm-gfx1151` reports `2.8.4-2`. The CK lane uses ROCm
+FlashAttention `main_perf` commit
+`3f94643fb41bcedded28c85185a8e11d42ef1592`, carries the setup.py portion of
+ROCm/flash-attention branch `matthias.gfx1151_ck` commit
+`561341f7e0913fb7dd12c81d9e68501a5a847220`, checks out
+`csrc/composable_kernel` at `03ce21ddcbb75c5ac8630628a913d0b2ced4979a`, and
+limits the initial build to a forward-only `OPT_DIM=32` CK smoke surface.
+`flash-attn.ck.backend-import` passed at run root
+`docs/worklog/inference-runs/20260423T033602`, selecting backend module
+`flash_attn_2_cuda` with `use_triton_rocm False`.
+`flash-attn.ck.qkvpacked-tiny` passed at run root
+`docs/worklog/inference-runs/20260423T071523`, returning finite
+`(1, 16, 2, 32)` output. Keep CK engine-integration claims pending until an
+installed engine route selects this backend.
+
 ## Live Host State
 
 The first full live cutover and subsequent native package rebuild completed

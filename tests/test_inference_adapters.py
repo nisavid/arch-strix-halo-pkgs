@@ -248,6 +248,38 @@ def test_flash_attn_adapter_builds_smoke_command(tmp_path: Path):
     assert plan.env is None
 
 
+def test_flash_attn_adapter_builds_ck_smoke_command(tmp_path: Path):
+    plan = build_execution_plan(
+        scenario(
+            {
+                "id": "flash-attn.ck.qkvpacked-tiny",
+                "given": {
+                    "engine": "flash-attn",
+                    "tool": "flash_attn_smoke.ck-qkvpacked-tiny",
+                },
+                "when": {
+                    "argv": ["--seqlen", "16"],
+                    "env": {"FLASH_ATTENTION_TRITON_AMD_ENABLE": "FALSE"},
+                },
+            }
+        ),
+        repo_root=REPO_ROOT,
+        scenario_run_root=tmp_path,
+        model_bindings={},
+    )
+
+    assert plan.command == [
+        sys.executable,
+        str(REPO_ROOT / "tools/flash_attn_smoke.py"),
+        "--mode",
+        "ck-qkvpacked-tiny",
+        "--seqlen",
+        "16",
+    ]
+    assert plan.env == {"FLASH_ATTENTION_TRITON_AMD_ENABLE": "FALSE"}
+    assert plan.server_log_path is None
+
+
 def test_flash_attn_adapter_carries_scenario_environment(tmp_path: Path):
     plan = build_execution_plan(
         scenario(

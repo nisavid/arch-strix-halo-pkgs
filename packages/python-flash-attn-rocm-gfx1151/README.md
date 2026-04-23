@@ -1,14 +1,26 @@
 # python-flash-attn-rocm-gfx1151
 
 This is the local FlashAttention package experiment for Strix Halo `gfx1151`.
-It follows the ROCm FlashAttention `main_perf` Triton backend lane at commit
+It follows the ROCm FlashAttention `main_perf` AMD backend lane at commit
 `3f94643fb41bcedded28c85185a8e11d42ef1592`, which reports package version
 `2.8.4`.
 
-The package intentionally builds the ROCm Triton path with
-`FLASH_ATTENTION_TRITON_AMD_ENABLE=TRUE`, `FLASH_ATTENTION_SKIP_CUDA_BUILD=TRUE`,
-and `GPU_ARCHS=gfx1151`. `FLASH_ATTENTION_TRITON_AMD_AUTOTUNE=TRUE` remains a
-later performance experiment after the non-autotuned direct smoke passes.
+The package intentionally builds the ROCm CK extension with
+`FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE`,
+`FLASH_ATTENTION_SKIP_CUDA_BUILD=FALSE`, and `GPU_ARCHS=gfx1151`. It carries
+the setup.py portion of ROCm/flash-attention branch `matthias.gfx1151_ck`
+commit `561341f7e0913fb7dd12c81d9e68501a5a847220`, which adds `gfx1151` to
+FlashAttention's CK architecture validation and passes the matching `gfx11`
+target into CK FMHA codegen.
+
+The package also prepares `csrc/composable_kernel` at
+`03ce21ddcbb75c5ac8630628a913d0b2ced4979a`, the matching CK gitlink from that
+branch. The older `main_perf` CK submodule does not expose `gfx11` FMHA codegen
+factories.
+
+`FLASH_ATTENTION_TRITON_AMD_ENABLE=TRUE` remains the explicit runtime selector
+for the packaged Triton AMD path through repo-owned AITER. Treat
+`FLASH_ATTENTION_TRITON_AMD_AUTOTUNE=TRUE` as a later performance experiment.
 
 ## Local Boundaries
 
@@ -23,17 +35,17 @@ later performance experiment after the non-autotuned direct smoke passes.
 
 ## Validation Gates
 
-The first package gate is build/import proof:
+The first CK package gate is build/import proof:
 
 ```sh
 tools/amerge build python-flash-attn-rocm-gfx1151
 ```
 
-After installation, the direct Triton AMD smoke should run before any vLLM or
-Transformers integration claim:
+After installation, the direct CK smoke should run before any engine
+integration claim:
 
 ```sh
-FLASH_ATTENTION_TRITON_AMD_ENABLE=TRUE python - <<'PY'
+FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE python - <<'PY'
 import torch
 from flash_attn import flash_attn_qkvpacked_func
 
@@ -45,8 +57,15 @@ print("finite", bool(torch.isfinite(out).all().item()))
 PY
 ```
 
-Keep any vLLM scenario exploratory until an installed engine proves it can route
-to this package.
+The tracked scenario equivalent is:
+
+```sh
+python tools/run_inference_scenarios.py --scenario flash-attn.ck.qkvpacked-tiny
+```
+
+Keep any CK engine-integration scenario exploratory until an installed engine
+proves it can route to this backend. Keep Triton AMD validation explicit because
+runtime backend selection still depends on `FLASH_ATTENTION_TRITON_AMD_ENABLE`.
 
 ## Current Evidence
 
@@ -64,3 +83,15 @@ The tracked installed scenarios
 run root `docs/worklog/inference-runs/20260422T200347`. The bounded GPU smoke ran
 `flash_attn_qkvpacked_func` on a `(1, 16, 3, 2, 32)` float16 CUDA tensor and
 returned finite `(1, 16, 2, 32)` output.
+
+On 2026-04-23, the CK package lane built
+`python-flash-attn-rocm-gfx1151 2.8.4-2` with `tools/amerge` plan
+`2697cc6b`. The build used the `gfx1151` CK codegen patch, the matching CK
+submodule commit, and the reduced forward-only `OPT_DIM=32` kernel set.
+`pacman -Q python-flash-attn-rocm-gfx1151` reports `2.8.4-2`.
+`flash-attn.ck.backend-import` passed at run root
+`docs/worklog/inference-runs/20260423T033602`, selecting
+`flash_attn_2_cuda` with `use_triton_rocm False`.
+`flash-attn.ck.qkvpacked-tiny` passed at run root
+`docs/worklog/inference-runs/20260423T071523`, returning finite
+`(1, 16, 2, 32)` output.

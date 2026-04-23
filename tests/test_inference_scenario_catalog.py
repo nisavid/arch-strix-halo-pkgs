@@ -454,6 +454,47 @@ def test_flash_attn_scenarios_record_triton_amd_contract():
         assert expected in vllm_vit.definition["then"]["assert"]
 
 
+def test_flash_attn_scenarios_record_ck_contract():
+    scenarios = load_scenarios(REPO_ROOT / "inference/scenarios")
+    by_id = {scenario.id: scenario for scenario in scenarios}
+
+    backend_import = by_id["flash-attn.ck.backend-import"]
+    qkvpacked_tiny = by_id["flash-attn.ck.qkvpacked-tiny"]
+
+    assert backend_import.engine == "flash-attn"
+    assert backend_import.model == "builtin"
+    assert backend_import.definition["given"]["tool"] == "flash_attn_smoke.ck-backend-import"
+    assert backend_import.definition["when"]["env"] == {
+        "FLASH_ATTENTION_TRITON_AMD_ENABLE": "FALSE",
+    }
+    assert set(backend_import.tags) >= {
+        "smoke",
+        "flash-attention",
+        "ck",
+    }
+
+    assert qkvpacked_tiny.engine == "flash-attn"
+    assert qkvpacked_tiny.model == "builtin"
+    assert qkvpacked_tiny.definition["given"]["tool"] == "flash_attn_smoke.ck-qkvpacked-tiny"
+    assert qkvpacked_tiny.definition["when"]["env"] == {
+        "FLASH_ATTENTION_TRITON_AMD_ENABLE": "FALSE",
+    }
+    assert qkvpacked_tiny.definition["when"]["argv"] == [
+        "--seqlen",
+        "16",
+        "--heads",
+        "2",
+        "--head-dim",
+        "32",
+    ]
+    assert set(qkvpacked_tiny.tags) >= {
+        "smoke",
+        "flash-attention",
+        "ck",
+        "kernel-probe",
+    }
+
+
 def test_gemma4_e2b_compiled_probe_records_current_blocker():
     scenarios = load_scenarios(REPO_ROOT / "inference/scenarios")
     by_id = {scenario.id: scenario for scenario in scenarios}

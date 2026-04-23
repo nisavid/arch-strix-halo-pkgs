@@ -1,8 +1,8 @@
 {
   "package_name": "python-flash-attn-rocm-gfx1151",
   "pkgver": "2.8.4",
-  "pkgrel": 1,
-  "description": "FlashAttention ROCm Triton backend experiment for the local gfx1151 stack",
+  "pkgrel": 2,
+  "description": "FlashAttention ROCm CK backend experiment for the local gfx1151 stack",
   "upstream": {
     "repo": "https://github.com/ROCm/flash-attention",
     "branch": "main_perf",
@@ -17,17 +17,26 @@
   "source_patches": [
     "0001-skip-bundled-aiter-install.patch",
     "0002-import-amdsmi-before-torch.patch",
-    "0003-use-system-triton-package.patch"
+    "0003-use-system-triton-package.patch",
+    "0004-enable-gfx1151-ck-codegen.patch",
+    "0005-preserve-packaged-ck-submodule-checkout.patch",
+    "0006-limit-ck-smoke-build-to-forward-d32.patch",
+    "0007-adapt-ck-fwd-args-layout.patch"
   ],
   "divergence_notes": [
-    "Uses the ROCm FlashAttention main_perf branch because the documented Triton AMD backend path lives there.",
-    "Builds the pure Python Triton AMD lane with FLASH_ATTENTION_TRITON_AMD_ENABLE=TRUE and FLASH_ATTENTION_SKIP_CUDA_BUILD=TRUE.",
+    "Uses the ROCm FlashAttention main_perf branch because the documented AMD CK and Triton backend paths live there.",
+    "Builds the CK extension with FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE, FLASH_ATTENTION_SKIP_CUDA_BUILD=FALSE, and GPU_ARCHS=gfx1151.",
+    "Carries the setup.py portion of ROCm/flash-attention branch matthias.gfx1151_ck commit 561341f7e0913fb7dd12c81d9e68501a5a847220 so CK accepts gfx1151 and codegen targets gfx11.",
+    "Checks out csrc/composable_kernel at commit 03ce21ddcbb75c5ac8630628a913d0b2ced4979a because that is the matching CK gitlink from the matthias.gfx1151_ck branch and contains gfx11 FMHA codegen factories.",
+    "Limits the first CK package experiment to forward-only OPT_DIM=32 codegen with FLASH_ATTENTION_CK_GENERATORS=fwd, FLASH_ATTENTION_CK_FILTER='*fp16*nbias_nmask*ndropout*', and FLASH_ATTENTION_CK_FORWARD_ONLY=TRUE so the direct qkvpacked smoke can validate CK without compiling unused backward, KV-cache, dtype, mask, or dropout variants.",
+    "Adapts the FlashAttention CK forward wrapper to the newer CK fmha_fwd_args layout by filling no-scale/no-sink block-scale and descale fields with zero/null values.",
     "Uses repo-owned python-amd-aiter-gfx1151, python-triton-gfx1151, and python-pytorch-opt-rocm-gfx1151 instead of letting setup.py install bundled or PyPI runtime pieces."
   ],
   "update_notes": [
     "Recheck the ROCm FlashAttention main_perf branch and CK-tile tags before bumping this package.",
-    "Keep direct flash_attn Triton AMD build/import smoke as the first validation gate before any vLLM integration scenario.",
+    "Keep direct flash_attn CK build/import and qkvpacked smoke as the first validation gate before any engine integration scenario; this gate passed for 2.8.4-2 on 2026-04-23.",
+    "Keep the Triton AMD smoke explicit because runtime backend selection still depends on FLASH_ATTENTION_TRITON_AMD_ENABLE.",
     "Treat FLASH_ATTENTION_TRITON_AMD_AUTOTUNE=TRUE as a performance follow-up, not part of the initial correctness gate."
   ],
-  "status": "validated"
+  "status": "testing"
 }

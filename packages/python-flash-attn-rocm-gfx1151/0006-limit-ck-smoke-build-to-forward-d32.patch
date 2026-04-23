@@ -1,0 +1,144 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: nisavid <nisavid@users.noreply.github.com>
+Date: Thu, 23 Apr 2026 02:20:00 -0400
+Subject: [PATCH] limit CK smoke build to selected forward generators
+
+The full CK backend emits thousands of generated HIP translation units. For
+the local gfx1151 smoke experiment, allow the package to request only selected
+CK forward generator blobs and guard the pybind API so import and forward
+calls do not refer to omitted backward or KV-cache symbols.
+---
+ csrc/flash_attn_ck/flash_api.cpp |  7 +++++++
+ setup.py                         | 48 ++++++++++++++++++++++++--------
+ 2 files changed, 40 insertions(+), 15 deletions(-)
+
+diff --git a/csrc/flash_attn_ck/flash_api.cpp b/csrc/flash_attn_ck/flash_api.cpp
+index a0580d52..1f327691 100644
+--- a/csrc/flash_attn_ck/flash_api.cpp
++++ b/csrc/flash_attn_ck/flash_api.cpp
+@@ -19,6 +19,7 @@ mha_fwd(at::Tensor &q,         // batch_size x seqlen_q x num_heads x head_size
+         const bool return_softmax,
+         std::optional<at::Generator> gen_);
+ 
++#ifndef FLASH_ATTENTION_CK_FORWARD_ONLY
+ std::vector<at::Tensor>
+ mha_varlen_fwd(at::Tensor &q,                               // total_q x num_heads x head_size, total_q := \sum_{i=0}^{b} s_i
+                const at::Tensor &k,                         // total_k x num_heads_k x head_size, total_k := \sum_{i=0}^{b} s_i
+@@ -40,7 +41,8 @@ mha_varlen_fwd(at::Tensor &q,                               // total_q x num_hea
+                const float softcap,
+                const bool return_softmax,
+                std::optional<at::Generator> gen_);
++#endif
+ 
+ std::vector<at::Tensor>
+ mha_bwd(const at::Tensor &dout,                   // batch_size x seqlen_q x num_heads, x multiple_of(head_size_og, 8)
+         const at::Tensor &q,                      // batch_size x seqlen_q x num_heads x head_size
+@@ -114,9 +116,11 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m)
+ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m)
+ {
+         m.doc() = "FlashAttention";
+         m.def("fwd", &mha_fwd, "Forward pass");
++#ifndef FLASH_ATTENTION_CK_FORWARD_ONLY
+         m.def("varlen_fwd", &mha_varlen_fwd, "Forward pass (variable length)");
+         m.def("bwd", &mha_bwd, "Backward pass");
+         m.def("varlen_bwd", &mha_varlen_bwd, "Backward pass (variable length)");
+         m.def("fwd_kvcache", &mha_fwd_kvcache, "Forward pass, with KV-cache");
++#endif
+ }
+diff --git a/setup.py b/setup.py
+index 439d6c7..dee42120 100644
+--- a/setup.py
++++ b/setup.py
+@@ -397,11 +397,21 @@ elif not SKIP_CUDA_BUILD and IS_ROCM:
+             elif a.startswith("gfx12"):
+                 codegen_targets.add("gfx12")
+         targets_arg = ["--targets", ",".join(sorted(codegen_targets))] if codegen_targets else []
++        ck_generators = [
++            item.strip()
++            for item in os.getenv("FLASH_ATTENTION_CK_GENERATORS", "fwd,fwd_appendkv,fwd_splitkv,bwd").split(",")
++            if item.strip()
++        ]
++        valid_ck_generators = {"fwd", "fwd_appendkv", "fwd_splitkv", "bwd"}
++        assert set(ck_generators) <= valid_ck_generators, (
++            f"Unsupported FLASH_ATTENTION_CK_GENERATORS entries: {ck_generators}"
++        )
+         gen_common = [sys.executable, f"{ck_dir}/example/ck_tile/01_fmha/generate.py", "--output_dir", "build", "--receipt", "2", "--optdim", optdim] + targets_arg
++        ck_filter = os.getenv("FLASH_ATTENTION_CK_FILTER")
++        if ck_filter:
++            gen_common += ["--filter", ck_filter]
+-        subprocess.run(gen_common + ["-d", "fwd"], check=True)
+-        subprocess.run(gen_common + ["-d", "fwd_appendkv"], check=True)
+-        subprocess.run(gen_common + ["-d", "fwd_splitkv"], check=True)
+-        subprocess.run(gen_common + ["-d", "bwd"], check=True)
++        for ck_generator in ck_generators:
++            subprocess.run(gen_common + ["-d", ck_generator], check=True)
+ 
+         # Check, if ATen/CUDAGeneratorImpl.h is found, otherwise use ATen/cuda/CUDAGeneratorImpl.h
+         # See https://github.com/pytorch/pytorch/pull/70650
+@@ -426,15 +438,16 @@ elif not SKIP_CUDA_BUILD and IS_ROCM:
+         if FORCE_CXX11_ABI:
+             torch._C._GLIBCXX_USE_CXX11_ABI = True
+ 
+-        sources = ["csrc/flash_attn_ck/flash_api.cpp",
+-                "csrc/flash_attn_ck/flash_common.cpp",
+-                "csrc/flash_attn_ck/mha_bwd.cpp",
+-                "csrc/flash_attn_ck/mha_fwd_kvcache.cpp",
+-                "csrc/flash_attn_ck/mha_fwd.cpp",
+-                "csrc/flash_attn_ck/mha_varlen_bwd.cpp",
+-                "csrc/flash_attn_ck/mha_varlen_fwd.cpp"] + glob.glob(
+-            f"build/fmha_*wd*.cpp"
+-        )
++        sources = ["csrc/flash_attn_ck/flash_api.cpp", "csrc/flash_attn_ck/flash_common.cpp"]
++        if "fwd" in ck_generators:
++            sources += ["csrc/flash_attn_ck/mha_fwd.cpp"]
++            if os.getenv("FLASH_ATTENTION_CK_FORWARD_ONLY", "FALSE") != "TRUE":
++                sources += ["csrc/flash_attn_ck/mha_varlen_fwd.cpp"]
++        if "fwd_appendkv" in ck_generators or "fwd_splitkv" in ck_generators:
++            sources += ["csrc/flash_attn_ck/mha_fwd_kvcache.cpp"]
++        if "bwd" in ck_generators:
++            sources += ["csrc/flash_attn_ck/mha_bwd.cpp", "csrc/flash_attn_ck/mha_varlen_bwd.cpp"]
++        sources += glob.glob(f"build/fmha_*wd*.cpp")
+ 
+         # Check if torch is using hipify v2. Until CK is updated with HIPIFY_V2 macro,
+         # we must replace the incorrect APIs.
+@@ -444,13 +455,14 @@ elif not SKIP_CUDA_BUILD and IS_ROCM:
+ 
+         rename_cpp_to_cu(sources)
+ 
+-        renamed_sources = ["csrc/flash_attn_ck/flash_api.cu",
+-                        "csrc/flash_attn_ck/flash_common.cu",
+-                        "csrc/flash_attn_ck/mha_bwd.cu",
+-                        "csrc/flash_attn_ck/mha_fwd_kvcache.cu",
+-                        "csrc/flash_attn_ck/mha_fwd.cu",
+-                        "csrc/flash_attn_ck/mha_varlen_bwd.cu",
+-                        "csrc/flash_attn_ck/mha_varlen_fwd.cu"] + glob.glob(f"build/fmha_*wd*.cu")
++        renamed_sources = [
++            source[:-4] + ".cu" if source.endswith(".cpp") else source
++            for source in sources
++        ]
++
++        forward_only_flag = []
++        if os.getenv("FLASH_ATTENTION_CK_FORWARD_ONLY", "FALSE") == "TRUE":
++            forward_only_flag = ["-DFLASH_ATTENTION_CK_FORWARD_ONLY"]
+ 
+         cc_flag += ["-O3","-std=c++20",
+                     "-DCK_TILE_FMHA_FWD_FAST_EXP2=1",
+@@ -466,6 +478,7 @@ elif not SKIP_CUDA_BUILD and IS_ROCM:
+                     "-DUSE_PROF_API=1",
+                     # "-DFLASHATTENTION_DISABLE_BACKWARD",
+                     "-D__HIP_PLATFORM_HCC__=1"]
++        cc_flag += forward_only_flag
+ 
+         cc_flag += [f"-DCK_TILE_FLOAT_TO_BFLOAT16_DEFAULT={os.environ.get('CK_TILE_FLOAT_TO_BFLOAT16_DEFAULT', 3)}"]
+ 
+@@ -484,7 +497,7 @@ elif not SKIP_CUDA_BUILD and IS_ROCM:
+             cc_flag += ["-mllvm", "-amdgpu-coerce-illegal-types=1"]
+ 
+         extra_compile_args = {
+-            "cxx": ["-O3", "-std=c++20"] + generator_flag + maybe_hipify_v2_flag,
++            "cxx": ["-O3", "-std=c++20"] + generator_flag + maybe_hipify_v2_flag + forward_only_flag,
+             "nvcc": cc_flag + generator_flag + maybe_hipify_v2_flag,
+         }
+ 
+-- 
+2.51.0

@@ -1,10 +1,10 @@
 # Maintainer: nisavid
-# Package experiment for the ROCm FlashAttention Triton backend on gfx1151
+# Package experiment for ROCm FlashAttention CK plus Triton backend access on gfx1151
 
 pkgname=python-flash-attn-rocm-gfx1151
 pkgver=2.8.4
-pkgrel=1
-pkgdesc='FlashAttention ROCm Triton backend experiment for the local gfx1151 stack'
+pkgrel=2
+pkgdesc='FlashAttention ROCm CK backend experiment for the local gfx1151 stack'
 arch=('x86_64')
 url=https://github.com/ROCm/flash-attention
 license=(BSD-3-Clause)
@@ -18,8 +18,12 @@ replaces=()
 source=('flash-attention::git+https://github.com/ROCm/flash-attention.git#commit=3f94643fb41bcedded28c85185a8e11d42ef1592'
         0001-skip-bundled-aiter-install.patch
         0002-import-amdsmi-before-torch.patch
-        0003-use-system-triton-package.patch)
-sha256sums=(SKIP SKIP SKIP SKIP)
+        0003-use-system-triton-package.patch
+        0004-enable-gfx1151-ck-codegen.patch
+        0005-preserve-packaged-ck-submodule-checkout.patch
+        0006-limit-ck-smoke-build-to-forward-d32.patch
+        0007-adapt-ck-fwd-args-layout.patch)
+sha256sums=(SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP)
 
 prepare() {
   cd "$srcdir/flash-attention"
@@ -27,20 +31,33 @@ prepare() {
   for _patch in \
     0001-skip-bundled-aiter-install.patch \
     0002-import-amdsmi-before-torch.patch \
-    0003-use-system-triton-package.patch; do
+    0003-use-system-triton-package.patch \
+    0004-enable-gfx1151-ck-codegen.patch \
+    0005-preserve-packaged-ck-submodule-checkout.patch \
+    0006-limit-ck-smoke-build-to-forward-d32.patch \
+    0007-adapt-ck-fwd-args-layout.patch; do
     if ! patch --dry-run -R -Np1 -i "$srcdir/${_patch}" >/dev/null 2>&1; then
       patch -Np1 -i "$srcdir/${_patch}"
     fi
   done
+
+  local _ck_commit=03ce21ddcbb75c5ac8630628a913d0b2ced4979a
+  git submodule update --init csrc/composable_kernel
+  git -C csrc/composable_kernel fetch origin "${_ck_commit}"
+  git -C csrc/composable_kernel checkout "${_ck_commit}"
 }
 
 build() {
   cd "$srcdir/flash-attention"
 
-  export FLASH_ATTENTION_TRITON_AMD_ENABLE=TRUE
-  export FLASH_ATTENTION_SKIP_CUDA_BUILD=TRUE
+  export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE
+  export FLASH_ATTENTION_SKIP_CUDA_BUILD=FALSE
   export FLASH_ATTENTION_FORCE_BUILD=TRUE
+  export FLASH_ATTENTION_CK_GENERATORS=fwd
+  export FLASH_ATTENTION_CK_FILTER='*fp16*nbias_nmask*ndropout*'
+  export FLASH_ATTENTION_CK_FORWARD_ONLY=TRUE
   export GPU_ARCHS=gfx1151
+  export OPT_DIM=32
   export ROCM_HOME=/opt/rocm
   export HIP_PATH=/opt/rocm
 

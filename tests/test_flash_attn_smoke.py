@@ -192,6 +192,40 @@ def test_backend_import_rejects_non_triton_rocm_backend(monkeypatch, capsys):
     assert attempted == ["flash_attn"]
 
 
+def test_ck_backend_import_reports_ck_extension(monkeypatch, capsys):
+    flash_attn, wrapper, backend = _install_fake_flash_attn(
+        monkeypatch,
+        use_triton_rocm=False,
+        backend_module_name="flash_attn_2_cuda",
+        backend_file="/fake/flash_attn_2_cuda.so",
+    )
+    _install_fake_torch(monkeypatch)
+
+    flash_attn_smoke = _load_smoke_module(monkeypatch)
+    attempted: list[str] = []
+
+    def fake_import_module(name: str):
+        attempted.append(name)
+        if name == "flash_attn":
+            return flash_attn
+        raise ModuleNotFoundError(name)
+
+    monkeypatch.setattr(flash_attn_smoke.importlib, "import_module", fake_import_module)
+
+    rc = flash_attn_smoke.main(["--mode", "ck-backend-import"])
+
+    assert rc == 0
+    output = capsys.readouterr().out
+    assert "mode ck-backend-import" in output
+    assert "flash_attn_version 9.9.9" in output
+    assert "use_triton_rocm False" in output
+    assert "backend_module flash_attn_2_cuda" in output
+    assert "backend_file /fake/flash_attn_2_cuda.so" in output
+    assert "flash_attn_ck_import_ok" in output
+    assert attempted == ["flash_attn"]
+    assert wrapper.flash_attn_gpu is backend
+
+
 def test_qkvpacked_tiny_reports_shape_and_finiteness(monkeypatch, capsys):
     call_log: list[str] = []
     _install_fake_flash_attn(monkeypatch, use_triton_rocm=True, call_log=call_log)
@@ -207,6 +241,30 @@ def test_qkvpacked_tiny_reports_shape_and_finiteness(monkeypatch, capsys):
     assert "shape (1, 16, 2, 32)" in output
     assert "finite True" in output
     assert "flash_attn_qkvpacked_ok" in output
+    assert call_log == ["qkvpacked_func:{'dropout_p': 0.0, 'causal': False}", "cuda.synchronize"]
+
+
+def test_ck_qkvpacked_tiny_reports_shape_and_finiteness(monkeypatch, capsys):
+    call_log: list[str] = []
+    _install_fake_flash_attn(
+        monkeypatch,
+        use_triton_rocm=False,
+        call_log=call_log,
+        backend_module_name="flash_attn_2_cuda",
+        backend_file="/fake/flash_attn_2_cuda.so",
+    )
+    _install_fake_torch(monkeypatch, call_log=call_log)
+
+    flash_attn_smoke = _load_smoke_module(monkeypatch)
+
+    rc = flash_attn_smoke.main(["--mode", "ck-qkvpacked-tiny"])
+
+    assert rc == 0
+    output = capsys.readouterr().out
+    assert "mode ck-qkvpacked-tiny" in output
+    assert "shape (1, 16, 2, 32)" in output
+    assert "finite True" in output
+    assert "flash_attn_ck_qkvpacked_ok" in output
     assert call_log == ["qkvpacked_func:{'dropout_p': 0.0, 'causal': False}", "cuda.synchronize"]
 
 

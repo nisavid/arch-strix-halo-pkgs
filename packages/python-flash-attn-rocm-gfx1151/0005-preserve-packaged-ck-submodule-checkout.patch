@@ -1,0 +1,30 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: nisavid <nisavid@users.noreply.github.com>
+Date: Thu, 23 Apr 2026 02:08:00 -0400
+Subject: [PATCH] preserve packaged CK submodule checkout
+
+The Arch package prepares csrc/composable_kernel at the gfx1151-capable commit
+from ROCm/flash-attention's matthias.gfx1151_ck branch. Avoid resetting that
+checkout back to the superproject gitlink when setup.py runs.
+---
+ setup.py | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/setup.py b/setup.py
+index 439d6c7..5823772 100644
+--- a/setup.py
++++ b/setup.py
+@@ -219,8 +219,8 @@ if IS_ROCM:
+     if ROCM_BACKEND == "triton":
+         pass  # PATCHED: skip bundled AITER install; use python-amd-aiter-gfx1151
+     elif ROCM_BACKEND == "ck":
+-        if os.path.isdir(".git"):
+-            subprocess.run(["git", "submodule", "update", "--init", "csrc/composable_kernel"], check=True)
++        if not os.path.exists("csrc/composable_kernel/example/ck_tile/01_fmha/generate.py"):
++            subprocess.run(["git", "submodule", "update", "--init", "csrc/composable_kernel"], check=True)
+         else:
+             assert os.path.exists("csrc/composable_kernel/example/ck_tile/01_fmha/generate.py"), (
+                 "csrc/composable_kernel is missing, please use source distribution or git clone"
+             )
+-- 
+2.51.0

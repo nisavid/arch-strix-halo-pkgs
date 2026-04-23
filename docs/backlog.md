@@ -12,8 +12,10 @@
     ResNet-style smoke as installed-validated package/scenario lanes. Keep a
     full ResNet50 PT2E quantization flow as optional follow-up if its
     model/data dependencies are needed.
-  - Package experiment: FlashAttention CK; requires source audit, build/import
-    proof, and direct CK smoke coverage before any engine integration claim.
+  - Package experiment: FlashAttention CK; source audit, package build, host
+    install, direct CK import proof, and direct CK qkvpacked smoke now pass for
+    `python-flash-attn-rocm-gfx1151 2.8.4-2`. Keep engine integration,
+    performance, and broader kernel coverage as follow-up.
   - Package experiment: FlashAttention Triton; `python-flash-attn-rocm-gfx1151`
     now has build proof, installed import proof, runtime backend-selection
     proof, and a bounded non-autotuned Triton AMD smoke from the installed

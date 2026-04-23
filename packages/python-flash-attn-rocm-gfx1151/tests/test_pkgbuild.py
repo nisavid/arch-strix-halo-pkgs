@@ -12,21 +12,64 @@ FRESHNESS_POLICY = REPO_ROOT / "policies/package-freshness.toml"
 SKIP_AITER_PATCH = PACKAGE / "0001-skip-bundled-aiter-install.patch"
 AMDSMI_PATCH = PACKAGE / "0002-import-amdsmi-before-torch.patch"
 SYSTEM_TRITON_PATCH = PACKAGE / "0003-use-system-triton-package.patch"
+GFX1151_CK_PATCH = PACKAGE / "0004-enable-gfx1151-ck-codegen.patch"
+PRESERVE_CK_PATCH = PACKAGE / "0005-preserve-packaged-ck-submodule-checkout.patch"
+CK_SMOKE_BUILD_PATCH = PACKAGE / "0006-limit-ck-smoke-build-to-forward-d32.patch"
+CK_FWD_ARGS_PATCH = PACKAGE / "0007-adapt-ck-fwd-args-layout.patch"
 
 
-def test_pkgbuild_tracks_rocm_flash_attention_triton_experiment():
+def test_pkgbuild_tracks_rocm_flash_attention_ck_experiment():
     text = PKGBUILD.read_text(encoding="utf-8")
 
     assert "pkgname=python-flash-attn-rocm-gfx1151" in text
     assert "pkgver=2.8.4" in text
     assert "3f94643fb41bcedded28c85185a8e11d42ef1592" in text
     assert "url=https://github.com/ROCm/flash-attention" in text
-    assert "FLASH_ATTENTION_TRITON_AMD_ENABLE=TRUE" in text
-    assert "FLASH_ATTENTION_SKIP_CUDA_BUILD=TRUE" in text
+    assert "FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE" in text
+    assert "FLASH_ATTENTION_SKIP_CUDA_BUILD=FALSE" in text
     assert "FLASH_ATTENTION_FORCE_BUILD=TRUE" in text
+    assert "FLASH_ATTENTION_CK_GENERATORS=fwd" in text
+    assert "FLASH_ATTENTION_CK_FILTER='*fp16*nbias_nmask*ndropout*'" in text
+    assert "FLASH_ATTENTION_CK_FORWARD_ONLY=TRUE" in text
     assert "GPU_ARCHS=gfx1151" in text
+    assert "OPT_DIM=32" in text
     assert "pip wheel . --no-build-isolation --no-deps" in text
     assert "python -m installer --destdir=\"$pkgdir\"" in text
+
+
+def test_pkgbuild_carries_gfx1151_ck_experiment():
+    text = PKGBUILD.read_text(encoding="utf-8")
+    ck_patch = GFX1151_CK_PATCH.read_text(encoding="utf-8")
+    preserve_ck_patch = PRESERVE_CK_PATCH.read_text(encoding="utf-8")
+    ck_smoke_build_patch = CK_SMOKE_BUILD_PATCH.read_text(encoding="utf-8")
+    ck_fwd_args_patch = CK_FWD_ARGS_PATCH.read_text(encoding="utf-8")
+
+    assert "0004-enable-gfx1151-ck-codegen.patch" in text
+    assert "0005-preserve-packaged-ck-submodule-checkout.patch" in text
+    assert "0006-limit-ck-smoke-build-to-forward-d32.patch" in text
+    assert "0007-adapt-ck-fwd-args-layout.patch" in text
+    assert "FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE" in text
+    assert "FLASH_ATTENTION_SKIP_CUDA_BUILD=FALSE" in text
+    assert "FLASH_ATTENTION_CK_GENERATORS=fwd" in text
+    assert "FLASH_ATTENTION_CK_FILTER='*fp16*nbias_nmask*ndropout*'" in text
+    assert "FLASH_ATTENTION_CK_FORWARD_ONLY=TRUE" in text
+    assert "GPU_ARCHS=gfx1151" in text
+    assert "03ce21ddcbb75c5ac8630628a913d0b2ced4979a" in text
+    assert '"gfx90a", "gfx950", "gfx942", "gfx1151"' in ck_patch
+    assert "--targets" in ck_patch
+    assert "gfx11" in ck_patch
+    assert "if not os.path.exists" in preserve_ck_patch
+    assert "csrc/composable_kernel" in preserve_ck_patch
+    assert "FLASH_ATTENTION_CK_GENERATORS" in ck_smoke_build_patch
+    assert "FLASH_ATTENTION_CK_FILTER" in ck_smoke_build_patch
+    assert "FLASH_ATTENTION_CK_FORWARD_ONLY" in ck_smoke_build_patch
+    assert "m.def(\"fwd\", &mha_fwd" in ck_smoke_build_patch
+    assert "m.def(\"varlen_fwd\", &mha_varlen_fwd" in ck_smoke_build_patch
+    assert "mha_varlen_fwd.cpp\"]" in ck_smoke_build_patch
+    assert "if os.getenv(\"FLASH_ATTENTION_CK_FORWARD_ONLY\", \"FALSE\") != \"TRUE\"" in ck_smoke_build_patch
+    assert "block_scale_seqstart_q_ptr" in ck_fwd_args_patch
+    assert "batch_stride_q_descale" in ck_fwd_args_patch
+    assert "block_scale_size_q" in ck_fwd_args_patch
 
 
 def test_pkgbuild_uses_repo_owned_rocm_runtime_instead_of_bundled_deps():
@@ -67,6 +110,10 @@ def test_patch_carry_records_rocm_runtime_boundaries():
     assert "0001-skip-bundled-aiter-install.patch" in recipe["source_patches"]
     assert "0002-import-amdsmi-before-torch.patch" in recipe["source_patches"]
     assert "0003-use-system-triton-package.patch" in recipe["source_patches"]
+    assert "0004-enable-gfx1151-ck-codegen.patch" in recipe["source_patches"]
+    assert "0005-preserve-packaged-ck-submodule-checkout.patch" in recipe["source_patches"]
+    assert "0006-limit-ck-smoke-build-to-forward-d32.patch" in recipe["source_patches"]
+    assert "0007-adapt-ck-fwd-args-layout.patch" in recipe["source_patches"]
 
 
 def test_freshness_policy_covers_flash_attention_branch():
