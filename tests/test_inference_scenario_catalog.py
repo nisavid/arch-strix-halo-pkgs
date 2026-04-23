@@ -754,7 +754,10 @@ def test_qwen3_5_flash_attn_ck_probe_records_validation_contract():
         {"kind": "stdout.contains", "value": "flash_attn_use_triton_rocm False"},
         {"kind": "stdout.contains", "value": "flash_attn_backend_module flash_attn_2_cuda"},
         {"kind": "stdout.contains", "value": "config_head_dim 256"},
-        {"kind": "output.contains", "value": "FlashAttention version not detected."},
+        {
+            "kind": "output.contains",
+            "value": "ROCm flash-attn varlen API is not vLLM-compatible",
+        },
     ):
         assert expected in assertions
 
