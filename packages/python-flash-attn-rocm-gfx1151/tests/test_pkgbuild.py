@@ -17,6 +17,7 @@ PRESERVE_CK_PATCH = PACKAGE / "0005-preserve-packaged-ck-submodule-checkout.patc
 CK_SMOKE_BUILD_PATCH = PACKAGE / "0006-limit-ck-smoke-build-to-forward-d32.patch"
 CK_FWD_ARGS_PATCH = PACKAGE / "0007-adapt-ck-fwd-args-layout.patch"
 CK_DISABLE_PAGED_KV_PATCH = PACKAGE / "0008-disable-ck-varlen-paged-kv-in-forward-smoke.patch"
+CK_VLLM_WRAPPER_PATCH = PACKAGE / "0009-accept-vllm-varlen-wrapper-keywords.patch"
 
 
 def test_pkgbuild_tracks_rocm_flash_attention_ck_experiment():
@@ -24,16 +25,18 @@ def test_pkgbuild_tracks_rocm_flash_attention_ck_experiment():
 
     assert "pkgname=python-flash-attn-rocm-gfx1151" in text
     assert "pkgver=2.8.4" in text
+    assert "pkgrel=5" in text
     assert "3f94643fb41bcedded28c85185a8e11d42ef1592" in text
     assert "url=https://github.com/ROCm/flash-attention" in text
     assert "FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE" in text
     assert "FLASH_ATTENTION_SKIP_CUDA_BUILD=FALSE" in text
     assert "FLASH_ATTENTION_FORCE_BUILD=TRUE" in text
-    assert "FLASH_ATTENTION_CK_GENERATORS=fwd" in text
+    assert "FLASH_ATTENTION_CK_GENERATORS=fwd,fwd_splitkv" in text
     assert "FLASH_ATTENTION_CK_FILTER='*fp16*nbias_nmask*ndropout*'" in text
-    assert "FLASH_ATTENTION_CK_FORWARD_ONLY=TRUE" in text
+    assert "FLASH_ATTENTION_CK_NO_BWD_KVCACHE_API=TRUE" in text
+    assert "FLASH_ATTENTION_CK_FORWARD_ONLY" not in text
     assert "GPU_ARCHS=gfx1151" in text
-    assert "OPT_DIM=32" in text
+    assert "OPT_DIM=32,256" in text
     assert "pip wheel . --no-build-isolation --no-deps" in text
     assert "python -m installer --destdir=\"$pkgdir\"" in text
 
@@ -45,17 +48,20 @@ def test_pkgbuild_carries_gfx1151_ck_experiment():
     ck_smoke_build_patch = CK_SMOKE_BUILD_PATCH.read_text(encoding="utf-8")
     ck_fwd_args_patch = CK_FWD_ARGS_PATCH.read_text(encoding="utf-8")
     ck_disable_paged_kv_patch = CK_DISABLE_PAGED_KV_PATCH.read_text(encoding="utf-8")
+    ck_vllm_wrapper_patch = CK_VLLM_WRAPPER_PATCH.read_text(encoding="utf-8")
 
     assert "0004-enable-gfx1151-ck-codegen.patch" in text
     assert "0005-preserve-packaged-ck-submodule-checkout.patch" in text
     assert "0006-limit-ck-smoke-build-to-forward-d32.patch" in text
     assert "0007-adapt-ck-fwd-args-layout.patch" in text
     assert "0008-disable-ck-varlen-paged-kv-in-forward-smoke.patch" in text
+    assert "0009-accept-vllm-varlen-wrapper-keywords.patch" in text
     assert "FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE" in text
     assert "FLASH_ATTENTION_SKIP_CUDA_BUILD=FALSE" in text
-    assert "FLASH_ATTENTION_CK_GENERATORS=fwd" in text
+    assert "FLASH_ATTENTION_CK_GENERATORS=fwd,fwd_splitkv" in text
     assert "FLASH_ATTENTION_CK_FILTER='*fp16*nbias_nmask*ndropout*'" in text
-    assert "FLASH_ATTENTION_CK_FORWARD_ONLY=TRUE" in text
+    assert "FLASH_ATTENTION_CK_NO_BWD_KVCACHE_API=TRUE" in text
+    assert "FLASH_ATTENTION_CK_FORWARD_ONLY" not in text
     assert "GPU_ARCHS=gfx1151" in text
     assert "03ce21ddcbb75c5ac8630628a913d0b2ced4979a" in text
     assert '"gfx90a", "gfx950", "gfx942", "gfx1151"' in ck_patch
@@ -65,23 +71,44 @@ def test_pkgbuild_carries_gfx1151_ck_experiment():
     assert "csrc/composable_kernel" in preserve_ck_patch
     assert "FLASH_ATTENTION_CK_GENERATORS" in ck_smoke_build_patch
     assert "FLASH_ATTENTION_CK_FILTER" in ck_smoke_build_patch
-    assert "FLASH_ATTENTION_CK_FORWARD_ONLY" in ck_smoke_build_patch
+    assert "FLASH_ATTENTION_CK_NO_BWD_KVCACHE_API" in ck_smoke_build_patch
+    assert "FLASH_ATTENTION_CK_HAS_SPLITKV" in ck_smoke_build_patch
+    assert "FLASH_ATTENTION_CK_FORWARD_ONLY" not in ck_smoke_build_patch
     assert "int num_splits);\n-\n+#endif" in ck_smoke_build_patch
-    assert "+#ifndef FLASH_ATTENTION_CK_FORWARD_ONLY\n         m.def(\"bwd\"" in ck_smoke_build_patch
+    assert "+#ifndef FLASH_ATTENTION_CK_NO_BWD_KVCACHE_API\n         m.def(\"bwd\"" in ck_smoke_build_patch
     assert "m.def(\"fwd\", &mha_fwd" in ck_smoke_build_patch
     assert "m.def(\"varlen_fwd\", &mha_varlen_fwd" in ck_smoke_build_patch
     assert '"csrc/flash_attn_ck/mha_fwd.cpp", "csrc/flash_attn_ck/mha_varlen_fwd.cpp"' in ck_smoke_build_patch
     assert 'if "fwd_appendkv" in ck_generators:' in ck_smoke_build_patch
-    assert 'or "fwd_splitkv" in ck_generators' not in ck_smoke_build_patch
+    assert 'if "fwd_splitkv" in ck_generators:' in ck_smoke_build_patch
     assert "path uses flash_attn_varlen_func" in ck_smoke_build_patch
     assert "m.def(\"bwd\", &mha_bwd" in ck_smoke_build_patch
     assert "block_scale_seqstart_q_ptr" in ck_fwd_args_patch
     assert "batch_stride_q_descale" in ck_fwd_args_patch
     assert "block_scale_size_q" in ck_fwd_args_patch
     assert "csrc/flash_attn_ck/mha_varlen_fwd.cpp" in ck_fwd_args_patch
-    assert "FLASH_ATTENTION_CK_FORWARD_ONLY" in ck_disable_paged_kv_patch
-    assert "does not include paged-KV split-KV kernels" in ck_disable_paged_kv_patch
+    assert "FLASH_ATTENTION_CK_HAS_SPLITKV" in ck_disable_paged_kv_patch
+    assert "does not include generated split-KV kernels" in ck_disable_paged_kv_patch
     assert "fmha_fwd_splitkv" in ck_disable_paged_kv_patch
+    for keyword in [
+        "out=None",
+        "seqused_k=None",
+        "leftpad_k=None",
+        "return_softmax_lse=False",
+        "scheduler_metadata=None",
+        "fa_version=None",
+        "q_descale=None",
+        "k_descale=None",
+        "v_descale=None",
+        "num_splits=None",
+        "s_aux=None",
+    ]:
+        assert keyword in ck_vllm_wrapper_patch
+    assert "return_softmax_lse=True is not supported" in ck_vllm_wrapper_patch
+    assert "s_aux is not supported" in ck_vllm_wrapper_patch
+    assert "seqused_k=seqused_k" in ck_vllm_wrapper_patch
+    assert "leftpad_k=leftpad_k" in ck_vllm_wrapper_patch
+    assert "out.copy_(result)" in ck_vllm_wrapper_patch
 
 
 def test_pkgbuild_uses_repo_owned_rocm_runtime_instead_of_bundled_deps():
@@ -127,6 +154,7 @@ def test_patch_carry_records_rocm_runtime_boundaries():
     assert "0006-limit-ck-smoke-build-to-forward-d32.patch" in recipe["source_patches"]
     assert "0007-adapt-ck-fwd-args-layout.patch" in recipe["source_patches"]
     assert "0008-disable-ck-varlen-paged-kv-in-forward-smoke.patch" in recipe["source_patches"]
+    assert "0009-accept-vllm-varlen-wrapper-keywords.patch" in recipe["source_patches"]
 
 
 def test_freshness_policy_covers_flash_attention_branch():

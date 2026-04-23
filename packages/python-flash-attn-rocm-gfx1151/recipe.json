@@ -1,7 +1,7 @@
 {
   "package_name": "python-flash-attn-rocm-gfx1151",
   "pkgver": "2.8.4",
-  "pkgrel": 4,
+  "pkgrel": 5,
   "description": "FlashAttention ROCm CK backend experiment for the local gfx1151 stack",
   "upstream": {
     "repo": "https://github.com/ROCm/flash-attention",
@@ -22,16 +22,18 @@
     "0005-preserve-packaged-ck-submodule-checkout.patch",
     "0006-limit-ck-smoke-build-to-forward-d32.patch",
     "0007-adapt-ck-fwd-args-layout.patch",
-    "0008-disable-ck-varlen-paged-kv-in-forward-smoke.patch"
+    "0008-disable-ck-varlen-paged-kv-in-forward-smoke.patch",
+    "0009-accept-vllm-varlen-wrapper-keywords.patch"
   ],
   "divergence_notes": [
     "Uses the ROCm FlashAttention main_perf branch because the documented AMD CK and Triton backend paths live there.",
     "Builds the CK extension with FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE, FLASH_ATTENTION_SKIP_CUDA_BUILD=FALSE, and GPU_ARCHS=gfx1151.",
     "Carries the setup.py portion of ROCm/flash-attention branch matthias.gfx1151_ck commit 561341f7e0913fb7dd12c81d9e68501a5a847220 so CK accepts gfx1151 and codegen targets gfx11.",
     "Checks out csrc/composable_kernel at commit 03ce21ddcbb75c5ac8630628a913d0b2ced4979a because that is the matching CK gitlink from the matthias.gfx1151_ck branch and contains gfx11 FMHA codegen factories.",
-    "Limits the CK package experiment to forward-only OPT_DIM=32 codegen with FLASH_ATTENTION_CK_GENERATORS=fwd, FLASH_ATTENTION_CK_FILTER='*fp16*nbias_nmask*ndropout*', and FLASH_ATTENTION_CK_FORWARD_ONLY=TRUE so direct qkvpacked and variable-length smokes can validate CK without compiling unused backward, paged-KV, dtype, mask, or dropout variants.",
+    "Builds a bounded d32+d256 CK surface with FLASH_ATTENTION_CK_GENERATORS=fwd,fwd_splitkv, FLASH_ATTENTION_CK_FILTER='*fp16*nbias_nmask*ndropout*', OPT_DIM=32,256, and FLASH_ATTENTION_CK_NO_BWD_KVCACHE_API=TRUE so direct qkvpacked, variable-length, and paged-KV split-KV smokes can validate CK without compiling unused backward, fwd_kvcache, dtype, mask, or dropout variants.",
     "Adapts the FlashAttention CK forward wrapper to the newer CK fmha_fwd_args layout by filling no-scale/no-sink block-scale and descale fields with zero/null values.",
-    "Rejects paged-KV variable-length CK calls in the forward-only smoke build so the package does not link against omitted split-KV generated kernels.",
+    "Compiles the paged-KV variable-length split-KV branch only when FLASH_ATTENTION_CK_HAS_SPLITKV is defined by the setup patch.",
+    "Extends the public Python flash_attn_varlen_func wrapper to accept the vLLM-shaped CK varlen keyword surface, pass seqused_k and leftpad_k through to CK, copy into an explicit out tensor, and reject unsupported return_softmax_lse=True or s_aux values with clear errors.",
     "Uses repo-owned python-amd-aiter-gfx1151, python-triton-gfx1151, and python-pytorch-opt-rocm-gfx1151 instead of letting setup.py install bundled or PyPI runtime pieces."
   ],
   "update_notes": [

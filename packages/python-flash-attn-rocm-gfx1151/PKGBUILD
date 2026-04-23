@@ -3,7 +3,7 @@
 
 pkgname=python-flash-attn-rocm-gfx1151
 pkgver=2.8.4
-pkgrel=4
+pkgrel=5
 pkgdesc='FlashAttention ROCm CK backend experiment for the local gfx1151 stack'
 arch=('x86_64')
 url=https://github.com/ROCm/flash-attention
@@ -23,8 +23,9 @@ source=('flash-attention::git+https://github.com/ROCm/flash-attention.git#commit
         0005-preserve-packaged-ck-submodule-checkout.patch
         0006-limit-ck-smoke-build-to-forward-d32.patch
         0007-adapt-ck-fwd-args-layout.patch
-        0008-disable-ck-varlen-paged-kv-in-forward-smoke.patch)
-sha256sums=(SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP)
+        0008-disable-ck-varlen-paged-kv-in-forward-smoke.patch
+        0009-accept-vllm-varlen-wrapper-keywords.patch)
+sha256sums=(SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP)
 
 prepare() {
   cd "$srcdir/flash-attention"
@@ -37,7 +38,8 @@ prepare() {
     0005-preserve-packaged-ck-submodule-checkout.patch \
     0006-limit-ck-smoke-build-to-forward-d32.patch \
     0007-adapt-ck-fwd-args-layout.patch \
-    0008-disable-ck-varlen-paged-kv-in-forward-smoke.patch; do
+    0008-disable-ck-varlen-paged-kv-in-forward-smoke.patch \
+    0009-accept-vllm-varlen-wrapper-keywords.patch; do
     if ! patch --dry-run -R -Np1 -i "$srcdir/${_patch}" >/dev/null 2>&1; then
       patch -Np1 -i "$srcdir/${_patch}"
     fi
@@ -55,11 +57,11 @@ build() {
   export FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE
   export FLASH_ATTENTION_SKIP_CUDA_BUILD=FALSE
   export FLASH_ATTENTION_FORCE_BUILD=TRUE
-  export FLASH_ATTENTION_CK_GENERATORS=fwd
+  export FLASH_ATTENTION_CK_GENERATORS=fwd,fwd_splitkv
   export FLASH_ATTENTION_CK_FILTER='*fp16*nbias_nmask*ndropout*'
-  export FLASH_ATTENTION_CK_FORWARD_ONLY=TRUE
+  export FLASH_ATTENTION_CK_NO_BWD_KVCACHE_API=TRUE
   export GPU_ARCHS=gfx1151
-  export OPT_DIM=32
+  export OPT_DIM=32,256
   export ROCM_HOME=/opt/rocm
   export HIP_PATH=/opt/rocm
 

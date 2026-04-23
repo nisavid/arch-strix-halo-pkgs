@@ -6,13 +6,14 @@ Subject: [PATCH] limit CK build to forward generators
 The full CK backend emits thousands of generated HIP translation units. For
 the local gfx1151 experiment, allow the package to request only selected CK
 forward generator blobs and guard the pybind API so import and forward calls
-do not refer to omitted backward or KV-cache symbols. Keep both fixed-length
+do not refer to omitted backward or fwd_kvcache symbols. Keep both fixed-length
 and variable-length forward entrypoints because vLLM's FLASH_ATTN consumer
-path uses flash_attn_varlen_func.
+path uses flash_attn_varlen_func, and define split-KV support when that
+generated surface is requested.
 ---
  csrc/flash_attn_ck/flash_api.cpp |  8 ++++++++
- setup.py                         | 48 ++++++++++++++++++++++++--------
- 2 files changed, 41 insertions(+), 15 deletions(-)
+ setup.py                         | 52 ++++++++++++++++++++++++++------
+ 2 files changed, 45 insertions(+), 15 deletions(-)
 
 diff --git a/csrc/flash_attn_ck/flash_api.cpp b/csrc/flash_attn_ck/flash_api.cpp
 index a0580d52..1f327691 100644
@@ -23,7 +24,7 @@ index a0580d52..1f327691 100644
                 const bool return_softmax,
                 std::optional<at::Generator> gen_);
  
-+#ifndef FLASH_ATTENTION_CK_FORWARD_ONLY
++#ifndef FLASH_ATTENTION_CK_NO_BWD_KVCACHE_API
  std::vector<at::Tensor>
  mha_bwd(const at::Tensor &dout,                   // batch_size x seqlen_q x num_heads, x multiple_of(head_size_og, 8)
          const at::Tensor &q,                      // batch_size x seqlen_q x num_heads x head_size
@@ -38,7 +39,7 @@ index a0580d52..1f327691 100644
          m.doc() = "FlashAttention";
          m.def("fwd", &mha_fwd, "Forward pass");
          m.def("varlen_fwd", &mha_varlen_fwd, "Forward pass (variable length)");
-+#ifndef FLASH_ATTENTION_CK_FORWARD_ONLY
++#ifndef FLASH_ATTENTION_CK_NO_BWD_KVCACHE_API
          m.def("bwd", &mha_bwd, "Backward pass");
          m.def("varlen_bwd", &mha_varlen_bwd, "Backward pass (variable length)");
          m.def("fwd_kvcache", &mha_fwd_kvcache, "Forward pass, with KV-cache");
@@ -98,7 +99,7 @@ index 439d6c7..dee42120 100644
  
          # Check if torch is using hipify v2. Until CK is updated with HIPIFY_V2 macro,
          # we must replace the incorrect APIs.
-@@ -444,13 +455,14 @@ elif not SKIP_CUDA_BUILD and IS_ROCM:
+@@ -444,13 +455,17 @@ elif not SKIP_CUDA_BUILD and IS_ROCM:
  
          rename_cpp_to_cu(sources)
  
@@ -114,9 +115,12 @@ index 439d6c7..dee42120 100644
 +            for source in sources
 +        ]
 +
-+        forward_only_flag = []
-+        if os.getenv("FLASH_ATTENTION_CK_FORWARD_ONLY", "FALSE") == "TRUE":
-+            forward_only_flag = ["-DFLASH_ATTENTION_CK_FORWARD_ONLY"]
++        ck_api_flag = []
++        if os.getenv("FLASH_ATTENTION_CK_NO_BWD_KVCACHE_API", "FALSE") == "TRUE":
++            ck_api_flag = ["-DFLASH_ATTENTION_CK_NO_BWD_KVCACHE_API"]
++        ck_splitkv_flag = []
++        if "fwd_splitkv" in ck_generators:
++            ck_splitkv_flag = ["-DFLASH_ATTENTION_CK_HAS_SPLITKV"]
  
          cc_flag += ["-O3","-std=c++20",
                      "-DCK_TILE_FMHA_FWD_FAST_EXP2=1",
@@ -124,7 +128,7 @@ index 439d6c7..dee42120 100644
                      "-DUSE_PROF_API=1",
                      # "-DFLASHATTENTION_DISABLE_BACKWARD",
                      "-D__HIP_PLATFORM_HCC__=1"]
-+        cc_flag += forward_only_flag
++        cc_flag += ck_api_flag + ck_splitkv_flag
  
          cc_flag += [f"-DCK_TILE_FLOAT_TO_BFLOAT16_DEFAULT={os.environ.get('CK_TILE_FLOAT_TO_BFLOAT16_DEFAULT', 3)}"]
  
@@ -133,7 +137,7 @@ index 439d6c7..dee42120 100644
  
          extra_compile_args = {
 -            "cxx": ["-O3", "-std=c++20"] + generator_flag + maybe_hipify_v2_flag,
-+            "cxx": ["-O3", "-std=c++20"] + generator_flag + maybe_hipify_v2_flag + forward_only_flag,
++            "cxx": ["-O3", "-std=c++20"] + generator_flag + maybe_hipify_v2_flag + ck_api_flag + ck_splitkv_flag,
              "nvcc": cc_flag + generator_flag + maybe_hipify_v2_flag,
          }
  

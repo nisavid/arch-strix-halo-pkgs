@@ -1,0 +1,62 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: nisavid <nisavid@users.noreply.github.com>
+Date: Thu, 23 Apr 2026 11:20:00 -0400
+Subject: [PATCH] accept vLLM varlen wrapper keywords
+
+vLLM's ROCm FlashAttention path calls the public flash_attn_varlen_func with
+a wider paged-KV keyword surface than upstream exposes on this branch. Accept
+those keywords in the Python wrapper, pass seqused_k and leftpad_k to the CK
+varlen extension call, support explicit out tensors by copying the computed
+result, and reject unsupported return_softmax_lse and s_aux requests clearly.
+---
+ flash_attn/flash_attn_interface.py | 35 ++++++++++++++++++++++++++++-
+ 1 file changed, 34 insertions(+), 1 deletion(-)
+
+diff --git i/flash_attn/flash_attn_interface.py w/flash_attn/flash_attn_interface.py
+index 204db00..914c03f 100644
+--- i/flash_attn/flash_attn_interface.py
++++ w/flash_attn/flash_attn_interface.py
+@@ -922,0 +923,2 @@ class FlashAttnVarlenFunc(torch.autograd.Function):
++        seqused_k,
++        leftpad_k,
+@@ -951,0 +954,2 @@ class FlashAttnVarlenFunc(torch.autograd.Function):
++            leftpad_k=leftpad_k,
++            seqused_k=seqused_k,
+@@ -1005 +1009 @@ class FlashAttnVarlenFunc(torch.autograd.Function):
+-        return dq, dk, dv, None, None, None, None, None, None, None, None, None, None, None, None, None, None
++        return dq, dk, dv, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None
+@@ -1396,0 +1401,11 @@ def flash_attn_varlen_func(
++    out=None,
++    seqused_k=None,
++    leftpad_k=None,
++    return_softmax_lse=False,
++    scheduler_metadata=None,
++    fa_version=None,
++    q_descale=None,
++    k_descale=None,
++    v_descale=None,
++    num_splits=None,
++    s_aux=None,
+@@ -1443,0 +1459,3 @@ def flash_attn_varlen_func(
++        out: optional output tensor. When provided, the computed output is copied into it.
++        seqused_k: optional per-sequence used key lengths for paged-KV calls.
++        leftpad_k: optional per-sequence KV left padding for paged-KV calls.
+@@ -1453 +1471,6 @@ def flash_attn_varlen_func(
+-    return FlashAttnVarlenFunc.apply(
++    if return_softmax_lse:
++        raise NotImplementedError("return_softmax_lse=True is not supported by the CK vLLM varlen wrapper")
++    if s_aux is not None:
++        raise NotImplementedError("s_aux is not supported by the CK vLLM varlen wrapper")
++
++    result = FlashAttnVarlenFunc.apply(
+@@ -1469,0 +1493,2 @@ def flash_attn_varlen_func(
++        seqused_k,
++        leftpad_k,
+@@ -1471,0 +1497,7 @@ def flash_attn_varlen_func(
++    if out is not None:
++        if return_attn_probs:
++            out.copy_(result[0])
++            return (out, *result[1:])
++        out.copy_(result)
++        return out
++    return result
