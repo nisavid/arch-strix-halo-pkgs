@@ -60,9 +60,7 @@ reports `flash_attn_version 2.8.4`, `use_triton_rocm True`, and backend module
 The tracked installed scenarios
 `flash-attn.triton-amd.backend-import` and
 `flash-attn.triton-amd.qkvpacked-tiny` passed from
-`python tools/run_inference_scenarios.py --scenario
-flash-attn.triton-amd.backend-import --scenario
-flash-attn.triton-amd.qkvpacked-tiny` at run root
-`docs/worklog/inference-runs/20260422T165857`. The bounded GPU smoke ran
+`python tools/run_inference_scenarios.py --engine flash-attn --tag smoke` at
+run root `docs/worklog/inference-runs/20260422T200347`. The bounded GPU smoke ran
 `flash_attn_qkvpacked_func` on a `(1, 16, 3, 2, 32)` float16 CUDA tensor and
 returned finite `(1, 16, 2, 32)` output.

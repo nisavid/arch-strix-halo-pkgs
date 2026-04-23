@@ -115,12 +115,12 @@ python-flash-attn-rocm-gfx1151` reports `2.8.4-1`. Installed import with
 `use_triton_rocm True`, and backend module
 `aiter.ops.triton._triton_kernels.flash_attn_triton_amd.interface_v2`.
 The tracked installed scenarios `flash-attn.triton-amd.backend-import` and
-`flash-attn.triton-amd.qkvpacked-tiny` passed from `python tools/run_inference_scenarios.py --scenario flash-attn.triton-amd.backend-import --scenario flash-attn.triton-amd.qkvpacked-tiny`
-at run root `docs/worklog/inference-runs/20260422T165857`. The bounded GPU
-smoke ran `flash_attn_qkvpacked_func` on a `(1, 16, 3, 2, 32)` float16 CUDA
-tensor, returned shape `(1, 16, 2, 32)`, and reported finite output. Keep
-vLLM or Transformers promotion behind an installed-engine backend-selection
-proof.
+`flash-attn.triton-amd.qkvpacked-tiny` passed from
+`python tools/run_inference_scenarios.py --engine flash-attn --tag smoke` at
+run root `docs/worklog/inference-runs/20260422T200347`. The bounded GPU smoke
+ran `flash_attn_qkvpacked_func` on a `(1, 16, 3, 2, 32)` float16 CUDA tensor,
+returned shape `(1, 16, 2, 32)`, and reported finite output. Keep vLLM or
+Transformers promotion behind an installed-engine backend-selection proof.
 
 ## Live Host State
 
