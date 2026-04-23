@@ -778,14 +778,14 @@ def test_qwen_flash_attn_ck_dry_run_resolves_command_and_env():
         str(REPO_ROOT / "inference/scenarios"),
         "--dry-run",
         "--scenario",
-        "vllm.qwen3_5.0_8b.text.flash-attn-ck-blocked",
+        "vllm.qwen3_5.0_8b.text.flash-attn-ck",
     )
 
     assert result.returncode == 0
     payload = json.loads(result.stdout)
     planned = payload["planned"][0]
     assert payload["selected_ids"] == [
-        "vllm.qwen3_5.0_8b.text.flash-attn-ck-blocked"
+        "vllm.qwen3_5.0_8b.text.flash-attn-ck"
     ]
     assert planned["command"] == [
         sys.executable,
@@ -797,6 +797,8 @@ def test_qwen_flash_attn_ck_dry_run_resolves_command_and_env():
         "ck",
         "--gpu-memory-utilization",
         "0.55",
+        "--dtype",
+        "float16",
     ]
     assert planned["env"] == {"FLASH_ATTENTION_TRITON_AMD_ENABLE": "FALSE"}
 

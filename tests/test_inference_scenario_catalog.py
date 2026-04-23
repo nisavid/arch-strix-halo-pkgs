@@ -36,7 +36,7 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     assert "vllm.gemma4.e2b.torchao.real-model" in ids
     assert "vllm.qwen3_5.0_8b.text.basic" in ids
     assert "vllm.qwen3_5.0_8b.text.compiled" in ids
-    assert "vllm.qwen3_5.0_8b.text.flash-attn-ck-blocked" in ids
+    assert "vllm.qwen3_5.0_8b.text.flash-attn-ck" in ids
     assert "vllm.qwen3_6.35b-a3b.text.unquantized-moe-no-aiter-control" in ids
     assert (
         "vllm.qwen3_6.35b-a3b.text.unquantized-moe-no-aiter-compiled" in ids
@@ -111,12 +111,8 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     assert "quantization-probe" in tags_by_id["torch-migraphx.resnet-tiny.pt2e"]
     assert "qwen3.5" in tags_by_id["vllm.qwen3_5.0_8b.text.basic"]
     assert "compiled-probe" in tags_by_id["vllm.qwen3_5.0_8b.text.compiled"]
-    assert "kernel-probe" in tags_by_id[
-        "vllm.qwen3_5.0_8b.text.flash-attn-ck-blocked"
-    ]
-    assert "blocked" in tags_by_id[
-        "vllm.qwen3_5.0_8b.text.flash-attn-ck-blocked"
-    ]
+    assert "kernel-probe" in tags_by_id["vllm.qwen3_5.0_8b.text.flash-attn-ck"]
+    assert "blocked" not in tags_by_id["vllm.qwen3_5.0_8b.text.flash-attn-ck"]
     assert "qwen3.6" in tags_by_id[
         "vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-no-aiter-blocked"
     ]
@@ -769,17 +765,17 @@ def test_qwen3_5_flash_attn_ck_probe_records_validation_contract():
     scenarios = load_scenarios(REPO_ROOT / "inference/scenarios")
     by_id = {scenario.id: scenario for scenario in scenarios}
 
-    probe = by_id["vllm.qwen3_5.0_8b.text.flash-attn-ck-blocked"]
+    probe = by_id["vllm.qwen3_5.0_8b.text.flash-attn-ck"]
 
     assert probe.model == "Qwen/Qwen3.5-0.8B"
     assert set(probe.tags) >= {
+        "smoke",
         "qwen",
         "qwen3.5",
         "flash-attention",
         "ck",
         "kernel-probe",
         "exploratory",
-        "blocked",
     }
     assert probe.definition["given"]["tool"] == "qwen_text_smoke"
     assert probe.definition["when"]["argv"] == [
@@ -789,6 +785,8 @@ def test_qwen3_5_flash_attn_ck_probe_records_validation_contract():
         "ck",
         "--gpu-memory-utilization",
         "0.55",
+        "--dtype",
+        "float16",
     ]
     assert probe.definition["when"]["env"] == {
         "FLASH_ATTENTION_TRITON_AMD_ENABLE": "FALSE",
@@ -796,15 +794,14 @@ def test_qwen3_5_flash_attn_ck_probe_records_validation_contract():
 
     assertions = probe.definition["then"]["assert"]
     for expected in (
-        {"kind": "exit_code.equals", "value": 1},
+        {"kind": "exit_code.equals", "value": 0},
         {"kind": "stdout.contains", "value": "attention_backend FLASH_ATTN"},
         {"kind": "stdout.contains", "value": "flash_attn_use_triton_rocm False"},
         {"kind": "stdout.contains", "value": "flash_attn_backend_module flash_attn_2_cuda"},
         {"kind": "stdout.contains", "value": "config_head_dim 256"},
-        {
-            "kind": "output.contains",
-            "value": "ROCm flash-attn varlen API is not vLLM-compatible",
-        },
+        {"kind": "stdout.contains", "value": "llm_init_ok"},
+        {"kind": "stdout.contains", "value": "generation_ok"},
+        {"kind": "stdout.contains", "value": "basic_ok"},
     ):
         assert expected in assertions
 
