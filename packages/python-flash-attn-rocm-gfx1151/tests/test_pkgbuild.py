@@ -25,7 +25,7 @@ def test_pkgbuild_tracks_rocm_flash_attention_ck_experiment():
 
     assert "pkgname=python-flash-attn-rocm-gfx1151" in text
     assert "pkgver=2.8.4" in text
-    assert "pkgrel=5" in text
+    assert "pkgrel=6" in text
     assert "3f94643fb41bcedded28c85185a8e11d42ef1592" in text
     assert "url=https://github.com/ROCm/flash-attention" in text
     assert "FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE" in text
@@ -74,6 +74,15 @@ def test_pkgbuild_carries_gfx1151_ck_experiment():
     assert "FLASH_ATTENTION_CK_NO_BWD_KVCACHE_API" in ck_smoke_build_patch
     assert "FLASH_ATTENTION_CK_HAS_SPLITKV" in ck_smoke_build_patch
     assert "FLASH_ATTENTION_CK_FORWARD_ONLY" not in ck_smoke_build_patch
+    assert 'if os.path.exists("./build"):' in ck_smoke_build_patch
+    assert 'shutil.rmtree("build")' in ck_smoke_build_patch
+    assert 'os.makedirs("build")' in ck_smoke_build_patch
+    assert 'if ck_generator == "fwd" and ck_filter:' in ck_smoke_build_patch
+    assert "gen_args = list(gen_common)" in ck_smoke_build_patch
+    assert 'gen_args += ["--filter", ck_filter]' in ck_smoke_build_patch
+    assert 'subprocess.run(gen_args + ["-d", ck_generator], check=True)' in ck_smoke_build_patch
+    assert "gen_args = gen_common" not in ck_smoke_build_patch
+    assert 'gen_common += ["--filter", ck_filter]' not in ck_smoke_build_patch
     assert "int num_splits);\n-\n+#endif" in ck_smoke_build_patch
     assert "+#ifndef FLASH_ATTENTION_CK_NO_BWD_KVCACHE_API\n         m.def(\"bwd\"" in ck_smoke_build_patch
     assert "m.def(\"fwd\", &mha_fwd" in ck_smoke_build_patch
@@ -155,6 +164,14 @@ def test_patch_carry_records_rocm_runtime_boundaries():
     assert "0007-adapt-ck-fwd-args-layout.patch" in recipe["source_patches"]
     assert "0008-disable-ck-varlen-paged-kv-in-forward-smoke.patch" in recipe["source_patches"]
     assert "0009-accept-vllm-varlen-wrapper-keywords.patch" in recipe["source_patches"]
+    assert any(
+        "keeping the bounded CK filter only on plain fwd generation" in note
+        for note in recipe["divergence_notes"]
+    )
+    assert any(
+        "Clears generated build/ FMHA output before CK codegen runs" in note
+        for note in recipe["divergence_notes"]
+    )
 
 
 def test_freshness_policy_covers_flash_attention_branch():

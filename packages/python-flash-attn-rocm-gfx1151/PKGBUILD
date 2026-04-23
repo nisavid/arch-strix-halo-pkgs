@@ -3,7 +3,7 @@
 
 pkgname=python-flash-attn-rocm-gfx1151
 pkgver=2.8.4
-pkgrel=5
+pkgrel=6
 pkgdesc='FlashAttention ROCm CK backend experiment for the local gfx1151 stack'
 arch=('x86_64')
 url=https://github.com/ROCm/flash-attention

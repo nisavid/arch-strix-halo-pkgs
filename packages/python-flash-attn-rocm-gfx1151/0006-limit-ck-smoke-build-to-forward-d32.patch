@@ -8,12 +8,13 @@ the local gfx1151 experiment, allow the package to request only selected CK
 forward generator blobs and guard the pybind API so import and forward calls
 do not refer to omitted backward or fwd_kvcache symbols. Keep both fixed-length
 and variable-length forward entrypoints because vLLM's FLASH_ATTN consumer
-path uses flash_attn_varlen_func, and define split-KV support when that
-generated surface is requested.
+path uses flash_attn_varlen_func, define split-KV support when that generated
+surface is requested, keep the bounded filter only on plain fwd generation,
+and clear stale generated build output before each codegen pass.
 ---
  csrc/flash_attn_ck/flash_api.cpp |  8 ++++++++
- setup.py                         | 52 ++++++++++++++++++++++++++------
- 2 files changed, 45 insertions(+), 15 deletions(-)
+ setup.py                         | 59 +++++++++++++++++++++++++++++++-------
+ 2 files changed, 52 insertions(+), 15 deletions(-)
 
 diff --git a/csrc/flash_attn_ck/flash_api.cpp b/csrc/flash_attn_ck/flash_api.cpp
 index a0580d52..1f327691 100644
@@ -46,13 +47,35 @@ index a0580d52..1f327691 100644
 +#endif
  }
 diff --git a/setup.py b/setup.py
-index 439d6c7..dee42120 100644
+index 3bf4a90..c6fe093 100644
 --- a/setup.py
 +++ b/setup.py
-@@ -397,11 +397,21 @@ elif not SKIP_CUDA_BUILD and IS_ROCM:
-             elif a.startswith("gfx12"):
-                 codegen_targets.add("gfx12")
-         targets_arg = ["--targets", ",".join(sorted(codegen_targets))] if codegen_targets else []
+@@ -393,14 +393,38 @@ elif not SKIP_CUDA_BUILD and IS_ROCM:
+         ck_dir = "csrc/composable_kernel"
+
+         #use codegen get code dispatch
+-        if not os.path.exists("./build"):
+-            os.makedirs("build")
++        if os.path.exists("./build"):
++            shutil.rmtree("build")
++        os.makedirs("build")
+
+         optdim = os.getenv("OPT_DIM", "32,64,128,256")
+-        subprocess.run([sys.executable, f"{ck_dir}/example/ck_tile/01_fmha/generate.py", "-d", "fwd", "--output_dir", "build", "--receipt", "2", "--optdim", optdim], check=True)
+-        subprocess.run([sys.executable, f"{ck_dir}/example/ck_tile/01_fmha/generate.py", "-d", "fwd_appendkv", "--output_dir", "build", "--receipt", "2", "--optdim", optdim], check=True)
+-        subprocess.run([sys.executable, f"{ck_dir}/example/ck_tile/01_fmha/generate.py", "-d", "fwd_splitkv", "--output_dir", "build", "--receipt", "2", "--optdim", optdim], check=True)
+-        subprocess.run([sys.executable, f"{ck_dir}/example/ck_tile/01_fmha/generate.py", "-d", "bwd", "--output_dir", "build", "--receipt", "2", "--optdim", optdim], check=True)
++        codegen_targets = set()
++        for a in os.getenv("GPU_ARCHS", "native").split(";"):
++            if a == "native":
++                continue
++            if a.startswith("gfx9"):
++                codegen_targets.add("gfx9")
++            elif a.startswith("gfx11"):
++                codegen_targets.add("gfx11")
++            elif a.startswith("gfx12"):
++                codegen_targets.add("gfx12")
++        targets_arg = ["--targets", ",".join(sorted(codegen_targets))] if codegen_targets else []
 +        ck_generators = [
 +            item.strip()
 +            for item in os.getenv("FLASH_ATTENTION_CK_GENERATORS", "fwd,fwd_appendkv,fwd_splitkv,bwd").split(",")
@@ -62,20 +85,17 @@ index 439d6c7..dee42120 100644
 +        assert set(ck_generators) <= valid_ck_generators, (
 +            f"Unsupported FLASH_ATTENTION_CK_GENERATORS entries: {ck_generators}"
 +        )
-         gen_common = [sys.executable, f"{ck_dir}/example/ck_tile/01_fmha/generate.py", "--output_dir", "build", "--receipt", "2", "--optdim", optdim] + targets_arg
++        gen_common = [sys.executable, f"{ck_dir}/example/ck_tile/01_fmha/generate.py", "--output_dir", "build", "--receipt", "2", "--optdim", optdim] + targets_arg
 +        ck_filter = os.getenv("FLASH_ATTENTION_CK_FILTER")
-+        if ck_filter:
-+            gen_common += ["--filter", ck_filter]
--        subprocess.run(gen_common + ["-d", "fwd"], check=True)
--        subprocess.run(gen_common + ["-d", "fwd_appendkv"], check=True)
--        subprocess.run(gen_common + ["-d", "fwd_splitkv"], check=True)
--        subprocess.run(gen_common + ["-d", "bwd"], check=True)
 +        for ck_generator in ck_generators:
-+            subprocess.run(gen_common + ["-d", ck_generator], check=True)
++            gen_args = list(gen_common)
++            if ck_generator == "fwd" and ck_filter:
++                gen_args += ["--filter", ck_filter]
++            subprocess.run(gen_args + ["-d", ck_generator], check=True)
  
          # Check, if ATen/CUDAGeneratorImpl.h is found, otherwise use ATen/cuda/CUDAGeneratorImpl.h
          # See https://github.com/pytorch/pytorch/pull/70650
-@@ -426,15 +438,14 @@ elif not SKIP_CUDA_BUILD and IS_ROCM:
+@@ -425,15 +449,14 @@ elif not SKIP_CUDA_BUILD and IS_ROCM:
          if FORCE_CXX11_ABI:
              torch._C._GLIBCXX_USE_CXX11_ABI = True
  
@@ -99,7 +119,7 @@ index 439d6c7..dee42120 100644
  
          # Check if torch is using hipify v2. Until CK is updated with HIPIFY_V2 macro,
          # we must replace the incorrect APIs.
-@@ -444,13 +455,17 @@ elif not SKIP_CUDA_BUILD and IS_ROCM:
+@@ -443,13 +466,17 @@ elif not SKIP_CUDA_BUILD and IS_ROCM:
  
          rename_cpp_to_cu(sources)
  
@@ -124,7 +144,7 @@ index 439d6c7..dee42120 100644
  
          cc_flag += ["-O3","-std=c++20",
                      "-DCK_TILE_FMHA_FWD_FAST_EXP2=1",
-@@ -466,6 +478,7 @@ elif not SKIP_CUDA_BUILD and IS_ROCM:
+@@ -465,6 +492,7 @@ elif not SKIP_CUDA_BUILD and IS_ROCM:
                      "-DUSE_PROF_API=1",
                      # "-DFLASHATTENTION_DISABLE_BACKWARD",
                      "-D__HIP_PLATFORM_HCC__=1"]
@@ -132,7 +152,7 @@ index 439d6c7..dee42120 100644
  
          cc_flag += [f"-DCK_TILE_FLOAT_TO_BFLOAT16_DEFAULT={os.environ.get('CK_TILE_FLOAT_TO_BFLOAT16_DEFAULT', 3)}"]
  
-@@ -484,7 +497,7 @@ elif not SKIP_CUDA_BUILD and IS_ROCM:
+@@ -483,7 +511,7 @@ elif not SKIP_CUDA_BUILD and IS_ROCM:
              cc_flag += ["-mllvm", "-amdgpu-coerce-illegal-types=1"]
  
          extra_compile_args = {

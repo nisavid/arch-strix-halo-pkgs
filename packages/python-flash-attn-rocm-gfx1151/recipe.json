@@ -1,7 +1,7 @@
 {
   "package_name": "python-flash-attn-rocm-gfx1151",
   "pkgver": "2.8.4",
-  "pkgrel": 5,
+  "pkgrel": 6,
   "description": "FlashAttention ROCm CK backend experiment for the local gfx1151 stack",
   "upstream": {
     "repo": "https://github.com/ROCm/flash-attention",
@@ -31,6 +31,8 @@
     "Carries the setup.py portion of ROCm/flash-attention branch matthias.gfx1151_ck commit 561341f7e0913fb7dd12c81d9e68501a5a847220 so CK accepts gfx1151 and codegen targets gfx11.",
     "Checks out csrc/composable_kernel at commit 03ce21ddcbb75c5ac8630628a913d0b2ced4979a because that is the matching CK gitlink from the matthias.gfx1151_ck branch and contains gfx11 FMHA codegen factories.",
     "Builds a bounded d32+d256 CK surface with FLASH_ATTENTION_CK_GENERATORS=fwd,fwd_splitkv, FLASH_ATTENTION_CK_FILTER='*fp16*nbias_nmask*ndropout*', OPT_DIM=32,256, and FLASH_ATTENTION_CK_NO_BWD_KVCACHE_API=TRUE so direct qkvpacked, variable-length, and paged-KV split-KV smokes can validate CK without compiling unused backward, fwd_kvcache, dtype, mask, or dropout variants.",
+    "Uses the revised CK generator flow by keeping the bounded CK filter only on plain fwd generation because the same filter excludes required gfx11 paged-KV split-KV combine kernels at OPT_DIM=256.",
+    "Clears generated build/ FMHA output before CK codegen runs so reused srcdirs cannot leak stale fmha_*wd translation units into later builds.",
     "Adapts the FlashAttention CK forward wrapper to the newer CK fmha_fwd_args layout by filling no-scale/no-sink block-scale and descale fields with zero/null values.",
     "Compiles the paged-KV variable-length split-KV branch only when FLASH_ATTENTION_CK_HAS_SPLITKV is defined by the setup patch.",
     "Extends the public Python flash_attn_varlen_func wrapper to accept the vLLM-shaped CK varlen keyword surface, pass seqused_k and leftpad_k through to CK, copy into an explicit out tensor, and reject unsupported return_softmax_lse=True or s_aux values with clear errors.",
