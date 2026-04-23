@@ -136,6 +136,25 @@ ran `flash_attn_qkvpacked_func` on a `(1, 16, 3, 2, 32)` float16 CUDA tensor,
 returned shape `(1, 16, 2, 32)`, and reported finite output. Keep vLLM or
 Transformers promotion behind an installed-engine backend-selection proof.
 
+The first vLLM consumer backend-selection gate passed on the reference host. On
+2026-04-23, `tools/amerge build python-vllm-rocm-gfx1151` built
+`python-vllm-rocm-gfx1151 0.19.1-4` with
+`0014-rocm-detect-flash-attn-triton-interface.patch`, which teaches vLLM's ROCm
+platform probe to detect the local `flash_attn.flash_attn_interface` Triton AMD
+binding when `FLASH_ATTENTION_TRITON_AMD_ENABLE=TRUE`. `pacman -Q
+python-vllm-rocm-gfx1151` reports `0.19.1-4`.
+
+The tracked consumer scenario `vllm.flash-attn.triton-amd.vit-wrapper` passed
+from `python tools/run_inference_scenarios.py --scenario
+vllm.flash-attn.triton-amd.vit-wrapper` at run root
+`docs/worklog/inference-runs/20260423T004320`. The scenario selected vLLM's ViT
+`FLASH_ATTN` wrapper, printed `Using Flash Attention (Triton backend) for ViT
+model on RDNA`, confirmed backend module
+`aiter.ops.triton._triton_kernels.flash_attn_triton_amd.interface_v2`, returned
+shape `(1, 16, 2, 32)`, and reported finite output. Keep broader
+FlashAttention consumer claims behind a real model route that actually selects
+and validates this installed backend.
+
 ## Live Host State
 
 The first full live cutover and subsequent native package rebuild completed

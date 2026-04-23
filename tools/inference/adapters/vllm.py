@@ -114,6 +114,17 @@ def build_execution_plan(
             ],
             env=env,
         )
+    if tool == "vllm_flash_attn_smoke.vit-wrapper":
+        return ExecutionPlan(
+            command=[
+                sys.executable,
+                str(repo_root / "tools/vllm_flash_attn_smoke.py"),
+                "--mode",
+                "vit-wrapper",
+                *extra_argv,
+            ],
+            env=env,
+        )
     if tool.startswith("vllm_pooling_smoke."):
         mode = tool.rsplit(".", 1)[1]
         return ExecutionPlan(

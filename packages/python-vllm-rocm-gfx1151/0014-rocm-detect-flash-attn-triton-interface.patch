@@ -1,0 +1,44 @@
+diff --git i/vllm/platforms/rocm.py w/vllm/platforms/rocm.py
+index 96af733..5a6d3d7 100644
+--- i/vllm/platforms/rocm.py
++++ w/vllm/platforms/rocm.py
+@@ -283,20 +283,34 @@ def _can_use_triton_attention(
++def _flash_attn_uses_triton_rocm() -> bool:
++    try:
++        from flash_attn import flash_attn_interface
++    except (AttributeError, ImportError, RuntimeError):
++        return False
++
++    if getattr(flash_attn_interface, "USE_TRITON_ROCM", False) is not True:
++        return False
++
++    backend = getattr(flash_attn_interface, "flash_attn_gpu", None)
++    backend_name = getattr(backend, "__name__", "")
++    return backend_name.startswith(
++        "aiter.ops.triton._triton_kernels.flash_attn_triton_amd"
++    )
++
++
+ @cache
+ def flash_attn_triton_available() -> bool:
+     if not on_gfx1x():
+         return False
+     try:
+         from importlib.util import find_spec
+ 
+-        if find_spec("flash_attn") is None:
+-            return False
+-        if find_spec("flash_attn.flash_attn_triton_amd") is None:
+-            return False
+         if os.environ.get("FLASH_ATTENTION_TRITON_AMD_ENABLE") != "TRUE":
+             logger.info_once(
+                 "Set FLASH_ATTENTION_TRITON_AMD_ENABLE=TRUE to enable "
+                 "Flash Attention Triton backend on RDNA."
+             )
+             return False
+-        return True
++        if find_spec("flash_attn") is None:
++            return False
++        return _flash_attn_uses_triton_rocm()
+     except ImportError:
+         return False

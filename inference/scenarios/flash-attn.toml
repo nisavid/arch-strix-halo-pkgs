@@ -50,3 +50,35 @@ value = "mode qkvpacked-tiny"
 [[scenario.then.assert]]
 kind = "stdout.contains"
 value = "flash_attn_qkvpacked_ok"
+
+[[scenario]]
+id = "vllm.flash-attn.triton-amd.vit-wrapper"
+summary = "vLLM ViT FlashAttention wrapper selects the installed Triton AMD FlashAttention package"
+tags = ["smoke", "vllm", "flash-attention", "triton-amd", "kernel-probe"]
+
+[scenario.given]
+engine = "vllm"
+model = "builtin"
+tool = "vllm_flash_attn_smoke.vit-wrapper"
+
+[scenario.when]
+argv = ["--seqlen", "16", "--heads", "2", "--head-dim", "32"]
+
+[scenario.when.env]
+FLASH_ATTENTION_TRITON_AMD_ENABLE = "TRUE"
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "mode vit-wrapper"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "vit_backend FLASH_ATTN"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "vllm_flash_attn_vit_ok"

@@ -53,6 +53,7 @@ recorded in .aiter-status file ("enabled" or "disabled").
 - Carries a ROCm top-k/top-p sampler guard so large-vocabulary Qwen3.5-family runs use vLLM's existing PyTorch filtering fallback instead of the Triton filter path that faulted the GPU on gfx1151.
 - Carries a padded EAGLE/MTP drafter-count typing patch so Qwen speculative decoding can compile the padded drafter batch Triton kernel on ROCm.
 - Carries the narrow DFlash speculators config parser from vLLM PR #38300 so speculators-format DFlash configs resolve to `DFlashDraftModel`; the package still intentionally stops before the upstream-scale DFlash runtime/model backport.
+- Carries a ROCm FlashAttention Triton availability fix so vLLM detects the local pure-Python `flash_attn` package when it selects AITER's Triton AMD interface.
 - The reference host now uses the local python-torchao-rocm-gfx1151 replacement lane, so the old external python-torchao-rocm failure is historical rather than current state. Generic vLLM startup should still stay TorchAO-clean on non-TorchAO code paths, and the tracked helpers for actual --quantization torchao support remain tools/torchao_vllm_smoke.py plus the Gemma 4 TorchAO scenarios.
 - `tools/torchao_vllm_smoke.py` now covers the tiny no-download checkpoint, a serialized real-model probe, and a real-model online quantization path. After the 2026-04-20 self-hosted rebuild, `vllm.gemma4.e2b.torchao.online-real-model` passed with `quantization=torchao`, `enforce_eager=True`, `ROCM_AITER_UNIFIED_ATTN`, and 10.62 GiB model-loading memory. The serialized real-model scenario is an expected blocked probe: it writes processor files correctly, then fails in TorchAO/vLLM weight loading with `AttributeError: 'Tensor' object has no attribute 'tensor_data_names'`.
 - makepkg -e reuses src/, so build() intentionally reapplies the carried source patches before wheel generation instead of assuming prepare() already ran in the current tree.
@@ -71,6 +72,7 @@ recorded in .aiter-status file ("enabled" or "disabled").
 - Carries a repo-owned Qwen3.5 hybrid/GDN patch lane for the parts of Blackcat Informatics' advisory recipe that are still missing from the maintained vLLM 0.19.1 package source.
 - Carries a repo-owned Qwen speculative-decoding patch lane for the padded EAGLE/MTP drafter batch Triton kernel on ROCm.
 - Carries the narrow upstream DFlash speculators config parser from vLLM PR #38300, while the DFlash runtime/model backport remains outside this package carry.
+- Carries a ROCm FlashAttention Triton availability fix so vLLM detects the local pure-Python `flash_attn` package when it selects AITER's Triton AMD interface.
 
 ## Update Notes
 
@@ -113,6 +115,7 @@ recorded in .aiter-status file ("enabled" or "disabled").
 - Keep the ROCm GCN-arch fallback import-safe on Strix Halo. AMDSMI ASIC-info probes can fail even when the device is visible; that must degrade to torch.cuda probing rather than crashing during module import.
 - Treat the current external python-torchao-rocm _C-extension failure as a host-package defect, not a blocker for this vLLM lane. Generic startup should stay clean after the local TorchAO-import patch, and the remaining follow-up only matters if this repo needs actual TorchAO custom ops or torchao-backed serving paths that truly require the native extension.
 - Treat runtime validation against the live ROCm stack as mandatory; a successful wheel build is not enough.
+- Keep the FlashAttention Triton availability check aligned with the packaged ROCm `flash_attn` interface. The local package does not ship a `flash_attn.flash_attn_triton_amd` module; it exposes AITER's Triton AMD backend through `flash_attn.flash_attn_interface` when `FLASH_ATTENTION_TRITON_AMD_ENABLE=TRUE`.
 
 ## Maintainer Starting Points
 

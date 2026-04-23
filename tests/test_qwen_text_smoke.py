@@ -28,6 +28,7 @@ def test_qwen_text_smoke_exposes_help_without_importing_vllm():
     assert "--quantization" in result.stdout
     assert "--kv-cache-dtype" in result.stdout
     assert "--dtype" in result.stdout
+    assert "--attention-backend" in result.stdout
 
 
 def test_build_llm_kwargs_carries_quantization_probe_options():
@@ -39,6 +40,7 @@ def test_build_llm_kwargs_carries_quantization_probe_options():
         max_num_batched_tokens=64,
         quantization="quark",
         dtype="float16",
+        attention_backend="FLASH_ATTN",
     )
 
     kwargs = build_llm_kwargs("Qwen/Qwen3-0.6B-FP8-KV", args)
@@ -47,6 +49,7 @@ def test_build_llm_kwargs_carries_quantization_probe_options():
     assert kwargs["quantization"] == "quark"
     assert kwargs["kv_cache_dtype"] == "fp8"
     assert kwargs["dtype"] == "float16"
+    assert kwargs["attention_backend"] == "FLASH_ATTN"
     assert kwargs["max_num_batched_tokens"] == 64
     assert kwargs["enforce_eager"] is True
 

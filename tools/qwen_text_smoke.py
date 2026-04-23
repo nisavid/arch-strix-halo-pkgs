@@ -37,6 +37,11 @@ def parse_args() -> argparse.Namespace:
         default="eager",
         help="use eager correctness mode or allow vLLM compilation/cudagraph paths",
     )
+    parser.add_argument(
+        "--attention-backend",
+        default=None,
+        help="optional vLLM attention backend override, such as FLASH_ATTN",
+    )
     return parser.parse_args()
 
 
@@ -129,6 +134,8 @@ def build_llm_kwargs(model: str, args: argparse.Namespace) -> dict[str, Any]:
         llm_kwargs["kv_cache_dtype"] = args.kv_cache_dtype
     if args.dtype:
         llm_kwargs["dtype"] = args.dtype
+    if args.attention_backend:
+        llm_kwargs["attention_backend"] = args.attention_backend
     return llm_kwargs
 
 
@@ -154,6 +161,7 @@ def main() -> None:
     print("quantization", args.quantization)
     print("kv_cache_dtype", args.kv_cache_dtype)
     print("dtype", args.dtype)
+    print("attention_backend", args.attention_backend)
 
     config = AutoConfig.from_pretrained(model, trust_remote_code=True)
     print_config_summary(config)

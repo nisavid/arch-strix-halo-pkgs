@@ -57,6 +57,13 @@ patches and expected-failure findings that were quarantined after the
   - This is not full DFlash runtime support; upstream `qwen3_dflash.py`, DFlash
     proposer/runtime code, and registry integration remain separate follow-up
     work before the blocked DFlash scenario can be promoted.
+- [ROCm FlashAttention Triton interface detection](../packages/python-vllm-rocm-gfx1151/0014-rocm-detect-flash-attn-triton-interface.patch)
+  - Keeps vLLM's RDNA ViT FlashAttention selection aligned with the local
+    pure-Python `flash_attn` package, which exposes AITER's Triton AMD backend
+    through `flash_attn.flash_attn_interface` rather than a
+    `flash_attn.flash_attn_triton_amd` package module.
+  - Guards the first vLLM consumer route for the local
+    `python-flash-attn-rocm-gfx1151` package.
 - Runtime-sensitive vLLM carries that needed post-rebuild confirmation are
   recorded in
   [the rebuild revalidation ledger](maintainers/rebuild-revalidation.md).

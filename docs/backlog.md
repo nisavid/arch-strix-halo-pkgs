@@ -17,8 +17,9 @@
   - Package experiment: FlashAttention Triton; `python-flash-attn-rocm-gfx1151`
     now has build proof, installed import proof, runtime backend-selection
     proof, and a bounded non-autotuned Triton AMD smoke from the installed
-    package. Next gate is the first consumer backend-selection probe that can
-    actually route to the package. Treat
+    package. The first vLLM consumer backend-selection gate also passed through
+    `python-vllm-rocm-gfx1151` `0.19.1-4` and
+    `vllm.flash-attn.triton-amd.vit-wrapper`. Treat
     `FLASH_ATTENTION_TRITON_AMD_AUTOTUNE=TRUE` as a later performance task.
   - Candidate follow-ups: Quark, AWQ, GPTQ, bitsandbytes, xFormers, and
     FBGEMM. Keep each marked as requires host validation and source audit
@@ -138,9 +139,14 @@
     installs it; the installed package imports `flash_attn`, selects AITER's
     Triton AMD backend with `FLASH_ATTENTION_TRITON_AMD_ENABLE=TRUE`, and
     passes a bounded `flash_attn_qkvpacked_func` GPU smoke
-  - next gate: add smoke coverage for the first local consumer engine that can
-    plausibly route to it; keep Transformers or vLLM backend-selection probes
-    only where the installed engine can actually route to that package
+  - the first vLLM consumer gate targets the ViT FlashAttention wrapper
+    because vLLM's text decoder `FLASH_ATTN` path expects vLLM's own
+    FlashAttention ABI and Gemma 4 still rejects forced `FLASH_ATTN` for its
+    head shape; `python-vllm-rocm-gfx1151` `0.19.1-4` carries the ROCm platform
+    detection fix, and `vllm.flash-attn.triton-amd.vit-wrapper` passed on the
+    reference host
+  - next gate: only broaden the consumer claim after a real model route needs
+    FlashAttention Triton AMD and passes with the installed packages
   - treat `FLASH_ATTENTION_TRITON_AMD_AUTOTUNE="TRUE"` as a later performance
     experiment after the non-autotuned import/kernel smoke passes
   - before promoting any FlashAttention instruction or explanation, validate

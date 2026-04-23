@@ -426,6 +426,39 @@ def test_vllm_adapter_builds_pooling_smoke_command(tmp_path: Path):
     assert plan.server_log_path is None
 
 
+def test_vllm_adapter_builds_flash_attn_vit_wrapper_command(tmp_path: Path):
+    plan = build_execution_plan(
+        scenario(
+            {
+                "id": "vllm.flash-attn.triton-amd.vit-wrapper",
+                "given": {
+                    "engine": "vllm",
+                    "model": "builtin",
+                    "tool": "vllm_flash_attn_smoke.vit-wrapper",
+                },
+                "when": {
+                    "argv": ["--seqlen", "16"],
+                    "env": {"FLASH_ATTENTION_TRITON_AMD_ENABLE": "TRUE"},
+                },
+            }
+        ),
+        repo_root=REPO_ROOT,
+        scenario_run_root=tmp_path,
+        model_bindings={},
+    )
+
+    assert plan.command == [
+        sys.executable,
+        str(REPO_ROOT / "tools/vllm_flash_attn_smoke.py"),
+        "--mode",
+        "vit-wrapper",
+        "--seqlen",
+        "16",
+    ]
+    assert plan.env == {"FLASH_ATTENTION_TRITON_AMD_ENABLE": "TRUE"}
+    assert plan.server_log_path is None
+
+
 def test_llamacpp_adapter_builds_generic_cli_command(tmp_path: Path):
     plan = build_execution_plan(
         scenario(

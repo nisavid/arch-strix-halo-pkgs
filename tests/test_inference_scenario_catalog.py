@@ -397,6 +397,7 @@ def test_flash_attn_scenarios_record_triton_amd_contract():
 
     backend_import = by_id["flash-attn.triton-amd.backend-import"]
     qkvpacked_tiny = by_id["flash-attn.triton-amd.qkvpacked-tiny"]
+    vllm_vit = by_id["vllm.flash-attn.triton-amd.vit-wrapper"]
 
     assert backend_import.engine == "flash-attn"
     assert backend_import.model == "builtin"
@@ -430,6 +431,27 @@ def test_flash_attn_scenarios_record_triton_amd_contract():
         "triton-amd",
         "kernel-probe",
     }
+
+    assert vllm_vit.engine == "vllm"
+    assert vllm_vit.model == "builtin"
+    assert vllm_vit.definition["given"]["tool"] == "vllm_flash_attn_smoke.vit-wrapper"
+    assert vllm_vit.definition["when"]["env"] == {
+        "FLASH_ATTENTION_TRITON_AMD_ENABLE": "TRUE",
+    }
+    assert set(vllm_vit.tags) >= {
+        "smoke",
+        "vllm",
+        "flash-attention",
+        "triton-amd",
+        "kernel-probe",
+    }
+    for expected in (
+        {"kind": "exit_code.equals", "value": 0},
+        {"kind": "stdout.contains", "value": "mode vit-wrapper"},
+        {"kind": "stdout.contains", "value": "vit_backend FLASH_ATTN"},
+        {"kind": "stdout.contains", "value": "vllm_flash_attn_vit_ok"},
+    ):
+        assert expected in vllm_vit.definition["then"]["assert"]
 
 
 def test_gemma4_e2b_compiled_probe_records_current_blocker():

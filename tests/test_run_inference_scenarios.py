@@ -610,6 +610,34 @@ def test_flash_attn_backend_import_dry_run_resolves_command_and_env():
     assert planned["env"] == {"FLASH_ATTENTION_TRITON_AMD_ENABLE": "TRUE"}
 
 
+def test_vllm_flash_attn_vit_wrapper_dry_run_resolves_command_and_env():
+    result = run_runner(
+        "--scenario-dir",
+        str(REPO_ROOT / "inference/scenarios"),
+        "--dry-run",
+        "--scenario",
+        "vllm.flash-attn.triton-amd.vit-wrapper",
+    )
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    planned = payload["planned"][0]
+    assert payload["selected_ids"] == ["vllm.flash-attn.triton-amd.vit-wrapper"]
+    assert planned["command"] == [
+        sys.executable,
+        str(REPO_ROOT / "tools/vllm_flash_attn_smoke.py"),
+        "--mode",
+        "vit-wrapper",
+        "--seqlen",
+        "16",
+        "--heads",
+        "2",
+        "--head-dim",
+        "32",
+    ]
+    assert planned["env"] == {"FLASH_ATTENTION_TRITON_AMD_ENABLE": "TRUE"}
+
+
 def test_flash_attn_engine_selector_includes_all_triton_amd_scenarios():
     result = run_runner(
         "--scenario-dir",
