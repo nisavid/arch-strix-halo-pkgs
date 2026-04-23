@@ -93,8 +93,9 @@ release that belongs to the Transformers/Gemma closure lane, not the direct
 FlashAttention build/import gate. The new
 `python-flash-attn-rocm-gfx1151` freshness family records ROCm
 FlashAttention `main_perf` at `3f94643fb41bcedded28c85185a8e11d42ef1592`.
-The reviewed values are recorded in `policies/package-freshness.toml`; rerun
-the daily checker before the next development arc.
+The reviewed values are recorded in `policies/package-freshness.toml`; the
+later llama.cpp b8892 sweep below supersedes this as the current freshness
+boundary.
 
 The next freshness sweep found llama.cpp upstream `b8892`. The
 `llama.cpp-hip-gfx1151` and `llama.cpp-vulkan-gfx1151` package definitions now
@@ -104,7 +105,10 @@ track `b8892` at commit `0d0764dfd257c0ae862525c05778207f87b99b1c`, and
 transcription and tool-call handling changes, WebGPU/SYCL code changes, and
 speculative example checkpointing. No HIP- or Vulkan-specific build-system
 change was found, but the server/tool source delta is relevant to the packaged
-runtime. The refreshed freshness sweep then reported all 24 families current.
+runtime. The 2026-04-22 20:41 EDT refreshed freshness sweep then reported all
+24 families current. Treat package freshness as satisfied until that completed
+sweep is older than 24 hours or invalidated by package policy, package
+directory, checker-logic, or relevant source-metadata changes.
 
 The `python-flash-attn-rocm-gfx1151` package experiment now tracks ROCm
 FlashAttention `main_perf` commit `3f94643fb41bcedded28c85185a8e11d42ef1592`

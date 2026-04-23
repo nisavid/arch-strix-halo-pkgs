@@ -855,6 +855,23 @@ def test_update_workflow_references_freshness_checker():
     assert "exits `3`" in doc
 
 
+def test_update_workflow_preserves_24_hour_freshness_decision():
+    repo = Path(__file__).resolve().parents[1]
+    doc = (repo / "docs/maintainers/update-workflows.md").read_text(
+        encoding="utf-8"
+    )
+    normalized_doc = " ".join(doc.split())
+    current_state = (repo / "docs/maintainers/current-state.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "acted-on completed sweep from the previous 24 hours" in normalized_doc
+    assert "not due again" in normalized_doc
+    assert "preserve the gate's termination condition" in normalized_doc
+    assert "every new arc requires a network rerun" in normalized_doc
+    assert "rerun the daily checker before the next development arc" not in current_state
+
+
 def test_agent_instructions_expose_freshness_cadence():
     repo = Path(__file__).resolve().parents[1]
     agents = (repo / "AGENTS.md").read_text(encoding="utf-8")
