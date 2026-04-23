@@ -101,14 +101,14 @@ submodule commit, and the reduced forward-only `OPT_DIM=32` kernel set.
 `docs/worklog/inference-runs/20260423T071523`, returning finite
 `(1, 16, 2, 32)` output.
 
-Later on 2026-04-23, `python-flash-attn-rocm-gfx1151 2.8.4-4` built with the
-same bounded `OPT_DIM=32` CK surface plus a direct variable-length smoke. The
-extracted package artifact selected `flash_attn_2_cuda` with
-`use_triton_rocm False`, and both direct GPU smokes passed:
-`flash_attn_ck_qkvpacked_ok` for `(1, 16, 2, 32)` output and
-`flash_attn_ck_varlen_ok` for `(16, 2, 32)` output. Host installation is still
-pending; the reference host remains on `2.8.4-2` until the local pacman repo can
-publish and install `2.8.4-4`.
+Later on 2026-04-23, `python-flash-attn-rocm-gfx1151 2.8.4-4` built and
+installed with the same bounded `OPT_DIM=32` CK surface plus a direct
+variable-length smoke. `pacman -Q python-flash-attn-rocm-gfx1151` reports
+`2.8.4-4`. The installed scenarios `flash-attn.ck.backend-import`,
+`flash-attn.ck.qkvpacked-tiny`, and `flash-attn.ck.varlen-tiny` passed at run
+root `docs/worklog/inference-runs/20260423T083738`; CK selected
+`flash_attn_2_cuda` with `use_triton_rocm False`, qkvpacked returned finite
+`(1, 16, 2, 32)` output, and varlen returned finite `(16, 2, 32)` output.
 
 The exploratory vLLM Qwen CK consumer probe is tracked as blocked, not passed.
 It confirms that vLLM sees CK (`flash_attn_2_cuda` and

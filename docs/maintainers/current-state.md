@@ -173,12 +173,14 @@ limits the initial build to a forward-only `OPT_DIM=32` CK smoke surface.
 `(1, 16, 2, 32)` output. Keep CK engine-integration claims pending until an
 installed engine route selects this backend.
 
-The next CK artifact, `python-flash-attn-rocm-gfx1151 2.8.4-4`, now builds and
-passes extracted-artifact GPU smokes for both the fixed qkvpacked d32 path and
-the variable-length d32 path. The newer artifact is not installed on the
-reference host yet; non-interactive `tools/amerge deploy
-python-flash-attn-rocm-gfx1151` is blocked by sudo password prompting, so
-`pacman -Q python-flash-attn-rocm-gfx1151` still reports `2.8.4-2`.
+The next CK artifact, `python-flash-attn-rocm-gfx1151 2.8.4-4`, is now
+installed-validated. `pacman -Q python-flash-attn-rocm-gfx1151` reports
+`2.8.4-4`, and `flash-attn.ck.backend-import`,
+`flash-attn.ck.qkvpacked-tiny`, and `flash-attn.ck.varlen-tiny` passed at run
+root `docs/worklog/inference-runs/20260423T083738`. The installed direct CK
+surface selected `flash_attn_2_cuda` with `use_triton_rocm False`, qkvpacked
+returned finite `(1, 16, 2, 32)` output, and varlen returned finite
+`(16, 2, 32)` output.
 
 The tracked exploratory scenario
 `vllm.qwen3_5.0_8b.text.flash-attn-ck-blocked` records the current vLLM consumer
