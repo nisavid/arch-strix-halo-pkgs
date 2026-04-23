@@ -33,6 +33,7 @@ which divergences are intentional, and where reusable source changes live.
   - `docs/maintainers/update-workflows.md`
   - `policies/recipe-packages.toml`
 - When checking the freshness cadence, open:
+  - `docs/maintainers/current-state.md`
   - `docs/maintainers/update-workflows.md`
   - `policies/package-freshness.toml`
 - When changing TheRock-generated package output, open:
@@ -62,8 +63,11 @@ which divergences are intentional, and where reusable source changes live.
 
 ## Default Package-Update Loop
 
-1. Check the dependency freshness sweep in `docs/maintainers/update-workflows.md`
-   before unrelated backlog work when the 24-hour cadence is due.
+1. Check whether the dependency freshness gate is due before unrelated backlog
+   work. Use `docs/maintainers/current-state.md` for the last completed or
+   acted-on sweep, then apply `docs/maintainers/update-workflows.md`. Do not
+   run `tools/check_package_updates.py` when those docs show a still-fresh
+   completed sweep and no invalidating change.
 2. Identify the change lane.
    Use one of: upstream source change, baseline package change, recipe change,
    or new package.

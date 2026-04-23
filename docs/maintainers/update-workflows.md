@@ -17,13 +17,17 @@ shape may use a one-time pacman downgrade.
 ## 0. Dependency Freshness Sweep
 
 Run this daily sweep after closing a development arc and before starting a new
-one only when the freshness state is due. A matching checker cache entry or an
-acted-on completed sweep from the previous 24 hours means the sweep is not due
-again. The freshness policy lives in `policies/package-freshness.toml`; keep
-every `packages/*/PKGBUILD` directory covered by exactly one freshness family.
+one only when the freshness state is due. Decide whether it is due before
+running the checker. A matching checker cache entry or an acted-on completed
+sweep from the previous 24 hours means the sweep is not due again. A tracked
+completion note in `docs/maintainers/current-state.md` is enough evidence when
+it records the completion time, outcome, and invalidating conditions. The
+freshness policy lives in `policies/package-freshness.toml`; keep every
+`packages/*/PKGBUILD` directory covered by exactly one freshness family.
 
-Use the read-only checker instead of manually visiting release pages. For the
-ordinary daily cadence, let the checker reuse a still-valid cache entry:
+Use the read-only checker instead of manually visiting release pages when the
+gate is due or the recorded state is insufficient. For the ordinary daily
+cadence, let the checker reuse a still-valid cache entry:
 
 ```sh
 tools/check_package_updates.py --json --fail-on actionable
@@ -74,14 +78,14 @@ the checker version, freshness policy, discovered package directories, and any
 `--only` selectors.
 
 Durable closeout notes may point future agents at the freshness gate, but the
-instruction must preserve the gate's termination condition: stop when a valid
-cache entry or acted-on completed sweep keeps the state fresh. If a completed
-sweep has already been triaged and any package updates have been acted on,
-record the concrete completion time, outcome, and invalidating conditions
-instead of implying that every new arc requires a network rerun. The freshness
-state becomes due again after 24 hours or after package policy, package
-directories, checker logic, or relevant source metadata changes in a way that
-the completed sweep no longer covers.
+instruction must preserve the gate's termination condition: stop before running
+the checker when a valid cache entry or acted-on completed sweep keeps the
+state fresh. If a completed sweep has already been triaged and any package
+updates have been acted on, record the concrete completion time, outcome, and
+invalidating conditions instead of implying that every new arc requires a
+network rerun. The freshness state becomes due again after 24 hours or after
+package policy, package directories, checker logic, or relevant source metadata
+changes in a way that the completed sweep no longer covers.
 
 Freshness `recorded` values are the last reviewed upstream or baseline values.
 For branch checks, the recorded value may be newer than the packaged source
