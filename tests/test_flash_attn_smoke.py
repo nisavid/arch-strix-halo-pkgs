@@ -41,7 +41,20 @@ def _install_fake_flash_attn(
         batch_size, seqlen, _, heads, head_dim = qkv.shape
         return types.SimpleNamespace(shape=(batch_size, seqlen, heads, head_dim))
 
+    def flash_attn_varlen_func(q, k, v, **kwargs):
+        del k, v
+        if call_log is not None:
+            call_log.append(
+                "varlen_func:"
+                f"max_q={kwargs.get('max_seqlen_q')},"
+                f"max_k={kwargs.get('max_seqlen_k')},"
+                f"dropout={kwargs.get('dropout_p')},"
+                f"causal={kwargs.get('causal')}"
+            )
+        return types.SimpleNamespace(shape=q.shape)
+
     flash_attn.flash_attn_qkvpacked_func = flash_attn_qkvpacked_func
+    flash_attn.flash_attn_varlen_func = flash_attn_varlen_func
     flash_attn.flash_attn_interface = wrapper
     flash_attn.flash_attn_gpu = backend
 
@@ -89,11 +102,13 @@ def _install_fake_torch(monkeypatch: pytest.MonkeyPatch, *, call_log: list[str] 
             return None
 
     torch.float16 = object()
+    torch.int32 = int
     torch.cuda = FakeCuda()
     torch.device = lambda name: name
     torch.Generator = FakeGenerator
     torch.manual_seed = lambda seed: None
     torch.randn = lambda *shape, **kwargs: FakeTensor(shape, dtype=kwargs.get("dtype"))
+    torch.arange = lambda *args, **kwargs: FakeTensor((len(range(*args)),), dtype=kwargs.get("dtype"))
     torch.isfinite = lambda tensor: FakeFiniteMask()
     torch.Tensor = FakeTensor
 
@@ -266,6 +281,30 @@ def test_ck_qkvpacked_tiny_reports_shape_and_finiteness(monkeypatch, capsys):
     assert "finite True" in output
     assert "flash_attn_ck_qkvpacked_ok" in output
     assert call_log == ["qkvpacked_func:{'dropout_p': 0.0, 'causal': False}", "cuda.synchronize"]
+
+
+def test_ck_varlen_tiny_reports_shape_and_finiteness(monkeypatch, capsys):
+    call_log: list[str] = []
+    _install_fake_flash_attn(
+        monkeypatch,
+        use_triton_rocm=False,
+        call_log=call_log,
+        backend_module_name="flash_attn_2_cuda",
+        backend_file="/fake/flash_attn_2_cuda.so",
+    )
+    _install_fake_torch(monkeypatch, call_log=call_log)
+
+    flash_attn_smoke = _load_smoke_module(monkeypatch)
+
+    rc = flash_attn_smoke.main(["--mode", "ck-varlen-tiny"])
+
+    assert rc == 0
+    output = capsys.readouterr().out
+    assert "mode ck-varlen-tiny" in output
+    assert "shape (16, 2, 32)" in output
+    assert "finite True" in output
+    assert "flash_attn_ck_varlen_ok" in output
+    assert call_log == ["varlen_func:max_q=16,max_k=16,dropout=0.0,causal=False", "cuda.synchronize"]
 
 
 def test_qkvpacked_tiny_propagates_runtime_errors_from_smoke_logic(monkeypatch):

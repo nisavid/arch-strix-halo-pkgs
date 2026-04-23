@@ -60,12 +60,17 @@ PY
 The tracked scenario equivalent is:
 
 ```sh
-python tools/run_inference_scenarios.py --scenario flash-attn.ck.qkvpacked-tiny
+python tools/run_inference_scenarios.py \
+  --scenario flash-attn.ck.qkvpacked-tiny \
+  --scenario flash-attn.ck.varlen-tiny
 ```
 
 Keep any CK engine-integration scenario exploratory until an installed engine
-proves it can route to this backend. Keep Triton AMD validation explicit because
-runtime backend selection still depends on `FLASH_ATTENTION_TRITON_AMD_ENABLE`.
+proves it can route to this backend. vLLM's ROCm V1 `FLASH_ATTN` path currently
+needs a vLLM-side adapter before it can consume upstream ROCm `flash_attn`
+through the same call surface used by CUDA `vllm_flash_attn`. Keep Triton AMD
+validation explicit because runtime backend selection still depends on
+`FLASH_ATTENTION_TRITON_AMD_ENABLE`.
 
 ## Current Evidence
 
@@ -95,3 +100,20 @@ submodule commit, and the reduced forward-only `OPT_DIM=32` kernel set.
 `flash-attn.ck.qkvpacked-tiny` passed at run root
 `docs/worklog/inference-runs/20260423T071523`, returning finite
 `(1, 16, 2, 32)` output.
+
+Later on 2026-04-23, `python-flash-attn-rocm-gfx1151 2.8.4-4` built with the
+same bounded `OPT_DIM=32` CK surface plus a direct variable-length smoke. The
+extracted package artifact selected `flash_attn_2_cuda` with
+`use_triton_rocm False`, and both direct GPU smokes passed:
+`flash_attn_ck_qkvpacked_ok` for `(1, 16, 2, 32)` output and
+`flash_attn_ck_varlen_ok` for `(16, 2, 32)` output. Host installation is still
+pending; the reference host remains on `2.8.4-2` until the local pacman repo can
+publish and install `2.8.4-4`.
+
+The exploratory vLLM Qwen CK consumer probe is tracked as blocked, not passed.
+It confirms that vLLM sees CK (`flash_attn_2_cuda` and
+`FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE`), but vLLM's ROCm V1
+`FLASH_ATTN` backend currently reports `FlashAttention version not detected.`
+The Qwen3.5 0.8B probe also has `config_head_dim 256`, outside this package's
+current d32 CK kernel surface. The expected blocked scenario passed at run root
+`docs/worklog/inference-runs/20260423T082249`.

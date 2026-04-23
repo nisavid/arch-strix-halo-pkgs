@@ -29,6 +29,7 @@ def build_parser() -> argparse.ArgumentParser:
             "qkvpacked-tiny",
             "ck-backend-import",
             "ck-qkvpacked-tiny",
+            "ck-varlen-tiny",
         ),
         help="which FlashAttention smoke path to run",
     )
@@ -170,6 +171,94 @@ def _run_qkvpacked_tiny(
     return 0
 
 
+def _run_varlen_tiny(
+    args: argparse.Namespace,
+    *,
+    backend: str | None = None,
+    mode: str = "varlen-tiny",
+    ok_marker: str = "flash_attn_varlen_ok",
+) -> int:
+    try:
+        torch = _load_torch()
+        flash_attn = _import_flash_attn()
+    except (ImportError, ModuleNotFoundError, RuntimeError, AttributeError) as exc:
+        print(f"flash_attn_import_error {exc}")
+        return 1
+
+    if not torch.cuda.is_available():
+        print("cuda_available False")
+        return 1
+
+    if backend is not None:
+        try:
+            _backend_module(flash_attn, backend=backend)
+        except RuntimeError as exc:
+            print(f"flash_attn_backend_error {exc}")
+            return 1
+
+    if args.seed is not None:
+        torch.manual_seed(args.seed)
+
+    device = torch.device("cuda")
+    generator = None
+    if args.seed is not None and hasattr(torch, "Generator"):
+        generator = torch.Generator(device="cpu").manual_seed(args.seed)
+
+    total_tokens = args.batch_size * args.seqlen
+    q = torch.randn(
+        total_tokens,
+        args.heads,
+        args.head_dim,
+        dtype=torch.float16,
+        generator=generator,
+    ).to(device)
+    k = torch.randn(
+        total_tokens,
+        args.heads,
+        args.head_dim,
+        dtype=torch.float16,
+        generator=generator,
+    ).to(device)
+    v = torch.randn(
+        total_tokens,
+        args.heads,
+        args.head_dim,
+        dtype=torch.float16,
+        generator=generator,
+    ).to(device)
+    cu_seqlens = torch.arange(
+        0,
+        total_tokens + 1,
+        step=args.seqlen,
+        dtype=torch.int32,
+        device=device,
+    )
+
+    output = flash_attn.flash_attn_varlen_func(
+        q,
+        k,
+        v,
+        cu_seqlens_q=cu_seqlens,
+        cu_seqlens_k=cu_seqlens,
+        max_seqlen_q=args.seqlen,
+        max_seqlen_k=args.seqlen,
+        dropout_p=0.0,
+        causal=False,
+    )
+    torch.cuda.synchronize()
+    expected_shape = (total_tokens, args.heads, args.head_dim)
+    actual_shape = tuple(output.shape)
+    finite = _is_finite(torch, output)
+
+    print(f"mode {mode}")
+    print(f"shape {actual_shape}")
+    print(f"finite {finite}")
+    if actual_shape != expected_shape or not finite:
+        return 1
+    print(ok_marker)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     if args.mode == "backend-import":
@@ -192,6 +281,13 @@ def main(argv: list[str] | None = None) -> int:
             backend="ck",
             mode="ck-qkvpacked-tiny",
             ok_marker="flash_attn_ck_qkvpacked_ok",
+        )
+    if args.mode == "ck-varlen-tiny":
+        return _run_varlen_tiny(
+            args,
+            backend="ck",
+            mode="ck-varlen-tiny",
+            ok_marker="flash_attn_ck_varlen_ok",
         )
     raise AssertionError(f"unhandled mode: {args.mode}")
 

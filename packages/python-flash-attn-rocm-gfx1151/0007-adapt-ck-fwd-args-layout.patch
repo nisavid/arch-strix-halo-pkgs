@@ -7,8 +7,9 @@ The gfx1151-capable CK submodule commit adds block-scale, sink, and descale
 fields to fmha_fwd_args. Keep the FlashAttention forward wrapper aligned with
 that layout for the no-scale/no-sink package smoke path.
 ---
- csrc/flash_attn_ck/mha_fwd.cpp | 15 ++++++++++++++-
- 1 file changed, 14 insertions(+), 1 deletion(-)
+ csrc/flash_attn_ck/mha_fwd.cpp        | 15 ++++++++++++++-
+ csrc/flash_attn_ck/mha_varlen_fwd.cpp | 15 ++++++++++++++-
+ 2 files changed, 28 insertions(+), 2 deletions(-)
 
 diff --git a/csrc/flash_attn_ck/mha_fwd.cpp b/csrc/flash_attn_ck/mha_fwd.cpp
 index 0229e777..5ec7d8b2 100644
@@ -55,5 +56,48 @@ index 0229e777..5ec7d8b2 100644
  }
  
  std::vector<at::Tensor>
+diff --git a/csrc/flash_attn_ck/mha_varlen_fwd.cpp b/csrc/flash_attn_ck/mha_varlen_fwd.cpp
+index a4f95c8a..0f33527b 100644
+--- a/csrc/flash_attn_ck/mha_varlen_fwd.cpp
++++ b/csrc/flash_attn_ck/mha_varlen_fwd.cpp
+@@ -113,6 +113,9 @@ fmha_fwd_args get_ck_fmha_varlen_fwd_args(bool has_lse,
+                          nullptr,              // seqlen_k_ptr
+                          nullptr,              // cu_seqlen_q_ptr
+                          nullptr,              // cu_seqlen_kv_ptr
++                         nullptr,              // block_scale_seqstart_q_ptr
++                         nullptr,              // block_scale_seqstart_k_ptr
++                         nullptr,              // sink_ptr
+                          total_q,
+                          total_k,
+                          b,
+@@ -136,6 +139,9 @@ fmha_fwd_args get_ck_fmha_varlen_fwd_args(bool has_lse,
+                          nhead_stride_randval,
+                          nhead_stride_lse,
+                          nhead_stride_o,
++                         0, // nhead_stride_q_descale
++                         0, // nhead_stride_k_descale
++                         0, // nhead_stride_v_descale
+                          batch_stride_q,
+                          batch_stride_k,
+                          batch_stride_v,
+@@ -143,11 +149,17 @@ fmha_fwd_args get_ck_fmha_varlen_fwd_args(bool has_lse,
+                          batch_stride_randval,
+                          batch_stride_lse,
+                          batch_stride_o,
++                         0, // batch_stride_q_descale
++                         0, // batch_stride_k_descale
++                         0, // batch_stride_v_descale
+                          mask.left,
+                          mask.right,
++                         0, // sink_size
+                          static_cast<ck_tile::index_t>(mask.type),
+                          0, // min_seqlen_q
+                          p_dropout,
+                          has_dropout_randval,
+-                         drop_seed_offset};
++                         drop_seed_offset,
++                         0, // block_scale_size_q
++                         0}; // block_scale_size_kv
+ }
 -- 
 2.51.0

@@ -173,6 +173,24 @@ limits the initial build to a forward-only `OPT_DIM=32` CK smoke surface.
 `(1, 16, 2, 32)` output. Keep CK engine-integration claims pending until an
 installed engine route selects this backend.
 
+The next CK artifact, `python-flash-attn-rocm-gfx1151 2.8.4-4`, now builds and
+passes extracted-artifact GPU smokes for both the fixed qkvpacked d32 path and
+the variable-length d32 path. The newer artifact is not installed on the
+reference host yet; non-interactive `tools/amerge deploy
+python-flash-attn-rocm-gfx1151` is blocked by sudo password prompting, so
+`pacman -Q python-flash-attn-rocm-gfx1151` still reports `2.8.4-2`.
+
+The tracked exploratory scenario
+`vllm.qwen3_5.0_8b.text.flash-attn-ck-blocked` records the current vLLM consumer
+boundary. It confirms the local package selects CK (`flash_attn_2_cuda` with
+`FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE`), then fails in vLLM's ROCm V1
+`FLASH_ATTN` backend with `FlashAttention version not detected.` The same probe
+prints `config_head_dim 256`, so Qwen3.5 0.8B also exceeds the current d32 CK
+kernel surface. It passed as an expected blocked scenario at run root
+`docs/worklog/inference-runs/20260423T082249`. Treat the next engine step as a
+vLLM ROCm adapter task plus broader CK kernel coverage, not as a completed
+engine validation.
+
 ## Live Host State
 
 The first full live cutover and subsequent native package rebuild completed

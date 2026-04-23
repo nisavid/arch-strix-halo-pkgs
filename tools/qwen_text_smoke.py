@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter
+import importlib
 import importlib.metadata as metadata
 from pathlib import Path
 from typing import Any
@@ -42,6 +43,12 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="optional vLLM attention backend override, such as FLASH_ATTN",
     )
+    parser.add_argument(
+        "--expected-flash-attn-backend",
+        choices=("ck", "triton-amd"),
+        default=None,
+        help="assert the installed flash_attn backend when --attention-backend FLASH_ATTN",
+    )
     return parser.parse_args()
 
 
@@ -62,10 +69,13 @@ def print_config_summary(config: Any) -> None:
         print("text_config_model_type", getattr(text_config, "model_type", ""))
 
     for attr in (
+        "hidden_size",
+        "num_attention_heads",
         "num_hidden_layers",
         "num_experts",
         "num_experts_per_tok",
         "num_key_value_heads",
+        "head_dim",
     ):
         value = getattr(config, attr, None)
         if value is None and text_config is not None:
@@ -112,6 +122,31 @@ def validate_nonempty_text(text: str) -> None:
     stripped = text.strip()
     if not stripped:
         raise AssertionError("empty model output")
+
+
+def print_flash_attn_backend_summary(expected: str | None = None) -> None:
+    flash_attn = importlib.import_module("flash_attn")
+    wrapper = getattr(flash_attn, "flash_attn_interface", None)
+    if wrapper is None:
+        raise AssertionError("flash_attn.flash_attn_interface missing")
+
+    use_triton_rocm = bool(getattr(wrapper, "USE_TRITON_ROCM", False))
+    backend = getattr(wrapper, "flash_attn_gpu", None)
+    backend_module = getattr(backend, "__name__", "missing")
+    backend_file = getattr(backend, "__file__", "unknown")
+
+    print("flash_attn_use_triton_rocm", use_triton_rocm)
+    print("flash_attn_backend_module", backend_module)
+    print("flash_attn_backend_file", backend_file)
+
+    if expected == "ck":
+        if use_triton_rocm or backend_module != "flash_attn_2_cuda":
+            raise AssertionError("expected FlashAttention CK backend")
+    elif expected == "triton-amd":
+        if not use_triton_rocm or not backend_module.startswith(
+            "aiter.ops.triton._triton_kernels.flash_attn_triton_amd"
+        ):
+            raise AssertionError("expected FlashAttention Triton AMD backend")
 
 
 def build_llm_kwargs(model: str, args: argparse.Namespace) -> dict[str, Any]:
@@ -162,6 +197,9 @@ def main() -> None:
     print("kv_cache_dtype", args.kv_cache_dtype)
     print("dtype", args.dtype)
     print("attention_backend", args.attention_backend)
+    print("expected_flash_attn_backend", args.expected_flash_attn_backend)
+    if args.attention_backend == "FLASH_ATTN" or args.expected_flash_attn_backend:
+        print_flash_attn_backend_summary(args.expected_flash_attn_backend)
 
     config = AutoConfig.from_pretrained(model, trust_remote_code=True)
     print_config_summary(config)

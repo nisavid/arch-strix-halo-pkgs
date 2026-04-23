@@ -13,9 +13,12 @@
     full ResNet50 PT2E quantization flow as optional follow-up if its
     model/data dependencies are needed.
   - Package experiment: FlashAttention CK; source audit, package build, host
-    install, direct CK import proof, and direct CK qkvpacked smoke now pass for
-    `python-flash-attn-rocm-gfx1151 2.8.4-2`. Keep engine integration,
-    performance, and broader kernel coverage as follow-up.
+    install, direct CK import proof, and direct CK qkvpacked smoke pass for
+    `python-flash-attn-rocm-gfx1151 2.8.4-2`. A newer `2.8.4-4` package
+    artifact adds and passes direct d32 variable-length CK smoke, but host
+    installation is still pending. vLLM CK consumer work is blocked on a ROCm
+    V1 `FLASH_ATTN` adapter contract (`FlashAttention version not detected.`)
+    and broader-than-d32 kernel coverage for real Qwen models.
   - Package experiment: FlashAttention Triton; `python-flash-attn-rocm-gfx1151`
     now has build proof, installed import proof, runtime backend-selection
     proof, and a bounded non-autotuned Triton AMD smoke from the installed

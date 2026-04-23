@@ -54,6 +54,53 @@ kind = "stdout.contains"
 value = "basic_ok"
 
 [[scenario]]
+id = "vllm.qwen3_5.0_8b.text.flash-attn-ck-blocked"
+summary = "Qwen3.5 0.8B FlashAttention CK probe blocked by vLLM ROCm V1 adapter coverage"
+tags = ["qwen", "qwen3.5", "flash-attention", "ck", "kernel-probe", "exploratory", "blocked"]
+
+[scenario.given]
+engine = "vllm"
+model = "Qwen/Qwen3.5-0.8B"
+tool = "qwen_text_smoke"
+
+[scenario.when]
+argv = [
+  "--attention-backend",
+  "FLASH_ATTN",
+  "--expected-flash-attn-backend",
+  "ck",
+  "--gpu-memory-utilization",
+  "0.55",
+]
+
+[scenario.when.env]
+FLASH_ATTENTION_TRITON_AMD_ENABLE = "FALSE"
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 1
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "attention_backend FLASH_ATTN"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "flash_attn_use_triton_rocm False"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "flash_attn_backend_module flash_attn_2_cuda"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "config_head_dim 256"
+
+[[scenario.then.assert]]
+kind = "output.contains"
+value = "FlashAttention version not detected."
+
+[[scenario]]
 id = "vllm.qwen3_6.35b-a3b.text.unquantized-moe-no-aiter-control"
 summary = "Qwen3.6 35B-A3B unquantized MoE control with AITER disabled"
 tags = ["smoke", "qwen", "qwen3.6", "moe", "unquantized", "control", "exploratory"]

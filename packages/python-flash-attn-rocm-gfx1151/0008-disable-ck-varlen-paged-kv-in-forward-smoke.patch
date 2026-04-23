@@ -1,0 +1,45 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: nisavid <nisavid@users.noreply.github.com>
+Date: Thu, 23 Apr 2026 07:58:00 -0400
+Subject: [PATCH] disable CK varlen paged-KV in forward smoke build
+
+The bounded gfx1151 CK smoke package only generates the fixed and variable
+forward kernels needed by the direct package and vLLM prefill probes. Reject
+the paged-KV block-table path under FLASH_ATTENTION_CK_FORWARD_ONLY so the
+extension does not link against omitted split-KV generated kernels.
+---
+ csrc/flash_attn_ck/mha_varlen_fwd.cpp | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/csrc/flash_attn_ck/mha_varlen_fwd.cpp b/csrc/flash_attn_ck/mha_varlen_fwd.cpp
+index 0f33527b..604b43b6 100644
+--- a/csrc/flash_attn_ck/mha_varlen_fwd.cpp
++++ b/csrc/flash_attn_ck/mha_varlen_fwd.cpp
+@@ -385,6 +385,9 @@ mha_varlen_fwd(at::Tensor &q,                   // total_q x num_heads x head_si
+ 
+     at::Tensor block_table;
+     const bool paged_KV = block_table_.has_value();
++#ifdef FLASH_ATTENTION_CK_FORWARD_ONLY
++    TORCH_CHECK(!paged_KV, "CK forward-only smoke build does not include paged-KV split-KV kernels");
++#endif
+     if (paged_KV) {
+         block_table = block_table_.value();
+         CHECK_DEVICE(block_table);
+@@ -492,6 +496,7 @@ mha_varlen_fwd(at::Tensor &q,                   // total_q x num_heads x head_si
+ #endif
+         ck_tile::stream_config stream_config{stream};
+ 
++#ifndef FLASH_ATTENTION_CK_FORWARD_ONLY
+         if (paged_KV)
+         {
+             auto traits =
+@@ -532,6 +537,7 @@ mha_varlen_fwd(at::Tensor &q,                   // total_q x num_heads x head_si
+             float t = fmha_fwd_splitkv(traits, args, stream_config);
+             TORCH_CHECK(t >= 0, "invalid argument for fmha_fwd_splitkv");
+         }
+         else
++#endif
+         {
+             auto drop_seed_offset = std::make_pair(rng_state_ptr, rng_state_ptr + 1);
+-- 
+2.51.0

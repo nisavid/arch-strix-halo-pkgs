@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from types import SimpleNamespace
+from types import ModuleType, SimpleNamespace
 import subprocess
 import sys
 
@@ -11,7 +11,11 @@ TOOLS_DIR = REPO_ROOT / "tools"
 if str(TOOLS_DIR) not in sys.path:
     sys.path.insert(0, str(TOOLS_DIR))
 
-from qwen_text_smoke import build_llm_kwargs, print_config_summary
+from qwen_text_smoke import (
+    build_llm_kwargs,
+    print_config_summary,
+    print_flash_attn_backend_summary,
+)
 
 
 def test_qwen_text_smoke_exposes_help_without_importing_vllm():
@@ -29,6 +33,7 @@ def test_qwen_text_smoke_exposes_help_without_importing_vllm():
     assert "--kv-cache-dtype" in result.stdout
     assert "--dtype" in result.stdout
     assert "--attention-backend" in result.stdout
+    assert "--expected-flash-attn-backend" in result.stdout
 
 
 def test_build_llm_kwargs_carries_quantization_probe_options():
@@ -52,6 +57,22 @@ def test_build_llm_kwargs_carries_quantization_probe_options():
     assert kwargs["attention_backend"] == "FLASH_ATTN"
     assert kwargs["max_num_batched_tokens"] == 64
     assert kwargs["enforce_eager"] is True
+
+
+def test_print_flash_attn_backend_summary_accepts_ck_backend(monkeypatch, capsys):
+    backend = ModuleType("flash_attn_2_cuda")
+    backend.__file__ = "/fake/flash_attn_2_cuda.so"
+    wrapper = SimpleNamespace(USE_TRITON_ROCM=False, flash_attn_gpu=backend)
+    flash_attn = ModuleType("flash_attn")
+    flash_attn.flash_attn_interface = wrapper
+    monkeypatch.setitem(sys.modules, "flash_attn", flash_attn)
+
+    print_flash_attn_backend_summary("ck")
+
+    output = capsys.readouterr().out
+    assert "flash_attn_use_triton_rocm False" in output
+    assert "flash_attn_backend_module flash_attn_2_cuda" in output
+    assert "flash_attn_backend_file /fake/flash_attn_2_cuda.so" in output
 
 
 def test_print_config_summary_reports_quantization_presence(capsys):
@@ -85,3 +106,24 @@ def test_print_config_summary_reports_quantization_presence(capsys):
     assert "config_quantization_config {'quant_method': 'fp8'}" in with_output
     assert "config_quantization_config_present true" in empty_output
     assert "config_quantization_config {}" in empty_output
+
+
+def test_print_config_summary_reports_attention_shape(capsys):
+    config = SimpleNamespace(
+        architectures=["Qwen3_5ForConditionalGeneration"],
+        model_type="qwen3_5",
+        text_config=SimpleNamespace(
+            hidden_size=1024,
+            num_attention_heads=8,
+            num_key_value_heads=2,
+            head_dim=256,
+        ),
+    )
+
+    print_config_summary(config)
+
+    output = capsys.readouterr().out
+    assert "config_hidden_size 1024" in output
+    assert "config_num_attention_heads 8" in output
+    assert "config_num_key_value_heads 2" in output
+    assert "config_head_dim 256" in output

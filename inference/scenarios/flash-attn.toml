@@ -52,6 +52,34 @@ kind = "stdout.contains"
 value = "flash_attn_ck_qkvpacked_ok"
 
 [[scenario]]
+id = "flash-attn.ck.varlen-tiny"
+summary = "FlashAttention variable-length forward smoke on the CK path"
+tags = ["smoke", "flash-attention", "ck", "kernel-probe"]
+
+[scenario.given]
+engine = "flash-attn"
+model = "builtin"
+tool = "flash_attn_smoke.ck-varlen-tiny"
+
+[scenario.when]
+argv = ["--seqlen", "16", "--heads", "2", "--head-dim", "32"]
+
+[scenario.when.env]
+FLASH_ATTENTION_TRITON_AMD_ENABLE = "FALSE"
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "mode ck-varlen-tiny"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "flash_attn_ck_varlen_ok"
+
+[[scenario]]
 id = "flash-attn.triton-amd.backend-import"
 summary = "FlashAttention backend import smoke on the Triton AMD path"
 tags = ["smoke", "flash-attention", "triton-amd"]

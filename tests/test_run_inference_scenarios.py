@@ -638,6 +638,34 @@ def test_flash_attn_ck_qkvpacked_tiny_dry_run_resolves_command_and_env():
     assert planned["env"] == {"FLASH_ATTENTION_TRITON_AMD_ENABLE": "FALSE"}
 
 
+def test_flash_attn_ck_varlen_tiny_dry_run_resolves_command_and_env():
+    result = run_runner(
+        "--scenario-dir",
+        str(REPO_ROOT / "inference/scenarios"),
+        "--dry-run",
+        "--scenario",
+        "flash-attn.ck.varlen-tiny",
+    )
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    planned = payload["planned"][0]
+    assert payload["selected_ids"] == ["flash-attn.ck.varlen-tiny"]
+    assert planned["command"] == [
+        sys.executable,
+        str(REPO_ROOT / "tools/flash_attn_smoke.py"),
+        "--mode",
+        "ck-varlen-tiny",
+        "--seqlen",
+        "16",
+        "--heads",
+        "2",
+        "--head-dim",
+        "32",
+    ]
+    assert planned["env"] == {"FLASH_ATTENTION_TRITON_AMD_ENABLE": "FALSE"}
+
+
 def test_vllm_flash_attn_vit_wrapper_dry_run_resolves_command_and_env():
     result = run_runner(
         "--scenario-dir",
@@ -680,9 +708,39 @@ def test_flash_attn_engine_selector_includes_all_triton_amd_scenarios():
     assert payload["selected_ids"] == [
         "flash-attn.ck.backend-import",
         "flash-attn.ck.qkvpacked-tiny",
+        "flash-attn.ck.varlen-tiny",
         "flash-attn.triton-amd.backend-import",
         "flash-attn.triton-amd.qkvpacked-tiny",
     ]
+
+
+def test_qwen_flash_attn_ck_dry_run_resolves_command_and_env():
+    result = run_runner(
+        "--scenario-dir",
+        str(REPO_ROOT / "inference/scenarios"),
+        "--dry-run",
+        "--scenario",
+        "vllm.qwen3_5.0_8b.text.flash-attn-ck-blocked",
+    )
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    planned = payload["planned"][0]
+    assert payload["selected_ids"] == [
+        "vllm.qwen3_5.0_8b.text.flash-attn-ck-blocked"
+    ]
+    assert planned["command"] == [
+        sys.executable,
+        str(REPO_ROOT / "tools/qwen_text_smoke.py"),
+        "Qwen/Qwen3.5-0.8B",
+        "--attention-backend",
+        "FLASH_ATTN",
+        "--expected-flash-attn-backend",
+        "ck",
+        "--gpu-memory-utilization",
+        "0.55",
+    ]
+    assert planned["env"] == {"FLASH_ATTENTION_TRITON_AMD_ENABLE": "FALSE"}
 
 
 def test_quantized_qwen_text_dry_run_includes_probe_options_and_binding(

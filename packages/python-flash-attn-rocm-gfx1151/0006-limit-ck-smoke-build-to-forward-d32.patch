@@ -1,45 +1,44 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: nisavid <nisavid@users.noreply.github.com>
 Date: Thu, 23 Apr 2026 02:20:00 -0400
-Subject: [PATCH] limit CK smoke build to selected forward generators
+Subject: [PATCH] limit CK build to forward generators
 
 The full CK backend emits thousands of generated HIP translation units. For
-the local gfx1151 smoke experiment, allow the package to request only selected
-CK forward generator blobs and guard the pybind API so import and forward
-calls do not refer to omitted backward or KV-cache symbols.
+the local gfx1151 experiment, allow the package to request only selected CK
+forward generator blobs and guard the pybind API so import and forward calls
+do not refer to omitted backward or KV-cache symbols. Keep both fixed-length
+and variable-length forward entrypoints because vLLM's FLASH_ATTN consumer
+path uses flash_attn_varlen_func.
 ---
- csrc/flash_attn_ck/flash_api.cpp |  7 +++++++
+ csrc/flash_attn_ck/flash_api.cpp |  8 ++++++++
  setup.py                         | 48 ++++++++++++++++++++++++--------
- 2 files changed, 40 insertions(+), 15 deletions(-)
+ 2 files changed, 41 insertions(+), 15 deletions(-)
 
 diff --git a/csrc/flash_attn_ck/flash_api.cpp b/csrc/flash_attn_ck/flash_api.cpp
 index a0580d52..1f327691 100644
 --- a/csrc/flash_attn_ck/flash_api.cpp
 +++ b/csrc/flash_attn_ck/flash_api.cpp
-@@ -19,6 +19,7 @@ mha_fwd(at::Tensor &q,         // batch_size x seqlen_q x num_heads x head_size
-         const bool return_softmax,
-         std::optional<at::Generator> gen_);
- 
-+#ifndef FLASH_ATTENTION_CK_FORWARD_ONLY
- std::vector<at::Tensor>
- mha_varlen_fwd(at::Tensor &q,                               // total_q x num_heads x head_size, total_q := \sum_{i=0}^{b} s_i
-                const at::Tensor &k,                         // total_k x num_heads_k x head_size, total_k := \sum_{i=0}^{b} s_i
-@@ -40,7 +41,8 @@ mha_varlen_fwd(at::Tensor &q,                               // total_q x num_hea
+@@ -40,7 +40,8 @@ mha_varlen_fwd(at::Tensor &q,                               // total_q x num_hea
                 const float softcap,
                 const bool return_softmax,
                 std::optional<at::Generator> gen_);
-+#endif
  
++#ifndef FLASH_ATTENTION_CK_FORWARD_ONLY
  std::vector<at::Tensor>
  mha_bwd(const at::Tensor &dout,                   // batch_size x seqlen_q x num_heads, x multiple_of(head_size_og, 8)
          const at::Tensor &q,                      // batch_size x seqlen_q x num_heads x head_size
-@@ -114,9 +116,11 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m)
+@@ -110,13 +111,15 @@ mha_fwd_kvcache(at::Tensor &q,
+                 const float softcap,
+                 bool is_rotary_interleaved, // if true, rotary combines indices 0 & 1, else indices 0 & rotary_dim / 2
+                 int num_splits);
+-
++#endif
  PYBIND11_MODULE(TORCH_EXTENSION_NAME, m)
  {
          m.doc() = "FlashAttention";
          m.def("fwd", &mha_fwd, "Forward pass");
-+#ifndef FLASH_ATTENTION_CK_FORWARD_ONLY
          m.def("varlen_fwd", &mha_varlen_fwd, "Forward pass (variable length)");
++#ifndef FLASH_ATTENTION_CK_FORWARD_ONLY
          m.def("bwd", &mha_bwd, "Backward pass");
          m.def("varlen_bwd", &mha_varlen_bwd, "Backward pass (variable length)");
          m.def("fwd_kvcache", &mha_fwd_kvcache, "Forward pass, with KV-cache");
@@ -75,7 +74,7 @@ index 439d6c7..dee42120 100644
  
          # Check, if ATen/CUDAGeneratorImpl.h is found, otherwise use ATen/cuda/CUDAGeneratorImpl.h
          # See https://github.com/pytorch/pytorch/pull/70650
-@@ -426,15 +438,16 @@ elif not SKIP_CUDA_BUILD and IS_ROCM:
+@@ -426,15 +438,14 @@ elif not SKIP_CUDA_BUILD and IS_ROCM:
          if FORCE_CXX11_ABI:
              torch._C._GLIBCXX_USE_CXX11_ABI = True
  
@@ -90,10 +89,8 @@ index 439d6c7..dee42120 100644
 -        )
 +        sources = ["csrc/flash_attn_ck/flash_api.cpp", "csrc/flash_attn_ck/flash_common.cpp"]
 +        if "fwd" in ck_generators:
-+            sources += ["csrc/flash_attn_ck/mha_fwd.cpp"]
-+            if os.getenv("FLASH_ATTENTION_CK_FORWARD_ONLY", "FALSE") != "TRUE":
-+                sources += ["csrc/flash_attn_ck/mha_varlen_fwd.cpp"]
-+        if "fwd_appendkv" in ck_generators or "fwd_splitkv" in ck_generators:
++            sources += ["csrc/flash_attn_ck/mha_fwd.cpp", "csrc/flash_attn_ck/mha_varlen_fwd.cpp"]
++        if "fwd_appendkv" in ck_generators:
 +            sources += ["csrc/flash_attn_ck/mha_fwd_kvcache.cpp"]
 +        if "bwd" in ck_generators:
 +            sources += ["csrc/flash_attn_ck/mha_bwd.cpp", "csrc/flash_attn_ck/mha_varlen_bwd.cpp"]

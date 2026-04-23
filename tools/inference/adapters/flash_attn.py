@@ -74,6 +74,17 @@ def build_execution_plan(
             ],
             env=env,
         )
+    if tool == "flash_attn_smoke.ck-varlen-tiny":
+        return ExecutionPlan(
+            command=[
+                sys.executable,
+                str(repo_root / "tools/flash_attn_smoke.py"),
+                "--mode",
+                "ck-varlen-tiny",
+                *argv,
+            ],
+            env=env,
+        )
     if tool.startswith("flash_attn_smoke."):
         mode = tool.rsplit(".", 1)[1]
         raise ValueError(f"UNSUPPORTED_FLASH_ATTN_SMOKE_MODE: {mode}")
