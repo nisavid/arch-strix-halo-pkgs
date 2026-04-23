@@ -911,7 +911,7 @@ scaffold_notes = [
 [packages."llama.cpp-hip-gfx1151"]
 recipe_key = "llamacpp"
 template = "llama-cpp"
-upstream_version = "b8881"
+upstream_version = "b8892"
 pkgdesc = "llama.cpp ROCm backend rebuilt for Strix Halo gfx1151"
 url = "https://github.com/ggml-org/llama.cpp"
 license = ["MIT"]
@@ -924,17 +924,17 @@ divergence_notes = [
 ]
 update_notes = [
   "Diff against aur/llama.cpp-hip first during updates, then consult aur/llama.cpp for shared install/dependency conventions outside the ROCm-specific split.",
-  "On 2026-04-22, reviewed upstream llama.cpp b8882 at ca7f7b7b947842384cd8dda4a17a1868f1493a3e. The b8881..b8882 range only adds WebGPU conv2d shader support under `ggml/src/ggml-webgpu`, outside the maintained HIP and Vulkan backend package outputs. Record freshness b8882 without repinning the package source until a supported backend diff or planned rebuild lane exists.",
+  "On 2026-04-23, adopted upstream llama.cpp b8892 at 0d0764dfd257c0ae862525c05778207f87b99b1c. The b8884..b8892 range updates HunyuanVL model loading and mtmd support, server transcription and tool-call handling, WebGPU/SYCL code, and speculative example checkpointing; no HIP-specific build-system change was found, but the server/tool source delta is relevant to the packaged runtime.",
   "Keep the backend-specific package split explicit until benchmarking proves a routing wrapper is worth maintaining."
 ]
 provides = ["llama.cpp-hip-gfx1151", "llama.cpp-hip"]
 conflicts = ["llama.cpp-hip"]
 depends = ["gcc-libs", "glibc", "hip-runtime-amd-gfx1151", "rocm-core-gfx1151"]
 makedepends = ["cmake", "ninja", "rocm-llvm-gfx1151"]
-src_subdir = "llama.cpp-0dedb9ef7a71fcebfa6fb17e0d6e6abd6e893376"
+src_subdir = "llama.cpp-0d0764dfd257c0ae862525c05778207f87b99b1c"
 upstream_name = "llama.cpp"
 baseline_kind = "closest-upstream"
-source_refs = ["llama.cpp-0dedb9ef7a71fcebfa6fb17e0d6e6abd6e893376.tar.gz::https://github.com/ggml-org/llama.cpp/archive/0dedb9ef7a71fcebfa6fb17e0d6e6abd6e893376.tar.gz"]
+source_refs = ["llama.cpp-0d0764dfd257c0ae862525c05778207f87b99b1c.tar.gz::https://github.com/ggml-org/llama.cpp/archive/0d0764dfd257c0ae862525c05778207f87b99b1c.tar.gz"]
 sha256sums = ["SKIP"]
 patches_dir = "patches/llama.cpp-hip-gfx1151"
 scaffold_notes = [
@@ -947,7 +947,7 @@ scaffold_notes = [
 [packages."llama.cpp-vulkan-gfx1151"]
 recipe_key = "llamacpp"
 template = "llama-cpp"
-upstream_version = "b8881"
+upstream_version = "b8892"
 pkgdesc = "llama.cpp Vulkan backend rebuilt for Strix Halo gfx1151"
 url = "https://github.com/ggml-org/llama.cpp"
 license = ["MIT"]
@@ -960,23 +960,23 @@ divergence_notes = [
 ]
 update_notes = [
   "If a maintained source-built aur/llama.cpp-vulkan package appears, switch to it as the authoritative baseline.",
-  "On 2026-04-22, reviewed upstream llama.cpp b8882 at ca7f7b7b947842384cd8dda4a17a1868f1493a3e. The b8881..b8882 range only adds WebGPU conv2d shader support under `ggml/src/ggml-webgpu`, outside the maintained HIP and Vulkan backend package outputs. Record freshness b8882 without repinning the package source until a supported backend diff or planned rebuild lane exists.",
+  "On 2026-04-23, adopted upstream llama.cpp b8892 at 0d0764dfd257c0ae862525c05778207f87b99b1c. The b8884..b8892 range updates HunyuanVL model loading and mtmd support, server transcription and tool-call handling, WebGPU/SYCL code, and speculative example checkpointing; no Vulkan-specific build-system change was found, but the server/tool source delta is relevant to the packaged runtime.",
   "Until then, compare runtime/package expectations against the -bin package and source-build conventions against aur/llama.cpp."
 ]
 provides = ["llama.cpp-vulkan-gfx1151", "llama.cpp-vulkan"]
 conflicts = ["llama.cpp-vulkan"]
 depends = ["gcc-libs", "glibc", "vulkan-icd-loader"]
 makedepends = ["cmake", "ninja", "rocm-llvm-gfx1151", "shaderc", "spirv-headers", "vulkan-headers"]
-src_subdir = "llama.cpp-0dedb9ef7a71fcebfa6fb17e0d6e6abd6e893376"
+src_subdir = "llama.cpp-0d0764dfd257c0ae862525c05778207f87b99b1c"
 upstream_name = "llama.cpp"
 baseline_kind = "closest-upstream"
-source_refs = ["llama.cpp-0dedb9ef7a71fcebfa6fb17e0d6e6abd6e893376.tar.gz::https://github.com/ggml-org/llama.cpp/archive/0dedb9ef7a71fcebfa6fb17e0d6e6abd6e893376.tar.gz"]
+source_refs = ["llama.cpp-0d0764dfd257c0ae862525c05778207f87b99b1c.tar.gz::https://github.com/ggml-org/llama.cpp/archive/0d0764dfd257c0ae862525c05778207f87b99b1c.tar.gz"]
 sha256sums = ["SKIP"]
 patches_dir = "patches/llama.cpp-vulkan-gfx1151"
 scaffold_notes = [
   "Vulkan backend package; backend-specific runtime package, no shared common package in first pass.",
   "Closest current Vulkan reference: AUR llama.cpp-vulkan-bin for backend-specific packaging expectations, with generic AUR llama.cpp kept as the source-build advisory baseline.",
-  "llama.cpp b8881 still includes SPIR-V headers directly from ggml-vulkan.cpp, so source builds require spirv-headers in addition to shaderc and vulkan-headers.",
+  "Vulkan source builds require spirv-headers in addition to shaderc and vulkan-headers.",
   "Pinned to a concrete upstream commit tarball so the first-pass metadata stays reproducible without a full Git history clone.",
   "This scaffold still uses amdclang from rocm-llvm-gfx1151 for consistency with the recipe toolchain even though the Vulkan build does not use HIP offload."
 ]

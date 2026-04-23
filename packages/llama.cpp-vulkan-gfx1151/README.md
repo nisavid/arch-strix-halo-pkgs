@@ -7,7 +7,7 @@
 - Scaffold template: `llama-cpp`
 - Recipe build method: `cmake`
 - Upstream repo: `https://github.com/ggml-org/llama.cpp.git`
-- Package version: `b8881`
+- Package version: `b8892`
 - Recipe revision: `ad42886 (20260317, 8 path commits)`
 - Recipe steps: `33`
 - Recipe dependencies: `therock`
@@ -36,7 +36,7 @@ binaries find their shared libraries without LD_LIBRARY_PATH.
 
 - Vulkan backend package; backend-specific runtime package, no shared common package in first pass.
 - Closest current Vulkan reference: AUR llama.cpp-vulkan-bin for backend-specific packaging expectations, with generic AUR llama.cpp kept as the source-build advisory baseline.
-- llama.cpp b8881 still includes SPIR-V headers directly from ggml-vulkan.cpp, so source builds require spirv-headers in addition to shaderc and vulkan-headers.
+- Vulkan source builds require spirv-headers in addition to shaderc and vulkan-headers.
 - Pinned to a concrete upstream commit tarball so the first-pass metadata stays reproducible without a full Git history clone.
 - This scaffold still uses amdclang from rocm-llvm-gfx1151 for consistency with the recipe toolchain even though the Vulkan build does not use HIP offload.
 
@@ -48,7 +48,7 @@ binaries find their shared libraries without LD_LIBRARY_PATH.
 ## Update Notes
 
 - If a maintained source-built aur/llama.cpp-vulkan package appears, switch to it as the authoritative baseline.
-- On 2026-04-22, reviewed upstream llama.cpp b8882 at ca7f7b7b947842384cd8dda4a17a1868f1493a3e. The b8881..b8882 range only adds WebGPU conv2d shader support under `ggml/src/ggml-webgpu`, outside the maintained HIP and Vulkan backend package outputs. Record freshness b8882 without repinning the package source until a supported backend diff or planned rebuild lane exists.
+- On 2026-04-23, adopted upstream llama.cpp b8892 at 0d0764dfd257c0ae862525c05778207f87b99b1c. The b8884..b8892 range updates HunyuanVL model loading and mtmd support, server transcription and tool-call handling, WebGPU/SYCL code, and speculative example checkpointing; no Vulkan-specific build-system change was found, but the server/tool source delta is relevant to the packaged runtime.
 - Until then, compare runtime/package expectations against the -bin package and source-build conventions against aur/llama.cpp.
 
 ## Maintainer Starting Points

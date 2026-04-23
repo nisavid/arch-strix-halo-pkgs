@@ -7,7 +7,7 @@
 - Scaffold template: `llama-cpp`
 - Recipe build method: `cmake`
 - Upstream repo: `https://github.com/ggml-org/llama.cpp.git`
-- Package version: `b8881`
+- Package version: `b8892`
 - Recipe revision: `ad42886 (20260317, 8 path commits)`
 - Recipe steps: `33`
 - Recipe dependencies: `therock`
@@ -47,7 +47,7 @@ binaries find their shared libraries without LD_LIBRARY_PATH.
 ## Update Notes
 
 - Diff against aur/llama.cpp-hip first during updates, then consult aur/llama.cpp for shared install/dependency conventions outside the ROCm-specific split.
-- On 2026-04-22, reviewed upstream llama.cpp b8882 at ca7f7b7b947842384cd8dda4a17a1868f1493a3e. The b8881..b8882 range only adds WebGPU conv2d shader support under `ggml/src/ggml-webgpu`, outside the maintained HIP and Vulkan backend package outputs. Record freshness b8882 without repinning the package source until a supported backend diff or planned rebuild lane exists.
+- On 2026-04-23, adopted upstream llama.cpp b8892 at 0d0764dfd257c0ae862525c05778207f87b99b1c. The b8884..b8892 range updates HunyuanVL model loading and mtmd support, server transcription and tool-call handling, WebGPU/SYCL code, and speculative example checkpointing; no HIP-specific build-system change was found, but the server/tool source delta is relevant to the packaged runtime.
 - Keep the backend-specific package split explicit until benchmarking proves a routing wrapper is worth maintaining.
 
 ## Maintainer Starting Points

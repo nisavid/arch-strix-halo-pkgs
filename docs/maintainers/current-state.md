@@ -1,6 +1,6 @@
 # Current State
 
-Status as of 2026-04-22.
+Status as of 2026-04-23.
 
 ## Rebuild Revalidation Boundary
 
@@ -95,6 +95,16 @@ FlashAttention build/import gate. The new
 FlashAttention `main_perf` at `3f94643fb41bcedded28c85185a8e11d42ef1592`.
 The reviewed values are recorded in `policies/package-freshness.toml`; rerun
 the daily checker before the next development arc.
+
+The next freshness sweep found llama.cpp upstream `b8892`. The
+`llama.cpp-hip-gfx1151` and `llama.cpp-vulkan-gfx1151` package definitions now
+track `b8892` at commit `0d0764dfd257c0ae862525c05778207f87b99b1c`, and
+`policies/package-freshness.toml` records `b8892` as the reviewed release. The
+`b8884..b8892` review found HunyuanVL model-loading and mtmd updates, server
+transcription and tool-call handling changes, WebGPU/SYCL code changes, and
+speculative example checkpointing. No HIP- or Vulkan-specific build-system
+change was found, but the server/tool source delta is relevant to the packaged
+runtime. The refreshed freshness sweep then reported all 24 families current.
 
 The `python-flash-attn-rocm-gfx1151` package experiment now tracks ROCm
 FlashAttention `main_perf` commit `3f94643fb41bcedded28c85185a8e11d42ef1592`
@@ -307,10 +317,13 @@ package update:
   AOCL-LibM's SCons variables rather than using the recipe's venv-local pip
   bootstrap.
 - `llama.cpp-hip-gfx1151` and `llama.cpp-vulkan-gfx1151` package definitions
-  track upstream llama.cpp `b8881` at commit
-  `0dedb9ef7a71fcebfa6fb17e0d6e6abd6e893376`; the live host reports both HIP
-  and Vulkan packages at `b8881-1`. The Vulkan package metadata includes
-  `spirv-headers` because b8881 includes `spirv/unified1/spirv.hpp` directly.
+  track upstream llama.cpp `b8892` at commit
+  `0d0764dfd257c0ae862525c05778207f87b99b1c`. Local artifacts
+  `llama.cpp-hip-gfx1151-b8892-1-x86_64.pkg.tar.zst` and
+  `llama.cpp-vulkan-gfx1151-b8892-1-x86_64.pkg.tar.zst` build successfully.
+  Host install is pending; until the deploy command completes, the last
+  confirmed live host state remains both HIP and Vulkan packages at `b8881-1`.
+  The Vulkan package metadata still includes `spirv-headers`.
 - `python-mistral-common-gfx1151` tracks PyPI `1.11.0`; the live host reports
   `python-mistral-common-gfx1151 1.11.0-1`.
 - `python-pytorch-opt-rocm-gfx1151` tracks ROCm/pytorch `release/2.11` at
@@ -332,7 +345,10 @@ package update:
   now agree: pacman reports `3.0.0+git0ec280cf-1`, while
   `importlib.metadata.version("triton")` reports `3.0.0+git0ec280cf`.
 - `lemonade-server` package metadata points its system-managed llama.cpp
-  backends at `b8881`; the live host reports `lemonade-server 10.2.0-3`.
+  backends at `b8892`, and local artifact
+  `lemonade-server-10.2.0-4-x86_64.pkg.tar.zst` builds successfully. Host
+  install is pending; until the deploy command completes, the last confirmed
+  live host state remains `lemonade-server 10.2.0-3`.
 
 ## Live Smoke Coverage
 
@@ -1035,8 +1051,8 @@ The following smoke checks have already passed on the reference host:
   - `llamacpp:cpu` remains Lemonade-managed and downloadable
   - `llamacpp:system` is removed from this custom variant
   - the deployed backend table identifies the packaged backends explicitly as:
-    - `System llama-server-hip-gfx1151 llama.cpp b8881`
-    - `System llama-server-vulkan-gfx1151 llama.cpp b8881`
+    - `System llama-server-hip-gfx1151 llama.cpp b8892`
+    - `System llama-server-vulkan-gfx1151 llama.cpp b8892`
 
 ## Known Deferred Follow-up Work
 

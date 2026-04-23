@@ -11,13 +11,13 @@
     "source_patches": [],
     "update_notes": [
       "Diff against aur/llama.cpp-hip first during updates, then consult aur/llama.cpp for shared install/dependency conventions outside the ROCm-specific split.",
-      "On 2026-04-22, reviewed upstream llama.cpp b8882 at ca7f7b7b947842384cd8dda4a17a1868f1493a3e. The b8881..b8882 range only adds WebGPU conv2d shader support under `ggml/src/ggml-webgpu`, outside the maintained HIP and Vulkan backend package outputs. Record freshness b8882 without repinning the package source until a supported backend diff or planned rebuild lane exists.",
+      "On 2026-04-23, adopted upstream llama.cpp b8892 at 0d0764dfd257c0ae862525c05778207f87b99b1c. The b8884..b8892 range updates HunyuanVL model loading and mtmd support, server transcription and tool-call handling, WebGPU/SYCL code, and speculative example checkpointing; no HIP-specific build-system change was found, but the server/tool source delta is relevant to the packaged runtime.",
       "Keep the backend-specific package split explicit until benchmarking proves a routing wrapper is worth maintaining."
     ]
   },
   "name": "llama.cpp-hip-gfx1151",
   "package_name": "llama.cpp-hip-gfx1151",
-  "pkgver": "b8881",
+  "pkgver": "b8892",
   "policy": {
     "advisory_references": [
       "aur/llama.cpp"
@@ -66,17 +66,17 @@
       "SKIP"
     ],
     "source_refs": [
-      "llama.cpp-0dedb9ef7a71fcebfa6fb17e0d6e6abd6e893376.tar.gz::https://github.com/ggml-org/llama.cpp/archive/0dedb9ef7a71fcebfa6fb17e0d6e6abd6e893376.tar.gz"
+      "llama.cpp-0d0764dfd257c0ae862525c05778207f87b99b1c.tar.gz::https://github.com/ggml-org/llama.cpp/archive/0d0764dfd257c0ae862525c05778207f87b99b1c.tar.gz"
     ],
-    "src_subdir": "llama.cpp-0dedb9ef7a71fcebfa6fb17e0d6e6abd6e893376",
+    "src_subdir": "llama.cpp-0d0764dfd257c0ae862525c05778207f87b99b1c",
     "template": "llama-cpp",
     "update_notes": [
       "Diff against aur/llama.cpp-hip first during updates, then consult aur/llama.cpp for shared install/dependency conventions outside the ROCm-specific split.",
-      "On 2026-04-22, reviewed upstream llama.cpp b8882 at ca7f7b7b947842384cd8dda4a17a1868f1493a3e. The b8881..b8882 range only adds WebGPU conv2d shader support under `ggml/src/ggml-webgpu`, outside the maintained HIP and Vulkan backend package outputs. Record freshness b8882 without repinning the package source until a supported backend diff or planned rebuild lane exists.",
+      "On 2026-04-23, adopted upstream llama.cpp b8892 at 0d0764dfd257c0ae862525c05778207f87b99b1c. The b8884..b8892 range updates HunyuanVL model loading and mtmd support, server transcription and tool-call handling, WebGPU/SYCL code, and speculative example checkpointing; no HIP-specific build-system change was found, but the server/tool source delta is relevant to the packaged runtime.",
       "Keep the backend-specific package split explicit until benchmarking proves a routing wrapper is worth maintaining."
     ],
     "upstream_name": "llama.cpp",
-    "upstream_version": "b8881",
+    "upstream_version": "b8892",
     "url": "https://github.com/ggml-org/llama.cpp"
   },
   "provenance": {

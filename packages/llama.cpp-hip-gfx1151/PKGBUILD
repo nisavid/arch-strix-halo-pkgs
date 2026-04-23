@@ -5,7 +5,7 @@
 # Package recipe key: llamacpp
 
 pkgname=llama.cpp-hip-gfx1151
-pkgver=b8881
+pkgver=b8892
 pkgrel=1
 pkgdesc='llama.cpp ROCm backend rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
@@ -18,11 +18,11 @@ options=()
 provides=(llama.cpp-hip-gfx1151 llama.cpp-hip)
 conflicts=(llama.cpp-hip)
 replaces=()
-source=(llama.cpp-0dedb9ef7a71fcebfa6fb17e0d6e6abd6e893376.tar.gz::https://github.com/ggml-org/llama.cpp/archive/0dedb9ef7a71fcebfa6fb17e0d6e6abd6e893376.tar.gz)
+source=(llama.cpp-0d0764dfd257c0ae862525c05778207f87b99b1c.tar.gz::https://github.com/ggml-org/llama.cpp/archive/0d0764dfd257c0ae862525c05778207f87b99b1c.tar.gz)
 sha256sums=(SKIP)
 
 build() {
-  cd "$srcdir/llama.cpp-0dedb9ef7a71fcebfa6fb17e0d6e6abd6e893376"
+  cd "$srcdir/llama.cpp-0d0764dfd257c0ae862525c05778207f87b99b1c"
 
   _setup_compiler_env() {
   local _compiler_root="/opt/rocm/lib/llvm/bin"
@@ -36,6 +36,8 @@ build() {
     done
     export PATH="${_ccache_dir}:$PATH"
     export CCACHE_BASEDIR="${CCACHE_BASEDIR:-$srcdir}"
+    export CCACHE_DIR="${CCACHE_DIR:-$srcdir/.ccache/store}"
+    export CCACHE_TEMPDIR="${CCACHE_TEMPDIR:-$srcdir/.ccache/tmp}"
     export CCACHE_NOCPP2=1
     export CCACHE_PATH="${_compiler_root}:/opt/rocm/bin:/usr/bin"
     export CC=amdclang
@@ -96,7 +98,7 @@ build() {
 }
 
 package() {
-  cd "$srcdir/llama.cpp-0dedb9ef7a71fcebfa6fb17e0d6e6abd6e893376"
+  cd "$srcdir/llama.cpp-0d0764dfd257c0ae862525c05778207f87b99b1c"
   local build_root="$srcdir/build-hip"
   local install_root="/opt/llama.cpp-hip-gfx1151"
 
@@ -122,5 +124,5 @@ exec /opt/llama.cpp-hip-gfx1151/bin/${_base} "\$@"
 EOF
     done
   fi
-  install -Dm644 "$srcdir/llama.cpp-0dedb9ef7a71fcebfa6fb17e0d6e6abd6e893376/LICENSE" "$pkgdir/usr/share/licenses/llama.cpp-hip-gfx1151/LICENSE"
+  install -Dm644 "$srcdir/llama.cpp-0d0764dfd257c0ae862525c05778207f87b99b1c/LICENSE" "$pkgdir/usr/share/licenses/llama.cpp-hip-gfx1151/LICENSE"
 }

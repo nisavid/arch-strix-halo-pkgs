@@ -10,7 +10,7 @@ CONF = (
     / "packages/lemonade-server/pkg/lemonade-server/etc/lemonade/conf.d/10-llamacpp-gfx1151.conf"
 )
 PKGINFO = REPO_ROOT / "packages/lemonade-server/pkg/lemonade-server/.PKGINFO"
-EXPECTED_LLAMACPP_VERSION = "b8881"
+EXPECTED_LLAMACPP_VERSION = "b8892"
 EXPECTED_RELEASE_URL = (
     "https://github.com/ggml-org/llama.cpp/releases/tag/"
     f"{EXPECTED_LLAMACPP_VERSION}"
