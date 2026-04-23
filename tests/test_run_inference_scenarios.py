@@ -666,6 +666,62 @@ def test_flash_attn_ck_varlen_tiny_dry_run_resolves_command_and_env():
     assert planned["env"] == {"FLASH_ATTENTION_TRITON_AMD_ENABLE": "FALSE"}
 
 
+def test_flash_attn_ck_varlen_tiny_d256_dry_run_resolves_command_and_env():
+    result = run_runner(
+        "--scenario-dir",
+        str(REPO_ROOT / "inference/scenarios"),
+        "--dry-run",
+        "--scenario",
+        "flash-attn.ck.varlen-tiny-d256",
+    )
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    planned = payload["planned"][0]
+    assert payload["selected_ids"] == ["flash-attn.ck.varlen-tiny-d256"]
+    assert planned["command"] == [
+        sys.executable,
+        str(REPO_ROOT / "tools/flash_attn_smoke.py"),
+        "--mode",
+        "ck-varlen-tiny",
+        "--seqlen",
+        "16",
+        "--heads",
+        "2",
+        "--head-dim",
+        "256",
+    ]
+    assert planned["env"] == {"FLASH_ATTENTION_TRITON_AMD_ENABLE": "FALSE"}
+
+
+def test_flash_attn_ck_varlen_paged_kv_dry_run_resolves_command_and_env():
+    result = run_runner(
+        "--scenario-dir",
+        str(REPO_ROOT / "inference/scenarios"),
+        "--dry-run",
+        "--scenario",
+        "flash-attn.ck.varlen-paged-kv",
+    )
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    planned = payload["planned"][0]
+    assert payload["selected_ids"] == ["flash-attn.ck.varlen-paged-kv"]
+    assert planned["command"] == [
+        sys.executable,
+        str(REPO_ROOT / "tools/flash_attn_smoke.py"),
+        "--mode",
+        "ck-varlen-paged-kv",
+        "--seqlen",
+        "16",
+        "--heads",
+        "2",
+        "--head-dim",
+        "256",
+    ]
+    assert planned["env"] == {"FLASH_ATTENTION_TRITON_AMD_ENABLE": "FALSE"}
+
+
 def test_vllm_flash_attn_vit_wrapper_dry_run_resolves_command_and_env():
     result = run_runner(
         "--scenario-dir",
@@ -694,7 +750,7 @@ def test_vllm_flash_attn_vit_wrapper_dry_run_resolves_command_and_env():
     assert planned["env"] == {"FLASH_ATTENTION_TRITON_AMD_ENABLE": "TRUE"}
 
 
-def test_flash_attn_engine_selector_includes_all_triton_amd_scenarios():
+def test_flash_attn_engine_selector_includes_ck_and_triton_scenarios():
     result = run_runner(
         "--scenario-dir",
         str(REPO_ROOT / "inference/scenarios"),
@@ -709,6 +765,8 @@ def test_flash_attn_engine_selector_includes_all_triton_amd_scenarios():
         "flash-attn.ck.backend-import",
         "flash-attn.ck.qkvpacked-tiny",
         "flash-attn.ck.varlen-tiny",
+        "flash-attn.ck.varlen-tiny-d256",
+        "flash-attn.ck.varlen-paged-kv",
         "flash-attn.triton-amd.backend-import",
         "flash-attn.triton-amd.qkvpacked-tiny",
     ]

@@ -42,15 +42,36 @@ def _install_fake_flash_attn(
         return types.SimpleNamespace(shape=(batch_size, seqlen, heads, head_dim))
 
     def flash_attn_varlen_func(q, k, v, **kwargs):
-        del k, v
         if call_log is not None:
-            call_log.append(
-                "varlen_func:"
-                f"max_q={kwargs.get('max_seqlen_q')},"
-                f"max_k={kwargs.get('max_seqlen_k')},"
-                f"dropout={kwargs.get('dropout_p')},"
-                f"causal={kwargs.get('causal')}"
-            )
+            block_table = kwargs.get("block_table")
+            seqused_k = kwargs.get("seqused_k")
+            leftpad_k = kwargs.get("leftpad_k")
+            block_table_shape = None if block_table is None else block_table.shape
+            if block_table is None:
+                call_log.append(
+                    "varlen_func:"
+                    f"max_q={kwargs.get('max_seqlen_q')},"
+                    f"max_k={kwargs.get('max_seqlen_k')},"
+                    f"dropout={kwargs.get('dropout_p')},"
+                    f"causal={kwargs.get('causal')},"
+                    f"block_table_shape={block_table_shape}"
+                )
+            else:
+                seqused_k_shape = None if seqused_k is None else seqused_k.shape
+                leftpad_k_shape = None if leftpad_k is None else leftpad_k.shape
+                call_log.append(
+                    "varlen_paged_kv_func:"
+                    f"q_shape={q.shape},"
+                    f"k_shape={k.shape},"
+                    f"v_shape={v.shape},"
+                    f"block_table_shape={block_table_shape},"
+                    f"seqused_k_shape={seqused_k_shape},"
+                    f"leftpad_k_shape={leftpad_k_shape},"
+                    f"max_q={kwargs.get('max_seqlen_q')},"
+                    f"max_k={kwargs.get('max_seqlen_k')},"
+                    f"dropout={kwargs.get('dropout_p')},"
+                    f"causal={kwargs.get('causal')}"
+                )
         return types.SimpleNamespace(shape=q.shape)
 
     flash_attn.flash_attn_qkvpacked_func = flash_attn_qkvpacked_func
@@ -109,6 +130,7 @@ def _install_fake_torch(monkeypatch: pytest.MonkeyPatch, *, call_log: list[str] 
     torch.manual_seed = lambda seed: None
     torch.randn = lambda *shape, **kwargs: FakeTensor(shape, dtype=kwargs.get("dtype"))
     torch.arange = lambda *args, **kwargs: FakeTensor((len(range(*args)),), dtype=kwargs.get("dtype"))
+    torch.full = lambda shape, fill_value, **kwargs: FakeTensor(shape, dtype=kwargs.get("dtype"))
     torch.isfinite = lambda tensor: FakeFiniteMask()
     torch.Tensor = FakeTensor
 
@@ -304,7 +326,94 @@ def test_ck_varlen_tiny_reports_shape_and_finiteness(monkeypatch, capsys):
     assert "shape (16, 2, 32)" in output
     assert "finite True" in output
     assert "flash_attn_ck_varlen_ok" in output
-    assert call_log == ["varlen_func:max_q=16,max_k=16,dropout=0.0,causal=False", "cuda.synchronize"]
+    assert call_log == [
+        "varlen_func:max_q=16,max_k=16,dropout=0.0,causal=False,block_table_shape=None",
+        "cuda.synchronize",
+    ]
+
+
+def test_ck_varlen_tiny_accepts_head_dim_256(monkeypatch, capsys):
+    call_log: list[str] = []
+    _install_fake_flash_attn(
+        monkeypatch,
+        use_triton_rocm=False,
+        call_log=call_log,
+        backend_module_name="flash_attn_2_cuda",
+        backend_file="/fake/flash_attn_2_cuda.so",
+    )
+    _install_fake_torch(monkeypatch, call_log=call_log)
+
+    flash_attn_smoke = _load_smoke_module(monkeypatch)
+
+    rc = flash_attn_smoke.main(["--mode", "ck-varlen-tiny", "--head-dim", "256"])
+
+    assert rc == 0
+    output = capsys.readouterr().out
+    assert "mode ck-varlen-tiny" in output
+    assert "shape (16, 2, 256)" in output
+    assert "finite True" in output
+    assert "flash_attn_ck_varlen_ok" in output
+    assert call_log == [
+        "varlen_func:max_q=16,max_k=16,dropout=0.0,causal=False,block_table_shape=None",
+        "cuda.synchronize",
+    ]
+
+
+def test_ck_varlen_paged_kv_reports_shape_and_block_table(monkeypatch, capsys):
+    call_log: list[str] = []
+    _install_fake_flash_attn(
+        monkeypatch,
+        use_triton_rocm=False,
+        call_log=call_log,
+        backend_module_name="flash_attn_2_cuda",
+        backend_file="/fake/flash_attn_2_cuda.so",
+    )
+    _install_fake_torch(monkeypatch, call_log=call_log)
+
+    flash_attn_smoke = _load_smoke_module(monkeypatch)
+
+    rc = flash_attn_smoke.main(["--mode", "ck-varlen-paged-kv", "--head-dim", "256"])
+
+    assert rc == 0
+    output = capsys.readouterr().out
+    assert "mode ck-varlen-paged-kv" in output
+    assert "shape (16, 2, 256)" in output
+    assert "finite True" in output
+    assert "flash_attn_ck_varlen_paged_kv_ok" in output
+    assert call_log == [
+        "varlen_paged_kv_func:"
+        "q_shape=(16, 2, 256),"
+        "k_shape=(1, 256, 2, 256),"
+        "v_shape=(1, 256, 2, 256),"
+        "block_table_shape=(1, 1),"
+        "seqused_k_shape=(1,),"
+        "leftpad_k_shape=None,"
+        "max_q=16,"
+        "max_k=16,"
+        "dropout=0.0,"
+        "causal=False",
+        "cuda.synchronize",
+    ]
+
+
+def test_ck_varlen_paged_kv_rejects_unsupported_shape(monkeypatch, capsys):
+    _install_fake_flash_attn(
+        monkeypatch,
+        use_triton_rocm=False,
+        backend_module_name="flash_attn_2_cuda",
+        backend_file="/fake/flash_attn_2_cuda.so",
+    )
+    _install_fake_torch(monkeypatch)
+
+    flash_attn_smoke = _load_smoke_module(monkeypatch)
+
+    rc = flash_attn_smoke.main(
+        ["--mode", "ck-varlen-paged-kv", "--batch-size", "2", "--seqlen", "512"]
+    )
+
+    assert rc != 0
+    output = capsys.readouterr().out
+    assert "ck-varlen-paged-kv requires batch_size=1 and seqlen<=256" in output
 
 
 def test_qkvpacked_tiny_propagates_runtime_errors_from_smoke_logic(monkeypatch):

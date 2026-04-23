@@ -30,6 +30,7 @@ def build_parser() -> argparse.ArgumentParser:
             "ck-backend-import",
             "ck-qkvpacked-tiny",
             "ck-varlen-tiny",
+            "ck-varlen-paged-kv",
         ),
         help="which FlashAttention smoke path to run",
     )
@@ -177,6 +178,7 @@ def _run_varlen_tiny(
     backend: str | None = None,
     mode: str = "varlen-tiny",
     ok_marker: str = "flash_attn_varlen_ok",
+    paged_kv: bool = False,
 ) -> int:
     try:
         torch = _load_torch()
@@ -212,20 +214,39 @@ def _run_varlen_tiny(
         dtype=torch.float16,
         generator=generator,
     ).to(device)
-    k = torch.randn(
-        total_tokens,
-        args.heads,
-        args.head_dim,
-        dtype=torch.float16,
-        generator=generator,
-    ).to(device)
-    v = torch.randn(
-        total_tokens,
-        args.heads,
-        args.head_dim,
-        dtype=torch.float16,
-        generator=generator,
-    ).to(device)
+    if paged_kv:
+        page_block_size = 256
+        k = torch.randn(
+            args.batch_size,
+            page_block_size,
+            args.heads,
+            args.head_dim,
+            dtype=torch.float16,
+            generator=generator,
+        ).to(device)
+        v = torch.randn(
+            args.batch_size,
+            page_block_size,
+            args.heads,
+            args.head_dim,
+            dtype=torch.float16,
+            generator=generator,
+        ).to(device)
+    else:
+        k = torch.randn(
+            total_tokens,
+            args.heads,
+            args.head_dim,
+            dtype=torch.float16,
+            generator=generator,
+        ).to(device)
+        v = torch.randn(
+            total_tokens,
+            args.heads,
+            args.head_dim,
+            dtype=torch.float16,
+            generator=generator,
+        ).to(device)
     cu_seqlens = torch.arange(
         0,
         total_tokens + 1,
@@ -233,18 +254,33 @@ def _run_varlen_tiny(
         dtype=torch.int32,
         device=device,
     )
+    block_table = None
+    seqused_k = None
+    if paged_kv:
+        if args.batch_size != 1 or args.seqlen > 256:
+            print(
+                "ck-varlen-paged-kv requires batch_size=1 and seqlen<=256; "
+                f"got batch_size={args.batch_size}, seqlen={args.seqlen}"
+            )
+            return 1
+        block_table = torch.full((args.batch_size, 1), 0, dtype=torch.int32, device=device)
+        seqused_k = torch.full((args.batch_size,), args.seqlen, dtype=torch.int32, device=device)
 
-    output = flash_attn.flash_attn_varlen_func(
-        q,
-        k,
-        v,
-        cu_seqlens_q=cu_seqlens,
-        cu_seqlens_k=cu_seqlens,
-        max_seqlen_q=args.seqlen,
-        max_seqlen_k=args.seqlen,
-        dropout_p=0.0,
-        causal=False,
-    )
+    output_kwargs = {
+        "cu_seqlens_q": cu_seqlens,
+        "cu_seqlens_k": cu_seqlens,
+        "max_seqlen_q": args.seqlen,
+        "max_seqlen_k": args.seqlen,
+        "dropout_p": 0.0,
+        "causal": False,
+    }
+    if block_table is not None:
+        output_kwargs["block_table"] = block_table
+    if seqused_k is not None:
+        # Target the forthcoming local CK/vLLM-compatible wrapper surface.
+        output_kwargs["seqused_k"] = seqused_k
+
+    output = flash_attn.flash_attn_varlen_func(q, k, v, **output_kwargs)
     torch.cuda.synchronize()
     expected_shape = (total_tokens, args.heads, args.head_dim)
     actual_shape = tuple(output.shape)
@@ -288,6 +324,14 @@ def main(argv: list[str] | None = None) -> int:
             backend="ck",
             mode="ck-varlen-tiny",
             ok_marker="flash_attn_ck_varlen_ok",
+        )
+    if args.mode == "ck-varlen-paged-kv":
+        return _run_varlen_tiny(
+            args,
+            backend="ck",
+            mode="ck-varlen-paged-kv",
+            ok_marker="flash_attn_ck_varlen_paged_kv_ok",
+            paged_kv=True,
         )
     raise AssertionError(f"unhandled mode: {args.mode}")
 

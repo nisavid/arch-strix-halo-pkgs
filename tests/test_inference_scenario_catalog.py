@@ -54,6 +54,8 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     assert "flash-attn.triton-amd.backend-import" in ids
     assert "flash-attn.triton-amd.qkvpacked-tiny" in ids
     assert "flash-attn.ck.varlen-tiny" in ids
+    assert "flash-attn.ck.varlen-tiny-d256" in ids
+    assert "flash-attn.ck.varlen-paged-kv" in ids
     assert "vllm.pooling.multilingual-e5-small.embeddings" in ids
     assert "vllm.pooling.jina-reranker-v3.rerank" in ids
     assert "transformers.zeroentropy.zembed-1.embeddings" in ids
@@ -469,6 +471,8 @@ def test_flash_attn_scenarios_record_ck_contract():
     backend_import = by_id["flash-attn.ck.backend-import"]
     qkvpacked_tiny = by_id["flash-attn.ck.qkvpacked-tiny"]
     varlen_tiny = by_id["flash-attn.ck.varlen-tiny"]
+    varlen_tiny_d256 = by_id["flash-attn.ck.varlen-tiny-d256"]
+    varlen_paged_kv = by_id["flash-attn.ck.varlen-paged-kv"]
 
     assert backend_import.engine == "flash-attn"
     assert backend_import.model == "builtin"
@@ -522,6 +526,49 @@ def test_flash_attn_scenarios_record_ck_contract():
         "flash-attention",
         "ck",
         "kernel-probe",
+    }
+
+    assert varlen_tiny_d256.engine == "flash-attn"
+    assert varlen_tiny_d256.model == "builtin"
+    assert varlen_tiny_d256.definition["given"]["tool"] == "flash_attn_smoke.ck-varlen-tiny"
+    assert varlen_tiny_d256.definition["when"]["env"] == {
+        "FLASH_ATTENTION_TRITON_AMD_ENABLE": "FALSE",
+    }
+    assert varlen_tiny_d256.definition["when"]["argv"] == [
+        "--seqlen",
+        "16",
+        "--heads",
+        "2",
+        "--head-dim",
+        "256",
+    ]
+    assert set(varlen_tiny_d256.tags) >= {
+        "smoke",
+        "flash-attention",
+        "ck",
+        "kernel-probe",
+    }
+
+    assert varlen_paged_kv.engine == "flash-attn"
+    assert varlen_paged_kv.model == "builtin"
+    assert varlen_paged_kv.definition["given"]["tool"] == "flash_attn_smoke.ck-varlen-paged-kv"
+    assert varlen_paged_kv.definition["when"]["env"] == {
+        "FLASH_ATTENTION_TRITON_AMD_ENABLE": "FALSE",
+    }
+    assert varlen_paged_kv.definition["when"]["argv"] == [
+        "--seqlen",
+        "16",
+        "--heads",
+        "2",
+        "--head-dim",
+        "256",
+    ]
+    assert set(varlen_paged_kv.tags) >= {
+        "smoke",
+        "flash-attention",
+        "ck",
+        "kernel-probe",
+        "paged-kv",
     }
 
 
