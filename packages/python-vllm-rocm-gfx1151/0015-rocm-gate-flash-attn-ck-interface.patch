@@ -1,0 +1,77 @@
+diff --git i/vllm/v1/attention/backends/fa_utils.py w/vllm/v1/attention/backends/fa_utils.py
+index 0b333c5..254f071 100644
+--- i/vllm/v1/attention/backends/fa_utils.py
++++ w/vllm/v1/attention/backends/fa_utils.py
+@@ -1,6 +1,8 @@
+ # SPDX-License-Identifier: Apache-2.0
+ # SPDX-FileCopyrightText: Copyright contributors to the vLLM project
+ 
++import inspect
++from functools import cache
+ from typing import Any
+ 
+ import vllm.envs as envs
+@@ -139,6 +141,39 @@ def get_flash_attn_version(
+         return None
+ 
+ 
++@cache
++def rocm_flash_attn_supports_vllm_varlen_api() -> bool:
++    if not current_platform.is_rocm():
++        return True
++    if not _ROCM_FLASH_ATTN_AVAILABLE:
++        return False
++
++    try:
++        signature = inspect.signature(flash_attn_varlen_func)
++    except (TypeError, ValueError):
++        return False
++
++    required_keywords = {
++        "out",
++        "seqused_k",
++        "scheduler_metadata",
++        "fa_version",
++        "q_descale",
++        "k_descale",
++        "v_descale",
++        "num_splits",
++        "s_aux",
++        "return_softmax_lse",
++    }
++    parameters = signature.parameters
++    if any(
++        parameter.kind == inspect.Parameter.VAR_KEYWORD
++        for parameter in parameters.values()
++    ):
++        return True
++    return required_keywords.issubset(parameters)
++
++
+ def flash_attn_supports_fp8() -> bool:
+     return (
+         get_flash_attn_version() == 3
+diff --git i/vllm/v1/attention/backends/flash_attn.py w/vllm/v1/attention/backends/flash_attn.py
+index e595432..593e741 100644
+--- i/vllm/v1/attention/backends/flash_attn.py
++++ w/vllm/v1/attention/backends/flash_attn.py
+@@ -19,6 +19,7 @@ from vllm.v1.attention.backends.fa_utils import (
+     flash_attn_supports_fp8,
+     get_flash_attn_version,
+     is_flash_attn_varlen_func_available,
++    rocm_flash_attn_supports_vllm_varlen_api,
+ )
+ from vllm.v1.attention.ops.common import cp_lse_ag_out_rs
+ from vllm.v1.attention.ops.dcp_alltoall import dcp_a2a_lse_reduce
+@@ -197,6 +198,11 @@ class FlashAttentionBackend(AttentionBackend):
+     ) -> str | None:
+         if has_sink and device_capability < DeviceCapability(9, 0):
+             return "sink not supported on compute capability < 9.0"
++        if not rocm_flash_attn_supports_vllm_varlen_api():
++            return (
++                "ROCm flash-attn varlen API is not vLLM-compatible; "
++                "FLASH_ATTN requires vLLM's paged-KV varlen API"
++            )
+         return None
+ 
+ 

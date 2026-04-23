@@ -98,7 +98,7 @@ value = "config_head_dim 256"
 
 [[scenario.then.assert]]
 kind = "output.contains"
-value = "FlashAttention version not detected."
+value = "ROCm flash-attn varlen API is not vLLM-compatible"
 
 [[scenario]]
 id = "vllm.qwen3_6.35b-a3b.text.unquantized-moe-no-aiter-control"

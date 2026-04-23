@@ -189,8 +189,11 @@ boundary. It confirms the local package selects CK (`flash_attn_2_cuda` with
 `FLASH_ATTN` backend with `FlashAttention version not detected.` The same probe
 prints `config_head_dim 256`, so Qwen3.5 0.8B also exceeds the current d32 CK
 kernel surface. It passed as an expected blocked scenario at run root
-`docs/worklog/inference-runs/20260423T082249`. Treat the next engine step as a
-vLLM ROCm adapter task plus broader CK kernel coverage, not as a completed
+`docs/worklog/inference-runs/20260423T082249`. The follow-up vLLM package
+candidate changes the blocked assertion to an explicit backend-selection gate:
+the imported CK/direct `flash_attn_varlen_func` must expose vLLM's paged-KV
+varlen API before `FLASH_ATTN` is accepted on ROCm. Treat the next engine step
+as a vLLM ROCm adapter task plus broader CK kernel coverage, not as a completed
 engine validation.
 
 ## Live Host State

@@ -16,9 +16,10 @@
     install, direct CK import proof, and direct CK qkvpacked smoke pass for
     `python-flash-attn-rocm-gfx1151 2.8.4-2`. `2.8.4-4` is now
     installed-validated and adds a passing direct d32 variable-length CK smoke.
-    vLLM CK consumer work is blocked on a ROCm V1 `FLASH_ATTN` adapter contract
-    (`FlashAttention version not detected.`) and broader-than-d32 kernel
-    coverage for real Qwen models.
+    vLLM CK consumer work is blocked on a ROCm V1 `FLASH_ATTN` adapter contract:
+    CK/direct `flash_attn_varlen_func` must expose vLLM's paged-KV varlen API,
+    and the package still needs broader-than-d32 kernel coverage for real Qwen
+    models.
   - Package experiment: FlashAttention Triton; `python-flash-attn-rocm-gfx1151`
     now has build proof, installed import proof, runtime backend-selection
     proof, and a bounded non-autotuned Triton AMD smoke from the installed
