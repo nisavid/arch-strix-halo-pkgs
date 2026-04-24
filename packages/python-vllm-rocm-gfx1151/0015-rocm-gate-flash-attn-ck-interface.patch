@@ -1,5 +1,5 @@
 diff --git i/vllm/v1/attention/backends/fa_utils.py w/vllm/v1/attention/backends/fa_utils.py
-index 0b333c5..254f071 100644
+index 0b333c5..4661d0c 100644
 --- i/vllm/v1/attention/backends/fa_utils.py
 +++ w/vllm/v1/attention/backends/fa_utils.py
 @@ -1,6 +1,8 @@
@@ -11,6 +11,19 @@ index 0b333c5..254f071 100644
  from typing import Any
  
  import vllm.envs as envs
+@@ -58,8 +60,10 @@ def get_flash_attn_version(
+     if current_platform.is_xpu():
+         return 2
+     if current_platform.is_rocm():
+-        # ROCm doesn't use vllm_flash_attn; return None to skip fa_version arg
+-        return None
++        if not _ROCM_FLASH_ATTN_AVAILABLE:
++            return None
++        # The validated upstream ROCm flash-attn lane in this package is FA2.
++        return 2
+     try:
+         from vllm.vllm_flash_attn.flash_attn_interface import (
+             fa_version_unsupported_reason,
 @@ -139,6 +141,39 @@ def get_flash_attn_version(
          return None
  

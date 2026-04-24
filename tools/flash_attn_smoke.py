@@ -256,6 +256,7 @@ def _run_varlen_tiny(
     )
     block_table = None
     seqused_k = None
+    leftpad_k = None
     if paged_kv:
         if args.batch_size != 1 or args.seqlen > 256:
             print(
@@ -265,20 +266,24 @@ def _run_varlen_tiny(
             return 1
         block_table = torch.full((args.batch_size, 1), 0, dtype=torch.int32, device=device)
         seqused_k = torch.full((args.batch_size,), args.seqlen, dtype=torch.int32, device=device)
+        leftpad_k = torch.full((args.batch_size,), 0, dtype=torch.int32, device=device)
 
     output_kwargs = {
         "cu_seqlens_q": cu_seqlens,
-        "cu_seqlens_k": cu_seqlens,
         "max_seqlen_q": args.seqlen,
         "max_seqlen_k": args.seqlen,
         "dropout_p": 0.0,
         "causal": False,
     }
+    if not paged_kv:
+        output_kwargs["cu_seqlens_k"] = cu_seqlens
     if block_table is not None:
         output_kwargs["block_table"] = block_table
     if seqused_k is not None:
         # Target the forthcoming local CK/vLLM-compatible wrapper surface.
         output_kwargs["seqused_k"] = seqused_k
+    if leftpad_k is not None:
+        output_kwargs["leftpad_k"] = leftpad_k
 
     output = flash_attn.flash_attn_varlen_func(q, k, v, **output_kwargs)
     torch.cuda.synchronize()

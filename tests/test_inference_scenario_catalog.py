@@ -112,7 +112,7 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     assert "qwen3.5" in tags_by_id["vllm.qwen3_5.0_8b.text.basic"]
     assert "compiled-probe" in tags_by_id["vllm.qwen3_5.0_8b.text.compiled"]
     assert "kernel-probe" in tags_by_id["vllm.qwen3_5.0_8b.text.flash-attn-ck"]
-    assert "blocked" not in tags_by_id["vllm.qwen3_5.0_8b.text.flash-attn-ck"]
+    assert "blocked" in tags_by_id["vllm.qwen3_5.0_8b.text.flash-attn-ck"]
     assert "qwen3.6" in tags_by_id[
         "vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-no-aiter-blocked"
     ]
@@ -769,12 +769,12 @@ def test_qwen3_5_flash_attn_ck_probe_records_validation_contract():
 
     assert probe.model == "Qwen/Qwen3.5-0.8B"
     assert set(probe.tags) >= {
-        "smoke",
         "qwen",
         "qwen3.5",
         "flash-attention",
         "ck",
         "kernel-probe",
+        "blocked",
         "exploratory",
     }
     assert probe.definition["given"]["tool"] == "qwen_text_smoke"
@@ -794,14 +794,13 @@ def test_qwen3_5_flash_attn_ck_probe_records_validation_contract():
 
     assertions = probe.definition["then"]["assert"]
     for expected in (
-        {"kind": "exit_code.equals", "value": 0},
+        {"kind": "exit_code.equals", "value": 1},
         {"kind": "stdout.contains", "value": "attention_backend FLASH_ATTN"},
         {"kind": "stdout.contains", "value": "flash_attn_use_triton_rocm False"},
         {"kind": "stdout.contains", "value": "flash_attn_backend_module flash_attn_2_cuda"},
         {"kind": "stdout.contains", "value": "config_head_dim 256"},
         {"kind": "stdout.contains", "value": "llm_init_ok"},
-        {"kind": "stdout.contains", "value": "generation_ok"},
-        {"kind": "stdout.contains", "value": "basic_ok"},
+        {"kind": "output.contains", "value": "Paged KV cache block size must be divisible by 128"},
     ):
         assert expected in assertions
 

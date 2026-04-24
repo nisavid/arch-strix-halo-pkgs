@@ -6,7 +6,7 @@
 
 pkgname=python-vllm-rocm-gfx1151
 pkgver=0.19.1
-pkgrel=5
+pkgrel=6
 pkgdesc='High-throughput and memory-efficient inference engine for LLMs with ROCm, rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://github.com/vllm-project/vllm

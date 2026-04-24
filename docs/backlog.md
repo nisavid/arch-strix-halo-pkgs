@@ -14,12 +14,13 @@
     model/data dependencies are needed.
   - Package experiment: FlashAttention CK; source audit, package build, host
     install, direct CK import proof, and direct CK qkvpacked smoke pass for
-    `python-flash-attn-rocm-gfx1151 2.8.4-2`. `2.8.4-4` is now
-    installed-validated and adds a passing direct d32 variable-length CK smoke.
-    vLLM CK consumer work is blocked on a ROCm V1 `FLASH_ATTN` adapter contract:
-    CK/direct `flash_attn_varlen_func` must expose vLLM's paged-KV varlen API,
-    and the package still needs broader-than-d32 kernel coverage for real Qwen
-    models.
+    `python-flash-attn-rocm-gfx1151 2.8.4-2`. `2.8.4-10` is now
+    installed-validated for direct import, qkvpacked, variable-length wrapper
+    keywords, and the vLLM adapter surface. vLLM Qwen3.5 CK consumer work is
+    blocked deeper in CK paged-KV: vLLM's hybrid path presents 64-token kernel
+    pages by default, and diagnostics that force 128-divisible pages progress to
+    a GPU memory-access fault inside CK. Do not promote the CK Qwen engine path
+    without upstream CK paged-KV kernel repair or a different validated backend.
   - Package experiment: FlashAttention Triton; `python-flash-attn-rocm-gfx1151`
     now has build proof, installed import proof, runtime backend-selection
     proof, and a bounded non-autotuned Triton AMD smoke from the installed

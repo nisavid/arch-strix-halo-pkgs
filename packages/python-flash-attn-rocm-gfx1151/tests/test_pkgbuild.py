@@ -25,7 +25,7 @@ def test_pkgbuild_tracks_rocm_flash_attention_ck_experiment():
 
     assert "pkgname=python-flash-attn-rocm-gfx1151" in text
     assert "pkgver=2.8.4" in text
-    assert "pkgrel=6" in text
+    assert "pkgrel=10" in text
     assert "3f94643fb41bcedded28c85185a8e11d42ef1592" in text
     assert "url=https://github.com/ROCm/flash-attention" in text
     assert "FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE" in text
@@ -64,6 +64,8 @@ def test_pkgbuild_carries_gfx1151_ck_experiment():
     assert "FLASH_ATTENTION_CK_FORWARD_ONLY" not in text
     assert "GPU_ARCHS=gfx1151" in text
     assert "03ce21ddcbb75c5ac8630628a913d0b2ced4979a" in text
+    assert "git reset --hard 3f94643fb41bcedded28c85185a8e11d42ef1592" in text
+    assert "git clean -fdx" in text
     assert '"gfx90a", "gfx950", "gfx942", "gfx1151"' in ck_patch
     assert "--targets" in ck_patch
     assert "gfx11" in ck_patch
@@ -100,6 +102,7 @@ def test_pkgbuild_carries_gfx1151_ck_experiment():
     assert "does not include generated split-KV kernels" in ck_disable_paged_kv_patch
     assert "fmha_fwd_splitkv" in ck_disable_paged_kv_patch
     for keyword in [
+        "cu_seqlens_k=None",
         "out=None",
         "seqused_k=None",
         "leftpad_k=None",
@@ -113,10 +116,36 @@ def test_pkgbuild_carries_gfx1151_ck_experiment():
         "s_aux=None",
     ]:
         assert keyword in ck_vllm_wrapper_patch
+    assert "-    cu_seqlens_k," in ck_vllm_wrapper_patch
+    assert "-    max_seqlen_q," in ck_vllm_wrapper_patch
+    assert "-    max_seqlen_k," in ck_vllm_wrapper_patch
+    assert "+    cu_seqlens_k=None," in ck_vllm_wrapper_patch
+    assert "+    max_seqlen_q=None," in ck_vllm_wrapper_patch
+    assert "+    max_seqlen_k=None," in ck_vllm_wrapper_patch
     assert "return_softmax_lse=True is not supported" in ck_vllm_wrapper_patch
+    assert "scheduler_metadata is not supported" in ck_vllm_wrapper_patch
+    assert "fa_version values other than 2 are not supported" in ck_vllm_wrapper_patch
+    assert "for descale_name, descale in (" in ck_vllm_wrapper_patch
+    assert '("q_descale", q_descale)' in ck_vllm_wrapper_patch
+    assert '("k_descale", k_descale)' in ck_vllm_wrapper_patch
+    assert '("v_descale", v_descale)' in ck_vllm_wrapper_patch
+    assert "if not torch.all(descale == 1):" in ck_vllm_wrapper_patch
+    assert "tensors other than all-ones are not supported" in ck_vllm_wrapper_patch
+    assert "num_splits values other than 0 or 1 are not supported" in ck_vllm_wrapper_patch
     assert "s_aux is not supported" in ck_vllm_wrapper_patch
+    assert "max_seqlen_q and max_seqlen_k are required" in ck_vllm_wrapper_patch
+    assert 'raise ValueError("cu_seqlens_k or seqused_k must be provided")' in ck_vllm_wrapper_patch
+    assert "torch.zeros_like(cu_seqlens_q)" in ck_vllm_wrapper_patch
+    assert "if block_table is not None:" in ck_vllm_wrapper_patch
+    assert "torch.cumsum(seqused_k, dim=0)" in ck_vllm_wrapper_patch
     assert "seqused_k=seqused_k" in ck_vllm_wrapper_patch
     assert "leftpad_k=leftpad_k" in ck_vllm_wrapper_patch
+    assert "        seqused_k," in ck_vllm_wrapper_patch
+    assert "        leftpad_k," in ck_vllm_wrapper_patch
+    assert "        block_table," in ck_vllm_wrapper_patch
+    assert "        torch.is_grad_enabled()," in ck_vllm_wrapper_patch
+    assert "result = FlashAttnVarlenFunc.apply(" in ck_vllm_wrapper_patch
+    assert "        block_table,\n+        seqused_k,\n+        leftpad_k,\n         torch.is_grad_enabled()," in ck_vllm_wrapper_patch
     assert "out.copy_(result)" in ck_vllm_wrapper_patch
 
 
@@ -153,6 +182,9 @@ def test_patch_carry_records_rocm_runtime_boundaries():
     assert "FLASH_ATTENTION_TRITON_AMD_ENABLE=TRUE" in readme
     assert "FLASH_ATTENTION_TRITON_AMD_AUTOTUNE=TRUE" in readme
     assert "python-amd-aiter-gfx1151" in readme
+    assert "python-flash-attn-rocm-gfx1151 2.8.4-10" in readme
+    assert "flash-attn.ck.varlen-paged-kv" in readme
+    assert "Qwen3.5 vLLM CK consumer remains blocked" in json.dumps(recipe)
     assert recipe["package_name"] == "python-flash-attn-rocm-gfx1151"
     assert recipe["upstream"]["commit"] == "3f94643fb41bcedded28c85185a8e11d42ef1592"
     assert "0001-skip-bundled-aiter-install.patch" in recipe["source_patches"]

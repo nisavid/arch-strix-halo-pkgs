@@ -101,19 +101,20 @@ submodule commit, and the reduced forward-only `OPT_DIM=32` kernel set.
 `docs/worklog/inference-runs/20260423T071523`, returning finite
 `(1, 16, 2, 32)` output.
 
-Later on 2026-04-23, `python-flash-attn-rocm-gfx1151 2.8.4-4` built and
-installed with the same bounded `OPT_DIM=32` CK surface plus a direct
-variable-length smoke. `pacman -Q python-flash-attn-rocm-gfx1151` reports
-`2.8.4-4`. The installed scenarios `flash-attn.ck.backend-import`,
-`flash-attn.ck.qkvpacked-tiny`, and `flash-attn.ck.varlen-tiny` passed at run
-root `docs/worklog/inference-runs/20260423T083738`; CK selected
-`flash_attn_2_cuda` with `use_triton_rocm False`, qkvpacked returned finite
-`(1, 16, 2, 32)` output, and varlen returned finite `(16, 2, 32)` output.
+Later on 2026-04-23, `python-flash-attn-rocm-gfx1151 2.8.4-10` built and
+installed with the bounded `OPT_DIM=32,256` CK surface plus direct
+variable-length and paged-KV smokes. `pacman -Q
+python-flash-attn-rocm-gfx1151` reports `2.8.4-10`. The installed scenarios
+`flash-attn.ck.backend-import`, `flash-attn.ck.qkvpacked-tiny`,
+`flash-attn.ck.varlen-tiny`, `flash-attn.ck.varlen-tiny-d256`, and
+`flash-attn.ck.varlen-paged-kv` passed at run root
+`docs/worklog/inference-runs/20260423T223607`; CK selected
+`flash_attn_2_cuda` with `use_triton_rocm False`.
 
 The exploratory vLLM Qwen CK consumer probe is tracked as blocked, not passed.
 It confirms that vLLM sees CK (`flash_attn_2_cuda` and
-`FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE`), but vLLM's ROCm V1
-`FLASH_ATTN` backend currently reports `FlashAttention version not detected.`
-The Qwen3.5 0.8B probe also has `config_head_dim 256`, outside this package's
-current d32 CK kernel surface. The expected blocked scenario passed at run root
-`docs/worklog/inference-runs/20260423T082249`.
+`FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE`) and reaches vLLM initialization, but
+the normal Qwen3.5 hybrid path presents a 64-token paged-KV kernel page while
+CK requires a 128-token multiple. Diagnostics that force 128-divisible pages
+progress past that check and then fault the GPU inside CK. The expected blocked
+scenario passed at run root `docs/worklog/inference-runs/20260423T224553`.

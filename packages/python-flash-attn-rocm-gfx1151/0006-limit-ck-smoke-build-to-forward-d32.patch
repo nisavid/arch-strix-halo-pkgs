@@ -50,32 +50,31 @@ diff --git a/setup.py b/setup.py
 index 3bf4a90..c6fe093 100644
 --- a/setup.py
 +++ b/setup.py
-@@ -393,14 +393,38 @@ elif not SKIP_CUDA_BUILD and IS_ROCM:
+@@ -393,29 +393,41 @@ elif not SKIP_CUDA_BUILD and IS_ROCM:
          ck_dir = "csrc/composable_kernel"
-
+ 
          #use codegen get code dispatch
 -        if not os.path.exists("./build"):
 -            os.makedirs("build")
 +        if os.path.exists("./build"):
 +            shutil.rmtree("build")
 +        os.makedirs("build")
-
+ 
          optdim = os.getenv("OPT_DIM", "32,64,128,256")
--        subprocess.run([sys.executable, f"{ck_dir}/example/ck_tile/01_fmha/generate.py", "-d", "fwd", "--output_dir", "build", "--receipt", "2", "--optdim", optdim], check=True)
--        subprocess.run([sys.executable, f"{ck_dir}/example/ck_tile/01_fmha/generate.py", "-d", "fwd_appendkv", "--output_dir", "build", "--receipt", "2", "--optdim", optdim], check=True)
--        subprocess.run([sys.executable, f"{ck_dir}/example/ck_tile/01_fmha/generate.py", "-d", "fwd_splitkv", "--output_dir", "build", "--receipt", "2", "--optdim", optdim], check=True)
--        subprocess.run([sys.executable, f"{ck_dir}/example/ck_tile/01_fmha/generate.py", "-d", "bwd", "--output_dir", "build", "--receipt", "2", "--optdim", optdim], check=True)
-+        codegen_targets = set()
-+        for a in os.getenv("GPU_ARCHS", "native").split(";"):
-+            if a == "native":
-+                continue
-+            if a.startswith("gfx9"):
-+                codegen_targets.add("gfx9")
-+            elif a.startswith("gfx11"):
-+                codegen_targets.add("gfx11")
-+            elif a.startswith("gfx12"):
-+                codegen_targets.add("gfx12")
-+        targets_arg = ["--targets", ",".join(sorted(codegen_targets))] if codegen_targets else []
+         gen_archs = os.getenv("GPU_ARCHS", "native").split(";")
+         if gen_archs == ["native"]:
+             gen_archs = [torch.cuda.get_device_properties("cuda").gcnArchName.split(":")[0]]
+         codegen_targets = set()
+         for a in gen_archs:
+             if a.startswith("gfx9"):
+                 codegen_targets.add("gfx9")
+                 if "gfx950" in a:
+                     codegen_targets.add("gfx950")
+             elif a.startswith("gfx11"):
+                 codegen_targets.add("gfx11")
+             elif a.startswith("gfx12"):
+                 codegen_targets.add("gfx12")
+         targets_arg = ["--targets", ",".join(sorted(codegen_targets))] if codegen_targets else []
 +        ck_generators = [
 +            item.strip()
 +            for item in os.getenv("FLASH_ATTENTION_CK_GENERATORS", "fwd,fwd_appendkv,fwd_splitkv,bwd").split(",")
@@ -85,7 +84,11 @@ index 3bf4a90..c6fe093 100644
 +        assert set(ck_generators) <= valid_ck_generators, (
 +            f"Unsupported FLASH_ATTENTION_CK_GENERATORS entries: {ck_generators}"
 +        )
-+        gen_common = [sys.executable, f"{ck_dir}/example/ck_tile/01_fmha/generate.py", "--output_dir", "build", "--receipt", "2", "--optdim", optdim] + targets_arg
+         gen_common = [sys.executable, f"{ck_dir}/example/ck_tile/01_fmha/generate.py", "--output_dir", "build", "--receipt", "2", "--optdim", optdim] + targets_arg
+-        subprocess.run(gen_common + ["-d", "fwd"], check=True)
+-        subprocess.run(gen_common + ["-d", "fwd_appendkv"], check=True)
+-        subprocess.run(gen_common + ["-d", "fwd_splitkv"], check=True)
+-        subprocess.run(gen_common + ["-d", "bwd"], check=True)
 +        ck_filter = os.getenv("FLASH_ATTENTION_CK_FILTER")
 +        for ck_generator in ck_generators:
 +            gen_args = list(gen_common)

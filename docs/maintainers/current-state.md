@@ -173,29 +173,33 @@ limits the initial build to a forward-only `OPT_DIM=32` CK smoke surface.
 `(1, 16, 2, 32)` output. Keep CK engine-integration claims pending until an
 installed engine route selects this backend.
 
-The next CK artifact, `python-flash-attn-rocm-gfx1151 2.8.4-4`, is now
+The current CK artifact, `python-flash-attn-rocm-gfx1151 2.8.4-10`, is now
 installed-validated. `pacman -Q python-flash-attn-rocm-gfx1151` reports
-`2.8.4-4`, and `flash-attn.ck.backend-import`,
-`flash-attn.ck.qkvpacked-tiny`, and `flash-attn.ck.varlen-tiny` passed at run
-root `docs/worklog/inference-runs/20260423T083738`. The installed direct CK
-surface selected `flash_attn_2_cuda` with `use_triton_rocm False`, qkvpacked
-returned finite `(1, 16, 2, 32)` output, and varlen returned finite
-`(16, 2, 32)` output.
+`2.8.4-10`, and `flash-attn.ck.backend-import`,
+`flash-attn.ck.qkvpacked-tiny`, `flash-attn.ck.varlen-tiny`,
+`flash-attn.ck.varlen-tiny-d256`, and `flash-attn.ck.varlen-paged-kv` passed at
+run root `docs/worklog/inference-runs/20260423T223607`. The installed direct CK
+surface selected `flash_attn_2_cuda` with `use_triton_rocm False`; the bounded
+direct smokes cover qkvpacked, variable-length d32, variable-length d256, and a
+small direct paged-KV shape.
 
-The tracked exploratory scenario
-`vllm.qwen3_5.0_8b.text.flash-attn-ck-blocked` records the current vLLM consumer
-boundary. With `python-vllm-rocm-gfx1151 0.19.1-5` and
-`python-flash-attn-rocm-gfx1151 2.8.4-4` installed, it confirms the local
+The tracked exploratory scenario `vllm.qwen3_5.0_8b.text.flash-attn-ck`
+records the current vLLM consumer boundary. With
+`python-vllm-rocm-gfx1151 0.19.1-6` and
+`python-flash-attn-rocm-gfx1151 2.8.4-10` installed, it confirms the local
 package selects CK (`flash_attn_2_cuda` with
-`FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE`) and prints `config_head_dim 256`.
-It now fails at vLLM backend selection with
-`ROCm flash-attn varlen API is not vLLM-compatible; FLASH_ATTN requires vLLM's
-paged-KV varlen API`, and passed as an expected blocked scenario at run root
-`docs/worklog/inference-runs/20260423T090851`. The earlier
-`docs/worklog/inference-runs/20260423T082249` run captured the pre-gate failure
-as `FlashAttention version not detected.` Treat the next engine step as a vLLM
-ROCm adapter task plus broader CK kernel coverage, not as a completed engine
-validation.
+`FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE`), reports FlashAttention version 2,
+accepts vLLM's paged-KV varlen wrapper keywords, and reaches `llm_init_ok`.
+It remains an expected blocked kernel probe: the normal Qwen3.5 hybrid path
+presents `k_shape=(69080, 64, 2, 256)` to CK, so CK rejects the paged-KV page
+with `Paged KV cache block size must be divisible by 128`. The tracked expected
+blocked scenario passed without a diagnostic block-size override at run root
+`docs/worklog/inference-runs/20260423T224553`. Diagnostics that forced a
+128-divisible effective page reached
+`k_shape=(6906, 640, 2, 256)` or `k_shape=(11513, 384, 2, 256)` and then
+faulted the GPU inside CK. Treat the next engine step as upstream CK paged-KV
+kernel work or a different validated backend, not as a local vLLM adapter
+gap.
 
 ## Live Host State
 

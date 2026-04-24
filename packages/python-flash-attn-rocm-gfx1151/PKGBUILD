@@ -3,7 +3,7 @@
 
 pkgname=python-flash-attn-rocm-gfx1151
 pkgver=2.8.4
-pkgrel=6
+pkgrel=10
 pkgdesc='FlashAttention ROCm CK backend experiment for the local gfx1151 stack'
 arch=('x86_64')
 url=https://github.com/ROCm/flash-attention
@@ -29,6 +29,9 @@ sha256sums=(SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP)
 
 prepare() {
   cd "$srcdir/flash-attention"
+
+  git reset --hard 3f94643fb41bcedded28c85185a8e11d42ef1592
+  git clean -fdx
 
   for _patch in \
     0001-skip-bundled-aiter-install.patch \

@@ -18,6 +18,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-tokens", type=int, default=16)
     parser.add_argument("--max-num-batched-tokens", type=int, default=None)
     parser.add_argument(
+        "--block-size",
+        type=int,
+        default=None,
+        help="optional vLLM KV cache block size override",
+    )
+    parser.add_argument(
         "--quantization",
         default=None,
         help="optional vLLM quantization method override, such as quark",
@@ -163,6 +169,8 @@ def build_llm_kwargs(model: str, args: argparse.Namespace) -> dict[str, Any]:
         llm_kwargs["enforce_eager"] = True
     if args.max_num_batched_tokens is not None:
         llm_kwargs["max_num_batched_tokens"] = args.max_num_batched_tokens
+    if args.block_size is not None:
+        llm_kwargs["block_size"] = args.block_size
     if args.quantization:
         llm_kwargs["quantization"] = args.quantization
     if args.kv_cache_dtype:
@@ -193,6 +201,7 @@ def main() -> None:
     print("max_model_len", args.max_model_len)
     print("max_tokens", args.max_tokens)
     print("max_num_batched_tokens", args.max_num_batched_tokens)
+    print("block_size", args.block_size)
     print("quantization", args.quantization)
     print("kv_cache_dtype", args.kv_cache_dtype)
     print("dtype", args.dtype)

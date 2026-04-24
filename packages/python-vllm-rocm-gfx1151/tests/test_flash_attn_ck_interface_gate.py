@@ -43,11 +43,15 @@ def test_flash_attn_ck_interface_gate_rejects_dao_style_varlen_api():
         assert f'"{keyword}"' in patch_text
 
     assert "ROCm flash-attn varlen API is not vLLM-compatible" in patch_text
-    assert "return 2" not in patch_text
+    assert "if not _ROCM_FLASH_ATTN_AVAILABLE:" in patch_text
+    assert "The validated upstream ROCm flash-attn lane in this package is FA2." in patch_text
+    assert "return 2" in patch_text
 
 
 def test_flash_attn_ck_interface_gate_is_documented():
     readme_text = README.read_text(encoding="utf-8")
 
     assert "CK/direct FlashAttention interface gate" in readme_text
-    assert "vLLM's paged-KV varlen API" in readme_text
+    assert "vLLM's paged-KV varlen call surface" in readme_text
+    assert "reports FlashAttention version 2 on ROCm" in readme_text
+    assert "blocked deeper in the paged-KV CK kernel path" in readme_text

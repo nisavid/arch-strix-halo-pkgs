@@ -55,8 +55,8 @@ value = "basic_ok"
 
 [[scenario]]
 id = "vllm.qwen3_5.0_8b.text.flash-attn-ck"
-summary = "Qwen3.5 0.8B FlashAttention CK smoke with the installed CK interface gate"
-tags = ["smoke", "qwen", "qwen3.5", "flash-attention", "ck", "kernel-probe", "exploratory"]
+summary = "Qwen3.5 0.8B FlashAttention CK paged-KV probe blocked by CK/vLLM page handling"
+tags = ["qwen", "qwen3.5", "flash-attention", "ck", "kernel-probe", "blocked", "exploratory"]
 
 [scenario.given]
 engine = "vllm"
@@ -80,7 +80,7 @@ FLASH_ATTENTION_TRITON_AMD_ENABLE = "FALSE"
 
 [[scenario.then.assert]]
 kind = "exit_code.equals"
-value = 0
+value = 1
 
 [[scenario.then.assert]]
 kind = "stdout.contains"
@@ -103,12 +103,8 @@ kind = "stdout.contains"
 value = "llm_init_ok"
 
 [[scenario.then.assert]]
-kind = "stdout.contains"
-value = "generation_ok"
-
-[[scenario.then.assert]]
-kind = "stdout.contains"
-value = "basic_ok"
+kind = "output.contains"
+value = "Paged KV cache block size must be divisible by 128"
 
 [[scenario]]
 id = "vllm.qwen3_6.35b-a3b.text.unquantized-moe-no-aiter-control"

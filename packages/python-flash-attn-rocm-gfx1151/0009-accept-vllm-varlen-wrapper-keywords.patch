@@ -5,27 +5,63 @@ Subject: [PATCH] accept vLLM varlen wrapper keywords
 
 vLLM's ROCm FlashAttention path calls the public flash_attn_varlen_func with
 a wider paged-KV keyword surface than upstream exposes on this branch. Accept
-those keywords in the Python wrapper, pass seqused_k and leftpad_k to the CK
-varlen extension call, support explicit out tensors by copying the computed
-result, and reject unsupported return_softmax_lse and s_aux requests clearly.
+those keywords in the Python wrapper, derive cu_seqlens_k from seqused_k when
+the paged-KV call omits it, pass seqused_k and leftpad_k to the CK varlen
+extension call, support explicit out tensors by copying the computed result,
+tolerate the validated eager-lane defaults for all-ones descales and
+num_splits=0, and reject unsupported scheduler metadata, nontrivial descales,
+other split controls, return_softmax_lse, and s_aux requests clearly.
 ---
- flash_attn/flash_attn_interface.py | 35 ++++++++++++++++++++++++++++-
- 1 file changed, 34 insertions(+), 1 deletion(-)
+ flash_attn/flash_attn_interface.py | 69 ++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 67 insertions(+), 2 deletions(-)
 
 diff --git i/flash_attn/flash_attn_interface.py w/flash_attn/flash_attn_interface.py
-index 204db00..914c03f 100644
+index 204db009..0500d876 100644
 --- i/flash_attn/flash_attn_interface.py
 +++ w/flash_attn/flash_attn_interface.py
-@@ -922,0 +923,2 @@ class FlashAttnVarlenFunc(torch.autograd.Function):
+@@ -920,6 +920,8 @@ class FlashAttnVarlenFunc(torch.autograd.Function):
+         deterministic,
+         return_softmax,
+         block_table,
 +        seqused_k,
 +        leftpad_k,
-@@ -951,0 +954,2 @@ class FlashAttnVarlenFunc(torch.autograd.Function):
+         is_grad_enabled,
+     ):
+         is_grad = is_grad_enabled and any(
+@@ -949,6 +951,8 @@ class FlashAttnVarlenFunc(torch.autograd.Function):
+             alibi_slopes=alibi_slopes,
+             return_softmax=return_softmax and dropout_p > 0,
+             block_table=block_table,
 +            leftpad_k=leftpad_k,
 +            seqused_k=seqused_k,
-@@ -1005 +1009 @@ class FlashAttnVarlenFunc(torch.autograd.Function):
+         )
+         if is_grad:
+             ctx.save_for_backward(
+@@ -1002,7 +1006,7 @@ class FlashAttnVarlenFunc(torch.autograd.Function):
+         dq = dq[..., : dout.shape[-1]]  # We could have padded the head dimension
+         dk = dk[..., : dout.shape[-1]]
+         dv = dv[..., : dout.shape[-1]]
 -        return dq, dk, dv, None, None, None, None, None, None, None, None, None, None, None, None, None, None
 +        return dq, dk, dv, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None
-@@ -1396,0 +1401,11 @@ def flash_attn_varlen_func(
+ 
+ 
+ def flash_attn_qkvpacked_func(
+@@ -1382,15 +1386,26 @@ def flash_attn_varlen_func(
+     k,
+     v,
+     cu_seqlens_q,
+-    cu_seqlens_k,
+-    max_seqlen_q,
+-    max_seqlen_k,
++    cu_seqlens_k=None,
++    max_seqlen_q=None,
++    max_seqlen_k=None,
+     dropout_p=0.0,
+     softmax_scale=None,
+     causal=False,
+     window_size=(-1, -1),  # -1 means infinite context window
+     softcap=0.0, # 0.0 means deactivated
+     alibi_slopes=None,
 +    out=None,
 +    seqused_k=None,
 +    leftpad_k=None,
@@ -37,22 +73,72 @@ index 204db00..914c03f 100644
 +    v_descale=None,
 +    num_splits=None,
 +    s_aux=None,
-@@ -1443,0 +1459,3 @@ def flash_attn_varlen_func(
+     deterministic=False,
+     return_attn_probs=False,
+     block_table=None,
+@@ -1438,6 +1453,9 @@ def flash_attn_varlen_func(
+             is added to the attention score of query i and key j.
+         deterministic: bool. Whether to use the deterministic implementation of the backward pass,
+             which is slightly slower and uses more memory. The forward pass is always deterministic.
 +        out: optional output tensor. When provided, the computed output is copied into it.
-+        seqused_k: optional per-sequence used key lengths for paged-KV calls.
-+        leftpad_k: optional per-sequence KV left padding for paged-KV calls.
-@@ -1453 +1471,6 @@ def flash_attn_varlen_func(
++        cu_seqlens_k: optional cumulative key lengths. When omitted for paged-KV
++           calls, the wrapper derives it from seqused_k.
+         return_attn_probs: bool. Whether to return the attention probabilities. This option is for
+            testing only. The returned probabilities are not guaranteed to be correct
+            (they might not have the right scaling).
+@@ -1450,7 +1468,43 @@ def flash_attn_varlen_func(
+             The output of softmax (possibly with different scaling). It also encodes the dropout
+             pattern (negative means that location was dropped, nonnegative means it was kept).
+     """
 -    return FlashAttnVarlenFunc.apply(
 +    if return_softmax_lse:
 +        raise NotImplementedError("return_softmax_lse=True is not supported by the CK vLLM varlen wrapper")
++    if max_seqlen_q is None or max_seqlen_k is None:
++        raise TypeError("max_seqlen_q and max_seqlen_k are required by the CK vLLM varlen wrapper")
++    if scheduler_metadata is not None:
++        raise NotImplementedError("scheduler_metadata is not supported by the CK vLLM varlen wrapper")
++    if fa_version not in (None, 2):
++        raise NotImplementedError("fa_version values other than 2 are not supported by the CK vLLM varlen wrapper")
++    for descale_name, descale in (
++        ("q_descale", q_descale),
++        ("k_descale", k_descale),
++        ("v_descale", v_descale),
++    ):
++        if descale is None:
++            continue
++        if not torch.all(descale == 1):
++            raise NotImplementedError(
++                f"{descale_name} tensors other than all-ones are not supported by the CK vLLM varlen wrapper"
++            )
++    if num_splits not in (None, 0, 1):
++        raise NotImplementedError(
++            "num_splits values other than 0 or 1 are not supported by the CK vLLM varlen wrapper"
++        )
 +    if s_aux is not None:
 +        raise NotImplementedError("s_aux is not supported by the CK vLLM varlen wrapper")
++    if cu_seqlens_k is None:
++        if seqused_k is None:
++            raise ValueError("cu_seqlens_k or seqused_k must be provided")
++        if block_table is not None:
++            cu_seqlens_k = torch.zeros_like(cu_seqlens_q)
++        else:
++            seqused_k = seqused_k.to(dtype=torch.int32)
++            cu_seqlens_k = torch.cat(
++                (seqused_k.new_zeros((1,)), torch.cumsum(seqused_k, dim=0))
++            )
 +
 +    result = FlashAttnVarlenFunc.apply(
-@@ -1469,0 +1493,2 @@ def flash_attn_varlen_func(
+         q,
+         k,
+         v,
+@@ -1467,8 +1521,17 @@ def flash_attn_varlen_func(
+         deterministic,
+         return_attn_probs,
+         block_table,
 +        seqused_k,
 +        leftpad_k,
-@@ -1471,0 +1497,7 @@ def flash_attn_varlen_func(
+         torch.is_grad_enabled(),
+     )
 +    if out is not None:
 +        if return_attn_probs:
 +            out.copy_(result[0])
@@ -60,3 +146,6 @@ index 204db00..914c03f 100644
 +        out.copy_(result)
 +        return out
 +    return result
+ 
+ 
+ def flash_attn_with_kvcache(
