@@ -178,6 +178,14 @@ to the current host-validated commit because this range does not address the
 gfx1151 OPUS FP8 `mfma_adaptor` gap or replace the package's local JIT/RDNA
 patch carry.
 
+During main-branch closeout on 2026-04-24, the live freshness gate found
+llama.cpp `b8914` and AITER main
+`f1f5e0674d7381c565b4ea33c25d7d584cae85c7`. llama.cpp `b8913..b8914` is the
+Hexagon-only `SOLVE_TRI` op addition, and AITER
+`ed2db5ef0f6444b735f018c0f4688058c1bfeb26..f1f5e0674d7381c565b4ea33c25d7d584cae85c7`
+only changes CI workflow files. `policies/package-freshness.toml` records both
+as reviewed without repinning package sources.
+
 The `python-flash-attn-rocm-gfx1151` package experiment now tracks ROCm
 FlashAttention `main_perf` commit `3f94643fb41bcedded28c85185a8e11d42ef1592`
 with package version `2.8.4`. The package builds the Triton AMD path with
