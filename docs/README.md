@@ -1,29 +1,65 @@
 # Documentation Index
 
-Use this index when you need the deeper project docs.
+Use this index to choose the smallest document that answers your question. The
+repo has user docs, maintainer docs, package reference, and state ledgers; each
+serves a different reader.
 
-## Install And Operate The Stack
+## If You Want To Install Or Operate The Stack
 
-- [Local repo usage](usage/local-repo.md)
+- [Local Repo Usage](usage/local-repo.md) explains how to publish `repo/x86_64`,
+  enable the local pacman repo, install packages, repair a rebuilt package, use
+  `amerge`, and run tracked inference scenarios.
+- [Current State](maintainers/current-state.md) records what has passed on the
+  reference host, what is installed, and which findings are blocked or
+  exploratory.
 
-## Understand The Package Architecture
+## If You Want To Understand What This Repo Changes
 
-- [TheRock generator architecture](architecture/therock-generator.md)
+- [Patch Inventory](patches.md) summarizes notable original source patches and
+  where to inspect the complete patch list.
+- [Reference-Package Policy](policies/reference-packages.md) explains how Arch,
+  CachyOS, AUR, upstream projects, and recipe inputs are used as baselines.
+- [TheRock Generator Architecture](architecture/therock-generator.md) explains
+  how the generated ROCm split packages are rendered from TheRock output.
+- [TheRock Generator Status](maintainers/therock-generator-status.md) records
+  current generator coverage and known gaps.
 
-## Follow Repository Policy
+## If You Are Maintaining Or Updating Packages
 
-- [Reference-package policy](policies/reference-packages.md)
-- [Documentation and session-artifact policy](policies/documentation-and-session-artifacts.md)
+- [Recipe Inputs](maintainers/recipe-inputs.md) explains the Blackcat
+  Informatics recipe source and how it feeds local package scaffolds.
+- [Update Workflows](maintainers/update-workflows.md) covers package update
+  paths, including the 24-hour dependency freshness sweep.
+- [Dependency Freshness Sweep](maintainers/update-workflows.md#0-dependency-freshness-sweep)
+  is the first gate to check before unrelated backlog work when it is due.
+- [ROCm Inference Reference](maintainers/rocm-inference-reference.md) collects
+  upstream ROCm, vLLM, FlashAttention, AITER, MIGraphX, quantization, and
+  profiling references that may affect future package or scenario work.
+- [vLLM Recipe Coverage](maintainers/vllm-recipe-coverage.md) tracks which
+  official vLLM recipe surfaces are validated, planned, advisory, or blocked.
 
-## Maintain Or Update The Repo
+## If You Are Picking Up Work
 
-- [Dependency freshness sweep](maintainers/update-workflows.md#0-dependency-freshness-sweep)
-- [Current state](maintainers/current-state.md)
-- [Recipe input repo](maintainers/recipe-inputs.md)
-- [Update workflows](maintainers/update-workflows.md)
-- [TheRock generator status](maintainers/therock-generator-status.md)
+- [Backlog](backlog.md) is the active worklist. It favors current follow-up
+  work over historical run logs.
+- [Current State](maintainers/current-state.md) is the first place to check
+  before claiming a package or scenario is installed, validated, blocked, or
+  stale.
+- [FlashAttention CK paged-KV boundary](maintainers/flashattention-ck-paged-kv.md)
+  records the latest tabled vLLM CK consumer lane and the gates required before
+  reopening it.
+- [Rebuild Revalidation Ledger](maintainers/rebuild-revalidation.md) preserves
+  the closed post-rebuild validation boundary for older findings.
 
-## Review Changes And Future Work
+## If You Are Writing Or Cleaning Up Docs
 
-- [Patch inventory](patches.md)
-- [Backlog](backlog.md)
+- [Documentation and Session Artifact Policy](policies/documentation-and-session-artifacts.md)
+  explains what belongs in tracked docs, package-local docs, ignored worklogs,
+  and session-only notes.
+
+## Package-Local Docs
+
+Each hand-maintained package has its own README and `recipe.json` under
+`packages/<name>/`. Use those files for package-specific version, baseline,
+divergence, patch, and update notes. The top-level package overview is
+[packages/README.md](../packages/README.md).

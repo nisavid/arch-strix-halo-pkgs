@@ -1,26 +1,31 @@
 # Documentation And Session Artifact Policy
 
+This repo treats documentation as part of the package surface. A future
+maintainer should be able to understand package logic, patch carry, validation
+state, and next work from tracked files without reading chat history.
+
 ## Keep Durable Docs Durable
 
-Tracked docs explain the repository's stable architecture, policy, workflow,
-package state, and patch story.
+Tracked docs explain stable architecture, policy, workflow, package state,
+patch rationale, and backlog decisions.
 
 Use tracked docs for:
 
 - architecture that will matter in later sessions
-- maintainer workflows that another agent should be able to follow
+- maintainer workflows another agent should be able to follow
 - package policy and baseline rationale
-- patch inventory and other durable source-level divergence notes
+- patch inventory and durable source-level divergence notes
 - backlog items that should survive beyond one work session
+- validated host state that changes what maintainers should believe
 
-Keep the user-facing overview in the README. Put the deeper operational and
-maintainer story under `docs/`.
+Keep the user-facing overview in the README. Put deeper operational and
+maintainer material under `docs/`. Put package-specific context in
+`packages/<name>/README.md` and `packages/<name>/recipe.json`.
 
 ## Keep Session Artifacts Out Of Git
 
-Treat prompts, specs, plans, work logs, scratch notes, and handoff docs as
-transient unless and until their useful content has been extracted into durable
-docs or code.
+Prompts, specs, plans, work logs, scratch notes, and handoff docs are transient
+until their useful content has been extracted into durable docs or code.
 
 Use ignored locations for session artifacts:
 
@@ -28,40 +33,41 @@ Use ignored locations for session artifacts:
 - `docs/worklog/`
 - any future ignored session-only directory that follows the same rule
 
-Do not commit those files, and do not keep stale finished-session files around
-just because they are ignored.
+Do not commit those files. Keep ignored forensic worklogs when they are useful
+for local investigation, but do not treat them as durable project state.
 
-## Finish The Session Properly
+## Finish A Substantial Session Properly
 
-Before you end a substantial session:
+Before ending a substantial session:
 
-1. move durable insights into tracked docs or code comments where they belong
-2. update the canonical docs whose statements are now stale
-3. delete the session-only docs that were consumed by the work
+1. Move durable insight into tracked docs or code comments where it belongs.
+2. Update canonical docs whose statements are now stale.
+3. Delete consumed session-only inputs after their durable content has been extracted.
 
 A work plan is not finished until its session-only plan, prompt, and scratch
 inputs are gone.
 
 ## Choose The Smallest Durable Artifact
 
-Do not promote a whole session file just because one paragraph mattered.
+Do not promote a whole session file because one paragraph mattered.
 
 Instead:
 
-- lift the enduring policy into `docs/policies/`
-- lift the enduring operational flow into `docs/usage/` or
-  `docs/maintainers/`
-- lift package-specific maintenance context into `packages/*/README.md` or
+- lift enduring policy into `docs/policies/`
+- lift operational flow into `docs/usage/` or `docs/maintainers/`
+- lift package-specific context into `packages/*/README.md` or
   `packages/*/recipe.json`
-- leave transient reasoning in ignored session artifacts until the work is done
+- leave transient reasoning in ignored session artifacts until it is no longer
+  needed
 
 ## Protect Private Context
 
 Never commit:
 
-- local home-directory paths
+- private filesystem paths, including home directories, cache roots, and host-local mount points
 - private hostnames or local-only service addresses
 - machine-specific IDs that do not help another maintainer
 - secrets, keys, or tokens
 
-Replace them with neutral placeholders or generic examples before committing.
+Replace private context with neutral placeholders or generic examples before
+committing.

@@ -1,42 +1,76 @@
 # Local Repo Usage
 
-The intended first-pass installation story is a local pacman repo on an Arch
-system.
+This repo is meant to produce a local pacman repository for a Strix Halo Arch
+host. The local repo keeps installs, upgrades, downgrades, repairs, and smoke
+validation inside the package manager instead of spreading state across manual
+`pacman -U` commands and build directories.
 
-That keeps installs, repairs, and upgrades inside normal package-manager
-behavior instead of long one-off `pacman -U` command lists.
+`repo/x86_64` is the working package repo inside this checkout. It is ignored
+by Git and can be missing or stale. Treat it as a build output, not as source of
+truth.
 
-## Build A Package
+## The Short Version
 
-Build any package directory with normal `makepkg` usage:
+If package archives are already present in `repo/x86_64`, publish them:
+
+```bash
+sudo install -d /srv/pacman/strix-halo-gfx1151/x86_64
+sudo rsync -a --delete repo/x86_64/ /srv/pacman/strix-halo-gfx1151/x86_64/
+```
+
+After completing [Enable The Repo In Pacman](#enable-the-repo-in-pacman) below once, refresh metadata and install packages:
+
+```bash
+sudo pacman -Sy
+paru -S rocm-gfx1151 python-vllm-rocm-gfx1151 llama.cpp-hip-gfx1151 lemonade
+```
+
+If the repo has not been built yet, build packages first with `makepkg` or
+`tools/amerge`, then publish the resulting `repo/x86_64` directory. The exact
+pacman stanza is below.
+
+## Build One Package
+
+Use normal `makepkg` workflow inside a package directory:
 
 ```bash
 (cd packages/<pkgname> && makepkg -f)
 ```
 
-Do that for each package you want to publish into the local repo.
+After a build, refresh the working package repo from that package directory:
 
-## Publish The Repo
+```bash
+python tools/update_pacman_repo.py \
+  --package-dir packages/<pkgname> \
+  --repo-dir repo/x86_64 \
+  --require-packagelist
+```
 
-The working package repo inside the checkout is `repo/x86_64`. It is
-intentionally ignored and can be stale on a given machine; rebuild or refresh
-it before treating it as current. Pacman should consume a world-traversable
-published copy, not a path buried inside a private home directory.
+The updater treats the current PKGBUILD's package archives as authoritative for
+that package's output names while preserving unrelated packages already present
+in `repo/x86_64`.
+
+## Publish The Local Repo
+
+Pacman should consume a world-traversable published copy, not a checkout path in
+a private home directory.
 
 Recommended published path:
 
-- `/srv/pacman/strix-halo-gfx1151/x86_64`
+```text
+/srv/pacman/strix-halo-gfx1151/x86_64
+```
 
-Publish the current repo contents like this:
+Publish the current working repo contents:
 
 ```bash
-sudo install -d /srv/pacman/strix-halo-gfx1151
+sudo install -d /srv/pacman/strix-halo-gfx1151/x86_64
 sudo rsync -a --delete repo/x86_64/ /srv/pacman/strix-halo-gfx1151/x86_64/
 ```
 
 ## Enable The Repo In Pacman
 
-Create the repo stanza:
+Create a pacman include file:
 
 ```bash
 printf '%s\n' \
@@ -54,63 +88,29 @@ grep -qxF 'Include = /etc/pacman.d/strix-halo-gfx1151.conf' /etc/pacman.conf \
   | sudo tee -a /etc/pacman.conf >/dev/null
 ```
 
-Refresh metadata:
+Refresh package metadata:
 
 ```bash
 sudo pacman -Sy
 ```
 
-## Install The Stack
+## Install Packages
 
-Use normal package-manager commands once the repo is enabled.
+Use ordinary package-manager commands once the repo is enabled.
 
-Example:
-
-```bash
-paru -S rocm-gfx1151 lemonade llama.cpp-hip-gfx1151 python-vllm-rocm-gfx1151
-```
-
-Prefer `paru` for everyday interactive use if that is already your habit. Drop
-to raw `pacman` only when you need low-level repair or rehearsal behavior.
-
-## Refresh The Repo After A Rebuild
-
-After rebuilding a package, refresh the canonical repo metadata:
+Typical local-inference stack:
 
 ```bash
-python tools/update_pacman_repo.py \
-  --package-dir packages/<pkgname> \
-  --repo-dir repo/x86_64 \
-  --require-packagelist
+paru -S rocm-gfx1151 python-vllm-rocm-gfx1151 llama.cpp-hip-gfx1151 lemonade
 ```
 
-That refresh treats the package archives named by the current PKGBUILD as the
-authoritative repo entries for those package names, while preserving unrelated
-packages already present in `repo/x86_64`.
+Use `paru` for everyday interactive use if that is already your normal Arch
+workflow. Drop to raw `pacman` when you need lower-level repair, rehearsal, or
+transaction debugging.
 
-Then republish:
+## Refresh After A Rebuild
 
-```bash
-sudo rsync -a --delete repo/x86_64/ /srv/pacman/strix-halo-gfx1151/x86_64/
-sudo pacman -Sy
-```
-
-## First Cutover
-
-For an initial migration from an older monolithic replacement such as
-`rocm-gfx1151-bin`:
-
-1. publish the full replacement closure into the local repo
-2. rehearse the transaction against a fake root
-3. perform the live install from the local repo
-4. run smoke tests immediately
-
-That is the bring-up pattern used for the first successful cutover of this
-stack.
-
-## Repair Loop
-
-For a narrow post-cutover fix:
+For a narrow post-build refresh and reinstall:
 
 ```bash
 python tools/update_pacman_repo.py \
@@ -122,59 +122,59 @@ sudo pacman -Sy
 paru -S <pkgname>
 ```
 
-Then rerun only the smoke tests that matter for the repaired package.
+Then rerun the smallest smoke test that proves the repaired package behavior.
 
-## Merge Packages With Amerge
+## First Cutover From Another ROCm Stack
 
-Use `amerge` when you want one command to plan package work, rebuild selected
-source packages, refresh `repo/x86_64`, republish the local pacman repo, and
-reinstall through pacman.
+For an initial migration from a monolithic replacement package such as
+`rocm-gfx1151-bin`:
+
+1. Publish the full replacement closure into the local repo.
+2. Rehearse the pacman transaction against a fake root when the package closure
+   or conflict set is uncertain.
+3. Perform the live install from the local repo.
+4. Run smoke tests immediately and record durable outcomes in the maintainer
+   docs when the result changes the repo's known state.
+
+This is the pattern used for the first successful live cutover of this stack.
+
+## Use Amerge For Package Workflows
+
+`amerge` plans package work, rebuilds selected source packages, refreshes
+`repo/x86_64`, republishes the local pacman repo, and reinstalls through
+pacman.
+
+Build, publish, and install selected packages:
 
 ```bash
 tools/amerge run python-amd-aiter-gfx1151 python-vllm-rocm-gfx1151
 ```
 
-Other common entry points:
-
-- rebuild every package root:
+Other common selectors:
 
 ```bash
 tools/amerge run --all
-```
-
-- rebuild outputs currently installed from this repo:
-
-```bash
 tools/amerge run --installed
-```
-
-- include dependencies in the rebuild:
-
-```bash
 tools/amerge run --deps python-amd-aiter-gfx1151 python-vllm-rocm-gfx1151
-```
-
-- include reverse dependencies in the rebuild:
-
-```bash
 tools/amerge run --rdeps python-amd-aiter-gfx1151
 ```
 
 By default, explicit targets rebuild only those targets. Dependencies are used
-for ordering and can be opted into with `--deps`. If no targets or selectors are
-given, `amerge` prompts on a TTY and fails fast otherwise. `run` builds roots
-in merge order and publishes each root immediately after a successful build.
-When the next group of selected builds needs rebuilt repo outputs through
+for ordering and can be opted into with `--deps`. If no targets or selectors
+are given, `amerge` prompts on a TTY and fails fast otherwise.
+
+`run` builds roots in merge order and publishes each root immediately after a
+successful build. When later selected builds need rebuilt repo outputs through
 `depends` or `makedepends`, `amerge` installs the needed outputs in one
-prerequisite transaction; any remaining selected outputs are installed together
+prerequisite transaction. Any remaining selected outputs are installed together
 at the end.
 
 `amerge` also sanitizes user Python environment variables such as
 `PYTHONPYCACHEPREFIX`, `PYTHONSTARTUP`, `PYTHONUSERBASE`, `PYTHON_EGG_CACHE`,
-and `PYTHONPATH` before running plan commands, and records that in the step log
-when any were present.
+and `PYTHONPATH` before running plan commands, and records that cleanup in the
+step log when any were present.
 
-`amerge` has separate subcommands for phase-specific work:
+### Phase-Specific Amerge Commands
 
 ```bash
 tools/amerge build python-amd-aiter-gfx1151
@@ -183,30 +183,37 @@ tools/amerge install python-amd-aiter-gfx1151
 tools/amerge deploy python-amd-aiter-gfx1151
 ```
 
-`build` runs only package builds and does not pre-warm sudo. Use it for
-unprivileged/autonomous rebuild attempts when the host already has build
-dependencies installed. `run`, `publish`, and `install` validate sudo once
-before step execution, keep the sudo validation timestamp fresh during the
-plan, and execute privileged commands with noninteractive sudo so mid-run
-commands fail instead of prompting.
+- `build` runs package builds only and does not pre-warm sudo. Use it for
+  unprivileged rebuild attempts when host build dependencies are already
+  installed.
+- `publish` refreshes the working repo and published pacman repo for selected
+  package outputs.
+- `install` installs selected outputs through pacman.
+- `deploy` skips `makepkg`; use it after packages already exist and only the
+  host-facing publish/install half remains.
 
-Use `deploy` after a package has already been built and only the host-facing
-publish/install half remains. It refreshes `repo/x86_64` from the selected
-package roots, republishes the local pacman repo, and installs the selected
-package outputs in one retained plan. It does not run `makepkg`.
+`run`, `publish`, and `install` validate sudo once before step execution, keep
+the sudo timestamp fresh during the plan, and execute privileged commands with
+noninteractive sudo so mid-run commands fail instead of prompting.
 
-Noninteractive `amerge` install steps pass pacman's conflict-removal answer bit
-so packages that intentionally conflict with an installed baseline package can
-replace it in the same transaction. The package metadata must still declare the
-relationship with `conflicts` and, for renamed or superseded packages,
-`replaces`.
+Noninteractive install steps pass pacman's conflict-removal answer bit so
+packages that intentionally conflict with an installed baseline can replace it
+in the same transaction. Package metadata must still declare `conflicts` and,
+for renamed or superseded packages, `replaces`.
+
+### Preview, Resume, And Inspect Amerge Plans
 
 Interactive runs preview the merge plan and ask for confirmation unless
 `-y/--noconfirm` is given. Noninteractive runs skip the prompt and preview
 unless `--preview=flat`, `--preview=tree`, or `--preview=commands` is requested.
-The tree preview includes both a dependency-forest projection and the linearized
-build order. Use the commands preview when you want to inspect the exact
-`makepkg`, publish, and install commands before running privileged operations.
+Use the commands preview when you want to inspect the exact `makepkg`, publish,
+and install commands before privileged operations.
+
+```bash
+tools/amerge run --preview=tree python-vllm-rocm-gfx1151
+tools/amerge run --preview=commands python-vllm-rocm-gfx1151
+```
+
 Preview colors default to `--color=auto`; use `--color=always` when capturing a
 colored preview and `--color=never` for plain text.
 
@@ -220,33 +227,32 @@ tools/amerge history show <short-id>
 tools/amerge logs latest --path
 ```
 
-Logs go to:
-
-- `docs/worklog/amerge/<plan-id>/plan.json`
-- `docs/worklog/amerge/<plan-id>/state.json`
-- `docs/worklog/amerge/<plan-id>/<run-id>.log`
-- `docs/worklog/amerge/<plan-id>/logs/<step-id>/`
-
-Each active plan also holds `docs/worklog/amerge/<plan-id>/active.lock`, which
-prevents concurrent resumes or duplicate runs of the same plan. State files are
-written through atomic replacement so interrupted runs remain inspectable and
-resumable.
-
 `amerge history` is an alias for `amerge history list`. It renders retained
 plans as a compact table with the short hex ID, local creation time, status,
-command, and an elided target list. Use `amerge history show <short-id>` for the
-full target list, run IDs, step status, and retained plan path. The short hex ID
-is the suffix of `<plan-id>` and can also be used with `amerge resume` and
-`amerge logs` when it uniquely identifies a retained plan. Retained JSON
-timestamps are persisted in UTC and rendered in local time for human history
-output.
+command, and an elided target list. Use `amerge history show <short-id>` for
+the full target list, run IDs, step status, and retained plan path. The short
+hex ID is the suffix of `<plan-id>` and can also be used with `amerge resume`
+and `amerge logs` when it uniquely identifies a retained plan.
+
+Retained plan files live under `docs/worklog/amerge/<plan-id>/`:
+
+- `plan.json`
+- `state.json`
+- `<run-id>.log`
+- `logs/<step-id>/`
+- `active.lock` for the active plan lock
+
+State files are written through atomic replacement so interrupted runs remain
+inspectable and resumable. Retained JSON timestamps are persisted in UTC and
+rendered in local time for human history output.
 
 ## Run Inference Scenarios
 
 Use the Python harness to run tracked inference scenarios serially across
-`vllm`, `llama.cpp`, and Lemonade.
+`vllm`, `llama.cpp`, Lemonade, FlashAttention, Torch-MIGraphX, and other local
+lanes represented in the catalog.
 
-Validated Gemma 4 26B A4B lane:
+Run a known Gemma 4 lane with explicit model binding:
 
 ```bash
 python tools/run_inference_scenarios.py \
@@ -255,40 +261,27 @@ python tools/run_inference_scenarios.py \
   --model-path google/gemma-4-26B-A4B-it=/path/to/google/gemma-4-26B-A4B-it
 ```
 
-The scenario catalog lives under `inference/scenarios/`.
+Run package-entrypoint smokes for the current `llama.cpp` and Lemonade lanes:
 
-You can also narrow by engine or model:
+```bash
+python tools/run_inference_scenarios.py --engine llama.cpp --engine lemonade --tag smoke
+```
+
+Narrow by engine:
 
 ```bash
 python tools/run_inference_scenarios.py --engine vllm
 python tools/run_inference_scenarios.py --engine lemonade
 ```
 
-For the package-entrypoint smokes that cover the current `llama.cpp` and
-Lemonade scenarios:
-
-```bash
-python tools/run_inference_scenarios.py --engine llama.cpp --engine lemonade --tag smoke
-```
-
 If no selectors are given, the tool prompts on a TTY and fails fast otherwise.
 
-The harness:
+The scenario catalog lives under `inference/scenarios/`. The harness writes run
+records under `docs/worklog/inference-runs/<timestamp>/`, including summary
+JSON plus per-scenario plans, results, logs, and server logs when applicable.
+`docs/worklog/` is intentionally ignored, so full transcripts can stay on disk
+for iteration without polluting tracked docs.
 
-- writes a predictable run root under `docs/worklog/inference-runs/<timestamp>/`
-- stores `run.json` plus per-scenario `plan.json`, `result.json`, `stdout.log`,
-  `stderr.log`, and `server.log` when applicable
-- resolves logical model ids to local filesystem paths through repeated
-  `--model-path MODEL=PATH` bindings
-- captures `amd-smi process -G --json` before and after `vllm` scenarios when
-  `amd-smi` is available
-- fails a `vllm` scenario early if a stale `VLLM::EngineCore` is already
-  holding VRAM from an earlier run
-
-Logs go to:
-
-- `docs/worklog/inference-runs/<timestamp>/summary.json`
-- `docs/worklog/inference-runs/<timestamp>/scenarios/<scenario-id>/`
-
-`docs/worklog/` is intentionally ignored, so the full transcript can stay on
-disk for iteration without polluting tracked docs.
+The harness resolves logical model IDs to local filesystem paths through
+repeated `--model-path MODEL=PATH` bindings. Keep tracked docs on model IDs and
+runtime bindings rather than committed cache snapshot paths.
