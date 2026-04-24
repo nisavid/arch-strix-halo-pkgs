@@ -7,7 +7,7 @@
 - Scaffold template: `llama-cpp`
 - Recipe build method: `cmake`
 - Upstream repo: `https://github.com/ggml-org/llama.cpp.git`
-- Package version: `b8892`
+- Package version: `b8911`
 - Recipe revision: `ad42886 (20260317, 8 path commits)`
 - Recipe steps: `33`
 - Recipe dependencies: `therock`
@@ -48,7 +48,7 @@ binaries find their shared libraries without LD_LIBRARY_PATH.
 ## Update Notes
 
 - If a maintained source-built aur/llama.cpp-vulkan package appears, switch to it as the authoritative baseline.
-- On 2026-04-23, adopted upstream llama.cpp b8892 at 0d0764dfd257c0ae862525c05778207f87b99b1c. The b8884..b8892 range updates HunyuanVL model loading and mtmd support, server transcription and tool-call handling, WebGPU/SYCL code, and speculative example checkpointing; no Vulkan-specific build-system change was found, but the server/tool source delta is relevant to the packaged runtime.
+- On 2026-04-23, adopted upstream llama.cpp b8911 at 5d2b52d80d9f375a6e81d07e212d047d8ee4f76e. The b8892..b8911 range updates shared server/API handling, fixes CVE-2026-21869 negative n_discard handling, updates ModelOpt mixed-precision GGUF conversion, and adds WebGPU/SYCL/Snapdragon work; no Vulkan-specific build-system change was found, but the server/tool source delta is relevant to the packaged runtime.
 - Until then, compare runtime/package expectations against the -bin package and source-build conventions against aur/llama.cpp.
 
 ## Maintainer Starting Points

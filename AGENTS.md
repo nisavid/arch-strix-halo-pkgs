@@ -23,8 +23,8 @@ without chat history.
   ending the work.
 - Delete session-only inputs once their durable content has been extracted.
 - Do not consider a work plan finished until its session-only inputs are gone.
-- When beginning repo work or closing a development arc, enforce the
-  dependency freshness gate before unrelated backlog work. First check
+- When beginning repo work or closing a development arc, enforce the 24-hour
+  dependency freshness sweep before unrelated backlog work. First check
   `docs/maintainers/current-state.md` for the last completed or acted-on sweep,
   then apply the due-state rules in `docs/maintainers/update-workflows.md`. Do
   not run `tools/check_package_updates.py` when those docs show a completed or

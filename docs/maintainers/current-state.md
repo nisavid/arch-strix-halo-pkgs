@@ -110,13 +110,31 @@ runtime. The 2026-04-22 20:41 EDT refreshed freshness sweep then reported all
 sweep is older than 24 hours or invalidated by package policy, package
 directory, checker-logic, or relevant source-metadata changes.
 
-The freshness gate is open again. On 2026-04-24 01:06 EDT,
-`tools/check_package_updates.py --json --fail-on actionable` completed and
-reported actionable statuses: `llama_cpp` has stable upstream `b8913` and AUR
-HIP baseline `b8909-1` available, `transformers` has stable upstream `5.6.2`
-available, `rocm_pytorch` release branch is ahead, `therock` recipe input is
-ahead, and `aiter` has a candidate branch head ahead. Triage those freshness
-items before ordinary backlog work.
+The 2026-04-23 21:51 EDT refreshed freshness sweep found actionable updates in
+five lanes and updated `policies/package-freshness.toml` with the reviewed
+heads. llama.cpp `b8911` at commit
+`5d2b52d80d9f375a6e81d07e212d047d8ee4f76e` was adopted for both HIP and
+Vulkan packages because the `b8892..b8911` range flips HIP graphs on by
+default, includes shared server/API fixes, fixes CVE-2026-21869 negative
+`n_discard` handling, and updates ModelOpt mixed-precision GGUF conversion.
+The same sweep reviewed but did not repin AITER main through
+`8432ff3b6e356bc0f8c664a686334e3be7e736ec`, ROCm PyTorch `release/2.11`
+through `0320cc5b2fbba866c7ac1aa5deb8c14dd9a37b95`, Transformers `5.6.2`,
+and Blackcat Informatics `upstream/ai-notes` main through
+`c4dbe5046f45550c2e0bfd8fc49101a992c08076`. Those reviewed ranges either do
+not overlap current local patch/runtime touchpoints or remain gated behind a
+separate package/scenario validation lane. Treat package freshness as
+satisfied until this sweep is older than 24 hours or invalidated by package
+policy, package directory, checker-logic, or relevant source-metadata changes.
+`tools/amerge build llama.cpp-hip-gfx1151 llama.cpp-vulkan-gfx1151
+lemonade-server` plan `a9437361` completed and produced
+`llama.cpp-hip-gfx1151-b8911-1-x86_64.pkg.tar.zst`,
+`llama.cpp-vulkan-gfx1151-b8911-1-x86_64.pkg.tar.zst`, and
+`lemonade-server-10.2.0-5-x86_64.pkg.tar.zst`. Host deploy then completed:
+`tools/amerge deploy llama.cpp-hip-gfx1151 llama.cpp-vulkan-gfx1151
+lemonade-server` plan `db292c1d` installed those artifacts. `pacman -Q`
+reports `llama.cpp-hip-gfx1151 b8911-1`,
+`llama.cpp-vulkan-gfx1151 b8911-1`, and `lemonade-server 10.2.0-5`.
 
 The `python-flash-attn-rocm-gfx1151` package experiment now tracks ROCm
 FlashAttention `main_perf` commit `3f94643fb41bcedded28c85185a8e11d42ef1592`
@@ -399,10 +417,10 @@ package updates:
   AOCL-LibM's SCons variables rather than using the recipe's venv-local pip
   bootstrap.
 - `llama.cpp-hip-gfx1151` and `llama.cpp-vulkan-gfx1151` package definitions
-  track upstream llama.cpp `b8892` at commit
-  `0d0764dfd257c0ae862525c05778207f87b99b1c`. The live host reports
-  `llama.cpp-hip-gfx1151 b8892-1` and
-  `llama.cpp-vulkan-gfx1151 b8892-1`.
+  track upstream llama.cpp `b8911` at commit
+  `5d2b52d80d9f375a6e81d07e212d047d8ee4f76e`. The live host reports
+  `llama.cpp-hip-gfx1151 b8911-1` and
+  `llama.cpp-vulkan-gfx1151 b8911-1`.
   The Vulkan package metadata still includes `spirv-headers`.
 - `python-mistral-common-gfx1151` tracks PyPI `1.11.0`; the live host reports
   `python-mistral-common-gfx1151 1.11.0-1`.
@@ -425,7 +443,7 @@ package updates:
   now agree: pacman reports `3.0.0+git0ec280cf-1`, while
   `importlib.metadata.version("triton")` reports `3.0.0+git0ec280cf`.
 - `lemonade-server` package metadata points its system-managed llama.cpp
-  backends at `b8892`; the live host reports `lemonade-server 10.2.0-4`.
+  backends at `b8911`; the live host reports `lemonade-server 10.2.0-5`.
 
 ## Live Smoke Coverage
 
@@ -472,6 +490,11 @@ The following smoke checks have already passed on the reference host:
   `python tools/run_inference_scenarios.py --engine llama.cpp --engine lemonade --tag smoke`
   passed the same 6/6 selected scenarios. The run root was
   `docs/worklog/inference-runs/20260422T211346`.
+- On 2026-04-23, after deploying `llama.cpp-hip-gfx1151 b8911-1`,
+  `llama.cpp-vulkan-gfx1151 b8911-1`, and `lemonade-server 10.2.0-5`,
+  `python tools/run_inference_scenarios.py --engine llama.cpp --engine lemonade --tag smoke`
+  passed the same 6/6 selected scenarios. The run root was
+  `docs/worklog/inference-runs/20260423T221640`.
 - On 2026-04-20, `aocl-libm-gfx1151 5.2.2-1` and
   `aocl-utils-gfx1151 5.2.2-1` passed the package-local installed-runtime
   guard:
@@ -1132,9 +1155,9 @@ The following smoke checks have already passed on the reference host:
   - `llamacpp:rocm` and `llamacpp:vulkan` are packaged system-managed backends
   - `llamacpp:cpu` remains Lemonade-managed and downloadable
   - `llamacpp:system` is removed from this custom variant
-  - the deployed backend table identifies the packaged backends explicitly as:
-    - `System llama-server-hip-gfx1151 llama.cpp b8892`
-    - `System llama-server-vulkan-gfx1151 llama.cpp b8892`
+  - the refreshed backend table identifies the packaged backends explicitly as:
+    - `System llama-server-hip-gfx1151 llama.cpp b8911`
+    - `System llama-server-vulkan-gfx1151 llama.cpp b8911`
 
 ## Known Deferred Follow-up Work
 

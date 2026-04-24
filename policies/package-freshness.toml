@@ -15,7 +15,7 @@ packages = ["therock-gfx1151"]
 priority = "high"
 workflow = "recipe_update"
 checks = [
-  { id = "ai-notes", role = "primary", kind = "submodule", path = "upstream/ai-notes", ref = "refs/heads/main", recorded = "ad428861b726f6bd0e0a533e9e2fccdef43d0709", comparison = "sha" },
+  { id = "ai-notes", role = "primary", kind = "submodule", path = "upstream/ai-notes", ref = "refs/heads/main", recorded = "c4dbe5046f45550c2e0bfd8fc49101a992c08076", comparison = "sha" },
 ]
 
 [families.aocl_utils]
@@ -68,7 +68,7 @@ packages = ["python-pytorch-opt-rocm-gfx1151"]
 priority = "high"
 workflow = "upstream_source_update"
 checks = [
-  { id = "release-branch", role = "primary", kind = "git_ref", repo = "https://github.com/ROCm/pytorch.git", ref = "refs/heads/release/2.11", recorded = "50bfde7c08dc92b69b71d2b76d3b2d3709cf28f6", comparison = "sha" },
+  { id = "release-branch", role = "primary", kind = "git_ref", repo = "https://github.com/ROCm/pytorch.git", ref = "refs/heads/release/2.11", recorded = "0320cc5b2fbba866c7ac1aa5deb8c14dd9a37b95", comparison = "sha" },
   { id = "arch", role = "baseline", kind = "arch_package", package = "python-pytorch-opt-rocm", recorded = "2.11.0-3", comparison = "pkgver" },
 ]
 
@@ -105,7 +105,7 @@ priority = "high"
 workflow = "upstream_source_update"
 checks = [
   { id = "release", role = "primary", kind = "github_release", repo = "ROCm/aiter", recorded = "0.1.12.post1", tag_prefix = "v", comparison = "pep440" },
-  { id = "main", role = "candidate", kind = "git_ref", repo = "https://github.com/ROCm/aiter.git", ref = "refs/heads/main", recorded = "5162472c87d0cb18b1a9fc0ee85949881073593c", comparison = "sha" },
+  { id = "main", role = "candidate", kind = "git_ref", repo = "https://github.com/ROCm/aiter.git", ref = "refs/heads/main", recorded = "8432ff3b6e356bc0f8c664a686334e3be7e736ec", comparison = "sha" },
 ]
 
 [families.flash_attention]
@@ -202,8 +202,8 @@ packages = ["python-transformers-gfx1151"]
 priority = "medium"
 workflow = "upstream_source_update"
 checks = [
-  { id = "pypi", role = "primary", kind = "pypi", package = "transformers", recorded = "5.6.0", comparison = "pep440" },
-  { id = "tag", role = "primary", kind = "github_tags", repo = "huggingface/transformers", recorded = "5.6.0", tag_prefix = "v", comparison = "pep440", include_prereleases = false },
+  { id = "pypi", role = "primary", kind = "pypi", package = "transformers", recorded = "5.6.2", comparison = "pep440" },
+  { id = "tag", role = "primary", kind = "github_tags", repo = "huggingface/transformers", recorded = "5.6.2", tag_prefix = "v", comparison = "pep440", include_prereleases = false },
 ]
 
 [families.llama_cpp]
@@ -211,8 +211,8 @@ packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"]
 priority = "high"
 workflow = "upstream_source_update"
 checks = [
-  { id = "release", role = "primary", kind = "github_release", repo = "ggml-org/llama.cpp", recorded = "b8892", comparison = "prefixed_integer" },
-  { id = "aur-hip", role = "baseline", kind = "aur", package = "llama.cpp-hip", recorded = "b8875-1", comparison = "pkgver" },
+  { id = "release", role = "primary", kind = "github_release", repo = "ggml-org/llama.cpp", recorded = "b8911", comparison = "prefixed_integer" },
+  { id = "aur-hip", role = "baseline", kind = "aur", package = "llama.cpp-hip", recorded = "b8909-1", comparison = "pkgver" },
   { id = "aur-vulkan", role = "baseline", kind = "aur", package = "llama.cpp-vulkan-bin", recorded = "b7376-1", comparison = "pkgver" },
 ]
 

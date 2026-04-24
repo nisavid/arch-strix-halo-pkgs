@@ -296,7 +296,7 @@ divergence_notes = [
 ]
 update_notes = [
   "When updating, inspect the current Arch python-pytorch pkgbase first, then re-evaluate every carried recipe/source patch against the chosen ROCm fork.",
-  "On 2026-04-22, reviewed ROCm/pytorch release/2.11 through 50bfde7c08dc92b69b71d2b76d3b2d3709cf28f6. The latest reviewed delta adds ROCm Inductor GEMM, pointwise, and reduction config coverage, with no overlap against the local Python 3.14 wheel flow, HIPGraph stub, NumPy target define, MAGMA version encoding, gfx1151 CK enablement, or BLAS/provider carry. Record the reviewed branch head without repinning the package source until a local workload needs those fixes or a broader PyTorch rebuild lane is already open.",
+  "On 2026-04-23, reviewed ROCm/pytorch release/2.11 through 0320cc5b2fbba866c7ac1aa5deb8c14dd9a37b95. The latest reviewed delta only updates CI Numba version constraints for Python 3.14, with no overlap against the local Python 3.14 wheel flow, HIPGraph stub, NumPy target define, MAGMA version encoding, gfx1151 CK enablement, BLAS/provider carry, or installed runtime behavior. Record the reviewed branch head without repinning the package source until a local workload needs those fixes or a broader PyTorch rebuild lane is already open.",
   "Keep the package version aligned with the built wheel version; do not repeat the earlier mismatch where the package claimed 2.11.0 but the built wheel came from develop.",
   "Keep openblas explicit in both depends and makedepends so the build does not drift back to generic host BLAS auto-detection.",
   "Preserve the current Arch Python 3.14 wheel flow unless upstream changes materially: build CMake artifacts first, tolerate the known _sysconfigdata__linux_x86_64-linux-gnu.cpython-314.pyc install failure, run the safe CMake install scripts that stage PyTorch C++ extension headers and Caffe2 package metadata, restage the built torch/lib and torch/bin payloads, then run SKIP_BUILD_DEPS=1 python setup.py bdist_wheel."
@@ -518,7 +518,7 @@ divergence_notes = [
 ]
 update_notes = [
   "Review upstream AITER main as a freshness candidate branch. Adopt a new pinned snapshot when the reviewed range is relevant to local build/runtime behavior, known blockers, or patch reduction; otherwise record the reviewed head without changing the packaged source commit.",
-  "On 2026-04-22, reviewed AITER main through 5162472c87d0cb18b1a9fc0ee85949881073593c. The latest reviewed delta is gfx942/gfx950 tuning, logging, MHA test coverage changes, and GLM-shaped A8W8 configs; it does not touch the gfx1151 OPUS FP8, RDNA header, JIT, or AITER MoE patch points. Record the reviewed candidate head without repinning the package source.",
+  "On 2026-04-23, reviewed AITER main through 8432ff3b6e356bc0f8c664a686334e3be7e736ec. The latest reviewed delta adds Gemma RMSNorm quant-fusion support, A16W16 tuning, MI308 MLA PS-mode work, FlyDSL AOT fixes, Kimi K2 FP4 tuned fMoE config updates, and CI/release workflow changes. It does not resolve the local gfx1151 OPUS FP8 mfma_adaptor gap, replace the RDNA header or JIT runtime patches, or change the currently validated Gemma TRITON default lane, so record the reviewed candidate head without repinning the package source.",
   "Treat FlyDSL as a separate tracked package story; do not silently fold an unpublished wheel into this package.",
   "Keep the installed-system JIT runtime patch until upstream AITER stops assuming `hipcc` is on the ambient PATH and correctly imports modules copied to the writable user JIT cache from read-only site-packages installs.",
   "Keep the package's explicit ROCm toolchain exports in `build()` until upstream AITER stops probing `hipconfig` and `hipcc` through ambient shell state. The concrete build failure was `Could not find hipconfig in PATH or ROCM_HOME(/usr)`.",
@@ -911,7 +911,7 @@ scaffold_notes = [
 [packages."llama.cpp-hip-gfx1151"]
 recipe_key = "llamacpp"
 template = "llama-cpp"
-upstream_version = "b8892"
+upstream_version = "b8911"
 pkgdesc = "llama.cpp ROCm backend rebuilt for Strix Halo gfx1151"
 url = "https://github.com/ggml-org/llama.cpp"
 license = ["MIT"]
@@ -924,17 +924,17 @@ divergence_notes = [
 ]
 update_notes = [
   "Diff against aur/llama.cpp-hip first during updates, then consult aur/llama.cpp for shared install/dependency conventions outside the ROCm-specific split.",
-  "On 2026-04-23, adopted upstream llama.cpp b8892 at 0d0764dfd257c0ae862525c05778207f87b99b1c. The b8884..b8892 range updates HunyuanVL model loading and mtmd support, server transcription and tool-call handling, WebGPU/SYCL code, and speculative example checkpointing; no HIP-specific build-system change was found, but the server/tool source delta is relevant to the packaged runtime.",
+  "On 2026-04-23, adopted upstream llama.cpp b8911 at 5d2b52d80d9f375a6e81d07e212d047d8ee4f76e. The b8892..b8911 range flips HIP graphs on by default, fixes server handling for LFM2-Audio transcriptions, Anthropic prefix caching and chat_template_kwargs forwarding, fixes CVE-2026-21869 negative n_discard handling, and updates ModelOpt mixed-precision GGUF conversion; no local packaging patch carry changed.",
   "Keep the backend-specific package split explicit until benchmarking proves a routing wrapper is worth maintaining."
 ]
 provides = ["llama.cpp-hip-gfx1151", "llama.cpp-hip"]
 conflicts = ["llama.cpp-hip"]
 depends = ["gcc-libs", "glibc", "hip-runtime-amd-gfx1151", "rocm-core-gfx1151"]
 makedepends = ["cmake", "ninja", "rocm-llvm-gfx1151"]
-src_subdir = "llama.cpp-0d0764dfd257c0ae862525c05778207f87b99b1c"
+src_subdir = "llama.cpp-5d2b52d80d9f375a6e81d07e212d047d8ee4f76e"
 upstream_name = "llama.cpp"
 baseline_kind = "closest-upstream"
-source_refs = ["llama.cpp-0d0764dfd257c0ae862525c05778207f87b99b1c.tar.gz::https://github.com/ggml-org/llama.cpp/archive/0d0764dfd257c0ae862525c05778207f87b99b1c.tar.gz"]
+source_refs = ["llama.cpp-5d2b52d80d9f375a6e81d07e212d047d8ee4f76e.tar.gz::https://github.com/ggml-org/llama.cpp/archive/5d2b52d80d9f375a6e81d07e212d047d8ee4f76e.tar.gz"]
 sha256sums = ["SKIP"]
 patches_dir = "patches/llama.cpp-hip-gfx1151"
 scaffold_notes = [
@@ -947,7 +947,7 @@ scaffold_notes = [
 [packages."llama.cpp-vulkan-gfx1151"]
 recipe_key = "llamacpp"
 template = "llama-cpp"
-upstream_version = "b8892"
+upstream_version = "b8911"
 pkgdesc = "llama.cpp Vulkan backend rebuilt for Strix Halo gfx1151"
 url = "https://github.com/ggml-org/llama.cpp"
 license = ["MIT"]
@@ -960,17 +960,17 @@ divergence_notes = [
 ]
 update_notes = [
   "If a maintained source-built aur/llama.cpp-vulkan package appears, switch to it as the authoritative baseline.",
-  "On 2026-04-23, adopted upstream llama.cpp b8892 at 0d0764dfd257c0ae862525c05778207f87b99b1c. The b8884..b8892 range updates HunyuanVL model loading and mtmd support, server transcription and tool-call handling, WebGPU/SYCL code, and speculative example checkpointing; no Vulkan-specific build-system change was found, but the server/tool source delta is relevant to the packaged runtime.",
+  "On 2026-04-23, adopted upstream llama.cpp b8911 at 5d2b52d80d9f375a6e81d07e212d047d8ee4f76e. The b8892..b8911 range updates shared server/API handling, fixes CVE-2026-21869 negative n_discard handling, updates ModelOpt mixed-precision GGUF conversion, and adds WebGPU/SYCL/Snapdragon work; no Vulkan-specific build-system change was found, but the server/tool source delta is relevant to the packaged runtime.",
   "Until then, compare runtime/package expectations against the -bin package and source-build conventions against aur/llama.cpp."
 ]
 provides = ["llama.cpp-vulkan-gfx1151", "llama.cpp-vulkan"]
 conflicts = ["llama.cpp-vulkan"]
 depends = ["gcc-libs", "glibc", "vulkan-icd-loader"]
 makedepends = ["cmake", "ninja", "rocm-llvm-gfx1151", "shaderc", "spirv-headers", "vulkan-headers"]
-src_subdir = "llama.cpp-0d0764dfd257c0ae862525c05778207f87b99b1c"
+src_subdir = "llama.cpp-5d2b52d80d9f375a6e81d07e212d047d8ee4f76e"
 upstream_name = "llama.cpp"
 baseline_kind = "closest-upstream"
-source_refs = ["llama.cpp-0d0764dfd257c0ae862525c05778207f87b99b1c.tar.gz::https://github.com/ggml-org/llama.cpp/archive/0d0764dfd257c0ae862525c05778207f87b99b1c.tar.gz"]
+source_refs = ["llama.cpp-5d2b52d80d9f375a6e81d07e212d047d8ee4f76e.tar.gz::https://github.com/ggml-org/llama.cpp/archive/5d2b52d80d9f375a6e81d07e212d047d8ee4f76e.tar.gz"]
 sha256sums = ["SKIP"]
 patches_dir = "patches/llama.cpp-vulkan-gfx1151"
 scaffold_notes = [
