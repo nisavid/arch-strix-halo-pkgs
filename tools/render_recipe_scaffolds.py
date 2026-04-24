@@ -101,8 +101,6 @@ _setup_compiler_env() {
     done
     export PATH="${_ccache_dir}:$PATH"
     export CCACHE_BASEDIR="${CCACHE_BASEDIR:-$srcdir}"
-    export CCACHE_DIR="${CCACHE_DIR:-$srcdir/.ccache/store}"
-    export CCACHE_TEMPDIR="${CCACHE_TEMPDIR:-$srcdir/.ccache/tmp}"
     export CCACHE_NOCPP2=1
     export CCACHE_PATH="${_compiler_root}:/opt/rocm/bin:/usr/bin"
     export CC=amdclang
@@ -662,7 +660,13 @@ _source_tree_has_all_source_patches() {
     grep -Fq 'Use PyTorch top-k/top-p filtering on ROCm' \
       vllm/v1/sample/ops/topk_topp_sampler.py &&
     grep -Fq 'Keep valid_count type stable across branches' \
-      vllm/v1/spec_decode/utils.py
+      vllm/v1/spec_decode/utils.py &&
+    grep -Fq 'def update_dflash(config_dict: dict, pre_trained_config: dict) -> None:' \
+      vllm/transformers_utils/configs/speculators/algos.py &&
+    grep -Fq 'def _flash_attn_uses_triton_rocm() -> bool:' \
+      vllm/platforms/rocm.py &&
+    grep -Fq 'def rocm_flash_attn_supports_vllm_varlen_api() -> bool:' \
+      vllm/v1/attention/backends/fa_utils.py
 }
 
 _apply_all_source_patches() {
@@ -1204,14 +1208,18 @@ package() {{
                 ]
             )
         config_settings = policy_pkg.get("build_config_settings", [])
+        build_flags = ["--wheel", "--no-isolation"]
+        if policy_pkg.get("skip_dependency_check"):
+            build_flags.append("--skip-dependency-check")
+        build_command_head = "python -m build " + " ".join(build_flags)
         if config_settings:
-            build_command_lines = ["python -m build --wheel --no-isolation \\"]
+            build_command_lines = [f"{build_command_head} \\"]
             for idx, setting in enumerate(config_settings):
                 suffix = " \\" if idx < len(config_settings) - 1 else ""
                 build_command_lines.append(f"    -C{shell_quote(setting)}{suffix}")
             build_command = "\n".join(build_command_lines)
         else:
-            build_command = "python -m build --wheel --no-isolation"
+            build_command = build_command_head
         build_body = f"""\
 build() {{
   cd "$srcdir/{src_subdir}"

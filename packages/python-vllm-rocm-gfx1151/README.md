@@ -7,13 +7,13 @@
 - Recipe build method: `pip`
 - Upstream repo: `https://github.com/vllm-project/vllm.git`
 - Package version: `0.19.1-6`
-- Recipe revision: `ad42886 (20260317, 8 path commits)`
+- Recipe revision: `b453c33 (20260422, 9 path commits)`
 - Recipe steps: `19, 20, 21, 22, 23, 24`
 - Recipe dependencies: `pytorch, triton, aotriton`
 - Recorded reference packages: `aur/python-vllm`
 - Authoritative reference package: `aur/python-vllm`
 - Advisory reference packages: `none`
-- Applied source patch files/actions: `41`
+- Applied source patch files/actions: `42`
 
 ## Recipe notes
 

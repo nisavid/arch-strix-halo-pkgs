@@ -55,10 +55,6 @@
   trial would have dropped the package's manual submodule initialization,
   `ROCM_HOME`, `PYTORCH_ROCM_ARCH`, `VERSION_SUFFIX`, and post-install RPATH
   logic, so package-local docs were updated narrowly instead.
-- Review the new Blackcat Informatics recipe note that adds `duckdb` to the
-  native C/C++ wheel set before adding a local `python-duckdb-gfx1151`
-  package. Treat it as a candidate only until a concrete local analytics or
-  Parquet workflow needs it.
 - Keep the local `python-transformers-gfx1151` and
   `python-mistral-common-gfx1151` closure lanes aligned. The current Gemma 4
   processor path needs both `transformers.models.gemma4` and

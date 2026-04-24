@@ -7,7 +7,7 @@
 - Recipe build method: `cargo`
 - Upstream repo: ``
 - Package version: `3.11.8`
-- Recipe revision: `ad42886 (20260317, 8 path commits)`
+- Recipe revision: `b453c33 (20260422, 9 path commits)`
 - Recipe steps: `30`
 - Recipe dependencies: `cpython`
 - Recorded reference packages: `extra/python-orjson, cachyos-extra-znver4/python-orjson`

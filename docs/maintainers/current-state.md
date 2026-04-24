@@ -1,6 +1,6 @@
 # Current State
 
-Status as of 2026-04-23.
+Status as of 2026-04-24.
 
 ## Rebuild Revalidation Boundary
 
@@ -135,6 +135,48 @@ lemonade-server` plan `a9437361` completed and produced
 lemonade-server` plan `db292c1d` installed those artifacts. `pacman -Q`
 reports `llama.cpp-hip-gfx1151 b8911-1`,
 `llama.cpp-vulkan-gfx1151 b8911-1`, and `lemonade-server 10.2.0-5`.
+
+On 2026-04-24, the repo adopted the reviewed Blackcat Informatics
+`upstream/ai-notes` recipe input at
+`c4dbe5046f45550c2e0bfd8fc49101a992c08076` and onboarded
+`python-duckdb-gfx1151` from the new native-wheel recipe note. The package is
+rendered from `policies/recipe-packages.toml` with Arch `extra/python-duckdb`
+as the authoritative reference and CachyOS `python-duckdb` as advisory, and
+`policies/package-freshness.toml` tracks DuckDB against PyPI `1.5.2` and Arch
+`python-duckdb 1.5.2-1`. `makepkg --verifysource` and
+`makepkg --printsrcinfo` pass for the new package. The first
+`tools/amerge run python-duckdb-gfx1151` attempt stopped before compilation
+because the host was missing the transient makedepend
+`python-scikit-build-core`; after that dependency was installed, the next
+attempt reached DuckDB's no-isolation build dependency check and exposed that
+Arch's `cmake` and `pybind11` packages do not satisfy DuckDB's PyPI metadata
+names `cmake` and `pybind11[global]`. The package now sets
+`skip_dependency_check = true`, keeps the actual Arch makedepends explicit,
+and `tools/amerge build python-duckdb-gfx1151` plan `b9882393` produced
+`python-duckdb-gfx1151-1.5.2-1-x86_64.pkg.tar.zst`. A staged package-tree
+smoke imported `duckdb 1.5.2` and returned `[(42,)]` for `select 21 * 2`.
+The first deploy attempt could not validate sudo noninteractively, but after
+host install `pacman -Q` reports `python-duckdb-gfx1151 1.5.2-1` with
+`python-gfx1151 3.14.4-1`. The installed-system smoke imported `duckdb 1.5.2`
+from `/usr/lib/python3.14/site-packages/duckdb/__init__.py` and returned
+`[(42,)]` for `select 21 * 2`.
+
+The same policy-invalidated freshness recheck reviewed llama.cpp `b8913` at
+commit `e5f070a1dca19baf3ae983273846b9a8c7c4231f`. The `b8911..b8913` range
+only touches WebGPU RMS-fuse aliasing and a CLI cleanup for redundant local
+sampling variables, so the local HIP/Vulkan packages remain pinned to the
+already built and deployed `b8911` source while `policies/package-freshness.toml`
+records `b8913` as the reviewed release head.
+
+The same recheck also reviewed AITER main through
+`ed2db5ef0f6444b735f018c0f4688058c1bfeb26`. The
+`8432ff3b6e356bc0f8c664a686334e3be7e736ec..ed2db5ef0f6444b735f018c0f4688058c1bfeb26`
+range contains two CI-only changes plus a Gluon paged-attention decode
+sliding-window MTP fix. Keep that recorded as a reviewed candidate head for
+future speculative/MTP validation, but the packaged AITER source remains pinned
+to the current host-validated commit because this range does not address the
+gfx1151 OPUS FP8 `mfma_adaptor` gap or replace the package's local JIT/RDNA
+patch carry.
 
 The `python-flash-attn-rocm-gfx1151` package experiment now tracks ROCm
 FlashAttention `main_perf` commit `3f94643fb41bcedded28c85185a8e11d42ef1592`

@@ -7,7 +7,7 @@
 - Recipe build method: `autoconf`
 - Upstream repo: `https://github.com/python/cpython.git`
 - Package version: `3.14.4`
-- Recipe revision: `ad42886 (20260317, 8 path commits)`
+- Recipe revision: `b453c33 (20260422, 9 path commits)`
 - Recipe steps: `7`
 - Recipe dependencies: `therock`
 - Recorded reference packages: `core/python, cachyos-znver4/python`

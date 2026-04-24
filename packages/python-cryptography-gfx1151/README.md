@@ -7,7 +7,7 @@
 - Recipe build method: `cargo`
 - Upstream repo: ``
 - Package version: `46.0.7`
-- Recipe revision: `ad42886 (20260317, 8 path commits)`
+- Recipe revision: `b453c33 (20260422, 9 path commits)`
 - Recipe steps: `30`
 - Recipe dependencies: `cpython`
 - Recorded reference packages: `extra/python-cryptography, cachyos-extra-znver4/python-cryptography`

@@ -7,7 +7,7 @@
 - Recipe build method: `pip`
 - Upstream repo: `https://github.com/ROCm/aiter.git`
 - Package version: `0.1.12.post2.dev69+gcf12b1381`
-- Recipe revision: `ad42886 (20260317, 8 path commits)`
+- Recipe revision: `b453c33 (20260422, 9 path commits)`
 - Recipe steps: `28`
 - Recipe dependencies: `pytorch, vllm`
 - Recorded reference packages: `extra/python-pytorch-opt-rocm, extra/python-pytorch-rocm`
@@ -48,6 +48,7 @@ aiter_meta/csrc/include/ files for gfx1151 RDNA 3.5 compatibility.
 
 - Review upstream AITER main as a freshness candidate branch. Adopt a new pinned snapshot when the reviewed range is relevant to local build/runtime behavior, known blockers, or patch reduction; otherwise record the reviewed head without changing the packaged source commit.
 - On 2026-04-23, reviewed AITER main through 8432ff3b6e356bc0f8c664a686334e3be7e736ec. The latest reviewed delta adds Gemma RMSNorm quant-fusion support, A16W16 tuning, MI308 MLA PS-mode work, FlyDSL AOT fixes, Kimi K2 FP4 tuned fMoE config updates, and CI/release workflow changes. It does not resolve the local gfx1151 OPUS FP8 mfma_adaptor gap, replace the RDNA header or JIT runtime patches, or change the currently validated Gemma TRITON default lane, so record the reviewed candidate head without repinning the package source.
+- On 2026-04-24, reviewed AITER main through ed2db5ef0f6444b735f018c0f4688058c1bfeb26. The latest reviewed delta adds a Gluon paged-attention decode sliding-window MTP fix plus CI-only changes. Keep it recorded as a reviewed candidate head for future speculative/MTP work, but do not repin this package until a host scenario needs that Gluon path or the range reduces current gfx1151 patch carry.
 - Treat FlyDSL as a separate tracked package story; do not silently fold an unpublished wheel into this package.
 - Keep the installed-system JIT runtime patch until upstream AITER stops assuming `hipcc` is on the ambient PATH and correctly imports modules copied to the writable user JIT cache from read-only site-packages installs.
 - Keep the package's explicit ROCm toolchain exports in `build()` until upstream AITER stops probing `hipconfig` and `hipcc` through ambient shell state. The concrete build failure was `Could not find hipconfig in PATH or ROCM_HOME(/usr)`.

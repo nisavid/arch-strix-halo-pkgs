@@ -7,7 +7,7 @@
 - Recipe build method: `pip`
 - Upstream repo: ``
 - Package version: `0.25.0`
-- Recipe revision: `ad42886 (20260317, 8 path commits)`
+- Recipe revision: `b453c33 (20260422, 9 path commits)`
 - Recipe steps: `31`
 - Recipe dependencies: `cpython, pytorch`
 - Recorded reference packages: `extra/python-zstandard, cachyos-extra-znver4/python-zstandard`
@@ -17,7 +17,7 @@
 
 ## Recipe notes
 
-Builds and installs numpy, sentencepiece, zstandard, asyncpg from
+Builds and installs numpy, sentencepiece, zstandard, asyncpg, duckdb from
 source with Zen 5 optimization flags.
 
 numpy: cmake pip wrapper breaks in build isolation; replaced with

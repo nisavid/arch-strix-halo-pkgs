@@ -8,7 +8,7 @@
 - Recipe build method: `cmake`
 - Upstream repo: `https://github.com/ggml-org/llama.cpp.git`
 - Package version: `b8911`
-- Recipe revision: `ad42886 (20260317, 8 path commits)`
+- Recipe revision: `b453c33 (20260422, 9 path commits)`
 - Recipe steps: `33`
 - Recipe dependencies: `therock`
 - Recorded reference packages: `aur/llama.cpp-hip, aur/llama.cpp`
@@ -19,6 +19,10 @@
 ## Recipe notes
 
 llama.cpp built with TWO backends for Lemonade:
+
+Source branch: upstream master. APEX GGUF support is expected on current
+upstream HEAD, so step 33 should build plain ggml-org/llama.cpp rather
+than a stale local "head-apex" side branch.
 
 ROCm (hipBLAS): Primary backend. Best prefill <32K context. Uses
 amdclang from TheRock with full Zen 5 + gfx1151 HIP optimization

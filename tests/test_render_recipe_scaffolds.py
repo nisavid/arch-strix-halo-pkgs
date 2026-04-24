@@ -129,6 +129,7 @@ def test_native_wheel_renderer_applies_source_patches_and_build_config_settings(
             "pypi_name": "sample-native",
             "src_subdir": "sample-native-1.2.3",
             "source_patches": ["0001-sample.patch"],
+            "skip_dependency_check": True,
             "build_config_settings": [
                 "setup-args=-Dblas=openblas",
                 "setup-args=-Dlapack=openblas",
@@ -152,9 +153,17 @@ def test_native_wheel_renderer_applies_source_patches_and_build_config_settings(
 
     assert "0001-sample.patch" in pkgbuild
     assert 'patch --dry-run -R -Np1 -i "$srcdir/0001-sample.patch"' in pkgbuild
-    assert "python -m build --wheel --no-isolation \\\n" in pkgbuild
+    assert "python -m build --wheel --no-isolation --skip-dependency-check \\\n" in pkgbuild
     assert "    -Csetup-args=-Dblas=openblas \\\n" in pkgbuild
     assert "    -Csetup-args=-Dlapack=openblas\n" in pkgbuild
+
+
+def test_compiler_env_leaves_ccache_storage_to_host_configuration() -> None:
+    snippet = render_recipe_scaffolds.compiler_env_snippet("/opt/rocm/lib/llvm/bin")
+
+    assert "CCACHE_BASEDIR" in snippet
+    assert "CCACHE_DIR" not in snippet
+    assert "CCACHE_TEMPDIR" not in snippet
 
 
 def test_rust_wheel_renderer_applies_source_patches() -> None:

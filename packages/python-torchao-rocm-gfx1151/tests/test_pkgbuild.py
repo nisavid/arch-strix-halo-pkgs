@@ -67,6 +67,7 @@ def test_package_docs_record_compatibility_and_runpath_story():
 def test_native_wheel_recipe_patch_metadata_uses_generic_build_venv_paths():
     recipes = [
         REPO_ROOT / "packages/python-asyncpg-gfx1151/recipe.json",
+        REPO_ROOT / "packages/python-duckdb-gfx1151/recipe.json",
         REPO_ROOT / "packages/python-numpy-gfx1151/recipe.json",
         REPO_ROOT / "packages/python-sentencepiece-gfx1151/recipe.json",
         REPO_ROOT / "packages/python-torchao-rocm-gfx1151/recipe.json",

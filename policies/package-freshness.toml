@@ -105,7 +105,7 @@ priority = "high"
 workflow = "upstream_source_update"
 checks = [
   { id = "release", role = "primary", kind = "github_release", repo = "ROCm/aiter", recorded = "0.1.12.post1", tag_prefix = "v", comparison = "pep440" },
-  { id = "main", role = "candidate", kind = "git_ref", repo = "https://github.com/ROCm/aiter.git", ref = "refs/heads/main", recorded = "8432ff3b6e356bc0f8c664a686334e3be7e736ec", comparison = "sha" },
+  { id = "main", role = "candidate", kind = "git_ref", repo = "https://github.com/ROCm/aiter.git", ref = "refs/heads/main", recorded = "ed2db5ef0f6444b735f018c0f4688058c1bfeb26", comparison = "sha" },
 ]
 
 [families.flash_attention]
@@ -170,6 +170,15 @@ checks = [
   { id = "arch", role = "baseline", kind = "arch_package", package = "python-asyncpg", recorded = "0.31.0-2", comparison = "pkgver" },
 ]
 
+[families.duckdb]
+packages = ["python-duckdb-gfx1151"]
+priority = "medium"
+workflow = "upstream_source_update"
+checks = [
+  { id = "pypi", role = "primary", kind = "pypi", package = "duckdb", recorded = "1.5.2", comparison = "pep440" },
+  { id = "arch", role = "baseline", kind = "arch_package", package = "python-duckdb", recorded = "1.5.2-1", comparison = "pkgver" },
+]
+
 [families.torchao]
 packages = ["python-torchao-rocm-gfx1151"]
 priority = "medium"
@@ -211,7 +220,7 @@ packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"]
 priority = "high"
 workflow = "upstream_source_update"
 checks = [
-  { id = "release", role = "primary", kind = "github_release", repo = "ggml-org/llama.cpp", recorded = "b8911", comparison = "prefixed_integer" },
+  { id = "release", role = "primary", kind = "github_release", repo = "ggml-org/llama.cpp", recorded = "b8913", comparison = "prefixed_integer" },
   { id = "aur-hip", role = "baseline", kind = "aur", package = "llama.cpp-hip", recorded = "b8909-1", comparison = "pkgver" },
   { id = "aur-vulkan", role = "baseline", kind = "aur", package = "llama.cpp-vulkan-bin", recorded = "b7376-1", comparison = "pkgver" },
 ]

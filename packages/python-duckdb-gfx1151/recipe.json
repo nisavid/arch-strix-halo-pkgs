@@ -1,0 +1,124 @@
+{
+  "maintenance": {
+    "advisory_references": [
+      "cachyos-extra-znver4/python-duckdb"
+    ],
+    "authoritative_reference": "extra/python-duckdb",
+    "divergence_notes": [
+      "Uses the Arch package shape while joining the Blackcat native-wheel recipe lane for Zen 5 source builds.",
+      "Uses the optimized Python package as the interpreter baseline and keeps optional dataframe, Arrow, and filesystem integrations as optdepends."
+    ],
+    "source_patches": [],
+    "update_notes": [
+      "Check Arch first for scikit-build-core, pybind11, bundled-extension, and optional dependency drift; use CachyOS only as the tuned-package neighbor.",
+      "Keep `skip_dependency_check = true` while DuckDB's build-system metadata asks for PyPI distributions such as `pybind11[global]` and `cmake`; Arch supplies those build inputs as `pybind11` and `cmake`, so the no-isolation frontend dependency check is stricter than the actual build backend.",
+      "Rebuild this package when DuckDB's bundled extension set or scikit-build-core metadata changes because those choices affect the Python extension ABI and packaged optional integrations.",
+      "After publishing a rebuilt package, verify `import duckdb` and a tiny in-memory query through the installed local Python lane before using it in analytics/parquet workflows."
+    ]
+  },
+  "name": "python-duckdb-gfx1151",
+  "package_name": "python-duckdb-gfx1151",
+  "pkgver": "1.5.2",
+  "policy": {
+    "advisory_references": [
+      "cachyos-extra-znver4/python-duckdb"
+    ],
+    "arch_reference": [
+      "extra/python-duckdb",
+      "cachyos-extra-znver4/python-duckdb"
+    ],
+    "authoritative_reference": "extra/python-duckdb",
+    "conflicts": [
+      "python-duckdb"
+    ],
+    "depends": [
+      "gcc-libs",
+      "glibc",
+      "python-gfx1151",
+      "python-typing_extensions"
+    ],
+    "divergence_notes": [
+      "Uses the Arch package shape while joining the Blackcat native-wheel recipe lane for Zen 5 source builds.",
+      "Uses the optimized Python package as the interpreter baseline and keeps optional dataframe, Arrow, and filesystem integrations as optdepends."
+    ],
+    "license": [
+      "MIT"
+    ],
+    "makedepends": [
+      "cmake",
+      "ninja",
+      "pybind11",
+      "python-build",
+      "python-installer",
+      "python-scikit-build-core",
+      "python-setuptools-scm",
+      "python-wheel",
+      "rocm-llvm-gfx1151"
+    ],
+    "optdepends": [
+      "ipython: used in duckdb.query_graph",
+      "python-fsspec: used in duckdb.filesystem",
+      "python-numpy-gfx1151: used in duckdb.experimental.spark and duckdb.fetchnumpy()",
+      "python-pandas: used for pandas dataframes",
+      "python-pyarrow: used for pyarrow support",
+      "python-arrow-adbc: used for the ADBC driver"
+    ],
+    "patches_dir": "patches/python-duckdb-gfx1151",
+    "pkgdesc": "Analytical in-process SQL database Python API rebuilt for Strix Halo gfx1151",
+    "provides": [
+      "python-duckdb"
+    ],
+    "pypi_name": "duckdb",
+    "recipe_key": "native_wheels",
+    "scaffold_notes": [
+      "Embedded OLAP engine for local analytics and parquet scans; Blackcat added DuckDB to the native C/C++ wheel set.",
+      "The package follows Arch's current `python-duckdb` metadata while building from the PyPI sdist with the same amdclang flag lane as the other recipe native wheels.",
+      "DuckDB's source build uses scikit-build-core, CMake, Ninja, and pybind11; keep those as explicit makedepends rather than relying on isolated pip build dependency resolution.",
+      "The build skips the Python frontend dependency check because DuckDB requests PyPI metadata names that do not match Arch's system package distribution metadata, even though the backend finds the system tools."
+    ],
+    "skip_dependency_check": true,
+    "src_subdir": "duckdb-1.5.2",
+    "template": "native-wheel-pypi",
+    "update_notes": [
+      "Check Arch first for scikit-build-core, pybind11, bundled-extension, and optional dependency drift; use CachyOS only as the tuned-package neighbor.",
+      "Keep `skip_dependency_check = true` while DuckDB's build-system metadata asks for PyPI distributions such as `pybind11[global]` and `cmake`; Arch supplies those build inputs as `pybind11` and `cmake`, so the no-isolation frontend dependency check is stricter than the actual build backend.",
+      "Rebuild this package when DuckDB's bundled extension set or scikit-build-core metadata changes because those choices affect the Python extension ABI and packaged optional integrations.",
+      "After publishing a rebuilt package, verify `import duckdb` and a tiny in-memory query through the installed local Python lane before using it in analytics/parquet workflows."
+    ],
+    "upstream_version": "1.5.2",
+    "url": "https://duckdb.org/"
+  },
+  "provenance": {
+    "output_root": "packages",
+    "recipe_author": "Blackcat Informatics Inc.",
+    "recipe_commit": "b453c33",
+    "recipe_date": "20260422",
+    "recipe_history_count": 9,
+    "recipe_repo": "https://github.com/paudley/ai-notes",
+    "recipe_subdir": "strix-halo",
+    "repo_subpath": "."
+  },
+  "recipe": {
+    "branch": null,
+    "depends_on": [
+      "cpython",
+      "pytorch"
+    ],
+    "method": "pip",
+    "notes": "Builds and installs numpy, sentencepiece, zstandard, asyncpg, duckdb from\nsource with Zen 5 optimization flags.\n\nnumpy: cmake pip wrapper breaks in build isolation; replaced with\nsymlink to system cmake.\n\nmeson-based packages (numpy, zstandard): -mllvm flags must be\nrewritten as -Xclang -mllvm -Xclang pairs because meson's compiler\nprobing rejects -mllvm as \"unused command line argument\".\n-famd-opt moved to LDFLAGS (link-time-only driver flag, no-op at\ncompile time -- triggers -Werror=unused in compile-only probes).",
+    "patches": [
+      {
+        "description": "Replace the recipe's broken venv-local Python cmake wrapper with the real system cmake binary. The cmake pip package installs a Python wrapper that does `from cmake import cmake`, which fails inside pip's build isolation where the cmake Python module is unavailable.\n",
+        "dst": "<build-venv>/.venv/bin/cmake",
+        "src": "/usr/bin/cmake",
+        "type": "file_copy"
+      }
+    ],
+    "phase": "H",
+    "repo": null,
+    "src_dir": null,
+    "steps": [
+      31
+    ]
+  }
+}

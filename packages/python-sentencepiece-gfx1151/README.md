@@ -7,7 +7,7 @@
 - Recipe build method: `pip`
 - Upstream repo: ``
 - Package version: `0.2.1`
-- Recipe revision: `ad42886 (20260317, 8 path commits)`
+- Recipe revision: `b453c33 (20260422, 9 path commits)`
 - Recipe steps: `31`
 - Recipe dependencies: `cpython, pytorch`
 - Recorded reference packages: `cachyos/python-sentencepiece, aur/python-sentencepiece, aur/python-sentencepiece-git`
@@ -17,7 +17,7 @@
 
 ## Recipe notes
 
-Builds and installs numpy, sentencepiece, zstandard, asyncpg from
+Builds and installs numpy, sentencepiece, zstandard, asyncpg, duckdb from
 source with Zen 5 optimization flags.
 
 numpy: cmake pip wrapper breaks in build isolation; replaced with
@@ -33,14 +33,6 @@ The bundled-build patch is effective when the built `_sentencepiece` extension
 has no dynamic dependency on host `libsentencepiece.so.0` or
 `libsentencepiece_train.so.0`. Treat the repo-built package lane as current
 only after the installed host extension matches that dependency shape.
-
-Post-rebuild validation on 2026-04-20 ran
-`pytest packages/python-sentencepiece-gfx1151/tests -q` with `2 passed`, then
-ran the rebuilt installed vLLM/Gemma 4 tokenizer path through
-`vllm.gemma4.26b-a4b.text.basic` and `vllm.gemma4.26b-a4b.server.basic`.
-Both scenarios passed against the `/var/cache/hf` Gemma 4 26B-A4B snapshot, so
-the installed extension shape and a downstream Gemma tokenizer consumer are
-the retained guards for this patch.
 
 
 ## Scaffold notes
