@@ -110,6 +110,14 @@ runtime. The 2026-04-22 20:41 EDT refreshed freshness sweep then reported all
 sweep is older than 24 hours or invalidated by package policy, package
 directory, checker-logic, or relevant source-metadata changes.
 
+The freshness gate is open again. On 2026-04-24 01:06 EDT,
+`tools/check_package_updates.py --json --fail-on actionable` completed and
+reported actionable statuses: `llama_cpp` has stable upstream `b8913` and AUR
+HIP baseline `b8909-1` available, `transformers` has stable upstream `5.6.2`
+available, `rocm_pytorch` release branch is ahead, `therock` recipe input is
+ahead, and `aiter` has a candidate branch head ahead. Triage those freshness
+items before ordinary backlog work.
+
 The `python-flash-attn-rocm-gfx1151` package experiment now tracks ROCm
 FlashAttention `main_perf` commit `3f94643fb41bcedded28c85185a8e11d42ef1592`
 with package version `2.8.4`. The package builds the Triton AMD path with
