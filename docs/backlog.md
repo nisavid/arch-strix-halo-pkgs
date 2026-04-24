@@ -21,6 +21,8 @@
     pages by default, and diagnostics that force 128-divisible pages progress to
     a GPU memory-access fault inside CK. Do not promote the CK Qwen engine path
     without upstream CK paged-KV kernel repair or a different validated backend.
+    The preserved closeout notes, source disposition, and future direct-CK test
+    gates are in `docs/maintainers/flashattention-ck-paged-kv.md`.
   - Package experiment: FlashAttention Triton; `python-flash-attn-rocm-gfx1151`
     now has build proof, installed import proof, runtime backend-selection
     proof, and a bounded non-autotuned Triton AMD smoke from the installed

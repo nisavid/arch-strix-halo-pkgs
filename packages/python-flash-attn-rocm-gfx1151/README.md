@@ -118,3 +118,5 @@ the normal Qwen3.5 hybrid path presents a 64-token paged-KV kernel page while
 CK requires a 128-token multiple. Diagnostics that force 128-divisible pages
 progress past that check and then fault the GPU inside CK. The expected blocked
 scenario passed at run root `docs/worklog/inference-runs/20260423T224553`.
+The durable closeout and future test gates are recorded in
+`docs/maintainers/flashattention-ck-paged-kv.md`.

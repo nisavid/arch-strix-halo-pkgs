@@ -201,6 +201,11 @@ faulted the GPU inside CK. Treat the next engine step as upstream CK paged-KV
 kernel work or a different validated backend, not as a local vLLM adapter
 gap.
 
+The durable closeout for that tabled unlock attempt is
+`docs/maintainers/flashattention-ck-paged-kv.md`. It records the source
+disposition, direct CK tests that passed, the blocked Qwen scenario, unsafe
+workarounds, and the reference-match gates required before reopening the lane.
+
 ## Live Host State
 
 The first full live cutover and subsequent native package rebuild completed

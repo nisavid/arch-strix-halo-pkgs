@@ -119,6 +119,7 @@ recorded in .aiter-status file ("enabled" or "disabled").
 - Treat runtime validation against the live ROCm stack as mandatory; a successful wheel build is not enough.
 - Keep the FlashAttention Triton availability check aligned with the packaged ROCm `flash_attn` interface. The local package does not ship a `flash_attn.flash_attn_triton_amd` module; it exposes AITER's Triton AMD backend through `flash_attn.flash_attn_interface` when `FLASH_ATTENTION_TRITON_AMD_ENABLE=TRUE`.
 - Keep the CK/direct FlashAttention interface gate aligned with the packaged ROCm `flash_attn` interface. The local CK lane now exposes the vLLM paged-KV wrapper keywords, but the V1 `FLASH_ATTN` Qwen3.5 probe remains an expected blocked kernel probe until CK paged-KV handles the effective Qwen hybrid page shape on gfx1151 without faulting.
+- The tabled CK paged-KV unlock attempt, source disposition, unsafe workarounds, and future direct-CK reference-match gates are recorded in `docs/maintainers/flashattention-ck-paged-kv.md`.
 
 ## Maintainer Starting Points
 
