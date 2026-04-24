@@ -783,27 +783,57 @@ def render_dependency_forest(plan: dict[str, object], *, color: bool = False) ->
         ]
         for item in plan.get("dependency_graph", [])
     }
+    dependency_names = {
+        dependency
+        for dependencies in dependencies_by_root.values()
+        for dependency in dependencies
+    }
+    top_level_roots = [
+        root_name for root_name in build_order if root_name not in dependency_names
+    ]
     lines: list[str] = []
-    for index, root_name in enumerate(build_order):
-        branch = "└──" if index == len(build_order) - 1 else "├──"
-        child_prefix = "│       " if index == len(build_order) - 1 else "│   │   "
+    rendered_roots: set[str] = set()
+
+    def append_root(
+        root_name: str,
+        *,
+        prefix: str,
+        is_last: bool,
+        ancestors: set[str],
+    ) -> None:
+        branch = "└──" if is_last else "├──"
+        already_rendered = root_name in rendered_roots
+        suffix = f" {colorize('(already shown)', color, DIM)}" if already_rendered else ""
         lines.append(
-            f"│   {colorize(branch, color, DIM)} "
-            f"{colorize(f'[{index + 1}]', color, YELLOW)} "
-            f"{colorize(root_name, color, GREEN)}"
+            f"{prefix}{colorize(branch, color, DIM)} "
+            f"{colorize(f'[{order_index[root_name] + 1}]', color, YELLOW)} "
+            f"{colorize(root_name, color, GREEN)}{suffix}"
         )
+        if already_rendered:
+            return
+        rendered_roots.add(root_name)
+        child_prefix = prefix + ("    " if is_last else "│   ")
         dependencies = sorted(
             dependencies_by_root.get(root_name, []),
             key=lambda dependency: order_index[dependency],
         )
         for dep_index, dependency in enumerate(dependencies):
-            dep_branch = "└──" if dep_index == len(dependencies) - 1 else "├──"
-            lines.append(
-                f"{child_prefix}{colorize(dep_branch, color, DIM)} "
-                f"{colorize('needs', color, DIM)} "
-                f"{colorize(f'[{order_index[dependency] + 1}]', color, YELLOW)} "
-                f"{colorize(dependency, color, GREEN)}"
+            if dependency in ancestors:
+                continue
+            append_root(
+                dependency,
+                prefix=child_prefix,
+                is_last=dep_index == len(dependencies) - 1,
+                ancestors={*ancestors, dependency},
             )
+
+    for index, root_name in enumerate(top_level_roots):
+        append_root(
+            root_name,
+            prefix="│   ",
+            is_last=index == len(top_level_roots) - 1,
+            ancestors={root_name},
+        )
     return lines
 
 

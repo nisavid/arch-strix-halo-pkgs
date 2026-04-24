@@ -486,15 +486,61 @@ def test_tree_preview_renders_dependency_forest_for_dependency_expansion(tmp_pat
     assert "[2] python-core-gfx1151" in result.stdout
     assert "[3] python-leaf-gfx1151" in result.stdout
     assert "[4] python-app-gfx1151" in result.stdout
-    assert result.stdout.index("[1] therock-gfx1151") < result.stdout.index(
+    build_order = result.stdout.split("Build order", 1)[1]
+    assert build_order.index("[1] therock-gfx1151") < build_order.index(
         "[2] python-core-gfx1151"
     )
-    assert result.stdout.index("[2] python-core-gfx1151") < result.stdout.index(
+    assert build_order.index("[2] python-core-gfx1151") < build_order.index(
         "[3] python-leaf-gfx1151"
     )
-    assert result.stdout.index("[3] python-leaf-gfx1151") < result.stdout.index(
+    assert build_order.index("[3] python-leaf-gfx1151") < build_order.index(
         "[4] python-app-gfx1151"
     )
+
+
+def test_tree_preview_renders_nested_parent_child_dependencies(tmp_path: Path):
+    packages_root = graph_fixture(tmp_path)
+    result = run_amerge(
+        "run",
+        "--dry-run",
+        "--preview=tree",
+        "--deps",
+        "--packages-root",
+        str(packages_root),
+        "python-app-gfx1151",
+    )
+
+    assert result.returncode == 0
+    assert "needs [" not in result.stdout
+    assert "│   └── [4] python-app-gfx1151" in result.stdout
+    assert "│       └── [3] python-leaf-gfx1151" in result.stdout
+    assert "│           ├── [1] therock-gfx1151" in result.stdout
+    assert "│           └── [2] python-core-gfx1151" in result.stdout
+
+
+def test_tree_preview_collapses_already_rendered_dependency_subtrees(tmp_path: Path):
+    packages_root = graph_fixture(tmp_path)
+    result = run_amerge(
+        "run",
+        "--dry-run",
+        "--preview=tree",
+        "--deps",
+        "--packages-root",
+        str(packages_root),
+        "python-app-gfx1151",
+    )
+
+    assert result.returncode == 0
+    forest = result.stdout.split("Dependency forest\n", 1)[1].split(
+        "├── Build order", 1
+    )[0]
+    assert forest.rstrip().splitlines() == [
+        "│   └── [4] python-app-gfx1151",
+        "│       └── [3] python-leaf-gfx1151",
+        "│           ├── [1] therock-gfx1151",
+        "│           └── [2] python-core-gfx1151",
+        "│               └── [1] therock-gfx1151 (already shown)",
+    ]
 
 
 def test_commands_preview_includes_concrete_commands(tmp_path: Path):

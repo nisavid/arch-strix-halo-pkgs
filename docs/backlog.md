@@ -37,9 +37,6 @@
     blocked, Gemma 4 AITER FlashAttention remains blocked, and MIGraphX
     creates a separate compiled graph/quantization lane rather than a vLLM
     backend replacement.
-- Render `amerge --preview=tree` dependency forests as visual parent/child
-  trees using box-drawing branches, similar to `dust` or `lsd --tree`, instead
-  of listing build-order nodes with symbolic dependency references.
 - Audit the remaining upstream TheRock project coverage for `hipfort-gfx1151`
   and `mivisionx-gfx1151`. Current policy already has metadata for both
   packages, but no local staged root or local package artifact currently
