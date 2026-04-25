@@ -323,9 +323,9 @@ provides = ["hipsparselt"]
 depends = ["rocsparse-gfx1151"]
 
 [packages."hiptensor-gfx1151"]
-desc = "Compatibility meta package for hipTensor from TheRock for gfx1151"
+desc = "hipTensor from TheRock for gfx1151"
 provides = ["hiptensor"]
-fileless = true
+depends = ["rocm-core-gfx1151", "hip-runtime-amd-gfx1151", "composable-kernel-gfx1151", "glibc", "gcc-libs"]
 
 [packages."rccl-gfx1151"]
 desc = "RCCL from TheRock for gfx1151"
@@ -380,9 +380,9 @@ desc = "MIVisionX from TheRock for gfx1151"
 provides = ["mivisionx"]
 
 [packages."rpp-gfx1151"]
-desc = "Compatibility meta package for Radeon Performance Primitives from TheRock for gfx1151"
+desc = "Radeon Performance Primitives from TheRock for gfx1151"
 provides = ["rpp"]
-fileless = true
+depends = ["rocm-core-gfx1151", "hip-runtime-amd-gfx1151", "opencv", "openmp", "gcc-libs", "glibc"]
 
 [packages."half-gfx1151"]
 desc = "half headers from TheRock for gfx1151"
@@ -399,7 +399,6 @@ depends = [
   "hipsolver-gfx1151",
   "hipsparse-gfx1151",
   "hipsparselt-gfx1151",
-  "hiptensor-gfx1151",
   "hipcub-gfx1151",
   "rocthrust-gfx1151",
   "rocwmma-gfx1151",
@@ -424,7 +423,6 @@ provides = ["rocm-ml-libraries"]
 depends = [
   "miopen-gfx1151",
   "migraphx-gfx1151",
-  "rpp-gfx1151",
 ]
 fileless = true
 

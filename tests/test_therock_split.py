@@ -134,6 +134,15 @@ def test_rocm_debug_agent_tracks_arch_rocr_debug_agent_baseline():
     ]
 
 
+def test_absent_hiptensor_and_rpp_payloads_do_not_render_fileless_compat_packages():
+    policy = therock_split.load_policy(REPO_ROOT / "policies/therock-packages.toml")
+
+    assert "fileless" not in policy["packages"]["hiptensor-gfx1151"]
+    assert "fileless" not in policy["packages"]["rpp-gfx1151"]
+    assert "hiptensor-gfx1151" not in policy["packages"]["rocm-hip-libraries-gfx1151"]["depends"]
+    assert "rpp-gfx1151" not in policy["packages"]["rocm-ml-libraries-gfx1151"]["depends"]
+
+
 def test_live_root_render_ignores_rocm_core_overlay_files():
     policy = therock_split.load_policy(REPO_ROOT / "policies/therock-packages.toml")
     classifier = therock_split.Classifier(policy)

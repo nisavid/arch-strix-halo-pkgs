@@ -22,7 +22,6 @@ pkgname=(
   'hipsolver-gfx1151'
   'hipsparse-gfx1151'
   'hipsparselt-gfx1151'
-  'hiptensor-gfx1151'
   'hsa-amd-aqlprofile-gfx1151'
   'hsa-rocr-gfx1151'
   'magma-gfx1151'
@@ -72,7 +71,6 @@ pkgname=(
   'rocthrust-gfx1151'
   'roctracer-gfx1151'
   'rocwmma-gfx1151'
-  'rpp-gfx1151'
 )
 pkgver='7.13.0pre'
 pkgrel=5
@@ -268,14 +266,6 @@ package_hipsparselt-gfx1151() {
     depends=('rocsparse-gfx1151')
     _require_therock_root
     _copy_from_filelist 'hipsparselt-gfx1151'
-}
-
-package_hiptensor-gfx1151() {
-    pkgdesc='Compatibility meta package for hipTensor from TheRock for gfx1151'
-    provides=('hiptensor')
-    conflicts=('hiptensor' 'rocm-gfx1151-bin')
-    depends=()
-    return 0
 }
 
 package_hsa-amd-aqlprofile-gfx1151() {
@@ -614,7 +604,7 @@ package_rocm-hip-libraries-gfx1151() {
     pkgdesc='Meta package for HIP math and runtime libraries from TheRock for gfx1151'
     provides=('rocm-hip-libraries')
     conflicts=('rocm-gfx1151-bin' 'rocm-hip-libraries')
-    depends=('hipblas-gfx1151' 'hipblaslt-gfx1151' 'hipfft-gfx1151' 'hiprand-gfx1151' 'hipsolver-gfx1151' 'hipsparse-gfx1151' 'hipsparselt-gfx1151' 'hiptensor-gfx1151' 'hipcub-gfx1151' 'rocthrust-gfx1151' 'rocwmma-gfx1151')
+    depends=('hipblas-gfx1151' 'hipblaslt-gfx1151' 'hipfft-gfx1151' 'hiprand-gfx1151' 'hipsolver-gfx1151' 'hipsparse-gfx1151' 'hipsparselt-gfx1151' 'hipcub-gfx1151' 'rocthrust-gfx1151' 'rocwmma-gfx1151')
     return 0
 }
 
@@ -665,7 +655,7 @@ package_rocm-ml-libraries-gfx1151() {
     pkgdesc='Meta package for ROCm ML libraries from TheRock for gfx1151'
     provides=('rocm-ml-libraries')
     conflicts=('rocm-gfx1151-bin' 'rocm-ml-libraries')
-    depends=('miopen-gfx1151' 'migraphx-gfx1151' 'rpp-gfx1151')
+    depends=('miopen-gfx1151' 'migraphx-gfx1151')
     return 0
 }
 
@@ -868,12 +858,4 @@ package_rocwmma-gfx1151() {
     depends=()
     _require_therock_root
     _copy_from_filelist 'rocwmma-gfx1151'
-}
-
-package_rpp-gfx1151() {
-    pkgdesc='Compatibility meta package for Radeon Performance Primitives from TheRock for gfx1151'
-    provides=('rpp')
-    conflicts=('rocm-gfx1151-bin' 'rpp')
-    depends=()
-    return 0
 }

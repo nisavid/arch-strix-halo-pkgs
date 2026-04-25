@@ -260,10 +260,18 @@ The same 2026-04-25 TheRock baseline audit aligned
 `rocm-debug-agent-gfx1151` with Arch/CachyOS `rocr-debug-agent`: the local
 package now provides and replaces `rocr-debug-agent`, keeps the
 `rocm-debug-agent` provide, and depends on the local `rocm-core`,
-`hip-runtime-amd`, and `rocm-dbgapi` split packages. The next baseline-audit
-decision is whether fileless `hiptensor-gfx1151` and `rpp-gfx1151`
-compatibility outputs should remain or become real payload packages when a
-staged TheRock root can support that shape.
+`hip-runtime-amd`, and `rocm-dbgapi` split packages. The audit also stopped
+rendering fileless `hiptensor-gfx1151` and `rpp-gfx1151` compatibility
+packages because current Arch/CachyOS `hiptensor` and `rpp` are real payload
+packages and the current staged TheRock root contains no matching payloads.
+The local HIP and ML meta packages therefore no longer depend on those names
+until a staged root can support real package contents.
+
+Deploying that generated-package change also needs stale-artifact cleanup:
+older local repo and host installs may still contain the former zero-payload
+`hiptensor-gfx1151` and `rpp-gfx1151` packages, so remove those installed
+packages and stale local repo archives after rebuilding/publishing
+`therock-gfx1151`.
 
 The `python-flash-attn-rocm-gfx1151` package experiment now tracks ROCm
 FlashAttention `main_perf` commit `3f94643fb41bcedded28c85185a8e11d42ef1592`

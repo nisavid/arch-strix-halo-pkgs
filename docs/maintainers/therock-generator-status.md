@@ -22,12 +22,14 @@ Using `/` is valid only when the live install root contains every payload that
 should remain rendered.
 
 The generated family is payload-driven. The current rendered output includes
-68 of the 70 policy-defined packages. Two packages are present in policy
+66 of the 70 policy-defined packages. Four packages are present in policy
 metadata but not rendered because their expected installed payloads are absent
 from the staged root used for the render:
 
 - `hipfort-gfx1151`
+- `hiptensor-gfx1151`
 - `mivisionx-gfx1151`
+- `rpp-gfx1151`
 
 The 2026-04-25 coverage audit confirmed this is a staged-payload boundary, not
 a missing package metadata boundary. The live `/opt/rocm`, current
@@ -54,6 +56,14 @@ current Arch/CachyOS `rocr-debug-agent` package shape: the local split package
 now provides and replaces `rocr-debug-agent` while continuing to provide
 `rocm-debug-agent`, and it depends on the local `rocm-core`, `hip-runtime-amd`,
 and `rocm-dbgapi` split packages.
+
+The same audit stopped rendering fileless compatibility packages for
+`hiptensor-gfx1151` and `rpp-gfx1151`. Current Arch/CachyOS `hiptensor` and
+`rpp` are real payload packages, while the current staged TheRock root contains
+no matching payloads. The local HIP and ML meta packages therefore no longer
+depend on those names until a staged root can render real package contents.
+Because older publishes may still have zero-payload archives for those names,
+deployment needs explicit stale local repo and installed-package cleanup.
 
 ## What changed
 
@@ -91,8 +101,5 @@ The generator is no longer exploratory. The follow-up work is maintenance:
 - keep policy current when TheRock adds or reshapes components
 - keep dependency and replacement metadata healthy
 - keep the generated family aligned with the local repo and live cutover story
-- rerender `hipfort-gfx1151` and `mivisionx-gfx1151` when a staged TheRock
-  root contains those payloads
-- decide whether fileless compatibility outputs for `hiptensor-gfx1151` and
-  `rpp-gfx1151` should remain, or whether a future render should introduce
-  real payload packages that mirror Arch/CachyOS more closely
+- rerender `hipfort-gfx1151`, `hiptensor-gfx1151`, `mivisionx-gfx1151`, and
+  `rpp-gfx1151` when a staged TheRock root contains those payloads

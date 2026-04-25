@@ -200,13 +200,19 @@
       "rendered": true
     },
     "hiptensor-gfx1151": {
-      "depends": [],
-      "fileless": true,
+      "depends": [
+        "rocm-core-gfx1151",
+        "hip-runtime-amd-gfx1151",
+        "composable-kernel-gfx1151",
+        "glibc",
+        "gcc-libs"
+      ],
+      "fileless": false,
       "files": 0,
       "provides": [
         "hiptensor"
       ],
-      "rendered": true
+      "rendered": false
     },
     "hsa-amd-aqlprofile-gfx1151": {
       "depends": [],
@@ -470,7 +476,6 @@
         "hipsolver-gfx1151",
         "hipsparse-gfx1151",
         "hipsparselt-gfx1151",
-        "hiptensor-gfx1151",
         "hipcub-gfx1151",
         "rocthrust-gfx1151",
         "rocwmma-gfx1151"
@@ -541,8 +546,7 @@
     "rocm-ml-libraries-gfx1151": {
       "depends": [
         "miopen-gfx1151",
-        "migraphx-gfx1151",
-        "rpp-gfx1151"
+        "migraphx-gfx1151"
       ],
       "fileless": true,
       "files": 0,
@@ -777,13 +781,20 @@
       "rendered": true
     },
     "rpp-gfx1151": {
-      "depends": [],
-      "fileless": true,
+      "depends": [
+        "rocm-core-gfx1151",
+        "hip-runtime-amd-gfx1151",
+        "opencv",
+        "openmp",
+        "gcc-libs",
+        "glibc"
+      ],
+      "fileless": false,
       "files": 0,
       "provides": [
         "rpp"
       ],
-      "rendered": true
+      "rendered": false
     }
   },
   "pkgbase": "therock-gfx1151",
