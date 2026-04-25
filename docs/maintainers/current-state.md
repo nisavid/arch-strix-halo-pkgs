@@ -216,6 +216,18 @@ families, but the AUR provider still failed with SSL EOF for
 freshness gate as blocked on those provider retries rather than an untriaged
 package update.
 
+A 2026-04-24 23:15 EDT retry narrowed the blocker to AUR provider
+availability, not package drift or checker parsing. The forced narrow checker
+run for `sentencepiece`, `torchvision`, and `vllm` reported `torchvision` and
+`vllm` current once, but still failed the `python-sentencepiece` AUR baseline
+with `SSL: UNEXPECTED_EOF_WHILE_READING`. A follow-up `vllm`-only run then
+timed out on the `python-vllm` AUR baseline. Direct `curl` requests to
+`aur.archlinux.org` and AUR RPC endpoints reproduced the TLS EOF while Arch
+package search, PyPI, and GitHub requests succeeded. GitHub currently lists
+`v0.20.0` for vLLM as a prerelease, so the checker's stable-release result of
+`0.19.1` remains expected. Treat the freshness gate as still blocked on an AUR
+provider retry.
+
 The `python-flash-attn-rocm-gfx1151` package experiment now tracks ROCm
 FlashAttention `main_perf` commit `3f94643fb41bcedded28c85185a8e11d42ef1592`
 with package version `2.8.4`. The package builds the Triton AMD path with
