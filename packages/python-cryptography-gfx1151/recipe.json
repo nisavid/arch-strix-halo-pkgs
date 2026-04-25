@@ -11,7 +11,8 @@
     "source_patches": [],
     "update_notes": [
       "Always confirm the current Arch build backend requirements before updating this package; cryptography regularly changes Rust/setuptools details.",
-      "Treat any OpenSSL dependency drift in Arch as authoritative unless the recipe provides a concrete reason to diverge."
+      "Treat any OpenSSL dependency drift in Arch as authoritative unless the recipe provides a concrete reason to diverge.",
+      "On 2026-04-24, reviewed PyPI cryptography 47.0.0 while Arch's authoritative python-cryptography baseline remained 46.0.7-1. The runtime dependency shape stayed aligned for the local Python 3.14 path, but the sdist build-system requirement now excludes maturin 1.12.0. Keep the local package on 46.0.7 until Arch adopts the release or a package-specific build refresh validates the newer maturin lane."
     ]
   },
   "name": "python-cryptography-gfx1151",
@@ -67,7 +68,8 @@
     "template": "rust-wheel-pypi",
     "update_notes": [
       "Always confirm the current Arch build backend requirements before updating this package; cryptography regularly changes Rust/setuptools details.",
-      "Treat any OpenSSL dependency drift in Arch as authoritative unless the recipe provides a concrete reason to diverge."
+      "Treat any OpenSSL dependency drift in Arch as authoritative unless the recipe provides a concrete reason to diverge.",
+      "On 2026-04-24, reviewed PyPI cryptography 47.0.0 while Arch's authoritative python-cryptography baseline remained 46.0.7-1. The runtime dependency shape stayed aligned for the local Python 3.14 path, but the sdist build-system requirement now excludes maturin 1.12.0. Keep the local package on 46.0.7 until Arch adopts the release or a package-specific build refresh validates the newer maturin lane."
     ],
     "upstream_version": "46.0.7",
     "url": "https://github.com/pyca/cryptography"
@@ -75,9 +77,9 @@
   "provenance": {
     "output_root": "packages",
     "recipe_author": "Blackcat Informatics Inc.",
-    "recipe_commit": "b453c33",
-    "recipe_date": "20260422",
-    "recipe_history_count": 9,
+    "recipe_commit": "a188f9e",
+    "recipe_date": "20260424",
+    "recipe_history_count": 10,
     "recipe_repo": "https://github.com/paudley/ai-notes",
     "recipe_subdir": "strix-halo",
     "repo_subpath": "."
@@ -94,7 +96,7 @@
     "repo": null,
     "src_dir": null,
     "steps": [
-      30
+      31
     ]
   }
 }

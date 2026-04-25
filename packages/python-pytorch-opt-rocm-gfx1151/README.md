@@ -7,13 +7,13 @@
 - Recipe build method: `pip`
 - Upstream repo: `https://github.com/ROCm/pytorch.git`
 - Package version: `2.11.0`
-- Recipe revision: `b453c33 (20260422, 9 path commits)`
-- Recipe steps: `9, 10, 11`
+- Recipe revision: `a188f9e (20260424, 10 path commits)`
+- Recipe steps: `10, 11, 12`
 - Recipe dependencies: `therock, cpython`
 - Recorded reference packages: `extra/python-pytorch-opt-rocm, extra/python-pytorch-rocm, cachyos-extra-znver4/python-pytorch-opt-rocm`
 - Authoritative reference package: `extra/python-pytorch-opt-rocm`
 - Advisory reference packages: `extra/python-pytorch-rocm, cachyos-extra-znver4/python-pytorch-opt-rocm`
-- Applied source patch files/actions: `10`
+- Applied source patch files/actions: `11`
 
 ## Recipe notes
 

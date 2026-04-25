@@ -15,7 +15,7 @@ packages = ["therock-gfx1151"]
 priority = "high"
 workflow = "recipe_update"
 checks = [
-  { id = "ai-notes", role = "primary", kind = "submodule", path = "upstream/ai-notes", ref = "refs/heads/main", recorded = "c4dbe5046f45550c2e0bfd8fc49101a992c08076", comparison = "sha" },
+  { id = "ai-notes", role = "primary", kind = "submodule", path = "upstream/ai-notes", ref = "refs/heads/main", recorded = "a188f9e5821b851870a81fd428508f19d26565ef", comparison = "sha" },
 ]
 
 [families.aocl_utils]
@@ -68,7 +68,7 @@ packages = ["python-pytorch-opt-rocm-gfx1151"]
 priority = "high"
 workflow = "upstream_source_update"
 checks = [
-  { id = "release-branch", role = "primary", kind = "git_ref", repo = "https://github.com/ROCm/pytorch.git", ref = "refs/heads/release/2.11", recorded = "0320cc5b2fbba866c7ac1aa5deb8c14dd9a37b95", comparison = "sha" },
+  { id = "release-branch", role = "primary", kind = "git_ref", repo = "https://github.com/ROCm/pytorch.git", ref = "refs/heads/release/2.11", recorded = "3aaa914af1e6fb268b242bfb871e614fbdb6c1bc", comparison = "sha" },
   { id = "arch", role = "baseline", kind = "arch_package", package = "python-pytorch-opt-rocm", recorded = "2.11.0-3", comparison = "pkgver" },
 ]
 
@@ -104,8 +104,8 @@ packages = ["python-amd-aiter-gfx1151"]
 priority = "high"
 workflow = "upstream_source_update"
 checks = [
-  { id = "release", role = "primary", kind = "github_release", repo = "ROCm/aiter", recorded = "0.1.12.post1", tag_prefix = "v", comparison = "pep440" },
-  { id = "main", role = "candidate", kind = "git_ref", repo = "https://github.com/ROCm/aiter.git", ref = "refs/heads/main", recorded = "f1f5e0674d7381c565b4ea33c25d7d584cae85c7", comparison = "sha" },
+  { id = "release", role = "primary", kind = "github_release", repo = "ROCm/aiter", recorded = "0.1.12.post2", tag_prefix = "v", comparison = "pep440" },
+  { id = "main", role = "candidate", kind = "git_ref", repo = "https://github.com/ROCm/aiter.git", ref = "refs/heads/main", recorded = "033d8b9dbc635d30aa63906245c045f24f8cf796", comparison = "sha" },
 ]
 
 [families.flash_attention]
@@ -139,7 +139,7 @@ packages = ["python-cryptography-gfx1151"]
 priority = "medium"
 workflow = "upstream_source_update"
 checks = [
-  { id = "pypi", role = "primary", kind = "pypi", package = "cryptography", recorded = "46.0.7", comparison = "pep440" },
+  { id = "pypi", role = "primary", kind = "pypi", package = "cryptography", recorded = "47.0.0", comparison = "pep440" },
   { id = "arch", role = "baseline", kind = "arch_package", package = "python-cryptography", recorded = "46.0.7-1", comparison = "pkgver" },
 ]
 
@@ -220,8 +220,8 @@ packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"]
 priority = "high"
 workflow = "upstream_source_update"
 checks = [
-  { id = "release", role = "primary", kind = "github_release", repo = "ggml-org/llama.cpp", recorded = "b8914", comparison = "prefixed_integer" },
-  { id = "aur-hip", role = "baseline", kind = "aur", package = "llama.cpp-hip", recorded = "b8909-1", comparison = "pkgver" },
+  { id = "release", role = "primary", kind = "github_release", repo = "ggml-org/llama.cpp", recorded = "b8925", comparison = "prefixed_integer" },
+  { id = "aur-hip", role = "baseline", kind = "aur", package = "llama.cpp-hip", recorded = "b8925-1", comparison = "pkgver" },
   { id = "aur-vulkan", role = "baseline", kind = "aur", package = "llama.cpp-vulkan-bin", recorded = "b7376-1", comparison = "pkgver" },
 ]
 

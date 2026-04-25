@@ -186,6 +186,36 @@ Hexagon-only `SOLVE_TRI` op addition, and AITER
 only changes CI workflow files. `policies/package-freshness.toml` records both
 as reviewed without repinning package sources.
 
+The 2026-04-24 22:06 EDT upstream-refresh pass adopted the reviewed Blackcat
+Informatics `upstream/ai-notes` recipe input at
+`a188f9e5821b851870a81fd428508f19d26565ef`, which integrates gfx1151 build
+hardening from the Dillflix fork. The rendered recipe package scaffolds now
+record recipe revision `a188f9e` and the 37-step upstream pipeline. The
+upstream manifest also removes its blanket vLLM Triton sampler bypass and adds
+PyTorch/ROCm hardening notes; local package policy still keeps the repo-owned
+vLLM sampler patch until the tracked gfx1151 large-vocabulary sampler failure
+is revalidated.
+
+The same refresh reviewed and recorded without repinning package sources:
+cryptography PyPI `47.0.0` while Arch `python-cryptography` remains
+`46.0.7-1`; llama.cpp `b8925` at
+`0adede866ddb2e31992b3792eaea31d18ed89acf` plus AUR
+`llama.cpp-hip b8925-1`; ROCm PyTorch `release/2.11` at
+`3aaa914af1e6fb268b242bfb871e614fbdb6c1bc`; and AITER `main` at
+`033d8b9dbc635d30aa63906245c045f24f8cf796` with release tag
+`0.1.12.post2`. PyTorch's reviewed delta is a Windows MIOpen CTC-loss fix.
+The AITER range adds Qwen3.5/GDN, large-KV batch-prefill, top-k-per-row, and
+fused-MoE work that belongs behind a tracked Qwen/GDN or fused-MoE validation
+lane before repinning. The llama.cpp range includes parser structured-output
+fixes, server SWA-full and cache-idle-slots cleanup, Jinja warning fixes,
+WebGPU FlashAttention work, Metal device logging, and Hexagon/Snapdragon
+updates; keep it reviewed until a runtime rebuild lane is opened. A post-update
+forced checker run reported no actionable package statuses and 22 current
+families, but the AUR provider still failed with SSL EOF for
+`python-sentencepiece`, `python-torchvision-rocm`, and `python-vllm`. Treat the
+freshness gate as blocked on those provider retries rather than an untriaged
+package update.
+
 The `python-flash-attn-rocm-gfx1151` package experiment now tracks ROCm
 FlashAttention `main_perf` commit `3f94643fb41bcedded28c85185a8e11d42ef1592`
 with package version `2.8.4`. The package builds the Triton AMD path with

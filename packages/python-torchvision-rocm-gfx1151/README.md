@@ -7,8 +7,8 @@
 - Recipe build method: `pip`
 - Upstream repo: `https://github.com/pytorch/vision.git`
 - Package version: `0.26.0`
-- Recipe revision: `b453c33 (20260422, 9 path commits)`
-- Recipe steps: `12, 13`
+- Recipe revision: `a188f9e (20260424, 10 path commits)`
+- Recipe steps: `13, 14`
 - Recipe dependencies: `pytorch`
 - Recorded reference packages: `aur/python-torchvision-rocm, aur/python-torchvision-rocm-bin, extra/python-torchvision`
 - Authoritative reference package: `aur/python-torchvision-rocm`

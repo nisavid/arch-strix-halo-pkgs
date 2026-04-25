@@ -8,8 +8,8 @@
 - Recipe build method: `cmake`
 - Upstream repo: `https://github.com/ggml-org/llama.cpp.git`
 - Package version: `b8911`
-- Recipe revision: `b453c33 (20260422, 9 path commits)`
-- Recipe steps: `33`
+- Recipe revision: `a188f9e (20260424, 10 path commits)`
+- Recipe steps: `34`
 - Recipe dependencies: `therock`
 - Recorded reference packages: `aur/llama.cpp-hip, aur/llama.cpp`
 - Authoritative reference package: `aur/llama.cpp-hip`
@@ -52,6 +52,7 @@ binaries find their shared libraries without LD_LIBRARY_PATH.
 
 - Diff against aur/llama.cpp-hip first during updates, then consult aur/llama.cpp for shared install/dependency conventions outside the ROCm-specific split.
 - On 2026-04-23, adopted upstream llama.cpp b8911 at 5d2b52d80d9f375a6e81d07e212d047d8ee4f76e. The b8892..b8911 range flips HIP graphs on by default, fixes server handling for LFM2-Audio transcriptions, Anthropic prefix caching and chat_template_kwargs forwarding, fixes CVE-2026-21869 negative n_discard handling, and updates ModelOpt mixed-precision GGUF conversion; no local packaging patch carry changed.
+- On 2026-04-24, reviewed upstream llama.cpp b8925 at 0adede866ddb2e31992b3792eaea31d18ed89acf and AUR llama.cpp-hip b8925-1. The b8911..b8925 range adds parser structured-output fixes, server SWA-full and cache-idle-slots cleanup, Jinja warning fixes, WebGPU FlashAttention work, Metal device logging, and Hexagon/Snapdragon updates. Record it as reviewed without repinning until a runtime rebuild lane is opened.
 - Keep the backend-specific package split explicit until benchmarking proves a routing wrapper is worth maintaining.
 
 ## Maintainer Starting Points

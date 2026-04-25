@@ -7,8 +7,8 @@
 - Recipe build method: `pip`
 - Upstream repo: ``
 - Package version: `2.4.4`
-- Recipe revision: `b453c33 (20260422, 9 path commits)`
-- Recipe steps: `31`
+- Recipe revision: `a188f9e (20260424, 10 path commits)`
+- Recipe steps: `32`
 - Recipe dependencies: `cpython, pytorch`
 - Recorded reference packages: `extra/python-numpy, cachyos-extra-znver4/python-numpy`
 - Authoritative reference package: `extra/python-numpy`

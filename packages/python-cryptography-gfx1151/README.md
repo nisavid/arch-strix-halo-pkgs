@@ -7,8 +7,8 @@
 - Recipe build method: `cargo`
 - Upstream repo: ``
 - Package version: `46.0.7`
-- Recipe revision: `b453c33 (20260422, 9 path commits)`
-- Recipe steps: `30`
+- Recipe revision: `a188f9e (20260424, 10 path commits)`
+- Recipe steps: `31`
 - Recipe dependencies: `cpython`
 - Recorded reference packages: `extra/python-cryptography, cachyos-extra-znver4/python-cryptography`
 - Authoritative reference package: `extra/python-cryptography`
@@ -45,6 +45,7 @@ internal cc invocations for build scripts don't understand.
 
 - Always confirm the current Arch build backend requirements before updating this package; cryptography regularly changes Rust/setuptools details.
 - Treat any OpenSSL dependency drift in Arch as authoritative unless the recipe provides a concrete reason to diverge.
+- On 2026-04-24, reviewed PyPI cryptography 47.0.0 while Arch's authoritative python-cryptography baseline remained 46.0.7-1. The runtime dependency shape stayed aligned for the local Python 3.14 path, but the sdist build-system requirement now excludes maturin 1.12.0. Keep the local package on 46.0.7 until Arch adopts the release or a package-specific build refresh validates the newer maturin lane.
 
 ## Maintainer Starting Points
 

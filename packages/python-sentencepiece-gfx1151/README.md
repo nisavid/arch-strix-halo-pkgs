@@ -7,8 +7,8 @@
 - Recipe build method: `pip`
 - Upstream repo: ``
 - Package version: `0.2.1`
-- Recipe revision: `b453c33 (20260422, 9 path commits)`
-- Recipe steps: `31`
+- Recipe revision: `a188f9e (20260424, 10 path commits)`
+- Recipe steps: `32`
 - Recipe dependencies: `cpython, pytorch`
 - Recorded reference packages: `cachyos/python-sentencepiece, aur/python-sentencepiece, aur/python-sentencepiece-git`
 - Authoritative reference package: `cachyos/python-sentencepiece`

@@ -7,8 +7,8 @@
 - Recipe build method: `cmake`
 - Upstream repo: `https://github.com/ROCm/aotriton.git`
 - Package version: `0.11.2b`
-- Recipe revision: `b453c33 (20260422, 9 path commits)`
-- Recipe steps: `17, 18`
+- Recipe revision: `a188f9e (20260424, 10 path commits)`
+- Recipe steps: `18, 19`
 - Recipe dependencies: `triton`
 - Recorded reference packages: `extra/python-aotriton, cachyos-extra-znver4/python-aotriton`
 - Authoritative reference package: `extra/python-aotriton`

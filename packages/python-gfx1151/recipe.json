@@ -104,9 +104,9 @@
   "provenance": {
     "output_root": "packages",
     "recipe_author": "Blackcat Informatics Inc.",
-    "recipe_commit": "b453c33",
-    "recipe_date": "20260422",
-    "recipe_history_count": 9,
+    "recipe_commit": "a188f9e",
+    "recipe_date": "20260424",
+    "recipe_history_count": 10,
     "recipe_repo": "https://github.com/paudley/ai-notes",
     "recipe_subdir": "strix-halo",
     "repo_subpath": "."
@@ -123,7 +123,7 @@
     "repo": "https://github.com/python/cpython.git",
     "src_dir": "cpython",
     "steps": [
-      7
+      8
     ]
   }
 }

@@ -7,8 +7,8 @@
 - Recipe build method: `pip`
 - Upstream repo: `https://github.com/ROCm/triton.git`
 - Package version: `3.0.0+git0ec280cf`
-- Recipe revision: `b453c33 (20260422, 9 path commits)`
-- Recipe steps: `14, 15, 16`
+- Recipe revision: `a188f9e (20260424, 10 path commits)`
+- Recipe steps: `15, 16, 17`
 - Recipe dependencies: `therock, pytorch`
 - Recorded reference packages: `extra/python-triton, cachyos-extra-znver4/python-triton`
 - Authoritative reference package: `extra/python-triton`
