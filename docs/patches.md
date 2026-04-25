@@ -86,6 +86,18 @@ becomes durable, prefer a named patch that another maintainer can review.
     evidence that the maintained Gemma 4 lane should leave Triton unquantized
     MoE.
 
+## Triton
+
+- [Python 3.14 and pybind11 build-system compatibility](../packages/python-triton-gfx1151/0001-python-3.14-and-pybind11-build-system.patch)
+  - Keeps the ROCm Triton fork on the repo's Python 3.14 lane while using the
+    Arch-provided build tools from the package metadata.
+- [Disable `-Werror` with TheRock LLVM headers](../packages/python-triton-gfx1151/0002-disable-werror-with-therock-llvm-headers.patch)
+  - Prevents warning-only differences in the local LLVM/header lane from
+    failing the package build.
+- [Add `AttrsDescriptor.__repr__` for Inductor codegen](../packages/python-triton-gfx1151/0003-attrs-descriptor-repr-for-inductor.patch)
+  - Keeps `torch.compile` / Inductor-generated Python valid when it serializes
+    Triton metadata with `repr()`.
+
 ## TorchAO
 
 - [Honor `PYTORCH_ROCM_ARCH` instead of hard-coding `gfx942`](../packages/python-torchao-rocm-gfx1151/0001-setup.py-honor-pytorch-rocm-arch.patch)

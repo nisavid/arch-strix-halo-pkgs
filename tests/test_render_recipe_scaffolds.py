@@ -201,6 +201,57 @@ def test_rust_wheel_renderer_applies_source_patches() -> None:
     assert 'patch -Np1 -i "$srcdir/0001-sample.patch"' in pkgbuild
 
 
+def test_triton_rocm_renderer_prefers_source_patches_over_inline_sed() -> None:
+    pkgbuild = render_recipe_scaffolds.render_pkgbuild(
+        "python-triton-gfx1151",
+        {
+            "recipe_key": "triton",
+            "template": "python-project-triton-rocm",
+            "upstream_version": "3.0.0+git0ec280cf",
+            "pkgdesc": "Triton",
+            "url": "https://triton-lang.org/main/index.html",
+            "license": ["MIT"],
+            "src_subdir": "triton",
+            "source_refs": [
+                "triton::git+https://github.com/ROCm/triton.git#commit=0ec280cf80dd91e9a86887981a670f2d4541a32b"
+            ],
+            "source_patches": [
+                "0001-python-3.14-and-pybind11-build-system.patch",
+                "0002-disable-werror-with-therock-llvm-headers.patch",
+                "0003-attrs-descriptor-repr-for-inductor.patch",
+            ],
+        },
+        {
+            "repo": "https://github.com/ROCm/triton.git",
+            "method": "pip",
+            "phase": "package",
+            "steps": [],
+            "depends_on": [],
+            "notes": "",
+            "patches": [
+                {
+                    "type": "sed",
+                    "file": "triton/backends/compiler.py",
+                    "marker": "__repr__",
+                    "marker_absent": True,
+                    "sed_command": "/def to_dict(self):/i\\    def __repr__(self):\\n        return f'AttrsDescriptor.from_dict({self.to_dict()!r})'",
+                }
+            ],
+        },
+        "3.0.0+git0ec280cf",
+        {
+            "recipe_repo": "https://github.com/paudley/ai-notes",
+            "recipe_subdir": "strix-halo",
+            "recipe_author": "Blackcat Informatics Inc.",
+        },
+    )
+
+    assert 'patch -Np1 -i "$srcdir/0001-python-3.14-and-pybind11-build-system.patch"' in pkgbuild
+    assert 'patch -Np1 -i "$srcdir/0003-attrs-descriptor-repr-for-inductor.patch"' in pkgbuild
+    assert "sed -i" not in pkgbuild
+    assert "git cherry-pick" not in pkgbuild
+
+
 def test_torch_migraphx_renderer_keeps_rocm_compiler_and_rpath() -> None:
     pkgbuild = render_recipe_scaffolds.render_pkgbuild(
         "python-torch-migraphx-gfx1151",

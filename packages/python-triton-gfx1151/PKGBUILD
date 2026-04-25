@@ -18,26 +18,15 @@ options=()
 provides=(python-triton=3.0.0+git0ec280cf)
 conflicts=(python-triton)
 replaces=()
-source=('triton::git+https://github.com/ROCm/triton.git#commit=0ec280cf80dd91e9a86887981a670f2d4541a32b')
-sha256sums=(SKIP)
+source=('triton::git+https://github.com/ROCm/triton.git#commit=0ec280cf80dd91e9a86887981a670f2d4541a32b' 0001-python-3.14-and-pybind11-build-system.patch 0002-disable-werror-with-therock-llvm-headers.patch 0003-attrs-descriptor-repr-for-inductor.patch)
+sha256sums=(SKIP SKIP SKIP SKIP)
 
 prepare() {
   cd "$srcdir/triton"
 
-  # Keep Arch's Python-3.14 and setuptools compatibility deltas on top of the ROCm performance fork.
-  sed -i '/requires = \[/s/.*/requires = ["setuptools", "wheel", "pybind11>=2.13.1"]/' python/pyproject.toml
-  sed -i 's/-Werror//' CMakeLists.txt
-  git cherry-pick -n c44b870bdd9e1ea8933fd4057b6b59a5e6e5407b || true
-    # Remove -Werror from Triton's CMakeLists.txt. Our TheRock-built LLVM headers trigger warnings that upstream Triton doesn't see because they use a different LLVM version.
-
-    if grep -Fq ' -Werror ' CMakeLists.txt; then
-      sed -i 's/ -Werror / /' CMakeLists.txt
-    fi
-    # Add __repr__ method to AttrsDescriptor so torch Inductor can serialize it into generated Triton kernel source files as valid Python. Uses the existing to_dict()/from_dict() round-trip. Without this fix, --enforce-eager is required as a workaround which disables CUDAGraph capture and kernel fusion optimizations.
-
-    if ! grep -Fq __repr__ python/triton/backends/compiler.py; then
-      sed -i '/def to_dict(self):/i\    def __repr__(self):\n        return f'"'"'AttrsDescriptor.from_dict({self.to_dict()!r})'"'"'' python/triton/backends/compiler.py
-    fi
+  patch -Np1 -i "$srcdir/0001-python-3.14-and-pybind11-build-system.patch"
+  patch -Np1 -i "$srcdir/0002-disable-werror-with-therock-llvm-headers.patch"
+  patch -Np1 -i "$srcdir/0003-attrs-descriptor-repr-for-inductor.patch"
 }
 
 build() {

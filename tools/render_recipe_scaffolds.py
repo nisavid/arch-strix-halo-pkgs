@@ -988,19 +988,25 @@ package() {{
 }}"""
     elif template == "python-project-triton-rocm":
         python_subdir = f"{src_subdir}/python"
-        prepare_lines.extend(
-            [
-                "# Keep Arch's Python-3.14 and setuptools compatibility deltas on top of the ROCm performance fork.",
-                "sed -i '/requires = \\[/s/.*/requires = [\"setuptools\", \"wheel\", \"pybind11>=2.13.1\"]/' python/pyproject.toml",
-                "sed -i 's/-Werror//' CMakeLists.txt",
-                "git cherry-pick -n c44b870bdd9e1ea8933fd4057b6b59a5e6e5407b || true",
-            ]
-        )
-        rendered_recipe_patches = render_patch_prepare(
-            recipe_pkg, policy_pkg.get("recipe_patch_file_rewrites")
-        )
-        if rendered_recipe_patches:
-            prepare_lines.append(rendered_recipe_patches)
+        source_patches = policy_pkg.get("source_patches", [])
+        if source_patches:
+            prepare_lines.extend(
+                f'patch -Np1 -i "$srcdir/{patch_name}"' for patch_name in source_patches
+            )
+        else:
+            prepare_lines.extend(
+                [
+                    "# Keep Arch's Python-3.14 and setuptools compatibility deltas on top of the ROCm performance fork.",
+                    "sed -i '/requires = \\[/s/.*/requires = [\"setuptools\", \"wheel\", \"pybind11>=2.13.1\"]/' python/pyproject.toml",
+                    "sed -i 's/-Werror//' CMakeLists.txt",
+                    "git cherry-pick -n c44b870bdd9e1ea8933fd4057b6b59a5e6e5407b || true",
+                ]
+            )
+            rendered_recipe_patches = render_patch_prepare(
+                recipe_pkg, policy_pkg.get("recipe_patch_file_rewrites")
+            )
+            if rendered_recipe_patches:
+                prepare_lines.append(rendered_recipe_patches)
         build_body = f"""\
 build() {{
   cd "$srcdir/{python_subdir}"
@@ -1389,6 +1395,12 @@ def normalize_recipe_patches(recipe_patches: list[dict]) -> list[dict]:
     return normalized
 
 
+def renders_recipe_patch_actions(policy_pkg: dict) -> bool:
+    if policy_pkg.get("template") == "python-project-triton-rocm" and policy_pkg.get("source_patches"):
+        return False
+    return True
+
+
 def render_recipe_json(package_name: str, policy_pkg: dict, recipe_pkg: dict, version: str, defaults: dict) -> str:
     authoritative_reference = policy_pkg.get("authoritative_reference")
     if authoritative_reference is None:
@@ -1436,7 +1448,8 @@ def render_recipe_json(package_name: str, policy_pkg: dict, recipe_pkg: dict, ve
 def render_readme(package_name: str, policy_pkg: dict, recipe_pkg: dict, version: str, defaults: dict) -> str:
     notes = policy_pkg.get("scaffold_notes", [])
     recipe_notes = policy_pkg.get("recipe_notes_override", recipe_pkg.get("notes", "").strip())
-    patch_count = len(recipe_pkg.get("patches", [])) + len(policy_pkg.get("source_patches", []))
+    recipe_patch_count = len(recipe_pkg.get("patches", [])) if renders_recipe_patch_actions(policy_pkg) else 0
+    patch_count = recipe_patch_count + len(policy_pkg.get("source_patches", []))
     steps = ", ".join(str(step) for step in recipe_pkg.get("steps", []))
     depends_on = ", ".join(recipe_pkg.get("depends_on", [])) or "none"
     references = ", ".join(policy_pkg.get("arch_reference", [])) or "none"

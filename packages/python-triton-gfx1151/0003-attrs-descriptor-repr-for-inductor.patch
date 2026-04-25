@@ -1,0 +1,25 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Strix Halo Packaging <packaging@example.invalid>
+Date: Sat, 25 Apr 2026 00:00:00 +0000
+Subject: [PATCH] Add AttrsDescriptor repr for Inductor codegen
+
+Torch Inductor serializes Triton metadata with repr(). Keep the generated code
+valid by round-tripping AttrsDescriptor through its existing dictionary form.
+---
+ python/triton/backends/compiler.py | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/python/triton/backends/compiler.py b/python/triton/backends/compiler.py
+index 851d115..2292f6a 100644
+--- a/python/triton/backends/compiler.py
++++ b/python/triton/backends/compiler.py
+@@ -132,6 +132,9 @@ class AttrsDescriptor:
+         key = str(values)
+         return hashlib.sha256(key.encode("utf-8")).hexdigest()
+ 
++    def __repr__(self):
++        return f'AttrsDescriptor.from_dict({self.to_dict()!r})'
++
+     def to_dict(self):
+         """
+         Store the fields of this class in a serializable dictionary

@@ -1,0 +1,39 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Strix Halo Packaging <packaging@example.invalid>
+Date: Sat, 25 Apr 2026 00:00:00 +0000
+Subject: [PATCH] Python 3.14 and pybind11 build-system compatibility
+
+Keep the ROCm Triton fork building on the repo's Python 3.14 lane while using
+Arch-provided build tools.
+---
+ python/pyproject.toml                  | 2 +-
+ python/triton/compiler/code_generator.py | 4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/python/pyproject.toml b/python/pyproject.toml
+index 2cbe2d3..49006e7 100644
+--- a/python/pyproject.toml
++++ b/python/pyproject.toml
+@@ -1,5 +1,5 @@
+ [build-system]
+-requires = ["setuptools>=40.8.0", "wheel", "cmake>=3.18", "ninja>=1.11.1", "pybind11>=2.13.1"]
++requires = ["setuptools", "wheel", "pybind11>=2.13.1"]
+ 
+ # We're incrementally switching from autopep8 to ruff.
+ [tool.autopep8]
+diff --git a/python/triton/compiler/code_generator.py b/python/triton/compiler/code_generator.py
+index 1c14f5a..71fca54 100644
+--- a/python/triton/compiler/code_generator.py
++++ b/python/triton/compiler/code_generator.py
+@@ -1161,9 +1161,9 @@ class CodeGenerator(ast.NodeVisitor):
+             # visit iterator arguments
+             # note: only `range` iterator is supported now
+             # collect lower bound (lb), upper bound (ub), and step
+-            lb = iter_args[0] if len(iter_args) > 1 else self.visit(ast.Num(0))
++            lb = iter_args[0] if len(iter_args) > 1 else self.visit(ast.Constant(0))
+             ub = iter_args[1] if len(iter_args) > 1 else self.visit(node.iter.args[0])
+-            step = iter_args[2] if len(iter_args) > 2 else self.visit(ast.Num(1))
++            step = iter_args[2] if len(iter_args) > 2 else self.visit(ast.Constant(1))
+         else:
+             raise RuntimeError('Only `range` and `static_range` iterators are currently supported')
+         # handle negative constant step (not supported by scf.for in MLIR)

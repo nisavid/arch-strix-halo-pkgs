@@ -307,6 +307,15 @@ The fileless meta packages remain intentional composition packages. Reopen this
 audit when Arch adds matching package surfaces, CachyOS changes ROCm metadata
 shape, or a future staged TheRock root changes the payload set.
 
+The 2026-04-25 patch-carry cleanup moved `python-triton-gfx1151`'s stabilized
+source edits out of inline `prepare()` sed/cherry-pick commands and into three
+package-local patch files: Python 3.14 and pybind11 build-system compatibility,
+`-Werror` removal for the local LLVM/header lane, and
+`AttrsDescriptor.__repr__` for Inductor codegen. The Triton recipe policy now
+lists those files as `source_patches`, and the renderer applies them directly
+for the ROCm Triton template. The policy-invalidated freshness sweep after this
+change reported all 25 package families current.
+
 The `python-flash-attn-rocm-gfx1151` package experiment now tracks ROCm
 FlashAttention `main_perf` commit `3f94643fb41bcedded28c85185a8e11d42ef1592`
 with package version `2.8.4`. The package builds the Triton AMD path with
