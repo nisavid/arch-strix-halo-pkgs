@@ -47,7 +47,9 @@
   rendering fileless `hiptensor-gfx1151` and `rpp-gfx1151` compatibility
   outputs until a staged TheRock root can provide real payload packages; the
   third tightened core runtime dependencies and corrected OpenCL ICD-loader
-  provides. Continue with math, profiler, and ML split-package dependencies.
+  provides; the fourth tightened math, profiler, and ML split-package
+  dependencies. Continue with remaining unbaselined generated packages and
+  local support exceptions.
 - Convert remaining scripted source edits into durable patch files where
   practical.
 - Tighten package hygiene for embedded build paths in PyTorch and vLLM.

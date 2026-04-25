@@ -75,6 +75,14 @@ shape while substituting local `-gfx1151` ROCm package names and
 runtime no longer claims to provide the ICD loader; it provides the OpenCL
 driver and depends on the system loader instead.
 
+The math, profiler, and ML slice of the same audit added Arch/CachyOS-style
+dependency edges for the rendered BLAS, FFT, sparse, RAND, decode/JPEG,
+MIOpen, MIGraphX, RCCL, Composable Kernel, rocProfiler, roctracer, and AQL
+profiling packages. `hipify-clang-gfx1151` intentionally does not mirror the
+Arch `cuda` dependency, because this repo's TheRock family is the coherent AMD
+ROCm lane and should not pull a CUDA stack just to expose the HIP translation
+tool.
+
 ## What changed
 
 The generator and policy now handle:
@@ -113,5 +121,5 @@ The generator is no longer exploratory. The follow-up work is maintenance:
 - keep the generated family aligned with the local repo and live cutover story
 - rerender `hipfort-gfx1151`, `hiptensor-gfx1151`, `mivisionx-gfx1151`, and
   `rpp-gfx1151` when a staged TheRock root contains those payloads
-- continue the Arch/CachyOS dependency audit for math, profiler, and ML split
-  packages
+- continue the Arch/CachyOS audit for remaining unbaselined generated packages
+  and local support exceptions

@@ -285,6 +285,14 @@ appropriate. The OpenCL runtime now provides `opencl-driver` but no longer
 claims `rocm-ocl-icd` or `rocm-opencl-icd-loader`; it depends on the system
 OpenCL ICD loader instead.
 
+The audit then tightened rendered math, profiler, and ML dependency metadata:
+BLAS, FFT, sparse, RAND, decode/JPEG, MIOpen, MIGraphX, RCCL, Composable
+Kernel, rocProfiler, roctracer, and AQL profiling split packages now carry
+Arch/CachyOS-style dependencies using local `-gfx1151` package names where
+appropriate. `hipify-clang-gfx1151` keeps the Arch-style compiler/runtime
+dependencies but intentionally omits Arch's `cuda` dependency so this AMD ROCm
+family does not pull a CUDA stack for the HIP translation tool.
+
 The `python-flash-attn-rocm-gfx1151` package experiment now tracks ROCm
 FlashAttention `main_perf` commit `3f94643fb41bcedded28c85185a8e11d42ef1592`
 with package version `2.8.4`. The package builds the Triton AMD path with

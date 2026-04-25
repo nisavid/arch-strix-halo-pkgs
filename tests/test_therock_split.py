@@ -187,6 +187,60 @@ def test_core_runtime_dependency_policy_tracks_arch_baseline_shape():
     ]
 
 
+def test_math_and_ml_dependency_policy_tracks_arch_baseline_shape():
+    policy = therock_split.load_policy(REPO_ROOT / "policies/therock-packages.toml")
+    packages = policy["packages"]
+
+    assert packages["rocblas-gfx1151"]["depends"] == [
+        "cblas",
+        "gcc-libs",
+        "glibc",
+        "hip-runtime-amd-gfx1151",
+        "openmp",
+        "rocm-core-gfx1151",
+        "roctracer-gfx1151",
+    ]
+    assert packages["hipblaslt-gfx1151"]["depends"] == [
+        "gcc-libs",
+        "glibc",
+        "hip-runtime-amd-gfx1151",
+        "hipblas-gfx1151",
+        "msgpack-cxx",
+        "rocblas-gfx1151",
+        "rocm-core-gfx1151",
+        "rocm-smi-lib-gfx1151",
+        "yaml-cpp",
+        "composable-kernel-gfx1151",
+    ]
+    assert packages["migraphx-gfx1151"]["depends"] == [
+        "gcc-libs",
+        "glibc",
+        "hip-runtime-amd-gfx1151",
+        "miopen-hip-gfx1151",
+        "msgpack-cxx",
+        "protobuf",
+        "python-gfx1151",
+        "rocblas-gfx1151",
+        "rocm-core-gfx1151",
+        "sqlite",
+    ]
+    assert packages["miopen-gfx1151"]["depends"] == [
+        "bzip2",
+        "comgr-gfx1151",
+        "composable-kernel-gfx1151",
+        "gcc-libs",
+        "glibc",
+        "hip-runtime-amd-gfx1151",
+        "hipblas-gfx1151",
+        "hipblaslt-gfx1151",
+        "rocblas-gfx1151",
+        "rocm-core-gfx1151",
+        "rocrand-gfx1151",
+        "roctracer-gfx1151",
+        "sqlite",
+    ]
+
+
 def test_live_root_render_ignores_rocm_core_overlay_files():
     policy = therock_split.load_policy(REPO_ROOT / "policies/therock-packages.toml")
     classifier = therock_split.Classifier(policy)

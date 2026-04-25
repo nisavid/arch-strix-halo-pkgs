@@ -14,7 +14,7 @@ AMDSMI_PTH = AMDSMI_PKGDIR / "usr/lib/python3.14/site-packages/amd_smi.pth"
 def test_migraphx_package_exports_python_import_hook():
     text = PKGBUILD.read_text()
     assert "package_migraphx-gfx1151()" in text
-    assert "depends=('gcc-libs' 'glibc' 'python-gfx1151')" in text
+    assert "depends=('gcc-libs' 'glibc' 'hip-runtime-amd-gfx1151' 'miopen-hip-gfx1151' 'msgpack-cxx' 'protobuf' 'python-gfx1151' 'rocblas-gfx1151' 'rocm-core-gfx1151' 'sqlite')" in text
     assert "migraphx.pth" in text
     assert "/opt/rocm/lib" in text
 
@@ -22,7 +22,14 @@ def test_migraphx_package_exports_python_import_hook():
     assert manifest["packages"]["migraphx-gfx1151"]["depends"] == [
         "gcc-libs",
         "glibc",
+        "hip-runtime-amd-gfx1151",
+        "miopen-hip-gfx1151",
+        "msgpack-cxx",
+        "protobuf",
         "python-gfx1151",
+        "rocblas-gfx1151",
+        "rocm-core-gfx1151",
+        "sqlite",
     ]
 
 

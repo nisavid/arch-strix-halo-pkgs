@@ -35,7 +35,12 @@
       "rendered": true
     },
     "composable-kernel-gfx1151": {
-      "depends": [],
+      "depends": [
+        "gcc-libs",
+        "glibc",
+        "hip-runtime-amd-gfx1151",
+        "rocm-core-gfx1151"
+      ],
       "fileless": false,
       "files": 1856,
       "provides": [
@@ -90,7 +95,9 @@
       ]
     },
     "hipblas-common-gfx1151": {
-      "depends": [],
+      "depends": [
+        "rocm-core-gfx1151"
+      ],
       "fileless": false,
       "files": 4,
       "provides": [
@@ -100,8 +107,13 @@
     },
     "hipblas-gfx1151": {
       "depends": [
+        "gcc-libs",
+        "glibc",
+        "hip-runtime-amd-gfx1151",
+        "hipblas-common-gfx1151",
         "rocblas-gfx1151",
-        "hipblas-common-gfx1151"
+        "rocm-core-gfx1151",
+        "rocsolver-gfx1151"
       ],
       "fileless": false,
       "files": 11,
@@ -112,8 +124,15 @@
     },
     "hipblaslt-gfx1151": {
       "depends": [
-        "rocblas-gfx1151",
+        "gcc-libs",
+        "glibc",
+        "hip-runtime-amd-gfx1151",
         "hipblas-gfx1151",
+        "msgpack-cxx",
+        "rocblas-gfx1151",
+        "rocm-core-gfx1151",
+        "rocm-smi-lib-gfx1151",
+        "yaml-cpp",
         "composable-kernel-gfx1151"
       ],
       "fileless": false,
@@ -137,6 +156,8 @@
     },
     "hipcub-gfx1151": {
       "depends": [
+        "rocm-core-gfx1151",
+        "hip-runtime-amd-gfx1151",
         "rocprim-gfx1151"
       ],
       "fileless": false,
@@ -148,7 +169,11 @@
     },
     "hipfft-gfx1151": {
       "depends": [
-        "rocfft-gfx1151"
+        "gcc-libs",
+        "glibc",
+        "hip-runtime-amd-gfx1151",
+        "rocfft-gfx1151",
+        "rocm-core-gfx1151"
       ],
       "fileless": false,
       "files": 17,
@@ -168,7 +193,14 @@
     },
     "hipify-clang-gfx1151": {
       "depends": [
-        "rocm-llvm-gfx1151"
+        "bash",
+        "gcc-libs",
+        "glibc",
+        "ncurses",
+        "perl",
+        "rocm-llvm-gfx1151",
+        "zlib",
+        "zstd"
       ],
       "fileless": false,
       "files": 12,
@@ -179,6 +211,10 @@
     },
     "hiprand-gfx1151": {
       "depends": [
+        "gcc-libs",
+        "glibc",
+        "hip-runtime-amd-gfx1151",
+        "rocm-core-gfx1151",
         "rocrand-gfx1151"
       ],
       "fileless": false,
@@ -190,7 +226,13 @@
     },
     "hipsolver-gfx1151": {
       "depends": [
-        "rocsolver-gfx1151"
+        "gcc-libs",
+        "glibc",
+        "hip-runtime-amd-gfx1151",
+        "rocblas-gfx1151",
+        "rocm-core-gfx1151",
+        "rocsolver-gfx1151",
+        "suitesparse"
       ],
       "fileless": false,
       "files": 20,
@@ -201,6 +243,10 @@
     },
     "hipsparse-gfx1151": {
       "depends": [
+        "gcc-libs",
+        "glibc",
+        "hip-runtime-amd-gfx1151",
+        "rocm-core-gfx1151",
         "rocsparse-gfx1151"
       ],
       "fileless": false,
@@ -212,7 +258,16 @@
     },
     "hipsparselt-gfx1151": {
       "depends": [
-        "rocsparse-gfx1151"
+        "gcc-libs",
+        "glibc",
+        "hip-runtime-amd-gfx1151",
+        "hipsparse-gfx1151",
+        "lapack",
+        "msgpack-cxx",
+        "rocm-core-gfx1151",
+        "rocm-smi-lib-gfx1151",
+        "rocminfo-gfx1151",
+        "roctracer-gfx1151"
       ],
       "fileless": false,
       "files": 10,
@@ -237,7 +292,12 @@
       "rendered": false
     },
     "hsa-amd-aqlprofile-gfx1151": {
-      "depends": [],
+      "depends": [
+        "gcc-libs",
+        "glibc",
+        "rocm-core-gfx1151",
+        "hsa-rocr-gfx1151"
+      ],
       "fileless": false,
       "files": 32,
       "provides": [
@@ -293,7 +353,14 @@
       "depends": [
         "gcc-libs",
         "glibc",
-        "python-gfx1151"
+        "hip-runtime-amd-gfx1151",
+        "miopen-hip-gfx1151",
+        "msgpack-cxx",
+        "protobuf",
+        "python-gfx1151",
+        "rocblas-gfx1151",
+        "rocm-core-gfx1151",
+        "sqlite"
       ],
       "fileless": false,
       "files": 513,
@@ -303,7 +370,21 @@
       "rendered": true
     },
     "miopen-gfx1151": {
-      "depends": [],
+      "depends": [
+        "bzip2",
+        "comgr-gfx1151",
+        "composable-kernel-gfx1151",
+        "gcc-libs",
+        "glibc",
+        "hip-runtime-amd-gfx1151",
+        "hipblas-gfx1151",
+        "hipblaslt-gfx1151",
+        "rocblas-gfx1151",
+        "rocm-core-gfx1151",
+        "rocrand-gfx1151",
+        "roctracer-gfx1151",
+        "sqlite"
+      ],
       "fileless": false,
       "files": 75,
       "provides": [
@@ -332,7 +413,13 @@
       "rendered": false
     },
     "rccl-gfx1151": {
-      "depends": [],
+      "depends": [
+        "gcc-libs",
+        "glibc",
+        "hip-runtime-amd-gfx1151",
+        "rocm-core-gfx1151",
+        "rocm-smi-lib-gfx1151"
+      ],
       "fileless": false,
       "files": 29,
       "provides": [
@@ -341,7 +428,15 @@
       "rendered": true
     },
     "rocblas-gfx1151": {
-      "depends": [],
+      "depends": [
+        "cblas",
+        "gcc-libs",
+        "glibc",
+        "hip-runtime-amd-gfx1151",
+        "openmp",
+        "rocm-core-gfx1151",
+        "roctracer-gfx1151"
+      ],
       "fileless": false,
       "files": 174,
       "provides": [
@@ -350,7 +445,15 @@
       "rendered": true
     },
     "rocdecode-gfx1151": {
-      "depends": [],
+      "depends": [
+        "ffmpeg",
+        "gcc-libs",
+        "glibc",
+        "hip-runtime-amd-gfx1151",
+        "libva",
+        "mesa",
+        "rocm-core-gfx1151"
+      ],
       "fileless": false,
       "files": 108,
       "provides": [
@@ -359,7 +462,12 @@
       "rendered": true
     },
     "rocfft-gfx1151": {
-      "depends": [],
+      "depends": [
+        "gcc-libs",
+        "glibc",
+        "hip-runtime-amd-gfx1151",
+        "rocm-core-gfx1151"
+      ],
       "fileless": false,
       "files": 39,
       "provides": [
@@ -368,7 +476,15 @@
       "rendered": true
     },
     "rocjpeg-gfx1151": {
-      "depends": [],
+      "depends": [
+        "gcc-libs",
+        "glibc",
+        "hip-runtime-amd-gfx1151",
+        "libva",
+        "mesa",
+        "rocm-core-gfx1151",
+        "rocprofiler-register-gfx1151"
+      ],
       "fileless": false,
       "files": 22,
       "provides": [
@@ -712,7 +828,10 @@
       "rendered": true
     },
     "rocprim-gfx1151": {
-      "depends": [],
+      "depends": [
+        "rocm-core-gfx1151",
+        "hip-runtime-amd-gfx1151"
+      ],
       "fileless": false,
       "files": 214,
       "provides": [
@@ -730,7 +849,13 @@
       "rendered": true
     },
     "rocprofiler-register-gfx1151": {
-      "depends": [],
+      "depends": [
+        "gcc-libs",
+        "glibc",
+        "fmt",
+        "google-glog",
+        "rocm-core-gfx1151"
+      ],
       "fileless": false,
       "files": 43,
       "provides": [
@@ -770,7 +895,16 @@
       "rendered": true
     },
     "rocprofiler-systems-gfx1151": {
-      "depends": [],
+      "depends": [
+        "fmt",
+        "google-glog",
+        "hip-runtime-amd-gfx1151",
+        "hsa-amd-aqlprofile-gfx1151",
+        "python-gfx1151",
+        "python-lxml",
+        "rocm-core-gfx1151",
+        "yaml-cpp"
+      ],
       "fileless": false,
       "files": 205,
       "provides": [
@@ -780,7 +914,12 @@
       "rendered": true
     },
     "rocrand-gfx1151": {
-      "depends": [],
+      "depends": [
+        "gcc-libs",
+        "glibc",
+        "hip-runtime-amd-gfx1151",
+        "rocm-core-gfx1151"
+      ],
       "fileless": false,
       "files": 49,
       "provides": [
@@ -799,7 +938,12 @@
     },
     "rocsolver-gfx1151": {
       "depends": [
-        "rocblas-gfx1151"
+        "gcc-libs",
+        "glibc",
+        "hip-runtime-amd-gfx1151",
+        "rocblas-gfx1151",
+        "rocm-core-gfx1151",
+        "rocsparse-gfx1151"
       ],
       "fileless": false,
       "files": 13,
@@ -809,7 +953,14 @@
       "rendered": true
     },
     "rocsparse-gfx1151": {
-      "depends": [],
+      "depends": [
+        "gcc-libs",
+        "glibc",
+        "hip-runtime-amd-gfx1151",
+        "rocblas-gfx1151",
+        "rocm-core-gfx1151",
+        "rocprim-gfx1151"
+      ],
       "fileless": false,
       "files": 127,
       "provides": [
@@ -818,7 +969,11 @@
       "rendered": true
     },
     "rocthrust-gfx1151": {
-      "depends": [],
+      "depends": [
+        "rocm-core-gfx1151",
+        "hip-runtime-amd-gfx1151",
+        "rocprim-gfx1151"
+      ],
       "fileless": false,
       "files": 916,
       "provides": [
@@ -827,7 +982,14 @@
       "rendered": true
     },
     "roctracer-gfx1151": {
-      "depends": [],
+      "depends": [
+        "gcc-libs",
+        "glibc",
+        "rocm-core-gfx1151",
+        "hip-runtime-amd-gfx1151",
+        "hsa-rocr-gfx1151",
+        "comgr-gfx1151"
+      ],
       "fileless": false,
       "files": 25,
       "provides": [
@@ -836,7 +998,12 @@
       "rendered": true
     },
     "rocwmma-gfx1151": {
-      "depends": [],
+      "depends": [
+        "hip-runtime-amd-gfx1151",
+        "openmp",
+        "rocblas-gfx1151",
+        "rocm-core-gfx1151"
+      ],
       "fileless": false,
       "files": 117,
       "provides": [

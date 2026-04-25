@@ -209,6 +209,7 @@ depends = ["rocm-dbgapi-gfx1151", "rocm-debug-agent-gfx1151"]
 [packages."rocprofiler-register-gfx1151"]
 desc = "rocprofiler-register from TheRock for gfx1151"
 provides = ["rocprofiler-register"]
+depends = ["gcc-libs", "glibc", "fmt", "google-glog", "rocm-core-gfx1151"]
 
 [packages."rocprofiler-sdk-gfx1151"]
 desc = "rocprofiler SDK from TheRock for gfx1151"
@@ -227,6 +228,7 @@ depends = ["rocprofiler-sdk-gfx1151"]
 [packages."rocprofiler-systems-gfx1151"]
 desc = "rocprofiler-systems from TheRock for gfx1151"
 provides = ["rocprofiler-systems", "rocprofiler"]
+depends = ["fmt", "google-glog", "hip-runtime-amd-gfx1151", "hsa-amd-aqlprofile-gfx1151", "python-gfx1151", "python-lxml", "rocm-core-gfx1151", "yaml-cpp"]
 
 [packages."rocprofiler-compute-gfx1151"]
 desc = "rocprofiler-compute from TheRock for gfx1151"
@@ -235,69 +237,78 @@ provides = ["rocprofiler-compute"]
 [packages."roctracer-gfx1151"]
 desc = "ROCm tracer libraries from TheRock for gfx1151"
 provides = ["roctracer"]
+depends = ["gcc-libs", "glibc", "rocm-core-gfx1151", "hip-runtime-amd-gfx1151", "hsa-rocr-gfx1151", "comgr-gfx1151"]
 
 [packages."hsa-amd-aqlprofile-gfx1151"]
 desc = "HSA AQL profiling runtime from TheRock for gfx1151"
 provides = ["hsa-amd-aqlprofile"]
 replaces = ["hsa-amd-aqlprofile-bin"]
+depends = ["gcc-libs", "glibc", "rocm-core-gfx1151", "hsa-rocr-gfx1151"]
 
 [packages."rocblas-gfx1151"]
 desc = "rocBLAS from TheRock for gfx1151"
 provides = ["rocblas"]
+depends = ["cblas", "gcc-libs", "glibc", "hip-runtime-amd-gfx1151", "openmp", "rocm-core-gfx1151", "roctracer-gfx1151"]
 
 [packages."rocsolver-gfx1151"]
 desc = "rocSOLVER from TheRock for gfx1151"
 provides = ["rocsolver"]
-depends = ["rocblas-gfx1151"]
+depends = ["gcc-libs", "glibc", "hip-runtime-amd-gfx1151", "rocblas-gfx1151", "rocm-core-gfx1151", "rocsparse-gfx1151"]
 
 [packages."hipblas-common-gfx1151"]
 desc = "hipBLAS common files from TheRock for gfx1151"
 provides = ["hipblas-common"]
+depends = ["rocm-core-gfx1151"]
 
 [packages."hipblas-gfx1151"]
 desc = "hipBLAS from TheRock for gfx1151"
 provides = ["hipblas"]
-depends = ["rocblas-gfx1151", "hipblas-common-gfx1151"]
+depends = ["gcc-libs", "glibc", "hip-runtime-amd-gfx1151", "hipblas-common-gfx1151", "rocblas-gfx1151", "rocm-core-gfx1151", "rocsolver-gfx1151"]
 
 [packages."hipblaslt-gfx1151"]
 desc = "hipBLASLt from TheRock for gfx1151"
 provides = ["hipblaslt"]
-depends = ["rocblas-gfx1151", "hipblas-gfx1151", "composable-kernel-gfx1151"]
+depends = ["gcc-libs", "glibc", "hip-runtime-amd-gfx1151", "hipblas-gfx1151", "msgpack-cxx", "rocblas-gfx1151", "rocm-core-gfx1151", "rocm-smi-lib-gfx1151", "yaml-cpp", "composable-kernel-gfx1151"]
 
 [packages."hiprand-gfx1151"]
 desc = "hipRAND from TheRock for gfx1151"
 provides = ["hiprand"]
-depends = ["rocrand-gfx1151"]
+depends = ["gcc-libs", "glibc", "hip-runtime-amd-gfx1151", "rocm-core-gfx1151", "rocrand-gfx1151"]
 
 [packages."rocrand-gfx1151"]
 desc = "rocRAND from TheRock for gfx1151"
 provides = ["rocrand"]
+depends = ["gcc-libs", "glibc", "hip-runtime-amd-gfx1151", "rocm-core-gfx1151"]
 
 [packages."rocdecode-gfx1151"]
 desc = "rocDecode from TheRock for gfx1151"
 provides = ["rocdecode"]
+depends = ["ffmpeg", "gcc-libs", "glibc", "hip-runtime-amd-gfx1151", "libva", "mesa", "rocm-core-gfx1151"]
 
 [packages."rocjpeg-gfx1151"]
 desc = "rocJPEG from TheRock for gfx1151"
 provides = ["rocjpeg"]
+depends = ["gcc-libs", "glibc", "hip-runtime-amd-gfx1151", "libva", "mesa", "rocm-core-gfx1151", "rocprofiler-register-gfx1151"]
 
 [packages."rocprim-gfx1151"]
 desc = "rocPRIM from TheRock for gfx1151"
 provides = ["rocprim"]
+depends = ["rocm-core-gfx1151", "hip-runtime-amd-gfx1151"]
 
 [packages."hipcub-gfx1151"]
 desc = "hipCUB from TheRock for gfx1151"
 provides = ["hipcub"]
-depends = ["rocprim-gfx1151"]
+depends = ["rocm-core-gfx1151", "hip-runtime-amd-gfx1151", "rocprim-gfx1151"]
 
 [packages."rocfft-gfx1151"]
 desc = "rocFFT from TheRock for gfx1151"
 provides = ["rocfft"]
+depends = ["gcc-libs", "glibc", "hip-runtime-amd-gfx1151", "rocm-core-gfx1151"]
 
 [packages."hipfft-gfx1151"]
 desc = "hipFFT from TheRock for gfx1151"
 provides = ["hipfft"]
-depends = ["rocfft-gfx1151"]
+depends = ["gcc-libs", "glibc", "hip-runtime-amd-gfx1151", "rocfft-gfx1151", "rocm-core-gfx1151"]
 
 [packages."hipfort-gfx1151"]
 desc = "hipFORT from TheRock for gfx1151"
@@ -306,26 +317,27 @@ provides = ["hipfort"]
 [packages."hipify-clang-gfx1151"]
 desc = "hipify-clang from TheRock for gfx1151"
 provides = ["hipify-clang"]
-depends = ["rocm-llvm-gfx1151"]
+depends = ["bash", "gcc-libs", "glibc", "ncurses", "perl", "rocm-llvm-gfx1151", "zlib", "zstd"]
 
 [packages."hipsolver-gfx1151"]
 desc = "hipSOLVER from TheRock for gfx1151"
 provides = ["hipsolver"]
-depends = ["rocsolver-gfx1151"]
+depends = ["gcc-libs", "glibc", "hip-runtime-amd-gfx1151", "rocblas-gfx1151", "rocm-core-gfx1151", "rocsolver-gfx1151", "suitesparse"]
 
 [packages."rocsparse-gfx1151"]
 desc = "rocSPARSE from TheRock for gfx1151"
 provides = ["rocsparse"]
+depends = ["gcc-libs", "glibc", "hip-runtime-amd-gfx1151", "rocblas-gfx1151", "rocm-core-gfx1151", "rocprim-gfx1151"]
 
 [packages."hipsparse-gfx1151"]
 desc = "hipSPARSE from TheRock for gfx1151"
 provides = ["hipsparse"]
-depends = ["rocsparse-gfx1151"]
+depends = ["gcc-libs", "glibc", "hip-runtime-amd-gfx1151", "rocm-core-gfx1151", "rocsparse-gfx1151"]
 
 [packages."hipsparselt-gfx1151"]
 desc = "hipSPARSELt from TheRock for gfx1151"
 provides = ["hipsparselt"]
-depends = ["rocsparse-gfx1151"]
+depends = ["gcc-libs", "glibc", "hip-runtime-amd-gfx1151", "hipsparse-gfx1151", "lapack", "msgpack-cxx", "rocm-core-gfx1151", "rocm-smi-lib-gfx1151", "rocminfo-gfx1151", "roctracer-gfx1151"]
 
 [packages."hiptensor-gfx1151"]
 desc = "hipTensor from TheRock for gfx1151"
@@ -335,18 +347,22 @@ depends = ["rocm-core-gfx1151", "hip-runtime-amd-gfx1151", "composable-kernel-gf
 [packages."rccl-gfx1151"]
 desc = "RCCL from TheRock for gfx1151"
 provides = ["rccl"]
+depends = ["gcc-libs", "glibc", "hip-runtime-amd-gfx1151", "rocm-core-gfx1151", "rocm-smi-lib-gfx1151"]
 
 [packages."rocthrust-gfx1151"]
 desc = "rocThrust from TheRock for gfx1151"
 provides = ["rocthrust"]
+depends = ["rocm-core-gfx1151", "hip-runtime-amd-gfx1151", "rocprim-gfx1151"]
 
 [packages."rocwmma-gfx1151"]
 desc = "rocWMMA from TheRock for gfx1151"
 provides = ["rocwmma"]
+depends = ["hip-runtime-amd-gfx1151", "openmp", "rocblas-gfx1151", "rocm-core-gfx1151"]
 
 [packages."composable-kernel-gfx1151"]
 desc = "Composable Kernel from TheRock for gfx1151"
 provides = ["composable-kernel"]
+depends = ["gcc-libs", "glibc", "hip-runtime-amd-gfx1151", "rocm-core-gfx1151"]
 
 [packages."rocshmem-gfx1151"]
 desc = "rocSHMEM from TheRock for gfx1151"
@@ -355,7 +371,7 @@ provides = ["rocshmem"]
 [packages."migraphx-gfx1151"]
 desc = "MIGraphX from TheRock for gfx1151"
 provides = ["migraphx"]
-depends = ["gcc-libs", "glibc", "python-gfx1151"]
+depends = ["gcc-libs", "glibc", "hip-runtime-amd-gfx1151", "miopen-hip-gfx1151", "msgpack-cxx", "protobuf", "python-gfx1151", "rocblas-gfx1151", "rocm-core-gfx1151", "sqlite"]
 
 [packages."magma-gfx1151"]
 desc = "Matrix Algebra on GPU and Multicore Architectures from TheRock for gfx1151"
@@ -366,6 +382,7 @@ depends = ["blas", "lapack", "hip-runtime-amd-gfx1151", "hipblas-gfx1151", "hips
 [packages."miopen-gfx1151"]
 desc = "MIOpen from TheRock for gfx1151"
 provides = ["miopen"]
+depends = ["bzip2", "comgr-gfx1151", "composable-kernel-gfx1151", "gcc-libs", "glibc", "hip-runtime-amd-gfx1151", "hipblas-gfx1151", "hipblaslt-gfx1151", "rocblas-gfx1151", "rocm-core-gfx1151", "rocrand-gfx1151", "roctracer-gfx1151", "sqlite"]
 
 [packages."miopen-hip-gfx1151"]
 desc = "MIOpen HIP frontend files from TheRock for gfx1151"
