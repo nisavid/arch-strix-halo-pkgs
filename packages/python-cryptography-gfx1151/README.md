@@ -45,7 +45,8 @@ internal cc invocations for build scripts don't understand.
 
 - Always confirm the current Arch build backend requirements before updating this package; cryptography regularly changes Rust/setuptools details.
 - Treat any OpenSSL dependency drift in Arch as authoritative unless the recipe provides a concrete reason to diverge.
-- On 2026-04-24, reviewed PyPI cryptography 47.0.0 while Arch's authoritative python-cryptography baseline remained 46.0.7-1. The runtime dependency shape stayed aligned for the local Python 3.14 path, but the sdist build-system requirement now excludes maturin 1.12.0. Keep the local package on 46.0.7 until Arch adopts the release or a package-specific build refresh validates the newer maturin lane.
+- On 2026-04-24, reviewed PyPI cryptography 47.0.0 while Arch's authoritative python-cryptography baseline remained 46.0.7-1. The runtime dependency shape stayed aligned for the local Python 3.14 path, but the sdist build-system requirement now excludes maturin 1.12.0.
+- On 2026-04-25, Arch adopted python-cryptography 47.0.0-1 with python-maturin, clang, lld, llvm, python-setuptools, and python-wheel makedepends. Keep the local package on 46.0.7 until a package-specific build refresh validates the newer maturin lane.
 
 ## Maintainer Starting Points
 

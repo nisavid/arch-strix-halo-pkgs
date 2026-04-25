@@ -228,6 +228,25 @@ package search, PyPI, and GitHub requests succeeded. GitHub currently lists
 `0.19.1` remains expected. Treat the freshness gate as still blocked on an AUR
 provider retry.
 
+The 2026-04-25 06:24 EDT retry cleared the AUR provider blocker:
+`sentencepiece`, `torchvision`, and `vllm` all reported current. A full forced
+freshness sweep then found three actionable statuses, all reviewed and recorded
+without adopting new package sources. Arch `python-cryptography` moved to
+`47.0.0-1`, matching the already reviewed PyPI release; Arch's current
+PKGBUILD uses `python-maturin`, `clang`, `lld`, `llvm`, `python-setuptools`,
+and `python-wheel`, so keep the local package on `46.0.7` until a
+package-specific build refresh validates that newer maturin lane. llama.cpp
+`b8925..b8929` changes SYCL, WebGPU SSM_SCAN, docs, and `llama-quant`'s
+default quantization type from `Q5_1` to `Q8_0`; no HIP/Vulkan package-build
+touchpoint was found, so keep the installed packages pinned to the deployed
+`b8911` source until a runtime rebuild lane opens. Blackcat Informatics
+`upstream/ai-notes` main moved to
+`9f7c85f264287ac744272ce540e87058c7a3296b`; the reviewed range adds Bitserv
+Qwen3-VL W8A16 artifacts, a stable-diffusion.cpp Vulkan build lane, a
+`file_copy` parent-directory fix, and llama.cpp Vulkan optimization notes.
+Record that head as reviewed, but do not bump the submodule without an
+explicit package/scenario adoption lane.
+
 The `python-flash-attn-rocm-gfx1151` package experiment now tracks ROCm
 FlashAttention `main_perf` commit `3f94643fb41bcedded28c85185a8e11d42ef1592`
 with package version `2.8.4`. The package builds the Triton AMD path with

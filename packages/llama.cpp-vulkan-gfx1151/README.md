@@ -54,6 +54,7 @@ binaries find their shared libraries without LD_LIBRARY_PATH.
 - If a maintained source-built aur/llama.cpp-vulkan package appears, switch to it as the authoritative baseline.
 - On 2026-04-23, adopted upstream llama.cpp b8911 at 5d2b52d80d9f375a6e81d07e212d047d8ee4f76e. The b8892..b8911 range updates shared server/API handling, fixes CVE-2026-21869 negative n_discard handling, updates ModelOpt mixed-precision GGUF conversion, and adds WebGPU/SYCL/Snapdragon work; no Vulkan-specific build-system change was found, but the server/tool source delta is relevant to the packaged runtime.
 - On 2026-04-24, reviewed upstream llama.cpp b8925 at 0adede866ddb2e31992b3792eaea31d18ed89acf. The b8911..b8925 range adds parser structured-output fixes, server SWA-full and cache-idle-slots cleanup, Jinja warning fixes, WebGPU FlashAttention work, Metal device logging, and Hexagon/Snapdragon updates. Record it as reviewed without repinning until a runtime rebuild lane is opened.
+- On 2026-04-25, reviewed upstream llama.cpp b8929 at 9d34231bb89590ee760ae19ba665e7855cd4fd4e. The b8925..b8929 range changes SYCL, WebGPU SSM_SCAN, docs, and llama-quant's default quantization type from Q5_1 to Q8_0; no Vulkan package-build touchpoint was found. Record it as reviewed without repinning until a runtime rebuild lane is opened.
 - Until then, compare runtime/package expectations against the -bin package and source-build conventions against aur/llama.cpp.
 
 ## Maintainer Starting Points

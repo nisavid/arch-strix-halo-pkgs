@@ -646,7 +646,8 @@ divergence_notes = [
 update_notes = [
   "Always confirm the current Arch build backend requirements before updating this package; cryptography regularly changes Rust/setuptools details.",
   "Treat any OpenSSL dependency drift in Arch as authoritative unless the recipe provides a concrete reason to diverge.",
-  "On 2026-04-24, reviewed PyPI cryptography 47.0.0 while Arch's authoritative python-cryptography baseline remained 46.0.7-1. The runtime dependency shape stayed aligned for the local Python 3.14 path, but the sdist build-system requirement now excludes maturin 1.12.0. Keep the local package on 46.0.7 until Arch adopts the release or a package-specific build refresh validates the newer maturin lane."
+  "On 2026-04-24, reviewed PyPI cryptography 47.0.0 while Arch's authoritative python-cryptography baseline remained 46.0.7-1. The runtime dependency shape stayed aligned for the local Python 3.14 path, but the sdist build-system requirement now excludes maturin 1.12.0.",
+  "On 2026-04-25, Arch adopted python-cryptography 47.0.0-1 with python-maturin, clang, lld, llvm, python-setuptools, and python-wheel makedepends. Keep the local package on 46.0.7 until a package-specific build refresh validates the newer maturin lane."
 ]
 provides = ["python-cryptography"]
 conflicts = ["python-cryptography"]
@@ -976,6 +977,7 @@ update_notes = [
   "Diff against aur/llama.cpp-hip first during updates, then consult aur/llama.cpp for shared install/dependency conventions outside the ROCm-specific split.",
   "On 2026-04-23, adopted upstream llama.cpp b8911 at 5d2b52d80d9f375a6e81d07e212d047d8ee4f76e. The b8892..b8911 range flips HIP graphs on by default, fixes server handling for LFM2-Audio transcriptions, Anthropic prefix caching and chat_template_kwargs forwarding, fixes CVE-2026-21869 negative n_discard handling, and updates ModelOpt mixed-precision GGUF conversion; no local packaging patch carry changed.",
   "On 2026-04-24, reviewed upstream llama.cpp b8925 at 0adede866ddb2e31992b3792eaea31d18ed89acf and AUR llama.cpp-hip b8925-1. The b8911..b8925 range adds parser structured-output fixes, server SWA-full and cache-idle-slots cleanup, Jinja warning fixes, WebGPU FlashAttention work, Metal device logging, and Hexagon/Snapdragon updates. Record it as reviewed without repinning until a runtime rebuild lane is opened.",
+  "On 2026-04-25, reviewed upstream llama.cpp b8929 at 9d34231bb89590ee760ae19ba665e7855cd4fd4e. The b8925..b8929 range changes SYCL, WebGPU SSM_SCAN, docs, and llama-quant's default quantization type from Q5_1 to Q8_0; no HIP/Vulkan package-build touchpoint was found. Record it as reviewed without repinning until a runtime rebuild lane is opened.",
   "Keep the backend-specific package split explicit until benchmarking proves a routing wrapper is worth maintaining."
 ]
 provides = ["llama.cpp-hip-gfx1151", "llama.cpp-hip"]
@@ -1013,6 +1015,7 @@ update_notes = [
   "If a maintained source-built aur/llama.cpp-vulkan package appears, switch to it as the authoritative baseline.",
   "On 2026-04-23, adopted upstream llama.cpp b8911 at 5d2b52d80d9f375a6e81d07e212d047d8ee4f76e. The b8892..b8911 range updates shared server/API handling, fixes CVE-2026-21869 negative n_discard handling, updates ModelOpt mixed-precision GGUF conversion, and adds WebGPU/SYCL/Snapdragon work; no Vulkan-specific build-system change was found, but the server/tool source delta is relevant to the packaged runtime.",
   "On 2026-04-24, reviewed upstream llama.cpp b8925 at 0adede866ddb2e31992b3792eaea31d18ed89acf. The b8911..b8925 range adds parser structured-output fixes, server SWA-full and cache-idle-slots cleanup, Jinja warning fixes, WebGPU FlashAttention work, Metal device logging, and Hexagon/Snapdragon updates. Record it as reviewed without repinning until a runtime rebuild lane is opened.",
+  "On 2026-04-25, reviewed upstream llama.cpp b8929 at 9d34231bb89590ee760ae19ba665e7855cd4fd4e. The b8925..b8929 range changes SYCL, WebGPU SSM_SCAN, docs, and llama-quant's default quantization type from Q5_1 to Q8_0; no Vulkan package-build touchpoint was found. Record it as reviewed without repinning until a runtime rebuild lane is opened.",
   "Until then, compare runtime/package expectations against the -bin package and source-build conventions against aur/llama.cpp."
 ]
 provides = ["llama.cpp-vulkan-gfx1151", "llama.cpp-vulkan"]
