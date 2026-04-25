@@ -18,27 +18,13 @@ options=()
 provides=(aocl-libm)
 conflicts=(aocl-libm)
 replaces=()
-source=('aocl-libm::git+https://github.com/amd/aocl-libm-ose.git#tag=5.2.2')
-sha256sums=(SKIP)
+source=('aocl-libm::git+https://github.com/amd/aocl-libm-ose.git#tag=5.2.2' 0001-scons-support-arch-amdclang-toolchain.patch)
+sha256sums=(SKIP SKIP)
 
 prepare() {
   cd "$srcdir/aocl-libm"
 
-    # Remove -muse-unaligned-vector-move flag. This is AOCC-only; TheRock's open-source amdclang doesn't support it. The -famd-opt flag covers equivalent optimizations.
-
-    if grep -Fq muse-unaligned-vector-move src/SConscript; then
-      sed -i 's/ccflags.append('"'"'-muse-unaligned-vector-move'"'"')/pass  # patched: AOCC-only flag removed for amdclang/' src/SConscript
-    fi
-    # Add -Wno-macro-redefined to suppress CMPLX/CMPLXF macro redefinition warnings. These macros are defined in both AOCL-LibM headers and glibc complex.h.
-
-    if ! grep -Fq Wno-macro-redefined src/SConscript; then
-      sed -i 's/'"'"'-Werror'"'"'/'"'"'-Werror'"'"', '"'"'-Wno-macro-redefined'"'"'/' src/SConscript
-    fi
-    # Fix linker flags: -ealm_main is AOCC syntax, use -Wl,-e,alm_main for GCC/Clang. Add -fuse-ld=bfd because hand-written AVX assembly uses absolute relocations that lld rejects in shared libraries; GNU ld handles them via dynamic text relocations.
-
-    if grep -Fq ''"'"'-ealm_main'"'"'' src/SConscript; then
-      sed -i 's|'"'"'-ealm_main'"'"'|'"'"'-Wl,-e,alm_main'"'"', '"'"'-fuse-ld=bfd'"'"'|' src/SConscript
-    fi
+  patch -Np1 -i "$srcdir/0001-scons-support-arch-amdclang-toolchain.patch"
 }
 
 build() {

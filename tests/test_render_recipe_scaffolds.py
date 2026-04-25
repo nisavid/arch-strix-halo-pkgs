@@ -252,6 +252,52 @@ def test_triton_rocm_renderer_prefers_source_patches_over_inline_sed() -> None:
     assert "git cherry-pick" not in pkgbuild
 
 
+def test_aocl_libm_renderer_prefers_source_patches_over_inline_sed() -> None:
+    pkgbuild = render_recipe_scaffolds.render_pkgbuild(
+        "aocl-libm-gfx1151",
+        {
+            "recipe_key": "aocl_libm",
+            "template": "scons-aocl-libm",
+            "upstream_version": "5.2.2",
+            "pkgdesc": "AOCL-LibM",
+            "url": "https://github.com/amd/aocl-libm-ose.git",
+            "license": ["BSD-3-Clause"],
+            "src_subdir": "aocl-libm",
+            "source_refs": [
+                "aocl-libm::git+https://github.com/amd/aocl-libm-ose.git#tag=5.2.2"
+            ],
+            "source_patches": ["0001-scons-support-arch-amdclang-toolchain.patch"],
+            "source_patches_replace_recipe_patches": True,
+        },
+        {
+            "repo": "https://github.com/amd/aocl-libm-ose.git",
+            "method": "scons",
+            "phase": "package",
+            "steps": [],
+            "depends_on": [],
+            "notes": "",
+            "patches": [
+                {
+                    "type": "sed",
+                    "file": "src/SConscript",
+                    "marker": "muse-unaligned-vector-move",
+                    "sed_command": "s/ccflags.append('-muse-unaligned-vector-move')/pass/",
+                }
+            ],
+        },
+        "5.2.2",
+        {
+            "recipe_repo": "https://github.com/paudley/ai-notes",
+            "recipe_subdir": "strix-halo",
+            "recipe_author": "Blackcat Informatics Inc.",
+        },
+    )
+
+    assert 'patch -Np1 -i "$srcdir/0001-scons-support-arch-amdclang-toolchain.patch"' in pkgbuild
+    assert "sed -i" not in pkgbuild
+    assert "patchelf --set-rpath /usr/lib" in pkgbuild
+
+
 def test_torch_migraphx_renderer_keeps_rocm_compiler_and_rpath() -> None:
     pkgbuild = render_recipe_scaffolds.render_pkgbuild(
         "python-torch-migraphx-gfx1151",

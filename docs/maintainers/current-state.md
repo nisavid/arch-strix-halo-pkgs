@@ -316,6 +316,14 @@ lists those files as `source_patches`, and the renderer applies them directly
 for the ROCm Triton template. The policy-invalidated freshness sweep after this
 change reported all 25 package families current.
 
+The same patch-carry cleanup moved `aocl-libm-gfx1151`'s SCons toolchain
+source edits into `0001-scons-support-arch-amdclang-toolchain.patch`. The patch
+removes the AOCC-only unaligned-vector flag, keeps macro-redefinition warnings
+from failing the package build, and uses Clang/GNU-ld-compatible entry-point
+linker flags for the hand-written assembly objects. The AOCL-LibM renderer now
+applies package `source_patches` instead of recipe sed actions while preserving
+the post-install RPATH fix in `package()`.
+
 The `python-flash-attn-rocm-gfx1151` package experiment now tracks ROCm
 FlashAttention `main_perf` commit `3f94643fb41bcedded28c85185a8e11d42ef1592`
 with package version `2.8.4`. The package builds the Triton AMD path with

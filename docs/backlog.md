@@ -50,8 +50,9 @@
 - Convert remaining scripted source edits into durable patch files where
   practical. The first slice moved `python-triton-gfx1151`'s stabilized Python
   3.14, `-Werror`, and `AttrsDescriptor.__repr__` edits into package-local
-  patches; continue with other durable source mutations that still live as
-  inline `prepare()` edits.
+  patches; the second moved `aocl-libm-gfx1151`'s SCons toolchain edits into a
+  package-local patch. Continue with other durable source mutations that still
+  live as inline `prepare()` edits.
 - Tighten package hygiene for embedded build paths in PyTorch and vLLM.
 - Fix `tools/render_recipe_scaffolds.py` before relying on it for
   `python-torchao-rocm-gfx1151` PKGBUILD regeneration. A 2026-04-19 render

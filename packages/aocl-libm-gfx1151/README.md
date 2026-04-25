@@ -13,7 +13,7 @@
 - Recorded reference packages: `aur/aocl`
 - Authoritative reference package: `none`
 - Advisory reference packages: `aur/aocl`
-- Applied source patch files/actions: `4`
+- Applied source patch files/actions: `1`
 
 ## Recipe notes
 
@@ -28,7 +28,7 @@ Available at runtime via LD_LIBRARY_PATH for NumPy and PyTorch.
 ## Scaffold notes
 
 - There is no standalone AOCL-LibM package in Arch, CachyOS, or AUR; the closest packaging lane is the broader AUR aocl bundle, which is only advisory for install-layout cleanup patterns.
-- The recipe carries three upstream-compatibility patch steps plus a post-install RPATH fix; those are rendered into prepare() and package().
+- The recipe carries three upstream-compatibility source edits; the package keeps them as a source patch file, plus a post-install RPATH fix in package().
 - Use Arch's system scons from makedepends directly. Do not recreate the recipe's venv-local pip bootstrap inside PKGBUILD; that makes package builds network-dependent.
 - Pass resolved compiler paths to SCons through ALM_CC and ALM_CXX because AOCL-LibM validates those variables as existing paths.
 - Keep AOCL-LibM out of the CPython link line. It is intended for downstream numerical libraries, not Python's own PGO run.
@@ -43,6 +43,7 @@ Available at runtime via LD_LIBRARY_PATH for NumPy and PyTorch.
 
 - When updating, audit upstream AOCL-LibM licensing and bundled notices directly from source rather than assuming the advisory aur/aocl metadata is sufficient.
 - If AOCL-Utils packaging changes, re-check the runtime dependency and any RPATH or SONAME assumptions here.
+- Keep the SCons compatibility carry as a source patch file instead of inline sed edits.
 
 ## Maintainer Starting Points
 

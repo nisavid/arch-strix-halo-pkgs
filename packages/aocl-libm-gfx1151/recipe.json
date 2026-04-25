@@ -8,10 +8,13 @@
       "There is no standalone Arch-family AOCL-LibM package, so this package is recipe-first and uses the broader aur/aocl bundle only for install-layout and metadata expectations.",
       "The package keeps AOCL-LibM out of CPython's own link line; it is intended as a downstream math library, not part of Python's PGO training path."
     ],
-    "source_patches": [],
+    "source_patches": [
+      "0001-scons-support-arch-amdclang-toolchain.patch"
+    ],
     "update_notes": [
       "When updating, audit upstream AOCL-LibM licensing and bundled notices directly from source rather than assuming the advisory aur/aocl metadata is sufficient.",
-      "If AOCL-Utils packaging changes, re-check the runtime dependency and any RPATH or SONAME assumptions here."
+      "If AOCL-Utils packaging changes, re-check the runtime dependency and any RPATH or SONAME assumptions here.",
+      "Keep the SCons compatibility carry as a source patch file instead of inline sed edits."
     ]
   },
   "name": "aocl-libm-gfx1151",
@@ -51,7 +54,7 @@
       "rocm-llvm-gfx1151",
       "scons"
     ],
-    "patches_dir": "patches/aocl-libm-gfx1151",
+    "patches_dir": "packages/aocl-libm-gfx1151",
     "pkgdesc": "AMD AOCL-LibM rebuilt with Zen 5 tuning for Strix Halo gfx1151",
     "provides": [
       "aocl-libm"
@@ -59,7 +62,7 @@
     "recipe_key": "aocl_libm",
     "scaffold_notes": [
       "There is no standalone AOCL-LibM package in Arch, CachyOS, or AUR; the closest packaging lane is the broader AUR aocl bundle, which is only advisory for install-layout cleanup patterns.",
-      "The recipe carries three upstream-compatibility patch steps plus a post-install RPATH fix; those are rendered into prepare() and package().",
+      "The recipe carries three upstream-compatibility source edits; the package keeps them as a source patch file, plus a post-install RPATH fix in package().",
       "Use Arch's system scons from makedepends directly. Do not recreate the recipe's venv-local pip bootstrap inside PKGBUILD; that makes package builds network-dependent.",
       "Pass resolved compiler paths to SCons through ALM_CC and ALM_CXX because AOCL-LibM validates those variables as existing paths.",
       "Keep AOCL-LibM out of the CPython link line. It is intended for downstream numerical libraries, not Python's own PGO run.",
@@ -68,6 +71,10 @@
     "sha256sums": [
       "SKIP"
     ],
+    "source_patches": [
+      "0001-scons-support-arch-amdclang-toolchain.patch"
+    ],
+    "source_patches_replace_recipe_patches": true,
     "source_refs": [
       "aocl-libm::git+https://github.com/amd/aocl-libm-ose.git#tag=5.2.2"
     ],
@@ -75,7 +82,8 @@
     "template": "scons-aocl-libm",
     "update_notes": [
       "When updating, audit upstream AOCL-LibM licensing and bundled notices directly from source rather than assuming the advisory aur/aocl metadata is sufficient.",
-      "If AOCL-Utils packaging changes, re-check the runtime dependency and any RPATH or SONAME assumptions here."
+      "If AOCL-Utils packaging changes, re-check the runtime dependency and any RPATH or SONAME assumptions here.",
+      "Keep the SCons compatibility carry as a source patch file instead of inline sed edits."
     ],
     "upstream_version": "5.2.2",
     "url": "https://github.com/amd/aocl-libm-ose.git"

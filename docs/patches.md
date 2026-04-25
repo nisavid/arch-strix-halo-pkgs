@@ -21,6 +21,13 @@ persist, deserves independent review, or may be useful outside this exact host.
 Inline shell edits are reserved for narrow packaging mechanics. When behavior
 becomes durable, prefer a named patch that another maintainer can review.
 
+## AOCL-LibM
+
+- [SCons compatibility for the Arch amdclang toolchain](../packages/aocl-libm-gfx1151/0001-scons-support-arch-amdclang-toolchain.patch)
+  - Removes an AOCC-only compiler flag, keeps macro-redefinition warnings from
+    failing the build, and uses Clang/GNU-ld-compatible entry-point flags for
+    the hand-written assembly objects.
+
 ## Lemonade
 
 - [Linux NPU fallback when accel-device opens fail](../packages/lemonade-server/0001-linux-npu-fallback-to-pci-id-when-accel-open-fails.patch)

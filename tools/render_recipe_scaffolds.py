@@ -500,9 +500,15 @@ EOF
   install -Dm644 "$srcdir/{src_subdir}/LICENSE" "$pkgdir/usr/share/licenses/{package_name}/LICENSE"
 }}"""
     elif template == "scons-aocl-libm":
-        prepare_lines.append(
-            render_patch_prepare(recipe_pkg, policy_pkg.get("recipe_patch_file_rewrites"))
-        )
+        source_patches = policy_pkg.get("source_patches", [])
+        if source_patches:
+            prepare_lines.extend(
+                f'patch -Np1 -i "$srcdir/{patch_name}"' for patch_name in source_patches
+            )
+        else:
+            prepare_lines.append(
+                render_patch_prepare(recipe_pkg, policy_pkg.get("recipe_patch_file_rewrites"))
+            )
         post_package_lines.append(
             textwrap.dedent(
                 """\
@@ -1396,6 +1402,8 @@ def normalize_recipe_patches(recipe_patches: list[dict]) -> list[dict]:
 
 
 def renders_recipe_patch_actions(policy_pkg: dict) -> bool:
+    if policy_pkg.get("source_patches_replace_recipe_patches"):
+        return False
     if policy_pkg.get("template") == "python-project-triton-rocm" and policy_pkg.get("source_patches"):
         return False
     return True
