@@ -41,8 +41,11 @@
   TheRock build or staged install contains those project payloads. Policy
   metadata and representative path aliases are now present, but the current
   live/staged payload and package artifacts do not contain either project.
-- Resume auditing the rest of the TheRock split-package family against the
-  best current CachyOS / Arch baselines.
+- Continue auditing the TheRock split-package family against the best current
+  CachyOS / Arch baselines. The first dependency/replacement slice aligned
+  `rocm-debug-agent-gfx1151` with `rocr-debug-agent`; the next explicit
+  decision is whether fileless `hiptensor-gfx1151` and `rpp-gfx1151`
+  compatibility outputs should remain or become real payload packages.
 - Convert remaining scripted source edits into durable patch files where
   practical.
 - Tighten package hygiene for embedded build paths in PyTorch and vLLM.

@@ -256,6 +256,15 @@ cover representative Arch-family payload shapes for hipFORT and MIVisionX, so
 a future staged TheRock root with those files should render package functions
 and file lists rather than fail classification.
 
+The same 2026-04-25 TheRock baseline audit aligned
+`rocm-debug-agent-gfx1151` with Arch/CachyOS `rocr-debug-agent`: the local
+package now provides and replaces `rocr-debug-agent`, keeps the
+`rocm-debug-agent` provide, and depends on the local `rocm-core`,
+`hip-runtime-amd`, and `rocm-dbgapi` split packages. The next baseline-audit
+decision is whether fileless `hiptensor-gfx1151` and `rpp-gfx1151`
+compatibility outputs should remain or become real payload packages when a
+staged TheRock root can support that shape.
+
 The `python-flash-attn-rocm-gfx1151` package experiment now tracks ROCm
 FlashAttention `main_perf` commit `3f94643fb41bcedded28c85185a8e11d42ef1592`
 with package version `2.8.4`. The package builds the Triton AMD path with

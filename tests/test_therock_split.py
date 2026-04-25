@@ -121,6 +121,19 @@ def test_render_pkgbuild_and_manifest_include_declared_replacements(tmp_path: Pa
     assert '"replaces": [\n        "magma-hip",\n        "hipmagma"\n      ]' in manifest
 
 
+def test_rocm_debug_agent_tracks_arch_rocr_debug_agent_baseline():
+    policy = therock_split.load_policy(REPO_ROOT / "policies/therock-packages.toml")
+    debug_agent = policy["packages"]["rocm-debug-agent-gfx1151"]
+
+    assert debug_agent["provides"] == ["rocm-debug-agent", "rocr-debug-agent"]
+    assert debug_agent["replaces"] == ["rocr-debug-agent"]
+    assert debug_agent["depends"] == [
+        "rocm-core-gfx1151",
+        "hip-runtime-amd-gfx1151",
+        "rocm-dbgapi-gfx1151",
+    ]
+
+
 def test_live_root_render_ignores_rocm_core_overlay_files():
     policy = therock_split.load_policy(REPO_ROOT / "policies/therock-packages.toml")
     classifier = therock_split.Classifier(policy)

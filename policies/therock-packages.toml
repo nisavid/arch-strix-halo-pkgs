@@ -192,8 +192,9 @@ provides = ["rocm-dbgapi"]
 
 [packages."rocm-debug-agent-gfx1151"]
 desc = "ROCm debug agent from TheRock for gfx1151"
-provides = ["rocm-debug-agent"]
-depends = ["rocm-dbgapi-gfx1151"]
+provides = ["rocm-debug-agent", "rocr-debug-agent"]
+replaces = ["rocr-debug-agent"]
+depends = ["rocm-core-gfx1151", "hip-runtime-amd-gfx1151", "rocm-dbgapi-gfx1151"]
 
 [packages."rocm-gdb-gfx1151"]
 desc = "ROCm GDB from TheRock for gfx1151"

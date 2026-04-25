@@ -379,14 +379,20 @@
     },
     "rocm-debug-agent-gfx1151": {
       "depends": [
+        "rocm-core-gfx1151",
+        "hip-runtime-amd-gfx1151",
         "rocm-dbgapi-gfx1151"
       ],
       "fileless": false,
       "files": 4,
       "provides": [
-        "rocm-debug-agent"
+        "rocm-debug-agent",
+        "rocr-debug-agent"
       ],
-      "rendered": true
+      "rendered": true,
+      "replaces": [
+        "rocr-debug-agent"
+      ]
     },
     "rocm-developer-tools-gfx1151": {
       "depends": [
@@ -784,8 +790,8 @@
   "pkgver": "7.13.0pre",
   "recipe": {
     "author": "Blackcat Informatics Inc.",
-    "commit": "ad42886",
-    "date": "20260317",
+    "commit": "a188f9e",
+    "date": "20260424",
     "repo_url": "https://github.com/paudley/ai-notes",
     "subdir": "strix-halo"
   },

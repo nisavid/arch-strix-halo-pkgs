@@ -49,6 +49,12 @@ does not correspond neatly to a standard Arch package, so it is treated as
 local TheRock support payload rather than a replacement for system-wide
 `openblas`, `suitesparse`, or other distro packages.
 
+The 2026-04-25 baseline audit aligned `rocm-debug-agent-gfx1151` with the
+current Arch/CachyOS `rocr-debug-agent` package shape: the local split package
+now provides and replaces `rocr-debug-agent` while continuing to provide
+`rocm-debug-agent`, and it depends on the local `rocm-core`, `hip-runtime-amd`,
+and `rocm-dbgapi` split packages.
+
 ## What changed
 
 The generator and policy now handle:
@@ -87,3 +93,6 @@ The generator is no longer exploratory. The follow-up work is maintenance:
 - keep the generated family aligned with the local repo and live cutover story
 - rerender `hipfort-gfx1151` and `mivisionx-gfx1151` when a staged TheRock
   root contains those payloads
+- decide whether fileless compatibility outputs for `hiptensor-gfx1151` and
+  `rpp-gfx1151` should remain, or whether a future render should introduce
+  real payload packages that mirror Arch/CachyOS more closely
