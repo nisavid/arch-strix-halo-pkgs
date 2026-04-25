@@ -65,6 +65,16 @@ depend on those names until a staged root can render real package contents.
 Because older publishes may still have zero-payload archives for those names,
 deployment needs explicit stale local repo and installed-package cleanup.
 
+The baseline audit also tightened core runtime dependency metadata for
+`comgr`, `hsa-rocr`, `rocminfo`, `rocm-device-libs`,
+`rocm-language-runtime`, `rocm-hip-runtime`, `hip-runtime-amd`, `rocm-cmake`,
+`rocm-smi-lib`, `amdsmi`, `rocm-opencl-runtime`, `rocm-opencl-sdk`, and
+`rocm-dbgapi`. The local split packages now mirror the Arch-family dependency
+shape while substituting local `-gfx1151` ROCm package names and
+`rocm-sysdeps-gfx1151` where TheRock bundles support libraries. The OpenCL
+runtime no longer claims to provide the ICD loader; it provides the OpenCL
+driver and depends on the system loader instead.
+
 ## What changed
 
 The generator and policy now handle:
@@ -103,3 +113,5 @@ The generator is no longer exploratory. The follow-up work is maintenance:
 - keep the generated family aligned with the local repo and live cutover story
 - rerender `hipfort-gfx1151`, `hiptensor-gfx1151`, `mivisionx-gfx1151`, and
   `rpp-gfx1151` when a staged TheRock root contains those payloads
+- continue the Arch/CachyOS dependency audit for math, profiler, and ML split
+  packages

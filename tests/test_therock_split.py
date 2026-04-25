@@ -143,6 +143,50 @@ def test_absent_hiptensor_and_rpp_payloads_do_not_render_fileless_compat_package
     assert "rpp-gfx1151" not in policy["packages"]["rocm-ml-libraries-gfx1151"]["depends"]
 
 
+def test_core_runtime_dependency_policy_tracks_arch_baseline_shape():
+    policy = therock_split.load_policy(REPO_ROOT / "policies/therock-packages.toml")
+    packages = policy["packages"]
+
+    assert packages["comgr-gfx1151"]["depends"] == [
+        "gcc-libs",
+        "glibc",
+        "rocm-core-gfx1151",
+        "rocm-llvm-gfx1151",
+        "rocm-device-libs-gfx1151",
+        "rocm-sysdeps-gfx1151",
+    ]
+    assert packages["hsa-rocr-gfx1151"]["depends"] == [
+        "gcc-libs",
+        "glibc",
+        "rocm-core-gfx1151",
+        "rocm-device-libs-gfx1151",
+        "rocprofiler-register-gfx1151",
+        "rocm-sysdeps-gfx1151",
+    ]
+    assert packages["rocm-opencl-runtime-gfx1151"]["provides"] == [
+        "rocm-opencl-runtime",
+        "opencl-driver",
+    ]
+    assert packages["rocm-opencl-runtime-gfx1151"]["depends"] == [
+        "gcc-libs",
+        "glibc",
+        "mesa",
+        "opencl-headers",
+        "opencl-icd-loader",
+        "rocm-core-gfx1151",
+        "comgr-gfx1151",
+        "hsa-rocr-gfx1151",
+        "rocm-sysdeps-gfx1151",
+    ]
+    assert packages["rocm-dbgapi-gfx1151"]["depends"] == [
+        "gcc-libs",
+        "glibc",
+        "rocm-core-gfx1151",
+        "comgr-gfx1151",
+        "hsa-rocr-gfx1151",
+    ]
+
+
 def test_live_root_render_ignores_rocm_core_overlay_files():
     policy = therock_split.load_policy(REPO_ROOT / "policies/therock-packages.toml")
     classifier = therock_split.Classifier(policy)

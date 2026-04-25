@@ -88,6 +88,7 @@ post_copy_commands = [
 [packages."comgr-gfx1151"]
 desc = "ROCm code object manager from TheRock for gfx1151"
 provides = ["comgr"]
+depends = ["gcc-libs", "glibc", "rocm-core-gfx1151", "rocm-llvm-gfx1151", "rocm-device-libs-gfx1151", "rocm-sysdeps-gfx1151"]
 post_copy_commands = [
   "sed -i -e 's/foreach(_cmake_expected_target IN ITEMS amd_comgr amd_comgr_loader test_amd_comgr_stub)/foreach(_cmake_expected_target IN ITEMS amd_comgr amd_comgr_loader)/' -e '/# Create imported target test_amd_comgr_stub/{N;d;}' -e '/list(APPEND _cmake_import_check_targets test_amd_comgr_stub )/{N;d;}' \"${pkgdir}/opt/rocm/lib/cmake/amd_comgr_stub/amd_comgr-targets.cmake\"",
   "sed -i '/# Import target \"test_amd_comgr_stub\" for configuration \"Release\"/,/list(APPEND _cmake_import_check_files_for_test_amd_comgr_stub .* )/d' \"${pkgdir}/opt/rocm/lib/cmake/amd_comgr_stub/amd_comgr-targets-release.cmake\"",
@@ -97,32 +98,34 @@ post_copy_commands = [
 desc = "HSA runtime from TheRock for gfx1151"
 provides = ["hsa-rocr", "hsakmt-roct"]
 replaces = ["hsakmt-roct"]
-depends = ["rocprofiler-register-gfx1151"]
+depends = ["gcc-libs", "glibc", "rocm-core-gfx1151", "rocm-device-libs-gfx1151", "rocprofiler-register-gfx1151", "rocm-sysdeps-gfx1151"]
 
 [packages."rocminfo-gfx1151"]
 desc = "rocminfo utility from TheRock for gfx1151"
 provides = ["rocminfo"]
-depends = ["hsa-rocr-gfx1151"]
+depends = ["gcc-libs", "glibc", "python-gfx1151", "rocm-core-gfx1151", "hsa-rocr-gfx1151"]
 
 [packages."rocm-device-libs-gfx1151"]
 desc = "ROCm device libraries from TheRock for gfx1151"
 provides = ["rocm-device-libs"]
+depends = ["rocm-core-gfx1151"]
 
 [packages."rocm-language-runtime-gfx1151"]
 desc = "ROCm language runtime from TheRock for gfx1151"
 provides = ["rocm-language-runtime"]
+depends = ["rocm-core-gfx1151", "hsa-rocr-gfx1151", "rocm-device-libs-gfx1151", "comgr-gfx1151"]
 
 [packages."rocm-hip-runtime-gfx1151"]
 desc = "Compatibility meta package for ROCm HIP runtime support from TheRock for gfx1151"
 provides = ["rocm-hip-runtime"]
-depends = ["hip-runtime-amd-gfx1151", "rocm-language-runtime-gfx1151"]
+depends = ["rocm-core-gfx1151", "rocm-language-runtime-gfx1151", "rocminfo-gfx1151", "hip-runtime-amd-gfx1151", "rocm-llvm-gfx1151", "rocm-cmake-gfx1151"]
 fileless = true
 
 [packages."hip-runtime-amd-gfx1151"]
 desc = "HIP runtime libraries from TheRock for gfx1151"
 provides = ["hip-runtime-amd"]
 replaces = ["hip"]
-depends = ["hsa-rocr-gfx1151", "comgr-gfx1151", "rocm-device-libs-gfx1151"]
+depends = ["bash", "perl", "gcc-libs", "glibc", "mesa", "rocm-core-gfx1151", "hsa-rocr-gfx1151", "comgr-gfx1151", "rocminfo-gfx1151", "rocm-llvm-gfx1151", "rocm-device-libs-gfx1151", "rocprofiler-register-gfx1151", "rocm-sysdeps-gfx1151"]
 
 [packages."rocm-hip-gfx1151"]
 desc = "ROCm HIP development files from TheRock for gfx1151"
@@ -147,6 +150,7 @@ depends = ["rocm-llvm-gfx1151", "hip-runtime-amd-gfx1151"]
 [packages."rocm-cmake-gfx1151"]
 desc = "ROCm CMake files from TheRock for gfx1151"
 provides = ["rocm-cmake"]
+depends = ["rocm-core-gfx1151", "cmake"]
 
 [packages."rocm-openmp-gfx1151"]
 desc = "Compatibility meta package for the ROCm OpenMP runtime from TheRock for gfx1151"
@@ -157,7 +161,7 @@ fileless = true
 [packages."rocm-smi-lib-gfx1151"]
 desc = "ROCm SMI library from TheRock for gfx1151"
 provides = ["rocm-smi-lib"]
-depends = ["rocm-sysdeps-gfx1151"]
+depends = ["gcc-libs", "glibc", "python-gfx1151", "rocm-core-gfx1151", "hsa-rocr-gfx1151", "rocm-sysdeps-gfx1151"]
 post_copy_commands = [
   "_rocm_smi_targets=\"${pkgdir}/opt/rocm/lib/cmake/rocm_smi/rocm_smiTargets.cmake\"",
   "perl -0pi -e 's#/home/runner/_work/rockrel/rockrel/output/build/third-party/sysdeps/linux/libdrm/build/stage/lib/rocm_sysdeps/lib/pkgconfig/\\.\\./\\.\\./include/libdrm#\\${_IMPORT_PREFIX}/lib/rocm_sysdeps/include/libdrm#g; s#/home/runner/_work/rockrel/rockrel/output/build/third-party/sysdeps/linux/libdrm/build/stage/lib/rocm_sysdeps/lib/pkgconfig/\\.\\./\\.\\./include#\\${_IMPORT_PREFIX}/lib/rocm_sysdeps/include#g' \"${_rocm_smi_targets}\"",
@@ -167,18 +171,18 @@ post_copy_commands = [
 [packages."amdsmi-gfx1151"]
 desc = "AMD SMI library and tools from TheRock for gfx1151"
 provides = ["amdsmi", "amd-smi-lib"]
-depends = ["rocm-smi-lib-gfx1151", "python-gfx1151"]
+depends = ["gcc-libs", "glibc", "python-gfx1151", "python-yaml", "rocm-core-gfx1151", "rocm-smi-lib-gfx1151", "rocm-sysdeps-gfx1151"]
 
 [packages."rocm-opencl-runtime-gfx1151"]
 desc = "ROCm OpenCL runtime from TheRock for gfx1151"
-provides = ["rocm-opencl-runtime", "rocm-ocl-icd", "rocm-opencl-icd-loader", "opencl-driver"]
-depends = ["rocm-core-gfx1151"]
+provides = ["rocm-opencl-runtime", "opencl-driver"]
+depends = ["gcc-libs", "glibc", "mesa", "opencl-headers", "opencl-icd-loader", "rocm-core-gfx1151", "comgr-gfx1151", "hsa-rocr-gfx1151", "rocm-sysdeps-gfx1151"]
 skip_conflicts_for_provides = ["opencl-driver"]
 
 [packages."rocm-opencl-sdk-gfx1151"]
 desc = "ROCm OpenCL SDK files from TheRock for gfx1151"
 provides = ["rocm-opencl-sdk"]
-depends = ["rocm-opencl-runtime-gfx1151"]
+depends = ["rocm-core-gfx1151", "hsa-rocr-gfx1151", "rocm-opencl-runtime-gfx1151"]
 
 [packages."rocm-opencl-gfx1151"]
 desc = "Meta package for ROCm OpenCL components from TheRock for gfx1151"
@@ -189,6 +193,7 @@ fileless = true
 [packages."rocm-dbgapi-gfx1151"]
 desc = "ROCm debug API from TheRock for gfx1151"
 provides = ["rocm-dbgapi"]
+depends = ["gcc-libs", "glibc", "rocm-core-gfx1151", "comgr-gfx1151", "hsa-rocr-gfx1151"]
 
 [packages."rocm-debug-agent-gfx1151"]
 desc = "ROCm debug agent from TheRock for gfx1151"

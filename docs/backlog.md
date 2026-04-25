@@ -45,7 +45,9 @@
   CachyOS / Arch baselines. The first dependency/replacement slice aligned
   `rocm-debug-agent-gfx1151` with `rocr-debug-agent`; the second stopped
   rendering fileless `hiptensor-gfx1151` and `rpp-gfx1151` compatibility
-  outputs until a staged TheRock root can provide real payload packages.
+  outputs until a staged TheRock root can provide real payload packages; the
+  third tightened core runtime dependencies and corrected OpenCL ICD-loader
+  provides. Continue with math, profiler, and ML split-package dependencies.
 - Convert remaining scripted source edits into durable patch files where
   practical.
 - Tighten package hygiene for embedded build paths in PyTorch and vLLM.

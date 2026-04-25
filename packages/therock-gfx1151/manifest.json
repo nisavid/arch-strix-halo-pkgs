@@ -2,8 +2,13 @@
   "packages": {
     "amdsmi-gfx1151": {
       "depends": [
+        "gcc-libs",
+        "glibc",
+        "python-gfx1151",
+        "python-yaml",
+        "rocm-core-gfx1151",
         "rocm-smi-lib-gfx1151",
-        "python-gfx1151"
+        "rocm-sysdeps-gfx1151"
       ],
       "fileless": false,
       "files": 157,
@@ -14,7 +19,14 @@
       "rendered": true
     },
     "comgr-gfx1151": {
-      "depends": [],
+      "depends": [
+        "gcc-libs",
+        "glibc",
+        "rocm-core-gfx1151",
+        "rocm-llvm-gfx1151",
+        "rocm-device-libs-gfx1151",
+        "rocm-sysdeps-gfx1151"
+      ],
       "fileless": false,
       "files": 16,
       "provides": [
@@ -53,9 +65,19 @@
     },
     "hip-runtime-amd-gfx1151": {
       "depends": [
+        "bash",
+        "perl",
+        "gcc-libs",
+        "glibc",
+        "mesa",
+        "rocm-core-gfx1151",
         "hsa-rocr-gfx1151",
         "comgr-gfx1151",
-        "rocm-device-libs-gfx1151"
+        "rocminfo-gfx1151",
+        "rocm-llvm-gfx1151",
+        "rocm-device-libs-gfx1151",
+        "rocprofiler-register-gfx1151",
+        "rocm-sysdeps-gfx1151"
       ],
       "fileless": false,
       "files": 14,
@@ -228,7 +250,12 @@
     },
     "hsa-rocr-gfx1151": {
       "depends": [
-        "rocprofiler-register-gfx1151"
+        "gcc-libs",
+        "glibc",
+        "rocm-core-gfx1151",
+        "rocm-device-libs-gfx1151",
+        "rocprofiler-register-gfx1151",
+        "rocm-sysdeps-gfx1151"
       ],
       "fileless": false,
       "files": 40,
@@ -350,7 +377,10 @@
       "rendered": true
     },
     "rocm-cmake-gfx1151": {
-      "depends": [],
+      "depends": [
+        "rocm-core-gfx1151",
+        "cmake"
+      ],
       "fileless": false,
       "files": 26,
       "provides": [
@@ -375,7 +405,13 @@
       "rendered": true
     },
     "rocm-dbgapi-gfx1151": {
-      "depends": [],
+      "depends": [
+        "gcc-libs",
+        "glibc",
+        "rocm-core-gfx1151",
+        "comgr-gfx1151",
+        "hsa-rocr-gfx1151"
+      ],
       "fileless": false,
       "files": 8,
       "provides": [
@@ -418,7 +454,9 @@
       "rendered": true
     },
     "rocm-device-libs-gfx1151": {
-      "depends": [],
+      "depends": [
+        "rocm-core-gfx1151"
+      ],
       "fileless": false,
       "files": 2,
       "provides": [
@@ -489,8 +527,12 @@
     },
     "rocm-hip-runtime-gfx1151": {
       "depends": [
+        "rocm-core-gfx1151",
+        "rocm-language-runtime-gfx1151",
+        "rocminfo-gfx1151",
         "hip-runtime-amd-gfx1151",
-        "rocm-language-runtime-gfx1151"
+        "rocm-llvm-gfx1151",
+        "rocm-cmake-gfx1151"
       ],
       "fileless": true,
       "files": 0,
@@ -524,7 +566,12 @@
       "rendered": true
     },
     "rocm-language-runtime-gfx1151": {
-      "depends": [],
+      "depends": [
+        "rocm-core-gfx1151",
+        "hsa-rocr-gfx1151",
+        "rocm-device-libs-gfx1151",
+        "comgr-gfx1151"
+      ],
       "fileless": false,
       "files": 1487,
       "provides": [
@@ -580,20 +627,28 @@
     },
     "rocm-opencl-runtime-gfx1151": {
       "depends": [
-        "rocm-core-gfx1151"
+        "gcc-libs",
+        "glibc",
+        "mesa",
+        "opencl-headers",
+        "opencl-icd-loader",
+        "rocm-core-gfx1151",
+        "comgr-gfx1151",
+        "hsa-rocr-gfx1151",
+        "rocm-sysdeps-gfx1151"
       ],
       "fileless": false,
       "files": 4,
       "provides": [
         "rocm-opencl-runtime",
-        "rocm-ocl-icd",
-        "rocm-opencl-icd-loader",
         "opencl-driver"
       ],
       "rendered": true
     },
     "rocm-opencl-sdk-gfx1151": {
       "depends": [
+        "rocm-core-gfx1151",
+        "hsa-rocr-gfx1151",
         "rocm-opencl-runtime-gfx1151"
       ],
       "fileless": false,
@@ -618,6 +673,11 @@
     },
     "rocm-smi-lib-gfx1151": {
       "depends": [
+        "gcc-libs",
+        "glibc",
+        "python-gfx1151",
+        "rocm-core-gfx1151",
+        "hsa-rocr-gfx1151",
         "rocm-sysdeps-gfx1151"
       ],
       "fileless": false,
@@ -638,6 +698,10 @@
     },
     "rocminfo-gfx1151": {
       "depends": [
+        "gcc-libs",
+        "glibc",
+        "python-gfx1151",
+        "rocm-core-gfx1151",
         "hsa-rocr-gfx1151"
       ],
       "fileless": false,

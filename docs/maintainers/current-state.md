@@ -275,6 +275,16 @@ on `hiptensor-gfx1151` or `rpp-gfx1151`; and those former zero-payload
 packages are absent from both the installed package database and
 `repo/x86_64`.
 
+The same baseline audit tightened core runtime dependency metadata in
+`policies/therock-packages.toml`: `comgr`, `hsa-rocr`, `rocminfo`,
+`rocm-device-libs`, `rocm-language-runtime`, `rocm-hip-runtime`,
+`hip-runtime-amd`, `rocm-cmake`, `rocm-smi-lib`, `amdsmi`,
+`rocm-opencl-runtime`, `rocm-opencl-sdk`, and `rocm-dbgapi` now carry
+Arch/CachyOS-style dependency edges using local `-gfx1151` package names where
+appropriate. The OpenCL runtime now provides `opencl-driver` but no longer
+claims `rocm-ocl-icd` or `rocm-opencl-icd-loader`; it depends on the system
+OpenCL ICD loader instead.
+
 The `python-flash-attn-rocm-gfx1151` package experiment now tracks ROCm
 FlashAttention `main_perf` commit `3f94643fb41bcedded28c85185a8e11d42ef1592`
 with package version `2.8.4`. The package builds the Triton AMD path with
