@@ -324,6 +324,21 @@ linker flags for the hand-written assembly objects. The AOCL-LibM renderer now
 applies package `source_patches` instead of recipe sed actions while preserving
 the post-install RPATH fix in `package()`.
 
+The deploy for the TheRock metadata slices plus the Triton and AOCL-LibM
+patch-carry slices was verified on the reference host on 2026-04-25. Installed
+packages report `python-triton-gfx1151 3.0.0+git0ec280cf-1`,
+`aocl-libm-gfx1151 5.2.2-1`, and the representative TheRock split packages
+`rocm-core-gfx1151`, `rocm-debug-agent-gfx1151`,
+`rocm-hip-libraries-gfx1151`, `rocm-ml-libraries-gfx1151`,
+`rocm-opencl-runtime-gfx1151`, and `rocm-opencl-sdk-gfx1151` at
+`7.13.0pre-5`. `rocm-debug-agent-gfx1151` provides and replaces
+`rocr-debug-agent`; `rocm-opencl-runtime-gfx1151` provides `opencl-driver`,
+does not claim the ICD loader, and depends on `opencl-icd-loader`; and stale
+`hiptensor-gfx1151` / `rpp-gfx1151` installs remain absent. The installed
+Triton package imports successfully and `repr(AttrsDescriptor())` round-trips
+through `AttrsDescriptor.from_dict(...)`. `/usr/lib/libalm.so` has RUNPATH
+`/usr/lib` and a `NEEDED` edge on `libau_cpuid.so`.
+
 The `python-flash-attn-rocm-gfx1151` package experiment now tracks ROCm
 FlashAttention `main_perf` commit `3f94643fb41bcedded28c85185a8e11d42ef1592`
 with package version `2.8.4`. The package builds the Triton AMD path with
