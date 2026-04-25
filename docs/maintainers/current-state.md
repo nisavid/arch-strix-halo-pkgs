@@ -267,11 +267,13 @@ packages and the current staged TheRock root contains no matching payloads.
 The local HIP and ML meta packages therefore no longer depend on those names
 until a staged root can support real package contents.
 
-Deploying that generated-package change also needs stale-artifact cleanup:
-older local repo and host installs may still contain the former zero-payload
-`hiptensor-gfx1151` and `rpp-gfx1151` packages, so remove those installed
-packages and stale local repo archives after rebuilding/publishing
-`therock-gfx1151`.
+The generated-package deployment was verified on 2026-04-25: `pacman -Q`
+reports `rocm-debug-agent-gfx1151`, `rocm-hip-libraries-gfx1151`, and
+`rocm-ml-libraries-gfx1151` at `7.13.0pre-5`; the debug-agent package provides
+and replaces `rocr-debug-agent`; the HIP and ML meta packages no longer depend
+on `hiptensor-gfx1151` or `rpp-gfx1151`; and those former zero-payload
+packages are absent from both the installed package database and
+`repo/x86_64`.
 
 The `python-flash-attn-rocm-gfx1151` package experiment now tracks ROCm
 FlashAttention `main_perf` commit `3f94643fb41bcedded28c85185a8e11d42ef1592`
