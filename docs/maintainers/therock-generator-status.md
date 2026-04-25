@@ -29,6 +29,21 @@ from the staged root used for the render:
 - `hipfort-gfx1151`
 - `mivisionx-gfx1151`
 
+The 2026-04-25 coverage audit confirmed this is a staged-payload boundary, not
+a missing package metadata boundary. The live `/opt/rocm`, current
+`packages/therock-gfx1151/filelists/`, and current package artifacts contain no
+hipFORT or MIVisionX payload. Arch-family package layouts show the expected
+payload shapes, and policy aliases now cover representative future TheRock
+paths:
+
+- `hipfort-gfx1151`: `hipfc`, `include/hipfort/`, `lib/cmake/hipfort/`,
+  `libhipfort-*`, `libexec/hipfort/`, and `share/hipfort/`
+- `mivisionx-gfx1151`: `mv_compile`, `runvx`, `include/mivisionx/`,
+  `libopenvx`, `libvx_*`, and `libexec/mivisionx/`
+
+A future staged root that contains those payloads should render package
+functions and file lists instead of failing with `NEW_THEROCK_PACKAGE_CLASS`.
+
 `rocm-sysdeps-gfx1151` is rendered as an internal TheRock support package. It
 does not correspond neatly to a standard Arch package, so it is treated as
 local TheRock support payload rather than a replacement for system-wide
@@ -70,5 +85,5 @@ The generator is no longer exploratory. The follow-up work is maintenance:
 - keep policy current when TheRock adds or reshapes components
 - keep dependency and replacement metadata healthy
 - keep the generated family aligned with the local repo and live cutover story
-- audit `hipfort-gfx1151` and `mivisionx-gfx1151` when a staged TheRock root
-  contains those payloads
+- rerender `hipfort-gfx1151` and `mivisionx-gfx1151` when a staged TheRock
+  root contains those payloads

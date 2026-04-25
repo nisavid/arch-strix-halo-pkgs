@@ -146,6 +146,35 @@ def test_migraphx_payloads_map_to_migraphx_split_package():
     assert classifier.failures == []
 
 
+def test_hipfort_payloads_map_to_hipfort_split_package():
+    policy = therock_split.load_policy(REPO_ROOT / "policies/therock-packages.toml")
+    classifier = therock_split.Classifier(policy)
+
+    assert classifier.classify("opt/rocm/bin/hipfc") == "hipfort-gfx1151"
+    assert classifier.classify("opt/rocm/include/hipfort/amdgcn/hipfort.mod") == "hipfort-gfx1151"
+    assert classifier.classify("opt/rocm/lib/cmake/hipfort/hipfort-config.cmake") == "hipfort-gfx1151"
+    assert classifier.classify("opt/rocm/lib/libhipfort-amdgcn.a") == "hipfort-gfx1151"
+    assert classifier.classify("opt/rocm/libexec/hipfort/mygpu") == "hipfort-gfx1151"
+    assert classifier.classify("opt/rocm/share/hipfort/Makefile.hipfort") == "hipfort-gfx1151"
+    assert classifier.failures == []
+
+
+def test_mivisionx_payloads_map_to_mivisionx_split_package():
+    policy = therock_split.load_policy(REPO_ROOT / "policies/therock-packages.toml")
+    classifier = therock_split.Classifier(policy)
+
+    assert classifier.classify("opt/rocm/bin/mv_compile") == "mivisionx-gfx1151"
+    assert classifier.classify("opt/rocm/bin/runvx") == "mivisionx-gfx1151"
+    assert classifier.classify("opt/rocm/include/mivisionx/VX/vx.h") == "mivisionx-gfx1151"
+    assert classifier.classify("opt/rocm/lib/libopenvx.so") == "mivisionx-gfx1151"
+    assert classifier.classify("opt/rocm/lib/libvx_amd_custom.so") == "mivisionx-gfx1151"
+    assert classifier.classify("opt/rocm/lib/libvx_nn.so") == "mivisionx-gfx1151"
+    assert classifier.classify("opt/rocm/lib/libvx_rpp.so") == "mivisionx-gfx1151"
+    assert classifier.classify("opt/rocm/lib/libvxu.so") == "mivisionx-gfx1151"
+    assert classifier.classify("opt/rocm/libexec/mivisionx/model_compiler/README.md") == "mivisionx-gfx1151"
+    assert classifier.failures == []
+
+
 def test_write_filelists_removes_stale_package_filelists(tmp_path: Path):
     filelist_dir = tmp_path / "filelists"
     filelist_dir.mkdir()

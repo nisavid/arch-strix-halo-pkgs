@@ -247,6 +247,15 @@ Qwen3-VL W8A16 artifacts, a stable-diffusion.cpp Vulkan build lane, a
 Record that head as reviewed, but do not bump the submodule without an
 explicit package/scenario adoption lane.
 
+The 2026-04-25 TheRock coverage audit for `hipfort-gfx1151` and
+`mivisionx-gfx1151` found no payload under the live `/opt/rocm`, current
+generated file lists, or current local package artifacts. The repo package
+graph therefore correctly treats both names as unknown outputs until a render
+uses a staged root that contains them. Policy aliases and regression tests now
+cover representative Arch-family payload shapes for hipFORT and MIVisionX, so
+a future staged TheRock root with those files should render package functions
+and file lists rather than fail classification.
+
 The `python-flash-attn-rocm-gfx1151` package experiment now tracks ROCm
 FlashAttention `main_perf` commit `3f94643fb41bcedded28c85185a8e11d42ef1592`
 with package version `2.8.4`. The package builds the Triton AMD path with

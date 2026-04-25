@@ -37,11 +37,10 @@
     blocked, Gemma 4 AITER FlashAttention remains blocked, and MIGraphX
     creates a separate compiled graph/quantization lane rather than a vLLM
     backend replacement.
-- Audit the remaining upstream TheRock project coverage for `hipfort-gfx1151`
-  and `mivisionx-gfx1151`. Current policy already has metadata for both
-  packages, but no local staged root or local package artifact currently
-  contains their expected installed payloads. Rendering them requires a fresh
-  TheRock build or staged install that includes those projects.
+- Rerender `hipfort-gfx1151` and `mivisionx-gfx1151` only after a fresh
+  TheRock build or staged install contains those project payloads. Policy
+  metadata and representative path aliases are now present, but the current
+  live/staged payload and package artifacts do not contain either project.
 - Resume auditing the rest of the TheRock split-package family against the
   best current CachyOS / Arch baselines.
 - Convert remaining scripted source edits into durable patch files where
