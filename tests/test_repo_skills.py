@@ -4,7 +4,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_repo_local_workflow_skills_exclude_user_global_worktree_policy():
+def test_repo_local_workflow_skills_exclude_user_global_policies():
     agents = REPO_ROOT / "AGENTS.md"
     zsh_skill = REPO_ROOT / ".agents/skills/idiomatic-zsh/SKILL.md"
     rebuild_skill = REPO_ROOT / ".agents/skills/deploying-local-arch-packages/SKILL.md"
@@ -14,18 +14,17 @@ def test_repo_local_workflow_skills_exclude_user_global_worktree_policy():
     )
 
     assert agents.is_file()
-    assert zsh_skill.is_file()
+    assert not zsh_skill.exists()
     assert rebuild_skill.is_file()
     assert inference_skill.is_file()
     assert not worktree_skill.exists()
 
     agents_text = agents.read_text(encoding="utf-8")
-    zsh_text = zsh_skill.read_text(encoding="utf-8")
     rebuild_text = rebuild_skill.read_text(encoding="utf-8")
     inference_text = inference_skill.read_text(encoding="utf-8")
 
-    assert "zsh" in zsh_text.lower()
     assert ".agents/skills/using-persistent-git-worktrees/SKILL.md" not in agents_text
+    assert ".agents/skills/idiomatic-zsh/SKILL.md" not in agents_text
     assert "<repo>.wt/<branch-or-task>" not in agents_text
     assert "tools/amerge" in rebuild_text
     assert "tools/run_inference_scenarios.py" in rebuild_text
