@@ -83,6 +83,25 @@ Arch `cuda` dependency, because this repo's TheRock family is the coherent AMD
 ROCm lane and should not pull a CUDA stack just to expose the HIP translation
 tool.
 
+The remaining generated packages without exact current Arch/CachyOS package
+counterparts are tracked as local support exceptions:
+
+- `rocm-hip-gfx1151`, `hip-gfx1151`, and `hipcc-gfx1151` are local composition
+  surfaces for the generated HIP SDK.
+- `rocprofiler-sdk-gfx1151`, `rocprofiler-sdk-roctx-gfx1151`,
+  `rocprofiler-sdk-rocpd-gfx1151`, and `rocprofiler-compute-gfx1151` follow
+  TheRock's profiler payload split while Arch currently exposes the older
+  `rocprofiler`/`roctracer`/`hsa-amd-aqlprofile` package surfaces.
+- `rocshmem-gfx1151`, `rocm-host-math-gfx1151`, and `rocm-sysdeps-gfx1151`
+  are TheRock/local support payloads with no exact Arch package counterpart.
+- `miopen-gfx1151` remains split from `miopen-hip-gfx1151` so generated
+  payload ownership stays explicit even though Arch's user-facing surface is
+  `miopen-hip`.
+
+The fileless meta packages are intentional composition packages. Reopen the
+baseline audit when Arch adds matching package surfaces, CachyOS changes ROCm
+metadata shape, or a future staged TheRock root changes the payload set.
+
 ## What changed
 
 The generator and policy now handle:
@@ -121,5 +140,5 @@ The generator is no longer exploratory. The follow-up work is maintenance:
 - keep the generated family aligned with the local repo and live cutover story
 - rerender `hipfort-gfx1151`, `hiptensor-gfx1151`, `mivisionx-gfx1151`, and
   `rpp-gfx1151` when a staged TheRock root contains those payloads
-- continue the Arch/CachyOS audit for remaining unbaselined generated packages
-  and local support exceptions
+- revisit the Arch/CachyOS baseline audit when upstream distro package
+  surfaces or TheRock payloads change

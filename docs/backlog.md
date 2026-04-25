@@ -41,15 +41,12 @@
   TheRock build or staged install contains those project payloads. Policy
   metadata and representative path aliases are now present, but the current
   live/staged payload and package artifacts do not contain either project.
-- Continue auditing the TheRock split-package family against the best current
-  CachyOS / Arch baselines. The first dependency/replacement slice aligned
-  `rocm-debug-agent-gfx1151` with `rocr-debug-agent`; the second stopped
-  rendering fileless `hiptensor-gfx1151` and `rpp-gfx1151` compatibility
-  outputs until a staged TheRock root can provide real payload packages; the
-  third tightened core runtime dependencies and corrected OpenCL ICD-loader
-  provides; the fourth tightened math, profiler, and ML split-package
-  dependencies. Continue with remaining unbaselined generated packages and
-  local support exceptions.
+- Revisit the TheRock split-package Arch/CachyOS baseline audit when Arch adds
+  new package surfaces, CachyOS reshapes ROCm split-package metadata, or a
+  staged TheRock root adds new payload packages. The current generated family
+  is audited through the 2026-04-25 baseline pass; remaining non-matching names
+  are recorded as local support exceptions in
+  `docs/maintainers/therock-generator-status.md`.
 - Convert remaining scripted source edits into durable patch files where
   practical.
 - Tighten package hygiene for embedded build paths in PyTorch and vLLM.

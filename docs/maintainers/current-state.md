@@ -293,6 +293,20 @@ appropriate. `hipify-clang-gfx1151` keeps the Arch-style compiler/runtime
 dependencies but intentionally omits Arch's `cuda` dependency so this AMD ROCm
 family does not pull a CUDA stack for the HIP translation tool.
 
+The same audit is now current through the rendered TheRock family. Remaining
+non-matching package names are local support exceptions rather than unchecked
+baseline gaps. `rocm-hip-gfx1151`, `hip-gfx1151`, and `hipcc-gfx1151` keep
+local meta/package surfaces that compose the generated HIP SDK around TheRock's
+payload. `rocprofiler-sdk-gfx1151`, `rocprofiler-sdk-roctx-gfx1151`,
+`rocprofiler-sdk-rocpd-gfx1151`, `rocprofiler-compute-gfx1151`,
+`rocshmem-gfx1151`, `rocm-host-math-gfx1151`, and `rocm-sysdeps-gfx1151` do
+not currently have exact Arch package counterparts to mirror. `miopen-gfx1151`
+stays split from `miopen-hip-gfx1151` because the local generated family keeps
+TheRock payload ownership separate from the Arch `miopen-hip` naming surface.
+The fileless meta packages remain intentional composition packages. Reopen this
+audit when Arch adds matching package surfaces, CachyOS changes ROCm metadata
+shape, or a future staged TheRock root changes the payload set.
+
 The `python-flash-attn-rocm-gfx1151` package experiment now tracks ROCm
 FlashAttention `main_perf` commit `3f94643fb41bcedded28c85185a8e11d42ef1592`
 with package version `2.8.4`. The package builds the Triton AMD path with
