@@ -10,9 +10,19 @@
       "Carries recipe-specific ROCm fixes such as the HIPGraph stub rewrite, gfx1151 CK enablement, and post-install patchelf/linker cleanup.",
       "Pins PyTorch's BLAS/LAPACK provider to OpenBLAS and uses a two-stage wheel assembly flow on Arch Python 3.14 to avoid host oneMKL contamination and the broken install target that mirrors /usr/lib into the source tree."
     ],
+    "source_patch_sha256sums": [
+      "95a46381bedcff873f9765c9b103877aa36f649e649c5b223582732b2ee61cac",
+      "944e0fb4db31da678993acd3104709083ef28dcee58fcc24ab1675d880c39846",
+      "7e4c285febfab6f2b06c09fede2107b985a7e12dfe78164652fe0c54d39b5d2f",
+      "4a42b9fa5fe9fbf3f87c1a03f27adeb75a6f5a5aa94f03dff29d9b34658072e3",
+      "33188a11f6848303b17b76adb97de75f19856ea3caab7452fd5c62289d63006b"
+    ],
     "source_patches": [
       "0001-setup-allow-skipping-build-deps.patch",
-      "0002-use-wide-magma-version-encoding.patch"
+      "0002-use-wide-magma-version-encoding.patch",
+      "0003-target-numpy-2-c-api.patch",
+      "0004-drop-hip-clang-abi-compat-flag.patch",
+      "0005-enable-ck-gemm-on-gfx1151.patch"
     ],
     "update_notes": [
       "When updating, inspect the current Arch python-pytorch pkgbase first, then re-evaluate every carried recipe/source patch against the chosen ROCm fork.",
@@ -68,10 +78,6 @@
       "Carries recipe-specific ROCm fixes such as the HIPGraph stub rewrite, gfx1151 CK enablement, and post-install patchelf/linker cleanup.",
       "Pins PyTorch's BLAS/LAPACK provider to OpenBLAS and uses a two-stage wheel assembly flow on Arch Python 3.14 to avoid host oneMKL contamination and the broken install target that mirrors /usr/lib into the source tree."
     ],
-    "extra_sha256sums": [
-      "95a46381bedcff873f9765c9b103877aa36f649e649c5b223582732b2ee61cac",
-      "944e0fb4db31da678993acd3104709083ef28dcee58fcc24ab1675d880c39846"
-    ],
     "license": [
       "BSD-3-Clause-Modification"
     ],
@@ -112,10 +118,6 @@
       "On Arch Python 3.14, the CMake install target currently mirrors /usr/lib and /usr/include into the source tree and then fails on a root-owned _sysconfigdata pyc. The maintained workaround is to build first, accept that known install failure, run the safe header/CMake metadata install scripts, restage the built torch/lib and torch/bin artifacts, and assemble the wheel with SKIP_BUILD_DEPS=1.",
       "After the known CMake install-target failure, the package must still run the torch/headeronly, c10, and caffe2 install scripts before wheel assembly so the wheel ships ATen, c10, torch/csrc, and CMake metadata for downstream extension builds.",
       "The SKIP_BUILD_DEPS source patch must apply before wheel assembly so bdist_wheel uses the already staged artifacts instead of re-running the CMake install target."
-    ],
-    "source_patches": [
-      "0001-setup-allow-skipping-build-deps.patch",
-      "0002-use-wide-magma-version-encoding.patch"
     ],
     "source_refs": [
       "pytorch::git+https://github.com/ROCm/pytorch.git#commit=8543095e3275db694084a6679bd5b61f7d2ece76"

@@ -67,9 +67,6 @@
       "The recipe forces explicit Rust linker selection because AMD's cc wrapper rejects non-amd-prefixed frontend names.",
       "Keep RUSTFLAGS pinned to znver5 rather than native; the recipe documents a rustc native-detection issue on this platform."
     ],
-    "source_patches": [
-      "0001-cold-path-feature-check-uses-rustc-capability.patch"
-    ],
     "src_subdir": "orjson-3.11.8",
     "template": "rust-wheel-pypi",
     "update_notes": [

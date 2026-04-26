@@ -1,0 +1,13 @@
+diff --git a/cmake/Dependencies.cmake b/cmake/Dependencies.cmake
+index 203cdc7c029..910a213ac38 100644
+--- a/cmake/Dependencies.cmake
++++ b/cmake/Dependencies.cmake
+@@ -1060,7 +1060,6 @@ if(USE_ROCM)
+     endif()
+ 
+-    # needed for compat with newer versions of hip-clang that introduced C++20 mangling rules
+-    list(APPEND HIP_HIPCC_FLAGS -fclang-abi-compat=17)
++    # Drop -fclang-abi-compat=17: it causes ABI mismatch with host amdclang 22.
+ 
+     set(HIP_CLANG_FLAGS ${HIP_CXX_FLAGS})
+     set(CMAKE_HIP_FLAGS ${HIP_HIPCC_FLAGS})

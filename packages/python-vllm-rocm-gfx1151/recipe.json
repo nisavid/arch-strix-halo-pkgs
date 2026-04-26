@@ -228,23 +228,6 @@
       "Keep the gfx1151 ROCm/AITER recipe patches in the source package, but evaluate Python-3.14 compatibility separately from ROCm runtime/linker issues.",
       "The earlier numba-pin idea is not currently part of the actual built package story; treat any numba change as a separate follow-up until it is backed by a real source patch."
     ],
-    "source_patches": [
-      "0001-python-3.14-version-gates.patch",
-      "0002-cli-version-avoids-eager-runtime-imports.patch",
-      "0003-rocm-gate-vendored-triton-kernels-on-runtime-support.patch",
-      "0004-rocm-fallback-and-optional-sagemaker-standards.patch",
-      "0005-rocm-reduce-triton-unified-attention-prefill-tile-for-large-heads.patch",
-      "0006-setup.py-forward-host-and-hip-flags-into-cmake.patch",
-      "0007-rocm-enable-gfx1x-aiter-and-prefer-it-for-gemma4.patch",
-      "0008-torchao-startup-stays-lazy.patch",
-      "0009-cli-startup-stays-runtime-light.patch",
-      "0010-rocm-support-qwen35-hybrid-gdn.patch",
-      "0011-rocm-avoid-triton-topk-topp-sampler.patch",
-      "0012-rocm-keep-eagle-padded-drafter-count-int32.patch",
-      "0013-speculators-dflash-config-parsing.patch",
-      "0014-rocm-detect-flash-attn-triton-interface.patch",
-      "0015-rocm-gate-flash-attn-ck-interface.patch"
-    ],
     "source_type": "tarball",
     "source_url": "https://github.com/vllm-project/vllm/archive/refs/tags/v0.19.1.tar.gz",
     "src_subdir": "vllm-0.19.1",

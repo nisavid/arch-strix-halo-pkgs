@@ -76,11 +76,6 @@
     "sha256sums": [
       "SKIP"
     ],
-    "source_patches": [
-      "0001-python-3.14-and-pybind11-build-system.patch",
-      "0002-disable-werror-with-therock-llvm-headers.patch",
-      "0003-attrs-descriptor-repr-for-inductor.patch"
-    ],
     "source_patches_replace_recipe_patches": true,
     "source_refs": [
       "triton::git+https://github.com/ROCm/triton.git#commit=0ec280cf80dd91e9a86887981a670f2d4541a32b"

@@ -82,12 +82,6 @@
     "sha256sums": [
       "SKIP"
     ],
-    "source_patches": [
-      "0001-import-pt2e-quantization-from-torchao.patch",
-      "0002-keep-dynamo-registration-lazy.patch",
-      "0003-relax-numpy-runtime-cap.patch",
-      "0004-preload-aot-autograd-before-native-extension.patch"
-    ],
     "source_refs": [
       "torch_migraphx::git+https://github.com/ROCm/torch_migraphx.git#commit=6b2cd2237e83b675ae671650d08343dfbb0be5f3"
     ],

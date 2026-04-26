@@ -71,9 +71,6 @@
       "The original recipe fixes a broken pip-installed cmake wrapper inside the venv. In Arch packaging that should translate to using the system cmake toolchain directly.",
       "The bundled-build patch prefers the bundled SentencePiece library by default and only uses the system pkg-config sentencepiece path when SENTENCEPIECE_USE_SYSTEM=1 is explicitly set."
     ],
-    "source_patches": [
-      "0001-bundle-sentencepiece-by-default.patch"
-    ],
     "src_subdir": "sentencepiece-0.2.1",
     "template": "native-wheel-pypi",
     "update_notes": [

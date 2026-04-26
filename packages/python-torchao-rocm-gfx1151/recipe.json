@@ -87,10 +87,6 @@
     "sha256sums": [
       "SKIP"
     ],
-    "source_patches": [
-      "0001-setup.py-honor-pytorch-rocm-arch.patch",
-      "0002-python-3.14-pt2e-union-aliases.patch"
-    ],
     "source_refs": [
       "torchao::git+https://github.com/pytorch/ao.git#tag=v0.17.0"
     ],

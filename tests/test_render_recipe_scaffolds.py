@@ -437,6 +437,9 @@ def test_pytorch_rocm_renderer_uses_source_patches_for_magma_fix() -> None:
             "source_patches": [
                 "0001-setup-allow-skipping-build-deps.patch",
                 "0002-use-wide-magma-version-encoding.patch",
+                "0003-target-numpy-2-c-api.patch",
+                "0004-drop-hip-clang-abi-compat-flag.patch",
+                "0005-enable-ck-gemm-on-gfx1151.patch",
             ],
         },
         {
@@ -458,9 +461,87 @@ def test_pytorch_rocm_renderer_uses_source_patches_for_magma_fix() -> None:
     assert "0002-use-wide-magma-version-encoding.patch" in pkgbuild
     assert '_apply_patch_if_needed "0001-setup-allow-skipping-build-deps.patch"' in pkgbuild
     assert '_apply_patch_if_needed "0002-use-wide-magma-version-encoding.patch"' in pkgbuild
+    assert '_apply_patch_if_needed "0003-target-numpy-2-c-api.patch"' in pkgbuild
+    assert '_apply_patch_if_needed "0004-drop-hip-clang-abi-compat-flag.patch"' in pkgbuild
+    assert '_apply_patch_if_needed "0005-enable-ck-gemm-on-gfx1151.patch"' in pkgbuild
     assert "patch --dry-run -R -Np1" in pkgbuild
     assert "aten/src/ATen/native/hip/linalg/BatchLinearAlgebra.cpp" not in pkgbuild
+    assert "sed -i" not in pkgbuild
+    assert "NPY_TARGET_VERSION" not in pkgbuild
     assert "cmake -P build/torch/headeronly/cmake_install.cmake" in pkgbuild
     assert "cmake -P build/c10/cmake_install.cmake" in pkgbuild
     assert "cmake -P build/caffe2/cmake_install.cmake" in pkgbuild
     assert "cmake -DCMAKE_INSTALL_COMPONENT=dev -P build/cmake_install.cmake" in pkgbuild
+
+
+def test_render_recipe_json_keeps_source_patches_in_one_place() -> None:
+    recipe_json = json.loads(
+        render_recipe_scaffolds.render_recipe_json(
+            "sample-gfx1151",
+            {
+                "recipe_key": "sample",
+                "upstream_version": "1.2.3",
+                "pkgdesc": "Sample",
+                "url": "https://example.invalid/sample",
+                "license": ["MIT"],
+                "source_patches": ["0001-sample.patch"],
+                "extra_sha256sums": ["abc123"],
+            },
+            {
+                "repo": "",
+                "method": "pip",
+                "phase": "package",
+                "steps": [],
+                "depends_on": [],
+                "notes": "",
+            },
+            "1.2.3",
+            {
+                "recipe_repo": "https://github.com/paudley/ai-notes",
+                "recipe_subdir": "strix-halo",
+                "recipe_author": "Blackcat Informatics Inc.",
+            },
+        )
+    )
+
+    assert recipe_json["maintenance"]["source_patches"] == ["0001-sample.patch"]
+    assert recipe_json["maintenance"]["source_patch_sha256sums"] == ["abc123"]
+    assert "source_patches" not in recipe_json["policy"]
+    assert "extra_sha256sums" not in recipe_json["policy"]
+
+
+def test_render_recipe_json_keeps_explicit_extra_source_checksums_in_policy() -> None:
+    recipe_json = json.loads(
+        render_recipe_scaffolds.render_recipe_json(
+            "sample-gfx1151",
+            {
+                "recipe_key": "sample",
+                "upstream_version": "1.2.3",
+                "pkgdesc": "Sample",
+                "url": "https://example.invalid/sample",
+                "license": ["MIT"],
+                "source_patches": ["0001-sample.patch"],
+                "extra_sources": ["extra-data.tar.gz"],
+                "extra_sha256sums": ["abc123"],
+            },
+            {
+                "repo": "",
+                "method": "pip",
+                "phase": "package",
+                "steps": [],
+                "depends_on": [],
+                "notes": "",
+            },
+            "1.2.3",
+            {
+                "recipe_repo": "https://github.com/paudley/ai-notes",
+                "recipe_subdir": "strix-halo",
+                "recipe_author": "Blackcat Informatics Inc.",
+            },
+        )
+    )
+
+    assert recipe_json["maintenance"]["source_patches"] == ["0001-sample.patch"]
+    assert "source_patch_sha256sums" not in recipe_json["maintenance"]
+    assert recipe_json["policy"]["extra_sources"] == ["extra-data.tar.gz"]
+    assert recipe_json["policy"]["extra_sha256sums"] == ["abc123"]
