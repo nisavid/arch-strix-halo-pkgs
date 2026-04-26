@@ -13,7 +13,7 @@
 - Recorded reference packages: `extra/python-pytorch-opt-rocm, extra/python-pytorch-rocm, cachyos-extra-znver4/python-pytorch-opt-rocm`
 - Authoritative reference package: `extra/python-pytorch-opt-rocm`
 - Advisory reference packages: `extra/python-pytorch-rocm, cachyos-extra-znver4/python-pytorch-opt-rocm`
-- Applied source patch files/actions: `11`
+- Applied source patch files/actions: `14`
 
 ## Recipe notes
 

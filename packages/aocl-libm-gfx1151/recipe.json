@@ -71,9 +71,6 @@
     "sha256sums": [
       "SKIP"
     ],
-    "source_patches": [
-      "0001-scons-support-arch-amdclang-toolchain.patch"
-    ],
     "source_patches_replace_recipe_patches": true,
     "source_refs": [
       "aocl-libm::git+https://github.com/amd/aocl-libm-ose.git#tag=5.2.2"

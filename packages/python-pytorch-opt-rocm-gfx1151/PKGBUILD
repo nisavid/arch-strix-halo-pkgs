@@ -18,8 +18,8 @@ options=()
 provides=(python-pytorch-opt-rocm=2.11.0 python-pytorch-rocm=2.11.0 python-pytorch=2.11.0)
 conflicts=(python-pytorch-opt-rocm python-pytorch-rocm python-pytorch)
 replaces=()
-source=('pytorch::git+https://github.com/ROCm/pytorch.git#commit=8543095e3275db694084a6679bd5b61f7d2ece76' 0001-setup-allow-skipping-build-deps.patch 0002-use-wide-magma-version-encoding.patch)
-sha256sums=(SKIP 95a46381bedcff873f9765c9b103877aa36f649e649c5b223582732b2ee61cac 944e0fb4db31da678993acd3104709083ef28dcee58fcc24ab1675d880c39846)
+source=('pytorch::git+https://github.com/ROCm/pytorch.git#commit=8543095e3275db694084a6679bd5b61f7d2ece76' 0001-setup-allow-skipping-build-deps.patch 0002-use-wide-magma-version-encoding.patch 0003-target-numpy-2-c-api.patch 0004-drop-hip-clang-abi-compat-flag.patch 0005-enable-ck-gemm-on-gfx1151.patch)
+sha256sums=(SKIP 95a46381bedcff873f9765c9b103877aa36f649e649c5b223582732b2ee61cac 944e0fb4db31da678993acd3104709083ef28dcee58fcc24ab1675d880c39846 7e4c285febfab6f2b06c09fede2107b985a7e12dfe78164652fe0c54d39b5d2f 4a42b9fa5fe9fbf3f87c1a03f27adeb75a6f5a5aa94f03dff29d9b34658072e3 33188a11f6848303b17b76adb97de75f19856ea3caab7452fd5c62289d63006b)
 
 prepare() {
   cd "$srcdir/pytorch"
@@ -37,13 +37,12 @@ prepare() {
   }
   _apply_patch_if_needed "0001-setup-allow-skipping-build-deps.patch"
   _apply_patch_if_needed "0002-use-wide-magma-version-encoding.patch"
+  _apply_patch_if_needed "0003-target-numpy-2-c-api.patch"
+  _apply_patch_if_needed "0004-drop-hip-clang-abi-compat-flag.patch"
+  _apply_patch_if_needed "0005-enable-ck-gemm-on-gfx1151.patch"
   # PyTorch's ROCm fork relies on vendored submodules and local hipify-generated sources.
   git -C "$srcdir/pytorch" submodule sync --recursive
   git -C "$srcdir/pytorch" submodule update --init --recursive --force
-  # Match the recipe's ABI/runtime fixes on top of the Arch split-package baseline.
-  sed -i 's|#include <numpy/arrayobject.h>|// Target numpy 2.0 C-API (0x12) for ABI compatibility with numpy >= 2.0.\n#ifndef NPY_TARGET_VERSION\n#define NPY_TARGET_VERSION 0x00000012\n#endif\n\n#include <numpy/arrayobject.h>|' torch/csrc/utils/numpy_stub.h
-  sed -i 's/list(APPEND HIP_HIPCC_FLAGS -fclang-abi-compat=17)/# Removed: causes ABI mismatch with host amdclang 22/' cmake/Dependencies.cmake
-  sed -i 's/"gfx90a", "gfx942", "gfx950"/"gfx90a", "gfx942", "gfx950", "gfx1151"/' aten/src/ATen/Context.cpp
 }
 
 build() {

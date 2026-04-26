@@ -84,9 +84,6 @@
       "The paired PyTorch package is now import-clean against librocsolver.so.1, so this scaffold should not reintroduce the earlier build-only librocsolver.so.0 shim.",
       "Keep the recipe's TorchVision environment intact: FORCE_CUDA=0, FORCE_MPS=0, empty TORCH_CUDA_ARCH_LIST, and pip-wheel packaging without build isolation."
     ],
-    "source_patches": [
-      "0001-setup-relative-sources.patch"
-    ],
     "source_type": "tarball",
     "source_url": "https://github.com/pytorch/vision/archive/refs/tags/v0.26.0.tar.gz",
     "src_subdir": "vision-0.26.0",

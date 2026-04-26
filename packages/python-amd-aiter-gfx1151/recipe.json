@@ -24,6 +24,7 @@
       "On 2026-04-23, reviewed AITER main through 8432ff3b6e356bc0f8c664a686334e3be7e736ec. The latest reviewed delta adds Gemma RMSNorm quant-fusion support, A16W16 tuning, MI308 MLA PS-mode work, FlyDSL AOT fixes, Kimi K2 FP4 tuned fMoE config updates, and CI/release workflow changes. It does not resolve the local gfx1151 OPUS FP8 mfma_adaptor gap, replace the RDNA header or JIT runtime patches, or change the currently validated Gemma TRITON default lane, so record the reviewed candidate head without repinning the package source.",
       "On 2026-04-24, reviewed AITER main through ed2db5ef0f6444b735f018c0f4688058c1bfeb26. The latest reviewed delta adds a Gluon paged-attention decode sliding-window MTP fix plus CI-only changes. Keep it recorded as a reviewed candidate head for future speculative/MTP work, but do not repin this package until a host scenario needs that Gluon path or the range reduces current gfx1151 patch carry.",
       "On 2026-04-24, reviewed AITER main through 033d8b9dbc635d30aa63906245c045f24f8cf796. The latest reviewed delta adds Qwen3.5 GDN prefill kernels, batch-prefill runtime dispatch for KV caches larger than 4 GiB, a top_k_per_row_prefill fix for large batched token counts, non-quantizing ASM fMoE kernels, MI308 tuning, and a GPT-OSS tuned-config revert. Keep it recorded as a reviewed candidate head for future Qwen3.5/GDN or fused-MoE validation, but do not repin the package source until a tracked host scenario needs this range or it replaces current gfx1151 patch carry.",
+      "On 2026-04-26, reviewed AITER main through dcb0639d870783c2bc0c530e465f301032e756dc. The latest reviewed delta only optimizes the mHC prefill kernel for small M and updates its op test; it does not touch the gfx1151 RDNA header patches, JIT runtime patch, gfx1x MoE carries, or the Qwen3.6 FP8 OPUS mfma_adaptor blocker. Record the reviewed candidate head without repinning the package source.",
       "Treat FlyDSL as a separate tracked package story; do not silently fold an unpublished wheel into this package.",
       "Keep the installed-system JIT runtime patch until upstream AITER stops assuming `hipcc` is on the ambient PATH and correctly imports modules copied to the writable user JIT cache from read-only site-packages installs.",
       "Keep the package's explicit ROCm toolchain exports in `build()` until upstream AITER stops probing `hipconfig` and `hipcc` through ambient shell state. The concrete build failure was `Could not find hipconfig in PATH or ROCM_HOME(/usr)`.",
@@ -97,14 +98,6 @@
     "sha256sums": [
       "SKIP"
     ],
-    "source_patches": [
-      "0001-gfx1151-rdna35-header-compat.patch",
-      "0002-jit-runtime-finds-hipcc-and-user-jit-modules.patch",
-      "0003-fused-moe-unknown-gfx-falls-back-to-2stage.patch",
-      "0004-moe-tuner-skips-missing-1stage-asm-metadata.patch",
-      "0005-ck-moe-normalizes-zero-splitk-and-forwards-stage2.patch",
-      "0006-rdna35-hip-reduce-wave32-dpp-compat.patch"
-    ],
     "source_refs": [
       "aiter::git+https://github.com/ROCm/aiter.git#commit=cf12b1381dcdec4b5d90d136a5403e718c7541ec"
     ],
@@ -115,6 +108,7 @@
       "On 2026-04-23, reviewed AITER main through 8432ff3b6e356bc0f8c664a686334e3be7e736ec. The latest reviewed delta adds Gemma RMSNorm quant-fusion support, A16W16 tuning, MI308 MLA PS-mode work, FlyDSL AOT fixes, Kimi K2 FP4 tuned fMoE config updates, and CI/release workflow changes. It does not resolve the local gfx1151 OPUS FP8 mfma_adaptor gap, replace the RDNA header or JIT runtime patches, or change the currently validated Gemma TRITON default lane, so record the reviewed candidate head without repinning the package source.",
       "On 2026-04-24, reviewed AITER main through ed2db5ef0f6444b735f018c0f4688058c1bfeb26. The latest reviewed delta adds a Gluon paged-attention decode sliding-window MTP fix plus CI-only changes. Keep it recorded as a reviewed candidate head for future speculative/MTP work, but do not repin this package until a host scenario needs that Gluon path or the range reduces current gfx1151 patch carry.",
       "On 2026-04-24, reviewed AITER main through 033d8b9dbc635d30aa63906245c045f24f8cf796. The latest reviewed delta adds Qwen3.5 GDN prefill kernels, batch-prefill runtime dispatch for KV caches larger than 4 GiB, a top_k_per_row_prefill fix for large batched token counts, non-quantizing ASM fMoE kernels, MI308 tuning, and a GPT-OSS tuned-config revert. Keep it recorded as a reviewed candidate head for future Qwen3.5/GDN or fused-MoE validation, but do not repin the package source until a tracked host scenario needs this range or it replaces current gfx1151 patch carry.",
+      "On 2026-04-26, reviewed AITER main through dcb0639d870783c2bc0c530e465f301032e756dc. The latest reviewed delta only optimizes the mHC prefill kernel for small M and updates its op test; it does not touch the gfx1151 RDNA header patches, JIT runtime patch, gfx1x MoE carries, or the Qwen3.6 FP8 OPUS mfma_adaptor blocker. Record the reviewed candidate head without repinning the package source.",
       "Treat FlyDSL as a separate tracked package story; do not silently fold an unpublished wheel into this package.",
       "Keep the installed-system JIT runtime patch until upstream AITER stops assuming `hipcc` is on the ambient PATH and correctly imports modules copied to the writable user JIT cache from read-only site-packages installs.",
       "Keep the package's explicit ROCm toolchain exports in `build()` until upstream AITER stops probing `hipconfig` and `hipcc` through ambient shell state. The concrete build failure was `Could not find hipconfig in PATH or ROCM_HOME(/usr)`.",

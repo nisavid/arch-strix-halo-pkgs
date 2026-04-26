@@ -1,6 +1,6 @@
 # Current State
 
-Status as of 2026-04-24.
+Status as of 2026-04-26.
 
 ## Rebuild Revalidation Boundary
 
@@ -323,6 +323,29 @@ from failing the package build, and uses Clang/GNU-ld-compatible entry-point
 linker flags for the hand-written assembly objects. The AOCL-LibM renderer now
 applies package `source_patches` instead of recipe sed actions while preserving
 the post-install RPATH fix in `package()`.
+
+On 2026-04-26, the patch-carry cleanup moved three
+`python-pytorch-opt-rocm-gfx1151` `prepare()` source edits into package-local
+patches: the NumPy 2 target C-API define, removal of the HIP
+`-fclang-abi-compat=17` flag for the local amdclang lane, and gfx1151
+Composable Kernel GEMM enablement. The PyTorch renderer now applies those
+files through package `source_patches` instead of emitting inline `sed`
+commands, while the generated HIPGraph rewrite remains a build-time generated
+source fix because that file is produced only after PyTorch's AMD build helper
+runs.
+
+The policy-invalidated 2026-04-26 freshness sweep found AITER main
+`dcb0639d870783c2bc0c530e465f301032e756dc`, llama.cpp `b8935` at
+`f454bd7eb8944629aabca163ea1c6e67e53fd77e`, and AUR `llama.cpp-hip
+b8933-1`. The AITER range only optimizes the mHC prefill kernel for small M
+and updates its op test, so it does not affect the current gfx1151 RDNA header
+patches, JIT runtime patch, gfx1x MoE carries, or Qwen3.6 FP8 OPUS blocker.
+The llama.cpp range adds OpenCL IQ4_NL support, CUDA MMQ overhead reduction,
+Metal Tensor API optimization, a Hexagon HMX clock guard, chat
+reasoning-marker spacing fixes, and speculative vocab compatibility checks; no
+HIP or Vulkan package-build touchpoint was found. `policies/package-freshness.toml`
+records those heads as reviewed without repinning package sources. A forced
+post-triage checker run then reported all 25 package families current.
 
 The deploy for the TheRock metadata slices plus the Triton and AOCL-LibM
 patch-carry slices was verified on the reference host on 2026-04-25. Installed

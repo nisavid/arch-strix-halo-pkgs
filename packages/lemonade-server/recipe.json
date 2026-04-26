@@ -87,12 +87,6 @@
     "sha256sums": [
       "SKIP"
     ],
-    "source_patches": [
-      "0001-linux-npu-fallback-to-pci-id-when-accel-open-fails.patch",
-      "0002-llamacpp-external-backends-are-system-managed.patch",
-      "0003-remove-llamacpp-system-backend.patch",
-      "0004-system-managed-llamacpp-metadata.patch"
-    ],
     "source_refs": [
       "https://github.com/lemonade-sdk/lemonade/archive/refs/tags/v10.2.0.tar.gz"
     ],

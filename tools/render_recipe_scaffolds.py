@@ -795,10 +795,6 @@ package() {{
                 "# PyTorch's ROCm fork relies on vendored submodules and local hipify-generated sources.",
                 'git -C "$srcdir/{src_subdir}" submodule sync --recursive'.format(src_subdir=src_subdir),
                 'git -C "$srcdir/{src_subdir}" submodule update --init --recursive --force'.format(src_subdir=src_subdir),
-                "# Match the recipe's ABI/runtime fixes on top of the Arch split-package baseline.",
-                "sed -i 's|#include <numpy/arrayobject.h>|// Target numpy 2.0 C-API (0x12) for ABI compatibility with numpy >= 2.0.\\n#ifndef NPY_TARGET_VERSION\\n#define NPY_TARGET_VERSION 0x00000012\\n#endif\\n\\n#include <numpy/arrayobject.h>|' torch/csrc/utils/numpy_stub.h",
-                "sed -i 's/list(APPEND HIP_HIPCC_FLAGS -fclang-abi-compat=17)/# Removed: causes ABI mismatch with host amdclang 22/' cmake/Dependencies.cmake",
-                "sed -i 's/\"gfx90a\", \"gfx942\", \"gfx950\"/\"gfx90a\", \"gfx942\", \"gfx950\", \"gfx1151\"/' aten/src/ATen/Context.cpp",
             ]
         )
         build_body = f"""\
@@ -1419,11 +1415,18 @@ def render_recipe_json(package_name: str, policy_pkg: dict, recipe_pkg: dict, ve
         references = policy_pkg.get("arch_reference", [])
         advisory_references = references[1:] if len(references) > 1 else []
     recipe_notes = policy_pkg.get("recipe_notes_override", recipe_pkg.get("notes", "").strip())
+    rendered_policy = dict(policy_pkg)
+    rendered_policy.pop("source_patches", None)
+    source_patches = policy_pkg.get("source_patches", [])
+    source_patch_sha256sums = []
+    if source_patches and "extra_sources" not in policy_pkg:
+        source_patch_sha256sums = policy_pkg.get("extra_sha256sums", [])
+        rendered_policy.pop("extra_sha256sums", None)
     payload = {
         "name": package_name,
         "package_name": package_name,
         "pkgver": version,
-        "policy": policy_pkg,
+        "policy": rendered_policy,
         "recipe": {
             "repo": recipe_pkg.get("repo"),
             "branch": recipe_pkg.get("branch"),
@@ -1442,8 +1445,10 @@ def render_recipe_json(package_name: str, policy_pkg: dict, recipe_pkg: dict, ve
         "advisory_references": advisory_references,
         "divergence_notes": policy_pkg.get("divergence_notes", []),
         "update_notes": policy_pkg.get("update_notes", []),
-        "source_patches": policy_pkg.get("source_patches", []),
+        "source_patches": source_patches,
     }
+    if source_patch_sha256sums:
+        payload["maintenance"]["source_patch_sha256sums"] = source_patch_sha256sums
     role = package_role(package_name, policy_pkg)
     if role:
         payload["role"] = role
