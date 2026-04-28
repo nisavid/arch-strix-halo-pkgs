@@ -1261,6 +1261,10 @@ def test_cache_is_reused_when_policy_digest_matches(tmp_path):
     assert second["families"] == first["families"]
 
 
+def test_checker_semantics_version_invalidates_existing_cache():
+    assert updates.TOOL_VERSION >= 3
+
+
 def test_refresh_bypasses_matching_cache(tmp_path):
     write_pkg(tmp_path, "python-numpy-gfx1151")
     write_policy(
