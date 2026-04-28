@@ -693,7 +693,10 @@ def test_load_candidate_ledger_reports_unsupported_non_numeric_schema(tmp_path):
         """,
     )
 
-    with pytest.raises(RuntimeError, match="CANDIDATE_LEDGER_SCHEMA_UNSUPPORTED"):
+    with pytest.raises(
+        RuntimeError,
+        match=r"CANDIDATE_LEDGER_SCHEMA_UNSUPPORTED: .*: 'current'",
+    ):
         updates.load_candidate_ledger(tmp_path)
 
 
