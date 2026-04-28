@@ -639,7 +639,16 @@ def candidate_matches_family(candidate: dict, family: dict) -> bool:
             if check.get("status") == "query_failed"
             and candidate_matches_check(candidate, check, family)
         ]
-        return len(failed_checks) == 1
+        if len(failed_checks) != 1:
+            return False
+        return not any(
+            (
+                check.get("status") == "query_failed"
+                or check.get("status") in ACTIONABLE_STATUSES
+            )
+            and not candidate_matches_check(candidate, check, family)
+            for check in family.get("checks", [])
+        )
     candidate_latest = str(candidate.get("latest", "")).strip()
     latest_values = {
         latest
