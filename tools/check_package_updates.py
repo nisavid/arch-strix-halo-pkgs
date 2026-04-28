@@ -779,7 +779,16 @@ def has_unblocked_query_failure(report: dict) -> bool:
 
 def format_table(report: dict) -> str:
     rows = [
-        ("priority", "status", "family", "packages", "recorded", "latest", "workflow")
+        (
+            "priority",
+            "status",
+            "effective_status",
+            "family",
+            "packages",
+            "recorded",
+            "latest",
+            "workflow",
+        )
     ]
     for family in report["families"]:
         checks = family.get("checks", [])
@@ -789,6 +798,7 @@ def format_table(report: dict) -> str:
             (
                 family.get("priority", ""),
                 family.get("status", ""),
+                family.get("effective_status", ""),
                 family.get("family", ""),
                 ",".join(family.get("packages", [])),
                 recorded,
