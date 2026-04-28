@@ -17,11 +17,14 @@
 
 ## Recipe notes
 
-Builds and installs numpy, sentencepiece, zstandard, asyncpg, duckdb from
-source with Zen 5 optimization flags.
+This package is the SentencePiece output from the shared `native_wheels`
+recipe phase. That phase also builds numpy, zstandard, asyncpg, and duckdb
+from source with Zen 5 optimization flags, but those outputs are tracked as
+separate packages rather than as dependencies of `python-sentencepiece-gfx1151`.
 
-numpy: cmake pip wrapper breaks in build isolation; replaced with
-symlink to system cmake.
+SentencePiece-specific recipe translation: the original recipe fixes a broken
+pip-installed cmake wrapper inside the venv. In Arch packaging, this package
+uses the system cmake toolchain directly.
 
 meson-based packages (numpy, zstandard): -mllvm flags must be
 rewritten as -Xclang -mllvm -Xclang pairs because meson's compiler

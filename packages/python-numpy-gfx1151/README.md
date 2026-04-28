@@ -24,14 +24,12 @@ yarl, and frozenlist from source with Zen 5 optimization flags, but those
 outputs are tracked as separate packages or follow-up package lanes rather
 than as dependencies of `python-numpy-gfx1151`.
 
-NumPy-specific recipe translation: the upstream cmake pip wrapper breaks in
-build isolation, so the package uses the system cmake toolchain directly.
-
-For meson-based packages such as NumPy and zstandard, -mllvm flags must be
-rewritten as -Xclang -mllvm -Xclang pairs because meson's compiler probing
-rejects -mllvm as "unused command line argument". -famd-opt moves to LDFLAGS
-because it is a link-time-only driver flag and triggers -Werror=unused in
-compile-only probes.
+NumPy uses the meson-python backend with the declared Meson setup arguments
+for OpenBLAS-backed BLAS/LAPACK. For meson-based packages such as NumPy and
+zstandard, -mllvm flags must be rewritten as -Xclang -mllvm -Xclang pairs
+because meson's compiler probing rejects -mllvm as "unused command line
+argument". -famd-opt moves to LDFLAGS because it is a link-time-only driver
+flag and triggers -Werror=unused in compile-only probes.
 
 
 ## Scaffold notes
