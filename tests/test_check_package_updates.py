@@ -852,6 +852,55 @@ def test_blocked_candidate_precedes_matching_query_failure(tmp_path):
     assert code == 10
 
 
+def test_empty_candidate_latest_does_not_match_empty_query_result(tmp_path):
+    write_pkg(tmp_path, "python-amd-aiter-gfx1151")
+    write_policy(
+        tmp_path,
+        """
+        [families.aiter]
+        packages = ["python-amd-aiter-gfx1151"]
+        priority = "high"
+        workflow = "upstream_source_update"
+        checks = [{ id = "main", role = "candidate", kind = "git_ref", repo = "https://github.com/ROCm/aiter.git", ref = "refs/heads/main", recorded = "cf12b138", comparison = "sha" }]
+        """,
+    )
+    write_candidate_ledger(
+        tmp_path,
+        """
+        schema_version = 1
+
+        [candidates.aiter-main]
+        family = "aiter"
+        packages = ["python-amd-aiter-gfx1151"]
+        source_kind = "git_ref"
+        previous_recorded = "cf12b138"
+        latest = ""
+        discovery_status = "query_failed"
+        disposition = "tracked"
+        disposition_reason = "Incomplete candidate record should not match."
+        salient_changes = ["Unknown until provider recovers"]
+        patch_carry_overlap = true
+        package_source_update_needed = false
+        host_validation_needed = true
+        next_gate_kind = "backlog"
+        next_gate_path = "docs/backlog.md"
+        next_gate_label = "AITER provider retry"
+        last_reviewed = "2026-04-28"
+        """,
+    )
+    clients = updates.FakeClients(
+        fail={
+            "git_ref:https://github.com/ROCm/aiter.git:refs/heads/main": "timeout"
+        }
+    )
+
+    report = updates.run_check(tmp_path, refresh=True, clients=clients)
+
+    assert report["families"][0]["status"] == "query_failed"
+    assert report["families"][0]["effective_status"] == "current"
+    assert "candidate" not in report["families"][0]
+
+
 def test_recorded_latest_with_open_tracked_candidate_is_not_plain_current(tmp_path):
     write_pkg(tmp_path, "python-vllm-rocm-gfx1151")
     write_policy(

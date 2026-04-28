@@ -600,8 +600,13 @@ def candidate_matches_family(candidate: dict, family: dict) -> bool:
         and candidate.get("disposition") == "blocked"
     ):
         return True
-    latest_values = {str(check.get("latest", "")) for check in family.get("checks", [])}
-    if str(candidate.get("latest", "")) in latest_values:
+    candidate_latest = str(candidate.get("latest", "")).strip()
+    latest_values = {
+        latest
+        for check in family.get("checks", [])
+        if (latest := str(check.get("latest", "")).strip())
+    }
+    if candidate_latest and candidate_latest in latest_values:
         return True
     if family.get("status") == "current" and candidate.get("disposition") == "tracked":
         return bool(candidate.get("package_source_update_needed", False))
