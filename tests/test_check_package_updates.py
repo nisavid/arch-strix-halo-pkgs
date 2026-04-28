@@ -1,6 +1,7 @@
 from pathlib import Path
 import importlib.util
 import json
+import pytest
 import re
 import subprocess
 import textwrap
@@ -692,12 +693,8 @@ def test_load_candidate_ledger_reports_unsupported_non_numeric_schema(tmp_path):
         """,
     )
 
-    try:
+    with pytest.raises(RuntimeError, match="CANDIDATE_LEDGER_SCHEMA_UNSUPPORTED"):
         updates.load_candidate_ledger(tmp_path)
-    except RuntimeError as exc:
-        assert "CANDIDATE_LEDGER_SCHEMA_UNSUPPORTED" in str(exc)
-    else:
-        raise AssertionError("expected unsupported schema RuntimeError")
 
 
 def test_tracked_candidate_changes_effective_status_without_hiding_discovery_status(
