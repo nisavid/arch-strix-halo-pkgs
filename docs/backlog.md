@@ -118,14 +118,15 @@
     `prompt_lookup_max=5`, and `num_speculative_tokens=2`
   - keep CPU `ngram` blocked until its generation-time `EngineCore` death is
     explained or fixed
-- Keep DFlash speculative decoding gated on an upstream vLLM source release
-  that carries the merged DFlash support from PR #38300.
+- Keep DFlash speculative decoding gated on a dedicated vLLM package update
+  from the current local 0.19.1 source to a release with the merged DFlash
+  support from PR #38300.
   - the local package should keep only the narrow speculators parser backport
     until the release source also includes the DFlash model, proposer/runtime,
     and registry integration
-  - as of 2026-04-21, upstream tags include `v0.19.2rc0`, but not a final
-    `v0.19.2` or `v0.20.0`; recheck upstream tags before deciding which package
-    bump should carry the full lane
+  - as of the 2026-04-28 freshness refresh, upstream `v0.20.0` is available
+    and includes DFlash model/runtime pieces; adopt it only through a full vLLM
+    package-update lane with patch refresh and host smokes
   - keep `draft_model` with `Qwen/Qwen3.5-0.8B` exploratory; current vLLM
     remaps that checkpoint into the Qwen3.5 MTP loader and fails on hidden-size
     mismatch instead of running a plain draft-model path
