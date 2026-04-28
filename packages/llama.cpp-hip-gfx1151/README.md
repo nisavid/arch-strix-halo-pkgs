@@ -20,9 +20,9 @@
 
 llama.cpp built with TWO backends for Lemonade:
 
-Source branch: upstream master. APEX GGUF support is expected on current
-upstream HEAD, so step 33 should build plain ggml-org/llama.cpp rather
-than a stale local "head-apex" side branch.
+Source lane: keep this package pinned to an audited upstream commit tarball.
+When opening an update lane, repin to plain ggml-org/llama.cpp upstream
+instead of reviving a stale local "head-apex" side branch.
 
 ROCm (hipBLAS): Primary backend. Best prefill <32K context. Uses
 amdclang from TheRock with full Zen 5 + gfx1151 HIP optimization flags,

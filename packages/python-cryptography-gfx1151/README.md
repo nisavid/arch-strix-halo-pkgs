@@ -27,8 +27,10 @@ cryptography is built with Rust flags:
   RUSTFLAGS="-C target-cpu=znver5 -C opt-level=3"
 This enables full AVX-512 + VAES codegen for Zen 5.
 
-Do NOT add -C lto=thin here -- maturin adds -C embed-bitcode=no, which
-conflicts with -C lto. Maturin manages its own LTO.
+Do NOT add -C lto=thin here without a package-specific setuptools-rust
+validation pass. The Arch-shaped cryptography build uses setuptools-rust
+rather than maturin, so keep LTO policy tied to the declared backend and the
+current upstream build-system metadata.
 
 Rust's linker invokes `cc`, which resolves to the amdclang symlink, but AMD's
 wrapper rejects binaries not prefixed with "amd". The package therefore sets:
