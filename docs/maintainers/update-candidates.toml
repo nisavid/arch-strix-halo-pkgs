@@ -45,27 +45,26 @@ next_gate_path = "docs/backlog.md"
 next_gate_label = "vLLM 0.20.0 package update"
 last_reviewed = "2026-04-28"
 
-[candidates."llama-cpp-b8953"]
+[candidates."llama-cpp-b8955"]
 family = "llama_cpp"
 packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"]
 source_kind = "github_release"
-previous_recorded = "b8935"
-latest = "b8953"
+previous_recorded = "b8953"
+latest = "b8955"
 discovery_status = "stable_update_available"
 disposition = "tracked"
 disposition_reason = "The runtime-facing server and model-conversion changes need a rebuild lane rather than a freshness-only record update."
 salient_changes = [
-  "WebGPU Q1_0 and matmul tuning",
-  "Fast i-quant mat-vec kernels and CPU/AMX optimizations",
-  "q8_0 download preference and model conversion cleanup",
-  "Server router form-data forwarding and Windows RPC/cache fixes",
+  "Speculative decoding parameter refactor",
+  "Renames sparam handling to sampling and adds a spec-params category",
+  "Documents removed arguments and updates server tests",
 ]
 patch_carry_overlap = true
 package_source_update_needed = true
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "llama.cpp b8953 runtime rebuild lane"
+next_gate_label = "llama.cpp b8955 runtime rebuild lane"
 last_reviewed = "2026-04-28"
 
 [candidates."rocm-pytorch-release-2.11-e16e349"]
@@ -92,24 +91,25 @@ next_gate_path = "docs/backlog.md"
 next_gate_label = "ROCm PyTorch release/2.11 and Arch 2.11.0-4 review"
 last_reviewed = "2026-04-28"
 
-[candidates."aiter-6a7df200"]
+[candidates."aiter-d0f5f76"]
 family = "aiter"
 packages = ["python-amd-aiter-gfx1151"]
 source_kind = "git_ref"
-previous_recorded = "dcb0639d870783c2bc0c530e465f301032e756dc"
-latest = "6a7df2004f5f896471cf9e6ab588b6aec0357dc7"
+previous_recorded = "6a7df2004f5f896471cf9e6ab588b6aec0357dc7"
+latest = "d0f5f76afb8cf78f1c5da29686dab7e088e6668d"
 discovery_status = "candidate_head_ahead"
 disposition = "tracked"
 disposition_reason = "The candidate overlaps active attention and MoE validation lanes and needs host validation before repinning."
 salient_changes = [
-  "Triton A16W4 MoE kernels",
-  "MHA backward stride fixes and mHC device fix",
-  "gfx950 A8W8 correctness updates and CI workflow changes",
+  "Custom group device support",
+  "Multi communication group entity support",
+  "Multi-group allgather and reduce-scatter interfaces",
+  "Custom communication group configuration fixes",
 ]
 patch_carry_overlap = true
 package_source_update_needed = true
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "AITER 6a7df200 package-source review"
+next_gate_label = "AITER d0f5f76 package-source review"
 last_reviewed = "2026-04-28"
