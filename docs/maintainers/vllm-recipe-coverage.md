@@ -21,8 +21,8 @@ Current recipe references:
 Recipe coverage uses these states:
 
 - `validated`: a local scenario has run after the self-hosted rebuild and is
-  recorded in `docs/maintainers/rebuild-revalidation.md` or
-  `docs/maintainers/current-state.md`.
+  recorded in `docs/maintainers/current-state.md`, a package-local README, or
+  the tracked scenario definition.
 - `tracked`: an executable scenario or helper exists, but this exact recipe
   surface still needs a reference-host result before promotion.
 - `planned`: the surface belongs in the work plan, but the runnable local

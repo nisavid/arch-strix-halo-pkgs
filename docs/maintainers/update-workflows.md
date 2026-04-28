@@ -118,15 +118,16 @@ If the sweep changes package policy, patch carry, validation status, or a known
 blocker, update canonical docs under `docs/` and delete any session-only input
 once its durable content has been extracted.
 
-After rebuilding a dependency lane that can affect runtime behavior, consult
-`docs/maintainers/rebuild-revalidation.md` before treating previous inference
-findings, expected-failure tests, backlog findings, or local-origin runtime
-patch rationale as accepted. Promote findings that reproduce after the rebuilt
-stack is installed, retire findings that no longer reproduce, and make sure
-each retained local-origin patch ends with a test or tracked scenario that
-guards the behavior it fixes. When a patch has no obvious executable spec,
-search package READMEs, recipe metadata, git history, and available session
-transcripts before inferring the best retained-patch guard from context.
+After rebuilding a dependency lane that can affect runtime behavior, treat
+previous inference findings, expected-failure tests, backlog findings, and
+local-origin runtime patch rationale as provisional until reproduced against
+the installed rebuilt stack. Promote findings that reproduce after install,
+retire findings that no longer reproduce, and make sure each retained
+local-origin patch ends with a test or tracked scenario that guards the
+behavior it fixes. Use `docs/maintainers/current-state.md`, `docs/patches.md`,
+package READMEs, recipe metadata, scenario definitions, git history, and
+available session transcripts to find the existing evidence and patch
+motivation before inferring a retained-patch guard.
 
 Current package-lane catalog:
 

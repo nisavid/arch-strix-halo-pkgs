@@ -6,15 +6,15 @@ Status as of 2026-04-28.
 
 Runtime and inference findings recorded before the 2026-04-20 self-hosted
 rebuild confidence boundary were treated as historical evidence until they
-were reproduced against the rebuilt stack. The closed quarantine record for
-local-origin patch rationale, expected-failure tests, and backlog findings
-lives in [the rebuild revalidation ledger](rebuild-revalidation.md).
+were reproduced against the rebuilt stack. The accepted results now live in
+this current-state file, package-local READMEs, `docs/patches.md`, and tracked
+scenario definitions. No separate rebuild quarantine worklist remains active.
 
 The full native package rebuild and install completed on 2026-04-20 through
 `tools/amerge` plan `20260420T045008-685264b1`, with 75 completed steps and no
 remaining failed steps. Build/deploy closeout for the native stack is complete;
-post-rebuild revalidation closeout is recorded in the revalidation ledger.
-Follow-up official vLLM recipe coverage now lives in
+post-rebuild revalidation closeout is recorded in the active maintainer docs.
+Follow-up official vLLM recipe coverage lives in
 `docs/maintainers/vllm-recipe-coverage.md`.
 
 ## ROCm inference reference boundary
@@ -584,7 +584,7 @@ classifying FP8-specific failures. Both local Qwen3.6 configs advertise
 Qwen3.5/GDN package carry is still relevant to this lane. The FP8 model
 remains a target and blocked-probe lane, not an accepted passing smoke lane,
 because the rebuilt native stack reproduces the expected Qwen3.6 FP8 probe
-failures in the revalidation ledger.
+failures recorded in this file.
 
 The `intfloat/multilingual-e5-small` vLLM pooling embedding scenario passed on
 2026-04-21 with `HF_HOME=/var/cache/hf`, ROCm `FLEX_ATTENTION`, and
@@ -777,8 +777,7 @@ package updates:
 
 This section includes both current installed-host checks and historical smoke
 records. When a result was recorded before the 2026-04-20 rebuild boundary,
-the rebuild revalidation ledger records whether that result was promoted or
-retired.
+the notes below record whether that result was promoted or retired.
 
 The following smoke checks have already passed on the reference host:
 
@@ -798,8 +797,8 @@ The following smoke checks have already passed on the reference host:
   limits and recipe-style chat-template prompting
 - `google/gemma-4-E2B-it` offline eager vLLM smoke on 2026-04-19 with
   `tools/gemma4_text_smoke.py`, `--max-model-len 128`, and text-only
-  multimodal limits; the same checkpoint's server/AsyncLLM path currently
-  fails separately during initialization
+  multimodal limits. The later 2026-04-20 rebuilt-stack server revalidation
+  retired the old E2B server/AsyncLLM initialization fault.
 - On 2026-04-20,
   `python tools/run_inference_scenarios.py --engine llama.cpp --engine lemonade --tag smoke`
   passed the tracked help-entrypoint scenarios for both `llama.cpp` backends
@@ -883,7 +882,11 @@ The following smoke checks have already passed on the reference host:
 - `python-sentencepiece-gfx1151` already carries the bundled-build patch needed
   to avoid host `sentencepiece` shared-library ABI drift, and the current
   built package artifact under `packages/python-sentencepiece-gfx1151/pkg/`
-  is self-contained at the ELF level.
+  is self-contained at the ELF level. On 2026-04-20,
+  `pytest packages/python-sentencepiece-gfx1151/tests -q -o cache_dir=/tmp/sentencepiece-revalidation-cache`
+  passed, and rebuilt Gemma tokenizer/vLLM paths passed through the promoted
+  `vllm.gemma4.26b-a4b.text.basic` and
+  `vllm.gemma4.26b-a4b.server.basic` scenarios.
 - `python-transformers-gfx1151` is now the local closure package for Gemma 4
   support on this stack because the host `python-transformers 5.2.0-1` lane
   did not ship `transformers.models.gemma4`; the repo currently tracks PyPI
@@ -1265,9 +1268,10 @@ The following smoke checks have already passed on the reference host:
     `pytest tests packages/python-vllm-rocm-gfx1151/tests -q` passed against
     the freshly populated `pkg/` tree
   - the simplified native package lane is now installed as
-    `python-vllm-rocm-gfx1151 0.19.1-2`; use the revalidation ledger before
-    treating earlier Gemma 4 and Qwen scenario results as accepted evidence for
-    the current installed stack
+    `python-vllm-rocm-gfx1151 0.19.1-2`; treat earlier Gemma 4 and Qwen
+    scenario results as accepted evidence only when this file, the package
+    README, or tracked scenarios record post-rebuild validation for the
+    current installed stack
   - after pkgrel `-26` was installed, the existing Gemma 4 26B-A4B
     installed-host lane still passed with the package:
     `vllm.gemma4.26b-a4b.text.basic` passed in `195.710255` seconds, and
@@ -1413,9 +1417,9 @@ The following smoke checks have already passed on the reference host:
     otherwise required explicitly via `--chat-template`, then validates both
     the initial tool call and the follow-up tool response round trip
 - An earlier reference-host pass verified three OpenAI-compatible Gemma 4
-  server flows with `google/gemma-4-E2B-it`, but the 2026-04-19 broad matrix
-  currently reproduces a server/AsyncLLM GPU memory-access fault before those
-  flows can be promoted as maintained defaults:
+  server flows with `google/gemma-4-E2B-it`. A 2026-04-19 broad matrix then
+  reproduced the now-retired server/AsyncLLM GPU memory-access fault before
+  those flows could be promoted as maintained defaults:
   - basic chat completion passed with the helper's default `--max-model-len 512`
   - reasoning parsing passed with `--mode reasoning`, `--reasoning-parser gemma4`,
     `skip_special_tokens=false`, and `--max-model-len 1024`; the returned
@@ -1573,5 +1577,5 @@ This repo is now the canonical source for:
 - maintainer documentation
 - the local pacman repo workflow
 
-Older draft packaging trees and migration leftovers are historical inputs, not
-authoritative sources.
+Historical draft packaging trees are reference inputs only, not authoritative
+sources.

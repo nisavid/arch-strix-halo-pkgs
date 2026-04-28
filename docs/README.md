@@ -48,8 +48,6 @@ serves a different reader.
 - [FlashAttention CK paged-KV boundary](maintainers/flashattention-ck-paged-kv.md)
   records the latest tabled vLLM CK consumer lane and the gates required before
   reopening it.
-- [Rebuild Revalidation Ledger](maintainers/rebuild-revalidation.md) preserves
-  the closed post-rebuild validation boundary for older findings.
 
 ## If You Are Writing Or Cleaning Up Docs
 
