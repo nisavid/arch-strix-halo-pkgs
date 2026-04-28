@@ -685,6 +685,38 @@ def test_load_candidate_ledger_reads_tracked_candidate(tmp_path):
     assert ledger["vllm-0_20_0"]["latest"] == "0.20.0"
 
 
+def test_load_candidate_ledger_uses_table_key_as_id(tmp_path):
+    write_candidate_ledger(
+        tmp_path,
+        """
+        schema_version = 1
+
+        [candidates.vllm-0_20_0]
+        id = "wrong"
+        family = "vllm"
+        packages = ["python-vllm-rocm-gfx1151"]
+        source_kind = "github_release"
+        previous_recorded = "0.19.1"
+        latest = "0.20.0"
+        discovery_status = "stable_update_available"
+        disposition = "tracked"
+        disposition_reason = "Needs a package update lane."
+        salient_changes = ["Python 3.14 metadata support"]
+        patch_carry_overlap = true
+        package_source_update_needed = true
+        host_validation_needed = true
+        next_gate_kind = "backlog"
+        next_gate_path = "docs/backlog.md"
+        next_gate_label = "vLLM 0.20.0 package update"
+        last_reviewed = "2026-04-28"
+        """,
+    )
+
+    ledger = updates.load_candidate_ledger(tmp_path)
+
+    assert ledger["vllm-0_20_0"]["id"] == "vllm-0_20_0"
+
+
 def test_load_candidate_ledger_reports_unsupported_non_numeric_schema(tmp_path):
     write_candidate_ledger(
         tmp_path,
@@ -778,6 +810,120 @@ def test_tracked_candidate_changes_effective_status_without_hiding_discovery_sta
     assert report["families"][0]["status"] == "stable_update_available"
     assert report["families"][0]["effective_status"] == "tracked_update_candidate"
     assert report["families"][0]["candidate"]["id"] == "vllm-0_20_0"
+
+
+def test_metadata_mismatch_is_not_dispositioned_by_candidate(tmp_path):
+    write_pkg(tmp_path, "python-vllm-rocm-gfx1151")
+    write_policy(
+        tmp_path,
+        """
+        [families.vllm]
+        packages = ["python-vllm-rocm-gfx1151"]
+        priority = "high"
+        workflow = "upstream_source_update"
+        checks = [{ id = "release", role = "invalid", kind = "github_release", repo = "vllm-project/vllm", recorded = "0.20.0", tag_prefix = "v", comparison = "pep440" }]
+        """,
+    )
+    write_candidate_ledger(
+        tmp_path,
+        """
+        schema_version = 1
+
+        [candidates.vllm-0_20_0]
+        family = "vllm"
+        packages = ["python-vllm-rocm-gfx1151"]
+        source_kind = "github_release"
+        previous_recorded = "0.19.1"
+        latest = "0.20.0"
+        discovery_status = "stable_update_available"
+        disposition = "tracked"
+        disposition_reason = "Needs a package update lane."
+        salient_changes = ["Python 3.14 metadata support"]
+        patch_carry_overlap = true
+        package_source_update_needed = true
+        host_validation_needed = true
+        next_gate_kind = "backlog"
+        next_gate_path = "docs/backlog.md"
+        next_gate_label = "vLLM 0.20.0 package update"
+        last_reviewed = "2026-04-28"
+        """,
+    )
+
+    report = updates.run_check(
+        tmp_path,
+        refresh=True,
+        clients=updates.FakeClients(allow_missing=True),
+    )
+
+    assert report["families"][0]["status"] == "metadata_mismatch"
+    assert report["families"][0]["effective_status"] == "action_required"
+    assert "candidate" not in report["families"][0]
+
+
+def test_duplicate_matching_candidates_are_invalid(tmp_path):
+    write_pkg(tmp_path, "python-vllm-rocm-gfx1151")
+    write_policy(
+        tmp_path,
+        """
+        [families.vllm]
+        packages = ["python-vllm-rocm-gfx1151"]
+        priority = "high"
+        workflow = "upstream_source_update"
+        checks = [{ id = "release", role = "primary", kind = "github_release", repo = "vllm-project/vllm", recorded = "0.19.1", tag_prefix = "v", comparison = "pep440" }]
+        """,
+    )
+    write_candidate_ledger(
+        tmp_path,
+        """
+        schema_version = 1
+
+        [candidates.vllm-0_20_0-a]
+        family = "vllm"
+        packages = ["python-vllm-rocm-gfx1151"]
+        source_kind = "github_release"
+        previous_recorded = "0.19.1"
+        latest = "0.20.0"
+        discovery_status = "stable_update_available"
+        disposition = "tracked"
+        disposition_reason = "Needs a package update lane."
+        salient_changes = ["Python 3.14 metadata support"]
+        patch_carry_overlap = true
+        package_source_update_needed = true
+        host_validation_needed = true
+        next_gate_kind = "backlog"
+        next_gate_path = "docs/backlog.md"
+        next_gate_label = "vLLM 0.20.0 package update"
+        last_reviewed = "2026-04-28"
+
+        [candidates.vllm-0_20_0-b]
+        family = "vllm"
+        packages = ["python-vllm-rocm-gfx1151"]
+        source_kind = "github_release"
+        previous_recorded = "0.19.1"
+        latest = "0.20.0"
+        discovery_status = "stable_update_available"
+        disposition = "tracked"
+        disposition_reason = "Duplicate update lane."
+        salient_changes = ["Python 3.14 metadata support"]
+        patch_carry_overlap = true
+        package_source_update_needed = true
+        host_validation_needed = true
+        next_gate_kind = "backlog"
+        next_gate_path = "docs/backlog.md"
+        next_gate_label = "Duplicate vLLM 0.20.0 package update"
+        last_reviewed = "2026-04-28"
+        """,
+    )
+    clients = updates.FakeClients(
+        github_releases={
+            "vllm-project/vllm": [
+                {"tag": "v0.20.0", "prerelease": False}
+            ]
+        }
+    )
+
+    with pytest.raises(RuntimeError, match="CANDIDATE_LEDGER_DUPLICATE_MATCH"):
+        updates.run_check(tmp_path, refresh=True, clients=clients)
 
 
 def test_tracked_candidate_does_not_hide_other_actionable_check(tmp_path):

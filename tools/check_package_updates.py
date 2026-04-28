@@ -348,7 +348,7 @@ def load_candidate_ledger(repo_root: str | Path) -> dict[str, dict]:
         disposition = str(candidate.get("disposition", ""))
         if disposition not in VALID_CANDIDATE_DISPOSITIONS:
             raise RuntimeError(f"CANDIDATE_LEDGER_DISPOSITION_INVALID: {candidate_id}")
-        normalized[candidate_id] = {"id": candidate_id, **candidate}
+        normalized[candidate_id] = {**candidate, "id": candidate_id}
     return normalized
 
 
@@ -604,6 +604,7 @@ def summarize_effective(families: list[dict]) -> dict:
 
 
 def candidate_matches_check(candidate: dict, check: dict, family: dict) -> bool:
+    """Match against checks from an evaluated family report, not raw policy."""
     if candidate.get("source_kind") != check.get("kind"):
         return False
     check_id = candidate.get("check_id")
@@ -627,6 +628,8 @@ def has_uncovered_actionable_check(candidate: dict, family: dict) -> bool:
 
 def candidate_matches_family(candidate: dict, family: dict) -> bool:
     if candidate.get("family") != family.get("family"):
+        return False
+    if family.get("status") == "metadata_mismatch":
         return False
     if (
         family.get("status") == "query_failed"
@@ -677,14 +680,17 @@ def enrich_candidate_dispositions(
 ) -> list[dict]:
     enriched = []
     for family in families:
-        candidate = next(
-            (
-                candidate
-                for candidate in candidates.values()
-                if candidate_matches_family(candidate, family)
-            ),
-            None,
-        )
+        matches = [
+            candidate
+            for candidate in candidates.values()
+            if candidate_matches_family(candidate, family)
+        ]
+        if len(matches) > 1:
+            match_ids = ", ".join(str(candidate["id"]) for candidate in matches)
+            raise RuntimeError(
+                f"CANDIDATE_LEDGER_DUPLICATE_MATCH: {family['family']}: {match_ids}"
+            )
+        candidate = matches[0] if matches else None
         report = family | {"effective_status": effective_status_for(family, candidate)}
         if candidate:
             report["candidate"] = candidate
