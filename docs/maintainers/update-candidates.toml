@@ -45,28 +45,29 @@ next_gate_path = "docs/backlog.md"
 next_gate_label = "vLLM 0.20.0 package update"
 last_reviewed = "2026-04-28"
 
-[candidates."llama-cpp-b8963"]
+[candidates."llama-cpp-b8966"]
 family = "llama_cpp"
 packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"]
 source_kind = "github_release"
 previous_recorded = "b8955"
-latest = "b8963"
+latest = "b8966"
 discovery_status = "stable_update_available"
 disposition = "tracked"
-disposition_reason = "b8955 was adopted, deployed, and installed-smoked, but upstream moved again; review b8955..b8963 before deciding whether to adopt b8963."
+disposition_reason = "b8955 was adopted, deployed, and installed-smoked, but upstream moved again; review b8955..b8966 before deciding whether to adopt b8966."
 salient_changes = [
   "CANN operator additions and optimization",
   "ggml backend/device duplicate-registration guard",
   "CMake link behavior reverts to -lm instead of find_library",
   "Vulkan timestamp barrier, SPIR-V header detection, Q4_K/Q5_K scale-load coalescing, and WebGPU SSM scan aliasing changes",
   "Large server web UI tool/chat settings refactor",
+  "CUDA FlashAttention support for Mistral Small 4 head sizes",
 ]
 patch_carry_overlap = true
 package_source_update_needed = true
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "llama.cpp b8963 runtime rebuild decision"
+next_gate_label = "llama.cpp b8966 runtime rebuild decision"
 last_reviewed = "2026-04-28"
 
 [candidates."rocm-pytorch-release-2.11-9413e9b"]
@@ -142,7 +143,7 @@ next_gate_path = "docs/backlog.md"
 next_gate_label = "Lemonade 10.3.0 package update"
 last_reviewed = "2026-04-28"
 
-[candidates."transformers-5.7.0-tag"]
+[candidates."transformers-5.7.0-pypi"]
 family = "transformers"
 packages = ["python-transformers-gfx1151"]
 source_kind = "pypi"

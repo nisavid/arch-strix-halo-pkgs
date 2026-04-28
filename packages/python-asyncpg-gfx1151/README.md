@@ -17,19 +17,16 @@
 
 ## Recipe notes
 
-Builds and installs numpy, sentencepiece, zstandard, asyncpg, duckdb,
-PyYAML, psutil, Pillow, uvloop, httptools, msgspec, aiohttp,
-multidict, yarl, and frozenlist from source with Zen 5 optimization
-flags.
+This package is the asyncpg output from the shared `native_wheels` recipe
+phase. That phase also builds numpy, sentencepiece, zstandard, duckdb, PyYAML,
+psutil, Pillow, uvloop, httptools, msgspec, aiohttp, multidict, yarl, and
+frozenlist from source with Zen 5 optimization flags, but those outputs are
+tracked as separate packages or follow-up package lanes rather than as
+dependencies of `python-asyncpg-gfx1151`.
 
-numpy: cmake pip wrapper breaks in build isolation; replaced with
-symlink to system cmake.
+asyncpg uses the recipe's generic native-wheel compiler lane even though its
+build backend differs from meson-based packages in the same phase.
 
-meson-based packages (numpy, zstandard): -mllvm flags must be
-rewritten as -Xclang -mllvm -Xclang pairs because meson's compiler
-probing rejects -mllvm as "unused command line argument".
--famd-opt moved to LDFLAGS (link-time-only driver flag, no-op at
-compile time -- triggers -Werror=unused in compile-only probes).
 
 ## Scaffold notes
 

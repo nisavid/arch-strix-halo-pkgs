@@ -25,18 +25,20 @@ upstream HEAD, so step 33 should build plain ggml-org/llama.cpp rather
 than a stale local "head-apex" side branch.
 
 ROCm (hipBLAS): Primary backend. Best prefill <32K context. Uses
-amdclang from TheRock with full Zen 5 + gfx1151 HIP optimization
-flags, explicit ggml LTO, and no embedded server web UI. Binaries placed
-where Lemonade SDK expects them.
+amdclang from TheRock with full Zen 5 + gfx1151 HIP optimization flags,
+explicit ggml LTO, and builds llama.cpp's server target. Binaries are
+placed where Lemonade SDK expects them.
 
 Vulkan: Secondary backend. +22% generation speed (44 vs 39 tok/s)
 and handles >32K context prefill (no VMM limitation on gfx1151).
-Uses the same amdclang, Zen 5, ThinLTO, AOCL-LibM, and Vulkan
-release-mode settings as the stable-diffusion.cpp Vulkan build.
+Uses the planned stable-diffusion.cpp Vulkan lane's amdclang, Zen 5,
+ThinLTO, AOCL-LibM, and Vulkan release-mode flag shape; the
+stable-diffusion.cpp package itself remains a separate backlog item.
 
 Both backends get .env files with gfx1151 runtime optimizations
 (batch sizing, hipBLASLt, THP). RPATH patched via patchelf so
 binaries find their shared libraries without LD_LIBRARY_PATH.
+
 
 ## Scaffold notes
 

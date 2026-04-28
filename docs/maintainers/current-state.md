@@ -419,11 +419,12 @@ A follow-up live freshness check on 2026-04-28 found new actionable drift after
 the b8955 build. Session-scoped prompts, specs, plans, scratch notes, and
 handoff material belong in ignored locations such as `.agents/session/` or
 `docs/worklog/`, with durable conclusions extracted into tracked docs. Upstream
-llama.cpp moved to `b8963`;
-the `b8955..b8963` range includes CANN operator work, ggml backend/device
+llama.cpp moved to `b8966`;
+the `b8955..b8966` range includes CANN operator work, ggml backend/device
 duplicate-registration handling, `-lm` link-behavior reversion, Vulkan
 timestamp-barrier and shader/header fixes, WebGPU SSM scan aliasing changes,
-and a large server web UI tool/chat settings refactor. Lemonade
+large server web UI tool/chat settings refactor, and CUDA FlashAttention
+support for Mistral Small 4 head sizes. Lemonade
 `10.3.0` is available with OmniRouter, a Tauri desktop app, the
 `lemonade_server.service` to `lemond.service` rename, ROCm channel/default
 changes, and system llama.cpp backend/version-tag config work that overlaps
