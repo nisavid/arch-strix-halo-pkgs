@@ -71,7 +71,9 @@ last_reviewed = "2026-04-28"
 [candidates."rocm-pytorch-release-2.11-e16e349"]
 family = "rocm_pytorch"
 packages = ["python-pytorch-opt-rocm-gfx1151"]
-source_kind = "git_ref_and_arch_package"
+source_kind = "git_ref"
+baseline_source_kind = "arch_package"
+baseline_latest = "2.11.0-4"
 previous_recorded = "3aaa914af1e6fb268b242bfb871e614fbdb6c1bc / 2.11.0-3"
 latest = "e16e349eb30bac8fd72b5c34ab220527fea5c58c"
 discovery_status = "branch_head_ahead"

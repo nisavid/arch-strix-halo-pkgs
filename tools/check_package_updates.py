@@ -620,6 +620,8 @@ def candidate_matches_family(candidate: dict, family: dict) -> bool:
 def effective_status_for(family: dict, candidate: dict | None) -> str:
     if candidate:
         return f"{candidate['disposition']}_update_candidate"
+    if family.get("status") == "query_failed":
+        return "query_failed"
     if family.get("status") in ACTIONABLE_STATUSES:
         return "action_required"
     return "current"

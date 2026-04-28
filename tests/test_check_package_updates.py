@@ -914,7 +914,8 @@ def test_empty_candidate_latest_does_not_match_empty_query_result(tmp_path):
     report = updates.run_check(tmp_path, refresh=True, clients=clients)
 
     assert report["families"][0]["status"] == "query_failed"
-    assert report["families"][0]["effective_status"] == "current"
+    assert report["families"][0]["effective_status"] == "query_failed"
+    assert report["effective_summary"] == {"query_failed": 1}
     assert "candidate" not in report["families"][0]
 
 
