@@ -3,11 +3,15 @@
 ## Packaging And Build Hygiene
 
 - Review the active 2026-04-28 update candidates: Blackcat ai-notes recipe
-  update; vLLM 0.20.0 package update; llama.cpp b8955 runtime rebuild lane;
-  ROCm PyTorch release/2.11 and Arch 2.11.0-4 review; AITER 4de5759
-  package-source review. Active candidate dispositions live in
-  `docs/maintainers/update-candidates.toml`; keep that ledger and this backlog
-  item in sync until each candidate is adopted, rejected, or blocked.
+  update; vLLM 0.20.0 package update; llama.cpp b8958 runtime rebuild
+  decision; ROCm PyTorch release/2.11 9413e9b review; AITER c1c65e6
+  package-source review; Lemonade 10.3.0 package update; Transformers 5.7.0
+  source-availability and package review. The llama.cpp b8955 runtime rebuild
+  lane adopted package sources and built artifacts before b8958 appeared, so
+  decide whether to deploy b8955 or skip straight to b8958. Active candidate
+  dispositions live in `docs/maintainers/update-candidates.toml`; keep that
+  ledger and this backlog item in sync until each candidate is adopted,
+  rejected, or blocked.
 - Newly discovered ROCm inference candidates from
   `docs/maintainers/rocm-inference-reference.md` belong near the top of this
   backlog, but they are not validated package commitments until their source
