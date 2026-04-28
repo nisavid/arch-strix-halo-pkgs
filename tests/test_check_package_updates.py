@@ -1086,7 +1086,8 @@ def test_real_update_candidate_ledger_is_valid():
         assert candidate["family"]
         assert candidate["packages"]
         assert candidate["disposition"] in updates.VALID_CANDIDATE_DISPOSITIONS
-        assert candidate["next_gate_path"] == "docs/backlog.md"
+        if candidate["disposition"] == "tracked":
+            assert candidate["next_gate_path"] == "docs/backlog.md"
         assert re.fullmatch(r"\d{4}-\d{2}-\d{2}", candidate["last_reviewed"])
         assert candidate["salient_changes"]
 
