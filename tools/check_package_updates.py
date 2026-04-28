@@ -642,8 +642,6 @@ def candidate_matches_family(candidate: dict, family: dict) -> bool:
     }
     if candidate_latest and candidate_latest in latest_values:
         return True
-    if family.get("status") == "current" and candidate.get("disposition") == "tracked":
-        return bool(candidate.get("package_source_update_needed", False))
     return False
 
 
@@ -685,7 +683,10 @@ def policy_digest(repo_root: Path, only: list[str] | None = None) -> str:
         hasher.update(policy.read_bytes())
     ledger = candidate_ledger_path(repo_root)
     if ledger.exists():
-        hasher.update(ledger.read_bytes())
+        try:
+            hasher.update(ledger.read_bytes())
+        except OSError as exc:
+            raise RuntimeError(f"CANDIDATE_LEDGER_UNREADABLE: {ledger}: {exc}") from exc
     for package in sorted(discover_package_dirs(repo_root)):
         hasher.update(f"package:{package}\n".encode())
     for selector in sorted(only or []):

@@ -547,6 +547,22 @@ def test_render_recipe_json_treats_empty_extra_sources_as_patch_checksums() -> N
     assert "extra_sha256sums" not in recipe_json["policy"]
 
 
+def test_render_source_refs_treats_empty_extra_sources_as_source_patches() -> None:
+    source_refs, sha256sums = render_recipe_scaffolds.render_source_refs(
+        {
+            "template": "python-project",
+            "src_subdir": "sample",
+            "source_patches": ["0001-sample.patch"],
+            "extra_sources": [],
+            "extra_sha256sums": ["abc123"],
+        },
+        {"repo": "https://example.invalid/sample.git"},
+    )
+
+    assert source_refs == "(sample::git+https://example.invalid/sample.git 0001-sample.patch)"
+    assert sha256sums == "(SKIP abc123)"
+
+
 def test_render_recipe_json_keeps_explicit_extra_source_checksums_in_policy() -> None:
     recipe_json = json.loads(
         render_recipe_scaffolds.render_recipe_json(

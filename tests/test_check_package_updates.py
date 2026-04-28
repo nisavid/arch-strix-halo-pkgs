@@ -709,6 +709,22 @@ def test_load_candidate_ledger_reports_unreadable_text(tmp_path):
         updates.load_candidate_ledger(tmp_path)
 
 
+def test_policy_digest_reports_unreadable_candidate_ledger(tmp_path, monkeypatch):
+    write_candidate_ledger(tmp_path, "schema_version = 1")
+
+    original_read_bytes = Path.read_bytes
+
+    def fail_for_ledger(path: Path) -> bytes:
+        if path == updates.candidate_ledger_path(tmp_path):
+            raise PermissionError("denied")
+        return original_read_bytes(path)
+
+    monkeypatch.setattr(Path, "read_bytes", fail_for_ledger)
+
+    with pytest.raises(RuntimeError, match="CANDIDATE_LEDGER_UNREADABLE"):
+        updates.policy_digest(tmp_path)
+
+
 def test_tracked_candidate_changes_effective_status_without_hiding_discovery_status(
     tmp_path,
 ):
@@ -1215,6 +1231,59 @@ def test_recorded_latest_with_open_tracked_candidate_is_not_plain_current(tmp_pa
     assert report["effective_summary"] == {"tracked_update_candidate": 1}
     assert report["families"][0]["status"] == "current"
     assert report["families"][0]["effective_status"] == "tracked_update_candidate"
+
+
+def test_stale_tracked_candidate_does_not_satisfy_current_family(tmp_path):
+    write_pkg(tmp_path, "python-vllm-rocm-gfx1151")
+    write_policy(
+        tmp_path,
+        """
+        [families.vllm]
+        packages = ["python-vllm-rocm-gfx1151"]
+        priority = "high"
+        workflow = "upstream_source_update"
+        checks = [{ id = "release", role = "primary", kind = "github_release", repo = "vllm-project/vllm", recorded = "0.21.0", tag_prefix = "v", comparison = "pep440" }]
+        """,
+    )
+    write_candidate_ledger(
+        tmp_path,
+        """
+        schema_version = 1
+
+        [candidates.vllm-0_20_0]
+        family = "vllm"
+        packages = ["python-vllm-rocm-gfx1151"]
+        source_kind = "github_release"
+        previous_recorded = "0.19.1"
+        latest = "0.20.0"
+        discovery_status = "stable_update_available"
+        disposition = "tracked"
+        disposition_reason = "Needs a package update lane."
+        salient_changes = ["Python 3.14 metadata support"]
+        patch_carry_overlap = true
+        package_source_update_needed = true
+        host_validation_needed = true
+        next_gate_kind = "backlog"
+        next_gate_path = "docs/backlog.md"
+        next_gate_label = "vLLM 0.20.0 package update"
+        last_reviewed = "2026-04-28"
+        """,
+    )
+    clients = updates.FakeClients(
+        github_releases={
+            "vllm-project/vllm": [
+                {"tag": "v0.21.0", "prerelease": False}
+            ]
+        }
+    )
+
+    report = updates.run_check(tmp_path, refresh=True, clients=clients)
+
+    assert report["summary"] == {"current": 1}
+    assert report["effective_summary"] == {"current": 1}
+    assert report["families"][0]["status"] == "current"
+    assert report["families"][0]["effective_status"] == "current"
+    assert "candidate" not in report["families"][0]
 
 
 def test_format_table_shows_effective_status(tmp_path):
