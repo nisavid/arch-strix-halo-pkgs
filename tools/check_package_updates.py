@@ -44,6 +44,7 @@ STATUS_PRECEDENCE = [
 ]
 TOOL_VERSION = 2
 CACHE_PATH = Path(".agents/session/dependency-freshness-cache.json")
+CANDIDATE_LEDGER_PATH = Path("docs/maintainers/update-candidates.toml")
 ACTIONABLE_STATUSES = {
     "stable_update_available",
     "candidate_head_ahead",
@@ -51,6 +52,8 @@ ACTIONABLE_STATUSES = {
     "baseline_drift",
     "metadata_mismatch",
 }
+VALID_CANDIDATE_DISPOSITIONS = {"adopted", "tracked", "rejected", "blocked"}
+EFFECTIVE_ACTIONABLE_STATUSES = {"action_required", "blocked_update_candidate"}
 ALLOWED_ROLES = {"primary", "candidate", "scout", "baseline"}
 SHA_REF_KINDS = {"git_ref", "submodule"}
 
@@ -310,6 +313,34 @@ def default_policy_path(repo_root: Path) -> Path:
     return repo_root / "policies/package-freshness.toml"
 
 
+def candidate_ledger_path(repo_root: Path) -> Path:
+    return repo_root / CANDIDATE_LEDGER_PATH
+
+
+def load_candidate_ledger(repo_root: str | Path) -> dict[str, dict]:
+    path = candidate_ledger_path(Path(repo_root))
+    if not path.exists():
+        return {}
+    try:
+        payload = tomllib.loads(path.read_text(encoding="utf-8"))
+    except tomllib.TOMLDecodeError as exc:
+        raise RuntimeError(f"CANDIDATE_LEDGER_INVALID: {path}: {exc}") from exc
+    if int(payload.get("schema_version", 0)) != 1:
+        raise RuntimeError(f"CANDIDATE_LEDGER_SCHEMA_UNSUPPORTED: {path}")
+    candidates = payload.get("candidates", {})
+    if not isinstance(candidates, dict):
+        raise RuntimeError(f"CANDIDATE_LEDGER_CANDIDATES_INVALID: {path}")
+    normalized: dict[str, dict] = {}
+    for candidate_id, candidate in candidates.items():
+        if not isinstance(candidate, dict):
+            raise RuntimeError(f"CANDIDATE_LEDGER_ENTRY_INVALID: {candidate_id}")
+        disposition = str(candidate.get("disposition", ""))
+        if disposition not in VALID_CANDIDATE_DISPOSITIONS:
+            raise RuntimeError(f"CANDIDATE_LEDGER_DISPOSITION_INVALID: {candidate_id}")
+        normalized[candidate_id] = {"id": candidate_id, **candidate}
+    return normalized
+
+
 def metadata_mismatch(message: str) -> dict:
     return {
         "family": "policy-coverage",
@@ -557,12 +588,63 @@ def summarize(families: list[dict]) -> dict:
     return dict(Counter(family["status"] for family in families))
 
 
+def summarize_effective(families: list[dict]) -> dict:
+    return dict(Counter(family["effective_status"] for family in families))
+
+
+def candidate_matches_family(candidate: dict, family: dict) -> bool:
+    if candidate.get("family") != family.get("family"):
+        return False
+    if (
+        family.get("status") == "query_failed"
+        and candidate.get("disposition") == "blocked"
+    ):
+        return True
+    latest_values = {str(check.get("latest", "")) for check in family.get("checks", [])}
+    if str(candidate.get("latest", "")) in latest_values:
+        return True
+    if family.get("status") == "current" and candidate.get("disposition") == "tracked":
+        return bool(candidate.get("package_source_update_needed", False))
+    return False
+
+
+def effective_status_for(family: dict, candidate: dict | None) -> str:
+    if candidate:
+        return f"{candidate['disposition']}_update_candidate"
+    if family.get("status") in ACTIONABLE_STATUSES:
+        return "action_required"
+    return "current"
+
+
+def enrich_candidate_dispositions(
+    families: list[dict], candidates: dict[str, dict]
+) -> list[dict]:
+    enriched = []
+    for family in families:
+        candidate = next(
+            (
+                candidate
+                for candidate in candidates.values()
+                if candidate_matches_family(candidate, family)
+            ),
+            None,
+        )
+        report = family | {"effective_status": effective_status_for(family, candidate)}
+        if candidate:
+            report["candidate"] = candidate
+        enriched.append(report)
+    return enriched
+
+
 def policy_digest(repo_root: Path, only: list[str] | None = None) -> str:
     hasher = hashlib.sha256()
     policy = default_policy_path(repo_root)
     hasher.update(f"tool-version:{TOOL_VERSION}\n".encode())
     if policy.exists():
         hasher.update(policy.read_bytes())
+    ledger = candidate_ledger_path(repo_root)
+    if ledger.exists():
+        hasher.update(ledger.read_bytes())
     for package in sorted(discover_package_dirs(repo_root)):
         hasher.update(f"package:{package}\n".encode())
     for selector in sorted(only or []):
@@ -649,8 +731,10 @@ def run_check(
             family_report(name, family, clients)
             for name, family in sorted(families.items())
         )
+    reports = enrich_candidate_dispositions(reports, load_candidate_ledger(root))
     report = {
         "summary": summarize(reports),
+        "effective_summary": summarize_effective(reports),
         "families": reports,
         "cache": {
             "used": False,
@@ -666,6 +750,20 @@ def run_check(
 
 def has_status(report: dict, statuses: set[str]) -> bool:
     return any(family.get("status") in statuses for family in report["families"])
+
+
+def has_effective_status(report: dict, statuses: set[str]) -> bool:
+    return any(
+        family.get("effective_status") in statuses for family in report["families"]
+    )
+
+
+def has_unblocked_query_failure(report: dict) -> bool:
+    return any(
+        family.get("status") == "query_failed"
+        and family.get("effective_status") != "blocked_update_candidate"
+        for family in report["families"]
+    )
 
 
 def format_table(report: dict) -> str:
@@ -732,9 +830,11 @@ def main(argv: list[str] | None = None, *, clients: FakeClients | None = None) -
     else:
         print(format_table(report))
 
-    if has_status(report, {"query_failed"}):
+    if has_unblocked_query_failure(report):
         return 3
-    if args.fail_on == "actionable" and has_status(report, ACTIONABLE_STATUSES):
+    if args.fail_on == "actionable" and has_effective_status(
+        report, EFFECTIVE_ACTIONABLE_STATUSES
+    ):
         return 10
     return 0
 

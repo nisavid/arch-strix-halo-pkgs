@@ -27,6 +27,13 @@ def write_policy(root: Path, body: str) -> Path:
     return policy
 
 
+def write_candidate_ledger(root: Path, body: str) -> Path:
+    ledger = root / "docs" / "maintainers" / "update-candidates.toml"
+    ledger.parent.mkdir(parents=True)
+    ledger.write_text(textwrap.dedent(body), encoding="utf-8")
+    return ledger
+
+
 def test_given_uncovered_pkgbuild_when_policy_loads_then_reports_metadata_mismatch(
     tmp_path,
 ):
@@ -641,6 +648,298 @@ def test_fail_on_actionable_returns_10_for_stable_update(tmp_path):
     )
 
     assert code == 10
+
+
+def test_load_candidate_ledger_reads_tracked_candidate(tmp_path):
+    write_candidate_ledger(
+        tmp_path,
+        """
+        schema_version = 1
+
+        [candidates.vllm-0_20_0]
+        family = "vllm"
+        packages = ["python-vllm-rocm-gfx1151"]
+        source_kind = "github_release"
+        previous_recorded = "0.19.1"
+        latest = "0.20.0"
+        discovery_status = "stable_update_available"
+        disposition = "tracked"
+        disposition_reason = "Needs a package update lane."
+        salient_changes = ["Python 3.14 metadata support"]
+        patch_carry_overlap = true
+        package_source_update_needed = true
+        host_validation_needed = true
+        next_gate_kind = "backlog"
+        next_gate_path = "docs/backlog.md"
+        next_gate_label = "vLLM 0.20.0 package update"
+        last_reviewed = "2026-04-28"
+        """,
+    )
+
+    ledger = updates.load_candidate_ledger(tmp_path)
+
+    assert ledger["vllm-0_20_0"]["id"] == "vllm-0_20_0"
+    assert ledger["vllm-0_20_0"]["disposition"] == "tracked"
+    assert ledger["vllm-0_20_0"]["latest"] == "0.20.0"
+
+
+def test_tracked_candidate_changes_effective_status_without_hiding_discovery_status(
+    tmp_path,
+):
+    write_pkg(tmp_path, "python-vllm-rocm-gfx1151")
+    write_policy(
+        tmp_path,
+        """
+        [families.vllm]
+        packages = ["python-vllm-rocm-gfx1151"]
+        priority = "high"
+        workflow = "upstream_source_update"
+        checks = [{ id = "release", role = "primary", kind = "github_release", repo = "vllm-project/vllm", recorded = "0.19.1", tag_prefix = "v", comparison = "pep440" }]
+        """,
+    )
+    write_candidate_ledger(
+        tmp_path,
+        """
+        schema_version = 1
+
+        [candidates.vllm-0_20_0]
+        family = "vllm"
+        packages = ["python-vllm-rocm-gfx1151"]
+        source_kind = "github_release"
+        previous_recorded = "0.19.1"
+        latest = "0.20.0"
+        discovery_status = "stable_update_available"
+        disposition = "tracked"
+        disposition_reason = "Needs a package update lane."
+        salient_changes = ["Python 3.14 metadata support"]
+        patch_carry_overlap = true
+        package_source_update_needed = true
+        host_validation_needed = true
+        next_gate_kind = "backlog"
+        next_gate_path = "docs/backlog.md"
+        next_gate_label = "vLLM 0.20.0 package update"
+        last_reviewed = "2026-04-28"
+        """,
+    )
+    clients = updates.FakeClients(
+        github_releases={
+            "vllm-project/vllm": [
+                {"tag": "v0.20.0", "prerelease": False}
+            ]
+        }
+    )
+
+    report = updates.run_check(tmp_path, refresh=True, clients=clients)
+
+    assert report["summary"] == {"stable_update_available": 1}
+    assert report["effective_summary"] == {"tracked_update_candidate": 1}
+    assert report["families"][0]["status"] == "stable_update_available"
+    assert report["families"][0]["effective_status"] == "tracked_update_candidate"
+    assert report["families"][0]["candidate"]["id"] == "vllm-0_20_0"
+
+
+def test_blocked_candidate_is_actionable_for_fail_on_actionable(tmp_path):
+    write_pkg(tmp_path, "python-vllm-rocm-gfx1151")
+    write_policy(
+        tmp_path,
+        """
+        [families.vllm]
+        packages = ["python-vllm-rocm-gfx1151"]
+        priority = "high"
+        workflow = "upstream_source_update"
+        checks = [{ id = "release", role = "primary", kind = "github_release", repo = "vllm-project/vllm", recorded = "0.19.1", tag_prefix = "v", comparison = "pep440" }]
+        """,
+    )
+    write_candidate_ledger(
+        tmp_path,
+        """
+        schema_version = 1
+
+        [candidates.vllm-0_20_0]
+        family = "vllm"
+        packages = ["python-vllm-rocm-gfx1151"]
+        source_kind = "github_release"
+        previous_recorded = "0.19.1"
+        latest = "0.20.0"
+        discovery_status = "stable_update_available"
+        disposition = "blocked"
+        disposition_reason = "Waiting on host validation."
+        salient_changes = ["Python 3.14 metadata support"]
+        patch_carry_overlap = true
+        package_source_update_needed = true
+        host_validation_needed = true
+        next_gate_kind = "backlog"
+        next_gate_path = "docs/backlog.md"
+        next_gate_label = "vLLM 0.20.0 package update"
+        last_reviewed = "2026-04-28"
+        """,
+    )
+    clients = updates.FakeClients(
+        github_releases={
+            "vllm-project/vllm": [
+                {"tag": "v0.20.0", "prerelease": False}
+            ]
+        }
+    )
+
+    code = updates.main(
+        [
+            "--repo-root",
+            str(tmp_path),
+            "--refresh",
+            "--fail-on",
+            "actionable",
+        ],
+        clients=clients,
+    )
+
+    assert code == 10
+
+
+def test_blocked_candidate_precedes_matching_query_failure(tmp_path):
+    write_pkg(tmp_path, "python-amd-aiter-gfx1151")
+    write_policy(
+        tmp_path,
+        """
+        [families.aiter]
+        packages = ["python-amd-aiter-gfx1151"]
+        priority = "high"
+        workflow = "upstream_source_update"
+        checks = [{ id = "main", role = "candidate", kind = "git_ref", repo = "https://github.com/ROCm/aiter.git", ref = "refs/heads/main", recorded = "cf12b138", comparison = "sha" }]
+        """,
+    )
+    write_candidate_ledger(
+        tmp_path,
+        """
+        schema_version = 1
+
+        [candidates.aiter-main]
+        family = "aiter"
+        packages = ["python-amd-aiter-gfx1151"]
+        source_kind = "git_ref"
+        previous_recorded = "cf12b138"
+        latest = "afddcbf4"
+        discovery_status = "query_failed"
+        disposition = "blocked"
+        disposition_reason = "Provider retry needed."
+        salient_changes = ["Unknown until provider recovers"]
+        patch_carry_overlap = true
+        package_source_update_needed = true
+        host_validation_needed = true
+        next_gate_kind = "backlog"
+        next_gate_path = "docs/backlog.md"
+        next_gate_label = "AITER provider retry"
+        last_reviewed = "2026-04-28"
+        """,
+    )
+    clients = updates.FakeClients(
+        fail={
+            "git_ref:https://github.com/ROCm/aiter.git:refs/heads/main": "timeout"
+        }
+    )
+
+    code = updates.main(
+        [
+            "--repo-root",
+            str(tmp_path),
+            "--refresh",
+            "--fail-on",
+            "actionable",
+        ],
+        clients=clients,
+    )
+
+    assert code == 10
+
+
+def test_recorded_latest_with_open_tracked_candidate_is_not_plain_current(tmp_path):
+    write_pkg(tmp_path, "python-vllm-rocm-gfx1151")
+    write_policy(
+        tmp_path,
+        """
+        [families.vllm]
+        packages = ["python-vllm-rocm-gfx1151"]
+        priority = "high"
+        workflow = "upstream_source_update"
+        checks = [{ id = "release", role = "primary", kind = "github_release", repo = "vllm-project/vllm", recorded = "0.20.0", tag_prefix = "v", comparison = "pep440" }]
+        """,
+    )
+    write_candidate_ledger(
+        tmp_path,
+        """
+        schema_version = 1
+
+        [candidates.vllm-0_20_0]
+        family = "vllm"
+        packages = ["python-vllm-rocm-gfx1151"]
+        source_kind = "github_release"
+        previous_recorded = "0.19.1"
+        latest = "0.20.0"
+        discovery_status = "stable_update_available"
+        disposition = "tracked"
+        disposition_reason = "Needs a package update lane."
+        salient_changes = ["Python 3.14 metadata support"]
+        patch_carry_overlap = true
+        package_source_update_needed = true
+        host_validation_needed = true
+        next_gate_kind = "backlog"
+        next_gate_path = "docs/backlog.md"
+        next_gate_label = "vLLM 0.20.0 package update"
+        last_reviewed = "2026-04-28"
+        """,
+    )
+    clients = updates.FakeClients(
+        github_releases={
+            "vllm-project/vllm": [
+                {"tag": "v0.20.0", "prerelease": False}
+            ]
+        }
+    )
+
+    report = updates.run_check(tmp_path, refresh=True, clients=clients)
+
+    assert report["summary"] == {"current": 1}
+    assert report["effective_summary"] == {"tracked_update_candidate": 1}
+    assert report["families"][0]["status"] == "current"
+    assert report["families"][0]["effective_status"] == "tracked_update_candidate"
+
+
+def test_real_update_candidate_ledger_is_valid():
+    repo = Path(__file__).resolve().parents[1]
+
+    ledger = updates.load_candidate_ledger(repo)
+
+    assert set(ledger) >= {
+        "blackcat-ai-notes-a1d7a681",
+        "vllm-0.20.0",
+        "llama-cpp-b8953",
+        "rocm-pytorch-release-2.11-e16e349",
+        "aiter-6a7df200",
+    }
+    assert {candidate["disposition"] for candidate in ledger.values()} == {"tracked"}
+    for candidate in ledger.values():
+        assert candidate["next_gate_path"] == "docs/backlog.md"
+        assert candidate["last_reviewed"] == "2026-04-28"
+        assert candidate["salient_changes"]
+
+
+def test_update_workflow_requires_candidate_disposition():
+    repo = Path(__file__).resolve().parents[1]
+    agents = (repo / "AGENTS.md").read_text(encoding="utf-8")
+    workflow = (repo / "docs/maintainers/update-workflows.md").read_text(
+        encoding="utf-8"
+    )
+    skill = (
+        repo / ".agents/skills/maintaining-arch-strix-halo-packages/SKILL.md"
+    ).read_text(encoding="utf-8")
+
+    for surface in (agents, workflow, skill):
+        assert "docs/maintainers/update-candidates.toml" in surface
+        assert "adopted" in surface
+        assert "tracked" in surface
+        assert "rejected" in surface
+        assert "blocked" in surface
+        assert "Do not close a refresh by only updating" in surface
 
 
 def test_cache_is_reused_when_policy_digest_matches(tmp_path):

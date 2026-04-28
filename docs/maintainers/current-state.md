@@ -377,7 +377,10 @@ new vLLM patch material. Treat both as dedicated package-update or recipe
 lanes before adopting them. `policies/package-freshness.toml` records the
 reviewed heads so the refresh gate is satisfied until this sweep is older than
 24 hours or invalidated by package policy, package directories, checker logic,
-or relevant source metadata changes.
+or relevant source metadata changes. The freshness checker can be mechanically
+current while update candidates remain open. The active dispositions for these
+candidates live in `docs/maintainers/update-candidates.toml`; do not treat the
+April 28 refresh as package-update closure.
 
 The deploy for the TheRock metadata slices plus the Triton and AOCL-LibM
 patch-carry slices was verified on the reference host on 2026-04-25. Installed

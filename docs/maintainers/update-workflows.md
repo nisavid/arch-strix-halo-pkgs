@@ -72,6 +72,25 @@ Status handling:
 - `manual_review_required`: the family deliberately has no complete automated
   freshness check; inspect the documented lane before ordinary backlog work.
 
+### Update Candidate Disposition
+
+Freshness discovery and update disposition are separate facts. A newer upstream
+version, branch head, baseline package, or canonical recipe input is not handled
+merely because `policies/package-freshness.toml` records the latest value.
+
+Every actionable freshness result must end in one of these durable dispositions:
+adopted, tracked, rejected, or blocked. Active dispositions live in
+`docs/maintainers/update-candidates.toml`; active follow-up work must also be
+visible in `docs/backlog.md`.
+
+Do not close a refresh by only updating `policies/package-freshness.toml`. Each
+candidate must have a disposition in the update-candidate ledger before the
+refresh is treated as handled.
+
+Patch carry overlap is a reason to prioritize update review, not a reason to
+defer an update. Absence of backend build-system changes is not enough to reject
+a candidate; review runtime and user-facing platform relevance too.
+
 The cache is valid only when the policy digest still matches and the cached
 report is younger than `--max-age-hours` (24 by default). The digest includes
 the checker version, freshness policy, discovered package directories, and any

@@ -11,7 +11,9 @@
   flow is hardened, re-open the 2026-04-28 refresh candidates for Blackcat
   `upstream/ai-notes`, vLLM `0.20.0`, llama.cpp `b8953`, ROCm PyTorch
   `release/2.11` / Arch `2.11.0-4`, and AITER main
-  `6a7df2004f5f896471cf9e6ab588b6aec0357dc7`.
+  `6a7df2004f5f896471cf9e6ab588b6aec0357dc7`. Active candidate dispositions
+  live in `docs/maintainers/update-candidates.toml`; keep that ledger and this
+  backlog item in sync until each candidate is adopted, rejected, or blocked.
 - Newly discovered ROCm inference candidates from
   `docs/maintainers/rocm-inference-reference.md` belong near the top of this
   backlog, but they are not validated package commitments until their source
