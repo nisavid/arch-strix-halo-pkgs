@@ -10,9 +10,10 @@ For the complete applied-patch inventory, inspect:
 - `packages/*/PKGBUILD`
 - patch files beside the affected package
 
-Runtime-sensitive local-origin patches and expected-failure findings from the
-post-rebuild quarantine are recorded in the
-[rebuild revalidation ledger](maintainers/rebuild-revalidation.md).
+Runtime-sensitive local-origin patch rationale belongs in this inventory, the
+affected package README, `docs/maintainers/current-state.md`, or the tracked
+scenario that guards the behavior. Historical quarantine ledgers should not be
+the only copy of retained patch rationale.
 
 ## Why Patches Live Here
 

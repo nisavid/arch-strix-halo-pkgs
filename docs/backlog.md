@@ -268,13 +268,11 @@
   - Blackcat Informatics recipe updates
   - new recipe entries entering the stack
 
-## Repository Migration
+## Repository Hygiene
 
 - Normalize package patches so reviewable source changes live as patch files.
 - Remove or ignore transient session/worklog docs once durable content has been
   extracted.
-- Keep the handoff prompt current whenever a follow-up pass materially changes
-  the repo structure, local-repo workflow, or benchmark plan.
 
 ## Documentation
 
