@@ -602,6 +602,7 @@ def candidate_matches_family(candidate: dict, family: dict) -> bool:
     if (
         family.get("status") == "query_failed"
         and candidate.get("disposition") == "blocked"
+        and candidate.get("discovery_status") == "query_failed"
     ):
         return True
     candidate_latest = str(candidate.get("latest", "")).strip()
