@@ -55,6 +55,7 @@
     ],
     "pypi_name": "asyncpg",
     "recipe_key": "native_wheels",
+    "recipe_notes_override": "This package is the asyncpg output from the shared `native_wheels` recipe\nphase. That phase also builds numpy, sentencepiece, zstandard, duckdb, PyYAML,\npsutil, Pillow, uvloop, httptools, msgspec, aiohttp, multidict, yarl, and\nfrozenlist from source with Zen 5 optimization flags, but those outputs are\ntracked as separate packages or follow-up package lanes rather than as\ndependencies of `python-asyncpg-gfx1151`.\n\nasyncpg uses the recipe's generic native-wheel compiler lane even though its\nbuild backend differs from meson-based packages in the same phase.\n",
     "scaffold_notes": [
       "This package is grouped under the recipe's native wheel build step even though its build backend differs from meson-based numpy."
     ],
@@ -84,7 +85,7 @@
       "pytorch"
     ],
     "method": "pip",
-    "notes": "Builds and installs numpy, sentencepiece, zstandard, asyncpg, duckdb,\nPyYAML, psutil, Pillow, uvloop, httptools, msgspec, aiohttp,\nmultidict, yarl, and frozenlist from source with Zen 5 optimization\nflags.\n\nnumpy: cmake pip wrapper breaks in build isolation; replaced with\nsymlink to system cmake.\n\nmeson-based packages (numpy, zstandard): -mllvm flags must be\nrewritten as -Xclang -mllvm -Xclang pairs because meson's compiler\nprobing rejects -mllvm as \"unused command line argument\".\n-famd-opt moved to LDFLAGS (link-time-only driver flag, no-op at\ncompile time -- triggers -Werror=unused in compile-only probes).",
+    "notes": "This package is the asyncpg output from the shared `native_wheels` recipe\nphase. That phase also builds numpy, sentencepiece, zstandard, duckdb, PyYAML,\npsutil, Pillow, uvloop, httptools, msgspec, aiohttp, multidict, yarl, and\nfrozenlist from source with Zen 5 optimization flags, but those outputs are\ntracked as separate packages or follow-up package lanes rather than as\ndependencies of `python-asyncpg-gfx1151`.\n\nasyncpg uses the recipe's generic native-wheel compiler lane even though its\nbuild backend differs from meson-based packages in the same phase.\n",
     "patches": [
       {
         "description": "Replace the recipe's broken venv-local Python cmake wrapper with the real system cmake binary. The cmake pip package installs a Python wrapper that does `from cmake import cmake`, which fails inside pip's build isolation where the cmake Python module is unavailable.\n",

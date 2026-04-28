@@ -17,21 +17,27 @@
 
 ## Recipe notes
 
-Builds and installs orjson, cryptography, pydantic-core, tokenizers,
-safetensors, and watchfiles from source with Rust flags:
+This package is the cryptography output from the shared `rust_wheels` recipe
+phase. That phase also documents orjson, pydantic-core, tokenizers,
+safetensors, and watchfiles as sibling Rust-wheel outputs, but those are not
+dependencies of `python-cryptography-gfx1151` unless listed in this package's
+policy metadata.
+
+cryptography is built with Rust flags:
   RUSTFLAGS="-C target-cpu=znver5 -C opt-level=3"
 This enables full AVX-512 + VAES codegen for Zen 5.
 
-Do NOT add -C lto=thin here -- maturin adds -C embed-bitcode=no
-which conflicts with -C lto. Maturin manages its own LTO.
+Do NOT add -C lto=thin here -- maturin adds -C embed-bitcode=no, which
+conflicts with -C lto. Maturin manages its own LTO.
 
-Rust's linker invokes `cc` which resolves to the amdclang symlink,
-but AMD's wrapper rejects binaries not prefixed with "amd". Fix:
+Rust's linker invokes `cc`, which resolves to the amdclang symlink, but AMD's
+wrapper rejects binaries not prefixed with "amd". The package therefore sets:
 CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=amdclang
 
-Must unset CFLAGS/CXXFLAGS/LDFLAGS during Rust builds because
-they contain clang-specific flags (-famd-opt, -mllvm) that rustc's
-internal cc invocations for build scripts don't understand.
+Unset CFLAGS/CXXFLAGS/LDFLAGS during Rust builds because they contain
+clang-specific flags (-famd-opt, -mllvm) that rustc's internal cc invocations
+for build scripts do not understand.
+
 
 ## Scaffold notes
 
