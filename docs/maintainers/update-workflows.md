@@ -43,10 +43,13 @@ tools/check_package_updates.py --refresh --json --fail-on actionable
 The checker writes only an ignored cache file under `.agents/session/`. It does
 not upgrade packages, update submodules, edit policy, or modify docs.
 
-With `--fail-on actionable`, the CLI exits `10` when an actionable status is
-present and exits `3` when any provider query failed. A zero exit means the
-report has no actionable statuses or query failures, but still read the JSON
-summary before moving on.
+With `--fail-on actionable`, the CLI exits `3` when a provider query failed
+without a blocked disposition and exits `10` when the effective report still
+has work requiring action, including missing dispositions and blocked
+candidates. Tracked, rejected, and adopted candidates remain visible through
+`effective_status` and `effective_summary`, but do not make the gate fail. A
+zero exit means the report has no unhandled query failures or effective
+action-required statuses, but still read the JSON summary before moving on.
 
 Status handling:
 
@@ -93,8 +96,8 @@ a candidate; review runtime and user-facing platform relevance too.
 
 The cache is valid only when the policy digest still matches and the cached
 report is younger than `--max-age-hours` (24 by default). The digest includes
-the checker version, freshness policy, discovered package directories, and any
-`--only` selectors.
+the checker version, freshness policy, update-candidate ledger, discovered
+package directories, and any `--only` selectors.
 
 Durable closeout notes may point future agents at the freshness gate, but the
 instruction must preserve the gate's termination condition: stop before running

@@ -616,6 +616,7 @@ def candidate_matches_family(candidate: dict, family: dict) -> bool:
     latest_values = {
         latest
         for check in family.get("checks", [])
+        if check.get("status") == family.get("status")
         if (latest := str(check.get("latest", "")).strip())
     }
     if candidate_latest and candidate_latest in latest_values:
