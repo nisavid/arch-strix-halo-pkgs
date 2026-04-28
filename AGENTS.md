@@ -39,7 +39,8 @@ without chat history.
   `docs/maintainers/update-candidates.toml`, and active tracked candidates must
   stay visible in `docs/backlog.md`.
 - Start new repo work from a topic branch in a separate worktree. Do not commit
-  directly on `main`; `origin/main` is protected and forbids direct updates.
+  directly on `main`; `main` is the protected branch, so push topic branches
+  and merge through GitHub pull requests.
 - Close out development branches through GitHub pull requests. Push the branch,
   open a PR, follow up on review comments and failing checks, and merge only
   through the protected-branch flow.
