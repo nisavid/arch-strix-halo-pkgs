@@ -719,8 +719,10 @@ cryptography is built with Rust flags:
   RUSTFLAGS="-C target-cpu=znver5 -C opt-level=3"
 This enables full AVX-512 + VAES codegen for Zen 5.
 
-Do NOT add -C lto=thin here -- maturin adds -C embed-bitcode=no, which
-conflicts with -C lto. Maturin manages its own LTO.
+Do NOT add -C lto=thin here without a package-specific setuptools-rust
+validation pass. The Arch-shaped cryptography build uses setuptools-rust
+rather than maturin, so keep LTO policy tied to the declared backend and the
+current upstream build-system metadata.
 
 Rust's linker invokes `cc`, which resolves to the amdclang symlink, but AMD's
 wrapper rejects binaries not prefixed with "amd". The package therefore sets:
@@ -1108,9 +1110,9 @@ patches_dir = "patches/llama.cpp-hip-gfx1151"
 recipe_notes_override = """
 llama.cpp built with TWO backends for Lemonade:
 
-Source branch: upstream master. APEX GGUF support is expected on current
-upstream HEAD, so step 33 should build plain ggml-org/llama.cpp rather
-than a stale local "head-apex" side branch.
+Source lane: keep this package pinned to an audited upstream commit tarball.
+When opening an update lane, repin to plain ggml-org/llama.cpp upstream
+instead of reviving a stale local "head-apex" side branch.
 
 ROCm (hipBLAS): Primary backend. Best prefill <32K context. Uses
 amdclang from TheRock with full Zen 5 + gfx1151 HIP optimization flags,
@@ -1171,9 +1173,9 @@ patches_dir = "patches/llama.cpp-vulkan-gfx1151"
 recipe_notes_override = """
 llama.cpp built with TWO backends for Lemonade:
 
-Source branch: upstream master. APEX GGUF support is expected on current
-upstream HEAD, so step 33 should build plain ggml-org/llama.cpp rather
-than a stale local "head-apex" side branch.
+Source lane: keep this package pinned to an audited upstream commit tarball.
+When opening an update lane, repin to plain ggml-org/llama.cpp upstream
+instead of reviving a stale local "head-apex" side branch.
 
 ROCm (hipBLAS): Primary backend. Best prefill <32K context. Uses
 amdclang from TheRock with full Zen 5 + gfx1151 HIP optimization flags,
