@@ -91,12 +91,12 @@ next_gate_path = "docs/backlog.md"
 next_gate_label = "ROCm PyTorch release/2.11 and Arch 2.11.0-4 review"
 last_reviewed = "2026-04-28"
 
-[candidates."aiter-d0f5f76"]
+[candidates."aiter-4de5759"]
 family = "aiter"
 packages = ["python-amd-aiter-gfx1151"]
 source_kind = "git_ref"
 previous_recorded = "6a7df2004f5f896471cf9e6ab588b6aec0357dc7"
-latest = "d0f5f76afb8cf78f1c5da29686dab7e088e6668d"
+latest = "4de5759eda9763b992b381036676085d5cbb33e4"
 discovery_status = "candidate_head_ahead"
 disposition = "tracked"
 disposition_reason = "The candidate overlaps active attention and MoE validation lanes and needs host validation before repinning."
@@ -105,11 +105,12 @@ salient_changes = [
   "Multi communication group entity support",
   "Multi-group allgather and reduce-scatter interfaces",
   "Custom communication group configuration fixes",
+  "FLYDSL version update to 0.1.5.dev504 and dynamic if-else grammar fix",
 ]
 patch_carry_overlap = true
 package_source_update_needed = true
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "AITER d0f5f76 package-source review"
+next_gate_label = "AITER 4de5759 package-source review"
 last_reviewed = "2026-04-28"

@@ -618,10 +618,59 @@ def candidate_matches_check(candidate: dict, check: dict, family: dict) -> bool:
     return check_id == check.get("id")
 
 
+def candidate_matches_recorded_value(candidate: dict, check: dict) -> bool:
+    candidate_recorded = str(candidate.get("previous_recorded", "")).strip()
+    check_recorded = str(check.get("recorded", "")).strip()
+    if not candidate_recorded or not check_recorded:
+        return False
+    return check_recorded in candidate_previous_recorded_values(candidate)
+
+
+def candidate_previous_recorded_values(candidate: dict) -> set[str]:
+    return {
+        value.strip()
+        for value in str(candidate.get("previous_recorded", "")).split("/")
+        if value.strip()
+    }
+
+
+def candidate_value_matches_package_version(value: str, package_version: str) -> bool:
+    return bool(value) and (
+        package_version == value or package_version.startswith(f"{value}-")
+    )
+
+
+def candidate_matches_reported_check(candidate: dict, check: dict, family: dict) -> bool:
+    return candidate_matches_check(
+        candidate, check, family
+    ) and candidate_matches_recorded_value(candidate, check)
+
+
+def candidate_covers_actionable_check(candidate: dict, check: dict, family: dict) -> bool:
+    if candidate_matches_reported_check(candidate, check, family):
+        return True
+    if check.get("status") != "baseline_drift":
+        return False
+    latest = str(check.get("latest", "")).strip()
+    recorded = str(check.get("recorded", "")).strip()
+    latest_values = {
+        str(value).strip()
+        for value in (candidate.get("latest"), candidate.get("baseline_latest"))
+        if str(value).strip()
+    }
+    return any(
+        candidate_value_matches_package_version(value, latest)
+        for value in latest_values
+    ) and any(
+        candidate_value_matches_package_version(value, recorded)
+        for value in candidate_previous_recorded_values(candidate)
+    )
+
+
 def has_uncovered_actionable_check(candidate: dict, family: dict) -> bool:
     return any(
         check.get("status") in ACTIONABLE_STATUSES
-        and not candidate_matches_check(candidate, check, family)
+        and not candidate_covers_actionable_check(candidate, check, family)
         for check in family.get("checks", [])
     )
 
@@ -632,6 +681,26 @@ def candidate_matches_family(candidate: dict, family: dict) -> bool:
     if family.get("status") == "metadata_mismatch":
         return False
     if (
+        family.get("status") == "current"
+        and candidate.get("disposition") in VALID_CANDIDATE_DISPOSITIONS
+    ):
+        candidate_latest = str(candidate.get("latest", "")).strip()
+        return any(
+            candidate_latest
+            and candidate_latest == str(check.get("recorded", "")).strip()
+            and candidate_latest == str(check.get("latest", "")).strip()
+            and candidate_matches_check(candidate, check, family)
+            for check in family.get("checks", [])
+        )
+    if family.get("status") == "baseline_drift":
+        return any(
+            check.get("status") == "baseline_drift"
+            and candidate_covers_actionable_check(candidate, check, family)
+            for check in family.get("checks", [])
+        ) and not has_uncovered_actionable_check(candidate, family)
+    if candidate.get("discovery_status") != family.get("status"):
+        return False
+    if (
         family.get("status") == "query_failed"
         and candidate.get("disposition") == "blocked"
         and candidate.get("discovery_status") == "query_failed"
@@ -640,7 +709,7 @@ def candidate_matches_family(candidate: dict, family: dict) -> bool:
             check
             for check in family.get("checks", [])
             if check.get("status") == "query_failed"
-            and candidate_matches_check(candidate, check, family)
+            and candidate_matches_reported_check(candidate, check, family)
         ]
         if len(failed_checks) != 1:
             return False
@@ -649,7 +718,7 @@ def candidate_matches_family(candidate: dict, family: dict) -> bool:
                 check.get("status") == "query_failed"
                 or check.get("status") in ACTIONABLE_STATUSES
             )
-            and not candidate_matches_check(candidate, check, family)
+            and not candidate_covers_actionable_check(candidate, check, family)
             for check in family.get("checks", [])
         )
     candidate_latest = str(candidate.get("latest", "")).strip()
@@ -657,7 +726,7 @@ def candidate_matches_family(candidate: dict, family: dict) -> bool:
         latest
         for check in family.get("checks", [])
         if check.get("status") == family.get("status")
-        if candidate_matches_check(candidate, check, family)
+        if candidate_matches_reported_check(candidate, check, family)
         if (latest := str(check.get("latest", "")).strip())
     }
     if candidate_latest and candidate_latest in latest_values:
@@ -705,6 +774,7 @@ def policy_digest(repo_root: Path, only: list[str] | None = None) -> str:
     if policy.exists():
         hasher.update(policy.read_bytes())
     ledger = candidate_ledger_path(repo_root)
+    hasher.update(f"candidate-ledger-present:{int(ledger.exists())}\n".encode())
     if ledger.exists():
         try:
             hasher.update(ledger.read_bytes())
