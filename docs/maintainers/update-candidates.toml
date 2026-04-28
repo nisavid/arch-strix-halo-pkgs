@@ -1,0 +1,116 @@
+schema_version = 1
+
+[candidates."blackcat-ai-notes-a1d7a681"]
+family = "therock"
+packages = ["therock-gfx1151"]
+source_kind = "submodule"
+previous_recorded = "9f7c85f264287ac744272ce540e87058c7a3296b"
+latest = "a1d7a6816dd2c456bad9fcc7d61c53a4bd8c5fbd"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "New recipe material needs a recipe-update lane before the submodule is adopted."
+salient_changes = [
+  "Stable Diffusion and Qwen3-VL embedding recipe material",
+  "vLLM environment/package and patch material",
+  "Additional package-scenario inputs that need local policy review",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "Blackcat ai-notes recipe update"
+last_reviewed = "2026-04-28"
+
+[candidates."vllm-0.20.0"]
+family = "vllm"
+packages = ["python-vllm-rocm-gfx1151"]
+source_kind = "github_release"
+previous_recorded = "0.19.1"
+latest = "0.20.0"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "The release is relevant but needs a dedicated package-update lane with patch refresh and host smokes."
+salient_changes = [
+  "First-party Python 3.14 and torch 2.11 metadata support",
+  "DFlash model/runtime pieces",
+  "ROCm memory-shutdown and NUMA detection fixes",
+  "Quantization, MoE, GDN, Gemma 4, pooling, scoring, and entrypoint changes",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "vLLM 0.20.0 package update"
+last_reviewed = "2026-04-28"
+
+[candidates."llama-cpp-b8955"]
+family = "llama_cpp"
+packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"]
+source_kind = "github_release"
+previous_recorded = "b8953"
+latest = "b8955"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "The runtime-facing server and model-conversion changes need a rebuild lane rather than a freshness-only record update."
+salient_changes = [
+  "Speculative decoding parameter refactor",
+  "Renames sparam handling to sampling and adds a spec-params category",
+  "Documents removed arguments and updates server tests",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "llama.cpp b8955 runtime rebuild lane"
+last_reviewed = "2026-04-28"
+
+[candidates."rocm-pytorch-release-2.11-e16e349"]
+family = "rocm_pytorch"
+packages = ["python-pytorch-opt-rocm-gfx1151"]
+source_kind = "git_ref"
+baseline_source_kind = "arch_package"
+baseline_latest = "2.11.0-4"
+previous_recorded = "3aaa914af1e6fb268b242bfb871e614fbdb6c1bc / 2.11.0-3"
+latest = "e16e349eb30bac8fd72b5c34ab220527fea5c58c"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "The branch and Arch baseline need a package-update review against local PyTorch patch carry."
+salient_changes = [
+  "ROCm PyTorch release/2.11 native-header and Windows DLL-export fixes",
+  "MIOpen CTC-loss fixes",
+  "Arch python-pytorch-opt-rocm baseline moved to 2.11.0-4",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "ROCm PyTorch release/2.11 and Arch 2.11.0-4 review"
+last_reviewed = "2026-04-28"
+
+[candidates."aiter-4de5759"]
+family = "aiter"
+packages = ["python-amd-aiter-gfx1151"]
+source_kind = "git_ref"
+previous_recorded = "6a7df2004f5f896471cf9e6ab588b6aec0357dc7"
+latest = "4de5759eda9763b992b381036676085d5cbb33e4"
+discovery_status = "candidate_head_ahead"
+disposition = "tracked"
+disposition_reason = "The candidate overlaps active attention and MoE validation lanes and needs host validation before repinning."
+salient_changes = [
+  "Custom group device support",
+  "Multi communication group entity support",
+  "Multi-group allgather and reduce-scatter interfaces",
+  "Custom communication group configuration fixes",
+  "FLYDSL version update to 0.1.5.dev504 and dynamic if-else grammar fix",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "AITER 4de5759 package-source review"
+last_reviewed = "2026-04-28"

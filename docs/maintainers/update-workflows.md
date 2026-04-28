@@ -43,10 +43,13 @@ tools/check_package_updates.py --refresh --json --fail-on actionable
 The checker writes only an ignored cache file under `.agents/session/`. It does
 not upgrade packages, update submodules, edit policy, or modify docs.
 
-With `--fail-on actionable`, the CLI exits `10` when an actionable status is
-present and exits `3` when any provider query failed. A zero exit means the
-report has no actionable statuses or query failures, but still read the JSON
-summary before moving on.
+With `--fail-on actionable`, the CLI exits `3` when a provider query failed
+without a blocked disposition and exits `10` when the effective report still
+has work requiring action, including missing dispositions and blocked
+candidates. Tracked, rejected, and adopted candidates remain visible through
+`effective_status` and `effective_summary`, but do not make the gate fail. A
+zero exit means the report has no unhandled query failures or effective
+action-required statuses, but still read the JSON summary before moving on.
 
 Status handling:
 
@@ -72,10 +75,29 @@ Status handling:
 - `manual_review_required`: the family deliberately has no complete automated
   freshness check; inspect the documented lane before ordinary backlog work.
 
+### Update Candidate Disposition
+
+Freshness discovery and update disposition are separate facts. A newer upstream
+version, branch head, baseline package, or canonical recipe input is not handled
+merely because `policies/package-freshness.toml` records the latest value.
+
+Every actionable freshness result must end in one of these durable dispositions:
+adopted, tracked, rejected, or blocked. Active dispositions live in
+`docs/maintainers/update-candidates.toml`; active follow-up work must also be
+visible in `docs/backlog.md`.
+
+Do not close a refresh by only updating `policies/package-freshness.toml`. Each
+candidate must have a disposition in the update-candidate ledger before the
+refresh is treated as handled.
+
+Patch carry overlap is a reason to prioritize update review, not a reason to
+defer an update. Absence of backend build-system changes is not enough to reject
+a candidate; review runtime and user-facing platform relevance too.
+
 The cache is valid only when the policy digest still matches and the cached
 report is younger than `--max-age-hours` (24 by default). The digest includes
-the checker version, freshness policy, discovered package directories, and any
-`--only` selectors.
+the checker version, freshness policy, update-candidate ledger, discovered
+package directories, and any `--only` selectors.
 
 Durable closeout notes may point future agents at the freshness gate, but the
 instruction must preserve the gate's termination condition: stop before running

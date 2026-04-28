@@ -5,12 +5,12 @@ index ecdfa61500e..5944b418d21 100644
 @@ -16,6 +16,11 @@
  #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
  #endif
- 
+
 +// Target numpy 2.0 C-API (0x12) for ABI compatibility with numpy >= 2.0.
 +#ifndef NPY_TARGET_VERSION
 +#define NPY_TARGET_VERSION 0x00000012
 +#endif
 +
  #include <numpy/arrayobject.h>
- 
+
  #endif // USE_NUMPY

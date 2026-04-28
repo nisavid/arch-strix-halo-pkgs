@@ -42,8 +42,9 @@ STATUS_PRECEDENCE = [
     "manual_review_required",
     "current",
 ]
-TOOL_VERSION = 2
+TOOL_VERSION = 3
 CACHE_PATH = Path(".agents/session/dependency-freshness-cache.json")
+CANDIDATE_LEDGER_PATH = Path("docs/maintainers/update-candidates.toml")
 ACTIONABLE_STATUSES = {
     "stable_update_available",
     "candidate_head_ahead",
@@ -51,6 +52,8 @@ ACTIONABLE_STATUSES = {
     "baseline_drift",
     "metadata_mismatch",
 }
+VALID_CANDIDATE_DISPOSITIONS = {"adopted", "tracked", "rejected", "blocked"}
+EFFECTIVE_ACTIONABLE_STATUSES = {"action_required", "blocked_update_candidate"}
 ALLOWED_ROLES = {"primary", "candidate", "scout", "baseline"}
 SHA_REF_KINDS = {"git_ref", "submodule"}
 
@@ -310,6 +313,45 @@ def default_policy_path(repo_root: Path) -> Path:
     return repo_root / "policies/package-freshness.toml"
 
 
+def candidate_ledger_path(repo_root: Path) -> Path:
+    return repo_root / CANDIDATE_LEDGER_PATH
+
+
+def load_candidate_ledger(repo_root: str | Path) -> dict[str, dict]:
+    path = candidate_ledger_path(Path(repo_root))
+    if not path.exists():
+        return {}
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        raise RuntimeError(f"CANDIDATE_LEDGER_UNREADABLE: {path}: {exc}") from exc
+    try:
+        payload = tomllib.loads(text)
+    except tomllib.TOMLDecodeError as exc:
+        raise RuntimeError(f"CANDIDATE_LEDGER_INVALID: {path}: {exc}") from exc
+    raw_schema_version = payload.get("schema_version", 0)
+    try:
+        schema_version = int(raw_schema_version)
+    except (TypeError, ValueError):
+        schema_version = 0
+    if schema_version != 1:
+        raise RuntimeError(
+            f"CANDIDATE_LEDGER_SCHEMA_UNSUPPORTED: {path}: {raw_schema_version!r}"
+        )
+    candidates = payload.get("candidates", {})
+    if not isinstance(candidates, dict):
+        raise RuntimeError(f"CANDIDATE_LEDGER_CANDIDATES_INVALID: {path}")
+    normalized: dict[str, dict] = {}
+    for candidate_id, candidate in candidates.items():
+        if not isinstance(candidate, dict):
+            raise RuntimeError(f"CANDIDATE_LEDGER_ENTRY_INVALID: {candidate_id}")
+        disposition = str(candidate.get("disposition", ""))
+        if disposition not in VALID_CANDIDATE_DISPOSITIONS:
+            raise RuntimeError(f"CANDIDATE_LEDGER_DISPOSITION_INVALID: {candidate_id}")
+        normalized[candidate_id] = {**candidate, "id": candidate_id}
+    return normalized
+
+
 def metadata_mismatch(message: str) -> dict:
     return {
         "family": "policy-coverage",
@@ -557,12 +599,187 @@ def summarize(families: list[dict]) -> dict:
     return dict(Counter(family["status"] for family in families))
 
 
+def summarize_effective(families: list[dict]) -> dict:
+    return dict(Counter(family["effective_status"] for family in families))
+
+
+def candidate_matches_check(candidate: dict, check: dict, family: dict) -> bool:
+    """Match against checks from an evaluated family report, not raw policy."""
+    if candidate.get("source_kind") != check.get("kind"):
+        return False
+    check_id = candidate.get("check_id")
+    if check_id is None:
+        matching_kind_checks = [
+            family_check
+            for family_check in family.get("checks", [])
+            if family_check.get("kind") == check.get("kind")
+        ]
+        return len(matching_kind_checks) == 1
+    return check_id == check.get("id")
+
+
+def candidate_matches_recorded_value(candidate: dict, check: dict) -> bool:
+    candidate_recorded = str(candidate.get("previous_recorded", "")).strip()
+    check_recorded = str(check.get("recorded", "")).strip()
+    if not candidate_recorded or not check_recorded:
+        return False
+    return check_recorded in candidate_previous_recorded_values(candidate)
+
+
+def candidate_previous_recorded_values(candidate: dict) -> set[str]:
+    return {
+        value.strip()
+        for value in str(candidate.get("previous_recorded", "")).split("/")
+        if value.strip()
+    }
+
+
+def candidate_value_matches_package_version(value: str, package_version: str) -> bool:
+    return bool(value) and (
+        package_version == value or package_version.startswith(f"{value}-")
+    )
+
+
+def candidate_matches_reported_check(candidate: dict, check: dict, family: dict) -> bool:
+    return candidate_matches_check(
+        candidate, check, family
+    ) and candidate_matches_recorded_value(candidate, check)
+
+
+def candidate_covers_actionable_check(candidate: dict, check: dict, family: dict) -> bool:
+    if candidate_matches_reported_check(candidate, check, family):
+        return True
+    if check.get("status") != "baseline_drift":
+        return False
+    latest = str(check.get("latest", "")).strip()
+    recorded = str(check.get("recorded", "")).strip()
+    latest_values = {
+        str(value).strip()
+        for value in (candidate.get("latest"), candidate.get("baseline_latest"))
+        if str(value).strip()
+    }
+    return any(
+        candidate_value_matches_package_version(value, latest)
+        for value in latest_values
+    ) and any(
+        candidate_value_matches_package_version(value, recorded)
+        for value in candidate_previous_recorded_values(candidate)
+    )
+
+
+def has_uncovered_actionable_check(candidate: dict, family: dict) -> bool:
+    return any(
+        check.get("status") in ACTIONABLE_STATUSES
+        and not candidate_covers_actionable_check(candidate, check, family)
+        for check in family.get("checks", [])
+    )
+
+
+def candidate_matches_family(candidate: dict, family: dict) -> bool:
+    if candidate.get("family") != family.get("family"):
+        return False
+    if family.get("status") == "metadata_mismatch":
+        return False
+    if (
+        family.get("status") == "current"
+        and candidate.get("disposition") in VALID_CANDIDATE_DISPOSITIONS
+    ):
+        candidate_latest = str(candidate.get("latest", "")).strip()
+        return any(
+            candidate_latest
+            and candidate_latest == str(check.get("recorded", "")).strip()
+            and candidate_latest == str(check.get("latest", "")).strip()
+            and candidate_matches_check(candidate, check, family)
+            for check in family.get("checks", [])
+        )
+    if family.get("status") == "baseline_drift":
+        return any(
+            check.get("status") == "baseline_drift"
+            and candidate_covers_actionable_check(candidate, check, family)
+            for check in family.get("checks", [])
+        ) and not has_uncovered_actionable_check(candidate, family)
+    if candidate.get("discovery_status") != family.get("status"):
+        return False
+    if (
+        family.get("status") == "query_failed"
+        and candidate.get("disposition") == "blocked"
+        and candidate.get("discovery_status") == "query_failed"
+    ):
+        failed_checks = [
+            check
+            for check in family.get("checks", [])
+            if check.get("status") == "query_failed"
+            and candidate_matches_reported_check(candidate, check, family)
+        ]
+        if len(failed_checks) != 1:
+            return False
+        return not any(
+            (
+                check.get("status") == "query_failed"
+                or check.get("status") in ACTIONABLE_STATUSES
+            )
+            and not candidate_covers_actionable_check(candidate, check, family)
+            for check in family.get("checks", [])
+        )
+    candidate_latest = str(candidate.get("latest", "")).strip()
+    latest_values = {
+        latest
+        for check in family.get("checks", [])
+        if check.get("status") == family.get("status")
+        if candidate_matches_reported_check(candidate, check, family)
+        if (latest := str(check.get("latest", "")).strip())
+    }
+    if candidate_latest and candidate_latest in latest_values:
+        return not has_uncovered_actionable_check(candidate, family)
+    return False
+
+
+def effective_status_for(family: dict, candidate: dict | None) -> str:
+    if candidate:
+        return f"{candidate['disposition']}_update_candidate"
+    if family.get("status") == "query_failed":
+        return "query_failed"
+    if family.get("status") in ACTIONABLE_STATUSES:
+        return "action_required"
+    return "current"
+
+
+def enrich_candidate_dispositions(
+    families: list[dict], candidates: dict[str, dict]
+) -> list[dict]:
+    enriched = []
+    for family in families:
+        matches = [
+            candidate
+            for candidate in candidates.values()
+            if candidate_matches_family(candidate, family)
+        ]
+        if len(matches) > 1:
+            match_ids = ", ".join(str(candidate["id"]) for candidate in matches)
+            raise RuntimeError(
+                f"CANDIDATE_LEDGER_DUPLICATE_MATCH: {family['family']}: {match_ids}"
+            )
+        candidate = matches[0] if matches else None
+        report = family | {"effective_status": effective_status_for(family, candidate)}
+        if candidate:
+            report["candidate"] = candidate
+        enriched.append(report)
+    return enriched
+
+
 def policy_digest(repo_root: Path, only: list[str] | None = None) -> str:
     hasher = hashlib.sha256()
     policy = default_policy_path(repo_root)
     hasher.update(f"tool-version:{TOOL_VERSION}\n".encode())
     if policy.exists():
         hasher.update(policy.read_bytes())
+    ledger = candidate_ledger_path(repo_root)
+    hasher.update(f"candidate-ledger-present:{int(ledger.exists())}\n".encode())
+    if ledger.exists():
+        try:
+            hasher.update(ledger.read_bytes())
+        except OSError as exc:
+            raise RuntimeError(f"CANDIDATE_LEDGER_UNREADABLE: {ledger}: {exc}") from exc
     for package in sorted(discover_package_dirs(repo_root)):
         hasher.update(f"package:{package}\n".encode())
     for selector in sorted(only or []):
@@ -649,8 +866,10 @@ def run_check(
             family_report(name, family, clients)
             for name, family in sorted(families.items())
         )
+    reports = enrich_candidate_dispositions(reports, load_candidate_ledger(root))
     report = {
         "summary": summarize(reports),
+        "effective_summary": summarize_effective(reports),
         "families": reports,
         "cache": {
             "used": False,
@@ -668,9 +887,32 @@ def has_status(report: dict, statuses: set[str]) -> bool:
     return any(family.get("status") in statuses for family in report["families"])
 
 
+def has_effective_status(report: dict, statuses: set[str]) -> bool:
+    return any(
+        family.get("effective_status") in statuses for family in report["families"]
+    )
+
+
+def has_unblocked_query_failure(report: dict) -> bool:
+    return any(
+        family.get("status") == "query_failed"
+        and family.get("effective_status") != "blocked_update_candidate"
+        for family in report["families"]
+    )
+
+
 def format_table(report: dict) -> str:
     rows = [
-        ("priority", "status", "family", "packages", "recorded", "latest", "workflow")
+        (
+            "priority",
+            "status",
+            "effective_status",
+            "family",
+            "packages",
+            "recorded",
+            "latest",
+            "workflow",
+        )
     ]
     for family in report["families"]:
         checks = family.get("checks", [])
@@ -680,6 +922,7 @@ def format_table(report: dict) -> str:
             (
                 family.get("priority", ""),
                 family.get("status", ""),
+                family.get("effective_status", ""),
                 family.get("family", ""),
                 ",".join(family.get("packages", [])),
                 recorded,
@@ -732,9 +975,11 @@ def main(argv: list[str] | None = None, *, clients: FakeClients | None = None) -
     else:
         print(format_table(report))
 
-    if has_status(report, {"query_failed"}):
+    if has_unblocked_query_failure(report):
         return 3
-    if args.fail_on == "actionable" and has_status(report, ACTIONABLE_STATUSES):
+    if args.fail_on == "actionable" and has_effective_status(
+        report, EFFECTIVE_ACTIONABLE_STATUSES
+    ):
         return 10
     return 0
 

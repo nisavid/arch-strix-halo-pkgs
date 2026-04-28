@@ -510,6 +510,59 @@ def test_render_recipe_json_keeps_source_patches_in_one_place() -> None:
     assert "extra_sha256sums" not in recipe_json["policy"]
 
 
+def test_render_recipe_json_treats_empty_extra_sources_as_patch_checksums() -> None:
+    recipe_json = json.loads(
+        render_recipe_scaffolds.render_recipe_json(
+            "sample-gfx1151",
+            {
+                "recipe_key": "sample",
+                "upstream_version": "1.2.3",
+                "pkgdesc": "Sample",
+                "url": "https://example.invalid/sample",
+                "license": ["MIT"],
+                "source_patches": ["0001-sample.patch"],
+                "extra_sources": [],
+                "extra_sha256sums": ["abc123"],
+            },
+            {
+                "repo": "",
+                "method": "pip",
+                "phase": "package",
+                "steps": [],
+                "depends_on": [],
+                "notes": "",
+            },
+            "1.2.3",
+            {
+                "recipe_repo": "https://github.com/paudley/ai-notes",
+                "recipe_subdir": "strix-halo",
+                "recipe_author": "Blackcat Informatics Inc.",
+            },
+        )
+    )
+
+    assert recipe_json["maintenance"]["source_patches"] == ["0001-sample.patch"]
+    assert recipe_json["maintenance"]["source_patch_sha256sums"] == ["abc123"]
+    assert "extra_sources" in recipe_json["policy"]
+    assert "extra_sha256sums" not in recipe_json["policy"]
+
+
+def test_render_source_refs_treats_empty_extra_sources_as_source_patches() -> None:
+    source_refs, sha256sums = render_recipe_scaffolds.render_source_refs(
+        {
+            "template": "python-project",
+            "src_subdir": "sample",
+            "source_patches": ["0001-sample.patch"],
+            "extra_sources": [],
+            "extra_sha256sums": ["abc123"],
+        },
+        {"repo": "https://example.invalid/sample.git"},
+    )
+
+    assert source_refs == "(sample::git+https://example.invalid/sample.git 0001-sample.patch)"
+    assert sha256sums == "(SKIP abc123)"
+
+
 def test_render_recipe_json_keeps_explicit_extra_source_checksums_in_policy() -> None:
     recipe_json = json.loads(
         render_recipe_scaffolds.render_recipe_json(

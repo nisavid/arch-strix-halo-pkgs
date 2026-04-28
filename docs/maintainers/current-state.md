@@ -1,6 +1,6 @@
 # Current State
 
-Status as of 2026-04-26.
+Status as of 2026-04-28.
 
 ## Rebuild Revalidation Boundary
 
@@ -346,6 +346,41 @@ reasoning-marker spacing fixes, and speculative vocab compatibility checks; no
 HIP or Vulkan package-build touchpoint was found. `policies/package-freshness.toml`
 records those heads as reviewed without repinning package sources. A forced
 post-triage checker run then reported all 25 package families current.
+
+The 2026-04-28 freshness refresh found AITER main
+`6a7df2004f5f896471cf9e6ab588b6aec0357dc7`, llama.cpp `b8953` at
+`434b2a1ff6a73927f1aeef1455599fbe207f7d6f`, AUR `llama.cpp-hip b8953-1`,
+ROCm PyTorch `release/2.11` at
+`e16e349eb30bac8fd72b5c34ab220527fea5c58c`, Arch
+`python-pytorch-opt-rocm 2.11.0-4`, vLLM `0.20.0`, and Blackcat Informatics
+`upstream/ai-notes` main at `a1d7a6816dd2c456bad9fcc7d61c53a4bd8c5fbd`.
+The reviewed AITER range adds Triton A16W4 MoE kernels, MHA backward stride
+fixes, an mHC device fix, gfx950 A8W8 correctness updates, and CI workflow
+changes, but does not resolve the gfx1151 OPUS FP8 `mfma_adaptor` blocker or
+replace local RDNA/JIT patch carry. The llama.cpp range adds WebGPU Q1_0 and
+matmul tuning, fast i-quant mat-vec kernels, CPU/AMX optimizations, q8_0
+download preference, model conversion cleanup, Qwen/LLaMA duplicate-scale
+removal, server router form-data forwarding, and Windows RPC/cache fixes; no
+HIP or Vulkan package-build touchpoint was found. The PyTorch range is limited
+to Windows DLL-export/native-header and MIOpen CTC-loss fixes, with no overlap
+against the current gfx1151 wheel assembly, HIPGraph stub, NumPy target
+define, CK enablement, or BLAS/provider carry.
+
+The vLLM 0.20.0 release is relevant but too broad for a freshness-only bump:
+it adds first-party Python 3.14 and torch 2.11 metadata support, DFlash
+model/runtime pieces, broad quantization and MoE refactors, ROCm
+memory-shutdown and NUMA detection fixes, GDN and Gemma 4 changes,
+pooling/scoring route reshaping, and many entrypoint changes that overlap
+local patch carry and tracked validation lanes. The newer Blackcat recipe
+input adds Stable Diffusion, Qwen3-VL embedding, vLLM environment/package, and
+new vLLM patch material. Treat both as dedicated package-update or recipe
+lanes before adopting them. `policies/package-freshness.toml` records the
+reviewed heads so the refresh gate is satisfied until this sweep is older than
+24 hours or invalidated by package policy, package directories, checker logic,
+or relevant source metadata changes. The freshness checker can be mechanically
+current while update candidates remain open. The active dispositions for these
+candidates live in `docs/maintainers/update-candidates.toml`; do not treat the
+April 28 refresh as package-update closure.
 
 The deploy for the TheRock metadata slices plus the Triton and AOCL-LibM
 patch-carry slices was verified on the reference host on 2026-04-25. Installed

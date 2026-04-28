@@ -32,7 +32,12 @@ without chat history.
   directory, checker logic, or relevant source metadata change invalidates it.
   When the gate is due, use the checker's cache-aware
   `--fail-on actionable` mode, and treat actionable or failed statuses as work
-  to triage before moving on.
+  to triage before moving on. When the checker reports any non-current family,
+  stop for candidate disposition. Do not close a refresh by only updating
+  `policies/package-freshness.toml`.
+  Each candidate must be adopted, tracked, rejected, or blocked in
+  `docs/maintainers/update-candidates.toml`, and active tracked candidates must
+  stay visible in `docs/backlog.md`.
 - Close out local branches by rebasing the branch onto `main`, then merging
   into `main` with `git merge --ff-only <branch>`. Do not create merge commits
   for routine local closeout, and do not switch the main worktree off `main`.

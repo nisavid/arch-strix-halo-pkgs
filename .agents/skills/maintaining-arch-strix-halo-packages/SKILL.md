@@ -68,6 +68,14 @@ which divergences are intentional, and where reusable source changes live.
    acted-on sweep, then apply `docs/maintainers/update-workflows.md`. Do not
    run `tools/check_package_updates.py` when those docs show a still-fresh
    completed sweep and no invalidating change.
+   - When a freshness check reports a non-current family, assign each update
+     candidate a durable disposition in
+     `docs/maintainers/update-candidates.toml`: `adopted`, `tracked`,
+     `rejected`, or `blocked`.
+   - Do not close a refresh by only updating `policies/package-freshness.toml`.
+   - Treat patch carry overlap as a reason to prioritize update review.
+   - Treat absence of backend build-system changes as insufficient rejection
+     evidence.
 2. Identify the change lane.
    Use one of: upstream source change, baseline package change, recipe change,
    or new package.
