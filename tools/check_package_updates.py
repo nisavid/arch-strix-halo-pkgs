@@ -603,13 +603,18 @@ def summarize_effective(families: list[dict]) -> dict:
     return dict(Counter(family["effective_status"] for family in families))
 
 
-def candidate_matches_check(candidate: dict, check: dict) -> bool:
+def candidate_matches_check(candidate: dict, check: dict, family: dict) -> bool:
     if candidate.get("source_kind") != check.get("kind"):
         return False
     check_id = candidate.get("check_id")
-    if check_id is not None and check_id != check.get("id"):
-        return False
-    return True
+    if check_id is None:
+        matching_kind_checks = [
+            family_check
+            for family_check in family.get("checks", [])
+            if family_check.get("kind") == check.get("kind")
+        ]
+        return len(matching_kind_checks) == 1
+    return check_id == check.get("id")
 
 
 def candidate_matches_family(candidate: dict, family: dict) -> bool:
@@ -624,7 +629,7 @@ def candidate_matches_family(candidate: dict, family: dict) -> bool:
             check
             for check in family.get("checks", [])
             if check.get("status") == "query_failed"
-            and candidate_matches_check(candidate, check)
+            and candidate_matches_check(candidate, check, family)
         ]
         return len(failed_checks) == 1
     candidate_latest = str(candidate.get("latest", "")).strip()
@@ -632,7 +637,7 @@ def candidate_matches_family(candidate: dict, family: dict) -> bool:
         latest
         for check in family.get("checks", [])
         if check.get("status") == family.get("status")
-        if candidate_matches_check(candidate, check)
+        if candidate_matches_check(candidate, check, family)
         if (latest := str(check.get("latest", "")).strip())
     }
     if candidate_latest and candidate_latest in latest_values:

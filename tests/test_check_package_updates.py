@@ -899,6 +899,7 @@ def test_blocked_candidate_precedes_matching_query_failure(tmp_path):
         family = "aiter"
         packages = ["python-amd-aiter-gfx1151"]
         source_kind = "git_ref"
+        check_id = "main"
         previous_recorded = "cf12b138"
         latest = "afddcbf4"
         discovery_status = "query_failed"
@@ -932,6 +933,74 @@ def test_blocked_candidate_precedes_matching_query_failure(tmp_path):
     )
 
     assert code == 10
+
+
+def test_blocked_query_candidate_without_check_id_does_not_hide_same_kind_failure(
+    tmp_path,
+):
+    write_pkg(tmp_path, "python-vllm-rocm-gfx1151")
+    write_policy(
+        tmp_path,
+        """
+        [families.vllm]
+        packages = ["python-vllm-rocm-gfx1151"]
+        priority = "high"
+        workflow = "upstream_source_update"
+        checks = [
+          { id = "release", role = "primary", kind = "github_release", repo = "vllm-project/vllm", recorded = "0.20.0", tag_prefix = "v", comparison = "pep440" },
+          { id = "compat-release", role = "primary", kind = "github_release", repo = "example/vllm-compat", recorded = "0.20.0", tag_prefix = "v", comparison = "pep440" },
+        ]
+        """,
+    )
+    write_candidate_ledger(
+        tmp_path,
+        """
+        schema_version = 1
+
+        [candidates.vllm-release-provider]
+        family = "vllm"
+        packages = ["python-vllm-rocm-gfx1151"]
+        source_kind = "github_release"
+        previous_recorded = "0.20.0"
+        latest = ""
+        discovery_status = "query_failed"
+        disposition = "blocked"
+        disposition_reason = "GitHub release provider retry needed."
+        salient_changes = ["Unknown until provider recovers"]
+        patch_carry_overlap = true
+        package_source_update_needed = true
+        host_validation_needed = true
+        next_gate_kind = "backlog"
+        next_gate_path = "docs/backlog.md"
+        next_gate_label = "vLLM release provider retry"
+        last_reviewed = "2026-04-28"
+        """,
+    )
+    clients = updates.FakeClients(
+        github_releases={
+            "vllm-project/vllm": [
+                {"tag": "v0.20.0", "prerelease": False}
+            ]
+        },
+        fail={"github_release:example/vllm-compat": "timeout"},
+    )
+
+    code = updates.main(
+        [
+            "--repo-root",
+            str(tmp_path),
+            "--refresh",
+            "--fail-on",
+            "actionable",
+        ],
+        clients=clients,
+    )
+    report = updates.run_check(tmp_path, refresh=True, clients=clients)
+
+    assert code == 3
+    assert report["families"][0]["status"] == "query_failed"
+    assert report["families"][0]["effective_status"] == "query_failed"
+    assert "candidate" not in report["families"][0]
 
 
 def test_non_query_blocked_candidate_does_not_hide_query_failure(tmp_path):
