@@ -1702,6 +1702,22 @@ def test_update_workflow_requires_candidate_disposition():
         assert "Do not close a refresh by only updating" in surface
 
 
+def test_tracked_candidates_are_visible_in_backlog():
+    repo = Path(__file__).resolve().parents[1]
+    candidates = updates.load_candidate_ledger(repo)
+    backlog = re.sub(
+        r"\s+",
+        " ",
+        (repo / "docs/backlog.md").read_text(encoding="utf-8"),
+    )
+
+    for candidate in candidates.values():
+        if candidate["disposition"] != "tracked":
+            continue
+        assert candidate["next_gate_path"] == "docs/backlog.md"
+        assert candidate["next_gate_label"] in backlog, candidate["id"]
+
+
 def test_cache_is_reused_when_policy_digest_matches(tmp_path):
     write_pkg(tmp_path, "python-numpy-gfx1151")
     write_policy(
@@ -1729,8 +1745,26 @@ def test_cache_is_reused_when_policy_digest_matches(tmp_path):
     assert second["families"] == first["families"]
 
 
-def test_checker_semantics_version_invalidates_existing_cache():
+def test_checker_semantics_version_invalidates_existing_cache(tmp_path, monkeypatch):
+    write_pkg(tmp_path, "python-numpy-gfx1151")
+    write_policy(
+        tmp_path,
+        """
+        [families.numpy]
+        packages = ["python-numpy-gfx1151"]
+        priority = "medium"
+        workflow = "upstream_source_update"
+        checks = [{ id = "pypi", role = "primary", kind = "pypi", package = "numpy", recorded = "2.4.4", comparison = "pep440" }]
+        """,
+    )
+
+    monkeypatch.setattr(updates, "TOOL_VERSION", 2)
+    old_digest = updates.policy_digest(tmp_path)
+    monkeypatch.setattr(updates, "TOOL_VERSION", 3)
+    new_digest = updates.policy_digest(tmp_path)
+
     assert updates.TOOL_VERSION >= 3
+    assert old_digest != new_digest
 
 
 def test_refresh_bypasses_matching_cache(tmp_path):

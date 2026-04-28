@@ -14,6 +14,9 @@
   `d0f5f76afb8cf78f1c5da29686dab7e088e6668d`. Active candidate dispositions
   live in `docs/maintainers/update-candidates.toml`; keep that ledger and this
   backlog item in sync until each candidate is adopted, rejected, or blocked.
+  Current tracked review lanes: Blackcat ai-notes recipe update; vLLM 0.20.0
+  package update; llama.cpp b8955 runtime rebuild lane; ROCm PyTorch
+  release/2.11 and Arch 2.11.0-4 review; AITER d0f5f76 package-source review.
 - Newly discovered ROCm inference candidates from
   `docs/maintainers/rocm-inference-reference.md` belong near the top of this
   backlog, but they are not validated package commitments until their source
