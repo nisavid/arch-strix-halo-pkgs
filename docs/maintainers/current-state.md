@@ -405,6 +405,12 @@ smoke` passed 6/6 selected scenarios at run root
 Lemonade embedding and rerank pooling smokes, and both llama.cpp HIP/Vulkan
 help scenarios.
 
+Pull-request review follow-up bumped `lemonade-server` to `10.2.0-6` so the
+metadata-only b8955 config change upgrades clients already on `10.2.0-5`.
+`tools/amerge build lemonade-server` plan `20260428T142857-8440fea8` produced
+`lemonade-server-10.2.0-6-x86_64.pkg.tar.zst`, and
+`pytest packages/lemonade-server/tests -q` reported `2 passed`.
+
 A follow-up live freshness check on 2026-04-28, run from a writable temporary
 repo root because `.agents/session` is read-only in this sandbox, found new
 actionable drift after the b8955 build. Upstream llama.cpp moved to `b8958`;
