@@ -325,7 +325,11 @@ def load_candidate_ledger(repo_root: str | Path) -> dict[str, dict]:
         payload = tomllib.loads(path.read_text(encoding="utf-8"))
     except tomllib.TOMLDecodeError as exc:
         raise RuntimeError(f"CANDIDATE_LEDGER_INVALID: {path}: {exc}") from exc
-    if int(payload.get("schema_version", 0)) != 1:
+    try:
+        schema_version = int(payload.get("schema_version", 0))
+    except (TypeError, ValueError):
+        schema_version = 0
+    if schema_version != 1:
         raise RuntimeError(f"CANDIDATE_LEDGER_SCHEMA_UNSUPPORTED: {path}")
     candidates = payload.get("candidates", {})
     if not isinstance(candidates, dict):

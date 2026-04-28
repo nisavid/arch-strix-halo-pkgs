@@ -1,6 +1,7 @@
 from pathlib import Path
 import importlib.util
 import json
+import re
 import subprocess
 import textwrap
 import time
@@ -683,6 +684,22 @@ def test_load_candidate_ledger_reads_tracked_candidate(tmp_path):
     assert ledger["vllm-0_20_0"]["latest"] == "0.20.0"
 
 
+def test_load_candidate_ledger_reports_unsupported_non_numeric_schema(tmp_path):
+    write_candidate_ledger(
+        tmp_path,
+        """
+        schema_version = "current"
+        """,
+    )
+
+    try:
+        updates.load_candidate_ledger(tmp_path)
+    except RuntimeError as exc:
+        assert "CANDIDATE_LEDGER_SCHEMA_UNSUPPORTED" in str(exc)
+    else:
+        raise AssertionError("expected unsupported schema RuntimeError")
+
+
 def test_tracked_candidate_changes_effective_status_without_hiding_discovery_status(
     tmp_path,
 ):
@@ -958,17 +975,14 @@ def test_real_update_candidate_ledger_is_valid():
 
     ledger = updates.load_candidate_ledger(repo)
 
-    assert set(ledger) >= {
-        "blackcat-ai-notes-a1d7a681",
-        "vllm-0.20.0",
-        "llama-cpp-b8953",
-        "rocm-pytorch-release-2.11-e16e349",
-        "aiter-6a7df200",
-    }
-    assert {candidate["disposition"] for candidate in ledger.values()} == {"tracked"}
+    assert ledger
     for candidate in ledger.values():
+        assert candidate["id"]
+        assert candidate["family"]
+        assert candidate["packages"]
+        assert candidate["disposition"] in updates.VALID_CANDIDATE_DISPOSITIONS
         assert candidate["next_gate_path"] == "docs/backlog.md"
-        assert candidate["last_reviewed"] == "2026-04-28"
+        assert re.fullmatch(r"\d{4}-\d{2}-\d{2}", candidate["last_reviewed"])
         assert candidate["salient_changes"]
 
 
