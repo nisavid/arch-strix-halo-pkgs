@@ -396,10 +396,14 @@ produced `llama.cpp-hip-gfx1151-b8955-1-x86_64.pkg.tar.zst`,
 metadata. `makepkg --verifysource` passed for both llama.cpp packages, and
 `pytest packages/llama.cpp-hip-gfx1151/tests
 packages/llama.cpp-vulkan-gfx1151/tests packages/lemonade-server/tests -q`
-reported `5 passed`. Privileged deploy did not run in the sandbox because
-sudo is blocked by the host no-new-privileges policy, so installed
-`pacman -Q` verification and `python tools/run_inference_scenarios.py --engine
-llama.cpp --engine lemonade --tag smoke` remain pending.
+reported `5 passed`. After privileged deploy, `pacman -Q` reports
+`llama.cpp-hip-gfx1151 b8955-1`, `llama.cpp-vulkan-gfx1151 b8955-1`, and
+`lemonade-server 10.2.0-5`. The installed scenario run `python
+tools/run_inference_scenarios.py --engine llama.cpp --engine lemonade --tag
+smoke` passed 6/6 selected scenarios at run root
+`docs/worklog/inference-runs/20260428T141728`: Lemonade CLI/server help,
+Lemonade embedding and rerank pooling smokes, and both llama.cpp HIP/Vulkan
+help scenarios.
 
 A follow-up live freshness check on 2026-04-28, run from a writable temporary
 repo root because `.agents/session` is read-only in this sandbox, found new

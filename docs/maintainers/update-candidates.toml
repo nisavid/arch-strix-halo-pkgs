@@ -53,7 +53,7 @@ previous_recorded = "b8955"
 latest = "b8958"
 discovery_status = "stable_update_available"
 disposition = "tracked"
-disposition_reason = "b8955 was adopted and built, but upstream moved again before privileged deploy; review b8955..b8958 before deciding whether to deploy b8955 or adopt b8958."
+disposition_reason = "b8955 was adopted, deployed, and installed-smoked, but upstream moved again; review b8955..b8958 before deciding whether to adopt b8958."
 salient_changes = [
   "CANN operator additions and optimization",
   "ggml backend/device duplicate-registration guard",
