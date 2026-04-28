@@ -1419,7 +1419,7 @@ def render_recipe_json(package_name: str, policy_pkg: dict, recipe_pkg: dict, ve
     rendered_policy.pop("source_patches", None)
     source_patches = policy_pkg.get("source_patches", [])
     source_patch_sha256sums = []
-    if source_patches and "extra_sources" not in policy_pkg:
+    if source_patches and not policy_pkg.get("extra_sources"):
         source_patch_sha256sums = policy_pkg.get("extra_sha256sums", [])
         rendered_policy.pop("extra_sha256sums", None)
     payload = {
