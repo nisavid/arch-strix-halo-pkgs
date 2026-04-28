@@ -2,6 +2,16 @@
 
 ## Packaging And Build Hygiene
 
+- Fix and harden the upstream refresh/update flow so freshness discovery cannot
+  be closed by merely recording latest upstream values. The new flow must
+  separate freshness detection from update-candidate disposition, require
+  salient changelog and local-impact reporting, and leave every actionable
+  upstream move in one of these explicit states: adopted, tracked as an update
+  candidate, rejected with evidence, or blocked with a retry gate. After the
+  flow is hardened, re-open the 2026-04-28 refresh candidates for Blackcat
+  `upstream/ai-notes`, vLLM `0.20.0`, llama.cpp `b8953`, ROCm PyTorch
+  `release/2.11` / Arch `2.11.0-4`, and AITER main
+  `6a7df2004f5f896471cf9e6ab588b6aec0357dc7`.
 - Newly discovered ROCm inference candidates from
   `docs/maintainers/rocm-inference-reference.md` belong near the top of this
   backlog, but they are not validated package commitments until their source
