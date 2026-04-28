@@ -38,9 +38,11 @@ without chat history.
   Each candidate must be adopted, tracked, rejected, or blocked in
   `docs/maintainers/update-candidates.toml`, and active tracked candidates must
   stay visible in `docs/backlog.md`.
-- Close out local branches by rebasing the branch onto `main`, then merging
-  into `main` with `git merge --ff-only <branch>`. Do not create merge commits
-  for routine local closeout, and do not switch the main worktree off `main`.
+- Start new repo work from a topic branch in a separate worktree. Do not commit
+  directly on `main`; `origin/main` is protected and forbids direct updates.
+- Close out development branches through GitHub pull requests. Push the branch,
+  open a PR, follow up on review comments and failing checks, and merge only
+  through the protected-branch flow.
 - Use Conventional Commits. A scope is preferred, not required, when it says
   something useful that would otherwise take more room in the summary. Use
   lowercase scopes, and use slashes for nested scopes such as `docs/usage` or
