@@ -7,7 +7,7 @@
 - Recipe build method: `cargo`
 - Upstream repo: ``
 - Package version: `0.0.8`
-- Recipe revision: `a188f9e (20260424, 10 path commits)`
+- Recipe revision: `a1d7a68 (20260427, 16 path commits)`
 - Recipe steps: `31`
 - Recipe dependencies: `cpython`
 - Recorded reference packages: `aur/python-openai-harmony, aur/python-openai-harmony-git`

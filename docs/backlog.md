@@ -2,16 +2,53 @@
 
 ## Packaging And Build Hygiene
 
-- Review the active 2026-04-28 update candidates: Blackcat ai-notes recipe
-  update; vLLM 0.20.0 package update; llama.cpp b8958 runtime rebuild
-  decision; ROCm PyTorch release/2.11 9413e9b review; AITER c1c65e6
-  package-source review; Lemonade 10.3.0 package update; Transformers 5.7.0
-  source-availability and package review. The llama.cpp b8955 runtime rebuild
-  lane adopted, deployed, and installed-smoked b8955 before b8958 appeared, so
-  decide whether to adopt b8958. Active candidate
+- Review the active 2026-04-28 update candidates: vLLM 0.20.0 package
+  update; llama.cpp b8963 runtime rebuild decision; ROCm PyTorch
+  release/2.11 9413e9b review; AITER c1c65e6 package-source review;
+  Lemonade 10.3.0 package update; Transformers 5.7.0
+  package review. The llama.cpp b8955 runtime rebuild
+  lane adopted, deployed, and installed-smoked b8955 before b8963 appeared, so
+  decide whether to adopt b8963. Active candidate
   dispositions live in `docs/maintainers/update-candidates.toml`; keep that
   ledger and this backlog item in sync until each candidate is adopted,
   rejected, or blocked.
+- Blackcat ai-notes recipe input is adopted through
+  `a1d7a6816dd2c456bad9fcc7d61c53a4bd8c5fbd`. Follow up the newly described
+  stable-diffusion.cpp package surface, expanded native/Rust wheel recipe
+  surfaces, and Qwen3-VL embedding notes as separate package-policy and host
+  validation lanes before adding packages or promoting scenarios.
+- Package the expanded Blackcat optimized-wheel surface as the comprehensive
+  local wheel stack, not as an implicit side effect of the recipe-input bump.
+  `policies/recipe-packages.toml` currently models concrete package entries
+  rather than named stack variants, so add policy entries only as packages are
+  implemented and reviewed. When a newly introduced dependency is native code,
+  performance-sensitive model/config plumbing, quantization tooling, or an
+  inference engine, default to ingesting it into the local optimized build
+  stack instead of relying on an external generic wheel. Keep both candidate
+  stack shapes visible:
+  - Core model/config stack: `python-pydantic-core-gfx1151`,
+    `python-tokenizers-gfx1151`, `python-safetensors-gfx1151`,
+    `python-pyyaml-gfx1151`, `python-psutil-gfx1151`, and
+    `python-pillow-gfx1151`.
+  - Comprehensive Blackcat wheel stack, selected for this repo: the core stack
+    plus `python-watchfiles-gfx1151`, `python-uvloop-gfx1151`,
+    `python-httptools-gfx1151`, `python-msgspec-gfx1151`,
+    `python-aiohttp-gfx1151`, `python-multidict-gfx1151`,
+    `python-yarl-gfx1151`, and `python-frozenlist-gfx1151`.
+  Native-worthy tooling helpers also belong in this selected stack when their
+  lane is implemented; start Qwen3-VL quantization/tooling review with
+  `python-llmcompressor-gfx1151` and
+  `python-compressed-tensors-gfx1151`, then add any native transitive
+  dependencies that materially affect quantization or model-loading runtime.
+  New engines are in scope by default; package `stable-diffusion.cpp` as a
+  local optimized Vulkan engine rather than consuming an upstream binary or
+  untracked source checkout.
+  Start from the existing `rust_wheels` and `native_wheels` policy/template
+  lanes; compare each package against Arch or AUR before carrying it locally,
+  and preserve the already packaged foundation (`python-numpy-gfx1151`,
+  `python-orjson-gfx1151`, `python-cryptography-gfx1151`,
+  `python-sentencepiece-gfx1151`, `python-zstandard-gfx1151`,
+  `python-asyncpg-gfx1151`, and `python-duckdb-gfx1151`).
 - Newly discovered ROCm inference candidates from
   `docs/maintainers/rocm-inference-reference.md` belong near the top of this
   backlog, but they are not validated package commitments until their source

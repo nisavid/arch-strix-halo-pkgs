@@ -419,9 +419,11 @@ A follow-up live freshness check on 2026-04-28 found new actionable drift after
 the b8955 build. Session-scoped prompts, specs, plans, scratch notes, and
 handoff material belong in ignored locations such as `.agents/session/` or
 `docs/worklog/`, with durable conclusions extracted into tracked docs. Upstream
-llama.cpp moved to `b8958`;
-the `b8955..b8958` range is CANN-focused plus a ggml backend/device
-duplicate-registration guard and `-lm` link-behavior reversion. Lemonade
+llama.cpp moved to `b8963`;
+the `b8955..b8963` range includes CANN operator work, ggml backend/device
+duplicate-registration handling, `-lm` link-behavior reversion, Vulkan
+timestamp-barrier and shader/header fixes, WebGPU SSM scan aliasing changes,
+and a large server web UI tool/chat settings refactor. Lemonade
 `10.3.0` is available with OmniRouter, a Tauri desktop app, the
 `lemonade_server.service` to `lemond.service` rename, ROCm channel/default
 changes, and system llama.cpp backend/version-tag config work that overlaps
@@ -431,9 +433,20 @@ RDNA TunableOp test fix. AITER main moved to
 `c1c65e6bef07a42bdf7e268f69b92e53f2e4ada5`, adding the previously tracked
 communication-group and FlyDSL changes plus test determinism updates across
 FP8, fused GEMM, MoE, normalization, rope, top-k, and gated-delta-rule tests.
-Transformers has a GitHub `v5.7.0` tag while PyPI still reports `5.6.2`.
+Transformers `5.7.0` is now available on PyPI and as a matching GitHub tag.
 These are tracked in `docs/maintainers/update-candidates.toml`; do not treat
 the b8955 build as full freshness closure.
+
+The Blackcat Informatics `upstream/ai-notes` recipe input was later adopted at
+`a1d7a6816dd2c456bad9fcc7d61c53a4bd8c5fbd`. The rendered recipe-managed
+package scaffolds now record recipe revision `a1d7a68`, date `20260427`, and
+16 path commits; `packages/therock-gfx1151` was also rerendered so its
+PKGBUILD and manifest provenance match the adopted recipe input. The adopted
+recipe notes add stable-diffusion.cpp, Qwen3-VL embedding, expanded native and
+Rust wheel surfaces, and vLLM build/environment material, but this pass did not
+promote those newly described surfaces into package commitments. Treat
+stable-diffusion.cpp packaging, additional optimized wheel packages, and
+Qwen3-VL scenario work as separate source-audit and host-validation lanes.
 
 The deploy for the TheRock metadata slices plus the Triton and AOCL-LibM
 patch-carry slices was verified on the reference host on 2026-04-25. Installed

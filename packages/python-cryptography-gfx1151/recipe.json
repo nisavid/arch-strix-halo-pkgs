@@ -79,9 +79,9 @@
   "provenance": {
     "output_root": "packages",
     "recipe_author": "Blackcat Informatics Inc.",
-    "recipe_commit": "a188f9e",
-    "recipe_date": "20260424",
-    "recipe_history_count": 10,
+    "recipe_commit": "a1d7a68",
+    "recipe_date": "20260427",
+    "recipe_history_count": 16,
     "recipe_repo": "https://github.com/paudley/ai-notes",
     "recipe_subdir": "strix-halo",
     "repo_subpath": "."
@@ -92,7 +92,7 @@
       "cpython"
     ],
     "method": "cargo",
-    "notes": "Builds and installs orjson and cryptography from source with Rust flags:\n  RUSTFLAGS=\"-C target-cpu=znver5 -C opt-level=3\"\nThis enables full AVX-512 + VAES codegen for Zen 5.\n\nDo NOT add -C lto=thin here -- maturin adds -C embed-bitcode=no\nwhich conflicts with -C lto. Maturin manages its own LTO.\n\nRust's linker invokes `cc` which resolves to the amdclang symlink,\nbut AMD's wrapper rejects binaries not prefixed with \"amd\". Fix:\nCARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=amdclang\n\nMust unset CFLAGS/CXXFLAGS/LDFLAGS during Rust builds because\nthey contain clang-specific flags (-famd-opt, -mllvm) that rustc's\ninternal cc invocations for build scripts don't understand.",
+    "notes": "Builds and installs orjson, cryptography, pydantic-core, tokenizers,\nsafetensors, and watchfiles from source with Rust flags:\n  RUSTFLAGS=\"-C target-cpu=znver5 -C opt-level=3\"\nThis enables full AVX-512 + VAES codegen for Zen 5.\n\nDo NOT add -C lto=thin here -- maturin adds -C embed-bitcode=no\nwhich conflicts with -C lto. Maturin manages its own LTO.\n\nRust's linker invokes `cc` which resolves to the amdclang symlink,\nbut AMD's wrapper rejects binaries not prefixed with \"amd\". Fix:\nCARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=amdclang\n\nMust unset CFLAGS/CXXFLAGS/LDFLAGS during Rust builds because\nthey contain clang-specific flags (-famd-opt, -mllvm) that rustc's\ninternal cc invocations for build scripts don't understand.",
     "patches": [],
     "phase": "H",
     "repo": null,

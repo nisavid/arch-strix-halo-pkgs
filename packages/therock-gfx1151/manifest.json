@@ -1032,8 +1032,8 @@
   "pkgver": "7.13.0pre",
   "recipe": {
     "author": "Blackcat Informatics Inc.",
-    "commit": "a188f9e",
-    "date": "20260424",
+    "commit": "a1d7a68",
+    "date": "20260427",
     "repo_url": "https://github.com/paudley/ai-notes",
     "subdir": "strix-halo"
   },

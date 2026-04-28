@@ -70,9 +70,9 @@
   "provenance": {
     "output_root": "packages",
     "recipe_author": "Blackcat Informatics Inc.",
-    "recipe_commit": "a188f9e",
-    "recipe_date": "20260424",
-    "recipe_history_count": 10,
+    "recipe_commit": "a1d7a68",
+    "recipe_date": "20260427",
+    "recipe_history_count": 16,
     "recipe_repo": "https://github.com/paudley/ai-notes",
     "recipe_subdir": "strix-halo",
     "repo_subpath": "."
@@ -84,7 +84,7 @@
       "pytorch"
     ],
     "method": "pip",
-    "notes": "Builds and installs numpy, sentencepiece, zstandard, asyncpg, duckdb from\nsource with Zen 5 optimization flags.\n\nnumpy: cmake pip wrapper breaks in build isolation; replaced with\nsymlink to system cmake.\n\nmeson-based packages (numpy, zstandard): -mllvm flags must be\nrewritten as -Xclang -mllvm -Xclang pairs because meson's compiler\nprobing rejects -mllvm as \"unused command line argument\".\n-famd-opt moved to LDFLAGS (link-time-only driver flag, no-op at\ncompile time -- triggers -Werror=unused in compile-only probes).",
+    "notes": "Builds and installs numpy, sentencepiece, zstandard, asyncpg, duckdb,\nPyYAML, psutil, Pillow, uvloop, httptools, msgspec, aiohttp,\nmultidict, yarl, and frozenlist from source with Zen 5 optimization\nflags.\n\nnumpy: cmake pip wrapper breaks in build isolation; replaced with\nsymlink to system cmake.\n\nmeson-based packages (numpy, zstandard): -mllvm flags must be\nrewritten as -Xclang -mllvm -Xclang pairs because meson's compiler\nprobing rejects -mllvm as \"unused command line argument\".\n-famd-opt moved to LDFLAGS (link-time-only driver flag, no-op at\ncompile time -- triggers -Werror=unused in compile-only probes).",
     "patches": [
       {
         "description": "Replace the recipe's broken venv-local Python cmake wrapper with the real system cmake binary. The cmake pip package installs a Python wrapper that does `from cmake import cmake`, which fails inside pip's build isolation where the cmake Python module is unavailable.\n",

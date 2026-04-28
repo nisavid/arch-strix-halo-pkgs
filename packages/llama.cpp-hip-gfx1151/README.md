@@ -8,7 +8,7 @@
 - Recipe build method: `cmake`
 - Upstream repo: `https://github.com/ggml-org/llama.cpp.git`
 - Package version: `b8955`
-- Recipe revision: `a188f9e (20260424, 10 path commits)`
+- Recipe revision: `a1d7a68 (20260427, 16 path commits)`
 - Recipe steps: `34`
 - Recipe dependencies: `therock`
 - Recorded reference packages: `aur/llama.cpp-hip, aur/llama.cpp`
@@ -26,11 +26,13 @@ than a stale local "head-apex" side branch.
 
 ROCm (hipBLAS): Primary backend. Best prefill <32K context. Uses
 amdclang from TheRock with full Zen 5 + gfx1151 HIP optimization
-flags. Binaries placed where Lemonade SDK expects them.
+flags, explicit ggml LTO, and no embedded server web UI. Binaries placed
+where Lemonade SDK expects them.
 
 Vulkan: Secondary backend. +22% generation speed (44 vs 39 tok/s)
 and handles >32K context prefill (no VMM limitation on gfx1151).
-CPU-only optimization flags, no HIP offload.
+Uses the same amdclang, Zen 5, ThinLTO, AOCL-LibM, and Vulkan
+release-mode settings as the stable-diffusion.cpp Vulkan build.
 
 Both backends get .env files with gfx1151 runtime optimizations
 (batch sizing, hipBLASLt, THP). RPATH patched via patchelf so
