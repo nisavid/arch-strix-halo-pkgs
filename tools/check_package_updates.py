@@ -617,6 +617,14 @@ def candidate_matches_check(candidate: dict, check: dict, family: dict) -> bool:
     return check_id == check.get("id")
 
 
+def has_uncovered_actionable_check(candidate: dict, family: dict) -> bool:
+    return any(
+        check.get("status") in ACTIONABLE_STATUSES
+        and not candidate_matches_check(candidate, check, family)
+        for check in family.get("checks", [])
+    )
+
+
 def candidate_matches_family(candidate: dict, family: dict) -> bool:
     if candidate.get("family") != family.get("family"):
         return False
@@ -641,7 +649,7 @@ def candidate_matches_family(candidate: dict, family: dict) -> bool:
         if (latest := str(check.get("latest", "")).strip())
     }
     if candidate_latest and candidate_latest in latest_values:
-        return True
+        return not has_uncovered_actionable_check(candidate, family)
     return False
 
 

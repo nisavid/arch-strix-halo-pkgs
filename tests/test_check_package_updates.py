@@ -836,6 +836,62 @@ def test_tracked_candidate_does_not_hide_other_actionable_check(tmp_path):
     assert report["effective_summary"] == {"action_required": 1}
 
 
+def test_tracked_candidate_does_not_hide_lower_precedence_actionable_check(tmp_path):
+    write_pkg(tmp_path, "python-vllm-rocm-gfx1151")
+    write_policy(
+        tmp_path,
+        """
+        [families.vllm]
+        packages = ["python-vllm-rocm-gfx1151"]
+        priority = "high"
+        workflow = "upstream_source_update"
+        checks = [
+          { id = "release", role = "primary", kind = "github_release", repo = "vllm-project/vllm", recorded = "0.19.1", tag_prefix = "v", comparison = "pep440" },
+          { id = "aur", role = "baseline", kind = "aur", package = "python-vllm", recorded = "0.12.0-1", comparison = "pkgver" },
+        ]
+        """,
+    )
+    write_candidate_ledger(
+        tmp_path,
+        """
+        schema_version = 1
+
+        [candidates.vllm-0_20_0]
+        family = "vllm"
+        packages = ["python-vllm-rocm-gfx1151"]
+        source_kind = "github_release"
+        previous_recorded = "0.19.1"
+        latest = "0.20.0"
+        discovery_status = "stable_update_available"
+        disposition = "tracked"
+        disposition_reason = "Needs a package update lane."
+        salient_changes = ["Python 3.14 metadata support"]
+        patch_carry_overlap = true
+        package_source_update_needed = true
+        host_validation_needed = true
+        next_gate_kind = "backlog"
+        next_gate_path = "docs/backlog.md"
+        next_gate_label = "vLLM 0.20.0 package update"
+        last_reviewed = "2026-04-28"
+        """,
+    )
+    clients = updates.FakeClients(
+        github_releases={
+            "vllm-project/vllm": [
+                {"tag": "v0.20.0", "prerelease": False}
+            ]
+        },
+        aur={"python-vllm": {"version": "0.13.0-1"}},
+    )
+
+    report = updates.run_check(tmp_path, refresh=True, clients=clients)
+
+    assert report["families"][0]["status"] == "stable_update_available"
+    assert report["families"][0]["effective_status"] == "action_required"
+    assert "candidate" not in report["families"][0]
+    assert report["effective_summary"] == {"action_required": 1}
+
+
 def test_blocked_candidate_is_actionable_for_fail_on_actionable(tmp_path):
     write_pkg(tmp_path, "python-vllm-rocm-gfx1151")
     write_policy(
