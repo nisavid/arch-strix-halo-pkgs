@@ -4,8 +4,8 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[3]
 PKGBUILD = REPO_ROOT / "packages/llama.cpp-hip-gfx1151/PKGBUILD"
 
-EXPECTED_VERSION = "b8911"
-EXPECTED_COMMIT = "5d2b52d80d9f375a6e81d07e212d047d8ee4f76e"
+EXPECTED_VERSION = "b8955"
+EXPECTED_COMMIT = "14e733e36f5752f39494b6c7e88022e43c05729a"
 
 
 def test_pkgbuild_tracks_recorded_llamacpp_release():

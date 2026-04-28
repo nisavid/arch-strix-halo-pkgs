@@ -45,58 +45,58 @@ next_gate_path = "docs/backlog.md"
 next_gate_label = "vLLM 0.20.0 package update"
 last_reviewed = "2026-04-28"
 
-[candidates."llama-cpp-b8955"]
+[candidates."llama-cpp-b8958"]
 family = "llama_cpp"
 packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"]
 source_kind = "github_release"
-previous_recorded = "b8953"
-latest = "b8955"
+previous_recorded = "b8955"
+latest = "b8958"
 discovery_status = "stable_update_available"
 disposition = "tracked"
-disposition_reason = "The runtime-facing server and model-conversion changes need a rebuild lane rather than a freshness-only record update."
+disposition_reason = "b8955 was adopted, deployed, and installed-smoked, but upstream moved again; review b8955..b8958 before deciding whether to adopt b8958."
 salient_changes = [
-  "Speculative decoding parameter refactor",
-  "Renames sparam handling to sampling and adds a spec-params category",
-  "Documents removed arguments and updates server tests",
+  "CANN operator additions and optimization",
+  "ggml backend/device duplicate-registration guard",
+  "CMake link behavior reverts to -lm instead of find_library",
 ]
 patch_carry_overlap = true
 package_source_update_needed = true
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "llama.cpp b8955 runtime rebuild lane"
+next_gate_label = "llama.cpp b8958 runtime rebuild decision"
 last_reviewed = "2026-04-28"
 
-[candidates."rocm-pytorch-release-2.11-e16e349"]
+[candidates."rocm-pytorch-release-2.11-9413e9b"]
 family = "rocm_pytorch"
 packages = ["python-pytorch-opt-rocm-gfx1151"]
 source_kind = "git_ref"
 baseline_source_kind = "arch_package"
 baseline_latest = "2.11.0-4"
-previous_recorded = "3aaa914af1e6fb268b242bfb871e614fbdb6c1bc / 2.11.0-3"
-latest = "e16e349eb30bac8fd72b5c34ab220527fea5c58c"
+previous_recorded = "e16e349eb30bac8fd72b5c34ab220527fea5c58c / 2.11.0-4"
+latest = "9413e9b96bcbeb8af1aa0280a3a9bc7dd048857e"
 discovery_status = "branch_head_ahead"
 disposition = "tracked"
 disposition_reason = "The branch and Arch baseline need a package-update review against local PyTorch patch carry."
 salient_changes = [
-  "ROCm PyTorch release/2.11 native-header and Windows DLL-export fixes",
-  "MIOpen CTC-loss fixes",
-  "Arch python-pytorch-opt-rocm baseline moved to 2.11.0-4",
+  "Windows-specific CUDA test fixes",
+  "RDNA TunableOp test_call_count_tunableop kernel-name extraction fix",
+  "Graph-capture, pinned-memory, FX, and numpy-compat test updates",
 ]
 patch_carry_overlap = true
 package_source_update_needed = true
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "ROCm PyTorch release/2.11 and Arch 2.11.0-4 review"
+next_gate_label = "ROCm PyTorch release/2.11 9413e9b review"
 last_reviewed = "2026-04-28"
 
-[candidates."aiter-4de5759"]
+[candidates."aiter-c1c65e6"]
 family = "aiter"
 packages = ["python-amd-aiter-gfx1151"]
 source_kind = "git_ref"
 previous_recorded = "6a7df2004f5f896471cf9e6ab588b6aec0357dc7"
-latest = "4de5759eda9763b992b381036676085d5cbb33e4"
+latest = "c1c65e6bef07a42bdf7e268f69b92e53f2e4ada5"
 discovery_status = "candidate_head_ahead"
 disposition = "tracked"
 disposition_reason = "The candidate overlaps active attention and MoE validation lanes and needs host validation before repinning."
@@ -106,11 +106,57 @@ salient_changes = [
   "Multi-group allgather and reduce-scatter interfaces",
   "Custom communication group configuration fixes",
   "FLYDSL version update to 0.1.5.dev504 and dynamic if-else grammar fix",
+  "FP8, fused GEMM, MoE, normalization, rope, top-k, and gated-delta-rule test determinism updates",
 ]
 patch_carry_overlap = true
 package_source_update_needed = true
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "AITER 4de5759 package-source review"
+next_gate_label = "AITER c1c65e6 package-source review"
+last_reviewed = "2026-04-28"
+
+[candidates."lemonade-10.3.0"]
+family = "lemonade"
+packages = ["lemonade-server", "lemonade-app", "lemonade"]
+source_kind = "github_release"
+previous_recorded = "10.2.0"
+latest = "10.3.0"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "The release has service, app, backend-management, and ROCm-channel changes that need a dedicated package update and patch-carry review."
+salient_changes = [
+  "OmniRouter multimodal tools and model collections",
+  "Desktop app migration from Electron to Tauri",
+  "lemonade_server.service renamed to lemond.service",
+  "ROCm channel support with preview as the default",
+  "System llama.cpp backend support and version-tag config keys",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "Lemonade 10.3.0 package update"
+last_reviewed = "2026-04-28"
+
+[candidates."transformers-5.7.0-tag"]
+family = "transformers"
+packages = ["python-transformers-gfx1151"]
+source_kind = "github_tags"
+previous_recorded = "5.6.2"
+latest = "5.7.0"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "The GitHub tag is ahead while PyPI still reports 5.6.2; review release-source availability and Gemma/model-surface impact before updating the PyPI-based package lane."
+salient_changes = [
+  "GitHub v5.7.0 tag is available while PyPI remains at 5.6.2",
+  "Potential Gemma/model-surface overlap with the local Transformers and Mistral-common closure lane",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "Transformers 5.7.0 source-availability and package review"
 last_reviewed = "2026-04-28"

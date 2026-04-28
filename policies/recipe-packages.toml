@@ -975,7 +975,7 @@ scaffold_notes = [
 [packages."llama.cpp-hip-gfx1151"]
 recipe_key = "llamacpp"
 template = "llama-cpp"
-upstream_version = "b8911"
+upstream_version = "b8955"
 pkgdesc = "llama.cpp ROCm backend rebuilt for Strix Halo gfx1151"
 url = "https://github.com/ggml-org/llama.cpp"
 license = ["MIT"]
@@ -993,16 +993,17 @@ update_notes = [
   "On 2026-04-25, reviewed upstream llama.cpp b8929 at 9d34231bb89590ee760ae19ba665e7855cd4fd4e. The b8925..b8929 range changes SYCL, WebGPU SSM_SCAN, docs, and llama-quant's default quantization type from Q5_1 to Q8_0; no HIP/Vulkan package-build touchpoint was found. Record it as reviewed without repinning until a runtime rebuild lane is opened.",
   "On 2026-04-26, reviewed upstream llama.cpp b8935 at f454bd7eb8944629aabca163ea1c6e67e53fd77e and AUR llama.cpp-hip b8933-1. The b8929..b8935 range adds OpenCL IQ4_NL support, reduces CUDA MMQ stream-k overhead, optimizes Metal Tensor API usage, guards a Hexagon HMX clock request, fixes chat reasoning-marker spacing, and tightens speculative vocab compatibility checks. No HIP or Vulkan package-build touchpoint was found; record it as reviewed without repinning until a runtime rebuild lane is opened.",
   "On 2026-04-28, reviewed upstream llama.cpp b8953 at 434b2a1ff6a73927f1aeef1455599fbe207f7d6f and AUR llama.cpp-hip b8953-1. The b8935..b8953 range adds WebGPU Q1_0 and matmul tuning, fast i-quant mat-vec kernels, CPU/AMX optimizations, q8_0 download preference, model conversion cleanup, Qwen/LLaMA duplicate-scale removal, server router form-data forwarding, and Windows RPC/cache fixes. No HIP or Vulkan package-build touchpoint was found; record it as reviewed without repinning until a runtime rebuild lane is opened.",
+  "On 2026-04-28, adopted upstream llama.cpp b8955 at 14e733e36f5752f39494b6c7e88022e43c05729a. The b8953..b8955 range refactors speculative decoding parameters, switches server m-rope task handling to pos_next, and updates argument parser, server, lookup, speculative, and llama-bench sources; no local packaging patch carry changed.",
   "Keep the backend-specific package split explicit until benchmarking proves a routing wrapper is worth maintaining."
 ]
 provides = ["llama.cpp-hip-gfx1151", "llama.cpp-hip"]
 conflicts = ["llama.cpp-hip"]
 depends = ["gcc-libs", "glibc", "hip-runtime-amd-gfx1151", "rocm-core-gfx1151"]
 makedepends = ["cmake", "ninja", "rocm-llvm-gfx1151"]
-src_subdir = "llama.cpp-5d2b52d80d9f375a6e81d07e212d047d8ee4f76e"
+src_subdir = "llama.cpp-14e733e36f5752f39494b6c7e88022e43c05729a"
 upstream_name = "llama.cpp"
 baseline_kind = "closest-upstream"
-source_refs = ["llama.cpp-5d2b52d80d9f375a6e81d07e212d047d8ee4f76e.tar.gz::https://github.com/ggml-org/llama.cpp/archive/5d2b52d80d9f375a6e81d07e212d047d8ee4f76e.tar.gz"]
+source_refs = ["llama.cpp-14e733e36f5752f39494b6c7e88022e43c05729a.tar.gz::https://github.com/ggml-org/llama.cpp/archive/14e733e36f5752f39494b6c7e88022e43c05729a.tar.gz"]
 sha256sums = ["SKIP"]
 patches_dir = "patches/llama.cpp-hip-gfx1151"
 scaffold_notes = [
@@ -1015,7 +1016,7 @@ scaffold_notes = [
 [packages."llama.cpp-vulkan-gfx1151"]
 recipe_key = "llamacpp"
 template = "llama-cpp"
-upstream_version = "b8911"
+upstream_version = "b8955"
 pkgdesc = "llama.cpp Vulkan backend rebuilt for Strix Halo gfx1151"
 url = "https://github.com/ggml-org/llama.cpp"
 license = ["MIT"]
@@ -1033,16 +1034,17 @@ update_notes = [
   "On 2026-04-25, reviewed upstream llama.cpp b8929 at 9d34231bb89590ee760ae19ba665e7855cd4fd4e. The b8925..b8929 range changes SYCL, WebGPU SSM_SCAN, docs, and llama-quant's default quantization type from Q5_1 to Q8_0; no Vulkan package-build touchpoint was found. Record it as reviewed without repinning until a runtime rebuild lane is opened.",
   "On 2026-04-26, reviewed upstream llama.cpp b8935 at f454bd7eb8944629aabca163ea1c6e67e53fd77e; the Vulkan baseline aur/llama.cpp-vulkan-bin remained at b7376-1. The b8929..b8935 range adds OpenCL IQ4_NL support, reduces CUDA MMQ stream-k overhead, optimizes Metal Tensor API usage, guards a Hexagon HMX clock request, fixes chat reasoning-marker spacing, and tightens speculative vocab compatibility checks. No Vulkan package-build touchpoint was found; record it as reviewed without repinning until a runtime rebuild lane is opened.",
   "On 2026-04-28, reviewed upstream llama.cpp b8953 at 434b2a1ff6a73927f1aeef1455599fbe207f7d6f; the Vulkan baseline aur/llama.cpp-vulkan-bin remained at b7376-1. The b8935..b8953 range is mostly WebGPU, CPU/AMX/i-quant, conversion, RPC, download, and server-router work. No Vulkan package-build touchpoint was found; record it as reviewed without repinning until a runtime rebuild lane is opened.",
+  "On 2026-04-28, adopted upstream llama.cpp b8955 at 14e733e36f5752f39494b6c7e88022e43c05729a. The b8953..b8955 range refactors speculative decoding parameters, switches server m-rope task handling to pos_next, and updates argument parser, server, lookup, speculative, and llama-bench sources; no Vulkan package-build touchpoint or local patch carry changed.",
   "Until then, compare runtime/package expectations against the -bin package and source-build conventions against aur/llama.cpp."
 ]
 provides = ["llama.cpp-vulkan-gfx1151", "llama.cpp-vulkan"]
 conflicts = ["llama.cpp-vulkan"]
 depends = ["gcc-libs", "glibc", "vulkan-icd-loader"]
 makedepends = ["cmake", "ninja", "rocm-llvm-gfx1151", "shaderc", "spirv-headers", "vulkan-headers"]
-src_subdir = "llama.cpp-5d2b52d80d9f375a6e81d07e212d047d8ee4f76e"
+src_subdir = "llama.cpp-14e733e36f5752f39494b6c7e88022e43c05729a"
 upstream_name = "llama.cpp"
 baseline_kind = "closest-upstream"
-source_refs = ["llama.cpp-5d2b52d80d9f375a6e81d07e212d047d8ee4f76e.tar.gz::https://github.com/ggml-org/llama.cpp/archive/5d2b52d80d9f375a6e81d07e212d047d8ee4f76e.tar.gz"]
+source_refs = ["llama.cpp-14e733e36f5752f39494b6c7e88022e43c05729a.tar.gz::https://github.com/ggml-org/llama.cpp/archive/14e733e36f5752f39494b6c7e88022e43c05729a.tar.gz"]
 sha256sums = ["SKIP"]
 patches_dir = "patches/llama.cpp-vulkan-gfx1151"
 scaffold_notes = [

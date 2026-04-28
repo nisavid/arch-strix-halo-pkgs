@@ -382,6 +382,59 @@ current while update candidates remain open. The active dispositions for these
 candidates live in `docs/maintainers/update-candidates.toml`; do not treat the
 April 28 refresh as package-update closure.
 
+Later on 2026-04-28, the llama.cpp runtime rebuild lane adopted upstream
+`b8955` at `14e733e36f5752f39494b6c7e88022e43c05729a` for both
+`llama.cpp-hip-gfx1151` and `llama.cpp-vulkan-gfx1151`. The `b8953..b8955`
+range refactors speculative decoding parameters, switches server m-rope task
+handling to `pos_next`, and updates argument parser, server, lookup,
+speculative, and llama-bench sources; no local package patch carry changed.
+`tools/amerge build llama.cpp-hip-gfx1151 llama.cpp-vulkan-gfx1151
+lemonade-server` plan `96221b2d` completed with writable cache overrides and
+produced `llama.cpp-hip-gfx1151-b8955-1-x86_64.pkg.tar.zst`,
+`llama.cpp-vulkan-gfx1151-b8955-1-x86_64.pkg.tar.zst`, and the refreshed
+`lemonade-server-10.2.0-5-x86_64.pkg.tar.zst` artifact with b8955 backend
+metadata. `makepkg --verifysource` passed for both llama.cpp packages, and the
+full PR verification command reported `71 passed`:
+
+```console
+$ pytest tests/test_check_package_updates.py packages/llama.cpp-hip-gfx1151/tests packages/llama.cpp-vulkan-gfx1151/tests packages/lemonade-server/tests -q
+```
+
+After privileged deploy, `pacman -Q` reports
+`llama.cpp-hip-gfx1151 b8955-1`, `llama.cpp-vulkan-gfx1151 b8955-1`, and
+`lemonade-server 10.2.0-5`. The installed scenario run `python
+tools/run_inference_scenarios.py --engine llama.cpp --engine lemonade --tag
+smoke` passed 6/6 selected scenarios at run root
+`docs/worklog/inference-runs/20260428T141728`: Lemonade CLI/server help,
+Lemonade embedding and rerank pooling smokes, and both llama.cpp HIP/Vulkan
+help scenarios.
+
+Pull-request review follow-up bumped `lemonade-server` to `10.2.0-6` so the
+metadata-only b8955 config change upgrades clients already on `10.2.0-5`.
+`tools/amerge build lemonade-server` plan `20260428T142857-8440fea8` produced
+`lemonade-server-10.2.0-6-x86_64.pkg.tar.zst`, and
+`pytest packages/lemonade-server/tests -q` reported `2 passed`.
+
+A follow-up live freshness check on 2026-04-28 found new actionable drift after
+the b8955 build. Session-scoped prompts, specs, plans, scratch notes, and
+handoff material belong in ignored locations such as `.agents/session/` or
+`docs/worklog/`, with durable conclusions extracted into tracked docs. Upstream
+llama.cpp moved to `b8958`;
+the `b8955..b8958` range is CANN-focused plus a ggml backend/device
+duplicate-registration guard and `-lm` link-behavior reversion. Lemonade
+`10.3.0` is available with OmniRouter, a Tauri desktop app, the
+`lemonade_server.service` to `lemond.service` rename, ROCm channel/default
+changes, and system llama.cpp backend/version-tag config work that overlaps
+local patch carry. ROCm PyTorch `release/2.11` moved to
+`9413e9b96bcbeb8af1aa0280a3a9bc7dd048857e` with Windows test fixes and an
+RDNA TunableOp test fix. AITER main moved to
+`c1c65e6bef07a42bdf7e268f69b92e53f2e4ada5`, adding the previously tracked
+communication-group and FlyDSL changes plus test determinism updates across
+FP8, fused GEMM, MoE, normalization, rope, top-k, and gated-delta-rule tests.
+Transformers has a GitHub `v5.7.0` tag while PyPI still reports `5.6.2`.
+These are tracked in `docs/maintainers/update-candidates.toml`; do not treat
+the b8955 build as full freshness closure.
+
 The deploy for the TheRock metadata slices plus the Triton and AOCL-LibM
 patch-carry slices was verified on the reference host on 2026-04-25. Installed
 packages report `python-triton-gfx1151 3.0.0+git0ec280cf-1`,
