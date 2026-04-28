@@ -700,6 +700,15 @@ def test_load_candidate_ledger_reports_unsupported_non_numeric_schema(tmp_path):
         updates.load_candidate_ledger(tmp_path)
 
 
+def test_load_candidate_ledger_reports_unreadable_text(tmp_path):
+    path = updates.candidate_ledger_path(tmp_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(b"\xff")
+
+    with pytest.raises(RuntimeError, match="CANDIDATE_LEDGER_UNREADABLE"):
+        updates.load_candidate_ledger(tmp_path)
+
+
 def test_tracked_candidate_changes_effective_status_without_hiding_discovery_status(
     tmp_path,
 ):

@@ -322,7 +322,11 @@ def load_candidate_ledger(repo_root: str | Path) -> dict[str, dict]:
     if not path.exists():
         return {}
     try:
-        payload = tomllib.loads(path.read_text(encoding="utf-8"))
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        raise RuntimeError(f"CANDIDATE_LEDGER_UNREADABLE: {path}: {exc}") from exc
+    try:
+        payload = tomllib.loads(text)
     except tomllib.TOMLDecodeError as exc:
         raise RuntimeError(f"CANDIDATE_LEDGER_INVALID: {path}: {exc}") from exc
     raw_schema_version = payload.get("schema_version", 0)
