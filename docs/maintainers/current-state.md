@@ -394,9 +394,10 @@ produced `llama.cpp-hip-gfx1151-b8955-1-x86_64.pkg.tar.zst`,
 `llama.cpp-vulkan-gfx1151-b8955-1-x86_64.pkg.tar.zst`, and the refreshed
 `lemonade-server-10.2.0-5-x86_64.pkg.tar.zst` artifact with b8955 backend
 metadata. `makepkg --verifysource` passed for both llama.cpp packages, and
-`pytest packages/llama.cpp-hip-gfx1151/tests
-packages/llama.cpp-vulkan-gfx1151/tests packages/lemonade-server/tests -q`
-reported `5 passed`. After privileged deploy, `pacman -Q` reports
+`pytest tests/test_check_package_updates.py
+packages/llama.cpp-hip-gfx1151/tests packages/llama.cpp-vulkan-gfx1151/tests
+packages/lemonade-server/tests -q` reported `71 passed`. After privileged
+deploy, `pacman -Q` reports
 `llama.cpp-hip-gfx1151 b8955-1`, `llama.cpp-vulkan-gfx1151 b8955-1`, and
 `lemonade-server 10.2.0-5`. The installed scenario run `python
 tools/run_inference_scenarios.py --engine llama.cpp --engine lemonade --tag
@@ -411,9 +412,11 @@ metadata-only b8955 config change upgrades clients already on `10.2.0-5`.
 `lemonade-server-10.2.0-6-x86_64.pkg.tar.zst`, and
 `pytest packages/lemonade-server/tests -q` reported `2 passed`.
 
-A follow-up live freshness check on 2026-04-28, run from a writable temporary
-repo root because `.agents/session` is read-only in this sandbox, found new
-actionable drift after the b8955 build. Upstream llama.cpp moved to `b8958`;
+A follow-up live freshness check on 2026-04-28 found new actionable drift after
+the b8955 build. Session-scoped prompts, specs, plans, scratch notes, and
+handoff material belong in ignored locations such as `.agents/session/` or
+`docs/worklog/`, with durable conclusions extracted into tracked docs. Upstream
+llama.cpp moved to `b8958`;
 the `b8955..b8958` range is CANN-focused plus a ggml backend/device
 duplicate-registration guard and `-lm` link-behavior reversion. Lemonade
 `10.3.0` is available with OmniRouter, a Tauri desktop app, the
