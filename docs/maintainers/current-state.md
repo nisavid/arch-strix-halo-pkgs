@@ -393,11 +393,14 @@ lemonade-server` plan `96221b2d` completed with writable cache overrides and
 produced `llama.cpp-hip-gfx1151-b8955-1-x86_64.pkg.tar.zst`,
 `llama.cpp-vulkan-gfx1151-b8955-1-x86_64.pkg.tar.zst`, and the refreshed
 `lemonade-server-10.2.0-5-x86_64.pkg.tar.zst` artifact with b8955 backend
-metadata. `makepkg --verifysource` passed for both llama.cpp packages, and
-`pytest tests/test_check_package_updates.py
-packages/llama.cpp-hip-gfx1151/tests packages/llama.cpp-vulkan-gfx1151/tests
-packages/lemonade-server/tests -q` reported `71 passed`. After privileged
-deploy, `pacman -Q` reports
+metadata. `makepkg --verifysource` passed for both llama.cpp packages, and the
+full PR verification command reported `71 passed`:
+
+```console
+$ pytest tests/test_check_package_updates.py packages/llama.cpp-hip-gfx1151/tests packages/llama.cpp-vulkan-gfx1151/tests packages/lemonade-server/tests -q
+```
+
+After privileged deploy, `pacman -Q` reports
 `llama.cpp-hip-gfx1151 b8955-1`, `llama.cpp-vulkan-gfx1151 b8955-1`, and
 `lemonade-server 10.2.0-5`. The installed scenario run `python
 tools/run_inference_scenarios.py --engine llama.cpp --engine lemonade --tag
