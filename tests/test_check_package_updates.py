@@ -979,6 +979,73 @@ def test_non_query_blocked_candidate_does_not_hide_query_failure(tmp_path):
     assert "candidate" not in report["families"][0]
 
 
+def test_blocked_query_candidate_does_not_hide_different_failed_check(tmp_path):
+    write_pkg(tmp_path, "python-vllm-rocm-gfx1151")
+    write_policy(
+        tmp_path,
+        """
+        [families.vllm]
+        packages = ["python-vllm-rocm-gfx1151"]
+        priority = "high"
+        workflow = "upstream_source_update"
+        checks = [
+          { id = "release", role = "primary", kind = "github_release", repo = "vllm-project/vllm", recorded = "0.20.0", tag_prefix = "v", comparison = "pep440" },
+          { id = "aur", role = "baseline", kind = "aur", package = "python-vllm", recorded = "0.12.0-1", comparison = "pkgver" },
+        ]
+        """,
+    )
+    write_candidate_ledger(
+        tmp_path,
+        """
+        schema_version = 1
+
+        [candidates.vllm-release-provider]
+        family = "vllm"
+        packages = ["python-vllm-rocm-gfx1151"]
+        source_kind = "github_release"
+        check_id = "release"
+        previous_recorded = "0.20.0"
+        latest = ""
+        discovery_status = "query_failed"
+        disposition = "blocked"
+        disposition_reason = "GitHub release provider retry needed."
+        salient_changes = ["Unknown until provider recovers"]
+        patch_carry_overlap = true
+        package_source_update_needed = true
+        host_validation_needed = true
+        next_gate_kind = "backlog"
+        next_gate_path = "docs/backlog.md"
+        next_gate_label = "vLLM release provider retry"
+        last_reviewed = "2026-04-28"
+        """,
+    )
+    clients = updates.FakeClients(
+        github_releases={
+            "vllm-project/vllm": [
+                {"tag": "v0.20.0", "prerelease": False}
+            ]
+        },
+        fail={"aur:python-vllm": "timeout"},
+    )
+
+    code = updates.main(
+        [
+            "--repo-root",
+            str(tmp_path),
+            "--refresh",
+            "--fail-on",
+            "actionable",
+        ],
+        clients=clients,
+    )
+    report = updates.run_check(tmp_path, refresh=True, clients=clients)
+
+    assert code == 3
+    assert report["families"][0]["status"] == "query_failed"
+    assert report["families"][0]["effective_status"] == "query_failed"
+    assert "candidate" not in report["families"][0]
+
+
 def test_empty_candidate_latest_does_not_match_empty_query_result(tmp_path):
     write_pkg(tmp_path, "python-amd-aiter-gfx1151")
     write_policy(

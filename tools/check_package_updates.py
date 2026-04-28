@@ -603,6 +603,15 @@ def summarize_effective(families: list[dict]) -> dict:
     return dict(Counter(family["effective_status"] for family in families))
 
 
+def candidate_matches_check(candidate: dict, check: dict) -> bool:
+    if candidate.get("source_kind") != check.get("kind"):
+        return False
+    check_id = candidate.get("check_id")
+    if check_id is not None and check_id != check.get("id"):
+        return False
+    return True
+
+
 def candidate_matches_family(candidate: dict, family: dict) -> bool:
     if candidate.get("family") != family.get("family"):
         return False
@@ -611,12 +620,19 @@ def candidate_matches_family(candidate: dict, family: dict) -> bool:
         and candidate.get("disposition") == "blocked"
         and candidate.get("discovery_status") == "query_failed"
     ):
-        return True
+        failed_checks = [
+            check
+            for check in family.get("checks", [])
+            if check.get("status") == "query_failed"
+            and candidate_matches_check(candidate, check)
+        ]
+        return len(failed_checks) == 1
     candidate_latest = str(candidate.get("latest", "")).strip()
     latest_values = {
         latest
         for check in family.get("checks", [])
         if check.get("status") == family.get("status")
+        if candidate_matches_check(candidate, check)
         if (latest := str(check.get("latest", "")).strip())
     }
     if candidate_latest and candidate_latest in latest_values:
