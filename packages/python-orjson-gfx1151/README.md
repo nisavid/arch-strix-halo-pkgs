@@ -7,7 +7,7 @@
 - Recipe build method: `cargo`
 - Upstream repo: ``
 - Package version: `3.11.8`
-- Recipe revision: `a188f9e (20260424, 10 path commits)`
+- Recipe revision: `a1d7a68 (20260427, 16 path commits)`
 - Recipe steps: `31`
 - Recipe dependencies: `cpython`
 - Recorded reference packages: `extra/python-orjson, cachyos-extra-znver4/python-orjson`
@@ -17,7 +17,8 @@
 
 ## Recipe notes
 
-Builds and installs orjson and cryptography from source with Rust flags:
+Builds and installs orjson, cryptography, pydantic-core, tokenizers,
+safetensors, and watchfiles from source with Rust flags:
   RUSTFLAGS="-C target-cpu=znver5 -C opt-level=3"
 This enables full AVX-512 + VAES codegen for Zen 5.
 

@@ -11,7 +11,7 @@
 - Recipe build method: `pip`
 - Upstream repo: `https://github.com/lemonade-sdk/lemonade.git`
 - Package version: `10.2.0`
-- Recipe revision: `a188f9e (20260424, 10 path commits)`
+- Recipe revision: `a1d7a68 (20260427, 16 path commits)`
 - Recipe steps: `34, 35, 36`
 - Recipe dependencies: `therock, llamacpp`
 - Recorded reference packages: `aur/lemonade-server, aur/lemonade-desktop`

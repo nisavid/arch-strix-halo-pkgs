@@ -7,7 +7,7 @@
 - Recipe build method: `pip`
 - Upstream repo: ``
 - Package version: `1.2`
-- Recipe revision: `a188f9e (20260424, 10 path commits)`
+- Recipe revision: `a1d7a68 (20260427, 16 path commits)`
 - Recipe steps: `32`
 - Recipe dependencies: `cpython, pytorch`
 - Recorded reference packages: `none`

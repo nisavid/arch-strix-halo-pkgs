@@ -7,19 +7,19 @@ source_kind = "submodule"
 previous_recorded = "9f7c85f264287ac744272ce540e87058c7a3296b"
 latest = "a1d7a6816dd2c456bad9fcc7d61c53a4bd8c5fbd"
 discovery_status = "branch_head_ahead"
-disposition = "tracked"
-disposition_reason = "New recipe material needs a recipe-update lane before the submodule is adopted."
+disposition = "adopted"
+disposition_reason = "Adopted the ai-notes submodule at a1d7a681, rerendered recipe-managed package scaffolds, and rerendered therock-gfx1151 provenance. Newly described stable-diffusion.cpp and expanded native/Rust wheel recipe surfaces remain policy follow-ups rather than implicit package adoption."
 salient_changes = [
   "Stable Diffusion and Qwen3-VL embedding recipe material",
   "vLLM environment/package and patch material",
   "Additional package-scenario inputs that need local policy review",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
-host_validation_needed = true
+package_source_update_needed = false
+host_validation_needed = false
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "Blackcat ai-notes recipe update"
+next_gate_label = "Blackcat follow-up recipe surfaces"
 last_reviewed = "2026-04-28"
 
 [candidates."vllm-0.20.0"]
@@ -45,26 +45,28 @@ next_gate_path = "docs/backlog.md"
 next_gate_label = "vLLM 0.20.0 package update"
 last_reviewed = "2026-04-28"
 
-[candidates."llama-cpp-b8958"]
+[candidates."llama-cpp-b8963"]
 family = "llama_cpp"
 packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"]
 source_kind = "github_release"
 previous_recorded = "b8955"
-latest = "b8958"
+latest = "b8963"
 discovery_status = "stable_update_available"
 disposition = "tracked"
-disposition_reason = "b8955 was adopted, deployed, and installed-smoked, but upstream moved again; review b8955..b8958 before deciding whether to adopt b8958."
+disposition_reason = "b8955 was adopted, deployed, and installed-smoked, but upstream moved again; review b8955..b8963 before deciding whether to adopt b8963."
 salient_changes = [
   "CANN operator additions and optimization",
   "ggml backend/device duplicate-registration guard",
   "CMake link behavior reverts to -lm instead of find_library",
+  "Vulkan timestamp barrier, SPIR-V header detection, Q4_K/Q5_K scale-load coalescing, and WebGPU SSM scan aliasing changes",
+  "Large server web UI tool/chat settings refactor",
 ]
 patch_carry_overlap = true
 package_source_update_needed = true
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "llama.cpp b8958 runtime rebuild decision"
+next_gate_label = "llama.cpp b8963 runtime rebuild decision"
 last_reviewed = "2026-04-28"
 
 [candidates."rocm-pytorch-release-2.11-9413e9b"]
@@ -143,14 +145,14 @@ last_reviewed = "2026-04-28"
 [candidates."transformers-5.7.0-tag"]
 family = "transformers"
 packages = ["python-transformers-gfx1151"]
-source_kind = "github_tags"
+source_kind = "pypi"
 previous_recorded = "5.6.2"
 latest = "5.7.0"
 discovery_status = "stable_update_available"
 disposition = "tracked"
-disposition_reason = "The GitHub tag is ahead while PyPI still reports 5.6.2; review release-source availability and Gemma/model-surface impact before updating the PyPI-based package lane."
+disposition_reason = "PyPI now publishes 5.7.0, matching the GitHub tag; review release-source availability and Gemma/model-surface impact before updating the PyPI-based package lane."
 salient_changes = [
-  "GitHub v5.7.0 tag is available while PyPI remains at 5.6.2",
+  "PyPI 5.7.0 wheel and sdist are available, matching GitHub v5.7.0",
   "Potential Gemma/model-surface overlap with the local Transformers and Mistral-common closure lane",
 ]
 patch_carry_overlap = true
@@ -158,5 +160,5 @@ package_source_update_needed = true
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "Transformers 5.7.0 source-availability and package review"
+next_gate_label = "Transformers 5.7.0 package review"
 last_reviewed = "2026-04-28"
