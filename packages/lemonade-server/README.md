@@ -10,7 +10,7 @@
 - Scaffold template: `lemonade-server`
 - Recipe build method: `pip`
 - Upstream repo: `https://github.com/lemonade-sdk/lemonade.git`
-- Package version: `10.2.0`
+- Package version: `10.3.0`
 - Recipe revision: `a1d7a68 (20260427, 16 path commits)`
 - Recipe steps: `34, 35, 36`
 - Recipe dependencies: `therock, llamacpp`
@@ -36,7 +36,7 @@ Reinstalling at compatible versions resolves conflicts.
 ## Scaffold notes
 
 - Server/runtime package; llama.cpp backends are optdepends, not hard deps.
-- Pinned to the v10.2.0 upstream release tarball to keep the first-pass metadata reproducible.
+- Pinned to the v10.3.0 upstream release tarball to keep the package metadata reproducible.
 - Installs /etc/lemonade/conf.d/10-llamacpp-gfx1151.conf so the packaged ROCm and Vulkan llama.cpp wrapper binaries are exposed to the service as system-managed backends.
 - The system-managed backend patch also folds in the config-load and CLI/backend-table changes needed for those service-provided overrides to stay visible after config.json already exists.
 - Export the packaged llama.cpp revision and ggml release URL in the system-managed backend env overlay so the GUI shows the packaged backend metadata instead of upstream downloader defaults.

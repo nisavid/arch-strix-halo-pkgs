@@ -121,7 +121,7 @@
       "The SKIP_BUILD_DEPS source patch must apply before wheel assembly so bdist_wheel uses the already staged artifacts instead of re-running the CMake install target."
     ],
     "source_refs": [
-      "pytorch::git+https://github.com/ROCm/pytorch.git#commit=8543095e3275db694084a6679bd5b61f7d2ece76"
+      "pytorch::git+https://github.com/ROCm/pytorch.git#commit=9413e9b96bcbeb8af1aa0280a3a9bc7dd048857e"
     ],
     "src_subdir": "pytorch",
     "template": "python-project-pytorch-rocm",

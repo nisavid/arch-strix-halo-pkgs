@@ -1,17 +1,18 @@
 diff --git a/aiter/fused_moe.py b/aiter/fused_moe.py
 --- a/aiter/fused_moe.py
 +++ b/aiter/fused_moe.py
-@@ -859,6 +859,9 @@ def get_2stage_cfgs(
+@@ -875,7 +875,10 @@ def get_2stage_cfgs(
          kernelName1 = ""
          kernelName2 = ""
          run_1stage = False
+         run_1stage_xbf16 = False
 +        # Fall back to the existing 2-stage heuristics for unknown gfx targets
 +        # instead of crashing while probing the 1-stage config table.
 +        gfx_1stage_cfgs = fused_moe_1stage_dict.get(get_gfx(), {})
          if (
              activation,
              q_type,
-@@ -867,7 +870,7 @@ def get_2stage_cfgs(
+@@ -883,7 +886,7 @@ def get_2stage_cfgs(
              q_dtype_w,
              use_g1u1,
              doweight_stage1,

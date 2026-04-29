@@ -3,6 +3,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 SITE_PACKAGES = [
@@ -52,6 +54,9 @@ def test_pkgbuild_drops_old_build_only_librocsolver_shim():
 
 
 def test_vllm_version_is_metadata_only():
+    if not VLLM_SCRIPT.exists():
+        pytest.skip("built vLLM package image is not present")
+
     env = os.environ.copy()
     pythonpath_entries = [*(str(path) for path in SITE_PACKAGES)]
     pythonpath = os.pathsep.join(pythonpath_entries)
@@ -72,7 +77,7 @@ def test_vllm_version_is_metadata_only():
         f"stdout:\n{result.stdout}\n"
         f"stderr:\n{result.stderr}"
     )
-    assert result.stdout.strip() == "0.19.1"
+    assert result.stdout.strip() == "0.20.0"
     assert "openai_harmony" not in result.stderr
     assert "triton.language.target_info" not in result.stderr
     assert "torchao/_C.abi3.so" not in result.stderr

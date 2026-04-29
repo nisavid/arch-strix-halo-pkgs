@@ -5,7 +5,7 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 PKGBUILD = REPO_ROOT / "packages/python-vllm-rocm-gfx1151/PKGBUILD"
 PATCH = (
     REPO_ROOT
-    / "packages/python-vllm-rocm-gfx1151/0010-rocm-support-qwen35-hybrid-gdn.patch"
+    / "packages/python-vllm-rocm-gfx1151/0016-rocm-refresh-local-carry-for-vllm-0.20.0.patch"
 )
 
 
@@ -22,7 +22,7 @@ def test_qwen35_patch_restricts_fla_autotune_on_amd():
 
     assert "vllm/model_executor/layers/fla/ops/chunk_delta_h.py" in text
     assert "vllm/model_executor/layers/fla/ops/chunk_o.py" in text
-    assert "from .utils import is_amd, use_cuda_graph" in text
+    assert "from .utils import FLA_CHUNK_SIZE, is_amd, use_cuda_graph" in text
     assert "for num_stages in ([2] if is_amd else [2, 3, 4])" in text
     assert "for BV in ([32] if is_amd else [32, 64])" in text
     assert "for BK in ([32] if is_amd else BKV_LIST)" in text
@@ -34,20 +34,16 @@ def test_qwen35_patch_restricts_fla_autotune_on_amd():
 def test_qwen35_patch_restricts_warmup_to_chunk_size_on_amd():
     text = PATCH.read_text()
 
-    assert "vllm/model_executor/layers/mamba/gdn_linear_attn.py" in text
-    assert "for T in (64,):" in text
-    assert "T must be >= chunk_size (64)" in text
+    assert "vllm/model_executor/layers/mamba/gdn_linear_attn.py" not in text
 
 
 def test_qwen35_patch_preserves_hybrid_block_alignment_after_rocm_platform_update():
     text = PATCH.read_text()
 
     assert "vllm/config/vllm.py" in text
-    assert "vllm/model_executor/models/config.py" in text
     assert "Re-run hybrid alignment" in text
-    assert "platform already set a minimum block_size" in text
-    assert "kernel_block_alignment_size = max(" in text
-    assert "cache_config.block_size" in text
+    assert "platform minimum" in text
+    assert "HybridAttentionMambaModelConfig.verify_and_update_config(self)" in text
 
 
 def test_qwen35_patch_routes_hybrid_models_away_from_aiter_attention():

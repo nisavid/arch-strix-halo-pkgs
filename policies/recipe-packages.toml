@@ -130,7 +130,7 @@ scaffold_notes = [
 [packages.python-vllm-rocm-gfx1151]
 recipe_key = "vllm"
 template = "python-project-vllm"
-upstream_version = "0.19.1"
+upstream_version = "0.20.0"
 pkgdesc = "High-throughput and memory-efficient inference engine for LLMs with ROCm, rebuilt for Strix Halo gfx1151"
 url = "https://github.com/vllm-project/vllm"
 license = ["Apache-2.0"]
@@ -141,16 +141,15 @@ divergence_notes = [
   "This package is ROCm-specific even though the closest Arch-family baseline is the generic aur/python-vllm package.",
   "Carries a deliberate Python-3.14 compatibility delta and recipe-specific ROCm/AITER integration that are not part of the generic baseline.",
   "Carries repo-owned Gemma 4 validation lanes for Strix Halo because the host-proven path is narrower than upstream defaults: AITER unified attention, TRITON unquantized MoE, text-only multimodal limits, and per-checkpoint eager/compiled decisions.",
-  "Carries a repo-owned Qwen3.5 hybrid/GDN patch lane for the parts of Blackcat Informatics' advisory recipe that are still missing from the maintained vLLM 0.19.1 package source.",
+  "Carries a repo-owned Qwen3.5 hybrid/GDN patch lane for the parts of Blackcat Informatics' advisory recipe that are still missing from the maintained vLLM 0.20.0 package source.",
   "Carries a repo-owned Qwen speculative-decoding patch lane for the padded EAGLE/MTP drafter batch Triton kernel on ROCm.",
-  "Carries the narrow upstream DFlash speculators config parser from vLLM PR #38300, while the DFlash runtime/model backport remains outside this package carry.",
+  "Uses upstream vLLM 0.20.0 DFlash model/runtime and speculators config parser support instead of carrying the former narrow parser backport locally.",
   "Carries a ROCm FlashAttention Triton availability fix so vLLM detects the local pure-Python flash_attn package when it selects AITER's Triton AMD interface.",
   "Carries a ROCm CK/direct FlashAttention interface gate that keeps the forced FLASH_ATTN probe blocked at backend selection until the imported flash_attn module exposes vLLM's paged-KV varlen API."
 ]
 update_notes = [
   "Check upstream vllm release notes and pyproject metadata first, then reconcile the Python upper-bound and hard-coded supported-version list with the current state of Python 3.14 support.",
-  "For the v0.19.1 upgrade, the upstream v0.19.0..v0.19.1 tarball diff was mostly additive (82 files changed, 5061 insertions, 269 deletions). The impact review focused on dependency metadata (`transformers` and `compressed-tensors` constraints), Gemma 4 model/tooling additions, and the local patch touchpoints; the carried ROCm/platform, Qwen3.5/GDN, sampler, and startup-laziness patches still apply after refresh.",
-  "On 2026-04-28, reviewed upstream vLLM 0.20.0 as a freshness candidate but did not repin this package. The range adds first-party Python 3.14 and torch 2.11 metadata support, DFlash model/runtime pieces, broad quantization and MoE refactors, ROCm memory-shutdown and NUMA detection fixes, GDN and Gemma 4 changes, pooling/scoring route reshaping, and many entrypoint changes that overlap local patch carry and tracked validation lanes. Treat adoption as a dedicated vLLM package-update lane with patch refresh and host smokes, not as a freshness-only metadata change.",
+  "On 2026-04-29, adopted upstream vLLM 0.20.0 with the local ROCm/Gemma/Qwen/TorchAO/FlashAttention carry refreshed as a single package patch. The release brings first-party Python 3.14 and torch 2.11 metadata support plus upstream DFlash model/runtime pieces, so the former local Python-version and narrow DFlash parser backports are no longer separate source patches.",
   "When validating a new model, usage pattern, or stable-tag gap, scout upstream release notes, open issues, open PRs, and recent commits before freezing local patch carry. Gemma 4 needed exactly that: the durable fixes were the unified-attention backend selection and server/template follow-ups, while the earlier AITER fused-MoE carries were later pruned once the validated default lane stayed on TRITON MoE.",
   "If numba remains part of the Python 3.14 story, capture it as a real source patch or package dependency decision rather than a no-op scripted edit.",
   "Keep vllm --version as a metadata-only smoke path. If upstream CLI imports optional OpenAI or Triton modules eagerly again, prefer restoring a lazy import boundary over adding unrelated hard runtime dependencies just for version output.",
@@ -165,7 +164,7 @@ update_notes = [
   "Keep the repo-owned Gemma 4 text-only smoke lanes on `enforce_eager=True` / `--enforce-eager` until separate host validation proves the compiled/CUDAGraph ROCm path is clean for each promoted checkpoint. vLLM documents eager mode as disabling compilation and CUDAGraph capture, so treat relaxing it as a follow-up performance lane rather than a silent default change. On 2026-04-20, fresh-cache compiled probes proved that 26B-A4B and 31B do not require eager for the tracked offline text smoke. E2B still requires eager: the compiled+CUDAGraph probe reached `generation_ok` and then returned corrupted non-ASCII text instead of the expected five-word answer. Run compiled-probe revalidation with fresh `VLLM_CACHE_ROOT`, `TORCHINDUCTOR_CACHE_DIR`, and `TRITON_CACHE_DIR` paths, because stale Inductor artifacts can produce misleading shape-mismatch failures.",
   "Keep Gemma 4 26B-A4B server startup timeouts long enough for cold reference-host loads. A 300-second budget killed the server while it was still loading safetensors shards; the helper now defaults this constrained 26B-A4B lane to 420 seconds.",
   "Use the tracked `compiled-probe`, `kernel-probe`, `multimodal`, and `quantization-probe` scenario tags for future investigations instead of adding terminal-only one-offs; keep `exploratory` on any scenario that should not run as part of broad package validation.",
-  "Keep `0010-rocm-support-qwen35-hybrid-gdn.patch` until upstream vLLM lands equivalent ROCm-safe Qwen3.5/GDN handling. The patch carries the still-missing pieces from Blackcat Informatics' advisory lane: AMD-restricted FLA autotune grids, float32 GDN exponent operands, GDN warmup at T=64 only, hybrid block-size realignment after ROCm platform updates, and hybrid full-attention fallback away from AITER attention. In vLLM 0.19.1, the GDN warmup loop still lives in `vllm/model_executor/layers/mamba/gdn_linear_attn.py`, not the older advisory `qwen3_next.py` path.",
+  "Keep the Qwen3.5/GDN section of `0016-rocm-refresh-local-carry-for-vllm-0.20.0.patch` until upstream vLLM lands equivalent ROCm-safe Qwen3.5/GDN handling. The patch carries the still-missing pieces from Blackcat Informatics' advisory lane: AMD-restricted FLA autotune grids, float32 GDN exponent operands, GDN warmup at T=64 only, hybrid block-size realignment after ROCm platform updates, and hybrid full-attention fallback away from AITER attention.",
   "On 2026-04-20, rebuilt installed Qwen3.5 text smokes passed in both eager and compiled mode. `vllm.qwen3_5.0_8b.text.compiled` ran with `enforce_eager=False`, `torch.compile`, CUDAGraph capture, GDN prefill, ROCM_ATTN, and output `Ready.`, so the tiny Qwen3.5 text lane does not require eager mode under the current installed stack.",
   "On 2026-04-20, rebuilt installed `Qwen/Qwen3.6-35B-A3B` also passed the unquantized no-AITER control in compiled mode with `enforce_eager=False`, TRITON unquantized MoE, GDN prefill, ROCM_ATTN, torch.compile, CUDAGraph capture, and output `ready`. Keep the FP8 Qwen3.6 probes blocked separately; the unquantized eager and compiled controls both pass.",
   "Do not restore the dropped Gemma 4 ROCm AITER MoE intermediate-padding carry unless a future explicit AITER fused-MoE lane reproduces a real alignment failure after the AITER backend is re-enabled on purpose. The 2026-04-17 validated reference-host lane used TRITON backend for Unquantized MoE, so that patch was removed as dormant carry. The 2026-04-19 forced AITER MoE server probe failed earlier with `ValueError: ROCm AITer MoE backend is not available for this configuration`, while default/automatic and forced Triton MoE server probes passed.",
@@ -176,9 +175,9 @@ update_notes = [
   "Keep the merged CLI/runtime-light startup patch intact unless upstream makes the generic startup path import-clean on its own. That carry now keeps plain `vllm --help` off the benchmark tree, OpenAI chat-utils path, Transformers-backed `arg_utils` helpers, and the heavy shared runtime command imports.",
   "Keep the ROCm top-k/top-p sampler patch unless upstream or the local Triton lane proves `apply_top_k_top_p_triton` safe for large Qwen-family vocabularies on gfx1151. The 2026-04-19 standalone repro faulted the GPU with logits shaped `(32, 248320)`, top-k enabled, and top-p `0.9`, while vLLM's existing PyTorch fallback completed on the same tensor.",
   "Keep the padded EAGLE/MTP drafter count patch unless upstream makes `eagle_prepare_next_token_padded_kernel` keep `valid_count` in one scalar dtype across Triton branches. The concrete ROCm/Triton failure is `Mismatched type for valid_count between then block (uint32) and else block (int1)` when the Qwen MTP server path uses the padded drafter batch.",
-  "Keep the DFlash speculators config parser patch only as a narrow parser backport. Do not promote DFlash scenarios as runnable until the package also has upstream `qwen3_dflash.py`, the DFlash proposer/runtime support, and registry integration.",
+  "Treat DFlash as upstream-owned in vLLM 0.20.0. Promote runnable DFlash scenarios only after this package's 0.20.0 runtime path passes reference-host validation.",
   "Keep the FlashAttention Triton availability check aligned with the packaged ROCm flash_attn interface. The local package does not ship a `flash_attn.flash_attn_triton_amd` module; it exposes AITER's Triton AMD backend through `flash_attn.flash_attn_interface` when `FLASH_ATTENTION_TRITON_AMD_ENABLE=TRUE`.",
-  "Keep the CK/direct FlashAttention interface gate aligned with the packaged ROCm flash_attn interface. The local CK lane currently exposes a Dao-style direct varlen function and direct smokes, not the vLLM paged-KV varlen API required by the V1 `FLASH_ATTN` backend.",
+  "Keep the CK/direct FlashAttention interface gate aligned with the packaged ROCm flash_attn interface. The local CK lane currently exposes a Dao-style direct varlen function and direct smokes, not vLLM's paged-KV varlen call surface required by the V1 `FLASH_ATTN` backend. The gate reports FlashAttention version 2 on ROCm so unsupported CK/direct calls are blocked deeper in the paged-KV CK kernel path.",
   "Treat `Qwen/Qwen3.6-35B-A3B-FP8` as a blocked FP8 MoE probe, not a passing smoke, until a ROCm/gfx1151 FP8 MoE backend exists. With AITER disabled, vLLM reports `No FP8 MoE backend supports the deployment configuration`; the Triton and batched Triton FP8 MoE gates only advertise ROCm FP8 support for gfx9, not gfx1151.",
   "Keep patch application idempotent across reused src/ trees. The concrete host failure while cutting pkgrel=14 was a file-adding patch aborting in `prepare()` after a previous failed build left a partially patched source tree behind.",
   "Keep the inherited makepkg compile flags when layering Strix tuning flags. Overwriting CFLAGS/CXXFLAGS drops Arch's build-path prefix maps and can leak $srcdir paths into the shipped ROCm extension modules.",
@@ -194,17 +193,15 @@ depends = ["amdsmi-gfx1151", "numactl", "python-aiohttp", "python-blake3", "pyth
 makedepends = ["cmake", "ninja", "python-installer", "python-pip", "python-setuptools", "python-setuptools-scm", "python-wheel", "rocm-llvm-gfx1151"]
 options = ["!lto"]
 source_type = "tarball"
-source_url = "https://github.com/vllm-project/vllm/archive/refs/tags/v0.19.1.tar.gz"
-extra_sources = ["0001-python-3.14-version-gates.patch", "0002-cli-version-avoids-eager-runtime-imports.patch", "0003-rocm-gate-vendored-triton-kernels-on-runtime-support.patch", "0004-rocm-fallback-and-optional-sagemaker-standards.patch", "0005-rocm-reduce-triton-unified-attention-prefill-tile-for-large-heads.patch", "0006-setup.py-forward-host-and-hip-flags-into-cmake.patch", "0007-rocm-enable-gfx1x-aiter-and-prefer-it-for-gemma4.patch", "0008-torchao-startup-stays-lazy.patch", "0009-cli-startup-stays-runtime-light.patch", "0010-rocm-support-qwen35-hybrid-gdn.patch", "0011-rocm-avoid-triton-topk-topp-sampler.patch", "0012-rocm-keep-eagle-padded-drafter-count-int32.patch", "0013-speculators-dflash-config-parsing.patch", "0014-rocm-detect-flash-attn-triton-interface.patch", "0015-rocm-gate-flash-attn-ck-interface.patch"]
-extra_sha256sums = ["SKIP", "SKIP", "SKIP", "SKIP", "SKIP", "SKIP", "SKIP", "SKIP", "SKIP", "SKIP", "SKIP", "SKIP", "SKIP", "SKIP", "SKIP"]
-source_patches = ["0001-python-3.14-version-gates.patch", "0002-cli-version-avoids-eager-runtime-imports.patch", "0003-rocm-gate-vendored-triton-kernels-on-runtime-support.patch", "0004-rocm-fallback-and-optional-sagemaker-standards.patch", "0005-rocm-reduce-triton-unified-attention-prefill-tile-for-large-heads.patch", "0006-setup.py-forward-host-and-hip-flags-into-cmake.patch", "0007-rocm-enable-gfx1x-aiter-and-prefer-it-for-gemma4.patch", "0008-torchao-startup-stays-lazy.patch", "0009-cli-startup-stays-runtime-light.patch", "0010-rocm-support-qwen35-hybrid-gdn.patch", "0011-rocm-avoid-triton-topk-topp-sampler.patch", "0012-rocm-keep-eagle-padded-drafter-count-int32.patch", "0013-speculators-dflash-config-parsing.patch", "0014-rocm-detect-flash-attn-triton-interface.patch", "0015-rocm-gate-flash-attn-ck-interface.patch"]
-src_subdir = "vllm-0.19.1"
+source_url = "https://github.com/vllm-project/vllm/archive/refs/tags/v0.20.0.tar.gz"
+extra_sources = ["0016-rocm-refresh-local-carry-for-vllm-0.20.0.patch"]
+extra_sha256sums = ["SKIP"]
+source_patches = ["0016-rocm-refresh-local-carry-for-vllm-0.20.0.patch"]
+src_subdir = "vllm-0.20.0"
 patches_dir = "patches/python-vllm-rocm-gfx1151"
 scaffold_notes = [
   "There does not appear to be a current dedicated python-vllm-rocm AUR package; the closest package baseline is the generic AUR python-vllm package, with ROCm-specific integration coming from this recipe.",
-  "Use the latest stable upstream release tarball (v0.19.1) instead of a floating full Git clone. Upstream released v0.19.1 as a patch release on top of v0.19.0, so the package now follows the final stable tag rather than the earlier v0.19.1 release candidate.",
-  "The v0.19.1 impact review found no dropped local patch lane: upstream mainly added Gemma 4 model/tooling coverage, relaxed the Transformers 5.x upper-bound shape while excluding known bad 5.x minors, and bumped compressed-tensors. The carried local patches were refreshed against the final tag.",
-  "This scaffold carries the minimal Python-3.14 source patch needed to build from the stable tarball: relax the Python upper bound and extend the hard-coded CMake supported-version list through 3.14.",
+  "Uses the latest stable upstream release tarball, currently v0.20.0, instead of a floating full Git clone.",
   "Carries a package-local CLI import patch so vllm --version remains a metadata-only path instead of importing optional OpenAI and Triton runtime modules at startup.",
   "Carries a ROCm-specific Triton compatibility patch so the vendored triton_kernels tree is treated as unavailable when the installed Triton runtime lacks CUDA-only APIs such as triton.language.target_info or triton.constexpr_function.",
   "Carries a ROCm-platform fallback patch so Strix Halo can fall back from AMDSMI ASIC-info lookup to torch.cuda without tripping the import-time warning_once circular import path.",
@@ -227,11 +224,11 @@ scaffold_notes = [
   "Carries a merged CLI/runtime-light startup patch so plain `vllm --help` stays off the benchmark latency tree, OpenAI chat-utils tool-call path, Transformers-backed `arg_utils` helpers, and heavy `serve`/`launch`/`run-batch` runtime imports unless the user actually selected those flows.",
   "Carries a ROCm top-k/top-p sampler guard so large-vocabulary Qwen3.5-family runs use vLLM's existing PyTorch filtering fallback instead of the Triton filter path that faulted the GPU on gfx1151.",
   "Carries a padded EAGLE/MTP drafter-count typing patch so Qwen speculative decoding can compile the padded drafter batch Triton kernel on ROCm.",
-  "Carries the narrow DFlash speculators config parser from vLLM PR #38300 so speculators-format DFlash configs resolve to `DFlashDraftModel`; the package still intentionally stops before the upstream-scale DFlash runtime/model backport.",
+  "Uses upstream vLLM 0.20.0 DFlash support instead of carrying the former narrow speculators config parser patch locally.",
   "The reference host now uses the local python-torchao-rocm-gfx1151 replacement lane, so the old external python-torchao-rocm failure is historical rather than current state. Generic vLLM startup should still stay TorchAO-clean on non-TorchAO code paths, and the tracked helpers for actual --quantization torchao support remain tools/torchao_vllm_smoke.py plus the Gemma 4 TorchAO scenarios.",
   "`tools/torchao_vllm_smoke.py` now covers the tiny no-download checkpoint, a serialized real-model probe, and a real-model online quantization path. After the 2026-04-20 self-hosted rebuild, `vllm.gemma4.e2b.torchao.online-real-model` passed with `quantization=torchao`, `enforce_eager=True`, `ROCM_AITER_UNIFIED_ATTN`, and 10.62 GiB model-loading memory. The serialized real-model scenario is an expected blocked probe: it writes processor files correctly, then fails in TorchAO/vLLM weight loading with `AttributeError: 'Tensor' object has no attribute 'tensor_data_names'`.",
   "makepkg -e reuses src/, so build() intentionally reapplies the carried source patches before wheel generation instead of assuming prepare() already ran in the current tree.",
-  "makepkg -f can also reuse a partially patched src/ tree across failed iterations. The PKGBUILD now re-extracts v0.19.1.tar.gz and reapplies the full carried patch series on a known-clean tree whenever its source-patch sentinels are missing, instead of relying on per-patch stamp files under src/.patch-state.",
+  "makepkg -f can also reuse a partially patched src/ tree across failed iterations. The PKGBUILD now re-extracts the v0.20.0 tarball and reapplies the full carried patch series on a known-clean tree whenever its source-patch sentinels are missing, instead of relying on per-patch stamp files under src/.patch-state.",
   "Preserve makepkg's inherited CFLAGS/CXXFLAGS when layering Strix tuning flags, and feed the same prefix-map flags into HIPFLAGS, so Arch's build-path sanitization survives the ROCm/HIP compile lane too.",
   "Upstream openai-harmony is a small Rust/PyO3 helper library with published manylinux wheels, not a ROCm-specific component. If Arch still lacks an official package, the right local story is a closure package derived from aur/python-openai-harmony. If this repo ingests it locally, it should still inherit the normal Strix build lane for applicable native code: Zen 5 / znver5 CPU tuning, -O3 or equivalent, LTO when compatible, and PGO when the build system exposes a maintainable path.",
   "Do not treat a successful build as sufficient for system-Python cutover; the gate is a real vLLM smoke test after the TheRock ROCm split packages are installed coherently.",
@@ -288,7 +285,7 @@ scaffold_notes = [
 recipe_key = "pytorch"
 template = "python-project-pytorch-rocm"
 upstream_version = "2.11.0"
-source_refs = ["pytorch::git+https://github.com/ROCm/pytorch.git#commit=8543095e3275db694084a6679bd5b61f7d2ece76"]
+source_refs = ["pytorch::git+https://github.com/ROCm/pytorch.git#commit=9413e9b96bcbeb8af1aa0280a3a9bc7dd048857e"]
 source_patches = ["0001-setup-allow-skipping-build-deps.patch", "0002-use-wide-magma-version-encoding.patch", "0003-target-numpy-2-c-api.patch", "0004-drop-hip-clang-abi-compat-flag.patch", "0005-enable-ck-gemm-on-gfx1151.patch"]
 extra_sha256sums = ["95a46381bedcff873f9765c9b103877aa36f649e649c5b223582732b2ee61cac", "944e0fb4db31da678993acd3104709083ef28dcee58fcc24ab1675d880c39846", "8ea6af3334027a5ef3360ca882f54e720ef501ea48288081f35d7404835ccc95", "4610d5b10e861079898410899b8c25112fcafd679942f25647af3d55a9253bd4", "33188a11f6848303b17b76adb97de75f19856ea3caab7452fd5c62289d63006b"]
 pkgdesc = "Tensors and dynamic neural networks in Python with ROCm acceleration, rebuilt for Strix Halo gfx1151"
@@ -518,7 +515,7 @@ scaffold_notes = [
 [packages.python-amd-aiter-gfx1151]
 recipe_key = "aiter"
 template = "python-project-aiter"
-upstream_version = "0.1.12.post2.dev69+gcf12b1381"
+upstream_version = "0.1.12.post2.dev140+gc1c65e6be"
 pkgdesc = "AMD AITER kernels rebuilt for Strix Halo gfx1151"
 url = "https://github.com/ROCm/aiter"
 license = ["MIT"]
@@ -552,7 +549,7 @@ depends = ["python-gfx1151", "python-pandas", "python-pytorch-opt-rocm-gfx1151",
 makedepends = ["git", "python-build", "python-installer", "python-setuptools", "python-wheel", "rocm-llvm-gfx1151"]
 optdepends = ["python-flydsl-gfx1151: optional FlyDSL MLIR kernels for AITER fused MoE paths (blocked on rocm-llvm MLIR Python SDK completeness)"]
 options = ["!strip"]
-source_refs = ["aiter::git+https://github.com/ROCm/aiter.git#commit=cf12b1381dcdec4b5d90d136a5403e718c7541ec"]
+source_refs = ["aiter::git+https://github.com/ROCm/aiter.git#commit=c1c65e6bef07a42bdf7e268f69b92e53f2e4ada5"]
 sha256sums = ["SKIP"]
 src_subdir = "aiter"
 source_patches = [
@@ -566,7 +563,7 @@ source_patches = [
 patches_dir = "packages/python-amd-aiter-gfx1151"
 scaffold_notes = [
   "There is no standalone Arch, CachyOS, or AUR aiter package. The closest packaging lane is the PyTorch ROCm pkgbase that vendors the same submodule, so that pkgbase is advisory only.",
-  "The package pins reviewed upstream AITER main snapshot cf12b1381dcdec4b5d90d136a5403e718c7541ec rather than rolling back to the v0.1.12.post1 release tag, because the reviewed post-release range carries local-lane-relevant MoE, quant, JIT, and architecture-dispatch changes.",
+  "The package pins reviewed upstream AITER main snapshot c1c65e6bef07a42bdf7e268f69b92e53f2e4ada5 rather than rolling back to the v0.1.12.post1 release tag, because the reviewed post-release range carries local-lane-relevant MoE, quant, JIT, and architecture-dispatch changes.",
   "The package exports SETUPTOOLS_SCM_PRETEND_VERSION so the wheel metadata is stable even though the source is a git commit past the latest release tag.",
   "The recipe rebuilds AITER from the pinned upstream AITER source lane while keeping CK and generated kernel expectations explicit in the package.",
   "Upstream AITER declares pandas as a real dependency and FlyDSL as an optional acceleration path. Keep pandas in the package metadata, and package FlyDSL separately rather than silently depending on an unpublished wheel.",
@@ -1077,7 +1074,7 @@ scaffold_notes = [
 [packages."llama.cpp-hip-gfx1151"]
 recipe_key = "llamacpp"
 template = "llama-cpp"
-upstream_version = "b8955"
+upstream_version = "b8966"
 pkgdesc = "llama.cpp ROCm backend rebuilt for Strix Halo gfx1151"
 url = "https://github.com/ggml-org/llama.cpp"
 license = ["MIT"]
@@ -1096,16 +1093,17 @@ update_notes = [
   "On 2026-04-26, reviewed upstream llama.cpp b8935 at f454bd7eb8944629aabca163ea1c6e67e53fd77e and AUR llama.cpp-hip b8933-1. The b8929..b8935 range adds OpenCL IQ4_NL support, reduces CUDA MMQ stream-k overhead, optimizes Metal Tensor API usage, guards a Hexagon HMX clock request, fixes chat reasoning-marker spacing, and tightens speculative vocab compatibility checks. No HIP or Vulkan package-build touchpoint was found; record it as reviewed without repinning until a runtime rebuild lane is opened.",
   "On 2026-04-28, reviewed upstream llama.cpp b8953 at 434b2a1ff6a73927f1aeef1455599fbe207f7d6f and AUR llama.cpp-hip b8953-1. The b8935..b8953 range adds WebGPU Q1_0 and matmul tuning, fast i-quant mat-vec kernels, CPU/AMX optimizations, q8_0 download preference, model conversion cleanup, Qwen/LLaMA duplicate-scale removal, server router form-data forwarding, and Windows RPC/cache fixes. No HIP or Vulkan package-build touchpoint was found; record it as reviewed without repinning until a runtime rebuild lane is opened.",
   "On 2026-04-28, adopted upstream llama.cpp b8955 at 14e733e36f5752f39494b6c7e88022e43c05729a. The b8953..b8955 range refactors speculative decoding parameters, switches server m-rope task handling to pos_next, and updates argument parser, server, lookup, speculative, and llama-bench sources; no local packaging patch carry changed.",
+  "On 2026-04-29, adopted upstream llama.cpp b8966 at 7b8443ac786c06438e0f407b7adaa72c220b5099. The b8955..b8966 range adds CANN operator work, backend/device duplicate-registration handling, Vulkan timestamp-barrier and shader/header fixes, WebGPU SSM scan aliasing fixes, CUDA FA support for Mistral Small head sizes, and a broad server UI tool/chat settings refactor; no local packaging patch carry changed.",
   "Keep the backend-specific package split explicit until benchmarking proves a routing wrapper is worth maintaining."
 ]
 provides = ["llama.cpp-hip-gfx1151", "llama.cpp-hip"]
 conflicts = ["llama.cpp-hip"]
 depends = ["gcc-libs", "glibc", "hip-runtime-amd-gfx1151", "rocm-core-gfx1151"]
 makedepends = ["cmake", "ninja", "rocm-llvm-gfx1151"]
-src_subdir = "llama.cpp-14e733e36f5752f39494b6c7e88022e43c05729a"
+src_subdir = "llama.cpp-7b8443ac786c06438e0f407b7adaa72c220b5099"
 upstream_name = "llama.cpp"
 baseline_kind = "closest-upstream"
-source_refs = ["llama.cpp-14e733e36f5752f39494b6c7e88022e43c05729a.tar.gz::https://github.com/ggml-org/llama.cpp/archive/14e733e36f5752f39494b6c7e88022e43c05729a.tar.gz"]
+source_refs = ["llama.cpp-7b8443ac786c06438e0f407b7adaa72c220b5099.tar.gz::https://github.com/ggml-org/llama.cpp/archive/7b8443ac786c06438e0f407b7adaa72c220b5099.tar.gz"]
 sha256sums = ["SKIP"]
 patches_dir = "patches/llama.cpp-hip-gfx1151"
 recipe_notes_override = """
@@ -1140,7 +1138,7 @@ scaffold_notes = [
 [packages."llama.cpp-vulkan-gfx1151"]
 recipe_key = "llamacpp"
 template = "llama-cpp"
-upstream_version = "b8955"
+upstream_version = "b8966"
 pkgdesc = "llama.cpp Vulkan backend rebuilt for Strix Halo gfx1151"
 url = "https://github.com/ggml-org/llama.cpp"
 license = ["MIT"]
@@ -1159,16 +1157,17 @@ update_notes = [
   "On 2026-04-26, reviewed upstream llama.cpp b8935 at f454bd7eb8944629aabca163ea1c6e67e53fd77e; the Vulkan baseline aur/llama.cpp-vulkan-bin remained at b7376-1. The b8929..b8935 range adds OpenCL IQ4_NL support, reduces CUDA MMQ stream-k overhead, optimizes Metal Tensor API usage, guards a Hexagon HMX clock request, fixes chat reasoning-marker spacing, and tightens speculative vocab compatibility checks. No Vulkan package-build touchpoint was found; record it as reviewed without repinning until a runtime rebuild lane is opened.",
   "On 2026-04-28, reviewed upstream llama.cpp b8953 at 434b2a1ff6a73927f1aeef1455599fbe207f7d6f; the Vulkan baseline aur/llama.cpp-vulkan-bin remained at b7376-1. The b8935..b8953 range is mostly WebGPU, CPU/AMX/i-quant, conversion, RPC, download, and server-router work. No Vulkan package-build touchpoint was found; record it as reviewed without repinning until a runtime rebuild lane is opened.",
   "On 2026-04-28, adopted upstream llama.cpp b8955 at 14e733e36f5752f39494b6c7e88022e43c05729a. The b8953..b8955 range refactors speculative decoding parameters, switches server m-rope task handling to pos_next, and updates argument parser, server, lookup, speculative, and llama-bench sources; no Vulkan package-build touchpoint or local patch carry changed.",
+  "On 2026-04-29, adopted upstream llama.cpp b8966 at 7b8443ac786c06438e0f407b7adaa72c220b5099. The b8955..b8966 range adds CANN operator work, backend/device duplicate-registration handling, Vulkan timestamp-barrier and shader/header fixes, WebGPU SSM scan aliasing fixes, CUDA FA support for Mistral Small head sizes, and a broad server UI tool/chat settings refactor; no Vulkan package-build touchpoint or local patch carry changed.",
   "Until then, compare runtime/package expectations against the -bin package and source-build conventions against aur/llama.cpp."
 ]
 provides = ["llama.cpp-vulkan-gfx1151", "llama.cpp-vulkan"]
 conflicts = ["llama.cpp-vulkan"]
 depends = ["gcc-libs", "glibc", "vulkan-icd-loader"]
 makedepends = ["cmake", "ninja", "rocm-llvm-gfx1151", "shaderc", "spirv-headers", "vulkan-headers"]
-src_subdir = "llama.cpp-14e733e36f5752f39494b6c7e88022e43c05729a"
+src_subdir = "llama.cpp-7b8443ac786c06438e0f407b7adaa72c220b5099"
 upstream_name = "llama.cpp"
 baseline_kind = "closest-upstream"
-source_refs = ["llama.cpp-14e733e36f5752f39494b6c7e88022e43c05729a.tar.gz::https://github.com/ggml-org/llama.cpp/archive/14e733e36f5752f39494b6c7e88022e43c05729a.tar.gz"]
+source_refs = ["llama.cpp-7b8443ac786c06438e0f407b7adaa72c220b5099.tar.gz::https://github.com/ggml-org/llama.cpp/archive/7b8443ac786c06438e0f407b7adaa72c220b5099.tar.gz"]
 sha256sums = ["SKIP"]
 patches_dir = "patches/llama.cpp-vulkan-gfx1151"
 recipe_notes_override = """
@@ -1204,7 +1203,7 @@ scaffold_notes = [
 [packages."lemonade-server"]
 recipe_key = "lemonade"
 template = "lemonade-server"
-upstream_version = "10.2.0"
+upstream_version = "10.3.0"
 pkgdesc = "Local AI server runtime rebuilt for Strix Halo gfx1151"
 url = "https://github.com/lemonade-sdk/lemonade"
 license = ["Apache-2.0"]
@@ -1228,10 +1227,10 @@ optdepends = [
   "llama.cpp-hip-gfx1151: llama.cpp ROCm backend",
   "llama.cpp-vulkan-gfx1151: llama.cpp Vulkan backend"
 ]
-src_subdir = "lemonade-10.2.0"
+src_subdir = "lemonade-10.3.0"
 upstream_name = "lemonade-server"
 baseline_kind = "closest-upstream"
-source_refs = ["https://github.com/lemonade-sdk/lemonade/archive/refs/tags/v10.2.0.tar.gz"]
+source_refs = ["https://github.com/lemonade-sdk/lemonade/archive/refs/tags/v10.3.0.tar.gz"]
 sha256sums = ["SKIP"]
 extra_sources = [
   "0001-linux-npu-fallback-to-pci-id-when-accel-open-fails.patch",
@@ -1249,7 +1248,7 @@ source_patches = [
 patches_dir = "packages/lemonade-server"
 scaffold_notes = [
   "Server/runtime package; llama.cpp backends are optdepends, not hard deps.",
-  "Pinned to the v10.2.0 upstream release tarball to keep the first-pass metadata reproducible.",
+  "Pinned to the v10.3.0 upstream release tarball to keep the package metadata reproducible.",
   "Installs /etc/lemonade/conf.d/10-llamacpp-gfx1151.conf so the packaged ROCm and Vulkan llama.cpp wrapper binaries are exposed to the service as system-managed backends.",
   "The system-managed backend patch also folds in the config-load and CLI/backend-table changes needed for those service-provided overrides to stay visible after config.json already exists.",
   "Export the packaged llama.cpp revision and ggml release URL in the system-managed backend env overlay so the GUI shows the packaged backend metadata instead of upstream downloader defaults."
@@ -1258,7 +1257,7 @@ scaffold_notes = [
 [packages."lemonade-app"]
 recipe_key = "lemonade"
 template = "lemonade-app"
-upstream_version = "10.2.0"
+upstream_version = "10.3.0"
 pkgdesc = "Lemonade desktop app rebuilt for Strix Halo gfx1151"
 url = "https://github.com/lemonade-sdk/lemonade"
 license = ["Apache-2.0"]
@@ -1278,22 +1277,22 @@ conflicts = ["lemonade-desktop"]
 replaces = ["lemonade-desktop"]
 depends = ["lemonade-server"]
 makedepends = ["cmake", "ninja", "nodejs", "npm", "rocm-llvm-gfx1151"]
-src_subdir = "lemonade-10.2.0"
+src_subdir = "lemonade-10.3.0"
 upstream_name = "lemonade-app"
 baseline_kind = "closest-upstream"
-source_refs = ["https://github.com/lemonade-sdk/lemonade/archive/refs/tags/v10.2.0.tar.gz"]
+source_refs = ["https://github.com/lemonade-sdk/lemonade/archive/refs/tags/v10.3.0.tar.gz"]
 sha256sums = ["SKIP"]
 patches_dir = "patches/lemonade-app"
 scaffold_notes = [
   "Electron desktop package split from the same lemonade monorepo.",
   "Install a /usr/bin/lemonade-app wrapper that launches the packaged Electron binary from /usr/share/lemonade-app so the shipped desktop entry resolves on PATH.",
-  "Pinned to the v10.2.0 upstream release tarball to keep the first-pass metadata reproducible."
+  "Pinned to the v10.3.0 upstream release tarball to keep the package metadata reproducible."
 ]
 
 [packages."lemonade"]
 recipe_key = "lemonade"
 template = "meta-package"
-upstream_version = "10.2.0"
+upstream_version = "10.3.0"
 pkgdesc = "Meta package for Lemonade and llama.cpp backend packages"
 url = "https://github.com/lemonade-sdk/lemonade"
 license = ["Apache-2.0"]

@@ -5,7 +5,7 @@
 - Package origin: local closure package
 - Build method: `python -m build`
 - Upstream repo: `https://github.com/huggingface/transformers`
-- Upstream version: `5.5.4`
+- Upstream version: `5.7.0`
 - Recorded reference packages: `cachyos/python-transformers, extra/python-transformers`
 - Authoritative reference package: `cachyos/python-transformers`
 - Advisory reference packages: `extra/python-transformers`
@@ -23,7 +23,7 @@ Gemma-4-capable without waiting on distro repo timing.
 
 ## Intentional Divergences
 
-- Tracks upstream `transformers 5.5.4` from PyPI instead of the currently
+- Tracks upstream `transformers 5.7.0` from PyPI instead of the currently
   installed CachyOS `5.2.0-1` lane because Gemma 4 support is missing from the
   older package.
 - Keeps the package pure-Python and architecture-independent; there are no
@@ -40,7 +40,7 @@ Gemma-4-capable without waiting on distro repo timing.
   range fixes `flash_attention_forward` when `s_aux` is absent, improves
   fine-grained FP8 kernel error handling, and repairs Qwen3.5 MoE conversion
   mapping while keeping `transformers.models.gemma4` present. The package
-  remains pinned to the validated `5.5.4` Gemma 4 closure lane until a
+  remains pinned to the validated `5.7.0` Gemma 4 closure lane until a
   Transformers/Gemma update arc reruns the host smokes.
 - Re-check dependency metadata against the chosen baseline package and the
   published PyPI metadata. The package is intentionally thin and should not

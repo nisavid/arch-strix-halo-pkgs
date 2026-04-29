@@ -1,0 +1,1200 @@
+diff --git a/setup.py b/setup.py
+--- a/setup.py	2026-04-27 15:04:32.000000000 -0400
++++ b/setup.py	2026-04-29 01:27:41.996259048 -0400
+@@ -273,6 +273,19 @@
+         elif _is_hip() and ROCM_HOME is not None:
+             cmake_args += [f"-DROCM_PATH={ROCM_HOME}"]
+ 
++        # setuptools environment flags are not forwarded into the ROCm/HIP
++        # CMake lane automatically. Pass them through explicitly so distro
++        # sanitization flags (prefix maps) and host tuning flags reach both the
++        # host C/C++ and HIP extension builds.
++        for env_name, cmake_name in (
++            ("CFLAGS", "CMAKE_C_FLAGS"),
++            ("CXXFLAGS", "CMAKE_CXX_FLAGS"),
++            ("HIPFLAGS", "CMAKE_HIP_FLAGS"),
++        ):
++            env_value = os.environ.get(env_name)
++            if env_value:
++                cmake_args += [f"-D{cmake_name}={env_value}"]
++
+         other_cmake_args = os.environ.get("CMAKE_ARGS")
+         if other_cmake_args:
+             cmake_args += other_cmake_args.split()
+diff --git a/vllm/_aiter_ops.py b/vllm/_aiter_ops.py
+--- a/vllm/_aiter_ops.py	2026-04-27 15:04:32.000000000 -0400
++++ b/vllm/_aiter_ops.py	2026-04-29 01:28:35.756253889 -0400
+@@ -42,7 +42,7 @@
+ def is_aiter_found_and_supported() -> bool:
+     """Check if AITER library is available and platform supports it.
+ 
+-    Checks: platform (ROCm), device arch (gfx9), and library existence.
++    Checks: platform (ROCm), device arch (gfx9/gfx1x), and library existence.
+     Does NOT check environment variables - that's handled by rocm_aiter_ops.is_enabled().
+ 
+     This function determines if aiter CAN be used, not if it SHOULD be used.
+@@ -56,9 +56,9 @@
+     VLLM_ROCM_USE_AITER=0, while preventing unwanted JIT warnings for auto-discovery.
+     """
+     if current_platform.is_rocm() and IS_AITER_FOUND:
+-        from vllm.platforms.rocm import on_mi3xx
++        from vllm.platforms.rocm import on_gfx1x, on_mi3xx
+ 
+-        return on_mi3xx()
++        return on_mi3xx() or on_gfx1x()
+     return False
+ 
+ 
+@@ -87,7 +87,7 @@
+ 
+ def if_aiter_supported(func: Callable) -> Callable:
+     """Decorator that only executes the function if
+-    ROCm AITER package is supported and enabled on gfx9 archs.
++    ROCm AITER package is supported and enabled on gfx9/gfx1x archs.
+     """
+ 
+     @functools.wraps(func)
+diff --git a/vllm/config/vllm.py b/vllm/config/vllm.py
+--- a/vllm/config/vllm.py	2026-04-27 15:04:32.000000000 -0400
++++ b/vllm/config/vllm.py	2026-04-29 01:27:42.002977299 -0400
+@@ -1153,6 +1153,17 @@
+         if envs.VLLM_USE_V2_MODEL_RUNNER:
+             self._validate_v2_model_runner()
+ 
++        if self.model_config is not None and self.model_config.is_hybrid:
++            # Re-run hybrid alignment after platform-specific config updates.
++            # ROCm AITER can raise the KV cache block size after the first
++            # hybrid pass, and Qwen3.5/GDN needs the hybrid mamba alignment to
++            # preserve that platform minimum.
++            from vllm.model_executor.models.config import (
++                HybridAttentionMambaModelConfig,
++            )
++
++            HybridAttentionMambaModelConfig.verify_and_update_config(self)
++
+         # Re-compute compile ranges after platform-specific config updates
+         # (e.g., XPU may lower max_num_batched_tokens when MLA is enabled)
+         self._set_compile_ranges()
+diff --git a/vllm/engine/arg_utils.py b/vllm/engine/arg_utils.py
+--- a/vllm/engine/arg_utils.py	2026-04-27 15:04:32.000000000 -0400
++++ b/vllm/engine/arg_utils.py	2026-04-29 01:28:35.759445552 -0400
+@@ -98,13 +98,6 @@
+ from vllm.platforms import CpuArchEnum, current_platform
+ from vllm.plugins import load_general_plugins
+ from vllm.ray.lazy_utils import is_in_ray_actor, is_ray_initialized
+-from vllm.transformers_utils.config import (
+-    is_interleaved,
+-    maybe_override_with_speculators,
+-)
+-from vllm.transformers_utils.gguf_utils import is_gguf
+-from vllm.transformers_utils.repo_utils import get_model_path
+-from vllm.transformers_utils.utils import is_cloud_storage
+ from vllm.utils.argparse_utils import (
+     FlexibleArgumentParser,
+     human_readable_int,
+@@ -712,6 +705,8 @@
+         load_general_plugins()
+         # when use hf offline,replace model and tokenizer id to local model path
+         if huggingface_hub.constants.HF_HUB_OFFLINE:
++            from vllm.transformers_utils.repo_utils import get_model_path
++
+             model_id = self.model
+             self.model = get_model_path(self.model, self.revision)
+             if model_id is not self.model:
+@@ -1460,6 +1455,8 @@
+ 
+     def create_model_config(self) -> ModelConfig:
+         # gguf file needs a specific model loader
++        from vllm.transformers_utils.gguf_utils import is_gguf
++
+         if is_gguf(self.model):
+             self.quantization = self.load_format = "gguf"
+ 
+@@ -1612,6 +1609,12 @@
+         # Skip speculator detection for cloud storage models (eg: S3, GCS) since
+         # HuggingFace cannot load configs directly from S3 URLs. S3 models can still
+         # use speculators with explicit --speculative-config.
++        from vllm.transformers_utils.config import (
++            is_interleaved,
++            maybe_override_with_speculators,
++        )
++        from vllm.transformers_utils.utils import is_cloud_storage
++
+         if not is_cloud_storage(self.model):
+             (self.model, self.tokenizer, self.speculative_config) = (
+                 maybe_override_with_speculators(
+diff --git a/vllm/entrypoints/cli/__init__.py b/vllm/entrypoints/cli/__init__.py
+--- a/vllm/entrypoints/cli/__init__.py	2026-04-27 15:04:32.000000000 -0400
++++ b/vllm/entrypoints/cli/__init__.py	2026-04-29 01:28:53.865543139 -0400
+@@ -1,2 +1,48 @@
+ # SPDX-License-Identifier: Apache-2.0
+ # SPDX-FileCopyrightText: Copyright contributors to the vLLM project
++
++from importlib import import_module
++
++__all__: list[str] = [
++    "BenchmarkLatencySubcommand",
++    "BenchmarkMMProcessorSubcommand",
++    "BenchmarkServingSubcommand",
++    "BenchmarkStartupSubcommand",
++    "BenchmarkSweepSubcommand",
++    "BenchmarkThroughputSubcommand",
++]
++
++_CLI_EXPORTS = {
++    "BenchmarkLatencySubcommand": (
++        "vllm.entrypoints.cli.benchmark.latency",
++        "BenchmarkLatencySubcommand",
++    ),
++    "BenchmarkMMProcessorSubcommand": (
++        "vllm.entrypoints.cli.benchmark.mm_processor",
++        "BenchmarkMMProcessorSubcommand",
++    ),
++    "BenchmarkServingSubcommand": (
++        "vllm.entrypoints.cli.benchmark.serve",
++        "BenchmarkServingSubcommand",
++    ),
++    "BenchmarkStartupSubcommand": (
++        "vllm.entrypoints.cli.benchmark.startup",
++        "BenchmarkStartupSubcommand",
++    ),
++    "BenchmarkSweepSubcommand": (
++        "vllm.entrypoints.cli.benchmark.sweep",
++        "BenchmarkSweepSubcommand",
++    ),
++    "BenchmarkThroughputSubcommand": (
++        "vllm.entrypoints.cli.benchmark.throughput",
++        "BenchmarkThroughputSubcommand",
++    ),
++}
++
++
++def __getattr__(name: str):
++    if name not in _CLI_EXPORTS:
++        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
++    module_name, attr_name = _CLI_EXPORTS[name]
++    module = import_module(module_name)
++    return getattr(module, attr_name)
+diff --git a/vllm/entrypoints/cli/main.py b/vllm/entrypoints/cli/main.py
+--- a/vllm/entrypoints/cli/main.py	2026-04-27 15:04:32.000000000 -0400
++++ b/vllm/entrypoints/cli/main.py	2026-04-29 01:27:42.000925920 -0400
+@@ -5,6 +5,7 @@
+ Note that all future modules must be lazily loaded within main
+ to avoid certain eager import breakage."""
+ 
++import argparse
+ import importlib.metadata
+ import sys
+ from importlib.util import find_spec
+@@ -14,24 +15,208 @@
+ logger = init_logger(__name__)
+ 
+ 
++def _print_version_and_exit_if_requested() -> bool:
++    if "-v" not in sys.argv[1:] and "--version" not in sys.argv[1:]:
++        return False
++
++    print(importlib.metadata.version("vllm"))
++    return True
++
++
++def _should_load_benchmark_module() -> bool:
++    if len(sys.argv) < 2:
++        return False
++
++    first_arg = sys.argv[1]
++    return first_arg == "bench" or first_arg.startswith("bench=")
++
++
++class _BenchHelpSubcommand:
++    name = "bench"
++    help = "vLLM bench subcommand."
++
++    @staticmethod
++    def cmd(args: argparse.Namespace) -> None:
++        import vllm.entrypoints.cli.benchmark.main
++
++        vllm.entrypoints.cli.benchmark.main.BenchmarkSubcommand.cmd(args)
++
++    def validate(self, args: argparse.Namespace) -> None:
++        return None
++
++    def subparser_init(
++        self, subparsers: argparse._SubParsersAction
++    ) -> argparse.ArgumentParser:
++        bench_parser = subparsers.add_parser(
++            self.name,
++            help=self.help,
++            description=self.help,
++            usage="vllm bench <bench_type> [options]",
++        )
++        bench_parser.set_defaults(dispatch_function=self.cmd)
++        return bench_parser
++
++
++class _BenchHelpModule:
++    @staticmethod
++    def cmd_init():
++        return [_BenchHelpSubcommand()]
++
++
++class _StaticSubcommand:
++    def __init__(
++        self,
++        name: str,
++        help: str,
++        description: str | None = None,
++        usage: str | None = None,
++    ) -> None:
++        self.name = name
++        self.help = help
++        self.description = description or help
++        self.usage = usage
++
++    @staticmethod
++    def cmd(args: argparse.Namespace) -> None:
++        raise RuntimeError("Static help subcommands should never be dispatched")
++
++    def validate(self, args: argparse.Namespace) -> None:
++        return None
++
++    def subparser_init(
++        self, subparsers: argparse._SubParsersAction
++    ) -> argparse.ArgumentParser:
++        return subparsers.add_parser(
++            self.name,
++            help=self.help,
++            description=self.description,
++            usage=self.usage,
++        )
++
++
++class _StaticHelpModule:
++    def __init__(self, *subcommands: _StaticSubcommand):
++        self._subcommands = list(subcommands)
++
++    def cmd_init(self):
++        return self._subcommands
++
++
++def _selected_subcommand() -> str | None:
++    if len(sys.argv) < 2:
++        return None
++
++    first_arg = sys.argv[1]
++    if first_arg in {"-h", "--help"} or first_arg.startswith("--help="):
++        return None
++
++    return first_arg
++
++
++def _load_cmd_modules():
++    selected = _selected_subcommand()
++
++    if selected in {"chat", "complete"}:
++        import vllm.entrypoints.cli.openai
++
++        openai_module = vllm.entrypoints.cli.openai
++    else:
++        openai_module = _StaticHelpModule(
++            _StaticSubcommand(
++                "chat",
++                "Generate chat completions via the running API server.",
++                "Generate chat completions via the running API server.",
++                "vllm chat [options]",
++            ),
++            _StaticSubcommand(
++                "complete",
++                "Generate text completions based on the given prompt via the running API server.",
++                "Generate text completions based on the given prompt via the running API server.",
++                "vllm complete [options]",
++            ),
++        )
++
++    if selected == "serve":
++        import vllm.entrypoints.cli.serve
++
++        serve_module = vllm.entrypoints.cli.serve
++    else:
++        serve_module = _StaticHelpModule(
++            _StaticSubcommand(
++                "serve",
++                "Launch a local OpenAI-compatible API server to serve LLM completions via HTTP.",
++                "Launch a local OpenAI-compatible API server to serve LLM completions via HTTP.",
++                "vllm serve [model_tag] [options]",
++            ),
++        )
++
++    if selected == "launch":
++        import vllm.entrypoints.cli.launch
++
++        launch_module = vllm.entrypoints.cli.launch
++    else:
++        launch_module = _StaticHelpModule(
++            _StaticSubcommand(
++                "launch",
++                "Launch individual vLLM components.",
++                "Launch individual vLLM components.",
++                "vllm launch <component> [options]",
++            ),
++        )
++
++    if _should_load_benchmark_module():
++        import vllm.entrypoints.cli.benchmark.main
++
++        benchmark_module = vllm.entrypoints.cli.benchmark.main
++    else:
++        benchmark_module = _BenchHelpModule()
++
++    if selected == "collect-env":
++        import vllm.entrypoints.cli.collect_env
++
++        collect_env_module = vllm.entrypoints.cli.collect_env
++    else:
++        collect_env_module = _StaticHelpModule(
++            _StaticSubcommand(
++                "collect-env",
++                "Start collecting environment information.",
++                "Start collecting environment information.",
++                "vllm collect-env",
++            ),
++        )
++
++    if selected == "run-batch":
++        import vllm.entrypoints.cli.run_batch
++
++        run_batch_module = vllm.entrypoints.cli.run_batch
++    else:
++        run_batch_module = _StaticHelpModule(
++            _StaticSubcommand(
++                "run-batch",
++                "Run batch prompts and write results to file.",
++                "Run batch prompts using vLLM's OpenAI-compatible API.\nSupports local or HTTP input/output files.",
++                "vllm run-batch -i INPUT.jsonl -o OUTPUT.jsonl --model <model>",
++            ),
++        )
++
++    return [
++        openai_module,
++        serve_module,
++        launch_module,
++        benchmark_module,
++        collect_env_module,
++        run_batch_module,
++    ]
++
++
+ def main():
+-    import vllm.entrypoints.cli.benchmark.main
+-    import vllm.entrypoints.cli.collect_env
+-    import vllm.entrypoints.cli.launch
+-    import vllm.entrypoints.cli.openai
+-    import vllm.entrypoints.cli.run_batch
+-    import vllm.entrypoints.cli.serve
++    if _print_version_and_exit_if_requested():
++        return
++
+     from vllm.entrypoints.utils import VLLM_SUBCMD_PARSER_EPILOG, cli_env_setup
+     from vllm.utils.argparse_utils import FlexibleArgumentParser
+ 
+-    CMD_MODULES = [
+-        vllm.entrypoints.cli.openai,
+-        vllm.entrypoints.cli.serve,
+-        vllm.entrypoints.cli.launch,
+-        vllm.entrypoints.cli.benchmark.main,
+-        vllm.entrypoints.cli.collect_env,
+-        vllm.entrypoints.cli.run_batch,
+-    ]
++    CMD_MODULES = _load_cmd_modules()
+ 
+     cli_env_setup()
+ 
+diff --git a/vllm/entrypoints/openai/engine/protocol.py b/vllm/entrypoints/openai/engine/protocol.py
+--- a/vllm/entrypoints/openai/engine/protocol.py	2026-04-27 15:04:32.000000000 -0400
++++ b/vllm/entrypoints/openai/engine/protocol.py	2026-04-29 01:27:42.001116504 -0400
+@@ -15,7 +15,6 @@
+     model_validator,
+ )
+ 
+-from vllm.entrypoints.chat_utils import make_tool_call_id
+ from vllm.logger import init_logger
+ from vllm.utils import random_uuid
+ from vllm.utils.import_utils import resolve_obj_by_qualname
+@@ -224,8 +223,14 @@
+     arguments: str
+ 
+ 
++def _make_tool_call_id() -> str:
++    from vllm.entrypoints.chat_utils import make_tool_call_id
++
++    return make_tool_call_id()
++
++
+ class ToolCall(OpenAIBaseModel):
+-    id: str = Field(default_factory=make_tool_call_id)
++    id: str = Field(default_factory=_make_tool_call_id)
+     type: Literal["function"] = "function"
+     function: FunctionCall
+ 
+diff --git a/vllm/entrypoints/sagemaker/api_router.py b/vllm/entrypoints/sagemaker/api_router.py
+--- a/vllm/entrypoints/sagemaker/api_router.py	2026-04-27 15:04:32.000000000 -0400
++++ b/vllm/entrypoints/sagemaker/api_router.py	2026-04-29 01:28:35.757587844 -0400
+@@ -5,8 +5,12 @@
+ from http import HTTPStatus
+ from typing import Any
+ 
+-import model_hosting_container_standards.sagemaker as sagemaker_standards
+ import pydantic
++
++try:
++    import model_hosting_container_standards.sagemaker as sagemaker_standards
++except ModuleNotFoundError:
++    sagemaker_standards = None
+ from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request
+ from fastapi.responses import JSONResponse, Response
+ 
+@@ -19,8 +23,11 @@
+ from vllm.entrypoints.pooling.factories import get_pooling_invocation_types
+ from vllm.entrypoints.serve.instrumentator.basic import base
+ from vllm.entrypoints.serve.instrumentator.health import health
++from vllm.logger import init_logger
+ from vllm.tasks import SupportedTask
+ 
++logger = init_logger(__name__)
++
+ # TODO: RequestType = TypeForm[BaseModel] when recognized by type checkers
+ # (requires typing_extensions >= 4.13)
+ RequestType = Any
+@@ -33,6 +40,13 @@
+     supported_tasks: tuple["SupportedTask", ...],
+     model_config: ModelConfig | None = None,
+ ):
++    if sagemaker_standards is None:
++        logger.info(
++            "SageMaker container standards are not installed; skipping "
++            "SageMaker-specific API routes."
++        )
++        return
++
+     router = APIRouter()
+ 
+     # NOTE: Construct the TypeAdapters only once
+@@ -100,4 +114,6 @@
+ 
+ 
+ def sagemaker_standards_bootstrap(app: FastAPI) -> FastAPI:
++    if sagemaker_standards is None:
++        return app
+     return sagemaker_standards.bootstrap(app)
+diff --git a/vllm/entrypoints/serve/lora/api_router.py b/vllm/entrypoints/serve/lora/api_router.py
+--- a/vllm/entrypoints/serve/lora/api_router.py	2026-04-27 15:04:32.000000000 -0400
++++ b/vllm/entrypoints/serve/lora/api_router.py	2026-04-29 01:27:41.994057903 -0400
+@@ -1,8 +1,6 @@
+ # SPDX-License-Identifier: Apache-2.0
+ # SPDX-FileCopyrightText: Copyright contributors to the vLLM project
+ 
+-
+-import model_hosting_container_standards.sagemaker as sagemaker_standards
+ from fastapi import APIRouter, Depends, FastAPI, Request
+ from fastapi.responses import JSONResponse, Response
+ 
+@@ -22,11 +20,22 @@
+ logger = init_logger(__name__)
+ router = APIRouter()
+ 
++try:
++    import model_hosting_container_standards.sagemaker as sagemaker_standards
++except ModuleNotFoundError:
++    sagemaker_standards = None
++
+ 
+ def attach_router(app: FastAPI):
+     if not envs.VLLM_ALLOW_RUNTIME_LORA_UPDATING:
+         """If LoRA dynamic loading & unloading is not enabled, do nothing."""
+         return
++    if sagemaker_standards is None:
++        logger.info(
++            "SageMaker container standards are not installed; skipping "
++            "runtime LoRA update routes."
++        )
++        return
+     logger.warning(
+         "LoRA dynamic loading & unloading is enabled in the API server. "
+         "This should ONLY be used for local development!"
+diff --git a/vllm/entrypoints/utils.py b/vllm/entrypoints/utils.py
+--- a/vllm/entrypoints/utils.py	2026-04-27 15:04:32.000000000 -0400
++++ b/vllm/entrypoints/utils.py	2026-04-29 01:27:42.001330047 -0400
+@@ -15,19 +15,29 @@
+ from fastapi.responses import JSONResponse, StreamingResponse
+ from starlette.background import BackgroundTask, BackgroundTasks
+ 
++from typing import TYPE_CHECKING, Any
++
+ from vllm import envs
+-from vllm.engine.arg_utils import EngineArgs
+-from vllm.entrypoints.openai.engine.protocol import (
+-    ErrorInfo,
+-    ErrorResponse,
+-    GenerationError,
+-    StreamOptions,
+-)
+-from vllm.entrypoints.openai.models.protocol import LoRAModulePath
+ from vllm.logger import current_formatter_type, init_logger
+-from vllm.platforms import current_platform
+ from vllm.utils.argparse_utils import FlexibleArgumentParser
+ 
++if TYPE_CHECKING:
++    from vllm.engine.arg_utils import EngineArgs
++    from vllm.entrypoints.openai.engine.protocol import (
++        ErrorInfo,
++        ErrorResponse,
++        GenerationError,
++        StreamOptions,
++    )
++    from vllm.entrypoints.openai.models.protocol import LoRAModulePath
++else:
++    EngineArgs = Any
++    ErrorInfo = Any
++    ErrorResponse = Any
++    GenerationError = Any
++    StreamOptions = Any
++    LoRAModulePath = Any
++
+ logger = init_logger(__name__)
+ 
+ VLLM_SUBCMD_PARSER_EPILOG = (
+@@ -184,6 +194,8 @@
+             f"context length ({max_model_len})."
+         )
+     model_max_tokens = max_model_len - input_length
++    from vllm.platforms import current_platform
++
+     platform_max_tokens = current_platform.get_max_output_tokens(input_length)
+     fallback_max_tokens = (
+         max_tokens
+@@ -204,6 +216,7 @@
+ 
+ 
+ def log_non_default_args(args: Namespace | EngineArgs):
++    from vllm.engine.arg_utils import EngineArgs
+     from vllm.entrypoints.openai.cli_args import make_arg_parser
+ 
+     non_default_args = {}
+@@ -305,6 +318,12 @@
+     status_code: HTTPStatus = HTTPStatus.BAD_REQUEST,
+     param: str | None = None,
+ ) -> ErrorResponse:
++    from vllm.entrypoints.openai.engine.protocol import (
++        ErrorInfo,
++        ErrorResponse,
++        GenerationError,
++    )
++
+     exc: Exception | None = None
+ 
+     if isinstance(message, Exception):
+diff --git a/vllm/model_executor/layers/fla/ops/chunk_delta_h.py b/vllm/model_executor/layers/fla/ops/chunk_delta_h.py
+--- a/vllm/model_executor/layers/fla/ops/chunk_delta_h.py	2026-04-27 15:04:32.000000000 -0400
++++ b/vllm/model_executor/layers/fla/ops/chunk_delta_h.py	2026-04-29 01:27:42.004226919 -0400
+@@ -15,7 +15,7 @@
+ 
+ from .index import prepare_chunk_indices, prepare_chunk_offsets
+ from .op import exp
+-from .utils import FLA_CHUNK_SIZE, use_cuda_graph
++from .utils import FLA_CHUNK_SIZE, is_amd, use_cuda_graph
+ 
+ NUM_WARPS = [2, 4, 8, 16]
+ 
+@@ -33,8 +33,12 @@
+     configs=[
+         triton.Config({"BV": BV}, num_warps=num_warps, num_stages=num_stages)
+         for num_warps in [2, 4]
+-        for num_stages in [2, 3, 4]
+-        for BV in [32, 64]
++        # NOTE(gfx1151): On AMD HIP, restrict autotune search to
++        # num_stages=2 and BV=32. Higher stages and BV=64 with K>64
++        # produce code that causes GPU page faults during autotuning on
++        # RDNA 3.5 (wave32).
++        for num_stages in ([2] if is_amd else [2, 3, 4])
++        for BV in ([32] if is_amd else [32, 64])
+     ],
+     key=["H", "K", "V", "BT"],
+     use_cuda_graph=use_cuda_graph,
+@@ -210,8 +214,12 @@
+                 g + bos * H + i_h, (T,), (H,), (i_t * BT,), (BT,), (0,)
+             )
+             b_g = tl.load(p_g, boundary_check=(0,))
+-            b_v = b_v * tl.where(m_t, exp(b_g_last - b_g), 0)[:, None]
+-            b_g_last = exp(b_g_last)
++            # NOTE(gfx1151): Triton HIP fails to infer types for
++            # exp(scalar_bf16 - block_ptr_load_bf16). Cast to float32
++            # first, which also improves precision for exp computation.
++            b_g_diff = b_g_last.to(tl.float32) - b_g.to(tl.float32)
++            b_v = b_v * tl.where(m_t, exp(b_g_diff), 0)[:, None]
++            b_g_last = exp(b_g_last.to(tl.float32))
+             b_h1 *= b_g_last
+             if K > 64:
+                 b_h2 *= b_g_last
+diff --git a/vllm/model_executor/layers/fla/ops/chunk_o.py b/vllm/model_executor/layers/fla/ops/chunk_o.py
+--- a/vllm/model_executor/layers/fla/ops/chunk_o.py	2026-04-27 15:04:32.000000000 -0400
++++ b/vllm/model_executor/layers/fla/ops/chunk_o.py	2026-04-29 01:27:42.004685003 -0400
+@@ -17,7 +17,7 @@
+ 
+ from .index import prepare_chunk_indices
+ from .op import exp
+-from .utils import FLA_CHUNK_SIZE, check_shared_mem, is_nvidia_hopper
++from .utils import FLA_CHUNK_SIZE, check_shared_mem, is_amd, is_nvidia_hopper
+ 
+ BKV_LIST = [64, 128] if check_shared_mem() else [32, 64]
+ NUM_WARPS = [2, 4] if is_nvidia_hopper else [2, 4, 8]
+@@ -31,10 +31,10 @@
+ @triton.autotune(
+     configs=[
+         triton.Config({"BK": BK, "BV": BV}, num_warps=num_warps, num_stages=num_stages)
+-        for BK in BKV_LIST
+-        for BV in BKV_LIST
++        for BK in ([32] if is_amd else BKV_LIST)
++        for BV in ([32] if is_amd else BKV_LIST)
+         for num_warps in NUM_WARPS
+-        for num_stages in [2, 3, 4]
++        for num_stages in ([2] if is_amd else [2, 3, 4])
+     ],
+     key=["H", "K", "V", "BT"],
+ )
+diff --git a/vllm/model_executor/layers/quantization/__init__.py b/vllm/model_executor/layers/quantization/__init__.py
+--- a/vllm/model_executor/layers/quantization/__init__.py	2026-04-27 15:04:32.000000000 -0400
++++ b/vllm/model_executor/layers/quantization/__init__.py	2026-04-29 01:28:35.758575001 -0400
+@@ -140,8 +140,7 @@
+     from .moe_wna16 import MoeWNA16Config
+     from .mxfp4 import GptOssMxfp4Config, Mxfp4Config
+     from .online.base import OnlineQuantizationConfig
+-    from .torchao import TorchAOConfig
+-
++    
+     method_to_config: dict[str, type[QuantizationConfig]] = {
+         "awq": AWQConfig,
+         "fp8": Fp8Config,
+@@ -160,7 +159,6 @@
+         "experts_int8": ExpertsInt8Config,
+         "quark": QuarkConfig,
+         "moe_wna16": MoeWNA16Config,
+-        "torchao": TorchAOConfig,
+         "auto-round": INCConfig,
+         "inc": INCConfig,
+         "mxfp4": Mxfp4Config,
+@@ -170,6 +168,10 @@
+         "humming": HummingConfig,
+         "online": OnlineQuantizationConfig,
+     }
++    if quantization == "torchao":
++        from .torchao import TorchAOConfig
++
++        method_to_config["torchao"] = TorchAOConfig
+ 
+     # Below are values of the OnlineQuantScheme enum. This is here to provide
+     # a shortcut where the user can specify
+diff --git a/vllm/model_executor/layers/quantization/torchao.py b/vllm/model_executor/layers/quantization/torchao.py
+--- a/vllm/model_executor/layers/quantization/torchao.py	2026-04-27 15:04:32.000000000 -0400
++++ b/vllm/model_executor/layers/quantization/torchao.py	2026-04-29 01:27:41.998682926 -0400
+@@ -1,15 +1,12 @@
+ # SPDX-License-Identifier: Apache-2.0
+ # SPDX-FileCopyrightText: Copyright contributors to the vLLM project
+-import importlib
+ import json
+ import types
+-from importlib.util import find_spec
+ from typing import Any
+ 
+ import regex as re
+ import torch
+ import torch.nn.functional as F
+-from packaging import version
+ from torch.nn.parameter import Parameter
+ 
+ from vllm.logger import init_logger
+@@ -23,6 +20,9 @@
+     QuantizationConfig,
+     QuantizeMethodBase,
+ )
++from vllm.model_executor.layers.quantization.torchao_utils import (
++    torchao_version_at_least,
++)
+ from vllm.model_executor.utils import set_weight_attrs
+ 
+ logger = init_logger(__name__)
+@@ -61,17 +61,6 @@
+             setattr(param, attr_name, _bond_method_to_cls(attr, param))
+ 
+ 
+-def torchao_version_at_least(torchao_version: str) -> bool:
+-    if find_spec("torchao"):
+-        try:
+-            if version.parse(importlib.metadata.version("torchao")) >= version.parse(
+-                torchao_version
+-            ):
+-                return True
+-        except (ImportError, version.InvalidVersion):
+-            return False
+-    return False
+-
+ 
+ def should_skip(prefix: str, skip_modules: list[str]) -> bool:
+     """
+diff --git a/vllm/model_executor/layers/quantization/torchao_utils.py b/vllm/model_executor/layers/quantization/torchao_utils.py
+--- a/vllm/model_executor/layers/quantization/torchao_utils.py	1969-12-31 19:00:00.000000000 -0500
++++ b/vllm/model_executor/layers/quantization/torchao_utils.py	2026-04-29 01:27:41.998710895 -0400
+@@ -0,0 +1,19 @@
++# SPDX-License-Identifier: Apache-2.0
++# SPDX-FileCopyrightText: Copyright contributors to the vLLM project
++
++import importlib
++from importlib.util import find_spec
++
++from packaging import version
++
++
++def torchao_version_at_least(torchao_version: str) -> bool:
++    """Check installed torchao version without importing the torchao package."""
++    if find_spec("torchao"):
++        try:
++            installed_version = importlib.metadata.version("torchao")
++            if version.parse(installed_version) >= version.parse(torchao_version):
++                return True
++        except (ImportError, version.InvalidVersion):
++            return False
++    return False
+diff --git a/vllm/model_executor/model_loader/default_loader.py b/vllm/model_executor/model_loader/default_loader.py
+--- a/vllm/model_executor/model_loader/default_loader.py	2026-04-27 15:04:32.000000000 -0400
++++ b/vllm/model_executor/model_loader/default_loader.py	2026-04-29 01:27:41.999024005 -0400
+@@ -14,7 +14,9 @@
+ from vllm.config import ModelConfig
+ from vllm.config.load import LoadConfig
+ from vllm.logger import init_logger
+-from vllm.model_executor.layers.quantization.torchao import torchao_version_at_least
++from vllm.model_executor.layers.quantization.torchao_utils import (
++    torchao_version_at_least,
++)
+ from vllm.model_executor.model_loader.base_loader import BaseModelLoader
+ from vllm.model_executor.model_loader.ep_weight_filter import (
+     compute_local_expert_ids,
+diff --git a/vllm/model_executor/model_loader/weight_utils.py b/vllm/model_executor/model_loader/weight_utils.py
+--- a/vllm/model_executor/model_loader/weight_utils.py	2026-04-27 15:04:32.000000000 -0400
++++ b/vllm/model_executor/model_loader/weight_utils.py	2026-04-29 01:27:41.999820018 -0400
+@@ -62,7 +62,9 @@
+     SafeTensorsFileLoader = fastsafetensors.placeholder_attr("SafeTensorsFileLoader")
+     SingleGroup = fastsafetensors.placeholder_attr("SingleGroup")
+ 
+-from vllm.model_executor.layers.quantization.torchao import torchao_version_at_least
++from vllm.model_executor.layers.quantization.torchao_utils import (
++    torchao_version_at_least,
++)
+ 
+ logger = init_logger(__name__)
+ 
+diff --git a/vllm/model_executor/models/config.py b/vllm/model_executor/models/config.py
+--- a/vllm/model_executor/models/config.py	2026-04-27 15:04:32.000000000 -0400
++++ b/vllm/model_executor/models/config.py	2026-04-29 01:27:41.997710129 -0400
+@@ -66,11 +66,13 @@
+         When global_head_dim > 256, FlashAttention rejects those layers
+         (head_size <= 256 kernel limit), causing vLLM to select a different
+         backend for each layer type. This mixed-backend execution produces
+-        numerical divergence and output corruption.
++        numerical divergence and output corruption. On ROCm gfx1x, the Triton
++        unified-attention fallback can still miscompile these layers during
++        decode, so prefer AITER unified attention when it is available.
+ 
+         The fix detects heterogeneous head dimensions from the model config
+-        and forces TRITON_ATTN (which has no head_size ceiling) for all
+-        layers when the user hasn't explicitly chosen a backend.
++        and forces a single backend for all layers when the user hasn't
++        explicitly chosen one.
+ 
+         TODO: Heterogeneous head_sizes (head_dim != global_head_dim)
+         require NixlConnector changes to support per-layer KV transfer
+@@ -93,18 +95,35 @@
+             and max_head_dim > 256
+             and vllm_config.attention_config.backend is None
+         ):
++            from vllm._aiter_ops import is_aiter_found_and_supported
++            from vllm.platforms import current_platform
+             from vllm.v1.attention.backends.registry import (
+                 AttentionBackendEnum,
+             )
+ 
+-            vllm_config.attention_config.backend = AttentionBackendEnum.TRITON_ATTN
+-            logger.info(
+-                "Gemma4 model has heterogeneous head dimensions "
+-                "(head_dim=%d, global_head_dim=%d). Forcing TRITON_ATTN "
+-                "backend to prevent mixed-backend numerical divergence.",
+-                head_dim,
+-                global_head_dim,
+-            )
++            backend = AttentionBackendEnum.TRITON_ATTN
++            if current_platform.is_rocm() and is_aiter_found_and_supported():
++                backend = AttentionBackendEnum.ROCM_AITER_UNIFIED_ATTN
++
++            vllm_config.attention_config.backend = backend
++            if backend == AttentionBackendEnum.ROCM_AITER_UNIFIED_ATTN:
++                logger.info(
++                    "Gemma4 model has heterogeneous head dimensions "
++                    "(head_dim=%d, global_head_dim=%d). Forcing "
++                    "ROCM_AITER_UNIFIED_ATTN backend to avoid mixed-backend "
++                    "numerical divergence and ROCm Triton unified-attention "
++                    "decode miscompilation.",
++                    head_dim,
++                    global_head_dim,
++                )
++            else:
++                logger.info(
++                    "Gemma4 model has heterogeneous head dimensions "
++                    "(head_dim=%d, global_head_dim=%d). Forcing TRITON_ATTN "
++                    "backend to prevent mixed-backend numerical divergence.",
++                    head_dim,
++                    global_head_dim,
++                )
+ 
+ 
+ class DeepseekV4ForCausalLMConfig(VerifyAndUpdateConfig):
+diff --git a/vllm/platforms/rocm.py b/vllm/platforms/rocm.py
+--- a/vllm/platforms/rocm.py	2026-04-27 15:04:32.000000000 -0400
++++ b/vllm/platforms/rocm.py	2026-04-29 01:27:42.007602085 -0400
+@@ -170,7 +170,7 @@
+         return _query_gcn_arch_from_amdsmi()
+     except Exception as e:
+         logger.debug("Failed to get GCN arch via amdsmi: %s", e)
+-        logger.warning_once(
++        logger.warning(
+             "Failed to get GCN arch via amdsmi, falling back to torch.cuda. "
+             "This will initialize CUDA and may cause "
+             "issues if CUDA_VISIBLE_DEVICES is not set yet."
+@@ -332,6 +332,22 @@
+         )
+ 
+ 
++def _flash_attn_uses_triton_rocm() -> bool:
++    try:
++        from flash_attn import flash_attn_interface
++    except (AttributeError, ImportError, RuntimeError):
++        return False
++
++    if getattr(flash_attn_interface, "USE_TRITON_ROCM", False) is not True:
++        return False
++
++    backend = getattr(flash_attn_interface, "flash_attn_gpu", None)
++    backend_name = getattr(backend, "__name__", "")
++    return backend_name.startswith(
++        "aiter.ops.triton._triton_kernels.flash_attn_triton_amd"
++    )
++
++
+ @cache
+ def flash_attn_triton_available() -> bool:
+     if not on_gfx1x():
+@@ -339,17 +355,15 @@
+     try:
+         from importlib.util import find_spec
+ 
+-        if find_spec("flash_attn") is None:
+-            return False
+-        if find_spec("flash_attn.flash_attn_triton_amd") is None:
+-            return False
+         if os.environ.get("FLASH_ATTENTION_TRITON_AMD_ENABLE") != "TRUE":
+             logger.info_once(
+                 "Set FLASH_ATTENTION_TRITON_AMD_ENABLE=TRUE to enable "
+                 "Flash Attention Triton backend on RDNA."
+             )
+             return False
+-        return True
++        if find_spec("flash_attn") is None:
++            return False
++        return _flash_attn_uses_triton_rocm()
+     except ImportError:
+         return False
+ 
+@@ -357,6 +371,7 @@
+ def _get_backend_priorities(
+     use_mla: bool,
+     use_sparse: bool,
++    is_hybrid: bool = False,
+ ) -> list[AttentionBackendEnum]:
+     from vllm._aiter_ops import is_aiter_found_and_supported, rocm_aiter_ops
+ 
+@@ -378,9 +393,12 @@
+     backends = [
+         AttentionBackendEnum.ROCM_ATTN,
+     ]
+-    if rocm_aiter_ops.is_mha_enabled():
++    # Hybrid models need TRITON_ATTN for full-attention layers because
++    # Qwen3.5/GDN can choose non-power-of-2 block sizes from mamba state
++    # alignment, while AITER attention kernels assume power-of-2 tiles.
++    if not is_hybrid and rocm_aiter_ops.is_mha_enabled():
+         backends.append(AttentionBackendEnum.ROCM_AITER_FA)
+-    if is_aiter_found_and_supported():
++    if not is_hybrid and is_aiter_found_and_supported():
+         backends.append(AttentionBackendEnum.ROCM_AITER_UNIFIED_ATTN)
+     backends.append(AttentionBackendEnum.TRITON_ATTN)
+     backends.append(AttentionBackendEnum.TURBOQUANT)
+@@ -444,9 +462,19 @@
+         valid_backends_priorities = []
+         invalid_reasons = {}
+ 
++        from vllm.config import get_current_vllm_config_or_none
++
++        vllm_config = get_current_vllm_config_or_none()
++        _is_hybrid = bool(
++            vllm_config is not None
++            and vllm_config.model_config is not None
++            and vllm_config.model_config.is_hybrid
++        )
++
+         backend_priorities = _get_backend_priorities(
+             attn_selector_config.use_mla,
+             attn_selector_config.use_sparse,
++            _is_hybrid,
+         )
+         for priority, backend in enumerate(backend_priorities):
+             try:
+@@ -476,6 +504,25 @@
+ 
+         # First try checking just the selected backend, if there is one.
+         if selected_backend is not None:
++            from vllm.config import get_current_vllm_config_or_none
++
++            vllm_config = get_current_vllm_config_or_none()
++            _is_hybrid = bool(
++                vllm_config is not None
++                and vllm_config.model_config is not None
++                and vllm_config.model_config.is_hybrid
++            )
++            if _is_hybrid and selected_backend in (
++                AttentionBackendEnum.ROCM_AITER_FA,
++                AttentionBackendEnum.ROCM_AITER_UNIFIED_ATTN,
++            ):
++                raise ValueError(
++                    "Selected AITER attention backend is not valid for "
++                    "hybrid models. Hybrid models need TRITON_ATTN for "
++                    "full-attention layers because their mamba alignment can "
++                    "choose non-power-of-2 block sizes."
++                )
++
+             try:
+                 backend_class = selected_backend.get_class()
+                 invalid_reasons = backend_class.validate_configuration(
+diff --git a/vllm/utils/import_utils.py b/vllm/utils/import_utils.py
+--- a/vllm/utils/import_utils.py	2026-04-27 15:04:32.000000000 -0400
++++ b/vllm/utils/import_utils.py	2026-04-29 01:27:41.993223431 -0400
+@@ -23,6 +23,29 @@
+ logger = init_logger(__name__)
+ 
+ 
++def _vendored_triton_kernels_supported() -> bool:
++    """Whether vLLM's vendored triton_kernels tree matches the installed Triton."""
++    if not _has_module("triton.language.target_info"):
++        logger.warning_once(
++            "Disabling vendored triton_kernels: installed Triton runtime "
++            "does not provide triton.language.target_info.",
++            scope="local",
++        )
++        return False
++
++    import triton
++
++    if not hasattr(triton, "constexpr_function"):
++        logger.warning_once(
++            "Disabling vendored triton_kernels: installed Triton runtime "
++            "does not provide triton.constexpr_function.",
++            scope="local",
++        )
++        return False
++
++    return True
++
++
+ def import_pynvml():
+     """
+     Historical comments:
+@@ -422,12 +445,15 @@
+ 
+ def has_triton_kernels() -> bool:
+     """Whether the optional `triton_kernels` package is available."""
+-    is_available = _has_module("triton_kernels") or _has_module(
+-        "vllm.third_party.triton_kernels"
+-    )
+-    if is_available:
++    if _has_module("triton_kernels"):
+         import_triton_kernels()
+-    return is_available
++        return True
++    if not _has_module("vllm.third_party.triton_kernels"):
++        return False
++    if not _vendored_triton_kernels_supported():
++        return False
++    import_triton_kernels()
++    return True
+ 
+ 
+ def has_tilelang() -> bool:
+diff --git a/vllm/v1/attention/backends/fa_utils.py b/vllm/v1/attention/backends/fa_utils.py
+--- a/vllm/v1/attention/backends/fa_utils.py	2026-04-27 15:04:32.000000000 -0400
++++ b/vllm/v1/attention/backends/fa_utils.py	2026-04-29 01:27:42.008172195 -0400
+@@ -1,6 +1,8 @@
+ # SPDX-License-Identifier: Apache-2.0
+ # SPDX-FileCopyrightText: Copyright contributors to the vLLM project
+ 
++import inspect
++from functools import cache
+ from typing import Any
+ 
+ import vllm.envs as envs
+@@ -62,8 +64,10 @@
+     if current_platform.is_xpu():
+         return 2
+     if current_platform.is_rocm():
+-        # ROCm doesn't use vllm_flash_attn; return None to skip fa_version arg
+-        return None
++        if not _ROCM_FLASH_ATTN_AVAILABLE:
++            return None
++        # The validated upstream ROCm flash-attn lane in this package is FA2.
++        return 2
+     try:
+         from vllm.vllm_flash_attn.flash_attn_interface import (
+             fa_version_unsupported_reason,
+@@ -184,6 +188,39 @@
+         return False
+ 
+ 
++@cache
++def rocm_flash_attn_supports_vllm_varlen_api() -> bool:
++    if not current_platform.is_rocm():
++        return True
++    if not _ROCM_FLASH_ATTN_AVAILABLE:
++        return False
++
++    try:
++        signature = inspect.signature(flash_attn_varlen_func)
++    except (TypeError, ValueError):
++        return False
++
++    required_keywords = {
++        "out",
++        "seqused_k",
++        "scheduler_metadata",
++        "fa_version",
++        "q_descale",
++        "k_descale",
++        "v_descale",
++        "num_splits",
++        "s_aux",
++        "return_softmax_lse",
++    }
++    parameters = signature.parameters
++    if any(
++        parameter.kind == inspect.Parameter.VAR_KEYWORD
++        for parameter in parameters.values()
++    ):
++        return True
++    return required_keywords.issubset(parameters)
++
++
+ def flash_attn_supports_fp8() -> bool:
+     if current_platform.is_xpu():
+         return True
+diff --git a/vllm/v1/attention/backends/flash_attn.py b/vllm/v1/attention/backends/flash_attn.py
+--- a/vllm/v1/attention/backends/flash_attn.py	2026-04-27 15:04:32.000000000 -0400
++++ b/vllm/v1/attention/backends/flash_attn.py	2026-04-29 01:27:42.008613091 -0400
+@@ -24,6 +24,7 @@
+     get_flash_attn_version,
+     is_fa_version_supported,
+     is_flash_attn_varlen_func_available,
++    rocm_flash_attn_supports_vllm_varlen_api,
+ )
+ from vllm.v1.attention.backends.utils import get_dcp_local_seq_lens
+ from vllm.v1.attention.ops.common import cp_lse_ag_out_rs
+@@ -216,6 +217,11 @@
+     ) -> str | None:
+         if has_sink and device_capability < DeviceCapability(9, 0):
+             return "sink not supported on compute capability < 9.0"
++        if not rocm_flash_attn_supports_vllm_varlen_api():
++            return (
++                "ROCm flash-attn varlen API is not vLLM-compatible; "
++                "FLASH_ATTN requires vLLM's paged-KV varlen API"
++            )
+         return None
+ 
+ 
+diff --git a/vllm/v1/attention/backends/rocm_aiter_unified_attn.py b/vllm/v1/attention/backends/rocm_aiter_unified_attn.py
+--- a/vllm/v1/attention/backends/rocm_aiter_unified_attn.py	2026-04-27 15:04:32.000000000 -0400
++++ b/vllm/v1/attention/backends/rocm_aiter_unified_attn.py	2026-04-29 01:27:42.005653531 -0400
+@@ -39,7 +39,7 @@
+     def supports_block_size(cls, block_size: int | None) -> bool:
+         if block_size is None:
+             return True
+-        return block_size % 16 == 0
++        return block_size % 16 == 0 and (block_size & (block_size - 1)) == 0
+ 
+     @classmethod
+     def supports_head_size(cls, head_size: int) -> bool:
+diff --git a/vllm/v1/attention/ops/triton_unified_attention.py b/vllm/v1/attention/ops/triton_unified_attention.py
+--- a/vllm/v1/attention/ops/triton_unified_attention.py	2026-04-27 15:04:32.000000000 -0400
++++ b/vllm/v1/attention/ops/triton_unified_attention.py	2026-04-29 01:27:41.994977681 -0400
+@@ -495,6 +495,17 @@
+         # Gemma3: use 32 for decode (default is 16)
+         return 32
+ 
++    if (
++        current_platform.is_rocm()
++        and is_prefill
++        and element_size >= 2
++        and head_size >= 512
++    ):
++        # ROCm Triton unified attention over-allocates LDS for large-head
++        # prefill at tile size 32 (for example Gemma4 global heads at 512),
++        # exceeding the 64 KiB hardware limit on gfx1151.
++        return 16
++
+     # Default behavior
+     if is_prefill:
+         return 32
+diff --git a/vllm/v1/sample/ops/topk_topp_sampler.py b/vllm/v1/sample/ops/topk_topp_sampler.py
+--- a/vllm/v1/sample/ops/topk_topp_sampler.py	2026-04-27 15:04:32.000000000 -0400
++++ b/vllm/v1/sample/ops/topk_topp_sampler.py	2026-04-29 01:27:42.005977156 -0400
+@@ -248,6 +248,14 @@
+     if p is None and k is None:
+         return logits
+ 
++    if current_platform.is_rocm():
++        # Use PyTorch top-k/top-p filtering on ROCm. The Triton filter path
++        # can fault on gfx1151 for large Qwen3.5-family vocabularies; a
++        # standalone reproducer with logits shaped (32, 248320), top_k
++        # enabled, and top_p=0.9 faults in apply_top_k_top_p_triton, while the
++        # existing PyTorch fallback completes on the same tensor.
++        return apply_top_k_top_p_pytorch(logits, k, p)
++
+     if HAS_TRITON and logits.shape[0] >= 8:
+         return apply_top_k_top_p_triton(logits, k, p)
+ 
+diff --git a/vllm/v1/spec_decode/utils.py b/vllm/v1/spec_decode/utils.py
+--- a/vllm/v1/spec_decode/utils.py	2026-04-27 15:04:32.000000000 -0400
++++ b/vllm/v1/spec_decode/utils.py	2026-04-29 01:27:42.007162490 -0400
+@@ -205,7 +205,11 @@
+ 
+     if is_discarded:
+         backup_token = tl.load(backup_next_token_ids_ptr + req_idx)
+-        valid_count = tl.full((), 0, dtype=tl.uint32)
++        # Keep valid_count type stable across branches. On ROCm/Triton, the
++        # tl.sum(bool mask) path below can otherwise infer an int1 scalar while
++        # this discarded-request path produces uint32, and Triton rejects the
++        # branch merge before the kernel can compile.
++        valid_count = tl.full((), 0, dtype=tl.int32)
+         tl.store(next_token_ids_ptr + req_idx, backup_token)
+         tl.store(valid_sampled_tokens_count_ptr + req_idx, valid_count)
+     else:
+@@ -218,7 +222,7 @@
+ 
+         # Rejected tokens are -1, valid tokens are in [0, vocab_size)
+         is_valid_mask = (token_ids != -1) & (token_ids < vocab_size) & token_mask
+-        valid_count = tl.sum(is_valid_mask)
++        valid_count = tl.sum(is_valid_mask.to(tl.int32))
+ 
+         if valid_count > 0:
+             # Guaranteed to be well-defined since

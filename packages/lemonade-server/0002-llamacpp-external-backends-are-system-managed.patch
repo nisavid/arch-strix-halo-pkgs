@@ -86,29 +86,35 @@
  static std::string get_expected_backend_version(const std::string& recipe, const std::string& backend) {
      static json backend_versions = []() -> json {
          try {
-@@ -945,7 +1013,8 @@
+@@ -1007,6 +1075,7 @@
  
              bool version_known = !installed_version.empty() && installed_version != "unknown";
              bool has_expected = !expected_version.empty();
--            bool needs_update = has_expected && (!version_known || installed_version != expected_version);
 +            bool externally_managed = is_system_managed_external_backend(def.recipe, def.backend);
-+            bool needs_update = !externally_managed && has_expected && (!version_known || installed_version != expected_version);
+             bool latest_pin = is_bin_pinned_to_latest(def.recipe, def.backend);
+             bool needs_update;
+ #if !defined(_WIN32)
+@@ -1029,7 +1098,7 @@
+                         || version_compare(installed_version, expected_version) < 0);
+             } else {
+-                needs_update = has_expected && (!version_known || installed_version != expected_version);
++                needs_update = !externally_managed && has_expected && (!version_known || installed_version != expected_version);
+             }
  
              if (needs_update) {
                  backend["state"] = "update_required";
-@@ -996,7 +1065,11 @@
-                 backend["action"] = get_install_command(def.recipe, def.backend);
-             } else {
-                 backend["state"] = "installed";
--                backend["message"] = "";
-+                if (externally_managed) {
-+                    backend["message"] = get_system_managed_backend_message(def.recipe, def.backend);
-+                } else {
-+                    backend["message"] = "";
-+                }
-                 backend["action"] = "";
+@@ -1055,6 +1124,10 @@
+                 } else {
+                     backend["state"] = "installed";
+-                    backend["message"] = "";
++                    if (externally_managed) {
++                        backend["message"] = get_system_managed_backend_message(def.recipe, def.backend);
++                    } else {
++                        backend["message"] = "";
++                    }
+                     backend["action"] = "";
+                 }
              }
-         }
 @@ -1094,40 +1167,7 @@
  }
  
