@@ -94,6 +94,47 @@ Patch carry overlap is a reason to prioritize update review, not a reason to
 defer an update. Absence of backend build-system changes is not enough to reject
 a candidate; review runtime and user-facing platform relevance too.
 
+`adopted` means the package source decision and the derived validation gates
+are complete. If build, downstream rebuild, deploy/install, installed-smoke,
+service-smoke, or live-scenario gates remain open, keep the candidate
+`tracked` or `blocked` and point `next_gate_*` plus `docs/backlog.md` at that
+work.
+
+### Validation Gate Derivation
+
+When package source refs, patches, build flags, dependency metadata, install
+layout, generated outputs, service/config files, CLI/API behavior, or runtime
+contracts change, derive the validation gates before PR or closeout.
+
+Treat the affected set as the union of:
+
+- directly changed package contracts
+- declared build and runtime consumers from package metadata and
+  `python tools/repo_package_graph.py --json <package-root> ...`
+- documented or runtime couplings found in maintainer docs, package READMEs,
+  tools, smoke tests, service definitions, config/env overlays, and tracked
+  scenarios
+- optional integrations that repo-owned docs, smokes, or scenarios actually
+  exercise
+
+Classify each affected contract into the strongest gate it needs:
+
+- package tests or source checks for metadata-only changes
+- package rebuild for changed source, patches, generated outputs, or build
+  flags
+- downstream rebuild when a consumer embeds, links, generates from, or
+  build-imports the changed package
+- deploy/install plus installed smoke when runtime imports, shared libraries,
+  JIT/cache paths, entrypoints, services, or config overlays can change
+- service smoke or live model/scenario run when user-facing service behavior,
+  model behavior, dynamic backend/plugin selection, or documented scenario
+  expectations can change
+
+Record unresolved gates in `docs/maintainers/update-candidates.toml` and
+`docs/backlog.md`. Final and PR summaries must distinguish source updated,
+package built, deployed/installed, installed-smoked, and live-scenario
+validated states.
+
 The cache is valid only when the policy digest still matches and the cached
 report is younger than `--max-age-hours` (24 by default). The digest includes
 the checker version, freshness policy, update-candidate ledger, discovered
@@ -164,11 +205,15 @@ to adopt.
 7. Re-render the package scaffold.
 8. Apply the carried patch series to a clean new source tree. Refresh patches
    when they apply with fuzz or when nearby upstream context changed.
-9. Rebuild the package.
-10. Refresh `repo/x86_64`.
-11. Run package-specific tests plus every tracked smoke or blocked-probe lane
-    that used to be part of the package's validated behavior.
-12. Update docs if the behavior, baseline, or maintenance story changed.
+9. Derive the validation gates for the changed contracts and affected
+   consumers.
+10. Rebuild, deploy/install, and smoke test according to the derived gate set,
+    then refresh `repo/x86_64` for package artifacts that are published
+    locally.
+11. Run package-specific tests plus every tracked smoke, service smoke,
+    live-scenario, or blocked-probe lane required by the derived gates.
+12. Update docs if the behavior, baseline, maintenance story, or validation
+    status changed.
 
 Scout starting points:
 
