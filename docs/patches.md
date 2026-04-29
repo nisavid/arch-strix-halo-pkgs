@@ -49,31 +49,22 @@ becomes durable, prefer a named patch that another maintainer can review.
 
 ## vLLM
 
-- [Python 3.14 compatibility on the packaged stable lane](../packages/python-vllm-rocm-gfx1151/0001-python-3.14-version-gates.patch)
-  - Extends the packaged `v0.19.1` lane to accept Python `3.14` by relaxing the
-    Python upper bound and supported-version gate.
-  - This packaging-facing compatibility patch is the clearest current
-    upstreaming candidate in the repo.
-- [ROCm large-head Triton unified-attention tile reduction](../packages/python-vllm-rocm-gfx1151/0005-rocm-reduce-triton-unified-attention-prefill-tile-for-large-heads.patch)
+- [ROCm local carry refreshed for vLLM 0.20.0](../packages/python-vllm-rocm-gfx1151/0016-rocm-refresh-local-carry-for-vllm-0.20.0.patch)
+  - Consolidates the package-local ROCm, Gemma, Qwen, TorchAO, CLI laziness,
+    sampler, EAGLE/MTP, and FlashAttention interface carry on top of upstream
+    vLLM 0.20.0.
   - Keeps large-head ROCm prefill paths such as Gemma 4 global attention under
     the gfx1151 LDS/shared-memory limit.
-  - Revalidated after the 2026-04-20 self-hosted rebuild with forced Triton
-    attention coverage and the package-local guard.
-- [ROCm padded EAGLE/MTP drafter count typing](../packages/python-vllm-rocm-gfx1151/0012-rocm-keep-eagle-padded-drafter-count-int32.patch)
-  - Keeps `eagle_prepare_next_token_padded_kernel` compiling on ROCm/Triton by
-    forcing `valid_count` to one scalar dtype across Triton branches.
-- [DFlash speculators config parsing](../packages/python-vllm-rocm-gfx1151/0013-speculators-dflash-config-parsing.patch)
-  - Backports the narrow `speculators` parser addition from vLLM PR #38300 so
-    DFlash-format configs resolve to `DFlashDraftModel`.
-  - This is parser support only. Full DFlash runtime/model support remains a
-    separate follow-up.
-- [ROCm FlashAttention Triton interface detection](../packages/python-vllm-rocm-gfx1151/0014-rocm-detect-flash-attn-triton-interface.patch)
-  - Lets vLLM detect the local pure-Python `flash_attn` package, which exposes
-    AITER's Triton AMD backend through `flash_attn.flash_attn_interface`.
-- [ROCm FlashAttention CK interface gate](../packages/python-vllm-rocm-gfx1151/0015-rocm-gate-flash-attn-ck-interface.patch)
-  - Keeps forced CK/direct FlashAttention paths explicit so vLLM only promotes
-    the local CK backend when the imported surface and kernel behavior match
-    the engine route being tested.
+  - Keeps Qwen speculative decoding compiling on ROCm/Triton by forcing the
+    padded drafter batch `valid_count` path to one scalar dtype across Triton
+    branches.
+  - Lets vLLM detect the packaged pure-Python `flash_attn` interface that
+    exposes AITER's Triton AMD backend, while keeping CK/direct FlashAttention
+    promotion behind the imported paged-KV surface and kernel behavior needed
+    by the vLLM engine route.
+  - Uses upstream vLLM 0.20.0 Python 3.14 metadata and DFlash support instead
+    of retaining the former local Python-version and narrow DFlash parser
+    backport patches.
   - The current Qwen CK consumer boundary is inside CK paged-KV behavior: the
     normal hybrid path presents 64-token pages, while diagnostics that force
     128-divisible pages progress to a GPU fault. That boundary is documented in

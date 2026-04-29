@@ -10,6 +10,11 @@
   candidate dispositions live in `docs/maintainers/update-candidates.toml`;
   keep that ledger and this backlog item in sync until each candidate is
   adopted, rejected, or blocked.
+- Review AITER main `d679e288` after the active update branch is built and
+  smoke-tested. The pre-PR freshness sweep recorded the new head as a tracked
+  follow-up because it includes FLYDSL, FMHA backward, paged-attention, and
+  fused collectives/FP8 quantization work, but it is not part of the current
+  vLLM-through-Transformers source bump.
 - Blackcat ai-notes recipe input is adopted through
   `a1d7a6816dd2c456bad9fcc7d61c53a4bd8c5fbd`. Follow up the newly described
   stable-diffusion.cpp package surface, expanded native/Rust wheel recipe

@@ -426,7 +426,7 @@ timestamp-barrier and shader/header fixes, WebGPU SSM scan aliasing changes,
 large server web UI tool/chat settings refactor, and CUDA FlashAttention
 support for Mistral Small 4 head sizes. Lemonade
 `10.3.0` is available with OmniRouter, a Tauri desktop app, the
-`lemonade_server.service` to `lemond.service` rename, ROCm channel/default
+`lemonade-server.service` to `lemond.service` rename, ROCm channel/default
 changes, and system llama.cpp backend/version-tag config work that overlaps
 local patch carry. ROCm PyTorch `release/2.11` moved to
 `9413e9b96bcbeb8af1aa0280a3a9bc7dd048857e` with Windows test fixes and an
@@ -437,6 +437,20 @@ FP8, fused GEMM, MoE, normalization, rope, top-k, and gated-delta-rule tests.
 Transformers `5.7.0` is now available on PyPI and as a matching GitHub tag.
 These are tracked in `docs/maintainers/update-candidates.toml`; do not treat
 the b8955 build as full freshness closure.
+
+The 2026-04-29 02:07 EDT pre-PR freshness sweep found three changes after the
+active update branch's source bump. AUR `llama.cpp-hip` caught up to `b8966-1`,
+matching this branch's llama.cpp source. AITER main moved from
+`c1c65e6bef07a42bdf7e268f69b92e53f2e4ada5` to
+`d679e288120cf407d1d0daa82bab4ad961ed0bb6`; the range includes FLYDSL GDR
+decode, FMHA backward layout, paged-attention optimization, fused
+all-reduce/RMSNorm/per-group FP8 quantization, and CI wheel changes. Track
+that as a follow-up rather than expanding the active source bump. ROCm PyTorch
+`release/2.11` moved from `9413e9b96bcbeb8af1aa0280a3a9bc7dd048857e` to
+`345ca6fbeb70f3a6edda9f13b8aafcadccbedd4e`; the range is limited to a
+custom-op test cleanup and a Composable Kernel submodule update for gfx1033
+support, so it is recorded as reviewed but not adopted for the gfx1151 package
+lane.
 
 The Blackcat Informatics `upstream/ai-notes` recipe input was later adopted at
 `a1d7a6816dd2c456bad9fcc7d61c53a4bd8c5fbd`. The rendered recipe-managed
