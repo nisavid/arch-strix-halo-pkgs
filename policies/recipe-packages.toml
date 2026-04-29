@@ -515,7 +515,7 @@ scaffold_notes = [
 [packages.python-amd-aiter-gfx1151]
 recipe_key = "aiter"
 template = "python-project-aiter"
-upstream_version = "0.1.12.post2.dev140+gc1c65e6be"
+upstream_version = "0.1.12.post2.dev146+gd679e2881"
 pkgdesc = "AMD AITER kernels rebuilt for Strix Halo gfx1151"
 url = "https://github.com/ROCm/aiter"
 license = ["MIT"]
@@ -549,7 +549,7 @@ depends = ["python-gfx1151", "python-pandas", "python-pytorch-opt-rocm-gfx1151",
 makedepends = ["git", "python-build", "python-installer", "python-setuptools", "python-wheel", "rocm-llvm-gfx1151"]
 optdepends = ["python-flydsl-gfx1151: optional FlyDSL MLIR kernels for AITER fused MoE paths (blocked on rocm-llvm MLIR Python SDK completeness)"]
 options = ["!strip"]
-source_refs = ["aiter::git+https://github.com/ROCm/aiter.git#commit=c1c65e6bef07a42bdf7e268f69b92e53f2e4ada5"]
+source_refs = ["aiter::git+https://github.com/ROCm/aiter.git#commit=d679e288120cf407d1d0daa82bab4ad961ed0bb6"]
 sha256sums = ["SKIP"]
 src_subdir = "aiter"
 source_patches = [
@@ -563,7 +563,7 @@ source_patches = [
 patches_dir = "packages/python-amd-aiter-gfx1151"
 scaffold_notes = [
   "There is no standalone Arch, CachyOS, or AUR aiter package. The closest packaging lane is the PyTorch ROCm pkgbase that vendors the same submodule, so that pkgbase is advisory only.",
-  "The package pins reviewed upstream AITER main snapshot c1c65e6bef07a42bdf7e268f69b92e53f2e4ada5 rather than rolling back to the v0.1.12.post1 release tag, because the reviewed post-release range carries local-lane-relevant MoE, quant, JIT, and architecture-dispatch changes.",
+  "The package pins reviewed upstream AITER main snapshot d679e288120cf407d1d0daa82bab4ad961ed0bb6 rather than rolling back to the v0.1.12.post1 release tag, because the reviewed post-release range carries local-lane-relevant MoE, quant, JIT, architecture-dispatch, FLYDSL, FMHA, paged-attention, and fused-collectives changes.",
   "The package exports SETUPTOOLS_SCM_PRETEND_VERSION so the wheel metadata is stable even though the source is a git commit past the latest release tag.",
   "The recipe rebuilds AITER from the pinned upstream AITER source lane while keeping CK and generated kernel expectations explicit in the package.",
   "Upstream AITER declares pandas as a real dependency and FlyDSL as an optional acceleration path. Keep pandas in the package metadata, and package FlyDSL separately rather than silently depending on an unpublished wheel.",

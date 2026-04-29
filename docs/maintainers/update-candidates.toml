@@ -94,12 +94,12 @@ next_gate_path = "docs/backlog.md"
 next_gate_label = "ROCm PyTorch release/2.11 9413e9b review"
 last_reviewed = "2026-04-28"
 
-[candidates."aiter-c1c65e6"]
+[candidates."aiter-d679e288"]
 family = "aiter"
 packages = ["python-amd-aiter-gfx1151"]
 source_kind = "git_ref"
 previous_recorded = "6a7df2004f5f896471cf9e6ab588b6aec0357dc7"
-latest = "c1c65e6bef07a42bdf7e268f69b92e53f2e4ada5"
+latest = "d679e288120cf407d1d0daa82bab4ad961ed0bb6"
 discovery_status = "candidate_head_ahead"
 disposition = "tracked"
 disposition_reason = "Package source is updated on the active vLLM-through-Transformers branch and local AITER patches dry-run against the new ref; keep tracked until build and host validation pass."
@@ -110,25 +110,6 @@ salient_changes = [
   "Custom communication group configuration fixes",
   "FLYDSL version update to 0.1.5.dev504 and dynamic if-else grammar fix",
   "FP8, fused GEMM, MoE, normalization, rope, top-k, and gated-delta-rule test determinism updates",
-]
-patch_carry_overlap = true
-package_source_update_needed = false
-host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
-next_gate_label = "AITER c1c65e6 package-source review"
-last_reviewed = "2026-04-28"
-
-[candidates."aiter-d679e288"]
-family = "aiter"
-packages = ["python-amd-aiter-gfx1151"]
-source_kind = "git_ref"
-previous_recorded = "c1c65e6bef07a42bdf7e268f69b92e53f2e4ada5"
-latest = "d679e288120cf407d1d0daa82bab4ad961ed0bb6"
-discovery_status = "candidate_head_ahead"
-disposition = "tracked"
-disposition_reason = "Reviewed during the pre-PR freshness sweep and left out of the active vLLM-through-Transformers source bump; track as a follow-up because the range includes runtime-adjacent FLYDSL, FMHA backward, paged-attention, and fused collectives/FP8 quantization work."
-salient_changes = [
   "FLYDSL GDR decode kernel update",
   "FMHA backward recompile kernel update for sbhd layout",
   "Paged-attention optimization",
@@ -136,11 +117,11 @@ salient_changes = [
   "Prebuilt Triton kernel wheel CI changes",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
+package_source_update_needed = false
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "AITER d679e288 follow-up review"
+next_gate_label = "AITER d679e288 package-source review"
 last_reviewed = "2026-04-29"
 
 [candidates."rocm-pytorch-release-2.11-345ca6f"]
