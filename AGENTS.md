@@ -38,6 +38,12 @@ without chat history.
   Each candidate must be adopted, tracked, rejected, or blocked in
   `docs/maintainers/update-candidates.toml`, and active tracked candidates must
   stay visible in `docs/backlog.md`.
+- When package source refs, patches, build flags, dependency metadata, install
+  layout, generated outputs, service/config files, CLI/API behavior, or runtime
+  contracts change, derive the affected validation set before PR or closeout.
+  Final and PR summaries must distinguish source updated, package built,
+  deployed/installed, installed-smoked, and live-scenario validated states. If
+  any required gate remains open, say so before describing the branch as ready.
 - Start new repo work from a topic branch in a separate worktree. Do not commit
   directly on `main`; `main` is the protected branch, so push topic branches
   and merge through GitHub pull requests.

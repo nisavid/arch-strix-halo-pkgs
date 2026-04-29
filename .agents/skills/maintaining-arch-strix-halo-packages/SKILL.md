@@ -83,9 +83,11 @@ which divergences are intentional, and where reusable source changes live.
 4. Update repo policy first if the maintenance story changed.
 5. Re-render generated metadata before making narrow manual edits.
 6. Keep durable source changes in patch files when practical.
-7. Rebuild, refresh the local repo metadata, and run the relevant smoke tests.
-8. Update tracked docs if the change altered policy, workflow, or verified
-   behavior.
+7. Derive validation gates with `docs/maintainers/update-workflows.md`, then
+   run or record the required package tests, rebuilds, downstream rebuilds,
+   deploy/install gates, installed smokes, service smokes, and live scenarios.
+8. Update tracked docs if the change altered policy, workflow, verified
+   behavior, or remaining validation status.
 
 ## Guardrails
 
