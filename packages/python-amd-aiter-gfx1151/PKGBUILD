@@ -5,7 +5,7 @@
 # Package recipe key: aiter
 
 pkgname=python-amd-aiter-gfx1151
-pkgver=0.1.12.post2.dev69+gcf12b1381
+pkgver=0.1.12.post2.dev140+gc1c65e6be
 pkgrel=1
 pkgdesc='AMD AITER kernels rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
@@ -18,7 +18,7 @@ options=('!strip')
 provides=(python-amd-aiter)
 conflicts=(python-amd-aiter)
 replaces=()
-source=('aiter::git+https://github.com/ROCm/aiter.git#commit=cf12b1381dcdec4b5d90d136a5403e718c7541ec' 0001-gfx1151-rdna35-header-compat.patch 0002-jit-runtime-finds-hipcc-and-user-jit-modules.patch 0003-fused-moe-unknown-gfx-falls-back-to-2stage.patch 0004-moe-tuner-skips-missing-1stage-asm-metadata.patch 0005-ck-moe-normalizes-zero-splitk-and-forwards-stage2.patch 0006-rdna35-hip-reduce-wave32-dpp-compat.patch)
+source=('aiter::git+https://github.com/ROCm/aiter.git#commit=c1c65e6bef07a42bdf7e268f69b92e53f2e4ada5' 0001-gfx1151-rdna35-header-compat.patch 0002-jit-runtime-finds-hipcc-and-user-jit-modules.patch 0003-fused-moe-unknown-gfx-falls-back-to-2stage.patch 0004-moe-tuner-skips-missing-1stage-asm-metadata.patch 0005-ck-moe-normalizes-zero-splitk-and-forwards-stage2.patch 0006-rdna35-hip-reduce-wave32-dpp-compat.patch)
 sha256sums=(SKIP SKIP SKIP SKIP SKIP SKIP SKIP)
 
 prepare() {
@@ -63,7 +63,7 @@ build() {
   export HIP_PATH="/opt/rocm"
   export PREBUILD_KERNELS=0
   export AITER_GPU_ARCH=gfx1151
-  export SETUPTOOLS_SCM_PRETEND_VERSION="0.1.12.post2.dev69+gcf12b1381"
+  export SETUPTOOLS_SCM_PRETEND_VERSION="0.1.12.post2.dev140+gc1c65e6be"
   export CFLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument"
   export CXXFLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument"
   local _ck_submodule="$srcdir/aiter/3rdparty/composable_kernel"

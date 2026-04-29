@@ -5,40 +5,34 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 PKGBUILD = REPO_ROOT / "packages/python-vllm-rocm-gfx1151/PKGBUILD"
 PATCH = (
     REPO_ROOT
-    / "packages/python-vllm-rocm-gfx1151/0005-rocm-reduce-triton-unified-attention-prefill-tile-for-large-heads.patch"
-)
-SETUP_FLAGS_PATCH = (
-    REPO_ROOT
-    / "packages/python-vllm-rocm-gfx1151/0006-setup.py-forward-host-and-hip-flags-into-cmake.patch"
-)
-GEMMA4_AITER_PATCH = (
-    REPO_ROOT
-    / "packages/python-vllm-rocm-gfx1151/0007-rocm-enable-gfx1x-aiter-and-prefer-it-for-gemma4.patch"
+    / "packages/python-vllm-rocm-gfx1151/0016-rocm-refresh-local-carry-for-vllm-0.20.0.patch"
 )
 
 
 def test_pkgbuild_carries_rocm_large_head_tile_patch():
-    text = PKGBUILD.read_text()
-    patch_name = PATCH.name
+    pkgbuild_text = PKGBUILD.read_text()
+    patch_text = PATCH.read_text()
 
-    assert patch_name in text
-    assert f'_apply_patch_if_needed "{patch_name}"' in text
+    assert PATCH.name in pkgbuild_text
+    assert f'_apply_patch_if_needed "{PATCH.name}"' in pkgbuild_text
+    assert "64 KiB hardware limit on gfx1151" in patch_text
 
 
 def test_pkgbuild_carries_setup_flag_forwarding_patch():
-    text = PKGBUILD.read_text()
-    patch_name = SETUP_FLAGS_PATCH.name
+    pkgbuild_text = PKGBUILD.read_text()
+    patch_text = PATCH.read_text()
 
-    assert patch_name in text
-    assert f'_apply_patch_if_needed "{patch_name}"' in text
+    assert PATCH.name in pkgbuild_text
+    assert f'_apply_patch_if_needed "{PATCH.name}"' in pkgbuild_text
+    assert "CMAKE_HIP_FLAGS" in patch_text
 
 
 def test_pkgbuild_carries_gemma4_aiter_patch():
     text = PKGBUILD.read_text()
-    patch_name = GEMMA4_AITER_PATCH.name
 
-    assert patch_name in text
-    assert f'_apply_patch_if_needed "{patch_name}"' in text
+    assert PATCH.name in text
+    assert f'_apply_patch_if_needed "{PATCH.name}"' in text
+    assert "return on_mi3xx() or on_gfx1x()" in text
 
 
 def test_pkgbuild_drops_fused_moe_policy_patch():
@@ -90,7 +84,7 @@ def test_patch_documents_gemma4_lds_overflow_reason():
 
 
 def test_setup_patch_forwards_host_and_hip_flags_into_cmake():
-    text = SETUP_FLAGS_PATCH.read_text()
+    text = PATCH.read_text()
 
     assert '("CFLAGS", "CMAKE_C_FLAGS")' in text
     assert '("CXXFLAGS", "CMAKE_CXX_FLAGS")' in text
@@ -99,7 +93,7 @@ def test_setup_patch_forwards_host_and_hip_flags_into_cmake():
 
 
 def test_gemma4_patch_enables_gfx1x_aiter_and_prefers_it():
-    text = GEMMA4_AITER_PATCH.read_text()
+    text = PATCH.read_text()
 
     assert "from vllm.platforms.rocm import on_gfx1x, on_mi3xx" in text
     assert "return on_mi3xx() or on_gfx1x()" in text

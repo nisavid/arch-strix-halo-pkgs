@@ -26,7 +26,7 @@
     "llama.cpp-vulkan-gfx1151"
   ],
   "package_name": "lemonade-server",
-  "pkgver": "10.2.0",
+  "pkgver": "10.3.0",
   "policy": {
     "advisory_references": [
       "aur/lemonade-desktop"
@@ -79,7 +79,7 @@
     "recipe_key": "lemonade",
     "scaffold_notes": [
       "Server/runtime package; llama.cpp backends are optdepends, not hard deps.",
-      "Pinned to the v10.2.0 upstream release tarball to keep the first-pass metadata reproducible.",
+      "Pinned to the v10.3.0 upstream release tarball to keep the package metadata reproducible.",
       "Installs /etc/lemonade/conf.d/10-llamacpp-gfx1151.conf so the packaged ROCm and Vulkan llama.cpp wrapper binaries are exposed to the service as system-managed backends.",
       "The system-managed backend patch also folds in the config-load and CLI/backend-table changes needed for those service-provided overrides to stay visible after config.json already exists.",
       "Export the packaged llama.cpp revision and ggml release URL in the system-managed backend env overlay so the GUI shows the packaged backend metadata instead of upstream downloader defaults."
@@ -88,9 +88,9 @@
       "SKIP"
     ],
     "source_refs": [
-      "https://github.com/lemonade-sdk/lemonade/archive/refs/tags/v10.2.0.tar.gz"
+      "https://github.com/lemonade-sdk/lemonade/archive/refs/tags/v10.3.0.tar.gz"
     ],
-    "src_subdir": "lemonade-10.2.0",
+    "src_subdir": "lemonade-10.3.0",
     "template": "lemonade-server",
     "update_notes": [
       "Update against the current upstream monorepo release and the AUR server package first, then re-check whether any local backend-management or NPU-detection patches are still needed.",
@@ -98,7 +98,7 @@
       "Re-test that LEMONADE_LLAMACPP_*_BIN service overrides still apply even when /var/lib/lemonade/config.json already exists."
     ],
     "upstream_name": "lemonade-server",
-    "upstream_version": "10.2.0",
+    "upstream_version": "10.3.0",
     "url": "https://github.com/lemonade-sdk/lemonade"
   },
   "provenance": {

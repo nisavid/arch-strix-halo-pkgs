@@ -5,7 +5,7 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 PKGBUILD = REPO_ROOT / "packages/python-vllm-rocm-gfx1151/PKGBUILD"
 PATCH = (
     REPO_ROOT
-    / "packages/python-vllm-rocm-gfx1151/0012-rocm-keep-eagle-padded-drafter-count-int32.patch"
+    / "packages/python-vllm-rocm-gfx1151/0016-rocm-refresh-local-carry-for-vllm-0.20.0.patch"
 )
 
 

@@ -5,23 +5,17 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 PKGBUILD = REPO_ROOT / "packages/python-vllm-rocm-gfx1151/PKGBUILD"
 PATCH = (
     REPO_ROOT
-    / "packages/python-vllm-rocm-gfx1151/0008-torchao-startup-stays-lazy.patch"
-)
-CLI_STARTUP_PATCH = (
-    REPO_ROOT
-    / "packages/python-vllm-rocm-gfx1151/0009-cli-startup-stays-runtime-light.patch"
+    / "packages/python-vllm-rocm-gfx1151/0016-rocm-refresh-local-carry-for-vllm-0.20.0.patch"
 )
 
 
 def test_pkgbuild_carries_merged_torchao_and_cli_startup_patches():
     text = PKGBUILD.read_text()
 
-    assert "pkgver=0.19.1" in text
-    assert "pkgrel=5" in text
+    assert "pkgver=0.20.0" in text
+    assert "pkgrel=1" in text
     assert PATCH.name in text
     assert f'_apply_patch_if_needed "{PATCH.name}"' in text
-    assert CLI_STARTUP_PATCH.name in text
-    assert f'_apply_patch_if_needed "{CLI_STARTUP_PATCH.name}"' in text
     assert "0009-lazy-import-torchao-config-only-for-torchao-quantization.patch" not in text
     assert "0010-cli-help-avoids-eager-benchmark-imports.patch" not in text
     assert "0011-openai-protocol-lazifies-chat-utils-import.patch" not in text
@@ -52,7 +46,7 @@ def test_merged_torchao_patch_keeps_version_checks_metadata_only_and_lazy_loads_
 
 
 def test_merged_cli_patch_keeps_top_level_help_off_runtime_paths():
-    text = CLI_STARTUP_PATCH.read_text()
+    text = PATCH.read_text()
 
     assert "+def _should_load_benchmark_module() -> bool:" in text
     assert '+        benchmark_module = _BenchHelpModule()' in text

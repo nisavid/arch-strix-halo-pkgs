@@ -5,7 +5,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 PKG_DIR = REPO_ROOT / "packages/python-vllm-rocm-gfx1151"
-PATCH = PKG_DIR / "0014-rocm-detect-flash-attn-triton-interface.patch"
+PATCH = PKG_DIR / "0016-rocm-refresh-local-carry-for-vllm-0.20.0.patch"
 PKGBUILD = PKG_DIR / "PKGBUILD"
 
 
@@ -21,7 +21,7 @@ def test_flash_attn_triton_interface_patch_is_packaged():
         line for line in patch_text.splitlines() if line.startswith("+")
     )
     assert "find_spec(\"flash_attn.flash_attn_triton_amd\")" not in added_lines
-    assert "0014-rocm-detect-flash-attn-triton-interface.patch" in pkgbuild_text
+    assert PATCH.name in pkgbuild_text
     assert (
         "grep -Fq 'def _flash_attn_uses_triton_rocm() -> bool:'"
         in pkgbuild_text

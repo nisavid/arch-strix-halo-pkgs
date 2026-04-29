@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 SAGEMAKER_API_ROUTER = (
@@ -13,6 +15,9 @@ LORA_API_ROUTER = (
 
 
 def test_sagemaker_router_is_optional_in_built_package():
+    if not SAGEMAKER_API_ROUTER.exists():
+        pytest.skip("built vLLM package image is not present")
+
     text = SAGEMAKER_API_ROUTER.read_text()
     assert (
         "import model_hosting_container_standards.sagemaker as "
@@ -27,6 +32,9 @@ def test_sagemaker_router_is_optional_in_built_package():
 
 
 def test_lora_router_skips_runtime_update_routes_without_sagemaker_standards():
+    if not LORA_API_ROUTER.exists():
+        pytest.skip("built vLLM package image is not present")
+
     text = LORA_API_ROUTER.read_text()
     assert (
         "import model_hosting_container_standards.sagemaker as "

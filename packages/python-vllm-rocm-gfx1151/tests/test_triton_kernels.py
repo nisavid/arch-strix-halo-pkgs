@@ -3,6 +3,8 @@ import sys
 from pathlib import Path
 from types import ModuleType
 
+import pytest
+
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 IMPORT_UTILS = (
@@ -44,6 +46,9 @@ def _load_import_utils(monkeypatch):
 
 
 def test_vendored_triton_kernels_are_disabled_when_target_info_is_missing(monkeypatch):
+    if not IMPORT_UTILS.exists():
+        pytest.skip("built vLLM package image is not present")
+
     import_utils, logger = _load_import_utils(monkeypatch)
 
     monkeypatch.setattr(

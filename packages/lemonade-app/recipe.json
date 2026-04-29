@@ -16,7 +16,7 @@
   },
   "name": "lemonade-app",
   "package_name": "lemonade-app",
-  "pkgver": "10.2.0",
+  "pkgver": "10.3.0",
   "policy": {
     "advisory_references": [
       "aur/lemonade-server"
@@ -59,22 +59,22 @@
     "scaffold_notes": [
       "Electron desktop package split from the same lemonade monorepo.",
       "Install a /usr/bin/lemonade-app wrapper that launches the packaged Electron binary from /usr/share/lemonade-app so the shipped desktop entry resolves on PATH.",
-      "Pinned to the v10.2.0 upstream release tarball to keep the first-pass metadata reproducible."
+      "Pinned to the v10.3.0 upstream release tarball to keep the package metadata reproducible."
     ],
     "sha256sums": [
       "SKIP"
     ],
     "source_refs": [
-      "https://github.com/lemonade-sdk/lemonade/archive/refs/tags/v10.2.0.tar.gz"
+      "https://github.com/lemonade-sdk/lemonade/archive/refs/tags/v10.3.0.tar.gz"
     ],
-    "src_subdir": "lemonade-10.2.0",
+    "src_subdir": "lemonade-10.3.0",
     "template": "lemonade-app",
     "update_notes": [
       "Update against the closest desktop/app packaging lane first, then re-check any server-side shared assets the app package expects from the monorepo build.",
       "Keep the provides/conflicts story accurate while Arch/AUR naming remains in transition."
     ],
     "upstream_name": "lemonade-app",
-    "upstream_version": "10.2.0",
+    "upstream_version": "10.3.0",
     "url": "https://github.com/lemonade-sdk/lemonade"
   },
   "provenance": {

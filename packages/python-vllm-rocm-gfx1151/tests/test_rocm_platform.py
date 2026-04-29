@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 ROCM_PLATFORM = (
@@ -9,6 +11,9 @@ ROCM_PLATFORM = (
 
 
 def test_rocm_platform_fallback_avoids_warning_once_during_import():
+    if not ROCM_PLATFORM.exists():
+        pytest.skip("built vLLM package image is not present")
+
     text = ROCM_PLATFORM.read_text()
     start = text.index("def _get_gcn_arch() -> str:")
     end = text.index("\n\n# Resolve once at module load.", start)

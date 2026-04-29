@@ -30,7 +30,7 @@ previous_recorded = "0.19.1"
 latest = "0.20.0"
 discovery_status = "stable_update_available"
 disposition = "tracked"
-disposition_reason = "The release is relevant but needs a dedicated package-update lane with patch refresh and host smokes."
+disposition_reason = "Package source is updated on the active vLLM-through-Transformers branch with local patch carry refreshed; keep tracked until build, install, and host smokes pass."
 salient_changes = [
   "First-party Python 3.14 and torch 2.11 metadata support",
   "DFlash model/runtime pieces",
@@ -38,7 +38,7 @@ salient_changes = [
   "Quantization, MoE, GDN, Gemma 4, pooling, scoring, and entrypoint changes",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
+package_source_update_needed = false
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
@@ -53,7 +53,7 @@ previous_recorded = "b8955"
 latest = "b8966"
 discovery_status = "stable_update_available"
 disposition = "tracked"
-disposition_reason = "b8955 was adopted, deployed, and installed-smoked, but upstream moved again; review b8955..b8966 before deciding whether to adopt b8966."
+disposition_reason = "Package source is updated on the active vLLM-through-Transformers branch; keep tracked until rebuild, deploy, and installed smoke validation pass."
 salient_changes = [
   "CANN operator additions and optimization",
   "ggml backend/device duplicate-registration guard",
@@ -63,7 +63,7 @@ salient_changes = [
   "CUDA FlashAttention support for Mistral Small 4 head sizes",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
+package_source_update_needed = false
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
@@ -80,14 +80,14 @@ previous_recorded = "e16e349eb30bac8fd72b5c34ab220527fea5c58c / 2.11.0-4"
 latest = "9413e9b96bcbeb8af1aa0280a3a9bc7dd048857e"
 discovery_status = "branch_head_ahead"
 disposition = "tracked"
-disposition_reason = "The branch and Arch baseline need a package-update review against local PyTorch patch carry."
+disposition_reason = "Package source is updated on the active vLLM-through-Transformers branch and local PyTorch patches dry-run against the new ROCm ref; keep tracked until build and host validation pass."
 salient_changes = [
   "Windows-specific CUDA test fixes",
   "RDNA TunableOp test_call_count_tunableop kernel-name extraction fix",
   "Graph-capture, pinned-memory, FX, and numpy-compat test updates",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
+package_source_update_needed = false
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
@@ -102,7 +102,7 @@ previous_recorded = "6a7df2004f5f896471cf9e6ab588b6aec0357dc7"
 latest = "c1c65e6bef07a42bdf7e268f69b92e53f2e4ada5"
 discovery_status = "candidate_head_ahead"
 disposition = "tracked"
-disposition_reason = "The candidate overlaps active attention and MoE validation lanes and needs host validation before repinning."
+disposition_reason = "Package source is updated on the active vLLM-through-Transformers branch and local AITER patches dry-run against the new ref; keep tracked until build and host validation pass."
 salient_changes = [
   "Custom group device support",
   "Multi communication group entity support",
@@ -112,7 +112,7 @@ salient_changes = [
   "FP8, fused GEMM, MoE, normalization, rope, top-k, and gated-delta-rule test determinism updates",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
+package_source_update_needed = false
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
@@ -127,7 +127,7 @@ previous_recorded = "10.2.0"
 latest = "10.3.0"
 discovery_status = "stable_update_available"
 disposition = "tracked"
-disposition_reason = "The release has service, app, backend-management, and ROCm-channel changes that need a dedicated package update and patch-carry review."
+disposition_reason = "Package source is updated on the active vLLM-through-Transformers branch with backend-management patch carry refreshed; keep tracked until build, deploy, and service/app validation pass."
 salient_changes = [
   "OmniRouter multimodal tools and model collections",
   "Desktop app migration from Electron to Tauri",
@@ -136,7 +136,7 @@ salient_changes = [
   "System llama.cpp backend support and version-tag config keys",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
+package_source_update_needed = false
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
@@ -151,13 +151,13 @@ previous_recorded = "5.6.2"
 latest = "5.7.0"
 discovery_status = "stable_update_available"
 disposition = "tracked"
-disposition_reason = "PyPI now publishes 5.7.0, matching the GitHub tag; review release-source availability and Gemma/model-surface impact before updating the PyPI-based package lane."
+disposition_reason = "Package source is updated on the active vLLM-through-Transformers branch; keep tracked until build and host import/model-surface validation pass."
 salient_changes = [
   "PyPI 5.7.0 wheel and sdist are available, matching GitHub v5.7.0",
   "Potential Gemma/model-surface overlap with the local Transformers and Mistral-common closure lane",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
+package_source_update_needed = false
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"

@@ -6,7 +6,7 @@
 - Scaffold template: `python-project-aiter`
 - Recipe build method: `pip`
 - Upstream repo: `https://github.com/ROCm/aiter.git`
-- Package version: `0.1.12.post2.dev69+gcf12b1381`
+- Package version: `0.1.12.post2.dev140+gc1c65e6be`
 - Recipe revision: `a1d7a68 (20260427, 16 path commits)`
 - Recipe steps: `29`
 - Recipe dependencies: `pytorch, vllm`
@@ -29,7 +29,7 @@ aiter_meta/csrc/include/ files for gfx1151 RDNA 3.5 compatibility.
 ## Scaffold notes
 
 - There is no standalone Arch, CachyOS, or AUR aiter package. The closest packaging lane is the PyTorch ROCm pkgbase that vendors the same submodule, so that pkgbase is advisory only.
-- The package pins reviewed upstream AITER main snapshot cf12b1381dcdec4b5d90d136a5403e718c7541ec rather than rolling back to the v0.1.12.post1 release tag, because the reviewed post-release range carries local-lane-relevant MoE, quant, JIT, and architecture-dispatch changes.
+- The package pins reviewed upstream AITER main snapshot c1c65e6bef07a42bdf7e268f69b92e53f2e4ada5 rather than rolling back to the v0.1.12.post1 release tag, because the reviewed post-release range carries local-lane-relevant MoE, quant, JIT, and architecture-dispatch changes.
 - The package exports SETUPTOOLS_SCM_PRETEND_VERSION so the wheel metadata is stable even though the source is a git commit past the latest release tag.
 - The recipe rebuilds AITER from the pinned upstream AITER source lane while keeping CK and generated kernel expectations explicit in the package.
 - Upstream AITER declares pandas as a real dependency and FlyDSL as an optional acceleration path. Keep pandas in the package metadata, and package FlyDSL separately rather than silently depending on an unpublished wheel.

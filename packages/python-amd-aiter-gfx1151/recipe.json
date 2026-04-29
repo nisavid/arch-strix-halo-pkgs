@@ -37,7 +37,7 @@
   },
   "name": "python-amd-aiter-gfx1151",
   "package_name": "python-amd-aiter-gfx1151",
-  "pkgver": "0.1.12.post2.dev69+gcf12b1381",
+  "pkgver": "0.1.12.post2.dev140+gc1c65e6be",
   "policy": {
     "advisory_references": [
       "extra/python-pytorch-opt-rocm",
@@ -88,7 +88,7 @@
     "recipe_key": "aiter",
     "scaffold_notes": [
       "There is no standalone Arch, CachyOS, or AUR aiter package. The closest packaging lane is the PyTorch ROCm pkgbase that vendors the same submodule, so that pkgbase is advisory only.",
-      "The package pins reviewed upstream AITER main snapshot cf12b1381dcdec4b5d90d136a5403e718c7541ec rather than rolling back to the v0.1.12.post1 release tag, because the reviewed post-release range carries local-lane-relevant MoE, quant, JIT, and architecture-dispatch changes.",
+      "The package pins reviewed upstream AITER main snapshot c1c65e6bef07a42bdf7e268f69b92e53f2e4ada5 rather than rolling back to the v0.1.12.post1 release tag, because the reviewed post-release range carries local-lane-relevant MoE, quant, JIT, and architecture-dispatch changes.",
       "The package exports SETUPTOOLS_SCM_PRETEND_VERSION so the wheel metadata is stable even though the source is a git commit past the latest release tag.",
       "The recipe rebuilds AITER from the pinned upstream AITER source lane while keeping CK and generated kernel expectations explicit in the package.",
       "Upstream AITER declares pandas as a real dependency and FlyDSL as an optional acceleration path. Keep pandas in the package metadata, and package FlyDSL separately rather than silently depending on an unpublished wheel.",
@@ -100,7 +100,7 @@
       "SKIP"
     ],
     "source_refs": [
-      "aiter::git+https://github.com/ROCm/aiter.git#commit=cf12b1381dcdec4b5d90d136a5403e718c7541ec"
+      "aiter::git+https://github.com/ROCm/aiter.git#commit=c1c65e6bef07a42bdf7e268f69b92e53f2e4ada5"
     ],
     "src_subdir": "aiter",
     "template": "python-project-aiter",
@@ -119,7 +119,7 @@
       "Treat the current Qwen3.6 FP8 MoE forced-AITER failure as an AITER opus/gfx1151 FP8-kernel feature gap, not a narrow include bug. A built-payload rerun with AITER pkgrel -8 and vLLM pkgrel -27 clears the `hip_compat.h` issue, then fails compiling `aiter.jit.module_quant` with `opus.hpp:3001:24: error: unknown type name 'mfma_adaptor'`; AITER defines `mfma_adaptor` only for `__GFX9__` device builds, while its alternate gfx1250 WMMA path uses FP8 builtins that hipcc rejects for gfx1151.",
       "Keep the unknown-gfx 2-stage fallback, missing-1-stage-metadata tuner skip, and CK 2-stage splitk normalization/forwarding fix until upstream AITER handles those gfx1x cases directly. Do not reintroduce an unquantized `torch_moe` fallback here: the concrete reference-host failure was `google/gemma-4-26B-A4B-it` generating corrupted text after such a fallback ran on AITER-shuffled weights."
     ],
-    "upstream_version": "0.1.12.post2.dev69+gcf12b1381",
+    "upstream_version": "0.1.12.post2.dev140+gc1c65e6be",
     "url": "https://github.com/ROCm/aiter"
   },
   "provenance": {

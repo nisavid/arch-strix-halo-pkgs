@@ -2,16 +2,14 @@
 
 ## Packaging And Build Hygiene
 
-- Review the active 2026-04-28 update candidates: vLLM 0.20.0 package
-  update; llama.cpp b8966 runtime rebuild decision; ROCm PyTorch
-  release/2.11 9413e9b review; AITER c1c65e6 package-source review;
-  Lemonade 10.3.0 package update; Transformers 5.7.0
-  package review. The llama.cpp b8955 runtime rebuild
-  lane adopted, deployed, and installed-smoked b8955 before b8966 appeared, so
-  decide whether to adopt b8966. Active candidate dispositions live in
-  `docs/maintainers/update-candidates.toml`; keep that
-  ledger and this backlog item in sync until each candidate is adopted,
-  rejected, or blocked.
+- Build and host-validate the active 2026-04-28 update branch. The branch
+  updates package sources for vLLM 0.20.0, llama.cpp b8966, ROCm PyTorch
+  release/2.11 at 9413e9b, AITER c1c65e6, Lemonade 10.3.0, and Transformers
+  5.7.0. The remaining gate is package build, deploy, and installed smoke
+  validation before the candidates can move from tracked to adopted. Active
+  candidate dispositions live in `docs/maintainers/update-candidates.toml`;
+  keep that ledger and this backlog item in sync until each candidate is
+  adopted, rejected, or blocked.
 - Blackcat ai-notes recipe input is adopted through
   `a1d7a6816dd2c456bad9fcc7d61c53a4bd8c5fbd`. Follow up the newly described
   stable-diffusion.cpp package surface, expanded native/Rust wheel recipe
@@ -167,15 +165,13 @@
     `prompt_lookup_max=5`, and `num_speculative_tokens=2`
   - keep CPU `ngram` blocked until its generation-time `EngineCore` death is
     explained or fixed
-- Keep DFlash speculative decoding gated on a dedicated vLLM package update
-  from the current local 0.19.1 source to a release with the merged DFlash
-  support from PR #38300.
-  - the local package should keep only the narrow speculators parser backport
-    until the release source also includes the DFlash model, proposer/runtime,
-    and registry integration
-  - as of the 2026-04-28 freshness refresh, upstream `v0.20.0` is available
-    and includes DFlash model/runtime pieces; adopt it only through a full vLLM
-    package-update lane with patch refresh and host smokes
+- Keep DFlash speculative decoding gated on installed validation of the vLLM
+  0.20.0 update lane.
+  - the active update branch uses upstream vLLM 0.20.0 DFlash model/runtime
+    and speculators parser support instead of carrying a narrow local parser
+    backport
+  - promote DFlash scenarios only after the 0.20.0 package build, install, and
+    reference-host smoke gates pass
   - keep `draft_model` with `Qwen/Qwen3.5-0.8B` exploratory; current vLLM
     remaps that checkpoint into the Qwen3.5 MTP loader and fails on hidden-size
     mismatch instead of running a plain draft-model path

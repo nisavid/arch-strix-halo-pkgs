@@ -7,7 +7,7 @@
 - Scaffold template: `llama-cpp`
 - Recipe build method: `cmake`
 - Upstream repo: `https://github.com/ggml-org/llama.cpp.git`
-- Package version: `b8955`
+- Package version: `b8966`
 - Recipe revision: `a1d7a68 (20260427, 16 path commits)`
 - Recipe steps: `34`
 - Recipe dependencies: `therock`
@@ -62,6 +62,7 @@ binaries find their shared libraries without LD_LIBRARY_PATH.
 - On 2026-04-26, reviewed upstream llama.cpp b8935 at f454bd7eb8944629aabca163ea1c6e67e53fd77e; the Vulkan baseline aur/llama.cpp-vulkan-bin remained at b7376-1. The b8929..b8935 range adds OpenCL IQ4_NL support, reduces CUDA MMQ stream-k overhead, optimizes Metal Tensor API usage, guards a Hexagon HMX clock request, fixes chat reasoning-marker spacing, and tightens speculative vocab compatibility checks. No Vulkan package-build touchpoint was found; record it as reviewed without repinning until a runtime rebuild lane is opened.
 - On 2026-04-28, reviewed upstream llama.cpp b8953 at 434b2a1ff6a73927f1aeef1455599fbe207f7d6f; the Vulkan baseline aur/llama.cpp-vulkan-bin remained at b7376-1. The b8935..b8953 range is mostly WebGPU, CPU/AMX/i-quant, conversion, RPC, download, and server-router work. No Vulkan package-build touchpoint was found; record it as reviewed without repinning until a runtime rebuild lane is opened.
 - On 2026-04-28, adopted upstream llama.cpp b8955 at 14e733e36f5752f39494b6c7e88022e43c05729a. The b8953..b8955 range refactors speculative decoding parameters, switches server m-rope task handling to pos_next, and updates argument parser, server, lookup, speculative, and llama-bench sources; no Vulkan package-build touchpoint or local patch carry changed.
+- On 2026-04-29, adopted upstream llama.cpp b8966 at 7b8443ac786c06438e0f407b7adaa72c220b5099. The b8955..b8966 range adds CANN operator work, backend/device duplicate-registration handling, Vulkan timestamp-barrier and shader/header fixes, WebGPU SSM scan aliasing fixes, CUDA FA support for Mistral Small head sizes, and a broad server UI tool/chat settings refactor; no Vulkan package-build touchpoint or local patch carry changed.
 - Until then, compare runtime/package expectations against the -bin package and source-build conventions against aur/llama.cpp.
 
 ## Maintainer Starting Points

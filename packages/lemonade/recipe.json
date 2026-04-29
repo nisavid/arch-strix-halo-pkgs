@@ -21,7 +21,7 @@
     "llama.cpp-vulkan-gfx1151"
   ],
   "package_name": "lemonade",
-  "pkgver": "10.2.0",
+  "pkgver": "10.3.0",
   "policy": {
     "advisory_references": [
       "aur/lemonade-server",
@@ -64,7 +64,7 @@
       "Do not let this meta package obscure the standalone update story for lemonade-server, lemonade-app, or the backend packages."
     ],
     "upstream_name": "lemonade",
-    "upstream_version": "10.2.0",
+    "upstream_version": "10.3.0",
     "url": "https://github.com/lemonade-sdk/lemonade"
   },
   "provenance": {
