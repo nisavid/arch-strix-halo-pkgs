@@ -4,17 +4,12 @@
 
 - Build and host-validate the active 2026-04-28 update branch. The branch
   updates package sources for vLLM 0.20.0, llama.cpp b8966, ROCm PyTorch
-  release/2.11 at 9413e9b, AITER c1c65e6, Lemonade 10.3.0, and Transformers
+  release/2.11 at 9413e9b, AITER d679e288, Lemonade 10.3.0, and Transformers
   5.7.0. The remaining gate is package build, deploy, and installed smoke
   validation before the candidates can move from tracked to adopted. Active
   candidate dispositions live in `docs/maintainers/update-candidates.toml`;
   keep that ledger and this backlog item in sync until each candidate is
   adopted, rejected, or blocked.
-- Review AITER main `d679e288` after the active update branch is built and
-  smoke-tested. The pre-PR freshness sweep recorded the new head as a tracked
-  follow-up because it includes FLYDSL, FMHA backward, paged-attention, and
-  fused collectives/FP8 quantization work, but it is not part of the current
-  vLLM-through-Transformers source bump.
 - Blackcat ai-notes recipe input is adopted through
   `a1d7a6816dd2c456bad9fcc7d61c53a4bd8c5fbd`. Follow up the newly described
   stable-diffusion.cpp package surface, expanded native/Rust wheel recipe

@@ -439,14 +439,15 @@ These are tracked in `docs/maintainers/update-candidates.toml`; do not treat
 the b8955 build as full freshness closure.
 
 The 2026-04-29 02:07 EDT pre-PR freshness sweep found three changes after the
-active update branch's source bump. AUR `llama.cpp-hip` caught up to `b8966-1`,
-matching this branch's llama.cpp source. AITER main moved from
+active update branch's first source bump. AUR `llama.cpp-hip` caught up to
+`b8966-1`, matching this branch's llama.cpp source. AITER main moved from
 `c1c65e6bef07a42bdf7e268f69b92e53f2e4ada5` to
 `d679e288120cf407d1d0daa82bab4ad961ed0bb6`; the range includes FLYDSL GDR
 decode, FMHA backward layout, paged-attention optimization, fused
-all-reduce/RMSNorm/per-group FP8 quantization, and CI wheel changes. Track
-that as a follow-up rather than expanding the active source bump. ROCm PyTorch
-`release/2.11` moved from `9413e9b96bcbeb8af1aa0280a3a9bc7dd048857e` to
+all-reduce/RMSNorm/per-group FP8 quantization, and CI wheel changes. The
+branch now includes that AITER source bump, with local package patches
+dry-run against the new head. ROCm PyTorch `release/2.11` moved from
+`9413e9b96bcbeb8af1aa0280a3a9bc7dd048857e` to
 `345ca6fbeb70f3a6edda9f13b8aafcadccbedd4e`; the range is limited to a
 custom-op test cleanup and a Composable Kernel submodule update for gfx1033
 support, so it is recorded as reviewed but not adopted for the gfx1151 package
