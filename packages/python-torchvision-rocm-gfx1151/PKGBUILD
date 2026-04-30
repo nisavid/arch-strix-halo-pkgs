@@ -108,7 +108,9 @@ PY
 )"
   local _extension="${pkgdir}${_site}/torchvision/_C.so"
   local _rpath="\$ORIGIN:\$ORIGIN/../torch/lib:/opt/rocm/lib"
-  if [[ -f "${_extension}" ]]; then
-    patchelf --set-rpath "${_rpath}" "${_extension}"
+  if [[ ! -f "${_extension}" ]]; then
+    echo "TORCHVISION_EXTENSION_MISSING: ${_extension}" >&2
+    return 1
   fi
+  patchelf --set-rpath "${_rpath}" "${_extension}"
 }

@@ -38,11 +38,13 @@ def test_pkgbuild_exports_source_path_sanitizer():
 def test_pkgbuild_patches_extension_rpath_to_torch_lib():
     text = PKGBUILD.read_text()
 
-    assert "pkgrel=6" in text
+    pkgrel = int(next(line.removeprefix("pkgrel=") for line in text.splitlines() if line.startswith("pkgrel=")))
+    assert pkgrel >= 6
     assert "export FORCE_CUDA=1" in text
     assert "patchelf" in text
     assert 'sysconfig.get_path("platlib"' in text
     assert "python3.14/site-packages" not in text
+    assert "TORCHVISION_EXTENSION_MISSING" in text
     assert 'local _rpath="\\$ORIGIN:\\$ORIGIN/../torch/lib:/opt/rocm/lib"' in text
     assert 'patchelf --set-rpath "${_rpath}" "${_extension}"' in text
 

@@ -929,10 +929,26 @@ package() {{
     echo "PYTORCH_ROCM_VERSION_EMPTY: /opt/rocm/.info/version was empty for ${{_version_py}}" >&2
     return 1
   fi
-  sed -i \\
-    -e "s/^hip: Optional\\[str\\] = None$/hip: Optional[str] = '${{_hip_version}}'/" \\
-    -e "s/^rocm: Optional\\[str\\] = None$/rocm: Optional[str] = '${{_rocm_version}}'/" \\
-    "${{_version_py}}"
+  python - "${{_version_py}}" "${{_hip_version}}" "${{_rocm_version}}" <<'PY'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+hip = sys.argv[2]
+rocm = sys.argv[3]
+text = path.read_text()
+text = text.replace(
+    "hip: Optional[str] = None",
+    f"hip: Optional[str] = {{hip!r}}",
+    1,
+)
+text = text.replace(
+    "rocm: Optional[str] = None",
+    f"rocm: Optional[str] = {{rocm!r}}",
+    1,
+)
+path.write_text(text)
+PY
   grep -Fqx "hip: Optional[str] = '${{_hip_version}}'" "${{_version_py}}" || {{
     echo "PYTORCH_HIP_VERSION_REWRITE_FAILED: ${{_version_py}} _hip_version=${{_hip_version}} _rocm_version=${{_rocm_version}}" >&2
     return 1
@@ -1049,9 +1065,11 @@ PY
 )"
   local _extension="${{pkgdir}}${{_site}}/torchvision/_C.so"
   local _rpath="\\$ORIGIN:\\$ORIGIN/../torch/lib:/opt/rocm/lib"
-  if [[ -f "${{_extension}}" ]]; then
-    patchelf --set-rpath "${{_rpath}}" "${{_extension}}"
+  if [[ ! -f "${{_extension}}" ]]; then
+    echo "TORCHVISION_EXTENSION_MISSING: ${{_extension}}" >&2
+    return 1
   fi
+  patchelf --set-rpath "${{_rpath}}" "${{_extension}}"
 }}"""
     elif template == "python-project-triton-rocm":
         python_subdir = f"{src_subdir}/python"
