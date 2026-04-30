@@ -18,6 +18,21 @@ NUMPY_SITE = (
 PKGBUILD = REPO_ROOT / "packages/python-pytorch-opt-rocm-gfx1151/PKGBUILD"
 
 
+def _require_built_torch_site() -> None:
+    if not TORCH_SITE.exists():
+        pytest.skip("built PyTorch package image is not present")
+
+
+def _needed_entries(path: Path) -> str:
+    result = subprocess.run(
+        ["readelf", "-d", str(path)],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    return result.stdout
+
+
 def test_pkgbuild_makes_numpy_available_at_build_time():
     text = PKGBUILD.read_text()
     assert "python-numpy-gfx1151" in text
@@ -45,21 +60,32 @@ def test_pkgbuild_makes_numpy_available_at_build_time():
 
 
 def test_pkgbuild_loads_clang_openmp_before_torch_cpu():
-    text = PKGBUILD.read_text()
+    _require_built_torch_site()
+    extensions = sorted(TORCH_SITE.glob("torch/_C*.so"))
+    assert extensions, f"missing torch extension modules under {TORCH_SITE}"
 
-    assert 'patchelf --add-needed libomp.so "${_so}"' in text
-    assert 'torch/_C*.so' in text
-    assert "grep -Eq 'libomp|libiomp5'" in text
+    for extension in extensions:
+        needed = _needed_entries(extension)
+        assert "libomp" in needed or "libiomp5" in needed
 
 
 def test_pkgbuild_marks_installed_wheel_as_rocm_build():
-    text = PKGBUILD.read_text()
+    _require_built_torch_site()
+    version_py = TORCH_SITE / "torch/version.py"
+    if not Path("/opt/rocm/.info/version").exists():
+        pytest.skip("ROCm version metadata is not available")
 
-    assert '_version_py="${_site}/torch/version.py"' in text
-    assert 'env -i PATH=/opt/rocm/bin:/usr/bin:/bin HIP_PATH=/opt/rocm ROCM_PATH=/opt/rocm /opt/rocm/bin/hipconfig --version | sed' in text
-    assert '_rocm_version="$(< /opt/rocm/.info/version)"' in text
-    assert "hip: Optional[str] = '${_hip_version}'" in text
-    assert "rocm: Optional[str] = '${_rocm_version}'" in text
+    hip_version = subprocess.run(
+        ["/opt/rocm/bin/hipconfig", "--version"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.strip().split("-", 1)[0]
+    rocm_version = Path("/opt/rocm/.info/version").read_text().strip()
+    text = version_py.read_text()
+
+    assert f"hip: Optional[str] = '{hip_version}'" in text
+    assert f"rocm: Optional[str] = '{rocm_version}'" in text
 
 
 def test_built_torch_package_supports_tensor_to_numpy():

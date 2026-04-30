@@ -41,6 +41,8 @@ def test_pkgbuild_patches_extension_rpath_to_torch_lib():
     assert "pkgrel=6" in text
     assert "export FORCE_CUDA=1" in text
     assert "patchelf" in text
+    assert 'sysconfig.get_path("platlib"' in text
+    assert "python3.14/site-packages" not in text
     assert 'local _rpath="\\$ORIGIN:\\$ORIGIN/../torch/lib:/opt/rocm/lib"' in text
     assert 'patchelf --set-rpath "${_rpath}" "${_extension}"' in text
 

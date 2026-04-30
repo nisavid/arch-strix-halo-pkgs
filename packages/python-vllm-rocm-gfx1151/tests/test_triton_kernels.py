@@ -7,9 +7,9 @@ import pytest
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-IMPORT_UTILS = (
+PKG_LIB = (
     REPO_ROOT
-    / "packages/python-vllm-rocm-gfx1151/pkg/python-vllm-rocm-gfx1151/usr/lib/python3.14/site-packages/vllm/utils/import_utils.py"
+    / "packages/python-vllm-rocm-gfx1151/pkg/python-vllm-rocm-gfx1151/usr/lib"
 )
 
 
@@ -27,7 +27,12 @@ class RecordingLogger:
         self.warnings.append(msg % args if args else msg)
 
 
-def _load_import_utils(monkeypatch):
+def _resolve_import_utils() -> Path | None:
+    matches = sorted(PKG_LIB.glob("python*/site-packages/vllm/utils/import_utils.py"))
+    return matches[-1] if matches else None
+
+
+def _load_import_utils(monkeypatch, import_utils_path: Path):
     logger = RecordingLogger()
     vllm_pkg = ModuleType("vllm")
     vllm_pkg.__path__ = []  # type: ignore[attr-defined]
@@ -37,7 +42,9 @@ def _load_import_utils(monkeypatch):
     monkeypatch.setitem(sys.modules, "vllm", vllm_pkg)
     monkeypatch.setitem(sys.modules, "vllm.logger", vllm_logger)
 
-    spec = importlib.util.spec_from_file_location("vllm_import_utils_under_test", IMPORT_UTILS)
+    spec = importlib.util.spec_from_file_location(
+        "vllm_import_utils_under_test", import_utils_path
+    )
     assert spec is not None and spec.loader is not None
 
     module = importlib.util.module_from_spec(spec)
@@ -46,10 +53,11 @@ def _load_import_utils(monkeypatch):
 
 
 def test_vendored_triton_kernels_are_disabled_when_target_info_is_missing(monkeypatch):
-    if not IMPORT_UTILS.exists():
+    import_utils_path = _resolve_import_utils()
+    if import_utils_path is None:
         pytest.skip("built vLLM package image is not present")
 
-    import_utils, logger = _load_import_utils(monkeypatch)
+    import_utils, logger = _load_import_utils(monkeypatch, import_utils_path)
 
     monkeypatch.setattr(
         import_utils,

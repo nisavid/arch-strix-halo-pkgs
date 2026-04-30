@@ -45,6 +45,7 @@ def test_pkgbuild_tracks_rocm_flash_attention_ck_experiment():
     assert "patchelf" in text
     assert 'local _rpath="\\$ORIGIN:\\$ORIGIN/torch/lib:/opt/rocm/lib"' in text
     assert 'patchelf --set-rpath "${_rpath}" "${_extension}"' in text
+    assert 'if [[ -f "${_extension}" ]]' not in text
 
 
 def test_pkgbuild_carries_gfx1151_ck_experiment():

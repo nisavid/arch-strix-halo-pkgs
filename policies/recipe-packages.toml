@@ -161,7 +161,7 @@ update_notes = [
   "Keep the PKGBUILD's clean HIP version handoff unless ROCm's CMake HIP probe stops treating unrelated hipconfig stderr as a failed version query. The concrete host failure was inherited Lmod shell-function import warnings on hipconfig stderr causing FindHIP.cmake to cache HIP_VERSION=0.0.0 and reject /opt/rocm.",
   "Keep LTO disabled for this package unless the ROCm HIP shared-module link path becomes compatible with it. The concrete host failure was _moe_C.abi3.so / _rocm_C.abi3.so link failure with `LLVM gold plugin has failed to create LTO module: Invalid record`.",
   "Keep the gfx1x AITER enablement and Gemma 4 ROCM_AITER_UNIFIED_ATTN preference unless upstream lands a ROCm-safe single-backend path for heterogeneous-head Gemma 4 models. The concrete host failure was successful Gemma 4 initialization followed by Triton unified-attention decode miscompilation (`operation scheduled before its operands`) and garbage output on gfx1151.",
-  "Keep `0007-rocm-enable-gfx1x-aiter-and-prefer-it-for-gemma4.patch` limited to gfx1x AITER support plus the Gemma 4 backend override, and do not reintroduce the broader fused-MoE default flip unless fresh host validation across real ROCm models proves it safe. The 2026-04-17 reference-host `google/gemma-4-26B-A4B-it` text smoke faulted the GPU when that policy forced the AITER fused-MoE 2-stage path without an explicit runtime override.",
+  "Keep the gfx1x AITER and Gemma 4 ROCM_AITER_UNIFIED_ATTN section of `0016-rocm-refresh-local-carry-for-vllm-0.20.0.patch` limited to gfx1x AITER support plus the Gemma 4 backend override, and do not reintroduce the broader fused-MoE default flip unless fresh host validation across real ROCm models proves it safe. The 2026-04-17 reference-host `google/gemma-4-26B-A4B-it` text smoke faulted the GPU when that policy forced the AITER fused-MoE 2-stage path without an explicit runtime override.",
   "Keep the repo-owned Gemma 4 text-only smoke lanes on `enforce_eager=True` / `--enforce-eager` until separate host validation proves the compiled/CUDAGraph ROCm path is clean for each promoted checkpoint. vLLM documents eager mode as disabling compilation and CUDAGraph capture, so treat relaxing it as a follow-up performance lane rather than a silent default change. On 2026-04-20, fresh-cache compiled probes proved that 26B-A4B and 31B do not require eager for the tracked offline text smoke. E2B still requires eager: the compiled+CUDAGraph probe reached `generation_ok` and then returned corrupted non-ASCII text instead of the expected five-word answer. Run compiled-probe revalidation with fresh `VLLM_CACHE_ROOT`, `TORCHINDUCTOR_CACHE_DIR`, and `TRITON_CACHE_DIR` paths, because stale Inductor artifacts can produce misleading shape-mismatch failures.",
   "Keep Gemma 4 26B-A4B server startup timeouts long enough for cold reference-host loads. A 300-second budget killed the server while it was still loading safetensors shards; the helper now defaults this constrained 26B-A4B lane to 420 seconds.",
   "Use the tracked `compiled-probe`, `kernel-probe`, `multimodal`, and `quantization-probe` scenario tags for future investigations instead of adding terminal-only one-offs; keep `exploratory` on any scenario that should not run as part of broad package validation.",
@@ -1238,6 +1238,7 @@ src_subdir = "lemonade-10.3.0"
 upstream_name = "lemonade-server"
 baseline_kind = "closest-upstream"
 source_refs = ["https://github.com/lemonade-sdk/lemonade/archive/refs/tags/v10.3.0.tar.gz"]
+recipe_branch_override = "v10.3.0"
 sha256sums = ["SKIP"]
 extra_sources = [
   "0001-linux-npu-fallback-to-pci-id-when-accel-open-fails.patch",
@@ -1284,7 +1285,7 @@ provides = ["lemonade-desktop"]
 conflicts = ["lemonade-desktop"]
 replaces = ["lemonade-desktop"]
 depends = ["lemonade-server"]
-makedepends = ["cmake", "ninja", "nodejs", "npm", "rocm-llvm-gfx1151"]
+makedepends = ["cargo", "cmake", "ninja", "nodejs", "npm", "rocm-llvm-gfx1151", "rust"]
 src_subdir = "lemonade-10.3.0"
 upstream_name = "lemonade-app"
 baseline_kind = "closest-upstream"

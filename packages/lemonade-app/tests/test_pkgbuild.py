@@ -14,6 +14,10 @@ WRAPPER = REPO_ROOT / "packages/lemonade-app/pkg/lemonade-app/usr/bin/lemonade-a
 
 def test_pkgbuild_installs_lemonade_app_wrapper():
     text = PKGBUILD.read_text()
+    assert "cargo" in text
+    assert "rust" in text
+    assert 'local _ccache_cache="$srcdir/.ccache/cache"' in text
+    assert 'export CCACHE_DIR="${CCACHE_DIR:-${_ccache_cache}}"' in text
     assert 'rm -rf "${build_root}"' in text
     assert "--target tauri-app" in text
     assert "--target electron-app" not in text

@@ -13,3 +13,5 @@ def test_pkgbuild_tracks_recorded_llamacpp_release():
     assert f"pkgver={EXPECTED_VERSION}" in text
     assert EXPECTED_COMMIT in text
     assert "ggml-org/llama.cpp/archive/" in text
+    assert 'rm -f "$pkgdir${install_root}/bin"/test-*' in text
+    assert "$pkgdir$/opt" not in text

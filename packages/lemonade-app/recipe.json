@@ -41,11 +41,13 @@
       "Apache-2.0"
     ],
     "makedepends": [
+      "cargo",
       "cmake",
       "ninja",
       "nodejs",
       "npm",
-      "rocm-llvm-gfx1151"
+      "rocm-llvm-gfx1151",
+      "rust"
     ],
     "patches_dir": "patches/lemonade-app",
     "pkgdesc": "Lemonade desktop app rebuilt for Strix Halo gfx1151",

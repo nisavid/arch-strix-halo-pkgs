@@ -29,6 +29,9 @@ def test_merged_torchao_patch_keeps_version_checks_metadata_only_and_lazy_loads_
 
     assert "torchao_utils.py" in text
     assert "Check installed torchao version without importing the torchao package" in text
+    assert "+from importlib import metadata" in text
+    assert '+            installed_version = metadata.version("torchao")' in text
+    assert "+        except (metadata.PackageNotFoundError, version.InvalidVersion):" in text
     assert (
         "from vllm.model_executor.layers.quantization.torchao_utils import ("
         in text

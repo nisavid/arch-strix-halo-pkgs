@@ -184,8 +184,8 @@
      fs::path config_path = utils::path_from_utf8(cache_dir) / "config.json";
  
      if (!fs::exists(config_path)) {
-@@ -97,7 +98,7 @@ json ConfigFile::load(const std::string& cache_dir) {
-         return defaults;
+-        return defaults;
++        return utils::JsonUtils::merge(defaults, env_overlay);
      }
  
 -    return utils::JsonUtils::merge(defaults, loaded);

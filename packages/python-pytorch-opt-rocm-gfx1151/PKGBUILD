@@ -176,15 +176,36 @@ package() {
 
   local _site="$pkgdir/usr/lib/python3.14/site-packages"
   local _version_py="${_site}/torch/version.py"
-  if [[ -f "${_version_py}" ]]; then
-    local _hip_version _rocm_version
-    _hip_version="$(env -i PATH=/opt/rocm/bin:/usr/bin:/bin HIP_PATH=/opt/rocm ROCM_PATH=/opt/rocm /opt/rocm/bin/hipconfig --version | sed 's/-.*//')"
-    _rocm_version="$(< /opt/rocm/.info/version)"
-    sed -i \
-      -e "s/^hip: Optional\[str\] = None$/hip: Optional[str] = '${_hip_version}'/" \
-      -e "s/^rocm: Optional\[str\] = None$/rocm: Optional[str] = '${_rocm_version}'/" \
-      "${_version_py}"
+  local _hip_version _rocm_version
+  if [[ ! -f "${_version_py}" ]]; then
+    echo "PYTORCH_VERSION_METADATA_MISSING: ${_version_py}" >&2
+    return 1
   fi
+  if ! _hip_version="$(env -i PATH=/opt/rocm/bin:/usr/bin:/bin HIP_PATH=/opt/rocm ROCM_PATH=/opt/rocm /opt/rocm/bin/hipconfig --version 2>/dev/null | sed 's/-.*//')" || [[ -z "${_hip_version}" ]]; then
+    echo "PYTORCH_HIP_VERSION_MISSING: hipconfig failed for ${_version_py}" >&2
+    return 1
+  fi
+  if [[ ! -f /opt/rocm/.info/version ]]; then
+    echo "PYTORCH_ROCM_VERSION_MISSING: /opt/rocm/.info/version not found for ${_version_py}" >&2
+    return 1
+  fi
+  _rocm_version="$(< /opt/rocm/.info/version)"
+  if [[ -z "${_rocm_version}" ]]; then
+    echo "PYTORCH_ROCM_VERSION_EMPTY: /opt/rocm/.info/version was empty for ${_version_py}" >&2
+    return 1
+  fi
+  sed -i \
+    -e "s/^hip: Optional\[str\] = None$/hip: Optional[str] = '${_hip_version}'/" \
+    -e "s/^rocm: Optional\[str\] = None$/rocm: Optional[str] = '${_rocm_version}'/" \
+    "${_version_py}"
+  grep -Fqx "hip: Optional[str] = '${_hip_version}'" "${_version_py}" || {
+    echo "PYTORCH_HIP_VERSION_REWRITE_FAILED: ${_version_py} _hip_version=${_hip_version} _rocm_version=${_rocm_version}" >&2
+    return 1
+  }
+  grep -Fqx "rocm: Optional[str] = '${_rocm_version}'" "${_version_py}" || {
+    echo "PYTORCH_ROCM_VERSION_REWRITE_FAILED: ${_version_py} _hip_version=${_hip_version} _rocm_version=${_rocm_version}" >&2
+    return 1
+  }
 
   if [[ -d "${_site}/torch/lib" ]]; then
     local _so _runpath
