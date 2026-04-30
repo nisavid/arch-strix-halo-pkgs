@@ -43,6 +43,10 @@ def test_pkgbuild_tracks_rocm_flash_attention_ck_experiment():
     assert "pip wheel . --no-build-isolation --no-deps" in text
     assert "python -m installer --destdir=\"$pkgdir\"" in text
     assert "patchelf" in text
+    assert "sysconfig.get_path(\"platlib\"" in text
+    assert "python3.14/site-packages" not in text
+    assert "find \"${pkgdir}${_site}\"" in text
+    assert "FLASH_ATTN_EXTENSION_MISSING" in text
     assert 'local _rpath="\\$ORIGIN:\\$ORIGIN/torch/lib:/opt/rocm/lib"' in text
     assert 'patchelf --set-rpath "${_rpath}" "${_extension}"' in text
     assert 'if [[ -f "${_extension}" ]]' not in text
