@@ -1133,10 +1133,10 @@ The following smoke checks have already passed on the reference host:
       for the `vec_convert.h` gfx11 packed-op fallbacks, and
       `python-amd-aiter-gfx1151/0006-rdna35-hip-reduce-wave32-dpp-compat.patch`
       for the broader `hip_reduce.h` wave32/DPP rewrite
-    - keep
-      `python-vllm-rocm-gfx1151/0007-rocm-enable-gfx1x-aiter-and-prefer-it-for-gemma4.patch`
-      because the validated lane still depends on the gfx1x AITER support plus
-      the Gemma 4 `ROCM_AITER_UNIFIED_ATTN` override
+    - keep the gfx1x AITER support plus Gemma 4
+      `ROCM_AITER_UNIFIED_ATTN` override in
+      `python-vllm-rocm-gfx1151/0016-rocm-refresh-local-carry-for-vllm-0.20.0.patch`
+      because the validated lane still depends on that backend selection
     - keep the broader fused-MoE default-policy carry dropped: the
       2026-04-17 reference-host rerun faulted the GPU as soon as that policy
       forced the AITER CK 2-stage fused-MoE path without an explicit runtime

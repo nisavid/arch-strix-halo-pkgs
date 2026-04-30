@@ -81,8 +81,6 @@ package() {
   local _site="$pkgdir/usr/lib/python3.14/site-packages"
   local _extension="${_site}/flash_attn_2_cuda.cpython-314-x86_64-linux-gnu.so"
   local _rpath="\$ORIGIN:\$ORIGIN/torch/lib:/opt/rocm/lib"
-  if [[ -f "${_extension}" ]]; then
-    patchelf --set-rpath "${_rpath}" "${_extension}"
-  fi
+  patchelf --set-rpath "${_rpath}" "${_extension}"
   install -Dm644 LICENSE "$pkgdir/usr/share/licenses/python-flash-attn-rocm-gfx1151/LICENSE"
 }

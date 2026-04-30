@@ -100,8 +100,13 @@ package() {
   local _wheel
   _wheel="$(ls dist/torchvision-*.whl 2>/dev/null | tail -n 1)"
   python -m installer --destdir="$pkgdir" "$_wheel"
-  local _site="$pkgdir/usr/lib/python3.14/site-packages"
-  local _extension="${_site}/torchvision/_C.so"
+  local _site
+  _site="$(python - <<'PY'
+import sysconfig
+print(sysconfig.get_path("platlib", vars={"base": "/usr", "platbase": "/usr"}))
+PY
+)"
+  local _extension="${pkgdir}${_site}/torchvision/_C.so"
   local _rpath="\$ORIGIN:\$ORIGIN/../torch/lib:/opt/rocm/lib"
   if [[ -f "${_extension}" ]]; then
     patchelf --set-rpath "${_rpath}" "${_extension}"

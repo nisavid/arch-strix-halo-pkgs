@@ -747,7 +747,7 @@ diff --git a/vllm/model_executor/layers/quantization/torchao_utils.py b/vllm/mod
 +# SPDX-License-Identifier: Apache-2.0
 +# SPDX-FileCopyrightText: Copyright contributors to the vLLM project
 +
-+import importlib
++from importlib import metadata
 +from importlib.util import find_spec
 +
 +from packaging import version
@@ -757,10 +757,10 @@ diff --git a/vllm/model_executor/layers/quantization/torchao_utils.py b/vllm/mod
 +    """Check installed torchao version without importing the torchao package."""
 +    if find_spec("torchao"):
 +        try:
-+            installed_version = importlib.metadata.version("torchao")
++            installed_version = metadata.version("torchao")
 +            if version.parse(installed_version) >= version.parse(torchao_version):
 +                return True
-+        except (ImportError, version.InvalidVersion):
++        except (metadata.PackageNotFoundError, version.InvalidVersion):
 +            return False
 +    return False
 diff --git a/vllm/model_executor/model_loader/default_loader.py b/vllm/model_executor/model_loader/default_loader.py

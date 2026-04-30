@@ -1,24 +1,36 @@
+import os
 from pathlib import Path
 
 import pytest
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-SAGEMAKER_API_ROUTER = (
+PKG_LIB = (
     REPO_ROOT
-    / "packages/python-vllm-rocm-gfx1151/pkg/python-vllm-rocm-gfx1151/usr/lib/python3.14/site-packages/vllm/entrypoints/sagemaker/api_router.py"
+    / "packages/python-vllm-rocm-gfx1151/pkg/python-vllm-rocm-gfx1151/usr/lib"
 )
-LORA_API_ROUTER = (
-    REPO_ROOT
-    / "packages/python-vllm-rocm-gfx1151/pkg/python-vllm-rocm-gfx1151/usr/lib/python3.14/site-packages/vllm/entrypoints/serve/lora/api_router.py"
-)
+
+
+def _resolve_artifact(relative_path: str) -> Path | None:
+    matches = sorted(PKG_LIB.glob(f"python*/site-packages/{relative_path}"))
+    return matches[-1] if matches else None
+
+
+def _require_or_skip(path: Path | None, label: str) -> Path:
+    if path is not None:
+        return path
+    if os.getenv("REQUIRE_BUILT_VLLM_PACKAGE") == "1":
+        pytest.fail(f"expected built vLLM package artifact missing: {label}")
+    pytest.skip("built vLLM package image is not present")
 
 
 def test_sagemaker_router_is_optional_in_built_package():
-    if not SAGEMAKER_API_ROUTER.exists():
-        pytest.skip("built vLLM package image is not present")
+    router = _require_or_skip(
+        _resolve_artifact("vllm/entrypoints/sagemaker/api_router.py"),
+        "vllm/entrypoints/sagemaker/api_router.py",
+    )
 
-    text = SAGEMAKER_API_ROUTER.read_text()
+    text = router.read_text()
     assert (
         "import model_hosting_container_standards.sagemaker as "
         "sagemaker_standards"
@@ -32,10 +44,12 @@ def test_sagemaker_router_is_optional_in_built_package():
 
 
 def test_lora_router_skips_runtime_update_routes_without_sagemaker_standards():
-    if not LORA_API_ROUTER.exists():
-        pytest.skip("built vLLM package image is not present")
+    router = _require_or_skip(
+        _resolve_artifact("vllm/entrypoints/serve/lora/api_router.py"),
+        "vllm/entrypoints/serve/lora/api_router.py",
+    )
 
-    text = LORA_API_ROUTER.read_text()
+    text = router.read_text()
     assert (
         "import model_hosting_container_standards.sagemaker as "
         "sagemaker_standards"

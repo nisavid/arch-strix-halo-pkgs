@@ -28,11 +28,12 @@ def test_pkgbuild_carries_setup_flag_forwarding_patch():
 
 
 def test_pkgbuild_carries_gemma4_aiter_patch():
-    text = PKGBUILD.read_text()
+    pkgbuild_text = PKGBUILD.read_text()
+    patch_text = PATCH.read_text()
 
-    assert PATCH.name in text
-    assert f'_apply_patch_if_needed "{PATCH.name}"' in text
-    assert "return on_mi3xx() or on_gfx1x()" in text
+    assert PATCH.name in pkgbuild_text
+    assert f'_apply_patch_if_needed "{PATCH.name}"' in pkgbuild_text
+    assert "return on_mi3xx() or on_gfx1x()" in patch_text
 
 
 def test_pkgbuild_drops_fused_moe_policy_patch():

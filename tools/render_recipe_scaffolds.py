@@ -365,7 +365,7 @@ package() {{
   local install_root="{install_root}"
 
   DESTDIR="$pkgdir" cmake --install "${{build_root}}"
-  rm -f "$pkgdir${install_root}/bin"/test-*
+  rm -f "$pkgdir${{install_root}}/bin"/test-*
   if command -v patchelf >/dev/null 2>&1; then
     local _bin _libdir
     _libdir="{install_root}/lib"
@@ -908,15 +908,36 @@ package() {{
 
   local _site="$pkgdir/usr/lib/python3.14/site-packages"
   local _version_py="${{_site}}/torch/version.py"
-  if [[ -f "${{_version_py}}" ]]; then
-    local _hip_version _rocm_version
-    _hip_version="$(env -i PATH=/opt/rocm/bin:/usr/bin:/bin HIP_PATH=/opt/rocm ROCM_PATH=/opt/rocm /opt/rocm/bin/hipconfig --version | sed 's/-.*//')"
-    _rocm_version="$(< /opt/rocm/.info/version)"
-    sed -i \\
-      -e "s/^hip: Optional\\[str\\] = None$/hip: Optional[str] = '${{_hip_version}}'/" \\
-      -e "s/^rocm: Optional\\[str\\] = None$/rocm: Optional[str] = '${{_rocm_version}}'/" \\
-      "${{_version_py}}"
+  local _hip_version _rocm_version
+  if [[ ! -f "${{_version_py}}" ]]; then
+    echo "PYTORCH_VERSION_METADATA_MISSING: ${{_version_py}}" >&2
+    return 1
   fi
+  if ! _hip_version="$(env -i PATH=/opt/rocm/bin:/usr/bin:/bin HIP_PATH=/opt/rocm ROCM_PATH=/opt/rocm /opt/rocm/bin/hipconfig --version 2>/dev/null | sed 's/-.*//')" || [[ -z "${{_hip_version}}" ]]; then
+    echo "PYTORCH_HIP_VERSION_MISSING: hipconfig failed for ${{_version_py}}" >&2
+    return 1
+  fi
+  if [[ ! -f /opt/rocm/.info/version ]]; then
+    echo "PYTORCH_ROCM_VERSION_MISSING: /opt/rocm/.info/version not found for ${{_version_py}}" >&2
+    return 1
+  fi
+  _rocm_version="$(< /opt/rocm/.info/version)"
+  if [[ -z "${{_rocm_version}}" ]]; then
+    echo "PYTORCH_ROCM_VERSION_EMPTY: /opt/rocm/.info/version was empty for ${{_version_py}}" >&2
+    return 1
+  fi
+  sed -i \\
+    -e "s/^hip: Optional\\[str\\] = None$/hip: Optional[str] = '${{_hip_version}}'/" \\
+    -e "s/^rocm: Optional\\[str\\] = None$/rocm: Optional[str] = '${{_rocm_version}}'/" \\
+    "${{_version_py}}"
+  grep -Fqx "hip: Optional[str] = '${{_hip_version}}'" "${{_version_py}}" || {{
+    echo "PYTORCH_HIP_VERSION_REWRITE_FAILED: ${{_version_py}} _hip_version=${{_hip_version}} _rocm_version=${{_rocm_version}}" >&2
+    return 1
+  }}
+  grep -Fqx "rocm: Optional[str] = '${{_rocm_version}}'" "${{_version_py}}" || {{
+    echo "PYTORCH_ROCM_VERSION_REWRITE_FAILED: ${{_version_py}} _hip_version=${{_hip_version}} _rocm_version=${{_rocm_version}}" >&2
+    return 1
+  }}
 
   if [[ -d "${{_site}}/torch/lib" ]]; then
     local _so _runpath
@@ -1013,8 +1034,13 @@ package() {{
   local _wheel
   _wheel="$(ls dist/torchvision-*.whl 2>/dev/null | tail -n 1)"
   python -m installer --destdir="$pkgdir" "$_wheel"
-  local _site="$pkgdir/usr/lib/python3.14/site-packages"
-  local _extension="${{_site}}/torchvision/_C.so"
+  local _site
+  _site="$(python - <<'PY'
+import sysconfig
+print(sysconfig.get_path("platlib", vars={{"base": "/usr", "platbase": "/usr"}}))
+PY
+)"
+  local _extension="${{pkgdir}}${{_site}}/torchvision/_C.so"
   local _rpath="\\$ORIGIN:\\$ORIGIN/../torch/lib:/opt/rocm/lib"
   if [[ -f "${{_extension}}" ]]; then
     patchelf --set-rpath "${{_rpath}}" "${{_extension}}"
@@ -1449,11 +1475,13 @@ def render_recipe_json(package_name: str, policy_pkg: dict, recipe_pkg: dict, ve
     recipe_notes = policy_pkg.get("recipe_notes_override", recipe_pkg.get("notes", "").strip())
     rendered_policy = dict(policy_pkg)
     rendered_policy.pop("source_patches", None)
+    rendered_policy.pop("recipe_branch_override", None)
     source_patches = policy_pkg.get("source_patches", [])
     source_patch_sha256sums = []
     if source_patches and not policy_pkg.get("extra_sources"):
         source_patch_sha256sums = policy_pkg.get("extra_sha256sums", [])
         rendered_policy.pop("extra_sha256sums", None)
+    recipe_branch = policy_pkg.get("recipe_branch_override", recipe_pkg.get("branch"))
     payload = {
         "name": package_name,
         "package_name": package_name,
@@ -1461,7 +1489,7 @@ def render_recipe_json(package_name: str, policy_pkg: dict, recipe_pkg: dict, ve
         "policy": rendered_policy,
         "recipe": {
             "repo": recipe_pkg.get("repo"),
-            "branch": recipe_pkg.get("branch"),
+            "branch": recipe_branch,
             "src_dir": recipe_pkg.get("src_dir"),
             "method": recipe_pkg.get("method"),
             "phase": recipe_pkg.get("phase"),

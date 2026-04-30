@@ -470,6 +470,9 @@ def test_pytorch_rocm_renderer_uses_source_patches_for_magma_fix() -> None:
     assert "aten/src/ATen/native/hip/linalg/BatchLinearAlgebra.cpp" not in pkgbuild
     assert "s/^hip: Optional\\[str\\] = None$/" in pkgbuild
     assert "s/^rocm: Optional\\[str\\] = None$/" in pkgbuild
+    assert "PYTORCH_VERSION_METADATA_MISSING" in pkgbuild
+    assert "PYTORCH_HIP_VERSION_REWRITE_FAILED" in pkgbuild
+    assert "PYTORCH_ROCM_VERSION_REWRITE_FAILED" in pkgbuild
     assert "NPY_TARGET_VERSION" not in pkgbuild
     assert "cmake -P build/torch/headeronly/cmake_install.cmake" in pkgbuild
     assert "cmake -P build/c10/cmake_install.cmake" in pkgbuild
@@ -511,6 +514,40 @@ def test_render_recipe_json_keeps_source_patches_in_one_place() -> None:
     assert recipe_json["maintenance"]["source_patch_sha256sums"] == ["abc123"]
     assert "source_patches" not in recipe_json["policy"]
     assert "extra_sha256sums" not in recipe_json["policy"]
+
+
+def test_render_recipe_json_can_override_stale_recipe_branch() -> None:
+    recipe_json = json.loads(
+        render_recipe_scaffolds.render_recipe_json(
+            "sample-gfx1151",
+            {
+                "recipe_key": "sample",
+                "upstream_version": "1.2.3",
+                "pkgdesc": "Sample",
+                "url": "https://example.invalid/sample",
+                "license": ["MIT"],
+                "recipe_branch_override": "v1.2.3",
+            },
+            {
+                "repo": "https://example.invalid/sample.git",
+                "branch": "v1.0.0",
+                "method": "pip",
+                "phase": "package",
+                "steps": [],
+                "depends_on": [],
+                "notes": "",
+            },
+            "1.2.3",
+            {
+                "recipe_repo": "https://github.com/paudley/ai-notes",
+                "recipe_subdir": "strix-halo",
+                "recipe_author": "Blackcat Informatics Inc.",
+            },
+        )
+    )
+
+    assert recipe_json["recipe"]["branch"] == "v1.2.3"
+    assert "recipe_branch_override" not in recipe_json["policy"]
 
 
 def test_render_recipe_json_treats_empty_extra_sources_as_patch_checksums() -> None:
