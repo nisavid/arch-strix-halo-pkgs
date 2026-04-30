@@ -28,8 +28,8 @@ def _needed_entries(path: Path) -> str:
     readelf = shutil.which("readelf")
     if readelf is None:
         pytest.skip("readelf is not available in PATH")
-    result = subprocess.run(
-        [readelf, "-d", str(path)],  # noqa: S603 - trusted local test artifact.
+    result = subprocess.run(  # noqa: S603 - trusted local test artifact.
+        [readelf, "-d", str(path)],
         capture_output=True,
         text=True,
         check=True,

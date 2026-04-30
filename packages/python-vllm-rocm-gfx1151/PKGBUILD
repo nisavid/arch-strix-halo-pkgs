@@ -143,7 +143,10 @@ build() {
   export PYTORCH_ROCM_ARCH="gfx1151"
   export CMAKE_PREFIX_PATH="/opt/rocm"
   local _hip_version
-  _hip_version="$(env -i PATH=/opt/rocm/bin:/usr/bin:/bin HIP_PATH=/opt/rocm ROCM_PATH=/opt/rocm /opt/rocm/bin/hipconfig --version)"
+  if ! _hip_version="$(env -i PATH=/opt/rocm/bin:/usr/bin:/bin HIP_PATH=/opt/rocm ROCM_PATH=/opt/rocm /opt/rocm/bin/hipconfig --version)" || [[ -z "${_hip_version}" ]]; then
+    echo "VLLM_HIP_VERSION_MISSING: hipconfig failed" >&2
+    return 1
+  fi
   export CMAKE_ARGS="-DHIP_VERSION=${_hip_version%%-*} ${CMAKE_ARGS:-}"
   export VLLM_VERSION_OVERRIDE="0.20.0"
   export VLLM_ROCM_USE_AITER=1

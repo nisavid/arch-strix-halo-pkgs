@@ -73,6 +73,7 @@ def test_pkgbuild_passes_clean_hip_version_to_cmake():
     assert "env -i PATH=/opt/rocm/bin:/usr/bin:/bin" in text
     assert "HIP_PATH=/opt/rocm ROCM_PATH=/opt/rocm" in text
     assert "/opt/rocm/bin/hipconfig --version" in text
+    assert "VLLM_HIP_VERSION_MISSING" in text
     assert 'export CMAKE_ARGS="-DHIP_VERSION=${_hip_version%%-*} ${CMAKE_ARGS:-}"' in text
 
 
