@@ -664,7 +664,7 @@ _source_tree_has_all_source_patches() {
     grep -Fq 'def torchao_version_at_least(torchao_version: str) -> bool:' \
       vllm/model_executor/layers/quantization/torchao_utils.py &&
     grep -Fq 'Hybrid models need TRITON_ATTN' vllm/platforms/rocm.py &&
-    grep -Fq 'Use PyTorch top-k/top-p filtering on ROCm' \
+    grep -Fq 'Use PyTorch top-k/top-p filtering on large-vocabulary ROCm' \
       vllm/v1/sample/ops/topk_topp_sampler.py &&
     grep -Fq 'Keep valid_count type stable across branches' \
       vllm/v1/spec_decode/utils.py &&
@@ -957,7 +957,11 @@ package() {{
         patchelf --set-rpath "/opt/rocm/lib:\\$ORIGIN/lib" "${{_so}}" 2>/dev/null || true
       fi
       if ! readelf -d "${{_so}}" 2>/dev/null | grep -Eq 'libomp|libiomp5'; then
-        patchelf --add-needed libomp.so "${{_so}}" 2>/dev/null || true
+        patchelf --add-needed libomp.so "${{_so}}"
+        readelf -d "${{_so}}" 2>/dev/null | grep -Eq 'libomp|libiomp5' || {{
+          echo "PYTORCH_OPENMP_NEEDED_REWRITE_FAILED: ${{_so}}" >&2
+          return 1
+        }}
       fi
     done
 

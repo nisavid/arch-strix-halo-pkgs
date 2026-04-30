@@ -1,4 +1,5 @@
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -24,8 +25,11 @@ def _require_built_torch_site() -> None:
 
 
 def _needed_entries(path: Path) -> str:
+    readelf = shutil.which("readelf")
+    if readelf is None:
+        pytest.skip("readelf is not available in PATH")
     result = subprocess.run(
-        ["readelf", "-d", str(path)],
+        [readelf, "-d", str(path)],  # noqa: S603 - trusted local test artifact.
         capture_output=True,
         text=True,
         check=True,

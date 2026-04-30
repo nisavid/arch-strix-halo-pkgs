@@ -1,4 +1,5 @@
 import os
+import re
 from pathlib import Path
 
 import pytest
@@ -12,8 +13,17 @@ PKG_LIB = (
 
 
 def _resolve_artifact(relative_path: str) -> Path | None:
-    matches = sorted(PKG_LIB.glob(f"python*/site-packages/{relative_path}"))
-    return matches[-1] if matches else None
+    matches = list(PKG_LIB.glob(f"python*/site-packages/{relative_path}"))
+    if not matches:
+        return None
+
+    def _python_version_key(path: Path) -> tuple[int, ...]:
+        match = re.search(r"/python(\d+(?:\.\d+)*)/", path.as_posix())
+        if match is None:
+            return (-1,)
+        return tuple(int(part) for part in match.group(1).split("."))
+
+    return max(matches, key=_python_version_key)
 
 
 def _require_or_skip(path: Path | None, label: str) -> Path:

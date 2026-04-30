@@ -815,7 +815,7 @@ diff --git a/vllm/model_executor/models/config.py b/vllm/model_executor/models/c
              and max_head_dim > 256
              and vllm_config.attention_config.backend is None
          ):
-+            from vllm._aiter_ops import is_aiter_found_and_supported
++            from vllm._aiter_ops import rocm_aiter_ops
 +            from vllm.platforms import current_platform
              from vllm.v1.attention.backends.registry import (
                  AttentionBackendEnum,
@@ -830,7 +830,7 @@ diff --git a/vllm/model_executor/models/config.py b/vllm/model_executor/models/c
 -                global_head_dim,
 -            )
 +            backend = AttentionBackendEnum.TRITON_ATTN
-+            if current_platform.is_rocm() and is_aiter_found_and_supported():
++            if current_platform.is_rocm() and rocm_aiter_ops.is_enabled():
 +                backend = AttentionBackendEnum.ROCM_AITER_UNIFIED_ATTN
 +
 +            vllm_config.attention_config.backend = backend
@@ -1162,12 +1162,13 @@ diff --git a/vllm/v1/sample/ops/topk_topp_sampler.py b/vllm/v1/sample/ops/topk_t
      if p is None and k is None:
          return logits
  
-+    if current_platform.is_rocm():
-+        # Use PyTorch top-k/top-p filtering on ROCm. The Triton filter path
-+        # can fault on gfx1151 for large Qwen3.5-family vocabularies; a
-+        # standalone reproducer with logits shaped (32, 248320), top_k
-+        # enabled, and top_p=0.9 faults in apply_top_k_top_p_triton, while the
-+        # existing PyTorch fallback completes on the same tensor.
++    if current_platform.is_rocm() and logits.shape[-1] > 200000:
++        # Use PyTorch top-k/top-p filtering on large-vocabulary ROCm lanes.
++        # The Triton filter path can fault on gfx1151 for Qwen3.5-family
++        # vocabularies; a standalone reproducer with logits shaped
++        # (32, 248320), top_k enabled, and top_p=0.9 faults in
++        # apply_top_k_top_p_triton, while the existing PyTorch fallback
++        # completes on the same tensor.
 +        return apply_top_k_top_p_pytorch(logits, k, p)
 +
      if HAS_TRITON and logits.shape[0] >= 8:
