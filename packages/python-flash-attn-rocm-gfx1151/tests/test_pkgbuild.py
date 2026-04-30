@@ -25,7 +25,7 @@ def test_pkgbuild_tracks_rocm_flash_attention_ck_experiment():
 
     assert "pkgname=python-flash-attn-rocm-gfx1151" in text
     assert "pkgver=2.8.4" in text
-    assert "pkgrel=10" in text
+    assert "pkgrel=11" in text
     assert "3f94643fb41bcedded28c85185a8e11d42ef1592" in text
     assert "url=https://github.com/ROCm/flash-attention" in text
     assert "FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE" in text
@@ -37,8 +37,14 @@ def test_pkgbuild_tracks_rocm_flash_attention_ck_experiment():
     assert "FLASH_ATTENTION_CK_FORWARD_ONLY" not in text
     assert "GPU_ARCHS=gfx1151" in text
     assert "OPT_DIM=32,256" in text
+    assert "ROCM_HOME=/opt/rocm" in text
+    assert "CUDA_HOME=/opt/rocm" in text
+    assert "HIP_PATH=/opt/rocm" in text
     assert "pip wheel . --no-build-isolation --no-deps" in text
     assert "python -m installer --destdir=\"$pkgdir\"" in text
+    assert "patchelf" in text
+    assert 'local _rpath="\\$ORIGIN:\\$ORIGIN/torch/lib:/opt/rocm/lib"' in text
+    assert 'patchelf --set-rpath "${_rpath}" "${_extension}"' in text
 
 
 def test_pkgbuild_carries_gfx1151_ck_experiment():

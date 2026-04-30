@@ -32,14 +32,14 @@ Reinstalling at compatible versions resolves conflicts.
 
 ## Scaffold notes
 
-- Electron desktop package split from the same lemonade monorepo.
-- Install a /usr/bin/lemonade-app wrapper that launches the packaged Electron binary from /usr/share/lemonade-app so the shipped desktop entry resolves on PATH.
+- Tauri desktop package split from the same lemonade monorepo.
+- Install a /usr/bin/lemonade-app wrapper that launches the packaged Tauri binary from /usr/share/lemonade-app so the shipped desktop entry resolves on PATH.
 - Pinned to the v10.3.0 upstream release tarball to keep the package metadata reproducible.
 
 ## Intentional Divergences
 
 - Tracks the renamed upstream lemonade-app payload while still providing lemonade-desktop compatibility for local package replacement.
-- Builds the Electron app from the upstream monorepo release tarball rather than relying on an auto-updated runtime payload.
+- Builds the Tauri app from the upstream monorepo release tarball rather than relying on an auto-updated runtime payload.
 
 ## Update Notes
 

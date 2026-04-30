@@ -26,6 +26,8 @@ def test_pkgbuild_uses_torch_2_11_compatible_torchao_lane():
     assert "VERSION_SUFFIX=" in text
     assert "ROCM_HOME=/opt/rocm" in text
     assert "PYTORCH_ROCM_ARCH=gfx1151" in text
+    assert 'local _ccache_cache="$srcdir/.ccache/cache"' in text
+    assert 'export CCACHE_DIR="${CCACHE_DIR:-${_ccache_cache}}"' in text
     assert "patchelf" in text
     assert PATCH.name in text
     assert PT2E_PATCH.name in text

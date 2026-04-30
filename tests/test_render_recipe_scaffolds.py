@@ -158,11 +158,12 @@ def test_native_wheel_renderer_applies_source_patches_and_build_config_settings(
     assert "    -Csetup-args=-Dlapack=openblas\n" in pkgbuild
 
 
-def test_compiler_env_leaves_ccache_storage_to_host_configuration() -> None:
+def test_compiler_env_uses_repo_local_ccache_storage() -> None:
     snippet = render_recipe_scaffolds.compiler_env_snippet("/opt/rocm/lib/llvm/bin")
 
     assert "CCACHE_BASEDIR" in snippet
-    assert "CCACHE_DIR" not in snippet
+    assert 'local _ccache_cache="$srcdir/.ccache/cache"' in snippet
+    assert 'export CCACHE_DIR="${CCACHE_DIR:-${_ccache_cache}}"' in snippet
     assert "CCACHE_TEMPDIR" not in snippet
 
 
@@ -248,6 +249,7 @@ def test_triton_rocm_renderer_prefers_source_patches_over_inline_sed() -> None:
 
     assert 'patch -Np1 -i "$srcdir/0001-python-3.14-and-pybind11-build-system.patch"' in pkgbuild
     assert 'patch -Np1 -i "$srcdir/0003-attrs-descriptor-repr-for-inductor.patch"' in pkgbuild
+    assert "aten/src/ATen/native/hip/linalg/BatchLinearAlgebra.cpp" not in pkgbuild
     assert "sed -i" not in pkgbuild
     assert "git cherry-pick" not in pkgbuild
 
@@ -466,7 +468,8 @@ def test_pytorch_rocm_renderer_uses_source_patches_for_magma_fix() -> None:
     assert '_apply_patch_if_needed "0005-enable-ck-gemm-on-gfx1151.patch"' in pkgbuild
     assert "patch --dry-run -R -Np1" in pkgbuild
     assert "aten/src/ATen/native/hip/linalg/BatchLinearAlgebra.cpp" not in pkgbuild
-    assert "sed -i" not in pkgbuild
+    assert "s/^hip: Optional\\[str\\] = None$/" in pkgbuild
+    assert "s/^rocm: Optional\\[str\\] = None$/" in pkgbuild
     assert "NPY_TARGET_VERSION" not in pkgbuild
     assert "cmake -P build/torch/headeronly/cmake_install.cmake" in pkgbuild
     assert "cmake -P build/c10/cmake_install.cmake" in pkgbuild

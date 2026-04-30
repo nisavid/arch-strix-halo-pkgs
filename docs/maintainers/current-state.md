@@ -1,6 +1,6 @@
 # Current State
 
-Status as of 2026-04-28.
+Status as of 2026-04-29.
 
 ## Rebuild Revalidation Boundary
 
@@ -16,6 +16,52 @@ remaining failed steps. Build/deploy closeout for the native stack is complete;
 post-rebuild revalidation closeout is recorded in the active maintainer docs.
 Follow-up official vLLM recipe coverage lives in
 `docs/maintainers/vllm-recipe-coverage.md`.
+
+The 2026-04-28 vLLM-through-Transformers update bundle closed on 2026-04-29.
+Source updates adopted vLLM 0.20.0, llama.cpp b8966, ROCm PyTorch release/2.11
+at `9413e9b96bcbeb8af1aa0280a3a9bc7dd048857e`, AITER
+`d679e288120cf407d1d0daa82bab4ad961ed0bb6`, Lemonade 10.3.0, and
+Transformers 5.7.0. Package-build gates completed through `tools/amerge` plans
+`de448c8b`, `fced6697`, `c69043a4`, `8dc41dff`, `fce08c62`, `40140c58`, and
+`65abd2c0`, including downstream rebuilds required by the PyTorch runtime
+contract. Deploy/install gates completed through plans `43f29ed6`, `667dce89`,
+`b596de39`, and `b51fb79a`.
+
+The installed closeout versions are:
+
+- `python-pytorch-opt-rocm-gfx1151 2.11.0-10`
+- `python-amd-aiter-gfx1151 0.1.12.post2.dev146+gd679e2881-1`
+- `python-flash-attn-rocm-gfx1151 2.8.4-11`
+- `python-torchao-rocm-gfx1151 0.17.0-3`
+- `python-torch-migraphx-gfx1151 1.2-5`
+- `python-torchvision-rocm-gfx1151 0.26.0-6`
+- `python-vllm-rocm-gfx1151 0.20.0-1`
+- `python-transformers-gfx1151 5.7.0-1`
+- `lemonade-server 10.3.0-1`, `lemonade-app 10.3.0-1`,
+  `lemonade 10.3.0-1`
+- `llama.cpp-hip-gfx1151 b8966-1` and
+  `llama.cpp-vulkan-gfx1151 b8966-1`
+
+Installed smoke passed for PyTorch import/HIP extension metadata, a GPU tensor
+allocation on `Radeon 8060S Graphics`, FlashAttention ROCm kernel execution,
+AITER JIT-core import, TorchAO PT2E import, Torch-MIGraphX import, vLLM import
+and `vllm --version`, Transformers Gemma 4 import, Lemonade CLI version checks,
+`lemond --version`, and llama.cpp HIP/Vulkan CLI version checks. The
+Lemonade service rename is adopted on the host: `lemond.service` is installed
+and `lemonade-server.service` is absent. TorchVision required the final
+`0.26.0-6` rebuild because `0.26.0-5` built with `BUILD_CUDA_SOURCES = False`;
+the installed `0.26.0-6` GPU `torchvision.ops.nms` smoke returned `[0]`.
+
+Live scenario gates passed on the reference host with `HF_HOME=/var/cache/hf`:
+
+- `vllm.qwen3_5.0_8b.text.basic` passed in `96.814519` seconds at
+  `docs/worklog/inference-runs/20260429T213133`.
+- `vllm.torchao.tiny.generate` passed in `26.908198` seconds at
+  `docs/worklog/inference-runs/20260429T213324`, including `copy_probe_ok`,
+  `quantization=torchao`, and `generation_ok`.
+- `vllm.gemma4.e2b.server.basic` passed in `64.8452` seconds at
+  `docs/worklog/inference-runs/20260429T213402`; the server selected
+  `ROCM_AITER_UNIFIED_ATTN`.
 
 ## ROCm inference reference boundary
 

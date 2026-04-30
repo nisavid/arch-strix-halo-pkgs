@@ -9,3 +9,9 @@
          else:
              define_macros += [("WITH_CUDA", None)]
              if NVCC_FLAGS is None:
+@@ -163,2 +163,5 @@
+     if IS_ROCM:
++        vision_hip_source = CSRS_DIR / "vision_hip.cpp"
++        if vision_hip_source in sources:
++            sources.remove(vision_hip_source)
+         from torch.utils.hipify import hipify_python

@@ -37,7 +37,9 @@ def test_rendered_duckdb_pkgbuild_follows_native_wheel_lane() -> None:
     assert "conflicts=(python-duckdb)" in pkgbuild
     assert "python-typing_extensions" in pkgbuild
 
-    assert recipe["recipe"]["notes"].startswith(
-        "Builds and installs numpy, sentencepiece, zstandard, asyncpg, duckdb"
+    notes = " ".join(recipe["recipe"]["notes"].split())
+    assert notes.startswith(
+        "This package is the DuckDB output from the shared `native_wheels` recipe"
     )
+    assert "also builds numpy, sentencepiece, zstandard, asyncpg" in notes
     assert "Embedded OLAP engine for local analytics and parquet scans" in readme
