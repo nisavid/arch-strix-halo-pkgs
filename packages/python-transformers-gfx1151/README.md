@@ -39,9 +39,9 @@ Gemma-4-capable without waiting on distro repo timing.
 - On 2026-04-23, reviewed upstream Transformers `5.6.2`. The `5.6.0..5.6.2`
   range fixes `flash_attention_forward` when `s_aux` is absent, improves
   fine-grained FP8 kernel error handling, and repairs Qwen3.5 MoE conversion
-  mapping while keeping `transformers.models.gemma4` present. The package
-  remains pinned to the validated `5.7.0` Gemma 4 closure lane until a
-  Transformers/Gemma update arc reruns the host smokes.
+  mapping while keeping `transformers.models.gemma4` present. This branch
+  adopts `5.7.0` as the validated Gemma 4 closure lane; future
+  Transformers/Gemma update arcs must rerun the host smokes.
 - Re-check dependency metadata against the chosen baseline package and the
   published PyPI metadata. The package is intentionally thin and should not
   grow optional extras into hard runtime dependencies.

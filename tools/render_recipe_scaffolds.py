@@ -822,11 +822,11 @@ build() {{
 
   local _clean_env=()
   local _env_name
-  while IFS='=' read -r _env_name _; do
+  while IFS= read -r _env_name; do
     case "${{_env_name}}" in
       BASH_FUNC_*|module|ml) _clean_env+=(-u "${{_env_name}}") ;;
     esac
-  done < <(env)
+  done < <(compgen -e)
 
   {compiler_env_snippet(compiler_root)}  _setup_compiler_env
   export CFLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument"

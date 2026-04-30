@@ -1,4 +1,5 @@
 import importlib.util
+import re
 import sys
 from pathlib import Path
 from types import ModuleType
@@ -28,8 +29,17 @@ class RecordingLogger:
 
 
 def _resolve_import_utils() -> Path | None:
-    matches = sorted(PKG_LIB.glob("python*/site-packages/vllm/utils/import_utils.py"))
-    return matches[-1] if matches else None
+    matches = list(PKG_LIB.glob("python*/site-packages/vllm/utils/import_utils.py"))
+    if not matches:
+        return None
+
+    def _python_version_key(path: Path) -> tuple[int, ...]:
+        match = re.search(r"/python(\d+(?:\.\d+)*)/", path.as_posix())
+        if match is None:
+            return (-1,)
+        return tuple(int(part) for part in match.group(1).split("."))
+
+    return max(matches, key=_python_version_key)
 
 
 def _load_import_utils(monkeypatch, import_utils_path: Path):
