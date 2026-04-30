@@ -167,6 +167,41 @@ def test_compiler_env_uses_repo_local_ccache_storage() -> None:
     assert "CCACHE_TEMPDIR" not in snippet
 
 
+def test_vllm_renderer_uses_repo_local_ccache_storage() -> None:
+    pkgbuild = render_recipe_scaffolds.render_pkgbuild(
+        "python-vllm-rocm-gfx1151",
+        {
+            "recipe_key": "vllm",
+            "template": "python-project-vllm",
+            "upstream_version": "0.20.0",
+            "pkgdesc": "vLLM ROCm",
+            "url": "https://github.com/vllm-project/vllm",
+            "license": ["Apache-2.0"],
+            "source_type": "tarball",
+            "source_url": "https://github.com/vllm-project/vllm/archive/refs/tags/v0.20.0.tar.gz",
+            "source_patches": ["0016-rocm-refresh-local-carry-for-vllm-0.20.0.patch"],
+            "src_subdir": "vllm-0.20.0",
+        },
+        {
+            "repo": "https://github.com/vllm-project/vllm",
+            "method": "pip",
+            "phase": "package",
+            "steps": [],
+            "depends_on": [],
+            "notes": "",
+        },
+        "0.20.0",
+        {
+            "recipe_repo": "https://github.com/paudley/ai-notes",
+            "recipe_subdir": "strix-halo",
+            "recipe_author": "Blackcat Informatics Inc.",
+        },
+    )
+
+    assert 'local _ccache_cache="$srcdir/.ccache/cache"' in pkgbuild
+    assert 'export CCACHE_DIR="${CCACHE_DIR:-${_ccache_cache}}"' in pkgbuild
+
+
 def test_rust_wheel_renderer_applies_source_patches() -> None:
     pkgbuild = render_recipe_scaffolds.render_pkgbuild(
         "sample-rust-gfx1151",
