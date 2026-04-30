@@ -503,8 +503,9 @@ def test_pytorch_rocm_renderer_uses_source_patches_for_magma_fix() -> None:
     assert '_apply_patch_if_needed "0005-enable-ck-gemm-on-gfx1151.patch"' in pkgbuild
     assert "patch --dry-run -R -Np1" in pkgbuild
     assert "aten/src/ATen/native/hip/linalg/BatchLinearAlgebra.cpp" not in pkgbuild
-    assert "s/^hip: Optional\\[str\\] = None$/" in pkgbuild
-    assert "s/^rocm: Optional\\[str\\] = None$/" in pkgbuild
+    assert "text = text.replace(" in pkgbuild
+    assert "hip: Optional[str] = {hip!r}" in pkgbuild
+    assert "rocm: Optional[str] = {rocm!r}" in pkgbuild
     assert "PYTORCH_VERSION_METADATA_MISSING" in pkgbuild
     assert "PYTORCH_HIP_VERSION_REWRITE_FAILED" in pkgbuild
     assert "PYTORCH_ROCM_VERSION_REWRITE_FAILED" in pkgbuild
