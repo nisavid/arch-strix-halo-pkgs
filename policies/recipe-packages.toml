@@ -158,6 +158,7 @@ update_notes = [
   "Keep the vendored triton_kernels path gated on the installed Triton runtime rather than forcing python-triton-gfx1151 to emulate CUDA-only APIs such as triton.language.target_info. On this ROCm lane, treat unavailable vendored Triton kernels as a clean fallback, not as a hard runtime error.",
   "Keep the ROCm large-head unified-attention prefill tile reduction unless upstream vLLM or Triton lands a fix for the 64 KiB LDS overflow. The concrete host failure was Gemma 4 global attention on gfx1151 requesting 66560 bytes of shared memory from the Triton 2D unified-attention kernel.",
   "Keep the setup.py compiler-flag forwarding patch unless upstream starts passing CFLAGS/CXXFLAGS/HIPFLAGS into the CMake ROCm build itself. The concrete packaging failure was $srcdir leaking into shipped extension modules because the HIP lane was built without Arch prefix-map flags.",
+  "Keep the PKGBUILD's clean HIP version handoff unless ROCm's CMake HIP probe stops treating unrelated hipconfig stderr as a failed version query. The concrete host failure was inherited Lmod shell-function import warnings on hipconfig stderr causing FindHIP.cmake to cache HIP_VERSION=0.0.0 and reject /opt/rocm.",
   "Keep LTO disabled for this package unless the ROCm HIP shared-module link path becomes compatible with it. The concrete host failure was _moe_C.abi3.so / _rocm_C.abi3.so link failure with `LLVM gold plugin has failed to create LTO module: Invalid record`.",
   "Keep the gfx1x AITER enablement and Gemma 4 ROCM_AITER_UNIFIED_ATTN preference unless upstream lands a ROCm-safe single-backend path for heterogeneous-head Gemma 4 models. The concrete host failure was successful Gemma 4 initialization followed by Triton unified-attention decode miscompilation (`operation scheduled before its operands`) and garbage output on gfx1151.",
   "Keep `0007-rocm-enable-gfx1x-aiter-and-prefer-it-for-gemma4.patch` limited to gfx1x AITER support plus the Gemma 4 backend override, and do not reintroduce the broader fused-MoE default flip unless fresh host validation across real ROCm models proves it safe. The 2026-04-17 reference-host `google/gemma-4-26B-A4B-it` text smoke faulted the GPU when that policy forced the AITER fused-MoE 2-stage path without an explicit runtime override.",
@@ -208,6 +209,7 @@ scaffold_notes = [
   "Carries an optional-SageMaker patch so vllm --help and the base OpenAI server routes stay usable when model_hosting_container_standards is not installed.",
   "Carries a ROCm Triton unified-attention tile-size patch so large-head prefill paths such as Gemma 4 global attention do not request more than 64 KiB of LDS/shared memory on gfx1151.",
   "Carries a setup.py flag-forwarding patch so host CFLAGS/CXXFLAGS and HIPFLAGS are passed into the CMake ROCm extension build explicitly. This keeps Arch prefix-map sanitization and Strix tuning flags active in the shipped HIP extension modules.",
+  "Passes a clean hipconfig-derived HIP_VERSION into CMake so the ROCm HIP package discovery path does not depend on stderr-clean ambient shell startup state.",
   "Disables LTO for this package. Re-enabling inherited -flto=* flags makes ROCm shared-module links such as _moe_C.abi3.so and _rocm_C.abi3.so fail with `LLVM gold plugin has failed to create LTO module: Invalid record`.",
   "Carries a gfx1x AITER enablement patch and a Gemma 4 backend-selection patch so heterogeneous-head Gemma 4 models can prefer ROCM_AITER_UNIFIED_ATTN on Strix Halo instead of forcing the Triton unified-attention backend that currently miscompiles during decode.",
   "Carries a Qwen3.5 hybrid/GDN patch that keeps AMD FLA autotune away from gfx1151 page-faulting shapes, preserves hybrid block-size alignment after ROCm platform updates, and routes hybrid full-attention layers away from AITER attention because Qwen3.5/GDN can choose non-power-of-2 block sizes.",
@@ -286,8 +288,8 @@ recipe_key = "pytorch"
 template = "python-project-pytorch-rocm"
 upstream_version = "2.11.0"
 source_refs = ["pytorch::git+https://github.com/ROCm/pytorch.git#commit=9413e9b96bcbeb8af1aa0280a3a9bc7dd048857e"]
-source_patches = ["0001-setup-allow-skipping-build-deps.patch", "0002-use-wide-magma-version-encoding.patch", "0003-target-numpy-2-c-api.patch", "0004-drop-hip-clang-abi-compat-flag.patch", "0005-enable-ck-gemm-on-gfx1151.patch"]
-extra_sha256sums = ["95a46381bedcff873f9765c9b103877aa36f649e649c5b223582732b2ee61cac", "944e0fb4db31da678993acd3104709083ef28dcee58fcc24ab1675d880c39846", "8ea6af3334027a5ef3360ca882f54e720ef501ea48288081f35d7404835ccc95", "4610d5b10e861079898410899b8c25112fcafd679942f25647af3d55a9253bd4", "33188a11f6848303b17b76adb97de75f19856ea3caab7452fd5c62289d63006b"]
+source_patches = ["0001-setup-allow-skipping-build-deps.patch", "0002-use-wide-magma-version-encoding.patch", "0003-target-numpy-2-c-api.patch", "0004-drop-hip-clang-abi-compat-flag.patch", "0005-enable-ck-gemm-on-gfx1151.patch", "0006-enable-aten-cuda-api-for-rocm.patch"]
+extra_sha256sums = ["95a46381bedcff873f9765c9b103877aa36f649e649c5b223582732b2ee61cac", "944e0fb4db31da678993acd3104709083ef28dcee58fcc24ab1675d880c39846", "8ea6af3334027a5ef3360ca882f54e720ef501ea48288081f35d7404835ccc95", "4610d5b10e861079898410899b8c25112fcafd679942f25647af3d55a9253bd4", "33188a11f6848303b17b76adb97de75f19856ea3caab7452fd5c62289d63006b", "9723877beb7eae7fc247517370777f952b534f4d83a981a26be869872dc2c265"]
 pkgdesc = "Tensors and dynamic neural networks in Python with ROCm acceleration, rebuilt for Strix Halo gfx1151"
 url = "https://pytorch.org"
 license = ["BSD-3-Clause-Modification"]
@@ -305,6 +307,7 @@ update_notes = [
   "On 2026-04-28, reviewed ROCm/pytorch release/2.11 through e16e349eb30bac8fd72b5c34ab220527fea5c58c plus Arch python-pytorch-opt-rocm 2.11.0-4. The upstream delta contains Windows DLL-export/native-header and MIOpen CTC-loss fixes, with no overlap against the current gfx1151 wheel assembly, HIPGraph stub, NumPy target define, CK enablement, or BLAS/provider carry. Record the reviewed branch and baseline without repinning until a PyTorch rebuild lane is open.",
   "Keep the package version aligned with the built wheel version; do not repeat the earlier mismatch where the package claimed 2.11.0 but the built wheel came from develop.",
   "Keep openblas explicit in both depends and makedepends so the build does not drift back to generic host BLAS auto-detection.",
+  "Run PyTorch build subprocesses without inherited Lmod shell-function exports so CMake HIP discovery sees the ROCm hipconfig version and keeps USE_ROCM enabled.",
   "Preserve the current Arch Python 3.14 wheel flow unless upstream changes materially: build CMake artifacts first, tolerate the known _sysconfigdata__linux_x86_64-linux-gnu.cpython-314.pyc install failure, run the safe CMake install scripts that stage PyTorch C++ extension headers and Caffe2 package metadata, restage the built torch/lib and torch/bin payloads, then run SKIP_BUILD_DEPS=1 python setup.py bdist_wheel."
 ]
 provides = ["python-pytorch-opt-rocm=2.11.0", "python-pytorch-rocm=2.11.0", "python-pytorch=2.11.0"]
@@ -316,6 +319,7 @@ depends = [
   "hipblaslt-gfx1151",
   "miopen-hip-gfx1151",
   "openblas",
+  "openmp",
   "python-aotriton-gfx1151",
   "python-filelock",
   "python-fsspec",
@@ -361,7 +365,8 @@ scaffold_notes = [
   "Use OpenBLAS explicitly for this lane. Letting the build auto-detect host oneMKL produced a broken wheel with /opt/intel/oneapi runpaths and NumPy import failures.",
   "On Arch Python 3.14, the CMake install target currently mirrors /usr/lib and /usr/include into the source tree and then fails on a root-owned _sysconfigdata pyc. The maintained workaround is to build first, accept that known install failure, run the safe header/CMake metadata install scripts, restage the built torch/lib and torch/bin artifacts, and assemble the wheel with SKIP_BUILD_DEPS=1.",
   "After the known CMake install-target failure, the package must still run the torch/headeronly, c10, and caffe2 install scripts before wheel assembly so the wheel ships ATen, c10, torch/csrc, and CMake metadata for downstream extension builds.",
-  "The SKIP_BUILD_DEPS source patch must apply before wheel assembly so bdist_wheel uses the already staged artifacts instead of re-running the CMake install target."
+  "The SKIP_BUILD_DEPS source patch must apply before wheel assembly so bdist_wheel uses the already staged artifacts instead of re-running the CMake install target.",
+  "Keep ATen's CUDA-named API enabled for ROCm builds without turning on NVIDIA CUDA discovery, so torch.cuda and downstream ROCm extension builds see the HIP-backed device surface."
 ]
 
 [packages.python-torchvision-rocm-gfx1151]
@@ -383,7 +388,8 @@ extra_sha256sums = ["SKIP"]
 source_patches = ["0001-setup-relative-sources.patch"]
 update_notes = [
   "Re-check the package against the current AUR ROCm variant first, then compare any generic Arch torchvision changes that affect Python packaging or dependency handling.",
-  "Keep the paired PyTorch package import-clean enough that TorchVision does not need any build-only rocsolver soname shim. If a shim becomes necessary again, treat that as a PyTorch/runtime-lane regression rather than reintroducing the workaround here."
+  "Keep the paired PyTorch package import-clean enough that TorchVision does not need any build-only rocsolver soname shim. If a shim becomes necessary again, treat that as a PyTorch/runtime-lane regression rather than reintroducing the workaround here.",
+  "Keep the installed torchvision extension RPATH pointed at the sibling torch/lib directory so torchvision operators register without requiring LD_LIBRARY_PATH."
 ]
 provides = ["python-torchvision-rocm=0.26.0", "python-torchvision=0.26.0"]
 conflicts = ["python-torchvision-rocm", "python-torchvision"]
@@ -398,7 +404,7 @@ depends = [
   "python-scipy",
   "python-sympy"
 ]
-makedepends = ["cmake", "miopen-hip-gfx1151", "ninja", "python-gfx1151", "python-installer", "python-pip", "python-setuptools", "rocm-llvm-gfx1151"]
+makedepends = ["cmake", "miopen-hip-gfx1151", "ninja", "patchelf", "python-gfx1151", "python-installer", "python-pip", "python-setuptools", "rocm-llvm-gfx1151"]
 source_type = "tarball"
 source_url = "https://github.com/pytorch/vision/archive/refs/tags/v0.26.0.tar.gz"
 src_subdir = "vision-0.26.0"
@@ -409,7 +415,8 @@ scaffold_notes = [
   "The recipe must build against the source-tree torch headers from the paired PyTorch package, not against an arbitrary preinstalled wheel.",
   "Carry the setup.py source patch that makes ROCm HIP builds honor NVCC_FLAGS so the package-level source-path sanitizer also applies to .hip translation units.",
   "The paired PyTorch package is now import-clean against librocsolver.so.1, so this scaffold should not reintroduce the earlier build-only librocsolver.so.0 shim.",
-  "Keep the recipe's TorchVision environment intact: FORCE_CUDA=0, FORCE_MPS=0, empty TORCH_CUDA_ARCH_LIST, and pip-wheel packaging without build isolation."
+  "Patch the installed torchvision extension RPATH to `$ORIGIN:$ORIGIN/../torch/lib:/opt/rocm/lib` so libc10, libtorch_cpu, c10_hip, and libtorch_hip resolve from the paired PyTorch package.",
+  "Keep the recipe's TorchVision environment intact for ROCm operator coverage: FORCE_CUDA=1, FORCE_MPS=0, empty TORCH_CUDA_ARCH_LIST, and pip-wheel packaging without build isolation."
 ]
 
 [packages.python-triton-gfx1151]
@@ -1267,7 +1274,7 @@ authoritative_reference = "aur/lemonade-desktop"
 advisory_references = ["aur/lemonade-server"]
 divergence_notes = [
   "Tracks the renamed upstream lemonade-app payload while still providing lemonade-desktop compatibility for local package replacement.",
-  "Builds the Electron app from the upstream monorepo release tarball rather than relying on an auto-updated runtime payload."
+  "Builds the Tauri app from the upstream monorepo release tarball rather than relying on an auto-updated runtime payload."
 ]
 update_notes = [
   "Update against the closest desktop/app packaging lane first, then re-check any server-side shared assets the app package expects from the monorepo build.",
@@ -1285,8 +1292,8 @@ source_refs = ["https://github.com/lemonade-sdk/lemonade/archive/refs/tags/v10.3
 sha256sums = ["SKIP"]
 patches_dir = "patches/lemonade-app"
 scaffold_notes = [
-  "Electron desktop package split from the same lemonade monorepo.",
-  "Install a /usr/bin/lemonade-app wrapper that launches the packaged Electron binary from /usr/share/lemonade-app so the shipped desktop entry resolves on PATH.",
+  "Tauri desktop package split from the same lemonade monorepo.",
+  "Install a /usr/bin/lemonade-app wrapper that launches the packaged Tauri binary from /usr/share/lemonade-app so the shipped desktop entry resolves on PATH.",
   "Pinned to the v10.3.0 upstream release tarball to keep the package metadata reproducible."
 ]
 

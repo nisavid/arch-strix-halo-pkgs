@@ -13,7 +13,7 @@
 - Recorded reference packages: `extra/python-pytorch-opt-rocm, extra/python-pytorch-rocm, cachyos-extra-znver4/python-pytorch-opt-rocm`
 - Authoritative reference package: `extra/python-pytorch-opt-rocm`
 - Advisory reference packages: `extra/python-pytorch-rocm, cachyos-extra-znver4/python-pytorch-opt-rocm`
-- Applied source patch files/actions: `14`
+- Applied source patch files/actions: `15`
 
 ## Recipe notes
 
@@ -34,6 +34,7 @@ USE_ROCM_CK_GEMM=ON enables Composable Kernel GEMM for ROCm.
 - On Arch Python 3.14, the CMake install target currently mirrors /usr/lib and /usr/include into the source tree and then fails on a root-owned _sysconfigdata pyc. The maintained workaround is to build first, accept that known install failure, run the safe header/CMake metadata install scripts, restage the built torch/lib and torch/bin artifacts, and assemble the wheel with SKIP_BUILD_DEPS=1.
 - After the known CMake install-target failure, the package must still run the torch/headeronly, c10, and caffe2 install scripts before wheel assembly so the wheel ships ATen, c10, torch/csrc, and CMake metadata for downstream extension builds.
 - The SKIP_BUILD_DEPS source patch must apply before wheel assembly so bdist_wheel uses the already staged artifacts instead of re-running the CMake install target.
+- Keep ATen's CUDA-named API enabled for ROCm builds without turning on NVIDIA CUDA discovery, so torch.cuda and downstream ROCm extension builds see the HIP-backed device surface.
 
 ## Intentional Divergences
 
@@ -48,6 +49,7 @@ USE_ROCM_CK_GEMM=ON enables Composable Kernel GEMM for ROCm.
 - On 2026-04-28, reviewed ROCm/pytorch release/2.11 through e16e349eb30bac8fd72b5c34ab220527fea5c58c plus Arch python-pytorch-opt-rocm 2.11.0-4. The upstream delta contains Windows DLL-export/native-header and MIOpen CTC-loss fixes, with no overlap against the current gfx1151 wheel assembly, HIPGraph stub, NumPy target define, CK enablement, or BLAS/provider carry. Record the reviewed branch and baseline without repinning until a PyTorch rebuild lane is open.
 - Keep the package version aligned with the built wheel version; do not repeat the earlier mismatch where the package claimed 2.11.0 but the built wheel came from develop.
 - Keep openblas explicit in both depends and makedepends so the build does not drift back to generic host BLAS auto-detection.
+- Run PyTorch build subprocesses without inherited Lmod shell-function exports so CMake HIP discovery sees the ROCm hipconfig version and keeps USE_ROCM enabled.
 - Preserve the current Arch Python 3.14 wheel flow unless upstream changes materially: build CMake artifacts first, tolerate the known _sysconfigdata__linux_x86_64-linux-gnu.cpython-314.pyc install failure, run the safe CMake install scripts that stage PyTorch C++ extension headers and Caffe2 package metadata, restage the built torch/lib and torch/bin payloads, then run SKIP_BUILD_DEPS=1 python setup.py bdist_wheel.
 
 ## Maintainer Starting Points

@@ -15,8 +15,10 @@ WRAPPER = REPO_ROOT / "packages/lemonade-app/pkg/lemonade-app/usr/bin/lemonade-a
 def test_pkgbuild_installs_lemonade_app_wrapper():
     text = PKGBUILD.read_text()
     assert 'rm -rf "${build_root}"' in text
+    assert "--target tauri-app" in text
+    assert "--target electron-app" not in text
     assert "$pkgdir/usr/bin/lemonade-app" in text
-    assert "/usr/share/lemonade-app/lemonade" in text
+    assert "/usr/share/lemonade-app/lemonade-app" in text
 
 
 def test_built_package_ships_desktop_launcher_wrapper():

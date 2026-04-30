@@ -27,7 +27,8 @@ source tree, not from a pip install).
 - The recipe must build against the source-tree torch headers from the paired PyTorch package, not against an arbitrary preinstalled wheel.
 - Carry the setup.py source patch that makes ROCm HIP builds honor NVCC_FLAGS so the package-level source-path sanitizer also applies to .hip translation units.
 - The paired PyTorch package is now import-clean against librocsolver.so.1, so this scaffold should not reintroduce the earlier build-only librocsolver.so.0 shim.
-- Keep the recipe's TorchVision environment intact: FORCE_CUDA=0, FORCE_MPS=0, empty TORCH_CUDA_ARCH_LIST, and pip-wheel packaging without build isolation.
+- Patch the installed torchvision extension RPATH to `$ORIGIN:$ORIGIN/../torch/lib:/opt/rocm/lib` so libc10, libtorch_cpu, c10_hip, and libtorch_hip resolve from the paired PyTorch package.
+- Keep the recipe's TorchVision environment intact for ROCm operator coverage: FORCE_CUDA=1, FORCE_MPS=0, empty TORCH_CUDA_ARCH_LIST, and pip-wheel packaging without build isolation.
 
 ## Intentional Divergences
 
@@ -38,6 +39,7 @@ source tree, not from a pip install).
 
 - Re-check the package against the current AUR ROCm variant first, then compare any generic Arch torchvision changes that affect Python packaging or dependency handling.
 - Keep the paired PyTorch package import-clean enough that TorchVision does not need any build-only rocsolver soname shim. If a shim becomes necessary again, treat that as a PyTorch/runtime-lane regression rather than reintroducing the workaround here.
+- Keep the installed torchvision extension RPATH pointed at the sibling torch/lib directory so torchvision operators register without requiring LD_LIBRARY_PATH.
 
 ## Maintainer Starting Points
 

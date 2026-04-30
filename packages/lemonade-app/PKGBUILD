@@ -55,27 +55,26 @@ build() {
   rm -rf "${build_root}"
   cmake -B "${build_root}" -GNinja .     -DCMAKE_C_COMPILER="${amdclang}"     -DCMAKE_CXX_COMPILER="${amdclangxx}"     -DCMAKE_BUILD_TYPE=Release     -DCMAKE_INSTALL_PREFIX="${install_root}"     -DCMAKE_C_FLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument"     -DCMAKE_CXX_FLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument"     -DBUILD_ELECTRON_APP=OFF     -DBUILD_WEB_APP=OFF
 
-  cmake --build "${build_root}" --target electron-app -j"$(nproc)"
+  cmake --build "${build_root}" --target tauri-app -j"$(nproc)"
 }
 
 package() {
   cd "$srcdir/lemonade-10.3.0"
   local build_root="$srcdir/build-lemonade-app"
-  local _electron_root="$pkgdir/usr/share/lemonade-app"
-  local _electron_output="${build_root}/app/linux-unpacked"
+  local _app_root="$pkgdir/usr/share/lemonade-app"
+  local _tauri_output="${build_root}/app/lemonade-app"
 
-  install -dm755 "${_electron_root}"
-  if [[ -d "${_electron_output}" ]]; then
-    cp -a "${_electron_output}/." "${_electron_root}/"
+  if [[ -f "${_tauri_output}" ]]; then
+    install -Dm755 "${_tauri_output}" "${_app_root}/lemonade-app"
   else
-    echo "LEMONADE_APP_OUTPUT_MISSING: expected Electron artifacts under ${_electron_output}" >&2
-    echo "HINT: lemonade electron-app currently writes to CMAKE_BINARY_DIR/app/linux-unpacked on Linux; adjust the renderer if upstream changes this." >&2
+    echo "LEMONADE_APP_OUTPUT_MISSING: expected Tauri binary at ${_tauri_output}" >&2
+    echo "HINT: lemonade tauri-app currently writes to CMAKE_BINARY_DIR/app/lemonade-app on Linux; adjust the renderer if upstream changes this." >&2
     return 1
   fi
 
   install -Dm755 /dev/stdin "$pkgdir/usr/bin/lemonade-app" <<'EOF'
 #!/bin/sh
-exec /usr/share/lemonade-app/lemonade "$@"
+exec /usr/share/lemonade-app/lemonade-app "$@"
 EOF
 
   if [[ -f data/lemonade-app.desktop ]]; then

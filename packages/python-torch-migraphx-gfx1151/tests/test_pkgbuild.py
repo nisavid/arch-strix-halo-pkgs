@@ -13,13 +13,15 @@ def test_pkgbuild_tracks_audited_upstream_commit_and_local_rocm_stack():
 
     assert "pkgname=python-torch-migraphx-gfx1151" in text
     assert "pkgver=1.2" in text
-    assert "pkgrel=4" in text
+    assert "pkgrel=5" in text
     assert "6b2cd2237e83b675ae671650d08343dfbb0be5f3" in text
     assert "migraphx-gfx1151" in text
     assert "python-pytorch-opt-rocm-gfx1151" in text
     assert "python-torchao-rocm-gfx1151" in text
     assert "ROCM_HOME=/opt/rocm" in text
     assert "PYTORCH_ROCM_ARCH=gfx1151" in text
+    assert 'local _ccache_cache="$srcdir/.ccache/cache"' in text
+    assert 'export CCACHE_DIR="${CCACHE_DIR:-${_ccache_cache}}"' in text
     assert "$ORIGIN/torch/lib" in text
 
 

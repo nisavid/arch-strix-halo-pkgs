@@ -92,8 +92,9 @@ def compiler_env_snippet(compiler_root: str) -> str:
 _setup_compiler_env() {
   local _compiler_root="__COMPILER_ROOT__"
   local _ccache_dir="$srcdir/.ccache/bin"
+  local _ccache_cache="$srcdir/.ccache/cache"
   if command -v ccache >/dev/null 2>&1; then
-    mkdir -p "${_ccache_dir}"
+    mkdir -p "${_ccache_dir}" "${_ccache_cache}"
     local _ccache_bin _name
     _ccache_bin="$(command -v ccache)"
     for _name in clang clang++ clang-22 amdclang amdclang++ hipcc hipcc.pl gcc g++ cc c++; do
@@ -101,6 +102,7 @@ _setup_compiler_env() {
     done
     export PATH="${_ccache_dir}:$PATH"
     export CCACHE_BASEDIR="${CCACHE_BASEDIR:-$srcdir}"
+    export CCACHE_DIR="${CCACHE_DIR:-${_ccache_cache}}"
     export CCACHE_NOCPP2=1
     export CCACHE_PATH="${_compiler_root}:/opt/rocm/bin:/usr/bin"
     export CC=amdclang
@@ -464,27 +466,26 @@ build() {{
     -DBUILD_ELECTRON_APP=OFF \
     -DBUILD_WEB_APP=OFF
 
-  cmake --build "${{build_root}}" --target electron-app -j"$(nproc)"
+  cmake --build "${{build_root}}" --target tauri-app -j"$(nproc)"
 }}
 
 package() {{
   cd "$srcdir/{src_subdir}"
   local build_root="$srcdir/build-{package_name}"
-  local _electron_root="$pkgdir/usr/share/lemonade-app"
-  local _electron_output="${{build_root}}/app/linux-unpacked"
+  local _app_root="$pkgdir/usr/share/lemonade-app"
+  local _tauri_output="${{build_root}}/app/lemonade-app"
 
-  install -dm755 "${{_electron_root}}"
-  if [[ -d "${{_electron_output}}" ]]; then
-    cp -a "${{_electron_output}}/." "${{_electron_root}}/"
+  if [[ -f "${{_tauri_output}}" ]]; then
+    install -Dm755 "${{_tauri_output}}" "${{_app_root}}/lemonade-app"
   else
-    echo "LEMONADE_APP_OUTPUT_MISSING: expected Electron artifacts under ${{_electron_output}}" >&2
-    echo "HINT: lemonade electron-app currently writes to CMAKE_BINARY_DIR/app/linux-unpacked on Linux; adjust the renderer if upstream changes this." >&2
+    echo "LEMONADE_APP_OUTPUT_MISSING: expected Tauri binary at ${{_tauri_output}}" >&2
+    echo "HINT: lemonade tauri-app currently writes to CMAKE_BINARY_DIR/app/lemonade-app on Linux; adjust the renderer if upstream changes this." >&2
     return 1
   fi
 
   install -Dm755 /dev/stdin "$pkgdir/usr/bin/lemonade-app" <<'EOF'
 #!/bin/sh
-exec /usr/share/lemonade-app/lemonade "$@"
+exec /usr/share/lemonade-app/lemonade-app "$@"
 EOF
 
   if [[ -f data/lemonade-app.desktop ]]; then
@@ -746,6 +747,9 @@ build() {{
   export HIP_PATH="/opt/rocm"
   export PYTORCH_ROCM_ARCH="gfx1151"
   export CMAKE_PREFIX_PATH="/opt/rocm"
+  local _hip_version
+  _hip_version="$(env -i PATH=/opt/rocm/bin:/usr/bin:/bin HIP_PATH=/opt/rocm ROCM_PATH=/opt/rocm /opt/rocm/bin/hipconfig --version)"
+  export CMAKE_ARGS="-DHIP_VERSION=${{_hip_version%%-*}} ${{CMAKE_ARGS:-}}"
   export VLLM_VERSION_OVERRIDE="{upstream_version}"
   export VLLM_ROCM_USE_AITER=1
 
@@ -813,6 +817,14 @@ build() {{
     find "${{_torch_lib}}" -mindepth 1 -maxdepth 1 ! -name libshm ! -name libshm_windows -exec rm -rf {{}} +
   fi
 
+  local _clean_env=()
+  local _env_name
+  while IFS='=' read -r _env_name _; do
+    case "${{_env_name}}" in
+      BASH_FUNC_*|module|ml) _clean_env+=(-u "${{_env_name}}") ;;
+    esac
+  done < <(env)
+
   {compiler_env_snippet(compiler_root)}  _setup_compiler_env
   export CFLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument"
   export CXXFLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument"
@@ -860,10 +872,10 @@ EOF
   fi
 
   mkdir -p dist
-  CMAKE_ONLY=1 python setup.py build
-  cmake --build build --config Release -j "${{MAX_JOBS}}"
+  env "${{_clean_env[@]}}" CMAKE_ONLY=1 python setup.py build
+  env "${{_clean_env[@]}}" cmake --build build --config Release -j "${{MAX_JOBS}}"
 
-  if ! cmake --build build --target install --config Release -j 1 >"${{_install_log}}" 2>&1; then
+  if ! env "${{_clean_env[@]}}" cmake --build build --target install --config Release -j 1 >"${{_install_log}}" 2>&1; then
     grep -q '_sysconfigdata__linux_x86_64-linux-gnu.cpython-314.pyc' "${{_install_log}}" || {{
       cat "${{_install_log}}"
       return 1
@@ -874,10 +886,10 @@ EOF
   # PyTorch developer install steps. Run the safe installers so downstream
   # C++/ROCm extension packages can build against this wheel through
   # find_package(Torch), including Torch's Caffe2 package lookup.
-  cmake -P build/torch/headeronly/cmake_install.cmake
-  cmake -P build/c10/cmake_install.cmake
-  cmake -P build/caffe2/cmake_install.cmake
-  cmake -DCMAKE_INSTALL_COMPONENT=dev -P build/cmake_install.cmake
+  env "${{_clean_env[@]}}" cmake -P build/torch/headeronly/cmake_install.cmake
+  env "${{_clean_env[@]}}" cmake -P build/c10/cmake_install.cmake
+  env "${{_clean_env[@]}}" cmake -P build/caffe2/cmake_install.cmake
+  env "${{_clean_env[@]}}" cmake -DCMAKE_INSTALL_COMPONENT=dev -P build/cmake_install.cmake
 
   find "${{_torch_lib}}" -mindepth 1 -maxdepth 1 ! -name libshm ! -name libshm_windows -exec rm -rf {{}} +
   mkdir -p "${{_torch_bin}}"
@@ -885,7 +897,7 @@ EOF
   cp build/bin/torch_shm_manager build/bin/protoc-3.13.0.0 "${{_torch_bin}}/"
   ln -sf protoc-3.13.0.0 "${{_torch_bin}}/protoc"
 
-  SKIP_BUILD_DEPS=1 python setup.py bdist_wheel --dist-dir dist
+  env "${{_clean_env[@]}}" SKIP_BUILD_DEPS=1 python setup.py bdist_wheel --dist-dir dist
 }}
 
 package() {{
@@ -895,6 +907,17 @@ package() {{
   python -m installer --destdir="$pkgdir" "$_wheel"
 
   local _site="$pkgdir/usr/lib/python3.14/site-packages"
+  local _version_py="${{_site}}/torch/version.py"
+  if [[ -f "${{_version_py}}" ]]; then
+    local _hip_version _rocm_version
+    _hip_version="$(env -i PATH=/opt/rocm/bin:/usr/bin:/bin HIP_PATH=/opt/rocm ROCM_PATH=/opt/rocm /opt/rocm/bin/hipconfig --version | sed 's/-.*//')"
+    _rocm_version="$(< /opt/rocm/.info/version)"
+    sed -i \\
+      -e "s/^hip: Optional\\[str\\] = None$/hip: Optional[str] = '${{_hip_version}}'/" \\
+      -e "s/^rocm: Optional\\[str\\] = None$/rocm: Optional[str] = '${{_rocm_version}}'/" \\
+      "${{_version_py}}"
+  fi
+
   if [[ -d "${{_site}}/torch/lib" ]]; then
     local _so _runpath
     for _so in "${{_site}}"/torch/lib/lib*.so; do
@@ -911,6 +934,9 @@ package() {{
       [[ -f "${{_so}}" ]] || continue
       if readelf -d "${{_so}}" 2>/dev/null | grep -q 'pytorch/build'; then
         patchelf --set-rpath "/opt/rocm/lib:\\$ORIGIN/lib" "${{_so}}" 2>/dev/null || true
+      fi
+      if ! readelf -d "${{_so}}" 2>/dev/null | grep -Eq 'libomp|libiomp5'; then
+        patchelf --add-needed libomp.so "${{_so}}" 2>/dev/null || true
       fi
     done
 
@@ -975,7 +1001,7 @@ build() {{
   export HIP_ROOT_DIR="/opt/rocm"
   export PYTORCH_ROCM_ARCH="gfx1151"
   export TORCH_CUDA_ARCH_LIST=""
-  export FORCE_CUDA=0
+  export FORCE_CUDA=1
   export FORCE_MPS=0
 
   mkdir -p dist
@@ -987,6 +1013,12 @@ package() {{
   local _wheel
   _wheel="$(ls dist/torchvision-*.whl 2>/dev/null | tail -n 1)"
   python -m installer --destdir="$pkgdir" "$_wheel"
+  local _site="$pkgdir/usr/lib/python3.14/site-packages"
+  local _extension="${{_site}}/torchvision/_C.so"
+  local _rpath="\\$ORIGIN:\\$ORIGIN/../torch/lib:/opt/rocm/lib"
+  if [[ -f "${{_extension}}" ]]; then
+    patchelf --set-rpath "${{_rpath}}" "${{_extension}}"
+  fi
 }}"""
     elif template == "python-project-triton-rocm":
         python_subdir = f"{src_subdir}/python"

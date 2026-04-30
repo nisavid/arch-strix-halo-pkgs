@@ -1,0 +1,18 @@
+diff --git a/cmake/Dependencies.cmake b/cmake/Dependencies.cmake
+index 1eeb3b2b86..b73dd43f8e 100644
+--- a/cmake/Dependencies.cmake
++++ b/cmake/Dependencies.cmake
+@@ -1494,10 +1494,10 @@ if(LAPACK_FOUND)
+     list(APPEND Caffe2_PRIVATE_DEPENDENCY_LIBS ${LAPACK_LIBRARIES})
+   endif()
+ 
+-  if(NOT USE_CUDA)
+-    message("disabling CUDA because NOT USE_CUDA is set")
++  if(NOT (USE_CUDA OR USE_ROCM))
++    message("disabling CUDA because neither USE_CUDA nor USE_ROCM is set")
+     set(AT_CUDA_ENABLED 0)
+-  else()
++  else()
+     set(AT_CUDA_ENABLED 1)
+   endif()
+ 

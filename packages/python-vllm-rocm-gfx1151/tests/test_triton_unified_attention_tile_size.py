@@ -66,6 +66,15 @@ def test_pkgbuild_preserves_inherited_makepkg_flags():
     assert 'export LDFLAGS="${_base_ldflags}"' in text
 
 
+def test_pkgbuild_passes_clean_hip_version_to_cmake():
+    text = PKGBUILD.read_text()
+
+    assert "env -i PATH=/opt/rocm/bin:/usr/bin:/bin" in text
+    assert "HIP_PATH=/opt/rocm ROCM_PATH=/opt/rocm" in text
+    assert "/opt/rocm/bin/hipconfig --version" in text
+    assert 'export CMAKE_ARGS="-DHIP_VERSION=${_hip_version%%-*} ${CMAKE_ARGS:-}"' in text
+
+
 def test_patch_reduces_rocm_large_head_prefill_tile_to_16():
     text = PATCH.read_text()
 

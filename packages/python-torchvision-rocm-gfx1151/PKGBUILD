@@ -6,13 +6,13 @@
 
 pkgname=python-torchvision-rocm-gfx1151
 pkgver=0.26.0
-pkgrel=3
+pkgrel=6
 pkgdesc='Datasets, transforms, and models for computer vision with ROCm support, rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://github.com/pytorch/vision
 license=(BSD-3-Clause)
 depends=(ffmpeg libjpeg-turbo libpng python-numpy-gfx1151 python-pillow python-pytorch-opt-rocm-gfx1151 python-requests python-scipy python-sympy)
-makedepends=(cmake miopen-hip-gfx1151 ninja python-gfx1151 python-installer python-pip python-setuptools rocm-llvm-gfx1151)
+makedepends=(cmake miopen-hip-gfx1151 ninja patchelf python-gfx1151 python-installer python-pip python-setuptools rocm-llvm-gfx1151)
 optdepends=()
 options=()
 provides=(python-torchvision-rocm=0.26.0 python-torchvision=0.26.0)
@@ -55,8 +55,9 @@ build() {
   _setup_compiler_env() {
   local _compiler_root="/opt/rocm/lib/llvm/bin"
   local _ccache_dir="$srcdir/.ccache/bin"
+  local _ccache_cache="$srcdir/.ccache/cache"
   if command -v ccache >/dev/null 2>&1; then
-    mkdir -p "${_ccache_dir}"
+    mkdir -p "${_ccache_dir}" "${_ccache_cache}"
     local _ccache_bin _name
     _ccache_bin="$(command -v ccache)"
     for _name in clang clang++ clang-22 amdclang amdclang++ hipcc hipcc.pl gcc g++ cc c++; do
@@ -64,6 +65,7 @@ build() {
     done
     export PATH="${_ccache_dir}:$PATH"
     export CCACHE_BASEDIR="${CCACHE_BASEDIR:-$srcdir}"
+    export CCACHE_DIR="${CCACHE_DIR:-${_ccache_cache}}"
     export CCACHE_NOCPP2=1
     export CCACHE_PATH="${_compiler_root}:/opt/rocm/bin:/usr/bin"
     export CC=amdclang
@@ -86,7 +88,7 @@ build() {
   export HIP_ROOT_DIR="/opt/rocm"
   export PYTORCH_ROCM_ARCH="gfx1151"
   export TORCH_CUDA_ARCH_LIST=""
-  export FORCE_CUDA=0
+  export FORCE_CUDA=1
   export FORCE_MPS=0
 
   mkdir -p dist
@@ -98,4 +100,10 @@ package() {
   local _wheel
   _wheel="$(ls dist/torchvision-*.whl 2>/dev/null | tail -n 1)"
   python -m installer --destdir="$pkgdir" "$_wheel"
+  local _site="$pkgdir/usr/lib/python3.14/site-packages"
+  local _extension="${_site}/torchvision/_C.so"
+  local _rpath="\$ORIGIN:\$ORIGIN/../torch/lib:/opt/rocm/lib"
+  if [[ -f "${_extension}" ]]; then
+    patchelf --set-rpath "${_rpath}" "${_extension}"
+  fi
 }

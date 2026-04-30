@@ -3,13 +3,13 @@
 
 pkgname=python-flash-attn-rocm-gfx1151
 pkgver=2.8.4
-pkgrel=10
+pkgrel=11
 pkgdesc='FlashAttention ROCm CK backend experiment for the local gfx1151 stack'
 arch=('x86_64')
 url=https://github.com/ROCm/flash-attention
 license=(BSD-3-Clause)
 depends=(python-amd-aiter-gfx1151 python-einops python-gfx1151 python-pytorch-opt-rocm-gfx1151 python-triton-gfx1151)
-makedepends=(git ninja python-installer python-packaging python-pip python-psutil python-setuptools python-wheel)
+makedepends=(git ninja patchelf python-installer python-packaging python-pip python-psutil python-setuptools python-wheel)
 optdepends=('python-vllm-rocm-gfx1151: local engine probe candidate after direct flash_attn smoke passes')
 options=(!lto)
 provides=(python-flash-attn python-flash-attention)
@@ -66,6 +66,7 @@ build() {
   export GPU_ARCHS=gfx1151
   export OPT_DIM=32,256
   export ROCM_HOME=/opt/rocm
+  export CUDA_HOME=/opt/rocm
   export HIP_PATH=/opt/rocm
 
   mkdir -p dist
@@ -77,5 +78,11 @@ package() {
   cd "$srcdir/flash-attention"
 
   python -m installer --destdir="$pkgdir" dist/*.whl
+  local _site="$pkgdir/usr/lib/python3.14/site-packages"
+  local _extension="${_site}/flash_attn_2_cuda.cpython-314-x86_64-linux-gnu.so"
+  local _rpath="\$ORIGIN:\$ORIGIN/torch/lib:/opt/rocm/lib"
+  if [[ -f "${_extension}" ]]; then
+    patchelf --set-rpath "${_rpath}" "${_extension}"
+  fi
   install -Dm644 LICENSE "$pkgdir/usr/share/licenses/python-flash-attn-rocm-gfx1151/LICENSE"
 }

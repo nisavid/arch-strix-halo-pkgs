@@ -6,20 +6,20 @@
 
 pkgname=python-pytorch-opt-rocm-gfx1151
 pkgver=2.11.0
-pkgrel=6
+pkgrel=10
 pkgdesc='Tensors and dynamic neural networks in Python with ROCm acceleration, rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://pytorch.org
 license=(BSD-3-Clause-Modification)
-depends=(amdsmi-gfx1151 composable-kernel-gfx1151 hsa-amd-aqlprofile-gfx1151 hipblaslt-gfx1151 miopen-hip-gfx1151 openblas python-aotriton-gfx1151 python-filelock python-fsspec python-gfx1151 python-jinja python-networkx python-numpy-gfx1151 python-sympy python-typing_extensions python-yaml rccl-gfx1151 rocblas-gfx1151 rocm-hip-sdk-gfx1151 rocm-openmp-gfx1151)
+depends=(amdsmi-gfx1151 composable-kernel-gfx1151 hsa-amd-aqlprofile-gfx1151 hipblaslt-gfx1151 miopen-hip-gfx1151 openblas openmp python-aotriton-gfx1151 python-filelock python-fsspec python-gfx1151 python-jinja python-networkx python-numpy-gfx1151 python-sympy python-typing_extensions python-yaml rccl-gfx1151 rocblas-gfx1151 rocm-hip-sdk-gfx1151 rocm-openmp-gfx1151)
 makedepends=(cmake git ninja openblas python-build python-cffi python-installer python-numpy-gfx1151 python-pip python-requests python-setuptools python-six python-triton-gfx1151 python-yaml patchelf rocm-llvm-gfx1151 unzip)
 optdepends=()
 options=()
 provides=(python-pytorch-opt-rocm=2.11.0 python-pytorch-rocm=2.11.0 python-pytorch=2.11.0)
 conflicts=(python-pytorch-opt-rocm python-pytorch-rocm python-pytorch)
 replaces=()
-source=('pytorch::git+https://github.com/ROCm/pytorch.git#commit=9413e9b96bcbeb8af1aa0280a3a9bc7dd048857e' 0001-setup-allow-skipping-build-deps.patch 0002-use-wide-magma-version-encoding.patch 0003-target-numpy-2-c-api.patch 0004-drop-hip-clang-abi-compat-flag.patch 0005-enable-ck-gemm-on-gfx1151.patch)
-sha256sums=(SKIP 95a46381bedcff873f9765c9b103877aa36f649e649c5b223582732b2ee61cac 944e0fb4db31da678993acd3104709083ef28dcee58fcc24ab1675d880c39846 8ea6af3334027a5ef3360ca882f54e720ef501ea48288081f35d7404835ccc95 4610d5b10e861079898410899b8c25112fcafd679942f25647af3d55a9253bd4 33188a11f6848303b17b76adb97de75f19856ea3caab7452fd5c62289d63006b)
+source=('pytorch::git+https://github.com/ROCm/pytorch.git#commit=9413e9b96bcbeb8af1aa0280a3a9bc7dd048857e' 0001-setup-allow-skipping-build-deps.patch 0002-use-wide-magma-version-encoding.patch 0003-target-numpy-2-c-api.patch 0004-drop-hip-clang-abi-compat-flag.patch 0005-enable-ck-gemm-on-gfx1151.patch 0006-enable-aten-cuda-api-for-rocm.patch)
+sha256sums=(SKIP 95a46381bedcff873f9765c9b103877aa36f649e649c5b223582732b2ee61cac 944e0fb4db31da678993acd3104709083ef28dcee58fcc24ab1675d880c39846 8ea6af3334027a5ef3360ca882f54e720ef501ea48288081f35d7404835ccc95 4610d5b10e861079898410899b8c25112fcafd679942f25647af3d55a9253bd4 33188a11f6848303b17b76adb97de75f19856ea3caab7452fd5c62289d63006b 9723877beb7eae7fc247517370777f952b534f4d83a981a26be869872dc2c265)
 
 prepare() {
   cd "$srcdir/pytorch"
@@ -40,6 +40,7 @@ prepare() {
   _apply_patch_if_needed "0003-target-numpy-2-c-api.patch"
   _apply_patch_if_needed "0004-drop-hip-clang-abi-compat-flag.patch"
   _apply_patch_if_needed "0005-enable-ck-gemm-on-gfx1151.patch"
+  _apply_patch_if_needed "0006-enable-aten-cuda-api-for-rocm.patch"
   # PyTorch's ROCm fork relies on vendored submodules and local hipify-generated sources.
   git -C "$srcdir/pytorch" submodule sync --recursive
   git -C "$srcdir/pytorch" submodule update --init --recursive --force
@@ -60,11 +61,20 @@ build() {
     find "${_torch_lib}" -mindepth 1 -maxdepth 1 ! -name libshm ! -name libshm_windows -exec rm -rf {} +
   fi
 
+  local _clean_env=()
+  local _env_name
+  while IFS='=' read -r _env_name _; do
+    case "${_env_name}" in
+      BASH_FUNC_*|module|ml) _clean_env+=(-u "${_env_name}") ;;
+    esac
+  done < <(env)
+
   _setup_compiler_env() {
   local _compiler_root="/opt/rocm/lib/llvm/bin"
   local _ccache_dir="$srcdir/.ccache/bin"
+  local _ccache_cache="$srcdir/.ccache/cache"
   if command -v ccache >/dev/null 2>&1; then
-    mkdir -p "${_ccache_dir}"
+    mkdir -p "${_ccache_dir}" "${_ccache_cache}"
     local _ccache_bin _name
     _ccache_bin="$(command -v ccache)"
     for _name in clang clang++ clang-22 amdclang amdclang++ hipcc hipcc.pl gcc g++ cc c++; do
@@ -72,6 +82,7 @@ build() {
     done
     export PATH="${_ccache_dir}:$PATH"
     export CCACHE_BASEDIR="${CCACHE_BASEDIR:-$srcdir}"
+    export CCACHE_DIR="${CCACHE_DIR:-${_ccache_cache}}"
     export CCACHE_NOCPP2=1
     export CCACHE_PATH="${_compiler_root}:/opt/rocm/bin:/usr/bin"
     export CC=amdclang
@@ -129,10 +140,10 @@ EOF
   fi
 
   mkdir -p dist
-  CMAKE_ONLY=1 python setup.py build
-  cmake --build build --config Release -j "${MAX_JOBS}"
+  env "${_clean_env[@]}" CMAKE_ONLY=1 python setup.py build
+  env "${_clean_env[@]}" cmake --build build --config Release -j "${MAX_JOBS}"
 
-  if ! cmake --build build --target install --config Release -j 1 >"${_install_log}" 2>&1; then
+  if ! env "${_clean_env[@]}" cmake --build build --target install --config Release -j 1 >"${_install_log}" 2>&1; then
     grep -q '_sysconfigdata__linux_x86_64-linux-gnu.cpython-314.pyc' "${_install_log}" || {
       cat "${_install_log}"
       return 1
@@ -143,10 +154,10 @@ EOF
   # PyTorch developer install steps. Run the safe installers so downstream
   # C++/ROCm extension packages can build against this wheel through
   # find_package(Torch), including Torch's Caffe2 package lookup.
-  cmake -P build/torch/headeronly/cmake_install.cmake
-  cmake -P build/c10/cmake_install.cmake
-  cmake -P build/caffe2/cmake_install.cmake
-  cmake -DCMAKE_INSTALL_COMPONENT=dev -P build/cmake_install.cmake
+  env "${_clean_env[@]}" cmake -P build/torch/headeronly/cmake_install.cmake
+  env "${_clean_env[@]}" cmake -P build/c10/cmake_install.cmake
+  env "${_clean_env[@]}" cmake -P build/caffe2/cmake_install.cmake
+  env "${_clean_env[@]}" cmake -DCMAKE_INSTALL_COMPONENT=dev -P build/cmake_install.cmake
 
   find "${_torch_lib}" -mindepth 1 -maxdepth 1 ! -name libshm ! -name libshm_windows -exec rm -rf {} +
   mkdir -p "${_torch_bin}"
@@ -154,7 +165,7 @@ EOF
   cp build/bin/torch_shm_manager build/bin/protoc-3.13.0.0 "${_torch_bin}/"
   ln -sf protoc-3.13.0.0 "${_torch_bin}/protoc"
 
-  SKIP_BUILD_DEPS=1 python setup.py bdist_wheel --dist-dir dist
+  env "${_clean_env[@]}" SKIP_BUILD_DEPS=1 python setup.py bdist_wheel --dist-dir dist
 }
 
 package() {
@@ -164,6 +175,17 @@ package() {
   python -m installer --destdir="$pkgdir" "$_wheel"
 
   local _site="$pkgdir/usr/lib/python3.14/site-packages"
+  local _version_py="${_site}/torch/version.py"
+  if [[ -f "${_version_py}" ]]; then
+    local _hip_version _rocm_version
+    _hip_version="$(env -i PATH=/opt/rocm/bin:/usr/bin:/bin HIP_PATH=/opt/rocm ROCM_PATH=/opt/rocm /opt/rocm/bin/hipconfig --version | sed 's/-.*//')"
+    _rocm_version="$(< /opt/rocm/.info/version)"
+    sed -i \
+      -e "s/^hip: Optional\[str\] = None$/hip: Optional[str] = '${_hip_version}'/" \
+      -e "s/^rocm: Optional\[str\] = None$/rocm: Optional[str] = '${_rocm_version}'/" \
+      "${_version_py}"
+  fi
+
   if [[ -d "${_site}/torch/lib" ]]; then
     local _so _runpath
     for _so in "${_site}"/torch/lib/lib*.so; do
@@ -180,6 +202,9 @@ package() {
       [[ -f "${_so}" ]] || continue
       if readelf -d "${_so}" 2>/dev/null | grep -q 'pytorch/build'; then
         patchelf --set-rpath "/opt/rocm/lib:\$ORIGIN/lib" "${_so}" 2>/dev/null || true
+      fi
+      if ! readelf -d "${_so}" 2>/dev/null | grep -Eq 'libomp|libiomp5'; then
+        patchelf --add-needed libomp.so "${_so}" 2>/dev/null || true
       fi
     done
 

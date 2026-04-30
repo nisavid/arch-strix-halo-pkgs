@@ -21,6 +21,7 @@ PKGBUILD = REPO_ROOT / "packages/python-pytorch-opt-rocm-gfx1151/PKGBUILD"
 def test_pkgbuild_makes_numpy_available_at_build_time():
     text = PKGBUILD.read_text()
     assert "python-numpy-gfx1151" in text
+    assert "openmp" in text
     assert "openblas" in text
     assert "makedepends=(" in text
     assert "0001-setup-allow-skipping-build-deps.patch" in text
@@ -30,12 +31,35 @@ def test_pkgbuild_makes_numpy_available_at_build_time():
     assert "export USE_LAPACK=1" in text
     assert 'export CMAKE_PREFIX_PATH="${OpenBLAS_HOME}:/opt/rocm"' in text
     assert 'export AOTRITON_INSTALLED_PREFIX="/usr"' in text
+    assert "export USE_CUDA=0" in text
+    assert "export USE_ROCM=1" in text
+    assert "0006-enable-aten-cuda-api-for-rocm.patch" in text
     assert 'rm -rf build' in text
-    assert "CCACHE_DIR" not in text
-    assert "CMAKE_ONLY=1 python setup.py build" in text
+    assert 'local _ccache_cache="$srcdir/.ccache/cache"' in text
+    assert 'export CCACHE_DIR="${CCACHE_DIR:-${_ccache_cache}}"' in text
+    assert "BASH_FUNC_*|module|ml" in text
+    assert 'env "${_clean_env[@]}" CMAKE_ONLY=1 python setup.py build' in text
     assert 'cmake --build build --config Release -j "${MAX_JOBS}"' in text
     assert "_sysconfigdata__linux_x86_64-linux-gnu.cpython-314.pyc" in text
-    assert "SKIP_BUILD_DEPS=1 python setup.py bdist_wheel --dist-dir dist" in text
+    assert 'env "${_clean_env[@]}" SKIP_BUILD_DEPS=1 python setup.py bdist_wheel --dist-dir dist' in text
+
+
+def test_pkgbuild_loads_clang_openmp_before_torch_cpu():
+    text = PKGBUILD.read_text()
+
+    assert 'patchelf --add-needed libomp.so "${_so}"' in text
+    assert 'torch/_C*.so' in text
+    assert "grep -Eq 'libomp|libiomp5'" in text
+
+
+def test_pkgbuild_marks_installed_wheel_as_rocm_build():
+    text = PKGBUILD.read_text()
+
+    assert '_version_py="${_site}/torch/version.py"' in text
+    assert 'env -i PATH=/opt/rocm/bin:/usr/bin:/bin HIP_PATH=/opt/rocm ROCM_PATH=/opt/rocm /opt/rocm/bin/hipconfig --version | sed' in text
+    assert '_rocm_version="$(< /opt/rocm/.info/version)"' in text
+    assert "hip: Optional[str] = '${_hip_version}'" in text
+    assert "rocm: Optional[str] = '${_rocm_version}'" in text
 
 
 def test_built_torch_package_supports_tensor_to_numpy():
