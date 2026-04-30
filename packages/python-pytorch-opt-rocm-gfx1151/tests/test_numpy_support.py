@@ -78,9 +78,21 @@ def test_pkgbuild_marks_installed_wheel_as_rocm_build():
     version_py = TORCH_SITE / "torch/version.py"
     if not Path("/opt/rocm/.info/version").exists():
         pytest.skip("ROCm version metadata is not available")
+    hipconfig = Path("/opt/rocm/bin/hipconfig")
+    if not hipconfig.exists():
+        pytest.skip("ROCm hipconfig is not available")
 
-    hip_version = subprocess.run(
-        ["/opt/rocm/bin/hipconfig", "--version"],
+    hip_env = os.environ.copy()
+    hip_env.update(
+        {
+            "PATH": "/opt/rocm/bin:/usr/bin:/bin",
+            "HIP_PATH": "/opt/rocm",
+            "ROCM_PATH": "/opt/rocm",
+        }
+    )
+    hip_version = subprocess.run(  # noqa: S603 - trusted ROCm tool path.
+        [str(hipconfig), "--version"],
+        env=hip_env,
         capture_output=True,
         text=True,
         check=True,
