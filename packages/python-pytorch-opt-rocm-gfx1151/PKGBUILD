@@ -63,11 +63,11 @@ build() {
 
   local _clean_env=()
   local _env_name
-  while IFS='=' read -r _env_name _; do
+  while IFS= read -r _env_name; do
     case "${_env_name}" in
       BASH_FUNC_*|module|ml) _clean_env+=(-u "${_env_name}") ;;
     esac
-  done < <(env)
+  done < <(compgen -e)
 
   _setup_compiler_env() {
   local _compiler_root="/opt/rocm/lib/llvm/bin"
