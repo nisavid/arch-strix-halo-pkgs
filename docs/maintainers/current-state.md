@@ -85,12 +85,12 @@ relevant RDNA Inductor reduction-mask SIGSEGV fix. `mistral-common 1.11.1`
 keeps the required Gemma 4 `ReasoningEffort` surface and changes OpenAI
 conversion and tool/user-message validation behavior.
 
-The active refresh PR repins all four source lanes together: llama.cpp `b8992`,
-ROCm PyTorch release/2.11 at
+The active refresh PR repins all four source lanes together. Source updated:
+llama.cpp `b8992`, ROCm PyTorch release/2.11 at
 `443606eb94430d90554ab4c21202494576afedce`, AITER
 `a0f25393903f5412b0fb997d5b825a0aeb257466`, and
 `mistral-common 1.11.1`. Package-build gates completed through `tools/amerge`
-plan `20260430T232524-81972211` on 2026-05-01:
+plan `20260430T232524-81972211` on 2026-05-01 for the first refresh build set:
 
 - `lemonade-server 10.3.0-1`
 - `llama.cpp-hip-gfx1151 b8992-1`
@@ -103,6 +103,12 @@ plan `20260430T232524-81972211` on 2026-05-01:
 - `python-torch-migraphx-gfx1151 1.2-5`
 - `python-torchvision-rocm-gfx1151 0.26.0-6`
 - `python-vllm-rocm-gfx1151 0.20.0-1`
+
+PR review closeout then produced the final package-release identifiers for the
+two packages whose contents changed without a `pkgver` change. Package built:
+`tools/amerge` plan `20260501T020334-f610661d` produced
+`lemonade-server 10.3.0-2` and
+`python-pytorch-opt-rocm-gfx1151 2.11.0-11` on 2026-05-01.
 
 The first attempt found a Lemonade server build-environment defect: upstream npm
 tried to write to the host user npm cache, which is read-only inside the
@@ -114,8 +120,8 @@ full vendored submodule set. The vLLM retry fixed a malformed carried patch
 hunk length in `0016-rocm-refresh-local-carry-for-vllm-0.20.0.patch`; the patch
 then applied cleanly and the package built.
 
-The refresh deployed and installed on the reference host on 2026-05-01. The
-installed versions are:
+The refresh deployed and installed on the reference host on 2026-05-01 before
+the pkgrel-only rebuild. Deployed/installed versions from that host pass are:
 
 - `lemonade-server 10.3.0-1`
 - `llama.cpp-hip-gfx1151 b8992-1`
@@ -129,24 +135,22 @@ installed versions are:
 - `python-torchvision-rocm-gfx1151 0.26.0-6`
 - `python-vllm-rocm-gfx1151 0.20.0-1`
 
-PR review closeout then bumped the package release identifiers for the two
-packages whose contents changed without a `pkgver` change:
-`lemonade-server 10.3.0-2` and
-`python-pytorch-opt-rocm-gfx1151 2.11.0-11`. `tools/amerge` plan
-`20260501T020334-f610661d` built those two pkgrel-only artifacts on
-2026-05-01. Publish/install did not run in the agent session because `sudo -v`
-requires a TTY/password; deploy those rebuilt artifacts before treating the host
-install as upgraded to the final package release identifiers.
+Publish/install for `lemonade-server 10.3.0-2` and
+`python-pytorch-opt-rocm-gfx1151 2.11.0-11` did not run in the agent session
+because `sudo -v` requires a TTY/password; deploy those rebuilt artifacts before
+treating the host install as upgraded to the final package release identifiers.
 
-Installed smoke passed for ROCm device discovery through `rocminfo`, PyTorch
-HIP tensor allocation on `Radeon 8060S Graphics`, FlashAttention import, AITER
-JIT-core import from the user JIT cache, TorchAO import, Torch-MIGraphX import,
-TorchVision GPU `torchvision.ops.nms`, vLLM import and `vllm --version`,
-`mistral-common` `ReasoningEffort`, Lemonade backend metadata and
-`lemond --version`, and llama.cpp HIP/Vulkan CLI version checks. The sandboxed
-process could not open `/dev/kfd`, so GPU smokes were run outside the sandbox.
+Installed-smoked state from the deployed host pass: ROCm device discovery
+through `rocminfo`, PyTorch HIP tensor allocation on `Radeon 8060S Graphics`,
+FlashAttention import, AITER JIT-core import from the user JIT cache, TorchAO
+import, Torch-MIGraphX import, TorchVision GPU `torchvision.ops.nms`, vLLM
+import and `vllm --version`, `mistral-common` `ReasoningEffort`, Lemonade
+backend metadata and `lemond --version`, and llama.cpp HIP/Vulkan CLI version
+checks passed. The sandboxed process could not open `/dev/kfd`, so GPU smokes
+were run outside the sandbox.
 
-Live scenario gates passed with `HF_HOME=/var/cache/hf` in
+Live-scenario validated state from the deployed host pass: gates passed with
+`HF_HOME=/var/cache/hf` in
 `docs/worklog/inference-runs/20260501T014711`:
 
 - `lemonade.cli.help` passed in `0.00373` seconds.

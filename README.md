@@ -90,8 +90,10 @@ state, active refresh candidates, and known blockers are in
 The active refresh lane adopts source pins for `llama.cpp` `b8992`, ROCm
 PyTorch release/2.11 at `443606e`, AITER `a0f2539`, and
 `mistral-common 1.11.1`. Package-build gates for that lane are complete; treat
-deploy/install, installed-smoke, and live-scenario gates as still open until
-the maintainer docs record host validation.
+host deploy/install, installed-smoke, and live-scenario validation as recorded
+in the maintainer docs. The final pkgrel-only artifacts for `lemonade-server`
+and `python-pytorch-opt-rocm-gfx1151` are built but still need host
+publish/install before the reference host reflects those release identifiers.
 
 ## Quick Start
 
