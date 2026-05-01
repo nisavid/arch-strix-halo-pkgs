@@ -6,12 +6,12 @@
 
 pkgname=python-torchvision-rocm-gfx1151
 pkgver=0.26.0
-pkgrel=6
+pkgrel=7
 pkgdesc='Datasets, transforms, and models for computer vision with ROCm support, rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://github.com/pytorch/vision
 license=(BSD-3-Clause)
-depends=(ffmpeg libjpeg-turbo libpng python-numpy-gfx1151 python-pillow python-pytorch-opt-rocm-gfx1151 python-requests python-scipy python-sympy)
+depends=(ffmpeg libjpeg-turbo libpng python-numpy-gfx1151 python-pillow-gfx1151 python-pytorch-opt-rocm-gfx1151 python-requests python-scipy python-sympy)
 makedepends=(cmake miopen-hip-gfx1151 ninja patchelf python-gfx1151 python-installer python-pip python-setuptools rocm-llvm-gfx1151)
 optdepends=()
 options=()

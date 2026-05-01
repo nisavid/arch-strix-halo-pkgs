@@ -31,6 +31,15 @@
   evidence are recorded in `docs/maintainers/current-state.md`. Keep follow-up
   work on separate backlog lines instead of reopening this closed update
   bundle.
+- The 2026-05-01 policy-change freshness sweep found one active update
+  candidate that should preempt ordinary backlog work after the current
+  package-policy slice lands: AITER main
+  `a85874151dc9a9e607598b8b73f83c6fab954a6b`. The reviewed head is recorded in
+  `policies/package-freshness.toml`; the active disposition and gate label are
+  in `docs/maintainers/update-candidates.toml`.
+  - `AITER a8587415 source-update lane`: review the MLA decode Gluon and mHC
+    synchronization range, build and install the package, run the installed JIT
+    smoke, and run affected vLLM scenario validation.
 - Blackcat ai-notes recipe input is adopted through
   `a1d7a6816dd2c456bad9fcc7d61c53a4bd8c5fbd`. Follow up the newly described
   stable-diffusion.cpp package surface, expanded native/Rust wheel recipe
@@ -46,10 +55,14 @@
     performance-sensitive model/config plumbing, quantization tooling, or an
     inference engine, default to ingesting it into the local optimized build
     stack instead of relying on an external generic wheel.
-  - Core model/config stack: `python-pydantic-core-gfx1151`,
-    `python-tokenizers-gfx1151`, `python-safetensors-gfx1151`,
-    `python-pyyaml-gfx1151`, `python-psutil-gfx1151`, and
-    `python-pillow-gfx1151`.
+  - Core model/config stack: package policy and rendered scaffolds now exist
+    for `python-pydantic-core-gfx1151`, `python-tokenizers-gfx1151`,
+    `python-safetensors-gfx1151`, `python-pyyaml-gfx1151`,
+    `python-psutil-gfx1151`, and `python-pillow-gfx1151`. The source and
+    package-build gates passed, and `python-transformers-gfx1151`,
+    `python-mistral-common-gfx1151`, and `python-vllm-rocm-gfx1151` rebuilt
+    against the metadata changes. The publish/install, installed-smoke, and
+    live-scenario gates are still open.
   - Comprehensive Blackcat wheel stack, selected for this repo: the core stack
     plus `python-watchfiles-gfx1151`, `python-uvloop-gfx1151`,
     `python-httptools-gfx1151`, `python-msgspec-gfx1151`,

@@ -1,0 +1,99 @@
+{
+  "maintenance": {
+    "advisory_references": [],
+    "authoritative_reference": "extra/python-psutil",
+    "divergence_notes": [
+      "Follows Arch's python-psutil package shape while rebuilding the native extension through the Blackcat native-wheel compiler lane.",
+      "Keeps vLLM scheduler and service telemetry on the repo-owned Python/native-extension stack."
+    ],
+    "source_patches": [],
+    "update_notes": [
+      "Check Arch first for release and dependency metadata before updating.",
+      "After publishing a rebuilt package, verify `import psutil` and a minimal process or virtual-memory probe through the installed local Python lane."
+    ]
+  },
+  "name": "python-psutil-gfx1151",
+  "package_name": "python-psutil-gfx1151",
+  "pkgver": "7.2.2",
+  "policy": {
+    "advisory_references": [],
+    "arch_reference": [
+      "extra/python-psutil"
+    ],
+    "authoritative_reference": "extra/python-psutil",
+    "conflicts": [
+      "python-psutil"
+    ],
+    "depends": [
+      "glibc",
+      "python-gfx1151"
+    ],
+    "divergence_notes": [
+      "Follows Arch's python-psutil package shape while rebuilding the native extension through the Blackcat native-wheel compiler lane.",
+      "Keeps vLLM scheduler and service telemetry on the repo-owned Python/native-extension stack."
+    ],
+    "license": [
+      "BSD-3-Clause"
+    ],
+    "makedepends": [
+      "python-build",
+      "python-installer",
+      "python-setuptools",
+      "python-wheel",
+      "rocm-llvm-gfx1151"
+    ],
+    "patches_dir": "patches/python-psutil-gfx1151",
+    "pkgdesc": "Cross-platform process and system utilities rebuilt for Strix Halo gfx1151",
+    "provides": [
+      "python-psutil"
+    ],
+    "pypi_name": "psutil",
+    "recipe_key": "native_wheels",
+    "recipe_notes_override": "This package is the psutil output from the shared `native_wheels` recipe\nphase. That phase also builds numpy, sentencepiece, zstandard, asyncpg,\nduckdb, PyYAML, Pillow, uvloop, httptools, msgspec, aiohttp, multidict,\nyarl, and frozenlist from source with Zen 5 optimization flags, but those\noutputs are tracked as separate packages or follow-up package lanes rather\nthan as dependencies of `python-psutil-gfx1151`.\n\npsutil supplies native process and system telemetry used by schedulers,\nmonitors, and vLLM service paths, so it belongs in the local optimized core\nstack rather than relying on the generic distro wheel.\n",
+    "scaffold_notes": [
+      "Part of the core Blackcat model/config stack and consumed by the local vLLM package.",
+      "Use the shared native-wheel renderer so amdclang, path remapping, and Zen 5 flags stay aligned with the other native wheel packages."
+    ],
+    "src_subdir": "psutil-7.2.2",
+    "template": "native-wheel-pypi",
+    "update_notes": [
+      "Check Arch first for release and dependency metadata before updating.",
+      "After publishing a rebuilt package, verify `import psutil` and a minimal process or virtual-memory probe through the installed local Python lane."
+    ],
+    "upstream_version": "7.2.2",
+    "url": "https://github.com/giampaolo/psutil"
+  },
+  "provenance": {
+    "output_root": "packages",
+    "recipe_author": "Blackcat Informatics Inc.",
+    "recipe_commit": "a1d7a68",
+    "recipe_date": "20260427",
+    "recipe_history_count": 16,
+    "recipe_repo": "https://github.com/paudley/ai-notes",
+    "recipe_subdir": "strix-halo",
+    "repo_subpath": "."
+  },
+  "recipe": {
+    "branch": null,
+    "depends_on": [
+      "cpython",
+      "pytorch"
+    ],
+    "method": "pip",
+    "notes": "This package is the psutil output from the shared `native_wheels` recipe\nphase. That phase also builds numpy, sentencepiece, zstandard, asyncpg,\nduckdb, PyYAML, Pillow, uvloop, httptools, msgspec, aiohttp, multidict,\nyarl, and frozenlist from source with Zen 5 optimization flags, but those\noutputs are tracked as separate packages or follow-up package lanes rather\nthan as dependencies of `python-psutil-gfx1151`.\n\npsutil supplies native process and system telemetry used by schedulers,\nmonitors, and vLLM service paths, so it belongs in the local optimized core\nstack rather than relying on the generic distro wheel.\n",
+    "patches": [
+      {
+        "description": "Replace the recipe's broken venv-local Python cmake wrapper with the real system cmake binary. The cmake pip package installs a Python wrapper that does `from cmake import cmake`, which fails inside pip's build isolation where the cmake Python module is unavailable.\n",
+        "dst": "<build-venv>/.venv/bin/cmake",
+        "src": "/usr/bin/cmake",
+        "type": "file_copy"
+      }
+    ],
+    "phase": "H",
+    "repo": null,
+    "src_dir": null,
+    "steps": [
+      32
+    ]
+  }
+}

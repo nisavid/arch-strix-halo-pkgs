@@ -2,7 +2,7 @@
 
 pkgname=python-transformers-gfx1151
 pkgver=5.7.0
-pkgrel=1
+pkgrel=2
 pkgdesc='State-of-the-art pretrained models for inference and training rebuilt for Strix Halo gfx1151'
 arch=('any')
 url='https://github.com/huggingface/transformers'
@@ -13,11 +13,11 @@ depends=(
   python-numpy-gfx1151
   python-packaging
   python-regex
-  python-safetensors
-  python-tokenizers
+  python-safetensors-gfx1151
+  python-tokenizers-gfx1151
   python-tqdm
   python-typer
-  python-yaml
+  python-pyyaml-gfx1151
 )
 makedepends=(
   python-build

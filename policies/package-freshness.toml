@@ -143,6 +143,32 @@ checks = [
   { id = "arch", role = "baseline", kind = "arch_package", package = "python-cryptography", recorded = "47.0.0-1", comparison = "pkgver" },
 ]
 
+[families.pydantic_core]
+packages = ["python-pydantic-core-gfx1151"]
+priority = "medium"
+workflow = "upstream_source_update"
+checks = [
+  { id = "arch", role = "primary", kind = "arch_package", package = "python-pydantic-core", recorded = "2.41.5-4", comparison = "pkgver" },
+  { id = "pypi", role = "baseline", kind = "pypi", package = "pydantic_core", recorded = "2.46.3", comparison = "pep440" },
+]
+
+[families.tokenizers]
+packages = ["python-tokenizers-gfx1151"]
+priority = "medium"
+workflow = "upstream_source_update"
+checks = [
+  { id = "pypi", role = "primary", kind = "pypi", package = "tokenizers", recorded = "0.23.1", comparison = "pep440" },
+]
+
+[families.safetensors]
+packages = ["python-safetensors-gfx1151"]
+priority = "medium"
+workflow = "upstream_source_update"
+checks = [
+  { id = "pypi", role = "primary", kind = "pypi", package = "safetensors", recorded = "0.7.0", comparison = "pep440" },
+  { id = "arch", role = "baseline", kind = "arch_package", package = "python-safetensors", recorded = "0.7.0-2", comparison = "pkgver" },
+]
+
 [families.sentencepiece]
 packages = ["python-sentencepiece-gfx1151"]
 priority = "medium"
@@ -177,6 +203,33 @@ workflow = "upstream_source_update"
 checks = [
   { id = "pypi", role = "primary", kind = "pypi", package = "duckdb", recorded = "1.5.2", comparison = "pep440" },
   { id = "arch", role = "baseline", kind = "arch_package", package = "python-duckdb", recorded = "1.5.2-1", comparison = "pkgver" },
+]
+
+[families.pyyaml]
+packages = ["python-pyyaml-gfx1151"]
+priority = "medium"
+workflow = "upstream_source_update"
+checks = [
+  { id = "pypi", role = "primary", kind = "pypi", package = "PyYAML", recorded = "6.0.3", comparison = "pep440" },
+  { id = "arch", role = "baseline", kind = "arch_package", package = "python-yaml", recorded = "6.0.3-2", comparison = "pkgver" },
+]
+
+[families.psutil]
+packages = ["python-psutil-gfx1151"]
+priority = "medium"
+workflow = "upstream_source_update"
+checks = [
+  { id = "pypi", role = "primary", kind = "pypi", package = "psutil", recorded = "7.2.2", comparison = "pep440" },
+  { id = "arch", role = "baseline", kind = "arch_package", package = "python-psutil", recorded = "7.2.2-1", comparison = "pkgver" },
+]
+
+[families.pillow]
+packages = ["python-pillow-gfx1151"]
+priority = "medium"
+workflow = "upstream_source_update"
+checks = [
+  { id = "pypi", role = "primary", kind = "pypi", package = "pillow", recorded = "12.2.0", comparison = "pep440" },
+  { id = "arch", role = "baseline", kind = "arch_package", package = "python-pillow", recorded = "12.2.0-1", comparison = "pkgver" },
 ]
 
 [families.torchao]

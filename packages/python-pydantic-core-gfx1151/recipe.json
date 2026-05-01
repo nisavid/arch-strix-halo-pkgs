@@ -1,0 +1,103 @@
+{
+  "maintenance": {
+    "advisory_references": [
+      "cachyos-extra-znver4/python-pydantic-core"
+    ],
+    "authoritative_reference": "extra/python-pydantic-core",
+    "divergence_notes": [
+      "Follows Arch's pydantic-core release while rebuilding the Rust extension through the recipe's znver5 Rust-wheel lane.",
+      "Keeps pydantic-core aligned with the distro python-pydantic package until this repo carries a local python-pydantic package too."
+    ],
+    "source_patches": [],
+    "update_notes": [
+      "Check Arch python-pydantic and python-pydantic-core together before updating; upstream pydantic normally constrains the pydantic-core ABI tightly.",
+      "Blackcat's recipe currently names pydantic-core 2.46.3, but adopting that newer core without a matching local pydantic package can break the distro pydantic consumer.",
+      "After publishing a rebuilt package, verify `import pydantic_core` and a tiny `pydantic.BaseModel` validation through the installed local Python lane."
+    ]
+  },
+  "name": "python-pydantic-core-gfx1151",
+  "package_name": "python-pydantic-core-gfx1151",
+  "pkgver": "2.41.5",
+  "policy": {
+    "advisory_references": [
+      "cachyos-extra-znver4/python-pydantic-core"
+    ],
+    "arch_reference": [
+      "extra/python-pydantic-core",
+      "cachyos-extra-znver4/python-pydantic-core"
+    ],
+    "authoritative_reference": "extra/python-pydantic-core",
+    "conflicts": [
+      "python-pydantic-core"
+    ],
+    "depends": [
+      "glibc",
+      "libgcc",
+      "python-gfx1151",
+      "python-typing-inspection",
+      "python-typing_extensions"
+    ],
+    "divergence_notes": [
+      "Follows Arch's pydantic-core release while rebuilding the Rust extension through the recipe's znver5 Rust-wheel lane.",
+      "Keeps pydantic-core aligned with the distro python-pydantic package until this repo carries a local python-pydantic package too."
+    ],
+    "license": [
+      "MIT"
+    ],
+    "makedepends": [
+      "cargo",
+      "python-build",
+      "python-installer",
+      "python-maturin",
+      "python-wheel",
+      "rocm-llvm-gfx1151",
+      "rust"
+    ],
+    "patches_dir": "patches/python-pydantic-core-gfx1151",
+    "pkgdesc": "Core validation logic for pydantic rebuilt for Strix Halo gfx1151",
+    "provides": [
+      "python-pydantic-core"
+    ],
+    "pypi_name": "pydantic_core",
+    "recipe_key": "rust_wheels",
+    "recipe_notes_override": "This package is the pydantic-core output from the shared `rust_wheels`\nrecipe phase. That phase also documents orjson, cryptography, tokenizers,\nsafetensors, and watchfiles as sibling Rust-wheel outputs, but those are not\ndependencies of `python-pydantic-core-gfx1151` unless listed in this package's\npolicy metadata.\n\npydantic-core is deliberately kept on the Arch pydantic-compatible release\nwhile it enters the local optimized stack. Move it to Blackcat's newer recipe\npin only with a matching local pydantic package or a validated compatibility\ndecision.\n\nThe Rust build follows the repo's shared Rust-wheel lane:\n  RUSTFLAGS=\"-C target-cpu=znver5 -C opt-level=3\"\nand uses amdclang as the cargo linker through\nCARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER.\n",
+    "scaffold_notes": [
+      "This is part of the core Blackcat model/config stack, but the package follows the current Arch pydantic-core ABI until the repo also owns python-pydantic.",
+      "Use the shared Rust-wheel renderer so linker selection, path remapping, and znver5 codegen stay aligned with orjson and cryptography."
+    ],
+    "src_subdir": "pydantic_core-2.41.5",
+    "template": "rust-wheel-pypi",
+    "update_notes": [
+      "Check Arch python-pydantic and python-pydantic-core together before updating; upstream pydantic normally constrains the pydantic-core ABI tightly.",
+      "Blackcat's recipe currently names pydantic-core 2.46.3, but adopting that newer core without a matching local pydantic package can break the distro pydantic consumer.",
+      "After publishing a rebuilt package, verify `import pydantic_core` and a tiny `pydantic.BaseModel` validation through the installed local Python lane."
+    ],
+    "upstream_version": "2.41.5",
+    "url": "https://github.com/pydantic/pydantic-core"
+  },
+  "provenance": {
+    "output_root": "packages",
+    "recipe_author": "Blackcat Informatics Inc.",
+    "recipe_commit": "a1d7a68",
+    "recipe_date": "20260427",
+    "recipe_history_count": 16,
+    "recipe_repo": "https://github.com/paudley/ai-notes",
+    "recipe_subdir": "strix-halo",
+    "repo_subpath": "."
+  },
+  "recipe": {
+    "branch": null,
+    "depends_on": [
+      "cpython"
+    ],
+    "method": "cargo",
+    "notes": "This package is the pydantic-core output from the shared `rust_wheels`\nrecipe phase. That phase also documents orjson, cryptography, tokenizers,\nsafetensors, and watchfiles as sibling Rust-wheel outputs, but those are not\ndependencies of `python-pydantic-core-gfx1151` unless listed in this package's\npolicy metadata.\n\npydantic-core is deliberately kept on the Arch pydantic-compatible release\nwhile it enters the local optimized stack. Move it to Blackcat's newer recipe\npin only with a matching local pydantic package or a validated compatibility\ndecision.\n\nThe Rust build follows the repo's shared Rust-wheel lane:\n  RUSTFLAGS=\"-C target-cpu=znver5 -C opt-level=3\"\nand uses amdclang as the cargo linker through\nCARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER.\n",
+    "patches": [],
+    "phase": "H",
+    "repo": null,
+    "src_dir": null,
+    "steps": [
+      31
+    ]
+  }
+}

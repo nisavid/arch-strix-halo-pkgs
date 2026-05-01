@@ -74,7 +74,7 @@
       "python-numpy-gfx1151",
       "python-sympy",
       "python-typing_extensions",
-      "python-yaml",
+      "python-pyyaml-gfx1151",
       "rccl-gfx1151",
       "rocblas-gfx1151",
       "rocm-hip-sdk-gfx1151",
@@ -102,7 +102,7 @@
       "python-setuptools",
       "python-six",
       "python-triton-gfx1151",
-      "python-yaml",
+      "python-pyyaml-gfx1151",
       "patchelf",
       "rocm-llvm-gfx1151",
       "unzip"

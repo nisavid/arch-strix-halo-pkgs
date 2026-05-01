@@ -30,7 +30,7 @@
       "python-gfx1151",
       "python-jsonschema",
       "python-numpy-gfx1151",
-      "python-pillow",
+      "python-pillow-gfx1151",
       "python-pydantic",
       "python-pydantic-extra-types",
       "python-requests",

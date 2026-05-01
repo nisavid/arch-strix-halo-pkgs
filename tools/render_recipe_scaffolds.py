@@ -1242,6 +1242,8 @@ build() {{
 
   {compiler_env_snippet(compiler_root)}  _setup_compiler_env
   local _debug_prefix="/usr/src/debug/{package_name}"
+  export CARGO_HOME="$srcdir/.cargo"
+  mkdir -p "$CARGO_HOME"
   export CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER="$CC"
   export RUSTFLAGS="-C target-cpu=znver5 -C opt-level=3 --remap-path-prefix=$srcdir=${{_debug_prefix}}"
   unset CFLAGS CXXFLAGS LDFLAGS

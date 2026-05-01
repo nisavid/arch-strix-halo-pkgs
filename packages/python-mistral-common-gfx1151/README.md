@@ -29,8 +29,9 @@ all the way through model load and then fail during processor initialization.
   baseline because the older lane does not export `ReasoningEffort`.
 - Keeps the package pure-Python and architecture-independent; there are no
   applicable Strix-specific native optimization flags to carry here.
-- Depends explicitly on `python-gfx1151` and `python-numpy-gfx1151` so the
-  local inference stack stays on the repo-managed Python lane.
+- Depends explicitly on `python-gfx1151`, `python-numpy-gfx1151`, and
+  `python-pillow-gfx1151` so the local inference stack stays on the
+  repo-managed Python and multimodal preprocessing closure.
 
 ## Update Notes
 
