@@ -1,6 +1,6 @@
 # Current State
 
-Status as of 2026-04-30.
+Status as of 2026-05-01.
 
 ## Rebuild Revalidation Boundary
 
@@ -128,6 +128,15 @@ installed versions are:
 - `python-torch-migraphx-gfx1151 1.2-5`
 - `python-torchvision-rocm-gfx1151 0.26.0-6`
 - `python-vllm-rocm-gfx1151 0.20.0-1`
+
+PR review closeout then bumped the package release identifiers for the two
+packages whose contents changed without a `pkgver` change:
+`lemonade-server 10.3.0-2` and
+`python-pytorch-opt-rocm-gfx1151 2.11.0-11`. `tools/amerge` plan
+`20260501T020334-f610661d` built those two pkgrel-only artifacts on
+2026-05-01. Publish/install did not run in the agent session because `sudo -v`
+requires a TTY/password; deploy those rebuilt artifacts before treating the host
+install as upgraded to the final package release identifiers.
 
 Installed smoke passed for ROCm device discovery through `rocminfo`, PyTorch
 HIP tensor allocation on `Radeon 8060S Graphics`, FlashAttention import, AITER
