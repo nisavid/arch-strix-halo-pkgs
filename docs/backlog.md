@@ -10,6 +10,23 @@
   `docs/maintainers/current-state.md` and the candidate dispositions are now
   adopted in `docs/maintainers/update-candidates.toml`. Keep follow-up work
   on separate backlog lines instead of reopening this closed update bundle.
+- The 2026-04-30 freshness sweep found four active update candidates that
+  preempt ordinary backlog work until each lane is adopted or re-dispositioned:
+  AITER main `a0f25393903f5412b0fb997d5b825a0aeb257466`, llama.cpp `b8992`,
+  `mistral-common 1.11.1`, and ROCm PyTorch release/2.11 at
+  `443606eb94430d90554ab4c21202494576afedce`. The reviewed heads are recorded
+  in `policies/package-freshness.toml`; active dispositions and gate labels
+  are in `docs/maintainers/update-candidates.toml`.
+  - `llama.cpp b8992 runtime rebuild lane`: update both HIP and Vulkan
+    packages, refresh Lemonade backend metadata, deploy/install, run CLI
+    smokes, and run tracked llama.cpp/Lemonade scenarios.
+  - `ROCm PyTorch release/2.11 443606e source-update lane`: use the normal
+    PyTorch rebuild/downstream validation lane because the update fixes an AMD
+    RDNA Inductor reduction-mask SIGSEGV.
+  - `AITER a0f2539 source-update lane`: build and install the package, run the
+    installed JIT smoke, and run affected vLLM scenario validation.
+  - `mistral-common 1.11.1 package-update lane`: rebuild the package, run
+    installed API checks, and run the Gemma 4 vLLM smoke gate.
 - Blackcat ai-notes recipe input is adopted through
   `a1d7a6816dd2c456bad9fcc7d61c53a4bd8c5fbd`. Follow up the newly described
   stable-diffusion.cpp package surface, expanded native/Rust wheel recipe
