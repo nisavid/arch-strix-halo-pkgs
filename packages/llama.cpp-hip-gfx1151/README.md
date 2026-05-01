@@ -7,7 +7,7 @@
 - Scaffold template: `llama-cpp`
 - Recipe build method: `cmake`
 - Upstream repo: `https://github.com/ggml-org/llama.cpp.git`
-- Package version: `b8966`
+- Package version: `b8992`
 - Recipe revision: `a1d7a68 (20260427, 16 path commits)`
 - Recipe steps: `34`
 - Recipe dependencies: `therock`
@@ -62,6 +62,7 @@ binaries find their shared libraries without LD_LIBRARY_PATH.
 - On 2026-04-28, reviewed upstream llama.cpp b8953 at 434b2a1ff6a73927f1aeef1455599fbe207f7d6f and AUR llama.cpp-hip b8953-1. The b8935..b8953 range adds WebGPU Q1_0 and matmul tuning, fast i-quant mat-vec kernels, CPU/AMX optimizations, q8_0 download preference, model conversion cleanup, Qwen/LLaMA duplicate-scale removal, server router form-data forwarding, and Windows RPC/cache fixes. No HIP or Vulkan package-build touchpoint was found; record it as reviewed without repinning until a runtime rebuild lane is opened.
 - On 2026-04-28, adopted upstream llama.cpp b8955 at 14e733e36f5752f39494b6c7e88022e43c05729a. The b8953..b8955 range refactors speculative decoding parameters, switches server m-rope task handling to pos_next, and updates argument parser, server, lookup, speculative, and llama-bench sources; no local packaging patch carry changed.
 - On 2026-04-29, adopted upstream llama.cpp b8966 at 7b8443ac786c06438e0f407b7adaa72c220b5099. The b8955..b8966 range adds CANN operator work, backend/device duplicate-registration handling, Vulkan timestamp-barrier and shader/header fixes, WebGPU SSM scan aliasing fixes, CUDA FA support for Mistral Small head sizes, and a broad server UI tool/chat settings refactor; no local packaging patch carry changed.
+- On 2026-05-01, adopted upstream llama.cpp b8992 at 5cbfb18075c95437e4ac7fb50e3baf88fe137a87. The b8966..b8992 range is runtime-facing for the packaged backends: common sampling, speculative, reasoning-budget, server/Web UI, ggml 0.10.1, Vulkan tensor-helper, mmap ftello/fseeko, hf-cache null-user, and cpp-httplib vendor changes.
 - Keep the backend-specific package split explicit until benchmarking proves a routing wrapper is worth maintaining.
 
 ## Maintainer Starting Points

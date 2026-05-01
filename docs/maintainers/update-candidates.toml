@@ -132,7 +132,7 @@ previous_recorded = "d679e288120cf407d1d0daa82bab4ad961ed0bb6"
 latest = "a0f25393903f5412b0fb997d5b825a0aeb257466"
 discovery_status = "candidate_head_ahead"
 disposition = "tracked"
-disposition_reason = "Reviewed during the 2026-04-30 freshness sweep and kept as an active AITER source-update lane. The range includes HIP KL cache refactoring, JIT/setup handling, cache kernels, mHC small-M work, fused all-reduce/RMSNorm memory ordering, GemmTuner SplitK guard changes, MXFP4 and preshuffled cache/indexer fixes, and tuning/test updates. That overlaps current package concerns enough to need a dedicated package build, install, JIT smoke, and affected vLLM scenario validation before adoption."
+disposition_reason = "Reviewed during the 2026-04-30 freshness sweep and kept as an active AITER source-update lane. The active refresh PR repins the package source to a0f2539 and built python-amd-aiter-gfx1151 0.1.12.post2.dev162+ga0f253939-1, but adoption remains open until install, JIT smoke, and affected vLLM scenario validation complete."
 salient_changes = [
   "HIP KL cache refactor and cache kernel changes",
   "mHC small-M accuracy/performance work",
@@ -141,11 +141,11 @@ salient_changes = [
   "MXFP4, preshuffled cache/indexer, JIT/setup, and AITER Triton wheel updates",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
+package_source_update_needed = false
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "AITER a0f2539 source-update lane"
+next_gate_label = "AITER a0f2539 install, JIT smoke, and vLLM validation lane"
 last_reviewed = "2026-04-30"
 
 [candidates."rocm-pytorch-release-2.11-345ca6f"]
@@ -181,18 +181,18 @@ previous_recorded = "345ca6fbeb70f3a6edda9f13b8aafcadccbedd4e / 2.11.0-4"
 latest = "443606eb94430d90554ab4c21202494576afedce"
 discovery_status = "branch_head_ahead"
 disposition = "tracked"
-disposition_reason = "Reviewed during the 2026-04-30 freshness sweep and kept as an active PyTorch source-update lane. The range is a single ROCm release/2.11 change for an AMD RDNA SIGSEGV caused by Inductor reduction-mask optimization, touching Inductor Triton codegen/runtime compatibility and adding regression coverage. Because the package is a gfx1151 RDNA PyTorch runtime, this should be adopted through the normal PyTorch rebuild and downstream validation lane rather than dismissed as metadata-only drift."
+disposition_reason = "Reviewed during the 2026-04-30 freshness sweep and kept as an active PyTorch source-update lane. The active refresh PR repins the package source to 443606e, changes PyTorch submodule prep to shallow recursive fetches, and completed the PyTorch and downstream package-build gates through tools/amerge plan 20260430T232524-81972211, but adoption remains open until install, smokes, and live validation complete."
 salient_changes = [
   "RDNA SIGSEGV fix for Inductor reduction-mask optimization",
   "Triton codegen and runtime compatibility changes",
   "Inductor regression coverage",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
+package_source_update_needed = false
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "ROCm PyTorch release/2.11 443606e source-update lane"
+next_gate_label = "ROCm PyTorch release/2.11 443606e install, smoke, and live validation lane"
 last_reviewed = "2026-04-30"
 
 [candidates."lemonade-10.3.0"]
@@ -248,18 +248,18 @@ previous_recorded = "1.11.0"
 latest = "1.11.1"
 discovery_status = "stable_update_available"
 disposition = "tracked"
-disposition_reason = "Reviewed during the 2026-04-30 freshness sweep and kept as an active package-update lane. The range keeps the required ReasoningEffort surface and changes request/converter behavior, including lenient from_openai handling that drops unsupported fields and validation that allows user messages after tool messages. Because this package is part of the Transformers/Gemma 4 closure, adoption needs package rebuild, installed import/API checks, and the Gemma 4 vLLM smoke gate."
+disposition_reason = "Reviewed during the 2026-04-30 freshness sweep and kept as an active package-update lane. The active refresh PR updates the package to 1.11.1 and tools/amerge plan 20260430T232524-81972211 completed its package-build gate, but adoption remains open until install, API checks, and the Gemma 4 vLLM smoke gate complete."
 salient_changes = [
   "Lenient from_openai conversion for unsupported fields",
   "Validation support for user messages after tool messages",
   "Request/converter and instruct-message changes",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
+package_source_update_needed = false
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "mistral-common 1.11.1 package-update lane"
+next_gate_label = "mistral-common 1.11.1 install, API check, and Gemma 4 smoke lane"
 last_reviewed = "2026-04-30"
 
 [candidates."llama-cpp-b8992"]
@@ -272,7 +272,7 @@ previous_recorded = "b8966 / b8966-1"
 latest = "b8992"
 discovery_status = "stable_update_available"
 disposition = "tracked"
-disposition_reason = "Reviewed during the 2026-04-30 freshness sweep and kept as an active llama.cpp runtime rebuild lane. The range includes common sampling/speculative/reasoning-budget changes, server/Web UI changes, ggml 0.10.1 sync, Vulkan tensor helpers, mmap ftello/fseeko handling, hf-cache null-user handling, and vendor cpp-httplib refresh. The update is runtime-facing for both packaged llama.cpp backends and should be adopted through package build, deploy/install, CLI smoke, Lemonade backend metadata, and tracked llama.cpp/Lemonade scenarios."
+disposition_reason = "Reviewed during the 2026-04-30 freshness sweep and kept as an active llama.cpp runtime rebuild lane. The active refresh PR repins both packaged backends to b8992, refreshes Lemonade backend metadata, and tools/amerge plan 20260430T232524-81972211 completed package-build gates for both llama.cpp backends and Lemonade server, but adoption remains open until deploy/install, CLI smoke, and tracked llama.cpp/Lemonade scenarios complete."
 salient_changes = [
   "common sampling, speculative, and reasoning-budget changes",
   "server and Web UI updates",
@@ -282,9 +282,9 @@ salient_changes = [
   "cpp-httplib 0.43.2 vendor refresh",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
+package_source_update_needed = false
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "llama.cpp b8992 runtime rebuild lane"
+next_gate_label = "llama.cpp b8992 deploy, CLI smoke, and Lemonade scenario lane"
 last_reviewed = "2026-04-30"

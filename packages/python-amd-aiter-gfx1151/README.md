@@ -6,7 +6,7 @@
 - Scaffold template: `python-project-aiter`
 - Recipe build method: `pip`
 - Upstream repo: `https://github.com/ROCm/aiter.git`
-- Package version: `0.1.12.post2.dev146+gd679e2881`
+- Package version: `0.1.12.post2.dev162+ga0f253939`
 - Recipe revision: `a1d7a68 (20260427, 16 path commits)`
 - Recipe steps: `29`
 - Recipe dependencies: `pytorch, vllm`
@@ -29,7 +29,7 @@ aiter_meta/csrc/include/ files for gfx1151 RDNA 3.5 compatibility.
 ## Scaffold notes
 
 - There is no standalone Arch, CachyOS, or AUR aiter package. The closest packaging lane is the PyTorch ROCm pkgbase that vendors the same submodule, so that pkgbase is advisory only.
-- The package pins reviewed upstream AITER main snapshot d679e288120cf407d1d0daa82bab4ad961ed0bb6 rather than rolling back to the v0.1.12.post1 release tag, because the reviewed post-release range carries local-lane-relevant MoE, quant, JIT, architecture-dispatch, FLYDSL, FMHA, paged-attention, and fused-collectives changes.
+- The package pins reviewed upstream AITER main snapshot a0f25393903f5412b0fb997d5b825a0aeb257466 because the reviewed post-release range carries local-lane-relevant MoE, quant, JIT, architecture-dispatch, FLYDSL, FMHA, paged-attention, cache, and fused-collectives changes.
 - The package exports SETUPTOOLS_SCM_PRETEND_VERSION so the wheel metadata is stable even though the source is a git commit past the latest release tag.
 - The recipe rebuilds AITER from the pinned upstream AITER source lane while keeping CK and generated kernel expectations explicit in the package.
 - Upstream AITER declares pandas as a real dependency and FlyDSL as an optional acceleration path. Keep pandas in the package metadata, and package FlyDSL separately rather than silently depending on an unpublished wheel.
@@ -52,6 +52,7 @@ aiter_meta/csrc/include/ files for gfx1151 RDNA 3.5 compatibility.
 - On 2026-04-24, reviewed AITER main through 033d8b9dbc635d30aa63906245c045f24f8cf796. The latest reviewed delta adds Qwen3.5 GDN prefill kernels, batch-prefill runtime dispatch for KV caches larger than 4 GiB, a top_k_per_row_prefill fix for large batched token counts, non-quantizing ASM fMoE kernels, MI308 tuning, and a GPT-OSS tuned-config revert. Keep it recorded as a reviewed candidate head for future Qwen3.5/GDN or fused-MoE validation, but do not repin the package source until a tracked host scenario needs this range or it replaces current gfx1151 patch carry.
 - On 2026-04-26, reviewed AITER main through dcb0639d870783c2bc0c530e465f301032e756dc. The latest reviewed delta only optimizes the mHC prefill kernel for small M and updates its op test; it does not touch the gfx1151 RDNA header patches, JIT runtime patch, gfx1x MoE carries, or the Qwen3.6 FP8 OPUS mfma_adaptor blocker. Record the reviewed candidate head without repinning the package source.
 - On 2026-04-28, reviewed AITER main through 6a7df2004f5f896471cf9e6ab588b6aec0357dc7. The range adds Triton A16W4 MoE kernels, MHA backward stride fixes, an mHC device fix, gfx950 A8W8 correctness updates, and CI workflow changes. It does not resolve the gfx1151 OPUS FP8 mfma_adaptor blocker or replace the local RDNA header/JIT runtime patch carry, so record the reviewed candidate head without repinning.
+- On 2026-05-01, adopted AITER main at a0f25393903f5412b0fb997d5b825a0aeb257466. The d679e288..a0f2539 range includes HIP KL cache refactoring, JIT/setup handling, cache kernels, mHC small-M work, fused all-reduce/RMSNorm memory ordering, GemmTuner SplitK guards, MXFP4 fixes, preshuffled cache/indexer fixes, and tuning/test coverage.
 - Treat FlyDSL as a separate tracked package story; do not silently fold an unpublished wheel into this package.
 - Keep the installed-system JIT runtime patch until upstream AITER stops assuming `hipcc` is on the ambient PATH and correctly imports modules copied to the writable user JIT cache from read-only site-packages installs.
 - Keep the package's explicit ROCm toolchain exports in `build()` until upstream AITER stops probing `hipconfig` and `hipcc` through ambient shell state. The concrete build failure was `Could not find hipconfig in PATH or ROCM_HOME(/usr)`.

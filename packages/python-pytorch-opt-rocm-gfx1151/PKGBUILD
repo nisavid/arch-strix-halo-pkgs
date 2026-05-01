@@ -18,7 +18,7 @@ options=()
 provides=(python-pytorch-opt-rocm=2.11.0 python-pytorch-rocm=2.11.0 python-pytorch=2.11.0)
 conflicts=(python-pytorch-opt-rocm python-pytorch-rocm python-pytorch)
 replaces=()
-source=('pytorch::git+https://github.com/ROCm/pytorch.git#commit=9413e9b96bcbeb8af1aa0280a3a9bc7dd048857e' 0001-setup-allow-skipping-build-deps.patch 0002-use-wide-magma-version-encoding.patch 0003-target-numpy-2-c-api.patch 0004-drop-hip-clang-abi-compat-flag.patch 0005-enable-ck-gemm-on-gfx1151.patch 0006-enable-aten-cuda-api-for-rocm.patch)
+source=('pytorch::git+https://github.com/ROCm/pytorch.git#commit=443606eb94430d90554ab4c21202494576afedce' 0001-setup-allow-skipping-build-deps.patch 0002-use-wide-magma-version-encoding.patch 0003-target-numpy-2-c-api.patch 0004-drop-hip-clang-abi-compat-flag.patch 0005-enable-ck-gemm-on-gfx1151.patch 0006-enable-aten-cuda-api-for-rocm.patch)
 sha256sums=(SKIP 95a46381bedcff873f9765c9b103877aa36f649e649c5b223582732b2ee61cac 944e0fb4db31da678993acd3104709083ef28dcee58fcc24ab1675d880c39846 8ea6af3334027a5ef3360ca882f54e720ef501ea48288081f35d7404835ccc95 4610d5b10e861079898410899b8c25112fcafd679942f25647af3d55a9253bd4 33188a11f6848303b17b76adb97de75f19856ea3caab7452fd5c62289d63006b 9723877beb7eae7fc247517370777f952b534f4d83a981a26be869872dc2c265)
 
 prepare() {
@@ -43,7 +43,7 @@ prepare() {
   _apply_patch_if_needed "0006-enable-aten-cuda-api-for-rocm.patch"
   # PyTorch's ROCm fork relies on vendored submodules and local hipify-generated sources.
   git -C "$srcdir/pytorch" submodule sync --recursive
-  git -C "$srcdir/pytorch" submodule update --init --recursive --force
+  git -C "$srcdir/pytorch" submodule update --init --recursive --force --depth 1 --recommend-shallow
 }
 
 build() {

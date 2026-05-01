@@ -52,10 +52,10 @@ The stack currently includes these major layers:
 | ROCm foundation | `therock-gfx1151`, `rocm-gfx1151`, split ROCm libraries | TheRock `7.13` prerelease lane for `gfx1151` |
 | Host math and Python | `aocl-utils-gfx1151`, `aocl-libm-gfx1151`, `python-gfx1151` | AOCL `5.2.2`, Python `3.14.4` |
 | ML runtime | `python-pytorch-opt-rocm-gfx1151`, `python-triton-gfx1151`, `python-aotriton-gfx1151` | ROCm PyTorch `2.11`, ROCm Triton main-perf, AOTriton `0.11.2b` |
-| Inference engines | `python-vllm-rocm-gfx1151`, `python-amd-aiter-gfx1151`, `python-flash-attn-rocm-gfx1151` | vLLM `0.19.1`, AITER post-`0.1.12.post1`, ROCm FlashAttention `2.8.4` |
+| Inference engines | `python-vllm-rocm-gfx1151`, `python-amd-aiter-gfx1151`, `python-flash-attn-rocm-gfx1151` | vLLM `0.20.0`, AITER post-`0.1.12.post2`, ROCm FlashAttention `2.8.4` |
 | Graph and quantization experiments | `python-torchao-rocm-gfx1151`, `python-torch-migraphx-gfx1151` | TorchAO `0.17.0`, Torch-MIGraphX `1.2` |
 | Model runners | `llama.cpp-hip-gfx1151`, `llama.cpp-vulkan-gfx1151` | packaged HIP and Vulkan backends from validated upstream snapshots |
-| Frontend and service layer | `lemonade`, `lemonade-server`, `lemonade-app` | Lemonade `10.2.0` with packaged backend discovery |
+| Frontend and service layer | `lemonade`, `lemonade-server`, `lemonade-app` | Lemonade `10.3.0` with packaged backend discovery |
 
 Hand-maintained recipe packages carry package-local READMEs and `recipe.json`
 files with exact baselines, patch notes, and update hints. The generated
@@ -83,8 +83,15 @@ Strix Halo-specific policy across the stack:
   blocked, and merely advisory work
 
 The patch overview is in [docs/patches.md](docs/patches.md). Current validated
-state and known blockers are in [docs/maintainers/current-state.md](docs/maintainers/current-state.md)
-and [docs/backlog.md](docs/backlog.md).
+state, active refresh candidates, and known blockers are in
+[docs/maintainers/current-state.md](docs/maintainers/current-state.md) and
+[docs/backlog.md](docs/backlog.md).
+
+The active refresh lane adopts source pins for `llama.cpp` `b8992`, ROCm
+PyTorch release/2.11 at `443606e`, AITER `a0f2539`, and
+`mistral-common 1.11.1`. Package-build gates for that lane are complete; treat
+deploy/install, installed-smoke, and live-scenario gates as still open until
+the maintainer docs record host validation.
 
 ## Quick Start
 
