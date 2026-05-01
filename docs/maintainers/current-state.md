@@ -85,14 +85,6 @@ relevant RDNA Inductor reduction-mask SIGSEGV fix. `mistral-common 1.11.1`
 keeps the required Gemma 4 `ReasoningEffort` surface and changes OpenAI
 conversion and tool/user-message validation behavior.
 
-No package source was repinned by this sweep. Treat the next update work as
-tracked package lanes, not as closed adoption: llama.cpp needs package build,
-deploy/install, CLI smoke, Lemonade backend metadata, and tracked
-llama.cpp/Lemonade scenarios; ROCm PyTorch needs the normal PyTorch rebuild and
-downstream validation lane; AITER needs package build, install, JIT smoke, and
-affected vLLM scenario validation; `mistral-common` needs package rebuild,
-installed API checks, and the Gemma 4 vLLM smoke gate.
-
 The active refresh PR repins all four source lanes together: llama.cpp `b8992`,
 ROCm PyTorch release/2.11 at
 `443606eb94430d90554ab4c21202494576afedce`, AITER
@@ -120,8 +112,41 @@ package builds use writable source-local state. The PyTorch package source prep
 now uses shallow recursive submodule fetches while still initializing upstream's
 full vendored submodule set. The vLLM retry fixed a malformed carried patch
 hunk length in `0016-rocm-refresh-local-carry-for-vllm-0.20.0.patch`; the patch
-then applied cleanly and the package built. Deploy/install, installed-smoke, and
-live-scenario gates remain open until host validation completes.
+then applied cleanly and the package built.
+
+The refresh deployed and installed on the reference host on 2026-05-01. The
+installed versions are:
+
+- `lemonade-server 10.3.0-1`
+- `llama.cpp-hip-gfx1151 b8992-1`
+- `llama.cpp-vulkan-gfx1151 b8992-1`
+- `python-mistral-common-gfx1151 1.11.1-1`
+- `python-pytorch-opt-rocm-gfx1151 2.11.0-10`
+- `python-amd-aiter-gfx1151 0.1.12.post2.dev162+ga0f253939-1`
+- `python-flash-attn-rocm-gfx1151 2.8.4-11`
+- `python-torchao-rocm-gfx1151 0.17.0-3`
+- `python-torch-migraphx-gfx1151 1.2-5`
+- `python-torchvision-rocm-gfx1151 0.26.0-6`
+- `python-vllm-rocm-gfx1151 0.20.0-1`
+
+Installed smoke passed for ROCm device discovery through `rocminfo`, PyTorch
+HIP tensor allocation on `Radeon 8060S Graphics`, FlashAttention import, AITER
+JIT-core import from the user JIT cache, TorchAO import, Torch-MIGraphX import,
+TorchVision GPU `torchvision.ops.nms`, vLLM import and `vllm --version`,
+`mistral-common` `ReasoningEffort`, Lemonade backend metadata and
+`lemond --version`, and llama.cpp HIP/Vulkan CLI version checks. The sandboxed
+process could not open `/dev/kfd`, so GPU smokes were run outside the sandbox.
+
+Live scenario gates passed with `HF_HOME=/var/cache/hf` in
+`docs/worklog/inference-runs/20260501T014711`:
+
+- `lemonade.cli.help` passed in `0.00373` seconds.
+- `lemonade.server.help` passed in `0.00287` seconds.
+- `llama.cpp.hip.help` passed in `0.106586` seconds.
+- `llama.cpp.vulkan.help` passed in `0.027732` seconds.
+- `vllm.gemma4.e2b.server.basic` passed in `90.855906` seconds.
+- `vllm.torchao.tiny.generate` passed in `25.601376` seconds.
+- `vllm.qwen3_5.0_8b.text.basic` passed in `42.41261` seconds.
 
 ## ROCm inference reference boundary
 

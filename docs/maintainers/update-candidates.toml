@@ -131,8 +131,8 @@ source_kind = "git_ref"
 previous_recorded = "d679e288120cf407d1d0daa82bab4ad961ed0bb6"
 latest = "a0f25393903f5412b0fb997d5b825a0aeb257466"
 discovery_status = "candidate_head_ahead"
-disposition = "tracked"
-disposition_reason = "Reviewed during the 2026-04-30 freshness sweep and kept as an active AITER source-update lane. The active refresh PR repins the package source to a0f2539 and built python-amd-aiter-gfx1151 0.1.12.post2.dev162+ga0f253939-1, but adoption remains open until install, JIT smoke, and affected vLLM scenario validation complete."
+disposition = "adopted"
+disposition_reason = "Adopted in the active 2026-04-30 refresh PR. Source update, package build, deploy/install, AITER JIT-core import, and affected vLLM live scenario validation passed on 2026-05-01."
 salient_changes = [
   "HIP KL cache refactor and cache kernel changes",
   "mHC small-M accuracy/performance work",
@@ -142,11 +142,11 @@ salient_changes = [
 ]
 patch_carry_overlap = true
 package_source_update_needed = false
-host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
-next_gate_label = "AITER a0f2539 install, JIT smoke, and vLLM validation lane"
-last_reviewed = "2026-04-30"
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Adopted; monitor future AITER refs through the normal freshness sweep"
+last_reviewed = "2026-05-01"
 
 [candidates."rocm-pytorch-release-2.11-345ca6f"]
 family = "rocm_pytorch"
@@ -180,8 +180,8 @@ baseline_latest = "2.11.0-4"
 previous_recorded = "345ca6fbeb70f3a6edda9f13b8aafcadccbedd4e / 2.11.0-4"
 latest = "443606eb94430d90554ab4c21202494576afedce"
 discovery_status = "branch_head_ahead"
-disposition = "tracked"
-disposition_reason = "Reviewed during the 2026-04-30 freshness sweep and kept as an active PyTorch source-update lane. The active refresh PR repins the package source to 443606e, changes PyTorch submodule prep to shallow recursive fetches, and completed the PyTorch and downstream package-build gates through tools/amerge plan 20260430T232524-81972211, but adoption remains open until install, smokes, and live validation complete."
+disposition = "adopted"
+disposition_reason = "Adopted in the active 2026-04-30 refresh PR. Source update, shallow recursive submodule prep, PyTorch and downstream package builds, deploy/install, installed smokes, and vLLM live validation passed on 2026-05-01."
 salient_changes = [
   "RDNA SIGSEGV fix for Inductor reduction-mask optimization",
   "Triton codegen and runtime compatibility changes",
@@ -189,11 +189,11 @@ salient_changes = [
 ]
 patch_carry_overlap = true
 package_source_update_needed = false
-host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
-next_gate_label = "ROCm PyTorch release/2.11 443606e install, smoke, and live validation lane"
-last_reviewed = "2026-04-30"
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Adopted; monitor future ROCm PyTorch refs through the normal freshness sweep"
+last_reviewed = "2026-05-01"
 
 [candidates."lemonade-10.3.0"]
 family = "lemonade"
@@ -247,8 +247,8 @@ source_kind = "pypi"
 previous_recorded = "1.11.0"
 latest = "1.11.1"
 discovery_status = "stable_update_available"
-disposition = "tracked"
-disposition_reason = "Reviewed during the 2026-04-30 freshness sweep and kept as an active package-update lane. The active refresh PR updates the package to 1.11.1 and tools/amerge plan 20260430T232524-81972211 completed its package-build gate, but adoption remains open until install, API checks, and the Gemma 4 vLLM smoke gate complete."
+disposition = "adopted"
+disposition_reason = "Adopted in the active 2026-04-30 refresh PR. Package update, package build, deploy/install, ReasoningEffort API check, and Gemma 4 vLLM live scenario validation passed on 2026-05-01."
 salient_changes = [
   "Lenient from_openai conversion for unsupported fields",
   "Validation support for user messages after tool messages",
@@ -256,11 +256,11 @@ salient_changes = [
 ]
 patch_carry_overlap = true
 package_source_update_needed = false
-host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
-next_gate_label = "mistral-common 1.11.1 install, API check, and Gemma 4 smoke lane"
-last_reviewed = "2026-04-30"
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Adopted; monitor future mistral-common releases through the normal freshness sweep"
+last_reviewed = "2026-05-01"
 
 [candidates."llama-cpp-b8992"]
 family = "llama_cpp"
@@ -271,8 +271,8 @@ baseline_latest = "b8992-1"
 previous_recorded = "b8966 / b8966-1"
 latest = "b8992"
 discovery_status = "stable_update_available"
-disposition = "tracked"
-disposition_reason = "Reviewed during the 2026-04-30 freshness sweep and kept as an active llama.cpp runtime rebuild lane. The active refresh PR repins both packaged backends to b8992, refreshes Lemonade backend metadata, and tools/amerge plan 20260430T232524-81972211 completed package-build gates for both llama.cpp backends and Lemonade server, but adoption remains open until deploy/install, CLI smoke, and tracked llama.cpp/Lemonade scenarios complete."
+disposition = "adopted"
+disposition_reason = "Adopted in the active 2026-04-30 refresh PR. Both packaged backends were repinned to b8992, Lemonade backend metadata was refreshed, package builds completed, deploy/install passed, and llama.cpp plus Lemonade live CLI scenarios passed on 2026-05-01."
 salient_changes = [
   "common sampling, speculative, and reasoning-budget changes",
   "server and Web UI updates",
@@ -283,8 +283,8 @@ salient_changes = [
 ]
 patch_carry_overlap = true
 package_source_update_needed = false
-host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
-next_gate_label = "llama.cpp b8992 deploy, CLI smoke, and Lemonade scenario lane"
-last_reviewed = "2026-04-30"
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Adopted; monitor future llama.cpp releases through the normal freshness sweep"
+last_reviewed = "2026-05-01"
