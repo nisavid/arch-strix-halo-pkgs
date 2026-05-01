@@ -232,6 +232,110 @@ checks = [
   { id = "arch", role = "baseline", kind = "arch_package", package = "python-pillow", recorded = "12.2.0-1", comparison = "pkgver" },
 ]
 
+[families.watchfiles]
+packages = ["python-watchfiles-gfx1151"]
+priority = "medium"
+workflow = "upstream_source_update"
+checks = [
+  { id = "pypi", role = "primary", kind = "pypi", package = "watchfiles", recorded = "1.1.1", comparison = "pep440" },
+]
+
+[families.uvloop]
+packages = ["python-uvloop-gfx1151"]
+priority = "medium"
+workflow = "upstream_source_update"
+checks = [
+  { id = "pypi", role = "primary", kind = "pypi", package = "uvloop", recorded = "0.22.1", comparison = "pep440" },
+]
+
+[families.httptools]
+packages = ["python-httptools-gfx1151"]
+priority = "medium"
+workflow = "upstream_source_update"
+checks = [
+  { id = "pypi", role = "primary", kind = "pypi", package = "httptools", recorded = "0.7.1", comparison = "pep440" },
+]
+
+[families.msgspec]
+packages = ["python-msgspec-gfx1151"]
+priority = "medium"
+workflow = "upstream_source_update"
+checks = [
+  { id = "pypi", role = "primary", kind = "pypi", package = "msgspec", recorded = "0.21.1", comparison = "pep440" },
+]
+
+[families.frozenlist]
+packages = ["python-frozenlist-gfx1151"]
+priority = "medium"
+workflow = "upstream_source_update"
+checks = [
+  { id = "pypi", role = "primary", kind = "pypi", package = "frozenlist", recorded = "1.8.0", comparison = "pep440" },
+]
+
+[families.multidict]
+packages = ["python-multidict-gfx1151"]
+priority = "medium"
+workflow = "upstream_source_update"
+checks = [
+  { id = "pypi", role = "primary", kind = "pypi", package = "multidict", recorded = "6.7.1", comparison = "pep440" },
+]
+
+[families.yarl]
+packages = ["python-yarl-gfx1151"]
+priority = "medium"
+workflow = "upstream_source_update"
+checks = [
+  { id = "pypi", role = "primary", kind = "pypi", package = "yarl", recorded = "1.23.0", comparison = "pep440" },
+]
+
+[families.aiohttp]
+packages = ["python-aiohttp-gfx1151"]
+priority = "medium"
+workflow = "upstream_source_update"
+checks = [
+  { id = "pypi", role = "primary", kind = "pypi", package = "aiohttp", recorded = "3.13.5", comparison = "pep440" },
+]
+
+[families.compressed_tensors]
+packages = ["python-compressed-tensors-gfx1151"]
+priority = "medium"
+workflow = "upstream_source_update"
+checks = [
+  { id = "pypi", role = "primary", kind = "pypi", package = "compressed-tensors", recorded = "0.15.0.1", comparison = "pep440" },
+]
+
+[families.accelerate]
+packages = ["python-accelerate-gfx1151"]
+priority = "medium"
+workflow = "upstream_source_update"
+checks = [
+  { id = "pypi", role = "primary", kind = "pypi", package = "accelerate", recorded = "1.12.0", comparison = "pep440" },
+]
+
+[families.auto_round]
+packages = ["python-auto-round-gfx1151"]
+priority = "medium"
+workflow = "upstream_source_update"
+checks = [
+  { id = "pypi", role = "primary", kind = "pypi", package = "auto-round", recorded = "0.10.2", comparison = "pep440" },
+]
+
+[families.nvidia_ml_py]
+packages = ["python-nvidia-ml-py-gfx1151"]
+priority = "low"
+workflow = "upstream_source_update"
+checks = [
+  { id = "pypi", role = "primary", kind = "pypi", package = "nvidia-ml-py", recorded = "13.590.48", comparison = "pep440" },
+]
+
+[families.llmcompressor]
+packages = ["python-llmcompressor-gfx1151"]
+priority = "medium"
+workflow = "upstream_source_update"
+checks = [
+  { id = "pypi", role = "primary", kind = "pypi", package = "llmcompressor", recorded = "0.10.0.1", comparison = "pep440" },
+]
+
 [families.torchao]
 packages = ["python-torchao-rocm-gfx1151"]
 priority = "medium"
