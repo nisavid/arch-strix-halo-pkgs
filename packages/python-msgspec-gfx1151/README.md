@@ -1,0 +1,52 @@
+# python-msgspec-gfx1151
+
+## Maintenance Snapshot
+
+- Recipe package key: `native_wheels`
+- Scaffold template: `native-wheel-pypi`
+- Recipe build method: `pip`
+- Upstream repo: ``
+- Package version: `0.21.1`
+- Recipe revision: `a1d7a68 (20260427, 16 path commits)`
+- Recipe steps: `32`
+- Recipe dependencies: `cpython, pytorch`
+- Recorded reference packages: `extra/python-msgspec, cachyos-extra-znver4/python-msgspec`
+- Authoritative reference package: `extra/python-msgspec`
+- Advisory reference packages: `cachyos-extra-znver4/python-msgspec`
+- Applied source patch files/actions: `1`
+
+## Recipe notes
+
+This package is the msgspec output from the shared `native_wheels` recipe
+phase. That phase also builds numpy, sentencepiece, zstandard, asyncpg,
+duckdb, PyYAML, psutil, Pillow, uvloop, httptools, aiohttp, multidict, yarl,
+and frozenlist from source with Zen 5 optimization flags, but those outputs
+are tracked as separate packages or follow-up package lanes rather than as
+dependencies of `python-msgspec-gfx1151`.
+
+msgspec supplies native JSON/MessagePack structs for API and queue payloads,
+so it belongs in the local optimized service/runtime stack rather than relying
+on the generic distro wheel.
+
+
+## Scaffold notes
+
+- Part of the comprehensive Blackcat service/runtime wheel stack and consumed by the local vLLM package.
+- Use the shared native-wheel renderer so amdclang, path remapping, and Zen 5 flags stay aligned with the other native wheel packages.
+
+## Intentional Divergences
+
+- Follows Arch's python-msgspec package shape while rebuilding the native extension through the Blackcat native-wheel compiler lane.
+- Keeps API and queue serialization hot paths on the repo-owned optimized wheel stack.
+
+## Update Notes
+
+- Check Arch first for release and dependency metadata before updating.
+- After publishing a rebuilt package, verify `import msgspec` and a minimal JSON encode/decode probe through the installed local Python lane.
+
+## Maintainer Starting Points
+
+- Diff the package against its recorded authoritative reference first.
+- Use the advisory references to scout neighboring packaging conventions without silently changing the baseline story.
+- Keep reusable source changes in sibling patch files rather than leaving them as ad hoc PKGBUILD shell edits.
+- Re-run `tools/render_recipe_scaffolds.py` after policy or recipe-manifest changes so the package-local docs stay in sync.

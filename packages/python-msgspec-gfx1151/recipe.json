@@ -1,0 +1,111 @@
+{
+  "maintenance": {
+    "advisory_references": [
+      "cachyos-extra-znver4/python-msgspec"
+    ],
+    "authoritative_reference": "extra/python-msgspec",
+    "divergence_notes": [
+      "Follows Arch's python-msgspec package shape while rebuilding the native extension through the Blackcat native-wheel compiler lane.",
+      "Keeps API and queue serialization hot paths on the repo-owned optimized wheel stack."
+    ],
+    "source_patches": [],
+    "update_notes": [
+      "Check Arch first for release and dependency metadata before updating.",
+      "After publishing a rebuilt package, verify `import msgspec` and a minimal JSON encode/decode probe through the installed local Python lane."
+    ]
+  },
+  "name": "python-msgspec-gfx1151",
+  "package_name": "python-msgspec-gfx1151",
+  "pkgver": "0.21.1",
+  "policy": {
+    "advisory_references": [
+      "cachyos-extra-znver4/python-msgspec"
+    ],
+    "arch_reference": [
+      "extra/python-msgspec",
+      "cachyos-extra-znver4/python-msgspec"
+    ],
+    "authoritative_reference": "extra/python-msgspec",
+    "conflicts": [
+      "python-msgspec"
+    ],
+    "depends": [
+      "glibc",
+      "python-gfx1151",
+      "python-attrs",
+      "python-typing_extensions"
+    ],
+    "divergence_notes": [
+      "Follows Arch's python-msgspec package shape while rebuilding the native extension through the Blackcat native-wheel compiler lane.",
+      "Keeps API and queue serialization hot paths on the repo-owned optimized wheel stack."
+    ],
+    "license": [
+      "BSD-3-Clause"
+    ],
+    "makedepends": [
+      "python-build",
+      "python-installer",
+      "python-setuptools",
+      "python-setuptools-scm",
+      "python-wheel",
+      "rocm-llvm-gfx1151"
+    ],
+    "optdepends": [
+      "python-tomli-w: for TOML writing support",
+      "python-pyyaml-gfx1151: for YAML support"
+    ],
+    "patches_dir": "patches/python-msgspec-gfx1151",
+    "pkgdesc": "Fast serialization and validation library rebuilt for Strix Halo gfx1151",
+    "provides": [
+      "python-msgspec"
+    ],
+    "pypi_name": "msgspec",
+    "recipe_key": "native_wheels",
+    "recipe_notes_override": "This package is the msgspec output from the shared `native_wheels` recipe\nphase. That phase also builds numpy, sentencepiece, zstandard, asyncpg,\nduckdb, PyYAML, psutil, Pillow, uvloop, httptools, aiohttp, multidict, yarl,\nand frozenlist from source with Zen 5 optimization flags, but those outputs\nare tracked as separate packages or follow-up package lanes rather than as\ndependencies of `python-msgspec-gfx1151`.\n\nmsgspec supplies native JSON/MessagePack structs for API and queue payloads,\nso it belongs in the local optimized service/runtime stack rather than relying\non the generic distro wheel.\n",
+    "scaffold_notes": [
+      "Part of the comprehensive Blackcat service/runtime wheel stack and consumed by the local vLLM package.",
+      "Use the shared native-wheel renderer so amdclang, path remapping, and Zen 5 flags stay aligned with the other native wheel packages."
+    ],
+    "src_subdir": "msgspec-0.21.1",
+    "template": "native-wheel-pypi",
+    "update_notes": [
+      "Check Arch first for release and dependency metadata before updating.",
+      "After publishing a rebuilt package, verify `import msgspec` and a minimal JSON encode/decode probe through the installed local Python lane."
+    ],
+    "upstream_version": "0.21.1",
+    "url": "https://github.com/jcrist/msgspec"
+  },
+  "provenance": {
+    "output_root": "packages",
+    "recipe_author": "Blackcat Informatics Inc.",
+    "recipe_commit": "a1d7a68",
+    "recipe_date": "20260427",
+    "recipe_history_count": 16,
+    "recipe_repo": "https://github.com/paudley/ai-notes",
+    "recipe_subdir": "strix-halo",
+    "repo_subpath": "."
+  },
+  "recipe": {
+    "branch": null,
+    "depends_on": [
+      "cpython",
+      "pytorch"
+    ],
+    "method": "pip",
+    "notes": "This package is the msgspec output from the shared `native_wheels` recipe\nphase. That phase also builds numpy, sentencepiece, zstandard, asyncpg,\nduckdb, PyYAML, psutil, Pillow, uvloop, httptools, aiohttp, multidict, yarl,\nand frozenlist from source with Zen 5 optimization flags, but those outputs\nare tracked as separate packages or follow-up package lanes rather than as\ndependencies of `python-msgspec-gfx1151`.\n\nmsgspec supplies native JSON/MessagePack structs for API and queue payloads,\nso it belongs in the local optimized service/runtime stack rather than relying\non the generic distro wheel.\n",
+    "patches": [
+      {
+        "description": "Replace the recipe's broken venv-local Python cmake wrapper with the real system cmake binary. The cmake pip package installs a Python wrapper that does `from cmake import cmake`, which fails inside pip's build isolation where the cmake Python module is unavailable.\n",
+        "dst": "<build-venv>/.venv/bin/cmake",
+        "src": "/usr/bin/cmake",
+        "type": "file_copy"
+      }
+    ],
+    "phase": "H",
+    "repo": null,
+    "src_dir": null,
+    "steps": [
+      32
+    ]
+  }
+}

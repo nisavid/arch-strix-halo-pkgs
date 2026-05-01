@@ -191,7 +191,7 @@ update_notes = [
 ]
 provides = ["python-vllm-rocm", "python-vllm"]
 conflicts = ["python-vllm-rocm", "python-vllm"]
-depends = ["amdsmi-gfx1151", "numactl", "python-aiohttp", "python-blake3", "python-cachetools", "python-cbor2", "python-cloudpickle", "python-diskcache", "python-einops", "python-fastapi", "python-gguf", "python-gfx1151", "python-huggingface-hub", "python-ijson", "python-importlib-metadata", "python-mistral-common-gfx1151", "python-msgspec", "python-openai", "python-openai-harmony-gfx1151", "python-opencv", "python-prometheus-fastapi-instrumentator", "python-psutil-gfx1151", "python-py-cpuinfo", "python-pybase64", "python-pydantic", "python-pytorch-opt-rocm-gfx1151", "python-pyzmq", "python-soundfile", "python-starlette", "python-sympy", "python-torchvision-rocm-gfx1151", "python-tqdm", "python-transformers-gfx1151", "python-triton-gfx1151", "python-uvloop", "python-watchfiles", "rocblas-gfx1151", "uvicorn"]
+depends = ["amdsmi-gfx1151", "numactl", "python-aiohttp-gfx1151", "python-blake3", "python-cachetools", "python-cbor2", "python-cloudpickle", "python-diskcache", "python-einops", "python-fastapi", "python-gguf", "python-gfx1151", "python-httptools-gfx1151", "python-huggingface-hub", "python-ijson", "python-importlib-metadata", "python-mistral-common-gfx1151", "python-msgspec-gfx1151", "python-openai", "python-openai-harmony-gfx1151", "python-opencv", "python-prometheus-fastapi-instrumentator", "python-psutil-gfx1151", "python-py-cpuinfo", "python-pybase64", "python-pydantic", "python-pytorch-opt-rocm-gfx1151", "python-pyzmq", "python-soundfile", "python-starlette", "python-sympy", "python-torchvision-rocm-gfx1151", "python-tqdm", "python-transformers-gfx1151", "python-triton-gfx1151", "python-uvloop-gfx1151", "python-watchfiles-gfx1151", "rocblas-gfx1151", "uvicorn"]
 makedepends = ["cmake", "ninja", "python-installer", "python-pip", "python-setuptools", "python-setuptools-scm", "python-wheel", "rocm-llvm-gfx1151"]
 options = ["!lto"]
 source_type = "tarball"
@@ -1205,6 +1205,356 @@ the native extension onto the local amdclang native-wheel lane.
 scaffold_notes = [
   "Part of the core Blackcat model/config stack and consumed by the local Mistral Common and TorchVision packages.",
   "Use the shared native-wheel renderer so amdclang, path remapping, and Zen 5 flags stay aligned with the other native wheel packages."
+]
+
+[packages.python-watchfiles-gfx1151]
+recipe_key = "rust_wheels"
+template = "rust-wheel-pypi"
+upstream_version = "1.1.1"
+pkgdesc = "Simple, modern, and high-performance file watching rebuilt for Strix Halo gfx1151"
+url = "https://github.com/samuelcolvin/watchfiles"
+license = ["MIT"]
+arch_reference = ["extra/python-watchfiles", "cachyos-extra-znver4/python-watchfiles"]
+authoritative_reference = "extra/python-watchfiles"
+advisory_references = ["cachyos-extra-znver4/python-watchfiles"]
+divergence_notes = [
+  "Follows Arch's python-watchfiles package shape while rebuilding the Rust extension through the Blackcat Rust-wheel compiler lane.",
+  "Keeps ASGI reload and development-service file watching on the repo-owned optimized wheel stack."
+]
+update_notes = [
+  "Check Arch first for watchfiles release and any maturin/build-backend metadata changes before updating.",
+  "After publishing a rebuilt package, verify `import watchfiles` and a minimal Python file-watch import path through the installed local Python lane."
+]
+provides = ["python-watchfiles"]
+conflicts = ["python-watchfiles"]
+depends = ["glibc", "libgcc", "python-gfx1151", "python-anyio"]
+makedepends = ["cargo", "python-build", "python-installer", "python-maturin", "python-wheel", "rocm-llvm-gfx1151", "rust"]
+pypi_name = "watchfiles"
+src_subdir = "watchfiles-1.1.1"
+patches_dir = "patches/python-watchfiles-gfx1151"
+recipe_notes_override = """
+This package is the watchfiles output from the shared `rust_wheels` recipe
+phase. That phase also documents orjson, cryptography, pydantic-core,
+tokenizers, and safetensors as sibling Rust-wheel outputs, but those are not
+dependencies of `python-watchfiles-gfx1151` unless listed in this package's
+policy metadata.
+
+watchfiles supplies the Rust file-watching path used by ASGI reload and local
+service workflows. The local package keeps that extension on the same znver5
+Rust codegen lane as the rest of the optimized local wheel stack.
+"""
+scaffold_notes = [
+  "Part of the comprehensive Blackcat service/runtime wheel stack and consumed by the local vLLM package.",
+  "Use the shared Rust-wheel renderer so Cargo, amdclang linker selection, path remapping, and Zen 5 flags stay aligned with the other Rust wheel packages."
+]
+
+[packages.python-uvloop-gfx1151]
+recipe_key = "native_wheels"
+template = "native-wheel-pypi"
+upstream_version = "0.22.1"
+pkgdesc = "Ultra-fast asyncio event loop rebuilt for Strix Halo gfx1151"
+url = "https://github.com/MagicStack/uvloop"
+license = ["Apache-2.0", "MIT"]
+arch_reference = ["extra/python-uvloop", "cachyos-extra-znver4/python-uvloop"]
+authoritative_reference = "extra/python-uvloop"
+advisory_references = ["cachyos-extra-znver4/python-uvloop"]
+divergence_notes = [
+  "Follows Arch's python-uvloop system-libuv package shape while rebuilding the native extension through the Blackcat native-wheel compiler lane.",
+  "Keeps vLLM and FastAPI service event loops on the repo-owned optimized wheel stack."
+]
+update_notes = [
+  "Check Arch first for libuv and Cython build metadata before updating.",
+  "Keep the package-local system-libuv patch unless upstream changes the build backend to expose a stable PEP 517 config setting for the same choice.",
+  "After publishing a rebuilt package, verify `import uvloop` and a minimal `uvloop.new_event_loop()` probe through the installed local Python lane."
+]
+provides = ["python-uvloop"]
+conflicts = ["python-uvloop"]
+depends = ["glibc", "libuv", "python-gfx1151"]
+makedepends = ["cython", "python-build", "python-installer", "python-setuptools", "python-wheel", "rocm-llvm-gfx1151"]
+pypi_name = "uvloop"
+src_subdir = "uvloop-0.22.1"
+source_patches = ["0001-use-system-libuv.patch"]
+patches_dir = "packages/python-uvloop-gfx1151"
+recipe_notes_override = """
+This package is the uvloop output from the shared `native_wheels` recipe
+phase. That phase also builds numpy, sentencepiece, zstandard, asyncpg,
+duckdb, PyYAML, psutil, Pillow, httptools, msgspec, aiohttp, multidict,
+yarl, and frozenlist from source with Zen 5 optimization flags, but those
+outputs are tracked as separate packages or follow-up package lanes rather
+than as dependencies of `python-uvloop-gfx1151`.
+
+uvloop supplies the libuv-backed asyncio event loop used by vLLM/FastAPI
+service paths. The local package follows Arch's system-libuv shape while
+moving the native extension onto the local amdclang native-wheel lane.
+"""
+scaffold_notes = [
+  "Part of the comprehensive Blackcat service/runtime wheel stack and consumed by the local vLLM package.",
+  "Keep the source patch that switches uvloop's build_ext default to system libuv so the local package does not vendor a private libuv copy."
+]
+
+[packages.python-httptools-gfx1151]
+recipe_key = "native_wheels"
+template = "native-wheel-pypi"
+upstream_version = "0.7.1"
+pkgdesc = "Fast HTTP parser rebuilt for Strix Halo gfx1151"
+url = "https://github.com/MagicStack/httptools"
+license = ["MIT"]
+arch_reference = ["extra/python-httptools", "cachyos-extra-znver4/python-httptools"]
+authoritative_reference = "extra/python-httptools"
+advisory_references = ["cachyos-extra-znver4/python-httptools"]
+divergence_notes = [
+  "Follows Arch's python-httptools system-llhttp package shape while rebuilding the native extension through the Blackcat native-wheel compiler lane.",
+  "Keeps uvicorn/vLLM HTTP parsing on the repo-owned optimized wheel stack."
+]
+update_notes = [
+  "Check Arch first for llhttp and Cython build metadata before updating.",
+  "Keep the package-local system-llhttp patch unless upstream changes the build backend to expose a stable PEP 517 config setting for the same choice.",
+  "Keep `skip_dependency_check = true` while the PyPI sdist pins an exact setuptools build requirement; Arch builds httptools from source without that equality gate, and this package uses the repo's system setuptools in the same no-isolation lane.",
+  "After publishing a rebuilt package, verify `import httptools` through the installed local Python lane."
+]
+provides = ["python-httptools"]
+conflicts = ["python-httptools"]
+depends = ["llhttp", "python-gfx1151"]
+makedepends = ["cython", "python-build", "python-installer", "python-setuptools", "python-wheel", "rocm-llvm-gfx1151"]
+pypi_name = "httptools"
+src_subdir = "httptools-0.7.1"
+source_patches = ["0001-use-system-llhttp.patch"]
+patches_dir = "packages/python-httptools-gfx1151"
+skip_dependency_check = true
+recipe_notes_override = """
+This package is the httptools output from the shared `native_wheels` recipe
+phase. That phase also builds numpy, sentencepiece, zstandard, asyncpg,
+duckdb, PyYAML, psutil, Pillow, uvloop, msgspec, aiohttp, multidict, yarl,
+and frozenlist from source with Zen 5 optimization flags, but those outputs
+are tracked as separate packages or follow-up package lanes rather than as
+dependencies of `python-httptools-gfx1151`.
+
+httptools supplies the native HTTP parser used by uvicorn standard service
+paths. The local package follows Arch's system-llhttp shape while moving the
+native extension onto the local amdclang native-wheel lane.
+"""
+scaffold_notes = [
+  "Part of the comprehensive Blackcat service/runtime wheel stack and consumed by the local vLLM package.",
+  "Keep the source patch that switches httptools' build_ext default to system llhttp so the local package does not vendor a private llhttp copy."
+]
+
+[packages.python-msgspec-gfx1151]
+recipe_key = "native_wheels"
+template = "native-wheel-pypi"
+upstream_version = "0.21.1"
+pkgdesc = "Fast serialization and validation library rebuilt for Strix Halo gfx1151"
+url = "https://github.com/jcrist/msgspec"
+license = ["BSD-3-Clause"]
+arch_reference = ["extra/python-msgspec", "cachyos-extra-znver4/python-msgspec"]
+authoritative_reference = "extra/python-msgspec"
+advisory_references = ["cachyos-extra-znver4/python-msgspec"]
+divergence_notes = [
+  "Follows Arch's python-msgspec package shape while rebuilding the native extension through the Blackcat native-wheel compiler lane.",
+  "Keeps API and queue serialization hot paths on the repo-owned optimized wheel stack."
+]
+update_notes = [
+  "Check Arch first for release and dependency metadata before updating.",
+  "After publishing a rebuilt package, verify `import msgspec` and a minimal JSON encode/decode probe through the installed local Python lane."
+]
+provides = ["python-msgspec"]
+conflicts = ["python-msgspec"]
+depends = ["glibc", "python-gfx1151", "python-attrs", "python-typing_extensions"]
+makedepends = ["python-build", "python-installer", "python-setuptools", "python-setuptools-scm", "python-wheel", "rocm-llvm-gfx1151"]
+optdepends = [
+  "python-tomli-w: for TOML writing support",
+  "python-pyyaml-gfx1151: for YAML support"
+]
+pypi_name = "msgspec"
+src_subdir = "msgspec-0.21.1"
+patches_dir = "patches/python-msgspec-gfx1151"
+recipe_notes_override = """
+This package is the msgspec output from the shared `native_wheels` recipe
+phase. That phase also builds numpy, sentencepiece, zstandard, asyncpg,
+duckdb, PyYAML, psutil, Pillow, uvloop, httptools, aiohttp, multidict, yarl,
+and frozenlist from source with Zen 5 optimization flags, but those outputs
+are tracked as separate packages or follow-up package lanes rather than as
+dependencies of `python-msgspec-gfx1151`.
+
+msgspec supplies native JSON/MessagePack structs for API and queue payloads,
+so it belongs in the local optimized service/runtime stack rather than relying
+on the generic distro wheel.
+"""
+scaffold_notes = [
+  "Part of the comprehensive Blackcat service/runtime wheel stack and consumed by the local vLLM package.",
+  "Use the shared native-wheel renderer so amdclang, path remapping, and Zen 5 flags stay aligned with the other native wheel packages."
+]
+
+[packages.python-frozenlist-gfx1151]
+recipe_key = "native_wheels"
+template = "native-wheel-pypi"
+upstream_version = "1.8.0"
+pkgdesc = "Immutable list implementation rebuilt for Strix Halo gfx1151"
+url = "https://github.com/aio-libs/frozenlist"
+license = ["Apache-2.0"]
+arch_reference = ["extra/python-frozenlist", "cachyos-extra-znver4/python-frozenlist"]
+authoritative_reference = "extra/python-frozenlist"
+advisory_references = ["cachyos-extra-znver4/python-frozenlist"]
+divergence_notes = [
+  "Follows Arch's python-frozenlist package shape while rebuilding the native extension through the Blackcat native-wheel compiler lane.",
+  "Keeps the aiohttp service dependency closure on the repo-owned optimized wheel stack."
+]
+update_notes = [
+  "Check Arch first for release and build-backend metadata before updating.",
+  "After publishing a rebuilt package, verify `import frozenlist` and a minimal FrozenList construction probe through the installed local Python lane."
+]
+provides = ["python-frozenlist"]
+conflicts = ["python-frozenlist"]
+depends = ["glibc", "python-gfx1151"]
+makedepends = ["cython", "python-build", "python-expandvars", "python-installer", "python-setuptools", "python-wheel", "rocm-llvm-gfx1151"]
+pypi_name = "frozenlist"
+src_subdir = "frozenlist-1.8.0"
+patches_dir = "patches/python-frozenlist-gfx1151"
+recipe_notes_override = """
+This package is the frozenlist output from the shared `native_wheels` recipe
+phase. That phase also builds numpy, sentencepiece, zstandard, asyncpg,
+duckdb, PyYAML, psutil, Pillow, uvloop, httptools, msgspec, aiohttp,
+multidict, and yarl from source with Zen 5 optimization flags, but those
+outputs are tracked as separate packages or follow-up package lanes rather
+than as dependencies of `python-frozenlist-gfx1151`.
+
+frozenlist is part of aiohttp's native dependency closure and belongs in the
+same optimized service/runtime stack.
+"""
+scaffold_notes = [
+  "Part of the comprehensive Blackcat aiohttp service dependency closure.",
+  "Use the shared native-wheel renderer so amdclang, path remapping, and Zen 5 flags stay aligned with the other native wheel packages."
+]
+
+[packages.python-multidict-gfx1151]
+recipe_key = "native_wheels"
+template = "native-wheel-pypi"
+upstream_version = "6.7.1"
+pkgdesc = "Asyncio-based multidict implementation rebuilt for Strix Halo gfx1151"
+url = "https://github.com/aio-libs/multidict"
+license = ["Apache-2.0"]
+arch_reference = ["extra/python-multidict", "cachyos-extra-znver4/python-multidict"]
+authoritative_reference = "extra/python-multidict"
+advisory_references = ["cachyos-extra-znver4/python-multidict"]
+divergence_notes = [
+  "Follows Arch's python-multidict package shape while rebuilding the native extension through the Blackcat native-wheel compiler lane.",
+  "Keeps the aiohttp/yarl service dependency closure on the repo-owned optimized wheel stack."
+]
+update_notes = [
+  "Check Arch first for release and build-backend metadata before updating.",
+  "After publishing a rebuilt package, verify `import multidict` and a minimal MultiDict construction probe through the installed local Python lane."
+]
+provides = ["python-multidict"]
+conflicts = ["python-multidict"]
+depends = ["glibc", "python-gfx1151"]
+makedepends = ["cython", "python-build", "python-installer", "python-setuptools", "python-wheel", "rocm-llvm-gfx1151"]
+pypi_name = "multidict"
+src_subdir = "multidict-6.7.1"
+patches_dir = "patches/python-multidict-gfx1151"
+recipe_notes_override = """
+This package is the multidict output from the shared `native_wheels` recipe
+phase. That phase also builds numpy, sentencepiece, zstandard, asyncpg,
+duckdb, PyYAML, psutil, Pillow, uvloop, httptools, msgspec, aiohttp, yarl,
+and frozenlist from source with Zen 5 optimization flags, but those outputs
+are tracked as separate packages or follow-up package lanes rather than as
+dependencies of `python-multidict-gfx1151`.
+
+multidict is part of aiohttp and yarl's native dependency closure and belongs
+in the same optimized service/runtime stack.
+"""
+scaffold_notes = [
+  "Part of the comprehensive Blackcat aiohttp service dependency closure and consumed by the local yarl and aiohttp packages.",
+  "Use the shared native-wheel renderer so amdclang, path remapping, and Zen 5 flags stay aligned with the other native wheel packages."
+]
+
+[packages.python-yarl-gfx1151]
+recipe_key = "native_wheels"
+template = "native-wheel-pypi"
+upstream_version = "1.23.0"
+pkgdesc = "Yet another URL library rebuilt for Strix Halo gfx1151"
+url = "https://github.com/aio-libs/yarl/"
+license = ["Apache-2.0"]
+arch_reference = ["extra/python-yarl", "cachyos-extra-znver4/python-yarl"]
+authoritative_reference = "extra/python-yarl"
+advisory_references = ["cachyos-extra-znver4/python-yarl"]
+divergence_notes = [
+  "Follows Arch's python-yarl package shape while rebuilding the native extension through the Blackcat native-wheel compiler lane.",
+  "Keeps the aiohttp service dependency closure on the repo-owned optimized wheel stack."
+]
+update_notes = [
+  "Check Arch first for release and build-backend metadata before updating.",
+  "After publishing a rebuilt package, verify `import yarl` and a minimal URL construction probe through the installed local Python lane."
+]
+provides = ["python-yarl"]
+conflicts = ["python-yarl"]
+depends = ["glibc", "python-gfx1151", "python-idna", "python-multidict-gfx1151", "python-propcache"]
+makedepends = ["cython", "python-build", "python-expandvars", "python-installer", "python-setuptools", "python-wheel", "rocm-llvm-gfx1151"]
+pypi_name = "yarl"
+src_subdir = "yarl-1.23.0"
+patches_dir = "patches/python-yarl-gfx1151"
+recipe_notes_override = """
+This package is the yarl output from the shared `native_wheels` recipe phase.
+That phase also builds numpy, sentencepiece, zstandard, asyncpg, duckdb,
+PyYAML, psutil, Pillow, uvloop, httptools, msgspec, aiohttp, multidict, and
+frozenlist from source with Zen 5 optimization flags, but those outputs are
+tracked as separate packages or follow-up package lanes rather than as
+dependencies of `python-yarl-gfx1151`.
+
+yarl is part of aiohttp's native URL/dependency closure and belongs in the
+same optimized service/runtime stack.
+"""
+scaffold_notes = [
+  "Part of the comprehensive Blackcat aiohttp service dependency closure and consumed by the local aiohttp package.",
+  "Use the shared native-wheel renderer so amdclang, path remapping, and Zen 5 flags stay aligned with the other native wheel packages."
+]
+
+[packages.python-aiohttp-gfx1151]
+recipe_key = "native_wheels"
+template = "native-wheel-pypi"
+upstream_version = "3.13.5"
+pkgdesc = "HTTP client/server for asyncio rebuilt for Strix Halo gfx1151"
+url = "https://aiohttp.readthedocs.io"
+license = ["Apache-2.0"]
+arch_reference = ["extra/python-aiohttp"]
+authoritative_reference = "extra/python-aiohttp"
+advisory_references = []
+divergence_notes = [
+  "Follows Arch's python-aiohttp system-dependency package shape while rebuilding native extensions through the Blackcat native-wheel compiler lane.",
+  "Keeps async HTTP client/server helpers for vLLM/FastAPI service paths on the repo-owned optimized wheel stack."
+]
+update_notes = [
+  "Check Arch first for llhttp, Cython, and dependency metadata before updating.",
+  "Keep AIOHTTP_USE_SYSTEM_DEPS=1 in the build environment unless upstream changes how system llhttp is selected.",
+  "After publishing a rebuilt package, verify `import aiohttp` and a minimal ClientSession construction path through the installed local Python lane."
+]
+provides = ["python-aiohttp"]
+conflicts = ["python-aiohttp"]
+depends = ["glibc", "llhttp", "python-gfx1151", "python-aiohappyeyeballs", "python-aiosignal", "python-attrs", "python-frozenlist-gfx1151", "python-multidict-gfx1151", "python-propcache", "python-yarl-gfx1151"]
+makedepends = ["cython", "python-build", "python-installer", "python-pkgconfig", "python-setuptools", "python-wheel", "rocm-llvm-gfx1151"]
+optdepends = [
+  "gunicorn: to deploy using Gunicorn",
+  "python-aiodns: for fast DNS resolving",
+  "python-brotli: for Brotli transfer-encodings support"
+]
+build_env = ["AIOHTTP_USE_SYSTEM_DEPS=1"]
+pypi_name = "aiohttp"
+src_subdir = "aiohttp-3.13.5"
+patches_dir = "patches/python-aiohttp-gfx1151"
+recipe_notes_override = """
+This package is the aiohttp output from the shared `native_wheels` recipe
+phase. That phase also builds numpy, sentencepiece, zstandard, asyncpg,
+duckdb, PyYAML, psutil, Pillow, uvloop, httptools, msgspec, multidict, yarl,
+and frozenlist from source with Zen 5 optimization flags, but those outputs
+are tracked as separate packages or follow-up package lanes rather than as
+dependencies of `python-aiohttp-gfx1151`.
+
+aiohttp supplies async HTTP client/server helpers used by service paths. The
+local package follows Arch's system-dependency shape with
+AIOHTTP_USE_SYSTEM_DEPS=1 while moving its native extensions onto the local
+amdclang native-wheel lane.
+"""
+scaffold_notes = [
+  "Part of the comprehensive Blackcat service/runtime wheel stack and consumed by the local vLLM package.",
+  "Keep dependencies pointed at the local frozenlist, multidict, and yarl packages so the aiohttp closure stays on the repo-owned optimized stack."
 ]
 
 [packages.python-torchao-rocm-gfx1151]

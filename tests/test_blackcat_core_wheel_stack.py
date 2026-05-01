@@ -50,6 +50,65 @@ CORE_STACK = {
     },
 }
 
+SERVICE_STACK = {
+    "python-watchfiles-gfx1151": {
+        "template": "rust-wheel-pypi",
+        "recipe_key": "rust_wheels",
+        "upstream_version": "1.1.1",
+        "provides": ["python-watchfiles"],
+        "consumer_dep": "python-watchfiles-gfx1151",
+    },
+    "python-uvloop-gfx1151": {
+        "template": "native-wheel-pypi",
+        "recipe_key": "native_wheels",
+        "upstream_version": "0.22.1",
+        "provides": ["python-uvloop"],
+        "consumer_dep": "python-uvloop-gfx1151",
+    },
+    "python-httptools-gfx1151": {
+        "template": "native-wheel-pypi",
+        "recipe_key": "native_wheels",
+        "upstream_version": "0.7.1",
+        "provides": ["python-httptools"],
+        "consumer_dep": "python-httptools-gfx1151",
+    },
+    "python-msgspec-gfx1151": {
+        "template": "native-wheel-pypi",
+        "recipe_key": "native_wheels",
+        "upstream_version": "0.21.1",
+        "provides": ["python-msgspec"],
+        "consumer_dep": "python-msgspec-gfx1151",
+    },
+    "python-aiohttp-gfx1151": {
+        "template": "native-wheel-pypi",
+        "recipe_key": "native_wheels",
+        "upstream_version": "3.13.5",
+        "provides": ["python-aiohttp"],
+        "consumer_dep": "python-aiohttp-gfx1151",
+    },
+    "python-multidict-gfx1151": {
+        "template": "native-wheel-pypi",
+        "recipe_key": "native_wheels",
+        "upstream_version": "6.7.1",
+        "provides": ["python-multidict"],
+        "consumer_dep": "python-multidict-gfx1151",
+    },
+    "python-yarl-gfx1151": {
+        "template": "native-wheel-pypi",
+        "recipe_key": "native_wheels",
+        "upstream_version": "1.23.0",
+        "provides": ["python-yarl"],
+        "consumer_dep": "python-yarl-gfx1151",
+    },
+    "python-frozenlist-gfx1151": {
+        "template": "native-wheel-pypi",
+        "recipe_key": "native_wheels",
+        "upstream_version": "1.8.0",
+        "provides": ["python-frozenlist"],
+        "consumer_dep": "python-frozenlist-gfx1151",
+    },
+}
+
 
 def test_core_blackcat_wheel_stack_is_policy_managed() -> None:
     packages = tomllib.loads((REPO_ROOT / "policies/recipe-packages.toml").read_text())[
@@ -97,3 +156,51 @@ def test_consumers_prefer_local_core_stack_packages() -> None:
     assert "python-psutil-gfx1151" in packages["python-vllm-rocm-gfx1151"]["depends"]
     assert "python-pillow-gfx1151" in mistral_common["depends"]
     assert "python-pillow-gfx1151" in packages["python-torchvision-rocm-gfx1151"]["depends"]
+
+
+def test_blackcat_service_wheel_stack_is_policy_managed() -> None:
+    packages = tomllib.loads((REPO_ROOT / "policies/recipe-packages.toml").read_text())[
+        "packages"
+    ]
+
+    for package_name, expected in SERVICE_STACK.items():
+        policy = packages[package_name]
+        assert policy["template"] == expected["template"]
+        assert policy["recipe_key"] == expected["recipe_key"]
+        assert policy["upstream_version"] == expected["upstream_version"]
+        assert policy["provides"] == expected["provides"]
+        assert set(policy["conflicts"]) >= set(expected["provides"])
+        assert "python-gfx1151" in policy["depends"]
+
+
+def test_blackcat_service_wheel_stack_rendered_outputs_exist() -> None:
+    for package_name, expected in SERVICE_STACK.items():
+        package_dir = REPO_ROOT / "packages" / package_name
+        pkgbuild = (package_dir / "PKGBUILD").read_text()
+        recipe = json.loads((package_dir / "recipe.json").read_text())
+        readme = (package_dir / "README.md").read_text()
+
+        assert f"pkgname={package_name}" in pkgbuild
+        assert f"pkgver={expected['upstream_version']}" in pkgbuild
+        assert f"provides=({' '.join(expected['provides'])})" in pkgbuild
+        assert recipe["policy"]["recipe_key"] == expected["recipe_key"]
+        assert "Blackcat" in readme
+
+
+def test_service_consumers_prefer_local_blackcat_packages() -> None:
+    packages = tomllib.loads((REPO_ROOT / "policies/recipe-packages.toml").read_text())[
+        "packages"
+    ]
+    vllm_deps = set(packages["python-vllm-rocm-gfx1151"]["depends"])
+    aiohttp_deps = set(packages["python-aiohttp-gfx1151"]["depends"])
+    yarl_deps = set(packages["python-yarl-gfx1151"]["depends"])
+
+    assert "python-watchfiles-gfx1151" in vllm_deps
+    assert "python-uvloop-gfx1151" in vllm_deps
+    assert "python-httptools-gfx1151" in vllm_deps
+    assert "python-msgspec-gfx1151" in vllm_deps
+    assert "python-aiohttp-gfx1151" in vllm_deps
+    assert "python-frozenlist-gfx1151" in aiohttp_deps
+    assert "python-multidict-gfx1151" in aiohttp_deps
+    assert "python-yarl-gfx1151" in aiohttp_deps
+    assert "python-multidict-gfx1151" in yarl_deps

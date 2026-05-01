@@ -257,6 +257,83 @@ the reference host with `HF_HOME=/var/cache/hf` at
 - `vllm.qwen3_5.0_8b.text.basic` passed in `40.949359` seconds, including
   `llm_init_ok`, `generation_ok`, and `basic_ok`.
 
+The same Blackcat wheel-stack branch now has package policy and rendered
+scaffolds for the service/runtime slice: `python-watchfiles-gfx1151`,
+`python-uvloop-gfx1151`, `python-httptools-gfx1151`,
+`python-msgspec-gfx1151`, `python-aiohttp-gfx1151`,
+`python-multidict-gfx1151`, `python-yarl-gfx1151`, and
+`python-frozenlist-gfx1151`. Focused scaffold tests passed with
+`pytest -p no:cacheprovider tests/test_blackcat_core_wheel_stack.py
+tests/test_render_recipe_scaffolds.py -q` on 2026-05-01. `tools/amerge build
+python-watchfiles-gfx1151 python-uvloop-gfx1151
+python-httptools-gfx1151 python-msgspec-gfx1151
+python-multidict-gfx1151` built:
+
+- `python-watchfiles-gfx1151 1.1.1-1`
+- `python-uvloop-gfx1151 0.22.1-1`
+- `python-httptools-gfx1151 0.7.1-1`
+- `python-msgspec-gfx1151 0.21.1-1`
+- `python-multidict-gfx1151 6.7.1-1`
+- `python-frozenlist-gfx1151 1.8.0-1`
+- `python-yarl-gfx1151 1.23.0-1`
+- `python-aiohttp-gfx1151 3.13.5-1`
+
+The first `tools/amerge build` pass also completed
+`python-frozenlist-gfx1151`; `python-yarl-gfx1151` then required a direct
+`makepkg -Csf --noconfirm --nodeps` build because its runtime dependency on
+the newly built local `python-multidict-gfx1151` cannot be satisfied until the
+final deploy transaction. `python-aiohttp-gfx1151` similarly required a direct
+`makepkg -Csf --noconfirm --nodeps` build because its runtime dependency
+closure points at the newly built local frozenlist, multidict, and yarl
+packages. The direct yarl and aiohttp rebuilds used
+`PYTHONPYCACHEPREFIX=/tmp` so fakeroot bytecode generation stayed out of the
+read-only home cache. `tools/amerge deploy` plan
+`20260501T060525-b09d8041` published and installed the eight service/runtime
+packages. After deploy, `pacman -Q` reported:
+
+- `python-watchfiles-gfx1151 1.1.1-1`
+- `python-uvloop-gfx1151 0.22.1-1`
+- `python-httptools-gfx1151 0.7.1-1`
+- `python-msgspec-gfx1151 0.21.1-1`
+- `python-frozenlist-gfx1151 1.8.0-1`
+- `python-multidict-gfx1151 6.7.1-1`
+- `python-yarl-gfx1151 1.23.0-1`
+- `python-aiohttp-gfx1151 3.13.5-1`
+
+Installed import smokes passed through `python3.14` for watchfiles import,
+uvloop event-loop construction, httptools import, msgspec JSON encode/decode,
+FrozenList construction, MultiDict lookup, yarl URL parsing, and aiohttp
+ClientSession construction. The first in-sandbox live-scenario pass failed
+because ROCm could not initialize the host GPU inside that sandbox (`RuntimeError:
+No CUDA GPUs are available`), while an escalated GPU probe immediately after
+reported `Radeon 8060S Graphics`, `gfx1151`, and a successful CUDA tensor
+allocation.
+
+Live scenario validation for the deployed service/runtime wheel stack passed
+outside the sandbox with `HF_HOME=/var/cache/hf` at
+`docs/worklog/inference-runs/20260501T061516`:
+
+- `vllm.gemma4.e2b.server.basic` passed in `74.079649` seconds.
+- `vllm.torchao.tiny.generate` passed in `23.673258` seconds.
+- `vllm.qwen3_5.0_8b.text.basic` passed in `39.119978` seconds.
+
+The pkgrel-3 vLLM dependency metadata rewire now has package-build evidence.
+`makepkg -Csf --noconfirm` with `PYTHONPYCACHEPREFIX=/tmp` built
+`python-vllm-rocm-gfx1151-0.20.0-3-x86_64.pkg.tar.zst` on 2026-05-01 after
+refreshing the vLLM ROCm carry to materialize no-op hipify `.hip` byproducts
+and use ROCm bfloat aliases in `csrc/cuda_vec_utils.cuh`. After deploy,
+`pacman -Q python-vllm-rocm-gfx1151` reported `0.20.0-3`; `vllm --version`
+reported `0.20.0`; and Python import smoke passed for `vllm`, `vllm._C`,
+`vllm._rocm_C`, and `vllm._moe_C`.
+
+Post-deploy live scenario validation for `python-vllm-rocm-gfx1151 0.20.0-3`
+passed outside the sandbox with `HF_HOME=/var/cache/hf` at
+`docs/worklog/inference-runs/20260501T064519`:
+
+- `vllm.gemma4.e2b.server.basic` passed in `74.780242` seconds.
+- `vllm.torchao.tiny.generate` passed in `25.175177` seconds.
+- `vllm.qwen3_5.0_8b.text.basic` passed in `38.174217` seconds.
+
 ## ROCm inference reference boundary
 
 `docs/maintainers/rocm-inference-reference.md` records ROCm examples,
