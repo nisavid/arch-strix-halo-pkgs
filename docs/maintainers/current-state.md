@@ -245,7 +245,17 @@ privileged deploy path. After deploy, `pacman -Q` reported
 `python3.14` for pydantic-core plus a tiny pydantic model validation,
 tokenizers construction, safetensors NumPy save/load, PyYAML parsing, psutil
 CPU count, Pillow image creation, Transformers import, mistral-common import,
-and vLLM import. Live-scenario validation remains open.
+and vLLM import.
+
+Live scenario validation for the deployed Blackcat core wheel stack passed on
+the reference host with `HF_HOME=/var/cache/hf` at
+`docs/worklog/inference-runs/20260501T044643`:
+
+- `vllm.gemma4.e2b.server.basic` passed in `77.890539` seconds.
+- `vllm.torchao.tiny.generate` passed in `24.207448` seconds, including
+  `copy_probe_ok`, `quantization=torchao`, and `generation_ok`.
+- `vllm.qwen3_5.0_8b.text.basic` passed in `40.949359` seconds, including
+  `llm_init_ok`, `generation_ok`, and `basic_ok`.
 
 ## ROCm inference reference boundary
 
