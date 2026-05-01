@@ -1,6 +1,6 @@
 # Current State
 
-Status as of 2026-04-29.
+Status as of 2026-04-30.
 
 ## Rebuild Revalidation Boundary
 
@@ -62,6 +62,36 @@ Live scenario gates passed on the reference host with `HF_HOME=/var/cache/hf`:
 - `vllm.gemma4.e2b.server.basic` passed in `64.8452` seconds at
   `docs/worklog/inference-runs/20260429T213402`; the server selected
   `ROCM_AITER_UNIFIED_ATTN`.
+
+The 2026-04-30 23:02 EDT freshness sweep ran
+`tools/check_package_updates.py --json --fail-on actionable` and found four
+non-current families requiring disposition: AITER main
+`a0f25393903f5412b0fb997d5b825a0aeb257466`, llama.cpp `b8992`, PyPI
+`mistral-common 1.11.1`, and ROCm PyTorch release/2.11 at
+`443606eb94430d90554ab4c21202494576afedce`. The reviewed values are recorded
+in `policies/package-freshness.toml` so the mechanical freshness gate is
+current, but the candidates remain active tracked update lanes in
+`docs/maintainers/update-candidates.toml` and `docs/backlog.md`.
+
+The reviewed llama.cpp range from `b8966` to `b8992` is runtime-facing for both
+packaged backends: it includes common sampling/speculative/reasoning-budget
+changes, server/Web UI updates, a ggml 0.10.1 sync, Vulkan tensor helpers,
+mmap `ftello`/`fseeko` handling, hf-cache null-user handling, and a cpp-httplib
+vendor refresh. AITER main from `d679e288` to `a0f2539` includes cache and JIT
+changes, mHC small-M work, fused all-reduce/RMSNorm memory ordering, GemmTuner
+SplitK guard changes, MXFP4 and preshuffled cache/indexer fixes, and tuning
+coverage. ROCm PyTorch release/2.11 from `345ca6f` to `443606e` is a small but
+relevant RDNA Inductor reduction-mask SIGSEGV fix. `mistral-common 1.11.1`
+keeps the required Gemma 4 `ReasoningEffort` surface and changes OpenAI
+conversion and tool/user-message validation behavior.
+
+No package source was repinned by this sweep. Treat the next update work as
+tracked package lanes, not as closed adoption: llama.cpp needs package build,
+deploy/install, CLI smoke, Lemonade backend metadata, and tracked
+llama.cpp/Lemonade scenarios; ROCm PyTorch needs the normal PyTorch rebuild and
+downstream validation lane; AITER needs package build, install, JIT smoke, and
+affected vLLM scenario validation; `mistral-common` needs package rebuild,
+installed API checks, and the Gemma 4 vLLM smoke gate.
 
 ## ROCm inference reference boundary
 
