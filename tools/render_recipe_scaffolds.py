@@ -1341,7 +1341,7 @@ package() {{
             f"export {assignment}" for assignment in policy_pkg.get("build_env", [])
         )
         if build_env_exports:
-            build_env_exports = "\n  " + build_env_exports + "\n"
+            build_env_exports = "\n" + textwrap.indent(build_env_exports, "  ") + "\n"
         build_body = f"""\
 build() {{
   cd "$srcdir/{src_subdir}"
@@ -1432,7 +1432,7 @@ def render_pkgbuild(package_name: str, policy_pkg: dict, recipe_pkg: dict, versi
     prepare_body, method_body, _ = render_method_body(package_name, policy_pkg, recipe_pkg)
     source_refs, sha256sums = render_source_refs(policy_pkg, recipe_pkg)
 
-    pkgrel = preserved_pkgrel(package_name, version)
+    pkgrel = int(policy_pkg.get("pkgrel", preserved_pkgrel(package_name, version)))
     header = textwrap.dedent(
         f"""\
         # Maintainer: nisavid

@@ -1,0 +1,102 @@
+{
+  "maintenance": {
+    "advisory_references": [
+      "extra/python-nvidia-ml-py"
+    ],
+    "authoritative_reference": "none",
+    "divergence_notes": [
+      "Arch's python-nvidia-ml-py package depends on nvidia-utils, which is not appropriate for the AMD reference host.",
+      "llmcompressor imports pynvml lazily only for NVIDIA metric logging, but its package metadata declares nvidia-ml-py as a runtime dependency, so this package satisfies metadata without installing the NVIDIA driver stack."
+    ],
+    "source_patches": [],
+    "update_notes": [
+      "Keep this package pinned to the llmcompressor dependency window unless llmcompressor drops the hard metadata dependency or Arch separates the Python bindings from nvidia-utils.",
+      "After publishing a rebuilt package, verify `import pynvml` through the installed local Python lane; do not treat NVML initialization failure on AMD as a package failure."
+    ]
+  },
+  "name": "python-nvidia-ml-py-gfx1151",
+  "package_name": "python-nvidia-ml-py-gfx1151",
+  "pkgver": "13.590.48",
+  "policy": {
+    "advisory_references": [
+      "extra/python-nvidia-ml-py"
+    ],
+    "arch_reference": [
+      "extra/python-nvidia-ml-py"
+    ],
+    "authoritative_reference": "none",
+    "conflicts": [
+      "python-nvidia-ml-py"
+    ],
+    "depends": [
+      "python-gfx1151"
+    ],
+    "divergence_notes": [
+      "Arch's python-nvidia-ml-py package depends on nvidia-utils, which is not appropriate for the AMD reference host.",
+      "llmcompressor imports pynvml lazily only for NVIDIA metric logging, but its package metadata declares nvidia-ml-py as a runtime dependency, so this package satisfies metadata without installing the NVIDIA driver stack."
+    ],
+    "license": [
+      "BSD"
+    ],
+    "makedepends": [
+      "python-build",
+      "python-installer",
+      "python-setuptools",
+      "python-wheel",
+      "rocm-llvm-gfx1151"
+    ],
+    "patches_dir": "patches/python-nvidia-ml-py-gfx1151",
+    "pkgdesc": "Python NVML bindings packaged without pulling NVIDIA driver utilities",
+    "provides": [
+      "python-nvidia-ml-py"
+    ],
+    "pypi_name": "nvidia_ml_py",
+    "recipe_key": "native_wheels",
+    "recipe_notes_override": "This package supplies the `pynvml` module named by llmcompressor metadata\nwithout depending on NVIDIA driver utilities. llmcompressor's NVIDIA metric\npath imports pynvml lazily and returns an empty usage result when the module or\nNVML library is unavailable, while AMD metric logging uses amdsmi separately.\n\nUse this package only as metadata and import closure for llmcompressor on the\nAMD reference host. A failing NVML initialization on AMD is expected and is not\nevidence that the package is broken.\n",
+    "scaffold_notes": [
+      "Part of the Blackcat Qwen3-VL quantization/tooling closure and consumed by llmcompressor metadata.",
+      "Do not add an nvidia-utils dependency; this package exists specifically to keep the AMD host free of NVIDIA driver packages."
+    ],
+    "src_subdir": "nvidia_ml_py-13.590.48",
+    "template": "native-wheel-pypi",
+    "update_notes": [
+      "Keep this package pinned to the llmcompressor dependency window unless llmcompressor drops the hard metadata dependency or Arch separates the Python bindings from nvidia-utils.",
+      "After publishing a rebuilt package, verify `import pynvml` through the installed local Python lane; do not treat NVML initialization failure on AMD as a package failure."
+    ],
+    "upstream_version": "13.590.48",
+    "url": "https://forums.developer.nvidia.com"
+  },
+  "provenance": {
+    "output_root": "packages",
+    "recipe_author": "Blackcat Informatics Inc.",
+    "recipe_commit": "a1d7a68",
+    "recipe_date": "20260427",
+    "recipe_history_count": 16,
+    "recipe_repo": "https://github.com/paudley/ai-notes",
+    "recipe_subdir": "strix-halo",
+    "repo_subpath": "."
+  },
+  "recipe": {
+    "branch": null,
+    "depends_on": [
+      "cpython",
+      "pytorch"
+    ],
+    "method": "pip",
+    "notes": "This package supplies the `pynvml` module named by llmcompressor metadata\nwithout depending on NVIDIA driver utilities. llmcompressor's NVIDIA metric\npath imports pynvml lazily and returns an empty usage result when the module or\nNVML library is unavailable, while AMD metric logging uses amdsmi separately.\n\nUse this package only as metadata and import closure for llmcompressor on the\nAMD reference host. A failing NVML initialization on AMD is expected and is not\nevidence that the package is broken.\n",
+    "patches": [
+      {
+        "description": "Replace the recipe's broken venv-local Python cmake wrapper with the real system cmake binary. The cmake pip package installs a Python wrapper that does `from cmake import cmake`, which fails inside pip's build isolation where the cmake Python module is unavailable.\n",
+        "dst": "<build-venv>/.venv/bin/cmake",
+        "src": "/usr/bin/cmake",
+        "type": "file_copy"
+      }
+    ],
+    "phase": "H",
+    "repo": null,
+    "src_dir": null,
+    "steps": [
+      32
+    ]
+  }
+}

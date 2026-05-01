@@ -1,0 +1,104 @@
+{
+  "maintenance": {
+    "advisory_references": [],
+    "authoritative_reference": "none",
+    "divergence_notes": [
+      "There is no current Arch-family accelerate package baseline, so this package is closure-first for llmcompressor and AutoRound tooling.",
+      "Uses accelerate 1.12.0 because llmcompressor 0.10.0.1 release metadata caps accelerate at 1.12.0 even though newer PyPI releases exist."
+    ],
+    "source_patches": [],
+    "update_notes": [
+      "Check llmcompressor and auto-round release metadata before updating; this package should stay inside the active quantization-tooling dependency bounds.",
+      "After publishing a rebuilt package, verify `import accelerate` through the installed local Python lane."
+    ]
+  },
+  "name": "python-accelerate-gfx1151",
+  "package_name": "python-accelerate-gfx1151",
+  "pkgver": "1.12.0",
+  "policy": {
+    "advisory_references": [],
+    "arch_reference": [],
+    "authoritative_reference": "none",
+    "conflicts": [
+      "python-accelerate"
+    ],
+    "depends": [
+      "python-gfx1151",
+      "python-huggingface-hub",
+      "python-numpy-gfx1151",
+      "python-packaging",
+      "python-psutil-gfx1151",
+      "python-pytorch-opt-rocm-gfx1151",
+      "python-pyyaml-gfx1151",
+      "python-safetensors-gfx1151"
+    ],
+    "divergence_notes": [
+      "There is no current Arch-family accelerate package baseline, so this package is closure-first for llmcompressor and AutoRound tooling.",
+      "Uses accelerate 1.12.0 because llmcompressor 0.10.0.1 release metadata caps accelerate at 1.12.0 even though newer PyPI releases exist."
+    ],
+    "license": [
+      "Apache-2.0"
+    ],
+    "makedepends": [
+      "python-build",
+      "python-installer",
+      "python-setuptools",
+      "python-wheel",
+      "rocm-llvm-gfx1151"
+    ],
+    "patches_dir": "patches/python-accelerate-gfx1151",
+    "pkgdesc": "Hugging Face multi-device training helpers for the Strix Halo Python stack",
+    "provides": [
+      "python-accelerate"
+    ],
+    "pypi_name": "accelerate",
+    "recipe_key": "native_wheels",
+    "recipe_notes_override": "This package supplies the Hugging Face accelerate dependency needed by the\nBlackcat Qwen3-VL quantization/tooling follow-up lane. It is pure Python, but\nit belongs in the local package closure because llmcompressor and AutoRound\nexpect a coherent installed accelerate package rather than an untracked venv\nwheel.\n\nThe package uses accelerate 1.12.0 because llmcompressor 0.10.0.1 release\nmetadata accepts accelerate up to 1.12.0. Keep updates tied to the active\nllmcompressor dependency window.\n",
+    "scaffold_notes": [
+      "Part of the Blackcat Qwen3-VL quantization/tooling closure and consumed by llmcompressor and AutoRound.",
+      "Use --skip-dependency-check because local torch, numpy, psutil, PyYAML, and safetensors packages satisfy upstream runtime requirements under gfx1151 package names."
+    ],
+    "skip_dependency_check": true,
+    "src_subdir": "accelerate-1.12.0",
+    "template": "native-wheel-pypi",
+    "update_notes": [
+      "Check llmcompressor and auto-round release metadata before updating; this package should stay inside the active quantization-tooling dependency bounds.",
+      "After publishing a rebuilt package, verify `import accelerate` through the installed local Python lane."
+    ],
+    "upstream_version": "1.12.0",
+    "url": "https://github.com/huggingface/accelerate"
+  },
+  "provenance": {
+    "output_root": "packages",
+    "recipe_author": "Blackcat Informatics Inc.",
+    "recipe_commit": "a1d7a68",
+    "recipe_date": "20260427",
+    "recipe_history_count": 16,
+    "recipe_repo": "https://github.com/paudley/ai-notes",
+    "recipe_subdir": "strix-halo",
+    "repo_subpath": "."
+  },
+  "recipe": {
+    "branch": null,
+    "depends_on": [
+      "cpython",
+      "pytorch"
+    ],
+    "method": "pip",
+    "notes": "This package supplies the Hugging Face accelerate dependency needed by the\nBlackcat Qwen3-VL quantization/tooling follow-up lane. It is pure Python, but\nit belongs in the local package closure because llmcompressor and AutoRound\nexpect a coherent installed accelerate package rather than an untracked venv\nwheel.\n\nThe package uses accelerate 1.12.0 because llmcompressor 0.10.0.1 release\nmetadata accepts accelerate up to 1.12.0. Keep updates tied to the active\nllmcompressor dependency window.\n",
+    "patches": [
+      {
+        "description": "Replace the recipe's broken venv-local Python cmake wrapper with the real system cmake binary. The cmake pip package installs a Python wrapper that does `from cmake import cmake`, which fails inside pip's build isolation where the cmake Python module is unavailable.\n",
+        "dst": "<build-venv>/.venv/bin/cmake",
+        "src": "/usr/bin/cmake",
+        "type": "file_copy"
+      }
+    ],
+    "phase": "H",
+    "repo": null,
+    "src_dir": null,
+    "steps": [
+      32
+    ]
+  }
+}

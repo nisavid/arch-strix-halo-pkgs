@@ -1,0 +1,105 @@
+{
+  "maintenance": {
+    "advisory_references": [],
+    "authoritative_reference": "none",
+    "divergence_notes": [
+      "There is no current Arch-family auto-round package baseline, so this package is closure-first for llmcompressor's AutoRound modifier.",
+      "Uses auto-round 0.10.2 because llmcompressor 0.10.0.1 release metadata caps auto-round at 0.10.2 even though newer PyPI releases exist."
+    ],
+    "source_patches": [],
+    "update_notes": [
+      "Check llmcompressor's AutoRound dependency bounds before updating.",
+      "After publishing a rebuilt package, verify `import auto_round` and `from auto_round.schemes import PRESET_SCHEMES` through the installed local Python lane."
+    ]
+  },
+  "name": "python-auto-round-gfx1151",
+  "package_name": "python-auto-round-gfx1151",
+  "pkgver": "0.10.2",
+  "policy": {
+    "advisory_references": [],
+    "arch_reference": [],
+    "authoritative_reference": "none",
+    "conflicts": [
+      "python-auto-round"
+    ],
+    "depends": [
+      "python-gfx1151",
+      "python-accelerate-gfx1151",
+      "python-datasets",
+      "python-numpy-gfx1151",
+      "python-py-cpuinfo",
+      "python-pytorch-opt-rocm-gfx1151",
+      "python-threadpoolctl",
+      "python-tqdm",
+      "python-transformers-gfx1151"
+    ],
+    "divergence_notes": [
+      "There is no current Arch-family auto-round package baseline, so this package is closure-first for llmcompressor's AutoRound modifier.",
+      "Uses auto-round 0.10.2 because llmcompressor 0.10.0.1 release metadata caps auto-round at 0.10.2 even though newer PyPI releases exist."
+    ],
+    "license": [
+      "Apache-2.0"
+    ],
+    "makedepends": [
+      "python-build",
+      "python-installer",
+      "python-setuptools",
+      "python-wheel",
+      "rocm-llvm-gfx1151"
+    ],
+    "patches_dir": "patches/python-auto-round-gfx1151",
+    "pkgdesc": "AutoRound quantization tooling for the Strix Halo Python stack",
+    "provides": [
+      "python-auto-round"
+    ],
+    "pypi_name": "auto_round",
+    "recipe_key": "native_wheels",
+    "recipe_notes_override": "This package supplies AutoRound for llmcompressor's AutoRound modifier. It\nships Python quantization helpers and backend adapters; the current package\nkeeps upstream's wheel shape and points runtime dependencies at the local\ngfx1151 torch, transformers, numpy, and accelerate stack.\n\nThe package uses auto-round 0.10.2 because llmcompressor 0.10.0.1 release\nmetadata accepts auto-round up to 0.10.2. Keep updates tied to the active\nllmcompressor dependency window.\n",
+    "scaffold_notes": [
+      "Part of the Blackcat Qwen3-VL quantization/tooling closure and consumed by llmcompressor.",
+      "Use --skip-dependency-check because local torch, transformers, numpy, and accelerate packages satisfy upstream runtime requirements under gfx1151 package names."
+    ],
+    "skip_dependency_check": true,
+    "src_subdir": "auto_round-0.10.2",
+    "template": "native-wheel-pypi",
+    "update_notes": [
+      "Check llmcompressor's AutoRound dependency bounds before updating.",
+      "After publishing a rebuilt package, verify `import auto_round` and `from auto_round.schemes import PRESET_SCHEMES` through the installed local Python lane."
+    ],
+    "upstream_version": "0.10.2",
+    "url": "https://github.com/intel/auto-round"
+  },
+  "provenance": {
+    "output_root": "packages",
+    "recipe_author": "Blackcat Informatics Inc.",
+    "recipe_commit": "a1d7a68",
+    "recipe_date": "20260427",
+    "recipe_history_count": 16,
+    "recipe_repo": "https://github.com/paudley/ai-notes",
+    "recipe_subdir": "strix-halo",
+    "repo_subpath": "."
+  },
+  "recipe": {
+    "branch": null,
+    "depends_on": [
+      "cpython",
+      "pytorch"
+    ],
+    "method": "pip",
+    "notes": "This package supplies AutoRound for llmcompressor's AutoRound modifier. It\nships Python quantization helpers and backend adapters; the current package\nkeeps upstream's wheel shape and points runtime dependencies at the local\ngfx1151 torch, transformers, numpy, and accelerate stack.\n\nThe package uses auto-round 0.10.2 because llmcompressor 0.10.0.1 release\nmetadata accepts auto-round up to 0.10.2. Keep updates tied to the active\nllmcompressor dependency window.\n",
+    "patches": [
+      {
+        "description": "Replace the recipe's broken venv-local Python cmake wrapper with the real system cmake binary. The cmake pip package installs a Python wrapper that does `from cmake import cmake`, which fails inside pip's build isolation where the cmake Python module is unavailable.\n",
+        "dst": "<build-venv>/.venv/bin/cmake",
+        "src": "/usr/bin/cmake",
+        "type": "file_copy"
+      }
+    ],
+    "phase": "H",
+    "repo": null,
+    "src_dir": null,
+    "steps": [
+      32
+    ]
+  }
+}
