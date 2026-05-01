@@ -93,7 +93,7 @@
       "python-openai-harmony-gfx1151",
       "python-opencv",
       "python-prometheus-fastapi-instrumentator",
-      "python-psutil",
+      "python-psutil-gfx1151",
       "python-py-cpuinfo",
       "python-pybase64",
       "python-pydantic",

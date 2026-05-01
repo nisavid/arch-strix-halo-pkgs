@@ -27,8 +27,9 @@ build() {
   _setup_compiler_env() {
   local _compiler_root="/opt/rocm/lib/llvm/bin"
   local _ccache_dir="$srcdir/.ccache/bin"
+  local _ccache_cache="$srcdir/.ccache/cache"
   if command -v ccache >/dev/null 2>&1; then
-    mkdir -p "${_ccache_dir}"
+    mkdir -p "${_ccache_dir}" "${_ccache_cache}"
     local _ccache_bin _name
     _ccache_bin="$(command -v ccache)"
     for _name in clang clang++ clang-22 amdclang amdclang++ hipcc hipcc.pl gcc g++ cc c++; do
@@ -36,6 +37,7 @@ build() {
     done
     export PATH="${_ccache_dir}:$PATH"
     export CCACHE_BASEDIR="${CCACHE_BASEDIR:-$srcdir}"
+    export CCACHE_DIR="${CCACHE_DIR:-${_ccache_cache}}"
     export CCACHE_NOCPP2=1
     export CCACHE_PATH="${_compiler_root}:/opt/rocm/bin:/usr/bin"
     export CC=amdclang
@@ -48,6 +50,8 @@ build() {
 
   _setup_compiler_env
   local _debug_prefix="/usr/src/debug/python-openai-harmony-gfx1151"
+  export CARGO_HOME="$srcdir/.cargo"
+  mkdir -p "$CARGO_HOME"
   export CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER="$CC"
   export RUSTFLAGS="-C target-cpu=znver5 -C opt-level=3 --remap-path-prefix=$srcdir=${_debug_prefix}"
   unset CFLAGS CXXFLAGS LDFLAGS

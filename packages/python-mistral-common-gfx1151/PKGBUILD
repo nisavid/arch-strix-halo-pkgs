@@ -2,7 +2,7 @@
 
 pkgname=python-mistral-common-gfx1151
 pkgver=1.11.1
-pkgrel=1
+pkgrel=2
 pkgdesc='Set of tools to help you work with Mistral models rebuilt for Strix Halo gfx1151'
 arch=('any')
 url='https://github.com/mistralai/mistral-common'
@@ -11,7 +11,7 @@ depends=(
   python-gfx1151
   python-jsonschema
   python-numpy-gfx1151
-  python-pillow
+  python-pillow-gfx1151
   python-pydantic
   python-pydantic-extra-types
   python-requests

@@ -28,8 +28,10 @@ Gemma-4-capable without waiting on distro repo timing.
   older package.
 - Keeps the package pure-Python and architecture-independent; there are no
   applicable Strix-specific native optimization flags to carry here.
-- Depends explicitly on `python-numpy-gfx1151` and `python-gfx1151` so the
-  local inference stack stays on the repo-managed Python lane.
+- Depends explicitly on `python-numpy-gfx1151`, `python-safetensors-gfx1151`,
+  `python-tokenizers-gfx1151`, `python-pyyaml-gfx1151`, and
+  `python-gfx1151` so the local inference stack stays on the repo-managed
+  Python and model-loading closure.
 
 ## Update Notes
 

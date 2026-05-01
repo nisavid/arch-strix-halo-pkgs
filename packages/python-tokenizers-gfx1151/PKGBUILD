@@ -4,25 +4,25 @@
 # Recipe attribution: Blackcat Informatics Inc.
 # Package recipe key: rust_wheels
 
-pkgname=python-cryptography-gfx1151
-pkgver=46.0.7
+pkgname=python-tokenizers-gfx1151
+pkgver=0.22.2
 pkgrel=1
-pkgdesc='Cryptographic recipes and primitives for Python rebuilt for Strix Halo gfx1151'
+pkgdesc='Fast state-of-the-art tokenizers rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
-url=https://github.com/pyca/cryptography
-license=(Apache-2.0 BSD-3-Clause)
-depends=(glibc libgcc openssl python-cffi python-gfx1151)
-makedepends=(cargo python-build python-installer python-setuptools-rust python-wheel rocm-llvm-gfx1151 rust)
+url=https://github.com/huggingface/tokenizers
+license=(Apache-2.0)
+depends=(glibc libgcc python-gfx1151)
+makedepends=(cargo python-build python-installer python-maturin python-wheel rocm-llvm-gfx1151 rust)
 optdepends=()
 options=()
-provides=(python-cryptography)
-conflicts=(python-cryptography)
+provides=(python-tokenizers)
+conflicts=(python-tokenizers)
 replaces=()
-source=(https://files.pythonhosted.org/packages/source/c/cryptography/cryptography-46.0.7.tar.gz)
+source=(https://files.pythonhosted.org/packages/source/t/tokenizers/tokenizers-0.22.2.tar.gz)
 sha256sums=(SKIP)
 
 build() {
-  cd "$srcdir/cryptography-46.0.7"
+  cd "$srcdir/tokenizers-0.22.2"
 
   _setup_compiler_env() {
   local _compiler_root="/opt/rocm/lib/llvm/bin"
@@ -49,7 +49,7 @@ build() {
 }
 
   _setup_compiler_env
-  local _debug_prefix="/usr/src/debug/python-cryptography-gfx1151"
+  local _debug_prefix="/usr/src/debug/python-tokenizers-gfx1151"
   export CARGO_HOME="$srcdir/.cargo"
   mkdir -p "$CARGO_HOME"
   export CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER="$CC"
@@ -60,11 +60,11 @@ build() {
 }
 
 package() {
-  cd "$srcdir/cryptography-46.0.7"
+  cd "$srcdir/tokenizers-0.22.2"
   python -m installer --destdir="$pkgdir" dist/*.whl
 
-  local _debug_prefix="/usr/src/debug/python-cryptography-gfx1151"
+  local _debug_prefix="/usr/src/debug/python-tokenizers-gfx1151"
   find "$pkgdir/usr/lib" -type f \( -name '*.so' -o -path '*/sboms/*.json' \) -print0 | while IFS= read -r -d '' _file; do
-    sed -i       -e "s|$srcdir/cryptography-46.0.7|${_debug_prefix}/cryptography-46.0.7|g"       -e "s|$srcdir|${_debug_prefix}|g"       -e "s|/tmp/pkg/src/cryptography-46.0.7|${_debug_prefix}/cryptography-46.0.7|g"       "$_file" 2>/dev/null || true
+    sed -i       -e "s|$srcdir/tokenizers-0.22.2|${_debug_prefix}/tokenizers-0.22.2|g"       -e "s|$srcdir|${_debug_prefix}|g"       -e "s|/tmp/pkg/src/tokenizers-0.22.2|${_debug_prefix}/tokenizers-0.22.2|g"       "$_file" 2>/dev/null || true
   done
 }

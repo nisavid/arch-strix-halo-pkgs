@@ -59,7 +59,7 @@
       "python-pluggy",
       "python-setuptools",
       "python-wheel",
-      "python-yaml",
+      "python-pyyaml-gfx1151",
       "rocm-llvm-gfx1151"
     ],
     "patches_dir": "patches/python-aotriton-gfx1151",

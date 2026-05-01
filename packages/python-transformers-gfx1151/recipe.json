@@ -38,11 +38,11 @@
       "python-numpy-gfx1151",
       "python-packaging",
       "python-regex",
-      "python-safetensors",
-      "python-tokenizers",
+      "python-safetensors-gfx1151",
+      "python-tokenizers-gfx1151",
       "python-tqdm",
       "python-typer",
-      "python-yaml"
+      "python-pyyaml-gfx1151"
     ],
     "divergence_notes": [
       "Tracks upstream transformers 5.7.0 from PyPI so the local vLLM closure stays ahead of distro timing for Gemma, Qwen, and model-surface fixes.",

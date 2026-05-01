@@ -201,6 +201,41 @@ Live-scenario validated state from the deployed host pass: gates passed with
 - `vllm.torchao.tiny.generate` passed in `25.884653` seconds.
 - `vllm.qwen3_5.0_8b.text.basic` passed in `39.579941` seconds.
 
+The 2026-05-01 policy-change freshness sweep ran
+`tools/check_package_updates.py --refresh --json --fail-on actionable` after
+adding the core Blackcat wheel-stack package policy. The sweep found three
+new non-current families and one policy-shape issue. llama.cpp `b8994` was
+reviewed and rejected because the `b8992..b8994` range is WebGPU-only and does
+not overlap the local HIP/Vulkan/Lemonade lanes. PyPI `tokenizers 0.23.1` was
+reviewed and blocked because local `python-transformers-gfx1151 5.7.0`
+requires `tokenizers<=0.23.0,>=0.22.0`. The pydantic-core freshness policy
+now records PyPI `2.46.3` as a reviewed baseline while the package follows the
+Arch-compatible `2.41.5` source until this repo owns a matching
+`python-pydantic` lane. The AITER main candidate reviewed during that sweep
+was superseded by the later 2026-05-03 AITER adoption recorded above.
+
+The same Blackcat wheel-stack branch now has package-build evidence for the
+new core stack. `tools/amerge build python-pydantic-core-gfx1151
+python-tokenizers-gfx1151 python-safetensors-gfx1151 python-pyyaml-gfx1151
+python-psutil-gfx1151 python-pillow-gfx1151` initially failed when Rust-wheel
+builds tried to write Cargo registry state under the read-only home tree; the
+shared Rust-wheel renderer now sets `CARGO_HOME="$srcdir/.cargo"`, and the
+resumed amerge plan built all six core packages. Direct sanitized `makepkg
+-Csf --noconfirm --nodeps` builds also passed for
+`python-transformers-gfx1151 5.7.0-2`,
+`python-mistral-common-gfx1151 1.11.1-2`, and
+`python-vllm-rocm-gfx1151 0.20.0-2`, with vLLM reaching and completing the HIP
+extension compile before the branch was rebased over the 2026-05-03 vLLM
+0.20.1 source update. The rebased vLLM dependency rewire now requires a fresh
+0.20.1 package-build gate before it can inherit that source-updated validation
+state. `makepkg --printsrcinfo` passed for the metadata-only
+`python-pytorch-opt-rocm-gfx1151`, `python-torchvision-rocm-gfx1151`, and
+`python-aotriton-gfx1151` dependency rewires. The built artifacts are present
+in `repo/x86_64`, but publish/install remains open because noninteractive
+`tools/amerge publish ... -y` could not satisfy sudo in this session
+(`sudo: a terminal is required to read the password`; `sudo: a password is
+required`). Installed smoke and live-scenario validation therefore remain open.
+
 ## ROCm inference reference boundary
 
 `docs/maintainers/rocm-inference-reference.md` records ROCm examples,

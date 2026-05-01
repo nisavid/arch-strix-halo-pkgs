@@ -1,0 +1,105 @@
+{
+  "maintenance": {
+    "advisory_references": [
+      "cachyos-extra-znver4/python-safetensors"
+    ],
+    "authoritative_reference": "extra/python-safetensors",
+    "divergence_notes": [
+      "Follows the Arch package shape while rebuilding the Rust extension through the recipe's znver5 Rust-wheel lane.",
+      "Depends on the repo-owned NumPy lane because safetensors participates in model/checkpoint tensor I/O for the local inference stack."
+    ],
+    "source_patches": [],
+    "update_notes": [
+      "Check Arch first for release and dependency metadata, then verify Transformers and TorchAO scenario compatibility before updating.",
+      "After publishing a rebuilt package, verify `import safetensors` and a tiny tensor save/load round trip through the installed local Python lane."
+    ]
+  },
+  "name": "python-safetensors-gfx1151",
+  "package_name": "python-safetensors-gfx1151",
+  "pkgver": "0.7.0",
+  "policy": {
+    "advisory_references": [
+      "cachyos-extra-znver4/python-safetensors"
+    ],
+    "arch_reference": [
+      "extra/python-safetensors",
+      "cachyos-extra-znver4/python-safetensors"
+    ],
+    "authoritative_reference": "extra/python-safetensors",
+    "conflicts": [
+      "python-safetensors"
+    ],
+    "depends": [
+      "glibc",
+      "libgcc",
+      "python-gfx1151",
+      "python-numpy-gfx1151"
+    ],
+    "divergence_notes": [
+      "Follows the Arch package shape while rebuilding the Rust extension through the recipe's znver5 Rust-wheel lane.",
+      "Depends on the repo-owned NumPy lane because safetensors participates in model/checkpoint tensor I/O for the local inference stack."
+    ],
+    "license": [
+      "Apache-2.0"
+    ],
+    "makedepends": [
+      "cargo",
+      "python-build",
+      "python-installer",
+      "python-maturin",
+      "python-wheel",
+      "rocm-llvm-gfx1151",
+      "rust"
+    ],
+    "optdepends": [
+      "python-jax: usage with jax",
+      "python-pytorch-opt-rocm-gfx1151: usage with the local PyTorch lane",
+      "python-tensorflow: usage with tensorflow"
+    ],
+    "patches_dir": "patches/python-safetensors-gfx1151",
+    "pkgdesc": "Safe tensor serialization format rebuilt for Strix Halo gfx1151",
+    "provides": [
+      "python-safetensors"
+    ],
+    "pypi_name": "safetensors",
+    "recipe_key": "rust_wheels",
+    "recipe_notes_override": "This package is the safetensors output from the shared `rust_wheels` recipe\nphase. That phase also documents orjson, cryptography, pydantic-core,\ntokenizers, and watchfiles as sibling Rust-wheel outputs, but those are not\ndependencies of `python-safetensors-gfx1151` unless listed in this package's\npolicy metadata.\n\nsafetensors is the model/checkpoint tensor I/O path for Transformers, vLLM,\nand TorchAO validation. The local package keeps that native extension on the\nsame znver5 Rust codegen lane as the rest of the optimized local wheel stack.\n",
+    "scaffold_notes": [
+      "Part of the core Blackcat model/config stack and consumed by the local Transformers closure package.",
+      "Use the shared Rust-wheel renderer so linker selection, path remapping, and znver5 codegen stay aligned with orjson and cryptography."
+    ],
+    "src_subdir": "safetensors-0.7.0",
+    "template": "rust-wheel-pypi",
+    "update_notes": [
+      "Check Arch first for release and dependency metadata, then verify Transformers and TorchAO scenario compatibility before updating.",
+      "After publishing a rebuilt package, verify `import safetensors` and a tiny tensor save/load round trip through the installed local Python lane."
+    ],
+    "upstream_version": "0.7.0",
+    "url": "https://github.com/huggingface/safetensors"
+  },
+  "provenance": {
+    "output_root": "packages",
+    "recipe_author": "Blackcat Informatics Inc.",
+    "recipe_commit": "a1d7a68",
+    "recipe_date": "20260427",
+    "recipe_history_count": 16,
+    "recipe_repo": "https://github.com/paudley/ai-notes",
+    "recipe_subdir": "strix-halo",
+    "repo_subpath": "."
+  },
+  "recipe": {
+    "branch": null,
+    "depends_on": [
+      "cpython"
+    ],
+    "method": "cargo",
+    "notes": "This package is the safetensors output from the shared `rust_wheels` recipe\nphase. That phase also documents orjson, cryptography, pydantic-core,\ntokenizers, and watchfiles as sibling Rust-wheel outputs, but those are not\ndependencies of `python-safetensors-gfx1151` unless listed in this package's\npolicy metadata.\n\nsafetensors is the model/checkpoint tensor I/O path for Transformers, vLLM,\nand TorchAO validation. The local package keeps that native extension on the\nsame znver5 Rust codegen lane as the rest of the optimized local wheel stack.\n",
+    "patches": [],
+    "phase": "H",
+    "repo": null,
+    "src_dir": null,
+    "steps": [
+      31
+    ]
+  }
+}

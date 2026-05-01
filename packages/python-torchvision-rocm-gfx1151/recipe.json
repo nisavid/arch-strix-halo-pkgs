@@ -41,7 +41,7 @@
       "libjpeg-turbo",
       "libpng",
       "python-numpy-gfx1151",
-      "python-pillow",
+      "python-pillow-gfx1151",
       "python-pytorch-opt-rocm-gfx1151",
       "python-requests",
       "python-scipy",

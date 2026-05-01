@@ -363,3 +363,48 @@ next_gate_kind = "none"
 next_gate_path = ""
 next_gate_label = "Adopted; monitor future llama.cpp releases through the normal freshness sweep"
 last_reviewed = "2026-05-01"
+
+[candidates."llama-cpp-b8994"]
+family = "llama_cpp"
+packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"]
+source_kind = "github_release"
+baseline_source_kind = "aur"
+baseline_latest = "b8992-1"
+previous_recorded = "b8992 / b8992-1"
+latest = "b8994"
+discovery_status = "stable_update_available"
+disposition = "rejected"
+disposition_reason = "Reviewed during the 2026-05-01 policy-change freshness sweep and not adopted because b8992..b8994 only changes ggml WebGPU shaders and WebGPU mat-vec/mat-mat/upscale handling. The local packages build HIP and Vulkan llama.cpp backends for Lemonade and do not enable the WebGPU backend."
+salient_changes = [
+  "WebGPU MUL_MAT_ID performance changes",
+  "WebGPU upscale shader addition",
+  "WebGPU shader template reshaping",
+]
+patch_carry_overlap = false
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "No follow-up needed unless later llama.cpp changes overlap the HIP, Vulkan, server, or Lemonade runtime lanes"
+last_reviewed = "2026-05-01"
+
+[candidates."tokenizers-0.23.1-pypi"]
+family = "tokenizers"
+packages = ["python-tokenizers-gfx1151"]
+source_kind = "pypi"
+previous_recorded = "0.22.2"
+latest = "0.23.1"
+discovery_status = "stable_update_available"
+disposition = "blocked"
+disposition_reason = "Reviewed during the 2026-05-01 policy-change freshness sweep and not adopted because the current local Transformers 5.7.0 package metadata requires tokenizers<=0.23.0,>=0.22.0. Keep the package on 0.22.2 until Transformers admits 0.23.1 or a matching Transformers update lane is adopted."
+salient_changes = [
+  "PyPI tokenizers 0.23.1 is available",
+  "Transformers 5.7.0 dependency metadata excludes tokenizers 0.23.1",
+]
+patch_carry_overlap = true
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "No tokenizers package update until the local Transformers lane admits tokenizers 0.23.1 or newer"
+last_reviewed = "2026-05-01"

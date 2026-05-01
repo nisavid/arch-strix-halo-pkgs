@@ -4,25 +4,25 @@
 # Recipe attribution: Blackcat Informatics Inc.
 # Package recipe key: rust_wheels
 
-pkgname=python-cryptography-gfx1151
-pkgver=46.0.7
+pkgname=python-safetensors-gfx1151
+pkgver=0.7.0
 pkgrel=1
-pkgdesc='Cryptographic recipes and primitives for Python rebuilt for Strix Halo gfx1151'
+pkgdesc='Safe tensor serialization format rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
-url=https://github.com/pyca/cryptography
-license=(Apache-2.0 BSD-3-Clause)
-depends=(glibc libgcc openssl python-cffi python-gfx1151)
-makedepends=(cargo python-build python-installer python-setuptools-rust python-wheel rocm-llvm-gfx1151 rust)
-optdepends=()
+url=https://github.com/huggingface/safetensors
+license=(Apache-2.0)
+depends=(glibc libgcc python-gfx1151 python-numpy-gfx1151)
+makedepends=(cargo python-build python-installer python-maturin python-wheel rocm-llvm-gfx1151 rust)
+optdepends=('python-jax: usage with jax' 'python-pytorch-opt-rocm-gfx1151: usage with the local PyTorch lane' 'python-tensorflow: usage with tensorflow')
 options=()
-provides=(python-cryptography)
-conflicts=(python-cryptography)
+provides=(python-safetensors)
+conflicts=(python-safetensors)
 replaces=()
-source=(https://files.pythonhosted.org/packages/source/c/cryptography/cryptography-46.0.7.tar.gz)
+source=(https://files.pythonhosted.org/packages/source/s/safetensors/safetensors-0.7.0.tar.gz)
 sha256sums=(SKIP)
 
 build() {
-  cd "$srcdir/cryptography-46.0.7"
+  cd "$srcdir/safetensors-0.7.0"
 
   _setup_compiler_env() {
   local _compiler_root="/opt/rocm/lib/llvm/bin"
@@ -49,7 +49,7 @@ build() {
 }
 
   _setup_compiler_env
-  local _debug_prefix="/usr/src/debug/python-cryptography-gfx1151"
+  local _debug_prefix="/usr/src/debug/python-safetensors-gfx1151"
   export CARGO_HOME="$srcdir/.cargo"
   mkdir -p "$CARGO_HOME"
   export CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER="$CC"
@@ -60,11 +60,11 @@ build() {
 }
 
 package() {
-  cd "$srcdir/cryptography-46.0.7"
+  cd "$srcdir/safetensors-0.7.0"
   python -m installer --destdir="$pkgdir" dist/*.whl
 
-  local _debug_prefix="/usr/src/debug/python-cryptography-gfx1151"
+  local _debug_prefix="/usr/src/debug/python-safetensors-gfx1151"
   find "$pkgdir/usr/lib" -type f \( -name '*.so' -o -path '*/sboms/*.json' \) -print0 | while IFS= read -r -d '' _file; do
-    sed -i       -e "s|$srcdir/cryptography-46.0.7|${_debug_prefix}/cryptography-46.0.7|g"       -e "s|$srcdir|${_debug_prefix}|g"       -e "s|/tmp/pkg/src/cryptography-46.0.7|${_debug_prefix}/cryptography-46.0.7|g"       "$_file" 2>/dev/null || true
+    sed -i       -e "s|$srcdir/safetensors-0.7.0|${_debug_prefix}/safetensors-0.7.0|g"       -e "s|$srcdir|${_debug_prefix}|g"       -e "s|/tmp/pkg/src/safetensors-0.7.0|${_debug_prefix}/safetensors-0.7.0|g"       "$_file" 2>/dev/null || true
   done
 }

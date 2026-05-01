@@ -1,0 +1,121 @@
+{
+  "maintenance": {
+    "advisory_references": [],
+    "authoritative_reference": "extra/python-pillow",
+    "divergence_notes": [
+      "Follows Arch's Pillow package shape while rebuilding the native extension through the Blackcat native-wheel compiler lane.",
+      "Uses the current Arch/PyPI 12.2.0 release instead of the older Blackcat recipe example pin because this package is a normal Arch-facing local replacement."
+    ],
+    "source_patches": [],
+    "update_notes": [
+      "Check Arch first for image-library dependency and optional-integration drift before updating.",
+      "After publishing a rebuilt package, verify `from PIL import Image` and a tiny in-memory image round trip through the installed local Python lane."
+    ]
+  },
+  "name": "python-pillow-gfx1151",
+  "package_name": "python-pillow-gfx1151",
+  "pkgver": "12.2.0",
+  "policy": {
+    "advisory_references": [],
+    "arch_reference": [
+      "extra/python-pillow"
+    ],
+    "authoritative_reference": "extra/python-pillow",
+    "conflicts": [
+      "python-pillow"
+    ],
+    "depends": [
+      "freetype2",
+      "glibc",
+      "lcms2",
+      "libavif",
+      "libimagequant",
+      "libjpeg-turbo",
+      "libraqm",
+      "libtiff",
+      "libxcb",
+      "openjpeg2",
+      "python-gfx1151",
+      "python-packaging",
+      "zlib"
+    ],
+    "divergence_notes": [
+      "Follows Arch's Pillow package shape while rebuilding the native extension through the Blackcat native-wheel compiler lane.",
+      "Uses the current Arch/PyPI 12.2.0 release instead of the older Blackcat recipe example pin because this package is a normal Arch-facing local replacement."
+    ],
+    "license": [
+      "MIT-CMU"
+    ],
+    "makedepends": [
+      "git",
+      "libwebp",
+      "pybind11",
+      "python-build",
+      "python-installer",
+      "python-setuptools",
+      "python-wheel",
+      "rocm-llvm-gfx1151",
+      "tk"
+    ],
+    "optdepends": [
+      "libwebp: for webp images",
+      "python-defusedxml: for reading XMP tags",
+      "python-olefile: OLE2 file support",
+      "python-pyqt6: for the ImageQt module",
+      "tk: for the ImageTK module"
+    ],
+    "patches_dir": "patches/python-pillow-gfx1151",
+    "pkgdesc": "Python Imaging Library fork rebuilt for Strix Halo gfx1151",
+    "provides": [
+      "python-pillow"
+    ],
+    "pypi_name": "pillow",
+    "recipe_key": "native_wheels",
+    "recipe_notes_override": "This package is the Pillow output from the shared `native_wheels` recipe\nphase. That phase also builds numpy, sentencepiece, zstandard, asyncpg,\nduckdb, PyYAML, psutil, uvloop, httptools, msgspec, aiohttp, multidict,\nyarl, and frozenlist from source with Zen 5 optimization flags, but those\noutputs are tracked as separate packages or follow-up package lanes rather\nthan as dependencies of `python-pillow-gfx1151`.\n\nPillow covers image preprocessing for multimodal model and corpus-enrichment\npaths. The package keeps Arch's image-library dependency shape while moving\nthe native extension onto the local amdclang native-wheel lane.\n",
+    "scaffold_notes": [
+      "Part of the core Blackcat model/config stack and consumed by the local Mistral Common and TorchVision packages.",
+      "Use the shared native-wheel renderer so amdclang, path remapping, and Zen 5 flags stay aligned with the other native wheel packages."
+    ],
+    "src_subdir": "pillow-12.2.0",
+    "template": "native-wheel-pypi",
+    "update_notes": [
+      "Check Arch first for image-library dependency and optional-integration drift before updating.",
+      "After publishing a rebuilt package, verify `from PIL import Image` and a tiny in-memory image round trip through the installed local Python lane."
+    ],
+    "upstream_version": "12.2.0",
+    "url": "https://pillow.readthedocs.io"
+  },
+  "provenance": {
+    "output_root": "packages",
+    "recipe_author": "Blackcat Informatics Inc.",
+    "recipe_commit": "a1d7a68",
+    "recipe_date": "20260427",
+    "recipe_history_count": 16,
+    "recipe_repo": "https://github.com/paudley/ai-notes",
+    "recipe_subdir": "strix-halo",
+    "repo_subpath": "."
+  },
+  "recipe": {
+    "branch": null,
+    "depends_on": [
+      "cpython",
+      "pytorch"
+    ],
+    "method": "pip",
+    "notes": "This package is the Pillow output from the shared `native_wheels` recipe\nphase. That phase also builds numpy, sentencepiece, zstandard, asyncpg,\nduckdb, PyYAML, psutil, uvloop, httptools, msgspec, aiohttp, multidict,\nyarl, and frozenlist from source with Zen 5 optimization flags, but those\noutputs are tracked as separate packages or follow-up package lanes rather\nthan as dependencies of `python-pillow-gfx1151`.\n\nPillow covers image preprocessing for multimodal model and corpus-enrichment\npaths. The package keeps Arch's image-library dependency shape while moving\nthe native extension onto the local amdclang native-wheel lane.\n",
+    "patches": [
+      {
+        "description": "Replace the recipe's broken venv-local Python cmake wrapper with the real system cmake binary. The cmake pip package installs a Python wrapper that does `from cmake import cmake`, which fails inside pip's build isolation where the cmake Python module is unavailable.\n",
+        "dst": "<build-venv>/.venv/bin/cmake",
+        "src": "/usr/bin/cmake",
+        "type": "file_copy"
+      }
+    ],
+    "phase": "H",
+    "repo": null,
+    "src_dir": null,
+    "steps": [
+      32
+    ]
+  }
+}

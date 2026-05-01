@@ -277,6 +277,8 @@ def test_rust_wheel_renderer_applies_source_patches() -> None:
     assert "0001-sample.patch" in pkgbuild
     assert 'patch --dry-run -R -Np1 -i "$srcdir/0001-sample.patch"' in pkgbuild
     assert 'patch -Np1 -i "$srcdir/0001-sample.patch"' in pkgbuild
+    assert 'export CARGO_HOME="$srcdir/.cargo"' in pkgbuild
+    assert 'mkdir -p "$CARGO_HOME"' in pkgbuild
 
 
 def test_triton_rocm_renderer_prefers_source_patches_over_inline_sed() -> None:

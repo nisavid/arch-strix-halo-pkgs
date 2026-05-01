@@ -191,7 +191,7 @@ update_notes = [
 ]
 provides = ["python-vllm-rocm", "python-vllm"]
 conflicts = ["python-vllm-rocm", "python-vllm"]
-depends = ["amdsmi-gfx1151", "numactl", "python-aiohttp", "python-blake3", "python-cachetools", "python-cbor2", "python-cloudpickle", "python-diskcache", "python-einops", "python-fastapi", "python-gguf", "python-gfx1151", "python-huggingface-hub", "python-ijson", "python-importlib-metadata", "python-mistral-common-gfx1151", "python-msgspec", "python-openai", "python-openai-harmony-gfx1151", "python-opencv", "python-prometheus-fastapi-instrumentator", "python-psutil", "python-py-cpuinfo", "python-pybase64", "python-pydantic", "python-pytorch-opt-rocm-gfx1151", "python-pyzmq", "python-soundfile", "python-starlette", "python-sympy", "python-torchvision-rocm-gfx1151", "python-tqdm", "python-transformers-gfx1151", "python-triton-gfx1151", "python-uvloop", "python-watchfiles", "rocblas-gfx1151", "uvicorn"]
+depends = ["amdsmi-gfx1151", "numactl", "python-aiohttp", "python-blake3", "python-cachetools", "python-cbor2", "python-cloudpickle", "python-diskcache", "python-einops", "python-fastapi", "python-gguf", "python-gfx1151", "python-huggingface-hub", "python-ijson", "python-importlib-metadata", "python-mistral-common-gfx1151", "python-msgspec", "python-openai", "python-openai-harmony-gfx1151", "python-opencv", "python-prometheus-fastapi-instrumentator", "python-psutil-gfx1151", "python-py-cpuinfo", "python-pybase64", "python-pydantic", "python-pytorch-opt-rocm-gfx1151", "python-pyzmq", "python-soundfile", "python-starlette", "python-sympy", "python-torchvision-rocm-gfx1151", "python-tqdm", "python-transformers-gfx1151", "python-triton-gfx1151", "python-uvloop", "python-watchfiles", "rocblas-gfx1151", "uvicorn"]
 makedepends = ["cmake", "ninja", "python-installer", "python-pip", "python-setuptools", "python-setuptools-scm", "python-wheel", "rocm-llvm-gfx1151"]
 options = ["!lto"]
 source_type = "tarball"
@@ -332,7 +332,7 @@ depends = [
   "python-numpy-gfx1151",
   "python-sympy",
   "python-typing_extensions",
-  "python-yaml",
+  "python-pyyaml-gfx1151",
   "rccl-gfx1151",
   "rocblas-gfx1151",
   "rocm-hip-sdk-gfx1151",
@@ -352,7 +352,7 @@ makedepends = [
   "python-setuptools",
   "python-six",
   "python-triton-gfx1151",
-  "python-yaml",
+  "python-pyyaml-gfx1151",
   "patchelf",
   "rocm-llvm-gfx1151",
   "unzip"
@@ -401,7 +401,7 @@ depends = [
   "libjpeg-turbo",
   "libpng",
   "python-numpy-gfx1151",
-  "python-pillow",
+  "python-pillow-gfx1151",
   "python-pytorch-opt-rocm-gfx1151",
   "python-requests",
   "python-scipy",
@@ -502,7 +502,7 @@ makedepends = [
   "python-pluggy",
   "python-setuptools",
   "python-wheel",
-  "python-yaml",
+  "python-pyyaml-gfx1151",
   "rocm-llvm-gfx1151"
 ]
 source_refs = [
@@ -743,6 +743,142 @@ scaffold_notes = [
   "This follows the recipe's Rust wheel build rules but still needs confirmation of the exact Arch build backend requirements on the current release."
 ]
 
+[packages.python-pydantic-core-gfx1151]
+recipe_key = "rust_wheels"
+template = "rust-wheel-pypi"
+upstream_version = "2.41.5"
+pkgdesc = "Core validation logic for pydantic rebuilt for Strix Halo gfx1151"
+url = "https://github.com/pydantic/pydantic-core"
+license = ["MIT"]
+arch_reference = ["extra/python-pydantic-core", "cachyos-extra-znver4/python-pydantic-core"]
+authoritative_reference = "extra/python-pydantic-core"
+advisory_references = ["cachyos-extra-znver4/python-pydantic-core"]
+divergence_notes = [
+  "Follows Arch's pydantic-core release while rebuilding the Rust extension through the recipe's znver5 Rust-wheel lane.",
+  "Keeps pydantic-core aligned with the distro python-pydantic package until this repo carries a local python-pydantic package too."
+]
+update_notes = [
+  "Check Arch python-pydantic and python-pydantic-core together before updating; upstream pydantic normally constrains the pydantic-core ABI tightly.",
+  "Blackcat's recipe currently names pydantic-core 2.46.3, but adopting that newer core without a matching local pydantic package can break the distro pydantic consumer.",
+  "After publishing a rebuilt package, verify `import pydantic_core` and a tiny `pydantic.BaseModel` validation through the installed local Python lane."
+]
+provides = ["python-pydantic-core"]
+conflicts = ["python-pydantic-core"]
+depends = ["glibc", "libgcc", "python-gfx1151", "python-typing-inspection", "python-typing_extensions"]
+makedepends = ["cargo", "python-build", "python-installer", "python-maturin", "python-wheel", "rocm-llvm-gfx1151", "rust"]
+pypi_name = "pydantic_core"
+src_subdir = "pydantic_core-2.41.5"
+patches_dir = "patches/python-pydantic-core-gfx1151"
+recipe_notes_override = """
+This package is the pydantic-core output from the shared `rust_wheels`
+recipe phase. That phase also documents orjson, cryptography, tokenizers,
+safetensors, and watchfiles as sibling Rust-wheel outputs, but those are not
+dependencies of `python-pydantic-core-gfx1151` unless listed in this package's
+policy metadata.
+
+pydantic-core is deliberately kept on the Arch pydantic-compatible release
+while it enters the local optimized stack. Move it to Blackcat's newer recipe
+pin only with a matching local pydantic package or a validated compatibility
+decision.
+
+The Rust build follows the repo's shared Rust-wheel lane:
+  RUSTFLAGS="-C target-cpu=znver5 -C opt-level=3"
+and uses amdclang as the cargo linker through
+CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER.
+"""
+scaffold_notes = [
+  "This is part of the core Blackcat model/config stack, but the package follows the current Arch pydantic-core ABI until the repo also owns python-pydantic.",
+  "Use the shared Rust-wheel renderer so linker selection, path remapping, and znver5 codegen stay aligned with orjson and cryptography."
+]
+
+[packages.python-tokenizers-gfx1151]
+recipe_key = "rust_wheels"
+template = "rust-wheel-pypi"
+upstream_version = "0.22.2"
+pkgdesc = "Fast state-of-the-art tokenizers rebuilt for Strix Halo gfx1151"
+url = "https://github.com/huggingface/tokenizers"
+license = ["Apache-2.0"]
+arch_reference = ["cachyos/python-tokenizers"]
+authoritative_reference = "cachyos/python-tokenizers"
+advisory_references = []
+divergence_notes = [
+  "Uses the Blackcat Rust-wheel lane for a local Hugging Face tokenizer hot path instead of relying on the generic CachyOS wheel.",
+  "There is no current Arch extra python-tokenizers package in the checked package databases, so CachyOS is the practical Arch-family baseline."
+]
+update_notes = [
+  "Check the current Hugging Face tokenizers release and Cachy package before updating; Transformers metadata can constrain this package.",
+  "On 2026-05-01, reviewed PyPI tokenizers 0.23.1 but kept the package on 0.22.2 because Transformers 5.7.0 declares tokenizers<=0.23.0,>=0.22.0.",
+  "After publishing a rebuilt package, verify `import tokenizers` and a tiny tokenizer construction through the installed local Python lane."
+]
+provides = ["python-tokenizers"]
+conflicts = ["python-tokenizers"]
+depends = ["glibc", "libgcc", "python-gfx1151"]
+makedepends = ["cargo", "python-build", "python-installer", "python-maturin", "python-wheel", "rocm-llvm-gfx1151", "rust"]
+pypi_name = "tokenizers"
+src_subdir = "tokenizers-0.22.2"
+patches_dir = "patches/python-tokenizers-gfx1151"
+recipe_notes_override = """
+This package is the tokenizers output from the shared `rust_wheels` recipe
+phase. That phase also documents orjson, cryptography, pydantic-core,
+safetensors, and watchfiles as sibling Rust-wheel outputs, but those are not
+dependencies of `python-tokenizers-gfx1151` unless listed in this package's
+policy metadata.
+
+tokenizers is the Hugging Face tokenizer hot path for Transformers/vLLM
+model loading. The local package keeps that native extension on the same
+znver5 Rust codegen lane as the rest of the optimized local wheel stack.
+"""
+scaffold_notes = [
+  "Part of the core Blackcat model/config stack and consumed by the local Transformers closure package.",
+  "Use the shared Rust-wheel renderer so linker selection, path remapping, and znver5 codegen stay aligned with orjson and cryptography."
+]
+
+[packages.python-safetensors-gfx1151]
+recipe_key = "rust_wheels"
+template = "rust-wheel-pypi"
+upstream_version = "0.7.0"
+pkgdesc = "Safe tensor serialization format rebuilt for Strix Halo gfx1151"
+url = "https://github.com/huggingface/safetensors"
+license = ["Apache-2.0"]
+arch_reference = ["extra/python-safetensors", "cachyos-extra-znver4/python-safetensors"]
+authoritative_reference = "extra/python-safetensors"
+advisory_references = ["cachyos-extra-znver4/python-safetensors"]
+divergence_notes = [
+  "Follows the Arch package shape while rebuilding the Rust extension through the recipe's znver5 Rust-wheel lane.",
+  "Depends on the repo-owned NumPy lane because safetensors participates in model/checkpoint tensor I/O for the local inference stack."
+]
+update_notes = [
+  "Check Arch first for release and dependency metadata, then verify Transformers and TorchAO scenario compatibility before updating.",
+  "After publishing a rebuilt package, verify `import safetensors` and a tiny tensor save/load round trip through the installed local Python lane."
+]
+provides = ["python-safetensors"]
+conflicts = ["python-safetensors"]
+depends = ["glibc", "libgcc", "python-gfx1151", "python-numpy-gfx1151"]
+makedepends = ["cargo", "python-build", "python-installer", "python-maturin", "python-wheel", "rocm-llvm-gfx1151", "rust"]
+optdepends = [
+  "python-jax: usage with jax",
+  "python-pytorch-opt-rocm-gfx1151: usage with the local PyTorch lane",
+  "python-tensorflow: usage with tensorflow"
+]
+pypi_name = "safetensors"
+src_subdir = "safetensors-0.7.0"
+patches_dir = "patches/python-safetensors-gfx1151"
+recipe_notes_override = """
+This package is the safetensors output from the shared `rust_wheels` recipe
+phase. That phase also documents orjson, cryptography, pydantic-core,
+tokenizers, and watchfiles as sibling Rust-wheel outputs, but those are not
+dependencies of `python-safetensors-gfx1151` unless listed in this package's
+policy metadata.
+
+safetensors is the model/checkpoint tensor I/O path for Transformers, vLLM,
+and TorchAO validation. The local package keeps that native extension on the
+same znver5 Rust codegen lane as the rest of the optimized local wheel stack.
+"""
+scaffold_notes = [
+  "Part of the core Blackcat model/config stack and consumed by the local Transformers closure package.",
+  "Use the shared Rust-wheel renderer so linker selection, path remapping, and znver5 codegen stay aligned with orjson and cryptography."
+]
+
 [packages.python-sentencepiece-gfx1151]
 recipe_key = "native_wheels"
 template = "native-wheel-pypi"
@@ -936,6 +1072,139 @@ scaffold_notes = [
   "The package follows Arch's current `python-duckdb` metadata while building from the PyPI sdist with the same amdclang flag lane as the other recipe native wheels.",
   "DuckDB's source build uses scikit-build-core, CMake, Ninja, and pybind11; keep those as explicit makedepends rather than relying on isolated pip build dependency resolution.",
   "The build skips the Python frontend dependency check because DuckDB requests PyPI metadata names that do not match Arch's system package distribution metadata, even though the backend finds the system tools."
+]
+
+[packages.python-pyyaml-gfx1151]
+recipe_key = "native_wheels"
+template = "native-wheel-pypi"
+upstream_version = "6.0.3"
+pkgdesc = "Python bindings for YAML with libYAML rebuilt for Strix Halo gfx1151"
+url = "https://github.com/yaml/pyyaml"
+license = ["MIT"]
+arch_reference = ["extra/python-yaml", "cachyos-extra-znver4/python-yaml"]
+authoritative_reference = "extra/python-yaml"
+advisory_references = ["cachyos-extra-znver4/python-yaml"]
+divergence_notes = [
+  "Follows Arch's python-yaml package shape while rebuilding the native extension through the Blackcat native-wheel compiler lane.",
+  "Provides both python-yaml and python-pyyaml so existing Arch-style dependencies and PyPI-style package references resolve to the local package."
+]
+update_notes = [
+  "Check Arch python-yaml first for Cython, libyaml, and build-backend changes before updating.",
+  "After publishing a rebuilt package, verify `import yaml` and confirm the libYAML-backed loader is available through the installed local Python lane."
+]
+provides = ["python-yaml", "python-pyyaml"]
+conflicts = ["python-yaml", "python-pyyaml"]
+depends = ["glibc", "libyaml", "python-gfx1151"]
+makedepends = ["cython", "python-build", "python-installer", "python-setuptools", "python-wheel", "rocm-llvm-gfx1151"]
+pypi_name = "pyyaml"
+src_subdir = "pyyaml-6.0.3"
+patches_dir = "patches/python-pyyaml-gfx1151"
+recipe_notes_override = """
+This package is the PyYAML output from the shared `native_wheels` recipe
+phase. That phase also builds numpy, sentencepiece, zstandard, asyncpg,
+duckdb, psutil, Pillow, uvloop, httptools, msgspec, aiohttp, multidict,
+yarl, and frozenlist from source with Zen 5 optimization flags, but those
+outputs are tracked as separate packages or follow-up package lanes rather
+than as dependencies of `python-pyyaml-gfx1151`.
+
+PyYAML keeps Arch's libYAML-backed package shape while moving the C extension
+onto the same amdclang native-wheel lane as the other Blackcat C/C++ wheel
+outputs.
+"""
+scaffold_notes = [
+  "Part of the core Blackcat model/config stack and used by PyTorch, AOTriton, and Transformers metadata/config paths.",
+  "The package name is python-pyyaml-gfx1151, but it provides python-yaml to satisfy Arch-style dependencies."
+]
+
+[packages.python-psutil-gfx1151]
+recipe_key = "native_wheels"
+template = "native-wheel-pypi"
+upstream_version = "7.2.2"
+pkgdesc = "Cross-platform process and system utilities rebuilt for Strix Halo gfx1151"
+url = "https://github.com/giampaolo/psutil"
+license = ["BSD-3-Clause"]
+arch_reference = ["extra/python-psutil"]
+authoritative_reference = "extra/python-psutil"
+advisory_references = []
+divergence_notes = [
+  "Follows Arch's python-psutil package shape while rebuilding the native extension through the Blackcat native-wheel compiler lane.",
+  "Keeps vLLM scheduler and service telemetry on the repo-owned Python/native-extension stack."
+]
+update_notes = [
+  "Check Arch first for release and dependency metadata before updating.",
+  "After publishing a rebuilt package, verify `import psutil` and a minimal process or virtual-memory probe through the installed local Python lane."
+]
+provides = ["python-psutil"]
+conflicts = ["python-psutil"]
+depends = ["glibc", "python-gfx1151"]
+makedepends = ["python-build", "python-installer", "python-setuptools", "python-wheel", "rocm-llvm-gfx1151"]
+pypi_name = "psutil"
+src_subdir = "psutil-7.2.2"
+patches_dir = "patches/python-psutil-gfx1151"
+recipe_notes_override = """
+This package is the psutil output from the shared `native_wheels` recipe
+phase. That phase also builds numpy, sentencepiece, zstandard, asyncpg,
+duckdb, PyYAML, Pillow, uvloop, httptools, msgspec, aiohttp, multidict,
+yarl, and frozenlist from source with Zen 5 optimization flags, but those
+outputs are tracked as separate packages or follow-up package lanes rather
+than as dependencies of `python-psutil-gfx1151`.
+
+psutil supplies native process and system telemetry used by schedulers,
+monitors, and vLLM service paths, so it belongs in the local optimized core
+stack rather than relying on the generic distro wheel.
+"""
+scaffold_notes = [
+  "Part of the core Blackcat model/config stack and consumed by the local vLLM package.",
+  "Use the shared native-wheel renderer so amdclang, path remapping, and Zen 5 flags stay aligned with the other native wheel packages."
+]
+
+[packages.python-pillow-gfx1151]
+recipe_key = "native_wheels"
+template = "native-wheel-pypi"
+upstream_version = "12.2.0"
+pkgdesc = "Python Imaging Library fork rebuilt for Strix Halo gfx1151"
+url = "https://pillow.readthedocs.io"
+license = ["MIT-CMU"]
+arch_reference = ["extra/python-pillow"]
+authoritative_reference = "extra/python-pillow"
+advisory_references = []
+divergence_notes = [
+  "Follows Arch's Pillow package shape while rebuilding the native extension through the Blackcat native-wheel compiler lane.",
+  "Uses the current Arch/PyPI 12.2.0 release instead of the older Blackcat recipe example pin because this package is a normal Arch-facing local replacement."
+]
+update_notes = [
+  "Check Arch first for image-library dependency and optional-integration drift before updating.",
+  "After publishing a rebuilt package, verify `from PIL import Image` and a tiny in-memory image round trip through the installed local Python lane."
+]
+provides = ["python-pillow"]
+conflicts = ["python-pillow"]
+depends = ["freetype2", "glibc", "lcms2", "libavif", "libimagequant", "libjpeg-turbo", "libraqm", "libtiff", "libxcb", "openjpeg2", "python-gfx1151", "python-packaging", "zlib"]
+makedepends = ["git", "libwebp", "pybind11", "python-build", "python-installer", "python-setuptools", "python-wheel", "rocm-llvm-gfx1151", "tk"]
+optdepends = [
+  "libwebp: for webp images",
+  "python-defusedxml: for reading XMP tags",
+  "python-olefile: OLE2 file support",
+  "python-pyqt6: for the ImageQt module",
+  "tk: for the ImageTK module"
+]
+pypi_name = "pillow"
+src_subdir = "pillow-12.2.0"
+patches_dir = "patches/python-pillow-gfx1151"
+recipe_notes_override = """
+This package is the Pillow output from the shared `native_wheels` recipe
+phase. That phase also builds numpy, sentencepiece, zstandard, asyncpg,
+duckdb, PyYAML, psutil, uvloop, httptools, msgspec, aiohttp, multidict,
+yarl, and frozenlist from source with Zen 5 optimization flags, but those
+outputs are tracked as separate packages or follow-up package lanes rather
+than as dependencies of `python-pillow-gfx1151`.
+
+Pillow covers image preprocessing for multimodal model and corpus-enrichment
+paths. The package keeps Arch's image-library dependency shape while moving
+the native extension onto the local amdclang native-wheel lane.
+"""
+scaffold_notes = [
+  "Part of the core Blackcat model/config stack and consumed by the local Mistral Common and TorchVision packages.",
+  "Use the shared native-wheel renderer so amdclang, path remapping, and Zen 5 flags stay aligned with the other native wheel packages."
 ]
 
 [packages.python-torchao-rocm-gfx1151]
