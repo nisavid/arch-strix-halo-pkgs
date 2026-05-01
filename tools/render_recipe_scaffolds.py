@@ -682,6 +682,8 @@ _source_tree_has_all_source_patches() {
   [[ -f pyproject.toml ]] || return 1
   grep -Fq 'requires-python = ">=3.10,<3.15"' pyproject.toml &&
     grep -Fq 'def _selected_subcommand() -> str | None:' vllm/entrypoints/cli/main.py &&
+    grep -Fq 'using vllm_bfloat16 = __hip_bfloat16;' csrc/cuda_vec_utils.cuh &&
+    grep -Fq 'expected_hipified_path' cmake/hipify.py &&
     grep -Fq 'return on_mi3xx() or on_gfx1x()' vllm/_aiter_ops.py &&
     grep -Fq 'def torchao_version_at_least(torchao_version: str) -> bool:' \
       vllm/model_executor/layers/quantization/torchao_utils.py &&
@@ -1335,6 +1337,11 @@ package() {{
             build_command = "\n".join(build_command_lines)
         else:
             build_command = build_command_head
+        build_env_exports = "\n".join(
+            f"export {assignment}" for assignment in policy_pkg.get("build_env", [])
+        )
+        if build_env_exports:
+            build_env_exports = "\n  " + build_env_exports + "\n"
         build_body = f"""\
 build() {{
   cd "$srcdir/{src_subdir}"
@@ -1346,7 +1353,7 @@ build() {{
 
   export CFLAGS="${{_wheel_flags}}"
   export CXXFLAGS="${{_wheel_flags}}"
-  export LDFLAGS="-famd-opt"
+  export LDFLAGS="-famd-opt"{build_env_exports}
 
   {build_command}
 }}

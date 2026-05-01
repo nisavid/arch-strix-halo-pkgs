@@ -68,7 +68,15 @@
     plus `python-watchfiles-gfx1151`, `python-uvloop-gfx1151`,
     `python-httptools-gfx1151`, `python-msgspec-gfx1151`,
     `python-aiohttp-gfx1151`, `python-multidict-gfx1151`,
-    `python-yarl-gfx1151`, and `python-frozenlist-gfx1151`.
+    `python-yarl-gfx1151`, and `python-frozenlist-gfx1151`. Package policy
+    and rendered scaffolds now exist for this service/runtime slice. Source
+    and package-build gates passed for the service/runtime packages. Publish,
+    install, installed-smoke, and live-scenario validation passed on
+    2026-05-01. The vLLM dependency metadata rewire is rendered at pkgrel 3,
+    and `python-vllm-rocm-gfx1151 0.20.0-3` now builds with the refreshed
+    ROCm carry for HIP byproducts and bfloat aliases. Publish/install,
+    installed-smoke, and post-deploy live-scenario validation passed for that
+    pkgrel-3 vLLM package on 2026-05-01.
   - Tooling helpers: native-worthy tooling helpers also belong in this
     selected stack when their lane is implemented. Start Qwen3-VL
     quantization/tooling review with `python-llmcompressor-gfx1151` and

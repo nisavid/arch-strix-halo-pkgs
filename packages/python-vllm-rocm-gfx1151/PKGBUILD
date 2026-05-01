@@ -6,12 +6,12 @@
 
 pkgname=python-vllm-rocm-gfx1151
 pkgver=0.20.1
-pkgrel=2
+pkgrel=3
 pkgdesc='High-throughput and memory-efficient inference engine for LLMs with ROCm, rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://github.com/vllm-project/vllm
 license=(Apache-2.0)
-depends=(amdsmi-gfx1151 numactl python-aiohttp python-blake3 python-cachetools python-cbor2 python-cloudpickle python-diskcache python-einops python-fastapi python-gguf python-gfx1151 python-huggingface-hub python-ijson python-importlib-metadata python-mistral-common-gfx1151 python-msgspec python-openai python-openai-harmony-gfx1151 python-opencv python-prometheus-fastapi-instrumentator python-psutil-gfx1151 python-py-cpuinfo python-pybase64 python-pydantic python-pytorch-opt-rocm-gfx1151 python-pyzmq python-soundfile python-starlette python-sympy python-torchvision-rocm-gfx1151 python-tqdm python-transformers-gfx1151 python-triton-gfx1151 python-uvloop python-watchfiles rocblas-gfx1151 uvicorn)
+depends=(amdsmi-gfx1151 numactl python-aiohttp-gfx1151 python-blake3 python-cachetools python-cbor2 python-cloudpickle python-diskcache python-einops python-fastapi python-gguf python-gfx1151 python-httptools-gfx1151 python-huggingface-hub python-ijson python-importlib-metadata python-mistral-common-gfx1151 python-msgspec-gfx1151 python-openai python-openai-harmony-gfx1151 python-opencv python-prometheus-fastapi-instrumentator python-psutil-gfx1151 python-py-cpuinfo python-pybase64 python-pydantic python-pytorch-opt-rocm-gfx1151 python-pyzmq python-soundfile python-starlette python-sympy python-torchvision-rocm-gfx1151 python-tqdm python-transformers-gfx1151 python-triton-gfx1151 python-uvloop-gfx1151 python-watchfiles-gfx1151 rocblas-gfx1151 uvicorn)
 makedepends=(cmake ninja python-installer python-pip python-setuptools python-setuptools-scm python-wheel rocm-llvm-gfx1151)
 optdepends=()
 options=('!lto')
@@ -51,6 +51,8 @@ _source_tree_has_all_source_patches() {
   [[ -f pyproject.toml ]] || return 1
   grep -Fq 'requires-python = ">=3.10,<3.15"' pyproject.toml &&
     grep -Fq 'def _selected_subcommand() -> str | None:' vllm/entrypoints/cli/main.py &&
+    grep -Fq 'using vllm_bfloat16 = __hip_bfloat16;' csrc/cuda_vec_utils.cuh &&
+    grep -Fq 'expected_hipified_path' cmake/hipify.py &&
     grep -Fq 'return on_mi3xx() or on_gfx1x()' vllm/_aiter_ops.py &&
     grep -Fq 'def torchao_version_at_least(torchao_version: str) -> bool:'       vllm/model_executor/layers/quantization/torchao_utils.py &&
     grep -Fq 'Hybrid models need TRITON_ATTN' vllm/platforms/rocm.py &&

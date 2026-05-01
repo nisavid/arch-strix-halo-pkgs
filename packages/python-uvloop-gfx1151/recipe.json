@@ -1,0 +1,111 @@
+{
+  "maintenance": {
+    "advisory_references": [
+      "cachyos-extra-znver4/python-uvloop"
+    ],
+    "authoritative_reference": "extra/python-uvloop",
+    "divergence_notes": [
+      "Follows Arch's python-uvloop system-libuv package shape while rebuilding the native extension through the Blackcat native-wheel compiler lane.",
+      "Keeps vLLM and FastAPI service event loops on the repo-owned optimized wheel stack."
+    ],
+    "source_patches": [
+      "0001-use-system-libuv.patch"
+    ],
+    "update_notes": [
+      "Check Arch first for libuv and Cython build metadata before updating.",
+      "Keep the package-local system-libuv patch unless upstream changes the build backend to expose a stable PEP 517 config setting for the same choice.",
+      "After publishing a rebuilt package, verify `import uvloop` and a minimal `uvloop.new_event_loop()` probe through the installed local Python lane."
+    ]
+  },
+  "name": "python-uvloop-gfx1151",
+  "package_name": "python-uvloop-gfx1151",
+  "pkgver": "0.22.1",
+  "policy": {
+    "advisory_references": [
+      "cachyos-extra-znver4/python-uvloop"
+    ],
+    "arch_reference": [
+      "extra/python-uvloop",
+      "cachyos-extra-znver4/python-uvloop"
+    ],
+    "authoritative_reference": "extra/python-uvloop",
+    "conflicts": [
+      "python-uvloop"
+    ],
+    "depends": [
+      "glibc",
+      "libuv",
+      "python-gfx1151"
+    ],
+    "divergence_notes": [
+      "Follows Arch's python-uvloop system-libuv package shape while rebuilding the native extension through the Blackcat native-wheel compiler lane.",
+      "Keeps vLLM and FastAPI service event loops on the repo-owned optimized wheel stack."
+    ],
+    "license": [
+      "Apache-2.0",
+      "MIT"
+    ],
+    "makedepends": [
+      "cython",
+      "python-build",
+      "python-installer",
+      "python-setuptools",
+      "python-wheel",
+      "rocm-llvm-gfx1151"
+    ],
+    "patches_dir": "packages/python-uvloop-gfx1151",
+    "pkgdesc": "Ultra-fast asyncio event loop rebuilt for Strix Halo gfx1151",
+    "provides": [
+      "python-uvloop"
+    ],
+    "pypi_name": "uvloop",
+    "recipe_key": "native_wheels",
+    "recipe_notes_override": "This package is the uvloop output from the shared `native_wheels` recipe\nphase. That phase also builds numpy, sentencepiece, zstandard, asyncpg,\nduckdb, PyYAML, psutil, Pillow, httptools, msgspec, aiohttp, multidict,\nyarl, and frozenlist from source with Zen 5 optimization flags, but those\noutputs are tracked as separate packages or follow-up package lanes rather\nthan as dependencies of `python-uvloop-gfx1151`.\n\nuvloop supplies the libuv-backed asyncio event loop used by vLLM/FastAPI\nservice paths. The local package follows Arch's system-libuv shape while\nmoving the native extension onto the local amdclang native-wheel lane.\n",
+    "scaffold_notes": [
+      "Part of the comprehensive Blackcat service/runtime wheel stack and consumed by the local vLLM package.",
+      "Keep the source patch that switches uvloop's build_ext default to system libuv so the local package does not vendor a private libuv copy."
+    ],
+    "src_subdir": "uvloop-0.22.1",
+    "template": "native-wheel-pypi",
+    "update_notes": [
+      "Check Arch first for libuv and Cython build metadata before updating.",
+      "Keep the package-local system-libuv patch unless upstream changes the build backend to expose a stable PEP 517 config setting for the same choice.",
+      "After publishing a rebuilt package, verify `import uvloop` and a minimal `uvloop.new_event_loop()` probe through the installed local Python lane."
+    ],
+    "upstream_version": "0.22.1",
+    "url": "https://github.com/MagicStack/uvloop"
+  },
+  "provenance": {
+    "output_root": "packages",
+    "recipe_author": "Blackcat Informatics Inc.",
+    "recipe_commit": "a1d7a68",
+    "recipe_date": "20260427",
+    "recipe_history_count": 16,
+    "recipe_repo": "https://github.com/paudley/ai-notes",
+    "recipe_subdir": "strix-halo",
+    "repo_subpath": "."
+  },
+  "recipe": {
+    "branch": null,
+    "depends_on": [
+      "cpython",
+      "pytorch"
+    ],
+    "method": "pip",
+    "notes": "This package is the uvloop output from the shared `native_wheels` recipe\nphase. That phase also builds numpy, sentencepiece, zstandard, asyncpg,\nduckdb, PyYAML, psutil, Pillow, httptools, msgspec, aiohttp, multidict,\nyarl, and frozenlist from source with Zen 5 optimization flags, but those\noutputs are tracked as separate packages or follow-up package lanes rather\nthan as dependencies of `python-uvloop-gfx1151`.\n\nuvloop supplies the libuv-backed asyncio event loop used by vLLM/FastAPI\nservice paths. The local package follows Arch's system-libuv shape while\nmoving the native extension onto the local amdclang native-wheel lane.\n",
+    "patches": [
+      {
+        "description": "Replace the recipe's broken venv-local Python cmake wrapper with the real system cmake binary. The cmake pip package installs a Python wrapper that does `from cmake import cmake`, which fails inside pip's build isolation where the cmake Python module is unavailable.\n",
+        "dst": "<build-venv>/.venv/bin/cmake",
+        "src": "/usr/bin/cmake",
+        "type": "file_copy"
+      }
+    ],
+    "phase": "H",
+    "repo": null,
+    "src_dir": null,
+    "steps": [
+      32
+    ]
+  }
+}

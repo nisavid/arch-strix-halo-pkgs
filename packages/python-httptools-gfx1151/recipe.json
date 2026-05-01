@@ -1,0 +1,112 @@
+{
+  "maintenance": {
+    "advisory_references": [
+      "cachyos-extra-znver4/python-httptools"
+    ],
+    "authoritative_reference": "extra/python-httptools",
+    "divergence_notes": [
+      "Follows Arch's python-httptools system-llhttp package shape while rebuilding the native extension through the Blackcat native-wheel compiler lane.",
+      "Keeps uvicorn/vLLM HTTP parsing on the repo-owned optimized wheel stack."
+    ],
+    "source_patches": [
+      "0001-use-system-llhttp.patch"
+    ],
+    "update_notes": [
+      "Check Arch first for llhttp and Cython build metadata before updating.",
+      "Keep the package-local system-llhttp patch unless upstream changes the build backend to expose a stable PEP 517 config setting for the same choice.",
+      "Keep `skip_dependency_check = true` while the PyPI sdist pins an exact setuptools build requirement; Arch builds httptools from source without that equality gate, and this package uses the repo's system setuptools in the same no-isolation lane.",
+      "After publishing a rebuilt package, verify `import httptools` through the installed local Python lane."
+    ]
+  },
+  "name": "python-httptools-gfx1151",
+  "package_name": "python-httptools-gfx1151",
+  "pkgver": "0.7.1",
+  "policy": {
+    "advisory_references": [
+      "cachyos-extra-znver4/python-httptools"
+    ],
+    "arch_reference": [
+      "extra/python-httptools",
+      "cachyos-extra-znver4/python-httptools"
+    ],
+    "authoritative_reference": "extra/python-httptools",
+    "conflicts": [
+      "python-httptools"
+    ],
+    "depends": [
+      "llhttp",
+      "python-gfx1151"
+    ],
+    "divergence_notes": [
+      "Follows Arch's python-httptools system-llhttp package shape while rebuilding the native extension through the Blackcat native-wheel compiler lane.",
+      "Keeps uvicorn/vLLM HTTP parsing on the repo-owned optimized wheel stack."
+    ],
+    "license": [
+      "MIT"
+    ],
+    "makedepends": [
+      "cython",
+      "python-build",
+      "python-installer",
+      "python-setuptools",
+      "python-wheel",
+      "rocm-llvm-gfx1151"
+    ],
+    "patches_dir": "packages/python-httptools-gfx1151",
+    "pkgdesc": "Fast HTTP parser rebuilt for Strix Halo gfx1151",
+    "provides": [
+      "python-httptools"
+    ],
+    "pypi_name": "httptools",
+    "recipe_key": "native_wheels",
+    "recipe_notes_override": "This package is the httptools output from the shared `native_wheels` recipe\nphase. That phase also builds numpy, sentencepiece, zstandard, asyncpg,\nduckdb, PyYAML, psutil, Pillow, uvloop, msgspec, aiohttp, multidict, yarl,\nand frozenlist from source with Zen 5 optimization flags, but those outputs\nare tracked as separate packages or follow-up package lanes rather than as\ndependencies of `python-httptools-gfx1151`.\n\nhttptools supplies the native HTTP parser used by uvicorn standard service\npaths. The local package follows Arch's system-llhttp shape while moving the\nnative extension onto the local amdclang native-wheel lane.\n",
+    "scaffold_notes": [
+      "Part of the comprehensive Blackcat service/runtime wheel stack and consumed by the local vLLM package.",
+      "Keep the source patch that switches httptools' build_ext default to system llhttp so the local package does not vendor a private llhttp copy."
+    ],
+    "skip_dependency_check": true,
+    "src_subdir": "httptools-0.7.1",
+    "template": "native-wheel-pypi",
+    "update_notes": [
+      "Check Arch first for llhttp and Cython build metadata before updating.",
+      "Keep the package-local system-llhttp patch unless upstream changes the build backend to expose a stable PEP 517 config setting for the same choice.",
+      "Keep `skip_dependency_check = true` while the PyPI sdist pins an exact setuptools build requirement; Arch builds httptools from source without that equality gate, and this package uses the repo's system setuptools in the same no-isolation lane.",
+      "After publishing a rebuilt package, verify `import httptools` through the installed local Python lane."
+    ],
+    "upstream_version": "0.7.1",
+    "url": "https://github.com/MagicStack/httptools"
+  },
+  "provenance": {
+    "output_root": "packages",
+    "recipe_author": "Blackcat Informatics Inc.",
+    "recipe_commit": "a1d7a68",
+    "recipe_date": "20260427",
+    "recipe_history_count": 16,
+    "recipe_repo": "https://github.com/paudley/ai-notes",
+    "recipe_subdir": "strix-halo",
+    "repo_subpath": "."
+  },
+  "recipe": {
+    "branch": null,
+    "depends_on": [
+      "cpython",
+      "pytorch"
+    ],
+    "method": "pip",
+    "notes": "This package is the httptools output from the shared `native_wheels` recipe\nphase. That phase also builds numpy, sentencepiece, zstandard, asyncpg,\nduckdb, PyYAML, psutil, Pillow, uvloop, msgspec, aiohttp, multidict, yarl,\nand frozenlist from source with Zen 5 optimization flags, but those outputs\nare tracked as separate packages or follow-up package lanes rather than as\ndependencies of `python-httptools-gfx1151`.\n\nhttptools supplies the native HTTP parser used by uvicorn standard service\npaths. The local package follows Arch's system-llhttp shape while moving the\nnative extension onto the local amdclang native-wheel lane.\n",
+    "patches": [
+      {
+        "description": "Replace the recipe's broken venv-local Python cmake wrapper with the real system cmake binary. The cmake pip package installs a Python wrapper that does `from cmake import cmake`, which fails inside pip's build isolation where the cmake Python module is unavailable.\n",
+        "dst": "<build-venv>/.venv/bin/cmake",
+        "src": "/usr/bin/cmake",
+        "type": "file_copy"
+      }
+    ],
+    "phase": "H",
+    "repo": null,
+    "src_dir": null,
+    "steps": [
+      32
+    ]
+  }
+}

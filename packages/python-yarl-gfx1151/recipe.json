@@ -1,0 +1,109 @@
+{
+  "maintenance": {
+    "advisory_references": [
+      "cachyos-extra-znver4/python-yarl"
+    ],
+    "authoritative_reference": "extra/python-yarl",
+    "divergence_notes": [
+      "Follows Arch's python-yarl package shape while rebuilding the native extension through the Blackcat native-wheel compiler lane.",
+      "Keeps the aiohttp service dependency closure on the repo-owned optimized wheel stack."
+    ],
+    "source_patches": [],
+    "update_notes": [
+      "Check Arch first for release and build-backend metadata before updating.",
+      "After publishing a rebuilt package, verify `import yarl` and a minimal URL construction probe through the installed local Python lane."
+    ]
+  },
+  "name": "python-yarl-gfx1151",
+  "package_name": "python-yarl-gfx1151",
+  "pkgver": "1.23.0",
+  "policy": {
+    "advisory_references": [
+      "cachyos-extra-znver4/python-yarl"
+    ],
+    "arch_reference": [
+      "extra/python-yarl",
+      "cachyos-extra-znver4/python-yarl"
+    ],
+    "authoritative_reference": "extra/python-yarl",
+    "conflicts": [
+      "python-yarl"
+    ],
+    "depends": [
+      "glibc",
+      "python-gfx1151",
+      "python-idna",
+      "python-multidict-gfx1151",
+      "python-propcache"
+    ],
+    "divergence_notes": [
+      "Follows Arch's python-yarl package shape while rebuilding the native extension through the Blackcat native-wheel compiler lane.",
+      "Keeps the aiohttp service dependency closure on the repo-owned optimized wheel stack."
+    ],
+    "license": [
+      "Apache-2.0"
+    ],
+    "makedepends": [
+      "cython",
+      "python-build",
+      "python-expandvars",
+      "python-installer",
+      "python-setuptools",
+      "python-wheel",
+      "rocm-llvm-gfx1151"
+    ],
+    "patches_dir": "patches/python-yarl-gfx1151",
+    "pkgdesc": "Yet another URL library rebuilt for Strix Halo gfx1151",
+    "provides": [
+      "python-yarl"
+    ],
+    "pypi_name": "yarl",
+    "recipe_key": "native_wheels",
+    "recipe_notes_override": "This package is the yarl output from the shared `native_wheels` recipe phase.\nThat phase also builds numpy, sentencepiece, zstandard, asyncpg, duckdb,\nPyYAML, psutil, Pillow, uvloop, httptools, msgspec, aiohttp, multidict, and\nfrozenlist from source with Zen 5 optimization flags, but those outputs are\ntracked as separate packages or follow-up package lanes rather than as\ndependencies of `python-yarl-gfx1151`.\n\nyarl is part of aiohttp's native URL/dependency closure and belongs in the\nsame optimized service/runtime stack.\n",
+    "scaffold_notes": [
+      "Part of the comprehensive Blackcat aiohttp service dependency closure and consumed by the local aiohttp package.",
+      "Use the shared native-wheel renderer so amdclang, path remapping, and Zen 5 flags stay aligned with the other native wheel packages."
+    ],
+    "src_subdir": "yarl-1.23.0",
+    "template": "native-wheel-pypi",
+    "update_notes": [
+      "Check Arch first for release and build-backend metadata before updating.",
+      "After publishing a rebuilt package, verify `import yarl` and a minimal URL construction probe through the installed local Python lane."
+    ],
+    "upstream_version": "1.23.0",
+    "url": "https://github.com/aio-libs/yarl/"
+  },
+  "provenance": {
+    "output_root": "packages",
+    "recipe_author": "Blackcat Informatics Inc.",
+    "recipe_commit": "a1d7a68",
+    "recipe_date": "20260427",
+    "recipe_history_count": 16,
+    "recipe_repo": "https://github.com/paudley/ai-notes",
+    "recipe_subdir": "strix-halo",
+    "repo_subpath": "."
+  },
+  "recipe": {
+    "branch": null,
+    "depends_on": [
+      "cpython",
+      "pytorch"
+    ],
+    "method": "pip",
+    "notes": "This package is the yarl output from the shared `native_wheels` recipe phase.\nThat phase also builds numpy, sentencepiece, zstandard, asyncpg, duckdb,\nPyYAML, psutil, Pillow, uvloop, httptools, msgspec, aiohttp, multidict, and\nfrozenlist from source with Zen 5 optimization flags, but those outputs are\ntracked as separate packages or follow-up package lanes rather than as\ndependencies of `python-yarl-gfx1151`.\n\nyarl is part of aiohttp's native URL/dependency closure and belongs in the\nsame optimized service/runtime stack.\n",
+    "patches": [
+      {
+        "description": "Replace the recipe's broken venv-local Python cmake wrapper with the real system cmake binary. The cmake pip package installs a Python wrapper that does `from cmake import cmake`, which fails inside pip's build isolation where the cmake Python module is unavailable.\n",
+        "dst": "<build-venv>/.venv/bin/cmake",
+        "src": "/usr/bin/cmake",
+        "type": "file_copy"
+      }
+    ],
+    "phase": "H",
+    "repo": null,
+    "src_dir": null,
+    "steps": [
+      32
+    ]
+  }
+}

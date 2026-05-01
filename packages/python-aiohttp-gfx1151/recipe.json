@@ -1,0 +1,119 @@
+{
+  "maintenance": {
+    "advisory_references": [],
+    "authoritative_reference": "extra/python-aiohttp",
+    "divergence_notes": [
+      "Follows Arch's python-aiohttp system-dependency package shape while rebuilding native extensions through the Blackcat native-wheel compiler lane.",
+      "Keeps async HTTP client/server helpers for vLLM/FastAPI service paths on the repo-owned optimized wheel stack."
+    ],
+    "source_patches": [],
+    "update_notes": [
+      "Check Arch first for llhttp, Cython, and dependency metadata before updating.",
+      "Keep AIOHTTP_USE_SYSTEM_DEPS=1 in the build environment unless upstream changes how system llhttp is selected.",
+      "After publishing a rebuilt package, verify `import aiohttp` and a minimal ClientSession construction path through the installed local Python lane."
+    ]
+  },
+  "name": "python-aiohttp-gfx1151",
+  "package_name": "python-aiohttp-gfx1151",
+  "pkgver": "3.13.5",
+  "policy": {
+    "advisory_references": [],
+    "arch_reference": [
+      "extra/python-aiohttp"
+    ],
+    "authoritative_reference": "extra/python-aiohttp",
+    "build_env": [
+      "AIOHTTP_USE_SYSTEM_DEPS=1"
+    ],
+    "conflicts": [
+      "python-aiohttp"
+    ],
+    "depends": [
+      "glibc",
+      "llhttp",
+      "python-gfx1151",
+      "python-aiohappyeyeballs",
+      "python-aiosignal",
+      "python-attrs",
+      "python-frozenlist-gfx1151",
+      "python-multidict-gfx1151",
+      "python-propcache",
+      "python-yarl-gfx1151"
+    ],
+    "divergence_notes": [
+      "Follows Arch's python-aiohttp system-dependency package shape while rebuilding native extensions through the Blackcat native-wheel compiler lane.",
+      "Keeps async HTTP client/server helpers for vLLM/FastAPI service paths on the repo-owned optimized wheel stack."
+    ],
+    "license": [
+      "Apache-2.0"
+    ],
+    "makedepends": [
+      "cython",
+      "python-build",
+      "python-installer",
+      "python-pkgconfig",
+      "python-setuptools",
+      "python-wheel",
+      "rocm-llvm-gfx1151"
+    ],
+    "optdepends": [
+      "gunicorn: to deploy using Gunicorn",
+      "python-aiodns: for fast DNS resolving",
+      "python-brotli: for Brotli transfer-encodings support"
+    ],
+    "patches_dir": "patches/python-aiohttp-gfx1151",
+    "pkgdesc": "HTTP client/server for asyncio rebuilt for Strix Halo gfx1151",
+    "provides": [
+      "python-aiohttp"
+    ],
+    "pypi_name": "aiohttp",
+    "recipe_key": "native_wheels",
+    "recipe_notes_override": "This package is the aiohttp output from the shared `native_wheels` recipe\nphase. That phase also builds numpy, sentencepiece, zstandard, asyncpg,\nduckdb, PyYAML, psutil, Pillow, uvloop, httptools, msgspec, multidict, yarl,\nand frozenlist from source with Zen 5 optimization flags, but those outputs\nare tracked as separate packages or follow-up package lanes rather than as\ndependencies of `python-aiohttp-gfx1151`.\n\naiohttp supplies async HTTP client/server helpers used by service paths. The\nlocal package follows Arch's system-dependency shape with\nAIOHTTP_USE_SYSTEM_DEPS=1 while moving its native extensions onto the local\namdclang native-wheel lane.\n",
+    "scaffold_notes": [
+      "Part of the comprehensive Blackcat service/runtime wheel stack and consumed by the local vLLM package.",
+      "Keep dependencies pointed at the local frozenlist, multidict, and yarl packages so the aiohttp closure stays on the repo-owned optimized stack."
+    ],
+    "src_subdir": "aiohttp-3.13.5",
+    "template": "native-wheel-pypi",
+    "update_notes": [
+      "Check Arch first for llhttp, Cython, and dependency metadata before updating.",
+      "Keep AIOHTTP_USE_SYSTEM_DEPS=1 in the build environment unless upstream changes how system llhttp is selected.",
+      "After publishing a rebuilt package, verify `import aiohttp` and a minimal ClientSession construction path through the installed local Python lane."
+    ],
+    "upstream_version": "3.13.5",
+    "url": "https://aiohttp.readthedocs.io"
+  },
+  "provenance": {
+    "output_root": "packages",
+    "recipe_author": "Blackcat Informatics Inc.",
+    "recipe_commit": "a1d7a68",
+    "recipe_date": "20260427",
+    "recipe_history_count": 16,
+    "recipe_repo": "https://github.com/paudley/ai-notes",
+    "recipe_subdir": "strix-halo",
+    "repo_subpath": "."
+  },
+  "recipe": {
+    "branch": null,
+    "depends_on": [
+      "cpython",
+      "pytorch"
+    ],
+    "method": "pip",
+    "notes": "This package is the aiohttp output from the shared `native_wheels` recipe\nphase. That phase also builds numpy, sentencepiece, zstandard, asyncpg,\nduckdb, PyYAML, psutil, Pillow, uvloop, httptools, msgspec, multidict, yarl,\nand frozenlist from source with Zen 5 optimization flags, but those outputs\nare tracked as separate packages or follow-up package lanes rather than as\ndependencies of `python-aiohttp-gfx1151`.\n\naiohttp supplies async HTTP client/server helpers used by service paths. The\nlocal package follows Arch's system-dependency shape with\nAIOHTTP_USE_SYSTEM_DEPS=1 while moving its native extensions onto the local\namdclang native-wheel lane.\n",
+    "patches": [
+      {
+        "description": "Replace the recipe's broken venv-local Python cmake wrapper with the real system cmake binary. The cmake pip package installs a Python wrapper that does `from cmake import cmake`, which fails inside pip's build isolation where the cmake Python module is unavailable.\n",
+        "dst": "<build-venv>/.venv/bin/cmake",
+        "src": "/usr/bin/cmake",
+        "type": "file_copy"
+      }
+    ],
+    "phase": "H",
+    "repo": null,
+    "src_dir": null,
+    "steps": [
+      32
+    ]
+  }
+}
