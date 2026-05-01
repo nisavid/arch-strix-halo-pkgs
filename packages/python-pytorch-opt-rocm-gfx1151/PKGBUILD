@@ -6,7 +6,7 @@
 
 pkgname=python-pytorch-opt-rocm-gfx1151
 pkgver=2.11.0
-pkgrel=10
+pkgrel=11
 pkgdesc='Tensors and dynamic neural networks in Python with ROCm acceleration, rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://pytorch.org

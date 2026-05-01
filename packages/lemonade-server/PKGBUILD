@@ -6,7 +6,7 @@
 
 pkgname=lemonade-server
 pkgver=10.3.0
-pkgrel=1
+pkgrel=2
 pkgdesc='Local AI server runtime rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://github.com/lemonade-sdk/lemonade
