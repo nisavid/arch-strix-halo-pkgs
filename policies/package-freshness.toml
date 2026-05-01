@@ -382,6 +382,15 @@ checks = [
   { id = "aur-vulkan", role = "baseline", kind = "aur", package = "llama.cpp-vulkan-bin", recorded = "b7376-1", comparison = "pkgver" },
 ]
 
+[families.stable_diffusion_cpp]
+packages = ["stable-diffusion.cpp-vulkan-gfx1151"]
+priority = "medium"
+workflow = "upstream_source_update"
+checks = [
+  { id = "master", role = "primary", kind = "git_ref", repo = "https://github.com/leejet/stable-diffusion.cpp.git", ref = "refs/heads/master", recorded = "3d6064b37ef4607917f8acf2ca8c8906d5087413", comparison = "sha" },
+  { id = "aur-vulkan", role = "baseline", kind = "aur", package = "stable-diffusion.cpp-vulkan-git", recorded = "r279.49d6570-1", comparison = "pkgver" },
+]
+
 [families.lemonade]
 packages = ["lemonade-server", "lemonade-app", "lemonade"]
 priority = "medium"

@@ -382,6 +382,40 @@ passed through `python3.14` for direct `accelerate`, `auto_round`, `pynvml`,
 and `llmcompressor` imports, AutoRound preset loading, `AutoRoundModifier`,
 `skip_weights_initialize`, and model-free name matching.
 
+The Blackcat stable-diffusion.cpp Vulkan engine lane now has package policy
+and rendered scaffolds for `stable-diffusion.cpp-vulkan-gfx1151
+r593.g3d6064b`. The package follows leejet/stable-diffusion.cpp master at
+`3d6064b37ef4607917f8acf2ca8c8906d5087413`, builds the Vulkan backend with
+recursive ggml, WebP, WebM, and server frontend submodules, and carries
+Blackcat's SDXL CLIP-G prefix mapping patch as a package-local source patch.
+The installed payload is runtime-only under
+`/opt/stable-diffusion.cpp-vulkan-gfx1151`, with
+`sd-cli-vulkan-gfx1151` and `sd-server-vulkan-gfx1151` wrappers under
+`/usr/bin`.
+
+Focused scaffold tests passed with `pytest -p no:cacheprovider
+tests/test_blackcat_core_wheel_stack.py tests/test_render_recipe_scaffolds.py
+tests/test_check_package_updates.py -q` on 2026-05-01. The first build exposed
+a malformed package-local patch hunk, which was corrected and verified with
+`patch --dry-run -Np1`; the next build reached the upstream server frontend
+but could not populate the pnpm store under the sandboxed read-only home tree.
+The escalated build completed, then the package was tightened to drop the
+installed static library, header, and CMake development payload so the final
+package no longer emitted `$srcdir` packaging warnings. `tools/amerge build`
+plan `00a27879` built the final package on 2026-05-01. `tools/amerge deploy`
+plan `8eb4805d` published and installed it on the host.
+
+After deploy, `pacman -Q` reported
+`stable-diffusion.cpp-vulkan-gfx1151 r593.g3d6064b-1`,
+`aocl-libm-gfx1151 5.2.2-1`, and `vulkan-icd-loader 1.4.341.0-1.1`.
+Installed wrapper smokes passed: `sd-cli-vulkan-gfx1151 -h` and
+`sd-server-vulkan-gfx1151 -h` both printed
+`stable-diffusion.cpp version master-593-3d6064b+, commit 3d6064b`, showed
+usage text from `/opt/stable-diffusion.cpp-vulkan-gfx1151/bin/...`, and
+exited `0`. `pacman -Ql stable-diffusion.cpp-vulkan-gfx1151` confirmed the
+installed payload contains only `/opt` runtime metadata and binaries,
+`/usr/bin` wrappers, and the license.
+
 The 2026-05-01 policy-coverage freshness sweep after adding the Blackcat
 service/runtime and tooling package directories first found missing freshness
 policy coverage for those new package directories. `policies/package-freshness.toml`

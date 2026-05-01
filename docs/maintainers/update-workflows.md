@@ -178,6 +178,7 @@ Current package-lane catalog:
 | PyPI source/wheel local closure | `python-numpy-gfx1151`, `python-sentencepiece-gfx1151`, `python-zstandard-gfx1151`, `python-asyncpg-gfx1151`, `python-openai-harmony-gfx1151`, `python-orjson-gfx1151`, `python-cryptography-gfx1151`, `python-torchao-rocm-gfx1151`, `python-mistral-common-gfx1151`, `python-transformers-gfx1151` | PyPI metadata, upstream changelog, Arch/AUR baseline |
 | ROCm/framework source lane | `python-pytorch-opt-rocm-gfx1151`, `python-triton-gfx1151`, `python-aotriton-gfx1151`, `python-amd-aiter-gfx1151` | upstream branch/tag, candidate or scout branch refs, ROCm compatibility notes, package patches |
 | Monorepo commit/release lane | `llama.cpp-hip-gfx1151`, `llama.cpp-vulkan-gfx1151`, `lemonade-server`, `lemonade-app` | upstream release/tag, recorded source revision, backend/runtime docs |
+| CMake engine source lane | `stable-diffusion.cpp-vulkan-gfx1151` | pinned upstream commit, recursive submodules, AUR backend package, Blackcat recipe notes, package-local source patches, installed wrapper smoke |
 | Recipe-first or meta lane | `aocl-libm-gfx1151`, `lemonade` | Blackcat Informatics recipe input, local package closure, generated metadata |
 
 Keep this table open-ended. When a new package class appears, add the lane

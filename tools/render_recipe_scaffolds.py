@@ -388,6 +388,110 @@ EOF
   fi
   install -Dm644 "$srcdir/{src_subdir}/LICENSE" "$pkgdir/usr/share/licenses/{package_name}/LICENSE"
 }}"""
+    elif template == "stable-diffusion-cpp":
+        prepare_lines.extend(
+            [
+                "git submodule sync --recursive",
+                "git submodule update --init --recursive",
+            ]
+        )
+        for patch_name in policy_pkg.get("source_patches", []):
+            prepare_lines.extend(
+                [
+                    f'if ! patch --dry-run -R -Np1 -i "$srcdir/{patch_name}" >/dev/null 2>&1; then',
+                    f'  patch -Np1 -i "$srcdir/{patch_name}"',
+                    "fi",
+                ]
+            )
+        install_root = f"/opt/{package_name}"
+        build_body = f"""\
+build() {{
+  cd "$srcdir/{src_subdir}"
+
+  {compiler_env_snippet(compiler_root)}  _setup_compiler_env
+  local amdclang="$CC"
+  local amdclangxx="$CXX"
+  local build_root="$srcdir/build-vulkan"
+  local install_root="{install_root}"
+  local _debug_prefix="/usr/src/debug/{package_name}"
+  local _debug_map="-ffile-prefix-map=$srcdir=${{_debug_prefix}}"
+  local _cpu_flags="-O3 -DNDEBUG -march=native -flto=thin -fno-semantic-interposition -mprefer-vector-width=512 -mavx512f -mavx512dq -mavx512vl -mavx512bw -famd-opt -Wno-error=unused-command-line-argument ${{_debug_map}}"
+  local _aggressive_flags="-mllvm -polly -mllvm -polly-vectorizer=stripmine -mllvm -inline-threshold=600 -mllvm -unroll-threshold=150 -mllvm -adce-remove-loops"
+  local _probe_src="$srcdir/.sdcpp-flag-probe.c"
+  local _probe_obj="$srcdir/.sdcpp-flag-probe.o"
+  printf '%s\\n' 'int main(void) {{ return 0; }}' > "${{_probe_src}}"
+  if "${{amdclang}}" -O2 -x c -c "${{_probe_src}}" -o "${{_probe_obj}}" ${{_aggressive_flags}} >/dev/null 2>&1; then
+    _cpu_flags="${{_cpu_flags}} ${{_aggressive_flags}}"
+  fi
+  rm -f "${{_probe_src}}" "${{_probe_obj}}"
+  local _linker_flags="-flto=thin -fuse-ld=lld -L/usr/lib -lalm"
+
+  rm -rf "${{build_root}}"
+  cmake -B "${{build_root}}" -S . -GNinja \\
+    -DCMAKE_BUILD_TYPE=Release \\
+    -DCMAKE_C_COMPILER="${{amdclang}}" \\
+    -DCMAKE_CXX_COMPILER="${{amdclangxx}}" \\
+    -DCMAKE_C_FLAGS="${{_cpu_flags}}" \\
+    -DCMAKE_CXX_FLAGS="${{_cpu_flags}}" \\
+    -DCMAKE_EXE_LINKER_FLAGS="${{_linker_flags}}" \\
+    -DCMAKE_SHARED_LINKER_FLAGS="${{_linker_flags}}" \\
+    -DCMAKE_INSTALL_PREFIX="${{install_root}}" \\
+    -DCMAKE_CXX_CLANG_TIDY=/bin/true \\
+    -DSD_VULKAN=ON \\
+    -DSD_BUILD_EXAMPLES=ON \\
+    -DSD_BUILD_SHARED_LIBS=OFF \\
+    -DSD_WEBP=ON \\
+    -DSD_WEBM=ON \\
+    -DGGML_NATIVE=ON \\
+    -DGGML_LTO=ON \\
+    -DGGML_OPENMP=ON \\
+    -DGGML_CCACHE=ON \\
+    -DGGML_VULKAN_CHECK_RESULTS=OFF \\
+    -DGGML_VULKAN_VALIDATE=OFF \\
+    -DGGML_VULKAN_DEBUG=OFF
+
+  cmake --build "${{build_root}}"
+}}
+
+package() {{
+  cd "$srcdir/{src_subdir}"
+  local build_root="$srcdir/build-vulkan"
+  local install_root="{install_root}"
+
+  DESTDIR="$pkgdir" cmake --install "${{build_root}}"
+  rm -rf "$pkgdir${{install_root}}/include" "$pkgdir${{install_root}}/lib"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/{package_name}/LICENSE"
+  install -d "$pkgdir/usr/bin" "$pkgdir${{install_root}}"
+  printf '%s\\n' "{policy_pkg['upstream_version']}" > "$pkgdir${{install_root}}/version.txt"
+  printf '%s\\n' "vulkan" > "$pkgdir${{install_root}}/backend.txt"
+  cat > "$pkgdir${{install_root}}/build-info.env" <<EOF
+PROJECT=stable-diffusion.cpp
+BACKEND=vulkan
+SOURCE_REVISION={policy_pkg.get('upstream_revision', policy_pkg['upstream_version'])}
+PACKAGE={package_name}
+EOF
+
+  if command -v patchelf >/dev/null 2>&1; then
+    local _bin
+    for _bin in "$pkgdir${{install_root}}/bin"/sd-cli "$pkgdir${{install_root}}/bin"/sd-server; do
+      [[ -f "${{_bin}}" ]] || continue
+      patchelf --set-rpath "/usr/lib:${{install_root}}/lib" "${{_bin}}" 2>/dev/null || true
+    done
+  fi
+
+  _install_wrapper() {{
+    local _tool="$1"
+    local _wrapper="$2"
+    [[ -x "$pkgdir${{install_root}}/bin/${{_tool}}" ]] || return 0
+    cat > "$pkgdir/usr/bin/${{_wrapper}}" <<EOF
+#!/usr/bin/env bash
+exec {install_root}/bin/${{_tool}} "\\$@"
+EOF
+    chmod 755 "$pkgdir/usr/bin/${{_wrapper}}"
+  }}
+  _install_wrapper sd-cli sd-cli-vulkan-gfx1151
+  _install_wrapper sd-server sd-server-vulkan-gfx1151
+}}"""
     elif template == "lemonade-server":
         source_patch_cmds = "".join(
             f'  patch -Np1 -i "$srcdir/{patch_name}"\n'
