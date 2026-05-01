@@ -409,6 +409,9 @@ build() {{
   local build_root="$srcdir/build-{package_name}"
   local install_root="/usr"
 
+  export npm_config_cache="$srcdir/.npm-cache"
+  export npm_config_update_notifier=false
+
   cmake -B "${{build_root}}" -GNinja . \\
     -DCMAKE_C_COMPILER="${{amdclang}}" \\
     -DCMAKE_CXX_COMPILER="${{amdclangxx}}" \\
@@ -801,7 +804,10 @@ package() {{
             [
                 "# PyTorch's ROCm fork relies on vendored submodules and local hipify-generated sources.",
                 'git -C "$srcdir/{src_subdir}" submodule sync --recursive'.format(src_subdir=src_subdir),
-                'git -C "$srcdir/{src_subdir}" submodule update --init --recursive --force'.format(src_subdir=src_subdir),
+                (
+                    'git -C "$srcdir/{src_subdir}" submodule update --init --recursive --force '
+                    "--depth 1 --recommend-shallow"
+                ).format(src_subdir=src_subdir),
             ]
         )
         build_body = f"""\

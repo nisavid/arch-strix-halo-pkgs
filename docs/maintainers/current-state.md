@@ -93,6 +93,36 @@ downstream validation lane; AITER needs package build, install, JIT smoke, and
 affected vLLM scenario validation; `mistral-common` needs package rebuild,
 installed API checks, and the Gemma 4 vLLM smoke gate.
 
+The active refresh PR repins all four source lanes together: llama.cpp `b8992`,
+ROCm PyTorch release/2.11 at
+`443606eb94430d90554ab4c21202494576afedce`, AITER
+`a0f25393903f5412b0fb997d5b825a0aeb257466`, and
+`mistral-common 1.11.1`. Package-build gates completed through `tools/amerge`
+plan `20260430T232524-81972211` on 2026-05-01:
+
+- `lemonade-server 10.3.0-1`
+- `llama.cpp-hip-gfx1151 b8992-1`
+- `llama.cpp-vulkan-gfx1151 b8992-1`
+- `python-mistral-common-gfx1151 1.11.1-1`
+- `python-pytorch-opt-rocm-gfx1151 2.11.0-10`
+- `python-amd-aiter-gfx1151 0.1.12.post2.dev162+ga0f253939-1`
+- `python-flash-attn-rocm-gfx1151 2.8.4-11`
+- `python-torchao-rocm-gfx1151 0.17.0-3`
+- `python-torch-migraphx-gfx1151 1.2-5`
+- `python-torchvision-rocm-gfx1151 0.26.0-6`
+- `python-vllm-rocm-gfx1151 0.20.0-1`
+
+The first attempt found a Lemonade server build-environment defect: upstream npm
+tried to write to the host user npm cache, which is read-only inside the
+package build sandbox. The generated Lemonade server PKGBUILD now sets
+`npm_config_cache="$srcdir/.npm-cache"` and disables the npm update notifier so
+package builds use writable source-local state. The PyTorch package source prep
+now uses shallow recursive submodule fetches while still initializing upstream's
+full vendored submodule set. The vLLM retry fixed a malformed carried patch
+hunk length in `0016-rocm-refresh-local-carry-for-vllm-0.20.0.patch`; the patch
+then applied cleanly and the package built. Deploy/install, installed-smoke, and
+live-scenario gates remain open until host validation completes.
+
 ## ROCm inference reference boundary
 
 `docs/maintainers/rocm-inference-reference.md` records ROCm examples,

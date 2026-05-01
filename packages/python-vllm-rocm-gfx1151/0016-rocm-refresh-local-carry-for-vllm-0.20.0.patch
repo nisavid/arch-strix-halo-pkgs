@@ -1158,7 +1158,7 @@ diff --git a/vllm/v1/attention/ops/triton_unified_attention.py b/vllm/v1/attenti
 diff --git a/vllm/v1/sample/ops/topk_topp_sampler.py b/vllm/v1/sample/ops/topk_topp_sampler.py
 --- a/vllm/v1/sample/ops/topk_topp_sampler.py	2026-04-27 15:04:32.000000000 -0400
 +++ b/vllm/v1/sample/ops/topk_topp_sampler.py	2026-04-29 01:27:42.005977156 -0400
-@@ -248,6 +248,14 @@
+@@ -248,6 +248,15 @@
      if p is None and k is None:
          return logits
  

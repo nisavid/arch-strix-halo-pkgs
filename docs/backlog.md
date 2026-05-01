@@ -16,17 +16,31 @@
   `mistral-common 1.11.1`, and ROCm PyTorch release/2.11 at
   `443606eb94430d90554ab4c21202494576afedce`. The reviewed heads are recorded
   in `policies/package-freshness.toml`; active dispositions and gate labels
-  are in `docs/maintainers/update-candidates.toml`.
-  - `llama.cpp b8992 runtime rebuild lane`: update both HIP and Vulkan
-    packages, refresh Lemonade backend metadata, deploy/install, run CLI
-    smokes, and run tracked llama.cpp/Lemonade scenarios.
-  - `ROCm PyTorch release/2.11 443606e source-update lane`: use the normal
-    PyTorch rebuild/downstream validation lane because the update fixes an AMD
-    RDNA Inductor reduction-mask SIGSEGV.
-  - `AITER a0f2539 source-update lane`: build and install the package, run the
-    installed JIT smoke, and run affected vLLM scenario validation.
-  - `mistral-common 1.11.1 package-update lane`: rebuild the package, run
-    installed API checks, and run the Gemma 4 vLLM smoke gate.
+  are in `docs/maintainers/update-candidates.toml`. The active refresh PR
+  repins all four source lanes together. `tools/amerge` plan
+  `20260430T232524-81972211` built Lemonade server, both llama.cpp backends,
+  `python-mistral-common-gfx1151`, PyTorch, AITER, FlashAttention, TorchAO,
+  Torch-MIGraphX, TorchVision, and vLLM. The first vLLM attempt failed because
+  a carried patch hunk declared the wrong new-line count; the active PR fixes
+  that patch metadata and the retry built `python-vllm-rocm-gfx1151 0.20.0-1`.
+  Deploy/install, installed-smoke, and live-scenario gates remain open.
+  - `llama.cpp b8992 deploy, CLI smoke, and Lemonade scenario lane`:
+    update both HIP and Vulkan packages, refresh Lemonade backend metadata,
+    deploy/install, run CLI smokes, and run tracked llama.cpp/Lemonade
+    scenarios. The source update, metadata refresh, and package builds are
+    complete in the active PR.
+  - `ROCm PyTorch release/2.11 443606e install, smoke, and live validation lane`:
+    use the normal PyTorch rebuild/downstream validation lane because the
+    update fixes an AMD RDNA Inductor reduction-mask SIGSEGV. The source
+    update, shallow submodule prep, PyTorch package build, and downstream
+    package builds are complete in the active PR.
+  - `AITER a0f2539 install, JIT smoke, and vLLM validation lane`: install the
+    package, run the installed JIT smoke, and run affected vLLM scenario
+    validation. The source update and package build are complete in the active
+    PR.
+  - `mistral-common 1.11.1 install, API check, and Gemma 4 smoke lane`:
+    install the package, run installed API checks, and run the Gemma 4 vLLM
+    smoke gate. The package update and build are complete in the active PR.
 - Blackcat ai-notes recipe input is adopted through
   `a1d7a6816dd2c456bad9fcc7d61c53a4bd8c5fbd`. Follow up the newly described
   stable-diffusion.cpp package surface, expanded native/Rust wheel recipe

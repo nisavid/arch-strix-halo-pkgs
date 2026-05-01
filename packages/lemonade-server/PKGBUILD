@@ -63,6 +63,9 @@ build() {
   local build_root="$srcdir/build-lemonade-server"
   local install_root="/usr"
 
+  export npm_config_cache="$srcdir/.npm-cache"
+  export npm_config_update_notifier=false
+
   cmake -B "${build_root}" -GNinja . \
     -DCMAKE_C_COMPILER="${amdclang}" \
     -DCMAKE_CXX_COMPILER="${amdclangxx}" \
@@ -95,12 +98,12 @@ package() {
   install -Dm644 /dev/stdin "$pkgdir/etc/lemonade/conf.d/10-llamacpp-gfx1151.conf" <<'EOF'
 LEMONADE_LLAMACPP_ROCM_BIN=/usr/bin/llama-server-hip-gfx1151
 LEMONADE_LLAMACPP_VULKAN_BIN=/usr/bin/llama-server-vulkan-gfx1151
-LEMONADE_LLAMACPP_ROCM_VERSION=b8966
-LEMONADE_LLAMACPP_VULKAN_VERSION=b8966
-LEMONADE_LLAMACPP_ROCM_RELEASE_URL=https://github.com/ggml-org/llama.cpp/releases/tag/b8966
-LEMONADE_LLAMACPP_VULKAN_RELEASE_URL=https://github.com/ggml-org/llama.cpp/releases/tag/b8966
-LEMONADE_LLAMACPP_ROCM_LABEL=System llama-server-hip-gfx1151 llama.cpp b8966
-LEMONADE_LLAMACPP_VULKAN_LABEL=System llama-server-vulkan-gfx1151 llama.cpp b8966
+LEMONADE_LLAMACPP_ROCM_VERSION=b8992
+LEMONADE_LLAMACPP_VULKAN_VERSION=b8992
+LEMONADE_LLAMACPP_ROCM_RELEASE_URL=https://github.com/ggml-org/llama.cpp/releases/tag/b8992
+LEMONADE_LLAMACPP_VULKAN_RELEASE_URL=https://github.com/ggml-org/llama.cpp/releases/tag/b8992
+LEMONADE_LLAMACPP_ROCM_LABEL=System llama-server-hip-gfx1151 llama.cpp b8992
+LEMONADE_LLAMACPP_VULKAN_LABEL=System llama-server-vulkan-gfx1151 llama.cpp b8992
 EOF
 
   install -Dm644 "$srcdir/lemonade-10.3.0/LICENSE" "$pkgdir/usr/share/licenses/lemonade-server/LICENSE"

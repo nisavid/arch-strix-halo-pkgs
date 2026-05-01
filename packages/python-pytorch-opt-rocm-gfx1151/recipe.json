@@ -30,9 +30,11 @@
       "When updating, inspect the current Arch python-pytorch pkgbase first, then re-evaluate every carried recipe/source patch against the chosen ROCm fork.",
       "On 2026-04-23, reviewed ROCm/pytorch release/2.11 through 0320cc5b2fbba866c7ac1aa5deb8c14dd9a37b95. The latest reviewed delta only updates CI Numba version constraints for Python 3.14, with no overlap against the local Python 3.14 wheel flow, HIPGraph stub, NumPy target define, MAGMA version encoding, gfx1151 CK enablement, BLAS/provider carry, or installed runtime behavior. Record the reviewed branch head without repinning the package source until a local workload needs those fixes or a broader PyTorch rebuild lane is already open.",
       "On 2026-04-28, reviewed ROCm/pytorch release/2.11 through e16e349eb30bac8fd72b5c34ab220527fea5c58c plus Arch python-pytorch-opt-rocm 2.11.0-4. The upstream delta contains Windows DLL-export/native-header and MIOpen CTC-loss fixes, with no overlap against the current gfx1151 wheel assembly, HIPGraph stub, NumPy target define, CK enablement, or BLAS/provider carry. Record the reviewed branch and baseline without repinning until a PyTorch rebuild lane is open.",
+      "On 2026-05-01, adopted ROCm/pytorch release/2.11 at 443606eb94430d90554ab4c21202494576afedce. The 9413e9b..443606e range fixes an AMD RDNA SIGSEGV in Inductor reduction-mask optimization and adds regression coverage; this is runtime-relevant for the gfx1151 PyTorch lane.",
       "Keep the package version aligned with the built wheel version; do not repeat the earlier mismatch where the package claimed 2.11.0 but the built wheel came from develop.",
       "Keep openblas explicit in both depends and makedepends so the build does not drift back to generic host BLAS auto-detection.",
       "Run PyTorch build subprocesses without inherited Lmod shell-function exports so CMake HIP discovery sees the ROCm hipconfig version and keeps USE_ROCM enabled.",
+      "Use shallow recursive submodule fetches for the ROCm/pytorch fork. The build still initializes the full vendored submodule set expected by upstream, but it does not need complete submodule history for package assembly.",
       "Preserve the current Arch Python 3.14 wheel flow unless upstream changes materially: build CMake artifacts first, tolerate the known _sysconfigdata__linux_x86_64-linux-gnu.cpython-314.pyc install failure, run the safe CMake install scripts that stage PyTorch C++ extension headers and Caffe2 package metadata, restage the built torch/lib and torch/bin payloads, then run SKIP_BUILD_DEPS=1 python setup.py bdist_wheel."
     ]
   },
@@ -126,7 +128,7 @@
       "Keep ATen's CUDA-named API enabled for ROCm builds without turning on NVIDIA CUDA discovery, so torch.cuda and downstream ROCm extension builds see the HIP-backed device surface."
     ],
     "source_refs": [
-      "pytorch::git+https://github.com/ROCm/pytorch.git#commit=9413e9b96bcbeb8af1aa0280a3a9bc7dd048857e"
+      "pytorch::git+https://github.com/ROCm/pytorch.git#commit=443606eb94430d90554ab4c21202494576afedce"
     ],
     "src_subdir": "pytorch",
     "template": "python-project-pytorch-rocm",
@@ -134,9 +136,11 @@
       "When updating, inspect the current Arch python-pytorch pkgbase first, then re-evaluate every carried recipe/source patch against the chosen ROCm fork.",
       "On 2026-04-23, reviewed ROCm/pytorch release/2.11 through 0320cc5b2fbba866c7ac1aa5deb8c14dd9a37b95. The latest reviewed delta only updates CI Numba version constraints for Python 3.14, with no overlap against the local Python 3.14 wheel flow, HIPGraph stub, NumPy target define, MAGMA version encoding, gfx1151 CK enablement, BLAS/provider carry, or installed runtime behavior. Record the reviewed branch head without repinning the package source until a local workload needs those fixes or a broader PyTorch rebuild lane is already open.",
       "On 2026-04-28, reviewed ROCm/pytorch release/2.11 through e16e349eb30bac8fd72b5c34ab220527fea5c58c plus Arch python-pytorch-opt-rocm 2.11.0-4. The upstream delta contains Windows DLL-export/native-header and MIOpen CTC-loss fixes, with no overlap against the current gfx1151 wheel assembly, HIPGraph stub, NumPy target define, CK enablement, or BLAS/provider carry. Record the reviewed branch and baseline without repinning until a PyTorch rebuild lane is open.",
+      "On 2026-05-01, adopted ROCm/pytorch release/2.11 at 443606eb94430d90554ab4c21202494576afedce. The 9413e9b..443606e range fixes an AMD RDNA SIGSEGV in Inductor reduction-mask optimization and adds regression coverage; this is runtime-relevant for the gfx1151 PyTorch lane.",
       "Keep the package version aligned with the built wheel version; do not repeat the earlier mismatch where the package claimed 2.11.0 but the built wheel came from develop.",
       "Keep openblas explicit in both depends and makedepends so the build does not drift back to generic host BLAS auto-detection.",
       "Run PyTorch build subprocesses without inherited Lmod shell-function exports so CMake HIP discovery sees the ROCm hipconfig version and keeps USE_ROCM enabled.",
+      "Use shallow recursive submodule fetches for the ROCm/pytorch fork. The build still initializes the full vendored submodule set expected by upstream, but it does not need complete submodule history for package assembly.",
       "Preserve the current Arch Python 3.14 wheel flow unless upstream changes materially: build CMake artifacts first, tolerate the known _sysconfigdata__linux_x86_64-linux-gnu.cpython-314.pyc install failure, run the safe CMake install scripts that stage PyTorch C++ extension headers and Caffe2 package metadata, restage the built torch/lib and torch/bin payloads, then run SKIP_BUILD_DEPS=1 python setup.py bdist_wheel."
     ],
     "upstream_version": "2.11.0",
