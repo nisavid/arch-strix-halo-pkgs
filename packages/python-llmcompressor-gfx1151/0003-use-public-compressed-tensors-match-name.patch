@@ -1,0 +1,24 @@
+diff --git a/src/llmcompressor/entrypoints/model_free/helpers.py b/src/llmcompressor/entrypoints/model_free/helpers.py
+index d8c9645..8c75d9b 100644
+--- a/src/llmcompressor/entrypoints/model_free/helpers.py
++++ b/src/llmcompressor/entrypoints/model_free/helpers.py
+@@ -4,7 +4,7 @@ from collections import defaultdict
+ from typing import Mapping, TypeVar
+ 
+ import torch
+-from compressed_tensors.utils.match import _match_name
++from compressed_tensors.utils.match import match_name as _match_name
+ from loguru import logger
+ from transformers.file_utils import CONFIG_NAME
+ 
+diff --git a/src/llmcompressor/entrypoints/model_free/process.py b/src/llmcompressor/entrypoints/model_free/process.py
+index 9470d66..2afca3f 100644
+--- a/src/llmcompressor/entrypoints/model_free/process.py
++++ b/src/llmcompressor/entrypoints/model_free/process.py
+@@ -5,7 +5,7 @@ from typing import Iterable
+ import torch
+ from compressed_tensors.quantization import QuantizationScheme
+-from compressed_tensors.utils.match import _match_name
++from compressed_tensors.utils.match import match_name as _match_name
+ from safetensors.torch import load_file, save_file
+ from torch.nn import Module

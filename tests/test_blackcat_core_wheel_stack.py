@@ -110,12 +110,40 @@ SERVICE_STACK = {
 }
 
 TOOLING_STACK = {
+    "python-accelerate-gfx1151": {
+        "template": "native-wheel-pypi",
+        "recipe_key": "native_wheels",
+        "upstream_version": "1.12.0",
+        "provides": ["python-accelerate"],
+        "consumer_dep": "python-accelerate-gfx1151",
+    },
+    "python-auto-round-gfx1151": {
+        "template": "native-wheel-pypi",
+        "recipe_key": "native_wheels",
+        "upstream_version": "0.10.2",
+        "provides": ["python-auto-round"],
+        "consumer_dep": "python-auto-round-gfx1151",
+    },
     "python-compressed-tensors-gfx1151": {
         "template": "native-wheel-pypi",
         "recipe_key": "native_wheels",
         "upstream_version": "0.15.0.1",
         "provides": ["python-compressed-tensors"],
         "consumer_dep": "python-compressed-tensors-gfx1151",
+    },
+    "python-nvidia-ml-py-gfx1151": {
+        "template": "native-wheel-pypi",
+        "recipe_key": "native_wheels",
+        "upstream_version": "13.590.48",
+        "provides": ["python-nvidia-ml-py"],
+        "consumer_dep": "python-nvidia-ml-py-gfx1151",
+    },
+    "python-llmcompressor-gfx1151": {
+        "template": "native-wheel-pypi",
+        "recipe_key": "native_wheels",
+        "upstream_version": "0.10.0.1",
+        "provides": ["python-llmcompressor"],
+        "consumer_dep": "python-llmcompressor-gfx1151",
     },
 }
 
@@ -243,3 +271,17 @@ def test_blackcat_tooling_wheel_stack_rendered_outputs_exist() -> None:
         assert f"provides=({' '.join(expected['provides'])})" in pkgbuild
         assert recipe["policy"]["recipe_key"] == expected["recipe_key"]
         assert "Blackcat" in readme
+
+
+def test_llmcompressor_closure_prefers_local_tooling_packages() -> None:
+    packages = tomllib.loads((REPO_ROOT / "policies/recipe-packages.toml").read_text())[
+        "packages"
+    ]
+    llmcompressor_deps = set(packages["python-llmcompressor-gfx1151"]["depends"])
+
+    assert "python-accelerate-gfx1151" in llmcompressor_deps
+    assert "python-auto-round-gfx1151" in llmcompressor_deps
+    assert "python-compressed-tensors-gfx1151" in llmcompressor_deps
+    assert "python-nvidia-ml-py-gfx1151" in llmcompressor_deps
+    assert "python-transformers-gfx1151" in llmcompressor_deps
+    assert "python-pytorch-opt-rocm-gfx1151" in llmcompressor_deps

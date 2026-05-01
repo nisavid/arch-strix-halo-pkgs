@@ -124,6 +124,7 @@ def test_native_wheel_renderer_applies_source_patches_and_build_config_settings(
             "template": "native-wheel-pypi",
             "upstream_version": "1.2.3",
             "pkgdesc": "Sample native wheel",
+            "pkgrel": 2,
             "url": "https://example.invalid/sample-native",
             "license": ["MIT"],
             "pypi_name": "sample-native",
@@ -133,6 +134,10 @@ def test_native_wheel_renderer_applies_source_patches_and_build_config_settings(
             "build_config_settings": [
                 "setup-args=-Dblas=openblas",
                 "setup-args=-Dlapack=openblas",
+            ],
+            "build_env": [
+                "SAMPLE_MODE=release",
+                "SAMPLE_VERSION=1.2.3",
             ],
         },
         {
@@ -152,10 +157,12 @@ def test_native_wheel_renderer_applies_source_patches_and_build_config_settings(
     )
 
     assert "0001-sample.patch" in pkgbuild
+    assert "pkgrel=2" in pkgbuild
     assert 'patch --dry-run -R -Np1 -i "$srcdir/0001-sample.patch"' in pkgbuild
     assert "python -m build --wheel --no-isolation --skip-dependency-check \\\n" in pkgbuild
     assert "    -Csetup-args=-Dblas=openblas \\\n" in pkgbuild
     assert "    -Csetup-args=-Dlapack=openblas\n" in pkgbuild
+    assert "\n  export SAMPLE_MODE=release\n  export SAMPLE_VERSION=1.2.3\n" in pkgbuild
 
 
 def test_compiler_env_uses_repo_local_ccache_storage() -> None:

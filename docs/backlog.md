@@ -85,11 +85,18 @@
     `python-compressed-tensors-gfx1151 0.15.0.1-1` now has package policy,
     rendered scaffolds, package-build evidence, publish/install proof, and
     installed-smoke evidence aligned with the installed vLLM 0.20.0
-    compressed-tensors requirement. Keep `python-llmcompressor-gfx1151` as the next
-    dependency-closure item: Blackcat's `llmcompressor 0.10.0.1` notes pin
-    `compressed-tensors 0.14.0.1`, `torch<=2.10.0`, and
-    `transformers<=4.57.6`, and also require missing host packages such as
-    `accelerate` and `auto-round`.
+    compressed-tensors requirement. Package policy, rendered scaffolds, and
+    package-build, publish/install, and installed-smoke evidence now also exist
+    for `python-accelerate-gfx1151
+    1.12.0-1`, `python-auto-round-gfx1151 0.10.2-1`,
+    `python-nvidia-ml-py-gfx1151 13.590.48-1`, and
+    `python-llmcompressor-gfx1151 0.10.0.1-4`. The llmcompressor package uses
+    upstream's dev dependency lane plus package-local compatibility patches to
+    accept the installed PyTorch 2.11, Transformers 5.7.0, and
+    compressed-tensors 0.15.0.1 stack. The 2026-05-01 installed smoke passed
+    for `accelerate`, `auto_round`, `pynvml`, `llmcompressor`,
+    llmcompressor's AutoRound modifier import, skip-weight initialization, and
+    model-free name matching.
   - Engine lanes: new engines are in scope by default. Package
     `stable-diffusion.cpp` as a local optimized Vulkan engine rather than
     consuming an upstream binary or untracked source checkout.
