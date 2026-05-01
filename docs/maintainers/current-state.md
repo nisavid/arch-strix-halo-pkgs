@@ -382,6 +382,22 @@ passed through `python3.14` for direct `accelerate`, `auto_round`, `pynvml`,
 and `llmcompressor` imports, AutoRound preset loading, `AutoRoundModifier`,
 `skip_weights_initialize`, and model-free name matching.
 
+The 2026-05-01 policy-coverage freshness sweep after adding the Blackcat
+service/runtime and tooling package directories first found missing freshness
+policy coverage for those new package directories. `policies/package-freshness.toml`
+now covers `python-watchfiles-gfx1151`, `python-uvloop-gfx1151`,
+`python-httptools-gfx1151`, `python-msgspec-gfx1151`,
+`python-aiohttp-gfx1151`, `python-multidict-gfx1151`,
+`python-yarl-gfx1151`, `python-frozenlist-gfx1151`,
+`python-compressed-tensors-gfx1151`, `python-accelerate-gfx1151`,
+`python-auto-round-gfx1151`, `python-nvidia-ml-py-gfx1151`, and
+`python-llmcompressor-gfx1151`. The refreshed sweep then found three
+actionable PyPI updates in the new tooling families: `accelerate 1.13.0`,
+`auto-round 0.12.3`, and `nvidia-ml-py 13.595.45`. They are tracked in
+`docs/maintainers/update-candidates.toml` as separate package update lanes
+because they require source review, rebuild, deploy/install, and installed
+smoke validation before adoption.
+
 ## ROCm inference reference boundary
 
 `docs/maintainers/rocm-inference-reference.md` records ROCm examples,
