@@ -1,0 +1,110 @@
+{
+  "maintenance": {
+    "advisory_references": [],
+    "authoritative_reference": "none",
+    "divergence_notes": [
+      "There is no current Arch-family compressed-tensors package baseline, so this package is closure-first for vLLM compressed-tensors quantization lanes.",
+      "Uses the vLLM 0.20.0-compatible compressed-tensors 0.15.0.1 release instead of the older 0.14.0.1 helper version named by Blackcat's llmcompressor quantization notes.",
+      "Treat llmcompressor as a separate package/dependency-closure decision because llmcompressor 0.10.0.1 pins compressed-tensors 0.14.0.1 and older torch/transformers bounds than the current local stack."
+    ],
+    "source_patches": [],
+    "update_notes": [
+      "Check vLLM's requirements/common.txt and compressed-tensors release metadata together before updating; this package should stay compatible with the installed vLLM quantization import path.",
+      "After publishing a rebuilt package, verify `import compressed_tensors` and a minimal config import through the installed local Python lane.",
+      "Do not use this package as proof that llmcompressor is installable. Package llmcompressor only after its accelerate, auto-round, NVIDIA-management, torch, transformers, and compressed-tensors dependency story is reconciled.",
+      "Keep the build dependency check skipped while upstream's sdist pins setuptools_scm==8.2.0. The Arch host carries a newer setuptools-scm that builds the pure-Python wheel cleanly."
+    ]
+  },
+  "name": "python-compressed-tensors-gfx1151",
+  "package_name": "python-compressed-tensors-gfx1151",
+  "pkgver": "0.15.0.1",
+  "policy": {
+    "advisory_references": [],
+    "arch_reference": [],
+    "authoritative_reference": "none",
+    "conflicts": [
+      "python-compressed-tensors"
+    ],
+    "depends": [
+      "python-gfx1151",
+      "python-loguru",
+      "python-pydantic",
+      "python-pytorch-opt-rocm-gfx1151",
+      "python-transformers-gfx1151"
+    ],
+    "divergence_notes": [
+      "There is no current Arch-family compressed-tensors package baseline, so this package is closure-first for vLLM compressed-tensors quantization lanes.",
+      "Uses the vLLM 0.20.0-compatible compressed-tensors 0.15.0.1 release instead of the older 0.14.0.1 helper version named by Blackcat's llmcompressor quantization notes.",
+      "Treat llmcompressor as a separate package/dependency-closure decision because llmcompressor 0.10.0.1 pins compressed-tensors 0.14.0.1 and older torch/transformers bounds than the current local stack."
+    ],
+    "license": [
+      "Apache-2.0"
+    ],
+    "makedepends": [
+      "python-build",
+      "python-installer",
+      "python-setuptools",
+      "python-setuptools-scm",
+      "python-wheel",
+      "rocm-llvm-gfx1151"
+    ],
+    "patches_dir": "patches/python-compressed-tensors-gfx1151",
+    "pkgdesc": "Compressed model tensor format helpers for vLLM quantized checkpoints",
+    "provides": [
+      "python-compressed-tensors"
+    ],
+    "pypi_name": "compressed_tensors",
+    "recipe_key": "native_wheels",
+    "recipe_notes_override": "This package is the compressed-tensors output for the Blackcat Qwen3-VL\ntooling follow-up lane. Blackcat's quantization helper names\nllmcompressor 0.10.0.1 and compressed-tensors 0.14.0.1, but the installed\nvLLM 0.20.0 lane expects compressed-tensors 0.15.0.1. Keep this package\naligned with vLLM first, then reconcile llmcompressor as a separate package\nclosure.\n\nThe package is pure Python today, but it still belongs in the local package\nset because vLLM compressed-tensors quantization and Qwen3-VL W8A8/W8A16\ncheckpoint loading need a coherent installed dependency rather than an\nuntracked venv wheel.\n\nThe upstream sdist pins `setuptools_scm==8.2.0` as a build dependency, while\nthe host has a newer Arch `python-setuptools-scm`. The package skips Python\nbuild dependency checking and uses the system build backend because this is a\npure-Python wheel and the newer backend builds the same installed package\nshape.\n",
+    "scaffold_notes": [
+      "Part of the Blackcat Qwen3-VL quantization/tooling follow-up lane.",
+      "Keep this package aligned with the installed vLLM compressed-tensors requirement before promoting Qwen3-VL compressed-tensors scenarios.",
+      "Uses --skip-dependency-check to avoid the stale exact setuptools_scm build pin in the PyPI sdist.",
+      "Keep llmcompressor out of this package's validation claim until its older dependency pins are reconciled with the local torch and transformers stack."
+    ],
+    "skip_dependency_check": true,
+    "src_subdir": "compressed_tensors-0.15.0.1",
+    "template": "native-wheel-pypi",
+    "update_notes": [
+      "Check vLLM's requirements/common.txt and compressed-tensors release metadata together before updating; this package should stay compatible with the installed vLLM quantization import path.",
+      "After publishing a rebuilt package, verify `import compressed_tensors` and a minimal config import through the installed local Python lane.",
+      "Do not use this package as proof that llmcompressor is installable. Package llmcompressor only after its accelerate, auto-round, NVIDIA-management, torch, transformers, and compressed-tensors dependency story is reconciled.",
+      "Keep the build dependency check skipped while upstream's sdist pins setuptools_scm==8.2.0. The Arch host carries a newer setuptools-scm that builds the pure-Python wheel cleanly."
+    ],
+    "upstream_version": "0.15.0.1",
+    "url": "https://github.com/vllm-project/compressed-tensors"
+  },
+  "provenance": {
+    "output_root": "packages",
+    "recipe_author": "Blackcat Informatics Inc.",
+    "recipe_commit": "a1d7a68",
+    "recipe_date": "20260427",
+    "recipe_history_count": 16,
+    "recipe_repo": "https://github.com/paudley/ai-notes",
+    "recipe_subdir": "strix-halo",
+    "repo_subpath": "."
+  },
+  "recipe": {
+    "branch": null,
+    "depends_on": [
+      "cpython",
+      "pytorch"
+    ],
+    "method": "pip",
+    "notes": "This package is the compressed-tensors output for the Blackcat Qwen3-VL\ntooling follow-up lane. Blackcat's quantization helper names\nllmcompressor 0.10.0.1 and compressed-tensors 0.14.0.1, but the installed\nvLLM 0.20.0 lane expects compressed-tensors 0.15.0.1. Keep this package\naligned with vLLM first, then reconcile llmcompressor as a separate package\nclosure.\n\nThe package is pure Python today, but it still belongs in the local package\nset because vLLM compressed-tensors quantization and Qwen3-VL W8A8/W8A16\ncheckpoint loading need a coherent installed dependency rather than an\nuntracked venv wheel.\n\nThe upstream sdist pins `setuptools_scm==8.2.0` as a build dependency, while\nthe host has a newer Arch `python-setuptools-scm`. The package skips Python\nbuild dependency checking and uses the system build backend because this is a\npure-Python wheel and the newer backend builds the same installed package\nshape.\n",
+    "patches": [
+      {
+        "description": "Replace the recipe's broken venv-local Python cmake wrapper with the real system cmake binary. The cmake pip package installs a Python wrapper that does `from cmake import cmake`, which fails inside pip's build isolation where the cmake Python module is unavailable.\n",
+        "dst": "<build-venv>/.venv/bin/cmake",
+        "src": "/usr/bin/cmake",
+        "type": "file_copy"
+      }
+    ],
+    "phase": "H",
+    "repo": null,
+    "src_dir": null,
+    "steps": [
+      32
+    ]
+  }
+}
