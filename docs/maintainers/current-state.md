@@ -230,11 +230,22 @@ extension compile before the branch was rebased over the 2026-05-03 vLLM
 0.20.1 package-build gate before it can inherit that source-updated validation
 state. `makepkg --printsrcinfo` passed for the metadata-only
 `python-pytorch-opt-rocm-gfx1151`, `python-torchvision-rocm-gfx1151`, and
-`python-aotriton-gfx1151` dependency rewires. The built artifacts are present
-in `repo/x86_64`, but publish/install remains open because noninteractive
-`tools/amerge publish ... -y` could not satisfy sudo in this session
-(`sudo: a terminal is required to read the password`; `sudo: a password is
-required`). Installed smoke and live-scenario validation therefore remain open.
+`python-aotriton-gfx1151` dependency rewires. The built artifacts were added
+to `repo/x86_64`. Noninteractive `tools/amerge publish ... -y` could not
+satisfy sudo in the Codex session (`sudo: a terminal is required to read the
+password`; `sudo: a password is required`), so the operator completed the
+privileged deploy path. After deploy, `pacman -Q` reported
+`python-pydantic-core-gfx1151 2.41.5-1`,
+`python-tokenizers-gfx1151 0.22.2-1`,
+`python-safetensors-gfx1151 0.7.0-1`, `python-pyyaml-gfx1151 6.0.3-1`,
+`python-psutil-gfx1151 7.2.2-1`, `python-pillow-gfx1151 12.2.0-1`,
+`python-transformers-gfx1151 5.7.0-2`,
+`python-mistral-common-gfx1151 1.11.1-2`, and
+`python-vllm-rocm-gfx1151 0.20.0-2`. Installed import smokes passed through
+`python3.14` for pydantic-core plus a tiny pydantic model validation,
+tokenizers construction, safetensors NumPy save/load, PyYAML parsing, psutil
+CPU count, Pillow image creation, Transformers import, mistral-common import,
+and vLLM import. Live-scenario validation remains open.
 
 ## ROCm inference reference boundary
 

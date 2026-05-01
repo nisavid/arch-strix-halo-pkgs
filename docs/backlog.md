@@ -61,8 +61,8 @@
     `python-psutil-gfx1151`, and `python-pillow-gfx1151`. The source and
     package-build gates passed, and `python-transformers-gfx1151`,
     `python-mistral-common-gfx1151`, and `python-vllm-rocm-gfx1151` rebuilt
-    against the metadata changes. The publish/install, installed-smoke, and
-    live-scenario gates are still open.
+    against the metadata changes. Publish/install and installed-smoke gates
+    passed on 2026-05-01. Live-scenario validation remains open.
   - Comprehensive Blackcat wheel stack, selected for this repo: the core stack
     plus `python-watchfiles-gfx1151`, `python-uvloop-gfx1151`,
     `python-httptools-gfx1151`, `python-msgspec-gfx1151`,
