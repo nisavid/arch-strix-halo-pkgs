@@ -103,9 +103,13 @@
     `python-nvidia-ml-py-gfx1151` from 13.590.48 to 13.595.45. These are
     tracked in `docs/maintainers/update-candidates.toml`; adopt them through a
     separate package update, rebuild, deploy/install, and installed smoke lane.
-  - Engine lanes: new engines are in scope by default. Package
-    `stable-diffusion.cpp` as a local optimized Vulkan engine rather than
-    consuming an upstream binary or untracked source checkout.
+  - Engine lanes: new engines are in scope by default.
+    `stable-diffusion.cpp-vulkan-gfx1151` now has package policy, rendered
+    scaffolds, source patch carry, freshness coverage, package-build evidence,
+    deploy/install proof, and installed wrapper smokes. Continue future engine
+    work from package-local maintenance docs and keep new engines in the local
+    optimized build stack rather than consuming upstream binaries or untracked
+    source checkouts.
   - Starting point: use the existing `rust_wheels` and `native_wheels`
     policy/template lanes; compare each package against Arch or AUR before
     carrying it locally, and preserve the already packaged foundation

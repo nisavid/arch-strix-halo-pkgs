@@ -1,0 +1,53 @@
+# stable-diffusion.cpp: SDXL CLIP-G prefix mapping fix
+#
+# When loading an SDXL diffusers checkpoint, stable-diffusion.cpp prefixes
+# second-text-encoder tensors with `te.1.`. The downstream prefix mapper must
+# rewrite those tensors to `cond_stage_model.1.transformer.` before the broader
+# `te.` rule can match; otherwise the SDXL CLIP-G runner does not find its
+# tensors and the checkpoint is misclassified as SD 1.x.
+#
+# Keep this as a package-local patch until upstream carries an equivalent
+# deterministic prefix ordering.
+diff --git a/src/name_conversion.cpp b/src/name_conversion.cpp
+--- a/src/name_conversion.cpp
++++ b/src/name_conversion.cpp
+@@ -1069,18 +1069,22 @@ std::string convert_tensor_name(std::string name, SDVersion version) {
+         }
+     }
+ 
+-    std::unordered_map<std::string, std::string> prefix_map = {
++    // Use std::vector<pair> so the more-specific prefixes are tried before
++    // broader ones such as "te.".
++    std::vector<std::pair<std::string, std::string>> prefix_map = {
+         {"diffusion_model.", "model.diffusion_model."},
+         {"unet.", "model.diffusion_model."},
+         {"transformer.", "model.diffusion_model."},  // dit
+         {"vae.", "first_stage_model."},
+-        {"text_encoder.", "cond_stage_model.transformer."},
+-        {"te.", "cond_stage_model.transformer."},
+         {"text_encoder.2.", "cond_stage_model.1.transformer."},
++        {"text_encoder.", "cond_stage_model.transformer."},
++        {"te.1.", "cond_stage_model.1.transformer."},
++        {"te.0.", "cond_stage_model.transformer."},
++        {"te.", "cond_stage_model.transformer."},
+         {"conditioner.embedders.0.open_clip.", "cond_stage_model."},
+         // https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0
+-        {"conditioner.embedders.0.", "cond_stage_model."},
+         {"conditioner.embedders.1.", "cond_stage_model.1."},
++        {"conditioner.embedders.0.", "cond_stage_model."},
+         // {"te2.text_model.encoder.layers.", "cond_stage_model.1.model.transformer.resblocks."},
+         {"te2.", "cond_stage_model.1.transformer."},
+         {"te1.", "cond_stage_model.transformer."},
+@@ -1088,7 +1092,11 @@ std::string convert_tensor_name(std::string name, SDVersion version) {
+     };
+ 
+     if (sd_version_is_flux(version)) {
+-        prefix_map["te1."] = "text_encoders.clip_l.transformer.";
++        for (auto& entry : prefix_map) {
++            if (entry.first == "te1.") {
++                entry.second = "text_encoders.clip_l.transformer.";
++            }
++        }
+     }
+ 
+     replace_with_prefix_map(name, prefix_map);

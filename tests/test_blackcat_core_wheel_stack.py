@@ -147,6 +147,18 @@ TOOLING_STACK = {
     },
 }
 
+ENGINE_STACK = {
+    "stable-diffusion.cpp-vulkan-gfx1151": {
+        "template": "stable-diffusion-cpp",
+        "recipe_key": "stable_diffusion_cpp",
+        "upstream_version": "r593.g3d6064b",
+        "provides": [
+            "stable-diffusion.cpp-vulkan-gfx1151",
+            "stable-diffusion.cpp-vulkan",
+        ],
+    },
+}
+
 
 def test_core_blackcat_wheel_stack_is_policy_managed() -> None:
     packages = tomllib.loads((REPO_ROOT / "policies/recipe-packages.toml").read_text())[
@@ -285,3 +297,41 @@ def test_llmcompressor_closure_prefers_local_tooling_packages() -> None:
     assert "python-nvidia-ml-py-gfx1151" in llmcompressor_deps
     assert "python-transformers-gfx1151" in llmcompressor_deps
     assert "python-pytorch-opt-rocm-gfx1151" in llmcompressor_deps
+
+
+def test_blackcat_engine_stack_is_policy_managed() -> None:
+    packages = tomllib.loads((REPO_ROOT / "policies/recipe-packages.toml").read_text())[
+        "packages"
+    ]
+
+    for package_name, expected in ENGINE_STACK.items():
+        policy = packages[package_name]
+        assert policy["template"] == expected["template"]
+        assert policy["recipe_key"] == expected["recipe_key"]
+        assert policy["upstream_version"] == expected["upstream_version"]
+        assert policy["provides"] == expected["provides"]
+        assert set(policy["depends"]) >= {
+            "aocl-libm-gfx1151",
+            "gcc-libs",
+            "glibc",
+            "vulkan-icd-loader",
+        }
+
+
+def test_blackcat_engine_stack_rendered_output_exists() -> None:
+    package_name = "stable-diffusion.cpp-vulkan-gfx1151"
+    package_dir = REPO_ROOT / "packages" / package_name
+    pkgbuild = (package_dir / "PKGBUILD").read_text()
+    recipe = json.loads((package_dir / "recipe.json").read_text())
+    readme = (package_dir / "README.md").read_text()
+
+    assert f"pkgname={package_name}" in pkgbuild
+    assert "pkgver=r593.g3d6064b" in pkgbuild
+    assert "git submodule update --init --recursive" in pkgbuild
+    assert "0001-sdxl-clipg-prefix-mapping.patch" in pkgbuild
+    assert "-DSD_VULKAN=ON" in pkgbuild
+    assert "-DGGML_VULKAN_VALIDATE=OFF" in pkgbuild
+    assert "sd-cli-vulkan-gfx1151" in pkgbuild
+    assert "sd-server-vulkan-gfx1151" in pkgbuild
+    assert recipe["policy"]["recipe_key"] == "stable_diffusion_cpp"
+    assert "Blackcat" in readme
