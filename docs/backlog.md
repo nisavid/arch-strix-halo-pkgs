@@ -82,6 +82,14 @@
     quantization/tooling review with `python-llmcompressor-gfx1151` and
     `python-compressed-tensors-gfx1151`, then add any native transitive
     dependencies that materially affect quantization or model-loading runtime.
+    `python-compressed-tensors-gfx1151 0.15.0.1-1` now has package policy,
+    rendered scaffolds, package-build evidence, publish/install proof, and
+    installed-smoke evidence aligned with the installed vLLM 0.20.0
+    compressed-tensors requirement. Keep `python-llmcompressor-gfx1151` as the next
+    dependency-closure item: Blackcat's `llmcompressor 0.10.0.1` notes pin
+    `compressed-tensors 0.14.0.1`, `torch<=2.10.0`, and
+    `transformers<=4.57.6`, and also require missing host packages such as
+    `accelerate` and `auto-round`.
   - Engine lanes: new engines are in scope by default. Package
     `stable-diffusion.cpp` as a local optimized Vulkan engine rather than
     consuming an upstream binary or untracked source checkout.

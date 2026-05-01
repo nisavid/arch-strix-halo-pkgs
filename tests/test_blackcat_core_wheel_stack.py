@@ -109,6 +109,16 @@ SERVICE_STACK = {
     },
 }
 
+TOOLING_STACK = {
+    "python-compressed-tensors-gfx1151": {
+        "template": "native-wheel-pypi",
+        "recipe_key": "native_wheels",
+        "upstream_version": "0.15.0.1",
+        "provides": ["python-compressed-tensors"],
+        "consumer_dep": "python-compressed-tensors-gfx1151",
+    },
+}
+
 
 def test_core_blackcat_wheel_stack_is_policy_managed() -> None:
     packages = tomllib.loads((REPO_ROOT / "policies/recipe-packages.toml").read_text())[
@@ -204,3 +214,32 @@ def test_service_consumers_prefer_local_blackcat_packages() -> None:
     assert "python-multidict-gfx1151" in aiohttp_deps
     assert "python-yarl-gfx1151" in aiohttp_deps
     assert "python-multidict-gfx1151" in yarl_deps
+
+
+def test_blackcat_tooling_wheel_stack_is_policy_managed() -> None:
+    packages = tomllib.loads((REPO_ROOT / "policies/recipe-packages.toml").read_text())[
+        "packages"
+    ]
+
+    for package_name, expected in TOOLING_STACK.items():
+        policy = packages[package_name]
+        assert policy["template"] == expected["template"]
+        assert policy["recipe_key"] == expected["recipe_key"]
+        assert policy["upstream_version"] == expected["upstream_version"]
+        assert policy["provides"] == expected["provides"]
+        assert set(policy["conflicts"]) >= set(expected["provides"])
+        assert "python-gfx1151" in policy["depends"]
+
+
+def test_blackcat_tooling_wheel_stack_rendered_outputs_exist() -> None:
+    for package_name, expected in TOOLING_STACK.items():
+        package_dir = REPO_ROOT / "packages" / package_name
+        pkgbuild = (package_dir / "PKGBUILD").read_text()
+        recipe = json.loads((package_dir / "recipe.json").read_text())
+        readme = (package_dir / "README.md").read_text()
+
+        assert f"pkgname={package_name}" in pkgbuild
+        assert f"pkgver={expected['upstream_version']}" in pkgbuild
+        assert f"provides=({' '.join(expected['provides'])})" in pkgbuild
+        assert recipe["policy"]["recipe_key"] == expected["recipe_key"]
+        assert "Blackcat" in readme

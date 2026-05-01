@@ -334,6 +334,31 @@ passed outside the sandbox with `HF_HOME=/var/cache/hf` at
 - `vllm.torchao.tiny.generate` passed in `25.175177` seconds.
 - `vllm.qwen3_5.0_8b.text.basic` passed in `38.174217` seconds.
 
+The Blackcat Qwen3-VL quantization/tooling lane now has package policy and
+rendered scaffolds for `python-compressed-tensors-gfx1151 0.15.0.1`.
+Focused scaffold tests passed with `pytest -p no:cacheprovider
+tests/test_blackcat_core_wheel_stack.py tests/test_render_recipe_scaffolds.py
+-q` on 2026-05-01. The first package build exposed the PyPI sdist's stale
+exact `setuptools_scm==8.2.0` build dependency pin; the package now uses the
+renderer's `--skip-dependency-check` path and the Arch `python-setuptools-scm`
+package. `tools/amerge build python-compressed-tensors-gfx1151` then built
+`python-compressed-tensors-gfx1151 0.15.0.1-1` on 2026-05-01. After deploy,
+`pacman -Q python-compressed-tensors-gfx1151` reported `0.15.0.1-1`.
+Installed smoke passed through `python3.14` for direct `compressed_tensors`
+import, `QuantizationConfig`, `CompressionFormat`, and vLLM's
+`compressed-tensors` quantization registry plus `CompressedTensorsConfig`
+import path.
+
+`python-llmcompressor-gfx1151` remains a separate dependency-closure item, not
+part of the compressed-tensors package claim. Blackcat's Qwen3-VL helper names
+`llmcompressor 0.10.0.1` with `compressed-tensors 0.14.0.1`, while installed
+vLLM 0.20.0 expects compressed-tensors 0.15.0.1. The same llmcompressor
+metadata also caps torch at `<=2.10.0` and transformers at `<=4.57.6`, but the
+local stack is on PyTorch 2.11 and Transformers 5.7.0. It also requires
+runtime packages such as `accelerate` and `auto-round` that are not currently
+available from the checked host package repositories. Reconcile those
+dependencies before adding or deploying `python-llmcompressor-gfx1151`.
+
 ## ROCm inference reference boundary
 
 `docs/maintainers/rocm-inference-reference.md` records ROCm examples,
