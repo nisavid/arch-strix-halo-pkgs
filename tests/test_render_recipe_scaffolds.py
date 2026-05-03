@@ -200,6 +200,11 @@ def test_vllm_renderer_uses_repo_local_ccache_storage() -> None:
 
     assert 'local _ccache_cache="$srcdir/.ccache/cache"' in pkgbuild
     assert 'export CCACHE_DIR="${CCACHE_DIR:-${_ccache_cache}}"' in pkgbuild
+    assert '_vllm_srcdir="vllm-${pkgver}"' in pkgbuild
+    assert '_vllm_tarball="v${pkgver}.tar.gz"' in pkgbuild
+    assert '_vllm_source_patch="0016-rocm-refresh-local-carry-for-vllm-${pkgver}.patch"' in pkgbuild
+    assert 'cd "$srcdir/${_vllm_srcdir}"' in pkgbuild
+    assert 'export VLLM_VERSION_OVERRIDE="${pkgver}"' in pkgbuild
 
 
 def test_rust_wheel_renderer_applies_source_patches() -> None:

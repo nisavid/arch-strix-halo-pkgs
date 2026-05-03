@@ -15,7 +15,8 @@ def test_pkgbuild_carries_merged_torchao_and_cli_startup_patches():
     assert "pkgver=0.20.1" in text
     assert "pkgrel=1" in text
     assert PATCH.name in text
-    assert f'_apply_patch_if_needed "{PATCH.name}"' in text
+    assert '_vllm_source_patch="0016-rocm-refresh-local-carry-for-vllm-${pkgver}.patch"' in text
+    assert '_apply_patch_if_needed "${_vllm_source_patch}"' in text
     assert "0009-lazy-import-torchao-config-only-for-torchao-quantization.patch" not in text
     assert "0010-cli-help-avoids-eager-benchmark-imports.patch" not in text
     assert "0011-openai-protocol-lazifies-chat-utils-import.patch" not in text

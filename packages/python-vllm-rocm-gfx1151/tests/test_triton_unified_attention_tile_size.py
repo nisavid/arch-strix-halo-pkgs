@@ -14,7 +14,8 @@ def test_pkgbuild_carries_rocm_large_head_tile_patch():
     patch_text = PATCH.read_text()
 
     assert PATCH.name in pkgbuild_text
-    assert f'_apply_patch_if_needed "{PATCH.name}"' in pkgbuild_text
+    assert '_vllm_source_patch="0016-rocm-refresh-local-carry-for-vllm-${pkgver}.patch"' in pkgbuild_text
+    assert '_apply_patch_if_needed "${_vllm_source_patch}"' in pkgbuild_text
     assert "64 KiB hardware limit on gfx1151" in patch_text
 
 
@@ -23,7 +24,8 @@ def test_pkgbuild_carries_setup_flag_forwarding_patch():
     patch_text = PATCH.read_text()
 
     assert PATCH.name in pkgbuild_text
-    assert f'_apply_patch_if_needed "{PATCH.name}"' in pkgbuild_text
+    assert '_vllm_source_patch="0016-rocm-refresh-local-carry-for-vllm-${pkgver}.patch"' in pkgbuild_text
+    assert '_apply_patch_if_needed "${_vllm_source_patch}"' in pkgbuild_text
     assert "CMAKE_HIP_FLAGS" in patch_text
 
 
@@ -32,7 +34,8 @@ def test_pkgbuild_carries_gemma4_aiter_patch():
     patch_text = PATCH.read_text()
 
     assert PATCH.name in pkgbuild_text
-    assert f'_apply_patch_if_needed "{PATCH.name}"' in pkgbuild_text
+    assert '_vllm_source_patch="0016-rocm-refresh-local-carry-for-vllm-${pkgver}.patch"' in pkgbuild_text
+    assert '_apply_patch_if_needed "${_vllm_source_patch}"' in pkgbuild_text
     assert "return on_mi3xx() or on_gfx1x()" in patch_text
 
 
