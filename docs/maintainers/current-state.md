@@ -237,9 +237,9 @@ resumed amerge plan built all six core packages. Direct sanitized `makepkg
 `python-mistral-common-gfx1151 1.11.1-2`, and
 `python-vllm-rocm-gfx1151 0.20.0-2`, with vLLM reaching and completing the HIP
 extension compile before the branch was rebased over the 2026-05-03 vLLM
-0.20.1 source update. The rebased vLLM dependency rewire now requires a fresh
-0.20.1 package-build gate before it can inherit that source-updated validation
-state. `makepkg --printsrcinfo` passed for the metadata-only
+0.20.1 source update. That pre-rebase vLLM evidence was refreshed by the
+2026-05-03 pkgrel-3 package-build/deploy pass recorded below.
+`makepkg --printsrcinfo` passed for the metadata-only
 `python-pytorch-opt-rocm-gfx1151`, `python-torchvision-rocm-gfx1151`, and
 `python-aotriton-gfx1151` dependency rewires. The built artifacts were added
 to `repo/x86_64`. Noninteractive `tools/amerge publish ... -y` could not
@@ -267,6 +267,24 @@ the reference host with `HF_HOME=/var/cache/hf` at
   `copy_probe_ok`, `quantization=torchao`, and `generation_ok`.
 - `vllm.qwen3_5.0_8b.text.basic` passed in `40.949359` seconds, including
   `llm_init_ok`, `generation_ok`, and `basic_ok`.
+
+After the 2026-05-03 rebase, `tools/amerge build
+python-vllm-rocm-gfx1151` plan `7aa7bdca` built
+`python-vllm-rocm-gfx1151 0.20.1-3`, and `tools/amerge deploy
+python-vllm-rocm-gfx1151` plan `1641d98b` installed it on the host. `pacman -Q
+python-vllm-rocm-gfx1151` reports `0.20.1-3`, `vllm --version` reports
+`0.20.1`, and installed vLLM smokes pass for `vllm`, `vllm._C`,
+`vllm._rocm_C`, `vllm._moe_C`, and the `compressed-tensors` quantization
+registry through `CompressedTensorsConfig`. The unsandboxed HIP probe sees
+`Radeon 8060S Graphics`, `gfx1151`, and a successful CUDA tensor allocation.
+
+Post-rebase live scenario validation for the deployed Blackcat wheel stack
+passed outside the sandbox with `HF_HOME=/var/cache/hf` at
+`docs/worklog/inference-runs/20260503T182553`:
+
+- `vllm.gemma4.e2b.server.basic` passed in `87.278597` seconds.
+- `vllm.torchao.tiny.generate` passed in `26.173949` seconds.
+- `vllm.qwen3_5.0_8b.text.basic` passed in `42.512453` seconds.
 
 The same Blackcat wheel-stack branch now has package policy and rendered
 scaffolds for the service/runtime slice: `python-watchfiles-gfx1151`,
