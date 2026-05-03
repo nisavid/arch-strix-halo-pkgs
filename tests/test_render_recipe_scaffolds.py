@@ -207,6 +207,43 @@ def test_vllm_renderer_uses_repo_local_ccache_storage() -> None:
     assert 'export VLLM_VERSION_OVERRIDE="${pkgver}"' in pkgbuild
 
 
+def test_vllm_renderer_defines_source_variables_without_patches() -> None:
+    pkgbuild = render_recipe_scaffolds.render_pkgbuild(
+        "python-vllm-rocm-gfx1151",
+        {
+            "recipe_key": "vllm",
+            "template": "python-project-vllm",
+            "upstream_version": "0.20.0",
+            "pkgdesc": "vLLM ROCm",
+            "url": "https://github.com/vllm-project/vllm",
+            "license": ["Apache-2.0"],
+            "source_type": "tarball",
+            "source_url": "https://github.com/vllm-project/vllm/archive/refs/tags/v0.20.0.tar.gz",
+            "source_patches": [],
+            "src_subdir": "vllm-0.20.0",
+        },
+        {
+            "repo": "https://github.com/vllm-project/vllm",
+            "method": "pip",
+            "phase": "package",
+            "steps": [],
+            "depends_on": [],
+            "notes": "",
+        },
+        "0.20.0",
+        {
+            "recipe_repo": "https://github.com/paudley/ai-notes",
+            "recipe_subdir": "strix-halo",
+            "recipe_author": "Blackcat Informatics Inc.",
+        },
+    )
+
+    assert '_vllm_srcdir="vllm-${pkgver}"' in pkgbuild
+    assert '_vllm_tarball="v${pkgver}.tar.gz"' in pkgbuild
+    assert 'cd "$srcdir/${_vllm_srcdir}"' in pkgbuild
+    assert "_apply_all_source_patches" not in pkgbuild
+
+
 def test_rust_wheel_renderer_applies_source_patches() -> None:
     pkgbuild = render_recipe_scaffolds.render_pkgbuild(
         "sample-rust-gfx1151",
