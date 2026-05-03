@@ -14,6 +14,12 @@ When package files, PKGBUILDs, repo metadata, or package versions changed and
 the privileged host mutation was not run, the final response must include the
 exact `tools/amerge ...` handoff command.
 
+Before handing off a package lane, run the strongest non-privileged command
+yourself. For build -> deploy flows, complete `tools/amerge build ...`
+autonomously when the required build dependencies are already available, then
+hand off only the narrow `tools/amerge deploy ...` command when privileged
+publish/install remains.
+
 Default handoff after broad package changes:
 
 ```bash
@@ -70,10 +76,19 @@ user wants a colorized plan captured in logs or chat.
 
 ## Operator Notes
 
-- Hand `run`, `publish`, `install`, and `deploy` commands to the user when
-  privileged publish/install execution is needed and you have not run it.
+- Own the unprivileged prepare/build/check phase for any similarly shaped
+  workflow. User handoff starts at the first genuinely privileged or
+  user-owned mutation step, not at an earlier convenient boundary.
+- Do not hand `build` or broad `run` commands to the user when the remaining
+  build step is unprivileged and agent-runnable. Complete the build first.
+- Hand `publish`, `install`, and `deploy` commands to the user only when
+  privileged host mutation is needed and you cannot run it from the current
+  environment.
 - When artifacts are built but host mutation is pending, close with the exact
   `tools/amerge deploy ...` command. Do not leave the deployment step implicit.
+- Handoffs must be convenient: include `cd <worktree>`, the exact command, and
+  the hand-back signal, then run the documented verification yourself after the
+  user reports completion.
 - After the user reports the privileged command has completed, run the
   applicable `pacman -Q ...` and smoke checks yourself when the host is
   accessible. Ask the user to run verification only when you cannot perform it
