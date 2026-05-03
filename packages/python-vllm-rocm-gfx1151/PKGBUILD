@@ -85,7 +85,7 @@ prepare() {
 build() {
   cd "$srcdir/vllm-0.20.1"
 
-    _apply_all_source_patches
+  _apply_all_source_patches
 
   _setup_compiler_env() {
   local _compiler_root="/opt/rocm/lib/llvm/bin"
