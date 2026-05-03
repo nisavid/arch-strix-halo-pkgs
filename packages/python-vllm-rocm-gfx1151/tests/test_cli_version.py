@@ -77,7 +77,7 @@ def test_vllm_version_is_metadata_only():
         f"stdout:\n{result.stdout}\n"
         f"stderr:\n{result.stderr}"
     )
-    assert result.stdout.strip() == "0.20.0"
+    assert result.stdout.strip() == "0.20.1"
     assert "openai_harmony" not in result.stderr
     assert "triton.language.target_info" not in result.stderr
     assert "torchao/_C.abi3.so" not in result.stderr

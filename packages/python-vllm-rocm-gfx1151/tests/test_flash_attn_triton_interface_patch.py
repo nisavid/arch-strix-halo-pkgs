@@ -5,7 +5,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 PKG_DIR = REPO_ROOT / "packages/python-vllm-rocm-gfx1151"
-PATCH = PKG_DIR / "0016-rocm-refresh-local-carry-for-vllm-0.20.0.patch"
+PATCH = PKG_DIR / "0016-rocm-refresh-local-carry-for-vllm-0.20.1.patch"
 PKGBUILD = PKG_DIR / "PKGBUILD"
 
 

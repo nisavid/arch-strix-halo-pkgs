@@ -2,6 +2,20 @@
 
 ## Packaging And Build Hygiene
 
+- Build and host-validate the active 2026-05-03 refresh branch. Source updated:
+  vLLM 0.20.1, llama.cpp b9010, and AITER main
+  `51f3d2b6968360fba7772208025e5c07756121ba`. Package built on 2026-05-03
+  through `tools/amerge` plan `20260503T045139-18169e0b` for
+  `python-vllm-rocm-gfx1151 0.20.1-1`, both llama.cpp backends at `b9010-1`,
+  and `python-amd-aiter-gfx1151 0.1.12.post2.dev171+g51f3d2b69-1`.
+  Deploy/install is blocked in the agent session because `sudo` requires a
+  TTY/password; installed-smoke and affected live-scenario validation remain
+  open. Derive downstream rebuilds and host gates from
+  `docs/maintainers/update-workflows.md` before closeout. Keep this line active
+  until deploy/install, installed-smoke, and affected live-scenario validation
+  states are recorded in
+  `docs/maintainers/current-state.md` and
+  `docs/maintainers/update-candidates.toml`.
 - Build and host-validate the active 2026-04-28 update branch. Completed on
   2026-04-29. The branch updates vLLM 0.20.0, llama.cpp b8966, ROCm PyTorch
   release/2.11 at 9413e9b, AITER d679e288, Lemonade 10.3.0, and Transformers
