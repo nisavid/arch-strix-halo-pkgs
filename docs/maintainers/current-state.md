@@ -161,6 +161,29 @@ Live-scenario validated state from the deployed host pass: gates passed with
 - `vllm.torchao.tiny.generate` passed in `25.601376` seconds.
 - `vllm.qwen3_5.0_8b.text.basic` passed in `42.41261` seconds.
 
+The 2026-05-03 freshness sweep ran
+`tools/check_package_updates.py --json --fail-on actionable` and found three
+new non-current families requiring disposition: vLLM 0.20.1, llama.cpp b9010,
+and AITER main `51f3d2b6968360fba7772208025e5c07756121ba`. The active refresh
+branch adopted those source updates together. Source updated: vLLM 0.20.1,
+llama.cpp b9010 at `d05fe1d7dadbf8943c8f1903fcf65b935ddab839`, and AITER main
+at `51f3d2b6968360fba7772208025e5c07756121ba`.
+
+Package-build gates completed on 2026-05-03 through `tools/amerge` plan
+`20260503T045139-18169e0b` for:
+
+- `llama.cpp-hip-gfx1151 b9010-1`
+- `llama.cpp-vulkan-gfx1151 b9010-1`
+- `python-amd-aiter-gfx1151 0.1.12.post2.dev171+g51f3d2b69-1`
+- `python-vllm-rocm-gfx1151 0.20.1-1`
+
+Deploy/install is blocked in the agent session because `sudo` requires a
+TTY/password, so installed-smoke and affected live-scenario validation gates
+remain open. Use
+`tools/amerge deploy llama.cpp-hip-gfx1151 llama.cpp-vulkan-gfx1151 python-amd-aiter-gfx1151 python-vllm-rocm-gfx1151`
+to publish and install the built artifacts before treating the host as upgraded
+to these package releases.
+
 ## ROCm inference reference boundary
 
 `docs/maintainers/rocm-inference-reference.md` records ROCm examples,

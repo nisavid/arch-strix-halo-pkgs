@@ -5,7 +5,7 @@
 # Package recipe key: vllm
 
 pkgname=python-vllm-rocm-gfx1151
-pkgver=0.20.0
+pkgver=0.20.1
 pkgrel=1
 pkgdesc='High-throughput and memory-efficient inference engine for LLMs with ROCm, rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
@@ -18,7 +18,7 @@ options=('!lto')
 provides=(python-vllm-rocm python-vllm)
 conflicts=(python-vllm-rocm python-vllm)
 replaces=()
-source=(https://github.com/vllm-project/vllm/archive/refs/tags/v0.20.0.tar.gz 0016-rocm-refresh-local-carry-for-vllm-0.20.0.patch)
+source=(https://github.com/vllm-project/vllm/archive/refs/tags/v0.20.1.tar.gz 0016-rocm-refresh-local-carry-for-vllm-0.20.1.patch)
 sha256sums=(SKIP SKIP)
 
 _apply_patch_if_needed() {
@@ -38,8 +38,8 @@ _apply_patch_if_needed() {
 }
 
 _reset_source_tree() {
-  rm -rf "${srcdir}/vllm-0.20.0"
-  bsdtar -xf "${srcdir}/v0.20.0.tar.gz" -C "${srcdir}"
+  rm -rf "${srcdir}/vllm-0.20.1"
+  bsdtar -xf "${srcdir}/v0.20.1.tar.gz" -C "${srcdir}"
 }
 
 _source_tree_has_all_source_patches() {
@@ -57,11 +57,11 @@ _source_tree_has_all_source_patches() {
 }
 
 _apply_all_source_patches() {
-  if [[ ! -d "${srcdir}/vllm-0.20.0" ]]; then
+  if [[ ! -d "${srcdir}/vllm-0.20.1" ]]; then
     _reset_source_tree
   fi
 
-  cd "${srcdir}/vllm-0.20.0"
+  cd "${srcdir}/vllm-0.20.1"
   if _source_tree_has_all_source_patches; then
     return 0
   fi
@@ -70,20 +70,20 @@ _apply_all_source_patches() {
   # checks are not reliable on an already-patched tree. Re-extract and apply the
   # series once on a known-clean source tree whenever any sentinel is missing.
   _reset_source_tree
-  cd "${srcdir}/vllm-0.20.0"
+  cd "${srcdir}/vllm-0.20.1"
 
-  _apply_patch_if_needed "0016-rocm-refresh-local-carry-for-vllm-0.20.0.patch"
+  _apply_patch_if_needed "0016-rocm-refresh-local-carry-for-vllm-0.20.1.patch"
 
 }
 
 prepare() {
-  cd "$srcdir/vllm-0.20.0"
+  cd "$srcdir/vllm-0.20.1"
 
   _apply_all_source_patches
 }
 
 build() {
-  cd "$srcdir/vllm-0.20.0"
+  cd "$srcdir/vllm-0.20.1"
 
     _apply_all_source_patches
 
@@ -148,7 +148,7 @@ build() {
     return 1
   fi
   export CMAKE_ARGS="-DHIP_VERSION=${_hip_version%%-*} ${CMAKE_ARGS:-}"
-  export VLLM_VERSION_OVERRIDE="0.20.0"
+  export VLLM_VERSION_OVERRIDE="0.20.1"
   export VLLM_ROCM_USE_AITER=1
 
   rm -rf .deps/triton_kernels-*
@@ -165,6 +165,6 @@ build() {
 }
 
 package() {
-  cd "$srcdir/vllm-0.20.0"
+  cd "$srcdir/vllm-0.20.1"
   python -m installer --destdir="$pkgdir" dist/*.whl
 }
