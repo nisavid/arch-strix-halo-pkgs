@@ -44,6 +44,12 @@ without chat history.
   Final and PR summaries must distinguish source updated, package built,
   deployed/installed, installed-smoked, and live-scenario validated states. If
   any required gate remains open, say so before describing the branch as ready.
+- When a workflow has agent-runnable preparation steps followed by privileged
+  or user-owned mutation steps, complete the preparation yourself before
+  handing work to the user. For package lanes, build first and hand off only the
+  narrow remaining deploy/install command when host mutation is the blocker.
+  Handoffs must include the exact workdir, command, hand-back signal, and the
+  verification the agent will run after the user completes the privileged step.
 - Start new repo work from a topic branch in a separate worktree. Do not commit
   directly on `main`; `main` is the protected branch, so push topic branches
   and merge through GitHub pull requests.
