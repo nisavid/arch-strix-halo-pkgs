@@ -105,7 +105,7 @@ priority = "high"
 workflow = "upstream_source_update"
 checks = [
   { id = "release", role = "primary", kind = "github_release", repo = "ROCm/aiter", recorded = "0.1.12.post2", tag_prefix = "v", comparison = "pep440" },
-  { id = "main", role = "candidate", kind = "git_ref", repo = "https://github.com/ROCm/aiter.git", ref = "refs/heads/main", recorded = "51f3d2b6968360fba7772208025e5c07756121ba", comparison = "sha" },
+  { id = "main", role = "candidate", kind = "git_ref", repo = "https://github.com/ROCm/aiter.git", ref = "refs/heads/main", recorded = "d2454ad18a0d7c7795162ab0f550e8a0397840bd", comparison = "sha" },
 ]
 
 [families.flash_attention]
@@ -333,7 +333,7 @@ packages = ["python-llmcompressor-gfx1151"]
 priority = "medium"
 workflow = "upstream_source_update"
 checks = [
-  { id = "pypi", role = "primary", kind = "pypi", package = "llmcompressor", recorded = "0.10.0.1", comparison = "pep440" },
+  { id = "pypi", role = "primary", kind = "pypi", package = "llmcompressor", recorded = "0.10.0.2", comparison = "pep440" },
 ]
 
 [families.torchao]
@@ -377,7 +377,7 @@ packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"]
 priority = "high"
 workflow = "upstream_source_update"
 checks = [
-  { id = "release", role = "primary", kind = "github_release", repo = "ggml-org/llama.cpp", recorded = "b9010", comparison = "prefixed_integer" },
+  { id = "release", role = "primary", kind = "github_release", repo = "ggml-org/llama.cpp", recorded = "b9012", comparison = "prefixed_integer" },
   { id = "aur-hip", role = "baseline", kind = "aur", package = "llama.cpp-hip", recorded = "b9010-1", comparison = "pkgver" },
   { id = "aur-vulkan", role = "baseline", kind = "aur", package = "llama.cpp-vulkan-bin", recorded = "b7376-1", comparison = "pkgver" },
 ]

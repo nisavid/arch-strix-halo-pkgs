@@ -97,12 +97,16 @@
     for `accelerate`, `auto_round`, `pynvml`, `llmcompressor`,
     llmcompressor's AutoRound modifier import, skip-weight initialization, and
     model-free name matching.
-  - Blackcat tooling freshness follow-up: the 2026-05-01 policy-coverage freshness
-    sweep found PyPI updates for `python-accelerate-gfx1151` from 1.12.0 to
-    1.13.0, `python-auto-round-gfx1151` from 0.10.2 to 0.12.3, and
+  - Blackcat tooling freshness follow-up: the 2026-05-01 policy-coverage
+    freshness sweep found PyPI updates for `python-accelerate-gfx1151` from
+    1.12.0 to 1.13.0, `python-auto-round-gfx1151` from 0.10.2 to 0.12.3, and
     `python-nvidia-ml-py-gfx1151` from 13.590.48 to 13.595.45. These are
     tracked in `docs/maintainers/update-candidates.toml`; adopt them through a
     separate package update, rebuild, deploy/install, and installed smoke lane.
+    The 2026-05-03 rebase freshness sweep rejected `llmcompressor 0.10.0.2`
+    because its published dependency metadata excludes the local PyTorch 2.11,
+    Transformers 5.7.0, compressed-tensors 0.15.0.1, and tracked newer tooling
+    package lane.
   - Engine lanes: new engines are in scope by default.
     `stable-diffusion.cpp-vulkan-gfx1151` now has package policy, rendered
     scaffolds, source patch carry, freshness coverage, package-build evidence,

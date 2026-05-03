@@ -196,6 +196,27 @@ next_gate_path = ""
 next_gate_label = "Adopted; monitor future AITER refs through the normal freshness sweep"
 last_reviewed = "2026-05-03"
 
+[candidates."aiter-d2454ad"]
+family = "aiter"
+packages = ["python-amd-aiter-gfx1151"]
+source_kind = "git_ref"
+previous_recorded = "51f3d2b6968360fba7772208025e5c07756121ba"
+latest = "d2454ad18a0d7c7795162ab0f550e8a0397840bd"
+discovery_status = "candidate_head_ahead"
+disposition = "rejected"
+disposition_reason = "Reviewed during the 2026-05-03 Blackcat rebase freshness sweep and not adopted because the range only adds an RDNA4 gfx1201 FlyDSL flash_attn_func backend and tests. The local AITER package targets gfx1151 and the diff does not overlap the installed gfx1151 JIT-core, mHC, or vLLM scenario lanes."
+salient_changes = [
+  "gfx1201 FlyDSL flash_attn_func backend",
+  "FlyDSL FMHA test coverage for the new gfx1201 backend",
+]
+patch_carry_overlap = false
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "No follow-up needed unless later AITER changes overlap gfx1151 kernels or package carry"
+last_reviewed = "2026-05-03"
+
 [candidates."rocm-pytorch-release-2.11-345ca6f"]
 family = "rocm_pytorch"
 packages = ["python-pytorch-opt-rocm-gfx1151"]
@@ -268,6 +289,29 @@ host_validation_needed = false
 next_gate_kind = "none"
 next_gate_path = ""
 next_gate_label = "Adopted; monitor future llama.cpp releases through the normal freshness sweep"
+last_reviewed = "2026-05-03"
+
+[candidates."llama-cpp-b9012"]
+family = "llama_cpp"
+packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"]
+source_kind = "github_release"
+baseline_source_kind = "aur"
+baseline_latest = "b9010-1"
+previous_recorded = "b9010 / b9010-1"
+latest = "b9012"
+discovery_status = "stable_update_available"
+disposition = "rejected"
+disposition_reason = "Reviewed during the 2026-05-03 Blackcat rebase freshness sweep and not adopted because b9010..b9012 only changes GGUF conversion paths for NVFP4 repacking and Mistral YARN apply_scale metadata. The packaged local lanes are HIP and Vulkan runtime backends plus Lemonade runtime integration, not GGUF conversion tooling."
+salient_changes = [
+  "GGUF converter Q/K RoPE permutation in NVFP4 repack path",
+  "Mistral-format YARN apply_scale support in conversion/model metadata",
+]
+patch_carry_overlap = false
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "No follow-up needed unless later llama.cpp changes overlap the HIP, Vulkan, server, or Lemonade runtime lanes"
 last_reviewed = "2026-05-03"
 
 [candidates."lemonade-10.3.0"]
@@ -395,7 +439,7 @@ source_kind = "pypi"
 previous_recorded = "0.22.2"
 latest = "0.23.1"
 discovery_status = "stable_update_available"
-disposition = "blocked"
+disposition = "rejected"
 disposition_reason = "Reviewed during the 2026-05-01 policy-change freshness sweep and not adopted because the current local Transformers 5.7.0 package metadata requires tokenizers<=0.23.0,>=0.22.0. Keep the package on 0.22.2 until Transformers admits 0.23.1 or a matching Transformers update lane is adopted."
 salient_changes = [
   "PyPI tokenizers 0.23.1 is available",
@@ -471,3 +515,24 @@ next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
 next_gate_label = "Blackcat tooling freshness follow-up"
 last_reviewed = "2026-05-01"
+
+[candidates."llmcompressor-0.10.0.2-pypi"]
+family = "llmcompressor"
+packages = ["python-llmcompressor-gfx1151"]
+source_kind = "pypi"
+previous_recorded = "0.10.0.1"
+latest = "0.10.0.2"
+discovery_status = "stable_update_available"
+disposition = "rejected"
+disposition_reason = "Reviewed during the 2026-05-03 Blackcat rebase freshness sweep and not adopted because the published 0.10.0.2 metadata requires torch<=2.10.0, transformers<=4.57.6, compressed-tensors==0.14.0.1, accelerate<=1.12.0, auto-round<=0.10.2, and nvidia-ml-py<=13.590.48. The local package is intentionally patched and validated against PyTorch 2.11, Transformers 5.7.0, compressed-tensors 0.15.0.1, and the tracked newer tooling packages."
+salient_changes = [
+  "PyPI llmcompressor 0.10.0.2 is available",
+  "Published dependency metadata conflicts with the local PyTorch 2.11, Transformers 5.7.0, compressed-tensors 0.15.0.1, and tracked tooling package lane",
+]
+patch_carry_overlap = true
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "No llmcompressor package update until upstream metadata admits the local runtime stack or a separate compatibility-patch lane is planned"
+last_reviewed = "2026-05-03"
