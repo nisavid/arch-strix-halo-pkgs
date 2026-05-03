@@ -15,7 +15,8 @@ def test_flash_attn_ck_interface_gate_patch_is_packaged():
     pkgbuild_text = PKGBUILD.read_text(encoding="utf-8")
 
     assert PATCH.name in pkgbuild_text
-    assert f'_apply_patch_if_needed "{PATCH.name}"' in pkgbuild_text
+    assert '_vllm_source_patch="0016-rocm-refresh-local-carry-for-vllm-${pkgver}.patch"' in pkgbuild_text
+    assert '_apply_patch_if_needed "${_vllm_source_patch}"' in pkgbuild_text
     assert (
         "grep -Fq 'def rocm_flash_attn_supports_vllm_varlen_api() -> bool:'"
         in pkgbuild_text

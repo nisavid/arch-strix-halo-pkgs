@@ -636,8 +636,24 @@ EOF
         patch_helper = ""
         patch_prepare_cmds = ""
         patch_build_cmds = ""
+        vllm_srcdir = src_subdir
+        if src_subdir == f"vllm-{upstream_version}":
+            vllm_srcdir = "vllm-${pkgver}"
+        vllm_patch_vars = ""
+        vllm_patch_apply_lines = "".join(
+            f'  _apply_patch_if_needed "{patch_name}"\n'
+            for patch_name in source_patches
+        )
+        if len(source_patches) == 1:
+            vllm_patch_name = source_patches[0].replace(upstream_version, "${pkgver}")
+            vllm_patch_vars = f'_vllm_source_patch="{vllm_patch_name}"\n'
+            vllm_patch_apply_lines = '  _apply_patch_if_needed "${_vllm_source_patch}"\n'
         if source_patches:
             patch_helper = """\
+_vllm_srcdir="__VLLM_SRCDIR__"
+_vllm_tarball="v${pkgver}.tar.gz"
+__PATCH_VARS__
+
 _apply_patch_if_needed() {
   local _patch_name="$1"
   local _patch=""
@@ -655,8 +671,8 @@ _apply_patch_if_needed() {
 }
 
 _reset_source_tree() {
-  rm -rf "${srcdir}/__SRC_SUBDIR__"
-  bsdtar -xf "${srcdir}/v__UPSTREAM_VERSION__.tar.gz" -C "${srcdir}"
+  rm -rf "${srcdir}/${_vllm_srcdir}"
+  bsdtar -xf "${srcdir}/${_vllm_tarball}" -C "${srcdir}"
 }
 
 _source_tree_has_all_source_patches() {
@@ -680,11 +696,11 @@ _source_tree_has_all_source_patches() {
 }
 
 _apply_all_source_patches() {
-  if [[ ! -d "${srcdir}/__SRC_SUBDIR__" ]]; then
+  if [[ ! -d "${srcdir}/${_vllm_srcdir}" ]]; then
     _reset_source_tree
   fi
 
-  cd "${srcdir}/__SRC_SUBDIR__"
+  cd "${srcdir}/${_vllm_srcdir}"
   if _source_tree_has_all_source_patches; then
     return 0
   fi
@@ -693,29 +709,26 @@ _apply_all_source_patches() {
   # checks are not reliable on an already-patched tree. Re-extract and apply the
   # series once on a known-clean source tree whenever any sentinel is missing.
   _reset_source_tree
-  cd "${srcdir}/__SRC_SUBDIR__"
+  cd "${srcdir}/${_vllm_srcdir}"
 
 __PATCH_APPLY_LINES__
 }
 
-""".replace("__SRC_SUBDIR__", src_subdir).replace("__UPSTREAM_VERSION__", upstream_version).replace(
+""".replace("__VLLM_SRCDIR__", vllm_srcdir).replace("__PATCH_VARS__", vllm_patch_vars.rstrip()).replace(
                 "__PATCH_APPLY_LINES__",
-                "".join(
-                    f'  _apply_patch_if_needed "{patch_name}"\n'
-                    for patch_name in source_patches
-                ),
+                vllm_patch_apply_lines,
             )
             patch_prepare_cmds = "  _apply_all_source_patches\n"
-            patch_build_cmds = patch_prepare_cmds
+            patch_build_cmds = "_apply_all_source_patches\n"
         build_body = f"""\
 {patch_helper}prepare() {{
-  cd "$srcdir/{src_subdir}"
+  cd "$srcdir/${{_vllm_srcdir}}"
 
 {patch_prepare_cmds.rstrip()}
 }}
 
 build() {{
-  cd "$srcdir/{src_subdir}"
+  cd "$srcdir/${{_vllm_srcdir}}"
 
   {patch_build_cmds.rstrip()}
 
@@ -756,7 +769,7 @@ build() {{
     return 1
   fi
   export CMAKE_ARGS="-DHIP_VERSION=${{_hip_version%%-*}} ${{CMAKE_ARGS:-}}"
-  export VLLM_VERSION_OVERRIDE="{upstream_version}"
+  export VLLM_VERSION_OVERRIDE="${{pkgver}}"
   export VLLM_ROCM_USE_AITER=1
 
   rm -rf .deps/triton_kernels-*
@@ -773,7 +786,7 @@ build() {{
 }}
 
 package() {{
-  cd "$srcdir/{src_subdir}"
+  cd "$srcdir/${{_vllm_srcdir}}"
   python -m installer --destdir="$pkgdir" dist/*.whl
 }}"""
     elif template == "python-project-pytorch-rocm":

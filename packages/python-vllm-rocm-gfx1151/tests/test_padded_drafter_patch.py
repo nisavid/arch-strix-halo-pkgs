@@ -13,7 +13,8 @@ def test_pkgbuild_carries_padded_drafter_count_patch():
     text = PKGBUILD.read_text()
 
     assert PATCH.name in text
-    assert f'_apply_patch_if_needed "{PATCH.name}"' in text
+    assert '_vllm_source_patch="0016-rocm-refresh-local-carry-for-vllm-${pkgver}.patch"' in text
+    assert '_apply_patch_if_needed "${_vllm_source_patch}"' in text
     assert "Keep valid_count type stable across branches" in text
 
 
