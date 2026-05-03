@@ -639,6 +639,11 @@ EOF
         vllm_srcdir = src_subdir
         if src_subdir == f"vllm-{upstream_version}":
             vllm_srcdir = "vllm-${pkgver}"
+        vllm_source_prelude = f"""\
+_vllm_srcdir="{vllm_srcdir}"
+_vllm_tarball="v${{pkgver}}.tar.gz"
+
+"""
         vllm_patch_vars = ""
         vllm_patch_apply_lines = "".join(
             f'  _apply_patch_if_needed "{patch_name}"\n'
@@ -650,8 +655,6 @@ EOF
             vllm_patch_apply_lines = '  _apply_patch_if_needed "${_vllm_source_patch}"\n'
         if source_patches:
             patch_helper = """\
-_vllm_srcdir="__VLLM_SRCDIR__"
-_vllm_tarball="v${pkgver}.tar.gz"
 __PATCH_VARS__
 
 _apply_patch_if_needed() {
@@ -714,14 +717,14 @@ _apply_all_source_patches() {
 __PATCH_APPLY_LINES__
 }
 
-""".replace("__VLLM_SRCDIR__", vllm_srcdir).replace("__PATCH_VARS__", vllm_patch_vars.rstrip()).replace(
+""".replace("__PATCH_VARS__", vllm_patch_vars.rstrip()).replace(
                 "__PATCH_APPLY_LINES__",
                 vllm_patch_apply_lines,
             )
             patch_prepare_cmds = "  _apply_all_source_patches\n"
             patch_build_cmds = "_apply_all_source_patches\n"
         build_body = f"""\
-{patch_helper}prepare() {{
+{vllm_source_prelude}{patch_helper}prepare() {{
   cd "$srcdir/${{_vllm_srcdir}}"
 
 {patch_prepare_cmds.rstrip()}

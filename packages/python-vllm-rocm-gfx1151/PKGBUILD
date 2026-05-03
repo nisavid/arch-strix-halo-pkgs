@@ -23,6 +23,7 @@ sha256sums=(SKIP SKIP)
 
 _vllm_srcdir="vllm-${pkgver}"
 _vllm_tarball="v${pkgver}.tar.gz"
+
 _vllm_source_patch="0016-rocm-refresh-local-carry-for-vllm-${pkgver}.patch"
 
 _apply_patch_if_needed() {
