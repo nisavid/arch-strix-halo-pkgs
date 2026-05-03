@@ -11,10 +11,7 @@
 diff --git a/src/name_conversion.cpp b/src/name_conversion.cpp
 --- a/src/name_conversion.cpp
 +++ b/src/name_conversion.cpp
-@@ -1069,18 +1069,22 @@ std::string convert_tensor_name(std::string name, SDVersion version) {
-         }
-     }
- 
+@@ -1072,15 +1072,19 @@ std::string convert_tensor_name(std::string name, SDVersion version) {
 -    std::unordered_map<std::string, std::string> prefix_map = {
 +    // Use std::vector<pair> so the more-specific prefixes are tried before
 +    // broader ones such as "te.".
@@ -38,9 +35,8 @@ diff --git a/src/name_conversion.cpp b/src/name_conversion.cpp
          // {"te2.text_model.encoder.layers.", "cond_stage_model.1.model.transformer.resblocks."},
          {"te2.", "cond_stage_model.1.transformer."},
          {"te1.", "cond_stage_model.transformer."},
-@@ -1088,7 +1092,11 @@ std::string convert_tensor_name(std::string name, SDVersion version) {
+@@ -1088,5 +1092,9 @@ std::string convert_tensor_name(std::string name, SDVersion version) {
      };
- 
      if (sd_version_is_flux(version)) {
 -        prefix_map["te1."] = "text_encoders.clip_l.transformer.";
 +        for (auto& entry : prefix_map) {
@@ -49,5 +45,3 @@ diff --git a/src/name_conversion.cpp b/src/name_conversion.cpp
 +            }
 +        }
      }
- 
-     replace_with_prefix_map(name, prefix_map);

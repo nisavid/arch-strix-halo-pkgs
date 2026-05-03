@@ -1,11 +1,6 @@
 --- a/setup.py
 +++ b/setup.py
-@@ -43,7 +43,7 @@
-             return
- 
+@@ -45,3 +45,3 @@
          super().initialize_options()
 -        self.use_system_llhttp = False
 +        self.use_system_llhttp = True
-         self.use_system_http_parser = False
-         self.cython_always = False
-         self.cython_annotate = None

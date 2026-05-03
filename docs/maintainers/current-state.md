@@ -214,6 +214,17 @@ Arch-compatible `2.41.5` source until this repo owns a matching
 `python-pydantic` lane. The AITER main candidate reviewed during that sweep
 was superseded by the later 2026-05-03 AITER adoption recorded above.
 
+The 2026-05-03 Blackcat rebase freshness sweep ran
+`tools/check_package_updates.py --refresh --json --fail-on actionable` after
+rebasing the wheel-stack branch over the May 3 source refresh. It found three
+new actionable items and dispositioned them in
+`docs/maintainers/update-candidates.toml`: AITER main
+`d2454ad18a0d7c7795162ab0f550e8a0397840bd` was rejected as gfx1201-only,
+llama.cpp `b9012` was rejected as GGUF-conversion-only, and
+`llmcompressor 0.10.0.2` was rejected because its published dependency metadata
+excludes the local PyTorch 2.11, Transformers 5.7.0, compressed-tensors
+0.15.0.1, and tracked newer tooling package lane.
+
 The same Blackcat wheel-stack branch now has package-build evidence for the
 new core stack. `tools/amerge build python-pydantic-core-gfx1151
 python-tokenizers-gfx1151 python-safetensors-gfx1151 python-pyyaml-gfx1151
