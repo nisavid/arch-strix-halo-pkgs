@@ -177,12 +177,29 @@ Package-build gates completed on 2026-05-03 through `tools/amerge` plan
 - `python-amd-aiter-gfx1151 0.1.12.post2.dev171+g51f3d2b69-1`
 - `python-vllm-rocm-gfx1151 0.20.1-1`
 
-Deploy/install is blocked in the agent session because `sudo` requires a
-TTY/password, so installed-smoke and affected live-scenario validation gates
-remain open. Use
-`tools/amerge deploy llama.cpp-hip-gfx1151 llama.cpp-vulkan-gfx1151 python-amd-aiter-gfx1151 python-vllm-rocm-gfx1151`
-to publish and install the built artifacts before treating the host as upgraded
-to these package releases.
+The refresh deployed and installed on the reference host on 2026-05-03.
+Deployed/installed versions from that host pass are:
+
+- `llama.cpp-hip-gfx1151 b9010-1`
+- `llama.cpp-vulkan-gfx1151 b9010-1`
+- `python-amd-aiter-gfx1151 0.1.12.post2.dev171+g51f3d2b69-1`
+- `python-vllm-rocm-gfx1151 0.20.1-1`
+
+Installed-smoked state from the deployed host pass: vLLM import and
+`vllm --version` reported `0.20.1`; AITER imported `aiter.jit.core` and loaded
+its user-cache JIT module; `llama-cli-hip-gfx1151 --version` reported
+`version: 293 (8d6f9a9)` and detected `Radeon 8060S Graphics, gfx1151`; and
+`llama-cli-vulkan-gfx1151 --version` reported `version: 293 (8d6f9a9)`.
+
+Live-scenario validated state from the deployed host pass: gates passed with
+`HF_HOME=/var/cache/hf` in
+`docs/worklog/inference-runs/20260503T050922`:
+
+- `llama.cpp.hip.help` passed in `0.116214` seconds.
+- `llama.cpp.vulkan.help` passed in `0.028032` seconds.
+- `vllm.gemma4.e2b.server.basic` passed in `62.907788` seconds.
+- `vllm.torchao.tiny.generate` passed in `25.884653` seconds.
+- `vllm.qwen3_5.0_8b.text.basic` passed in `39.579941` seconds.
 
 ## ROCm inference reference boundary
 
