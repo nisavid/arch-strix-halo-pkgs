@@ -5,7 +5,7 @@
 - Recipe package key: `native_wheels`
 - Scaffold template: `native-wheel-pypi`
 - Recipe build method: `pip`
-- Upstream repo: ``
+- Upstream repo: `https://github.com/vllm-project/llm-compressor`
 - Package version: `0.10.0.1`
 - Recipe revision: `a1d7a68 (20260427, 16 path commits)`
 - Recipe steps: `32`
@@ -23,7 +23,7 @@ llmcompressor 0.10.0.1 with release metadata that pins older torch,
 transformers, and compressed-tensors bounds than the current local stack.
 
 The package builds with llmcompressor's dev dependency lane so torch and
-compressed-tensors can follow the installed vLLM 0.20.0 stack, and carries a
+compressed-tensors can follow the installed vLLM 0.20.1 stack, and carries a
 small metadata patch to remove the remaining Transformers upper bound. It also
 carries compatibility patches for the current Transformers and
 compressed-tensors APIs. The build sets `SETUPTOOLS_SCM_PRETEND_VERSION=0.10.0.1`

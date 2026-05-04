@@ -4,7 +4,7 @@
     "authoritative_reference": "none",
     "divergence_notes": [
       "There is no current Arch-family compressed-tensors package baseline, so this package is closure-first for vLLM compressed-tensors quantization lanes.",
-      "Uses the vLLM 0.20.0-compatible compressed-tensors 0.15.0.1 release instead of the older 0.14.0.1 helper version named by Blackcat's llmcompressor quantization notes.",
+      "Uses the vLLM 0.20.1-compatible compressed-tensors 0.15.0.1 release instead of the older 0.14.0.1 helper version named by Blackcat's llmcompressor quantization notes.",
       "Treat llmcompressor as a separate package/dependency-closure decision because llmcompressor 0.10.0.1 pins compressed-tensors 0.14.0.1 and older torch/transformers bounds than the current local stack."
     ],
     "source_patches": [],
@@ -34,7 +34,7 @@
     ],
     "divergence_notes": [
       "There is no current Arch-family compressed-tensors package baseline, so this package is closure-first for vLLM compressed-tensors quantization lanes.",
-      "Uses the vLLM 0.20.0-compatible compressed-tensors 0.15.0.1 release instead of the older 0.14.0.1 helper version named by Blackcat's llmcompressor quantization notes.",
+      "Uses the vLLM 0.20.1-compatible compressed-tensors 0.15.0.1 release instead of the older 0.14.0.1 helper version named by Blackcat's llmcompressor quantization notes.",
       "Treat llmcompressor as a separate package/dependency-closure decision because llmcompressor 0.10.0.1 pins compressed-tensors 0.14.0.1 and older torch/transformers bounds than the current local stack."
     ],
     "license": [
@@ -55,12 +55,15 @@
     ],
     "pypi_name": "compressed_tensors",
     "recipe_key": "native_wheels",
-    "recipe_notes_override": "This package is the compressed-tensors output for the Blackcat Qwen3-VL\ntooling follow-up lane. Blackcat's quantization helper names\nllmcompressor 0.10.0.1 and compressed-tensors 0.14.0.1, but the installed\nvLLM 0.20.0 lane expects compressed-tensors 0.15.0.1. Keep this package\naligned with vLLM first, then reconcile llmcompressor as a separate package\nclosure.\n\nThe package is pure Python today, but it still belongs in the local package\nset because vLLM compressed-tensors quantization and Qwen3-VL W8A8/W8A16\ncheckpoint loading need a coherent installed dependency rather than an\nuntracked venv wheel.\n\nThe upstream sdist pins `setuptools_scm==8.2.0` as a build dependency, while\nthe host has a newer Arch `python-setuptools-scm`. The package skips Python\nbuild dependency checking and uses the system build backend because this is a\npure-Python wheel and the newer backend builds the same installed package\nshape.\n",
+    "recipe_notes_override": "This package is the compressed-tensors output for the Blackcat Qwen3-VL\ntooling follow-up lane. Blackcat's quantization helper names\nllmcompressor 0.10.0.1 and compressed-tensors 0.14.0.1, but the installed\nvLLM 0.20.1 lane expects compressed-tensors 0.15.0.1. Keep this package\naligned with vLLM first, then reconcile llmcompressor as a separate package\nclosure.\n\nThe package is pure Python today, but it still belongs in the local package\nset because vLLM compressed-tensors quantization and Qwen3-VL W8A8/W8A16\ncheckpoint loading need a coherent installed dependency rather than an\nuntracked venv wheel.\n\nThe upstream sdist pins `setuptools_scm==8.2.0` as a build dependency, while\nthe host has a newer Arch `python-setuptools-scm`. The package skips Python\nbuild dependency checking and uses the system build backend because this is a\npure-Python wheel and the newer backend builds the same installed package\nshape.\n",
     "scaffold_notes": [
       "Part of the Blackcat Qwen3-VL quantization/tooling follow-up lane.",
       "Keep this package aligned with the installed vLLM compressed-tensors requirement before promoting Qwen3-VL compressed-tensors scenarios.",
       "Uses --skip-dependency-check to avoid the stale exact setuptools_scm build pin in the PyPI sdist.",
       "Keep llmcompressor out of this package's validation claim until its older dependency pins are reconciled with the local torch and transformers stack."
+    ],
+    "sha256sums": [
+      "a8e93054e8a5ec49c980b09ed36c4c1249b4a8ee167920a8e461c4da26e78d99"
     ],
     "skip_dependency_check": true,
     "src_subdir": "compressed_tensors-0.15.0.1",
@@ -91,7 +94,7 @@
       "pytorch"
     ],
     "method": "pip",
-    "notes": "This package is the compressed-tensors output for the Blackcat Qwen3-VL\ntooling follow-up lane. Blackcat's quantization helper names\nllmcompressor 0.10.0.1 and compressed-tensors 0.14.0.1, but the installed\nvLLM 0.20.0 lane expects compressed-tensors 0.15.0.1. Keep this package\naligned with vLLM first, then reconcile llmcompressor as a separate package\nclosure.\n\nThe package is pure Python today, but it still belongs in the local package\nset because vLLM compressed-tensors quantization and Qwen3-VL W8A8/W8A16\ncheckpoint loading need a coherent installed dependency rather than an\nuntracked venv wheel.\n\nThe upstream sdist pins `setuptools_scm==8.2.0` as a build dependency, while\nthe host has a newer Arch `python-setuptools-scm`. The package skips Python\nbuild dependency checking and uses the system build backend because this is a\npure-Python wheel and the newer backend builds the same installed package\nshape.\n",
+    "notes": "This package is the compressed-tensors output for the Blackcat Qwen3-VL\ntooling follow-up lane. Blackcat's quantization helper names\nllmcompressor 0.10.0.1 and compressed-tensors 0.14.0.1, but the installed\nvLLM 0.20.1 lane expects compressed-tensors 0.15.0.1. Keep this package\naligned with vLLM first, then reconcile llmcompressor as a separate package\nclosure.\n\nThe package is pure Python today, but it still belongs in the local package\nset because vLLM compressed-tensors quantization and Qwen3-VL W8A8/W8A16\ncheckpoint loading need a coherent installed dependency rather than an\nuntracked venv wheel.\n\nThe upstream sdist pins `setuptools_scm==8.2.0` as a build dependency, while\nthe host has a newer Arch `python-setuptools-scm`. The package skips Python\nbuild dependency checking and uses the system build backend because this is a\npure-Python wheel and the newer backend builds the same installed package\nshape.\n",
     "patches": [
       {
         "description": "Replace the recipe's broken venv-local Python cmake wrapper with the real system cmake binary. The cmake pip package installs a Python wrapper that does `from cmake import cmake`, which fails inside pip's build isolation where the cmake Python module is unavailable.\n",

@@ -19,7 +19,7 @@ provides=(python-multidict)
 conflicts=(python-multidict)
 replaces=()
 source=(https://files.pythonhosted.org/packages/source/m/multidict/multidict-6.7.1.tar.gz)
-sha256sums=(SKIP)
+sha256sums=(ec6652a1bee61c53a3e5776b6049172c53b6aaba34f18c9ad04f82712bac623d)
 
 build() {
   cd "$srcdir/multidict-6.7.1"
@@ -36,8 +36,8 @@ build() {
       ln -sf "${_ccache_bin}" "${_ccache_dir}/${_name}"
     done
     export PATH="${_ccache_dir}:$PATH"
-    export CCACHE_BASEDIR="${CCACHE_BASEDIR:-$srcdir}"
-    export CCACHE_DIR="${CCACHE_DIR:-${_ccache_cache}}"
+    export CCACHE_BASEDIR="$srcdir"
+    export CCACHE_DIR="${_ccache_cache}"
     export CCACHE_NOCPP2=1
     export CCACHE_PATH="${_compiler_root}:/opt/rocm/bin:/usr/bin"
     export CC=amdclang

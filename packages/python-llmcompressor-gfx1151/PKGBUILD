@@ -19,7 +19,7 @@ provides=(python-llmcompressor)
 conflicts=(python-llmcompressor)
 replaces=()
 source=(https://files.pythonhosted.org/packages/source/l/llmcompressor/llmcompressor-0.10.0.1.tar.gz 0001-relax-transformers-upper-bound.patch 0002-import-torch-init-functions-from-initialization.patch 0003-use-public-compressed-tensors-match-name.patch 0004-use-compressed-tensors-infer-module-format.patch)
-sha256sums=(SKIP SKIP SKIP SKIP SKIP)
+sha256sums=(f8915064ab47f14245e01f1d99012420c7ddf77b56612d368522afb959893a65 f753bf83b822c94f4dd714210c28f0a897b5d3949253acd531813f4fb30d6534 4b8c2dfceaa8131a686c8805c262229094ef7ffaf68b2d66d51c416990b3a6bf 97b78bbfd5b07a7d63ad24cfecb2bd8aa7547f154ccf238373a7d8a79096d209 512e8371ecfe36ff3a18aec68a33de4f1d18b751a1822a2357ec914240cf4307)
 
 prepare() {
   cd "$srcdir/llmcompressor-0.10.0.1"
@@ -53,8 +53,8 @@ build() {
       ln -sf "${_ccache_bin}" "${_ccache_dir}/${_name}"
     done
     export PATH="${_ccache_dir}:$PATH"
-    export CCACHE_BASEDIR="${CCACHE_BASEDIR:-$srcdir}"
-    export CCACHE_DIR="${CCACHE_DIR:-${_ccache_cache}}"
+    export CCACHE_BASEDIR="$srcdir"
+    export CCACHE_DIR="${_ccache_cache}"
     export CCACHE_NOCPP2=1
     export CCACHE_PATH="${_compiler_root}:/opt/rocm/bin:/usr/bin"
     export CC=amdclang

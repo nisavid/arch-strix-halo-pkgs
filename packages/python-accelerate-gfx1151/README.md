@@ -5,7 +5,7 @@
 - Recipe package key: `native_wheels`
 - Scaffold template: `native-wheel-pypi`
 - Recipe build method: `pip`
-- Upstream repo: ``
+- Upstream repo: `https://github.com/huggingface/accelerate`
 - Package version: `1.12.0`
 - Recipe revision: `a1d7a68 (20260427, 16 path commits)`
 - Recipe steps: `32`

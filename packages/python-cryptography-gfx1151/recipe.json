@@ -66,6 +66,9 @@
     "scaffold_notes": [
       "This follows the recipe's Rust wheel build rules but still needs confirmation of the exact Arch build backend requirements on the current release."
     ],
+    "sha256sums": [
+      "e4cfd68c5f3e0bfdad0d38e023239b96a2fe84146481852dffbcca442c245aa5"
+    ],
     "src_subdir": "cryptography-46.0.7",
     "template": "rust-wheel-pypi",
     "update_notes": [

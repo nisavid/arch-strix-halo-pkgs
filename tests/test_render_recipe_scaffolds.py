@@ -128,6 +128,7 @@ def test_native_wheel_renderer_applies_source_patches_and_build_config_settings(
             "url": "https://example.invalid/sample-native",
             "license": ["MIT"],
             "pypi_name": "sample-native",
+            "sha256sums": ["0" * 64],
             "src_subdir": "sample-native-1.2.3",
             "source_patches": ["0001-sample.patch"],
             "skip_dependency_check": True,
@@ -157,6 +158,7 @@ def test_native_wheel_renderer_applies_source_patches_and_build_config_settings(
     )
 
     assert "0001-sample.patch" in pkgbuild
+    assert f"sha256sums=({'0' * 64} SKIP)" in pkgbuild
     assert "pkgrel=2" in pkgbuild
     assert 'patch --dry-run -R -Np1 -i "$srcdir/0001-sample.patch"' in pkgbuild
     assert "python -m build --wheel --no-isolation --skip-dependency-check \\\n" in pkgbuild
@@ -170,8 +172,26 @@ def test_compiler_env_uses_repo_local_ccache_storage() -> None:
 
     assert "CCACHE_BASEDIR" in snippet
     assert 'local _ccache_cache="$srcdir/.ccache/cache"' in snippet
-    assert 'export CCACHE_DIR="${CCACHE_DIR:-${_ccache_cache}}"' in snippet
+    assert 'export CCACHE_BASEDIR="$srcdir"' in snippet
+    assert 'export CCACHE_DIR="${_ccache_cache}"' in snippet
     assert "CCACHE_TEMPDIR" not in snippet
+
+
+def test_implicit_source_checksum_must_match_generated_source() -> None:
+    try:
+        render_recipe_scaffolds.render_source_refs(
+            {
+                "template": "native-wheel-pypi",
+                "pypi_name": "sample-native",
+                "upstream_version": "1.2.3",
+                "sha256sums": ["0" * 64, "1" * 64],
+            },
+            {"repo": "https://example.invalid/sample-native"},
+        )
+    except SystemExit as exc:
+        assert exc.code == 2
+    else:
+        raise AssertionError("expected implicit-source checksum mismatch to fail")
 
 
 def test_vllm_renderer_uses_repo_local_ccache_storage() -> None:
@@ -206,7 +226,8 @@ def test_vllm_renderer_uses_repo_local_ccache_storage() -> None:
     )
 
     assert 'local _ccache_cache="$srcdir/.ccache/cache"' in pkgbuild
-    assert 'export CCACHE_DIR="${CCACHE_DIR:-${_ccache_cache}}"' in pkgbuild
+    assert 'export CCACHE_BASEDIR="$srcdir"' in pkgbuild
+    assert 'export CCACHE_DIR="${_ccache_cache}"' in pkgbuild
     assert '_vllm_srcdir="vllm-${pkgver}"' in pkgbuild
     assert '_vllm_tarball="v${pkgver}.tar.gz"' in pkgbuild
     assert '_vllm_source_patch="0016-rocm-refresh-local-carry-for-vllm-${pkgver}.patch"' in pkgbuild
@@ -286,6 +307,44 @@ def test_rust_wheel_renderer_applies_source_patches() -> None:
     assert 'patch -Np1 -i "$srcdir/0001-sample.patch"' in pkgbuild
     assert 'export CARGO_HOME="$srcdir/.cargo"' in pkgbuild
     assert 'mkdir -p "$CARGO_HOME"' in pkgbuild
+    assert "find \"$pkgdir/usr/lib\" -type f -path '*/sboms/*.json'" in pkgbuild
+    assert "-name '*.so'" not in pkgbuild
+
+
+def test_stable_diffusion_renderer_keeps_runtime_rpath_to_system_libs() -> None:
+    pkgbuild = render_recipe_scaffolds.render_pkgbuild(
+        "stable-diffusion.cpp-vulkan-gfx1151",
+        {
+            "recipe_key": "stable_diffusion_cpp",
+            "template": "stable-diffusion-cpp",
+            "upstream_version": "r593.g3d6064b",
+            "pkgdesc": "stable-diffusion.cpp",
+            "url": "https://github.com/leejet/stable-diffusion.cpp",
+            "license": ["MIT"],
+            "src_subdir": "stable-diffusion.cpp",
+            "source_refs": [
+                "stable-diffusion.cpp::git+https://github.com/leejet/stable-diffusion.cpp.git#commit=3d6064b"
+            ],
+            "source_patches": ["0001-sdxl-clipg-prefix-mapping.patch"],
+        },
+        {
+            "repo": "https://github.com/leejet/stable-diffusion.cpp.git",
+            "method": "cmake",
+            "phase": "package",
+            "steps": [],
+            "depends_on": [],
+            "notes": "",
+        },
+        "r593.g3d6064b",
+        {
+            "recipe_repo": "https://github.com/paudley/ai-notes",
+            "recipe_subdir": "strix-halo",
+            "recipe_author": "Blackcat Informatics Inc.",
+        },
+    )
+
+    assert 'patchelf --set-rpath "/usr/lib"' in pkgbuild
+    assert 'patchelf --set-rpath "/usr/lib:${install_root}/lib"' not in pkgbuild
 
 
 def test_triton_rocm_renderer_prefers_source_patches_over_inline_sed() -> None:
@@ -506,6 +565,37 @@ def test_torch_migraphx_readme_uses_policy_notes_override() -> None:
 
     assert "host-device FX lowering smoke" in readme
     assert "unrelated native wheel recipe notes" not in readme
+
+
+def test_readme_uses_policy_url_when_recipe_repo_is_absent() -> None:
+    readme = render_recipe_scaffolds.render_readme(
+        "sample-gfx1151",
+        {
+            "recipe_key": "sample",
+            "template": "native-wheel-pypi",
+            "upstream_version": "1.2.3",
+            "pkgdesc": "Sample",
+            "url": "https://example.invalid/sample",
+            "license": ["MIT"],
+            "arch_reference": [],
+        },
+        {
+            "repo": "",
+            "method": "pip",
+            "phase": "package",
+            "steps": [],
+            "depends_on": [],
+            "notes": "",
+        },
+        "1.2.3",
+        {
+            "recipe_repo": "https://github.com/paudley/ai-notes",
+            "recipe_subdir": "strix-halo",
+            "recipe_author": "Blackcat Informatics Inc.",
+        },
+    )
+
+    assert "- Upstream repo: `https://example.invalid/sample`" in readme
 
 
 def test_pytorch_rocm_renderer_uses_source_patches_for_magma_fix() -> None:

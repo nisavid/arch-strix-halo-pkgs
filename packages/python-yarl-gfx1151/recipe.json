@@ -64,6 +64,9 @@
       "Part of the comprehensive Blackcat aiohttp service dependency closure and consumed by the local aiohttp package.",
       "Use the shared native-wheel renderer so amdclang, path remapping, and Zen 5 flags stay aligned with the other native wheel packages."
     ],
+    "sha256sums": [
+      "53b1ea6ca88ebd4420379c330aea57e258408dd0df9af0992e5de2078dc9f5d5"
+    ],
     "src_subdir": "yarl-1.23.0",
     "template": "native-wheel-pypi",
     "update_notes": [

@@ -9,6 +9,9 @@
       "Uses the Blackcat Vulkan lane with amdclang, Zen 5 flags, ThinLTO, AOCL-LibM linkage, WebP/WebM output support, and release-mode Vulkan diagnostics disabled.",
       "Carries Blackcat's SDXL CLIP-G prefix mapping patch because upstream master still needs the deterministic te.1 prefix rewrite for SDXL diffusers checkpoints."
     ],
+    "source_patch_sha256sums": [
+      "ef8e1abd394f164998126a629003ed6c3578458a57c94ee420440caa051f128a"
+    ],
     "source_patches": [
       "0001-sdxl-clipg-prefix-mapping.patch"
     ],

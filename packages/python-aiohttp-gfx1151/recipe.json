@@ -73,6 +73,9 @@
       "Part of the comprehensive Blackcat service/runtime wheel stack and consumed by the local vLLM package.",
       "Keep dependencies pointed at the local frozenlist, multidict, and yarl packages so the aiohttp closure stays on the repo-owned optimized stack."
     ],
+    "sha256sums": [
+      "9d98cc980ecc96be6eb4c1994ce35d28d8b1f5e5208a23b421187d1209dbb7d1"
+    ],
     "src_subdir": "aiohttp-3.13.5",
     "template": "native-wheel-pypi",
     "update_notes": [

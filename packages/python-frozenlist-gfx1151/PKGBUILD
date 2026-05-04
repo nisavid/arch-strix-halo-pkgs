@@ -19,7 +19,7 @@ provides=(python-frozenlist)
 conflicts=(python-frozenlist)
 replaces=()
 source=(https://files.pythonhosted.org/packages/source/f/frozenlist/frozenlist-1.8.0.tar.gz)
-sha256sums=(SKIP)
+sha256sums=(3ede829ed8d842f6cd48fc7081d7a41001a56f1f38603f9d49bf3020d59a31ad)
 
 build() {
   cd "$srcdir/frozenlist-1.8.0"
@@ -36,8 +36,8 @@ build() {
       ln -sf "${_ccache_bin}" "${_ccache_dir}/${_name}"
     done
     export PATH="${_ccache_dir}:$PATH"
-    export CCACHE_BASEDIR="${CCACHE_BASEDIR:-$srcdir}"
-    export CCACHE_DIR="${CCACHE_DIR:-${_ccache_cache}}"
+    export CCACHE_BASEDIR="$srcdir"
+    export CCACHE_DIR="${_ccache_cache}"
     export CCACHE_NOCPP2=1
     export CCACHE_PATH="${_compiler_root}:/opt/rocm/bin:/usr/bin"
     export CC=amdclang

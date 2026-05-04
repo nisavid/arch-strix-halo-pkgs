@@ -19,7 +19,7 @@ provides=(python-auto-round)
 conflicts=(python-auto-round)
 replaces=()
 source=(https://files.pythonhosted.org/packages/source/a/auto_round/auto_round-0.10.2.tar.gz)
-sha256sums=(SKIP)
+sha256sums=(f00a5fd484363d9ab9f5628f46ae70fd880b5fa91fcd15d55a556b8e36d39e24)
 
 build() {
   cd "$srcdir/auto_round-0.10.2"
@@ -36,8 +36,8 @@ build() {
       ln -sf "${_ccache_bin}" "${_ccache_dir}/${_name}"
     done
     export PATH="${_ccache_dir}:$PATH"
-    export CCACHE_BASEDIR="${CCACHE_BASEDIR:-$srcdir}"
-    export CCACHE_DIR="${CCACHE_DIR:-${_ccache_cache}}"
+    export CCACHE_BASEDIR="$srcdir"
+    export CCACHE_DIR="${_ccache_cache}"
     export CCACHE_NOCPP2=1
     export CCACHE_PATH="${_compiler_root}:/opt/rocm/bin:/usr/bin"
     export CC=amdclang

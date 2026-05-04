@@ -63,6 +63,9 @@
       "Part of the core Blackcat model/config stack and used by PyTorch, AOTriton, and Transformers metadata/config paths.",
       "The package name is python-pyyaml-gfx1151, but it provides python-yaml to satisfy Arch-style dependencies."
     ],
+    "sha256sums": [
+      "d76623373421df22fb4cf8817020cbb7ef15c725b9d5e45f17e189bfc384190f"
+    ],
     "src_subdir": "pyyaml-6.0.3",
     "template": "native-wheel-pypi",
     "update_notes": [

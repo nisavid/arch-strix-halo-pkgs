@@ -19,7 +19,7 @@ provides=(python-msgspec)
 conflicts=(python-msgspec)
 replaces=()
 source=(https://files.pythonhosted.org/packages/source/m/msgspec/msgspec-0.21.1.tar.gz)
-sha256sums=(SKIP)
+sha256sums=(2313508e394b0d208f8f56892ca9b2799e2561329de9763b19619595a6c0f72c)
 
 build() {
   cd "$srcdir/msgspec-0.21.1"
@@ -36,8 +36,8 @@ build() {
       ln -sf "${_ccache_bin}" "${_ccache_dir}/${_name}"
     done
     export PATH="${_ccache_dir}:$PATH"
-    export CCACHE_BASEDIR="${CCACHE_BASEDIR:-$srcdir}"
-    export CCACHE_DIR="${CCACHE_DIR:-${_ccache_cache}}"
+    export CCACHE_BASEDIR="$srcdir"
+    export CCACHE_DIR="${_ccache_cache}"
     export CCACHE_NOCPP2=1
     export CCACHE_PATH="${_compiler_root}:/opt/rocm/bin:/usr/bin"
     export CC=amdclang

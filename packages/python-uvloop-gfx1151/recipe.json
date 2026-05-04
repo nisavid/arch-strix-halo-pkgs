@@ -8,6 +8,9 @@
       "Follows Arch's python-uvloop system-libuv package shape while rebuilding the native extension through the Blackcat native-wheel compiler lane.",
       "Keeps vLLM and FastAPI service event loops on the repo-owned optimized wheel stack."
     ],
+    "source_patch_sha256sums": [
+      "e604aa28d65559b07b842e403105bfce6087162671df4b8680220f25883c29a6"
+    ],
     "source_patches": [
       "0001-use-system-libuv.patch"
     ],
@@ -64,6 +67,9 @@
     "scaffold_notes": [
       "Part of the comprehensive Blackcat service/runtime wheel stack and consumed by the local vLLM package.",
       "Keep the source patch that switches uvloop's build_ext default to system libuv so the local package does not vendor a private libuv copy."
+    ],
+    "sha256sums": [
+      "6c84bae345b9147082b17371e3dd5d42775bddce91f885499017f4607fdaf39f"
     ],
     "src_subdir": "uvloop-0.22.1",
     "template": "native-wheel-pypi",

@@ -19,7 +19,7 @@ provides=(python-safetensors)
 conflicts=(python-safetensors)
 replaces=()
 source=(https://files.pythonhosted.org/packages/source/s/safetensors/safetensors-0.7.0.tar.gz)
-sha256sums=(SKIP)
+sha256sums=(07663963b67e8bd9f0b8ad15bb9163606cd27cc5a1b96235a50d8369803b96b0)
 
 build() {
   cd "$srcdir/safetensors-0.7.0"
@@ -36,8 +36,8 @@ build() {
       ln -sf "${_ccache_bin}" "${_ccache_dir}/${_name}"
     done
     export PATH="${_ccache_dir}:$PATH"
-    export CCACHE_BASEDIR="${CCACHE_BASEDIR:-$srcdir}"
-    export CCACHE_DIR="${CCACHE_DIR:-${_ccache_cache}}"
+    export CCACHE_BASEDIR="$srcdir"
+    export CCACHE_DIR="${_ccache_cache}"
     export CCACHE_NOCPP2=1
     export CCACHE_PATH="${_compiler_root}:/opt/rocm/bin:/usr/bin"
     export CC=amdclang
@@ -64,7 +64,7 @@ package() {
   python -m installer --destdir="$pkgdir" dist/*.whl
 
   local _debug_prefix="/usr/src/debug/python-safetensors-gfx1151"
-  find "$pkgdir/usr/lib" -type f \( -name '*.so' -o -path '*/sboms/*.json' \) -print0 | while IFS= read -r -d '' _file; do
+  find "$pkgdir/usr/lib" -type f -path '*/sboms/*.json' -print0 | while IFS= read -r -d '' _file; do
     sed -i       -e "s|$srcdir/safetensors-0.7.0|${_debug_prefix}/safetensors-0.7.0|g"       -e "s|$srcdir|${_debug_prefix}|g"       -e "s|/tmp/pkg/src/safetensors-0.7.0|${_debug_prefix}/safetensors-0.7.0|g"       "$_file" 2>/dev/null || true
   done
 }

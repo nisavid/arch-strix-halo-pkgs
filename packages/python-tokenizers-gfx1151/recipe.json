@@ -4,7 +4,7 @@
     "authoritative_reference": "cachyos/python-tokenizers",
     "divergence_notes": [
       "Uses the Blackcat Rust-wheel lane for a local Hugging Face tokenizer hot path instead of relying on the generic CachyOS wheel.",
-      "There is no current Arch extra python-tokenizers package in the checked package databases, so CachyOS is the practical Arch-family baseline."
+      "There is no current Arch extra python-tokenizers package in the checked package databases as of 2026-05-01, so CachyOS is the practical Arch-family baseline."
     ],
     "source_patches": [],
     "update_notes": [
@@ -32,7 +32,7 @@
     ],
     "divergence_notes": [
       "Uses the Blackcat Rust-wheel lane for a local Hugging Face tokenizer hot path instead of relying on the generic CachyOS wheel.",
-      "There is no current Arch extra python-tokenizers package in the checked package databases, so CachyOS is the practical Arch-family baseline."
+      "There is no current Arch extra python-tokenizers package in the checked package databases as of 2026-05-01, so CachyOS is the practical Arch-family baseline."
     ],
     "license": [
       "Apache-2.0"
@@ -57,6 +57,9 @@
     "scaffold_notes": [
       "Part of the core Blackcat model/config stack and consumed by the local Transformers closure package.",
       "Use the shared Rust-wheel renderer so linker selection, path remapping, and znver5 codegen stay aligned with orjson and cryptography."
+    ],
+    "sha256sums": [
+      "473b83b915e547aa366d1eee11806deaf419e17be16310ac0a14077f1e28f917"
     ],
     "src_subdir": "tokenizers-0.22.2",
     "template": "rust-wheel-pypi",
