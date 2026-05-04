@@ -19,7 +19,7 @@ provides=(python-openai-harmony)
 conflicts=(python-openai-harmony)
 replaces=()
 source=(https://files.pythonhosted.org/packages/source/o/openai_harmony/openai_harmony-0.0.8.tar.gz)
-sha256sums=(SKIP)
+sha256sums=(6e43f98e6c242fa2de6f8ea12eab24af63fa2ed3e89c06341fb9d92632c5cbdf)
 
 build() {
   cd "$srcdir/openai_harmony-0.0.8"
@@ -36,8 +36,8 @@ build() {
       ln -sf "${_ccache_bin}" "${_ccache_dir}/${_name}"
     done
     export PATH="${_ccache_dir}:$PATH"
-    export CCACHE_BASEDIR="${CCACHE_BASEDIR:-$srcdir}"
-    export CCACHE_DIR="${CCACHE_DIR:-${_ccache_cache}}"
+    export CCACHE_BASEDIR="$srcdir"
+    export CCACHE_DIR="${_ccache_cache}"
     export CCACHE_NOCPP2=1
     export CCACHE_PATH="${_compiler_root}:/opt/rocm/bin:/usr/bin"
     export CC=amdclang
@@ -64,7 +64,7 @@ package() {
   python -m installer --destdir="$pkgdir" dist/*.whl
 
   local _debug_prefix="/usr/src/debug/python-openai-harmony-gfx1151"
-  find "$pkgdir/usr/lib" -type f \( -name '*.so' -o -path '*/sboms/*.json' \) -print0 | while IFS= read -r -d '' _file; do
+  find "$pkgdir/usr/lib" -type f -path '*/sboms/*.json' -print0 | while IFS= read -r -d '' _file; do
     sed -i       -e "s|$srcdir/openai_harmony-0.0.8|${_debug_prefix}/openai_harmony-0.0.8|g"       -e "s|$srcdir|${_debug_prefix}|g"       -e "s|/tmp/pkg/src/openai_harmony-0.0.8|${_debug_prefix}/openai_harmony-0.0.8|g"       "$_file" 2>/dev/null || true
   done
 }

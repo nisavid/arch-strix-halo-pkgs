@@ -59,6 +59,9 @@
       "Part of the Blackcat Qwen3-VL quantization/tooling closure and consumed by llmcompressor.",
       "Use --skip-dependency-check because local torch, transformers, numpy, and accelerate packages satisfy upstream runtime requirements under gfx1151 package names."
     ],
+    "sha256sums": [
+      "f00a5fd484363d9ab9f5628f46ae70fd880b5fa91fcd15d55a556b8e36d39e24"
+    ],
     "skip_dependency_check": true,
     "src_subdir": "auto_round-0.10.2",
     "template": "native-wheel-pypi",

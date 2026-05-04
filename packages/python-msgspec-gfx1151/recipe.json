@@ -66,6 +66,9 @@
       "Part of the comprehensive Blackcat service/runtime wheel stack and consumed by the local vLLM package.",
       "Use the shared native-wheel renderer so amdclang, path remapping, and Zen 5 flags stay aligned with the other native wheel packages."
     ],
+    "sha256sums": [
+      "2313508e394b0d208f8f56892ca9b2799e2561329de9763b19619595a6c0f72c"
+    ],
     "src_subdir": "msgspec-0.21.1",
     "template": "native-wheel-pypi",
     "update_notes": [

@@ -5,7 +5,7 @@
 - Recipe package key: `native_wheels`
 - Scaffold template: `native-wheel-pypi`
 - Recipe build method: `pip`
-- Upstream repo: ``
+- Upstream repo: `https://github.com/intel/auto-round`
 - Package version: `0.10.2`
 - Recipe revision: `a1d7a68 (20260427, 16 path commits)`
 - Recipe steps: `32`

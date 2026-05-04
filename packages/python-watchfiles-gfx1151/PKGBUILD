@@ -19,7 +19,7 @@ provides=(python-watchfiles)
 conflicts=(python-watchfiles)
 replaces=()
 source=(https://files.pythonhosted.org/packages/source/w/watchfiles/watchfiles-1.1.1.tar.gz)
-sha256sums=(SKIP)
+sha256sums=(a173cb5c16c4f40ab19cecf48a534c409f7ea983ab8fed0741304a1c0a31b3f2)
 
 build() {
   cd "$srcdir/watchfiles-1.1.1"
@@ -36,8 +36,8 @@ build() {
       ln -sf "${_ccache_bin}" "${_ccache_dir}/${_name}"
     done
     export PATH="${_ccache_dir}:$PATH"
-    export CCACHE_BASEDIR="${CCACHE_BASEDIR:-$srcdir}"
-    export CCACHE_DIR="${CCACHE_DIR:-${_ccache_cache}}"
+    export CCACHE_BASEDIR="$srcdir"
+    export CCACHE_DIR="${_ccache_cache}"
     export CCACHE_NOCPP2=1
     export CCACHE_PATH="${_compiler_root}:/opt/rocm/bin:/usr/bin"
     export CC=amdclang
@@ -64,7 +64,7 @@ package() {
   python -m installer --destdir="$pkgdir" dist/*.whl
 
   local _debug_prefix="/usr/src/debug/python-watchfiles-gfx1151"
-  find "$pkgdir/usr/lib" -type f \( -name '*.so' -o -path '*/sboms/*.json' \) -print0 | while IFS= read -r -d '' _file; do
+  find "$pkgdir/usr/lib" -type f -path '*/sboms/*.json' -print0 | while IFS= read -r -d '' _file; do
     sed -i       -e "s|$srcdir/watchfiles-1.1.1|${_debug_prefix}/watchfiles-1.1.1|g"       -e "s|$srcdir|${_debug_prefix}|g"       -e "s|/tmp/pkg/src/watchfiles-1.1.1|${_debug_prefix}/watchfiles-1.1.1|g"       "$_file" 2>/dev/null || true
   done
 }

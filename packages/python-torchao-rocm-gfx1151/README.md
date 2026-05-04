@@ -5,7 +5,7 @@
 - Recipe package key: `native_wheels`
 - Scaffold template: `python-project-torchao`
 - Recipe build method: `pip`
-- Upstream repo: ``
+- Upstream repo: `https://github.com/pytorch/ao`
 - Package version: `0.17.0`
 - Recipe revision: `a1d7a68 (20260427, 16 path commits)`
 - Recipe steps: `32`

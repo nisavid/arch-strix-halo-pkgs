@@ -10,6 +10,12 @@
       "Carries a package-local compressed-tensors 0.15 compatibility patch for the moved quantization compression-format helper.",
       "Keeps nvidia-ml-py as a local pure-Python metadata dependency without pulling NVIDIA driver utilities onto the AMD reference host."
     ],
+    "source_patch_sha256sums": [
+      "f753bf83b822c94f4dd714210c28f0a897b5d3949253acd531813f4fb30d6534",
+      "4b8c2dfceaa8131a686c8805c262229094ef7ffaf68b2d66d51c416990b3a6bf",
+      "97b78bbfd5b07a7d63ad24cfecb2bd8aa7547f154ccf238373a7d8a79096d209",
+      "512e8371ecfe36ff3a18aec68a33de4f1d18b751a1822a2357ec914240cf4307"
+    ],
     "source_patches": [
       "0001-relax-transformers-upper-bound.patch",
       "0002-import-torch-init-functions-from-initialization.patch",
@@ -80,12 +86,15 @@
     ],
     "pypi_name": "llmcompressor",
     "recipe_key": "native_wheels",
-    "recipe_notes_override": "This package supplies llmcompressor for the Blackcat Qwen3-VL\nquantization/tooling follow-up lane. Blackcat's helper notes name\nllmcompressor 0.10.0.1 with release metadata that pins older torch,\ntransformers, and compressed-tensors bounds than the current local stack.\n\nThe package builds with llmcompressor's dev dependency lane so torch and\ncompressed-tensors can follow the installed vLLM 0.20.0 stack, and carries a\nsmall metadata patch to remove the remaining Transformers upper bound. It also\ncarries compatibility patches for the current Transformers and\ncompressed-tensors APIs. The build sets `SETUPTOOLS_SCM_PRETEND_VERSION=0.10.0.1`\nso the PyPI sdist build keeps the adopted release version.\n\nllmcompressor declares nvidia-ml-py as a runtime dependency even though pynvml\nis imported lazily only for NVIDIA metric logging. The local dependency points\nat `python-nvidia-ml-py-gfx1151`, which provides the Python module without\npulling NVIDIA driver utilities onto the AMD reference host.\n",
+    "recipe_notes_override": "This package supplies llmcompressor for the Blackcat Qwen3-VL\nquantization/tooling follow-up lane. Blackcat's helper notes name\nllmcompressor 0.10.0.1 with release metadata that pins older torch,\ntransformers, and compressed-tensors bounds than the current local stack.\n\nThe package builds with llmcompressor's dev dependency lane so torch and\ncompressed-tensors can follow the installed vLLM 0.20.1 stack, and carries a\nsmall metadata patch to remove the remaining Transformers upper bound. It also\ncarries compatibility patches for the current Transformers and\ncompressed-tensors APIs. The build sets `SETUPTOOLS_SCM_PRETEND_VERSION=0.10.0.1`\nso the PyPI sdist build keeps the adopted release version.\n\nllmcompressor declares nvidia-ml-py as a runtime dependency even though pynvml\nis imported lazily only for NVIDIA metric logging. The local dependency points\nat `python-nvidia-ml-py-gfx1151`, which provides the Python module without\npulling NVIDIA driver utilities onto the AMD reference host.\n",
     "scaffold_notes": [
       "Part of the Blackcat Qwen3-VL quantization/tooling closure.",
       "Keep dependencies pointed at the local accelerate, AutoRound, compressed-tensors, torch, transformers, Pillow, PyYAML, and nvidia-ml-py packages.",
       "Use --skip-dependency-check to avoid the stale exact setuptools_scm build pin and local-package-name metadata mismatch.",
       "Keep BUILD_TYPE=dev plus the Transformers compatibility patches unless upstream release metadata and imports accept the installed torch, transformers, and compressed-tensors stack directly."
+    ],
+    "sha256sums": [
+      "f8915064ab47f14245e01f1d99012420c7ddf77b56612d368522afb959893a65"
     ],
     "skip_dependency_check": true,
     "src_subdir": "llmcompressor-0.10.0.1",
@@ -116,7 +125,7 @@
       "pytorch"
     ],
     "method": "pip",
-    "notes": "This package supplies llmcompressor for the Blackcat Qwen3-VL\nquantization/tooling follow-up lane. Blackcat's helper notes name\nllmcompressor 0.10.0.1 with release metadata that pins older torch,\ntransformers, and compressed-tensors bounds than the current local stack.\n\nThe package builds with llmcompressor's dev dependency lane so torch and\ncompressed-tensors can follow the installed vLLM 0.20.0 stack, and carries a\nsmall metadata patch to remove the remaining Transformers upper bound. It also\ncarries compatibility patches for the current Transformers and\ncompressed-tensors APIs. The build sets `SETUPTOOLS_SCM_PRETEND_VERSION=0.10.0.1`\nso the PyPI sdist build keeps the adopted release version.\n\nllmcompressor declares nvidia-ml-py as a runtime dependency even though pynvml\nis imported lazily only for NVIDIA metric logging. The local dependency points\nat `python-nvidia-ml-py-gfx1151`, which provides the Python module without\npulling NVIDIA driver utilities onto the AMD reference host.\n",
+    "notes": "This package supplies llmcompressor for the Blackcat Qwen3-VL\nquantization/tooling follow-up lane. Blackcat's helper notes name\nllmcompressor 0.10.0.1 with release metadata that pins older torch,\ntransformers, and compressed-tensors bounds than the current local stack.\n\nThe package builds with llmcompressor's dev dependency lane so torch and\ncompressed-tensors can follow the installed vLLM 0.20.1 stack, and carries a\nsmall metadata patch to remove the remaining Transformers upper bound. It also\ncarries compatibility patches for the current Transformers and\ncompressed-tensors APIs. The build sets `SETUPTOOLS_SCM_PRETEND_VERSION=0.10.0.1`\nso the PyPI sdist build keeps the adopted release version.\n\nllmcompressor declares nvidia-ml-py as a runtime dependency even though pynvml\nis imported lazily only for NVIDIA metric logging. The local dependency points\nat `python-nvidia-ml-py-gfx1151`, which provides the Python module without\npulling NVIDIA driver utilities onto the AMD reference host.\n",
     "patches": [
       {
         "description": "Replace the recipe's broken venv-local Python cmake wrapper with the real system cmake binary. The cmake pip package installs a Python wrapper that does `from cmake import cmake`, which fails inside pip's build isolation where the cmake Python module is unavailable.\n",

@@ -263,6 +263,7 @@ conflicts = ["python-openai-harmony"]
 depends = ["glibc", "libgcc", "python-gfx1151", "python-pydantic"]
 makedepends = ["cargo", "gcc", "nasm", "perl", "python-build", "python-installer", "python-maturin", "python-wheel", "rocm-llvm-gfx1151", "rust"]
 pypi_name = "openai_harmony"
+sha256sums = ["6e43f98e6c242fa2de6f8ea12eab24af63fa2ed3e89c06341fb9d92632c5cbdf"]
 src_subdir = "openai_harmony-0.0.8"
 patches_dir = "patches/python-openai-harmony-gfx1151"
 recipe_notes_override = """
@@ -713,6 +714,7 @@ conflicts = ["python-cryptography"]
 depends = ["glibc", "libgcc", "openssl", "python-cffi", "python-gfx1151"]
 makedepends = ["cargo", "python-build", "python-installer", "python-setuptools-rust", "python-wheel", "rocm-llvm-gfx1151", "rust"]
 pypi_name = "cryptography"
+sha256sums = ["e4cfd68c5f3e0bfdad0d38e023239b96a2fe84146481852dffbcca442c245aa5"]
 src_subdir = "cryptography-46.0.7"
 patches_dir = "patches/python-cryptography-gfx1151"
 recipe_notes_override = """
@@ -759,7 +761,7 @@ divergence_notes = [
 ]
 update_notes = [
   "Check Arch python-pydantic and python-pydantic-core together before updating; upstream pydantic normally constrains the pydantic-core ABI tightly.",
-  "Blackcat's recipe currently names pydantic-core 2.46.3, but adopting that newer core without a matching local pydantic package can break the distro pydantic consumer.",
+  "Do not adopt a newer pydantic-core release from recipe notes alone; keep pydantic-core aligned with the installed pydantic ABI unless this repo also carries and validates a matching pydantic package.",
   "After publishing a rebuilt package, verify `import pydantic_core` and a tiny `pydantic.BaseModel` validation through the installed local Python lane."
 ]
 provides = ["python-pydantic-core"]
@@ -767,6 +769,7 @@ conflicts = ["python-pydantic-core"]
 depends = ["glibc", "libgcc", "python-gfx1151", "python-typing-inspection", "python-typing_extensions"]
 makedepends = ["cargo", "python-build", "python-installer", "python-maturin", "python-wheel", "rocm-llvm-gfx1151", "rust"]
 pypi_name = "pydantic_core"
+sha256sums = ["08daa51ea16ad373ffd5e7606252cc32f07bc72b28284b6bc9c6df804816476e"]
 src_subdir = "pydantic_core-2.41.5"
 patches_dir = "patches/python-pydantic-core-gfx1151"
 recipe_notes_override = """
@@ -803,7 +806,7 @@ authoritative_reference = "cachyos/python-tokenizers"
 advisory_references = []
 divergence_notes = [
   "Uses the Blackcat Rust-wheel lane for a local Hugging Face tokenizer hot path instead of relying on the generic CachyOS wheel.",
-  "There is no current Arch extra python-tokenizers package in the checked package databases, so CachyOS is the practical Arch-family baseline."
+  "There is no current Arch extra python-tokenizers package in the checked package databases as of 2026-05-01, so CachyOS is the practical Arch-family baseline."
 ]
 update_notes = [
   "Check the current Hugging Face tokenizers release and Cachy package before updating; Transformers metadata can constrain this package.",
@@ -815,6 +818,7 @@ conflicts = ["python-tokenizers"]
 depends = ["glibc", "libgcc", "python-gfx1151"]
 makedepends = ["cargo", "python-build", "python-installer", "python-maturin", "python-wheel", "rocm-llvm-gfx1151", "rust"]
 pypi_name = "tokenizers"
+sha256sums = ["473b83b915e547aa366d1eee11806deaf419e17be16310ac0a14077f1e28f917"]
 src_subdir = "tokenizers-0.22.2"
 patches_dir = "patches/python-tokenizers-gfx1151"
 recipe_notes_override = """
@@ -861,6 +865,7 @@ optdepends = [
   "python-tensorflow: usage with tensorflow"
 ]
 pypi_name = "safetensors"
+sha256sums = ["07663963b67e8bd9f0b8ad15bb9163606cd27cc5a1b96235a50d8369803b96b0"]
 src_subdir = "safetensors-0.7.0"
 patches_dir = "patches/python-safetensors-gfx1151"
 recipe_notes_override = """
@@ -1097,6 +1102,7 @@ conflicts = ["python-yaml", "python-pyyaml"]
 depends = ["glibc", "libyaml", "python-gfx1151"]
 makedepends = ["cython", "python-build", "python-installer", "python-setuptools", "python-wheel", "rocm-llvm-gfx1151"]
 pypi_name = "pyyaml"
+sha256sums = ["d76623373421df22fb4cf8817020cbb7ef15c725b9d5e45f17e189bfc384190f"]
 src_subdir = "pyyaml-6.0.3"
 patches_dir = "patches/python-pyyaml-gfx1151"
 recipe_notes_override = """
@@ -1139,6 +1145,7 @@ conflicts = ["python-psutil"]
 depends = ["glibc", "python-gfx1151"]
 makedepends = ["python-build", "python-installer", "python-setuptools", "python-wheel", "rocm-llvm-gfx1151"]
 pypi_name = "psutil"
+sha256sums = ["0746f5f8d406af344fd547f1c8daa5f5c33dbc293bb8d6a16d80b4bb88f59372"]
 src_subdir = "psutil-7.2.2"
 patches_dir = "patches/python-psutil-gfx1151"
 recipe_notes_override = """
@@ -1188,6 +1195,7 @@ optdepends = [
   "tk: for the ImageTK module"
 ]
 pypi_name = "pillow"
+sha256sums = ["a830b1a40919539d07806aa58e1b114df53ddd43213d9c8b75847eee6c0182b5"]
 src_subdir = "pillow-12.2.0"
 patches_dir = "patches/python-pillow-gfx1151"
 recipe_notes_override = """
@@ -1230,6 +1238,7 @@ conflicts = ["python-watchfiles"]
 depends = ["glibc", "libgcc", "python-gfx1151", "python-anyio"]
 makedepends = ["cargo", "python-build", "python-installer", "python-maturin", "python-wheel", "rocm-llvm-gfx1151", "rust"]
 pypi_name = "watchfiles"
+sha256sums = ["a173cb5c16c4f40ab19cecf48a534c409f7ea983ab8fed0741304a1c0a31b3f2"]
 src_subdir = "watchfiles-1.1.1"
 patches_dir = "patches/python-watchfiles-gfx1151"
 recipe_notes_override = """
@@ -1272,8 +1281,10 @@ conflicts = ["python-uvloop"]
 depends = ["glibc", "libuv", "python-gfx1151"]
 makedepends = ["cython", "python-build", "python-installer", "python-setuptools", "python-wheel", "rocm-llvm-gfx1151"]
 pypi_name = "uvloop"
+sha256sums = ["6c84bae345b9147082b17371e3dd5d42775bddce91f885499017f4607fdaf39f"]
 src_subdir = "uvloop-0.22.1"
 source_patches = ["0001-use-system-libuv.patch"]
+extra_sha256sums = ["e604aa28d65559b07b842e403105bfce6087162671df4b8680220f25883c29a6"]
 patches_dir = "packages/python-uvloop-gfx1151"
 recipe_notes_override = """
 This package is the uvloop output from the shared `native_wheels` recipe
@@ -1317,8 +1328,10 @@ conflicts = ["python-httptools"]
 depends = ["llhttp", "python-gfx1151"]
 makedepends = ["cython", "python-build", "python-installer", "python-setuptools", "python-wheel", "rocm-llvm-gfx1151"]
 pypi_name = "httptools"
+sha256sums = ["abd72556974f8e7c74a259655924a717a2365b236c882c3f6f8a45fe94703ac9"]
 src_subdir = "httptools-0.7.1"
 source_patches = ["0001-use-system-llhttp.patch"]
+extra_sha256sums = ["3da331b23886e7fed88f74dfa284010fdcfea0a1a14cd7f71ed3e20df202b6ab"]
 patches_dir = "packages/python-httptools-gfx1151"
 skip_dependency_check = true
 recipe_notes_override = """
@@ -1365,6 +1378,7 @@ optdepends = [
   "python-pyyaml-gfx1151: for YAML support"
 ]
 pypi_name = "msgspec"
+sha256sums = ["2313508e394b0d208f8f56892ca9b2799e2561329de9763b19619595a6c0f72c"]
 src_subdir = "msgspec-0.21.1"
 patches_dir = "patches/python-msgspec-gfx1151"
 recipe_notes_override = """
@@ -1407,6 +1421,7 @@ conflicts = ["python-frozenlist"]
 depends = ["glibc", "python-gfx1151"]
 makedepends = ["cython", "python-build", "python-expandvars", "python-installer", "python-setuptools", "python-wheel", "rocm-llvm-gfx1151"]
 pypi_name = "frozenlist"
+sha256sums = ["3ede829ed8d842f6cd48fc7081d7a41001a56f1f38603f9d49bf3020d59a31ad"]
 src_subdir = "frozenlist-1.8.0"
 patches_dir = "patches/python-frozenlist-gfx1151"
 recipe_notes_override = """
@@ -1448,6 +1463,7 @@ conflicts = ["python-multidict"]
 depends = ["glibc", "python-gfx1151"]
 makedepends = ["cython", "python-build", "python-installer", "python-setuptools", "python-wheel", "rocm-llvm-gfx1151"]
 pypi_name = "multidict"
+sha256sums = ["ec6652a1bee61c53a3e5776b6049172c53b6aaba34f18c9ad04f82712bac623d"]
 src_subdir = "multidict-6.7.1"
 patches_dir = "patches/python-multidict-gfx1151"
 recipe_notes_override = """
@@ -1489,6 +1505,7 @@ conflicts = ["python-yarl"]
 depends = ["glibc", "python-gfx1151", "python-idna", "python-multidict-gfx1151", "python-propcache"]
 makedepends = ["cython", "python-build", "python-expandvars", "python-installer", "python-setuptools", "python-wheel", "rocm-llvm-gfx1151"]
 pypi_name = "yarl"
+sha256sums = ["53b1ea6ca88ebd4420379c330aea57e258408dd0df9af0992e5de2078dc9f5d5"]
 src_subdir = "yarl-1.23.0"
 patches_dir = "patches/python-yarl-gfx1151"
 recipe_notes_override = """
@@ -1537,6 +1554,7 @@ optdepends = [
 ]
 build_env = ["AIOHTTP_USE_SYSTEM_DEPS=1"]
 pypi_name = "aiohttp"
+sha256sums = ["9d98cc980ecc96be6eb4c1994ce35d28d8b1f5e5208a23b421187d1209dbb7d1"]
 src_subdir = "aiohttp-3.13.5"
 patches_dir = "patches/python-aiohttp-gfx1151"
 recipe_notes_override = """
@@ -1569,7 +1587,7 @@ authoritative_reference = "none"
 advisory_references = []
 divergence_notes = [
   "There is no current Arch-family compressed-tensors package baseline, so this package is closure-first for vLLM compressed-tensors quantization lanes.",
-  "Uses the vLLM 0.20.0-compatible compressed-tensors 0.15.0.1 release instead of the older 0.14.0.1 helper version named by Blackcat's llmcompressor quantization notes.",
+  "Uses the vLLM 0.20.1-compatible compressed-tensors 0.15.0.1 release instead of the older 0.14.0.1 helper version named by Blackcat's llmcompressor quantization notes.",
   "Treat llmcompressor as a separate package/dependency-closure decision because llmcompressor 0.10.0.1 pins compressed-tensors 0.14.0.1 and older torch/transformers bounds than the current local stack."
 ]
 update_notes = [
@@ -1584,13 +1602,14 @@ depends = ["python-gfx1151", "python-loguru", "python-pydantic", "python-pytorch
 makedepends = ["python-build", "python-installer", "python-setuptools", "python-setuptools-scm", "python-wheel", "rocm-llvm-gfx1151"]
 skip_dependency_check = true
 pypi_name = "compressed_tensors"
+sha256sums = ["a8e93054e8a5ec49c980b09ed36c4c1249b4a8ee167920a8e461c4da26e78d99"]
 src_subdir = "compressed_tensors-0.15.0.1"
 patches_dir = "patches/python-compressed-tensors-gfx1151"
 recipe_notes_override = """
 This package is the compressed-tensors output for the Blackcat Qwen3-VL
 tooling follow-up lane. Blackcat's quantization helper names
 llmcompressor 0.10.0.1 and compressed-tensors 0.14.0.1, but the installed
-vLLM 0.20.0 lane expects compressed-tensors 0.15.0.1. Keep this package
+vLLM 0.20.1 lane expects compressed-tensors 0.15.0.1. Keep this package
 aligned with vLLM first, then reconcile llmcompressor as a separate package
 closure.
 
@@ -1636,6 +1655,7 @@ depends = ["python-gfx1151", "python-huggingface-hub", "python-numpy-gfx1151", "
 makedepends = ["python-build", "python-installer", "python-setuptools", "python-wheel", "rocm-llvm-gfx1151"]
 skip_dependency_check = true
 pypi_name = "accelerate"
+sha256sums = ["70988c352feb481887077d2ab845125024b2a137a5090d6d7a32b57d03a45df6"]
 src_subdir = "accelerate-1.12.0"
 patches_dir = "patches/python-accelerate-gfx1151"
 recipe_notes_override = """
@@ -1678,6 +1698,7 @@ depends = ["python-gfx1151", "python-accelerate-gfx1151", "python-datasets", "py
 makedepends = ["python-build", "python-installer", "python-setuptools", "python-wheel", "rocm-llvm-gfx1151"]
 skip_dependency_check = true
 pypi_name = "auto_round"
+sha256sums = ["f00a5fd484363d9ab9f5628f46ae70fd880b5fa91fcd15d55a556b8e36d39e24"]
 src_subdir = "auto_round-0.10.2"
 patches_dir = "patches/python-auto-round-gfx1151"
 recipe_notes_override = """
@@ -1718,6 +1739,7 @@ conflicts = ["python-nvidia-ml-py"]
 depends = ["python-gfx1151"]
 makedepends = ["python-build", "python-installer", "python-setuptools", "python-wheel", "rocm-llvm-gfx1151"]
 pypi_name = "nvidia_ml_py"
+sha256sums = ["8184d1be52914ac7f0991cd1c0d946c65dc88a840c754cd12c274b77b88760dd"]
 src_subdir = "nvidia_ml_py-13.590.48"
 patches_dir = "patches/python-nvidia-ml-py-gfx1151"
 recipe_notes_override = """
@@ -1770,9 +1792,11 @@ source_patches = [
   "0003-use-public-compressed-tensors-match-name.patch",
   "0004-use-compressed-tensors-infer-module-format.patch"
 ]
+extra_sha256sums = ["f753bf83b822c94f4dd714210c28f0a897b5d3949253acd531813f4fb30d6534", "4b8c2dfceaa8131a686c8805c262229094ef7ffaf68b2d66d51c416990b3a6bf", "97b78bbfd5b07a7d63ad24cfecb2bd8aa7547f154ccf238373a7d8a79096d209", "512e8371ecfe36ff3a18aec68a33de4f1d18b751a1822a2357ec914240cf4307"]
 skip_dependency_check = true
 build_env = ["BUILD_TYPE=dev", "SETUPTOOLS_SCM_PRETEND_VERSION=0.10.0.1"]
 pypi_name = "llmcompressor"
+sha256sums = ["f8915064ab47f14245e01f1d99012420c7ddf77b56612d368522afb959893a65"]
 src_subdir = "llmcompressor-0.10.0.1"
 patches_dir = "packages/python-llmcompressor-gfx1151"
 recipe_notes_override = """
@@ -1782,7 +1806,7 @@ llmcompressor 0.10.0.1 with release metadata that pins older torch,
 transformers, and compressed-tensors bounds than the current local stack.
 
 The package builds with llmcompressor's dev dependency lane so torch and
-compressed-tensors can follow the installed vLLM 0.20.0 stack, and carries a
+compressed-tensors can follow the installed vLLM 0.20.1 stack, and carries a
 small metadata patch to remove the remaining Transformers upper bound. It also
 carries compatibility patches for the current Transformers and
 compressed-tensors APIs. The build sets `SETUPTOOLS_SCM_PRETEND_VERSION=0.10.0.1`
@@ -2132,6 +2156,7 @@ upstream_revision = "3d6064b37ef4607917f8acf2ca8c8906d5087413"
 baseline_kind = "closest-upstream"
 patches_dir = "packages/stable-diffusion.cpp-vulkan-gfx1151"
 source_patches = ["0001-sdxl-clipg-prefix-mapping.patch"]
+extra_sha256sums = ["ef8e1abd394f164998126a629003ed6c3578458a57c94ee420440caa051f128a"]
 scaffold_notes = [
   "Blackcat Vulkan engine lane for local image generation; this is an engine package, not a Python wheel.",
   "Uses recursive git submodules because upstream's ggml, WebP, WebM, and server frontend inputs are submodules and GitHub tarballs do not include them.",

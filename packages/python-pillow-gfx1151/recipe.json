@@ -76,6 +76,9 @@
       "Part of the core Blackcat model/config stack and consumed by the local Mistral Common and TorchVision packages.",
       "Use the shared native-wheel renderer so amdclang, path remapping, and Zen 5 flags stay aligned with the other native wheel packages."
     ],
+    "sha256sums": [
+      "a830b1a40919539d07806aa58e1b114df53ddd43213d9c8b75847eee6c0182b5"
+    ],
     "src_subdir": "pillow-12.2.0",
     "template": "native-wheel-pypi",
     "update_notes": [

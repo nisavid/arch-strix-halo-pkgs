@@ -57,6 +57,9 @@
       "Part of the Blackcat Qwen3-VL quantization/tooling closure and consumed by llmcompressor metadata.",
       "Do not add an nvidia-utils dependency; this package exists specifically to keep the AMD host free of NVIDIA driver packages."
     ],
+    "sha256sums": [
+      "8184d1be52914ac7f0991cd1c0d946c65dc88a840c754cd12c274b77b88760dd"
+    ],
     "src_subdir": "nvidia_ml_py-13.590.48",
     "template": "native-wheel-pypi",
     "update_notes": [

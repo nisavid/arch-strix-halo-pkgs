@@ -68,6 +68,9 @@
       "The package uses the PyPI sdist rather than a git+tag source fetch because upstream publishes matching source archives and the pyproject.toml build metadata is authoritative there.",
       "Keep the Rust linker pinned to the AMD toolchain lane and the CPU target pinned to znver5; if future rustc native detection becomes trustworthy here, that can be re-evaluated package by package."
     ],
+    "sha256sums": [
+      "6e43f98e6c242fa2de6f8ea12eab24af63fa2ed3e89c06341fb9d92632c5cbdf"
+    ],
     "src_subdir": "openai_harmony-0.0.8",
     "template": "rust-wheel-pypi",
     "update_notes": [

@@ -5,7 +5,7 @@
 - Recipe package key: `rust_wheels`
 - Scaffold template: `rust-wheel-pypi`
 - Recipe build method: `cargo`
-- Upstream repo: ``
+- Upstream repo: `https://github.com/huggingface/safetensors`
 - Package version: `0.7.0`
 - Recipe revision: `a1d7a68 (20260427, 16 path commits)`
 - Recipe steps: `31`

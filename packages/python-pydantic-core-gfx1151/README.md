@@ -5,7 +5,7 @@
 - Recipe package key: `rust_wheels`
 - Scaffold template: `rust-wheel-pypi`
 - Recipe build method: `cargo`
-- Upstream repo: ``
+- Upstream repo: `https://github.com/pydantic/pydantic-core`
 - Package version: `2.41.5`
 - Recipe revision: `a1d7a68 (20260427, 16 path commits)`
 - Recipe steps: `31`
@@ -47,7 +47,7 @@ CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER.
 ## Update Notes
 
 - Check Arch python-pydantic and python-pydantic-core together before updating; upstream pydantic normally constrains the pydantic-core ABI tightly.
-- Blackcat's recipe currently names pydantic-core 2.46.3, but adopting that newer core without a matching local pydantic package can break the distro pydantic consumer.
+- Do not adopt a newer pydantic-core release from recipe notes alone; keep pydantic-core aligned with the installed pydantic ABI unless this repo also carries and validates a matching pydantic package.
 - After publishing a rebuilt package, verify `import pydantic_core` and a tiny `pydantic.BaseModel` validation through the installed local Python lane.
 
 ## Maintainer Starting Points

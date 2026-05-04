@@ -5,7 +5,7 @@
 - Recipe package key: `rust_wheels`
 - Scaffold template: `rust-wheel-pypi`
 - Recipe build method: `cargo`
-- Upstream repo: ``
+- Upstream repo: `https://github.com/huggingface/tokenizers`
 - Package version: `0.22.2`
 - Recipe revision: `a1d7a68 (20260427, 16 path commits)`
 - Recipe steps: `31`
@@ -36,7 +36,7 @@ znver5 Rust codegen lane as the rest of the optimized local wheel stack.
 ## Intentional Divergences
 
 - Uses the Blackcat Rust-wheel lane for a local Hugging Face tokenizer hot path instead of relying on the generic CachyOS wheel.
-- There is no current Arch extra python-tokenizers package in the checked package databases, so CachyOS is the practical Arch-family baseline.
+- There is no current Arch extra python-tokenizers package in the checked package databases as of 2026-05-01, so CachyOS is the practical Arch-family baseline.
 
 ## Update Notes
 

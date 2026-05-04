@@ -19,7 +19,7 @@ provides=(stable-diffusion.cpp-vulkan-gfx1151 stable-diffusion.cpp-vulkan)
 conflicts=(stable-diffusion.cpp-vulkan)
 replaces=()
 source=('stable-diffusion.cpp::git+https://github.com/leejet/stable-diffusion.cpp.git#commit=3d6064b37ef4607917f8acf2ca8c8906d5087413' 0001-sdxl-clipg-prefix-mapping.patch)
-sha256sums=(SKIP SKIP)
+sha256sums=(SKIP ef8e1abd394f164998126a629003ed6c3578458a57c94ee420440caa051f128a)
 
 prepare() {
   cd "$srcdir/stable-diffusion.cpp"
@@ -46,8 +46,8 @@ build() {
       ln -sf "${_ccache_bin}" "${_ccache_dir}/${_name}"
     done
     export PATH="${_ccache_dir}:$PATH"
-    export CCACHE_BASEDIR="${CCACHE_BASEDIR:-$srcdir}"
-    export CCACHE_DIR="${CCACHE_DIR:-${_ccache_cache}}"
+    export CCACHE_BASEDIR="$srcdir"
+    export CCACHE_DIR="${_ccache_cache}"
     export CCACHE_NOCPP2=1
     export CCACHE_PATH="${_compiler_root}:/opt/rocm/bin:/usr/bin"
     export CC=amdclang
@@ -125,7 +125,7 @@ EOF
     local _bin
     for _bin in "$pkgdir${install_root}/bin"/sd-cli "$pkgdir${install_root}/bin"/sd-server; do
       [[ -f "${_bin}" ]] || continue
-      patchelf --set-rpath "/usr/lib:${install_root}/lib" "${_bin}" 2>/dev/null || true
+      patchelf --set-rpath "/usr/lib" "${_bin}" 2>/dev/null || true
     done
   fi
 

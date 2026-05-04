@@ -63,6 +63,9 @@
       "Part of the comprehensive Blackcat service/runtime wheel stack and consumed by the local vLLM package.",
       "Use the shared Rust-wheel renderer so Cargo, amdclang linker selection, path remapping, and Zen 5 flags stay aligned with the other Rust wheel packages."
     ],
+    "sha256sums": [
+      "a173cb5c16c4f40ab19cecf48a534c409f7ea983ab8fed0741304a1c0a31b3f2"
+    ],
     "src_subdir": "watchfiles-1.1.1",
     "template": "rust-wheel-pypi",
     "update_notes": [

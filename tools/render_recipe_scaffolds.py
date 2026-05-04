@@ -101,8 +101,8 @@ _setup_compiler_env() {
       ln -sf "${_ccache_bin}" "${_ccache_dir}/${_name}"
     done
     export PATH="${_ccache_dir}:$PATH"
-    export CCACHE_BASEDIR="${CCACHE_BASEDIR:-$srcdir}"
-    export CCACHE_DIR="${CCACHE_DIR:-${_ccache_cache}}"
+    export CCACHE_BASEDIR="$srcdir"
+    export CCACHE_DIR="${_ccache_cache}"
     export CCACHE_NOCPP2=1
     export CCACHE_PATH="${_compiler_root}:/opt/rocm/bin:/usr/bin"
     export CC=amdclang
@@ -150,7 +150,12 @@ def render_source_refs(policy_pkg: dict, recipe_pkg: dict) -> tuple[str, str]:
         branch = recipe_pkg.get("branch")
         if branch:
             source_ref = f"{source_ref}#branch={branch}"
-    return bash_array([source_ref] + extra_sources), bash_array(["SKIP"] + extra_sha256sums)
+    sha256sums = policy_pkg.get("sha256sums", ["SKIP"])
+    if len(sha256sums) != 1:
+        print("SOURCE_REF_MISMATCH: implicit source refs need exactly one sha256sum", file=sys.stderr)
+        print("HINT: add one checksum for the generated source URL in policies/recipe-packages.toml.", file=sys.stderr)
+        raise SystemExit(2)
+    return bash_array([source_ref] + extra_sources), bash_array(sha256sums + extra_sha256sums)
 
 
 def slugify_step(step: int) -> str:
@@ -475,7 +480,7 @@ EOF
     local _bin
     for _bin in "$pkgdir${{install_root}}/bin"/sd-cli "$pkgdir${{install_root}}/bin"/sd-server; do
       [[ -f "${{_bin}}" ]] || continue
-      patchelf --set-rpath "/usr/lib:${{install_root}}/lib" "${{_bin}}" 2>/dev/null || true
+      patchelf --set-rpath "/usr/lib" "${{_bin}}" 2>/dev/null || true
     done
   fi
 
@@ -1362,7 +1367,7 @@ package() {{
   python -m installer --destdir="$pkgdir" dist/*.whl
 
   local _debug_prefix="/usr/src/debug/{package_name}"
-  find "$pkgdir/usr/lib" -type f \\( -name '*.so' -o -path '*/sboms/*.json' \\) -print0 | while IFS= read -r -d '' _file; do
+  find "$pkgdir/usr/lib" -type f -path '*/sboms/*.json' -print0 | while IFS= read -r -d '' _file; do
     sed -i \
       -e "s|$srcdir/{src_subdir}|${{_debug_prefix}}/{src_subdir}|g" \
       -e "s|$srcdir|${{_debug_prefix}}|g" \
@@ -1716,7 +1721,7 @@ def render_readme(package_name: str, policy_pkg: dict, recipe_pkg: dict, version
         f"- Recipe package key: `{policy_pkg['recipe_key']}`",
         f"- Scaffold template: `{policy_pkg['template']}`",
         f"- Recipe build method: `{recipe_pkg.get('method', 'unknown')}`",
-        f"- Upstream repo: `{recipe_pkg.get('repo', '')}`",
+        f"- Upstream repo: `{policy_pkg.get('repo') or recipe_pkg.get('repo') or policy_pkg.get('url', '')}`",
         f"- Package version: `{version}`",
         f"- Recipe revision: `{recipe_revision_text}`",
         f"- Recipe steps: `{steps}`",

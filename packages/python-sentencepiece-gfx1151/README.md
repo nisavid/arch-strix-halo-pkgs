@@ -5,7 +5,7 @@
 - Recipe package key: `native_wheels`
 - Scaffold template: `native-wheel-pypi`
 - Recipe build method: `pip`
-- Upstream repo: ``
+- Upstream repo: `https://github.com/google/sentencepiece`
 - Package version: `0.2.1`
 - Recipe revision: `a1d7a68 (20260427, 16 path commits)`
 - Recipe steps: `32`
@@ -54,11 +54,6 @@ only after the installed host extension matches that dependency shape.
 - Re-check against Cachy first, then consult the AUR source and git variants if the maintained package lags a needed upstream change.
 - If the upstream build backend changes, keep the package metadata focused on the system cmake/toolchain story rather than reviving venv-local wrapper assumptions.
 - After publishing a rebuilt package, verify the installed host extension with readelf or ldd before treating the host lane as current.
-- The 2026-04-20 rebuilt-stack revalidation passed
-  `pytest packages/python-sentencepiece-gfx1151/tests -q -o cache_dir=/tmp/sentencepiece-revalidation-cache`.
-  For the corresponding post-rebuild Gemma tokenizer and vLLM run details, see
-  the 2026-04-20 entries in `docs/maintainers/current-state.md`. Keep that
-  package-local test as the first guard for bundled-library regressions.
 
 ## Maintainer Starting Points
 
