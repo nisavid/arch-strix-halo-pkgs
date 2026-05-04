@@ -7,13 +7,13 @@
 - Recipe build method: `pip`
 - Upstream repo: `https://github.com/vllm-project/llm-compressor`
 - Package version: `0.10.0.1`
-- Recipe revision: `a1d7a68 (20260427, 16 path commits)`
+- Recipe revision: `a1d7a68 (20260427, 16 patch commits)`
 - Recipe steps: `32`
 - Recipe dependencies: `cpython, pytorch`
 - Recorded reference packages: `none`
 - Authoritative reference package: `none`
 - Advisory reference packages: `none`
-- Applied source patch files/actions: `5`
+- Applied source patch files/actions: `4`
 
 ## Recipe notes
 
@@ -60,7 +60,7 @@ pulling NVIDIA driver utilities onto the AMD reference host.
 
 ## Maintainer Starting Points
 
-- Diff the package against its recorded authoritative reference first.
-- Use the advisory references to scout neighboring packaging conventions without silently changing the baseline story.
+- If an authoritative reference exists, diff the package against it first; when none is recorded, start from the current policy and document the source of each change.
+- Use advisory references to scout neighboring packaging conventions without silently changing the baseline story.
 - Keep reusable source changes in sibling patch files rather than leaving them as ad hoc PKGBUILD shell edits.
 - Re-run `tools/render_recipe_scaffolds.py` after policy or recipe-manifest changes so the package-local docs stay in sync.

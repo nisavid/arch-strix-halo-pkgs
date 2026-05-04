@@ -388,7 +388,7 @@ divergence_notes = [
   "Follows the recipe's ROCm wheel-build environment instead of the generic upstream CUDA-oriented defaults."
 ]
 extra_sources = ["0001-setup-relative-sources.patch"]
-extra_sha256sums = ["SKIP"]
+extra_sha256sums = ["4318e3ac610fbc70563edda12ed137fead517d7617173d6ac7bdfcccabe00d7f"]
 source_patches = ["0001-setup-relative-sources.patch"]
 update_notes = [
   "Re-check the package against the current AUR ROCm variant first, then compare any generic Arch torchvision changes that affect Python packaging or dependency handling.",
@@ -411,6 +411,7 @@ depends = [
 makedepends = ["cmake", "miopen-hip-gfx1151", "ninja", "patchelf", "python-gfx1151", "python-installer", "python-pip", "python-setuptools", "rocm-llvm-gfx1151"]
 source_type = "tarball"
 source_url = "https://github.com/pytorch/vision/archive/refs/tags/v0.26.0.tar.gz"
+sha256sums = ["fb95b6b78b3801c4d4d6332f7a5a0b6c624588e1b39e0d6fa145227b0c749403"]
 src_subdir = "vision-0.26.0"
 patches_dir = "patches/python-torchvision-rocm-gfx1151"
 scaffold_notes = [
@@ -2157,6 +2158,7 @@ baseline_kind = "closest-upstream"
 patches_dir = "packages/stable-diffusion.cpp-vulkan-gfx1151"
 source_patches = ["0001-sdxl-clipg-prefix-mapping.patch"]
 extra_sha256sums = ["ef8e1abd394f164998126a629003ed6c3578458a57c94ee420440caa051f128a"]
+recipe_patch_file_rewrites."patches/sdcpp-sdxl-clipg-prefix.patch" = "0001-sdxl-clipg-prefix-mapping.patch"
 scaffold_notes = [
   "Blackcat Vulkan engine lane for local image generation; this is an engine package, not a Python wheel.",
   "Uses recursive git submodules because upstream's ggml, WebP, WebM, and server frontend inputs are submodules and GitHub tarballs do not include them.",

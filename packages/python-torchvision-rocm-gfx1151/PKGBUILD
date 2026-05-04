@@ -19,7 +19,7 @@ provides=(python-torchvision-rocm=0.26.0 python-torchvision=0.26.0)
 conflicts=(python-torchvision-rocm python-torchvision)
 replaces=()
 source=(https://github.com/pytorch/vision/archive/refs/tags/v0.26.0.tar.gz 0001-setup-relative-sources.patch)
-sha256sums=(SKIP SKIP)
+sha256sums=(fb95b6b78b3801c4d4d6332f7a5a0b6c624588e1b39e0d6fa145227b0c749403 4318e3ac610fbc70563edda12ed137fead517d7617173d6ac7bdfcccabe00d7f)
 
 _apply_patch_if_needed() {
   local _patch_name="$1"

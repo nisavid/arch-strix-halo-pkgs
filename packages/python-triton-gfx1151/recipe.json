@@ -119,7 +119,7 @@
       },
       {
         "description": "Add __repr__ method to AttrsDescriptor so torch Inductor can serialize it into generated Triton kernel source files as valid Python. Uses the existing to_dict()/from_dict() round-trip. Without this fix, --enforce-eager is required as a workaround which disables CUDAGraph capture and kernel fusion optimizations.\n",
-        "file": "triton/backends/compiler.py",
+        "file": "python/triton/backends/compiler.py",
         "marker": "__repr__",
         "marker_absent": true,
         "sed_command": "/def to_dict(self):/i\\    def __repr__(self):\\n        return f'AttrsDescriptor.from_dict({self.to_dict()!r})'",

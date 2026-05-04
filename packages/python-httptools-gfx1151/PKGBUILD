@@ -59,11 +59,14 @@ build() {
   _setup_compiler_env
   local _base_flags="-O3 -march=native -mprefer-vector-width=512 -mavx512f -mavx512dq -mavx512vl -mavx512bw -mllvm -enable-gvn-hoist -mllvm -enable-gvn-sink -famd-opt -Wno-error=unused-command-line-argument"
   local _wheel_flags
-  _wheel_flags="$(printf '%s' "${_base_flags}" | sed -E 's/-mllvm (-[^ ]+)/-Xclang -mllvm -Xclang \1/g; s/-famd-opt//g; s/  +/ /g; s/^ +| +$//g')"
+  _wheel_flags="$(printf '%s' "${_base_flags}" | sed -E 's/-mllvm (-[^ ]+)/-Xclang -mllvm -Xclang \1/g; s/  +/ /g; s/^ +| +$//g')"
+  local _base_cflags="${CFLAGS:-}"
+  local _base_cxxflags="${CXXFLAGS:-}"
+  local _base_ldflags="${LDFLAGS:-}"
 
-  export CFLAGS="${_wheel_flags}"
-  export CXXFLAGS="${_wheel_flags}"
-  export LDFLAGS="-famd-opt"
+  export CFLAGS="${_base_cflags:+${_base_cflags} }${_wheel_flags}"
+  export CXXFLAGS="${_base_cxxflags:+${_base_cxxflags} }${_wheel_flags}"
+  export LDFLAGS="${_base_ldflags:+${_base_ldflags} }-famd-opt"
 
   python -m build --wheel --no-isolation --skip-dependency-check
 }
