@@ -392,13 +392,13 @@ NVIDIA-only `nvidia-ml-py` runtime dependency; the runtime code still imports
 
 Focused scaffold tests passed with `pytest -p no:cacheprovider
 tests/test_blackcat_core_wheel_stack.py tests/test_render_recipe_scaffolds.py
--q` on 2026-05-01. The initial tooling deploy installed
+-q` on 2026-05-01. The initial 2026-05-01 tooling deploy installed
 `python-accelerate-gfx1151 1.12.0-1`, `python-auto-round-gfx1151 0.10.2-1`,
 `python-nvidia-ml-py-gfx1151 13.590.48-1`, and
-`python-llmcompressor-gfx1151 0.10.0.1-4`; installed smoke passed through
-`python3.14` for direct `accelerate`, `auto_round`, `pynvml`, and
-`llmcompressor` imports, AutoRound preset loading, `AutoRoundModifier`,
-`skip_weights_initialize`, and model-free name matching.
+`python-llmcompressor-gfx1151 0.10.0.1-4`. That historical smoke included
+`pynvml` only because the temporary NVML shim was still part of the package
+closure; the current llmcompressor gate is the rebuilt `0.10.0.1-5` smoke
+recorded below, without a `pynvml` import requirement.
 
 The 2026-05-04 NVML-shim cleanup removes `python-nvidia-ml-py-gfx1151` from
 the package roster and rebuilds `python-llmcompressor-gfx1151 0.10.0.1-5` with
@@ -455,7 +455,7 @@ now covers `python-watchfiles-gfx1151`, `python-uvloop-gfx1151`,
 `python-yarl-gfx1151`, `python-frozenlist-gfx1151`,
 `python-compressed-tensors-gfx1151`, `python-accelerate-gfx1151`,
 `python-auto-round-gfx1151`, and
-`python-llmcompressor-gfx1151`. The refreshed sweep then found three
+`python-llmcompressor-gfx1151`. The refreshed sweep then found two
 actionable PyPI updates in the new tooling families: `accelerate 1.13.0`
 and `auto-round 0.12.3`. They are tracked in
 `docs/maintainers/update-candidates.toml` as separate package update lanes
