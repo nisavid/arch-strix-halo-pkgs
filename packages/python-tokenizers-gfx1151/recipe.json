@@ -34,6 +34,7 @@
       "Uses the Blackcat Rust-wheel lane for a local Hugging Face tokenizer hot path instead of relying on the generic CachyOS wheel.",
       "There is no current Arch extra python-tokenizers package in the checked package databases as of 2026-05-01, so CachyOS is the practical Arch-family baseline."
     ],
+    "isolated_cargo_home": false,
     "license": [
       "Apache-2.0"
     ],

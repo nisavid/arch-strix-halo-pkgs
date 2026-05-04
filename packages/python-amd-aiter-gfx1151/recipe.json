@@ -88,6 +88,7 @@
       "python-amd-aiter"
     ],
     "recipe_key": "aiter",
+    "recipe_notes_override": "Rebuilt from PyTorch's third_party/aiter/ submodule to align CK ABI\nwith the CK headers used by AITER's JIT at runtime.\n\nPREBUILD_KERNELS=0: skip 45-minute full kernel precompilation.\nKernels are JIT-compiled on first use instead.\n\nPackage-local source patches are applied before wheel build for gfx1151\nRDNA 3.5 compatibility and installed-system JIT/runtime behavior.\n",
     "scaffold_notes": [
       "There is no standalone Arch, CachyOS, or AUR aiter package. The closest packaging lane is the PyTorch ROCm pkgbase that vendors the same submodule, so that pkgbase is advisory only.",
       "The package pins reviewed upstream AITER main snapshot 51f3d2b6968360fba7772208025e5c07756121ba because the reviewed post-release range carries local-lane-relevant MoE, quant, JIT, architecture-dispatch, FlyDSL, MLA, tuned GEMM, cache, and fused-collectives changes.",
@@ -143,7 +144,7 @@
       "vllm"
     ],
     "method": "pip",
-    "notes": "Rebuilt from PyTorch's third_party/aiter/ submodule to align CK ABI\nwith the CK headers used by AITER's JIT at runtime.\n\nPREBUILD_KERNELS=0: skip 45-minute full kernel precompilation.\nKernels are JIT-compiled on first use instead.\n\nAfter wheel install, two header patches are applied to the installed\naiter_meta/csrc/include/ files for gfx1151 RDNA 3.5 compatibility.",
+    "notes": "Rebuilt from PyTorch's third_party/aiter/ submodule to align CK ABI\nwith the CK headers used by AITER's JIT at runtime.\n\nPREBUILD_KERNELS=0: skip 45-minute full kernel precompilation.\nKernels are JIT-compiled on first use instead.\n\nPackage-local source patches are applied before wheel build for gfx1151\nRDNA 3.5 compatibility and installed-system JIT/runtime behavior.\n",
     "patches": [],
     "phase": "F",
     "repo": "https://github.com/ROCm/aiter.git",

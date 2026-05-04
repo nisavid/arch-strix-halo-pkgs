@@ -61,7 +61,6 @@ build() {
   export LDFLAGS="${_base_ldflags:+${_base_ldflags} }-famd-opt"
   export AIOHTTP_USE_SYSTEM_DEPS=1
 
-
   python -m build --wheel --no-isolation
 }
 

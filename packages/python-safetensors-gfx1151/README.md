@@ -17,15 +17,14 @@
 
 ## Recipe notes
 
-This package is the safetensors output from the shared `rust_wheels` recipe
-phase. That phase also documents orjson, cryptography, pydantic-core,
-tokenizers, and watchfiles as sibling Rust-wheel outputs, but those are not
-dependencies of `python-safetensors-gfx1151` unless listed in this package's
-policy metadata.
-
 safetensors is the model/checkpoint tensor I/O path for Transformers, vLLM,
-and TorchAO validation. The local package keeps that native extension on the
-same znver5 Rust codegen lane as the rest of the optimized local wheel stack.
+and TorchAO validation. This package builds the Rust-backed Python extension
+through the shared `rust_wheels` cargo path, keeping it on the same znver5
+Rust codegen, linker, and path-remapping lane as the other local Rust-wheel
+outputs.
+
+After publishing a rebuilt package, verify `import safetensors` and a tiny
+tensor save/load round trip through the installed local Python lane.
 
 
 ## Scaffold notes

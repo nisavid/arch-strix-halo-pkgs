@@ -23,8 +23,9 @@ with the CK headers used by AITER's JIT at runtime.
 PREBUILD_KERNELS=0: skip 45-minute full kernel precompilation.
 Kernels are JIT-compiled on first use instead.
 
-After wheel install, two header patches are applied to the installed
-aiter_meta/csrc/include/ files for gfx1151 RDNA 3.5 compatibility.
+Package-local source patches are applied before wheel build for gfx1151
+RDNA 3.5 compatibility and installed-system JIT/runtime behavior.
+
 
 ## Scaffold notes
 

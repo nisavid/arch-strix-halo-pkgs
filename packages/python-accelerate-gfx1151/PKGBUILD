@@ -8,11 +8,11 @@ pkgname=python-accelerate-gfx1151
 pkgver=1.12.0
 pkgrel=1
 pkgdesc='Hugging Face multi-device training helpers for the Strix Halo Python stack'
-arch=('x86_64')
+arch=('any')
 url=https://github.com/huggingface/accelerate
 license=(Apache-2.0)
 depends=(python-gfx1151 python-huggingface-hub python-numpy-gfx1151 python-packaging python-psutil-gfx1151 python-pytorch-opt-rocm-gfx1151 python-pyyaml-gfx1151 python-safetensors-gfx1151)
-makedepends=(python-build python-installer python-setuptools python-wheel rocm-llvm-gfx1151)
+makedepends=(python-build python-installer python-setuptools python-wheel)
 optdepends=()
 options=()
 provides=(python-accelerate)
@@ -23,42 +23,6 @@ sha256sums=(70988c352feb481887077d2ab845125024b2a137a5090d6d7a32b57d03a45df6)
 
 build() {
   cd "$srcdir/accelerate-1.12.0"
-
-  _setup_compiler_env() {
-  local _compiler_root="/opt/rocm/lib/llvm/bin"
-  local _ccache_dir="$srcdir/.ccache/bin"
-  local _ccache_cache="$srcdir/.ccache/cache"
-  if command -v ccache >/dev/null 2>&1; then
-    mkdir -p "${_ccache_dir}" "${_ccache_cache}"
-    local _ccache_bin _name
-    _ccache_bin="$(command -v ccache)"
-    for _name in clang clang++ clang-22 amdclang amdclang++ hipcc hipcc.pl gcc g++ cc c++; do
-      ln -sf "${_ccache_bin}" "${_ccache_dir}/${_name}"
-    done
-    export PATH="${_ccache_dir}:$PATH"
-    export CCACHE_BASEDIR="$srcdir"
-    export CCACHE_DIR="${_ccache_cache}"
-    export CCACHE_NOCPP2=1
-    export CCACHE_PATH="${_compiler_root}:/opt/rocm/bin:/usr/bin"
-    export CC=amdclang
-    export CXX=amdclang++
-  else
-    export CC="${_compiler_root}/amdclang"
-    export CXX="${_compiler_root}/amdclang++"
-  fi
-}
-
-  _setup_compiler_env
-  local _base_flags="-O3 -march=native -mprefer-vector-width=512 -mavx512f -mavx512dq -mavx512vl -mavx512bw -mllvm -enable-gvn-hoist -mllvm -enable-gvn-sink -famd-opt -Wno-error=unused-command-line-argument"
-  local _wheel_flags
-  _wheel_flags="$(printf '%s' "${_base_flags}" | sed -E 's/-mllvm (-[^ ]+)/-Xclang -mllvm -Xclang \1/g; s/  +/ /g; s/^ +| +$//g')"
-  local _base_cflags="${CFLAGS:-}"
-  local _base_cxxflags="${CXXFLAGS:-}"
-  local _base_ldflags="${LDFLAGS:-}"
-
-  export CFLAGS="${_base_cflags:+${_base_cflags} }${_wheel_flags}"
-  export CXXFLAGS="${_base_cxxflags:+${_base_cxxflags} }${_wheel_flags}"
-  export LDFLAGS="${_base_ldflags:+${_base_ldflags} }-famd-opt"
 
   python -m build --wheel --no-isolation --skip-dependency-check
 }
