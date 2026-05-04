@@ -77,6 +77,9 @@
       "DuckDB's source build uses scikit-build-core, CMake, Ninja, and pybind11; keep those as explicit makedepends rather than relying on isolated pip build dependency resolution.",
       "The build skips the Python frontend dependency check because DuckDB requests PyPI metadata names that do not match Arch's system package distribution metadata, even though the backend finds the system tools."
     ],
+    "sha256sums": [
+      "638da0d5102b6cb6f7d47f83d0600708ac1d3cb46c5e9aaabc845f9ba4d69246"
+    ],
     "skip_dependency_check": true,
     "src_subdir": "duckdb-1.5.2",
     "template": "native-wheel-pypi",
@@ -87,7 +90,7 @@
       "After publishing a rebuilt package, verify `import duckdb` and a tiny in-memory query through the installed local Python lane before using it in analytics/parquet workflows."
     ],
     "upstream_version": "1.5.2",
-    "url": "https://duckdb.org/"
+    "url": "https://github.com/duckdb/duckdb"
   },
   "provenance": {
     "output_root": "packages",

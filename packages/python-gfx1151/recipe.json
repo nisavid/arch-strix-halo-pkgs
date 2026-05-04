@@ -90,6 +90,9 @@
       "The scaffold uses the official CPython release tarball rather than a git mirror because the package is pinned to a tagged release and full VCS fetches are unnecessarily expensive here.",
       "Treat the system-Python replacement as gated on a successful Python-3.14 vLLM smoke test against the coherent TheRock ROCm stack."
     ],
+    "sha256sums": [
+      "d923c51303e38e249136fc1bdf3568d56ecb03214efdef48516176d3d7faaef8"
+    ],
     "source_type": "tarball",
     "source_url": "https://www.python.org/ftp/python/3.14.4/Python-3.14.4.tar.xz",
     "src_subdir": "Python-3.14.4",

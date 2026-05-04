@@ -116,7 +116,7 @@ src_subdir = "sample"
     assert recipe_json["provenance"]["recipe_history_count"] == 1
     assert "- Package version: `1.2.3`" in readme
     assert "- Recipe revision:" in readme
-    assert "1 patch commits" in readme
+    assert "1 commits touching recipe path" in readme
     assert "path commits" not in readme
     assert "If an authoritative reference exists" in readme
 
@@ -169,7 +169,7 @@ def test_native_wheel_renderer_applies_source_patches_and_build_config_settings(
     assert "python -m build --wheel --no-isolation --skip-dependency-check \\\n" in pkgbuild
     assert "    -Csetup-args=-Dblas=openblas \\\n" in pkgbuild
     assert "    -Csetup-args=-Dlapack=openblas\n" in pkgbuild
-    assert "s/-famd-opt//g" in pkgbuild
+    assert "s/-famd-opt//g" not in pkgbuild
     assert 'local _base_cflags="${CFLAGS:-}"' in pkgbuild
     assert 'export CFLAGS="${_base_cflags:+${_base_cflags} }${_wheel_flags}"' in pkgbuild
     assert 'export CXXFLAGS="${_base_cxxflags:+${_base_cxxflags} }${_wheel_flags}"' in pkgbuild
@@ -202,6 +202,21 @@ def test_implicit_source_checksum_must_match_generated_source() -> None:
     assert exc.value.code == 2
 
 
+def test_implicit_archive_source_requires_real_checksum() -> None:
+    with pytest.raises(SystemExit) as exc:
+        render_recipe_scaffolds.render_source_refs(
+            {
+                "template": "native-wheel-pypi",
+                "pypi_name": "sample-native",
+                "upstream_version": "1.2.3",
+                "sha256sums": ["SKIP"],
+            },
+            {"repo": "https://example.invalid/sample-native"},
+        )
+
+    assert exc.value.code == 2
+
+
 def test_vllm_renderer_uses_repo_local_ccache_storage() -> None:
     pkgbuild = render_recipe_scaffolds.render_pkgbuild(
         "python-vllm-rocm-gfx1151",
@@ -214,6 +229,7 @@ def test_vllm_renderer_uses_repo_local_ccache_storage() -> None:
             "license": ["Apache-2.0"],
             "source_type": "tarball",
             "source_url": "https://github.com/vllm-project/vllm/archive/refs/tags/v0.20.0.tar.gz",
+            "sha256sums": ["0" * 64],
             "source_patches": ["0016-rocm-refresh-local-carry-for-vllm-0.20.0.patch"],
             "src_subdir": "vllm-0.20.0",
         },
@@ -255,6 +271,7 @@ def test_vllm_renderer_defines_source_variables_without_patches() -> None:
             "license": ["Apache-2.0"],
             "source_type": "tarball",
             "source_url": "https://github.com/vllm-project/vllm/archive/refs/tags/v0.20.0.tar.gz",
+            "sha256sums": ["0" * 64],
             "source_patches": [],
             "src_subdir": "vllm-0.20.0",
         },
@@ -291,6 +308,7 @@ def test_rust_wheel_renderer_applies_source_patches() -> None:
             "url": "https://example.invalid/sample-rust",
             "license": ["MIT"],
             "pypi_name": "sample-rust",
+            "sha256sums": ["0" * 64],
             "src_subdir": "sample-rust-1.2.3",
             "source_patches": ["0001-sample.patch"],
         },
@@ -351,8 +369,45 @@ def test_stable_diffusion_renderer_keeps_runtime_rpath_to_system_libs() -> None:
         },
     )
 
+    assert "git submodule update --init --recursive" not in pkgbuild
+    assert 'cp -a "$srcdir/ggml" ggml' in pkgbuild
+    assert 'cp -a "$srcdir/sdcpp-webui" examples/server/frontend' in pkgbuild
     assert 'patchelf --set-rpath "/usr/lib"' in pkgbuild
     assert 'patchelf --set-rpath "/usr/lib:${install_root}/lib"' not in pkgbuild
+
+
+def test_native_wheel_build_env_quotes_values() -> None:
+    pkgbuild = render_recipe_scaffolds.render_pkgbuild(
+        "sample-native-gfx1151",
+        {
+            "recipe_key": "sample",
+            "template": "native-wheel-pypi",
+            "upstream_version": "1.2.3",
+            "pkgdesc": "Sample native wheel",
+            "url": "https://example.invalid/sample-native",
+            "license": ["MIT"],
+            "pypi_name": "sample-native",
+            "sha256sums": ["0" * 64],
+            "src_subdir": "sample-native-1.2.3",
+            "build_env": ["SAMPLE_FLAGS=alpha beta"],
+        },
+        {
+            "repo": "",
+            "method": "pip",
+            "phase": "package",
+            "steps": [],
+            "depends_on": [],
+            "notes": "",
+        },
+        "1.2.3",
+        {
+            "recipe_repo": "https://github.com/paudley/ai-notes",
+            "recipe_subdir": "strix-halo",
+            "recipe_author": "Blackcat Informatics Inc.",
+        },
+    )
+
+    assert "export SAMPLE_FLAGS='alpha beta'" in pkgbuild
 
 
 def test_triton_rocm_renderer_prefers_source_patches_over_inline_sed() -> None:
@@ -537,7 +592,7 @@ def test_torchao_renderer_preserves_source_build_shape() -> None:
     assert "ROCM_HOME=/opt/rocm" in pkgbuild
     assert "PYTORCH_ROCM_ARCH=gfx1151" in pkgbuild
     assert "VERSION_SUFFIX=" in pkgbuild
-    assert "s/-famd-opt//g" in pkgbuild
+    assert "s/-famd-opt//g" not in pkgbuild
     assert 'export CXXFLAGS="${_base_cxxflags:+${_base_cxxflags} }${_wheel_flags}"' in pkgbuild
     assert 'export LDFLAGS="${_base_ldflags:+${_base_ldflags} }-famd-opt"' in pkgbuild
     assert "patchelf --set-rpath" in pkgbuild

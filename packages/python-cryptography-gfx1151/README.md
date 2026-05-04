@@ -7,7 +7,7 @@
 - Recipe build method: `cargo`
 - Upstream repo: `https://github.com/pyca/cryptography`
 - Package version: `46.0.7`
-- Recipe revision: `a1d7a68 (20260427, 16 patch commits)`
+- Recipe revision: `a1d7a68 (20260427, 16 commits touching recipe path)`
 - Recipe steps: `31`
 - Recipe dependencies: `cpython`
 - Recorded reference packages: `extra/python-cryptography, cachyos-extra-znver4/python-cryptography`

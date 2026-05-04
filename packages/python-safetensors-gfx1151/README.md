@@ -7,7 +7,7 @@
 - Recipe build method: `cargo`
 - Upstream repo: `https://github.com/huggingface/safetensors`
 - Package version: `0.7.0`
-- Recipe revision: `a1d7a68 (20260427, 16 patch commits)`
+- Recipe revision: `a1d7a68 (20260427, 16 commits touching recipe path)`
 - Recipe steps: `31`
 - Recipe dependencies: `cpython`
 - Recorded reference packages: `extra/python-safetensors, cachyos-extra-znver4/python-safetensors`

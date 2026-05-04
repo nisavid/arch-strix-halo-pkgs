@@ -19,7 +19,7 @@ provides=(python-vllm-rocm python-vllm)
 conflicts=(python-vllm-rocm python-vllm)
 replaces=()
 source=(https://github.com/vllm-project/vllm/archive/refs/tags/v0.20.1.tar.gz 0016-rocm-refresh-local-carry-for-vllm-0.20.1.patch)
-sha256sums=(SKIP SKIP)
+sha256sums=(872f44c9f21f59639da534ad94b5ad14d461e95bea3d20fbfac5c8fab221742f SKIP)
 
 _vllm_srcdir="vllm-${pkgver}"
 _vllm_tarball="v${pkgver}.tar.gz"

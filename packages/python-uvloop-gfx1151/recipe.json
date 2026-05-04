@@ -71,7 +71,7 @@
     "sha256sums": [
       "6c84bae345b9147082b17371e3dd5d42775bddce91f885499017f4607fdaf39f"
     ],
-    "src_subdir": "uvloop-0.22.1",
+    "src_subdir": "uvloop-${pkgver}",
     "template": "native-wheel-pypi",
     "update_notes": [
       "Check Arch first for libuv and Cython build metadata before updating.",

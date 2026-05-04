@@ -102,7 +102,7 @@
       "python-setuptools",
       "python-six",
       "python-triton-gfx1151",
-      "python-pyyaml-gfx1151",
+      "python-yaml",
       "patchelf",
       "rocm-llvm-gfx1151",
       "unzip"

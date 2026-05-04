@@ -8,7 +8,7 @@
 - Recipe build method: `cmake`
 - Upstream repo: `https://github.com/ggml-org/llama.cpp.git`
 - Package version: `b9010`
-- Recipe revision: `a1d7a68 (20260427, 16 patch commits)`
+- Recipe revision: `a1d7a68 (20260427, 16 commits touching recipe path)`
 - Recipe steps: `34`
 - Recipe dependencies: `therock`
 - Recorded reference packages: `aur/llama.cpp-vulkan-bin, aur/llama.cpp`

@@ -59,6 +59,9 @@
     "scaffold_notes": [
       "This package is grouped under the recipe's native wheel build step even though its build backend differs from meson-based numpy."
     ],
+    "sha256sums": [
+      "c989386c83940bfbd787180f2b1519415e2d3d6277a70d9d0f0145ac73500735"
+    ],
     "src_subdir": "asyncpg-0.31.0",
     "template": "native-wheel-pypi",
     "update_notes": [

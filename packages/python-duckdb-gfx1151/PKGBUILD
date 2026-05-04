@@ -9,7 +9,7 @@ pkgver=1.5.2
 pkgrel=1
 pkgdesc='Analytical in-process SQL database Python API rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
-url=https://duckdb.org/
+url=https://github.com/duckdb/duckdb
 license=(MIT)
 depends=(gcc-libs glibc python-gfx1151 python-typing_extensions)
 makedepends=(cmake ninja pybind11 python-build python-installer python-scikit-build-core python-setuptools-scm python-wheel rocm-llvm-gfx1151)
@@ -19,7 +19,7 @@ provides=(python-duckdb)
 conflicts=(python-duckdb)
 replaces=()
 source=(https://files.pythonhosted.org/packages/source/d/duckdb/duckdb-1.5.2.tar.gz)
-sha256sums=(SKIP)
+sha256sums=(638da0d5102b6cb6f7d47f83d0600708ac1d3cb46c5e9aaabc845f9ba4d69246)
 
 build() {
   cd "$srcdir/duckdb-1.5.2"
@@ -51,7 +51,7 @@ build() {
   _setup_compiler_env
   local _base_flags="-O3 -march=native -mprefer-vector-width=512 -mavx512f -mavx512dq -mavx512vl -mavx512bw -mllvm -enable-gvn-hoist -mllvm -enable-gvn-sink -famd-opt -Wno-error=unused-command-line-argument"
   local _wheel_flags
-  _wheel_flags="$(printf '%s' "${_base_flags}" | sed -E 's/-mllvm (-[^ ]+)/-Xclang -mllvm -Xclang \1/g; s/-famd-opt//g; s/  +/ /g; s/^ +| +$//g')"
+  _wheel_flags="$(printf '%s' "${_base_flags}" | sed -E 's/-mllvm (-[^ ]+)/-Xclang -mllvm -Xclang \1/g; s/  +/ /g; s/^ +| +$//g')"
   local _base_cflags="${CFLAGS:-}"
   local _base_cxxflags="${CXXFLAGS:-}"
   local _base_ldflags="${LDFLAGS:-}"

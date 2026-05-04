@@ -150,11 +150,17 @@ def render_source_refs(policy_pkg: dict, recipe_pkg: dict) -> tuple[str, str]:
         branch = recipe_pkg.get("branch")
         if branch:
             source_ref = f"{source_ref}#branch={branch}"
-    sha256sums = policy_pkg.get("sha256sums", ["SKIP"])
+    needs_archive_checksum = source_type == "tarball" or template in {"rust-wheel-pypi", "native-wheel-pypi"}
+    sha256sums = policy_pkg.get("sha256sums", [] if needs_archive_checksum else ["SKIP"])
     if len(sha256sums) != 1:
         print("SOURCE_REF_MISMATCH: implicit source refs need exactly one sha256sum", file=sys.stderr)
         print("HINT: add one checksum for the generated source URL in policies/recipe-packages.toml.", file=sys.stderr)
         raise SystemExit(2)
+    if needs_archive_checksum:
+        if sha256sums[0] == "SKIP":
+            print("SOURCE_REF_MISMATCH: implicit archive source refs need a concrete sha256sum", file=sys.stderr)
+            print("HINT: add one checksum for the generated source URL in policies/recipe-packages.toml.", file=sys.stderr)
+            raise SystemExit(2)
     return bash_array([source_ref] + extra_sources), bash_array(sha256sums + extra_sha256sums)
 
 
@@ -396,8 +402,12 @@ EOF
     elif template == "stable-diffusion-cpp":
         prepare_lines.extend(
             [
-                "git submodule sync --recursive",
-                "git submodule update --init --recursive",
+                "rm -rf ggml examples/server/frontend thirdparty/libwebm thirdparty/libwebp",
+                "mkdir -p examples/server thirdparty",
+                'cp -a "$srcdir/ggml" ggml',
+                'cp -a "$srcdir/sdcpp-webui" examples/server/frontend',
+                'cp -a "$srcdir/libwebm" thirdparty/libwebm',
+                'cp -a "$srcdir/libwebp" thirdparty/libwebp',
             ]
         )
         for patch_name in policy_pkg.get("source_patches", []):
@@ -1400,7 +1410,7 @@ build() {{
   {compiler_env_snippet(compiler_root)}  _setup_compiler_env
   local _base_flags="-O3 -march=native -mprefer-vector-width=512 -mavx512f -mavx512dq -mavx512vl -mavx512bw -mllvm -enable-gvn-hoist -mllvm -enable-gvn-sink -famd-opt -Wno-error=unused-command-line-argument"
   local _wheel_flags
-  _wheel_flags="$(printf '%s' "${{_base_flags}}" | sed -E 's/-mllvm (-[^ ]+)/-Xclang -mllvm -Xclang \\1/g; s/-famd-opt//g; s/  +/ /g; s/^ +| +$//g')"
+  _wheel_flags="$(printf '%s' "${{_base_flags}}" | sed -E 's/-mllvm (-[^ ]+)/-Xclang -mllvm -Xclang \\1/g; s/  +/ /g; s/^ +| +$//g')"
   local _base_cflags="${{CFLAGS:-}}"
   local _base_cxxflags="${{CXXFLAGS:-}}"
   local _base_ldflags="${{LDFLAGS:-}}"
@@ -1449,9 +1459,11 @@ package() {{
             build_command = "\n".join(build_command_lines)
         else:
             build_command = build_command_head
-        build_env_exports = "\n".join(
-            f"export {assignment}" for assignment in policy_pkg.get("build_env", [])
-        )
+        build_env_lines = []
+        for assignment in policy_pkg.get("build_env", []):
+            name, value = assignment.split("=", 1)
+            build_env_lines.append(f"export {name}={shell_quote(value)}")
+        build_env_exports = "\n".join(build_env_lines)
         if build_env_exports:
             build_env_exports = "\n" + textwrap.indent(build_env_exports, "  ") + "\n"
         build_body = f"""\
@@ -1461,7 +1473,7 @@ build() {{
   {compiler_env_snippet(compiler_root)}  _setup_compiler_env
   local _base_flags="-O3 -march=native -mprefer-vector-width=512 -mavx512f -mavx512dq -mavx512vl -mavx512bw -mllvm -enable-gvn-hoist -mllvm -enable-gvn-sink -famd-opt -Wno-error=unused-command-line-argument"
   local _wheel_flags
-  _wheel_flags="$(printf '%s' "${{_base_flags}}" | sed -E 's/-mllvm (-[^ ]+)/-Xclang -mllvm -Xclang \\1/g; s/-famd-opt//g; s/  +/ /g; s/^ +| +$//g')"
+  _wheel_flags="$(printf '%s' "${{_base_flags}}" | sed -E 's/-mllvm (-[^ ]+)/-Xclang -mllvm -Xclang \\1/g; s/  +/ /g; s/^ +| +$//g')"
   local _base_cflags="${{CFLAGS:-}}"
   local _base_cxxflags="${{CXXFLAGS:-}}"
   local _base_ldflags="${{LDFLAGS:-}}"
@@ -1734,7 +1746,7 @@ def render_readme(package_name: str, policy_pkg: dict, recipe_pkg: dict, version
     if defaults.get("recipe_commit") and defaults.get("recipe_date"):
         recipe_revision_text = f"{defaults['recipe_commit']} ({defaults['recipe_date']}"
         if defaults.get("recipe_history_count") is not None:
-            recipe_revision_text += f", {defaults['recipe_history_count']} patch commits"
+            recipe_revision_text += f", {defaults['recipe_history_count']} commits touching recipe path"
         recipe_revision_text += ")"
 
     lines = [f"# {package_name}", "", "## Maintenance Snapshot", ""]

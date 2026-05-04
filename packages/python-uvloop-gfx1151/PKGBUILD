@@ -22,7 +22,7 @@ source=(https://files.pythonhosted.org/packages/source/u/uvloop/uvloop-0.22.1.ta
 sha256sums=(6c84bae345b9147082b17371e3dd5d42775bddce91f885499017f4607fdaf39f e604aa28d65559b07b842e403105bfce6087162671df4b8680220f25883c29a6)
 
 prepare() {
-  cd "$srcdir/uvloop-0.22.1"
+  cd "$srcdir/uvloop-${pkgver}"
 
   if ! patch --dry-run -R -Np1 -i "$srcdir/0001-use-system-libuv.patch" >/dev/null 2>&1; then
     patch -Np1 -i "$srcdir/0001-use-system-libuv.patch"
@@ -30,7 +30,7 @@ prepare() {
 }
 
 build() {
-  cd "$srcdir/uvloop-0.22.1"
+  cd "$srcdir/uvloop-${pkgver}"
 
   _setup_compiler_env() {
   local _compiler_root="/opt/rocm/lib/llvm/bin"
@@ -59,7 +59,7 @@ build() {
   _setup_compiler_env
   local _base_flags="-O3 -march=native -mprefer-vector-width=512 -mavx512f -mavx512dq -mavx512vl -mavx512bw -mllvm -enable-gvn-hoist -mllvm -enable-gvn-sink -famd-opt -Wno-error=unused-command-line-argument"
   local _wheel_flags
-  _wheel_flags="$(printf '%s' "${_base_flags}" | sed -E 's/-mllvm (-[^ ]+)/-Xclang -mllvm -Xclang \1/g; s/-famd-opt//g; s/  +/ /g; s/^ +| +$//g')"
+  _wheel_flags="$(printf '%s' "${_base_flags}" | sed -E 's/-mllvm (-[^ ]+)/-Xclang -mllvm -Xclang \1/g; s/  +/ /g; s/^ +| +$//g')"
   local _base_cflags="${CFLAGS:-}"
   local _base_cxxflags="${CXXFLAGS:-}"
   local _base_ldflags="${LDFLAGS:-}"
@@ -72,6 +72,6 @@ build() {
 }
 
 package() {
-  cd "$srcdir/uvloop-0.22.1"
+  cd "$srcdir/uvloop-${pkgver}"
   python -m installer --destdir="$pkgdir" dist/*.whl
 }

@@ -7,7 +7,7 @@
 - Recipe build method: `pip`
 - Upstream repo: `https://github.com/indygreg/python-zstandard`
 - Package version: `0.25.0`
-- Recipe revision: `a1d7a68 (20260427, 16 patch commits)`
+- Recipe revision: `a1d7a68 (20260427, 16 commits touching recipe path)`
 - Recipe steps: `32`
 - Recipe dependencies: `cpython, pytorch`
 - Recorded reference packages: `extra/python-zstandard, cachyos-extra-znver4/python-zstandard`

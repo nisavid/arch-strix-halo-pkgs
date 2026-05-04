@@ -188,6 +188,9 @@
       "Keep the gfx1151 ROCm/AITER recipe patches in the source package, but evaluate Python-3.14 compatibility separately from ROCm runtime/linker issues.",
       "The earlier numba-pin idea is not currently part of the actual built package story; treat any numba change as a separate follow-up until it is backed by a real source patch."
     ],
+    "sha256sums": [
+      "872f44c9f21f59639da534ad94b5ad14d461e95bea3d20fbfac5c8fab221742f"
+    ],
     "source_type": "tarball",
     "source_url": "https://github.com/vllm-project/vllm/archive/refs/tags/v0.20.1.tar.gz",
     "src_subdir": "vllm-0.20.1",

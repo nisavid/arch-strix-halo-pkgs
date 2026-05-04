@@ -7,7 +7,7 @@
 - Recipe build method: `scons`
 - Upstream repo: `https://github.com/amd/aocl-libm-ose.git`
 - Package version: `5.2.2`
-- Recipe revision: `a1d7a68 (20260427, 16 patch commits)`
+- Recipe revision: `a1d7a68 (20260427, 16 commits touching recipe path)`
 - Recipe steps: `7`
 - Recipe dependencies: `therock, aocl_utils`
 - Recorded reference packages: `aur/aocl`

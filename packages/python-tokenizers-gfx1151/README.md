@@ -7,7 +7,7 @@
 - Recipe build method: `cargo`
 - Upstream repo: `https://github.com/huggingface/tokenizers`
 - Package version: `0.22.2`
-- Recipe revision: `a1d7a68 (20260427, 16 patch commits)`
+- Recipe revision: `a1d7a68 (20260427, 16 commits touching recipe path)`
 - Recipe steps: `31`
 - Recipe dependencies: `cpython`
 - Recorded reference packages: `cachyos/python-tokenizers`

@@ -7,7 +7,7 @@
 - Recipe build method: `pip`
 - Upstream repo: `https://github.com/aio-libs/aiohttp`
 - Package version: `3.13.5`
-- Recipe revision: `a1d7a68 (20260427, 16 patch commits)`
+- Recipe revision: `a1d7a68 (20260427, 16 commits touching recipe path)`
 - Recipe steps: `32`
 - Recipe dependencies: `cpython, pytorch`
 - Recorded reference packages: `extra/python-aiohttp`
@@ -20,9 +20,10 @@
 This package is the aiohttp output from the shared `native_wheels` recipe
 phase. That phase also builds numpy, sentencepiece, zstandard, asyncpg,
 duckdb, PyYAML, psutil, Pillow, uvloop, httptools, msgspec, multidict, yarl,
-and frozenlist from source with Zen 5 optimization flags, but those outputs
-are tracked as separate packages or follow-up package lanes rather than as
-dependencies of `python-aiohttp-gfx1151`.
+and frozenlist from source with Zen 5 optimization flags. `multidict`, `yarl`,
+and `frozenlist` are direct local dependencies of this package; the remaining
+outputs are tracked as separate packages or follow-up package lanes rather than
+as dependencies of `python-aiohttp-gfx1151`.
 
 aiohttp supplies async HTTP client/server helpers used by service paths. The
 local package follows Arch's system-dependency shape with
