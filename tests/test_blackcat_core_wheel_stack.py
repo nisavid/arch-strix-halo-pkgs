@@ -261,6 +261,8 @@ def test_blackcat_service_wheel_stack_rendered_outputs_exist() -> None:
         assert f"provides=({' '.join(expected['provides'])})" in pkgbuild
         assert recipe["policy"]["recipe_key"] == expected["recipe_key"]
         assert "Blackcat" in readme
+        if package_name == "python-frozenlist-gfx1151":
+            assert recipe["policy"]["patches_dir"] == "patches/python-frozenlist-gfx1151"
 
 
 def test_service_consumers_prefer_local_blackcat_packages() -> None:
@@ -308,7 +310,11 @@ def test_blackcat_tooling_wheel_stack_rendered_outputs_exist() -> None:
         assert f"pkgver={expected['upstream_version']}" in pkgbuild
         assert f"provides=({' '.join(expected['provides'])})" in pkgbuild
         assert recipe["policy"]["recipe_key"] == expected["recipe_key"]
-        if package_name in {"python-accelerate-gfx1151", "python-compressed-tensors-gfx1151"}:
+        if package_name in {
+            "python-accelerate-gfx1151",
+            "python-compressed-tensors-gfx1151",
+            "python-nvidia-ml-py-gfx1151",
+        }:
             assert "arch=('any')" in pkgbuild
             assert "rocm-llvm-gfx1151" not in pkgbuild
             assert "_setup_compiler_env" not in pkgbuild

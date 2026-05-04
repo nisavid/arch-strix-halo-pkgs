@@ -21,6 +21,9 @@
     "advisory_references": [
       "extra/python-nvidia-ml-py"
     ],
+    "arch": [
+      "any"
+    ],
     "arch_reference": [
       "extra/python-nvidia-ml-py"
     ],
@@ -42,14 +45,14 @@
       "python-build",
       "python-installer",
       "python-setuptools",
-      "python-wheel",
-      "rocm-llvm-gfx1151"
+      "python-wheel"
     ],
     "patches_dir": "patches/python-nvidia-ml-py-gfx1151",
     "pkgdesc": "Python NVML bindings packaged without pulling NVIDIA driver utilities",
     "provides": [
       "python-nvidia-ml-py"
     ],
+    "pure_python_wheel": true,
     "pypi_name": "nvidia_ml_py",
     "recipe_key": "native_wheels",
     "recipe_notes_override": "This package supplies the `pynvml` module named by llmcompressor metadata\nwithout depending on NVIDIA driver utilities. llmcompressor's NVIDIA metric\npath imports pynvml lazily and returns an empty usage result when the module or\nNVML library is unavailable, while AMD metric logging uses amdsmi separately.\n\nUse this package only as metadata and import closure for llmcompressor on the\nAMD reference host. A failing NVML initialization on AMD is expected and is not\nevidence that the package is broken.\n",

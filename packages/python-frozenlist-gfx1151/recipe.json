@@ -49,7 +49,7 @@
       "python-wheel",
       "rocm-llvm-gfx1151"
     ],
-    "patches_dir": "packages/python-frozenlist-gfx1151",
+    "patches_dir": "patches/python-frozenlist-gfx1151",
     "pkgdesc": "Immutable list implementation rebuilt for Strix Halo gfx1151",
     "provides": [
       "python-frozenlist"
