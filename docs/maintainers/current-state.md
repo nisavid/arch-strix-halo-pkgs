@@ -403,8 +403,14 @@ tests/test_blackcat_core_wheel_stack.py tests/test_render_recipe_scaffolds.py
 The 2026-05-04 NVML-shim cleanup removes `python-nvidia-ml-py-gfx1151` from
 the package roster and rebuilds `python-llmcompressor-gfx1151 0.10.0.1-5` with
 wheel metadata that no longer requires `nvidia-ml-py`. Package-build evidence
-passed with `tools/amerge build -y python-llmcompressor-gfx1151`;
-deploy/install and installed-smoke gates remain pending for `0.10.0.1-5`.
+passed with `tools/amerge build -y python-llmcompressor-gfx1151`. Deploy/install
+then installed `python-llmcompressor-gfx1151 0.10.0.1-5` from the local repo,
+and installed smoke confirmed `nvidia-ml-py` is absent from llmcompressor
+metadata while `llmcompressor`, `AutoRoundModifier`, and `skip_weights_initialize`
+import from the installed Python lane. The retired `python-nvidia-ml-py-gfx1151`
+package remains explicitly installed on the host with no reverse pacman
+dependencies, so host removal is a separate cleanup step rather than an
+llmcompressor dependency gate.
 
 The Blackcat stable-diffusion.cpp Vulkan engine lane now has package policy
 and rendered scaffolds for `stable-diffusion.cpp-vulkan-gfx1151
