@@ -20,10 +20,16 @@ autonomously when the required build dependencies are already available, then
 hand off only the narrow `tools/amerge deploy ...` command when privileged
 publish/install remains.
 
-Default handoff after broad package changes:
+Default broad package flow when installed repo packages are affected:
 
 ```bash
-tools/amerge run --installed
+tools/amerge build --installed
+```
+
+Then hand off only the privileged publish/install step if it remains:
+
+```bash
+tools/amerge deploy --installed
 ```
 
 If package artifacts are already built and only publish/install remains:
@@ -35,7 +41,7 @@ tools/amerge deploy <package-root>...
 If the user wants to inspect the privileged commands first:
 
 ```bash
-tools/amerge run --installed --preview=commands
+tools/amerge deploy --installed --preview=commands
 ```
 
 ## Command Selection
