@@ -593,6 +593,16 @@ source_patches = [
   "0006-rdna35-hip-reduce-wave32-dpp-compat.patch"
 ]
 patches_dir = "packages/python-amd-aiter-gfx1151"
+recipe_notes_override = """
+Rebuilt from PyTorch's third_party/aiter/ submodule to align CK ABI
+with the CK headers used by AITER's JIT at runtime.
+
+PREBUILD_KERNELS=0: skip 45-minute full kernel precompilation.
+Kernels are JIT-compiled on first use instead.
+
+Package-local source patches are applied before wheel build for gfx1151
+RDNA 3.5 compatibility and installed-system JIT/runtime behavior.
+"""
 scaffold_notes = [
   "There is no standalone Arch, CachyOS, or AUR aiter package. The closest packaging lane is the PyTorch ROCm pkgbase that vendors the same submodule, so that pkgbase is advisory only.",
   "The package pins reviewed upstream AITER main snapshot 51f3d2b6968360fba7772208025e5c07756121ba because the reviewed post-release range carries local-lane-relevant MoE, quant, JIT, architecture-dispatch, FlyDSL, MLA, tuned GEMM, cache, and fused-collectives changes.",
@@ -838,6 +848,7 @@ provides = ["python-tokenizers"]
 conflicts = ["python-tokenizers"]
 depends = ["glibc", "libgcc", "python-gfx1151"]
 makedepends = ["cargo", "python-build", "python-installer", "python-maturin", "python-wheel", "rocm-llvm-gfx1151", "rust"]
+isolated_cargo_home = false
 pypi_name = "tokenizers"
 sha256sums = ["473b83b915e547aa366d1eee11806deaf419e17be16310ac0a14077f1e28f917"]
 src_subdir = "tokenizers-0.22.2"
@@ -890,15 +901,14 @@ sha256sums = ["07663963b67e8bd9f0b8ad15bb9163606cd27cc5a1b96235a50d8369803b96b0"
 src_subdir = "safetensors-0.7.0"
 patches_dir = "patches/python-safetensors-gfx1151"
 recipe_notes_override = """
-This package is the safetensors output from the shared `rust_wheels` recipe
-phase. That phase also documents orjson, cryptography, pydantic-core,
-tokenizers, and watchfiles as sibling Rust-wheel outputs, but those are not
-dependencies of `python-safetensors-gfx1151` unless listed in this package's
-policy metadata.
-
 safetensors is the model/checkpoint tensor I/O path for Transformers, vLLM,
-and TorchAO validation. The local package keeps that native extension on the
-same znver5 Rust codegen lane as the rest of the optimized local wheel stack.
+and TorchAO validation. This package builds the Rust-backed Python extension
+through the shared `rust_wheels` cargo path, keeping it on the same znver5
+Rust codegen, linker, and path-remapping lane as the other local Rust-wheel
+outputs.
+
+After publishing a rebuilt package, verify `import safetensors` and a tiny
+tensor save/load round trip through the installed local Python lane.
 """
 scaffold_notes = [
   "Part of the core Blackcat model/config stack and consumed by the local Transformers closure package.",
@@ -1619,7 +1629,9 @@ update_notes = [
 provides = ["python-compressed-tensors"]
 conflicts = ["python-compressed-tensors"]
 depends = ["python-gfx1151", "python-loguru", "python-pydantic", "python-pytorch-opt-rocm-gfx1151", "python-transformers-gfx1151"]
-makedepends = ["python-build", "python-installer", "python-setuptools", "python-setuptools-scm", "python-wheel", "rocm-llvm-gfx1151"]
+makedepends = ["python-build", "python-installer", "python-setuptools", "python-setuptools-scm", "python-wheel"]
+arch = ["any"]
+pure_python_wheel = true
 skip_dependency_check = true
 pypi_name = "compressed_tensors"
 sha256sums = ["a8e93054e8a5ec49c980b09ed36c4c1249b4a8ee167920a8e461c4da26e78d99"]
@@ -1672,7 +1684,9 @@ update_notes = [
 provides = ["python-accelerate"]
 conflicts = ["python-accelerate"]
 depends = ["python-gfx1151", "python-huggingface-hub", "python-numpy-gfx1151", "python-packaging", "python-psutil-gfx1151", "python-pytorch-opt-rocm-gfx1151", "python-pyyaml-gfx1151", "python-safetensors-gfx1151"]
-makedepends = ["python-build", "python-installer", "python-setuptools", "python-wheel", "rocm-llvm-gfx1151"]
+makedepends = ["python-build", "python-installer", "python-setuptools", "python-wheel"]
+arch = ["any"]
+pure_python_wheel = true
 skip_dependency_check = true
 pypi_name = "accelerate"
 sha256sums = ["70988c352feb481887077d2ab845125024b2a137a5090d6d7a32b57d03a45df6"]

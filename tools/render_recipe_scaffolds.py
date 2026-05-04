@@ -1357,15 +1357,17 @@ package() {{
                     "fi",
                 ]
             )
+        if policy_pkg.get("isolated_cargo_home", True):
+            cargo_home_exports = '  export CARGO_HOME="$srcdir/.cargo"\n  mkdir -p "$CARGO_HOME"\n'
+        else:
+            cargo_home_exports = ""
         build_body = f"""\
 build() {{
   cd "$srcdir/{src_subdir}"
 
   {compiler_env_snippet(compiler_root)}  _setup_compiler_env
   local _debug_prefix="/usr/src/debug/{package_name}"
-  export CARGO_HOME="$srcdir/.cargo"
-  mkdir -p "$CARGO_HOME"
-  export CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER="$CC"
+{cargo_home_exports}  export CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER="$CC"
   export RUSTFLAGS="-C target-cpu=znver5 -C opt-level=3 --remap-path-prefix=$srcdir=${{_debug_prefix}}"
   unset CFLAGS CXXFLAGS LDFLAGS
 
@@ -1479,11 +1481,10 @@ package() {{
             ])
         else:
             installer_command = "python -m installer --destdir=\"$pkgdir\" dist/*.whl"
-        build_body = f"""\
-build() {{
-  cd "$srcdir/{src_subdir}"
-
-  {compiler_env_snippet(compiler_root)}  _setup_compiler_env
+        if policy_pkg.get("pure_python_wheel", False):
+            native_wheel_build_preamble = ""
+        else:
+            native_wheel_build_preamble = f"""  {compiler_env_snippet(compiler_root)}  _setup_compiler_env
   local _base_flags="-O3 -march=native -mprefer-vector-width=512 -mavx512f -mavx512dq -mavx512vl -mavx512bw -mllvm -enable-gvn-hoist -mllvm -enable-gvn-sink -famd-opt -Wno-error=unused-command-line-argument"
   local _wheel_flags
   _wheel_flags="$(printf '%s' "${{_base_flags}}" | sed -E 's/-mllvm (-[^ ]+)/-Xclang -mllvm -Xclang \\1/g; s/  +/ /g; s/^ +| +$//g')"
@@ -1493,9 +1494,17 @@ build() {{
 
   export CFLAGS="${{_base_cflags:+${{_base_cflags}} }}${{_wheel_flags}}"
   export CXXFLAGS="${{_base_cxxflags:+${{_base_cxxflags}} }}${{_wheel_flags}}"
-  export LDFLAGS="${{_base_ldflags:+${{_base_ldflags}} }}-famd-opt"{build_env_exports}
-{clean_build_outputs}
-  {build_command}
+  export LDFLAGS="${{_base_ldflags:+${{_base_ldflags}} }}-famd-opt"
+"""
+        build_env_section = build_env_exports
+        if native_wheel_build_preamble and build_env_section.startswith("\n"):
+            build_env_section = build_env_section[1:]
+        post_build_env_gap = "\n" if (native_wheel_build_preamble or build_env_section or clean_build_outputs) else ""
+        build_body = f"""\
+build() {{
+  cd "$srcdir/{src_subdir}"
+
+{native_wheel_build_preamble}{build_env_section}{clean_build_outputs}{post_build_env_gap}  {build_command}
 }}
 
 package() {{
@@ -1569,6 +1578,8 @@ def render_pkgbuild(package_name: str, policy_pkg: dict, recipe_pkg: dict, versi
     optdepends = policy_pkg.get("optdepends", [])
     options = policy_pkg.get("options", [])
     license_items = policy_pkg.get("license", [])
+    arch_items = policy_pkg.get("arch", ["x86_64"])
+    arch_array = "(" + " ".join(f"'{item}'" for item in arch_items) + ")"
     prepare_body, method_body, _ = render_method_body(package_name, policy_pkg, recipe_pkg)
     source_refs, sha256sums = render_source_refs(policy_pkg, recipe_pkg)
 
@@ -1589,7 +1600,7 @@ pkgname={package_name}
 pkgver={version}
 pkgrel={pkgrel}
 pkgdesc={shell_quote(policy_pkg['pkgdesc'])}
-arch=('x86_64')
+arch={arch_array}
 url={shell_quote(policy_pkg['url'])}
 license={bash_array(license_items)}
 depends={bash_array(depends)}

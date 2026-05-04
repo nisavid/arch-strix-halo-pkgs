@@ -63,7 +63,7 @@
     ],
     "pypi_name": "safetensors",
     "recipe_key": "rust_wheels",
-    "recipe_notes_override": "This package is the safetensors output from the shared `rust_wheels` recipe\nphase. That phase also documents orjson, cryptography, pydantic-core,\ntokenizers, and watchfiles as sibling Rust-wheel outputs, but those are not\ndependencies of `python-safetensors-gfx1151` unless listed in this package's\npolicy metadata.\n\nsafetensors is the model/checkpoint tensor I/O path for Transformers, vLLM,\nand TorchAO validation. The local package keeps that native extension on the\nsame znver5 Rust codegen lane as the rest of the optimized local wheel stack.\n",
+    "recipe_notes_override": "safetensors is the model/checkpoint tensor I/O path for Transformers, vLLM,\nand TorchAO validation. This package builds the Rust-backed Python extension\nthrough the shared `rust_wheels` cargo path, keeping it on the same znver5\nRust codegen, linker, and path-remapping lane as the other local Rust-wheel\noutputs.\n\nAfter publishing a rebuilt package, verify `import safetensors` and a tiny\ntensor save/load round trip through the installed local Python lane.\n",
     "scaffold_notes": [
       "Part of the core Blackcat model/config stack and consumed by the local Transformers closure package.",
       "Use the shared Rust-wheel renderer so linker selection, path remapping, and znver5 codegen stay aligned with orjson and cryptography."
@@ -96,7 +96,7 @@
       "cpython"
     ],
     "method": "cargo",
-    "notes": "This package is the safetensors output from the shared `rust_wheels` recipe\nphase. That phase also documents orjson, cryptography, pydantic-core,\ntokenizers, and watchfiles as sibling Rust-wheel outputs, but those are not\ndependencies of `python-safetensors-gfx1151` unless listed in this package's\npolicy metadata.\n\nsafetensors is the model/checkpoint tensor I/O path for Transformers, vLLM,\nand TorchAO validation. The local package keeps that native extension on the\nsame znver5 Rust codegen lane as the rest of the optimized local wheel stack.\n",
+    "notes": "safetensors is the model/checkpoint tensor I/O path for Transformers, vLLM,\nand TorchAO validation. This package builds the Rust-backed Python extension\nthrough the shared `rust_wheels` cargo path, keeping it on the same znver5\nRust codegen, linker, and path-remapping lane as the other local Rust-wheel\noutputs.\n\nAfter publishing a rebuilt package, verify `import safetensors` and a tiny\ntensor save/load round trip through the installed local Python lane.\n",
     "patches": [],
     "phase": "H",
     "repo": null,
