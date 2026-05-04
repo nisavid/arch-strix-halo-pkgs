@@ -126,14 +126,7 @@
     ],
     "method": "pip",
     "notes": "This package supplies llmcompressor for the Blackcat Qwen3-VL\nquantization/tooling follow-up lane. Blackcat's helper notes name\nllmcompressor 0.10.0.1 with release metadata that pins older torch,\ntransformers, and compressed-tensors bounds than the current local stack.\n\nThe package builds with llmcompressor's dev dependency lane so torch and\ncompressed-tensors can follow the installed vLLM 0.20.1 stack, and carries a\nsmall metadata patch to remove the remaining Transformers upper bound. It also\ncarries compatibility patches for the current Transformers and\ncompressed-tensors APIs. The build sets `SETUPTOOLS_SCM_PRETEND_VERSION=0.10.0.1`\nso the PyPI sdist build keeps the adopted release version.\n\nllmcompressor declares nvidia-ml-py as a runtime dependency even though pynvml\nis imported lazily only for NVIDIA metric logging. The local dependency points\nat `python-nvidia-ml-py-gfx1151`, which provides the Python module without\npulling NVIDIA driver utilities onto the AMD reference host.\n",
-    "patches": [
-      {
-        "description": "Replace the recipe's broken venv-local Python cmake wrapper with the real system cmake binary. The cmake pip package installs a Python wrapper that does `from cmake import cmake`, which fails inside pip's build isolation where the cmake Python module is unavailable.\n",
-        "dst": "<build-venv>/.venv/bin/cmake",
-        "src": "/usr/bin/cmake",
-        "type": "file_copy"
-      }
-    ],
+    "patches": [],
     "phase": "H",
     "repo": null,
     "src_dir": null,

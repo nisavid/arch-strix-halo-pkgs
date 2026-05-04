@@ -116,15 +116,7 @@
     ],
     "method": "cmake",
     "notes": "This package supplies stable-diffusion.cpp as the Blackcat Vulkan image\ngeneration engine for the Strix Halo stack. The source follows\nleejet/stable-diffusion.cpp master at\n`3d6064b37ef4607917f8acf2ca8c8906d5087413` (`r593.g3d6064b`, 2026-04-30).\nThe reviewed `b8bdffc..3d6064b` range includes runtime backend discovery,\nVAE buffer lifetime cleanup, image metadata output, and tensor-to-image\nconversion speed work.\n\nThe package builds the Vulkan backend with recursive ggml, WebP, and WebM\nsubmodules. It uses the repo's amdclang/Zen 5 lane, ThinLTO, AOCL-LibM\nlinkage, OpenMP CPU fallback, WebP/WebM output support, and release-mode\nVulkan settings. Runtime payloads live under\n`/opt/stable-diffusion.cpp-vulkan-gfx1151`, with\n`sd-cli-vulkan-gfx1151` and `sd-server-vulkan-gfx1151` wrappers under\n`/usr/bin`.\n\nThe SDXL CLIP-G prefix patch comes from Blackcat's recipe notes and keeps\ndiffusers SDXL checkpoint loading from misclassifying CLIP-G tensors as SD 1.x\nunknown tensors.\n",
-    "patches": [
-      {
-        "description": "Fix SDXL CLIP-G prefix mapping in convert_tensor_name (te.1. -> cond_stage_model.1.transformer., applied before the broader te. rule via deterministic vector<pair> ordering).\n",
-        "file": "src/name_conversion.cpp",
-        "marker": "te.1.\", \"cond_stage_model.1.transformer.",
-        "patch": "0001-sdxl-clipg-prefix-mapping.patch",
-        "type": "git_apply"
-      }
-    ],
+    "patches": [],
     "phase": "I",
     "repo": "https://github.com/leejet/stable-diffusion.cpp.git",
     "src_dir": "vendor/stable-diffusion.cpp",

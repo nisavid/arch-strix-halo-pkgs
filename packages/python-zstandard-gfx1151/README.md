@@ -13,7 +13,7 @@
 - Recorded reference packages: `extra/python-zstandard, cachyos-extra-znver4/python-zstandard`
 - Authoritative reference package: `extra/python-zstandard`
 - Advisory reference packages: `cachyos-extra-znver4/python-zstandard`
-- Applied source patch files/actions: `1`
+- Applied source patch files/actions: `0`
 
 ## Recipe notes
 

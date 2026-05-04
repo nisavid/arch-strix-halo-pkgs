@@ -95,14 +95,7 @@
     ],
     "method": "pip",
     "notes": "This package is the compressed-tensors output for the Blackcat Qwen3-VL\ntooling follow-up lane. Blackcat's quantization helper names\nllmcompressor 0.10.0.1 and compressed-tensors 0.14.0.1, but the installed\nvLLM 0.20.1 lane expects compressed-tensors 0.15.0.1. Keep this package\naligned with vLLM first, then reconcile llmcompressor as a separate package\nclosure.\n\nThe package is pure Python today, but it still belongs in the local package\nset because vLLM compressed-tensors quantization and Qwen3-VL W8A8/W8A16\ncheckpoint loading need a coherent installed dependency rather than an\nuntracked venv wheel.\n\nThe upstream sdist pins `setuptools_scm==8.2.0` as a build dependency, while\nthe host has a newer Arch `python-setuptools-scm`. The package skips Python\nbuild dependency checking and uses the system build backend because this is a\npure-Python wheel and the newer backend builds the same installed package\nshape.\n",
-    "patches": [
-      {
-        "description": "Replace the recipe's broken venv-local Python cmake wrapper with the real system cmake binary. The cmake pip package installs a Python wrapper that does `from cmake import cmake`, which fails inside pip's build isolation where the cmake Python module is unavailable.\n",
-        "dst": "<build-venv>/.venv/bin/cmake",
-        "src": "/usr/bin/cmake",
-        "type": "file_copy"
-      }
-    ],
+    "patches": [],
     "phase": "H",
     "repo": null,
     "src_dir": null,

@@ -93,14 +93,7 @@
     ],
     "method": "pip",
     "notes": "This package is the PyYAML output from the shared `native_wheels` recipe\nphase. That phase also builds numpy, sentencepiece, zstandard, asyncpg,\nduckdb, psutil, Pillow, uvloop, httptools, msgspec, aiohttp, multidict,\nyarl, and frozenlist from source with Zen 5 optimization flags, but those\noutputs are tracked as separate packages or follow-up package lanes rather\nthan as dependencies of `python-pyyaml-gfx1151`.\n\nPyYAML keeps Arch's libYAML-backed package shape while moving the C extension\nonto the same amdclang native-wheel lane as the other Blackcat C/C++ wheel\noutputs.\n",
-    "patches": [
-      {
-        "description": "Replace the recipe's broken venv-local Python cmake wrapper with the real system cmake binary. The cmake pip package installs a Python wrapper that does `from cmake import cmake`, which fails inside pip's build isolation where the cmake Python module is unavailable.\n",
-        "dst": "<build-venv>/.venv/bin/cmake",
-        "src": "/usr/bin/cmake",
-        "type": "file_copy"
-      }
-    ],
+    "patches": [],
     "phase": "H",
     "repo": null,
     "src_dir": null,

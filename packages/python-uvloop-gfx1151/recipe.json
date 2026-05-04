@@ -99,14 +99,7 @@
     ],
     "method": "pip",
     "notes": "uvloop supplies the libuv-backed asyncio event loop used by vLLM/FastAPI\nservice paths. The local package follows Arch's system-libuv shape while\nmoving the native extension onto the local amdclang native-wheel lane.\n\nKeep this README focused on uvloop's direct package surface: `cpython` as the\nrecipe input, system `libuv` linkage, and the package-local source patch that\nselects system libuv by default.\n",
-    "patches": [
-      {
-        "description": "Replace the recipe's broken venv-local Python cmake wrapper with the real system cmake binary. The cmake pip package installs a Python wrapper that does `from cmake import cmake`, which fails inside pip's build isolation where the cmake Python module is unavailable.\n",
-        "dst": "<build-venv>/.venv/bin/cmake",
-        "src": "/usr/bin/cmake",
-        "type": "file_copy"
-      }
-    ],
+    "patches": [],
     "phase": "H",
     "repo": null,
     "src_dir": null,

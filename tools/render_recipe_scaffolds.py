@@ -1400,7 +1400,7 @@ build() {{
   {compiler_env_snippet(compiler_root)}  _setup_compiler_env
   local _base_flags="-O3 -march=native -mprefer-vector-width=512 -mavx512f -mavx512dq -mavx512vl -mavx512bw -mllvm -enable-gvn-hoist -mllvm -enable-gvn-sink -famd-opt -Wno-error=unused-command-line-argument"
   local _wheel_flags
-  _wheel_flags="$(printf '%s' "${{_base_flags}}" | sed -E 's/-mllvm (-[^ ]+)/-Xclang -mllvm -Xclang \\1/g; s/  +/ /g; s/^ +| +$//g')"
+  _wheel_flags="$(printf '%s' "${{_base_flags}}" | sed -E 's/-mllvm (-[^ ]+)/-Xclang -mllvm -Xclang \\1/g; s/-famd-opt//g; s/  +/ /g; s/^ +| +$//g')"
   local _base_cflags="${{CFLAGS:-}}"
   local _base_cxxflags="${{CXXFLAGS:-}}"
   local _base_ldflags="${{LDFLAGS:-}}"
@@ -1461,7 +1461,7 @@ build() {{
   {compiler_env_snippet(compiler_root)}  _setup_compiler_env
   local _base_flags="-O3 -march=native -mprefer-vector-width=512 -mavx512f -mavx512dq -mavx512vl -mavx512bw -mllvm -enable-gvn-hoist -mllvm -enable-gvn-sink -famd-opt -Wno-error=unused-command-line-argument"
   local _wheel_flags
-  _wheel_flags="$(printf '%s' "${{_base_flags}}" | sed -E 's/-mllvm (-[^ ]+)/-Xclang -mllvm -Xclang \\1/g; s/  +/ /g; s/^ +| +$//g')"
+  _wheel_flags="$(printf '%s' "${{_base_flags}}" | sed -E 's/-mllvm (-[^ ]+)/-Xclang -mllvm -Xclang \\1/g; s/-famd-opt//g; s/  +/ /g; s/^ +| +$//g')"
   local _base_cflags="${{CFLAGS:-}}"
   local _base_cxxflags="${{CXXFLAGS:-}}"
   local _base_ldflags="${{LDFLAGS:-}}"
@@ -1637,9 +1637,9 @@ def normalize_recipe_patches(
 def renders_recipe_patch_actions(policy_pkg: dict) -> bool:
     if policy_pkg.get("source_patches_replace_recipe_patches"):
         return False
-    if policy_pkg.get("template") == "python-project-triton-rocm" and policy_pkg.get("source_patches"):
+    if policy_pkg.get("source_patches"):
         return False
-    return True
+    return policy_pkg.get("template") in {"scons-aocl-libm", "python-project-triton-rocm"}
 
 
 def rendered_patch_count(policy_pkg: dict, recipe_pkg: dict) -> int:
@@ -1670,6 +1670,12 @@ def render_recipe_json(package_name: str, policy_pkg: dict, recipe_pkg: dict, ve
         source_patch_sha256sums = policy_pkg.get("extra_sha256sums", [])
         rendered_policy.pop("extra_sha256sums", None)
     recipe_branch = policy_pkg.get("recipe_branch_override", recipe_pkg.get("branch"))
+    recipe_patches = []
+    if renders_recipe_patch_actions(policy_pkg):
+        recipe_patches = normalize_recipe_patches(
+            recipe_pkg.get("patches", []),
+            policy_pkg.get("recipe_patch_file_rewrites"),
+        )
     payload = {
         "name": package_name,
         "package_name": package_name,
@@ -1684,10 +1690,7 @@ def render_recipe_json(package_name: str, policy_pkg: dict, recipe_pkg: dict, ve
             "steps": recipe_pkg.get("steps", []),
             "depends_on": recipe_pkg.get("depends_on", []),
             "notes": recipe_notes,
-            "patches": normalize_recipe_patches(
-                recipe_pkg.get("patches", []),
-                policy_pkg.get("recipe_patch_file_rewrites"),
-            ),
+            "patches": recipe_patches,
         },
         "provenance": defaults,
     }

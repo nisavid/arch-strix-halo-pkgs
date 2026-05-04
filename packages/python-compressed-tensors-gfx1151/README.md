@@ -13,7 +13,7 @@
 - Recorded reference packages: `none`
 - Authoritative reference package: `none`
 - Advisory reference packages: `none`
-- Applied source patch files/actions: `1`
+- Applied source patch files/actions: `0`
 
 ## Recipe notes
 

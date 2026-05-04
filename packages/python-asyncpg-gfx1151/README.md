@@ -13,7 +13,7 @@
 - Recorded reference packages: `extra/python-asyncpg, cachyos-extra-znver4/python-asyncpg`
 - Authoritative reference package: `extra/python-asyncpg`
 - Advisory reference packages: `cachyos-extra-znver4/python-asyncpg`
-- Applied source patch files/actions: `1`
+- Applied source patch files/actions: `0`
 
 ## Recipe notes
 

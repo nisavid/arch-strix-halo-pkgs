@@ -13,7 +13,7 @@
 - Recorded reference packages: `extra/python-frozenlist, cachyos-extra-znver4/python-frozenlist`
 - Authoritative reference package: `extra/python-frozenlist`
 - Advisory reference packages: `cachyos-extra-znver4/python-frozenlist`
-- Applied source patch files/actions: `1`
+- Applied source patch files/actions: `0`
 
 ## Recipe notes
 

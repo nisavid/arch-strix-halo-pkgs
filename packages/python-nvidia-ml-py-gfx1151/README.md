@@ -13,7 +13,7 @@
 - Recorded reference packages: `extra/python-nvidia-ml-py`
 - Authoritative reference package: `none`
 - Advisory reference packages: `extra/python-nvidia-ml-py`
-- Applied source patch files/actions: `1`
+- Applied source patch files/actions: `0`
 
 ## Recipe notes
 

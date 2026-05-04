@@ -13,7 +13,7 @@
 - Recorded reference packages: `extra/python-numpy, cachyos-extra-znver4/python-numpy`
 - Authoritative reference package: `extra/python-numpy`
 - Advisory reference packages: `cachyos-extra-znver4/python-numpy`
-- Applied source patch files/actions: `1`
+- Applied source patch files/actions: `0`
 
 ## Recipe notes
 
