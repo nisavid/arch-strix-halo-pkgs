@@ -6,20 +6,20 @@
 
 pkgname=python-llmcompressor-gfx1151
 pkgver=0.10.0.1
-pkgrel=4
+pkgrel=5
 pkgdesc='LLM compression and quantization tooling for the Strix Halo Python stack'
 arch=('x86_64')
 url=https://github.com/vllm-project/llm-compressor
 license=(Apache-2.0)
-depends=(python-gfx1151 python-accelerate-gfx1151 python-auto-round-gfx1151 python-compressed-tensors-gfx1151 python-datasets python-loguru python-numpy-gfx1151 python-nvidia-ml-py-gfx1151 python-pillow-gfx1151 python-pytorch-opt-rocm-gfx1151 python-requests python-tqdm python-transformers-gfx1151 python-pyyaml-gfx1151)
+depends=(python-gfx1151 python-accelerate-gfx1151 python-auto-round-gfx1151 python-compressed-tensors-gfx1151 python-datasets python-loguru python-numpy-gfx1151 python-pillow-gfx1151 python-pytorch-opt-rocm-gfx1151 python-requests python-tqdm python-transformers-gfx1151 python-pyyaml-gfx1151)
 makedepends=(python-build python-installer python-setuptools python-setuptools-scm python-wheel rocm-llvm-gfx1151)
 optdepends=()
 options=()
 provides=(python-llmcompressor)
 conflicts=(python-llmcompressor)
 replaces=()
-source=(https://files.pythonhosted.org/packages/source/l/llmcompressor/llmcompressor-0.10.0.1.tar.gz 0001-relax-transformers-upper-bound.patch 0002-import-torch-init-functions-from-initialization.patch 0003-use-public-compressed-tensors-match-name.patch 0004-use-compressed-tensors-infer-module-format.patch)
-sha256sums=(f8915064ab47f14245e01f1d99012420c7ddf77b56612d368522afb959893a65 f753bf83b822c94f4dd714210c28f0a897b5d3949253acd531813f4fb30d6534 4b8c2dfceaa8131a686c8805c262229094ef7ffaf68b2d66d51c416990b3a6bf 97b78bbfd5b07a7d63ad24cfecb2bd8aa7547f154ccf238373a7d8a79096d209 512e8371ecfe36ff3a18aec68a33de4f1d18b751a1822a2357ec914240cf4307)
+source=(https://files.pythonhosted.org/packages/source/l/llmcompressor/llmcompressor-0.10.0.1.tar.gz 0001-relax-transformers-upper-bound.patch 0002-import-torch-init-functions-from-initialization.patch 0003-use-public-compressed-tensors-match-name.patch 0004-use-compressed-tensors-infer-module-format.patch 0005-drop-nvidia-ml-py-runtime-dependency.patch)
+sha256sums=(f8915064ab47f14245e01f1d99012420c7ddf77b56612d368522afb959893a65 f753bf83b822c94f4dd714210c28f0a897b5d3949253acd531813f4fb30d6534 4b8c2dfceaa8131a686c8805c262229094ef7ffaf68b2d66d51c416990b3a6bf ce7a8c8b7f258556b50748f8fb6bc213b0011fded8a25e07642e4d2397a6927e 2ddfc364a45454aea350343f681941da09481775558126d3f9e06dc4b5ec26f4 ae8113abd70aa8d3cde4b1b7586699f6e42d5b8e224232fd003dd65824184265)
 
 prepare() {
   cd "$srcdir/llmcompressor-0.10.0.1"
@@ -35,6 +35,9 @@ prepare() {
   fi
   if ! patch --dry-run -R -Np1 -i "$srcdir/0004-use-compressed-tensors-infer-module-format.patch" >/dev/null 2>&1; then
     patch -Np1 -i "$srcdir/0004-use-compressed-tensors-infer-module-format.patch"
+  fi
+  if ! patch --dry-run -R -Np1 -i "$srcdir/0005-drop-nvidia-ml-py-runtime-dependency.patch" >/dev/null 2>&1; then
+    patch -Np1 -i "$srcdir/0005-drop-nvidia-ml-py-runtime-dependency.patch"
   fi
 }
 

@@ -2,7 +2,7 @@ diff --git a/src/llmcompressor/entrypoints/model_free/lifecycle.py b/src/llmcomp
 index 2f6fa25..b3d9560 100644
 --- a/src/llmcompressor/entrypoints/model_free/lifecycle.py
 +++ b/src/llmcompressor/entrypoints/model_free/lifecycle.py
-@@ -1,6 +1,6 @@
+@@ -1,5 +1,5 @@
  import torch
  from compressed_tensors.compressors import BaseCompressor
 -from compressed_tensors.config.format import _get_quant_compression_format
@@ -10,7 +10,7 @@ index 2f6fa25..b3d9560 100644
  from compressed_tensors.quantization import (
      QuantizationScheme,
      initialize_module_for_quantization,
-@@ -62,6 +62,6 @@ def compress_module(module: torch.nn.Linear):
+@@ -62,5 +62,5 @@ def compress_module(module: torch.nn.Linear):
  def compress_module(module: torch.nn.Linear):
      scheme: QuantizationScheme = getattr(module, "quantization_scheme")
 -    format = _get_quant_compression_format(scheme.input_activations, scheme.weights)

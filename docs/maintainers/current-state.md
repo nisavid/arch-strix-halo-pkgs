@@ -1,6 +1,6 @@
 # Current State
 
-Status as of 2026-05-03.
+Status as of 2026-05-04.
 
 ## Rebuild Revalidation Boundary
 
@@ -380,36 +380,31 @@ import path.
 
 The Blackcat Qwen3-VL quantization/tooling lane now also has package policy
 and rendered scaffolds for `python-accelerate-gfx1151 1.12.0`,
-`python-auto-round-gfx1151 0.10.2`,
-`python-nvidia-ml-py-gfx1151 13.590.48`, and
+`python-auto-round-gfx1151 0.10.2`, and
 `python-llmcompressor-gfx1151 0.10.0.1`. The llmcompressor package builds with
-upstream's dev dependency lane, a package-local metadata patch, and
+upstream's dev dependency lane, package-local metadata patches, and
 compatibility patches for the current Transformers and compressed-tensors APIs
 so the installed package accepts the local PyTorch 2.11, Transformers 5.7.0,
-and compressed-tensors 0.15.0.1 stack. The local
-`python-nvidia-ml-py-gfx1151`
-package provides `pynvml` for llmcompressor metadata without depending on
-NVIDIA driver utilities; llmcompressor imports pynvml lazily only for NVIDIA
-metric logging, while AMD metric logging uses `amdsmi`.
+and compressed-tensors 0.15.0.1 stack. Its package metadata patches out the
+NVIDIA-only `nvidia-ml-py` runtime dependency; the runtime code still imports
+`pynvml` lazily only for NVIDIA metric logging, while AMD metric logging uses
+`amdsmi`.
 
 Focused scaffold tests passed with `pytest -p no:cacheprovider
 tests/test_blackcat_core_wheel_stack.py tests/test_render_recipe_scaffolds.py
--q` on 2026-05-01. `tools/amerge build python-accelerate-gfx1151
-python-auto-round-gfx1151 python-nvidia-ml-py-gfx1151
-python-llmcompressor-gfx1151` built `python-accelerate-gfx1151 1.12.0-1`
-first, then stopped because the sandboxed build could not install that newly
-built local package as an AutoRound dependency. Sanitized direct package builds
-then passed for `python-auto-round-gfx1151 0.10.2-1`,
-`python-nvidia-ml-py-gfx1151 13.590.48-1`, and the patched
-`python-llmcompressor-gfx1151 0.10.0.1-4`. The four artifacts were added to
-the repo-local `repo/x86_64` database with `repo-add`, then deployed on the
-host. `pacman -Q` reported `python-accelerate-gfx1151 1.12.0-1`,
-`python-auto-round-gfx1151 0.10.2-1`,
+-q` on 2026-05-01. The initial tooling deploy installed
+`python-accelerate-gfx1151 1.12.0-1`, `python-auto-round-gfx1151 0.10.2-1`,
 `python-nvidia-ml-py-gfx1151 13.590.48-1`, and
-`python-llmcompressor-gfx1151 0.10.0.1-4` on 2026-05-01. Installed smoke
-passed through `python3.14` for direct `accelerate`, `auto_round`, `pynvml`,
-and `llmcompressor` imports, AutoRound preset loading, `AutoRoundModifier`,
+`python-llmcompressor-gfx1151 0.10.0.1-4`; installed smoke passed through
+`python3.14` for direct `accelerate`, `auto_round`, `pynvml`, and
+`llmcompressor` imports, AutoRound preset loading, `AutoRoundModifier`,
 `skip_weights_initialize`, and model-free name matching.
+
+The 2026-05-04 NVML-shim cleanup removes `python-nvidia-ml-py-gfx1151` from
+the package roster and rebuilds `python-llmcompressor-gfx1151 0.10.0.1-5` with
+wheel metadata that no longer requires `nvidia-ml-py`. Package-build evidence
+passed with `tools/amerge build -y python-llmcompressor-gfx1151`;
+deploy/install and installed-smoke gates remain pending for `0.10.0.1-5`.
 
 The Blackcat stable-diffusion.cpp Vulkan engine lane now has package policy
 and rendered scaffolds for `stable-diffusion.cpp-vulkan-gfx1151
@@ -453,10 +448,10 @@ now covers `python-watchfiles-gfx1151`, `python-uvloop-gfx1151`,
 `python-aiohttp-gfx1151`, `python-multidict-gfx1151`,
 `python-yarl-gfx1151`, `python-frozenlist-gfx1151`,
 `python-compressed-tensors-gfx1151`, `python-accelerate-gfx1151`,
-`python-auto-round-gfx1151`, `python-nvidia-ml-py-gfx1151`, and
+`python-auto-round-gfx1151`, and
 `python-llmcompressor-gfx1151`. The refreshed sweep then found three
-actionable PyPI updates in the new tooling families: `accelerate 1.13.0`,
-`auto-round 0.12.3`, and `nvidia-ml-py 13.595.45`. They are tracked in
+actionable PyPI updates in the new tooling families: `accelerate 1.13.0`
+and `auto-round 0.12.3`. They are tracked in
 `docs/maintainers/update-candidates.toml` as separate package update lanes
 because they require source review, rebuild, deploy/install, and installed
 smoke validation before adoption.

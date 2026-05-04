@@ -319,15 +319,6 @@ workflow = "upstream_source_update"
 checks = [
   { id = "pypi", role = "primary", kind = "pypi", package = "auto-round", recorded = "0.10.2", comparison = "pep440" },
 ]
-
-[families.nvidia_ml_py]
-packages = ["python-nvidia-ml-py-gfx1151"]
-priority = "low"
-workflow = "upstream_source_update"
-checks = [
-  { id = "pypi", role = "primary", kind = "pypi", package = "nvidia-ml-py", recorded = "13.590.48", comparison = "pep440" },
-]
-
 [families.llmcompressor]
 packages = ["python-llmcompressor-gfx1151"]
 priority = "medium"

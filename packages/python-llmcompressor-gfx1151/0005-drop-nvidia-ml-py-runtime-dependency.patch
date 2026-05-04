@@ -1,0 +1,16 @@
+diff --git a/setup.py b/setup.py
+index ae5ab2f..0c537b1 100644
+--- a/setup.py
++++ b/setup.py
+@@ -139,11 +139,6 @@ setup(
+             if BUILD_TYPE == "release"
+             else "accelerate>=1.6.0"
+         ),
+-        (
+-            "nvidia-ml-py>=12.560.30,<=13.590.48"
+-            if BUILD_TYPE == "release"
+-            else "nvidia-ml-py>=12.560.30"
+-        ),
+         ("pillow>=10.4.0,<=12.1.1" if BUILD_TYPE == "release" else "pillow>=10.4.0"),
+         (
+             "compressed-tensors==0.14.0.1"
