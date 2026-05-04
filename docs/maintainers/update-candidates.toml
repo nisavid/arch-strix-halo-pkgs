@@ -495,7 +495,6 @@ next_gate_path = "docs/backlog.md"
 next_gate_label = "Blackcat tooling freshness follow-up"
 last_reviewed = "2026-05-01"
 
-
 [candidates."llmcompressor-0.10.0.2-pypi"]
 family = "llmcompressor"
 packages = ["python-llmcompressor-gfx1151"]
