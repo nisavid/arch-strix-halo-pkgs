@@ -405,9 +405,10 @@ the package roster and rebuilds `python-llmcompressor-gfx1151 0.10.0.1-5` with
 wheel metadata that no longer requires `nvidia-ml-py`. Package-build evidence
 passed with `tools/amerge build -y python-llmcompressor-gfx1151`. Deploy/install
 then installed `python-llmcompressor-gfx1151 0.10.0.1-5` from the local repo,
-and installed smoke confirmed `nvidia-ml-py` is absent from llmcompressor
-metadata while `llmcompressor`, `AutoRoundModifier`, and `skip_weights_initialize`
-import from the installed Python lane. The retired `python-nvidia-ml-py-gfx1151`
+and installed smoke confirmed the `nvidia-ml-py` runtime dependency is absent
+from the `python-llmcompressor-gfx1151` wheel metadata while `llmcompressor`,
+`AutoRoundModifier`, and `skip_weights_initialize` import from the installed
+Python lane. The retired `python-nvidia-ml-py-gfx1151`
 package remains explicitly installed on the host with no reverse pacman
 dependencies, so host removal is a separate cleanup step rather than an
 llmcompressor dependency gate.
