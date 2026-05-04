@@ -214,6 +214,26 @@ def test_consumers_prefer_local_core_stack_packages() -> None:
     assert "python-pillow-gfx1151" in packages["python-torchvision-rocm-gfx1151"]["depends"]
 
 
+def test_pytorch_build_metadata_prefers_local_pyyaml_package() -> None:
+    packages = tomllib.loads((REPO_ROOT / "policies/recipe-packages.toml").read_text())[
+        "packages"
+    ]
+    policy = packages["python-pytorch-opt-rocm-gfx1151"]
+    recipe = json.loads(
+        (REPO_ROOT / "packages/python-pytorch-opt-rocm-gfx1151/recipe.json").read_text()
+    )["policy"]
+    pkgbuild = (
+        REPO_ROOT / "packages/python-pytorch-opt-rocm-gfx1151/PKGBUILD"
+    ).read_text()
+
+    assert "python-pyyaml-gfx1151" in policy["depends"]
+    assert "python-pyyaml-gfx1151" in policy["makedepends"]
+    assert "python-yaml" not in policy["makedepends"]
+    assert recipe["makedepends"] == policy["makedepends"]
+    assert "python-pyyaml-gfx1151" in pkgbuild
+    assert "python-yaml" not in pkgbuild
+
+
 def test_blackcat_service_wheel_stack_is_policy_managed() -> None:
     packages = tomllib.loads((REPO_ROOT / "policies/recipe-packages.toml").read_text())[
         "packages"
@@ -351,3 +371,8 @@ def test_blackcat_engine_stack_rendered_output_exists() -> None:
     assert r'patchelf --set-rpath "/usr/lib:${install_root}/lib"' not in pkgbuild
     assert recipe["policy"]["recipe_key"] == "stable_diffusion_cpp"
     assert "Blackcat" in readme
+    assert "recursive git submodules" not in readme
+    assert "prepare-time network submodule fetches" in readme
+    assert "explicit package sources" in readme
+    assert "recursive ggml" not in recipe["policy"]["recipe_notes_override"]
+    assert "explicit package sources" in recipe["policy"]["recipe_notes_override"]
