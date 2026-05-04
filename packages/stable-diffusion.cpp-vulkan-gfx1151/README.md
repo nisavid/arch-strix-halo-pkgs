@@ -25,8 +25,10 @@ The reviewed `b8bdffc..3d6064b` range includes runtime backend discovery,
 VAE buffer lifetime cleanup, image metadata output, and tensor-to-image
 conversion speed work.
 
-The package builds the Vulkan backend with recursive ggml, WebP, and WebM
-submodules. It uses the repo's amdclang/Zen 5 lane, ThinLTO, AOCL-LibM
+The package builds the Vulkan backend with ggml, WebP, WebM, and server frontend
+inputs modeled as explicit package sources and staged into the upstream
+submodule paths during prepare().
+It uses the repo's amdclang/Zen 5 lane, ThinLTO, AOCL-LibM
 linkage, OpenMP CPU fallback, WebP/WebM output support, and release-mode
 Vulkan settings. Runtime payloads live under
 `/opt/stable-diffusion.cpp-vulkan-gfx1151`, with
@@ -41,7 +43,7 @@ unknown tensors.
 ## Scaffold notes
 
 - Blackcat Vulkan engine lane for local image generation; this is an engine package, not a Python wheel.
-- Uses recursive git submodules because upstream's ggml, WebP, WebM, and server frontend inputs are submodules and GitHub tarballs do not include them.
+- Models upstream's ggml, WebP, WebM, and server frontend submodule inputs as explicit package sources, then stages them into the expected submodule paths during prepare(); do not reintroduce prepare-time network submodule fetches.
 - Closest current packaging reference is AUR stable-diffusion.cpp-vulkan-git, but that package is out of date and installs generic command names; keep the local package backend-specific.
 - Keep the SDXL CLIP-G source patch as a package-local patch file until upstream carries an equivalent deterministic prefix rewrite.
 - Use suffixed wrapper names so this package can coexist with other stable-diffusion.cpp backend variants.
