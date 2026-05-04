@@ -87,14 +87,7 @@
     ],
     "method": "pip",
     "notes": "This package supplies the `pynvml` module named by llmcompressor metadata\nwithout depending on NVIDIA driver utilities. llmcompressor's NVIDIA metric\npath imports pynvml lazily and returns an empty usage result when the module or\nNVML library is unavailable, while AMD metric logging uses amdsmi separately.\n\nUse this package only as metadata and import closure for llmcompressor on the\nAMD reference host. A failing NVML initialization on AMD is expected and is not\nevidence that the package is broken.\n",
-    "patches": [
-      {
-        "description": "Replace the recipe's broken venv-local Python cmake wrapper with the real system cmake binary. The cmake pip package installs a Python wrapper that does `from cmake import cmake`, which fails inside pip's build isolation where the cmake Python module is unavailable.\n",
-        "dst": "<build-venv>/.venv/bin/cmake",
-        "src": "/usr/bin/cmake",
-        "type": "file_copy"
-      }
-    ],
+    "patches": [],
     "phase": "H",
     "repo": null,
     "src_dir": null,

@@ -13,7 +13,7 @@
 - Recorded reference packages: `extra/python-aotriton, cachyos-extra-znver4/python-aotriton`
 - Authoritative reference package: `extra/python-aotriton`
 - Advisory reference packages: `cachyos-extra-znver4/python-aotriton`
-- Applied source patch files/actions: `1`
+- Applied source patch files/actions: `0`
 
 ## Recipe notes
 

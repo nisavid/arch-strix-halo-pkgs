@@ -100,14 +100,7 @@
     ],
     "method": "pip",
     "notes": "This package is the httptools output from the shared `native_wheels` recipe\nphase. That phase also builds numpy, sentencepiece, zstandard, asyncpg,\nduckdb, PyYAML, psutil, Pillow, uvloop, msgspec, aiohttp, multidict, yarl,\nand frozenlist from source with Zen 5 optimization flags, but those outputs\nare tracked as separate packages or follow-up package lanes rather than as\ndependencies of `python-httptools-gfx1151`.\n\nhttptools supplies the native HTTP parser used by uvicorn standard service\npaths. The local package follows Arch's system-llhttp shape while moving the\nnative extension onto the local amdclang native-wheel lane.\n",
-    "patches": [
-      {
-        "description": "Replace the recipe's broken venv-local Python cmake wrapper with the real system cmake binary. The cmake pip package installs a Python wrapper that does `from cmake import cmake`, which fails inside pip's build isolation where the cmake Python module is unavailable.\n",
-        "dst": "<build-venv>/.venv/bin/cmake",
-        "src": "/usr/bin/cmake",
-        "type": "file_copy"
-      }
-    ],
+    "patches": [],
     "phase": "H",
     "repo": null,
     "src_dir": null,

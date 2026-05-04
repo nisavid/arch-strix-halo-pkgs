@@ -13,7 +13,7 @@
 - Recorded reference packages: `extra/python-psutil`
 - Authoritative reference package: `extra/python-psutil`
 - Advisory reference packages: `none`
-- Applied source patch files/actions: `1`
+- Applied source patch files/actions: `0`
 
 ## Recipe notes
 

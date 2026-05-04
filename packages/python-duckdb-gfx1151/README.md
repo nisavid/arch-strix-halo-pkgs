@@ -13,7 +13,7 @@
 - Recorded reference packages: `extra/python-duckdb, cachyos-extra-znver4/python-duckdb`
 - Authoritative reference package: `extra/python-duckdb`
 - Advisory reference packages: `cachyos-extra-znver4/python-duckdb`
-- Applied source patch files/actions: `1`
+- Applied source patch files/actions: `0`
 
 ## Recipe notes
 

@@ -90,14 +90,7 @@
     ],
     "method": "pip",
     "notes": "This package supplies AutoRound for llmcompressor's AutoRound modifier. It\nships Python quantization helpers and backend adapters; the current package\nkeeps upstream's wheel shape and points runtime dependencies at the local\ngfx1151 torch, transformers, numpy, and accelerate stack.\n\nThe package uses auto-round 0.10.2 because llmcompressor 0.10.0.1 release\nmetadata accepts auto-round up to 0.10.2. Keep updates tied to the active\nllmcompressor dependency window.\n",
-    "patches": [
-      {
-        "description": "Replace the recipe's broken venv-local Python cmake wrapper with the real system cmake binary. The cmake pip package installs a Python wrapper that does `from cmake import cmake`, which fails inside pip's build isolation where the cmake Python module is unavailable.\n",
-        "dst": "<build-venv>/.venv/bin/cmake",
-        "src": "/usr/bin/cmake",
-        "type": "file_copy"
-      }
-    ],
+    "patches": [],
     "phase": "H",
     "repo": null,
     "src_dir": null,

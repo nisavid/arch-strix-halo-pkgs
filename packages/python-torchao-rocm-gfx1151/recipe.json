@@ -121,14 +121,7 @@
     ],
     "method": "pip",
     "notes": "Builds TorchAO `0.17.0` from the upstream git tag because that release does\nnot publish an sdist on PyPI. This release is the local TorchAO compatibility\nlane for `torch 2.11.0+`.\n\nTorchAO imports `torch` at build time and still hard-codes `gfx942` for ROCm\nextension builds. The local package exports `VERSION_SUFFIX=` to keep the\nwheel on the stable release version, exports `ROCM_HOME=/opt/rocm` so\nPyTorch's extension helpers use the real split-layout ROCm headers, and\npatches `setup.py` so the ROCm target arch follows `PYTORCH_ROCM_ARCH`.\n\nThe staged package was verified locally with:\n- `readelf -d` showing `RUNPATH [$ORIGIN:$ORIGIN/../torch/lib:/opt/rocm/lib]`\n- `ldd -r` resolving cleanly against `/usr/lib/python3.14/site-packages/torch/lib`\n- `PYTHONPATH=<pkgdir>/site-packages python -c 'import torchao'` succeeding\n\nThe reference host has now validated the installed package with a clean\n`import torchao` path, the tiny serialized-checkpoint\n`tools/torchao_vllm_smoke.py` round trip, and the tracked\n`vllm.gemma4.e2b.torchao.online-real-model` scenario. The Gemma 4 online path\nloaded `google/gemma-4-E2B-it` with vLLM `quantization=torchao`, selected\n`ROCM_AITER_UNIFIED_ATTN`, and generated successfully.\n\nThe serialized Gemma 4 real-model path now writes processor files correctly,\nbut remains blocked during vLLM weight loading by TorchAO tensor metadata:\n`AttributeError: 'Tensor' object has no attribute 'tensor_data_names'`.\n\nThe `Stored version is not the same as current default version` warning is\nexpected with TorchAO `0.17.0` when using `Int8WeightOnlyConfig(version=2)`;\nthat version is still required for the serialized safetensors path. The ROCm\ncustom paged-attention fallback warning is vLLM shape-gated and did not appear\nin the Gemma 4 online TorchAO run.\n",
-    "patches": [
-      {
-        "description": "Replace the recipe's broken venv-local Python cmake wrapper with the real system cmake binary. The cmake pip package installs a Python wrapper that does `from cmake import cmake`, which fails inside pip's build isolation where the cmake Python module is unavailable.\n",
-        "dst": "<build-venv>/.venv/bin/cmake",
-        "src": "/usr/bin/cmake",
-        "type": "file_copy"
-      }
-    ],
+    "patches": [],
     "phase": "H",
     "repo": null,
     "src_dir": null,

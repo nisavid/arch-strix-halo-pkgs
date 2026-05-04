@@ -13,7 +13,7 @@
 - Recorded reference packages: `extra/python-msgspec, cachyos-extra-znver4/python-msgspec`
 - Authoritative reference package: `extra/python-msgspec`
 - Advisory reference packages: `cachyos-extra-znver4/python-msgspec`
-- Applied source patch files/actions: `1`
+- Applied source patch files/actions: `0`
 
 ## Recipe notes
 

@@ -112,15 +112,7 @@
     ],
     "method": "cmake",
     "notes": "Pre-compiles Triton attention kernels to HSACO (ahead-of-time),\neliminating JIT compilation at inference time. v2 with Python\nbindings. gfx1151 explicitly targeted via AOTRITON_TARGET_ARCH.",
-    "patches": [
-      {
-        "description": "Remove stray git rebase 'pick' line from CMakeLists.txt. The AOTriton repo occasionally has rebase artifacts that break cmake parsing.\n",
-        "file": "CMakeLists.txt",
-        "marker": "^pick ",
-        "sed_command": "/^pick /d",
-        "type": "sed"
-      }
-    ],
+    "patches": [],
     "phase": "D",
     "repo": "https://github.com/ROCm/aotriton.git",
     "src_dir": "aotriton",

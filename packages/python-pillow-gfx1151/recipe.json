@@ -106,14 +106,7 @@
     ],
     "method": "pip",
     "notes": "This package is the Pillow output from the shared `native_wheels` recipe\nphase. That phase also builds numpy, sentencepiece, zstandard, asyncpg,\nduckdb, PyYAML, psutil, uvloop, httptools, msgspec, aiohttp, multidict,\nyarl, and frozenlist from source with Zen 5 optimization flags, but those\noutputs are tracked as separate packages or follow-up package lanes rather\nthan as dependencies of `python-pillow-gfx1151`.\n\nPillow covers image preprocessing for multimodal model and corpus-enrichment\npaths. The package keeps Arch's image-library dependency shape while moving\nthe native extension onto the local amdclang native-wheel lane.\n",
-    "patches": [
-      {
-        "description": "Replace the recipe's broken venv-local Python cmake wrapper with the real system cmake binary. The cmake pip package installs a Python wrapper that does `from cmake import cmake`, which fails inside pip's build isolation where the cmake Python module is unavailable.\n",
-        "dst": "<build-venv>/.venv/bin/cmake",
-        "src": "/usr/bin/cmake",
-        "type": "file_copy"
-      }
-    ],
+    "patches": [],
     "phase": "H",
     "repo": null,
     "src_dir": null,

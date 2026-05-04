@@ -144,34 +144,7 @@
     ],
     "method": "pip",
     "notes": "Rebuilt from PyTorch's third_party/aiter/ submodule to align CK ABI\nwith the CK headers used by AITER's JIT at runtime.\n\nPREBUILD_KERNELS=0: skip 45-minute full kernel precompilation.\nKernels are JIT-compiled on first use instead.\n\nAfter wheel install, two header patches are applied to the installed\naiter_meta/csrc/include/ files for gfx1151 RDNA 3.5 compatibility.",
-    "patches": [
-      {
-        "description": "Add RDNA 3/3.5 scalar C++ fallbacks for three CDNA-only packed instructions: v_pk_mul_f32 (packed FP32 multiply, gfx940+), v_cvt_pk_fp8_f32 (packed FP8 conversion, gfx942+), and v_cvt_pk_bf8_f32 (packed BF8 conversion, gfx942+). On gfx11xx, these are replaced with scalar multiply/clamp+convert operations guarded by CK_TILE_RDNA3_NO_PK_FP8. Applied to installed site-packages, not source tree (JIT reads installed headers).\n",
-        "file": "aiter_meta/csrc/include/ck_tile/vec_convert.h",
-        "marker": "CK_TILE_RDNA3_NO_PK_FP8",
-        "marker_absent": true,
-        "note": "Content is a heredoc in build-vllm.sh (multi-line C++ with preprocessor guards)",
-        "type": "file_rewrite"
-      },
-      {
-        "description": "Replace DPP row_bcast:15 (0x142) and row_bcast:31 (0x143) with ds_swizzle (warp_swizzle<T, 0x1e0>) on RDNA 3/3.5. DPP broadcast instructions are CDNA-only (gfx9); RDNA uses the ds_swizzle equivalent that maps lane_id & 15 \u2014 functionally identical after intra-row reduction makes all lanes in a row hold the same value. This is the same fix rocprim applies in warp_reduce_dpp.hpp when ROCPRIM_HAS_PERMLANE() is true. Also guards the thread_num==64 path in multithread_reduce with #if !defined(AITER_RDNA_NO_DPP_BCAST) since RDNA wave size is 32, not 64.\n",
-        "file": "aiter_meta/csrc/include/hip_reduce.h",
-        "marker": "AITER_RDNA_NO_DPP_BCAST",
-        "marker_absent": true,
-        "note": "Content is a heredoc in build-vllm.sh (multi-line C++ with preprocessor guards)",
-        "type": "file_rewrite"
-      },
-      {
-        "description": "Cap TILE_SIZE to min(block_size, 128) in both select_2d_config (decode branch) and select_3d_config. Defense-in-depth for hybrid models with large non-power-of-2 block_size (e.g. 576). Without the cap, TILE_SIZE=576 would require 576 * head_size * elem_size bytes of shared memory per K/V tile, blowing the 64 KiB LDS on all AMD GPUs. For standard block_size (64/128) this is a no-op.\n",
-        "file": "aiter/ops/triton/attention/unified_attention.py",
-        "marker": "min(block_size, 128)",
-        "marker_absent": true,
-        "note": "Primary protection comes from vLLM patches 26-27 which route hybrid models away from AITER attention entirely. This cap is defense-in-depth for any code path that reaches the AITER kernel with a non-standard block_size.\n",
-        "sed_command": "s/TILE_SIZE = block_size/TILE_SIZE = min(block_size, 128)/",
-        "status": "testing",
-        "type": "sed"
-      }
-    ],
+    "patches": [],
     "phase": "F",
     "repo": "https://github.com/ROCm/aiter.git",
     "src_dir": "pytorch/third_party/aiter",

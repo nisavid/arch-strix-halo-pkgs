@@ -13,7 +13,7 @@
 - Recorded reference packages: `extra/python-yarl, cachyos-extra-znver4/python-yarl`
 - Authoritative reference package: `extra/python-yarl`
 - Advisory reference packages: `cachyos-extra-znver4/python-yarl`
-- Applied source patch files/actions: `1`
+- Applied source patch files/actions: `0`
 
 ## Recipe notes
 

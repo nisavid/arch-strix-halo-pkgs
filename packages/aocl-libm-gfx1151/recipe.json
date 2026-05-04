@@ -103,38 +103,7 @@
     ],
     "method": "scons",
     "notes": "Zen 5 optimized transcendentals (exp, log, sin, cos, pow) with\nAVX-512 codepaths for native 512-bit execution on Strix Halo.\n\nNOT linked into CPython directly: AOCL-LibM has slightly different\nULP rounding than glibc libm (cbrt(-0.0) -> +0.0, nextafter broken\nfor subnormals), which causes CPython's PGO test_math to fail.\nAvailable at runtime via LD_LIBRARY_PATH for NumPy and PyTorch.",
-    "patches": [
-      {
-        "description": "Remove -muse-unaligned-vector-move flag. This is AOCC-only; TheRock's open-source amdclang doesn't support it. The -famd-opt flag covers equivalent optimizations.\n",
-        "file": "src/SConscript",
-        "marker": "muse-unaligned-vector-move",
-        "sed_command": "s/ccflags.append('-muse-unaligned-vector-move')/pass  # patched: AOCC-only flag removed for amdclang/",
-        "type": "sed"
-      },
-      {
-        "description": "Add -Wno-macro-redefined to suppress CMPLX/CMPLXF macro redefinition warnings. These macros are defined in both AOCL-LibM headers and glibc complex.h.\n",
-        "file": "src/SConscript",
-        "marker": "Wno-macro-redefined",
-        "marker_absent": true,
-        "sed_command": "s/'-Werror'/'-Werror', '-Wno-macro-redefined'/",
-        "type": "sed"
-      },
-      {
-        "description": "Fix linker flags: -ealm_main is AOCC syntax, use -Wl,-e,alm_main for GCC/Clang. Add -fuse-ld=bfd because hand-written AVX assembly uses absolute relocations that lld rejects in shared libraries; GNU ld handles them via dynamic text relocations.\n",
-        "file": "src/SConscript",
-        "marker": "'-ealm_main'",
-        "sed_command": "s|'-ealm_main'|'-Wl,-e,alm_main', '-fuse-ld=bfd'|",
-        "type": "sed"
-      },
-      {
-        "action": "add",
-        "condition": "libalm.so does not contain LOCAL_PREFIX in RPATH",
-        "description": "Add RPATH to libalm.so so it finds libau_cpuid.so (from AOCL-Utils) in the same directory at runtime without needing LD_LIBRARY_PATH.\n",
-        "rpath": "${LOCAL_PREFIX}/lib",
-        "target": "${LOCAL_PREFIX}/lib/libalm.so",
-        "type": "patchelf_rpath"
-      }
-    ],
+    "patches": [],
     "phase": "B",
     "repo": "https://github.com/amd/aocl-libm-ose.git",
     "src_dir": "aocl-libm",

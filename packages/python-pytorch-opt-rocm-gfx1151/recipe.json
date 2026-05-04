@@ -164,73 +164,7 @@
     ],
     "method": "pip",
     "notes": "ROCm fork carries AMD-specific fixes (hipify, Tensile, rocm_smi\nlinkage) not yet upstreamed. The upstream pytorch/pytorch works with\nUSE_ROCM=1 but AMD's CI tests against this fork.\n\nUSE_ROCM_CK_GEMM=ON enables Composable Kernel GEMM for ROCm.",
-    "patches": [
-      {
-        "description": "Set NPY_TARGET_VERSION to numpy 2.0 C-API (0x12). Without this, numpy 2.x headers compile against oldest compatible API (1.20), producing a .so that crashes at import with numpy 2.x installed.\n",
-        "file": "torch/csrc/utils/numpy_stub.h",
-        "marker": "NPY_TARGET_VERSION",
-        "marker_absent": true,
-        "sed_command": "s|#include <numpy/arrayobject.h>|// Target numpy 2.0 C-API (0x12) for ABI compatibility with numpy >= 2.0.\\n#ifndef NPY_TARGET_VERSION\\n#define NPY_TARGET_VERSION 0x00000012\\n#endif\\n\\n#include <numpy/arrayobject.h>|",
-        "type": "sed"
-      },
-      {
-        "description": "Remove the top-level host C++ ABI compatibility override. The ROCm fork also injects -fclang-abi-compat=17 into CMAKE_CXX_FLAGS for Clang >= 18, which can still leave torch host objects mangled for the Clang 17 ABI and trigger unresolved symbols at import time.\n",
-        "file": "CMakeLists.txt",
-        "marker": "append_cxx_flag_if_supported(\"-fclang-abi-compat=17\" CMAKE_CXX_FLAGS)",
-        "sed_command": "s/append_cxx_flag_if_supported(\\\"-fclang-abi-compat=17\\\" CMAKE_CXX_FLAGS)/# Removed: causes ABI mismatch with amdclang 22/",
-        "type": "sed"
-      },
-      {
-        "description": "Remove -fclang-abi-compat=17 from HIPCC flags. PyTorch adds it for compat with newer hip-clang C++20 mangling rules, but it forces HIP device code to use Clang 17 ABI while host code uses amdclang 22 ABI, causing undefined symbol errors.\n",
-        "file": "cmake/Dependencies.cmake",
-        "marker": "fclang-abi-compat=17",
-        "sed_command": "s/[[:space:]]-fclang-abi-compat=17//g",
-        "type": "sed"
-      },
-      {
-        "description": "Add gfx1151 to Composable Kernel GEMM supported architectures. Without this, PyTorch logs \"Attempting to use CK on an unsupported architecture!\" and TunableOp cannot include CK kernels in its autotuning candidates. The gate is a hardcoded vector of arch strings.\n",
-        "file": "aten/src/ATen/Context.cpp",
-        "marker": "gfx1151",
-        "marker_absent": true,
-        "sed_command": "s/\"gfx90a\", \"gfx942\", \"gfx950\"/\"gfx90a\", \"gfx942\", \"gfx950\", \"gfx1151\"/",
-        "type": "sed"
-      },
-      {
-        "description": "Replace HIPGraph.hip entirely. hipify creates a set_conditional_handle() function referencing cudaGraphConditionalHandle (CUDA 12.4+ type with no HIP equivalent). The header doesn't declare it, nothing calls it on ROCm -- dead code that fails to compile. Replaced with minimal stub containing only the namespace declaration.\n",
-        "file": "aten/src/ATen/hip/HIPGraph.hip",
-        "marker": "cudaGraphConditionalHandle",
-        "note": "Content is a heredoc in build-vllm.sh (too complex for YAML inline)",
-        "type": "file_rewrite"
-      },
-      {
-        "action": "set",
-        "description": "Normalize every torch/lib/*.so RPATH inside the PyTorch wheel. cmake can leak the build tree path (e.g. /opt/src/vllm/pytorch/build/lib) into RUNPATH, causing the dynamic linker to mix build-tree and installed wheel libraries. Replacing it with only the local runtime dirs and $ORIGIN keeps torch's shared libraries self-consistent and also makes clang's OpenMP runtime resolvable without LD_LIBRARY_PATH.\n",
-        "rpath": "${LOCAL_PREFIX}/lib:${LOCAL_PREFIX}/lib/llvm/lib:$ORIGIN",
-        "target": "torch/lib/lib*.so",
-        "type": "patchelf_rpath"
-      },
-      {
-        "action": "set",
-        "description": "Normalize the _C extension module RPATH. It has the same build-tree leakage risk as torch/lib/*.so, but also needs $ORIGIN/lib to find sibling torch libraries in the wheel's lib/ subdirectory.\n",
-        "rpath": "${LOCAL_PREFIX}/lib:${LOCAL_PREFIX}/lib/llvm/lib:$ORIGIN/lib",
-        "target": "torch/_C*.so",
-        "type": "patchelf_rpath"
-      },
-      {
-        "condition": "NEEDED does not contain librocm_smi64",
-        "description": "Add librocm_smi64.so to libtorch_hip.so NEEDED list. PyTorch's build system omits it from the link line despite using rsmi_* symbols -- upstream bug that causes \"undefined symbol: rsmi_init\" at runtime.\n",
-        "library": "librocm_smi64.so",
-        "target": "torch/lib/libtorch_hip.so",
-        "type": "patchelf_needed"
-      },
-      {
-        "condition": "NEEDED does not contain an OpenMP runtime",
-        "description": "Add clang's OpenMP runtime to the torch._C extension when the wheel omits it. This ensures libomp/libiomp5 is loaded at import time without mutating libtorch_cpu.so itself, avoiding the original \"__kmpc_fork_call\" failure while keeping torch's internal library dependency graph unchanged.\n",
-        "library": "libomp.so or libiomp5.so from ${LOCAL_PREFIX}/lib{,/llvm/lib}",
-        "target": "torch/_C*.so",
-        "type": "patchelf_needed"
-      }
-    ],
+    "patches": [],
     "phase": "C",
     "repo": "https://github.com/ROCm/pytorch.git",
     "src_dir": "pytorch",

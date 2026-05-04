@@ -169,9 +169,10 @@ def test_native_wheel_renderer_applies_source_patches_and_build_config_settings(
     assert "python -m build --wheel --no-isolation --skip-dependency-check \\\n" in pkgbuild
     assert "    -Csetup-args=-Dblas=openblas \\\n" in pkgbuild
     assert "    -Csetup-args=-Dlapack=openblas\n" in pkgbuild
-    assert "s/-famd-opt//g" not in pkgbuild
+    assert "s/-famd-opt//g" in pkgbuild
     assert 'local _base_cflags="${CFLAGS:-}"' in pkgbuild
     assert 'export CFLAGS="${_base_cflags:+${_base_cflags} }${_wheel_flags}"' in pkgbuild
+    assert 'export CXXFLAGS="${_base_cxxflags:+${_base_cxxflags} }${_wheel_flags}"' in pkgbuild
     assert 'export LDFLAGS="${_base_ldflags:+${_base_ldflags} }-famd-opt"' in pkgbuild
     assert "\n  export SAMPLE_MODE=release\n  export SAMPLE_VERSION=1.2.3\n" in pkgbuild
 
@@ -536,8 +537,9 @@ def test_torchao_renderer_preserves_source_build_shape() -> None:
     assert "ROCM_HOME=/opt/rocm" in pkgbuild
     assert "PYTORCH_ROCM_ARCH=gfx1151" in pkgbuild
     assert "VERSION_SUFFIX=" in pkgbuild
-    assert "s/-famd-opt//g" not in pkgbuild
+    assert "s/-famd-opt//g" in pkgbuild
     assert 'export CXXFLAGS="${_base_cxxflags:+${_base_cxxflags} }${_wheel_flags}"' in pkgbuild
+    assert 'export LDFLAGS="${_base_ldflags:+${_base_ldflags} }-famd-opt"' in pkgbuild
     assert "patchelf --set-rpath" in pkgbuild
     assert "$ORIGIN/../torch/lib" in pkgbuild
 
@@ -698,17 +700,56 @@ def test_render_recipe_json_keeps_source_patches_in_one_place() -> None:
     assert "extra_sha256sums" not in recipe_json["policy"]
 
 
+def test_render_recipe_json_suppresses_unrendered_native_wheel_recipe_patches() -> None:
+    recipe_json = json.loads(
+        render_recipe_scaffolds.render_recipe_json(
+            "sample-native-gfx1151",
+            {
+                "recipe_key": "sample",
+                "template": "native-wheel-pypi",
+                "upstream_version": "1.2.3",
+                "pkgdesc": "Sample",
+                "url": "https://example.invalid/sample",
+                "license": ["MIT"],
+            },
+            {
+                "repo": "",
+                "method": "pip",
+                "phase": "package",
+                "steps": [],
+                "depends_on": [],
+                "notes": "",
+                "patches": [
+                    {
+                        "type": "file_copy",
+                        "dst": "${VLLM_DIR}/.venv/bin/cmake",
+                        "src": "system cmake binary",
+                    }
+                ],
+            },
+            "1.2.3",
+            {
+                "recipe_repo": "https://github.com/paudley/ai-notes",
+                "recipe_subdir": "strix-halo",
+                "recipe_author": "Blackcat Informatics Inc.",
+            },
+        )
+    )
+
+    assert recipe_json["recipe"]["patches"] == []
+
+
 def test_render_recipe_json_rewrites_stale_recipe_patch_paths() -> None:
     recipe_json = json.loads(
         render_recipe_scaffolds.render_recipe_json(
             "sample-gfx1151",
             {
                 "recipe_key": "sample",
+                "template": "python-project-triton-rocm",
                 "upstream_version": "1.2.3",
                 "pkgdesc": "Sample",
                 "url": "https://example.invalid/sample",
                 "license": ["MIT"],
-                "source_patches": ["0001-local.patch"],
                 "recipe_patch_file_rewrites": {
                     "patches/upstream-name.patch": "0001-local.patch",
                 },
