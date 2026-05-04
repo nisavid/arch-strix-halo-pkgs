@@ -5,7 +5,7 @@
 - Recipe package key: `native_wheels`
 - Scaffold template: `native-wheel-pypi`
 - Recipe build method: `pip`
-- Upstream repo: `https://pillow.readthedocs.io`
+- Upstream repo: `https://github.com/python-pillow/Pillow`
 - Package version: `12.2.0`
 - Recipe revision: `a1d7a68 (20260427, 16 patch commits)`
 - Recipe steps: `32`

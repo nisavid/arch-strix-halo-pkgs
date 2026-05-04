@@ -591,7 +591,7 @@ recipe_key = "native_wheels"
 template = "native-wheel-pypi"
 upstream_version = "2.4.4"
 pkgdesc = "Scientific tools for Python rebuilt for Strix Halo gfx1151"
-url = "https://www.numpy.org/"
+url = "https://github.com/numpy/numpy"
 license = ["custom"]
 arch_reference = ["extra/python-numpy", "cachyos-extra-znver4/python-numpy"]
 authoritative_reference = "extra/python-numpy"
@@ -613,6 +613,7 @@ makedepends = ["meson", "ninja", "patchelf", "python-build", "python-installer",
 optdepends = []
 build_config_settings = ["setup-args=-Dblas=openblas", "setup-args=-Dlapack=openblas", "setup-args=-Dallow-noblas=false"]
 pypi_name = "numpy"
+sha256sums = ["2d390634c5182175533585cc89f3608a4682ccb173cc9bb940b2881c8d6f8fa0"]
 src_subdir = "numpy-2.4.4"
 patches_dir = "patches/python-numpy-gfx1151"
 recipe_notes_override = """
@@ -910,7 +911,9 @@ depends = ["gcc-libs", "glibc", "python-gfx1151"]
 makedepends = ["cmake", "ninja", "python-build", "python-installer", "python-wheel", "rocm-llvm-gfx1151"]
 optdepends = ["python-protobuf"]
 source_patches = ["0001-bundle-sentencepiece-by-default.patch"]
+extra_sha256sums = ["04b134d04727093b49455d44126988d104ea7019bbe6c72b7e2f8ddeb3686bb1"]
 pypi_name = "sentencepiece"
+sha256sums = ["8138cec27c2f2282f4a34d9a016e3374cd40e5c6e9cb335063db66a0a3b71fad"]
 src_subdir = "sentencepiece-0.2.1"
 patches_dir = "patches/python-sentencepiece-gfx1151"
 scaffold_notes = [
@@ -1171,7 +1174,7 @@ recipe_key = "native_wheels"
 template = "native-wheel-pypi"
 upstream_version = "12.2.0"
 pkgdesc = "Python Imaging Library fork rebuilt for Strix Halo gfx1151"
-url = "https://pillow.readthedocs.io"
+url = "https://github.com/python-pillow/Pillow"
 license = ["MIT-CMU"]
 arch_reference = ["extra/python-pillow"]
 authoritative_reference = "extra/python-pillow"
@@ -1288,16 +1291,13 @@ source_patches = ["0001-use-system-libuv.patch"]
 extra_sha256sums = ["e604aa28d65559b07b842e403105bfce6087162671df4b8680220f25883c29a6"]
 patches_dir = "packages/python-uvloop-gfx1151"
 recipe_notes_override = """
-This package is the uvloop output from the shared `native_wheels` recipe
-phase. That phase also builds numpy, sentencepiece, zstandard, asyncpg,
-duckdb, PyYAML, psutil, Pillow, httptools, msgspec, aiohttp, multidict,
-yarl, and frozenlist from source with Zen 5 optimization flags, but those
-outputs are tracked as separate packages or follow-up package lanes rather
-than as dependencies of `python-uvloop-gfx1151`.
-
 uvloop supplies the libuv-backed asyncio event loop used by vLLM/FastAPI
 service paths. The local package follows Arch's system-libuv shape while
 moving the native extension onto the local amdclang native-wheel lane.
+
+Keep this README focused on uvloop's direct package surface: `cpython` as the
+recipe input, system `libuv` linkage, and the package-local source patch that
+selects system libuv by default.
 """
 scaffold_notes = [
   "Part of the comprehensive Blackcat service/runtime wheel stack and consumed by the local vLLM package.",
@@ -1530,7 +1530,7 @@ recipe_key = "native_wheels"
 template = "native-wheel-pypi"
 upstream_version = "3.13.5"
 pkgdesc = "HTTP client/server for asyncio rebuilt for Strix Halo gfx1151"
-url = "https://aiohttp.readthedocs.io"
+url = "https://github.com/aio-libs/aiohttp"
 license = ["Apache-2.0"]
 arch_reference = ["extra/python-aiohttp"]
 authoritative_reference = "extra/python-aiohttp"
@@ -1722,7 +1722,7 @@ recipe_key = "native_wheels"
 template = "native-wheel-pypi"
 upstream_version = "13.590.48"
 pkgdesc = "Python NVML bindings packaged without pulling NVIDIA driver utilities"
-url = "https://forums.developer.nvidia.com"
+url = "https://pypi.org/project/nvidia-ml-py/"
 license = ["BSD"]
 arch_reference = ["extra/python-nvidia-ml-py"]
 authoritative_reference = "none"

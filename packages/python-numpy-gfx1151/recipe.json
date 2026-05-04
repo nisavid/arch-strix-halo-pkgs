@@ -71,6 +71,9 @@
       "The recipe's key fix here is the meson/clang flag rewrite: convert driver-level -mllvm flags to -Xclang pairs and move -famd-opt to LDFLAGS.",
       "Pins Meson BLAS and LAPACK to OpenBLAS so upstream NumPy does not auto-detect and link Intel oneMKL on mixed-provider hosts."
     ],
+    "sha256sums": [
+      "2d390634c5182175533585cc89f3608a4682ccb173cc9bb940b2881c8d6f8fa0"
+    ],
     "src_subdir": "numpy-2.4.4",
     "template": "native-wheel-pypi",
     "update_notes": [
@@ -79,7 +82,7 @@
       "If future recipe changes add real source patches, keep them as patch files instead of further growing shell flag transforms."
     ],
     "upstream_version": "2.4.4",
-    "url": "https://www.numpy.org/"
+    "url": "https://github.com/numpy/numpy"
   },
   "provenance": {
     "output_root": "packages",

@@ -17,16 +17,13 @@
 
 ## Recipe notes
 
-This package is the uvloop output from the shared `native_wheels` recipe
-phase. That phase also builds numpy, sentencepiece, zstandard, asyncpg,
-duckdb, PyYAML, psutil, Pillow, httptools, msgspec, aiohttp, multidict,
-yarl, and frozenlist from source with Zen 5 optimization flags, but those
-outputs are tracked as separate packages or follow-up package lanes rather
-than as dependencies of `python-uvloop-gfx1151`.
-
 uvloop supplies the libuv-backed asyncio event loop used by vLLM/FastAPI
 service paths. The local package follows Arch's system-libuv shape while
 moving the native extension onto the local amdclang native-wheel lane.
+
+Keep this README focused on uvloop's direct package surface: `cpython` as the
+recipe input, system `libuv` linkage, and the package-local source patch that
+selects system libuv by default.
 
 
 ## Scaffold notes

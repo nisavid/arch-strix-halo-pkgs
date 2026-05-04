@@ -9,6 +9,9 @@
       "Uses the closest maintained Cachy baseline but applies the recipe's system-cmake packaging translation instead of relying on a pip-installed cmake wrapper.",
       "Stays on a source-build path even though a git variant exists, because the release package is the primary maintenance lane."
     ],
+    "source_patch_sha256sums": [
+      "04b134d04727093b49455d44126988d104ea7019bbe6c72b7e2f8ddeb3686bb1"
+    ],
     "source_patches": [
       "0001-bundle-sentencepiece-by-default.patch"
     ],
@@ -70,6 +73,9 @@
       "The current CachyOS python-sentencepiece package is the closest maintained baseline, while the AUR python-sentencepiece and python-sentencepiece-git packages remain advisory references for patching and split-package expectations.",
       "The original recipe fixes a broken pip-installed cmake wrapper inside the venv. In Arch packaging that should translate to using the system cmake toolchain directly.",
       "The bundled-build patch prefers the bundled SentencePiece library by default and only uses the system pkg-config sentencepiece path when SENTENCEPIECE_USE_SYSTEM=1 is explicitly set."
+    ],
+    "sha256sums": [
+      "8138cec27c2f2282f4a34d9a016e3374cd40e5c6e9cb335063db66a0a3b71fad"
     ],
     "src_subdir": "sentencepiece-0.2.1",
     "template": "native-wheel-pypi",

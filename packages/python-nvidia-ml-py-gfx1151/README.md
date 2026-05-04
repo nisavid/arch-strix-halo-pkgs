@@ -5,7 +5,7 @@
 - Recipe package key: `native_wheels`
 - Scaffold template: `native-wheel-pypi`
 - Recipe build method: `pip`
-- Upstream repo: `https://forums.developer.nvidia.com`
+- Upstream repo: `https://pypi.org/project/nvidia-ml-py/`
 - Package version: `13.590.48`
 - Recipe revision: `a1d7a68 (20260427, 16 patch commits)`
 - Recipe steps: `32`

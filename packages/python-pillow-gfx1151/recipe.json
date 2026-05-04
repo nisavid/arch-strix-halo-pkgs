@@ -86,7 +86,7 @@
       "After publishing a rebuilt package, verify `from PIL import Image` and a tiny in-memory image round trip through the installed local Python lane."
     ],
     "upstream_version": "12.2.0",
-    "url": "https://pillow.readthedocs.io"
+    "url": "https://github.com/python-pillow/Pillow"
   },
   "provenance": {
     "output_root": "packages",
