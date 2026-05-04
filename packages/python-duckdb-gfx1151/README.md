@@ -5,9 +5,9 @@
 - Recipe package key: `native_wheels`
 - Scaffold template: `native-wheel-pypi`
 - Recipe build method: `pip`
-- Upstream repo: `https://duckdb.org/`
+- Upstream repo: `https://github.com/duckdb/duckdb`
 - Package version: `1.5.2`
-- Recipe revision: `a1d7a68 (20260427, 16 patch commits)`
+- Recipe revision: `a1d7a68 (20260427, 16 commits touching recipe path)`
 - Recipe steps: `32`
 - Recipe dependencies: `cpython, pytorch`
 - Recorded reference packages: `extra/python-duckdb, cachyos-extra-znver4/python-duckdb`

@@ -19,7 +19,7 @@ provides=(aocl-utils)
 conflicts=(aocl-utils)
 replaces=()
 source=(https://github.com/amd/aocl-utils/archive/refs/tags/5.2.2.tar.gz)
-sha256sums=(SKIP)
+sha256sums=(e84c242772ff433f0264adeaf280bf25e52c61c9508eb61f7d338c5afb1faeb3)
 
 build() {
   cd "$srcdir/aocl-utils-5.2.2"

@@ -60,6 +60,9 @@
     "scaffold_notes": [
       "Treat this like the recipe's native wheel class so the same clang flag rewrite is available if the backend performs compiler probes."
     ],
+    "sha256sums": [
+      "7713e1179d162cf5c7906da876ec2ccb9c3a9dcbdffef0cc7f70c3667a205f0b"
+    ],
     "src_subdir": "zstandard-0.25.0",
     "template": "native-wheel-pypi",
     "update_notes": [

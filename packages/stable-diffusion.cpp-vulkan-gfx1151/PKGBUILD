@@ -18,14 +18,18 @@ options=()
 provides=(stable-diffusion.cpp-vulkan-gfx1151 stable-diffusion.cpp-vulkan)
 conflicts=(stable-diffusion.cpp-vulkan)
 replaces=()
-source=('stable-diffusion.cpp::git+https://github.com/leejet/stable-diffusion.cpp.git#commit=3d6064b37ef4607917f8acf2ca8c8906d5087413' 0001-sdxl-clipg-prefix-mapping.patch)
-sha256sums=(SKIP ef8e1abd394f164998126a629003ed6c3578458a57c94ee420440caa051f128a)
+source=('stable-diffusion.cpp::git+https://github.com/leejet/stable-diffusion.cpp.git#commit=3d6064b37ef4607917f8acf2ca8c8906d5087413' 'ggml::git+https://github.com/ggml-org/ggml.git#commit=404fcb9d7c96989569e68c9e7881ee3465a05c50' 'sdcpp-webui::git+https://github.com/leejet/sdcpp-webui.git#commit=797ccf80825cc035508ba9b599b2a21953e7f835' 'libwebm::git+https://github.com/webmproject/libwebm.git#commit=5bf12267eea773a32fcf4949de52b0add158a8d5' 'libwebp::git+https://github.com/webmproject/libwebp.git#commit=0c9546f7efc61eac7f79ae115c3f99c91c21c443' 0001-sdxl-clipg-prefix-mapping.patch)
+sha256sums=(SKIP SKIP SKIP SKIP SKIP ef8e1abd394f164998126a629003ed6c3578458a57c94ee420440caa051f128a)
 
 prepare() {
   cd "$srcdir/stable-diffusion.cpp"
 
-  git submodule sync --recursive
-  git submodule update --init --recursive
+  rm -rf ggml examples/server/frontend thirdparty/libwebm thirdparty/libwebp
+  mkdir -p examples/server thirdparty
+  cp -a "$srcdir/ggml" ggml
+  cp -a "$srcdir/sdcpp-webui" examples/server/frontend
+  cp -a "$srcdir/libwebm" thirdparty/libwebm
+  cp -a "$srcdir/libwebp" thirdparty/libwebp
   if ! patch --dry-run -R -Np1 -i "$srcdir/0001-sdxl-clipg-prefix-mapping.patch" >/dev/null 2>&1; then
     patch -Np1 -i "$srcdir/0001-sdxl-clipg-prefix-mapping.patch"
   fi

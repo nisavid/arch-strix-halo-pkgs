@@ -19,7 +19,7 @@ provides=(python-asyncpg)
 conflicts=(python-asyncpg)
 replaces=()
 source=(https://files.pythonhosted.org/packages/source/a/asyncpg/asyncpg-0.31.0.tar.gz)
-sha256sums=(SKIP)
+sha256sums=(c989386c83940bfbd787180f2b1519415e2d3d6277a70d9d0f0145ac73500735)
 
 build() {
   cd "$srcdir/asyncpg-0.31.0"
@@ -51,7 +51,7 @@ build() {
   _setup_compiler_env
   local _base_flags="-O3 -march=native -mprefer-vector-width=512 -mavx512f -mavx512dq -mavx512vl -mavx512bw -mllvm -enable-gvn-hoist -mllvm -enable-gvn-sink -famd-opt -Wno-error=unused-command-line-argument"
   local _wheel_flags
-  _wheel_flags="$(printf '%s' "${_base_flags}" | sed -E 's/-mllvm (-[^ ]+)/-Xclang -mllvm -Xclang \1/g; s/-famd-opt//g; s/  +/ /g; s/^ +| +$//g')"
+  _wheel_flags="$(printf '%s' "${_base_flags}" | sed -E 's/-mllvm (-[^ ]+)/-Xclang -mllvm -Xclang \1/g; s/  +/ /g; s/^ +| +$//g')"
   local _base_cflags="${CFLAGS:-}"
   local _base_cxxflags="${CXXFLAGS:-}"
   local _base_ldflags="${LDFLAGS:-}"

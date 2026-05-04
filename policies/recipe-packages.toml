@@ -31,6 +31,7 @@ options = ["staticlibs", "!lto"]
 compiler_dep = "rocm-llvm-gfx1151"
 source_type = "tarball"
 source_url = "https://github.com/amd/aocl-utils/archive/refs/tags/5.2.2.tar.gz"
+sha256sums = ["e84c242772ff433f0264adeaf280bf25e52c61c9508eb61f7d338c5afb1faeb3"]
 src_subdir = "aocl-utils-5.2.2"
 install_prefix = "/usr"
 patches_dir = "patches/aocl-utils-gfx1151"
@@ -115,6 +116,7 @@ optdepends = [
 compiler_dep = "rocm-llvm-gfx1151"
 source_type = "tarball"
 source_url = "https://www.python.org/ftp/python/3.14.4/Python-3.14.4.tar.xz"
+sha256sums = ["d923c51303e38e249136fc1bdf3568d56ecb03214efdef48516176d3d7faaef8"]
 src_subdir = "Python-3.14.4"
 install_prefix = "/usr"
 patches_dir = "patches/python-gfx1151"
@@ -196,6 +198,7 @@ makedepends = ["cmake", "ninja", "python-installer", "python-pip", "python-setup
 options = ["!lto"]
 source_type = "tarball"
 source_url = "https://github.com/vllm-project/vllm/archive/refs/tags/v0.20.1.tar.gz"
+sha256sums = ["872f44c9f21f59639da534ad94b5ad14d461e95bea3d20fbfac5c8fab221742f"]
 extra_sources = ["0016-rocm-refresh-local-carry-for-vllm-0.20.1.patch"]
 extra_sha256sums = ["SKIP"]
 source_patches = ["0016-rocm-refresh-local-carry-for-vllm-0.20.1.patch"]
@@ -353,7 +356,7 @@ makedepends = [
   "python-setuptools",
   "python-six",
   "python-triton-gfx1151",
-  "python-pyyaml-gfx1151",
+  "python-yaml",
   "patchelf",
   "rocm-llvm-gfx1151",
   "unzip"
@@ -661,6 +664,7 @@ conflicts = ["python-orjson"]
 depends = ["glibc", "libgcc", "python-gfx1151"]
 makedepends = ["cargo", "python-build", "python-installer", "python-maturin", "python-wheel", "rocm-llvm-gfx1151", "rust"]
 pypi_name = "orjson"
+sha256sums = ["96163d9cdc5a202703e9ad1b9ae757d5f0ca62f4fa0cc93d1f27b0e180cc404e"]
 src_subdir = "orjson-3.11.8"
 patches_dir = "patches/python-orjson-gfx1151"
 source_patches = ["0001-cold-path-feature-check-uses-rustc-capability.patch"]
@@ -967,6 +971,7 @@ depends = ["glibc", "python-gfx1151"]
 makedepends = ["python-build", "python-installer", "python-wheel", "rocm-llvm-gfx1151"]
 optdepends = ["python-cffi"]
 pypi_name = "zstandard"
+sha256sums = ["7713e1179d162cf5c7906da876ec2ccb9c3a9dcbdffef0cc7f70c3667a205f0b"]
 src_subdir = "zstandard-0.25.0"
 patches_dir = "patches/python-zstandard-gfx1151"
 recipe_notes_override = """
@@ -1010,6 +1015,7 @@ conflicts = ["python-asyncpg"]
 depends = ["glibc", "python-gfx1151"]
 makedepends = ["cython", "python-build", "python-installer", "python-setuptools", "python-wheel", "rocm-llvm-gfx1151"]
 pypi_name = "asyncpg"
+sha256sums = ["c989386c83940bfbd787180f2b1519415e2d3d6277a70d9d0f0145ac73500735"]
 src_subdir = "asyncpg-0.31.0"
 patches_dir = "patches/python-asyncpg-gfx1151"
 recipe_notes_override = """
@@ -1032,7 +1038,7 @@ recipe_key = "native_wheels"
 template = "native-wheel-pypi"
 upstream_version = "1.5.2"
 pkgdesc = "Analytical in-process SQL database Python API rebuilt for Strix Halo gfx1151"
-url = "https://duckdb.org/"
+url = "https://github.com/duckdb/duckdb"
 license = ["MIT"]
 arch_reference = ["extra/python-duckdb", "cachyos-extra-znver4/python-duckdb"]
 authoritative_reference = "extra/python-duckdb"
@@ -1061,6 +1067,7 @@ optdepends = [
   "python-arrow-adbc: used for the ADBC driver"
 ]
 pypi_name = "duckdb"
+sha256sums = ["638da0d5102b6cb6f7d47f83d0600708ac1d3cb46c5e9aaabc845f9ba4d69246"]
 src_subdir = "duckdb-1.5.2"
 patches_dir = "patches/python-duckdb-gfx1151"
 recipe_notes_override = """
@@ -1286,7 +1293,7 @@ depends = ["glibc", "libuv", "python-gfx1151"]
 makedepends = ["cython", "python-build", "python-installer", "python-setuptools", "python-wheel", "rocm-llvm-gfx1151"]
 pypi_name = "uvloop"
 sha256sums = ["6c84bae345b9147082b17371e3dd5d42775bddce91f885499017f4607fdaf39f"]
-src_subdir = "uvloop-0.22.1"
+src_subdir = "uvloop-${pkgver}"
 source_patches = ["0001-use-system-libuv.patch"]
 extra_sha256sums = ["e604aa28d65559b07b842e403105bfce6087162671df4b8680220f25883c29a6"]
 patches_dir = "packages/python-uvloop-gfx1151"
@@ -1562,9 +1569,10 @@ recipe_notes_override = """
 This package is the aiohttp output from the shared `native_wheels` recipe
 phase. That phase also builds numpy, sentencepiece, zstandard, asyncpg,
 duckdb, PyYAML, psutil, Pillow, uvloop, httptools, msgspec, multidict, yarl,
-and frozenlist from source with Zen 5 optimization flags, but those outputs
-are tracked as separate packages or follow-up package lanes rather than as
-dependencies of `python-aiohttp-gfx1151`.
+and frozenlist from source with Zen 5 optimization flags. `multidict`, `yarl`,
+and `frozenlist` are direct local dependencies of this package; the remaining
+outputs are tracked as separate packages or follow-up package lanes rather than
+as dependencies of `python-aiohttp-gfx1151`.
 
 aiohttp supplies async HTTP client/server helpers used by service paths. The
 local package follows Arch's system-dependency shape with
@@ -2157,7 +2165,14 @@ upstream_revision = "3d6064b37ef4607917f8acf2ca8c8906d5087413"
 baseline_kind = "closest-upstream"
 patches_dir = "packages/stable-diffusion.cpp-vulkan-gfx1151"
 source_patches = ["0001-sdxl-clipg-prefix-mapping.patch"]
-extra_sha256sums = ["ef8e1abd394f164998126a629003ed6c3578458a57c94ee420440caa051f128a"]
+extra_sources = [
+  "ggml::git+https://github.com/ggml-org/ggml.git#commit=404fcb9d7c96989569e68c9e7881ee3465a05c50",
+  "sdcpp-webui::git+https://github.com/leejet/sdcpp-webui.git#commit=797ccf80825cc035508ba9b599b2a21953e7f835",
+  "libwebm::git+https://github.com/webmproject/libwebm.git#commit=5bf12267eea773a32fcf4949de52b0add158a8d5",
+  "libwebp::git+https://github.com/webmproject/libwebp.git#commit=0c9546f7efc61eac7f79ae115c3f99c91c21c443",
+  "0001-sdxl-clipg-prefix-mapping.patch"
+]
+extra_sha256sums = ["SKIP", "SKIP", "SKIP", "SKIP", "ef8e1abd394f164998126a629003ed6c3578458a57c94ee420440caa051f128a"]
 recipe_patch_file_rewrites."patches/sdcpp-sdxl-clipg-prefix.patch" = "0001-sdxl-clipg-prefix-mapping.patch"
 scaffold_notes = [
   "Blackcat Vulkan engine lane for local image generation; this is an engine package, not a Python wheel.",

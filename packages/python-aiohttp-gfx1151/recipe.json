@@ -68,7 +68,7 @@
     ],
     "pypi_name": "aiohttp",
     "recipe_key": "native_wheels",
-    "recipe_notes_override": "This package is the aiohttp output from the shared `native_wheels` recipe\nphase. That phase also builds numpy, sentencepiece, zstandard, asyncpg,\nduckdb, PyYAML, psutil, Pillow, uvloop, httptools, msgspec, multidict, yarl,\nand frozenlist from source with Zen 5 optimization flags, but those outputs\nare tracked as separate packages or follow-up package lanes rather than as\ndependencies of `python-aiohttp-gfx1151`.\n\naiohttp supplies async HTTP client/server helpers used by service paths. The\nlocal package follows Arch's system-dependency shape with\nAIOHTTP_USE_SYSTEM_DEPS=1 while moving its native extensions onto the local\namdclang native-wheel lane.\n",
+    "recipe_notes_override": "This package is the aiohttp output from the shared `native_wheels` recipe\nphase. That phase also builds numpy, sentencepiece, zstandard, asyncpg,\nduckdb, PyYAML, psutil, Pillow, uvloop, httptools, msgspec, multidict, yarl,\nand frozenlist from source with Zen 5 optimization flags. `multidict`, `yarl`,\nand `frozenlist` are direct local dependencies of this package; the remaining\noutputs are tracked as separate packages or follow-up package lanes rather than\nas dependencies of `python-aiohttp-gfx1151`.\n\naiohttp supplies async HTTP client/server helpers used by service paths. The\nlocal package follows Arch's system-dependency shape with\nAIOHTTP_USE_SYSTEM_DEPS=1 while moving its native extensions onto the local\namdclang native-wheel lane.\n",
     "scaffold_notes": [
       "Part of the comprehensive Blackcat service/runtime wheel stack and consumed by the local vLLM package.",
       "Keep dependencies pointed at the local frozenlist, multidict, and yarl packages so the aiohttp closure stays on the repo-owned optimized stack."
@@ -103,7 +103,7 @@
       "pytorch"
     ],
     "method": "pip",
-    "notes": "This package is the aiohttp output from the shared `native_wheels` recipe\nphase. That phase also builds numpy, sentencepiece, zstandard, asyncpg,\nduckdb, PyYAML, psutil, Pillow, uvloop, httptools, msgspec, multidict, yarl,\nand frozenlist from source with Zen 5 optimization flags, but those outputs\nare tracked as separate packages or follow-up package lanes rather than as\ndependencies of `python-aiohttp-gfx1151`.\n\naiohttp supplies async HTTP client/server helpers used by service paths. The\nlocal package follows Arch's system-dependency shape with\nAIOHTTP_USE_SYSTEM_DEPS=1 while moving its native extensions onto the local\namdclang native-wheel lane.\n",
+    "notes": "This package is the aiohttp output from the shared `native_wheels` recipe\nphase. That phase also builds numpy, sentencepiece, zstandard, asyncpg,\nduckdb, PyYAML, psutil, Pillow, uvloop, httptools, msgspec, multidict, yarl,\nand frozenlist from source with Zen 5 optimization flags. `multidict`, `yarl`,\nand `frozenlist` are direct local dependencies of this package; the remaining\noutputs are tracked as separate packages or follow-up package lanes rather than\nas dependencies of `python-aiohttp-gfx1151`.\n\naiohttp supplies async HTTP client/server helpers used by service paths. The\nlocal package follows Arch's system-dependency shape with\nAIOHTTP_USE_SYSTEM_DEPS=1 while moving its native extensions onto the local\namdclang native-wheel lane.\n",
     "patches": [],
     "phase": "H",
     "repo": null,

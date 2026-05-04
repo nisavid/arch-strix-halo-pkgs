@@ -7,7 +7,7 @@
 - Recipe build method: `cmake`
 - Upstream repo: `https://github.com/amd/aocl-utils.git`
 - Package version: `5.2.2`
-- Recipe revision: `a1d7a68 (20260427, 16 patch commits)`
+- Recipe revision: `a1d7a68 (20260427, 16 commits touching recipe path)`
 - Recipe steps: `6`
 - Recipe dependencies: `therock`
 - Recorded reference packages: `aur/aocl-utils, aur/aocl-utils-aocc`

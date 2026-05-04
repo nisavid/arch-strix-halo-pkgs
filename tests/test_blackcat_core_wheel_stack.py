@@ -327,7 +327,11 @@ def test_blackcat_engine_stack_rendered_output_exists() -> None:
 
     assert f"pkgname={package_name}" in pkgbuild
     assert "pkgver=r593.g3d6064b" in pkgbuild
-    assert "git submodule update --init --recursive" in pkgbuild
+    assert "git submodule update --init --recursive" not in pkgbuild
+    assert "ggml::git+https://github.com/ggml-org/ggml.git" in pkgbuild
+    assert "sdcpp-webui::git+https://github.com/leejet/sdcpp-webui.git" in pkgbuild
+    assert 'cp -a "$srcdir/ggml" ggml' in pkgbuild
+    assert 'cp -a "$srcdir/sdcpp-webui" examples/server/frontend' in pkgbuild
     assert "0001-sdxl-clipg-prefix-mapping.patch" in pkgbuild
     assert "-DSD_VULKAN=ON" in pkgbuild
     assert "-DGGML_VULKAN_VALIDATE=OFF" in pkgbuild

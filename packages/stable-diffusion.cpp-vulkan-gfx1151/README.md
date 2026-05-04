@@ -7,7 +7,7 @@
 - Recipe build method: `cmake`
 - Upstream repo: `https://github.com/leejet/stable-diffusion.cpp.git`
 - Package version: `r593.g3d6064b`
-- Recipe revision: `a1d7a68 (20260427, 16 patch commits)`
+- Recipe revision: `a1d7a68 (20260427, 16 commits touching recipe path)`
 - Recipe steps: `35, 37`
 - Recipe dependencies: `therock`
 - Recorded reference packages: `aur/stable-diffusion.cpp-vulkan-git, aur/stable-diffusion.cpp-git`

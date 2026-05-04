@@ -7,7 +7,7 @@
 - Recipe build method: `pip`
 - Upstream repo: `https://pypi.org/project/nvidia-ml-py/`
 - Package version: `13.590.48`
-- Recipe revision: `a1d7a68 (20260427, 16 patch commits)`
+- Recipe revision: `a1d7a68 (20260427, 16 commits touching recipe path)`
 - Recipe steps: `32`
 - Recipe dependencies: `cpython, pytorch`
 - Recorded reference packages: `extra/python-nvidia-ml-py`

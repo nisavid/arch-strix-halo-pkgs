@@ -60,6 +60,9 @@
       "The recipe intentionally disables LTO because AOCL-LibM links AOCL-Utils archives with GNU ld.",
       "Build testing showed -famd-opt is a compile-time no-op here, so the scaffold keeps it out of the AOCL-Utils compile flags while still using amdclang as the compiler baseline."
     ],
+    "sha256sums": [
+      "e84c242772ff433f0264adeaf280bf25e52c61c9508eb61f7d338c5afb1faeb3"
+    ],
     "source_type": "tarball",
     "source_url": "https://github.com/amd/aocl-utils/archive/refs/tags/5.2.2.tar.gz",
     "src_subdir": "aocl-utils-5.2.2",

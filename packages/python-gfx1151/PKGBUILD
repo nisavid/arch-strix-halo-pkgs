@@ -19,7 +19,7 @@ provides=(python=3.14.4 python3 python-externally-managed)
 conflicts=(python)
 replaces=(python python3 python-externally-managed)
 source=(https://www.python.org/ftp/python/3.14.4/Python-3.14.4.tar.xz)
-sha256sums=(SKIP)
+sha256sums=(d923c51303e38e249136fc1bdf3568d56ecb03214efdef48516176d3d7faaef8)
 
 prepare() {
   cd "$srcdir/Python-3.14.4"

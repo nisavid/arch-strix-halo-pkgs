@@ -12,7 +12,7 @@ arch=('x86_64')
 url=https://pytorch.org
 license=(BSD-3-Clause-Modification)
 depends=(amdsmi-gfx1151 composable-kernel-gfx1151 hsa-amd-aqlprofile-gfx1151 hipblaslt-gfx1151 miopen-hip-gfx1151 openblas openmp python-aotriton-gfx1151 python-filelock python-fsspec python-gfx1151 python-jinja python-networkx python-numpy-gfx1151 python-sympy python-typing_extensions python-pyyaml-gfx1151 rccl-gfx1151 rocblas-gfx1151 rocm-hip-sdk-gfx1151 rocm-openmp-gfx1151)
-makedepends=(cmake git ninja openblas python-build python-cffi python-installer python-numpy-gfx1151 python-pip python-requests python-setuptools python-six python-triton-gfx1151 python-pyyaml-gfx1151 patchelf rocm-llvm-gfx1151 unzip)
+makedepends=(cmake git ninja openblas python-build python-cffi python-installer python-numpy-gfx1151 python-pip python-requests python-setuptools python-six python-triton-gfx1151 python-yaml patchelf rocm-llvm-gfx1151 unzip)
 optdepends=()
 options=()
 provides=(python-pytorch-opt-rocm=2.11.0 python-pytorch-rocm=2.11.0 python-pytorch=2.11.0)
