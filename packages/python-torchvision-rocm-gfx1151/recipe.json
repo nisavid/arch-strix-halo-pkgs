@@ -52,7 +52,7 @@
       "Follows the recipe's ROCm wheel-build environment instead of the generic upstream CUDA-oriented defaults."
     ],
     "extra_sha256sums": [
-      "SKIP"
+      "4318e3ac610fbc70563edda12ed137fead517d7617173d6ac7bdfcccabe00d7f"
     ],
     "extra_sources": [
       "0001-setup-relative-sources.patch"
@@ -86,6 +86,9 @@
       "The paired PyTorch package is now import-clean against librocsolver.so.1, so this scaffold should not reintroduce the earlier build-only librocsolver.so.0 shim.",
       "Patch the installed torchvision extension RPATH to `$ORIGIN:$ORIGIN/../torch/lib:/opt/rocm/lib` so libc10, libtorch_cpu, c10_hip, and libtorch_hip resolve from the paired PyTorch package.",
       "Keep the recipe's TorchVision environment intact for ROCm operator coverage: FORCE_CUDA=1, FORCE_MPS=0, empty TORCH_CUDA_ARCH_LIST, and pip-wheel packaging without build isolation."
+    ],
+    "sha256sums": [
+      "fb95b6b78b3801c4d4d6332f7a5a0b6c624588e1b39e0d6fa145227b0c749403"
     ],
     "source_type": "tarball",
     "source_url": "https://github.com/pytorch/vision/archive/refs/tags/v0.26.0.tar.gz",

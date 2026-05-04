@@ -7,7 +7,7 @@
 - Recipe build method: `pip`
 - Upstream repo: `https://www.numpy.org/`
 - Package version: `2.4.4`
-- Recipe revision: `a1d7a68 (20260427, 16 path commits)`
+- Recipe revision: `a1d7a68 (20260427, 16 patch commits)`
 - Recipe steps: `32`
 - Recipe dependencies: `cpython, pytorch`
 - Recorded reference packages: `extra/python-numpy, cachyos-extra-znver4/python-numpy`
@@ -51,7 +51,7 @@ flag and triggers -Werror=unused in compile-only probes.
 
 ## Maintainer Starting Points
 
-- Diff the package against its recorded authoritative reference first.
-- Use the advisory references to scout neighboring packaging conventions without silently changing the baseline story.
+- If an authoritative reference exists, diff the package against it first; when none is recorded, start from the current policy and document the source of each change.
+- Use advisory references to scout neighboring packaging conventions without silently changing the baseline story.
 - Keep reusable source changes in sibling patch files rather than leaving them as ad hoc PKGBUILD shell edits.
 - Re-run `tools/render_recipe_scaffolds.py` after policy or recipe-manifest changes so the package-local docs stay in sync.

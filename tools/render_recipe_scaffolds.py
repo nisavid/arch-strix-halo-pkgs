@@ -1400,11 +1400,14 @@ build() {{
   {compiler_env_snippet(compiler_root)}  _setup_compiler_env
   local _base_flags="-O3 -march=native -mprefer-vector-width=512 -mavx512f -mavx512dq -mavx512vl -mavx512bw -mllvm -enable-gvn-hoist -mllvm -enable-gvn-sink -famd-opt -Wno-error=unused-command-line-argument"
   local _wheel_flags
-  _wheel_flags="$(printf '%s' "${{_base_flags}}" | sed -E 's/-mllvm (-[^ ]+)/-Xclang -mllvm -Xclang \\1/g; s/-famd-opt//g; s/  +/ /g; s/^ +| +$//g')"
+  _wheel_flags="$(printf '%s' "${{_base_flags}}" | sed -E 's/-mllvm (-[^ ]+)/-Xclang -mllvm -Xclang \\1/g; s/  +/ /g; s/^ +| +$//g')"
+  local _base_cflags="${{CFLAGS:-}}"
+  local _base_cxxflags="${{CXXFLAGS:-}}"
+  local _base_ldflags="${{LDFLAGS:-}}"
 
-  export CFLAGS="${{_wheel_flags}}"
-  export CXXFLAGS="${{_wheel_flags}}"
-  export LDFLAGS="-famd-opt"
+  export CFLAGS="${{_base_cflags:+${{_base_cflags}} }}${{_wheel_flags}}"
+  export CXXFLAGS="${{_base_cxxflags:+${{_base_cxxflags}} }}${{_wheel_flags}}"
+  export LDFLAGS="${{_base_ldflags:+${{_base_ldflags}} }}-famd-opt"
   export ROCM_HOME=/opt/rocm
   export PYTORCH_ROCM_ARCH=gfx1151
   export VERSION_SUFFIX=
@@ -1458,11 +1461,14 @@ build() {{
   {compiler_env_snippet(compiler_root)}  _setup_compiler_env
   local _base_flags="-O3 -march=native -mprefer-vector-width=512 -mavx512f -mavx512dq -mavx512vl -mavx512bw -mllvm -enable-gvn-hoist -mllvm -enable-gvn-sink -famd-opt -Wno-error=unused-command-line-argument"
   local _wheel_flags
-  _wheel_flags="$(printf '%s' "${{_base_flags}}" | sed -E 's/-mllvm (-[^ ]+)/-Xclang -mllvm -Xclang \\1/g; s/-famd-opt//g; s/  +/ /g; s/^ +| +$//g')"
+  _wheel_flags="$(printf '%s' "${{_base_flags}}" | sed -E 's/-mllvm (-[^ ]+)/-Xclang -mllvm -Xclang \\1/g; s/  +/ /g; s/^ +| +$//g')"
+  local _base_cflags="${{CFLAGS:-}}"
+  local _base_cxxflags="${{CXXFLAGS:-}}"
+  local _base_ldflags="${{LDFLAGS:-}}"
 
-  export CFLAGS="${{_wheel_flags}}"
-  export CXXFLAGS="${{_wheel_flags}}"
-  export LDFLAGS="-famd-opt"{build_env_exports}
+  export CFLAGS="${{_base_cflags:+${{_base_cflags}} }}${{_wheel_flags}}"
+  export CXXFLAGS="${{_base_cxxflags:+${{_base_cxxflags}} }}${{_wheel_flags}}"
+  export LDFLAGS="${{_base_ldflags:+${{_base_ldflags}} }}-famd-opt"{build_env_exports}
 
   {build_command}
 }}
@@ -1598,10 +1604,18 @@ def optional_backends(package_name: str, policy_pkg: dict) -> list[str]:
     return []
 
 
-def normalize_recipe_patches(recipe_patches: list[dict]) -> list[dict]:
+def normalize_recipe_patches(
+    recipe_patches: list[dict],
+    file_rewrites: dict[str, str] | None = None,
+) -> list[dict]:
     normalized: list[dict] = []
+    file_rewrites = file_rewrites or {}
     for patch in recipe_patches:
         item = dict(patch)
+        if item.get("file") in file_rewrites:
+            item["file"] = file_rewrites[item["file"]]
+        if item.get("patch") in file_rewrites:
+            item["patch"] = file_rewrites[item["patch"]]
         if (
             item.get("type") == "file_copy"
             and item.get("dst") == "${VLLM_DIR}/.venv/bin/cmake"
@@ -1626,6 +1640,15 @@ def renders_recipe_patch_actions(policy_pkg: dict) -> bool:
     if policy_pkg.get("template") == "python-project-triton-rocm" and policy_pkg.get("source_patches"):
         return False
     return True
+
+
+def rendered_patch_count(policy_pkg: dict, recipe_pkg: dict) -> int:
+    source_patch_count = len(policy_pkg.get("source_patches", []))
+    if source_patch_count:
+        return source_patch_count
+    if not renders_recipe_patch_actions(policy_pkg):
+        return 0
+    return len(recipe_pkg.get("patches", []))
 
 
 def render_recipe_json(package_name: str, policy_pkg: dict, recipe_pkg: dict, version: str, defaults: dict) -> str:
@@ -1661,7 +1684,10 @@ def render_recipe_json(package_name: str, policy_pkg: dict, recipe_pkg: dict, ve
             "steps": recipe_pkg.get("steps", []),
             "depends_on": recipe_pkg.get("depends_on", []),
             "notes": recipe_notes,
-            "patches": normalize_recipe_patches(recipe_pkg.get("patches", [])),
+            "patches": normalize_recipe_patches(
+                recipe_pkg.get("patches", []),
+                policy_pkg.get("recipe_patch_file_rewrites"),
+            ),
         },
         "provenance": defaults,
     }
@@ -1686,8 +1712,7 @@ def render_recipe_json(package_name: str, policy_pkg: dict, recipe_pkg: dict, ve
 def render_readme(package_name: str, policy_pkg: dict, recipe_pkg: dict, version: str, defaults: dict) -> str:
     notes = policy_pkg.get("scaffold_notes", [])
     recipe_notes = policy_pkg.get("recipe_notes_override", recipe_pkg.get("notes", "").strip())
-    recipe_patch_count = len(recipe_pkg.get("patches", [])) if renders_recipe_patch_actions(policy_pkg) else 0
-    patch_count = recipe_patch_count + len(policy_pkg.get("source_patches", []))
+    patch_count = rendered_patch_count(policy_pkg, recipe_pkg)
     steps = ", ".join(str(step) for step in recipe_pkg.get("steps", []))
     depends_on = ", ".join(recipe_pkg.get("depends_on", [])) or "none"
     references = ", ".join(policy_pkg.get("arch_reference", [])) or "none"
@@ -1706,7 +1731,7 @@ def render_readme(package_name: str, policy_pkg: dict, recipe_pkg: dict, version
     if defaults.get("recipe_commit") and defaults.get("recipe_date"):
         recipe_revision_text = f"{defaults['recipe_commit']} ({defaults['recipe_date']}"
         if defaults.get("recipe_history_count") is not None:
-            recipe_revision_text += f", {defaults['recipe_history_count']} path commits"
+            recipe_revision_text += f", {defaults['recipe_history_count']} patch commits"
         recipe_revision_text += ")"
 
     lines = [f"# {package_name}", "", "## Maintenance Snapshot", ""]
@@ -1756,8 +1781,8 @@ def render_readme(package_name: str, policy_pkg: dict, recipe_pkg: dict, version
             "",
             "## Maintainer Starting Points",
             "",
-            "- Diff the package against its recorded authoritative reference first.",
-            "- Use the advisory references to scout neighboring packaging conventions without silently changing the baseline story.",
+            "- If an authoritative reference exists, diff the package against it first; when none is recorded, start from the current policy and document the source of each change.",
+            "- Use advisory references to scout neighboring packaging conventions without silently changing the baseline story.",
             "- Keep reusable source changes in sibling patch files rather than leaving them as ad hoc PKGBUILD shell edits.",
             "- Re-run `tools/render_recipe_scaffolds.py` after policy or recipe-manifest changes so the package-local docs stay in sync.",
             "",

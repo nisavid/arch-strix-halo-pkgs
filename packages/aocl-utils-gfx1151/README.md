@@ -7,7 +7,7 @@
 - Recipe build method: `cmake`
 - Upstream repo: `https://github.com/amd/aocl-utils.git`
 - Package version: `5.2.2`
-- Recipe revision: `a1d7a68 (20260427, 16 path commits)`
+- Recipe revision: `a1d7a68 (20260427, 16 patch commits)`
 - Recipe steps: `6`
 - Recipe dependencies: `therock`
 - Recorded reference packages: `aur/aocl-utils, aur/aocl-utils-aocc`
@@ -46,8 +46,8 @@ CMAKE_CXX_CLANG_TIDY=/bin/true prevents auto-detection.
 
 ## Maintainer Starting Points
 
-- Diff the package against its recorded authoritative reference first.
-- Use the advisory references to scout neighboring packaging conventions without silently changing the baseline story.
+- If an authoritative reference exists, diff the package against it first; when none is recorded, start from the current policy and document the source of each change.
+- Use advisory references to scout neighboring packaging conventions without silently changing the baseline story.
 - Keep reusable source changes in sibling patch files rather than leaving them as ad hoc PKGBUILD shell edits.
 - Re-run `tools/render_recipe_scaffolds.py` after policy or recipe-manifest changes so the package-local docs stay in sync.
 - Reconfirm the chosen upstream source artifact and build lane before treating the scaffold as release-ready.
