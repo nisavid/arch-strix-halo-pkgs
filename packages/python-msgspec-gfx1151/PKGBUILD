@@ -60,10 +60,16 @@ build() {
   export CXXFLAGS="${_base_cxxflags:+${_base_cxxflags} }${_wheel_flags}"
   export LDFLAGS="${_base_ldflags:+${_base_ldflags} }-famd-opt"
 
+  rm -rf dist build
   python -m build --wheel --no-isolation
 }
 
 package() {
   cd "$srcdir/msgspec-0.21.1"
-  python -m installer --destdir="$pkgdir" dist/*.whl
+  local _wheels=(dist/*.whl)
+  if (( ${#_wheels[@]} != 1 )); then
+    printf 'expected exactly one wheel, found %s\n' "${#_wheels[@]}" >&2
+    return 1
+  fi
+  python -m installer --destdir="$pkgdir" "${_wheels[0]}"
 }

@@ -137,6 +137,7 @@ def test_native_wheel_renderer_applies_source_patches_and_build_config_settings(
             "src_subdir": "sample-native-1.2.3",
             "source_patches": ["0001-sample.patch"],
             "skip_dependency_check": True,
+            "single_wheel_install": True,
             "build_config_settings": [
                 "setup-args=-Dblas=openblas",
                 "setup-args=-Dlapack=openblas",
@@ -175,6 +176,10 @@ def test_native_wheel_renderer_applies_source_patches_and_build_config_settings(
     assert 'export CXXFLAGS="${_base_cxxflags:+${_base_cxxflags} }${_wheel_flags}"' in pkgbuild
     assert 'export LDFLAGS="${_base_ldflags:+${_base_ldflags} }-famd-opt"' in pkgbuild
     assert "\n  export SAMPLE_MODE=release\n  export SAMPLE_VERSION=1.2.3\n" in pkgbuild
+    assert "\n  rm -rf dist build\n" in pkgbuild
+    assert "local _wheels=(dist/*.whl)" in pkgbuild
+    assert "expected exactly one wheel" in pkgbuild
+    assert r'python -m installer --destdir="$pkgdir" "${_wheels[0]}"' in pkgbuild
 
 
 def test_compiler_env_uses_repo_local_ccache_storage() -> None:

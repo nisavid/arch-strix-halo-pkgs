@@ -59,6 +59,8 @@ build() {
   export CFLAGS="${_base_cflags:+${_base_cflags} }${_wheel_flags}"
   export CXXFLAGS="${_base_cxxflags:+${_base_cxxflags} }${_wheel_flags}"
   export LDFLAGS="${_base_ldflags:+${_base_ldflags} }-famd-opt"
+  export PYYAML_FORCE_LIBYAML=1
+
 
   python -m build --wheel --no-isolation
 }
