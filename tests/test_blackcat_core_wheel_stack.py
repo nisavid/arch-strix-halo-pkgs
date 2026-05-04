@@ -131,13 +131,6 @@ TOOLING_STACK = {
         "provides": ["python-compressed-tensors"],
         "consumer_dep": "python-compressed-tensors-gfx1151",
     },
-    "python-nvidia-ml-py-gfx1151": {
-        "template": "native-wheel-pypi",
-        "recipe_key": "native_wheels",
-        "upstream_version": "13.590.48",
-        "provides": ["python-nvidia-ml-py"],
-        "consumer_dep": "python-nvidia-ml-py-gfx1151",
-    },
     "python-llmcompressor-gfx1151": {
         "template": "native-wheel-pypi",
         "recipe_key": "native_wheels",
@@ -313,7 +306,6 @@ def test_blackcat_tooling_wheel_stack_rendered_outputs_exist() -> None:
         if package_name in {
             "python-accelerate-gfx1151",
             "python-compressed-tensors-gfx1151",
-            "python-nvidia-ml-py-gfx1151",
         }:
             assert "arch=('any')" in pkgbuild
             assert "rocm-llvm-gfx1151" not in pkgbuild
@@ -330,7 +322,7 @@ def test_llmcompressor_closure_prefers_local_tooling_packages() -> None:
     assert "python-accelerate-gfx1151" in llmcompressor_deps
     assert "python-auto-round-gfx1151" in llmcompressor_deps
     assert "python-compressed-tensors-gfx1151" in llmcompressor_deps
-    assert "python-nvidia-ml-py-gfx1151" in llmcompressor_deps
+    assert "python-nvidia-ml-py-gfx1151" not in llmcompressor_deps
     assert "python-transformers-gfx1151" in llmcompressor_deps
     assert "python-pytorch-opt-rocm-gfx1151" in llmcompressor_deps
 

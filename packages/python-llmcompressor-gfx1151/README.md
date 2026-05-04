@@ -13,7 +13,7 @@
 - Recorded reference packages: `none`
 - Authoritative reference package: `none`
 - Advisory reference packages: `none`
-- Applied source patch files/actions: `4`
+- Applied source patch files/actions: `5`
 
 ## Recipe notes
 
@@ -30,15 +30,15 @@ compressed-tensors APIs. The build sets `SETUPTOOLS_SCM_PRETEND_VERSION=0.10.0.1
 so the PyPI sdist build keeps the adopted release version.
 
 llmcompressor declares nvidia-ml-py as a runtime dependency even though pynvml
-is imported lazily only for NVIDIA metric logging. The local dependency points
-at `python-nvidia-ml-py-gfx1151`, which provides the Python module without
-pulling NVIDIA driver utilities onto the AMD reference host.
+is imported lazily only for NVIDIA metric logging. The local package patches
+that dependency out of the built wheel metadata so AMD installs do not need a
+repo-owned NVML shim or NVIDIA driver utilities.
 
 
 ## Scaffold notes
 
 - Part of the Blackcat Qwen3-VL quantization/tooling closure.
-- Keep dependencies pointed at the local accelerate, AutoRound, compressed-tensors, torch, transformers, Pillow, PyYAML, and nvidia-ml-py packages.
+- Keep dependencies pointed at the local accelerate, AutoRound, compressed-tensors, torch, transformers, Pillow, and PyYAML packages.
 - Use --skip-dependency-check to avoid the stale exact setuptools_scm build pin and local-package-name metadata mismatch.
 - Keep BUILD_TYPE=dev plus the Transformers compatibility patches unless upstream release metadata and imports accept the installed torch, transformers, and compressed-tensors stack directly.
 
@@ -49,11 +49,11 @@ pulling NVIDIA driver utilities onto the AMD reference host.
 - Carries a package-local Transformers 5.7 compatibility patch for the moved `TORCH_INIT_FUNCTIONS` import.
 - Carries a package-local compressed-tensors 0.15 compatibility patch for the public `match_name` API replacing the former private `_match_name` import.
 - Carries a package-local compressed-tensors 0.15 compatibility patch for the moved quantization compression-format helper.
-- Keeps nvidia-ml-py as a local pure-Python metadata dependency without pulling NVIDIA driver utilities onto the AMD reference host.
+- Carries a package-local metadata patch so NVIDIA metric logging remains optional on the AMD reference host instead of requiring nvidia-ml-py.
 
 ## Update Notes
 
-- Check torch, transformers, compressed-tensors, accelerate, auto-round, and nvidia-ml-py bounds together before updating.
+- Check torch, transformers, compressed-tensors, accelerate, and auto-round bounds together before updating.
 - After publishing a rebuilt package, verify `import llmcompressor` and the AutoRound modifier import through the installed local Python lane.
 - Use `SETUPTOOLS_SCM_PRETEND_VERSION` when building from the PyPI sdist so the package version stays at the adopted release instead of a guessed dev version.
 - Keep the build dependency check skipped while upstream's sdist pins setuptools_scm==8.2.0 and local runtime dependencies satisfy metadata under gfx1151 package names.

@@ -2,7 +2,7 @@ diff --git a/src/llmcompressor/entrypoints/model_free/helpers.py b/src/llmcompre
 index d8c9645..8c75d9b 100644
 --- a/src/llmcompressor/entrypoints/model_free/helpers.py
 +++ b/src/llmcompressor/entrypoints/model_free/helpers.py
-@@ -6,3 +6,3 @@ from typing import Mapping, TypeVar
+@@ -6,2 +6,2 @@ from typing import Mapping, TypeVar
  import torch
 -from compressed_tensors.utils.match import _match_name
 +from compressed_tensors.utils.match import match_name as _match_name
@@ -10,7 +10,7 @@ diff --git a/src/llmcompressor/entrypoints/model_free/process.py b/src/llmcompre
 index 9470d66..2afca3f 100644
 --- a/src/llmcompressor/entrypoints/model_free/process.py
 +++ b/src/llmcompressor/entrypoints/model_free/process.py
-@@ -5,5 +5,5 @@ from typing import Iterable
+@@ -5,4 +5,4 @@ from typing import Iterable
  import torch
  from compressed_tensors.quantization import QuantizationScheme
 -from compressed_tensors.utils.match import _match_name

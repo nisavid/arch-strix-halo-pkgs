@@ -87,22 +87,22 @@
     installed-smoke evidence aligned with the installed vLLM 0.20.1
     compressed-tensors requirement. Package policy, rendered scaffolds, and
     package-build, publish/install, and installed-smoke evidence now also exist
-    for `python-accelerate-gfx1151
-    1.12.0-1`, `python-auto-round-gfx1151 0.10.2-1`,
-    `python-nvidia-ml-py-gfx1151 13.590.48-1`, and
-    `python-llmcompressor-gfx1151 0.10.0.1-4`. The llmcompressor package uses
+    for `python-accelerate-gfx1151 1.12.0-1`, `python-auto-round-gfx1151 0.10.2-1`,
+    and `python-llmcompressor-gfx1151 0.10.0.1-4`; package-build evidence exists
+    for the follow-up `python-llmcompressor-gfx1151 0.10.0.1-5` cleanup. The llmcompressor package uses
     upstream's dev dependency lane plus package-local compatibility patches to
     accept the installed PyTorch 2.11, Transformers 5.7.0, and
-    compressed-tensors 0.15.0.1 stack. The 2026-05-01 installed smoke passed
-    for `accelerate`, `auto_round`, `pynvml`, `llmcompressor`,
+    compressed-tensors 0.15.0.1 stack, and its wheel metadata patches out
+    the NVIDIA-only `nvidia-ml-py` runtime dependency. The installed smoke passed for `accelerate`, `auto_round`, `llmcompressor`,
     llmcompressor's AutoRound modifier import, skip-weight initialization, and
     model-free name matching.
   - Blackcat tooling freshness follow-up: the 2026-05-01 policy-coverage
     freshness sweep found PyPI updates for `python-accelerate-gfx1151` from
-    1.12.0 to 1.13.0, `python-auto-round-gfx1151` from 0.10.2 to 0.12.3, and
-    `python-nvidia-ml-py-gfx1151` from 13.590.48 to 13.595.45. These are
+    1.12.0 to 1.13.0 and `python-auto-round-gfx1151` from 0.10.2 to 0.12.3. These are
     tracked in `docs/maintainers/update-candidates.toml`; adopt them through a
     separate package update, rebuild, deploy/install, and installed smoke lane.
+    The former `nvidia-ml-py` follow-up is retired because llmcompressor now
+    patches the NVIDIA metric dependency out of its wheel metadata.
     The 2026-05-03 rebase freshness sweep rejected `llmcompressor 0.10.0.2`
     because its published dependency metadata excludes the local PyTorch 2.11,
     Transformers 5.7.0, compressed-tensors 0.15.0.1, and tracked newer tooling

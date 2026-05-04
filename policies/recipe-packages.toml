@@ -1749,55 +1749,11 @@ scaffold_notes = [
   "Part of the Blackcat Qwen3-VL quantization/tooling closure and consumed by llmcompressor.",
   "Use --skip-dependency-check because local torch, transformers, numpy, and accelerate packages satisfy upstream runtime requirements under gfx1151 package names."
 ]
-
-[packages.python-nvidia-ml-py-gfx1151]
-recipe_key = "native_wheels"
-template = "native-wheel-pypi"
-upstream_version = "13.590.48"
-pkgdesc = "Python NVML bindings packaged without pulling NVIDIA driver utilities"
-url = "https://pypi.org/project/nvidia-ml-py/"
-license = ["BSD"]
-arch_reference = ["extra/python-nvidia-ml-py"]
-authoritative_reference = "none"
-advisory_references = ["extra/python-nvidia-ml-py"]
-divergence_notes = [
-  "Arch's python-nvidia-ml-py package depends on nvidia-utils, which is not appropriate for the AMD reference host.",
-  "llmcompressor imports pynvml lazily only for NVIDIA metric logging, but its package metadata declares nvidia-ml-py as a runtime dependency, so this package satisfies metadata without installing the NVIDIA driver stack."
-]
-update_notes = [
-  "Keep this package pinned to the llmcompressor dependency window unless llmcompressor drops the hard metadata dependency or Arch separates the Python bindings from nvidia-utils.",
-  "After publishing a rebuilt package, verify `import pynvml` through the installed local Python lane; do not treat NVML initialization failure on AMD as a package failure."
-]
-provides = ["python-nvidia-ml-py"]
-conflicts = ["python-nvidia-ml-py"]
-depends = ["python-gfx1151"]
-makedepends = ["python-build", "python-installer", "python-setuptools", "python-wheel"]
-arch = ["any"]
-pure_python_wheel = true
-pypi_name = "nvidia_ml_py"
-sha256sums = ["8184d1be52914ac7f0991cd1c0d946c65dc88a840c754cd12c274b77b88760dd"]
-src_subdir = "nvidia_ml_py-13.590.48"
-patches_dir = "patches/python-nvidia-ml-py-gfx1151"
-recipe_notes_override = """
-This package supplies the `pynvml` module named by llmcompressor metadata
-without depending on NVIDIA driver utilities. llmcompressor's NVIDIA metric
-path imports pynvml lazily and returns an empty usage result when the module or
-NVML library is unavailable, while AMD metric logging uses amdsmi separately.
-
-Use this package only as metadata and import closure for llmcompressor on the
-AMD reference host. A failing NVML initialization on AMD is expected and is not
-evidence that the package is broken.
-"""
-scaffold_notes = [
-  "Part of the Blackcat Qwen3-VL quantization/tooling closure and consumed by llmcompressor metadata.",
-  "Do not add an nvidia-utils dependency; this package exists specifically to keep the AMD host free of NVIDIA driver packages."
-]
-
 [packages.python-llmcompressor-gfx1151]
 recipe_key = "native_wheels"
 template = "native-wheel-pypi"
 upstream_version = "0.10.0.1"
-pkgrel = 4
+pkgrel = 5
 pkgdesc = "LLM compression and quantization tooling for the Strix Halo Python stack"
 url = "https://github.com/vllm-project/llm-compressor"
 license = ["Apache-2.0"]
@@ -1810,25 +1766,26 @@ divergence_notes = [
   "Carries a package-local Transformers 5.7 compatibility patch for the moved `TORCH_INIT_FUNCTIONS` import.",
   "Carries a package-local compressed-tensors 0.15 compatibility patch for the public `match_name` API replacing the former private `_match_name` import.",
   "Carries a package-local compressed-tensors 0.15 compatibility patch for the moved quantization compression-format helper.",
-  "Keeps nvidia-ml-py as a local pure-Python metadata dependency without pulling NVIDIA driver utilities onto the AMD reference host."
+  "Carries a package-local metadata patch so NVIDIA metric logging remains optional on the AMD reference host instead of requiring nvidia-ml-py."
 ]
 update_notes = [
-  "Check torch, transformers, compressed-tensors, accelerate, auto-round, and nvidia-ml-py bounds together before updating.",
+  "Check torch, transformers, compressed-tensors, accelerate, and auto-round bounds together before updating.",
   "After publishing a rebuilt package, verify `import llmcompressor` and the AutoRound modifier import through the installed local Python lane.",
   "Use `SETUPTOOLS_SCM_PRETEND_VERSION` when building from the PyPI sdist so the package version stays at the adopted release instead of a guessed dev version.",
   "Keep the build dependency check skipped while upstream's sdist pins setuptools_scm==8.2.0 and local runtime dependencies satisfy metadata under gfx1151 package names."
 ]
 provides = ["python-llmcompressor"]
 conflicts = ["python-llmcompressor"]
-depends = ["python-gfx1151", "python-accelerate-gfx1151", "python-auto-round-gfx1151", "python-compressed-tensors-gfx1151", "python-datasets", "python-loguru", "python-numpy-gfx1151", "python-nvidia-ml-py-gfx1151", "python-pillow-gfx1151", "python-pytorch-opt-rocm-gfx1151", "python-requests", "python-tqdm", "python-transformers-gfx1151", "python-pyyaml-gfx1151"]
+depends = ["python-gfx1151", "python-accelerate-gfx1151", "python-auto-round-gfx1151", "python-compressed-tensors-gfx1151", "python-datasets", "python-loguru", "python-numpy-gfx1151", "python-pillow-gfx1151", "python-pytorch-opt-rocm-gfx1151", "python-requests", "python-tqdm", "python-transformers-gfx1151", "python-pyyaml-gfx1151"]
 makedepends = ["python-build", "python-installer", "python-setuptools", "python-setuptools-scm", "python-wheel", "rocm-llvm-gfx1151"]
 source_patches = [
   "0001-relax-transformers-upper-bound.patch",
   "0002-import-torch-init-functions-from-initialization.patch",
   "0003-use-public-compressed-tensors-match-name.patch",
-  "0004-use-compressed-tensors-infer-module-format.patch"
+  "0004-use-compressed-tensors-infer-module-format.patch",
+  "0005-drop-nvidia-ml-py-runtime-dependency.patch"
 ]
-extra_sha256sums = ["f753bf83b822c94f4dd714210c28f0a897b5d3949253acd531813f4fb30d6534", "4b8c2dfceaa8131a686c8805c262229094ef7ffaf68b2d66d51c416990b3a6bf", "97b78bbfd5b07a7d63ad24cfecb2bd8aa7547f154ccf238373a7d8a79096d209", "512e8371ecfe36ff3a18aec68a33de4f1d18b751a1822a2357ec914240cf4307"]
+extra_sha256sums = ["f753bf83b822c94f4dd714210c28f0a897b5d3949253acd531813f4fb30d6534", "4b8c2dfceaa8131a686c8805c262229094ef7ffaf68b2d66d51c416990b3a6bf", "ce7a8c8b7f258556b50748f8fb6bc213b0011fded8a25e07642e4d2397a6927e", "2ddfc364a45454aea350343f681941da09481775558126d3f9e06dc4b5ec26f4", "ae8113abd70aa8d3cde4b1b7586699f6e42d5b8e224232fd003dd65824184265"]
 skip_dependency_check = true
 build_env = ["BUILD_TYPE=dev", "SETUPTOOLS_SCM_PRETEND_VERSION=0.10.0.1"]
 pypi_name = "llmcompressor"
@@ -1849,13 +1806,13 @@ compressed-tensors APIs. The build sets `SETUPTOOLS_SCM_PRETEND_VERSION=0.10.0.1
 so the PyPI sdist build keeps the adopted release version.
 
 llmcompressor declares nvidia-ml-py as a runtime dependency even though pynvml
-is imported lazily only for NVIDIA metric logging. The local dependency points
-at `python-nvidia-ml-py-gfx1151`, which provides the Python module without
-pulling NVIDIA driver utilities onto the AMD reference host.
+is imported lazily only for NVIDIA metric logging. The local package patches
+that dependency out of the built wheel metadata so AMD installs do not need a
+repo-owned NVML shim or NVIDIA driver utilities.
 """
 scaffold_notes = [
   "Part of the Blackcat Qwen3-VL quantization/tooling closure.",
-  "Keep dependencies pointed at the local accelerate, AutoRound, compressed-tensors, torch, transformers, Pillow, PyYAML, and nvidia-ml-py packages.",
+  "Keep dependencies pointed at the local accelerate, AutoRound, compressed-tensors, torch, transformers, Pillow, and PyYAML packages.",
   "Use --skip-dependency-check to avoid the stale exact setuptools_scm build pin and local-package-name metadata mismatch.",
   "Keep BUILD_TYPE=dev plus the Transformers compatibility patches unless upstream release metadata and imports accept the installed torch, transformers, and compressed-tensors stack directly."
 ]
