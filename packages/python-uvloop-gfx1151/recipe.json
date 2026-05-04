@@ -63,7 +63,7 @@
     ],
     "pypi_name": "uvloop",
     "recipe_key": "native_wheels",
-    "recipe_notes_override": "This package is the uvloop output from the shared `native_wheels` recipe\nphase. That phase also builds numpy, sentencepiece, zstandard, asyncpg,\nduckdb, PyYAML, psutil, Pillow, httptools, msgspec, aiohttp, multidict,\nyarl, and frozenlist from source with Zen 5 optimization flags, but those\noutputs are tracked as separate packages or follow-up package lanes rather\nthan as dependencies of `python-uvloop-gfx1151`.\n\nuvloop supplies the libuv-backed asyncio event loop used by vLLM/FastAPI\nservice paths. The local package follows Arch's system-libuv shape while\nmoving the native extension onto the local amdclang native-wheel lane.\n",
+    "recipe_notes_override": "uvloop supplies the libuv-backed asyncio event loop used by vLLM/FastAPI\nservice paths. The local package follows Arch's system-libuv shape while\nmoving the native extension onto the local amdclang native-wheel lane.\n\nKeep this README focused on uvloop's direct package surface: `cpython` as the\nrecipe input, system `libuv` linkage, and the package-local source patch that\nselects system libuv by default.\n",
     "scaffold_notes": [
       "Part of the comprehensive Blackcat service/runtime wheel stack and consumed by the local vLLM package.",
       "Keep the source patch that switches uvloop's build_ext default to system libuv so the local package does not vendor a private libuv copy."
@@ -98,7 +98,7 @@
       "pytorch"
     ],
     "method": "pip",
-    "notes": "This package is the uvloop output from the shared `native_wheels` recipe\nphase. That phase also builds numpy, sentencepiece, zstandard, asyncpg,\nduckdb, PyYAML, psutil, Pillow, httptools, msgspec, aiohttp, multidict,\nyarl, and frozenlist from source with Zen 5 optimization flags, but those\noutputs are tracked as separate packages or follow-up package lanes rather\nthan as dependencies of `python-uvloop-gfx1151`.\n\nuvloop supplies the libuv-backed asyncio event loop used by vLLM/FastAPI\nservice paths. The local package follows Arch's system-libuv shape while\nmoving the native extension onto the local amdclang native-wheel lane.\n",
+    "notes": "uvloop supplies the libuv-backed asyncio event loop used by vLLM/FastAPI\nservice paths. The local package follows Arch's system-libuv shape while\nmoving the native extension onto the local amdclang native-wheel lane.\n\nKeep this README focused on uvloop's direct package surface: `cpython` as the\nrecipe input, system `libuv` linkage, and the package-local source patch that\nselects system libuv by default.\n",
     "patches": [
       {
         "description": "Replace the recipe's broken venv-local Python cmake wrapper with the real system cmake binary. The cmake pip package installs a Python wrapper that does `from cmake import cmake`, which fails inside pip's build isolation where the cmake Python module is unavailable.\n",

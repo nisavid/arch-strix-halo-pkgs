@@ -84,7 +84,7 @@
       "After publishing a rebuilt package, verify `import aiohttp` and a minimal ClientSession construction path through the installed local Python lane."
     ],
     "upstream_version": "3.13.5",
-    "url": "https://aiohttp.readthedocs.io"
+    "url": "https://github.com/aio-libs/aiohttp"
   },
   "provenance": {
     "output_root": "packages",

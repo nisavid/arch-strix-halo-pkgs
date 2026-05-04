@@ -9,7 +9,7 @@ pkgver=2.4.4
 pkgrel=3
 pkgdesc='Scientific tools for Python rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
-url=https://www.numpy.org/
+url=https://github.com/numpy/numpy
 license=(custom)
 depends=(openblas python-gfx1151)
 makedepends=(meson ninja patchelf python-build python-installer meson-python python-wheel rocm-llvm-gfx1151)
@@ -19,7 +19,7 @@ provides=(python-numpy)
 conflicts=(python-numpy)
 replaces=()
 source=(https://files.pythonhosted.org/packages/source/n/numpy/numpy-2.4.4.tar.gz)
-sha256sums=(SKIP)
+sha256sums=(2d390634c5182175533585cc89f3608a4682ccb173cc9bb940b2881c8d6f8fa0)
 
 build() {
   cd "$srcdir/numpy-2.4.4"

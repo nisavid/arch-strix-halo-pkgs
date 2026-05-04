@@ -5,7 +5,7 @@
 - Recipe package key: `native_wheels`
 - Scaffold template: `native-wheel-pypi`
 - Recipe build method: `pip`
-- Upstream repo: `https://www.numpy.org/`
+- Upstream repo: `https://github.com/numpy/numpy`
 - Package version: `2.4.4`
 - Recipe revision: `a1d7a68 (20260427, 16 patch commits)`
 - Recipe steps: `32`

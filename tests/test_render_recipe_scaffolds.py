@@ -597,11 +597,7 @@ def test_readme_uses_policy_url_when_recipe_repo_is_absent() -> None:
             "notes": "",
         },
         "1.2.3",
-        {
-            "recipe_repo": "https://github.com/paudley/ai-notes",
-            "recipe_subdir": "strix-halo",
-            "recipe_author": "Blackcat Informatics Inc.",
-        },
+        {},
     )
 
     assert "- Upstream repo: `https://example.invalid/sample`" in readme

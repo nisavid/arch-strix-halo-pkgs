@@ -67,7 +67,7 @@
       "After publishing a rebuilt package, verify `import pynvml` through the installed local Python lane; do not treat NVML initialization failure on AMD as a package failure."
     ],
     "upstream_version": "13.590.48",
-    "url": "https://forums.developer.nvidia.com"
+    "url": "https://pypi.org/project/nvidia-ml-py/"
   },
   "provenance": {
     "output_root": "packages",
