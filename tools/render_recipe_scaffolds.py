@@ -1466,6 +1466,19 @@ package() {{
         build_env_exports = "\n".join(build_env_lines)
         if build_env_exports:
             build_env_exports = "\n" + textwrap.indent(build_env_exports, "  ") + "\n"
+        single_wheel_install = policy_pkg.get("single_wheel_install", False)
+        clean_build_outputs = "\n  rm -rf dist build" if single_wheel_install else ""
+        if single_wheel_install:
+            installer_command = "\n".join([
+                "local _wheels=(dist/*.whl)",
+                "  if (( $" + "{#_wheels[@]} != 1 )); then",
+                "    printf 'expected exactly one wheel, found %s\\n' \"$" + "{#_wheels[@]}\" >&2",
+                "    return 1",
+                "  fi",
+                "  python -m installer --destdir=\"$pkgdir\" \"$" + "{_wheels[0]}\"",
+            ])
+        else:
+            installer_command = "python -m installer --destdir=\"$pkgdir\" dist/*.whl"
         build_body = f"""\
 build() {{
   cd "$srcdir/{src_subdir}"
@@ -1481,13 +1494,13 @@ build() {{
   export CFLAGS="${{_base_cflags:+${{_base_cflags}} }}${{_wheel_flags}}"
   export CXXFLAGS="${{_base_cxxflags:+${{_base_cxxflags}} }}${{_wheel_flags}}"
   export LDFLAGS="${{_base_ldflags:+${{_base_ldflags}} }}-famd-opt"{build_env_exports}
-
+{clean_build_outputs}
   {build_command}
 }}
 
 package() {{
   cd "$srcdir/{src_subdir}"
-  python -m installer --destdir="$pkgdir" dist/*.whl
+  {installer_command}
 }}"""
     elif template == "python-project-torch-migraphx":
         for patch_name in policy_pkg.get("source_patches", []):

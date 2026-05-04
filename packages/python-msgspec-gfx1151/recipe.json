@@ -69,6 +69,7 @@
     "sha256sums": [
       "2313508e394b0d208f8f56892ca9b2799e2561329de9763b19619595a6c0f72c"
     ],
+    "single_wheel_install": true,
     "src_subdir": "msgspec-0.21.1",
     "template": "native-wheel-pypi",
     "update_notes": [

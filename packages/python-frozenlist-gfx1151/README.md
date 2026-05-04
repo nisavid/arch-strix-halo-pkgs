@@ -17,15 +17,9 @@
 
 ## Recipe notes
 
-This package is the frozenlist output from the shared `native_wheels` recipe
-phase. That phase also builds numpy, sentencepiece, zstandard, asyncpg,
-duckdb, PyYAML, psutil, Pillow, uvloop, httptools, msgspec, aiohttp,
-multidict, and yarl from source with Zen 5 optimization flags, but those
-outputs are tracked as separate packages or follow-up package lanes rather
-than as dependencies of `python-frozenlist-gfx1151`.
-
-frozenlist is part of aiohttp's native dependency closure and belongs in the
-same optimized service/runtime stack.
+frozenlist is part of aiohttp's native dependency closure. This package
+keeps that direct C-extension surface on the local amdclang native-wheel lane
+while following Arch's python-frozenlist package shape.
 
 
 ## Scaffold notes

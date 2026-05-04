@@ -461,6 +461,21 @@ source_patches_replace_recipe_patches = true
 sha256sums = ["SKIP"]
 src_subdir = "triton"
 patches_dir = "packages/python-triton-gfx1151"
+recipe_notes_override = """
+ROCm performance fork of Triton. Keep this package on ROCm/triton main_perf
+and its compatible sidecar LLVM path; do not point it at TheRock LLVM.
+
+The gfx1151 Inductor carry is `0003-attrs-descriptor-repr-for-inductor.patch`,
+listed in `maintenance.source_patches` and applied by the renderer in
+`prepare()`. Without that patch, torch Inductor can serialize
+`AttrsDescriptor` with the default angle-bracket object repr and emit invalid
+generated Python.
+
+When switching compilation configurations, clear stale Inductor and Triton
+caches before diagnosing mismatched guard-expression failures. The vLLM
+compile cache is config-hash-keyed and does not require routine manual
+clearing.
+"""
 scaffold_notes = [
   "Authoritative base: Arch python-triton 3.5.1-4 for distro integration and Python-3.14 carry patches.",
   "The recipe intentionally swaps in ROCm/triton main_perf instead of upstream triton-lang/triton. That makes Arch's package an advisory base rather than a source-identical one.",
@@ -1116,6 +1131,7 @@ pypi_name = "pyyaml"
 sha256sums = ["d76623373421df22fb4cf8817020cbb7ef15c725b9d5e45f17e189bfc384190f"]
 src_subdir = "pyyaml-6.0.3"
 patches_dir = "patches/python-pyyaml-gfx1151"
+build_env = ["PYYAML_FORCE_LIBYAML=1"]
 recipe_notes_override = """
 This package is the PyYAML output from the shared `native_wheels` recipe
 phase. That phase also builds numpy, sentencepiece, zstandard, asyncpg,
@@ -1389,6 +1405,7 @@ pypi_name = "msgspec"
 sha256sums = ["2313508e394b0d208f8f56892ca9b2799e2561329de9763b19619595a6c0f72c"]
 src_subdir = "msgspec-0.21.1"
 patches_dir = "patches/python-msgspec-gfx1151"
+single_wheel_install = true
 recipe_notes_override = """
 This package is the msgspec output from the shared `native_wheels` recipe
 phase. That phase also builds numpy, sentencepiece, zstandard, asyncpg,
@@ -1431,17 +1448,11 @@ makedepends = ["cython", "python-build", "python-expandvars", "python-installer"
 pypi_name = "frozenlist"
 sha256sums = ["3ede829ed8d842f6cd48fc7081d7a41001a56f1f38603f9d49bf3020d59a31ad"]
 src_subdir = "frozenlist-1.8.0"
-patches_dir = "patches/python-frozenlist-gfx1151"
+patches_dir = "packages/python-frozenlist-gfx1151"
 recipe_notes_override = """
-This package is the frozenlist output from the shared `native_wheels` recipe
-phase. That phase also builds numpy, sentencepiece, zstandard, asyncpg,
-duckdb, PyYAML, psutil, Pillow, uvloop, httptools, msgspec, aiohttp,
-multidict, and yarl from source with Zen 5 optimization flags, but those
-outputs are tracked as separate packages or follow-up package lanes rather
-than as dependencies of `python-frozenlist-gfx1151`.
-
-frozenlist is part of aiohttp's native dependency closure and belongs in the
-same optimized service/runtime stack.
+frozenlist is part of aiohttp's native dependency closure. This package
+keeps that direct C-extension surface on the local amdclang native-wheel lane
+while following Arch's python-frozenlist package shape.
 """
 scaffold_notes = [
   "Part of the comprehensive Blackcat aiohttp service dependency closure.",

@@ -49,14 +49,14 @@
       "python-wheel",
       "rocm-llvm-gfx1151"
     ],
-    "patches_dir": "patches/python-frozenlist-gfx1151",
+    "patches_dir": "packages/python-frozenlist-gfx1151",
     "pkgdesc": "Immutable list implementation rebuilt for Strix Halo gfx1151",
     "provides": [
       "python-frozenlist"
     ],
     "pypi_name": "frozenlist",
     "recipe_key": "native_wheels",
-    "recipe_notes_override": "This package is the frozenlist output from the shared `native_wheels` recipe\nphase. That phase also builds numpy, sentencepiece, zstandard, asyncpg,\nduckdb, PyYAML, psutil, Pillow, uvloop, httptools, msgspec, aiohttp,\nmultidict, and yarl from source with Zen 5 optimization flags, but those\noutputs are tracked as separate packages or follow-up package lanes rather\nthan as dependencies of `python-frozenlist-gfx1151`.\n\nfrozenlist is part of aiohttp's native dependency closure and belongs in the\nsame optimized service/runtime stack.\n",
+    "recipe_notes_override": "frozenlist is part of aiohttp's native dependency closure. This package\nkeeps that direct C-extension surface on the local amdclang native-wheel lane\nwhile following Arch's python-frozenlist package shape.\n",
     "scaffold_notes": [
       "Part of the comprehensive Blackcat aiohttp service dependency closure.",
       "Use the shared native-wheel renderer so amdclang, path remapping, and Zen 5 flags stay aligned with the other native wheel packages."
@@ -90,7 +90,7 @@
       "pytorch"
     ],
     "method": "pip",
-    "notes": "This package is the frozenlist output from the shared `native_wheels` recipe\nphase. That phase also builds numpy, sentencepiece, zstandard, asyncpg,\nduckdb, PyYAML, psutil, Pillow, uvloop, httptools, msgspec, aiohttp,\nmultidict, and yarl from source with Zen 5 optimization flags, but those\noutputs are tracked as separate packages or follow-up package lanes rather\nthan as dependencies of `python-frozenlist-gfx1151`.\n\nfrozenlist is part of aiohttp's native dependency closure and belongs in the\nsame optimized service/runtime stack.\n",
+    "notes": "frozenlist is part of aiohttp's native dependency closure. This package\nkeeps that direct C-extension surface on the local amdclang native-wheel lane\nwhile following Arch's python-frozenlist package shape.\n",
     "patches": [],
     "phase": "H",
     "repo": null,

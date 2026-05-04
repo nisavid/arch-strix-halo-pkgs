@@ -17,40 +17,20 @@
 
 ## Recipe notes
 
-ROCm performance fork of Triton.
+ROCm performance fork of Triton. Keep this package on ROCm/triton main_perf
+and its compatible sidecar LLVM path; do not point it at TheRock LLVM.
 
-CRITICAL: Does NOT use TheRock's LLVM. TheRock ships LLVM 22 but
-Triton's codebase expects ~LLVM 19 APIs. Triton downloads and builds
-its own LLVM internally. Do NOT set LLVM_SYSPATH.
+The gfx1151 Inductor carry is `0003-attrs-descriptor-repr-for-inductor.patch`,
+listed in `maintenance.source_patches` and applied by the renderer in
+`prepare()`. Without that patch, torch Inductor can serialize
+`AttrsDescriptor` with the default angle-bracket object repr and emit invalid
+generated Python.
 
-gfx11 support: warp_size=32 configured in backends/amd/compiler.py.
+When switching compilation configurations, clear stale Inductor and Triton
+caches before diagnosing mismatched guard-expression failures. The vLLM
+compile cache is config-hash-keyed and does not require routine manual
+clearing.
 
-target_info and gluon are CUDA-only features -- NOT available in
-the ROCm fork. This is expected and not a gap.
-
-Triton compiler bug on gfx1151: the unified attention kernel
-(triton_unified_attention.py:239) previously produced "operation
-scheduled before its operands" errors. With Patch 2 below
-(AttrsDescriptor __repr__) applied, torch.compile with Inductor
-works correctly on gfx1151 — --enforce-eager is NOT required.
-Verified with Qwen2.5-7B-Instruct: all AITER optimizations active,
-correct output across multiple inference tests.
-
-Inductor codegen bug: AttrsDescriptor in triton/backends/compiler.py
-has no __repr__ method. torch Inductor codegen uses {triton_meta!r}
-to serialize kernel metadata into generated Python source files.
-Without __repr__, Python produces angle-bracket object repr
-(<triton.backends.compiler.AttrsDescriptor object at 0x...>) which
-is invalid Python syntax, causing SyntaxError at import time.
-Fixed by Patch 2 below.
-
-IMPORTANT: When switching between compilation configurations
-(e.g., changing custom_ops, enabling/disabling AITER), stale
-Inductor caches (/tmp/torchinductor_$USER/) and Triton caches
-(~/.triton/cache/) must be cleared to avoid KeyError crashes
-from mismatched guard expressions. The vLLM compile cache
-(~/.cache/vllm/torch_compile_cache/) is config-hash-keyed and
-does not require manual clearing.
 
 ## Scaffold notes
 

@@ -337,5 +337,7 @@ def test_blackcat_engine_stack_rendered_output_exists() -> None:
     assert "-DGGML_VULKAN_VALIDATE=OFF" in pkgbuild
     assert "sd-cli-vulkan-gfx1151" in pkgbuild
     assert "sd-server-vulkan-gfx1151" in pkgbuild
+    assert 'patchelf --set-rpath "/usr/lib"' in pkgbuild
+    assert r'patchelf --set-rpath "/usr/lib:${install_root}/lib"' not in pkgbuild
     assert recipe["policy"]["recipe_key"] == "stable_diffusion_cpp"
     assert "Blackcat" in readme

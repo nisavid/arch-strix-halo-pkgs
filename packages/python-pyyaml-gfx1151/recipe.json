@@ -26,6 +26,9 @@
       "cachyos-extra-znver4/python-yaml"
     ],
     "authoritative_reference": "extra/python-yaml",
+    "build_env": [
+      "PYYAML_FORCE_LIBYAML=1"
+    ],
     "conflicts": [
       "python-yaml",
       "python-pyyaml"
