@@ -1458,7 +1458,7 @@ makedepends = ["cython", "python-build", "python-expandvars", "python-installer"
 pypi_name = "frozenlist"
 sha256sums = ["3ede829ed8d842f6cd48fc7081d7a41001a56f1f38603f9d49bf3020d59a31ad"]
 src_subdir = "frozenlist-1.8.0"
-patches_dir = "packages/python-frozenlist-gfx1151"
+patches_dir = "patches/python-frozenlist-gfx1151"
 recipe_notes_override = """
 frozenlist is part of aiohttp's native dependency closure. This package
 keeps that direct C-extension surface on the local amdclang native-wheel lane
@@ -1771,7 +1771,9 @@ update_notes = [
 provides = ["python-nvidia-ml-py"]
 conflicts = ["python-nvidia-ml-py"]
 depends = ["python-gfx1151"]
-makedepends = ["python-build", "python-installer", "python-setuptools", "python-wheel", "rocm-llvm-gfx1151"]
+makedepends = ["python-build", "python-installer", "python-setuptools", "python-wheel"]
+arch = ["any"]
+pure_python_wheel = true
 pypi_name = "nvidia_ml_py"
 sha256sums = ["8184d1be52914ac7f0991cd1c0d946c65dc88a840c754cd12c274b77b88760dd"]
 src_subdir = "nvidia_ml_py-13.590.48"
