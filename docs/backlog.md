@@ -88,14 +88,15 @@
     compressed-tensors requirement. Package policy, rendered scaffolds, and
     package-build, publish/install, and installed-smoke evidence now also exist
     for `python-accelerate-gfx1151 1.12.0-1`, `python-auto-round-gfx1151 0.10.2-1`,
-    and `python-llmcompressor-gfx1151 0.10.0.1-4`; package-build evidence exists
-    for the follow-up `python-llmcompressor-gfx1151 0.10.0.1-5` cleanup. The llmcompressor package uses
+    and `python-llmcompressor-gfx1151 0.10.0.1-4`; package-build, publish/install,
+    and installed-smoke evidence now also exists for the follow-up
+    `python-llmcompressor-gfx1151 0.10.0.1-5` cleanup. The llmcompressor package uses
     upstream's dev dependency lane plus package-local compatibility patches to
     accept the installed PyTorch 2.11, Transformers 5.7.0, and
     compressed-tensors 0.15.0.1 stack, and its wheel metadata patches out
-    the NVIDIA-only `nvidia-ml-py` runtime dependency. The installed smoke passed for `accelerate`, `auto_round`, `llmcompressor`,
-    llmcompressor's AutoRound modifier import, skip-weight initialization, and
-    model-free name matching.
+    the NVIDIA-only `nvidia-ml-py` runtime dependency. Installed smoke passed for `accelerate`, `auto_round`,
+    `python-llmcompressor-gfx1151 0.10.0.1-5`, llmcompressor's AutoRound
+    modifier import, skip-weight initialization, and model-free name matching.
   - Blackcat tooling freshness follow-up: the 2026-05-01 policy-coverage
     freshness sweep found PyPI updates for `python-accelerate-gfx1151` from
     1.12.0 to 1.13.0 and `python-auto-round-gfx1151` from 0.10.2 to 0.12.3. These are
