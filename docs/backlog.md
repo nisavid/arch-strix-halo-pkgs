@@ -2,6 +2,31 @@
 
 ## Packaging And Build Hygiene
 
+- The 2026-05-07 freshness sweep found a new refresh bundle now prepared in
+  source metadata: AITER main
+  `086cd0aef432233e604891224b4a39645b2e24c2`, llama.cpp `b9050`,
+  stable-diffusion.cpp `r596.g90e87bc`, Transformers 5.8.0,
+  mistral-common 1.11.2, cryptography 48.0.0, orjson 3.11.9, accelerate
+  1.13.0, and auto-round 0.12.3. The affected package set now builds, but
+  publish/install and installed smokes still need to pass before marking the
+  candidates adopted in `docs/maintainers/update-candidates.toml`.
+  - `2026-05-07 refresh build and deploy`: build the directly changed
+    packages, rebuild affected consumers where metadata/runtime contracts
+    require it, deploy/install the built artifacts, run import/CLI/JIT smokes,
+    and rerun the affected vLLM and stable-diffusion wrapper scenarios. The
+    `tools/amerge` build plan `20260507T045259-7a242b1c` completed after
+    removing obsolete orjson patch carry; the remaining gate is privileged
+    deploy/install plus installed smoke and scenario validation.
+- Python 3.14.5 coordinated rebuild lane: Python 3.14.5 is reviewed as
+  baseline drift but remains a coordinated interpreter rebuild lane rather
+  than part of the 2026-05-07 source bundle.
+  Keep `python-gfx1151` aligned with Arch's Python package shape until that
+  rebuild lane is opened.
+- Local python-pydantic ABI lane: PyPI pydantic-core 2.46.4 is reviewed as
+  baseline drift. Keep
+  `python-pydantic-core-gfx1151` aligned with Arch's pydantic-core ABI for the
+  installed `python-pydantic` package until this repo owns a matching local
+  `python-pydantic` lane.
 - The 2026-05-03 refresh candidates are adopted as one branch: vLLM 0.20.1,
   llama.cpp b9010, and AITER main
   `51f3d2b6968360fba7772208025e5c07756121ba`. `tools/amerge` plan
@@ -99,11 +124,11 @@
     The installed smoke covered `accelerate`, `auto_round`, `llmcompressor`,
     llmcompressor's AutoRound modifier import, skip-weight initialization, and
     model-free name matching.
-  - Blackcat tooling freshness follow-up: the 2026-05-01 policy-coverage
-    freshness sweep found PyPI updates for `python-accelerate-gfx1151` from
-    1.12.0 to 1.13.0 and `python-auto-round-gfx1151` from 0.10.2 to 0.12.3. These are
-    tracked in `docs/maintainers/update-candidates.toml`; adopt them through a
-    separate package update, rebuild, deploy/install, and installed smoke lane.
+  - Blackcat tooling freshness follow-up: the 2026-05-07 refresh source bundle
+    prepares `python-accelerate-gfx1151 1.13.0` and
+    `python-auto-round-gfx1151 0.12.3`. Adoption still needs package build,
+    deploy/install, and installed smoke evidence as part of the active refresh
+    build/deploy gate.
     The former `nvidia-ml-py` follow-up is retired because llmcompressor now
     patches the NVIDIA metric dependency out of its wheel metadata.
     The 2026-05-03 rebase freshness sweep rejected `llmcompressor 0.10.0.2`

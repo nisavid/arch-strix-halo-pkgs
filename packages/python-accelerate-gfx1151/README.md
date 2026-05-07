@@ -6,7 +6,7 @@
 - Scaffold template: `native-wheel-pypi`
 - Recipe build method: `pip`
 - Upstream repo: `https://github.com/huggingface/accelerate`
-- Package version: `1.12.0`
+- Package version: `1.13.0`
 - Recipe revision: `a1d7a68 (20260427, 16 commits touching recipe path)`
 - Recipe steps: `32`
 - Recipe dependencies: `cpython, pytorch`
@@ -23,9 +23,10 @@ it belongs in the local package closure because llmcompressor and AutoRound
 expect a coherent installed accelerate package rather than an untracked venv
 wheel.
 
-The package uses accelerate 1.12.0 because llmcompressor 0.10.0.1 release
-metadata accepts accelerate up to 1.12.0. Keep updates tied to the active
-llmcompressor dependency window.
+The package follows the active PyPI accelerate lane because the local
+llmcompressor package uses the dev dependency window and package-local metadata
+patches for the repo-owned runtime stack. Keep updates tied to the active
+quantization-tooling dependency window.
 
 
 ## Scaffold notes
@@ -36,7 +37,7 @@ llmcompressor dependency window.
 ## Intentional Divergences
 
 - There is no current Arch-family accelerate package baseline, so this package is closure-first for llmcompressor and AutoRound tooling.
-- Uses accelerate 1.12.0 because llmcompressor 0.10.0.1 release metadata caps accelerate at 1.12.0 even though newer PyPI releases exist.
+- Follows the active PyPI accelerate lane because the local llmcompressor package builds against the dev dependency window and carries metadata patches for the repo-owned runtime stack.
 
 ## Update Notes
 

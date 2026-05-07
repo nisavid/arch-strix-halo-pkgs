@@ -6,7 +6,7 @@
 - Scaffold template: `stable-diffusion-cpp`
 - Recipe build method: `cmake`
 - Upstream repo: `https://github.com/leejet/stable-diffusion.cpp.git`
-- Package version: `r593.g3d6064b`
+- Package version: `r596.g90e87bc`
 - Recipe revision: `a1d7a68 (20260427, 16 commits touching recipe path)`
 - Recipe steps: `35, 37`
 - Recipe dependencies: `therock`
@@ -20,10 +20,10 @@
 This package supplies stable-diffusion.cpp as the Blackcat Vulkan image
 generation engine for the Strix Halo stack. The source follows
 leejet/stable-diffusion.cpp master at
-`3d6064b37ef4607917f8acf2ca8c8906d5087413` (`r593.g3d6064b`, 2026-04-30).
-The reviewed `b8bdffc..3d6064b` range includes runtime backend discovery,
-VAE buffer lifetime cleanup, image metadata output, and tensor-to-image
-conversion speed work.
+`90e87bc846f17059771efb8aaa31e9ef0cab6f78` (`r596.g90e87bc`).
+The reviewed range includes runtime backend discovery, VAE buffer lifetime
+cleanup, image metadata output, tensor-to-image conversion speed work, flow
+sampler improvements, and max-VRAM segmented parameter offload support.
 
 The package builds the Vulkan backend with ggml, WebP, WebM, and server frontend
 inputs modeled as explicit package sources and staged into the upstream
@@ -60,6 +60,7 @@ unknown tensors.
 - Diff against aur/stable-diffusion.cpp-vulkan-git for package layout and dependency conventions, but keep the local /opt install and suffixed wrappers to avoid CLI name collisions.
 - When updating the pinned commit, re-check that 0001-sdxl-clipg-prefix-mapping.patch still applies and still guards the SDXL diffusers CLIP-G load path.
 - After publish/install, smoke sd-cli-vulkan-gfx1151 and sd-server-vulkan-gfx1151 with --help or equivalent no-model startup checks before any model-generation validation claim.
+- The current package follows upstream master at 90e87bc846f17059771efb8aaa31e9ef0cab6f78 for MultiLora handling, flow-model sampler behavior, and max-VRAM segmented parameter offload support.
 
 ## Maintainer Starting Points
 

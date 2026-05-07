@@ -47,7 +47,8 @@ vllm-env.sh is re-sourced after build to restore flags.
 ## Update Notes
 
 - Always diff against the current Arch python PKGBUILD first, then inspect CachyOS for any CPU-tuning or toolchain deltas worth carrying.
-- Treat system-Python replacement as gated on a fresh torch/vllm smoke run after any major Python, ROCm, or recipe change.
+- Treat system-Python replacement as gated on a fresh torch/vLLM smoke run after any major Python, ROCm, or recipe change.
+- Keep the package aligned with Arch's Python 3.14 package until a coordinated interpreter rebuild lane is opened for the local ROCm and vLLM stack.
 
 ## Maintainer Starting Points
 

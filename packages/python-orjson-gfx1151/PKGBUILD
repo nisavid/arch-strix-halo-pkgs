@@ -5,8 +5,8 @@
 # Package recipe key: rust_wheels
 
 pkgname=python-orjson-gfx1151
-pkgver=3.11.8
-pkgrel=2
+pkgver=3.11.9
+pkgrel=1
 pkgdesc='Fast, correct Python JSON library rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://github.com/ijl/orjson
@@ -18,19 +18,11 @@ options=()
 provides=(python-orjson)
 conflicts=(python-orjson)
 replaces=()
-source=(https://files.pythonhosted.org/packages/source/o/orjson/orjson-3.11.8.tar.gz 0001-cold-path-feature-check-uses-rustc-capability.patch)
-sha256sums=(96163d9cdc5a202703e9ad1b9ae757d5f0ca62f4fa0cc93d1f27b0e180cc404e SKIP)
-
-prepare() {
-  cd "$srcdir/orjson-3.11.8"
-
-  if ! patch --dry-run -R -Np1 -i "$srcdir/0001-cold-path-feature-check-uses-rustc-capability.patch" >/dev/null 2>&1; then
-    patch -Np1 -i "$srcdir/0001-cold-path-feature-check-uses-rustc-capability.patch"
-  fi
-}
+source=(https://files.pythonhosted.org/packages/source/o/orjson/orjson-3.11.9.tar.gz)
+sha256sums=(4fef17e1f8722c11587a6ef18e35902450221da0028e65dbaaa543619e68e48f)
 
 build() {
-  cd "$srcdir/orjson-3.11.8"
+  cd "$srcdir/orjson-3.11.9"
 
   _setup_compiler_env() {
   local _compiler_root="/opt/rocm/lib/llvm/bin"
@@ -68,11 +60,11 @@ build() {
 }
 
 package() {
-  cd "$srcdir/orjson-3.11.8"
+  cd "$srcdir/orjson-3.11.9"
   python -m installer --destdir="$pkgdir" dist/*.whl
 
   local _debug_prefix="/usr/src/debug/python-orjson-gfx1151"
   find "$pkgdir/usr/lib" -type f -path '*/sboms/*.json' -print0 | while IFS= read -r -d '' _file; do
-    sed -i       -e "s|$srcdir/orjson-3.11.8|${_debug_prefix}/orjson-3.11.8|g"       -e "s|$srcdir|${_debug_prefix}|g"       -e "s|/tmp/pkg/src/orjson-3.11.8|${_debug_prefix}/orjson-3.11.8|g"       "$_file" 2>/dev/null || true
+    sed -i       -e "s|$srcdir/orjson-3.11.9|${_debug_prefix}/orjson-3.11.9|g"       -e "s|$srcdir|${_debug_prefix}|g"       -e "s|/tmp/pkg/src/orjson-3.11.9|${_debug_prefix}/orjson-3.11.9|g"       "$_file" 2>/dev/null || true
   done
 }

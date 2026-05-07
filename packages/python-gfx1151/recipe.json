@@ -11,7 +11,8 @@
     "source_patches": [],
     "update_notes": [
       "Always diff against the current Arch python PKGBUILD first, then inspect CachyOS for any CPU-tuning or toolchain deltas worth carrying.",
-      "Treat system-Python replacement as gated on a fresh torch/vllm smoke run after any major Python, ROCm, or recipe change."
+      "Treat system-Python replacement as gated on a fresh torch/vLLM smoke run after any major Python, ROCm, or recipe change.",
+      "Keep the package aligned with Arch's Python 3.14 package until a coordinated interpreter rebuild lane is opened for the local ROCm and vLLM stack."
     ]
   },
   "name": "python-gfx1151",
@@ -99,7 +100,8 @@
     "template": "autoconf-python",
     "update_notes": [
       "Always diff against the current Arch python PKGBUILD first, then inspect CachyOS for any CPU-tuning or toolchain deltas worth carrying.",
-      "Treat system-Python replacement as gated on a fresh torch/vllm smoke run after any major Python, ROCm, or recipe change."
+      "Treat system-Python replacement as gated on a fresh torch/vLLM smoke run after any major Python, ROCm, or recipe change.",
+      "Keep the package aligned with Arch's Python 3.14 package until a coordinated interpreter rebuild lane is opened for the local ROCm and vLLM stack."
     ],
     "upstream_version": "3.14.4",
     "url": "https://www.python.org/"

@@ -6,21 +6,18 @@
     "authoritative_reference": "extra/python-orjson",
     "divergence_notes": [
       "Uses the recipe's explicit Rust linker selection and path-remapping rules so AMD's toolchain wrappers behave correctly.",
-      "Pins Rust target-cpu to znver5 instead of plain native because the recipe documents a rustc native-detection issue on this platform.",
-      "Carries a build.rs capability probe patch so orjson enables the `cold_path` optimization only when rustc reports support for it."
+      "Pins Rust target-cpu to znver5 instead of plain native because the recipe documents a rustc native-detection issue on this platform."
     ],
-    "source_patches": [
-      "0001-cold-path-feature-check-uses-rustc-capability.patch"
-    ],
+    "source_patches": [],
     "update_notes": [
       "Compare against Arch first for maturin/backend changes, then keep Cachy as a secondary reference for CPU-targeting differences.",
       "Retain CycloneDX/debug-path rewriting in package() unless upstream or Arch resolves the path leakage directly.",
-      "Recheck `cold_path` feature detection when adopting a newer orjson or Rust lane."
+      "Keep the patch list empty while upstream build.rs does not emit or gate `cold_path` configuration."
     ]
   },
   "name": "python-orjson-gfx1151",
   "package_name": "python-orjson-gfx1151",
-  "pkgver": "3.11.8",
+  "pkgver": "3.11.9",
   "policy": {
     "advisory_references": [
       "cachyos-extra-znver4/python-orjson"
@@ -40,8 +37,7 @@
     ],
     "divergence_notes": [
       "Uses the recipe's explicit Rust linker selection and path-remapping rules so AMD's toolchain wrappers behave correctly.",
-      "Pins Rust target-cpu to znver5 instead of plain native because the recipe documents a rustc native-detection issue on this platform.",
-      "Carries a build.rs capability probe patch so orjson enables the `cold_path` optimization only when rustc reports support for it."
+      "Pins Rust target-cpu to znver5 instead of plain native because the recipe documents a rustc native-detection issue on this platform."
     ],
     "license": [
       "Apache-2.0",
@@ -56,7 +52,6 @@
       "rocm-llvm-gfx1151",
       "rust"
     ],
-    "patches_dir": "patches/python-orjson-gfx1151",
     "pkgdesc": "Fast, correct Python JSON library rebuilt for Strix Halo gfx1151",
     "provides": [
       "python-orjson"
@@ -69,16 +64,16 @@
       "Keep RUSTFLAGS pinned to znver5 rather than native; the recipe documents a rustc native-detection issue on this platform."
     ],
     "sha256sums": [
-      "96163d9cdc5a202703e9ad1b9ae757d5f0ca62f4fa0cc93d1f27b0e180cc404e"
+      "4fef17e1f8722c11587a6ef18e35902450221da0028e65dbaaa543619e68e48f"
     ],
-    "src_subdir": "orjson-3.11.8",
+    "src_subdir": "orjson-3.11.9",
     "template": "rust-wheel-pypi",
     "update_notes": [
       "Compare against Arch first for maturin/backend changes, then keep Cachy as a secondary reference for CPU-targeting differences.",
       "Retain CycloneDX/debug-path rewriting in package() unless upstream or Arch resolves the path leakage directly.",
-      "Recheck `cold_path` feature detection when adopting a newer orjson or Rust lane."
+      "Keep the patch list empty while upstream build.rs does not emit or gate `cold_path` configuration."
     ],
-    "upstream_version": "3.11.8",
+    "upstream_version": "3.11.9",
     "url": "https://github.com/ijl/orjson"
   },
   "provenance": {

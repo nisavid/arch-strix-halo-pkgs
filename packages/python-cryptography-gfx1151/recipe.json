@@ -12,13 +12,12 @@
     "update_notes": [
       "Always confirm the current Arch build backend requirements before updating this package; cryptography regularly changes Rust/setuptools details.",
       "Treat any OpenSSL dependency drift in Arch as authoritative unless the recipe provides a concrete reason to diverge.",
-      "On 2026-04-24, reviewed PyPI cryptography 47.0.0 while Arch's authoritative python-cryptography baseline remained 46.0.7-1. The runtime dependency shape stayed aligned for the local Python 3.14 path, but the sdist build-system requirement now excludes maturin 1.12.0.",
-      "On 2026-04-25, Arch adopted python-cryptography 47.0.0-1 with python-maturin, clang, lld, llvm, python-setuptools, and python-wheel makedepends. Keep the local package on 46.0.7 until a package-specific build refresh validates the newer maturin lane."
+      "The package follows the current Arch/PyPI cryptography release and keeps the recipe Rust-wheel compiler lane while the build backend stays compatible with the repo-owned Rust-wheel scaffold."
     ]
   },
   "name": "python-cryptography-gfx1151",
   "package_name": "python-cryptography-gfx1151",
-  "pkgver": "46.0.7",
+  "pkgver": "48.0.0",
   "policy": {
     "advisory_references": [
       "cachyos-extra-znver4/python-cryptography"
@@ -67,17 +66,16 @@
       "This follows the recipe's Rust wheel build rules but still needs confirmation of the exact Arch build backend requirements on the current release."
     ],
     "sha256sums": [
-      "e4cfd68c5f3e0bfdad0d38e023239b96a2fe84146481852dffbcca442c245aa5"
+      "5c3932f4436d1cccb036cb0eaef46e6e2db91035166f1ad6505c3c9d5a635920"
     ],
-    "src_subdir": "cryptography-46.0.7",
+    "src_subdir": "cryptography-48.0.0",
     "template": "rust-wheel-pypi",
     "update_notes": [
       "Always confirm the current Arch build backend requirements before updating this package; cryptography regularly changes Rust/setuptools details.",
       "Treat any OpenSSL dependency drift in Arch as authoritative unless the recipe provides a concrete reason to diverge.",
-      "On 2026-04-24, reviewed PyPI cryptography 47.0.0 while Arch's authoritative python-cryptography baseline remained 46.0.7-1. The runtime dependency shape stayed aligned for the local Python 3.14 path, but the sdist build-system requirement now excludes maturin 1.12.0.",
-      "On 2026-04-25, Arch adopted python-cryptography 47.0.0-1 with python-maturin, clang, lld, llvm, python-setuptools, and python-wheel makedepends. Keep the local package on 46.0.7 until a package-specific build refresh validates the newer maturin lane."
+      "The package follows the current Arch/PyPI cryptography release and keeps the recipe Rust-wheel compiler lane while the build backend stays compatible with the repo-owned Rust-wheel scaffold."
     ],
-    "upstream_version": "46.0.7",
+    "upstream_version": "48.0.0",
     "url": "https://github.com/pyca/cryptography"
   },
   "provenance": {

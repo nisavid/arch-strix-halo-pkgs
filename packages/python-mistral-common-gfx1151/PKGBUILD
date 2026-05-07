@@ -1,8 +1,8 @@
 # Maintainer: nisavid
 
 pkgname=python-mistral-common-gfx1151
-pkgver=1.11.1
-pkgrel=2
+pkgver=1.11.2
+pkgrel=1
 pkgdesc='Set of tools to help you work with Mistral models rebuilt for Strix Halo gfx1151'
 arch=('any')
 url='https://github.com/mistralai/mistral-common'
@@ -37,7 +37,7 @@ provides=(python-mistral-common)
 conflicts=(python-mistral-common)
 replaces=()
 source=(https://files.pythonhosted.org/packages/source/m/mistral_common/mistral_common-${pkgver}.tar.gz)
-sha256sums=(SKIP)
+sha256sums=(79f68fc2d1190f28637f40e053f919c8c2697e00b2aa679ddee562a95183f4ad)
 
 build() {
   cd "$srcdir/mistral_common-${pkgver}"

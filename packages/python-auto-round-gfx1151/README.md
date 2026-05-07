@@ -6,7 +6,7 @@
 - Scaffold template: `native-wheel-pypi`
 - Recipe build method: `pip`
 - Upstream repo: `https://github.com/intel/auto-round`
-- Package version: `0.10.2`
+- Package version: `0.12.3`
 - Recipe revision: `a1d7a68 (20260427, 16 commits touching recipe path)`
 - Recipe steps: `32`
 - Recipe dependencies: `cpython, pytorch`
@@ -22,9 +22,10 @@ ships Python quantization helpers and backend adapters; the current package
 keeps upstream's wheel shape and points runtime dependencies at the local
 gfx1151 torch, transformers, numpy, and accelerate stack.
 
-The package uses auto-round 0.10.2 because llmcompressor 0.10.0.1 release
-metadata accepts auto-round up to 0.10.2. Keep updates tied to the active
-llmcompressor dependency window.
+The package follows the active PyPI auto-round lane because the local
+llmcompressor package uses the dev dependency window and package-local metadata
+patches for the repo-owned runtime stack. Keep updates tied to the active
+quantization-tooling dependency window.
 
 
 ## Scaffold notes
@@ -35,7 +36,7 @@ llmcompressor dependency window.
 ## Intentional Divergences
 
 - There is no current Arch-family auto-round package baseline, so this package is closure-first for llmcompressor's AutoRound modifier.
-- Uses auto-round 0.10.2 because llmcompressor 0.10.0.1 release metadata caps auto-round at 0.10.2 even though newer PyPI releases exist.
+- Follows the active PyPI auto-round lane because the local llmcompressor package builds against the dev dependency window and carries metadata patches for the repo-owned runtime stack.
 
 ## Update Notes
 

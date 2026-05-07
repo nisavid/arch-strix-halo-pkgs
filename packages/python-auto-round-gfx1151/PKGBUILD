@@ -5,7 +5,7 @@
 # Package recipe key: native_wheels
 
 pkgname=python-auto-round-gfx1151
-pkgver=0.10.2
+pkgver=0.12.3
 pkgrel=1
 pkgdesc='AutoRound quantization tooling for the Strix Halo Python stack'
 arch=('x86_64')
@@ -18,11 +18,11 @@ options=()
 provides=(python-auto-round)
 conflicts=(python-auto-round)
 replaces=()
-source=(https://files.pythonhosted.org/packages/source/a/auto_round/auto_round-0.10.2.tar.gz)
-sha256sums=(f00a5fd484363d9ab9f5628f46ae70fd880b5fa91fcd15d55a556b8e36d39e24)
+source=(https://files.pythonhosted.org/packages/source/a/auto_round/auto_round-0.12.3.tar.gz)
+sha256sums=(bc3370f7c3dabcae35d7f513e0bea3a1ee60bb9bfe0766ff25e4cc71fdf18f31)
 
 build() {
-  cd "$srcdir/auto_round-0.10.2"
+  cd "$srcdir/auto_round-0.12.3"
 
   _setup_compiler_env() {
   local _compiler_root="/opt/rocm/lib/llvm/bin"
@@ -64,6 +64,6 @@ build() {
 }
 
 package() {
-  cd "$srcdir/auto_round-0.10.2"
+  cd "$srcdir/auto_round-0.12.3"
   python -m installer --destdir="$pkgdir" dist/*.whl
 }

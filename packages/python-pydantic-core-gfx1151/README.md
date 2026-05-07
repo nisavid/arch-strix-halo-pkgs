@@ -49,6 +49,7 @@ CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER.
 - Check Arch python-pydantic and python-pydantic-core together before updating; upstream pydantic normally constrains the pydantic-core ABI tightly.
 - Do not adopt a newer pydantic-core release from recipe notes alone; keep pydantic-core aligned with the installed pydantic ABI unless this repo also carries and validates a matching pydantic package.
 - After publishing a rebuilt package, verify `import pydantic_core` and a tiny `pydantic.BaseModel` validation through the installed local Python lane.
+- Record newer PyPI pydantic-core releases as baseline drift while the package follows Arch's pydantic-core ABI for the installed pydantic package.
 
 ## Maintainer Starting Points
 

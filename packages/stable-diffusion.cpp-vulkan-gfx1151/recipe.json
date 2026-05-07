@@ -16,12 +16,13 @@
       "Track upstream master as a pinned git snapshot until leejet/stable-diffusion.cpp publishes release tags suitable for package versioning.",
       "Diff against aur/stable-diffusion.cpp-vulkan-git for package layout and dependency conventions, but keep the local /opt install and suffixed wrappers to avoid CLI name collisions.",
       "When updating the pinned commit, re-check that 0001-sdxl-clipg-prefix-mapping.patch still applies and still guards the SDXL diffusers CLIP-G load path.",
-      "After publish/install, smoke sd-cli-vulkan-gfx1151 and sd-server-vulkan-gfx1151 with --help or equivalent no-model startup checks before any model-generation validation claim."
+      "After publish/install, smoke sd-cli-vulkan-gfx1151 and sd-server-vulkan-gfx1151 with --help or equivalent no-model startup checks before any model-generation validation claim.",
+      "The current package follows upstream master at 90e87bc846f17059771efb8aaa31e9ef0cab6f78 for MultiLora handling, flow-model sampler behavior, and max-VRAM segmented parameter offload support."
     ]
   },
   "name": "stable-diffusion.cpp-vulkan-gfx1151",
   "package_name": "stable-diffusion.cpp-vulkan-gfx1151",
-  "pkgver": "r593.g3d6064b",
+  "pkgver": "r596.g90e87bc",
   "policy": {
     "advisory_references": [
       "aur/stable-diffusion.cpp-git"
@@ -80,7 +81,7 @@
       "stable-diffusion.cpp-vulkan"
     ],
     "recipe_key": "stable_diffusion_cpp",
-    "recipe_notes_override": "This package supplies stable-diffusion.cpp as the Blackcat Vulkan image\ngeneration engine for the Strix Halo stack. The source follows\nleejet/stable-diffusion.cpp master at\n`3d6064b37ef4607917f8acf2ca8c8906d5087413` (`r593.g3d6064b`, 2026-04-30).\nThe reviewed `b8bdffc..3d6064b` range includes runtime backend discovery,\nVAE buffer lifetime cleanup, image metadata output, and tensor-to-image\nconversion speed work.\n\nThe package builds the Vulkan backend with ggml, WebP, WebM, and server frontend\ninputs modeled as explicit package sources and staged into the upstream\nsubmodule paths during prepare().\nIt uses the repo's amdclang/Zen 5 lane, ThinLTO, AOCL-LibM\nlinkage, OpenMP CPU fallback, WebP/WebM output support, and release-mode\nVulkan settings. Runtime payloads live under\n`/opt/stable-diffusion.cpp-vulkan-gfx1151`, with\n`sd-cli-vulkan-gfx1151` and `sd-server-vulkan-gfx1151` wrappers under\n`/usr/bin`.\n\nThe SDXL CLIP-G prefix patch comes from Blackcat's recipe notes and keeps\ndiffusers SDXL checkpoint loading from misclassifying CLIP-G tensors as SD 1.x\nunknown tensors.\n",
+    "recipe_notes_override": "This package supplies stable-diffusion.cpp as the Blackcat Vulkan image\ngeneration engine for the Strix Halo stack. The source follows\nleejet/stable-diffusion.cpp master at\n`90e87bc846f17059771efb8aaa31e9ef0cab6f78` (`r596.g90e87bc`).\nThe reviewed range includes runtime backend discovery, VAE buffer lifetime\ncleanup, image metadata output, tensor-to-image conversion speed work, flow\nsampler improvements, and max-VRAM segmented parameter offload support.\n\nThe package builds the Vulkan backend with ggml, WebP, WebM, and server frontend\ninputs modeled as explicit package sources and staged into the upstream\nsubmodule paths during prepare().\nIt uses the repo's amdclang/Zen 5 lane, ThinLTO, AOCL-LibM\nlinkage, OpenMP CPU fallback, WebP/WebM output support, and release-mode\nVulkan settings. Runtime payloads live under\n`/opt/stable-diffusion.cpp-vulkan-gfx1151`, with\n`sd-cli-vulkan-gfx1151` and `sd-server-vulkan-gfx1151` wrappers under\n`/usr/bin`.\n\nThe SDXL CLIP-G prefix patch comes from Blackcat's recipe notes and keeps\ndiffusers SDXL checkpoint loading from misclassifying CLIP-G tensors as SD 1.x\nunknown tensors.\n",
     "recipe_patch_file_rewrites": {
       "patches/sdcpp-sdxl-clipg-prefix.patch": "0001-sdxl-clipg-prefix-mapping.patch"
     },
@@ -95,7 +96,7 @@
       "SKIP"
     ],
     "source_refs": [
-      "stable-diffusion.cpp::git+https://github.com/leejet/stable-diffusion.cpp.git#commit=3d6064b37ef4607917f8acf2ca8c8906d5087413"
+      "stable-diffusion.cpp::git+https://github.com/leejet/stable-diffusion.cpp.git#commit=90e87bc846f17059771efb8aaa31e9ef0cab6f78"
     ],
     "src_subdir": "stable-diffusion.cpp",
     "template": "stable-diffusion-cpp",
@@ -103,11 +104,12 @@
       "Track upstream master as a pinned git snapshot until leejet/stable-diffusion.cpp publishes release tags suitable for package versioning.",
       "Diff against aur/stable-diffusion.cpp-vulkan-git for package layout and dependency conventions, but keep the local /opt install and suffixed wrappers to avoid CLI name collisions.",
       "When updating the pinned commit, re-check that 0001-sdxl-clipg-prefix-mapping.patch still applies and still guards the SDXL diffusers CLIP-G load path.",
-      "After publish/install, smoke sd-cli-vulkan-gfx1151 and sd-server-vulkan-gfx1151 with --help or equivalent no-model startup checks before any model-generation validation claim."
+      "After publish/install, smoke sd-cli-vulkan-gfx1151 and sd-server-vulkan-gfx1151 with --help or equivalent no-model startup checks before any model-generation validation claim.",
+      "The current package follows upstream master at 90e87bc846f17059771efb8aaa31e9ef0cab6f78 for MultiLora handling, flow-model sampler behavior, and max-VRAM segmented parameter offload support."
     ],
     "upstream_name": "stable-diffusion.cpp",
-    "upstream_revision": "3d6064b37ef4607917f8acf2ca8c8906d5087413",
-    "upstream_version": "r593.g3d6064b",
+    "upstream_revision": "90e87bc846f17059771efb8aaa31e9ef0cab6f78",
+    "upstream_version": "r596.g90e87bc",
     "url": "https://github.com/leejet/stable-diffusion.cpp"
   },
   "provenance": {
@@ -126,7 +128,7 @@
       "therock"
     ],
     "method": "cmake",
-    "notes": "This package supplies stable-diffusion.cpp as the Blackcat Vulkan image\ngeneration engine for the Strix Halo stack. The source follows\nleejet/stable-diffusion.cpp master at\n`3d6064b37ef4607917f8acf2ca8c8906d5087413` (`r593.g3d6064b`, 2026-04-30).\nThe reviewed `b8bdffc..3d6064b` range includes runtime backend discovery,\nVAE buffer lifetime cleanup, image metadata output, and tensor-to-image\nconversion speed work.\n\nThe package builds the Vulkan backend with ggml, WebP, WebM, and server frontend\ninputs modeled as explicit package sources and staged into the upstream\nsubmodule paths during prepare().\nIt uses the repo's amdclang/Zen 5 lane, ThinLTO, AOCL-LibM\nlinkage, OpenMP CPU fallback, WebP/WebM output support, and release-mode\nVulkan settings. Runtime payloads live under\n`/opt/stable-diffusion.cpp-vulkan-gfx1151`, with\n`sd-cli-vulkan-gfx1151` and `sd-server-vulkan-gfx1151` wrappers under\n`/usr/bin`.\n\nThe SDXL CLIP-G prefix patch comes from Blackcat's recipe notes and keeps\ndiffusers SDXL checkpoint loading from misclassifying CLIP-G tensors as SD 1.x\nunknown tensors.\n",
+    "notes": "This package supplies stable-diffusion.cpp as the Blackcat Vulkan image\ngeneration engine for the Strix Halo stack. The source follows\nleejet/stable-diffusion.cpp master at\n`90e87bc846f17059771efb8aaa31e9ef0cab6f78` (`r596.g90e87bc`).\nThe reviewed range includes runtime backend discovery, VAE buffer lifetime\ncleanup, image metadata output, tensor-to-image conversion speed work, flow\nsampler improvements, and max-VRAM segmented parameter offload support.\n\nThe package builds the Vulkan backend with ggml, WebP, WebM, and server frontend\ninputs modeled as explicit package sources and staged into the upstream\nsubmodule paths during prepare().\nIt uses the repo's amdclang/Zen 5 lane, ThinLTO, AOCL-LibM\nlinkage, OpenMP CPU fallback, WebP/WebM output support, and release-mode\nVulkan settings. Runtime payloads live under\n`/opt/stable-diffusion.cpp-vulkan-gfx1151`, with\n`sd-cli-vulkan-gfx1151` and `sd-server-vulkan-gfx1151` wrappers under\n`/usr/bin`.\n\nThe SDXL CLIP-G prefix patch comes from Blackcat's recipe notes and keeps\ndiffusers SDXL checkpoint loading from misclassifying CLIP-G tensors as SD 1.x\nunknown tensors.\n",
     "patches": [],
     "phase": "I",
     "repo": "https://github.com/leejet/stable-diffusion.cpp.git",
