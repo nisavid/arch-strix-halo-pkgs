@@ -7,7 +7,7 @@
 - Scaffold template: `llama-cpp`
 - Recipe build method: `cmake`
 - Upstream repo: `https://github.com/ggml-org/llama.cpp.git`
-- Package version: `b9010`
+- Package version: `b9050`
 - Recipe revision: `a1d7a68 (20260427, 16 commits touching recipe path)`
 - Recipe steps: `34`
 - Recipe dependencies: `therock`
@@ -64,6 +64,7 @@ binaries find their shared libraries without LD_LIBRARY_PATH.
 - On 2026-04-29, adopted upstream llama.cpp b8966 at 7b8443ac786c06438e0f407b7adaa72c220b5099. The b8955..b8966 range adds CANN operator work, backend/device duplicate-registration handling, Vulkan timestamp-barrier and shader/header fixes, WebGPU SSM scan aliasing fixes, CUDA FA support for Mistral Small head sizes, and a broad server UI tool/chat settings refactor; no local packaging patch carry changed.
 - On 2026-05-01, adopted upstream llama.cpp b8992 at 5cbfb18075c95437e4ac7fb50e3baf88fe137a87. The b8966..b8992 range is runtime-facing for the packaged backends: common sampling, speculative, reasoning-budget, server/Web UI, ggml 0.10.1, Vulkan tensor-helper, mmap ftello/fseeko, hf-cache null-user, and cpp-httplib vendor changes.
 - On 2026-05-03, adopted upstream llama.cpp b9010 at d05fe1d7dadbf8943c8f1903fcf65b935ddab839. The b8992..b9010 range changes shared runtime/server code, ggml 0.10.2, Vulkan FlashAttention coopmat2 support, OpenCL MXFP4 MoE support, WebGPU shaders, and server UI attachment/refactor paths; no local package patch carry changed.
+- The current package follows upstream llama.cpp b9050 at 3980e04d5a374da025e1942eb1043ac2f33e6a9a because the range includes shared runtime/server changes, ggml 0.11.0, Vulkan code changes, backend loading changes, and model/runtime fixes that overlap the packaged HIP and Vulkan backends.
 - Keep the backend-specific package split explicit until benchmarking proves a routing wrapper is worth maintaining.
 
 ## Maintainer Starting Points

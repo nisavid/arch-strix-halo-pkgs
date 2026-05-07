@@ -113,14 +113,14 @@ TOOLING_STACK = {
     "python-accelerate-gfx1151": {
         "template": "native-wheel-pypi",
         "recipe_key": "native_wheels",
-        "upstream_version": "1.12.0",
+        "upstream_version": "1.13.0",
         "provides": ["python-accelerate"],
         "consumer_dep": "python-accelerate-gfx1151",
     },
     "python-auto-round-gfx1151": {
         "template": "native-wheel-pypi",
         "recipe_key": "native_wheels",
-        "upstream_version": "0.10.2",
+        "upstream_version": "0.12.3",
         "provides": ["python-auto-round"],
         "consumer_dep": "python-auto-round-gfx1151",
     },
@@ -144,7 +144,7 @@ ENGINE_STACK = {
     "stable-diffusion.cpp-vulkan-gfx1151": {
         "template": "stable-diffusion-cpp",
         "recipe_key": "stable_diffusion_cpp",
-        "upstream_version": "r593.g3d6064b",
+        "upstream_version": "r596.g90e87bc",
         "provides": [
             "stable-diffusion.cpp-vulkan-gfx1151",
             "stable-diffusion.cpp-vulkan",
@@ -354,7 +354,7 @@ def test_blackcat_engine_stack_rendered_output_exists() -> None:
     readme = (package_dir / "README.md").read_text()
 
     assert f"pkgname={package_name}" in pkgbuild
-    assert "pkgver=r593.g3d6064b" in pkgbuild
+    assert "pkgver=r596.g90e87bc" in pkgbuild
     assert "git submodule update --init --recursive" not in pkgbuild
     assert "ggml::git+https://github.com/ggml-org/ggml.git" in pkgbuild
     assert "sdcpp-webui::git+https://github.com/leejet/sdcpp-webui.git" in pkgbuild

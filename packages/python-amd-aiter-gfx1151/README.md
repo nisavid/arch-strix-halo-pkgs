@@ -6,7 +6,7 @@
 - Scaffold template: `python-project-aiter`
 - Recipe build method: `pip`
 - Upstream repo: `https://github.com/ROCm/aiter.git`
-- Package version: `0.1.12.post2.dev171+g51f3d2b69`
+- Package version: `0.1.12.post2.dev200+g086cd0aef`
 - Recipe revision: `a1d7a68 (20260427, 16 commits touching recipe path)`
 - Recipe steps: `29`
 - Recipe dependencies: `pytorch, vllm`
@@ -55,6 +55,7 @@ RDNA 3.5 compatibility and installed-system JIT/runtime behavior.
 - On 2026-04-28, reviewed AITER main through 6a7df2004f5f896471cf9e6ab588b6aec0357dc7. The range adds Triton A16W4 MoE kernels, MHA backward stride fixes, an mHC device fix, gfx950 A8W8 correctness updates, and CI workflow changes. It does not resolve the gfx1151 OPUS FP8 mfma_adaptor blocker or replace the local RDNA header/JIT runtime patch carry, so record the reviewed candidate head without repinning.
 - On 2026-05-01, adopted AITER main at a0f25393903f5412b0fb997d5b825a0aeb257466. The d679e288..a0f2539 range includes HIP KL cache refactoring, JIT/setup handling, cache kernels, mHC small-M work, fused all-reduce/RMSNorm memory ordering, GemmTuner SplitK guards, MXFP4 fixes, preshuffled cache/indexer fixes, and tuning/test coverage.
 - On 2026-05-03, adopted AITER main at 51f3d2b6968360fba7772208025e5c07756121ba. The a0f2539..51f3d2b range adds Triton/Gluon MLA decode work, unquantized kv_b_proj handling, arch_info torch.compile graph-break cleanup, FlyDSL tuning improvements, mHC synchronization accuracy repair, CKTile blockscale GEMM tunables, and expanded tuned GEMM/fMoE config coverage.
+- The current package follows AITER main at 086cd0aef432233e604891224b4a39645b2e24c2 because the reviewed range touches mHC, OPUS/MoE, top-k, Qwen3-Next, DeepSeek V4, FlyDSL synchronization, and custom-op surfaces that overlap local vLLM/AITER validation lanes.
 - Treat FlyDSL as a separate tracked package story; do not silently fold an unpublished wheel into this package.
 - Keep the installed-system JIT runtime patch until upstream AITER stops assuming `hipcc` is on the ambient PATH and correctly imports modules copied to the writable user JIT cache from read-only site-packages installs.
 - Keep the package's explicit ROCm toolchain exports in `build()` until upstream AITER stops probing `hipconfig` and `hipcc` through ambient shell state. The concrete build failure was `Could not find hipconfig in PATH or ROCM_HOME(/usr)`.

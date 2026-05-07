@@ -42,7 +42,7 @@ priority = "high"
 workflow = "upstream_source_update"
 checks = [
   { id = "arch", role = "primary", kind = "arch_package", package = "python", recorded = "3.14.4-1", comparison = "pkgver" },
-  { id = "cpython", role = "baseline", kind = "python_ftp", recorded = "3.14.4", comparison = "pep440", series = "3.14" },
+  { id = "cpython", role = "baseline", kind = "python_ftp", recorded = "3.14.5", comparison = "pep440", series = "3.14" },
 ]
 
 [families.vllm]
@@ -105,7 +105,7 @@ priority = "high"
 workflow = "upstream_source_update"
 checks = [
   { id = "release", role = "primary", kind = "github_release", repo = "ROCm/aiter", recorded = "0.1.12.post2", tag_prefix = "v", comparison = "pep440" },
-  { id = "main", role = "candidate", kind = "git_ref", repo = "https://github.com/ROCm/aiter.git", ref = "refs/heads/main", recorded = "d2454ad18a0d7c7795162ab0f550e8a0397840bd", comparison = "sha" },
+  { id = "main", role = "candidate", kind = "git_ref", repo = "https://github.com/ROCm/aiter.git", ref = "refs/heads/main", recorded = "3ed8a22e817acb1bc8b0898fb089ef3a6a03c1aa", comparison = "sha" },
 ]
 
 [families.flash_attention]
@@ -130,7 +130,7 @@ packages = ["python-orjson-gfx1151"]
 priority = "medium"
 workflow = "upstream_source_update"
 checks = [
-  { id = "pypi", role = "primary", kind = "pypi", package = "orjson", recorded = "3.11.8", comparison = "pep440" },
+  { id = "pypi", role = "primary", kind = "pypi", package = "orjson", recorded = "3.11.9", comparison = "pep440" },
   { id = "arch", role = "baseline", kind = "arch_package", package = "python-orjson", recorded = "3.11.8-1", comparison = "pkgver" },
 ]
 
@@ -139,8 +139,8 @@ packages = ["python-cryptography-gfx1151"]
 priority = "medium"
 workflow = "upstream_source_update"
 checks = [
-  { id = "pypi", role = "primary", kind = "pypi", package = "cryptography", recorded = "47.0.0", comparison = "pep440" },
-  { id = "arch", role = "baseline", kind = "arch_package", package = "python-cryptography", recorded = "47.0.0-1", comparison = "pkgver" },
+  { id = "pypi", role = "primary", kind = "pypi", package = "cryptography", recorded = "48.0.0", comparison = "pep440" },
+  { id = "arch", role = "baseline", kind = "arch_package", package = "python-cryptography", recorded = "48.0.0-1", comparison = "pkgver" },
 ]
 
 [families.pydantic_core]
@@ -149,7 +149,7 @@ priority = "medium"
 workflow = "upstream_source_update"
 checks = [
   { id = "arch", role = "primary", kind = "arch_package", package = "python-pydantic-core", recorded = "2.41.5-4", comparison = "pkgver" },
-  { id = "pypi", role = "baseline", kind = "pypi", package = "pydantic_core", recorded = "2.46.3", comparison = "pep440" },
+  { id = "pypi", role = "baseline", kind = "pypi", package = "pydantic_core", recorded = "2.46.4", comparison = "pep440" },
 ]
 
 [families.tokenizers]
@@ -309,7 +309,7 @@ packages = ["python-accelerate-gfx1151"]
 priority = "medium"
 workflow = "upstream_source_update"
 checks = [
-  { id = "pypi", role = "primary", kind = "pypi", package = "accelerate", recorded = "1.12.0", comparison = "pep440" },
+  { id = "pypi", role = "primary", kind = "pypi", package = "accelerate", recorded = "1.13.0", comparison = "pep440" },
 ]
 
 [families.auto_round]
@@ -317,7 +317,7 @@ packages = ["python-auto-round-gfx1151"]
 priority = "medium"
 workflow = "upstream_source_update"
 checks = [
-  { id = "pypi", role = "primary", kind = "pypi", package = "auto-round", recorded = "0.10.2", comparison = "pep440" },
+  { id = "pypi", role = "primary", kind = "pypi", package = "auto-round", recorded = "0.12.3", comparison = "pep440" },
 ]
 
 [families.llmcompressor]
@@ -351,7 +351,7 @@ packages = ["python-mistral-common-gfx1151"]
 priority = "medium"
 workflow = "upstream_source_update"
 checks = [
-  { id = "pypi", role = "primary", kind = "pypi", package = "mistral_common", recorded = "1.11.1", comparison = "pep440" },
+  { id = "pypi", role = "primary", kind = "pypi", package = "mistral_common", recorded = "1.11.2", comparison = "pep440" },
   { id = "aur", role = "baseline", kind = "aur", package = "python-mistral-common", recorded = "1.8.6-1", comparison = "pkgver" },
 ]
 
@@ -360,8 +360,8 @@ packages = ["python-transformers-gfx1151"]
 priority = "medium"
 workflow = "upstream_source_update"
 checks = [
-  { id = "pypi", role = "primary", kind = "pypi", package = "transformers", recorded = "5.7.0", comparison = "pep440" },
-  { id = "tag", role = "primary", kind = "github_tags", repo = "huggingface/transformers", recorded = "5.7.0", tag_prefix = "v", comparison = "pep440", include_prereleases = false },
+  { id = "pypi", role = "primary", kind = "pypi", package = "transformers", recorded = "5.8.0", comparison = "pep440" },
+  { id = "tag", role = "primary", kind = "github_tags", repo = "huggingface/transformers", recorded = "5.8.0", tag_prefix = "v", comparison = "pep440", include_prereleases = false },
 ]
 
 [families.llama_cpp]
@@ -369,8 +369,8 @@ packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"]
 priority = "high"
 workflow = "upstream_source_update"
 checks = [
-  { id = "release", role = "primary", kind = "github_release", repo = "ggml-org/llama.cpp", recorded = "b9012", comparison = "prefixed_integer" },
-  { id = "aur-hip", role = "baseline", kind = "aur", package = "llama.cpp-hip", recorded = "b9010-1", comparison = "pkgver" },
+  { id = "release", role = "primary", kind = "github_release", repo = "ggml-org/llama.cpp", recorded = "b9050", comparison = "prefixed_integer" },
+  { id = "aur-hip", role = "baseline", kind = "aur", package = "llama.cpp-hip", recorded = "b9049-1", comparison = "pkgver" },
   { id = "aur-vulkan", role = "baseline", kind = "aur", package = "llama.cpp-vulkan-bin", recorded = "b7376-1", comparison = "pkgver" },
 ]
 
@@ -379,7 +379,7 @@ packages = ["stable-diffusion.cpp-vulkan-gfx1151"]
 priority = "medium"
 workflow = "upstream_source_update"
 checks = [
-  { id = "master", role = "primary", kind = "git_ref", repo = "https://github.com/leejet/stable-diffusion.cpp.git", ref = "refs/heads/master", recorded = "3d6064b37ef4607917f8acf2ca8c8906d5087413", comparison = "sha" },
+  { id = "master", role = "primary", kind = "git_ref", repo = "https://github.com/leejet/stable-diffusion.cpp.git", ref = "refs/heads/master", recorded = "90e87bc846f17059771efb8aaa31e9ef0cab6f78", comparison = "sha" },
   { id = "aur-vulkan", role = "baseline", kind = "aur", package = "stable-diffusion.cpp-vulkan-git", recorded = "r279.49d6570-1", comparison = "pkgver" },
 ]
 

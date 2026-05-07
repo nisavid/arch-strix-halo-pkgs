@@ -1,6 +1,6 @@
 # Current State
 
-Status as of 2026-05-04.
+Status as of 2026-05-07.
 
 ## Rebuild Revalidation Boundary
 
@@ -224,6 +224,45 @@ llama.cpp `b9012` was rejected as GGUF-conversion-only, and
 `llmcompressor 0.10.0.2` was rejected because its published dependency metadata
 excludes the local PyTorch 2.11, Transformers 5.7.0, compressed-tensors
 0.15.0.1, and tracked newer tooling package lane.
+
+The 2026-05-07 freshness sweep ran
+`tools/check_package_updates.py --json --fail-on actionable` and found new
+action-required source or baseline drift. Source metadata is prepared for one
+refresh bundle: AITER main
+`086cd0aef432233e604891224b4a39645b2e24c2`, llama.cpp `b9050`,
+stable-diffusion.cpp `r596.g90e87bc`, Transformers 5.8.0,
+mistral-common 1.11.2, cryptography 48.0.0, orjson 3.11.9, accelerate 1.13.0,
+and auto-round 0.12.3. Package-build gates passed for this bundle, but these
+candidates remain tracked rather than adopted until deploy/install,
+installed-smoke, and affected scenario gates are complete. Python 3.14.5 and
+pydantic-core 2.46.4 were reviewed as
+baseline drift and kept as separate tracked lanes because Python requires a
+coordinated interpreter rebuild and pydantic-core must stay aligned with the
+installed `python-pydantic` ABI unless this repo owns a matching pydantic lane.
+
+The `tools/amerge` build plan `20260507T045259-7a242b1c` completed on
+2026-05-07 after the obsolete `python-orjson-gfx1151` `cold_path` patch was
+removed because upstream orjson 3.11.9 no longer emits or gates that build.rs
+configuration. It produced these artifacts:
+
+- `lemonade-server 10.3.0-2`, rebuilt so the system-managed llama.cpp backend
+  metadata advertises b9050.
+- `llama.cpp-hip-gfx1151 b9050-1` and `llama.cpp-vulkan-gfx1151 b9050-1`.
+- `python-amd-aiter-gfx1151 0.1.12.post2.dev200+g086cd0aef-1`.
+- `python-transformers-gfx1151 5.8.0-1`.
+- `python-mistral-common-gfx1151 1.11.2-1`.
+- `python-cryptography-gfx1151 48.0.0-1`.
+- `python-orjson-gfx1151 3.11.9-1`.
+- `python-accelerate-gfx1151 1.13.0-1`.
+- `python-auto-round-gfx1151 0.12.3-1`.
+- `stable-diffusion.cpp-vulkan-gfx1151 r596.g90e87bc-1`.
+
+Package-local built-image tests passed with
+`pytest -p no:cacheprovider packages/lemonade-server/tests
+packages/python-mistral-common-gfx1151/tests
+packages/python-transformers-gfx1151/tests packages/python-amd-aiter-gfx1151/tests
+packages/llama.cpp-hip-gfx1151/tests packages/llama.cpp-vulkan-gfx1151/tests -q`.
+Deploy/install and installed smokes are still open.
 
 The same Blackcat wheel-stack branch now has package-build evidence for the
 new core stack. `tools/amerge build python-pydantic-core-gfx1151

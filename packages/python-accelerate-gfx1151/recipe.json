@@ -4,7 +4,7 @@
     "authoritative_reference": "none",
     "divergence_notes": [
       "There is no current Arch-family accelerate package baseline, so this package is closure-first for llmcompressor and AutoRound tooling.",
-      "Uses accelerate 1.12.0 because llmcompressor 0.10.0.1 release metadata caps accelerate at 1.12.0 even though newer PyPI releases exist."
+      "Follows the active PyPI accelerate lane because the local llmcompressor package builds against the dev dependency window and carries metadata patches for the repo-owned runtime stack."
     ],
     "source_patches": [],
     "update_notes": [
@@ -14,7 +14,7 @@
   },
   "name": "python-accelerate-gfx1151",
   "package_name": "python-accelerate-gfx1151",
-  "pkgver": "1.12.0",
+  "pkgver": "1.13.0",
   "policy": {
     "advisory_references": [],
     "arch": [
@@ -37,7 +37,7 @@
     ],
     "divergence_notes": [
       "There is no current Arch-family accelerate package baseline, so this package is closure-first for llmcompressor and AutoRound tooling.",
-      "Uses accelerate 1.12.0 because llmcompressor 0.10.0.1 release metadata caps accelerate at 1.12.0 even though newer PyPI releases exist."
+      "Follows the active PyPI accelerate lane because the local llmcompressor package builds against the dev dependency window and carries metadata patches for the repo-owned runtime stack."
     ],
     "license": [
       "Apache-2.0"
@@ -56,22 +56,22 @@
     "pure_python_wheel": true,
     "pypi_name": "accelerate",
     "recipe_key": "native_wheels",
-    "recipe_notes_override": "This package supplies the Hugging Face accelerate dependency needed by the\nBlackcat Qwen3-VL quantization/tooling follow-up lane. It is pure Python, but\nit belongs in the local package closure because llmcompressor and AutoRound\nexpect a coherent installed accelerate package rather than an untracked venv\nwheel.\n\nThe package uses accelerate 1.12.0 because llmcompressor 0.10.0.1 release\nmetadata accepts accelerate up to 1.12.0. Keep updates tied to the active\nllmcompressor dependency window.\n",
+    "recipe_notes_override": "This package supplies the Hugging Face accelerate dependency needed by the\nBlackcat Qwen3-VL quantization/tooling follow-up lane. It is pure Python, but\nit belongs in the local package closure because llmcompressor and AutoRound\nexpect a coherent installed accelerate package rather than an untracked venv\nwheel.\n\nThe package follows the active PyPI accelerate lane because the local\nllmcompressor package uses the dev dependency window and package-local metadata\npatches for the repo-owned runtime stack. Keep updates tied to the active\nquantization-tooling dependency window.\n",
     "scaffold_notes": [
       "Part of the Blackcat Qwen3-VL quantization/tooling closure and consumed by llmcompressor and AutoRound.",
       "Use --skip-dependency-check because local torch, numpy, psutil, PyYAML, and safetensors packages satisfy upstream runtime requirements under gfx1151 package names."
     ],
     "sha256sums": [
-      "70988c352feb481887077d2ab845125024b2a137a5090d6d7a32b57d03a45df6"
+      "d631b4e0f5b3de4aff2d7e9e6857d164810dfc3237d54d017f075122d057b236"
     ],
     "skip_dependency_check": true,
-    "src_subdir": "accelerate-1.12.0",
+    "src_subdir": "accelerate-1.13.0",
     "template": "native-wheel-pypi",
     "update_notes": [
       "Check llmcompressor and auto-round release metadata before updating; this package should stay inside the active quantization-tooling dependency bounds.",
       "After publishing a rebuilt package, verify `import accelerate` through the installed local Python lane."
     ],
-    "upstream_version": "1.12.0",
+    "upstream_version": "1.13.0",
     "url": "https://github.com/huggingface/accelerate"
   },
   "provenance": {
@@ -91,7 +91,7 @@
       "pytorch"
     ],
     "method": "pip",
-    "notes": "This package supplies the Hugging Face accelerate dependency needed by the\nBlackcat Qwen3-VL quantization/tooling follow-up lane. It is pure Python, but\nit belongs in the local package closure because llmcompressor and AutoRound\nexpect a coherent installed accelerate package rather than an untracked venv\nwheel.\n\nThe package uses accelerate 1.12.0 because llmcompressor 0.10.0.1 release\nmetadata accepts accelerate up to 1.12.0. Keep updates tied to the active\nllmcompressor dependency window.\n",
+    "notes": "This package supplies the Hugging Face accelerate dependency needed by the\nBlackcat Qwen3-VL quantization/tooling follow-up lane. It is pure Python, but\nit belongs in the local package closure because llmcompressor and AutoRound\nexpect a coherent installed accelerate package rather than an untracked venv\nwheel.\n\nThe package follows the active PyPI accelerate lane because the local\nllmcompressor package uses the dev dependency window and package-local metadata\npatches for the repo-owned runtime stack. Keep updates tied to the active\nquantization-tooling dependency window.\n",
     "patches": [],
     "phase": "H",
     "repo": null,

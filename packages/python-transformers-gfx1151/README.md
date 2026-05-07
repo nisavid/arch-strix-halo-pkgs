@@ -5,7 +5,7 @@
 - Package origin: local closure package
 - Build method: `python -m build`
 - Upstream repo: `https://github.com/huggingface/transformers`
-- Upstream version: `5.7.0`
+- Upstream version: `5.8.0`
 - Recorded reference packages: `cachyos/python-transformers, extra/python-transformers`
 - Authoritative reference package: `cachyos/python-transformers`
 - Advisory reference packages: `extra/python-transformers`
@@ -23,9 +23,8 @@ Gemma-4-capable without waiting on distro repo timing.
 
 ## Intentional Divergences
 
-- Tracks upstream `transformers 5.7.0` from PyPI instead of the currently
-  installed CachyOS `5.2.0-1` lane because Gemma 4 support is missing from the
-  older package.
+- Tracks upstream `transformers 5.8.0` from PyPI so the local vLLM closure
+  stays ahead of distro timing for Gemma, Qwen, and model-surface fixes.
 - Keeps the package pure-Python and architecture-independent; there are no
   applicable Strix-specific native optimization flags to carry here.
 - Depends explicitly on `python-numpy-gfx1151`, `python-safetensors-gfx1151`,
@@ -38,12 +37,9 @@ Gemma-4-capable without waiting on distro repo timing.
 - Before updating, verify the candidate Transformers release actually ships
   `transformers.models.gemma4`; do not assume the version number alone is
   enough.
-- On 2026-04-23, reviewed upstream Transformers `5.6.2`. The `5.6.0..5.6.2`
-  range fixes `flash_attention_forward` when `s_aux` is absent, improves
-  fine-grained FP8 kernel error handling, and repairs Qwen3.5 MoE conversion
-  mapping while keeping `transformers.models.gemma4` present. This branch
-  adopts `5.7.0` as the validated Gemma 4 closure lane; future
-  Transformers/Gemma update arcs must rerun the host smokes.
+- The current package adopts `5.8.0` with DeepSeek V4, Gemma 4 Assistant,
+  tokenizer/cache fixes, and model-surface additions while keeping
+  `transformers.models.gemma4` present.
 - Re-check dependency metadata against the chosen baseline package and the
   published PyPI metadata. The package is intentionally thin and should not
   grow optional extras into hard runtime dependencies.

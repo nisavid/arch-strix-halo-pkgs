@@ -3,7 +3,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 PKGBUILD = REPO_ROOT / "packages/python-transformers-gfx1151/PKGBUILD"
-EXPECTED_VERSION = "5.7.0"
+EXPECTED_VERSION = "5.8.0"
 DIST_INFO = (
     REPO_ROOT
     / f"packages/python-transformers-gfx1151/pkg/python-transformers-gfx1151/usr/lib/python3.14/site-packages/transformers-{EXPECTED_VERSION}.dist-info/METADATA"
