@@ -7,16 +7,18 @@
   `086cd0aef432233e604891224b4a39645b2e24c2`, llama.cpp `b9050`,
   stable-diffusion.cpp `r596.g90e87bc`, Transformers 5.8.0,
   mistral-common 1.11.2, cryptography 48.0.0, orjson 3.11.9, accelerate
-  1.13.0, and auto-round 0.12.3. The affected package set now builds, but
-  publish/install and installed smokes still need to pass before marking the
-  candidates adopted in `docs/maintainers/update-candidates.toml`.
-  - `2026-05-07 refresh build and deploy`: build the directly changed
-    packages, rebuild affected consumers where metadata/runtime contracts
-    require it, deploy/install the built artifacts, run import/CLI/JIT smokes,
-    and rerun the affected vLLM and stable-diffusion wrapper scenarios. The
-    `tools/amerge` build plan `20260507T045259-7a242b1c` completed after
-    removing obsolete orjson patch carry; the remaining gate is privileged
-    deploy/install plus installed smoke and scenario validation.
+  1.13.0, and auto-round 0.12.3. Package build, deploy/install, and installed
+  smokes passed for the bundle. The completed lanes are adopted in
+  `docs/maintainers/update-candidates.toml`; AITER, Transformers, and
+  mistral-common remain tracked until the affected Gemma 4 vLLM scenario can
+  run with a local safetensors model binding.
+  - `Run affected vLLM Gemma 4 scenario with a local safetensors model binding`:
+    run the promoted Gemma 4 vLLM scenario against a local safetensors
+    checkout, then adopt the remaining AITER, Transformers, and mistral-common
+    candidates if it passes. The `tools/amerge` build plan
+    `20260507T045259-7a242b1c` completed after removing obsolete orjson patch
+    carry; deploy/install and installed smokes passed after the user completed
+    the privileged deploy.
 - Python 3.14.5 coordinated rebuild lane: Python 3.14.5 is reviewed as
   baseline drift but remains a coordinated interpreter rebuild lane rather
   than part of the 2026-05-07 source bundle.
@@ -125,10 +127,10 @@
     llmcompressor's AutoRound modifier import, skip-weight initialization, and
     model-free name matching.
   - Blackcat tooling freshness follow-up: the 2026-05-07 refresh source bundle
-    prepares `python-accelerate-gfx1151 1.13.0` and
-    `python-auto-round-gfx1151 0.12.3`. Adoption still needs package build,
-    deploy/install, and installed smoke evidence as part of the active refresh
-    build/deploy gate.
+    adopts `python-accelerate-gfx1151 1.13.0` and
+    `python-auto-round-gfx1151 0.12.3` after package build, deploy/install,
+    direct import, llmcompressor AutoRound modifier import, and skip-weight
+    initialization smoke passed.
     The former `nvidia-ml-py` follow-up is retired because llmcompressor now
     patches the NVIDIA metric dependency out of its wheel metadata.
     The 2026-05-03 rebase freshness sweep rejected `llmcompressor 0.10.0.2`

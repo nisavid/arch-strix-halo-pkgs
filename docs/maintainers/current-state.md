@@ -262,7 +262,31 @@ Package-local built-image tests passed with
 packages/python-mistral-common-gfx1151/tests
 packages/python-transformers-gfx1151/tests packages/python-amd-aiter-gfx1151/tests
 packages/llama.cpp-hip-gfx1151/tests packages/llama.cpp-vulkan-gfx1151/tests -q`.
-Deploy/install and installed smokes are still open.
+After deploy/install, `pacman -Q` reported the expected package versions for
+all built artifacts. Installed smokes passed for direct Python imports
+(`accelerate 1.13.0`, `auto_round 0.12.3`, `transformers 5.8.0`,
+`mistral_common 1.11.2`, `cryptography 48.0.0`, `orjson 3.11.9`, and AITER),
+Transformers `gemma4` model-surface import, Mistral `ReasoningEffort`,
+llmcompressor's AutoRound modifier import plus skip-weight initialization, host
+ROCm `gfx1151` visibility, AITER JIT-core import, `vllm --version`, and the
+repo-owned llama.cpp/Lemonade installed scenarios. The Lemonade server was
+active and the Lemonade pooling smokes passed against the installed service.
+`llama-cli-hip-gfx1151 --version` saw the Radeon 8060S `gfx1151` device,
+`llama-cli-vulkan-gfx1151 --version` passed, and both
+`sd-cli-vulkan-gfx1151 --help` and `sd-server-vulkan-gfx1151 --help` exposed
+the installed stable-diffusion.cpp `90e87bc` wrapper surfaces.
+
+The remaining live-scenario gate is the affected Gemma 4 vLLM run for AITER,
+Transformers, and mistral-common. The host-visible local model found during
+closeout was the LM Studio GGUF copy under the Lemonade/llama.cpp lane, not a
+safetensors checkout suitable for the promoted vLLM scenario binding, so those
+three candidates remain tracked rather than adopted.
+
+The closeout freshness checker also found AITER main
+`3a5261496c591b4fd7cf280d35d20dee713098fd`. That delta only adds gfx950 FP8
+FMHA ASM objects and related dispatch plumbing, so it was rejected as not
+overlapping the gfx1151 package source, patch carry, or current validation
+lanes.
 
 The same Blackcat wheel-stack branch now has package-build evidence for the
 new core stack. `tools/amerge build python-pydantic-core-gfx1151

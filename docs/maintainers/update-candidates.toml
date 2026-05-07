@@ -460,18 +460,18 @@ source_kind = "pypi"
 previous_recorded = "1.12.0"
 latest = "1.13.0"
 discovery_status = "stable_update_available"
-disposition = "tracked"
-disposition_reason = "Source update prepared in the 2026-05-07 refresh cycle. The local llmcompressor package builds against the dev dependency window, so accelerate 1.13.0 remains inside the active quantization-tooling dependency closure. Package build passed in amerge plan 20260507T045259-7a242b1c; adoption still needs deploy/install and installed smoke evidence."
+disposition = "adopted"
+disposition_reason = "Adopted in the 2026-05-07 refresh cycle. Source update, package build, deploy/install, direct import, llmcompressor AutoRound modifier import, and skip-weight initialization smoke passed after install."
 salient_changes = [
   "PyPI accelerate 1.13.0 is available after packaging the local 1.12.0 closure",
   "llmcompressor metadata only requires accelerate>=1.6.0",
 ]
 patch_carry_overlap = false
 package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
-next_gate_label = "2026-05-07 refresh build and deploy"
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Adopted; monitor future accelerate releases through the normal freshness sweep"
 last_reviewed = "2026-05-07"
 
 [candidates."auto-round-0.12.3-pypi"]
@@ -481,18 +481,18 @@ source_kind = "pypi"
 previous_recorded = "0.10.2"
 latest = "0.12.3"
 discovery_status = "stable_update_available"
-disposition = "tracked"
-disposition_reason = "Source update prepared in the 2026-05-07 refresh cycle. The local llmcompressor package builds against the dev dependency window, so auto-round 0.12.3 remains inside the active quantization-tooling dependency closure. Package build passed in amerge plan 20260507T045259-7a242b1c; adoption still needs deploy/install and installed smoke evidence."
+disposition = "adopted"
+disposition_reason = "Adopted in the 2026-05-07 refresh cycle. Source update, package build, deploy/install, direct import, llmcompressor AutoRound modifier import, and skip-weight initialization smoke passed after install."
 salient_changes = [
   "PyPI auto-round 0.12.3 is available after packaging the local 0.10.2 closure",
   "llmcompressor metadata only requires auto-round>=0.9.6",
 ]
 patch_carry_overlap = false
 package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
-next_gate_label = "2026-05-07 refresh build and deploy"
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Adopted; monitor future auto-round releases through the normal freshness sweep"
 last_reviewed = "2026-05-07"
 
 [candidates."llmcompressor-0.10.0.2-pypi"]
@@ -524,7 +524,7 @@ previous_recorded = "d2454ad18a0d7c7795162ab0f550e8a0397840bd"
 latest = "086cd0aef432233e604891224b4a39645b2e24c2"
 discovery_status = "candidate_head_ahead"
 disposition = "tracked"
-disposition_reason = "Source update prepared in the 2026-05-07 refresh cycle because the reviewed range touches mHC, OPUS/MoE, top-k, Qwen3-Next, DeepSeek V4, FlyDSL synchronization, and custom-op surfaces that overlap local AITER and vLLM validation lanes. Package build passed in amerge plan 20260507T045259-7a242b1c; adoption still needs deploy/install, installed JIT smoke, and affected vLLM scenario evidence."
+disposition_reason = "Source update prepared in the 2026-05-07 refresh cycle because the reviewed range touches mHC, OPUS/MoE, top-k, Qwen3-Next, DeepSeek V4, FlyDSL synchronization, and custom-op surfaces that overlap local AITER and vLLM validation lanes. Package build, deploy/install, host ROCm visibility, AITER JIT-core import, and vLLM metadata smoke passed after install; adoption still needs affected vLLM model-scenario evidence with a local safetensors model binding."
 salient_changes = [
   "mHC pre-op custom-op exposure and square-sum race fix",
   "OPUS/MoE sorting, workspace, and tuned-config updates",
@@ -535,7 +535,7 @@ package_source_update_needed = true
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "2026-05-07 refresh build and deploy"
+next_gate_label = "Run affected vLLM Gemma 4 scenario with a local safetensors model binding"
 last_reviewed = "2026-05-07"
 
 [candidates."llama-cpp-b9050"]
@@ -545,8 +545,8 @@ source_kind = "github_release"
 previous_recorded = "b9012 / b9010-1"
 latest = "b9050 / b9049-1"
 discovery_status = "stable_update_available"
-disposition = "tracked"
-disposition_reason = "Source update prepared in the 2026-05-07 refresh cycle because the range includes shared runtime/server changes, ggml 0.11.0, Vulkan code changes, backend-loading behavior, and model/runtime fixes that overlap the packaged HIP and Vulkan backends. Package builds passed in amerge plan 20260507T045259-7a242b1c, including the Lemonade backend-metadata rebuild; adoption still needs deploy/install and CLI smoke evidence."
+disposition = "adopted"
+disposition_reason = "Adopted in the 2026-05-07 refresh cycle. Both packaged backends were repinned to b9050, Lemonade backend metadata was refreshed, package builds completed, deploy/install passed, llama.cpp HIP/Vulkan CLI smokes passed, and Lemonade pooling scenarios passed against the active installed server."
 salient_changes = [
   "ggml 0.11.0 sync and backend-loading changes",
   "server and Web UI fixes including model reload and tool validation",
@@ -554,10 +554,10 @@ salient_changes = [
 ]
 patch_carry_overlap = false
 package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
-next_gate_label = "2026-05-07 refresh build and deploy"
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Adopted; monitor future llama.cpp releases through the normal freshness sweep"
 last_reviewed = "2026-05-07"
 
 [candidates."aiter-3ed8a22"]
@@ -580,6 +580,27 @@ next_gate_path = ""
 next_gate_label = "No package follow-up needed for the AITER CI-only candidate"
 last_reviewed = "2026-05-07"
 
+[candidates."aiter-3a52614"]
+family = "aiter"
+packages = ["python-amd-aiter-gfx1151"]
+source_kind = "git_ref"
+previous_recorded = "3ed8a22e817acb1bc8b0898fb089ef3a6a03c1aa"
+latest = "3a5261496c591b4fd7cf280d35d20dee713098fd"
+discovery_status = "candidate_head_ahead"
+disposition = "rejected"
+disposition_reason = "Reviewed during the 2026-05-07 refresh closeout and not adopted because the delta only adds gfx950 FP8 FMHA ASM objects and related dispatch plumbing. It does not touch gfx1151 package source, local RDNA header or JIT runtime patch carry, or the current AITER/vLLM validation lanes."
+salient_changes = [
+  "gfx950 FP8 FMHA ASM objects and CSV metadata",
+  "mha.py and mha_fwd.cu dispatch plumbing for the gfx950 FMHA path",
+]
+patch_carry_overlap = false
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "No package follow-up needed for the AITER gfx950 FMHA candidate"
+last_reviewed = "2026-05-07"
+
 [candidates."transformers-5.8.0-pypi"]
 family = "transformers"
 packages = ["python-transformers-gfx1151"]
@@ -588,7 +609,7 @@ previous_recorded = "5.7.0"
 latest = "5.8.0"
 discovery_status = "stable_update_available"
 disposition = "tracked"
-disposition_reason = "Source update prepared in the 2026-05-07 refresh cycle. The release keeps the Gemma 4 model surface present while adding DeepSeek V4, Gemma 4 Assistant, tokenizer/cache fixes, and other model-surface changes. Package build passed in amerge plan 20260507T045259-7a242b1c; adoption still needs deploy/install, import smoke, and affected vLLM scenario evidence."
+disposition_reason = "Source update prepared in the 2026-05-07 refresh cycle. The release keeps the Gemma 4 model surface present while adding DeepSeek V4, Gemma 4 Assistant, tokenizer/cache fixes, and other model-surface changes. Package build, deploy/install, Transformers import, Gemma 4 model-surface import, and vLLM metadata smoke passed after install; adoption still needs affected vLLM model-scenario evidence with a local safetensors model binding."
 salient_changes = [
   "DeepSeek V4 and Gemma 4 Assistant model support",
   "Tokenizer, local-cache, image/video processor, and model-surface fixes",
@@ -599,7 +620,7 @@ package_source_update_needed = true
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "2026-05-07 refresh build and deploy"
+next_gate_label = "Run affected vLLM Gemma 4 scenario with a local safetensors model binding"
 last_reviewed = "2026-05-07"
 
 [candidates."mistral-common-1.11.2"]
@@ -610,7 +631,7 @@ previous_recorded = "1.11.1"
 latest = "1.11.2"
 discovery_status = "stable_update_available"
 disposition = "tracked"
-disposition_reason = "Source update prepared in the 2026-05-07 refresh cycle. The release keeps ReasoningEffort available while changing OpenAI conversion, tool-call/message validation, and Python 3.14 dependency metadata. Package build passed in amerge plan 20260507T045259-7a242b1c; adoption still needs deploy/install, import/ReasoningEffort smoke, and affected vLLM scenario evidence."
+disposition_reason = "Source update prepared in the 2026-05-07 refresh cycle. The release keeps ReasoningEffort available while changing OpenAI conversion, tool-call/message validation, and Python 3.14 dependency metadata. Package build, deploy/install, import, ReasoningEffort, and vLLM metadata smokes passed after install; adoption still needs affected vLLM model-scenario evidence with a local safetensors model binding."
 salient_changes = [
   "OpenAI conversion and validator changes",
   "Python 3.14 metadata now requires pydantic>=2.12 and tiktoken>=0.12.0",
@@ -621,7 +642,7 @@ package_source_update_needed = true
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "2026-05-07 refresh build and deploy"
+next_gate_label = "Run affected vLLM Gemma 4 scenario with a local safetensors model binding"
 last_reviewed = "2026-05-07"
 
 [candidates."cryptography-48.0.0-pypi"]
@@ -631,8 +652,8 @@ source_kind = "pypi"
 previous_recorded = "47.0.0 / 47.0.0-1"
 latest = "48.0.0 / 48.0.0-1"
 discovery_status = "stable_update_available"
-disposition = "tracked"
-disposition_reason = "Source update prepared in the 2026-05-07 refresh cycle because PyPI and Arch now agree on cryptography 48.0.0 and the host has the required cffi and Rust build-tool baseline. Package build passed in amerge plan 20260507T045259-7a242b1c; adoption still needs deploy/install and import smoke evidence."
+disposition = "adopted"
+disposition_reason = "Adopted in the 2026-05-07 refresh cycle. Source update, package build, deploy/install, and installed import smoke passed after install."
 salient_changes = [
   "PyPI cryptography 48.0.0 is available",
   "Arch python-cryptography baseline is 48.0.0-1",
@@ -640,10 +661,10 @@ salient_changes = [
 ]
 patch_carry_overlap = false
 package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
-next_gate_label = "2026-05-07 refresh build and deploy"
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Adopted; monitor future cryptography releases through the normal freshness sweep"
 last_reviewed = "2026-05-07"
 
 [candidates."orjson-3.11.9-pypi"]
@@ -653,18 +674,18 @@ source_kind = "pypi"
 previous_recorded = "3.11.8"
 latest = "3.11.9"
 discovery_status = "stable_update_available"
-disposition = "tracked"
-disposition_reason = "Source update prepared in the 2026-05-07 refresh cycle. Upstream orjson 3.11.9 no longer emits or gates `cold_path` configuration, so the obsolete local Rust capability-probe patch was removed. Package build passed in amerge plan 20260507T045259-7a242b1c; adoption still needs deploy/install and import smoke evidence."
+disposition = "adopted"
+disposition_reason = "Adopted in the 2026-05-07 refresh cycle. Source update, obsolete patch removal, package build, deploy/install, and installed import smoke passed after install."
 salient_changes = [
   "PyPI orjson 3.11.9 is available",
   "The package patch list is empty while upstream build.rs does not emit or gate cold_path configuration",
 ]
 patch_carry_overlap = false
 package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
-next_gate_label = "2026-05-07 refresh build and deploy"
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Adopted; monitor future orjson releases through the normal freshness sweep"
 last_reviewed = "2026-05-07"
 
 [candidates."stable-diffusion-cpp-90e87bc"]
@@ -674,8 +695,8 @@ source_kind = "git_ref"
 previous_recorded = "3d6064b37ef4607917f8acf2ca8c8906d5087413"
 latest = "90e87bc846f17059771efb8aaa31e9ef0cab6f78"
 discovery_status = "branch_head_ahead"
-disposition = "tracked"
-disposition_reason = "Source update prepared in the 2026-05-07 refresh cycle because the upstream range changes model runtime behavior through MultiLora handling, flow-model sampler behavior, and max-VRAM segmented parameter offload support. Package build passed in amerge plan 20260507T045259-7a242b1c; adoption still needs deploy/install and wrapper smoke evidence."
+disposition = "adopted"
+disposition_reason = "Adopted in the 2026-05-07 refresh cycle. Source update, package build, deploy/install, and installed sd-cli/sd-server wrapper help smokes passed after install."
 salient_changes = [
   "Skip empty MultiLoraAdapter when no LoRAs target a model",
   "Adapt flow-model samplers for eta > 0",
@@ -683,10 +704,10 @@ salient_changes = [
 ]
 patch_carry_overlap = true
 package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
-next_gate_label = "2026-05-07 refresh build and deploy"
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Adopted; monitor future stable-diffusion.cpp refs through the normal freshness sweep"
 last_reviewed = "2026-05-07"
 
 [candidates."python-3.14.5-cpython"]
