@@ -184,6 +184,30 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     ]
 
 
+def test_gemma4_26b_promoted_scenarios_enable_aiter_attention():
+    scenarios = load_scenarios(REPO_ROOT / "inference/scenarios")
+    by_id = {scenario.id: scenario for scenario in scenarios}
+
+    expected_env = {
+        "VLLM_ROCM_USE_AITER": "1",
+        "VLLM_ROCM_USE_AITER_MOE": "0",
+    }
+
+    text = by_id["vllm.gemma4.26b-a4b.text.basic"]
+    server = by_id["vllm.gemma4.26b-a4b.server.basic"]
+
+    assert text.definition["when"]["env"] == expected_env
+    assert server.definition["when"]["env"] == expected_env
+    assert {
+        "kind": "server_log.contains",
+        "value": "ROCM_AITER_UNIFIED_ATTN",
+    } in server.definition["then"]["assert"]
+    assert {
+        "kind": "server_log.contains",
+        "value": "Using TRITON Unquantized MoE backend",
+    } in server.definition["then"]["assert"]
+
+
 def test_gemma4_aiter_flash_attention_probe_records_current_blocker():
     scenarios = load_scenarios(REPO_ROOT / "inference/scenarios")
     by_id = {scenario.id: scenario for scenario in scenarios}

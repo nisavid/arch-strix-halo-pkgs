@@ -1,6 +1,6 @@
 # Current State
 
-Status as of 2026-05-07.
+Status as of 2026-05-10.
 
 ## Rebuild Revalidation Boundary
 
@@ -276,17 +276,35 @@ active and the Lemonade pooling smokes passed against the installed service.
 `sd-cli-vulkan-gfx1151 --help` and `sd-server-vulkan-gfx1151 --help` exposed
 the installed stable-diffusion.cpp `90e87bc` wrapper surfaces.
 
-The remaining live-scenario gate is the affected Gemma 4 vLLM run for AITER,
-Transformers, and mistral-common. The host-visible local model found during
-closeout was the LM Studio GGUF copy under the Lemonade/llama.cpp lane, not a
-safetensors checkout suitable for the promoted vLLM scenario binding, so those
-three candidates remain tracked rather than adopted.
+On 2026-05-10, the remaining promoted Gemma 4 vLLM scenarios passed with
+`HF_HUB_CACHE=/bulk/testing/huggingface/hub` and model binding
+`google/gemma-4-26B-A4B-it=/bulk/testing/huggingface/hub/models--google--gemma-4-26B-A4B-it/snapshots/462a98a12e28e2cbcfccaf78fe41e3e50235e6ae`.
+The first run exposed that the scenario catalog was not enabling AITER even
+though it asserted the AITER attention backend; the catalog now sets
+`VLLM_ROCM_USE_AITER=1` and `VLLM_ROCM_USE_AITER_MOE=0` for the promoted 26B
+A4B text and server lanes. The passing run
+`docs/worklog/inference-runs/20260510T182509` selected
+`ROCM_AITER_UNIFIED_ATTN`, used the TRITON unquantized MoE backend, returned
+`These are exactly five words.` for the offline text smoke, and returned
+`Deep blue waves crash endlessly.` through the OpenAI-compatible server smoke.
+With that live-scenario evidence, the AITER 086cd0a, Transformers 5.8.0, and
+mistral-common 1.11.2 candidates are adopted.
 
 The closeout freshness checker also found AITER main
 `3a5261496c591b4fd7cf280d35d20dee713098fd`. That delta only adds gfx950 FP8
 FMHA ASM objects and related dispatch plumbing, so it was rejected as not
 overlapping the gfx1151 package source, patch carry, or current validation
 lanes.
+
+The 2026-05-10 closeout freshness checker then found new follow-up lanes after
+the adopted refresh bundle: AITER 0.1.13, Lemonade 10.4.0, llama.cpp b9101,
+ROCm PyTorch release/2.11 at
+`5223630054ce5ecd7b774d0ea31f2a1b472fb9b3`, Blackcat ai-notes at
+`3f15f9f1318491c9ee03782d8b2ebd41391de118`, Torch-MIGraphX at
+`b94b985586a051fbee19aefe8c934bb7c1a9df0a`, and vLLM 0.20.2. Those candidates
+are tracked in `docs/maintainers/update-candidates.toml` and visible in
+`docs/backlog.md`; they are not built, deployed, installed, installed-smoked,
+or live-scenario validated as part of the 2026-05-07 bundle.
 
 The same Blackcat wheel-stack branch now has package-build evidence for the
 new core stack. `tools/amerge build python-pydantic-core-gfx1151

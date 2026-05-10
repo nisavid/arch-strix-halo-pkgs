@@ -105,7 +105,7 @@ priority = "high"
 workflow = "upstream_source_update"
 checks = [
   { id = "release", role = "primary", kind = "github_release", repo = "ROCm/aiter", recorded = "0.1.12.post2", tag_prefix = "v", comparison = "pep440" },
-  { id = "main", role = "candidate", kind = "git_ref", repo = "https://github.com/ROCm/aiter.git", ref = "refs/heads/main", recorded = "3a5261496c591b4fd7cf280d35d20dee713098fd", comparison = "sha" },
+  { id = "main", role = "candidate", kind = "git_ref", repo = "https://github.com/ROCm/aiter.git", ref = "refs/heads/main", recorded = "bdece28f7b20e770b6ac9b1b9b1814b71faf258f", comparison = "sha" },
 ]
 
 [families.flash_attention]
@@ -389,6 +389,6 @@ priority = "medium"
 workflow = "upstream_source_update"
 checks = [
   { id = "release", role = "primary", kind = "github_release", repo = "lemonade-sdk/lemonade", recorded = "10.2.0", tag_prefix = "v", comparison = "pep440" },
-  { id = "aur-server", role = "baseline", kind = "aur", package = "lemonade-server", recorded = "10.2.0-1", comparison = "pkgver" },
-  { id = "aur-desktop", role = "baseline", kind = "aur", package = "lemonade-desktop", recorded = "10.2.0-1", comparison = "pkgver" },
+  { id = "aur-server", role = "baseline", kind = "aur", package = "lemonade-server", recorded = "10.4.0-1", comparison = "pkgver" },
+  { id = "aur-desktop", role = "baseline", kind = "aur", package = "lemonade-desktop", recorded = "10.4.0-4", comparison = "pkgver" },
 ]
