@@ -523,8 +523,8 @@ source_kind = "git_ref"
 previous_recorded = "d2454ad18a0d7c7795162ab0f550e8a0397840bd"
 latest = "086cd0aef432233e604891224b4a39645b2e24c2"
 discovery_status = "candidate_head_ahead"
-disposition = "tracked"
-disposition_reason = "Source update prepared in the 2026-05-07 refresh cycle because the reviewed range touches mHC, OPUS/MoE, top-k, Qwen3-Next, DeepSeek V4, FlyDSL synchronization, and custom-op surfaces that overlap local AITER and vLLM validation lanes. Package build, deploy/install, host ROCm visibility, AITER JIT-core import, and vLLM metadata smoke passed after install; adoption still needs affected vLLM model-scenario evidence with a local safetensors model binding."
+disposition = "adopted"
+disposition_reason = "Adopted in the 2026-05-07 refresh cycle. Package build, deploy/install, host ROCm visibility, AITER JIT-core import, vLLM metadata smoke, and the promoted Gemma 4 26B A4B text/server scenarios passed with AITER attention enabled on 2026-05-10."
 salient_changes = [
   "mHC pre-op custom-op exposure and square-sum race fix",
   "OPUS/MoE sorting, workspace, and tuned-config updates",
@@ -532,11 +532,11 @@ salient_changes = [
 ]
 patch_carry_overlap = true
 package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
-next_gate_label = "Run affected vLLM Gemma 4 scenario with a local safetensors model binding"
-last_reviewed = "2026-05-07"
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Adopted; monitor future AITER refs through the normal freshness sweep"
+last_reviewed = "2026-05-10"
 
 [candidates."llama-cpp-b9050"]
 family = "llama_cpp"
@@ -608,8 +608,8 @@ source_kind = "pypi"
 previous_recorded = "5.7.0"
 latest = "5.8.0"
 discovery_status = "stable_update_available"
-disposition = "tracked"
-disposition_reason = "Source update prepared in the 2026-05-07 refresh cycle. The release keeps the Gemma 4 model surface present while adding DeepSeek V4, Gemma 4 Assistant, tokenizer/cache fixes, and other model-surface changes. Package build, deploy/install, Transformers import, Gemma 4 model-surface import, and vLLM metadata smoke passed after install; adoption still needs affected vLLM model-scenario evidence with a local safetensors model binding."
+disposition = "adopted"
+disposition_reason = "Adopted in the 2026-05-07 refresh cycle. Package build, deploy/install, Transformers import, Gemma 4 model-surface import, vLLM metadata smoke, and the promoted Gemma 4 26B A4B text/server scenarios passed on 2026-05-10."
 salient_changes = [
   "DeepSeek V4 and Gemma 4 Assistant model support",
   "Tokenizer, local-cache, image/video processor, and model-surface fixes",
@@ -617,11 +617,11 @@ salient_changes = [
 ]
 patch_carry_overlap = false
 package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
-next_gate_label = "Run affected vLLM Gemma 4 scenario with a local safetensors model binding"
-last_reviewed = "2026-05-07"
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Adopted; monitor future Transformers releases through the normal freshness sweep"
+last_reviewed = "2026-05-10"
 
 [candidates."mistral-common-1.11.2"]
 family = "mistral_common"
@@ -630,8 +630,8 @@ source_kind = "pypi"
 previous_recorded = "1.11.1"
 latest = "1.11.2"
 discovery_status = "stable_update_available"
-disposition = "tracked"
-disposition_reason = "Source update prepared in the 2026-05-07 refresh cycle. The release keeps ReasoningEffort available while changing OpenAI conversion, tool-call/message validation, and Python 3.14 dependency metadata. Package build, deploy/install, import, ReasoningEffort, and vLLM metadata smokes passed after install; adoption still needs affected vLLM model-scenario evidence with a local safetensors model binding."
+disposition = "adopted"
+disposition_reason = "Adopted in the 2026-05-07 refresh cycle. Package build, deploy/install, import, ReasoningEffort, vLLM metadata smoke, and the promoted Gemma 4 26B A4B text/server scenarios passed on 2026-05-10."
 salient_changes = [
   "OpenAI conversion and validator changes",
   "Python 3.14 metadata now requires pydantic>=2.12 and tiktoken>=0.12.0",
@@ -639,11 +639,11 @@ salient_changes = [
 ]
 patch_carry_overlap = false
 package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
-next_gate_label = "Run affected vLLM Gemma 4 scenario with a local safetensors model binding"
-last_reviewed = "2026-05-07"
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Adopted; monitor future mistral-common releases through the normal freshness sweep"
+last_reviewed = "2026-05-10"
 
 [candidates."cryptography-48.0.0-pypi"]
 family = "cryptography"
@@ -751,3 +751,158 @@ next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
 next_gate_label = "Local python-pydantic ABI lane"
 last_reviewed = "2026-05-07"
+
+[candidates."aiter-0.1.13-release"]
+family = "aiter"
+packages = ["python-amd-aiter-gfx1151"]
+source_kind = "github_release"
+previous_recorded = "0.1.12.post2"
+latest = "0.1.13"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Reviewed during 2026-05-10 closeout after the Gemma 4 validation gate. This is a new upstream release beyond the adopted 2026-05-07 bundle and needs its own source audit, package build, deploy/install, AITER smoke, and affected vLLM scenario lane."
+salient_changes = [
+  "GitHub release 0.1.13 is available after the adopted 0.1.12.post2-based local package",
+  "AITER main also moved beyond the adopted 086cd0a refresh point",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "AITER 0.1.13 source-update lane"
+last_reviewed = "2026-05-10"
+
+[candidates."lemonade-10.4.0"]
+family = "lemonade"
+packages = ["lemonade-server", "lemonade-app", "lemonade"]
+source_kind = "github_release"
+baseline_source_kind = "aur"
+baseline_latest = "10.4.0-1 / 10.4.0-4"
+previous_recorded = "10.2.0 / 10.3.0 / 10.2.0-1"
+latest = "10.4.0"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Reviewed during 2026-05-10 closeout as a new upstream release after the installed 10.3.0 lane. Keep it as a separate Lemonade source-update lane because it can affect bundled service/app behavior and system llama.cpp integration metadata."
+salient_changes = [
+  "GitHub release 10.4.0 is available",
+  "AUR lemonade-server and lemonade-app baselines have moved to 10.4.0 package releases",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "Lemonade 10.4.0 source-update lane"
+last_reviewed = "2026-05-10"
+
+[candidates."llama-cpp-b9101"]
+family = "llama_cpp"
+packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"]
+source_kind = "github_release"
+baseline_source_kind = "aur"
+baseline_latest = "b9093-1"
+previous_recorded = "b9050 / b9049-1"
+latest = "b9101"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Reviewed during 2026-05-10 closeout as a new release after the adopted b9050 package lane. Keep it as a separate source-update lane because llama.cpp changes affect both packaged HIP/Vulkan backends and Lemonade's system-backend integration."
+salient_changes = [
+  "GitHub release b9101 is available after the adopted b9050 lane",
+  "The AUR HIP baseline has advanced to b9093-1",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "llama.cpp b9101 source-update lane"
+last_reviewed = "2026-05-10"
+
+[candidates."rocm-pytorch-release-2.11-5223630"]
+family = "rocm_pytorch"
+packages = ["python-pytorch-opt-rocm-gfx1151"]
+source_kind = "git_ref"
+baseline_source_kind = "arch_package"
+baseline_latest = "2.11.0-4"
+previous_recorded = "443606eb94430d90554ab4c21202494576afedce / 2.11.0-4"
+latest = "5223630054ce5ecd7b774d0ea31f2a1b472fb9b3"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "Reviewed during 2026-05-10 closeout as a new release/2.11 head after the adopted 443606e package lane. Keep it separate because PyTorch source movement requires recursive submodule prep, downstream native rebuild planning, deploy/install, and GPU smoke validation."
+salient_changes = [
+  "ROCm PyTorch release/2.11 branch head moved beyond the adopted 443606e lane",
+  "The Arch python-pytorch-rocm baseline remains 2.11.0-4",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "ROCm PyTorch release/2.11 source-update lane"
+last_reviewed = "2026-05-10"
+
+[candidates."blackcat-ai-notes-3f15f9f"]
+family = "therock"
+packages = ["therock-gfx1151"]
+source_kind = "submodule"
+previous_recorded = "a1d7a6816dd2c456bad9fcc7d61c53a4bd8c5fbd"
+latest = "3f15f9f1318491c9ee03782d8b2ebd41391de118"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "Reviewed during 2026-05-10 closeout as new ai-notes recipe input after the adopted a1d7a681 lane. Keep it as a recipe-input audit lane before changing rendered TheRock or recipe-managed package output."
+salient_changes = [
+  "blackcat-ai-notes moved beyond the adopted a1d7a681 recipe input",
+  "Recipe input changes can affect TheRock provenance and generated package surfaces",
+]
+patch_carry_overlap = true
+package_source_update_needed = false
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "Blackcat ai-notes recipe-input audit"
+last_reviewed = "2026-05-10"
+
+[candidates."torch-migraphx-b94b985"]
+family = "torch_migraphx"
+packages = ["python-torch-migraphx-gfx1151"]
+source_kind = "git_ref"
+previous_recorded = "6b2cd2237e83b675ae671650d08343dfbb0be5f3"
+latest = "b94b985586a051fbee19aefe8c934bb7c1a9df0a"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "Reviewed during 2026-05-10 closeout as a new upstream master head. Keep it as a separate Torch-MIGraphX source audit and installed-smoke lane because this package gates MIGraphX import, compile, and PT2E validation behavior."
+salient_changes = [
+  "Torch-MIGraphX master moved beyond the recorded package source ref",
+  "The package has local installed-smoke and scenario surfaces for MIGraphX behavior",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "Torch-MIGraphX source-update lane"
+last_reviewed = "2026-05-10"
+
+[candidates."vllm-0.20.2"]
+family = "vllm"
+packages = ["python-vllm-rocm-gfx1151"]
+source_kind = "github_release"
+baseline_source_kind = "aur"
+baseline_latest = "0.12.0-1"
+previous_recorded = "0.20.1"
+latest = "0.20.2"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Reviewed during 2026-05-10 closeout as a new vLLM upstream release after the adopted 0.20.1 lane. Keep it separate because vLLM package source movement needs patch-carry review, package build, deploy/install, installed smoke, and affected live-scenario validation."
+salient_changes = [
+  "GitHub release 0.20.2 is available after the adopted vLLM 0.20.1 lane",
+  "The local package carries ROCm/gfx1151 patches and scenario contracts",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "vLLM 0.20.2 source-update lane"
+last_reviewed = "2026-05-10"

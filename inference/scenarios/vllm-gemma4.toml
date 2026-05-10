@@ -8,6 +8,10 @@ engine = "vllm"
 model = "google/gemma-4-26B-A4B-it"
 tool = "gemma4_text_smoke"
 
+[scenario.when.env]
+VLLM_ROCM_USE_AITER = "1"
+VLLM_ROCM_USE_AITER_MOE = "0"
+
 [[scenario.then.assert]]
 kind = "exit_code.equals"
 value = 0
@@ -30,6 +34,10 @@ engine = "vllm"
 model = "google/gemma-4-26B-A4B-it"
 tool = "gemma4_server_smoke.basic"
 
+[scenario.when.env]
+VLLM_ROCM_USE_AITER = "1"
+VLLM_ROCM_USE_AITER_MOE = "0"
+
 [[scenario.then.assert]]
 kind = "exit_code.equals"
 value = 0
@@ -44,7 +52,7 @@ value = "ROCM_AITER_UNIFIED_ATTN"
 
 [[scenario.then.assert]]
 kind = "server_log.contains"
-value = "Using TRITON backend for Unquantized MoE"
+value = "Using TRITON Unquantized MoE backend"
 
 [[scenario]]
 id = "vllm.gemma4.e2b.server.basic"
