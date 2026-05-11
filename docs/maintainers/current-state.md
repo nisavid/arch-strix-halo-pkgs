@@ -1,6 +1,6 @@
 # Current State
 
-Status as of 2026-05-10.
+Status as of 2026-05-11.
 
 ## Rebuild Revalidation Boundary
 
@@ -317,10 +317,44 @@ through `tools/amerge` plan `20260510T185935-9cefeddf` on 2026-05-10:
 
 The refreshed vLLM patch carry applies against vLLM 0.20.2, and the Lemonade
 system-managed llama.cpp backend patch is refreshed against Lemonade 10.4.0.
-Deploy/install, installed-smoke, and affected live-scenario gates remain open,
-so these candidates are still tracked in
-`docs/maintainers/update-candidates.toml` and `docs/backlog.md` rather than
-adopted.
+Deploy/install completed on the reference host through `tools/amerge` plans
+`20260510T201114-f3f30a0d`, `20260511T081325-ff707e38`, and
+`20260511T082929-52430ccd`. The first deployed PyTorch package was rejected by
+installed smoke because it was CPU-only; the rendered PyTorch package now
+scrubs exported shell-function environment variables through raw `env` names
+before HIP discovery and fails packaging if `torch/lib/libtorch_hip.so` is
+missing. The corrected `python-pytorch-opt-rocm-gfx1151 2.11.0-12` package
+contains `usr/lib/python3.14/site-packages/torch/lib/libtorch_hip.so`.
+Installed smokes then passed for PyTorch HIP build state, GPU tensor allocation
+on `Radeon 8060S Graphics`, AITER JIT-core import, Torch-MIGraphX import, vLLM
+import and `vllm --version`, llama.cpp HIP/Vulkan CLI version checks, and
+Lemonade CLI/server version checks.
+
+Because vLLM builds against the installed Torch package, the corrected vLLM
+artifact was rebuilt after the PyTorch deploy through `tools/amerge` plan
+`20260511T081446-f56bde47`; it produced
+`python-vllm-rocm-gfx1151 0.20.2-1` with HIP shared modules and was then
+deployed through plan `20260511T082929-52430ccd`.
+
+Affected live-scenario validation passed on 2026-05-11 with
+`HF_HUB_CACHE=/bulk/testing/huggingface/hub` in
+`docs/worklog/inference-runs/20260511T083036`:
+
+- `lemonade.cli.help` passed in `0.003982` seconds.
+- `lemonade.server.help` passed in `0.003307` seconds.
+- `llama.cpp.hip.help` passed in `0.121132` seconds.
+- `llama.cpp.vulkan.help` passed in `0.026589` seconds.
+- `torch-migraphx.pt2e.quantizer-import` passed in `6.164528` seconds.
+- `torch-migraphx.resnet-tiny.dynamo` passed in `5.310158` seconds.
+- `torch-migraphx.resnet-tiny.pt2e` passed in `7.033428` seconds.
+- `vllm.gemma4.26b-a4b.text.basic` passed in `169.637231` seconds.
+- `vllm.gemma4.26b-a4b.server.basic` passed in `272.941582` seconds.
+- `vllm.torchao.tiny.generate` passed in `27.746998` seconds.
+- `vllm.qwen3_5.0_8b.text.basic` passed in `63.970664` seconds.
+
+With source update, package build, deploy/install, installed-smoke, and
+affected live-scenario gates complete, the 2026-05-10 follow-up refresh
+candidates are adopted in `docs/maintainers/update-candidates.toml`.
 
 The same Blackcat wheel-stack branch now has package-build evidence for the
 new core stack. `tools/amerge build python-pydantic-core-gfx1151

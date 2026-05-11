@@ -12,17 +12,18 @@
   passed on 2026-05-10 with
   `HF_HUB_CACHE=/bulk/testing/huggingface/hub`, so the refresh bundle is
   adopted in `docs/maintainers/update-candidates.toml`.
-- The 2026-05-10 follow-up refresh has source-update and package-build
+- The 2026-05-10 follow-up refresh is adopted. It has source-update,
+  package-build, deploy/install, installed-smoke, and affected live-scenario
   evidence for AITER 0.1.13, Lemonade 10.4.0, llama.cpp b9101, ROCm PyTorch
   release/2.11 at `5223630054ce5ecd7b774d0ea31f2a1b472fb9b3`, Blackcat
   ai-notes at `3f15f9f1318491c9ee03782d8b2ebd41391de118`, Torch-MIGraphX at
-  `b94b985586a051fbee19aefe8c934bb7c1a9df0a`, and vLLM 0.20.2. The package
-  build completed through `tools/amerge` plan `20260510T185935-9cefeddf`;
-  deploy/install, installed smokes, and affected live-scenario validation are
-  still open before these candidates can be marked adopted.
-  - `2026-05-10 refresh deploy/install lane`
-  - `2026-05-10 refresh installed-smoke lane`
-  - `2026-05-10 refresh affected live-scenario lane`
+  `b94b985586a051fbee19aefe8c934bb7c1a9df0a`, and vLLM 0.20.2. Package build
+  completed through `tools/amerge` plan `20260510T185935-9cefeddf`;
+  deploy/install completed through plans `20260510T201114-f3f30a0d`,
+  `20260511T081325-ff707e38`, and `20260511T082929-52430ccd`; vLLM was
+  rebuilt after the corrected PyTorch deploy through plan
+  `20260511T081446-f56bde47`; and affected live scenarios passed in
+  `docs/worklog/inference-runs/20260511T083036`.
 - Python 3.14.5 coordinated rebuild lane: Python 3.14.5 is reviewed as
   baseline drift but remains a coordinated interpreter rebuild lane rather
   than part of the 2026-05-07 source bundle.
