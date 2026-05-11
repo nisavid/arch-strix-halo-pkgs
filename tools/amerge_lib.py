@@ -506,13 +506,11 @@ def repo_name_from_publish_root(path: Path) -> str | None:
 
 def validate_publish_root(publish_root: Path, *, allow_foreign: bool = False) -> None:
     repo_name = repo_name_from_publish_root(publish_root)
-    if repo_name is None:
-        return
     if allow_foreign:
         return
     if repo_name == LOCAL_REPO_NAME:
         return
-    if repo_name in FOREIGN_PUBLISH_ROOT_NAMES or publish_root.parts[:3] == ("/", "srv", "pacman"):
+    if publish_root.parts[:3] == ("/", "srv", "pacman") or repo_name in FOREIGN_PUBLISH_ROOT_NAMES:
         raise SystemExit(
             "Refusing to publish Strix Halo packages to foreign pacman repo path "
             f"{publish_root}. Expected {EXPECTED_PUBLISH_ROOT}. "
