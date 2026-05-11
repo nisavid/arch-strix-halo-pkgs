@@ -10,7 +10,7 @@
   1.13.0, and auto-round 0.12.3. Package build, deploy/install, and installed
   smokes passed for the bundle. The promoted Gemma 4 vLLM scenarios also
   passed on 2026-05-10 with
-  `HF_HUB_CACHE=/bulk/testing/huggingface/hub`, so the refresh bundle is
+  `HF_HUB_CACHE=<testing HF hub cache root>`, so the refresh bundle is
   adopted in `docs/maintainers/update-candidates.toml`.
 - The 2026-05-10 follow-up refresh is adopted. It has source-update,
   package-build, deploy/install, installed-smoke, and affected live-scenario

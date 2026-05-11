@@ -64,10 +64,13 @@ Instead:
 
 Never commit:
 
-- private filesystem paths, including home directories, cache roots, and host-local mount points
+- private filesystem paths, including home directories, cache roots, host-local
+  mount points, and other nonstandard local paths
 - private hostnames or local-only service addresses
 - machine-specific IDs that do not help another maintainer
 - secrets, keys, or tokens
+- exact local paths inside committed agent policies, instructions, guidance, or
+  skills
 
 Replace private context with neutral placeholders or generic examples before
 committing.
