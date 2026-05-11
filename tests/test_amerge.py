@@ -1021,6 +1021,20 @@ def test_publish_root_validation_checks_resolved_srv_pacman_path(monkeypatch):
         module.validate_publish_root(Path("/tmp/publish-link"))
 
 
+def test_publish_repo_name_uses_resolved_srv_pacman_path(monkeypatch):
+    module = load_module()
+    original_resolve = Path.resolve
+
+    def fake_resolve(self, *args, **kwargs):
+        if self == Path("/tmp/publish-link"):
+            return Path("/srv/pacman/nisavid/x86_64")
+        return original_resolve(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "resolve", fake_resolve)
+
+    assert module.publish_repo_name_for_root(Path("/tmp/publish-link")) == "nisavid"
+
+
 def test_foreign_publish_root_can_be_explicitly_overridden(tmp_path: Path):
     packages_root = graph_fixture(tmp_path)
     result = run_amerge(
