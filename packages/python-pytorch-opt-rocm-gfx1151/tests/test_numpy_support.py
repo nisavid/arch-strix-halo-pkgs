@@ -63,6 +63,7 @@ def test_pkgbuild_makes_numpy_available_at_build_time():
     assert 'cmake --build build --config Release -j "${MAX_JOBS}"' in text
     assert "_sysconfigdata__linux_x86_64-linux-gnu.cpython-314.pyc" in text
     assert 'env "${_clean_env[@]}" SKIP_BUILD_DEPS=1 python setup.py bdist_wheel --dist-dir dist' in text
+    assert "PYTORCH_LIB_DIR_MISSING" in text
     assert "PYTORCH_HIP_LIBRARY_MISSING" in text
 
 
