@@ -57,11 +57,12 @@ def test_pkgbuild_makes_numpy_available_at_build_time():
     assert 'local _ccache_cache="$srcdir/.ccache/cache"' in text
     assert 'export CCACHE_DIR="${_ccache_cache}"' in text
     assert "BASH_FUNC_*|module|ml" in text
-    assert "done < <(compgen -e)" in text
+    assert "done < <(env | sed -n 's/=.*//p')" in text
     assert 'env "${_clean_env[@]}" CMAKE_ONLY=1 python setup.py build' in text
     assert 'cmake --build build --config Release -j "${MAX_JOBS}"' in text
     assert "_sysconfigdata__linux_x86_64-linux-gnu.cpython-314.pyc" in text
     assert 'env "${_clean_env[@]}" SKIP_BUILD_DEPS=1 python setup.py bdist_wheel --dist-dir dist' in text
+    assert "PYTORCH_HIP_LIBRARY_MISSING" in text
 
 
 def test_pkgbuild_loads_clang_openmp_before_torch_cpu():
