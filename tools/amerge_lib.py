@@ -24,6 +24,7 @@ from repo_package_graph import RepoPackageRoot, discover_repo_package_roots
 
 LOCAL_REPO_NAME = "strix-halo-gfx1151"
 EXPECTED_PUBLISH_ROOT = Path(f"/srv/pacman/{LOCAL_REPO_NAME}/x86_64")
+EXPECTED_PUBLISH_ROOT_RESOLVED = EXPECTED_PUBLISH_ROOT.resolve()
 FOREIGN_PUBLISH_ROOT_NAMES = {"nisavid"}
 DEFAULT_PACKAGES_ROOT = REPO_ROOT / "packages"
 DEFAULT_REPO_DIR = REPO_ROOT / "repo/x86_64"
@@ -502,26 +503,40 @@ def repo_name_from_publish_root(path: Path) -> str | None:
     return None
 
 
+def is_srv_pacman_root(path: Path) -> bool:
+    return path.parts[:3] == ("/", "srv", "pacman")
+
+
+def has_srv_pacman_publish_shape(path: Path) -> bool:
+    return len(path.parts) == 5 and path.parts[4] == "x86_64"
+
+
+def refuse_publish_root(publish_root: Path, *, override_hint: bool) -> None:
+    message = (
+        "Refusing to publish Strix Halo packages to unexpected pacman repo path "
+        f"{publish_root}. Expected /srv/pacman/<repo>/x86_64, normally "
+        f"{EXPECTED_PUBLISH_ROOT}."
+    )
+    if override_hint:
+        message += " Pass --allow-foreign-publish-root to override intentionally."
+    raise SystemExit(message)
+
+
 def validate_publish_root(publish_root: Path, *, allow_foreign: bool = False) -> None:
     repo_name = repo_name_from_publish_root(publish_root)
-    is_srv_pacman_root = publish_root.parts[:3] == ("/", "srv", "pacman")
-    has_publish_shape = len(publish_root.parts) == 5 and publish_root.parts[4] == "x86_64"
-    if is_srv_pacman_root and not has_publish_shape:
-        raise SystemExit(
-            "Refusing to publish Strix Halo packages to foreign pacman repo path "
-            f"{publish_root}. Expected /srv/pacman/<repo>/x86_64, normally "
-            f"{EXPECTED_PUBLISH_ROOT}."
-        )
+    resolved_root = publish_root.resolve()
+    roots_to_check = (publish_root, resolved_root)
+    if any(
+        is_srv_pacman_root(root) and not has_srv_pacman_publish_shape(root)
+        for root in roots_to_check
+    ):
+        refuse_publish_root(publish_root, override_hint=False)
     if allow_foreign:
         return
-    if publish_root == EXPECTED_PUBLISH_ROOT:
+    if publish_root == EXPECTED_PUBLISH_ROOT or resolved_root == EXPECTED_PUBLISH_ROOT_RESOLVED:
         return
-    if is_srv_pacman_root or repo_name in FOREIGN_PUBLISH_ROOT_NAMES:
-        raise SystemExit(
-            "Refusing to publish Strix Halo packages to foreign pacman repo path "
-            f"{publish_root}. Expected {EXPECTED_PUBLISH_ROOT}. "
-            "Pass --allow-foreign-publish-root to override intentionally."
-        )
+    if any(is_srv_pacman_root(root) for root in roots_to_check) or repo_name in FOREIGN_PUBLISH_ROOT_NAMES:
+        refuse_publish_root(publish_root, override_hint=True)
 
 
 def build_steps(

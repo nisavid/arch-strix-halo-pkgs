@@ -1001,8 +1001,24 @@ def test_foreign_publish_override_still_requires_srv_pacman_arch_root(tmp_path: 
 
     assert result.returncode != 0
     assert "Refusing to publish Strix Halo packages" in result.stderr
+    assert "unexpected pacman repo path" in result.stderr
     assert "/srv/pacman/strix-halo-gfx1151/x86_64" in result.stderr
     assert "--allow-foreign-publish-root" not in result.stderr
+
+
+def test_publish_root_validation_checks_resolved_srv_pacman_path(monkeypatch):
+    module = load_module()
+    original_resolve = Path.resolve
+
+    def fake_resolve(self, *args, **kwargs):
+        if self == Path("/tmp/publish-link"):
+            return Path("/srv/pacman/nisavid/x86_64")
+        return original_resolve(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "resolve", fake_resolve)
+
+    with pytest.raises(SystemExit, match="unexpected pacman repo path"):
+        module.validate_publish_root(Path("/tmp/publish-link"))
 
 
 def test_foreign_publish_root_can_be_explicitly_overridden(tmp_path: Path):
