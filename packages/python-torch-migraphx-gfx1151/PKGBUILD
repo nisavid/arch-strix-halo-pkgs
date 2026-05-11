@@ -18,7 +18,7 @@ options=()
 provides=(python-torch-migraphx torch-migraphx)
 conflicts=(python-torch-migraphx torch-migraphx)
 replaces=()
-source=('torch_migraphx::git+https://github.com/ROCm/torch_migraphx.git#commit=6b2cd2237e83b675ae671650d08343dfbb0be5f3' 0001-import-pt2e-quantization-from-torchao.patch 0002-keep-dynamo-registration-lazy.patch 0003-relax-numpy-runtime-cap.patch 0004-preload-aot-autograd-before-native-extension.patch)
+source=('torch_migraphx::git+https://github.com/ROCm/torch_migraphx.git#commit=b94b985586a051fbee19aefe8c934bb7c1a9df0a' 0001-import-pt2e-quantization-from-torchao.patch 0002-keep-dynamo-registration-lazy.patch 0003-relax-numpy-runtime-cap.patch 0004-preload-aot-autograd-before-native-extension.patch)
 sha256sums=(SKIP SKIP SKIP SKIP SKIP)
 
 prepare() {

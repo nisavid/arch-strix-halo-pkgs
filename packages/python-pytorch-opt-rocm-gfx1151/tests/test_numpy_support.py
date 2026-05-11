@@ -55,7 +55,7 @@ def test_pkgbuild_makes_numpy_available_at_build_time():
     assert "0006-enable-aten-cuda-api-for-rocm.patch" in text
     assert 'rm -rf build' in text
     assert 'local _ccache_cache="$srcdir/.ccache/cache"' in text
-    assert 'export CCACHE_DIR="${CCACHE_DIR:-${_ccache_cache}}"' in text
+    assert 'export CCACHE_DIR="${_ccache_cache}"' in text
     assert "BASH_FUNC_*|module|ml" in text
     assert "done < <(compgen -e)" in text
     assert 'env "${_clean_env[@]}" CMAKE_ONLY=1 python setup.py build' in text

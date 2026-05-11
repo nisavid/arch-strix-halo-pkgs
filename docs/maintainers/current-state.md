@@ -301,10 +301,26 @@ the adopted refresh bundle: AITER 0.1.13, Lemonade 10.4.0, llama.cpp b9101,
 ROCm PyTorch release/2.11 at
 `5223630054ce5ecd7b774d0ea31f2a1b472fb9b3`, Blackcat ai-notes at
 `3f15f9f1318491c9ee03782d8b2ebd41391de118`, Torch-MIGraphX at
-`b94b985586a051fbee19aefe8c934bb7c1a9df0a`, and vLLM 0.20.2. Those candidates
-are tracked in `docs/maintainers/update-candidates.toml` and visible in
-`docs/backlog.md`; they are not built, deployed, installed, installed-smoked,
-or live-scenario validated as part of the 2026-05-07 bundle.
+`b94b985586a051fbee19aefe8c934bb7c1a9df0a`, and vLLM 0.20.2. The active
+follow-up refresh updated source metadata for those lanes and built packages
+through `tools/amerge` plan `20260510T185935-9cefeddf` on 2026-05-10:
+
+- `lemonade-server 10.4.0-1`
+- `lemonade-app 10.4.0-1`
+- `lemonade 10.4.0-1`
+- `llama.cpp-hip-gfx1151 b9101-1`
+- `llama.cpp-vulkan-gfx1151 b9101-1`
+- `python-pytorch-opt-rocm-gfx1151 2.11.0-12`
+- `python-amd-aiter-gfx1151 0.1.13-1`
+- `python-torch-migraphx-gfx1151 1.2-5`
+- `python-vllm-rocm-gfx1151 0.20.2-1`
+
+The refreshed vLLM patch carry applies against vLLM 0.20.2, and the Lemonade
+system-managed llama.cpp backend patch is refreshed against Lemonade 10.4.0.
+Deploy/install, installed-smoke, and affected live-scenario gates remain open,
+so these candidates are still tracked in
+`docs/maintainers/update-candidates.toml` and `docs/backlog.md` rather than
+adopted.
 
 The same Blackcat wheel-stack branch now has package-build evidence for the
 new core stack. `tools/amerge build python-pydantic-core-gfx1151

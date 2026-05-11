@@ -94,11 +94,14 @@
              bool latest_pin = is_bin_pinned_to_latest(def.recipe, def.backend);
              bool needs_update;
  #if !defined(_WIN32)
-@@ -1029,7 +1098,7 @@
+@@ -1106,8 +1175,8 @@
+                 needs_update = has_expected
+                     && (!version_known
                          || version_compare(installed_version, expected_version) < 0);
              } else {
--                needs_update = has_expected && (!version_known || installed_version != expected_version);
-+                needs_update = !externally_managed && has_expected && (!version_known || installed_version != expected_version);
+-                needs_update = has_expected
++                needs_update = !externally_managed && has_expected
+                     && (!version_known || !versions_match(installed_version, expected_version));
              }
  
              if (needs_update) {

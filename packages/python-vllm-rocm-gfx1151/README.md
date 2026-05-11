@@ -6,8 +6,8 @@
 - Scaffold template: `python-project-vllm`
 - Recipe build method: `pip`
 - Upstream repo: `https://github.com/vllm-project/vllm.git`
-- Package version: `0.20.1`
-- Recipe revision: `a1d7a68 (20260427, 16 commits touching recipe path)`
+- Package version: `0.20.2`
+- Recipe revision: `3f15f9f (20260508, 17 commits touching recipe path)`
 - Recipe steps: `20, 21, 22, 23, 24, 25`
 - Recipe dependencies: `pytorch, triton, aotriton`
 - Recorded reference packages: `aur/python-vllm`
@@ -27,7 +27,7 @@ recorded in .aiter-status file ("enabled" or "disabled").
 ## Scaffold notes
 
 - There does not appear to be a current dedicated python-vllm-rocm AUR package; the closest package baseline is the generic AUR python-vllm package, with ROCm-specific integration coming from this recipe.
-- Uses the latest stable upstream release tarball, currently v0.20.1, instead of a floating full Git clone.
+- Uses the latest stable upstream release tarball, currently v0.20.2, instead of a floating full Git clone.
 - Carries a package-local CLI import patch so vllm --version remains a metadata-only path instead of importing optional OpenAI and Triton runtime modules at startup.
 - Carries a ROCm-specific Triton compatibility patch so the vendored triton_kernels tree is treated as unavailable when the installed Triton runtime lacks CUDA-only APIs such as triton.language.target_info or triton.constexpr_function.
 - Carries a ROCm-platform fallback patch so Strix Halo can fall back from AMDSMI ASIC-info lookup to torch.cuda without tripping the import-time warning_once circular import path.

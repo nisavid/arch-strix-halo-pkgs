@@ -13,7 +13,7 @@
       "Carries a ROCm CK/direct FlashAttention interface gate that keeps the forced FLASH_ATTN probe blocked at backend selection until the imported flash_attn module exposes vLLM's paged-KV varlen API."
     ],
     "source_patches": [
-      "0016-rocm-refresh-local-carry-for-vllm-0.20.1.patch"
+      "0016-rocm-refresh-local-carry-for-vllm-0.20.2.patch"
     ],
     "update_notes": [
       "Check upstream vllm release notes and pyproject metadata first, then reconcile the Python upper-bound and hard-coded supported-version list with the current state of Python 3.14 support.",
@@ -60,7 +60,7 @@
   },
   "name": "python-vllm-rocm-gfx1151",
   "package_name": "python-vllm-rocm-gfx1151",
-  "pkgver": "0.20.1",
+  "pkgver": "0.20.2",
   "policy": {
     "advisory_references": [],
     "arch_reference": [
@@ -126,7 +126,7 @@
       "SKIP"
     ],
     "extra_sources": [
-      "0016-rocm-refresh-local-carry-for-vllm-0.20.1.patch"
+      "0016-rocm-refresh-local-carry-for-vllm-0.20.2.patch"
     ],
     "license": [
       "Apache-2.0"
@@ -153,7 +153,7 @@
     "recipe_key": "vllm",
     "scaffold_notes": [
       "There does not appear to be a current dedicated python-vllm-rocm AUR package; the closest package baseline is the generic AUR python-vllm package, with ROCm-specific integration coming from this recipe.",
-      "Uses the latest stable upstream release tarball, currently v0.20.1, instead of a floating full Git clone.",
+      "Uses the latest stable upstream release tarball, currently v0.20.2, instead of a floating full Git clone.",
       "Carries a package-local CLI import patch so vllm --version remains a metadata-only path instead of importing optional OpenAI and Triton runtime modules at startup.",
       "Carries a ROCm-specific Triton compatibility patch so the vendored triton_kernels tree is treated as unavailable when the installed Triton runtime lacks CUDA-only APIs such as triton.language.target_info or triton.constexpr_function.",
       "Carries a ROCm-platform fallback patch so Strix Halo can fall back from AMDSMI ASIC-info lookup to torch.cuda without tripping the import-time warning_once circular import path.",
@@ -189,11 +189,11 @@
       "The earlier numba-pin idea is not currently part of the actual built package story; treat any numba change as a separate follow-up until it is backed by a real source patch."
     ],
     "sha256sums": [
-      "872f44c9f21f59639da534ad94b5ad14d461e95bea3d20fbfac5c8fab221742f"
+      "d3fad72335d0232fdd291113985f5c0c2e393192b19a5ddabed9c635b9b4d73b"
     ],
     "source_type": "tarball",
-    "source_url": "https://github.com/vllm-project/vllm/archive/refs/tags/v0.20.1.tar.gz",
-    "src_subdir": "vllm-0.20.1",
+    "source_url": "https://github.com/vllm-project/vllm/archive/refs/tags/v0.20.2.tar.gz",
+    "src_subdir": "vllm-0.20.2",
     "template": "python-project-vllm",
     "update_notes": [
       "Check upstream vllm release notes and pyproject metadata first, then reconcile the Python upper-bound and hard-coded supported-version list with the current state of Python 3.14 support.",
@@ -237,15 +237,15 @@
       "Treat the current external python-torchao-rocm _C-extension failure as a host-package defect, not a blocker for this vLLM lane. Generic startup should stay clean after the local TorchAO-import patch, and the remaining follow-up only matters if this repo needs actual TorchAO custom ops or torchao-backed serving paths that truly require the native extension.",
       "Treat runtime validation against the live ROCm stack as mandatory; a successful wheel build is not enough."
     ],
-    "upstream_version": "0.20.1",
+    "upstream_version": "0.20.2",
     "url": "https://github.com/vllm-project/vllm"
   },
   "provenance": {
     "output_root": "packages",
     "recipe_author": "Blackcat Informatics Inc.",
-    "recipe_commit": "a1d7a68",
-    "recipe_date": "20260427",
-    "recipe_history_count": 16,
+    "recipe_commit": "3f15f9f",
+    "recipe_date": "20260508",
+    "recipe_history_count": 17,
     "recipe_repo": "https://github.com/paudley/ai-notes",
     "recipe_subdir": "strix-halo",
     "repo_subpath": "."
