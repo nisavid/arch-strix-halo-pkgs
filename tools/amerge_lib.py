@@ -508,7 +508,7 @@ def validate_publish_root(publish_root: Path, *, allow_foreign: bool = False) ->
     repo_name = repo_name_from_publish_root(publish_root)
     if allow_foreign:
         return
-    if repo_name == LOCAL_REPO_NAME:
+    if publish_root == EXPECTED_PUBLISH_ROOT:
         return
     if publish_root.parts[:3] == ("/", "srv", "pacman") or repo_name in FOREIGN_PUBLISH_ROOT_NAMES:
         raise SystemExit(
