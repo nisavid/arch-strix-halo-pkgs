@@ -17,8 +17,8 @@
 
 ## Recipe notes
 
-Rebuilt from PyTorch's third_party/aiter/ submodule to align CK ABI
-with the CK headers used by AITER's JIT at runtime.
+Rebuilt from upstream AITER stable tag v0.1.13. Keep the packaged CK ABI
+aligned with the CK headers used by AITER's JIT at runtime.
 
 PREBUILD_KERNELS=0: skip 45-minute full kernel precompilation.
 Kernels are JIT-compiled on first use instead.
@@ -31,7 +31,7 @@ RDNA 3.5 compatibility and installed-system JIT/runtime behavior.
 
 - There is no standalone Arch, CachyOS, or AUR aiter package. The closest packaging lane is the PyTorch ROCm pkgbase that vendors the same submodule, so that pkgbase is advisory only.
 - The package pins reviewed upstream AITER stable tag v0.1.13 because it is the adopted source lane for the local vLLM/AITER validation surface.
-- The package exports SETUPTOOLS_SCM_PRETEND_VERSION so the wheel metadata is stable even though the source is a git commit past the latest release tag.
+- The package exports SETUPTOOLS_SCM_PRETEND_VERSION so the wheel metadata stays stable while building from the pinned upstream v0.1.13 tag.
 - The recipe rebuilds AITER from the pinned upstream AITER source lane while keeping CK and generated kernel expectations explicit in the package.
 - Upstream AITER declares pandas as a real dependency and FlyDSL as an optional acceleration path. Keep pandas in the package metadata, and package FlyDSL separately rather than silently depending on an unpublished wheel.
 - Keep the gfx1151 RDNA 3.5 header fixes as package-local source patches applied before wheel build, split between the `vec_convert.h` packed-op fallbacks and the `hip_reduce.h` wave32/DPP compatibility rewrite.
