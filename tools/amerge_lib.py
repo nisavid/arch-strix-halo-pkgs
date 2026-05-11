@@ -531,6 +531,8 @@ def validate_publish_root(publish_root: Path, *, allow_foreign: bool = False) ->
         for root in roots_to_check
     ):
         refuse_publish_root(publish_root, override_hint=False)
+    if is_srv_pacman_root(publish_root) and not is_srv_pacman_root(resolved_root):
+        refuse_publish_root(publish_root, override_hint=False)
     if allow_foreign:
         return
     if publish_root == EXPECTED_PUBLISH_ROOT or resolved_root == EXPECTED_PUBLISH_ROOT_RESOLVED:
@@ -541,8 +543,8 @@ def validate_publish_root(publish_root: Path, *, allow_foreign: bool = False) ->
 
 def publish_repo_name_for_root(publish_root: Path) -> str:
     return (
-        repo_name_from_publish_root(publish_root)
-        or repo_name_from_publish_root(publish_root.resolve())
+        repo_name_from_publish_root(publish_root.resolve())
+        or repo_name_from_publish_root(publish_root)
         or LOCAL_REPO_NAME
     )
 
