@@ -113,6 +113,37 @@ def test_expected_package_paths_come_from_makepkg_packagelist(tmp_path: Path, mo
     assert update_pacman_repo.expected_package_paths(package_dir) == [expected_archive]
 
 
+def test_default_repo_name_is_strix_halo(monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "update_pacman_repo.py",
+            "--package-dir",
+            "packages/demo",
+            "--repo-dir",
+            "repo/x86_64",
+        ],
+    )
+
+    args = update_pacman_repo.parse_args()
+
+    assert args.repo_name == "strix-halo-gfx1151"
+    assert args.repo_name != "nisavid"
+
+
+def test_nisavid_repo_name_requires_explicit_override():
+    try:
+        update_pacman_repo.validate_repo_name("nisavid")
+    except RuntimeError as exc:
+        assert "PACMAN_REPO_NAME_REFUSED" in str(exc)
+        assert "strix-halo-gfx1151" in str(exc)
+    else:
+        raise AssertionError("expected foreign repo database basename to fail")
+
+    update_pacman_repo.validate_repo_name("nisavid", allow_foreign=True)
+
+
 def test_expected_package_paths_fail_when_current_archive_is_missing(
     tmp_path: Path,
     monkeypatch,

@@ -8,6 +8,11 @@ description: Use when Arch package changes need a host handoff, rebuild, publish
 Use `tools/amerge` as the canonical repo-side host workflow for merge planning,
 rebuild, publish, install, resume, history, and logs.
 
+This repo's local pacman target is `strix-halo-gfx1151`, published at
+`/srv/pacman/strix-halo-gfx1151/x86_64`. Do not use the sibling `arch-pkgs`
+repo target `nisavid` or `/srv/pacman/nisavid/x86_64` for Strix Halo package
+artifacts.
+
 ## Completion Rule
 
 When package files, PKGBUILDs, repo metadata, or package versions changed and

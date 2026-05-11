@@ -12,6 +12,10 @@ from pathlib import Path
 from package_archives import PackageInfo, read_package_infos, select_latest_by_name, vercmp
 
 
+DEFAULT_REPO_NAME = "strix-halo-gfx1151"
+FOREIGN_REPO_NAMES = {"nisavid"}
+
+
 def link_or_copy(src: Path, dst: Path) -> None:
     if dst.exists() or dst.is_symlink():
         try:
@@ -78,7 +82,12 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Populate a local pacman repo from built package archives")
     parser.add_argument("--package-dir", required=True, help="directory containing built .pkg.tar.* archives")
     parser.add_argument("--repo-dir", required=True, help="destination repo directory")
-    parser.add_argument("--repo-name", default="strix-halo-gfx1151", help="repo database basename")
+    parser.add_argument("--repo-name", default=DEFAULT_REPO_NAME, help="repo database basename")
+    parser.add_argument(
+        "--allow-foreign-repo-name",
+        action="store_true",
+        help="allow a repo database basename that is known to belong to another local repo",
+    )
     parser.add_argument(
         "--recursive",
         action="store_true",
@@ -92,8 +101,23 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def validate_repo_name(repo_name: str, *, allow_foreign: bool = False) -> None:
+    if allow_foreign or repo_name not in FOREIGN_REPO_NAMES:
+        return
+    raise RuntimeError(
+        "PACMAN_REPO_NAME_REFUSED: this repo defaults to "
+        f"{DEFAULT_REPO_NAME!r}; refusing foreign repo database basename "
+        f"{repo_name!r}. Pass --allow-foreign-repo-name to override intentionally."
+    )
+
+
 def main() -> int:
     args = parse_args()
+    try:
+        validate_repo_name(args.repo_name, allow_foreign=args.allow_foreign_repo_name)
+    except RuntimeError as exc:
+        print(exc, file=sys.stderr)
+        return 2
     package_dir = Path(args.package_dir).resolve()
     repo_dir = Path(args.repo_dir).resolve()
     repo_dir.mkdir(parents=True, exist_ok=True)
