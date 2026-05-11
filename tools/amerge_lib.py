@@ -539,6 +539,14 @@ def validate_publish_root(publish_root: Path, *, allow_foreign: bool = False) ->
         refuse_publish_root(publish_root, override_hint=True)
 
 
+def publish_repo_name_for_root(publish_root: Path) -> str:
+    return (
+        repo_name_from_publish_root(publish_root)
+        or repo_name_from_publish_root(publish_root.resolve())
+        or LOCAL_REPO_NAME
+    )
+
+
 def build_steps(
     *,
     command: str,
@@ -761,7 +769,7 @@ def create_merge_plan(args: argparse.Namespace, *, command: str) -> dict[str, ob
         final_install_outputs=final_install_outputs,
         repo_dir=repo_dir,
         publish_root=publish_root,
-        publish_repo_name=repo_name_from_publish_root(publish_root) or LOCAL_REPO_NAME,
+        publish_repo_name=publish_repo_name_for_root(publish_root),
         allow_foreign_repo_name=args.allow_foreign_publish_root,
     )
     plan_id = new_plan_id()
