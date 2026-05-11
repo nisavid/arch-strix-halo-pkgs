@@ -225,6 +225,12 @@ PY
 
   if [[ -d "${_site}/torch/lib" ]]; then
     local _so _runpath
+
+    if [[ ! -f "${_site}/torch/lib/libtorch_hip.so" ]]; then
+      echo "PYTORCH_HIP_LIBRARY_MISSING: ${_site}/torch/lib/libtorch_hip.so" >&2
+      return 1
+    fi
+
     for _so in "${_site}"/torch/lib/lib*.so; do
       [[ -f "${_so}" ]] || continue
       _runpath="$(readelf -d "${_so}" 2>/dev/null | grep 'RUNPATH' || true)"
@@ -251,11 +257,6 @@ PY
 
     if [[ -f "${_site}/torch/lib/libtorch_hip.so" ]] && ! readelf -d "${_site}/torch/lib/libtorch_hip.so" 2>/dev/null | grep -q 'librocm_smi64'; then
       patchelf --add-needed librocm_smi64.so "${_site}/torch/lib/libtorch_hip.so" 2>/dev/null || true
-    fi
-
-    if [[ ! -f "${_site}/torch/lib/libtorch_hip.so" ]]; then
-      echo "PYTORCH_HIP_LIBRARY_MISSING: ${_site}/torch/lib/libtorch_hip.so" >&2
-      return 1
     fi
   fi
 }
