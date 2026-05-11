@@ -15,7 +15,7 @@ packages = ["therock-gfx1151"]
 priority = "high"
 workflow = "recipe_update"
 checks = [
-  { id = "ai-notes", role = "primary", kind = "submodule", path = "upstream/ai-notes", ref = "refs/heads/main", recorded = "a1d7a6816dd2c456bad9fcc7d61c53a4bd8c5fbd", comparison = "sha" },
+  { id = "ai-notes", role = "primary", kind = "submodule", path = "upstream/ai-notes", ref = "refs/heads/main", recorded = "3f15f9f1318491c9ee03782d8b2ebd41391de118", comparison = "sha" },
 ]
 
 [families.aocl_utils]
@@ -50,7 +50,7 @@ packages = ["python-vllm-rocm-gfx1151"]
 priority = "high"
 workflow = "upstream_source_update"
 checks = [
-  { id = "release", role = "primary", kind = "github_release", repo = "vllm-project/vllm", recorded = "0.20.1", tag_prefix = "v", comparison = "pep440", include_prereleases = false },
+  { id = "release", role = "primary", kind = "github_release", repo = "vllm-project/vllm", recorded = "0.20.2", tag_prefix = "v", comparison = "pep440", include_prereleases = false },
   { id = "aur", role = "baseline", kind = "aur", package = "python-vllm", recorded = "0.12.0-1", comparison = "pkgver" },
 ]
 
@@ -68,7 +68,7 @@ packages = ["python-pytorch-opt-rocm-gfx1151"]
 priority = "high"
 workflow = "upstream_source_update"
 checks = [
-  { id = "release-branch", role = "primary", kind = "git_ref", repo = "https://github.com/ROCm/pytorch.git", ref = "refs/heads/release/2.11", recorded = "443606eb94430d90554ab4c21202494576afedce", comparison = "sha" },
+  { id = "release-branch", role = "primary", kind = "git_ref", repo = "https://github.com/ROCm/pytorch.git", ref = "refs/heads/release/2.11", recorded = "5223630054ce5ecd7b774d0ea31f2a1b472fb9b3", comparison = "sha" },
   { id = "arch", role = "baseline", kind = "arch_package", package = "python-pytorch-opt-rocm", recorded = "2.11.0-4", comparison = "pkgver" },
 ]
 
@@ -104,7 +104,7 @@ packages = ["python-amd-aiter-gfx1151"]
 priority = "high"
 workflow = "upstream_source_update"
 checks = [
-  { id = "release", role = "primary", kind = "github_release", repo = "ROCm/aiter", recorded = "0.1.12.post2", tag_prefix = "v", comparison = "pep440" },
+  { id = "release", role = "primary", kind = "github_release", repo = "ROCm/aiter", recorded = "0.1.13", tag_prefix = "v", comparison = "pep440" },
   { id = "main", role = "candidate", kind = "git_ref", repo = "https://github.com/ROCm/aiter.git", ref = "refs/heads/main", recorded = "bdece28f7b20e770b6ac9b1b9b1814b71faf258f", comparison = "sha" },
 ]
 
@@ -342,7 +342,7 @@ packages = ["python-torch-migraphx-gfx1151"]
 priority = "medium"
 workflow = "upstream_source_update"
 checks = [
-  { id = "master", role = "primary", kind = "git_ref", repo = "https://github.com/ROCm/torch_migraphx.git", ref = "refs/heads/master", recorded = "6b2cd2237e83b675ae671650d08343dfbb0be5f3", comparison = "sha" },
+  { id = "master", role = "primary", kind = "git_ref", repo = "https://github.com/ROCm/torch_migraphx.git", ref = "refs/heads/master", recorded = "b94b985586a051fbee19aefe8c934bb7c1a9df0a", comparison = "sha" },
   { id = "tag", role = "baseline", kind = "github_tags", repo = "ROCm/torch_migraphx", recorded = "1.1", comparison = "pep440", include_prereleases = false },
 ]
 
@@ -369,8 +369,8 @@ packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"]
 priority = "high"
 workflow = "upstream_source_update"
 checks = [
-  { id = "release", role = "primary", kind = "github_release", repo = "ggml-org/llama.cpp", recorded = "b9050", comparison = "prefixed_integer" },
-  { id = "aur-hip", role = "baseline", kind = "aur", package = "llama.cpp-hip", recorded = "b9049-1", comparison = "pkgver" },
+  { id = "release", role = "primary", kind = "github_release", repo = "ggml-org/llama.cpp", recorded = "b9101", comparison = "prefixed_integer" },
+  { id = "aur-hip", role = "baseline", kind = "aur", package = "llama.cpp-hip", recorded = "b9101-1", comparison = "pkgver" },
   { id = "aur-vulkan", role = "baseline", kind = "aur", package = "llama.cpp-vulkan-bin", recorded = "b7376-1", comparison = "pkgver" },
 ]
 
@@ -388,7 +388,7 @@ packages = ["lemonade-server", "lemonade-app", "lemonade"]
 priority = "medium"
 workflow = "upstream_source_update"
 checks = [
-  { id = "release", role = "primary", kind = "github_release", repo = "lemonade-sdk/lemonade", recorded = "10.2.0", tag_prefix = "v", comparison = "pep440" },
+  { id = "release", role = "primary", kind = "github_release", repo = "lemonade-sdk/lemonade", recorded = "10.4.0", tag_prefix = "v", comparison = "pep440" },
   { id = "aur-server", role = "baseline", kind = "aur", package = "lemonade-server", recorded = "10.4.0-1", comparison = "pkgver" },
   { id = "aur-desktop", role = "baseline", kind = "aur", package = "lemonade-desktop", recorded = "10.4.0-4", comparison = "pkgver" },
 ]
