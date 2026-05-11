@@ -969,7 +969,7 @@ build() {{
     case "${{_env_name}}" in
       BASH_FUNC_*|module|ml) _clean_env+=(-u "${{_env_name}}") ;;
     esac
-  done < <(compgen -e)
+  done < <(env | sed -n 's/=.*//p')
 
   {compiler_env_snippet(compiler_root)}  _setup_compiler_env
   export CFLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument"
@@ -1129,6 +1129,11 @@ PY
 
     if [[ -f "${{_site}}/torch/lib/libtorch_hip.so" ]] && ! readelf -d "${{_site}}/torch/lib/libtorch_hip.so" 2>/dev/null | grep -q 'librocm_smi64'; then
       patchelf --add-needed librocm_smi64.so "${{_site}}/torch/lib/libtorch_hip.so" 2>/dev/null || true
+    fi
+
+    if [[ ! -f "${{_site}}/torch/lib/libtorch_hip.so" ]]; then
+      echo "PYTORCH_HIP_LIBRARY_MISSING: ${{_site}}/torch/lib/libtorch_hip.so" >&2
+      return 1
     fi
   fi
 }}"""
