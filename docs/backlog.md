@@ -26,10 +26,10 @@
   `docs/worklog/inference-runs/20260511T083036`.
 - The 2026-05-11 PR closeout freshness check found two new tracked follow-up
   lanes after the 2026-05-10 refresh had already closed validation:
-  - `AITER main 665a73a source-update lane`: review the main-branch kernel/JIT
+  - `AITER main 0120532 source-update lane`: review the main-branch kernel/JIT
     delta after the adopted 0.1.13 release, then build, deploy/install, run the
     installed JIT smoke, and run affected vLLM scenario validation.
-  - `llama.cpp b9103 source-update lane`: review the b9101..b9103 runtime
+  - `llama.cpp b9106 source-update lane`: review the b9101..b9106 runtime
     delta, then build and deploy both HIP/Vulkan backends, run backend CLI
     smokes, and run affected Lemonade/vLLM scenario validation.
 - Python 3.14.5 coordinated rebuild lane: Python 3.14.5 is reviewed as
