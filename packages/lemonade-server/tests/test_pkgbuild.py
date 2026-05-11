@@ -22,7 +22,7 @@ OLD_SERVICE = (
     REPO_ROOT
     / "packages/lemonade-server/pkg/lemonade-server/usr/lib/systemd/system/lemonade-server.service"
 )
-EXPECTED_LLAMACPP_VERSION = "b9050"
+EXPECTED_LLAMACPP_VERSION = "b9101"
 EXPECTED_RELEASE_URL = (
     "https://github.com/ggml-org/llama.cpp/releases/tag/"
     f"{EXPECTED_LLAMACPP_VERSION}"

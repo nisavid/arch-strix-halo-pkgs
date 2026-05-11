@@ -5,7 +5,7 @@
 # Package recipe key: lemonade
 
 pkgname=lemonade-app
-pkgver=10.3.0
+pkgver=10.4.0
 pkgrel=1
 pkgdesc='Lemonade desktop app rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
@@ -18,11 +18,11 @@ options=()
 provides=(lemonade-desktop)
 conflicts=(lemonade-desktop)
 replaces=(lemonade-desktop)
-source=(https://github.com/lemonade-sdk/lemonade/archive/refs/tags/v10.3.0.tar.gz)
+source=(https://github.com/lemonade-sdk/lemonade/archive/refs/tags/v10.4.0.tar.gz)
 sha256sums=(SKIP)
 
 build() {
-  cd "$srcdir/lemonade-10.3.0"
+  cd "$srcdir/lemonade-10.4.0"
 
   _setup_compiler_env() {
   local _compiler_root="/opt/rocm/lib/llvm/bin"
@@ -61,7 +61,7 @@ build() {
 }
 
 package() {
-  cd "$srcdir/lemonade-10.3.0"
+  cd "$srcdir/lemonade-10.4.0"
   local build_root="$srcdir/build-lemonade-app"
   local _app_root="$pkgdir/usr/share/lemonade-app"
   local _tauri_output="${build_root}/app/lemonade-app"
@@ -89,5 +89,5 @@ EOF
     install -Dm644 src/app/assets/logo.svg "$pkgdir/usr/share/pixmaps/lemonade-app.svg"
   fi
 
-  install -Dm644 "$srcdir/lemonade-10.3.0/LICENSE" "$pkgdir/usr/share/licenses/lemonade-app/LICENSE"
+  install -Dm644 "$srcdir/lemonade-10.4.0/LICENSE" "$pkgdir/usr/share/licenses/lemonade-app/LICENSE"
 }

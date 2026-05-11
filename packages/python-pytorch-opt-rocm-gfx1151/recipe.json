@@ -128,7 +128,7 @@
       "Keep ATen's CUDA-named API enabled for ROCm builds without turning on NVIDIA CUDA discovery, so torch.cuda and downstream ROCm extension builds see the HIP-backed device surface."
     ],
     "source_refs": [
-      "pytorch::git+https://github.com/ROCm/pytorch.git#commit=443606eb94430d90554ab4c21202494576afedce"
+      "pytorch::git+https://github.com/ROCm/pytorch.git#commit=5223630054ce5ecd7b774d0ea31f2a1b472fb9b3"
     ],
     "src_subdir": "pytorch",
     "template": "python-project-pytorch-rocm",
@@ -149,9 +149,9 @@
   "provenance": {
     "output_root": "packages",
     "recipe_author": "Blackcat Informatics Inc.",
-    "recipe_commit": "a1d7a68",
-    "recipe_date": "20260427",
-    "recipe_history_count": 16,
+    "recipe_commit": "3f15f9f",
+    "recipe_date": "20260508",
+    "recipe_history_count": 17,
     "recipe_repo": "https://github.com/paudley/ai-notes",
     "recipe_subdir": "strix-halo",
     "repo_subpath": "."

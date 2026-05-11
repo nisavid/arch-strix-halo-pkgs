@@ -21,7 +21,7 @@
     "llama.cpp-vulkan-gfx1151"
   ],
   "package_name": "lemonade",
-  "pkgver": "10.3.0",
+  "pkgver": "10.4.0",
   "policy": {
     "advisory_references": [
       "aur/lemonade-server",
@@ -64,15 +64,15 @@
       "Do not let this meta package obscure the standalone update story for lemonade-server, lemonade-app, or the backend packages."
     ],
     "upstream_name": "lemonade",
-    "upstream_version": "10.3.0",
+    "upstream_version": "10.4.0",
     "url": "https://github.com/lemonade-sdk/lemonade"
   },
   "provenance": {
     "output_root": "packages",
     "recipe_author": "Blackcat Informatics Inc.",
-    "recipe_commit": "a1d7a68",
-    "recipe_date": "20260427",
-    "recipe_history_count": 16,
+    "recipe_commit": "3f15f9f",
+    "recipe_date": "20260508",
+    "recipe_history_count": 17,
     "recipe_repo": "https://github.com/paudley/ai-notes",
     "recipe_subdir": "strix-halo",
     "repo_subpath": "."

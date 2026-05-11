@@ -4,8 +4,8 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[3]
 PKGBUILD = REPO_ROOT / "packages/llama.cpp-vulkan-gfx1151/PKGBUILD"
 
-EXPECTED_VERSION = "b9050"
-EXPECTED_COMMIT = "3980e04d5a374da025e1942eb1043ac2f33e6a9a"
+EXPECTED_VERSION = "b9101"
+EXPECTED_COMMIT = "389ff61d77b5c71cec0cf92fe4e5d01ace80b797"
 
 
 def test_pkgbuild_tracks_recorded_llamacpp_release():

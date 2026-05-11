@@ -4,7 +4,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[3]
 PATCH = (
     REPO_ROOT
-    / "packages/python-vllm-rocm-gfx1151/0016-rocm-refresh-local-carry-for-vllm-0.20.1.patch"
+    / "packages/python-vllm-rocm-gfx1151/0016-rocm-refresh-local-carry-for-vllm-0.20.2.patch"
 )
 
 

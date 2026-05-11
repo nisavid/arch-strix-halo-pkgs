@@ -760,17 +760,17 @@ previous_recorded = "0.1.12.post2"
 latest = "0.1.13"
 discovery_status = "stable_update_available"
 disposition = "tracked"
-disposition_reason = "Reviewed during 2026-05-10 closeout after the Gemma 4 validation gate. This is a new upstream release beyond the adopted 2026-05-07 bundle and needs its own source audit, package build, deploy/install, AITER smoke, and affected vLLM scenario lane."
+disposition_reason = "The 2026-05-10 follow-up refresh updated package source metadata to AITER 0.1.13 and built python-amd-aiter-gfx1151 0.1.13-1 through tools/amerge plan 20260510T185935-9cefeddf. Deploy/install, AITER installed smoke, and affected vLLM scenario validation remain open."
 salient_changes = [
   "GitHub release 0.1.13 is available after the adopted 0.1.12.post2-based local package",
   "AITER main also moved beyond the adopted 086cd0a refresh point",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
+package_source_update_needed = false
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "AITER 0.1.13 source-update lane"
+next_gate_label = "2026-05-10 refresh deploy/install lane"
 last_reviewed = "2026-05-10"
 
 [candidates."lemonade-10.4.0"]
@@ -783,17 +783,17 @@ previous_recorded = "10.2.0 / 10.3.0 / 10.2.0-1"
 latest = "10.4.0"
 discovery_status = "stable_update_available"
 disposition = "tracked"
-disposition_reason = "Reviewed during 2026-05-10 closeout as a new upstream release after the installed 10.3.0 lane. Keep it as a separate Lemonade source-update lane because it can affect bundled service/app behavior and system llama.cpp integration metadata."
+disposition_reason = "The 2026-05-10 follow-up refresh updated package source metadata to Lemonade 10.4.0 and built lemonade-server 10.4.0-1, lemonade-app 10.4.0-1, and lemonade 10.4.0-1 through tools/amerge plan 20260510T185935-9cefeddf. Deploy/install, Lemonade installed/service smokes, and affected live-scenario validation remain open."
 salient_changes = [
   "GitHub release 10.4.0 is available",
   "AUR lemonade-server and lemonade-app baselines have moved to 10.4.0 package releases",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
+package_source_update_needed = false
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "Lemonade 10.4.0 source-update lane"
+next_gate_label = "2026-05-10 refresh deploy/install lane"
 last_reviewed = "2026-05-10"
 
 [candidates."llama-cpp-b9101"]
@@ -806,17 +806,17 @@ previous_recorded = "b9050 / b9049-1"
 latest = "b9101"
 discovery_status = "stable_update_available"
 disposition = "tracked"
-disposition_reason = "Reviewed during 2026-05-10 closeout as a new release after the adopted b9050 package lane. Keep it as a separate source-update lane because llama.cpp changes affect both packaged HIP/Vulkan backends and Lemonade's system-backend integration."
+disposition_reason = "The 2026-05-10 follow-up refresh updated package source metadata to llama.cpp b9101 and built llama.cpp-hip-gfx1151 b9101-1 and llama.cpp-vulkan-gfx1151 b9101-1 through tools/amerge plan 20260510T185935-9cefeddf. Deploy/install, backend CLI smokes, and affected Lemonade/vLLM live-scenario validation remain open."
 salient_changes = [
   "GitHub release b9101 is available after the adopted b9050 lane",
   "The AUR HIP baseline has advanced to b9093-1",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
+package_source_update_needed = false
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "llama.cpp b9101 source-update lane"
+next_gate_label = "2026-05-10 refresh deploy/install lane"
 last_reviewed = "2026-05-10"
 
 [candidates."rocm-pytorch-release-2.11-5223630"]
@@ -829,17 +829,17 @@ previous_recorded = "443606eb94430d90554ab4c21202494576afedce / 2.11.0-4"
 latest = "5223630054ce5ecd7b774d0ea31f2a1b472fb9b3"
 discovery_status = "branch_head_ahead"
 disposition = "tracked"
-disposition_reason = "Reviewed during 2026-05-10 closeout as a new release/2.11 head after the adopted 443606e package lane. Keep it separate because PyTorch source movement requires recursive submodule prep, downstream native rebuild planning, deploy/install, and GPU smoke validation."
+disposition_reason = "The 2026-05-10 follow-up refresh updated package source metadata to ROCm PyTorch release/2.11 at 5223630054ce5ecd7b774d0ea31f2a1b472fb9b3 and built python-pytorch-opt-rocm-gfx1151 2.11.0-12 through tools/amerge plan 20260510T185935-9cefeddf. Deploy/install, PyTorch HIP smoke, downstream installed smokes, and affected live-scenario validation remain open."
 salient_changes = [
   "ROCm PyTorch release/2.11 branch head moved beyond the adopted 443606e lane",
   "The Arch python-pytorch-rocm baseline remains 2.11.0-4",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
+package_source_update_needed = false
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "ROCm PyTorch release/2.11 source-update lane"
+next_gate_label = "2026-05-10 refresh deploy/install lane"
 last_reviewed = "2026-05-10"
 
 [candidates."blackcat-ai-notes-3f15f9f"]
@@ -850,7 +850,7 @@ previous_recorded = "a1d7a6816dd2c456bad9fcc7d61c53a4bd8c5fbd"
 latest = "3f15f9f1318491c9ee03782d8b2ebd41391de118"
 discovery_status = "branch_head_ahead"
 disposition = "tracked"
-disposition_reason = "Reviewed during 2026-05-10 closeout as new ai-notes recipe input after the adopted a1d7a681 lane. Keep it as a recipe-input audit lane before changing rendered TheRock or recipe-managed package output."
+disposition_reason = "The 2026-05-10 follow-up refresh updated the ai-notes submodule to 3f15f9f1318491c9ee03782d8b2ebd41391de118 and audited the visible recipe-input delta. The new llamacpp_atomic recipe surface is not adopted as a package in this branch; deploy/install and post-refresh runtime validation for the packages that consumed updated source metadata remain open."
 salient_changes = [
   "blackcat-ai-notes moved beyond the adopted a1d7a681 recipe input",
   "Recipe input changes can affect TheRock provenance and generated package surfaces",
@@ -860,7 +860,7 @@ package_source_update_needed = false
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "Blackcat ai-notes recipe-input audit"
+next_gate_label = "2026-05-10 refresh deploy/install lane"
 last_reviewed = "2026-05-10"
 
 [candidates."torch-migraphx-b94b985"]
@@ -871,17 +871,17 @@ previous_recorded = "6b2cd2237e83b675ae671650d08343dfbb0be5f3"
 latest = "b94b985586a051fbee19aefe8c934bb7c1a9df0a"
 discovery_status = "branch_head_ahead"
 disposition = "tracked"
-disposition_reason = "Reviewed during 2026-05-10 closeout as a new upstream master head. Keep it as a separate Torch-MIGraphX source audit and installed-smoke lane because this package gates MIGraphX import, compile, and PT2E validation behavior."
+disposition_reason = "The 2026-05-10 follow-up refresh updated package source metadata to Torch-MIGraphX b94b985586a051fbee19aefe8c934bb7c1a9df0a and built python-torch-migraphx-gfx1151 1.2-5 through tools/amerge plan 20260510T185935-9cefeddf. Deploy/install, Torch-MIGraphX installed smokes, and affected scenario validation remain open."
 salient_changes = [
   "Torch-MIGraphX master moved beyond the recorded package source ref",
   "The package has local installed-smoke and scenario surfaces for MIGraphX behavior",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
+package_source_update_needed = false
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "Torch-MIGraphX source-update lane"
+next_gate_label = "2026-05-10 refresh deploy/install lane"
 last_reviewed = "2026-05-10"
 
 [candidates."vllm-0.20.2"]
@@ -894,15 +894,15 @@ previous_recorded = "0.20.1"
 latest = "0.20.2"
 discovery_status = "stable_update_available"
 disposition = "tracked"
-disposition_reason = "Reviewed during 2026-05-10 closeout as a new vLLM upstream release after the adopted 0.20.1 lane. Keep it separate because vLLM package source movement needs patch-carry review, package build, deploy/install, installed smoke, and affected live-scenario validation."
+disposition_reason = "The 2026-05-10 follow-up refresh updated package source metadata to vLLM 0.20.2, refreshed the local ROCm patch carry name, checked the patch against a clean v0.20.2 source tree, and built python-vllm-rocm-gfx1151 0.20.2-1 through tools/amerge plan 20260510T185935-9cefeddf. Deploy/install, vLLM installed smoke, and affected live-scenario validation remain open."
 salient_changes = [
   "GitHub release 0.20.2 is available after the adopted vLLM 0.20.1 lane",
   "The local package carries ROCm/gfx1151 patches and scenario contracts",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
+package_source_update_needed = false
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "vLLM 0.20.2 source-update lane"
+next_gate_label = "2026-05-10 refresh deploy/install lane"
 last_reviewed = "2026-05-10"

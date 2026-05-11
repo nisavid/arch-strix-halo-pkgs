@@ -6,8 +6,8 @@
 - Scaffold template: `python-project-aiter`
 - Recipe build method: `pip`
 - Upstream repo: `https://github.com/ROCm/aiter.git`
-- Package version: `0.1.12.post2.dev200+g086cd0aef`
-- Recipe revision: `a1d7a68 (20260427, 16 commits touching recipe path)`
+- Package version: `0.1.13`
+- Recipe revision: `3f15f9f (20260508, 17 commits touching recipe path)`
 - Recipe steps: `29`
 - Recipe dependencies: `pytorch, vllm`
 - Recorded reference packages: `extra/python-pytorch-opt-rocm, extra/python-pytorch-rocm`

@@ -12,21 +12,17 @@
   passed on 2026-05-10 with
   `HF_HUB_CACHE=/bulk/testing/huggingface/hub`, so the refresh bundle is
   adopted in `docs/maintainers/update-candidates.toml`.
-- The 2026-05-10 closeout freshness checker found new follow-up lanes after
-  the Gemma 4 validation gate closed: AITER 0.1.13, Lemonade 10.4.0,
-  llama.cpp b9101, ROCm PyTorch release/2.11 at
-  `5223630054ce5ecd7b774d0ea31f2a1b472fb9b3`, Blackcat ai-notes at
-  `3f15f9f1318491c9ee03782d8b2ebd41391de118`, Torch-MIGraphX at
-  `b94b985586a051fbee19aefe8c934bb7c1a9df0a`, and vLLM 0.20.2. These are
-  tracked in `docs/maintainers/update-candidates.toml`; treat them as the next
-  refresh/update lanes rather than part of the adopted 2026-05-07 bundle.
-  - `AITER 0.1.13 source-update lane`
-  - `Lemonade 10.4.0 source-update lane`
-  - `llama.cpp b9101 source-update lane`
-  - `ROCm PyTorch release/2.11 source-update lane`
-  - `Blackcat ai-notes recipe-input audit`
-  - `Torch-MIGraphX source-update lane`
-  - `vLLM 0.20.2 source-update lane`
+- The 2026-05-10 follow-up refresh has source-update and package-build
+  evidence for AITER 0.1.13, Lemonade 10.4.0, llama.cpp b9101, ROCm PyTorch
+  release/2.11 at `5223630054ce5ecd7b774d0ea31f2a1b472fb9b3`, Blackcat
+  ai-notes at `3f15f9f1318491c9ee03782d8b2ebd41391de118`, Torch-MIGraphX at
+  `b94b985586a051fbee19aefe8c934bb7c1a9df0a`, and vLLM 0.20.2. The package
+  build completed through `tools/amerge` plan `20260510T185935-9cefeddf`;
+  deploy/install, installed smokes, and affected live-scenario validation are
+  still open before these candidates can be marked adopted.
+  - `2026-05-10 refresh deploy/install lane`
+  - `2026-05-10 refresh installed-smoke lane`
+  - `2026-05-10 refresh affected live-scenario lane`
 - Python 3.14.5 coordinated rebuild lane: Python 3.14.5 is reviewed as
   baseline drift but remains a coordinated interpreter rebuild lane rather
   than part of the 2026-05-07 source bundle.

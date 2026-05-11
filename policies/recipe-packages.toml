@@ -133,7 +133,7 @@ scaffold_notes = [
 [packages.python-vllm-rocm-gfx1151]
 recipe_key = "vllm"
 template = "python-project-vllm"
-upstream_version = "0.20.1"
+upstream_version = "0.20.2"
 pkgdesc = "High-throughput and memory-efficient inference engine for LLMs with ROCm, rebuilt for Strix Halo gfx1151"
 url = "https://github.com/vllm-project/vllm"
 license = ["Apache-2.0"]
@@ -198,16 +198,16 @@ depends = ["amdsmi-gfx1151", "numactl", "python-aiohttp-gfx1151", "python-blake3
 makedepends = ["cmake", "ninja", "python-installer", "python-pip", "python-setuptools", "python-setuptools-scm", "python-wheel", "rocm-llvm-gfx1151"]
 options = ["!lto"]
 source_type = "tarball"
-source_url = "https://github.com/vllm-project/vllm/archive/refs/tags/v0.20.1.tar.gz"
-sha256sums = ["872f44c9f21f59639da534ad94b5ad14d461e95bea3d20fbfac5c8fab221742f"]
-extra_sources = ["0016-rocm-refresh-local-carry-for-vllm-0.20.1.patch"]
+source_url = "https://github.com/vllm-project/vllm/archive/refs/tags/v0.20.2.tar.gz"
+sha256sums = ["d3fad72335d0232fdd291113985f5c0c2e393192b19a5ddabed9c635b9b4d73b"]
+extra_sources = ["0016-rocm-refresh-local-carry-for-vllm-0.20.2.patch"]
 extra_sha256sums = ["SKIP"]
-source_patches = ["0016-rocm-refresh-local-carry-for-vllm-0.20.1.patch"]
-src_subdir = "vllm-0.20.1"
+source_patches = ["0016-rocm-refresh-local-carry-for-vllm-0.20.2.patch"]
+src_subdir = "vllm-0.20.2"
 patches_dir = "patches/python-vllm-rocm-gfx1151"
 scaffold_notes = [
   "There does not appear to be a current dedicated python-vllm-rocm AUR package; the closest package baseline is the generic AUR python-vllm package, with ROCm-specific integration coming from this recipe.",
-  "Uses the latest stable upstream release tarball, currently v0.20.1, instead of a floating full Git clone.",
+  "Uses the latest stable upstream release tarball, currently v0.20.2, instead of a floating full Git clone.",
   "Carries a package-local CLI import patch so vllm --version remains a metadata-only path instead of importing optional OpenAI and Triton runtime modules at startup.",
   "Carries a ROCm-specific Triton compatibility patch so the vendored triton_kernels tree is treated as unavailable when the installed Triton runtime lacks CUDA-only APIs such as triton.language.target_info or triton.constexpr_function.",
   "Carries a ROCm-platform fallback patch so Strix Halo can fall back from AMDSMI ASIC-info lookup to torch.cuda without tripping the import-time warning_once circular import path.",
@@ -293,7 +293,7 @@ scaffold_notes = [
 recipe_key = "pytorch"
 template = "python-project-pytorch-rocm"
 upstream_version = "2.11.0"
-source_refs = ["pytorch::git+https://github.com/ROCm/pytorch.git#commit=443606eb94430d90554ab4c21202494576afedce"]
+source_refs = ["pytorch::git+https://github.com/ROCm/pytorch.git#commit=5223630054ce5ecd7b774d0ea31f2a1b472fb9b3"]
 source_patches = ["0001-setup-allow-skipping-build-deps.patch", "0002-use-wide-magma-version-encoding.patch", "0003-target-numpy-2-c-api.patch", "0004-drop-hip-clang-abi-compat-flag.patch", "0005-enable-ck-gemm-on-gfx1151.patch", "0006-enable-aten-cuda-api-for-rocm.patch"]
 extra_sha256sums = ["95a46381bedcff873f9765c9b103877aa36f649e649c5b223582732b2ee61cac", "944e0fb4db31da678993acd3104709083ef28dcee58fcc24ab1675d880c39846", "8ea6af3334027a5ef3360ca882f54e720ef501ea48288081f35d7404835ccc95", "4610d5b10e861079898410899b8c25112fcafd679942f25647af3d55a9253bd4", "33188a11f6848303b17b76adb97de75f19856ea3caab7452fd5c62289d63006b", "9723877beb7eae7fc247517370777f952b534f4d83a981a26be869872dc2c265"]
 pkgdesc = "Tensors and dynamic neural networks in Python with ROCm acceleration, rebuilt for Strix Halo gfx1151"
@@ -546,7 +546,7 @@ scaffold_notes = [
 [packages.python-amd-aiter-gfx1151]
 recipe_key = "aiter"
 template = "python-project-aiter"
-upstream_version = "0.1.12.post2.dev200+g086cd0aef"
+upstream_version = "0.1.13"
 pkgdesc = "AMD AITER kernels rebuilt for Strix Halo gfx1151"
 url = "https://github.com/ROCm/aiter"
 license = ["MIT"]
@@ -583,7 +583,7 @@ depends = ["python-gfx1151", "python-pandas", "python-pytorch-opt-rocm-gfx1151",
 makedepends = ["git", "python-build", "python-installer", "python-setuptools", "python-wheel", "rocm-llvm-gfx1151"]
 optdepends = ["python-flydsl-gfx1151: optional FlyDSL MLIR kernels for AITER fused MoE paths (blocked on rocm-llvm MLIR Python SDK completeness)"]
 options = ["!strip"]
-source_refs = ["aiter::git+https://github.com/ROCm/aiter.git#commit=086cd0aef432233e604891224b4a39645b2e24c2"]
+source_refs = ["aiter::git+https://github.com/ROCm/aiter.git#tag=v0.1.13"]
 sha256sums = ["SKIP"]
 src_subdir = "aiter"
 source_patches = [
@@ -1944,7 +1944,7 @@ provides = ["python-torch-migraphx", "torch-migraphx"]
 conflicts = ["python-torch-migraphx", "torch-migraphx"]
 depends = ["gcc-libs", "glibc", "migraphx-gfx1151", "python-gfx1151", "python-numpy-gfx1151", "python-packaging", "python-pytorch-opt-rocm-gfx1151", "python-tabulate", "python-torchao-rocm-gfx1151"]
 makedepends = ["git", "patchelf", "python-build", "python-installer", "python-setuptools", "python-wheel", "rocm-llvm-gfx1151"]
-source_refs = ["torch_migraphx::git+https://github.com/ROCm/torch_migraphx.git#commit=6b2cd2237e83b675ae671650d08343dfbb0be5f3"]
+source_refs = ["torch_migraphx::git+https://github.com/ROCm/torch_migraphx.git#commit=b94b985586a051fbee19aefe8c934bb7c1a9df0a"]
 sha256sums = ["SKIP"]
 src_subdir = "torch_migraphx"
 patches_dir = "packages/python-torch-migraphx-gfx1151"
@@ -1966,7 +1966,7 @@ scaffold_notes = [
 [packages."llama.cpp-hip-gfx1151"]
 recipe_key = "llamacpp"
 template = "llama-cpp"
-upstream_version = "b9050"
+upstream_version = "b9101"
 pkgdesc = "llama.cpp ROCm backend rebuilt for Strix Halo gfx1151"
 url = "https://github.com/ggml-org/llama.cpp"
 license = ["MIT"]
@@ -1988,17 +1988,17 @@ update_notes = [
   "On 2026-04-29, adopted upstream llama.cpp b8966 at 7b8443ac786c06438e0f407b7adaa72c220b5099. The b8955..b8966 range adds CANN operator work, backend/device duplicate-registration handling, Vulkan timestamp-barrier and shader/header fixes, WebGPU SSM scan aliasing fixes, CUDA FA support for Mistral Small head sizes, and a broad server UI tool/chat settings refactor; no local packaging patch carry changed.",
   "On 2026-05-01, adopted upstream llama.cpp b8992 at 5cbfb18075c95437e4ac7fb50e3baf88fe137a87. The b8966..b8992 range is runtime-facing for the packaged backends: common sampling, speculative, reasoning-budget, server/Web UI, ggml 0.10.1, Vulkan tensor-helper, mmap ftello/fseeko, hf-cache null-user, and cpp-httplib vendor changes.",
   "On 2026-05-03, adopted upstream llama.cpp b9010 at d05fe1d7dadbf8943c8f1903fcf65b935ddab839. The b8992..b9010 range changes shared runtime/server code, ggml 0.10.2, Vulkan FlashAttention coopmat2 support, OpenCL MXFP4 MoE support, WebGPU shaders, and server UI attachment/refactor paths; no local package patch carry changed.",
-  "The current package follows upstream llama.cpp b9050 at 3980e04d5a374da025e1942eb1043ac2f33e6a9a because the range includes shared runtime/server changes, ggml 0.11.0, Vulkan code changes, backend loading changes, and model/runtime fixes that overlap the packaged HIP and Vulkan backends.",
+  "On 2026-05-10, adopted upstream llama.cpp b9101 at 389ff61d77b5c71cec0cf92fe4e5d01ace80b797. The b9050..b9101 range includes shared runtime/server changes, ggml 0.11.1, model architecture fixes, Gemma4_26B_A4B_NVFP4 support, Vulkan code changes, and cpp-httplib updates that overlap the packaged HIP, Vulkan, and Lemonade runtime lanes.",
   "Keep the backend-specific package split explicit until benchmarking proves a routing wrapper is worth maintaining."
 ]
 provides = ["llama.cpp-hip-gfx1151", "llama.cpp-hip"]
 conflicts = ["llama.cpp-hip"]
 depends = ["gcc-libs", "glibc", "hip-runtime-amd-gfx1151", "rocm-core-gfx1151"]
 makedepends = ["cmake", "ninja", "rocm-llvm-gfx1151"]
-src_subdir = "llama.cpp-3980e04d5a374da025e1942eb1043ac2f33e6a9a"
+src_subdir = "llama.cpp-389ff61d77b5c71cec0cf92fe4e5d01ace80b797"
 upstream_name = "llama.cpp"
 baseline_kind = "closest-upstream"
-source_refs = ["llama.cpp-3980e04d5a374da025e1942eb1043ac2f33e6a9a.tar.gz::https://github.com/ggml-org/llama.cpp/archive/3980e04d5a374da025e1942eb1043ac2f33e6a9a.tar.gz"]
+source_refs = ["llama.cpp-389ff61d77b5c71cec0cf92fe4e5d01ace80b797.tar.gz::https://github.com/ggml-org/llama.cpp/archive/389ff61d77b5c71cec0cf92fe4e5d01ace80b797.tar.gz"]
 sha256sums = ["SKIP"]
 patches_dir = "patches/llama.cpp-hip-gfx1151"
 recipe_notes_override = """
@@ -2033,7 +2033,7 @@ scaffold_notes = [
 [packages."llama.cpp-vulkan-gfx1151"]
 recipe_key = "llamacpp"
 template = "llama-cpp"
-upstream_version = "b9050"
+upstream_version = "b9101"
 pkgdesc = "llama.cpp Vulkan backend rebuilt for Strix Halo gfx1151"
 url = "https://github.com/ggml-org/llama.cpp"
 license = ["MIT"]
@@ -2055,17 +2055,17 @@ update_notes = [
   "On 2026-04-29, adopted upstream llama.cpp b8966 at 7b8443ac786c06438e0f407b7adaa72c220b5099. The b8955..b8966 range adds CANN operator work, backend/device duplicate-registration handling, Vulkan timestamp-barrier and shader/header fixes, WebGPU SSM scan aliasing fixes, CUDA FA support for Mistral Small head sizes, and a broad server UI tool/chat settings refactor; no Vulkan package-build touchpoint or local patch carry changed.",
   "On 2026-05-01, adopted upstream llama.cpp b8992 at 5cbfb18075c95437e4ac7fb50e3baf88fe137a87. The b8966..b8992 range includes shared runtime and server changes plus Vulkan tensor-helper changes, so the Vulkan package follows the same source snapshot as the HIP backend.",
   "On 2026-05-03, adopted upstream llama.cpp b9010 at d05fe1d7dadbf8943c8f1903fcf65b935ddab839. The b8992..b9010 range includes shared runtime/server changes, ggml 0.10.2, Vulkan FlashAttention coopmat2 support, OpenCL MXFP4 MoE support, WebGPU shader changes, and server UI attachment/refactor paths, so the Vulkan package follows the same source snapshot as the HIP backend.",
-  "The current package follows upstream llama.cpp b9050 at 3980e04d5a374da025e1942eb1043ac2f33e6a9a because the range includes shared runtime/server changes, ggml 0.11.0, Vulkan code changes, backend loading changes, and model/runtime fixes.",
+  "On 2026-05-10, adopted upstream llama.cpp b9101 at 389ff61d77b5c71cec0cf92fe4e5d01ace80b797. The b9050..b9101 range includes shared runtime/server changes, ggml 0.11.1, model architecture fixes, Gemma4_26B_A4B_NVFP4 support, Vulkan code changes, and cpp-httplib updates, so the Vulkan package follows the same source snapshot as the HIP backend.",
   "Until then, compare runtime/package expectations against the -bin package and source-build conventions against aur/llama.cpp."
 ]
 provides = ["llama.cpp-vulkan-gfx1151", "llama.cpp-vulkan"]
 conflicts = ["llama.cpp-vulkan"]
 depends = ["gcc-libs", "glibc", "vulkan-icd-loader"]
 makedepends = ["cmake", "ninja", "rocm-llvm-gfx1151", "shaderc", "spirv-headers", "vulkan-headers"]
-src_subdir = "llama.cpp-3980e04d5a374da025e1942eb1043ac2f33e6a9a"
+src_subdir = "llama.cpp-389ff61d77b5c71cec0cf92fe4e5d01ace80b797"
 upstream_name = "llama.cpp"
 baseline_kind = "closest-upstream"
-source_refs = ["llama.cpp-3980e04d5a374da025e1942eb1043ac2f33e6a9a.tar.gz::https://github.com/ggml-org/llama.cpp/archive/3980e04d5a374da025e1942eb1043ac2f33e6a9a.tar.gz"]
+source_refs = ["llama.cpp-389ff61d77b5c71cec0cf92fe4e5d01ace80b797.tar.gz::https://github.com/ggml-org/llama.cpp/archive/389ff61d77b5c71cec0cf92fe4e5d01ace80b797.tar.gz"]
 sha256sums = ["SKIP"]
 patches_dir = "patches/llama.cpp-vulkan-gfx1151"
 recipe_notes_override = """
@@ -2175,7 +2175,7 @@ scaffold_notes = [
 [packages."lemonade-server"]
 recipe_key = "lemonade"
 template = "lemonade-server"
-upstream_version = "10.3.0"
+upstream_version = "10.4.0"
 pkgdesc = "Local AI server runtime rebuilt for Strix Halo gfx1151"
 url = "https://github.com/lemonade-sdk/lemonade"
 license = ["Apache-2.0"]
@@ -2199,11 +2199,11 @@ optdepends = [
   "llama.cpp-hip-gfx1151: llama.cpp ROCm backend",
   "llama.cpp-vulkan-gfx1151: llama.cpp Vulkan backend"
 ]
-src_subdir = "lemonade-10.3.0"
+src_subdir = "lemonade-10.4.0"
 upstream_name = "lemonade-server"
 baseline_kind = "closest-upstream"
-source_refs = ["https://github.com/lemonade-sdk/lemonade/archive/refs/tags/v10.3.0.tar.gz"]
-recipe_branch_override = "v10.3.0"
+source_refs = ["https://github.com/lemonade-sdk/lemonade/archive/refs/tags/v10.4.0.tar.gz"]
+recipe_branch_override = "v10.4.0"
 sha256sums = ["SKIP"]
 extra_sources = [
   "0001-linux-npu-fallback-to-pci-id-when-accel-open-fails.patch",
@@ -2221,7 +2221,7 @@ source_patches = [
 patches_dir = "packages/lemonade-server"
 scaffold_notes = [
   "Server/runtime package; llama.cpp backends are optdepends, not hard deps.",
-  "Pinned to the v10.3.0 upstream release tarball to keep the package metadata reproducible.",
+  "Pinned to the v10.4.0 upstream release tarball to keep the package metadata reproducible.",
   "Uses upstream's lemond.service unit name; do not ship the pre-10.3 lemonade-server.service name in this package.",
   "Installs /etc/lemonade/conf.d/10-llamacpp-gfx1151.conf so the packaged ROCm and Vulkan llama.cpp wrapper binaries are exposed to the service as system-managed backends.",
   "The system-managed backend patch also folds in the config-load and CLI/backend-table changes needed for those service-provided overrides to stay visible after config.json already exists.",
@@ -2231,7 +2231,7 @@ scaffold_notes = [
 [packages."lemonade-app"]
 recipe_key = "lemonade"
 template = "lemonade-app"
-upstream_version = "10.3.0"
+upstream_version = "10.4.0"
 pkgdesc = "Lemonade desktop app rebuilt for Strix Halo gfx1151"
 url = "https://github.com/lemonade-sdk/lemonade"
 license = ["Apache-2.0"]
@@ -2251,22 +2251,22 @@ conflicts = ["lemonade-desktop"]
 replaces = ["lemonade-desktop"]
 depends = ["lemonade-server"]
 makedepends = ["cargo", "cmake", "ninja", "nodejs", "npm", "rocm-llvm-gfx1151", "rust"]
-src_subdir = "lemonade-10.3.0"
+src_subdir = "lemonade-10.4.0"
 upstream_name = "lemonade-app"
 baseline_kind = "closest-upstream"
-source_refs = ["https://github.com/lemonade-sdk/lemonade/archive/refs/tags/v10.3.0.tar.gz"]
+source_refs = ["https://github.com/lemonade-sdk/lemonade/archive/refs/tags/v10.4.0.tar.gz"]
 sha256sums = ["SKIP"]
 patches_dir = "patches/lemonade-app"
 scaffold_notes = [
   "Tauri desktop package split from the same lemonade monorepo.",
   "Install a /usr/bin/lemonade-app wrapper that launches the packaged Tauri binary from /usr/share/lemonade-app so the shipped desktop entry resolves on PATH.",
-  "Pinned to the v10.3.0 upstream release tarball to keep the package metadata reproducible."
+  "Pinned to the v10.4.0 upstream release tarball to keep the package metadata reproducible."
 ]
 
 [packages."lemonade"]
 recipe_key = "lemonade"
 template = "meta-package"
-upstream_version = "10.3.0"
+upstream_version = "10.4.0"
 pkgdesc = "Meta package for Lemonade and llama.cpp backend packages"
 url = "https://github.com/lemonade-sdk/lemonade"
 license = ["Apache-2.0"]

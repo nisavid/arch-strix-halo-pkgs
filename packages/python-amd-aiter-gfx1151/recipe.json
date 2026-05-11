@@ -40,7 +40,7 @@
   },
   "name": "python-amd-aiter-gfx1151",
   "package_name": "python-amd-aiter-gfx1151",
-  "pkgver": "0.1.12.post2.dev200+g086cd0aef",
+  "pkgver": "0.1.13",
   "policy": {
     "advisory_references": [
       "extra/python-pytorch-opt-rocm",
@@ -104,7 +104,7 @@
       "SKIP"
     ],
     "source_refs": [
-      "aiter::git+https://github.com/ROCm/aiter.git#commit=086cd0aef432233e604891224b4a39645b2e24c2"
+      "aiter::git+https://github.com/ROCm/aiter.git#tag=v0.1.13"
     ],
     "src_subdir": "aiter",
     "template": "python-project-aiter",
@@ -126,15 +126,15 @@
       "Treat the current Qwen3.6 FP8 MoE forced-AITER failure as an AITER opus/gfx1151 FP8-kernel feature gap, not a narrow include bug. A built-payload rerun with AITER pkgrel -8 and vLLM pkgrel -27 clears the `hip_compat.h` issue, then fails compiling `aiter.jit.module_quant` with `opus.hpp:3001:24: error: unknown type name 'mfma_adaptor'`; AITER defines `mfma_adaptor` only for `__GFX9__` device builds, while its alternate gfx1250 WMMA path uses FP8 builtins that hipcc rejects for gfx1151.",
       "Keep the unknown-gfx 2-stage fallback, missing-1-stage-metadata tuner skip, and CK 2-stage splitk normalization/forwarding fix until upstream AITER handles those gfx1x cases directly. Do not reintroduce an unquantized `torch_moe` fallback here: the concrete reference-host failure was `google/gemma-4-26B-A4B-it` generating corrupted text after such a fallback ran on AITER-shuffled weights."
     ],
-    "upstream_version": "0.1.12.post2.dev200+g086cd0aef",
+    "upstream_version": "0.1.13",
     "url": "https://github.com/ROCm/aiter"
   },
   "provenance": {
     "output_root": "packages",
     "recipe_author": "Blackcat Informatics Inc.",
-    "recipe_commit": "a1d7a68",
-    "recipe_date": "20260427",
-    "recipe_history_count": 16,
+    "recipe_commit": "3f15f9f",
+    "recipe_date": "20260508",
+    "recipe_history_count": 17,
     "recipe_repo": "https://github.com/paudley/ai-notes",
     "recipe_subdir": "strix-halo",
     "repo_subpath": "."

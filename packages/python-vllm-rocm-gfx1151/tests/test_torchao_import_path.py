@@ -5,15 +5,15 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 PKGBUILD = REPO_ROOT / "packages/python-vllm-rocm-gfx1151/PKGBUILD"
 PATCH = (
     REPO_ROOT
-    / "packages/python-vllm-rocm-gfx1151/0016-rocm-refresh-local-carry-for-vllm-0.20.1.patch"
+    / "packages/python-vllm-rocm-gfx1151/0016-rocm-refresh-local-carry-for-vllm-0.20.2.patch"
 )
 
 
 def test_pkgbuild_carries_merged_torchao_and_cli_startup_patches():
     text = PKGBUILD.read_text()
 
-    assert "pkgver=0.20.1" in text
-    assert "pkgrel=3" in text
+    assert "pkgver=0.20.2" in text
+    assert "pkgrel=1" in text
     assert PATCH.name in text
     assert '_vllm_source_patch="0016-rocm-refresh-local-carry-for-vllm-${pkgver}.patch"' in text
     assert '_apply_patch_if_needed "${_vllm_source_patch}"' in text
