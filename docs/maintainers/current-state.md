@@ -52,7 +52,7 @@ and `lemonade-server.service` is absent. TorchVision required the final
 `0.26.0-6` rebuild because `0.26.0-5` built with `BUILD_CUDA_SOURCES = False`;
 the installed `0.26.0-6` GPU `torchvision.ops.nms` smoke returned `[0]`.
 
-Live scenario gates passed on the reference host with `HF_HOME=/var/cache/hf`:
+Live scenario gates passed on the reference host with `HF_HOME=<host HF cache root>`:
 
 - `vllm.qwen3_5.0_8b.text.basic` passed in `96.814519` seconds at
   `docs/worklog/inference-runs/20260429T213133`.
@@ -150,7 +150,7 @@ checks passed. The sandboxed process could not open `/dev/kfd`, so GPU smokes
 were run outside the sandbox.
 
 Live-scenario validated state from the deployed host pass: gates passed with
-`HF_HOME=/var/cache/hf` in
+`HF_HOME=<host HF cache root>` in
 `docs/worklog/inference-runs/20260501T014711`:
 
 - `lemonade.cli.help` passed in `0.00373` seconds.
@@ -192,7 +192,7 @@ its user-cache JIT module; `llama-cli-hip-gfx1151 --version` reported
 `llama-cli-vulkan-gfx1151 --version` reported `version: 293 (8d6f9a9)`.
 
 Live-scenario validated state from the deployed host pass: gates passed with
-`HF_HOME=/var/cache/hf` in
+`HF_HOME=<host HF cache root>` in
 `docs/worklog/inference-runs/20260503T050922`:
 
 - `llama.cpp.hip.help` passed in `0.116214` seconds.
@@ -277,8 +277,8 @@ active and the Lemonade pooling smokes passed against the installed service.
 the installed stable-diffusion.cpp `90e87bc` wrapper surfaces.
 
 On 2026-05-10, the remaining promoted Gemma 4 vLLM scenarios passed with
-`HF_HUB_CACHE=/bulk/testing/huggingface/hub` and model binding
-`google/gemma-4-26B-A4B-it=/bulk/testing/huggingface/hub/models--google--gemma-4-26B-A4B-it/snapshots/462a98a12e28e2cbcfccaf78fe41e3e50235e6ae`.
+`HF_HUB_CACHE=<testing HF hub cache root>` and model binding
+`google/gemma-4-26B-A4B-it=<testing HF hub cache root>/models--google--gemma-4-26B-A4B-it/snapshots/<commit>`.
 The first run exposed that the scenario catalog was not enabling AITER even
 though it asserted the AITER attention backend; the catalog now sets
 `VLLM_ROCM_USE_AITER=1` and `VLLM_ROCM_USE_AITER_MOE=0` for the promoted 26B
@@ -337,7 +337,7 @@ artifact was rebuilt after the PyTorch deploy through `tools/amerge` plan
 deployed through plan `20260511T082929-52430ccd`.
 
 Affected live-scenario validation passed on 2026-05-11 with
-`HF_HUB_CACHE=/bulk/testing/huggingface/hub` in
+`HF_HUB_CACHE=<testing HF hub cache root>` in
 `docs/worklog/inference-runs/20260511T083036`:
 
 - `lemonade.cli.help` passed in `0.003982` seconds.
@@ -390,7 +390,7 @@ CPU count, Pillow image creation, Transformers import, mistral-common import,
 and vLLM import.
 
 Live scenario validation for the deployed Blackcat core wheel stack passed on
-the reference host with `HF_HOME=/var/cache/hf` at
+the reference host with `HF_HOME=<host HF cache root>` at
 `docs/worklog/inference-runs/20260501T044643`:
 
 - `vllm.gemma4.e2b.server.basic` passed in `77.890539` seconds.
@@ -410,7 +410,7 @@ registry through `CompressedTensorsConfig`. The unsandboxed HIP probe sees
 `Radeon 8060S Graphics`, `gfx1151`, and a successful CUDA tensor allocation.
 
 Post-rebase live scenario validation for the deployed Blackcat wheel stack
-passed outside the sandbox with `HF_HOME=/var/cache/hf` at
+passed outside the sandbox with `HF_HOME=<host HF cache root>` at
 `docs/worklog/inference-runs/20260503T182553`:
 
 - `vllm.gemma4.e2b.server.basic` passed in `87.278597` seconds.
@@ -470,7 +470,7 @@ reported `Radeon 8060S Graphics`, `gfx1151`, and a successful CUDA tensor
 allocation.
 
 Live scenario validation for the deployed service/runtime wheel stack passed
-outside the sandbox with `HF_HOME=/var/cache/hf` at
+outside the sandbox with `HF_HOME=<host HF cache root>` at
 `docs/worklog/inference-runs/20260501T061516`:
 
 - `vllm.gemma4.e2b.server.basic` passed in `74.079649` seconds.
@@ -487,7 +487,7 @@ reported `0.20.0`; and Python import smoke passed for `vllm`, `vllm._C`,
 `vllm._rocm_C`, and `vllm._moe_C`.
 
 Post-deploy live scenario validation for `python-vllm-rocm-gfx1151 0.20.0-3`
-passed outside the sandbox with `HF_HOME=/var/cache/hf` at
+passed outside the sandbox with `HF_HOME=<host HF cache root>` at
 `docs/worklog/inference-runs/20260501T064519`:
 
 - `vllm.gemma4.e2b.server.basic` passed in `74.780242` seconds.
@@ -1158,7 +1158,7 @@ The first full live cutover and subsequent native package rebuild completed
 successfully on the reference Arch host.
 
 The reference host's active Hugging Face cache root for current validation work
-is `HF_HOME=/var/cache/hf`. Keep durable docs on model IDs and runtime
+is `HF_HOME=<host HF cache root>`. Keep durable docs on model IDs and runtime
 `--model-path` bindings, not committed cache snapshot subpaths. Current local
 non-GGUF model IDs relevant to this branch are:
 
@@ -1179,7 +1179,7 @@ because the rebuilt native stack reproduces the expected Qwen3.6 FP8 probe
 failures recorded in this file.
 
 The `intfloat/multilingual-e5-small` vLLM pooling embedding scenario passed on
-2026-04-21 with `HF_HOME=/var/cache/hf`, ROCm `FLEX_ATTENTION`, and
+2026-04-21 with `HF_HOME=<host HF cache root>`, ROCm `FLEX_ATTENTION`, and
 `vllm.pooling.multilingual-e5-small.embeddings`; the tracked run completed in
 `28.677313` seconds with finite embedding vectors and the fixed related-passage
 ranking fixture. Keep tracked scenarios on model IDs plus runtime
@@ -1226,7 +1226,7 @@ documented local endpoints require registered `llamacpp` or `flm` recipes for
 embeddings and `llamacpp` for reranking.
 
 The rebuilt installed stack passed the unquantized Qwen3.6 control on
-2026-04-20 with `HF_HOME=/var/cache/hf` and `Qwen/Qwen3.6-35B-A3B`,
+2026-04-20 with `HF_HOME=<host HF cache root>` and `Qwen/Qwen3.6-35B-A3B`,
 `VLLM_ROCM_USE_AITER=0`, `VLLM_ROCM_USE_AITER_MOE=0`,
 `--max-num-batched-tokens 32`, and `--gpu-memory-utilization 0.9`; the tracked
 `run_inference_scenarios.py` run completed in `85.054242` seconds. The run
@@ -1872,7 +1872,7 @@ The following smoke checks have already passed on the reference host:
     the logs selected `ROCM_AITER_UNIFIED_ATTN`, imported AITER's JIT helper,
     used `Using TRITON backend for Unquantized MoE`, and ended with no
     running GPU processes detected
-  - the old non-GGUF checkpoint blocker is cleared by the `/var/cache/hf`
+  - the old non-GGUF checkpoint blocker is cleared by the `<host HF cache root>`
     cache move: use `Qwen/Qwen3.5-0.8B` for tiny Qwen3.5 hybrid/GDN smoke
     coverage and `Qwen/Qwen3.6-35B-A3B-FP8` for the main Qwen
     MoE/shared-expert lane
@@ -1896,7 +1896,7 @@ The following smoke checks have already passed on the reference host:
     python-vllm-rocm-gfx1151` produced pkgrel `-27`; using that built package
     payload on `PYTHONPATH`, the standalone `(32, 248320)` sampler repro
     completed and `vllm.qwen3_5.0_8b.text.basic` passed against the
-    `/var/cache/hf` Qwen3.5 snapshot in 42.948777 seconds. After installing
+    `<host HF cache root>` Qwen3.5 snapshot in 42.948777 seconds. After installing
     pkgrel `-27`, the installed-host rerun passed in `42.52507` seconds.
   - after the self-hosted rebuild, `vllm.qwen3_5.0_8b.text.basic` passed
     again on 2026-04-20 in `72.408359` seconds with `enforce_eager=True`,

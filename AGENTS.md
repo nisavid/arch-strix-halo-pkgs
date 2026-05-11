@@ -11,6 +11,11 @@ without chat history.
 
 - Never commit private filesystem paths, private hostnames, private network
   addresses, machine-specific IDs, tokens, or keys.
+- Treat nonstandard local paths as private. This includes local mount points,
+  cache roots, host-specific testing stores, and any path that is not a generic
+  package or system interface.
+- Treat committed agent policy, instructions, guidance, and skills as committed
+  content for the same privacy rules.
 - When a task needs upstream recipe or reference source from submodules, update
   submodules recursively in the active worktree before treating missing source
   as unavailable.
