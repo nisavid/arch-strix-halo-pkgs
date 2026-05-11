@@ -952,6 +952,23 @@ def test_publish_root_env_refuses_sibling_arch_pkgs_repo(tmp_path: Path):
     assert "/srv/pacman/strix-halo-gfx1151/x86_64" in result.stderr
 
 
+def test_publish_root_refuses_bare_srv_pacman_root(tmp_path: Path):
+    packages_root = graph_fixture(tmp_path)
+    result = run_amerge(
+        "deploy",
+        "--dry-run",
+        "--packages-root",
+        str(packages_root),
+        "--publish-root",
+        "/srv/pacman",
+        "python-app-gfx1151",
+    )
+
+    assert result.returncode != 0
+    assert "Refusing to publish Strix Halo packages" in result.stderr
+    assert "/srv/pacman/strix-halo-gfx1151/x86_64" in result.stderr
+
+
 def test_foreign_publish_root_can_be_explicitly_overridden(tmp_path: Path):
     packages_root = graph_fixture(tmp_path)
     result = run_amerge(
