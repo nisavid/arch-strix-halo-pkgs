@@ -495,22 +495,28 @@ def install_step_label(prefix: str, outputs: list[str]) -> str:
 
 def repo_name_from_publish_root(path: Path) -> str | None:
     parts = path.parts
-    for index, part in enumerate(parts):
-        if part != "pacman":
-            continue
-        repo_index = index + 1
-        if repo_index < len(parts):
-            return parts[repo_index]
+    if parts[:3] != ("/", "srv", "pacman"):
+        return None
+    if len(parts) >= 4:
+        return parts[3]
     return None
 
 
 def validate_publish_root(publish_root: Path, *, allow_foreign: bool = False) -> None:
     repo_name = repo_name_from_publish_root(publish_root)
+    is_srv_pacman_root = publish_root.parts[:3] == ("/", "srv", "pacman")
+    has_publish_shape = len(publish_root.parts) == 5 and publish_root.parts[4] == "x86_64"
+    if is_srv_pacman_root and not has_publish_shape:
+        raise SystemExit(
+            "Refusing to publish Strix Halo packages to foreign pacman repo path "
+            f"{publish_root}. Expected {EXPECTED_PUBLISH_ROOT}. "
+            "Pass --allow-foreign-publish-root to override intentionally."
+        )
     if allow_foreign:
         return
     if publish_root == EXPECTED_PUBLISH_ROOT:
         return
-    if publish_root.parts[:3] == ("/", "srv", "pacman") or repo_name in FOREIGN_PUBLISH_ROOT_NAMES:
+    if is_srv_pacman_root or repo_name in FOREIGN_PUBLISH_ROOT_NAMES:
         raise SystemExit(
             "Refusing to publish Strix Halo packages to foreign pacman repo path "
             f"{publish_root}. Expected {EXPECTED_PUBLISH_ROOT}. "
@@ -681,7 +687,9 @@ def build_steps(
 def create_merge_plan(args: argparse.Namespace, *, command: str) -> dict[str, object]:
     packages_root = args.packages_root.resolve()
     repo_dir = args.repo_dir.resolve()
-    publish_root = args.publish_root.resolve()
+    publish_root = args.publish_root.expanduser()
+    if not publish_root.is_absolute():
+        publish_root = publish_root.resolve()
     if command in {"run", "publish", "deploy"}:
         validate_publish_root(
             publish_root,

@@ -144,6 +144,16 @@ def test_nisavid_repo_name_requires_explicit_override():
     update_pacman_repo.validate_repo_name("nisavid", allow_foreign=True)
 
 
+def test_repo_name_must_be_simple_database_basename():
+    for repo_name in ("../nisavid", "nested/nisavid", ".", ".."):
+        try:
+            update_pacman_repo.validate_repo_name(repo_name, allow_foreign=True)
+        except RuntimeError as exc:
+            assert "simple filename" in str(exc)
+        else:
+            raise AssertionError(f"expected unsafe repo name to fail: {repo_name}")
+
+
 def test_expected_package_paths_fail_when_current_archive_is_missing(
     tmp_path: Path,
     monkeypatch,

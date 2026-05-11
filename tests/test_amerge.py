@@ -986,6 +986,24 @@ def test_publish_root_refuses_incomplete_strix_halo_srv_pacman_root(tmp_path: Pa
     assert "/srv/pacman/strix-halo-gfx1151/x86_64" in result.stderr
 
 
+def test_foreign_publish_override_still_requires_srv_pacman_arch_root(tmp_path: Path):
+    packages_root = graph_fixture(tmp_path)
+    result = run_amerge(
+        "deploy",
+        "--dry-run",
+        "--packages-root",
+        str(packages_root),
+        "--publish-root",
+        "/srv/pacman/nisavid",
+        "--allow-foreign-publish-root",
+        "python-app-gfx1151",
+    )
+
+    assert result.returncode != 0
+    assert "Refusing to publish Strix Halo packages" in result.stderr
+    assert "/srv/pacman/strix-halo-gfx1151/x86_64" in result.stderr
+
+
 def test_foreign_publish_root_can_be_explicitly_overridden(tmp_path: Path):
     packages_root = graph_fixture(tmp_path)
     result = run_amerge(
@@ -1003,6 +1021,13 @@ def test_foreign_publish_root_can_be_explicitly_overridden(tmp_path: Path):
     assert result.returncode == 0
     payload = json.loads(result.stdout)
     assert payload["config"]["publish_root"] == "/srv/pacman/nisavid/x86_64"
+
+
+def test_repo_name_from_publish_root_only_reads_srv_pacman_paths():
+    module = load_module()
+
+    assert module.repo_name_from_publish_root(Path("/srv/pacman/nisavid/x86_64")) == "nisavid"
+    assert module.repo_name_from_publish_root(Path("/tmp/pacman/nisavid/x86_64")) is None
 
 
 def test_command_environment_removes_user_python_state(monkeypatch):
