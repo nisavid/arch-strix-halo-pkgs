@@ -102,6 +102,11 @@ def parse_args() -> argparse.Namespace:
 
 
 def validate_repo_name(repo_name: str, *, allow_foreign: bool = False) -> None:
+    if repo_name in {"", ".", ".."} or Path(repo_name).name != repo_name:
+        raise RuntimeError(
+            "PACMAN_REPO_NAME_REFUSED: repo database basename must be a simple "
+            f"filename, got {repo_name!r}."
+        )
     if allow_foreign or repo_name not in FOREIGN_REPO_NAMES:
         return
     raise RuntimeError(
