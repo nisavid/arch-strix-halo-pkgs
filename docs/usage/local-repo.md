@@ -61,6 +61,10 @@ Recommended published path:
 /srv/pacman/strix-halo-gfx1151/x86_64
 ```
 
+This path and the `strix-halo-gfx1151` pacman database basename belong to this
+repo. The sibling `arch-pkgs` repo publishes to `/srv/pacman/nisavid/x86_64`;
+do not use that target for Strix Halo package artifacts.
+
 Publish the current working repo contents:
 
 ```bash

@@ -18,13 +18,19 @@ AMERGE = REPO_ROOT / "tools/amerge"
 MODULE_PATH = REPO_ROOT / "tools/amerge_lib.py"
 
 
-def run_amerge(*args: str, input_text: str | None = None) -> subprocess.CompletedProcess[str]:
+def run_amerge(
+    *args: str,
+    input_text: str | None = None,
+    env: dict[str, str] | None = None,
+) -> subprocess.CompletedProcess[str]:
+    command_env = {"PYTHONPYCACHEPREFIX": "/tmp", "TERM": "xterm-256color"}
+    command_env.update(env or {})
     return subprocess.run(
         [sys.executable, str(AMERGE), *args],
         input=input_text,
         capture_output=True,
         text=True,
-        env={"PYTHONPYCACHEPREFIX": "/tmp", "TERM": "xterm-256color"},
+        env=command_env,
     )
 
 
@@ -395,6 +401,15 @@ def test_deploy_subcommand_publishes_then_installs_selected_outputs(tmp_path: Pa
     assert payload["steps"][0]["kind"] == "publish"
     assert payload["steps"][1]["kind"] == "install"
     assert "--require-packagelist" in payload["steps"][0]["commands"][0]["argv"]
+    assert payload["config"]["publish_root"] == "/srv/pacman/strix-halo-gfx1151/x86_64"
+    assert "nisavid" not in payload["config"]["publish_root"]
+    assert payload["steps"][0]["commands"][1]["argv"] == [
+        "sudo",
+        "-n",
+        "install",
+        "-d",
+        "/srv/pacman/strix-halo-gfx1151/x86_64",
+    ]
     assert payload["steps"][1]["commands"][0]["argv"] == [
         "sudo",
         "-n",
@@ -919,6 +934,41 @@ def test_publish_steps_require_current_packagelist_artifacts(tmp_path: Path):
     payload = json.loads(result.stdout)
     update_command = payload["steps"][0]["commands"][0]["argv"]
     assert "--require-packagelist" in update_command
+
+
+def test_publish_root_env_refuses_sibling_arch_pkgs_repo(tmp_path: Path):
+    packages_root = graph_fixture(tmp_path)
+    result = run_amerge(
+        "deploy",
+        "--dry-run",
+        "--packages-root",
+        str(packages_root),
+        "python-app-gfx1151",
+        env={"PUBLISH_ROOT": "/srv/pacman/nisavid/x86_64"},
+    )
+
+    assert result.returncode != 0
+    assert "Refusing to publish Strix Halo packages" in result.stderr
+    assert "/srv/pacman/strix-halo-gfx1151/x86_64" in result.stderr
+
+
+def test_foreign_publish_root_can_be_explicitly_overridden(tmp_path: Path):
+    packages_root = graph_fixture(tmp_path)
+    result = run_amerge(
+        "deploy",
+        "--dry-run",
+        "--json",
+        "--packages-root",
+        str(packages_root),
+        "--publish-root",
+        "/srv/pacman/nisavid/x86_64",
+        "--allow-foreign-publish-root",
+        "python-app-gfx1151",
+    )
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    assert payload["config"]["publish_root"] == "/srv/pacman/nisavid/x86_64"
 
 
 def test_command_environment_removes_user_python_state(monkeypatch):

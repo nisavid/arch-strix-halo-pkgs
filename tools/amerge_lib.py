@@ -22,10 +22,13 @@ if str(TOOLS_DIR) not in sys.path:
 from repo_package_graph import RepoPackageRoot, discover_repo_package_roots
 
 
+LOCAL_REPO_NAME = "strix-halo-gfx1151"
+EXPECTED_PUBLISH_ROOT = Path(f"/srv/pacman/{LOCAL_REPO_NAME}/x86_64")
+FOREIGN_PUBLISH_ROOT_NAMES = {"nisavid"}
 DEFAULT_PACKAGES_ROOT = REPO_ROOT / "packages"
 DEFAULT_REPO_DIR = REPO_ROOT / "repo/x86_64"
 DEFAULT_PUBLISH_ROOT = Path(
-    os.environ.get("PUBLISH_ROOT", "/srv/pacman/strix-halo-gfx1151/x86_64")
+    os.environ.get("PUBLISH_ROOT", str(EXPECTED_PUBLISH_ROOT))
 )
 DEFAULT_STATE_ROOT = REPO_ROOT / "docs/worklog/amerge"
 # libalpm question bit for "Should a conflicting package be removed?"
@@ -490,6 +493,33 @@ def install_step_label(prefix: str, outputs: list[str]) -> str:
     return f"{prefix}: {' '.join(outputs)}" if outputs else prefix
 
 
+def repo_name_from_publish_root(path: Path) -> str | None:
+    parts = path.parts
+    for index, part in enumerate(parts):
+        if part != "pacman":
+            continue
+        repo_index = index + 1
+        if repo_index < len(parts):
+            return parts[repo_index]
+    return None
+
+
+def validate_publish_root(publish_root: Path, *, allow_foreign: bool = False) -> None:
+    repo_name = repo_name_from_publish_root(publish_root)
+    if repo_name is None:
+        return
+    if allow_foreign:
+        return
+    if repo_name == LOCAL_REPO_NAME:
+        return
+    if repo_name in FOREIGN_PUBLISH_ROOT_NAMES or publish_root.parts[:3] == ("/", "srv", "pacman"):
+        raise SystemExit(
+            "Refusing to publish Strix Halo packages to foreign pacman repo path "
+            f"{publish_root}. Expected {EXPECTED_PUBLISH_ROOT}. "
+            "Pass --allow-foreign-publish-root to override intentionally."
+        )
+
+
 def build_steps(
     *,
     command: str,
@@ -654,6 +684,11 @@ def create_merge_plan(args: argparse.Namespace, *, command: str) -> dict[str, ob
     packages_root = args.packages_root.resolve()
     repo_dir = args.repo_dir.resolve()
     publish_root = args.publish_root.resolve()
+    if command in {"run", "publish", "deploy"}:
+        validate_publish_root(
+            publish_root,
+            allow_foreign=args.allow_foreign_publish_root,
+        )
     roots = discover_repo_package_roots(packages_root)
     targets = resolve_initial_targets(roots, args)
     requested_outputs = requested_outputs_for_targets(roots, targets)
@@ -1621,6 +1656,11 @@ def add_common_plan_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--packages-root", type=Path, default=DEFAULT_PACKAGES_ROOT)
     parser.add_argument("--repo-dir", type=Path, default=DEFAULT_REPO_DIR)
     parser.add_argument("--publish-root", type=Path, default=DEFAULT_PUBLISH_ROOT)
+    parser.add_argument(
+        "--allow-foreign-publish-root",
+        action="store_true",
+        help="allow publishing to a /srv/pacman repo path that is not strix-halo-gfx1151",
+    )
     parser.add_argument("--state-root", type=Path, default=DEFAULT_STATE_ROOT)
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--json", action="store_true")
