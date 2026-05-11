@@ -542,8 +542,10 @@ last_reviewed = "2026-05-10"
 family = "llama_cpp"
 packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"]
 source_kind = "github_release"
+baseline_source_kind = "aur"
+baseline_latest = "b9049-1"
 previous_recorded = "b9012 / b9010-1"
-latest = "b9050 / b9049-1"
+latest = "b9050"
 discovery_status = "stable_update_available"
 disposition = "adopted"
 disposition_reason = "Adopted in the 2026-05-07 refresh cycle. Both packaged backends were repinned to b9050, Lemonade backend metadata was refreshed, package builds completed, deploy/install passed, llama.cpp HIP/Vulkan CLI smokes passed, and Lemonade pooling scenarios passed against the active installed server."
@@ -649,8 +651,10 @@ last_reviewed = "2026-05-10"
 family = "cryptography"
 packages = ["python-cryptography-gfx1151"]
 source_kind = "pypi"
+baseline_source_kind = "arch_package"
+baseline_latest = "48.0.0-1"
 previous_recorded = "47.0.0 / 47.0.0-1"
-latest = "48.0.0 / 48.0.0-1"
+latest = "48.0.0"
 discovery_status = "stable_update_available"
 disposition = "adopted"
 disposition_reason = "Adopted in the 2026-05-07 refresh cycle. Source update, package build, deploy/install, and installed import smoke passed after install."
@@ -780,7 +784,7 @@ family = "lemonade"
 packages = ["lemonade-server", "lemonade-app", "lemonade"]
 source_kind = "github_release"
 baseline_source_kind = "aur"
-baseline_latest = "10.4.0-1 / 10.4.0-4"
+baseline_latest = "10.4.0-1"
 previous_recorded = "10.2.0 / 10.3.0 / 10.2.0-1"
 latest = "10.4.0"
 discovery_status = "stable_update_available"
@@ -909,12 +913,12 @@ next_gate_path = ""
 next_gate_label = "Adopted; monitor future vLLM releases through the normal freshness sweep"
 last_reviewed = "2026-05-11"
 
-[candidates."aiter-main-665a73a"]
+[candidates."aiter-main-0120532"]
 family = "aiter"
 packages = ["python-amd-aiter-gfx1151"]
 source_kind = "git_ref"
 previous_recorded = "bdece28f7b20e770b6ac9b1b9b1814b71faf258f"
-latest = "665a73a5d47204c19ddf6148e17a0557cb508c2f"
+latest = "0120532614b9ef70d7fb9ee1b9f39d1273e303d0"
 discovery_status = "candidate_head_ahead"
 disposition = "tracked"
 disposition_reason = "Found during the 2026-05-11 PR closeout freshness check after adopting AITER 0.1.13. Track the main-branch kernel/JIT delta separately from the already-adopted stable release."
@@ -927,22 +931,22 @@ package_source_update_needed = true
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "AITER main 665a73a source-update lane"
+next_gate_label = "AITER main 0120532 source-update lane"
 last_reviewed = "2026-05-11"
 
-[candidates."llama-cpp-b9103"]
+[candidates."llama-cpp-b9106"]
 family = "llama_cpp"
 packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"]
 source_kind = "github_release"
 baseline_source_kind = "aur"
 baseline_latest = "b9101-1"
 previous_recorded = "b9101 / b9101-1"
-latest = "b9103"
+latest = "b9106"
 discovery_status = "stable_update_available"
 disposition = "tracked"
 disposition_reason = "Found during the 2026-05-11 PR closeout freshness check after adopting llama.cpp b9101. Track as the next source-update lane rather than expanding the May 10 refresh after validation closed."
 salient_changes = [
-  "GitHub release b9103 is available after the adopted b9101 lane",
+  "GitHub release b9106 is available after the adopted b9101 lane",
   "The AUR HIP baseline remains at the adopted b9101 package release",
 ]
 patch_carry_overlap = true
@@ -950,5 +954,5 @@ package_source_update_needed = true
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "llama.cpp b9103 source-update lane"
+next_gate_label = "llama.cpp b9106 source-update lane"
 last_reviewed = "2026-05-11"
