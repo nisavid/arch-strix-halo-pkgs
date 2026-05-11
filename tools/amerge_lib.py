@@ -509,8 +509,8 @@ def validate_publish_root(publish_root: Path, *, allow_foreign: bool = False) ->
     if is_srv_pacman_root and not has_publish_shape:
         raise SystemExit(
             "Refusing to publish Strix Halo packages to foreign pacman repo path "
-            f"{publish_root}. Expected {EXPECTED_PUBLISH_ROOT}. "
-            "Pass --allow-foreign-publish-root to override intentionally."
+            f"{publish_root}. Expected /srv/pacman/<repo>/x86_64, normally "
+            f"{EXPECTED_PUBLISH_ROOT}."
         )
     if allow_foreign:
         return
@@ -533,6 +533,8 @@ def build_steps(
     final_install_outputs: list[str],
     repo_dir: Path,
     publish_root: Path,
+    publish_repo_name: str,
+    allow_foreign_repo_name: bool,
 ) -> list[StepSpec]:
     steps: list[StepSpec] = []
     python = sys.executable
@@ -542,18 +544,21 @@ def build_steps(
         return ("sudo", "-n", *args)
 
     def update_repo_command(root: RepoPackageRoot) -> CommandSpec:
-        return CommandSpec(
-            argv=(
-                python,
-                update_repo,
-                "--package-dir",
-                str(root.package_dir),
-                "--repo-dir",
-                str(repo_dir),
-                "--recursive",
-                "--require-packagelist",
-            )
-        )
+        argv = [
+            python,
+            update_repo,
+            "--package-dir",
+            str(root.package_dir),
+            "--repo-dir",
+            str(repo_dir),
+            "--recursive",
+            "--require-packagelist",
+        ]
+        if publish_repo_name != LOCAL_REPO_NAME:
+            argv.extend(["--repo-name", publish_repo_name])
+            if allow_foreign_repo_name:
+                argv.append("--allow-foreign-repo-name")
+        return CommandSpec(argv=tuple(argv))
 
     def install_command(outputs: list[str]) -> CommandSpec:
         return CommandSpec(
@@ -741,6 +746,8 @@ def create_merge_plan(args: argparse.Namespace, *, command: str) -> dict[str, ob
         final_install_outputs=final_install_outputs,
         repo_dir=repo_dir,
         publish_root=publish_root,
+        publish_repo_name=repo_name_from_publish_root(publish_root) or LOCAL_REPO_NAME,
+        allow_foreign_repo_name=args.allow_foreign_publish_root,
     )
     plan_id = new_plan_id()
     return {

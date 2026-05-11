@@ -1002,6 +1002,7 @@ def test_foreign_publish_override_still_requires_srv_pacman_arch_root(tmp_path: 
     assert result.returncode != 0
     assert "Refusing to publish Strix Halo packages" in result.stderr
     assert "/srv/pacman/strix-halo-gfx1151/x86_64" in result.stderr
+    assert "--allow-foreign-publish-root" not in result.stderr
 
 
 def test_foreign_publish_root_can_be_explicitly_overridden(tmp_path: Path):
@@ -1021,6 +1022,10 @@ def test_foreign_publish_root_can_be_explicitly_overridden(tmp_path: Path):
     assert result.returncode == 0
     payload = json.loads(result.stdout)
     assert payload["config"]["publish_root"] == "/srv/pacman/nisavid/x86_64"
+    update_command = payload["steps"][0]["commands"][0]["argv"]
+    assert "--repo-name" in update_command
+    assert update_command[update_command.index("--repo-name") + 1] == "nisavid"
+    assert "--allow-foreign-repo-name" in update_command
 
 
 def test_repo_name_from_publish_root_only_reads_srv_pacman_paths():
