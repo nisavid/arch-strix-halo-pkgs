@@ -1101,41 +1101,44 @@ PY
     return 1
   }}
 
-  if [[ -d "${{_site}}/torch/lib" ]]; then
-    local _so _runpath
+  if [[ ! -d "${{_site}}/torch/lib" ]]; then
+    echo "PYTORCH_LIB_DIR_MISSING: ${{_site}}/torch/lib" >&2
+    return 1
+  fi
 
-    if [[ ! -f "${{_site}}/torch/lib/libtorch_hip.so" ]]; then
-      echo "PYTORCH_HIP_LIBRARY_MISSING: ${{_site}}/torch/lib/libtorch_hip.so" >&2
-      return 1
+  local _so _runpath
+
+  if [[ ! -f "${{_site}}/torch/lib/libtorch_hip.so" ]]; then
+    echo "PYTORCH_HIP_LIBRARY_MISSING: ${{_site}}/torch/lib/libtorch_hip.so" >&2
+    return 1
+  fi
+
+  for _so in "${{_site}}"/torch/lib/lib*.so; do
+    [[ -f "${{_so}}" ]] || continue
+    _runpath="$(readelf -d "${{_so}}" 2>/dev/null | grep 'RUNPATH' || true)"
+    if grep -q 'pytorch/build' <<<"${{_runpath}}"; then
+      patchelf --set-rpath "/opt/rocm/lib:\\$ORIGIN" "${{_so}}" 2>/dev/null || true
+    elif readelf -d "${{_so}}" 2>/dev/null | grep -Eq 'libamdhip64|librocm_smi'; then
+      patchelf --add-rpath "/opt/rocm/lib" "${{_so}}" 2>/dev/null || true
     fi
+  done
 
-    for _so in "${{_site}}"/torch/lib/lib*.so; do
-      [[ -f "${{_so}}" ]] || continue
-      _runpath="$(readelf -d "${{_so}}" 2>/dev/null | grep 'RUNPATH' || true)"
-      if grep -q 'pytorch/build' <<<"${{_runpath}}"; then
-        patchelf --set-rpath "/opt/rocm/lib:\\$ORIGIN" "${{_so}}" 2>/dev/null || true
-      elif readelf -d "${{_so}}" 2>/dev/null | grep -Eq 'libamdhip64|librocm_smi'; then
-        patchelf --add-rpath "/opt/rocm/lib" "${{_so}}" 2>/dev/null || true
-      fi
-    done
-
-    for _so in "${{_site}}"/torch/_C*.so; do
-      [[ -f "${{_so}}" ]] || continue
-      if readelf -d "${{_so}}" 2>/dev/null | grep -q 'pytorch/build'; then
-        patchelf --set-rpath "/opt/rocm/lib:\\$ORIGIN/lib" "${{_so}}" 2>/dev/null || true
-      fi
-      if ! readelf -d "${{_so}}" 2>/dev/null | grep -Eq 'libomp|libiomp5'; then
-        patchelf --add-needed libomp.so "${{_so}}"
-        readelf -d "${{_so}}" 2>/dev/null | grep -Eq 'libomp|libiomp5' || {{
-          echo "PYTORCH_OPENMP_NEEDED_REWRITE_FAILED: ${{_so}}" >&2
-          return 1
-        }}
-      fi
-    done
-
-    if [[ -f "${{_site}}/torch/lib/libtorch_hip.so" ]] && ! readelf -d "${{_site}}/torch/lib/libtorch_hip.so" 2>/dev/null | grep -q 'librocm_smi64'; then
-      patchelf --add-needed librocm_smi64.so "${{_site}}/torch/lib/libtorch_hip.so" 2>/dev/null || true
+  for _so in "${{_site}}"/torch/_C*.so; do
+    [[ -f "${{_so}}" ]] || continue
+    if readelf -d "${{_so}}" 2>/dev/null | grep -q 'pytorch/build'; then
+      patchelf --set-rpath "/opt/rocm/lib:\\$ORIGIN/lib" "${{_so}}" 2>/dev/null || true
     fi
+    if ! readelf -d "${{_so}}" 2>/dev/null | grep -Eq 'libomp|libiomp5'; then
+      patchelf --add-needed libomp.so "${{_so}}"
+      readelf -d "${{_so}}" 2>/dev/null | grep -Eq 'libomp|libiomp5' || {{
+        echo "PYTORCH_OPENMP_NEEDED_REWRITE_FAILED: ${{_so}}" >&2
+        return 1
+      }}
+    fi
+  done
+
+  if [[ -f "${{_site}}/torch/lib/libtorch_hip.so" ]] && ! readelf -d "${{_site}}/torch/lib/libtorch_hip.so" 2>/dev/null | grep -q 'librocm_smi64'; then
+    patchelf --add-needed librocm_smi64.so "${{_site}}/torch/lib/libtorch_hip.so" 2>/dev/null || true
   fi
 }}"""
     elif template == "python-project-torchvision-rocm":

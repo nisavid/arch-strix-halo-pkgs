@@ -18,7 +18,7 @@
 ## Recipe notes
 
 Builds Torch-MIGraphX from audited upstream `master` at
-`6b2cd2237e83b675ae671650d08343dfbb0be5f3` because PyPI and the only upstream
+`b94b985586a051fbee19aefe8c934bb7c1a9df0a` because PyPI and the only upstream
 tag remain at `1.1` while current upstream reports package version `1.2`.
 
 The package is bound to the coherent local ROCm stack: `migraphx-gfx1151`
@@ -43,7 +43,7 @@ the local Python 3.14 and PyTorch 2.11 stack.
 
 ## Scaffold notes
 
-- Builds from upstream master at 6b2cd2237e83b675ae671650d08343dfbb0be5f3 because PyPI and the only upstream tag remain at 1.1 while current master reports version 1.2.
+- Builds from upstream master at b94b985586a051fbee19aefe8c934bb7c1a9df0a because PyPI and the only upstream tag remain at 1.1 while current master reports version 1.2.
 - Uses the ROCm compiler lane explicitly and strips the unsupported -famd-opt flag from wheel C/C++ flags.
 - Depends on the local MIGraphX split package because the Python binding is installed under /opt/rocm/lib with migraphx.pth.
 - Relaxes upstream's numpy metadata cap for the repo's numpy 2.x lane.
