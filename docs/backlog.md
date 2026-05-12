@@ -245,28 +245,16 @@
     and the no-CUDAGraph compiled path previously faulted during warmup
   - start from the `compiled-probe` scenarios under `inference/scenarios/`
     instead of treating the experiment as an ad hoc terminal-only rehearsal
-- Continue Qwen3.6 FP8 MoE/shared-expert follow-up on gfx1151.
+- Continue Qwen3.6 sparse-model and quantization follow-up on gfx1151.
   - Qwen3.5 sampler/GDN package carry, tiny smoke coverage, and blocked-probe
     coverage for Qwen3.6 are already tracked and validated
-  - validate the new dense FP8/Quark and GPTQ-Int4 exploratory probes before
-    promoting either lane to smoke coverage:
-    `vllm.qwen3.0_6b-fp8-kv.text.fp8-dense-quark` and
-    `vllm.qwen2_5.0_5b-gptq-int4.text.basic`
+  - validate the small FP8 safetensors exploratory probe before promoting the
+    lane to smoke coverage:
+    `vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors-blocked`
   - compare FP8 probe outcomes against the accepted unquantized no-AITER
     `Qwen/Qwen3.6-35B-A3B` control, which currently passes with
     `--max-num-batched-tokens 32` and `--gpu-memory-utilization 0.9`
-  - treat the non-AITER path as blocked until a backend advertises gfx1151 FP8
-    MoE support; the current failure is
-    `No FP8 MoE backend supports the deployment configuration`
-  - treat the forced-AITER path as blocked on AITER opus/gfx1151 FP8-kernel
-    feature work; the current `module_quant` failure is
-    `unknown type name 'mfma_adaptor'`
-  - do not paper over the AITER OPUS gap by selecting the gfx1250 WMMA path:
-    gfx1151 rejects the relevant FP8 WMMA builtin with
-    `needs target feature gfx1250-insts`. The current upstream AITER release
-    has RDNA registration/config-selection work, but no small gfx11 OPUS FP8
-    adaptor patch to carry locally.
-  - keep the AxionML NVFP4 probe blocked on local ROCm vLLM ModelOpt FP4
+  - keep the RedHatAI Qwen3.6 NVFP4 probe blocked on local ROCm vLLM ModelOpt FP4
     support; the checkpoint is ModelOpt NVFP4, and the current expected failure
     is `modelopt_fp4 quantization is currently not supported in rocm.`
   - treat Petit as out of scope for Strix Halo unless its support matrix
@@ -416,8 +404,8 @@
   - `unsloth/gemma-4-E2B-it-GGUF:UD-Q6_K_XL`
   - `unsloth/gemma-4-26B-A4B-it-GGUF:UD-Q4_K_XL`
   - `Qwen/Qwen3.5-0.8B` for tiny non-GGUF vLLM Qwen smoke coverage
-  - `Qwen/Qwen3.6-35B-A3B-FP8` for the main non-GGUF vLLM Qwen MoE lane,
-    replacing the earlier Qwen3.5 122B-A10B target in local testing plans
+  - `Qwen/Qwen3.6-35B-A3B` for the main non-GGUF vLLM Qwen MoE lane
+  - `surogate/Qwen3.5-0.8B-FP8` for the small FP8 safetensors probe
   - use a Qwen3.6 GGUF quantization for llama.cpp once one is chosen locally
 - Capture benchmark methodology and results in repo docs before any public AUR
   publication attempt.

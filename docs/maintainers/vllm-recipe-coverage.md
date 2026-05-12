@@ -50,7 +50,7 @@ unblock it by themselves.
 | Surface | Recipe flags or request shape | Current coverage | Planned action |
 | --- | --- | --- | --- |
 | E4B quick start | `google/gemma-4-E4B-it`, `--max-model-len <n>` up to `131072` | `planned` | Add an optional smoke only if the E4B checkpoint is cached locally; otherwise keep advisory. |
-| 31B dense serving | `--tensor-parallel-size 2`, `--max-model-len 32768`, `--gpu-memory-utilization 0.90` | `tracked` by `vllm.gemma4.31b.text.compiled`, but not server recipe coverage | Add a reduced 31B server smoke if memory allows; keep TP2 as advisory on single-host gfx1151. |
+| E2B dense/PLE serving | reduced text/server smokes against `google/gemma-4-E2B-it` | `tracked` by the E2B text, server, feature, multimodal, and benchmark-lite scenarios | Use E2B as the retained small dense/PLE Gemma 4 cache target. |
 | 26B-A4B MoE serving | `--max-model-len 32768`, `--gpu-memory-utilization 0.90` | `validated` for basic text/server and MoE backend probes | No new base smoke required; keep MoE backend probes as the local tuning coverage. |
 | AMD MI-series Docker shape | `vllm/vllm-openai-rocm:gemma4`, device mounts, host networking | `advisory-only` | Do not turn Docker install guidance into a repo scenario. |
 | Full-feature server | `--enable-auto-tool-choice`, `--reasoning-parser gemma4`, `--tool-call-parser gemma4`, `--chat-template examples/tool_chat_template_gemma4.jinja`, `--limit-mm-per-prompt image=4,audio=1`, `--async-scheduling` | `tracked` through E2B text-only feature scenarios, not fully validated post-rebuild | Run `full-feature-text-only`, then mode-specific reasoning, tool, structured, and structured-thinking scenarios before promotion. |
@@ -73,7 +73,7 @@ unblock it by themselves.
 | Surface | Recipe flags or request shape | Current coverage | Planned action |
 | --- | --- | --- | --- |
 | Qwen3.6 BF16 reasoning | `Qwen/Qwen3.6-35B-A3B`, `--tensor-parallel-size 8` or interactive TP2, `--max-model-len 262144`, `--reasoning-parser qwen3` | `validated` by reduced `reasoning` and `reasoning-disabled`; unquantized eager and compiled text controls remain validated | Keep the large TP/context recipe shape advisory unless the host gains matching hardware. |
-| Qwen3.6 FP8 AMD | `VLLM_ROCM_USE_AITER=1`, `Qwen/Qwen3.6-35B-A3B-FP8`, `--max-model-len 262144`, `--reasoning-parser qwen3`, `--trust-remote-code` | `validated` as blocked for non-AITER and forced-AITER FP8 MoE paths | Keep blocked probes; re-run only after a backend advertises gfx1151 FP8 MoE support. |
+| FP8 safetensors probe | `surogate/Qwen3.5-0.8B-FP8`, reduced local context | `tracked` by `vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors-blocked` | Use this small retained checkpoint for local FP8 support checks; do not treat it as Qwen3.6 MoE recipe coverage. |
 | Qwen3.6 MTP/spec decoding | `--speculative-config '{"method":"mtp","num_speculative_tokens":2}'` | `validated` by reduced `mtp` through the padded drafter batch path with the installed ROCm `valid_count` patch | No remaining local MTP workaround; keep only full Qwen3.5 FP8 latency shape advisory. |
 | Qwen3.6 tool calling | interactive feature selector plus Qwen parser family; Qwen3.5 guide names `--enable-auto-tool-choice --tool-call-parser qwen3_coder` | `validated` by reduced `tool` server scenario | Keep the Qwen3.5 FP8 deployment shape advisory; the local result validates parser behavior on Qwen3.6. |
 | Qwen3.6 advanced selectors | interactive `max_batched_8k` and `max_num_seqs_256` | `validated` by reduced `advanced-selectors` server scenario | Treat this as memory-fit evidence for the reduced local server shape, not the full MI-series deployment. |
@@ -118,15 +118,9 @@ Qwen3.6 server shape with `prompt_lookup_min=2`, `prompt_lookup_max=5`, and
 draft-weight loading, EAGLE config construction, and missing Arctic Inference,
 respectively.
 
-Task 3 adds tracked speculative-decoding scenarios for the documented EAGLE3
-shape and the DFlash speculators-format path. The EAGLE3 scenario uses the
-official verifier `meta-llama/Llama-3.1-8B-Instruct` plus
-`RedHatAI/Llama-3.1-8B-Instruct-speculator.eagle3`; do not replace that with a
-normal Qwen checkpoint and call it EAGLE coverage. The DFlash scenario stays
-blocked: the package now carries the narrow speculators config parser from
-vLLM PR #38300, but the stable `v0.19.1` source package still lacks the
-upstream DFlash model/proposer/runtime pieces needed to run
-`nm-testing/dflash-qwen3-8b-speculators`. PR #38300 merged upstream on
-2026-04-15, so promote this lane only after a tagged source release carries
-that full support; as of 2026-04-21, `git ls-remote --tags` shows
-`v0.19.2rc0` but no final `v0.19.2` or `v0.20.0` tag.
+Tracked speculative-decoding scenarios now use the retained Qwen3.6 35B-A3B
+model family. The EAGLE3 lane uses
+`Dogacel/specdrift-qwen3.6-35b-a3b-eagle3`, the DFlash lane uses
+`z-lab/Qwen3.6-35B-A3B-DFlash`, and both run against the BF16 base and RedHatAI
+NVFP4 model. The MTP lane remains separate and runs against the same two target
+models without a draft-model repository.

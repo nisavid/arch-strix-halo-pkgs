@@ -1,22 +1,21 @@
 [[scenario]]
-id = "vllm.speculative.eagle3.llama3_1_8b.server.basic"
-summary = "Llama 3.1 8B server smoke with the official EAGLE3 speculator shape"
-source_url = "https://docs.vllm.ai/en/latest/features/speculative_decoding/eagle/"
-tags = ["vllm", "speculative-decoding", "eagle3", "llama", "server", "exploratory"]
+id = "vllm.speculative.eagle3.qwen3_6.35b-a3b.server.benchmark-lite"
+summary = "Qwen3.6 35B-A3B EAGLE3 speculative decoding benchmark-lite server smoke"
+tags = ["vllm", "speculative-decoding", "eagle3", "qwen3.6", "benchmark-lite", "server", "exploratory"]
+source_url = "https://huggingface.co/Dogacel/specdrift-qwen3.6-35b-a3b-eagle3"
 
 [scenario.given]
 engine = "vllm"
-model = "meta-llama/Llama-3.1-8B-Instruct"
+model = "Qwen/Qwen3.6-35B-A3B"
 tool = "qwen_server_smoke.benchmark-lite"
 
 [scenario.given.speculative_config]
 method = "eagle3"
-model = "RedHatAI/Llama-3.1-8B-Instruct-speculator.eagle3"
-draft_tensor_parallel_size = 2
-num_speculative_tokens = 2
+model = "Dogacel/specdrift-qwen3.6-35b-a3b-eagle3"
+num_speculative_tokens = 4
 
 [scenario.when]
-argv = ["--max-model-len", "1024", "--max-num-batched-tokens", "32"]
+argv = ["--max-model-len", "2048"]
 
 [[scenario.then.assert]]
 kind = "exit_code.equals"
@@ -35,42 +34,166 @@ kind = "stdout.contains"
 value = "\"method\":\"eagle3\""
 
 [[scenario]]
-id = "vllm.speculative.dflash.qwen3_8b-speculators.server.blocked"
-summary = "DFlash speculators-format Qwen3 server probe blocked on local vLLM DFlash runtime support"
-source_url = "https://github.com/vllm-project/vllm/pull/38300"
-tags = [
-  "vllm",
-  "speculative-decoding",
-  "dflash",
-  "qwen",
-  "qwen3",
-  "server",
-  "blocked",
-  "exploratory",
-]
+id = "vllm.speculative.eagle3.qwen3_6.35b-a3b-nvfp4.server.benchmark-lite"
+summary = "Qwen3.6 35B-A3B NVFP4 EAGLE3 speculative decoding benchmark-lite server smoke"
+tags = ["vllm", "speculative-decoding", "eagle3", "qwen3.6", "nvfp4", "benchmark-lite", "server", "exploratory"]
+source_url = "https://huggingface.co/Dogacel/specdrift-qwen3.6-35b-a3b-eagle3"
 
 [scenario.given]
 engine = "vllm"
-model = "nm-testing/dflash-qwen3-8b-speculators"
-speculative_model = "nm-testing/dflash-qwen3-8b-speculators"
+model = "RedHatAI/Qwen3.6-35B-A3B-NVFP4"
 tool = "qwen_server_smoke.benchmark-lite"
 
+[scenario.given.speculative_config]
+method = "eagle3"
+model = "Dogacel/specdrift-qwen3.6-35b-a3b-eagle3"
+num_speculative_tokens = 4
+
 [scenario.when]
-argv = [
-  "--execution-mode",
-  "compiled",
-  "--max-model-len",
-  "4096",
-  "--max-num-seqs",
-  "128",
-  "--gpu-memory-utilization",
-  "0.85",
-]
+argv = ["--quantization", "modelopt_fp4", "--max-model-len", "2048"]
 
 [[scenario.then.assert]]
 kind = "exit_code.equals"
-value = 1
+value = 0
 
 [[scenario.then.assert]]
-kind = "output.contains"
-value = "DFlashDraftModel"
+kind = "stdout.contains"
+value = "server_ready"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "benchmark_lite_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "\"method\":\"eagle3\""
+
+[[scenario]]
+id = "vllm.speculative.dflash.qwen3_6.35b-a3b.server.benchmark-lite"
+summary = "Qwen3.6 35B-A3B DFlash speculative decoding benchmark-lite server smoke"
+tags = ["vllm", "speculative-decoding", "dflash", "qwen3.6", "benchmark-lite", "server", "exploratory"]
+source_url = "https://huggingface.co/z-lab/Qwen3.6-35B-A3B-DFlash"
+
+[scenario.given]
+engine = "vllm"
+model = "Qwen/Qwen3.6-35B-A3B"
+tool = "qwen_server_smoke.benchmark-lite"
+
+[scenario.given.speculative_config]
+method = "dflash"
+model = "z-lab/Qwen3.6-35B-A3B-DFlash"
+num_speculative_tokens = 4
+
+[scenario.when]
+argv = ["--max-model-len", "2048"]
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "server_ready"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "benchmark_lite_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "\"method\":\"dflash\""
+
+[[scenario]]
+id = "vllm.speculative.dflash.qwen3_6.35b-a3b-nvfp4.server.benchmark-lite"
+summary = "Qwen3.6 35B-A3B NVFP4 DFlash speculative decoding benchmark-lite server smoke"
+tags = ["vllm", "speculative-decoding", "dflash", "qwen3.6", "nvfp4", "benchmark-lite", "server", "exploratory"]
+source_url = "https://huggingface.co/z-lab/Qwen3.6-35B-A3B-DFlash"
+
+[scenario.given]
+engine = "vllm"
+model = "RedHatAI/Qwen3.6-35B-A3B-NVFP4"
+tool = "qwen_server_smoke.benchmark-lite"
+
+[scenario.given.speculative_config]
+method = "dflash"
+model = "z-lab/Qwen3.6-35B-A3B-DFlash"
+num_speculative_tokens = 4
+
+[scenario.when]
+argv = ["--quantization", "modelopt_fp4", "--max-model-len", "2048"]
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "server_ready"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "benchmark_lite_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "\"method\":\"dflash\""
+
+[[scenario]]
+id = "vllm.speculative.mtp.qwen3_6.35b-a3b.server.benchmark-lite"
+summary = "Qwen3.6 35B-A3B MTP benchmark-lite server smoke"
+tags = ["vllm", "speculative-decoding", "mtp", "qwen3.6", "benchmark-lite", "server", "exploratory"]
+source_url = "https://docs.vllm.ai/en/latest/features/spec_decode.html"
+
+[scenario.given]
+engine = "vllm"
+model = "Qwen/Qwen3.6-35B-A3B"
+tool = "qwen_server_smoke.mtp"
+
+[scenario.when]
+argv = ["--max-model-len", "2048", "--benchmark-lite"]
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "server_ready"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "benchmark_lite_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "\"method\":\"mtp\""
+
+[[scenario]]
+id = "vllm.speculative.mtp.qwen3_6.35b-a3b-nvfp4.server.benchmark-lite"
+summary = "Qwen3.6 35B-A3B NVFP4 MTP benchmark-lite server smoke"
+tags = ["vllm", "speculative-decoding", "mtp", "qwen3.6", "nvfp4", "benchmark-lite", "server", "exploratory"]
+source_url = "https://docs.vllm.ai/en/latest/features/spec_decode.html"
+
+[scenario.given]
+engine = "vllm"
+model = "RedHatAI/Qwen3.6-35B-A3B-NVFP4"
+tool = "qwen_server_smoke.mtp"
+
+[scenario.when]
+argv = ["--quantization", "modelopt_fp4", "--max-model-len", "2048", "--benchmark-lite"]
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "server_ready"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "benchmark_lite_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "\"method\":\"mtp\""

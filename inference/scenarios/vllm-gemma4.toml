@@ -403,27 +403,6 @@ kind = "output.contains"
 value = "basic mode response included unexpected non-ASCII content"
 
 [[scenario]]
-id = "vllm.gemma4.31b.text.compiled"
-summary = "Gemma 4 31B text-only offline smoke without enforce_eager"
-tags = ["smoke", "gemma4", "compiled-probe", "exploratory"]
-
-[scenario.given]
-engine = "vllm"
-model = "google/gemma-4-31B-it"
-tool = "gemma4_text_smoke"
-
-[scenario.when]
-argv = ["--execution-mode", "compiled", "--max-model-len", "512"]
-
-[[scenario.then.assert]]
-kind = "exit_code.equals"
-value = 0
-
-[[scenario.then.assert]]
-kind = "stdout.contains"
-value = "basic_ok"
-
-[[scenario]]
 id = "vllm.gemma4.26b-a4b.text.compiled"
 summary = "Gemma 4 26B A4B text-only offline smoke without enforce_eager"
 tags = ["smoke", "gemma4", "compiled-probe", "exploratory"]

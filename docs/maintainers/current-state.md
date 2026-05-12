@@ -1,6 +1,17 @@
 # Current State
 
-Status as of 2026-05-11.
+Status as of 2026-05-12.
+
+The testing Hugging Face cache keep-set now prefers the smallest compatible
+fixtures that preserve each validation purpose. The Qwen3.6 base and NVFP4
+models stay as the sparse MoE lane, the Qwen3.6 EAGLE3 and DFlash draft models
+replace the older Llama/Qwen3.8B speculative fixtures, and
+`surogate/Qwen3.5-0.8B-FP8` replaces the larger Qwen3.6 FP8 MoE cache artifact
+as the retained FP8 safetensors probe. `google/gemma-4-E2B-it` and
+`google/gemma-4-26B-A4B-it` cover the retained Gemma 4 dense/PLE and sparse MoE
+lanes. The vLLM pooling and Lemonade GGUF pooling fixtures are not equivalent to
+ZeroEntropy's Transformers-only zembed/zerank checks, so those surfaces remain
+explicit exceptions rather than automatic swaps.
 
 ## Rebuild Revalidation Boundary
 
@@ -1162,21 +1173,24 @@ is `HF_HOME=<host HF cache root>`. Keep durable docs on model IDs and runtime
 `--model-path` bindings, not committed cache snapshot subpaths. Current local
 non-GGUF model IDs relevant to this branch are:
 
-- `google/gemma-4-31B-it`
+- `Dogacel/specdrift-qwen3.6-35b-a3b-eagle3`
+- `google/gemma-4-26B-A4B-it`
+- `google/gemma-4-E2B-it`
 - `Qwen/Qwen3.5-0.8B`
 - `Qwen/Qwen3.6-35B-A3B`
-- `Qwen/Qwen3.6-35B-A3B-FP8`
+- `RedHatAI/Qwen3.6-35B-A3B-NVFP4`
+- `surogate/Qwen3.5-0.8B-FP8`
+- `z-lab/Qwen3.6-35B-A3B-DFlash`
 - `jinaai/jina-reranker-v3`
+- `zeroentropy/zembed-1`
+- `zeroentropy/zerank-2`
 
-Use `Qwen/Qwen3.6-35B-A3B-FP8` as the main Qwen MoE/shared-expert target for
-this dev arc; it replaces the earlier Qwen3.5 122B-A10B testing and usage
-target. Use `Qwen/Qwen3.6-35B-A3B` as the unquantized no-AITER control before
-classifying FP8-specific failures. Both local Qwen3.6 configs advertise
-`Qwen3_5MoeForConditionalGeneration` / `qwen3_5_moe`, so the maintained
-Qwen3.5/GDN package carry is still relevant to this lane. The FP8 model
-remains a target and blocked-probe lane, not an accepted passing smoke lane,
-because the rebuilt native stack reproduces the expected Qwen3.6 FP8 probe
-failures recorded in this file.
+Use `Qwen/Qwen3.6-35B-A3B` as the main Qwen MoE/shared-expert target and as
+the unquantized no-AITER control. `RedHatAI/Qwen3.6-35B-A3B-NVFP4` is the
+retained ModelOpt NVFP4 probe for the same model family. Use
+`surogate/Qwen3.5-0.8B-FP8` as the small FP8 safetensors probe; it replaces the
+larger Qwen3.6 FP8 MoE cache artifact for local storage purposes and does not
+validate Qwen3.6 MoE recipe behavior.
 
 The `intfloat/multilingual-e5-small` vLLM pooling embedding scenario passed on
 2026-04-21 with `HF_HOME=<host HF cache root>`, ROCm `FLEX_ATTENTION`, and
@@ -1874,13 +1888,12 @@ The following smoke checks have already passed on the reference host:
     running GPU processes detected
   - the old non-GGUF checkpoint blocker is cleared by the `<host HF cache root>`
     cache move: use `Qwen/Qwen3.5-0.8B` for tiny Qwen3.5 hybrid/GDN smoke
-    coverage and `Qwen/Qwen3.6-35B-A3B-FP8` for the main Qwen
-    MoE/shared-expert lane
+    coverage and `Qwen/Qwen3.6-35B-A3B` for the main Qwen MoE/shared-expert
+    lane
   - tracked Qwen scenarios now exist:
     `vllm.qwen3_5.0_8b.text.basic`,
     `vllm.qwen3_5.0_8b.text.compiled`, and
-    blocked Qwen3.6 FP8 MoE kernel probes for the non-AITER backend-selection
-    path and the forced-AITER `module_quant` path
+    the retained small FP8 safetensors and Qwen3.6 NVFP4 quantization probes
   - `vllm.qwen3_5.0_8b.text.basic` failed on 2026-04-19 after model loading
     with a ROCm GPU memory-access fault. The failure is now localized past GDN
     warmup, GDN prefill/recurrent kernels, full-attention kernels,
@@ -1914,15 +1927,9 @@ The following smoke checks have already passed on the reference host:
     and the underlying `operation scheduled before its operands` diagnostic;
     because the run completed and generated the expected output, keep that as
     a non-fatal fallback marker for this lane
-  - Qwen3.6 FP8 MoE is not a passing smoke lane on gfx1151 yet. With
-    `VLLM_ROCM_USE_AITER=0` and `VLLM_ROCM_USE_AITER_MOE=0`, vLLM fails
-    during FP8 MoE backend selection with
-    `No FP8 MoE backend supports the deployment configuration`; the vLLM
-    Triton and batched Triton FP8 MoE gates currently advertise ROCm FP8
-    support for `gfx9`, not `gfx1151`. The rebuilt installed stack reproduced
-    this finding on 2026-04-20 in `22.765256` seconds against
-    `Qwen/Qwen3.6-35B-A3B-FP8`, with `config_quantization_config_present true`
-    and the same backend-selection error.
+  - The earlier Qwen3.6 FP8 MoE blocker remains useful historical evidence, but
+    that checkpoint is no longer the retained cache fixture. Use the small FP8
+    safetensors probe for ongoing local FP8 support checks.
   - The 2026-04-20 rebuilt-stack control for `Qwen/Qwen3.6-35B-A3B` passed
     unquantized with AITER disabled, `--max-num-batched-tokens 32`, and
     `--gpu-memory-utilization 0.9`; the tracked scenario completed in
@@ -1968,17 +1975,11 @@ The following smoke checks have already passed on the reference host:
     the installed OPUS header still has only the gfx9 MFMA adaptor and gfx1250
     WMMA adaptor choices for this code path. Treat a gfx11 OPUS FP8 adaptor as
     new kernel feature work unless upstream lands it.
-  - Task 4 quantization-lane coverage now includes three additional tracked
-    exploratory probes under `inference/scenarios/vllm-qwen.toml`:
-    `vllm.qwen3.0_6b-fp8-kv.text.fp8-dense-quark`,
-    `vllm.qwen2_5.0_5b-gptq-int4.text.basic`, and
-    `vllm.qwen3_5.2b-nvfp4.text.unsupported-rocm-gfx1151`.
-    The dense FP8 lane uses an AMD Quark-exported Qwen3 FP8 checkpoint with
-    `quantization="quark"` and `kv_cache_dtype="fp8"`. The GPTQ-Int4 lane uses
-    the small official Qwen2.5 GPTQ-Int4 checkpoint with `dtype="float16"`,
-    matching vLLM's GPTQ activation dtype contract. Both are expected runnable
-    probes, but not promoted smokes until they pass on the reference host.
-  - The AxionML NVFP4 probe is expected to fail on ROCm/gfx1151 with
+  - Quantization-lane coverage now includes the retained small FP8 safetensors
+    probe `vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors-blocked` and the retained
+    Qwen3.6 NVFP4 probe
+    `vllm.qwen3_6.35b-a3b-nvfp4.text.unsupported-rocm-gfx1151`.
+  - The RedHatAI Qwen3.6 NVFP4 probe is expected to fail on ROCm/gfx1151 with
     `modelopt_fp4 quantization is currently not supported in rocm.` The
     checkpoint is ModelOpt NVFP4, so the scenario uses `modelopt_fp4` and fails
     in the local vLLM ROCm platform quantization gate before Petit NVFP4 backend
