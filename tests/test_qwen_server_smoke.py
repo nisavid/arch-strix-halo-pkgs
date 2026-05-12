@@ -62,6 +62,20 @@ def test_qwen_server_smoke_carries_quantization_override():
     assert command_value(command, "--quantization") == "modelopt_fp4"
 
 
+def test_qwen_server_smoke_exits_for_policy_blocked_scenario():
+    result = run_helper(
+        "Qwen/Qwen3.6-35B-A3B",
+        "--mode",
+        "benchmark-lite",
+        "--blocked-reason",
+        "scenario blocked pending validation",
+    )
+
+    assert result.returncode == 1
+    assert "scenario blocked pending validation" in result.stderr
+    assert not result.stdout
+
+
 def test_qwen_server_smoke_mode_specific_server_args():
     disabled_command = dry_run("reasoning-disabled")["server_command"]
     mtp_command = dry_run("mtp")["server_command"]

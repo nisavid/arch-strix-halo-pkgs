@@ -422,14 +422,20 @@ def test_speculative_decoding_scenarios_record_upstream_evidence():
         "benchmark-lite",
         "server",
         "exploratory",
+        "blocked",
     }
     assert dflash.definition["source_url"] == (
         "https://huggingface.co/z-lab/Qwen3.6-35B-A3B-DFlash"
     )
     for expected in (
-        {"kind": "exit_code.equals", "value": 0},
-        {"kind": "stdout.contains", "value": "server_ready"},
-        {"kind": "stdout.contains", "value": "benchmark_lite_ok"},
+        {"kind": "exit_code.equals", "value": 1},
+        {
+            "kind": "output.contains",
+            "value": (
+                "DFlash benchmark-lite scenario is blocked pending "
+                "reference-host validation of the package runtime path."
+            ),
+        },
     ):
         assert expected in dflash.definition["then"]["assert"]
 
@@ -445,6 +451,16 @@ def test_speculative_decoding_scenarios_record_upstream_evidence():
         "exploratory",
     }
     assert mtp.definition["given"]["tool"] == "qwen_server_smoke.mtp"
+    assert mtp.definition["when"]["argv"] == ["--max-model-len", "2048"]
+    assert {"kind": "stdout.contains", "value": "mtp_ok"} in mtp.definition["then"][
+        "assert"
+    ]
+    assert mtp_nvfp4.definition["when"]["argv"] == [
+        "--quantization",
+        "modelopt_fp4",
+        "--max-model-len",
+        "2048",
+    ]
 
     for scenario in (eagle3_nvfp4, dflash_nvfp4, mtp_nvfp4):
         assert scenario.model == "RedHatAI/Qwen3.6-35B-A3B-NVFP4"

@@ -74,6 +74,13 @@ def parse_args() -> argparse.Namespace:
         help="optional vLLM server quantization method override, such as modelopt_fp4",
     )
     parser.add_argument(
+        "--blocked-reason",
+        help=(
+            "exit before launching vLLM and print this reason; use for scenario "
+            "contracts that are intentionally blocked by current package policy"
+        ),
+    )
+    parser.add_argument(
         "--max-model-len",
         type=int,
         default=None,
@@ -692,6 +699,9 @@ def run_smoke(args: argparse.Namespace) -> None:
 
 def main() -> None:
     args = parse_args()
+    if args.blocked_reason and not args.dry_run:
+        print(args.blocked_reason, file=sys.stderr)
+        raise SystemExit(1)
     plan = build_plan(args)
     if args.dry_run:
         json.dump(plan, sys.stdout, indent=2, sort_keys=True)
