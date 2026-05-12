@@ -153,7 +153,7 @@ def validate_rerank_fixture(scores: list[float]) -> None:
     )
     if ordered_indices != [0, 1, 2]:
         raise AssertionError(
-            "rerank fixture expected Paris, Berlin, unrelated ordering: "
+            "rerank fixture expected descending score ordering [0, 1, 2]: "
             f"{ordered_indices!r}"
         )
 
