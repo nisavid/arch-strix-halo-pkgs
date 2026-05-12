@@ -461,6 +461,8 @@ def test_vllm_adapter_builds_pooling_smoke_command(tmp_path: Path):
                         "FLEX_ATTENTION",
                         "--max-model-len",
                         "256",
+                        "--fixture",
+                        "zeroentropy",
                     ]
                 },
             }
@@ -480,6 +482,8 @@ def test_vllm_adapter_builds_pooling_smoke_command(tmp_path: Path):
         "FLEX_ATTENTION",
         "--max-model-len",
         "256",
+        "--fixture",
+        "zeroentropy",
     ]
     assert plan.server_log_path is None
 
