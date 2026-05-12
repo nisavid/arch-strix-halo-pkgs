@@ -55,6 +55,13 @@ def test_qwen_server_smoke_dry_run_uses_compact_json_and_defaults():
     assert plan["startup_timeout"] == 420.0
 
 
+def test_qwen_server_smoke_carries_quantization_override():
+    plan = dry_run("benchmark-lite", "--quantization", "modelopt_fp4")
+    command = plan["server_command"]
+
+    assert command_value(command, "--quantization") == "modelopt_fp4"
+
+
 def test_qwen_server_smoke_mode_specific_server_args():
     disabled_command = dry_run("reasoning-disabled")["server_command"]
     mtp_command = dry_run("mtp")["server_command"]
