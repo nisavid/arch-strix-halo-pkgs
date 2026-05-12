@@ -231,10 +231,6 @@ def run_embeddings(args: argparse.Namespace, model: str) -> None:
     print("embeddings_ok")
 
 
-def _format_rerank_inputs(tokenizer, query: str, documents: list[str]) -> list[str]:
-    return format_zerank_inputs(tokenizer, query, documents)
-
-
 def format_zerank_inputs(tokenizer, query: str, documents: list[str]) -> list[str]:
     prompts: list[str] = []
     for document in documents:
@@ -267,7 +263,7 @@ def run_rerank(args: argparse.Namespace, model: str) -> None:
         local_files_only=not args.allow_download,
     )
     yes_token_id = tokenizer.encode("Yes", add_special_tokens=False)[0]
-    prompts = _format_rerank_inputs(tokenizer, RERANK_QUERY, RERANK_DOCUMENTS)
+    prompts = format_zerank_inputs(tokenizer, RERANK_QUERY, RERANK_DOCUMENTS)
     inputs = tokenizer(
         prompts,
         padding=True,

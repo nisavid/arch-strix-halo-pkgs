@@ -179,17 +179,15 @@ def _llm_kwargs(args: argparse.Namespace, model: str) -> dict[str, Any]:
         kwargs["convert"] = "embed"
     if args.mode == "rerank":
         kwargs["convert"] = "classify"
-        kwargs["pooler_config"] = {"task": "classify"}
-    if args.mode == "rerank" and args.fixture == "zeroentropy":
-        kwargs["hf_overrides"] = {
-            "classifier_from_token": ["Yes"],
-            "method": "no_post_processing",
-            "num_labels": 1,
-        }
-        kwargs["pooler_config"] = {
-            "task": "classify",
-            "logit_sigma": 5.0,
-        }
+        pooler_config: dict[str, object] = {"task": "classify"}
+        if args.fixture == "zeroentropy":
+            kwargs["hf_overrides"] = {
+                "classifier_from_token": ["Yes"],
+                "method": "no_post_processing",
+                "num_labels": 1,
+            }
+            pooler_config["logit_sigma"] = 5.0
+        kwargs["pooler_config"] = pooler_config
     if args.max_num_batched_tokens is not None:
         kwargs["max_num_batched_tokens"] = args.max_num_batched_tokens
     return kwargs

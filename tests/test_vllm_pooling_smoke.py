@@ -17,12 +17,15 @@ if str(TOOLS_DIR) not in sys.path:
 from vllm_pooling_smoke import (
     RERANK_DOCUMENTS,
     RERANK_QUERY,
+    ZEROENTROPY_EMBEDDING_DOCUMENTS,
+    ZEROENTROPY_EMBEDDING_QUERY,
     ZEROENTROPY_RERANK_DOCUMENTS,
     ZEROENTROPY_RERANK_QUERY,
     embedding_vector,
     _llm_kwargs,
     score_value,
     run_rerank,
+    run_zeroentropy_embeddings,
     run_zeroentropy_rerank,
     validate_embedding_fixture,
     validate_rerank_fixture,
@@ -144,6 +147,48 @@ def test_run_rerank_scores_pairs_with_classification_pooling(monkeypatch):
             {"use_tqdm": False, "pooling_params": pooling_params},
         )
     ]
+
+
+def test_run_zeroentropy_embeddings_formats_query_and_documents(capsys):
+    outputs = [
+        SimpleNamespace(outputs=SimpleNamespace(embedding=[1.0, 0.0, 0.0])),
+        SimpleNamespace(outputs=SimpleNamespace(embedding=[0.9, 0.1, 0.0])),
+        SimpleNamespace(outputs=SimpleNamespace(embedding=[0.0, 1.0, 0.0])),
+    ]
+
+    class FakeLLM:
+        def __init__(self) -> None:
+            self.embed_calls = []
+
+        def embed(self, prompts, **kwargs):
+            self.embed_calls.append((prompts, kwargs))
+            return outputs
+
+    llm = FakeLLM()
+
+    run_zeroentropy_embeddings(llm)
+
+    assert llm.embed_calls == [
+        (
+            [
+                "<|im_start|>system\n"
+                "query<|im_end|>\n"
+                "<|im_start|>user\n"
+                f"{ZEROENTROPY_EMBEDDING_QUERY}<|im_end|>\n",
+                *[
+                    "<|im_start|>system\n"
+                    "document<|im_end|>\n"
+                    "<|im_start|>user\n"
+                    f"{document}<|im_end|>\n"
+                    for document in ZEROENTROPY_EMBEDDING_DOCUMENTS
+                ],
+            ],
+            {"use_tqdm": False},
+        )
+    ]
+    output = capsys.readouterr().out
+    assert "embedding_ranking_ok" in output
+    assert "embeddings_ok" in output
 
 
 def test_run_zeroentropy_rerank_classifies_formatted_prompts(monkeypatch):
