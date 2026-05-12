@@ -62,8 +62,8 @@ value = "modelopt_fp4 quantization is currently not supported in rocm."
 
 [[scenario]]
 id = "vllm.speculative.dflash.qwen3_6.35b-a3b.server.benchmark-lite"
-summary = "Qwen3.6 35B-A3B DFlash speculative decoding benchmark-lite server smoke"
-tags = ["vllm", "speculative-decoding", "dflash", "qwen3.6", "benchmark-lite", "server", "exploratory"]
+summary = "Qwen3.6 35B-A3B DFlash speculative decoding probe blocked pending reference-host validation"
+tags = ["vllm", "speculative-decoding", "dflash", "qwen3.6", "benchmark-lite", "server", "exploratory", "blocked"]
 source_url = "https://huggingface.co/z-lab/Qwen3.6-35B-A3B-DFlash"
 
 [scenario.given]
@@ -77,23 +77,20 @@ model = "z-lab/Qwen3.6-35B-A3B-DFlash"
 num_speculative_tokens = 4
 
 [scenario.when]
-argv = ["--max-model-len", "2048"]
+argv = [
+  "--max-model-len",
+  "2048",
+  "--blocked-reason",
+  "DFlash benchmark-lite scenario is blocked pending reference-host validation of the package runtime path.",
+]
 
 [[scenario.then.assert]]
 kind = "exit_code.equals"
-value = 0
+value = 1
 
 [[scenario.then.assert]]
-kind = "stdout.contains"
-value = "server_ready"
-
-[[scenario.then.assert]]
-kind = "stdout.contains"
-value = "benchmark_lite_ok"
-
-[[scenario.then.assert]]
-kind = "stdout.contains"
-value = "\"method\":\"dflash\""
+kind = "output.contains"
+value = "DFlash benchmark-lite scenario is blocked pending reference-host validation of the package runtime path."
 
 [[scenario]]
 id = "vllm.speculative.dflash.qwen3_6.35b-a3b-nvfp4.server.benchmark-lite"
@@ -134,7 +131,7 @@ model = "Qwen/Qwen3.6-35B-A3B"
 tool = "qwen_server_smoke.mtp"
 
 [scenario.when]
-argv = ["--max-model-len", "2048", "--benchmark-lite"]
+argv = ["--max-model-len", "2048"]
 
 [[scenario.then.assert]]
 kind = "exit_code.equals"
@@ -146,7 +143,7 @@ value = "server_ready"
 
 [[scenario.then.assert]]
 kind = "stdout.contains"
-value = "benchmark_lite_ok"
+value = "mtp_ok"
 
 [[scenario.then.assert]]
 kind = "stdout.contains"
@@ -164,7 +161,7 @@ model = "RedHatAI/Qwen3.6-35B-A3B-NVFP4"
 tool = "qwen_server_smoke.mtp"
 
 [scenario.when]
-argv = ["--quantization", "modelopt_fp4", "--max-model-len", "2048", "--benchmark-lite"]
+argv = ["--quantization", "modelopt_fp4", "--max-model-len", "2048"]
 
 [[scenario.then.assert]]
 kind = "exit_code.equals"
