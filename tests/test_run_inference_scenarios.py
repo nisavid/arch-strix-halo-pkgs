@@ -430,16 +430,16 @@ def test_dry_run_includes_resolved_pooling_smoke_command(tmp_path: Path):
     (scenario_dir / "vllm-pooling.toml").write_text(
         """
 [[scenario]]
-id = "vllm.pooling.jina-reranker-v3.rerank"
-summary = "Jina reranker pooling smoke"
+id = "vllm.pooling.zerank-2.rerank"
+summary = "ZeroEntropy reranker pooling smoke"
 
 [scenario.given]
 engine = "vllm"
-model = "jinaai/jina-reranker-v3"
+model = "zeroentropy/zerank-2"
 tool = "vllm_pooling_smoke.rerank"
 
 [scenario.when]
-argv = ["--attention-backend", "FLEX_ATTENTION", "--max-model-len", "512"]
+argv = ["--attention-backend", "FLEX_ATTENTION", "--max-model-len", "512", "--fixture", "zeroentropy"]
 """,
         encoding="utf-8",
     )
@@ -449,24 +449,26 @@ argv = ["--attention-backend", "FLEX_ATTENTION", "--max-model-len", "512"]
         str(scenario_dir),
         "--dry-run",
         "--scenario",
-        "vllm.pooling.jina-reranker-v3.rerank",
+        "vllm.pooling.zerank-2.rerank",
         "--model-path",
-        "jinaai/jina-reranker-v3=/models/jina",
+        "zeroentropy/zerank-2=/models/zerank",
     )
 
     assert result.returncode == 0
     payload = json.loads(result.stdout)
-    assert payload["selected_ids"] == ["vllm.pooling.jina-reranker-v3.rerank"]
+    assert payload["selected_ids"] == ["vllm.pooling.zerank-2.rerank"]
     assert payload["planned"][0]["command"] == [
         sys.executable,
         str(REPO_ROOT / "tools/vllm_pooling_smoke.py"),
-        "/models/jina",
+        "/models/zerank",
         "--mode",
         "rerank",
         "--attention-backend",
         "FLEX_ATTENTION",
         "--max-model-len",
         "512",
+        "--fixture",
+        "zeroentropy",
     ]
 
 

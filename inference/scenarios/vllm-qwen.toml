@@ -528,6 +528,48 @@ kind = "output.contains"
 value = "fp8"
 
 [[scenario]]
+id = "vllm.qwen3_5.4b-gptq-int4.text.basic"
+summary = "Qwen3.5 4B GPTQ Int4 safetensors quantization probe"
+tags = ["qwen", "qwen3.5", "gptq", "int4", "safetensors", "quantization-probe", "exploratory"]
+source_url = "https://huggingface.co/RafaDom/Qwen3.5-4B-Claude-4.6-Opus-Reasoning-Distilled-v2-GPTQ-Int4-HQ"
+
+[scenario.given]
+engine = "vllm"
+model = "RafaDom/Qwen3.5-4B-Claude-4.6-Opus-Reasoning-Distilled-v2-GPTQ-Int4-HQ"
+tool = "qwen_text_smoke"
+
+[scenario.when]
+argv = ["--max-model-len", "128"]
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "config_model_type qwen3_5_text"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "config_quantization_config_present true"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "'quant_method': 'gptq'"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "llm_init_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "generation_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "basic_ok"
+
+[[scenario]]
 id = "vllm.qwen3_6.35b-a3b-nvfp4.text.unsupported-rocm-gfx1151"
 summary = "Qwen3.6 35B-A3B ModelOpt NVFP4 probe blocked by ROCm vLLM quantization support"
 tags = ["qwen", "qwen3.6", "nvfp4", "modelopt", "quantization-probe", "exploratory", "blocked"]
