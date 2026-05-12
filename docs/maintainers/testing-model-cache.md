@@ -35,26 +35,33 @@ Hugging Face cache when they are present there. Copy, rather than move, other
 Hugging Face entries that this repo uses so end-user workflows keep their
 existing cache entries.
 
-Current repo-owned scenario model IDs include:
+Current kept model IDs include:
 
-- `AxionML/Qwen3.5-2B-NVFP4`
-- `EliovpAI/Qwen3-0.6B-FP8-KV`
-- `Qwen/Qwen2.5-0.5B-Instruct-GPTQ-Int4`
+- `AXERA-TECH/Qwen3-4B-GPTQ-Int4`
+- `Dogacel/specdrift-qwen3.6-35b-a3b-eagle3`
 - `Qwen/Qwen3.5-0.8B`
-- `Qwen/Qwen3.5-397B-A17B`
-- `Qwen/Qwen3.5-397B-A17B-FP8`
 - `Qwen/Qwen3.6-35B-A3B`
-- `Qwen/Qwen3.6-35B-A3B-FP8`
-- `RedHatAI/Llama-3.1-8B-Instruct-speculator.eagle3`
+- `RedHatAI/Qwen3.6-35B-A3B-NVFP4`
 - `google/gemma-4-26B-A4B-it`
-- `google/gemma-4-31B-it`
 - `google/gemma-4-E2B-it`
-- `intfloat/multilingual-e5-small`
-- `jinaai/jina-reranker-v3`
-- `meta-llama/Llama-3.1-8B-Instruct`
-- `nm-testing/dflash-qwen3-8b-speculators`
+- `surogate/Qwen3.5-0.8B-FP8`
+- `z-lab/Qwen3.6-35B-A3B-DFlash`
 - `zeroentropy/zembed-1`
 - `zeroentropy/zerank-2`
+
+Keep the AXERA Int4 repository as an operator-selected cache artifact, not as a
+drop-in replacement for the older vLLM GPTQ safetensors smoke. Its published
+files are AXERA runtime artifacts rather than an ordinary vLLM GPTQ checkpoint.
+Add a separate runnable vLLM GPTQ scenario only after choosing a compatible
+checkpoint.
+
+The vLLM pooling and Lemonade GGUF pooling surfaces intentionally do not use the
+ZeroEntropy repositories. `intfloat/multilingual-e5-small` exercises vLLM
+embedding pooling and FlexAttention behavior, `jinaai/jina-reranker-v3`
+exercises vLLM score/rerank behavior with the Jina ranking head, and the
+Lemonade pooling scenarios exercise registered GGUF model paths. Replacing
+those with `zeroentropy/zembed-1` or `zeroentropy/zerank-2` would change the
+runtime interface under test.
 
 Update this list when tracked scenarios add or remove model IDs. Keep model
 bindings in docs as model IDs plus placeholder cache roots, not concrete

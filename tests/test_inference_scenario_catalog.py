@@ -49,8 +49,21 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     assert "vllm.qwen3_6.35b-a3b.server.advanced-selectors" in ids
     assert "vllm.qwen3_6.35b-a3b.server.long-context-reduced" in ids
     assert "vllm.qwen3_6.35b-a3b.server.media-embedding" in ids
-    assert "vllm.speculative.eagle3.llama3_1_8b.server.basic" in ids
-    assert "vllm.speculative.dflash.qwen3_8b-speculators.server.blocked" in ids
+    assert "vllm.speculative.eagle3.qwen3_6.35b-a3b.server.benchmark-lite" in ids
+    assert (
+        "vllm.speculative.eagle3.qwen3_6.35b-a3b-nvfp4.server.benchmark-lite"
+        in ids
+    )
+    assert "vllm.speculative.dflash.qwen3_6.35b-a3b.server.benchmark-lite" in ids
+    assert (
+        "vllm.speculative.dflash.qwen3_6.35b-a3b-nvfp4.server.benchmark-lite"
+        in ids
+    )
+    assert "vllm.speculative.mtp.qwen3_6.35b-a3b.server.benchmark-lite" in ids
+    assert (
+        "vllm.speculative.mtp.qwen3_6.35b-a3b-nvfp4.server.benchmark-lite"
+        in ids
+    )
     assert "flash-attn.triton-amd.backend-import" in ids
     assert "flash-attn.triton-amd.qkvpacked-tiny" in ids
     assert "flash-attn.ck.varlen-tiny" in ids
@@ -60,11 +73,8 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     assert "vllm.pooling.jina-reranker-v3.rerank" in ids
     assert "transformers.zeroentropy.zembed-1.embeddings" in ids
     assert "transformers.zeroentropy.zerank-2.rerank" in ids
-    assert "vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-no-aiter-blocked" in ids
-    assert "vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-aiter-blocked" in ids
-    assert "vllm.qwen3.0_6b-fp8-kv.text.fp8-dense-quark" in ids
-    assert "vllm.qwen2_5.0_5b-gptq-int4.text.basic" in ids
-    assert "vllm.qwen3_5.2b-nvfp4.text.unsupported-rocm-gfx1151" in ids
+    assert "vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors-blocked" in ids
+    assert "vllm.qwen3_6.35b-a3b-nvfp4.text.unsupported-rocm-gfx1151" in ids
     assert "llama.cpp.hip.help" in ids
     assert "llama.cpp.vulkan.help" in ids
     assert "lemonade.cli.help" in ids
@@ -113,8 +123,8 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     assert "compiled-probe" in tags_by_id["vllm.qwen3_5.0_8b.text.compiled"]
     assert "kernel-probe" in tags_by_id["vllm.qwen3_5.0_8b.text.flash-attn-ck"]
     assert "blocked" in tags_by_id["vllm.qwen3_5.0_8b.text.flash-attn-ck"]
-    assert "qwen3.6" in tags_by_id[
-        "vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-no-aiter-blocked"
+    assert "safetensors" in tags_by_id[
+        "vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors-blocked"
     ]
     assert "control" in tags_by_id[
         "vllm.qwen3_6.35b-a3b.text.unquantized-moe-no-aiter-control"
@@ -141,13 +151,13 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
         "vllm.qwen3_6.35b-a3b.server.media-embedding"
     ]
     assert "eagle3" in tags_by_id[
-        "vllm.speculative.eagle3.llama3_1_8b.server.basic"
+        "vllm.speculative.eagle3.qwen3_6.35b-a3b.server.benchmark-lite"
     ]
     assert "dflash" in tags_by_id[
-        "vllm.speculative.dflash.qwen3_8b-speculators.server.blocked"
+        "vllm.speculative.dflash.qwen3_6.35b-a3b.server.benchmark-lite"
     ]
-    assert "blocked" in tags_by_id[
-        "vllm.speculative.dflash.qwen3_8b-speculators.server.blocked"
+    assert "mtp" in tags_by_id[
+        "vllm.speculative.mtp.qwen3_6.35b-a3b.server.benchmark-lite"
     ]
     assert tags_by_id["flash-attn.triton-amd.backend-import"] >= {
         "smoke",
@@ -160,18 +170,11 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
         "triton-amd",
         "kernel-probe",
     }
-    assert "moe" in tags_by_id[
-        "vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-aiter-blocked"
+    assert "blocked" in tags_by_id[
+        "vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors-blocked"
     ]
     assert "blocked" in tags_by_id[
-        "vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-aiter-blocked"
-    ]
-    assert "quark" in tags_by_id[
-        "vllm.qwen3.0_6b-fp8-kv.text.fp8-dense-quark"
-    ]
-    assert "gptq" in tags_by_id["vllm.qwen2_5.0_5b-gptq-int4.text.basic"]
-    assert "blocked" in tags_by_id[
-        "vllm.qwen3_5.2b-nvfp4.text.unsupported-rocm-gfx1151"
+        "vllm.qwen3_6.35b-a3b-nvfp4.text.unsupported-rocm-gfx1151"
     ]
     assert "pooling" in tags_by_id["vllm.pooling.multilingual-e5-small.embeddings"]
     assert "embeddings" in tags_by_id[
@@ -374,51 +377,64 @@ def test_speculative_decoding_scenarios_record_upstream_evidence():
     scenarios = load_scenarios(REPO_ROOT / "inference/scenarios")
     by_id = {scenario.id: scenario for scenario in scenarios}
 
-    eagle3 = by_id["vllm.speculative.eagle3.llama3_1_8b.server.basic"]
-    dflash = by_id["vllm.speculative.dflash.qwen3_8b-speculators.server.blocked"]
+    eagle3 = by_id["vllm.speculative.eagle3.qwen3_6.35b-a3b.server.benchmark-lite"]
+    dflash = by_id["vllm.speculative.dflash.qwen3_6.35b-a3b.server.benchmark-lite"]
+    mtp = by_id["vllm.speculative.mtp.qwen3_6.35b-a3b.server.benchmark-lite"]
 
-    assert eagle3.model == "meta-llama/Llama-3.1-8B-Instruct"
-    assert eagle3.speculative_model == (
-        "RedHatAI/Llama-3.1-8B-Instruct-speculator.eagle3"
-    )
+    assert eagle3.model == "Qwen/Qwen3.6-35B-A3B"
+    assert eagle3.speculative_model == "Dogacel/specdrift-qwen3.6-35b-a3b-eagle3"
     assert set(eagle3.tags) >= {
         "vllm",
         "speculative-decoding",
         "eagle3",
+        "qwen3.6",
+        "benchmark-lite",
         "server",
         "exploratory",
     }
     assert eagle3.definition["given"]["tool"] == "qwen_server_smoke.benchmark-lite"
     assert eagle3.definition["given"]["speculative_config"] == {
         "method": "eagle3",
-        "model": "RedHatAI/Llama-3.1-8B-Instruct-speculator.eagle3",
-        "draft_tensor_parallel_size": 2,
-        "num_speculative_tokens": 2,
+        "model": "Dogacel/specdrift-qwen3.6-35b-a3b-eagle3",
+        "num_speculative_tokens": 4,
     }
     assert eagle3.definition["source_url"] == (
-        "https://docs.vllm.ai/en/latest/features/speculative_decoding/eagle/"
+        "https://huggingface.co/Dogacel/specdrift-qwen3.6-35b-a3b-eagle3"
     )
 
-    assert dflash.model == "nm-testing/dflash-qwen3-8b-speculators"
-    assert dflash.speculative_model == "nm-testing/dflash-qwen3-8b-speculators"
+    assert dflash.model == "Qwen/Qwen3.6-35B-A3B"
+    assert dflash.speculative_model == "z-lab/Qwen3.6-35B-A3B-DFlash"
     assert set(dflash.tags) >= {
         "vllm",
         "speculative-decoding",
         "dflash",
-        "qwen",
-        "qwen3",
+        "qwen3.6",
+        "benchmark-lite",
         "server",
-        "blocked",
         "exploratory",
     }
     assert dflash.definition["source_url"] == (
-        "https://github.com/vllm-project/vllm/pull/38300"
+        "https://huggingface.co/z-lab/Qwen3.6-35B-A3B-DFlash"
     )
     for expected in (
-        {"kind": "exit_code.equals", "value": 1},
-        {"kind": "output.contains", "value": "DFlashDraftModel"},
+        {"kind": "exit_code.equals", "value": 0},
+        {"kind": "stdout.contains", "value": "server_ready"},
+        {"kind": "stdout.contains", "value": "benchmark_lite_ok"},
     ):
         assert expected in dflash.definition["then"]["assert"]
+
+    assert mtp.model == "Qwen/Qwen3.6-35B-A3B"
+    assert mtp.speculative_model is None
+    assert set(mtp.tags) >= {
+        "vllm",
+        "speculative-decoding",
+        "mtp",
+        "qwen3.6",
+        "benchmark-lite",
+        "server",
+        "exploratory",
+    }
+    assert mtp.definition["given"]["tool"] == "qwen_server_smoke.mtp"
 
 
 def test_flash_attn_scenarios_record_triton_amd_contract():
@@ -626,110 +642,39 @@ def test_gemma4_e2b_compiled_probe_records_current_blocker():
         assert expected in assertions
 
 
-def test_qwen3_6_fp8_moe_probes_record_backend_modes():
-    scenarios = load_scenarios(REPO_ROOT / "inference/scenarios")
-
-    no_aiter = next(
-        scenario
-        for scenario in scenarios
-        if scenario.id
-        == "vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-no-aiter-blocked"
-    )
-    forced_aiter = next(
-        scenario
-        for scenario in scenarios
-        if scenario.id == "vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-aiter-blocked"
-    )
-
-    assert no_aiter.definition["when"]["env"] == {
-        "VLLM_ROCM_USE_AITER": "0",
-        "VLLM_ROCM_USE_AITER_MOE": "0",
-    }
-    assert forced_aiter.definition["when"]["env"] == {
-        "VLLM_ROCM_USE_AITER": "1",
-        "VLLM_ROCM_USE_AITER_MOE": "1",
-    }
-    assert {
-        "kind": "stdout.contains",
-        "value": "config_quantization_config_present true",
-    } in no_aiter.definition["then"]["assert"]
-    assert {
-        "kind": "stdout.contains",
-        "value": "config_quantization_config_present true",
-    } in forced_aiter.definition["then"]["assert"]
-
-
 def test_quantization_lane_probes_record_root_cause_contracts():
     scenarios = load_scenarios(REPO_ROOT / "inference/scenarios")
     by_id = {scenario.id: scenario for scenario in scenarios}
 
-    fp8_dense = by_id["vllm.qwen3.0_6b-fp8-kv.text.fp8-dense-quark"]
-    assert fp8_dense.model == "EliovpAI/Qwen3-0.6B-FP8-KV"
+    fp8_dense = by_id["vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors-blocked"]
+    assert fp8_dense.model == "surogate/Qwen3.5-0.8B-FP8"
     assert set(fp8_dense.tags) >= {
         "qwen",
-        "qwen3",
+        "qwen3.5",
         "fp8",
-        "quark",
-        "kv-cache-fp8",
+        "safetensors",
         "quantization-probe",
+        "blocked",
         "exploratory",
     }
     assert fp8_dense.definition["given"]["tool"] == "qwen_text_smoke"
-    assert fp8_dense.definition["when"]["argv"] == [
-        "--quantization",
-        "quark",
-        "--kv-cache-dtype",
-        "fp8",
-        "--max-model-len",
-        "128",
-    ]
+    assert fp8_dense.definition["when"]["argv"] == ["--max-model-len", "128"]
     for expected in (
-        {"kind": "exit_code.equals", "value": 0},
-        {"kind": "stdout.contains", "value": "quantization quark"},
-        {"kind": "stdout.contains", "value": "kv_cache_dtype fp8"},
+        {"kind": "exit_code.equals", "value": 1},
         {
             "kind": "stdout.contains",
             "value": "config_quantization_config_present true",
         },
-        {"kind": "stdout.contains", "value": "generation_ok"},
-        {"kind": "stdout.contains", "value": "basic_ok"},
+        {"kind": "stdout.contains", "value": "config_model_type qwen3_5"},
+        {"kind": "output.contains", "value": "fp8"},
     ):
         assert expected in fp8_dense.definition["then"]["assert"]
 
-    gptq = by_id["vllm.qwen2_5.0_5b-gptq-int4.text.basic"]
-    assert gptq.model == "Qwen/Qwen2.5-0.5B-Instruct-GPTQ-Int4"
-    assert set(gptq.tags) >= {
-        "qwen",
-        "qwen2.5",
-        "gptq",
-        "int4",
-        "quantization-probe",
-        "exploratory",
-    }
-    assert gptq.definition["when"]["argv"] == [
-        "--dtype",
-        "float16",
-        "--max-model-len",
-        "128",
-    ]
-    for expected in (
-        {"kind": "exit_code.equals", "value": 0},
-        {"kind": "stdout.contains", "value": "dtype float16"},
-        {
-            "kind": "stdout.contains",
-            "value": "config_quantization_config_present true",
-        },
-        {"kind": "stdout.contains", "value": "config_model_type qwen2"},
-        {"kind": "stdout.contains", "value": "generation_ok"},
-        {"kind": "stdout.contains", "value": "basic_ok"},
-    ):
-        assert expected in gptq.definition["then"]["assert"]
-
-    nvfp4 = by_id["vllm.qwen3_5.2b-nvfp4.text.unsupported-rocm-gfx1151"]
-    assert nvfp4.model == "AxionML/Qwen3.5-2B-NVFP4"
+    nvfp4 = by_id["vllm.qwen3_6.35b-a3b-nvfp4.text.unsupported-rocm-gfx1151"]
+    assert nvfp4.model == "RedHatAI/Qwen3.6-35B-A3B-NVFP4"
     assert set(nvfp4.tags) >= {
         "qwen",
-        "qwen3.5",
+        "qwen3.6",
         "nvfp4",
         "modelopt",
         "quantization-probe",

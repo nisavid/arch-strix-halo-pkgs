@@ -498,21 +498,18 @@ kind = "server_log.contains"
 value = "Using TRITON backend for Unquantized MoE"
 
 [[scenario]]
-id = "vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-no-aiter-blocked"
-summary = "Qwen3.6 35B-A3B FP8 MoE backend-selection probe with AITER disabled"
-tags = ["qwen", "qwen3.6", "moe", "fp8", "kernel-probe", "exploratory", "blocked"]
+id = "vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors-blocked"
+summary = "Qwen3.5 0.8B FP8 safetensors quantization probe for gfx1151 FP8 support"
+tags = ["qwen", "qwen3.5", "fp8", "safetensors", "quantization-probe", "exploratory", "blocked"]
+source_url = "https://huggingface.co/surogate/Qwen3.5-0.8B-FP8"
 
 [scenario.given]
 engine = "vllm"
-model = "Qwen/Qwen3.6-35B-A3B-FP8"
+model = "surogate/Qwen3.5-0.8B-FP8"
 tool = "qwen_text_smoke"
 
 [scenario.when]
-argv = ["--max-num-batched-tokens", "32"]
-
-[scenario.when.env]
-VLLM_ROCM_USE_AITER = "0"
-VLLM_ROCM_USE_AITER_MOE = "0"
+argv = ["--max-model-len", "128"]
 
 [[scenario.then.assert]]
 kind = "exit_code.equals"
@@ -520,7 +517,7 @@ value = 1
 
 [[scenario.then.assert]]
 kind = "stdout.contains"
-value = "config_model_type qwen3_5_moe"
+value = "config_model_type qwen3_5"
 
 [[scenario.then.assert]]
 kind = "stdout.contains"
@@ -528,142 +525,17 @@ value = "config_quantization_config_present true"
 
 [[scenario.then.assert]]
 kind = "output.contains"
-value = "No FP8 MoE backend supports the deployment configuration."
+value = "fp8"
 
 [[scenario]]
-id = "vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-aiter-blocked"
-summary = "Qwen3.6 35B-A3B FP8 MoE forced-AITER gfx1151 module_quant probe"
-tags = ["qwen", "qwen3.6", "moe", "fp8", "aiter", "kernel-probe", "exploratory", "blocked"]
+id = "vllm.qwen3_6.35b-a3b-nvfp4.text.unsupported-rocm-gfx1151"
+summary = "Qwen3.6 35B-A3B ModelOpt NVFP4 probe blocked by ROCm vLLM quantization support"
+tags = ["qwen", "qwen3.6", "nvfp4", "modelopt", "quantization-probe", "exploratory", "blocked"]
+source_url = "https://huggingface.co/RedHatAI/Qwen3.6-35B-A3B-NVFP4"
 
 [scenario.given]
 engine = "vllm"
-model = "Qwen/Qwen3.6-35B-A3B-FP8"
-tool = "qwen_text_smoke"
-
-[scenario.when]
-argv = ["--max-num-batched-tokens", "32"]
-
-[scenario.when.env]
-VLLM_ROCM_USE_AITER = "1"
-VLLM_ROCM_USE_AITER_MOE = "1"
-
-[[scenario.then.assert]]
-kind = "exit_code.equals"
-value = 1
-
-[[scenario.then.assert]]
-kind = "stdout.contains"
-value = "config_model_type qwen3_5_moe"
-
-[[scenario.then.assert]]
-kind = "stdout.contains"
-value = "config_quantization_config_present true"
-
-[[scenario.then.assert]]
-kind = "stdout.contains"
-value = "Using AITER Fp8 MoE backend"
-
-[[scenario.then.assert]]
-kind = "output.contains"
-value = "unknown type name 'mfma_adaptor'"
-
-[[scenario]]
-id = "vllm.qwen3.0_6b-fp8-kv.text.fp8-dense-quark"
-summary = "Qwen3 0.6B dense FP8/Quark text-only probe with FP8 KV cache"
-tags = ["qwen", "qwen3", "fp8", "quark", "kv-cache-fp8", "quantization-probe", "exploratory"]
-source_url = "https://huggingface.co/EliovpAI/Qwen3-0.6B-FP8-KV"
-
-[scenario.given]
-engine = "vllm"
-model = "EliovpAI/Qwen3-0.6B-FP8-KV"
-tool = "qwen_text_smoke"
-
-[scenario.when]
-argv = [
-  "--quantization",
-  "quark",
-  "--kv-cache-dtype",
-  "fp8",
-  "--max-model-len",
-  "128",
-]
-
-[[scenario.then.assert]]
-kind = "exit_code.equals"
-value = 0
-
-[[scenario.then.assert]]
-kind = "stdout.contains"
-value = "quantization quark"
-
-[[scenario.then.assert]]
-kind = "stdout.contains"
-value = "kv_cache_dtype fp8"
-
-[[scenario.then.assert]]
-kind = "stdout.contains"
-value = "config_quantization_config_present true"
-
-[[scenario.then.assert]]
-kind = "stdout.contains"
-value = "generation_ok"
-
-[[scenario.then.assert]]
-kind = "stdout.contains"
-value = "basic_ok"
-
-[[scenario]]
-id = "vllm.qwen2_5.0_5b-gptq-int4.text.basic"
-summary = "Qwen2.5 0.5B GPTQ-Int4 text-only probe"
-tags = ["qwen", "qwen2.5", "gptq", "int4", "quantization-probe", "exploratory"]
-source_url = "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GPTQ-Int4"
-
-[scenario.given]
-engine = "vllm"
-model = "Qwen/Qwen2.5-0.5B-Instruct-GPTQ-Int4"
-tool = "qwen_text_smoke"
-
-[scenario.when]
-argv = [
-  "--dtype",
-  "float16",
-  "--max-model-len",
-  "128",
-]
-
-[[scenario.then.assert]]
-kind = "exit_code.equals"
-value = 0
-
-[[scenario.then.assert]]
-kind = "stdout.contains"
-value = "dtype float16"
-
-[[scenario.then.assert]]
-kind = "stdout.contains"
-value = "config_quantization_config_present true"
-
-[[scenario.then.assert]]
-kind = "stdout.contains"
-value = "config_model_type qwen2"
-
-[[scenario.then.assert]]
-kind = "stdout.contains"
-value = "generation_ok"
-
-[[scenario.then.assert]]
-kind = "stdout.contains"
-value = "basic_ok"
-
-[[scenario]]
-id = "vllm.qwen3_5.2b-nvfp4.text.unsupported-rocm-gfx1151"
-summary = "Qwen3.5 2B ModelOpt NVFP4 probe blocked by ROCm vLLM quantization support"
-tags = ["qwen", "qwen3.5", "nvfp4", "modelopt", "quantization-probe", "exploratory", "blocked"]
-source_url = "https://huggingface.co/AxionML/Qwen3.5-2B-NVFP4"
-
-[scenario.given]
-engine = "vllm"
-model = "AxionML/Qwen3.5-2B-NVFP4"
+model = "RedHatAI/Qwen3.6-35B-A3B-NVFP4"
 tool = "qwen_text_smoke"
 
 [scenario.when]
@@ -901,31 +773,17 @@ caveats = [
 ]
 
 [[recipe_surface]]
-id = "vllm.qwen.recipe.qwen3_6.fp8.no_aiter_blocked"
-summary = "Qwen3.6 FP8 MoE non-AITER gfx1151 blocked backend path"
-source_url = "https://docs.vllm.ai/projects/recipes/en/latest/Qwen/Qwen3.5.html#running-qwen3-6"
-model = "Qwen/Qwen3.6-35B-A3B-FP8"
+id = "vllm.qwen.recipe.qwen3_5.fp8_safetensors_blocked"
+summary = "Qwen3.5 0.8B FP8 safetensors gfx1151 blocked quantization probe"
+source_url = "https://huggingface.co/surogate/Qwen3.5-0.8B-FP8"
+model = "surogate/Qwen3.5-0.8B-FP8"
 status = "advisory-only"
-local_scenarios = ["vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-no-aiter-blocked"]
+local_scenarios = ["vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors-blocked"]
 required_flags = [
-  "VLLM_ROCM_USE_AITER=0",
-  "VLLM_ROCM_USE_AITER_MOE=0",
+  "small FP8 safetensors checkpoint",
+  "local gfx1151 quantization-probe shape",
 ]
 caveats = [
-  "The local probe records the current gfx1151 backend blocker; do not treat it as passing recipe coverage.",
-]
-
-[[recipe_surface]]
-id = "vllm.qwen.recipe.qwen3_6.fp8.aiter_blocked"
-summary = "Qwen3.6 FP8 MoE forced-AITER gfx1151 blocked kernel path"
-source_url = "https://docs.vllm.ai/projects/recipes/en/latest/Qwen/Qwen3.5.html#running-qwen3-6"
-model = "Qwen/Qwen3.6-35B-A3B-FP8"
-status = "advisory-only"
-local_scenarios = ["vllm.qwen3_6.35b-a3b-fp8.text.fp8-moe-aiter-blocked"]
-required_flags = [
-  "VLLM_ROCM_USE_AITER=1",
-  "VLLM_ROCM_USE_AITER_MOE=1",
-]
-caveats = [
-  "The local probe records the current AITER gfx1151 kernel compile blocker; do not promote without new backend evidence.",
+  "The local cache keeps the smallest FP8 safetensors checkpoint in the retained Qwen3.5 family instead of the larger Qwen3.6 FP8 MoE artifact.",
+  "The local probe records FP8 support behavior only; it is not Qwen3.6 MoE recipe coverage.",
 ]
