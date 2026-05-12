@@ -379,8 +379,17 @@ def test_speculative_decoding_scenarios_record_upstream_evidence():
     by_id = {scenario.id: scenario for scenario in scenarios}
 
     eagle3 = by_id["vllm.speculative.eagle3.qwen3_6.35b-a3b.server.benchmark-lite"]
+    eagle3_nvfp4 = by_id[
+        "vllm.speculative.eagle3.qwen3_6.35b-a3b-nvfp4.server.benchmark-lite"
+    ]
     dflash = by_id["vllm.speculative.dflash.qwen3_6.35b-a3b.server.benchmark-lite"]
+    dflash_nvfp4 = by_id[
+        "vllm.speculative.dflash.qwen3_6.35b-a3b-nvfp4.server.benchmark-lite"
+    ]
     mtp = by_id["vllm.speculative.mtp.qwen3_6.35b-a3b.server.benchmark-lite"]
+    mtp_nvfp4 = by_id[
+        "vllm.speculative.mtp.qwen3_6.35b-a3b-nvfp4.server.benchmark-lite"
+    ]
 
     assert eagle3.model == "Qwen/Qwen3.6-35B-A3B"
     assert eagle3.speculative_model == "Dogacel/specdrift-qwen3.6-35b-a3b-eagle3"
@@ -436,6 +445,20 @@ def test_speculative_decoding_scenarios_record_upstream_evidence():
         "exploratory",
     }
     assert mtp.definition["given"]["tool"] == "qwen_server_smoke.mtp"
+
+    for scenario in (eagle3_nvfp4, dflash_nvfp4, mtp_nvfp4):
+        assert scenario.model == "RedHatAI/Qwen3.6-35B-A3B-NVFP4"
+        assert set(scenario.tags) >= {"nvfp4", "modelopt", "blocked", "exploratory"}
+        assert "--quantization" in scenario.definition["when"]["argv"]
+        assert "modelopt_fp4" in scenario.definition["when"]["argv"]
+        for expected in (
+            {"kind": "exit_code.equals", "value": 1},
+            {
+                "kind": "output.contains",
+                "value": "modelopt_fp4 quantization is currently not supported in rocm.",
+            },
+        ):
+            assert expected in scenario.definition["then"]["assert"]
 
 
 def test_flash_attn_scenarios_record_triton_amd_contract():

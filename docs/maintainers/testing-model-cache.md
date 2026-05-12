@@ -26,13 +26,18 @@ artifacts or operator-local configuration only.
 
 The testing cache owns repo validation fixtures for these namespaces:
 
+- `Dogacel/*`
 - `Qwen/*`
+- `RafaDom/*`
 - `RedHatAI/*`
 - `google/*`
+- `surogate/*`
+- `z-lab/*`
+- `zeroentropy/*`
 
-Move model or dataset entries from those namespaces out of the end-user
-Hugging Face cache when they are present there. Copy, rather than move, other
-Hugging Face entries that this repo uses so end-user workflows keep their
+Move `Qwen/*`, `RedHatAI/*`, and `google/*` model or dataset entries out of the
+end-user Hugging Face cache when they are present there. Copy, rather than move,
+other retained entries that this repo uses so end-user workflows keep their
 existing cache entries.
 
 Current kept model IDs include:

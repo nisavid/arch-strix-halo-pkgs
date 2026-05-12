@@ -291,7 +291,7 @@ the installed stable-diffusion.cpp `90e87bc` wrapper surfaces.
 
 On 2026-05-10, the remaining promoted Gemma 4 vLLM scenarios passed with
 `HF_HUB_CACHE=<testing HF hub cache root>` and model binding
-`google/gemma-4-26B-A4B-it=<testing HF hub cache root>/models--google--gemma-4-26B-A4B-it/snapshots/<commit>`.
+`google/gemma-4-26B-A4B-it=<runtime cache or model path>`.
 The first run exposed that the scenario catalog was not enabling AITER even
 though it asserted the AITER attention backend; the catalog now sets
 `VLLM_ROCM_USE_AITER=1` and `VLLM_ROCM_USE_AITER_MOE=0` for the promoted 26B

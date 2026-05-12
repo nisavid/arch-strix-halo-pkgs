@@ -70,6 +70,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--api-key", default="EMPTY")
     parser.add_argument("--gpu-memory-utilization", type=float, default=0.9)
     parser.add_argument(
+        "--quantization",
+        help="optional vLLM server quantization method override, such as modelopt_fp4",
+    )
+    parser.add_argument(
         "--max-model-len",
         type=int,
         default=None,
@@ -249,6 +253,8 @@ def build_server_command(args: argparse.Namespace) -> list[str]:
         compact_json(effective_limit_mm_per_prompt(args)),
         "--disable-log-stats",
     ]
+    if args.quantization:
+        command.extend(["--quantization", args.quantization])
     if args.execution_mode == "eager":
         command.append("--enforce-eager")
     if args.mode in REASONING_MODES:

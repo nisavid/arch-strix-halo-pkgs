@@ -35,8 +35,8 @@ value = "\"method\":\"eagle3\""
 
 [[scenario]]
 id = "vllm.speculative.eagle3.qwen3_6.35b-a3b-nvfp4.server.benchmark-lite"
-summary = "Qwen3.6 35B-A3B NVFP4 EAGLE3 speculative decoding benchmark-lite server smoke"
-tags = ["vllm", "speculative-decoding", "eagle3", "qwen3.6", "nvfp4", "benchmark-lite", "server", "exploratory"]
+summary = "Qwen3.6 35B-A3B NVFP4 EAGLE3 speculative decoding probe blocked by ROCm ModelOpt FP4 support"
+tags = ["vllm", "speculative-decoding", "eagle3", "qwen3.6", "nvfp4", "modelopt", "benchmark-lite", "server", "exploratory", "blocked"]
 source_url = "https://huggingface.co/Dogacel/specdrift-qwen3.6-35b-a3b-eagle3"
 
 [scenario.given]
@@ -54,19 +54,11 @@ argv = ["--quantization", "modelopt_fp4", "--max-model-len", "2048"]
 
 [[scenario.then.assert]]
 kind = "exit_code.equals"
-value = 0
+value = 1
 
 [[scenario.then.assert]]
-kind = "stdout.contains"
-value = "server_ready"
-
-[[scenario.then.assert]]
-kind = "stdout.contains"
-value = "benchmark_lite_ok"
-
-[[scenario.then.assert]]
-kind = "stdout.contains"
-value = "\"method\":\"eagle3\""
+kind = "output.contains"
+value = "modelopt_fp4 quantization is currently not supported in rocm."
 
 [[scenario]]
 id = "vllm.speculative.dflash.qwen3_6.35b-a3b.server.benchmark-lite"
@@ -105,8 +97,8 @@ value = "\"method\":\"dflash\""
 
 [[scenario]]
 id = "vllm.speculative.dflash.qwen3_6.35b-a3b-nvfp4.server.benchmark-lite"
-summary = "Qwen3.6 35B-A3B NVFP4 DFlash speculative decoding benchmark-lite server smoke"
-tags = ["vllm", "speculative-decoding", "dflash", "qwen3.6", "nvfp4", "benchmark-lite", "server", "exploratory"]
+summary = "Qwen3.6 35B-A3B NVFP4 DFlash speculative decoding probe blocked by ROCm ModelOpt FP4 support"
+tags = ["vllm", "speculative-decoding", "dflash", "qwen3.6", "nvfp4", "modelopt", "benchmark-lite", "server", "exploratory", "blocked"]
 source_url = "https://huggingface.co/z-lab/Qwen3.6-35B-A3B-DFlash"
 
 [scenario.given]
@@ -124,19 +116,11 @@ argv = ["--quantization", "modelopt_fp4", "--max-model-len", "2048"]
 
 [[scenario.then.assert]]
 kind = "exit_code.equals"
-value = 0
+value = 1
 
 [[scenario.then.assert]]
-kind = "stdout.contains"
-value = "server_ready"
-
-[[scenario.then.assert]]
-kind = "stdout.contains"
-value = "benchmark_lite_ok"
-
-[[scenario.then.assert]]
-kind = "stdout.contains"
-value = "\"method\":\"dflash\""
+kind = "output.contains"
+value = "modelopt_fp4 quantization is currently not supported in rocm."
 
 [[scenario]]
 id = "vllm.speculative.mtp.qwen3_6.35b-a3b.server.benchmark-lite"
@@ -170,8 +154,8 @@ value = "\"method\":\"mtp\""
 
 [[scenario]]
 id = "vllm.speculative.mtp.qwen3_6.35b-a3b-nvfp4.server.benchmark-lite"
-summary = "Qwen3.6 35B-A3B NVFP4 MTP benchmark-lite server smoke"
-tags = ["vllm", "speculative-decoding", "mtp", "qwen3.6", "nvfp4", "benchmark-lite", "server", "exploratory"]
+summary = "Qwen3.6 35B-A3B NVFP4 MTP probe blocked by ROCm ModelOpt FP4 support"
+tags = ["vllm", "speculative-decoding", "mtp", "qwen3.6", "nvfp4", "modelopt", "benchmark-lite", "server", "exploratory", "blocked"]
 source_url = "https://docs.vllm.ai/en/latest/features/spec_decode.html"
 
 [scenario.given]
@@ -184,16 +168,8 @@ argv = ["--quantization", "modelopt_fp4", "--max-model-len", "2048", "--benchmar
 
 [[scenario.then.assert]]
 kind = "exit_code.equals"
-value = 0
+value = 1
 
 [[scenario.then.assert]]
-kind = "stdout.contains"
-value = "server_ready"
-
-[[scenario.then.assert]]
-kind = "stdout.contains"
-value = "benchmark_lite_ok"
-
-[[scenario.then.assert]]
-kind = "stdout.contains"
-value = "\"method\":\"mtp\""
+kind = "output.contains"
+value = "modelopt_fp4 quantization is currently not supported in rocm."
