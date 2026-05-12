@@ -6,6 +6,8 @@ import types
 import subprocess
 import sys
 
+import pytest
+
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 TOOLS_DIR = REPO_ROOT / "tools"
@@ -208,3 +210,6 @@ def test_validate_rerank_fixture_checks_finite_scores_and_ordering(capsys):
     assert "scores_finite_ok" in output
     assert "rerank_order 0,1,2" in output
     assert "rerank_order_ok" in output
+
+    with pytest.raises(AssertionError, match="descending score ordering"):
+        validate_rerank_fixture([0.15, 0.95, -0.35])
