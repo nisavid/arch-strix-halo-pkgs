@@ -69,11 +69,12 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     assert "flash-attn.ck.varlen-tiny" in ids
     assert "flash-attn.ck.varlen-tiny-d256" in ids
     assert "flash-attn.ck.varlen-paged-kv" in ids
-    assert "vllm.pooling.multilingual-e5-small.embeddings" in ids
-    assert "vllm.pooling.jina-reranker-v3.rerank" in ids
+    assert "vllm.pooling.zembed-1.embeddings" in ids
+    assert "vllm.pooling.zerank-2.rerank" in ids
     assert "transformers.zeroentropy.zembed-1.embeddings" in ids
     assert "transformers.zeroentropy.zerank-2.rerank" in ids
     assert "vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors-blocked" in ids
+    assert "vllm.qwen3_5.4b-gptq-int4.text.basic" in ids
     assert "vllm.qwen3_6.35b-a3b-nvfp4.text.unsupported-rocm-gfx1151" in ids
     assert "llama.cpp.hip.help" in ids
     assert "llama.cpp.vulkan.help" in ids
@@ -173,18 +174,18 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     assert "blocked" in tags_by_id[
         "vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors-blocked"
     ]
+    assert "gptq" in tags_by_id["vllm.qwen3_5.4b-gptq-int4.text.basic"]
+    assert "int4" in tags_by_id["vllm.qwen3_5.4b-gptq-int4.text.basic"]
     assert "blocked" in tags_by_id[
         "vllm.qwen3_6.35b-a3b-nvfp4.text.unsupported-rocm-gfx1151"
     ]
-    assert "pooling" in tags_by_id["vllm.pooling.multilingual-e5-small.embeddings"]
+    assert "pooling" in tags_by_id["vllm.pooling.zembed-1.embeddings"]
     assert "embeddings" in tags_by_id[
-        "vllm.pooling.multilingual-e5-small.embeddings"
+        "vllm.pooling.zembed-1.embeddings"
     ]
-    assert "rerank" in tags_by_id["vllm.pooling.jina-reranker-v3.rerank"]
-    assert "blocked" in tags_by_id["vllm.pooling.jina-reranker-v3.rerank"]
-    assert "flex-attention" in tags_by_id[
-        "vllm.pooling.jina-reranker-v3.rerank"
-    ]
+    assert "rerank" in tags_by_id["vllm.pooling.zerank-2.rerank"]
+    assert "zeroentropy" in tags_by_id["vllm.pooling.zerank-2.rerank"]
+    assert "flex-attention" in tags_by_id["vllm.pooling.zerank-2.rerank"]
 
 
 def test_gemma4_26b_promoted_scenarios_enable_aiter_attention():
@@ -670,6 +671,36 @@ def test_quantization_lane_probes_record_root_cause_contracts():
     ):
         assert expected in fp8_dense.definition["then"]["assert"]
 
+    gptq_int4 = by_id["vllm.qwen3_5.4b-gptq-int4.text.basic"]
+    assert (
+        gptq_int4.model
+        == "RafaDom/Qwen3.5-4B-Claude-4.6-Opus-Reasoning-Distilled-v2-GPTQ-Int4-HQ"
+    )
+    assert set(gptq_int4.tags) >= {
+        "qwen",
+        "qwen3.5",
+        "gptq",
+        "int4",
+        "safetensors",
+        "quantization-probe",
+        "exploratory",
+    }
+    assert gptq_int4.definition["given"]["tool"] == "qwen_text_smoke"
+    assert gptq_int4.definition["when"]["argv"] == ["--max-model-len", "128"]
+    for expected in (
+        {"kind": "exit_code.equals", "value": 0},
+        {"kind": "stdout.contains", "value": "config_model_type qwen3_5_text"},
+        {
+            "kind": "stdout.contains",
+            "value": "config_quantization_config_present true",
+        },
+        {"kind": "stdout.contains", "value": "'quant_method': 'gptq'"},
+        {"kind": "stdout.contains", "value": "llm_init_ok"},
+        {"kind": "stdout.contains", "value": "generation_ok"},
+        {"kind": "stdout.contains", "value": "basic_ok"},
+    ):
+        assert expected in gptq_int4.definition["then"]["assert"]
+
     nvfp4 = by_id["vllm.qwen3_6.35b-a3b-nvfp4.text.unsupported-rocm-gfx1151"]
     assert nvfp4.model == "RedHatAI/Qwen3.6-35B-A3B-NVFP4"
     assert set(nvfp4.tags) >= {
@@ -778,16 +809,18 @@ def test_vllm_pooling_scenarios_record_validation_contracts():
     scenarios = load_scenarios(REPO_ROOT / "inference/scenarios")
     by_id = {scenario.id: scenario for scenario in scenarios}
 
-    embeddings = by_id["vllm.pooling.multilingual-e5-small.embeddings"]
-    rerank = by_id["vllm.pooling.jina-reranker-v3.rerank"]
+    embeddings = by_id["vllm.pooling.zembed-1.embeddings"]
+    rerank = by_id["vllm.pooling.zerank-2.rerank"]
 
-    assert embeddings.model == "intfloat/multilingual-e5-small"
+    assert embeddings.model == "zeroentropy/zembed-1"
     assert embeddings.definition["given"]["tool"] == "vllm_pooling_smoke.embeddings"
     assert set(embeddings.tags) >= {
         "smoke",
         "vllm",
         "pooling",
         "embeddings",
+        "zeroentropy",
+        "zembed",
         "rocm",
         "flex-attention",
     }
@@ -796,12 +829,16 @@ def test_vllm_pooling_scenarios_record_validation_contracts():
         "FLEX_ATTENTION",
         "--max-model-len",
         "256",
+        "--fixture",
+        "zeroentropy",
     ]
 
     for expected in (
         {"kind": "exit_code.equals", "value": 0},
         {"kind": "stdout.contains", "value": "runner pooling"},
         {"kind": "stdout.contains", "value": "attention_backend FLEX_ATTENTION"},
+        {"kind": "stdout.contains", "value": "fixture zeroentropy"},
+        {"kind": "stdout.contains", "value": "convert embed"},
         {"kind": "stdout.contains", "value": "embedding_count 3"},
         {"kind": "stdout.contains", "value": "embeddings_finite_ok"},
         {"kind": "stdout.contains", "value": "embedding_ranking_ok"},
@@ -809,37 +846,41 @@ def test_vllm_pooling_scenarios_record_validation_contracts():
     ):
         assert expected in embeddings.definition["then"]["assert"]
 
-    assert rerank.model == "jinaai/jina-reranker-v3"
+    assert rerank.model == "zeroentropy/zerank-2"
     assert rerank.definition["given"]["tool"] == "vllm_pooling_smoke.rerank"
     assert set(rerank.tags) >= {
         "smoke",
         "vllm",
         "pooling",
         "rerank",
+        "zeroentropy",
+        "zerank",
         "rocm",
         "flex-attention",
-        "blocked",
     }
     assert rerank.definition["when"]["argv"] == [
         "--attention-backend",
         "FLEX_ATTENTION",
         "--max-model-len",
         "512",
+        "--fixture",
+        "zeroentropy",
     ]
 
     for expected in (
-        {"kind": "exit_code.equals", "value": 1},
+        {"kind": "exit_code.equals", "value": 0},
         {"kind": "stdout.contains", "value": "runner pooling"},
         {"kind": "stdout.contains", "value": "attention_backend FLEX_ATTENTION"},
+        {"kind": "stdout.contains", "value": "fixture zeroentropy"},
         {"kind": "stdout.contains", "value": "pooling_task classify"},
         {"kind": "stdout.contains", "value": "convert classify"},
-        {"kind": "stdout.contains", "value": "TransformersForSequenceClassification"},
-        {
-            "kind": "stderr.contains",
-            "value": "Following weights were not initialized from checkpoint",
-        },
-        {"kind": "stderr.contains", "value": "model.lm_head.weight"},
-        {"kind": "stderr.contains", "value": "score.weight"},
+        {"kind": "stdout.contains", "value": "classifier_from_token Yes"},
+        {"kind": "stdout.contains", "value": "method no_post_processing"},
+        {"kind": "stdout.contains", "value": "logit_sigma 5.0"},
+        {"kind": "stdout.contains", "value": "score_count 3"},
+        {"kind": "stdout.contains", "value": "scores_finite_ok"},
+        {"kind": "stdout.contains", "value": "rerank_order_ok"},
+        {"kind": "stdout.contains", "value": "rerank_ok"},
     ):
         assert expected in rerank.definition["then"]["assert"]
 

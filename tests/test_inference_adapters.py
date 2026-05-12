@@ -449,10 +449,10 @@ def test_vllm_adapter_builds_pooling_smoke_command(tmp_path: Path):
     plan = build_execution_plan(
         scenario(
             {
-                "id": "vllm.pooling.multilingual-e5-small.embeddings",
+                "id": "vllm.pooling.zembed-1.embeddings",
                 "given": {
                     "engine": "vllm",
-                    "model": "intfloat/multilingual-e5-small",
+                    "model": "zeroentropy/zembed-1",
                     "tool": "vllm_pooling_smoke.embeddings",
                 },
                 "when": {
@@ -467,13 +467,13 @@ def test_vllm_adapter_builds_pooling_smoke_command(tmp_path: Path):
         ),
         repo_root=REPO_ROOT,
         scenario_run_root=tmp_path,
-        model_bindings={"intfloat/multilingual-e5-small": "/models/e5"},
+        model_bindings={"zeroentropy/zembed-1": "/models/zembed"},
     )
 
     assert plan.command == [
         sys.executable,
         str(REPO_ROOT / "tools/vllm_pooling_smoke.py"),
-        "/models/e5",
+        "/models/zembed",
         "--mode",
         "embeddings",
         "--attention-backend",

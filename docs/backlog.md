@@ -406,6 +406,8 @@
   - `Qwen/Qwen3.5-0.8B` for tiny non-GGUF vLLM Qwen smoke coverage
   - `Qwen/Qwen3.6-35B-A3B` for the main non-GGUF vLLM Qwen MoE lane
   - `surogate/Qwen3.5-0.8B-FP8` for the small FP8 safetensors probe
+  - `RafaDom/Qwen3.5-4B-Claude-4.6-Opus-Reasoning-Distilled-v2-GPTQ-Int4-HQ`
+    for the GPTQ Int4 safetensors probe
   - use a Qwen3.6 GGUF quantization for llama.cpp once one is chosen locally
 - Capture benchmark methodology and results in repo docs before any public AUR
   publication attempt.

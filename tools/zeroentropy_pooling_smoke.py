@@ -232,6 +232,10 @@ def run_embeddings(args: argparse.Namespace, model: str) -> None:
 
 
 def _format_rerank_inputs(tokenizer, query: str, documents: list[str]) -> list[str]:
+    return format_zerank_inputs(tokenizer, query, documents)
+
+
+def format_zerank_inputs(tokenizer, query: str, documents: list[str]) -> list[str]:
     prompts: list[str] = []
     for document in documents:
         messages = [

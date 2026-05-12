@@ -9,9 +9,11 @@ replace the older Llama/Qwen3.8B speculative fixtures, and
 `surogate/Qwen3.5-0.8B-FP8` replaces the larger Qwen3.6 FP8 MoE cache artifact
 as the retained FP8 safetensors probe. `google/gemma-4-E2B-it` and
 `google/gemma-4-26B-A4B-it` cover the retained Gemma 4 dense/PLE and sparse MoE
-lanes. The vLLM pooling and Lemonade GGUF pooling fixtures are not equivalent to
-ZeroEntropy's Transformers-only zembed/zerank checks, so those surfaces remain
-explicit exceptions rather than automatic swaps.
+lanes. `RafaDom/Qwen3.5-4B-Claude-4.6-Opus-Reasoning-Distilled-v2-GPTQ-Int4-HQ`
+is the retained GPTQ Int4 safetensors target. The vLLM pooling and
+Transformers ZeroEntropy scenarios now share `zeroentropy/zembed-1` and
+`zeroentropy/zerank-2`; the Lemonade GGUF pooling fixtures remain separate
+because they exercise registered GGUF model paths.
 
 ## Rebuild Revalidation Boundary
 
@@ -1168,20 +1170,20 @@ workarounds, and the reference-match gates required before reopening the lane.
 The first full live cutover and subsequent native package rebuild completed
 successfully on the reference Arch host.
 
-The reference host's active Hugging Face cache root for current validation work
-is `HF_HOME=<host HF cache root>`. Keep durable docs on model IDs and runtime
-`--model-path` bindings, not committed cache snapshot subpaths. Current local
-non-GGUF model IDs relevant to this branch are:
+The reference host's active Hugging Face Hub cache root for current validation
+work is `HF_HUB_CACHE=<testing HF hub cache root>`. Keep durable docs on model
+IDs and runtime `--model-path` bindings, not committed cache snapshot subpaths.
+Current local non-GGUF model IDs relevant to this branch are:
 
 - `Dogacel/specdrift-qwen3.6-35b-a3b-eagle3`
 - `google/gemma-4-26B-A4B-it`
 - `google/gemma-4-E2B-it`
 - `Qwen/Qwen3.5-0.8B`
 - `Qwen/Qwen3.6-35B-A3B`
+- `RafaDom/Qwen3.5-4B-Claude-4.6-Opus-Reasoning-Distilled-v2-GPTQ-Int4-HQ`
 - `RedHatAI/Qwen3.6-35B-A3B-NVFP4`
 - `surogate/Qwen3.5-0.8B-FP8`
 - `z-lab/Qwen3.6-35B-A3B-DFlash`
-- `jinaai/jina-reranker-v3`
 - `zeroentropy/zembed-1`
 - `zeroentropy/zerank-2`
 
@@ -1190,30 +1192,21 @@ the unquantized no-AITER control. `RedHatAI/Qwen3.6-35B-A3B-NVFP4` is the
 retained ModelOpt NVFP4 probe for the same model family. Use
 `surogate/Qwen3.5-0.8B-FP8` as the small FP8 safetensors probe; it replaces the
 larger Qwen3.6 FP8 MoE cache artifact for local storage purposes and does not
-validate Qwen3.6 MoE recipe behavior.
+validate Qwen3.6 MoE recipe behavior. Use
+`RafaDom/Qwen3.5-4B-Claude-4.6-Opus-Reasoning-Distilled-v2-GPTQ-Int4-HQ` as
+the retained GPTQ Int4 safetensors probe; it replaces the AXERA Int4 cache
+artifact, whose files target AXERA's runtime format rather than vLLM GPTQ.
 
-The `intfloat/multilingual-e5-small` vLLM pooling embedding scenario passed on
-2026-04-21 with `HF_HOME=<host HF cache root>`, ROCm `FLEX_ATTENTION`, and
-`vllm.pooling.multilingual-e5-small.embeddings`; the tracked run completed in
-`28.677313` seconds with finite embedding vectors and the fixed related-passage
-ranking fixture. Keep tracked scenarios on model IDs plus runtime
-`--model-path` bindings rather than new committed cache snapshot paths.
-
-The Jina v3 reranker lane is a blocked vLLM pooling probe, not a passing
-rerank smoke. Keep `vllm.pooling.jina-reranker-v3.rerank` on explicit
-classification pooling (`--convert classify` / `PoolerConfig(task="classify")`)
-so vLLM does not auto-convert the Qwen3-based checkpoint to an embedding
-model. The current upstream model shape remains incompatible with vLLM's
-linear sequence-classification conversion: the model card identifies local
-inference as Transformers remote code, and its `JinaForRanking` class uses a
-projector plus cosine scoring over query/document embed tokens. On the
-reference host with vLLM `0.19.1`, the corrected vLLM probe reaches
-`TransformersForSequenceClassification` conversion and then fails during load
-because `model.lm_head.weight` and `score.weight` are not initialized from the
-checkpoint. Do not treat this as a ROCm/FlexAttention failure, and do not
-promote the scenario to a passing vLLM smoke unless vLLM gains support for
-this remote-code ranking head or the lane switches to a vLLM-supported
-cross-encoder model.
+The vLLM pooling scenarios now use retained ZeroEntropy repositories instead
+of separate E5 and Jina model caches. `vllm.pooling.zembed-1.embeddings` runs
+`zeroentropy/zembed-1` through vLLM's pooling runner with `--convert embed`,
+the model's SentenceTransformers last-token pooling metadata, and normalized
+embedding validation. `vllm.pooling.zerank-2.rerank` runs
+`zeroentropy/zerank-2` through vLLM's classification conversion by deriving the
+score head from the `Yes` token with `method=no_post_processing` and
+`logit_sigma=5.0`, matching the model-card arithmetic ranking fixture. Keep
+tracked scenarios on model IDs plus runtime `--model-path` bindings rather
+than committed cache snapshot paths.
 
 Lemonade has conventional embedding and reranking endpoints for registered
 `llamacpp` models, and the tracked Lemonade pooling scenarios now cover both.
@@ -1977,6 +1970,7 @@ The following smoke checks have already passed on the reference host:
     new kernel feature work unless upstream lands it.
   - Quantization-lane coverage now includes the retained small FP8 safetensors
     probe `vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors-blocked` and the retained
+    GPTQ Int4 safetensors probe `vllm.qwen3_5.4b-gptq-int4.text.basic`, plus the
     Qwen3.6 NVFP4 probe
     `vllm.qwen3_6.35b-a3b-nvfp4.text.unsupported-rocm-gfx1151`.
   - The RedHatAI Qwen3.6 NVFP4 probe is expected to fail on ROCm/gfx1151 with

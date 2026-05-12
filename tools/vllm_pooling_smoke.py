@@ -13,11 +13,24 @@ EMBEDDING_PROMPTS = [
     "passage: Bread dough rises when yeast ferments sugar.",
 ]
 
+ZEROENTROPY_EMBEDDING_QUERY = "What is backpropagation?"
+ZEROENTROPY_EMBEDDING_DOCUMENTS = [
+    "Backpropagation is an algorithm for training neural networks by computing gradients.",
+    "Paris is the capital city of France.",
+]
+
 RERANK_QUERY = "Which city is the capital of France?"
 RERANK_DOCUMENTS = [
     "Paris is the capital city of France and home to the Eiffel Tower.",
     "Berlin is the capital city of Germany.",
     "Bread dough rises when yeast ferments sugar.",
+]
+
+ZEROENTROPY_RERANK_QUERY = "What is 2+2?"
+ZEROENTROPY_RERANK_DOCUMENTS = [
+    "4",
+    "Two plus two equals four.",
+    "The answer is definitely 1 million.",
 ]
 
 
@@ -34,6 +47,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--gpu-memory-utilization", type=float, default=0.5)
     parser.add_argument("--max-model-len", type=int, default=256)
     parser.add_argument("--max-num-batched-tokens", type=int, default=None)
+    parser.add_argument(
+        "--fixture",
+        choices=("generic", "zeroentropy"),
+        default="generic",
+        help="prompt and adapter fixture shape to run",
+    )
     return parser.parse_args()
 
 
@@ -63,6 +82,11 @@ def score_value(output: Any) -> float:
     outputs = output.outputs
     if hasattr(outputs, "score"):
         return float(outputs.score)
+    if hasattr(outputs, "probs"):
+        probs = outputs.probs
+        if len(probs) != 1:
+            raise AssertionError(f"expected one classification probability: {probs!r}")
+        return float(probs[0])
     if hasattr(outputs, "data"):
         data = outputs.data
         if hasattr(data, "squeeze"):
@@ -151,9 +175,21 @@ def _llm_kwargs(args: argparse.Namespace, model: str) -> dict[str, Any]:
         "enforce_eager": True,
         "attention_config": {"backend": args.attention_backend},
     }
+    if args.mode == "embeddings" and args.fixture == "zeroentropy":
+        kwargs["convert"] = "embed"
     if args.mode == "rerank":
         kwargs["convert"] = "classify"
         kwargs["pooler_config"] = {"task": "classify"}
+    if args.mode == "rerank" and args.fixture == "zeroentropy":
+        kwargs["hf_overrides"] = {
+            "classifier_from_token": ["Yes"],
+            "method": "no_post_processing",
+            "num_labels": 1,
+        }
+        kwargs["pooler_config"] = {
+            "task": "classify",
+            "logit_sigma": 5.0,
+        }
     if args.max_num_batched_tokens is not None:
         kwargs["max_num_batched_tokens"] = args.max_num_batched_tokens
     return kwargs
@@ -172,12 +208,45 @@ def run_embeddings(llm: Any) -> None:
     print("embeddings_ok")
 
 
+def run_zeroentropy_embeddings(llm: Any) -> None:
+    from zeroentropy_pooling_smoke import format_zembed_inputs
+
+    prompts = format_zembed_inputs(
+        ZEROENTROPY_EMBEDDING_QUERY,
+        ZEROENTROPY_EMBEDDING_DOCUMENTS,
+    )
+    outputs = llm.embed(prompts, use_tqdm=False)
+    vectors = [embedding_vector(output) for output in outputs]
+    validate_embedding_fixture(vectors)
+    print("embeddings_ok")
+
+
 def run_rerank(llm: Any) -> None:
     outputs = llm.score(
         RERANK_QUERY,
         RERANK_DOCUMENTS,
         use_tqdm=False,
         pooling_params=classification_pooling_params(),
+    )
+    scores = [score_value(output) for output in outputs]
+    validate_rerank_fixture(scores)
+    print("rerank_ok")
+
+
+def run_zeroentropy_rerank(llm: Any) -> None:
+    from vllm.pooling_params import PoolingParams
+    from zeroentropy_pooling_smoke import format_zerank_inputs
+
+    tokenizer = llm.get_tokenizer()
+    prompts = format_zerank_inputs(
+        tokenizer,
+        ZEROENTROPY_RERANK_QUERY,
+        ZEROENTROPY_RERANK_DOCUMENTS,
+    )
+    outputs = llm.classify(
+        prompts,
+        use_tqdm=False,
+        pooling_params=PoolingParams(task="classify"),
     )
     scores = [score_value(output) for output in outputs]
     validate_rerank_fixture(scores)
@@ -200,6 +269,7 @@ def main() -> None:
         print("cuda_device_0", torch.cuda.get_device_name(0))
     print("runner pooling")
     print("mode", args.mode)
+    print("fixture", args.fixture)
     print("attention_backend", args.attention_backend)
     print("gpu_memory_utilization", args.gpu_memory_utilization)
     print("max_model_len", args.max_model_len)
@@ -207,12 +277,24 @@ def main() -> None:
     if args.mode == "rerank":
         print("pooling_task classify")
         print("convert classify")
+    if args.mode == "embeddings" and args.fixture == "zeroentropy":
+        print("convert embed")
+    if args.mode == "rerank" and args.fixture == "zeroentropy":
+        print("classifier_from_token Yes")
+        print("method no_post_processing")
+        print("logit_sigma 5.0")
 
     llm = LLM(**_llm_kwargs(args, model))
     print("llm_init_ok")
 
     if args.mode == "embeddings":
+        if args.fixture == "zeroentropy":
+            run_zeroentropy_embeddings(llm)
+            return
         run_embeddings(llm)
+        return
+    if args.fixture == "zeroentropy":
+        run_zeroentropy_rerank(llm)
         return
     run_rerank(llm)
 
