@@ -1723,6 +1723,7 @@ def render_recipe_json(package_name: str, policy_pkg: dict, recipe_pkg: dict, ve
             recipe_pkg.get("patches", []),
             policy_pkg.get("recipe_patch_file_rewrites"),
         )
+    rendered_src_dir = policy_pkg.get("src_subdir", recipe_pkg.get("src_dir"))
     payload = {
         "name": package_name,
         "package_name": package_name,
@@ -1731,7 +1732,7 @@ def render_recipe_json(package_name: str, policy_pkg: dict, recipe_pkg: dict, ve
         "recipe": {
             "repo": recipe_pkg.get("repo"),
             "branch": recipe_branch,
-            "src_dir": recipe_pkg.get("src_dir"),
+            "src_dir": rendered_src_dir,
             "method": recipe_pkg.get("method"),
             "phase": recipe_pkg.get("phase"),
             "steps": recipe_pkg.get("steps", []),

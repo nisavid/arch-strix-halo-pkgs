@@ -152,7 +152,7 @@
     "patches": [],
     "phase": "F",
     "repo": "https://github.com/ROCm/aiter.git",
-    "src_dir": "pytorch/third_party/aiter",
+    "src_dir": "aiter",
     "steps": [
       29
     ]
