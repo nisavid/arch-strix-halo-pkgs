@@ -760,6 +760,40 @@ def test_render_recipe_json_keeps_source_patches_in_one_place() -> None:
     assert "extra_sha256sums" not in recipe_json["policy"]
 
 
+def test_render_recipe_json_uses_package_source_subdir_as_recipe_src_dir() -> None:
+    recipe_json = json.loads(
+        render_recipe_scaffolds.render_recipe_json(
+            "sample-gfx1151",
+            {
+                "recipe_key": "sample",
+                "upstream_version": "1.2.3",
+                "pkgdesc": "Sample",
+                "url": "https://example.invalid/sample",
+                "license": ["MIT"],
+                "src_subdir": "sample",
+                "source_refs": ["sample::git+https://example.invalid/sample.git#commit=abc123"],
+            },
+            {
+                "repo": "https://example.invalid/vendor.git",
+                "src_dir": "vendor/third_party/sample",
+                "method": "pip",
+                "phase": "package",
+                "steps": [],
+                "depends_on": [],
+                "notes": "",
+            },
+            "1.2.3",
+            {
+                "recipe_repo": "https://github.com/paudley/ai-notes",
+                "recipe_subdir": "strix-halo",
+                "recipe_author": "Blackcat Informatics Inc.",
+            },
+        )
+    )
+
+    assert recipe_json["recipe"]["src_dir"] == "sample"
+
+
 def test_render_recipe_json_suppresses_unrendered_native_wheel_recipe_patches() -> None:
     recipe_json = json.loads(
         render_recipe_scaffolds.render_recipe_json(
