@@ -33,9 +33,9 @@ def test_pkgbuild_carries_jit_runtime_patch():
     text = PKGBUILD.read_text()
 
     assert "pkgrel=1" in text
-    assert "pkgver=0.1.13" in text
-    assert "#tag=v0.1.13" in text
-    assert 'export SETUPTOOLS_SCM_PRETEND_VERSION="0.1.13"' in text
+    assert "pkgver=0.1.13.post1.dev268+gd50194cae" in text
+    assert "#commit=d50194cae28f2e22f4dfff19a86577fe2fcbca27" in text
+    assert 'export SETUPTOOLS_SCM_PRETEND_VERSION="0.1.13.post1.dev268+gd50194cae"' in text
     assert HEADER_PATCH.name in text
     assert f'patch -Np1 -i "$srcdir/{HEADER_PATCH.name}"' in text
     assert HIP_REDUCE_PATCH.name in text
@@ -58,7 +58,15 @@ def test_pkgbuild_clears_stale_wheels_before_building():
     text = PKGBUILD.read_text()
 
     assert "rm -f dist/*.whl" in text
-    assert text.index("rm -f dist/*.whl") < text.index("pip wheel . --no-build-isolation")
+    assert text.index("rm -f dist/*.whl") < text.index("/usr/bin/python -m pip wheel . --no-build-isolation")
+
+
+def test_pkgbuild_uses_system_python_and_local_pycache_for_wheel_build():
+    text = PKGBUILD.read_text()
+
+    assert 'export PYTHONPYCACHEPREFIX="$srcdir/.pycache"' in text
+    assert "/usr/bin/python -m pip wheel . --no-build-isolation --no-deps --wheel-dir dist -v" in text
+    assert '/usr/bin/python -m installer --destdir="$pkgdir" dist/*.whl' in text
 
 
 def test_pkgbuild_disables_makepkg_strip_for_rocm_code_objects():

@@ -2,6 +2,18 @@
 
 ## Packaging And Build Hygiene
 
+- The 2026-05-14 refresh is adopted. It has source-update, package-build,
+  deploy/install, installed-smoke, llama.cpp scenario-runner smoke, and
+  affected Gemma 4 vLLM live-scenario evidence for llama.cpp `b9145`, AITER
+  main `d50194cae28f2e22f4dfff19a86577fe2fcbca27`, and Transformers 5.8.1.
+  The AITER and Transformers PKGBUILDs now call `/usr/bin/python` directly so
+  bytecode generation stays out of agent-local Python wrappers and private
+  pycache roots. Keep follow-up work on separate backlog lines instead of
+  reopening this closed update bundle.
+- The 2026-05-14 sweep rejected ROCm PyTorch release/2.11 at
+  `96bfee122869125d32aa4ec9acc8c3597059188b` because the range does not overlap
+  the local gfx1151 package carry, and rejected TorchVision 0.27.0 because its
+  published metadata requires `torch==2.12.0`.
 - The 2026-05-07 freshness sweep found a new refresh bundle now prepared in
   source metadata: AITER main
   `086cd0aef432233e604891224b4a39645b2e24c2`, llama.cpp `b9050`,

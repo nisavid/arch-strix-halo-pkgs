@@ -1,6 +1,36 @@
 # Current State
 
-Status as of 2026-05-12.
+Status as of 2026-05-14.
+
+The 2026-05-14 freshness sweep ran
+`tools/check_package_updates.py --json --fail-on actionable` and found six
+families requiring disposition. Source updates are adopted for llama.cpp
+`b9145`, AITER main `d50194cae28f2e22f4dfff19a86577fe2fcbca27`, and
+Transformers 5.8.1. Package-build gates passed for
+`llama.cpp-hip-gfx1151 b9145-1`, `llama.cpp-vulkan-gfx1151 b9145-1`,
+`python-amd-aiter-gfx1151 0.1.13.post1.dev268+gd50194cae-1`, and
+`python-transformers-gfx1151 5.8.1-1`. Deploy/install passed for the same
+four packages after the build. Installed smokes passed for package versions,
+llama.cpp HIP/Vulkan CLI version checks, AITER JIT-core import, Transformers
+import, and Gemma 4 model surface import. The escalated HIP CLI smoke saw one
+ROCm device: `Radeon 8060S Graphics, gfx1151`.
+
+The llama.cpp scenario runner passed both installed backend help scenarios at
+`docs/worklog/inference-runs/20260514T075418`. The affected Gemma 4 vLLM live
+scenario `vllm.gemma4.e2b.server.basic` passed in `56.936829` seconds at
+`docs/worklog/inference-runs/20260514T075502` before the AITER inclusion and
+again in `50.550297` seconds at `docs/worklog/inference-runs/20260514T081531`
+after installing the AITER main snapshot, both with
+`HF_HUB_CACHE=<testing HF hub cache root>`. The Transformers and AITER packages
+now run their build and install commands through `/usr/bin/python` so package
+bytecode generation stays out of agent-local Python wrappers and private
+pycache roots.
+
+ROCm PyTorch release/2.11 at
+`96bfee122869125d32aa4ec9acc8c3597059188b` is rejected for this sweep because
+the reviewed range does not overlap the current gfx1151 package carry, and
+TorchVision 0.27.0 is rejected until this repo opens a coordinated PyTorch
+2.12 lane.
 
 The testing Hugging Face cache keep-set now prefers the smallest compatible
 fixtures that preserve each validation purpose. The Qwen3.6 base and NVFP4

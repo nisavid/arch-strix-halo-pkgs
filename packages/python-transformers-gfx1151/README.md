@@ -5,7 +5,7 @@
 - Package origin: local closure package
 - Build method: `python -m build`
 - Upstream repo: `https://github.com/huggingface/transformers`
-- Upstream version: `5.8.0`
+- Upstream version: `5.8.1`
 - Recorded reference packages: `cachyos/python-transformers, extra/python-transformers`
 - Authoritative reference package: `cachyos/python-transformers`
 - Advisory reference packages: `extra/python-transformers`
@@ -23,7 +23,7 @@ Gemma-4-capable without waiting on distro repo timing.
 
 ## Intentional Divergences
 
-- Tracks upstream `transformers 5.8.0` from PyPI so the local vLLM closure
+- Tracks upstream `transformers 5.8.1` from PyPI so the local vLLM closure
   stays ahead of distro timing for Gemma, Qwen, and model-surface fixes.
 - Keeps the package pure-Python and architecture-independent; there are no
   applicable Strix-specific native optimization flags to carry here.
@@ -37,9 +37,11 @@ Gemma-4-capable without waiting on distro repo timing.
 - Before updating, verify the candidate Transformers release actually ships
   `transformers.models.gemma4`; do not assume the version number alone is
   enough.
-- The current package adopts `5.8.0` with DeepSeek V4, Gemma 4 Assistant,
-  tokenizer/cache fixes, and model-surface additions while keeping
-  `transformers.models.gemma4` present.
+- The current package adopts `5.8.1` with DeepSeek V4 serving and weight
+  conversion fixes while keeping `transformers.models.gemma4` present.
+- Run build and install commands through `/usr/bin/python` in the PKGBUILD so
+  package bytecode generation does not inherit agent-local Python wrappers or
+  private pycache paths from the maintainer environment.
 - Re-check dependency metadata against the chosen baseline package and the
   published PyPI metadata. The package is intentionally thin and should not
   grow optional extras into hard runtime dependencies.

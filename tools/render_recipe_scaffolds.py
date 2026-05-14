@@ -1335,6 +1335,7 @@ build() {{
   export PREBUILD_KERNELS=0
   export AITER_GPU_ARCH=gfx1151
   export SETUPTOOLS_SCM_PRETEND_VERSION="{policy_pkg['upstream_version']}"
+  export PYTHONPYCACHEPREFIX="$srcdir/.pycache"
   export CFLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument"
   export CXXFLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument"
   local _ck_submodule="$srcdir/{src_subdir}/3rdparty/composable_kernel"
@@ -1350,12 +1351,13 @@ build() {{
 
   mkdir -p dist
   rm -f dist/*.whl
-  pip wheel . --no-build-isolation --no-deps --wheel-dir dist -v
+  /usr/bin/python -m pip wheel . --no-build-isolation --no-deps --wheel-dir dist -v
 }}
 
 package() {{
   cd "$srcdir/{src_subdir}"
-  python -m installer --destdir="$pkgdir" dist/*.whl
+  export PYTHONPYCACHEPREFIX="$srcdir/.pycache"
+  /usr/bin/python -m installer --destdir="$pkgdir" dist/*.whl
 }}"""
     elif template == "rust-wheel-pypi":
         for patch_name in policy_pkg.get("source_patches", []):
