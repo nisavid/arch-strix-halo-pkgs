@@ -1,7 +1,7 @@
 # Maintainer: nisavid
 
 pkgname=python-transformers-gfx1151
-pkgver=5.8.0
+pkgver=5.8.1
 pkgrel=1
 pkgdesc='State-of-the-art pretrained models for inference and training rebuilt for Strix Halo gfx1151'
 arch=('any')
@@ -35,14 +35,16 @@ provides=(python-transformers)
 conflicts=(python-transformers)
 replaces=()
 source=(https://files.pythonhosted.org/packages/source/t/transformers/transformers-${pkgver}.tar.gz)
-sha256sums=(6cc9a1f0291d16b1c1b735bad775e78ebefff7722701d4e28f98aaaa2bd6fb91)
+sha256sums=(4dd5b6de4105725104d84fd6abd74b305f4debfc251b38c648ee5dd087cf543b)
 
 build() {
   cd "$srcdir/transformers-${pkgver}"
-  python -m build --wheel --no-isolation
+  export PYTHONPYCACHEPREFIX="$srcdir/.pycache"
+  /usr/bin/python -m build --wheel --no-isolation
 }
 
 package() {
   cd "$srcdir/transformers-${pkgver}"
-  python -m installer --destdir="$pkgdir" dist/*.whl
+  export PYTHONPYCACHEPREFIX="$srcdir/.pycache"
+  /usr/bin/python -m installer --destdir="$pkgdir" dist/*.whl
 }

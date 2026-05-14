@@ -5,21 +5,22 @@
     ],
     "authoritative_reference": "cachyos/python-transformers",
     "divergence_notes": [
-      "Tracks upstream transformers 5.8.0 from PyPI so the local vLLM closure stays ahead of distro timing for Gemma, Qwen, and model-surface fixes.",
+      "Tracks upstream transformers 5.8.1 from PyPI so the local vLLM closure stays ahead of distro timing for Gemma, Qwen, and model-surface fixes.",
       "Keeps the package pure-Python and architecture-independent; there are no applicable Strix-specific native optimization flags to carry here.",
       "Depends explicitly on python-numpy-gfx1151 and python-gfx1151 so the local inference stack stays on the repo-managed Python lane."
     ],
     "source_patches": [],
     "update_notes": [
       "Before updating, verify the candidate Transformers release actually ships transformers.models.gemma4; do not assume the version number alone is enough.",
-      "The current package adopts Transformers 5.8.0 with DeepSeek V4, Gemma 4 Assistant, tokenizer/cache fixes, and model-surface additions while keeping transformers.models.gemma4 present.",
+      "The current package adopts Transformers 5.8.1 with DeepSeek V4 serving and weight conversion fixes while keeping transformers.models.gemma4 present.",
+      "Run build and install commands through /usr/bin/python in the PKGBUILD so package bytecode generation does not inherit agent-local Python wrappers or private pycache paths from the maintainer environment.",
       "Re-check dependency metadata against the chosen baseline package and the published PyPI metadata. The package is intentionally thin and should not grow optional extras into hard runtime dependencies.",
       "After any update, rerun the Gemma 4 vLLM smoke test on the host rather than stopping at import transformers."
     ]
   },
   "name": "python-transformers-gfx1151",
   "package_name": "python-transformers-gfx1151",
-  "pkgver": "5.8.0",
+  "pkgver": "5.8.1",
   "policy": {
     "advisory_references": [
       "extra/python-transformers"
@@ -45,7 +46,7 @@
       "python-pyyaml-gfx1151"
     ],
     "divergence_notes": [
-      "Tracks upstream transformers 5.8.0 from PyPI so the local vLLM closure stays ahead of distro timing for Gemma, Qwen, and model-surface fixes.",
+      "Tracks upstream transformers 5.8.1 from PyPI so the local vLLM closure stays ahead of distro timing for Gemma, Qwen, and model-surface fixes.",
       "Keeps the package pure-Python and architecture-independent; there are no applicable Strix-specific native optimization flags to carry here.",
       "Depends explicitly on python-numpy-gfx1151 and python-gfx1151 so the local inference stack stays on the repo-managed Python lane."
     ],
@@ -68,15 +69,16 @@
     "provides": [
       "python-transformers"
     ],
-    "src_subdir": "transformers-5.8.0",
+    "src_subdir": "transformers-5.8.1",
     "template": "manual-python-wheel",
     "update_notes": [
       "Before updating, verify the candidate Transformers release actually ships transformers.models.gemma4; do not assume the version number alone is enough.",
-      "The current package adopts Transformers 5.8.0 with DeepSeek V4, Gemma 4 Assistant, tokenizer/cache fixes, and model-surface additions while keeping transformers.models.gemma4 present.",
+      "The current package adopts Transformers 5.8.1 with DeepSeek V4 serving and weight conversion fixes while keeping transformers.models.gemma4 present.",
+      "Run build and install commands through /usr/bin/python in the PKGBUILD so package bytecode generation does not inherit agent-local Python wrappers or private pycache paths from the maintainer environment.",
       "Re-check dependency metadata against the chosen baseline package and the published PyPI metadata. The package is intentionally thin and should not grow optional extras into hard runtime dependencies.",
       "After any update, rerun the Gemma 4 vLLM smoke test on the host rather than stopping at import transformers."
     ],
-    "upstream_version": "5.8.0",
+    "upstream_version": "5.8.1",
     "url": "https://github.com/huggingface/transformers"
   },
   "provenance": {

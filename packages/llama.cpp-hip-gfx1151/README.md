@@ -7,7 +7,7 @@
 - Scaffold template: `llama-cpp`
 - Recipe build method: `cmake`
 - Upstream repo: `https://github.com/ggml-org/llama.cpp.git`
-- Package version: `b9101`
+- Package version: `b9145`
 - Recipe revision: `3f15f9f (20260508, 17 commits touching recipe path)`
 - Recipe steps: `34`
 - Recipe dependencies: `therock`
@@ -65,6 +65,7 @@ binaries find their shared libraries without LD_LIBRARY_PATH.
 - On 2026-05-01, adopted upstream llama.cpp b8992 at 5cbfb18075c95437e4ac7fb50e3baf88fe137a87. The b8966..b8992 range is runtime-facing for the packaged backends: common sampling, speculative, reasoning-budget, server/Web UI, ggml 0.10.1, Vulkan tensor-helper, mmap ftello/fseeko, hf-cache null-user, and cpp-httplib vendor changes.
 - On 2026-05-03, adopted upstream llama.cpp b9010 at d05fe1d7dadbf8943c8f1903fcf65b935ddab839. The b8992..b9010 range changes shared runtime/server code, ggml 0.10.2, Vulkan FlashAttention coopmat2 support, OpenCL MXFP4 MoE support, WebGPU shaders, and server UI attachment/refactor paths; no local package patch carry changed.
 - On 2026-05-10, adopted upstream llama.cpp b9101 at 389ff61d77b5c71cec0cf92fe4e5d01ace80b797. The b9010..b9101 range includes shared runtime/server changes, ggml 0.11.1, model architecture fixes, Gemma4_26B_A4B_NVFP4 support, Vulkan code changes, and cpp-httplib updates that overlap the packaged HIP, Vulkan, and Lemonade runtime lanes.
+- On 2026-05-14, adopted upstream llama.cpp b9145 at 9ed6e19b9d7e14a71a19622287b2dcd495a828b8. The b9101..b9145 range includes shared runtime/server changes, speculative parallel drafting support, modalities surfaced from /v1/models, cpp-httplib 0.44.0, ggml/CMake updates, and Vulkan asymmetric FlashAttention and shared-memory checks that overlap the packaged HIP, Vulkan, and Lemonade runtime lanes.
 - Keep the backend-specific package split explicit until benchmarking proves a routing wrapper is worth maintaining.
 
 ## Maintainer Starting Points

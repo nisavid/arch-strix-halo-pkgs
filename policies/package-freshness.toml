@@ -41,7 +41,7 @@ packages = ["python-gfx1151"]
 priority = "high"
 workflow = "upstream_source_update"
 checks = [
-  { id = "arch", role = "primary", kind = "arch_package", package = "python", recorded = "3.14.4-1", comparison = "pkgver" },
+  { id = "arch", role = "primary", kind = "arch_package", package = "python", recorded = "3.14.5-1", comparison = "pkgver" },
   { id = "cpython", role = "baseline", kind = "python_ftp", recorded = "3.14.5", comparison = "pep440", series = "3.14" },
 ]
 
@@ -68,7 +68,7 @@ packages = ["python-pytorch-opt-rocm-gfx1151"]
 priority = "high"
 workflow = "upstream_source_update"
 checks = [
-  { id = "release-branch", role = "primary", kind = "git_ref", repo = "https://github.com/ROCm/pytorch.git", ref = "refs/heads/release/2.11", recorded = "5223630054ce5ecd7b774d0ea31f2a1b472fb9b3", comparison = "sha" },
+  { id = "release-branch", role = "primary", kind = "git_ref", repo = "https://github.com/ROCm/pytorch.git", ref = "refs/heads/release/2.11", recorded = "96bfee122869125d32aa4ec9acc8c3597059188b", comparison = "sha" },
   { id = "arch", role = "baseline", kind = "arch_package", package = "python-pytorch-opt-rocm", recorded = "2.11.0-4", comparison = "pkgver" },
 ]
 
@@ -77,7 +77,7 @@ packages = ["python-torchvision-rocm-gfx1151"]
 priority = "medium"
 workflow = "upstream_source_update"
 checks = [
-  { id = "release", role = "primary", kind = "github_release", repo = "pytorch/vision", recorded = "0.26.0", tag_prefix = "v", comparison = "pep440", include_prereleases = false },
+  { id = "release", role = "primary", kind = "github_release", repo = "pytorch/vision", recorded = "0.27.0", tag_prefix = "v", comparison = "pep440", include_prereleases = false },
   { id = "aur", role = "baseline", kind = "aur", package = "python-torchvision-rocm", recorded = "0.26.0-1", comparison = "pkgver" },
 ]
 
@@ -105,7 +105,7 @@ priority = "high"
 workflow = "upstream_source_update"
 checks = [
   { id = "release", role = "primary", kind = "github_release", repo = "ROCm/aiter", recorded = "0.1.13", tag_prefix = "v", comparison = "pep440" },
-  { id = "main", role = "candidate", kind = "git_ref", repo = "https://github.com/ROCm/aiter.git", ref = "refs/heads/main", recorded = "bdece28f7b20e770b6ac9b1b9b1814b71faf258f", comparison = "sha" },
+  { id = "main", role = "candidate", kind = "git_ref", repo = "https://github.com/ROCm/aiter.git", ref = "refs/heads/main", recorded = "d50194cae28f2e22f4dfff19a86577fe2fcbca27", comparison = "sha" },
 ]
 
 [families.flash_attention]
@@ -360,8 +360,8 @@ packages = ["python-transformers-gfx1151"]
 priority = "medium"
 workflow = "upstream_source_update"
 checks = [
-  { id = "pypi", role = "primary", kind = "pypi", package = "transformers", recorded = "5.8.0", comparison = "pep440" },
-  { id = "tag", role = "primary", kind = "github_tags", repo = "huggingface/transformers", recorded = "5.8.0", tag_prefix = "v", comparison = "pep440", include_prereleases = false },
+  { id = "pypi", role = "primary", kind = "pypi", package = "transformers", recorded = "5.8.1", comparison = "pep440" },
+  { id = "tag", role = "primary", kind = "github_tags", repo = "huggingface/transformers", recorded = "5.8.1", tag_prefix = "v", comparison = "pep440", include_prereleases = false },
 ]
 
 [families.llama_cpp]
@@ -369,8 +369,8 @@ packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"]
 priority = "high"
 workflow = "upstream_source_update"
 checks = [
-  { id = "release", role = "primary", kind = "github_release", repo = "ggml-org/llama.cpp", recorded = "b9101", comparison = "prefixed_integer" },
-  { id = "aur-hip", role = "baseline", kind = "aur", package = "llama.cpp-hip", recorded = "b9101-1", comparison = "pkgver" },
+  { id = "release", role = "primary", kind = "github_release", repo = "ggml-org/llama.cpp", recorded = "b9145", comparison = "prefixed_integer" },
+  { id = "aur-hip", role = "baseline", kind = "aur", package = "llama.cpp-hip", recorded = "b9139-1", comparison = "pkgver" },
   { id = "aur-vulkan", role = "baseline", kind = "aur", package = "llama.cpp-vulkan-bin", recorded = "b7376-1", comparison = "pkgver" },
 ]
 

@@ -718,14 +718,16 @@ last_reviewed = "2026-05-07"
 family = "python"
 packages = ["python-gfx1151"]
 source_kind = "python_ftp"
-previous_recorded = "3.14.4"
-latest = "3.14.5"
+baseline_source_kind = "arch_package"
+baseline_latest = "3.14.5-1"
+previous_recorded = "3.14.4 / 3.14.4-1"
+latest = "3.14.5 / 3.14.5-1"
 discovery_status = "stable_update_available"
 disposition = "tracked"
 disposition_reason = "Reviewed during the 2026-05-07 freshness sweep and not folded into this source-update bundle. The package follows the current Arch python 3.14 package shape, and adopting a CPython point release requires a coordinated interpreter rebuild lane for the local ROCm and vLLM stack."
 salient_changes = [
   "CPython 3.14.5 is available in the 3.14 series",
-  "Arch python remains the package's primary integration baseline",
+  "Arch python 3.14.5-1 is the current package integration baseline",
 ]
 patch_carry_overlap = true
 package_source_update_needed = true
@@ -956,3 +958,118 @@ next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
 next_gate_label = "llama.cpp b9106 source-update lane"
 last_reviewed = "2026-05-11"
+
+[candidates."llama-cpp-b9145"]
+family = "llama_cpp"
+packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"]
+source_kind = "github_release"
+baseline_source_kind = "aur"
+baseline_latest = "b9139-1"
+previous_recorded = "b9101 / b9101-1"
+latest = "b9145 / b9139-1"
+discovery_status = "stable_update_available"
+disposition = "adopted"
+disposition_reason = "Adopted in the 2026-05-14 refresh cycle. Source update, package build, deploy/install, installed HIP/Vulkan CLI smokes, llama.cpp scenario-runner smokes, and affected Gemma 4 vLLM live validation passed on 2026-05-14."
+salient_changes = [
+  "cpp-httplib 0.44.0 vendor refresh",
+  "Vulkan asymmetric FlashAttention and scalar/mmq/coopmat1 paths",
+  "Speculative parallel drafting changes",
+  "Model metadata surface changes for /v1/models",
+]
+patch_carry_overlap = true
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Adopted; monitor future llama.cpp releases through the normal freshness sweep"
+last_reviewed = "2026-05-14"
+
+[candidates."transformers-5.8.1-pypi"]
+family = "transformers"
+packages = ["python-transformers-gfx1151"]
+source_kind = "pypi"
+previous_recorded = "5.8.0"
+latest = "5.8.1"
+discovery_status = "stable_update_available"
+disposition = "adopted"
+disposition_reason = "Adopted in the 2026-05-14 refresh cycle. Source update, package build, deploy/install, installed Transformers and Gemma 4 imports, and Gemma 4 vLLM live validation passed on 2026-05-14. The PKGBUILD is pinned to /usr/bin/python to avoid agent-local Python wrapper pycache paths during package bytecode generation."
+salient_changes = [
+  "DeepSeek V4 serving fixes",
+  "DeepSeek V4 weight conversion fixes",
+  "PyPI metadata remains compatible with the current local tokenizers, safetensors, and Hugging Face Hub closure",
+]
+patch_carry_overlap = true
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Adopted; monitor future Transformers releases through the normal freshness sweep"
+last_reviewed = "2026-05-14"
+
+[candidates."aiter-main-d50194c"]
+family = "aiter"
+packages = ["python-amd-aiter-gfx1151"]
+source_kind = "git_ref"
+previous_recorded = "bdece28f7b20e770b6ac9b1b9b1814b71faf258f"
+latest = "main d50194cae28f2e22f4dfff19a86577fe2fcbca27"
+discovery_status = "candidate_head_ahead"
+disposition = "adopted"
+disposition_reason = "Adopted in the 2026-05-14 refresh cycle after maintainer direction to include the AITER main snapshot in the same bundle. Source update, package build, deploy/install, AITER JIT-core import, and affected Gemma 4 vLLM live-scenario validation passed on 2026-05-14. The package uses a local post-0.1.13 version because upstream main describes below the stable tag while still carrying the selected kernel/JIT/runtime range."
+salient_changes = [
+  "Triton naming changes and HK MLA retuning",
+  "mHC prefill and OOB page-table read fix",
+  "FlyDSL indexing and version changes",
+  "topk gating and MXFP4 kernel work",
+]
+patch_carry_overlap = true
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Adopted; monitor future AITER refs through the normal freshness sweep"
+last_reviewed = "2026-05-14"
+
+[candidates."rocm-pytorch-release-2.11-96bfee1"]
+family = "rocm_pytorch"
+packages = ["python-pytorch-opt-rocm-gfx1151"]
+source_kind = "git_ref"
+baseline_source_kind = "arch_package"
+baseline_latest = "2.11.0-4"
+previous_recorded = "5223630054ce5ecd7b774d0ea31f2a1b472fb9b3 / 2.11.0-4"
+latest = "96bfee122869125d32aa4ec9acc8c3597059188b / 2.11.0-4"
+discovery_status = "branch_head_ahead"
+disposition = "rejected"
+disposition_reason = "Reviewed during the 2026-05-14 freshness sweep and not adopted because the range contains a Dynamo ignore-logging-functions fix with no overlap against the current gfx1151 wheel assembly, ROCm patch carry, or installed runtime contracts."
+salient_changes = [
+  "Dynamo ignore-logging-functions update",
+]
+patch_carry_overlap = false
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "No follow-up needed unless later ROCm PyTorch changes overlap gfx1151 package carry"
+last_reviewed = "2026-05-14"
+
+[candidates."torchvision-0.27.0"]
+family = "torchvision"
+packages = ["python-torchvision-rocm-gfx1151"]
+source_kind = "github_release"
+baseline_source_kind = "aur"
+baseline_latest = "0.26.0-1"
+previous_recorded = "0.26.0"
+latest = "0.27.0"
+discovery_status = "stable_update_available"
+disposition = "rejected"
+disposition_reason = "Reviewed during the 2026-05-14 freshness sweep and not adopted because upstream TorchVision 0.27.0 metadata requires torch==2.12.0 while the local ROCm stack is currently the PyTorch 2.11 lane."
+salient_changes = [
+  "TorchVision 0.27.0 release is available",
+  "Published metadata pins torch==2.12.0",
+]
+patch_carry_overlap = true
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Revisit with a coordinated local PyTorch 2.12 lane"
+last_reviewed = "2026-05-14"

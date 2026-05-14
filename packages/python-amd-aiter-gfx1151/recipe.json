@@ -28,7 +28,8 @@
       "On 2026-04-28, reviewed AITER main through 6a7df2004f5f896471cf9e6ab588b6aec0357dc7. The range adds Triton A16W4 MoE kernels, MHA backward stride fixes, an mHC device fix, gfx950 A8W8 correctness updates, and CI workflow changes. It does not resolve the gfx1151 OPUS FP8 mfma_adaptor blocker or replace the local RDNA header/JIT runtime patch carry, so record the reviewed candidate head without repinning.",
       "On 2026-05-01, adopted AITER main at a0f25393903f5412b0fb997d5b825a0aeb257466. The d679e288..a0f2539 range includes HIP KL cache refactoring, JIT/setup handling, cache kernels, mHC small-M work, fused all-reduce/RMSNorm memory ordering, GemmTuner SplitK guards, MXFP4 fixes, preshuffled cache/indexer fixes, and tuning/test coverage.",
       "On 2026-05-10, adopted AITER stable tag v0.1.13 with the local gfx1151 RDNA header, JIT runtime, and gfx1x MoE compatibility carry preserved.",
-      "The current package follows AITER stable tag v0.1.13 because it is the reviewed release lane for the local vLLM/AITER validation surface.",
+      "On 2026-05-14, adopted AITER main d50194cae28f2e22f4dfff19a86577fe2fcbca27 as a post-0.1.13 snapshot because the range carries kernel, JIT, mHC, topk, and MXFP4 changes that are relevant to the local vLLM/AITER validation surface.",
+      "The current package follows reviewed AITER main snapshot d50194cae28f2e22f4dfff19a86577fe2fcbca27 with a local post-0.1.13 package version because the upstream main branch describes below the stable tag even though the selected range is included in this refresh.",
       "Treat FlyDSL as a separate tracked package story; do not silently fold an unpublished wheel into this package.",
       "Keep the installed-system JIT runtime patch until upstream AITER stops assuming `hipcc` is on the ambient PATH and correctly imports modules copied to the writable user JIT cache from read-only site-packages installs.",
       "Keep the package's explicit ROCm toolchain exports in `build()` until upstream AITER stops probing `hipconfig` and `hipcc` through ambient shell state. The concrete build failure was `Could not find hipconfig in PATH or ROCM_HOME(/usr)`.",
@@ -40,7 +41,7 @@
   },
   "name": "python-amd-aiter-gfx1151",
   "package_name": "python-amd-aiter-gfx1151",
-  "pkgver": "0.1.13",
+  "pkgver": "0.1.13.post1.dev268+gd50194cae",
   "policy": {
     "advisory_references": [
       "extra/python-pytorch-opt-rocm",
@@ -89,11 +90,11 @@
       "python-amd-aiter"
     ],
     "recipe_key": "aiter",
-    "recipe_notes_override": "Rebuilt from upstream AITER stable tag v0.1.13. Keep the packaged CK ABI\naligned with the CK headers used by AITER's JIT at runtime.\n\nPREBUILD_KERNELS=0: skip 45-minute full kernel precompilation.\nKernels are JIT-compiled on first use instead.\n\nPackage-local source patches are applied before wheel build for gfx1151\nRDNA 3.5 compatibility and installed-system JIT/runtime behavior.\n",
+    "recipe_notes_override": "Rebuilt from reviewed upstream AITER main snapshot d50194cae28f2e22f4dfff19a86577fe2fcbca27. Keep the packaged CK ABI\naligned with the CK headers used by AITER's JIT at runtime.\n\nPREBUILD_KERNELS=0: skip 45-minute full kernel precompilation.\nKernels are JIT-compiled on first use instead.\n\nPackage-local source patches are applied before wheel build for gfx1151\nRDNA 3.5 compatibility and installed-system JIT/runtime behavior.\n",
     "scaffold_notes": [
       "There is no standalone Arch, CachyOS, or AUR aiter package. The closest packaging lane is the PyTorch ROCm pkgbase that vendors the same submodule, so that pkgbase is advisory only.",
-      "The package pins reviewed upstream AITER stable tag v0.1.13 because it is the adopted source lane for the local vLLM/AITER validation surface.",
-      "The package exports SETUPTOOLS_SCM_PRETEND_VERSION so the wheel metadata stays stable while building from the pinned upstream v0.1.13 tag.",
+      "The package pins reviewed upstream AITER main snapshot d50194cae28f2e22f4dfff19a86577fe2fcbca27 because it is included in the adopted 2026-05-14 refresh for the local vLLM/AITER validation surface.",
+      "The package exports SETUPTOOLS_SCM_PRETEND_VERSION so the wheel metadata stays stable while building from the pinned upstream snapshot.",
       "The recipe rebuilds AITER from the pinned upstream AITER source lane while keeping CK and generated kernel expectations explicit in the package.",
       "Upstream AITER declares pandas as a real dependency and FlyDSL as an optional acceleration path. Keep pandas in the package metadata, and package FlyDSL separately rather than silently depending on an unpublished wheel.",
       "Keep the gfx1151 RDNA 3.5 header fixes as package-local source patches applied before wheel build, split between the `vec_convert.h` packed-op fallbacks and the `hip_reduce.h` wave32/DPP compatibility rewrite.",
@@ -104,7 +105,7 @@
       "SKIP"
     ],
     "source_refs": [
-      "aiter::git+https://github.com/ROCm/aiter.git#tag=v0.1.13"
+      "aiter::git+https://github.com/ROCm/aiter.git#commit=d50194cae28f2e22f4dfff19a86577fe2fcbca27"
     ],
     "src_subdir": "aiter",
     "template": "python-project-aiter",
@@ -117,7 +118,8 @@
       "On 2026-04-28, reviewed AITER main through 6a7df2004f5f896471cf9e6ab588b6aec0357dc7. The range adds Triton A16W4 MoE kernels, MHA backward stride fixes, an mHC device fix, gfx950 A8W8 correctness updates, and CI workflow changes. It does not resolve the gfx1151 OPUS FP8 mfma_adaptor blocker or replace the local RDNA header/JIT runtime patch carry, so record the reviewed candidate head without repinning.",
       "On 2026-05-01, adopted AITER main at a0f25393903f5412b0fb997d5b825a0aeb257466. The d679e288..a0f2539 range includes HIP KL cache refactoring, JIT/setup handling, cache kernels, mHC small-M work, fused all-reduce/RMSNorm memory ordering, GemmTuner SplitK guards, MXFP4 fixes, preshuffled cache/indexer fixes, and tuning/test coverage.",
       "On 2026-05-10, adopted AITER stable tag v0.1.13 with the local gfx1151 RDNA header, JIT runtime, and gfx1x MoE compatibility carry preserved.",
-      "The current package follows AITER stable tag v0.1.13 because it is the reviewed release lane for the local vLLM/AITER validation surface.",
+      "On 2026-05-14, adopted AITER main d50194cae28f2e22f4dfff19a86577fe2fcbca27 as a post-0.1.13 snapshot because the range carries kernel, JIT, mHC, topk, and MXFP4 changes that are relevant to the local vLLM/AITER validation surface.",
+      "The current package follows reviewed AITER main snapshot d50194cae28f2e22f4dfff19a86577fe2fcbca27 with a local post-0.1.13 package version because the upstream main branch describes below the stable tag even though the selected range is included in this refresh.",
       "Treat FlyDSL as a separate tracked package story; do not silently fold an unpublished wheel into this package.",
       "Keep the installed-system JIT runtime patch until upstream AITER stops assuming `hipcc` is on the ambient PATH and correctly imports modules copied to the writable user JIT cache from read-only site-packages installs.",
       "Keep the package's explicit ROCm toolchain exports in `build()` until upstream AITER stops probing `hipconfig` and `hipcc` through ambient shell state. The concrete build failure was `Could not find hipconfig in PATH or ROCM_HOME(/usr)`.",
@@ -126,7 +128,7 @@
       "Treat the current Qwen3.6 FP8 MoE forced-AITER failure as an AITER opus/gfx1151 FP8-kernel feature gap, not a narrow include bug. A built-payload rerun with AITER pkgrel -8 and vLLM pkgrel -27 clears the `hip_compat.h` issue, then fails compiling `aiter.jit.module_quant` with `opus.hpp:3001:24: error: unknown type name 'mfma_adaptor'`; AITER defines `mfma_adaptor` only for `__GFX9__` device builds, while its alternate gfx1250 WMMA path uses FP8 builtins that hipcc rejects for gfx1151.",
       "Keep the unknown-gfx 2-stage fallback, missing-1-stage-metadata tuner skip, and CK 2-stage splitk normalization/forwarding fix until upstream AITER handles those gfx1x cases directly. Do not reintroduce an unquantized `torch_moe` fallback here: the concrete reference-host failure was `google/gemma-4-26B-A4B-it` generating corrupted text after such a fallback ran on AITER-shuffled weights."
     ],
-    "upstream_version": "0.1.13",
+    "upstream_version": "0.1.13.post1.dev268+gd50194cae",
     "url": "https://github.com/ROCm/aiter"
   },
   "provenance": {
@@ -146,11 +148,11 @@
       "vllm"
     ],
     "method": "pip",
-    "notes": "Rebuilt from upstream AITER stable tag v0.1.13. Keep the packaged CK ABI\naligned with the CK headers used by AITER's JIT at runtime.\n\nPREBUILD_KERNELS=0: skip 45-minute full kernel precompilation.\nKernels are JIT-compiled on first use instead.\n\nPackage-local source patches are applied before wheel build for gfx1151\nRDNA 3.5 compatibility and installed-system JIT/runtime behavior.\n",
+    "notes": "Rebuilt from reviewed upstream AITER main snapshot d50194cae28f2e22f4dfff19a86577fe2fcbca27. Keep the packaged CK ABI\naligned with the CK headers used by AITER's JIT at runtime.\n\nPREBUILD_KERNELS=0: skip 45-minute full kernel precompilation.\nKernels are JIT-compiled on first use instead.\n\nPackage-local source patches are applied before wheel build for gfx1151\nRDNA 3.5 compatibility and installed-system JIT/runtime behavior.\n",
     "patches": [],
     "phase": "F",
     "repo": "https://github.com/ROCm/aiter.git",
-    "src_dir": "aiter",
+    "src_dir": "pytorch/third_party/aiter",
     "steps": [
       29
     ]

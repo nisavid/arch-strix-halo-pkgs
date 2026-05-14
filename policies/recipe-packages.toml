@@ -547,7 +547,7 @@ scaffold_notes = [
 [packages.python-amd-aiter-gfx1151]
 recipe_key = "aiter"
 template = "python-project-aiter"
-upstream_version = "0.1.13"
+upstream_version = "0.1.13.post1.dev268+gd50194cae"
 pkgdesc = "AMD AITER kernels rebuilt for Strix Halo gfx1151"
 url = "https://github.com/ROCm/aiter"
 license = ["MIT"]
@@ -569,7 +569,8 @@ update_notes = [
   "On 2026-04-28, reviewed AITER main through 6a7df2004f5f896471cf9e6ab588b6aec0357dc7. The range adds Triton A16W4 MoE kernels, MHA backward stride fixes, an mHC device fix, gfx950 A8W8 correctness updates, and CI workflow changes. It does not resolve the gfx1151 OPUS FP8 mfma_adaptor blocker or replace the local RDNA header/JIT runtime patch carry, so record the reviewed candidate head without repinning.",
   "On 2026-05-01, adopted AITER main at a0f25393903f5412b0fb997d5b825a0aeb257466. The d679e288..a0f2539 range includes HIP KL cache refactoring, JIT/setup handling, cache kernels, mHC small-M work, fused all-reduce/RMSNorm memory ordering, GemmTuner SplitK guards, MXFP4 fixes, preshuffled cache/indexer fixes, and tuning/test coverage.",
   "On 2026-05-10, adopted AITER stable tag v0.1.13 with the local gfx1151 RDNA header, JIT runtime, and gfx1x MoE compatibility carry preserved.",
-  "The current package follows AITER stable tag v0.1.13 because it is the reviewed release lane for the local vLLM/AITER validation surface.",
+  "On 2026-05-14, adopted AITER main d50194cae28f2e22f4dfff19a86577fe2fcbca27 as a post-0.1.13 snapshot because the range carries kernel, JIT, mHC, topk, and MXFP4 changes that are relevant to the local vLLM/AITER validation surface.",
+  "The current package follows reviewed AITER main snapshot d50194cae28f2e22f4dfff19a86577fe2fcbca27 with a local post-0.1.13 package version because the upstream main branch describes below the stable tag even though the selected range is included in this refresh.",
   "Treat FlyDSL as a separate tracked package story; do not silently fold an unpublished wheel into this package.",
   "Keep the installed-system JIT runtime patch until upstream AITER stops assuming `hipcc` is on the ambient PATH and correctly imports modules copied to the writable user JIT cache from read-only site-packages installs.",
   "Keep the package's explicit ROCm toolchain exports in `build()` until upstream AITER stops probing `hipconfig` and `hipcc` through ambient shell state. The concrete build failure was `Could not find hipconfig in PATH or ROCM_HOME(/usr)`.",
@@ -584,7 +585,7 @@ depends = ["python-gfx1151", "python-pandas", "python-pytorch-opt-rocm-gfx1151",
 makedepends = ["git", "python-build", "python-installer", "python-setuptools", "python-wheel", "rocm-llvm-gfx1151"]
 optdepends = ["python-flydsl-gfx1151: optional FlyDSL MLIR kernels for AITER fused MoE paths (blocked on rocm-llvm MLIR Python SDK completeness)"]
 options = ["!strip"]
-source_refs = ["aiter::git+https://github.com/ROCm/aiter.git#tag=v0.1.13"]
+source_refs = ["aiter::git+https://github.com/ROCm/aiter.git#commit=d50194cae28f2e22f4dfff19a86577fe2fcbca27"]
 sha256sums = ["SKIP"]
 src_subdir = "aiter"
 source_patches = [
@@ -597,7 +598,7 @@ source_patches = [
 ]
 patches_dir = "packages/python-amd-aiter-gfx1151"
 recipe_notes_override = """
-Rebuilt from upstream AITER stable tag v0.1.13. Keep the packaged CK ABI
+Rebuilt from reviewed upstream AITER main snapshot d50194cae28f2e22f4dfff19a86577fe2fcbca27. Keep the packaged CK ABI
 aligned with the CK headers used by AITER's JIT at runtime.
 
 PREBUILD_KERNELS=0: skip 45-minute full kernel precompilation.
@@ -608,8 +609,8 @@ RDNA 3.5 compatibility and installed-system JIT/runtime behavior.
 """
 scaffold_notes = [
   "There is no standalone Arch, CachyOS, or AUR aiter package. The closest packaging lane is the PyTorch ROCm pkgbase that vendors the same submodule, so that pkgbase is advisory only.",
-  "The package pins reviewed upstream AITER stable tag v0.1.13 because it is the adopted source lane for the local vLLM/AITER validation surface.",
-  "The package exports SETUPTOOLS_SCM_PRETEND_VERSION so the wheel metadata stays stable while building from the pinned upstream v0.1.13 tag.",
+  "The package pins reviewed upstream AITER main snapshot d50194cae28f2e22f4dfff19a86577fe2fcbca27 because it is included in the adopted 2026-05-14 refresh for the local vLLM/AITER validation surface.",
+  "The package exports SETUPTOOLS_SCM_PRETEND_VERSION so the wheel metadata stays stable while building from the pinned upstream snapshot.",
   "The recipe rebuilds AITER from the pinned upstream AITER source lane while keeping CK and generated kernel expectations explicit in the package.",
   "Upstream AITER declares pandas as a real dependency and FlyDSL as an optional acceleration path. Keep pandas in the package metadata, and package FlyDSL separately rather than silently depending on an unpublished wheel.",
   "Keep the gfx1151 RDNA 3.5 header fixes as package-local source patches applied before wheel build, split between the `vec_convert.h` packed-op fallbacks and the `hip_reduce.h` wave32/DPP compatibility rewrite.",
@@ -1967,7 +1968,7 @@ scaffold_notes = [
 [packages."llama.cpp-hip-gfx1151"]
 recipe_key = "llamacpp"
 template = "llama-cpp"
-upstream_version = "b9101"
+upstream_version = "b9145"
 pkgdesc = "llama.cpp ROCm backend rebuilt for Strix Halo gfx1151"
 url = "https://github.com/ggml-org/llama.cpp"
 license = ["MIT"]
@@ -1990,16 +1991,17 @@ update_notes = [
   "On 2026-05-01, adopted upstream llama.cpp b8992 at 5cbfb18075c95437e4ac7fb50e3baf88fe137a87. The b8966..b8992 range is runtime-facing for the packaged backends: common sampling, speculative, reasoning-budget, server/Web UI, ggml 0.10.1, Vulkan tensor-helper, mmap ftello/fseeko, hf-cache null-user, and cpp-httplib vendor changes.",
   "On 2026-05-03, adopted upstream llama.cpp b9010 at d05fe1d7dadbf8943c8f1903fcf65b935ddab839. The b8992..b9010 range changes shared runtime/server code, ggml 0.10.2, Vulkan FlashAttention coopmat2 support, OpenCL MXFP4 MoE support, WebGPU shaders, and server UI attachment/refactor paths; no local package patch carry changed.",
   "On 2026-05-10, adopted upstream llama.cpp b9101 at 389ff61d77b5c71cec0cf92fe4e5d01ace80b797. The b9010..b9101 range includes shared runtime/server changes, ggml 0.11.1, model architecture fixes, Gemma4_26B_A4B_NVFP4 support, Vulkan code changes, and cpp-httplib updates that overlap the packaged HIP, Vulkan, and Lemonade runtime lanes.",
+  "On 2026-05-14, adopted upstream llama.cpp b9145 at 9ed6e19b9d7e14a71a19622287b2dcd495a828b8. The b9101..b9145 range includes shared runtime/server changes, speculative parallel drafting support, modalities surfaced from /v1/models, cpp-httplib 0.44.0, ggml/CMake updates, and Vulkan asymmetric FlashAttention and shared-memory checks that overlap the packaged HIP, Vulkan, and Lemonade runtime lanes.",
   "Keep the backend-specific package split explicit until benchmarking proves a routing wrapper is worth maintaining."
 ]
 provides = ["llama.cpp-hip-gfx1151", "llama.cpp-hip"]
 conflicts = ["llama.cpp-hip"]
 depends = ["gcc-libs", "glibc", "hip-runtime-amd-gfx1151", "rocm-core-gfx1151"]
 makedepends = ["cmake", "ninja", "rocm-llvm-gfx1151"]
-src_subdir = "llama.cpp-389ff61d77b5c71cec0cf92fe4e5d01ace80b797"
+src_subdir = "llama.cpp-9ed6e19b9d7e14a71a19622287b2dcd495a828b8"
 upstream_name = "llama.cpp"
 baseline_kind = "closest-upstream"
-source_refs = ["llama.cpp-389ff61d77b5c71cec0cf92fe4e5d01ace80b797.tar.gz::https://github.com/ggml-org/llama.cpp/archive/389ff61d77b5c71cec0cf92fe4e5d01ace80b797.tar.gz"]
+source_refs = ["llama.cpp-9ed6e19b9d7e14a71a19622287b2dcd495a828b8.tar.gz::https://github.com/ggml-org/llama.cpp/archive/9ed6e19b9d7e14a71a19622287b2dcd495a828b8.tar.gz"]
 sha256sums = ["SKIP"]
 patches_dir = "patches/llama.cpp-hip-gfx1151"
 recipe_notes_override = """
@@ -2034,7 +2036,7 @@ scaffold_notes = [
 [packages."llama.cpp-vulkan-gfx1151"]
 recipe_key = "llamacpp"
 template = "llama-cpp"
-upstream_version = "b9101"
+upstream_version = "b9145"
 pkgdesc = "llama.cpp Vulkan backend rebuilt for Strix Halo gfx1151"
 url = "https://github.com/ggml-org/llama.cpp"
 license = ["MIT"]
@@ -2057,16 +2059,17 @@ update_notes = [
   "On 2026-05-01, adopted upstream llama.cpp b8992 at 5cbfb18075c95437e4ac7fb50e3baf88fe137a87. The b8966..b8992 range includes shared runtime and server changes plus Vulkan tensor-helper changes, so the Vulkan package follows the same source snapshot as the HIP backend.",
   "On 2026-05-03, adopted upstream llama.cpp b9010 at d05fe1d7dadbf8943c8f1903fcf65b935ddab839. The b8992..b9010 range includes shared runtime/server changes, ggml 0.10.2, Vulkan FlashAttention coopmat2 support, OpenCL MXFP4 MoE support, WebGPU shader changes, and server UI attachment/refactor paths, so the Vulkan package follows the same source snapshot as the HIP backend.",
   "On 2026-05-10, adopted upstream llama.cpp b9101 at 389ff61d77b5c71cec0cf92fe4e5d01ace80b797. The b9010..b9101 range includes shared runtime/server changes, ggml 0.11.1, model architecture fixes, Gemma4_26B_A4B_NVFP4 support, Vulkan code changes, and cpp-httplib updates, so the Vulkan package follows the same source snapshot as the HIP backend.",
+  "On 2026-05-14, adopted upstream llama.cpp b9145 at 9ed6e19b9d7e14a71a19622287b2dcd495a828b8. The b9101..b9145 range includes shared runtime/server changes, speculative parallel drafting support, modalities surfaced from /v1/models, cpp-httplib 0.44.0, ggml/CMake updates, and Vulkan asymmetric FlashAttention and shared-memory checks, so the Vulkan package follows the same source snapshot as the HIP backend.",
   "Until then, compare runtime/package expectations against the -bin package and source-build conventions against aur/llama.cpp."
 ]
 provides = ["llama.cpp-vulkan-gfx1151", "llama.cpp-vulkan"]
 conflicts = ["llama.cpp-vulkan"]
 depends = ["gcc-libs", "glibc", "vulkan-icd-loader"]
 makedepends = ["cmake", "ninja", "rocm-llvm-gfx1151", "shaderc", "spirv-headers", "vulkan-headers"]
-src_subdir = "llama.cpp-389ff61d77b5c71cec0cf92fe4e5d01ace80b797"
+src_subdir = "llama.cpp-9ed6e19b9d7e14a71a19622287b2dcd495a828b8"
 upstream_name = "llama.cpp"
 baseline_kind = "closest-upstream"
-source_refs = ["llama.cpp-389ff61d77b5c71cec0cf92fe4e5d01ace80b797.tar.gz::https://github.com/ggml-org/llama.cpp/archive/389ff61d77b5c71cec0cf92fe4e5d01ace80b797.tar.gz"]
+source_refs = ["llama.cpp-9ed6e19b9d7e14a71a19622287b2dcd495a828b8.tar.gz::https://github.com/ggml-org/llama.cpp/archive/9ed6e19b9d7e14a71a19622287b2dcd495a828b8.tar.gz"]
 sha256sums = ["SKIP"]
 patches_dir = "patches/llama.cpp-vulkan-gfx1151"
 recipe_notes_override = """
