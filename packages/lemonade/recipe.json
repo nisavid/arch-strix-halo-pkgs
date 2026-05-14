@@ -65,7 +65,7 @@
     ],
     "upstream_name": "lemonade",
     "upstream_version": "10.4.0",
-    "url": "https://github.com/lemonade-sdk/lemonade"
+    "url": "https://github.com/nisavid/lemonade"
   },
   "provenance": {
     "output_root": "packages",

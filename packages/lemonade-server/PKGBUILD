@@ -6,23 +6,23 @@
 
 pkgname=lemonade-server
 pkgver=10.4.0
-pkgrel=1
+pkgrel=3
 pkgdesc='Local AI server runtime rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
-url=https://github.com/lemonade-sdk/lemonade
+url=https://github.com/nisavid/lemonade
 license=(Apache-2.0)
 depends=(glibc)
-makedepends=(cmake ninja nodejs npm rocm-llvm-gfx1151)
+makedepends=(cmake git ninja nodejs npm rocm-llvm-gfx1151)
 optdepends=('llama.cpp-hip-gfx1151: llama.cpp ROCm backend' 'llama.cpp-vulkan-gfx1151: llama.cpp Vulkan backend')
 options=()
 provides=(lemonade-server)
 conflicts=()
 replaces=()
-source=(https://github.com/lemonade-sdk/lemonade/archive/refs/tags/v10.4.0.tar.gz 0001-linux-npu-fallback-to-pci-id-when-accel-open-fails.patch 0002-llamacpp-external-backends-are-system-managed.patch 0003-remove-llamacpp-system-backend.patch 0004-system-managed-llamacpp-metadata.patch)
+source=('lemonade::git+https://github.com/nisavid/lemonade.git#commit=8bb0f7408e37c764d7172b24ad190a5014bc6a4d' 0001-linux-npu-fallback-to-pci-id-when-accel-open-fails.patch 0002-llamacpp-external-backends-are-system-managed.patch 0003-remove-llamacpp-system-backend.patch 0004-system-managed-llamacpp-metadata.patch)
 sha256sums=(SKIP SKIP SKIP SKIP SKIP)
 
 prepare() {
-  cd "$srcdir/lemonade-10.4.0"
+  cd "$srcdir/lemonade"
 
   patch -Np1 -i "$srcdir/0001-linux-npu-fallback-to-pci-id-when-accel-open-fails.patch"
   patch -Np1 -i "$srcdir/0002-llamacpp-external-backends-are-system-managed.patch"
@@ -31,7 +31,7 @@ prepare() {
 }
 
 build() {
-  cd "$srcdir/lemonade-10.4.0"
+  cd "$srcdir/lemonade"
 
   _setup_compiler_env() {
   local _compiler_root="/opt/rocm/lib/llvm/bin"
@@ -80,7 +80,7 @@ build() {
 }
 
 package() {
-  cd "$srcdir/lemonade-10.4.0"
+  cd "$srcdir/lemonade"
   local build_root="$srcdir/build-lemonade-server"
 
   DESTDIR="$pkgdir" cmake --install "${build_root}"
@@ -98,13 +98,13 @@ package() {
   install -Dm644 /dev/stdin "$pkgdir/etc/lemonade/conf.d/10-llamacpp-gfx1151.conf" <<'EOF'
 LEMONADE_LLAMACPP_ROCM_BIN=/usr/bin/llama-server-hip-gfx1151
 LEMONADE_LLAMACPP_VULKAN_BIN=/usr/bin/llama-server-vulkan-gfx1151
-LEMONADE_LLAMACPP_ROCM_VERSION=b9101
-LEMONADE_LLAMACPP_VULKAN_VERSION=b9101
-LEMONADE_LLAMACPP_ROCM_RELEASE_URL=https://github.com/ggml-org/llama.cpp/releases/tag/b9101
-LEMONADE_LLAMACPP_VULKAN_RELEASE_URL=https://github.com/ggml-org/llama.cpp/releases/tag/b9101
-LEMONADE_LLAMACPP_ROCM_LABEL=System llama-server-hip-gfx1151 llama.cpp b9101
-LEMONADE_LLAMACPP_VULKAN_LABEL=System llama-server-vulkan-gfx1151 llama.cpp b9101
+LEMONADE_LLAMACPP_ROCM_VERSION=b9145
+LEMONADE_LLAMACPP_VULKAN_VERSION=b9145
+LEMONADE_LLAMACPP_ROCM_RELEASE_URL=https://github.com/ggml-org/llama.cpp/releases/tag/b9145
+LEMONADE_LLAMACPP_VULKAN_RELEASE_URL=https://github.com/ggml-org/llama.cpp/releases/tag/b9145
+LEMONADE_LLAMACPP_ROCM_LABEL=System llama-server-hip-gfx1151 llama.cpp b9145
+LEMONADE_LLAMACPP_VULKAN_LABEL=System llama-server-vulkan-gfx1151 llama.cpp b9145
 EOF
 
-  install -Dm644 "$srcdir/lemonade-10.4.0/LICENSE" "$pkgdir/usr/share/licenses/lemonade-server/LICENSE"
+  install -Dm644 "$srcdir/lemonade/LICENSE" "$pkgdir/usr/share/licenses/lemonade-server/LICENSE"
 }

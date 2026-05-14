@@ -2,6 +2,14 @@
 
 ## Packaging And Build Hygiene
 
+- Deploy and host-validate the fork-backed Lemonade source switch.
+  Source updated: `lemonade-server` and `lemonade-app` now build from
+  `nisavid/lemonade` commit `8bb0f7408e37c764d7172b24ad190a5014bc6a4d`.
+  Package-build gates passed locally for `lemonade-server 10.4.0-3`,
+  `lemonade-app 10.4.0-3`, and the `lemonade 10.4.0-1` meta package.
+  Publish to the `strix-halo-gfx1151` local pacman repo passed on
+  2026-05-14. Install, installed-smoke, service-smoke, and affected Lemonade
+  scenario validation remain open.
 - The 2026-05-14 refresh is adopted. It has source-update, package-build,
   deploy/install, installed-smoke, llama.cpp scenario-runner smoke, and
   affected Gemma 4 vLLM live-scenario evidence for llama.cpp `b9145`, AITER
