@@ -14,6 +14,7 @@ CONF = (
     / "packages/lemonade-server/pkg/lemonade-server/etc/lemonade/conf.d/10-llamacpp-gfx1151.conf"
 )
 PKGINFO = REPO_ROOT / "packages/lemonade-server/pkg/lemonade-server/.PKGINFO"
+LLAMACPP_HIP_PKGBUILD = REPO_ROOT / "packages/llama.cpp-hip-gfx1151/PKGBUILD"
 SERVICE = (
     REPO_ROOT
     / "packages/lemonade-server/pkg/lemonade-server/usr/lib/systemd/system/lemond.service"
@@ -22,7 +23,15 @@ OLD_SERVICE = (
     REPO_ROOT
     / "packages/lemonade-server/pkg/lemonade-server/usr/lib/systemd/system/lemonade-server.service"
 )
-EXPECTED_LLAMACPP_VERSION = "b9101"
+def _pkgbuild_value(path, key):
+    prefix = f"{key}="
+    for line in path.read_text().splitlines():
+        if line.startswith(prefix):
+            return line.removeprefix(prefix).strip("'\"")
+    raise AssertionError(f"{key} not found in {path}")
+
+
+EXPECTED_LLAMACPP_VERSION = _pkgbuild_value(LLAMACPP_HIP_PKGBUILD, "pkgver")
 EXPECTED_RELEASE_URL = (
     "https://github.com/ggml-org/llama.cpp/releases/tag/"
     f"{EXPECTED_LLAMACPP_VERSION}"

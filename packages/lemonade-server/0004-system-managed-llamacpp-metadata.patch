@@ -1,3 +1,5 @@
+diff --git a/src/cpp/server/backend_manager.cpp b/src/cpp/server/backend_manager.cpp
+index dff22d1..5a43bb8 100644
 --- a/src/cpp/server/backend_manager.cpp
 +++ b/src/cpp/server/backend_manager.cpp
 @@ -7,6 +7,7 @@
@@ -8,10 +10,10 @@
  #include <filesystem>
  #include <fstream>
  #include <iostream>
-@@ -21,6 +22,42 @@
- 
+@@ -21,6 +22,42 @@ namespace {
+
  static const char* ROCM_STABLE_RUNTIME_DIR = "rocm-stable-runtime";
- 
+
 +bool is_system_managed_external_backend(const std::string& recipe, const std::string& backend) {
 +    if (recipe != "llamacpp") {
 +        return false;
@@ -51,8 +53,8 @@
  std::string get_current_os() {
  #ifdef _WIN32
      return "windows";
-@@ -626,6 +663,10 @@
- 
+@@ -630,6 +667,10 @@ void BackendManager::uninstall_backend(const std::string& recipe, const std::str
+
  std::string BackendManager::get_latest_version(const std::string& recipe, const std::string& backend) {
      try {
 +        std::string version_override = get_system_managed_backend_version_override(recipe, backend);
@@ -62,8 +64,8 @@
          return get_version_from_config(recipe, normalize_backend_name(recipe, backend));
      } catch (...) {
          return "";
-@@ -668,6 +709,10 @@
- 
+@@ -672,6 +713,10 @@ json BackendManager::get_all_backends_status() {
+
  std::string BackendManager::get_release_url(const std::string& recipe, const std::string& backend) {
      try {
 +        std::string release_url_override = get_system_managed_backend_release_url_override(recipe, backend);
@@ -73,8 +75,8 @@
          std::string resolved_backend = normalize_backend_name(recipe, backend);
          auto params = get_install_params(recipe, resolved_backend);
          return "https://github.com/" + params.repo + "/releases/tag/" + params.version;
-@@ -678,6 +723,9 @@
- 
+@@ -682,6 +727,9 @@ std::string BackendManager::get_release_url(const std::string& recipe, const std
+
  std::string BackendManager::get_download_filename(const std::string& recipe, const std::string& backend) {
      try {
 +        if (is_system_managed_external_backend(recipe, backend)) {
@@ -83,7 +85,7 @@
          std::string resolved_backend = normalize_backend_name(recipe, backend);
          auto params = get_install_params(recipe, resolved_backend);
          return params.filename;
-@@ -689,6 +737,14 @@
+@@ -693,6 +741,14 @@ std::string BackendManager::get_download_filename(const std::string& recipe, con
  BackendManager::BackendEnrichment BackendManager::get_backend_enrichment(const std::string& recipe, const std::string& backend) {
      BackendEnrichment result;
      try {
@@ -98,12 +100,14 @@
          std::string resolved_backend = normalize_backend_name(recipe, backend);
          // All standard recipes (including ryzenai-llm): one get_install_params() call gives us everything
          auto params = get_install_params(recipe, resolved_backend);
+diff --git a/src/cpp/server/system_info.cpp b/src/cpp/server/system_info.cpp
+index f7a5a65..e0d35a3 100644
 --- a/src/cpp/server/system_info.cpp
 +++ b/src/cpp/server/system_info.cpp
-@@ -348,6 +348,19 @@
+@@ -356,6 +356,19 @@ static bool is_system_managed_external_backend(const std::string& recipe, const
      return !BackendUtils::find_external_backend_binary(recipe, backend).empty();
  }
- 
+
 +static std::string get_system_managed_backend_version_override(const std::string& recipe, const std::string& backend) {
 +    if (recipe != "llamacpp") {
 +        return "";
@@ -120,7 +124,7 @@
  static std::string get_llamacpp_version_from_executable(const std::string& executable) {
      std::string output;
  #ifdef _WIN32
-@@ -389,6 +402,10 @@
+@@ -397,6 +410,10 @@ static std::string get_recipe_version(const std::string& recipe, const std::stri
          return get_llamacpp_version_from_executable("llama-server");
      }
      if (is_system_managed_external_backend(recipe, backend)) {

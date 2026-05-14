@@ -1,6 +1,8 @@
+diff --git a/src/cpp/server/system_info.cpp b/src/cpp/server/system_info.cpp
+index 7a0f7b2..f7a5a65 100644
 --- a/src/cpp/server/system_info.cpp
 +++ b/src/cpp/server/system_info.cpp
-@@ -127,10 +127,7 @@
+@@ -124,10 +124,7 @@ struct RecipeBackendDef {
  //
  // Empty family set {} means "all families of that device type"
  static const std::vector<RecipeBackendDef> RECIPE_DEFS = {

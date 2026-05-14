@@ -6,7 +6,7 @@
     "authoritative_reference": "aur/lemonade-desktop",
     "divergence_notes": [
       "Tracks the renamed upstream lemonade-app payload while still providing lemonade-desktop compatibility for local package replacement.",
-      "Builds the Tauri app from the upstream monorepo release tarball rather than relying on an auto-updated runtime payload."
+      "Builds the Tauri app from the maintained forked monorepo source rather than relying on an auto-updated runtime payload."
     ],
     "source_patches": [],
     "update_notes": [
@@ -35,7 +35,7 @@
     ],
     "divergence_notes": [
       "Tracks the renamed upstream lemonade-app payload while still providing lemonade-desktop compatibility for local package replacement.",
-      "Builds the Tauri app from the upstream monorepo release tarball rather than relying on an auto-updated runtime payload."
+      "Builds the Tauri app from the maintained forked monorepo source rather than relying on an auto-updated runtime payload."
     ],
     "license": [
       "Apache-2.0"
@@ -43,6 +43,7 @@
     "makedepends": [
       "cargo",
       "cmake",
+      "git",
       "ninja",
       "nodejs",
       "npm",
@@ -51,6 +52,7 @@
     ],
     "patches_dir": "patches/lemonade-app",
     "pkgdesc": "Lemonade desktop app rebuilt for Strix Halo gfx1151",
+    "pkgrel": 3,
     "provides": [
       "lemonade-desktop"
     ],
@@ -58,18 +60,19 @@
     "replaces": [
       "lemonade-desktop"
     ],
+    "repo": "https://github.com/nisavid/lemonade.git",
     "scaffold_notes": [
       "Tauri desktop package split from the same lemonade monorepo.",
       "Install a /usr/bin/lemonade-app wrapper that launches the packaged Tauri binary from /usr/share/lemonade-app so the shipped desktop entry resolves on PATH.",
-      "Pinned to the v10.4.0 upstream release tarball to keep the package metadata reproducible."
+      "Pinned to nisavid/lemonade main commit 8bb0f7408e37c764d7172b24ad190a5014bc6a4d, whose CMake project version remains 10.4.0."
     ],
     "sha256sums": [
       "SKIP"
     ],
     "source_refs": [
-      "https://github.com/lemonade-sdk/lemonade/archive/refs/tags/v10.4.0.tar.gz"
+      "lemonade::git+https://github.com/nisavid/lemonade.git#commit=8bb0f7408e37c764d7172b24ad190a5014bc6a4d"
     ],
-    "src_subdir": "lemonade-10.4.0",
+    "src_subdir": "lemonade",
     "template": "lemonade-app",
     "update_notes": [
       "Update against the closest desktop/app packaging lane first, then re-check any server-side shared assets the app package expects from the monorepo build.",
@@ -77,7 +80,7 @@
     ],
     "upstream_name": "lemonade-app",
     "upstream_version": "10.4.0",
-    "url": "https://github.com/lemonade-sdk/lemonade"
+    "url": "https://github.com/nisavid/lemonade"
   },
   "provenance": {
     "output_root": "packages",

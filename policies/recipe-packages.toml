@@ -2181,14 +2181,17 @@ recipe_key = "lemonade"
 template = "lemonade-server"
 upstream_version = "10.4.0"
 pkgdesc = "Local AI server runtime rebuilt for Strix Halo gfx1151"
-url = "https://github.com/lemonade-sdk/lemonade"
+pkgrel = 3
+url = "https://github.com/nisavid/lemonade"
+repo = "https://github.com/nisavid/lemonade.git"
 license = ["Apache-2.0"]
 arch_reference = ["aur/lemonade-server", "aur/lemonade-desktop"]
 authoritative_reference = "aur/lemonade-server"
 advisory_references = ["aur/lemonade-desktop"]
 divergence_notes = [
   "This custom build treats the ROCm and Vulkan llama.cpp backends as packaged system-managed backends rather than Lemonade-managed runtime downloads.",
-  "Carries local patches for Linux XDNA2 detection and the system-managed llama.cpp backend story that are specific to this Strix Halo packaging lane."
+  "Carries local patches for Linux XDNA2 detection and the system-managed llama.cpp backend story that are specific to this Strix Halo packaging lane.",
+  "Builds from the nisavid/lemonade fork so this package can consume local upstream fixes before they are available from the canonical Lemonade repository."
 ]
 update_notes = [
   "Update against the current upstream monorepo release and the AUR server package first, then re-check whether any local backend-management or NPU-detection patches are still needed.",
@@ -2198,16 +2201,16 @@ update_notes = [
 provides = ["lemonade-server"]
 conflicts = []
 depends = ["glibc"]
-makedepends = ["cmake", "ninja", "nodejs", "npm", "rocm-llvm-gfx1151"]
+makedepends = ["cmake", "git", "ninja", "nodejs", "npm", "rocm-llvm-gfx1151"]
 optdepends = [
   "llama.cpp-hip-gfx1151: llama.cpp ROCm backend",
   "llama.cpp-vulkan-gfx1151: llama.cpp Vulkan backend"
 ]
-src_subdir = "lemonade-10.4.0"
+src_subdir = "lemonade"
 upstream_name = "lemonade-server"
 baseline_kind = "closest-upstream"
-source_refs = ["https://github.com/lemonade-sdk/lemonade/archive/refs/tags/v10.4.0.tar.gz"]
-recipe_branch_override = "v10.4.0"
+source_refs = ["lemonade::git+https://github.com/nisavid/lemonade.git#commit=8bb0f7408e37c764d7172b24ad190a5014bc6a4d"]
+recipe_branch_override = "main"
 sha256sums = ["SKIP"]
 extra_sources = [
   "0001-linux-npu-fallback-to-pci-id-when-accel-open-fails.patch",
@@ -2225,7 +2228,7 @@ source_patches = [
 patches_dir = "packages/lemonade-server"
 scaffold_notes = [
   "Server/runtime package; llama.cpp backends are optdepends, not hard deps.",
-  "Pinned to the v10.4.0 upstream release tarball to keep the package metadata reproducible.",
+  "Pinned to nisavid/lemonade main commit 8bb0f7408e37c764d7172b24ad190a5014bc6a4d, whose CMake project version remains 10.4.0.",
   "Uses upstream's lemond.service unit name; do not ship the pre-10.3 lemonade-server.service name in this package.",
   "Installs /etc/lemonade/conf.d/10-llamacpp-gfx1151.conf so the packaged ROCm and Vulkan llama.cpp wrapper binaries are exposed to the service as system-managed backends.",
   "The system-managed backend patch also folds in the config-load and CLI/backend-table changes needed for those service-provided overrides to stay visible after config.json already exists.",
@@ -2237,14 +2240,16 @@ recipe_key = "lemonade"
 template = "lemonade-app"
 upstream_version = "10.4.0"
 pkgdesc = "Lemonade desktop app rebuilt for Strix Halo gfx1151"
-url = "https://github.com/lemonade-sdk/lemonade"
+pkgrel = 3
+url = "https://github.com/nisavid/lemonade"
+repo = "https://github.com/nisavid/lemonade.git"
 license = ["Apache-2.0"]
 arch_reference = ["aur/lemonade-desktop", "aur/lemonade-server"]
 authoritative_reference = "aur/lemonade-desktop"
 advisory_references = ["aur/lemonade-server"]
 divergence_notes = [
   "Tracks the renamed upstream lemonade-app payload while still providing lemonade-desktop compatibility for local package replacement.",
-  "Builds the Tauri app from the upstream monorepo release tarball rather than relying on an auto-updated runtime payload."
+  "Builds the Tauri app from the maintained forked monorepo source rather than relying on an auto-updated runtime payload."
 ]
 update_notes = [
   "Update against the closest desktop/app packaging lane first, then re-check any server-side shared assets the app package expects from the monorepo build.",
@@ -2254,17 +2259,17 @@ provides = ["lemonade-desktop"]
 conflicts = ["lemonade-desktop"]
 replaces = ["lemonade-desktop"]
 depends = ["lemonade-server"]
-makedepends = ["cargo", "cmake", "ninja", "nodejs", "npm", "rocm-llvm-gfx1151", "rust"]
-src_subdir = "lemonade-10.4.0"
+makedepends = ["cargo", "cmake", "git", "ninja", "nodejs", "npm", "rocm-llvm-gfx1151", "rust"]
+src_subdir = "lemonade"
 upstream_name = "lemonade-app"
 baseline_kind = "closest-upstream"
-source_refs = ["https://github.com/lemonade-sdk/lemonade/archive/refs/tags/v10.4.0.tar.gz"]
+source_refs = ["lemonade::git+https://github.com/nisavid/lemonade.git#commit=8bb0f7408e37c764d7172b24ad190a5014bc6a4d"]
 sha256sums = ["SKIP"]
 patches_dir = "patches/lemonade-app"
 scaffold_notes = [
   "Tauri desktop package split from the same lemonade monorepo.",
   "Install a /usr/bin/lemonade-app wrapper that launches the packaged Tauri binary from /usr/share/lemonade-app so the shipped desktop entry resolves on PATH.",
-  "Pinned to the v10.4.0 upstream release tarball to keep the package metadata reproducible."
+  "Pinned to nisavid/lemonade main commit 8bb0f7408e37c764d7172b24ad190a5014bc6a4d, whose CMake project version remains 10.4.0."
 ]
 
 [packages."lemonade"]
@@ -2272,7 +2277,7 @@ recipe_key = "lemonade"
 template = "meta-package"
 upstream_version = "10.4.0"
 pkgdesc = "Meta package for Lemonade and llama.cpp backend packages"
-url = "https://github.com/lemonade-sdk/lemonade"
+url = "https://github.com/nisavid/lemonade"
 license = ["Apache-2.0"]
 arch_reference = ["aur/lemonade-server", "aur/lemonade-desktop"]
 authoritative_reference = "none"

@@ -9,7 +9,7 @@
 - Recipe package key: `lemonade`
 - Scaffold template: `lemonade-server`
 - Recipe build method: `pip`
-- Upstream repo: `https://github.com/lemonade-sdk/lemonade.git`
+- Upstream repo: `https://github.com/nisavid/lemonade.git`
 - Package version: `10.4.0`
 - Recipe revision: `3f15f9f (20260508, 17 commits touching recipe path)`
 - Recipe steps: `34, 35, 36`
@@ -36,7 +36,7 @@ Reinstalling at compatible versions resolves conflicts.
 ## Scaffold notes
 
 - Server/runtime package; llama.cpp backends are optdepends, not hard deps.
-- Pinned to the v10.4.0 upstream release tarball to keep the package metadata reproducible.
+- Pinned to nisavid/lemonade main commit 8bb0f7408e37c764d7172b24ad190a5014bc6a4d, whose CMake project version remains 10.4.0.
 - Uses upstream's lemond.service unit name; do not ship the pre-10.3 lemonade-server.service name in this package.
 - Installs /etc/lemonade/conf.d/10-llamacpp-gfx1151.conf so the packaged ROCm and Vulkan llama.cpp wrapper binaries are exposed to the service as system-managed backends.
 - The system-managed backend patch also folds in the config-load and CLI/backend-table changes needed for those service-provided overrides to stay visible after config.json already exists.
@@ -46,6 +46,7 @@ Reinstalling at compatible versions resolves conflicts.
 
 - This custom build treats the ROCm and Vulkan llama.cpp backends as packaged system-managed backends rather than Lemonade-managed runtime downloads.
 - Carries local patches for Linux XDNA2 detection and the system-managed llama.cpp backend story that are specific to this Strix Halo packaging lane.
+- Builds from the nisavid/lemonade fork so this package can consume local upstream fixes before they are available from the canonical Lemonade repository.
 
 ## Update Notes
 
