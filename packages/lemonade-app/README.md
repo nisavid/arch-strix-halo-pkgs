@@ -43,7 +43,7 @@ Reinstalling at compatible versions resolves conflicts.
 
 ## Update Notes
 
-- Update against the closest desktop/app packaging lane first, then re-check any server-side shared assets the app package expects from the monorepo build.
+- Track the nisavid/lemonade fork's main branch as the package source lane; use the closest desktop/app packages as packaging baselines only.
 - Keep the provides/conflicts story accurate while Arch/AUR naming remains in transition.
 
 ## Maintainer Starting Points

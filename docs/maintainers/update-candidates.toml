@@ -785,6 +785,7 @@ last_reviewed = "2026-05-11"
 family = "lemonade"
 packages = ["lemonade-server", "lemonade-app", "lemonade"]
 source_kind = "github_release"
+check_id = "upstream-release"
 baseline_source_kind = "aur"
 baseline_latest = "10.4.0-1"
 previous_recorded = "10.2.0 / 10.3.0 / 10.2.0-1"
@@ -803,6 +804,28 @@ next_gate_kind = "none"
 next_gate_path = ""
 next_gate_label = "Adopted; monitor future Lemonade releases through the normal freshness sweep"
 last_reviewed = "2026-05-11"
+
+[candidates."lemonade-fork-main-81f7e006"]
+family = "lemonade"
+packages = ["lemonade-server", "lemonade-app", "lemonade"]
+source_kind = "git_ref"
+check_id = "fork-main"
+previous_recorded = "8bb0f7408e37c764d7172b24ad190a5014bc6a4d"
+latest = "81f7e00608347fcbaa43eb89da53270d8e2370ef"
+discovery_status = "branch_head_ahead"
+disposition = "blocked"
+disposition_reason = "The fork default branch advanced after the source switch. The package bundle still pins the earlier fork main commit, so the source update, patch review, rebuild, publish, install, smoke, and affected Lemonade scenario gates remain open."
+salient_changes = [
+  "nisavid/lemonade main advanced from 8bb0f7408e37c764d7172b24ad190a5014bc6a4d to 81f7e00608347fcbaa43eb89da53270d8e2370ef",
+  "This repo now treats the fork default branch as the Lemonade source lane when no release channel is specified",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "Adopt fork main 81f7e00608347fcbaa43eb89da53270d8e2370ef for Lemonade package bundle"
+last_reviewed = "2026-05-15"
 
 [candidates."llama-cpp-b9101"]
 family = "llama_cpp"

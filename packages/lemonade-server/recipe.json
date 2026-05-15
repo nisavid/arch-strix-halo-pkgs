@@ -16,7 +16,7 @@
       "0004-system-managed-llamacpp-metadata.patch"
     ],
     "update_notes": [
-      "Update against the current upstream monorepo release and the AUR server package first, then re-check whether any local backend-management or NPU-detection patches are still needed.",
+      "Track the nisavid/lemonade fork's main branch as the package source lane; use canonical upstream releases and AUR packages as baselines for compatibility review.",
       "Keep packaging and app/server split aligned with upstream naming changes; do not drift back toward the old lemonade-desktop era naming model.",
       "Re-test that LEMONADE_LLAMACPP_*_BIN service overrides still apply even when /var/lib/lemonade/config.json already exists."
     ]
@@ -99,7 +99,7 @@
     "src_subdir": "lemonade",
     "template": "lemonade-server",
     "update_notes": [
-      "Update against the current upstream monorepo release and the AUR server package first, then re-check whether any local backend-management or NPU-detection patches are still needed.",
+      "Track the nisavid/lemonade fork's main branch as the package source lane; use canonical upstream releases and AUR packages as baselines for compatibility review.",
       "Keep packaging and app/server split aligned with upstream naming changes; do not drift back toward the old lemonade-desktop era naming model.",
       "Re-test that LEMONADE_LLAMACPP_*_BIN service overrides still apply even when /var/lib/lemonade/config.json already exists."
     ],

@@ -2,6 +2,15 @@
 
 ## Packaging And Build Hygiene
 
+- Adopt fork main `81f7e00608347fcbaa43eb89da53270d8e2370ef` for Lemonade
+  package bundle.
+  Freshness now tracks `nisavid/lemonade` `main` as the source lane because
+  this package bundle builds from the fork rather than from canonical upstream
+  releases. Package source remains pinned to
+  `8bb0f7408e37c764d7172b24ad190a5014bc6a4d`; review the branch range, repin
+  `lemonade-server` and `lemonade-app`, refresh patches if needed, rebuild,
+  publish, install, smoke, and run affected Lemonade scenarios before closing
+  this candidate.
 - Deploy and host-validate the fork-backed Lemonade source switch.
   Source updated: `lemonade-server` and `lemonade-app` now build from
   `nisavid/lemonade` commit `8bb0f7408e37c764d7172b24ad190a5014bc6a4d`.
