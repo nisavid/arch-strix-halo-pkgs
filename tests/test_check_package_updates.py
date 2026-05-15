@@ -6,6 +6,7 @@ import re
 import subprocess
 import textwrap
 import time
+import tomllib
 
 import pytest
 
@@ -471,6 +472,38 @@ def test_primary_sha_ref_drift_keeps_legacy_branch_head_status(tmp_path):
     report = updates.run_check(tmp_path, refresh=True, clients=clients)
 
     assert report["families"][0]["status"] == "branch_head_ahead"
+
+
+def test_primary_branch_head_ahead_is_actionable(tmp_path):
+    write_pkg(tmp_path, "python-triton-gfx1151")
+    write_policy(
+        tmp_path,
+        """
+        [families.triton]
+        packages = ["python-triton-gfx1151"]
+        priority = "high"
+        workflow = "upstream_source_update"
+        checks = [{ id = "main-perf", role = "primary", kind = "git_ref", repo = "https://github.com/ROCm/triton.git", ref = "refs/heads/main_perf", recorded = "0ec280c", comparison = "sha" }]
+        """,
+    )
+    clients = updates.FakeClients(
+        git_refs={
+            "https://github.com/ROCm/triton.git:refs/heads/main_perf": "1111111"
+        }
+    )
+
+    code = updates.main(
+        [
+            "--repo-root",
+            str(tmp_path),
+            "--refresh",
+            "--fail-on",
+            "actionable",
+        ],
+        clients=clients,
+    )
+
+    assert code == 10
 
 
 def test_candidate_drift_precedes_baseline_drift(tmp_path):
@@ -2131,6 +2164,44 @@ def test_real_freshness_policy_covers_every_pkgbuild_dir():
     )
 
     assert report["summary"].get("metadata_mismatch", 0) == 0
+
+
+def test_real_lemonade_freshness_tracks_fork_main_source_commit():
+    repo = Path(__file__).resolve().parents[1]
+    families = updates.policy_families(repo)
+    lemonade = families["lemonade"]
+    checks = {check["id"]: check for check in lemonade["checks"]}
+    fork_main = checks["fork-main"]
+
+    assert fork_main["role"] == "primary"
+    assert fork_main["kind"] == "git_ref"
+    assert fork_main["repo"] == "https://github.com/nisavid/lemonade.git"
+    assert fork_main["ref"] == "refs/heads/main"
+    assert fork_main["comparison"] == "sha"
+    for check_id, check in checks.items():
+        if check_id == "fork-main":
+            continue
+        assert check["role"] == "baseline", check_id
+
+    recipe_policy = tomllib.loads(
+        (repo / "policies/recipe-packages.toml").read_text(encoding="utf-8")
+    )
+    package_entries = recipe_policy["packages"]
+    source_commits = set()
+    for package in ("lemonade-server", "lemonade-app"):
+        refs = package_entries[package]["source_refs"]
+        matches = [
+            re.fullmatch(
+                r"lemonade::git\+https://github\.com/nisavid/lemonade\.git#commit=([0-9a-f]{40})",
+                ref,
+            )
+            for ref in refs
+        ]
+        commits = {match.group(1) for match in matches if match}
+        assert commits, package
+        source_commits.update(commits)
+
+    assert source_commits == {fork_main["recorded"]}
 
 
 def test_github_release_client_ignores_drafts_and_respects_prerelease_flag():

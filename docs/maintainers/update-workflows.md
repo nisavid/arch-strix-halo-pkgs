@@ -155,6 +155,15 @@ For branch checks, the recorded value may be newer than the packaged source
 when the reviewed branch range did not justify changing the pinned package
 commit.
 
+When a package is onboarded or re-onboarded to a remote repository source
+without an explicit release channel, treat the source repository's selected ref
+as the freshness source. If the operator names a repo origin but not a release,
+tag, or branch, verify the intended ref before committing the package metadata.
+For repositories with no versioned releases or versioned tags, the default
+branch is the normal source lane only after that intent is clear; encode it as
+a `git_ref` freshness check and keep release/tag sources as baselines or remove
+them if they are not relevant.
+
 If the sweep changes package policy, patch carry, validation status, or a known
 blocker, update canonical docs under `docs/` and delete any session-only input
 once its durable content has been extracted.

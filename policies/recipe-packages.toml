@@ -2194,7 +2194,7 @@ divergence_notes = [
   "Builds from the nisavid/lemonade fork so this package can consume local upstream fixes before they are available from the canonical Lemonade repository."
 ]
 update_notes = [
-  "Update against the current upstream monorepo release and the AUR server package first, then re-check whether any local backend-management or NPU-detection patches are still needed.",
+  "Track the nisavid/lemonade fork's main branch as the package source lane; use canonical upstream releases and AUR packages as baselines for compatibility review.",
   "Keep packaging and app/server split aligned with upstream naming changes; do not drift back toward the old lemonade-desktop era naming model.",
   "Re-test that LEMONADE_LLAMACPP_*_BIN service overrides still apply even when /var/lib/lemonade/config.json already exists."
 ]
@@ -2252,7 +2252,7 @@ divergence_notes = [
   "Builds the Tauri app from the maintained forked monorepo source rather than relying on an auto-updated runtime payload."
 ]
 update_notes = [
-  "Update against the closest desktop/app packaging lane first, then re-check any server-side shared assets the app package expects from the monorepo build.",
+  "Track the nisavid/lemonade fork's main branch as the package source lane; use the closest desktop/app packages as packaging baselines only.",
   "Keep the provides/conflicts story accurate while Arch/AUR naming remains in transition."
 ]
 provides = ["lemonade-desktop"]
