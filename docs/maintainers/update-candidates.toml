@@ -945,19 +945,19 @@ source_kind = "git_ref"
 previous_recorded = "bdece28f7b20e770b6ac9b1b9b1814b71faf258f"
 latest = "0120532614b9ef70d7fb9ee1b9f39d1273e303d0"
 discovery_status = "candidate_head_ahead"
-disposition = "tracked"
-disposition_reason = "Found during the 2026-05-11 PR closeout freshness check after adopting AITER 0.1.13. Track the main-branch kernel/JIT delta separately from the already-adopted stable release."
+disposition = "adopted"
+disposition_reason = "Found during the 2026-05-11 PR closeout freshness check after adopting AITER 0.1.13. The tracked lane was superseded by later AITER main adoptions through d50194c on 2026-05-14 and 7cfe519 on 2026-05-15, so no separate 0120532 follow-up remains active."
 salient_changes = [
   "AITER main moved beyond the recorded candidate head after the stable 0.1.13 refresh was adopted",
   "AITER main changes can affect JIT cache behavior, kernel selection, and vLLM runtime smokes",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
-next_gate_label = "AITER main 0120532 source-update lane"
-last_reviewed = "2026-05-11"
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Superseded by later adopted AITER main refreshes"
+last_reviewed = "2026-05-15"
 
 [candidates."llama-cpp-b9106"]
 family = "llama_cpp"
@@ -968,19 +968,19 @@ baseline_latest = "b9101-1"
 previous_recorded = "b9101 / b9101-1"
 latest = "b9106"
 discovery_status = "stable_update_available"
-disposition = "tracked"
-disposition_reason = "Found during the 2026-05-11 PR closeout freshness check after adopting llama.cpp b9101. Track as the next source-update lane rather than expanding the May 10 refresh after validation closed."
+disposition = "adopted"
+disposition_reason = "Found during the 2026-05-11 PR closeout freshness check after adopting llama.cpp b9101. The tracked lane was superseded by later llama.cpp adoptions through b9145 on 2026-05-14 and b9165 on 2026-05-15, so no separate b9106 follow-up remains active."
 salient_changes = [
   "GitHub release b9106 is available after the adopted b9101 lane",
   "The AUR HIP baseline remains at the adopted b9101 package release",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
-next_gate_label = "llama.cpp b9106 source-update lane"
-last_reviewed = "2026-05-11"
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Superseded by later adopted llama.cpp refreshes"
+last_reviewed = "2026-05-15"
 
 [candidates."llama-cpp-b9145"]
 family = "llama_cpp"
@@ -1096,3 +1096,97 @@ next_gate_kind = "none"
 next_gate_path = ""
 next_gate_label = "Revisit with a coordinated local PyTorch 2.12 lane"
 last_reviewed = "2026-05-14"
+
+[candidates."vllm-0.21.0"]
+family = "vllm"
+packages = ["python-vllm-rocm-gfx1151"]
+source_kind = "github_release"
+baseline_source_kind = "aur"
+baseline_latest = "0.12.0-1"
+previous_recorded = "0.20.2"
+latest = "0.21.0"
+discovery_status = "stable_update_available"
+disposition = "adopted"
+disposition_reason = "Adopted in the 2026-05-15 refresh cycle. Source metadata and ROCm patch carry are refreshed for vLLM 0.21.0; source verification, package source preparation, focused package tests, and package build passed. Deploy/install, installed-smoke, and affected live-scenario gates are tracked in current-state until closeout."
+salient_changes = [
+  "ROCm paged-attention shared-memory fixes",
+  "AITER metadata and MoE updates",
+  "Gemma 4, Qwen3.5, GDN, and DeepSeek V4 fixes",
+  "C++20 build compatibility updates",
+]
+patch_carry_overlap = true
+package_source_update_needed = false
+host_validation_needed = true
+next_gate_kind = "current-state"
+next_gate_path = "docs/maintainers/current-state.md"
+next_gate_label = "Complete 2026-05-15 deploy/install and host validation gates"
+last_reviewed = "2026-05-15"
+
+[candidates."aiter-main-7cfe519"]
+family = "aiter"
+packages = ["python-amd-aiter-gfx1151"]
+source_kind = "git_ref"
+previous_recorded = "d50194cae28f2e22f4dfff19a86577fe2fcbca27"
+latest = "7cfe51983cd9dd55c0355e34fb614e7c0de44e6e"
+discovery_status = "candidate_head_ahead"
+disposition = "adopted"
+disposition_reason = "Adopted in the 2026-05-15 refresh cycle. Source metadata is updated to the selected AITER main snapshot and source preparation applies the local patch carry with offsets/fuzz, and package build passed. Deploy/install, installed JIT smoke, and affected vLLM scenario gates are tracked in current-state until closeout."
+salient_changes = [
+  "Tuned GEMM and MoE kernel/config churn after the 2026-05-14 main snapshot",
+  "Runtime-facing JIT and fused-MoE surfaces that overlap local vLLM validation lanes",
+]
+patch_carry_overlap = true
+package_source_update_needed = false
+host_validation_needed = true
+next_gate_kind = "current-state"
+next_gate_path = "docs/maintainers/current-state.md"
+next_gate_label = "Complete 2026-05-15 deploy/install and host validation gates"
+last_reviewed = "2026-05-15"
+
+[candidates."llama-cpp-b9165"]
+family = "llama_cpp"
+packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"]
+source_kind = "github_release"
+baseline_source_kind = "aur"
+baseline_latest = "b9158-1"
+previous_recorded = "b9145 / b9139-1"
+latest = "b9165"
+discovery_status = "stable_update_available"
+disposition = "adopted"
+disposition_reason = "Adopted in the 2026-05-15 refresh cycle. Source metadata is updated for both HIP and Vulkan backends; source verification, package source preparation, and package build passed. Deploy/install, backend CLI smokes, and affected Lemonade or vLLM scenario gates are tracked in current-state until closeout."
+salient_changes = [
+  "HIP RDNA3 MMA and transpose tuning",
+  "Vulkan integer pipeline selection",
+  "Codex CLI Responses-tool compatibility",
+  "WebUI streaming, error handling, and Qwen tokenizer handling fixes",
+]
+patch_carry_overlap = true
+package_source_update_needed = false
+host_validation_needed = true
+next_gate_kind = "current-state"
+next_gate_path = "docs/maintainers/current-state.md"
+next_gate_label = "Complete 2026-05-15 deploy/install and host validation gates"
+last_reviewed = "2026-05-15"
+
+[candidates."stable-diffusion-cpp-0b82969"]
+family = "stable_diffusion_cpp"
+packages = ["stable-diffusion.cpp-vulkan-gfx1151"]
+source_kind = "git_ref"
+previous_recorded = "90e87bc846f17059771efb8aaa31e9ef0cab6f78"
+latest = "0b8296915c4094090cff6bd2e09a5e98288c3c7d"
+discovery_status = "branch_head_ahead"
+disposition = "adopted"
+disposition_reason = "Adopted in the 2026-05-15 refresh cycle. Source metadata is updated to stable-diffusion.cpp r604.g0b82969 and source preparation applies the local SDXL CLIP-G mapping patch with offset/fuzz, and package build passed after routing pnpm tool/cache state into $srcdir. Deploy/install and installed wrapper smokes are tracked in current-state until closeout."
+salient_changes = [
+  "HiDream O1 image support",
+  "WebP/WebM pkg-config integration",
+  "Model-weight mmap support",
+  "Euler CFG++ sampler additions",
+]
+patch_carry_overlap = true
+package_source_update_needed = false
+host_validation_needed = true
+next_gate_kind = "current-state"
+next_gate_path = "docs/maintainers/current-state.md"
+next_gate_label = "Complete 2026-05-15 deploy/install and host validation gates"
+last_reviewed = "2026-05-15"

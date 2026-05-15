@@ -2,6 +2,16 @@
 
 ## Packaging And Build Hygiene
 
+- Deploy and host-validate the 2026-05-15 refresh bundle. Source metadata is updated for
+  vLLM 0.21.0, AITER main
+  `7cfe51983cd9dd55c0355e34fb614e7c0de44e6e`, llama.cpp `b9165`, and
+  stable-diffusion.cpp `r604.g0b82969`. Source verification and package source
+  preparation passed for the affected packages. Package build produced
+  `llama.cpp-hip-gfx1151 b9165-1`, `llama.cpp-vulkan-gfx1151 b9165-1`,
+  `python-amd-aiter-gfx1151 0.1.14rc1.dev27+g7cfe51983-1`,
+  `python-vllm-rocm-gfx1151 0.21.0-1`, and
+  `stable-diffusion.cpp-vulkan-gfx1151 r604.g0b82969-1`. Deploy/install,
+  installed-smoke, and affected scenario gates remain open.
 - Adopt fork main `81f7e00608347fcbaa43eb89da53270d8e2370ef` for Lemonade
   package bundle.
   Freshness now tracks `nisavid/lemonade` `main` as the source lane because
@@ -53,14 +63,6 @@
   rebuilt after the corrected PyTorch deploy through plan
   `20260511T081446-f56bde47`; and affected live scenarios passed in
   `docs/worklog/inference-runs/20260511T083036`.
-- The 2026-05-11 PR closeout freshness check found two new tracked follow-up
-  lanes after the 2026-05-10 refresh had already closed validation:
-  - `AITER main 0120532 source-update lane`: review the main-branch kernel/JIT
-    delta after the adopted 0.1.13 release, then build, deploy/install, run the
-    installed JIT smoke, and run affected vLLM scenario validation.
-  - `llama.cpp b9106 source-update lane`: review the b9101..b9106 runtime
-    delta, then build and deploy both HIP/Vulkan backends, run backend CLI
-    smokes, and run affected Lemonade/vLLM scenario validation.
 - Python 3.14.5 coordinated rebuild lane: Python 3.14.5 is reviewed as
   baseline drift but remains a coordinated interpreter rebuild lane rather
   than part of the 2026-05-07 source bundle.

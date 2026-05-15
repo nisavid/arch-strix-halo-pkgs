@@ -5,7 +5,7 @@
 # Package recipe key: vllm
 
 pkgname=python-vllm-rocm-gfx1151
-pkgver=0.20.2
+pkgver=0.21.0
 pkgrel=1
 pkgdesc='High-throughput and memory-efficient inference engine for LLMs with ROCm, rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
@@ -18,8 +18,8 @@ options=('!lto')
 provides=(python-vllm-rocm python-vllm)
 conflicts=(python-vllm-rocm python-vllm)
 replaces=()
-source=(https://github.com/vllm-project/vllm/archive/refs/tags/v0.20.2.tar.gz 0016-rocm-refresh-local-carry-for-vllm-0.20.2.patch)
-sha256sums=(d3fad72335d0232fdd291113985f5c0c2e393192b19a5ddabed9c635b9b4d73b SKIP)
+source=(https://github.com/vllm-project/vllm/archive/refs/tags/v0.21.0.tar.gz 0016-rocm-refresh-local-carry-for-vllm-0.21.0.patch)
+sha256sums=(2d4bc9f472437e29f3d37918eebe7d6cd6d15e076995fb98ee0edbbb6e533959 SKIP)
 
 _vllm_srcdir="vllm-${pkgver}"
 _vllm_tarball="v${pkgver}.tar.gz"

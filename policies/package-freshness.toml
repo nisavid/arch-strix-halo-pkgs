@@ -50,7 +50,7 @@ packages = ["python-vllm-rocm-gfx1151"]
 priority = "high"
 workflow = "upstream_source_update"
 checks = [
-  { id = "release", role = "primary", kind = "github_release", repo = "vllm-project/vllm", recorded = "0.20.2", tag_prefix = "v", comparison = "pep440", include_prereleases = false },
+  { id = "release", role = "primary", kind = "github_release", repo = "vllm-project/vllm", recorded = "0.21.0", tag_prefix = "v", comparison = "pep440", include_prereleases = false },
   { id = "aur", role = "baseline", kind = "aur", package = "python-vllm", recorded = "0.12.0-1", comparison = "pkgver" },
 ]
 
@@ -105,7 +105,7 @@ priority = "high"
 workflow = "upstream_source_update"
 checks = [
   { id = "release", role = "primary", kind = "github_release", repo = "ROCm/aiter", recorded = "0.1.13", tag_prefix = "v", comparison = "pep440" },
-  { id = "main", role = "candidate", kind = "git_ref", repo = "https://github.com/ROCm/aiter.git", ref = "refs/heads/main", recorded = "d50194cae28f2e22f4dfff19a86577fe2fcbca27", comparison = "sha" },
+  { id = "main", role = "candidate", kind = "git_ref", repo = "https://github.com/ROCm/aiter.git", ref = "refs/heads/main", recorded = "7cfe51983cd9dd55c0355e34fb614e7c0de44e6e", comparison = "sha" },
 ]
 
 [families.flash_attention]
@@ -369,8 +369,8 @@ packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"]
 priority = "high"
 workflow = "upstream_source_update"
 checks = [
-  { id = "release", role = "primary", kind = "github_release", repo = "ggml-org/llama.cpp", recorded = "b9145", comparison = "prefixed_integer" },
-  { id = "aur-hip", role = "baseline", kind = "aur", package = "llama.cpp-hip", recorded = "b9139-1", comparison = "pkgver" },
+  { id = "release", role = "primary", kind = "github_release", repo = "ggml-org/llama.cpp", recorded = "b9165", comparison = "prefixed_integer" },
+  { id = "aur-hip", role = "baseline", kind = "aur", package = "llama.cpp-hip", recorded = "b9158-1", comparison = "pkgver" },
   { id = "aur-vulkan", role = "baseline", kind = "aur", package = "llama.cpp-vulkan-bin", recorded = "b7376-1", comparison = "pkgver" },
 ]
 
@@ -379,7 +379,7 @@ packages = ["stable-diffusion.cpp-vulkan-gfx1151"]
 priority = "medium"
 workflow = "upstream_source_update"
 checks = [
-  { id = "master", role = "primary", kind = "git_ref", repo = "https://github.com/leejet/stable-diffusion.cpp.git", ref = "refs/heads/master", recorded = "90e87bc846f17059771efb8aaa31e9ef0cab6f78", comparison = "sha" },
+  { id = "master", role = "primary", kind = "git_ref", repo = "https://github.com/leejet/stable-diffusion.cpp.git", ref = "refs/heads/master", recorded = "0b8296915c4094090cff6bd2e09a5e98288c3c7d", comparison = "sha" },
   { id = "aur-vulkan", role = "baseline", kind = "aur", package = "stable-diffusion.cpp-vulkan-git", recorded = "r279.49d6570-1", comparison = "pkgver" },
 ]
 

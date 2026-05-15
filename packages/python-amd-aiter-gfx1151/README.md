@@ -6,7 +6,7 @@
 - Scaffold template: `python-project-aiter`
 - Recipe build method: `pip`
 - Upstream repo: `https://github.com/ROCm/aiter.git`
-- Package version: `0.1.13.post1.dev268+gd50194cae`
+- Package version: `0.1.14rc1.dev27+g7cfe51983`
 - Recipe revision: `3f15f9f (20260508, 17 commits touching recipe path)`
 - Recipe steps: `29`
 - Recipe dependencies: `pytorch, vllm`
@@ -17,7 +17,7 @@
 
 ## Recipe notes
 
-Rebuilt from reviewed upstream AITER main snapshot d50194cae28f2e22f4dfff19a86577fe2fcbca27. Keep the packaged CK ABI
+Rebuilt from reviewed upstream AITER main snapshot 7cfe51983cd9dd55c0355e34fb614e7c0de44e6e. Keep the packaged CK ABI
 aligned with the CK headers used by AITER's JIT at runtime.
 
 PREBUILD_KERNELS=0: skip 45-minute full kernel precompilation.
@@ -30,7 +30,7 @@ RDNA 3.5 compatibility and installed-system JIT/runtime behavior.
 ## Scaffold notes
 
 - There is no standalone Arch, CachyOS, or AUR aiter package. The closest packaging lane is the PyTorch ROCm pkgbase that vendors the same submodule, so that pkgbase is advisory only.
-- The package pins reviewed upstream AITER main snapshot d50194cae28f2e22f4dfff19a86577fe2fcbca27 because it is included in the adopted 2026-05-14 refresh for the local vLLM/AITER validation surface.
+- The package pins reviewed upstream AITER main snapshot 7cfe51983cd9dd55c0355e34fb614e7c0de44e6e because it is included in the adopted 2026-05-15 refresh for the local vLLM/AITER validation surface.
 - The package exports SETUPTOOLS_SCM_PRETEND_VERSION so the wheel metadata stays stable while building from the pinned upstream snapshot.
 - The recipe rebuilds AITER from the pinned upstream AITER source lane while keeping CK and generated kernel expectations explicit in the package.
 - Upstream AITER declares pandas as a real dependency and FlyDSL as an optional acceleration path. Keep pandas in the package metadata, and package FlyDSL separately rather than silently depending on an unpublished wheel.
@@ -56,7 +56,8 @@ RDNA 3.5 compatibility and installed-system JIT/runtime behavior.
 - On 2026-05-01, adopted AITER main at a0f25393903f5412b0fb997d5b825a0aeb257466. The d679e288..a0f2539 range includes HIP KL cache refactoring, JIT/setup handling, cache kernels, mHC small-M work, fused all-reduce/RMSNorm memory ordering, GemmTuner SplitK guards, MXFP4 fixes, preshuffled cache/indexer fixes, and tuning/test coverage.
 - On 2026-05-10, adopted AITER stable tag v0.1.13 with the local gfx1151 RDNA header, JIT runtime, and gfx1x MoE compatibility carry preserved.
 - On 2026-05-14, adopted AITER main d50194cae28f2e22f4dfff19a86577fe2fcbca27 as a post-0.1.13 snapshot because the range carries kernel, JIT, mHC, topk, and MXFP4 changes that are relevant to the local vLLM/AITER validation surface.
-- The current package follows reviewed AITER main snapshot d50194cae28f2e22f4dfff19a86577fe2fcbca27 with a local post-0.1.13 package version because the upstream main branch describes below the stable tag even though the selected range is included in this refresh.
+- On 2026-05-15, adopted AITER main 7cfe51983cd9dd55c0355e34fb614e7c0de44e6e because the range includes DeepSeek V3.2 cache/indexer kernels, custom all-reduce qknorm fixes, gather memory-violation repair, CK submodule updates, and AITER GPU visibility diagnostics relevant to the local vLLM/AITER validation surface.
+- The current package follows reviewed AITER main snapshot 7cfe51983cd9dd55c0355e34fb614e7c0de44e6e with the upstream SCM-derived package version.
 - Treat FlyDSL as a separate tracked package story; do not silently fold an unpublished wheel into this package.
 - Keep the installed-system JIT runtime patch until upstream AITER stops assuming `hipcc` is on the ambient PATH and correctly imports modules copied to the writable user JIT cache from read-only site-packages installs.
 - Keep the package's explicit ROCm toolchain exports in `build()` until upstream AITER stops probing `hipconfig` and `hipcc` through ambient shell state. The concrete build failure was `Could not find hipconfig in PATH or ROCM_HOME(/usr)`.

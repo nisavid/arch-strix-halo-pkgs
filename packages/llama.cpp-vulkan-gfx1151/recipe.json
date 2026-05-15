@@ -22,12 +22,13 @@
       "On 2026-05-03, adopted upstream llama.cpp b9010 at d05fe1d7dadbf8943c8f1903fcf65b935ddab839. The b8992..b9010 range includes shared runtime/server changes, ggml 0.10.2, Vulkan FlashAttention coopmat2 support, OpenCL MXFP4 MoE support, WebGPU shader changes, and server UI attachment/refactor paths, so the Vulkan package follows the same source snapshot as the HIP backend.",
       "On 2026-05-10, adopted upstream llama.cpp b9101 at 389ff61d77b5c71cec0cf92fe4e5d01ace80b797. The b9010..b9101 range includes shared runtime/server changes, ggml 0.11.1, model architecture fixes, Gemma4_26B_A4B_NVFP4 support, Vulkan code changes, and cpp-httplib updates, so the Vulkan package follows the same source snapshot as the HIP backend.",
       "On 2026-05-14, adopted upstream llama.cpp b9145 at 9ed6e19b9d7e14a71a19622287b2dcd495a828b8. The b9101..b9145 range includes shared runtime/server changes, speculative parallel drafting support, modalities surfaced from /v1/models, cpp-httplib 0.44.0, ggml/CMake updates, and Vulkan asymmetric FlashAttention and shared-memory checks, so the Vulkan package follows the same source snapshot as the HIP backend.",
+      "On 2026-05-15, adopted upstream llama.cpp b9165 at 769cc93a43b51bf6013986180c73ee60cf24cede. The b9145..b9165 range includes HIP RDNA3 MMA/transpose tuning, Vulkan integer pipeline selection, WebUI streaming/error handling, Codex CLI Responses-tool compatibility, Qwen tokenizer handling, and release-archive fixes, so the Vulkan package follows the same source snapshot as the HIP backend.",
       "Until then, compare runtime/package expectations against the -bin package and source-build conventions against aur/llama.cpp."
     ]
   },
   "name": "llama.cpp-vulkan-gfx1151",
   "package_name": "llama.cpp-vulkan-gfx1151",
-  "pkgver": "b9145",
+  "pkgver": "b9165",
   "policy": {
     "advisory_references": [
       "aur/llama.cpp"
@@ -80,9 +81,9 @@
       "SKIP"
     ],
     "source_refs": [
-      "llama.cpp-9ed6e19b9d7e14a71a19622287b2dcd495a828b8.tar.gz::https://github.com/ggml-org/llama.cpp/archive/9ed6e19b9d7e14a71a19622287b2dcd495a828b8.tar.gz"
+      "llama.cpp-769cc93a43b51bf6013986180c73ee60cf24cede.tar.gz::https://github.com/ggml-org/llama.cpp/archive/769cc93a43b51bf6013986180c73ee60cf24cede.tar.gz"
     ],
-    "src_subdir": "llama.cpp-9ed6e19b9d7e14a71a19622287b2dcd495a828b8",
+    "src_subdir": "llama.cpp-769cc93a43b51bf6013986180c73ee60cf24cede",
     "template": "llama-cpp",
     "update_notes": [
       "If a maintained source-built aur/llama.cpp-vulkan package appears, switch to it as the authoritative baseline.",
@@ -97,10 +98,11 @@
       "On 2026-05-03, adopted upstream llama.cpp b9010 at d05fe1d7dadbf8943c8f1903fcf65b935ddab839. The b8992..b9010 range includes shared runtime/server changes, ggml 0.10.2, Vulkan FlashAttention coopmat2 support, OpenCL MXFP4 MoE support, WebGPU shader changes, and server UI attachment/refactor paths, so the Vulkan package follows the same source snapshot as the HIP backend.",
       "On 2026-05-10, adopted upstream llama.cpp b9101 at 389ff61d77b5c71cec0cf92fe4e5d01ace80b797. The b9010..b9101 range includes shared runtime/server changes, ggml 0.11.1, model architecture fixes, Gemma4_26B_A4B_NVFP4 support, Vulkan code changes, and cpp-httplib updates, so the Vulkan package follows the same source snapshot as the HIP backend.",
       "On 2026-05-14, adopted upstream llama.cpp b9145 at 9ed6e19b9d7e14a71a19622287b2dcd495a828b8. The b9101..b9145 range includes shared runtime/server changes, speculative parallel drafting support, modalities surfaced from /v1/models, cpp-httplib 0.44.0, ggml/CMake updates, and Vulkan asymmetric FlashAttention and shared-memory checks, so the Vulkan package follows the same source snapshot as the HIP backend.",
+      "On 2026-05-15, adopted upstream llama.cpp b9165 at 769cc93a43b51bf6013986180c73ee60cf24cede. The b9145..b9165 range includes HIP RDNA3 MMA/transpose tuning, Vulkan integer pipeline selection, WebUI streaming/error handling, Codex CLI Responses-tool compatibility, Qwen tokenizer handling, and release-archive fixes, so the Vulkan package follows the same source snapshot as the HIP backend.",
       "Until then, compare runtime/package expectations against the -bin package and source-build conventions against aur/llama.cpp."
     ],
     "upstream_name": "llama.cpp",
-    "upstream_version": "b9145",
+    "upstream_version": "b9165",
     "url": "https://github.com/ggml-org/llama.cpp"
   },
   "provenance": {
@@ -123,7 +125,7 @@
     "patches": [],
     "phase": "I",
     "repo": "https://github.com/ggml-org/llama.cpp.git",
-    "src_dir": "llama.cpp",
+    "src_dir": "llama.cpp-769cc93a43b51bf6013986180c73ee60cf24cede",
     "steps": [
       34
     ]

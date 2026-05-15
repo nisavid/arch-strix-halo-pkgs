@@ -5,20 +5,20 @@
 # Package recipe key: stable_diffusion_cpp
 
 pkgname=stable-diffusion.cpp-vulkan-gfx1151
-pkgver=r596.g90e87bc
+pkgver=r604.g0b82969
 pkgrel=1
 pkgdesc='stable-diffusion.cpp Vulkan backend rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://github.com/leejet/stable-diffusion.cpp
 license=(MIT)
 depends=(aocl-libm-gfx1151 gcc-libs glibc vulkan-icd-loader)
-makedepends=(cmake git ninja patchelf rocm-llvm-gfx1151 shaderc spirv-headers vulkan-headers)
+makedepends=(cmake git ninja patchelf pnpm rocm-llvm-gfx1151 shaderc spirv-headers vulkan-headers)
 optdepends=()
 options=()
 provides=(stable-diffusion.cpp-vulkan-gfx1151 stable-diffusion.cpp-vulkan)
 conflicts=(stable-diffusion.cpp-vulkan)
 replaces=()
-source=('stable-diffusion.cpp::git+https://github.com/leejet/stable-diffusion.cpp.git#commit=90e87bc846f17059771efb8aaa31e9ef0cab6f78' 'ggml::git+https://github.com/ggml-org/ggml.git#commit=404fcb9d7c96989569e68c9e7881ee3465a05c50' 'sdcpp-webui::git+https://github.com/leejet/sdcpp-webui.git#commit=797ccf80825cc035508ba9b599b2a21953e7f835' 'libwebm::git+https://github.com/webmproject/libwebm.git#commit=5bf12267eea773a32fcf4949de52b0add158a8d5' 'libwebp::git+https://github.com/webmproject/libwebp.git#commit=0c9546f7efc61eac7f79ae115c3f99c91c21c443' 0001-sdxl-clipg-prefix-mapping.patch)
+source=('stable-diffusion.cpp::git+https://github.com/leejet/stable-diffusion.cpp.git#commit=0b8296915c4094090cff6bd2e09a5e98288c3c7d' 'ggml::git+https://github.com/ggml-org/ggml.git#commit=404fcb9d7c96989569e68c9e7881ee3465a05c50' 'sdcpp-webui::git+https://github.com/leejet/sdcpp-webui.git#commit=797ccf80825cc035508ba9b599b2a21953e7f835' 'libwebm::git+https://github.com/webmproject/libwebm.git#commit=5bf12267eea773a32fcf4949de52b0add158a8d5' 'libwebp::git+https://github.com/webmproject/libwebp.git#commit=0c9546f7efc61eac7f79ae115c3f99c91c21c443' 0001-sdxl-clipg-prefix-mapping.patch)
 sha256sums=(SKIP SKIP SKIP SKIP SKIP ef8e1abd394f164998126a629003ed6c3578458a57c94ee420440caa051f128a)
 
 prepare() {
@@ -79,6 +79,12 @@ build() {
   fi
   rm -f "${_probe_src}" "${_probe_obj}"
   local _linker_flags="-flto=thin -fuse-ld=lld -L/usr/lib -lalm"
+  export XDG_DATA_HOME="$srcdir/.xdg-data"
+  export XDG_CONFIG_HOME="$srcdir/.xdg-config"
+  export PNPM_HOME="$srcdir/.pnpm-home"
+  export npm_config_cache="$srcdir/.npm-cache"
+  export npm_config_store_dir="$srcdir/.pnpm-store"
+  mkdir -p "$XDG_DATA_HOME" "$XDG_CONFIG_HOME" "$PNPM_HOME" "$npm_config_cache" "$npm_config_store_dir"
 
   rm -rf "${build_root}"
   cmake -B "${build_root}" -S . -GNinja \
@@ -116,12 +122,12 @@ package() {
   rm -rf "$pkgdir${install_root}/include" "$pkgdir${install_root}/lib"
   install -Dm644 LICENSE "$pkgdir/usr/share/licenses/stable-diffusion.cpp-vulkan-gfx1151/LICENSE"
   install -d "$pkgdir/usr/bin" "$pkgdir${install_root}"
-  printf '%s\n' "r596.g90e87bc" > "$pkgdir${install_root}/version.txt"
+  printf '%s\n' "r604.g0b82969" > "$pkgdir${install_root}/version.txt"
   printf '%s\n' "vulkan" > "$pkgdir${install_root}/backend.txt"
   cat > "$pkgdir${install_root}/build-info.env" <<EOF
 PROJECT=stable-diffusion.cpp
 BACKEND=vulkan
-SOURCE_REVISION=90e87bc846f17059771efb8aaa31e9ef0cab6f78
+SOURCE_REVISION=0b8296915c4094090cff6bd2e09a5e98288c3c7d
 PACKAGE=stable-diffusion.cpp-vulkan-gfx1151
 EOF
 

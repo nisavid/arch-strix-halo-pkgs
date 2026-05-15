@@ -1,7 +1,149 @@
+diff --git a/cmake/hipify.py b/cmake/hipify.py
+index 8504f9def..39adabae0 100755
+--- a/cmake/hipify.py
++++ b/cmake/hipify.py
+@@ -64,15 +64,27 @@ if __name__ == "__main__":
+     hipified_sources = []
+     for source in args.sources:
+         s_abs = os.path.abspath(source)
+-        hipified_s_abs = (
+-            hipify_result[s_abs].hipified_path
+-            if (
+-                s_abs in hipify_result
+-                and hipify_result[s_abs].hipified_path is not None
+-            )
+-            else s_abs
++        if s_abs in hipify_result and hipify_result[s_abs].hipified_path is not None:
++            hipified_sources.append(hipify_result[s_abs].hipified_path)
++            continue
++
++        # CMake derives expected HIP byproducts from the CUDA source names
++        # before this script runs. If hipify decides a .cu source needs no
++        # textual changes, it leaves hipified_path unset, but CMake still tries
++        # to compile the .hip byproduct. Materialize that byproduct as a copy of
++        # the unchanged source so no-op ROCm sources such as rocm/attention.cu
++        # remain buildable.
++        rel_source = os.path.relpath(s_abs, os.path.abspath(args.project_dir))
++        expected_hipified_path = os.path.join(
++            os.path.abspath(args.output_dir),
++            rel_source.replace(".cu", ".hip").replace("cuda", "hip"),
+         )
+-        hipified_sources.append(hipified_s_abs)
++        if s_abs.endswith(".cu"):
++            os.makedirs(os.path.dirname(expected_hipified_path), exist_ok=True)
++            shutil.copy2(s_abs, expected_hipified_path)
++            hipified_sources.append(expected_hipified_path)
++        else:
++            hipified_sources.append(s_abs)
+
+     assert len(hipified_sources) == len(args.sources)
+
+diff --git a/csrc/cuda_vec_utils.cuh b/csrc/cuda_vec_utils.cuh
+index 91e181c58..d3345f25c 100644
+--- a/csrc/cuda_vec_utils.cuh
++++ b/csrc/cuda_vec_utils.cuh
+@@ -14,6 +14,13 @@
+   #include <cuda_fp16.h>
+   #include <cuda_runtime.h>
+ #endif
++#ifdef USE_ROCM
++using vllm_bfloat16 = __hip_bfloat16;
++using vllm_bfloat162 = __hip_bfloat162;
++#else
++using vllm_bfloat16 = __nv_bfloat16;
++using vllm_bfloat162 = __nv_bfloat162;
++#endif
+
+ // Device-side: SM100+ architecture with CUDA 12.9+ toolkit, which
+ // together enable 256-bit (v8.u32) PTX load/store instructions.
+@@ -54,7 +61,7 @@ struct VecTraits<false> {
+ };
+
+ // PackedTypeConverter — map between CUDA scalar and packed types
+-//   half  <-> half2,  __nv_bfloat16 <-> __nv_bfloat162, etc.
++//   half  <-> half2,  vllm_bfloat16 <-> vllm_bfloat162, etc.
+ template <typename T>
+ struct PackedTypeConverter {
+   static_assert(sizeof(T) == 0,
+@@ -72,13 +79,13 @@ struct PackedTypeConverter<half> {
+ };
+
+ template <>
+-struct PackedTypeConverter<__nv_bfloat162> {
+-  using Type = __nv_bfloat16;
++struct PackedTypeConverter<vllm_bfloat162> {
++  using Type = vllm_bfloat16;
+ };
+
+ template <>
+-struct PackedTypeConverter<__nv_bfloat16> {
+-  using Type = __nv_bfloat162;
++struct PackedTypeConverter<vllm_bfloat16> {
++  using Type = vllm_bfloat162;
+ };
+
+ template <>
+@@ -98,11 +105,11 @@ struct PackedTypeConverter<c10::Half> {
+
+ template <>
+ struct PackedTypeConverter<c10::BFloat16> {
+-  using Type = __nv_bfloat162;
++  using Type = vllm_bfloat162;
+ };
+
+ // CUDATypeConverter — map PyTorch scalar types to CUDA scalar
+-//   c10::Half -> half,  c10::BFloat16 -> __nv_bfloat16
++//   c10::Half -> half,  c10::BFloat16 -> vllm_bfloat16
+ template <typename T>
+ struct CUDATypeConverter {
+   using Type = T;
+@@ -115,12 +122,12 @@ struct CUDATypeConverter<c10::Half> {
+
+ template <>
+ struct CUDATypeConverter<c10::BFloat16> {
+-  using Type = __nv_bfloat16;
++  using Type = vllm_bfloat16;
+ };
+
+ // PackedVec — typed vector container for packed element access.
+ //   Derives alignment and element count from VecTraits.
+-//   Type is the CUDA scalar type (e.g. half, __nv_bfloat16).
++//   Type is the CUDA scalar type (e.g. half, vllm_bfloat16).
+ template <class Type, bool use_256b>
+ struct alignas(VecTraits<use_256b>::ARCH_MAX_VEC_SIZE) PackedVec {
+   static constexpr int NUM_ELTS =
+@@ -328,7 +335,7 @@ __host__ __device__ __forceinline__ bool is_32byte_aligned(const void* ptr) {
+
+ template <typename packed_t>
+ __device__ __forceinline__ float2 cast_to_float2(const packed_t& val) {
+-  if constexpr (std::is_same_v<packed_t, __nv_bfloat162>) {
++  if constexpr (std::is_same_v<packed_t, vllm_bfloat162>) {
+     return __bfloat1622float2(val);
+   } else if constexpr (std::is_same_v<packed_t, __half2>) {
+     return __half22float2(val);
+@@ -339,7 +346,7 @@ __device__ __forceinline__ float2 cast_to_float2(const packed_t& val) {
+
+ template <typename packed_t>
+ __device__ __forceinline__ packed_t cast_to_packed(const float2& val) {
+-  if constexpr (std::is_same_v<packed_t, __nv_bfloat162>) {
++  if constexpr (std::is_same_v<packed_t, vllm_bfloat162>) {
+     return __float22bfloat162_rn(val);
+   } else if constexpr (std::is_same_v<packed_t, __half2>) {
+     return __float22half2_rn(val);
+@@ -351,7 +358,7 @@ __device__ __forceinline__ packed_t cast_to_packed(const float2& val) {
+ template <typename packed_t>
+ __device__ __forceinline__ packed_t packed_mul(const packed_t& x,
+                                                const packed_t& y) {
+-  if constexpr (std::is_same_v<packed_t, __nv_bfloat162> ||
++  if constexpr (std::is_same_v<packed_t, vllm_bfloat162> ||
+                 std::is_same_v<packed_t, __half2>) {
+     return __hmul2(x, y);
+   } else if constexpr (std::is_same_v<packed_t, float2>) {
 diff --git a/setup.py b/setup.py
---- a/setup.py	2026-04-27 15:04:32.000000000 -0400
-+++ b/setup.py	2026-04-29 01:27:41.996259048 -0400
-@@ -273,6 +273,19 @@
+index 40734b4c4..a37b8d3e5 100644
+--- a/setup.py
++++ b/setup.py
+@@ -273,6 +273,19 @@ class cmake_build_ext(build_ext):
          elif _is_hip() and ROCM_HOME is not None:
              cmake_args += [f"-DROCM_PATH={ROCM_HOME}"]
 
@@ -21,81 +163,11 @@ diff --git a/setup.py b/setup.py
          other_cmake_args = os.environ.get("CMAKE_ARGS")
          if other_cmake_args:
              cmake_args += other_cmake_args.split()
-diff --git a/cmake/hipify.py b/cmake/hipify.py
---- a/cmake/hipify.py	2026-04-27 15:04:32.000000000 -0400
-+++ b/cmake/hipify.py	2026-05-01 06:38:41.000000000 -0400
-@@ -67,9 +67,21 @@
--        hipified_s_abs = (
--            hipify_result[s_abs].hipified_path
--            if (
--                s_abs in hipify_result
--                and hipify_result[s_abs].hipified_path is not None
--            )
--            else s_abs
--        )
--        hipified_sources.append(hipified_s_abs)
-+        if s_abs in hipify_result and hipify_result[s_abs].hipified_path is not None:
-+            hipified_sources.append(hipify_result[s_abs].hipified_path)
-+            continue
-+
-+        # CMake derives expected HIP byproducts from the CUDA source names
-+        # before this script runs. If hipify decides a .cu source needs no
-+        # textual changes, it leaves hipified_path unset, but CMake still tries
-+        # to compile the .hip byproduct. Materialize that byproduct as a copy of
-+        # the unchanged source so no-op ROCm sources such as rocm/attention.cu
-+        # remain buildable.
-+        rel_source = os.path.relpath(s_abs, os.path.abspath(args.project_dir))
-+        expected_hipified_path = os.path.join(
-+            os.path.abspath(args.output_dir),
-+            rel_source.replace(".cu", ".hip").replace("cuda", "hip"),
-+        )
-+        if s_abs.endswith(".cu"):
-+            os.makedirs(os.path.dirname(expected_hipified_path), exist_ok=True)
-+            shutil.copy2(s_abs, expected_hipified_path)
-+            hipified_sources.append(expected_hipified_path)
-+        else:
-+            hipified_sources.append(s_abs)
-diff --git a/csrc/cuda_vec_utils.cuh b/csrc/cuda_vec_utils.cuh
---- a/csrc/cuda_vec_utils.cuh	2026-04-27 15:04:32.000000000 -0400
-+++ b/csrc/cuda_vec_utils.cuh	2026-05-01 06:38:41.000000000 -0400
-@@ -16,0 +17,7 @@
-+#ifdef USE_ROCM
-+using vllm_bfloat16 = __hip_bfloat16;
-+using vllm_bfloat162 = __hip_bfloat162;
-+#else
-+using vllm_bfloat16 = __nv_bfloat16;
-+using vllm_bfloat162 = __nv_bfloat162;
-+#endif
-+
-@@ -57 +64 @@
--//   half  <-> half2,  __nv_bfloat16 <-> __nv_bfloat162, etc.
-+//   half  <-> half2,  vllm_bfloat16 <-> vllm_bfloat162, etc.
-@@ -75,2 +82,2 @@
--struct PackedTypeConverter<__nv_bfloat162> {
--  using Type = __nv_bfloat16;
-+struct PackedTypeConverter<vllm_bfloat162> {
-+  using Type = vllm_bfloat16;
-@@ -80,2 +87,2 @@
--struct PackedTypeConverter<__nv_bfloat16> {
--  using Type = __nv_bfloat162;
-+struct PackedTypeConverter<vllm_bfloat16> {
-+  using Type = vllm_bfloat162;
-@@ -101 +108 @@
--  using Type = __nv_bfloat162;
-+  using Type = vllm_bfloat162;
-@@ -105 +112 @@
--//   c10::Half -> half,  c10::BFloat16 -> __nv_bfloat16
-+//   c10::Half -> half,  c10::BFloat16 -> vllm_bfloat16
-@@ -118 +125 @@
--  using Type = __nv_bfloat16;
-+  using Type = vllm_bfloat16;
-@@ -123 +130 @@
--//   Type is the CUDA scalar type (e.g. half, __nv_bfloat16).
-+//   Type is the CUDA scalar type (e.g. half, vllm_bfloat16).
 diff --git a/vllm/_aiter_ops.py b/vllm/_aiter_ops.py
---- a/vllm/_aiter_ops.py	2026-04-27 15:04:32.000000000 -0400
-+++ b/vllm/_aiter_ops.py	2026-04-29 01:28:35.756253889 -0400
-@@ -42,7 +42,7 @@
+index e628c9783..f0297842c 100644
+--- a/vllm/_aiter_ops.py
++++ b/vllm/_aiter_ops.py
+@@ -66,7 +66,7 @@ class AiterCustomAllreduceProto(Protocol):
  def is_aiter_found_and_supported() -> bool:
      """Check if AITER library is available and platform supports it.
 
@@ -104,7 +176,7 @@ diff --git a/vllm/_aiter_ops.py b/vllm/_aiter_ops.py
      Does NOT check environment variables - that's handled by rocm_aiter_ops.is_enabled().
 
      This function determines if aiter CAN be used, not if it SHOULD be used.
-@@ -56,9 +56,9 @@
+@@ -80,9 +80,9 @@ def is_aiter_found_and_supported() -> bool:
      VLLM_ROCM_USE_AITER=0, while preventing unwanted JIT warnings for auto-discovery.
      """
      if current_platform.is_rocm() and IS_AITER_FOUND:
@@ -116,7 +188,7 @@ diff --git a/vllm/_aiter_ops.py b/vllm/_aiter_ops.py
      return False
 
 
-@@ -87,7 +87,7 @@
+@@ -111,7 +111,7 @@ def _check_kernel_tuned(N: int, K: int, q_dtype_w: torch.dtype, csv_path: str) -
 
  def if_aiter_supported(func: Callable) -> Callable:
      """Decorator that only executes the function if
@@ -126,11 +198,12 @@ diff --git a/vllm/_aiter_ops.py b/vllm/_aiter_ops.py
 
      @functools.wraps(func)
 diff --git a/vllm/config/vllm.py b/vllm/config/vllm.py
---- a/vllm/config/vllm.py	2026-04-27 15:04:32.000000000 -0400
-+++ b/vllm/config/vllm.py	2026-04-29 01:27:42.002977299 -0400
-@@ -1153,6 +1153,17 @@
-         if envs.VLLM_USE_V2_MODEL_RUNNER:
-             self._validate_v2_model_runner()
+index 53f91e1b6..bf29ab16b 100644
+--- a/vllm/config/vllm.py
++++ b/vllm/config/vllm.py
+@@ -1205,6 +1205,17 @@ class VllmConfig:
+         ):
+             self._validate_return_routed_experts()
 
 +        if self.model_config is not None and self.model_config.is_hybrid:
 +            # Re-run hybrid alignment after platform-specific config updates.
@@ -147,9 +220,10 @@ diff --git a/vllm/config/vllm.py b/vllm/config/vllm.py
          # (e.g., XPU may lower max_num_batched_tokens when MLA is enabled)
          self._set_compile_ranges()
 diff --git a/vllm/engine/arg_utils.py b/vllm/engine/arg_utils.py
---- a/vllm/engine/arg_utils.py	2026-04-27 15:04:32.000000000 -0400
-+++ b/vllm/engine/arg_utils.py	2026-04-29 01:28:35.759445552 -0400
-@@ -98,13 +98,6 @@
+index e65ef6e42..dbdc68278 100644
+--- a/vllm/engine/arg_utils.py
++++ b/vllm/engine/arg_utils.py
+@@ -98,13 +98,6 @@ from vllm.logger import init_logger, suppress_logging
  from vllm.platforms import CpuArchEnum, current_platform
  from vllm.plugins import load_general_plugins
  from vllm.ray.lazy_utils import is_in_ray_actor, is_ray_initialized
@@ -163,7 +237,7 @@ diff --git a/vllm/engine/arg_utils.py b/vllm/engine/arg_utils.py
  from vllm.utils.argparse_utils import (
      FlexibleArgumentParser,
      human_readable_int,
-@@ -712,6 +705,8 @@
+@@ -731,6 +724,8 @@ class EngineArgs:
          load_general_plugins()
          # when use hf offline,replace model and tokenizer id to local model path
          if huggingface_hub.constants.HF_HUB_OFFLINE:
@@ -172,7 +246,7 @@ diff --git a/vllm/engine/arg_utils.py b/vllm/engine/arg_utils.py
              model_id = self.model
              self.model = get_model_path(self.model, self.revision)
              if model_id is not self.model:
-@@ -1460,6 +1455,8 @@
+@@ -1496,6 +1491,8 @@ class EngineArgs:
 
      def create_model_config(self) -> ModelConfig:
          # gguf file needs a specific model loader
@@ -181,7 +255,7 @@ diff --git a/vllm/engine/arg_utils.py b/vllm/engine/arg_utils.py
          if is_gguf(self.model):
              self.quantization = self.load_format = "gguf"
 
-@@ -1612,6 +1609,12 @@
+@@ -1654,6 +1651,12 @@ class EngineArgs:
          # Skip speculator detection for cloud storage models (eg: S3, GCS) since
          # HuggingFace cannot load configs directly from S3 URLs. S3 models can still
          # use speculators with explicit --speculative-config.
@@ -195,8 +269,9 @@ diff --git a/vllm/engine/arg_utils.py b/vllm/engine/arg_utils.py
              (self.model, self.tokenizer, self.speculative_config) = (
                  maybe_override_with_speculators(
 diff --git a/vllm/entrypoints/cli/__init__.py b/vllm/entrypoints/cli/__init__.py
---- a/vllm/entrypoints/cli/__init__.py	2026-04-27 15:04:32.000000000 -0400
-+++ b/vllm/entrypoints/cli/__init__.py	2026-04-29 01:28:53.865543139 -0400
+index 208f01a7c..d77062e9b 100644
+--- a/vllm/entrypoints/cli/__init__.py
++++ b/vllm/entrypoints/cli/__init__.py
 @@ -1,2 +1,48 @@
  # SPDX-License-Identifier: Apache-2.0
  # SPDX-FileCopyrightText: Copyright contributors to the vLLM project
@@ -247,8 +322,9 @@ diff --git a/vllm/entrypoints/cli/__init__.py b/vllm/entrypoints/cli/__init__.py
 +    module = import_module(module_name)
 +    return getattr(module, attr_name)
 diff --git a/vllm/entrypoints/cli/main.py b/vllm/entrypoints/cli/main.py
---- a/vllm/entrypoints/cli/main.py	2026-04-27 15:04:32.000000000 -0400
-+++ b/vllm/entrypoints/cli/main.py	2026-04-29 01:27:42.000925920 -0400
+index ac7f9e0a7..8ca924f1f 100644
+--- a/vllm/entrypoints/cli/main.py
++++ b/vllm/entrypoints/cli/main.py
 @@ -5,6 +5,7 @@
  Note that all future modules must be lazily loaded within main
  to avoid certain eager import breakage."""
@@ -257,12 +333,12 @@ diff --git a/vllm/entrypoints/cli/main.py b/vllm/entrypoints/cli/main.py
  import importlib.metadata
  import sys
  from importlib.util import find_spec
-@@ -14,24 +15,208 @@
+@@ -14,24 +15,208 @@ from vllm.logger import init_logger
  logger = init_logger(__name__)
 
 
 +def _print_version_and_exit_if_requested() -> bool:
-+    if "-v" not in sys.argv[1:] and "--version" not in sys.argv[1:]:
++    if len(sys.argv) != 2 or sys.argv[1] not in {"-v", "--version"}:
 +        return False
 +
 +    print(importlib.metadata.version("vllm"))
@@ -481,9 +557,10 @@ diff --git a/vllm/entrypoints/cli/main.py b/vllm/entrypoints/cli/main.py
      cli_env_setup()
 
 diff --git a/vllm/entrypoints/openai/engine/protocol.py b/vllm/entrypoints/openai/engine/protocol.py
---- a/vllm/entrypoints/openai/engine/protocol.py	2026-04-27 15:04:32.000000000 -0400
-+++ b/vllm/entrypoints/openai/engine/protocol.py	2026-04-29 01:27:42.001116504 -0400
-@@ -15,7 +15,6 @@
+index 890af0300..34167e6b8 100644
+--- a/vllm/entrypoints/openai/engine/protocol.py
++++ b/vllm/entrypoints/openai/engine/protocol.py
+@@ -16,7 +16,6 @@ from pydantic import (
      model_validator,
  )
 
@@ -491,7 +568,7 @@ diff --git a/vllm/entrypoints/openai/engine/protocol.py b/vllm/entrypoints/opena
  from vllm.logger import init_logger
  from vllm.utils import random_uuid
  from vllm.utils.import_utils import resolve_obj_by_qualname
-@@ -224,8 +223,14 @@
+@@ -233,8 +232,14 @@ class FunctionCall(OpenAIBaseModel):
      arguments: str
 
 
@@ -508,9 +585,10 @@ diff --git a/vllm/entrypoints/openai/engine/protocol.py b/vllm/entrypoints/opena
      function: FunctionCall
 
 diff --git a/vllm/entrypoints/sagemaker/api_router.py b/vllm/entrypoints/sagemaker/api_router.py
---- a/vllm/entrypoints/sagemaker/api_router.py	2026-04-27 15:04:32.000000000 -0400
-+++ b/vllm/entrypoints/sagemaker/api_router.py	2026-04-29 01:28:35.757587844 -0400
-@@ -5,8 +5,12 @@
+index b3b11cd07..ec859cba1 100644
+--- a/vllm/entrypoints/sagemaker/api_router.py
++++ b/vllm/entrypoints/sagemaker/api_router.py
+@@ -5,8 +5,12 @@ from collections.abc import Awaitable, Callable
  from http import HTTPStatus
  from typing import Any
 
@@ -524,7 +602,7 @@ diff --git a/vllm/entrypoints/sagemaker/api_router.py b/vllm/entrypoints/sagemak
  from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request
  from fastapi.responses import JSONResponse, Response
 
-@@ -19,8 +23,11 @@
+@@ -19,8 +23,11 @@ from vllm.entrypoints.pooling.base.serving import PoolingServingBase
  from vllm.entrypoints.pooling.factories import get_pooling_invocation_types
  from vllm.entrypoints.serve.instrumentator.basic import base
  from vllm.entrypoints.serve.instrumentator.health import health
@@ -536,7 +614,7 @@ diff --git a/vllm/entrypoints/sagemaker/api_router.py b/vllm/entrypoints/sagemak
  # TODO: RequestType = TypeForm[BaseModel] when recognized by type checkers
  # (requires typing_extensions >= 4.13)
  RequestType = Any
-@@ -33,6 +40,13 @@
+@@ -33,6 +40,13 @@ def attach_router(
      supported_tasks: tuple["SupportedTask", ...],
      model_config: ModelConfig | None = None,
  ):
@@ -550,7 +628,7 @@ diff --git a/vllm/entrypoints/sagemaker/api_router.py b/vllm/entrypoints/sagemak
      router = APIRouter()
 
      # NOTE: Construct the TypeAdapters only once
-@@ -100,4 +114,6 @@
+@@ -100,4 +114,6 @@ def attach_router(
 
 
  def sagemaker_standards_bootstrap(app: FastAPI) -> FastAPI:
@@ -558,8 +636,9 @@ diff --git a/vllm/entrypoints/sagemaker/api_router.py b/vllm/entrypoints/sagemak
 +        return app
      return sagemaker_standards.bootstrap(app)
 diff --git a/vllm/entrypoints/serve/lora/api_router.py b/vllm/entrypoints/serve/lora/api_router.py
---- a/vllm/entrypoints/serve/lora/api_router.py	2026-04-27 15:04:32.000000000 -0400
-+++ b/vllm/entrypoints/serve/lora/api_router.py	2026-04-29 01:27:41.994057903 -0400
+index 057bf5c2e..fe04babf7 100644
+--- a/vllm/entrypoints/serve/lora/api_router.py
++++ b/vllm/entrypoints/serve/lora/api_router.py
 @@ -1,8 +1,6 @@
  # SPDX-License-Identifier: Apache-2.0
  # SPDX-FileCopyrightText: Copyright contributors to the vLLM project
@@ -569,7 +648,7 @@ diff --git a/vllm/entrypoints/serve/lora/api_router.py b/vllm/entrypoints/serve/
  from fastapi import APIRouter, Depends, FastAPI, Request
  from fastapi.responses import JSONResponse, Response
 
-@@ -22,11 +20,22 @@
+@@ -22,11 +20,22 @@ from vllm.logger import init_logger
  logger = init_logger(__name__)
  router = APIRouter()
 
@@ -593,9 +672,10 @@ diff --git a/vllm/entrypoints/serve/lora/api_router.py b/vllm/entrypoints/serve/
          "LoRA dynamic loading & unloading is enabled in the API server. "
          "This should ONLY be used for local development!"
 diff --git a/vllm/entrypoints/utils.py b/vllm/entrypoints/utils.py
---- a/vllm/entrypoints/utils.py	2026-04-27 15:04:32.000000000 -0400
-+++ b/vllm/entrypoints/utils.py	2026-04-29 01:27:42.001330047 -0400
-@@ -15,19 +15,29 @@
+index cd1010457..24eff338b 100644
+--- a/vllm/entrypoints/utils.py
++++ b/vllm/entrypoints/utils.py
+@@ -15,19 +15,29 @@ from fastapi import Request
  from fastapi.responses import JSONResponse, StreamingResponse
  from starlette.background import BackgroundTask, BackgroundTasks
 
@@ -634,7 +714,7 @@ diff --git a/vllm/entrypoints/utils.py b/vllm/entrypoints/utils.py
  logger = init_logger(__name__)
 
  VLLM_SUBCMD_PARSER_EPILOG = (
-@@ -184,6 +194,8 @@
+@@ -191,6 +201,8 @@ def get_max_tokens(
              f"context length ({max_model_len})."
          )
      model_max_tokens = max_model_len - input_length
@@ -643,7 +723,7 @@ diff --git a/vllm/entrypoints/utils.py b/vllm/entrypoints/utils.py
      platform_max_tokens = current_platform.get_max_output_tokens(input_length)
      fallback_max_tokens = (
          max_tokens
-@@ -204,6 +216,7 @@
+@@ -211,6 +223,7 @@ def get_max_tokens(
 
 
  def log_non_default_args(args: Namespace | EngineArgs):
@@ -651,7 +731,7 @@ diff --git a/vllm/entrypoints/utils.py b/vllm/entrypoints/utils.py
      from vllm.entrypoints.openai.cli_args import make_arg_parser
 
      non_default_args = {}
-@@ -305,6 +318,12 @@
+@@ -312,6 +325,12 @@ def create_error_response(
      status_code: HTTPStatus = HTTPStatus.BAD_REQUEST,
      param: str | None = None,
  ) -> ErrorResponse:
@@ -665,9 +745,10 @@ diff --git a/vllm/entrypoints/utils.py b/vllm/entrypoints/utils.py
 
      if isinstance(message, Exception):
 diff --git a/vllm/model_executor/layers/fla/ops/chunk_delta_h.py b/vllm/model_executor/layers/fla/ops/chunk_delta_h.py
---- a/vllm/model_executor/layers/fla/ops/chunk_delta_h.py	2026-04-27 15:04:32.000000000 -0400
-+++ b/vllm/model_executor/layers/fla/ops/chunk_delta_h.py	2026-04-29 01:27:42.004226919 -0400
-@@ -15,7 +15,7 @@
+index 83bf33079..eaf64554f 100644
+--- a/vllm/model_executor/layers/fla/ops/chunk_delta_h.py
++++ b/vllm/model_executor/layers/fla/ops/chunk_delta_h.py
+@@ -14,7 +14,7 @@ from vllm.triton_utils import tl, triton
 
  from .index import prepare_chunk_indices, prepare_chunk_offsets
  from .op import exp
@@ -676,7 +757,7 @@ diff --git a/vllm/model_executor/layers/fla/ops/chunk_delta_h.py b/vllm/model_ex
 
  NUM_WARPS = [2, 4, 8, 16]
 
-@@ -33,8 +33,12 @@
+@@ -33,8 +33,12 @@ NUM_WARPS = [2, 4, 8, 16]
      configs=[
          triton.Config({"BV": BV}, num_warps=num_warps, num_stages=num_stages)
          for num_warps in [2, 4]
@@ -691,7 +772,7 @@ diff --git a/vllm/model_executor/layers/fla/ops/chunk_delta_h.py b/vllm/model_ex
      ],
      key=["H", "K", "V", "BT"],
      use_cuda_graph=use_cuda_graph,
-@@ -210,8 +214,12 @@
+@@ -210,8 +214,12 @@ def chunk_gated_delta_rule_fwd_kernel_h_blockdim64(
                  g + bos * H + i_h, (T,), (H,), (i_t * BT,), (BT,), (0,)
              )
              b_g = tl.load(p_g, boundary_check=(0,))
@@ -707,9 +788,10 @@ diff --git a/vllm/model_executor/layers/fla/ops/chunk_delta_h.py b/vllm/model_ex
              if K > 64:
                  b_h2 *= b_g_last
 diff --git a/vllm/model_executor/layers/fla/ops/chunk_o.py b/vllm/model_executor/layers/fla/ops/chunk_o.py
---- a/vllm/model_executor/layers/fla/ops/chunk_o.py	2026-04-27 15:04:32.000000000 -0400
-+++ b/vllm/model_executor/layers/fla/ops/chunk_o.py	2026-04-29 01:27:42.004685003 -0400
-@@ -17,7 +17,7 @@
+index 0c323b8ce..8506b52cf 100644
+--- a/vllm/model_executor/layers/fla/ops/chunk_o.py
++++ b/vllm/model_executor/layers/fla/ops/chunk_o.py
+@@ -16,7 +16,7 @@ from vllm.triton_utils import tl, triton
 
  from .index import prepare_chunk_indices
  from .op import exp
@@ -718,7 +800,7 @@ diff --git a/vllm/model_executor/layers/fla/ops/chunk_o.py b/vllm/model_executor
 
  BKV_LIST = [64, 128] if check_shared_mem() else [32, 64]
  NUM_WARPS = [2, 4] if is_nvidia_hopper else [2, 4, 8]
-@@ -31,10 +31,10 @@
+@@ -31,10 +31,10 @@ NUM_WARPS = [2, 4] if is_nvidia_hopper else [2, 4, 8]
  @triton.autotune(
      configs=[
          triton.Config({"BK": BK, "BV": BV}, num_warps=num_warps, num_stages=num_stages)
@@ -733,19 +815,18 @@ diff --git a/vllm/model_executor/layers/fla/ops/chunk_o.py b/vllm/model_executor
      key=["H", "K", "V", "BT"],
  )
 diff --git a/vllm/model_executor/layers/quantization/__init__.py b/vllm/model_executor/layers/quantization/__init__.py
---- a/vllm/model_executor/layers/quantization/__init__.py	2026-04-27 15:04:32.000000000 -0400
-+++ b/vllm/model_executor/layers/quantization/__init__.py	2026-04-29 01:28:35.758575001 -0400
-@@ -140,8 +140,7 @@
+index 9f2b4e702..978cd987d 100644
+--- a/vllm/model_executor/layers/quantization/__init__.py
++++ b/vllm/model_executor/layers/quantization/__init__.py
+@@ -140,7 +140,6 @@ def get_quantization_config(quantization: str) -> type[QuantizationConfig]:
      from .moe_wna16 import MoeWNA16Config
      from .mxfp4 import GptOssMxfp4Config, Mxfp4Config
      from .online.base import OnlineQuantizationConfig
 -    from .torchao import TorchAOConfig
--
-+
+
      method_to_config: dict[str, type[QuantizationConfig]] = {
          "awq": AWQConfig,
-         "fp8": Fp8Config,
-@@ -160,7 +159,6 @@
+@@ -160,7 +159,6 @@ def get_quantization_config(quantization: str) -> type[QuantizationConfig]:
          "experts_int8": ExpertsInt8Config,
          "quark": QuarkConfig,
          "moe_wna16": MoeWNA16Config,
@@ -753,7 +834,7 @@ diff --git a/vllm/model_executor/layers/quantization/__init__.py b/vllm/model_ex
          "auto-round": INCConfig,
          "inc": INCConfig,
          "mxfp4": Mxfp4Config,
-@@ -170,6 +168,10 @@
+@@ -170,6 +168,10 @@ def get_quantization_config(quantization: str) -> type[QuantizationConfig]:
          "humming": HummingConfig,
          "online": OnlineQuantizationConfig,
      }
@@ -765,8 +846,9 @@ diff --git a/vllm/model_executor/layers/quantization/__init__.py b/vllm/model_ex
      # Below are values of the OnlineQuantScheme enum. This is here to provide
      # a shortcut where the user can specify
 diff --git a/vllm/model_executor/layers/quantization/torchao.py b/vllm/model_executor/layers/quantization/torchao.py
---- a/vllm/model_executor/layers/quantization/torchao.py	2026-04-27 15:04:32.000000000 -0400
-+++ b/vllm/model_executor/layers/quantization/torchao.py	2026-04-29 01:27:41.998682926 -0400
+index 3c6fdf043..07315a1a6 100644
+--- a/vllm/model_executor/layers/quantization/torchao.py
++++ b/vllm/model_executor/layers/quantization/torchao.py
 @@ -1,15 +1,12 @@
  # SPDX-License-Identifier: Apache-2.0
  # SPDX-FileCopyrightText: Copyright contributors to the vLLM project
@@ -783,7 +865,7 @@ diff --git a/vllm/model_executor/layers/quantization/torchao.py b/vllm/model_exe
  from torch.nn.parameter import Parameter
 
  from vllm.logger import init_logger
-@@ -23,6 +20,9 @@
+@@ -23,6 +20,9 @@ from vllm.model_executor.layers.quantization.base_config import (
      QuantizationConfig,
      QuantizeMethodBase,
  )
@@ -793,7 +875,7 @@ diff --git a/vllm/model_executor/layers/quantization/torchao.py b/vllm/model_exe
  from vllm.model_executor.utils import set_weight_attrs
 
  logger = init_logger(__name__)
-@@ -61,17 +61,6 @@
+@@ -61,17 +61,6 @@ def _restore_weight_attrs(param, recorded_weight_attr):
              setattr(param, attr_name, _bond_method_to_cls(attr, param))
 
 
@@ -813,7 +895,7 @@ diff --git a/vllm/model_executor/layers/quantization/torchao.py b/vllm/model_exe
      """
 diff --git a/vllm/model_executor/layers/quantization/torchao_utils.py b/vllm/model_executor/layers/quantization/torchao_utils.py
 --- a/vllm/model_executor/layers/quantization/torchao_utils.py	1969-12-31 19:00:00.000000000 -0500
-+++ b/vllm/model_executor/layers/quantization/torchao_utils.py	2026-04-29 01:27:41.998710895 -0400
++++ b/vllm/model_executor/layers/quantization/torchao_utils.py	2026-05-15 11:36:00.000000000 -0400
 @@ -0,0 +1,19 @@
 +# SPDX-License-Identifier: Apache-2.0
 +# SPDX-FileCopyrightText: Copyright contributors to the vLLM project
@@ -835,9 +917,10 @@ diff --git a/vllm/model_executor/layers/quantization/torchao_utils.py b/vllm/mod
 +            return False
 +    return False
 diff --git a/vllm/model_executor/model_loader/default_loader.py b/vllm/model_executor/model_loader/default_loader.py
---- a/vllm/model_executor/model_loader/default_loader.py	2026-04-27 15:04:32.000000000 -0400
-+++ b/vllm/model_executor/model_loader/default_loader.py	2026-04-29 01:27:41.999024005 -0400
-@@ -14,7 +14,9 @@
+index 5b5632e31..5826c1d2b 100644
+--- a/vllm/model_executor/model_loader/default_loader.py
++++ b/vllm/model_executor/model_loader/default_loader.py
+@@ -14,7 +14,9 @@ from transformers.utils import SAFE_WEIGHTS_INDEX_NAME
  from vllm.config import ModelConfig
  from vllm.config.load import LoadConfig
  from vllm.logger import init_logger
@@ -849,9 +932,10 @@ diff --git a/vllm/model_executor/model_loader/default_loader.py b/vllm/model_exe
  from vllm.model_executor.model_loader.ep_weight_filter import (
      compute_local_expert_ids,
 diff --git a/vllm/model_executor/model_loader/weight_utils.py b/vllm/model_executor/model_loader/weight_utils.py
---- a/vllm/model_executor/model_loader/weight_utils.py	2026-04-27 15:04:32.000000000 -0400
-+++ b/vllm/model_executor/model_loader/weight_utils.py	2026-04-29 01:27:41.999820018 -0400
-@@ -62,7 +62,9 @@
+index c418c29a8..ee2c43684 100644
+--- a/vllm/model_executor/model_loader/weight_utils.py
++++ b/vllm/model_executor/model_loader/weight_utils.py
+@@ -66,7 +66,9 @@ except ImportError:
      SafeTensorsFileLoader = fastsafetensors.placeholder_attr("SafeTensorsFileLoader")
      SingleGroup = fastsafetensors.placeholder_attr("SingleGroup")
 
@@ -863,9 +947,10 @@ diff --git a/vllm/model_executor/model_loader/weight_utils.py b/vllm/model_execu
  logger = init_logger(__name__)
 
 diff --git a/vllm/model_executor/models/config.py b/vllm/model_executor/models/config.py
---- a/vllm/model_executor/models/config.py	2026-04-27 15:04:32.000000000 -0400
-+++ b/vllm/model_executor/models/config.py	2026-04-29 01:27:41.997710129 -0400
-@@ -66,11 +66,13 @@
+index 459c16f8e..fe197db1d 100644
+--- a/vllm/model_executor/models/config.py
++++ b/vllm/model_executor/models/config.py
+@@ -66,11 +66,13 @@ class Gemma4Config(VerifyAndUpdateConfig):
          When global_head_dim > 256, FlashAttention rejects those layers
          (head_size <= 256 kernel limit), causing vLLM to select a different
          backend for each layer type. This mixed-backend execution produces
@@ -882,7 +967,7 @@ diff --git a/vllm/model_executor/models/config.py b/vllm/model_executor/models/c
 
          TODO: Heterogeneous head_sizes (head_dim != global_head_dim)
          require NixlConnector changes to support per-layer KV transfer
-@@ -93,18 +95,35 @@
+@@ -93,18 +95,35 @@ class Gemma4Config(VerifyAndUpdateConfig):
              and max_head_dim > 256
              and vllm_config.attention_config.backend is None
          ):
@@ -927,18 +1012,19 @@ diff --git a/vllm/model_executor/models/config.py b/vllm/model_executor/models/c
 
  class DeepseekV4ForCausalLMConfig(VerifyAndUpdateConfig):
 diff --git a/vllm/platforms/rocm.py b/vllm/platforms/rocm.py
---- a/vllm/platforms/rocm.py	2026-04-27 15:04:32.000000000 -0400
-+++ b/vllm/platforms/rocm.py	2026-04-29 01:27:42.007602085 -0400
-@@ -170,7 +170,7 @@
+index 984b706e7..0c1843220 100644
+--- a/vllm/platforms/rocm.py
++++ b/vllm/platforms/rocm.py
+@@ -170,7 +170,7 @@ def _get_gcn_arch() -> str:
          return _query_gcn_arch_from_amdsmi()
      except Exception as e:
          logger.debug("Failed to get GCN arch via amdsmi: %s", e)
 -        logger.warning_once(
-+        logger.warning(
++        logger.warning_once(
              "Failed to get GCN arch via amdsmi, falling back to torch.cuda. "
              "This will initialize CUDA and may cause "
              "issues if CUDA_VISIBLE_DEVICES is not set yet."
-@@ -332,6 +332,22 @@
+@@ -332,6 +332,22 @@ def use_rocm_custom_paged_attention(
          )
 
 
@@ -961,7 +1047,7 @@ diff --git a/vllm/platforms/rocm.py b/vllm/platforms/rocm.py
  @cache
  def flash_attn_triton_available() -> bool:
      if not on_gfx1x():
-@@ -339,17 +355,15 @@
+@@ -339,17 +355,15 @@ def flash_attn_triton_available() -> bool:
      try:
          from importlib.util import find_spec
 
@@ -982,7 +1068,7 @@ diff --git a/vllm/platforms/rocm.py b/vllm/platforms/rocm.py
      except ImportError:
          return False
 
-@@ -357,6 +371,7 @@
+@@ -357,6 +371,7 @@ def flash_attn_triton_available() -> bool:
  def _get_backend_priorities(
      use_mla: bool,
      use_sparse: bool,
@@ -990,7 +1076,7 @@ diff --git a/vllm/platforms/rocm.py b/vllm/platforms/rocm.py
  ) -> list[AttentionBackendEnum]:
      from vllm._aiter_ops import is_aiter_found_and_supported, rocm_aiter_ops
 
-@@ -378,9 +393,12 @@
+@@ -378,9 +393,12 @@ def _get_backend_priorities(
      backends = [
          AttentionBackendEnum.ROCM_ATTN,
      ]
@@ -1005,7 +1091,7 @@ diff --git a/vllm/platforms/rocm.py b/vllm/platforms/rocm.py
          backends.append(AttentionBackendEnum.ROCM_AITER_UNIFIED_ATTN)
      backends.append(AttentionBackendEnum.TRITON_ATTN)
      backends.append(AttentionBackendEnum.TURBOQUANT)
-@@ -444,9 +462,19 @@
+@@ -452,9 +470,19 @@ class RocmPlatform(Platform):
          valid_backends_priorities = []
          invalid_reasons = {}
 
@@ -1025,7 +1111,7 @@ diff --git a/vllm/platforms/rocm.py b/vllm/platforms/rocm.py
          )
          for priority, backend in enumerate(backend_priorities):
              try:
-@@ -476,6 +504,25 @@
+@@ -484,6 +512,25 @@ class RocmPlatform(Platform):
 
          # First try checking just the selected backend, if there is one.
          if selected_backend is not None:
@@ -1052,9 +1138,10 @@ diff --git a/vllm/platforms/rocm.py b/vllm/platforms/rocm.py
                  backend_class = selected_backend.get_class()
                  invalid_reasons = backend_class.validate_configuration(
 diff --git a/vllm/utils/import_utils.py b/vllm/utils/import_utils.py
---- a/vllm/utils/import_utils.py	2026-04-27 15:04:32.000000000 -0400
-+++ b/vllm/utils/import_utils.py	2026-04-29 01:27:41.993223431 -0400
-@@ -23,6 +23,29 @@
+index 5822e5840..5ebc3fed7 100644
+--- a/vllm/utils/import_utils.py
++++ b/vllm/utils/import_utils.py
+@@ -23,6 +23,29 @@ from vllm.logger import init_logger
  logger = init_logger(__name__)
 
 
@@ -1084,7 +1171,7 @@ diff --git a/vllm/utils/import_utils.py b/vllm/utils/import_utils.py
  def import_pynvml():
      """
      Historical comments:
-@@ -422,12 +445,15 @@
+@@ -422,12 +445,15 @@ def has_nixl_ep() -> bool:
 
  def has_triton_kernels() -> bool:
      """Whether the optional `triton_kernels` package is available."""
@@ -1106,8 +1193,9 @@ diff --git a/vllm/utils/import_utils.py b/vllm/utils/import_utils.py
 
  def has_tilelang() -> bool:
 diff --git a/vllm/v1/attention/backends/fa_utils.py b/vllm/v1/attention/backends/fa_utils.py
---- a/vllm/v1/attention/backends/fa_utils.py	2026-04-27 15:04:32.000000000 -0400
-+++ b/vllm/v1/attention/backends/fa_utils.py	2026-04-29 01:27:42.008172195 -0400
+index 1e74e4c48..3608f0344 100644
+--- a/vllm/v1/attention/backends/fa_utils.py
++++ b/vllm/v1/attention/backends/fa_utils.py
 @@ -1,6 +1,8 @@
  # SPDX-License-Identifier: Apache-2.0
  # SPDX-FileCopyrightText: Copyright contributors to the vLLM project
@@ -1117,7 +1205,7 @@ diff --git a/vllm/v1/attention/backends/fa_utils.py b/vllm/v1/attention/backends
  from typing import Any
 
  import vllm.envs as envs
-@@ -62,8 +64,10 @@
+@@ -62,8 +64,10 @@ def get_flash_attn_version(
      if current_platform.is_xpu():
          return 2
      if current_platform.is_rocm():
@@ -1130,7 +1218,7 @@ diff --git a/vllm/v1/attention/backends/fa_utils.py b/vllm/v1/attention/backends
      try:
          from vllm.vllm_flash_attn.flash_attn_interface import (
              fa_version_unsupported_reason,
-@@ -184,6 +188,39 @@
+@@ -191,6 +195,39 @@ def is_fa_version_supported(fa_version: int) -> bool:
          return False
 
 
@@ -1171,9 +1259,10 @@ diff --git a/vllm/v1/attention/backends/fa_utils.py b/vllm/v1/attention/backends
      if current_platform.is_xpu():
          return True
 diff --git a/vllm/v1/attention/backends/flash_attn.py b/vllm/v1/attention/backends/flash_attn.py
---- a/vllm/v1/attention/backends/flash_attn.py	2026-04-27 15:04:32.000000000 -0400
-+++ b/vllm/v1/attention/backends/flash_attn.py	2026-04-29 01:27:42.008613091 -0400
-@@ -24,6 +24,7 @@
+index 4b8b86d86..574b8787c 100755
+--- a/vllm/v1/attention/backends/flash_attn.py
++++ b/vllm/v1/attention/backends/flash_attn.py
+@@ -27,6 +27,7 @@ from vllm.v1.attention.backends.fa_utils import (
      get_flash_attn_version,
      is_fa_version_supported,
      is_flash_attn_varlen_func_available,
@@ -1181,7 +1270,7 @@ diff --git a/vllm/v1/attention/backends/flash_attn.py b/vllm/v1/attention/backen
  )
  from vllm.v1.attention.backends.utils import get_dcp_local_seq_lens
  from vllm.v1.attention.ops.common import cp_lse_ag_out_rs
-@@ -216,6 +217,11 @@
+@@ -219,6 +220,11 @@ class FlashAttentionBackend(AttentionBackend):
      ) -> str | None:
          if has_sink and device_capability < DeviceCapability(9, 0):
              return "sink not supported on compute capability < 9.0"
@@ -1194,9 +1283,10 @@ diff --git a/vllm/v1/attention/backends/flash_attn.py b/vllm/v1/attention/backen
 
 
 diff --git a/vllm/v1/attention/backends/rocm_aiter_unified_attn.py b/vllm/v1/attention/backends/rocm_aiter_unified_attn.py
---- a/vllm/v1/attention/backends/rocm_aiter_unified_attn.py	2026-04-27 15:04:32.000000000 -0400
-+++ b/vllm/v1/attention/backends/rocm_aiter_unified_attn.py	2026-04-29 01:27:42.005653531 -0400
-@@ -39,7 +39,7 @@
+index f56b58c43..84e60ca67 100644
+--- a/vllm/v1/attention/backends/rocm_aiter_unified_attn.py
++++ b/vllm/v1/attention/backends/rocm_aiter_unified_attn.py
+@@ -39,7 +39,7 @@ class RocmAiterUnifiedAttentionBackend(RocmAttentionBackend):
      def supports_block_size(cls, block_size: int | None) -> bool:
          if block_size is None:
              return True
@@ -1206,9 +1296,10 @@ diff --git a/vllm/v1/attention/backends/rocm_aiter_unified_attn.py b/vllm/v1/att
      @classmethod
      def supports_head_size(cls, head_size: int) -> bool:
 diff --git a/vllm/v1/attention/ops/triton_unified_attention.py b/vllm/v1/attention/ops/triton_unified_attention.py
---- a/vllm/v1/attention/ops/triton_unified_attention.py	2026-04-27 15:04:32.000000000 -0400
-+++ b/vllm/v1/attention/ops/triton_unified_attention.py	2026-04-29 01:27:41.994977681 -0400
-@@ -495,6 +495,17 @@
+index 1774f1b30..77fe5b0c5 100644
+--- a/vllm/v1/attention/ops/triton_unified_attention.py
++++ b/vllm/v1/attention/ops/triton_unified_attention.py
+@@ -495,6 +495,17 @@ def _get_tile_size(
          # Gemma3: use 32 for decode (default is 16)
          return 32
 
@@ -1227,9 +1318,10 @@ diff --git a/vllm/v1/attention/ops/triton_unified_attention.py b/vllm/v1/attenti
      if is_prefill:
          return 32
 diff --git a/vllm/v1/sample/ops/topk_topp_sampler.py b/vllm/v1/sample/ops/topk_topp_sampler.py
---- a/vllm/v1/sample/ops/topk_topp_sampler.py	2026-04-27 15:04:32.000000000 -0400
-+++ b/vllm/v1/sample/ops/topk_topp_sampler.py	2026-04-29 01:27:42.005977156 -0400
-@@ -248,6 +248,15 @@
+index 363b113f0..b7a341c90 100644
+--- a/vllm/v1/sample/ops/topk_topp_sampler.py
++++ b/vllm/v1/sample/ops/topk_topp_sampler.py
+@@ -308,6 +308,15 @@ def apply_top_k_top_p(
      if p is None and k is None:
          return logits
 
@@ -1246,9 +1338,10 @@ diff --git a/vllm/v1/sample/ops/topk_topp_sampler.py b/vllm/v1/sample/ops/topk_t
          return apply_top_k_top_p_triton(logits, k, p)
 
 diff --git a/vllm/v1/spec_decode/utils.py b/vllm/v1/spec_decode/utils.py
---- a/vllm/v1/spec_decode/utils.py	2026-04-27 15:04:32.000000000 -0400
-+++ b/vllm/v1/spec_decode/utils.py	2026-04-29 01:27:42.007162490 -0400
-@@ -205,7 +205,11 @@
+index e046f0136..67a1c6852 100644
+--- a/vllm/v1/spec_decode/utils.py
++++ b/vllm/v1/spec_decode/utils.py
+@@ -205,7 +205,11 @@ def eagle_prepare_next_token_padded_kernel(
 
      if is_discarded:
          backup_token = tl.load(backup_next_token_ids_ptr + req_idx)
@@ -1261,7 +1354,7 @@ diff --git a/vllm/v1/spec_decode/utils.py b/vllm/v1/spec_decode/utils.py
          tl.store(next_token_ids_ptr + req_idx, backup_token)
          tl.store(valid_sampled_tokens_count_ptr + req_idx, valid_count)
      else:
-@@ -218,7 +222,7 @@
+@@ -218,7 +222,7 @@ def eagle_prepare_next_token_padded_kernel(
 
          # Rejected tokens are -1, valid tokens are in [0, vocab_size)
          is_valid_mask = (token_ids != -1) & (token_ids < vocab_size) & token_mask

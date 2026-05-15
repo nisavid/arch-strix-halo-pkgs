@@ -17,12 +17,12 @@
       "Diff against aur/stable-diffusion.cpp-vulkan-git for package layout and dependency conventions, but keep the local /opt install and suffixed wrappers to avoid CLI name collisions.",
       "When updating the pinned commit, re-check that 0001-sdxl-clipg-prefix-mapping.patch still applies and still guards the SDXL diffusers CLIP-G load path.",
       "After publish/install, smoke sd-cli-vulkan-gfx1151 and sd-server-vulkan-gfx1151 with --help or equivalent no-model startup checks before any model-generation validation claim.",
-      "The current package follows upstream master at 90e87bc846f17059771efb8aaa31e9ef0cab6f78 for MultiLora handling, flow-model sampler behavior, and max-VRAM segmented parameter offload support."
+      "On 2026-05-15, adopted upstream master at 0b8296915c4094090cff6bd2e09a5e98288c3c7d for MultiLora handling, flow-model sampler behavior, max-VRAM segmented parameter offload support, HiDream O1 image support, model-weight mmap support, Euler CFG++ sampler support, WebP/WebM pkg-config handling, and server URL display cleanup."
     ]
   },
   "name": "stable-diffusion.cpp-vulkan-gfx1151",
   "package_name": "stable-diffusion.cpp-vulkan-gfx1151",
-  "pkgver": "r596.g90e87bc",
+  "pkgver": "r604.g0b82969",
   "policy": {
     "advisory_references": [
       "aur/stable-diffusion.cpp-git"
@@ -69,6 +69,7 @@
       "git",
       "ninja",
       "patchelf",
+      "pnpm",
       "rocm-llvm-gfx1151",
       "shaderc",
       "spirv-headers",
@@ -81,7 +82,7 @@
       "stable-diffusion.cpp-vulkan"
     ],
     "recipe_key": "stable_diffusion_cpp",
-    "recipe_notes_override": "This package supplies stable-diffusion.cpp as the Blackcat Vulkan image\ngeneration engine for the Strix Halo stack. The source follows\nleejet/stable-diffusion.cpp master at\n`90e87bc846f17059771efb8aaa31e9ef0cab6f78` (`r596.g90e87bc`).\nThe reviewed range includes runtime backend discovery, VAE buffer lifetime\ncleanup, image metadata output, tensor-to-image conversion speed work, flow\nsampler improvements, and max-VRAM segmented parameter offload support.\n\nThe package builds the Vulkan backend with ggml, WebP, WebM, and server frontend\ninputs modeled as explicit package sources and staged into the upstream\nsubmodule paths during prepare().\nIt uses the repo's amdclang/Zen 5 lane, ThinLTO, AOCL-LibM\nlinkage, OpenMP CPU fallback, WebP/WebM output support, and release-mode\nVulkan settings. Runtime payloads live under\n`/opt/stable-diffusion.cpp-vulkan-gfx1151`, with\n`sd-cli-vulkan-gfx1151` and `sd-server-vulkan-gfx1151` wrappers under\n`/usr/bin`.\n\nThe SDXL CLIP-G prefix patch comes from Blackcat's recipe notes and keeps\ndiffusers SDXL checkpoint loading from misclassifying CLIP-G tensors as SD 1.x\nunknown tensors.\n",
+    "recipe_notes_override": "This package supplies stable-diffusion.cpp as the Blackcat Vulkan image\ngeneration engine for the Strix Halo stack. The source follows\nleejet/stable-diffusion.cpp master at\n`0b8296915c4094090cff6bd2e09a5e98288c3c7d` (`r604.g0b82969`).\nThe reviewed range includes runtime backend discovery, VAE buffer lifetime\ncleanup, image metadata output, tensor-to-image conversion speed work, flow\nsampler improvements, max-VRAM segmented parameter offload support,\nHiDream O1 image support, model-weight mmap support, Euler CFG++ sampler\nsupport, WebP/WebM pkg-config handling, and server URL display cleanup.\n\nThe package builds the Vulkan backend with ggml, WebP, WebM, and server frontend\ninputs modeled as explicit package sources and staged into the upstream\nsubmodule paths during prepare().\nIt uses the repo's amdclang/Zen 5 lane, ThinLTO, AOCL-LibM\nlinkage, OpenMP CPU fallback, WebP/WebM output support, and release-mode\nVulkan settings. Runtime payloads live under\n`/opt/stable-diffusion.cpp-vulkan-gfx1151`, with\n`sd-cli-vulkan-gfx1151` and `sd-server-vulkan-gfx1151` wrappers under\n`/usr/bin`.\n\nThe SDXL CLIP-G prefix patch comes from Blackcat's recipe notes and keeps\ndiffusers SDXL checkpoint loading from misclassifying CLIP-G tensors as SD 1.x\nunknown tensors.\n",
     "recipe_patch_file_rewrites": {
       "patches/sdcpp-sdxl-clipg-prefix.patch": "0001-sdxl-clipg-prefix-mapping.patch"
     },
@@ -96,7 +97,7 @@
       "SKIP"
     ],
     "source_refs": [
-      "stable-diffusion.cpp::git+https://github.com/leejet/stable-diffusion.cpp.git#commit=90e87bc846f17059771efb8aaa31e9ef0cab6f78"
+      "stable-diffusion.cpp::git+https://github.com/leejet/stable-diffusion.cpp.git#commit=0b8296915c4094090cff6bd2e09a5e98288c3c7d"
     ],
     "src_subdir": "stable-diffusion.cpp",
     "template": "stable-diffusion-cpp",
@@ -105,19 +106,19 @@
       "Diff against aur/stable-diffusion.cpp-vulkan-git for package layout and dependency conventions, but keep the local /opt install and suffixed wrappers to avoid CLI name collisions.",
       "When updating the pinned commit, re-check that 0001-sdxl-clipg-prefix-mapping.patch still applies and still guards the SDXL diffusers CLIP-G load path.",
       "After publish/install, smoke sd-cli-vulkan-gfx1151 and sd-server-vulkan-gfx1151 with --help or equivalent no-model startup checks before any model-generation validation claim.",
-      "The current package follows upstream master at 90e87bc846f17059771efb8aaa31e9ef0cab6f78 for MultiLora handling, flow-model sampler behavior, and max-VRAM segmented parameter offload support."
+      "On 2026-05-15, adopted upstream master at 0b8296915c4094090cff6bd2e09a5e98288c3c7d for MultiLora handling, flow-model sampler behavior, max-VRAM segmented parameter offload support, HiDream O1 image support, model-weight mmap support, Euler CFG++ sampler support, WebP/WebM pkg-config handling, and server URL display cleanup."
     ],
     "upstream_name": "stable-diffusion.cpp",
-    "upstream_revision": "90e87bc846f17059771efb8aaa31e9ef0cab6f78",
-    "upstream_version": "r596.g90e87bc",
+    "upstream_revision": "0b8296915c4094090cff6bd2e09a5e98288c3c7d",
+    "upstream_version": "r604.g0b82969",
     "url": "https://github.com/leejet/stable-diffusion.cpp"
   },
   "provenance": {
     "output_root": "packages",
     "recipe_author": "Blackcat Informatics Inc.",
-    "recipe_commit": "a1d7a68",
-    "recipe_date": "20260427",
-    "recipe_history_count": 16,
+    "recipe_commit": "3f15f9f",
+    "recipe_date": "20260508",
+    "recipe_history_count": 17,
     "recipe_repo": "https://github.com/paudley/ai-notes",
     "recipe_subdir": "strix-halo",
     "repo_subpath": "."
@@ -128,11 +129,11 @@
       "therock"
     ],
     "method": "cmake",
-    "notes": "This package supplies stable-diffusion.cpp as the Blackcat Vulkan image\ngeneration engine for the Strix Halo stack. The source follows\nleejet/stable-diffusion.cpp master at\n`90e87bc846f17059771efb8aaa31e9ef0cab6f78` (`r596.g90e87bc`).\nThe reviewed range includes runtime backend discovery, VAE buffer lifetime\ncleanup, image metadata output, tensor-to-image conversion speed work, flow\nsampler improvements, and max-VRAM segmented parameter offload support.\n\nThe package builds the Vulkan backend with ggml, WebP, WebM, and server frontend\ninputs modeled as explicit package sources and staged into the upstream\nsubmodule paths during prepare().\nIt uses the repo's amdclang/Zen 5 lane, ThinLTO, AOCL-LibM\nlinkage, OpenMP CPU fallback, WebP/WebM output support, and release-mode\nVulkan settings. Runtime payloads live under\n`/opt/stable-diffusion.cpp-vulkan-gfx1151`, with\n`sd-cli-vulkan-gfx1151` and `sd-server-vulkan-gfx1151` wrappers under\n`/usr/bin`.\n\nThe SDXL CLIP-G prefix patch comes from Blackcat's recipe notes and keeps\ndiffusers SDXL checkpoint loading from misclassifying CLIP-G tensors as SD 1.x\nunknown tensors.\n",
+    "notes": "This package supplies stable-diffusion.cpp as the Blackcat Vulkan image\ngeneration engine for the Strix Halo stack. The source follows\nleejet/stable-diffusion.cpp master at\n`0b8296915c4094090cff6bd2e09a5e98288c3c7d` (`r604.g0b82969`).\nThe reviewed range includes runtime backend discovery, VAE buffer lifetime\ncleanup, image metadata output, tensor-to-image conversion speed work, flow\nsampler improvements, max-VRAM segmented parameter offload support,\nHiDream O1 image support, model-weight mmap support, Euler CFG++ sampler\nsupport, WebP/WebM pkg-config handling, and server URL display cleanup.\n\nThe package builds the Vulkan backend with ggml, WebP, WebM, and server frontend\ninputs modeled as explicit package sources and staged into the upstream\nsubmodule paths during prepare().\nIt uses the repo's amdclang/Zen 5 lane, ThinLTO, AOCL-LibM\nlinkage, OpenMP CPU fallback, WebP/WebM output support, and release-mode\nVulkan settings. Runtime payloads live under\n`/opt/stable-diffusion.cpp-vulkan-gfx1151`, with\n`sd-cli-vulkan-gfx1151` and `sd-server-vulkan-gfx1151` wrappers under\n`/usr/bin`.\n\nThe SDXL CLIP-G prefix patch comes from Blackcat's recipe notes and keeps\ndiffusers SDXL checkpoint loading from misclassifying CLIP-G tensors as SD 1.x\nunknown tensors.\n",
     "patches": [],
     "phase": "I",
     "repo": "https://github.com/leejet/stable-diffusion.cpp.git",
-    "src_dir": "vendor/stable-diffusion.cpp",
+    "src_dir": "stable-diffusion.cpp",
     "steps": [
       35,
       37

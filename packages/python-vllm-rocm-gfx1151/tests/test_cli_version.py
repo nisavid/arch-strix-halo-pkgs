@@ -53,6 +53,16 @@ def test_pkgbuild_drops_old_build_only_librocsolver_shim():
     assert 'export LD_LIBRARY_PATH="${_rocm_compat}:/opt/rocm/lib:${LD_LIBRARY_PATH:-}"' not in text
 
 
+def test_cli_version_fast_path_only_handles_top_level_version_flag():
+    text = (
+        REPO_ROOT
+        / "packages/python-vllm-rocm-gfx1151/0016-rocm-refresh-local-carry-for-vllm-0.21.0.patch"
+    ).read_text()
+
+    assert '+    if len(sys.argv) != 2 or sys.argv[1] not in {"-v", "--version"}:' in text
+    assert '+    if "-v" not in sys.argv[1:] and "--version" not in sys.argv[1:]:' not in text
+
+
 def test_vllm_version_is_metadata_only():
     if not VLLM_SCRIPT.exists():
         pytest.skip("built vLLM package image is not present")
@@ -77,7 +87,7 @@ def test_vllm_version_is_metadata_only():
         f"stdout:\n{result.stdout}\n"
         f"stderr:\n{result.stderr}"
     )
-    assert result.stdout.strip() == "0.20.2"
+    assert result.stdout.strip() == "0.21.0"
     assert "openai_harmony" not in result.stderr
     assert "triton.language.target_info" not in result.stderr
     assert "torchao/_C.abi3.so" not in result.stderr
