@@ -6,8 +6,8 @@
 - Scaffold template: `stable-diffusion-cpp`
 - Recipe build method: `cmake`
 - Upstream repo: `https://github.com/leejet/stable-diffusion.cpp.git`
-- Package version: `r596.g90e87bc`
-- Recipe revision: `a1d7a68 (20260427, 16 commits touching recipe path)`
+- Package version: `r604.g0b82969`
+- Recipe revision: `3f15f9f (20260508, 17 commits touching recipe path)`
 - Recipe steps: `35, 37`
 - Recipe dependencies: `therock`
 - Recorded reference packages: `aur/stable-diffusion.cpp-vulkan-git, aur/stable-diffusion.cpp-git`
@@ -20,10 +20,12 @@
 This package supplies stable-diffusion.cpp as the Blackcat Vulkan image
 generation engine for the Strix Halo stack. The source follows
 leejet/stable-diffusion.cpp master at
-`90e87bc846f17059771efb8aaa31e9ef0cab6f78` (`r596.g90e87bc`).
+`0b8296915c4094090cff6bd2e09a5e98288c3c7d` (`r604.g0b82969`).
 The reviewed range includes runtime backend discovery, VAE buffer lifetime
 cleanup, image metadata output, tensor-to-image conversion speed work, flow
-sampler improvements, and max-VRAM segmented parameter offload support.
+sampler improvements, max-VRAM segmented parameter offload support,
+HiDream O1 image support, model-weight mmap support, Euler CFG++ sampler
+support, WebP/WebM pkg-config handling, and server URL display cleanup.
 
 The package builds the Vulkan backend with ggml, WebP, WebM, and server frontend
 inputs modeled as explicit package sources and staged into the upstream
@@ -60,7 +62,7 @@ unknown tensors.
 - Diff against aur/stable-diffusion.cpp-vulkan-git for package layout and dependency conventions, but keep the local /opt install and suffixed wrappers to avoid CLI name collisions.
 - When updating the pinned commit, re-check that 0001-sdxl-clipg-prefix-mapping.patch still applies and still guards the SDXL diffusers CLIP-G load path.
 - After publish/install, smoke sd-cli-vulkan-gfx1151 and sd-server-vulkan-gfx1151 with --help or equivalent no-model startup checks before any model-generation validation claim.
-- The current package follows upstream master at 90e87bc846f17059771efb8aaa31e9ef0cab6f78 for MultiLora handling, flow-model sampler behavior, and max-VRAM segmented parameter offload support.
+- On 2026-05-15, adopted upstream master at 0b8296915c4094090cff6bd2e09a5e98288c3c7d for MultiLora handling, flow-model sampler behavior, max-VRAM segmented parameter offload support, HiDream O1 image support, model-weight mmap support, Euler CFG++ sampler support, WebP/WebM pkg-config handling, and server URL display cleanup.
 
 ## Maintainer Starting Points
 

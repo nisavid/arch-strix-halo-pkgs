@@ -5,14 +5,14 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 PKGBUILD = REPO_ROOT / "packages/python-vllm-rocm-gfx1151/PKGBUILD"
 PATCH = (
     REPO_ROOT
-    / "packages/python-vllm-rocm-gfx1151/0016-rocm-refresh-local-carry-for-vllm-0.20.2.patch"
+    / "packages/python-vllm-rocm-gfx1151/0016-rocm-refresh-local-carry-for-vllm-0.21.0.patch"
 )
 
 
 def test_pkgbuild_carries_merged_torchao_and_cli_startup_patches():
     text = PKGBUILD.read_text()
 
-    assert "pkgver=0.20.2" in text
+    assert "pkgver=0.21.0" in text
     assert "pkgrel=1" in text
     assert PATCH.name in text
     assert '_vllm_source_patch="0016-rocm-refresh-local-carry-for-vllm-${pkgver}.patch"' in text
@@ -26,27 +26,21 @@ def test_pkgbuild_carries_merged_torchao_and_cli_startup_patches():
 
 
 def test_merged_torchao_patch_keeps_version_checks_metadata_only_and_lazy_loads_torchao_config():
-    text = PATCH.read_text()
+    pkgbuild_text = PKGBUILD.read_text()
+    patch_text = PATCH.read_text()
 
-    assert "torchao_utils.py" in text
-    assert "Check installed torchao version without importing the torchao package" in text
-    assert "+from importlib import metadata" in text
-    assert '+            installed_version = metadata.version("torchao")' in text
-    assert "+        except (metadata.PackageNotFoundError, version.InvalidVersion):" in text
+    # Local carry keeps the package-time sentinel, metadata-only version check, and lazy import together.
     assert (
-        "from vllm.model_executor.layers.quantization.torchao_utils import ("
-        in text
+        "grep -Fq 'def torchao_version_at_least(torchao_version: str) -> bool:'"
+        in pkgbuild_text
     )
-    assert "-def torchao_version_at_least(torchao_version: str) -> bool:" in text
-    assert "-    if find_spec(\"torchao\"):" in text
-    assert (
-        "-from vllm.model_executor.layers.quantization.torchao import "
-        "torchao_version_at_least" in text
-    )
-    assert '-    from .torchao import TorchAOConfig' in text
-    assert '+    if quantization == "torchao":' in text
-    assert '+        from .torchao import TorchAOConfig' in text
-    assert '+        method_to_config["torchao"] = TorchAOConfig' in text
+    assert "vllm/model_executor/layers/quantization/torchao_utils.py" in patch_text
+    assert "+from importlib import metadata" in patch_text
+    assert "+        except (metadata.PackageNotFoundError, version.InvalidVersion):" in patch_text
+    assert '-    from .torchao import TorchAOConfig' in patch_text
+    assert '+    if quantization == "torchao":' in patch_text
+    assert '+        from .torchao import TorchAOConfig' in patch_text
+    assert '+        method_to_config["torchao"] = TorchAOConfig' in patch_text
 
 
 def test_merged_cli_patch_keeps_top_level_help_off_runtime_paths():

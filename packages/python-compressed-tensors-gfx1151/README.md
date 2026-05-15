@@ -7,7 +7,7 @@
 - Recipe build method: `pip`
 - Upstream repo: `https://github.com/vllm-project/compressed-tensors`
 - Package version: `0.15.0.1`
-- Recipe revision: `a1d7a68 (20260427, 16 commits touching recipe path)`
+- Recipe revision: `3f15f9f (20260508, 17 commits touching recipe path)`
 - Recipe steps: `32`
 - Recipe dependencies: `cpython, pytorch`
 - Recorded reference packages: `none`
@@ -19,8 +19,8 @@
 
 This package is the compressed-tensors output for the Blackcat Qwen3-VL
 tooling follow-up lane. Blackcat's quantization helper names
-llmcompressor 0.10.0.1 and compressed-tensors 0.14.0.1, but the installed
-vLLM 0.20.1 lane expects compressed-tensors 0.15.0.1. Keep this package
+llmcompressor 0.10.0.1 and compressed-tensors 0.14.0.1, but the current
+vLLM lane expects compressed-tensors 0.15.0.1. Keep this package
 aligned with vLLM first, then reconcile llmcompressor as a separate package
 closure.
 
@@ -46,7 +46,7 @@ shape.
 ## Intentional Divergences
 
 - There is no current Arch-family compressed-tensors package baseline, so this package is closure-first for vLLM compressed-tensors quantization lanes.
-- Uses the vLLM 0.20.1-compatible compressed-tensors 0.15.0.1 release instead of the older 0.14.0.1 helper version named by Blackcat's llmcompressor quantization notes.
+- Uses the current-vLLM-compatible compressed-tensors 0.15.0.1 release instead of the older 0.14.0.1 helper version named by Blackcat's llmcompressor quantization notes.
 - Treat llmcompressor as a separate package/dependency-closure decision because llmcompressor 0.10.0.1 pins compressed-tensors 0.14.0.1 and older torch/transformers bounds than the current local stack.
 
 ## Update Notes

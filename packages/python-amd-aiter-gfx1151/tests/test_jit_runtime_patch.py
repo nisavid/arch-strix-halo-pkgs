@@ -33,9 +33,9 @@ def test_pkgbuild_carries_jit_runtime_patch():
     text = PKGBUILD.read_text()
 
     assert "pkgrel=1" in text
-    assert "pkgver=0.1.13.post1.dev268+gd50194cae" in text
-    assert "#commit=d50194cae28f2e22f4dfff19a86577fe2fcbca27" in text
-    assert 'export SETUPTOOLS_SCM_PRETEND_VERSION="0.1.13.post1.dev268+gd50194cae"' in text
+    assert "pkgver=0.1.14rc1.dev27+g7cfe51983" in text
+    assert "#commit=7cfe51983cd9dd55c0355e34fb614e7c0de44e6e" in text
+    assert 'export SETUPTOOLS_SCM_PRETEND_VERSION="0.1.14rc1.dev27+g7cfe51983"' in text
     assert HEADER_PATCH.name in text
     assert f'patch -Np1 -i "$srcdir/{HEADER_PATCH.name}"' in text
     assert HIP_REDUCE_PATCH.name in text

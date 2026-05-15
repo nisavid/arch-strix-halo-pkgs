@@ -4,7 +4,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[3]
 PATCH = (
     REPO_ROOT
-    / "packages/python-vllm-rocm-gfx1151/0016-rocm-refresh-local-carry-for-vllm-0.20.2.patch"
+    / "packages/python-vllm-rocm-gfx1151/0016-rocm-refresh-local-carry-for-vllm-0.21.0.patch"
 )
 
 
@@ -25,3 +25,16 @@ def test_patch_keeps_hipify_byproducts_present_for_unchanged_cuda_sources():
     assert "cmake/hipify.py" in text
     assert "expected_hipified_path" in text
     assert "shutil.copy2(s_abs, expected_hipified_path)" in text
+
+
+def test_rocm_amdsmi_fallback_warning_stays_one_shot():
+    text = PATCH.read_text()
+    fallback_start = text.index("Failed to get GCN arch via amdsmi")
+    next_file_start = text.find("diff --git", fallback_start)
+    if next_file_start == -1:
+        next_file_start = len(text)
+    amdsmi_fallback = text[fallback_start:next_file_start]
+
+    assert "Failed to get GCN arch via amdsmi" in amdsmi_fallback
+    assert "+        logger.warning_once(" in amdsmi_fallback
+    assert "+        logger.warning(" not in amdsmi_fallback

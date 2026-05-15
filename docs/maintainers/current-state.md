@@ -1,6 +1,52 @@
 # Current State
 
-Status as of 2026-05-14.
+Status as of 2026-05-15.
+
+The 2026-05-15 freshness sweep ran
+`tools/check_package_updates.py --json --fail-on actionable` and found four
+families requiring disposition: vLLM 0.21.0, AITER main
+`7cfe51983cd9dd55c0355e34fb614e7c0de44e6e`, llama.cpp `b9165`, and
+stable-diffusion.cpp master
+`0b8296915c4094090cff6bd2e09a5e98288c3c7d`. Source metadata is updated for
+`python-vllm-rocm-gfx1151 0.21.0-1`,
+`python-amd-aiter-gfx1151 0.1.14rc1.dev27+g7cfe51983-1`,
+`llama.cpp-hip-gfx1151 b9165-1`, `llama.cpp-vulkan-gfx1151 b9165-1`, and
+`stable-diffusion.cpp-vulkan-gfx1151 r604.g0b82969-1`. The vLLM ROCm patch
+carry was refreshed against 0.21.0, and compressed-tensors package metadata was
+rerendered so its vLLM note describes the current lane instead of the previous
+0.20.2 lane.
+
+Source verification passed with `makepkg --verifysource` for all five affected
+package roots. Package source preparation passed with
+`makepkg --nobuild --nodeps --force` for the same roots; AITER and
+stable-diffusion.cpp patch application succeeded with offsets/fuzz and should
+be reviewed again on the next upstream movement. The focused vLLM test set
+`pytest tests packages/python-vllm-rocm-gfx1151/tests -q` passed with
+`398 passed, 5 skipped`, and a follow-up freshness check reported no
+action-required families.
+
+Package-build gates passed on 2026-05-15. `tools/amerge` plan
+`20260515T110326-5baea7f4` produced `llama.cpp-hip-gfx1151 b9165-1`,
+`llama.cpp-vulkan-gfx1151 b9165-1`,
+`python-amd-aiter-gfx1151 0.1.14rc1.dev27+g7cfe51983-1`, and
+`python-vllm-rocm-gfx1151 0.21.0-1` before failing at
+stable-diffusion.cpp because upstream's server frontend `pnpm install` tried
+to create tool/cache state under the user home. The stable-diffusion.cpp
+generated package template now routes `XDG_DATA_HOME`, `PNPM_HOME`,
+`XDG_CONFIG_HOME`, `npm_config_cache`, and `pnpm_config_store_dir` into
+`$srcdir`, declares `pnpm` as a build dependency, and rerenders the package.
+Follow-up `tools/amerge` plan `20260515T111330-b6923556` then produced
+`stable-diffusion.cpp-vulkan-gfx1151 r604.g0b82969-1`.
+PR review follow-up tightened the vLLM CLI `--version` fast path to top-level
+invocations only, kept the ROCm amdsmi fallback warning one-shot, restored the
+`torchao_utils.py` metadata-only version helper in the local carry, and
+consolidated the stable-diffusion.cpp update note. The follow-up vLLM rebuild
+passed through `tools/amerge` plan `20260515T113643-78c2c9ff` and produced
+`python-vllm-rocm-gfx1151 0.21.0-1`.
+
+Deploy/install, installed-smoke, and affected live-scenario gates remain open
+until the built artifacts are published to the local repo and installed on the
+reference host.
 
 The 2026-05-14 freshness sweep ran
 `tools/check_package_updates.py --json --fail-on actionable` and found six

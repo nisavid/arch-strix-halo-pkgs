@@ -440,6 +440,12 @@ build() {{
   fi
   rm -f "${{_probe_src}}" "${{_probe_obj}}"
   local _linker_flags="-flto=thin -fuse-ld=lld -L/usr/lib -lalm"
+  export XDG_DATA_HOME="$srcdir/.xdg-data"
+  export XDG_CONFIG_HOME="$srcdir/.xdg-config"
+  export PNPM_HOME="$srcdir/.pnpm-home"
+  export npm_config_cache="$srcdir/.npm-cache"
+  export npm_config_store_dir="$srcdir/.pnpm-store"
+  mkdir -p "$XDG_DATA_HOME" "$XDG_CONFIG_HOME" "$PNPM_HOME" "$npm_config_cache" "$npm_config_store_dir"
 
   rm -rf "${{build_root}}"
   cmake -B "${{build_root}}" -S . -GNinja \\
