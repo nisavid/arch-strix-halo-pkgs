@@ -4,10 +4,7 @@ import argparse
 import importlib.metadata as metadata
 import sys
 from pathlib import Path
-
-import torch
-from transformers import AutoTokenizer
-from vllm import LLM, SamplingParams
+from typing import Any
 
 TOOLS_DIR = Path(__file__).resolve().parent
 if str(TOOLS_DIR) not in sys.path:
@@ -41,7 +38,14 @@ def is_gemma4_26b_a4b(model: str) -> bool:
     return "gemma-4-26B-A4B-it" in model
 
 
-def effective_max_num_batched_tokens(args: argparse.Namespace, model: Path) -> int | None:
+def resolved_model_arg(model: str) -> str:
+    path = Path(model)
+    if path.exists():
+        return str(path.resolve())
+    return model
+
+
+def effective_max_num_batched_tokens(args: argparse.Namespace, model: str) -> int | None:
     if args.max_num_batched_tokens is not None:
         return args.max_num_batched_tokens
     if is_gemma4_26b_a4b(str(model)):
@@ -49,38 +53,14 @@ def effective_max_num_batched_tokens(args: argparse.Namespace, model: Path) -> i
     return None
 
 
-def main() -> None:
-    args = parse_args()
-    model = Path(args.model).resolve()
-    max_num_batched_tokens = effective_max_num_batched_tokens(args, model)
-
-    print("model", str(model))
-    print("vllm", metadata.version("vllm"))
-    print("torch", torch.__version__)
-    print("cuda_available", torch.cuda.is_available())
-    print("cuda_device_count", torch.cuda.device_count())
-    if torch.cuda.is_available():
-        print("cuda_device_0", torch.cuda.get_device_name(0))
-    print("gpu_memory_utilization", args.gpu_memory_utilization)
-    print("max_model_len", args.max_model_len)
-    print("max_tokens", args.max_tokens)
-    print("max_num_batched_tokens", max_num_batched_tokens)
-
-    tokenizer = AutoTokenizer.from_pretrained(str(model), trust_remote_code=True)
-    messages = [
-        {"role": "system", "content": "You are a helpful assistant."},
-        {"role": "user", "content": "Write exactly five words."},
-    ]
-    prompt = tokenizer.apply_chat_template(
-        messages,
-        tokenize=False,
-        add_generation_prompt=True,
-        enable_thinking=False,
-    )
-    print("rendered_prompt:", repr(prompt))
-
-    llm_kwargs = {
-        "model": str(model),
+def build_llm_kwargs(
+    model: str,
+    args: argparse.Namespace,
+    *,
+    max_num_batched_tokens: int | None,
+) -> dict[str, Any]:
+    llm_kwargs: dict[str, Any] = {
+        "model": model,
         "trust_remote_code": True,
         "max_model_len": args.max_model_len,
         "gpu_memory_utilization": args.gpu_memory_utilization,
@@ -94,6 +74,48 @@ def main() -> None:
         llm_kwargs["enforce_eager"] = True
     if max_num_batched_tokens is not None:
         llm_kwargs["max_num_batched_tokens"] = max_num_batched_tokens
+    return llm_kwargs
+
+
+def main() -> None:
+    args = parse_args()
+    model = resolved_model_arg(args.model)
+    max_num_batched_tokens = effective_max_num_batched_tokens(args, model)
+
+    import torch
+    from transformers import AutoTokenizer
+    from vllm import LLM, SamplingParams
+
+    print("model", model)
+    print("vllm", metadata.version("vllm"))
+    print("torch", torch.__version__)
+    print("cuda_available", torch.cuda.is_available())
+    print("cuda_device_count", torch.cuda.device_count())
+    if torch.cuda.is_available():
+        print("cuda_device_0", torch.cuda.get_device_name(0))
+    print("gpu_memory_utilization", args.gpu_memory_utilization)
+    print("max_model_len", args.max_model_len)
+    print("max_tokens", args.max_tokens)
+    print("max_num_batched_tokens", max_num_batched_tokens)
+
+    tokenizer = AutoTokenizer.from_pretrained(model, trust_remote_code=True)
+    messages = [
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "Write exactly five words."},
+    ]
+    prompt = tokenizer.apply_chat_template(
+        messages,
+        tokenize=False,
+        add_generation_prompt=True,
+        enable_thinking=False,
+    )
+    print("rendered_prompt:", repr(prompt))
+
+    llm_kwargs = build_llm_kwargs(
+        model,
+        args,
+        max_num_batched_tokens=max_num_batched_tokens,
+    )
 
     llm = LLM(**llm_kwargs)
     print("llm_init_ok")
