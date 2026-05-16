@@ -1277,11 +1277,25 @@ package() {{
   install -Dm644 "$srcdir/{src_subdir}/LICENSE" "$pkgdir/usr/share/licenses/{package_name}/LICENSE"
 }}"""
     elif template == "python-project-aotriton":
+        submodule_sources = policy_pkg.get("submodule_sources", {})
+        if submodule_sources:
+            for submodule_path, source_name in submodule_sources.items():
+                prepare_lines.extend(
+                    [
+                        f'rm -rf "$srcdir/{src_subdir}/{submodule_path}"',
+                        f'cp -a "$srcdir/{source_name}" "$srcdir/{src_subdir}/{submodule_path}"',
+                    ]
+                )
+        else:
+            prepare_lines.extend(
+                [
+                    "# Arch-style source prep: AOTriton expects its bundled submodules to be initialized before configure.",
+                    'git -C "$srcdir/{src_subdir}" submodule sync --recursive'.format(src_subdir=src_subdir),
+                    'git -C "$srcdir/{src_subdir}" submodule update --init --recursive --force'.format(src_subdir=src_subdir),
+                ]
+            )
         prepare_lines.extend(
             [
-                "# Arch-style source prep: AOTriton expects its bundled submodules to be initialized before configure.",
-                'git -C "$srcdir/{src_subdir}" submodule sync --recursive'.format(src_subdir=src_subdir),
-                'git -C "$srcdir/{src_subdir}" submodule update --init --recursive --force'.format(src_subdir=src_subdir),
                 "# Keep vendored Triton aligned with the standalone Python-3.14 compatibility fix we already apply in python-triton-gfx1151.",
                 'git -C "$srcdir/{src_subdir}/third_party/triton" cherry-pick -n c44b870bdd9e1ea8933fd4057b6b59a5e6e5407b || true'.format(src_subdir=src_subdir),
             ]

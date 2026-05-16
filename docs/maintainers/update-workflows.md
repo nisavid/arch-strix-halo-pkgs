@@ -55,7 +55,9 @@ Status handling:
 
 - `current`: no upstream or baseline drift was found for that package family.
 - `stable_update_available`: run the upstream source update story before
-  unrelated backlog work.
+  unrelated backlog work. For a package family that explicitly opts into
+  prerelease source adoption, this status means the primary release lane has
+  a newer release, including prereleases.
 - `branch_head_ahead`: review the VCS source lane and run the upstream source
   update story if the newer head belongs in this repo.
 - `candidate_head_ahead`: review a branch lane that can become the next pinned
@@ -137,8 +139,9 @@ validated states.
 
 The cache is valid only when the policy digest still matches and the cached
 report is younger than `--max-age-hours` (24 by default). The digest includes
-the checker version, freshness policy, update-candidate ledger, discovered
-package directories, and any `--only` selectors.
+the checker version, freshness policy, recipe-package policy,
+update-candidate ledger, discovered package directories, and any `--only`
+selectors.
 
 Durable closeout notes may point future agents at the freshness gate, but the
 instruction must preserve the gate's termination condition: stop before running
@@ -154,6 +157,27 @@ Freshness `recorded` values are the last reviewed upstream or baseline values.
 For branch checks, the recorded value may be newer than the packaged source
 when the reviewed branch range did not justify changing the pinned package
 commit.
+
+Freshness checks and package sources form one source-lane contract. The package
+source pin, the freshness check, and the reviewed cursor may be different
+fields, but they must be declared or inferable as one contract. A package
+source must bind to a freshness check, inherit a family source contract, or be
+declared as an auxiliary source owned by a primary source lane. Source patch
+files are not freshness sources. Auxiliary source refs, such as staged
+submodules or vendored web/runtime inputs, are non-actionable unless their
+contract explicitly promotes them to a candidate or primary lane.
+
+By default, inferred contracts require the source value to match the recorded
+freshness value after normal tag-prefix handling. Use an explicit
+`value_policy` such as `pinned_may_lag_reviewed`,
+`pinned_commit_may_lag_reviewed`, or `owned_by_primary_release` when the
+packaged source intentionally lags a reviewed cursor or encodes the same lane
+through a release-owned commit/archive instead of the release label.
+
+Do not flatten reviewed cursors into package pins. A rejected, tracked, or
+blocked candidate may leave a freshness `recorded` value ahead of the packaged
+source. The source contract exists to make that relationship deterministic, not
+to force the package to adopt every reviewed upstream value.
 
 When a package is onboarded or re-onboarded to a remote repository source
 without an explicit release channel, treat the source repository's selected ref

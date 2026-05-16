@@ -7,7 +7,7 @@
 - Recipe build method: `cmake`
 - Upstream repo: `https://github.com/ROCm/aotriton.git`
 - Package version: `0.11.2b`
-- Recipe revision: `a1d7a68 (20260427, 16 commits touching recipe path)`
+- Recipe revision: `3f15f9f (20260508, 17 commits touching recipe path)`
 - Recipe steps: `18, 19`
 - Recipe dependencies: `triton`
 - Recorded reference packages: `extra/python-aotriton, cachyos-extra-znver4/python-aotriton`
@@ -28,6 +28,7 @@ bindings. gfx1151 explicitly targeted via AOTRITON_TARGET_ARCH.
 - Do not carry forward Arch's broader multi-arch target matrix here. The Strix Halo recipe intentionally narrows AOTRITON_TARGET_ARCH to gfx1151 only so the build does not waste time compiling irrelevant kernels.
 - The nested vendored Triton build must explicitly disable TRITON_BUILD_UT, otherwise it spends time linking irrelevant C++ unit-test binaries and can fail there before the Python runtime package is produced.
 - The nested vendored Triton build must also inherit amdclang via CC/CXX and start from a fresh triton_build directory. Reusing a stale g++-configured build tree can reproduce GCC 15 LTO warning-as-error failures in GenericSwizzling.cpp even after the PKGBUILD is fixed.
+- AOTriton's release-owned submodules are pinned as package sources and staged into third_party during prepare(); do not reintroduce network submodule updates.
 - The vendored Triton submodule also needs the same Python-3.14 ast.Num compatibility cherry-pick used by python-triton-gfx1151, otherwise AOTriton kernel generation fails inside v3python/compile.py after the nested Triton wheel already built successfully.
 
 ## Intentional Divergences
@@ -38,6 +39,7 @@ bindings. gfx1151 explicitly targeted via AOTRITON_TARGET_ARCH.
 ## Update Notes
 
 - When updating, compare against Arch first because this is one of the closest recipe-to-baseline packages in the stack.
+- Keep the package on stable AOTriton releases for gfx1151. The 0.11.210b and 0.11.52b tech previews are intentionally not adopted because they target gfx942 ASAN and gfx1250 preview builds rather than this package's Strix Halo lane.
 - Preserve the reuse-build logic and stale-build-tree cleanup; interrupted AOTriton builds otherwise leave a misleading broken state behind.
 
 ## Maintainer Starting Points

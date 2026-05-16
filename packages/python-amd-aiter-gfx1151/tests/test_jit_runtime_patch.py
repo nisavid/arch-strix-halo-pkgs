@@ -33,9 +33,9 @@ def test_pkgbuild_carries_jit_runtime_patch():
     text = PKGBUILD.read_text()
 
     assert "pkgrel=1" in text
-    assert "pkgver=0.1.14rc1.dev27+g7cfe51983" in text
-    assert "#commit=7cfe51983cd9dd55c0355e34fb614e7c0de44e6e" in text
-    assert 'export SETUPTOOLS_SCM_PRETEND_VERSION="0.1.14rc1.dev27+g7cfe51983"' in text
+    assert "pkgver=0.1.14rc0" in text
+    assert "#tag=v0.1.14-rc0" in text
+    assert 'export SETUPTOOLS_SCM_PRETEND_VERSION="0.1.14rc0"' in text
     assert HEADER_PATCH.name in text
     assert f'patch -Np1 -i "$srcdir/{HEADER_PATCH.name}"' in text
     assert HIP_REDUCE_PATCH.name in text
@@ -101,7 +101,7 @@ def test_hip_reduce_patch_isolated_from_vec_convert_changes():
 def test_hip_reduce_patch_keeps_installed_aiter_common_header():
     text = HIP_REDUCE_PATCH.read_text()
 
-    assert '+#include "aiter_hip_common.h"' in text
+    assert '#include "aiter_hip_common.h"' in text
     assert '+#include "hip_compat.h"' not in text
 
 

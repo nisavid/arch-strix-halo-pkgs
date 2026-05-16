@@ -1,7 +1,8 @@
-diff --git a/aiter/jit/core.py b/aiter/jit/core.py
---- a/aiter/jit/core.py
-+++ b/aiter/jit/core.py
-@@ -383,7 +383,8 @@
+diff --git i/aiter/jit/core.py w/aiter/jit/core.py
+index d42155df1..e4e10e581 100644
+--- i/aiter/jit/core.py
++++ w/aiter/jit/core.py
+@@ -407,7 +407,8 @@ def get_user_jit_dir() -> str:
      if "AITER_JIT_DIR" in os.environ:
          path = os.getenv("AITER_JIT_DIR", "")
          os.makedirs(path, exist_ok=True)
@@ -11,7 +12,7 @@ diff --git a/aiter/jit/core.py b/aiter/jit/core.py
          return path
      else:
          if os.access(this_dir, os.W_OK):
-@@ -391,6 +392,8 @@
+@@ -415,6 +416,8 @@ def get_user_jit_dir() -> str:
      home_jit_dir = f"{os.path.expanduser('~')}/.aiter/{os.path.basename(this_dir)}"
      if not os.path.exists(home_jit_dir):
          shutil.copytree(this_dir, home_jit_dir)
@@ -20,10 +21,11 @@ diff --git a/aiter/jit/core.py b/aiter/jit/core.py
      return home_jit_dir
  
  
-@@ -436,16 +439,42 @@
+@@ -459,17 +462,43 @@ def validate_and_update_archs():
+     return archs
  
  
- @functools.lru_cache()
++@functools.lru_cache()
 +def get_hipcc_path() -> str:
 +    candidates = [
 +        os.environ.get("HIPCC"),
@@ -46,7 +48,7 @@ diff --git a/aiter/jit/core.py b/aiter/jit/core.py
 +    return "hipcc"
 +
 +
-+@functools.lru_cache()
+ @functools.lru_cache()
  def hip_flag_checker(flag_hip: str) -> bool:
      import subprocess
  
@@ -64,7 +66,7 @@ diff --git a/aiter/jit/core.py b/aiter/jit/core.py
      except subprocess.CalledProcessError:
          logger.warning(f"Current hipcc not support: {flag_hip}, skip it.")
          return False
-@@ -462,10 +491,21 @@
+@@ -486,10 +515,21 @@ def check_LLVM_MAIN_REVISION():
      #define CK_TILE_HOST_DEVICE_EXTERN"""
      import subprocess
  
@@ -89,7 +91,7 @@ diff --git a/aiter/jit/core.py b/aiter/jit/core.py
      except subprocess.CalledProcessError:
          return 554785
      return 554785 - 1
-@@ -550,7 +590,11 @@
+@@ -574,7 +614,11 @@ __mds = {}
  def get_module_custom_op(md_name: str) -> None:
      global __mds
      if md_name not in __mds:

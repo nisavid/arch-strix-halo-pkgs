@@ -604,6 +604,47 @@ def test_torchao_renderer_preserves_source_build_shape() -> None:
     assert "$ORIGIN/../torch/lib" in pkgbuild
 
 
+def test_aotriton_renderer_stages_pinned_submodule_sources() -> None:
+    pkgbuild = render_recipe_scaffolds.render_pkgbuild(
+        "python-aotriton-gfx1151",
+        {
+            "recipe_key": "aotriton",
+            "template": "python-project-aotriton",
+            "upstream_version": "0.11.2b",
+            "pkgdesc": "AOTriton",
+            "url": "https://github.com/ROCm/aotriton",
+            "license": ["MIT"],
+            "src_subdir": "aotriton",
+            "source_refs": [
+                "aotriton::git+https://github.com/ROCm/aotriton#tag=0.11.2b",
+                "aotriton-aiter::git+https://github.com/ROCm/aiter.git#commit=01aae101",
+            ],
+            "submodule_sources": {
+                "third_party/aiter": "aotriton-aiter",
+            },
+            "makedepends": ["git"],
+        },
+        {
+            "repo": "https://github.com/ROCm/aotriton",
+            "method": "cmake",
+            "phase": "package",
+            "steps": [],
+            "depends_on": [],
+            "notes": "",
+        },
+        "0.11.2b",
+        {
+            "recipe_repo": "https://github.com/paudley/ai-notes",
+            "recipe_subdir": "strix-halo",
+            "recipe_author": "Blackcat Informatics Inc.",
+        },
+    )
+
+    assert 'cp -a "$srcdir/aotriton-aiter" "$srcdir/aotriton/third_party/aiter"' in pkgbuild
+    assert "git submodule update --init --recursive" not in pkgbuild
+    assert "cherry-pick -n c44b870bdd9e1ea8933fd4057b6b59a5e6e5407b" in pkgbuild
+
+
 def test_torch_migraphx_readme_uses_policy_notes_override() -> None:
     readme = render_recipe_scaffolds.render_readme(
         "python-torch-migraphx-gfx1151",

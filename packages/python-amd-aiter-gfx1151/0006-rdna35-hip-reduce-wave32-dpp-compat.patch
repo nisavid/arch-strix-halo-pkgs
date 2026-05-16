@@ -1,12 +1,9 @@
---- a/csrc/include/hip_reduce.h
-+++ b/csrc/include/hip_reduce.h
-@@ -1,9 +1,18 @@
- // SPDX-License-Identifier: MIT
--// Copyright (C) 2024-2026, Advanced Micro Devices, Inc. All rights reserved.
--#pragma once
--#include "aiter_hip_common.h"
-+// Copyright (C) 2024-2025, Advanced Micro Devices, Inc. All rights reserved.
-+#include "aiter_hip_common.h"
+diff --git i/csrc/include/hip_reduce.h w/csrc/include/hip_reduce.h
+index f8076be0d..ac3e87f80 100644
+--- i/csrc/include/hip_reduce.h
++++ w/csrc/include/hip_reduce.h
+@@ -4,6 +4,16 @@
+ #include "aiter_hip_common.h"
  #include <rocprim/rocprim.hpp>
  
 +// Detect RDNA 3/3.5 (gfx11xx) which lack DPP row broadcast instructions
@@ -22,7 +19,7 @@
  template <typename T, typename F>
  __device__ constexpr T wave_reduce_ds(T local, F reduce_op)
  {
-@@ -54,7 +63,7 @@
+@@ -54,7 +64,7 @@ __device__ constexpr T cross_wave_reduce(T local, F reduce_op, T* smem)
  //     return v_local;
  // }
  
@@ -31,7 +28,7 @@
  __device__ inline T thread_broadcast(T val, int idx)
  {
      constexpr int words_no = (sizeof(T) + sizeof(int) - 1) / sizeof(int);
-@@ -78,28 +87,9 @@
+@@ -78,28 +88,9 @@ __device__ inline T thread_broadcast(T val, int idx)
      return __builtin_bit_cast(T, a);
  }
  
@@ -61,7 +58,7 @@
  __device__ constexpr T wave_reduce(T local, F reduce_op)
  {
      if constexpr(WarpSize > 1)
-@@ -116,45 +106,57 @@
+@@ -116,45 +107,57 @@ __device__ constexpr T wave_reduce(T local, F reduce_op)
  
      if constexpr(WarpSize > 4)
      {
@@ -131,7 +128,7 @@
  __device__ constexpr T multithread_reduce(T data, F reduce_op, int thread_num)
  {
      if(thread_num == 1)
-@@ -187,21 +189,21 @@
+@@ -187,21 +190,21 @@ __device__ constexpr T multithread_reduce(T data, F reduce_op, int thread_num)
      {
          data = reduce_op(rocprim::detail::warp_move_dpp<T, 0xb1>(data), data);
          data = reduce_op(rocprim::detail::warp_move_dpp<T, 0x4e>(data), data);
@@ -161,7 +158,7 @@
      else if(thread_num == 64)
      {
          data = reduce_op(rocprim::detail::warp_move_dpp<T, 0xb1>(data), data);
-@@ -217,6 +219,7 @@
+@@ -217,6 +220,7 @@ __device__ constexpr T multithread_reduce(T data, F reduce_op, int thread_num)
          }
      }
  #endif
@@ -169,7 +166,7 @@
      return data;
  }
  
-@@ -224,112 +227,40 @@
+@@ -224,112 +228,40 @@ template <typename T, typename F, int BlockSize, bool waveBroadcast = true>
  __device__ constexpr T block_reduce(T local, F reduce_op)
  {
      // static_assert(BlockSize <= 256, "BlockSize > 256 is not supported");
@@ -185,14 +182,14 @@
 +    local = wave_reduce<T, F, WARP_SIZE, false>(local, reduce_op);
 +
 +    if(lane_id == wave_size - 1)
-+    {
+     {
+-        local = wave_reduce<T, F, WARP_SIZE, waveBroadcast>(local, reduce_op);
 +        smem[wave_id] = local;
 +    }
 +    __syncthreads();
 +
 +    if constexpr(WARP_SIZE % waves == 0)
-     {
--        local = wave_reduce<T, F, WARP_SIZE, waveBroadcast>(local, reduce_op);
++    {
 +        local = smem[lane_id % waves];
 +        local = wave_reduce<T, F, waves, waveBroadcast>(local, reduce_op);
      }
@@ -213,7 +210,10 @@
 -        __syncthreads();
  
 -        if constexpr(WARP_SIZE % waves == 0)
--        {
++        local = wave_reduce<T, F, waves, false>(local, reduce_op);
++
++        if constexpr(waveBroadcast)
+         {
 -            local = smem[lane_id % waves];
 -            local = wave_reduce<T, F, waves, waveBroadcast>(local, reduce_op);
 -        }
@@ -225,15 +225,12 @@
 -            }
 -
 -            local = wave_reduce<T, F, waves, false>(local, reduce_op);
-+        local = wave_reduce<T, F, waves, false>(local, reduce_op);
- 
+-
 -            if constexpr(waveBroadcast)
 -            {
 -                // Read the result from the last lane of the logical warp
 -                local = rocprim::warp_shuffle(local, waves - 1, wave_size);
 -            }
-+        if constexpr(waveBroadcast)
-+        {
 +            // Read the result from the last lane of the logical warp
 +            local = rocprim::warp_shuffle(local, waves - 1, wave_size);
          }

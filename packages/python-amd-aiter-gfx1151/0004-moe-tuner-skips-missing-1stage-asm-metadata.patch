@@ -1,8 +1,8 @@
-diff --git a/csrc/ck_gemm_moe_2stages_codegen/gemm_moe_tune.py b/csrc/ck_gemm_moe_2stages_codegen/gemm_moe_tune.py
-index ac0540e76..0567561f9 100644
---- a/csrc/ck_gemm_moe_2stages_codegen/gemm_moe_tune.py
-+++ b/csrc/ck_gemm_moe_2stages_codegen/gemm_moe_tune.py
-@@ -1546,9 +1546,15 @@ class FmoeTuner(TunerCommon):
+diff --git i/csrc/ck_gemm_moe_2stages_codegen/gemm_moe_tune.py w/csrc/ck_gemm_moe_2stages_codegen/gemm_moe_tune.py
+index f2a40f9c9..0c7ef1b3b 100644
+--- i/csrc/ck_gemm_moe_2stages_codegen/gemm_moe_tune.py
++++ w/csrc/ck_gemm_moe_2stages_codegen/gemm_moe_tune.py
+@@ -1839,9 +1839,15 @@ class FmoeTuner(TunerCommon):
          elif act_type == ActivationType.Gelu:
              acti_dir = "gelu"
          up = 1 if use_g1u1 else 0

@@ -32,6 +32,13 @@ def write_policy(root: Path, body: str) -> Path:
     return policy
 
 
+def write_recipe_policy(root: Path, body: str) -> Path:
+    policy = root / "policies" / "recipe-packages.toml"
+    policy.parent.mkdir(parents=True, exist_ok=True)
+    policy.write_text(textwrap.dedent(body), encoding="utf-8")
+    return policy
+
+
 def write_candidate_ledger(root: Path, body: str) -> Path:
     ledger = root / "docs" / "maintainers" / "update-candidates.toml"
     ledger.parent.mkdir(parents=True, exist_ok=True)
@@ -171,6 +178,308 @@ def test_given_only_prerelease_tag_when_checked_then_prerelease_only(tmp_path):
     report = updates.run_check(tmp_path, refresh=True, clients=clients)
 
     assert report["families"][0]["status"] == "prerelease_only"
+
+
+def test_version_key_orders_hyphenated_release_candidates():
+    assert updates.version_key("0.1.13") < updates.version_key("0.1.14-rc0")
+    assert updates.version_key("0.1.14-rc0") < updates.version_key("0.1.14")
+
+
+def test_given_prereleases_included_when_checked_then_prerelease_is_actionable(
+    tmp_path,
+):
+    write_pkg(tmp_path, "python-amd-aiter-gfx1151")
+    write_policy(
+        tmp_path,
+        """
+        [families.aiter]
+        packages = ["python-amd-aiter-gfx1151"]
+        priority = "high"
+        workflow = "upstream_source_update"
+        checks = [{ id = "release", role = "primary", kind = "github_release", repo = "ROCm/aiter", recorded = "0.1.13", tag_prefix = "v", comparison = "pep440", include_prereleases = true }]
+        """,
+    )
+    clients = updates.FakeClients(
+        github_releases={
+            "ROCm/aiter": [
+                {"tag": "v0.1.14-rc0", "prerelease": True}
+            ]
+        }
+    )
+
+    report = updates.run_check(tmp_path, refresh=True, clients=clients)
+
+    assert report["families"][0]["status"] == "stable_update_available"
+    assert report["families"][0]["checks"][0]["latest"] == "0.1.14-rc0"
+    assert report["families"][0]["checks"][0]["latest_is_prerelease"] is True
+
+
+def test_policy_digest_changes_when_recipe_policy_changes(tmp_path):
+    write_recipe_policy(
+        tmp_path,
+        """
+        [packages.sample]
+        template = "meta-package"
+        """,
+    )
+    before = updates.policy_digest(tmp_path)
+    write_recipe_policy(
+        tmp_path,
+        """
+        [packages.sample]
+        template = "meta-package"
+        upstream_version = "1.2.3"
+        """,
+    )
+
+    assert updates.policy_digest(tmp_path) != before
+
+
+def test_source_contract_validation_accepts_branch_source_bound_to_git_ref(
+    tmp_path,
+):
+    write_pkg(tmp_path, "lemonade-server")
+    write_policy(
+        tmp_path,
+        """
+        [families.lemonade]
+        packages = ["lemonade-server"]
+        priority = "medium"
+        workflow = "upstream_source_update"
+        checks = [{ id = "fork-main", role = "primary", kind = "git_ref", repo = "https://github.com/nisavid/lemonade.git", ref = "refs/heads/main", recorded = "abc123", comparison = "sha" }]
+        """,
+    )
+    write_recipe_policy(
+        tmp_path,
+        """
+        [packages.lemonade-server]
+        template = "lemonade-server"
+        source_refs = ["lemonade::git+https://github.com/nisavid/lemonade.git#commit=abc123"]
+        """,
+    )
+    clients = updates.FakeClients(
+        git_refs={"https://github.com/nisavid/lemonade.git:refs/heads/main": "abc123"}
+    )
+
+    report = updates.run_check(tmp_path, refresh=True, clients=clients)
+
+    assert report["families"][0]["status"] == "current"
+
+
+def test_source_contract_validation_accepts_aiter_prerelease_tag_source(
+    tmp_path,
+):
+    write_pkg(tmp_path, "python-amd-aiter-gfx1151")
+    write_policy(
+        tmp_path,
+        """
+        [families.aiter]
+        packages = ["python-amd-aiter-gfx1151"]
+        priority = "high"
+        workflow = "upstream_source_update"
+        checks = [{ id = "release", role = "primary", kind = "github_release", repo = "ROCm/aiter", recorded = "0.1.14-rc0", tag_prefix = "v", comparison = "pep440", include_prereleases = true }]
+        """,
+    )
+    write_recipe_policy(
+        tmp_path,
+        """
+        [packages.python-amd-aiter-gfx1151]
+        template = "python-project-aiter"
+        upstream_version = "0.1.14rc0"
+        source_refs = ["aiter::git+https://github.com/ROCm/aiter.git#tag=v0.1.14-rc0"]
+        """,
+    )
+    clients = updates.FakeClients(
+        github_releases={
+            "ROCm/aiter": [
+                {"tag": "v0.1.14-rc0", "prerelease": True}
+            ]
+        }
+    )
+
+    report = updates.run_check(tmp_path, refresh=True, clients=clients)
+
+    assert report["families"][0]["status"] == "current"
+    assert report["families"][0]["checks"][0]["latest_is_prerelease"] is True
+
+
+def test_source_contract_validation_accepts_aocl_libm_release_only_source(
+    tmp_path,
+):
+    write_pkg(tmp_path, "aocl-libm-gfx1151")
+    write_policy(
+        tmp_path,
+        """
+        [families.aocl_libm]
+        packages = ["aocl-libm-gfx1151"]
+        priority = "medium"
+        workflow = "upstream_source_update"
+        checks = [{ id = "release", role = "primary", kind = "github_release", repo = "amd/aocl-libm-ose", recorded = "5.2.2", comparison = "pep440" }]
+        """,
+    )
+    write_recipe_policy(
+        tmp_path,
+        """
+        [packages.aocl-libm-gfx1151]
+        template = "scons-aocl-libm"
+        source_refs = ["aocl-libm::git+https://github.com/amd/aocl-libm-ose.git#tag=5.2.2"]
+        """,
+    )
+    clients = updates.FakeClients(
+        github_releases={
+            "amd/aocl-libm-ose": [
+                {"tag": "5.2.2", "prerelease": False}
+            ]
+        }
+    )
+
+    report = updates.run_check(tmp_path, refresh=True, clients=clients)
+
+    assert report["families"][0]["status"] == "current"
+
+
+def test_source_contract_validation_accepts_explicit_aotriton_auxiliary_sources(
+    tmp_path,
+):
+    write_pkg(tmp_path, "python-aotriton-gfx1151")
+    write_policy(
+        tmp_path,
+        """
+        [families.aotriton]
+        packages = ["python-aotriton-gfx1151"]
+        priority = "medium"
+        workflow = "upstream_source_update"
+        checks = [{ id = "release", role = "primary", kind = "github_release", repo = "ROCm/aotriton", recorded = "0.11.2b", comparison = "pep440" }]
+        source_contracts = [
+          { id = "aiter-submodule", packages = ["python-aotriton-gfx1151"], check_id = "release", source_name = "aotriton-aiter", source_kind = "git_commit", origin = "https://github.com/ROCm/aiter.git", value_policy = "owned_by_primary_release" },
+        ]
+        """,
+    )
+    write_recipe_policy(
+        tmp_path,
+        """
+        [packages.python-aotriton-gfx1151]
+        template = "python-project-aotriton"
+        source_refs = ["aotriton::git+https://github.com/ROCm/aotriton#tag=0.11.2b"]
+        extra_sources = ["aotriton-aiter::git+https://github.com/ROCm/aiter.git#commit=01aae101"]
+        """,
+    )
+    clients = updates.FakeClients(
+        github_releases={
+            "ROCm/aotriton": [
+                {"tag": "0.11.2b", "prerelease": False}
+            ]
+        }
+    )
+
+    report = updates.run_check(tmp_path, refresh=True, clients=clients)
+
+    assert report["families"][0]["status"] == "current"
+
+
+def test_source_contract_validation_reports_unbound_auxiliary_source(tmp_path):
+    write_pkg(tmp_path, "python-aotriton-gfx1151")
+    write_policy(
+        tmp_path,
+        """
+        [families.aotriton]
+        packages = ["python-aotriton-gfx1151"]
+        priority = "medium"
+        workflow = "upstream_source_update"
+        checks = [{ id = "release", role = "primary", kind = "github_release", repo = "ROCm/aotriton", recorded = "0.11.2b", comparison = "pep440" }]
+        """,
+    )
+    write_recipe_policy(
+        tmp_path,
+        """
+        [packages.python-aotriton-gfx1151]
+        template = "python-project-aotriton"
+        source_refs = ["aotriton::git+https://github.com/ROCm/aotriton#tag=0.11.2b"]
+        extra_sources = ["aotriton-aiter::git+https://github.com/ROCm/aiter.git#commit=01aae101"]
+        """,
+    )
+
+    report = updates.run_check(
+        tmp_path,
+        refresh=True,
+        clients=updates.FakeClients(allow_missing=True),
+    )
+
+    assert report["families"][0]["status"] == "metadata_mismatch"
+    assert "aotriton-aiter" in report["families"][0]["message"]
+
+
+def test_source_contract_validation_reports_source_value_mismatch(tmp_path):
+    write_pkg(tmp_path, "python-amd-aiter-gfx1151")
+    write_policy(
+        tmp_path,
+        """
+        [families.aiter]
+        packages = ["python-amd-aiter-gfx1151"]
+        priority = "high"
+        workflow = "upstream_source_update"
+        checks = [{ id = "release", role = "primary", kind = "github_release", repo = "ROCm/aiter", recorded = "0.1.14-rc0", tag_prefix = "v", comparison = "pep440", include_prereleases = true }]
+        """,
+    )
+    write_recipe_policy(
+        tmp_path,
+        """
+        [packages.python-amd-aiter-gfx1151]
+        template = "python-project-aiter"
+        source_refs = ["aiter::git+https://github.com/ROCm/aiter.git#tag=v0.1.13"]
+        """,
+    )
+
+    report = updates.run_check(
+        tmp_path,
+        refresh=True,
+        clients=updates.FakeClients(
+            github_releases={
+                "ROCm/aiter": [
+                    {"tag": "v0.1.14-rc0", "prerelease": True}
+                ]
+            }
+        ),
+    )
+
+    assert report["families"][0]["status"] == "metadata_mismatch"
+    assert "aiter" in report["families"][0]["message"]
+
+
+def test_source_contract_validation_allows_reviewed_cursor_ahead_of_pinned_source(
+    tmp_path,
+):
+    write_pkg(tmp_path, "python-pytorch-opt-rocm-gfx1151")
+    write_policy(
+        tmp_path,
+        """
+        [families.rocm_pytorch]
+        packages = ["python-pytorch-opt-rocm-gfx1151"]
+        priority = "high"
+        workflow = "upstream_source_update"
+        checks = [{ id = "release-branch", role = "primary", kind = "git_ref", repo = "https://github.com/ROCm/pytorch.git", ref = "refs/heads/release/2.11", recorded = "new456", comparison = "sha" }]
+        source_contracts = [
+          { id = "release-branch-source", check_id = "release-branch", source_name = "pytorch", source_kind = "git_commit", origin = "https://github.com/ROCm/pytorch.git", value_policy = "pinned_commit_may_lag_reviewed" },
+        ]
+        """,
+    )
+    write_recipe_policy(
+        tmp_path,
+        """
+        [packages.python-pytorch-opt-rocm-gfx1151]
+        template = "python-project-pytorch-rocm"
+        source_refs = ["pytorch::git+https://github.com/ROCm/pytorch.git#commit=old123"]
+        """,
+    )
+    clients = updates.FakeClients(
+        git_refs={
+            "https://github.com/ROCm/pytorch.git:refs/heads/release/2.11": "new456"
+        }
+    )
+
+    report = updates.run_check(tmp_path, refresh=True, clients=clients)
+
+    assert report["families"][0]["status"] == "current"
 
 
 def test_given_recorded_aur_baseline_changes_then_baseline_drift_not_upstream_update(
