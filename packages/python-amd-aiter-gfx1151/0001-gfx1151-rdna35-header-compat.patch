@@ -1,5 +1,7 @@
---- a/csrc/include/ck_tile/vec_convert.h
-+++ b/csrc/include/ck_tile/vec_convert.h
+diff --git i/csrc/include/ck_tile/vec_convert.h w/csrc/include/ck_tile/vec_convert.h
+index aaabcd350..e6b6bbb7c 100644
+--- i/csrc/include/ck_tile/vec_convert.h
++++ w/csrc/include/ck_tile/vec_convert.h
 @@ -1,5 +1,5 @@
  // SPDX-License-Identifier: MIT
 -// Copyright (C) 2018-2026, Advanced Micro Devices, Inc. All rights reserved.
@@ -7,7 +9,7 @@
  #pragma once
  #include "aiter_hip_common.h"
  
-@@ -37,37 +37,73 @@
+@@ -37,37 +37,73 @@ struct numeric<fp4x2_t>
      // maximum finite value
      CK_TILE_HOST_DEVICE static constexpr fp32_t max() { return 6.0f; }
  };

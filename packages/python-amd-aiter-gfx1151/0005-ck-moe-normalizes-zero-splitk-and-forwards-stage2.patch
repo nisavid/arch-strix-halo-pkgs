@@ -1,6 +1,36 @@
---- a/aiter/ops/moe_op.py
-+++ b/aiter/ops/moe_op.py
-@@ -568,7 +568,7 @@
+diff --git i/aiter/fused_moe.py w/aiter/fused_moe.py
+index 6edf148ac..7f77b6844 100644
+--- i/aiter/fused_moe.py
++++ w/aiter/fused_moe.py
+@@ -1149,6 +1149,7 @@ def get_2stage_cfgs(
+                 kernelName=kernelName2,
+                 activation=activation,
+                 quant_type=q_type,
++                splitk=ksplit,
+                 use_non_temporal_load=use_non_temporal_load,
+             )
+         _s1_fp8q = is_flydsl1 and "_fp8" in kernelName1.split("_t")[-1]
+@@ -1378,6 +1379,7 @@ def get_2stage_cfgs(
+                 kernelName=kernelName2,
+                 activation=activation,
+                 quant_type=q_type,
++                splitk=ksplit,
+                 use_non_temporal_load=use_non_temporal_load,
+             )
+         return MOEMetadata(
+@@ -1408,6 +1410,7 @@ def get_2stage_cfgs(
+             kernelName=kernelName1,
+             activation=activation,
+             quant_type=q_type,
++            splitk=ksplit,
+         ),
+         functools.partial(
+             aiter.ck_moe_stage2_fwd,
+diff --git i/aiter/ops/moe_op.py w/aiter/ops/moe_op.py
+index 4ea3a5c2e..4f884adee 100755
+--- i/aiter/ops/moe_op.py
++++ w/aiter/ops/moe_op.py
+@@ -568,7 +568,7 @@ def ck_moe_stage1_fwd(
          sorted_weights,
          quant_type.value,
          activation.value,
@@ -9,7 +39,7 @@
          use_non_temporal_load,
          None if dst_type is None else dtype2str_dict[dst_type],
          is_shuffled=getattr(w1, "is_shuffled", False),
-@@ -576,6 +576,10 @@
+@@ -576,6 +576,10 @@ def ck_moe_stage1_fwd(
      return out
  
  
@@ -20,7 +50,7 @@
  def ck_moe_stage2_fwd(
      inter_states: Tensor,
      w1: Tensor,
-@@ -592,6 +596,7 @@
+@@ -592,6 +596,7 @@ def ck_moe_stage2_fwd(
      sorted_weights: Optional[Tensor] = None,
      quant_type: QuantType = QuantType.No,
      activation: ActivationType = ActivationType.Silu,
@@ -28,7 +58,7 @@
      use_non_temporal_load: Optional[bool] = False,
  ):
      ck_moe_stage2(
-@@ -610,6 +615,7 @@
+@@ -610,6 +615,7 @@ def ck_moe_stage2_fwd(
          sorted_weights,
          quant_type.value,
          activation.value,
@@ -36,35 +66,11 @@
          use_non_temporal_load=use_non_temporal_load,
          is_shuffled=getattr(w2, "is_shuffled", False),
      )
---- a/aiter/fused_moe.py
-+++ b/aiter/fused_moe.py
-@@ -987,6 +987,7 @@
-                 kernelName=kernelName2,
-                 activation=activation,
-                 quant_type=q_type,
-+                splitk=ksplit,
-                 use_non_temporal_load=use_non_temporal_load,
-             )
- 
-@@ -1081,6 +1082,7 @@
-                 kernelName=kernelName2,
-                 activation=activation,
-                 quant_type=q_type,
-+                splitk=ksplit,
-                 use_non_temporal_load=use_non_temporal_load,
-             )
-         return MOEMetadata(
-@@ -1117,6 +1119,7 @@
-             kernelName=kernelName2,
-             activation=activation,
-             quant_type=q_type,
-+            splitk=ksplit,
-         ),
-         block_m,
-         ksplit,
---- a/csrc/ck_gemm_moe_2stages_codegen/gemm_moe_ck2stages.cu
-+++ b/csrc/ck_gemm_moe_2stages_codegen/gemm_moe_ck2stages.cu
-@@ -66,7 +66,7 @@
+diff --git i/csrc/ck_gemm_moe_2stages_codegen/gemm_moe_ck2stages.cu w/csrc/ck_gemm_moe_2stages_codegen/gemm_moe_ck2stages.cu
+index b92dabad1..6963a1403 100644
+--- i/csrc/ck_gemm_moe_2stages_codegen/gemm_moe_ck2stages.cu
++++ w/csrc/ck_gemm_moe_2stages_codegen/gemm_moe_ck2stages.cu
+@@ -66,7 +66,7 @@ void ck_moe_stage1(torch::Tensor &hidden_states,     // [m, k], input token
      // std::cerr << __FILE__ << ":" << __LINE__ << " ck_moe_stage1 called!" << nt << " " << block_m.value() << std::endl;
      const at::hip::OptionalHIPGuardMasqueradingAsCUDA device_guard(device_of(out));
      at::hip::getCurrentHIPStream();
@@ -73,7 +79,7 @@
  
      if (splitk_local > 1)
      {
-@@ -141,7 +141,7 @@
+@@ -141,7 +141,7 @@ void ck_moe_stage2(torch::Tensor &inter_states,      // [m, k], input token
      TORCH_CHECK(out.dtype() == at::ScalarType::BFloat16 || out.dtype() == at::ScalarType::Half,
                  "Out dtype only support BFloat16/Float16!")
  

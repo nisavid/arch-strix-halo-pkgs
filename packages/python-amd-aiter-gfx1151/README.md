@@ -6,7 +6,7 @@
 - Scaffold template: `python-project-aiter`
 - Recipe build method: `pip`
 - Upstream repo: `https://github.com/ROCm/aiter.git`
-- Package version: `0.1.14rc1.dev27+g7cfe51983`
+- Package version: `0.1.14rc0`
 - Recipe revision: `3f15f9f (20260508, 17 commits touching recipe path)`
 - Recipe steps: `29`
 - Recipe dependencies: `pytorch, vllm`
@@ -17,7 +17,7 @@
 
 ## Recipe notes
 
-Rebuilt from reviewed upstream AITER main snapshot 7cfe51983cd9dd55c0355e34fb614e7c0de44e6e. Keep the packaged CK ABI
+Rebuilt from upstream AITER release candidate v0.1.14-rc0. Keep the packaged CK ABI
 aligned with the CK headers used by AITER's JIT at runtime.
 
 PREBUILD_KERNELS=0: skip 45-minute full kernel precompilation.
@@ -30,7 +30,7 @@ RDNA 3.5 compatibility and installed-system JIT/runtime behavior.
 ## Scaffold notes
 
 - There is no standalone Arch, CachyOS, or AUR aiter package. The closest packaging lane is the PyTorch ROCm pkgbase that vendors the same submodule, so that pkgbase is advisory only.
-- The package pins reviewed upstream AITER main snapshot 7cfe51983cd9dd55c0355e34fb614e7c0de44e6e because it is included in the adopted 2026-05-15 refresh for the local vLLM/AITER validation surface.
+- The package follows upstream AITER release tags, including release candidates and previews when they are the latest GitHub release.
 - The package exports SETUPTOOLS_SCM_PRETEND_VERSION so the wheel metadata stays stable while building from the pinned upstream snapshot.
 - The recipe rebuilds AITER from the pinned upstream AITER source lane while keeping CK and generated kernel expectations explicit in the package.
 - Upstream AITER declares pandas as a real dependency and FlyDSL as an optional acceleration path. Keep pandas in the package metadata, and package FlyDSL separately rather than silently depending on an unpublished wheel.
@@ -47,7 +47,7 @@ RDNA 3.5 compatibility and installed-system JIT/runtime behavior.
 
 ## Update Notes
 
-- Review upstream AITER main as a freshness candidate branch. Adopt a new pinned snapshot when the reviewed range is relevant to local build/runtime behavior, known blockers, or patch reduction; otherwise record the reviewed head without changing the packaged source commit.
+- Track upstream AITER releases as the package source lane, including release candidates and previews when upstream publishes them through GitHub releases.
 - On 2026-04-23, reviewed AITER main through 8432ff3b6e356bc0f8c664a686334e3be7e736ec. The latest reviewed delta adds Gemma RMSNorm quant-fusion support, A16W16 tuning, MI308 MLA PS-mode work, FlyDSL AOT fixes, Kimi K2 FP4 tuned fMoE config updates, and CI/release workflow changes. It does not resolve the local gfx1151 OPUS FP8 mfma_adaptor gap, replace the RDNA header or JIT runtime patches, or change the currently validated Gemma TRITON default lane, so record the reviewed candidate head without repinning the package source.
 - On 2026-04-24, reviewed AITER main through ed2db5ef0f6444b735f018c0f4688058c1bfeb26. The latest reviewed delta adds a Gluon paged-attention decode sliding-window MTP fix plus CI-only changes. Keep it recorded as a reviewed candidate head for future speculative/MTP work, but do not repin this package until a host scenario needs that Gluon path or the range reduces current gfx1151 patch carry.
 - On 2026-04-24, reviewed AITER main through 033d8b9dbc635d30aa63906245c045f24f8cf796. The latest reviewed delta adds Qwen3.5 GDN prefill kernels, batch-prefill runtime dispatch for KV caches larger than 4 GiB, a top_k_per_row_prefill fix for large batched token counts, non-quantizing ASM fMoE kernels, MI308 tuning, and a GPT-OSS tuned-config revert. Keep it recorded as a reviewed candidate head for future Qwen3.5/GDN or fused-MoE validation, but do not repin the package source until a tracked host scenario needs this range or it replaces current gfx1151 patch carry.
@@ -56,8 +56,7 @@ RDNA 3.5 compatibility and installed-system JIT/runtime behavior.
 - On 2026-05-01, adopted AITER main at a0f25393903f5412b0fb997d5b825a0aeb257466. The d679e288..a0f2539 range includes HIP KL cache refactoring, JIT/setup handling, cache kernels, mHC small-M work, fused all-reduce/RMSNorm memory ordering, GemmTuner SplitK guards, MXFP4 fixes, preshuffled cache/indexer fixes, and tuning/test coverage.
 - On 2026-05-10, adopted AITER stable tag v0.1.13 with the local gfx1151 RDNA header, JIT runtime, and gfx1x MoE compatibility carry preserved.
 - On 2026-05-14, adopted AITER main d50194cae28f2e22f4dfff19a86577fe2fcbca27 as a post-0.1.13 snapshot because the range carries kernel, JIT, mHC, topk, and MXFP4 changes that are relevant to the local vLLM/AITER validation surface.
-- On 2026-05-15, adopted AITER main 7cfe51983cd9dd55c0355e34fb614e7c0de44e6e because the range includes DeepSeek V3.2 cache/indexer kernels, custom all-reduce qknorm fixes, gather memory-violation repair, CK submodule updates, and AITER GPU visibility diagnostics relevant to the local vLLM/AITER validation surface.
-- The current package follows reviewed AITER main snapshot 7cfe51983cd9dd55c0355e34fb614e7c0de44e6e with the upstream SCM-derived package version.
+- On 2026-05-16, switched the package source lane from the reviewed main snapshot back to upstream release tags and adopted v0.1.14-rc0 because prerelease GitHub releases are now intentional source-lane updates for this package.
 - Treat FlyDSL as a separate tracked package story; do not silently fold an unpublished wheel into this package.
 - Keep the installed-system JIT runtime patch until upstream AITER stops assuming `hipcc` is on the ambient PATH and correctly imports modules copied to the writable user JIT cache from read-only site-packages installs.
 - Keep the package's explicit ROCm toolchain exports in `build()` until upstream AITER stops probing `hipconfig` and `hipcc` through ambient shell state. The concrete build failure was `Could not find hipconfig in PATH or ROCM_HOME(/usr)`.

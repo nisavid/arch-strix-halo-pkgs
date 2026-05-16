@@ -196,6 +196,49 @@ next_gate_path = ""
 next_gate_label = "Adopted; monitor future AITER refs through the normal freshness sweep"
 last_reviewed = "2026-05-03"
 
+[candidates."aiter-0.1.14-rc0"]
+family = "aiter"
+packages = ["python-amd-aiter-gfx1151"]
+source_kind = "github_release"
+previous_recorded = "0.1.13"
+latest = "0.1.14-rc0"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Selected as the package's release-source lane after opting AITER into GitHub prerelease updates. This replaces the prior reviewed-main snapshot source with upstream release candidate v0.1.14-rc0 while preserving the local gfx1151 patch carry. Package build passed through tools/amerge plan ec0a2dff; publish/install, installed smoke, and runtime validation gates remain open."
+salient_changes = [
+  "DSv4 Triton/ATOM fusion work",
+  "Kimi-K2.5-MXFP4 enablement notes for paired ATOM fixes",
+  "FlyDSL, Triton, CK_TILE, and FMHA follow-up changes since v0.1.13",
+]
+patch_carry_overlap = true
+package_source_update_needed = false
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "AITER v0.1.14-rc0 publish/install, JIT smoke, and affected vLLM/AITER validation"
+last_reviewed = "2026-05-16"
+
+[candidates."aotriton-tech-previews-0.11.210b-0.11.52b"]
+family = "aotriton"
+packages = ["python-aotriton-gfx1151"]
+source_kind = "github_release"
+previous_recorded = "0.11.2b"
+latest = "0.11.210b / 0.11.52b"
+discovery_status = "prerelease_only"
+disposition = "rejected"
+disposition_reason = "Rejected for this package lane because both newer AOTriton releases are marked as technology previews for non-gfx1151 targets: 0.11.210b is a gfx942 ASAN build and 0.11.52b is a gfx1250 preview. The gfx1151 package remains on stable 0.11.2b."
+salient_changes = [
+  "gfx942-exclusive ASAN build",
+  "gfx1250-exclusive preview build",
+]
+patch_carry_overlap = false
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "No follow-up unless AOTriton publishes a stable or gfx1151-relevant release"
+last_reviewed = "2026-05-16"
+
 [candidates."aiter-d2454ad"]
 family = "aiter"
 packages = ["python-amd-aiter-gfx1151"]

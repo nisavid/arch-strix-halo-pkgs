@@ -9,6 +9,10 @@
 # - candidate: reviewed branch lane that may become a pinned package source
 # - scout: reviewed branch lane used for fix discovery or patch reduction
 # - baseline: Arch-family package reference
+#
+# source_contracts bind package sources from recipe policy to freshness checks.
+# Pinned package values and recorded reviewed cursors may differ when the
+# contract value_policy says so. Auxiliary sources must be explicit.
 
 [families.therock]
 packages = ["therock-gfx1151"]
@@ -33,7 +37,9 @@ priority = "medium"
 workflow = "upstream_source_update"
 checks = [
   { id = "release", role = "primary", kind = "github_release", repo = "amd/aocl-libm-ose", recorded = "5.2.2", comparison = "pep440" },
-  { id = "master", role = "primary", kind = "git_ref", repo = "https://github.com/amd/aocl-libm-ose.git", ref = "refs/heads/master", recorded = "9e33942012291e345ccfd1ebdbe35988e19c79b2", comparison = "sha" },
+]
+source_contracts = [
+  { id = "release-source", packages = ["aocl-libm-gfx1151"], check_id = "release", source_name = "aocl-libm", source_kind = "git_tag", origin = "https://github.com/amd/aocl-libm-ose.git", value_policy = "matches_reviewed" },
 ]
 
 [families.python]
@@ -44,13 +50,16 @@ checks = [
   { id = "arch", role = "primary", kind = "arch_package", package = "python", recorded = "3.14.5-1", comparison = "pkgver" },
   { id = "cpython", role = "baseline", kind = "python_ftp", recorded = "3.14.5", comparison = "pep440", series = "3.14" },
 ]
+source_contracts = [
+  { id = "cpython-source", packages = ["python-gfx1151"], check_id = "cpython", source_kind = "python_source_archive", origin = "python_ftp", value_policy = "pinned_may_lag_reviewed" },
+]
 
 [families.vllm]
 packages = ["python-vllm-rocm-gfx1151"]
 priority = "high"
 workflow = "upstream_source_update"
 checks = [
-  { id = "release", role = "primary", kind = "github_release", repo = "vllm-project/vllm", recorded = "0.21.0", tag_prefix = "v", comparison = "pep440", include_prereleases = false },
+  { id = "release", role = "primary", kind = "github_release", repo = "vllm-project/vllm", recorded = "0.20.2", tag_prefix = "v", comparison = "pep440", include_prereleases = false },
   { id = "aur", role = "baseline", kind = "aur", package = "python-vllm", recorded = "0.12.0-1", comparison = "pkgver" },
 ]
 
@@ -71,6 +80,9 @@ checks = [
   { id = "release-branch", role = "primary", kind = "git_ref", repo = "https://github.com/ROCm/pytorch.git", ref = "refs/heads/release/2.11", recorded = "96bfee122869125d32aa4ec9acc8c3597059188b", comparison = "sha" },
   { id = "arch", role = "baseline", kind = "arch_package", package = "python-pytorch-opt-rocm", recorded = "2.11.0-4", comparison = "pkgver" },
 ]
+source_contracts = [
+  { id = "release-branch-source", packages = ["python-pytorch-opt-rocm-gfx1151"], check_id = "release-branch", source_name = "pytorch", source_kind = "git_commit", origin = "https://github.com/ROCm/pytorch.git", value_policy = "pinned_commit_may_lag_reviewed" },
+]
 
 [families.torchvision]
 packages = ["python-torchvision-rocm-gfx1151"]
@@ -79,6 +91,9 @@ workflow = "upstream_source_update"
 checks = [
   { id = "release", role = "primary", kind = "github_release", repo = "pytorch/vision", recorded = "0.27.0", tag_prefix = "v", comparison = "pep440", include_prereleases = false },
   { id = "aur", role = "baseline", kind = "aur", package = "python-torchvision-rocm", recorded = "0.26.0-1", comparison = "pkgver" },
+]
+source_contracts = [
+  { id = "release-source", packages = ["python-torchvision-rocm-gfx1151"], check_id = "release", source_kind = "github_archive", origin = "https://github.com/pytorch/vision", value_policy = "pinned_may_lag_reviewed" },
 ]
 
 [families.triton]
@@ -98,14 +113,23 @@ checks = [
   { id = "release", role = "primary", kind = "github_release", repo = "ROCm/aotriton", recorded = "0.11.2b", comparison = "pep440" },
   { id = "arch", role = "baseline", kind = "arch_package", package = "python-aotriton", recorded = "0.11.2b-1", comparison = "pkgver" },
 ]
+source_contracts = [
+  { id = "release-source", packages = ["python-aotriton-gfx1151"], check_id = "release", source_name = "aotriton", source_kind = "git_tag", origin = "https://github.com/ROCm/aotriton", value_policy = "matches_reviewed" },
+  { id = "triton-submodule", packages = ["python-aotriton-gfx1151"], check_id = "release", source_name = "aotriton-triton", source_kind = "git_commit", origin = "https://github.com/ROCmSoftwarePlatform/triton.git", value_policy = "owned_by_primary_release" },
+  { id = "aiter-submodule", packages = ["python-aotriton-gfx1151"], check_id = "release", source_name = "aotriton-aiter", source_kind = "git_commit", origin = "https://github.com/ROCm/aiter.git", value_policy = "owned_by_primary_release" },
+  { id = "incbin-submodule", packages = ["python-aotriton-gfx1151"], check_id = "release", source_name = "aotriton-incbin", source_kind = "git_commit", origin = "https://github.com/graphitemaster/incbin.git", value_policy = "owned_by_primary_release" },
+  { id = "pybind11-submodule", packages = ["python-aotriton-gfx1151"], check_id = "release", source_name = "aotriton-pybind11", source_kind = "git_commit", origin = "https://github.com/pybind/pybind11.git", value_policy = "owned_by_primary_release" },
+]
 
 [families.aiter]
 packages = ["python-amd-aiter-gfx1151"]
 priority = "high"
 workflow = "upstream_source_update"
 checks = [
-  { id = "release", role = "primary", kind = "github_release", repo = "ROCm/aiter", recorded = "0.1.13", tag_prefix = "v", comparison = "pep440" },
-  { id = "main", role = "candidate", kind = "git_ref", repo = "https://github.com/ROCm/aiter.git", ref = "refs/heads/main", recorded = "7cfe51983cd9dd55c0355e34fb614e7c0de44e6e", comparison = "sha" },
+  { id = "release", role = "primary", kind = "github_release", repo = "ROCm/aiter", recorded = "0.1.14-rc0", tag_prefix = "v", comparison = "pep440", include_prereleases = true },
+]
+source_contracts = [
+  { id = "release-source", packages = ["python-amd-aiter-gfx1151"], check_id = "release", source_name = "aiter", source_kind = "git_tag", origin = "https://github.com/ROCm/aiter.git", value_policy = "matches_reviewed" },
 ]
 
 [families.flash_attention]
@@ -151,6 +175,9 @@ checks = [
   { id = "arch", role = "primary", kind = "arch_package", package = "python-pydantic-core", recorded = "2.41.5-4", comparison = "pkgver" },
   { id = "pypi", role = "baseline", kind = "pypi", package = "pydantic_core", recorded = "2.46.4", comparison = "pep440" },
 ]
+source_contracts = [
+  { id = "arch-compatible-source", packages = ["python-pydantic-core-gfx1151"], check_id = "arch", source_kind = "pypi_sdist", origin = "pypi:pydantic-core", value_policy = "pinned_may_lag_reviewed" },
+]
 
 [families.tokenizers]
 packages = ["python-tokenizers-gfx1151"]
@@ -158,6 +185,9 @@ priority = "medium"
 workflow = "upstream_source_update"
 checks = [
   { id = "pypi", role = "primary", kind = "pypi", package = "tokenizers", recorded = "0.23.1", comparison = "pep440" },
+]
+source_contracts = [
+  { id = "pypi-source", packages = ["python-tokenizers-gfx1151"], check_id = "pypi", source_kind = "pypi_sdist", origin = "pypi:tokenizers", value_policy = "pinned_may_lag_reviewed" },
 ]
 
 [families.safetensors]
@@ -327,6 +357,9 @@ workflow = "upstream_source_update"
 checks = [
   { id = "pypi", role = "primary", kind = "pypi", package = "llmcompressor", recorded = "0.10.0.2", comparison = "pep440" },
 ]
+source_contracts = [
+  { id = "pypi-source", packages = ["python-llmcompressor-gfx1151"], check_id = "pypi", source_kind = "pypi_sdist", origin = "pypi:llmcompressor", value_policy = "pinned_may_lag_reviewed" },
+]
 
 [families.torchao]
 packages = ["python-torchao-rocm-gfx1151"]
@@ -369,9 +402,12 @@ packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"]
 priority = "high"
 workflow = "upstream_source_update"
 checks = [
-  { id = "release", role = "primary", kind = "github_release", repo = "ggml-org/llama.cpp", recorded = "b9165", comparison = "prefixed_integer" },
-  { id = "aur-hip", role = "baseline", kind = "aur", package = "llama.cpp-hip", recorded = "b9158-1", comparison = "pkgver" },
+  { id = "release", role = "primary", kind = "github_release", repo = "ggml-org/llama.cpp", recorded = "b9145", comparison = "prefixed_integer" },
+  { id = "aur-hip", role = "baseline", kind = "aur", package = "llama.cpp-hip", recorded = "b9139-1", comparison = "pkgver" },
   { id = "aur-vulkan", role = "baseline", kind = "aur", package = "llama.cpp-vulkan-bin", recorded = "b7376-1", comparison = "pkgver" },
+]
+source_contracts = [
+  { id = "release-commit-archive", packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"], check_id = "release", source_kind = "github_archive", origin = "https://github.com/ggml-org/llama.cpp", value_policy = "pinned_commit_may_lag_reviewed" },
 ]
 
 [families.stable_diffusion_cpp]
@@ -379,8 +415,14 @@ packages = ["stable-diffusion.cpp-vulkan-gfx1151"]
 priority = "medium"
 workflow = "upstream_source_update"
 checks = [
-  { id = "master", role = "primary", kind = "git_ref", repo = "https://github.com/leejet/stable-diffusion.cpp.git", ref = "refs/heads/master", recorded = "0b8296915c4094090cff6bd2e09a5e98288c3c7d", comparison = "sha" },
+  { id = "master", role = "primary", kind = "git_ref", repo = "https://github.com/leejet/stable-diffusion.cpp.git", ref = "refs/heads/master", recorded = "90e87bc846f17059771efb8aaa31e9ef0cab6f78", comparison = "sha" },
   { id = "aur-vulkan", role = "baseline", kind = "aur", package = "stable-diffusion.cpp-vulkan-git", recorded = "r279.49d6570-1", comparison = "pkgver" },
+]
+source_contracts = [
+  { id = "ggml-submodule", packages = ["stable-diffusion.cpp-vulkan-gfx1151"], check_id = "master", source_name = "ggml", source_kind = "git_commit", origin = "https://github.com/ggml-org/ggml.git", value_policy = "owned_by_primary_release" },
+  { id = "webui-submodule", packages = ["stable-diffusion.cpp-vulkan-gfx1151"], check_id = "master", source_name = "sdcpp-webui", source_kind = "git_commit", origin = "https://github.com/leejet/sdcpp-webui.git", value_policy = "owned_by_primary_release" },
+  { id = "libwebm-submodule", packages = ["stable-diffusion.cpp-vulkan-gfx1151"], check_id = "master", source_name = "libwebm", source_kind = "git_commit", origin = "https://github.com/webmproject/libwebm.git", value_policy = "owned_by_primary_release" },
+  { id = "libwebp-submodule", packages = ["stable-diffusion.cpp-vulkan-gfx1151"], check_id = "master", source_name = "libwebp", source_kind = "git_commit", origin = "https://github.com/webmproject/libwebp.git", value_policy = "owned_by_primary_release" },
 ]
 
 [families.lemonade]

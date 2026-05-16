@@ -7,7 +7,7 @@
 - Recipe build method: `scons`
 - Upstream repo: `https://github.com/amd/aocl-libm-ose.git`
 - Package version: `5.2.2`
-- Recipe revision: `a1d7a68 (20260427, 16 commits touching recipe path)`
+- Recipe revision: `3f15f9f (20260508, 17 commits touching recipe path)`
 - Recipe steps: `7`
 - Recipe dependencies: `therock, aocl_utils`
 - Recorded reference packages: `aur/aocl`
@@ -28,6 +28,7 @@ Available at runtime via LD_LIBRARY_PATH for NumPy and PyTorch.
 ## Scaffold notes
 
 - There is no standalone AOCL-LibM package in Arch, CachyOS, or AUR; the closest packaging lane is the broader AUR aocl bundle, which is only advisory for install-layout cleanup patterns.
+- The package source lane is the latest stable AOCL-LibM release tag.
 - The recipe carries three upstream-compatibility source edits; the package keeps them as a source patch file, plus a post-install RPATH fix in package().
 - Use Arch's system scons from makedepends directly. Do not recreate the recipe's venv-local pip bootstrap inside PKGBUILD; that makes package builds network-dependent.
 - Pass resolved compiler paths to SCons through ALM_CC and ALM_CXX because AOCL-LibM validates those variables as existing paths.
@@ -41,6 +42,7 @@ Available at runtime via LD_LIBRARY_PATH for NumPy and PyTorch.
 
 ## Update Notes
 
+- Track AOCL-LibM stable GitHub releases only; do not treat the upstream master branch as an actionable source lane for this package.
 - When updating, audit upstream AOCL-LibM licensing and bundled notices directly from source rather than assuming the advisory aur/aocl metadata is sufficient.
 - If AOCL-Utils packaging changes, re-check the runtime dependency and any RPATH or SONAME assumptions here.
 - Keep the SCons compatibility carry as a source patch file instead of inline sed edits.

@@ -1,8 +1,8 @@
-diff --git a/aiter/fused_moe.py b/aiter/fused_moe.py
---- a/aiter/fused_moe.py
-+++ b/aiter/fused_moe.py
-@@ -875,7 +875,10 @@ def get_2stage_cfgs(
-         kernelName1 = ""
+diff --git i/aiter/fused_moe.py w/aiter/fused_moe.py
+index f763b37ab..6edf148ac 100644
+--- i/aiter/fused_moe.py
++++ w/aiter/fused_moe.py
+@@ -1017,6 +1017,9 @@ def get_2stage_cfgs(
          kernelName2 = ""
          run_1stage = False
          run_1stage_xbf16 = False
@@ -12,7 +12,7 @@ diff --git a/aiter/fused_moe.py b/aiter/fused_moe.py
          if (
              activation,
              q_type,
-@@ -883,7 +886,7 @@ def get_2stage_cfgs(
+@@ -1025,7 +1028,7 @@ def get_2stage_cfgs(
              q_dtype_w,
              use_g1u1,
              doweight_stage1,
