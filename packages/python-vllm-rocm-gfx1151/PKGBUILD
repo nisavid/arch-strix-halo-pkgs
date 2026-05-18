@@ -6,7 +6,7 @@
 
 pkgname=python-vllm-rocm-gfx1151
 pkgver=0.21.0
-pkgrel=1
+pkgrel=2
 pkgdesc='High-throughput and memory-efficient inference engine for LLMs with ROCm, rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://github.com/vllm-project/vllm
@@ -58,6 +58,8 @@ _source_tree_has_all_source_patches() {
     grep -Fq 'Hybrid models need TRITON_ATTN' vllm/platforms/rocm.py &&
     grep -Fq 'Use PyTorch top-k/top-p filtering on large-vocabulary ROCm'       vllm/v1/sample/ops/topk_topp_sampler.py &&
     grep -Fq 'Keep valid_count type stable across branches'       vllm/v1/spec_decode/utils.py &&
+    grep -Fq 'def _triton_knobs():'       vllm/triton_utils/jit_monitor.py &&
+    grep -Fq 'knobs = _triton_knobs()'       vllm/triton_utils/jit_monitor.py &&
     grep -Fq 'def update_dflash(config_dict: dict, pre_trained_config: dict) -> None:'       vllm/transformers_utils/configs/speculators/algos.py &&
     grep -Fq 'def _flash_attn_uses_triton_rocm() -> bool:'       vllm/platforms/rocm.py &&
     grep -Fq 'def rocm_flash_attn_supports_vllm_varlen_api() -> bool:'       vllm/v1/attention/backends/fa_utils.py

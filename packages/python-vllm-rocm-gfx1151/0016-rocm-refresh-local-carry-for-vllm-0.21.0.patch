@@ -1020,7 +1020,7 @@ index 984b706e7..0c1843220 100644
      except Exception as e:
          logger.debug("Failed to get GCN arch via amdsmi: %s", e)
 -        logger.warning_once(
-+        logger.warning_once(
++        logger.warning(
              "Failed to get GCN arch via amdsmi, falling back to torch.cuda. "
              "This will initialize CUDA and may cause "
              "issues if CUDA_VISIBLE_DEVICES is not set yet."
@@ -1363,3 +1363,46 @@ index e046f0136..67a1c6852 100644
 
          if valid_count > 0:
              # Guaranteed to be well-defined since
+diff --git a/vllm/triton_utils/jit_monitor.py b/vllm/triton_utils/jit_monitor.py
+index eca6b1302..dd3a66a42 100644
+--- a/vllm/triton_utils/jit_monitor.py
++++ b/vllm/triton_utils/jit_monitor.py
+@@ -24,6 +24,20 @@ logger = init_logger(__name__)
+ _active: bool = False
+-
+-
++
++
++def _triton_knobs():
++    if not HAS_TRITON:
++        return None
++    try:
++        from triton import knobs  # type: ignore[import-untyped]
++    except ImportError:
++        logger.warning_once(
++            "Disabling Triton JIT monitor: installed Triton runtime "
++            "does not provide triton.knobs."
++        )
++        return None
++    return knobs
++
++
+ def is_active() -> bool:
+     """Return whether the JIT compilation monitor is currently active."""
+     return _active
+@@ -65,5 +79,5 @@ def _setup_triton_autotuning_print() -> None:
+ def _setup_triton_autotuning_print() -> None:
+     """Enable ``TRITON_PRINT_AUTOTUNING`` unless the user opted out."""
+-    if not HAS_TRITON:
++    knobs = _triton_knobs()
++    if knobs is None:
+         return
+-    from triton import knobs  # type: ignore[import-untyped]
+@@ -87,5 +101,5 @@ def _setup_triton_jit_hook() -> None:
+ def _setup_triton_jit_hook() -> None:
+     """Register a ``jit_post_compile_hook`` that warns on compilation."""
+-    if not HAS_TRITON:
++    knobs = _triton_knobs()
++    if knobs is None:
+         return
+-    from triton import knobs  # type: ignore[import-untyped]

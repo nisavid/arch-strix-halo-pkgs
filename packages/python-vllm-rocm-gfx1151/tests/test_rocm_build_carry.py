@@ -27,7 +27,7 @@ def test_patch_keeps_hipify_byproducts_present_for_unchanged_cuda_sources():
     assert "shutil.copy2(s_abs, expected_hipified_path)" in text
 
 
-def test_rocm_amdsmi_fallback_warning_stays_one_shot():
+def test_rocm_amdsmi_fallback_warning_avoids_warning_once_during_import():
     text = PATCH.read_text()
     fallback_start = text.index("Failed to get GCN arch via amdsmi")
     next_file_start = text.find("diff --git", fallback_start)
@@ -36,5 +36,5 @@ def test_rocm_amdsmi_fallback_warning_stays_one_shot():
     amdsmi_fallback = text[fallback_start:next_file_start]
 
     assert "Failed to get GCN arch via amdsmi" in amdsmi_fallback
-    assert "+        logger.warning_once(" in amdsmi_fallback
-    assert "+        logger.warning(" not in amdsmi_fallback
+    assert "-        logger.warning_once(" in amdsmi_fallback
+    assert "+        logger.warning(" in amdsmi_fallback

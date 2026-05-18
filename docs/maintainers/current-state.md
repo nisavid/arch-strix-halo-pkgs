@@ -1,6 +1,6 @@
 # Current State
 
-Status as of 2026-05-17.
+Status as of 2026-05-18.
 
 The 2026-05-15 freshness sweep ran
 `tools/check_package_updates.py --json --fail-on actionable` and found four
@@ -53,7 +53,40 @@ Installed smokes passed for `vllm --version`, `vllm` Python import, AITER
 Python import, both llama.cpp backend CLI version checks, the stable-diffusion
 Vulkan CLI wrapper, and the tracked `llama.cpp` smoke-tag scenarios
 with `python tools/run_inference_scenarios.py --engine llama.cpp --tag smoke`.
-Affected live-scenario gates remain open.
+The affected vLLM live-scenario gate is now closed by the pkgrel 2 follow-up
+recorded below.
+
+The first affected vLLM live-scenario attempt on 2026-05-17 found two
+follow-up blockers. The default scenario memory reservation could not fit
+beside an already-running host inference service, and a constrained
+`Qwen/Qwen3.5-0.8B` probe then reached engine initialization before failing in
+vLLM's Triton JIT monitor because the installed ROCm Triton runtime does not
+export `triton.knobs`. `python-vllm-rocm-gfx1151 0.21.0-2` now carries a
+package-local guard that disables the JIT monitor hook when `triton.knobs` is
+unavailable, and also fixes the existing ROCm amdsmi fallback hunk so it
+actually avoids `warning_once` during platform import. Package-local tests
+passed with `pytest packages/python-vllm-rocm-gfx1151/tests -q`
+(`76 passed`), source preparation passed with
+`makepkg -C --nobuild --nodeps --force`, and `tools/amerge build
+python-vllm-rocm-gfx1151 -y` produced
+`python-vllm-rocm-gfx1151-0.21.0-2-x86_64.pkg.tar.zst`. The agent could not
+deploy/install pkgrel 2 directly because sudo was unavailable in the sandbox.
+The package was then installed by the operator and verified from the agent:
+`pacman -Q` reports `python-vllm-rocm-gfx1151 0.21.0-2`,
+`python-triton-gfx1151 3.0.0+git0ec280cf-1`, and
+`python-amd-aiter-gfx1151 0.1.14rc1.dev27+g7cfe51983-1`; `vllm --version`
+and the vLLM Python import both report `0.21.0`. The constrained
+`Qwen/Qwen3.5-0.8B` smoke with `--gpu-memory-utilization 0.25` passed,
+logged the intended `triton.knobs` fallback, and generated `Ready.`. The
+promoted affected live scenarios
+`vllm.gemma4.e2b.server.basic` and `vllm.qwen3_5.0_8b.text.basic` initially
+remained open under the default scenario settings because another active GPU
+process held about 76 GiB of VRAM, leaving 35.73 GiB free while the scenarios
+requested 84.0 GiB at `gpu_memory_utilization=0.75`. After the host freed
+enough VRAM, the promoted default live-scenario rerun passed at
+`docs/worklog/inference-runs/20260517T232711`: `vllm.gemma4.e2b.server.basic`
+passed in `141.647271` seconds and `vllm.qwen3_5.0_8b.text.basic` passed in
+`42.133449` seconds.
 
 The 2026-05-14 freshness sweep ran
 `tools/check_package_updates.py --json --fail-on actionable` and found six
