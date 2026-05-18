@@ -16,7 +16,8 @@
       "8ea6af3334027a5ef3360ca882f54e720ef501ea48288081f35d7404835ccc95",
       "4610d5b10e861079898410899b8c25112fcafd679942f25647af3d55a9253bd4",
       "33188a11f6848303b17b76adb97de75f19856ea3caab7452fd5c62289d63006b",
-      "9723877beb7eae7fc247517370777f952b534f4d83a981a26be869872dc2c265"
+      "9723877beb7eae7fc247517370777f952b534f4d83a981a26be869872dc2c265",
+      "c8e20f172c407e50b0a333bb94b94dafd1c4db1348bc71160f4a704c25c9cba5"
     ],
     "source_patches": [
       "0001-setup-allow-skipping-build-deps.patch",
@@ -24,7 +25,8 @@
       "0003-target-numpy-2-c-api.patch",
       "0004-drop-hip-clang-abi-compat-flag.patch",
       "0005-enable-ck-gemm-on-gfx1151.patch",
-      "0006-enable-aten-cuda-api-for-rocm.patch"
+      "0006-enable-aten-cuda-api-for-rocm.patch",
+      "0007-initialize-numpy-before-global-deps.patch"
     ],
     "update_notes": [
       "When updating, inspect the current Arch python-pytorch pkgbase first, then re-evaluate every carried recipe/source patch against the chosen ROCm fork.",
@@ -110,6 +112,7 @@
     ],
     "patches_dir": "patches/python-pytorch-opt-rocm-gfx1151",
     "pkgdesc": "Tensors and dynamic neural networks in Python with ROCm acceleration, rebuilt for Strix Halo gfx1151",
+    "pkgrel": 14,
     "provides": [
       "python-pytorch-opt-rocm=2.11.0",
       "python-pytorch-rocm=2.11.0",

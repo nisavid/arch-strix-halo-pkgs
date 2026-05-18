@@ -85,6 +85,13 @@ becomes durable, prefer a named patch that another maintainer can review.
     evidence that the maintained Gemma 4 lane should leave Triton unquantized
     MoE.
 
+## PyTorch
+
+- [Initialize NumPy before ROCm global dependencies](../packages/python-pytorch-opt-rocm-gfx1151/0007-initialize-numpy-before-global-deps.patch)
+  - Loads NumPy's OpenBLAS provider before PyTorch loads ROCm global
+    dependencies, keeping `import torch` stable on the installed TheRock 7.13
+    runtime stack.
+
 ## Triton
 
 - [Python 3.14 and pybind11 build-system compatibility](../packages/python-triton-gfx1151/0001-python-3.14-and-pybind11-build-system.patch)

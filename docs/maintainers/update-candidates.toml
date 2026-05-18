@@ -8,20 +8,129 @@ check_id = "release"
 previous_recorded = "7.12"
 latest = "7.13"
 discovery_status = "stable_update_available"
-disposition = "tracked"
-disposition_reason = "A real therock-7.13 staged root has been built, rendered into therock-gfx1151 7.13.0-1, packaged, and published into the repo-local package database. Keep the candidate tracked until privileged deploy/install completes and installed ROCm visibility plus affected downstream inference smokes pass."
+disposition = "adopted"
+disposition_reason = "Adopted on 2026-05-18. A real therock-7.13 staged root was built, rendered into therock-gfx1151 7.13.0-2, packaged, published into the repo-local package database, deployed to the reference host, and validated with ROCm visibility, MIGraphX payload and import-order smokes, downstream installed imports, and affected Torch-MIGraphX compiled scenario smokes."
 salient_changes = [
   "Stable therock-7.13 release tag published upstream",
-  "The generated split package now renders from a real 7.13 staged root",
-  "The package build and repo-local publish gates passed",
-  "Privileged deploy/install and installed validation remain open",
+  "The generated split package now renders from a real 7.13 staged root as pkgrel 2",
+  "The MIGraphX split carries runtime binaries, shared libraries, the Python extension, and a sqlite-preloading import hook",
+  "Package build, repo-local publish, deploy/install, installed imports, and affected Torch-MIGraphX compiled scenario gates passed",
 ]
 patch_carry_overlap = true
 package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Adopted; monitor future TheRock releases through the normal freshness sweep"
+last_reviewed = "2026-05-18"
+
+[candidates."llama-cpp-b9219"]
+family = "llama_cpp"
+packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"]
+source_kind = "github_release"
+baseline_source_kind = "aur"
+baseline_latest = "b9209"
+previous_recorded = "b9165 / b9139-1 / b7376-1"
+latest = "b9219"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Found during the 2026-05-18 closeout freshness gate after adopting TheRock 7.13. Keep as a follow-up lane because llama.cpp updates require source review, HIP and Vulkan package rebuilds, deploy/install, backend CLI smokes, and affected Lemonade or vLLM scenario validation."
+salient_changes = [
+  "GitHub release b9219 is available after the adopted b9165 lane",
+  "AUR HIP and Vulkan baselines have also advanced",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "TheRock 7.13 stable deploy/install gate"
+next_gate_label = "2026-05-18 freshness follow-up bundle"
+last_reviewed = "2026-05-18"
+
+[candidates."numpy-2.4.5"]
+family = "numpy"
+packages = ["python-numpy-gfx1151"]
+source_kind = "pypi"
+baseline_source_kind = "arch_package"
+baseline_latest = "2.4.5-1"
+previous_recorded = "2.4.4 / 2.4.4-1"
+latest = "2.4.5"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Found during the 2026-05-18 closeout freshness gate after adopting TheRock 7.13. Keep as a follow-up lane because NumPy is the BLAS provider imported before PyTorch ROCm global deps and changes require package rebuild, deploy/install, and downstream PyTorch/vLLM smoke coverage."
+salient_changes = [
+  "PyPI NumPy 2.4.5 is available after the installed 2.4.4 lane",
+  "Arch python-numpy baseline has advanced to 2.4.5-1",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "2026-05-18 freshness follow-up bundle"
+last_reviewed = "2026-05-18"
+
+[candidates."rocm-pytorch-arch-2.12.0"]
+family = "rocm_pytorch"
+packages = ["python-pytorch-opt-rocm-gfx1151"]
+source_kind = "arch_package"
+baseline_source_kind = "arch_package"
+baseline_latest = "2.12.0-1"
+previous_recorded = "96bfee122869125d32aa4ec9acc8c3597059188b / 2.11.0-4"
+latest = "2.12.0-1"
+discovery_status = "baseline_drift"
+disposition = "tracked"
+disposition_reason = "Found during the 2026-05-18 closeout freshness gate after adopting TheRock 7.13. Treat as a coordinated PyTorch 2.12 lane rather than a closeout fix because the local package currently tracks ROCm PyTorch 2.11 with downstream TorchVision, TorchAO, Torch-MIGraphX, vLLM, and AITER validation contracts."
+salient_changes = [
+  "Arch python-pytorch-rocm baseline has advanced from 2.11.0-4 to 2.12.0-1",
+  "A PyTorch major/minor lane change affects the local ROCm extension and inference package closure",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "Coordinated PyTorch 2.12 lane"
+last_reviewed = "2026-05-18"
+
+[candidates."stable-diffusion-cpp-caa823a"]
+family = "stable_diffusion_cpp"
+packages = ["stable-diffusion.cpp-vulkan-gfx1151"]
+source_kind = "git_ref"
+previous_recorded = "0b8296915c4094090cff6bd2e09a5e98288c3c7d"
+latest = "caa823a8c06a51288f0a01bb29e9bd8bcec30a8a"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "Found during the 2026-05-18 closeout freshness gate after adopting TheRock 7.13. Keep as a follow-up lane because stable-diffusion.cpp changes require source review, package rebuild, deploy/install, and installed wrapper smokes before adoption."
+salient_changes = [
+  "stable-diffusion.cpp upstream moved beyond the adopted r604.g0b82969 lane",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "2026-05-18 freshness follow-up bundle"
+last_reviewed = "2026-05-18"
+
+[candidates."watchfiles-1.2.0"]
+family = "watchfiles"
+packages = ["python-watchfiles-gfx1151"]
+source_kind = "pypi"
+previous_recorded = "1.1.1"
+latest = "1.2.0"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Found during the 2026-05-18 closeout freshness gate after adopting TheRock 7.13. Keep as a follow-up lane because watchfiles is part of the local service/runtime wheel stack and should be refreshed with source verification, package build, deploy/install, and installed import smoke."
+salient_changes = [
+  "PyPI watchfiles 1.2.0 is available after the adopted 1.1.1 lane",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "2026-05-18 freshness follow-up bundle"
 last_reviewed = "2026-05-18"
 
 [candidates."blackcat-ai-notes-a1d7a681"]
