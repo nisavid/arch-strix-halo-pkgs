@@ -667,9 +667,15 @@ def validate_source_contracts(repo_root: Path, families: dict) -> list[dict]:
         contract_packages_requiring_policy = set()
         invalid_contracts = []
         for contract in contracts:
-            contract_packages_requiring_policy.update(
-                set(contract.get("packages", family_packages))
-            )
+            contract_packages = set(contract.get("packages", family_packages))
+            contract_packages_requiring_policy.update(contract_packages)
+            unexpected_packages = sorted(contract_packages - family_packages)
+            if unexpected_packages:
+                invalid_contracts.append(
+                    f"{contract.get('id', contract.get('check_id', 'contract'))}: "
+                    "packages outside family "
+                    + ", ".join(unexpected_packages)
+                )
             value_policy = contract.get("value_policy", "matches_reviewed")
             if value_policy not in ALLOWED_SOURCE_VALUE_POLICIES:
                 invalid_contracts.append(
