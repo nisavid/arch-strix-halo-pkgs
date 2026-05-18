@@ -758,10 +758,9 @@ def test_pytorch_rocm_renderer_uses_source_patches_for_magma_fix() -> None:
     assert "hip: Optional[str] = {hip!r}" in pkgbuild
     assert "rocm: Optional[str] = {rocm!r}" in pkgbuild
     assert "PYTORCH_VERSION_METADATA_MISSING" in pkgbuild
-    assert "PYTORCH_NUMPY_BOOTSTRAP_MARKER_MISSING" in pkgbuild
-    assert "import numpy as _torch_numpy_bootstrap" in pkgbuild
     assert "PYTORCH_HIP_VERSION_REWRITE_FAILED" in pkgbuild
     assert "PYTORCH_ROCM_VERSION_REWRITE_FAILED" in pkgbuild
+    assert 'export PATH="${PATH}:/opt/rocm/bin"' in pkgbuild
     assert 'export CMAKE_CXX_COMPILER="${_rocm_llvm_bin}/amdclang++"' in pkgbuild
     assert 'export CMAKE_CXX_COMPILER_LAUNCHER="$(command -v ccache)"' in pkgbuild
     assert 'export CMAKE_AR="${_rocm_llvm_bin}/llvm-ar"' in pkgbuild
