@@ -35,7 +35,7 @@ valid. For a staged install tree, point it at that staging root instead.
 
 The official upstream `therock-7.13` release is the current package source
 lane. This rendered package is built from a real 7.13 staged root and reports
-`7.13.0-2`; the package is deployed, installed, and smoke-tested on the
+`7.13.0-2`; The package is deployed, installed, and smoke-tested on the
 reference host.
 
 ## rocm-core baseline
