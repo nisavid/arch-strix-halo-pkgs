@@ -1405,7 +1405,13 @@ package() {{
                 ]
             )
         if policy_pkg.get("isolated_cargo_home", True):
-            cargo_home_exports = '  export CARGO_HOME="$srcdir/.cargo"\n  mkdir -p "$CARGO_HOME"\n'
+            cargo_home_exports = (
+                '  export HOME="$srcdir/.home"\n'
+                '  export XDG_CACHE_HOME="$srcdir/.cache"\n'
+                '  export XDG_DATA_HOME="$srcdir/.local/share"\n'
+                '  export CARGO_HOME="$srcdir/.cargo"\n'
+                '  mkdir -p "$HOME" "$XDG_CACHE_HOME" "$XDG_DATA_HOME" "$CARGO_HOME"\n'
+            )
         else:
             cargo_home_exports = ""
         build_body = f"""\

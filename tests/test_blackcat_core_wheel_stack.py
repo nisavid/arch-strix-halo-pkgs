@@ -54,7 +54,7 @@ SERVICE_STACK = {
     "python-watchfiles-gfx1151": {
         "template": "rust-wheel-pypi",
         "recipe_key": "rust_wheels",
-        "upstream_version": "1.1.1",
+        "upstream_version": "1.2.0",
         "provides": ["python-watchfiles"],
         "consumer_dep": "python-watchfiles-gfx1151",
     },

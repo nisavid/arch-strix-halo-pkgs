@@ -1281,7 +1281,7 @@ scaffold_notes = [
 [packages.python-watchfiles-gfx1151]
 recipe_key = "rust_wheels"
 template = "rust-wheel-pypi"
-upstream_version = "1.1.1"
+upstream_version = "1.2.0"
 pkgdesc = "Simple, modern, and high-performance file watching rebuilt for Strix Halo gfx1151"
 url = "https://github.com/samuelcolvin/watchfiles"
 license = ["MIT"]
@@ -1294,6 +1294,7 @@ divergence_notes = [
 ]
 update_notes = [
   "Check Arch first for watchfiles release and any maturin/build-backend metadata changes before updating.",
+  "On 2026-05-18, adopted watchfiles 1.2.0 while Arch remained at python-watchfiles 1.1.1-3. The upstream release drops Python 3.9, adds Python 3.15 classifiers, raises the Rust MSRV to 1.83, and updates PyO3 to 0.28.3 without changing runtime dependencies beyond anyio.",
   "After publishing a rebuilt package, verify `import watchfiles` and a minimal Python file-watch import path through the installed local Python lane."
 ]
 provides = ["python-watchfiles"]
@@ -1301,8 +1302,8 @@ conflicts = ["python-watchfiles"]
 depends = ["glibc", "libgcc", "python-gfx1151", "python-anyio"]
 makedepends = ["cargo", "python-build", "python-installer", "python-maturin", "python-wheel", "rocm-llvm-gfx1151", "rust"]
 pypi_name = "watchfiles"
-sha256sums = ["a173cb5c16c4f40ab19cecf48a534c409f7ea983ab8fed0741304a1c0a31b3f2"]
-src_subdir = "watchfiles-1.1.1"
+sha256sums = ["c995fba777f1ea992f090f9236e9284cf7a5d1a0130dd5a3d82c598cacd76838"]
+src_subdir = "watchfiles-1.2.0"
 patches_dir = "patches/python-watchfiles-gfx1151"
 recipe_notes_override = """
 This package is the watchfiles output from the shared `rust_wheels` recipe

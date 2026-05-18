@@ -15,9 +15,13 @@
   NumPy `2.4.5`, stable-diffusion.cpp
   `caa823a8c06a51288f0a01bb29e9bd8bcec30a8a`, and watchfiles `1.2.0`.
   Review source deltas, refresh package metadata, build, deploy/install, and
-  run the affected installed smokes or scenarios before adoption. Keep the
-  coordinated PyTorch `2.12.0-1` baseline drift as its own lane because it
-  affects the ROCm extension and inference package closure.
+  run the affected installed smokes or scenarios before adoption. Watchfiles
+  `1.2.0-1` has source metadata, rendered scaffolds, source verification,
+  source preparation, and package-build evidence through `tools/amerge` plan
+  `2973e241`; next gate: Deploy/install watchfiles 1.2.0-1 and run installed
+  import smoke.
+  Coordinated PyTorch 2.12 lane: keep the `2.12.0-1` baseline drift as its own
+  lane because it affects the ROCm extension and inference package closure.
 - The 2026-05-18 Python 3.14.5 rebuild lane is adopted. `python-gfx1151`
   now tracks CPython `3.14.5` with Arch `python 3.14.5-1` as the integration
   baseline. Source verification, package source preparation, package build,

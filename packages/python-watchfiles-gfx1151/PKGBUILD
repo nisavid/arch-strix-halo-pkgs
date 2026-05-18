@@ -5,7 +5,7 @@
 # Package recipe key: rust_wheels
 
 pkgname=python-watchfiles-gfx1151
-pkgver=1.1.1
+pkgver=1.2.0
 pkgrel=1
 pkgdesc='Simple, modern, and high-performance file watching rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
@@ -18,11 +18,11 @@ options=()
 provides=(python-watchfiles)
 conflicts=(python-watchfiles)
 replaces=()
-source=(https://files.pythonhosted.org/packages/source/w/watchfiles/watchfiles-1.1.1.tar.gz)
-sha256sums=(a173cb5c16c4f40ab19cecf48a534c409f7ea983ab8fed0741304a1c0a31b3f2)
+source=(https://files.pythonhosted.org/packages/source/w/watchfiles/watchfiles-1.2.0.tar.gz)
+sha256sums=(c995fba777f1ea992f090f9236e9284cf7a5d1a0130dd5a3d82c598cacd76838)
 
 build() {
-  cd "$srcdir/watchfiles-1.1.1"
+  cd "$srcdir/watchfiles-1.2.0"
 
   _setup_compiler_env() {
   local _compiler_root="/opt/rocm/lib/llvm/bin"
@@ -50,8 +50,11 @@ build() {
 
   _setup_compiler_env
   local _debug_prefix="/usr/src/debug/python-watchfiles-gfx1151"
+  export HOME="$srcdir/.home"
+  export XDG_CACHE_HOME="$srcdir/.cache"
+  export XDG_DATA_HOME="$srcdir/.local/share"
   export CARGO_HOME="$srcdir/.cargo"
-  mkdir -p "$CARGO_HOME"
+  mkdir -p "$HOME" "$XDG_CACHE_HOME" "$XDG_DATA_HOME" "$CARGO_HOME"
   export CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER="$CC"
   export RUSTFLAGS="-C target-cpu=znver5 -C opt-level=3 --remap-path-prefix=$srcdir=${_debug_prefix}"
   unset CFLAGS CXXFLAGS LDFLAGS
@@ -60,11 +63,11 @@ build() {
 }
 
 package() {
-  cd "$srcdir/watchfiles-1.1.1"
+  cd "$srcdir/watchfiles-1.2.0"
   python -m installer --destdir="$pkgdir" dist/*.whl
 
   local _debug_prefix="/usr/src/debug/python-watchfiles-gfx1151"
   find "$pkgdir/usr/lib" -type f -path '*/sboms/*.json' -print0 | while IFS= read -r -d '' _file; do
-    sed -i       -e "s|$srcdir/watchfiles-1.1.1|${_debug_prefix}/watchfiles-1.1.1|g"       -e "s|$srcdir|${_debug_prefix}|g"       -e "s|/tmp/pkg/src/watchfiles-1.1.1|${_debug_prefix}/watchfiles-1.1.1|g"       "$_file" 2>/dev/null || true
+    sed -i       -e "s|$srcdir/watchfiles-1.2.0|${_debug_prefix}/watchfiles-1.2.0|g"       -e "s|$srcdir|${_debug_prefix}|g"       -e "s|/tmp/pkg/src/watchfiles-1.2.0|${_debug_prefix}/watchfiles-1.2.0|g"       "$_file" 2>/dev/null || true
   done
 }
