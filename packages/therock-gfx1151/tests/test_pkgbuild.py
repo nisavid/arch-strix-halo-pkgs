@@ -5,6 +5,7 @@ import pytest
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
+REPO_PACKAGES = REPO_ROOT / "packages"
 PKGBUILD = REPO_ROOT / "packages/therock-gfx1151/PKGBUILD"
 MANIFEST = REPO_ROOT / "packages/therock-gfx1151/manifest.json"
 MIGRAPHX_FILELIST = REPO_ROOT / "packages/therock-gfx1151/filelists/migraphx-gfx1151.txt"
@@ -75,8 +76,10 @@ def test_rendered_local_package_dependencies_exist():
             for meta in packages.values()
             for dep in meta["depends"]
             if dep.endswith("-gfx1151")
-            and dep in packages
-            and not packages[dep]["rendered"]
+            and (
+                (dep in packages and not packages[dep]["rendered"])
+                or (dep not in packages and not (REPO_PACKAGES / dep).exists())
+            )
         }
     )
     assert missing == []
