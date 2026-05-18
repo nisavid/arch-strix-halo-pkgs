@@ -6,7 +6,7 @@
 
 pkgname=python-pytorch-opt-rocm-gfx1151
 pkgver=2.11.0
-pkgrel=12
+pkgrel=14
 pkgdesc='Tensors and dynamic neural networks in Python with ROCm acceleration, rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://pytorch.org
@@ -18,8 +18,8 @@ options=()
 provides=(python-pytorch-opt-rocm=2.11.0 python-pytorch-rocm=2.11.0 python-pytorch=2.11.0)
 conflicts=(python-pytorch-opt-rocm python-pytorch-rocm python-pytorch)
 replaces=()
-source=('pytorch::git+https://github.com/ROCm/pytorch.git#commit=5223630054ce5ecd7b774d0ea31f2a1b472fb9b3' 0001-setup-allow-skipping-build-deps.patch 0002-use-wide-magma-version-encoding.patch 0003-target-numpy-2-c-api.patch 0004-drop-hip-clang-abi-compat-flag.patch 0005-enable-ck-gemm-on-gfx1151.patch 0006-enable-aten-cuda-api-for-rocm.patch)
-sha256sums=(SKIP 95a46381bedcff873f9765c9b103877aa36f649e649c5b223582732b2ee61cac 944e0fb4db31da678993acd3104709083ef28dcee58fcc24ab1675d880c39846 8ea6af3334027a5ef3360ca882f54e720ef501ea48288081f35d7404835ccc95 4610d5b10e861079898410899b8c25112fcafd679942f25647af3d55a9253bd4 33188a11f6848303b17b76adb97de75f19856ea3caab7452fd5c62289d63006b 9723877beb7eae7fc247517370777f952b534f4d83a981a26be869872dc2c265)
+source=('pytorch::git+https://github.com/ROCm/pytorch.git#commit=5223630054ce5ecd7b774d0ea31f2a1b472fb9b3' 0001-setup-allow-skipping-build-deps.patch 0002-use-wide-magma-version-encoding.patch 0003-target-numpy-2-c-api.patch 0004-drop-hip-clang-abi-compat-flag.patch 0005-enable-ck-gemm-on-gfx1151.patch 0006-enable-aten-cuda-api-for-rocm.patch 0007-initialize-numpy-before-global-deps.patch)
+sha256sums=(SKIP 95a46381bedcff873f9765c9b103877aa36f649e649c5b223582732b2ee61cac 944e0fb4db31da678993acd3104709083ef28dcee58fcc24ab1675d880c39846 8ea6af3334027a5ef3360ca882f54e720ef501ea48288081f35d7404835ccc95 4610d5b10e861079898410899b8c25112fcafd679942f25647af3d55a9253bd4 33188a11f6848303b17b76adb97de75f19856ea3caab7452fd5c62289d63006b 9723877beb7eae7fc247517370777f952b534f4d83a981a26be869872dc2c265 c8e20f172c407e50b0a333bb94b94dafd1c4db1348bc71160f4a704c25c9cba5)
 
 prepare() {
   cd "$srcdir/pytorch"
@@ -41,6 +41,7 @@ prepare() {
   _apply_patch_if_needed "0004-drop-hip-clang-abi-compat-flag.patch"
   _apply_patch_if_needed "0005-enable-ck-gemm-on-gfx1151.patch"
   _apply_patch_if_needed "0006-enable-aten-cuda-api-for-rocm.patch"
+  _apply_patch_if_needed "0007-initialize-numpy-before-global-deps.patch"
   # PyTorch's ROCm fork relies on vendored submodules and local hipify-generated sources.
   git -C "$srcdir/pytorch" submodule sync --recursive
   git -C "$srcdir/pytorch" submodule update --init --recursive --force --depth 1 --recommend-shallow
@@ -94,6 +95,16 @@ build() {
 }
 
   _setup_compiler_env
+  local _rocm_llvm_bin="/opt/rocm/lib/llvm/bin"
+  export PATH="${_rocm_llvm_bin}:/opt/rocm/bin:${PATH}"
+  export CMAKE_C_COMPILER="${_rocm_llvm_bin}/amdclang"
+  export CMAKE_CXX_COMPILER="${_rocm_llvm_bin}/amdclang++"
+  export CMAKE_AR="${_rocm_llvm_bin}/llvm-ar"
+  export CMAKE_RANLIB="${_rocm_llvm_bin}/llvm-ranlib"
+  if command -v ccache >/dev/null 2>&1; then
+    export CMAKE_C_COMPILER_LAUNCHER="$(command -v ccache)"
+    export CMAKE_CXX_COMPILER_LAUNCHER="$(command -v ccache)"
+  fi
   export CFLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument"
   export CXXFLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument"
   export LDFLAGS="-fuse-ld=lld"
@@ -113,6 +124,8 @@ build() {
   export USE_BENCHMARK=0
   export HIP_PATH="/opt/rocm"
   export ROCM_HOME="/opt/rocm"
+  export ROCM_PATH="/opt/rocm"
+  export HIP_CLANG_PATH="${_rocm_llvm_bin}"
   export CMAKE_PREFIX_PATH="${OpenBLAS_HOME}:/opt/rocm"
   export MAX_JOBS="$(nproc)"
   export PYTORCH_BUILD_VERSION="2.11.0"
@@ -176,7 +189,26 @@ package() {
 
   local _site="$pkgdir/usr/lib/python3.14/site-packages"
   local _version_py="${_site}/torch/version.py"
+  local _init_py="${_site}/torch/__init__.py"
   local _hip_version _rocm_version
+  python - "${_init_py}" <<'PY'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+text = path.read_text()
+bootstrap = (
+    "# Initialize NumPy's OpenBLAS provider before PyTorch loads ROCm global deps.\n"
+    "import numpy as _torch_numpy_bootstrap\n"
+    "del _torch_numpy_bootstrap\n"
+)
+if bootstrap not in text:
+    marker = ")\n\n\n# As a bunch of torch.packages"
+    if marker not in text:
+        raise SystemExit("PYTORCH_NUMPY_BOOTSTRAP_MARKER_MISSING")
+    text = text.replace(marker, ")\n\n" + bootstrap + "\n# As a bunch of torch.packages", 1)
+    path.write_text(text)
+PY
   if [[ ! -f "${_version_py}" ]]; then
     echo "PYTORCH_VERSION_METADATA_MISSING: ${_version_py}" >&2
     return 1

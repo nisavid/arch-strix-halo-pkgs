@@ -1,0 +1,15 @@
+diff --git a/torch/__init__.py b/torch/__init__.py
+index 6a6a1dd4ab..62f5fdbeb0 100644
+--- a/torch/__init__.py
++++ b/torch/__init__.py
+@@ -32,6 +32,10 @@ from typing_extensions import (
+     TypeIs as _TypeIs,
+ )
+ 
++# Initialize NumPy's OpenBLAS provider before PyTorch loads ROCm global deps.
++import numpy as _torch_numpy_bootstrap
++del _torch_numpy_bootstrap
++
+ 
+ # As a bunch of torch.packages internally still have this check
+ # we need to keep this. @todo: Remove tests that rely on this check as

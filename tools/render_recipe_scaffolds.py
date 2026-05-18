@@ -982,6 +982,16 @@ build() {{
   done < <(env -0)
 
   {compiler_env_snippet(compiler_root)}  _setup_compiler_env
+  local _rocm_llvm_bin="{compiler_root}"
+  export PATH="${{_rocm_llvm_bin}}:/opt/rocm/bin:${{PATH}}"
+  export CMAKE_C_COMPILER="${{_rocm_llvm_bin}}/amdclang"
+  export CMAKE_CXX_COMPILER="${{_rocm_llvm_bin}}/amdclang++"
+  export CMAKE_AR="${{_rocm_llvm_bin}}/llvm-ar"
+  export CMAKE_RANLIB="${{_rocm_llvm_bin}}/llvm-ranlib"
+  if command -v ccache >/dev/null 2>&1; then
+    export CMAKE_C_COMPILER_LAUNCHER="$(command -v ccache)"
+    export CMAKE_CXX_COMPILER_LAUNCHER="$(command -v ccache)"
+  fi
   export CFLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument"
   export CXXFLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument"
   export LDFLAGS="-fuse-ld=lld"
@@ -1001,6 +1011,8 @@ build() {{
   export USE_BENCHMARK=0
   export HIP_PATH="/opt/rocm"
   export ROCM_HOME="/opt/rocm"
+  export ROCM_PATH="/opt/rocm"
+  export HIP_CLANG_PATH="${{_rocm_llvm_bin}}"
   export CMAKE_PREFIX_PATH="${{OpenBLAS_HOME}}:/opt/rocm"
   export MAX_JOBS="$(nproc)"
   export PYTORCH_BUILD_VERSION="{upstream_version}"
@@ -1064,7 +1076,26 @@ package() {{
 
   local _site="$pkgdir/usr/lib/python3.14/site-packages"
   local _version_py="${{_site}}/torch/version.py"
+  local _init_py="${{_site}}/torch/__init__.py"
   local _hip_version _rocm_version
+  python - "${{_init_py}}" <<'PY'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+text = path.read_text()
+bootstrap = (
+    "# Initialize NumPy's OpenBLAS provider before PyTorch loads ROCm global deps.\\n"
+    "import numpy as _torch_numpy_bootstrap\\n"
+    "del _torch_numpy_bootstrap\\n"
+)
+if bootstrap not in text:
+    marker = ")\\n\\n\\n# As a bunch of torch.packages"
+    if marker not in text:
+        raise SystemExit("PYTORCH_NUMPY_BOOTSTRAP_MARKER_MISSING")
+    text = text.replace(marker, ")\\n\\n" + bootstrap + "\\n# As a bunch of torch.packages", 1)
+    path.write_text(text)
+PY
   if [[ ! -f "${{_version_py}}" ]]; then
     echo "PYTORCH_VERSION_METADATA_MISSING: ${{_version_py}}" >&2
     return 1

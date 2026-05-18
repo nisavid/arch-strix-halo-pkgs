@@ -726,6 +726,7 @@ def test_pytorch_rocm_renderer_uses_source_patches_for_magma_fix() -> None:
                 "0003-target-numpy-2-c-api.patch",
                 "0004-drop-hip-clang-abi-compat-flag.patch",
                 "0005-enable-ck-gemm-on-gfx1151.patch",
+                "0007-initialize-numpy-before-global-deps.patch",
             ],
         },
         {
@@ -750,14 +751,22 @@ def test_pytorch_rocm_renderer_uses_source_patches_for_magma_fix() -> None:
     assert '_apply_patch_if_needed "0003-target-numpy-2-c-api.patch"' in pkgbuild
     assert '_apply_patch_if_needed "0004-drop-hip-clang-abi-compat-flag.patch"' in pkgbuild
     assert '_apply_patch_if_needed "0005-enable-ck-gemm-on-gfx1151.patch"' in pkgbuild
+    assert '_apply_patch_if_needed "0007-initialize-numpy-before-global-deps.patch"' in pkgbuild
     assert "patch --dry-run -R -Np1" in pkgbuild
     assert "aten/src/ATen/native/hip/linalg/BatchLinearAlgebra.cpp" not in pkgbuild
     assert "text = text.replace(" in pkgbuild
     assert "hip: Optional[str] = {hip!r}" in pkgbuild
     assert "rocm: Optional[str] = {rocm!r}" in pkgbuild
     assert "PYTORCH_VERSION_METADATA_MISSING" in pkgbuild
+    assert "PYTORCH_NUMPY_BOOTSTRAP_MARKER_MISSING" in pkgbuild
+    assert "import numpy as _torch_numpy_bootstrap" in pkgbuild
     assert "PYTORCH_HIP_VERSION_REWRITE_FAILED" in pkgbuild
     assert "PYTORCH_ROCM_VERSION_REWRITE_FAILED" in pkgbuild
+    assert 'export CMAKE_CXX_COMPILER="${_rocm_llvm_bin}/amdclang++"' in pkgbuild
+    assert 'export CMAKE_CXX_COMPILER_LAUNCHER="$(command -v ccache)"' in pkgbuild
+    assert 'export CMAKE_AR="${_rocm_llvm_bin}/llvm-ar"' in pkgbuild
+    assert 'export ROCM_PATH="/opt/rocm"' in pkgbuild
+    assert 'export HIP_CLANG_PATH="${_rocm_llvm_bin}"' in pkgbuild
     assert "NPY_TARGET_VERSION" not in pkgbuild
     assert "cmake -P build/torch/headeronly/cmake_install.cmake" in pkgbuild
     assert "cmake -P build/c10/cmake_install.cmake" in pkgbuild

@@ -1,7 +1,7 @@
 [repo]
 pkgbase = "therock-gfx1151"
 pkgver = "7.13.0"
-pkgrel = 1
+pkgrel = 2
 suffix = "-gfx1151"
 url = "https://github.com/ROCm/TheRock"
 license = ["custom:AMD"]
@@ -743,7 +743,7 @@ fileless = true
   { path = "usr/lib/python3.14/site-packages/amd_smi.pth", text = "/opt/rocm/share/amd_smi\n" },
 ]
 "migraphx-gfx1151" = [
-  { path = "usr/lib/python3.14/site-packages/migraphx.pth", text = "/opt/rocm/lib\n" },
+  { path = "usr/lib/python3.14/site-packages/migraphx.pth", text = "import sqlite3\n/opt/rocm/lib\n" },
 ]
 "rocm-core-gfx1151" = [
   { path = "etc/ld.so.conf.d/rocm.conf", text = "/opt/rocm/lib\n" },

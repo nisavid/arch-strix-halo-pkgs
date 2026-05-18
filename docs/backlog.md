@@ -2,15 +2,22 @@
 
 ## Packaging And Build Hygiene
 
-- TheRock 7.13 stable deploy/install gate: upstream ROCm/TheRock published the
-  stable `therock-7.13` release at
-  `6d2136cd12be28c6251eb38c700e980c8c2f8cf6`. A real 7.13 staged root has
-  been built, the generated `therock-gfx1151` split package now renders as
-  `7.13.0-1`, the full split package family builds, and the repo-local
-  `repo/x86_64` metadata has been refreshed. Deploy/install remains blocked on
-  interactive sudo; after `tools/amerge deploy therock-gfx1151` completes, run
-  ROCm visibility plus affected downstream inference smokes before marking the
-  candidate adopted.
+- TheRock 7.13 stable is adopted. Upstream ROCm/TheRock published the stable
+  `therock-7.13` release at
+  `6d2136cd12be28c6251eb38c700e980c8c2f8cf6`; the generated
+  `therock-gfx1151` split package now renders as `7.13.0-2` from a real staged
+  7.13 root. Package build, repo-local publish, deploy/install, ROCm host
+  visibility, MIGraphX payload/import-order smokes, downstream installed
+  imports, and the affected Torch-MIGraphX compiled scenario smokes passed on
+  2026-05-18.
+- 2026-05-18 freshness follow-up bundle: the closeout freshness gate after
+  TheRock 7.13 adoption found tracked follow-up lanes for llama.cpp `b9219`,
+  NumPy `2.4.5`, stable-diffusion.cpp
+  `caa823a8c06a51288f0a01bb29e9bd8bcec30a8a`, and watchfiles `1.2.0`.
+  Review source deltas, refresh package metadata, build, deploy/install, and
+  run the affected installed smokes or scenarios before adoption. Keep the
+  coordinated PyTorch `2.12.0-1` baseline drift as its own lane because it
+  affects the ROCm extension and inference package closure.
 - The 2026-05-18 Python 3.14.5 rebuild lane is adopted. `python-gfx1151`
   now tracks CPython `3.14.5` with Arch `python 3.14.5-1` as the integration
   baseline. Source verification, package source preparation, package build,

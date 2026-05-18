@@ -7,8 +7,11 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parents[3]
 PKGBUILD = REPO_ROOT / "packages/therock-gfx1151/PKGBUILD"
 MANIFEST = REPO_ROOT / "packages/therock-gfx1151/manifest.json"
+MIGRAPHX_FILELIST = REPO_ROOT / "packages/therock-gfx1151/filelists/migraphx-gfx1151.txt"
 AMDSMI_PKGDIR = REPO_ROOT / "packages/therock-gfx1151/pkg/amdsmi-gfx1151"
 AMDSMI_PTH = AMDSMI_PKGDIR / "usr/lib/python3.14/site-packages/amd_smi.pth"
+MIGRAPHX_PKGDIR = REPO_ROOT / "packages/therock-gfx1151/pkg/migraphx-gfx1151"
+MIGRAPHX_PTH = MIGRAPHX_PKGDIR / "usr/lib/python3.14/site-packages/migraphx.pth"
 
 
 def test_migraphx_package_exports_python_import_hook():
@@ -16,6 +19,7 @@ def test_migraphx_package_exports_python_import_hook():
     assert "package_migraphx-gfx1151()" in text
     assert "depends=('gcc-libs' 'glibc' 'hip-runtime-amd-gfx1151' 'miopen-hip-gfx1151' 'msgpack-cxx' 'protobuf' 'python-gfx1151' 'rocblas-gfx1151' 'rocm-core-gfx1151' 'sqlite')" in text
     assert "migraphx.pth" in text
+    assert "import sqlite3" in text
     assert "/opt/rocm/lib" in text
 
     manifest = json.loads(MANIFEST.read_text())
@@ -31,6 +35,20 @@ def test_migraphx_package_exports_python_import_hook():
         "rocm-core-gfx1151",
         "sqlite",
     ]
+
+
+def test_migraphx_filelist_contains_runtime_payload():
+    paths = MIGRAPHX_FILELIST.read_text().splitlines()
+    assert "opt/rocm/bin/migraphx-driver" in paths
+    assert any(path.startswith("opt/rocm/lib/migraphx/lib/libmigraphx.so") for path in paths)
+    assert any(path.startswith("opt/rocm/lib/migraphx.cpython-") for path in paths)
+
+
+def test_built_migraphx_package_preloads_sqlite_before_import_path():
+    if not MIGRAPHX_PKGDIR.exists():
+        pytest.skip("built package tree is not present in this checkout")
+    assert MIGRAPHX_PTH.exists()
+    assert MIGRAPHX_PTH.read_text() == "import sqlite3\n/opt/rocm/lib\n"
 
 
 def test_amdsmi_package_exports_python_import_hook():

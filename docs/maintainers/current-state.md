@@ -22,18 +22,31 @@ Host ROCm visibility reports `gfx1151`. The focused downstream live scenarios
 `docs/worklog/inference-runs/20260518T053712` in `37.711251` and `135.212036`
 seconds with `HF_HUB_CACHE=<testing HF hub cache root>`.
 
-TheRock 7.13 stable is packaged, but not adopted. Upstream ROCm/TheRock
+TheRock 7.13 stable is validated and installed. Upstream ROCm/TheRock
 published the non-prerelease `therock-7.13` release on 2026-05-15 at
-`6d2136cd12be28c6251eb38c700e980c8c2f8cf6`. A 7.13 staged root has now been
-built from the `release/therock-7.13` lane and passed the recipe ROCm
-validation checks for `hipcc`, `rocminfo`, `amd-smi`, device bitcode,
-`libamdhip64.so`, `librocblas.so`, and `libMIOpen.so`. The generated
-`therock-gfx1151` package renders as `7.13.0-1`, the full split package family
-builds with `_THEROCK_ROOT` pointed at the staged root, and the repo-local
-`repo/x86_64` package database has been refreshed. Deploy/install remains
-blocked on interactive sudo, so the installed host still requires
-`tools/amerge deploy therock-gfx1151` followed by installed ROCm visibility and
-affected downstream inference smokes before adoption.
+`6d2136cd12be28c6251eb38c700e980c8c2f8cf6`. A 7.13 staged root was built from
+the `release/therock-7.13` lane and passed the recipe ROCm validation checks
+for `hipcc`, `rocminfo`, `amd-smi`, device bitcode, `libamdhip64.so`,
+`librocblas.so`, and `libMIOpen.so`. The generated `therock-gfx1151` package
+renders as `7.13.0-2` from that staged root; the pkgrel 2 package includes the
+MIGraphX runtime payload and preloads `sqlite3` from `migraphx.pth` before
+adding `/opt/rocm/lib` to Python's import path.
+
+Package build, repo-local publish, deploy/install, and installed validation
+passed on 2026-05-18. The reference host reports `migraphx-gfx1151 7.13.0-2`,
+`rocm-core-gfx1151 7.13.0-2`,
+`python-pytorch-opt-rocm-gfx1151 2.11.0-14`, and
+`python-torch-migraphx-gfx1151 1.2-5` from `pacman -Q`.
+`pacman -Ql migraphx-gfx1151` shows `migraphx-driver`,
+`migraphx.cpython-314-x86_64-linux-gnu.so`, and the `libmigraphx*` shared
+libraries. A direct import-order smoke for `migraphx` followed by
+`torch_migraphx` passes, covering the standalone MIGraphX import order that
+previously exposed the sqlite import hazard. PyTorch reports HIP `7.13.26176`,
+sees the Radeon 8060S Graphics device, and downstream installed imports pass
+for TorchVision, vLLM, AITER, TorchAO, and Torch-MIGraphX.
+`tools/torch_migraphx_smoke.py --mode pt2e-quantizer-import` passes, and the
+bounded `dynamo-resnet-tiny` and `pt2e-resnet-tiny` compiled probes both pass
+on the Radeon 8060S with max absolute difference `0.00000001`.
 
 The source-lane contract cleanup is validated and installed. AITER now uses the
 prerelease-enabled GitHub release lane at `v0.1.14-rc0`, packaged as
