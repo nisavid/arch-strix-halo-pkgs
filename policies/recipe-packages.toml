@@ -87,7 +87,7 @@ scaffold_notes = [
 [packages.python-gfx1151]
 recipe_key = "cpython"
 template = "autoconf-python"
-upstream_version = "3.14.4"
+upstream_version = "3.14.5"
 pkgdesc = "The Python programming language rebuilt with amdclang for Strix Halo gfx1151"
 url = "https://www.python.org/"
 license = ["PSF-2.0"]
@@ -103,7 +103,20 @@ update_notes = [
   "Treat system-Python replacement as gated on a fresh torch/vLLM smoke run after any major Python, ROCm, or recipe change.",
   "Keep the package aligned with Arch's Python 3.14 package until a coordinated interpreter rebuild lane is opened for the local ROCm and vLLM stack."
 ]
-provides = ["python=3.14.4", "python3", "python-externally-managed"]
+recipe_notes_override = """
+Python 3.14.x built with PGO + LTO + amdclang for Zen 5.
+
+PGO (Profile-Guided Optimization): runs the test suite as training
+data, then recompiles with branch prediction hints. LTO (thin):
+whole-program optimization across translation units.
+
+CRITICAL: Must unset ALL vllm-env.sh flags before configure.
+vllm-env.sh sets LDFLAGS=-lalm which autoconf merges with configure
+LDFLAGS, causing AOCL-LibM to be linked, which breaks PGO training
+(test_math fails on signed zero and subnormal number handling).
+
+vllm-env.sh is re-sourced after build to restore flags."""
+provides = ["python=3.14.5", "python3", "python-externally-managed"]
 conflicts = ["python"]
 replaces = ["python", "python3", "python-externally-managed"]
 depends = ["bzip2", "expat", "gdbm", "libffi", "libnsl", "libxcrypt", "mpdecimal", "openssl", "tzdata", "zlib", "zstd"]
@@ -118,9 +131,9 @@ optdepends = [
 ]
 compiler_dep = "rocm-llvm-gfx1151"
 source_type = "tarball"
-source_url = "https://www.python.org/ftp/python/3.14.4/Python-3.14.4.tar.xz"
-sha256sums = ["d923c51303e38e249136fc1bdf3568d56ecb03214efdef48516176d3d7faaef8"]
-src_subdir = "Python-3.14.4"
+source_url = "https://www.python.org/ftp/python/3.14.5/Python-3.14.5.tar.xz"
+sha256sums = ["7e32597b99e5d9a39abed35de4693fa169df3e5850d4c334337ffd6a19a36db6"]
+src_subdir = "Python-3.14.5"
 install_prefix = "/usr"
 patches_dir = "patches/python-gfx1151"
 scaffold_notes = [

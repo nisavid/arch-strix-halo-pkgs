@@ -17,7 +17,7 @@
   },
   "name": "python-gfx1151",
   "package_name": "python-gfx1151",
-  "pkgver": "3.14.4",
+  "pkgver": "3.14.5",
   "policy": {
     "advisory_references": [
       "cachyos-znver4/python"
@@ -73,11 +73,12 @@
     "patches_dir": "patches/python-gfx1151",
     "pkgdesc": "The Python programming language rebuilt with amdclang for Strix Halo gfx1151",
     "provides": [
-      "python=3.14.4",
+      "python=3.14.5",
       "python3",
       "python-externally-managed"
     ],
     "recipe_key": "cpython",
+    "recipe_notes_override": "Python 3.14.x built with PGO + LTO + amdclang for Zen 5.\n\nPGO (Profile-Guided Optimization): runs the test suite as training\ndata, then recompiles with branch prediction hints. LTO (thin):\nwhole-program optimization across translation units.\n\nCRITICAL: Must unset ALL vllm-env.sh flags before configure.\nvllm-env.sh sets LDFLAGS=-lalm which autoconf merges with configure\nLDFLAGS, causing AOCL-LibM to be linked, which breaks PGO training\n(test_math fails on signed zero and subnormal number handling).\n\nvllm-env.sh is re-sourced after build to restore flags.",
     "replaces": [
       "python",
       "python3",
@@ -92,26 +93,26 @@
       "Treat the system-Python replacement as gated on a successful Python-3.14 vLLM smoke test against the coherent TheRock ROCm stack."
     ],
     "sha256sums": [
-      "d923c51303e38e249136fc1bdf3568d56ecb03214efdef48516176d3d7faaef8"
+      "7e32597b99e5d9a39abed35de4693fa169df3e5850d4c334337ffd6a19a36db6"
     ],
     "source_type": "tarball",
-    "source_url": "https://www.python.org/ftp/python/3.14.4/Python-3.14.4.tar.xz",
-    "src_subdir": "Python-3.14.4",
+    "source_url": "https://www.python.org/ftp/python/3.14.5/Python-3.14.5.tar.xz",
+    "src_subdir": "Python-3.14.5",
     "template": "autoconf-python",
     "update_notes": [
       "Always diff against the current Arch python PKGBUILD first, then inspect CachyOS for any CPU-tuning or toolchain deltas worth carrying.",
       "Treat system-Python replacement as gated on a fresh torch/vLLM smoke run after any major Python, ROCm, or recipe change.",
       "Keep the package aligned with Arch's Python 3.14 package until a coordinated interpreter rebuild lane is opened for the local ROCm and vLLM stack."
     ],
-    "upstream_version": "3.14.4",
+    "upstream_version": "3.14.5",
     "url": "https://www.python.org/"
   },
   "provenance": {
     "output_root": "packages",
     "recipe_author": "Blackcat Informatics Inc.",
-    "recipe_commit": "a1d7a68",
-    "recipe_date": "20260427",
-    "recipe_history_count": 16,
+    "recipe_commit": "3f15f9f",
+    "recipe_date": "20260508",
+    "recipe_history_count": 17,
     "recipe_repo": "https://github.com/paudley/ai-notes",
     "recipe_subdir": "strix-halo",
     "repo_subpath": "."
@@ -122,11 +123,11 @@
       "therock"
     ],
     "method": "autoconf",
-    "notes": "Python 3.13 built with PGO + LTO + amdclang for Zen 5.\n\nPGO (Profile-Guided Optimization): runs the test suite as training\ndata, then recompiles with branch prediction hints. LTO (thin):\nwhole-program optimization across translation units.\n\nCRITICAL: Must unset ALL vllm-env.sh flags before configure.\nvllm-env.sh sets LDFLAGS=-lalm which autoconf merges with configure\nLDFLAGS, causing AOCL-LibM to be linked, which breaks PGO training\n(test_math fails on signed zero and subnormal number handling).\n\nvllm-env.sh is re-sourced after build to restore flags.",
+    "notes": "Python 3.14.x built with PGO + LTO + amdclang for Zen 5.\n\nPGO (Profile-Guided Optimization): runs the test suite as training\ndata, then recompiles with branch prediction hints. LTO (thin):\nwhole-program optimization across translation units.\n\nCRITICAL: Must unset ALL vllm-env.sh flags before configure.\nvllm-env.sh sets LDFLAGS=-lalm which autoconf merges with configure\nLDFLAGS, causing AOCL-LibM to be linked, which breaks PGO training\n(test_math fails on signed zero and subnormal number handling).\n\nvllm-env.sh is re-sourced after build to restore flags.",
     "patches": [],
     "phase": "B",
     "repo": "https://github.com/python/cpython.git",
-    "src_dir": "cpython",
+    "src_dir": "Python-3.14.5",
     "steps": [
       8
     ]
