@@ -105,6 +105,13 @@ def test_hip_reduce_patch_keeps_installed_aiter_common_header():
     assert '+#include "hip_compat.h"' not in text
 
 
+def test_hip_reduce_patch_keeps_block_reduce_shared_memory_typed():
+    text = HIP_REDUCE_PATCH.read_text()
+
+    assert "+    __shared__ T smem[waves];" in text
+    assert "+    __shared__ float smem[waves];" not in text
+
+
 def test_runtime_patch_fixes_user_jit_import_and_hipcc_resolution():
     text = RUNTIME_PATCH.read_text()
 

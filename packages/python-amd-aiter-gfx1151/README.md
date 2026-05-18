@@ -31,7 +31,7 @@ RDNA 3.5 compatibility and installed-system JIT/runtime behavior.
 
 - There is no standalone Arch, CachyOS, or AUR aiter package. The closest packaging lane is the PyTorch ROCm pkgbase that vendors the same submodule, so that pkgbase is advisory only.
 - The package follows upstream AITER release tags, including release candidates and previews when they are the latest GitHub release.
-- The package exports SETUPTOOLS_SCM_PRETEND_VERSION so the wheel metadata stays stable while building from the pinned upstream snapshot.
+- The package exports SETUPTOOLS_SCM_PRETEND_VERSION so the wheel metadata stays stable while building from the pinned upstream release tag.
 - The recipe rebuilds AITER from the pinned upstream AITER source lane while keeping CK and generated kernel expectations explicit in the package.
 - Upstream AITER declares pandas as a real dependency and FlyDSL as an optional acceleration path. Keep pandas in the package metadata, and package FlyDSL separately rather than silently depending on an unpublished wheel.
 - Keep the gfx1151 RDNA 3.5 header fixes as package-local source patches applied before wheel build, split between the `vec_convert.h` packed-op fallbacks and the `hip_reduce.h` wave32/DPP compatibility rewrite.
@@ -40,7 +40,7 @@ RDNA 3.5 compatibility and installed-system JIT/runtime behavior.
 
 ## Intentional Divergences
 
-- There is no standalone AITER package in Arch-family packaging; this package is recipe-first and follows a reviewed upstream AITER snapshot lane.
+- There is no standalone AITER package in Arch-family packaging; this package is recipe-first and follows upstream AITER release tags, including release candidates and previews when published through GitHub releases.
 - Carries explicit package-local source patches for gfx1151 RDNA 3.5 header compatibility, split between vec_convert packed-op fallbacks and hip_reduce wave32/DPP compatibility, rather than leaving those fixes as manual post-build mutations.
 - Carries an installed-system JIT runtime patch so AITER can find `hipcc` and import JIT-built modules from the writable user cache on read-only site-packages installs.
 - Carries the gfx1x AITER-side MoE compatibility patches that are safe to keep local: unknown-gfx probing, missing 1-stage ASM metadata handling, and CK 2-stage splitk normalization/forwarding for AITER fused-MoE experiments and other non-Gemma lanes. The current validated Gemma 4 default path still uses TRITON for unquantized MoE.
@@ -56,7 +56,7 @@ RDNA 3.5 compatibility and installed-system JIT/runtime behavior.
 - On 2026-05-01, adopted AITER main at a0f25393903f5412b0fb997d5b825a0aeb257466. The d679e288..a0f2539 range includes HIP KL cache refactoring, JIT/setup handling, cache kernels, mHC small-M work, fused all-reduce/RMSNorm memory ordering, GemmTuner SplitK guards, MXFP4 fixes, preshuffled cache/indexer fixes, and tuning/test coverage.
 - On 2026-05-10, adopted AITER stable tag v0.1.13 with the local gfx1151 RDNA header, JIT runtime, and gfx1x MoE compatibility carry preserved.
 - On 2026-05-14, adopted AITER main d50194cae28f2e22f4dfff19a86577fe2fcbca27 as a post-0.1.13 snapshot because the range carries kernel, JIT, mHC, topk, and MXFP4 changes that are relevant to the local vLLM/AITER validation surface.
-- On 2026-05-16, switched the package source lane from the reviewed main snapshot back to upstream release tags and adopted v0.1.14-rc0 because prerelease GitHub releases are now intentional source-lane updates for this package.
+- On 2026-05-16, adopted upstream release tag v0.1.14-rc0 because prerelease GitHub releases are now intentional source-lane updates for this package.
 - Treat FlyDSL as a separate tracked package story; do not silently fold an unpublished wheel into this package.
 - Keep the installed-system JIT runtime patch until upstream AITER stops assuming `hipcc` is on the ambient PATH and correctly imports modules copied to the writable user JIT cache from read-only site-packages installs.
 - Keep the package's explicit ROCm toolchain exports in `build()` until upstream AITER stops probing `hipconfig` and `hipcc` through ambient shell state. The concrete build failure was `Could not find hipconfig in PATH or ROCM_HOME(/usr)`.

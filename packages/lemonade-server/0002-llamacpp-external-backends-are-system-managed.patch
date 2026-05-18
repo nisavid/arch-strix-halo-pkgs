@@ -55,14 +55,14 @@ index 9abda84..7a0f7b2 100644
      return false;
  }
 
-+static bool is_system_managed_external_backend(const std::string& recipe, const std::string& backend) {
++static std::string find_system_managed_external_backend(const std::string& recipe, const std::string& backend) {
 +    if (recipe != "llamacpp") {
-+        return false;
++        return "";
 +    }
 +    if (backend != "rocm" && backend != "vulkan") {
-+        return false;
++        return "";
 +    }
-+    return !BackendUtils::find_external_backend_binary(recipe, backend).empty();
++    return BackendUtils::find_external_backend_binary(recipe, backend);
 +}
 +
 +static std::string get_llamacpp_version_from_executable(const std::string& executable) {
@@ -106,8 +106,8 @@ index 9abda84..7a0f7b2 100644
 -        return SystemInfo::get_system_llamacpp_version();
 +        return get_llamacpp_version_from_executable("llama-server");
 +    }
-+    if (is_system_managed_external_backend(recipe, backend)) {
-+        std::string external_binary = BackendUtils::find_external_backend_binary(recipe, backend);
++    std::string external_binary = find_system_managed_external_backend(recipe, backend);
++    if (!external_binary.empty()) {
 +        return get_llamacpp_version_from_executable(external_binary);
      }
      auto* spec = try_get_spec_for_recipe(recipe);
@@ -123,9 +123,9 @@ index 9abda84..7a0f7b2 100644
 +        if (label_env && *label_env) {
 +            return label_env;
 +        }
-+        std::string external_binary = BackendUtils::find_external_backend_binary(recipe, backend);
++        std::string external_binary = find_system_managed_external_backend(recipe, backend);
 +        std::string binary_name = external_binary.empty() ? "backend" : fs::path(external_binary).filename().string();
-+        std::string version = get_recipe_version(recipe, backend);
++        std::string version = external_binary.empty() ? "unknown" : get_llamacpp_version_from_executable(external_binary);
 +        if (!version.empty() && version != "unknown") {
 +            return "System " + binary_name + " " + version;
 +        }
@@ -141,7 +141,7 @@ index 9abda84..7a0f7b2 100644
 
              bool version_known = !installed_version.empty() && installed_version != "unknown";
              bool has_expected = !expected_version.empty();
-+            bool externally_managed = is_system_managed_external_backend(def.recipe, def.backend);
++            bool externally_managed = !find_system_managed_external_backend(def.recipe, def.backend).empty();
              bool latest_pin = is_bin_pinned_to_latest(def.recipe, def.backend);
              bool needs_update;
 

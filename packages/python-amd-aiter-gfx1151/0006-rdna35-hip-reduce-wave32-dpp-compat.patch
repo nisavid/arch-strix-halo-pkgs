@@ -177,7 +177,7 @@ index f8076be0d..ac3e87f80 100644
 +    const int wave_size        = WARP_SIZE;
 +    int wave_id                = threadIdx.x / wave_size;
 +    int lane_id                = threadIdx.x % wave_size;
-+    __shared__ float smem[waves];
++    __shared__ T smem[waves];
 +
 +    local = wave_reduce<T, F, WARP_SIZE, false>(local, reduce_op);
 +

@@ -22,6 +22,7 @@ def test_gemma4_text_smoke_exposes_help_without_importing_vllm():
     result = subprocess.run(
         [sys.executable, str(REPO_ROOT / "tools/gemma4_text_smoke.py"), "--help"],
         check=False,
+        timeout=30,
         capture_output=True,
         text=True,
     )

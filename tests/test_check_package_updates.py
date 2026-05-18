@@ -23,11 +23,15 @@ def write_pkg(root: Path, name: str) -> None:
     pkg_dir = root / "packages" / name
     pkg_dir.mkdir(parents=True)
     (pkg_dir / "PKGBUILD").write_text("pkgname='x'\n", encoding="utf-8")
+    recipe_policy = root / "policies" / "recipe-packages.toml"
+    recipe_policy.parent.mkdir(parents=True, exist_ok=True)
+    with recipe_policy.open("a", encoding="utf-8") as handle:
+        handle.write(f'\n[packages."{name}"]\ntemplate = "meta-package"\n')
 
 
 def write_policy(root: Path, body: str) -> Path:
     policy = root / "policies" / "package-freshness.toml"
-    policy.parent.mkdir(parents=True)
+    policy.parent.mkdir(parents=True, exist_ok=True)
     policy.write_text(textwrap.dedent(body), encoding="utf-8")
     return policy
 
@@ -444,6 +448,128 @@ def test_source_contract_validation_reports_source_value_mismatch(tmp_path):
 
     assert report["families"][0]["status"] == "metadata_mismatch"
     assert "aiter" in report["families"][0]["message"]
+
+
+def test_source_contract_validation_reports_missing_recipe_policy(tmp_path):
+    pkg_dir = tmp_path / "packages" / "python-amd-aiter-gfx1151"
+    pkg_dir.mkdir(parents=True)
+    (pkg_dir / "PKGBUILD").write_text("pkgname='x'\n", encoding="utf-8")
+    write_policy(
+        tmp_path,
+        """
+        [families.aiter]
+        packages = ["python-amd-aiter-gfx1151"]
+        priority = "high"
+        workflow = "upstream_source_update"
+        checks = [{ id = "release", role = "primary", kind = "github_release", repo = "ROCm/aiter", recorded = "0.1.14-rc0", tag_prefix = "v", comparison = "pep440", include_prereleases = true }]
+        """,
+    )
+
+    report = updates.run_check(
+        tmp_path,
+        refresh=True,
+        clients=updates.FakeClients(
+            github_releases={
+                "ROCm/aiter": [
+                    {"tag": "v0.1.14-rc0", "prerelease": True}
+                ]
+            }
+        ),
+    )
+
+    assert report["families"][0]["status"] == "metadata_mismatch"
+    assert "Recipe package policy not found" in report["families"][0]["message"]
+
+
+def test_source_contract_validation_reports_missing_recipe_package_entry(tmp_path):
+    write_pkg(tmp_path, "python-amd-aiter-gfx1151")
+    write_policy(
+        tmp_path,
+        """
+        [families.aiter]
+        packages = ["python-amd-aiter-gfx1151"]
+        priority = "high"
+        workflow = "upstream_source_update"
+        checks = [{ id = "release", role = "primary", kind = "github_release", repo = "ROCm/aiter", recorded = "0.1.14-rc0", tag_prefix = "v", comparison = "pep440", include_prereleases = true }]
+        source_contracts = [
+          { id = "release-source", packages = ["python-amd-aiter-gfx1151"], check_id = "release", source_name = "aiter", source_kind = "git_tag", origin = "https://github.com/ROCm/aiter.git", value_policy = "matches_reviewed" },
+        ]
+        """,
+    )
+    write_recipe_policy(tmp_path, "")
+
+    report = updates.run_check(
+        tmp_path,
+        refresh=True,
+        clients=updates.FakeClients(
+            github_releases={
+                "ROCm/aiter": [
+                    {"tag": "v0.1.14-rc0", "prerelease": True}
+                ]
+            }
+        ),
+    )
+
+    assert report["families"][0]["status"] == "metadata_mismatch"
+    assert "python-amd-aiter-gfx1151: missing recipe policy entry" in report[
+        "families"
+    ][0]["message"]
+
+
+def test_source_contract_validation_preserves_unrelated_family_report(tmp_path):
+    write_pkg(tmp_path, "python-amd-aiter-gfx1151")
+    write_pkg(tmp_path, "python-numpy-gfx1151")
+    write_policy(
+        tmp_path,
+        """
+        [families.aiter]
+        packages = ["python-amd-aiter-gfx1151"]
+        priority = "high"
+        workflow = "upstream_source_update"
+        checks = [{ id = "release", role = "primary", kind = "github_release", repo = "ROCm/aiter", recorded = "0.1.14-rc0", tag_prefix = "v", comparison = "pep440", include_prereleases = true }]
+
+        [families.numpy]
+        packages = ["python-numpy-gfx1151"]
+        priority = "medium"
+        workflow = "upstream_source_update"
+        checks = [{ id = "pypi", role = "primary", kind = "pypi", package = "numpy", recorded = "2.4.4", comparison = "pep440" }]
+        """,
+    )
+    write_recipe_policy(
+        tmp_path,
+        """
+        [packages.python-amd-aiter-gfx1151]
+        template = "python-project-aiter"
+        source_refs = ["aiter::git+https://github.com/ROCm/aiter.git#tag=v0.1.13"]
+
+        [packages.python-numpy-gfx1151]
+        template = "native-wheel-pypi"
+        pypi_name = "numpy"
+        upstream_version = "2.4.4"
+        """,
+    )
+
+    report = updates.run_check(
+        tmp_path,
+        refresh=True,
+        clients=updates.FakeClients(
+            pypi={"numpy": {"version": "2.4.4"}},
+            github_releases={
+                "ROCm/aiter": [
+                    {"tag": "v0.1.14-rc0", "prerelease": True}
+                ]
+            },
+        ),
+    )
+
+    assert any(
+        family["family"] == "aiter" and family["status"] == "metadata_mismatch"
+        for family in report["families"]
+    )
+    assert any(
+        family["family"] == "numpy" and family["status"] == "current"
+        for family in report["families"]
+    )
 
 
 def test_source_contract_validation_allows_reviewed_cursor_ahead_of_pinned_source(
