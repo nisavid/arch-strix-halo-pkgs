@@ -450,6 +450,36 @@ def test_source_contract_validation_reports_source_value_mismatch(tmp_path):
     assert "aiter" in report["families"][0]["message"]
 
 
+def test_source_contract_validation_reports_contract_package_outside_family(
+    tmp_path,
+):
+    write_pkg(tmp_path, "python-amd-aiter-gfx1151")
+    write_policy(
+        tmp_path,
+        """
+        [families.aiter]
+        packages = ["python-amd-aiter-gfx1151"]
+        priority = "high"
+        workflow = "upstream_source_update"
+        checks = [{ id = "release", role = "primary", kind = "github_release", repo = "ROCm/aiter", recorded = "0.1.14-rc0", tag_prefix = "v", comparison = "pep440", include_prereleases = true }]
+        source_contracts = [
+          { id = "release-source", packages = ["python-other-gfx1151"], check_id = "release", source_name = "aiter", source_kind = "git_tag", origin = "https://github.com/ROCm/aiter.git", value_policy = "matches_reviewed" },
+        ]
+        """,
+    )
+
+    report = updates.run_check(
+        tmp_path,
+        refresh=True,
+        clients=updates.FakeClients(allow_missing=True),
+    )
+
+    assert report["families"][0]["status"] == "metadata_mismatch"
+    assert "packages outside family python-other-gfx1151" in report["families"][0][
+        "message"
+    ]
+
+
 def test_source_contract_validation_reports_missing_recipe_policy(tmp_path):
     pkg_dir = tmp_path / "packages" / "python-amd-aiter-gfx1151"
     pkg_dir.mkdir(parents=True)
