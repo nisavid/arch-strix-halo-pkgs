@@ -9,5 +9,8 @@ opt/rocm/lib/cmake/rocprofiler-sdk-roctx/rocprofiler-sdk-roctx-targets-release.c
 opt/rocm/lib/cmake/rocprofiler-sdk-roctx/rocprofiler-sdk-roctx-targets.cmake
 opt/rocm/lib/librocprofiler-sdk-roctx.so
 opt/rocm/lib/librocprofiler-sdk-roctx.so.1
-opt/rocm/lib/librocprofiler-sdk-roctx.so.1.2.0
+opt/rocm/lib/librocprofiler-sdk-roctx.so.1.3.0
+opt/rocm/lib/python3.14/site-packages/roctx/__init__.py
+opt/rocm/lib/python3.14/site-packages/roctx/context_decorators.py
+opt/rocm/lib/python3.14/site-packages/roctx/libpyroctx.cpython-314-x86_64-linux-gnu.so
 opt/rocm/share/rocprofiler-sdk-roctx/setup-env.sh

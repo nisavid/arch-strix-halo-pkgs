@@ -6,7 +6,7 @@ opt/rocm/lib/cmake/rocjpeg/rocjpeg-config.cmake
 opt/rocm/lib/cmake/rocjpeg/rocjpeg-targets.cmake
 opt/rocm/lib/librocjpeg.so
 opt/rocm/lib/librocjpeg.so.1
-opt/rocm/lib/librocjpeg.so.1.4.0
+opt/rocm/lib/librocjpeg.so.1.5.0
 opt/rocm/share/rocjpeg/images/mug_400.jpg
 opt/rocm/share/rocjpeg/images/mug_420.jpg
 opt/rocm/share/rocjpeg/images/mug_422.jpg

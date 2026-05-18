@@ -31,6 +31,13 @@ The generated `PKGBUILD` expects `_THEROCK_ROOT` to point at a filesystem root
 that contains `opt/rocm`. For a complete live local tree, `_THEROCK_ROOT=/` is
 valid. For a staged install tree, point it at that staging root instead.
 
+## Source lane
+
+The official upstream `therock-7.13` release is the current package source
+lane. This rendered package is built from a real 7.13 staged root and reports
+`7.13.0-1`; keep the candidate tracked until the package is deployed, installed,
+and smoke-tested on the reference host.
+
 ## rocm-core baseline
 
 `rocm-core-gfx1151` now treats CachyOS `rocm-core` as the distro-integration

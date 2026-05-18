@@ -49,7 +49,7 @@ The stack currently includes these major layers:
 
 | Layer | Package examples | Current lane |
 | --- | --- | --- |
-| ROCm foundation | `therock-gfx1151`, `rocm-gfx1151`, split ROCm libraries | TheRock `7.13` prerelease lane for `gfx1151` |
+| ROCm foundation | `therock-gfx1151`, `rocm-gfx1151`, split ROCm libraries | TheRock `7.13` stable repin tracked for `gfx1151` |
 | Host math and Python | `aocl-utils-gfx1151`, `aocl-libm-gfx1151`, `python-gfx1151` | AOCL `5.2.2`, Python `3.14.5` |
 | ML runtime | `python-pytorch-opt-rocm-gfx1151`, `python-triton-gfx1151`, `python-aotriton-gfx1151` | ROCm PyTorch `2.11`, ROCm Triton main-perf, AOTriton `0.11.2b` |
 | Inference engines | `python-vllm-rocm-gfx1151`, `python-amd-aiter-gfx1151`, `python-flash-attn-rocm-gfx1151` | vLLM `0.21.0`, AITER `v0.1.14-rc0`, ROCm FlashAttention `2.8.4` |

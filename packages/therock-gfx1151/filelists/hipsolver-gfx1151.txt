@@ -14,7 +14,7 @@ opt/rocm/lib/cmake/hipsolver/hipsolver-targets-release.cmake
 opt/rocm/lib/cmake/hipsolver/hipsolver-targets.cmake
 opt/rocm/lib/libhipsolver.so
 opt/rocm/lib/libhipsolver.so.1
-opt/rocm/lib/libhipsolver.so.1.0
+opt/rocm/lib/libhipsolver.so.1.1
 opt/rocm/lib/libhipsolver_fortran.so
 opt/rocm/lib/libhipsolver_fortran.so.1
-opt/rocm/lib/libhipsolver_fortran.so.1.0
+opt/rocm/lib/libhipsolver_fortran.so.1.1

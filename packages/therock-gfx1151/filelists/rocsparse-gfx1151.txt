@@ -1,4 +1,3 @@
-opt/rocm/bin/rocsparse_mtx2csr
 opt/rocm/include/rocsparse/internal/conversion/rocsparse_bsr2csr.h
 opt/rocm/include/rocsparse/internal/conversion/rocsparse_bsrpad_value.h
 opt/rocm/include/rocsparse/internal/conversion/rocsparse_coo2csr.h
@@ -46,6 +45,8 @@ opt/rocm/include/rocsparse/internal/generic/rocsparse_sparse_to_dense.h
 opt/rocm/include/rocsparse/internal/generic/rocsparse_sparse_to_sparse.h
 opt/rocm/include/rocsparse/internal/generic/rocsparse_spgeam.h
 opt/rocm/include/rocsparse/internal/generic/rocsparse_spgemm.h
+opt/rocm/include/rocsparse/internal/generic/rocsparse_spic0.h
+opt/rocm/include/rocsparse/internal/generic/rocsparse_spilu0.h
 opt/rocm/include/rocsparse/internal/generic/rocsparse_spitsv.h
 opt/rocm/include/rocsparse/internal/generic/rocsparse_spmm.h
 opt/rocm/include/rocsparse/internal/generic/rocsparse_spmv.h
@@ -122,6 +123,3 @@ opt/rocm/lib/cmake/rocsparse/rocsparse-targets.cmake
 opt/rocm/lib/librocsparse.so
 opt/rocm/lib/librocsparse.so.1
 opt/rocm/lib/librocsparse.so.1.0
-opt/rocm/lib/rocsparse/rocsparseio-convert
-opt/rocm/lib/rocsparse/rocsparseio-info
-opt/rocm/libexec/rocsparse/test/rocsparse_gentest.py

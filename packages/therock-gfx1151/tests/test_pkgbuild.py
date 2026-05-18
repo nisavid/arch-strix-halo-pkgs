@@ -48,6 +48,22 @@ def test_built_amdsmi_package_installs_python_import_hook():
     assert AMDSMI_PTH.read_text().strip() == "/opt/rocm/share/amd_smi"
 
 
+def test_rendered_local_package_dependencies_exist():
+    manifest = json.loads(MANIFEST.read_text())
+    packages = manifest["packages"]
+    missing = sorted(
+        {
+            dep
+            for meta in packages.values()
+            for dep in meta["depends"]
+            if dep.endswith("-gfx1151")
+            and dep in packages
+            and not packages[dep]["rendered"]
+        }
+    )
+    assert missing == []
+
+
 def test_rocm_core_pkgbuild_carries_cachy_runtime_baseline():
     text = PKGBUILD.read_text()
     assert "package_rocm-core-gfx1151()" in text

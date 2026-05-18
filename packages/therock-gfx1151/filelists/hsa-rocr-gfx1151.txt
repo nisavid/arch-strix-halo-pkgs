@@ -22,6 +22,7 @@ opt/rocm/include/hsakmt/drm/drm_mode.h
 opt/rocm/include/hsakmt/drm/xf86drm.h
 opt/rocm/include/hsakmt/hsakmt.h
 opt/rocm/include/hsakmt/hsakmt_drm.h
+opt/rocm/include/hsakmt/hsakmtctx.h
 opt/rocm/include/hsakmt/hsakmtmodel.h
 opt/rocm/include/hsakmt/hsakmtmodeliface.h
 opt/rocm/include/hsakmt/hsakmttypes.h
@@ -35,6 +36,6 @@ opt/rocm/lib/cmake/hsakmt/hsakmtTargets-release.cmake
 opt/rocm/lib/cmake/hsakmt/hsakmtTargets.cmake
 opt/rocm/lib/libhsa-runtime64.so
 opt/rocm/lib/libhsa-runtime64.so.1
-opt/rocm/lib/libhsa-runtime64.so.1.18.0
+opt/rocm/lib/libhsa-runtime64.so.1.21.0
 opt/rocm/lib/libhsakmt.a
 opt/rocm/lib/pkgconfig/libhsakmt.pc
