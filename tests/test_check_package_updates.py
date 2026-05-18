@@ -570,6 +570,7 @@ def test_source_contract_validation_preserves_unrelated_family_report(tmp_path):
         family["family"] == "numpy" and family["status"] == "current"
         for family in report["families"]
     )
+    assert [family["family"] for family in report["families"]].count("aiter") == 1
 
 
 def test_source_contract_validation_allows_reviewed_cursor_ahead_of_pinned_source(

@@ -10,7 +10,7 @@ index dff22d1..5a43bb8 100644
  #include <filesystem>
  #include <fstream>
  #include <iostream>
-@@ -21,6 +22,42 @@ namespace {
+@@ -21,6 +22,48 @@ namespace {
 
  static const char* ROCM_STABLE_RUNTIME_DIR = "rocm-stable-runtime";
 
@@ -25,6 +25,9 @@ index dff22d1..5a43bb8 100644
 +}
 +
 +std::string get_system_managed_backend_version_override(const std::string& recipe, const std::string& backend) {
++    if (!is_system_managed_external_backend(recipe, backend)) {
++        return "";
++    }
 +    if (recipe != "llamacpp") {
 +        return "";
 +    }
@@ -38,6 +41,9 @@ index dff22d1..5a43bb8 100644
 +}
 +
 +std::string get_system_managed_backend_release_url_override(const std::string& recipe, const std::string& backend) {
++    if (!is_system_managed_external_backend(recipe, backend)) {
++        return "";
++    }
 +    if (recipe != "llamacpp") {
 +        return "";
 +    }
@@ -53,7 +59,7 @@ index dff22d1..5a43bb8 100644
  std::string get_current_os() {
  #ifdef _WIN32
      return "windows";
-@@ -630,6 +667,10 @@ void BackendManager::uninstall_backend(const std::string& recipe, const std::str
+@@ -630,6 +673,10 @@ void BackendManager::uninstall_backend(const std::string& recipe, const std::str
 
  std::string BackendManager::get_latest_version(const std::string& recipe, const std::string& backend) {
      try {
@@ -64,7 +70,7 @@ index dff22d1..5a43bb8 100644
          return get_version_from_config(recipe, normalize_backend_name(recipe, backend));
      } catch (...) {
          return "";
-@@ -672,6 +713,10 @@ json BackendManager::get_all_backends_status() {
+@@ -672,6 +719,10 @@ json BackendManager::get_all_backends_status() {
 
  std::string BackendManager::get_release_url(const std::string& recipe, const std::string& backend) {
      try {
@@ -75,7 +81,7 @@ index dff22d1..5a43bb8 100644
          std::string resolved_backend = normalize_backend_name(recipe, backend);
          auto params = get_install_params(recipe, resolved_backend);
          return "https://github.com/" + params.repo + "/releases/tag/" + params.version;
-@@ -682,6 +727,9 @@ std::string BackendManager::get_release_url(const std::string& recipe, const std
+@@ -682,6 +733,9 @@ std::string BackendManager::get_release_url(const std::string& recipe, const std
 
  std::string BackendManager::get_download_filename(const std::string& recipe, const std::string& backend) {
      try {
@@ -85,7 +91,7 @@ index dff22d1..5a43bb8 100644
          std::string resolved_backend = normalize_backend_name(recipe, backend);
          auto params = get_install_params(recipe, resolved_backend);
          return params.filename;
-@@ -693,6 +741,14 @@ std::string BackendManager::get_download_filename(const std::string& recipe, con
+@@ -693,6 +747,14 @@ std::string BackendManager::get_download_filename(const std::string& recipe, con
  BackendManager::BackendEnrichment BackendManager::get_backend_enrichment(const std::string& recipe, const std::string& backend) {
      BackendEnrichment result;
      try {

@@ -69,7 +69,7 @@ index 9abda84..7a0f7b2 100644
 +    std::string output;
 +#ifdef _WIN32
 +    std::string command = "\"" + executable + "\" --version 2>&1";
-+    int rc = lemon::utils::ProcessManager::run_command(command, output);
++    (void)lemon::utils::ProcessManager::run_command(command, output);
 +#else
 +    std::string command = "\"" + executable + "\" --version 2>&1";
 +    FILE* pipe = popen(command.c_str(), "r");
