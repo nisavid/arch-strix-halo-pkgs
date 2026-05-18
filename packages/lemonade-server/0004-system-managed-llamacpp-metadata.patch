@@ -104,8 +104,8 @@ diff --git a/src/cpp/server/system_info.cpp b/src/cpp/server/system_info.cpp
 index f7a5a65..e0d35a3 100644
 --- a/src/cpp/server/system_info.cpp
 +++ b/src/cpp/server/system_info.cpp
-@@ -356,6 +356,19 @@ static bool is_system_managed_external_backend(const std::string& recipe, const
-     return !BackendUtils::find_external_backend_binary(recipe, backend).empty();
+@@ -356,6 +356,19 @@ static std::string find_system_managed_external_backend(const std::string& recipe, const
+     return BackendUtils::find_external_backend_binary(recipe, backend);
  }
 
 +static std::string get_system_managed_backend_version_override(const std::string& recipe, const std::string& backend) {
@@ -127,11 +127,11 @@ index f7a5a65..e0d35a3 100644
 @@ -397,6 +410,10 @@ static std::string get_recipe_version(const std::string& recipe, const std::stri
          return get_llamacpp_version_from_executable("llama-server");
      }
-     if (is_system_managed_external_backend(recipe, backend)) {
+     std::string external_binary = find_system_managed_external_backend(recipe, backend);
+     if (!external_binary.empty()) {
 +        std::string version_override = get_system_managed_backend_version_override(recipe, backend);
 +        if (!version_override.empty()) {
 +            return version_override;
 +        }
-         std::string external_binary = BackendUtils::find_external_backend_binary(recipe, backend);
          return get_llamacpp_version_from_executable(external_binary);
      }

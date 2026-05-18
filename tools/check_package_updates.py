@@ -550,7 +550,7 @@ def implicit_source_fact(package: str, policy_pkg: dict) -> dict | None:
 def recipe_source_facts(repo_root: Path) -> dict[str, list[dict]]:
     path = recipe_policy_path(repo_root)
     if not path.exists():
-        return {}
+        raise FileNotFoundError(f"Recipe package policy not found: {path}")
     payload = load_toml(path)
     facts: dict[str, list[dict]] = {}
     for package, policy_pkg in payload.get("packages", {}).items():
@@ -648,17 +648,28 @@ def inferred_contract_matches(fact: dict, checks: list[dict]) -> bool:
 
 
 def validate_source_contracts(repo_root: Path, families: dict) -> list[dict]:
-    facts_by_package = recipe_source_facts(repo_root)
-    if not facts_by_package:
-        return []
+    try:
+        facts_by_package = recipe_source_facts(repo_root)
+    except FileNotFoundError as exc:
+        return [
+            metadata_mismatch(str(exc))
+            | {
+                "family": "recipe-source-contracts",
+                "workflow": "source_contract_validation",
+            }
+        ]
     findings: list[dict] = []
     for family_name, family in families.items():
         family_packages = set(family.get("packages", []))
         checks = list(family.get("checks", []))
         checks_by_id = {str(check.get("id", check.get("kind", ""))): check for check in checks}
         contracts = list(family.get("source_contracts", []))
+        contract_packages_requiring_policy = set()
         invalid_contracts = []
         for contract in contracts:
+            contract_packages_requiring_policy.update(
+                set(contract.get("packages", family_packages))
+            )
             value_policy = contract.get("value_policy", "matches_reviewed")
             if value_policy not in ALLOWED_SOURCE_VALUE_POLICIES:
                 invalid_contracts.append(
@@ -676,6 +687,10 @@ def validate_source_contracts(repo_root: Path, families: dict) -> list[dict]:
 
         missing = []
         for package in sorted(family_packages):
+            if package not in facts_by_package:
+                if package in contract_packages_requiring_policy:
+                    missing.append(f"{package}: missing recipe policy entry")
+                continue
             for fact in facts_by_package.get(package, []):
                 if fact["source_kind"] == "patch":
                     continue
@@ -1183,7 +1198,6 @@ def run_check(
         reports.append(selector_mismatch(unmatched))
     if not reports:
         reports.extend(validate_source_contracts(root, families))
-    if not reports:
         reports.extend(
             family_report(name, family, clients)
             for name, family in sorted(families.items())

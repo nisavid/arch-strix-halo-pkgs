@@ -63,6 +63,14 @@ def test_system_backend_patch_applies_env_overlay_without_config_file():
     )
 
 
+def test_system_backend_patch_reuses_external_backend_lookup():
+    text = SYSTEM_BACKEND_PATCH.read_text()
+
+    assert "find_system_managed_external_backend" in text
+    assert "if (!external_binary.empty())" in text
+    assert "is_system_managed_external_backend" not in text
+
+
 def _current_pkgbuild_version():
     values = {}
     for line in PKGBUILD.read_text().splitlines():
