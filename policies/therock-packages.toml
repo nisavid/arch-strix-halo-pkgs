@@ -1,7 +1,7 @@
 [repo]
 pkgbase = "therock-gfx1151"
-pkgver = "7.13.0pre"
-pkgrel = 5
+pkgver = "7.13.0"
+pkgrel = 1
 suffix = "-gfx1151"
 url = "https://github.com/ROCm/TheRock"
 license = ["custom:AMD"]
@@ -20,6 +20,10 @@ ignore_globs = [
   "opt/rocm/bin/*test*",
   "opt/rocm/bin/*bench*",
   "opt/rocm/bin/*validate*",
+  "opt/rocm/bin/hipdnn_*_tests*",
+  "opt/rocm/bin/hipdnn_integration_tests_ctest/**",
+  "opt/rocm/bin/hipdnn_sample_*",
+  "opt/rocm/bin/hipdnn_samples/**",
   "opt/rocm/bin/rdhc",
   "opt/rocm/bin/bn_*",
   "opt/rocm/bin/conv_*",
@@ -30,7 +34,10 @@ ignore_globs = [
   "opt/rocm/bin/knobs_usage",
   "opt/rocm/bin/rocrtst64",
   "opt/rocm/bin/MIOpen/**",
+  "opt/rocm/.kpack/**",
   "opt/rocm/clients/**",
+  "opt/rocm/lib/hipdnn_reference_data/**",
+  "opt/rocm/lib/cmake/hipdnn_integration_tests/**",
   "opt/rocm/libhipcxx/.clang-format",
   "opt/rocm/libhipcxx/.clangd",
   "opt/rocm/libhipcxx/.git*",
@@ -90,8 +97,10 @@ desc = "ROCm code object manager from TheRock for gfx1151"
 provides = ["comgr"]
 depends = ["gcc-libs", "glibc", "rocm-core-gfx1151", "rocm-llvm-gfx1151", "rocm-device-libs-gfx1151", "rocm-sysdeps-gfx1151"]
 post_copy_commands = [
-  "sed -i -e 's/foreach(_cmake_expected_target IN ITEMS amd_comgr amd_comgr_loader test_amd_comgr_stub)/foreach(_cmake_expected_target IN ITEMS amd_comgr amd_comgr_loader)/' -e '/# Create imported target test_amd_comgr_stub/{N;d;}' -e '/list(APPEND _cmake_import_check_targets test_amd_comgr_stub )/{N;d;}' \"${pkgdir}/opt/rocm/lib/cmake/amd_comgr_stub/amd_comgr-targets.cmake\"",
-  "sed -i '/# Import target \"test_amd_comgr_stub\" for configuration \"Release\"/,/list(APPEND _cmake_import_check_files_for_test_amd_comgr_stub .* )/d' \"${pkgdir}/opt/rocm/lib/cmake/amd_comgr_stub/amd_comgr-targets-release.cmake\"",
+  "_comgr_stub_targets=\"${pkgdir}/opt/rocm/lib/cmake/amd_comgr_stub/amd_comgr-targets.cmake\"",
+  "[[ ! -f \"${_comgr_stub_targets}\" ]] || sed -i -e 's/foreach(_cmake_expected_target IN ITEMS amd_comgr amd_comgr_loader test_amd_comgr_stub)/foreach(_cmake_expected_target IN ITEMS amd_comgr amd_comgr_loader)/' -e '/# Create imported target test_amd_comgr_stub/{N;d;}' -e '/list(APPEND _cmake_import_check_targets test_amd_comgr_stub )/{N;d;}' \"${_comgr_stub_targets}\"",
+  "_comgr_stub_release=\"${pkgdir}/opt/rocm/lib/cmake/amd_comgr_stub/amd_comgr-targets-release.cmake\"",
+  "[[ ! -f \"${_comgr_stub_release}\" ]] || sed -i '/# Import target \"test_amd_comgr_stub\" for configuration \"Release\"/,/list(APPEND _cmake_import_check_files_for_test_amd_comgr_stub .* )/d' \"${_comgr_stub_release}\"",
 ]
 
 [packages."hsa-rocr-gfx1151"]
@@ -460,10 +469,8 @@ provides = ["rocm-developer-tools"]
 depends = [
   "rocm-llvm-gfx1151",
   "rocm-cmake-gfx1151",
-  "rocm-gdb-gfx1151",
   "rocprofiler-systems-gfx1151",
   "rocprofiler-sdk-gfx1151",
-  "rocprofiler-compute-gfx1151",
   "roctracer-gfx1151",
 ]
 fileless = true
@@ -501,6 +508,7 @@ fileless = true
 "hipdnn" = "miopen-hip-gfx1151"
 "hipdnn_backend" = "miopen-hip-gfx1151"
 "hipdnn_data_sdk" = "miopen-hip-gfx1151"
+"hipdnn_flatbuffers_sdk" = "miopen-hip-gfx1151"
 "hipdnn_frontend" = "miopen-hip-gfx1151"
 "hipdnn_plugin_sdk" = "miopen-hip-gfx1151"
 "hipdnn_test_sdk" = "miopen-hip-gfx1151"
@@ -515,7 +523,14 @@ fileless = true
 "miopen" = "miopen-gfx1151"
 "migraphx" = "migraphx-gfx1151"
 "mivisionx" = "mivisionx-gfx1151"
+"elfio" = "rocm-sysdeps-gfx1151"
+"iree" = "migraphx-gfx1151"
+"IREE" = "migraphx-gfx1151"
+"mlir-c" = "migraphx-gfx1151"
 "rocgdb" = "rocm-gdb-gfx1151"
+"rocdecode-host" = "rocdecode-gfx1151"
+"rocm-kpack" = "rocm-core-gfx1151"
+"rocm_kpack" = "rocm-core-gfx1151"
 "rocprofiler-compute" = "rocprofiler-compute-gfx1151"
 "rocm" = "rocm-core-gfx1151"
 "roctracer" = "roctracer-gfx1151"
@@ -564,6 +579,7 @@ fileless = true
 "hipcc" = "hipcc-gfx1151"
 "hipconfig" = "hipcc-gfx1151"
 "hipfc" = "hipfort-gfx1151"
+"hipdnn" = "miopen-hip-gfx1151"
 "hipify-perl" = "hipify-clang-gfx1151"
 "hipRTC" = "hip-runtime-amd-gfx1151"
 "hipify-clang" = "hipify-clang-gfx1151"
@@ -613,6 +629,8 @@ fileless = true
 "hipsolver" = "hipsolver-gfx1151"
 "hipsparse" = "hipsparse-gfx1151"
 "hipsparselt" = "hipsparselt-gfx1151"
+"IREECompiler" = "migraphx-gfx1151"
+"iree_compiler" = "migraphx-gfx1151"
 "hsa-amd-aqlprofile64" = "hsa-amd-aqlprofile-gfx1151"
 "hsa-runtime64" = "hsa-rocr-gfx1151"
 "hsakmt" = "hsa-rocr-gfx1151"
@@ -626,6 +644,7 @@ fileless = true
 "rocfft" = "rocfft-gfx1151"
 "rocjpeg" = "rocjpeg-gfx1151"
 "rocm-core" = "rocm-core-gfx1151"
+"rocm_kpack" = "rocm-core-gfx1151"
 "rocm-dbgapi" = "rocm-dbgapi-gfx1151"
 "rocm-debug-agent" = "rocm-debug-agent-gfx1151"
 "rocm_smi64" = "rocm-smi-lib-gfx1151"
@@ -656,14 +675,20 @@ fileless = true
 "opt/rocm/.info/version" = "rocm-core-gfx1151"
 "opt/rocm/bin/clinfo" = "rocm-opencl-runtime-gfx1151"
 "opt/rocm/bin/flatc" = "migraphx-gfx1151"
+"opt/rocm/etc/OpenCL" = "rocm-opencl-runtime-gfx1151"
+"opt/rocm/etc/ld.so.conf.d/10-rocm-opencl.conf" = "rocm-opencl-runtime-gfx1151"
 "opt/rocm/include/half" = "half-gfx1151"
 "opt/rocm/include/amdsmi_go_shim.h" = "amdsmi-gfx1151"
 "opt/rocm/libhipcxx/include" = "hip-gfx1151"
 "opt/rocm/libhipcxx/LICENSE.TXT" = "hip-gfx1151"
+"opt/rocm/libhipcxx/NOTICE.txt" = "hip-gfx1151"
 "opt/rocm/libhipcxx/cmake" = "hip-gfx1151"
 "opt/rocm/libhipcxx/lib" = "hip-gfx1151"
 "opt/rocm/lib/rocmmod" = "rocm-core-gfx1151"
 "opt/rocm/lib/libdevice_conv_operations.a" = "composable-kernel-gfx1151"
+"opt/rocm/lib/libdevice_contraction_operations.a" = "miopen-hip-gfx1151"
+"opt/rocm/lib/libdevice_other_operations.a" = "miopen-hip-gfx1151"
+"opt/rocm/lib/libdevice_reduction_operations.a" = "miopen-hip-gfx1151"
 "opt/rocm/lib/libutility.a" = "composable-kernel-gfx1151"
 "opt/rocm/lib/hipdnn_plugins" = "miopen-hip-gfx1151"
 "opt/rocm/lib/hipblaslt" = "hipblaslt-gfx1151"
@@ -686,12 +711,17 @@ fileless = true
 "opt/rocm/lib/libfftw3f.so.3" = "rocfft-gfx1151"
 "opt/rocm/lib/libfftw3f_threads.so.3" = "rocfft-gfx1151"
 "opt/rocm/lib/libhipdnn_backend.so" = "miopen-hip-gfx1151"
+"opt/rocm/lib/libOpenCL.so" = "rocm-opencl-runtime-gfx1151"
+"opt/rocm/lib/libOpenCL.so.1" = "rocm-opencl-runtime-gfx1151"
+"opt/rocm/lib/libOpenCL.so.1.2" = "rocm-opencl-runtime-gfx1151"
 "opt/rocm/lib/libmagma.so" = "magma-gfx1151"
 "opt/rocm/lib/libmagma_sparse.so" = "magma-gfx1151"
 "opt/rocm/lib/python3.10" = "amdsmi-gfx1151"
 "opt/rocm/lib/python3.11" = "amdsmi-gfx1151"
 "opt/rocm/lib/python3.12" = "amdsmi-gfx1151"
 "opt/rocm/lib/python3.13" = "amdsmi-gfx1151"
+"opt/rocm/lib/python3.14/site-packages/rocpd" = "rocprofiler-sdk-rocpd-gfx1151"
+"opt/rocm/lib/python3.14/site-packages/roctx" = "rocprofiler-sdk-roctx-gfx1151"
 "opt/rocm/lib/python3/site-packages/rocprofv3" = "rocprofiler-systems-gfx1151"
 "opt/rocm/lib/.hipInfo" = "rocm-core-gfx1151"
 "opt/rocm/share/amd_smi" = "amdsmi-gfx1151"

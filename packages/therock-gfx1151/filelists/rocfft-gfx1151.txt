@@ -36,4 +36,3 @@ opt/rocm/lib/librocfft.so.0.1
 opt/rocm/lib/pkgconfig/fftw3.pc
 opt/rocm/lib/pkgconfig/fftw3f.pc
 opt/rocm/lib/rocfft/1.0.37/rocfft_rtc_helper
-opt/rocm/lib/rocfft/rocfft_kernel_cache.db

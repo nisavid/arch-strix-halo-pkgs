@@ -11,7 +11,7 @@
         "rocm-sysdeps-gfx1151"
       ],
       "fileless": false,
-      "files": 157,
+      "files": 77,
       "provides": [
         "amdsmi",
         "amd-smi-lib"
@@ -28,7 +28,7 @@
         "rocm-sysdeps-gfx1151"
       ],
       "fileless": false,
-      "files": 16,
+      "files": 8,
       "provides": [
         "comgr"
       ],
@@ -42,7 +42,7 @@
         "rocm-core-gfx1151"
       ],
       "fileless": false,
-      "files": 1856,
+      "files": 1924,
       "provides": [
         "composable-kernel"
       ],
@@ -62,7 +62,7 @@
         "rocm-hip-gfx1151"
       ],
       "fileless": false,
-      "files": 2775,
+      "files": 2499,
       "provides": [
         "hip"
       ],
@@ -85,7 +85,7 @@
         "rocm-sysdeps-gfx1151"
       ],
       "fileless": false,
-      "files": 14,
+      "files": 13,
       "provides": [
         "hip-runtime-amd"
       ],
@@ -136,7 +136,7 @@
         "composable-kernel-gfx1151"
       ],
       "fileless": false,
-      "files": 188,
+      "files": 195,
       "provides": [
         "hipblaslt"
       ],
@@ -250,7 +250,7 @@
         "rocsparse-gfx1151"
       ],
       "fileless": false,
-      "files": 91,
+      "files": 89,
       "provides": [
         "hipsparse"
       ],
@@ -299,7 +299,7 @@
         "hsa-rocr-gfx1151"
       ],
       "fileless": false,
-      "files": 32,
+      "files": 5,
       "provides": [
         "hsa-amd-aqlprofile"
       ],
@@ -318,7 +318,7 @@
         "rocm-sysdeps-gfx1151"
       ],
       "fileless": false,
-      "files": 40,
+      "files": 41,
       "provides": [
         "hsa-rocr",
         "hsakmt-roct"
@@ -338,12 +338,12 @@
         "rocm-openmp-gfx1151"
       ],
       "fileless": false,
-      "files": 80,
+      "files": 0,
       "provides": [
         "magma-hip",
         "hipmagma"
       ],
-      "rendered": true,
+      "rendered": false,
       "replaces": [
         "magma-hip",
         "hipmagma"
@@ -363,7 +363,7 @@
         "sqlite"
       ],
       "fileless": false,
-      "files": 513,
+      "files": 125,
       "provides": [
         "migraphx"
       ],
@@ -386,7 +386,7 @@
         "sqlite"
       ],
       "fileless": false,
-      "files": 75,
+      "files": 96,
       "provides": [
         "miopen"
       ],
@@ -397,7 +397,7 @@
         "miopen-gfx1151"
       ],
       "fileless": false,
-      "files": 271,
+      "files": 387,
       "provides": [
         "miopen-hip"
       ],
@@ -421,7 +421,7 @@
         "rocm-smi-lib-gfx1151"
       ],
       "fileless": false,
-      "files": 29,
+      "files": 13,
       "provides": [
         "rccl"
       ],
@@ -438,7 +438,7 @@
         "roctracer-gfx1151"
       ],
       "fileless": false,
-      "files": 174,
+      "files": 173,
       "provides": [
         "rocblas"
       ],
@@ -455,7 +455,7 @@
         "rocm-core-gfx1151"
       ],
       "fileless": false,
-      "files": 108,
+      "files": 118,
       "provides": [
         "rocdecode"
       ],
@@ -469,7 +469,7 @@
         "rocm-core-gfx1151"
       ],
       "fileless": false,
-      "files": 39,
+      "files": 38,
       "provides": [
         "rocfft"
       ],
@@ -514,7 +514,7 @@
         "python-yaml"
       ],
       "fileless": false,
-      "files": 69,
+      "files": 78,
       "provides": [
         "rocm-core"
       ],
@@ -542,7 +542,7 @@
         "rocm-dbgapi-gfx1151"
       ],
       "fileless": false,
-      "files": 4,
+      "files": 3,
       "provides": [
         "rocm-debug-agent",
         "rocr-debug-agent"
@@ -556,10 +556,8 @@
       "depends": [
         "rocm-llvm-gfx1151",
         "rocm-cmake-gfx1151",
-        "rocm-gdb-gfx1151",
         "rocprofiler-systems-gfx1151",
         "rocprofiler-sdk-gfx1151",
-        "rocprofiler-compute-gfx1151",
         "roctracer-gfx1151"
       ],
       "fileless": true,
@@ -586,11 +584,11 @@
         "rocm-debug-agent-gfx1151"
       ],
       "fileless": false,
-      "files": 89,
+      "files": 0,
       "provides": [
         "rocm-gdb"
       ],
-      "rendered": true
+      "rendered": false
     },
     "rocm-gfx1151": {
       "depends": [
@@ -689,7 +687,7 @@
         "comgr-gfx1151"
       ],
       "fileless": false,
-      "files": 1487,
+      "files": 1434,
       "provides": [
         "rocm-language-runtime"
       ],
@@ -700,7 +698,7 @@
         "rocm-sysdeps-gfx1151"
       ],
       "fileless": false,
-      "files": 9168,
+      "files": 9643,
       "provides": [
         "rocm-llvm"
       ],
@@ -754,7 +752,7 @@
         "rocm-sysdeps-gfx1151"
       ],
       "fileless": false,
-      "files": 4,
+      "files": 9,
       "provides": [
         "rocm-opencl-runtime",
         "opencl-driver"
@@ -768,7 +766,7 @@
         "rocm-opencl-runtime-gfx1151"
       ],
       "fileless": false,
-      "files": 19,
+      "files": 14,
       "provides": [
         "rocm-opencl-sdk"
       ],
@@ -806,7 +804,7 @@
     "rocm-sysdeps-gfx1151": {
       "depends": [],
       "fileless": false,
-      "files": 3170,
+      "files": 3688,
       "provides": [
         "rocm-sysdeps"
       ],
@@ -842,11 +840,11 @@
     "rocprofiler-compute-gfx1151": {
       "depends": [],
       "fileless": false,
-      "files": 4140,
+      "files": 0,
       "provides": [
         "rocprofiler-compute"
       ],
-      "rendered": true
+      "rendered": false
     },
     "rocprofiler-register-gfx1151": {
       "depends": [
@@ -866,7 +864,7 @@
     "rocprofiler-sdk-gfx1151": {
       "depends": [],
       "fileless": false,
-      "files": 609,
+      "files": 660,
       "provides": [
         "rocprofiler-sdk"
       ],
@@ -877,7 +875,7 @@
         "rocprofiler-sdk-gfx1151"
       ],
       "fileless": false,
-      "files": 24,
+      "files": 38,
       "provides": [
         "rocprofiler-sdk-rocpd"
       ],
@@ -888,7 +886,7 @@
         "rocprofiler-sdk-gfx1151"
       ],
       "fileless": false,
-      "files": 13,
+      "files": 16,
       "provides": [
         "rocprofiler-sdk-roctx"
       ],
@@ -906,7 +904,7 @@
         "yaml-cpp"
       ],
       "fileless": false,
-      "files": 205,
+      "files": 7,
       "provides": [
         "rocprofiler-systems",
         "rocprofiler"
@@ -930,7 +928,7 @@
     "rocshmem-gfx1151": {
       "depends": [],
       "fileless": false,
-      "files": 17,
+      "files": 18,
       "provides": [
         "rocshmem"
       ],
@@ -962,7 +960,7 @@
         "rocprim-gfx1151"
       ],
       "fileless": false,
-      "files": 127,
+      "files": 125,
       "provides": [
         "rocsparse"
       ],
@@ -1029,13 +1027,13 @@
     }
   },
   "pkgbase": "therock-gfx1151",
-  "pkgver": "7.13.0pre",
+  "pkgver": "7.13.0",
   "recipe": {
     "author": "Blackcat Informatics Inc.",
-    "commit": "a1d7a68",
-    "date": "20260427",
+    "commit": "3f15f9f",
+    "date": "20260508",
     "repo_url": "https://github.com/paudley/ai-notes",
     "subdir": "strix-halo"
   },
-  "upstream_pkgver": "7.13.0pre"
+  "upstream_pkgver": "7.13.0"
 }
