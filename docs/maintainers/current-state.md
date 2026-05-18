@@ -2,6 +2,38 @@
 
 Status as of 2026-05-18.
 
+The source-lane contract cleanup is validated and installed. AITER now uses the
+prerelease-enabled GitHub release lane at `v0.1.14-rc0`, packaged as
+`python-amd-aiter-gfx1151 0.1.14rc0-1`, and Lemonade now tracks the fork
+default branch at `3a1a0dff2d5fe24f4369f91e76b8587b5c703e78`, aligned with
+upstream stable `10.5.0`. The reference host reports
+`python-vllm-rocm-gfx1151 0.21.0-2`,
+`python-triton-gfx1151 3.0.0+git0ec280cf-1`,
+`python-amd-aiter-gfx1151 0.1.14rc0-1`,
+`lemonade-server 10.5.0-1`, `lemonade-app 10.5.0-1`,
+`lemonade 10.5.0-1`, `llama.cpp-hip-gfx1151 b9165-1`, and
+`llama.cpp-vulkan-gfx1151 b9165-1` from `pacman -Q`.
+
+Lemonade source verification, package source preparation, package build,
+local-repo publish, deploy/install, and installed scenario validation passed on
+2026-05-18. `lemonade.cli.help`, `lemonade.server.help`,
+`lemonade.pooling.zembed-1-q4-k-m.embeddings`, and
+`lemonade.pooling.bge-reranker-v2-m3.rerank` all passed at
+`docs/worklog/inference-runs/20260518T033840`; the pooling scenarios took
+`25.950544` and `7.009954` seconds. The installed `lemond.service` was stopped
+and reset to `inactive` after Lemonade validation so GPU memory was available
+for vLLM validation.
+
+AITER and affected vLLM host validation also passed on 2026-05-18. `rocminfo`
+reported `gfx1151`, the installed AITER package imported `aiter.jit.core`, and
+`vllm --version` reported `0.21.0`. The promoted
+`vllm.gemma4.26b-a4b.text.basic` and
+`vllm.gemma4.26b-a4b.server.basic` scenarios passed at
+`docs/worklog/inference-runs/20260518T034216` in `140.099304` and
+`309.783789` seconds with `HF_HUB_CACHE=<testing HF hub cache root>`. The logs
+selected `ROCM_AITER_UNIFIED_ATTN` and exercised the Triton JIT monitor guard
+for ROCm Triton runtimes without `triton.knobs`.
+
 The 2026-05-15 freshness sweep ran
 `tools/check_package_updates.py --json --fail-on actionable` and found four
 families requiring disposition: vLLM 0.21.0, AITER main

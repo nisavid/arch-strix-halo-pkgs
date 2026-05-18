@@ -10,7 +10,7 @@
 - Scaffold template: `meta-package`
 - Recipe build method: `pip`
 - Upstream repo: `https://github.com/lemonade-sdk/lemonade.git`
-- Package version: `10.4.0`
+- Package version: `10.5.0`
 - Recipe revision: `3f15f9f (20260508, 17 commits touching recipe path)`
 - Recipe steps: `34, 35, 36`
 - Recipe dependencies: `therock, llamacpp`

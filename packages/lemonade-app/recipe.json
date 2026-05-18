@@ -16,7 +16,7 @@
   },
   "name": "lemonade-app",
   "package_name": "lemonade-app",
-  "pkgver": "10.4.0",
+  "pkgver": "10.5.0",
   "policy": {
     "advisory_references": [
       "aur/lemonade-server"
@@ -52,7 +52,7 @@
     ],
     "patches_dir": "patches/lemonade-app",
     "pkgdesc": "Lemonade desktop app rebuilt for Strix Halo gfx1151",
-    "pkgrel": 3,
+    "pkgrel": 1,
     "provides": [
       "lemonade-desktop"
     ],
@@ -64,13 +64,13 @@
     "scaffold_notes": [
       "Tauri desktop package split from the same lemonade monorepo.",
       "Install a /usr/bin/lemonade-app wrapper that launches the packaged Tauri binary from /usr/share/lemonade-app so the shipped desktop entry resolves on PATH.",
-      "Pinned to nisavid/lemonade main commit 8bb0f7408e37c764d7172b24ad190a5014bc6a4d, whose CMake project version remains 10.4.0."
+      "Pinned to nisavid/lemonade main commit 3a1a0dff2d5fe24f4369f91e76b8587b5c703e78, whose CMake project version is 10.5.0."
     ],
     "sha256sums": [
       "SKIP"
     ],
     "source_refs": [
-      "lemonade::git+https://github.com/nisavid/lemonade.git#commit=8bb0f7408e37c764d7172b24ad190a5014bc6a4d"
+      "lemonade::git+https://github.com/nisavid/lemonade.git#commit=3a1a0dff2d5fe24f4369f91e76b8587b5c703e78"
     ],
     "src_subdir": "lemonade",
     "template": "lemonade-app",
@@ -79,7 +79,7 @@
       "Keep the provides/conflicts story accurate while Arch/AUR naming remains in transition."
     ],
     "upstream_name": "lemonade-app",
-    "upstream_version": "10.4.0",
+    "upstream_version": "10.5.0",
     "url": "https://github.com/nisavid/lemonade"
   },
   "provenance": {

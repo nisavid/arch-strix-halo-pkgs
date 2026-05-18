@@ -2186,9 +2186,9 @@ scaffold_notes = [
 [packages."lemonade-server"]
 recipe_key = "lemonade"
 template = "lemonade-server"
-upstream_version = "10.4.0"
+upstream_version = "10.5.0"
 pkgdesc = "Local AI server runtime rebuilt for Strix Halo gfx1151"
-pkgrel = 3
+pkgrel = 1
 url = "https://github.com/nisavid/lemonade"
 repo = "https://github.com/nisavid/lemonade.git"
 license = ["Apache-2.0"]
@@ -2216,7 +2216,7 @@ optdepends = [
 src_subdir = "lemonade"
 upstream_name = "lemonade-server"
 baseline_kind = "closest-upstream"
-source_refs = ["lemonade::git+https://github.com/nisavid/lemonade.git#commit=8bb0f7408e37c764d7172b24ad190a5014bc6a4d"]
+source_refs = ["lemonade::git+https://github.com/nisavid/lemonade.git#commit=3a1a0dff2d5fe24f4369f91e76b8587b5c703e78"]
 recipe_branch_override = "main"
 sha256sums = ["SKIP"]
 extra_sources = [
@@ -2235,7 +2235,7 @@ source_patches = [
 patches_dir = "packages/lemonade-server"
 scaffold_notes = [
   "Server/runtime package; llama.cpp backends are optdepends, not hard deps.",
-  "Pinned to nisavid/lemonade main commit 8bb0f7408e37c764d7172b24ad190a5014bc6a4d, whose CMake project version remains 10.4.0.",
+  "Pinned to nisavid/lemonade main commit 3a1a0dff2d5fe24f4369f91e76b8587b5c703e78, whose CMake project version is 10.5.0.",
   "Uses upstream's lemond.service unit name; do not ship the pre-10.3 lemonade-server.service name in this package.",
   "Installs /etc/lemonade/conf.d/10-llamacpp-gfx1151.conf so the packaged ROCm and Vulkan llama.cpp wrapper binaries are exposed to the service as system-managed backends.",
   "The system-managed backend patch also folds in the config-load and CLI/backend-table changes needed for those service-provided overrides to stay visible after config.json already exists.",
@@ -2245,9 +2245,9 @@ scaffold_notes = [
 [packages."lemonade-app"]
 recipe_key = "lemonade"
 template = "lemonade-app"
-upstream_version = "10.4.0"
+upstream_version = "10.5.0"
 pkgdesc = "Lemonade desktop app rebuilt for Strix Halo gfx1151"
-pkgrel = 3
+pkgrel = 1
 url = "https://github.com/nisavid/lemonade"
 repo = "https://github.com/nisavid/lemonade.git"
 license = ["Apache-2.0"]
@@ -2270,19 +2270,19 @@ makedepends = ["cargo", "cmake", "git", "ninja", "nodejs", "npm", "rocm-llvm-gfx
 src_subdir = "lemonade"
 upstream_name = "lemonade-app"
 baseline_kind = "closest-upstream"
-source_refs = ["lemonade::git+https://github.com/nisavid/lemonade.git#commit=8bb0f7408e37c764d7172b24ad190a5014bc6a4d"]
+source_refs = ["lemonade::git+https://github.com/nisavid/lemonade.git#commit=3a1a0dff2d5fe24f4369f91e76b8587b5c703e78"]
 sha256sums = ["SKIP"]
 patches_dir = "patches/lemonade-app"
 scaffold_notes = [
   "Tauri desktop package split from the same lemonade monorepo.",
   "Install a /usr/bin/lemonade-app wrapper that launches the packaged Tauri binary from /usr/share/lemonade-app so the shipped desktop entry resolves on PATH.",
-  "Pinned to nisavid/lemonade main commit 8bb0f7408e37c764d7172b24ad190a5014bc6a4d, whose CMake project version remains 10.4.0."
+  "Pinned to nisavid/lemonade main commit 3a1a0dff2d5fe24f4369f91e76b8587b5c703e78, whose CMake project version is 10.5.0."
 ]
 
 [packages."lemonade"]
 recipe_key = "lemonade"
 template = "meta-package"
-upstream_version = "10.4.0"
+upstream_version = "10.5.0"
 pkgdesc = "Meta package for Lemonade and llama.cpp backend packages"
 url = "https://github.com/nisavid/lemonade"
 license = ["Apache-2.0"]

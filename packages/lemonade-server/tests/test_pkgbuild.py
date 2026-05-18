@@ -58,7 +58,7 @@ def test_system_backend_patch_applies_env_overlay_without_config_file():
     assert "json env_overlay = migrate_from_env(defaults);" in text
     assert "return utils::JsonUtils::merge(defaults, env_overlay);" in text
     assert (
-        "return utils::JsonUtils::merge(utils::JsonUtils::merge(defaults, loaded), env_overlay);"
+        "json merged = utils::JsonUtils::merge(utils::JsonUtils::merge(defaults, loaded), env_overlay);"
         in text
     )
 

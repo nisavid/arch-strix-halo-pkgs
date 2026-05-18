@@ -27,7 +27,7 @@
     "llama.cpp-vulkan-gfx1151"
   ],
   "package_name": "lemonade-server",
-  "pkgver": "10.4.0",
+  "pkgver": "10.5.0",
   "policy": {
     "advisory_references": [
       "aur/lemonade-desktop"
@@ -76,7 +76,7 @@
     ],
     "patches_dir": "packages/lemonade-server",
     "pkgdesc": "Local AI server runtime rebuilt for Strix Halo gfx1151",
-    "pkgrel": 3,
+    "pkgrel": 1,
     "provides": [
       "lemonade-server"
     ],
@@ -84,7 +84,7 @@
     "repo": "https://github.com/nisavid/lemonade.git",
     "scaffold_notes": [
       "Server/runtime package; llama.cpp backends are optdepends, not hard deps.",
-      "Pinned to nisavid/lemonade main commit 8bb0f7408e37c764d7172b24ad190a5014bc6a4d, whose CMake project version remains 10.4.0.",
+      "Pinned to nisavid/lemonade main commit 3a1a0dff2d5fe24f4369f91e76b8587b5c703e78, whose CMake project version is 10.5.0.",
       "Uses upstream's lemond.service unit name; do not ship the pre-10.3 lemonade-server.service name in this package.",
       "Installs /etc/lemonade/conf.d/10-llamacpp-gfx1151.conf so the packaged ROCm and Vulkan llama.cpp wrapper binaries are exposed to the service as system-managed backends.",
       "The system-managed backend patch also folds in the config-load and CLI/backend-table changes needed for those service-provided overrides to stay visible after config.json already exists.",
@@ -94,7 +94,7 @@
       "SKIP"
     ],
     "source_refs": [
-      "lemonade::git+https://github.com/nisavid/lemonade.git#commit=8bb0f7408e37c764d7172b24ad190a5014bc6a4d"
+      "lemonade::git+https://github.com/nisavid/lemonade.git#commit=3a1a0dff2d5fe24f4369f91e76b8587b5c703e78"
     ],
     "src_subdir": "lemonade",
     "template": "lemonade-server",
@@ -104,7 +104,7 @@
       "Re-test that LEMONADE_LLAMACPP_*_BIN service overrides still apply even when /var/lib/lemonade/config.json already exists."
     ],
     "upstream_name": "lemonade-server",
-    "upstream_version": "10.4.0",
+    "upstream_version": "10.5.0",
     "url": "https://github.com/nisavid/lemonade"
   },
   "provenance": {
