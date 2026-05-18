@@ -817,6 +817,10 @@ _source_tree_has_all_source_patches() {
       vllm/v1/sample/ops/topk_topp_sampler.py &&
     grep -Fq 'Keep valid_count type stable across branches' \
       vllm/v1/spec_decode/utils.py &&
+    grep -Fq 'def _triton_knobs():' \
+      vllm/triton_utils/jit_monitor.py &&
+    grep -Fq 'knobs = _triton_knobs()' \
+      vllm/triton_utils/jit_monitor.py &&
     grep -Fq 'def update_dflash(config_dict: dict, pre_trained_config: dict) -> None:' \
       vllm/transformers_utils/configs/speculators/algos.py &&
     grep -Fq 'def _flash_attn_uses_triton_rocm() -> bool:' \

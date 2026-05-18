@@ -2,7 +2,7 @@
 
 ## Packaging And Build Hygiene
 
-- Run affected live-scenario validation for the 2026-05-15 refresh bundle. Source metadata is updated for
+- The 2026-05-15 refresh bundle is adopted. Source metadata is updated for
   vLLM 0.21.0, AITER main
   `7cfe51983cd9dd55c0355e34fb614e7c0de44e6e`, llama.cpp `b9165`, and
   stable-diffusion.cpp `r604.g0b82969`. Source verification and package source
@@ -11,8 +11,16 @@
   `python-amd-aiter-gfx1151 0.1.14rc1.dev27+g7cfe51983-1`,
   `python-vllm-rocm-gfx1151 0.21.0-1`, and
   `stable-diffusion.cpp-vulkan-gfx1151 r604.g0b82969-1`. Deploy/install and
-  installed-smoke passed on 2026-05-17; affected live-scenario gates remain
-  open.
+  installed-smoke passed on 2026-05-17. The first vLLM live-scenario follow-up found a `triton.knobs`
+  incompatibility in vLLM's JIT monitor after a constrained Qwen probe got
+  past model loading. `python-vllm-rocm-gfx1151 0.21.0-2` now builds with a
+  guard for ROCm Triton runtimes without `triton.knobs`; deploy/install,
+  installed-smoke, and a constrained Qwen vLLM smoke passed for pkgrel 2. The
+  promoted default live-scenario rerun passed after the host freed enough VRAM
+  for the default 75% vLLM reservation:
+  `vllm.gemma4.e2b.server.basic` passed in `141.647271` seconds and
+  `vllm.qwen3_5.0_8b.text.basic` passed in `42.133449` seconds at
+  `docs/worklog/inference-runs/20260517T232711`.
 - Adopt fork main `81f7e00608347fcbaa43eb89da53270d8e2370ef` for Lemonade
   package bundle.
   Freshness now tracks `nisavid/lemonade` `main` as the source lane because
