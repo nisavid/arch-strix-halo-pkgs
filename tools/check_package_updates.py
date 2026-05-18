@@ -532,7 +532,9 @@ def implicit_source_fact(package: str, policy_pkg: dict) -> dict | None:
     if template == "meta-package":
         return None
     if template in {"rust-wheel-pypi", "native-wheel-pypi"}:
-        pypi_name = policy_pkg["pypi_name"]
+        pypi_name = policy_pkg.get("pypi_name")
+        if not pypi_name:
+            raise ValueError(f"{package}: template {template} requires pypi_name")
         return {
             "package": package,
             "source_name": None,
@@ -650,7 +652,7 @@ def inferred_contract_matches(fact: dict, checks: list[dict]) -> bool:
 def validate_source_contracts(repo_root: Path, families: dict) -> list[dict]:
     try:
         facts_by_package = recipe_source_facts(repo_root)
-    except FileNotFoundError as exc:
+    except (FileNotFoundError, ValueError) as exc:
         return [
             metadata_mismatch(str(exc))
             | {

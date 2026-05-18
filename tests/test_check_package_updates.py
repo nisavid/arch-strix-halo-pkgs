@@ -480,6 +480,39 @@ def test_source_contract_validation_reports_contract_package_outside_family(
     ]
 
 
+def test_source_contract_validation_reports_missing_pypi_name(tmp_path):
+    write_pkg(tmp_path, "python-numpy-gfx1151")
+    write_policy(
+        tmp_path,
+        """
+        [families.numpy]
+        packages = ["python-numpy-gfx1151"]
+        priority = "medium"
+        workflow = "upstream_source_update"
+        checks = [{ id = "pypi", role = "primary", kind = "pypi", package = "numpy", recorded = "2.4.4", comparison = "pep440" }]
+        """,
+    )
+    write_recipe_policy(
+        tmp_path,
+        """
+        [packages.python-numpy-gfx1151]
+        template = "native-wheel-pypi"
+        upstream_version = "2.4.4"
+        """,
+    )
+
+    report = updates.run_check(
+        tmp_path,
+        refresh=True,
+        clients=updates.FakeClients(allow_missing=True),
+    )
+
+    assert report["families"][0]["status"] == "metadata_mismatch"
+    assert "python-numpy-gfx1151: template native-wheel-pypi requires pypi_name" in report[
+        "families"
+    ][0]["message"]
+
+
 def test_source_contract_validation_reports_missing_recipe_policy(tmp_path):
     pkg_dir = tmp_path / "packages" / "python-amd-aiter-gfx1151"
     pkg_dir.mkdir(parents=True)
