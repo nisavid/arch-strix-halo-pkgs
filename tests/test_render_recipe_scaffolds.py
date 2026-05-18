@@ -336,8 +336,11 @@ def test_rust_wheel_renderer_applies_source_patches() -> None:
     assert "0001-sample.patch" in pkgbuild
     assert 'patch --dry-run -R -Np1 -i "$srcdir/0001-sample.patch"' in pkgbuild
     assert 'patch -Np1 -i "$srcdir/0001-sample.patch"' in pkgbuild
+    assert 'export HOME="$srcdir/.home"' in pkgbuild
+    assert 'export XDG_CACHE_HOME="$srcdir/.cache"' in pkgbuild
+    assert 'export XDG_DATA_HOME="$srcdir/.local/share"' in pkgbuild
     assert 'export CARGO_HOME="$srcdir/.cargo"' in pkgbuild
-    assert 'mkdir -p "$CARGO_HOME"' in pkgbuild
+    assert 'mkdir -p "$HOME" "$XDG_CACHE_HOME" "$XDG_DATA_HOME" "$CARGO_HOME"' in pkgbuild
     assert "find \"$pkgdir/usr/lib\" -type f -path '*/sboms/*.json'" in pkgbuild
     assert "-name '*.so'" not in pkgbuild
 

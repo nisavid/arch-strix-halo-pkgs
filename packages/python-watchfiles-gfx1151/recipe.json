@@ -11,12 +11,13 @@
     "source_patches": [],
     "update_notes": [
       "Check Arch first for watchfiles release and any maturin/build-backend metadata changes before updating.",
+      "On 2026-05-18, adopted watchfiles 1.2.0 while Arch remained at python-watchfiles 1.1.1-3. The upstream release drops Python 3.9, adds Python 3.15 classifiers, raises the Rust MSRV to 1.83, and updates PyO3 to 0.28.3 without changing runtime dependencies beyond anyio.",
       "After publishing a rebuilt package, verify `import watchfiles` and a minimal Python file-watch import path through the installed local Python lane."
     ]
   },
   "name": "python-watchfiles-gfx1151",
   "package_name": "python-watchfiles-gfx1151",
-  "pkgver": "1.1.1",
+  "pkgver": "1.2.0",
   "policy": {
     "advisory_references": [
       "cachyos-extra-znver4/python-watchfiles"
@@ -64,23 +65,24 @@
       "Use the shared Rust-wheel renderer so Cargo, amdclang linker selection, path remapping, and Zen 5 flags stay aligned with the other Rust wheel packages."
     ],
     "sha256sums": [
-      "a173cb5c16c4f40ab19cecf48a534c409f7ea983ab8fed0741304a1c0a31b3f2"
+      "c995fba777f1ea992f090f9236e9284cf7a5d1a0130dd5a3d82c598cacd76838"
     ],
-    "src_subdir": "watchfiles-1.1.1",
+    "src_subdir": "watchfiles-1.2.0",
     "template": "rust-wheel-pypi",
     "update_notes": [
       "Check Arch first for watchfiles release and any maturin/build-backend metadata changes before updating.",
+      "On 2026-05-18, adopted watchfiles 1.2.0 while Arch remained at python-watchfiles 1.1.1-3. The upstream release drops Python 3.9, adds Python 3.15 classifiers, raises the Rust MSRV to 1.83, and updates PyO3 to 0.28.3 without changing runtime dependencies beyond anyio.",
       "After publishing a rebuilt package, verify `import watchfiles` and a minimal Python file-watch import path through the installed local Python lane."
     ],
-    "upstream_version": "1.1.1",
+    "upstream_version": "1.2.0",
     "url": "https://github.com/samuelcolvin/watchfiles"
   },
   "provenance": {
     "output_root": "packages",
     "recipe_author": "Blackcat Informatics Inc.",
-    "recipe_commit": "a1d7a68",
-    "recipe_date": "20260427",
-    "recipe_history_count": 16,
+    "recipe_commit": "3f15f9f",
+    "recipe_date": "20260508",
+    "recipe_history_count": 17,
     "recipe_repo": "https://github.com/paudley/ai-notes",
     "recipe_subdir": "strix-halo",
     "repo_subpath": "."
@@ -95,7 +97,7 @@
     "patches": [],
     "phase": "H",
     "repo": null,
-    "src_dir": null,
+    "src_dir": "watchfiles-1.2.0",
     "steps": [
       31
     ]

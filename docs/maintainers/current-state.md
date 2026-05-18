@@ -48,6 +48,18 @@ for TorchVision, vLLM, AITER, TorchAO, and Torch-MIGraphX.
 bounded `dynamo-resnet-tiny` and `pt2e-resnet-tiny` compiled probes both pass
 on the Radeon 8060S with max absolute difference `0.00000001`.
 
+Watchfiles 1.2.0 source and package-build preparation is in progress but not
+installed. The package now renders as `python-watchfiles-gfx1151 1.2.0-1`.
+Upstream watchfiles 1.2.0 drops Python 3.9 support, adds Python 3.15
+classifiers, raises the Rust MSRV to 1.83, and updates PyO3 to 0.28.3 while
+keeping the runtime dependency on AnyIO. Arch `python-watchfiles` remains at
+`1.1.1-3`, so no Arch baseline carry is adopted for this slice.
+`makepkg --verifysource` and `makepkg --nobuild --nodeps --force` passed for
+`packages/python-watchfiles-gfx1151`, and `tools/amerge` plan `2973e241`
+built `python-watchfiles-gfx1151 1.2.0-1`. Deploy/install and installed import
+smoke remain open in `docs/maintainers/update-candidates.toml` and
+`docs/backlog.md` because noninteractive sudo was unavailable in this session.
+
 The source-lane contract cleanup is validated and installed. AITER now uses the
 prerelease-enabled GitHub release lane at `v0.1.14-rc0`, packaged as
 `python-amd-aiter-gfx1151 0.1.14rc0-1`, and Lemonade now tracks the fork

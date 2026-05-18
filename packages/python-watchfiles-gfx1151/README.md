@@ -6,8 +6,8 @@
 - Scaffold template: `rust-wheel-pypi`
 - Recipe build method: `cargo`
 - Upstream repo: `https://github.com/samuelcolvin/watchfiles`
-- Package version: `1.1.1`
-- Recipe revision: `a1d7a68 (20260427, 16 commits touching recipe path)`
+- Package version: `1.2.0`
+- Recipe revision: `3f15f9f (20260508, 17 commits touching recipe path)`
 - Recipe steps: `31`
 - Recipe dependencies: `cpython`
 - Recorded reference packages: `extra/python-watchfiles, cachyos-extra-znver4/python-watchfiles`
@@ -41,6 +41,7 @@ Rust codegen lane as the rest of the optimized local wheel stack.
 ## Update Notes
 
 - Check Arch first for watchfiles release and any maturin/build-backend metadata changes before updating.
+- On 2026-05-18, adopted watchfiles 1.2.0 while Arch remained at python-watchfiles 1.1.1-3. The upstream release drops Python 3.9, adds Python 3.15 classifiers, raises the Rust MSRV to 1.83, and updates PyO3 to 0.28.3 without changing runtime dependencies beyond anyio.
 - After publishing a rebuilt package, verify `import watchfiles` and a minimal Python file-watch import path through the installed local Python lane.
 
 ## Maintainer Starting Points
