@@ -2,6 +2,11 @@
 
 ## Packaging And Build Hygiene
 
+- The 2026-05-18 Python 3.14.5 rebuild lane is adopted. `python-gfx1151`
+  now tracks CPython `3.14.5` with Arch `python 3.14.5-1` as the integration
+  baseline. Source verification, package source preparation, package build,
+  deploy/install, installed Python/import smokes, ROCm host visibility, and
+  focused vLLM/TorchAO and Qwen3.5 live scenarios passed on 2026-05-18.
 - The 2026-05-18 source-lane contract cleanup is adopted. AITER now tracks the
   prerelease-enabled GitHub release lane at `v0.1.14-rc0`, and the Lemonade
   bundle now tracks the fork default branch at
@@ -63,11 +68,6 @@
   rebuilt after the corrected PyTorch deploy through plan
   `20260511T081446-f56bde47`; and affected live scenarios passed in
   `docs/worklog/inference-runs/20260511T083036`.
-- Python 3.14.5 coordinated rebuild lane: Python 3.14.5 is reviewed as
-  baseline drift but remains a coordinated interpreter rebuild lane rather
-  than part of the 2026-05-07 source bundle.
-  Keep `python-gfx1151` aligned with Arch's Python package shape until that
-  rebuild lane is opened.
 - Local python-pydantic ABI lane: Arch `python-pydantic-core 2.46.4-1` and
   PyPI pydantic-core 2.46.4 are reviewed as baseline drift. Keep
   `python-pydantic-core-gfx1151` aligned with Arch's pydantic-core ABI for the

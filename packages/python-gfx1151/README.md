@@ -6,8 +6,8 @@
 - Scaffold template: `autoconf-python`
 - Recipe build method: `autoconf`
 - Upstream repo: `https://github.com/python/cpython.git`
-- Package version: `3.14.4`
-- Recipe revision: `a1d7a68 (20260427, 16 commits touching recipe path)`
+- Package version: `3.14.5`
+- Recipe revision: `3f15f9f (20260508, 17 commits touching recipe path)`
 - Recipe steps: `8`
 - Recipe dependencies: `therock`
 - Recorded reference packages: `core/python, cachyos-znver4/python`
@@ -17,7 +17,7 @@
 
 ## Recipe notes
 
-Python 3.13 built with PGO + LTO + amdclang for Zen 5.
+Python 3.14.x built with PGO + LTO + amdclang for Zen 5.
 
 PGO (Profile-Guided Optimization): runs the test suite as training
 data, then recompiles with branch prediction hints. LTO (thin):

@@ -2,6 +2,26 @@
 
 Status as of 2026-05-18.
 
+The Python 3.14.5 coordinated rebuild lane is validated and installed.
+`python-gfx1151` now tracks CPython `3.14.5`, with Arch `python 3.14.5-1` as
+the integration baseline and source checksum
+`7e32597b99e5d9a39abed35de4693fa169df3e5850d4c334337ffd6a19a36db6`.
+`makepkg --verifysource` and `makepkg --nobuild --nodeps --force` passed for
+`packages/python-gfx1151`, and `tools/amerge` plan `a13c7d1d` built
+`python-gfx1151 3.14.5-1`. Deploy plan `fb5bf9c8` published and installed the
+package; the reference host reports `python-gfx1151 3.14.5-1` from `pacman -Q`.
+
+Installed Python validation passed on 2026-05-18. `python -V` reports
+`Python 3.14.5`, and the installed interpreter imports `ssl`, `sqlite3`,
+`lzma`, `ctypes`, `decimal`, and `sysconfig` with SOABI
+`cpython-314-x86_64-linux-gnu`. Installed runtime imports passed for
+`torch 2.11.0`, ROCm HIP `7.12.60610`, `vllm 0.21.0`, AITER, and
+Transformers `5.8.1`; `vllm --version` reports `0.21.0`.
+Host ROCm visibility reports `gfx1151`. The focused downstream live scenarios
+`vllm.torchao.tiny.generate` and `vllm.qwen3_5.0_8b.text.basic` passed at
+`docs/worklog/inference-runs/20260518T053712` in `37.711251` and `135.212036`
+seconds with `HF_HUB_CACHE=<testing HF hub cache root>`.
+
 The source-lane contract cleanup is validated and installed. AITER now uses the
 prerelease-enabled GitHub release lane at `v0.1.14-rc0`, packaged as
 `python-amd-aiter-gfx1151 0.1.14rc0-1`, and Lemonade now tracks the fork
@@ -1579,7 +1599,7 @@ The following smoke checks have already passed on the reference host:
 
 ## Important Package Decisions
 
-- `python-gfx1151` is rebased onto Arch/Cachy Python `3.14.4`, not the
+- `python-gfx1151` is rebased onto Arch/Cachy Python `3.14.5`, not the
   recipe's older Python `3.13.x` pin.
 - `amdsmi-gfx1151` now installs an `amd_smi.pth` import hook into Python
   `site-packages`, so Python `3.14` can import the ROCm-shipped `amdsmi`
