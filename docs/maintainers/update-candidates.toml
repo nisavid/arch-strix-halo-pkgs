@@ -1055,10 +1055,10 @@ family = "therock"
 packages = ["therock-gfx1151"]
 source_kind = "submodule"
 previous_recorded = "a1d7a6816dd2c456bad9fcc7d61c53a4bd8c5fbd"
-latest = "3f15f9f1318491c9ee03782d8b2ebd41391de118"
+latest = "adopted 3f15f9f1318491c9ee03782d8b2ebd41391de118"
 discovery_status = "branch_head_ahead"
 disposition = "adopted"
-disposition_reason = "Adopted the ai-notes submodule at 3f15f9f1318491c9ee03782d8b2ebd41391de118 in the 2026-05-10 follow-up refresh. Runtime validation for the packages that consumed updated source metadata passed by 2026-05-11; the new llamacpp_atomic recipe surface remains a separate package-policy follow-up rather than an implicit package adoption."
+disposition_reason = "Adopted the ai-notes submodule at 3f15f9f1318491c9ee03782d8b2ebd41391de118 in the 2026-05-10 follow-up refresh. The latest value is label-qualified after the TheRock 7.13 adoption so the ledger retains this historical submodule record without matching the current TheRock family alongside the newer release candidate. Runtime validation for the packages that consumed updated source metadata passed by 2026-05-11; the new llamacpp_atomic recipe surface remains a separate package-policy follow-up rather than an implicit package adoption."
 salient_changes = [
   "blackcat-ai-notes moved beyond the adopted a1d7a681 recipe input",
   "Recipe input changes can affect TheRock provenance and generated package surfaces",

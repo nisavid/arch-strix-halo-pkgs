@@ -19,7 +19,7 @@ packages = ["therock-gfx1151"]
 priority = "high"
 workflow = "recipe_update"
 checks = [
-  { id = "release", role = "primary", kind = "github_release", repo = "ROCm/TheRock", recorded = "7.12", tag_prefix = "therock-", comparison = "pep440", include_prereleases = false },
+  { id = "release", role = "primary", kind = "github_release", repo = "ROCm/TheRock", recorded = "7.13", tag_prefix = "therock-", comparison = "pep440", include_prereleases = false },
   { id = "ai-notes", role = "primary", kind = "submodule", path = "upstream/ai-notes", ref = "refs/heads/main", recorded = "3f15f9f1318491c9ee03782d8b2ebd41391de118", comparison = "sha" },
 ]
 
