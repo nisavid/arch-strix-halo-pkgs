@@ -1197,10 +1197,17 @@ def run_check(
     if not reports and unmatched:
         reports.append(selector_mismatch(unmatched))
     if not reports:
-        reports.extend(validate_source_contracts(root, families))
+        contract_findings = validate_source_contracts(root, families)
+        reports.extend(contract_findings)
+        failed_contract_families = {
+            str(finding.get("family"))
+            for finding in contract_findings
+            if finding.get("status") == "metadata_mismatch"
+        }
         reports.extend(
             family_report(name, family, clients)
             for name, family in sorted(families.items())
+            if name not in failed_contract_families
         )
     reports = enrich_candidate_dispositions(reports, load_candidate_ledger(root))
     report = {

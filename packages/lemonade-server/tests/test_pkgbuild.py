@@ -9,6 +9,10 @@ SYSTEM_BACKEND_PATCH = (
     REPO_ROOT
     / "packages/lemonade-server/0002-llamacpp-external-backends-are-system-managed.patch"
 )
+SYSTEM_METADATA_PATCH = (
+    REPO_ROOT
+    / "packages/lemonade-server/0004-system-managed-llamacpp-metadata.patch"
+)
 CONF = (
     REPO_ROOT
     / "packages/lemonade-server/pkg/lemonade-server/etc/lemonade/conf.d/10-llamacpp-gfx1151.conf"
@@ -69,6 +73,14 @@ def test_system_backend_patch_reuses_external_backend_lookup():
     assert "find_system_managed_external_backend" in text
     assert "if (!external_binary.empty())" in text
     assert "is_system_managed_external_backend" not in text
+
+
+def test_system_backend_metadata_overrides_require_external_backend():
+    text = SYSTEM_METADATA_PATCH.read_text()
+
+    assert 'if (!is_system_managed_external_backend(recipe, backend))' in text
+    assert "get_system_managed_backend_version_override" in text
+    assert "get_system_managed_backend_release_url_override" in text
 
 
 def _current_pkgbuild_version():
