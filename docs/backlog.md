@@ -2,7 +2,7 @@
 
 ## Packaging And Build Hygiene
 
-- Deploy and host-validate the 2026-05-15 refresh bundle. Source metadata is updated for
+- Run affected live-scenario validation for the 2026-05-15 refresh bundle. Source metadata is updated for
   vLLM 0.21.0, AITER main
   `7cfe51983cd9dd55c0355e34fb614e7c0de44e6e`, llama.cpp `b9165`, and
   stable-diffusion.cpp `r604.g0b82969`. Source verification and package source
@@ -10,8 +10,9 @@
   `llama.cpp-hip-gfx1151 b9165-1`, `llama.cpp-vulkan-gfx1151 b9165-1`,
   `python-amd-aiter-gfx1151 0.1.14rc1.dev27+g7cfe51983-1`,
   `python-vllm-rocm-gfx1151 0.21.0-1`, and
-  `stable-diffusion.cpp-vulkan-gfx1151 r604.g0b82969-1`. Deploy/install,
-  installed-smoke, and affected scenario gates remain open.
+  `stable-diffusion.cpp-vulkan-gfx1151 r604.g0b82969-1`. Deploy/install and
+  installed-smoke passed on 2026-05-17; affected live-scenario gates remain
+  open.
 - Adopt fork main `81f7e00608347fcbaa43eb89da53270d8e2370ef` for Lemonade
   package bundle.
   Freshness now tracks `nisavid/lemonade` `main` as the source lane because
