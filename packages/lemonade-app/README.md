@@ -7,7 +7,7 @@
 - Scaffold template: `lemonade-app`
 - Recipe build method: `pip`
 - Upstream repo: `https://github.com/nisavid/lemonade.git`
-- Package version: `10.4.0`
+- Package version: `10.5.0`
 - Recipe revision: `3f15f9f (20260508, 17 commits touching recipe path)`
 - Recipe steps: `34, 35, 36`
 - Recipe dependencies: `therock, llamacpp`
@@ -34,7 +34,7 @@ Reinstalling at compatible versions resolves conflicts.
 
 - Tauri desktop package split from the same lemonade monorepo.
 - Install a /usr/bin/lemonade-app wrapper that launches the packaged Tauri binary from /usr/share/lemonade-app so the shipped desktop entry resolves on PATH.
-- Pinned to nisavid/lemonade main commit 8bb0f7408e37c764d7172b24ad190a5014bc6a4d, whose CMake project version remains 10.4.0.
+- Pinned to nisavid/lemonade main commit 3a1a0dff2d5fe24f4369f91e76b8587b5c703e78, whose CMake project version is 10.5.0.
 
 ## Intentional Divergences
 

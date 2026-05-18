@@ -2,6 +2,14 @@
 
 ## Packaging And Build Hygiene
 
+- The 2026-05-18 source-lane contract cleanup is adopted. AITER now tracks the
+  prerelease-enabled GitHub release lane at `v0.1.14-rc0`, and the Lemonade
+  bundle now tracks the fork default branch at
+  `3a1a0dff2d5fe24f4369f91e76b8587b5c703e78`, aligned with upstream stable
+  `10.5.0`. Package build, publish/install, installed smokes, Lemonade
+  pooling/rerank scenarios, and the promoted Gemma 4 26B A4B vLLM text/server
+  scenarios passed on 2026-05-18. Future movement should come through the
+  normal source-lane freshness contracts rather than reopening this bundle.
 - The 2026-05-15 refresh bundle is adopted. Source metadata is updated for
   vLLM 0.21.0, AITER main
   `7cfe51983cd9dd55c0355e34fb614e7c0de44e6e`, llama.cpp `b9165`, and
@@ -21,23 +29,6 @@
   `vllm.gemma4.e2b.server.basic` passed in `141.647271` seconds and
   `vllm.qwen3_5.0_8b.text.basic` passed in `42.133449` seconds at
   `docs/worklog/inference-runs/20260517T232711`.
-- Adopt fork main `81f7e00608347fcbaa43eb89da53270d8e2370ef` for Lemonade
-  package bundle.
-  Freshness now tracks `nisavid/lemonade` `main` as the source lane because
-  this package bundle builds from the fork rather than from canonical upstream
-  releases. Package source remains pinned to
-  `8bb0f7408e37c764d7172b24ad190a5014bc6a4d`; review the branch range, repin
-  `lemonade-server` and `lemonade-app`, refresh patches if needed, rebuild,
-  publish, install, smoke, and run affected Lemonade scenarios before closing
-  this candidate.
-- Deploy and host-validate the fork-backed Lemonade source switch.
-  Source updated: `lemonade-server` and `lemonade-app` now build from
-  `nisavid/lemonade` commit `8bb0f7408e37c764d7172b24ad190a5014bc6a4d`.
-  Package-build gates passed locally for `lemonade-server 10.4.0-3`,
-  `lemonade-app 10.4.0-3`, and the `lemonade 10.4.0-1` meta package.
-  Publish to the `strix-halo-gfx1151` local pacman repo passed on
-  2026-05-14. Install, installed-smoke, service-smoke, and affected Lemonade
-  scenario validation remain open.
 - The 2026-05-14 refresh is adopted. It has source-update, package-build,
   deploy/install, installed-smoke, llama.cpp scenario-runner smoke, and
   affected Gemma 4 vLLM live-scenario evidence for llama.cpp `b9145`, AITER
