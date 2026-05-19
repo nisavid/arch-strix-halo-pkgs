@@ -8,6 +8,9 @@
       "This package stays close to the Arch baseline but deliberately narrows the target arch set to gfx1151 and reuses the recipe's amdclang build lane.",
       "The nested vendored Triton build is part of the package story here and must carry the same Python-3.14 compatibility patching as the standalone Triton package."
     ],
+    "source_patch_sha256sums": [
+      "cb21d853259a322067786634305272ddf6c0c116e74819a3f0ed17581b85db5d"
+    ],
     "source_patches": [
       "0001-gate-vendored-triton-nvidia-build-artifacts.patch"
     ],

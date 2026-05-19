@@ -984,6 +984,8 @@ build() {{
   {compiler_env_snippet(compiler_root)}  _setup_compiler_env
   local _rocm_llvm_bin="{compiler_root}"
   export PATH="${{PATH}}:/opt/rocm/bin"
+  # PyTorch also invokes non-CMake compiler probes; keep those on ROCm LLVM.
+  # CMake builds still use ccache through the compiler launcher exports below.
   export CC="${{_rocm_llvm_bin}}/amdclang"
   export CXX="${{_rocm_llvm_bin}}/amdclang++"
   export HIPCXX="${{_rocm_llvm_bin}}/clang++"
@@ -1099,7 +1101,7 @@ package() {{
     echo "PYTORCH_ROCM_VERSION_EMPTY: /opt/rocm/.info/version was empty for ${{_version_py}}" >&2
     return 1
   fi
-  python - "${{_version_py}}" "${{_hip_version}}" "${{_rocm_version}}" <<'PY'
+  /usr/bin/python - "${{_version_py}}" "${{_hip_version}}" "${{_rocm_version}}" <<'PY'
 from pathlib import Path
 import sys
 

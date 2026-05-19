@@ -80,7 +80,7 @@
     ],
     "recipe_key": "torchvision",
     "scaffold_notes": [
-      "Authoritative base: AUR python-torchvision-rocm 0.26.0-1 because it is the closest maintained ROCm packaging lane for torchvision; upstream TorchVision 0.27.0 is paired with the local PyTorch 2.12 lane.",
+      "Authoritative base: AUR python-torchvision-rocm 0.27.0-1 because it is the closest maintained ROCm packaging lane for torchvision; upstream TorchVision 0.27.0 is paired with the local PyTorch 2.12 lane.",
       "Advisory references: python-torchvision-rocm-bin for packaging shape around the ROCm variant and repo python-torchvision for generic Arch Python packaging conventions.",
       "The recipe must build against the source-tree torch headers from the paired PyTorch package, not against an arbitrary preinstalled wheel.",
       "Carry the setup.py source patch that makes ROCm HIP builds honor NVCC_FLAGS so the package-level source-path sanitizer also applies to .hip translation units.",

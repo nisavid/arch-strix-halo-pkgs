@@ -19,7 +19,7 @@ provides=(python-aotriton=0.12b)
 conflicts=(python-aotriton)
 replaces=()
 source=('aotriton::git+https://github.com/ROCm/aotriton#tag=0.12b' 'aotriton-triton::git+https://github.com/ROCmSoftwarePlatform/triton.git#commit=db82b800cd4b73e3fa586e1819b314f53bfbad4c' 0001-gate-vendored-triton-nvidia-build-artifacts.patch)
-sha256sums=(SKIP SKIP SKIP)
+sha256sums=(SKIP SKIP cb21d853259a322067786634305272ddf6c0c116e74819a3f0ed17581b85db5d)
 
 prepare() {
   cd "$srcdir/aotriton"

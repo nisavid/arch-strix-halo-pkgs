@@ -772,7 +772,10 @@ def test_pytorch_rocm_renderer_uses_source_patches_for_magma_fix() -> None:
     assert "PYTORCH_ROCM_VERSION_REWRITE_FAILED" in pkgbuild
     assert 'export PYTHONPYCACHEPREFIX="$srcdir/.python-pycache"' in pkgbuild
     assert '/usr/bin/python -m installer --destdir="$pkgdir" "$_wheel"' in pkgbuild
+    assert '/usr/bin/python - "${_version_py}" "${_hip_version}" "${_rocm_version}"' in pkgbuild
     assert 'export PATH="${PATH}:/opt/rocm/bin"' in pkgbuild
+    assert "PyTorch also invokes non-CMake compiler probes" in pkgbuild
+    assert "CMake builds still use ccache through the compiler launcher exports below" in pkgbuild
     assert 'export CC="${_rocm_llvm_bin}/amdclang"' in pkgbuild
     assert 'export CXX="${_rocm_llvm_bin}/amdclang++"' in pkgbuild
     assert 'export HIPCXX="${_rocm_llvm_bin}/clang++"' in pkgbuild
