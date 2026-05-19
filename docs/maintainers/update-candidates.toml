@@ -120,8 +120,8 @@ source_kind = "pypi"
 previous_recorded = "1.1.1"
 latest = "1.2.0"
 discovery_status = "stable_update_available"
-disposition = "tracked"
-disposition_reason = "Source metadata is updated to watchfiles 1.2.0, package scaffolds were rerendered, source verification and source preparation passed, and tools/amerge build plan 2973e241 produced python-watchfiles-gfx1151 1.2.0-1. Keep tracked until deploy/install and installed import smoke pass."
+disposition = "adopted"
+disposition_reason = "Source metadata is updated to watchfiles 1.2.0, package scaffolds were rerendered, source verification and source preparation passed, tools/amerge build plan 2973e241 produced python-watchfiles-gfx1151 1.2.0-1, deploy/install plan a2428587 completed, pacman -Q reports python-watchfiles-gfx1151 1.2.0-1, and the installed import smoke passed."
 salient_changes = [
   "watchfiles 1.2.0 drops Python 3.9 support, adds Python 3.15 classifiers, raises the Rust MSRV to 1.83, and updates PyO3 to 0.28.3",
   "Arch python-watchfiles remains at 1.1.1-3, so no Arch baseline carry was adopted",
@@ -129,11 +129,11 @@ salient_changes = [
 ]
 patch_carry_overlap = true
 package_source_update_needed = false
-host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
-next_gate_label = "Deploy/install watchfiles 1.2.0-1 and run installed import smoke"
-last_reviewed = "2026-05-18"
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Adopted; monitor future watchfiles releases through the normal freshness sweep"
+last_reviewed = "2026-05-19"
 
 [candidates."blackcat-ai-notes-a1d7a681"]
 family = "therock"
