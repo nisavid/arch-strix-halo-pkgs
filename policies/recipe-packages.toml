@@ -444,7 +444,7 @@ sha256sums = ["04c588d80e63903e1e4444db8a1c32dc56e4080ed48782555e1d00752d6edb17"
 src_subdir = "vision-0.27.0"
 patches_dir = "patches/python-torchvision-rocm-gfx1151"
 scaffold_notes = [
-  "Authoritative base: AUR python-torchvision-rocm 0.26.0-1 because it is the closest maintained ROCm packaging lane for torchvision; upstream TorchVision 0.27.0 is paired with the local PyTorch 2.12 lane.",
+  "Authoritative base: AUR python-torchvision-rocm 0.27.0-1 because it is the closest maintained ROCm packaging lane for torchvision; upstream TorchVision 0.27.0 is paired with the local PyTorch 2.12 lane.",
   "Advisory references: python-torchvision-rocm-bin for packaging shape around the ROCm variant and repo python-torchvision for generic Arch Python packaging conventions.",
   "The recipe must build against the source-tree torch headers from the paired PyTorch package, not against an arbitrary preinstalled wheel.",
   "Carry the setup.py source patch that makes ROCm HIP builds honor NVCC_FLAGS so the package-level source-path sanitizer also applies to .hip translation units.",
@@ -559,6 +559,7 @@ source_refs = [
 source_patches = [
   "0001-gate-vendored-triton-nvidia-build-artifacts.patch"
 ]
+extra_sha256sums = ["cb21d853259a322067786634305272ddf6c0c116e74819a3f0ed17581b85db5d"]
 sha256sums = ["SKIP", "SKIP"]
 submodule_sources = { "third_party/triton" = "aotriton-triton" }
 src_subdir = "aotriton"
@@ -2222,7 +2223,7 @@ recipe_key = "lemonade"
 template = "lemonade-server"
 upstream_version = "10.5.0"
 pkgdesc = "Local AI server runtime rebuilt for Strix Halo gfx1151"
-pkgrel = 1
+pkgrel = 2
 url = "https://github.com/nisavid/lemonade"
 repo = "https://github.com/nisavid/lemonade.git"
 license = ["Apache-2.0"]

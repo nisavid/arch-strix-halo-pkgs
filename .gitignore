@@ -21,6 +21,7 @@ packages/*/torchao/
 packages/*/triton/
 packages/*/vllm/
 packages/*/aotriton/
+packages/*/aotriton-triton/
 packages/*/aiter/
 packages/*/aotriton-aiter/
 packages/*/aotriton-incbin/

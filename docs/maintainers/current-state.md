@@ -7,7 +7,7 @@ live-validated. The installed reference host reports
 `python-numpy-gfx1151 2.4.6-1`, `python-aotriton-gfx1151 0.12b-1`,
 `llama.cpp-hip-gfx1151 b9222-1`, `llama.cpp-vulkan-gfx1151 b9222-1`,
 `stable-diffusion.cpp-vulkan-gfx1151 r629.gcaa823a-1`,
-`lemonade-server 10.5.0-1`, `python-pytorch-opt-rocm-gfx1151 2.12.0-1`,
+`lemonade-server 10.5.0-2`, `python-pytorch-opt-rocm-gfx1151 2.12.0-1`,
 `python-torchvision-rocm-gfx1151 0.27.0-1`, and
 `python-vllm-rocm-gfx1151 0.21.0-3` from `pacman -Q`.
 
@@ -16,6 +16,8 @@ AOTriton, both llama.cpp backends, stable-diffusion.cpp, Lemonade, PyTorch,
 TorchVision, and the vLLM compatibility rebuild. Package build gates produced
 the adopted packages above; vLLM was rebuilt at pkgrel 3 after the installed
 PyTorch 2.12 lane exposed an ABI mismatch in the older vLLM native extensions.
+The Lemonade package was rebuilt and installed at pkgrel 2 so the refreshed
+system-managed llama.cpp backend metadata is visible to package managers.
 Deploy/install passed after the operator installed the generated packages.
 
 Installed smokes passed for NumPy import, PyTorch import and CPU tensor to
