@@ -5,7 +5,7 @@
 # Package recipe key: llamacpp
 
 pkgname=llama.cpp-hip-gfx1151
-pkgver=b9165
+pkgver=b9222
 pkgrel=1
 pkgdesc='llama.cpp ROCm backend rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
@@ -18,11 +18,11 @@ options=()
 provides=(llama.cpp-hip-gfx1151 llama.cpp-hip)
 conflicts=(llama.cpp-hip)
 replaces=()
-source=(llama.cpp-769cc93a43b51bf6013986180c73ee60cf24cede.tar.gz::https://github.com/ggml-org/llama.cpp/archive/769cc93a43b51bf6013986180c73ee60cf24cede.tar.gz)
+source=(llama.cpp-9a532ae4bab1b164052ce60a738f78538b421c66.tar.gz::https://github.com/ggml-org/llama.cpp/archive/9a532ae4bab1b164052ce60a738f78538b421c66.tar.gz)
 sha256sums=(SKIP)
 
 build() {
-  cd "$srcdir/llama.cpp-769cc93a43b51bf6013986180c73ee60cf24cede"
+  cd "$srcdir/llama.cpp-9a532ae4bab1b164052ce60a738f78538b421c66"
 
   _setup_compiler_env() {
   local _compiler_root="/opt/rocm/lib/llvm/bin"
@@ -98,7 +98,7 @@ build() {
 }
 
 package() {
-  cd "$srcdir/llama.cpp-769cc93a43b51bf6013986180c73ee60cf24cede"
+  cd "$srcdir/llama.cpp-9a532ae4bab1b164052ce60a738f78538b421c66"
   local build_root="$srcdir/build-hip"
   local install_root="/opt/llama.cpp-hip-gfx1151"
 
@@ -124,5 +124,5 @@ exec /opt/llama.cpp-hip-gfx1151/bin/${_base} "\$@"
 EOF
     done
   fi
-  install -Dm644 "$srcdir/llama.cpp-769cc93a43b51bf6013986180c73ee60cf24cede/LICENSE" "$pkgdir/usr/share/licenses/llama.cpp-hip-gfx1151/LICENSE"
+  install -Dm644 "$srcdir/llama.cpp-9a532ae4bab1b164052ce60a738f78538b421c66/LICENSE" "$pkgdir/usr/share/licenses/llama.cpp-hip-gfx1151/LICENSE"
 }

@@ -6,8 +6,8 @@
 - Scaffold template: `native-wheel-pypi`
 - Recipe build method: `pip`
 - Upstream repo: `https://github.com/numpy/numpy`
-- Package version: `2.4.4`
-- Recipe revision: `a1d7a68 (20260427, 16 commits touching recipe path)`
+- Package version: `2.4.6`
+- Recipe revision: `3f15f9f (20260508, 17 commits touching recipe path)`
 - Recipe steps: `32`
 - Recipe dependencies: `cpython, pytorch`
 - Recorded reference packages: `extra/python-numpy, cachyos-extra-znver4/python-numpy`

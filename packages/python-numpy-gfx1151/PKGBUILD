@@ -5,8 +5,8 @@
 # Package recipe key: native_wheels
 
 pkgname=python-numpy-gfx1151
-pkgver=2.4.4
-pkgrel=3
+pkgver=2.4.6
+pkgrel=1
 pkgdesc='Scientific tools for Python rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://github.com/numpy/numpy
@@ -18,11 +18,11 @@ options=()
 provides=(python-numpy)
 conflicts=(python-numpy)
 replaces=()
-source=(https://files.pythonhosted.org/packages/source/n/numpy/numpy-2.4.4.tar.gz)
-sha256sums=(2d390634c5182175533585cc89f3608a4682ccb173cc9bb940b2881c8d6f8fa0)
+source=(https://files.pythonhosted.org/packages/source/n/numpy/numpy-2.4.6.tar.gz)
+sha256sums=(f3a3570c4a2a16746ac2c31a7c7c7b0c186b95ce902e33db6f28094ed7387dda)
 
 build() {
-  cd "$srcdir/numpy-2.4.4"
+  cd "$srcdir/numpy-2.4.6"
 
   _setup_compiler_env() {
   local _compiler_root="/opt/rocm/lib/llvm/bin"
@@ -49,7 +49,7 @@ build() {
 }
 
   _setup_compiler_env
-  local _base_flags="-O3 -march=native -mprefer-vector-width=512 -mavx512f -mavx512dq -mavx512vl -mavx512bw -mllvm -enable-gvn-hoist -mllvm -enable-gvn-sink -famd-opt -Wno-error=unused-command-line-argument"
+  local _base_flags="-O3 -march=native -mprefer-vector-width=512 -mavx512f -mavx512dq -mavx512vl -mavx512bw -mllvm -enable-gvn-hoist -mllvm -enable-gvn-sink -Wno-error=unused-command-line-argument"
   local _wheel_flags
   _wheel_flags="$(printf '%s' "${_base_flags}" | sed -E 's/-mllvm (-[^ ]+)/-Xclang -mllvm -Xclang \1/g; s/  +/ /g; s/^ +| +$//g')"
   local _base_cflags="${CFLAGS:-}"
@@ -67,6 +67,6 @@ build() {
 }
 
 package() {
-  cd "$srcdir/numpy-2.4.4"
+  cd "$srcdir/numpy-2.4.6"
   python -m installer --destdir="$pkgdir" dist/*.whl
 }

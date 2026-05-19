@@ -5,8 +5,8 @@
 # Package recipe key: aotriton
 
 pkgname=python-aotriton-gfx1151
-pkgver=0.11.2b
-pkgrel=2
+pkgver=0.12b
+pkgrel=1
 pkgdesc='Ahead-of-time Triton math library rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://github.com/ROCm/aotriton
@@ -15,25 +15,22 @@ depends=(gcc-libs glibc hip-runtime-amd-gfx1151 hipsparselt-gfx1151 python-gfx11
 makedepends=(cmake git ninja pybind11 python-filelock python-iniconfig python-msgpack python-numpy-gfx1151 python-packaging python-pandas python-pluggy python-setuptools python-wheel python-pyyaml-gfx1151 rocm-llvm-gfx1151)
 optdepends=()
 options=()
-provides=(python-aotriton=0.11.2b)
+provides=(python-aotriton=0.12b)
 conflicts=(python-aotriton)
 replaces=()
-source=('aotriton::git+https://github.com/ROCm/aotriton#tag=0.11.2b' 'aotriton-triton::git+https://github.com/ROCmSoftwarePlatform/triton.git#commit=f75e44a96a54495d52fe82b1e684ec4e712c69d3' 'aotriton-aiter::git+https://github.com/ROCm/aiter.git#commit=01aae101b9e5e94d6c16a9514c9fb8df99c93150' 'aotriton-incbin::git+https://github.com/graphitemaster/incbin.git#commit=6e576cae5ab5810f25e2631f2e0b80cbe7dc8cbf' 'aotriton-pybind11::git+https://github.com/pybind/pybind11.git#commit=8a099e44b3d5f85b20f05828d919d2332a8de841')
-sha256sums=(SKIP SKIP SKIP SKIP SKIP)
+source=('aotriton::git+https://github.com/ROCm/aotriton#tag=0.12b' 'aotriton-triton::git+https://github.com/ROCmSoftwarePlatform/triton.git#commit=db82b800cd4b73e3fa586e1819b314f53bfbad4c' 0001-gate-vendored-triton-nvidia-build-artifacts.patch)
+sha256sums=(SKIP SKIP SKIP)
 
 prepare() {
   cd "$srcdir/aotriton"
 
   rm -rf "$srcdir/aotriton/third_party/triton"
   cp -a "$srcdir/aotriton-triton" "$srcdir/aotriton/third_party/triton"
-  rm -rf "$srcdir/aotriton/third_party/aiter"
-  cp -a "$srcdir/aotriton-aiter" "$srcdir/aotriton/third_party/aiter"
-  rm -rf "$srcdir/aotriton/third_party/incbin"
-  cp -a "$srcdir/aotriton-incbin" "$srcdir/aotriton/third_party/incbin"
-  rm -rf "$srcdir/aotriton/third_party/pybind11"
-  cp -a "$srcdir/aotriton-pybind11" "$srcdir/aotriton/third_party/pybind11"
   # Keep vendored Triton aligned with the standalone Python-3.14 compatibility fix we already apply in python-triton-gfx1151.
   git -C "$srcdir/aotriton/third_party/triton" cherry-pick -n c44b870bdd9e1ea8933fd4057b6b59a5e6e5407b || true
+  if ! patch --dry-run -R -Np1 -i "$srcdir/0001-gate-vendored-triton-nvidia-build-artifacts.patch" >/dev/null 2>&1; then
+    patch -Np1 -i "$srcdir/0001-gate-vendored-triton-nvidia-build-artifacts.patch"
+  fi
 }
 
 build() {
@@ -62,6 +59,9 @@ build() {
 }
 
   _setup_compiler_env
+  export TRITON_HOME="$srcdir/.triton-home"
+  export PIP_CACHE_DIR="$srcdir/.pip-cache"
+  export PYTHONPYCACHEPREFIX="$srcdir/.python-pycache"
   if [[ -n "${AOTRITON_REUSE_BUILD:-}" && -f "$srcdir/build/build.ninja" ]]; then
     :
   else

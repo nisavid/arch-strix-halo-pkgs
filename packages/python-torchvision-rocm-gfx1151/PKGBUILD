@@ -5,8 +5,8 @@
 # Package recipe key: torchvision
 
 pkgname=python-torchvision-rocm-gfx1151
-pkgver=0.26.0
-pkgrel=7
+pkgver=0.27.0
+pkgrel=1
 pkgdesc='Datasets, transforms, and models for computer vision with ROCm support, rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://github.com/pytorch/vision
@@ -15,11 +15,11 @@ depends=(ffmpeg libjpeg-turbo libpng python-numpy-gfx1151 python-pillow-gfx1151 
 makedepends=(cmake miopen-hip-gfx1151 ninja patchelf python-gfx1151 python-installer python-pip python-setuptools rocm-llvm-gfx1151)
 optdepends=()
 options=()
-provides=(python-torchvision-rocm=0.26.0 python-torchvision=0.26.0)
+provides=(python-torchvision-rocm=0.27.0 python-torchvision=0.27.0)
 conflicts=(python-torchvision-rocm python-torchvision)
 replaces=()
-source=(https://github.com/pytorch/vision/archive/refs/tags/v0.26.0.tar.gz 0001-setup-relative-sources.patch)
-sha256sums=(fb95b6b78b3801c4d4d6332f7a5a0b6c624588e1b39e0d6fa145227b0c749403 4318e3ac610fbc70563edda12ed137fead517d7617173d6ac7bdfcccabe00d7f)
+source=(https://github.com/pytorch/vision/archive/refs/tags/v0.27.0.tar.gz 0001-setup-relative-sources.patch)
+sha256sums=(04c588d80e63903e1e4444db8a1c32dc56e4080ed48782555e1d00752d6edb17 4318e3ac610fbc70563edda12ed137fead517d7617173d6ac7bdfcccabe00d7f)
 
 _apply_patch_if_needed() {
   local _patch_name="$1"
@@ -42,13 +42,13 @@ _apply_patch_if_needed() {
 }
 
 prepare() {
-  cd "$srcdir/vision-0.26.0"
+  cd "$srcdir/vision-0.27.0"
 
   _apply_patch_if_needed "0001-setup-relative-sources.patch"
 }
 
 build() {
-  cd "$srcdir/vision-0.26.0"
+  cd "$srcdir/vision-0.27.0"
 
     _apply_patch_if_needed "0001-setup-relative-sources.patch"
 
@@ -96,12 +96,13 @@ build() {
 }
 
 package() {
-  cd "$srcdir/vision-0.26.0"
+  cd "$srcdir/vision-0.27.0"
+  export PYTHONPYCACHEPREFIX="$srcdir/.python-pycache"
   local _wheel
   _wheel="$(ls dist/torchvision-*.whl 2>/dev/null | tail -n 1)"
-  python -m installer --destdir="$pkgdir" "$_wheel"
+  /usr/bin/python -m installer --destdir="$pkgdir" "$_wheel"
   local _site
-  _site="$(python - <<'PY'
+  _site="$(/usr/bin/python - <<'PY'
 import sysconfig
 print(sysconfig.get_path("platlib", vars={"base": "/usr", "platbase": "/usr"}))
 PY

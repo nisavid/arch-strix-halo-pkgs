@@ -14,7 +14,8 @@ MULTIARRAY = (
 
 def test_pkgbuild_pins_system_blas_and_lapack() -> None:
     text = PKGBUILD.read_text()
-    assert "pkgrel=3" in text
+    assert "pkgver=2.4.6" in text
+    assert "pkgrel=1" in text
     assert "-Csetup-args=-Dblas=openblas" in text
     assert "-Csetup-args=-Dlapack=openblas" in text
     assert "-Csetup-args=-Dallow-noblas=false" in text

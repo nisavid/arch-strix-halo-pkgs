@@ -1,0 +1,113 @@
+diff --git a/third_party/triton/CMakeLists.txt b/third_party/triton/CMakeLists.txt
+index 538f3332c..da655b801 100644
+--- a/third_party/triton/CMakeLists.txt
++++ b/third_party/triton/CMakeLists.txt
+@@ -448,7 +448,9 @@ if(TRITON_BUILD_PYTHON_MODULE)
+     COPYONLY)
+
+   # Build plugins when building libtriton since they depend on libtriton.
+-  add_subdirectory(examples/plugins)
++  if("nvidia" IN_LIST TRITON_CODEGEN_BACKENDS)
++    add_subdirectory(examples/plugins)
++  endif()
+ endif()
+
+ if (UNIX AND NOT APPLE AND NOT TRITON_EXT_ENABLED)
+diff --git a/third_party/triton/lib/Conversion/TritonInstrumentToLLVM/CMakeLists.txt b/third_party/triton/lib/Conversion/TritonInstrumentToLLVM/CMakeLists.txt
+index 8b2637bf9..d76a3a9c2 100644
+--- a/third_party/triton/lib/Conversion/TritonInstrumentToLLVM/CMakeLists.txt
++++ b/third_party/triton/lib/Conversion/TritonInstrumentToLLVM/CMakeLists.txt
+@@ -8,6 +8,11 @@ add_triton_library(TritonInstrumentToLLVM
+     TritonIR
+     TritonGPUIR
+     TritonInstrumentIR
++)
++
++if("nvidia" IN_LIST TRITON_CODEGEN_BACKENDS)
++  target_link_libraries(TritonInstrumentToLLVM PUBLIC
+     TritonNvidiaGPUIR
+     NVGPUIR
+-)
++  )
++endif()
+diff --git a/third_party/triton/lib/Dialect/TritonGPU/Transforms/CMakeLists.txt b/third_party/triton/lib/Dialect/TritonGPU/Transforms/CMakeLists.txt
+index 83f01cf79..a637e80e9 100644
+--- a/third_party/triton/lib/Dialect/TritonGPU/Transforms/CMakeLists.txt
++++ b/third_party/triton/lib/Dialect/TritonGPU/Transforms/CMakeLists.txt
+@@ -48,10 +48,15 @@ add_triton_library(TritonGPUTransforms
+   TritonIR
+   TritonTransforms
+   TritonGPUIR
+-  TritonNvidiaGPUIR
+-  NVWSIR
+-  NVWSTransforms
+   TritonToTritonGPU
+   TritonInstrumentIR
+   MLIRTransformUtils
+ )
++
++if("nvidia" IN_LIST TRITON_CODEGEN_BACKENDS)
++  target_link_libraries(TritonGPUTransforms PUBLIC
++    TritonNvidiaGPUIR
++    NVWSIR
++    NVWSTransforms
++  )
++endif()
+diff --git a/third_party/triton/third_party/nvidia/CMakeLists.txt b/third_party/triton/third_party/nvidia/CMakeLists.txt
+index 339f7d323..f1a7e5080 100644
+--- a/third_party/triton/third_party/nvidia/CMakeLists.txt
++++ b/third_party/triton/third_party/nvidia/CMakeLists.txt
+@@ -68,11 +68,8 @@ if(TRITON_BUILD_PYTHON_MODULE)
+       DEPENDS "${GSAN_RUNTIME_SRC}" ${GSAN_RUNTIME_HDRS}
+       COMMENT "Building GSan runtime"
+       VERBATIM)
+-  add_custom_target(TritonNVIDIAGSanRuntime ALL DEPENDS "${GSAN_RUNTIME_IR}")
+-
+   add_triton_plugin(TritonNVIDIA ${CMAKE_CURRENT_SOURCE_DIR}/triton_nvidia.cc LINK_LIBS TritonNVIDIAGPUToLLVM NVGPUToLLVM)
+   target_link_libraries(TritonNVIDIA PRIVATE Python3::Module pybind11::headers)
+-  add_dependencies(TritonNVIDIA TritonNVIDIAGSanRuntime)
+ endif()
+ if(TRITON_BUILD_UT)
+   add_subdirectory(unittest)
+diff --git a/third_party/triton/third_party/proton/Dialect/CMakeLists.txt b/third_party/triton/third_party/proton/Dialect/CMakeLists.txt
+index 9ef6bdc31..8f27d39ab 100644
+--- a/third_party/triton/third_party/proton/Dialect/CMakeLists.txt
++++ b/third_party/triton/third_party/proton/Dialect/CMakeLists.txt
+@@ -3,6 +3,10 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
+ add_subdirectory(include)
+ add_subdirectory(lib)
+ if(TRITON_BUILD_PYTHON_MODULE)
+-  add_triton_plugin(TritonProton ${CMAKE_CURRENT_SOURCE_DIR}/triton_proton.cc LINK_LIBS ProtonToProtonGPU ProtonGPUToLLVM ProtonAMDGPUToLLVM ProtonNVIDIAGPUToLLVM ProtonAnalysis)
++  set(PROTON_LINK_LIBS ProtonToProtonGPU ProtonGPUToLLVM ProtonAMDGPUToLLVM ProtonAnalysis)
++  if("nvidia" IN_LIST TRITON_CODEGEN_BACKENDS)
++    list(APPEND PROTON_LINK_LIBS ProtonNVIDIAGPUToLLVM)
++  endif()
++  add_triton_plugin(TritonProton ${CMAKE_CURRENT_SOURCE_DIR}/triton_proton.cc LINK_LIBS ${PROTON_LINK_LIBS})
+   target_link_libraries(TritonProton PRIVATE Python3::Module pybind11::headers)
+ endif()
+diff --git a/third_party/triton/third_party/proton/Dialect/include/Conversion/ProtonGPUToLLVM/CMakeLists.txt b/third_party/triton/third_party/proton/Dialect/include/Conversion/ProtonGPUToLLVM/CMakeLists.txt
+index 486052132..a32ebc70d 100644
+--- a/third_party/triton/third_party/proton/Dialect/include/Conversion/ProtonGPUToLLVM/CMakeLists.txt
++++ b/third_party/triton/third_party/proton/Dialect/include/Conversion/ProtonGPUToLLVM/CMakeLists.txt
+@@ -2,5 +2,7 @@ set(LLVM_TARGET_DEFINITIONS Passes.td)
+ mlir_tablegen(Passes.h.inc -gen-pass-decls --name ProtonGPUToLLVM)
+ add_public_tablegen_target(ProtonGPUConversionPassIncGen)
+
+-add_subdirectory(ProtonNvidiaGPUToLLVM)
++if("nvidia" IN_LIST TRITON_CODEGEN_BACKENDS)
++  add_subdirectory(ProtonNvidiaGPUToLLVM)
++endif()
+ add_subdirectory(ProtonAMDGPUToLLVM)
+diff --git a/third_party/triton/third_party/proton/Dialect/lib/ProtonGPUToLLVM/CMakeLists.txt b/third_party/triton/third_party/proton/Dialect/lib/ProtonGPUToLLVM/CMakeLists.txt
+index 3a568c218..ac4d54595 100644
+--- a/third_party/triton/third_party/proton/Dialect/lib/ProtonGPUToLLVM/CMakeLists.txt
++++ b/third_party/triton/third_party/proton/Dialect/lib/ProtonGPUToLLVM/CMakeLists.txt
+@@ -12,5 +12,7 @@ add_triton_library(ProtonGPUToLLVM
+     ProtonAnalysis
+ )
+
+-add_subdirectory(ProtonNvidiaGPUToLLVM)
++if("nvidia" IN_LIST TRITON_CODEGEN_BACKENDS)
++  add_subdirectory(ProtonNvidiaGPUToLLVM)
++endif()
+ add_subdirectory(ProtonAMDGPUToLLVM)

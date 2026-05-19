@@ -24,51 +24,97 @@ next_gate_path = ""
 next_gate_label = "Adopted; monitor future TheRock releases through the normal freshness sweep"
 last_reviewed = "2026-05-18"
 
-[candidates."llama-cpp-b9219"]
+[candidates."aocl-libm-5.3"]
+family = "aocl_libm"
+packages = ["aocl-libm-gfx1151"]
+source_kind = "github_release"
+previous_recorded = "5.2.2"
+latest = "5.3"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Found during the 2026-05-19 closeout freshness gate after the PyTorch 2.12 follow-up bundle. Keep as a separate follow-up lane because AOCL-LibM is source-built with local SCons toolchain carry, has direct math-library correctness risk, and needs source review, source verification, package build, deploy/install, installed payload checks, and downstream stable-diffusion.cpp smoke coverage before adoption."
+salient_changes = [
+  "AOCL-LibM 5.3 stable release is available after the current 5.2.2 package lane",
+  "The package is a downstream math library for local optimized packages and is intentionally not linked into CPython directly",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "AOCL-LibM 5.3 follow-up"
+last_reviewed = "2026-05-19"
+
+[candidates."lemonade-10.5.1-baseline"]
+family = "lemonade"
+packages = ["lemonade-server", "lemonade-app", "lemonade"]
+source_kind = "github_release"
+check_id = "upstream-release"
+baseline_latest = "10.5.1-1"
+previous_recorded = "10.5.0"
+latest = "10.5.1"
+discovery_status = "baseline_drift"
+disposition = "tracked"
+disposition_reason = "Found during the 2026-05-19 closeout freshness gate after the coordinated inference-stack bundle. Keep as a separate source-lane follow-up because the local package currently tracks the nisavid/lemonade fork main commit whose CMake project version remains 10.5.0, while canonical upstream and AUR baselines have advanced to 10.5.1."
+salient_changes = [
+  "Canonical upstream Lemonade 10.5.1 is available after the adopted fork-main 10.5.0 package lane",
+  "AUR lemonade-server and lemonade-desktop baselines have advanced to 10.5.1-1",
+  "The package source lane is the nisavid/lemonade fork main ref, so the next action is a source-lane review rather than a metadata-only baseline update",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "Lemonade 10.5.1 baseline follow-up"
+last_reviewed = "2026-05-19"
+
+[candidates."llama-cpp-b9222"]
 family = "llama_cpp"
 packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"]
 source_kind = "github_release"
 baseline_source_kind = "aur"
-baseline_latest = "b9209"
+baseline_latest = "b9222-3 / b9222-1"
 previous_recorded = "b9165 / b9139-1 / b7376-1"
-latest = "b9219"
+latest = "b9222"
 discovery_status = "stable_update_available"
-disposition = "tracked"
-disposition_reason = "Found during the 2026-05-18 closeout freshness gate after adopting TheRock 7.13. Keep as a follow-up lane because llama.cpp updates require source review, HIP and Vulkan package rebuilds, deploy/install, backend CLI smokes, and affected Lemonade or vLLM scenario validation."
+disposition = "adopted"
+disposition_reason = "Adopted on 2026-05-19. Both packaged backends were repinned to b9222, Lemonade backend metadata was refreshed to point at the b9222 system backends, source verification and package builds passed, deploy/install completed, installed backend and Lemonade smokes passed, and the affected vLLM Qwen3.5 scenario passed after the PyTorch 2.12 compatibility rebuild."
 salient_changes = [
-  "GitHub release b9219 is available after the adopted b9165 lane",
+  "GitHub release b9222 is adopted after the b9165 lane",
+  "The b9165..b9222 range includes ggml 0.12.0, MTP support, server/Web UI updates, Vulkan BF16/ROPE/SSM pipeline work, and removal of the old Hugging Face cache migration path",
   "AUR HIP and Vulkan baselines have also advanced",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
-next_gate_label = "2026-05-18 freshness follow-up bundle"
-last_reviewed = "2026-05-18"
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Adopted; monitor future llama.cpp releases through the normal freshness sweep"
+last_reviewed = "2026-05-19"
 
-[candidates."numpy-2.4.5"]
+[candidates."numpy-2.4.6"]
 family = "numpy"
 packages = ["python-numpy-gfx1151"]
 source_kind = "pypi"
 baseline_source_kind = "arch_package"
-baseline_latest = "2.4.5-1"
+baseline_latest = "2.4.6-1"
 previous_recorded = "2.4.4 / 2.4.4-1"
-latest = "2.4.5"
+latest = "2.4.6"
 discovery_status = "stable_update_available"
-disposition = "tracked"
-disposition_reason = "Found during the 2026-05-18 closeout freshness gate after adopting TheRock 7.13. Keep as a follow-up lane because NumPy is the BLAS provider imported before PyTorch ROCm global deps and changes require package rebuild, deploy/install, and downstream PyTorch/vLLM smoke coverage."
+disposition = "adopted"
+disposition_reason = "Adopted on 2026-05-19. Source metadata and rendered scaffolds are updated to NumPy 2.4.6, source verification and package build passed, deploy/install completed, installed NumPy import and PyTorch tensor-to-NumPy smokes passed, and the affected vLLM Qwen3.5 scenario passed after the coordinated PyTorch 2.12 lane."
 salient_changes = [
-  "PyPI NumPy 2.4.5 is available after the installed 2.4.4 lane",
-  "Arch python-numpy baseline has advanced to 2.4.5-1",
+  "PyPI NumPy 2.4.6 is adopted after the installed 2.4.4 lane",
+  "Arch python-numpy baseline has advanced to 2.4.6-1",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
-next_gate_label = "2026-05-18 freshness follow-up bundle"
-last_reviewed = "2026-05-18"
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Adopted; monitor future NumPy releases through the normal freshness sweep"
+last_reviewed = "2026-05-19"
 
 [candidates."rocm-pytorch-arch-2.12.0"]
 family = "rocm_pytorch"
@@ -79,19 +125,45 @@ baseline_latest = "2.12.0-1"
 previous_recorded = "96bfee122869125d32aa4ec9acc8c3597059188b / 2.11.0-4"
 latest = "2.12.0-1"
 discovery_status = "baseline_drift"
-disposition = "tracked"
-disposition_reason = "Found during the 2026-05-18 closeout freshness gate after adopting TheRock 7.13. Treat as a coordinated PyTorch 2.12 lane rather than a closeout fix because the local package currently tracks ROCm PyTorch 2.11 with downstream TorchVision, TorchAO, Torch-MIGraphX, vLLM, and AITER validation contracts."
+disposition = "adopted"
+disposition_reason = "Adopted on 2026-05-19. The package now tracks ROCm/pytorch release/2.12 at 4ddfe99d6da426414b7f0e587cdb1910f1c23eb3, carries the ROCm BLAS template-specialization export patch required for import-clean libtorch_hip.so, and is paired with TorchVision 0.27.0 plus vLLM 0.21.0-3. Source verification, package build, deploy/install, installed Python/GPU smokes, and the affected Qwen3.5 vLLM scenario passed."
 salient_changes = [
   "Arch python-pytorch-rocm baseline has advanced from 2.11.0-4 to 2.12.0-1",
-  "A PyTorch major/minor lane change affects the local ROCm extension and inference package closure",
+  "TorchVision 0.27.0 is paired with torch==2.12.0",
+  "vLLM native extensions needed a pkgrel 3 compatibility rebuild against PyTorch 2.12",
+  "ROCm BLAS template specializations are exported from libtorch_hip.so so installed torch imports cleanly",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
-next_gate_label = "Coordinated PyTorch 2.12 lane"
-last_reviewed = "2026-05-18"
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Adopted; monitor future ROCm PyTorch release/2.12 movement through the normal freshness sweep"
+last_reviewed = "2026-05-19"
+
+[candidates."aotriton-0.12b"]
+family = "aotriton"
+packages = ["python-aotriton-gfx1151"]
+source_kind = "github_release"
+baseline_source_kind = "arch_package"
+baseline_latest = "0.11.2b-1"
+previous_recorded = "0.11.2b / 0.11.2b-1"
+latest = "0.12b"
+discovery_status = "stable_update_available"
+disposition = "adopted"
+disposition_reason = "Adopted on 2026-05-19 because upstream 0.12b promotes gfx1151 out of the experimental target set. Source metadata and rendered scaffolds are updated, vendored Triton's optional NVIDIA build artifacts are backend-gated for this ROCm package, source verification and package build passed, deploy/install completed, installed payload checks passed, and the affected vLLM Qwen3.5 scenario passed after the coordinated PyTorch 2.12 lane."
+salient_changes = [
+  "AOTriton 0.12b is the adopted stable gfx1151-relevant release",
+  "The package now follows the release-owned Triton submodule for 0.12b",
+  "Vendored Triton's CUDA GSan/NVIDIA plugin wiring is gated away from the gfx1151 ROCm build",
+]
+patch_carry_overlap = true
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Adopted; monitor future AOTriton releases through the normal freshness sweep"
+last_reviewed = "2026-05-19"
 
 [candidates."stable-diffusion-cpp-caa823a"]
 family = "stable_diffusion_cpp"
@@ -100,18 +172,19 @@ source_kind = "git_ref"
 previous_recorded = "0b8296915c4094090cff6bd2e09a5e98288c3c7d"
 latest = "caa823a8c06a51288f0a01bb29e9bd8bcec30a8a"
 discovery_status = "branch_head_ahead"
-disposition = "tracked"
-disposition_reason = "Found during the 2026-05-18 closeout freshness gate after adopting TheRock 7.13. Keep as a follow-up lane because stable-diffusion.cpp changes require source review, package rebuild, deploy/install, and installed wrapper smokes before adoption."
+disposition = "adopted"
+disposition_reason = "Adopted on 2026-05-19. Source metadata and rendered scaffolds are updated to r629.gcaa823a, source verification and package build passed, deploy/install completed, and installed Vulkan wrapper startup smokes passed."
 salient_changes = [
-  "stable-diffusion.cpp upstream moved beyond the adopted r604.g0b82969 lane",
+  "stable-diffusion.cpp upstream moved beyond the adopted r604.g0b82969 lane to r629.gcaa823a",
+  "The adopted range includes LTX 2.3 support, Gradient Estimation sampler support, spare-VRAM budgeting, backend assignment work, restored LLM singleton dimensions, and ROCm 7.13 CI target updates",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
-next_gate_label = "2026-05-18 freshness follow-up bundle"
-last_reviewed = "2026-05-18"
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Adopted; monitor future stable-diffusion.cpp refs through the normal freshness sweep"
+last_reviewed = "2026-05-19"
 
 [candidates."watchfiles-1.2.0"]
 family = "watchfiles"
@@ -1262,8 +1335,8 @@ baseline_latest = "0.26.0-1"
 previous_recorded = "0.26.0"
 latest = "0.27.0"
 discovery_status = "stable_update_available"
-disposition = "rejected"
-disposition_reason = "Reviewed during the 2026-05-14 freshness sweep and not adopted because upstream TorchVision 0.27.0 metadata requires torch==2.12.0 while the local ROCm stack is currently the PyTorch 2.11 lane."
+disposition = "adopted"
+disposition_reason = "Adopted on 2026-05-19 as part of the coordinated PyTorch 2.12 lane. Source metadata and rendered scaffolds are updated to TorchVision 0.27.0, source verification and package build passed against the installed PyTorch 2.12 package, deploy/install completed, and installed import plus CPU NMS registration smokes passed after rebuilding TorchVision against the corrected PyTorch package."
 salient_changes = [
   "TorchVision 0.27.0 release is available",
   "Published metadata pins torch==2.12.0",
@@ -1273,8 +1346,8 @@ package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
 next_gate_path = ""
-next_gate_label = "Revisit with a coordinated local PyTorch 2.12 lane"
-last_reviewed = "2026-05-14"
+next_gate_label = "Adopted; monitor future TorchVision releases through the normal freshness sweep"
+last_reviewed = "2026-05-19"
 
 [candidates."vllm-0.21.0"]
 family = "vllm"
@@ -1286,7 +1359,7 @@ previous_recorded = "0.20.2"
 latest = "0.21.0"
 discovery_status = "stable_update_available"
 disposition = "adopted"
-disposition_reason = "Adopted in the 2026-05-15 refresh cycle. Source metadata and ROCm patch carry are refreshed for vLLM 0.21.0; source verification, package source preparation, focused package tests, and package build passed. Deploy/install, installed-smoke, and affected live-scenario gates are tracked in current-state until closeout."
+disposition_reason = "Adopted in the 2026-05-15 refresh cycle and closed on 2026-05-19 after the PyTorch 2.12 follow-up. Source metadata and ROCm patch carry are refreshed for vLLM 0.21.0; source verification, package source preparation, focused package tests, package build, deploy/install, installed native-extension imports, and affected live-scenario validation passed. The PyTorch 2.12 lane required a pkgrel 3 compatibility rebuild so vLLM's native extensions import cleanly against the new torch ABI."
 salient_changes = [
   "ROCm paged-attention shared-memory fixes",
   "AITER metadata and MoE updates",
@@ -1295,11 +1368,11 @@ salient_changes = [
 ]
 patch_carry_overlap = true
 package_source_update_needed = false
-host_validation_needed = true
-next_gate_kind = "current-state"
-next_gate_path = "docs/maintainers/current-state.md"
-next_gate_label = "Complete 2026-05-15 deploy/install and host validation gates"
-last_reviewed = "2026-05-15"
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Adopted; monitor future vLLM releases through the normal freshness sweep"
+last_reviewed = "2026-05-19"
 
 [candidates."aiter-main-7cfe519"]
 family = "aiter"

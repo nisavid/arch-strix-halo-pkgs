@@ -1,0 +1,193 @@
+diff --git i/aten/src/ATen/cuda/CUDABlas.cpp w/aten/src/ATen/cuda/CUDABlas.cpp
+index 748eecbc157..429191e54a4 100644
+--- i/aten/src/ATen/cuda/CUDABlas.cpp
++++ w/aten/src/ATen/cuda/CUDABlas.cpp
+@@ -1562,6 +1562,30 @@ void gemm<at::BFloat16, float>(CUDABLAS_GEMM_ARGTYPES_AND_C_DTYPE(at::BFloat16,
+   gemm_internal<at::BFloat16, float>(CUDABLAS_GEMM_ARGS(at::BFloat16));
+ }
+
++TORCH_CUDA_CPP_API void gemm_double_sfin_compat(CUDABLAS_GEMM_ARGTYPES(double))
++    __asm__("_ZN2at4cuda4blas4gemmIddTnPNSt9enable_ifIXntaaoosr3std7is_sameIT_N3c104HalfEEE5valuesr3std7is_sameIS4_NS5_8BFloat16EEE5valuesr3std7is_sameIT0_fEE5valueES4_E4typeELPd0EEEvcclllNS_10OpMathTypeIS4_E4typeEPKS4_lSH_lSF_PS8_l");
++TORCH_CUDA_CPP_API void gemm_double_sfin_compat(CUDABLAS_GEMM_ARGTYPES(double)) {
++  gemm_internal<double>(CUDABLAS_GEMM_ARGS(double));
++}
++
++TORCH_CUDA_CPP_API void gemm_float_sfin_compat(CUDABLAS_GEMM_ARGTYPES(float))
++    __asm__("_ZN2at4cuda4blas4gemmIffTnPNSt9enable_ifIXntaaoosr3std7is_sameIT_N3c104HalfEEE5valuesr3std7is_sameIS4_NS5_8BFloat16EEE5valuesr3std7is_sameIT0_fEE5valueES4_E4typeELPf0EEEvcclllNS_10OpMathTypeIS4_E4typeEPKS4_lSH_lSF_PS8_l");
++TORCH_CUDA_CPP_API void gemm_float_sfin_compat(CUDABLAS_GEMM_ARGTYPES(float)) {
++  gemm_internal<float>(CUDABLAS_GEMM_ARGS(float));
++}
++
++TORCH_CUDA_CPP_API void gemm_half_sfin_compat(CUDABLAS_GEMM_ARGTYPES(at::Half))
++    __asm__("_ZN2at4cuda4blas4gemmIN3c104HalfES4_TnPNSt9enable_ifIXntaaoosr3std7is_sameIT_S4_EE5valuesr3std7is_sameIS6_NS3_8BFloat16EEE5valuesr3std7is_sameIT0_fEE5valueES6_E4typeELPS4_0EEEvcclllNS_10OpMathTypeIS6_E4typeEPKS6_lSH_lSF_PS8_l");
++TORCH_CUDA_CPP_API void gemm_half_sfin_compat(CUDABLAS_GEMM_ARGTYPES(at::Half)) {
++  gemm_internal<at::Half>(CUDABLAS_GEMM_ARGS(at::Half));
++}
++
++TORCH_CUDA_CPP_API void gemm_bfloat16_sfin_compat(CUDABLAS_GEMM_ARGTYPES(at::BFloat16))
++    __asm__("_ZN2at4cuda4blas4gemmIN3c108BFloat16ES4_TnPNSt9enable_ifIXntaaoosr3std7is_sameIT_NS3_4HalfEEE5valuesr3std7is_sameIS6_S4_EE5valuesr3std7is_sameIT0_fEE5valueES6_E4typeELPS4_0EEEvcclllNS_10OpMathTypeIS6_E4typeEPKS6_lSH_lSF_PS8_l");
++TORCH_CUDA_CPP_API void gemm_bfloat16_sfin_compat(CUDABLAS_GEMM_ARGTYPES(at::BFloat16)) {
++  gemm_internal<at::BFloat16>(CUDABLAS_GEMM_ARGS(at::BFloat16));
++}
++
+
+ template <typename Dtype, typename C_Dtype>
+ bool gemm_and_bias(
+diff --git i/aten/src/ATen/cuda/CUDABlas.h w/aten/src/ATen/cuda/CUDABlas.h
+index 0295948311a..f31bc681aeb 100644
+--- i/aten/src/ATen/cuda/CUDABlas.h
++++ w/aten/src/ATen/cuda/CUDABlas.h
+@@ -52,52 +52,57 @@ private:
+ #define CUDABLAS_GEMM_DTYPE_IS_FLOAT_TYPE_AND_C_DTYPE_IS_FLOAT \
+     ((std::is_same<Dtype, at::Half>::value || std::is_same<Dtype, at::BFloat16>::value) && std::is_same<C_Dtype, float>::value)
+
++template <typename Dtype, typename C_Dtype = Dtype>
++void gemm_internal(CUDABLAS_GEMM_ARGTYPES_AND_C_DTYPE(Dtype, C_Dtype));
++
+ template <typename Dtype, typename C_Dtype = Dtype, typename std::enable_if<!CUDABLAS_GEMM_DTYPE_IS_FLOAT_TYPE_AND_C_DTYPE_IS_FLOAT, Dtype>::type* = nullptr>
+ inline void gemm(CUDABLAS_GEMM_ARGTYPES_AND_C_DTYPE(Dtype, C_Dtype)) {
+-  static_assert(false&&sizeof(Dtype),"at::cuda::blas::gemm: not implemented");
++  gemm_internal<Dtype, C_Dtype>(CUDABLAS_GEMM_ARGS(Dtype));
+ }
+
+ template <typename Dtype, typename C_Dtype, typename std::enable_if<CUDABLAS_GEMM_DTYPE_IS_FLOAT_TYPE_AND_C_DTYPE_IS_FLOAT, Dtype>::type* = nullptr>
+-void gemm(CUDABLAS_GEMM_ARGTYPES_AND_C_DTYPE(Dtype, C_Dtype));
++inline void gemm(CUDABLAS_GEMM_ARGTYPES_AND_C_DTYPE(Dtype, C_Dtype)) {
++  gemm_internal<Dtype, C_Dtype>(CUDABLAS_GEMM_ARGS(Dtype));
++}
+
+ template <>
+-void gemm<double>(CUDABLAS_GEMM_ARGTYPES(double));
++TORCH_CUDA_CPP_API void gemm<double>(CUDABLAS_GEMM_ARGTYPES(double));
+ template <>
+-void gemm<float>(CUDABLAS_GEMM_ARGTYPES(float));
++TORCH_CUDA_CPP_API void gemm<float>(CUDABLAS_GEMM_ARGTYPES(float));
+ template <>
+-void gemm<c10::complex<double>>(CUDABLAS_GEMM_ARGTYPES(c10::complex<double>));
++TORCH_CUDA_CPP_API void gemm<c10::complex<double>>(CUDABLAS_GEMM_ARGTYPES(c10::complex<double>));
+ template <>
+-void gemm<c10::complex<float>>(CUDABLAS_GEMM_ARGTYPES(c10::complex<float>));
++TORCH_CUDA_CPP_API void gemm<c10::complex<float>>(CUDABLAS_GEMM_ARGTYPES(c10::complex<float>));
+ template <>
+-void gemm<at::Half>(CUDABLAS_GEMM_ARGTYPES(at::Half));
++TORCH_CUDA_CPP_API void gemm<at::Half>(CUDABLAS_GEMM_ARGTYPES(at::Half));
+ template <>
+-void gemm<at::BFloat16>(CUDABLAS_GEMM_ARGTYPES(at::BFloat16));
++TORCH_CUDA_CPP_API void gemm<at::BFloat16>(CUDABLAS_GEMM_ARGTYPES(at::BFloat16));
+ template<>
+-void gemm<at::Half, float>(CUDABLAS_GEMM_ARGTYPES_AND_C_DTYPE(at::Half, float));
++TORCH_CUDA_CPP_API void gemm<at::Half, float>(CUDABLAS_GEMM_ARGTYPES_AND_C_DTYPE(at::Half, float));
+ template<>
+-void gemm<at::BFloat16, float>(CUDABLAS_GEMM_ARGTYPES_AND_C_DTYPE(at::BFloat16, float));
++TORCH_CUDA_CPP_API void gemm<at::BFloat16, float>(CUDABLAS_GEMM_ARGTYPES_AND_C_DTYPE(at::BFloat16, float));
+
+-template <typename Dtype, typename C_Dtype = Dtype>
++template <typename Dtype, typename C_Dtype>
+ inline void gemm_internal(CUDABLAS_GEMM_ARGTYPES_AND_C_DTYPE(Dtype, C_Dtype)) {
+   static_assert(false&&sizeof(Dtype),"at::cuda::blas::gemm_internal: not implemented");
+ }
+
+ template <>
+-void gemm_internal<double>(CUDABLAS_GEMM_ARGTYPES(double));
++TORCH_CUDA_CPP_API void gemm_internal<double>(CUDABLAS_GEMM_ARGTYPES(double));
+ template <>
+-void gemm_internal<float>(CUDABLAS_GEMM_ARGTYPES(float));
++TORCH_CUDA_CPP_API void gemm_internal<float>(CUDABLAS_GEMM_ARGTYPES(float));
+ template <>
+-void gemm_internal<c10::complex<double>>(CUDABLAS_GEMM_ARGTYPES(c10::complex<double>));
++TORCH_CUDA_CPP_API void gemm_internal<c10::complex<double>>(CUDABLAS_GEMM_ARGTYPES(c10::complex<double>));
+ template <>
+-void gemm_internal<c10::complex<float>>(CUDABLAS_GEMM_ARGTYPES(c10::complex<float>));
++TORCH_CUDA_CPP_API void gemm_internal<c10::complex<float>>(CUDABLAS_GEMM_ARGTYPES(c10::complex<float>));
+ template <>
+-void gemm_internal<at::Half>(CUDABLAS_GEMM_ARGTYPES(at::Half));
++TORCH_CUDA_CPP_API void gemm_internal<at::Half>(CUDABLAS_GEMM_ARGTYPES(at::Half));
+ template <>
+-void gemm_internal<at::BFloat16>(CUDABLAS_GEMM_ARGTYPES(at::BFloat16));
++TORCH_CUDA_CPP_API void gemm_internal<at::BFloat16>(CUDABLAS_GEMM_ARGTYPES(at::BFloat16));
+ template<>
+-void gemm_internal<at::Half, float>(CUDABLAS_GEMM_ARGTYPES_AND_C_DTYPE(at::Half, float));
++TORCH_CUDA_CPP_API void gemm_internal<at::Half, float>(CUDABLAS_GEMM_ARGTYPES_AND_C_DTYPE(at::Half, float));
+ template<>
+-void gemm_internal<at::BFloat16, float>(CUDABLAS_GEMM_ARGTYPES_AND_C_DTYPE(at::BFloat16, float));
++TORCH_CUDA_CPP_API void gemm_internal<at::BFloat16, float>(CUDABLAS_GEMM_ARGTYPES_AND_C_DTYPE(at::BFloat16, float));
+
+ enum GEMMAndBiasActivationEpilogue {
+   None,
+@@ -175,52 +180,57 @@ void scaled_gemm(
+ #define CUDABLAS_BGEMM_ARGS(Dtype) \
+   transa, transb, m, n, k, alpha, a, lda, stridea, b, ldb, strideb, beta, c, ldc, stridec, num_batches
+
++template <typename Dtype, typename C_Dtype = Dtype>
++void bgemm_internal(CUDABLAS_BGEMM_ARGTYPES_AND_C_DTYPE(Dtype, C_Dtype));
++
+ template <typename Dtype, typename C_Dtype = Dtype, typename std::enable_if<!CUDABLAS_GEMM_DTYPE_IS_FLOAT_TYPE_AND_C_DTYPE_IS_FLOAT, Dtype>::type* = nullptr>
+ inline void bgemm(CUDABLAS_BGEMM_ARGTYPES_AND_C_DTYPE(Dtype, C_Dtype)) {
+-  static_assert(false&&sizeof(Dtype),"at::cuda::blas::bgemm: not implemented");
++  bgemm_internal<Dtype, C_Dtype>(CUDABLAS_BGEMM_ARGS(Dtype));
+ }
+
+ template <typename Dtype, typename C_Dtype, typename std::enable_if<CUDABLAS_GEMM_DTYPE_IS_FLOAT_TYPE_AND_C_DTYPE_IS_FLOAT, Dtype>::type* = nullptr>
+-void bgemm(CUDABLAS_BGEMM_ARGTYPES_AND_C_DTYPE(Dtype, C_Dtype));
++inline void bgemm(CUDABLAS_BGEMM_ARGTYPES_AND_C_DTYPE(Dtype, C_Dtype)) {
++  bgemm_internal<Dtype, C_Dtype>(CUDABLAS_BGEMM_ARGS(Dtype));
++}
+
+ template <>
+-void bgemm<double>(CUDABLAS_BGEMM_ARGTYPES(double));
++TORCH_CUDA_CPP_API void bgemm<double>(CUDABLAS_BGEMM_ARGTYPES(double));
+ template <>
+-void bgemm<float>(CUDABLAS_BGEMM_ARGTYPES(float));
++TORCH_CUDA_CPP_API void bgemm<float>(CUDABLAS_BGEMM_ARGTYPES(float));
+ template <>
+-void bgemm<c10::complex<double>>(CUDABLAS_BGEMM_ARGTYPES(c10::complex<double>));
++TORCH_CUDA_CPP_API void bgemm<c10::complex<double>>(CUDABLAS_BGEMM_ARGTYPES(c10::complex<double>));
+ template <>
+-void bgemm<c10::complex<float>>(CUDABLAS_BGEMM_ARGTYPES(c10::complex<float>));
++TORCH_CUDA_CPP_API void bgemm<c10::complex<float>>(CUDABLAS_BGEMM_ARGTYPES(c10::complex<float>));
+ template <>
+-void bgemm<at::Half>(CUDABLAS_BGEMM_ARGTYPES(at::Half));
++TORCH_CUDA_CPP_API void bgemm<at::Half>(CUDABLAS_BGEMM_ARGTYPES(at::Half));
+ template <>
+-void bgemm<at::BFloat16>(CUDABLAS_BGEMM_ARGTYPES(at::BFloat16));
++TORCH_CUDA_CPP_API void bgemm<at::BFloat16>(CUDABLAS_BGEMM_ARGTYPES(at::BFloat16));
+ template<>
+-void bgemm<at::Half, float>(CUDABLAS_BGEMM_ARGTYPES_AND_C_DTYPE(at::Half, float));
++TORCH_CUDA_CPP_API void bgemm<at::Half, float>(CUDABLAS_BGEMM_ARGTYPES_AND_C_DTYPE(at::Half, float));
+ template<>
+-void bgemm<at::BFloat16, float>(CUDABLAS_BGEMM_ARGTYPES_AND_C_DTYPE(at::BFloat16, float));
++TORCH_CUDA_CPP_API void bgemm<at::BFloat16, float>(CUDABLAS_BGEMM_ARGTYPES_AND_C_DTYPE(at::BFloat16, float));
+
+-template <typename Dtype, typename C_Dtype = Dtype>
++template <typename Dtype, typename C_Dtype>
+ inline void bgemm_internal(CUDABLAS_BGEMM_ARGTYPES_AND_C_DTYPE(Dtype, C_Dtype)) {
+   static_assert(false&&sizeof(Dtype),"at::cuda::blas::bgemm_internal: not implemented");
+ }
+
+ template <>
+-void bgemm_internal<double>(CUDABLAS_BGEMM_ARGTYPES(double));
++TORCH_CUDA_CPP_API void bgemm_internal<double>(CUDABLAS_BGEMM_ARGTYPES(double));
+ template <>
+-void bgemm_internal<float>(CUDABLAS_BGEMM_ARGTYPES(float));
++TORCH_CUDA_CPP_API void bgemm_internal<float>(CUDABLAS_BGEMM_ARGTYPES(float));
+ template <>
+-void bgemm_internal<c10::complex<double>>(CUDABLAS_BGEMM_ARGTYPES(c10::complex<double>));
++TORCH_CUDA_CPP_API void bgemm_internal<c10::complex<double>>(CUDABLAS_BGEMM_ARGTYPES(c10::complex<double>));
+ template <>
+-void bgemm_internal<c10::complex<float>>(CUDABLAS_BGEMM_ARGTYPES(c10::complex<float>));
++TORCH_CUDA_CPP_API void bgemm_internal<c10::complex<float>>(CUDABLAS_BGEMM_ARGTYPES(c10::complex<float>));
+ template <>
+-void bgemm_internal<at::Half>(CUDABLAS_BGEMM_ARGTYPES(at::Half));
++TORCH_CUDA_CPP_API void bgemm_internal<at::Half>(CUDABLAS_BGEMM_ARGTYPES(at::Half));
+ template <>
+-void bgemm_internal<at::BFloat16>(CUDABLAS_BGEMM_ARGTYPES(at::BFloat16));
++TORCH_CUDA_CPP_API void bgemm_internal<at::BFloat16>(CUDABLAS_BGEMM_ARGTYPES(at::BFloat16));
+ template<>
+-void bgemm_internal<at::Half, float>(CUDABLAS_BGEMM_ARGTYPES_AND_C_DTYPE(at::Half, float));
++TORCH_CUDA_CPP_API void bgemm_internal<at::Half, float>(CUDABLAS_BGEMM_ARGTYPES_AND_C_DTYPE(at::Half, float));
+ template<>
+-void bgemm_internal<at::BFloat16, float>(CUDABLAS_BGEMM_ARGTYPES_AND_C_DTYPE(at::BFloat16, float));
++TORCH_CUDA_CPP_API void bgemm_internal<at::BFloat16, float>(CUDABLAS_BGEMM_ARGTYPES_AND_C_DTYPE(at::BFloat16, float));
+
+ #define CUDABLAS_TRSM_ARGTYPES(Dtype)                                  \
+   cublasHandle_t handle, cublasSideMode_t side, cublasFillMode_t uplo, \

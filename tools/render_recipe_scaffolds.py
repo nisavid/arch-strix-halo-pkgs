@@ -984,8 +984,12 @@ build() {{
   {compiler_env_snippet(compiler_root)}  _setup_compiler_env
   local _rocm_llvm_bin="{compiler_root}"
   export PATH="${{PATH}}:/opt/rocm/bin"
+  export CC="${{_rocm_llvm_bin}}/amdclang"
+  export CXX="${{_rocm_llvm_bin}}/amdclang++"
+  export HIPCXX="${{_rocm_llvm_bin}}/clang++"
   export CMAKE_C_COMPILER="${{_rocm_llvm_bin}}/amdclang"
   export CMAKE_CXX_COMPILER="${{_rocm_llvm_bin}}/amdclang++"
+  export CMAKE_HIP_COMPILER="${{_rocm_llvm_bin}}/clang++"
   export CMAKE_AR="${{_rocm_llvm_bin}}/llvm-ar"
   export CMAKE_RANLIB="${{_rocm_llvm_bin}}/llvm-ranlib"
   if command -v ccache >/dev/null 2>&1; then
@@ -1070,9 +1074,10 @@ EOF
 
 package() {{
   cd "$srcdir/{src_subdir}"
+  export PYTHONPYCACHEPREFIX="$srcdir/.python-pycache"
   local _wheel
   _wheel="$(ls dist/torch-*.whl 2>/dev/null | tail -n 1)"
-  python -m installer --destdir="$pkgdir" "$_wheel"
+  /usr/bin/python -m installer --destdir="$pkgdir" "$_wheel"
 
   local _site="$pkgdir/usr/lib/python3.14/site-packages"
   local _version_py="${{_site}}/torch/version.py"
@@ -1228,11 +1233,12 @@ build() {{
 
 package() {{
   cd "$srcdir/{src_subdir}"
+  export PYTHONPYCACHEPREFIX="$srcdir/.python-pycache"
   local _wheel
   _wheel="$(ls dist/torchvision-*.whl 2>/dev/null | tail -n 1)"
-  python -m installer --destdir="$pkgdir" "$_wheel"
+  /usr/bin/python -m installer --destdir="$pkgdir" "$_wheel"
   local _site
-  _site="$(python - <<'PY'
+  _site="$(/usr/bin/python - <<'PY'
 import sysconfig
 print(sysconfig.get_path("platlib", vars={{"base": "/usr", "platbase": "/usr"}}))
 PY
@@ -1312,9 +1318,20 @@ package() {{
                 'git -C "$srcdir/{src_subdir}/third_party/triton" cherry-pick -n c44b870bdd9e1ea8933fd4057b6b59a5e6e5407b || true'.format(src_subdir=src_subdir),
             ]
         )
+        for patch_name in policy_pkg.get("source_patches", []):
+            prepare_lines.extend(
+                [
+                    f'if ! patch --dry-run -R -Np1 -i "$srcdir/{patch_name}" >/dev/null 2>&1; then',
+                    f'  patch -Np1 -i "$srcdir/{patch_name}"',
+                    "fi",
+                ]
+            )
         build_body = f"""\
 build() {{
   {compiler_env_snippet(compiler_root)}  _setup_compiler_env
+  export TRITON_HOME="$srcdir/.triton-home"
+  export PIP_CACHE_DIR="$srcdir/.pip-cache"
+  export PYTHONPYCACHEPREFIX="$srcdir/.python-pycache"
   if [[ -n "${{AOTRITON_REUSE_BUILD:-}}" && -f "$srcdir/build/build.ninja" ]]; then
     :
   else
@@ -1463,7 +1480,7 @@ build() {{
   cd "$srcdir/{src_subdir}"
 
   {compiler_env_snippet(compiler_root)}  _setup_compiler_env
-  local _base_flags="-O3 -march=native -mprefer-vector-width=512 -mavx512f -mavx512dq -mavx512vl -mavx512bw -mllvm -enable-gvn-hoist -mllvm -enable-gvn-sink -famd-opt -Wno-error=unused-command-line-argument"
+  local _base_flags="-O3 -march=native -mprefer-vector-width=512 -mavx512f -mavx512dq -mavx512vl -mavx512bw -mllvm -enable-gvn-hoist -mllvm -enable-gvn-sink -Wno-error=unused-command-line-argument"
   local _wheel_flags
   _wheel_flags="$(printf '%s' "${{_base_flags}}" | sed -E 's/-mllvm (-[^ ]+)/-Xclang -mllvm -Xclang \\1/g; s/  +/ /g; s/^ +| +$//g')"
   local _base_cflags="${{CFLAGS:-}}"
@@ -1538,7 +1555,7 @@ package() {{
             native_wheel_build_preamble = ""
         else:
             native_wheel_build_preamble = f"""  {compiler_env_snippet(compiler_root)}  _setup_compiler_env
-  local _base_flags="-O3 -march=native -mprefer-vector-width=512 -mavx512f -mavx512dq -mavx512vl -mavx512bw -mllvm -enable-gvn-hoist -mllvm -enable-gvn-sink -famd-opt -Wno-error=unused-command-line-argument"
+  local _base_flags="-O3 -march=native -mprefer-vector-width=512 -mavx512f -mavx512dq -mavx512vl -mavx512bw -mllvm -enable-gvn-hoist -mllvm -enable-gvn-sink -Wno-error=unused-command-line-argument"
   local _wheel_flags
   _wheel_flags="$(printf '%s' "${{_base_flags}}" | sed -E 's/-mllvm (-[^ ]+)/-Xclang -mllvm -Xclang \\1/g; s/  +/ /g; s/^ +| +$//g')"
   local _base_cflags="${{CFLAGS:-}}"
