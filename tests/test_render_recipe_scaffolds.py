@@ -171,6 +171,7 @@ def test_native_wheel_renderer_applies_source_patches_and_build_config_settings(
     assert "    -Csetup-args=-Dblas=openblas \\\n" in pkgbuild
     assert "    -Csetup-args=-Dlapack=openblas\n" in pkgbuild
     assert "s/-famd-opt//g" not in pkgbuild
+    assert 'local _base_flags="-O3 -march=native -mprefer-vector-width=512 -mavx512f -mavx512dq -mavx512vl -mavx512bw -mllvm -enable-gvn-hoist -mllvm -enable-gvn-sink -Wno-error=unused-command-line-argument"' in pkgbuild
     assert 'local _base_cflags="${CFLAGS:-}"' in pkgbuild
     assert 'export CFLAGS="${_base_cflags:+${_base_cflags} }${_wheel_flags}"' in pkgbuild
     assert 'export CXXFLAGS="${_base_cxxflags:+${_base_cxxflags} }${_wheel_flags}"' in pkgbuild
@@ -601,6 +602,7 @@ def test_torchao_renderer_preserves_source_build_shape() -> None:
     assert "PYTORCH_ROCM_ARCH=gfx1151" in pkgbuild
     assert "VERSION_SUFFIX=" in pkgbuild
     assert "s/-famd-opt//g" not in pkgbuild
+    assert 'local _base_flags="-O3 -march=native -mprefer-vector-width=512 -mavx512f -mavx512dq -mavx512vl -mavx512bw -mllvm -enable-gvn-hoist -mllvm -enable-gvn-sink -Wno-error=unused-command-line-argument"' in pkgbuild
     assert 'export CXXFLAGS="${_base_cxxflags:+${_base_cxxflags} }${_wheel_flags}"' in pkgbuild
     assert 'export LDFLAGS="${_base_ldflags:+${_base_ldflags} }-famd-opt"' in pkgbuild
     assert "patchelf --set-rpath" in pkgbuild
@@ -625,6 +627,7 @@ def test_aotriton_renderer_stages_pinned_submodule_sources() -> None:
             "submodule_sources": {
                 "third_party/aiter": "aotriton-aiter",
             },
+            "source_patches": ["0001-gate-vendored-triton-nvidia-build-artifacts.patch"],
             "makedepends": ["git"],
         },
         {
@@ -646,6 +649,10 @@ def test_aotriton_renderer_stages_pinned_submodule_sources() -> None:
     assert 'cp -a "$srcdir/aotriton-aiter" "$srcdir/aotriton/third_party/aiter"' in pkgbuild
     assert "git submodule update --init --recursive" not in pkgbuild
     assert "cherry-pick -n c44b870bdd9e1ea8933fd4057b6b59a5e6e5407b" in pkgbuild
+    assert 'patch -Np1 -i "$srcdir/0001-gate-vendored-triton-nvidia-build-artifacts.patch"' in pkgbuild
+    assert 'export TRITON_HOME="$srcdir/.triton-home"' in pkgbuild
+    assert 'export PIP_CACHE_DIR="$srcdir/.pip-cache"' in pkgbuild
+    assert 'export PYTHONPYCACHEPREFIX="$srcdir/.python-pycache"' in pkgbuild
 
 
 def test_torch_migraphx_readme_uses_policy_notes_override() -> None:
@@ -763,8 +770,14 @@ def test_pytorch_rocm_renderer_uses_source_patches_for_magma_fix() -> None:
     assert "PYTORCH_VERSION_METADATA_MISSING" in pkgbuild
     assert "PYTORCH_HIP_VERSION_REWRITE_FAILED" in pkgbuild
     assert "PYTORCH_ROCM_VERSION_REWRITE_FAILED" in pkgbuild
+    assert 'export PYTHONPYCACHEPREFIX="$srcdir/.python-pycache"' in pkgbuild
+    assert '/usr/bin/python -m installer --destdir="$pkgdir" "$_wheel"' in pkgbuild
     assert 'export PATH="${PATH}:/opt/rocm/bin"' in pkgbuild
+    assert 'export CC="${_rocm_llvm_bin}/amdclang"' in pkgbuild
+    assert 'export CXX="${_rocm_llvm_bin}/amdclang++"' in pkgbuild
+    assert 'export HIPCXX="${_rocm_llvm_bin}/clang++"' in pkgbuild
     assert 'export CMAKE_CXX_COMPILER="${_rocm_llvm_bin}/amdclang++"' in pkgbuild
+    assert 'export CMAKE_HIP_COMPILER="${_rocm_llvm_bin}/clang++"' in pkgbuild
     assert 'export CMAKE_CXX_COMPILER_LAUNCHER="$(command -v ccache)"' in pkgbuild
     assert 'export CMAKE_AR="${_rocm_llvm_bin}/llvm-ar"' in pkgbuild
     assert 'export ROCM_PATH="/opt/rocm"' in pkgbuild
@@ -774,6 +787,43 @@ def test_pytorch_rocm_renderer_uses_source_patches_for_magma_fix() -> None:
     assert "cmake -P build/c10/cmake_install.cmake" in pkgbuild
     assert "cmake -P build/caffe2/cmake_install.cmake" in pkgbuild
     assert "cmake -DCMAKE_INSTALL_COMPONENT=dev -P build/cmake_install.cmake" in pkgbuild
+
+
+def test_torchvision_rocm_renderer_routes_bytecode_cache() -> None:
+    pkgbuild = render_recipe_scaffolds.render_pkgbuild(
+        "python-torchvision-rocm-gfx1151",
+        {
+            "recipe_key": "torchvision",
+            "template": "python-project-torchvision-rocm",
+            "upstream_version": "0.27.0",
+            "pkgdesc": "TorchVision",
+            "url": "https://github.com/pytorch/vision",
+            "license": ["BSD-3-Clause"],
+            "source_url": "https://github.com/pytorch/vision/archive/refs/tags/v0.27.0.tar.gz",
+            "sha256sums": ["0" * 64],
+            "src_subdir": "vision-0.27.0",
+            "depends": ["python-pytorch-opt-rocm-gfx1151"],
+            "makedepends": ["python-installer"],
+        },
+        {
+            "repo": "",
+            "method": "pip",
+            "phase": "package",
+            "steps": [],
+            "depends_on": [],
+            "notes": "",
+        },
+        "0.27.0",
+        {
+            "recipe_repo": "https://github.com/paudley/ai-notes",
+            "recipe_subdir": "strix-halo",
+            "recipe_author": "Blackcat Informatics Inc.",
+        },
+    )
+
+    assert 'export PYTHONPYCACHEPREFIX="$srcdir/.python-pycache"' in pkgbuild
+    assert '/usr/bin/python -m installer --destdir="$pkgdir" "$_wheel"' in pkgbuild
+    assert "_site=\"$(/usr/bin/python - <<'PY'" in pkgbuild
 
 
 def test_render_recipe_json_keeps_source_patches_in_one_place() -> None:

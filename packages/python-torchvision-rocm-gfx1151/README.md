@@ -6,8 +6,8 @@
 - Scaffold template: `python-project-torchvision-rocm`
 - Recipe build method: `pip`
 - Upstream repo: `https://github.com/pytorch/vision.git`
-- Package version: `0.26.0`
-- Recipe revision: `a1d7a68 (20260427, 16 commits touching recipe path)`
+- Package version: `0.27.0`
+- Recipe revision: `3f15f9f (20260508, 17 commits touching recipe path)`
 - Recipe steps: `13, 14`
 - Recipe dependencies: `pytorch`
 - Recorded reference packages: `aur/python-torchvision-rocm, aur/python-torchvision-rocm-bin, extra/python-torchvision`
@@ -22,7 +22,7 @@ source tree, not from a pip install).
 
 ## Scaffold notes
 
-- Authoritative base: AUR python-torchvision-rocm 0.26.0-1 because it is the closest maintained ROCm packaging lane for torchvision.
+- Authoritative base: AUR python-torchvision-rocm 0.26.0-1 because it is the closest maintained ROCm packaging lane for torchvision; upstream TorchVision 0.27.0 is paired with the local PyTorch 2.12 lane.
 - Advisory references: python-torchvision-rocm-bin for packaging shape around the ROCm variant and repo python-torchvision for generic Arch Python packaging conventions.
 - The recipe must build against the source-tree torch headers from the paired PyTorch package, not against an arbitrary preinstalled wheel.
 - Carry the setup.py source patch that makes ROCm HIP builds honor NVCC_FLAGS so the package-level source-path sanitizer also applies to .hip translation units.

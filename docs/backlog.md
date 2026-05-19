@@ -10,18 +10,31 @@
   visibility, MIGraphX payload/import-order smokes, downstream installed
   imports, and the affected Torch-MIGraphX compiled scenario smokes passed on
   2026-05-18.
-- 2026-05-18 freshness follow-up bundle: the closeout freshness gate after
-  TheRock 7.13 adoption found tracked follow-up lanes for llama.cpp `b9219`,
-  NumPy `2.4.5`, stable-diffusion.cpp
-  `caa823a8c06a51288f0a01bb29e9bd8bcec30a8a`, and watchfiles `1.2.0`.
-  Review source deltas, refresh package metadata, build, deploy/install, and
-  run the affected installed smokes or scenarios before adoption. Watchfiles
-  `1.2.0-1` is adopted: source metadata, rendered scaffolds, source
-  verification, source preparation, package build plan `2973e241`,
-  deploy/install plan `a2428587`, `pacman -Q python-watchfiles-gfx1151`, and
-  the installed import smoke all passed.
-  Coordinated PyTorch 2.12 lane: keep the `2.12.0-1` baseline drift as its own
-  lane because it affects the ROCm extension and inference package closure.
+- The 2026-05-18 freshness follow-up bundle is adopted. It updates NumPy
+  `2.4.6`, AOTriton `0.12b`, llama.cpp `b9222`, stable-diffusion.cpp
+  `r629.gcaa823a`, PyTorch `2.12.0`, TorchVision `0.27.0`, and the vLLM
+  compatibility rebuild `0.21.0-3`; Lemonade backend metadata now points at
+  the llama.cpp `b9222` system backends. Source verification, package source
+  preparation, package builds, deploy/install, installed Python smokes, ROCm
+  GPU tensor smoke, stable-diffusion.cpp wrapper startup, llama.cpp/Lemonade
+  smoke scenarios, and the affected Qwen3.5 vLLM scenario passed on
+  2026-05-19. Watchfiles `1.2.0-1` was adopted earlier in the same branch with
+  source verification, package build, deploy/install, and installed import
+  smoke evidence.
+- AOCL-LibM 5.3 follow-up: the 2026-05-19 closeout freshness gate found
+  upstream AOCL-LibM `5.3` after the adopted `5.2.2` package lane. Keep this
+  as a separate math-library refresh lane: review upstream source and license
+  changes, refresh package metadata, verify the local SCons toolchain patch,
+  build, deploy/install, run installed payload checks, and rerun the downstream
+  stable-diffusion.cpp Vulkan wrapper smoke before adoption.
+- Lemonade 10.5.1 baseline follow-up: the 2026-05-19 closeout freshness gate
+  found canonical upstream and AUR Lemonade `10.5.1` baselines while the local
+  package source lane still tracks the `nisavid/lemonade` fork at the adopted
+  `10.5.0` CMake project version. Keep this as a separate source-lane review:
+  inspect the canonical 10.5.0..10.5.1 range, decide whether the fork/main
+  source pin should move, refresh package metadata or record a rejection, then
+  rebuild, deploy/install, and rerun Lemonade service plus pooling/rerank
+  scenarios before adoption.
 - The 2026-05-18 Python 3.14.5 rebuild lane is adopted. `python-gfx1151`
   now tracks CPython `3.14.5` with Arch `python 3.14.5-1` as the integration
   baseline. Source verification, package source preparation, package build,

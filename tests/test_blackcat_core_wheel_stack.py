@@ -144,7 +144,7 @@ ENGINE_STACK = {
     "stable-diffusion.cpp-vulkan-gfx1151": {
         "template": "stable-diffusion-cpp",
         "recipe_key": "stable_diffusion_cpp",
-        "upstream_version": "r604.g0b82969",
+        "upstream_version": "r629.gcaa823a",
         "provides": [
             "stable-diffusion.cpp-vulkan-gfx1151",
             "stable-diffusion.cpp-vulkan",
@@ -354,9 +354,9 @@ def test_blackcat_engine_stack_rendered_output_exists() -> None:
     readme = (package_dir / "README.md").read_text()
 
     assert f"pkgname={package_name}" in pkgbuild
-    assert "pkgver=r604.g0b82969" in pkgbuild
+    assert "pkgver=r629.gcaa823a" in pkgbuild
     assert "git submodule update --init --recursive" not in pkgbuild
-    assert "ggml::git+https://github.com/ggml-org/ggml.git" in pkgbuild
+    assert "ggml::git+https://github.com/leejet/ggml.git" in pkgbuild
     assert "sdcpp-webui::git+https://github.com/leejet/sdcpp-webui.git" in pkgbuild
     assert 'cp -a "$srcdir/ggml" ggml' in pkgbuild
     assert 'cp -a "$srcdir/sdcpp-webui" examples/server/frontend' in pkgbuild

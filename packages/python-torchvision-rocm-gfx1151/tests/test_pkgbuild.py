@@ -30,7 +30,7 @@ def test_pkgbuild_exports_source_path_sanitizer():
     assert "-ffile-prefix-map=$srcdir=${_debug_prefix}" in text
     assert 'export NVCC_FLAGS="${_debug_map}"' in text
     assert 'local _ccache_cache="$srcdir/.ccache/cache"' in text
-    assert 'export CCACHE_DIR="${CCACHE_DIR:-${_ccache_cache}}"' in text
+    assert 'export CCACHE_DIR="${_ccache_cache}"' in text
     assert 'vision_hip_source = CSRS_DIR / "vision_hip.cpp"' in patch_text
     assert "sources.remove(vision_hip_source)" in patch_text
 
@@ -39,7 +39,8 @@ def test_pkgbuild_patches_extension_rpath_to_torch_lib():
     text = PKGBUILD.read_text()
 
     pkgrel = int(next(line.removeprefix("pkgrel=") for line in text.splitlines() if line.startswith("pkgrel=")))
-    assert pkgrel >= 6
+    assert "pkgver=0.27.0" in text
+    assert pkgrel == 1
     assert "export FORCE_CUDA=1" in text
     assert "patchelf" in text
     assert 'sysconfig.get_path("platlib"' in text

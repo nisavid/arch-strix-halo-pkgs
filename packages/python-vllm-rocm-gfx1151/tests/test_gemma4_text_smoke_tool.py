@@ -19,7 +19,7 @@ def test_text_only_smoke_tool_uses_tokenizer_not_processor():
     assert 'parser.add_argument("--max-model-len", type=int, default=128)' in text
     assert 'parser.add_argument("--max-tokens", type=int, default=16)' in text
     assert 'parser.add_argument("--max-num-batched-tokens", type=int, default=None)' in text
-    assert 'def effective_max_num_batched_tokens(args: argparse.Namespace, model: Path) -> int | None:' in text
+    assert 'def effective_max_num_batched_tokens(args: argparse.Namespace, model: str) -> int | None:' in text
     assert 'if is_gemma4_26b_a4b(str(model)):' in text
     assert 'return 32' in text
     assert '"limit_mm_per_prompt": {"image": 0, "audio": 0, "video": 0},' in text

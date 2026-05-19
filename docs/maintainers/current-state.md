@@ -1,6 +1,39 @@
 # Current State
 
-Status as of 2026-05-18.
+Status as of 2026-05-19.
+
+The 2026-05-18 freshness follow-up bundle is adopted, installed, and
+live-validated. The installed reference host reports
+`python-numpy-gfx1151 2.4.6-1`, `python-aotriton-gfx1151 0.12b-1`,
+`llama.cpp-hip-gfx1151 b9222-1`, `llama.cpp-vulkan-gfx1151 b9222-1`,
+`stable-diffusion.cpp-vulkan-gfx1151 r629.gcaa823a-1`,
+`lemonade-server 10.5.0-1`, `python-pytorch-opt-rocm-gfx1151 2.12.0-1`,
+`python-torchvision-rocm-gfx1151 0.27.0-1`, and
+`python-vllm-rocm-gfx1151 0.21.0-3` from `pacman -Q`.
+
+Source verification passed with `makepkg --verifysource -f` for NumPy,
+AOTriton, both llama.cpp backends, stable-diffusion.cpp, Lemonade, PyTorch,
+TorchVision, and the vLLM compatibility rebuild. Package build gates produced
+the adopted packages above; vLLM was rebuilt at pkgrel 3 after the installed
+PyTorch 2.12 lane exposed an ABI mismatch in the older vLLM native extensions.
+Deploy/install passed after the operator installed the generated packages.
+
+Installed smokes passed for NumPy import, PyTorch import and CPU tensor to
+NumPy conversion, TorchVision import and CPU NMS registration, AOTriton
+installed payload presence, stable-diffusion.cpp Vulkan wrapper startup, and
+ROCm GPU tensor execution on the Radeon 8060S Graphics device. The escalated
+installed-stack smoke imports `vllm`, `vllm._C`, `vllm._rocm_C`,
+`vllm._moe_C`, AITER JIT core, TorchAO, and Torch-MIGraphX against
+`torch 2.12.0` / HIP `7.13.26176`; it also runs a CUDA tensor on the Radeon
+8060S. The llama.cpp and Lemonade smoke scenarios passed at
+`docs/worklog/inference-runs/20260519T064212` with six passed and zero failed:
+`lemonade.cli.help`, `lemonade.server.help`,
+`lemonade.pooling.zembed-1-q4-k-m.embeddings`,
+`lemonade.pooling.bge-reranker-v2-m3.rerank`, `llama.cpp.hip.help`, and
+`llama.cpp.vulkan.help`. `lemond.service` was stopped and reset after that
+validation. The affected vLLM live scenario
+`vllm.qwen3_5.0_8b.text.basic` passed at
+`docs/worklog/inference-runs/20260519T065832` in `221.359789` seconds.
 
 The Python 3.14.5 coordinated rebuild lane is validated and installed.
 `python-gfx1151` now tracks CPython `3.14.5`, with Arch `python 3.14.5-1` as

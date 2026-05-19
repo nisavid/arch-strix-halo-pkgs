@@ -148,7 +148,7 @@
     ],
     "patches_dir": "patches/python-vllm-rocm-gfx1151",
     "pkgdesc": "High-throughput and memory-efficient inference engine for LLMs with ROCm, rebuilt for Strix Halo gfx1151",
-    "pkgrel": 2,
+    "pkgrel": 3,
     "provides": [
       "python-vllm-rocm",
       "python-vllm"
