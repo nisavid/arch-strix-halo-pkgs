@@ -16,10 +16,10 @@
   `caa823a8c06a51288f0a01bb29e9bd8bcec30a8a`, and watchfiles `1.2.0`.
   Review source deltas, refresh package metadata, build, deploy/install, and
   run the affected installed smokes or scenarios before adoption. Watchfiles
-  `1.2.0-1` has source metadata, rendered scaffolds, source verification,
-  source preparation, and package-build evidence through `tools/amerge` plan
-  `2973e241`; next gate: Deploy/install watchfiles 1.2.0-1 and run installed
-  import smoke.
+  `1.2.0-1` is adopted: source metadata, rendered scaffolds, source
+  verification, source preparation, package build plan `2973e241`,
+  deploy/install plan `a2428587`, `pacman -Q python-watchfiles-gfx1151`, and
+  the installed import smoke all passed.
   Coordinated PyTorch 2.12 lane: keep the `2.12.0-1` baseline drift as its own
   lane because it affects the ROCm extension and inference package closure.
 - The 2026-05-18 Python 3.14.5 rebuild lane is adopted. `python-gfx1151`
