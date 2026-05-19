@@ -74,7 +74,7 @@ family = "llama_cpp"
 packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"]
 source_kind = "github_release"
 baseline_source_kind = "aur"
-baseline_latest = "b9222-3 / b9222-1"
+baseline_latest = "b9222-3"
 previous_recorded = "b9165 / b9139-1 / b7376-1"
 latest = "b9222"
 discovery_status = "stable_update_available"
@@ -83,7 +83,7 @@ disposition_reason = "Adopted on 2026-05-19. Both packaged backends were repinne
 salient_changes = [
   "GitHub release b9222 is adopted after the b9165 lane",
   "The b9165..b9222 range includes ggml 0.12.0, MTP support, server/Web UI updates, Vulkan BF16/ROPE/SSM pipeline work, and removal of the old Hugging Face cache migration path",
-  "AUR HIP and Vulkan baselines have also advanced",
+  "AUR HIP baseline is b9222-3, and the Vulkan baseline is b9222-1",
 ]
 patch_carry_overlap = true
 package_source_update_needed = false

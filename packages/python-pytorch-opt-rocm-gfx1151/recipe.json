@@ -169,7 +169,7 @@
     "repo_subpath": "."
   },
   "recipe": {
-    "branch": "develop",
+    "branch": "release/2.12",
     "depends_on": [
       "therock",
       "cpython"
