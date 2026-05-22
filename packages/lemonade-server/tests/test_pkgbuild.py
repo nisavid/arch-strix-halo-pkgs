@@ -61,11 +61,14 @@ def test_system_backend_patch_applies_env_overlay_without_config_file():
 
     assert "json env_overlay = migrate_from_env(defaults);" in text
     assert "+        json config = utils::JsonUtils::merge(defaults, env_overlay);" in text
+    assert "+        save(cache_dir, repaired);" in text
+    assert "+        return repaired;" in text
     assert "return utils::JsonUtils::merge(defaults, env_overlay);" in text
     assert (
         "json merged = utils::JsonUtils::merge(utils::JsonUtils::merge(defaults, loaded), env_overlay);"
         in text
     )
+
 
 def test_system_backend_patch_keeps_migration_overlay_sparse():
     text = SYSTEM_BACKEND_PATCH.read_text()
@@ -73,6 +76,7 @@ def test_system_backend_patch_keeps_migration_overlay_sparse():
     assert "+    return overlay;" in text
     assert "-    return utils::JsonUtils::merge(defaults, overlay);" in text
     assert "0006-keep-env-migration-overlay-sparse.patch" not in PKGBUILD.read_text()
+
 
 def test_system_backend_patch_reuses_external_backend_lookup():
     text = SYSTEM_BACKEND_PATCH.read_text()
