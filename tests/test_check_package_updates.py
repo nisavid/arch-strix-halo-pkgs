@@ -1357,6 +1357,59 @@ def test_tracked_candidate_changes_effective_status_without_hiding_discovery_sta
     assert report["families"][0]["candidate"]["id"] == "vllm-0_20_0"
 
 
+def test_candidate_can_cover_related_primary_checks(tmp_path):
+    write_pkg(tmp_path, "python-transformers-gfx1151")
+    write_policy(
+        tmp_path,
+        """
+        [families.transformers]
+        packages = ["python-transformers-gfx1151"]
+        priority = "medium"
+        workflow = "upstream_source_update"
+        checks = [
+          { id = "pypi", role = "primary", kind = "pypi", package = "transformers", recorded = "5.8.1", comparison = "pep440" },
+          { id = "tag", role = "primary", kind = "github_tags", repo = "huggingface/transformers", recorded = "5.8.1", tag_prefix = "v", comparison = "pep440" },
+        ]
+        """,
+    )
+    write_candidate_ledger(
+        tmp_path,
+        """
+        schema_version = 1
+
+        [candidates.transformers-5_9_0]
+        family = "transformers"
+        packages = ["python-transformers-gfx1151"]
+        source_kind = "pypi"
+        check_id = "pypi"
+        covered_checks = [{ source_kind = "github_tags", check_id = "tag" }]
+        previous_recorded = "5.8.1"
+        latest = "5.9.0"
+        discovery_status = "stable_update_available"
+        disposition = "tracked"
+        disposition_reason = "Needs a Transformers package update lane."
+        salient_changes = ["PyPI and tag sources agree on 5.9.0"]
+        patch_carry_overlap = true
+        package_source_update_needed = true
+        host_validation_needed = true
+        next_gate_kind = "backlog"
+        next_gate_path = "docs/backlog.md"
+        next_gate_label = "Transformers 5.9.0 package update"
+        last_reviewed = "2026-05-21"
+        """,
+    )
+    clients = updates.FakeClients(
+        pypi={"transformers": {"version": "5.9.0"}},
+        github_tags={"huggingface/transformers": ["v5.9.0", "v5.8.1"]},
+    )
+
+    report = updates.run_check(tmp_path, refresh=True, clients=clients)
+
+    assert report["summary"] == {"stable_update_available": 1}
+    assert report["effective_summary"] == {"tracked_update_candidate": 1}
+    assert report["families"][0]["effective_status"] == "tracked_update_candidate"
+
+
 def test_candidate_discovery_status_must_match_family_status(tmp_path):
     write_pkg(tmp_path, "python-vllm-rocm-gfx1151")
     write_policy(

@@ -102,6 +102,12 @@ service-smoke, or live-scenario gates remain open, keep the candidate
 `tracked` or `blocked` and point `next_gate_*` plus `docs/backlog.md` at that
 work.
 
+When one update candidate covers multiple equivalent checks for the same
+source lane, such as a PyPI release and the matching upstream git tag, record
+the primary `source_kind` and `check_id` and list the additional selectors in
+`covered_checks`. Keep `latest` and `previous_recorded` broad enough to cover
+each selected check.
+
 ### Validation Gate Derivation
 
 When package source refs, patches, build flags, dependency metadata, install
