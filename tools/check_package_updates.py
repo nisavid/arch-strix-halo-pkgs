@@ -942,11 +942,26 @@ def summarize_effective(families: list[dict]) -> dict:
     return dict(Counter(family["effective_status"] for family in families))
 
 
-def candidate_matches_check(candidate: dict, check: dict, family: dict) -> bool:
+def candidate_check_selectors(candidate: dict) -> list[dict]:
+    selectors = [
+        {
+            "source_kind": candidate.get("source_kind"),
+            "check_id": candidate.get("check_id"),
+        }
+    ]
+    for selector in candidate.get("covered_checks", []):
+        if isinstance(selector, dict):
+            selectors.append(selector)
+    return selectors
+
+
+def candidate_selector_matches_check(
+    candidate: dict, selector: dict, check: dict, family: dict
+) -> bool:
     """Match against checks from an evaluated family report, not raw policy."""
-    if candidate.get("source_kind") != check.get("kind"):
+    if selector.get("source_kind") != check.get("kind"):
         return False
-    check_id = candidate.get("check_id")
+    check_id = selector.get("check_id")
     if check_id is None:
         matching_kind_checks = [
             family_check
@@ -955,6 +970,13 @@ def candidate_matches_check(candidate: dict, check: dict, family: dict) -> bool:
         ]
         return len(matching_kind_checks) == 1
     return check_id == check.get("id")
+
+
+def candidate_matches_check(candidate: dict, check: dict, family: dict) -> bool:
+    return any(
+        candidate_selector_matches_check(candidate, selector, check, family)
+        for selector in candidate_check_selectors(candidate)
+    )
 
 
 def candidate_matches_recorded_value(candidate: dict, check: dict) -> bool:

@@ -1,6 +1,17 @@
 # Current State
 
-Status as of 2026-05-19.
+Status as of 2026-05-21.
+
+The 2026-05-21 freshness gate ran
+`tools/check_package_updates.py --json --fail-on actionable` after the
+Lemonade patch-stack cleanup. The sweep completed without query failures and
+found eight non-current families requiring disposition: AOCL-Utils 5.3.0,
+DuckDB 1.5.3, Lemonade 10.6.0 baselines, llama.cpp b9277, ROCm PyTorch
+release/2.12 branch movement, stable-diffusion.cpp master movement,
+Transformers 5.9.0, and Yarl 1.24.2. These are tracked in
+`docs/maintainers/update-candidates.toml` and visible in `docs/backlog.md`;
+no package source update was adopted as part of the Lemonade patch-stack
+cleanup.
 
 The 2026-05-18 freshness follow-up bundle is adopted, installed, and
 live-validated. The installed reference host reports

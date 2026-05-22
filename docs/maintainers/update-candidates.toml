@@ -45,20 +45,66 @@ next_gate_path = "docs/backlog.md"
 next_gate_label = "AOCL-LibM 5.3 follow-up"
 last_reviewed = "2026-05-19"
 
-[candidates."lemonade-10.5.1-baseline"]
+[candidates."aocl-utils-5.3.0"]
+family = "aocl_utils"
+packages = ["aocl-utils-gfx1151"]
+source_kind = "github_release"
+check_id = "release"
+previous_recorded = "5.2.2"
+latest = "5.3.0"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Found during the 2026-05-21 closeout freshness gate. Keep as a separate AOCL utility refresh lane because the package follows upstream AOCL sources with local packaging policy and should be reviewed beside AOCL-LibM rather than folded into the Lemonade patch-stack cleanup."
+salient_changes = [
+  "AOCL-Utils 5.3.0 stable release is available after the current 5.2.2 package lane",
+  "The AUR aocl-utils baseline remains at 5.2.2-1",
+]
+patch_carry_overlap = false
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "AOCL-Utils 5.3.0 follow-up"
+last_reviewed = "2026-05-21"
+
+[candidates."duckdb-1.5.3-pypi"]
+family = "duckdb"
+packages = ["python-duckdb-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+baseline_source_kind = "arch_package"
+baseline_latest = "1.5.3-1"
+previous_recorded = "1.5.2 / 1.5.2-1"
+latest = "1.5.3"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Found during the 2026-05-21 closeout freshness gate. Keep as a separate Python native-wheel refresh because DuckDB has compiled payload and Arch baseline movement, so it needs source review, package build, deploy/install, and installed import smoke before adoption."
+salient_changes = [
+  "PyPI duckdb 1.5.3 is available after the current 1.5.2 package lane",
+  "Arch python-duckdb baseline has advanced to 1.5.3-1",
+]
+patch_carry_overlap = false
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "DuckDB 1.5.3 follow-up"
+last_reviewed = "2026-05-21"
+
+[candidates."lemonade-10.6.0-baseline"]
 family = "lemonade"
 packages = ["lemonade-server", "lemonade-app", "lemonade"]
 source_kind = "github_release"
 check_id = "upstream-release"
-baseline_latest = "10.5.1-1"
+baseline_latest = "10.6.0-1"
 previous_recorded = "10.5.0"
-latest = "10.5.1"
+latest = "10.6.0"
 discovery_status = "baseline_drift"
 disposition = "tracked"
-disposition_reason = "Found during the 2026-05-19 closeout freshness gate after the coordinated inference-stack bundle. Keep as a separate source-lane follow-up because the local package currently tracks the nisavid/lemonade fork main commit whose CMake project version remains 10.5.0, while canonical upstream and AUR baselines have advanced to 10.5.1."
+disposition_reason = "Found during the 2026-05-21 closeout freshness gate after the Lemonade patch-stack cleanup. Keep as a separate source-lane follow-up because the local package currently tracks the nisavid/lemonade fork main commit whose CMake project version remains 10.5.0, while canonical upstream and AUR baselines have advanced to 10.6.0."
 salient_changes = [
-  "Canonical upstream Lemonade 10.5.1 is available after the adopted fork-main 10.5.0 package lane",
-  "AUR lemonade-server and lemonade-desktop baselines have advanced to 10.5.1-1",
+  "Canonical upstream Lemonade 10.6.0 is available after the adopted fork-main 10.5.0 package lane",
+  "AUR lemonade-server and lemonade-desktop baselines have advanced to 10.6.0-1",
   "The package source lane is the nisavid/lemonade fork main ref, so the next action is a source-lane review rather than a metadata-only baseline update",
 ]
 patch_carry_overlap = true
@@ -66,8 +112,8 @@ package_source_update_needed = true
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "Lemonade 10.5.1 baseline follow-up"
-last_reviewed = "2026-05-19"
+next_gate_label = "Lemonade 10.6.0 baseline follow-up"
+last_reviewed = "2026-05-21"
 
 [candidates."llama-cpp-b9222"]
 family = "llama_cpp"
@@ -92,6 +138,30 @@ next_gate_kind = "none"
 next_gate_path = ""
 next_gate_label = "Adopted; monitor future llama.cpp releases through the normal freshness sweep"
 last_reviewed = "2026-05-19"
+
+[candidates."llama-cpp-b9277"]
+family = "llama_cpp"
+packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"]
+source_kind = "github_release"
+check_id = "release"
+baseline_source_kind = "aur"
+baseline_latest = "b9275-1"
+previous_recorded = "b9222 / b9222-3"
+latest = "b9277"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Found during the 2026-05-21 closeout freshness gate. Keep as a separate llama.cpp refresh lane because updating the packaged backends also requires refreshing Lemonade backend metadata, rebuilding the backend packages, deploy/install, installed backend smokes, Lemonade service smokes, and affected inference scenario validation."
+salient_changes = [
+  "GitHub release b9277 is available after the adopted b9222 package lane",
+  "AUR llama.cpp-hip baseline has advanced to b9275-1 while the Vulkan baseline remains at b9222-1",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "llama.cpp b9277 follow-up"
+last_reviewed = "2026-05-21"
 
 [candidates."numpy-2.4.6"]
 family = "numpy"
@@ -141,6 +211,30 @@ next_gate_path = ""
 next_gate_label = "Adopted; monitor future ROCm PyTorch release/2.12 movement through the normal freshness sweep"
 last_reviewed = "2026-05-19"
 
+[candidates."rocm-pytorch-release-2.12-26872de"]
+family = "rocm_pytorch"
+packages = ["python-pytorch-opt-rocm-gfx1151"]
+source_kind = "git_ref"
+check_id = "release-branch"
+baseline_source_kind = "arch_package"
+baseline_latest = "2.12.0-1"
+previous_recorded = "4ddfe99d6da426414b7f0e587cdb1910f1c23eb3"
+latest = "26872debb4452ea6dc898288618a15595e2317d9"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "Found during the 2026-05-21 closeout freshness gate. Keep as a separate ROCm PyTorch release/2.12 follow-up because branch movement can affect the patched native ABI, TorchVision, vLLM native extensions, and installed GPU smoke surface."
+salient_changes = [
+  "ROCm/pytorch release/2.12 moved beyond the adopted 4ddfe99d package lane",
+  "Arch python-pytorch-opt-rocm baseline remains at 2.12.0-1",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "ROCm PyTorch release/2.12 26872de follow-up"
+last_reviewed = "2026-05-21"
+
 [candidates."aotriton-0.12b"]
 family = "aotriton"
 packages = ["python-aotriton-gfx1151"]
@@ -186,6 +280,28 @@ next_gate_path = ""
 next_gate_label = "Adopted; monitor future stable-diffusion.cpp refs through the normal freshness sweep"
 last_reviewed = "2026-05-19"
 
+[candidates."stable-diffusion-cpp-3a8788c"]
+family = "stable_diffusion_cpp"
+packages = ["stable-diffusion.cpp-vulkan-gfx1151"]
+source_kind = "git_ref"
+check_id = "master"
+previous_recorded = "caa823a8c06a51288f0a01bb29e9bd8bcec30a8a"
+latest = "3a8788cb7d74f185d6b18688e9563015524ecaf5"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "Found during the 2026-05-21 closeout freshness gate. Keep as a separate stable-diffusion.cpp follow-up because the package has source patch carry, web/runtime build inputs, Vulkan wrapper behavior, and installed smoke coverage that need review before adoption."
+salient_changes = [
+  "stable-diffusion.cpp master moved beyond the adopted r629.gcaa823a lane",
+  "AUR stable-diffusion.cpp-vulkan-git baseline remains at r279.49d6570-1",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "stable-diffusion.cpp 3a8788c follow-up"
+last_reviewed = "2026-05-21"
+
 [candidates."watchfiles-1.2.0"]
 family = "watchfiles"
 packages = ["python-watchfiles-gfx1151"]
@@ -207,6 +323,28 @@ next_gate_kind = "none"
 next_gate_path = ""
 next_gate_label = "Adopted; monitor future watchfiles releases through the normal freshness sweep"
 last_reviewed = "2026-05-19"
+
+[candidates."yarl-1.24.2-pypi"]
+family = "yarl"
+packages = ["python-yarl-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+previous_recorded = "1.23.0"
+latest = "1.24.2"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Found during the 2026-05-21 closeout freshness gate. Keep as a separate service-runtime Python wheel refresh because yarl is part of the aiohttp closure and needs package build, deploy/install, and installed import coverage before adoption."
+salient_changes = [
+  "PyPI yarl 1.24.2 is available after the current 1.23.0 package lane",
+  "The package is part of the local aiohttp service-runtime dependency closure",
+]
+patch_carry_overlap = false
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "Yarl 1.24.2 follow-up"
+last_reviewed = "2026-05-21"
 
 [candidates."blackcat-ai-notes-a1d7a681"]
 family = "therock"
@@ -1280,6 +1418,29 @@ next_gate_kind = "none"
 next_gate_path = ""
 next_gate_label = "Adopted; monitor future Transformers releases through the normal freshness sweep"
 last_reviewed = "2026-05-14"
+
+[candidates."transformers-5.9.0-pypi"]
+family = "transformers"
+packages = ["python-transformers-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+covered_checks = [{ source_kind = "github_tags", check_id = "tag" }]
+previous_recorded = "5.8.1"
+latest = "5.9.0"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Found during the 2026-05-21 closeout freshness gate. Keep as a separate Transformers refresh because the package is coupled to tokenizers, safetensors, Hugging Face Hub, model-surface imports, and affected vLLM scenarios."
+salient_changes = [
+  "PyPI and the upstream git tag both report Transformers 5.9.0 after the current 5.8.1 package lane",
+  "Review dependency metadata before adoption because the local stack carries package-specific compatibility policy",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "Transformers 5.9.0 follow-up"
+last_reviewed = "2026-05-21"
 
 [candidates."aiter-main-d50194c"]
 family = "aiter"

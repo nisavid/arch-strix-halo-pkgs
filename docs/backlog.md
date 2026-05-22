@@ -27,14 +27,53 @@
   changes, refresh package metadata, verify the local SCons toolchain patch,
   build, deploy/install, run installed payload checks, and rerun the downstream
   stable-diffusion.cpp Vulkan wrapper smoke before adoption.
-- Lemonade 10.5.1 baseline follow-up: the 2026-05-19 closeout freshness gate
-  found canonical upstream and AUR Lemonade `10.5.1` baselines while the local
+- AOCL-Utils 5.3.0 follow-up: the 2026-05-21 closeout freshness gate found
+  upstream AOCL-Utils `5.3.0` after the current `5.2.2` package lane while the
+  AUR baseline remains at `5.2.2-1`. Review the AOCL-Utils source delta
+  alongside AOCL-LibM, refresh package metadata, build, deploy/install, and
+  run installed utility smoke coverage before adoption.
+- DuckDB 1.5.3 follow-up: the 2026-05-21 closeout freshness gate found PyPI
+  `duckdb 1.5.3` and Arch `python-duckdb 1.5.3-1` after the current `1.5.2`
+  local package lane. Treat this as a compiled Python package refresh with
+  source review, package build, deploy/install, and installed import smoke
+  before adoption.
+- Lemonade 10.6.0 baseline follow-up: the 2026-05-21 closeout freshness gate
+  found canonical upstream and AUR Lemonade `10.6.0` baselines while the local
   package source lane still tracks the `nisavid/lemonade` fork at the adopted
   `10.5.0` CMake project version. Keep this as a separate source-lane review:
-  inspect the canonical 10.5.0..10.5.1 range, decide whether the fork/main
+  inspect the canonical 10.5.0..10.6.0 range, decide whether the fork/main
   source pin should move, refresh package metadata or record a rejection, then
   rebuild, deploy/install, and rerun Lemonade service plus pooling/rerank
   scenarios before adoption.
+- llama.cpp b9277 follow-up: the 2026-05-21 closeout freshness gate found
+  upstream `b9277` after the adopted `b9222` backend package lane, with AUR
+  `llama.cpp-hip` at `b9275-1`. Keep this as a coordinated backend refresh:
+  review the release range, update both packaged backends and Lemonade backend
+  metadata, rebuild, deploy/install, run installed backend smokes, and rerun
+  Lemonade service plus affected inference scenarios before adoption.
+- ROCm PyTorch release/2.12 26872de follow-up: the 2026-05-21 closeout
+  freshness gate found `ROCm/pytorch` release/2.12 at
+  `26872debb4452ea6dc898288618a15595e2317d9` after the adopted
+  `4ddfe99d6da426414b7f0e587cdb1910f1c23eb3` package lane. Review the branch
+  delta against the local patch carry, rebuild PyTorch and affected native
+  consumers, deploy/install, and rerun installed GPU plus affected vLLM
+  scenario validation before adoption.
+- stable-diffusion.cpp 3a8788c follow-up: the 2026-05-21 closeout freshness
+  gate found upstream master at `3a8788cb7d74f185d6b18688e9563015524ecaf5`
+  after the adopted `caa823a8c06a51288f0a01bb29e9bd8bcec30a8a` package lane.
+  Review the source and submodule delta, refresh package metadata, rebuild
+  with the carried CLIP-G patch, deploy/install, and rerun the installed Vulkan
+  wrapper smoke before adoption.
+- Transformers 5.9.0 follow-up: the 2026-05-21 closeout freshness gate found
+  PyPI and upstream tag `transformers 5.9.0` after the current `5.8.1` package
+  lane. Review dependency metadata against tokenizers, safetensors, Hugging
+  Face Hub, and the local vLLM/model-surface package closure, then rebuild,
+  deploy/install, run installed imports, and rerun affected vLLM scenarios
+  before adoption.
+- Yarl 1.24.2 follow-up: the 2026-05-21 closeout freshness gate found PyPI
+  `yarl 1.24.2` after the current `1.23.0` package lane. Treat it as part of
+  the aiohttp service-runtime closure: source review, package build,
+  deploy/install, and installed import smoke are required before adoption.
 - The 2026-05-18 Python 3.14.5 rebuild lane is adopted. `python-gfx1151`
   now tracks CPython `3.14.5` with Arch `python 3.14.5-1` as the integration
   baseline. Source verification, package source preparation, package build,
