@@ -91,7 +91,7 @@ index 578f7cc..fdc766f 100644
              corrupt = true;
              parse_error_msg = e.what();
 @@ -135,6 +185,8 @@
-         return utils::JsonUtils::merge(defaults, env_overlay);
+         return repaired;
      }
  
 +    LOG(INFO) << "Config load diagnostics: merging defaults, existing config.json, and environment overlay"

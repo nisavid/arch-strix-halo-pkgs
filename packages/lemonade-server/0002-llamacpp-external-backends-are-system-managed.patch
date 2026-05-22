@@ -43,14 +43,14 @@ index a268138..e3f15e5 100644
          }
 
          try {
-@@ -131,10 +132,10 @@ json ConfigFile::load(const std::string& cache_dir) {
-
+@@ -132,3 +133,4 @@ json ConfigFile::load(const std::string& cache_dir) {
          LOG(WARNING) << "  Using defaults." << std::endl;
-         save(cache_dir, defaults);
+-        save(cache_dir, defaults);
 -        return defaults;
-+        return utils::JsonUtils::merge(defaults, env_overlay);
-     }
-
++        json repaired = utils::JsonUtils::merge(defaults, env_overlay);
++        save(cache_dir, repaired);
++        return repaired;
+@@ -138 +140 @@ json ConfigFile::load(const std::string& cache_dir) {
 -    json merged = utils::JsonUtils::merge(defaults, loaded);
 +    json merged = utils::JsonUtils::merge(utils::JsonUtils::merge(defaults, loaded), env_overlay);
      if (migrate_deprecated_rocm_preview_channel(merged)) {
