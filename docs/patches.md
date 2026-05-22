@@ -38,7 +38,8 @@ becomes durable, prefer a named patch that another maintainer can review.
   - Makes Lemonade treat the packaged ROCm and Vulkan `llama.cpp` backends as
     system-managed backends rather than downloadable runtimes.
   - Includes the config-load, backend-table, and CLI presentation changes that
-    keep the override visible after the first startup.
+    keep the override visible after the first startup without resetting
+    unrelated keys loaded from `config.json` back to defaults.
 - [Remove the generic `llamacpp:system` backend](../packages/lemonade-server/0003-remove-llamacpp-system-backend.patch)
   - Keeps this custom build focused on the explicit HIP and Vulkan lanes this
     repo packages.
@@ -46,6 +47,10 @@ becomes durable, prefer a named patch that another maintainer can review.
   - Makes the Lemonade GUI and backend API report the packaged `llama.cpp`
     revision and upstream `ggml-org/llama.cpp` release URL for the local ROCm
     and Vulkan lanes.
+- [Log config-load diagnostics](../packages/lemonade-server/0005-log-config-load-diagnostics.patch)
+  - Temporarily logs the resolved cache/config paths, filesystem existence
+    checks, and config parse/merge path so service restarts can identify why an
+    existing `config.json` appears to be ignored.
 
 ## vLLM
 

@@ -25,6 +25,15 @@ index a268138..e3f15e5 100644
      fs::path config_path = utils::path_from_utf8(cache_dir) / "config.json";
 
      if (!fs::exists(config_path)) {
+@@ -81,7 +82,7 @@ json ConfigFile::load(const std::string& cache_dir) {
+         if (!fs::exists(cache_path)) {
+             fs::create_directories(cache_path);
+         }
+-        json config = migrate_from_env(defaults);
++        json config = utils::JsonUtils::merge(defaults, env_overlay);
+         migrate_deprecated_rocm_preview_channel(config);
+         save(cache_dir, config);
+         return config;
 @@ -105,7 +106,7 @@ json ConfigFile::load(const std::string& cache_dir) {
          if (!file.is_open()) {
              LOG(WARNING) << "Could not open " << config_path.string()
@@ -47,6 +56,9 @@ index a268138..e3f15e5 100644
      if (migrate_deprecated_rocm_preview_channel(merged)) {
          save(cache_dir, merged);
      }
+@@ -290 +291 @@ json ConfigFile::migrate_from_env(const json& defaults) {
+-    return utils::JsonUtils::merge(defaults, overlay);
++    return overlay;
 diff --git a/src/cpp/server/system_info.cpp b/src/cpp/server/system_info.cpp
 index 9abda84..7a0f7b2 100644
 --- a/src/cpp/server/system_info.cpp
