@@ -45,8 +45,8 @@
   source pin should move, refresh package metadata or record a rejection, then
   rebuild, deploy/install, and rerun Lemonade service plus pooling/rerank
   scenarios before adoption.
-- llama.cpp b9277 follow-up: the 2026-05-21 closeout freshness gate found
-  upstream `b9277` after the adopted `b9222` backend package lane, with AUR
+- llama.cpp b9279 follow-up: the 2026-05-21 closeout freshness gate found
+  upstream `b9279` after the adopted `b9222` backend package lane, with AUR
   `llama.cpp-hip` at `b9275-1`. Keep this as a coordinated backend refresh:
   review the release range, update both packaged backends and Lemonade backend
   metadata, rebuild, deploy/install, run installed backend smokes, and rerun
