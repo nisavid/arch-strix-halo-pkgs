@@ -1,4 +1,6 @@
 # arch-strix-halo-pkgs
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fnisavid%2Farch-strix-halo-pkgs.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fnisavid%2Farch-strix-halo-pkgs?ref=badge_shield)
+
 
 Arch packaging for a Strix Halo local inference stack on Arch and CachyOS.
 
@@ -197,3 +199,7 @@ This repo builds on work from:
 - [llama.cpp](https://github.com/ggml-org/llama.cpp)
 - [Lemonade](https://github.com/lemonade-sdk/lemonade)
 - Arch, CachyOS, and AUR package metadata used as package baselines
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fnisavid%2Farch-strix-halo-pkgs.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fnisavid%2Farch-strix-halo-pkgs?ref=badge_large)
