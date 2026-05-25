@@ -2,17 +2,24 @@
 
 Status as of 2026-05-25.
 
-The llama.cpp selected-token logits package branch is built but not adopted.
-Both packaged backends remain on upstream `b9222` and now render as pkgrel `2`
-with `0001-server-return-selected-token-logits.patch` applied during
-`prepare()`. The patch adds a generic `/completion` `token_logits` request
-field and returns the requested raw token logits in the final response so
-downstream rerank adapters can choose their token IDs outside the backend
-packages. Renderer tests, package-local tests, source preparation, and
-`tools/amerge` build plan `b5faa314` passed for
-`llama.cpp-hip-gfx1151 b9222-2` and `llama.cpp-vulkan-gfx1151 b9222-2`.
-Deploy/install, installed backend smoke, and a live completion smoke that
-requests `token_logits` are still open before this branch is adopted.
+The llama.cpp selected-token logits package branch is adopted and
+live-validated. Both packaged backends remain on upstream `b9222` and now
+render as pkgrel `2` with
+`0001-server-return-selected-token-logits.patch` applied during `prepare()`.
+The patch adds a generic `/completion` `token_logits` request field and returns
+the requested raw token logits in the final response so downstream rerank
+adapters can choose their token IDs outside the backend packages. Renderer
+tests, package-local tests, source preparation, and `tools/amerge` build plan
+`b5faa314` passed for `llama.cpp-hip-gfx1151 b9222-2` and
+`llama.cpp-vulkan-gfx1151 b9222-2`. Deploy/install completed through
+`tools/amerge` plan `d32c0996`; `pacman -Q` reports
+`llama.cpp-hip-gfx1151 b9222-2` and
+`llama.cpp-vulkan-gfx1151 b9222-2`, and host-side `pacman -Qkk` reports zero
+altered files for both packages. The tracked llama.cpp help smoke passed at
+`docs/worklog/inference-runs/20260525T062823`. Live `/completion` smokes passed
+for both installed backend servers using the `ggml-org/tiny-llamas`
+`stories15M-q4_0.gguf` fixture: each request asked for `token_logits` ids
+`[1, 2, 3]`, and each response returned those ids with finite logit values.
 
 The Lemonade 10.6.0 source update is adopted and live-validated. The local
 packages render from `nisavid/lemonade` fork main commit
