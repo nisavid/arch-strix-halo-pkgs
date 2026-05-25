@@ -2791,6 +2791,62 @@ def test_github_release_client_ignores_drafts_and_respects_prerelease_flag():
     assert [release["tag"] for release in releases] == ["v0.19.2rc0", "v0.19.1"]
 
 
+def test_url_transport_uses_github_token_for_github_api(monkeypatch):
+    seen = {}
+
+    class Response:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def read(self):
+            return b"[]"
+
+    def fake_urlopen(request, timeout):
+        seen["authorization"] = request.get_header("Authorization")
+        seen["user_agent"] = request.get_header("User-agent")
+        seen["timeout"] = timeout
+        return Response()
+
+    monkeypatch.setenv("GITHUB_TOKEN", "test-token")
+    monkeypatch.setattr(updates, "urlopen", fake_urlopen)
+
+    assert updates.UrlTransport(timeout=1, retries=0).get_text(
+        "https://api.github.com/repos/example/project/releases"
+    ) == "[]"
+    assert seen == {
+        "authorization": "Bearer test-token",
+        "user_agent": "arch-strix-halo-pkgs-freshness-checker/1",
+        "timeout": 1,
+    }
+
+
+def test_url_transport_does_not_send_github_token_to_other_hosts(monkeypatch):
+    seen = {}
+
+    class Response:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def read(self):
+            return b"{}"
+
+    def fake_urlopen(request, timeout):
+        seen["authorization"] = request.get_header("Authorization")
+        return Response()
+
+    monkeypatch.setenv("GITHUB_TOKEN", "test-token")
+    monkeypatch.setattr(updates, "urlopen", fake_urlopen)
+
+    assert updates.UrlTransport(retries=0).get_text("https://pypi.org/pypi/x/json") == "{}"
+    assert seen["authorization"] is None
+
+
 def test_aur_client_reads_rpc_version():
     client = updates.RealClients(
         transport=updates.StaticTransport(

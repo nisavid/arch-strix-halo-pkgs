@@ -7,14 +7,14 @@
 - Scaffold template: `lemonade-app`
 - Recipe build method: `pip`
 - Upstream repo: `https://github.com/nisavid/lemonade.git`
-- Package version: `10.5.0`
+- Package version: `10.6.0`
 - Recipe revision: `3f15f9f (20260508, 17 commits touching recipe path)`
 - Recipe steps: `34, 35, 36`
 - Recipe dependencies: `therock, llamacpp`
 - Recorded reference packages: `aur/lemonade-desktop, aur/lemonade-server`
 - Authoritative reference package: `aur/lemonade-desktop`
 - Advisory reference packages: `aur/lemonade-server`
-- Applied source patch files/actions: `0`
+- Applied source patch files/actions: `1`
 
 ## Recipe notes
 
@@ -33,8 +33,10 @@ Reinstalling at compatible versions resolves conflicts.
 ## Scaffold notes
 
 - Tauri desktop package split from the same lemonade monorepo.
+- Carry a local Tauri Cargo patch that keeps the direct Linux glib dependency on the webkit2gtk-compatible 0.18 series until upstream's glib 0.20 bump builds cleanly.
+- Route Cargo and npm caches into the package build tree so the Tauri build does not depend on user-local cache state.
 - Install a /usr/bin/lemonade-app wrapper that launches the packaged Tauri binary from /usr/share/lemonade-app so the shipped desktop entry resolves on PATH.
-- Pinned to nisavid/lemonade main commit 3a1a0dff2d5fe24f4369f91e76b8587b5c703e78, whose CMake project version is 10.5.0.
+- Pinned to nisavid/lemonade main commit a90f8194f29940c22575499951b12e588a2e8211, whose CMake project version is 10.6.0.
 
 ## Intentional Divergences
 

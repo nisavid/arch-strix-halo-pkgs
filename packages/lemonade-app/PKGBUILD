@@ -5,7 +5,7 @@
 # Package recipe key: lemonade
 
 pkgname=lemonade-app
-pkgver=10.5.0
+pkgver=10.6.0
 pkgrel=1
 pkgdesc='Lemonade desktop app rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
@@ -18,8 +18,14 @@ options=()
 provides=(lemonade-desktop)
 conflicts=(lemonade-desktop)
 replaces=(lemonade-desktop)
-source=('lemonade::git+https://github.com/nisavid/lemonade.git#commit=3a1a0dff2d5fe24f4369f91e76b8587b5c703e78')
-sha256sums=(SKIP)
+source=('lemonade::git+https://github.com/nisavid/lemonade.git#commit=a90f8194f29940c22575499951b12e588a2e8211' 0001-keep-tauri-glib-on-webkit-compatible-series.patch)
+sha256sums=(SKIP SKIP)
+
+prepare() {
+  cd "$srcdir/lemonade"
+
+  patch -Np1 -i "$srcdir/0001-keep-tauri-glib-on-webkit-compatible-series.patch"
+}
 
 build() {
   cd "$srcdir/lemonade"
@@ -53,6 +59,16 @@ build() {
   local amdclangxx="$CXX"
   local build_root="$srcdir/build-lemonade-app"
   local install_root="/usr"
+  local _debug_prefix="/usr/src/debug/lemonade-app"
+
+  export HOME="$srcdir/.home"
+  export XDG_CACHE_HOME="$srcdir/.cache"
+  export XDG_DATA_HOME="$srcdir/.local/share"
+  export CARGO_HOME="$srcdir/.cargo"
+  export npm_config_cache="$srcdir/.npm-cache"
+  export npm_config_update_notifier=false
+  export RUSTFLAGS="--remap-path-prefix=$srcdir=${_debug_prefix}"
+  mkdir -p "$HOME" "$XDG_CACHE_HOME" "$XDG_DATA_HOME" "$CARGO_HOME" "$npm_config_cache"
 
   rm -rf "${build_root}"
   cmake -B "${build_root}" -GNinja .     -DCMAKE_C_COMPILER="${amdclang}"     -DCMAKE_CXX_COMPILER="${amdclangxx}"     -DCMAKE_BUILD_TYPE=Release     -DCMAKE_INSTALL_PREFIX="${install_root}"     -DCMAKE_C_FLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument"     -DCMAKE_CXX_FLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument"     -DBUILD_ELECTRON_APP=OFF     -DBUILD_WEB_APP=OFF

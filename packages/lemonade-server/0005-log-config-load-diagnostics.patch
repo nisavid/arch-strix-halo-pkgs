@@ -1,30 +1,29 @@
 diff --git a/src/cpp/server/config_file.cpp b/src/cpp/server/config_file.cpp
-index 578f7cc..fdc766f 100644
+index 8976f46..6266a1c 100644
 --- a/src/cpp/server/config_file.cpp
 +++ b/src/cpp/server/config_file.cpp
-@@ -16,6 +16,10 @@
- namespace lemon {
- 
+@@ -17,6 +17,10 @@ namespace lemon {
+
  std::shared_mutex ConfigFile::file_mutex_;
-+
+
 +static const char* bool_to_string(bool value) {
 +    return value ? "true" : "false";
 +}
- 
++
  static json load_json_file(const fs::path& path) {
      std::ifstream file(path);
-@@ -75,11 +79,53 @@
+     if (!file.is_open()) {
+@@ -75,11 +79,53 @@ static bool migrate_deprecated_rocm_preview_channel(json& config) {
  json ConfigFile::load(const std::string& cache_dir) {
      json defaults = get_defaults();
      json env_overlay = migrate_from_env(defaults);
 -    fs::path config_path = utils::path_from_utf8(cache_dir) / "config.json";
--
++    fs::path cache_path = utils::path_from_utf8(cache_dir);
++    fs::path config_path = cache_path / "config.json";
+
 -    if (!fs::exists(config_path)) {
 -        fs::path cache_path = utils::path_from_utf8(cache_dir);
 -        if (!fs::exists(cache_path)) {
-+    fs::path cache_path = utils::path_from_utf8(cache_dir);
-+    fs::path config_path = cache_path / "config.json";
-+
 +    std::error_code cache_exists_ec;
 +    std::error_code config_exists_ec;
 +    std::error_code config_regular_ec;
@@ -72,17 +71,17 @@ index 578f7cc..fdc766f 100644
              fs::create_directories(cache_path);
          }
          json config = utils::JsonUtils::merge(defaults, env_overlay);
-@@ -102,6 +148,8 @@
+@@ -102,6 +148,8 @@ json ConfigFile::load(const std::string& cache_dir) {
      {
          std::shared_lock lock(file_mutex_);
- 
+
 +        LOG(INFO) << "Config load diagnostics: opening existing config.json at "
 +                  << utils::path_to_utf8(config_path) << std::endl;
          std::ifstream file(config_path);
          if (!file.is_open()) {
              LOG(WARNING) << "Could not open " << config_path.string()
-@@ -111,6 +159,8 @@
- 
+@@ -111,6 +159,8 @@ json ConfigFile::load(const std::string& cache_dir) {
+
          try {
              loaded = json::parse(file);
 +            LOG(INFO) << "Config load diagnostics: parsed existing config.json successfully"
@@ -90,10 +89,10 @@ index 578f7cc..fdc766f 100644
          } catch (const json::parse_error& e) {
              corrupt = true;
              parse_error_msg = e.what();
-@@ -135,6 +185,8 @@
+@@ -136,6 +186,8 @@ json ConfigFile::load(const std::string& cache_dir) {
          return repaired;
      }
- 
+
 +    LOG(INFO) << "Config load diagnostics: merging defaults, existing config.json, and environment overlay"
 +              << std::endl;
      json merged = utils::JsonUtils::merge(utils::JsonUtils::merge(defaults, loaded), env_overlay);

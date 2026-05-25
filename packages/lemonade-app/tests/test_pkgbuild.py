@@ -5,6 +5,10 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 PKGBUILD = REPO_ROOT / "packages/lemonade-app/PKGBUILD"
+GLIB_PATCH = (
+    REPO_ROOT
+    / "packages/lemonade-app/0001-keep-tauri-glib-on-webkit-compatible-series.patch"
+)
 DESKTOP_FILE = (
     REPO_ROOT
     / "packages/lemonade-app/pkg/lemonade-app/usr/share/applications/lemonade-app.desktop"
@@ -18,11 +22,23 @@ def test_pkgbuild_installs_lemonade_app_wrapper():
     assert "rust" in text
     assert 'local _ccache_cache="$srcdir/.ccache/cache"' in text
     assert 'export CCACHE_DIR="${_ccache_cache}"' in text
+    assert 'export CARGO_HOME="$srcdir/.cargo"' in text
+    assert 'export npm_config_cache="$srcdir/.npm-cache"' in text
+    assert 'export RUSTFLAGS="--remap-path-prefix=$srcdir=${_debug_prefix}"' in text
+    assert "0001-keep-tauri-glib-on-webkit-compatible-series.patch" in text
+    assert 'patch -Np1 -i "$srcdir/0001-keep-tauri-glib-on-webkit-compatible-series.patch"' in text
     assert 'rm -rf "${build_root}"' in text
     assert "--target tauri-app" in text
     assert "--target electron-app" not in text
     assert "$pkgdir/usr/bin/lemonade-app" in text
     assert "/usr/share/lemonade-app/lemonade-app" in text
+
+
+def test_pkgbuild_keeps_tauri_glib_on_webkit_compatible_series():
+    text = GLIB_PATCH.read_text()
+
+    assert '-glib = "0.20"' in text
+    assert '+glib = "0.18"' in text
 
 
 def test_built_package_ships_desktop_launcher_wrapper():
