@@ -116,6 +116,35 @@ next_gate_path = ""
 next_gate_label = "Adopted; monitor future Lemonade releases through the normal freshness sweep"
 last_reviewed = "2026-05-25"
 
+[candidates."lemonade-fork-main-a90f8194"]
+family = "lemonade"
+packages = ["lemonade-server", "lemonade-app", "lemonade"]
+source_kind = "git_ref"
+check_id = "fork-main"
+covered_checks = [
+  { source_kind = "github_release", check_id = "upstream-release" },
+  { source_kind = "aur", check_id = "aur-server" },
+  { source_kind = "aur", check_id = "aur-desktop" },
+]
+baseline_latest = "10.6.0"
+previous_recorded = "3a1a0dff2d5fe24f4369f91e76b8587b5c703e78 / 10.5.0"
+latest = "a90f8194f29940c22575499951b12e588a2e8211"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "Found during the 2026-05-25 selected-token logits closeout freshness gate. Keep with the Lemonade source-lane follow-up because the package source lane tracks nisavid/lemonade fork main, and the same review needs to reconcile fork-main movement with the canonical 10.6.0 and AUR baseline drift already tracked for this package family."
+salient_changes = [
+  "nisavid/lemonade fork main advanced from the adopted 3a1a0dff2d5fe24f4369f91e76b8587b5c703e78 source cursor to a90f8194f29940c22575499951b12e588a2e8211",
+  "Canonical upstream Lemonade and AUR baselines remain on the separate tracked 10.6.0 follow-up lane",
+  "Review the fork-main delta together with the 10.6.0 baseline before changing package source metadata",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "Lemonade 10.6.0 baseline follow-up"
+last_reviewed = "2026-05-25"
+
 [candidates."llama-cpp-b9222"]
 family = "llama_cpp"
 packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"]

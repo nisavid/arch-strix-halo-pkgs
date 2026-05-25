@@ -346,6 +346,51 @@ def test_rust_wheel_renderer_applies_source_patches() -> None:
     assert "-name '*.so'" not in pkgbuild
 
 
+def test_llamacpp_renderer_applies_source_patches() -> None:
+    pkgbuild = render_recipe_scaffolds.render_pkgbuild(
+        "llama.cpp-hip-gfx1151",
+        {
+            "recipe_key": "llamacpp",
+            "template": "llama-cpp",
+            "upstream_version": "b9222",
+            "pkgdesc": "llama.cpp HIP",
+            "url": "https://github.com/ggml-org/llama.cpp",
+            "license": ["MIT"],
+            "src_subdir": "llama.cpp-abcdef",
+            "source_refs": [
+                "llama.cpp-abcdef.tar.gz::https://github.com/ggml-org/llama.cpp/archive/abcdef.tar.gz"
+            ],
+            "source_patches": ["0001-selected-token-logits.patch"],
+            "depends": ["hip-runtime-amd-gfx1151"],
+            "makedepends": ["cmake", "ninja"],
+        },
+        {
+            "repo": "https://github.com/ggml-org/llama.cpp.git",
+            "method": "cmake",
+            "phase": "package",
+            "steps": [],
+            "depends_on": [],
+            "notes": "",
+        },
+        "b9222",
+        {
+            "recipe_repo": "https://github.com/paudley/ai-notes",
+            "recipe_subdir": "strix-halo",
+            "recipe_author": "Blackcat Informatics Inc.",
+        },
+    )
+
+    assert "0001-selected-token-logits.patch" in pkgbuild
+    assert (
+        "source=(llama.cpp-abcdef.tar.gz::https://github.com/ggml-org/llama.cpp/archive/abcdef.tar.gz "
+        "0001-selected-token-logits.patch)"
+    ) in pkgbuild
+    assert "sha256sums=(SKIP SKIP)" in pkgbuild
+    assert 'patch --dry-run -R -Np1 -i "$srcdir/0001-selected-token-logits.patch"' in pkgbuild
+    assert 'patch -Np1 -i "$srcdir/0001-selected-token-logits.patch"' in pkgbuild
+    assert pkgbuild.index("prepare()") < pkgbuild.index("build()")
+
+
 def test_stable_diffusion_renderer_keeps_runtime_rpath_to_system_libs() -> None:
     pkgbuild = render_recipe_scaffolds.render_pkgbuild(
         "stable-diffusion.cpp-vulkan-gfx1151",

@@ -14,7 +14,7 @@
 - Recorded reference packages: `aur/llama.cpp-vulkan-bin, aur/llama.cpp`
 - Authoritative reference package: `aur/llama.cpp-vulkan-bin`
 - Advisory reference packages: `aur/llama.cpp`
-- Applied source patch files/actions: `0`
+- Applied source patch files/actions: `1`
 
 ## Recipe notes
 
@@ -47,11 +47,13 @@ binaries find their shared libraries without LD_LIBRARY_PATH.
 - Vulkan source builds require spirv-headers in addition to shaderc and vulkan-headers.
 - Pinned to a concrete upstream commit tarball so the first-pass metadata stays reproducible without a full Git history clone.
 - This scaffold still uses amdclang from rocm-llvm-gfx1151 for consistency with the recipe toolchain even though the Vulkan build does not use HIP offload.
+- The selected-token logits patch adds a generic `token_logits` completion-request field and returns the requested raw logits in `token_logits`; model-specific token choices belong in downstream service configuration.
 
 ## Intentional Divergences
 
 - Uses a source-build path even though the closest backend-specific AUR reference is currently a binary package.
 - Keeps the recipe's amdclang and ThinLTO lane for consistency with the rest of the stack while using Vulkan rather than HIP.
+- Carries a server-local selected-token logits extension for completion requests so downstream rerank adapters can request raw logits for explicit token IDs without using llama.cpp's native rerank endpoint.
 
 ## Update Notes
 

@@ -14,7 +14,7 @@
 - Recorded reference packages: `aur/llama.cpp-hip, aur/llama.cpp`
 - Authoritative reference package: `aur/llama.cpp-hip`
 - Advisory reference packages: `aur/llama.cpp`
-- Applied source patch files/actions: `0`
+- Applied source patch files/actions: `1`
 
 ## Recipe notes
 
@@ -46,11 +46,13 @@ binaries find their shared libraries without LD_LIBRARY_PATH.
 - Authoritative base: AUR llama.cpp-hip, because it is the closest maintained ROCm packaging lane for llama.cpp on Arch.
 - Advisory reference: generic AUR llama.cpp for shared install/dependency conventions outside the ROCm-specific package split.
 - Pinned to a concrete upstream commit tarball so the first-pass metadata stays reproducible without a full Git history clone.
+- The selected-token logits patch adds a generic `token_logits` completion-request field and returns the requested raw logits in `token_logits`; model-specific token choices belong in downstream service configuration.
 
 ## Intentional Divergences
 
 - Installs into /opt/llama.cpp-hip-gfx1151 with suffixed wrapper binaries instead of taking over the generic /usr/bin names directly.
 - Uses the recipe's amdclang plus gfx1151-targeted HIP build lane and private-library RPATH handling.
+- Carries a server-local selected-token logits extension for completion requests so downstream rerank adapters can request raw logits for explicit token IDs without using llama.cpp's native rerank endpoint.
 
 ## Update Notes
 

@@ -52,6 +52,15 @@ becomes durable, prefer a named patch that another maintainer can review.
     checks, and config parse/merge path so service restarts can identify why an
     existing `config.json` appears to be ignored.
 
+## llama.cpp
+
+- [HIP selected-token logits server extension](../packages/llama.cpp-hip-gfx1151/0001-server-return-selected-token-logits.patch)
+  and [Vulkan selected-token logits server extension](../packages/llama.cpp-vulkan-gfx1151/0001-server-return-selected-token-logits.patch)
+  - Adds a generic `/completion` `token_logits` request field and returns the
+    requested raw token logits in the final response.
+  - Keeps model-specific token selection in downstream service configuration
+    instead of encoding a rerank model assumption in the backend packages.
+
 ## vLLM
 
 - [ROCm local carry refreshed for vLLM 0.20.0](../packages/python-vllm-rocm-gfx1151/0016-rocm-refresh-local-carry-for-vllm-0.20.0.patch)
