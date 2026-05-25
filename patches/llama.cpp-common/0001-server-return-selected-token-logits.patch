@@ -57,11 +57,17 @@
  
      params.sampling.top_k              = json_value(data, "top_k",               defaults.sampling.top_k);
      params.sampling.top_p              = json_value(data, "top_p",               defaults.sampling.top_p);
-@@ -368,6 +371,15 @@
+@@ -368,6 +371,21 @@
          params.sampling.dry_base = defaults.sampling.dry_base;
      }
  
 +    {
++        constexpr size_t max_token_logits = 1024;
++        if (params.token_logits.size() > max_token_logits) {
++            throw std::runtime_error(
++                "Error: token_logits must contain at most " + std::to_string(max_token_logits) + " token ids");
++        }
++
 +        const int n_vocab = llama_vocab_n_tokens(vocab);
 +        for (const auto token : params.token_logits) {
 +            if (token < 0 || token >= n_vocab) {
