@@ -163,6 +163,30 @@ next_gate_path = "docs/backlog.md"
 next_gate_label = "llama.cpp b9279 follow-up"
 last_reviewed = "2026-05-21"
 
+[candidates."llama-cpp-b9305"]
+family = "llama_cpp"
+packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"]
+source_kind = "github_release"
+check_id = "release"
+baseline_source_kind = "aur"
+baseline_latest = "b9297-1"
+previous_recorded = "b9222 / b9222-3"
+latest = "b9305"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Found during the 2026-05-24 recovery-branch freshness gate. Keep as a separate llama.cpp refresh lane because it supersedes the earlier b9279 follow-up and still requires release-range review, both backend package updates, Lemonade backend metadata refresh, package builds, deploy/install, installed backend smokes, Lemonade service smokes, and affected inference scenario validation."
+salient_changes = [
+  "GitHub release b9305 is available after the adopted b9222 package lane",
+  "AUR llama.cpp-hip baseline has advanced to b9297-1 while the Vulkan baseline remains at b9222-1",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "llama.cpp b9305 follow-up"
+last_reviewed = "2026-05-24"
+
 [candidates."numpy-2.4.6"]
 family = "numpy"
 packages = ["python-numpy-gfx1151"]
@@ -301,6 +325,28 @@ next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
 next_gate_label = "stable-diffusion.cpp 3a8788c follow-up"
 last_reviewed = "2026-05-21"
+
+[candidates."stable-diffusion-cpp-a397e03"]
+family = "stable_diffusion_cpp"
+packages = ["stable-diffusion.cpp-vulkan-gfx1151"]
+source_kind = "git_ref"
+check_id = "master"
+previous_recorded = "caa823a8c06a51288f0a01bb29e9bd8bcec30a8a"
+latest = "a397e03488cc27e1a42da646b82dfce9f50741c0"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "Found during the 2026-05-24 recovery-branch freshness gate. Keep as a separate stable-diffusion.cpp follow-up because it supersedes the earlier 3a8788c follow-up and still needs source/submodule review, package metadata refresh, rebuild with the carried CLIP-G patch, deploy/install, and installed Vulkan wrapper smoke before adoption."
+salient_changes = [
+  "stable-diffusion.cpp master moved beyond the adopted r629.gcaa823a lane to a397e03",
+  "AUR stable-diffusion.cpp-vulkan-git baseline remains at r279.49d6570-1",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "stable-diffusion.cpp a397e03 follow-up"
+last_reviewed = "2026-05-24"
 
 [candidates."watchfiles-1.2.0"]
 family = "watchfiles"
@@ -563,6 +609,27 @@ next_gate_kind = "none"
 next_gate_path = ""
 next_gate_label = "Adopted; monitor future AITER prereleases through the normal freshness sweep"
 last_reviewed = "2026-05-18"
+
+[candidates."aiter-0.1.14-stable"]
+family = "aiter"
+packages = ["python-amd-aiter-gfx1151"]
+source_kind = "github_release"
+previous_recorded = "0.1.14-rc0"
+latest = "0.1.14"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Found during the 2026-05-24 recovery-branch freshness gate. Keep as a separate AITER stable-release follow-up because the current package adopted the 0.1.14 release-candidate lane and a stable promotion needs release delta review, package rebuild, deploy/install, installed JIT smoke, and affected vLLM scenario validation before adoption."
+salient_changes = [
+  "AITER 0.1.14 stable is available after the adopted 0.1.14-rc0 package lane",
+  "The local package carries gfx1151 patch and runtime validation surfaces that must be rechecked against the stable release",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "AITER 0.1.14 stable follow-up"
+last_reviewed = "2026-05-24"
 
 [candidates."aotriton-tech-previews-0.11.210b-0.11.52b"]
 family = "aotriton"
@@ -1131,23 +1198,24 @@ family = "pydantic_core"
 packages = ["python-pydantic-core-gfx1151"]
 source_kind = "arch_package"
 baseline_source_kind = "pypi"
-baseline_latest = "2.46.4"
-previous_recorded = "2.41.5-4 / 2.46.3"
+baseline_latest = "2.47.0"
+previous_recorded = "2.41.5-4 / 2.46.4"
 latest = "2.46.4-1"
 discovery_status = "stable_update_available"
 disposition = "tracked"
-disposition_reason = "Reviewed during the 2026-05-11 PR closeout freshness check and not folded into this source-update bundle. The package stays aligned with Arch's pydantic-core ABI for the installed python-pydantic package until this repo owns a coordinated python-pydantic lane."
+disposition_reason = "Reviewed again during the 2026-05-24 recovery-branch freshness gate and not folded into the CTranslate2 recovery. The package should stay aligned with Arch's pydantic-core ABI for the installed python-pydantic package until this repo owns a coordinated python-pydantic lane or the existing pydantic-core ABI branch is merged separately."
 salient_changes = [
   "Arch python-pydantic-core 2.46.4-1 is available and matches PyPI pydantic-core 2.46.4",
+  "PyPI pydantic-core 2.47.0 is visible as a newer baseline cursor, but the installed python-pydantic ABI remains the package boundary",
   "The local package follows Arch's pydantic-core ABI boundary for the installed python-pydantic package",
 ]
 patch_carry_overlap = false
-package_source_update_needed = false
-host_validation_needed = false
+package_source_update_needed = true
+host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
 next_gate_label = "Local python-pydantic ABI lane"
-last_reviewed = "2026-05-11"
+last_reviewed = "2026-05-24"
 
 [candidates."aiter-0.1.13-release"]
 family = "aiter"

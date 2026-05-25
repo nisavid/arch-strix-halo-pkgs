@@ -51,6 +51,13 @@
   review the release range, update both packaged backends and Lemonade backend
   metadata, rebuild, deploy/install, run installed backend smokes, and rerun
   Lemonade service plus affected inference scenarios before adoption.
+- llama.cpp b9305 follow-up: the 2026-05-24 recovery-branch freshness gate
+  found upstream `b9305` after the adopted `b9222` backend package lane, with
+  AUR `llama.cpp-hip` at `b9297-1`. Treat this as superseding the earlier b9279
+  follow-up: review the release range, update both packaged backends and
+  Lemonade backend metadata, rebuild, deploy/install, run installed backend
+  smokes, and rerun Lemonade service plus affected inference scenarios before
+  adoption.
 - ROCm PyTorch release/2.12 26872de follow-up: the 2026-05-21 closeout
   freshness gate found `ROCm/pytorch` release/2.12 at
   `26872debb4452ea6dc898288618a15595e2317d9` after the adopted
@@ -64,6 +71,13 @@
   Review the source and submodule delta, refresh package metadata, rebuild
   with the carried CLIP-G patch, deploy/install, and rerun the installed Vulkan
   wrapper smoke before adoption.
+- stable-diffusion.cpp a397e03 follow-up: the 2026-05-24 recovery-branch
+  freshness gate found upstream master at
+  `a397e03488cc27e1a42da646b82dfce9f50741c0` after the adopted
+  `caa823a8c06a51288f0a01bb29e9bd8bcec30a8a` package lane. Treat this as
+  superseding the earlier 3a8788c follow-up: review the source and submodule
+  delta, refresh package metadata, rebuild with the carried CLIP-G patch,
+  deploy/install, and rerun the installed Vulkan wrapper smoke before adoption.
 - Transformers 5.9.0 follow-up: the 2026-05-21 closeout freshness gate found
   PyPI and upstream tag `transformers 5.9.0` after the current `5.8.1` package
   lane. Review dependency metadata against tokenizers, safetensors, Hugging
@@ -74,6 +88,11 @@
   `yarl 1.24.2` after the current `1.23.0` package lane. Treat it as part of
   the aiohttp service-runtime closure: source review, package build,
   deploy/install, and installed import smoke are required before adoption.
+- AITER 0.1.14 stable follow-up: the 2026-05-24 recovery-branch freshness gate
+  found stable `AITER 0.1.14` after the adopted `0.1.14-rc0` package lane.
+  Review the release delta against the local gfx1151 patch carry, rebuild,
+  deploy/install, run installed JIT smoke, and rerun affected vLLM scenarios
+  before adoption.
 - The 2026-05-18 Python 3.14.5 rebuild lane is adopted. `python-gfx1151`
   now tracks CPython `3.14.5` with Arch `python 3.14.5-1` as the integration
   baseline. Source verification, package source preparation, package build,
@@ -141,10 +160,11 @@
   `20260511T081446-f56bde47`; and affected live scenarios passed in
   `docs/worklog/inference-runs/20260511T083036`.
 - Local python-pydantic ABI lane: Arch `python-pydantic-core 2.46.4-1` and
-  PyPI pydantic-core 2.46.4 are reviewed as baseline drift. Keep
+  PyPI pydantic-core 2.47.0 are reviewed as baseline drift. Keep
   `python-pydantic-core-gfx1151` aligned with Arch's pydantic-core ABI for the
   installed `python-pydantic` package until this repo owns a matching local
-  `python-pydantic` lane.
+  `python-pydantic` lane or the existing pydantic-core ABI branch is merged
+  separately.
 - The 2026-05-03 refresh candidates are adopted as one branch: vLLM 0.20.1,
   llama.cpp b9010, and AITER main
   `51f3d2b6968360fba7772208025e5c07756121ba`. `tools/amerge` plan
