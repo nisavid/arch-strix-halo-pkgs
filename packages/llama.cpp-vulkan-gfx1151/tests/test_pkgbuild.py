@@ -47,6 +47,8 @@ def test_selected_token_logits_patch_exposes_generic_completion_contract():
     assert '"token_logits"' in text
     assert "selected_token_logit_output" in text
     assert "populate_selected_token_logits" in text
+    assert "completion_token_output::str_to_bytes(txt_valid)" in text
+    assert "if (!slot.has_budget(params_base))" in text
     assert "backend_sampling &= task.params.token_logits.empty();" in text
     assert "llama_get_sampled_candidates_ith" not in text
     assert "bool found" not in text
