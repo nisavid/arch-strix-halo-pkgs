@@ -67,9 +67,9 @@
       "spirv-headers",
       "vulkan-headers"
     ],
-    "patches_dir": "patches/llama.cpp-vulkan-gfx1151",
+    "patches_dir": "patches/llama.cpp-common",
     "pkgdesc": "llama.cpp Vulkan backend rebuilt for Strix Halo gfx1151",
-    "pkgrel": 2,
+    "pkgrel": 3,
     "provides": [
       "llama.cpp-vulkan-gfx1151",
       "llama.cpp-vulkan"

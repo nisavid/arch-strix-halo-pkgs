@@ -2004,7 +2004,7 @@ scaffold_notes = [
 recipe_key = "llamacpp"
 template = "llama-cpp"
 upstream_version = "b9222"
-pkgrel = 2
+pkgrel = 3
 pkgdesc = "llama.cpp ROCm backend rebuilt for Strix Halo gfx1151"
 url = "https://github.com/ggml-org/llama.cpp"
 license = ["MIT"]
@@ -2043,7 +2043,7 @@ baseline_kind = "closest-upstream"
 source_refs = ["llama.cpp-9a532ae4bab1b164052ce60a738f78538b421c66.tar.gz::https://github.com/ggml-org/llama.cpp/archive/9a532ae4bab1b164052ce60a738f78538b421c66.tar.gz"]
 sha256sums = ["SKIP"]
 source_patches = ["0001-server-return-selected-token-logits.patch"]
-patches_dir = "patches/llama.cpp-hip-gfx1151"
+patches_dir = "patches/llama.cpp-common"
 recipe_notes_override = """
 llama.cpp built with TWO backends for Lemonade:
 
@@ -2078,7 +2078,7 @@ scaffold_notes = [
 recipe_key = "llamacpp"
 template = "llama-cpp"
 upstream_version = "b9222"
-pkgrel = 2
+pkgrel = 3
 pkgdesc = "llama.cpp Vulkan backend rebuilt for Strix Halo gfx1151"
 url = "https://github.com/ggml-org/llama.cpp"
 license = ["MIT"]
@@ -2117,7 +2117,7 @@ baseline_kind = "closest-upstream"
 source_refs = ["llama.cpp-9a532ae4bab1b164052ce60a738f78538b421c66.tar.gz::https://github.com/ggml-org/llama.cpp/archive/9a532ae4bab1b164052ce60a738f78538b421c66.tar.gz"]
 sha256sums = ["SKIP"]
 source_patches = ["0001-server-return-selected-token-logits.patch"]
-patches_dir = "patches/llama.cpp-vulkan-gfx1151"
+patches_dir = "patches/llama.cpp-common"
 recipe_notes_override = """
 llama.cpp built with TWO backends for Lemonade:
 
