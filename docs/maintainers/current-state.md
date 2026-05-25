@@ -2,8 +2,8 @@
 
 Status as of 2026-05-25.
 
-The Lemonade 10.6.0 source update is installed but not adopted. The local
-packages now render from `nisavid/lemonade` fork main commit
+The Lemonade 10.6.0 source update is adopted and live-validated. The local
+packages render from `nisavid/lemonade` fork main commit
 `a90f8194f29940c22575499951b12e588a2e8211`, aligned with canonical upstream
 and AUR `10.6.0` baselines, and the reference host reports
 `lemonade-server 10.6.0-1`, `lemonade-app 10.6.0-1`, and `lemonade 10.6.0-1`
@@ -17,24 +17,22 @@ upstream `glib 0.20` bump builds cleanly here. The generated app package also
 routes Cargo/npm cache state under `$srcdir` and remaps Rust build paths out of
 the shipped binary.
 
-Validation completed for the source/build/install phase: `makepkg
+Validation completed for the source/build/install/live-scenario phase: `makepkg
 --verifysource -f` passed for `packages/lemonade-server`,
 `packages/lemonade-app`, and the `lemonade` meta package; `makepkg -C
 --nobuild --nodeps --force` passed for both source packages; `pytest
 packages/lemonade-server/tests packages/lemonade-app/tests -q` reports
 `12 passed`; `git diff --check` passes; and
 `tools/check_package_updates.py --refresh --only lemonade --json --fail-on
-actionable` reports all raw Lemonade checks current with the candidate still
-tracked for host validation. `tools/amerge build` produced `lemonade-server
-10.6.0-1`, `lemonade-app 10.6.0-1`, and `lemonade 10.6.0-1` artifacts.
-Installed Lemonade CLI/server help and rerank scenario validation passed after
-operator deployment at `docs/worklog/inference-runs/20260525T023532`, but
-`lemonade.pooling.zembed-1-q4-k-m.embeddings` failed. After restarting the
-system `lemond.service`, a direct zembed embeddings probe returned three
-1024-dimensional vectors with only zero numeric values and JSON `null` entries
-in two vectors. Keep the 10.6.0 candidate tracked until the installed zembed
-embeddings path returns finite, nonzero vectors and the full Lemonade smoke set
-passes.
+actionable` reports all raw Lemonade checks current. `tools/amerge build`
+produced `lemonade-server 10.6.0-1`, `lemonade-app 10.6.0-1`, and `lemonade
+10.6.0-1` artifacts. The installed zembed GGUF registration now carries
+`llamacpp_args = "--pooling last"`, matching the model's GGUF
+`pooling_type = 3` metadata. With that registration, the full Lemonade smoke
+set passed at `docs/worklog/inference-runs/20260525T030136`: `lemonade
+--help`, `lemond --help`, `lemonade.pooling.zembed-1-q4-k-m.embeddings`, and
+`lemonade.pooling.bge-reranker-v2-m3.rerank` all passed. The zembed scenario
+returned three finite 2560-dimensional vectors.
 
 The 2026-05-25 AITER stable-release refresh is adopted and live-validated.
 `python-amd-aiter-gfx1151` now renders from upstream tag `v0.1.14` as
