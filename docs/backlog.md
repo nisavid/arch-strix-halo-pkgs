@@ -2,6 +2,15 @@
 
 ## Packaging And Build Hygiene
 
+- llama.cpp selected-token logits validation follow-up: the 2026-05-25 package
+  branch adds a generic `/completion` `token_logits` request field to both
+  packaged backends and returns the requested raw token logits in final
+  responses. Renderer tests, package-local tests, source preparation, and
+  `tools/amerge` build plan `b5faa314` passed for
+  `llama.cpp-hip-gfx1151 b9222-2` and
+  `llama.cpp-vulkan-gfx1151 b9222-2`. Complete deploy/install, installed
+  backend smoke, and a live completion smoke that requests `token_logits`
+  before adoption.
 - TheRock 7.13 stable is adopted. Upstream ROCm/TheRock published the stable
   `therock-7.13` release at
   `6d2136cd12be28c6251eb38c700e980c8c2f8cf6`; the generated

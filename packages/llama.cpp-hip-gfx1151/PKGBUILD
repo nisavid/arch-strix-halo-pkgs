@@ -6,7 +6,7 @@
 
 pkgname=llama.cpp-hip-gfx1151
 pkgver=b9222
-pkgrel=1
+pkgrel=2
 pkgdesc='llama.cpp ROCm backend rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://github.com/ggml-org/llama.cpp
@@ -18,8 +18,16 @@ options=()
 provides=(llama.cpp-hip-gfx1151 llama.cpp-hip)
 conflicts=(llama.cpp-hip)
 replaces=()
-source=(llama.cpp-9a532ae4bab1b164052ce60a738f78538b421c66.tar.gz::https://github.com/ggml-org/llama.cpp/archive/9a532ae4bab1b164052ce60a738f78538b421c66.tar.gz)
-sha256sums=(SKIP)
+source=(llama.cpp-9a532ae4bab1b164052ce60a738f78538b421c66.tar.gz::https://github.com/ggml-org/llama.cpp/archive/9a532ae4bab1b164052ce60a738f78538b421c66.tar.gz 0001-server-return-selected-token-logits.patch)
+sha256sums=(SKIP SKIP)
+
+prepare() {
+  cd "$srcdir/llama.cpp-9a532ae4bab1b164052ce60a738f78538b421c66"
+
+  if ! patch --dry-run -R -Np1 -i "$srcdir/0001-server-return-selected-token-logits.patch" >/dev/null 2>&1; then
+    patch -Np1 -i "$srcdir/0001-server-return-selected-token-logits.patch"
+  fi
+}
 
 build() {
   cd "$srcdir/llama.cpp-9a532ae4bab1b164052ce60a738f78538b421c66"

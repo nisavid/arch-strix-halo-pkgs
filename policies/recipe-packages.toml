@@ -2004,6 +2004,7 @@ scaffold_notes = [
 recipe_key = "llamacpp"
 template = "llama-cpp"
 upstream_version = "b9222"
+pkgrel = 2
 pkgdesc = "llama.cpp ROCm backend rebuilt for Strix Halo gfx1151"
 url = "https://github.com/ggml-org/llama.cpp"
 license = ["MIT"]
@@ -2012,7 +2013,8 @@ authoritative_reference = "aur/llama.cpp-hip"
 advisory_references = ["aur/llama.cpp"]
 divergence_notes = [
   "Installs into /opt/llama.cpp-hip-gfx1151 with suffixed wrapper binaries instead of taking over the generic /usr/bin names directly.",
-  "Uses the recipe's amdclang plus gfx1151-targeted HIP build lane and private-library RPATH handling."
+  "Uses the recipe's amdclang plus gfx1151-targeted HIP build lane and private-library RPATH handling.",
+  "Carries a server-local selected-token logits extension for completion requests so downstream rerank adapters can request raw logits for explicit token IDs without using llama.cpp's native rerank endpoint."
 ]
 update_notes = [
   "Diff against aur/llama.cpp-hip first during updates, then consult aur/llama.cpp for shared install/dependency conventions outside the ROCm-specific split.",
@@ -2040,6 +2042,7 @@ upstream_name = "llama.cpp"
 baseline_kind = "closest-upstream"
 source_refs = ["llama.cpp-9a532ae4bab1b164052ce60a738f78538b421c66.tar.gz::https://github.com/ggml-org/llama.cpp/archive/9a532ae4bab1b164052ce60a738f78538b421c66.tar.gz"]
 sha256sums = ["SKIP"]
+source_patches = ["0001-server-return-selected-token-logits.patch"]
 patches_dir = "patches/llama.cpp-hip-gfx1151"
 recipe_notes_override = """
 llama.cpp built with TWO backends for Lemonade:
@@ -2067,13 +2070,15 @@ scaffold_notes = [
   "ROCm/hip backend package; backend-specific runtime package, no shared common package in first pass.",
   "Authoritative base: AUR llama.cpp-hip, because it is the closest maintained ROCm packaging lane for llama.cpp on Arch.",
   "Advisory reference: generic AUR llama.cpp for shared install/dependency conventions outside the ROCm-specific package split.",
-  "Pinned to a concrete upstream commit tarball so the first-pass metadata stays reproducible without a full Git history clone."
+  "Pinned to a concrete upstream commit tarball so the first-pass metadata stays reproducible without a full Git history clone.",
+  "The selected-token logits patch adds a generic `token_logits` completion-request field and returns the requested raw logits in `token_logits`; model-specific token choices belong in downstream service configuration."
 ]
 
 [packages."llama.cpp-vulkan-gfx1151"]
 recipe_key = "llamacpp"
 template = "llama-cpp"
 upstream_version = "b9222"
+pkgrel = 2
 pkgdesc = "llama.cpp Vulkan backend rebuilt for Strix Halo gfx1151"
 url = "https://github.com/ggml-org/llama.cpp"
 license = ["MIT"]
@@ -2082,7 +2087,8 @@ authoritative_reference = "aur/llama.cpp-vulkan-bin"
 advisory_references = ["aur/llama.cpp"]
 divergence_notes = [
   "Uses a source-build path even though the closest backend-specific AUR reference is currently a binary package.",
-  "Keeps the recipe's amdclang and ThinLTO lane for consistency with the rest of the stack while using Vulkan rather than HIP."
+  "Keeps the recipe's amdclang and ThinLTO lane for consistency with the rest of the stack while using Vulkan rather than HIP.",
+  "Carries a server-local selected-token logits extension for completion requests so downstream rerank adapters can request raw logits for explicit token IDs without using llama.cpp's native rerank endpoint."
 ]
 update_notes = [
   "If a maintained source-built aur/llama.cpp-vulkan package appears, switch to it as the authoritative baseline.",
@@ -2110,6 +2116,7 @@ upstream_name = "llama.cpp"
 baseline_kind = "closest-upstream"
 source_refs = ["llama.cpp-9a532ae4bab1b164052ce60a738f78538b421c66.tar.gz::https://github.com/ggml-org/llama.cpp/archive/9a532ae4bab1b164052ce60a738f78538b421c66.tar.gz"]
 sha256sums = ["SKIP"]
+source_patches = ["0001-server-return-selected-token-logits.patch"]
 patches_dir = "patches/llama.cpp-vulkan-gfx1151"
 recipe_notes_override = """
 llama.cpp built with TWO backends for Lemonade:
@@ -2138,7 +2145,8 @@ scaffold_notes = [
   "Closest current Vulkan reference: AUR llama.cpp-vulkan-bin for backend-specific packaging expectations, with generic AUR llama.cpp kept as the source-build advisory baseline.",
   "Vulkan source builds require spirv-headers in addition to shaderc and vulkan-headers.",
   "Pinned to a concrete upstream commit tarball so the first-pass metadata stays reproducible without a full Git history clone.",
-  "This scaffold still uses amdclang from rocm-llvm-gfx1151 for consistency with the recipe toolchain even though the Vulkan build does not use HIP offload."
+  "This scaffold still uses amdclang from rocm-llvm-gfx1151 for consistency with the recipe toolchain even though the Vulkan build does not use HIP offload.",
+  "The selected-token logits patch adds a generic `token_logits` completion-request field and returns the requested raw logits in `token_logits`; model-specific token choices belong in downstream service configuration."
 ]
 
 [packages."stable-diffusion.cpp-vulkan-gfx1151"]

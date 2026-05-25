@@ -284,6 +284,14 @@ package() {{
   DESTDIR="$pkgdir" cmake --install build
 }}"""
     elif template == "llama-cpp":
+        for patch_name in policy_pkg.get("source_patches", []):
+            prepare_lines.extend(
+                [
+                    f'if ! patch --dry-run -R -Np1 -i "$srcdir/{patch_name}" >/dev/null 2>&1; then',
+                    f'  patch -Np1 -i "$srcdir/{patch_name}"',
+                    "fi",
+                ]
+            )
         if package_name.endswith("-hip-gfx1151"):
             backend = "hip"
         elif package_name.endswith("-vulkan-gfx1151"):
