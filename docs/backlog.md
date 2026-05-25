@@ -2,16 +2,15 @@
 
 ## Packaging And Build Hygiene
 
-- llama.cpp selected-token logits review-fix deploy follow-up: both packaged
-  backends stay on upstream `b9222` at pkgrel `3` and carry a shared generic
+- The llama.cpp selected-token logits branch is adopted. Both packaged backends
+  stay on upstream `b9222` at pkgrel `3` and carry a shared generic
   `/completion` `token_logits` patch that returns every requested raw token
   logit from full-vocabulary logits, including prompt-final selected logits
   when no generation budget remains, preserves original token bytes, and caps
   each request at 1024 selected token IDs. Renderer tests, package-local tests,
-  source preparation, and `tools/amerge` build plan `b664ef40` passed for both
-  backend packages. Complete deploy/install of the rebuilt bytes-fix artifacts,
-  installed backend smoke, and live `/completion` smokes with `token_logits`
-  before adoption.
+  source preparation, `tools/amerge` build plan `b664ef40`, deploy plan
+  `b9b88117`, installed backend smoke, and direct HIP/Vulkan `/completion`
+  smokes passed for the adopted artifacts.
 - TheRock 7.13 stable is adopted. Upstream ROCm/TheRock published the stable
   `therock-7.13` release at
   `6d2136cd12be28c6251eb38c700e980c8c2f8cf6`; the generated
