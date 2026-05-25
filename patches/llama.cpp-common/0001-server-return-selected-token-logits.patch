@@ -89,7 +89,7 @@
 +    return json {
 +        {"id",    tok},
 +        {"token", txt_valid},
-+        {"bytes", completion_token_output::str_to_bytes(txt_valid)},
++        {"bytes", completion_token_output::str_to_bytes(txt)},
 +        {"logit", logit},
 +    };
 +}

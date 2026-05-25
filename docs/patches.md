@@ -59,6 +59,9 @@ becomes durable, prefer a named patch that another maintainer can review.
     requested raw token logits in the final response.
   - Disables backend sampled-candidate logits when `token_logits` is requested
     so every requested token ID is returned from full-vocabulary logits.
+  - Handles prompt-final selected logits when `n_predict` leaves no generation
+    budget, preserves original token bytes separately from the UTF-8-safe token
+    string, and caps requests at 1024 selected token IDs.
   - Keeps model-specific token selection in downstream service configuration
     instead of encoding a rerank model assumption in the backend packages.
 
