@@ -574,12 +574,27 @@ EOF
 }}"""
     elif template == "lemonade-app":
         source_patch_cmds = "".join(
-            f'  patch -Np1 -i "$srcdir/{patch_name}"\n'
+            f'  _apply_patch_if_needed "{patch_name}"\n'
             for patch_name in policy_pkg.get("source_patches", [])
         )
         prepare_block = ""
         if source_patch_cmds:
             prepare_block = f"""\
+_apply_patch_if_needed() {{
+  local _patch="$srcdir/$1"
+
+  if [[ ! -f "${{_patch}}" ]]; then
+    printf 'missing patch file: %s\\n' "$1" >&2
+    return 1
+  fi
+
+  if patch --dry-run -R -Np1 -i "${{_patch}}" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  patch -Np1 -i "${{_patch}}"
+}}
+
 prepare() {{
   cd "$srcdir/{src_subdir}"
 

@@ -6,11 +6,13 @@ The Lemonade 10.6.0 source update is adopted and live-validated. The local
 packages render from `nisavid/lemonade` fork main commit
 `a90f8194f29940c22575499951b12e588a2e8211`, aligned with canonical upstream
 and AUR `10.6.0` baselines, and the reference host reports
-`lemonade-server 10.6.0-1`, `lemonade-app 10.6.0-1`, and `lemonade 10.6.0-1`
+`lemonade-server 10.6.0-2`, `lemonade-app 10.6.0-1`, and `lemonade 10.6.0-1`
 from `pacman -Q`. The published repo contains the matching
-`lemonade-server`, `lemonade-app`, and `lemonade` `10.6.0-1` artifacts. The
-server patch stack was refreshed against the new source and applies without
-offsets or fuzz. The app package carries
+`lemonade-server 10.6.0-2`, `lemonade-app 10.6.0-1`, and `lemonade 10.6.0-1`
+artifacts. The server patch stack was refreshed against the new source and
+applies without offsets or fuzz; pkgrel 2 uses Lemonade's argv-based
+`ProcessManager` output capture for system-managed llama.cpp `--version`
+probing instead of shell-interpolated commands. The app package carries
 `0001-keep-tauri-glib-on-webkit-compatible-series.patch` so the Tauri Linux
 build uses the webkit2gtk-compatible `glib 0.18` dependency set until the
 upstream `glib 0.20` bump builds cleanly here. The generated app package also
@@ -25,7 +27,7 @@ packages/lemonade-server/tests packages/lemonade-app/tests -q` reports
 `12 passed`; `git diff --check` passes; and
 `tools/check_package_updates.py --refresh --only lemonade --json --fail-on
 actionable` reports all raw Lemonade checks current. `tools/amerge build`
-produced `lemonade-server 10.6.0-1`, `lemonade-app 10.6.0-1`, and `lemonade
+produced `lemonade-server 10.6.0-2`, `lemonade-app 10.6.0-1`, and `lemonade
 10.6.0-1` artifacts. The installed zembed GGUF registration now carries
 `llamacpp_args = "--pooling last"`, matching the model's GGUF
 `pooling_type = 3` metadata. With that registration, the full Lemonade smoke
