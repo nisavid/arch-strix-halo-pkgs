@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 from io import BytesIO
 import json
+import os
 from pathlib import Path
 import subprocess
 from types import SimpleNamespace
@@ -25,12 +26,19 @@ def run_helper(*args: str) -> subprocess.CompletedProcess[str]:
         [sys.executable, str(HELPER), *args],
         capture_output=True,
         text=True,
-        env={"PYTHONPYCACHEPREFIX": "/tmp"},
+        env={**os.environ, "PYTHONPYCACHEPREFIX": "/tmp"},
+        check=False,
     )
 
 
 def command_value(command: list[str], flag: str) -> str:
-    return command[command.index(flag) + 1]
+    try:
+        index = command.index(flag)
+    except ValueError:
+        raise AssertionError(f"{flag!r} not found in command: {command}") from None
+    if index + 1 >= len(command):
+        raise AssertionError(f"{flag!r} has no following value in command: {command}")
+    return command[index + 1]
 
 
 def _image_data_urls(mode: str) -> list[str]:
