@@ -1,6 +1,19 @@
 # Current State
 
-Status as of 2026-05-21.
+Status as of 2026-05-24.
+
+The 2026-05-24 recovery-branch freshness gate ran
+`tools/check_package_updates.py --json --fail-on actionable` before restoring
+the CTranslate2 package branch. The sweep found four new action-required
+families and they are tracked as separate follow-up lanes in
+`docs/maintainers/update-candidates.toml` and `docs/backlog.md`: AITER
+`0.1.14` stable after the adopted `0.1.14-rc0` package lane, llama.cpp
+`b9305` with AUR HIP baseline `b9297-1`, stable-diffusion.cpp master
+`a397e03488cc27e1a42da646b82dfce9f50741c0`, and the local
+python-pydantic-core ABI lane with Arch `2.46.4-1` and PyPI baseline cursor
+`2.47.0`. These are not adopted in the CTranslate2 recovery branch; each
+requires the package-specific source review, rebuild, deploy/install, and
+runtime validation gates recorded in the backlog before adoption.
 
 The 2026-05-21 freshness gate ran
 `tools/check_package_updates.py --json --fail-on actionable` after the
