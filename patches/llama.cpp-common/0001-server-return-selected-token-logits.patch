@@ -83,7 +83,7 @@
 +    return json {
 +        {"id",    tok},
 +        {"token", txt_valid},
-+        {"bytes", completion_token_output::str_to_bytes(txt)},
++        {"bytes", completion_token_output::str_to_bytes(txt_valid)},
 +        {"logit", logit},
 +    };
 +}
@@ -158,13 +158,12 @@
  
              bool backend_sampling = true;
  
-@@ -1350,2 +1353,6 @@
-             // TODO: speculative decoding requires multiple samples per batch - not supported yet
-             backend_sampling &= !(slot.can_speculate());
+@@ -1355,1 +1358,4 @@
+-            // TODO: getting pre sampling logits is not yet supported with backend sampling
 +            // token_logits must return every requested token id, so keep the
 +            // full-vocabulary logits instead of sampled-candidate logits.
 +            backend_sampling &= task.params.token_logits.empty();
-+
++            // TODO: getting pre sampling logits is not yet supported with backend sampling
 @@ -1567,6 +1574,25 @@
          }
      }
@@ -199,12 +198,31 @@
  
          res->verbose           = slot.task->params.verbose;
          res->stream            = slot.task->params.stream;
-@@ -3136,6 +3181,8 @@
- 
-                 const int tok_idx = slot.i_batch - i;
- 
+@@ -3123,1 +3168,21 @@
+-                    // prompt evaluated for next-token prediction
++                    const int tok_idx = slot.i_batch - i;
++
++                    populate_selected_token_logits(slot, tok_idx);
++
++                    if (!slot.has_budget(params_base)) {
++                        const int64_t t_current = ggml_time_us();
++                        slot.t_start_generation = t_current;
++                        slot.t_prompt_processing = (slot.t_start_generation - slot.t_start_process_prompt) / 1e3;
++                        slot.t_token_generation = 0;
++                        slot.stop = STOP_TYPE_LIMIT;
++                        slot.has_next_token = false;
++                        slot.i_batch = -1;
++                        metrics.on_prompt_eval(slot);
++                        slot.print_timings();
++                        send_final_response(slot);
++                        metrics.on_prediction(slot);
++                        slot.release();
++                        continue;
++                    }
++
++                    // prompt evaluated for next-token prediction
+@@ -3139,1 +3218,3 @@
+-                llama_token id = common_sampler_sample(slot.smpl.get(), slot.ctx_tgt, tok_idx);
 +                populate_selected_token_logits(slot, tok_idx);
 +
-                 llama_token id = common_sampler_sample(slot.smpl.get(), slot.ctx_tgt, tok_idx);
- 
-                 slot.i_batch = -1;
++                llama_token id = common_sampler_sample(slot.smpl.get(), slot.ctx_tgt, tok_idx);
