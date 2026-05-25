@@ -5,6 +5,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 MODULE_PATH = REPO_ROOT / "tools/repo_package_graph.py"
@@ -25,7 +27,9 @@ def write_recipe_package(
     *,
     depends: list[str],
     makedepends: list[str],
+    outputs: list[str] | None = None,
 ) -> Path:
+    outputs = outputs or [name]
     package_dir = tmp_path / "packages" / name
     package_dir.mkdir(parents=True)
     (package_dir / "recipe.json").write_text(
@@ -33,21 +37,51 @@ def write_recipe_package(
             {
                 "name": name,
                 "package_name": name,
+                "outputs": outputs,
                 "policy": {"depends": depends},
             }
         ),
         encoding="utf-8",
     )
     (package_dir / "PKGBUILD").write_text(
-        "\n".join(
+        (
+            f"pkgname={name}"
+            if outputs == [name]
+            else "pkgname=(" + " ".join(f"'{output}'" for output in outputs) + ")"
+        )
+        + "\n"
+        + "\n".join(
             [
-                f"pkgname={name}",
                 f"depends=({' '.join(depends)})" if depends else "depends=()",
                 (
                     f"makedepends=({' '.join(makedepends)})"
                     if makedepends
                     else "makedepends=()"
                 ),
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    return package_dir
+
+
+def write_mismatched_recipe_package(
+    tmp_path: Path,
+    name: str,
+) -> Path:
+    package_dir = tmp_path / "packages" / name
+    package_dir.mkdir(parents=True)
+    (package_dir / "recipe.json").write_text(
+        json.dumps({"name": name, "package_name": name, "outputs": [name, "extra"]}),
+        encoding="utf-8",
+    )
+    (package_dir / "PKGBUILD").write_text(
+        "\n".join(
+            [
+                f"pkgname={name}",
+                "depends=()",
+                "makedepends=()",
             ]
         )
         + "\n",
@@ -110,6 +144,51 @@ def test_discover_repo_package_roots_reads_single_and_multi_output_roots(tmp_pat
     assert roots["python-vllm-rocm-gfx1151"].repo_dependency_roots == {
         "therock-gfx1151"
     }
+
+
+def test_discover_recipe_root_uses_explicit_split_outputs(tmp_path: Path):
+    write_recipe_package(
+        tmp_path,
+        "ctranslate2-gfx1151",
+        depends=[],
+        makedepends=[],
+        outputs=["ctranslate2-gfx1151", "python-ctranslate2-gfx1151"],
+    )
+
+    module = load_module()
+    roots = module.discover_repo_package_roots(tmp_path / "packages")
+
+    assert roots["ctranslate2-gfx1151"].outputs == (
+        "ctranslate2-gfx1151",
+        "python-ctranslate2-gfx1151",
+    )
+
+
+def test_discover_recipe_root_rejects_non_string_outputs(tmp_path: Path):
+    package_dir = write_recipe_package(
+        tmp_path,
+        "broken",
+        depends=[],
+        makedepends=[],
+        outputs=["broken"],
+    )
+    recipe = json.loads((package_dir / "recipe.json").read_text(encoding="utf-8"))
+    recipe["outputs"] = ["broken", None]
+    (package_dir / "recipe.json").write_text(json.dumps(recipe), encoding="utf-8")
+
+    module = load_module()
+
+    with pytest.raises(RuntimeError, match="RECIPE_OUTPUTS_INVALID"):
+        module.discover_repo_package_roots(tmp_path / "packages")
+
+
+def test_discover_recipe_root_rejects_outputs_that_drift_from_pkgbuild(tmp_path: Path):
+    write_mismatched_recipe_package(tmp_path, "broken")
+
+    module = load_module()
+
+    with pytest.raises(RuntimeError, match="RECIPE_OUTPUTS_PKGBUILD_MISMATCH"):
+        module.discover_repo_package_roots(tmp_path / "packages")
 
 
 def test_discover_repo_package_roots_ignores_unrendered_therock_manifest_entries(tmp_path: Path):

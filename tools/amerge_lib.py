@@ -102,6 +102,12 @@ class StepSpec:
         }
 
 
+@dataclass(frozen=True)
+class TargetSelection:
+    targets: list[str]
+    expand_root_targets: bool
+
+
 class PlanAlreadyActive(RuntimeError):
     pass
 
@@ -180,7 +186,7 @@ def parse_menu_selection(selection: str, count: int) -> list[int]:
     return sorted(indexes)
 
 
-def prompt_for_targets(roots: dict[str, RepoPackageRoot]) -> list[str]:
+def prompt_for_targets(roots: dict[str, RepoPackageRoot]) -> TargetSelection:
     root_names = sorted(roots)
     print("No amerge targets were selected.")
     print("  1. all repo package roots")
@@ -188,12 +194,12 @@ def prompt_for_targets(roots: dict[str, RepoPackageRoot]) -> list[str]:
     print("  3. choose package roots")
     answer = input("Select target set [1/2/3]: ").strip() or "1"
     if answer == "1":
-        return root_names
+        return TargetSelection(root_names, expand_root_targets=True)
     if answer == "2":
         outputs = installed_repo_outputs(roots)
         if not outputs:
             raise SystemExit("No installed repo packages were found.")
-        return outputs
+        return TargetSelection(outputs, expand_root_targets=False)
     if answer != "3":
         raise SystemExit("No package selection was made.")
 
@@ -203,7 +209,10 @@ def prompt_for_targets(roots: dict[str, RepoPackageRoot]) -> list[str]:
     selection = input("Select package roots by number or range: ").strip()
     if not selection:
         raise SystemExit("No package selection was made.")
-    return [root_names[index - 1] for index in parse_menu_selection(selection, len(root_names))]
+    return TargetSelection(
+        [root_names[index - 1] for index in parse_menu_selection(selection, len(root_names))],
+        expand_root_targets=True,
+    )
 
 
 def resolve_targets(
@@ -225,14 +234,16 @@ def resolve_targets(
 def requested_outputs_for_targets(
     roots: dict[str, RepoPackageRoot],
     targets: list[str],
+    *,
+    expand_root_targets: bool = True,
 ) -> dict[str, set[str]]:
     outputs = output_to_root_map(roots)
     requested: dict[str, set[str]] = {}
     for target in targets:
-        if target in outputs:
-            requested.setdefault(outputs[target], set()).add(target)
-        elif target in roots:
+        if target in roots and (expand_root_targets or target not in outputs):
             requested.setdefault(target, set()).update(roots[target].outputs)
+        elif target in outputs:
+            requested.setdefault(outputs[target], set()).add(target)
         else:
             raise SystemExit(f"Unknown repo package or output: {target}")
     return requested
@@ -241,19 +252,19 @@ def requested_outputs_for_targets(
 def resolve_initial_targets(
     roots: dict[str, RepoPackageRoot],
     args: argparse.Namespace,
-) -> list[str]:
+) -> TargetSelection:
     targets = list(args.targets)
     if targets and (args.all or args.installed):
         raise SystemExit("Choose package names or a selector, not both.")
     if targets:
-        return targets
+        return TargetSelection(targets, expand_root_targets=True)
     if args.all:
-        return sorted(roots)
+        return TargetSelection(sorted(roots), expand_root_targets=True)
     if args.installed:
         outputs = installed_repo_outputs(roots)
         if not outputs:
             raise SystemExit("No installed repo packages were found.")
-        return outputs
+        return TargetSelection(outputs, expand_root_targets=False)
     if sys.stdin.isatty() and sys.stdout.isatty():
         return prompt_for_targets(roots)
     raise SystemExit(
@@ -726,8 +737,13 @@ def create_merge_plan(args: argparse.Namespace, *, command: str) -> dict[str, ob
             allow_foreign=args.allow_foreign_publish_root,
         )
     roots = discover_repo_package_roots(packages_root)
-    targets = resolve_initial_targets(roots, args)
-    requested_outputs = requested_outputs_for_targets(roots, targets)
+    target_selection = resolve_initial_targets(roots, args)
+    targets = target_selection.targets
+    requested_outputs = requested_outputs_for_targets(
+        roots,
+        targets,
+        expand_root_targets=target_selection.expand_root_targets,
+    )
     selected = selected_roots_for_args(
         roots,
         targets,

@@ -1,0 +1,103 @@
+{
+  "maintenance": {
+    "divergence_notes": [
+      "Uses upstream OpenNMT CTranslate2 4.7.2 because the tagged release carries first-party HIP build support.",
+      "Enables the ROCm HIP backend for gfx1151 while keeping the AUR baseline's OpenBLAS/Ruy CPU backend shape.",
+      "Disables the optional CLI target until the vendored cxxopts clang 22 include failure is patched or upstreamed.",
+      "Relaxes the exact pybind11 build requirement to use Arch's system pybind11 package."
+    ],
+    "update_notes": [
+      "Re-check AUR ctranslate2 first for Arch packaging drift.",
+      "Compare upstream OpenNMT release notes and the ROCm fork for HIP-specific fixes before changing the source lane.",
+      "Keep Open WebUI STT validation separate from package-build proof when the CTranslate2, faster-whisper, Open WebUI, or ROCm package lanes change."
+    ]
+  },
+  "name": "ctranslate2-gfx1151",
+  "package_name": "ctranslate2-gfx1151",
+  "outputs": [
+    "ctranslate2-gfx1151",
+    "python-ctranslate2-gfx1151"
+  ],
+  "pkgver": "4.7.2",
+  "policy": {
+    "advisory_references": [
+      "https://github.com/ROCm/CTranslate2",
+      "https://rocm.blogs.amd.com/artificial-intelligence/ctranslate2/README.html"
+    ],
+    "arch_reference": [
+      "aur/ctranslate2"
+    ],
+    "authoritative_reference": "aur/ctranslate2",
+    "conflicts": [
+      "ctranslate2",
+      "python-ctranslate2"
+    ],
+    "depends": [
+      "gcc-libs",
+      "glibc",
+      "hip-gfx1151",
+      "hipblas-gfx1151",
+      "hiprand-gfx1151",
+      "openblas",
+      "openmp",
+      "python-gfx1151",
+      "python-numpy-gfx1151",
+      "python-pytorch-opt-rocm-gfx1151",
+      "python-pyyaml-gfx1151",
+      "python-setuptools",
+      "rocblas-gfx1151",
+      "rocm-sysdeps-gfx1151"
+    ],
+    "license": [
+      "MIT"
+    ],
+    "makedepends": [
+      "cmake",
+      "git",
+      "hip-gfx1151",
+      "hipblas-gfx1151",
+      "hipcub-gfx1151",
+      "hiprand-gfx1151",
+      "ninja",
+      "openblas",
+      "pybind11",
+      "python-build",
+      "python-gfx1151",
+      "python-installer",
+      "python-setuptools",
+      "python-wheel",
+      "rocprim-gfx1151",
+      "rocthrust-gfx1151",
+      "rocm-llvm-gfx1151"
+    ],
+    "pkgdesc": "CTranslate2 inference runtime rebuilt with ROCm HIP for Strix Halo gfx1151",
+    "provides": [
+      "ctranslate2",
+      "python-ctranslate2"
+    ],
+    "source_refs": [
+      "git+https://github.com/OpenNMT/CTranslate2.git#tag=v4.7.2"
+    ],
+    "submodule_refs": [
+      "https://github.com/google/cpu_features.git",
+      "https://github.com/pytorch/cpuinfo.git",
+      "https://github.com/NVIDIA/cutlass.git",
+      "https://github.com/jarro2783/cxxopts.git",
+      "https://github.com/google/googletest.git",
+      "https://github.com/google/ruy.git",
+      "https://github.com/gabime/spdlog.git",
+      "https://github.com/NVIDIA/thrust.git",
+      "https://github.com/NVIDIA/cub.git"
+    ],
+    "source_patches": [
+      "0001-relax-pybind11-build-requirement.patch"
+    ],
+    "template": "manual-split-cmake-python",
+    "upstream_version": "4.7.2",
+    "url": "https://github.com/OpenNMT/CTranslate2"
+  },
+  "provenance": {
+    "reference_retrieved": "2026-05-24",
+    "source_type": "manual package scout"
+  }
+}

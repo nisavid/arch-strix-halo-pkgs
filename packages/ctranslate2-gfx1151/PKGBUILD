@@ -1,0 +1,175 @@
+# Maintainer: nisavid
+
+pkgbase=ctranslate2-gfx1151
+pkgname=(
+  'ctranslate2-gfx1151'
+  'python-ctranslate2-gfx1151'
+)
+pkgver=4.7.2
+pkgrel=1
+pkgdesc='CTranslate2 inference runtime rebuilt with ROCm HIP for Strix Halo gfx1151'
+arch=('x86_64')
+url='https://github.com/OpenNMT/CTranslate2'
+license=('MIT')
+depends=()
+makedepends=(
+  'cmake'
+  'git'
+  'hip-gfx1151'
+  'hipblas-gfx1151'
+  'hipcub-gfx1151'
+  'hiprand-gfx1151'
+  'ninja'
+  'openblas'
+  'pybind11'
+  'python-build'
+  'python-gfx1151'
+  'python-installer'
+  'python-setuptools'
+  'python-wheel'
+  'rocprim-gfx1151'
+  'rocm-llvm-gfx1151'
+  'rocthrust-gfx1151'
+)
+options=('!lto')
+source=(
+  "CTranslate2::git+https://github.com/OpenNMT/CTranslate2.git#tag=v${pkgver}"
+  'git+https://github.com/google/cpu_features.git'
+  'git+https://github.com/NVIDIA/cutlass.git'
+  'git+https://github.com/jarro2783/cxxopts.git'
+  'git+https://github.com/google/googletest.git'
+  'git+https://github.com/pytorch/cpuinfo.git'
+  'git+https://github.com/google/ruy.git'
+  'git+https://github.com/gabime/spdlog.git'
+  'git+https://github.com/NVIDIA/thrust.git'
+  'git+https://github.com/NVIDIA/cub.git'
+  '0001-relax-pybind11-build-requirement.patch'
+)
+sha256sums=(
+  'SKIP'
+  'SKIP'
+  'SKIP'
+  'SKIP'
+  'SKIP'
+  'SKIP'
+  'SKIP'
+  'SKIP'
+  'SKIP'
+  'SKIP'
+  'SKIP'
+)
+
+prepare() {
+  cd CTranslate2
+
+  git submodule init
+  for submodule in cpu_features cutlass cxxopts googletest ruy spdlog thrust; do
+    git config "submodule.third_party/${submodule}.url" "$srcdir/${submodule}"
+  done
+  git submodule sync
+  git -c protocol.file.allow=always submodule update
+
+  pushd third_party/ruy
+  git submodule init
+  git config submodule.cpuinfo.url "$srcdir/cpuinfo"
+  git config submodule.googletest.url "$srcdir/googletest"
+  git submodule sync
+  git -c protocol.file.allow=always submodule update
+  popd
+
+  pushd third_party/thrust
+  git submodule init
+  git config submodule.cub.url "$srcdir/cub"
+  git submodule sync
+  git -c protocol.file.allow=always submodule update
+  popd
+
+  if ! patch --dry-run -R -Np1 -i "$srcdir/0001-relax-pybind11-build-requirement.patch" >/dev/null 2>&1; then
+    patch -Np1 -i "$srcdir/0001-relax-pybind11-build-requirement.patch"
+  fi
+
+  git clean python -dfx
+}
+
+build() {
+  local _compiler_root='/opt/rocm/lib/llvm/bin'
+  local _python='/usr/bin/python'
+  local _rocm_base_flags
+  local _source_prefix_flags="-ffile-prefix-map=${srcdir}=/usr/src/debug/${pkgbase} -fmacro-prefix-map=${srcdir}=/usr/src/debug/${pkgbase}"
+  _rocm_base_flags="$(printf '%s' "${CXXFLAGS:-}" | sed -E 's/(^| )-fcf-protection(=[^ ]*)?( |$)/ /g; s/  +/ /g; s/^ +| +$//g')"
+  local _cmake_cxx_flags="${_rocm_base_flags} ${_source_prefix_flags} -Wno-deprecated-literal-operator -Wno-error=unused-command-line-argument"
+  local _cmake_hip_flags="${_rocm_base_flags} ${_source_prefix_flags} -Wno-deprecated-literal-operator -Wno-error=unused-command-line-argument"
+
+  cmake -S CTranslate2 -B build -G Ninja \
+    -D CMAKE_BUILD_TYPE=Release \
+    -D CMAKE_INSTALL_PREFIX=/usr \
+    -D CMAKE_C_COMPILER="${_compiler_root}/amdclang" \
+    -D CMAKE_CXX_COMPILER="${_compiler_root}/amdclang++" \
+    -D CMAKE_HIP_COMPILER="${_compiler_root}/amdclang++" \
+    -D CMAKE_CXX_FLAGS="${_cmake_cxx_flags}" \
+    -D CMAKE_HIP_FLAGS="${_cmake_hip_flags}" \
+    -D CMAKE_HIP_ARCHITECTURES=gfx1151 \
+    -D WITH_HIP=ON \
+    -D WITH_CUDA=OFF \
+    -D WITH_CUDNN=OFF \
+    -D WITH_MKL=OFF \
+    -D WITH_DNNL=OFF \
+    -D WITH_OPENBLAS=ON \
+    -D WITH_RUY=ON \
+    -D OPENMP_RUNTIME=COMP \
+    -D ENABLE_CPU_DISPATCH=OFF \
+    -D BUILD_TESTS=OFF \
+    -D BUILD_CLI=OFF \
+    -D CMAKE_POLICY_VERSION_MINIMUM=3.5
+  cmake --build build
+
+  pushd CTranslate2/python
+  CTRANSLATE2_ROOT=.. LIBRARY_PATH="$srcdir/build" "$_python" -m build --wheel --no-isolation
+  popd
+}
+
+package_ctranslate2-gfx1151() {
+  pkgdesc='CTranslate2 C++ inference runtime rebuilt with ROCm HIP for Strix Halo gfx1151'
+  depends=(
+    'gcc-libs'
+    'glibc'
+    'hip-gfx1151'
+    'hipblas-gfx1151'
+    'hiprand-gfx1151'
+    'openblas'
+    'openmp'
+    'rocblas-gfx1151'
+    'rocm-sysdeps-gfx1151'
+  )
+  provides=('ctranslate2')
+  conflicts=('ctranslate2')
+
+  DESTDIR="$pkgdir" cmake --install build
+
+  # Avoid conflict with nlohmann-json.
+  rm -rf "$pkgdir/usr/include/nlohmann"
+
+  install -Dm644 CTranslate2/LICENSE -t "$pkgdir/usr/share/licenses/$pkgname/"
+}
+
+package_python-ctranslate2-gfx1151() {
+  pkgdesc='Python bindings for CTranslate2 rebuilt with ROCm HIP for Strix Halo gfx1151'
+  depends=(
+    'ctranslate2-gfx1151'
+    'gcc-libs'
+    'glibc'
+    'python-gfx1151'
+    'python-numpy-gfx1151'
+    'python-pytorch-opt-rocm-gfx1151'
+    'python-pyyaml-gfx1151'
+    'python-setuptools'
+  )
+  provides=('python-ctranslate2')
+  conflicts=('python-ctranslate2')
+
+  cd CTranslate2/python
+  export PYTHONPYCACHEPREFIX="$srcdir/python-pycache"
+  /usr/bin/python -m installer --destdir="$pkgdir" dist/*.whl
+
+  install -Dm644 ../LICENSE -t "$pkgdir/usr/share/licenses/$pkgname/"
+}

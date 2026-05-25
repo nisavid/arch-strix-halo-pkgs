@@ -96,12 +96,24 @@ def read_pkgbuild_metadata(path: Path) -> dict[str, tuple[str, ...] | str]:
     }
 
 
-def _load_recipe_output(path: Path) -> tuple[str, ...]:
+def _load_recipe_outputs(path: Path) -> tuple[str, ...]:
     recipe = json.loads(path.read_text(encoding="utf-8"))
     package_name = recipe.get("package_name")
     if not package_name:
         raise RuntimeError(f"RECIPE_PACKAGE_NAME_MISSING: {path}")
-    return (str(package_name),)
+    outputs = recipe.get("outputs")
+    if outputs is None:
+        return (str(package_name),)
+    if not isinstance(outputs, list):
+        raise RuntimeError(f"RECIPE_OUTPUTS_INVALID: {path}")
+    if not all(isinstance(output, str) and output for output in outputs):
+        raise RuntimeError(f"RECIPE_OUTPUTS_INVALID: {path}")
+    normalized = tuple(outputs)
+    if not normalized:
+        raise RuntimeError(f"RECIPE_OUTPUTS_EMPTY: {path}")
+    if str(package_name) not in normalized:
+        raise RuntimeError(f"RECIPE_OUTPUTS_PACKAGE_NAME_MISSING: {path}")
+    return normalized
 
 
 def _load_therock_outputs(package_dir: Path) -> tuple[str, ...]:
@@ -125,7 +137,14 @@ def discover_repo_package_roots(packages_root: Path) -> dict[str, RepoPackageRoo
             depends = ()
             makedepends = ()
         else:
-            outputs = _load_recipe_output(package_dir / "recipe.json")
+            outputs = _load_recipe_outputs(package_dir / "recipe.json")
+            pkgbuild_outputs = tuple(metadata["outputs"])
+            if set(outputs) != set(pkgbuild_outputs):
+                raise RuntimeError(
+                    "RECIPE_OUTPUTS_PKGBUILD_MISMATCH: "
+                    f"{package_dir} "
+                    f"recipe={tuple(sorted(outputs))} pkgbuild={pkgbuild_outputs}"
+                )
             depends = tuple(metadata["depends"])
             makedepends = tuple(metadata["makedepends"])
         provisional[root_name] = RepoPackageRoot(
