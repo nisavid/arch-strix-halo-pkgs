@@ -73,6 +73,16 @@ checks = [
   { id = "aur", role = "baseline", kind = "aur", package = "python-openai-harmony", recorded = "0.0.8-1", comparison = "pkgver" },
 ]
 
+[families.ctranslate2]
+packages = ["ctranslate2-gfx1151"]
+priority = "medium"
+workflow = "upstream_source_update"
+checks = [
+  { id = "release", role = "primary", kind = "github_release", repo = "OpenNMT/CTranslate2", recorded = "4.7.2", tag_prefix = "v", comparison = "pep440", include_prereleases = false },
+  { id = "aur", role = "baseline", kind = "aur", package = "ctranslate2", recorded = "4.7.1-1", comparison = "pkgver" },
+  { id = "rocm-fork", role = "scout", kind = "git_ref", repo = "https://github.com/ROCm/CTranslate2.git", ref = "refs/heads/amd_dev", recorded = "d8536d34e6e606c793b926c6ab773425d11c6b58", comparison = "sha" },
+]
+
 [families.rocm_pytorch]
 packages = ["python-pytorch-opt-rocm-gfx1151"]
 priority = "high"

@@ -1,0 +1,20 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: nisavid <nisavid@users.noreply.github.com>
+Date: Thu, 14 May 2026 08:45:00 -0400
+Subject: [PATCH] relax pybind11 build requirement
+
+Arch packages pybind11 separately. Accept the system package instead of
+requiring the exact wheel version in the build metadata.
+---
+ python/pyproject.toml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/python/pyproject.toml b/python/pyproject.toml
+index 7f49281a..5292afc9 100644
+--- a/python/pyproject.toml
++++ b/python/pyproject.toml
+@@ -1,3 +1,3 @@
+ [build-system]
+-requires = ["setuptools", "wheel", "pybind11==2.11.1"]
++requires = ["setuptools", "wheel", "pybind11"]
+ build-backend = "setuptools.build_meta"

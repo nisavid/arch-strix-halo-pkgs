@@ -291,6 +291,17 @@
   `docs/maintainers/rocm-inference-reference.md` belong near the top of this
   backlog, but they are not validated package commitments until their source
   audit and host gates pass.
+  - Open WebUI STT CTranslate2 lane: adopted and validated. The package follows
+    OpenNMT CTranslate2 4.7.2 with upstream `WITH_HIP=ON` for `gfx1151`.
+    Package-build proof passed through `tools/amerge build
+    ctranslate2-gfx1151` on 2026-05-24, producing both split packages after
+    CMake used ROCm clang directly, the optional CLI target was disabled, the
+    exact pybind11 build pin was relaxed, and package Python calls used
+    `/usr/bin/python`. Both split packages are published to and installed from
+    the local repo, `amerge` selects both recipe-declared split outputs for
+    root-target deploys, installed Python smokes see one ROCm device through
+    CTranslate2, and the Open WebUI/faster-whisper STT consumer smoke passes on
+    the ROCm path.
   - Torch-MIGraphX PT2E follow-up: `python-torch-migraphx-gfx1151` now tracks
     FX lowering, PT2E quantizer imports, a bounded ResNet-style
     `torch.compile(..., backend="migraphx")` smoke, and a bounded PT2E

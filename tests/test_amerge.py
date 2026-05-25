@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import io
 import json
 import os
 import subprocess
@@ -9,6 +10,7 @@ import threading
 import time
 from datetime import datetime, timezone
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -49,19 +51,26 @@ def write_recipe_package(
     *,
     depends: list[str] | None = None,
     makedepends: list[str] | None = None,
+    outputs: list[str] | None = None,
 ) -> Path:
     depends = depends or []
     makedepends = makedepends or []
+    outputs = outputs or [name]
     package_dir = tmp_path / "packages" / name
     package_dir.mkdir(parents=True)
     (package_dir / "recipe.json").write_text(
-        json.dumps({"name": name, "package_name": name}),
+        json.dumps({"name": name, "package_name": name, "outputs": outputs}),
         encoding="utf-8",
     )
     (package_dir / "PKGBUILD").write_text(
-        "\n".join(
+        (
+            f"pkgname={name}"
+            if outputs == [name]
+            else "pkgname=(" + " ".join(f"'{output}'" for output in outputs) + ")"
+        )
+        + "\n"
+        + "\n".join(
             [
-                f"pkgname={name}",
                 f"depends=({' '.join(depends)})" if depends else "depends=()",
                 (
                     f"makedepends=({' '.join(makedepends)})"
@@ -419,6 +428,134 @@ def test_deploy_subcommand_publishes_then_installs_selected_outputs(tmp_path: Pa
         "--ask=4",
         "python-app-gfx1151",
     ]
+
+
+def test_deploy_recipe_split_root_installs_all_declared_outputs(tmp_path: Path):
+    package_dir = write_recipe_package(
+        tmp_path,
+        "ctranslate2-gfx1151",
+        outputs=["ctranslate2-gfx1151", "python-ctranslate2-gfx1151"],
+    )
+    (package_dir / "PKGBUILD").write_text(
+        "\n".join(
+            [
+                "pkgbase=ctranslate2-gfx1151",
+                "pkgname=('ctranslate2-gfx1151' 'python-ctranslate2-gfx1151')",
+                "depends=()",
+                "makedepends=()",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    result = run_amerge(
+        "deploy",
+        "--dry-run",
+        "--json",
+        "--packages-root",
+        str(tmp_path / "packages"),
+        "ctranslate2-gfx1151",
+    )
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    assert payload["merge_plan"]["install_outputs"] == [
+        "ctranslate2-gfx1151",
+        "python-ctranslate2-gfx1151",
+    ]
+    assert payload["steps"][1]["commands"][0]["argv"][-2:] == [
+        "ctranslate2-gfx1151",
+        "python-ctranslate2-gfx1151",
+    ]
+
+
+def test_installed_selector_keeps_primary_split_output_precise(tmp_path: Path):
+    package_dir = write_recipe_package(
+        tmp_path,
+        "ctranslate2-gfx1151",
+        outputs=["ctranslate2-gfx1151", "python-ctranslate2-gfx1151"],
+    )
+    (package_dir / "PKGBUILD").write_text(
+        "\n".join(
+            [
+                "pkgbase=ctranslate2-gfx1151",
+                "pkgname=('ctranslate2-gfx1151' 'python-ctranslate2-gfx1151')",
+                "depends=()",
+                "makedepends=()",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    pacman = bin_dir / "pacman"
+    pacman.write_text(
+        "#!/bin/sh\n"
+        "if [ \"$1\" = \"-Qq\" ]; then\n"
+        "  printf '%s\\n' ctranslate2-gfx1151\n"
+        "  exit 0\n"
+        "fi\n"
+        "exit 2\n",
+        encoding="utf-8",
+    )
+    pacman.chmod(0o755)
+
+    result = run_amerge(
+        "deploy",
+        "--dry-run",
+        "--json",
+        "--installed",
+        "--packages-root",
+        str(tmp_path / "packages"),
+        env={"PATH": f"{bin_dir}:{os.environ['PATH']}"},
+    )
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    assert payload["merge_plan"]["install_outputs"] == ["ctranslate2-gfx1151"]
+    assert payload["steps"][1]["commands"][0]["argv"][-1] == "ctranslate2-gfx1151"
+
+
+def test_prompt_installed_selection_keeps_primary_split_output_precise(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    write_recipe_package(
+        tmp_path,
+        "ctranslate2-gfx1151",
+        outputs=["ctranslate2-gfx1151", "python-ctranslate2-gfx1151"],
+    )
+    module = load_module()
+    roots = module.discover_repo_package_roots(tmp_path / "packages")
+
+    class TtyBuffer(io.StringIO):
+        def isatty(self) -> bool:
+            return True
+
+    monkeypatch.setattr(module.sys, "stdin", TtyBuffer())
+    monkeypatch.setattr(module.sys, "stdout", TtyBuffer())
+    monkeypatch.setattr("builtins.input", lambda _prompt: "2")
+    monkeypatch.setattr(
+        module,
+        "installed_repo_outputs",
+        lambda _roots: ["ctranslate2-gfx1151"],
+    )
+
+    selection = module.resolve_initial_targets(
+        roots,
+        SimpleNamespace(targets=[], all=False, installed=False),
+    )
+    requested = module.requested_outputs_for_targets(
+        roots,
+        selection.targets,
+        expand_root_targets=selection.expand_root_targets,
+    )
+
+    assert selection.targets == ["ctranslate2-gfx1151"]
+    assert not selection.expand_root_targets
+    assert requested == {"ctranslate2-gfx1151": {"ctranslate2-gfx1151"}}
 
 
 def test_privileged_plan_commands_use_noninteractive_sudo(tmp_path: Path):

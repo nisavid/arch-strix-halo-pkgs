@@ -27,6 +27,16 @@ packages/*/aotriton-aiter/
 packages/*/aotriton-incbin/
 packages/*/flash-attention/
 packages/*/python-triton-gfx1151-llvm-*/
+packages/ctranslate2-gfx1151/CTranslate2/
+packages/ctranslate2-gfx1151/cpu_features/
+packages/ctranslate2-gfx1151/cpuinfo/
+packages/ctranslate2-gfx1151/cutlass/
+packages/ctranslate2-gfx1151/cxxopts/
+packages/ctranslate2-gfx1151/googletest/
+packages/ctranslate2-gfx1151/ruy/
+packages/ctranslate2-gfx1151/spdlog/
+packages/ctranslate2-gfx1151/thrust/
+packages/ctranslate2-gfx1151/cub/
 repo/
 docs/superpowers/
 docs/worklog/

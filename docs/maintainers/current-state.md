@@ -262,6 +262,23 @@ now run their build and install commands through `/usr/bin/python` so package
 bytecode generation stays out of agent-local Python wrappers and private
 pycache roots.
 
+The Open WebUI STT CTranslate2 lane has source, package-build, deploy/install,
+installed-smoke, and Open WebUI consumer proof. `tools/amerge build
+ctranslate2-gfx1151` produced `ctranslate2-gfx1151 4.7.2-1` and
+`python-ctranslate2-gfx1151 4.7.2-1` on 2026-05-24. Both split packages are
+published to the local repo and installed from it, and the package metadata
+depends on Arch's `openmp` package for `libomp.so`. `amerge` treats
+recipe-declared split outputs as outputs of the root target so
+`tools/amerge deploy ctranslate2-gfx1151` selects both split packages.
+Installed module smoke passed with CTranslate2 4.7.2 reporting one ROCm device
+and CUDA/HIP compute types including `float16`, `bfloat16`, `float32`, and int8
+variants; `faster_whisper` imports against the installed CTranslate2 module.
+The Open WebUI STT smoke passed through Open WebUI's `transcribe` path with
+`USE_CUDA_DOCKER=true`, `DEVICE_TYPE=cuda`, and
+`Systran/faster-whisper-tiny.en` producing non-empty English transcript text.
+The focused CTranslate2 freshness check is current for OpenNMT 4.7.2, AUR
+`ctranslate2 4.7.1-1`, and the tracked ROCm fork `amd_dev` commit.
+
 ROCm PyTorch release/2.11 at
 `96bfee122869125d32aa4ec9acc8c3597059188b` is rejected for this sweep because
 the reviewed range does not overlap the current gfx1151 package carry, and
