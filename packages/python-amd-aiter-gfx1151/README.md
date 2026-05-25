@@ -6,7 +6,7 @@
 - Scaffold template: `python-project-aiter`
 - Recipe build method: `pip`
 - Upstream repo: `https://github.com/ROCm/aiter.git`
-- Package version: `0.1.14rc0`
+- Package version: `0.1.14`
 - Recipe revision: `3f15f9f (20260508, 17 commits touching recipe path)`
 - Recipe steps: `29`
 - Recipe dependencies: `pytorch, vllm`
@@ -17,7 +17,7 @@
 
 ## Recipe notes
 
-Rebuilt from upstream AITER release candidate v0.1.14-rc0. Keep the packaged CK ABI
+Rebuilt from upstream AITER stable release v0.1.14. Keep the packaged CK ABI
 aligned with the CK headers used by AITER's JIT at runtime.
 
 PREBUILD_KERNELS=0: skip 45-minute full kernel precompilation.
@@ -57,6 +57,7 @@ RDNA 3.5 compatibility and installed-system JIT/runtime behavior.
 - On 2026-05-10, adopted AITER stable tag v0.1.13 with the local gfx1151 RDNA header, JIT runtime, and gfx1x MoE compatibility carry preserved.
 - On 2026-05-14, adopted AITER main d50194cae28f2e22f4dfff19a86577fe2fcbca27 as a post-0.1.13 snapshot because the range carries kernel, JIT, mHC, topk, and MXFP4 changes that are relevant to the local vLLM/AITER validation surface.
 - On 2026-05-16, adopted upstream release tag v0.1.14-rc0 because prerelease GitHub releases are now intentional source-lane updates for this package.
+- On 2026-05-25, adopted upstream release tag v0.1.14 because it supersedes the rc0 package lane. The stable release is cut from release/v0.1.14 at bd0534e96 and adds DSv4 fusions, MiniMax fused qknorm/allreduce, FlyDSL and Triton updates, and bug fixes while preserving the local gfx1151 patch carry.
 - Treat FlyDSL as a separate tracked package story; do not silently fold an unpublished wheel into this package.
 - Keep the installed-system JIT runtime patch until upstream AITER stops assuming `hipcc` is on the ambient PATH and correctly imports modules copied to the writable user JIT cache from read-only site-packages installs.
 - Keep the package's explicit ROCm toolchain exports in `build()` until upstream AITER stops probing `hipconfig` and `hipcc` through ambient shell state. The concrete build failure was `Could not find hipconfig in PATH or ROCM_HOME(/usr)`.

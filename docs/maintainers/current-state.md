@@ -1,6 +1,34 @@
 # Current State
 
-Status as of 2026-05-24.
+Status as of 2026-05-25.
+
+The 2026-05-25 AITER stable-release refresh is adopted and live-validated.
+`python-amd-aiter-gfx1151` now renders from upstream tag `v0.1.14` as
+`0.1.14-1`, replacing the superseded `v0.1.14-rc0` source lane while
+preserving the local gfx1151 patch carry. Source verification passed with
+`makepkg --verifysource -f`, source preparation and patch application passed
+with `makepkg --nobuild --nodeps --force`, package-local tests passed with
+`pytest tests packages/python-amd-aiter-gfx1151/tests -q`, and
+`tools/amerge build python-amd-aiter-gfx1151 -y` built the package.
+Deploy/install completed after operator handoff; `pacman -Q` reports
+`python-amd-aiter-gfx1151 0.1.14-1`. The installed AITER smoke imported
+`aiter.jit.core` against visible host ROCm and reported `amd-aiter 0.1.14`.
+A constrained Qwen3.5 vLLM smoke with `--gpu-memory-utilization 0.25` passed
+and generated `ready`. After the host Lemonade server was stopped, the tracked
+default `vllm.qwen3_5.0_8b.text.basic` scenario passed at
+`docs/worklog/inference-runs/20260524T220946` in `40.814022` seconds with
+the previous `gpu_memory_utilization=0.75` setting. After tightening the tiny
+Qwen scenario contract to `0.25`, the same scenario passed again at
+`docs/worklog/inference-runs/20260524T222250` in `42.850922` seconds.
+
+The AITER closeout exposed an oversized small-model smoke default rather than
+a model weight requirement. vLLM interprets `gpu_memory_utilization` as the
+fraction of total device memory available to the model executor and KV cache,
+so `0.75` on the 112 GiB Strix Halo device requests about 84 GiB even for tiny
+correctness smokes. The reduced Qwen3.5 0.8B text smoke now records
+`--gpu-memory-utilization 0.25`, and Gemma 4 E2B text/server helpers default
+to `0.35`; larger 26B-A4B and Qwen3.6 MoE probes keep their existing explicit
+high-reservation settings.
 
 The 2026-05-24 recovery-branch freshness gate ran
 `tools/check_package_updates.py --json --fail-on actionable` before restoring

@@ -95,7 +95,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--api-key", default="EMPTY")
-    parser.add_argument("--gpu-memory-utilization", type=float, default=0.75)
+    parser.add_argument(
+        "--gpu-memory-utilization",
+        type=float,
+        default=None,
+        help=(
+            "fraction of GPU memory vLLM may reserve; defaults to 0.35 for "
+            "Gemma 4 E2B and 0.75 for the validated 26B-A4B smoke lanes"
+        ),
+    )
     parser.add_argument(
         "--max-num-batched-tokens",
         type=int,
@@ -228,6 +236,19 @@ def is_gemma4_26b_a4b(args: argparse.Namespace) -> bool:
     return any("gemma-4-26B-A4B-it" in identifier for identifier in identifiers)
 
 
+def is_gemma4_e2b(args: argparse.Namespace) -> bool:
+    identifiers = (args.model, served_model_name(args))
+    return any("gemma-4-E2B-it" in identifier for identifier in identifiers)
+
+
+def effective_gpu_memory_utilization(args: argparse.Namespace) -> float:
+    if args.gpu_memory_utilization is not None:
+        return args.gpu_memory_utilization
+    if is_gemma4_e2b(args):
+        return 0.35
+    return 0.75
+
+
 def use_gemma4_26b_a4b_text_only_defaults(args: argparse.Namespace) -> bool:
     return args.mode == "basic" and is_gemma4_26b_a4b(args)
 
@@ -282,6 +303,7 @@ def build_server_command(args: argparse.Namespace) -> list[str]:
     limit_mm_per_prompt = compact_json(effective_limit_mm_per_prompt(args))
     max_model_len = effective_max_model_len(args)
     max_num_batched_tokens = effective_max_num_batched_tokens(args)
+    gpu_memory_utilization = effective_gpu_memory_utilization(args)
     command = [
         sys.executable,
         "-m",
@@ -298,7 +320,7 @@ def build_server_command(args: argparse.Namespace) -> list[str]:
         "--tensor-parallel-size",
         "1",
         "--gpu-memory-utilization",
-        str(args.gpu_memory_utilization),
+        str(gpu_memory_utilization),
         "--max-model-len",
         str(max_model_len),
         "--limit-mm-per-prompt",

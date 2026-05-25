@@ -13,7 +13,15 @@ def parse_args() -> argparse.Namespace:
         description="Run a text-only offline Qwen smoke through vLLM."
     )
     parser.add_argument("model", help="local model path or Hugging Face model id")
-    parser.add_argument("--gpu-memory-utilization", type=float, default=0.75)
+    parser.add_argument(
+        "--gpu-memory-utilization",
+        type=float,
+        default=None,
+        help=(
+            "fraction of GPU memory vLLM may reserve; defaults to 0.25 for "
+            "the tiny Qwen3.5 0.8B smoke and 0.75 otherwise"
+        ),
+    )
     parser.add_argument("--max-model-len", type=int, default=128)
     parser.add_argument("--max-tokens", type=int, default=16)
     parser.add_argument("--max-num-batched-tokens", type=int, default=None)
@@ -56,6 +64,18 @@ def parse_args() -> argparse.Namespace:
         help="assert the installed flash_attn backend when --attention-backend FLASH_ATTN",
     )
     return parser.parse_args()
+
+
+def is_qwen3_5_0_8b(model: str) -> bool:
+    return "Qwen3.5-0.8B" in model
+
+
+def effective_gpu_memory_utilization(args: argparse.Namespace, model: str) -> float:
+    if args.gpu_memory_utilization is not None:
+        return args.gpu_memory_utilization
+    if is_qwen3_5_0_8b(model):
+        return 0.25
+    return 0.75
 
 
 def resolved_model_arg(model: str) -> str:
@@ -185,6 +205,7 @@ def build_llm_kwargs(model: str, args: argparse.Namespace) -> dict[str, Any]:
 def main() -> None:
     args = parse_args()
     model = resolved_model_arg(args.model)
+    args.gpu_memory_utilization = effective_gpu_memory_utilization(args, model)
 
     import torch
     from transformers import AutoConfig, AutoTokenizer

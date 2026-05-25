@@ -13,6 +13,7 @@ if str(TOOLS_DIR) not in sys.path:
 
 from qwen_text_smoke import (
     build_llm_kwargs,
+    effective_gpu_memory_utilization,
     print_config_summary,
     print_flash_attn_backend_summary,
 )
@@ -60,6 +61,15 @@ def test_build_llm_kwargs_carries_quantization_probe_options():
     assert kwargs["block_size"] == 128
     assert kwargs["max_num_batched_tokens"] == 64
     assert kwargs["enforce_eager"] is True
+
+
+def test_effective_gpu_memory_utilization_is_tight_for_tiny_qwen():
+    default_args = SimpleNamespace(gpu_memory_utilization=None)
+    override_args = SimpleNamespace(gpu_memory_utilization=0.6)
+
+    assert effective_gpu_memory_utilization(default_args, "Qwen/Qwen3.5-0.8B") == 0.25
+    assert effective_gpu_memory_utilization(default_args, "Qwen/Qwen3.6-35B-A3B") == 0.75
+    assert effective_gpu_memory_utilization(override_args, "Qwen/Qwen3.5-0.8B") == 0.6
 
 
 def test_print_flash_attn_backend_summary_accepts_ck_backend(monkeypatch, capsys):

@@ -407,7 +407,7 @@ def test_vllm_adapter_builds_torchao_real_model_command(tmp_path: Path):
         (
             "vllm.qwen3_5.0_8b.text.basic",
             "Qwen/Qwen3.5-0.8B",
-            ["--max-model-len", "128"],
+            ["--max-model-len", "128", "--gpu-memory-utilization", "0.25"],
         ),
         (
             "vllm.qwen3_6.35b-a3b.text.unquantized-moe-no-aiter-control",
