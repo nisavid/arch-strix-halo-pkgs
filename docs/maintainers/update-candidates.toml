@@ -94,26 +94,28 @@ last_reviewed = "2026-05-21"
 [candidates."lemonade-10.6.0-baseline"]
 family = "lemonade"
 packages = ["lemonade-server", "lemonade-app", "lemonade"]
-source_kind = "github_release"
-check_id = "upstream-release"
+source_kind = "git_ref"
+check_id = "fork-main"
+covered_checks = [{ source_kind = "github_release", check_id = "upstream-release" }]
 baseline_latest = "10.6.0-1"
-previous_recorded = "10.5.0"
-latest = "10.6.0"
-discovery_status = "baseline_drift"
-disposition = "adopted"
-disposition_reason = "Adopted on 2026-05-25. The package source lane pins nisavid/lemonade fork main at a90f8194f29940c22575499951b12e588a2e8211, aligned with canonical upstream and AUR 10.6.0 baselines. Source verification, source preparation, package builds, deploy/install, installed pacman -Q, CLI/server help smokes, zembed embeddings validation, and BGE rerank validation passed. The installed zembed GGUF registration carries llamacpp_args = \"--pooling last\" to match the model's GGUF pooling_type = 3 metadata."
+previous_recorded = "a90f8194f29940c22575499951b12e588a2e8211"
+latest = "3caab7217efec689f947c69fcf2fdb4d812ddbb5"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "The 10.6.0 release baseline is adopted, and the fork-main package source lane is updated and package-built at 3caab7217efec689f947c69fcf2fdb4d812ddbb5. Deploy/install, installed pacman verification, and Lemonade installed smokes remain open because privileged host deployment has not completed."
 salient_changes = [
-  "Lemonade packages render as 10.6.0 from nisavid/lemonade fork main a90f8194f29940c22575499951b12e588a2e8211",
+  "Lemonade packages render as 10.6.0 from nisavid/lemonade fork main 3caab7217efec689f947c69fcf2fdb4d812ddbb5",
   "AUR lemonade-server and lemonade-desktop baselines are reviewed at 10.6.0-1",
   "The app package carries a local Tauri Cargo patch that keeps direct Linux glib on the webkit2gtk-compatible 0.18 series",
-  "lemonade-app now routes Cargo and npm cache state under srcdir and remaps Rust build paths out of the shipped binary",
+  "Source verification, clean source preparation, package-local tests, and tools/amerge build passed for lemonade-server 10.6.0-3 and lemonade-app 10.6.0-2",
+  "The source range adds the llama.cpp selected-logit reranking adapter, backend archive extraction hardening, and Tauri app dependency lockfile updates",
 ]
 patch_carry_overlap = true
 package_source_update_needed = false
-host_validation_needed = false
-next_gate_kind = "none"
-next_gate_path = ""
-next_gate_label = "Adopted; monitor future Lemonade releases through the normal freshness sweep"
+host_validation_needed = true
+next_gate_kind = "deploy_install"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "Lemonade 10.6.0 fork-main deploy/install"
 last_reviewed = "2026-05-25"
 
 [candidates."llama-cpp-b9222"]

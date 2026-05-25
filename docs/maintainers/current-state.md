@@ -24,39 +24,34 @@ finite `token_logits` for requested IDs `[0, 1, 2]` with `n_predict: 0`,
 included both `token` and `bytes` fields, and rejected 1025 requested IDs with
 HTTP 400 and the 1024-token cap message.
 
-The Lemonade 10.6.0 source update is adopted and live-validated. The local
-packages render from `nisavid/lemonade` fork main commit
-`a90f8194f29940c22575499951b12e588a2e8211`, aligned with canonical upstream
-and AUR `10.6.0` baselines, and the reference host reports
-`lemonade-server 10.6.0-2`, `lemonade-app 10.6.0-1`, and `lemonade 10.6.0-1`
-from `pacman -Q`. The published repo contains the matching
-`lemonade-server 10.6.0-2`, `lemonade-app 10.6.0-1`, and `lemonade 10.6.0-1`
-artifacts. The server patch stack was refreshed against the new source and
-applies without offsets or fuzz; pkgrel 2 uses Lemonade's argv-based
-`ProcessManager` output capture for system-managed llama.cpp `--version`
-probing instead of shell-interpolated commands. The app package carries
-`0001-keep-tauri-glib-on-webkit-compatible-series.patch` so the Tauri Linux
-build uses the webkit2gtk-compatible `glib 0.18` dependency set until the
-upstream `glib 0.20` bump builds cleanly here. The generated app package also
-routes Cargo/npm cache state under `$srcdir` and remaps Rust build paths out of
-the shipped binary.
+The Lemonade 10.6.0 fork-main refresh is source-updated and package-built, with
+deploy/install and installed smokes still open. The local source packages render
+from `nisavid/lemonade` fork main commit
+`b608a74d0604f96786de59d65cb0ba27b05db0c6`, aligned with the canonical
+upstream and AUR `10.6.0` baselines. The server package now renders as
+`lemonade-server 10.6.0-5`, and the app package renders as
+`lemonade-app 10.6.0-4`.
 
-Validation completed for the source/build/install/live-scenario phase: `makepkg
---verifysource -f` passed for `packages/lemonade-server`,
-`packages/lemonade-app`, and the `lemonade` meta package; `makepkg -C
---nobuild --nodeps --force` passed for both source packages; `pytest
-packages/lemonade-server/tests packages/lemonade-app/tests -q` reports
-`12 passed`; `git diff --check` passes; and
-`tools/check_package_updates.py --refresh --only lemonade --json --fail-on
-actionable` reports all raw Lemonade checks current. `tools/amerge build`
-produced `lemonade-server 10.6.0-2`, `lemonade-app 10.6.0-1`, and `lemonade
-10.6.0-1` artifacts. The installed zembed GGUF registration now carries
-`llamacpp_args = "--pooling last"`, matching the model's GGUF
-`pooling_type = 3` metadata. With that registration, the full Lemonade smoke
-set passed at `docs/worklog/inference-runs/20260525T030136`: `lemonade
---help`, `lemond --help`, `lemonade.pooling.zembed-1-q4-k-m.embeddings`, and
-`lemonade.pooling.bge-reranker-v2-m3.rerank` all passed. The zembed scenario
-returned three finite 2560-dimensional vectors.
+The fork commit contains the pinned-backend lifecycle fix and the reranking
+error-message UI fix, so the package lane no longer carries
+`0006-keep-llamacpp-backends-alive-after-threaded-loads.patch` or
+`0002-surface-reranking-server-errors.patch`. The server package still carries
+the Strix Halo llama.cpp backend integration patch stack. The app package still
+carries the local Tauri Cargo patch that keeps direct Linux glib on the
+webkit2gtk-compatible `glib 0.18` dependency set until the upstream `glib 0.20`
+bump builds cleanly here.
+
+Validation completed for the source/build phase: recipe scaffolds were
+regenerated for `lemonade-server` and `lemonade-app`; `git diff --check` passed;
+`pytest packages/lemonade-server/tests packages/lemonade-app/tests
+tests/test_lemonade_zerank_smoke.py tests/test_inference_adapters.py
+tests/test_inference_scenario_catalog.py -q -p no:cacheprovider` reports `57
+passed`; `pytest -q -p no:cacheprovider` reports `370 passed`; and
+`tools/amerge build lemonade-server lemonade-app -y` produced
+`lemonade-server 10.6.0-5` and `lemonade-app 10.6.0-4` artifacts. The next
+gate is `tools/amerge deploy lemonade-server lemonade-app -y`, followed by
+`pacman -Q lemonade-server lemonade-app lemonade` and the installed Lemonade
+selected-logit zerank smoke scenario.
 
 The 2026-05-25 AITER stable-release refresh is adopted and live-validated.
 `python-amd-aiter-gfx1151` now renders from upstream tag `v0.1.14` as
