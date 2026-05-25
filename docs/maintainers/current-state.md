@@ -9,14 +9,15 @@ evidence but is not re-adopted yet. Both packaged backends remain on upstream
 The patch adds a generic `/completion` `token_logits` request field, disables
 backend sampled-candidate logits when `token_logits` is requested, returns
 prompt-final selected logits even when `n_predict` leaves no generation budget,
-and serializes selected-logit `bytes` from the same validated text as `token`.
-Renderer tests, package-local tests, source preparation, and `tools/amerge`
-build plan `f5b36ffd` passed for `llama.cpp-hip-gfx1151 b9222-3` and
+serializes selected-logit `bytes` from the same validated text as `token`, and
+caps each request at 1024 selected token IDs. Renderer tests, package-local
+tests, source preparation, and `tools/amerge` build plan `396931c7` passed for
+`llama.cpp-hip-gfx1151 b9222-3` and
 `llama.cpp-vulkan-gfx1151 b9222-3`. Deploy/install, installed backend smoke,
 and live `/completion` smoke for the rebuilt pkgrel `3` artifacts remain open
 because the agent environment cannot satisfy noninteractive sudo. The earlier
 pkgrel `2` validation and the 2026-05-25 06:55 deploy of pre-review-fix
-pkgrel `3` artifacts are superseded by build plan `f5b36ffd`.
+pkgrel `3` artifacts are superseded by build plan `396931c7`.
 
 The Lemonade 10.6.0 source update is adopted and live-validated. The local
 packages render from `nisavid/lemonade` fork main commit
