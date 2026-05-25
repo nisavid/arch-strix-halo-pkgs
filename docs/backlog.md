@@ -45,17 +45,16 @@
   local package lane. Treat this as a compiled Python package refresh with
   source review, package build, deploy/install, and installed import smoke
   before adoption.
-- Fix Lemonade 10.6.0 zembed embeddings validation: the source lane now pins
+- The Lemonade 10.6.0 refresh is adopted. The source lane pins
   `nisavid/lemonade` fork main at
   `a90f8194f29940c22575499951b12e588a2e8211`, aligned with canonical upstream
   and AUR `10.6.0` baselines. Source verification, source preparation, and
   package builds passed for `lemonade-server`, `lemonade-app`, and
   `lemonade`; deploy/install completed and the reference host reports all
-  three packages at `10.6.0-1`. Installed CLI/server help and rerank scenarios
-  passed, but the zembed embeddings scenario still fails because the endpoint
-  returns all-zero vectors with JSON `null` entries after a clean
-  `lemond.service` restart. Diagnose the zembed embeddings path and rerun the
-  full Lemonade smoke set before adoption.
+  three packages at `10.6.0-1`. The zembed GGUF registration uses
+  `llamacpp_args = "--pooling last"` to match its GGUF `pooling_type = 3`
+  metadata. With that registration, installed CLI/server help, zembed
+  embeddings, and BGE rerank scenarios passed on 2026-05-25.
 - llama.cpp b9279 follow-up: the 2026-05-21 closeout freshness gate found
   upstream `b9279` after the adopted `b9222` backend package lane, with AUR
   `llama.cpp-hip` at `b9275-1`. Keep this as a coordinated backend refresh:

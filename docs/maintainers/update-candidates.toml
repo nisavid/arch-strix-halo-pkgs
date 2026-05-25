@@ -100,8 +100,8 @@ baseline_latest = "10.6.0-1"
 previous_recorded = "10.5.0"
 latest = "10.6.0"
 discovery_status = "baseline_drift"
-disposition = "tracked"
-disposition_reason = "Tracked until installed Lemonade embeddings validation passes. The package source lane now pins nisavid/lemonade fork main at a90f8194f29940c22575499951b12e588a2e8211, aligned with canonical upstream and AUR 10.6.0 baselines. Source verification, source preparation, package builds, deploy/install, installed pacman -Q, CLI/server help smokes, and rerank validation passed on 2026-05-25. The zembed embeddings scenario remains blocked because the installed endpoint returns all-zero vectors with JSON null entries after a clean lemond.service restart."
+disposition = "adopted"
+disposition_reason = "Adopted on 2026-05-25. The package source lane pins nisavid/lemonade fork main at a90f8194f29940c22575499951b12e588a2e8211, aligned with canonical upstream and AUR 10.6.0 baselines. Source verification, source preparation, package builds, deploy/install, installed pacman -Q, CLI/server help smokes, zembed embeddings validation, and BGE rerank validation passed. The installed zembed GGUF registration carries llamacpp_args = \"--pooling last\" to match the model's GGUF pooling_type = 3 metadata."
 salient_changes = [
   "Lemonade packages render as 10.6.0 from nisavid/lemonade fork main a90f8194f29940c22575499951b12e588a2e8211",
   "AUR lemonade-server and lemonade-desktop baselines are reviewed at 10.6.0-1",
@@ -110,10 +110,10 @@ salient_changes = [
 ]
 patch_carry_overlap = true
 package_source_update_needed = false
-host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
-next_gate_label = "Fix Lemonade 10.6.0 zembed embeddings validation"
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Adopted; monitor future Lemonade releases through the normal freshness sweep"
 last_reviewed = "2026-05-25"
 
 [candidates."llama-cpp-b9222"]
