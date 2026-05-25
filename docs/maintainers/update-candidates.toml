@@ -617,19 +617,21 @@ source_kind = "github_release"
 previous_recorded = "0.1.14-rc0"
 latest = "0.1.14"
 discovery_status = "stable_update_available"
-disposition = "tracked"
-disposition_reason = "Found during the 2026-05-24 recovery-branch freshness gate. Keep as a separate AITER stable-release follow-up because the current package adopted the 0.1.14 release-candidate lane and a stable promotion needs release delta review, package rebuild, deploy/install, installed JIT smoke, and affected vLLM scenario validation before adoption."
+disposition = "adopted"
+disposition_reason = "Adopted on 2026-05-25. Source metadata now tracks upstream v0.1.14 after the superseded v0.1.14-rc0 package lane, source verification passed, package source preparation and package-local tests passed, tools/amerge build produced python-amd-aiter-gfx1151 0.1.14-1, operator deploy/install completed, pacman -Q reports python-amd-aiter-gfx1151 0.1.14-1, installed AITER JIT import passed with host ROCm visible, a constrained Qwen3.5 vLLM smoke passed, the default vllm.qwen3_5.0_8b.text.basic scenario passed at docs/worklog/inference-runs/20260524T220946 after the host inference service freed GPU memory, and the same scenario passed again at docs/worklog/inference-runs/20260524T222250 after tightening the tiny-smoke reservation to 0.25."
 salient_changes = [
   "AITER 0.1.14 stable is available after the adopted 0.1.14-rc0 package lane",
-  "The local package carries gfx1151 patch and runtime validation surfaces that must be rechecked against the stable release",
+  "The stable release is cut from release/v0.1.14 at bd0534e96 and includes DSv4 fusions, MiniMax fused qknorm/allreduce, FlyDSL and Triton updates, and bug fixes",
+  "Source verification, package source preparation, package-local tests, package build, deploy/install, installed AITER JIT import, constrained Qwen3.5 vLLM smoke, and the default Qwen3.5 vLLM scenario have passed for the local gfx1151 package",
+  "The 84 GiB default-scenario precondition came from vLLM's fraction-of-device gpu_memory_utilization setting, not from a tiny-model weight requirement; reduced small-model smoke defaults are now tracked in the scenario helpers",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
-next_gate_label = "AITER 0.1.14 stable follow-up"
-last_reviewed = "2026-05-24"
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Adopted; monitor future AITER stable releases through the normal freshness sweep"
+last_reviewed = "2026-05-25"
 
 [candidates."aotriton-tech-previews-0.11.210b-0.11.52b"]
 family = "aotriton"

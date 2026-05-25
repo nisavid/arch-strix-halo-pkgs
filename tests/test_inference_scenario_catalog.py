@@ -668,6 +668,8 @@ def test_gemma4_e2b_compiled_probe_records_current_blocker():
         "compiled",
         "--max-model-len",
         "512",
+        "--gpu-memory-utilization",
+        "0.35",
     ]
 
     assertions = probe.definition["then"]["assert"]
@@ -788,7 +790,12 @@ def test_qwen3_5_compiled_probe_records_validation_contract():
         "exploratory",
     }
     assert probe.definition["given"]["tool"] == "qwen_text_smoke"
-    assert probe.definition["when"]["argv"] == ["--execution-mode", "compiled"]
+    assert probe.definition["when"]["argv"] == [
+        "--execution-mode",
+        "compiled",
+        "--gpu-memory-utilization",
+        "0.25",
+    ]
 
     assertions = probe.definition["then"]["assert"]
     for expected in (

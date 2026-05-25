@@ -13,6 +13,7 @@ if str(TOOLS_DIR) not in sys.path:
 
 from gemma4_text_smoke import (
     build_llm_kwargs,
+    effective_gpu_memory_utilization,
     effective_max_num_batched_tokens,
     resolved_model_arg,
 )
@@ -45,6 +46,15 @@ def test_gemma4_26b_uses_batched_token_default():
 
     assert effective_max_num_batched_tokens(args, "google/gemma-4-26B-A4B-it") == 32
     assert effective_max_num_batched_tokens(args, "google/gemma-4-E2B-it") is None
+
+
+def test_gemma4_text_smoke_uses_tighter_e2b_memory_default():
+    default_args = SimpleNamespace(gpu_memory_utilization=None)
+    override_args = SimpleNamespace(gpu_memory_utilization=0.55)
+
+    assert effective_gpu_memory_utilization(default_args, "google/gemma-4-E2B-it") == 0.35
+    assert effective_gpu_memory_utilization(default_args, "google/gemma-4-26B-A4B-it") == 0.75
+    assert effective_gpu_memory_utilization(override_args, "google/gemma-4-E2B-it") == 0.55
 
 
 def test_build_llm_kwargs_uses_resolved_model_id():

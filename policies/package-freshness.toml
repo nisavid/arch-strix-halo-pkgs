@@ -134,7 +134,7 @@ packages = ["python-amd-aiter-gfx1151"]
 priority = "high"
 workflow = "upstream_source_update"
 checks = [
-  { id = "release", role = "primary", kind = "github_release", repo = "ROCm/aiter", recorded = "0.1.14-rc0", tag_prefix = "v", comparison = "pep440", include_prereleases = true },
+  { id = "release", role = "primary", kind = "github_release", repo = "ROCm/aiter", recorded = "0.1.14", tag_prefix = "v", comparison = "pep440", include_prereleases = true },
 ]
 source_contracts = [
   { id = "release-source", packages = ["python-amd-aiter-gfx1151"], check_id = "release", source_name = "aiter", source_kind = "git_tag", origin = "https://github.com/ROCm/aiter.git", value_policy = "matches_reviewed" },

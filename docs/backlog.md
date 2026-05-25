@@ -21,6 +21,14 @@
   2026-05-19. Watchfiles `1.2.0-1` was adopted earlier in the same branch with
   source verification, package build, deploy/install, and installed import
   smoke evidence.
+- The 2026-05-25 AITER 0.1.14 stable refresh is adopted. Source metadata now
+  tracks upstream tag `v0.1.14`, source verification, source preparation,
+  package-local tests, package build, deploy/install, installed AITER JIT
+  smoke, constrained Qwen3.5 vLLM smoke, and the default
+  `vllm.qwen3_5.0_8b.text.basic` live scenario passed before and after the
+  tiny-smoke memory reservation was tightened. The closeout also tightened
+  small-model vLLM smoke reservations so tiny correctness probes no longer ask
+  vLLM to reserve 75% of the whole device by default.
 - AOCL-LibM 5.3 follow-up: the 2026-05-19 closeout freshness gate found
   upstream AOCL-LibM `5.3` after the adopted `5.2.2` package lane. Keep this
   as a separate math-library refresh lane: review upstream source and license
@@ -88,11 +96,6 @@
   `yarl 1.24.2` after the current `1.23.0` package lane. Treat it as part of
   the aiohttp service-runtime closure: source review, package build,
   deploy/install, and installed import smoke are required before adoption.
-- AITER 0.1.14 stable follow-up: the 2026-05-24 recovery-branch freshness gate
-  found stable `AITER 0.1.14` after the adopted `0.1.14-rc0` package lane.
-  Review the release delta against the local gfx1151 patch carry, rebuild,
-  deploy/install, run installed JIT smoke, and rerun affected vLLM scenarios
-  before adoption.
 - The 2026-05-18 Python 3.14.5 rebuild lane is adopted. `python-gfx1151`
   now tracks CPython `3.14.5` with Arch `python 3.14.5-1` as the integration
   baseline. Source verification, package source preparation, package build,

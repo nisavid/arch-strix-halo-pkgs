@@ -21,7 +21,16 @@ def parse_args() -> argparse.Namespace:
         )
     )
     parser.add_argument("model", help="local model path or Hugging Face model id")
-    parser.add_argument("--gpu-memory-utilization", type=float, default=0.75)
+    parser.add_argument(
+        "--gpu-memory-utilization",
+        type=float,
+        default=None,
+        help=(
+            "fraction of GPU memory vLLM may reserve; defaults to 0.35 for "
+            "Gemma 4 E2B, 0.75 for the validated 26B-A4B lane, and 0.75 "
+            "otherwise"
+        ),
+    )
     parser.add_argument("--max-model-len", type=int, default=128)
     parser.add_argument("--max-tokens", type=int, default=16)
     parser.add_argument("--max-num-batched-tokens", type=int, default=None)
@@ -36,6 +45,18 @@ def parse_args() -> argparse.Namespace:
 
 def is_gemma4_26b_a4b(model: str) -> bool:
     return "gemma-4-26B-A4B-it" in model
+
+
+def is_gemma4_e2b(model: str) -> bool:
+    return "gemma-4-E2B-it" in model
+
+
+def effective_gpu_memory_utilization(args: argparse.Namespace, model: str) -> float:
+    if args.gpu_memory_utilization is not None:
+        return args.gpu_memory_utilization
+    if is_gemma4_e2b(str(model)):
+        return 0.35
+    return 0.75
 
 
 def resolved_model_arg(model: str) -> str:
@@ -80,6 +101,7 @@ def build_llm_kwargs(
 def main() -> None:
     args = parse_args()
     model = resolved_model_arg(args.model)
+    args.gpu_memory_utilization = effective_gpu_memory_utilization(args, model)
     max_num_batched_tokens = effective_max_num_batched_tokens(args, model)
 
     import torch

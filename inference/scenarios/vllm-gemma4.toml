@@ -388,7 +388,14 @@ model = "google/gemma-4-E2B-it"
 tool = "gemma4_text_smoke"
 
 [scenario.when]
-argv = ["--execution-mode", "compiled", "--max-model-len", "512"]
+argv = [
+  "--execution-mode",
+  "compiled",
+  "--max-model-len",
+  "512",
+  "--gpu-memory-utilization",
+  "0.35",
+]
 
 [[scenario.then.assert]]
 kind = "exit_code.equals"

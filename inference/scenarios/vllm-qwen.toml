@@ -8,6 +8,9 @@ engine = "vllm"
 model = "Qwen/Qwen3.5-0.8B"
 tool = "qwen_text_smoke"
 
+[scenario.when]
+argv = ["--gpu-memory-utilization", "0.25"]
+
 [[scenario.then.assert]]
 kind = "exit_code.equals"
 value = 0
@@ -35,7 +38,7 @@ model = "Qwen/Qwen3.5-0.8B"
 tool = "qwen_text_smoke"
 
 [scenario.when]
-argv = ["--execution-mode", "compiled"]
+argv = ["--execution-mode", "compiled", "--gpu-memory-utilization", "0.25"]
 
 [[scenario.then.assert]]
 kind = "exit_code.equals"
