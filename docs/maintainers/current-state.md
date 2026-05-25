@@ -9,15 +9,22 @@ evidence but is not re-adopted yet. Both packaged backends remain on upstream
 The patch adds a generic `/completion` `token_logits` request field, disables
 backend sampled-candidate logits when `token_logits` is requested, returns
 prompt-final selected logits even when `n_predict` leaves no generation budget,
-serializes selected-logit `bytes` from the same validated text as `token`, and
-caps each request at 1024 selected token IDs. Renderer tests, package-local
-tests, source preparation, and `tools/amerge` build plan `396931c7` passed for
-`llama.cpp-hip-gfx1151 b9222-3` and
+serializes selected-logit `token` as validated UTF-8 while preserving original
+token bytes in `bytes`, and caps each request at 1024 selected token IDs.
+Renderer tests, package-local tests, source preparation, and `tools/amerge`
+build plan `b664ef40` passed for `llama.cpp-hip-gfx1151 b9222-3` and
 `llama.cpp-vulkan-gfx1151 b9222-3`. Deploy/install, installed backend smoke,
-and live `/completion` smoke for the rebuilt pkgrel `3` artifacts remain open
-because the agent environment cannot satisfy noninteractive sudo. The earlier
-pkgrel `2` validation and the 2026-05-25 06:55 deploy of pre-review-fix
-pkgrel `3` artifacts are superseded by build plan `396931c7`.
+and live `/completion` smoke for that rebuilt bytes-fix payload remain open
+because the agent environment cannot satisfy noninteractive sudo. Before the
+bytes fix, deploy plan `8445b4f3` published and installed the earlier pkgrel `3`
+artifacts, `pacman -Q` reported both packages at `b9222-3`, the installed
+`llama.cpp` smoke scenarios passed at
+`docs/worklog/inference-runs/20260525T073645`, and direct HIP/Vulkan
+`/completion` smokes against a tiny GGUF returned finite `token_logits` for
+requested IDs `[0, 1, 2]` with `n_predict: 0` and rejected 1025 requested IDs
+with the 1024-token cap. The earlier pkgrel `2` validation, the 2026-05-25
+06:55 deploy of pre-review-fix pkgrel `3` artifacts, deploy plan `8445b4f3`,
+and build plan `396931c7` are superseded by build plan `b664ef40`.
 
 The Lemonade 10.6.0 source update is adopted and live-validated. The local
 packages render from `nisavid/lemonade` fork main commit
