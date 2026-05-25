@@ -45,14 +45,13 @@
   local package lane. Treat this as a compiled Python package refresh with
   source review, package build, deploy/install, and installed import smoke
   before adoption.
-- Lemonade 10.6.0 baseline follow-up: the 2026-05-21 closeout freshness gate
-  found canonical upstream and AUR Lemonade `10.6.0` baselines while the local
-  package source lane still tracks the `nisavid/lemonade` fork at the adopted
-  `10.5.0` CMake project version. Keep this as a separate source-lane review:
-  inspect the canonical 10.5.0..10.6.0 range, decide whether the fork/main
-  source pin should move, refresh package metadata or record a rejection, then
-  rebuild, deploy/install, and rerun Lemonade service plus pooling/rerank
-  scenarios before adoption.
+- Deploy Lemonade 10.6.0 packages: the source lane now pins
+  `nisavid/lemonade` fork main at
+  `a90f8194f29940c22575499951b12e588a2e8211`, aligned with canonical upstream
+  and AUR `10.6.0` baselines. Source verification, source preparation, and
+  package builds passed for `lemonade-server`, `lemonade-app`, and `lemonade`.
+  Deploy/install the built packages, verify installed package versions, then
+  rerun Lemonade CLI/server plus pooling/rerank scenarios before adoption.
 - llama.cpp b9279 follow-up: the 2026-05-21 closeout freshness gate found
   upstream `b9279` after the adopted `b9222` backend package lane, with AUR
   `llama.cpp-hip` at `b9275-1`. Keep this as a coordinated backend refresh:

@@ -573,7 +573,22 @@ EOF
   install -Dm644 "$srcdir/{src_subdir}/LICENSE" "$pkgdir/usr/share/licenses/{package_name}/LICENSE"
 }}"""
     elif template == "lemonade-app":
+        source_patch_cmds = "".join(
+            f'  patch -Np1 -i "$srcdir/{patch_name}"\n'
+            for patch_name in policy_pkg.get("source_patches", [])
+        )
+        prepare_block = ""
+        if source_patch_cmds:
+            prepare_block = f"""\
+prepare() {{
+  cd "$srcdir/{src_subdir}"
+
+{source_patch_cmds.rstrip()}
+}}
+
+"""
         build_body = f"""\
+{prepare_block}\
 build() {{
   cd "$srcdir/{src_subdir}"
 
@@ -582,6 +597,16 @@ build() {{
   local amdclangxx="$CXX"
   local build_root="$srcdir/build-{package_name}"
   local install_root="/usr"
+  local _debug_prefix="/usr/src/debug/{package_name}"
+
+  export HOME="$srcdir/.home"
+  export XDG_CACHE_HOME="$srcdir/.cache"
+  export XDG_DATA_HOME="$srcdir/.local/share"
+  export CARGO_HOME="$srcdir/.cargo"
+  export npm_config_cache="$srcdir/.npm-cache"
+  export npm_config_update_notifier=false
+  export RUSTFLAGS="--remap-path-prefix=$srcdir=${{_debug_prefix}}"
+  mkdir -p "$HOME" "$XDG_CACHE_HOME" "$XDG_DATA_HOME" "$CARGO_HOME" "$npm_config_cache"
 
   rm -rf "${{build_root}}"
   cmake -B "${{build_root}}" -GNinja . \

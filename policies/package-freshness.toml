@@ -438,8 +438,8 @@ packages = ["lemonade-server", "lemonade-app", "lemonade"]
 priority = "medium"
 workflow = "upstream_source_update"
 checks = [
-  { id = "fork-main", role = "primary", kind = "git_ref", repo = "https://github.com/nisavid/lemonade.git", ref = "refs/heads/main", recorded = "3a1a0dff2d5fe24f4369f91e76b8587b5c703e78", comparison = "sha" },
-  { id = "upstream-release", role = "baseline", kind = "github_release", repo = "lemonade-sdk/lemonade", recorded = "10.5.0", tag_prefix = "v", comparison = "pep440" },
-  { id = "aur-server", role = "baseline", kind = "aur", package = "lemonade-server", recorded = "10.5.0-1", comparison = "pkgver" },
-  { id = "aur-desktop", role = "baseline", kind = "aur", package = "lemonade-desktop", recorded = "10.5.0-1", comparison = "pkgver" },
+  { id = "fork-main", role = "primary", kind = "git_ref", repo = "https://github.com/nisavid/lemonade.git", ref = "refs/heads/main", recorded = "a90f8194f29940c22575499951b12e588a2e8211", comparison = "sha" },
+  { id = "upstream-release", role = "baseline", kind = "github_release", repo = "lemonade-sdk/lemonade", recorded = "10.6.0", tag_prefix = "v", comparison = "pep440" },
+  { id = "aur-server", role = "baseline", kind = "aur", package = "lemonade-server", recorded = "10.6.0-1", comparison = "pkgver" },
+  { id = "aur-desktop", role = "baseline", kind = "aur", package = "lemonade-desktop", recorded = "10.6.0-1", comparison = "pkgver" },
 ]

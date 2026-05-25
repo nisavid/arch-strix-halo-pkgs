@@ -42,7 +42,7 @@ STATUS_PRECEDENCE = [
     "manual_review_required",
     "current",
 ]
-TOOL_VERSION = 4
+TOOL_VERSION = 5
 CACHE_PATH = Path(".agents/session/dependency-freshness-cache.json")
 CANDIDATE_LEDGER_PATH = Path("docs/maintainers/update-candidates.toml")
 RECIPE_POLICY_PATH = Path("policies/recipe-packages.toml")
@@ -182,11 +182,15 @@ class UrlTransport:
         last_error: Exception | None = None
         for _attempt in range(self.retries + 1):
             try:
+                headers = {
+                    "User-Agent": "arch-strix-halo-pkgs-freshness-checker/1"
+                }
+                token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
+                if token and url.startswith("https://api.github.com/"):
+                    headers["Authorization"] = f"Bearer {token}"
                 request = Request(
                     url,
-                    headers={
-                        "User-Agent": "arch-strix-halo-pkgs-freshness-checker/1"
-                    },
+                    headers=headers,
                 )
                 with urlopen(request, timeout=self.timeout) as response:
                     return response.read().decode("utf-8")

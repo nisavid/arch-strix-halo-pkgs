@@ -2,6 +2,30 @@
 
 Status as of 2026-05-25.
 
+The Lemonade 10.6.0 source update is built and awaiting host deployment.
+`lemonade-server`, `lemonade-app`, and `lemonade` now render as `10.6.0-1`
+from `nisavid/lemonade` fork main commit
+`a90f8194f29940c22575499951b12e588a2e8211`, aligned with canonical upstream
+and AUR `10.6.0` baselines. The server patch stack was refreshed against the
+new source and applies without offsets or fuzz. The app package carries
+`0001-keep-tauri-glib-on-webkit-compatible-series.patch` so the Tauri Linux
+build uses the webkit2gtk-compatible `glib 0.18` dependency set until the
+upstream `glib 0.20` bump builds cleanly here. The generated app package also
+routes Cargo/npm cache state under `$srcdir` and remaps Rust build paths out of
+the shipped binary.
+
+Validation completed for the source/build phase: `makepkg --verifysource -f`
+passed for `packages/lemonade-server`, `packages/lemonade-app`, and the
+`lemonade` meta package; `makepkg -C --nobuild --nodeps --force` passed for
+both source packages; `pytest packages/lemonade-server/tests
+packages/lemonade-app/tests -q` reports `12 passed`; `git diff --check`
+passes; and `tools/check_package_updates.py --refresh --only lemonade --json
+--fail-on actionable` reports all raw Lemonade checks current with the
+candidate still tracked for host validation. `tools/amerge build` produced
+`lemonade-server 10.6.0-1`, `lemonade-app 10.6.0-1`, and `lemonade 10.6.0-1`
+artifacts. Deploy/install, installed `pacman -Q`, Lemonade CLI/server smokes,
+and pooling/rerank scenarios remain open.
+
 The 2026-05-25 AITER stable-release refresh is adopted and live-validated.
 `python-amd-aiter-gfx1151` now renders from upstream tag `v0.1.14` as
 `0.1.14-1`, replacing the superseded `v0.1.14-rc0` source lane while

@@ -1,8 +1,8 @@
 diff --git a/src/cpp/server/system_info.cpp b/src/cpp/server/system_info.cpp
-index 9e9117b..9abda84 100644
+index 57532db..57cade9 100644
 --- a/src/cpp/server/system_info.cpp
 +++ b/src/cpp/server/system_info.cpp
-@@ -1338,9 +1338,40 @@ std::string identify_rocm_arch_from_name(const std::string& device_name) {
+@@ -1409,9 +1409,40 @@ std::string identify_rocm_arch_from_name(const std::string& device_name) {
      return "";
  }
 
@@ -44,7 +44,7 @@ index 9e9117b..9abda84 100644
  static std::string identify_npu_arch_linux() {
  #ifdef __linux__
      fs::path accel_path = "/sys/class/accel";
-@@ -1365,69 +1396,35 @@ static std::string identify_npu_arch_linux() {
+@@ -1436,69 +1467,35 @@ static std::string identify_npu_arch_linux() {
              continue;
          }
 

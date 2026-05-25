@@ -101,19 +101,20 @@ previous_recorded = "10.5.0"
 latest = "10.6.0"
 discovery_status = "baseline_drift"
 disposition = "tracked"
-disposition_reason = "Found during the 2026-05-21 closeout freshness gate after the Lemonade patch-stack cleanup. Keep as a separate source-lane follow-up because the local package currently tracks the nisavid/lemonade fork main commit whose CMake project version remains 10.5.0, while canonical upstream and AUR baselines have advanced to 10.6.0."
+disposition_reason = "Tracked until host deployment and installed validation complete. The package source lane now pins nisavid/lemonade fork main at a90f8194f29940c22575499951b12e588a2e8211, aligned with canonical upstream and AUR 10.6.0 baselines. Source verification, source preparation, and package builds passed for lemonade-server, lemonade-app, and lemonade on 2026-05-25."
 salient_changes = [
-  "Canonical upstream Lemonade 10.6.0 is available after the adopted fork-main 10.5.0 package lane",
-  "AUR lemonade-server and lemonade-desktop baselines have advanced to 10.6.0-1",
-  "The package source lane is the nisavid/lemonade fork main ref, so the next action is a source-lane review rather than a metadata-only baseline update",
+  "Lemonade packages render as 10.6.0 from nisavid/lemonade fork main a90f8194f29940c22575499951b12e588a2e8211",
+  "AUR lemonade-server and lemonade-desktop baselines are reviewed at 10.6.0-1",
+  "The app package carries a local Tauri Cargo patch that keeps direct Linux glib on the webkit2gtk-compatible 0.18 series",
+  "lemonade-app now routes Cargo and npm cache state under srcdir and remaps Rust build paths out of the shipped binary",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
+package_source_update_needed = false
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "Lemonade 10.6.0 baseline follow-up"
-last_reviewed = "2026-05-21"
+next_gate_label = "Deploy Lemonade 10.6.0 packages"
+last_reviewed = "2026-05-25"
 
 [candidates."llama-cpp-b9222"]
 family = "llama_cpp"
