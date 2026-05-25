@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 
@@ -34,7 +35,7 @@ def test_pkgbuild_carries_jit_runtime_patch():
 
     assert "pkgrel=1" in text
     assert "pkgver=0.1.14" in text
-    assert "#tag=v0.1.14" in text
+    assert re.search(r"#tag=v0\.1\.14(?:'|\s)", text) is not None
     assert 'export SETUPTOOLS_SCM_PRETEND_VERSION="0.1.14"' in text
     assert HEADER_PATCH.name in text
     assert f'patch -Np1 -i "$srcdir/{HEADER_PATCH.name}"' in text
