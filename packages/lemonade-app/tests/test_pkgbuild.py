@@ -26,7 +26,9 @@ def test_pkgbuild_installs_lemonade_app_wrapper():
     assert 'export npm_config_cache="$srcdir/.npm-cache"' in text
     assert 'export RUSTFLAGS="--remap-path-prefix=$srcdir=${_debug_prefix}"' in text
     assert "0001-keep-tauri-glib-on-webkit-compatible-series.patch" in text
-    assert 'patch -Np1 -i "$srcdir/0001-keep-tauri-glib-on-webkit-compatible-series.patch"' in text
+    assert "_apply_patch_if_needed()" in text
+    assert 'patch --dry-run -R -Np1 -i "${_patch}"' in text
+    assert '_apply_patch_if_needed "0001-keep-tauri-glib-on-webkit-compatible-series.patch"' in text
     assert 'rm -rf "${build_root}"' in text
     assert "--target tauri-app" in text
     assert "--target electron-app" not in text

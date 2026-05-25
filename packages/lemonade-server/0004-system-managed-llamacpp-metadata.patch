@@ -129,8 +129,8 @@ index cb26d5d..014105b 100644
 +
  static std::string get_llamacpp_version_from_executable(const std::string& executable) {
      std::string output;
- #ifdef _WIN32
-@@ -409,6 +422,10 @@ static std::string get_recipe_version(const std::string& recipe, const std::stri
+     try {
+@@ -407,6 +420,10 @@ static std::string get_recipe_version(const std::string& recipe, const std::stri
      }
      std::string external_binary = find_system_managed_external_backend(recipe, backend);
      if (!external_binary.empty()) {

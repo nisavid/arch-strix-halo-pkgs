@@ -21,10 +21,25 @@ replaces=(lemonade-desktop)
 source=('lemonade::git+https://github.com/nisavid/lemonade.git#commit=a90f8194f29940c22575499951b12e588a2e8211' 0001-keep-tauri-glib-on-webkit-compatible-series.patch)
 sha256sums=(SKIP SKIP)
 
+_apply_patch_if_needed() {
+  local _patch="$srcdir/$1"
+
+  if [[ ! -f "${_patch}" ]]; then
+    printf 'missing patch file: %s\n' "$1" >&2
+    return 1
+  fi
+
+  if patch --dry-run -R -Np1 -i "${_patch}" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  patch -Np1 -i "${_patch}"
+}
+
 prepare() {
   cd "$srcdir/lemonade"
 
-  patch -Np1 -i "$srcdir/0001-keep-tauri-glib-on-webkit-compatible-series.patch"
+  _apply_patch_if_needed "0001-keep-tauri-glib-on-webkit-compatible-series.patch"
 }
 
 build() {

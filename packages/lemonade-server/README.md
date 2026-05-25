@@ -41,6 +41,7 @@ Reinstalling at compatible versions resolves conflicts.
 - Installs /etc/lemonade/conf.d/10-llamacpp-gfx1151.conf so the packaged ROCm and Vulkan llama.cpp wrapper binaries are exposed to the service as system-managed backends.
 - The system-managed backend patch also folds in the config-load and CLI/backend-table changes needed for those service-provided overrides to stay visible after config.json already exists.
 - Export the packaged llama.cpp revision and ggml release URL in the system-managed backend env overlay so the GUI shows the packaged backend metadata instead of upstream downloader defaults.
+- Pkgrel 2 replaces shell-interpolated llama.cpp --version probing with Lemonade's argv-based ProcessManager capture path in the system-managed backend patch.
 - Temporarily carries config-load diagnostics to verify the service cache path, config existence checks, and parse/merge path while debugging config reset behavior.
 - Keeps legacy environment migration as a sparse overlay so service-provided backend paths override config.json without resetting unrelated user config keys to defaults.
 
