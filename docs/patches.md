@@ -54,10 +54,11 @@ becomes durable, prefer a named patch that another maintainer can review.
 
 ## llama.cpp
 
-- [HIP selected-token logits server extension](../packages/llama.cpp-hip-gfx1151/0001-server-return-selected-token-logits.patch)
-  and [Vulkan selected-token logits server extension](../packages/llama.cpp-vulkan-gfx1151/0001-server-return-selected-token-logits.patch)
+- [Shared HIP/Vulkan selected-token logits server extension](../patches/llama.cpp-common/0001-server-return-selected-token-logits.patch)
   - Adds a generic `/completion` `token_logits` request field and returns the
     requested raw token logits in the final response.
+  - Disables backend sampled-candidate logits when `token_logits` is requested
+    so every requested token ID is returned from full-vocabulary logits.
   - Keeps model-specific token selection in downstream service configuration
     instead of encoding a rerank model assumption in the backend packages.
 

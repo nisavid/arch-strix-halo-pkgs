@@ -65,9 +65,9 @@
       "ninja",
       "rocm-llvm-gfx1151"
     ],
-    "patches_dir": "patches/llama.cpp-hip-gfx1151",
+    "patches_dir": "patches/llama.cpp-common",
     "pkgdesc": "llama.cpp ROCm backend rebuilt for Strix Halo gfx1151",
-    "pkgrel": 2,
+    "pkgrel": 3,
     "provides": [
       "llama.cpp-hip-gfx1151",
       "llama.cpp-hip"
