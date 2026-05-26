@@ -5,7 +5,7 @@
 # Package recipe key: native_wheels
 
 pkgname=python-yarl-gfx1151
-pkgver=1.23.0
+pkgver=1.24.2
 pkgrel=1
 pkgdesc='Yet another URL library rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
@@ -18,11 +18,11 @@ options=()
 provides=(python-yarl)
 conflicts=(python-yarl)
 replaces=()
-source=(https://files.pythonhosted.org/packages/source/y/yarl/yarl-1.23.0.tar.gz)
-sha256sums=(53b1ea6ca88ebd4420379c330aea57e258408dd0df9af0992e5de2078dc9f5d5)
+source=(https://files.pythonhosted.org/packages/source/y/yarl/yarl-1.24.2.tar.gz)
+sha256sums=(9ac374123c6fd7abf64d1fec93962b0bd4ee2c19751755a762a72dd96c0378f8)
 
 build() {
-  cd "$srcdir/yarl-1.23.0"
+  cd "$srcdir/yarl-1.24.2"
 
   _setup_compiler_env() {
   local _compiler_root="/opt/rocm/lib/llvm/bin"
@@ -49,7 +49,7 @@ build() {
 }
 
   _setup_compiler_env
-  local _base_flags="-O3 -march=native -mprefer-vector-width=512 -mavx512f -mavx512dq -mavx512vl -mavx512bw -mllvm -enable-gvn-hoist -mllvm -enable-gvn-sink -famd-opt -Wno-error=unused-command-line-argument"
+  local _base_flags="-O3 -march=native -mprefer-vector-width=512 -mavx512f -mavx512dq -mavx512vl -mavx512bw -mllvm -enable-gvn-hoist -mllvm -enable-gvn-sink -Wno-error=unused-command-line-argument"
   local _wheel_flags
   _wheel_flags="$(printf '%s' "${_base_flags}" | sed -E 's/-mllvm (-[^ ]+)/-Xclang -mllvm -Xclang \1/g; s/  +/ /g; s/^ +| +$//g')"
   local _base_cflags="${CFLAGS:-}"
@@ -60,10 +60,10 @@ build() {
   export CXXFLAGS="${_base_cxxflags:+${_base_cxxflags} }${_wheel_flags}"
   export LDFLAGS="${_base_ldflags:+${_base_ldflags} }-famd-opt"
 
-  python -m build --wheel --no-isolation
+  /usr/bin/python -m build --wheel --no-isolation
 }
 
 package() {
-  cd "$srcdir/yarl-1.23.0"
-  python -m installer --destdir="$pkgdir" dist/*.whl
+  cd "$srcdir/yarl-1.24.2"
+  /usr/bin/python -m installer --destdir="$pkgdir" dist/*.whl
 }

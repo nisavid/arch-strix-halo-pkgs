@@ -5,7 +5,7 @@
 # Package recipe key: native_wheels
 
 pkgname=python-httptools-gfx1151
-pkgver=0.7.1
+pkgver=0.8.0
 pkgrel=1
 pkgdesc='Fast HTTP parser rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
@@ -18,11 +18,11 @@ options=()
 provides=(python-httptools)
 conflicts=(python-httptools)
 replaces=()
-source=(https://files.pythonhosted.org/packages/source/h/httptools/httptools-0.7.1.tar.gz 0001-use-system-llhttp.patch)
-sha256sums=(abd72556974f8e7c74a259655924a717a2365b236c882c3f6f8a45fe94703ac9 3da331b23886e7fed88f74dfa284010fdcfea0a1a14cd7f71ed3e20df202b6ab)
+source=(https://files.pythonhosted.org/packages/source/h/httptools/httptools-0.8.0.tar.gz 0001-use-system-llhttp.patch)
+sha256sums=(6b2a32f18d97e16e90827d7a819ffa8dbd8cc245fc4e1fa9d1095b54ef4bd999 db5c625c08b481c8f85dbb598eb394fee089f360f5b2f056d18bb253d5c36b44)
 
 prepare() {
-  cd "$srcdir/httptools-0.7.1"
+  cd "$srcdir/httptools-0.8.0"
 
   if ! patch --dry-run -R -Np1 -i "$srcdir/0001-use-system-llhttp.patch" >/dev/null 2>&1; then
     patch -Np1 -i "$srcdir/0001-use-system-llhttp.patch"
@@ -30,7 +30,7 @@ prepare() {
 }
 
 build() {
-  cd "$srcdir/httptools-0.7.1"
+  cd "$srcdir/httptools-0.8.0"
 
   _setup_compiler_env() {
   local _compiler_root="/opt/rocm/lib/llvm/bin"
@@ -57,7 +57,7 @@ build() {
 }
 
   _setup_compiler_env
-  local _base_flags="-O3 -march=native -mprefer-vector-width=512 -mavx512f -mavx512dq -mavx512vl -mavx512bw -mllvm -enable-gvn-hoist -mllvm -enable-gvn-sink -famd-opt -Wno-error=unused-command-line-argument"
+  local _base_flags="-O3 -march=native -mprefer-vector-width=512 -mavx512f -mavx512dq -mavx512vl -mavx512bw -mllvm -enable-gvn-hoist -mllvm -enable-gvn-sink -Wno-error=unused-command-line-argument"
   local _wheel_flags
   _wheel_flags="$(printf '%s' "${_base_flags}" | sed -E 's/-mllvm (-[^ ]+)/-Xclang -mllvm -Xclang \1/g; s/  +/ /g; s/^ +| +$//g')"
   local _base_cflags="${CFLAGS:-}"
@@ -68,10 +68,10 @@ build() {
   export CXXFLAGS="${_base_cxxflags:+${_base_cxxflags} }${_wheel_flags}"
   export LDFLAGS="${_base_ldflags:+${_base_ldflags} }-famd-opt"
 
-  python -m build --wheel --no-isolation --skip-dependency-check
+  /usr/bin/python -m build --wheel --no-isolation --skip-dependency-check
 }
 
 package() {
-  cd "$srcdir/httptools-0.7.1"
-  python -m installer --destdir="$pkgdir" dist/*.whl
+  cd "$srcdir/httptools-0.8.0"
+  /usr/bin/python -m installer --destdir="$pkgdir" dist/*.whl
 }

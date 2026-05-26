@@ -18,7 +18,7 @@
   },
   "name": "python-duckdb-gfx1151",
   "package_name": "python-duckdb-gfx1151",
-  "pkgver": "1.5.2",
+  "pkgver": "1.5.3",
   "policy": {
     "advisory_references": [
       "cachyos-extra-znver4/python-duckdb"
@@ -78,10 +78,10 @@
       "The build skips the Python frontend dependency check because DuckDB requests PyPI metadata names that do not match Arch's system package distribution metadata, even though the backend finds the system tools."
     ],
     "sha256sums": [
-      "638da0d5102b6cb6f7d47f83d0600708ac1d3cb46c5e9aaabc845f9ba4d69246"
+      "df39428eb130faa35ae96fd35245bdeae6ecf43936250b116b5fead568eb9f16"
     ],
     "skip_dependency_check": true,
-    "src_subdir": "duckdb-1.5.2",
+    "src_subdir": "duckdb-1.5.3",
     "template": "native-wheel-pypi",
     "update_notes": [
       "Check Arch first for scikit-build-core, pybind11, bundled-extension, and optional dependency drift; use CachyOS only as the tuned-package neighbor.",
@@ -89,15 +89,15 @@
       "Rebuild this package when DuckDB's bundled extension set or scikit-build-core metadata changes because those choices affect the Python extension ABI and packaged optional integrations.",
       "After publishing a rebuilt package, verify `import duckdb` and a tiny in-memory query through the installed local Python lane before using it in analytics/parquet workflows."
     ],
-    "upstream_version": "1.5.2",
+    "upstream_version": "1.5.3",
     "url": "https://github.com/duckdb/duckdb"
   },
   "provenance": {
     "output_root": "packages",
     "recipe_author": "Blackcat Informatics Inc.",
-    "recipe_commit": "a1d7a68",
-    "recipe_date": "20260427",
-    "recipe_history_count": 16,
+    "recipe_commit": "3f15f9f",
+    "recipe_date": "20260508",
+    "recipe_history_count": 17,
     "recipe_repo": "https://github.com/paudley/ai-notes",
     "recipe_subdir": "strix-halo",
     "repo_subpath": "."
@@ -113,7 +113,7 @@
     "patches": [],
     "phase": "H",
     "repo": null,
-    "src_dir": null,
+    "src_dir": "duckdb-1.5.3",
     "steps": [
       32
     ]

@@ -167,7 +167,7 @@ def test_native_wheel_renderer_applies_source_patches_and_build_config_settings(
     assert f"sha256sums=({'0' * 64} SKIP)" in pkgbuild
     assert "pkgrel=2" in pkgbuild
     assert 'patch --dry-run -R -Np1 -i "$srcdir/0001-sample.patch"' in pkgbuild
-    assert "python -m build --wheel --no-isolation --skip-dependency-check \\\n" in pkgbuild
+    assert "/usr/bin/python -m build --wheel --no-isolation --skip-dependency-check \\\n" in pkgbuild
     assert "    -Csetup-args=-Dblas=openblas \\\n" in pkgbuild
     assert "    -Csetup-args=-Dlapack=openblas\n" in pkgbuild
     assert "s/-famd-opt//g" not in pkgbuild
@@ -180,7 +180,7 @@ def test_native_wheel_renderer_applies_source_patches_and_build_config_settings(
     assert "\n  rm -rf dist build\n" in pkgbuild
     assert "local _wheels=(dist/*.whl)" in pkgbuild
     assert "expected exactly one wheel" in pkgbuild
-    assert r'python -m installer --destdir="$pkgdir" "${_wheels[0]}"' in pkgbuild
+    assert r'/usr/bin/python -m installer --destdir="$pkgdir" "${_wheels[0]}"' in pkgbuild
 
 
 def test_compiler_env_uses_repo_local_ccache_storage() -> None:

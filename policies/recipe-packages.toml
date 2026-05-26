@@ -1096,7 +1096,7 @@ scaffold_notes = [
 [packages.python-duckdb-gfx1151]
 recipe_key = "native_wheels"
 template = "native-wheel-pypi"
-upstream_version = "1.5.2"
+upstream_version = "1.5.3"
 pkgdesc = "Analytical in-process SQL database Python API rebuilt for Strix Halo gfx1151"
 url = "https://github.com/duckdb/duckdb"
 license = ["MIT"]
@@ -1127,8 +1127,8 @@ optdepends = [
   "python-arrow-adbc: used for the ADBC driver"
 ]
 pypi_name = "duckdb"
-sha256sums = ["638da0d5102b6cb6f7d47f83d0600708ac1d3cb46c5e9aaabc845f9ba4d69246"]
-src_subdir = "duckdb-1.5.2"
+sha256sums = ["df39428eb130faa35ae96fd35245bdeae6ecf43936250b116b5fead568eb9f16"]
+src_subdir = "duckdb-1.5.3"
 patches_dir = "patches/python-duckdb-gfx1151"
 recipe_notes_override = """
 This package is the DuckDB output from the shared `native_wheels` recipe
@@ -1376,7 +1376,7 @@ scaffold_notes = [
 [packages.python-httptools-gfx1151]
 recipe_key = "native_wheels"
 template = "native-wheel-pypi"
-upstream_version = "0.7.1"
+upstream_version = "0.8.0"
 pkgdesc = "Fast HTTP parser rebuilt for Strix Halo gfx1151"
 url = "https://github.com/MagicStack/httptools"
 license = ["MIT"]
@@ -1398,10 +1398,10 @@ conflicts = ["python-httptools"]
 depends = ["llhttp", "python-gfx1151"]
 makedepends = ["cython", "python-build", "python-installer", "python-setuptools", "python-wheel", "rocm-llvm-gfx1151"]
 pypi_name = "httptools"
-sha256sums = ["abd72556974f8e7c74a259655924a717a2365b236c882c3f6f8a45fe94703ac9"]
-src_subdir = "httptools-0.7.1"
+sha256sums = ["6b2a32f18d97e16e90827d7a819ffa8dbd8cc245fc4e1fa9d1095b54ef4bd999"]
+src_subdir = "httptools-0.8.0"
 source_patches = ["0001-use-system-llhttp.patch"]
-extra_sha256sums = ["3da331b23886e7fed88f74dfa284010fdcfea0a1a14cd7f71ed3e20df202b6ab"]
+extra_sha256sums = ["db5c625c08b481c8f85dbb598eb394fee089f360f5b2f056d18bb253d5c36b44"]
 patches_dir = "packages/python-httptools-gfx1151"
 skip_dependency_check = true
 recipe_notes_override = """
@@ -1550,7 +1550,7 @@ scaffold_notes = [
 [packages.python-yarl-gfx1151]
 recipe_key = "native_wheels"
 template = "native-wheel-pypi"
-upstream_version = "1.23.0"
+upstream_version = "1.24.2"
 pkgdesc = "Yet another URL library rebuilt for Strix Halo gfx1151"
 url = "https://github.com/aio-libs/yarl/"
 license = ["Apache-2.0"]
@@ -1570,8 +1570,8 @@ conflicts = ["python-yarl"]
 depends = ["glibc", "python-gfx1151", "python-idna", "python-multidict-gfx1151", "python-propcache"]
 makedepends = ["cython", "python-build", "python-expandvars", "python-installer", "python-setuptools", "python-wheel", "rocm-llvm-gfx1151"]
 pypi_name = "yarl"
-sha256sums = ["53b1ea6ca88ebd4420379c330aea57e258408dd0df9af0992e5de2078dc9f5d5"]
-src_subdir = "yarl-1.23.0"
+sha256sums = ["9ac374123c6fd7abf64d1fec93962b0bd4ee2c19751755a762a72dd96c0378f8"]
+src_subdir = "yarl-1.24.2"
 patches_dir = "patches/python-yarl-gfx1151"
 recipe_notes_override = """
 This package is the yarl output from the shared `native_wheels` recipe phase.

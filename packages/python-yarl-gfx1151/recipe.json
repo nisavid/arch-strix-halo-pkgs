@@ -16,7 +16,7 @@
   },
   "name": "python-yarl-gfx1151",
   "package_name": "python-yarl-gfx1151",
-  "pkgver": "1.23.0",
+  "pkgver": "1.24.2",
   "policy": {
     "advisory_references": [
       "cachyos-extra-znver4/python-yarl"
@@ -65,23 +65,23 @@
       "Use the shared native-wheel renderer so amdclang, path remapping, and Zen 5 flags stay aligned with the other native wheel packages."
     ],
     "sha256sums": [
-      "53b1ea6ca88ebd4420379c330aea57e258408dd0df9af0992e5de2078dc9f5d5"
+      "9ac374123c6fd7abf64d1fec93962b0bd4ee2c19751755a762a72dd96c0378f8"
     ],
-    "src_subdir": "yarl-1.23.0",
+    "src_subdir": "yarl-1.24.2",
     "template": "native-wheel-pypi",
     "update_notes": [
       "Check Arch first for release and build-backend metadata before updating.",
       "After publishing a rebuilt package, verify `import yarl` and a minimal URL construction probe through the installed local Python lane."
     ],
-    "upstream_version": "1.23.0",
+    "upstream_version": "1.24.2",
     "url": "https://github.com/aio-libs/yarl/"
   },
   "provenance": {
     "output_root": "packages",
     "recipe_author": "Blackcat Informatics Inc.",
-    "recipe_commit": "a1d7a68",
-    "recipe_date": "20260427",
-    "recipe_history_count": 16,
+    "recipe_commit": "3f15f9f",
+    "recipe_date": "20260508",
+    "recipe_history_count": 17,
     "recipe_repo": "https://github.com/paudley/ai-notes",
     "recipe_subdir": "strix-halo",
     "repo_subpath": "."
@@ -97,7 +97,7 @@
     "patches": [],
     "phase": "H",
     "repo": null,
-    "src_dir": null,
+    "src_dir": "yarl-1.24.2",
     "steps": [
       32
     ]

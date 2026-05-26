@@ -9,7 +9,7 @@
       "Keeps uvicorn/vLLM HTTP parsing on the repo-owned optimized wheel stack."
     ],
     "source_patch_sha256sums": [
-      "3da331b23886e7fed88f74dfa284010fdcfea0a1a14cd7f71ed3e20df202b6ab"
+      "db5c625c08b481c8f85dbb598eb394fee089f360f5b2f056d18bb253d5c36b44"
     ],
     "source_patches": [
       "0001-use-system-llhttp.patch"
@@ -23,7 +23,7 @@
   },
   "name": "python-httptools-gfx1151",
   "package_name": "python-httptools-gfx1151",
-  "pkgver": "0.7.1",
+  "pkgver": "0.8.0",
   "policy": {
     "advisory_references": [
       "cachyos-extra-znver4/python-httptools"
@@ -68,10 +68,10 @@
       "Keep the source patch that switches httptools' build_ext default to system llhttp so the local package does not vendor a private llhttp copy."
     ],
     "sha256sums": [
-      "abd72556974f8e7c74a259655924a717a2365b236c882c3f6f8a45fe94703ac9"
+      "6b2a32f18d97e16e90827d7a819ffa8dbd8cc245fc4e1fa9d1095b54ef4bd999"
     ],
     "skip_dependency_check": true,
-    "src_subdir": "httptools-0.7.1",
+    "src_subdir": "httptools-0.8.0",
     "template": "native-wheel-pypi",
     "update_notes": [
       "Check Arch first for llhttp and Cython build metadata before updating.",
@@ -79,15 +79,15 @@
       "Keep `skip_dependency_check = true` while the PyPI sdist pins an exact setuptools build requirement; Arch builds httptools from source without that equality gate, and this package uses the repo's system setuptools in the same no-isolation lane.",
       "After publishing a rebuilt package, verify `import httptools` through the installed local Python lane."
     ],
-    "upstream_version": "0.7.1",
+    "upstream_version": "0.8.0",
     "url": "https://github.com/MagicStack/httptools"
   },
   "provenance": {
     "output_root": "packages",
     "recipe_author": "Blackcat Informatics Inc.",
-    "recipe_commit": "a1d7a68",
-    "recipe_date": "20260427",
-    "recipe_history_count": 16,
+    "recipe_commit": "3f15f9f",
+    "recipe_date": "20260508",
+    "recipe_history_count": 17,
     "recipe_repo": "https://github.com/paudley/ai-notes",
     "recipe_subdir": "strix-halo",
     "repo_subpath": "."
@@ -103,7 +103,7 @@
     "patches": [],
     "phase": "H",
     "repo": null,
-    "src_dir": null,
+    "src_dir": "httptools-0.8.0",
     "steps": [
       32
     ]
