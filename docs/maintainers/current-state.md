@@ -2,6 +2,12 @@
 
 Status as of 2026-05-26.
 
+The Blackcat recipe-surface policy spec is docs-only. The classification now
+lives in `docs/maintainers/blackcat-recipe-surfaces.md`, separating already
+adopted package surfaces from tracked, rejected, and blocked future lanes. This
+spec did not update package source refs, rebuild packages, deploy or install
+artifacts, run installed smokes, or run live inference scenarios.
+
 The llama.cpp selected-token logits package branch is adopted and
 live-validated. Both packaged backends remain on upstream `b9222` and render as
 pkgrel `3` with the shared

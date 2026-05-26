@@ -218,90 +218,15 @@
   - `AITER a8587415 source-update lane`: review the MLA decode Gluon and mHC
     synchronization range, build and install the package, run the installed JIT
     smoke, and run affected vLLM scenario validation.
-- Blackcat ai-notes recipe input is adopted through
-  `a1d7a6816dd2c456bad9fcc7d61c53a4bd8c5fbd`. Follow up the newly described
-  stable-diffusion.cpp package surface, expanded native/Rust wheel recipe
-  surfaces, and Qwen3-VL embedding notes as separate package-policy and host
-  validation lanes before adding packages or promoting scenarios.
-- Package the expanded Blackcat optimized-wheel surface as the comprehensive
-  local wheel stack, not as an implicit side effect of the recipe-input bump.
-  Track it with the following shape:
-  - Policy: `policies/recipe-packages.toml` currently models concrete package
-    entries rather than named stack variants, so add policy entries only as
-    packages are implemented and reviewed.
-  - Selection rule: when a newly introduced dependency is native code,
-    performance-sensitive model/config plumbing, quantization tooling, or an
-    inference engine, default to ingesting it into the local optimized build
-    stack instead of relying on an external generic wheel.
-  - Core model/config stack: package policy and rendered scaffolds now exist
-    for `python-pydantic-core-gfx1151`, `python-tokenizers-gfx1151`,
-    `python-safetensors-gfx1151`, `python-pyyaml-gfx1151`,
-    `python-psutil-gfx1151`, and `python-pillow-gfx1151`. The source and
-    package-build gates passed, and `python-transformers-gfx1151`,
-    `python-mistral-common-gfx1151`, and `python-vllm-rocm-gfx1151` rebuilt
-    against the metadata changes. Publish/install and installed-smoke gates
-    passed on 2026-05-01. Live-scenario validation passed on 2026-05-01 with
-    Qwen3.5 text, TorchAO tiny generation, and Gemma 4 E2B server scenarios.
-  - Comprehensive Blackcat wheel stack, selected for this repo: the core stack
-    plus `python-watchfiles-gfx1151`, `python-uvloop-gfx1151`,
-    `python-httptools-gfx1151`, `python-msgspec-gfx1151`,
-    `python-aiohttp-gfx1151`, `python-multidict-gfx1151`,
-    `python-yarl-gfx1151`, and `python-frozenlist-gfx1151`. Package policy
-    and rendered scaffolds now exist for this service/runtime slice. Source
-    and package-build gates passed for the service/runtime packages. Publish,
-    install, installed-smoke, and live-scenario validation passed on
-    2026-05-01. The rebased vLLM dependency metadata rewire is rendered at
-    pkgrel 3, and `python-vllm-rocm-gfx1151 0.20.1-3` now builds with the
-    refreshed ROCm carry for HIP byproducts and bfloat aliases. Publish/install,
-    installed-smoke, and post-deploy live-scenario validation passed for that
-    pkgrel-3 vLLM package on 2026-05-03.
-  - Tooling helpers: native-worthy tooling helpers also belong in this
-    selected stack when their lane is implemented. Start Qwen3-VL
-    quantization/tooling review with `python-llmcompressor-gfx1151` and
-    `python-compressed-tensors-gfx1151`, then add any native transitive
-    dependencies that materially affect quantization or model-loading runtime.
-    `python-compressed-tensors-gfx1151 0.15.0.1-1` now has package policy,
-    rendered scaffolds, package-build evidence, publish/install proof, and
-    installed-smoke evidence aligned with the installed vLLM 0.20.1
-    compressed-tensors requirement. Package policy, rendered scaffolds, and
-    package-build, publish/install, and installed-smoke evidence now also exist
-    for `python-accelerate-gfx1151 1.12.0-1`, `python-auto-round-gfx1151 0.10.2-1`,
-    and `python-llmcompressor-gfx1151 0.10.0.1-4`; package-build, publish/install,
-    and installed-smoke evidence now also exists for the follow-up
-    `python-llmcompressor-gfx1151 0.10.0.1-5` cleanup. The llmcompressor package uses
-    upstream's dev dependency lane plus package-local compatibility patches to
-    accept the installed PyTorch 2.11, Transformers 5.7.0, and
-    compressed-tensors 0.15.0.1 stack, and its wheel metadata patches out
-    the NVIDIA-only `nvidia-ml-py` runtime dependency. Installed smoke passed for
-    `python-llmcompressor-gfx1151 0.10.0.1-5`.
-    The installed smoke covered `accelerate`, `auto_round`, `llmcompressor`,
-    llmcompressor's AutoRound modifier import, skip-weight initialization, and
-    model-free name matching.
-  - Blackcat tooling freshness follow-up: the 2026-05-07 refresh source bundle
-    adopts `python-accelerate-gfx1151 1.13.0` and
-    `python-auto-round-gfx1151 0.12.3` after package build, deploy/install,
-    direct import, llmcompressor AutoRound modifier import, and skip-weight
-    initialization smoke passed.
-    The former `nvidia-ml-py` follow-up is retired because llmcompressor now
-    patches the NVIDIA metric dependency out of its wheel metadata.
-    The 2026-05-03 rebase freshness sweep rejected `llmcompressor 0.10.0.2`
-    because its published dependency metadata excludes the local PyTorch 2.11,
-    Transformers 5.7.0, compressed-tensors 0.15.0.1, and tracked newer tooling
-    package lane.
-  - Engine lanes: new engines are in scope by default.
-    `stable-diffusion.cpp-vulkan-gfx1151` now has package policy, rendered
-    scaffolds, source patch carry, freshness coverage, package-build evidence,
-    deploy/install proof, and installed wrapper smokes. Continue future engine
-    work from package-local maintenance docs and keep new engines in the local
-    optimized build stack rather than consuming upstream binaries or untracked
-    source checkouts.
-  - Starting point: use the existing `rust_wheels` and `native_wheels`
-    policy/template lanes; compare each package against Arch or AUR before
-    carrying it locally, and preserve the already packaged foundation
-    (`python-numpy-gfx1151`, `python-orjson-gfx1151`,
-    `python-cryptography-gfx1151`, `python-sentencepiece-gfx1151`,
-    `python-zstandard-gfx1151`, `python-asyncpg-gfx1151`, and
-    `python-duckdb-gfx1151`).
+- Blackcat recipe surface policy is centralized in
+  `docs/maintainers/blackcat-recipe-surfaces.md`. The current package set
+  already adopts the concrete stable-diffusion.cpp, Rust wheel, native wheel,
+  source-wheel-equivalent, and Qwen3-VL tooling-helper package surfaces
+  represented in `policies/recipe-packages.toml`. Remaining dispatchable work
+  is separate: Qwen3-VL quantization helper tracking, Qwen3-VL runtime/scenario
+  blocking gates, Atomic TurboQuant user/source-risk blocking gates, the active
+  stable-diffusion.cpp source refresh, and ordinary native-wheel freshness lanes
+  such as DuckDB, Httptools, and Yarl.
 - Newly discovered ROCm inference candidates from
   `docs/maintainers/rocm-inference-reference.md` belong near the top of this
   backlog, but they are not validated package commitments until their source
