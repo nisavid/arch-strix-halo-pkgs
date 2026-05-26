@@ -600,6 +600,45 @@ def test_lemonade_adapter_builds_pooling_endpoint_smoke_command(tmp_path: Path):
     assert plan.server_log_path is None
 
 
+def test_lemonade_adapter_builds_zerank_selected_logit_smoke_command(tmp_path: Path):
+    plan = build_execution_plan(
+        scenario(
+            {
+                "id": "lemonade.reranking.zerank-2.selected-logit",
+                "given": {
+                    "engine": "lemonade",
+                    "model": "zerank-2-GGUF",
+                    "tool": "lemonade_zerank_smoke.selected-logit",
+                },
+                "when": {
+                    "argv": [
+                        "--lemond",
+                        "/usr/bin/lemond",
+                        "--llama-server",
+                        "/usr/bin/llama-server-hip-gfx1151",
+                    ]
+                },
+            }
+        ),
+        repo_root=REPO_ROOT,
+        scenario_run_root=tmp_path,
+        model_bindings={},
+    )
+
+    assert plan.command == [
+        sys.executable,
+        str(REPO_ROOT / "tools/lemonade_zerank_smoke.py"),
+        "zerank-2-GGUF",
+        "--server-log",
+        str(tmp_path / "server.log"),
+        "--lemond",
+        "/usr/bin/lemond",
+        "--llama-server",
+        "/usr/bin/llama-server-hip-gfx1151",
+    ]
+    assert plan.server_log_path == tmp_path / "server.log"
+
+
 def test_transformers_adapter_builds_zeroentropy_pooling_smoke_command(tmp_path: Path):
     plan = build_execution_plan(
         scenario(

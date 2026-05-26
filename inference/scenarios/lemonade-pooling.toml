@@ -73,3 +73,56 @@ value = "rerank_order 0,1,2"
 [[scenario.then.assert]]
 kind = "stdout.contains"
 value = "rerank_ok"
+
+[[scenario]]
+id = "lemonade.reranking.zerank-2.selected-logit"
+summary = "Lemonade zerank-2 selected-logit reranking integration through packaged llama-server"
+tags = [
+  "smoke",
+  "lemonade",
+  "pooling",
+  "rerank",
+  "reranking",
+  "llamacpp",
+  "zerank",
+  "zeroentropy",
+  "selected-logit",
+  "integration",
+]
+
+[scenario.given]
+engine = "lemonade"
+model = "zerank-2-GGUF"
+tool = "lemonade_zerank_smoke.selected-logit"
+
+[scenario.when]
+argv = [
+  "--lemond",
+  "/usr/bin/lemond",
+  "--llama-server",
+  "/usr/bin/llama-server-hip-gfx1151",
+]
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "mode selected-logit"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "zerank_adapter_options_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "capital_france_order_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "arithmetic_order_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "zerank_rerank_ok"

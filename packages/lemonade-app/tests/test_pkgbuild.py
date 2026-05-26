@@ -43,6 +43,13 @@ def test_pkgbuild_keeps_tauri_glib_on_webkit_compatible_series():
     assert '+glib = "0.18"' in text
 
 
+def test_reranking_error_fix_lives_in_pinned_fork_source():
+    text = PKGBUILD.read_text()
+
+    assert "b608a74d0604f96786de59d65cb0ba27b05db0c6" in text
+    assert "0002-surface-reranking-server-errors.patch" not in text
+
+
 def test_built_package_ships_desktop_launcher_wrapper():
     if not WRAPPER.exists():
         pytest.skip("built lemonade-app package image is not present")

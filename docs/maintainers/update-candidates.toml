@@ -99,15 +99,17 @@ check_id = "fork-main"
 covered_checks = [{ source_kind = "github_release", check_id = "upstream-release" }]
 baseline_latest = "10.6.0-1"
 previous_recorded = "a90f8194f29940c22575499951b12e588a2e8211"
-latest = "3caab7217efec689f947c69fcf2fdb4d812ddbb5"
+latest = "b608a74d0604f96786de59d65cb0ba27b05db0c6"
 discovery_status = "branch_head_ahead"
 disposition = "tracked"
-disposition_reason = "The 10.6.0 release baseline is adopted, and the fork-main package source lane is updated and package-built at 3caab7217efec689f947c69fcf2fdb4d812ddbb5. Deploy/install, installed pacman verification, and Lemonade installed smokes remain open because privileged host deployment has not completed."
+disposition_reason = "The 10.6.0 release baseline is adopted, and the fork-main package source lane is updated and package-built at b608a74d0604f96786de59d65cb0ba27b05db0c6. The fork now contains the pinned-backend lifecycle and reranking error-message fixes, so the package-local temporary patches are removed. Deploy/install, installed pacman verification, and selected-logit zerank live validation remain open because privileged host deployment has not completed."
 salient_changes = [
-  "Lemonade packages render as 10.6.0 from nisavid/lemonade fork main 3caab7217efec689f947c69fcf2fdb4d812ddbb5",
+  "Lemonade packages render as 10.6.0 from nisavid/lemonade fork main b608a74d0604f96786de59d65cb0ba27b05db0c6",
   "AUR lemonade-server and lemonade-desktop baselines are reviewed at 10.6.0-1",
   "The app package carries a local Tauri Cargo patch that keeps direct Linux glib on the webkit2gtk-compatible 0.18 series",
-  "Source verification, clean source preparation, package-local tests, and tools/amerge build passed for lemonade-server 10.6.0-3 and lemonade-app 10.6.0-2",
+  "Recipe render, package-local tests, full pytest, and tools/amerge build passed for lemonade-server 10.6.0-5 and lemonade-app 10.6.0-4",
+  "The pinned-backend lifecycle and reranking error-message fixes live in the pinned fork source, so their package-local temporary patches are dropped",
+  "tools/amerge deploy, installed pacman verification, and selected-logit zerank live validation remain open",
   "The source range adds the llama.cpp selected-logit reranking adapter, backend archive extraction hardening, and Tauri app dependency lockfile updates",
 ]
 patch_carry_overlap = true

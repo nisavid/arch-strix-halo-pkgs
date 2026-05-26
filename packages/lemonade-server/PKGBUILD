@@ -6,7 +6,7 @@
 
 pkgname=lemonade-server
 pkgver=10.6.0
-pkgrel=3
+pkgrel=5
 pkgdesc='Local AI server runtime rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://github.com/nisavid/lemonade
@@ -18,7 +18,7 @@ options=()
 provides=(lemonade-server)
 conflicts=()
 replaces=()
-source=('lemonade::git+https://github.com/nisavid/lemonade.git#commit=3caab7217efec689f947c69fcf2fdb4d812ddbb5' 0001-linux-npu-fallback-to-pci-id-when-accel-open-fails.patch 0002-llamacpp-external-backends-are-system-managed.patch 0003-remove-llamacpp-system-backend.patch 0004-system-managed-llamacpp-metadata.patch 0005-log-config-load-diagnostics.patch)
+source=('lemonade::git+https://github.com/nisavid/lemonade.git#commit=b608a74d0604f96786de59d65cb0ba27b05db0c6' 0001-linux-npu-fallback-to-pci-id-when-accel-open-fails.patch 0002-llamacpp-external-backends-are-system-managed.patch 0003-remove-llamacpp-system-backend.patch 0004-system-managed-llamacpp-metadata.patch 0005-log-config-load-diagnostics.patch)
 sha256sums=(SKIP SKIP SKIP SKIP SKIP SKIP)
 
 prepare() {

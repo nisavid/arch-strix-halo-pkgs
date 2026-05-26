@@ -82,6 +82,7 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     assert "lemonade.server.help" in ids
     assert "lemonade.pooling.zembed-1-q4-k-m.embeddings" in ids
     assert "lemonade.pooling.bge-reranker-v2-m3.rerank" in ids
+    assert "lemonade.reranking.zerank-2.selected-logit" in ids
     assert "torch-migraphx.pt2e.quantizer-import" in ids
     assert "torch-migraphx.resnet-tiny.dynamo" in ids
     assert "torch-migraphx.resnet-tiny.pt2e" in ids
@@ -186,6 +187,10 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     assert "rerank" in tags_by_id["vllm.pooling.zerank-2.rerank"]
     assert "zeroentropy" in tags_by_id["vllm.pooling.zerank-2.rerank"]
     assert "flex-attention" in tags_by_id["vllm.pooling.zerank-2.rerank"]
+    assert "integration" in tags_by_id["lemonade.reranking.zerank-2.selected-logit"]
+    assert "selected-logit" in tags_by_id[
+        "lemonade.reranking.zerank-2.selected-logit"
+    ]
 
 
 def test_gemma4_26b_promoted_scenarios_enable_aiter_attention():
