@@ -52,6 +52,12 @@ def test_selected_token_logits_patch_exposes_generic_completion_contract():
     assert "completion_token_output::str_to_bytes(txt)" in text
     assert "if (!slot.has_budget(params_base))" in text
     assert "backend_sampling &= task.params.token_logits.empty();" in text
+    populate_body = text[
+        text.index("void populate_selected_token_logits") : text.index("void send_error")
+    ]
+    assert "const int n_vocab = llama_vocab_n_tokens(vocab);" in populate_body
+    assert "if (token < 0 || token >= n_vocab)" in populate_body
+    assert "continue;" in populate_body
     assert "llama_get_sampled_candidates_ith" not in text
     assert "bool found" not in text
     assert "zeroentropy" not in text.lower()
