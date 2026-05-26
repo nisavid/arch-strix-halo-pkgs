@@ -31,7 +31,6 @@ from `nisavid/lemonade` fork main commit
 upstream and AUR `10.6.0` baselines. The server package now renders as
 `lemonade-server 10.6.0-5`, and the app package renders as
 `lemonade-app 10.6.0-4`.
-
 The fork commit contains the pinned-backend lifecycle fix and the reranking
 error-message UI fix, so the package lane no longer carries
 `0006-keep-llamacpp-backends-alive-after-threaded-loads.patch` or
@@ -52,6 +51,8 @@ passed`; `pytest -q -p no:cacheprovider` reports `370 passed`; and
 gate is `tools/amerge deploy lemonade-server lemonade-app -y`, followed by
 `pacman -Q lemonade-server lemonade-app lemonade` and the installed Lemonade
 selected-logit zerank smoke scenario.
+
+
 
 The 2026-05-25 AITER stable-release refresh is adopted and live-validated.
 `python-amd-aiter-gfx1151` now renders from upstream tag `v0.1.14` as

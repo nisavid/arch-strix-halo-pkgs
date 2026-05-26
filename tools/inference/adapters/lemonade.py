@@ -14,7 +14,6 @@ def build_execution_plan(
     scenario_run_root: Path,
     model_bindings: dict[str, str],
 ) -> ExecutionPlan:
-    del scenario_run_root
     del model_bindings
 
     given = definition["given"]
@@ -36,6 +35,18 @@ def build_execution_plan(
                     mode,
                     *argv,
                 ]
+            )
+        if tool_name == "lemonade_zerank_smoke.selected-logit":
+            return ExecutionPlan(
+                command=[
+                    sys.executable,
+                    str(repo_root / "tools/lemonade_zerank_smoke.py"),
+                    str(given["model"]),
+                    "--server-log",
+                    str(scenario_run_root / "server.log"),
+                    *argv,
+                ],
+                server_log_path=scenario_run_root / "server.log",
             )
         raise ValueError(f"UNSUPPORTED_LEMONADE_TOOL: {tool_name}")
 

@@ -27,6 +27,9 @@ OLD_SERVICE = (
     REPO_ROOT
     / "packages/lemonade-server/pkg/lemonade-server/usr/lib/systemd/system/lemonade-server.service"
 )
+SOURCE_TREE = REPO_ROOT / "packages/lemonade-server/src/lemonade"
+
+
 def _pkgbuild_value(path, key):
     prefix = f"{key}="
     for line in path.read_text().splitlines():
@@ -94,6 +97,13 @@ def test_system_backend_metadata_overrides_require_external_backend():
     assert "get_system_managed_backend_release_url_override" in text
 
 
+def test_backend_lifecycle_fix_lives_in_pinned_fork_source():
+    text = PKGBUILD.read_text()
+
+    assert "b608a74d0604f96786de59d65cb0ba27b05db0c6" in text
+    assert "0006-keep-llamacpp-backends-alive-after-threaded-loads.patch" not in text
+
+
 def _current_pkgbuild_version():
     values = {}
     for line in PKGBUILD.read_text().splitlines():
@@ -131,3 +141,28 @@ def test_built_package_installs_renamed_lemond_service():
 
     assert SERVICE.exists()
     assert not OLD_SERVICE.exists()
+
+
+def test_prepared_source_contains_zerank_selected_logit_adapter():
+    if not SOURCE_TREE.exists():
+        pytest.skip("prepared lemonade source is not present")
+
+    server_models = SOURCE_TREE / "src/cpp/resources/server_models.json"
+    adapter = SOURCE_TREE / "src/cpp/server/backends/llamacpp_reranking_adapter.cpp"
+    adapter_header = (
+        SOURCE_TREE / "src/cpp/include/lemon/backends/llamacpp_reranking_adapter.h"
+    )
+    for path in (server_models, adapter, adapter_header):
+        if not path.exists():
+            pytest.skip("prepared lemonade source is incomplete")
+
+    models_text = server_models.read_text()
+    adapter_text = adapter.read_text()
+    header_text = adapter_header.read_text()
+
+    assert '"zerank-2-GGUF"' in models_text
+    assert '"llamacpp_reranking_adapter": "zeroentropy-logit-score"' in models_text
+    assert '"llamacpp_reranking_true_token_id": 9454' in models_text
+    assert '"llamacpp_reranking_logit_scale": 5.0' in models_text
+    assert "ZEROENTROPY_LOGIT_SCORE_ADAPTER" in header_text
+    assert "token_logits" in adapter_text
