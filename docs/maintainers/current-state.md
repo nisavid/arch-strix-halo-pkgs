@@ -193,8 +193,10 @@ deploy/install, installed-smoke, and live-scenario validation gates remain
 open. The closeout refresh check then found upstream llama.cpp b9333 as the
 next llama.cpp follow-up rather than folding it into the b9330 build. After
 recording that disposition, `tools/check_package_updates.py --refresh --json
---fail-on actionable` exited `0`. The branch needs a final post-rebase
-freshness check after the AOCL and llama.cpp evidence is combined.
+--fail-on actionable` exited `0`. The post-AOCL rebase check
+`tools/check_package_updates.py --json --fail-on actionable` also exited `0`,
+with effective counts of 22 adopted update candidates, 17 current families, 2
+rejected update candidates, and 4 tracked update candidates.
 
 The 2026-05-26 Quark/AWQ/GPTQ/bitsandbytes/xFormers/FBGEMM candidate triage is
 also docs-only source audit. It does not implement packages, change package
