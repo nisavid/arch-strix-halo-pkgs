@@ -180,9 +180,8 @@ candidates, 17 current families, 2 rejected update candidates, and 5 tracked
 update candidates.
 
 The tracked ledger entries now include: llama.cpp b9330-2 deploy/install
-closeout, llama.cpp b9333 follow-up, ROCm PyTorch release/2.12 26872de
-follow-up, stable-diffusion.cpp 1ceb5bd follow-up, and Transformers 5.9.0
-follow-up. Each tracked entry has its disposition in
+closeout, llama.cpp b9334 follow-up, ROCm PyTorch release/2.12 26872de
+follow-up, and Transformers 5.9.0 follow-up. Each tracked entry has its disposition in
 `docs/maintainers/update-candidates.toml` and its gate label in
 `docs/backlog.md`. The superseded llama.cpp `b9279` and `b9305` candidates and
 stable-diffusion.cpp `3a8788c` and `a397e03` candidates are rejected in the
@@ -191,15 +190,29 @@ adopts the Lemonade fork `13b1af2` lane through source update, package build,
 deploy/install, installed smoke, and live-scenario validation. The llama.cpp
 b9330 lane is source-updated and package-built as b9330-2; its final
 deploy/install, installed-smoke, and live-scenario validation gates remain
-open. The closeout refresh check then found upstream llama.cpp b9333 as the
+open. The closeout refresh check then found upstream llama.cpp b9334 as the
 next llama.cpp follow-up rather than folding it into the b9330 build. After
 recording that disposition, `tools/check_package_updates.py --refresh --json
 --fail-on actionable` exited `0`. The post-AOCL rebase check
 `tools/check_package_updates.py --json --fail-on actionable` also exited `0`,
 with effective counts of 22 adopted update candidates, 17 current families, 2
-rejected update candidates, and 4 tracked update candidates; b9333 remains the
+rejected update candidates, and 4 tracked update candidates; b9334 remains the
 effective llama.cpp update candidate while b9330-2 remains tracked as a
-deploy/install closeout gate.
+deploy/install closeout gate. After the stable-diffusion.cpp closeout below,
+the same checker exited `0` with effective counts of 23 adopted update
+candidates, 17 current families, 2 rejected update candidates, and 3 tracked
+update candidates.
+
+The stable-diffusion.cpp 1ceb5bd follow-up is adopted. Source metadata and
+rendered scaffolds now track upstream master
+`1ceb5bd9df7784bcdf67dd9ed8bf0198b542ebc9` as `r650.g1ceb5bd-1`, with the
+local CLIP-G patch refreshed for the current source. Package build plan
+`3a354f90` produced the package, the local repo publishes
+`stable-diffusion.cpp-vulkan-gfx1151-r650.g1ceb5bd-1-x86_64.pkg.tar.zst`, the
+reference host reports `stable-diffusion.cpp-vulkan-gfx1151
+r650.g1ceb5bd-1`, and installed `sd-cli-vulkan-gfx1151 --help` plus
+`sd-server-vulkan-gfx1151 --help` smokes passed. No model-generation
+validation is claimed for this closeout.
 
 The 2026-05-26 Quark/AWQ/GPTQ/bitsandbytes/xFormers/FBGEMM candidate triage is
 also docs-only source audit. It does not implement packages, change package

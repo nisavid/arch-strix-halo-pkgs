@@ -210,7 +210,7 @@ previous_recorded = "b9222 / b9222-3"
 latest = "b9279"
 discovery_status = "stable_update_available"
 disposition = "rejected"
-disposition_reason = "Superseded before package adoption. The active llama.cpp refresh lane is b9333, so this older b9279 candidate should not remain tracked as separate open work."
+disposition_reason = "Superseded before package adoption. The active llama.cpp refresh lane is b9334, so this older b9279 candidate should not remain tracked as separate open work."
 salient_changes = [
   "GitHub release b9279 is available after the adopted b9222 package lane",
   "AUR llama.cpp-hip baseline has advanced to b9275-1 while the Vulkan baseline remains at b9222-1",
@@ -220,7 +220,7 @@ package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
 next_gate_path = ""
-next_gate_label = "Superseded by llama.cpp b9333 follow-up"
+next_gate_label = "Superseded by llama.cpp b9334 follow-up"
 last_reviewed = "2026-05-26"
 
 [candidates."llama-cpp-b9305"]
@@ -234,7 +234,7 @@ previous_recorded = "b9222 / b9222-3"
 latest = "b9305"
 discovery_status = "stable_update_available"
 disposition = "rejected"
-disposition_reason = "Superseded before package adoption. The active llama.cpp refresh lane is b9333, so this older b9305 candidate should not remain tracked as separate open work."
+disposition_reason = "Superseded before package adoption. The active llama.cpp refresh lane is b9334, so this older b9305 candidate should not remain tracked as separate open work."
 salient_changes = [
   "GitHub release b9305 is available after the adopted b9222 package lane",
   "AUR llama.cpp-hip baseline has advanced to b9297-1 while the Vulkan baseline remains at b9222-1",
@@ -244,7 +244,7 @@ package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
 next_gate_path = ""
-next_gate_label = "Superseded by llama.cpp b9333 follow-up"
+next_gate_label = "Superseded by llama.cpp b9334 follow-up"
 last_reviewed = "2026-05-26"
 
 [candidates."llama-cpp-b9330"]
@@ -276,7 +276,7 @@ next_gate_path = "docs/backlog.md"
 next_gate_label = "llama.cpp b9330-2 deploy/install + installed validation closeout"
 last_reviewed = "2026-05-26"
 
-[candidates."llama-cpp-b9333"]
+[candidates."llama-cpp-b9334"]
 family = "llama_cpp"
 packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"]
 source_kind = "github_release"
@@ -284,12 +284,12 @@ check_id = "release"
 baseline_source_kind = "aur"
 baseline_latest = "b9326-1"
 previous_recorded = "b9330 / b9326-1"
-latest = "b9333"
+latest = "b9334"
 discovery_status = "stable_update_available"
 disposition = "tracked"
 disposition_reason = "Found during the 2026-05-26 closeout freshness check after selecting llama.cpp b9330 for the active runtime refresh. Keep as a separate follow-up lane so the b9330/Lemonade runtime refresh can close with its own package build, deploy/install, installed-smoke, and selected-logit validation evidence."
 salient_changes = [
-  "GitHub release b9333 is available after the active b9330 package lane",
+  "GitHub release b9334 is available after the active b9330 package lane",
   "The checker marks this release lane as actionable because the llama.cpp family follows prerelease source movement",
   "AUR llama.cpp-hip remains at b9326-1 while the Vulkan baseline remains at b9222-1",
 ]
@@ -298,7 +298,7 @@ package_source_update_needed = true
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "llama.cpp b9333 follow-up"
+next_gate_label = "llama.cpp b9334 follow-up"
 last_reviewed = "2026-05-26"
 
 [candidates."numpy-2.4.6"]
@@ -470,18 +470,18 @@ check_id = "master"
 previous_recorded = "caa823a8c06a51288f0a01bb29e9bd8bcec30a8a"
 latest = "1ceb5bd9df7784bcdf67dd9ed8bf0198b542ebc9"
 discovery_status = "branch_head_ahead"
-disposition = "tracked"
-disposition_reason = "Found during the 2026-05-26 freshness gate. Keep as the active stable-diffusion.cpp follow-up because it supersedes the earlier 3a8788c and a397e03 candidates and still needs source/submodule review, package metadata refresh, rebuild with the carried CLIP-G patch, deploy/install, and installed Vulkan wrapper smoke before adoption."
+disposition = "adopted"
+disposition_reason = "Adopted on 2026-05-26. Source metadata and rendered scaffolds now track r650.g1ceb5bd, source verification passed with the carried CLIP-G patch, package build plan 3a354f90 produced stable-diffusion.cpp-vulkan-gfx1151 r650.g1ceb5bd-1, the package is published in the local repo and installed, and both installed Vulkan wrapper --help smokes passed. No model-generation validation is claimed."
 salient_changes = [
   "stable-diffusion.cpp master moved beyond the adopted r629.gcaa823a lane to 1ceb5bd",
   "AUR stable-diffusion.cpp-vulkan-git baseline remains at r279.49d6570-1",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
-next_gate_label = "stable-diffusion.cpp 1ceb5bd follow-up"
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Adopted; monitor future stable-diffusion.cpp refs through the normal freshness sweep"
 last_reviewed = "2026-05-26"
 
 [candidates."watchfiles-1.2.0"]
