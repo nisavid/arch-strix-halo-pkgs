@@ -37,54 +37,41 @@ adopted package surfaces from tracked, rejected, and blocked future lanes. This
 spec did not update package source refs, rebuild packages, deploy or install
 artifacts, run installed smokes, or run live inference scenarios.
 
-The llama.cpp selected-token logits package branch is adopted and
-live-validated. Both packaged backends remain on upstream `b9222` and render as
-pkgrel `3` with the shared
+The llama.cpp b9330 and Lemonade fork `13b1af2` refresh is adopted,
+installed, and live-validated. Both packaged llama.cpp backends render from
+upstream `b9330` commit `328874d054e0eb44591202a23c209cf02c18e3cb` as
+`llama.cpp-hip-gfx1151 b9330-1` and
+`llama.cpp-vulkan-gfx1151 b9330-1`, with the shared
 `0001-server-return-selected-token-logits.patch` applied during `prepare()`.
 The patch adds a generic `/completion` `token_logits` request field, disables
 backend sampled-candidate logits when `token_logits` is requested, returns
-prompt-final selected logits even when `n_predict` leaves no generation budget,
+prompt-final selected logits when `n_predict` leaves no generation budget,
 serializes selected-logit `token` as validated UTF-8 while preserving original
 token bytes in `bytes`, and caps each request at 1024 selected token IDs.
-Renderer tests, package-local tests, source preparation, and `tools/amerge`
-build plan `b664ef40` passed for `llama.cpp-hip-gfx1151 b9222-3` and
-`llama.cpp-vulkan-gfx1151 b9222-3`. Deploy plan `b9b88117` published and
-installed the rebuilt artifacts; the published repo matches the local package
-archives for both backends, and `pacman -Q` reports both installed packages at
-`b9222-3`. `pacman -Qkk` reports UID/GID mismatches for the package payloads in
-this environment and no missing-file evidence. The installed `llama.cpp` smoke
-scenarios passed at `docs/worklog/inference-runs/20260525T081923`. Direct
-HIP/Vulkan `/completion` smokes against `/tmp/stories15M-q4_0.gguf` returned
-finite `token_logits` for requested IDs `[0, 1, 2]` with `n_predict: 0`,
-included both `token` and `bytes` fields, and rejected 1025 requested IDs with
-HTTP 400 and the 1024-token cap message.
+`lemonade-server` and `lemonade-app` render from `nisavid/lemonade` fork main
+commit `13b1af25f84cf08ad5f8bf0ec58980bdfc09c9e7` as
+`lemonade-server 10.6.0-6` and `lemonade-app 10.6.0-5`; the `lemonade` meta
+package remains `10.6.0-1`.
 
-The Lemonade 10.6.0 fork-main refresh is adopted, installed, and
-live-validated. The local source packages render from `nisavid/lemonade` fork
-main commit `b608a74d0604f96786de59d65cb0ba27b05db0c6`, aligned with the canonical upstream and
-AUR `10.6.0` baselines. The reference host reports `lemonade-server 10.6.0-5`,
-`lemonade-app 10.6.0-4`, and `lemonade 10.6.0-1` from `pacman -Q`, and the
-published local repo contains matching `lemonade-server 10.6.0-5` and
-`lemonade-app 10.6.0-4` artifacts.
-
-The fork commit contains the pinned-backend lifecycle fix and the reranking
-error-message UI fix, so the package lane no longer carries
-`0006-keep-llamacpp-backends-alive-after-threaded-loads.patch` or
-`0002-surface-reranking-server-errors.patch`. The server package still carries
-the Strix Halo llama.cpp backend integration patch stack. The app package still
-carries the local Tauri Cargo patch that keeps direct Linux glib on the
-webkit2gtk-compatible `glib 0.18` dependency set until the upstream `glib 0.20`
-bump builds cleanly here.
-
-Validation completed for the source/build/install/live-scenario phase: recipe
-scaffolds were regenerated for `lemonade-server` and `lemonade-app`; `git diff
---check` passed; the focused Lemonade tests passed; full `pytest -q
--p no:cacheprovider` reported `370 passed`; `tools/amerge build
-lemonade-server lemonade-app -y` produced `lemonade-server 10.6.0-5` and
-`lemonade-app 10.6.0-4` artifacts; deploy/install completed; `pacman -Q`
-reported the expected installed packages; and
-`python tools/run_inference_scenarios.py --scenario
-lemonade.reranking.zerank-2.selected-logit --run-root docs/worklog/inference-runs/20260526T-current-zerank` passed.
+Source updated: recipe scaffolds were regenerated for both llama.cpp backends,
+`lemonade-server`, and `lemonade-app`; Lemonade system-managed backend metadata
+now points at the b9330 packaged backends; and the app package follows the fork
+change that hides reranking adapter controls for base llamacpp models. Package
+built: `tools/amerge` build plan `46a69d2a` completed for
+`lemonade-server`, `lemonade-app`, both llama.cpp backends, and `lemonade`,
+producing the versions listed above. Deployed/installed: deploy plan
+`8e489a2e` published those artifacts to the `strix-halo-gfx1151` local repo
+and installed them; `pacman -Q` and `pacman -Sl strix-halo-gfx1151` both report
+the expected installed versions. Installed-smoked and live-scenario validated:
+`python tools/run_inference_scenarios.py --scenario llama.cpp.hip.help
+--scenario llama.cpp.vulkan.help --scenario lemonade.cli.help --scenario
+lemonade.server.help --scenario lemonade.reranking.zerank-2.selected-logit
+--run-root docs/worklog/inference-runs/20260526T021053-lane4-b9330-closeout`
+passed with five scenarios and zero failures. Direct HIP and Vulkan
+`/completion` smokes against the tiny GGUF fixture returned finite
+`token_logits` for requested IDs `[0, 1, 2]` with `n_predict: 0`, included both
+`token` and `bytes` fields, and rejected 1025 requested IDs with HTTP 400 and
+the 1024-token cap message.
 
 
 
@@ -180,14 +167,21 @@ llama.cpp candidate dispositions were updated,
 candidates, 17 current families, 2 rejected update candidates, and 5 tracked
 update candidates.
 
-The active tracked update-candidate set is now: Lemonade fork 13b1af2
-follow-up, llama.cpp b9333 follow-up, ROCm PyTorch release/2.12 26872de
-follow-up, stable-diffusion.cpp 1ceb5bd follow-up, and Transformers 5.9.0
-follow-up. Each active tracked candidate has its disposition in
-`docs/maintainers/update-candidates.toml` and its gate label in
-`docs/backlog.md`. The superseded llama.cpp `b9279`, `b9305`, and `b9330`
-candidates and stable-diffusion.cpp `3a8788c` and `a397e03` candidates are
-rejected in the ledger rather than left as active tracked work.
+The active tracked update-candidate set is now: llama.cpp b9333 follow-up,
+ROCm PyTorch release/2.12 26872de follow-up, stable-diffusion.cpp 1ceb5bd
+follow-up, and Transformers 5.9.0 follow-up. Each active tracked candidate has
+its disposition in `docs/maintainers/update-candidates.toml` and its gate label
+in `docs/backlog.md`. The superseded llama.cpp `b9279` and `b9305` candidates
+and stable-diffusion.cpp `3a8788c` and `a397e03` candidates are rejected in the
+ledger rather than left as active tracked work. The 2026-05-26 package refresh
+adopts the Lemonade fork `13b1af2` lane through source update, package build,
+deploy/install, installed smoke, and live-scenario validation. The llama.cpp
+b9330 lane is captured by the package refresh above, and the closeout refresh
+check then found upstream llama.cpp b9333 as the next llama.cpp follow-up
+rather than folding it into the b9330 build. After recording that disposition,
+`tools/check_package_updates.py --refresh --json --fail-on actionable` exited
+`0`; rerun the freshness gate after this branch is merged to refresh the
+combined post-merge counts.
 
 The 2026-05-26 Quark/AWQ/GPTQ/bitsandbytes/xFormers/FBGEMM candidate triage is
 also docs-only source audit. It does not implement packages, change package

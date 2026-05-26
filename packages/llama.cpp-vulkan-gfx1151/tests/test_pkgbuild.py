@@ -8,8 +8,8 @@ RECIPE_JSON = REPO_ROOT / "packages/llama.cpp-vulkan-gfx1151/recipe.json"
 PACKAGE_PATCH_LINK = REPO_ROOT / "packages/llama.cpp-vulkan-gfx1151/0001-server-return-selected-token-logits.patch"
 PATCH_FILE = REPO_ROOT / "patches/llama.cpp-common/0001-server-return-selected-token-logits.patch"
 
-EXPECTED_VERSION = "b9222"
-EXPECTED_COMMIT = "9a532ae4bab1b164052ce60a738f78538b421c66"
+EXPECTED_VERSION = "b9330"
+EXPECTED_COMMIT = "328874d054e0eb44591202a23c209cf02c18e3cb"
 SELECTED_LOGITS_PATCH = "0001-server-return-selected-token-logits.patch"
 
 

@@ -36,7 +36,7 @@ Reinstalling at compatible versions resolves conflicts.
 ## Scaffold notes
 
 - Server/runtime package; llama.cpp backends are optdepends, not hard deps.
-- Pinned to nisavid/lemonade main commit b608a74d0604f96786de59d65cb0ba27b05db0c6, whose CMake project version is 10.6.0.
+- Pinned to nisavid/lemonade main commit 13b1af25f84cf08ad5f8bf0ec58980bdfc09c9e7, whose CMake project version is 10.6.0.
 - Uses upstream's lemond.service unit name; do not ship the pre-10.3 lemonade-server.service name in this package.
 - Installs /etc/lemonade/conf.d/10-llamacpp-gfx1151.conf so the packaged ROCm and Vulkan llama.cpp wrapper binaries are exposed to the service as system-managed backends.
 - The system-managed backend patch also folds in the config-load and CLI/backend-table changes needed for those service-provided overrides to stay visible after config.json already exists.
@@ -56,6 +56,7 @@ Reinstalling at compatible versions resolves conflicts.
 - Track the nisavid/lemonade fork's main branch as the package source lane; use canonical upstream releases and AUR packages as baselines for compatibility review.
 - Keep packaging and app/server split aligned with upstream naming changes; do not drift back toward the old lemonade-desktop era naming model.
 - Re-test that LEMONADE_LLAMACPP_*_BIN service overrides still apply even when /var/lib/lemonade/config.json already exists.
+- On 2026-05-26, adopted nisavid/lemonade fork main 13b1af25f84cf08ad5f8bf0ec58980bdfc09c9e7 so the server and app packages stay pinned to the same fork source while the app hides adapter controls for base llamacpp models.
 
 ## Maintainer Starting Points
 

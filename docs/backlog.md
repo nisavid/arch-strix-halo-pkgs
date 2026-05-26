@@ -2,15 +2,19 @@
 
 ## Packaging And Build Hygiene
 
-- The llama.cpp selected-token logits branch is adopted. Both packaged backends
-  stay on upstream `b9222` at pkgrel `3` and carry a shared generic
-  `/completion` `token_logits` patch that returns every requested raw token
-  logit from full-vocabulary logits, including prompt-final selected logits
-  when no generation budget remains, preserves original token bytes, and caps
-  each request at 1024 selected token IDs. Renderer tests, package-local tests,
-  source preparation, `tools/amerge` build plan `b664ef40`, deploy plan
-  `b9b88117`, installed backend smoke, and direct HIP/Vulkan `/completion`
-  smokes passed for the adopted artifacts.
+- The llama.cpp b9330 and Lemonade fork `13b1af2` refresh is adopted. Both
+  packaged llama.cpp backends render from upstream b9330 as `b9330-1` and carry
+  the shared generic `/completion` `token_logits` patch that returns requested
+  raw token logits, preserves original token bytes, and caps each request at
+  1024 selected token IDs. `lemonade-server 10.6.0-6` and
+  `lemonade-app 10.6.0-5` render from `nisavid/lemonade` fork main
+  `13b1af25f84cf08ad5f8bf0ec58980bdfc09c9e7`, while `lemonade` remains
+  `10.6.0-1`. Recipe render, package-local tests, package build plan
+  `46a69d2a`, deploy/install plan `8e489a2e`, published/installed pacman
+  verification, HIP/Vulkan/Lemonade installed smokes, direct HIP/Vulkan
+  `/completion` selected-logit checks, and the packaged Lemonade zerank
+  selected-logit scenario passed; the scenario run is recorded at
+  `docs/worklog/inference-runs/20260526T021053-lane4-b9330-closeout`.
 - TheRock 7.13 stable is adopted. Upstream ROCm/TheRock published the stable
   `therock-7.13` release at
   `6d2136cd12be28c6251eb38c700e980c8c2f8cf6`; the generated
@@ -64,21 +68,13 @@
   pacman verification, and the selected-logit zerank scenario passed for
   `lemonade-server 10.6.0-5` and `lemonade-app 10.6.0-4`; the live scenario
   run is recorded at `docs/worklog/inference-runs/20260526T-current-zerank`.
-- Lemonade fork 13b1af2 follow-up: the 2026-05-26 freshness gate found
-  `nisavid/lemonade` fork main at
-  `13b1af25f84cf08ad5f8bf0ec58980bdfc09c9e7` after the adopted
-  `b608a74d0604f96786de59d65cb0ba27b05db0c6` package source lane. Review the
-  fork range against the Strix Halo llama.cpp backend integration and app/server
-  package carry, refresh package metadata, build, deploy/install, run installed
-  service smokes, and rerun affected reranking or backend scenarios before
-  adoption.
-- llama.cpp b9333 follow-up: the 2026-05-26 freshness gate found upstream
-  `b9333` after the adopted `b9222` backend package lane, with AUR
-  `llama.cpp-hip` at `b9326-1`. Treat this as superseding the earlier `b9279`,
-  `b9305`, and `b9330` observations: review the release range, update both
-  packaged backends and Lemonade backend metadata, rebuild, deploy/install, run
-  installed backend smokes, and rerun Lemonade service plus affected inference
-  scenarios before adoption.
+- llama.cpp b9333 follow-up: the 2026-05-26 closeout freshness check found
+  upstream `b9333` after the adopted `b9330` package lane, while the AUR HIP
+  baseline remains at `b9326-1` and the Vulkan baseline remains at `b9222-1`.
+  Treat this as a separate llama.cpp refresh lane: review the release range,
+  update both packaged backends and Lemonade backend metadata, rebuild,
+  deploy/install, run installed backend smokes, and rerun Lemonade service plus
+  affected selected-logit scenarios before adoption.
 - ROCm PyTorch release/2.12 26872de follow-up: the 2026-05-21 closeout
   freshness gate found `ROCm/pytorch` release/2.12 at
   `26872debb4452ea6dc898288618a15595e2317d9` after the adopted
