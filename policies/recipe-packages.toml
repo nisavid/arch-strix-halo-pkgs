@@ -8,19 +8,20 @@ output_root = "packages"
 [packages.aocl-utils-gfx1151]
 recipe_key = "aocl_utils"
 template = "cmake"
-upstream_version = "5.2.2"
+upstream_version = "5.3.0"
 pkgdesc = "AOCL CPU feature detection library rebuilt for Strix Halo gfx1151"
 url = "https://github.com/amd/aocl-utils"
-license = ["BSD"]
+license = ["BSD-3-Clause", "MIT", "NCSA"]
 arch_reference = ["aur/aocl-utils", "aur/aocl-utils-aocc"]
 authoritative_reference = "aur/aocl-utils"
 advisory_references = ["aur/aocl-utils-aocc"]
 divergence_notes = [
   "Uses amdclang as the compiler baseline but intentionally leaves AOCL-Utils itself off the more aggressive recipe flag bundle because build testing showed -famd-opt is a no-op here.",
-  "Uses the upstream 5.2.2 release tarball; recipe commit, date, and path-history count are recorded as provenance."
+  "Uses the upstream 5.3.0 release tarball while preserving local amdclang, clang-tidy, and LTO policy over the simpler AUR baseline."
 ]
 update_notes = [
   "When the AUR baseline changes, re-check license packaging and install layout against aur/aocl-utils first, then compare any AOCC-specific drift from aur/aocl-utils-aocc.",
+  "The current AUR aocl-utils baseline is 5.3.0-1; aocl-utils-aocc remains stale advisory context for the AOCC-specific lane.",
   "If the recipe starts carrying source patches here, convert them into patch files under patches/aocl-utils-gfx1151 rather than inline shell edits."
 ]
 provides = ["aocl-utils"]
@@ -30,22 +31,23 @@ makedepends = ["cmake", "ninja", "rocm-llvm-gfx1151"]
 options = ["staticlibs", "!lto"]
 compiler_dep = "rocm-llvm-gfx1151"
 source_type = "tarball"
-source_url = "https://github.com/amd/aocl-utils/archive/refs/tags/5.2.2.tar.gz"
-sha256sums = ["e84c242772ff433f0264adeaf280bf25e52c61c9508eb61f7d338c5afb1faeb3"]
-src_subdir = "aocl-utils-5.2.2"
+source_url = "https://github.com/amd/aocl-utils/archive/refs/tags/5.3.0.tar.gz"
+sha256sums = ["3d2fcad3a27d90e50dddbdcef55edbf9f73bb58096f9f682cf5ea6b4f9bd4bfa"]
+src_subdir = "aocl-utils-5.3.0"
 install_prefix = "/usr"
 patches_dir = "patches/aocl-utils-gfx1151"
 scaffold_notes = [
-  "This scaffold is rebased onto the current AUR aocl-utils 5.2.2 package rather than the older aocc-specific variant.",
-  "The older AUR aocl-utils-aocc package remains an advisory sibling because it captures the AOCC-specific lane, even though the current non-AOCC aocl-utils package is the closer baseline for this toolchain.",
+  "This scaffold is rebased onto the current AUR aocl-utils 5.3.0 package rather than the older aocc-specific variant.",
+  "The older AUR aocl-utils-aocc package remains stale advisory context because it captures the AOCC-specific lane, even though the current non-AOCC aocl-utils package is the closer baseline for this toolchain.",
   "The recipe intentionally disables LTO because AOCL-LibM links AOCL-Utils archives with GNU ld.",
-  "Build testing showed -famd-opt is a compile-time no-op here, so the scaffold keeps it out of the AOCL-Utils compile flags while still using amdclang as the compiler baseline."
+  "Build testing showed -famd-opt is a compile-time no-op here, so the scaffold keeps it out of the AOCL-Utils compile flags while still using amdclang as the compiler baseline.",
+  "AOCL-Utils 5.3.0 renames upstream license files to LICENSE.txt and NOTICE.txt without changing the installed library/header layout used by this package."
 ]
 
 [packages.aocl-libm-gfx1151]
 recipe_key = "aocl_libm"
 template = "scons-aocl-libm"
-upstream_version = "5.2.2"
+upstream_version = "5.3"
 pkgdesc = "AMD AOCL-LibM rebuilt with Zen 5 tuning for Strix Halo gfx1151"
 url = "https://github.com/amd/aocl-libm-ose.git"
 license = ["BSD-3-Clause", "MIT", "Apache-2.0"]
@@ -67,7 +69,7 @@ conflicts = ["aocl-libm"]
 depends = ["aocl-utils-gfx1151", "gcc-libs", "glibc"]
 makedepends = ["git", "patchelf", "python", "rocm-llvm-gfx1151", "scons"]
 compiler_dep = "rocm-llvm-gfx1151"
-source_refs = ["aocl-libm::git+https://github.com/amd/aocl-libm-ose.git#tag=5.2.2"]
+source_refs = ["aocl-libm::git+https://github.com/amd/aocl-libm-ose.git#tag=5.3"]
 source_patches = ["0001-scons-support-arch-amdclang-toolchain.patch"]
 source_patches_replace_recipe_patches = true
 sha256sums = ["SKIP"]
@@ -77,7 +79,9 @@ patches_dir = "packages/aocl-libm-gfx1151"
 scaffold_notes = [
   "There is no standalone AOCL-LibM package in Arch, CachyOS, or AUR; the closest packaging lane is the broader AUR aocl bundle, which is only advisory for install-layout cleanup patterns.",
   "The package source lane is the latest stable AOCL-LibM release tag.",
-  "The recipe carries three upstream-compatibility source edits; the package keeps them as a source patch file, plus a post-install RPATH fix in package().",
+  "AOCL-LibM 5.3 expands the AVX-512 source and header layout while preserving the package's manual libalm/header install shape.",
+  "AOCL-LibM 5.3 renames upstream license files to LICENSE.txt and NOTICE.txt; audit those files directly when updating license metadata.",
+  "The recipe carries upstream-compatibility source edits; the package keeps retained SCons compatibility changes as a source patch file, plus a post-install RPATH fix in package().",
   "Use Arch's system scons from makedepends directly. Do not recreate the recipe's venv-local pip bootstrap inside PKGBUILD; that makes package builds network-dependent.",
   "Pass resolved compiler paths to SCons through ALM_CC and ALM_CXX because AOCL-LibM validates those variables as existing paths.",
   "Keep AOCL-LibM out of the CPython link line. It is intended for downstream numerical libraries, not Python's own PGO run.",

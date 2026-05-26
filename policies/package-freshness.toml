@@ -28,8 +28,8 @@ packages = ["aocl-utils-gfx1151"]
 priority = "medium"
 workflow = "upstream_source_update"
 checks = [
-  { id = "release", role = "primary", kind = "github_release", repo = "amd/aocl-utils", recorded = "5.2.2", comparison = "pep440" },
-  { id = "aur", role = "baseline", kind = "aur", package = "aocl-utils", recorded = "5.2.2-1", comparison = "pkgver" },
+  { id = "release", role = "primary", kind = "github_release", repo = "amd/aocl-utils", recorded = "5.3.0", comparison = "pep440" },
+  { id = "aur", role = "baseline", kind = "aur", package = "aocl-utils", recorded = "5.3.0-1", comparison = "pkgver" },
 ]
 
 [families.aocl_libm]
@@ -37,7 +37,7 @@ packages = ["aocl-libm-gfx1151"]
 priority = "medium"
 workflow = "upstream_source_update"
 checks = [
-  { id = "release", role = "primary", kind = "github_release", repo = "amd/aocl-libm-ose", recorded = "5.2.2", comparison = "pep440" },
+  { id = "release", role = "primary", kind = "github_release", repo = "amd/aocl-libm-ose", recorded = "5.3", comparison = "pep440" },
 ]
 source_contracts = [
   { id = "release-source", packages = ["aocl-libm-gfx1151"], check_id = "release", source_name = "aocl-libm", source_kind = "git_tag", origin = "https://github.com/amd/aocl-libm-ose.git", value_policy = "matches_reviewed" },

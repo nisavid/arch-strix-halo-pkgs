@@ -31,19 +31,21 @@ source_kind = "github_release"
 previous_recorded = "5.2.2"
 latest = "5.3"
 discovery_status = "stable_update_available"
-disposition = "tracked"
-disposition_reason = "Found during the 2026-05-19 closeout freshness gate after the PyTorch 2.12 follow-up bundle. Keep as a separate follow-up lane because AOCL-LibM is source-built with local SCons toolchain carry, has direct math-library correctness risk, and needs source review, source verification, package build, deploy/install, installed payload checks, and downstream stable-diffusion.cpp smoke coverage before adoption."
+disposition = "adopted"
+disposition_reason = "Adopted on 2026-05-26 alongside AOCL-Utils 5.3.0. Source metadata now tracks AOCL-LibM 5.3, the SCons amdclang compatibility patch was refreshed for the 5.3 source layout, final package build plan 0045fab5 produced aocl-libm-gfx1151 5.3-1 with symlink-preserving header installation, deploy plan ae011f92 installed it with aocl-utils-gfx1151 5.3.0-1, the published local repo contains the rebuilt AOCL-LibM archive and AOCL-Utils artifact, the installed runtime smoke loaded libalm.so through libau_cpuid.so and validated amd_sin, and the downstream stable-diffusion.cpp Vulkan wrapper startup smokes passed."
 salient_changes = [
-  "AOCL-LibM 5.3 stable release is available after the current 5.2.2 package lane",
-  "The package is a downstream math library for local optimized packages and is intentionally not linked into CPython directly",
+  "AOCL-LibM 5.3 is adopted after the previous 5.2.2 package lane",
+  "The package remains a downstream math library for local optimized packages and is intentionally not linked into CPython directly",
+  "AOCL-LibM 5.3 expands the AVX-512 source and header layout while preserving symlinked upstream headers through the package's manual libalm/header install shape",
+  "Package build, deploy/install, published-repo verification, installed libalm runtime smoke, and downstream stable-diffusion.cpp Vulkan wrapper smokes passed",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
-next_gate_label = "AOCL-LibM 5.3 follow-up"
-last_reviewed = "2026-05-19"
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Adopted; monitor future AOCL-LibM releases through the normal freshness sweep"
+last_reviewed = "2026-05-26"
 
 [candidates."aocl-utils-5.3.0"]
 family = "aocl_utils"
@@ -53,19 +55,21 @@ check_id = "release"
 previous_recorded = "5.2.2"
 latest = "5.3.0"
 discovery_status = "stable_update_available"
-disposition = "tracked"
-disposition_reason = "Found during the 2026-05-21 closeout freshness gate. Keep as a separate AOCL utility refresh lane because the package follows upstream AOCL sources with local packaging policy and should be reviewed beside AOCL-LibM rather than folded into the Lemonade patch-stack cleanup."
+disposition = "adopted"
+disposition_reason = "Adopted on 2026-05-26 alongside AOCL-LibM 5.3. Source metadata now tracks AOCL-Utils 5.3.0 and the current AUR aocl-utils 5.3.0-1 baseline, package build plan c541b948 produced aocl-utils-gfx1151 5.3.0-1, deploy plan ae011f92 installed it with aocl-libm-gfx1151 5.3-1, the published local repo contains both AOCL 5.3 artifacts, pkg-config reports aocl-utils 5.3.0, and the installed AOCL-LibM runtime smoke validated libau_cpuid.so as the libalm dependency."
 salient_changes = [
-  "AOCL-Utils 5.3.0 stable release is available after the current 5.2.2 package lane",
-  "The AUR aocl-utils baseline remains at 5.2.2-1",
+  "AOCL-Utils 5.3.0 is adopted after the previous 5.2.2 package lane",
+  "The current AUR aocl-utils baseline is 5.3.0-1",
+  "AOCL-Utils 5.3.0 renames upstream license files to LICENSE.txt and NOTICE.txt without changing the installed library/header layout used by this package",
+  "Package build, deploy/install, published-repo verification, pkg-config smoke, and AOCL-LibM dependent runtime smoke passed",
 ]
 patch_carry_overlap = false
-package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
-next_gate_label = "AOCL-Utils 5.3.0 follow-up"
-last_reviewed = "2026-05-21"
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Adopted; monitor future AOCL-Utils releases through the normal freshness sweep"
+last_reviewed = "2026-05-26"
 
 [candidates."duckdb-1.5.3-pypi"]
 family = "duckdb"
@@ -241,6 +245,31 @@ next_gate_path = ""
 next_gate_label = "Superseded by llama.cpp b9333 follow-up"
 last_reviewed = "2026-05-26"
 
+[candidates."llama-cpp-b9330"]
+family = "llama_cpp"
+packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"]
+source_kind = "github_release"
+check_id = "release"
+baseline_source_kind = "aur"
+baseline_latest = "b9326-1"
+previous_recorded = "b9222 / b9222-3"
+latest = "b9330"
+discovery_status = "stable_update_available"
+disposition = "rejected"
+disposition_reason = "Superseded before package adoption. The active llama.cpp refresh lane is b9333, so this older b9330 candidate should not remain tracked as separate open work."
+salient_changes = [
+  "GitHub release b9330 is available after the adopted b9222 package lane",
+  "AUR llama.cpp-hip baseline has advanced to b9326-1 while the Vulkan baseline remains at b9222-1",
+  "The current candidate supersedes the handoff's b9329 observation from the earlier coordinator snapshot",
+]
+patch_carry_overlap = true
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Superseded by llama.cpp b9333 follow-up"
+last_reviewed = "2026-05-26"
+
 [candidates."llama-cpp-b9333"]
 family = "llama_cpp"
 packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"]
@@ -252,11 +281,11 @@ previous_recorded = "b9222 / b9222-3"
 latest = "b9333"
 discovery_status = "stable_update_available"
 disposition = "tracked"
-disposition_reason = "Found during the 2026-05-26 freshness gate. Keep as the active llama.cpp refresh lane because it supersedes the earlier b9279, b9305, and b9330 observations and still requires release-range review, both backend package updates, Lemonade backend metadata refresh, package builds, deploy/install, installed backend smokes, Lemonade service smokes, and affected inference scenario validation before adoption."
+disposition_reason = "Found during the 2026-05-26 AOCL closeout freshness gate. Keep as the active llama.cpp refresh lane because it supersedes the earlier b9279, b9305, and b9330 candidates and still requires release-range review, both backend package updates, Lemonade backend metadata refresh, package builds, deploy/install, installed backend smokes, Lemonade service smokes, and affected inference scenario validation before adoption."
 salient_changes = [
   "GitHub release b9333 is available after the adopted b9222 package lane",
-  "AUR llama.cpp-hip baseline has advanced to b9326-1 while the Vulkan baseline remains at b9222-1",
-  "The current candidate supersedes the handoff's b9329 observation and the earlier b9330 tracked lane",
+  "AUR llama.cpp-hip baseline remains at b9326-1 while the Vulkan baseline remains at b9222-1",
+  "The current candidate supersedes the b9330 observation from the earlier 2026-05-26 freshness gate",
 ]
 patch_carry_overlap = true
 package_source_update_needed = true

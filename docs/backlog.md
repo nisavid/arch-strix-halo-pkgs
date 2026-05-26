@@ -47,17 +47,13 @@
   build, published-repo, deploy/install, installed package smokes, affected
   aiohttp/uvicorn/vLLM import smokes, and the Qwen3.5 vLLM live scenario
   passed on 2026-05-26.
-- AOCL-LibM 5.3 follow-up: the 2026-05-19 closeout freshness gate found
-  upstream AOCL-LibM `5.3` after the adopted `5.2.2` package lane. Keep this
-  as a separate math-library refresh lane: review upstream source and license
-  changes, refresh package metadata, verify the local SCons toolchain patch,
-  build, deploy/install, run installed payload checks, and rerun the downstream
-  stable-diffusion.cpp Vulkan wrapper smoke before adoption.
-- AOCL-Utils 5.3.0 follow-up: the 2026-05-21 closeout freshness gate found
-  upstream AOCL-Utils `5.3.0` after the current `5.2.2` package lane while the
-  AUR baseline remains at `5.2.2-1`. Review the AOCL-Utils source delta
-  alongside AOCL-LibM, refresh package metadata, build, deploy/install, and
-  run installed utility smoke coverage before adoption.
+- The 2026-05-26 AOCL 5.3 refresh is adopted. AOCL-Utils now tracks upstream
+  and AUR `5.3.0`, and AOCL-LibM now tracks upstream `5.3` with the refreshed
+  SCons amdclang compatibility patch. Package builds produced
+  `aocl-utils-gfx1151 5.3.0-1` and final `aocl-libm-gfx1151 5.3-1`; the
+  rebuilt AOCL-LibM archive is published, and deploy/install, AOCL-Utils
+  `pkg-config`, installed `libalm` runtime, and downstream stable-diffusion.cpp
+  Vulkan wrapper smokes passed.
 - The Lemonade 10.6.0 fork-main refresh is adopted. The source lane pins
   `nisavid/lemonade` fork main at
   `b608a74d0604f96786de59d65cb0ba27b05db0c6`, aligned with canonical upstream

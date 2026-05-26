@@ -3,17 +3,19 @@ From: Strix Halo Packaging <packaging@example.invalid>
 Date: Sat, 25 Apr 2026 00:00:00 +0000
 Subject: [PATCH] Support the Arch amdclang toolchain in SCons
 
-AOCL-LibM's upstream SCons rules assume AOCC flag spelling. Keep the source
-compatible with the repo's open-source amdclang and GNU ld package build lane.
+AOCL-LibM builds with -Werror, and the repo's open-source amdclang lane sees
+macro redefinition warnings in upstream headers. Keep those warnings from
+failing the package build while leaving AOCL-LibM 5.3's native compiler-feature
+and linker probes intact.
 ---
- src/SConscript | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ src/SConscript | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/src/SConscript b/src/SConscript
-index 5195f92..25741dc 100644
+index 773df284..26a81e3f 100644
 --- a/src/SConscript
 +++ b/src/SConscript
-@@ -46,7 +46,7 @@ if env['HOST_OS'] != 'win32':
+@@ -49,7 +49,7 @@ if env['HOST_OS'] != 'win32':
                 '-W',
                 '-Wstrict-prototypes',
                 '-Werror',
@@ -21,21 +23,4 @@ index 5195f92..25741dc 100644
 +               '-Wno-unused-parameter', '-Wno-macro-redefined',
                 '-fPIC',
                ]
-     if use_asan == 1:
-@@ -59,7 +59,7 @@ if env['HOST_OS'] != 'win32':
-             cc_ver = cc_ver[:cc_ver.rfind(".")]
-         # AOCC 4.0.0 (CLANG 14.0.6) and above supports the flag -muse-unaligned-vector-move
-         if ((float(cc_ver) > 14.0) or ((float(cc_ver) == 14.0) and (float(cc_ver_minor) >= 6.0))):
--            ccflags.append('-muse-unaligned-vector-move')
-+            pass  # patched: AOCC-only flag removed for amdclang
- else:
-     ccflags = ['-DAVX_XOP_FMA4_FMA3',
-                '-DDEBUG=0',
-@@ -102,7 +101,7 @@ almenv = e.Clone()
- 
- if e['HOST_OS'] != 'win32':
--    __linkflags = ['-ealm_main',]
-+    __linkflags = ['-Wl,-e,alm_main', '-fuse-ld=bfd']
-     __libs = ['c']
- 
      if use_asan == 1:

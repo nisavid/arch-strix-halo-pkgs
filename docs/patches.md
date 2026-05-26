@@ -25,9 +25,8 @@ becomes durable, prefer a named patch that another maintainer can review.
 ## AOCL-LibM
 
 - [SCons compatibility for the Arch amdclang toolchain](../packages/aocl-libm-gfx1151/0001-scons-support-arch-amdclang-toolchain.patch)
-  - Removes an AOCC-only compiler flag, keeps macro-redefinition warnings from
-    failing the build, and uses Clang/GNU-ld-compatible entry-point flags for
-    the hand-written assembly objects.
+  - Keeps macro-redefinition warnings from failing the build while preserving
+    AOCL-LibM 5.3's native compiler-feature and linker probes.
 
 ## Lemonade
 

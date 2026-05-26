@@ -699,8 +699,8 @@ build() {{
   cd "$srcdir/{src_subdir}"
 
   {compiler_env_snippet(compiler_root)}  _setup_compiler_env
-  local amdclang="$(command -v "$CC")"
-  local amdclangxx="$(command -v "$CXX")"
+  local amdclang="{compiler_root}/amdclang"
+  local amdclangxx="{compiler_root}/amdclang++"
 
   scons -j"$(nproc)" \\
     ALM_CC="${{amdclang}}" \\
@@ -721,7 +721,7 @@ package() {{
   fi
 
   if [[ -d include ]]; then
-    cp -a include/. "$pkgdir/usr/include/"
+    cp -r --no-preserve=ownership include/. "$pkgdir/usr/include/"
   fi
 
 {textwrap.indent(post_package_lines[0], "  ")}
