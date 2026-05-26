@@ -28,6 +28,9 @@ serves a different reader.
 
 - [Recipe Inputs](maintainers/recipe-inputs.md) explains the Blackcat
   Informatics recipe source and how it feeds local package scaffolds.
+- [Blackcat Recipe Surface Policy](maintainers/blackcat-recipe-surfaces.md)
+  classifies remaining Blackcat recipe surfaces and tooling-helper candidates
+  as adopted, tracked, rejected, or blocked.
 - [Update Workflows](maintainers/update-workflows.md) covers package update
   paths, including the 24-hour dependency freshness sweep.
 - [Dependency Freshness Sweep](maintainers/update-workflows.md#0-dependency-freshness-sweep)
