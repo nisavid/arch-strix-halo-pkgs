@@ -12,6 +12,8 @@ if str(TOOLS_DIR) not in sys.path:
     sys.path.insert(0, str(TOOLS_DIR))
 
 from lemonade_zerank_smoke import (
+    _error_payload_message,
+    _scores_by_document,
     validate_arithmetic_fixture,
     validate_capital_france_fixture,
     validate_model_metadata,
@@ -82,4 +84,46 @@ def test_arithmetic_fixture_requires_canonical_answer_then_literal_four():
                 "4": 0.1,
                 "The answer is definitely 1 million.": 0.74,
             }
+        )
+
+
+def test_error_payload_message_accepts_non_dict_errors():
+    assert _error_payload_message({"message": "bad request"}) == "bad request"
+    assert _error_payload_message("bad request") == "bad request"
+    assert _error_payload_message(["bad", "request"]) == "['bad', 'request']"
+
+
+def test_scores_by_document_rejects_duplicate_and_out_of_range_indices():
+    documents = ["a", "b"]
+
+    assert _scores_by_document(
+        {
+            "results": [
+                {"index": 1, "relevance_score": 0.25},
+                {"index": 0, "relevance_score": 0.75},
+            ]
+        },
+        documents,
+    ) == {"a": 0.75, "b": 0.25}
+
+    with pytest.raises(AssertionError, match="duplicate result index"):
+        _scores_by_document(
+            {
+                "results": [
+                    {"index": 0, "relevance_score": 0.75},
+                    {"index": 0, "relevance_score": 0.25},
+                ]
+            },
+            documents,
+        )
+
+    with pytest.raises(AssertionError, match="result index out of bounds"):
+        _scores_by_document(
+            {
+                "results": [
+                    {"index": 0, "relevance_score": 0.75},
+                    {"index": 2, "relevance_score": 0.25},
+                ]
+            },
+            documents,
         )
