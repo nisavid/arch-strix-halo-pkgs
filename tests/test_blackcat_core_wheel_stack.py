@@ -68,7 +68,7 @@ SERVICE_STACK = {
     "python-httptools-gfx1151": {
         "template": "native-wheel-pypi",
         "recipe_key": "native_wheels",
-        "upstream_version": "0.7.1",
+        "upstream_version": "0.8.0",
         "provides": ["python-httptools"],
         "consumer_dep": "python-httptools-gfx1151",
     },
@@ -96,7 +96,7 @@ SERVICE_STACK = {
     "python-yarl-gfx1151": {
         "template": "native-wheel-pypi",
         "recipe_key": "native_wheels",
-        "upstream_version": "1.23.0",
+        "upstream_version": "1.24.2",
         "provides": ["python-yarl"],
         "consumer_dep": "python-yarl-gfx1151",
     },

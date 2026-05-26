@@ -38,6 +38,15 @@
   tiny-smoke memory reservation was tightened. The closeout also tightened
   small-model vLLM smoke reservations so tiny correctness probes no longer ask
   vLLM to reserve 75% of the whole device by default.
+- The DuckDB/yarl/httptools native-wheel refresh is adopted.
+  `python-duckdb-gfx1151` now tracks DuckDB `1.5.3`,
+  `python-httptools-gfx1151` now tracks httptools `0.8.0`, and
+  `python-yarl-gfx1151` now tracks yarl `1.24.2`. The native-wheel renderer
+  emits `/usr/bin/python` for generated build and installer calls, the
+  httptools system-llhttp patch is refreshed for the 0.8.0 source, package
+  build, published-repo, deploy/install, installed package smokes, affected
+  aiohttp/uvicorn/vLLM import smokes, and the Qwen3.5 vLLM live scenario
+  passed on 2026-05-26.
 - AOCL-LibM 5.3 follow-up: the 2026-05-19 closeout freshness gate found
   upstream AOCL-LibM `5.3` after the adopted `5.2.2` package lane. Keep this
   as a separate math-library refresh lane: review upstream source and license
@@ -49,16 +58,6 @@
   AUR baseline remains at `5.2.2-1`. Review the AOCL-Utils source delta
   alongside AOCL-LibM, refresh package metadata, build, deploy/install, and
   run installed utility smoke coverage before adoption.
-- DuckDB 1.5.3 follow-up: the 2026-05-21 closeout freshness gate found PyPI
-  `duckdb 1.5.3` and Arch `python-duckdb 1.5.3-1` after the current `1.5.2`
-  local package lane. Treat this as a compiled Python package refresh with
-  source review, package build, deploy/install, and installed import smoke
-  before adoption.
-- Httptools 0.8.0 follow-up: the 2026-05-26 freshness gate found PyPI
-  `httptools 0.8.0` after the current `0.7.1` package lane. Treat this as a
-  service-runtime native-wheel refresh: review the source range against the
-  local system-llhttp patch, refresh package metadata, build, deploy/install,
-  and run an installed import smoke before adoption.
 - The Lemonade 10.6.0 fork-main refresh is adopted. The source lane pins
   `nisavid/lemonade` fork main at
   `b608a74d0604f96786de59d65cb0ba27b05db0c6`, aligned with canonical upstream
@@ -77,13 +76,13 @@
   package carry, refresh package metadata, build, deploy/install, run installed
   service smokes, and rerun affected reranking or backend scenarios before
   adoption.
-- llama.cpp b9330 follow-up: the 2026-05-26 freshness gate found upstream
-  `b9330` after the adopted `b9222` backend package lane, with AUR
-  `llama.cpp-hip` at `b9326-1`. Treat this as superseding the earlier `b9279`
-  and `b9305` follow-ups: review the release range, update both packaged
-  backends and Lemonade backend metadata, rebuild, deploy/install, run installed
-  backend smokes, and rerun Lemonade service plus affected inference scenarios
-  before adoption.
+- llama.cpp b9333 follow-up: the 2026-05-26 freshness gate found upstream
+  `b9333` after the adopted `b9222` backend package lane, with AUR
+  `llama.cpp-hip` at `b9326-1`. Treat this as superseding the earlier `b9279`,
+  `b9305`, and `b9330` observations: review the release range, update both
+  packaged backends and Lemonade backend metadata, rebuild, deploy/install, run
+  installed backend smokes, and rerun Lemonade service plus affected inference
+  scenarios before adoption.
 - ROCm PyTorch release/2.12 26872de follow-up: the 2026-05-21 closeout
   freshness gate found `ROCm/pytorch` release/2.12 at
   `26872debb4452ea6dc898288618a15595e2317d9` after the adopted
@@ -104,10 +103,6 @@
   Face Hub, and the local vLLM/model-surface package closure, then rebuild,
   deploy/install, run installed imports, and rerun affected vLLM scenarios
   before adoption.
-- Yarl 1.24.2 follow-up: the 2026-05-21 closeout freshness gate found PyPI
-  `yarl 1.24.2` after the current `1.23.0` package lane. Treat it as part of
-  the aiohttp service-runtime closure: source review, package build,
-  deploy/install, and installed import smoke are required before adoption.
 - The 2026-05-18 Python 3.14.5 rebuild lane is adopted. `python-gfx1151`
   now tracks CPython `3.14.5` with Arch `python 3.14.5-1` as the integration
   baseline. Source verification, package source preparation, package build,
@@ -227,8 +222,8 @@
   represented in `policies/recipe-packages.toml`. Remaining dispatchable work
   is separate: Qwen3-VL quantization helper tracking, Qwen3-VL runtime/scenario
   blocking gates, Atomic TurboQuant user/source-risk blocking gates, the active
-  stable-diffusion.cpp source refresh, and ordinary native-wheel freshness lanes
-  such as DuckDB, Httptools, and Yarl.
+  stable-diffusion.cpp source refresh, and future native-wheel freshness lanes
+  found by the normal sweep.
 - Newly discovered ROCm inference candidates from
   `docs/maintainers/rocm-inference-reference.md` belong near the top of this
   backlog, but they are not validated package commitments until their source

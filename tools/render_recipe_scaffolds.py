@@ -1572,7 +1572,7 @@ package() {{
         build_flags = ["--wheel", "--no-isolation"]
         if policy_pkg.get("skip_dependency_check"):
             build_flags.append("--skip-dependency-check")
-        build_command_head = "python -m build " + " ".join(build_flags)
+        build_command_head = "/usr/bin/python -m build " + " ".join(build_flags)
         if config_settings:
             build_command_lines = [f"{build_command_head} \\"]
             for idx, setting in enumerate(config_settings):
@@ -1597,10 +1597,10 @@ package() {{
                 "    printf 'expected exactly one wheel, found %s\\n' \"$" + "{#_wheels[@]}\" >&2",
                 "    return 1",
                 "  fi",
-                "  python -m installer --destdir=\"$pkgdir\" \"$" + "{_wheels[0]}\"",
+                "  /usr/bin/python -m installer --destdir=\"$pkgdir\" \"$" + "{_wheels[0]}\"",
             ])
         else:
-            installer_command = "python -m installer --destdir=\"$pkgdir\" dist/*.whl"
+            installer_command = "/usr/bin/python -m installer --destdir=\"$pkgdir\" dist/*.whl"
         if policy_pkg.get("pure_python_wheel", False):
             native_wheel_build_preamble = ""
         else:

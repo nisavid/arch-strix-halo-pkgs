@@ -110,24 +110,51 @@ focused pydantic-only checker run also exited `0`: Arch
 `python-pydantic-core` records `2.46.4-1`, PyPI `pydantic_core` records
 `2.47.0`, and the effective pydantic-core status is adopted.
 
+The 2026-05-26 DuckDB/yarl/httptools native-wheel refresh is adopted,
+installed, and live-validated. The package policy and rendered scaffolds now
+track `python-duckdb-gfx1151 1.5.3-1`,
+`python-httptools-gfx1151 0.8.0-1`, and
+`python-yarl-gfx1151 1.24.2-1`. The native-wheel renderer now emits
+`/usr/bin/python` for generated build and installer calls so package builds do
+not inherit agent-local Python wrapper paths, and the httptools system-llhttp
+patch is refreshed against the 0.8.0 source context.
+
+Source verification and package builds passed through `tools/amerge build`
+plan `4c5a9b4d`, producing all three package artifacts. Deploy/install plan
+`103ff5cf` installed the packages on the reference host, and the current
+published local repo contains the package archives
+`python-duckdb-gfx1151-1.5.3-1-x86_64.pkg.tar.zst`,
+`python-httptools-gfx1151-0.8.0-1-x86_64.pkg.tar.zst`, and
+`python-yarl-gfx1151-1.24.2-1-x86_64.pkg.tar.zst`, and the sync database has
+matching package entries. `pacman -Q` reports the expected installed package
+versions. Installed runtime smokes passed for `duckdb 1.5.3` with a tiny
+in-memory query, `httptools 0.8.0` with `HttpRequestParser`, and `yarl 1.24.2`
+with URL construction. Affected consumer smokes passed for `aiohttp 3.13.5`,
+`uvicorn 0.38.0` using `HttpToolsProtocol`, and `vllm 0.21.0`. The affected
+live scenario
+`vllm.qwen3_5.0_8b.text.basic` passed at
+`docs/worklog/inference-runs/20260526T-lane2-duckdb-yarl-httptools-host`.
+The final full freshness check `tools/check_package_updates.py --json
+--fail-on actionable` exited `0` with effective counts of 19 adopted update
+candidates, 17 current families, 2 rejected update candidates, and 7 tracked
+update candidates.
+
 The 2026-05-26 freshness gate supersedes the coordinator snapshot for the
 Lemonade cursor and llama.cpp release. The active tracked set below captures
-all raw non-current families that still need future package-lane work. The live
-llama.cpp result supersedes the coordinator handoff's earlier `b9329`
-observation.
+the remaining raw non-current families that still need future package-lane
+work. The live llama.cpp result supersedes the coordinator handoff's earlier
+`b9329` observation.
 
 The active tracked update-candidate set is now: AOCL-LibM 5.3 follow-up,
-AOCL-Utils 5.3.0 follow-up, DuckDB 1.5.3 follow-up, Httptools 0.8.0 follow-up,
-Lemonade fork 13b1af2 follow-up, llama.cpp b9330 follow-up, ROCm PyTorch
-release/2.12 26872de follow-up, stable-diffusion.cpp 1ceb5bd follow-up,
-Transformers 5.9.0 follow-up, and Yarl 1.24.2 follow-up. Each active tracked
+AOCL-Utils 5.3.0 follow-up, Lemonade fork 13b1af2 follow-up, llama.cpp b9333
+follow-up, ROCm PyTorch release/2.12 26872de follow-up, stable-diffusion.cpp
+1ceb5bd follow-up, and Transformers 5.9.0 follow-up. Each active tracked
 candidate has its disposition in
 `docs/maintainers/update-candidates.toml` and its gate label in
 `docs/backlog.md`. The superseded llama.cpp `b9279` and `b9305` candidates and
 stable-diffusion.cpp `3a8788c` and `a397e03` candidates are rejected in the
-ledger rather than left as active tracked work. No package source update,
-package build, deploy/install, installed smoke, or live-scenario validation was
-performed in this docs-only cleanup.
+ledger, and the earlier llama.cpp `b9330` observation is superseded by the
+active `b9333` lane rather than left as active tracked work.
 
 The 2026-05-26 Quark/AWQ/GPTQ/bitsandbytes/xFormers/FBGEMM candidate triage is
 also docs-only source audit. It does not implement packages, change package
@@ -154,8 +181,9 @@ found eight non-current families requiring disposition: AOCL-Utils 5.3.0,
 DuckDB 1.5.3, Lemonade 10.6.0 baselines, llama.cpp b9279, ROCm PyTorch
 release/2.12 branch movement, stable-diffusion.cpp master movement,
 Transformers 5.9.0, and Yarl 1.24.2. The remaining active work from that sweep
-is captured in the current tracked set above; Lemonade 10.6.0 is adopted, and
-the older llama.cpp and stable-diffusion.cpp candidates are superseded.
+is captured in the current tracked set above; DuckDB 1.5.3, Lemonade 10.6.0,
+and Yarl 1.24.2 are adopted, and the older llama.cpp and stable-diffusion.cpp
+candidates are superseded.
 
 The 2026-05-18 freshness follow-up bundle is adopted, installed, and
 live-validated. The installed reference host reports

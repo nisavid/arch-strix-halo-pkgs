@@ -239,8 +239,8 @@ packages = ["python-duckdb-gfx1151"]
 priority = "medium"
 workflow = "upstream_source_update"
 checks = [
-  { id = "pypi", role = "primary", kind = "pypi", package = "duckdb", recorded = "1.5.2", comparison = "pep440" },
-  { id = "arch", role = "baseline", kind = "arch_package", package = "python-duckdb", recorded = "1.5.2-1", comparison = "pkgver" },
+  { id = "pypi", role = "primary", kind = "pypi", package = "duckdb", recorded = "1.5.3", comparison = "pep440" },
+  { id = "arch", role = "baseline", kind = "arch_package", package = "python-duckdb", recorded = "1.5.3-1", comparison = "pkgver" },
 ]
 
 [families.pyyaml]
@@ -291,7 +291,7 @@ packages = ["python-httptools-gfx1151"]
 priority = "medium"
 workflow = "upstream_source_update"
 checks = [
-  { id = "pypi", role = "primary", kind = "pypi", package = "httptools", recorded = "0.7.1", comparison = "pep440" },
+  { id = "pypi", role = "primary", kind = "pypi", package = "httptools", recorded = "0.8.0", comparison = "pep440" },
 ]
 
 [families.msgspec]
@@ -323,7 +323,7 @@ packages = ["python-yarl-gfx1151"]
 priority = "medium"
 workflow = "upstream_source_update"
 checks = [
-  { id = "pypi", role = "primary", kind = "pypi", package = "yarl", recorded = "1.23.0", comparison = "pep440" },
+  { id = "pypi", role = "primary", kind = "pypi", package = "yarl", recorded = "1.24.2", comparison = "pep440" },
 ]
 
 [families.aiohttp]

@@ -15,7 +15,7 @@ def test_duckdb_recipe_package_is_policy_managed_native_wheel() -> None:
 
     assert policy["recipe_key"] == "native_wheels"
     assert policy["template"] == "native-wheel-pypi"
-    assert policy["upstream_version"] == "1.5.2"
+    assert policy["upstream_version"] == "1.5.3"
     assert policy["authoritative_reference"] == "extra/python-duckdb"
     assert "cachyos-extra-znver4/python-duckdb" in policy["advisory_references"]
     assert policy["provides"] == ["python-duckdb"]
@@ -30,9 +30,9 @@ def test_rendered_duckdb_pkgbuild_follows_native_wheel_lane() -> None:
     readme = (PACKAGE / "README.md").read_text()
 
     assert "pkgname=python-duckdb-gfx1151" in pkgbuild
-    assert "pkgver=1.5.2" in pkgbuild
-    assert "source=(https://files.pythonhosted.org/packages/source/d/duckdb/duckdb-1.5.2.tar.gz)" in pkgbuild
-    assert "python -m build --wheel --no-isolation --skip-dependency-check" in pkgbuild
+    assert "pkgver=1.5.3" in pkgbuild
+    assert "source=(https://files.pythonhosted.org/packages/source/d/duckdb/duckdb-1.5.3.tar.gz)" in pkgbuild
+    assert "/usr/bin/python -m build --wheel --no-isolation --skip-dependency-check" in pkgbuild
     assert "provides=(python-duckdb)" in pkgbuild
     assert "conflicts=(python-duckdb)" in pkgbuild
     assert "python-typing_extensions" in pkgbuild
