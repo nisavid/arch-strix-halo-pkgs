@@ -303,7 +303,10 @@ def _stop_lemond(root_url: str, proc: Any) -> None:
             proc.wait(timeout=15.0)
         except subprocess.TimeoutExpired:
             proc.kill()
-            proc.wait()
+            try:
+                proc.wait(timeout=15.0)
+            except subprocess.TimeoutExpired:
+                pass
 
 
 def run_smoke(args: argparse.Namespace) -> None:
