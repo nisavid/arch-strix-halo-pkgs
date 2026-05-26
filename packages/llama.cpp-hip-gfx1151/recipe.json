@@ -68,7 +68,7 @@
     ],
     "patches_dir": "patches/llama.cpp-common",
     "pkgdesc": "llama.cpp ROCm backend rebuilt for Strix Halo gfx1151",
-    "pkgrel": 1,
+    "pkgrel": 2,
     "provides": [
       "llama.cpp-hip-gfx1151",
       "llama.cpp-hip"
