@@ -5,7 +5,7 @@
 # Package recipe key: aocl_libm
 
 pkgname=aocl-libm-gfx1151
-pkgver=5.2.2
+pkgver=5.3
 pkgrel=1
 pkgdesc='AMD AOCL-LibM rebuilt with Zen 5 tuning for Strix Halo gfx1151'
 arch=('x86_64')
@@ -18,7 +18,7 @@ options=()
 provides=(aocl-libm)
 conflicts=(aocl-libm)
 replaces=()
-source=('aocl-libm::git+https://github.com/amd/aocl-libm-ose.git#tag=5.2.2' 0001-scons-support-arch-amdclang-toolchain.patch)
+source=('aocl-libm::git+https://github.com/amd/aocl-libm-ose.git#tag=5.3' 0001-scons-support-arch-amdclang-toolchain.patch)
 sha256sums=(SKIP SKIP)
 
 prepare() {
@@ -55,8 +55,8 @@ build() {
 }
 
   _setup_compiler_env
-  local amdclang="$(command -v "$CC")"
-  local amdclangxx="$(command -v "$CXX")"
+  local amdclang="/opt/rocm/lib/llvm/bin/amdclang"
+  local amdclangxx="/opt/rocm/lib/llvm/bin/amdclang++"
 
   scons -j"$(nproc)" \
     ALM_CC="${amdclang}" \
@@ -77,7 +77,7 @@ package() {
   fi
 
   if [[ -d include ]]; then
-    cp -a include/. "$pkgdir/usr/include/"
+    cp -r --no-preserve=ownership include/. "$pkgdir/usr/include/"
   fi
 
   if [[ -f "$pkgdir/usr/lib/libalm.so" ]]; then

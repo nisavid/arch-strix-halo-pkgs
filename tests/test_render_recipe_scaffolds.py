@@ -559,6 +559,11 @@ def test_aocl_libm_renderer_prefers_source_patches_over_inline_sed() -> None:
 
     assert 'patch -Np1 -i "$srcdir/0001-scons-support-arch-amdclang-toolchain.patch"' in pkgbuild
     assert "sed -i" not in pkgbuild
+    assert 'local amdclang="/opt/rocm/lib/llvm/bin/amdclang"' in pkgbuild
+    assert 'local amdclangxx="/opt/rocm/lib/llvm/bin/amdclang++"' in pkgbuild
+    assert 'local amdclang="$(command -v "$CC")"' not in pkgbuild
+    assert 'cp -r --no-preserve=ownership include/. "$pkgdir/usr/include/"' in pkgbuild
+    assert 'cp -a include/. "$pkgdir/usr/include/"' not in pkgbuild
     assert "patchelf --set-rpath /usr/lib" in pkgbuild
 
 

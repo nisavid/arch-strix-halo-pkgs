@@ -5,12 +5,12 @@
 # Package recipe key: aocl_utils
 
 pkgname=aocl-utils-gfx1151
-pkgver=5.2.2
+pkgver=5.3.0
 pkgrel=1
 pkgdesc='AOCL CPU feature detection library rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://github.com/amd/aocl-utils
-license=(BSD)
+license=(BSD-3-Clause MIT NCSA)
 depends=()
 makedepends=(cmake ninja rocm-llvm-gfx1151)
 optdepends=()
@@ -18,11 +18,11 @@ options=(staticlibs '!lto')
 provides=(aocl-utils)
 conflicts=(aocl-utils)
 replaces=()
-source=(https://github.com/amd/aocl-utils/archive/refs/tags/5.2.2.tar.gz)
-sha256sums=(e84c242772ff433f0264adeaf280bf25e52c61c9508eb61f7d338c5afb1faeb3)
+source=(https://github.com/amd/aocl-utils/archive/refs/tags/5.3.0.tar.gz)
+sha256sums=(3d2fcad3a27d90e50dddbdcef55edbf9f73bb58096f9f682cf5ea6b4f9bd4bfa)
 
 build() {
-  cd "$srcdir/aocl-utils-5.2.2"
+  cd "$srcdir/aocl-utils-5.3.0"
 
   _setup_compiler_env() {
   local _compiler_root="/opt/rocm/lib/llvm/bin"
@@ -68,6 +68,6 @@ build() {
 }
 
 package() {
-  cd "$srcdir/aocl-utils-5.2.2"
+  cd "$srcdir/aocl-utils-5.3.0"
   DESTDIR="$pkgdir" cmake --install build
 }

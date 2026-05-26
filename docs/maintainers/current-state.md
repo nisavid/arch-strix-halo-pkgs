@@ -2,6 +2,36 @@
 
 Status as of 2026-05-26.
 
+The 2026-05-26 AOCL 5.3 refresh is adopted. `aocl-utils-gfx1151`
+now renders from upstream AOCL-Utils `5.3.0` with the current AUR
+`aocl-utils 5.3.0-1` baseline, and `aocl-libm-gfx1151` now renders from
+upstream AOCL-LibM `5.3`. The AOCL-LibM SCons compatibility patch is refreshed
+for the 5.3 source layout and still passes resolved `ALM_CC` and `ALM_CXX`
+compiler paths to SCons because upstream validates those variables as existing
+paths.
+
+Package build and host closeout are complete. `tools/amerge` build plan
+`c541b948` produced `aocl-utils-gfx1151 5.3.0-1`, and final build plan
+`0045fab5` produced `aocl-libm-gfx1151 5.3-1` with the symlink-preserving
+header install command. Deploy plan `ae011f92` installed both packages on the
+reference host, and `pacman -Q` reports
+`aocl-utils-gfx1151 5.3.0-1` and `aocl-libm-gfx1151 5.3-1`. The published
+`strix-halo-gfx1151` repo database contains the rebuilt AOCL-LibM archive and
+AOCL-Utils archive alongside the current `lemonade 10.6.0-1`, `lemonade-app
+10.6.0-5`, `lemonade-server 10.6.0-6`, and both llama.cpp `b9330-1` artifacts.
+
+Installed smoke coverage passed. `pkg-config --modversion aocl-utils` reports
+`5.3.0`; the installed AOCL-LibM runtime test loaded `/usr/lib/libalm.so`,
+confirmed its `/usr/lib` runpath and `libau_cpuid.so` dependency, and compared
+`amd_sin(0.5)` against glibc `sin`. `readelf` shows the installed
+stable-diffusion.cpp Vulkan `sd-cli` binary links `libalm.so` with `/usr/lib`
+runpath, and both `sd-cli-vulkan-gfx1151` and `sd-server-vulkan-gfx1151`
+started from the installed wrappers and printed usage text. `pacman -Qkk`
+reports UID/GID mismatches for the package payloads in this environment and no
+missing-file evidence. No model-generation live scenario is claimed for this
+AOCL lane; the derived downstream gate is the installed stable-diffusion.cpp
+Vulkan wrapper startup smoke.
+
 The Blackcat recipe-surface policy spec is docs-only. The classification now
 lives in `docs/maintainers/blackcat-recipe-surfaces.md`, separating already
 adopted package surfaces from tracked, rejected, and blocked future lanes. This
@@ -140,21 +170,25 @@ candidates, 17 current families, 2 rejected update candidates, and 7 tracked
 update candidates.
 
 The 2026-05-26 freshness gate supersedes the coordinator snapshot for the
-Lemonade cursor and llama.cpp release. The active tracked set below captures
+Lemonade cursor and llama.cpp release. AOCL-LibM, AOCL-Utils,
+DuckDB, Httptools, and Yarl are adopted; the active tracked set below captures
 the remaining raw non-current families that still need future package-lane
 work. The live llama.cpp result supersedes the coordinator handoff's earlier
-`b9329` observation.
+`b9329` observation and the later `b9330` observation. After the AOCL and
+llama.cpp candidate dispositions were updated,
+`tools/check_package_updates.py --refresh --json --fail-on actionable` exited
+`0` at 2026-05-26 02:40:22 EDT with effective counts of 18 adopted update
+candidates, 17 current families, 2 rejected update candidates, and 8 tracked
+update candidates.
 
-The active tracked update-candidate set is now: AOCL-LibM 5.3 follow-up,
-AOCL-Utils 5.3.0 follow-up, Lemonade fork 13b1af2 follow-up, llama.cpp b9333
-follow-up, ROCm PyTorch release/2.12 26872de follow-up, stable-diffusion.cpp
-1ceb5bd follow-up, and Transformers 5.9.0 follow-up. Each active tracked
-candidate has its disposition in
+The active tracked update-candidate set is now: Lemonade fork 13b1af2
+follow-up, llama.cpp b9333 follow-up, ROCm PyTorch release/2.12 26872de
+follow-up, stable-diffusion.cpp 1ceb5bd follow-up, and Transformers 5.9.0
+follow-up. Each active tracked candidate has its disposition in
 `docs/maintainers/update-candidates.toml` and its gate label in
-`docs/backlog.md`. The superseded llama.cpp `b9279` and `b9305` candidates and
-stable-diffusion.cpp `3a8788c` and `a397e03` candidates are rejected in the
-ledger, and the earlier llama.cpp `b9330` observation is superseded by the
-active `b9333` lane rather than left as active tracked work.
+`docs/backlog.md`. The superseded llama.cpp `b9279`, `b9305`, and `b9330`
+candidates and stable-diffusion.cpp `3a8788c` and `a397e03` candidates are
+rejected in the ledger rather than left as active tracked work.
 
 The 2026-05-26 Quark/AWQ/GPTQ/bitsandbytes/xFormers/FBGEMM candidate triage is
 also docs-only source audit. It does not implement packages, change package
