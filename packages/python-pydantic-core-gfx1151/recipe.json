@@ -18,7 +18,7 @@
   },
   "name": "python-pydantic-core-gfx1151",
   "package_name": "python-pydantic-core-gfx1151",
-  "pkgver": "2.41.5",
+  "pkgver": "2.46.4",
   "policy": {
     "advisory_references": [
       "cachyos-extra-znver4/python-pydantic-core"
@@ -67,9 +67,9 @@
       "Use the shared Rust-wheel renderer so linker selection, path remapping, and znver5 codegen stay aligned with orjson and cryptography."
     ],
     "sha256sums": [
-      "08daa51ea16ad373ffd5e7606252cc32f07bc72b28284b6bc9c6df804816476e"
+      "62f875393d7f270851f20523dd2e29f082bcc82292d66db2b64ea71f64b6e1c1"
     ],
-    "src_subdir": "pydantic_core-2.41.5",
+    "src_subdir": "pydantic_core-2.46.4",
     "template": "rust-wheel-pypi",
     "update_notes": [
       "Check Arch python-pydantic and python-pydantic-core together before updating; upstream pydantic normally constrains the pydantic-core ABI tightly.",
@@ -77,15 +77,15 @@
       "After publishing a rebuilt package, verify `import pydantic_core` and a tiny `pydantic.BaseModel` validation through the installed local Python lane.",
       "Record newer PyPI pydantic-core releases as baseline drift while the package follows Arch's pydantic-core ABI for the installed pydantic package."
     ],
-    "upstream_version": "2.41.5",
+    "upstream_version": "2.46.4",
     "url": "https://github.com/pydantic/pydantic-core"
   },
   "provenance": {
     "output_root": "packages",
     "recipe_author": "Blackcat Informatics Inc.",
-    "recipe_commit": "a1d7a68",
-    "recipe_date": "20260427",
-    "recipe_history_count": 16,
+    "recipe_commit": "3f15f9f",
+    "recipe_date": "20260508",
+    "recipe_history_count": 17,
     "recipe_repo": "https://github.com/paudley/ai-notes",
     "recipe_subdir": "strix-halo",
     "repo_subpath": "."
@@ -100,7 +100,7 @@
     "patches": [],
     "phase": "H",
     "repo": null,
-    "src_dir": null,
+    "src_dir": "pydantic_core-2.46.4",
     "steps": [
       31
     ]

@@ -9,7 +9,7 @@ CORE_STACK = {
     "python-pydantic-core-gfx1151": {
         "template": "rust-wheel-pypi",
         "recipe_key": "rust_wheels",
-        "upstream_version": "2.41.5",
+        "upstream_version": "2.46.4",
         "provides": ["python-pydantic-core"],
         "consumer_dep": "python-pydantic-core-gfx1151",
     },

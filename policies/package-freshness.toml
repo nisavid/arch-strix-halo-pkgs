@@ -180,8 +180,8 @@ packages = ["python-pydantic-core-gfx1151"]
 priority = "medium"
 workflow = "upstream_source_update"
 checks = [
-  { id = "arch", role = "primary", kind = "arch_package", package = "python-pydantic-core", recorded = "2.41.5-4", comparison = "pkgver" },
-  { id = "pypi", role = "baseline", kind = "pypi", package = "pydantic_core", recorded = "2.46.4", comparison = "pep440" },
+  { id = "arch", role = "primary", kind = "arch_package", package = "python-pydantic-core", recorded = "2.46.4-1", comparison = "pkgver" },
+  { id = "pypi", role = "baseline", kind = "pypi", package = "pydantic_core", recorded = "2.47.0", comparison = "pep440" },
 ]
 source_contracts = [
   { id = "arch-compatible-source", packages = ["python-pydantic-core-gfx1151"], check_id = "arch", source_kind = "pypi_sdist", origin = "pypi:pydantic-core", value_policy = "pinned_may_lag_reviewed" },

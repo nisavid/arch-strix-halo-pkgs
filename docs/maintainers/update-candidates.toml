@@ -1303,20 +1303,23 @@ baseline_latest = "2.47.0"
 previous_recorded = "2.41.5-4 / 2.46.4"
 latest = "2.46.4-1"
 discovery_status = "stable_update_available"
-disposition = "tracked"
-disposition_reason = "Reviewed again during the 2026-05-24 recovery-branch freshness gate and not folded into the CTranslate2 recovery. The package should stay aligned with Arch's pydantic-core ABI for the installed python-pydantic package until this repo owns a coordinated python-pydantic lane or the existing pydantic-core ABI branch is merged separately."
+disposition = "adopted"
+disposition_reason = "Adopted on 2026-05-26. The package policy and rendered scaffold now track Arch python-pydantic-core 2.46.4-1 as pydantic_core 2.46.4 while PyPI 2.47.0 remains a reviewed baseline cursor. Source verification, source preparation, focused renderer/checker tests, and tools/amerge build plan 1313f3a8 passed. The reference host already had python-pydantic-core-gfx1151 2.46.4-1 installed alongside python-pydantic 2.13.4-1, so no new privileged deploy was required; the installed BaseModel ABI smoke and affected local pydantic consumer imports passed."
 salient_changes = [
   "Arch python-pydantic-core 2.46.4-1 is available and matches PyPI pydantic-core 2.46.4",
   "PyPI pydantic-core 2.47.0 is visible as a newer baseline cursor, but the installed python-pydantic ABI remains the package boundary",
   "The local package follows Arch's pydantic-core ABI boundary for the installed python-pydantic package",
+  "The package now renders as python-pydantic-core-gfx1151 2.46.4-1 from the PyPI pydantic_core 2.46.4 sdist",
+  "The rendered Rust-wheel build isolates HOME, XDG cache/data roots, and CARGO_HOME under srcdir",
+  "Installed imports passed for pydantic, pydantic_core, mistral_common, openai_harmony, compressed_tensors, and vllm",
 ]
 patch_carry_overlap = false
-package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
-next_gate_label = "Local python-pydantic ABI lane"
-last_reviewed = "2026-05-24"
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Adopted; monitor future Arch python-pydantic ABI movement through the normal freshness sweep"
+last_reviewed = "2026-05-26"
 
 [candidates."ctranslate2-4.7.2"]
 family = "ctranslate2"
