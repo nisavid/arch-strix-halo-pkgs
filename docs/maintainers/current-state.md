@@ -81,20 +81,41 @@ correctness smokes. The reduced Qwen3.5 0.8B text smoke now records
 to `0.35`; larger 26B-A4B and Qwen3.6 MoE probes keep their existing explicit
 high-reservation settings.
 
+The 2026-05-26 local python-pydantic ABI lane is adopted. The package policy
+and rendered scaffold now track Arch `python-pydantic-core 2.46.4-1` as
+`python-pydantic-core-gfx1151 2.46.4-1`, while PyPI pydantic-core `2.47.0`
+remains a reviewed baseline cursor rather than an adopted source. Source
+verification passed with `makepkg --verifysource -f`, source preparation passed
+with `makepkg --nobuild --nodeps --force`, focused renderer/checker tests
+passed with `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 pytest
+tests/test_render_recipe_scaffolds.py tests/test_check_package_updates.py -q`,
+and `git diff --check` passed. `tools/amerge` build plan `1313f3a8` produced
+`python-pydantic-core-gfx1151 2.46.4-1`. The reference host already had
+`python-pydantic 2.13.4-1` and `python-pydantic-core-gfx1151 2.46.4-1`
+installed, so no new privileged deploy was required. Installed ABI validation
+passed with `pydantic 2.13.4`, `pydantic_core 2.46.4`, and a tiny
+`BaseModel` coercion smoke printing `sample 42`; affected installed consumer
+imports passed for `mistral_common`, `openai_harmony`, `compressed_tensors`,
+and `vllm`. The post-policy full freshness check
+`tools/check_package_updates.py --refresh --json --fail-on actionable` exited
+`0` with effective counts of 16 adopted update candidates, 17 current
+families, 2 rejected update candidates, and 10 tracked update candidates. A
+focused pydantic-only checker run also exited `0`: Arch
+`python-pydantic-core` records `2.46.4-1`, PyPI `pydantic_core` records
+`2.47.0`, and the effective pydantic-core status is adopted.
+
 The 2026-05-26 freshness gate supersedes the coordinator snapshot for the
-Lemonade cursor and llama.cpp release. The rerun exited `10` with four current
-action-required families: Httptools `0.8.0`, Lemonade fork main
-`13b1af25f84cf08ad5f8bf0ec58980bdfc09c9e7`, llama.cpp `b9330` with AUR HIP
-baseline `b9326-1`, and stable-diffusion.cpp master
-`1ceb5bd9df7784bcdf67dd9ed8bf0198b542ebc9`. The live llama.cpp result
-supersedes the coordinator handoff's earlier `b9329` observation.
+Lemonade cursor and llama.cpp release. The active tracked set below captures
+all raw non-current families that still need future package-lane work. The live
+llama.cpp result supersedes the coordinator handoff's earlier `b9329`
+observation.
 
 The active tracked update-candidate set is now: AOCL-LibM 5.3 follow-up,
 AOCL-Utils 5.3.0 follow-up, DuckDB 1.5.3 follow-up, Httptools 0.8.0 follow-up,
-Lemonade fork 13b1af2 follow-up, llama.cpp b9330 follow-up, Local
-python-pydantic ABI lane, ROCm PyTorch release/2.12 26872de follow-up,
-stable-diffusion.cpp 1ceb5bd follow-up, Transformers 5.9.0 follow-up, and Yarl
-1.24.2 follow-up. Each active tracked candidate has its disposition in
+Lemonade fork 13b1af2 follow-up, llama.cpp b9330 follow-up, ROCm PyTorch
+release/2.12 26872de follow-up, stable-diffusion.cpp 1ceb5bd follow-up,
+Transformers 5.9.0 follow-up, and Yarl 1.24.2 follow-up. Each active tracked
+candidate has its disposition in
 `docs/maintainers/update-candidates.toml` and its gate label in
 `docs/backlog.md`. The superseded llama.cpp `b9279` and `b9305` candidates and
 stable-diffusion.cpp `3a8788c` and `a397e03` candidates are rejected in the
@@ -106,9 +127,8 @@ The earlier 2026-05-24 recovery-branch freshness gate tracked AITER `0.1.14`
 stable, llama.cpp `b9305`, stable-diffusion.cpp
 `a397e03488cc27e1a42da646b82dfce9f50741c0`, and the local
 python-pydantic-core ABI lane. AITER `0.1.14` is now adopted and live-validated,
-the llama.cpp and stable-diffusion.cpp entries are superseded by the current
-tracked lanes above, and the pydantic-core ABI lane remains active tracked
-work.
+the pydantic-core ABI lane is adopted, and the llama.cpp and
+stable-diffusion.cpp entries are superseded by the current tracked lanes above.
 
 The 2026-05-21 freshness gate ran
 `tools/check_package_updates.py --json --fail-on actionable` after the
@@ -598,11 +618,12 @@ new non-current families and one policy-shape issue. llama.cpp `b8994` was
 reviewed and rejected because the `b8992..b8994` range is WebGPU-only and does
 not overlap the local HIP/Vulkan/Lemonade lanes. PyPI `tokenizers 0.23.1` was
 reviewed and blocked because local `python-transformers-gfx1151 5.7.0`
-requires `tokenizers<=0.23.0,>=0.22.0`. The pydantic-core freshness policy
-now records PyPI `2.46.3` as a reviewed baseline while the package follows the
-Arch-compatible `2.41.5` source until this repo owns a matching
-`python-pydantic` lane. The AITER main candidate reviewed during that sweep
-was superseded by the later 2026-05-03 AITER adoption recorded above.
+requires `tokenizers<=0.23.0,>=0.22.0`. At that point, the pydantic-core
+freshness policy recorded PyPI `2.46.3` as a reviewed baseline while the
+package followed the Arch-compatible `2.41.5` source; the pydantic-core lane is
+now superseded by the 2026-05-26 adoption recorded above. The AITER main
+candidate reviewed during that sweep was superseded by the later 2026-05-03
+AITER adoption recorded above.
 
 The 2026-05-03 Blackcat rebase freshness sweep ran
 `tools/check_package_updates.py --refresh --json --fail-on actionable` after
@@ -625,10 +646,11 @@ mistral-common 1.11.2, cryptography 48.0.0, orjson 3.11.9, accelerate 1.13.0,
 and auto-round 0.12.3. Package-build gates passed for this bundle, but these
 candidates remain tracked rather than adopted until deploy/install,
 installed-smoke, and affected scenario gates are complete. Python 3.14.5 and
-pydantic-core 2.46.4 were reviewed as
-baseline drift and kept as separate tracked lanes because Python requires a
-coordinated interpreter rebuild and pydantic-core must stay aligned with the
-installed `python-pydantic` ABI unless this repo owns a matching pydantic lane.
+pydantic-core 2.46.4 were reviewed as baseline drift and kept as separate
+tracked lanes at that time because Python required a coordinated interpreter
+rebuild and pydantic-core had to stay aligned with the installed
+`python-pydantic` ABI. The pydantic-core lane is now adopted in the 2026-05-26
+ABI closeout above.
 
 The `tools/amerge` build plan `20260507T045259-7a242b1c` completed on
 2026-05-07 after the obsolete `python-orjson-gfx1151` `cold_path` patch was

@@ -5,7 +5,7 @@
 # Package recipe key: rust_wheels
 
 pkgname=python-pydantic-core-gfx1151
-pkgver=2.41.5
+pkgver=2.46.4
 pkgrel=1
 pkgdesc='Core validation logic for pydantic rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
@@ -18,11 +18,11 @@ options=()
 provides=(python-pydantic-core)
 conflicts=(python-pydantic-core)
 replaces=()
-source=(https://files.pythonhosted.org/packages/source/p/pydantic_core/pydantic_core-2.41.5.tar.gz)
-sha256sums=(08daa51ea16ad373ffd5e7606252cc32f07bc72b28284b6bc9c6df804816476e)
+source=(https://files.pythonhosted.org/packages/source/p/pydantic_core/pydantic_core-2.46.4.tar.gz)
+sha256sums=(62f875393d7f270851f20523dd2e29f082bcc82292d66db2b64ea71f64b6e1c1)
 
 build() {
-  cd "$srcdir/pydantic_core-2.41.5"
+  cd "$srcdir/pydantic_core-2.46.4"
 
   _setup_compiler_env() {
   local _compiler_root="/opt/rocm/lib/llvm/bin"
@@ -50,8 +50,11 @@ build() {
 
   _setup_compiler_env
   local _debug_prefix="/usr/src/debug/python-pydantic-core-gfx1151"
+  export HOME="$srcdir/.home"
+  export XDG_CACHE_HOME="$srcdir/.cache"
+  export XDG_DATA_HOME="$srcdir/.local/share"
   export CARGO_HOME="$srcdir/.cargo"
-  mkdir -p "$CARGO_HOME"
+  mkdir -p "$HOME" "$XDG_CACHE_HOME" "$XDG_DATA_HOME" "$CARGO_HOME"
   export CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER="$CC"
   export RUSTFLAGS="-C target-cpu=znver5 -C opt-level=3 --remap-path-prefix=$srcdir=${_debug_prefix}"
   unset CFLAGS CXXFLAGS LDFLAGS
@@ -60,11 +63,11 @@ build() {
 }
 
 package() {
-  cd "$srcdir/pydantic_core-2.41.5"
+  cd "$srcdir/pydantic_core-2.46.4"
   python -m installer --destdir="$pkgdir" dist/*.whl
 
   local _debug_prefix="/usr/src/debug/python-pydantic-core-gfx1151"
   find "$pkgdir/usr/lib" -type f -path '*/sboms/*.json' -print0 | while IFS= read -r -d '' _file; do
-    sed -i       -e "s|$srcdir/pydantic_core-2.41.5|${_debug_prefix}/pydantic_core-2.41.5|g"       -e "s|$srcdir|${_debug_prefix}|g"       -e "s|/tmp/pkg/src/pydantic_core-2.41.5|${_debug_prefix}/pydantic_core-2.41.5|g"       "$_file" 2>/dev/null || true
+    sed -i       -e "s|$srcdir/pydantic_core-2.46.4|${_debug_prefix}/pydantic_core-2.46.4|g"       -e "s|$srcdir|${_debug_prefix}|g"       -e "s|/tmp/pkg/src/pydantic_core-2.46.4|${_debug_prefix}/pydantic_core-2.46.4|g"       "$_file" 2>/dev/null || true
   done
 }

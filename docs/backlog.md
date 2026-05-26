@@ -174,12 +174,14 @@
   rebuilt after the corrected PyTorch deploy through plan
   `20260511T081446-f56bde47`; and affected live scenarios passed in
   `docs/worklog/inference-runs/20260511T083036`.
-- Local python-pydantic ABI lane: Arch `python-pydantic-core 2.46.4-1` and
-  PyPI pydantic-core 2.47.0 are reviewed as baseline drift. Keep
-  `python-pydantic-core-gfx1151` aligned with Arch's pydantic-core ABI for the
-  installed `python-pydantic` package until this repo owns a matching local
-  `python-pydantic` lane or the existing pydantic-core ABI branch is merged
-  separately.
+- The local python-pydantic ABI lane is adopted. `python-pydantic-core-gfx1151`
+  now renders as `2.46.4-1`, aligned with Arch `python-pydantic-core
+  2.46.4-1` and the installed `python-pydantic 2.13.4-1` ABI. PyPI
+  pydantic-core 2.47.0 remains a reviewed baseline cursor, not an adopted
+  source, until this repo owns a matching local `python-pydantic` lane.
+  Source verification, source preparation, focused tests, `tools/amerge` build
+  plan `1313f3a8`, installed pydantic smoke, and affected local consumer
+  imports passed on 2026-05-26.
 - The 2026-05-03 refresh candidates are adopted as one branch: vLLM 0.20.1,
   llama.cpp b9010, and AITER main
   `51f3d2b6968360fba7772208025e5c07756121ba`. `tools/amerge` plan
