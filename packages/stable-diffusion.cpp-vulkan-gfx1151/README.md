@@ -29,6 +29,12 @@ macOS rpath fixes, and Windows ROCm BLAS artifact packaging.
 The package builds the Vulkan backend with ggml, WebP, WebM, and server frontend
 inputs modeled as explicit package sources and staged into the upstream
 submodule paths during prepare().
+At this pin, the upstream recursive git tree records mode-160000 gitlinks for
+`ggml` (`0ce7ad348a3151e1da9f65d962044546bcaad421`),
+`examples/server/frontend` (`797ccf80825cc035508ba9b599b2a21953e7f835`),
+`thirdparty/libwebm` (`5bf12267eea773a32fcf4949de52b0add158a8d5`), and
+`thirdparty/libwebp` (`0c9546f7efc61eac7f79ae115c3f99c91c21c443`), matching
+the explicit package source pins and the previous upstream `caa823a` tree.
 It uses the repo's amdclang/Zen 5 lane, ThinLTO, AOCL-LibM
 linkage, OpenMP CPU fallback, WebP/WebM output support, and release-mode
 Vulkan settings. Runtime payloads live under
@@ -64,6 +70,7 @@ unknown tensors.
 - On 2026-05-15, adopted upstream master at 0b8296915c4094090cff6bd2e09a5e98288c3c7d for MultiLora handling, flow-model sampler behavior, max-VRAM segmented parameter offload support, HiDream O1 image support, model-weight mmap support, Euler CFG++ sampler support, WebP/WebM pkg-config handling, and server URL display cleanup.
 - On 2026-05-19, adopted upstream master at caa823a8c06a51288f0a01bb29e9bd8bcec30a8a for LTX 2.3 support, Gradient Estimation sampler support, negative max_vram spare-VRAM budgeting, module backend assignment, restored LLM singleton dimensions, and ROCm 7.13 CI target updates.
 - On 2026-05-26, adopted upstream master at 1ceb5bd9df7784bcdf67dd9ed8bf0198b542ebc9 for LTX temporal and rational latent upscaling, Longcat image/edit support, highres custom sigma and VAE tiling arguments, TAESD preview fixes, macOS rpath fixes, and Windows ROCm BLAS artifact packaging.
+- On 2026-05-26 review follow-up, verified the upstream mode-160000 gitlinks at 1ceb5bd9df7784bcdf67dd9ed8bf0198b542ebc9 match the explicit ggml, sdcpp-webui, libwebm, and libwebp package source pins and are unchanged from caa823a8c06a51288f0a01bb29e9bd8bcec30a8a.
 
 ## Maintainer Starting Points
 

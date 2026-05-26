@@ -471,10 +471,11 @@ previous_recorded = "caa823a8c06a51288f0a01bb29e9bd8bcec30a8a"
 latest = "1ceb5bd9df7784bcdf67dd9ed8bf0198b542ebc9"
 discovery_status = "branch_head_ahead"
 disposition = "adopted"
-disposition_reason = "Adopted on 2026-05-26. Source metadata and rendered scaffolds now track r650.g1ceb5bd, source verification passed with the carried CLIP-G patch, package build plan 3a354f90 produced stable-diffusion.cpp-vulkan-gfx1151 r650.g1ceb5bd-1, the package is published in the local repo and installed, and both installed Vulkan wrapper --help smokes passed. No model-generation validation is claimed."
+disposition_reason = "Adopted on 2026-05-26. Source metadata and rendered scaffolds now track r650.g1ceb5bd, source verification passed with the carried CLIP-G patch, package build plan 3a354f90 produced stable-diffusion.cpp-vulkan-gfx1151 r650.g1ceb5bd-1, the package is published in the local repo and installed, and both installed Vulkan wrapper --help smokes passed. A review follow-up verified the upstream recursive git trees at caa823a and 1ceb5bd keep matching mode-160000 gitlinks for ggml, examples/server/frontend, thirdparty/libwebm, and thirdparty/libwebp, so the explicit package source pins match the 1ceb5bd upstream submodule state. No model-generation validation is claimed."
 salient_changes = [
   "stable-diffusion.cpp master moved beyond the adopted r629.gcaa823a lane to 1ceb5bd",
   "AUR stable-diffusion.cpp-vulkan-git baseline remains at r279.49d6570-1",
+  "The upstream 1ceb5bd gitlinks for ggml, examples/server/frontend, thirdparty/libwebm, and thirdparty/libwebp match the explicit package source pins and are unchanged from caa823a",
 ]
 patch_carry_overlap = true
 package_source_update_needed = false

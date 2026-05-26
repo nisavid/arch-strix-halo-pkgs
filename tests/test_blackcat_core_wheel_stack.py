@@ -372,5 +372,14 @@ def test_blackcat_engine_stack_rendered_output_exists() -> None:
     assert "recursive git submodules" not in readme
     assert "prepare-time network submodule fetches" in readme
     assert "explicit package sources" in readme
+    assert "mode-160000 gitlinks" in readme
+    for submodule_sha in (
+        "0ce7ad348a3151e1da9f65d962044546bcaad421",
+        "797ccf80825cc035508ba9b599b2a21953e7f835",
+        "5bf12267eea773a32fcf4949de52b0add158a8d5",
+        "0c9546f7efc61eac7f79ae115c3f99c91c21c443",
+    ):
+        assert submodule_sha in readme
+        assert submodule_sha in recipe["policy"]["recipe_notes_override"]
     assert "recursive ggml" not in recipe["policy"]["recipe_notes_override"]
     assert "explicit package sources" in recipe["policy"]["recipe_notes_override"]

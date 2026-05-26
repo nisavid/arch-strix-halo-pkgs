@@ -211,8 +211,12 @@ local CLIP-G patch refreshed for the current source. Package build plan
 `stable-diffusion.cpp-vulkan-gfx1151-r650.g1ceb5bd-1-x86_64.pkg.tar.zst`, the
 reference host reports `stable-diffusion.cpp-vulkan-gfx1151
 r650.g1ceb5bd-1`, and installed `sd-cli-vulkan-gfx1151 --help` plus
-`sd-server-vulkan-gfx1151 --help` smokes passed. No model-generation
-validation is claimed for this closeout.
+`sd-server-vulkan-gfx1151 --help` smokes passed. The recursive upstream git
+trees at `caa823a` and `1ceb5bd` keep matching mode-160000 gitlinks for
+`ggml`, `examples/server/frontend`, `thirdparty/libwebm`, and
+`thirdparty/libwebp`, so the explicit package source pins match the upstream
+`1ceb5bd` submodule state. No model-generation validation is claimed for this
+closeout.
 
 The 2026-05-26 Quark/AWQ/GPTQ/bitsandbytes/xFormers/FBGEMM candidate triage is
 also docs-only source audit. It does not implement packages, change package
