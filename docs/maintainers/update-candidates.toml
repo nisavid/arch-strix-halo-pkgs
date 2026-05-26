@@ -91,6 +91,28 @@ next_gate_path = "docs/backlog.md"
 next_gate_label = "DuckDB 1.5.3 follow-up"
 last_reviewed = "2026-05-21"
 
+[candidates."httptools-0.8.0-pypi"]
+family = "httptools"
+packages = ["python-httptools-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+previous_recorded = "0.7.1"
+latest = "0.8.0"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Found during the 2026-05-26 freshness gate. Keep as a separate service-runtime native-wheel refresh because httptools supplies uvicorn's native HTTP parser path, carries a local system-llhttp source patch, and needs source review, package build, deploy/install, and installed import smoke before adoption."
+salient_changes = [
+  "PyPI httptools 0.8.0 is available after the current 0.7.1 package lane",
+  "The package follows Arch's system-llhttp shape while rebuilding the native extension through the local native-wheel compiler lane",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "Httptools 0.8.0 follow-up"
+last_reviewed = "2026-05-26"
+
 [candidates."lemonade-10.6.0-baseline"]
 family = "lemonade"
 packages = ["lemonade-server", "lemonade-app", "lemonade"]
@@ -118,6 +140,31 @@ host_validation_needed = false
 next_gate_kind = "none"
 next_gate_path = ""
 next_gate_label = "Adopted; monitor future Lemonade releases through the normal freshness sweep"
+last_reviewed = "2026-05-26"
+
+[candidates."lemonade-fork-13b1af2"]
+family = "lemonade"
+packages = ["lemonade-server", "lemonade-app", "lemonade"]
+source_kind = "git_ref"
+check_id = "fork-main"
+baseline_source_kind = "aur"
+baseline_latest = "10.6.0-1"
+previous_recorded = "b608a74d0604f96786de59d65cb0ba27b05db0c6"
+latest = "13b1af25f84cf08ad5f8bf0ec58980bdfc09c9e7"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "Found during the 2026-05-26 freshness gate after the adopted Lemonade 10.6.0 fork-main package lane. Keep as a separate fork-source refresh because the packages track nisavid/lemonade main directly and still require source-range review, package metadata refresh, package builds, deploy/install, installed service smokes, and affected reranking or llama.cpp backend scenario validation before adoption."
+salient_changes = [
+  "nisavid/lemonade fork main moved beyond the adopted b608a74 package source lane",
+  "Canonical upstream and AUR Lemonade baselines remain at 10.6.0",
+  "The local package still carries Strix Halo llama.cpp backend integration and Tauri app dependency policy that need review against the new fork range",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "Lemonade fork 13b1af2 follow-up"
 last_reviewed = "2026-05-26"
 
 [candidates."llama-cpp-b9222"]
@@ -154,19 +201,19 @@ baseline_latest = "b9275-1"
 previous_recorded = "b9222 / b9222-3"
 latest = "b9279"
 discovery_status = "stable_update_available"
-disposition = "tracked"
-disposition_reason = "Found during the 2026-05-21 closeout freshness gate and refreshed after upstream advanced again during closeout. Keep as a separate llama.cpp refresh lane because updating the packaged backends also requires refreshing Lemonade backend metadata, rebuilding the backend packages, deploy/install, installed backend smokes, Lemonade service smokes, and affected inference scenario validation."
+disposition = "rejected"
+disposition_reason = "Superseded before package adoption. The active llama.cpp refresh lane is b9330, so this older b9279 candidate should not remain tracked as separate open work."
 salient_changes = [
   "GitHub release b9279 is available after the adopted b9222 package lane",
   "AUR llama.cpp-hip baseline has advanced to b9275-1 while the Vulkan baseline remains at b9222-1",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
-next_gate_label = "llama.cpp b9279 follow-up"
-last_reviewed = "2026-05-21"
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Superseded by llama.cpp b9330 follow-up"
+last_reviewed = "2026-05-26"
 
 [candidates."llama-cpp-b9305"]
 family = "llama_cpp"
@@ -178,19 +225,44 @@ baseline_latest = "b9297-1"
 previous_recorded = "b9222 / b9222-3"
 latest = "b9305"
 discovery_status = "stable_update_available"
-disposition = "tracked"
-disposition_reason = "Found during the 2026-05-24 recovery-branch freshness gate. Keep as a separate llama.cpp refresh lane because it supersedes the earlier b9279 follow-up and still requires release-range review, both backend package updates, Lemonade backend metadata refresh, package builds, deploy/install, installed backend smokes, Lemonade service smokes, and affected inference scenario validation."
+disposition = "rejected"
+disposition_reason = "Superseded before package adoption. The active llama.cpp refresh lane is b9330, so this older b9305 candidate should not remain tracked as separate open work."
 salient_changes = [
   "GitHub release b9305 is available after the adopted b9222 package lane",
   "AUR llama.cpp-hip baseline has advanced to b9297-1 while the Vulkan baseline remains at b9222-1",
+]
+patch_carry_overlap = true
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Superseded by llama.cpp b9330 follow-up"
+last_reviewed = "2026-05-26"
+
+[candidates."llama-cpp-b9330"]
+family = "llama_cpp"
+packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"]
+source_kind = "github_release"
+check_id = "release"
+baseline_source_kind = "aur"
+baseline_latest = "b9326-1"
+previous_recorded = "b9222 / b9222-3"
+latest = "b9330"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Found during the 2026-05-26 freshness gate. Keep as the active llama.cpp refresh lane because it supersedes the earlier b9279 and b9305 candidates and still requires release-range review, both backend package updates, Lemonade backend metadata refresh, package builds, deploy/install, installed backend smokes, Lemonade service smokes, and affected inference scenario validation before adoption."
+salient_changes = [
+  "GitHub release b9330 is available after the adopted b9222 package lane",
+  "AUR llama.cpp-hip baseline has advanced to b9326-1 while the Vulkan baseline remains at b9222-1",
+  "The current candidate supersedes the handoff's b9329 observation from the earlier coordinator snapshot",
 ]
 patch_carry_overlap = true
 package_source_update_needed = true
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "llama.cpp b9305 follow-up"
-last_reviewed = "2026-05-24"
+next_gate_label = "llama.cpp b9330 follow-up"
+last_reviewed = "2026-05-26"
 
 [candidates."numpy-2.4.6"]
 family = "numpy"
@@ -317,19 +389,19 @@ check_id = "master"
 previous_recorded = "caa823a8c06a51288f0a01bb29e9bd8bcec30a8a"
 latest = "3a8788cb7d74f185d6b18688e9563015524ecaf5"
 discovery_status = "branch_head_ahead"
-disposition = "tracked"
-disposition_reason = "Found during the 2026-05-21 closeout freshness gate. Keep as a separate stable-diffusion.cpp follow-up because the package has source patch carry, web/runtime build inputs, Vulkan wrapper behavior, and installed smoke coverage that need review before adoption."
+disposition = "rejected"
+disposition_reason = "Superseded before package adoption. The active stable-diffusion.cpp refresh lane is 1ceb5bd, so this older 3a8788c candidate should not remain tracked as separate open work."
 salient_changes = [
   "stable-diffusion.cpp master moved beyond the adopted r629.gcaa823a lane",
   "AUR stable-diffusion.cpp-vulkan-git baseline remains at r279.49d6570-1",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
-next_gate_label = "stable-diffusion.cpp 3a8788c follow-up"
-last_reviewed = "2026-05-21"
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Superseded by stable-diffusion.cpp 1ceb5bd follow-up"
+last_reviewed = "2026-05-26"
 
 [candidates."stable-diffusion-cpp-a397e03"]
 family = "stable_diffusion_cpp"
@@ -339,10 +411,32 @@ check_id = "master"
 previous_recorded = "caa823a8c06a51288f0a01bb29e9bd8bcec30a8a"
 latest = "a397e03488cc27e1a42da646b82dfce9f50741c0"
 discovery_status = "branch_head_ahead"
-disposition = "tracked"
-disposition_reason = "Found during the 2026-05-24 recovery-branch freshness gate. Keep as a separate stable-diffusion.cpp follow-up because it supersedes the earlier 3a8788c follow-up and still needs source/submodule review, package metadata refresh, rebuild with the carried CLIP-G patch, deploy/install, and installed Vulkan wrapper smoke before adoption."
+disposition = "rejected"
+disposition_reason = "Superseded before package adoption. The active stable-diffusion.cpp refresh lane is 1ceb5bd, so this older a397e03 candidate should not remain tracked as separate open work."
 salient_changes = [
   "stable-diffusion.cpp master moved beyond the adopted r629.gcaa823a lane to a397e03",
+  "AUR stable-diffusion.cpp-vulkan-git baseline remains at r279.49d6570-1",
+]
+patch_carry_overlap = true
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Superseded by stable-diffusion.cpp 1ceb5bd follow-up"
+last_reviewed = "2026-05-26"
+
+[candidates."stable-diffusion-cpp-1ceb5bd"]
+family = "stable_diffusion_cpp"
+packages = ["stable-diffusion.cpp-vulkan-gfx1151"]
+source_kind = "git_ref"
+check_id = "master"
+previous_recorded = "caa823a8c06a51288f0a01bb29e9bd8bcec30a8a"
+latest = "1ceb5bd9df7784bcdf67dd9ed8bf0198b542ebc9"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "Found during the 2026-05-26 freshness gate. Keep as the active stable-diffusion.cpp follow-up because it supersedes the earlier 3a8788c and a397e03 candidates and still needs source/submodule review, package metadata refresh, rebuild with the carried CLIP-G patch, deploy/install, and installed Vulkan wrapper smoke before adoption."
+salient_changes = [
+  "stable-diffusion.cpp master moved beyond the adopted r629.gcaa823a lane to 1ceb5bd",
   "AUR stable-diffusion.cpp-vulkan-git baseline remains at r279.49d6570-1",
 ]
 patch_carry_overlap = true
@@ -350,8 +444,8 @@ package_source_update_needed = true
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "stable-diffusion.cpp a397e03 follow-up"
-last_reviewed = "2026-05-24"
+next_gate_label = "stable-diffusion.cpp 1ceb5bd follow-up"
+last_reviewed = "2026-05-26"
 
 [candidates."watchfiles-1.2.0"]
 family = "watchfiles"
@@ -1643,18 +1737,18 @@ previous_recorded = "d50194cae28f2e22f4dfff19a86577fe2fcbca27"
 latest = "7cfe51983cd9dd55c0355e34fb614e7c0de44e6e"
 discovery_status = "candidate_head_ahead"
 disposition = "adopted"
-disposition_reason = "Adopted in the 2026-05-15 refresh cycle. Source metadata is updated to the selected AITER main snapshot and source preparation applies the local patch carry with offsets/fuzz, and package build passed. Deploy/install, installed JIT smoke, and affected vLLM scenario gates are tracked in current-state until closeout."
+disposition_reason = "Adopted in the 2026-05-15 refresh cycle and closed by the 2026-05-18 installed validation bundle. Source metadata was updated to the selected AITER main snapshot, source preparation applied the local patch carry, package build passed, deploy/install completed, installed JIT smoke passed, and affected vLLM scenario gates passed."
 salient_changes = [
   "Tuned GEMM and MoE kernel/config churn after the 2026-05-14 main snapshot",
   "Runtime-facing JIT and fused-MoE surfaces that overlap local vLLM validation lanes",
 ]
 patch_carry_overlap = true
 package_source_update_needed = false
-host_validation_needed = true
-next_gate_kind = "current-state"
-next_gate_path = "docs/maintainers/current-state.md"
-next_gate_label = "Complete 2026-05-15 deploy/install and host validation gates"
-last_reviewed = "2026-05-15"
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Adopted; monitor future AITER refs through the normal freshness sweep"
+last_reviewed = "2026-05-26"
 
 [candidates."llama-cpp-b9165"]
 family = "llama_cpp"
@@ -1666,7 +1760,7 @@ previous_recorded = "b9145 / b9139-1"
 latest = "b9165"
 discovery_status = "stable_update_available"
 disposition = "adopted"
-disposition_reason = "Adopted in the 2026-05-15 refresh cycle. Source metadata is updated for both HIP and Vulkan backends; source verification, package source preparation, and package build passed. Deploy/install, backend CLI smokes, and affected Lemonade or vLLM scenario gates are tracked in current-state until closeout."
+disposition_reason = "Adopted in the 2026-05-15 refresh cycle and closed by the 2026-05-18 installed validation bundle. Source metadata was updated for both HIP and Vulkan backends, source verification, package source preparation, and package build passed, deploy/install completed, backend CLI smokes passed, and affected Lemonade or vLLM scenario gates passed."
 salient_changes = [
   "HIP RDNA3 MMA and transpose tuning",
   "Vulkan integer pipeline selection",
@@ -1675,11 +1769,11 @@ salient_changes = [
 ]
 patch_carry_overlap = true
 package_source_update_needed = false
-host_validation_needed = true
-next_gate_kind = "current-state"
-next_gate_path = "docs/maintainers/current-state.md"
-next_gate_label = "Complete 2026-05-15 deploy/install and host validation gates"
-last_reviewed = "2026-05-15"
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Adopted; monitor future llama.cpp releases through the normal freshness sweep"
+last_reviewed = "2026-05-26"
 
 [candidates."stable-diffusion-cpp-0b82969"]
 family = "stable_diffusion_cpp"
@@ -1689,7 +1783,7 @@ previous_recorded = "90e87bc846f17059771efb8aaa31e9ef0cab6f78"
 latest = "0b8296915c4094090cff6bd2e09a5e98288c3c7d"
 discovery_status = "branch_head_ahead"
 disposition = "adopted"
-disposition_reason = "Adopted in the 2026-05-15 refresh cycle. Source metadata is updated to stable-diffusion.cpp r604.g0b82969 and source preparation applies the local SDXL CLIP-G mapping patch with offset/fuzz, and package build passed after routing pnpm tool/cache state into $srcdir. Deploy/install and installed wrapper smokes are tracked in current-state until closeout."
+disposition_reason = "Adopted in the 2026-05-15 refresh cycle and closed by the 2026-05-18 installed validation bundle. Source metadata was updated to stable-diffusion.cpp r604.g0b82969, source preparation applied the local SDXL CLIP-G mapping patch, package build passed after routing pnpm tool/cache state into $srcdir, deploy/install completed, and installed wrapper smokes passed."
 salient_changes = [
   "HiDream O1 image support",
   "WebP/WebM pkg-config integration",
@@ -1698,8 +1792,8 @@ salient_changes = [
 ]
 patch_carry_overlap = true
 package_source_update_needed = false
-host_validation_needed = true
-next_gate_kind = "current-state"
-next_gate_path = "docs/maintainers/current-state.md"
-next_gate_label = "Complete 2026-05-15 deploy/install and host validation gates"
-last_reviewed = "2026-05-15"
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Adopted; monitor future stable-diffusion.cpp refs through the normal freshness sweep"
+last_reviewed = "2026-05-26"

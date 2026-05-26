@@ -54,6 +54,11 @@
   local package lane. Treat this as a compiled Python package refresh with
   source review, package build, deploy/install, and installed import smoke
   before adoption.
+- Httptools 0.8.0 follow-up: the 2026-05-26 freshness gate found PyPI
+  `httptools 0.8.0` after the current `0.7.1` package lane. Treat this as a
+  service-runtime native-wheel refresh: review the source range against the
+  local system-llhttp patch, refresh package metadata, build, deploy/install,
+  and run an installed import smoke before adoption.
 - The Lemonade 10.6.0 fork-main refresh is adopted. The source lane pins
   `nisavid/lemonade` fork main at
   `b608a74d0604f96786de59d65cb0ba27b05db0c6`, aligned with canonical upstream
@@ -64,19 +69,21 @@
   pacman verification, and the selected-logit zerank scenario passed for
   `lemonade-server 10.6.0-5` and `lemonade-app 10.6.0-4`; the live scenario
   run is recorded at `docs/worklog/inference-runs/20260526T-current-zerank`.
-- llama.cpp b9279 follow-up: the 2026-05-21 closeout freshness gate found
-  upstream `b9279` after the adopted `b9222` backend package lane, with AUR
-  `llama.cpp-hip` at `b9275-1`. Keep this as a coordinated backend refresh:
-  review the release range, update both packaged backends and Lemonade backend
-  metadata, rebuild, deploy/install, run installed backend smokes, and rerun
-  Lemonade service plus affected inference scenarios before adoption.
-- llama.cpp b9305 follow-up: the 2026-05-24 recovery-branch freshness gate
-  found upstream `b9305` after the adopted `b9222` backend package lane, with
-  AUR `llama.cpp-hip` at `b9297-1`. Treat this as superseding the earlier b9279
-  follow-up: review the release range, update both packaged backends and
-  Lemonade backend metadata, rebuild, deploy/install, run installed backend
-  smokes, and rerun Lemonade service plus affected inference scenarios before
+- Lemonade fork 13b1af2 follow-up: the 2026-05-26 freshness gate found
+  `nisavid/lemonade` fork main at
+  `13b1af25f84cf08ad5f8bf0ec58980bdfc09c9e7` after the adopted
+  `b608a74d0604f96786de59d65cb0ba27b05db0c6` package source lane. Review the
+  fork range against the Strix Halo llama.cpp backend integration and app/server
+  package carry, refresh package metadata, build, deploy/install, run installed
+  service smokes, and rerun affected reranking or backend scenarios before
   adoption.
+- llama.cpp b9330 follow-up: the 2026-05-26 freshness gate found upstream
+  `b9330` after the adopted `b9222` backend package lane, with AUR
+  `llama.cpp-hip` at `b9326-1`. Treat this as superseding the earlier `b9279`
+  and `b9305` follow-ups: review the release range, update both packaged
+  backends and Lemonade backend metadata, rebuild, deploy/install, run installed
+  backend smokes, and rerun Lemonade service plus affected inference scenarios
+  before adoption.
 - ROCm PyTorch release/2.12 26872de follow-up: the 2026-05-21 closeout
   freshness gate found `ROCm/pytorch` release/2.12 at
   `26872debb4452ea6dc898288618a15595e2317d9` after the adopted
@@ -84,19 +91,13 @@
   delta against the local patch carry, rebuild PyTorch and affected native
   consumers, deploy/install, and rerun installed GPU plus affected vLLM
   scenario validation before adoption.
-- stable-diffusion.cpp 3a8788c follow-up: the 2026-05-21 closeout freshness
-  gate found upstream master at `3a8788cb7d74f185d6b18688e9563015524ecaf5`
-  after the adopted `caa823a8c06a51288f0a01bb29e9bd8bcec30a8a` package lane.
-  Review the source and submodule delta, refresh package metadata, rebuild
-  with the carried CLIP-G patch, deploy/install, and rerun the installed Vulkan
-  wrapper smoke before adoption.
-- stable-diffusion.cpp a397e03 follow-up: the 2026-05-24 recovery-branch
-  freshness gate found upstream master at
-  `a397e03488cc27e1a42da646b82dfce9f50741c0` after the adopted
-  `caa823a8c06a51288f0a01bb29e9bd8bcec30a8a` package lane. Treat this as
-  superseding the earlier 3a8788c follow-up: review the source and submodule
-  delta, refresh package metadata, rebuild with the carried CLIP-G patch,
-  deploy/install, and rerun the installed Vulkan wrapper smoke before adoption.
+- stable-diffusion.cpp 1ceb5bd follow-up: the 2026-05-26 freshness gate found
+  upstream master at `1ceb5bd9df7784bcdf67dd9ed8bf0198b542ebc9` after the
+  adopted `caa823a8c06a51288f0a01bb29e9bd8bcec30a8a` package lane. Treat this
+  as superseding the earlier `3a8788c` and `a397e03` follow-ups: review the
+  source and submodule delta, refresh package metadata, rebuild with the
+  carried CLIP-G patch, deploy/install, and rerun the installed Vulkan wrapper
+  smoke before adoption.
 - Transformers 5.9.0 follow-up: the 2026-05-21 closeout freshness gate found
   PyPI and upstream tag `transformers 5.9.0` after the current `5.8.1` package
   lane. Review dependency metadata against tokenizers, safetensors, Hugging
