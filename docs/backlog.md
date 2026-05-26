@@ -16,8 +16,8 @@
   `/completion` selected-logit checks, and the packaged Lemonade zerank
   selected-logit scenario passed for the installed b9330-1 plus Lemonade set;
   follow-up build plan `b59627f0` produced the b9330-2 llama.cpp packages after
-  the selected-token bounds guard. The b9330-2 privileged deploy/install,
-  installed-smoke, and live-scenario validation gates remain open.
+  the selected-token bounds guard. Tracked gate: llama.cpp b9330-2
+  deploy/install + installed validation closeout.
 - TheRock 7.13 stable is adopted. Upstream ROCm/TheRock published the stable
   `therock-7.13` release at
   `6d2136cd12be28c6251eb38c700e980c8c2f8cf6`; the generated
