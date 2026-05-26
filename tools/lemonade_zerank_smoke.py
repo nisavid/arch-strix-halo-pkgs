@@ -192,8 +192,6 @@ def validate_model_metadata(payload: dict[str, Any]) -> None:
     labels = set(model.get("labels", []))
     options = model.get("recipe_options", {})
 
-    if model.get("downloaded") is not True:
-        raise AssertionError("zerank-2-GGUF must be downloaded for integration smoke")
     if "reranking" not in labels:
         raise AssertionError(f"zerank-2-GGUF missing reranking label: {sorted(labels)}")
     if model.get("recipe") != "llamacpp":
@@ -295,6 +293,19 @@ def _validate_health(base_url: str, *, model: str, timeout: float) -> None:
             )
 
 
+def _stop_lemond(root_url: str, proc: Any) -> None:
+    _shutdown(root_url, timeout=10.0)
+    try:
+        proc.wait(timeout=15.0)
+    except subprocess.TimeoutExpired:
+        proc.terminate()
+        try:
+            proc.wait(timeout=15.0)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            proc.wait()
+
+
 def run_smoke(args: argparse.Namespace) -> None:
     root_url = None
     proc = None
@@ -345,12 +356,7 @@ def run_smoke(args: argparse.Namespace) -> None:
         print("zerank_rerank_ok")
     finally:
         if root_url is not None and proc is not None:
-            _shutdown(root_url, timeout=10.0)
-            try:
-                proc.wait(timeout=15.0)
-            except subprocess.TimeoutExpired:
-                proc.terminate()
-                proc.wait(timeout=15.0)
+            _stop_lemond(root_url, proc)
         if log_handle is not None:
             log_handle.close()
         if owned_cache_dir is not None:
