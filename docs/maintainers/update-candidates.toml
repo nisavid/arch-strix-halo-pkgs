@@ -158,19 +158,21 @@ baseline_latest = "10.6.0-1"
 previous_recorded = "b608a74d0604f96786de59d65cb0ba27b05db0c6"
 latest = "13b1af25f84cf08ad5f8bf0ec58980bdfc09c9e7"
 discovery_status = "branch_head_ahead"
-disposition = "tracked"
-disposition_reason = "Found during the 2026-05-26 freshness gate after the adopted Lemonade 10.6.0 fork-main package lane. Keep as a separate fork-source refresh because the packages track nisavid/lemonade main directly and still require source-range review, package metadata refresh, package builds, deploy/install, installed service smokes, and affected reranking or llama.cpp backend scenario validation before adoption."
+disposition = "adopted"
+disposition_reason = "Adopted in the 2026-05-26 llama.cpp b9330 and Lemonade runtime closeout. The server and app packages now pin nisavid/lemonade fork main 13b1af25f84cf08ad5f8bf0ec58980bdfc09c9e7, package metadata was refreshed, package build and deploy/install completed, installed Lemonade smokes passed, and the selected-logit zerank scenario passed through the installed packaged server."
 salient_changes = [
-  "nisavid/lemonade fork main moved beyond the adopted b608a74 package source lane",
+  "nisavid/lemonade fork main 13b1af25f84cf08ad5f8bf0ec58980bdfc09c9e7 is adopted as the package source lane",
   "Canonical upstream and AUR Lemonade baselines remain at 10.6.0",
-  "The local package still carries Strix Halo llama.cpp backend integration and Tauri app dependency policy that need review against the new fork range",
+  "The fork range keeps the Strix Halo llama.cpp backend integration intact and hides reranking adapter controls for base llamacpp models",
+  "tools/amerge build plan 46a69d2a built lemonade-server 10.6.0-6 and lemonade-app 10.6.0-5; deploy plan 8e489a2e published and installed them with lemonade 10.6.0-1",
+  "Installed Lemonade CLI/server smokes and lemonade.reranking.zerank-2.selected-logit passed at docs/worklog/inference-runs/20260526T021053-lane4-b9330-closeout",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
-next_gate_label = "Lemonade fork 13b1af2 follow-up"
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Adopted; monitor future Lemonade fork movement through the normal freshness sweep"
 last_reviewed = "2026-05-26"
 
 [candidates."llama-cpp-b9222"]
@@ -255,19 +257,22 @@ baseline_latest = "b9326-1"
 previous_recorded = "b9222 / b9222-3"
 latest = "b9330"
 discovery_status = "stable_update_available"
-disposition = "rejected"
-disposition_reason = "Superseded before package adoption. The active llama.cpp refresh lane is b9333, so this older b9330 candidate should not remain tracked as separate open work."
+disposition = "adopted"
+disposition_reason = "Adopted in the 2026-05-26 llama.cpp b9330 and Lemonade runtime closeout. Both packaged backends were repinned to upstream b9330, the selected-token logits patch was refreshed, Lemonade backend metadata was refreshed to the b9330 system backends, package build and deploy/install completed, installed backend smokes passed, direct /completion selected-logit checks passed for HIP and Vulkan, and the packaged Lemonade zerank selected-logit scenario passed."
 salient_changes = [
-  "GitHub release b9330 is available after the adopted b9222 package lane",
+  "GitHub release b9330 is adopted after the b9222 package lane",
   "AUR llama.cpp-hip baseline has advanced to b9326-1 while the Vulkan baseline remains at b9222-1",
-  "The current candidate supersedes the handoff's b9329 observation from the earlier coordinator snapshot",
+  "The package source pins upstream commit 328874d054e0eb44591202a23c209cf02c18e3cb",
+  "The candidate supersedes the handoff's b9329 observation from the earlier coordinator snapshot",
+  "tools/amerge build plan 46a69d2a built llama.cpp-hip-gfx1151 b9330-1 and llama.cpp-vulkan-gfx1151 b9330-1; deploy plan 8e489a2e published and installed them",
+  "Installed llama.cpp HIP/Vulkan smokes, direct HIP/Vulkan selected-logit /completion checks, and the packaged Lemonade zerank selected-logit scenario passed at docs/worklog/inference-runs/20260526T021053-lane4-b9330-closeout",
 ]
 patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
 next_gate_path = ""
-next_gate_label = "Superseded by llama.cpp b9333 follow-up"
+next_gate_label = "Adopted; monitor future llama.cpp releases through the normal freshness sweep"
 last_reviewed = "2026-05-26"
 
 [candidates."llama-cpp-b9333"]
@@ -277,15 +282,15 @@ source_kind = "github_release"
 check_id = "release"
 baseline_source_kind = "aur"
 baseline_latest = "b9326-1"
-previous_recorded = "b9222 / b9222-3"
+previous_recorded = "b9330 / b9326-1"
 latest = "b9333"
 discovery_status = "stable_update_available"
 disposition = "tracked"
-disposition_reason = "Found during the 2026-05-26 AOCL closeout freshness gate. Keep as the active llama.cpp refresh lane because it supersedes the earlier b9279, b9305, and b9330 candidates and still requires release-range review, both backend package updates, Lemonade backend metadata refresh, package builds, deploy/install, installed backend smokes, Lemonade service smokes, and affected inference scenario validation before adoption."
+disposition_reason = "Found during the 2026-05-26 closeout freshness check after adopting llama.cpp b9330. Keep as a separate follow-up lane so the b9330/Lemonade runtime refresh can close with its completed build, deploy/install, installed-smoke, and selected-logit validation evidence."
 salient_changes = [
-  "GitHub release b9333 is available after the adopted b9222 package lane",
-  "AUR llama.cpp-hip baseline remains at b9326-1 while the Vulkan baseline remains at b9222-1",
-  "The current candidate supersedes the b9330 observation from the earlier 2026-05-26 freshness gate",
+  "GitHub release b9333 is available after the adopted b9330 package lane",
+  "The checker marks this release lane as actionable because the llama.cpp family follows prerelease source movement",
+  "AUR llama.cpp-hip remains at b9326-1 while the Vulkan baseline remains at b9222-1",
 ]
 patch_carry_overlap = true
 package_source_update_needed = true

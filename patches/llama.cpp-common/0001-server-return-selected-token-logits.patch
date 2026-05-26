@@ -1,179 +1,47 @@
---- a/tools/server/server-task.h
-+++ b/tools/server/server-task.h
-@@ -68,6 +68,7 @@
- 
-     std::vector<std::string> antiprompt;
-     std::vector<std::string> response_fields;
-+    std::vector<llama_token> token_logits;
- 
-     bool timings_per_token   = false;
-     bool post_sampling_probs = false;
-@@ -330,6 +331,14 @@
- 
- };
- 
-+struct selected_token_logit_output {
-+    llama_token tok;
-+    std::string txt;
-+    float logit;
-+
-+    json to_json() const;
-+};
-+
- struct server_task_result_cmpl_final : server_task_result {
-     std::string content;
-     llama_tokens tokens;
-@@ -350,6 +359,7 @@
- 
-     bool post_sampling_probs;
-     std::vector<completion_token_output> probs_output;
-+    std::vector<selected_token_logit_output> token_logits_output;
-     std::vector<std::string>  response_fields;
- 
-     task_params generation_params;
---- a/tools/server/server-task.cpp
-+++ b/tools/server/server-task.cpp
-@@ -80,6 +80,7 @@
-             {"timings_per_token",         timings_per_token},
-             {"post_sampling_probs",       post_sampling_probs},
-             {"backend_sampling",          sampling.backend_sampling},
-+            {"token_logits",              token_logits},
-             {"lora",                      lora},
-         };
-     }
-@@ -137,6 +138,7 @@
-         {"timings_per_token",         timings_per_token},
-         {"post_sampling_probs",       post_sampling_probs},
-         {"backend_sampling",          sampling.backend_sampling},
-+        {"token_logits",              token_logits},
-         {"lora",                      lora},
-     };
- }
-@@ -275,6 +277,7 @@
-     //params.t_max_prompt_ms  = json_value(data,       "t_max_prompt_ms",    defaults.t_max_prompt_ms); // TODO: implement
-     params.t_max_predict_ms = json_value(data,       "t_max_predict_ms",   defaults.t_max_predict_ms);
-     params.response_fields  = json_value(data,       "response_fields",    std::vector<std::string>());
-+    params.token_logits     = json_value(data,       "token_logits",       std::vector<llama_token>());
- 
-     params.sampling.top_k              = json_value(data, "top_k",               defaults.sampling.top_k);
-     params.sampling.top_p              = json_value(data, "top_p",               defaults.sampling.top_p);
-@@ -368,6 +371,21 @@
-         params.sampling.dry_base = defaults.sampling.dry_base;
-     }
- 
-+    {
-+        constexpr size_t max_token_logits = 1024;
-+        if (params.token_logits.size() > max_token_logits) {
-+            throw std::runtime_error(
-+                "Error: token_logits must contain at most " + std::to_string(max_token_logits) + " token ids");
-+        }
-+
-+        const int n_vocab = llama_vocab_n_tokens(vocab);
-+        for (const auto token : params.token_logits) {
-+            if (token < 0 || token >= n_vocab) {
-+                throw std::runtime_error("Error: token_logits contains an invalid token id");
-+            }
-+        }
-+    }
-+
-     // sequence breakers for DRY
-     {
-         // Currently, this is not compatible with TextGen WebUI, Koboldcpp and SillyTavern format
-@@ -721,6 +733,17 @@
-     return bytes;
- }
- 
-+json selected_token_logit_output::to_json() const {
-+    std::string txt_valid(txt);
-+    txt_valid.resize(validate_utf8(txt_valid));
-+    return json {
-+        {"id",    tok},
-+        {"token", txt_valid},
-+        {"bytes", completion_token_output::str_to_bytes(txt)},
-+        {"logit", logit},
-+    };
-+}
-+
- //
- // server_task_result_cmpl_final
- //
-@@ -766,6 +789,12 @@
-     if (!stream && !probs_output.empty()) {
-         res["completion_probabilities"] = completion_token_output::probs_vector_to_json(probs_output, post_sampling_probs);
-     }
-+    if (!token_logits_output.empty()) {
-+        res["token_logits"] = json::array();
-+        for (const auto & token_logit : token_logits_output) {
-+            res["token_logits"].push_back(token_logit.to_json());
-+        }
-+    }
-     return response_fields.empty() ? res : json_get_nested_values(response_fields, res);
- }
- 
-@@ -814,6 +843,12 @@
-     if (timings.prompt_n >= 0) {
-         res.push_back({"timings", timings.to_json()});
-     }
-+    if (!token_logits_output.empty()) {
-+        res["token_logits"] = json::array();
-+        for (const auto & token_logit : token_logits_output) {
-+            res["token_logits"].push_back(token_logit.to_json());
-+        }
-+    }
- 
-     return res;
- }
-@@ -862,6 +897,12 @@
-     if (timings.prompt_n >= 0) {
-         res.push_back({"timings", timings.to_json()});
-     }
-+    if (!token_logits_output.empty()) {
-+        res["token_logits"] = json::array();
-+        for (const auto & token_logit : token_logits_output) {
-+            res["token_logits"].push_back(token_logit.to_json());
-+        }
-+    }
- 
-     return res;
- }
+diff --git a/tools/server/server-context.cpp b/tools/server/server-context.cpp
+index ae9e0bf..a46f7b1 100644
 --- a/tools/server/server-context.cpp
 +++ b/tools/server/server-context.cpp
-@@ -93,6 +93,7 @@
+@@ -94,6 +94,7 @@ struct server_slot {
      llama_tokens generated_tokens;
- 
+
      std::vector<completion_token_output> generated_token_probs;
 +    std::vector<selected_token_logit_output> selected_token_logits;
- 
+
      bool has_next_token = true;
      bool has_new_line   = false;
-@@ -199,6 +200,7 @@
+@@ -200,6 +201,7 @@ struct server_slot {
          }
          generated_tokens.clear();
          generated_token_probs.clear();
 +        selected_token_logits.clear();
          json_schema = json();
- 
+
          // clear speculative decoding stats
-@@ -1340,7 +1342,8 @@
+@@ -1473,7 +1475,8 @@ private:
                  return false;
              }
- 
+
 -            const bool need_pre_sample_logits = task.params.sampling.n_probs > 0 && !task.params.post_sampling_probs;
 +            const bool need_pre_sample_logits = (task.params.sampling.n_probs > 0 && !task.params.post_sampling_probs)
 +                    || !task.params.token_logits.empty();
- 
+
              bool backend_sampling = true;
- 
-@@ -1355,1 +1358,4 @@
--            // TODO: getting pre sampling logits is not yet supported with backend sampling
+
+@@ -1482,6 +1485,9 @@ private:
+             // TODO: speculative decoding requires multiple samples per batch - not supported yet
+             backend_sampling &= !(slot.can_speculate());
+
 +            // token_logits must return every requested token id, so keep the
 +            // full-vocabulary logits instead of sampled-candidate logits.
 +            backend_sampling &= task.params.token_logits.empty();
-+            // TODO: getting pre sampling logits is not yet supported with backend sampling
-@@ -1567,6 +1574,25 @@
+             // TODO: getting pre sampling logits is not yet supported with backend sampling
+             backend_sampling &= !need_pre_sample_logits;
+
+@@ -1700,6 +1706,25 @@ private:
          }
      }
- 
+
 +    void populate_selected_token_logits(server_slot & slot, int idx) const {
 +        if (!slot.selected_token_logits.empty() || slot.task->params.token_logits.empty()) {
 +            return;
@@ -196,16 +64,18 @@
      void send_error(const server_task & task, const std::string & error, const enum error_type type = ERROR_TYPE_SERVER) {
          send_error(task.id, error, type);
      }
-@@ -1675,6 +1719,7 @@
+@@ -1808,6 +1833,7 @@ private:
          res->stopping_word         = slot.stopping_word;
          res->stop                  = slot.stop;
          res->post_sampling_probs   = slot.task->params.post_sampling_probs;
 +        res->token_logits_output   = slot.selected_token_logits;
- 
+
          res->verbose           = slot.task->params.verbose;
          res->stream            = slot.task->params.stream;
-@@ -3123,1 +3168,21 @@
--                    // prompt evaluated for next-token prediction
+@@ -3272,6 +3298,26 @@ private:
+
+                     GGML_ASSERT(slot.task->need_sampling());
+
 +                    const int tok_idx = slot.i_batch - i;
 +
 +                    populate_selected_token_logits(slot, tok_idx);
@@ -226,9 +96,157 @@
 +                        continue;
 +                    }
 +
-+                    // prompt evaluated for next-token prediction
-@@ -3139,1 +3218,3 @@
--                llama_token id = common_sampler_sample(slot.smpl.get(), slot.ctx_tgt, tok_idx);
+                     // prompt evaluated for next-token prediction
+                     slot.state = SLOT_STATE_GENERATING;
+
+@@ -3288,6 +3334,8 @@ private:
+
+                 const int tok_idx = slot.i_batch - i;
+
 +                populate_selected_token_logits(slot, tok_idx);
 +
-+                llama_token id = common_sampler_sample(slot.smpl.get(), slot.ctx_tgt, tok_idx);
+                 llama_token id = common_sampler_sample(slot.smpl.get(), slot.ctx_tgt, tok_idx);
+
+                 slot.i_batch = -1;
+diff --git a/tools/server/server-task.cpp b/tools/server/server-task.cpp
+index abc00c8..fc60f2b 100644
+--- a/tools/server/server-task.cpp
++++ b/tools/server/server-task.cpp
+@@ -80,6 +80,7 @@ json task_params::to_json(bool only_metrics) const {
+             {"timings_per_token",         timings_per_token},
+             {"post_sampling_probs",       post_sampling_probs},
+             {"backend_sampling",          sampling.backend_sampling},
++            {"token_logits",              token_logits},
+             {"lora",                      lora},
+         };
+     }
+@@ -137,6 +138,7 @@ json task_params::to_json(bool only_metrics) const {
+         {"timings_per_token",         timings_per_token},
+         {"post_sampling_probs",       post_sampling_probs},
+         {"backend_sampling",          sampling.backend_sampling},
++        {"token_logits",              token_logits},
+         {"lora",                      lora},
+     };
+ }
+@@ -275,6 +277,7 @@ task_params server_task::params_from_json_cmpl(
+     //params.t_max_prompt_ms  = json_value(data,       "t_max_prompt_ms",    defaults.t_max_prompt_ms); // TODO: implement
+     params.t_max_predict_ms = json_value(data,       "t_max_predict_ms",   defaults.t_max_predict_ms);
+     params.response_fields  = json_value(data,       "response_fields",    std::vector<std::string>());
++    params.token_logits     = json_value(data,       "token_logits",       std::vector<llama_token>());
+
+     params.sampling.top_k              = json_value(data, "top_k",               defaults.sampling.top_k);
+     params.sampling.top_p              = json_value(data, "top_p",               defaults.sampling.top_p);
+@@ -368,6 +371,21 @@ task_params server_task::params_from_json_cmpl(
+         params.sampling.dry_base = defaults.sampling.dry_base;
+     }
+
++    {
++        constexpr size_t max_token_logits = 1024;
++        if (params.token_logits.size() > max_token_logits) {
++            throw std::runtime_error(
++                "Error: token_logits must contain at most " + std::to_string(max_token_logits) + " token ids");
++        }
++
++        const int n_vocab = llama_vocab_n_tokens(vocab);
++        for (const auto token : params.token_logits) {
++            if (token < 0 || token >= n_vocab) {
++                throw std::runtime_error("Error: token_logits contains an invalid token id");
++            }
++        }
++    }
++
+     // sequence breakers for DRY
+     {
+         // Currently, this is not compatible with TextGen WebUI, Koboldcpp and SillyTavern format
+@@ -725,6 +743,17 @@ std::vector<unsigned char> completion_token_output::str_to_bytes(const std::stri
+     return bytes;
+ }
+
++json selected_token_logit_output::to_json() const {
++    std::string txt_valid(txt);
++    txt_valid.resize(validate_utf8(txt_valid));
++    return json {
++        {"id",    tok},
++        {"token", txt_valid},
++        {"bytes", completion_token_output::str_to_bytes(txt)},
++        {"logit", logit},
++    };
++}
++
+ //
+ // server_task_result_cmpl_final
+ //
+@@ -770,6 +799,12 @@ json server_task_result_cmpl_final::to_json_non_oaicompat() {
+     if (!stream && !probs_output.empty()) {
+         res["completion_probabilities"] = completion_token_output::probs_vector_to_json(probs_output, post_sampling_probs);
+     }
++    if (!token_logits_output.empty()) {
++        res["token_logits"] = json::array();
++        for (const auto & token_logit : token_logits_output) {
++            res["token_logits"].push_back(token_logit.to_json());
++        }
++    }
+     return response_fields.empty() ? res : json_get_nested_values(response_fields, res);
+ }
+
+@@ -818,6 +853,12 @@ json server_task_result_cmpl_final::to_json_oaicompat() {
+     if (timings.prompt_n >= 0) {
+         res.push_back({"timings", timings.to_json()});
+     }
++    if (!token_logits_output.empty()) {
++        res["token_logits"] = json::array();
++        for (const auto & token_logit : token_logits_output) {
++            res["token_logits"].push_back(token_logit.to_json());
++        }
++    }
+
+     return res;
+ }
+@@ -866,6 +907,12 @@ json server_task_result_cmpl_final::to_json_oaicompat_chat() {
+     if (timings.prompt_n >= 0) {
+         res.push_back({"timings", timings.to_json()});
+     }
++    if (!token_logits_output.empty()) {
++        res["token_logits"] = json::array();
++        for (const auto & token_logit : token_logits_output) {
++            res["token_logits"].push_back(token_logit.to_json());
++        }
++    }
+
+     return res;
+ }
+diff --git a/tools/server/server-task.h b/tools/server/server-task.h
+index 60e216e..2f0d018 100644
+--- a/tools/server/server-task.h
++++ b/tools/server/server-task.h
+@@ -71,6 +71,7 @@ struct task_params {
+
+     std::vector<std::string> antiprompt;
+     std::vector<std::string> response_fields;
++    std::vector<llama_token> token_logits;
+
+     bool timings_per_token   = false;
+     bool post_sampling_probs = false;
+@@ -333,6 +334,14 @@ struct completion_token_output {
+
+ };
+
++struct selected_token_logit_output {
++    llama_token tok;
++    std::string txt;
++    float logit;
++
++    json to_json() const;
++};
++
+ struct server_task_result_cmpl_final : server_task_result {
+     std::string content;
+     llama_tokens tokens;
+@@ -353,6 +362,7 @@ struct server_task_result_cmpl_final : server_task_result {
+
+     bool post_sampling_probs;
+     std::vector<completion_token_output> probs_output;
++    std::vector<selected_token_logit_output> token_logits_output;
+     std::vector<std::string>  response_fields;
+
+     task_params generation_params;

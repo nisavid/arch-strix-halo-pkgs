@@ -410,8 +410,8 @@ packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"]
 priority = "high"
 workflow = "upstream_source_update"
 checks = [
-  { id = "release", role = "primary", kind = "github_release", repo = "ggml-org/llama.cpp", recorded = "b9222", comparison = "prefixed_integer" },
-  { id = "aur-hip", role = "baseline", kind = "aur", package = "llama.cpp-hip", recorded = "b9222-3", comparison = "pkgver" },
+  { id = "release", role = "primary", kind = "github_release", repo = "ggml-org/llama.cpp", recorded = "b9330", comparison = "prefixed_integer" },
+  { id = "aur-hip", role = "baseline", kind = "aur", package = "llama.cpp-hip", recorded = "b9326-1", comparison = "pkgver" },
   { id = "aur-vulkan", role = "baseline", kind = "aur", package = "llama.cpp-vulkan-bin", recorded = "b9222-1", comparison = "pkgver" },
 ]
 source_contracts = [
@@ -438,7 +438,7 @@ packages = ["lemonade-server", "lemonade-app", "lemonade"]
 priority = "medium"
 workflow = "upstream_source_update"
 checks = [
-  { id = "fork-main", role = "primary", kind = "git_ref", repo = "https://github.com/nisavid/lemonade.git", ref = "refs/heads/main", recorded = "b608a74d0604f96786de59d65cb0ba27b05db0c6", comparison = "sha" },
+  { id = "fork-main", role = "primary", kind = "git_ref", repo = "https://github.com/nisavid/lemonade.git", ref = "refs/heads/main", recorded = "13b1af25f84cf08ad5f8bf0ec58980bdfc09c9e7", comparison = "sha" },
   { id = "upstream-release", role = "baseline", kind = "github_release", repo = "lemonade-sdk/lemonade", recorded = "10.6.0", tag_prefix = "v", comparison = "pep440" },
   { id = "aur-server", role = "baseline", kind = "aur", package = "lemonade-server", recorded = "10.6.0-1", comparison = "pkgver" },
   { id = "aur-desktop", role = "baseline", kind = "aur", package = "lemonade-desktop", recorded = "10.6.0-1", comparison = "pkgver" },

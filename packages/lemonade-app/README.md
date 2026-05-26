@@ -36,7 +36,7 @@ Reinstalling at compatible versions resolves conflicts.
 - Carry a local Tauri Cargo patch that keeps the direct Linux glib dependency on the webkit2gtk-compatible 0.18 series until upstream's glib 0.20 bump builds cleanly.
 - Route Cargo and npm caches into the package build tree so the Tauri build does not depend on user-local cache state.
 - Install a /usr/bin/lemonade-app wrapper that launches the packaged Tauri binary from /usr/share/lemonade-app so the shipped desktop entry resolves on PATH.
-- Pinned to nisavid/lemonade main commit b608a74d0604f96786de59d65cb0ba27b05db0c6, whose CMake project version is 10.6.0.
+- Pinned to nisavid/lemonade main commit 13b1af25f84cf08ad5f8bf0ec58980bdfc09c9e7, whose CMake project version is 10.6.0.
 
 ## Intentional Divergences
 
@@ -47,6 +47,7 @@ Reinstalling at compatible versions resolves conflicts.
 
 - Track the nisavid/lemonade fork's main branch as the package source lane; use the closest desktop/app packages as packaging baselines only.
 - Keep the provides/conflicts story accurate while Arch/AUR naming remains in transition.
+- On 2026-05-26, adopted nisavid/lemonade fork main 13b1af25f84cf08ad5f8bf0ec58980bdfc09c9e7 so base llamacpp model options do not show reranking adapter controls.
 
 ## Maintainer Starting Points
 

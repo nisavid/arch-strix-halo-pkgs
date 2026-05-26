@@ -7,7 +7,7 @@
 - Scaffold template: `llama-cpp`
 - Recipe build method: `cmake`
 - Upstream repo: `https://github.com/ggml-org/llama.cpp.git`
-- Package version: `b9222`
+- Package version: `b9330`
 - Recipe revision: `3f15f9f (20260508, 17 commits touching recipe path)`
 - Recipe steps: `34`
 - Recipe dependencies: `therock`
@@ -71,6 +71,7 @@ binaries find their shared libraries without LD_LIBRARY_PATH.
 - On 2026-05-14, adopted upstream llama.cpp b9145 at 9ed6e19b9d7e14a71a19622287b2dcd495a828b8. The b9101..b9145 range includes shared runtime/server changes, speculative parallel drafting support, modalities surfaced from /v1/models, cpp-httplib 0.44.0, ggml/CMake updates, and Vulkan asymmetric FlashAttention and shared-memory checks, so the Vulkan package follows the same source snapshot as the HIP backend.
 - On 2026-05-15, adopted upstream llama.cpp b9165 at 769cc93a43b51bf6013986180c73ee60cf24cede. The b9145..b9165 range includes HIP RDNA3 MMA/transpose tuning, Vulkan integer pipeline selection, WebUI streaming/error handling, Codex CLI Responses-tool compatibility, Qwen tokenizer handling, and release-archive fixes, so the Vulkan package follows the same source snapshot as the HIP backend.
 - On 2026-05-19, adopted upstream llama.cpp b9222 at 9a532ae4bab1b164052ce60a738f78538b421c66. The b9165..b9222 range includes ggml 0.12.0, MTP support, server/Web UI updates, Vulkan BF16/ROPE/SSM pipeline work, and removal of the old Hugging Face cache migration path, so the Vulkan package follows the same source snapshot as the HIP backend.
+- On 2026-05-26, adopted upstream llama.cpp b9330 at 328874d054e0eb44591202a23c209cf02c18e3cb. The b9222..b9330 range includes shared server MTP and draft-resource fixes, prompt token counts in /slots, CMake/UI build refactors, ggml 0.13.0, Vulkan im2col and snake activation updates, and backend probe fixes including ffn_latent MUL_MAT classification, so the Vulkan package follows the same source snapshot as the HIP backend.
 - Until then, compare runtime/package expectations against the -bin package and source-build conventions against aur/llama.cpp.
 
 ## Maintainer Starting Points
