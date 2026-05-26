@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 from pathlib import Path
 import sys
 
@@ -12,6 +13,7 @@ if str(TOOLS_DIR) not in sys.path:
     sys.path.insert(0, str(TOOLS_DIR))
 
 from lemonade_zerank_smoke import (
+    _start_lemond,
     _error_payload_message,
     _scores_by_document,
     validate_arithmetic_fixture,
@@ -127,3 +129,33 @@ def test_scores_by_document_rejects_duplicate_and_out_of_range_indices():
             },
             documents,
         )
+
+
+def test_start_lemond_cleans_owned_resources_when_launch_fails(tmp_path, monkeypatch):
+    server_log = tmp_path / "server.log"
+    cache_dir = tmp_path / "owned-cache"
+
+    def fake_mkdtemp(*args, **kwargs):
+        cache_dir.mkdir()
+        return str(cache_dir)
+
+    def fail_popen(*args, **kwargs):
+        raise OSError("cannot launch")
+
+    monkeypatch.setattr("lemonade_zerank_smoke.tempfile.mkdtemp", fake_mkdtemp)
+    monkeypatch.setattr("lemonade_zerank_smoke.subprocess.Popen", fail_popen)
+    args = argparse.Namespace(
+        port=12345,
+        host="127.0.0.1",
+        cache_dir=None,
+        server_log=server_log,
+        llama_server="/missing/llama-server",
+        lemond="/missing/lemond",
+    )
+
+    with pytest.raises(OSError, match="cannot launch"):
+        _start_lemond(args)
+
+    assert server_log.exists()
+    assert server_log.read_text() == ""
+    assert not cache_dir.exists()

@@ -152,9 +152,12 @@ def test_prepared_source_contains_zerank_selected_logit_adapter():
     adapter_header = (
         SOURCE_TREE / "src/cpp/include/lemon/backends/llamacpp_reranking_adapter.h"
     )
-    for path in (server_models, adapter, adapter_header):
-        if not path.exists():
-            pytest.skip("prepared lemonade source is incomplete")
+    missing_paths = [path for path in (server_models, adapter, adapter_header) if not path.exists()]
+    if missing_paths:
+        pytest.fail(
+            "prepared lemonade source is incomplete; missing "
+            + ", ".join(str(path) for path in missing_paths)
+        )
 
     models_text = server_models.read_text()
     adapter_text = adapter.read_text()

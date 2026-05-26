@@ -136,20 +136,27 @@ def _start_lemond(args: argparse.Namespace) -> tuple[subprocess.Popen, Path | No
     env["LEMONADE_NO_BROADCAST"] = "true"
     env["LEMONADE_LLAMACPP_ROCM_BIN"] = args.llama_server
     env["LEMONADE_LLAMACPP_ROCM_LABEL"] = "System llama-server-hip-gfx1151"
-    proc = subprocess.Popen(
-        [
-            args.lemond,
-            str(cache_dir),
-            "--host",
-            args.host,
-            "--port",
-            str(args.port),
-        ],
-        stdout=stdout,
-        stderr=subprocess.STDOUT,
-        text=True,
-        env=env,
-    )
+    try:
+        proc = subprocess.Popen(
+            [
+                args.lemond,
+                str(cache_dir),
+                "--host",
+                args.host,
+                "--port",
+                str(args.port),
+            ],
+            stdout=stdout,
+            stderr=subprocess.STDOUT,
+            text=True,
+            env=env,
+        )
+    except Exception:
+        if log_handle is not None:
+            log_handle.close()
+        if owned_cache_dir:
+            shutil.rmtree(cache_dir, ignore_errors=True)
+        raise
     print("isolated_server_started")
     return proc, cache_dir if owned_cache_dir else None, log_handle
 
