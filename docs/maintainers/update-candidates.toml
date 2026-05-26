@@ -32,12 +32,12 @@ previous_recorded = "5.2.2"
 latest = "5.3"
 discovery_status = "stable_update_available"
 disposition = "adopted"
-disposition_reason = "Adopted on 2026-05-26 alongside AOCL-Utils 5.3.0. Source metadata now tracks AOCL-LibM 5.3, the SCons amdclang compatibility patch was refreshed for the 5.3 source layout, final package build plan 0045fab5 produced aocl-libm-gfx1151 5.3-1 with symlink-preserving header installation, deploy plan ae011f92 installed it with aocl-utils-gfx1151 5.3.0-1, the published local repo contains the rebuilt AOCL-LibM archive and AOCL-Utils artifact, the installed runtime smoke loaded libalm.so through libau_cpuid.so and validated amd_sin, and the downstream stable-diffusion.cpp Vulkan wrapper startup smokes passed."
+disposition_reason = "Adopted on 2026-05-26 alongside AOCL-Utils 5.3.0. Source metadata now tracks AOCL-LibM 5.3, the SCons amdclang compatibility patch was refreshed for the 5.3 source layout, final package build plan 0045fab5 produced aocl-libm-gfx1151 5.3-1 with the symlink-preserving header install command, deploy plan ae011f92 installed it with aocl-utils-gfx1151 5.3.0-1, the published local repo contains the rebuilt AOCL-LibM archive and AOCL-Utils 5.3 artifact, the installed runtime smoke loaded libalm.so through libau_cpuid.so and validated amd_sin, and the downstream stable-diffusion.cpp Vulkan wrapper startup smokes passed."
 salient_changes = [
   "AOCL-LibM 5.3 is adopted after the previous 5.2.2 package lane",
   "The package remains a downstream math library for local optimized packages and is intentionally not linked into CPython directly",
   "AOCL-LibM 5.3 expands the AVX-512 source and header layout while preserving symlinked upstream headers through the package's manual libalm/header install shape",
-  "Package build, deploy/install, published-repo verification, installed libalm runtime smoke, and downstream stable-diffusion.cpp Vulkan wrapper smokes passed",
+  "Final package build, deploy/install, rebuilt-archive publish, installed libalm runtime smoke, and downstream stable-diffusion.cpp Vulkan wrapper smokes passed",
 ]
 patch_carry_overlap = true
 package_source_update_needed = false

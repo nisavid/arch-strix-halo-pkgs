@@ -17,8 +17,7 @@ header install command. Deploy plan `ae011f92` installed both packages on the
 reference host, and `pacman -Q` reports
 `aocl-utils-gfx1151 5.3.0-1` and `aocl-libm-gfx1151 5.3-1`. The published
 `strix-halo-gfx1151` repo database contains the rebuilt AOCL-LibM archive and
-AOCL-Utils archive alongside the current `lemonade 10.6.0-1`, `lemonade-app
-10.6.0-5`, `lemonade-server 10.6.0-6`, and both llama.cpp `b9330-1` artifacts.
+AOCL-Utils archive.
 
 Installed smoke coverage passed. `pkg-config --modversion aocl-utils` reports
 `5.3.0`; the installed AOCL-LibM runtime test loaded `/usr/lib/libalm.so`,
@@ -164,10 +163,10 @@ with URL construction. Affected consumer smokes passed for `aiohttp 3.13.5`,
 live scenario
 `vllm.qwen3_5.0_8b.text.basic` passed at
 `docs/worklog/inference-runs/20260526T-lane2-duckdb-yarl-httptools-host`.
-The final full freshness check `tools/check_package_updates.py --json
---fail-on actionable` exited `0` with effective counts of 19 adopted update
-candidates, 17 current families, 2 rejected update candidates, and 7 tracked
-update candidates.
+The native-wheel closeout freshness check `tools/check_package_updates.py
+--json --fail-on actionable` exited `0` with effective counts of 19 adopted
+update candidates, 17 current families, 2 rejected update candidates, and 7
+tracked update candidates.
 
 The 2026-05-26 freshness gate supersedes the coordinator snapshot for the
 Lemonade cursor and llama.cpp release. AOCL-LibM, AOCL-Utils,
@@ -177,8 +176,8 @@ work. The live llama.cpp result supersedes the coordinator handoff's earlier
 `b9329` observation and the later `b9330` observation. After the AOCL and
 llama.cpp candidate dispositions were updated,
 `tools/check_package_updates.py --refresh --json --fail-on actionable` exited
-`0` at 2026-05-26 02:40:22 EDT with effective counts of 18 adopted update
-candidates, 17 current families, 2 rejected update candidates, and 8 tracked
+`0` at 2026-05-26 02:55:07 EDT with effective counts of 21 adopted update
+candidates, 17 current families, 2 rejected update candidates, and 5 tracked
 update candidates.
 
 The active tracked update-candidate set is now: Lemonade fork 13b1af2
