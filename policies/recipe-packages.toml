@@ -2158,7 +2158,7 @@ scaffold_notes = [
 [packages."stable-diffusion.cpp-vulkan-gfx1151"]
 recipe_key = "stable_diffusion_cpp"
 template = "stable-diffusion-cpp"
-upstream_version = "r629.gcaa823a"
+upstream_version = "r650.g1ceb5bd"
 pkgdesc = "stable-diffusion.cpp Vulkan backend rebuilt for Strix Halo gfx1151"
 url = "https://github.com/leejet/stable-diffusion.cpp"
 license = ["MIT"]
@@ -2176,20 +2176,18 @@ update_notes = [
   "When updating the pinned commit, re-check that 0001-sdxl-clipg-prefix-mapping.patch still applies and still guards the SDXL diffusers CLIP-G load path.",
   "After publish/install, smoke sd-cli-vulkan-gfx1151 and sd-server-vulkan-gfx1151 with --help or equivalent no-model startup checks before any model-generation validation claim.",
   "On 2026-05-15, adopted upstream master at 0b8296915c4094090cff6bd2e09a5e98288c3c7d for MultiLora handling, flow-model sampler behavior, max-VRAM segmented parameter offload support, HiDream O1 image support, model-weight mmap support, Euler CFG++ sampler support, WebP/WebM pkg-config handling, and server URL display cleanup.",
-  "On 2026-05-19, adopted upstream master at caa823a8c06a51288f0a01bb29e9bd8bcec30a8a for LTX 2.3 support, Gradient Estimation sampler support, negative max_vram spare-VRAM budgeting, module backend assignment, restored LLM singleton dimensions, and ROCm 7.13 CI target updates."
+  "On 2026-05-19, adopted upstream master at caa823a8c06a51288f0a01bb29e9bd8bcec30a8a for LTX 2.3 support, Gradient Estimation sampler support, negative max_vram spare-VRAM budgeting, module backend assignment, restored LLM singleton dimensions, and ROCm 7.13 CI target updates.",
+  "On 2026-05-26, adopted upstream master at 1ceb5bd9df7784bcdf67dd9ed8bf0198b542ebc9 for LTX temporal and rational latent upscaling, Longcat image/edit support, highres custom sigma and VAE tiling arguments, TAESD preview fixes, macOS rpath fixes, and Windows ROCm BLAS artifact packaging."
 ]
 recipe_notes_override = """
 This package supplies stable-diffusion.cpp as the Blackcat Vulkan image
 generation engine for the Strix Halo stack. The source follows
 leejet/stable-diffusion.cpp master at
-`caa823a8c06a51288f0a01bb29e9bd8bcec30a8a` (`r629.gcaa823a`).
-The reviewed range includes runtime backend discovery, VAE buffer lifetime
-cleanup, image metadata output, tensor-to-image conversion speed work, flow
-sampler improvements, max-VRAM segmented parameter offload support,
-HiDream O1 image support, model-weight mmap support, Euler CFG++ sampler
-support, WebP/WebM pkg-config handling, LTX 2.3 support, Gradient Estimation
-sampler support, negative max_vram spare-VRAM budgeting, module backend
-assignment, and ROCm 7.13 CI target updates.
+`1ceb5bd9df7784bcdf67dd9ed8bf0198b542ebc9` (`r650.g1ceb5bd`).
+The current source includes LTX temporal and rational latent upscaling,
+LTX audio and VAE decoding improvements, highres custom sigma support,
+extra VAE tiling arguments, Longcat image/edit support, TAESD preview fixes,
+macOS rpath fixes, and Windows ROCm BLAS artifact packaging.
 
 The package builds the Vulkan backend with ggml, WebP, WebM, and server frontend
 inputs modeled as explicit package sources and staged into the upstream
@@ -2209,11 +2207,11 @@ provides = ["stable-diffusion.cpp-vulkan-gfx1151", "stable-diffusion.cpp-vulkan"
 conflicts = ["stable-diffusion.cpp-vulkan"]
 depends = ["aocl-libm-gfx1151", "gcc-libs", "glibc", "vulkan-icd-loader"]
 makedepends = ["cmake", "git", "ninja", "patchelf", "pnpm", "rocm-llvm-gfx1151", "shaderc", "spirv-headers", "vulkan-headers"]
-source_refs = ["stable-diffusion.cpp::git+https://github.com/leejet/stable-diffusion.cpp.git#commit=caa823a8c06a51288f0a01bb29e9bd8bcec30a8a"]
+source_refs = ["stable-diffusion.cpp::git+https://github.com/leejet/stable-diffusion.cpp.git#commit=1ceb5bd9df7784bcdf67dd9ed8bf0198b542ebc9"]
 sha256sums = ["SKIP"]
 src_subdir = "stable-diffusion.cpp"
 upstream_name = "stable-diffusion.cpp"
-upstream_revision = "caa823a8c06a51288f0a01bb29e9bd8bcec30a8a"
+upstream_revision = "1ceb5bd9df7784bcdf67dd9ed8bf0198b542ebc9"
 baseline_kind = "closest-upstream"
 patches_dir = "packages/stable-diffusion.cpp-vulkan-gfx1151"
 source_patches = ["0001-sdxl-clipg-prefix-mapping.patch"]
@@ -2224,7 +2222,7 @@ extra_sources = [
   "libwebp::git+https://github.com/webmproject/libwebp.git#commit=0c9546f7efc61eac7f79ae115c3f99c91c21c443",
   "0001-sdxl-clipg-prefix-mapping.patch"
 ]
-extra_sha256sums = ["SKIP", "SKIP", "SKIP", "SKIP", "ef8e1abd394f164998126a629003ed6c3578458a57c94ee420440caa051f128a"]
+extra_sha256sums = ["SKIP", "SKIP", "SKIP", "SKIP", "9e6040eceb97ec26252d9081d952f413d317e9682e0500d029b15bf8c2dfa03b"]
 recipe_patch_file_rewrites."patches/sdcpp-sdxl-clipg-prefix.patch" = "0001-sdxl-clipg-prefix-mapping.patch"
 scaffold_notes = [
   "Blackcat Vulkan engine lane for local image generation; this is an engine package, not a Python wheel.",

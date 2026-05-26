@@ -423,7 +423,7 @@ packages = ["stable-diffusion.cpp-vulkan-gfx1151"]
 priority = "medium"
 workflow = "upstream_source_update"
 checks = [
-  { id = "master", role = "primary", kind = "git_ref", repo = "https://github.com/leejet/stable-diffusion.cpp.git", ref = "refs/heads/master", recorded = "caa823a8c06a51288f0a01bb29e9bd8bcec30a8a", comparison = "sha" },
+  { id = "master", role = "primary", kind = "git_ref", repo = "https://github.com/leejet/stable-diffusion.cpp.git", ref = "refs/heads/master", recorded = "1ceb5bd9df7784bcdf67dd9ed8bf0198b542ebc9", comparison = "sha" },
   { id = "aur-vulkan", role = "baseline", kind = "aur", package = "stable-diffusion.cpp-vulkan-git", recorded = "r279.49d6570-1", comparison = "pkgver" },
 ]
 source_contracts = [

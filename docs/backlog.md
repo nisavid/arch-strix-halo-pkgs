@@ -71,8 +71,8 @@
   pacman verification, and the selected-logit zerank scenario passed for
   `lemonade-server 10.6.0-5` and `lemonade-app 10.6.0-4`; the live scenario
   run is recorded at `docs/worklog/inference-runs/20260526T-current-zerank`.
-- llama.cpp b9333 follow-up: the 2026-05-26 closeout freshness check found
-  upstream `b9333` after the adopted `b9330` package lane, while the AUR HIP
+- llama.cpp b9334 follow-up: the 2026-05-26 closeout freshness check found
+  upstream `b9334` after the adopted `b9330` package lane, while the AUR HIP
   baseline remains at `b9326-1` and the Vulkan baseline remains at `b9222-1`.
   Treat this as a separate llama.cpp refresh lane: review the release range,
   update both packaged backends and Lemonade backend metadata, rebuild,
@@ -85,13 +85,13 @@
   delta against the local patch carry, rebuild PyTorch and affected native
   consumers, deploy/install, and rerun installed GPU plus affected vLLM
   scenario validation before adoption.
-- stable-diffusion.cpp 1ceb5bd follow-up: the 2026-05-26 freshness gate found
-  upstream master at `1ceb5bd9df7784bcdf67dd9ed8bf0198b542ebc9` after the
-  adopted `caa823a8c06a51288f0a01bb29e9bd8bcec30a8a` package lane. Treat this
-  as superseding the earlier `3a8788c` and `a397e03` follow-ups: review the
-  source and submodule delta, refresh package metadata, rebuild with the
-  carried CLIP-G patch, deploy/install, and rerun the installed Vulkan wrapper
-  smoke before adoption.
+- The stable-diffusion.cpp 1ceb5bd follow-up is adopted.
+  `stable-diffusion.cpp-vulkan-gfx1151` now tracks upstream master
+  `1ceb5bd9df7784bcdf67dd9ed8bf0198b542ebc9` as `r650.g1ceb5bd-1`.
+  Source verification, package build plan `3a354f90`, local repo publication,
+  deploy/install, and installed `sd-cli-vulkan-gfx1151 --help` plus
+  `sd-server-vulkan-gfx1151 --help` smokes passed on 2026-05-26. No
+  model-generation validation is claimed.
 - Transformers 5.9.0 follow-up: the 2026-05-21 closeout freshness gate found
   PyPI and upstream tag `transformers 5.9.0` after the current `5.8.1` package
   lane. Review dependency metadata against tokenizers, safetensors, Hugging
