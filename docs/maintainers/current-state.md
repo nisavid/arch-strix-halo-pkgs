@@ -37,19 +37,22 @@ adopted package surfaces from tracked, rejected, and blocked future lanes. This
 spec did not update package source refs, rebuild packages, deploy or install
 artifacts, run installed smokes, or run live inference scenarios.
 
-The llama.cpp b9330 and Lemonade fork `13b1af2` refresh is adopted,
-installed, and live-validated. Both packaged llama.cpp backends render from
-upstream `b9330` commit `328874d054e0eb44591202a23c209cf02c18e3cb` as
-`llama.cpp-hip-gfx1151 b9330-1` and
-`llama.cpp-vulkan-gfx1151 b9330-1`, with the shared
+The llama.cpp b9330 and Lemonade fork `13b1af2` refresh is source-updated and
+partially host-validated, with a rebuilt llama.cpp package release still
+awaiting privileged deploy/install. Both packaged llama.cpp backends render
+from upstream `b9330` commit
+`328874d054e0eb44591202a23c209cf02c18e3cb` as
+`llama.cpp-hip-gfx1151 b9330-2` and
+`llama.cpp-vulkan-gfx1151 b9330-2`, with the shared
 `0001-server-return-selected-token-logits.patch` applied during `prepare()`.
 The patch adds a generic `/completion` `token_logits` request field, disables
 backend sampled-candidate logits when `token_logits` is requested, returns
 prompt-final selected logits when `n_predict` leaves no generation budget,
-serializes selected-logit `token` as validated UTF-8 while preserving original
-token bytes in `bytes`, and caps each request at 1024 selected token IDs.
-`lemonade-server` and `lemonade-app` render from `nisavid/lemonade` fork main
-commit `13b1af25f84cf08ad5f8bf0ec58980bdfc09c9e7` as
+validates selected token IDs before reading the logits buffer, serializes
+selected-logit `token` as validated UTF-8 while preserving original token bytes
+in `bytes`, and caps each request at 1024 selected token IDs. `lemonade-server`
+and `lemonade-app` render from `nisavid/lemonade` fork main commit
+`13b1af25f84cf08ad5f8bf0ec58980bdfc09c9e7` as
 `lemonade-server 10.6.0-6` and `lemonade-app 10.6.0-5`; the `lemonade` meta
 package remains `10.6.0-1`.
 
@@ -59,19 +62,28 @@ now points at the b9330 packaged backends; and the app package follows the fork
 change that hides reranking adapter controls for base llamacpp models. Package
 built: `tools/amerge` build plan `46a69d2a` completed for
 `lemonade-server`, `lemonade-app`, both llama.cpp backends, and `lemonade`,
-producing the versions listed above. Deployed/installed: deploy plan
-`8e489a2e` published those artifacts to the `strix-halo-gfx1151` local repo
-and installed them; `pacman -Q` and `pacman -Sl strix-halo-gfx1151` both report
-the expected installed versions. Installed-smoked and live-scenario validated:
+producing the Lemonade versions listed above and the initial b9330-1 llama.cpp
+packages; follow-up build plan `b59627f0` produced
+`llama.cpp-hip-gfx1151 b9330-2` and `llama.cpp-vulkan-gfx1151 b9330-2` after
+the selected-token bounds guard. Deployed/installed: deploy plan `8e489a2e`
+published and installed the Lemonade artifacts and the initial b9330-1 llama.cpp
+packages; the b9330-2 llama.cpp deploy/install gate remains open after the
+latest noninteractive deploy attempt stopped at the sudo password boundary.
+Current `pacman -Q` and `pacman -Sl strix-halo-gfx1151` evidence still reports
+`llama.cpp-hip-gfx1151 b9330-1`, `llama.cpp-vulkan-gfx1151 b9330-1`,
+`lemonade-server 10.6.0-6`, `lemonade-app 10.6.0-5`, and `lemonade 10.6.0-1`.
+Installed-smoked and live-scenario validated: the installed b9330-1 plus
+Lemonade package set passed
 `python tools/run_inference_scenarios.py --scenario llama.cpp.hip.help
 --scenario llama.cpp.vulkan.help --scenario lemonade.cli.help --scenario
 lemonade.server.help --scenario lemonade.reranking.zerank-2.selected-logit
 --run-root docs/worklog/inference-runs/20260526T021053-lane4-b9330-closeout`
-passed with five scenarios and zero failures. Direct HIP and Vulkan
-`/completion` smokes against the tiny GGUF fixture returned finite
-`token_logits` for requested IDs `[0, 1, 2]` with `n_predict: 0`, included both
-`token` and `bytes` fields, and rejected 1025 requested IDs with HTTP 400 and
-the 1024-token cap message.
+with five scenarios and zero failures. Direct HIP and Vulkan `/completion`
+smokes against the tiny GGUF fixture returned finite `token_logits` for
+requested IDs `[0, 1, 2]` with `n_predict: 0`, included both `token` and
+`bytes` fields, and rejected 1025 requested IDs with HTTP 400 and the
+1024-token cap message. The b9330-2 installed-smoke and live-scenario gates
+remain open until the privileged deploy/install step completes.
 
 
 
@@ -176,14 +188,13 @@ and stable-diffusion.cpp `3a8788c` and `a397e03` candidates are rejected in the
 ledger rather than left as active tracked work. The 2026-05-26 package refresh
 adopts the Lemonade fork `13b1af2` lane through source update, package build,
 deploy/install, installed smoke, and live-scenario validation. The llama.cpp
-b9330 lane is captured by the package refresh above, and the closeout refresh
-check then found upstream llama.cpp b9333 as the next llama.cpp follow-up
-rather than folding it into the b9330 build. After recording that disposition,
-`tools/check_package_updates.py --refresh --json --fail-on actionable` exited
-`0`. The rebased branch was rechecked with
-`tools/check_package_updates.py --json --fail-on actionable`, also exited `0`,
-and reported six tracked, two rejected, twenty adopted, and seventeen current
-families in the effective summary.
+b9330 lane is source-updated and package-built as b9330-2; its final
+deploy/install, installed-smoke, and live-scenario validation gates remain
+open. The closeout refresh check then found upstream llama.cpp b9333 as the
+next llama.cpp follow-up rather than folding it into the b9330 build. After
+recording that disposition, `tools/check_package_updates.py --refresh --json
+--fail-on actionable` exited `0`. The branch needs a final post-rebase
+freshness check after the AOCL and llama.cpp evidence is combined.
 
 The 2026-05-26 Quark/AWQ/GPTQ/bitsandbytes/xFormers/FBGEMM candidate triage is
 also docs-only source audit. It does not implement packages, change package

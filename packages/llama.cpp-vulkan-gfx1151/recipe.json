@@ -70,7 +70,7 @@
     ],
     "patches_dir": "patches/llama.cpp-common",
     "pkgdesc": "llama.cpp Vulkan backend rebuilt for Strix Halo gfx1151",
-    "pkgrel": 1,
+    "pkgrel": 2,
     "provides": [
       "llama.cpp-vulkan-gfx1151",
       "llama.cpp-vulkan"

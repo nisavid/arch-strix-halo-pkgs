@@ -6,7 +6,7 @@
 
 pkgname=llama.cpp-hip-gfx1151
 pkgver=b9330
-pkgrel=1
+pkgrel=2
 pkgdesc='llama.cpp ROCm backend rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://github.com/ggml-org/llama.cpp

@@ -2,19 +2,22 @@
 
 ## Packaging And Build Hygiene
 
-- The llama.cpp b9330 and Lemonade fork `13b1af2` refresh is adopted. Both
-  packaged llama.cpp backends render from upstream b9330 as `b9330-1` and carry
-  the shared generic `/completion` `token_logits` patch that returns requested
-  raw token logits, preserves original token bytes, and caps each request at
-  1024 selected token IDs. `lemonade-server 10.6.0-6` and
-  `lemonade-app 10.6.0-5` render from `nisavid/lemonade` fork main
+- The llama.cpp b9330 and Lemonade fork `13b1af2` refresh is source-updated and
+  partly host-validated. Both packaged llama.cpp backends render from upstream
+  b9330 as `b9330-2` and carry the shared generic `/completion` `token_logits`
+  patch that validates selected token IDs, returns requested raw token logits,
+  preserves original token bytes, and caps each request at 1024 selected token
+  IDs. `lemonade-server 10.6.0-6` and `lemonade-app 10.6.0-5` render from
+  `nisavid/lemonade` fork main
   `13b1af25f84cf08ad5f8bf0ec58980bdfc09c9e7`, while `lemonade` remains
   `10.6.0-1`. Recipe render, package-local tests, package build plan
   `46a69d2a`, deploy/install plan `8e489a2e`, published/installed pacman
   verification, HIP/Vulkan/Lemonade installed smokes, direct HIP/Vulkan
   `/completion` selected-logit checks, and the packaged Lemonade zerank
-  selected-logit scenario passed; the scenario run is recorded at
-  `docs/worklog/inference-runs/20260526T021053-lane4-b9330-closeout`.
+  selected-logit scenario passed for the installed b9330-1 plus Lemonade set;
+  follow-up build plan `b59627f0` produced the b9330-2 llama.cpp packages after
+  the selected-token bounds guard. The b9330-2 privileged deploy/install,
+  installed-smoke, and live-scenario validation gates remain open.
 - TheRock 7.13 stable is adopted. Upstream ROCm/TheRock published the stable
   `therock-7.13` release at
   `6d2136cd12be28c6251eb38c700e980c8c2f8cf6`; the generated
