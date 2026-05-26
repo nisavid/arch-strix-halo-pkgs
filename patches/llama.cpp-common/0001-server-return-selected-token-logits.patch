@@ -38,11 +38,14 @@ index ae9e0bf..a46f7b1 100644
              // TODO: getting pre sampling logits is not yet supported with backend sampling
              backend_sampling &= !need_pre_sample_logits;
 
-@@ -1700,6 +1706,29 @@ private:
+@@ -1700,6 +1706,32 @@ private:
          }
      }
 
 +    void populate_selected_token_logits(server_slot & slot, int idx) const {
++        // The completion API exposes a flat token_logits array for the first
++        // available next-token distribution. Generation requests keep this
++        // prompt-final distribution instead of appending later token positions.
 +        if (!slot.selected_token_logits.empty() || slot.task->params.token_logits.empty()) {
 +            return;
 +        }

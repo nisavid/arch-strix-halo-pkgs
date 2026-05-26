@@ -55,7 +55,8 @@ becomes durable, prefer a named patch that another maintainer can review.
 
 - [Shared HIP/Vulkan selected-token logits server extension](../patches/llama.cpp-common/0001-server-return-selected-token-logits.patch)
   - Adds a generic `/completion` `token_logits` request field and returns the
-    requested raw token logits in the final response.
+    requested raw token logits in the final response as a flat array for the
+    first available next-token distribution.
   - Disables backend sampled-candidate logits when `token_logits` is requested
     so every requested token ID is returned from full-vocabulary logits.
   - Handles prompt-final selected logits when `n_predict` leaves no generation
