@@ -72,7 +72,7 @@ latest noninteractive deploy attempt stopped at the sudo password boundary.
 Current `pacman -Q` and `pacman -Sl strix-halo-gfx1151` evidence still reports
 `llama.cpp-hip-gfx1151 b9330-1`, `llama.cpp-vulkan-gfx1151 b9330-1`,
 `lemonade-server 10.6.0-6`, `lemonade-app 10.6.0-5`, and `lemonade 10.6.0-1`.
-Installed-smoked and live-scenario validated: the installed b9330-1 plus
+Installed-smoke and live-scenario validated: the installed b9330-1 plus
 Lemonade package set passed
 `python tools/run_inference_scenarios.py --scenario llama.cpp.hip.help
 --scenario llama.cpp.vulkan.help --scenario lemonade.cli.help --scenario
@@ -640,7 +640,7 @@ Publish/install for `lemonade-server 10.3.0-2` and
 because `sudo -v` requires a TTY/password; deploy those rebuilt artifacts before
 treating the host install as upgraded to the final package release identifiers.
 
-Installed-smoked state from the deployed host pass: ROCm device discovery
+Installed-smoke state from the deployed host pass: ROCm device discovery
 through `rocminfo`, PyTorch HIP tensor allocation on `Radeon 8060S Graphics`,
 FlashAttention import, AITER JIT-core import from the user JIT cache, TorchAO
 import, Torch-MIGraphX import, TorchVision GPU `torchvision.ops.nms`, vLLM
@@ -685,7 +685,7 @@ Deployed/installed versions from that host pass are:
 - `python-amd-aiter-gfx1151 0.1.12.post2.dev171+g51f3d2b69-1`
 - `python-vllm-rocm-gfx1151 0.20.1-1`
 
-Installed-smoked state from the deployed host pass: vLLM import and
+Installed-smoke state from the deployed host pass: vLLM import and
 `vllm --version` reported `0.20.1`; AITER imported `aiter.jit.core` and loaded
 its user-cache JIT module; `llama-cli-hip-gfx1151 --version` reported
 `version: 293 (8d6f9a9)` and detected `Radeon 8060S Graphics, gfx1151`; and
