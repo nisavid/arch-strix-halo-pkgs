@@ -38,7 +38,7 @@ index ae9e0bf..a46f7b1 100644
              // TODO: getting pre sampling logits is not yet supported with backend sampling
              backend_sampling &= !need_pre_sample_logits;
 
-@@ -1700,6 +1706,25 @@ private:
+@@ -1700,6 +1706,29 @@ private:
          }
      }
 
@@ -51,8 +51,12 @@ index ae9e0bf..a46f7b1 100644
 +        if (logits == nullptr) {
 +            return;
 +        }
++        const int n_vocab = llama_vocab_n_tokens(vocab);
 +        slot.selected_token_logits.reserve(slot.task->params.token_logits.size());
 +        for (const auto token : slot.task->params.token_logits) {
++            if (token < 0 || token >= n_vocab) {
++                continue;
++            }
 +            slot.selected_token_logits.push_back({
 +                token,
 +                common_token_to_piece(ctx_tgt, token, params_base.special),
