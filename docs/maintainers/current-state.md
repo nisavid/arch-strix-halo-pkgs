@@ -129,6 +129,17 @@ ledger rather than left as active tracked work. No package source update,
 package build, deploy/install, installed smoke, or live-scenario validation was
 performed in this docs-only cleanup.
 
+The 2026-05-26 Quark/AWQ/GPTQ/bitsandbytes/xFormers/FBGEMM candidate triage is
+also docs-only source audit. It does not implement packages, change package
+policy, update package sources, build packages, deploy/install artifacts, run
+installed smokes, or claim new live-scenario validation. The durable
+recommendations are tracked in `docs/maintainers/rocm-inference-reference.md`,
+`docs/maintainers/vllm-recipe-coverage.md`, and `docs/backlog.md`: GPTQ is the
+highest-priority live-validation lane because the retained Qwen3.5 GPTQ Int4
+scenario already exists; Quark, bitsandbytes, AWQ, xFormers, and FBGEMM remain
+tracked source/package candidates with source-provenance, source-build,
+installed-smoke, and live-scenario gates before adoption.
+
 The earlier 2026-05-24 recovery-branch freshness gate tracked AITER `0.1.14`
 stable, llama.cpp `b9305`, stable-diffusion.cpp
 `a397e03488cc27e1a42da646b82dfce9f50741c0`, and the local

@@ -268,9 +268,50 @@
     `python-vllm-rocm-gfx1151` `0.19.1-4` and
     `vllm.flash-attn.triton-amd.vit-wrapper`. Treat
     `FLASH_ATTENTION_TRITON_AMD_AUTOTUNE=TRUE` as a later performance task.
-  - Candidate follow-ups: Quark, AWQ, GPTQ, bitsandbytes, xFormers, and
-    FBGEMM. Keep each marked as requires host validation and source audit
-    before adding a package or promoting a scenario.
+  - Candidate follow-ups from the 2026-05-26 Lane 9 source audit are ranked
+    below. Keep each marked as requires host validation before adding a package
+    or promoting a scenario; package implementation waits for the runtime-base
+    prerequisite lanes if they change the Python/ROCm stack.
+    - GPTQ, next implementation lane: run the retained
+      `vllm.qwen3_5.4b-gptq-int4.text.basic` scenario against the installed
+      gfx1151 stack after pinning the RafaDom model revision, license
+      metadata, and provenance/terms review. The current vLLM support matrix
+      lists GPTQ as unsupported on AMD GPU, so treat local installed scenario
+      results as the promotion gate. No new runtime package is expected for
+      prequantized GPTQ inference; promote only after vLLM ROCm extensions
+      import, generation passes, and source/build/install/live states are
+      recorded separately.
+    - Quark: track as a vLLM model-artifact and optional authoring-tool lane,
+      not as a `python-vllm-rocm-gfx1151` runtime dependency. The package lane
+      is blocked until the chosen `amd-quark` release has public source
+      provenance or an explicit source pin, and until Python 3.14 plus NumPy
+      compatibility is resolved. A consumer-only lane can start with a pinned
+      Quark-exported model and a bounded vLLM generation smoke.
+    - bitsandbytes: track a separate source-built
+      `python-bitsandbytes-gfx1151` package candidate. Upstream ROCm support is
+      preview but names `gfx1151`; do not adopt PyPI or PyTorch-index binary
+      wheels. Required gates are a `COMPUTE_BACKEND=hip` build for `gfx1151`,
+      installed `python -m bitsandbytes`, direct 4-bit and 8-bit PyTorch
+      smokes, a pinned Transformers model smoke, and a bounded vLLM
+      BitsAndBytes smoke.
+    - AWQ: track as exploratory Qwen text coverage only. Keep native AWQ,
+      compressed-tensors-format AWQ models, and deprecated AutoAWQ tooling
+      separate; do not package AutoAWQ for this lane. Required gates are a
+      pinned AWQ model revision/license, `VLLM_USE_TRITON_AWQ` backend evidence
+      where applicable, LLM init, generation, and selected-backend assertions.
+    - xFormers: track as a future source-built attention package only when a
+      concrete consumer needs it or upstream publishes explicit `gfx1151`
+      evidence. Required gates are pinned source and submodules, local HIP
+      extension build, linkage/private-path inspection, `python -m
+      xformers.info`, and direct fp16/bf16 memory-efficient-attention
+      correctness smokes before any consumer scenario.
+    - FBGEMM: track as a future package candidate, not as a PyTorch bundle.
+      Current public ROCm evidence targets CDNA/MI300-class systems and the
+      GenAI code is moving toward `meta-pytorch/MSLK`. Required gates are a
+      package-boundary decision, pinned source/submodules, source build for
+      `gfx1151`, shared-library inspection, import/op smoke, and a vLLM or
+      Transformers consumer path that proves value over existing TorchAO,
+      compressed-tensors, AITER, and FlashAttention lanes.
   - Existing affected failures audited on 2026-04-22: Qwen3.6 FP8 MoE remains
     blocked, Gemma 4 AITER FlashAttention remains blocked, and MIGraphX
     creates a separate compiled graph/quantization lane rather than a vLLM
