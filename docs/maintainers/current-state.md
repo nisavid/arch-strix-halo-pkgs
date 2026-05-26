@@ -179,21 +179,40 @@ llama.cpp candidate dispositions were updated,
 candidates, 17 current families, 2 rejected update candidates, and 5 tracked
 update candidates.
 
-The tracked ledger entries now include: llama.cpp b9330-2 deploy/install
-closeout, llama.cpp b9334 follow-up, ROCm PyTorch release/2.12 26872de
-follow-up, and Transformers 5.9.0 follow-up. Each tracked entry has its disposition in
+The active package ledgers are: llama.cpp b9330-2 deploy/install closeout,
+llama.cpp b9334 follow-up, ROCm PyTorch release/2.12 `26872de` follow-up, and
+Transformers 5.9.0 follow-up. Each tracked entry has its disposition in
 `docs/maintainers/update-candidates.toml` and its gate label in
 `docs/backlog.md`. The superseded llama.cpp `b9279` and `b9305` candidates and
 stable-diffusion.cpp `3a8788c` and `a397e03` candidates are rejected in the
-ledger rather than left as active tracked work. The 2026-05-26 package refresh
-adopts the Lemonade fork `13b1af2` lane through source update, package build,
-deploy/install, installed smoke, and live-scenario validation. The llama.cpp
-b9330 lane is source-updated and package-built as b9330-2; its final
-deploy/install, installed-smoke, and live-scenario validation gates remain
-open. The closeout refresh check then found upstream llama.cpp b9334 as the
-next llama.cpp follow-up rather than folding it into the b9330 build. After
-recording that disposition, `tools/check_package_updates.py --refresh --json
---fail-on actionable` exited `0`. The post-AOCL rebase check
+ledger rather than left as active tracked work.
+
+The 2026-05-26 package refresh adopts the Lemonade fork `13b1af2` lane through
+source update, package build, deploy/install, installed smoke, and
+live-scenario validation. The llama.cpp b9330 lane is source-updated and
+package-built as b9330-2; its final deploy/install, installed-smoke, and
+live-scenario validation gates remain open. The closeout refresh check then
+found upstream llama.cpp b9334 as the next llama.cpp follow-up rather than
+folding it into the b9330 build.
+
+Read-only installed-state verification after PR #41 reports
+`python-pytorch-opt-rocm-gfx1151 2.12.0-2`,
+`python-amd-aiter-gfx1151 0.1.14-2`,
+`python-flash-attn-rocm-gfx1151 2.8.4-12`,
+`python-torchao-rocm-gfx1151 0.17.0-4`,
+`python-torch-migraphx-gfx1151 1.2-7`,
+`python-torchvision-rocm-gfx1151 0.27.0-2`, and
+`python-vllm-rocm-gfx1151 0.21.0-4`. Those host versions do not close the
+ROCm PyTorch `26872de` candidate: `origin/main` still pins
+`python-pytorch-opt-rocm-gfx1151` to ROCm/pytorch
+`4ddfe99d6da426414b7f0e587cdb1910f1c23eb3`, and the candidate ledger still
+requires a source update plus host validation. Treat the installed package
+state as evidence to reconcile in that package lane, not as an adopted source
+disposition.
+
+After recording the llama.cpp dispositions,
+`tools/check_package_updates.py --refresh --json --fail-on actionable` exited
+`0`. The post-AOCL rebase check
 `tools/check_package_updates.py --json --fail-on actionable` also exited `0`,
 with effective counts of 22 adopted update candidates, 17 current families, 2
 rejected update candidates, and 4 tracked update candidates; b9334 remains the
@@ -201,7 +220,9 @@ effective llama.cpp update candidate while b9330-2 remains tracked as a
 deploy/install closeout gate. After the stable-diffusion.cpp closeout below,
 the same checker exited `0` with effective counts of 23 adopted update
 candidates, 17 current families, 2 rejected update candidates, and 3 tracked
-update candidates.
+update candidates. This docs-only lane did not change package policy, package
+directories, checker logic, or relevant package source metadata, so the
+24-hour freshness gate is not due again.
 
 The stable-diffusion.cpp 1ceb5bd follow-up is adopted. Source metadata and
 rendered scaffolds now track upstream master

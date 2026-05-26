@@ -2,22 +2,63 @@
 
 ## Packaging And Build Hygiene
 
-- The llama.cpp b9330 and Lemonade fork `13b1af2` refresh is source-updated and
-  partly host-validated. Both packaged llama.cpp backends render from upstream
-  b9330 as `b9330-2` and carry the shared generic `/completion` `token_logits`
-  patch that validates selected token IDs, returns requested raw token logits,
-  preserves original token bytes, and caps each request at 1024 selected token
-  IDs. `lemonade-server 10.6.0-6` and `lemonade-app 10.6.0-5` render from
-  `nisavid/lemonade` fork main
-  `13b1af25f84cf08ad5f8bf0ec58980bdfc09c9e7`, while `lemonade` remains
-  `10.6.0-1`. Recipe render, package-local tests, package build plan
-  `46a69d2a`, deploy/install plan `8e489a2e`, published/installed pacman
-  verification, HIP/Vulkan/Lemonade installed smokes, direct HIP/Vulkan
-  `/completion` selected-logit checks, and the packaged Lemonade zerank
-  selected-logit scenario passed for the installed b9330-1 plus Lemonade set;
-  follow-up build plan `b59627f0` produced the b9330-2 llama.cpp packages after
-  the selected-token bounds guard. Tracked gate: llama.cpp b9330-2
-  deploy/install + installed validation closeout.
+### Active Unresolved Gates
+
+- llama.cpp b9330-2 deploy/install + installed validation closeout: both
+  packaged backends render from upstream b9330 as `b9330-2`, and follow-up
+  build plan `b59627f0` produced the selected-token bounds-guard rebuild. The
+  reference host still reports `llama.cpp-hip-gfx1151 b9330-1` and
+  `llama.cpp-vulkan-gfx1151 b9330-1`, so the b9330-2 deploy/install,
+  installed-smoke, and live-scenario validation gates remain open.
+- llama.cpp b9334 follow-up: the 2026-05-26 closeout freshness check found
+  upstream `b9334` after the b9330 package lane. Start this as a separate
+  source refresh only after the b9330-2 deploy/install closeout records its
+  final installed state and validation.
+- ROCm PyTorch release/2.12 26872de follow-up: `origin/main` still pins
+  `python-pytorch-opt-rocm-gfx1151` to ROCm/pytorch
+  `4ddfe99d6da426414b7f0e587cdb1910f1c23eb3`. Read-only installed package
+  state on 2026-05-26 reports newer local pkgrels for PyTorch and downstream
+  consumers, but that host state does not close the committed source lane.
+  Keep the source update, package provenance, affected rebuild, installed-smoke,
+  and live-scenario gates open until a package lane records them together.
+- Transformers 5.9.0 follow-up: keep this blocked behind the PyTorch 26872de
+  source/validation closeout because the local Transformers package is coupled
+  to tokenizers, safetensors, Hugging Face Hub, model-surface imports, and vLLM
+  scenarios.
+- GPTQ live-validation lane: run the retained
+  `vllm.qwen3_5.4b-gptq-int4.text.basic` scenario only after pinning the
+  RafaDom model revision, license metadata, and provenance/terms decision.
+  No new runtime package is expected for prequantized GPTQ inference; promote
+  only after vLLM ROCm extensions import, generation passes, and the source,
+  build, install, and live states are recorded separately.
+- Quark lane: track Quark as a vLLM model-artifact and optional authoring-tool
+  path, not as a `python-vllm-rocm-gfx1151` runtime dependency. Package work is
+  blocked until the chosen `amd-quark` release has public source provenance or
+  an explicit source pin, and until Python 3.14 plus NumPy compatibility is
+  resolved.
+- bitsandbytes lane: track a separate source-built
+  `python-bitsandbytes-gfx1151` package candidate. Do not adopt PyPI or
+  PyTorch-index binary wheels; require a pinned source build for `gfx1151`,
+  installed `python -m bitsandbytes`, direct 4-bit and 8-bit PyTorch smokes, a
+  pinned Transformers model smoke, and a bounded vLLM BitsAndBytes smoke.
+- AWQ lane: keep native AWQ, compressed-tensors-format AWQ models, and
+  deprecated AutoAWQ tooling separate. Do not package AutoAWQ for this lane;
+  require a pinned AWQ model revision/license, backend evidence where
+  applicable, LLM init, generation, and selected-backend assertions.
+- xFormers lane: track as a future source-built attention package only when a
+  concrete consumer needs it or upstream publishes explicit `gfx1151` evidence.
+  Required gates are pinned source and submodules, local HIP extension build,
+  linkage/private-path inspection, `python -m xformers.info`, and direct
+  fp16/bf16 memory-efficient-attention correctness smokes before any consumer
+  scenario.
+- FBGEMM lane: track as a future package candidate, not as a PyTorch bundle.
+  Required gates are a package-boundary decision, pinned source/submodules,
+  source build for `gfx1151`, shared-library inspection, import/op smoke, and a
+  vLLM or Transformers consumer path that proves value over existing TorchAO,
+  compressed-tensors, AITER, and FlashAttention lanes.
+
+### Recently Adopted Package Lanes
+
 - TheRock 7.13 stable is adopted. Upstream ROCm/TheRock published the stable
   `therock-7.13` release at
   `6d2136cd12be28c6251eb38c700e980c8c2f8cf6`; the generated
@@ -71,20 +112,6 @@
   pacman verification, and the selected-logit zerank scenario passed for
   `lemonade-server 10.6.0-5` and `lemonade-app 10.6.0-4`; the live scenario
   run is recorded at `docs/worklog/inference-runs/20260526T-current-zerank`.
-- llama.cpp b9334 follow-up: the 2026-05-26 closeout freshness check found
-  upstream `b9334` after the adopted `b9330` package lane, while the AUR HIP
-  baseline remains at `b9326-1` and the Vulkan baseline remains at `b9222-1`.
-  Treat this as a separate llama.cpp refresh lane: review the release range,
-  update both packaged backends and Lemonade backend metadata, rebuild,
-  deploy/install, run installed backend smokes, and rerun Lemonade service plus
-  affected selected-logit scenarios before adoption.
-- ROCm PyTorch release/2.12 26872de follow-up: the 2026-05-21 closeout
-  freshness gate found `ROCm/pytorch` release/2.12 at
-  `26872debb4452ea6dc898288618a15595e2317d9` after the adopted
-  `4ddfe99d6da426414b7f0e587cdb1910f1c23eb3` package lane. Review the branch
-  delta against the local patch carry, rebuild PyTorch and affected native
-  consumers, deploy/install, and rerun installed GPU plus affected vLLM
-  scenario validation before adoption.
 - The stable-diffusion.cpp 1ceb5bd follow-up is adopted.
   `stable-diffusion.cpp-vulkan-gfx1151` now tracks upstream master
   `1ceb5bd9df7784bcdf67dd9ed8bf0198b542ebc9` as `r650.g1ceb5bd-1`.
@@ -92,12 +119,6 @@
   deploy/install, and installed `sd-cli-vulkan-gfx1151 --help` plus
   `sd-server-vulkan-gfx1151 --help` smokes passed on 2026-05-26. No
   model-generation validation is claimed.
-- Transformers 5.9.0 follow-up: the 2026-05-21 closeout freshness gate found
-  PyPI and upstream tag `transformers 5.9.0` after the current `5.8.1` package
-  lane. Review dependency metadata against tokenizers, safetensors, Hugging
-  Face Hub, and the local vLLM/model-surface package closure, then rebuild,
-  deploy/install, run installed imports, and rerun affected vLLM scenarios
-  before adoption.
 - The 2026-05-18 Python 3.14.5 rebuild lane is adopted. `python-gfx1151`
   now tracks CPython `3.14.5` with Arch `python 3.14.5-1` as the integration
   baseline. Source verification, package source preparation, package build,
@@ -201,28 +222,17 @@
   evidence are recorded in `docs/maintainers/current-state.md`. Keep follow-up
   work on separate backlog lines instead of reopening this closed update
   bundle.
-- The 2026-05-01 policy-change freshness sweep found one active update
-  candidate that should preempt ordinary backlog work after the current
-  package-policy slice lands: AITER main
-  `a85874151dc9a9e607598b8b73f83c6fab954a6b`. The reviewed head is recorded in
-  `policies/package-freshness.toml`; the active disposition and gate label are
-  in `docs/maintainers/update-candidates.toml`.
-  - `AITER a8587415 source-update lane`: review the MLA decode Gluon and mHC
-    synchronization range, build and install the package, run the installed JIT
-    smoke, and run affected vLLM scenario validation.
 - Blackcat recipe surface policy is centralized in
   `docs/maintainers/blackcat-recipe-surfaces.md`. The current package set
   already adopts the concrete stable-diffusion.cpp, Rust wheel, native wheel,
   source-wheel-equivalent, and Qwen3-VL tooling-helper package surfaces
   represented in `policies/recipe-packages.toml`. Remaining dispatchable work
   is separate: Qwen3-VL quantization helper tracking, Qwen3-VL runtime/scenario
-  blocking gates, Atomic TurboQuant user/source-risk blocking gates, the active
-  stable-diffusion.cpp source refresh, and future native-wheel freshness lanes
-  found by the normal sweep.
+  blocking gates, Atomic TurboQuant user/source-risk blocking gates, and future
+  native-wheel freshness lanes found by the normal sweep.
 - Newly discovered ROCm inference candidates from
-  `docs/maintainers/rocm-inference-reference.md` belong near the top of this
-  backlog, but they are not validated package commitments until their source
-  audit and host gates pass.
+  `docs/maintainers/rocm-inference-reference.md` are not validated package
+  commitments until their source audit and host gates pass.
   - Open WebUI STT CTranslate2 lane: adopted and validated. The package follows
     OpenNMT CTranslate2 4.7.2 with upstream `WITH_HIP=ON` for `gfx1151`.
     Package-build proof passed through `tools/amerge build
@@ -258,50 +268,12 @@
     `python-vllm-rocm-gfx1151` `0.19.1-4` and
     `vllm.flash-attn.triton-amd.vit-wrapper`. Treat
     `FLASH_ATTENTION_TRITON_AMD_AUTOTUNE=TRUE` as a later performance task.
-  - Candidate follow-ups from the 2026-05-26 Lane 9 source audit are ranked
-    below. Keep each marked as requires host validation before adding a package
-    or promoting a scenario; package implementation waits for the runtime-base
-    prerequisite lanes if they change the Python/ROCm stack.
-    - GPTQ, next implementation lane: run the retained
-      `vllm.qwen3_5.4b-gptq-int4.text.basic` scenario against the installed
-      gfx1151 stack after pinning the RafaDom model revision, license
-      metadata, and provenance/terms review. The current vLLM support matrix
-      lists GPTQ as unsupported on AMD GPU, so treat local installed scenario
-      results as the promotion gate. No new runtime package is expected for
-      prequantized GPTQ inference; promote only after vLLM ROCm extensions
-      import, generation passes, and source/build/install/live states are
-      recorded separately.
-    - Quark: track as a vLLM model-artifact and optional authoring-tool lane,
-      not as a `python-vllm-rocm-gfx1151` runtime dependency. The package lane
-      is blocked until the chosen `amd-quark` release has public source
-      provenance or an explicit source pin, and until Python 3.14 plus NumPy
-      compatibility is resolved. A consumer-only lane can start with a pinned
-      Quark-exported model and a bounded vLLM generation smoke.
-    - bitsandbytes: track a separate source-built
-      `python-bitsandbytes-gfx1151` package candidate. Upstream ROCm support is
-      preview but names `gfx1151`; do not adopt PyPI or PyTorch-index binary
-      wheels. Required gates are a `COMPUTE_BACKEND=hip` build for `gfx1151`,
-      installed `python -m bitsandbytes`, direct 4-bit and 8-bit PyTorch
-      smokes, a pinned Transformers model smoke, and a bounded vLLM
-      BitsAndBytes smoke.
-    - AWQ: track as exploratory Qwen text coverage only. Keep native AWQ,
-      compressed-tensors-format AWQ models, and deprecated AutoAWQ tooling
-      separate; do not package AutoAWQ for this lane. Required gates are a
-      pinned AWQ model revision/license, `VLLM_USE_TRITON_AWQ` backend evidence
-      where applicable, LLM init, generation, and selected-backend assertions.
-    - xFormers: track as a future source-built attention package only when a
-      concrete consumer needs it or upstream publishes explicit `gfx1151`
-      evidence. Required gates are pinned source and submodules, local HIP
-      extension build, linkage/private-path inspection, `python -m
-      xformers.info`, and direct fp16/bf16 memory-efficient-attention
-      correctness smokes before any consumer scenario.
-    - FBGEMM: track as a future package candidate, not as a PyTorch bundle.
-      Current public ROCm evidence targets CDNA/MI300-class systems and the
-      GenAI code is moving toward `meta-pytorch/MSLK`. Required gates are a
-      package-boundary decision, pinned source/submodules, source build for
-      `gfx1151`, shared-library inspection, import/op smoke, and a vLLM or
-      Transformers consumer path that proves value over existing TorchAO,
-      compressed-tensors, AITER, and FlashAttention lanes.
+  - Candidate follow-ups from the 2026-05-26 Lane 9 source audit are the GPTQ,
+    Quark, bitsandbytes, AWQ, xFormers, and FBGEMM gates listed in the active
+    unresolved set above. Each candidate still requires host validation and
+    source/provenance review before adding a package or promoting a scenario;
+    package implementation waits for runtime-base prerequisite lanes if they
+    change the Python/ROCm stack.
   - Existing affected failures audited on 2026-04-22: Qwen3.6 FP8 MoE remains
     blocked, Gemma 4 AITER FlashAttention remains blocked, and MIGraphX
     creates a separate compiled graph/quantization lane rather than a vLLM
