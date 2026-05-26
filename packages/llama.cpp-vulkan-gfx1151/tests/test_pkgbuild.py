@@ -55,6 +55,8 @@ def test_selected_token_logits_patch_exposes_generic_completion_contract():
     populate_body = text[
         text.index("void populate_selected_token_logits") : text.index("void send_error")
     ]
+    assert "flat token_logits array for the first" in populate_body
+    assert "if (!slot.selected_token_logits.empty() || slot.task->params.token_logits.empty())" in populate_body
     assert "const int n_vocab = llama_vocab_n_tokens(vocab);" in populate_body
     assert "if (token < 0 || token >= n_vocab)" in populate_body
     assert "continue;" in populate_body
