@@ -180,8 +180,10 @@ b9330 lane is captured by the package refresh above, and the closeout refresh
 check then found upstream llama.cpp b9333 as the next llama.cpp follow-up
 rather than folding it into the b9330 build. After recording that disposition,
 `tools/check_package_updates.py --refresh --json --fail-on actionable` exited
-`0`; rerun the freshness gate after this branch is merged to refresh the
-combined post-merge counts.
+`0`. The rebased branch was rechecked with
+`tools/check_package_updates.py --json --fail-on actionable`, also exited `0`,
+and reported six tracked, two rejected, twenty adopted, and seventeen current
+families in the effective summary.
 
 The 2026-05-26 Quark/AWQ/GPTQ/bitsandbytes/xFormers/FBGEMM candidate triage is
 also docs-only source audit. It does not implement packages, change package
