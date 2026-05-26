@@ -24,13 +24,14 @@ finite `token_logits` for requested IDs `[0, 1, 2]` with `n_predict: 0`,
 included both `token` and `bytes` fields, and rejected 1025 requested IDs with
 HTTP 400 and the 1024-token cap message.
 
-The Lemonade 10.6.0 fork-main refresh is source-updated and package-built, with
-deploy/install and installed smokes still open. The local source packages render
-from `nisavid/lemonade` fork main commit
-`b608a74d0604f96786de59d65cb0ba27b05db0c6`, aligned with the canonical
-upstream and AUR `10.6.0` baselines. The server package now renders as
-`lemonade-server 10.6.0-5`, and the app package renders as
-`lemonade-app 10.6.0-4`.
+The Lemonade 10.6.0 fork-main refresh is adopted, installed, and
+live-validated. The local source packages render from `nisavid/lemonade` fork
+main commit `b608a74d0604f96786de59d65cb0ba27b05db0c6`, aligned with the canonical upstream and
+AUR `10.6.0` baselines. The reference host reports `lemonade-server 10.6.0-5`,
+`lemonade-app 10.6.0-4`, and `lemonade 10.6.0-1` from `pacman -Q`, and the
+published local repo contains matching `lemonade-server 10.6.0-5` and
+`lemonade-app 10.6.0-4` artifacts.
+
 The fork commit contains the pinned-backend lifecycle fix and the reranking
 error-message UI fix, so the package lane no longer carries
 `0006-keep-llamacpp-backends-alive-after-threaded-loads.patch` or
@@ -40,17 +41,15 @@ carries the local Tauri Cargo patch that keeps direct Linux glib on the
 webkit2gtk-compatible `glib 0.18` dependency set until the upstream `glib 0.20`
 bump builds cleanly here.
 
-Validation completed for the source/build phase: recipe scaffolds were
-regenerated for `lemonade-server` and `lemonade-app`; `git diff --check` passed;
-`pytest packages/lemonade-server/tests packages/lemonade-app/tests
-tests/test_lemonade_zerank_smoke.py tests/test_inference_adapters.py
-tests/test_inference_scenario_catalog.py -q -p no:cacheprovider` reports `57
-passed`; `pytest -q -p no:cacheprovider` reports `370 passed`; and
-`tools/amerge build lemonade-server lemonade-app -y` produced
-`lemonade-server 10.6.0-5` and `lemonade-app 10.6.0-4` artifacts. The next
-gate is `tools/amerge deploy lemonade-server lemonade-app -y`, followed by
-`pacman -Q lemonade-server lemonade-app lemonade` and the installed Lemonade
-selected-logit zerank smoke scenario.
+Validation completed for the source/build/install/live-scenario phase: recipe
+scaffolds were regenerated for `lemonade-server` and `lemonade-app`; `git diff
+--check` passed; the focused Lemonade tests passed; full `pytest -q
+-p no:cacheprovider` reported `370 passed`; `tools/amerge build
+lemonade-server lemonade-app -y` produced `lemonade-server 10.6.0-5` and
+`lemonade-app 10.6.0-4` artifacts; deploy/install completed; `pacman -Q`
+reported the expected installed packages; and
+`python tools/run_inference_scenarios.py --scenario
+lemonade.reranking.zerank-2.selected-logit --run-root docs/worklog/inference-runs/20260526T-current-zerank` passed.
 
 
 

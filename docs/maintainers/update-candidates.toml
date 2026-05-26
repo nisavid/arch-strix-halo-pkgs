@@ -101,24 +101,24 @@ baseline_latest = "10.6.0-1"
 previous_recorded = "a90f8194f29940c22575499951b12e588a2e8211"
 latest = "b608a74d0604f96786de59d65cb0ba27b05db0c6"
 discovery_status = "branch_head_ahead"
-disposition = "tracked"
-disposition_reason = "The 10.6.0 release baseline is adopted, and the fork-main package source lane is updated and package-built at b608a74d0604f96786de59d65cb0ba27b05db0c6. The fork now contains the pinned-backend lifecycle and reranking error-message fixes, so the package-local temporary patches are removed. Deploy/install, installed pacman verification, and selected-logit zerank live validation remain open because privileged host deployment has not completed."
+disposition = "adopted"
+disposition_reason = "The 10.6.0 release baseline is adopted, and the fork-main package source lane is updated, package-built, deployed, installed, and live-validated at b608a74d0604f96786de59d65cb0ba27b05db0c6. The fork now contains the pinned-backend lifecycle and reranking error-message fixes, so the package-local temporary patches are removed. Recipe render, package-local tests, full pytest, package build, deploy/install, installed pacman verification, and selected-logit zerank live validation passed."
 salient_changes = [
   "Lemonade packages render as 10.6.0 from nisavid/lemonade fork main b608a74d0604f96786de59d65cb0ba27b05db0c6",
   "AUR lemonade-server and lemonade-desktop baselines are reviewed at 10.6.0-1",
   "The app package carries a local Tauri Cargo patch that keeps direct Linux glib on the webkit2gtk-compatible 0.18 series",
   "Recipe render, package-local tests, full pytest, and tools/amerge build passed for lemonade-server 10.6.0-5 and lemonade-app 10.6.0-4",
   "The pinned-backend lifecycle and reranking error-message fixes live in the pinned fork source, so their package-local temporary patches are dropped",
-  "tools/amerge deploy, installed pacman verification, and selected-logit zerank live validation remain open",
+  "tools/amerge deploy installed lemonade-server 10.6.0-5 and lemonade-app 10.6.0-4; pacman -Q reports those versions plus lemonade 10.6.0-1; selected-logit zerank live validation passed at docs/worklog/inference-runs/20260526T-current-zerank",
   "The source range adds the llama.cpp selected-logit reranking adapter, backend archive extraction hardening, and Tauri app dependency lockfile updates",
 ]
 patch_carry_overlap = true
 package_source_update_needed = false
-host_validation_needed = true
-next_gate_kind = "deploy_install"
-next_gate_path = "docs/backlog.md"
-next_gate_label = "Lemonade 10.6.0 fork-main deploy/install"
-last_reviewed = "2026-05-25"
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Adopted; monitor future Lemonade releases through the normal freshness sweep"
+last_reviewed = "2026-05-26"
 
 [candidates."llama-cpp-b9222"]
 family = "llama_cpp"
