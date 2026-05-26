@@ -54,17 +54,16 @@
   local package lane. Treat this as a compiled Python package refresh with
   source review, package build, deploy/install, and installed import smoke
   before adoption.
-- Lemonade 10.6.0 fork-main deploy/install: the source lane pins
+- The Lemonade 10.6.0 fork-main refresh is adopted. The source lane pins
   `nisavid/lemonade` fork main at
   `b608a74d0604f96786de59d65cb0ba27b05db0c6`, aligned with canonical upstream
   and AUR `10.6.0` baselines. This fork commit includes the pinned-backend
   lifecycle and reranking error-message fixes that were temporarily carried in
   the package lane, so those package-local patches are removed. Recipe render,
-  package-local tests, full pytest, and package builds passed for
-  `lemonade-server 10.6.0-5` and `lemonade-app 10.6.0-4`. Run
-  `tools/amerge deploy lemonade-server lemonade-app -y`, then verify
-  `pacman -Q lemonade-server lemonade-app lemonade` and rerun the Lemonade
-  selected-logit zerank scenario before adoption.
+  package-local tests, full pytest, package build, deploy/install, installed
+  pacman verification, and the selected-logit zerank scenario passed for
+  `lemonade-server 10.6.0-5` and `lemonade-app 10.6.0-4`; the live scenario
+  run is recorded at `docs/worklog/inference-runs/20260526T-current-zerank`.
 - llama.cpp b9279 follow-up: the 2026-05-21 closeout freshness gate found
   upstream `b9279` after the adopted `b9222` backend package lane, with AUR
   `llama.cpp-hip` at `b9275-1`. Keep this as a coordinated backend refresh:
