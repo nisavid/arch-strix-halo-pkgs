@@ -1,9 +1,11 @@
 # ROCm Inference Reference
 
-This source disposition reference was retrieved 2026-05-24. It is for
-troubleshooting and planning the Strix Halo `gfx1151` inference stack. Upstream
-ROCm documents often describe MI300X, MI350X, CDNA, or Instinct systems; treat
-those details as `advisory-only` until a local scenario validates them here.
+This source disposition reference was compiled from sources retrieved across
+2026-04-22, 2026-05-24, and the Quark/AWQ/GPTQ/bitsandbytes/xFormers/FBGEMM
+candidate triage on 2026-05-26. It is for troubleshooting and planning the
+Strix Halo `gfx1151` inference stack. Upstream ROCm documents often describe
+MI300X, MI350X, CDNA, or Instinct systems; treat those details as
+`advisory-only` until a local scenario validates them here.
 
 Status labels:
 
@@ -37,6 +39,13 @@ Status labels:
 | <https://github.com/OpenNMT/CTranslate2/tree/v4.7.2> | upstream GitHub tag | 2026-05-24 | `validated` | `packages/ctranslate2-gfx1151`; `docs/backlog.md`; `docs/maintainers/rocm-inference-reference.md` | install, Python import, and Open WebUI/faster-whisper STT smoke | Tagged OpenNMT 4.7.2 includes first-party `WITH_HIP=ON` build support. The local package build completed for both split packages when CMake used ROCm clang directly as the HIP compiler, the optional CLI target was disabled, the exact pybind11 build requirement was relaxed, and package Python calls used `/usr/bin/python`. The installed Open WebUI STT path selected `DEVICE_TYPE=cuda` and produced non-empty transcript text through faster-whisper. |
 | <https://github.com/ROCm/CTranslate2/tree/amd_dev> | ROCm GitHub fork branch | 2026-05-24 | `advisory-only` | `packages/ctranslate2-gfx1151`; `docs/maintainers/rocm-inference-reference.md` | compare only when fork-specific HIP fixes are needed | The branch contains ROCm-oriented Docker and HIP carry, but the current local package source should stay on the tagged OpenNMT release because OpenNMT 4.7.2 already carries HIP build support. |
 | <https://rocm.blogs.amd.com/artificial-intelligence/ctranslate2/README.html> | AMD ROCm blog | 2026-05-24 | `advisory-only` | `packages/ctranslate2-gfx1151`; `docs/maintainers/rocm-inference-reference.md` | local Open WebUI/faster-whisper STT smoke | Describes CTranslate2 on AMD GPUs using ROCm, PyTorch, and `device="cuda"` examples. Treat performance and model examples as advisory, while the local Open WebUI/faster-whisper validation is now the gfx1151 acceptance proof. |
+| <https://github.com/amd/Quark> | upstream AMD GitHub repo, `release/0.11` at `210bbb76a1af71d6e5e03f8bea4d3bcf4ef57178`; latest public release `v0.11.1` | 2026-05-26 | `requires-host-validation` | `docs/backlog.md`; `docs/maintainers/vllm-recipe-coverage.md`; `docs/maintainers/rocm-inference-reference.md` | Quark-exported vLLM consumer smoke or source-package provenance decision | Official AMD quantization toolkit relevant to vLLM Quark model artifacts. Track as a scenario or authoring-tool candidate, not a vLLM runtime dependency. PyPI `amd-quark 0.11.2` is wheel-only with no matching public source tag or sdist observed; package work also needs Python 3.14 and NumPy compatibility resolution. |
+| <https://docs.vllm.ai/en/latest/features/quantization/> | upstream vLLM docs | 2026-05-26 | `requires-host-validation` | `docs/backlog.md`; `docs/maintainers/vllm-recipe-coverage.md`; `docs/maintainers/rocm-inference-reference.md` | reconcile support matrix with local gfx1151 scenarios | The visible support matrix marks Quark and FBGEMM FP8 as AMD-GPU-supported and marks AWQ, GPTQ, and BitsAndBytes unsupported on AMD GPU. vLLM ROCm platform APIs and AMD ROCm docs expose narrower AWQ/GPTQ hooks, so local scenario results decide promotion. |
+| <https://huggingface.co/RafaDom/Qwen3.5-4B-Claude-4.6-Opus-Reasoning-Distilled-v2-GPTQ-Int4-HQ> | Hugging Face model repo, revision `a86e57f8166807d28b447bab5daad3e079a268a7` | 2026-05-26 | `requires-host-validation` | `inference/scenarios/vllm-qwen.toml`; `docs/backlog.md`; `docs/maintainers/vllm-recipe-coverage.md` | model provenance and terms review before installed gfx1151 run | Retained Qwen3.5 GPTQ Int4 safetensors fixture with `apache-2.0` license metadata and `quant_method: gptq`. The model name asserts Claude-derived distillation, which the license metadata does not resolve; do not promote it as a first-class live fixture until provenance/terms risk is explicitly accepted or the fixture is replaced. Treat model config, tokenizer, template, and weights as untrusted inputs until pinned and live-validated. |
+| <https://github.com/bitsandbytes-foundation/bitsandbytes/releases/tag/0.49.2> | upstream GitHub release, commit `f0e6ca31b32c4744a9cee4e31610b25796cbf778` | 2026-05-26 | `requires-host-validation` | `docs/backlog.md`; `docs/maintainers/rocm-inference-reference.md` | source-built `python-bitsandbytes-gfx1151` package experiment plus PyTorch/vLLM smokes | ROCm support is official but preview; upstream docs list `gfx1151` in ROCm target sets and expose `COMPUTE_BACKEND=hip` / `BNB_ROCM_ARCH`. Do not adopt PyPI binary wheels; build from pinned source and keep the package separate from `python-vllm-rocm-gfx1151`. |
+| <https://github.com/facebookresearch/xformers> | upstream Meta GitHub repo, latest release `v0.0.35` at `03b91d7d9ff295ae68a320e2e733dd6c2ef8f342` | 2026-05-26 | `requires-host-validation` | `docs/backlog.md`; `docs/maintainers/rocm-inference-reference.md` | source-built xFormers package experiment only after a concrete consumer exists | Mature upstream package, but ROCm/gfx1151 relevance is unproven. Public wheels are not package sources for this stack; a local package would need pinned submodules, `gfx1151` HIP build proof, extension linkage checks, and direct attention correctness smokes. |
+| <https://github.com/ROCm/xformers> | ROCm GitHub fork, `develop` at `db55a2f5745ee0a13316f93e968a002b143e35da` | 2026-05-26 | `advisory-only` | `docs/backlog.md`; `docs/maintainers/rocm-inference-reference.md` | compare only if Meta upstream lacks required ROCm carry | ROCm fork has no public releases observed and examples/docs target MI300-class `gfx942`; use as advisory source only unless a future package audit proves it is the right source lane. |
+| <https://github.com/pytorch/FBGEMM/releases/tag/v1.7.0> | upstream PyTorch/Meta GitHub release, commit `bf6dce360a4fe133bc779e2fd036277678509f95` | 2026-05-26 | `requires-host-validation` | `docs/backlog.md`; `docs/maintainers/rocm-inference-reference.md` | source-built FBGEMM package experiment with proven consumer path | Real ROCm support exists, including ROCm 7.x release notes and FBGEMM FP8 matrix support in vLLM, but visible CI and examples target CDNA/MI300-class `gfx942`. Track separately from PyTorch; require source/submodule pinning, package-boundary decision, import/op smoke, and a vLLM or Transformers consumer path before adoption. |
 
 ## Package And Scenario Impact
 
@@ -72,8 +81,26 @@ Status labels:
 - Track Quark, AWQ, GPTQ, bitsandbytes, FP8 KV-cache, and AITER feature
   switches as vLLM scenario candidates. Keep the existing Qwen3.6 FP8 MoE
   blockers until a backend advertises gfx1151 support and a local run passes.
-- Keep xFormers and FBGEMM as package candidates, not package commitments,
-  until source audit shows they fit the local ROCm/PyTorch closure.
+- The 2026-05-26 candidate triage ranks GPTQ first because the repo already
+  retains a Qwen3.5 GPTQ Int4 safetensors scenario. Promote it only after an
+  installed gfx1151 run passes and records source, install, and live-scenario
+  states separately.
+- Track AWQ as exploratory and keep native AWQ, compressed-tensors AWQ-format
+  models, and deprecated AutoAWQ tooling separate. Do not package AutoAWQ for
+  this lane.
+- Track Quark as a vLLM model-artifact and possible authoring-tool lane, not
+  as a `python-vllm-rocm-gfx1151` runtime dependency. Quark package work needs
+  public source provenance for the chosen release plus Python 3.14 and NumPy
+  compatibility resolution.
+- Track bitsandbytes as a source-built package candidate. The source audit
+  found official preview ROCm/gfx1151 support, but adoption requires a local
+  `COMPUTE_BACKEND=hip` build, installed PyTorch smokes, and bounded
+  Transformers/vLLM quantization smokes. Do not consume prebuilt wheels as the
+  package source.
+- Keep xFormers and FBGEMM as package candidates, not package commitments.
+  xFormers needs explicit `gfx1151` source-build and direct attention proof
+  before a consumer scenario; FBGEMM needs a package-boundary decision, source
+  and submodule pins, import/op proof, and a vLLM or Transformers consumer path.
 - Keep the Blackcat Qwen3-VL embedding/reranking notes as blocked scenario
   material until the repo owns source-reviewed vLLM patches, bounded model
   bindings, and host validation. The existing llmcompressor and

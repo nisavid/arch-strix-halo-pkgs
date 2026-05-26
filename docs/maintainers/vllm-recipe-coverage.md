@@ -1,6 +1,6 @@
 # vLLM Recipe Coverage
 
-Status as of 2026-04-22.
+Status as of 2026-05-26.
 
 This worklist tracks how official vLLM Gemma and Qwen recipe surfaces map onto
 the local Arch/TheRock `gfx1151` validation stack. These recipes are advisory
@@ -45,6 +45,17 @@ decode limits. Keep each probe requires-host-validation until a local scenario
 passes. These probes are adjacent to the Qwen3.6 FP8 MoE blocker; they do not
 unblock it by themselves.
 
+The 2026-05-26 Quark/AWQ/GPTQ/bitsandbytes/xFormers/FBGEMM source audit keeps
+the vLLM scenario order narrow. GPTQ is the first live-validation lane because
+the retained `vllm.qwen3_5.4b-gptq-int4.text.basic` scenario already binds a
+pinned-compatible Qwen3.5 Int4 safetensors target. AWQ stays exploratory until
+a native AWQ Qwen text fixture is pinned and validated; AutoAWQ is not a
+package candidate for this lane. Quark is tracked as a model-artifact or
+authoring-tool path, not a vLLM runtime dependency. bitsandbytes is tracked as
+a separate source-built package candidate because upstream ROCm support is
+still preview even though it names `gfx1151`. xFormers and FBGEMM do not change
+the vLLM scenario surface until a source-built package and consumer path exist.
+
 ## Gemma 4
 
 | Surface | Recipe flags or request shape | Current coverage | Planned action |
@@ -74,7 +85,7 @@ unblock it by themselves.
 | --- | --- | --- | --- |
 | Qwen3.6 BF16 reasoning | `Qwen/Qwen3.6-35B-A3B`, `--tensor-parallel-size 8` or interactive TP2, `--max-model-len 262144`, `--reasoning-parser qwen3` | `validated` by reduced `reasoning` and `reasoning-disabled`; unquantized eager and compiled text controls remain validated | Keep the large TP/context recipe shape advisory unless the host gains matching hardware. |
 | FP8 safetensors probe | `surogate/Qwen3.5-0.8B-FP8`, reduced local context | `tracked` by `vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors-blocked` | Use this small retained checkpoint for local FP8 support checks; do not treat it as Qwen3.6 MoE recipe coverage. |
-| GPTQ Int4 safetensors probe | `RafaDom/Qwen3.5-4B-Claude-4.6-Opus-Reasoning-Distilled-v2-GPTQ-Int4-HQ`, reduced local context | `tracked` by `vllm.qwen3_5.4b-gptq-int4.text.basic` | Use this checkpoint for local vLLM GPTQ Int4 support checks; it replaces the AXERA-format cache artifact. |
+| GPTQ Int4 safetensors probe | `RafaDom/Qwen3.5-4B-Claude-4.6-Opus-Reasoning-Distilled-v2-GPTQ-Int4-HQ`, reduced local context | `tracked` by `vllm.qwen3_5.4b-gptq-int4.text.basic` | Use this checkpoint only after the model revision, license metadata, and provenance/terms risk are accepted; it replaces the AXERA-format cache artifact. |
 | Qwen3.6 MTP/spec decoding | `--speculative-config '{"method":"mtp","num_speculative_tokens":2}'` | `validated` by reduced `mtp` through the padded drafter batch path with the installed ROCm `valid_count` patch | No remaining local MTP workaround; keep only full Qwen3.5 FP8 latency shape advisory. |
 | Qwen3.6 tool calling | interactive feature selector plus Qwen parser family; Qwen3.5 guide names `--enable-auto-tool-choice --tool-call-parser qwen3_coder` | `validated` by reduced `tool` server scenario | Keep the Qwen3.5 FP8 deployment shape advisory; the local result validates parser behavior on Qwen3.6. |
 | Qwen3.6 advanced selectors | interactive `max_batched_8k` and `max_num_seqs_256` | `validated` by reduced `advanced-selectors` server scenario | Treat this as memory-fit evidence for the reduced local server shape, not the full MI-series deployment. |
