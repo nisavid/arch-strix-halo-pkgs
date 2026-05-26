@@ -81,9 +81,14 @@ def _request_json(
     result = json.loads(body) if body else {}
     if "error" in result:
         print(json.dumps(result, sort_keys=True))
-        message = result["error"].get("message", result["error"])
-        raise AssertionError(f"lemonade_error: {message}")
+        raise AssertionError(f"lemonade_error: {_error_payload_message(result['error'])}")
     return result
+
+
+def _error_payload_message(payload: Any) -> str:
+    if isinstance(payload, dict):
+        return str(payload.get("message", payload))
+    return str(payload)
 
 
 def _free_port(host: str) -> int:
@@ -231,8 +236,14 @@ def _scores_by_document(payload: dict[str, Any], documents: list[str]) -> dict[s
     if len(results) != len(documents):
         raise AssertionError(f"score_count expected {len(documents)}, got {len(results)}")
     scores: dict[str, float] = {}
+    seen_indices: set[int] = set()
     for item in results:
         index = int(item["index"])
+        if index < 0 or index >= len(documents):
+            raise AssertionError(f"result index out of bounds: {index}")
+        if index in seen_indices:
+            raise AssertionError(f"duplicate result index: {index}")
+        seen_indices.add(index)
         scores[documents[index]] = float(item["relevance_score"])
     return scores
 
