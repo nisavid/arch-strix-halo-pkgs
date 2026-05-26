@@ -179,12 +179,13 @@ llama.cpp candidate dispositions were updated,
 candidates, 17 current families, 2 rejected update candidates, and 5 tracked
 update candidates.
 
-The active tracked update-candidate set is now: llama.cpp b9333 follow-up,
-ROCm PyTorch release/2.12 26872de follow-up, stable-diffusion.cpp 1ceb5bd
-follow-up, and Transformers 5.9.0 follow-up. Each active tracked candidate has
-its disposition in `docs/maintainers/update-candidates.toml` and its gate label
-in `docs/backlog.md`. The superseded llama.cpp `b9279` and `b9305` candidates
-and stable-diffusion.cpp `3a8788c` and `a397e03` candidates are rejected in the
+The tracked ledger entries now include: llama.cpp b9330-2 deploy/install
+closeout, llama.cpp b9333 follow-up, ROCm PyTorch release/2.12 26872de
+follow-up, stable-diffusion.cpp 1ceb5bd follow-up, and Transformers 5.9.0
+follow-up. Each tracked entry has its disposition in
+`docs/maintainers/update-candidates.toml` and its gate label in
+`docs/backlog.md`. The superseded llama.cpp `b9279` and `b9305` candidates and
+stable-diffusion.cpp `3a8788c` and `a397e03` candidates are rejected in the
 ledger rather than left as active tracked work. The 2026-05-26 package refresh
 adopts the Lemonade fork `13b1af2` lane through source update, package build,
 deploy/install, installed smoke, and live-scenario validation. The llama.cpp
@@ -196,7 +197,9 @@ recording that disposition, `tools/check_package_updates.py --refresh --json
 --fail-on actionable` exited `0`. The post-AOCL rebase check
 `tools/check_package_updates.py --json --fail-on actionable` also exited `0`,
 with effective counts of 22 adopted update candidates, 17 current families, 2
-rejected update candidates, and 4 tracked update candidates.
+rejected update candidates, and 4 tracked update candidates; b9333 remains the
+effective llama.cpp update candidate while b9330-2 remains tracked as a
+deploy/install closeout gate.
 
 The 2026-05-26 Quark/AWQ/GPTQ/bitsandbytes/xFormers/FBGEMM candidate triage is
 also docs-only source audit. It does not implement packages, change package
