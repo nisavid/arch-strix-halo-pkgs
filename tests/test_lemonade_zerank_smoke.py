@@ -192,5 +192,5 @@ def test_stop_lemond_kills_process_after_terminate_timeout(monkeypatch):
         ("terminate", None),
         ("wait", 15.0),
         ("kill", None),
-        ("wait", None),
+        ("wait", 15.0),
     ]
