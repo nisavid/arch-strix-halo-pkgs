@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import subprocess
 from pathlib import Path
 import sys
 
@@ -13,6 +14,7 @@ if str(TOOLS_DIR) not in sys.path:
     sys.path.insert(0, str(TOOLS_DIR))
 
 from lemonade_zerank_smoke import (
+    _stop_lemond,
     _start_lemond,
     _error_payload_message,
     _scores_by_document,
@@ -26,7 +28,7 @@ def test_validate_model_metadata_requires_zeroentropy_adapter_options():
     validate_model_metadata(
         {
             "id": "zerank-2-GGUF",
-            "downloaded": True,
+            "downloaded": False,
             "labels": ["reranking"],
             "recipe": "llamacpp",
             "recipe_options": {
@@ -159,3 +161,36 @@ def test_start_lemond_cleans_owned_resources_when_launch_fails(tmp_path, monkeyp
     assert server_log.exists()
     assert server_log.read_text() == ""
     assert not cache_dir.exists()
+
+
+def test_stop_lemond_kills_process_after_terminate_timeout(monkeypatch):
+    calls = []
+
+    class FakeProcess:
+        def __init__(self):
+            self.wait_calls = 0
+
+        def wait(self, timeout=None):
+            self.wait_calls += 1
+            calls.append(("wait", timeout))
+            if self.wait_calls < 3:
+                raise subprocess.TimeoutExpired("lemond", timeout)
+            return 0
+
+        def terminate(self):
+            calls.append(("terminate", None))
+
+        def kill(self):
+            calls.append(("kill", None))
+
+    monkeypatch.setattr("lemonade_zerank_smoke._shutdown", lambda *args, **kwargs: None)
+
+    _stop_lemond("http://127.0.0.1:12345", FakeProcess())
+
+    assert calls == [
+        ("wait", 15.0),
+        ("terminate", None),
+        ("wait", 15.0),
+        ("kill", None),
+        ("wait", None),
+    ]
