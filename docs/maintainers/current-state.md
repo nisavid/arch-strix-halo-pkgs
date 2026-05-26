@@ -1,6 +1,6 @@
 # Current State
 
-Status as of 2026-05-25.
+Status as of 2026-05-26.
 
 The llama.cpp selected-token logits package branch is adopted and
 live-validated. Both packaged backends remain on upstream `b9222` and render as
@@ -81,18 +81,34 @@ correctness smokes. The reduced Qwen3.5 0.8B text smoke now records
 to `0.35`; larger 26B-A4B and Qwen3.6 MoE probes keep their existing explicit
 high-reservation settings.
 
-The 2026-05-24 recovery-branch freshness gate ran
-`tools/check_package_updates.py --json --fail-on actionable` before restoring
-the CTranslate2 package branch. The sweep found four new action-required
-families and they are tracked as separate follow-up lanes in
-`docs/maintainers/update-candidates.toml` and `docs/backlog.md`: AITER
-`0.1.14` stable after the adopted `0.1.14-rc0` package lane, llama.cpp
-`b9305` with AUR HIP baseline `b9297-1`, stable-diffusion.cpp master
+The 2026-05-26 freshness gate supersedes the coordinator snapshot for the
+Lemonade cursor and llama.cpp release. The rerun exited `10` with four current
+action-required families: Httptools `0.8.0`, Lemonade fork main
+`13b1af25f84cf08ad5f8bf0ec58980bdfc09c9e7`, llama.cpp `b9330` with AUR HIP
+baseline `b9326-1`, and stable-diffusion.cpp master
+`1ceb5bd9df7784bcdf67dd9ed8bf0198b542ebc9`. The live llama.cpp result
+supersedes the coordinator handoff's earlier `b9329` observation.
+
+The active tracked update-candidate set is now: AOCL-LibM 5.3 follow-up,
+AOCL-Utils 5.3.0 follow-up, DuckDB 1.5.3 follow-up, Httptools 0.8.0 follow-up,
+Lemonade fork 13b1af2 follow-up, llama.cpp b9330 follow-up, Local
+python-pydantic ABI lane, ROCm PyTorch release/2.12 26872de follow-up,
+stable-diffusion.cpp 1ceb5bd follow-up, Transformers 5.9.0 follow-up, and Yarl
+1.24.2 follow-up. Each active tracked candidate has its disposition in
+`docs/maintainers/update-candidates.toml` and its gate label in
+`docs/backlog.md`. The superseded llama.cpp `b9279` and `b9305` candidates and
+stable-diffusion.cpp `3a8788c` and `a397e03` candidates are rejected in the
+ledger rather than left as active tracked work. No package source update,
+package build, deploy/install, installed smoke, or live-scenario validation was
+performed in this docs-only cleanup.
+
+The earlier 2026-05-24 recovery-branch freshness gate tracked AITER `0.1.14`
+stable, llama.cpp `b9305`, stable-diffusion.cpp
 `a397e03488cc27e1a42da646b82dfce9f50741c0`, and the local
-python-pydantic-core ABI lane with Arch `2.46.4-1` and PyPI baseline cursor
-`2.47.0`. These are not adopted in the CTranslate2 recovery branch; each
-requires the package-specific source review, rebuild, deploy/install, and
-runtime validation gates recorded in the backlog before adoption.
+python-pydantic-core ABI lane. AITER `0.1.14` is now adopted and live-validated,
+the llama.cpp and stable-diffusion.cpp entries are superseded by the current
+tracked lanes above, and the pydantic-core ABI lane remains active tracked
+work.
 
 The 2026-05-21 freshness gate ran
 `tools/check_package_updates.py --json --fail-on actionable` after the
@@ -100,10 +116,9 @@ Lemonade patch-stack cleanup. The sweep completed without query failures and
 found eight non-current families requiring disposition: AOCL-Utils 5.3.0,
 DuckDB 1.5.3, Lemonade 10.6.0 baselines, llama.cpp b9279, ROCm PyTorch
 release/2.12 branch movement, stable-diffusion.cpp master movement,
-Transformers 5.9.0, and Yarl 1.24.2. These are tracked in
-`docs/maintainers/update-candidates.toml` and visible in `docs/backlog.md`;
-no package source update was adopted as part of the Lemonade patch-stack
-cleanup.
+Transformers 5.9.0, and Yarl 1.24.2. The remaining active work from that sweep
+is captured in the current tracked set above; Lemonade 10.6.0 is adopted, and
+the older llama.cpp and stable-diffusion.cpp candidates are superseded.
 
 The 2026-05-18 freshness follow-up bundle is adopted, installed, and
 live-validated. The installed reference host reports
