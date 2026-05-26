@@ -721,7 +721,7 @@ package() {{
   fi
 
   if [[ -d include ]]; then
-    cp -r --no-preserve=ownership include/. "$pkgdir/usr/include/"
+    cp -a --no-preserve=ownership include/. "$pkgdir/usr/include/"
   fi
 
 {textwrap.indent(post_package_lines[0], "  ")}

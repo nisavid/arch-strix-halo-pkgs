@@ -77,7 +77,7 @@ package() {
   fi
 
   if [[ -d include ]]; then
-    cp -r --no-preserve=ownership include/. "$pkgdir/usr/include/"
+    cp -a --no-preserve=ownership include/. "$pkgdir/usr/include/"
   fi
 
   if [[ -f "$pkgdir/usr/lib/libalm.so" ]]; then
