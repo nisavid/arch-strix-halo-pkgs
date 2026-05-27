@@ -8,8 +8,8 @@ RECIPE_JSON = REPO_ROOT / "packages/llama.cpp-hip-gfx1151/recipe.json"
 PACKAGE_PATCH_LINK = REPO_ROOT / "packages/llama.cpp-hip-gfx1151/0001-server-return-selected-token-logits.patch"
 PATCH_FILE = REPO_ROOT / "patches/llama.cpp-common/0001-server-return-selected-token-logits.patch"
 
-EXPECTED_VERSION = "b9330"
-EXPECTED_COMMIT = "328874d054e0eb44591202a23c209cf02c18e3cb"
+EXPECTED_VERSION = "b9352"
+EXPECTED_COMMIT = "b4c0549a49be9e6dc59ac9d0a5bc21dbda910774"
 SELECTED_LOGITS_PATCH = "0001-server-return-selected-token-logits.patch"
 
 

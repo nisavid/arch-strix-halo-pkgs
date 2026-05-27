@@ -4,27 +4,14 @@
 
 ### Active Unresolved Gates
 
-- llama.cpp b9352 deploy/install and live closeout: Lane C prepared the source
-  refresh at commit `c95568a`, building from upstream `b9352` commit
-  `b4c0549a49be9e6dc59ac9d0a5bc21dbda910774` for
-  `llama.cpp-hip-gfx1151 b9352-1` and
-  `llama.cpp-vulkan-gfx1151 b9352-1`; `lemonade-server 10.6.0-7` refreshes
-  the packaged system-managed llama.cpp backend metadata to the b9352 labels.
-  Source verification, source preparation, focused package tests, and
-  `tools/amerge build` plan `c8c6175b` have passed. The current installed set
-  remains `llama.cpp-hip-gfx1151 b9330-2`,
-  `llama.cpp-vulkan-gfx1151 b9330-2`, and `lemonade-server 10.6.0-6`.
-  Required remaining gates are PR closeout, operator deploy/install, read-only
-  installed-package verification, installed help smokes, and
-  `lemonade.reranking.zerank-2.selected-logit` live validation.
-- llama.cpp b9354 follow-up after b9352 validation: the 2026-05-27 freshness
-  check run during the b9352 pre-deploy gate found upstream `b9354` commit
-  `9777256c3130fa3201327bfab44bae187f7caea2` after the built b9352 lane. Do
-  not retarget the b9352 deploy/install handoff in place. Treat b9354 as a
-  separate source follow-up after b9352 is merged, deployed/installed,
-  installed-smoked, and selected-logit live-validated; required gates are
-  source diff review, package source update, package build, deploy/install,
-  installed smokes, and selected-logit live validation.
+- llama.cpp b9357 follow-up after b9352 validation: the 2026-05-27 freshness
+  check run during the b9352 package lane found upstream `b9357` commit
+  `4d8cc0c56ffba3f8b7fdb0130627fed2a6f71958` after the adopted b9352 lane. Do
+  not retarget the b9352 adoption in place. Treat b9357 as a separate source
+  follow-up; the range adds MiniCPM5 tokenizer support, a server SSL log
+  adjustment, and Vulkan transfer-queue handling for AMD UMA devices. Required
+  gates are source diff review, package source update, package build,
+  deploy/install, installed smokes, and selected-logit live validation.
 - ROCm PyTorch release/2.12 26872de post-pkgrel live validation:
   `python-pytorch-opt-rocm-gfx1151` now tracks ROCm/pytorch release/2.12
   commit `26872debb4452ea6dc898288618a15595e2317d9` as `2.12.0-2`; the
@@ -235,8 +222,15 @@
   deploy/install completed, installed help smokes passed, and the b9330-2
   selected-logit live scenario passed at
   `docs/worklog/inference-runs/20260526T-llama-b9330-2-postdeploy-live`.
-  The separate llama.cpp b9352 deploy/install/live closeout and b9354 follow-up
-  remain active.
+- The llama.cpp b9352 backend refresh is adopted. Both llama.cpp backends render
+  from upstream b9352 as `b9352-1`, `lemonade-server 10.6.0-7` refreshes the
+  packaged system-managed backend labels, package build plan `c8c6175b`
+  completed, the deployed host reports both b9352 backends plus
+  `lemonade-server 10.6.0-7`, installed help smokes passed at
+  `docs/worklog/inference-runs/20260527T-llama-b9352-postdeploy-help`, and the
+  selected-logit live scenario passed at
+  `docs/worklog/inference-runs/20260527T-llama-b9352-postdeploy-live`.
+  The separate llama.cpp b9357 follow-up remains active.
 - The Lemonade 10.6.0 fork-main refresh is adopted. The source lane pins
   `nisavid/lemonade` fork main at
   `b608a74d0604f96786de59d65cb0ba27b05db0c6`, aligned with canonical upstream
