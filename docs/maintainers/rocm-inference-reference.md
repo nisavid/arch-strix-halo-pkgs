@@ -2,10 +2,10 @@
 
 This source disposition reference was compiled from sources retrieved across
 2026-04-22, 2026-05-24, the Quark/AWQ/GPTQ/bitsandbytes/xFormers/FBGEMM
-candidate triage on 2026-05-26, and the xFormers follow-up on 2026-05-27. It
-is for troubleshooting and planning the Strix Halo `gfx1151` inference stack.
-Upstream ROCm documents often describe
-MI300X, MI350X, CDNA, or Instinct systems; treat those details as
+candidate triage on 2026-05-26, the xFormers follow-up on 2026-05-27, and the
+FBGEMM package-boundary review on 2026-05-27. It is for troubleshooting and
+planning the Strix Halo `gfx1151` inference stack. Upstream ROCm documents
+often describe MI300X, MI350X, CDNA, or Instinct systems; treat those details as
 `advisory-only` until a local scenario validates them here.
 
 Status labels:
@@ -46,7 +46,7 @@ Status labels:
 | <https://github.com/bitsandbytes-foundation/bitsandbytes/releases/tag/0.49.2> | upstream GitHub release, commit `f0e6ca31b32c4744a9cee4e31610b25796cbf778` | 2026-05-26 | `requires-host-validation` | `docs/backlog.md`; `docs/maintainers/rocm-inference-reference.md` | source-built `python-bitsandbytes-gfx1151` package experiment plus PyTorch/vLLM smokes | ROCm support is official but preview; upstream docs list `gfx1151` in ROCm target sets and expose `COMPUTE_BACKEND=hip` / `BNB_ROCM_ARCH`. Do not adopt PyPI binary wheels; build from pinned source and keep the package separate from `python-vllm-rocm-gfx1151`. |
 | <https://github.com/facebookresearch/xformers> | upstream Meta GitHub repo, latest release `v0.0.35` at `03b91d7d9ff295ae68a320e2e733dd6c2ef8f342`; main at `c04f47b69b53d60a53916fd61ddd32bdb4a6b927`; CK submodule `50fad035248b154cdfa4505cf5de7465ce146149` | 2026-05-27 | `advisory-only` | `docs/backlog.md`; `docs/maintainers/rocm-inference-reference.md` | concrete local consumer plus explicit package-level `gfx1151` source-build evidence | Current README advertises experimental ROCm 7.1 wheels and source builds can pass `HIP_ARCHITECTURES`. The CK submodule contains generic `gfx1151` target references, but Meta's ROCm wheel workflow targets `gfx90a gfx942` and no top-level xFormers build or test lane advertises `gfx1151`. Public wheels are not package sources for this stack; a local package would need pinned source/submodules, HIP build proof, extension linkage checks, `python -m xformers.info`, and fp16/bf16 attention correctness smokes. |
 | <https://github.com/ROCm/xformers> | ROCm GitHub fork, `develop` at `db55a2f5745ee0a13316f93e968a002b143e35da`; CK submodule `fe2e29fa68ce52eda49506d7e59738ba311de986`; no public releases or tags observed | 2026-05-27 | `advisory-only` | `docs/backlog.md`; `docs/maintainers/rocm-inference-reference.md` | compare only after a concrete consumer or package-level upstream `gfx1151` evidence exists | The ROCm fork's CK submodules contain `gfx1151` references, but top-level setup.py falls back to `gfx942` when local ROCm agent enumeration is unavailable and rejects architectures outside `gfx908`, `gfx90a`, `gfx942`, and `gfx950`; use it only if a future audit proves it is the right source lane. |
-| <https://github.com/pytorch/FBGEMM/releases/tag/v1.7.0> | upstream PyTorch/Meta GitHub release, commit `bf6dce360a4fe133bc779e2fd036277678509f95` | 2026-05-26 | `requires-host-validation` | `docs/backlog.md`; `docs/maintainers/rocm-inference-reference.md` | source-built FBGEMM package experiment with proven consumer path | Real ROCm support exists, including ROCm 7.x release notes and FBGEMM FP8 matrix support in vLLM, but visible CI and examples target CDNA/MI300-class `gfx942`. Track separately from PyTorch; require source/submodule pinning, package-boundary decision, import/op smoke, and a vLLM or Transformers consumer path before adoption. |
+| <https://github.com/pytorch/FBGEMM/releases/tag/v1.7.0> | upstream PyTorch/Meta GitHub release, commit `bf6dce360a4fe133bc779e2fd036277678509f95`; submodules include `asmjit`, `cpuinfo`, `googletest`, `hipify_torch`, `jwfromm/cutlass`, `ROCm/composable_kernel`, and `nlohmann/json` gitlinks | 2026-05-27 | `advisory-only` | `docs/backlog.md`; `docs/maintainers/rocm-inference-reference.md`; `docs/maintainers/vllm-recipe-coverage.md` | reopen only after a pinned consumer proves `fbgemm_gpu` value on `gfx1151` | The current boundary is a deferred standalone package candidate. FBGEMM v1.7.0 advertises ROCm 7.0/7.1 support, but visible CI/build automation targets `gfx942`/`gfx950`, and the inspected FP8 rowwise grouped GEMM path rejects architectures outside that set. Current vLLM ROCm `fbgemm_fp8` selects existing ROCm/AITER/Torch FP8 kernels instead of importing `fbgemm_gpu`; Transformers has a possible `FbgemmFp8Config` consumer but no pinned local model/scenario here. |
 
 ## Package And Scenario Impact
 
@@ -105,16 +105,33 @@ Status labels:
   `COMPUTE_BACKEND=hip` build, installed PyTorch smokes, and bounded
   Transformers/vLLM quantization smokes. Do not consume prebuilt wheels as the
   package source.
-- Keep xFormers and FBGEMM as package candidates, not package commitments.
+- Keep xFormers as a package candidate, not a package commitment.
   xFormers is blocked/deferred until a named local consumer exists and either
   upstream publishes explicit package-level `gfx1151` support or a pinned
   source/submodule spike proves a local HIP extension build. Submodule-level CK
   `gfx1151` references are useful scout evidence, not xFormers adoption proof.
   The required xFormers acceptance gates are source and submodule trust review,
   linkage/private-path inspection, `python -m xformers.info`, and direct
-  fp16/bf16 attention proof before a consumer scenario. FBGEMM needs a
-  package-boundary decision, source and submodule pins, import/op proof, and a
-  vLLM or Transformers consumer path.
+  fp16/bf16 attention proof before a consumer scenario.
+- Keep FBGEMM deferred as a standalone `fbgemm_gpu` package candidate. Reopen
+  only when a pinned vLLM or Transformers consumer requires
+  `fbgemm_gpu`/`torch.ops.fbgemm` and is not covered by TorchAO,
+  compressed-tensors, AITER, FlashAttention, Quark, GPTQ, AWQ, or
+  bitsandbytes lanes. A package plan must pin the FBGEMM release/tag/commit and
+  every submodule gitlink, disposition the `jwfromm/cutlass` fork, build
+  source for `gfx1151`, inspect shared-library linkage and private paths,
+  smoke `fbgemm_gpu.experimental.gen_ai` plus minimal FP8 ops, and record the
+  downstream consumer validation separately from source, build, install, and
+  installed-smoke states.
+  The reviewed v1.7.0 gitlinks are `external/asmjit`
+  `a3199e8857792cd10b7589ff5d58343d2c9008ea`,
+  `external/composable_kernel`
+  `7fe50dc3da2069d6645d9deb8c017a876472a977`, `external/cpuinfo`
+  `161a9ec374884f4b3e85725cb22e05f9458fdc93`, `external/cutlass`
+  `571edeb2d0ac872a8392fc49285b156b07884b4e`, `external/googletest`
+  `52eb8108c5bdec04579160ae17225d66034bd723`, `external/hipify_torch`
+  `63b6a7b541fa7f08f8475ca7d74054db36ff2691`, and `external/json`
+  `55f93686c01528224f448c19128836e7df245f72`.
 - Keep the Blackcat Qwen3-VL embedding/reranking notes as blocked scenario
   material until the repo owns source-reviewed vLLM patches, bounded model
   bindings, and host validation. The existing llmcompressor and
