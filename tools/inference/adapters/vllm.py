@@ -69,6 +69,7 @@ def _extra_argv(definition: dict[str, Any]) -> list[str]:
 def _model_revision_argv(
     definition: dict[str, Any],
     *,
+    tool: str,
     model_bindings: dict[str, str],
     extra_argv: list[str],
 ) -> list[str]:
@@ -87,6 +88,11 @@ def _model_revision_argv(
     revision = provenance.get("revision")
     if not revision:
         return []
+    if tool != "qwen_text_smoke":
+        raise ValueError(
+            "UNSUPPORTED_MODEL_REVISION_TOOL: "
+            f"{tool} cannot apply model_provenance.revision"
+        )
     return ["--revision", str(revision)]
 
 
@@ -118,6 +124,7 @@ def build_execution_plan(
     extra_argv = _extra_argv(definition)
     model_revision_argv = _model_revision_argv(
         definition,
+        tool=tool,
         model_bindings=model_bindings,
         extra_argv=extra_argv,
     )
