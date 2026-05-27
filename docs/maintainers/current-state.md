@@ -142,6 +142,38 @@ selected-logit scenario passed
 `lemonade.reranking.zerank-2.selected-logit` with zero failures at
 `docs/worklog/inference-runs/20260526T-llama-b9330-2-postdeploy-live`.
 
+The llama.cpp b9352 source/build checkpoint is prepared on the Lane C branch
+and awaiting PR, host deploy/install, installed smoke, and live validation
+closeout. Branch commit `c95568a` prepares both packaged backends from upstream
+`b9352` commit `b4c0549a49be9e6dc59ac9d0a5bc21dbda910774` as
+`llama.cpp-hip-gfx1151 b9352-1` and
+`llama.cpp-vulkan-gfx1151 b9352-1`, with the shared
+`0001-server-return-selected-token-logits.patch` still applied during
+`prepare()`. Source review for `b9330..b9352` found Vulkan conv2d and coopmat1
+work, a ZenDNN matmul naming fix, SYCL VMM pool work, model support additions,
+and WebGPU/CUDA maintenance; no upstream changes touched `tools/server`, and
+the selected-token logits patch applies cleanly without fuzz.
+
+Source updated: complete on the Lane C branch, not yet merged to `main`.
+Package built: `tools/amerge` build plan `c8c6175b` produced
+`llama.cpp-hip-gfx1151 b9352-1`, `llama.cpp-vulkan-gfx1151 b9352-1`, and
+`lemonade-server 10.6.0-7`; Lane C source verification, source preparation,
+focused package tests, and `git diff --check` passed. Deployed/installed: not
+complete for b9352; the installed set remains
+`llama.cpp-hip-gfx1151 b9330-2`, `llama.cpp-vulkan-gfx1151 b9330-2`, and
+`lemonade-server 10.6.0-6`. Installed-smoked: not complete for b9352.
+Live-scenario validated: not complete for b9352; the remaining handoff is PR
+closeout, deploy/install, installed help smokes, and the packaged Lemonade
+selected-logit scenario against the installed b9352 backend set.
+
+The same pre-deploy freshness gate found upstream llama.cpp `b9354` commit
+`9777256c3130fa3201327bfab44bae187f7caea2` after the built b9352 lane. Treat
+b9354 as separate source drift rather than retargeting the b9352 deployment in
+place. The `b9352..b9354` range adds MiniCPM5 tokenizer support and adjusts a
+server SSL log message in `tools/server/server-http.cpp` and
+`tools/server/server-http.h`; source update, package build, deploy/install,
+installed smokes, and selected-logit live validation remain open for b9354.
+
 
 
 The 2026-05-25 AITER stable-release refresh is adopted and live-validated.
@@ -236,14 +268,15 @@ llama.cpp candidate dispositions were updated,
 candidates, 17 current families, 2 rejected update candidates, and 5 tracked
 update candidates.
 
-The active package ledgers are: llama.cpp b9352 follow-up, ROCm PyTorch
+The active package ledgers are: llama.cpp b9352 deploy/install/live/PR
+closeout, llama.cpp b9354 follow-up after b9352 validation, ROCm PyTorch
 release/2.12 `26872de` post-pkgrel live validation, ROCm PyTorch release/2.12
 `980ce60` follow-up, and Transformers 5.9.0 follow-up. The effective
-freshness-tracked non-current entries are llama.cpp b9352, ROCm PyTorch
+freshness-tracked non-current entries are llama.cpp b9354, ROCm PyTorch
 release/2.12 `980ce60`, and Transformers 5.9.0. The additional
-package-validation tracked entry is ROCm PyTorch release/2.12 `26872de`
-post-pkgrel live validation. Each active entry has its disposition in
-`docs/maintainers/update-candidates.toml` and its gate label in
+package-validation tracked entries are llama.cpp b9352 and ROCm PyTorch
+release/2.12 `26872de` post-pkgrel live validation. Each active entry has its
+disposition in `docs/maintainers/update-candidates.toml` and its gate label in
 `docs/backlog.md`. The superseded llama.cpp `b9279`, `b9305`, and `b9334`
 candidates and stable-diffusion.cpp `3a8788c` and `a397e03` candidates are
 rejected in the ledger rather than left as active tracked work.
@@ -267,17 +300,22 @@ observation is accepted as real and reconciled here as documentation and
 candidate-ledger state for llama.cpp b9352, stable-diffusion.cpp 92dc726, ROCm
 PyTorch release/2.12 980ce60, and Transformers 5.9.0. The stable-diffusion.cpp
 92dc726 package lane has since reached adopted source/build/install/smoke state
-as described below, while llama.cpp b9352, ROCm PyTorch release/2.12 980ce60,
-and Transformers 5.9.0 remain tracked follow-ups. The ROCm PyTorch 26872de
-closeout updates package sources and generated metadata to match the already
-deployed stack; it leaves the post-pkgrel live scenario rerun as user-owned
-work.
+as described below. The llama.cpp b9352 lane is source-updated and
+package-built on the Lane C branch but still needs PR, deploy/install,
+installed smokes, and selected-logit live validation; llama.cpp b9354, ROCm
+PyTorch release/2.12 980ce60, and Transformers 5.9.0 remain tracked source
+follow-ups. The ROCm PyTorch 26872de closeout updates package sources and
+generated metadata to match the already deployed stack; it leaves the
+post-pkgrel live scenario rerun as user-owned work.
 
 After the Lane A b9330-2 and stable-diffusion.cpp 92dc726 adoption ledgers were
 recorded, `tools/check_package_updates.py --json --fail-on actionable` exited
 `0` at 2026-05-27 01:21:38 EDT with effective counts of 23 adopted update
 candidates, 17 current families, 2 rejected update candidates, and 3 tracked
-update candidates.
+update candidates. Lane 0 did not rerun the freshness checker during this
+docs-only reconciliation because that acted-on sweep was less than 24 hours old
+and this branch changes docs plus candidate-ledger dispositions, not package
+policy, package directories, checker logic, or package source metadata.
 
 The stable-diffusion.cpp 1ceb5bd follow-up is adopted. Source metadata and
 rendered scaffolds now track upstream master
@@ -322,11 +360,17 @@ highest-priority live-validation lane because the retained Qwen3.5 GPTQ Int4
 scenario carries pinned model revision/license metadata in its scenario
 provenance, and direct repo-ID execution passes the pinned revision to the qwen
 text smoke. The scenario runner fails before subprocess execution when
-`model_provenance.terms_status` is not accepted. The Claude-derived
-provenance/terms decision remains open for GPTQ before any live run. Quark is
-split into a pinned model-artifact vLLM consumer lane and a separate optional
-`amd-quark` authoring-tool package lane;
-bitsandbytes, AWQ, xFormers, and FBGEMM remain tracked source/package
+`model_provenance.terms_status` is not accepted. GPTQ provenance/fixture
+decision work can start after this reconciliation, but live vLLM validation
+waits for the accepted model decision plus stable runtime-base evidence after
+the PyTorch and Transformers lanes unless the operator explicitly bypasses that
+sequence. Quark is split into a pinned model-artifact vLLM consumer lane and a
+separate optional `amd-quark` authoring-tool package lane; Quark artifact
+decision work can start after this reconciliation, but live vLLM validation
+waits for artifact provenance/terms acceptance plus the same stable
+runtime-base boundary unless explicitly bypassed. The `amd-quark` package lane
+remains out of scope for this through-Quark wave unless the operator expands
+scope. Bitsandbytes, AWQ, xFormers, and FBGEMM remain tracked source/package
 candidates with source-provenance, source-build, installed-smoke, and
 live-scenario gates before adoption.
 
