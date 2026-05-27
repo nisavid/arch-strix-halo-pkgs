@@ -39,9 +39,9 @@ When an interactive recipe URL includes selectors such as
 rendered command keeps the base shape.
 
 ROCm vLLM optimization references add planned probe families, not new
-validated behavior: FP8 KV-cache, Quark, AWQ, GPTQ, AITER feature switches,
+validated behavior: FP8 KV-cache, Quark vLLM consumer smoke, AWQ, GPTQ, AITER feature switches,
 bounded `--max-num-seqs` / `--max-num-batched-tokens` tuning, and speculative
-decode limits. Keep each probe requires-host-validation until a local scenario
+decode limits. Keep each probe as requires-host-validation until a local scenario
 passes. These probes are adjacent to the Qwen3.6 FP8 MoE blocker; they do not
 unblock it by themselves.
 
