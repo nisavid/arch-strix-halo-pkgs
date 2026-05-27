@@ -118,7 +118,12 @@
   `python-bitsandbytes-gfx1151` package candidate. Do not adopt PyPI or
   PyTorch-index binary wheels; require a pinned source build for `gfx1151`,
   installed `python -m bitsandbytes`, direct 4-bit and 8-bit PyTorch smokes, a
-  pinned Transformers model smoke, and a bounded vLLM BitsAndBytes smoke.
+  pinned Transformers model smoke, and a bounded vLLM BitsAndBytes smoke. The
+  source/provenance and validation plan lives in
+  `docs/maintainers/bitsandbytes-package-research.md`. Package implementation
+  waits for stable runtime-base evidence and the Transformers follow-up
+  barrier, unless a separate coordinator-approved implementation lane
+  explicitly bypasses that sequence.
 - AWQ lane: keep native AWQ, compressed-tensors-format AWQ models, and
   deprecated AutoAWQ tooling separate. Do not package AutoAWQ for this lane;
   require a pinned AWQ model revision/license, backend evidence where
@@ -402,7 +407,9 @@
     the active unresolved and deferred package-candidate sections above. GPTQ,
     Quark, bitsandbytes, AWQ, and xFormers share this common gate: each
     candidate requires host validation plus source/provenance review before
-    adding a package or promoting a scenario.
+    adding a package or promoting a scenario. bitsandbytes now has a
+    source/provenance research note at
+    `docs/maintainers/bitsandbytes-package-research.md`.
     FBGEMM is deferred until the standalone package criteria and pinned
     consumer proof are satisfied. Package implementation waits for runtime-base
     prerequisite lanes if they change the Python/ROCm stack.

@@ -442,6 +442,19 @@ exact reopen criteria live in `docs/backlog.md` and
 `docs/maintainers/update-candidates.toml` record is created because FBGEMM is
 not an active freshness-policy family.
 
+The 2026-05-27 bitsandbytes research lane is a docs-only refinement of that
+candidate. It records upstream `bitsandbytes` tag `0.49.2` at
+`f0e6ca31b32c4744a9cee4e31610b25796cbf778` as the future package source pin,
+with PyPI and PyTorch-index binary wheels explicitly disallowed as package
+sources. `docs/maintainers/bitsandbytes-package-research.md` now owns the
+ROCm/HIP `gfx1151` build facts, source-test surfaces, installed-smoke set,
+Transformers and vLLM consumer gates, and implementation blockers. This lane
+does not add package policy, package files, source updates, package builds,
+deploy/install work, installed smokes, or live-scenario validation.
+Implementation still waits for stable runtime-base evidence and the
+Transformers follow-up barrier unless a separate coordinator-approved
+implementation lane explicitly bypasses that sequence.
+
 The earlier 2026-05-24 recovery-branch freshness gate tracked AITER `0.1.14`
 stable, llama.cpp `b9305`, stable-diffusion.cpp
 `a397e03488cc27e1a42da646b82dfce9f50741c0`, and the local

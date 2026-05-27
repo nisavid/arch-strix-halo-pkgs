@@ -73,7 +73,12 @@ at `v0.11.1`, `release/0.11` still reports version `0.11.1`, PyPI still
 excludes Python 3.13+ and declares `numpy<=2.1.3`, and no concrete local
 authoring consumer path has been selected.
 bitsandbytes is tracked as a separate source-built package candidate because
-upstream ROCm support is still preview even though it names `gfx1151`.
+upstream AMD ROCm (Preview) support names `gfx1151` as a supported target; the
+source/provenance plan and future vLLM smoke gate live in
+`docs/maintainers/bitsandbytes-package-research.md`. The vLLM BitsAndBytes
+surface remains unpromoted until a source-built package installs cleanly and a
+pinned BitsAndBytes-quantized model proves the vLLM quantization/load path on
+the reference host.
 xFormers remains blocked/deferred after the 2026-05-27 refresh: current vLLM
 docs list `gfx1151` as supported ROCm hardware for vLLM itself, but the local
 vLLM package, recipe metadata, tools, tests, and scenarios do not depend on
