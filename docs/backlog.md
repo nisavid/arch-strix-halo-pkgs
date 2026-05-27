@@ -10,10 +10,11 @@
   reference host still reports `llama.cpp-hip-gfx1151 b9330-1` and
   `llama.cpp-vulkan-gfx1151 b9330-1`, so the b9330-2 deploy/install,
   installed-smoke, and live-scenario validation gates remain open.
-- llama.cpp b9334 follow-up: the 2026-05-26 closeout freshness check found
-  upstream `b9334` after the b9330 package lane. Start this as a separate
-  source refresh only after the b9330-2 deploy/install closeout records its
-  final installed state and validation.
+- llama.cpp b9352 follow-up: the accepted 2026-05-27 raw freshness observation
+  found upstream `b9352` after the b9330 package lane, superseding the earlier
+  b9334 follow-up before package adoption. Start this as a separate source
+  refresh only after the b9330-2 deploy/install closeout records its final
+  installed state and validation.
 - ROCm PyTorch release/2.12 26872de follow-up: `origin/main` still pins
   `python-pytorch-opt-rocm-gfx1151` to ROCm/pytorch
   `4ddfe99d6da426414b7f0e587cdb1910f1c23eb3`. Read-only installed package
@@ -21,10 +22,23 @@
   consumers, but that host state does not close the committed source lane.
   Keep the source update, package provenance, affected rebuild, installed-smoke,
   and live-scenario gates open until a package lane records them together.
-- Transformers 5.9.0 follow-up: keep this blocked behind the PyTorch 26872de
-  source/validation closeout because the local Transformers package is coupled
-  to tokenizers, safetensors, Hugging Face Hub, model-surface imports, and vLLM
-  scenarios.
+- ROCm PyTorch release/2.12 980ce60 follow-up: the accepted 2026-05-27 raw
+  freshness observation found release/2.12 at
+  `980ce601387f3fb82911cec6aa0bfc3ec2e73d75`. Keep this as tracked drift
+  until the 26872de runtime lane records whether it merges as an intermediate
+  or retargets. Package implementation still requires source diff review,
+  affected rebuilds, deploy/install, installed-smoke, and live-scenario
+  validation.
+- stable-diffusion.cpp 92dc726 follow-up: the accepted 2026-05-27 raw
+  freshness observation found upstream master at
+  `92dc7268fc4ffb0c0cc0bd52dfcefea91326e797` after the adopted 1ceb5bd
+  package lane. Keep this as a separate source-refresh candidate with source
+  diff review, submodule-pin review, package build, deploy/install, installed
+  wrapper smokes, and any model-generation validation still open.
+- Transformers 5.9.0 follow-up: keep this blocked behind the PyTorch
+  runtime-base source/validation closeout because the local Transformers
+  package is coupled to tokenizers, safetensors, Hugging Face Hub,
+  model-surface imports, and vLLM scenarios.
 - GPTQ live-validation lane: run the retained
   `vllm.qwen3_5.4b-gptq-int4.text.basic` scenario only after pinning the
   RafaDom model revision, license metadata, and provenance/terms decision.

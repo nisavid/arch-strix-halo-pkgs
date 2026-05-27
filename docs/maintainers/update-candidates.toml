@@ -210,7 +210,7 @@ previous_recorded = "b9222 / b9222-3"
 latest = "b9279"
 discovery_status = "stable_update_available"
 disposition = "rejected"
-disposition_reason = "Superseded before package adoption. The active llama.cpp refresh lane is b9334, so this older b9279 candidate should not remain tracked as separate open work."
+disposition_reason = "Superseded before package adoption. The active llama.cpp refresh lane is b9352, so this older b9279 candidate should not remain tracked as separate open work."
 salient_changes = [
   "GitHub release b9279 is available after the adopted b9222 package lane",
   "AUR llama.cpp-hip baseline has advanced to b9275-1 while the Vulkan baseline remains at b9222-1",
@@ -220,7 +220,7 @@ package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
 next_gate_path = ""
-next_gate_label = "Superseded by llama.cpp b9334 follow-up"
+next_gate_label = "Superseded by llama.cpp b9352 follow-up"
 last_reviewed = "2026-05-26"
 
 [candidates."llama-cpp-b9305"]
@@ -234,7 +234,7 @@ previous_recorded = "b9222 / b9222-3"
 latest = "b9305"
 discovery_status = "stable_update_available"
 disposition = "rejected"
-disposition_reason = "Superseded before package adoption. The active llama.cpp refresh lane is b9334, so this older b9305 candidate should not remain tracked as separate open work."
+disposition_reason = "Superseded before package adoption. The active llama.cpp refresh lane is b9352, so this older b9305 candidate should not remain tracked as separate open work."
 salient_changes = [
   "GitHub release b9305 is available after the adopted b9222 package lane",
   "AUR llama.cpp-hip baseline has advanced to b9297-1 while the Vulkan baseline remains at b9222-1",
@@ -244,7 +244,7 @@ package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
 next_gate_path = ""
-next_gate_label = "Superseded by llama.cpp b9334 follow-up"
+next_gate_label = "Superseded by llama.cpp b9352 follow-up"
 last_reviewed = "2026-05-26"
 
 [candidates."llama-cpp-b9330"]
@@ -286,20 +286,45 @@ baseline_latest = "b9326-1"
 previous_recorded = "b9330 / b9326-1"
 latest = "b9334"
 discovery_status = "stable_update_available"
-disposition = "tracked"
-disposition_reason = "Found during the 2026-05-26 closeout freshness check after selecting llama.cpp b9330 for the active runtime refresh. Keep as a separate follow-up lane so the b9330/Lemonade runtime refresh can close with its own package build, deploy/install, installed-smoke, and selected-logit validation evidence."
+disposition = "rejected"
+disposition_reason = "Superseded before package adoption. The 2026-05-27 accepted raw checker observation reports upstream b9352 after b9334, so b9334 should not remain tracked as separate open work."
 salient_changes = [
   "GitHub release b9334 is available after the active b9330 package lane",
   "The checker marks this release lane as actionable because the llama.cpp family follows prerelease source movement",
   "AUR llama.cpp-hip remains at b9326-1 while the Vulkan baseline remains at b9222-1",
 ]
 patch_carry_overlap = true
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Superseded by llama.cpp b9352 follow-up"
+last_reviewed = "2026-05-27"
+
+[candidates."llama-cpp-b9352"]
+family = "llama_cpp"
+packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"]
+source_kind = "github_release"
+check_id = "release"
+baseline_source_kind = "aur"
+baseline_latest = "b9326-1"
+previous_recorded = "b9330 / b9326-1"
+latest = "b9352"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Accepted as raw freshness drift on 2026-05-27 after the b9330 package lane and the superseded b9334 follow-up. Track as the next llama.cpp source-refresh candidate without folding it into the b9330-2 deploy/install closeout."
+salient_changes = [
+  "GitHub release b9352 is available after the active b9330 package lane",
+  "This reconciliation records candidate disposition only; source diff review, package source update, package build, deploy/install, installed-smoke, and selected-logit live validation remain open",
+  "The b9330-2 deploy/install closeout remains a separate tracked gate",
+]
+patch_carry_overlap = true
 package_source_update_needed = true
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "llama.cpp b9334 follow-up"
-last_reviewed = "2026-05-26"
+next_gate_label = "llama.cpp b9352 follow-up"
+last_reviewed = "2026-05-27"
 
 [candidates."numpy-2.4.6"]
 family = "numpy"
@@ -372,6 +397,31 @@ next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
 next_gate_label = "ROCm PyTorch release/2.12 26872de follow-up"
 last_reviewed = "2026-05-21"
+
+[candidates."rocm-pytorch-release-2.12-980ce60"]
+family = "rocm_pytorch"
+packages = ["python-pytorch-opt-rocm-gfx1151"]
+source_kind = "git_ref"
+check_id = "release-branch"
+baseline_source_kind = "arch_package"
+baseline_latest = "2.12.0-1"
+previous_recorded = "4ddfe99d6da426414b7f0e587cdb1910f1c23eb3"
+latest = "980ce601387f3fb82911cec6aa0bfc3ec2e73d75"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "Accepted as raw freshness drift on 2026-05-27 after the existing 26872de release/2.12 follow-up. Keep as a separate tracked candidate until the PyTorch runtime lane decides whether 26872de merges as an intermediate or is retargeted."
+salient_changes = [
+  "ROCm/pytorch release/2.12 moved beyond the adopted 4ddfe99d package lane and beyond the existing 26872de follow-up",
+  "This reconciliation records candidate disposition only; source diff review, package source update, affected rebuilds, deploy/install, installed-smoke, and live-scenario validation remain open",
+  "The existing 26872de package lane remains tracked until its postdeploy evidence and merge-or-retarget decision are recorded",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "ROCm PyTorch release/2.12 980ce60 follow-up"
+last_reviewed = "2026-05-27"
 
 [candidates."aotriton-0.12b"]
 family = "aotriton"
@@ -484,6 +534,31 @@ next_gate_kind = "none"
 next_gate_path = ""
 next_gate_label = "Adopted; monitor future stable-diffusion.cpp refs through the normal freshness sweep"
 last_reviewed = "2026-05-26"
+
+[candidates."stable-diffusion-cpp-92dc726"]
+family = "stable_diffusion_cpp"
+packages = ["stable-diffusion.cpp-vulkan-gfx1151"]
+source_kind = "git_ref"
+check_id = "master"
+baseline_source_kind = "aur"
+baseline_latest = "r279.49d6570-1"
+previous_recorded = "1ceb5bd9df7784bcdf67dd9ed8bf0198b542ebc9"
+latest = "92dc7268fc4ffb0c0cc0bd52dfcefea91326e797"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "Accepted as raw freshness drift on 2026-05-27 after the adopted stable-diffusion.cpp 1ceb5bd package lane. Track as a separate source-refresh candidate; this docs-only reconciliation does not update source metadata or claim package, install, wrapper-smoke, or model-generation validation."
+salient_changes = [
+  "stable-diffusion.cpp master moved beyond the adopted 1ceb5bd package lane to 92dc726",
+  "This reconciliation records candidate disposition only; source diff review, submodule-pin review, package source update, package build, deploy/install, installed wrapper smokes, and any model-generation validation remain open",
+  "The adopted 1ceb5bd package lane remains the last built and installed stable-diffusion.cpp source state",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "stable-diffusion.cpp 92dc726 follow-up"
+last_reviewed = "2026-05-27"
 
 [candidates."watchfiles-1.2.0"]
 family = "watchfiles"

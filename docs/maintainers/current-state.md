@@ -1,6 +1,6 @@
 # Current State
 
-Status as of 2026-05-26.
+Status as of 2026-05-27.
 
 The 2026-05-26 AOCL 5.3 refresh is adopted. `aocl-utils-gfx1151`
 now renders from upstream AOCL-Utils `5.3.0` with the current AUR
@@ -180,12 +180,14 @@ candidates, 17 current families, 2 rejected update candidates, and 5 tracked
 update candidates.
 
 The active package ledgers are: llama.cpp b9330-2 deploy/install closeout,
-llama.cpp b9334 follow-up, ROCm PyTorch release/2.12 `26872de` follow-up, and
-Transformers 5.9.0 follow-up. Each tracked entry has its disposition in
+llama.cpp b9352 follow-up, ROCm PyTorch release/2.12 `26872de` intermediate
+follow-up, ROCm PyTorch release/2.12 `980ce60` follow-up,
+stable-diffusion.cpp `92dc726` follow-up, and Transformers 5.9.0 follow-up.
+Each tracked entry has its disposition in
 `docs/maintainers/update-candidates.toml` and its gate label in
-`docs/backlog.md`. The superseded llama.cpp `b9279` and `b9305` candidates and
-stable-diffusion.cpp `3a8788c` and `a397e03` candidates are rejected in the
-ledger rather than left as active tracked work.
+`docs/backlog.md`. The superseded llama.cpp `b9279`, `b9305`, and `b9334`
+candidates and stable-diffusion.cpp `3a8788c` and `a397e03` candidates are
+rejected in the ledger rather than left as active tracked work.
 
 The 2026-05-26 package refresh adopts the Lemonade fork `13b1af2` lane through
 source update, package build, deploy/install, installed smoke, and
@@ -193,7 +195,9 @@ live-scenario validation. The llama.cpp b9330 lane is source-updated and
 package-built as b9330-2; its final deploy/install, installed-smoke, and
 live-scenario validation gates remain open. The closeout refresh check then
 found upstream llama.cpp b9334 as the next llama.cpp follow-up rather than
-folding it into the b9330 build.
+folding it into the b9330 build. The 2026-05-27 accepted raw checker
+observation supersedes that b9334 follow-up with b9352 before b9334 package
+implementation.
 
 Read-only installed-state verification after PR #41 reports
 `python-pytorch-opt-rocm-gfx1151 2.12.0-2`,
@@ -210,19 +214,19 @@ requires a source update plus host validation. Treat the installed package
 state as evidence to reconcile in that package lane, not as an adopted source
 disposition.
 
-After recording the llama.cpp dispositions,
+After recording the earlier llama.cpp dispositions,
 `tools/check_package_updates.py --refresh --json --fail-on actionable` exited
 `0`. The post-AOCL rebase check
 `tools/check_package_updates.py --json --fail-on actionable` also exited `0`,
-with effective counts of 22 adopted update candidates, 17 current families, 2
-rejected update candidates, and 4 tracked update candidates; b9334 remains the
-effective llama.cpp update candidate while b9330-2 remains tracked as a
-deploy/install closeout gate. After the stable-diffusion.cpp closeout below,
-the same checker exited `0` with effective counts of 23 adopted update
-candidates, 17 current families, 2 rejected update candidates, and 3 tracked
-update candidates. This docs-only lane did not change package policy, package
-directories, checker logic, or relevant package source metadata, so the
-24-hour freshness gate is not due again.
+and the stable-diffusion.cpp 1ceb5bd closeout left no unhandled
+action-required families in that acted-on sweep. The 2026-05-27 raw checker
+observation is accepted as real but reconciled here only as documentation and
+candidate-ledger state: llama.cpp b9352 and stable-diffusion.cpp 92dc726 are
+tracked, ROCm PyTorch release/2.12 980ce60 is tracked alongside the existing
+26872de intermediate lane, llama.cpp b9334 is rejected as superseded, and
+Transformers 5.9.0 remains tracked. This docs-only reconciliation did not
+update package sources, build packages, deploy/install artifacts, run installed
+smokes, or run live inference scenarios.
 
 The stable-diffusion.cpp 1ceb5bd follow-up is adopted. Source metadata and
 rendered scaffolds now track upstream master
@@ -266,9 +270,10 @@ found eight non-current families requiring disposition: AOCL-Utils 5.3.0,
 DuckDB 1.5.3, Lemonade 10.6.0 baselines, llama.cpp b9279, ROCm PyTorch
 release/2.12 branch movement, stable-diffusion.cpp master movement,
 Transformers 5.9.0, and Yarl 1.24.2. The remaining active work from that sweep
-is captured in the current tracked set above; DuckDB 1.5.3, Lemonade 10.6.0,
-and Yarl 1.24.2 are adopted, and the older llama.cpp and stable-diffusion.cpp
-candidates are superseded.
+is captured in the current tracked set above, together with the accepted
+2026-05-27 raw observations; DuckDB 1.5.3, Lemonade 10.6.0, and Yarl 1.24.2
+are adopted, and the older llama.cpp and stable-diffusion.cpp candidates are
+superseded.
 
 The 2026-05-18 freshness follow-up bundle is adopted, installed, and
 live-validated. The installed reference host reports
