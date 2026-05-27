@@ -65,8 +65,13 @@ waits for an explicit source pin plus Python 3.14 and current NumPy
 compatibility.
 bitsandbytes is tracked as a separate source-built package candidate because
 upstream ROCm support is still preview even though it names `gfx1151`.
-xFormers and FBGEMM do not change the vLLM scenario surface until a
-source-built package and consumer path exist.
+xFormers remains blocked/deferred after the 2026-05-27 refresh: current vLLM
+docs list `gfx1151` as supported ROCm hardware for vLLM itself, but the local
+vLLM package, recipe metadata, tools, tests, and scenarios do not depend on
+xFormers. Current Meta/ROCm xFormers CK submodules contain `gfx1151` scout
+evidence, but the top-level package sources do not provide explicit
+package-level `gfx1151` support evidence. xFormers and FBGEMM do not change
+the vLLM scenario surface until a source-built package and consumer path exist.
 
 ## Gemma 4
 
