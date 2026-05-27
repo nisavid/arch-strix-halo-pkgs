@@ -2018,7 +2018,7 @@ scaffold_notes = [
 [packages."llama.cpp-hip-gfx1151"]
 recipe_key = "llamacpp"
 template = "llama-cpp"
-upstream_version = "b9352"
+upstream_version = "b9357"
 pkgrel = 1
 pkgdesc = "llama.cpp ROCm backend rebuilt for Strix Halo gfx1151"
 url = "https://github.com/ggml-org/llama.cpp"
@@ -2048,16 +2048,17 @@ update_notes = [
   "On 2026-05-19, adopted upstream llama.cpp b9222 at 9a532ae4bab1b164052ce60a738f78538b421c66. The b9165..b9222 range includes ggml 0.12.0, MTP support, server/Web UI updates, Vulkan BF16/ROPE/SSM pipeline work, and removal of the old Hugging Face cache migration path, so both packaged backends and Lemonade backend metadata follow the same source snapshot.",
   "On 2026-05-26, adopted upstream llama.cpp b9330 at 328874d054e0eb44591202a23c209cf02c18e3cb. The b9222..b9330 range includes server MTP and draft-resource fixes, prompt token counts in /slots, CMake/UI build refactors, ggml 0.13.0, Vulkan im2col and snake activation updates, and backend probe fixes including ffn_latent MUL_MAT classification, so both packaged backends and Lemonade backend metadata follow the same source snapshot.",
   "On 2026-05-27, updated the package source to upstream llama.cpp b9352 at b4c0549a49be9e6dc59ac9d0a5bc21dbda910774. The b9330..b9352 range includes Vulkan conv2d and coopmat1 work, SYCL pool VMM support, WebGPU MMVQ cleanup, Talkie/Mistral3 model metadata, Hexagon CONCAT/ROPE work, CUDA FWHT sync fixes, and CI workflow refactors; no server patch-carry file changed, but the Vulkan runtime delta and shared model/runtime movement justify refreshing both packaged backends and Lemonade backend metadata.",
+  "On 2026-05-27, updated the package source to upstream llama.cpp b9357 at 4d8cc0c56ffba3f8b7fdb0130627fed2a6f71958. The b9352..b9357 range adds MiniCPM5 tokenizer support, fixes the SSL listener log scheme, avoids preferring a dedicated Vulkan transfer queue on AMD UMA devices, and includes CI/docs maintenance. The shared selected-token logits patch still applies cleanly to the unchanged server context/task files.",
   "Keep the backend-specific package split explicit until benchmarking proves a routing wrapper is worth maintaining."
 ]
 provides = ["llama.cpp-hip-gfx1151", "llama.cpp-hip"]
 conflicts = ["llama.cpp-hip"]
 depends = ["gcc-libs", "glibc", "hip-runtime-amd-gfx1151", "rocm-core-gfx1151"]
 makedepends = ["cmake", "ninja", "rocm-llvm-gfx1151"]
-src_subdir = "llama.cpp-b4c0549a49be9e6dc59ac9d0a5bc21dbda910774"
+src_subdir = "llama.cpp-4d8cc0c56ffba3f8b7fdb0130627fed2a6f71958"
 upstream_name = "llama.cpp"
 baseline_kind = "closest-upstream"
-source_refs = ["llama.cpp-b4c0549a49be9e6dc59ac9d0a5bc21dbda910774.tar.gz::https://github.com/ggml-org/llama.cpp/archive/b4c0549a49be9e6dc59ac9d0a5bc21dbda910774.tar.gz"]
+source_refs = ["llama.cpp-4d8cc0c56ffba3f8b7fdb0130627fed2a6f71958.tar.gz::https://github.com/ggml-org/llama.cpp/archive/4d8cc0c56ffba3f8b7fdb0130627fed2a6f71958.tar.gz"]
 sha256sums = ["SKIP"]
 source_patches = ["0001-server-return-selected-token-logits.patch"]
 patches_dir = "patches/llama.cpp-common"
@@ -2094,7 +2095,7 @@ scaffold_notes = [
 [packages."llama.cpp-vulkan-gfx1151"]
 recipe_key = "llamacpp"
 template = "llama-cpp"
-upstream_version = "b9352"
+upstream_version = "b9357"
 pkgrel = 1
 pkgdesc = "llama.cpp Vulkan backend rebuilt for Strix Halo gfx1151"
 url = "https://github.com/ggml-org/llama.cpp"
@@ -2124,16 +2125,17 @@ update_notes = [
   "On 2026-05-19, adopted upstream llama.cpp b9222 at 9a532ae4bab1b164052ce60a738f78538b421c66. The b9165..b9222 range includes ggml 0.12.0, MTP support, server/Web UI updates, Vulkan BF16/ROPE/SSM pipeline work, and removal of the old Hugging Face cache migration path, so the Vulkan package follows the same source snapshot as the HIP backend.",
   "On 2026-05-26, adopted upstream llama.cpp b9330 at 328874d054e0eb44591202a23c209cf02c18e3cb. The b9222..b9330 range includes shared server MTP and draft-resource fixes, prompt token counts in /slots, CMake/UI build refactors, ggml 0.13.0, Vulkan im2col and snake activation updates, and backend probe fixes including ffn_latent MUL_MAT classification, so the Vulkan package follows the same source snapshot as the HIP backend.",
   "On 2026-05-27, updated the package source to upstream llama.cpp b9352 at b4c0549a49be9e6dc59ac9d0a5bc21dbda910774. The b9330..b9352 range includes Vulkan conv2d and coopmat1 work, SYCL pool VMM support, WebGPU MMVQ cleanup, Talkie/Mistral3 model metadata, Hexagon CONCAT/ROPE work, CUDA FWHT sync fixes, and CI workflow refactors; no server patch-carry file changed, but the Vulkan runtime delta and shared model/runtime movement justify refreshing both packaged backends and Lemonade backend metadata.",
+  "On 2026-05-27, updated the package source to upstream llama.cpp b9357 at 4d8cc0c56ffba3f8b7fdb0130627fed2a6f71958. The b9352..b9357 range adds MiniCPM5 tokenizer support, fixes the SSL listener log scheme, avoids preferring a dedicated Vulkan transfer queue on AMD UMA devices, and includes CI/docs maintenance. The shared selected-token logits patch still applies cleanly to the unchanged server context/task files.",
   "Until then, compare runtime/package expectations against the -bin package and source-build conventions against aur/llama.cpp."
 ]
 provides = ["llama.cpp-vulkan-gfx1151", "llama.cpp-vulkan"]
 conflicts = ["llama.cpp-vulkan"]
 depends = ["gcc-libs", "glibc", "vulkan-icd-loader"]
 makedepends = ["cmake", "ninja", "rocm-llvm-gfx1151", "shaderc", "spirv-headers", "vulkan-headers"]
-src_subdir = "llama.cpp-b4c0549a49be9e6dc59ac9d0a5bc21dbda910774"
+src_subdir = "llama.cpp-4d8cc0c56ffba3f8b7fdb0130627fed2a6f71958"
 upstream_name = "llama.cpp"
 baseline_kind = "closest-upstream"
-source_refs = ["llama.cpp-b4c0549a49be9e6dc59ac9d0a5bc21dbda910774.tar.gz::https://github.com/ggml-org/llama.cpp/archive/b4c0549a49be9e6dc59ac9d0a5bc21dbda910774.tar.gz"]
+source_refs = ["llama.cpp-4d8cc0c56ffba3f8b7fdb0130627fed2a6f71958.tar.gz::https://github.com/ggml-org/llama.cpp/archive/4d8cc0c56ffba3f8b7fdb0130627fed2a6f71958.tar.gz"]
 sha256sums = ["SKIP"]
 source_patches = ["0001-server-return-selected-token-logits.patch"]
 patches_dir = "patches/llama.cpp-common"
@@ -2260,7 +2262,7 @@ recipe_key = "lemonade"
 template = "lemonade-server"
 pkgdesc = "Local AI server runtime rebuilt for Strix Halo gfx1151"
 upstream_version = "10.6.0"
-pkgrel = 7
+pkgrel = 8
 url = "https://github.com/nisavid/lemonade"
 repo = "https://github.com/nisavid/lemonade.git"
 license = ["Apache-2.0"]
@@ -2277,7 +2279,8 @@ update_notes = [
   "Keep packaging and app/server split aligned with upstream naming changes; do not drift back toward the old lemonade-desktop era naming model.",
   "Re-test that LEMONADE_LLAMACPP_*_BIN service overrides still apply even when /var/lib/lemonade/config.json already exists.",
   "On 2026-05-26, adopted nisavid/lemonade fork main 13b1af25f84cf08ad5f8bf0ec58980bdfc09c9e7 so the server and app packages stay pinned to the same fork source while the app hides adapter controls for base llamacpp models.",
-  "On 2026-05-27, bumped the server package release to refresh packaged system-managed llama.cpp backend metadata for the b9352 HIP and Vulkan backends."
+  "On 2026-05-27, bumped the server package release to refresh packaged system-managed llama.cpp backend metadata for the b9352 HIP and Vulkan backends.",
+  "On 2026-05-27, bumped the server package release to refresh packaged system-managed llama.cpp backend metadata for the b9357 HIP and Vulkan backends."
 ]
 provides = ["lemonade-server"]
 conflicts = []

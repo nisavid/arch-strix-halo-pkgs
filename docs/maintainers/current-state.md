@@ -210,19 +210,37 @@ Live-scenario validated: complete for b9352; the installed
 `lemonade.reranking.zerank-2.selected-logit` scenario passed with zero failures
 at `docs/worklog/inference-runs/20260527T-llama-b9352-postdeploy-live`.
 
-The same package-lane freshness gate found upstream llama.cpp `b9357` commit
-`4d8cc0c56ffba3f8b7fdb0130627fed2a6f71958` after the adopted b9352 lane. Treat
-b9357 as separate source drift rather than retargeting the b9352 adoption in
-place. The `b9352..b9357` range adds MiniCPM5 tokenizer support, adjusts a
-server SSL log message in `tools/server/server-http.cpp` and
-`tools/server/server-http.h`, avoids preferring the Vulkan transfer queue on
-AMD UMA devices, and includes CI/docs maintenance; source update, package
-build, deploy/install, installed smokes, and selected-logit live validation
-remain open for b9357.
-After recording b9357 as tracked,
-`tools/check_package_updates.py --json --fail-on actionable` exited `0` with
-effective counts of 23 adopted update candidates, 17 current families, 2
-rejected update candidates, and 3 tracked update candidates.
+The llama.cpp b9357 source and package-build lane is tracked, with
+coordinator-owned validation still open. Both packaged backends now render from
+upstream `b9357` commit `4d8cc0c56ffba3f8b7fdb0130627fed2a6f71958` as
+`llama.cpp-hip-gfx1151 b9357-1` and
+`llama.cpp-vulkan-gfx1151 b9357-1`, with the shared
+`0001-server-return-selected-token-logits.patch` still applied during
+`prepare()`. Source review for `b9352..b9357` found MiniCPM5 tokenizer support,
+a server SSL log scheme adjustment in `tools/server/server-http.cpp` and
+`tools/server/server-http.h`, Vulkan transfer-queue selection changes for AMD
+UMA devices, and CI/docs maintenance. The upstream range does not touch
+`tools/server/server-context.cpp`, `tools/server/server-task.cpp`, or
+`tools/server/server-task.h`; direct `git apply --check`, patch dry-run, and
+`makepkg --nobuild --nodeps --force` source preparation applied the
+selected-token logits patch cleanly.
+
+Source updated: recipe scaffolds were regenerated for both llama.cpp backends
+and `lemonade-server`; Lemonade system-managed backend metadata now labels the
+b9357 packaged backends; and the freshness baseline records upstream llama.cpp
+release `b9357`. Package built: `tools/amerge` build plan `05912058` produced
+`lemonade-server 10.6.0-8`, `llama.cpp-hip-gfx1151 b9357-1`, and
+`llama.cpp-vulkan-gfx1151 b9357-1`. Deployed/installed: not complete for b9357.
+Installed-smoked: not complete for b9357. Live-scenario validated: not complete
+for b9357. The remaining coordinator-owned gates are deploy/install,
+installed help smokes, and the selected-logit live scenario after the stacked
+base is cleared.
+
+After recording b9357 source/build progress,
+`tools/check_package_updates.py --only llama_cpp --json --fail-on actionable`
+exited `0`: the upstream release, AUR HIP baseline, and AUR Vulkan baseline
+checks are current, and the effective `llama_cpp` state remains
+`tracked_update_candidate` because host validation is still open.
 
 The 2026-05-25 AITER stable-release refresh is adopted and live-validated.
 `python-amd-aiter-gfx1151` now renders from upstream tag `v0.1.14` as

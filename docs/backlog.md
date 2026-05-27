@@ -4,13 +4,18 @@
 
 ### Active Unresolved Gates
 
-- llama.cpp b9357 follow-up after b9352 validation: the 2026-05-27 freshness
-  check run during the b9352 package lane found upstream `b9357` commit
+- llama.cpp b9357 deploy/install and postdeploy validation handoff: the
+  2026-05-27 freshness check run during the b9352 package lane found upstream
+  `b9357` commit
   `4d8cc0c56ffba3f8b7fdb0130627fed2a6f71958` after the adopted b9352 lane. Do
   not retarget the b9352 adoption in place. Treat b9357 as a separate source
   follow-up; the range adds MiniCPM5 tokenizer support, a server SSL log
-  adjustment, and Vulkan transfer-queue handling for AMD UMA devices. Required
-  gates are source diff review, package source update, package build,
+  adjustment, and Vulkan transfer-queue handling for AMD UMA devices. Source
+  diff review, package source update, source verification, source preparation,
+  selected-token logits patch application, focused package tests, freshness
+  check, and package build plan `05912058` are complete for
+  `llama.cpp-hip-gfx1151 b9357-1`, `llama.cpp-vulkan-gfx1151 b9357-1`, and
+  `lemonade-server 10.6.0-8`. Remaining gates are coordinator-owned
   deploy/install, installed smokes, and selected-logit live validation.
 - ROCm PyTorch release/2.12 26872de post-pkgrel live validation:
   `python-pytorch-opt-rocm-gfx1151` now tracks ROCm/pytorch release/2.12

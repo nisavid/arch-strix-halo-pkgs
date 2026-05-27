@@ -7,7 +7,7 @@
 - Scaffold template: `llama-cpp`
 - Recipe build method: `cmake`
 - Upstream repo: `https://github.com/ggml-org/llama.cpp.git`
-- Package version: `b9352`
+- Package version: `b9357`
 - Recipe revision: `3f15f9f (20260508, 17 commits touching recipe path)`
 - Recipe steps: `34`
 - Recipe dependencies: `therock`
@@ -72,6 +72,7 @@ binaries find their shared libraries without LD_LIBRARY_PATH.
 - On 2026-05-19, adopted upstream llama.cpp b9222 at 9a532ae4bab1b164052ce60a738f78538b421c66. The b9165..b9222 range includes ggml 0.12.0, MTP support, server/Web UI updates, Vulkan BF16/ROPE/SSM pipeline work, and removal of the old Hugging Face cache migration path, so both packaged backends and Lemonade backend metadata follow the same source snapshot.
 - On 2026-05-26, adopted upstream llama.cpp b9330 at 328874d054e0eb44591202a23c209cf02c18e3cb. The b9222..b9330 range includes server MTP and draft-resource fixes, prompt token counts in /slots, CMake/UI build refactors, ggml 0.13.0, Vulkan im2col and snake activation updates, and backend probe fixes including ffn_latent MUL_MAT classification, so both packaged backends and Lemonade backend metadata follow the same source snapshot.
 - On 2026-05-27, updated the package source to upstream llama.cpp b9352 at b4c0549a49be9e6dc59ac9d0a5bc21dbda910774. The b9330..b9352 range includes Vulkan conv2d and coopmat1 work, SYCL pool VMM support, WebGPU MMVQ cleanup, Talkie/Mistral3 model metadata, Hexagon CONCAT/ROPE work, CUDA FWHT sync fixes, and CI workflow refactors; no server patch-carry file changed, but the Vulkan runtime delta and shared model/runtime movement justify refreshing both packaged backends and Lemonade backend metadata.
+- On 2026-05-27, updated the package source to upstream llama.cpp b9357 at 4d8cc0c56ffba3f8b7fdb0130627fed2a6f71958. The b9352..b9357 range adds MiniCPM5 tokenizer support, fixes the SSL listener log scheme, avoids preferring a dedicated Vulkan transfer queue on AMD UMA devices, and includes CI/docs maintenance. The shared selected-token logits patch still applies cleanly to the unchanged server context/task files.
 - Keep the backend-specific package split explicit until benchmarking proves a routing wrapper is worth maintaining.
 
 ## Maintainer Starting Points

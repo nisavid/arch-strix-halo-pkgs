@@ -347,20 +347,23 @@ previous_recorded = "b9352 / b9352-1"
 latest = "b9357"
 discovery_status = "stable_update_available"
 disposition = "tracked"
-disposition_reason = "Accepted as separate freshness drift found during the b9352 package lane. Do not retarget the adopted b9352 package lane in place; track b9357 as the next llama.cpp source follow-up."
+disposition_reason = "Source update and package build are complete in the stacked b9357 lane. Both packaged backends now pin upstream b9357 at 4d8cc0c56ffba3f8b7fdb0130627fed2a6f71958, Lemonade server metadata renders the b9357 system-managed backend labels, source verification and source preparation passed, the shared selected-token logits patch applies cleanly, and tools/amerge build plan 05912058 produced the b9357 llama.cpp packages plus lemonade-server 10.6.0-8. Deploy/install, installed smokes, and selected-logit live validation remain coordinator-owned open gates before adoption."
 salient_changes = [
-  "GitHub release b9357 is available after the adopted b9352 package lane",
-  "The package source would pin upstream commit 4d8cc0c56ffba3f8b7fdb0130627fed2a6f71958",
+  "GitHub release b9357 is the selected follow-up after the adopted b9352 package lane",
+  "The package source pins upstream commit 4d8cc0c56ffba3f8b7fdb0130627fed2a6f71958",
   "The b9352..b9357 range adds MiniCPM5 tokenizer support, adjusts a server SSL log message in tools/server/server-http.cpp and tools/server/server-http.h, avoids preferring the Vulkan transfer queue on AMD UMA devices, and includes CI/docs maintenance",
+  "The upstream range does not touch the shared selected-token logits patch target files, and makepkg source preparation applied the patch cleanly for both backends",
+  "Recipe scaffolds were regenerated for llama.cpp-hip-gfx1151 b9357-1, llama.cpp-vulkan-gfx1151 b9357-1, and lemonade-server 10.6.0-8 so Lemonade system-managed backend metadata labels the b9357 packaged backends",
+  "tools/amerge build plan 05912058 built lemonade-server 10.6.0-8, llama.cpp-hip-gfx1151 b9357-1, and llama.cpp-vulkan-gfx1151 b9357-1",
   "AUR llama.cpp-hip has advanced to b9352-1 while the Vulkan baseline remains llama.cpp-vulkan-bin b9222-1",
-  "Source diff review, package source update, package build, deploy/install, installed-smoke, and selected-logit live validation remain open for b9357",
+  "Deploy/install, installed-smoke, and selected-logit live validation remain open for coordinator handoff",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
+package_source_update_needed = false
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "llama.cpp b9357 follow-up after b9352 validation"
+next_gate_label = "llama.cpp b9357 deploy/install and postdeploy validation handoff"
 last_reviewed = "2026-05-27"
 
 [candidates."numpy-2.4.6"]
