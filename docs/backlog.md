@@ -4,11 +4,27 @@
 
 ### Active Unresolved Gates
 
-- llama.cpp b9352 follow-up: the accepted 2026-05-27 raw freshness observation
-  found upstream `b9352` after the b9330 package lane, superseding the earlier
-  b9334 follow-up before package adoption. Start this as a separate source
-  refresh after the b9330-2 selected-logit live-scenario closeout recorded its
-  final validation.
+- llama.cpp b9352 deploy/install and live closeout: Lane C prepared the source
+  refresh at commit `c95568a`, building from upstream `b9352` commit
+  `b4c0549a49be9e6dc59ac9d0a5bc21dbda910774` for
+  `llama.cpp-hip-gfx1151 b9352-1` and
+  `llama.cpp-vulkan-gfx1151 b9352-1`; `lemonade-server 10.6.0-7` refreshes
+  the packaged system-managed llama.cpp backend metadata to the b9352 labels.
+  Source verification, source preparation, focused package tests, and
+  `tools/amerge build` plan `c8c6175b` have passed. The current installed set
+  remains `llama.cpp-hip-gfx1151 b9330-2`,
+  `llama.cpp-vulkan-gfx1151 b9330-2`, and `lemonade-server 10.6.0-6`.
+  Required remaining gates are PR closeout, operator deploy/install, read-only
+  installed-package verification, installed help smokes, and
+  `lemonade.reranking.zerank-2.selected-logit` live validation.
+- llama.cpp b9354 follow-up after b9352 validation: the 2026-05-27 freshness
+  check run during the b9352 pre-deploy gate found upstream `b9354` commit
+  `9777256c3130fa3201327bfab44bae187f7caea2` after the built b9352 lane. Do
+  not retarget the b9352 deploy/install handoff in place. Treat b9354 as a
+  separate source follow-up after b9352 is merged, deployed/installed,
+  installed-smoked, and selected-logit live-validated; required gates are
+  source diff review, package source update, package build, deploy/install,
+  installed smokes, and selected-logit live validation.
 - ROCm PyTorch release/2.12 26872de post-pkgrel live validation:
   `python-pytorch-opt-rocm-gfx1151` now tracks ROCm/pytorch release/2.12
   commit `26872debb4452ea6dc898288618a15595e2317d9` as `2.12.0-2`; the
@@ -26,7 +42,9 @@
   --scenario flash-attn.ck.backend-import --scenario
   torch-migraphx.pt2e.quantizer-import --scenario vllm.qwen3_5.0_8b.text.basic`
   and record the run root before adopting this candidate.
-- ROCm PyTorch release/2.12 980ce60 follow-up: the accepted 2026-05-27 raw
+- ROCm PyTorch release/2.12 980ce60 follow-up: start this after the 26872de
+  post-pkgrel live rerun and docs/ledger closeout merge, unless the operator
+  explicitly declares a stable-runtime-base bypass. The accepted 2026-05-27 raw
   freshness observation found release/2.12 at
   `980ce601387f3fb82911cec6aa0bfc3ec2e73d75`. The 26872de runtime-base
   closeout records that 26872de remains the deployed source target rather than
@@ -35,30 +53,34 @@
   indexing fix in `TriangularOps.cu`, and package implementation still requires
   source update, affected rebuilds, deploy/install, installed-smoke, and
   live-scenario validation.
-- Transformers 5.9.0 follow-up: keep this blocked behind the PyTorch
-  runtime-base source/validation closeout because the local Transformers
-  package is coupled to tokenizers, safetensors, Hugging Face Hub,
-  model-surface imports, and vLLM scenarios.
+- Transformers 5.9.0 follow-up: keep this blocked until the 980ce60 follow-up
+  merges, or until the operator explicitly bypasses 980ce60 and declares the
+  runtime base stable. The local Transformers package is coupled to tokenizers,
+  safetensors, Hugging Face Hub, model-surface imports, and vLLM scenarios.
 - GPTQ live-validation lane: the retained
   `vllm.qwen3_5.4b-gptq-int4.text.basic` scenario pins the RafaDom model
   revision and model-card license metadata in scenario provenance. When the
   scenario uses the Hugging Face repo ID directly, the runner passes the pinned
   revision to the qwen text smoke. The runner treats non-accepted
-  `model_provenance.terms_status` values as a pre-run failure. Run it only
-  after the operator accepts the unresolved Claude-derived provenance/terms
-  risk or replaces the fixture. No new runtime package is expected for
+  `model_provenance.terms_status` values as a pre-run failure. Decision and
+  provenance work can start after this reconciliation; live vLLM validation
+  waits for operator acceptance of the unresolved Claude-derived
+  provenance/terms risk or a replacement fixture, plus stable runtime-base
+  evidence after the PyTorch/Transformers lanes unless explicitly bypassed. No
+  new runtime package is expected for
   prequantized GPTQ inference; promote only after vLLM ROCm extensions import,
   generation passes, and the source, build, install, and live states are
   recorded separately.
 - Quark vLLM consumer lane: track a pinned Quark-exported model artifact as a
-  vLLM validation lane, not as a runtime package. This can start after the
-  model artifact revision, license, and terms are accepted and the runtime-base
-  lanes needed by the smoke are stable. Required gates are model provenance, a
-  bounded installed vLLM generation smoke with `quantization="quark"` and any
-  model-required cache dtype, and separate recording of model-source
-  provenance, current installed vLLM package state, installed-smoke state, and
-  live-scenario validation. No new package build is expected unless the
-  existing vLLM runtime base changes.
+  vLLM validation lane, not as a runtime package. Decision work can start after
+  this reconciliation; live vLLM validation waits for artifact revision,
+  license, and terms acceptance plus stable runtime-base evidence after the
+  PyTorch/Transformers lanes unless explicitly bypassed. Required gates are
+  model provenance, a bounded installed vLLM generation smoke with
+  `quantization="quark"` and any model-required cache dtype, and separate
+  recording of model-source provenance, current installed vLLM package state,
+  installed-smoke state, and live-scenario validation. No new package build is
+  expected unless the existing vLLM runtime base changes.
 - `amd-quark` authoring-tool package lane: keep this as an optional package
   candidate, not as a `python-vllm-rocm-gfx1151` runtime dependency. Package
   work is blocked until the chosen release has a public source tag or explicit
@@ -140,7 +162,8 @@
   deploy/install completed, installed help smokes passed, and the b9330-2
   selected-logit live scenario passed at
   `docs/worklog/inference-runs/20260526T-llama-b9330-2-postdeploy-live`.
-  The separate llama.cpp b9352 source-refresh candidate remains active.
+  The separate llama.cpp b9352 deploy/install/live closeout and b9354 follow-up
+  remain active.
 - The Lemonade 10.6.0 fork-main refresh is adopted. The source lane pins
   `nisavid/lemonade` fork main at
   `b608a74d0604f96786de59d65cb0ba27b05db0c6`, aligned with canonical upstream
