@@ -1,5 +1,6 @@
 from pathlib import Path
 import importlib.util
+import re
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -15,8 +16,10 @@ def test_text_only_smoke_tool_uses_tokenizer_not_processor():
     assert "from transformers import AutoTokenizer" in text
     assert "AutoProcessor" not in text
     assert "apply_chat_template" in text
-    assert 'parser.add_argument(\n        "--gpu-memory-utilization",' in text
-    assert "default=None" in text
+    assert re.search(
+        r'parser\.add_argument\(\s*"--gpu-memory-utilization",\s*type=float,\s*default=None,',
+        text,
+    )
     assert "def effective_gpu_memory_utilization(args: argparse.Namespace, model: str) -> float:" in text
     assert "if is_gemma4_e2b(str(model)):" in text
     assert "return 0.35" in text
