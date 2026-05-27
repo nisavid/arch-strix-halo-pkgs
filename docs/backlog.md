@@ -4,21 +4,11 @@
 
 ### Active Unresolved Gates
 
-- llama.cpp b9330-2 selected-logit live-scenario closeout: both packaged
-  backends render from upstream b9330 as `b9330-2`, and follow-up build plan
-  `b59627f0` produced the selected-token bounds-guard rebuild. After operator
-  deploy handback, read-only `pacman -Q` and `pacman -Sl strix-halo-gfx1151`
-  checks report `llama.cpp-hip-gfx1151 b9330-2`,
-  `llama.cpp-vulkan-gfx1151 b9330-2`, `lemonade-server 10.6.0-6`,
-  `lemonade-app 10.6.0-5`, and `lemonade 10.6.0-1`; the postdeploy help-smoke
-  run at `docs/worklog/inference-runs/20260526T-llama-b9330-2-postdeploy`
-  passed four scenarios with zero failures. Next gate: Run b9330-2
-  selected-logit live scenario before adoption.
 - llama.cpp b9352 follow-up: the accepted 2026-05-27 raw freshness observation
   found upstream `b9352` after the b9330 package lane, superseding the earlier
   b9334 follow-up before package adoption. Start this as a separate source
-  refresh only after the b9330-2 selected-logit live-scenario closeout records
-  its final validation.
+  refresh after the b9330-2 selected-logit live-scenario closeout recorded its
+  final validation.
 - ROCm PyTorch release/2.12 26872de post-pkgrel live validation:
   `python-pytorch-opt-rocm-gfx1151` now tracks ROCm/pytorch release/2.12
   commit `26872debb4452ea6dc898288618a15595e2317d9` as `2.12.0-2`; the
@@ -45,12 +35,6 @@
   indexing fix in `TriangularOps.cu`, and package implementation still requires
   source update, affected rebuilds, deploy/install, installed-smoke, and
   live-scenario validation.
-- stable-diffusion.cpp 92dc726 follow-up: the accepted 2026-05-27 raw
-  freshness observation found upstream master at
-  `92dc7268fc4ffb0c0cc0bd52dfcefea91326e797` after the adopted 1ceb5bd
-  package lane. Keep this as a separate source-refresh candidate with source
-  diff review, submodule-pin review, package build, deploy/install, installed
-  wrapper smokes, and any model-generation validation still open.
 - Transformers 5.9.0 follow-up: keep this blocked behind the PyTorch
   runtime-base source/validation closeout because the local Transformers
   package is coupled to tokenizers, safetensors, Hugging Face Hub,
@@ -150,6 +134,13 @@
   rebuilt AOCL-LibM archive is published, and deploy/install, AOCL-Utils
   `pkg-config`, installed `libalm` runtime, and downstream stable-diffusion.cpp
   Vulkan wrapper smokes passed.
+- The llama.cpp b9330 and Lemonade fork `13b1af2` refresh is adopted.
+  Both llama.cpp backends render from upstream b9330 as `b9330-2`, Lemonade
+  backend metadata points at the b9330 system backends, package build and
+  deploy/install completed, installed help smokes passed, and the b9330-2
+  selected-logit live scenario passed at
+  `docs/worklog/inference-runs/20260526T-llama-b9330-2-postdeploy-live`.
+  The separate llama.cpp b9352 source-refresh candidate remains active.
 - The Lemonade 10.6.0 fork-main refresh is adopted. The source lane pins
   `nisavid/lemonade` fork main at
   `b608a74d0604f96786de59d65cb0ba27b05db0c6`, aligned with canonical upstream
@@ -167,6 +158,13 @@
   deploy/install, and installed `sd-cli-vulkan-gfx1151 --help` plus
   `sd-server-vulkan-gfx1151 --help` smokes passed on 2026-05-26. No
   model-generation validation is claimed.
+- The stable-diffusion.cpp 92dc726 follow-up is adopted.
+  `stable-diffusion.cpp-vulkan-gfx1151` now tracks upstream master
+  `92dc7268fc4ffb0c0cc0bd52dfcefea91326e797` as `r652.g92dc726-1`.
+  Source review, submodule-pin review, CLIP-G patch refresh, package build
+  plan `e6783abd`, deploy/install, published-repo verification, and installed
+  `sd-cli-vulkan-gfx1151 --help` plus `sd-server-vulkan-gfx1151 --help`
+  smokes passed. No model-generation validation is claimed.
 - The 2026-05-18 Python 3.14.5 rebuild lane is adopted. `python-gfx1151`
   now tracks CPython `3.14.5` with Arch `python 3.14.5-1` as the integration
   baseline. Source verification, package source preparation, package build,

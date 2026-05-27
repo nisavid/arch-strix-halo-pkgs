@@ -15,6 +15,11 @@ packages/*/*.whl
 packages/*/aocl-libm/
 packages/*/lemonade/
 packages/*/llama.cpp/
+packages/*/stable-diffusion.cpp/
+packages/*/ggml/
+packages/*/sdcpp-webui/
+packages/*/libwebm/
+packages/*/libwebp/
 packages/*/pytorch/
 packages/*/torch_migraphx/
 packages/*/torchao/

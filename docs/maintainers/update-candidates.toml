@@ -257,8 +257,8 @@ baseline_latest = "b9326-1"
 previous_recorded = "b9222 / b9222-3"
 latest = "b9330"
 discovery_status = "stable_update_available"
-disposition = "tracked"
-disposition_reason = "Source-updated, package-built, deployed/installed, and installed-smoked in the 2026-05-26 llama.cpp b9330 and Lemonade runtime closeout. Both packaged backends were repinned to upstream b9330, the selected-token logits patch was refreshed with a selected-token bounds guard, Lemonade backend metadata was refreshed to the b9330 system backends, b9330-2 package build completed, and operator deploy handback plus read-only pacman verification confirm b9330-2 is installed and repo-visible. Keep tracked until the b9330-2 selected-logit live-scenario gate passes."
+disposition = "adopted"
+disposition_reason = "Adopted after the b9330-2 selected-logit handback. Both packaged backends were repinned to upstream b9330, the selected-token logits patch was refreshed with a selected-token bounds guard, Lemonade backend metadata was refreshed to the b9330 system backends, b9330-2 package build completed, operator deploy handback plus read-only installed-package verification confirmed b9330-2 installed, installed help smokes passed, and lemonade.reranking.zerank-2.selected-logit passed against the installed b9330-2 packages at docs/worklog/inference-runs/20260526T-llama-b9330-2-postdeploy-live."
 salient_changes = [
   "GitHub release b9330 is the selected source lane after the b9222 package lane",
   "AUR llama.cpp-hip baseline has advanced to b9326-1 while the Vulkan baseline remains at b9222-1",
@@ -266,17 +266,18 @@ salient_changes = [
   "The candidate supersedes the handoff's b9329 observation from the earlier coordinator snapshot",
   "tools/amerge build plan 46a69d2a built llama.cpp-hip-gfx1151 b9330-1 and llama.cpp-vulkan-gfx1151 b9330-1; deploy plan 8e489a2e published and installed the b9330-1 packages with the Lemonade runtime packages",
   "tools/amerge build plan b59627f0 built llama.cpp-hip-gfx1151 b9330-2 and llama.cpp-vulkan-gfx1151 b9330-2 after the selected-token bounds guard",
-  "After operator deploy handback, pacman -Q and pacman -Sl strix-halo-gfx1151 report llama.cpp-hip-gfx1151 b9330-2 and llama.cpp-vulkan-gfx1151 b9330-2 installed and repo-visible alongside lemonade-server 10.6.0-6, lemonade-app 10.6.0-5, and lemonade 10.6.0-1",
+  "After operator deploy handback, pacman -Q and pacman -Qi report llama.cpp-hip-gfx1151 b9330-2 and llama.cpp-vulkan-gfx1151 b9330-2 installed from strix-halo-gfx1151 alongside lemonade-server 10.6.0-6, lemonade-app 10.6.0-5, and lemonade 10.6.0-1",
   "Installed b9330-2 help smokes for llama.cpp HIP, llama.cpp Vulkan, Lemonade CLI, and Lemonade server passed at docs/worklog/inference-runs/20260526T-llama-b9330-2-postdeploy",
   "Installed llama.cpp HIP/Vulkan smokes, direct HIP/Vulkan selected-logit /completion checks, and the packaged Lemonade zerank selected-logit scenario passed for the b9330-1 plus Lemonade set at docs/worklog/inference-runs/20260526T021053-lane4-b9330-closeout",
+  "The b9330-2 selected-logit live scenario passed at docs/worklog/inference-runs/20260526T-llama-b9330-2-postdeploy-live",
 ]
 patch_carry_overlap = true
 package_source_update_needed = false
-host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
-next_gate_label = "Run b9330-2 selected-logit live scenario before adoption"
-last_reviewed = "2026-05-26"
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Adopted; monitor future llama.cpp releases through the normal freshness sweep"
+last_reviewed = "2026-05-27"
 
 [candidates."llama-cpp-b9334"]
 family = "llama_cpp"
@@ -568,19 +569,23 @@ baseline_latest = "r279.49d6570-1"
 previous_recorded = "1ceb5bd9df7784bcdf67dd9ed8bf0198b542ebc9"
 latest = "92dc7268fc4ffb0c0cc0bd52dfcefea91326e797"
 discovery_status = "branch_head_ahead"
-disposition = "tracked"
-disposition_reason = "Accepted as raw freshness drift on 2026-05-27 after the adopted stable-diffusion.cpp 1ceb5bd package lane. Track as a separate source-refresh candidate; this docs-only reconciliation does not update source metadata or claim package, install, wrapper-smoke, or model-generation validation."
+disposition = "adopted"
+disposition_reason = "Adopted after the installed handback. Source metadata and rendered scaffolds now track 92dc7268fc4ffb0c0cc0bd52dfcefea91326e797 as r652.g92dc726, the upstream submodule gitlinks still match the explicit package source pins, the CLIP-G patch context was refreshed, first build plan 43b2ade5 exposed an ignored patch hunk through a vector operator[] compile error, final build plan e6783abd produced stable-diffusion.cpp-vulkan-gfx1151-r652.g92dc726-1-x86_64.pkg.tar.zst, the package is installed as r652.g92dc726-1, the published strix-halo-gfx1151 repo contains the same package version, and installed sd-cli-vulkan-gfx1151 plus sd-server-vulkan-gfx1151 wrapper help smokes passed. No model-generation validation is claimed."
 salient_changes = [
   "stable-diffusion.cpp master moved beyond the adopted 1ceb5bd package lane to 92dc726",
-  "This reconciliation records candidate disposition only; source diff review, submodule-pin review, package source update, package build, deploy/install, installed wrapper smokes, and any model-generation validation remain open",
-  "The adopted 1ceb5bd package lane remains the last built and installed stable-diffusion.cpp source state",
+  "Source review found Microsoft Lens support, GPT-OSS tokenizer and vocabulary additions, and LoRA directory scans that skip permission-denied entries",
+  "The upstream mode-160000 gitlinks for ggml, sdcpp-webui, libwebm, and libwebp are unchanged from the adopted 1ceb5bd tree and still match the explicit package source pins",
+  "The CLIP-G patch context was refreshed so both the prefix-ordering change and Flux te1 remap apply without ignored patch hunks",
+  "Final build plan e6783abd produced stable-diffusion.cpp-vulkan-gfx1151-r652.g92dc726-1-x86_64.pkg.tar.zst",
+  "Installed package and published-repo verification report stable-diffusion.cpp-vulkan-gfx1151 r652.g92dc726-1",
+  "Installed sd-cli-vulkan-gfx1151 --help and sd-server-vulkan-gfx1151 --help smokes passed",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
-next_gate_label = "stable-diffusion.cpp 92dc726 follow-up"
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Adopted; monitor future stable-diffusion.cpp refs through the normal freshness sweep"
 last_reviewed = "2026-05-27"
 
 [candidates."watchfiles-1.2.0"]

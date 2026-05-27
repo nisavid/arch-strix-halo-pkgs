@@ -90,10 +90,8 @@ deploy/install, installed-smoke, or live-scenario evidence in this repo, future
 work must update the source pin, build the derived package set, and hand
 privileged deploy/install plus live validation through the normal package lane.
 
-The llama.cpp b9330 and Lemonade fork `13b1af2` refresh is source-updated,
-package-built, deployed/installed, and installed-smoked, with the b9330-2
-selected-logit live-scenario gate still open. Both packaged llama.cpp backends
-render from upstream `b9330` commit
+The llama.cpp b9330 and Lemonade fork `13b1af2` refresh is adopted. Both
+packaged llama.cpp backends render from upstream `b9330` commit
 `328874d054e0eb44591202a23c209cf02c18e3cb` as
 `llama.cpp-hip-gfx1151 b9330-2` and
 `llama.cpp-vulkan-gfx1151 b9330-2`, with the shared
@@ -121,7 +119,7 @@ packages; follow-up build plan `b59627f0` produced
 the selected-token bounds guard. Deployed/installed: deploy plan `8e489a2e`
 published and installed the Lemonade artifacts and the initial b9330-1 llama.cpp
 packages; after the operator handback reported the b9330-2 deploy complete,
-read-only `pacman -Q` and `pacman -Sl strix-halo-gfx1151` verification reports
+read-only installed-package verification reports
 `llama.cpp-hip-gfx1151 b9330-2`, `llama.cpp-vulkan-gfx1151 b9330-2`,
 `lemonade-server 10.6.0-6`, `lemonade-app 10.6.0-5`, and `lemonade 10.6.0-1`.
 Installed-smoked: the installed b9330-2 plus Lemonade package set passed
@@ -139,9 +137,10 @@ with five scenarios and zero failures. Direct HIP and Vulkan `/completion`
 smokes against the tiny GGUF fixture returned finite `token_logits` for
 requested IDs `[0, 1, 2]` with `n_predict: 0`, included both `token` and
 `bytes` fields, and rejected 1025 requested IDs with HTTP 400 and the
-1024-token cap message. The b9330-2 live-scenario gate remains open until
-`lemonade.reranking.zerank-2.selected-logit` is rerun against the installed
-b9330-2 packages.
+1024-token cap message. Live-scenario validated: the installed b9330-2
+selected-logit scenario passed
+`lemonade.reranking.zerank-2.selected-logit` with zero failures at
+`docs/worklog/inference-runs/20260526T-llama-b9330-2-postdeploy-live`.
 
 
 
@@ -237,26 +236,23 @@ llama.cpp candidate dispositions were updated,
 candidates, 17 current families, 2 rejected update candidates, and 5 tracked
 update candidates.
 
-The active package ledgers are: llama.cpp b9330-2 selected-logit live-scenario
-closeout, llama.cpp b9352 follow-up, ROCm PyTorch release/2.12 `26872de`
-post-pkgrel live validation, ROCm PyTorch release/2.12 `980ce60` follow-up,
-stable-diffusion.cpp `92dc726` follow-up, and Transformers 5.9.0 follow-up.
-The effective freshness-tracked non-current entries are llama.cpp b9352, ROCm
-PyTorch release/2.12 `980ce60`, stable-diffusion.cpp `92dc726`, and
-Transformers 5.9.0. The additional package-validation tracked entry is ROCm
-PyTorch release/2.12 `26872de` post-pkgrel live validation. Each active entry
-has its disposition in `docs/maintainers/update-candidates.toml` and its gate
-label in `docs/backlog.md`. The superseded llama.cpp `b9279`, `b9305`, and
-`b9334` candidates and stable-diffusion.cpp `3a8788c` and `a397e03`
-candidates are rejected in the ledger rather than left as active tracked work.
+The active package ledgers are: llama.cpp b9352 follow-up, ROCm PyTorch
+release/2.12 `26872de` post-pkgrel live validation, ROCm PyTorch release/2.12
+`980ce60` follow-up, and Transformers 5.9.0 follow-up. The effective
+freshness-tracked non-current entries are llama.cpp b9352, ROCm PyTorch
+release/2.12 `980ce60`, and Transformers 5.9.0. The additional
+package-validation tracked entry is ROCm PyTorch release/2.12 `26872de`
+post-pkgrel live validation. Each active entry has its disposition in
+`docs/maintainers/update-candidates.toml` and its gate label in
+`docs/backlog.md`. The superseded llama.cpp `b9279`, `b9305`, and `b9334`
+candidates and stable-diffusion.cpp `3a8788c` and `a397e03` candidates are
+rejected in the ledger rather than left as active tracked work.
 
 The 2026-05-26 package refresh adopts the Lemonade fork `13b1af2` lane through
 source update, package build, deploy/install, installed smoke, and
-live-scenario validation. The llama.cpp b9330 lane is source-updated and
-package-built as b9330-2; after operator deploy handback, read-only pacman
-verification and the postdeploy help-smoke run close deployed/installed and
-installed-smoked, while the b9330-2 selected-logit live-scenario validation
-gate remains open. The closeout refresh check then found upstream llama.cpp
+live-scenario validation. The llama.cpp b9330 lane is source-updated,
+package-built, deployed/installed, installed-smoked, and live-scenario
+validated as b9330-2. The closeout refresh check then found upstream llama.cpp
 b9334 as the next llama.cpp follow-up rather than folding it into the b9330
 build. The 2026-05-27 accepted raw checker observation supersedes that b9334
 follow-up with b9352 before b9334 package implementation.
@@ -267,15 +263,21 @@ After recording the earlier llama.cpp dispositions,
 `tools/check_package_updates.py --json --fail-on actionable` also exited `0`,
 and the stable-diffusion.cpp 1ceb5bd closeout left no unhandled
 action-required families in that acted-on sweep. The 2026-05-27 raw checker
-observation is accepted as real but reconciled here as documentation and
+observation is accepted as real and reconciled here as documentation and
 candidate-ledger state for llama.cpp b9352, stable-diffusion.cpp 92dc726, ROCm
-PyTorch release/2.12 980ce60, and Transformers 5.9.0. The ROCm PyTorch
-26872de closeout now updates package sources and generated metadata to match
-the already deployed stack; it leaves the post-pkgrel live scenario rerun as
-user-owned work. After the b9330-2 handback closeout and this PyTorch closeout
-were recorded, `tools/check_package_updates.py --json --fail-on actionable`
-exited `0` with effective counts of 22 adopted update candidates, 17 current
-families, 2 rejected update candidates, and 4 tracked update candidates.
+PyTorch release/2.12 980ce60, and Transformers 5.9.0. The stable-diffusion.cpp
+92dc726 package lane has since reached adopted source/build/install/smoke state
+as described below, while llama.cpp b9352, ROCm PyTorch release/2.12 980ce60,
+and Transformers 5.9.0 remain tracked follow-ups. The ROCm PyTorch 26872de
+closeout updates package sources and generated metadata to match the already
+deployed stack; it leaves the post-pkgrel live scenario rerun as user-owned
+work.
+
+After the Lane A b9330-2 and stable-diffusion.cpp 92dc726 adoption ledgers were
+recorded, `tools/check_package_updates.py --json --fail-on actionable` exited
+`0` at 2026-05-27 01:21:38 EDT with effective counts of 23 adopted update
+candidates, 17 current families, 2 rejected update candidates, and 3 tracked
+update candidates.
 
 The stable-diffusion.cpp 1ceb5bd follow-up is adopted. Source metadata and
 rendered scaffolds now track upstream master
@@ -291,6 +293,24 @@ trees at `caa823a` and `1ceb5bd` keep matching mode-160000 gitlinks for
 `thirdparty/libwebp`, so the explicit package source pins match the upstream
 `1ceb5bd` submodule state. No model-generation validation is claimed for this
 closeout.
+
+The stable-diffusion.cpp 92dc726 follow-up is adopted.
+Source metadata and rendered scaffolds now track upstream master
+`92dc7268fc4ffb0c0cc0bd52dfcefea91326e797` as `r652.g92dc726-1`. Source
+review found Microsoft Lens support, GPT-OSS tokenizer and vocabulary additions,
+and LoRA directory scans that skip permission-denied entries. The recursive
+upstream git tree keeps the same mode-160000 gitlinks for `ggml`,
+`examples/server/frontend`, `thirdparty/libwebm`, and `thirdparty/libwebp`, so
+the explicit package source pins still match upstream. The CLIP-G patch context
+was refreshed so both the prefix-ordering change and Flux `te1` remap apply.
+First build plan `43b2ade5` failed on a vector `operator[]` compile error from
+the stale remap hunk; after the patch refresh, final build plan `e6783abd`
+produced `stable-diffusion.cpp-vulkan-gfx1151-r652.g92dc726-1-x86_64.pkg.tar.zst`.
+Deployed/installed: the installed package and the published `strix-halo-gfx1151`
+repo both report `stable-diffusion.cpp-vulkan-gfx1151 r652.g92dc726-1`.
+Installed-smoked: `sd-cli-vulkan-gfx1151 --help` and
+`sd-server-vulkan-gfx1151 --help` exited `0` from the installed wrappers. No
+model-generation live scenario is claimed.
 
 The 2026-05-26 Quark/AWQ/GPTQ/bitsandbytes/xFormers/FBGEMM candidate triage is
 also docs-only source audit. It does not implement packages, change package
