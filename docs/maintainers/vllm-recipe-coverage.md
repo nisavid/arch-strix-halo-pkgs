@@ -66,7 +66,12 @@ consumer lane pins
 that smoke. The artifact metadata is accepted for this bounded scenario because
 the AMD artifact and `Qwen/Qwen3-8B` base model are public, non-gated, and
 Apache-2.0 on Hugging Face. Authoring-tool packaging waits for an explicit
-source pin plus Python 3.14 and current NumPy compatibility.
+source pin plus Python 3.14 and `python-numpy-gfx1151 2.4.6` compatibility. The
+2026-05-27 authoring-tool blocker refresh keeps that package lane blocked: PyPI
+`amd-quark 0.11.2` is still wheel-only, public GitHub releases/tags still stop
+at `v0.11.1`, `release/0.11` still reports version `0.11.1`, PyPI still
+excludes Python 3.13+ and declares `numpy<=2.1.3`, and no concrete local
+authoring consumer path has been selected.
 bitsandbytes is tracked as a separate source-built package candidate because
 upstream ROCm support is still preview even though it names `gfx1151`.
 xFormers remains blocked/deferred after the 2026-05-27 refresh: current vLLM
