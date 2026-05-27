@@ -114,6 +114,44 @@ def test_vllm_adapter_assigns_server_log_for_qwen_server_smoke(tmp_path: Path):
     assert plan.env == {"VLLM_ROCM_USE_AITER_MOE": "0"}
 
 
+def test_vllm_adapter_respects_inline_revision_override_for_qwen_text(
+    tmp_path: Path,
+):
+    definition = scenario(
+        {
+            "id": "vllm.qwen3_5.4b-gptq-int4.text.basic",
+            "given": {
+                "engine": "vllm",
+                "model": "RafaDom/Qwen3.5-4B-GPTQ",
+                "tool": "qwen_text_smoke",
+            },
+            "when": {
+                "argv": ["--max-model-len", "128", "--revision=operator-pin"]
+            },
+        }
+    )
+    definition["model_provenance"] = {
+        "repo_id": "RafaDom/Qwen3.5-4B-GPTQ",
+        "revision": "scenario-pin",
+    }
+
+    plan = build_execution_plan(
+        definition,
+        repo_root=REPO_ROOT,
+        scenario_run_root=tmp_path,
+        model_bindings={},
+    )
+
+    assert plan.command == [
+        sys.executable,
+        str(REPO_ROOT / "tools/qwen_text_smoke.py"),
+        "RafaDom/Qwen3.5-4B-GPTQ",
+        "--max-model-len",
+        "128",
+        "--revision=operator-pin",
+    ]
+
+
 def test_vllm_adapter_resolves_draft_model_binding_for_qwen_server_smoke(
     tmp_path: Path,
 ):

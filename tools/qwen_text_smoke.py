@@ -63,6 +63,11 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="assert the installed flash_attn backend when --attention-backend FLASH_ATTN",
     )
+    parser.add_argument(
+        "--revision",
+        default=None,
+        help="optional Hugging Face model revision for repo-id model inputs",
+    )
     return parser.parse_args()
 
 
@@ -199,6 +204,8 @@ def build_llm_kwargs(model: str, args: argparse.Namespace) -> dict[str, Any]:
         llm_kwargs["dtype"] = args.dtype
     if args.attention_backend:
         llm_kwargs["attention_backend"] = args.attention_backend
+    if args.revision:
+        llm_kwargs["revision"] = args.revision
     return llm_kwargs
 
 
@@ -228,13 +235,18 @@ def main() -> None:
     print("dtype", args.dtype)
     print("attention_backend", args.attention_backend)
     print("expected_flash_attn_backend", args.expected_flash_attn_backend)
+    print("revision", args.revision)
     if args.attention_backend == "FLASH_ATTN" or args.expected_flash_attn_backend:
         print_flash_attn_backend_summary(args.expected_flash_attn_backend)
 
-    config = AutoConfig.from_pretrained(model, trust_remote_code=True)
+    model_load_kwargs: dict[str, Any] = {"trust_remote_code": True}
+    if args.revision:
+        model_load_kwargs["revision"] = args.revision
+
+    config = AutoConfig.from_pretrained(model, **model_load_kwargs)
     print_config_summary(config)
 
-    tokenizer = AutoTokenizer.from_pretrained(model, trust_remote_code=True)
+    tokenizer = AutoTokenizer.from_pretrained(model, **model_load_kwargs)
     prompt = render_prompt(tokenizer)
     print("rendered_prompt:", repr(prompt))
 

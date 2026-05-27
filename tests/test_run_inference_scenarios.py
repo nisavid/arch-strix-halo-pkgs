@@ -835,6 +835,84 @@ def test_quantized_qwen_text_dry_run_includes_probe_options_and_binding(
     ]
 
 
+def test_gptq_qwen_text_dry_run_preserves_model_provenance(
+    tmp_path: Path,
+):
+    run_root = tmp_path / "run"
+    result = run_runner(
+        "--scenario-dir",
+        str(REPO_ROOT / "inference/scenarios"),
+        "--run-root",
+        str(run_root),
+        "--dry-run",
+        "--scenario",
+        "vllm.qwen3_5.4b-gptq-int4.text.basic",
+        "--model-path",
+        (
+            "RafaDom/Qwen3.5-4B-Claude-4.6-Opus-Reasoning-Distilled-v2-"
+            "GPTQ-Int4-HQ=/models/qwen35-gptq"
+        ),
+    )
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    assert payload["selected_ids"] == [
+        "vllm.qwen3_5.4b-gptq-int4.text.basic"
+    ]
+    planned = payload["planned"][0]
+    assert planned["command"] == [
+        sys.executable,
+        str(REPO_ROOT / "tools/qwen_text_smoke.py"),
+        "/models/qwen35-gptq",
+        "--max-model-len",
+        "128",
+    ]
+    assert (
+        planned["source_url"]
+        == "https://huggingface.co/RafaDom/Qwen3.5-4B-Claude-4.6-Opus-Reasoning-Distilled-v2-GPTQ-Int4-HQ"
+    )
+    assert planned["model_provenance"] == {
+        "repo_id": "RafaDom/Qwen3.5-4B-Claude-4.6-Opus-Reasoning-Distilled-v2-GPTQ-Int4-HQ",
+        "revision": "a86e57f8166807d28b447bab5daad3e079a268a7",
+        "license": "apache-2.0",
+        "base_model": "Jackrong/Qwen3.5-9B-Claude-4.6-Opus-Reasoning-Distilled-v2",
+        "terms_status": "requires-operator-decision",
+        "terms_gate": (
+            "Model-card license metadata is apache-2.0, but the model name "
+            "and base_model metadata assert Claude-derived distillation. "
+            "Run this scenario only after the operator accepts that "
+            "provenance/terms risk or replaces the fixture."
+        ),
+    }
+
+
+def test_gptq_qwen_text_dry_run_uses_pinned_revision_without_binding(
+    tmp_path: Path,
+):
+    run_root = tmp_path / "run"
+    result = run_runner(
+        "--scenario-dir",
+        str(REPO_ROOT / "inference/scenarios"),
+        "--run-root",
+        str(run_root),
+        "--dry-run",
+        "--scenario",
+        "vllm.qwen3_5.4b-gptq-int4.text.basic",
+    )
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    assert payload["planned"][0]["command"] == [
+        sys.executable,
+        str(REPO_ROOT / "tools/qwen_text_smoke.py"),
+        "RafaDom/Qwen3.5-4B-Claude-4.6-Opus-Reasoning-Distilled-v2-GPTQ-Int4-HQ",
+        "--max-model-len",
+        "128",
+        "--revision",
+        "a86e57f8166807d28b447bab5daad3e079a268a7",
+    ]
+
+
 def test_runner_executes_scenario_and_writes_logs(tmp_path: Path):
     script = write_fake_command_script(tmp_path)
     scenario_dir = tmp_path / "inference" / "scenarios"
@@ -889,6 +967,63 @@ value = 0
     assert result_file.is_file()
     assert stdout_log.read_text(encoding="utf-8").strip() == "hello from fake"
     assert stderr_log.read_text(encoding="utf-8").strip() == "warn from fake"
+
+
+def test_runner_blocks_unaccepted_model_provenance_terms_before_execution(
+    tmp_path: Path,
+):
+    script = write_fake_command_script(tmp_path)
+    scenario_dir = tmp_path / "inference" / "scenarios"
+    scenario_dir.mkdir(parents=True)
+    run_root = tmp_path / "run"
+    (scenario_dir / "generic.toml").write_text(
+        f"""
+[[scenario]]
+id = "llama.cpp.fake.terms-gated"
+summary = "fake command is terms gated"
+
+[scenario.model_provenance]
+repo_id = "demo/model"
+revision = "abc123"
+terms_status = "requires-operator-decision"
+terms_gate = "Operator must accept the fixture terms before runtime validation."
+
+[scenario.given]
+engine = "llama.cpp"
+model = "demo/model"
+entrypoint = "{sys.executable}"
+
+[scenario.when]
+argv = ["{script}", "--stdout", "should not run"]
+""",
+        encoding="utf-8",
+    )
+
+    result = run_runner(
+        "--scenario-dir",
+        str(scenario_dir),
+        "--run-root",
+        str(run_root),
+        "--scenario",
+        "llama.cpp.fake.terms-gated",
+    )
+
+    assert result.returncode == 1
+    payload = json.loads(result.stdout)
+    assert payload["passed"] == 0
+    assert payload["failed"] == 1
+    result_file = run_root / "scenarios" / "llama.cpp.fake.terms-gated" / "result.json"
+    stdout_log = run_root / "scenarios" / "llama.cpp.fake.terms-gated" / "stdout.log"
+    stderr_log = run_root / "scenarios" / "llama.cpp.fake.terms-gated" / "stderr.log"
+    scenario_result = json.loads(result_file.read_text(encoding="utf-8"))
+    assert scenario_result["exit_code"] is None
+    assert scenario_result["ok"] is False
+    assert stdout_log.read_text(encoding="utf-8") == ""
+    stderr_text = stderr_log.read_text(encoding="utf-8")
+    assert "MODEL_PROVENANCE_TERMS_GATE" in stderr_text
+    assert "requires-operator-decision" in stderr_text
+    assert "Operator must accept the fixture terms" in stderr_text
+    assert "should not run" not in stdout_log.read_text(encoding="utf-8")
 
 
 def test_runner_asserts_labeled_stdout_json_path(tmp_path: Path):

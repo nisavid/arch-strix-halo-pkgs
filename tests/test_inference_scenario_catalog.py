@@ -733,6 +733,19 @@ def test_quantization_lane_probes_record_root_cause_contracts():
     }
     assert gptq_int4.definition["given"]["tool"] == "qwen_text_smoke"
     assert gptq_int4.definition["when"]["argv"] == ["--max-model-len", "128"]
+    assert gptq_int4.definition["model_provenance"] == {
+        "repo_id": "RafaDom/Qwen3.5-4B-Claude-4.6-Opus-Reasoning-Distilled-v2-GPTQ-Int4-HQ",
+        "revision": "a86e57f8166807d28b447bab5daad3e079a268a7",
+        "license": "apache-2.0",
+        "base_model": "Jackrong/Qwen3.5-9B-Claude-4.6-Opus-Reasoning-Distilled-v2",
+        "terms_status": "requires-operator-decision",
+        "terms_gate": (
+            "Model-card license metadata is apache-2.0, but the model name "
+            "and base_model metadata assert Claude-derived distillation. "
+            "Run this scenario only after the operator accepts that "
+            "provenance/terms risk or replaces the fixture."
+        ),
+    }
     for expected in (
         {"kind": "exit_code.equals", "value": 0},
         {"kind": "stdout.contains", "value": "config_model_type qwen3_5_text"},
