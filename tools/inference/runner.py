@@ -282,15 +282,17 @@ def _model_provenance_terms_failure(scenario: Scenario) -> str | None:
     provenance = scenario.definition.get("model_provenance")
     if not isinstance(provenance, dict):
         return None
-    terms_status = str(provenance.get("terms_status", "accepted"))
-    if terms_status in ("", "accepted"):
+    raw_terms_status = provenance.get("terms_status")
+    terms_status = "" if raw_terms_status is None else str(raw_terms_status).strip()
+    if terms_status == "accepted":
         return None
+    display_status = terms_status or ("<missing>" if raw_terms_status is None else "<blank>")
     terms_gate = str(
         provenance.get("terms_gate", "model provenance terms are not accepted")
     )
     return (
         "MODEL_PROVENANCE_TERMS_GATE: "
-        f"{scenario.id} terms_status={terms_status}: {terms_gate}"
+        f"{scenario.id} terms_status={display_status}: {terms_gate}"
     )
 
 

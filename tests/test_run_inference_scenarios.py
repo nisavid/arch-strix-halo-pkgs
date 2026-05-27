@@ -1026,6 +1026,109 @@ argv = ["{script}", "--stdout", "should not run"]
     assert "should not run" not in stdout_log.read_text(encoding="utf-8")
 
 
+def test_runner_blocks_blank_model_provenance_terms_status_before_execution(
+    tmp_path: Path,
+):
+    script = write_fake_command_script(tmp_path)
+    scenario_dir = tmp_path / "inference" / "scenarios"
+    scenario_dir.mkdir(parents=True)
+    run_root = tmp_path / "run"
+    (scenario_dir / "generic.toml").write_text(
+        f"""
+[[scenario]]
+id = "llama.cpp.fake.blank-terms-status"
+summary = "fake command is terms gated by a blank status"
+
+[scenario.model_provenance]
+repo_id = "demo/model"
+revision = "abc123"
+terms_status = ""
+terms_gate = "Operator must explicitly accept the fixture terms before runtime validation."
+
+[scenario.given]
+engine = "llama.cpp"
+model = "demo/model"
+entrypoint = "{sys.executable}"
+
+[scenario.when]
+argv = ["{script}", "--stdout", "should not run"]
+""",
+        encoding="utf-8",
+    )
+
+    result = run_runner(
+        "--scenario-dir",
+        str(scenario_dir),
+        "--run-root",
+        str(run_root),
+        "--scenario",
+        "llama.cpp.fake.blank-terms-status",
+    )
+
+    assert result.returncode == 1
+    payload = json.loads(result.stdout)
+    assert payload["passed"] == 0
+    assert payload["failed"] == 1
+    scenario_root = run_root / "scenarios" / "llama.cpp.fake.blank-terms-status"
+    stderr_text = (scenario_root / "stderr.log").read_text(encoding="utf-8")
+    stdout_text = (scenario_root / "stdout.log").read_text(encoding="utf-8")
+    assert "MODEL_PROVENANCE_TERMS_GATE" in stderr_text
+    assert "terms_status=" in stderr_text
+    assert "Operator must explicitly accept the fixture terms" in stderr_text
+    assert "should not run" not in stdout_text
+
+
+def test_runner_blocks_missing_model_provenance_terms_status_before_execution(
+    tmp_path: Path,
+):
+    script = write_fake_command_script(tmp_path)
+    scenario_dir = tmp_path / "inference" / "scenarios"
+    scenario_dir.mkdir(parents=True)
+    run_root = tmp_path / "run"
+    (scenario_dir / "generic.toml").write_text(
+        f"""
+[[scenario]]
+id = "llama.cpp.fake.missing-terms-status"
+summary = "fake command is terms gated by a missing status"
+
+[scenario.model_provenance]
+repo_id = "demo/model"
+revision = "abc123"
+terms_gate = "Operator must explicitly accept the fixture terms before runtime validation."
+
+[scenario.given]
+engine = "llama.cpp"
+model = "demo/model"
+entrypoint = "{sys.executable}"
+
+[scenario.when]
+argv = ["{script}", "--stdout", "should not run"]
+""",
+        encoding="utf-8",
+    )
+
+    result = run_runner(
+        "--scenario-dir",
+        str(scenario_dir),
+        "--run-root",
+        str(run_root),
+        "--scenario",
+        "llama.cpp.fake.missing-terms-status",
+    )
+
+    assert result.returncode == 1
+    payload = json.loads(result.stdout)
+    assert payload["passed"] == 0
+    assert payload["failed"] == 1
+    scenario_root = run_root / "scenarios" / "llama.cpp.fake.missing-terms-status"
+    stderr_text = (scenario_root / "stderr.log").read_text(encoding="utf-8")
+    stdout_text = (scenario_root / "stdout.log").read_text(encoding="utf-8")
+    assert "MODEL_PROVENANCE_TERMS_GATE" in stderr_text
+    assert "terms_status=<missing>" in stderr_text
+    assert "Operator must explicitly accept the fixture terms" in stderr_text
+    assert "should not run" not in stdout_text
+
+
 def test_runner_asserts_labeled_stdout_json_path(tmp_path: Path):
     script = write_fake_command_script(tmp_path)
     scenario_dir = tmp_path / "inference" / "scenarios"
