@@ -52,7 +52,10 @@ Int4 safetensors target with pinned revision and license metadata, and direct
 repo-ID execution passes that revision to the qwen text smoke. The runner
 fails before subprocess execution while `model_provenance.terms_status` is not
 accepted, so the scenario remains gated on operator acceptance of the
-unresolved Claude-derived provenance/terms risk or fixture replacement. AWQ
+unresolved Claude-derived provenance/terms risk or fixture replacement. Find
+the source terms on the Hugging Face model card linked by `source_url`, then
+record acceptance by setting the scenario's `model_provenance.terms_status` to
+`accepted`. AWQ
 stays exploratory until a native AWQ Qwen text fixture is pinned and validated;
 AutoAWQ is not a package candidate for this lane. Quark is split into a vLLM
 consumer lane and an optional `amd-quark` authoring-tool package lane: vLLM can
