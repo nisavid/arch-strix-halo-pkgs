@@ -54,17 +54,24 @@ revision to the qwen text smoke. The operator rejected the prior RafaDom
 Claude-derived fixture for this repo. The replacement has accepted provenance
 terms based on the official Qwen model card's Apache-2.0 metadata and explicit
 base-model metadata, but this docs/metadata change does not claim live
-validation. AWQ
-stays exploratory until a native AWQ Qwen text fixture is pinned and validated;
-AutoAWQ is not a package candidate for this lane. Quark is split into a vLLM
-consumer lane and an optional `amd-quark` authoring-tool package lane. The vLLM
-consumer lane pins
+validation. AWQ now tracks the native
+`vllm.qwen3_5.9b-awq.text.basic` scenario against
+`QuantTrio/Qwen3.5-9B-AWQ` at revision
+`938f8e3ef86c9d1e9bec3705e149694c172592f1`; the fixture has Apache-2.0
+license metadata, `Qwen/Qwen3.5-9B` base-model provenance, and a native
+`quant_method: awq` config. Keep this separate from compressed-tensors-format
+AWQ artifacts, and keep deprecated AutoAWQ tooling out of the package lane.
+Live promotion waits for stable runtime-base evidence and an operator-run host
+scenario that proves vLLM ROCm extension import, `quantization="awq"`, LLM
+init, generation, and the ROCm `VLLM_USE_TRITON_AWQ` selected-backend
+assertion. Quark is split into a vLLM consumer lane and an optional
+`amd-quark` authoring-tool package lane. The vLLM consumer lane pins
 `amd/Qwen3-8B-WMXFP4FP8-AMXFP4FP8-AMP-KVFP8` at revision
 `7d63d86fe5de2cee926e6ba54b0eec7f442323cf` and tracks it through
 `vllm.qwen3.8b-quark-amp.text.basic` with `quantization="quark"` and
-`kv_cache_dtype="fp8"`; no `amd-quark` runtime dependency is required for
-that smoke. The artifact metadata is accepted for this bounded scenario because
-the AMD artifact and `Qwen/Qwen3-8B` base model are public, non-gated, and
+`kv_cache_dtype="fp8"`; no `amd-quark` runtime dependency is required for that
+smoke. The artifact metadata is accepted for this bounded scenario because the
+AMD artifact and `Qwen/Qwen3-8B` base model are public, non-gated, and
 Apache-2.0 on Hugging Face. Authoring-tool packaging waits for an explicit
 source pin plus Python 3.14 and `python-numpy-gfx1151 2.4.6` compatibility. The
 2026-05-27 authoring-tool blocker refresh keeps that package lane blocked: PyPI
@@ -125,6 +132,7 @@ the existing TorchAO, compressed-tensors, AITER, and FlashAttention coverage.
 | Qwen3 Quark AMP safetensors probe | `amd/Qwen3-8B-WMXFP4FP8-AMXFP4FP8-AMP-KVFP8` at revision `7d63d86fe5de2cee926e6ba54b0eec7f442323cf`, `quantization="quark"`, `kv_cache_dtype="fp8"`, reduced local context | `tracked` by `vllm.qwen3.8b-quark-amp.text.basic`; scenario metadata records `apache-2.0`, base model `Qwen/Qwen3-8B`, accepted public/non-gated terms status, required Quark quantization, and required FP8 KV cache dtype | Run only after the runtime base is stable; re-review artifact provenance if the revision, license, gating, base model, or file list changes. |
 | FP8 safetensors probe | `surogate/Qwen3.5-0.8B-FP8`, reduced local context | `tracked` by `vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors-blocked` | Use this small retained checkpoint for local FP8 support checks; do not treat it as Qwen3.6 MoE recipe coverage. |
 | GPTQ Int4 safetensors probe | `Qwen/Qwen3.5-35B-A3B-GPTQ-Int4` at revision `3af5ca2972faf6de1fd6f4efc4d8d319ca751e8b`, `--quantization moe_wna16`, bounded local context | `tracked` by `vllm.qwen3_5.35b-a3b-gptq-int4.text.basic`; scenario metadata records official Qwen model-card license `apache-2.0`, base model `Qwen/Qwen3.5-35B-A3B`, and accepted provenance terms | Run only after materializing the retained testing-cache fixture and stable runtime-base evidence; this replaces the rejected RafaDom Claude-derived fixture and the AXERA-format cache artifact. |
+| Native AWQ probe | `QuantTrio/Qwen3.5-9B-AWQ` at revision `938f8e3ef86c9d1e9bec3705e149694c172592f1`, reduced local context | `tracked` by `vllm.qwen3_5.9b-awq.text.basic`; scenario metadata records Apache-2.0 license metadata, `Qwen/Qwen3.5-9B` base model, native `awq` quantization, and accepted public-model terms for local validation | Run only after the runtime base is stable and the operator can execute live inference; require vLLM ROCm extension import, `quantization="awq"`, LLM init, generation, and ROCm `VLLM_USE_TRITON_AWQ` backend-selection evidence. Do not package AutoAWQ and do not conflate this with compressed-tensors AWQ artifacts. |
 | Qwen3.6 MTP/spec decoding | `--speculative-config '{"method":"mtp","num_speculative_tokens":2}'` | `validated` by reduced `mtp` through the padded drafter batch path with the installed ROCm `valid_count` patch | No remaining local MTP workaround; keep only full Qwen3.5 FP8 latency shape advisory. |
 | Qwen3.6 tool calling | interactive feature selector plus Qwen parser family; Qwen3.5 guide names `--enable-auto-tool-choice --tool-call-parser qwen3_coder` | `validated` by reduced `tool` server scenario | Keep the Qwen3.5 FP8 deployment shape advisory; the local result validates parser behavior on Qwen3.6. |
 | Qwen3.6 advanced selectors | interactive `max_batched_8k` and `max_num_seqs_256` | `validated` by reduced `advanced-selectors` server scenario | Treat this as memory-fit evidence for the reduced local server shape, not the full MI-series deployment. |

@@ -655,6 +655,82 @@ kind = "stdout.contains"
 value = "basic_ok"
 
 [[scenario]]
+id = "vllm.qwen3_5.9b-awq.text.basic"
+summary = "Qwen3.5 9B native AWQ text-only quantization probe"
+tags = ["qwen", "qwen3.5", "awq", "native-awq", "int4", "safetensors", "quantization-probe", "exploratory"]
+source_url = "https://huggingface.co/QuantTrio/Qwen3.5-9B-AWQ"
+
+[scenario.model_provenance]
+repo_id = "QuantTrio/Qwen3.5-9B-AWQ"
+revision = "938f8e3ef86c9d1e9bec3705e149694c172592f1"
+license = "apache-2.0"
+base_model = "Qwen/Qwen3.5-9B"
+quantization_format = "native-awq"
+quant_method = "awq"
+quant_bits = 4
+provenance = "QuantTrio data-free quantization of Qwen/Qwen3.5-9B."
+terms_status = "accepted"
+terms_gate = "Public Apache-2.0 model-card and base-model metadata are accepted for local validation; treat the pinned model repo as an untrusted artifact until live validation passes."
+
+[scenario.given]
+engine = "vllm"
+model = "QuantTrio/Qwen3.5-9B-AWQ"
+tool = "qwen_text_smoke"
+
+[scenario.when]
+argv = [
+  "--quantization",
+  "awq",
+  "--max-model-len",
+  "128",
+  "--gpu-memory-utilization",
+  "0.35",
+]
+
+[scenario.when.env]
+VLLM_USE_TRITON_AWQ = "0"
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "config_model_type qwen3_5"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "config_quantization_config_present true"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "'quant_method': 'awq'"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "'bits': 4"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "quantization awq"
+
+[[scenario.then.assert]]
+kind = "output.contains"
+value = "Using AWQ quantization with ROCm, but VLLM_USE_TRITON_AWQ"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "llm_init_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "generation_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "basic_ok"
+
+[[scenario]]
 id = "vllm.qwen3_6.35b-a3b-nvfp4.text.unsupported-rocm-gfx1151"
 summary = "Qwen3.6 35B-A3B ModelOpt NVFP4 probe blocked by ROCm vLLM quantization support"
 tags = ["qwen", "qwen3.6", "nvfp4", "modelopt", "quantization-probe", "exploratory", "blocked"]
@@ -930,4 +1006,23 @@ required_flags = [
 caveats = [
   "The pinned artifact is accepted for scenario metadata from public Apache-2.0 Hugging Face provenance, but the repo has not run live generation for this scenario.",
   "Keep this as a vLLM consumer scenario; amd-quark remains an authoring tool and is not a python-vllm-rocm-gfx1151 runtime dependency.",
+]
+
+[[recipe_surface]]
+id = "vllm.qwen.recipe.qwen3_5.awq_native"
+summary = "Qwen3.5 native AWQ vLLM consumer probe"
+source_url = "https://huggingface.co/QuantTrio/Qwen3.5-9B-AWQ"
+model = "QuantTrio/Qwen3.5-9B-AWQ"
+status = "tracked"
+local_target = "QuantTrio/Qwen3.5-9B-AWQ"
+local_scenarios = ["vllm.qwen3_5.9b-awq.text.basic"]
+required_flags = [
+  "native AWQ safetensors checkpoint",
+  "--quantization awq",
+  "VLLM_USE_TRITON_AWQ ROCm backend selection",
+]
+caveats = [
+  "The scenario pins the Hugging Face revision, Apache-2.0 license metadata, and Qwen/Qwen3.5-9B base-model provenance.",
+  "This is not the compressed-tensors AWQ-format lane and does not add AutoAWQ packaging.",
+  "Promotion waits for stable runtime-base evidence and an operator-run live validation handoff.",
 ]
