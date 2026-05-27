@@ -414,6 +414,26 @@ source/submodule trust review, HIP extension build, linkage/private-path
 inspection, `python -m xformers.info`, and direct fp16/bf16 attention
 correctness smokes before any consumer scenario.
 
+The 2026-05-27 FBGEMM package-boundary review closes the current wave as a
+deferred package candidate rather than an implementation lane. The selected
+boundary is a standalone source-built `fbgemm_gpu` package that registers
+`torch.ops.fbgemm`; it is not part of the PyTorch package and is not a current
+`python-vllm-rocm-gfx1151` runtime dependency. Upstream FBGEMM v1.7.0 remains
+the latest reviewed release and advertises ROCm 7.0/7.1 support, but the
+visible ROCm CI/build automation targets `gfx942`/`gfx950`, and an inspected
+FP8 rowwise grouped GEMM path rejects other architecture names. The current
+vLLM ROCm `fbgemm_fp8` path uses existing ROCm/AITER/Torch FP8 kernels rather
+than importing `fbgemm_gpu`. Transformers exposes a possible
+`FbgemmFp8Config` consumer, but this repo does not yet own a pinned local model
+or scenario that proves `gfx1151` value over TorchAO, compressed-tensors,
+AITER, FlashAttention, Quark, GPTQ, AWQ, or bitsandbytes coverage. No package
+source was changed, no package was built, no deploy/install occurred, no
+installed smoke was run, and no live scenario is claimed for this review. The
+exact reopen criteria live in `docs/backlog.md` and
+`docs/maintainers/rocm-inference-reference.md`; no
+`docs/maintainers/update-candidates.toml` record is created because FBGEMM is
+not an active freshness-policy family.
+
 The earlier 2026-05-24 recovery-branch freshness gate tracked AITER `0.1.14`
 stable, llama.cpp `b9305`, stable-diffusion.cpp
 `a397e03488cc27e1a42da646b82dfce9f50741c0`, and the local

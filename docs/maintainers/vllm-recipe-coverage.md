@@ -75,8 +75,15 @@ docs list `gfx1151` as supported ROCm hardware for vLLM itself, but the local
 vLLM package, recipe metadata, tools, tests, and scenarios do not depend on
 xFormers. Current Meta/ROCm xFormers CK submodules contain `gfx1151` scout
 evidence, but the top-level package sources do not provide explicit
-package-level `gfx1151` support evidence. xFormers and FBGEMM do not change
-the vLLM scenario surface until a source-built package and consumer path exist.
+package-level `gfx1151` support evidence. xFormers does not change the vLLM
+scenario surface until a source-built package and consumer path exist. FBGEMM
+is deferred as a standalone package candidate:
+current vLLM ROCm `fbgemm_fp8` is a quantization-format path that selects
+existing ROCm/AITER/Torch FP8 kernels, and the vLLM code path that imports
+`fbgemm_gpu` is the `VLLM_USE_FBGEMM` NVFP4 override rather than a proven
+`gfx1151` validation lane. Add a vLLM FBGEMM scenario only after a pinned model
+or feature path exercises `fbgemm_gpu`/`torch.ops.fbgemm` and proves value over
+the existing TorchAO, compressed-tensors, AITER, and FlashAttention coverage.
 
 ## Gemma 4
 

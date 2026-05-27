@@ -133,11 +133,35 @@
   linkage/private-path inspection, `python -m xformers.info`, and direct
   fp16/bf16 memory-efficient-attention correctness smokes before any consumer
   scenario.
-- FBGEMM lane: track as a future package candidate, not as a PyTorch bundle.
-  Required gates are a package-boundary decision, pinned source/submodules,
-  source build for `gfx1151`, shared-library inspection, import/op smoke, and a
-  vLLM or Transformers consumer path that proves value over existing TorchAO,
-  compressed-tensors, AITER, and FlashAttention lanes.
+
+### Deferred Package Candidates
+
+- FBGEMM package lane: defer implementation. The package boundary is a
+  standalone source-built `fbgemm_gpu` package that registers
+  `torch.ops.fbgemm`; it is not a PyTorch bundle and is not a
+  `python-vllm-rocm-gfx1151` runtime dependency in the current stack. Current
+  vLLM ROCm `fbgemm_fp8` coverage is a quantization-format path that selects
+  existing ROCm/AITER/Torch FP8 kernels, and the only visible vLLM code path
+  that imports `fbgemm_gpu` is the `VLLM_USE_FBGEMM` NVFP4 override. Current
+  Transformers exposes `FbgemmFp8Config` and can use `fbgemm_gpu`, but this
+  repo does not yet own a pinned local model or scenario that proves package
+  value on `gfx1151`.
+  Reopen package implementation only when all of these criteria are true:
+  a pinned vLLM or Transformers consumer scenario requires
+  `fbgemm_gpu`/`torch.ops.fbgemm` and is not covered by TorchAO,
+  compressed-tensors, AITER, FlashAttention, Quark, GPTQ, AWQ, or
+  bitsandbytes lanes; the source plan pins upstream FBGEMM release/tag/commit
+  plus every submodule gitlink and explicitly accepts or replaces the
+  `jwfromm/cutlass` fork; a source build with `PYTORCH_ROCM_ARCH=gfx1151`,
+  `--build-target=genai`, and `--build-variant=rocm` succeeds without network
+  fetches outside pinned sources; the FP8 op surface either supports `gfx1151`
+  upstream or carries reviewed local patch material for `gfx1151`; shipped
+  shared libraries pass `readelf -d`, `ldd -r`, RPATH/private-path, and
+  unresolved-symbol inspection; installed smokes import
+  `fbgemm_gpu.experimental.gen_ai`, register `torch.ops.fbgemm`, and run
+  minimal `quantize_fp8_per_row` plus `f8f8bf16_rowwise` sanity checks on the
+  reference GPU; and the consumer scenario records source, package build,
+  deploy/install, installed-smoke, and live-scenario states separately.
 
 ### Recently Adopted Package Lanes
 - TheRock 7.13 stable is adopted. Upstream ROCm/TheRock published the stable
@@ -364,12 +388,14 @@
     `python-vllm-rocm-gfx1151` `0.19.1-4` and
     `vllm.flash-attn.triton-amd.vit-wrapper`. Treat
     `FLASH_ATTENTION_TRITON_AMD_AUTOTUNE=TRUE` as a later performance task.
-  - Candidate follow-ups from the 2026-05-26 Lane 9 source audit are the GPTQ,
-    Quark, bitsandbytes, AWQ, xFormers, and FBGEMM gates listed in the active
-    unresolved set above. Each candidate still requires host validation and
-    source/provenance review before adding a package or promoting a scenario;
-    package implementation waits for runtime-base prerequisite lanes if they
-    change the Python/ROCm stack.
+  - Candidate follow-ups from the 2026-05-26 Lane 9 source audit are tracked in
+    the active unresolved and deferred package-candidate sections above. GPTQ,
+    Quark, bitsandbytes, AWQ, and xFormers share this common gate: each
+    candidate requires host validation plus source/provenance review before
+    adding a package or promoting a scenario.
+    FBGEMM is deferred until the standalone package criteria and pinned
+    consumer proof are satisfied. Package implementation waits for runtime-base
+    prerequisite lanes if they change the Python/ROCm stack.
   - Existing affected failures audited on 2026-04-22: Qwen3.6 FP8 MoE remains
     blocked, Gemma 4 AITER FlashAttention remains blocked, and MIGraphX
     creates a separate compiled graph/quantization lane rather than a vLLM
