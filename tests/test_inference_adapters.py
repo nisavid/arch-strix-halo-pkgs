@@ -152,6 +152,33 @@ def test_vllm_adapter_respects_inline_revision_override_for_qwen_text(
     ]
 
 
+def test_vllm_adapter_rejects_model_provenance_revision_for_unsupported_tool(
+    tmp_path: Path,
+):
+    definition = scenario(
+        {
+            "id": "vllm.gemma4.text.provenance-revision",
+            "given": {
+                "engine": "vllm",
+                "model": "google/gemma-4-E2B-it",
+                "tool": "gemma4_text_smoke",
+            },
+        }
+    )
+    definition["model_provenance"] = {
+        "repo_id": "google/gemma-4-E2B-it",
+        "revision": "scenario-pin",
+    }
+
+    with pytest.raises(ValueError, match="UNSUPPORTED_MODEL_REVISION_TOOL"):
+        build_execution_plan(
+            definition,
+            repo_root=REPO_ROOT,
+            scenario_run_root=tmp_path,
+            model_bindings={},
+        )
+
+
 def test_vllm_adapter_resolves_draft_model_binding_for_qwen_server_smoke(
     tmp_path: Path,
 ):
