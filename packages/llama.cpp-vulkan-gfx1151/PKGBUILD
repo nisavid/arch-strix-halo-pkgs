@@ -5,8 +5,8 @@
 # Package recipe key: llamacpp
 
 pkgname=llama.cpp-vulkan-gfx1151
-pkgver=b9330
-pkgrel=2
+pkgver=b9352
+pkgrel=1
 pkgdesc='llama.cpp Vulkan backend rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://github.com/ggml-org/llama.cpp
@@ -18,11 +18,11 @@ options=()
 provides=(llama.cpp-vulkan-gfx1151 llama.cpp-vulkan)
 conflicts=(llama.cpp-vulkan)
 replaces=()
-source=(llama.cpp-328874d054e0eb44591202a23c209cf02c18e3cb.tar.gz::https://github.com/ggml-org/llama.cpp/archive/328874d054e0eb44591202a23c209cf02c18e3cb.tar.gz 0001-server-return-selected-token-logits.patch)
+source=(llama.cpp-b4c0549a49be9e6dc59ac9d0a5bc21dbda910774.tar.gz::https://github.com/ggml-org/llama.cpp/archive/b4c0549a49be9e6dc59ac9d0a5bc21dbda910774.tar.gz 0001-server-return-selected-token-logits.patch)
 sha256sums=(SKIP SKIP)
 
 prepare() {
-  cd "$srcdir/llama.cpp-328874d054e0eb44591202a23c209cf02c18e3cb"
+  cd "$srcdir/llama.cpp-b4c0549a49be9e6dc59ac9d0a5bc21dbda910774"
 
   if ! patch --dry-run -R -Np1 -i "$srcdir/0001-server-return-selected-token-logits.patch" >/dev/null 2>&1; then
     patch -Np1 -i "$srcdir/0001-server-return-selected-token-logits.patch"
@@ -30,7 +30,7 @@ prepare() {
 }
 
 build() {
-  cd "$srcdir/llama.cpp-328874d054e0eb44591202a23c209cf02c18e3cb"
+  cd "$srcdir/llama.cpp-b4c0549a49be9e6dc59ac9d0a5bc21dbda910774"
 
   _setup_compiler_env() {
   local _compiler_root="/opt/rocm/lib/llvm/bin"
@@ -103,7 +103,7 @@ build() {
 }
 
 package() {
-  cd "$srcdir/llama.cpp-328874d054e0eb44591202a23c209cf02c18e3cb"
+  cd "$srcdir/llama.cpp-b4c0549a49be9e6dc59ac9d0a5bc21dbda910774"
   local build_root="$srcdir/build-vulkan"
   local install_root="/opt/llama.cpp-vulkan-gfx1151"
 
@@ -129,5 +129,5 @@ exec /opt/llama.cpp-vulkan-gfx1151/bin/${_base} "\$@"
 EOF
     done
   fi
-  install -Dm644 "$srcdir/llama.cpp-328874d054e0eb44591202a23c209cf02c18e3cb/LICENSE" "$pkgdir/usr/share/licenses/llama.cpp-vulkan-gfx1151/LICENSE"
+  install -Dm644 "$srcdir/llama.cpp-b4c0549a49be9e6dc59ac9d0a5bc21dbda910774/LICENSE" "$pkgdir/usr/share/licenses/llama.cpp-vulkan-gfx1151/LICENSE"
 }
