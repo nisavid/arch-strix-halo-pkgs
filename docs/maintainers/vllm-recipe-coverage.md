@@ -1,6 +1,6 @@
 # vLLM Recipe Coverage
 
-Status as of 2026-05-26.
+Status as of 2026-05-27.
 
 This worklist tracks how official vLLM Gemma and Qwen recipe surfaces map onto
 the local Arch/TheRock `gfx1151` validation stack. These recipes are advisory
