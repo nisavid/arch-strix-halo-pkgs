@@ -97,13 +97,23 @@
 - `amd-quark` authoring-tool package lane: keep this as an optional package
   candidate, not as a `python-vllm-rocm-gfx1151` runtime dependency. Package
   work is blocked until the chosen release has a public source tag or explicit
-  source pin, and until Arch Python 3.14 plus current NumPy compatibility is
-  resolved. As of the 2026-05-26 source refresh, PyPI `amd-quark 0.11.2`
-  publishes only a wheel, no matching public `v0.11.2` tag or sdist was
-  observed, and the PyPI metadata still declares `<3.13` Python plus
-  `numpy<=2.1.3`. After those blockers clear, required gates are source
-  verification, package build, deploy/install handoff, installed import or CLI
-  smoke, Quark-exported model production, and a downstream vLLM consumer smoke.
+  source pin that matches the packaged version, and until Arch Python 3.14 plus
+  `python-numpy-gfx1151 2.4.6` compatibility is resolved. As of the 2026-05-27
+  source refresh, PyPI `amd-quark 0.11.2` remains the latest release and still
+  publishes only `amd_quark-0.11.2-py3-none-any.whl`; GitHub public
+  releases/tags still stop at `v0.11.1`; the `release/0.11` branch head
+  `210bbb76a1af71d6e5e03f8bea4d3bcf4ef57178` still reports
+  `quark/version.txt` as `0.11.1`; PyPI metadata still declares
+  `Requires-Python: <3.13,>=3.9.0` and `numpy<=2.1.3`; and AMD's installation
+  guide still limits support to Python 3.10, 3.11, or 3.12. Keep this lane
+  blocked rather than packaging the wheel. Unblock only when a chosen release
+  has a matching public source tag, sdist, or explicit source commit, supports
+  the repo's Python 3.14 and has no upstream NumPy cap below
+  `python-numpy-gfx1151 2.4.6`, and has a concrete local authoring or
+  Quark-exported-model consumer path. After those blockers clear, required
+  gates are source verification, package build, deploy/install
+  handoff, installed import or CLI smoke, Quark-exported model production, and
+  a downstream vLLM consumer smoke.
 - bitsandbytes lane: track a separate source-built
   `python-bitsandbytes-gfx1151` package candidate. Do not adopt PyPI or
   PyTorch-index binary wheels; require a pinned source build for `gfx1151`,

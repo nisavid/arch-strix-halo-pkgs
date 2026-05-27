@@ -376,10 +376,12 @@ Installed-smoked: `sd-cli-vulkan-gfx1151 --help` and
 model-generation live scenario is claimed.
 
 The 2026-05-26 Quark/AWQ/GPTQ/bitsandbytes/xFormers/FBGEMM candidate triage is
-also docs-only source audit. It does not implement packages, change package
-policy, update package sources, build packages, deploy/install artifacts, run
-installed smokes, or claim new live-scenario validation. The durable
-recommendations are tracked in `docs/maintainers/rocm-inference-reference.md`,
+also docs-only source audit. The 2026-05-27 `amd-quark` authoring-tool blocker
+refresh extends that audit without implementing packages, changing package
+policy, updating package sources, building packages, deploy/installing
+artifacts, running installed smokes, or claiming new live-scenario validation.
+The durable recommendations are tracked in
+`docs/maintainers/rocm-inference-reference.md`,
 `docs/maintainers/vllm-recipe-coverage.md`, and `docs/backlog.md`: GPTQ is the
 highest-priority live-validation lane because the retained Qwen3.5 GPTQ Int4
 scenario carries pinned model revision/license metadata in its scenario
@@ -394,25 +396,29 @@ separate optional `amd-quark` authoring-tool package lane; Quark artifact
 decision work can start after this reconciliation, but live vLLM validation
 waits for artifact provenance/terms acceptance plus the same stable
 runtime-base boundary unless explicitly bypassed. The `amd-quark` package lane
-remains out of scope for this through-Quark wave unless the operator expands
-scope. Bitsandbytes, AWQ, xFormers, and FBGEMM remain tracked source/package
-candidates with source-provenance, source-build, installed-smoke, and
-live-scenario gates before adoption. The 2026-05-27 xFormers follow-up keeps
-that lane blocked/deferred rather than implementation-ready: Meta xFormers
-latest release `v0.0.35` and main `c04f47b69b53d60a53916fd61ddd32bdb4a6b927`
-advertise experimental ROCm 7.1 wheels and carry CK submodule
-`50fad035248b154cdfa4505cf5de7465ce146149` with generic `gfx1151` target
-references, but no top-level xFormers build or test lane advertises `gfx1151`
-and Meta ROCm wheel CI still targets `gfx90a gfx942`. The ROCm fork remains
-unreleased at `develop` `db55a2f5745ee0a13316f93e968a002b143e35da`; even
-though its CK submodules contain `gfx1151` references, top-level setup.py
-rejects architectures outside `gfx908`, `gfx90a`, `gfx942`, and `gfx950`.
-Repo-owned package/scenario surfaces have no current xFormers consumer. Reopen
-package planning only after a named consumer and explicit package-level
-`gfx1151` source-build proof exist, then require pinned source and submodules,
-source/submodule trust review, HIP extension build, linkage/private-path
-inspection, `python -m xformers.info`, and direct fp16/bf16 attention
-correctness smokes before any consumer scenario.
+is blocked and deferred rather than package-ready: PyPI `amd-quark 0.11.2` is
+still wheel-only, public GitHub releases/tags stop at `v0.11.1`, the
+`release/0.11` branch reports `quark/version.txt` as `0.11.1`, PyPI metadata
+excludes Python 3.13+ and declares `numpy<=2.1.3`, AMD's installation guide
+supports Python 3.10, 3.11, and 3.12, and no concrete local authoring consumer
+path is selected. Bitsandbytes, AWQ, xFormers, and FBGEMM remain tracked
+source/package candidates with source-provenance, source-build,
+installed-smoke, and live-scenario gates before adoption. The 2026-05-27
+xFormers follow-up keeps that lane blocked/deferred rather than
+implementation-ready: Meta xFormers latest release `v0.0.35` and main
+`c04f47b69b53d60a53916fd61ddd32bdb4a6b927` advertise experimental ROCm 7.1
+wheels and carry CK submodule `50fad035248b154cdfa4505cf5de7465ce146149` with
+generic `gfx1151` target references, but no top-level xFormers build or test
+lane advertises `gfx1151` and Meta ROCm wheel CI still targets `gfx90a gfx942`.
+The ROCm fork remains unreleased at `develop`
+`db55a2f5745ee0a13316f93e968a002b143e35da`; even though its CK submodules
+contain `gfx1151` references, top-level setup.py rejects architectures outside
+`gfx908`, `gfx90a`, `gfx942`, and `gfx950`. Repo-owned package/scenario surfaces
+have no current xFormers consumer. Reopen package planning only after a named
+consumer and explicit package-level `gfx1151` source-build proof exist, then
+require pinned source and submodules, source/submodule trust review, HIP
+extension build, linkage/private-path inspection, `python -m xformers.info`,
+and direct fp16/bf16 attention correctness smokes before any consumer scenario.
 
 The 2026-05-27 FBGEMM package-boundary review closes the current wave as a
 deferred package candidate rather than an implementation lane. The selected

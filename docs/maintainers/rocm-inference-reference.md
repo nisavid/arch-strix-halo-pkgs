@@ -2,10 +2,11 @@
 
 This source disposition reference was compiled from sources retrieved across
 2026-04-22, 2026-05-24, the Quark/AWQ/GPTQ/bitsandbytes/xFormers/FBGEMM
-candidate triage on 2026-05-26, the xFormers follow-up on 2026-05-27, and the
-FBGEMM package-boundary review on 2026-05-27. It is for troubleshooting and
-planning the Strix Halo `gfx1151` inference stack. Upstream ROCm documents
-often describe MI300X, MI350X, CDNA, or Instinct systems; treat those details as
+candidate triage on 2026-05-26, and the `amd-quark` authoring-tool blocker
+refresh, xFormers follow-up, and FBGEMM package-boundary review on 2026-05-27.
+It is for troubleshooting and planning the Strix Halo `gfx1151` inference
+stack. Upstream ROCm documents often describe MI300X, MI350X, CDNA, or Instinct
+systems; treat those details as
 `advisory-only` until a local scenario validates them here.
 
 Status labels:
@@ -40,7 +41,7 @@ Status labels:
 | <https://github.com/OpenNMT/CTranslate2/tree/v4.7.2> | upstream GitHub tag | 2026-05-24 | `validated` | `packages/ctranslate2-gfx1151`; `docs/backlog.md`; `docs/maintainers/rocm-inference-reference.md` | install, Python import, and Open WebUI/faster-whisper STT smoke | Tagged OpenNMT 4.7.2 includes first-party `WITH_HIP=ON` build support. The local package build completed for both split packages when CMake used ROCm clang directly as the HIP compiler, the optional CLI target was disabled, the exact pybind11 build requirement was relaxed, and package Python calls used `/usr/bin/python`. The installed Open WebUI STT path selected `DEVICE_TYPE=cuda` and produced non-empty transcript text through faster-whisper. |
 | <https://github.com/ROCm/CTranslate2/tree/amd_dev> | ROCm GitHub fork branch | 2026-05-24 | `advisory-only` | `packages/ctranslate2-gfx1151`; `docs/maintainers/rocm-inference-reference.md` | compare only when fork-specific HIP fixes are needed | The branch contains ROCm-oriented Docker and HIP carry, but the current local package source should stay on the tagged OpenNMT release because OpenNMT 4.7.2 already carries HIP build support. |
 | <https://rocm.blogs.amd.com/artificial-intelligence/ctranslate2/README.html> | AMD ROCm blog | 2026-05-24 | `advisory-only` | `packages/ctranslate2-gfx1151`; `docs/maintainers/rocm-inference-reference.md` | local Open WebUI/faster-whisper STT smoke | Describes CTranslate2 on AMD GPUs using ROCm, PyTorch, and `device="cuda"` examples. Treat performance and model examples as advisory, while the local Open WebUI/faster-whisper validation is now the gfx1151 acceptance proof. |
-| <https://github.com/amd/Quark> | upstream AMD GitHub repo, `release/0.11` at `210bbb76a1af71d6e5e03f8bea4d3bcf4ef57178`; latest public tag `v0.11.1`; PyPI latest `amd-quark 0.11.2` | 2026-05-26 | `requires-host-validation` | `docs/backlog.md`; `docs/maintainers/vllm-recipe-coverage.md`; `docs/maintainers/rocm-inference-reference.md` | Pin a Quark-exported model artifact and run a bounded vLLM consumer smoke; separately choose a package source pin and resolve Python/NumPy compatibility before authoring-tool packaging | Split Quark into a vLLM consumer lane and an optional authoring-tool package lane. vLLM consumes exported Hugging Face-format artifacts with `quantization="quark"`; `amd-quark` is needed for authoring/quantization, not as a local vLLM runtime dependency. As of the 2026-05-26 refresh, PyPI `0.11.2` publishes only a wheel, no matching public `v0.11.2` tag or sdist was observed, and the PyPI metadata declares `<3.13` Python plus `numpy<=2.1.3`. |
+| <https://github.com/amd/Quark> | upstream AMD GitHub repo, `release/0.11` at `210bbb76a1af71d6e5e03f8bea4d3bcf4ef57178`; latest public tag `v0.11.1`; PyPI latest `amd-quark 0.11.2` | 2026-05-27 | `requires-host-validation` | `docs/backlog.md`; `docs/maintainers/vllm-recipe-coverage.md`; `docs/maintainers/rocm-inference-reference.md` | Pin a Quark-exported model artifact and run a bounded vLLM consumer smoke; keep authoring-tool packaging blocked until the chosen release has matching public source, Python 3.14 support, no upstream NumPy cap below `python-numpy-gfx1151 2.4.6`, and a concrete local consumer path | Split Quark into a vLLM consumer lane and an optional authoring-tool package lane. vLLM consumes exported Hugging Face-format artifacts with `quantization="quark"`; `amd-quark` is needed for authoring/quantization, not as a local vLLM runtime dependency. As of the 2026-05-27 refresh, PyPI `0.11.2` publishes only a wheel, GitHub public releases/tags stop at `v0.11.1`, `release/0.11` still reports package version `0.11.1`, PyPI metadata declares `<3.13` Python plus `numpy<=2.1.3`, and AMD's installation guide supports Python 3.10, 3.11, and 3.12. Do not package the wheel or treat the branch head as a matching 0.11.2 source pin. |
 | <https://huggingface.co/amd/Qwen3-8B-WMXFP4FP8-AMXFP4FP8-AMP-KVFP8> | Hugging Face model repo, revision `7d63d86fe5de2cee926e6ba54b0eec7f442323cf` | 2026-05-27 | `requires-host-validation` | `inference/scenarios/vllm-qwen.toml`; `docs/backlog.md`; `docs/maintainers/vllm-recipe-coverage.md`; `docs/maintainers/rocm-inference-reference.md` | installed gfx1151 vLLM run after stable runtime-base evidence | Quark-exported AMD Qwen3 8B AMP artifact. The model card and API metadata report a public, non-gated, Apache-2.0 repo with base model `Qwen/Qwen3-8B`; config reports `quant_method: quark`, Quark `0.11`, and FP8 KV-cache outputs. The tracked scenario passes `quantization="quark"` and `kv_cache_dtype="fp8"` to vLLM and keeps `amd-quark` out of the runtime closure. Re-review provenance before live validation if the revision, license, gating, base model, or file list changes. |
 | <https://docs.vllm.ai/en/latest/features/quantization/> | upstream vLLM docs | 2026-05-26 | `requires-host-validation` | `docs/backlog.md`; `docs/maintainers/vllm-recipe-coverage.md`; `docs/maintainers/rocm-inference-reference.md` | reconcile support matrix with local gfx1151 scenarios | The visible support matrix marks Quark and FBGEMM FP8 as AMD-GPU-supported and marks AWQ, GPTQ, and BitsAndBytes unsupported on AMD GPU. vLLM ROCm platform APIs and AMD ROCm docs expose narrower AWQ/GPTQ hooks, so local scenario results decide promotion. |
 | <https://huggingface.co/RafaDom/Qwen3.5-4B-Claude-4.6-Opus-Reasoning-Distilled-v2-GPTQ-Int4-HQ> | Hugging Face model repo, revision `a86e57f8166807d28b447bab5daad3e079a268a7` | 2026-05-26 | `requires-host-validation` | `inference/scenarios/vllm-qwen.toml`; `docs/backlog.md`; `docs/maintainers/vllm-recipe-coverage.md` | operator provenance/terms decision or fixture replacement before installed gfx1151 run | Retained Qwen3.5 GPTQ Int4 safetensors fixture with `apache-2.0` license metadata, base model `Jackrong/Qwen3.5-9B-Claude-4.6-Opus-Reasoning-Distilled-v2`, and `quant_method: gptq`. The scenario metadata pins the revision and license. The model name and base-model metadata assert Claude-derived distillation, which the license metadata does not resolve; do not promote it as a first-class live fixture until provenance/terms risk is explicitly accepted or the fixture is replaced. Treat model config, tokenizer, template, and weights as untrusted inputs until live-validated. |
@@ -97,12 +98,15 @@ Status labels:
   `vllm.qwen3.8b-quark-amp.text.basic` for the bounded installed smoke with
   `quantization="quark"` and `kv_cache_dtype="fp8"`; no new package build is
   expected unless the existing vLLM runtime base changes. The optional
-  `amd-quark` authoring-tool package lane needs an explicit source pin for the
-  chosen release, Python 3.14 and current NumPy compatibility resolution,
-  source verification, package build, deploy/install handoff, installed import
-  or CLI smoke, Quark-exported model production, and a downstream vLLM consumer
-  smoke. Do not make `amd-quark` a `python-vllm-rocm-gfx1151` runtime
-  dependency.
+  `amd-quark` authoring-tool package lane is blocked until the chosen package
+  version has matching public source, the upstream Python requirements admit
+  the repo's Python 3.14, upstream has no NumPy cap below
+  `python-numpy-gfx1151 2.4.6`, and a concrete local authoring or
+  exported-model consumer path exists. After those blockers clear, required
+  gates are source verification, package build, deploy/install
+  handoff, installed import or CLI smoke, Quark-exported model production, and
+  a downstream vLLM consumer smoke. Do not make `amd-quark` a
+  `python-vllm-rocm-gfx1151` runtime dependency.
 - Track bitsandbytes as a source-built package candidate. The source audit
   found official preview ROCm/gfx1151 support, but adoption requires a local
   `COMPUTE_BACKEND=hip` build, installed PyTorch smokes, and bounded
