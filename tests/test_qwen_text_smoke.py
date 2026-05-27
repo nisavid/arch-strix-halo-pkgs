@@ -57,6 +57,7 @@ def test_build_llm_kwargs_carries_quantization_probe_options():
 
     assert kwargs["model"] == "Qwen/Qwen3-0.6B-FP8-KV"
     assert kwargs["revision"] == "a86e57f8166807d28b447bab5daad3e079a268a7"
+    assert kwargs["tokenizer_revision"] == "a86e57f8166807d28b447bab5daad3e079a268a7"
     assert kwargs["quantization"] == "quark"
     assert kwargs["kv_cache_dtype"] == "fp8"
     assert kwargs["dtype"] == "float16"
