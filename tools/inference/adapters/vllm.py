@@ -66,6 +66,30 @@ def _extra_argv(definition: dict[str, Any]) -> list[str]:
     return [str(value) for value in when.get("argv", [])]
 
 
+def _model_revision_argv(
+    definition: dict[str, Any],
+    *,
+    model_bindings: dict[str, str],
+    extra_argv: list[str],
+) -> list[str]:
+    if any(
+        arg == "--revision" or arg.startswith("--revision=") for arg in extra_argv
+    ):
+        return []
+    model = str(definition["given"]["model"])
+    if model in model_bindings:
+        return []
+    provenance = definition.get("model_provenance")
+    if not isinstance(provenance, dict):
+        return []
+    if str(provenance.get("repo_id", model)) != model:
+        return []
+    revision = provenance.get("revision")
+    if not revision:
+        return []
+    return ["--revision", str(revision)]
+
+
 def _env(definition: dict[str, Any]) -> dict[str, str] | None:
     when = definition.get("when") or {}
     raw_env = when.get("env") or {}
@@ -92,6 +116,11 @@ def build_execution_plan(
         model_bindings=model_bindings,
     )
     extra_argv = _extra_argv(definition)
+    model_revision_argv = _model_revision_argv(
+        definition,
+        model_bindings=model_bindings,
+        extra_argv=extra_argv,
+    )
     env = _env(definition)
 
     if tool == "gemma4_text_smoke":
@@ -111,6 +140,7 @@ def build_execution_plan(
                 str(repo_root / "tools/qwen_text_smoke.py"),
                 model,
                 *extra_argv,
+                *model_revision_argv,
             ],
             env=env,
         )

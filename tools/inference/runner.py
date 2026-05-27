@@ -20,6 +20,9 @@ def _scenario_metadata(scenario: Scenario) -> dict[str, object]:
         "engine": scenario.engine,
         "model": scenario.model,
     }
+    for key in ("source_url", "model_provenance"):
+        if key in scenario.definition:
+            metadata[key] = scenario.definition[key]
     if scenario.draft_model is not None:
         metadata["draft_model"] = scenario.draft_model
     if scenario.speculative_model is not None:
@@ -275,6 +278,22 @@ def _scenario_assertions(scenario: Scenario) -> list[dict[str, object]]:
     return [dict(item) for item in raw_assertions]
 
 
+def _model_provenance_terms_failure(scenario: Scenario) -> str | None:
+    provenance = scenario.definition.get("model_provenance")
+    if not isinstance(provenance, dict):
+        return None
+    terms_status = str(provenance.get("terms_status", "accepted"))
+    if terms_status in ("", "accepted"):
+        return None
+    terms_gate = str(
+        provenance.get("terms_gate", "model provenance terms are not accepted")
+    )
+    return (
+        "MODEL_PROVENANCE_TERMS_GATE: "
+        f"{scenario.id} terms_status={terms_status}: {terms_gate}"
+    )
+
+
 def _write_text(path: Path, text: str) -> None:
     path.write_text(text, encoding="utf-8")
 
@@ -323,6 +342,30 @@ def run_scenarios(
             )
             + "\n",
         )
+
+        terms_failure = _model_provenance_terms_failure(scenario)
+        if terms_failure is not None:
+            result = {
+                **_scenario_metadata(scenario),
+                "ok": False,
+                "exit_code": None,
+                "duration_seconds": 0.0,
+                "stdout_log": str(scenario_run_root / "stdout.log"),
+                "stderr_log": str(scenario_run_root / "stderr.log"),
+                "server_log_path": (
+                    str(plan.server_log_path) if plan.server_log_path is not None else None
+                ),
+                "failures": [terms_failure],
+            }
+            _write_text(scenario_run_root / "stdout.log", "")
+            _write_text(scenario_run_root / "stderr.log", terms_failure + "\n")
+            _write_text(
+                scenario_run_root / "result.json",
+                json.dumps(result, indent=2, sort_keys=True) + "\n",
+            )
+            results.append(result)
+            failed += 1
+            continue
 
         if scenario.engine == "vllm":
             _capture_gpu_process_table(scenario_run_root, phase="before")

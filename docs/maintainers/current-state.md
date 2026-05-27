@@ -250,8 +250,13 @@ installed smokes, or claim new live-scenario validation. The durable
 recommendations are tracked in `docs/maintainers/rocm-inference-reference.md`,
 `docs/maintainers/vllm-recipe-coverage.md`, and `docs/backlog.md`: GPTQ is the
 highest-priority live-validation lane because the retained Qwen3.5 GPTQ Int4
-scenario already exists; Quark is split into a pinned model-artifact vLLM
-consumer lane and a separate optional `amd-quark` authoring-tool package lane;
+scenario carries pinned model revision/license metadata in its scenario
+provenance, and direct repo-ID execution passes the pinned revision to the qwen
+text smoke. The scenario runner fails before subprocess execution when
+`model_provenance.terms_status` is not accepted. The Claude-derived
+provenance/terms decision remains open for GPTQ before any live run. Quark is
+split into a pinned model-artifact vLLM consumer lane and a separate optional
+`amd-quark` authoring-tool package lane;
 bitsandbytes, AWQ, xFormers, and FBGEMM remain tracked source/package
 candidates with source-provenance, source-build, installed-smoke, and
 live-scenario gates before adoption.

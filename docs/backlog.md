@@ -39,12 +39,17 @@
   runtime-base source/validation closeout because the local Transformers
   package is coupled to tokenizers, safetensors, Hugging Face Hub,
   model-surface imports, and vLLM scenarios.
-- GPTQ live-validation lane: run the retained
-  `vllm.qwen3_5.4b-gptq-int4.text.basic` scenario only after pinning the
-  RafaDom model revision, license metadata, and provenance/terms decision.
-  No new runtime package is expected for prequantized GPTQ inference; promote
-  only after vLLM ROCm extensions import, generation passes, and the source,
-  build, install, and live states are recorded separately.
+- GPTQ live-validation lane: the retained
+  `vllm.qwen3_5.4b-gptq-int4.text.basic` scenario pins the RafaDom model
+  revision and model-card license metadata in scenario provenance. When the
+  scenario uses the Hugging Face repo ID directly, the runner passes the pinned
+  revision to the qwen text smoke. The runner treats non-accepted
+  `model_provenance.terms_status` values as a pre-run failure. Run it only
+  after the operator accepts the unresolved Claude-derived provenance/terms
+  risk or replaces the fixture. No new runtime package is expected for
+  prequantized GPTQ inference; promote only after vLLM ROCm extensions import,
+  generation passes, and the source, build, install, and live states are
+  recorded separately.
 - Quark vLLM consumer lane: track a pinned Quark-exported model artifact as a
   vLLM validation lane, not as a runtime package. This can start after the
   model artifact revision, license, and terms are accepted and the runtime-base
