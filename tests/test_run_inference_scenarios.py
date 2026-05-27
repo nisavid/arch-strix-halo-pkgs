@@ -913,6 +913,49 @@ def test_gptq_qwen_text_dry_run_uses_pinned_revision_without_binding(
     ]
 
 
+def test_dry_run_records_plan_failure_in_planned_entry(tmp_path: Path):
+    scenario_dir = tmp_path / "inference" / "scenarios"
+    scenario_dir.mkdir(parents=True)
+    run_root = tmp_path / "run"
+    (scenario_dir / "vllm.toml").write_text(
+        """
+[[scenario]]
+id = "vllm.gemma4.bad-provenance-revision"
+summary = "future unsupported provenance revision"
+
+[scenario.model_provenance]
+repo_id = "google/gemma-4-26B-A4B-it"
+revision = "scenario-pin"
+terms_status = "accepted"
+
+[scenario.given]
+engine = "vllm"
+model = "google/gemma-4-26B-A4B-it"
+tool = "gemma4_text_smoke"
+""",
+        encoding="utf-8",
+    )
+
+    result = run_runner(
+        "--scenario-dir",
+        str(scenario_dir),
+        "--run-root",
+        str(run_root),
+        "--dry-run",
+        "--scenario",
+        "vllm.gemma4.bad-provenance-revision",
+    )
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    planned = payload["planned"][0]
+    assert planned["command"] is None
+    assert planned["server_log_path"] is None
+    assert planned["env"] == {}
+    assert "SCENARIO_PLAN_FAILED" in planned["planning_failure"]
+    assert "UNSUPPORTED_MODEL_REVISION_TOOL" in planned["planning_failure"]
+
+
 def test_runner_executes_scenario_and_writes_logs(tmp_path: Path):
     script = write_fake_command_script(tmp_path)
     scenario_dir = tmp_path / "inference" / "scenarios"
@@ -1127,6 +1170,86 @@ argv = ["{script}", "--stdout", "should not run"]
     assert "terms_status=<missing>" in stderr_text
     assert "Operator must explicitly accept the fixture terms" in stderr_text
     assert "should not run" not in stdout_text
+
+
+def test_runner_records_plan_failure_and_continues_remaining_scenarios(
+    tmp_path: Path,
+):
+    script = write_fake_command_script(tmp_path)
+    scenario_dir = tmp_path / "inference" / "scenarios"
+    scenario_dir.mkdir(parents=True)
+    run_root = tmp_path / "run"
+    (scenario_dir / "mixed.toml").write_text(
+        f"""
+[[scenario]]
+id = "vllm.gemma4.bad-provenance-revision"
+summary = "future unsupported provenance revision"
+
+[scenario.model_provenance]
+repo_id = "google/gemma-4-26B-A4B-it"
+revision = "scenario-pin"
+terms_status = "accepted"
+
+[scenario.given]
+engine = "vllm"
+model = "google/gemma-4-26B-A4B-it"
+tool = "gemma4_text_smoke"
+
+[[scenario]]
+id = "llama.cpp.fake.after-plan-failure"
+summary = "fake command still runs"
+
+[scenario.given]
+engine = "llama.cpp"
+model = "builtin"
+entrypoint = "{sys.executable}"
+
+[scenario.when]
+argv = ["{script}", "--stdout", "ran after plan failure"]
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "ran after plan failure"
+""",
+        encoding="utf-8",
+    )
+
+    result = run_runner(
+        "--scenario-dir",
+        str(scenario_dir),
+        "--run-root",
+        str(run_root),
+        "--scenario",
+        "vllm.gemma4.bad-provenance-revision",
+        "--scenario",
+        "llama.cpp.fake.after-plan-failure",
+    )
+
+    assert result.returncode == 1
+    payload = json.loads(result.stdout)
+    assert payload["passed"] == 1
+    assert payload["failed"] == 1
+    assert payload["selected_ids"] == [
+        "vllm.gemma4.bad-provenance-revision",
+        "llama.cpp.fake.after-plan-failure",
+    ]
+    bad_root = run_root / "scenarios" / "vllm.gemma4.bad-provenance-revision"
+    bad_plan = json.loads((bad_root / "plan.json").read_text(encoding="utf-8"))
+    bad_result = json.loads((bad_root / "result.json").read_text(encoding="utf-8"))
+    assert bad_plan["command"] is None
+    assert "SCENARIO_PLAN_FAILED" in bad_plan["planning_failure"]
+    assert bad_result["ok"] is False
+    assert bad_result["exit_code"] is None
+    assert "SCENARIO_PLAN_FAILED" in bad_result["failures"][0]
+    assert "UNSUPPORTED_MODEL_REVISION_TOOL" in bad_result["failures"][0]
+    assert (bad_root / "stdout.log").read_text(encoding="utf-8") == ""
+    assert "UNSUPPORTED_MODEL_REVISION_TOOL" in (
+        bad_root / "stderr.log"
+    ).read_text(encoding="utf-8")
+    good_stdout = (
+        run_root / "scenarios" / "llama.cpp.fake.after-plan-failure" / "stdout.log"
+    ).read_text(encoding="utf-8")
+    assert "ran after plan failure" in good_stdout
 
 
 def test_runner_asserts_labeled_stdout_json_path(tmp_path: Path):
