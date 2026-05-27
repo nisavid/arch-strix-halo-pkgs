@@ -429,7 +429,7 @@ previous_recorded = "4ddfe99d6da426414b7f0e587cdb1910f1c23eb3"
 latest = "26872debb4452ea6dc898288618a15595e2317d9"
 discovery_status = "branch_head_ahead"
 disposition = "tracked"
-disposition_reason = "Tracked on 2026-05-27 for post-pkgrel live validation. The package source now tracks ROCm/pytorch release/2.12 at 26872debb4452ea6dc898288618a15595e2317d9 as python-pytorch-opt-rocm-gfx1151 2.12.0-2, with refreshed local patch carry and an AOTriton 0.12 lazy-tensor callback compatibility patch. Build plan 395995a5 produced PyTorch and affected native consumer rebuilds, and follow-up build plan 9f99f3a2 produced pkgrel-bumped delivery artifacts. Read-only installed verification reports PyTorch 2.12.0-2 and the downstream pkgrel set installed, and a current import/version smoke passed. The remaining gate is a user-owned live rerun because the existing live-scenario evidence predates the later package-manager delivery of the downstream pkgrel set."
+disposition_reason = "Tracked on 2026-05-27 for post-pkgrel live validation. The package source now tracks ROCm/pytorch release/2.12 at 26872debb4452ea6dc898288618a15595e2317d9 as python-pytorch-opt-rocm-gfx1151 2.12.0-2, with refreshed local patch carry and an AOTriton 0.12 lazy-tensor callback compatibility patch. Build plan 395995a5 produced PyTorch and affected native consumer rebuilds, and follow-up build plan 9f99f3a2 produced pkgrel-bumped delivery artifacts. Read-only installed verification reports PyTorch 2.12.0-2 and the downstream pkgrel set installed, and a current import/version smoke passed. The remaining gate is an operator-owned live rerun because the existing live-scenario evidence predates the later package-manager delivery of the downstream pkgrel set."
 salient_changes = [
   "ROCm/pytorch release/2.12 moved beyond the adopted 4ddfe99d package lane",
   "Arch python-pytorch-opt-rocm baseline remains at 2.12.0-1",
@@ -437,6 +437,7 @@ salient_changes = [
   "The local package carries an AOTriton 0.12 lazy-tensor callback compatibility patch while building against python-aotriton-gfx1151 0.12b",
   "The installed runtime-base set is PyTorch 2.12.0-2, AITER 0.1.14-2, FlashAttention 2.8.4-12, TorchAO 0.17.0-4, Torch-MIGraphX 1.2-7, TorchVision 0.27.0-2, and vLLM 0.21.0-4",
   "Existing live scenario evidence covers the same source content, but it predates the downstream package-manager pkgrel delivery and remains provisional until rerun against the installed stack",
+  "Operator handback must rerun flash-attn.ck.backend-import, torch-migraphx.pt2e.quantizer-import, and vllm.qwen3_5.0_8b.text.basic at docs/worklog/inference-runs/20260527T-pytorch-26872de-postdeploy-live before adoption",
 ]
 patch_carry_overlap = true
 package_source_update_needed = false
