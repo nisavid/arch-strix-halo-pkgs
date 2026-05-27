@@ -119,10 +119,10 @@ def test_vllm_adapter_respects_inline_revision_override_for_qwen_text(
 ):
     definition = scenario(
         {
-            "id": "vllm.qwen3_5.4b-gptq-int4.text.basic",
+            "id": "vllm.qwen3_5.35b-a3b-gptq-int4.text.basic",
             "given": {
                 "engine": "vllm",
-                "model": "RafaDom/Qwen3.5-4B-GPTQ",
+                "model": "Qwen/Qwen3.5-35B-A3B-GPTQ-Int4",
                 "tool": "qwen_text_smoke",
             },
             "when": {
@@ -131,7 +131,7 @@ def test_vllm_adapter_respects_inline_revision_override_for_qwen_text(
         }
     )
     definition["model_provenance"] = {
-        "repo_id": "RafaDom/Qwen3.5-4B-GPTQ",
+        "repo_id": "Qwen/Qwen3.5-35B-A3B-GPTQ-Int4",
         "revision": "scenario-pin",
     }
 
@@ -145,7 +145,7 @@ def test_vllm_adapter_respects_inline_revision_override_for_qwen_text(
     assert plan.command == [
         sys.executable,
         str(REPO_ROOT / "tools/qwen_text_smoke.py"),
-        "RafaDom/Qwen3.5-4B-GPTQ",
+        "Qwen/Qwen3.5-35B-A3B-GPTQ-Int4",
         "--max-model-len",
         "128",
         "--revision=operator-pin",

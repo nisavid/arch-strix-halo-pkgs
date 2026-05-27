@@ -50,14 +50,14 @@ def test_build_llm_kwargs_carries_quantization_probe_options():
         quantization="quark",
         dtype="float16",
         attention_backend="FLASH_ATTN",
-        revision="a86e57f8166807d28b447bab5daad3e079a268a7",
+        revision="3af5ca2972faf6de1fd6f4efc4d8d319ca751e8b",
     )
 
     kwargs = build_llm_kwargs("Qwen/Qwen3-0.6B-FP8-KV", args)
 
     assert kwargs["model"] == "Qwen/Qwen3-0.6B-FP8-KV"
-    assert kwargs["revision"] == "a86e57f8166807d28b447bab5daad3e079a268a7"
-    assert kwargs["tokenizer_revision"] == "a86e57f8166807d28b447bab5daad3e079a268a7"
+    assert kwargs["revision"] == "3af5ca2972faf6de1fd6f4efc4d8d319ca751e8b"
+    assert kwargs["tokenizer_revision"] == "3af5ca2972faf6de1fd6f4efc4d8d319ca751e8b"
     assert kwargs["quantization"] == "quark"
     assert kwargs["kv_cache_dtype"] == "fp8"
     assert kwargs["dtype"] == "float16"

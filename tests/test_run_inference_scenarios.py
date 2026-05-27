@@ -846,18 +846,15 @@ def test_gptq_qwen_text_dry_run_preserves_model_provenance(
         str(run_root),
         "--dry-run",
         "--scenario",
-        "vllm.qwen3_5.4b-gptq-int4.text.basic",
+        "vllm.qwen3_5.35b-a3b-gptq-int4.text.basic",
         "--model-path",
-        (
-            "RafaDom/Qwen3.5-4B-Claude-4.6-Opus-Reasoning-Distilled-v2-"
-            "GPTQ-Int4-HQ=/models/qwen35-gptq"
-        ),
+        "Qwen/Qwen3.5-35B-A3B-GPTQ-Int4=/models/qwen35-gptq",
     )
 
     assert result.returncode == 0
     payload = json.loads(result.stdout)
     assert payload["selected_ids"] == [
-        "vllm.qwen3_5.4b-gptq-int4.text.basic"
+        "vllm.qwen3_5.35b-a3b-gptq-int4.text.basic"
     ]
     planned = payload["planned"][0]
     assert planned["command"] == [
@@ -869,19 +866,18 @@ def test_gptq_qwen_text_dry_run_preserves_model_provenance(
     ]
     assert (
         planned["source_url"]
-        == "https://huggingface.co/RafaDom/Qwen3.5-4B-Claude-4.6-Opus-Reasoning-Distilled-v2-GPTQ-Int4-HQ"
+        == "https://huggingface.co/Qwen/Qwen3.5-35B-A3B-GPTQ-Int4"
     )
     assert planned["model_provenance"] == {
-        "repo_id": "RafaDom/Qwen3.5-4B-Claude-4.6-Opus-Reasoning-Distilled-v2-GPTQ-Int4-HQ",
-        "revision": "a86e57f8166807d28b447bab5daad3e079a268a7",
+        "repo_id": "Qwen/Qwen3.5-35B-A3B-GPTQ-Int4",
+        "revision": "3af5ca2972faf6de1fd6f4efc4d8d319ca751e8b",
         "license": "apache-2.0",
-        "base_model": "Jackrong/Qwen3.5-9B-Claude-4.6-Opus-Reasoning-Distilled-v2",
-        "terms_status": "requires-operator-decision",
-        "terms_gate": (
-            "Model-card license metadata is apache-2.0, but the model name "
-            "and base_model metadata assert Claude-derived distillation. "
-            "Run this scenario only after the operator accepts that "
-            "provenance/terms risk or replaces the fixture."
+        "base_model": "Qwen/Qwen3.5-35B-A3B",
+        "terms_status": "accepted",
+        "terms_decision": (
+            "Replaces the rejected RafaDom Claude-derived fixture with the "
+            "official Qwen GPTQ Int4 checkpoint published under Apache-2.0; "
+            "live validation remains pending."
         ),
     }
 
@@ -897,7 +893,7 @@ def test_gptq_qwen_text_dry_run_uses_pinned_revision_without_binding(
         str(run_root),
         "--dry-run",
         "--scenario",
-        "vllm.qwen3_5.4b-gptq-int4.text.basic",
+        "vllm.qwen3_5.35b-a3b-gptq-int4.text.basic",
     )
 
     assert result.returncode == 0
@@ -905,11 +901,11 @@ def test_gptq_qwen_text_dry_run_uses_pinned_revision_without_binding(
     assert payload["planned"][0]["command"] == [
         sys.executable,
         str(REPO_ROOT / "tools/qwen_text_smoke.py"),
-        "RafaDom/Qwen3.5-4B-Claude-4.6-Opus-Reasoning-Distilled-v2-GPTQ-Int4-HQ",
+        "Qwen/Qwen3.5-35B-A3B-GPTQ-Int4",
         "--max-model-len",
         "128",
         "--revision",
-        "a86e57f8166807d28b447bab5daad3e079a268a7",
+        "3af5ca2972faf6de1fd6f4efc4d8d319ca751e8b",
     ]
 
 
