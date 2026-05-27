@@ -35,13 +35,23 @@
   same source content is recorded at
   `docs/worklog/inference-runs/20260526T-pytorch-26872de-closeout`, but that
   run predates the later package-manager delivery of the downstream pkgrel set.
-  The remaining user-owned gate is a live rerun of
+  The remaining operator-owned gate is a live rerun of
   `flash-attn.ck.backend-import`, `torch-migraphx.pt2e.quantizer-import`, and
-  `vllm.qwen3_5.0_8b.text.basic` against the currently installed stack. Run
-  it from the repo root with `python tools/run_inference_scenarios.py
-  --scenario flash-attn.ck.backend-import --scenario
-  torch-migraphx.pt2e.quantizer-import --scenario vllm.qwen3_5.0_8b.text.basic`
-  and record the run root before adopting this candidate.
+  `vllm.qwen3_5.0_8b.text.basic` against the currently installed stack. Hand
+  this to the operator from a fresh lane worktree at updated `origin/main`:
+
+  ```bash
+  cd <fresh-lane-worktree>
+  HF_HUB_CACHE=<testing HF hub cache root> python tools/run_inference_scenarios.py \
+    --scenario flash-attn.ck.backend-import \
+    --scenario torch-migraphx.pt2e.quantizer-import \
+    --scenario vllm.qwen3_5.0_8b.text.basic \
+    --run-root docs/worklog/inference-runs/20260527T-pytorch-26872de-postdeploy-live
+  ```
+
+  The handback signal is the completed run root. After handback, inspect
+  `summary.json`, each scenario `result.json`, and the scenario logs for
+  pass/fail status and private path leakage before adopting this candidate.
 - ROCm PyTorch release/2.12 980ce60 follow-up: start this after the 26872de
   post-pkgrel live rerun and docs/ledger closeout merge, unless the operator
   explicitly declares a stable-runtime-base bypass. The accepted 2026-05-27 raw

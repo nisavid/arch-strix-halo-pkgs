@@ -38,7 +38,7 @@ spec did not update package source refs, rebuild packages, deploy or install
 artifacts, run installed smokes, or run live inference scenarios.
 
 The ROCm PyTorch release/2.12 `26872de` runtime-base source/build/deploy
-closeout is complete, with a user-owned live-scenario rerun still tracked.
+closeout is complete, with an operator-owned live-scenario rerun still tracked.
 Source updated: `python-pytorch-opt-rocm-gfx1151` now tracks ROCm/pytorch
 `release/2.12` at `26872debb4452ea6dc898288618a15595e2317d9` and renders as
 `2.12.0-2`, with Arch `python-pytorch-opt-rocm 2.12.0-1` still used as the
@@ -75,10 +75,22 @@ Existing evidence for the same source content passed
 `docs/worklog/inference-runs/20260526T-pytorch-26872de-closeout`, but that
 scenario run occurred after the PyTorch 2.12.0-2 install and before the later
 package-manager delivery of the downstream pkgrel set. The remaining
-user-owned gate is a live rerun of those three scenarios against the current
-installed stack with `python tools/run_inference_scenarios.py --scenario
-flash-attn.ck.backend-import --scenario torch-migraphx.pt2e.quantizer-import
---scenario vllm.qwen3_5.0_8b.text.basic`.
+operator-owned gate is a live rerun of those three scenarios against the
+current installed stack. Hand the operator this command from a fresh lane
+worktree at updated `origin/main`:
+
+```bash
+cd <fresh-lane-worktree>
+HF_HUB_CACHE=<testing HF hub cache root> python tools/run_inference_scenarios.py \
+  --scenario flash-attn.ck.backend-import \
+  --scenario torch-migraphx.pt2e.quantizer-import \
+  --scenario vllm.qwen3_5.0_8b.text.basic \
+  --run-root docs/worklog/inference-runs/20260527T-pytorch-26872de-postdeploy-live
+```
+
+The handback signal is the completed run root. After handback, inspect
+`summary.json`, each scenario `result.json`, and the scenario logs for pass/fail
+status and private path leakage before adopting the candidate.
 
 The ROCm PyTorch release/2.12 `980ce60` follow-up remains tracked as separate
 drift rather than replacing the deployed 26872de closeout target. The
@@ -304,7 +316,7 @@ installed smokes, and selected-logit live validation; llama.cpp b9354, ROCm
 PyTorch release/2.12 980ce60, and Transformers 5.9.0 remain tracked source
 follow-ups. The ROCm PyTorch 26872de closeout updates package sources and
 generated metadata to match the already deployed stack; it leaves the
-post-pkgrel live scenario rerun as user-owned work.
+post-pkgrel live scenario rerun as operator-owned work.
 
 After the Lane A b9330-2 and stable-diffusion.cpp 92dc726 adoption ledgers were
 recorded, `tools/check_package_updates.py --json --fail-on actionable` exited
