@@ -58,11 +58,16 @@ decision by setting the scenario's `model_provenance.terms_status` to
 `accepted`. AWQ
 stays exploratory until a native AWQ Qwen text fixture is pinned and validated;
 AutoAWQ is not a package candidate for this lane. Quark is split into a vLLM
-consumer lane and an optional `amd-quark` authoring-tool package lane: vLLM can
-consume an exported model artifact with `quantization="quark"` without adding
-`amd-quark` to the local vLLM runtime closure, while authoring-tool packaging
-waits for an explicit source pin plus Python 3.14 and current NumPy
-compatibility.
+consumer lane and an optional `amd-quark` authoring-tool package lane. The vLLM
+consumer lane pins
+`amd/Qwen3-8B-WMXFP4FP8-AMXFP4FP8-AMP-KVFP8` at revision
+`7d63d86fe5de2cee926e6ba54b0eec7f442323cf` and tracks it through
+`vllm.qwen3.8b-quark-amp.text.basic` with `quantization="quark"` and
+`kv_cache_dtype="fp8"`; no `amd-quark` runtime dependency is required for
+that smoke. The artifact metadata is accepted for this bounded scenario because
+the AMD artifact and `Qwen/Qwen3-8B` base model are public, non-gated, and
+Apache-2.0 on Hugging Face. Authoring-tool packaging waits for an explicit
+source pin plus Python 3.14 and current NumPy compatibility.
 bitsandbytes is tracked as a separate source-built package candidate because
 upstream ROCm support is still preview even though it names `gfx1151`.
 xFormers and FBGEMM do not change the vLLM scenario surface until a
@@ -96,6 +101,7 @@ source-built package and consumer path exist.
 | Surface | Recipe flags or request shape | Current coverage | Planned action |
 | --- | --- | --- | --- |
 | Qwen3.6 BF16 reasoning | `Qwen/Qwen3.6-35B-A3B`, `--tensor-parallel-size 8` or interactive TP2, `--max-model-len 262144`, `--reasoning-parser qwen3` | `validated` by reduced `reasoning` and `reasoning-disabled`; unquantized eager and compiled text controls remain validated | Keep the large TP/context recipe shape advisory unless the host gains matching hardware. |
+| Qwen3 Quark AMP safetensors probe | `amd/Qwen3-8B-WMXFP4FP8-AMXFP4FP8-AMP-KVFP8` at revision `7d63d86fe5de2cee926e6ba54b0eec7f442323cf`, `quantization="quark"`, `kv_cache_dtype="fp8"`, reduced local context | `tracked` by `vllm.qwen3.8b-quark-amp.text.basic`; scenario metadata records `apache-2.0`, base model `Qwen/Qwen3-8B`, accepted public/non-gated terms status, required Quark quantization, and required FP8 KV cache dtype | Run only after the runtime base is stable; re-review artifact provenance if the revision, license, gating, base model, or file list changes. |
 | FP8 safetensors probe | `surogate/Qwen3.5-0.8B-FP8`, reduced local context | `tracked` by `vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors-blocked` | Use this small retained checkpoint for local FP8 support checks; do not treat it as Qwen3.6 MoE recipe coverage. |
 | GPTQ Int4 safetensors probe | `RafaDom/Qwen3.5-4B-Claude-4.6-Opus-Reasoning-Distilled-v2-GPTQ-Int4-HQ` at revision `a86e57f8166807d28b447bab5daad3e079a268a7`, reduced local context | `tracked` by `vllm.qwen3_5.4b-gptq-int4.text.basic`; scenario metadata records model-card license `apache-2.0`, base model `Jackrong/Qwen3.5-9B-Claude-4.6-Opus-Reasoning-Distilled-v2`, and unresolved provenance/terms status | Use this checkpoint only after the operator accepts the Claude-derived provenance/terms risk or replaces the fixture; it replaces the AXERA-format cache artifact. |
 | Qwen3.6 MTP/spec decoding | `--speculative-config '{"method":"mtp","num_speculative_tokens":2}'` | `validated` by reduced `mtp` through the padded drafter batch path with the installed ROCm `valid_count` patch | No remaining local MTP workaround; keep only full Qwen3.5 FP8 latency shape advisory. |

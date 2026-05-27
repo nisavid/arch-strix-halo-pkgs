@@ -581,6 +581,76 @@ kind = "stdout.contains"
 value = "basic_ok"
 
 [[scenario]]
+id = "vllm.qwen3.8b-quark-amp.text.basic"
+summary = "Qwen3 8B Quark AMP safetensors consumer smoke"
+tags = ["qwen", "qwen3", "quark", "amp", "safetensors", "quantization-probe", "exploratory"]
+source_url = "https://huggingface.co/amd/Qwen3-8B-WMXFP4FP8-AMXFP4FP8-AMP-KVFP8"
+
+[scenario.model_provenance]
+repo_id = "amd/Qwen3-8B-WMXFP4FP8-AMXFP4FP8-AMP-KVFP8"
+revision = "7d63d86fe5de2cee926e6ba54b0eec7f442323cf"
+license = "apache-2.0"
+base_model = "Qwen/Qwen3-8B"
+terms_status = "accepted"
+terms_gate = "Accepted for bounded scenario metadata because the AMD model artifact and base Qwen model are public, non-gated, Apache-2.0 Hugging Face repos and the pinned artifact sibling list has no Python or custom model-code files. Re-review before live validation if the revision, license, gating, base model, or sibling list changes."
+required_quantization = "quark"
+required_kv_cache_dtype = "fp8"
+quark_version = "0.11"
+
+[scenario.given]
+engine = "vllm"
+model = "amd/Qwen3-8B-WMXFP4FP8-AMXFP4FP8-AMP-KVFP8"
+tool = "qwen_text_smoke"
+
+[scenario.when]
+argv = [
+  "--quantization",
+  "quark",
+  "--kv-cache-dtype",
+  "fp8",
+  "--max-model-len",
+  "128",
+  "--gpu-memory-utilization",
+  "0.35",
+]
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "config_model_type qwen3"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "config_quantization_config_present true"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "'quant_method': 'quark'"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "quantization quark"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "kv_cache_dtype fp8"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "llm_init_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "generation_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "basic_ok"
+
+[[scenario]]
 id = "vllm.qwen3_6.35b-a3b-nvfp4.text.unsupported-rocm-gfx1151"
 summary = "Qwen3.6 35B-A3B ModelOpt NVFP4 probe blocked by ROCm vLLM quantization support"
 tags = ["qwen", "qwen3.6", "nvfp4", "modelopt", "quantization-probe", "exploratory", "blocked"]
@@ -839,4 +909,21 @@ required_flags = [
 caveats = [
   "The local cache keeps the smallest FP8 safetensors checkpoint in the retained Qwen3.5 family instead of the larger Qwen3.6 FP8 MoE artifact.",
   "The local probe records FP8 support behavior only; it is not Qwen3.6 MoE recipe coverage.",
+]
+
+[[recipe_surface]]
+id = "vllm.qwen.recipe.qwen3_8.quark_amp"
+summary = "AMD Qwen3 8B Quark AMP vLLM consumer probe"
+source_url = "https://huggingface.co/amd/Qwen3-8B-WMXFP4FP8-AMXFP4FP8-AMP-KVFP8"
+model = "amd/Qwen3-8B-WMXFP4FP8-AMXFP4FP8-AMP-KVFP8"
+status = "tracked"
+local_scenarios = ["vllm.qwen3.8b-quark-amp.text.basic"]
+required_flags = [
+  "quantization=quark",
+  "kv_cache_dtype=fp8",
+  "max_model_len=128",
+]
+caveats = [
+  "The pinned artifact is accepted for scenario metadata from public Apache-2.0 Hugging Face provenance, but the repo has not run live generation for this scenario.",
+  "Keep this as a vLLM consumer scenario; amd-quark remains an authoring tool and is not a python-vllm-rocm-gfx1151 runtime dependency.",
 ]

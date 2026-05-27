@@ -276,6 +276,7 @@ def test_qwen_recipe_surfaces_link_runnable_local_scenarios():
         "vllm.qwen.recipe.qwen3_5.benchmark.openai_chat",
         "vllm.qwen.recipe.qwen3_5.client.openai_multimodal",
         "vllm.qwen.recipe.qwen3_5.server.long_context_yarn",
+        "vllm.qwen.recipe.qwen3_8.quark_amp",
     }
     allowed_statuses = {"validated", "tracked", "planned", "advisory-only"}
 
@@ -322,6 +323,10 @@ def test_qwen_recipe_surfaces_link_runnable_local_scenarios():
     assert surfaces["vllm.qwen.recipe.qwen3_5.client.openai_multimodal"][
         "status"
     ] == "validated"
+    assert surfaces["vllm.qwen.recipe.qwen3_8.quark_amp"]["status"] == "tracked"
+    assert surfaces["vllm.qwen.recipe.qwen3_8.quark_amp"][
+        "local_scenarios"
+    ] == ["vllm.qwen3.8b-quark-amp.text.basic"]
     assert "--reasoning-parser qwen3" in surfaces[
         "vllm.qwen.recipe.qwen3_6.server.reasoning"
     ]["required_flags"]
@@ -336,6 +341,12 @@ def test_qwen_recipe_surfaces_link_runnable_local_scenarios():
     ]["required_flags"]
     assert "VLLM_ALLOW_LONG_MAX_MODEL_LEN=1" in surfaces[
         "vllm.qwen.recipe.qwen3_5.server.long_context_yarn"
+    ]["required_flags"]
+    assert "quantization=quark" in surfaces[
+        "vllm.qwen.recipe.qwen3_8.quark_amp"
+    ]["required_flags"]
+    assert "kv_cache_dtype=fp8" in surfaces[
+        "vllm.qwen.recipe.qwen3_8.quark_amp"
     ]["required_flags"]
 
 
@@ -759,6 +770,62 @@ def test_quantization_lane_probes_record_root_cause_contracts():
         {"kind": "stdout.contains", "value": "basic_ok"},
     ):
         assert expected in gptq_int4.definition["then"]["assert"]
+
+    quark_amp = by_id["vllm.qwen3.8b-quark-amp.text.basic"]
+    assert quark_amp.model == "amd/Qwen3-8B-WMXFP4FP8-AMXFP4FP8-AMP-KVFP8"
+    assert set(quark_amp.tags) >= {
+        "qwen",
+        "qwen3",
+        "quark",
+        "amp",
+        "safetensors",
+        "quantization-probe",
+        "exploratory",
+    }
+    assert quark_amp.definition["given"]["tool"] == "qwen_text_smoke"
+    assert quark_amp.definition["when"]["argv"] == [
+        "--quantization",
+        "quark",
+        "--kv-cache-dtype",
+        "fp8",
+        "--max-model-len",
+        "128",
+        "--gpu-memory-utilization",
+        "0.35",
+    ]
+    assert quark_amp.definition["model_provenance"] == {
+        "repo_id": "amd/Qwen3-8B-WMXFP4FP8-AMXFP4FP8-AMP-KVFP8",
+        "revision": "7d63d86fe5de2cee926e6ba54b0eec7f442323cf",
+        "license": "apache-2.0",
+        "base_model": "Qwen/Qwen3-8B",
+        "terms_status": "accepted",
+        "terms_gate": (
+            "Accepted for bounded scenario metadata because the AMD model "
+            "artifact and base Qwen model are public, non-gated, Apache-2.0 "
+            "Hugging Face repos and the pinned artifact sibling list has no "
+            "Python or custom model-code files. Re-review before live validation "
+            "if the revision, license, gating, base model, or sibling list "
+            "changes."
+        ),
+        "required_quantization": "quark",
+        "required_kv_cache_dtype": "fp8",
+        "quark_version": "0.11",
+    }
+    for expected in (
+        {"kind": "exit_code.equals", "value": 0},
+        {"kind": "stdout.contains", "value": "config_model_type qwen3"},
+        {
+            "kind": "stdout.contains",
+            "value": "config_quantization_config_present true",
+        },
+        {"kind": "stdout.contains", "value": "'quant_method': 'quark'"},
+        {"kind": "stdout.contains", "value": "quantization quark"},
+        {"kind": "stdout.contains", "value": "kv_cache_dtype fp8"},
+        {"kind": "stdout.contains", "value": "llm_init_ok"},
+        {"kind": "stdout.contains", "value": "generation_ok"},
+        {"kind": "stdout.contains", "value": "basic_ok"},
+    ):
+        assert expected in quark_amp.definition["then"]["assert"]
 
     nvfp4 = by_id["vllm.qwen3_6.35b-a3b-nvfp4.text.unsupported-rocm-gfx1151"]
     assert nvfp4.model == "RedHatAI/Qwen3.6-35B-A3B-NVFP4"
