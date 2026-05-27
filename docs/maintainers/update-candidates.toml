@@ -574,7 +574,7 @@ disposition_reason = "Adopted after the installed handback. Source metadata and 
 salient_changes = [
   "stable-diffusion.cpp master moved beyond the adopted 1ceb5bd package lane to 92dc726",
   "Source review found Microsoft Lens support, GPT-OSS tokenizer and vocabulary additions, and LoRA directory scans that skip permission-denied entries",
-  "The upstream mode-160000 gitlinks for ggml, sdcpp-webui, libwebm, and libwebp are unchanged from the adopted 1ceb5bd tree and still match the explicit package source pins",
+  "The upstream mode-160000 gitlinks for ggml, examples/server/frontend, thirdparty/libwebm, and thirdparty/libwebp are unchanged from the adopted 1ceb5bd tree and still match the explicit package source pins",
   "The CLIP-G patch context was refreshed so both the prefix-ordering change and Flux te1 remap apply without ignored patch hunks",
   "Final build plan e6783abd produced stable-diffusion.cpp-vulkan-gfx1151-r652.g92dc726-1-x86_64.pkg.tar.zst",
   "Installed package and published-repo verification report stable-diffusion.cpp-vulkan-gfx1151 r652.g92dc726-1",
