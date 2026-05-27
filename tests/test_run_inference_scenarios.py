@@ -913,6 +913,63 @@ def test_gptq_qwen_text_dry_run_uses_pinned_revision_without_binding(
     ]
 
 
+def test_quark_qwen_text_dry_run_pins_artifact_and_probe_options(
+    tmp_path: Path,
+):
+    run_root = tmp_path / "run"
+    result = run_runner(
+        "--scenario-dir",
+        str(REPO_ROOT / "inference/scenarios"),
+        "--run-root",
+        str(run_root),
+        "--dry-run",
+        "--scenario",
+        "vllm.qwen3.8b-quark-amp.text.basic",
+    )
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    assert payload["selected_ids"] == ["vllm.qwen3.8b-quark-amp.text.basic"]
+    planned = payload["planned"][0]
+    assert planned["command"] == [
+        sys.executable,
+        str(REPO_ROOT / "tools/qwen_text_smoke.py"),
+        "amd/Qwen3-8B-WMXFP4FP8-AMXFP4FP8-AMP-KVFP8",
+        "--quantization",
+        "quark",
+        "--kv-cache-dtype",
+        "fp8",
+        "--max-model-len",
+        "128",
+        "--gpu-memory-utilization",
+        "0.35",
+        "--revision",
+        "7d63d86fe5de2cee926e6ba54b0eec7f442323cf",
+    ]
+    assert (
+        planned["source_url"]
+        == "https://huggingface.co/amd/Qwen3-8B-WMXFP4FP8-AMXFP4FP8-AMP-KVFP8"
+    )
+    assert planned["model_provenance"] == {
+        "repo_id": "amd/Qwen3-8B-WMXFP4FP8-AMXFP4FP8-AMP-KVFP8",
+        "revision": "7d63d86fe5de2cee926e6ba54b0eec7f442323cf",
+        "license": "apache-2.0",
+        "base_model": "Qwen/Qwen3-8B",
+        "terms_status": "accepted",
+        "terms_gate": (
+            "Accepted for bounded scenario metadata because the AMD model "
+            "artifact and base Qwen model are public, non-gated, Apache-2.0 "
+            "Hugging Face repos and the pinned artifact sibling list has no "
+            "Python or custom model-code files. Re-review before live validation "
+            "if the revision, license, gating, base model, or sibling list "
+            "changes."
+        ),
+        "required_quantization": "quark",
+        "required_kv_cache_dtype": "fp8",
+        "quark_version": "0.11",
+    }
+
+
 def test_dry_run_records_plan_failure_in_planned_entry(tmp_path: Path):
     scenario_dir = tmp_path / "inference" / "scenarios"
     scenario_dir.mkdir(parents=True)

@@ -37,6 +37,21 @@ adopted package surfaces from tracked, rejected, and blocked future lanes. This
 spec did not update package source refs, rebuild packages, deploy or install
 artifacts, run installed smokes, or run live inference scenarios.
 
+The Quark vLLM consumer artifact decision is scenario metadata plus durable
+documentation, not package work. Source updated: no package source ref changed;
+the model-source artifact decision pins the public, non-gated, Apache-2.0 AMD
+Hugging Face model `amd/Qwen3-8B-WMXFP4FP8-AMXFP4FP8-AMP-KVFP8` at revision
+`7d63d86fe5de2cee926e6ba54b0eec7f442323cf` with base model `Qwen/Qwen3-8B`.
+The tracked `vllm.qwen3.8b-quark-amp.text.basic` scenario records
+`terms_status="accepted"`, required `quantization="quark"`, required
+`kv_cache_dtype="fp8"`, and Quark config version `0.11`.
+Package built: no package build is required or claimed, and `amd-quark` is not a
+runtime dependency of `python-vllm-rocm-gfx1151`. Deployed/installed: no package
+or service mutation was performed. Installed-smoked: not run for this scenario.
+Live-scenario validated: not complete; run the bounded installed vLLM generation
+smoke only after the runtime base is stable, and re-review model provenance if
+the revision, license, gating, base model, or file list changes.
+
 The ROCm PyTorch release/2.12 `26872de` runtime-base source/build/deploy
 closeout is complete, with an operator-owned live-scenario rerun still tracked.
 Source updated: `python-pytorch-opt-rocm-gfx1151` now tracks ROCm/pytorch

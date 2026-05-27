@@ -81,16 +81,19 @@
   prequantized GPTQ inference; promote only after vLLM ROCm extensions import,
   generation passes, and the source, build, install, and live states are
   recorded separately.
-- Quark vLLM consumer lane: track a pinned Quark-exported model artifact as a
-  vLLM validation lane, not as a runtime package. Decision work can start after
-  this reconciliation; live vLLM validation waits for artifact revision,
-  license, and terms acceptance plus stable runtime-base evidence after the
-  PyTorch/Transformers lanes unless explicitly bypassed. Required gates are
-  model provenance, a bounded installed vLLM generation smoke with
-  `quantization="quark"` and any model-required cache dtype, and separate
-  recording of model-source provenance, current installed vLLM package state,
-  installed-smoke state, and live-scenario validation. No new package build is
-  expected unless the existing vLLM runtime base changes.
+- Quark vLLM consumer lane: track
+  `vllm.qwen3.8b-quark-amp.text.basic` as the bounded consumer scenario for the
+  pinned AMD Quark-exported artifact
+  `amd/Qwen3-8B-WMXFP4FP8-AMXFP4FP8-AMP-KVFP8` at revision
+  `7d63d86fe5de2cee926e6ba54b0eec7f442323cf`. The artifact and its
+  `Qwen/Qwen3-8B` base model are public, non-gated, Apache-2.0 Hugging Face
+  repos, so scenario metadata records `terms_status="accepted"` with a
+  re-review requirement if the revision, license, gating, base model, or file
+  list changes. The live smoke must pass `quantization="quark"` and
+  `kv_cache_dtype="fp8"`. No `amd-quark` runtime dependency or package build is
+  expected for this vLLM consumer lane unless the installed vLLM runtime base
+  changes. Live validation remains open until the runtime base is stable and an
+  operator-owned installed vLLM generation run is scheduled.
 - `amd-quark` authoring-tool package lane: keep this as an optional package
   candidate, not as a `python-vllm-rocm-gfx1151` runtime dependency. Package
   work is blocked until the chosen release has a public source tag or explicit
