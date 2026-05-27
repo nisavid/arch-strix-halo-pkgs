@@ -314,7 +314,7 @@ previous_recorded = "b9330 / b9326-1"
 latest = "b9352"
 discovery_status = "stable_update_available"
 disposition = "tracked"
-disposition_reason = "Accepted as raw freshness drift on 2026-05-27 after the b9330 package lane and the superseded b9334 follow-up. Track as the next llama.cpp source-refresh candidate without folding it into the b9330-2 deploy/install closeout."
+disposition_reason = "Accepted as raw freshness drift on 2026-05-27 after the b9330 package lane and the superseded b9334 follow-up. Track as the next llama.cpp source-refresh candidate without folding it into the b9330-2 selected-logit live-scenario closeout."
 salient_changes = [
   "GitHub release b9352 is available after the active b9330 package lane",
   "This reconciliation records candidate disposition only; source diff review, package source update, package build, deploy/install, installed-smoke, and selected-logit live validation remain open",
@@ -361,7 +361,7 @@ previous_recorded = "96bfee122869125d32aa4ec9acc8c3597059188b / 2.11.0-4"
 latest = "2.12.0-1"
 discovery_status = "baseline_drift"
 disposition = "adopted"
-disposition_reason = "Adopted on 2026-05-19. The package now tracks ROCm/pytorch release/2.12 at 4ddfe99d6da426414b7f0e587cdb1910f1c23eb3, carries the ROCm BLAS template-specialization export patch required for import-clean libtorch_hip.so, and is paired with TorchVision 0.27.0 plus vLLM 0.21.0-3. Source verification, package build, deploy/install, installed Python/GPU smokes, and the affected Qwen3.5 vLLM scenario passed."
+disposition_reason = "Adopted on 2026-05-19. The package tracks ROCm/pytorch release/2.12 at 4ddfe99d6da426414b7f0e587cdb1910f1c23eb3, carries the ROCm BLAS template-specialization export patch required for import-clean libtorch_hip.so, and is paired with TorchVision 0.27.0 plus vLLM 0.21.0-3. Source verification, package build, deploy/install, installed Python/GPU smokes, and the affected Qwen3.5 vLLM scenario passed. This record is retained as the historical Arch-baseline adoption; later release/2.12 branch movement is dispositioned by explicit git-ref candidates."
 salient_changes = [
   "Arch python-pytorch-rocm baseline has advanced from 2.11.0-4 to 2.12.0-1",
   "TorchVision 0.27.0 is paired with torch==2.12.0",
@@ -378,7 +378,15 @@ last_reviewed = "2026-05-19"
 
 [candidates."rocm-pytorch-release-2.12-26872de"]
 family = "rocm_pytorch"
-packages = ["python-pytorch-opt-rocm-gfx1151"]
+packages = [
+  "python-pytorch-opt-rocm-gfx1151",
+  "python-amd-aiter-gfx1151",
+  "python-flash-attn-rocm-gfx1151",
+  "python-torchao-rocm-gfx1151",
+  "python-torch-migraphx-gfx1151",
+  "python-torchvision-rocm-gfx1151",
+  "python-vllm-rocm-gfx1151",
+]
 source_kind = "git_ref"
 check_id = "release-branch"
 baseline_source_kind = "arch_package"
@@ -387,35 +395,48 @@ previous_recorded = "4ddfe99d6da426414b7f0e587cdb1910f1c23eb3"
 latest = "26872debb4452ea6dc898288618a15595e2317d9"
 discovery_status = "branch_head_ahead"
 disposition = "tracked"
-disposition_reason = "Found during the 2026-05-21 closeout freshness gate. Keep as a separate ROCm PyTorch release/2.12 follow-up because branch movement can affect the patched native ABI, TorchVision, vLLM native extensions, and installed GPU smoke surface."
+disposition_reason = "Tracked on 2026-05-27 for post-pkgrel live validation. The package source now tracks ROCm/pytorch release/2.12 at 26872debb4452ea6dc898288618a15595e2317d9 as python-pytorch-opt-rocm-gfx1151 2.12.0-2, with refreshed local patch carry and an AOTriton 0.12 lazy-tensor callback compatibility patch. Build plan 395995a5 produced PyTorch and affected native consumer rebuilds, and follow-up build plan 9f99f3a2 produced pkgrel-bumped delivery artifacts. Read-only installed verification reports PyTorch 2.12.0-2 and the downstream pkgrel set installed, and a current import/version smoke passed. The remaining gate is a user-owned live rerun because the existing live-scenario evidence predates the later package-manager delivery of the downstream pkgrel set."
 salient_changes = [
   "ROCm/pytorch release/2.12 moved beyond the adopted 4ddfe99d package lane",
   "Arch python-pytorch-opt-rocm baseline remains at 2.12.0-1",
+  "The 4ddfe99..26872de range includes the ROCm Inductor static launcher change that loads HSACO images through hipModuleLoadData",
+  "The local package carries an AOTriton 0.12 lazy-tensor callback compatibility patch while building against python-aotriton-gfx1151 0.12b",
+  "The installed runtime-base set is PyTorch 2.12.0-2, AITER 0.1.14-2, FlashAttention 2.8.4-12, TorchAO 0.17.0-4, Torch-MIGraphX 1.2-7, TorchVision 0.27.0-2, and vLLM 0.21.0-4",
+  "Existing live scenario evidence covers the same source content, but it predates the downstream package-manager pkgrel delivery and remains provisional until rerun against the installed stack",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
+package_source_update_needed = false
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "ROCm PyTorch release/2.12 26872de follow-up"
-last_reviewed = "2026-05-21"
+next_gate_label = "ROCm PyTorch release/2.12 26872de post-pkgrel live validation"
+last_reviewed = "2026-05-27"
 
 [candidates."rocm-pytorch-release-2.12-980ce60"]
 family = "rocm_pytorch"
-packages = ["python-pytorch-opt-rocm-gfx1151"]
+packages = [
+  "python-pytorch-opt-rocm-gfx1151",
+  "python-amd-aiter-gfx1151",
+  "python-flash-attn-rocm-gfx1151",
+  "python-torchao-rocm-gfx1151",
+  "python-torch-migraphx-gfx1151",
+  "python-torchvision-rocm-gfx1151",
+  "python-vllm-rocm-gfx1151",
+]
 source_kind = "git_ref"
 check_id = "release-branch"
 baseline_source_kind = "arch_package"
 baseline_latest = "2.12.0-1"
-previous_recorded = "4ddfe99d6da426414b7f0e587cdb1910f1c23eb3"
+previous_recorded = "26872debb4452ea6dc898288618a15595e2317d9"
 latest = "980ce601387f3fb82911cec6aa0bfc3ec2e73d75"
 discovery_status = "branch_head_ahead"
 disposition = "tracked"
-disposition_reason = "Accepted as raw freshness drift on 2026-05-27 after the existing 26872de release/2.12 follow-up. Keep as a separate tracked candidate until the PyTorch runtime lane decides whether 26872de merges as an intermediate or is retargeted."
+disposition_reason = "Tracked on 2026-05-27 after the 26872de runtime-base closeout. Do not retarget the deployed 26872de closeout to this commit: the current installed and live evidence belongs to 26872de, while the 26872de..980ce60 range is a new PyTorch runtime fix that still needs its own source update, package build, deploy/install, installed-smoke, and live-scenario validation."
 salient_changes = [
-  "ROCm/pytorch release/2.12 moved beyond the adopted 4ddfe99d package lane and beyond the existing 26872de follow-up",
-  "This reconciliation records candidate disposition only; source diff review, package source update, affected rebuilds, deploy/install, installed-smoke, and live-scenario validation remain open",
-  "The existing 26872de package lane remains tracked until its postdeploy evidence and merge-or-retarget decision are recorded",
+  "ROCm/pytorch release/2.12 moved beyond the adopted 26872de package lane",
+  "The 26872de..980ce60 range is one commit fixing triu/tril 64-bit indexing for large matrices in aten/src/ATen/native/cuda/TriangularOps.cu",
+  "The current deployed-stack evidence validates 26872de, not this newer source commit",
+  "Package source update, affected rebuilds, deploy/install, installed-smoke, and live-scenario validation remain open",
 ]
 patch_carry_overlap = true
 package_source_update_needed = true

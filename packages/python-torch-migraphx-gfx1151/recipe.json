@@ -20,7 +20,8 @@
       "Keep the installed _torch_migraphx extension RPATH pointed at the sibling torch/lib directory so libc10, libtorch_cpu, and libtorch_python resolve without LD_LIBRARY_PATH.",
       "Keep the numpy metadata patch while the local package depends on the repo's numpy 2.x lane.",
       "Re-run host-device FX lowering after every MIGraphX, PyTorch, TorchAO, or Torch-MIGraphX rebuild.",
-      "Re-run the PT2E quantizer import and tiny torch.compile backend smokes after every PyTorch, TorchAO, or Torch-MIGraphX rebuild because those lanes depend on moved TorchAO APIs and PyTorch AOTAutograd import ordering."
+      "Re-run the PT2E quantizer import and tiny torch.compile backend smokes after every PyTorch, TorchAO, or Torch-MIGraphX rebuild because those lanes depend on moved TorchAO APIs and PyTorch AOTAutograd import ordering.",
+      "On 2026-05-26, bump pkgrel to 7 for delivery of the Torch-MIGraphX rebuild against python-pytorch-opt-rocm-gfx1151 2.12.0-2 and python-torchao-rocm-gfx1151 0.17.0-4."
     ]
   },
   "name": "python-torch-migraphx-gfx1151",
@@ -65,6 +66,7 @@
     ],
     "patches_dir": "packages/python-torch-migraphx-gfx1151",
     "pkgdesc": "PyTorch integration for MIGraphX on the local ROCm gfx1151 stack",
+    "pkgrel": 7,
     "provides": [
       "python-torch-migraphx",
       "torch-migraphx"
@@ -93,7 +95,8 @@
       "Keep the installed _torch_migraphx extension RPATH pointed at the sibling torch/lib directory so libc10, libtorch_cpu, and libtorch_python resolve without LD_LIBRARY_PATH.",
       "Keep the numpy metadata patch while the local package depends on the repo's numpy 2.x lane.",
       "Re-run host-device FX lowering after every MIGraphX, PyTorch, TorchAO, or Torch-MIGraphX rebuild.",
-      "Re-run the PT2E quantizer import and tiny torch.compile backend smokes after every PyTorch, TorchAO, or Torch-MIGraphX rebuild because those lanes depend on moved TorchAO APIs and PyTorch AOTAutograd import ordering."
+      "Re-run the PT2E quantizer import and tiny torch.compile backend smokes after every PyTorch, TorchAO, or Torch-MIGraphX rebuild because those lanes depend on moved TorchAO APIs and PyTorch AOTAutograd import ordering.",
+      "On 2026-05-26, bump pkgrel to 7 for delivery of the Torch-MIGraphX rebuild against python-pytorch-opt-rocm-gfx1151 2.12.0-2 and python-torchao-rocm-gfx1151 0.17.0-4."
     ],
     "upstream_version": "1.2",
     "url": "https://github.com/ROCm/torch_migraphx"
@@ -119,7 +122,7 @@
     "patches": [],
     "phase": "H",
     "repo": null,
-    "src_dir": null,
+    "src_dir": "torch_migraphx",
     "steps": [
       32
     ]

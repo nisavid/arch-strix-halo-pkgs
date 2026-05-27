@@ -72,6 +72,11 @@ through the same call surface used by CUDA `vllm_flash_attn`. Keep Triton AMD
 validation explicit because runtime backend selection still depends on
 `FLASH_ATTENTION_TRITON_AMD_ENABLE`.
 
+The 2026-05-26 PyTorch `2.12.0-2` rebuild lane bumps this package to
+`2.8.4-12` so package-manager upgrades deliver the CK extension rebuilt against
+the refreshed local torch headers. Keep the direct CK backend-import smoke as
+the installed gate before claiming engine integration behavior.
+
 ## Current Evidence
 
 On 2026-04-22, `tools/amerge build python-flash-attn-rocm-gfx1151` built

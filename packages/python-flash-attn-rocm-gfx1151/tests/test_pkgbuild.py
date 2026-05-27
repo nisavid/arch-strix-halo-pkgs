@@ -25,7 +25,7 @@ def test_pkgbuild_tracks_rocm_flash_attention_ck_experiment():
 
     assert "pkgname=python-flash-attn-rocm-gfx1151" in text
     assert "pkgver=2.8.4" in text
-    assert "pkgrel=11" in text
+    assert "pkgrel=12" in text
     assert "3f94643fb41bcedded28c85185a8e11d42ef1592" in text
     assert "url=https://github.com/ROCm/flash-attention" in text
     assert "FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE" in text
@@ -50,6 +50,14 @@ def test_pkgbuild_tracks_rocm_flash_attention_ck_experiment():
     assert 'local _rpath="\\$ORIGIN:\\$ORIGIN/torch/lib:/opt/rocm/lib"' in text
     assert 'patchelf --set-rpath "${_rpath}" "${_extension}"' in text
     assert 'if [[ -f "${_extension}" ]]' not in text
+
+
+def test_recipe_pkgrel_matches_pkgbuild_release():
+    text = PKGBUILD.read_text(encoding="utf-8")
+    recipe = json.loads(RECIPE_JSON.read_text(encoding="utf-8"))
+    pkgrel = int(next(line.removeprefix("pkgrel=") for line in text.splitlines() if line.startswith("pkgrel=")))
+
+    assert recipe["pkgrel"] == pkgrel
 
 
 def test_pkgbuild_carries_gfx1151_ck_experiment():

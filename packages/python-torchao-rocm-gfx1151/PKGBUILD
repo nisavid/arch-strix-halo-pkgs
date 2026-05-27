@@ -6,7 +6,7 @@
 
 pkgname=python-torchao-rocm-gfx1151
 pkgver=0.17.0
-pkgrel=3
+pkgrel=4
 pkgdesc='Package for applying ao techniques to GPU models with ROCm, rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://github.com/pytorch/ao
@@ -64,7 +64,7 @@ build() {
 }
 
   _setup_compiler_env
-  local _base_flags="-O3 -march=native -mprefer-vector-width=512 -mavx512f -mavx512dq -mavx512vl -mavx512bw -mllvm -enable-gvn-hoist -mllvm -enable-gvn-sink -famd-opt -Wno-error=unused-command-line-argument"
+  local _base_flags="-O3 -march=native -mprefer-vector-width=512 -mavx512f -mavx512dq -mavx512vl -mavx512bw -mllvm -enable-gvn-hoist -mllvm -enable-gvn-sink -Wno-error=unused-command-line-argument"
   local _wheel_flags
   _wheel_flags="$(printf '%s' "${_base_flags}" | sed -E 's/-mllvm (-[^ ]+)/-Xclang -mllvm -Xclang \1/g; s/  +/ /g; s/^ +| +$//g')"
   local _base_cflags="${CFLAGS:-}"

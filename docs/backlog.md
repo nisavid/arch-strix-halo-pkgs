@@ -19,20 +19,32 @@
   b9334 follow-up before package adoption. Start this as a separate source
   refresh only after the b9330-2 selected-logit live-scenario closeout records
   its final validation.
-- ROCm PyTorch release/2.12 26872de follow-up: `origin/main` still pins
-  `python-pytorch-opt-rocm-gfx1151` to ROCm/pytorch
-  `4ddfe99d6da426414b7f0e587cdb1910f1c23eb3`. Read-only installed package
-  state on 2026-05-26 reports newer local pkgrels for PyTorch and downstream
-  consumers, but that host state does not close the committed source lane.
-  Keep the source update, package provenance, affected rebuild, installed-smoke,
-  and live-scenario gates open until a package lane records them together.
+- ROCm PyTorch release/2.12 26872de post-pkgrel live validation:
+  `python-pytorch-opt-rocm-gfx1151` now tracks ROCm/pytorch release/2.12
+  commit `26872debb4452ea6dc898288618a15595e2317d9` as `2.12.0-2`; the
+  affected runtime-base package set is built, deployed/installed, and
+  installed-smoked at PyTorch `2.12.0-2`, AITER `0.1.14-2`, FlashAttention
+  `2.8.4-12`, TorchAO `0.17.0-4`, Torch-MIGraphX `1.2-7`, TorchVision
+  `0.27.0-2`, and vLLM `0.21.0-4`. Existing live scenario evidence for the
+  same source content is recorded at
+  `docs/worklog/inference-runs/20260526T-pytorch-26872de-closeout`, but that
+  run predates the later package-manager delivery of the downstream pkgrel set.
+  The remaining user-owned gate is a live rerun of
+  `flash-attn.ck.backend-import`, `torch-migraphx.pt2e.quantizer-import`, and
+  `vllm.qwen3_5.0_8b.text.basic` against the currently installed stack. Run
+  it from the repo root with `python tools/run_inference_scenarios.py
+  --scenario flash-attn.ck.backend-import --scenario
+  torch-migraphx.pt2e.quantizer-import --scenario vllm.qwen3_5.0_8b.text.basic`
+  and record the run root before adopting this candidate.
 - ROCm PyTorch release/2.12 980ce60 follow-up: the accepted 2026-05-27 raw
   freshness observation found release/2.12 at
-  `980ce601387f3fb82911cec6aa0bfc3ec2e73d75`. Keep this as tracked drift
-  until the 26872de runtime lane records whether it merges as an intermediate
-  or retargets. Package implementation still requires source diff review,
-  affected rebuilds, deploy/install, installed-smoke, and live-scenario
-  validation.
+  `980ce601387f3fb82911cec6aa0bfc3ec2e73d75`. The 26872de runtime-base
+  closeout records that 26872de remains the deployed source target rather than
+  retargeting this lane. Treat 980ce60 as a separate follow-up: the
+  `26872de..980ce60` source range is the large-matrix `triu`/`tril` 64-bit
+  indexing fix in `TriangularOps.cu`, and package implementation still requires
+  source update, affected rebuilds, deploy/install, installed-smoke, and
+  live-scenario validation.
 - stable-diffusion.cpp 92dc726 follow-up: the accepted 2026-05-27 raw
   freshness observation found upstream master at
   `92dc7268fc4ffb0c0cc0bd52dfcefea91326e797` after the adopted 1ceb5bd

@@ -1,0 +1,40 @@
+diff --git i/aten/src/ATen/native/transformers/hip/aotriton_adapter.h w/aten/src/ATen/native/transformers/hip/aotriton_adapter.h
+index e40376ae0c3..7d58eb1c804 100644
+--- i/aten/src/ATen/native/transformers/hip/aotriton_adapter.h
++++ w/aten/src/ATen/native/transformers/hip/aotriton_adapter.h
+@@ -127,8 +127,7 @@ struct LazyTensorContext {
+-
++
+ template<int kRank, bool kRequireZeros>
+ struct LazyTensorFunctions : public LazyTensorContext {
+-  static aotriton::TensorView<kRank> acquire(void* cookie) {
+-    auto ctx = (LazyTensorContext*)cookie;
++  static aotriton::TensorView<kRank> acquire_common(LazyTensorContext* ctx) {
+     if (!ctx->tensor.defined()) {
+       auto q = ctx->like_tensor;
+       if constexpr (kRequireZeros) {
+@@ -141,8 +140,21 @@ struct LazyTensorFunctions : public LazyTensorContext {
+     return mk_aotensor<kRank>(ctx->tensor, ctx->tensor_name);
+   }
+-
++
+-  static void dispose(void* cookie) {
++#if AOTRITON_VERSION_CURRENT >= AOTRITON_VERSION_INT(0, 12)
++  static aotriton::TensorView<kRank> acquire(aotriton::LazyTensor<kRank>* self) {
++    return acquire_common(static_cast<LazyTensorContext*>(self->cookie));
+   }
++
++  static void dispose(aotriton::LazyTensor<kRank>*) {
++  }
++#else
++  static aotriton::TensorView<kRank> acquire(void* cookie) {
++    return acquire_common(static_cast<LazyTensorContext*>(cookie));
++  }
++
++  static void dispose(void*) {
++  }
++#endif
+ };
+-
++
+ template<int kRank, bool kRequireZeros>

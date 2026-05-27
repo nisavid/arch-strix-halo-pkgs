@@ -7,7 +7,7 @@
 - Recipe build method: `pip`
 - Upstream repo: `https://github.com/pytorch/ao`
 - Package version: `0.17.0`
-- Recipe revision: `a1d7a68 (20260427, 16 commits touching recipe path)`
+- Recipe revision: `3f15f9f (20260508, 17 commits touching recipe path)`
 - Recipe steps: `32`
 - Recipe dependencies: `cpython, pytorch`
 - Recorded reference packages: `extra/python-pytorch-opt-rocm, extra/python-pytorch-rocm`
@@ -72,6 +72,8 @@ in the Gemma 4 online TorchAO run.
 - Re-verify the installed extension with readelf -d and ldd -r after each update. A clean package needs both a usable torch/lib runpath and zero unresolved ATen/Torch symbols once torch/lib is visible.
 - Keep the PT2E union-alias patch until upstream TorchAO handles Python 3.14 typing.Union objects without assigning __module__ directly.
 - Keep the repo-local tools/torchao_vllm_smoke.py helper passing for both the tiny serialized checkpoint and the Gemma 4 online quantization path. Treat the serialized Gemma 4 real-model checkpoint path as blocked until the TorchAO/vLLM tensor metadata mismatch is fixed.
+- Keep -famd-opt out of TorchAO wheel CFLAGS/CXXFLAGS while retaining it in LDFLAGS as a clang driver link flag; do not move it back into the wheel compile flags without a fresh TorchAO extension build failure that requires it there.
+- On 2026-05-26, bump pkgrel to 4 for delivery of the TorchAO extension rebuild against python-pytorch-opt-rocm-gfx1151 2.12.0-2 from ROCm/pytorch release/2.12 commit 26872debb4452ea6dc898288618a15595e2317d9.
 
 ## Maintainer Starting Points
 

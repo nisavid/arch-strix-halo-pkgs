@@ -13,7 +13,7 @@
 - Recorded reference packages: `extra/python-pytorch-opt-rocm, extra/python-pytorch-rocm, cachyos-extra-znver4/python-pytorch-opt-rocm`
 - Authoritative reference package: `extra/python-pytorch-opt-rocm`
 - Advisory reference packages: `extra/python-pytorch-rocm, cachyos-extra-znver4/python-pytorch-opt-rocm`
-- Applied source patch files/actions: `8`
+- Applied source patch files/actions: `9`
 
 ## Recipe notes
 
@@ -51,6 +51,8 @@ USE_ROCM_CK_GEMM=ON enables Composable Kernel GEMM for ROCm.
 - On 2026-05-01, adopted ROCm/pytorch release/2.11 at 443606eb94430d90554ab4c21202494576afedce. The 9413e9b..443606e range fixes an AMD RDNA SIGSEGV in Inductor reduction-mask optimization and adds regression coverage; this is runtime-relevant for the gfx1151 PyTorch lane.
 - On 2026-05-10, adopted ROCm/pytorch release/2.11 at 5223630054ce5ecd7b774d0ea31f2a1b472fb9b3. The refresh preserves the wheel-version alignment for PyTorch 2.11.0, carries the corrected ROCm detection and missing torch/lib guard, and was validated through package build, install, direct PyTorch HIP smoke, vLLM rebuild, and the promoted installed inference scenarios.
 - On 2026-05-18, opened the coordinated PyTorch 2.12 lane by adopting ROCm/pytorch release/2.12 at 4ddfe99d6da426414b7f0e587cdb1910f1c23eb3 together with TorchVision 0.27.0, because TorchVision 0.27.0 publishes a torch==2.12.0 runtime requirement.
+- On 2026-05-26, reviewed ROCm/pytorch release/2.12 through 26872debb4452ea6dc898288618a15595e2317d9. The 4ddfe99..26872de range contains the ROCm Inductor static launcher change that loads HSACO images through hipModuleLoadData to avoid retained file descriptors, plus test cleanup commits. Adopt the branch head as a runtime-relevant PyTorch 2.12 pkgrel update and keep the current local patch semantics refreshed against that source.
+- On 2026-05-26, carry a local AOTriton 0.12 lazy-tensor callback patch while the recipe builds PyTorch's ROCm mem-efficient attention against the packaged python-aotriton-gfx1151 0.12b headers. The patch keeps the existing 0.11 callback shape under a version guard and uses LazyTensor self callbacks for AOTriton 0.12.
 - Keep the package version aligned with the built wheel version; do not repeat the earlier mismatch where the package claimed 2.11.0 but the built wheel came from develop.
 - Keep openblas explicit in both depends and makedepends so the build does not drift back to generic host BLAS auto-detection.
 - Run PyTorch build subprocesses without inherited Lmod shell-function exports so CMake HIP discovery sees the ROCm hipconfig version and keeps USE_ROCM enabled.

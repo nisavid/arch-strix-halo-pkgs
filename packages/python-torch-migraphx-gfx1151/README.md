@@ -65,6 +65,7 @@ the local Python 3.14 and PyTorch 2.11 stack.
 - Keep the numpy metadata patch while the local package depends on the repo's numpy 2.x lane.
 - Re-run host-device FX lowering after every MIGraphX, PyTorch, TorchAO, or Torch-MIGraphX rebuild.
 - Re-run the PT2E quantizer import and tiny torch.compile backend smokes after every PyTorch, TorchAO, or Torch-MIGraphX rebuild because those lanes depend on moved TorchAO APIs and PyTorch AOTAutograd import ordering.
+- On 2026-05-26, bump pkgrel to 7 for delivery of the Torch-MIGraphX rebuild against python-pytorch-opt-rocm-gfx1151 2.12.0-2 and python-torchao-rocm-gfx1151 0.17.0-4.
 
 ## Maintainer Starting Points
 
