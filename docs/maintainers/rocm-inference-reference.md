@@ -2,10 +2,10 @@
 
 This source disposition reference was compiled from sources retrieved across
 2026-04-22, 2026-05-24, the Quark/AWQ/GPTQ/bitsandbytes/xFormers/FBGEMM
-candidate triage on 2026-05-26, and the `amd-quark` authoring-tool blocker
-refresh, xFormers follow-up, FBGEMM package-boundary review, and bitsandbytes
-package-source research on 2026-05-27. It is for troubleshooting and planning
-the Strix Halo `gfx1151` inference stack. Upstream ROCm documents often describe
+candidate triage on 2026-05-26, and the 2026-05-27 `amd-quark` authoring-tool
+blocker refresh, xFormers follow-up, FBGEMM package-boundary review, and
+bitsandbytes package-source research. It is for troubleshooting and planning the
+Strix Halo `gfx1151` inference stack. Upstream ROCm documents often describe
 MI300X, MI350X, CDNA, or Instinct systems; treat those details as
 `advisory-only` until a local scenario validates them here.
 
@@ -109,8 +109,8 @@ Status labels:
   a downstream vLLM consumer smoke. Do not make `amd-quark` a
   `python-vllm-rocm-gfx1151` runtime dependency.
 - Track bitsandbytes as a source-built package candidate. The source audit
-  found AMD ROCm (Preview) support that names `gfx1151` as a supported target,
-  and `docs/maintainers/bitsandbytes-package-research.md` records the selected
+  found AMD ROCm (Preview) support that names `gfx1151` as a supported target.
+  `docs/maintainers/bitsandbytes-package-research.md` records the selected
   upstream tag, HIP build shape, source-test surfaces, installed-smoke set,
   and consumer gates. Adoption requires a local `COMPUTE_BACKEND=hip` build,
   installed direct 4-bit and 8-bit PyTorch smokes, pinned Transformers 4-bit
