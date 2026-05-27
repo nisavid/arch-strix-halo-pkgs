@@ -50,11 +50,15 @@ the vLLM scenario order narrow. GPTQ is the first live-validation lane because
 the retained `vllm.qwen3_5.4b-gptq-int4.text.basic` scenario already binds a
 pinned-compatible Qwen3.5 Int4 safetensors target. AWQ stays exploratory until
 a native AWQ Qwen text fixture is pinned and validated; AutoAWQ is not a
-package candidate for this lane. Quark is tracked as a model-artifact or
-authoring-tool path, not a vLLM runtime dependency. bitsandbytes is tracked as
-a separate source-built package candidate because upstream ROCm support is
-still preview even though it names `gfx1151`. xFormers and FBGEMM do not change
-the vLLM scenario surface until a source-built package and consumer path exist.
+package candidate for this lane. Quark is split into a vLLM consumer lane and
+an optional `amd-quark` authoring-tool package lane: vLLM can consume an
+exported model artifact with `quantization="quark"` without adding `amd-quark`
+to the local vLLM runtime closure, while authoring-tool packaging waits for an
+explicit source pin plus Python 3.14 and current NumPy compatibility.
+bitsandbytes is tracked as a separate source-built package candidate because
+upstream ROCm support is still preview even though it names `gfx1151`.
+xFormers and FBGEMM do not change the vLLM scenario surface until a
+source-built package and consumer path exist.
 
 ## Gemma 4
 

@@ -246,9 +246,11 @@ installed smokes, or claim new live-scenario validation. The durable
 recommendations are tracked in `docs/maintainers/rocm-inference-reference.md`,
 `docs/maintainers/vllm-recipe-coverage.md`, and `docs/backlog.md`: GPTQ is the
 highest-priority live-validation lane because the retained Qwen3.5 GPTQ Int4
-scenario already exists; Quark, bitsandbytes, AWQ, xFormers, and FBGEMM remain
-tracked source/package candidates with source-provenance, source-build,
-installed-smoke, and live-scenario gates before adoption.
+scenario already exists; Quark is split into a pinned model-artifact vLLM
+consumer lane and a separate optional `amd-quark` authoring-tool package lane;
+bitsandbytes, AWQ, xFormers, and FBGEMM remain tracked source/package
+candidates with source-provenance, source-build, installed-smoke, and
+live-scenario gates before adoption.
 
 The earlier 2026-05-24 recovery-branch freshness gate tracked AITER `0.1.14`
 stable, llama.cpp `b9305`, stable-diffusion.cpp
