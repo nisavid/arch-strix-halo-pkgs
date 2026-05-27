@@ -153,7 +153,7 @@ scaffold_notes = [
 recipe_key = "vllm"
 template = "python-project-vllm"
 upstream_version = "0.21.0"
-pkgrel = 3
+pkgrel = 4
 pkgdesc = "High-throughput and memory-efficient inference engine for LLMs with ROCm, rebuilt for Strix Halo gfx1151"
 url = "https://github.com/vllm-project/vllm"
 license = ["Apache-2.0"]
@@ -212,6 +212,7 @@ update_notes = [
   "Keep SageMaker integration optional unless this repo intentionally packages model_hosting_container_standards; missing SageMaker helpers should disable only SageMaker-specific routes, not the base CLI or local server startup paths.",
   "Keep the ROCm GCN-arch fallback import-safe on Strix Halo. AMDSMI ASIC-info probes can fail even when the device is visible; that must degrade to torch.cuda probing rather than crashing during module import.",
   "Treat the current external python-torchao-rocm _C-extension failure as a host-package defect, not a blocker for this vLLM lane. Generic startup should stay clean after the local TorchAO-import patch, and the remaining follow-up only matters if this repo needs actual TorchAO custom ops or torchao-backed serving paths that truly require the native extension.",
+  "On 2026-05-26, bump pkgrel to 4 for delivery of the vLLM native-extension rebuild against python-pytorch-opt-rocm-gfx1151 2.12.0-2 from ROCm/pytorch release/2.12 commit 26872debb4452ea6dc898288618a15595e2317d9.",
   "Treat runtime validation against the live ROCm stack as mandatory; a successful wheel build is not enough."
 ]
 provides = ["python-vllm-rocm", "python-vllm"]
@@ -316,11 +317,11 @@ scaffold_notes = [
 recipe_key = "pytorch"
 template = "python-project-pytorch-rocm"
 upstream_version = "2.12.0"
-pkgrel = 1
-source_refs = ["pytorch::git+https://github.com/ROCm/pytorch.git#commit=4ddfe99d6da426414b7f0e587cdb1910f1c23eb3"]
+pkgrel = 2
+source_refs = ["pytorch::git+https://github.com/ROCm/pytorch.git#commit=26872debb4452ea6dc898288618a15595e2317d9"]
 recipe_branch_override = "release/2.12"
-source_patches = ["0001-setup-allow-skipping-build-deps.patch", "0002-use-wide-magma-version-encoding.patch", "0003-target-numpy-2-c-api.patch", "0004-drop-hip-clang-abi-compat-flag.patch", "0005-enable-ck-gemm-on-gfx1151.patch", "0006-enable-aten-cuda-api-for-rocm.patch", "0007-initialize-numpy-before-global-deps.patch", "0008-export-rocm-blas-template-specializations.patch"]
-extra_sha256sums = ["95a46381bedcff873f9765c9b103877aa36f649e649c5b223582732b2ee61cac", "944e0fb4db31da678993acd3104709083ef28dcee58fcc24ab1675d880c39846", "8ea6af3334027a5ef3360ca882f54e720ef501ea48288081f35d7404835ccc95", "4610d5b10e861079898410899b8c25112fcafd679942f25647af3d55a9253bd4", "33188a11f6848303b17b76adb97de75f19856ea3caab7452fd5c62289d63006b", "9723877beb7eae7fc247517370777f952b534f4d83a981a26be869872dc2c265", "c8e20f172c407e50b0a333bb94b94dafd1c4db1348bc71160f4a704c25c9cba5", "de81964675e483440b7cf64da6915deb701d1d31460f0b69a88c97277026032b"]
+source_patches = ["0001-setup-allow-skipping-build-deps.patch", "0002-use-wide-magma-version-encoding.patch", "0003-target-numpy-2-c-api.patch", "0004-drop-hip-clang-abi-compat-flag.patch", "0005-enable-ck-gemm-on-gfx1151.patch", "0006-enable-aten-cuda-api-for-rocm.patch", "0007-initialize-numpy-before-global-deps.patch", "0008-export-rocm-blas-template-specializations.patch", "0009-match-aotriton-0.12-lazy-tensor-callbacks.patch"]
+extra_sha256sums = ["95a46381bedcff873f9765c9b103877aa36f649e649c5b223582732b2ee61cac", "d2da39d5ad4183b4e9ac3dc33a6cad014eb5bb6fd3d27c861fa42f03ddd5b8e4", "8ea6af3334027a5ef3360ca882f54e720ef501ea48288081f35d7404835ccc95", "550c9c8446e65d0dde2d0193637bed9bd775126d79790a3c820e81b969f01b45", "33188a11f6848303b17b76adb97de75f19856ea3caab7452fd5c62289d63006b", "2ca8044d626da3cf146c22e2d5164f53ad7ee45f0b79b0ec91c3503a5ab5f299", "84377437090b8ca9bf550158b93554b47650d476e6d56c94c52426150ff1c40d", "de81964675e483440b7cf64da6915deb701d1d31460f0b69a88c97277026032b", "27ec1a3c71e81a40060b126b7035df160b8cdc4271a1f181ff8db8140305c1c3"]
 pkgdesc = "Tensors and dynamic neural networks in Python with ROCm acceleration, rebuilt for Strix Halo gfx1151"
 url = "https://pytorch.org"
 license = ["BSD-3-Clause-Modification"]
@@ -339,6 +340,8 @@ update_notes = [
   "On 2026-05-01, adopted ROCm/pytorch release/2.11 at 443606eb94430d90554ab4c21202494576afedce. The 9413e9b..443606e range fixes an AMD RDNA SIGSEGV in Inductor reduction-mask optimization and adds regression coverage; this is runtime-relevant for the gfx1151 PyTorch lane.",
   "On 2026-05-10, adopted ROCm/pytorch release/2.11 at 5223630054ce5ecd7b774d0ea31f2a1b472fb9b3. The refresh preserves the wheel-version alignment for PyTorch 2.11.0, carries the corrected ROCm detection and missing torch/lib guard, and was validated through package build, install, direct PyTorch HIP smoke, vLLM rebuild, and the promoted installed inference scenarios.",
   "On 2026-05-18, opened the coordinated PyTorch 2.12 lane by adopting ROCm/pytorch release/2.12 at 4ddfe99d6da426414b7f0e587cdb1910f1c23eb3 together with TorchVision 0.27.0, because TorchVision 0.27.0 publishes a torch==2.12.0 runtime requirement.",
+  "On 2026-05-26, reviewed ROCm/pytorch release/2.12 through 26872debb4452ea6dc898288618a15595e2317d9. The 4ddfe99..26872de range contains the ROCm Inductor static launcher change that loads HSACO images through hipModuleLoadData to avoid retained file descriptors, plus test cleanup commits. Adopt the branch head as a runtime-relevant PyTorch 2.12 pkgrel update and keep the current local patch semantics refreshed against that source.",
+  "On 2026-05-26, carry a local AOTriton 0.12 lazy-tensor callback patch while the recipe builds PyTorch's ROCm mem-efficient attention against the packaged python-aotriton-gfx1151 0.12b headers. The patch keeps the existing 0.11 callback shape under a version guard and uses LazyTensor self callbacks for AOTriton 0.12.",
   "Keep the package version aligned with the built wheel version; do not repeat the earlier mismatch where the package claimed 2.11.0 but the built wheel came from develop.",
   "Keep openblas explicit in both depends and makedepends so the build does not drift back to generic host BLAS auto-detection.",
   "Run PyTorch build subprocesses without inherited Lmod shell-function exports so CMake HIP discovery sees the ROCm hipconfig version and keeps USE_ROCM enabled.",
@@ -410,7 +413,7 @@ scaffold_notes = [
 recipe_key = "torchvision"
 template = "python-project-torchvision-rocm"
 upstream_version = "0.27.0"
-pkgrel = 1
+pkgrel = 2
 pkgdesc = "Datasets, transforms, and models for computer vision with ROCm support, rebuilt for Strix Halo gfx1151"
 url = "https://github.com/pytorch/vision"
 license = ["BSD-3-Clause"]
@@ -427,7 +430,8 @@ source_patches = ["0001-setup-relative-sources.patch"]
 update_notes = [
   "Re-check the package against the current AUR ROCm variant first, then compare any generic Arch torchvision changes that affect Python packaging or dependency handling.",
   "Keep the paired PyTorch package import-clean enough that TorchVision does not need any build-only rocsolver soname shim. If a shim becomes necessary again, treat that as a PyTorch/runtime-lane regression rather than reintroducing the workaround here.",
-  "Keep the installed torchvision extension RPATH pointed at the sibling torch/lib directory so torchvision operators register without requiring LD_LIBRARY_PATH."
+  "Keep the installed torchvision extension RPATH pointed at the sibling torch/lib directory so torchvision operators register without requiring LD_LIBRARY_PATH.",
+  "On 2026-05-26, bump pkgrel to 2 for delivery of the TorchVision extension rebuild against python-pytorch-opt-rocm-gfx1151 2.12.0-2 from ROCm/pytorch release/2.12 commit 26872debb4452ea6dc898288618a15595e2317d9."
 ]
 provides = ["python-torchvision-rocm=0.27.0", "python-torchvision=0.27.0"]
 conflicts = ["python-torchvision-rocm", "python-torchvision"]
@@ -585,6 +589,7 @@ scaffold_notes = [
 recipe_key = "aiter"
 template = "python-project-aiter"
 upstream_version = "0.1.14"
+pkgrel = 2
 pkgdesc = "AMD AITER kernels rebuilt for Strix Halo gfx1151"
 url = "https://github.com/ROCm/aiter"
 license = ["MIT"]
@@ -615,7 +620,8 @@ update_notes = [
   "Keep the split RDNA header carries narrow: `0001-gfx1151-rdna35-header-compat.patch` now covers only the `vec_convert.h` gfx11 packed-op fallbacks, while `0006-rdna35-hip-reduce-wave32-dpp-compat.patch` carries the broader `hip_reduce.h` wave32/DPP rewrite. If that area is revisited, re-verify `hip_reduce.h` on its own instead of recombining unrelated header edits.",
   "Keep `0006-rdna35-hip-reduce-wave32-dpp-compat.patch` on AITER's shipped `aiter_hip_common.h` include. A 2026-04-19 Qwen3.6 FP8 MoE probe selected AITER but failed JIT-building `module_quant` because an earlier patch variant rewrote `hip_reduce.h` to include nonexistent `hip_compat.h`.",
   "Treat the current Qwen3.6 FP8 MoE forced-AITER failure as an AITER opus/gfx1151 FP8-kernel feature gap, not a narrow include bug. A built-payload rerun with AITER pkgrel -8 and vLLM pkgrel -27 clears the `hip_compat.h` issue, then fails compiling `aiter.jit.module_quant` with `opus.hpp:3001:24: error: unknown type name 'mfma_adaptor'`; AITER defines `mfma_adaptor` only for `__GFX9__` device builds, while its alternate gfx1250 WMMA path uses FP8 builtins that hipcc rejects for gfx1151.",
-  "Keep the unknown-gfx 2-stage fallback, missing-1-stage-metadata tuner skip, and CK 2-stage splitk normalization/forwarding fix until upstream AITER handles those gfx1x cases directly. Do not reintroduce an unquantized `torch_moe` fallback here: the concrete reference-host failure was `google/gemma-4-26B-A4B-it` generating corrupted text after such a fallback ran on AITER-shuffled weights."
+  "Keep the unknown-gfx 2-stage fallback, missing-1-stage-metadata tuner skip, and CK 2-stage splitk normalization/forwarding fix until upstream AITER handles those gfx1x cases directly. Do not reintroduce an unquantized `torch_moe` fallback here: the concrete reference-host failure was `google/gemma-4-26B-A4B-it` generating corrupted text after such a fallback ran on AITER-shuffled weights.",
+  "On 2026-05-26, bump pkgrel to 2 for delivery of the AITER rebuild against python-pytorch-opt-rocm-gfx1151 2.12.0-2 from ROCm/pytorch release/2.12 commit 26872debb4452ea6dc898288618a15595e2317d9."
 ]
 provides = ["python-amd-aiter"]
 conflicts = ["python-amd-aiter"]
@@ -1863,6 +1869,7 @@ scaffold_notes = [
 recipe_key = "native_wheels"
 template = "python-project-torchao"
 upstream_version = "0.17.0"
+pkgrel = 4
 pkgdesc = "Package for applying ao techniques to GPU models with ROCm, rebuilt for Strix Halo gfx1151"
 url = "https://github.com/pytorch/ao"
 license = ["BSD-3-Clause"]
@@ -1880,7 +1887,9 @@ update_notes = [
   "Keep ROCM_HOME=/opt/rocm in the build environment unless the local ROCm packaging layout changes. The host-visible hipcc wrapper may live under /usr/bin, but the headers and shared libraries still come from /opt/rocm.",
   "Re-verify the installed extension with readelf -d and ldd -r after each update. A clean package needs both a usable torch/lib runpath and zero unresolved ATen/Torch symbols once torch/lib is visible.",
   "Keep the PT2E union-alias patch until upstream TorchAO handles Python 3.14 typing.Union objects without assigning __module__ directly.",
-  "Keep the repo-local tools/torchao_vllm_smoke.py helper passing for both the tiny serialized checkpoint and the Gemma 4 online quantization path. Treat the serialized Gemma 4 real-model checkpoint path as blocked until the TorchAO/vLLM tensor metadata mismatch is fixed."
+  "Keep the repo-local tools/torchao_vllm_smoke.py helper passing for both the tiny serialized checkpoint and the Gemma 4 online quantization path. Treat the serialized Gemma 4 real-model checkpoint path as blocked until the TorchAO/vLLM tensor metadata mismatch is fixed.",
+  "Keep -famd-opt out of TorchAO wheel CFLAGS/CXXFLAGS while retaining it in LDFLAGS as a clang driver link flag; do not move it back into the wheel compile flags without a fresh TorchAO extension build failure that requires it there.",
+  "On 2026-05-26, bump pkgrel to 4 for delivery of the TorchAO extension rebuild against python-pytorch-opt-rocm-gfx1151 2.12.0-2 from ROCm/pytorch release/2.12 commit 26872debb4452ea6dc898288618a15595e2317d9."
 ]
 recipe_notes_override = """
 Builds TorchAO `0.17.0` from the upstream git tag because that release does
@@ -1937,6 +1946,7 @@ scaffold_notes = [
 recipe_key = "native_wheels"
 template = "python-project-torch-migraphx"
 upstream_version = "1.2"
+pkgrel = 7
 pkgdesc = "PyTorch integration for MIGraphX on the local ROCm gfx1151 stack"
 url = "https://github.com/ROCm/torch_migraphx"
 license = ["BSD-3-Clause"]
@@ -1955,7 +1965,8 @@ update_notes = [
   "Keep the installed _torch_migraphx extension RPATH pointed at the sibling torch/lib directory so libc10, libtorch_cpu, and libtorch_python resolve without LD_LIBRARY_PATH.",
   "Keep the numpy metadata patch while the local package depends on the repo's numpy 2.x lane.",
   "Re-run host-device FX lowering after every MIGraphX, PyTorch, TorchAO, or Torch-MIGraphX rebuild.",
-  "Re-run the PT2E quantizer import and tiny torch.compile backend smokes after every PyTorch, TorchAO, or Torch-MIGraphX rebuild because those lanes depend on moved TorchAO APIs and PyTorch AOTAutograd import ordering."
+  "Re-run the PT2E quantizer import and tiny torch.compile backend smokes after every PyTorch, TorchAO, or Torch-MIGraphX rebuild because those lanes depend on moved TorchAO APIs and PyTorch AOTAutograd import ordering.",
+  "On 2026-05-26, bump pkgrel to 7 for delivery of the Torch-MIGraphX rebuild against python-pytorch-opt-rocm-gfx1151 2.12.0-2 and python-torchao-rocm-gfx1151 0.17.0-4."
 ]
 recipe_notes_override = """
 Builds Torch-MIGraphX from audited upstream `master` at

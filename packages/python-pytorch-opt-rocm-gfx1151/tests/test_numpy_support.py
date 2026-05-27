@@ -39,11 +39,14 @@ def _needed_entries(path: Path) -> str:
 
 def test_pkgbuild_makes_numpy_available_at_build_time():
     text = PKGBUILD.read_text()
+    assert "pkgrel=2" in text
+    assert "26872debb4452ea6dc898288618a15595e2317d9" in text
     assert "python-numpy-gfx1151" in text
     assert "openmp" in text
     assert "openblas" in text
     assert "makedepends=(" in text
     assert "0001-setup-allow-skipping-build-deps.patch" in text
+    assert "0009-match-aotriton-0.12-lazy-tensor-callbacks.patch" in text
     assert "export USE_NUMPY=1" in text
     assert 'export BLAS="OpenBLAS"' in text
     assert 'export OpenBLAS_HOME="${OpenBLAS_HOME:-/usr}"' in text

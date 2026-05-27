@@ -15,7 +15,12 @@ def test_text_only_smoke_tool_uses_tokenizer_not_processor():
     assert "from transformers import AutoTokenizer" in text
     assert "AutoProcessor" not in text
     assert "apply_chat_template" in text
-    assert 'parser.add_argument("--gpu-memory-utilization", type=float, default=0.75)' in text
+    assert 'parser.add_argument(\n        "--gpu-memory-utilization",' in text
+    assert "default=None" in text
+    assert "def effective_gpu_memory_utilization(args: argparse.Namespace, model: str) -> float:" in text
+    assert "if is_gemma4_e2b(str(model)):" in text
+    assert "return 0.35" in text
+    assert "return 0.75" in text
     assert 'parser.add_argument("--max-model-len", type=int, default=128)' in text
     assert 'parser.add_argument("--max-tokens", type=int, default=16)' in text
     assert 'parser.add_argument("--max-num-batched-tokens", type=int, default=None)' in text

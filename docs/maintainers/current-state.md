@@ -37,6 +37,59 @@ adopted package surfaces from tracked, rejected, and blocked future lanes. This
 spec did not update package source refs, rebuild packages, deploy or install
 artifacts, run installed smokes, or run live inference scenarios.
 
+The ROCm PyTorch release/2.12 `26872de` runtime-base source/build/deploy
+closeout is complete, with a user-owned live-scenario rerun still tracked.
+Source updated: `python-pytorch-opt-rocm-gfx1151` now tracks ROCm/pytorch
+`release/2.12` at `26872debb4452ea6dc898288618a15595e2317d9` and renders as
+`2.12.0-2`, with Arch `python-pytorch-opt-rocm 2.12.0-1` still used as the
+integration baseline. The package keeps the existing local ROCm/gfx1151 patch
+semantics refreshed against that source and carries
+`0009-match-aotriton-0.12-lazy-tensor-callbacks.patch` so the ROCm
+mem-efficient attention path builds against the packaged
+`python-aotriton-gfx1151 0.12b` headers.
+
+Package built: `tools/amerge build` plan `395995a5` produced
+`python-pytorch-opt-rocm-gfx1151 2.12.0-2` plus the affected native consumer
+set, and follow-up build plan `9f99f3a2` produced the pkgrel-bumped delivery
+set: `python-amd-aiter-gfx1151 0.1.14-2`,
+`python-flash-attn-rocm-gfx1151 2.8.4-12`,
+`python-torchao-rocm-gfx1151 0.17.0-4`,
+`python-torch-migraphx-gfx1151 1.2-7`,
+`python-torchvision-rocm-gfx1151 0.27.0-2`, and
+`python-vllm-rocm-gfx1151 0.21.0-4`.
+
+Deployed/installed: read-only installed-package verification reports the same
+runtime-base versions. PyTorch was installed on 2026-05-26 at 04:23 EDT, and
+the downstream pkgrel-bumped consumer set was installed on 2026-05-26 at
+18:06 EDT. Installed-smoked: a read-only import/version smoke against the
+current installed set exited `0`, reporting `torch 2.12.0`, HIP `7.13.26176`,
+one visible CUDA/HIP device, TorchVision `0.27.0+8972967`, FlashAttention
+`2.8.4`, TorchAO `0.17.0`, Torch-MIGraphX importability, vLLM `0.21.0`, and
+AITER JIT core importability. That smoke did not run model generation and did
+not replace live scenario validation.
+
+Live-scenario validated: not complete for the final installed pkgrel set.
+Existing evidence for the same source content passed
+`flash-attn.ck.backend-import`, `torch-migraphx.pt2e.quantizer-import`, and
+`vllm.qwen3_5.0_8b.text.basic` at
+`docs/worklog/inference-runs/20260526T-pytorch-26872de-closeout`, but that
+scenario run occurred after the PyTorch 2.12.0-2 install and before the later
+package-manager delivery of the downstream pkgrel set. The remaining
+user-owned gate is a live rerun of those three scenarios against the current
+installed stack with `python tools/run_inference_scenarios.py --scenario
+flash-attn.ck.backend-import --scenario torch-migraphx.pt2e.quantizer-import
+--scenario vllm.qwen3_5.0_8b.text.basic`.
+
+The ROCm PyTorch release/2.12 `980ce60` follow-up remains tracked as separate
+drift rather than replacing the deployed 26872de closeout target. The
+`26872de..980ce60` range is one ROCm commit,
+`[release/2.12] [ROCm] fix triu/tril for 64-bit indexing for large matrices
+(#3253)`, touching `aten/src/ATen/native/cuda/TriangularOps.cu`. Because
+980ce60 is beyond the current deployed stack and has no package build,
+deploy/install, installed-smoke, or live-scenario evidence in this repo, future
+work must update the source pin, build the derived package set, and hand
+privileged deploy/install plus live validation through the normal package lane.
+
 The llama.cpp b9330 and Lemonade fork `13b1af2` refresh is source-updated,
 package-built, deployed/installed, and installed-smoked, with the b9330-2
 selected-logit live-scenario gate still open. Both packaged llama.cpp backends
@@ -186,13 +239,16 @@ update candidates.
 
 The active package ledgers are: llama.cpp b9330-2 selected-logit live-scenario
 closeout, llama.cpp b9352 follow-up, ROCm PyTorch release/2.12 `26872de`
-intermediate follow-up, ROCm PyTorch release/2.12 `980ce60` follow-up,
+post-pkgrel live validation, ROCm PyTorch release/2.12 `980ce60` follow-up,
 stable-diffusion.cpp `92dc726` follow-up, and Transformers 5.9.0 follow-up.
-Each tracked entry has its disposition in
-`docs/maintainers/update-candidates.toml` and its gate label in
-`docs/backlog.md`. The superseded llama.cpp `b9279`, `b9305`, and `b9334`
-candidates and stable-diffusion.cpp `3a8788c` and `a397e03` candidates are
-rejected in the ledger rather than left as active tracked work.
+The effective freshness-tracked non-current entries are llama.cpp b9352, ROCm
+PyTorch release/2.12 `980ce60`, stable-diffusion.cpp `92dc726`, and
+Transformers 5.9.0. The additional package-validation tracked entry is ROCm
+PyTorch release/2.12 `26872de` post-pkgrel live validation. Each active entry
+has its disposition in `docs/maintainers/update-candidates.toml` and its gate
+label in `docs/backlog.md`. The superseded llama.cpp `b9279`, `b9305`, and
+`b9334` candidates and stable-diffusion.cpp `3a8788c` and `a397e03`
+candidates are rejected in the ledger rather than left as active tracked work.
 
 The 2026-05-26 package refresh adopts the Lemonade fork `13b1af2` lane through
 source update, package build, deploy/install, installed smoke, and
@@ -205,39 +261,21 @@ b9334 as the next llama.cpp follow-up rather than folding it into the b9330
 build. The 2026-05-27 accepted raw checker observation supersedes that b9334
 follow-up with b9352 before b9334 package implementation.
 
-Read-only installed-state verification after PR #41 reports
-`python-pytorch-opt-rocm-gfx1151 2.12.0-2`,
-`python-amd-aiter-gfx1151 0.1.14-2`,
-`python-flash-attn-rocm-gfx1151 2.8.4-12`,
-`python-torchao-rocm-gfx1151 0.17.0-4`,
-`python-torch-migraphx-gfx1151 1.2-7`,
-`python-torchvision-rocm-gfx1151 0.27.0-2`, and
-`python-vllm-rocm-gfx1151 0.21.0-4`. Those host versions do not close the
-ROCm PyTorch `26872de` candidate: `origin/main` still pins
-`python-pytorch-opt-rocm-gfx1151` to ROCm/pytorch
-`4ddfe99d6da426414b7f0e587cdb1910f1c23eb3`, and the candidate ledger still
-requires a source update plus host validation. Treat the installed package
-state as evidence to reconcile in that package lane, not as an adopted source
-disposition.
-
 After recording the earlier llama.cpp dispositions,
 `tools/check_package_updates.py --refresh --json --fail-on actionable` exited
 `0`. The post-AOCL rebase check
 `tools/check_package_updates.py --json --fail-on actionable` also exited `0`,
 and the stable-diffusion.cpp 1ceb5bd closeout left no unhandled
 action-required families in that acted-on sweep. The 2026-05-27 raw checker
-observation is accepted as real but reconciled here only as documentation and
-candidate-ledger state: llama.cpp b9352 and stable-diffusion.cpp 92dc726 are
-tracked, ROCm PyTorch release/2.12 980ce60 is tracked alongside the existing
-26872de intermediate lane, llama.cpp b9334 is rejected as superseded, and
-Transformers 5.9.0 remains tracked. This docs-only reconciliation did not
-update package sources, build packages, deploy/install artifacts, run installed
-smokes, or run live inference scenarios.
-
-After the b9330-2 handback closeout docs were recorded,
-`tools/check_package_updates.py --json --fail-on actionable` exited `0` with
-effective counts of 22 adopted update candidates, 17 current families, 2
-rejected update candidates, and 4 tracked update candidates.
+observation is accepted as real but reconciled here as documentation and
+candidate-ledger state for llama.cpp b9352, stable-diffusion.cpp 92dc726, ROCm
+PyTorch release/2.12 980ce60, and Transformers 5.9.0. The ROCm PyTorch
+26872de closeout now updates package sources and generated metadata to match
+the already deployed stack; it leaves the post-pkgrel live scenario rerun as
+user-owned work. After the b9330-2 handback closeout and this PyTorch closeout
+were recorded, `tools/check_package_updates.py --json --fail-on actionable`
+exited `0` with effective counts of 22 adopted update candidates, 17 current
+families, 2 rejected update candidates, and 4 tracked update candidates.
 
 The stable-diffusion.cpp 1ceb5bd follow-up is adopted. Source metadata and
 rendered scaffolds now track upstream master

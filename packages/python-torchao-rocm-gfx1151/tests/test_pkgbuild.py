@@ -22,12 +22,13 @@ def test_pkgbuild_uses_torch_2_11_compatible_torchao_lane():
 
     assert "pkgname=python-torchao-rocm-gfx1151" in text
     assert "pkgver=0.17.0" in text
+    assert "pkgrel=4" in text
     assert "python-pytorch-opt-rocm-gfx1151" in text
     assert "VERSION_SUFFIX=" in text
     assert "ROCM_HOME=/opt/rocm" in text
     assert "PYTORCH_ROCM_ARCH=gfx1151" in text
     assert 'local _ccache_cache="$srcdir/.ccache/cache"' in text
-    assert 'export CCACHE_DIR="${CCACHE_DIR:-${_ccache_cache}}"' in text
+    assert 'export CCACHE_DIR="${_ccache_cache}"' in text
     assert "patchelf" in text
     assert PATCH.name in text
     assert PT2E_PATCH.name in text
@@ -66,7 +67,7 @@ def test_package_docs_record_compatibility_and_runpath_story():
     assert "tools/torchao_vllm_smoke.py" in recipe
 
 
-def test_native_wheel_recipe_patch_metadata_uses_generic_build_venv_paths():
+def test_native_wheel_recipe_patch_metadata_avoids_private_build_paths():
     recipes = [
         REPO_ROOT / "packages/python-asyncpg-gfx1151/recipe.json",
         REPO_ROOT / "packages/python-duckdb-gfx1151/recipe.json",
@@ -78,6 +79,5 @@ def test_native_wheel_recipe_patch_metadata_uses_generic_build_venv_paths():
 
     for recipe_path in recipes:
         text = recipe_path.read_text()
-        assert "${VLLM_DIR}" not in text, recipe_path
-        assert "<build-venv>/.venv/bin/cmake" in text, recipe_path
-        assert '"/usr/bin/cmake"' in text, recipe_path
+        for marker in ("${VLLM_DIR}", "/home/", "/mnt/", "/tmp/"):
+            assert marker not in text, recipe_path

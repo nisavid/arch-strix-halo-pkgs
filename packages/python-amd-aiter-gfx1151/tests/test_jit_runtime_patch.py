@@ -33,7 +33,7 @@ SPLITK_PATCH = (
 def test_pkgbuild_carries_jit_runtime_patch():
     text = PKGBUILD.read_text()
 
-    assert "pkgrel=1" in text
+    assert "pkgrel=2" in text
     assert "pkgver=0.1.14" in text
     assert re.search(r"#tag=v0\.1\.14(?:'|\s)", text) is not None
     assert 'export SETUPTOOLS_SCM_PRETEND_VERSION="0.1.14"' in text

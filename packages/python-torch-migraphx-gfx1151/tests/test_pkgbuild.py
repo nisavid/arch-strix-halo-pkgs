@@ -13,7 +13,7 @@ def test_pkgbuild_tracks_audited_upstream_commit_and_local_rocm_stack():
 
     assert "pkgname=python-torch-migraphx-gfx1151" in text
     assert "pkgver=1.2" in text
-    assert "pkgrel=6" in text
+    assert "pkgrel=7" in text
     assert "b94b985586a051fbee19aefe8c934bb7c1a9df0a" in text
     assert "migraphx-gfx1151" in text
     assert "python-pytorch-opt-rocm-gfx1151" in text
