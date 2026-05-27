@@ -9,7 +9,7 @@ import subprocess
 import time
 from typing import Any
 
-from .adapters import build_execution_plan
+from .adapters import ExecutionPlan, build_execution_plan
 from .logging import default_run_root
 from .scenario_loader import Scenario
 
@@ -30,6 +30,69 @@ def _scenario_metadata(scenario: Scenario) -> dict[str, object]:
     return metadata
 
 
+def _planning_failure(scenario: Scenario, exc: ValueError) -> str:
+    return f"SCENARIO_PLAN_FAILED: {scenario.id}: {exc}"
+
+
+def _planned_entry(
+    scenario: Scenario,
+    *,
+    plan: ExecutionPlan | None,
+    planning_failure: str | None = None,
+) -> dict[str, object]:
+    entry = {
+        **_scenario_metadata(scenario),
+        "command": plan.command if plan is not None else None,
+        "server_log_path": (
+            str(plan.server_log_path)
+            if plan is not None and plan.server_log_path is not None
+            else None
+        ),
+        "env": plan.env if plan is not None and plan.env is not None else {},
+    }
+    if planning_failure is not None:
+        entry["planning_failure"] = planning_failure
+    return entry
+
+
+PlanRecord = tuple[Scenario, Path, ExecutionPlan | None, str | None, dict[str, object]]
+
+
+def _collect_plan_records(
+    scenarios: list[Scenario],
+    *,
+    repo_root: Path,
+    run_root: Path,
+    model_bindings: dict[str, str],
+) -> tuple[list[PlanRecord], list[dict[str, object]]]:
+    plan_records: list[PlanRecord] = []
+    planned: list[dict[str, object]] = []
+    for scenario in scenarios:
+        scenario_run_root = run_root / "scenarios" / scenario.id
+        try:
+            plan = build_execution_plan(
+                scenario,
+                repo_root=repo_root,
+                scenario_run_root=scenario_run_root,
+                model_bindings=model_bindings,
+            )
+        except ValueError as exc:
+            planning_failure = _planning_failure(scenario, exc)
+            entry = _planned_entry(
+                scenario,
+                plan=None,
+                planning_failure=planning_failure,
+            )
+            plan_records.append(
+                (scenario, scenario_run_root, None, planning_failure, entry)
+            )
+        else:
+            entry = _planned_entry(scenario, plan=plan)
+            plan_records.append((scenario, scenario_run_root, plan, None, entry))
+        planned.append(entry)
+    return plan_records, planned
+
+
 def build_run_plan(
     scenarios: list[Scenario],
     *,
@@ -39,25 +102,12 @@ def build_run_plan(
 ) -> dict[str, object]:
     actual_run_root = run_root or default_run_root(repo_root)
     bindings = model_bindings or {}
-    planned: list[dict[str, object]] = []
-    for scenario in scenarios:
-        scenario_run_root = actual_run_root / "scenarios" / scenario.id
-        plan = build_execution_plan(
-            scenario,
-            repo_root=repo_root,
-            scenario_run_root=scenario_run_root,
-            model_bindings=bindings,
-        )
-        planned.append(
-            {
-                **_scenario_metadata(scenario),
-                "command": plan.command,
-                "server_log_path": (
-                    str(plan.server_log_path) if plan.server_log_path is not None else None
-                ),
-                "env": plan.env or {},
-            }
-        )
+    _, planned = _collect_plan_records(
+        scenarios,
+        repo_root=repo_root,
+        run_root=actual_run_root,
+        model_bindings=bindings,
+    )
     return {
         "execution_mode": "serial",
         "planned_run_root": str(actual_run_root),
@@ -307,44 +357,55 @@ def run_scenarios(
     run_root: Path,
     model_bindings: dict[str, str],
 ) -> dict[str, object]:
-    manifest = build_run_plan(
+    plan_records, planned = _collect_plan_records(
         scenarios,
         repo_root=repo_root,
         run_root=run_root,
         model_bindings=model_bindings,
     )
+
+    manifest = {
+        "execution_mode": "serial",
+        "planned_run_root": str(run_root),
+        "selected_ids": [scenario.id for scenario in scenarios],
+        "planned": planned,
+    }
     write_run_manifest(run_root, manifest)
 
     results: list[dict[str, object]] = []
     passed = 0
     failed = 0
 
-    for scenario in scenarios:
-        scenario_run_root = run_root / "scenarios" / scenario.id
+    for scenario, scenario_run_root, plan, planning_failure, plan_entry in plan_records:
         scenario_run_root.mkdir(parents=True, exist_ok=True)
-        plan = build_execution_plan(
-            scenario,
-            repo_root=repo_root,
-            scenario_run_root=scenario_run_root,
-            model_bindings=model_bindings,
-        )
         _write_text(
             scenario_run_root / "plan.json",
-            json.dumps(
-                {
-                    **_scenario_metadata(scenario),
-                    "command": plan.command,
-                    "server_log_path": (
-                        str(plan.server_log_path) if plan.server_log_path is not None else None
-                    ),
-                    "env": plan.env or {},
-                },
-                indent=2,
-                sort_keys=True,
-            )
+            json.dumps(plan_entry, indent=2, sort_keys=True)
             + "\n",
         )
 
+        if planning_failure is not None:
+            result = {
+                **_scenario_metadata(scenario),
+                "ok": False,
+                "exit_code": None,
+                "duration_seconds": 0.0,
+                "stdout_log": str(scenario_run_root / "stdout.log"),
+                "stderr_log": str(scenario_run_root / "stderr.log"),
+                "server_log_path": None,
+                "failures": [planning_failure],
+            }
+            _write_text(scenario_run_root / "stdout.log", "")
+            _write_text(scenario_run_root / "stderr.log", planning_failure + "\n")
+            _write_text(
+                scenario_run_root / "result.json",
+                json.dumps(result, indent=2, sort_keys=True) + "\n",
+            )
+            results.append(result)
+            failed += 1
+            continue
+
+        assert plan is not None
         terms_failure = _model_provenance_terms_failure(scenario)
         if terms_failure is not None:
             result = {

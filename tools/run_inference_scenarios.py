@@ -12,6 +12,7 @@ if str(TOOLS_DIR) not in sys.path:
     sys.path.insert(0, str(TOOLS_DIR))
 
 from inference.menu import prompt_for_scenarios
+from inference.logging import default_run_root
 from inference.runner import build_run_plan, run_scenarios
 from inference.scenario_loader import load_scenarios, select_scenarios
 
@@ -93,20 +94,21 @@ def main() -> int:
         print("SCENARIO_SELECTION_EMPTY: no scenarios matched the requested filters", file=sys.stderr)
         return 2
 
-    payload = build_run_plan(
-        selected,
-        repo_root=repo_root,
-        run_root=args.run_root.resolve() if args.run_root is not None else None,
-        model_bindings=model_bindings,
-    )
     if args.dry_run:
+        payload = build_run_plan(
+            selected,
+            repo_root=repo_root,
+            run_root=args.run_root.resolve() if args.run_root is not None else None,
+            model_bindings=model_bindings,
+        )
         print(json.dumps(payload, indent=2, sort_keys=True))
         return 0
 
+    run_root = args.run_root.resolve() if args.run_root is not None else default_run_root(repo_root)
     summary = run_scenarios(
         selected,
         repo_root=repo_root,
-        run_root=Path(payload["planned_run_root"]),
+        run_root=run_root,
         model_bindings=model_bindings,
     )
     print(json.dumps(summary, indent=2, sort_keys=True))
