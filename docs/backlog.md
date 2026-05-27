@@ -124,10 +124,17 @@
   waits for stable runtime-base evidence and the Transformers follow-up
   barrier, unless a separate coordinator-approved implementation lane
   explicitly bypasses that sequence.
-- AWQ lane: keep native AWQ, compressed-tensors-format AWQ models, and
-  deprecated AutoAWQ tooling separate. Do not package AutoAWQ for this lane;
-  require a pinned AWQ model revision/license, backend evidence where
-  applicable, LLM init, generation, and selected-backend assertions.
+- AWQ live-validation lane: the native AWQ vLLM consumer probe now pins
+  `QuantTrio/Qwen3.5-9B-AWQ` at revision
+  `938f8e3ef86c9d1e9bec3705e149694c172592f1`, with Apache-2.0 license
+  metadata, `Qwen/Qwen3.5-9B` base-model provenance, and the
+  `vllm.qwen3_5.9b-awq.text.basic` scenario contract. Keep native AWQ,
+  compressed-tensors-format AWQ models, and deprecated AutoAWQ tooling
+  separate. Do not package AutoAWQ for this lane. Live validation is blocked on
+  stable runtime-base evidence after the PyTorch/Transformers lanes plus an
+  operator-run scenario handoff; promotion requires vLLM ROCm extensions
+  import, `quantization="awq"`, LLM init, generation, and the ROCm
+  `VLLM_USE_TRITON_AWQ` selected-backend assertion to pass.
 - xFormers lane: blocked/deferred until the repo has both a concrete local
   consumer and explicit `gfx1151` support evidence. The 2026-05-27 refresh
   found Meta xFormers latest release `v0.0.35` and main
@@ -404,11 +411,13 @@
     `vllm.flash-attn.triton-amd.vit-wrapper`. Treat
     `FLASH_ATTENTION_TRITON_AMD_AUTOTUNE=TRUE` as a later performance task.
   - Candidate follow-ups from the 2026-05-26 Lane 9 source audit are tracked in
-    the active unresolved and deferred package-candidate sections above. GPTQ,
-    Quark, bitsandbytes, AWQ, and xFormers share this common gate: each
-    candidate requires host validation plus source/provenance review before
-    adding a package or promoting a scenario. bitsandbytes now has a
-    source/provenance research note at
+    the active unresolved and deferred package-candidate sections above. The
+    AWQ decision is now source/provenance-reviewed for the native
+    `QuantTrio/Qwen3.5-9B-AWQ` fixture and still requires host validation.
+    GPTQ, Quark, bitsandbytes, AWQ, and xFormers still require host validation
+    before promotion, and unresolved candidates other than AWQ still require
+    source/provenance review before adding a package or promoting a scenario.
+    bitsandbytes now has a source/provenance research note at
     `docs/maintainers/bitsandbytes-package-research.md`.
     FBGEMM is deferred until the standalone package criteria and pinned
     consumer proof are satisfied. Package implementation waits for runtime-base
@@ -469,6 +478,9 @@
   - validate the small FP8 safetensors exploratory probe before promoting the
     lane to smoke coverage:
     `vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors-blocked`
+  - run the native AWQ exploratory probe only after the runtime base is stable:
+    `vllm.qwen3_5.9b-awq.text.basic`; this is a vLLM consumer scenario, not an
+    AutoAWQ package lane and not the compressed-tensors AWQ-format lane
   - compare FP8 probe outcomes against the accepted unquantized no-AITER
     `Qwen/Qwen3.6-35B-A3B` control, which currently passes with
     `--max-num-batched-tokens 32` and `--gpu-memory-utilization 0.9`
@@ -625,6 +637,7 @@
   - `Qwen/Qwen3.6-35B-A3B` for the main non-GGUF vLLM Qwen MoE lane
   - `surogate/Qwen3.5-0.8B-FP8` for the small FP8 safetensors probe
   - `Qwen/Qwen3.5-35B-A3B-GPTQ-Int4` for the GPTQ Int4 safetensors probe
+  - `QuantTrio/Qwen3.5-9B-AWQ` for the native AWQ vLLM consumer probe
   - use a Qwen3.6 GGUF quantization for llama.cpp once one is chosen locally
 - Capture benchmark methodology and results in repo docs before any public AUR
   publication attempt.

@@ -970,6 +970,56 @@ def test_quark_qwen_text_dry_run_pins_artifact_and_probe_options(
     }
 
 
+def test_awq_qwen_text_dry_run_uses_native_awq_probe_contract(
+    tmp_path: Path,
+):
+    run_root = tmp_path / "run"
+    result = run_runner(
+        "--scenario-dir",
+        str(REPO_ROOT / "inference/scenarios"),
+        "--run-root",
+        str(run_root),
+        "--dry-run",
+        "--scenario",
+        "vllm.qwen3_5.9b-awq.text.basic",
+    )
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    assert payload["selected_ids"] == ["vllm.qwen3_5.9b-awq.text.basic"]
+    planned = payload["planned"][0]
+    assert planned["command"] == [
+        sys.executable,
+        str(REPO_ROOT / "tools/qwen_text_smoke.py"),
+        "QuantTrio/Qwen3.5-9B-AWQ",
+        "--quantization",
+        "awq",
+        "--max-model-len",
+        "128",
+        "--gpu-memory-utilization",
+        "0.35",
+        "--revision",
+        "938f8e3ef86c9d1e9bec3705e149694c172592f1",
+    ]
+    assert planned["env"] == {"VLLM_USE_TRITON_AWQ": "0"}
+    assert planned["model_provenance"] == {
+        "repo_id": "QuantTrio/Qwen3.5-9B-AWQ",
+        "revision": "938f8e3ef86c9d1e9bec3705e149694c172592f1",
+        "license": "apache-2.0",
+        "base_model": "Qwen/Qwen3.5-9B",
+        "quantization_format": "native-awq",
+        "quant_method": "awq",
+        "quant_bits": 4,
+        "provenance": "QuantTrio data-free quantization of Qwen/Qwen3.5-9B.",
+        "terms_status": "accepted",
+        "terms_gate": (
+            "Public Apache-2.0 model-card and base-model metadata are accepted "
+            "for local validation; treat the pinned model repo as an untrusted "
+            "artifact until live validation passes."
+        ),
+    }
+
+
 def test_dry_run_records_plan_failure_in_planned_entry(tmp_path: Path):
     scenario_dir = tmp_path / "inference" / "scenarios"
     scenario_dir.mkdir(parents=True)

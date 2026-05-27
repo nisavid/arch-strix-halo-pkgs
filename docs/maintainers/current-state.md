@@ -52,6 +52,20 @@ Live-scenario validated: not complete; run the bounded installed vLLM generation
 smoke only after the runtime base is stable, and re-review model provenance if
 the revision, license, gating, base model, or file list changes.
 
+The AWQ model-provenance decision is docs/scenario-only. The native AWQ vLLM
+consumer lane now pins `QuantTrio/Qwen3.5-9B-AWQ` at revision
+`938f8e3ef86c9d1e9bec3705e149694c172592f1`, records Apache-2.0 license
+metadata and `Qwen/Qwen3.5-9B` base-model provenance, and tracks
+`vllm.qwen3_5.9b-awq.text.basic` as the local scenario contract. Native AWQ,
+compressed-tensors-format AWQ artifacts, and deprecated AutoAWQ tooling remain
+separate; no AutoAWQ package is expected. Source updated: model-source
+provenance is pinned in scenario/docs only. Package built: not applicable.
+Deployed/installed: not applicable. Installed-smoked: not complete. Live-scenario
+validated: not complete. Promotion waits for stable runtime-base evidence after
+the PyTorch/Transformers lanes plus an operator-run host handoff that proves
+vLLM ROCm extension import, `quantization="awq"`, LLM init, generation, and the
+ROCm `VLLM_USE_TRITON_AWQ` selected-backend assertion.
+
 The ROCm PyTorch release/2.12 `26872de` runtime-base source/build/deploy
 closeout is complete, with an operator-owned live-scenario rerun still tracked.
 Source updated: `python-pytorch-opt-rocm-gfx1151` now tracks ROCm/pytorch

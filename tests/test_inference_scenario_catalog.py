@@ -37,6 +37,7 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     assert "vllm.qwen3_5.0_8b.text.basic" in ids
     assert "vllm.qwen3_5.0_8b.text.compiled" in ids
     assert "vllm.qwen3_5.0_8b.text.flash-attn-ck" in ids
+    assert "vllm.qwen3_5.9b-awq.text.basic" in ids
     assert "vllm.qwen3_6.35b-a3b.text.unquantized-moe-no-aiter-control" in ids
     assert (
         "vllm.qwen3_6.35b-a3b.text.unquantized-moe-no-aiter-compiled" in ids
@@ -177,6 +178,8 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     ]
     assert "gptq" in tags_by_id["vllm.qwen3_5.35b-a3b-gptq-int4.text.basic"]
     assert "int4" in tags_by_id["vllm.qwen3_5.35b-a3b-gptq-int4.text.basic"]
+    assert "awq" in tags_by_id["vllm.qwen3_5.9b-awq.text.basic"]
+    assert "native-awq" in tags_by_id["vllm.qwen3_5.9b-awq.text.basic"]
     assert "blocked" in tags_by_id[
         "vllm.qwen3_6.35b-a3b-nvfp4.text.unsupported-rocm-gfx1151"
     ]
@@ -277,6 +280,7 @@ def test_qwen_recipe_surfaces_link_runnable_local_scenarios():
         "vllm.qwen.recipe.qwen3_5.client.openai_multimodal",
         "vllm.qwen.recipe.qwen3_5.server.long_context_yarn",
         "vllm.qwen.recipe.qwen3_8.quark_amp",
+        "vllm.qwen.recipe.qwen3_5.awq_native",
     }
     allowed_statuses = {"validated", "tracked", "planned", "advisory-only"}
 
@@ -307,9 +311,13 @@ def test_qwen_recipe_surfaces_link_runnable_local_scenarios():
     assert surfaces["vllm.qwen.recipe.qwen3_5.server.long_context_yarn"][
         "local_scenarios"
     ] == ["vllm.qwen3_6.35b-a3b.server.long-context-reduced"]
+    assert surfaces["vllm.qwen.recipe.qwen3_5.awq_native"][
+        "local_scenarios"
+    ] == ["vllm.qwen3_5.9b-awq.text.basic"]
     assert surfaces["vllm.qwen.recipe.qwen3_5.server.throughput_text"][
         "status"
     ] == "advisory-only"
+    assert surfaces["vllm.qwen.recipe.qwen3_5.awq_native"]["status"] == "tracked"
     assert surfaces["vllm.qwen.recipe.qwen3_6.server.mtp"]["status"] == "validated"
     assert surfaces["vllm.qwen.recipe.qwen3_5.server.tool_calling"]["status"] == (
         "validated"
@@ -347,6 +355,9 @@ def test_qwen_recipe_surfaces_link_runnable_local_scenarios():
     ]["required_flags"]
     assert "kv_cache_dtype=fp8" in surfaces[
         "vllm.qwen.recipe.qwen3_8.quark_amp"
+    ]["required_flags"]
+    assert "--quantization awq" in surfaces[
+        "vllm.qwen.recipe.qwen3_5.awq_native"
     ]["required_flags"]
 
 
@@ -831,6 +842,64 @@ def test_quantization_lane_probes_record_root_cause_contracts():
         {"kind": "stdout.contains", "value": "basic_ok"},
     ):
         assert expected in quark_amp.definition["then"]["assert"]
+
+    awq = by_id["vllm.qwen3_5.9b-awq.text.basic"]
+    assert awq.model == "QuantTrio/Qwen3.5-9B-AWQ"
+    assert set(awq.tags) >= {
+        "qwen",
+        "qwen3.5",
+        "awq",
+        "native-awq",
+        "int4",
+        "safetensors",
+        "quantization-probe",
+        "exploratory",
+    }
+    assert awq.definition["given"]["tool"] == "qwen_text_smoke"
+    assert awq.definition["when"]["argv"] == [
+        "--quantization",
+        "awq",
+        "--max-model-len",
+        "128",
+        "--gpu-memory-utilization",
+        "0.35",
+    ]
+    assert awq.definition["when"]["env"] == {"VLLM_USE_TRITON_AWQ": "0"}
+    assert awq.definition["model_provenance"] == {
+        "repo_id": "QuantTrio/Qwen3.5-9B-AWQ",
+        "revision": "938f8e3ef86c9d1e9bec3705e149694c172592f1",
+        "license": "apache-2.0",
+        "base_model": "Qwen/Qwen3.5-9B",
+        "quantization_format": "native-awq",
+        "quant_method": "awq",
+        "quant_bits": 4,
+        "provenance": "QuantTrio data-free quantization of Qwen/Qwen3.5-9B.",
+        "terms_status": "accepted",
+        "terms_gate": (
+            "Public Apache-2.0 model-card and base-model metadata are accepted "
+            "for local validation; treat the pinned model repo as an untrusted "
+            "artifact until live validation passes."
+        ),
+    }
+    for expected in (
+        {"kind": "exit_code.equals", "value": 0},
+        {"kind": "stdout.contains", "value": "config_model_type qwen3_5"},
+        {
+            "kind": "stdout.contains",
+            "value": "config_quantization_config_present true",
+        },
+        {"kind": "stdout.contains", "value": "'quant_method': 'awq'"},
+        {"kind": "stdout.contains", "value": "'bits': 4"},
+        {"kind": "stdout.contains", "value": "quantization awq"},
+        {
+            "kind": "output.contains",
+            "value": "Using AWQ quantization with ROCm, but VLLM_USE_TRITON_AWQ",
+        },
+        {"kind": "stdout.contains", "value": "llm_init_ok"},
+        {"kind": "stdout.contains", "value": "generation_ok"},
+        {"kind": "stdout.contains", "value": "basic_ok"},
+    ):
+        assert expected in awq.definition["then"]["assert"]
 
     nvfp4 = by_id["vllm.qwen3_6.35b-a3b-nvfp4.text.unsupported-rocm-gfx1151"]
     assert nvfp4.model == "RedHatAI/Qwen3.6-35B-A3B-NVFP4"
