@@ -74,7 +74,7 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     assert "transformers.zeroentropy.zembed-1.embeddings" in ids
     assert "transformers.zeroentropy.zerank-2.rerank" in ids
     assert "vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors-blocked" in ids
-    assert "vllm.qwen3_5.4b-gptq-int4.text.basic" in ids
+    assert "vllm.qwen3_5.35b-a3b-gptq-int4.text.basic" in ids
     assert "vllm.qwen3_6.35b-a3b-nvfp4.text.unsupported-rocm-gfx1151" in ids
     assert "llama.cpp.hip.help" in ids
     assert "llama.cpp.vulkan.help" in ids
@@ -175,8 +175,8 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     assert "blocked" in tags_by_id[
         "vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors-blocked"
     ]
-    assert "gptq" in tags_by_id["vllm.qwen3_5.4b-gptq-int4.text.basic"]
-    assert "int4" in tags_by_id["vllm.qwen3_5.4b-gptq-int4.text.basic"]
+    assert "gptq" in tags_by_id["vllm.qwen3_5.35b-a3b-gptq-int4.text.basic"]
+    assert "int4" in tags_by_id["vllm.qwen3_5.35b-a3b-gptq-int4.text.basic"]
     assert "blocked" in tags_by_id[
         "vllm.qwen3_6.35b-a3b-nvfp4.text.unsupported-rocm-gfx1151"
     ]
@@ -728,11 +728,8 @@ def test_quantization_lane_probes_record_root_cause_contracts():
     ):
         assert expected in fp8_dense.definition["then"]["assert"]
 
-    gptq_int4 = by_id["vllm.qwen3_5.4b-gptq-int4.text.basic"]
-    assert (
-        gptq_int4.model
-        == "RafaDom/Qwen3.5-4B-Claude-4.6-Opus-Reasoning-Distilled-v2-GPTQ-Int4-HQ"
-    )
+    gptq_int4 = by_id["vllm.qwen3_5.35b-a3b-gptq-int4.text.basic"]
+    assert gptq_int4.model == "Qwen/Qwen3.5-35B-A3B-GPTQ-Int4"
     assert set(gptq_int4.tags) >= {
         "qwen",
         "qwen3.5",
@@ -745,21 +742,24 @@ def test_quantization_lane_probes_record_root_cause_contracts():
     assert gptq_int4.definition["given"]["tool"] == "qwen_text_smoke"
     assert gptq_int4.definition["when"]["argv"] == ["--max-model-len", "128"]
     assert gptq_int4.definition["model_provenance"] == {
-        "repo_id": "RafaDom/Qwen3.5-4B-Claude-4.6-Opus-Reasoning-Distilled-v2-GPTQ-Int4-HQ",
-        "revision": "a86e57f8166807d28b447bab5daad3e079a268a7",
+        "repo_id": "Qwen/Qwen3.5-35B-A3B-GPTQ-Int4",
+        "revision": "3af5ca2972faf6de1fd6f4efc4d8d319ca751e8b",
         "license": "apache-2.0",
-        "base_model": "Jackrong/Qwen3.5-9B-Claude-4.6-Opus-Reasoning-Distilled-v2",
-        "terms_status": "requires-operator-decision",
-        "terms_gate": (
-            "Model-card license metadata is apache-2.0, but the model name "
-            "and base_model metadata assert Claude-derived distillation. "
-            "Run this scenario only after the operator accepts that "
-            "provenance/terms risk or replaces the fixture."
+        "base_model": "Qwen/Qwen3.5-35B-A3B",
+        "terms_status": "accepted",
+        "terms_decision": (
+            "Replaces the rejected RafaDom Claude-derived fixture with the "
+            "official Qwen GPTQ Int4 checkpoint published under Apache-2.0; "
+            "live validation remains pending."
         ),
     }
     for expected in (
         {"kind": "exit_code.equals", "value": 0},
-        {"kind": "stdout.contains", "value": "config_model_type qwen3_5_text"},
+        {"kind": "stdout.contains", "value": "config_model_type qwen3_5_moe"},
+        {
+            "kind": "stdout.contains",
+            "value": "text_config_model_type qwen3_5_moe_text",
+        },
         {
             "kind": "stdout.contains",
             "value": "config_quantization_config_present true",

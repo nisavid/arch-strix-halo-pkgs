@@ -47,15 +47,14 @@ unblock it by themselves.
 
 The 2026-05-26 Quark/AWQ/GPTQ/bitsandbytes/xFormers/FBGEMM source audit keeps
 the vLLM scenario order narrow. GPTQ is the first live-validation lane because
-the retained `vllm.qwen3_5.4b-gptq-int4.text.basic` scenario binds a Qwen3.5
-Int4 safetensors target with pinned revision and license metadata, and direct
-repo-ID execution passes that revision to the qwen text smoke. The runner
-fails before subprocess execution while `model_provenance.terms_status` is not
-accepted, so the scenario remains gated on operator acceptance of the
-unresolved Claude-derived provenance risk or fixture replacement. Review the
-Hugging Face model card linked by `source_url`, then record the operator
-decision by setting the scenario's `model_provenance.terms_status` to
-`accepted`. AWQ
+the retained `vllm.qwen3_5.35b-a3b-gptq-int4.text.basic` scenario binds the
+official `Qwen/Qwen3.5-35B-A3B-GPTQ-Int4` safetensors target with pinned
+revision and license metadata, and direct repo-ID execution passes that
+revision to the qwen text smoke. The operator rejected the prior RafaDom
+Claude-derived fixture for this repo. The replacement has accepted provenance
+terms based on the official Qwen model card's Apache-2.0 metadata and explicit
+base-model metadata, but this docs/metadata change does not claim live
+validation. AWQ
 stays exploratory until a native AWQ Qwen text fixture is pinned and validated;
 AutoAWQ is not a package candidate for this lane. Quark is split into a vLLM
 consumer lane and an optional `amd-quark` authoring-tool package lane. The vLLM
@@ -115,7 +114,7 @@ the existing TorchAO, compressed-tensors, AITER, and FlashAttention coverage.
 | Qwen3.6 BF16 reasoning | `Qwen/Qwen3.6-35B-A3B`, `--tensor-parallel-size 8` or interactive TP2, `--max-model-len 262144`, `--reasoning-parser qwen3` | `validated` by reduced `reasoning` and `reasoning-disabled`; unquantized eager and compiled text controls remain validated | Keep the large TP/context recipe shape advisory unless the host gains matching hardware. |
 | Qwen3 Quark AMP safetensors probe | `amd/Qwen3-8B-WMXFP4FP8-AMXFP4FP8-AMP-KVFP8` at revision `7d63d86fe5de2cee926e6ba54b0eec7f442323cf`, `quantization="quark"`, `kv_cache_dtype="fp8"`, reduced local context | `tracked` by `vllm.qwen3.8b-quark-amp.text.basic`; scenario metadata records `apache-2.0`, base model `Qwen/Qwen3-8B`, accepted public/non-gated terms status, required Quark quantization, and required FP8 KV cache dtype | Run only after the runtime base is stable; re-review artifact provenance if the revision, license, gating, base model, or file list changes. |
 | FP8 safetensors probe | `surogate/Qwen3.5-0.8B-FP8`, reduced local context | `tracked` by `vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors-blocked` | Use this small retained checkpoint for local FP8 support checks; do not treat it as Qwen3.6 MoE recipe coverage. |
-| GPTQ Int4 safetensors probe | `RafaDom/Qwen3.5-4B-Claude-4.6-Opus-Reasoning-Distilled-v2-GPTQ-Int4-HQ` at revision `a86e57f8166807d28b447bab5daad3e079a268a7`, reduced local context | `tracked` by `vllm.qwen3_5.4b-gptq-int4.text.basic`; scenario metadata records model-card license `apache-2.0`, base model `Jackrong/Qwen3.5-9B-Claude-4.6-Opus-Reasoning-Distilled-v2`, and unresolved provenance/terms status | Use this checkpoint only after the operator accepts the Claude-derived provenance/terms risk or replaces the fixture; it replaces the AXERA-format cache artifact. |
+| GPTQ Int4 safetensors probe | `Qwen/Qwen3.5-35B-A3B-GPTQ-Int4` at revision `3af5ca2972faf6de1fd6f4efc4d8d319ca751e8b`, bounded local context | `tracked` by `vllm.qwen3_5.35b-a3b-gptq-int4.text.basic`; scenario metadata records official Qwen model-card license `apache-2.0`, base model `Qwen/Qwen3.5-35B-A3B`, and accepted provenance terms | Run only after materializing the retained testing-cache fixture and stable runtime-base evidence; this replaces the rejected RafaDom Claude-derived fixture and the AXERA-format cache artifact. |
 | Qwen3.6 MTP/spec decoding | `--speculative-config '{"method":"mtp","num_speculative_tokens":2}'` | `validated` by reduced `mtp` through the padded drafter batch path with the installed ROCm `valid_count` patch | No remaining local MTP workaround; keep only full Qwen3.5 FP8 latency shape advisory. |
 | Qwen3.6 tool calling | interactive feature selector plus Qwen parser family; Qwen3.5 guide names `--enable-auto-tool-choice --tool-call-parser qwen3_coder` | `validated` by reduced `tool` server scenario | Keep the Qwen3.5 FP8 deployment shape advisory; the local result validates parser behavior on Qwen3.6. |
 | Qwen3.6 advanced selectors | interactive `max_batched_8k` and `max_num_seqs_256` | `validated` by reduced `advanced-selectors` server scenario | Treat this as memory-fit evidence for the reduced local server shape, not the full MI-series deployment. |

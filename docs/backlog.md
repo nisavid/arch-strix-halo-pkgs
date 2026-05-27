@@ -68,16 +68,16 @@
   runtime base stable. The local Transformers package is coupled to tokenizers,
   safetensors, Hugging Face Hub, model-surface imports, and vLLM scenarios.
 - GPTQ live-validation lane: the retained
-  `vllm.qwen3_5.4b-gptq-int4.text.basic` scenario pins the RafaDom model
-  revision and model-card license metadata in scenario provenance. When the
-  scenario uses the Hugging Face repo ID directly, the runner passes the pinned
-  revision to the qwen text smoke. The runner treats non-accepted
-  `model_provenance.terms_status` values as a pre-run failure. Decision and
-  provenance work can start after this reconciliation; live vLLM validation
-  waits for operator acceptance of the unresolved Claude-derived
-  provenance/terms risk or a replacement fixture, plus stable runtime-base
-  evidence after the PyTorch/Transformers lanes unless explicitly bypassed. No
-  new runtime package is expected for
+  `vllm.qwen3_5.35b-a3b-gptq-int4.text.basic` scenario pins the official
+  `Qwen/Qwen3.5-35B-A3B-GPTQ-Int4` model revision and model-card license
+  metadata in scenario provenance. The rejected RafaDom Claude-derived fixture
+  is not an accepted repo validation target. When the scenario uses the
+  Hugging Face repo ID directly, the runner passes the pinned revision to the
+  qwen text smoke. The replacement's provenance terms are accepted for this
+  repo because the official Qwen model card records Apache-2.0 metadata and
+  explicit `Qwen/Qwen3.5-35B-A3B` base-model provenance. Live vLLM validation
+  still waits for stable runtime-base evidence after the PyTorch/Transformers
+  lanes unless explicitly bypassed. No new runtime package is expected for
   prequantized GPTQ inference; promote only after vLLM ROCm extensions import,
   generation passes, and the source, build, install, and live states are
   recorded separately.
@@ -607,8 +607,7 @@
   - `Qwen/Qwen3.5-0.8B` for tiny non-GGUF vLLM Qwen smoke coverage
   - `Qwen/Qwen3.6-35B-A3B` for the main non-GGUF vLLM Qwen MoE lane
   - `surogate/Qwen3.5-0.8B-FP8` for the small FP8 safetensors probe
-  - `RafaDom/Qwen3.5-4B-Claude-4.6-Opus-Reasoning-Distilled-v2-GPTQ-Int4-HQ`
-    for the GPTQ Int4 safetensors probe
+  - `Qwen/Qwen3.5-35B-A3B-GPTQ-Int4` for the GPTQ Int4 safetensors probe
   - use a Qwen3.6 GGUF quantization for llama.cpp once one is chosen locally
 - Capture benchmark methodology and results in repo docs before any public AUR
   publication attempt.

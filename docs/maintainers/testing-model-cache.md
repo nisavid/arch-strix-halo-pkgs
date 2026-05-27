@@ -28,7 +28,6 @@ The testing cache owns repo validation fixtures for these namespaces:
 
 - `Dogacel/*`
 - `Qwen/*`
-- `RafaDom/*`
 - `RedHatAI/*`
 - `google/*`
 - `surogate/*`
@@ -44,8 +43,8 @@ Current kept model IDs include:
 
 - `Dogacel/specdrift-qwen3.6-35b-a3b-eagle3`
 - `Qwen/Qwen3.5-0.8B`
+- `Qwen/Qwen3.5-35B-A3B-GPTQ-Int4`
 - `Qwen/Qwen3.6-35B-A3B`
-- `RafaDom/Qwen3.5-4B-Claude-4.6-Opus-Reasoning-Distilled-v2-GPTQ-Int4-HQ`
 - `RedHatAI/Qwen3.6-35B-A3B-NVFP4`
 - `google/gemma-4-26B-A4B-it`
 - `google/gemma-4-E2B-it`
@@ -54,9 +53,10 @@ Current kept model IDs include:
 - `zeroentropy/zembed-1`
 - `zeroentropy/zerank-2`
 
-Keep the RafaDom GPTQ repository as the retained Int4 safetensors target. The
-AXERA Int4 repository uses AXERA runtime artifacts rather than an ordinary vLLM
-GPTQ checkpoint and is not part of the repo validation keep-set.
+Keep `Qwen/Qwen3.5-35B-A3B-GPTQ-Int4` as the retained GPTQ Int4 safetensors
+target. It replaces the rejected RafaDom Claude-derived GPTQ fixture and the
+AXERA Int4 repository, whose files target AXERA's runtime format rather than an
+ordinary vLLM GPTQ checkpoint.
 
 The vLLM pooling scenarios use the same retained ZeroEntropy repositories as
 the Transformers ZeroEntropy scenarios. `zeroentropy/zembed-1` exercises

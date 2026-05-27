@@ -384,12 +384,14 @@ recommendations are tracked in `docs/maintainers/rocm-inference-reference.md`,
 highest-priority live-validation lane because the retained Qwen3.5 GPTQ Int4
 scenario carries pinned model revision/license metadata in its scenario
 provenance, and direct repo-ID execution passes the pinned revision to the qwen
-text smoke. The scenario runner fails before subprocess execution when
-`model_provenance.terms_status` is not accepted. GPTQ provenance/fixture
-decision work can start after this reconciliation, but live vLLM validation
-waits for the accepted model decision plus stable runtime-base evidence after
-the PyTorch and Transformers lanes unless the operator explicitly bypasses that
-sequence. Quark is split into a pinned model-artifact vLLM consumer lane and a
+text smoke. The repo rejects the RafaDom Claude-derived GPTQ fixture and now
+uses the official `Qwen/Qwen3.5-35B-A3B-GPTQ-Int4` checkpoint with accepted
+Apache-2.0 provenance terms. This reconciliation only updates source fixture
+metadata and docs: it does not build packages, deploy/install artifacts, run
+installed smokes, or claim live vLLM validation. Live validation waits for
+stable runtime-base evidence after the PyTorch and Transformers lanes unless
+the operator explicitly bypasses that sequence. Quark is split into a pinned
+model-artifact vLLM consumer lane and a
 separate optional `amd-quark` authoring-tool package lane; Quark artifact
 decision work can start after this reconciliation, but live vLLM validation
 waits for artifact provenance/terms acceptance plus the same stable
@@ -712,16 +714,16 @@ the reviewed range does not overlap the current gfx1151 package carry, and
 TorchVision 0.27.0 is rejected until this repo opens a coordinated PyTorch
 2.12 lane.
 
-The testing Hugging Face cache keep-set now prefers the smallest compatible
-fixtures that preserve each validation purpose. The Qwen3.6 base and NVFP4
+The testing Hugging Face cache keep-set now prefers fixtures with clear
+provenance that preserve each validation purpose. The Qwen3.6 base and NVFP4
 models stay as the sparse MoE lane, the Qwen3.6 EAGLE3 and DFlash draft models
 replace the older Llama/Qwen3.8B speculative fixtures, and
 `surogate/Qwen3.5-0.8B-FP8` replaces the larger Qwen3.6 FP8 MoE cache artifact
 as the retained FP8 safetensors probe. `google/gemma-4-E2B-it` and
 `google/gemma-4-26B-A4B-it` cover the retained Gemma 4 dense/PLE and sparse MoE
-lanes. `RafaDom/Qwen3.5-4B-Claude-4.6-Opus-Reasoning-Distilled-v2-GPTQ-Int4-HQ`
-is the retained GPTQ Int4 safetensors target. The vLLM pooling and
-Transformers ZeroEntropy scenarios now share `zeroentropy/zembed-1` and
+lanes. `Qwen/Qwen3.5-35B-A3B-GPTQ-Int4` is the retained GPTQ Int4 safetensors
+target, replacing the rejected RafaDom Claude-derived fixture. The vLLM pooling
+and Transformers ZeroEntropy scenarios now share `zeroentropy/zembed-1` and
 `zeroentropy/zerank-2`; the Lemonade GGUF pooling fixtures remain separate
 because they exercise registered GGUF model paths.
 
@@ -1891,8 +1893,8 @@ Current local non-GGUF model IDs relevant to this branch are:
 - `google/gemma-4-26B-A4B-it`
 - `google/gemma-4-E2B-it`
 - `Qwen/Qwen3.5-0.8B`
+- `Qwen/Qwen3.5-35B-A3B-GPTQ-Int4`
 - `Qwen/Qwen3.6-35B-A3B`
-- `RafaDom/Qwen3.5-4B-Claude-4.6-Opus-Reasoning-Distilled-v2-GPTQ-Int4-HQ`
 - `RedHatAI/Qwen3.6-35B-A3B-NVFP4`
 - `surogate/Qwen3.5-0.8B-FP8`
 - `z-lab/Qwen3.6-35B-A3B-DFlash`
@@ -1905,9 +1907,10 @@ retained ModelOpt NVFP4 probe for the same model family. Use
 `surogate/Qwen3.5-0.8B-FP8` as the small FP8 safetensors probe; it replaces the
 larger Qwen3.6 FP8 MoE cache artifact for local storage purposes and does not
 validate Qwen3.6 MoE recipe behavior. Use
-`RafaDom/Qwen3.5-4B-Claude-4.6-Opus-Reasoning-Distilled-v2-GPTQ-Int4-HQ` as
-the retained GPTQ Int4 safetensors probe; it replaces the AXERA Int4 cache
-artifact, whose files target AXERA's runtime format rather than vLLM GPTQ.
+`Qwen/Qwen3.5-35B-A3B-GPTQ-Int4` as the retained GPTQ Int4 safetensors probe;
+it replaces the rejected RafaDom Claude-derived fixture and the AXERA Int4
+cache artifact, whose files target AXERA's runtime format rather than vLLM
+GPTQ.
 
 The vLLM pooling scenarios now use retained ZeroEntropy repositories instead
 of separate E5 and Jina model caches. `vllm.pooling.zembed-1.embeddings` runs
@@ -2682,8 +2685,8 @@ The following smoke checks have already passed on the reference host:
     new kernel feature work unless upstream lands it.
   - Quantization-lane coverage now includes the retained small FP8 safetensors
     probe `vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors-blocked` and the retained
-    GPTQ Int4 safetensors probe `vllm.qwen3_5.4b-gptq-int4.text.basic`, plus the
-    Qwen3.6 NVFP4 probe
+    GPTQ Int4 safetensors probe
+    `vllm.qwen3_5.35b-a3b-gptq-int4.text.basic`, plus the Qwen3.6 NVFP4 probe
     `vllm.qwen3_6.35b-a3b-nvfp4.text.unsupported-rocm-gfx1151`.
   - The RedHatAI Qwen3.6 NVFP4 probe is expected to fail on ROCm/gfx1151 with
     `modelopt_fp4 quantization is currently not supported in rocm.` The
