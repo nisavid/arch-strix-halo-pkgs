@@ -550,7 +550,7 @@ model = "Qwen/Qwen3.5-35B-A3B-GPTQ-Int4"
 tool = "qwen_text_smoke"
 
 [scenario.when]
-argv = ["--max-model-len", "128"]
+argv = ["--quantization", "moe_wna16", "--max-model-len", "128"]
 
 [[scenario.then.assert]]
 kind = "exit_code.equals"

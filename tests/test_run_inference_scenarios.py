@@ -861,6 +861,8 @@ def test_gptq_qwen_text_dry_run_preserves_model_provenance(
         sys.executable,
         str(REPO_ROOT / "tools/qwen_text_smoke.py"),
         "/models/qwen35-gptq",
+        "--quantization",
+        "moe_wna16",
         "--max-model-len",
         "128",
     ]
@@ -902,6 +904,8 @@ def test_gptq_qwen_text_dry_run_uses_pinned_revision_without_binding(
         sys.executable,
         str(REPO_ROOT / "tools/qwen_text_smoke.py"),
         "Qwen/Qwen3.5-35B-A3B-GPTQ-Int4",
+        "--quantization",
+        "moe_wna16",
         "--max-model-len",
         "128",
         "--revision",
