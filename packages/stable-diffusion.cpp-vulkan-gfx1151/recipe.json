@@ -20,12 +20,14 @@
       "On 2026-05-15, adopted upstream master at 0b8296915c4094090cff6bd2e09a5e98288c3c7d for MultiLora handling, flow-model sampler behavior, max-VRAM segmented parameter offload support, HiDream O1 image support, model-weight mmap support, Euler CFG++ sampler support, WebP/WebM pkg-config handling, and server URL display cleanup.",
       "On 2026-05-19, adopted upstream master at caa823a8c06a51288f0a01bb29e9bd8bcec30a8a for LTX 2.3 support, Gradient Estimation sampler support, negative max_vram spare-VRAM budgeting, module backend assignment, restored LLM singleton dimensions, and ROCm 7.13 CI target updates.",
       "On 2026-05-26, adopted upstream master at 1ceb5bd9df7784bcdf67dd9ed8bf0198b542ebc9 for LTX temporal and rational latent upscaling, Longcat image/edit support, highres custom sigma and VAE tiling arguments, TAESD preview fixes, macOS rpath fixes, and Windows ROCm BLAS artifact packaging.",
-      "On 2026-05-26 review follow-up, verified the upstream mode-160000 gitlinks at 1ceb5bd9df7784bcdf67dd9ed8bf0198b542ebc9 match the explicit ggml, sdcpp-webui, libwebm, and libwebp package source pins and are unchanged from caa823a8c06a51288f0a01bb29e9bd8bcec30a8a."
+      "On 2026-05-26 review follow-up, verified the upstream mode-160000 gitlinks at 1ceb5bd9df7784bcdf67dd9ed8bf0198b542ebc9 match the explicit ggml, sdcpp-webui, libwebm, and libwebp package source pins and are unchanged from caa823a8c06a51288f0a01bb29e9bd8bcec30a8a.",
+      "On 2026-05-27, updated package source metadata to upstream master at 92dc7268fc4ffb0c0cc0bd52dfcefea91326e797 for Microsoft Lens support, GPT-OSS tokenizer and vocabulary additions used by Lens prompts, and permission-denied skipping in recursive LoRA directory scans.",
+      "On 2026-05-27 source review, verified the upstream mode-160000 gitlinks at 92dc7268fc4ffb0c0cc0bd52dfcefea91326e797 match the explicit ggml, sdcpp-webui, libwebm, and libwebp package source pins, and refreshed the CLIP-G patch context so both the prefix-ordering change and Flux te1 remap apply without ignored patch hunks."
     ]
   },
   "name": "stable-diffusion.cpp-vulkan-gfx1151",
   "package_name": "stable-diffusion.cpp-vulkan-gfx1151",
-  "pkgver": "r650.g1ceb5bd",
+  "pkgver": "r652.g92dc726",
   "policy": {
     "advisory_references": [
       "aur/stable-diffusion.cpp-git"
@@ -55,7 +57,7 @@
       "SKIP",
       "SKIP",
       "SKIP",
-      "9e6040eceb97ec26252d9081d952f413d317e9682e0500d029b15bf8c2dfa03b"
+      "044658c55684439e53b464d919740976775133573ea74390b44d51fa2ddd2949"
     ],
     "extra_sources": [
       "ggml::git+https://github.com/leejet/ggml.git#commit=0ce7ad348a3151e1da9f65d962044546bcaad421",
@@ -85,7 +87,7 @@
       "stable-diffusion.cpp-vulkan"
     ],
     "recipe_key": "stable_diffusion_cpp",
-    "recipe_notes_override": "This package supplies stable-diffusion.cpp as the Blackcat Vulkan image\ngeneration engine for the Strix Halo stack. The source follows\nleejet/stable-diffusion.cpp master at\n`1ceb5bd9df7784bcdf67dd9ed8bf0198b542ebc9` (`r650.g1ceb5bd`).\nThe current source includes LTX temporal and rational latent upscaling,\nLTX audio and VAE decoding improvements, highres custom sigma support,\nextra VAE tiling arguments, Longcat image/edit support, TAESD preview fixes,\nmacOS rpath fixes, and Windows ROCm BLAS artifact packaging.\n\nThe package builds the Vulkan backend with ggml, WebP, WebM, and server frontend\ninputs modeled as explicit package sources and staged into the upstream\nsubmodule paths during prepare().\nAt this pin, the upstream recursive git tree records mode-160000 gitlinks for\n`ggml` (`0ce7ad348a3151e1da9f65d962044546bcaad421`),\n`examples/server/frontend` (`797ccf80825cc035508ba9b599b2a21953e7f835`),\n`thirdparty/libwebm` (`5bf12267eea773a32fcf4949de52b0add158a8d5`), and\n`thirdparty/libwebp` (`0c9546f7efc61eac7f79ae115c3f99c91c21c443`), matching\nthe explicit package source pins and the previous upstream `caa823a` tree.\nIt uses the repo's amdclang/Zen 5 lane, ThinLTO, AOCL-LibM\nlinkage, OpenMP CPU fallback, WebP/WebM output support, and release-mode\nVulkan settings. Runtime payloads live under\n`/opt/stable-diffusion.cpp-vulkan-gfx1151`, with\n`sd-cli-vulkan-gfx1151` and `sd-server-vulkan-gfx1151` wrappers under\n`/usr/bin`.\n\nThe SDXL CLIP-G prefix patch comes from Blackcat's recipe notes and keeps\ndiffusers SDXL checkpoint loading from misclassifying CLIP-G tensors as SD 1.x\nunknown tensors.\n",
+    "recipe_notes_override": "This package supplies stable-diffusion.cpp as the Blackcat Vulkan image\ngeneration engine for the Strix Halo stack. The source follows\nleejet/stable-diffusion.cpp master at\n`92dc7268fc4ffb0c0cc0bd52dfcefea91326e797` (`r652.g92dc726`).\nThe current source includes Microsoft Lens support, GPT-OSS tokenizer and\nvocabulary additions used by Lens prompts, LTX temporal and rational latent\nupscaling, LTX audio and VAE decoding improvements, highres custom sigma\nsupport, extra VAE tiling arguments, Longcat image/edit support, TAESD preview\nfixes, and LoRA directory scans that skip permission-denied entries.\n\nThe package builds the Vulkan backend with ggml, WebP, WebM, and server frontend\ninputs modeled as explicit package sources and staged into the upstream\nsubmodule paths during prepare().\nAt this pin, the upstream recursive git tree records mode-160000 gitlinks for\n`ggml` (`0ce7ad348a3151e1da9f65d962044546bcaad421`),\n`examples/server/frontend` (`797ccf80825cc035508ba9b599b2a21953e7f835`),\n`thirdparty/libwebm` (`5bf12267eea773a32fcf4949de52b0add158a8d5`), and\n`thirdparty/libwebp` (`0c9546f7efc61eac7f79ae115c3f99c91c21c443`), matching\nthe explicit package source pins.\nIt uses the repo's amdclang/Zen 5 lane, ThinLTO, AOCL-LibM\nlinkage, OpenMP CPU fallback, WebP/WebM output support, and release-mode\nVulkan settings. Runtime payloads live under\n`/opt/stable-diffusion.cpp-vulkan-gfx1151`, with\n`sd-cli-vulkan-gfx1151` and `sd-server-vulkan-gfx1151` wrappers under\n`/usr/bin`.\n\nThe SDXL CLIP-G prefix patch comes from Blackcat's recipe notes and keeps\ndiffusers SDXL checkpoint loading from misclassifying CLIP-G tensors as SD 1.x\nunknown tensors.\n",
     "recipe_patch_file_rewrites": {
       "patches/sdcpp-sdxl-clipg-prefix.patch": "0001-sdxl-clipg-prefix-mapping.patch"
     },
@@ -100,7 +102,7 @@
       "SKIP"
     ],
     "source_refs": [
-      "stable-diffusion.cpp::git+https://github.com/leejet/stable-diffusion.cpp.git#commit=1ceb5bd9df7784bcdf67dd9ed8bf0198b542ebc9"
+      "stable-diffusion.cpp::git+https://github.com/leejet/stable-diffusion.cpp.git#commit=92dc7268fc4ffb0c0cc0bd52dfcefea91326e797"
     ],
     "src_subdir": "stable-diffusion.cpp",
     "template": "stable-diffusion-cpp",
@@ -112,11 +114,13 @@
       "On 2026-05-15, adopted upstream master at 0b8296915c4094090cff6bd2e09a5e98288c3c7d for MultiLora handling, flow-model sampler behavior, max-VRAM segmented parameter offload support, HiDream O1 image support, model-weight mmap support, Euler CFG++ sampler support, WebP/WebM pkg-config handling, and server URL display cleanup.",
       "On 2026-05-19, adopted upstream master at caa823a8c06a51288f0a01bb29e9bd8bcec30a8a for LTX 2.3 support, Gradient Estimation sampler support, negative max_vram spare-VRAM budgeting, module backend assignment, restored LLM singleton dimensions, and ROCm 7.13 CI target updates.",
       "On 2026-05-26, adopted upstream master at 1ceb5bd9df7784bcdf67dd9ed8bf0198b542ebc9 for LTX temporal and rational latent upscaling, Longcat image/edit support, highres custom sigma and VAE tiling arguments, TAESD preview fixes, macOS rpath fixes, and Windows ROCm BLAS artifact packaging.",
-      "On 2026-05-26 review follow-up, verified the upstream mode-160000 gitlinks at 1ceb5bd9df7784bcdf67dd9ed8bf0198b542ebc9 match the explicit ggml, sdcpp-webui, libwebm, and libwebp package source pins and are unchanged from caa823a8c06a51288f0a01bb29e9bd8bcec30a8a."
+      "On 2026-05-26 review follow-up, verified the upstream mode-160000 gitlinks at 1ceb5bd9df7784bcdf67dd9ed8bf0198b542ebc9 match the explicit ggml, sdcpp-webui, libwebm, and libwebp package source pins and are unchanged from caa823a8c06a51288f0a01bb29e9bd8bcec30a8a.",
+      "On 2026-05-27, updated package source metadata to upstream master at 92dc7268fc4ffb0c0cc0bd52dfcefea91326e797 for Microsoft Lens support, GPT-OSS tokenizer and vocabulary additions used by Lens prompts, and permission-denied skipping in recursive LoRA directory scans.",
+      "On 2026-05-27 source review, verified the upstream mode-160000 gitlinks at 92dc7268fc4ffb0c0cc0bd52dfcefea91326e797 match the explicit ggml, sdcpp-webui, libwebm, and libwebp package source pins, and refreshed the CLIP-G patch context so both the prefix-ordering change and Flux te1 remap apply without ignored patch hunks."
     ],
     "upstream_name": "stable-diffusion.cpp",
-    "upstream_revision": "1ceb5bd9df7784bcdf67dd9ed8bf0198b542ebc9",
-    "upstream_version": "r650.g1ceb5bd",
+    "upstream_revision": "92dc7268fc4ffb0c0cc0bd52dfcefea91326e797",
+    "upstream_version": "r652.g92dc726",
     "url": "https://github.com/leejet/stable-diffusion.cpp"
   },
   "provenance": {
@@ -135,7 +139,7 @@
       "therock"
     ],
     "method": "cmake",
-    "notes": "This package supplies stable-diffusion.cpp as the Blackcat Vulkan image\ngeneration engine for the Strix Halo stack. The source follows\nleejet/stable-diffusion.cpp master at\n`1ceb5bd9df7784bcdf67dd9ed8bf0198b542ebc9` (`r650.g1ceb5bd`).\nThe current source includes LTX temporal and rational latent upscaling,\nLTX audio and VAE decoding improvements, highres custom sigma support,\nextra VAE tiling arguments, Longcat image/edit support, TAESD preview fixes,\nmacOS rpath fixes, and Windows ROCm BLAS artifact packaging.\n\nThe package builds the Vulkan backend with ggml, WebP, WebM, and server frontend\ninputs modeled as explicit package sources and staged into the upstream\nsubmodule paths during prepare().\nAt this pin, the upstream recursive git tree records mode-160000 gitlinks for\n`ggml` (`0ce7ad348a3151e1da9f65d962044546bcaad421`),\n`examples/server/frontend` (`797ccf80825cc035508ba9b599b2a21953e7f835`),\n`thirdparty/libwebm` (`5bf12267eea773a32fcf4949de52b0add158a8d5`), and\n`thirdparty/libwebp` (`0c9546f7efc61eac7f79ae115c3f99c91c21c443`), matching\nthe explicit package source pins and the previous upstream `caa823a` tree.\nIt uses the repo's amdclang/Zen 5 lane, ThinLTO, AOCL-LibM\nlinkage, OpenMP CPU fallback, WebP/WebM output support, and release-mode\nVulkan settings. Runtime payloads live under\n`/opt/stable-diffusion.cpp-vulkan-gfx1151`, with\n`sd-cli-vulkan-gfx1151` and `sd-server-vulkan-gfx1151` wrappers under\n`/usr/bin`.\n\nThe SDXL CLIP-G prefix patch comes from Blackcat's recipe notes and keeps\ndiffusers SDXL checkpoint loading from misclassifying CLIP-G tensors as SD 1.x\nunknown tensors.\n",
+    "notes": "This package supplies stable-diffusion.cpp as the Blackcat Vulkan image\ngeneration engine for the Strix Halo stack. The source follows\nleejet/stable-diffusion.cpp master at\n`92dc7268fc4ffb0c0cc0bd52dfcefea91326e797` (`r652.g92dc726`).\nThe current source includes Microsoft Lens support, GPT-OSS tokenizer and\nvocabulary additions used by Lens prompts, LTX temporal and rational latent\nupscaling, LTX audio and VAE decoding improvements, highres custom sigma\nsupport, extra VAE tiling arguments, Longcat image/edit support, TAESD preview\nfixes, and LoRA directory scans that skip permission-denied entries.\n\nThe package builds the Vulkan backend with ggml, WebP, WebM, and server frontend\ninputs modeled as explicit package sources and staged into the upstream\nsubmodule paths during prepare().\nAt this pin, the upstream recursive git tree records mode-160000 gitlinks for\n`ggml` (`0ce7ad348a3151e1da9f65d962044546bcaad421`),\n`examples/server/frontend` (`797ccf80825cc035508ba9b599b2a21953e7f835`),\n`thirdparty/libwebm` (`5bf12267eea773a32fcf4949de52b0add158a8d5`), and\n`thirdparty/libwebp` (`0c9546f7efc61eac7f79ae115c3f99c91c21c443`), matching\nthe explicit package source pins.\nIt uses the repo's amdclang/Zen 5 lane, ThinLTO, AOCL-LibM\nlinkage, OpenMP CPU fallback, WebP/WebM output support, and release-mode\nVulkan settings. Runtime payloads live under\n`/opt/stable-diffusion.cpp-vulkan-gfx1151`, with\n`sd-cli-vulkan-gfx1151` and `sd-server-vulkan-gfx1151` wrappers under\n`/usr/bin`.\n\nThe SDXL CLIP-G prefix patch comes from Blackcat's recipe notes and keeps\ndiffusers SDXL checkpoint loading from misclassifying CLIP-G tensors as SD 1.x\nunknown tensors.\n",
     "patches": [],
     "phase": "I",
     "repo": "https://github.com/leejet/stable-diffusion.cpp.git",

@@ -6,7 +6,7 @@
 - Scaffold template: `stable-diffusion-cpp`
 - Recipe build method: `cmake`
 - Upstream repo: `https://github.com/leejet/stable-diffusion.cpp.git`
-- Package version: `r650.g1ceb5bd`
+- Package version: `r652.g92dc726`
 - Recipe revision: `3f15f9f (20260508, 17 commits touching recipe path)`
 - Recipe steps: `35, 37`
 - Recipe dependencies: `therock`
@@ -20,11 +20,12 @@
 This package supplies stable-diffusion.cpp as the Blackcat Vulkan image
 generation engine for the Strix Halo stack. The source follows
 leejet/stable-diffusion.cpp master at
-`1ceb5bd9df7784bcdf67dd9ed8bf0198b542ebc9` (`r650.g1ceb5bd`).
-The current source includes LTX temporal and rational latent upscaling,
-LTX audio and VAE decoding improvements, highres custom sigma support,
-extra VAE tiling arguments, Longcat image/edit support, TAESD preview fixes,
-macOS rpath fixes, and Windows ROCm BLAS artifact packaging.
+`92dc7268fc4ffb0c0cc0bd52dfcefea91326e797` (`r652.g92dc726`).
+The current source includes Microsoft Lens support, GPT-OSS tokenizer and
+vocabulary additions used by Lens prompts, LTX temporal and rational latent
+upscaling, LTX audio and VAE decoding improvements, highres custom sigma
+support, extra VAE tiling arguments, Longcat image/edit support, TAESD preview
+fixes, and LoRA directory scans that skip permission-denied entries.
 
 The package builds the Vulkan backend with ggml, WebP, WebM, and server frontend
 inputs modeled as explicit package sources and staged into the upstream
@@ -34,7 +35,7 @@ At this pin, the upstream recursive git tree records mode-160000 gitlinks for
 `examples/server/frontend` (`797ccf80825cc035508ba9b599b2a21953e7f835`),
 `thirdparty/libwebm` (`5bf12267eea773a32fcf4949de52b0add158a8d5`), and
 `thirdparty/libwebp` (`0c9546f7efc61eac7f79ae115c3f99c91c21c443`), matching
-the explicit package source pins and the previous upstream `caa823a` tree.
+the explicit package source pins.
 It uses the repo's amdclang/Zen 5 lane, ThinLTO, AOCL-LibM
 linkage, OpenMP CPU fallback, WebP/WebM output support, and release-mode
 Vulkan settings. Runtime payloads live under
@@ -71,6 +72,8 @@ unknown tensors.
 - On 2026-05-19, adopted upstream master at caa823a8c06a51288f0a01bb29e9bd8bcec30a8a for LTX 2.3 support, Gradient Estimation sampler support, negative max_vram spare-VRAM budgeting, module backend assignment, restored LLM singleton dimensions, and ROCm 7.13 CI target updates.
 - On 2026-05-26, adopted upstream master at 1ceb5bd9df7784bcdf67dd9ed8bf0198b542ebc9 for LTX temporal and rational latent upscaling, Longcat image/edit support, highres custom sigma and VAE tiling arguments, TAESD preview fixes, macOS rpath fixes, and Windows ROCm BLAS artifact packaging.
 - On 2026-05-26 review follow-up, verified the upstream mode-160000 gitlinks at 1ceb5bd9df7784bcdf67dd9ed8bf0198b542ebc9 match the explicit ggml, sdcpp-webui, libwebm, and libwebp package source pins and are unchanged from caa823a8c06a51288f0a01bb29e9bd8bcec30a8a.
+- On 2026-05-27, updated package source metadata to upstream master at 92dc7268fc4ffb0c0cc0bd52dfcefea91326e797 for Microsoft Lens support, GPT-OSS tokenizer and vocabulary additions used by Lens prompts, and permission-denied skipping in recursive LoRA directory scans.
+- On 2026-05-27 source review, verified the upstream mode-160000 gitlinks at 92dc7268fc4ffb0c0cc0bd52dfcefea91326e797 match the explicit ggml, sdcpp-webui, libwebm, and libwebp package source pins, and refreshed the CLIP-G patch context so both the prefix-ordering change and Flux te1 remap apply without ignored patch hunks.
 
 ## Maintainer Starting Points
 
