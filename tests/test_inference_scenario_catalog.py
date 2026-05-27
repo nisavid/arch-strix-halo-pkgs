@@ -729,7 +729,12 @@ def test_quantization_lane_probes_record_root_cause_contracts():
         "exploratory",
     }
     assert gptq_int4.definition["given"]["tool"] == "qwen_text_smoke"
-    assert gptq_int4.definition["when"]["argv"] == ["--max-model-len", "128"]
+    assert gptq_int4.definition["when"]["argv"] == [
+        "--quantization",
+        "moe_wna16",
+        "--max-model-len",
+        "128",
+    ]
     assert gptq_int4.definition["model_provenance"] == {
         "repo_id": "Qwen/Qwen3.5-35B-A3B-GPTQ-Int4",
         "revision": "3af5ca2972faf6de1fd6f4efc4d8d319ca751e8b",
