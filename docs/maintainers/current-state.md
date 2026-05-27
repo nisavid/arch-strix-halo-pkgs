@@ -174,8 +174,6 @@ server SSL log message in `tools/server/server-http.cpp` and
 `tools/server/server-http.h`; source update, package build, deploy/install,
 installed smokes, and selected-logit live validation remain open for b9354.
 
-
-
 The 2026-05-25 AITER stable-release refresh is adopted and live-validated.
 `python-amd-aiter-gfx1151` now renders from upstream tag `v0.1.14` as
 `0.1.14-1`, replacing the superseded `v0.1.14-rc0` source lane while
