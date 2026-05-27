@@ -206,6 +206,7 @@ def build_llm_kwargs(model: str, args: argparse.Namespace) -> dict[str, Any]:
         llm_kwargs["attention_backend"] = args.attention_backend
     if args.revision:
         llm_kwargs["revision"] = args.revision
+        llm_kwargs["tokenizer_revision"] = args.revision
     return llm_kwargs
 
 
