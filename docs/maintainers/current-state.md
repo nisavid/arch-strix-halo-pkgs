@@ -37,10 +37,10 @@ adopted package surfaces from tracked, rejected, and blocked future lanes. This
 spec did not update package source refs, rebuild packages, deploy or install
 artifacts, run installed smokes, or run live inference scenarios.
 
-The llama.cpp b9330 and Lemonade fork `13b1af2` refresh is source-updated and
-partially host-validated, with a rebuilt llama.cpp package release still
-awaiting privileged deploy/install. Both packaged llama.cpp backends render
-from upstream `b9330` commit
+The llama.cpp b9330 and Lemonade fork `13b1af2` refresh is source-updated,
+package-built, deployed/installed, and installed-smoked, with the b9330-2
+selected-logit live-scenario gate still open. Both packaged llama.cpp backends
+render from upstream `b9330` commit
 `328874d054e0eb44591202a23c209cf02c18e3cb` as
 `llama.cpp-hip-gfx1151 b9330-2` and
 `llama.cpp-vulkan-gfx1151 b9330-2`, with the shared
@@ -67,13 +67,17 @@ packages; follow-up build plan `b59627f0` produced
 `llama.cpp-hip-gfx1151 b9330-2` and `llama.cpp-vulkan-gfx1151 b9330-2` after
 the selected-token bounds guard. Deployed/installed: deploy plan `8e489a2e`
 published and installed the Lemonade artifacts and the initial b9330-1 llama.cpp
-packages; the b9330-2 llama.cpp deploy/install gate remains open after the
-latest noninteractive deploy attempt stopped at the sudo password boundary.
-Current `pacman -Q` and `pacman -Sl strix-halo-gfx1151` evidence still reports
-`llama.cpp-hip-gfx1151 b9330-1`, `llama.cpp-vulkan-gfx1151 b9330-1`,
+packages; after the operator handback reported the b9330-2 deploy complete,
+read-only `pacman -Q` and `pacman -Sl strix-halo-gfx1151` verification reports
+`llama.cpp-hip-gfx1151 b9330-2`, `llama.cpp-vulkan-gfx1151 b9330-2`,
 `lemonade-server 10.6.0-6`, `lemonade-app 10.6.0-5`, and `lemonade 10.6.0-1`.
-Installed-smoke and live-scenario validated: the installed b9330-1 plus
-Lemonade package set passed
+Installed-smoked: the installed b9330-2 plus Lemonade package set passed
+`python tools/run_inference_scenarios.py --scenario llama.cpp.hip.help
+--scenario llama.cpp.vulkan.help --scenario lemonade.cli.help --scenario
+lemonade.server.help
+--run-root docs/worklog/inference-runs/20260526T-llama-b9330-2-postdeploy`
+with four scenarios and zero failures. Earlier b9330-1 plus Lemonade
+selected-logit evidence passed
 `python tools/run_inference_scenarios.py --scenario llama.cpp.hip.help
 --scenario llama.cpp.vulkan.help --scenario lemonade.cli.help --scenario
 lemonade.server.help --scenario lemonade.reranking.zerank-2.selected-logit
@@ -82,8 +86,9 @@ with five scenarios and zero failures. Direct HIP and Vulkan `/completion`
 smokes against the tiny GGUF fixture returned finite `token_logits` for
 requested IDs `[0, 1, 2]` with `n_predict: 0`, included both `token` and
 `bytes` fields, and rejected 1025 requested IDs with HTTP 400 and the
-1024-token cap message. The b9330-2 installed-smoke and live-scenario gates
-remain open until the privileged deploy/install step completes.
+1024-token cap message. The b9330-2 live-scenario gate remains open until
+`lemonade.reranking.zerank-2.selected-logit` is rerun against the installed
+b9330-2 packages.
 
 
 
@@ -179,9 +184,9 @@ llama.cpp candidate dispositions were updated,
 candidates, 17 current families, 2 rejected update candidates, and 5 tracked
 update candidates.
 
-The active package ledgers are: llama.cpp b9330-2 deploy/install closeout,
-llama.cpp b9352 follow-up, ROCm PyTorch release/2.12 `26872de` intermediate
-follow-up, ROCm PyTorch release/2.12 `980ce60` follow-up,
+The active package ledgers are: llama.cpp b9330-2 selected-logit live-scenario
+closeout, llama.cpp b9352 follow-up, ROCm PyTorch release/2.12 `26872de`
+intermediate follow-up, ROCm PyTorch release/2.12 `980ce60` follow-up,
 stable-diffusion.cpp `92dc726` follow-up, and Transformers 5.9.0 follow-up.
 Each tracked entry has its disposition in
 `docs/maintainers/update-candidates.toml` and its gate label in
@@ -192,12 +197,13 @@ rejected in the ledger rather than left as active tracked work.
 The 2026-05-26 package refresh adopts the Lemonade fork `13b1af2` lane through
 source update, package build, deploy/install, installed smoke, and
 live-scenario validation. The llama.cpp b9330 lane is source-updated and
-package-built as b9330-2; its final deploy/install, installed-smoke, and
-live-scenario validation gates remain open. The closeout refresh check then
-found upstream llama.cpp b9334 as the next llama.cpp follow-up rather than
-folding it into the b9330 build. The 2026-05-27 accepted raw checker
-observation supersedes that b9334 follow-up with b9352 before b9334 package
-implementation.
+package-built as b9330-2; after operator deploy handback, read-only pacman
+verification and the postdeploy help-smoke run close deployed/installed and
+installed-smoked, while the b9330-2 selected-logit live-scenario validation
+gate remains open. The closeout refresh check then found upstream llama.cpp
+b9334 as the next llama.cpp follow-up rather than folding it into the b9330
+build. The 2026-05-27 accepted raw checker observation supersedes that b9334
+follow-up with b9352 before b9334 package implementation.
 
 Read-only installed-state verification after PR #41 reports
 `python-pytorch-opt-rocm-gfx1151 2.12.0-2`,
@@ -227,6 +233,11 @@ tracked, ROCm PyTorch release/2.12 980ce60 is tracked alongside the existing
 Transformers 5.9.0 remains tracked. This docs-only reconciliation did not
 update package sources, build packages, deploy/install artifacts, run installed
 smokes, or run live inference scenarios.
+
+After the b9330-2 handback closeout docs were recorded,
+`tools/check_package_updates.py --json --fail-on actionable` exited `0` with
+effective counts of 22 adopted update candidates, 17 current families, 2
+rejected update candidates, and 4 tracked update candidates.
 
 The stable-diffusion.cpp 1ceb5bd follow-up is adopted. Source metadata and
 rendered scaffolds now track upstream master

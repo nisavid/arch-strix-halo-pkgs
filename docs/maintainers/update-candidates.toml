@@ -258,14 +258,16 @@ previous_recorded = "b9222 / b9222-3"
 latest = "b9330"
 discovery_status = "stable_update_available"
 disposition = "tracked"
-disposition_reason = "Source-updated and package-built in the 2026-05-26 llama.cpp b9330 and Lemonade runtime closeout. Both packaged backends were repinned to upstream b9330, the selected-token logits patch was refreshed with a selected-token bounds guard, Lemonade backend metadata was refreshed to the b9330 system backends, and b9330-2 package build completed. The installed host still reports b9330-1 until the privileged b9330-2 deploy/install step completes."
+disposition_reason = "Source-updated, package-built, deployed/installed, and installed-smoked in the 2026-05-26 llama.cpp b9330 and Lemonade runtime closeout. Both packaged backends were repinned to upstream b9330, the selected-token logits patch was refreshed with a selected-token bounds guard, Lemonade backend metadata was refreshed to the b9330 system backends, b9330-2 package build completed, and operator deploy handback plus read-only pacman verification confirm b9330-2 is installed and repo-visible. Keep tracked until the b9330-2 selected-logit live-scenario gate passes."
 salient_changes = [
   "GitHub release b9330 is the selected source lane after the b9222 package lane",
   "AUR llama.cpp-hip baseline has advanced to b9326-1 while the Vulkan baseline remains at b9222-1",
   "The package source pins upstream commit 328874d054e0eb44591202a23c209cf02c18e3cb",
   "The candidate supersedes the handoff's b9329 observation from the earlier coordinator snapshot",
   "tools/amerge build plan 46a69d2a built llama.cpp-hip-gfx1151 b9330-1 and llama.cpp-vulkan-gfx1151 b9330-1; deploy plan 8e489a2e published and installed the b9330-1 packages with the Lemonade runtime packages",
-  "tools/amerge build plan b59627f0 built llama.cpp-hip-gfx1151 b9330-2 and llama.cpp-vulkan-gfx1151 b9330-2 after the selected-token bounds guard; b9330-2 privileged deploy/install, installed-smoke, and live-scenario validation remain open",
+  "tools/amerge build plan b59627f0 built llama.cpp-hip-gfx1151 b9330-2 and llama.cpp-vulkan-gfx1151 b9330-2 after the selected-token bounds guard",
+  "After operator deploy handback, pacman -Q and pacman -Sl strix-halo-gfx1151 report llama.cpp-hip-gfx1151 b9330-2 and llama.cpp-vulkan-gfx1151 b9330-2 installed and repo-visible alongside lemonade-server 10.6.0-6, lemonade-app 10.6.0-5, and lemonade 10.6.0-1",
+  "Installed b9330-2 help smokes for llama.cpp HIP, llama.cpp Vulkan, Lemonade CLI, and Lemonade server passed at docs/worklog/inference-runs/20260526T-llama-b9330-2-postdeploy",
   "Installed llama.cpp HIP/Vulkan smokes, direct HIP/Vulkan selected-logit /completion checks, and the packaged Lemonade zerank selected-logit scenario passed for the b9330-1 plus Lemonade set at docs/worklog/inference-runs/20260526T021053-lane4-b9330-closeout",
 ]
 patch_carry_overlap = true
@@ -273,7 +275,7 @@ package_source_update_needed = false
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "llama.cpp b9330-2 deploy/install + installed validation closeout"
+next_gate_label = "Run b9330-2 selected-logit live scenario before adoption"
 last_reviewed = "2026-05-26"
 
 [candidates."llama-cpp-b9334"]
@@ -316,7 +318,7 @@ disposition_reason = "Accepted as raw freshness drift on 2026-05-27 after the b9
 salient_changes = [
   "GitHub release b9352 is available after the active b9330 package lane",
   "This reconciliation records candidate disposition only; source diff review, package source update, package build, deploy/install, installed-smoke, and selected-logit live validation remain open",
-  "The b9330-2 deploy/install closeout remains a separate tracked gate",
+  "The b9330-2 selected-logit live-scenario closeout remains a separate tracked gate",
 ]
 patch_carry_overlap = true
 package_source_update_needed = true

@@ -4,17 +4,21 @@
 
 ### Active Unresolved Gates
 
-- llama.cpp b9330-2 deploy/install + installed validation closeout: both
-  packaged backends render from upstream b9330 as `b9330-2`, and follow-up
-  build plan `b59627f0` produced the selected-token bounds-guard rebuild. The
-  reference host still reports `llama.cpp-hip-gfx1151 b9330-1` and
-  `llama.cpp-vulkan-gfx1151 b9330-1`, so the b9330-2 deploy/install,
-  installed-smoke, and live-scenario validation gates remain open.
+- llama.cpp b9330-2 selected-logit live-scenario closeout: both packaged
+  backends render from upstream b9330 as `b9330-2`, and follow-up build plan
+  `b59627f0` produced the selected-token bounds-guard rebuild. After operator
+  deploy handback, read-only `pacman -Q` and `pacman -Sl strix-halo-gfx1151`
+  checks report `llama.cpp-hip-gfx1151 b9330-2`,
+  `llama.cpp-vulkan-gfx1151 b9330-2`, `lemonade-server 10.6.0-6`,
+  `lemonade-app 10.6.0-5`, and `lemonade 10.6.0-1`; the postdeploy help-smoke
+  run at `docs/worklog/inference-runs/20260526T-llama-b9330-2-postdeploy`
+  passed four scenarios with zero failures. Next gate: Run b9330-2
+  selected-logit live scenario before adoption.
 - llama.cpp b9352 follow-up: the accepted 2026-05-27 raw freshness observation
   found upstream `b9352` after the b9330 package lane, superseding the earlier
   b9334 follow-up before package adoption. Start this as a separate source
-  refresh only after the b9330-2 deploy/install closeout records its final
-  installed state and validation.
+  refresh only after the b9330-2 selected-logit live-scenario closeout records
+  its final validation.
 - ROCm PyTorch release/2.12 26872de follow-up: `origin/main` still pins
   `python-pytorch-opt-rocm-gfx1151` to ROCm/pytorch
   `4ddfe99d6da426414b7f0e587cdb1910f1c23eb3`. Read-only installed package
@@ -91,7 +95,6 @@
   compressed-tensors, AITER, and FlashAttention lanes.
 
 ### Recently Adopted Package Lanes
-
 - TheRock 7.13 stable is adopted. Upstream ROCm/TheRock published the stable
   `therock-7.13` release at
   `6d2136cd12be28c6251eb38c700e980c8c2f8cf6`; the generated
