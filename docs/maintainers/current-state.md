@@ -382,7 +382,22 @@ runtime-base boundary unless explicitly bypassed. The `amd-quark` package lane
 remains out of scope for this through-Quark wave unless the operator expands
 scope. Bitsandbytes, AWQ, xFormers, and FBGEMM remain tracked source/package
 candidates with source-provenance, source-build, installed-smoke, and
-live-scenario gates before adoption.
+live-scenario gates before adoption. The 2026-05-27 xFormers follow-up keeps
+that lane blocked/deferred rather than implementation-ready: Meta xFormers
+latest release `v0.0.35` and main `c04f47b69b53d60a53916fd61ddd32bdb4a6b927`
+advertise experimental ROCm 7.1 wheels and carry CK submodule
+`50fad035248b154cdfa4505cf5de7465ce146149` with generic `gfx1151` target
+references, but no top-level xFormers build or test lane advertises `gfx1151`
+and Meta ROCm wheel CI still targets `gfx90a gfx942`. The ROCm fork remains
+unreleased at `develop` `db55a2f5745ee0a13316f93e968a002b143e35da`; even
+though its CK submodules contain `gfx1151` references, top-level setup.py
+rejects architectures outside `gfx908`, `gfx90a`, `gfx942`, and `gfx950`.
+Repo-owned package/scenario surfaces have no current xFormers consumer. Reopen
+package planning only after a named consumer and explicit package-level
+`gfx1151` source-build proof exist, then require pinned source and submodules,
+source/submodule trust review, HIP extension build, linkage/private-path
+inspection, `python -m xformers.info`, and direct fp16/bf16 attention
+correctness smokes before any consumer scenario.
 
 The earlier 2026-05-24 recovery-branch freshness gate tracked AITER `0.1.14`
 stable, llama.cpp `b9305`, stable-diffusion.cpp

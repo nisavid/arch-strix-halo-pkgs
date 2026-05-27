@@ -110,9 +110,23 @@
   deprecated AutoAWQ tooling separate. Do not package AutoAWQ for this lane;
   require a pinned AWQ model revision/license, backend evidence where
   applicable, LLM init, generation, and selected-backend assertions.
-- xFormers lane: track as a future source-built attention package only when a
-  concrete consumer needs it or upstream publishes explicit `gfx1151` evidence.
-  Required gates are pinned source and submodules, local HIP extension build,
+- xFormers lane: blocked/deferred until the repo has both a concrete local
+  consumer and explicit `gfx1151` support evidence. The 2026-05-27 refresh
+  found Meta xFormers latest release `v0.0.35` and main
+  `c04f47b69b53d60a53916fd61ddd32bdb4a6b927`, with experimental ROCm 7.1
+  wheel guidance and CK submodule `50fad035248b154cdfa4505cf5de7465ce146149`
+  containing generic `gfx1151` target references. That is not package-level
+  xFormers support: Meta's ROCm wheel CI still targets `gfx90a gfx942`, and no
+  top-level xFormers build or test lane advertises `gfx1151`. The ROCm fork
+  remains unreleased at `develop`
+  `db55a2f5745ee0a13316f93e968a002b143e35da`; even though its CK submodules
+  contain `gfx1151` references, its top-level build allowlist rejects
+  architectures outside `gfx908`, `gfx90a`, `gfx942`, and `gfx950`.
+  Repo-owned packages, tests, tools, and scenarios have no current xFormers
+  consumer, and existing attention coverage stays with AITER, FlashAttention,
+  and vLLM ROCm paths. Reopen only with a named consumer and upstream/source
+  proof for package-level `gfx1151` support; required gates are pinned source
+  and submodules, source and submodule trust review, local HIP extension build,
   linkage/private-path inspection, `python -m xformers.info`, and direct
   fp16/bf16 memory-efficient-attention correctness smokes before any consumer
   scenario.
