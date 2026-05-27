@@ -31,11 +31,25 @@
   No new runtime package is expected for prequantized GPTQ inference; promote
   only after vLLM ROCm extensions import, generation passes, and the source,
   build, install, and live states are recorded separately.
-- Quark lane: track Quark as a vLLM model-artifact and optional authoring-tool
-  path, not as a `python-vllm-rocm-gfx1151` runtime dependency. Package work is
-  blocked until the chosen `amd-quark` release has public source provenance or
-  an explicit source pin, and until Python 3.14 plus NumPy compatibility is
-  resolved.
+- Quark vLLM consumer lane: track a pinned Quark-exported model artifact as a
+  vLLM validation lane, not as a runtime package. This can start after the
+  model artifact revision, license, and terms are accepted and the runtime-base
+  lanes needed by the smoke are stable. Required gates are model provenance, a
+  bounded installed vLLM generation smoke with `quantization="quark"` and any
+  model-required cache dtype, and separate recording of model-source
+  provenance, current installed vLLM package state, installed-smoke state, and
+  live-scenario validation. No new package build is expected unless the
+  existing vLLM runtime base changes.
+- `amd-quark` authoring-tool package lane: keep this as an optional package
+  candidate, not as a `python-vllm-rocm-gfx1151` runtime dependency. Package
+  work is blocked until the chosen release has a public source tag or explicit
+  source pin, and until Arch Python 3.14 plus current NumPy compatibility is
+  resolved. As of the 2026-05-26 source refresh, PyPI `amd-quark 0.11.2`
+  publishes only a wheel, no matching public `v0.11.2` tag or sdist was
+  observed, and the PyPI metadata still declares `<3.13` Python plus
+  `numpy<=2.1.3`. After those blockers clear, required gates are source
+  verification, package build, deploy/install handoff, installed import or CLI
+  smoke, Quark-exported model production, and a downstream vLLM consumer smoke.
 - bitsandbytes lane: track a separate source-built
   `python-bitsandbytes-gfx1151` package candidate. Do not adopt PyPI or
   PyTorch-index binary wheels; require a pinned source build for `gfx1151`,
