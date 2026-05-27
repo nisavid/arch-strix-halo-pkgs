@@ -144,7 +144,7 @@ ENGINE_STACK = {
     "stable-diffusion.cpp-vulkan-gfx1151": {
         "template": "stable-diffusion-cpp",
         "recipe_key": "stable_diffusion_cpp",
-        "upstream_version": "r650.g1ceb5bd",
+        "upstream_version": "r652.g92dc726",
         "provides": [
             "stable-diffusion.cpp-vulkan-gfx1151",
             "stable-diffusion.cpp-vulkan",
@@ -348,13 +348,14 @@ def test_blackcat_engine_stack_is_policy_managed() -> None:
 
 def test_blackcat_engine_stack_rendered_output_exists() -> None:
     package_name = "stable-diffusion.cpp-vulkan-gfx1151"
+    expected = ENGINE_STACK[package_name]
     package_dir = REPO_ROOT / "packages" / package_name
     pkgbuild = (package_dir / "PKGBUILD").read_text()
     recipe = json.loads((package_dir / "recipe.json").read_text())
     readme = (package_dir / "README.md").read_text()
 
     assert f"pkgname={package_name}" in pkgbuild
-    assert "pkgver=r650.g1ceb5bd" in pkgbuild
+    assert f"pkgver={expected['upstream_version']}" in pkgbuild
     assert "git submodule update --init --recursive" not in pkgbuild
     assert "ggml::git+https://github.com/leejet/ggml.git" in pkgbuild
     assert "sdcpp-webui::git+https://github.com/leejet/sdcpp-webui.git" in pkgbuild
