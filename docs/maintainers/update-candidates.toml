@@ -379,16 +379,18 @@ previous_recorded = "b9357 / b9357-1 / b9352-1"
 latest = "b9371"
 discovery_status = "stable_update_available"
 disposition = "tracked"
-disposition_reason = "Tracked on 2026-05-28 after the b9357 install and selected-logit closeout. Do not retarget the adopted b9357 closeout to this release: the current installed and live evidence belongs to b9357, while the b9357..b9371 range still needs detailed source diff review, package source update, package build, deploy/install, installed-smoke, and selected-logit live validation."
+disposition_reason = "Tracked on 2026-05-28 after the b9357 install and selected-logit closeout. The b9371 branch now records source updated for both llama.cpp backends at f12cc6d0fa96d6a3c33952f06b7439ac43a3c3fe, keeps the selected-token logits patch applying cleanly, refreshes Lemonade backend metadata to b9371, and records package built for lemonade-server 10.6.0-9 plus both b9371 llama.cpp backends with tools/amerge build plan 0a46aa9e. Deployed-installed, installed-smoked, and live-scenario validated remain open until coordinator deploy handoff and postdeploy validation complete."
 salient_changes = [
   "GitHub release b9371 and AUR llama.cpp-hip b9371-1 are available after the adopted b9357 package lane",
   "The release tag resolves to commit f12cc6d0fa96d6a3c33952f06b7439ac43a3c3fe",
   "The b9357..b9371 compare is 14 commits ahead, including llama.cpp environment variable name cleanup, cpp-httplib 0.46.0 vendor update, Vulkan REPEAT/cooperative-matrix/vector-matmul work, WebGPU dispatch cleanup, Hexagon Q4_1 support, CUDA/CI/build maintenance, and conversion dependency updates",
-  "The current deployed-stack evidence validates b9357, not this newer source release",
-  "Package source update, package build, deploy/install, installed-smoke, and selected-logit live validation remain open",
+  "The upstream range does not touch the shared selected-token logits patch target files, and direct patch apply plus makepkg source preparation passed for both backends",
+  "Recipe scaffolds were regenerated for llama.cpp-hip-gfx1151 b9371-1, llama.cpp-vulkan-gfx1151 b9371-1, and lemonade-server 10.6.0-9 so Lemonade system-managed backend metadata labels the b9371 packaged backends",
+  "tools/amerge build plan 0a46aa9e built lemonade-server 10.6.0-9, llama.cpp-hip-gfx1151 b9371-1, and llama.cpp-vulkan-gfx1151 b9371-1",
+  "The current deployed-stack evidence validates b9357; deployed-installed, installed-smoked, and live-scenario validated remain open for b9371",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
+package_source_update_needed = false
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"

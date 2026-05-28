@@ -11,9 +11,12 @@
   HIP `b9371-1` baseline as a separate source follow-up; the `b9357..b9371`
   range includes llama.cpp environment-name, cpp-httplib vendor, Vulkan,
   WebGPU, Hexagon, CUDA, and CI/build maintenance.
-  Package implementation still requires detailed source diff review, package
-  source update, package build, deploy/install, installed-smoke, and
-  selected-logit live validation.
+  Source updated and package built are complete on the active branch: both
+  llama.cpp backends render from b9371, `lemonade-server 10.6.0-9` labels the
+  b9371 system backends, the selected-token logits patch applies cleanly, and
+  `tools/amerge` build plan `0a46aa9e` produced the three affected packages.
+  Deployed-installed, installed-smoked, and live-scenario validated remain open
+  until coordinator deploy handoff and postdeploy validation complete.
 - ROCm PyTorch release/2.12 ab32a1f follow-up: the accepted 2026-05-28 targeted
   freshness observation found release/2.12 at
   `ab32a1f4f3aaf18f14c371244a91e0bb9b3abb0d` and the Arch

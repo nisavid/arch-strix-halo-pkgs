@@ -237,6 +237,31 @@ check found upstream llama.cpp `b9371` commit
 Treat b9371 as a separate source follow-up rather than retargeting the adopted
 b9357 lane.
 
+The llama.cpp b9371 refresh is source updated and package built. Both packaged
+backends now render from upstream `b9371` commit
+`f12cc6d0fa96d6a3c33952f06b7439ac43a3c3fe` as
+`llama.cpp-hip-gfx1151 b9371-1` and `llama.cpp-vulkan-gfx1151 b9371-1`, with
+the shared `0001-server-return-selected-token-logits.patch` still applied
+during `prepare()`. Source review for `b9357..b9371` found llama.cpp
+environment variable name cleanup, cpp-httplib 0.46.0 vendor updates, Vulkan
+REPEAT/cooperative-matrix/vector-matmul work, WebGPU dispatch cleanup, Hexagon
+Q4_1 support, CUDA and CI/build maintenance, and conversion dependency updates.
+The upstream range does not touch `tools/server/server-context.cpp`,
+`tools/server/server-task.cpp`, or `tools/server/server-task.h`; direct
+`git apply --check` and `makepkg --nobuild --nodeps --force` source preparation
+applied the selected-token logits patch cleanly.
+
+Source updated: recipe scaffolds were regenerated for both llama.cpp backends
+and `lemonade-server`; Lemonade system-managed backend metadata now labels the
+b9371 packaged backends; and the freshness baseline records upstream llama.cpp
+release `b9371`. Package built: `tools/amerge` build plan `0a46aa9e` produced
+`lemonade-server 10.6.0-9`, `llama.cpp-hip-gfx1151 b9371-1`, and
+`llama.cpp-vulkan-gfx1151 b9371-1`. Deployed-installed: open for b9371 pending
+coordinator deploy handoff. Installed-smoked: open for b9371 pending installed
+package verification and help scenarios. Live-scenario validated: open for
+b9371 pending the installed `lemonade.reranking.zerank-2.selected-logit`
+scenario.
+
 The 2026-05-25 AITER stable-release refresh is adopted and live-validated.
 `python-amd-aiter-gfx1151` now renders from upstream tag `v0.1.14` as
 `0.1.14-1`, replacing the superseded `v0.1.14-rc0` source lane while
@@ -330,12 +355,13 @@ llama.cpp candidate dispositions were updated,
 candidates, 17 current families, 2 rejected update candidates, and 5 tracked
 update candidates.
 
-The active package ledgers are: llama.cpp b9371 follow-up, ROCm PyTorch
-release/2.12 `ab32a1f` follow-up, stable-diffusion.cpp 0e4ee04 follow-up, and
-Transformers 5.9.0 follow-up. The effective freshness-tracked non-current
-entries are llama.cpp b9371, ROCm PyTorch release/2.12 `ab32a1f`,
-stable-diffusion.cpp 0e4ee04, and Transformers 5.9.0. Each active entry has its
-disposition in `docs/maintainers/update-candidates.toml` and its gate label in
+The active package ledgers are: llama.cpp b9371 deployed-installed,
+installed-smoked, and live-scenario validation; ROCm PyTorch release/2.12
+`ab32a1f` follow-up; stable-diffusion.cpp 0e4ee04 follow-up; and Transformers
+5.9.0 follow-up. The effective freshness-tracked entries are llama.cpp b9371,
+ROCm PyTorch release/2.12 `ab32a1f`, stable-diffusion.cpp 0e4ee04, and
+Transformers 5.9.0. Each active entry has its disposition in
+`docs/maintainers/update-candidates.toml` and its gate label in
 `docs/backlog.md`. The superseded llama.cpp `b9279`, `b9305`, and `b9334`
 candidates, stable-diffusion.cpp `3a8788c` and `a397e03` candidates, llama.cpp
 b9357, stable-diffusion.cpp 92dc726, and ROCm PyTorch release/2.12 `26872de`
@@ -363,19 +389,19 @@ initial ROCm PyTorch release/2.12 980ce60 observation, and Transformers 5.9.0.
 The stable-diffusion.cpp 92dc726 package lane has since reached adopted
 source/build/install/smoke state as described below. The llama.cpp b9352 and
 b9357 lanes are source-updated, package-built, deployed/installed,
-installed-smoked, and live-validated. The 2026-05-28 targeted closeout checks
-found llama.cpp b9371 and ROCm PyTorch release/2.12 ab32a1f as new tracked
-source follow-ups, and the full closeout freshness check found
-stable-diffusion.cpp 0e4ee04 after the adopted 92dc726 lane; Transformers 5.9.0
-also remains tracked. The ROCm PyTorch 26872de closeout updates package sources
-and generated metadata to match the deployed stack, and the post-pkgrel live
-scenario rerun is complete.
+installed-smoked, and live-validated. The llama.cpp b9371 lane is source updated
+and package built; deployed-installed, installed-smoked, and live-scenario
+validated remain open. The 2026-05-28 targeted closeout checks found llama.cpp
+b9371 and ROCm PyTorch release/2.12 ab32a1f as tracked follow-ups, and the full
+closeout freshness check found stable-diffusion.cpp 0e4ee04 after the adopted
+92dc726 lane; Transformers 5.9.0 also remains tracked. The ROCm PyTorch 26872de
+closeout updates package sources and generated metadata to match the deployed
+stack, and the post-pkgrel live scenario rerun is complete.
 
-After the b9357 and PyTorch 26872de closeouts were recorded and the new
-llama.cpp, ROCm PyTorch, stable-diffusion.cpp, and Transformers follow-ups were
-tracked, `tools/check_package_updates.py --json --fail-on actionable` exited
-`0` at 2026-05-28 with effective counts of 22 adopted update candidates, 17
-current families, 2 rejected update candidates, and 4 tracked update
+After the b9371 source and build updates were recorded, the cache-aware
+`tools/check_package_updates.py --refresh --json --fail-on actionable` sweep
+exited `0` at 2026-05-28 with effective counts of 22 adopted update candidates,
+17 current families, 2 rejected update candidates, and 4 tracked update
 candidates.
 The b9352 source refresh then updated the recorded llama.cpp release cursor to
 `b9352`, and the later install/live handback adopted b9352 as a completed
