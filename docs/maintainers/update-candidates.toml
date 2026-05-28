@@ -355,7 +355,7 @@ salient_changes = [
   "The upstream range does not touch the shared selected-token logits patch target files, and makepkg source preparation applied the patch cleanly for both backends",
   "Recipe scaffolds were regenerated for llama.cpp-hip-gfx1151 b9357-1, llama.cpp-vulkan-gfx1151 b9357-1, and lemonade-server 10.6.0-8 so Lemonade system-managed backend metadata labels the b9357 packaged backends",
   "tools/amerge build plan 05912058 built lemonade-server 10.6.0-8, llama.cpp-hip-gfx1151 b9357-1, and llama.cpp-vulkan-gfx1151 b9357-1",
-  "AUR llama.cpp-hip has advanced to b9352-1 while the Vulkan baseline remains llama.cpp-vulkan-bin b9222-1",
+  "AUR llama.cpp-hip has advanced to b9371-1 while the Vulkan baseline remains llama.cpp-vulkan-bin b9222-1; the b9371 source follow-up tracks that newer HIP baseline separately",
   "After operator deploy handback, pacman -Q reports llama.cpp-hip-gfx1151 b9357-1, llama.cpp-vulkan-gfx1151 b9357-1, and lemonade-server 10.6.0-8 installed",
   "Installed help smokes for llama.cpp HIP, llama.cpp Vulkan, Lemonade CLI, and Lemonade server passed at docs/worklog/inference-runs/20260528T-llama-b9357-postdeploy-help",
   "The b9357 selected-logit live scenario passed at docs/worklog/inference-runs/20260528T-llama-b9357-postdeploy-live",
