@@ -419,11 +419,16 @@ drift rather than replacing the deployed 92dc726 closeout target. The
 `92dc726..0e4ee04` range has four upstream commits: ROCm CI frontend-tooling
 preservation, diffusion-model runner parameter simplification,
 architecture-specific LLM norm tensor-name resolution, and Flux2 VAE TAE
-selection. Because 0e4ee04 is beyond the current deployed stack and has no
-package build, deploy/install, published-repo verification, or installed-wrapper
-smoke evidence in this repo, future work must update the source pin, review
-submodule pins and CLIP-G patch carry, build the package, and hand privileged
-deploy/install through the normal package lane.
+selection. Source metadata and rendered scaffolds now track upstream master
+`0e4ee04488159b81d95a9ffcd983a077fd5dcb77` as `r656.g0e4ee04`. The upstream
+mode-160000 gitlinks still match the explicit package source pins for `ggml`,
+`examples/server/frontend`, `thirdparty/libwebm`, and `thirdparty/libwebp`, and
+the CLIP-G patch applies without refresh. Package built: `tools/amerge` build
+plan `4764eb5d` produced
+`stable-diffusion.cpp-vulkan-gfx1151-r656.g0e4ee04-1-x86_64.pkg.tar.zst`.
+Deployed/installed: not complete; privileged deploy/install remains
+operator-owned. Installed-smoked: not complete. Live-scenario validated: not
+complete, and no model-generation validation is claimed.
 
 The 2026-05-26 Quark/AWQ/GPTQ/bitsandbytes/xFormers/FBGEMM candidate triage is
 also docs-only source audit. The 2026-05-27 `amd-quark` authoring-tool blocker

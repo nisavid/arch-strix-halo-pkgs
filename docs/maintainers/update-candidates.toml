@@ -666,20 +666,24 @@ previous_recorded = "92dc7268fc4ffb0c0cc0bd52dfcefea91326e797"
 latest = "0e4ee04488159b81d95a9ffcd983a077fd5dcb77"
 discovery_status = "branch_head_ahead"
 disposition = "tracked"
-disposition_reason = "Tracked on 2026-05-28 after the 92dc726 package closeout. Do not retarget the adopted 92dc726 closeout to this commit: the current installed and published-repo evidence belongs to 92dc726, while the 92dc726..0e4ee04 range still needs source update, submodule-pin review, CLIP-G patch review, package build, deploy/install, published-repo verification, and installed wrapper smokes."
+disposition_reason = "Tracked on 2026-05-28 after source update and package build. Do not retarget the adopted 92dc726 closeout to this commit: the current installed and published-repo evidence belongs to 92dc726. Source metadata and rendered scaffolds now track 0e4ee04488159b81d95a9ffcd983a077fd5dcb77 as r656.g0e4ee04, upstream submodule gitlinks still match the explicit package source pins, the CLIP-G patch applies without refresh, and tools/amerge build plan 4764eb5d produced stable-diffusion.cpp-vulkan-gfx1151-r656.g0e4ee04-1-x86_64.pkg.tar.zst. Deploy/install, published-repo verification, and installed wrapper smokes remain open. No model-generation validation is claimed."
 salient_changes = [
   "stable-diffusion.cpp master moved beyond the adopted 92dc726 package lane to 0e4ee04",
   "The 92dc726..0e4ee04 compare is four commits ahead, including ROCm CI frontend-tooling preservation, diffusion-model runner parameter simplification, architecture-specific LLM norm tensor-name resolution, and Flux2 VAE TAE selection",
   "AUR stable-diffusion.cpp-vulkan-git baseline remains at r279.49d6570-1",
   "The current deployed-stack evidence validates 92dc726, not this newer source commit",
-  "Package source update, submodule-pin review, CLIP-G patch review, package build, deploy/install, published-repo verification, and installed wrapper smokes remain open",
+  "Source metadata and rendered scaffolds now track r656.g0e4ee04",
+  "The upstream mode-160000 gitlinks for ggml, examples/server/frontend, thirdparty/libwebm, and thirdparty/libwebp are unchanged from the adopted 92dc726 tree and still match the explicit package source pins",
+  "The CLIP-G patch applies to 0e4ee04 without refresh",
+  "Package build plan 4764eb5d produced stable-diffusion.cpp-vulkan-gfx1151-r656.g0e4ee04-1-x86_64.pkg.tar.zst",
+  "Deploy/install, published-repo verification, and installed wrapper smokes remain open",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
+package_source_update_needed = false
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "stable-diffusion.cpp 0e4ee04 follow-up after 92dc726 validation"
+next_gate_label = "Deploy/install stable-diffusion.cpp 0e4ee04 and run installed wrapper smokes"
 last_reviewed = "2026-05-28"
 
 [candidates."watchfiles-1.2.0"]

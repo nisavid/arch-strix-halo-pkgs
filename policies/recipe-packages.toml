@@ -2173,7 +2173,7 @@ scaffold_notes = [
 [packages."stable-diffusion.cpp-vulkan-gfx1151"]
 recipe_key = "stable_diffusion_cpp"
 template = "stable-diffusion-cpp"
-upstream_version = "r652.g92dc726"
+upstream_version = "r656.g0e4ee04"
 pkgdesc = "stable-diffusion.cpp Vulkan backend rebuilt for Strix Halo gfx1151"
 url = "https://github.com/leejet/stable-diffusion.cpp"
 license = ["MIT"]
@@ -2195,18 +2195,22 @@ update_notes = [
   "On 2026-05-26, adopted upstream master at 1ceb5bd9df7784bcdf67dd9ed8bf0198b542ebc9 for LTX temporal and rational latent upscaling, Longcat image/edit support, highres custom sigma and VAE tiling arguments, TAESD preview fixes, macOS rpath fixes, and Windows ROCm BLAS artifact packaging.",
   "On 2026-05-26 review follow-up, verified the upstream mode-160000 gitlinks at 1ceb5bd9df7784bcdf67dd9ed8bf0198b542ebc9 match the explicit ggml, sdcpp-webui, libwebm, and libwebp package source pins and are unchanged from caa823a8c06a51288f0a01bb29e9bd8bcec30a8a.",
   "On 2026-05-27, updated package source metadata to upstream master at 92dc7268fc4ffb0c0cc0bd52dfcefea91326e797 for Microsoft Lens support, GPT-OSS tokenizer and vocabulary additions used by Lens prompts, and permission-denied skipping in recursive LoRA directory scans.",
-  "On 2026-05-27 source review, verified the upstream mode-160000 gitlinks at 92dc7268fc4ffb0c0cc0bd52dfcefea91326e797 match the explicit ggml, examples/server/frontend, thirdparty/libwebm, and thirdparty/libwebp package source pins, and refreshed the CLIP-G patch context so both the prefix-ordering change and Flux te1 remap apply without ignored patch hunks."
+  "On 2026-05-27 source review, verified the upstream mode-160000 gitlinks at 92dc7268fc4ffb0c0cc0bd52dfcefea91326e797 match the explicit ggml, examples/server/frontend, thirdparty/libwebm, and thirdparty/libwebp package source pins, and refreshed the CLIP-G patch context so both the prefix-ordering change and Flux te1 remap apply without ignored patch hunks.",
+  "On 2026-05-28, updated package source metadata to upstream master at 0e4ee04488159b81d95a9ffcd983a077fd5dcb77 for ROCm CI frontend-tooling preservation, diffusion-model runner parameter simplification, architecture-specific LLM norm tensor-name resolution, and Flux2 VAE TAE selection.",
+  "On 2026-05-28 source review, verified the upstream mode-160000 gitlinks at 0e4ee04488159b81d95a9ffcd983a077fd5dcb77 match the explicit ggml, examples/server/frontend, thirdparty/libwebm, and thirdparty/libwebp package source pins, and verified the CLIP-G patch still applies without refresh."
 ]
 recipe_notes_override = """
 This package supplies stable-diffusion.cpp as the Blackcat Vulkan image
 generation engine for the Strix Halo stack. The source follows
 leejet/stable-diffusion.cpp master at
-`92dc7268fc4ffb0c0cc0bd52dfcefea91326e797` (`r652.g92dc726`).
+`0e4ee04488159b81d95a9ffcd983a077fd5dcb77` (`r656.g0e4ee04`).
 The current source includes Microsoft Lens support, GPT-OSS tokenizer and
 vocabulary additions used by Lens prompts, LTX temporal and rational latent
 upscaling, LTX audio and VAE decoding improvements, highres custom sigma
 support, extra VAE tiling arguments, Longcat image/edit support, TAESD preview
-fixes, and LoRA directory scans that skip permission-denied entries.
+fixes, LoRA directory scans that skip permission-denied entries, a simplified
+diffusion-model runner parameter flow, architecture-specific LLM norm
+tensor-name resolution, and Flux2 VAE TAE selection.
 
 The package builds the Vulkan backend with ggml, WebP, WebM, and server frontend
 inputs modeled as explicit package sources and staged into the upstream
@@ -2232,11 +2236,11 @@ provides = ["stable-diffusion.cpp-vulkan-gfx1151", "stable-diffusion.cpp-vulkan"
 conflicts = ["stable-diffusion.cpp-vulkan"]
 depends = ["aocl-libm-gfx1151", "gcc-libs", "glibc", "vulkan-icd-loader"]
 makedepends = ["cmake", "git", "ninja", "patchelf", "pnpm", "rocm-llvm-gfx1151", "shaderc", "spirv-headers", "vulkan-headers"]
-source_refs = ["stable-diffusion.cpp::git+https://github.com/leejet/stable-diffusion.cpp.git#commit=92dc7268fc4ffb0c0cc0bd52dfcefea91326e797"]
+source_refs = ["stable-diffusion.cpp::git+https://github.com/leejet/stable-diffusion.cpp.git#commit=0e4ee04488159b81d95a9ffcd983a077fd5dcb77"]
 sha256sums = ["SKIP"]
 src_subdir = "stable-diffusion.cpp"
 upstream_name = "stable-diffusion.cpp"
-upstream_revision = "92dc7268fc4ffb0c0cc0bd52dfcefea91326e797"
+upstream_revision = "0e4ee04488159b81d95a9ffcd983a077fd5dcb77"
 baseline_kind = "closest-upstream"
 patches_dir = "packages/stable-diffusion.cpp-vulkan-gfx1151"
 source_patches = ["0001-sdxl-clipg-prefix-mapping.patch"]

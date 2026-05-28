@@ -30,9 +30,14 @@
   Treat this as a separate source follow-up; the `92dc726..0e4ee04` range
   includes ROCm CI frontend-tooling preservation, a diffusion-model runner
   refactor, architecture-specific LLM norm tensor-name resolution, and Flux2
-  VAE TAE selection. Package implementation still requires source update,
-  submodule-pin review, CLIP-G patch review, package build, deploy/install,
-  published-repo verification, and installed wrapper smokes.
+  VAE TAE selection. Source metadata and rendered scaffolds now track
+  `r656.g0e4ee04`; submodule-pin review and CLIP-G patch review are complete;
+  and package build plan `4764eb5d` produced
+  `stable-diffusion.cpp-vulkan-gfx1151 r656.g0e4ee04-1`. Deploy/install
+  stable-diffusion.cpp 0e4ee04 and run installed wrapper smokes: publish and
+  install the built package, verify the published repo, then run installed
+  `sd-cli-vulkan-gfx1151 --help` plus `sd-server-vulkan-gfx1151 --help`
+  wrapper smokes. No model-generation validation is claimed.
 - Transformers 5.9.0 follow-up: keep this blocked until the ab32a1f follow-up
   merges, or until the operator explicitly bypasses ab32a1f and declares the
   runtime base stable. The local Transformers package is coupled to tokenizers,

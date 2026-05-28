@@ -144,7 +144,7 @@ ENGINE_STACK = {
     "stable-diffusion.cpp-vulkan-gfx1151": {
         "template": "stable-diffusion-cpp",
         "recipe_key": "stable_diffusion_cpp",
-        "upstream_version": "r652.g92dc726",
+        "upstream_version": "r656.g0e4ee04",
         "provides": [
             "stable-diffusion.cpp-vulkan-gfx1151",
             "stable-diffusion.cpp-vulkan",

@@ -6,7 +6,7 @@
 - Scaffold template: `stable-diffusion-cpp`
 - Recipe build method: `cmake`
 - Upstream repo: `https://github.com/leejet/stable-diffusion.cpp.git`
-- Package version: `r652.g92dc726`
+- Package version: `r656.g0e4ee04`
 - Recipe revision: `3f15f9f (20260508, 17 commits touching recipe path)`
 - Recipe steps: `35, 37`
 - Recipe dependencies: `therock`
@@ -20,12 +20,14 @@
 This package supplies stable-diffusion.cpp as the Blackcat Vulkan image
 generation engine for the Strix Halo stack. The source follows
 leejet/stable-diffusion.cpp master at
-`92dc7268fc4ffb0c0cc0bd52dfcefea91326e797` (`r652.g92dc726`).
+`0e4ee04488159b81d95a9ffcd983a077fd5dcb77` (`r656.g0e4ee04`).
 The current source includes Microsoft Lens support, GPT-OSS tokenizer and
 vocabulary additions used by Lens prompts, LTX temporal and rational latent
 upscaling, LTX audio and VAE decoding improvements, highres custom sigma
 support, extra VAE tiling arguments, Longcat image/edit support, TAESD preview
-fixes, and LoRA directory scans that skip permission-denied entries.
+fixes, LoRA directory scans that skip permission-denied entries, a simplified
+diffusion-model runner parameter flow, architecture-specific LLM norm
+tensor-name resolution, and Flux2 VAE TAE selection.
 
 The package builds the Vulkan backend with ggml, WebP, WebM, and server frontend
 inputs modeled as explicit package sources and staged into the upstream
@@ -74,6 +76,8 @@ unknown tensors.
 - On 2026-05-26 review follow-up, verified the upstream mode-160000 gitlinks at 1ceb5bd9df7784bcdf67dd9ed8bf0198b542ebc9 match the explicit ggml, sdcpp-webui, libwebm, and libwebp package source pins and are unchanged from caa823a8c06a51288f0a01bb29e9bd8bcec30a8a.
 - On 2026-05-27, updated package source metadata to upstream master at 92dc7268fc4ffb0c0cc0bd52dfcefea91326e797 for Microsoft Lens support, GPT-OSS tokenizer and vocabulary additions used by Lens prompts, and permission-denied skipping in recursive LoRA directory scans.
 - On 2026-05-27 source review, verified the upstream mode-160000 gitlinks at 92dc7268fc4ffb0c0cc0bd52dfcefea91326e797 match the explicit ggml, examples/server/frontend, thirdparty/libwebm, and thirdparty/libwebp package source pins, and refreshed the CLIP-G patch context so both the prefix-ordering change and Flux te1 remap apply without ignored patch hunks.
+- On 2026-05-28, updated package source metadata to upstream master at 0e4ee04488159b81d95a9ffcd983a077fd5dcb77 for ROCm CI frontend-tooling preservation, diffusion-model runner parameter simplification, architecture-specific LLM norm tensor-name resolution, and Flux2 VAE TAE selection.
+- On 2026-05-28 source review, verified the upstream mode-160000 gitlinks at 0e4ee04488159b81d95a9ffcd983a077fd5dcb77 match the explicit ggml, examples/server/frontend, thirdparty/libwebm, and thirdparty/libwebp package source pins, and verified the CLIP-G patch still applies without refresh.
 
 ## Maintainer Starting Points
 
