@@ -4,59 +4,37 @@
 
 ### Active Unresolved Gates
 
-- llama.cpp b9357 deploy/install and postdeploy validation handoff: the
-  2026-05-27 freshness check run during the b9352 package lane found upstream
-  `b9357` commit
-  `4d8cc0c56ffba3f8b7fdb0130627fed2a6f71958` after the adopted b9352 lane. Do
-  not retarget the b9352 adoption in place. Treat b9357 as a separate source
-  follow-up; the range adds MiniCPM5 tokenizer support, a server SSL log
-  adjustment, and Vulkan transfer-queue handling for AMD UMA devices. Source
-  diff review, package source update, source verification, source preparation,
-  selected-token logits patch application, focused package tests, freshness
-  check, and package build plan `05912058` are complete for
-  `llama.cpp-hip-gfx1151 b9357-1`, `llama.cpp-vulkan-gfx1151 b9357-1`, and
-  `lemonade-server 10.6.0-8`. Remaining gates are coordinator-owned
-  deploy/install, installed smokes, and selected-logit live validation.
-- ROCm PyTorch release/2.12 26872de post-pkgrel live validation:
-  `python-pytorch-opt-rocm-gfx1151` now tracks ROCm/pytorch release/2.12
-  commit `26872debb4452ea6dc898288618a15595e2317d9` as `2.12.0-2`; the
-  affected runtime-base package set is built, deployed/installed, and
-  installed-smoked at PyTorch `2.12.0-2`, AITER `0.1.14-2`, FlashAttention
-  `2.8.4-12`, TorchAO `0.17.0-4`, Torch-MIGraphX `1.2-7`, TorchVision
-  `0.27.0-2`, and vLLM `0.21.0-4`. Existing live scenario evidence for the
-  same source content is recorded at
-  `docs/worklog/inference-runs/20260526T-pytorch-26872de-closeout`, but that
-  run predates the later package-manager delivery of the downstream pkgrel set.
-  The remaining operator-owned gate is a live rerun of
-  `flash-attn.ck.backend-import`, `torch-migraphx.pt2e.quantizer-import`, and
-  `vllm.qwen3_5.0_8b.text.basic` against the currently installed stack. Hand
-  this to the operator from a fresh lane worktree at updated `origin/main`:
-
-  ```bash
-  cd <fresh-lane-worktree>
-  HF_HUB_CACHE=<testing HF hub cache root> python tools/run_inference_scenarios.py \
-    --scenario flash-attn.ck.backend-import \
-    --scenario torch-migraphx.pt2e.quantizer-import \
-    --scenario vllm.qwen3_5.0_8b.text.basic \
-    --run-root docs/worklog/inference-runs/20260527T-pytorch-26872de-postdeploy-live
-  ```
-
-  The handback signal is the completed run root. After handback, inspect
-  `summary.json`, each scenario `result.json`, and the scenario logs for
-  pass/fail status and private path leakage before adopting this candidate.
-- ROCm PyTorch release/2.12 980ce60 follow-up: start this after the 26872de
-  post-pkgrel live rerun and docs/ledger closeout merge, unless the operator
-  explicitly declares a stable-runtime-base bypass. The accepted 2026-05-27 raw
+- llama.cpp b9371 follow-up after b9357 validation: the 2026-05-28 targeted
+  freshness check run during b9357 closeout found upstream `b9371` commit
+  `f12cc6d0fa96d6a3c33952f06b7439ac43a3c3fe` after the adopted b9357 lane. Do
+  not retarget the b9357 adoption in place. Treat b9371 and the matching AUR
+  HIP `b9371-1` baseline as a separate source follow-up; the `b9357..b9371`
+  range includes llama.cpp environment-name, cpp-httplib vendor, Vulkan,
+  WebGPU, Hexagon, CUDA, and CI/build maintenance.
+  Package implementation still requires detailed source diff review, package
+  source update, package build, deploy/install, installed-smoke, and
+  selected-logit live validation.
+- ROCm PyTorch release/2.12 ab32a1f follow-up: the accepted 2026-05-28 targeted
   freshness observation found release/2.12 at
-  `980ce601387f3fb82911cec6aa0bfc3ec2e73d75`. The 26872de runtime-base
+  `ab32a1f4f3aaf18f14c371244a91e0bb9b3abb0d` and the Arch
+  `python-pytorch-opt-rocm 2.12.0-2` baseline. The 26872de runtime-base
   closeout records that 26872de remains the deployed source target rather than
-  retargeting this lane. Treat 980ce60 as a separate follow-up: the
-  `26872de..980ce60` source range is the large-matrix `triu`/`tril` 64-bit
-  indexing fix in `TriangularOps.cu`, and package implementation still requires
-  source update, affected rebuilds, deploy/install, installed-smoke, and
-  live-scenario validation.
-- Transformers 5.9.0 follow-up: keep this blocked until the 980ce60 follow-up
-  merges, or until the operator explicitly bypasses 980ce60 and declares the
+  retargeting this lane. Treat ab32a1f as a separate follow-up: the
+  `26872de..ab32a1f` source range includes the large-matrix `triu`/`tril`
+  64-bit indexing fix and the UnaryUfuncInfo lambda syntax fix, and package
+  implementation still requires source update, affected rebuilds,
+  deploy/install, installed-smoke, and live-scenario validation.
+- stable-diffusion.cpp 0e4ee04 follow-up after 92dc726 validation: the
+  2026-05-28 full freshness check found upstream master at
+  `0e4ee04488159b81d95a9ffcd983a077fd5dcb77` after the adopted 92dc726 lane.
+  Treat this as a separate source follow-up; the `92dc726..0e4ee04` range
+  includes ROCm CI frontend-tooling preservation, a diffusion-model runner
+  refactor, architecture-specific LLM norm tensor-name resolution, and Flux2
+  VAE TAE selection. Package implementation still requires source update,
+  submodule-pin review, CLIP-G patch review, package build, deploy/install,
+  published-repo verification, and installed wrapper smokes.
+- Transformers 5.9.0 follow-up: keep this blocked until the ab32a1f follow-up
+  merges, or until the operator explicitly bypasses ab32a1f and declares the
   runtime base stable. The local Transformers package is coupled to tokenizers,
   safetensors, Hugging Face Hub, model-surface imports, and vLLM scenarios.
 - GPTQ live-validation lane: the retained
@@ -235,7 +213,24 @@
   `docs/worklog/inference-runs/20260527T-llama-b9352-postdeploy-help`, and the
   selected-logit live scenario passed at
   `docs/worklog/inference-runs/20260527T-llama-b9352-postdeploy-live`.
-  The separate llama.cpp b9357 follow-up remains active.
+  The separate llama.cpp b9357 follow-up is also adopted.
+- The llama.cpp b9357 backend refresh is adopted. Both llama.cpp backends render
+  from upstream b9357 as `b9357-1`, `lemonade-server 10.6.0-8` refreshes the
+  packaged system-managed backend labels, package build plan `05912058`
+  completed, the deployed host reports both b9357 backends plus
+  `lemonade-server 10.6.0-8`, installed help smokes passed at
+  `docs/worklog/inference-runs/20260528T-llama-b9357-postdeploy-help`, and the
+  selected-logit live scenario passed at
+  `docs/worklog/inference-runs/20260528T-llama-b9357-postdeploy-live`.
+- The ROCm PyTorch release/2.12 `26872de` post-pkgrel closeout is adopted.
+  `python-pytorch-opt-rocm-gfx1151` tracks ROCm/pytorch release/2.12 commit
+  `26872debb4452ea6dc898288618a15595e2317d9` as `2.12.0-2`, and the affected
+  runtime-base package set is built, deployed/installed, installed-smoked, and
+  live-validated. The final operator-owned live rerun passed
+  `flash-attn.ck.backend-import`, `torch-migraphx.pt2e.quantizer-import`, and
+  `vllm.qwen3_5.0_8b.text.basic` with zero failures at
+  `docs/worklog/inference-runs/20260527T-pytorch-26872de-postdeploy-live`.
+  The separate ROCm PyTorch `ab32a1f` follow-up remains active.
 - The Lemonade 10.6.0 fork-main refresh is adopted. The source lane pins
   `nisavid/lemonade` fork main at
   `b608a74d0604f96786de59d65cb0ba27b05db0c6`, aligned with canonical upstream

@@ -346,8 +346,8 @@ baseline_latest = "b9352-1"
 previous_recorded = "b9352 / b9352-1"
 latest = "b9357"
 discovery_status = "stable_update_available"
-disposition = "tracked"
-disposition_reason = "Source update and package build are complete in the stacked b9357 lane. Both packaged backends now pin upstream b9357 at 4d8cc0c56ffba3f8b7fdb0130627fed2a6f71958, Lemonade server metadata renders the b9357 system-managed backend labels, source verification and source preparation passed, the shared selected-token logits patch applies cleanly, and tools/amerge build plan 05912058 produced the b9357 llama.cpp packages plus lemonade-server 10.6.0-8. Deploy/install, installed smokes, and selected-logit live validation remain coordinator-owned open gates before adoption."
+disposition = "adopted"
+disposition_reason = "Adopted after the b9357 install and selected-logit handback. Both packaged backends now pin upstream b9357 at 4d8cc0c56ffba3f8b7fdb0130627fed2a6f71958, Lemonade server metadata renders the b9357 system-managed backend labels, source verification and source preparation passed, the shared selected-token logits patch applies cleanly, tools/amerge build plan 05912058 produced the b9357 llama.cpp packages plus lemonade-server 10.6.0-8, the deployed host reports both b9357 packages and lemonade-server 10.6.0-8 installed, installed help smokes passed, and lemonade.reranking.zerank-2.selected-logit passed against the installed b9357 packages at docs/worklog/inference-runs/20260528T-llama-b9357-postdeploy-live."
 salient_changes = [
   "GitHub release b9357 is the selected follow-up after the adopted b9352 package lane",
   "The package source pins upstream commit 4d8cc0c56ffba3f8b7fdb0130627fed2a6f71958",
@@ -356,15 +356,44 @@ salient_changes = [
   "Recipe scaffolds were regenerated for llama.cpp-hip-gfx1151 b9357-1, llama.cpp-vulkan-gfx1151 b9357-1, and lemonade-server 10.6.0-8 so Lemonade system-managed backend metadata labels the b9357 packaged backends",
   "tools/amerge build plan 05912058 built lemonade-server 10.6.0-8, llama.cpp-hip-gfx1151 b9357-1, and llama.cpp-vulkan-gfx1151 b9357-1",
   "AUR llama.cpp-hip has advanced to b9352-1 while the Vulkan baseline remains llama.cpp-vulkan-bin b9222-1",
-  "Deploy/install, installed-smoke, and selected-logit live validation remain open for coordinator handoff",
+  "After operator deploy handback, pacman -Q reports llama.cpp-hip-gfx1151 b9357-1, llama.cpp-vulkan-gfx1151 b9357-1, and lemonade-server 10.6.0-8 installed",
+  "Installed help smokes for llama.cpp HIP, llama.cpp Vulkan, Lemonade CLI, and Lemonade server passed at docs/worklog/inference-runs/20260528T-llama-b9357-postdeploy-help",
+  "The b9357 selected-logit live scenario passed at docs/worklog/inference-runs/20260528T-llama-b9357-postdeploy-live",
 ]
 patch_carry_overlap = true
 package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Adopted; monitor future llama.cpp releases through the normal freshness sweep"
+last_reviewed = "2026-05-28"
+
+[candidates."llama-cpp-b9371"]
+family = "llama_cpp"
+packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"]
+source_kind = "github_release"
+check_id = "release"
+baseline_source_kind = "aur"
+baseline_latest = "b9371-1"
+previous_recorded = "b9357 / b9357-1 / b9352-1"
+latest = "b9371"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked on 2026-05-28 after the b9357 install and selected-logit closeout. Do not retarget the adopted b9357 closeout to this release: the current installed and live evidence belongs to b9357, while the b9357..b9371 range still needs detailed source diff review, package source update, package build, deploy/install, installed-smoke, and selected-logit live validation."
+salient_changes = [
+  "GitHub release b9371 and AUR llama.cpp-hip b9371-1 are available after the adopted b9357 package lane",
+  "The release tag resolves to commit f12cc6d0fa96d6a3c33952f06b7439ac43a3c3fe",
+  "The b9357..b9371 compare is 14 commits ahead, including llama.cpp environment variable name cleanup, cpp-httplib 0.46.0 vendor update, Vulkan REPEAT/cooperative-matrix/vector-matmul work, WebGPU dispatch cleanup, Hexagon Q4_1 support, CUDA/CI/build maintenance, and conversion dependency updates",
+  "The current deployed-stack evidence validates b9357, not this newer source release",
+  "Package source update, package build, deploy/install, installed-smoke, and selected-logit live validation remain open",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "llama.cpp b9357 deploy/install and postdeploy validation handoff"
-last_reviewed = "2026-05-27"
+next_gate_label = "llama.cpp b9371 follow-up after b9357 validation"
+last_reviewed = "2026-05-28"
 
 [candidates."numpy-2.4.6"]
 family = "numpy"
@@ -432,26 +461,25 @@ baseline_latest = "2.12.0-1"
 previous_recorded = "4ddfe99d6da426414b7f0e587cdb1910f1c23eb3"
 latest = "26872debb4452ea6dc898288618a15595e2317d9"
 discovery_status = "branch_head_ahead"
-disposition = "tracked"
-disposition_reason = "Tracked on 2026-05-27 for post-pkgrel live validation. The package source now tracks ROCm/pytorch release/2.12 at 26872debb4452ea6dc898288618a15595e2317d9 as python-pytorch-opt-rocm-gfx1151 2.12.0-2, with refreshed local patch carry and an AOTriton 0.12 lazy-tensor callback compatibility patch. Build plan 395995a5 produced PyTorch and affected native consumer rebuilds, and follow-up build plan 9f99f3a2 produced pkgrel-bumped delivery artifacts. Read-only installed verification reports PyTorch 2.12.0-2 and the downstream pkgrel set installed, and a current import/version smoke passed. The remaining gate is an operator-owned live rerun because the existing live-scenario evidence predates the later package-manager delivery of the downstream pkgrel set."
+disposition = "adopted"
+disposition_reason = "Adopted on 2026-05-28 after post-pkgrel live validation. The package source tracks ROCm/pytorch release/2.12 at 26872debb4452ea6dc898288618a15595e2317d9 as python-pytorch-opt-rocm-gfx1151 2.12.0-2, with refreshed local patch carry and an AOTriton 0.12 lazy-tensor callback compatibility patch. Build plan 395995a5 produced PyTorch and affected native consumer rebuilds, and follow-up build plan 9f99f3a2 produced pkgrel-bumped delivery artifacts. Read-only installed verification reports PyTorch 2.12.0-2 and the downstream pkgrel set installed, the import/version smoke passed, and the operator-owned live rerun passed flash-attn.ck.backend-import, torch-migraphx.pt2e.quantizer-import, and vllm.qwen3_5.0_8b.text.basic with zero failures."
 salient_changes = [
   "ROCm/pytorch release/2.12 moved beyond the adopted 4ddfe99d package lane",
-  "Arch python-pytorch-opt-rocm baseline remains at 2.12.0-1",
+  "Arch python-pytorch-opt-rocm baseline moved from 2.12.0-1 to 2.12.0-2 during closeout, matching the local package pkgrel while the repo source pin remains ROCm/pytorch 26872de",
   "The 4ddfe99..26872de range includes the ROCm Inductor static launcher change that loads HSACO images through hipModuleLoadData",
   "The local package carries an AOTriton 0.12 lazy-tensor callback compatibility patch while building against python-aotriton-gfx1151 0.12b",
   "The installed runtime-base set is PyTorch 2.12.0-2, AITER 0.1.14-2, FlashAttention 2.8.4-12, TorchAO 0.17.0-4, Torch-MIGraphX 1.2-7, TorchVision 0.27.0-2, and vLLM 0.21.0-4",
-  "Existing live scenario evidence covers the same source content, but it predates the downstream package-manager pkgrel delivery and remains provisional until rerun against the installed stack",
-  "Operator handback must rerun flash-attn.ck.backend-import, torch-migraphx.pt2e.quantizer-import, and vllm.qwen3_5.0_8b.text.basic at docs/worklog/inference-runs/20260527T-pytorch-26872de-postdeploy-live before adoption",
+  "The final installed-stack live rerun passed flash-attn.ck.backend-import, torch-migraphx.pt2e.quantizer-import, and vllm.qwen3_5.0_8b.text.basic at docs/worklog/inference-runs/20260527T-pytorch-26872de-postdeploy-live",
 ]
 patch_carry_overlap = true
 package_source_update_needed = false
-host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
-next_gate_label = "ROCm PyTorch release/2.12 26872de post-pkgrel live validation"
-last_reviewed = "2026-05-27"
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Adopted; monitor future ROCm PyTorch release/2.12 movement through the normal freshness sweep"
+last_reviewed = "2026-05-28"
 
-[candidates."rocm-pytorch-release-2.12-980ce60"]
+[candidates."rocm-pytorch-release-2.12-ab32a1f"]
 family = "rocm_pytorch"
 packages = [
   "python-pytorch-opt-rocm-gfx1151",
@@ -465,15 +493,16 @@ packages = [
 source_kind = "git_ref"
 check_id = "release-branch"
 baseline_source_kind = "arch_package"
-baseline_latest = "2.12.0-1"
-previous_recorded = "26872debb4452ea6dc898288618a15595e2317d9"
-latest = "980ce601387f3fb82911cec6aa0bfc3ec2e73d75"
+baseline_latest = "2.12.0-2"
+previous_recorded = "26872debb4452ea6dc898288618a15595e2317d9 / 2.12.0-1"
+latest = "ab32a1f4f3aaf18f14c371244a91e0bb9b3abb0d"
 discovery_status = "branch_head_ahead"
 disposition = "tracked"
-disposition_reason = "Tracked on 2026-05-27 after the 26872de runtime-base closeout. Do not retarget the deployed 26872de closeout to this commit: the current installed and live evidence belongs to 26872de, while the 26872de..980ce60 range is a new PyTorch runtime fix that still needs its own source update, package build, deploy/install, installed-smoke, and live-scenario validation."
+disposition_reason = "Tracked on 2026-05-28 after the 26872de runtime-base closeout. Do not retarget the deployed 26872de closeout to this commit: the current installed and live evidence belongs to adopted 26872de, while the 26872de..ab32a1f range is new PyTorch runtime drift that still needs its own source update, package build, deploy/install, installed-smoke, and live-scenario validation."
 salient_changes = [
   "ROCm/pytorch release/2.12 moved beyond the adopted 26872de package lane",
-  "The 26872de..980ce60 range is one commit fixing triu/tril 64-bit indexing for large matrices in aten/src/ATen/native/cuda/TriangularOps.cu",
+  "Arch python-pytorch-opt-rocm baseline moved from 2.12.0-1 to 2.12.0-2 during closeout",
+  "The 26872de..ab32a1f range is two commits: the triu/tril 64-bit indexing fix for large matrices and the UnaryUfuncInfo ref lambda syntax fix",
   "The current deployed-stack evidence validates 26872de, not this newer source commit",
   "Package source update, affected rebuilds, deploy/install, installed-smoke, and live-scenario validation remain open",
 ]
@@ -482,8 +511,8 @@ package_source_update_needed = true
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "ROCm PyTorch release/2.12 980ce60 follow-up"
-last_reviewed = "2026-05-27"
+next_gate_label = "ROCm PyTorch release/2.12 ab32a1f follow-up"
+last_reviewed = "2026-05-28"
 
 [candidates."aotriton-0.12b"]
 family = "aotriton"
@@ -625,6 +654,33 @@ next_gate_kind = "none"
 next_gate_path = ""
 next_gate_label = "Adopted; monitor future stable-diffusion.cpp refs through the normal freshness sweep"
 last_reviewed = "2026-05-27"
+
+[candidates."stable-diffusion-cpp-0e4ee04"]
+family = "stable_diffusion_cpp"
+packages = ["stable-diffusion.cpp-vulkan-gfx1151"]
+source_kind = "git_ref"
+check_id = "master"
+baseline_source_kind = "aur"
+baseline_latest = "r279.49d6570-1"
+previous_recorded = "92dc7268fc4ffb0c0cc0bd52dfcefea91326e797"
+latest = "0e4ee04488159b81d95a9ffcd983a077fd5dcb77"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "Tracked on 2026-05-28 after the 92dc726 package closeout. Do not retarget the adopted 92dc726 closeout to this commit: the current installed and published-repo evidence belongs to 92dc726, while the 92dc726..0e4ee04 range still needs source update, submodule-pin review, CLIP-G patch review, package build, deploy/install, published-repo verification, and installed wrapper smokes."
+salient_changes = [
+  "stable-diffusion.cpp master moved beyond the adopted 92dc726 package lane to 0e4ee04",
+  "The 92dc726..0e4ee04 compare is four commits ahead, including ROCm CI frontend-tooling preservation, diffusion-model runner parameter simplification, architecture-specific LLM norm tensor-name resolution, and Flux2 VAE TAE selection",
+  "AUR stable-diffusion.cpp-vulkan-git baseline remains at r279.49d6570-1",
+  "The current deployed-stack evidence validates 92dc726, not this newer source commit",
+  "Package source update, submodule-pin review, CLIP-G patch review, package build, deploy/install, published-repo verification, and installed wrapper smokes remain open",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "stable-diffusion.cpp 0e4ee04 follow-up after 92dc726 validation"
+last_reviewed = "2026-05-28"
 
 [candidates."watchfiles-1.2.0"]
 family = "watchfiles"
