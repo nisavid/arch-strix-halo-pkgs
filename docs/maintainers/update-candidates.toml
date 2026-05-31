@@ -385,14 +385,14 @@ salient_changes = [
   "The release tag resolves to commit f12cc6d0fa96d6a3c33952f06b7439ac43a3c3fe",
   "The b9357..b9371 compare is 14 commits ahead, including llama.cpp environment variable name cleanup, cpp-httplib 0.46.0 vendor update, Vulkan REPEAT/cooperative-matrix/vector-matmul work, WebGPU dispatch cleanup, Hexagon Q4_1 support, CUDA/CI/build maintenance, and conversion dependency updates",
   "The current deployed-stack evidence validates b9357, not this newer source release",
-  "Package source update, package build, deploy/install, installed-smoke, and selected-logit live validation remain open",
+  "No active b9371 package, deploy, or live-validation work remains; the source lane is superseded by the tracked b9442 and b9444 follow-ups",
 ]
 patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
 next_gate_path = ""
-next_gate_label = "Superseded by llama.cpp b9442 follow-up"
+next_gate_label = "Superseded by llama.cpp b9442 and b9444 candidates"
 last_reviewed = "2026-05-31"
 
 [candidates."llama-cpp-b9442"]
@@ -420,7 +420,7 @@ package_source_update_needed = false
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "llama.cpp b9442 follow-up after b9357 validation"
+next_gate_label = "llama.cpp b9442 live validation"
 last_reviewed = "2026-05-31"
 
 [candidates."llama-cpp-b9444"]

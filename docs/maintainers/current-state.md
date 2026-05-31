@@ -159,17 +159,16 @@ The scenario stdout proved FlashAttention CK backend import against
 `0.21.0` generation on the installed PyTorch `2.12.0` stack. The raw run logs
 remain ignored worklog evidence and should not be promoted into tracked docs.
 
-The ROCm PyTorch release/2.12 `ab32a1f` follow-up remains tracked as separate
-drift rather than replacing the deployed 26872de closeout target. The
+The ROCm PyTorch release/2.12 `ab32a1f` follow-up was tracked as separate
+drift rather than replacing the deployed 26872de closeout target until the
+2026-05-31 `f8efdb3` observation superseded it. The
 `26872de..ab32a1f` range has two ROCm commits: the large-matrix `triu`/`tril`
 64-bit indexing fix and the UnaryUfuncInfo lambda syntax fix. The same targeted
 check found the Arch `python-pytorch-opt-rocm 2.12.0-2` baseline, which is
-tracked with the ab32a1f source follow-up because the source branch still moved
-beyond the deployed 26872de stack. Because ab32a1f is beyond the current
-deployed stack and has no package build, deploy/install, installed-smoke, or
-live-scenario evidence in this repo, future work must update the source pin,
-build the derived package set, and hand privileged deploy/install plus live
-validation through the normal package lane.
+now tracked with the newer f8efdb3 source follow-up because the source branch
+still moved beyond the deployed 26872de stack. The active future package lane
+is the f8efdb3 entry in `docs/backlog.md` and
+`docs/maintainers/update-candidates.toml`.
 
 The llama.cpp b9330 and Lemonade fork `13b1af2` refresh is adopted. Both
 packaged llama.cpp backends render from upstream `b9330` commit
@@ -284,8 +283,8 @@ After recording b9357 source/build/install/live progress, a targeted
 `tools/check_package_updates.py --only llama_cpp --json --fail-on actionable`
 check found upstream llama.cpp `b9371` commit
 `f12cc6d0fa96d6a3c33952f06b7439ac43a3c3fe` and AUR HIP baseline `b9371-1`.
-Treat b9371 as a separate source follow-up rather than retargeting the adopted
-b9357 lane.
+This b9371 observation was later superseded by the 2026-05-31 b9442 refresh
+and the post-deploy b9444 source follow-up.
 
 The 2026-05-25 AITER stable-release refresh is adopted and live-validated.
 `python-amd-aiter-gfx1151` now renders from upstream tag `v0.1.14` as
@@ -414,12 +413,14 @@ The stable-diffusion.cpp 92dc726 package lane has since reached adopted
 source/build/install/smoke state as described below. The llama.cpp b9352 and
 b9357 lanes are source-updated, package-built, deployed/installed,
 installed-smoked, and live-validated. The 2026-05-28 targeted closeout checks
-found llama.cpp b9371 and ROCm PyTorch release/2.12 ab32a1f as new tracked
+found llama.cpp b9371 and ROCm PyTorch release/2.12 ab32a1f as then-new tracked
 source follow-ups, and the full closeout freshness check found
-stable-diffusion.cpp 0e4ee04 after the adopted 92dc726 lane; Transformers 5.9.0
-also remains tracked. The ROCm PyTorch 26872de closeout updates package sources
-and generated metadata to match the deployed stack, and the post-pkgrel live
-scenario rerun is complete.
+stable-diffusion.cpp 0e4ee04 after the adopted 92dc726 lane. The 2026-05-31
+freshness sweep superseded those older llama.cpp, ROCm PyTorch, and
+stable-diffusion.cpp observations with b9442/b9444, f8efdb3, and be65ac7;
+Transformers 5.9.0 remains tracked. The ROCm PyTorch 26872de closeout updates
+package sources and generated metadata to match the deployed stack, and the
+post-pkgrel live scenario rerun is complete.
 
 After the b9357 and PyTorch 26872de closeouts were recorded and the new
 llama.cpp, ROCm PyTorch, stable-diffusion.cpp, and Transformers follow-ups were
@@ -464,15 +465,15 @@ Installed-smoked: `sd-cli-vulkan-gfx1151 --help` and
 `sd-server-vulkan-gfx1151 --help` exited `0` from the installed wrappers. No
 model-generation live scenario is claimed.
 
-The stable-diffusion.cpp 0e4ee04 follow-up remains tracked as separate source
-drift rather than replacing the deployed 92dc726 closeout target. The
+The stable-diffusion.cpp 0e4ee04 follow-up was tracked as separate source
+drift rather than replacing the deployed 92dc726 closeout target until the
+2026-05-31 be65ac7 package lane superseded it. The
 `92dc726..0e4ee04` range has four upstream commits: ROCm CI frontend-tooling
 preservation, diffusion-model runner parameter simplification,
 architecture-specific LLM norm tensor-name resolution, and Flux2 VAE TAE
-selection. Because 0e4ee04 is beyond the current deployed stack and has no
-package build, deploy/install, published-repo verification, or installed-wrapper
-smoke evidence in this repo, future work must update the source pin, review
-submodule pins and CLIP-G patch carry, build the package, and hand privileged
+selection. The active package evidence now lives on the adopted be65ac7 ledger,
+which updated the source pin, reviewed submodule pins and CLIP-G patch carry,
+built the package, and completed privileged
 deploy/install through the normal package lane.
 
 The 2026-05-26 Quark/AWQ/GPTQ/bitsandbytes/xFormers/FBGEMM candidate triage is

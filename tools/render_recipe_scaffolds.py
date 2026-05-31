@@ -1539,6 +1539,8 @@ build() {{
 
   export CFLAGS="${{_base_cflags:+${{_base_cflags}} }}${{_wheel_flags}}"
   export CXXFLAGS="${{_base_cxxflags:+${{_base_cxxflags}} }}${{_wheel_flags}}"
+  # -famd-opt is a clang driver link flag here; keeping it out of wheel compile
+  # flags avoids compile-only probes treating it as unused.
   export LDFLAGS="${{_base_ldflags:+${{_base_ldflags}} }}-famd-opt"
   export ROCM_HOME=/opt/rocm
   export PYTORCH_ROCM_ARCH=gfx1151
@@ -1614,6 +1616,8 @@ package() {{
 
   export CFLAGS="${{_base_cflags:+${{_base_cflags}} }}${{_wheel_flags}}"
   export CXXFLAGS="${{_base_cxxflags:+${{_base_cxxflags}} }}${{_wheel_flags}}"
+  # -famd-opt is a clang driver link flag here; keeping it out of wheel compile
+  # flags avoids compile-only probes treating it as unused.
   export LDFLAGS="${{_base_ldflags:+${{_base_ldflags}} }}-famd-opt"
 """
         build_env_section = build_env_exports
