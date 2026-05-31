@@ -27,8 +27,11 @@
   follow-up: the `26872de..f8efdb3` source range includes the large-matrix
   `triu`/`tril` 64-bit indexing fix, the UnaryUfuncInfo lambda syntax fix, and
   a ROCm foreach profiler-test skip. Package implementation still requires
-  source update, affected rebuilds, deploy/install, installed-smoke, and
-  live-scenario validation.
+  source update, affected rebuilds, deploy/install, local-repo verification,
+  published-repo verification, installed-smoke, and live-scenario validation.
+  This lane also owns reconciliation of the reference host's intermediate
+  ab32a1f/pkgrel-3 install; do not promote cached pkgrel-3 artifacts from the
+  unmerged ab32a1f lane as canonical repository state.
 - AITER 0.1.15-rc0 dependency-closure blocker: upstream released v0.1.15-rc0,
   but the RC requires `flydsl 0.1.9.dev599` from AMD's gfx942/gfx950 staging
   index and `triton>=3.6`. Keep `python-amd-aiter-gfx1151` on 0.1.14 until
@@ -236,7 +239,8 @@
   `vllm.qwen3_5.0_8b.text.basic` with zero failures at
   `docs/worklog/inference-runs/20260527T-pytorch-26872de-postdeploy-live`.
   The separate ROCm PyTorch `ab32a1f` follow-up was superseded by the
-  2026-05-31 `f8efdb3` ledger entry.
+  2026-05-31 `f8efdb3` ledger entry; later reference-host ab32a1f/pkgrel-3
+  packages are host drift for that follow-up, not adopted 26872de evidence.
 - The Lemonade 10.6.0 fork-main refresh is adopted. The source lane pins
   `nisavid/lemonade` fork main at
   `b608a74d0604f96786de59d65cb0ba27b05db0c6`, aligned with canonical upstream

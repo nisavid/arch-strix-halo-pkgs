@@ -47,10 +47,11 @@ recorded without package source adoption. AITER v0.1.15-rc0 is blocked because
 the release candidate requires `flydsl 0.1.9.dev599` from AMD's gfx942/gfx950
 staging index plus `triton>=3.6`, while this repo has no FlyDSL package closure
 and the current local Triton lane is 3.5.1. ROCm PyTorch f8efdb3 remains a
-tracked runtime-base follow-up after the deployed 26872de stack. vLLM 0.22.0
-remains tracked until the local ROCm patch carry and runtime-base gates are
-handled. Active follow-up work is visible in `docs/backlog.md` and
-`docs/maintainers/update-candidates.toml`.
+tracked runtime-base follow-up after the deployed 26872de stack and owns the
+reference-host reconciliation for the intermediate ab32a1f/pkgrel-3 install
+described below. vLLM 0.22.0 remains tracked until the local ROCm patch carry
+and runtime-base gates are handled. Active follow-up work is visible in
+`docs/backlog.md` and `docs/maintainers/update-candidates.toml`.
 
 The 2026-05-26 AOCL 5.3 refresh is adopted. `aocl-utils-gfx1151`
 now renders from upstream AOCL-Utils `5.3.0` with the current AUR
@@ -139,18 +140,18 @@ set: `python-amd-aiter-gfx1151 0.1.14-2`,
 `python-torchvision-rocm-gfx1151 0.27.0-2`, and
 `python-vllm-rocm-gfx1151 0.21.0-4`.
 
-Deployed/installed: read-only installed-package verification reports the same
-runtime-base versions. PyTorch was installed on 2026-05-26 at 04:23 EDT, and
-the downstream pkgrel-bumped consumer set was installed on 2026-05-26 at
-18:06 EDT. Installed-smoked: a read-only import/version smoke against the
-current installed set exited `0`, reporting `torch 2.12.0`, HIP `7.13.26176`,
-one visible CUDA/HIP device, TorchVision `0.27.0+8972967`, FlashAttention
-`2.8.4`, TorchAO `0.17.0`, Torch-MIGraphX importability, vLLM `0.21.0`, and
-AITER JIT core importability. That smoke did not run model generation and did
-not replace live scenario validation.
+Deployed/installed: at the 26872de closeout, read-only installed-package
+verification reported the same runtime-base versions. PyTorch was installed on
+2026-05-26 at 04:23 EDT, and the downstream pkgrel-bumped consumer set was
+installed on 2026-05-26 at 18:06 EDT. Installed-smoked: a read-only
+import/version smoke against that installed set exited `0`, reporting
+`torch 2.12.0`, HIP `7.13.26176`, one visible CUDA/HIP device, TorchVision
+`0.27.0+8972967`, FlashAttention `2.8.4`, TorchAO `0.17.0`, Torch-MIGraphX
+importability, vLLM `0.21.0`, and AITER JIT core importability. That smoke did
+not run model generation and did not replace live scenario validation.
 
-Live-scenario validated: complete for the final installed pkgrel set. The
-operator-owned rerun passed `flash-attn.ck.backend-import`,
+Live-scenario validated: at the 26872de closeout, complete for that final
+installed pkgrel set. The operator-owned rerun passed `flash-attn.ck.backend-import`,
 `torch-migraphx.pt2e.quantizer-import`, and
 `vllm.qwen3_5.0_8b.text.basic` with three selected scenarios and zero failures
 at `docs/worklog/inference-runs/20260527T-pytorch-26872de-postdeploy-live`.
@@ -169,6 +170,21 @@ now tracked with the newer f8efdb3 source follow-up because the source branch
 still moved beyond the deployed 26872de stack. The active future package lane
 is the f8efdb3 entry in `docs/backlog.md` and
 `docs/maintainers/update-candidates.toml`.
+
+Post-#63 host reconciliation: the reference host currently has the intermediate
+ab32a1f/pkgrel-3 runtime-base stack installed from a prior handoff, including
+`python-pytorch-opt-rocm-gfx1151 2.12.0-3`,
+`python-amd-aiter-gfx1151 0.1.14-3`,
+`python-flash-attn-rocm-gfx1151 2.8.4-13`,
+`python-torchao-rocm-gfx1151 0.17.0-5`,
+`python-torch-migraphx-gfx1151 1.2-8`,
+`python-torchvision-rocm-gfx1151 0.27.0-3`, and
+`python-vllm-rocm-gfx1151 0.21.0-5`. That host state is not adopted package
+metadata and should not be repaired by publishing cached pkgrel-3 artifacts from
+the unmerged ab32a1f lane. The f8efdb3 follow-up is the canonical path to
+reconcile source metadata, package builds, deploy/install state,
+local-repo verification, published-repo verification, installed-smoke evidence,
+live-scenario validation, and published repository contents.
 
 The llama.cpp b9330 and Lemonade fork `13b1af2` refresh is adopted. Both
 packaged llama.cpp backends render from upstream `b9330` commit
