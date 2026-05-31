@@ -58,6 +58,8 @@ build() {
 
   export CFLAGS="${_base_cflags:+${_base_cflags} }${_wheel_flags}"
   export CXXFLAGS="${_base_cxxflags:+${_base_cxxflags} }${_wheel_flags}"
+  # -famd-opt is a clang driver link flag here; keeping it out of wheel compile
+  # flags avoids compile-only probes treating it as unused.
   export LDFLAGS="${_base_ldflags:+${_base_ldflags} }-famd-opt"
 
   /usr/bin/python -m build --wheel --no-isolation --skip-dependency-check

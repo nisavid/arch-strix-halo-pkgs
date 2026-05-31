@@ -4,7 +4,7 @@
 
 ### Active Unresolved Gates
 
-- llama.cpp b9442 follow-up after b9357 validation: the 2026-05-31 freshness
+- llama.cpp b9442 live validation: the 2026-05-31 freshness
   sweep found upstream `b9442` commit
   `d4c8e2c29ce2fb9a251a0a4a16d6c857b4f70f8c` and AUR HIP `b9437-1`.
   Source metadata and generated scaffolds now point both llama.cpp backends at
@@ -235,7 +235,8 @@
   `flash-attn.ck.backend-import`, `torch-migraphx.pt2e.quantizer-import`, and
   `vllm.qwen3_5.0_8b.text.basic` with zero failures at
   `docs/worklog/inference-runs/20260527T-pytorch-26872de-postdeploy-live`.
-  The separate ROCm PyTorch `ab32a1f` follow-up remains active.
+  The separate ROCm PyTorch `ab32a1f` follow-up was superseded by the
+  2026-05-31 `f8efdb3` ledger entry.
 - The Lemonade 10.6.0 fork-main refresh is adopted. The source lane pins
   `nisavid/lemonade` fork main at
   `b608a74d0604f96786de59d65cb0ba27b05db0c6`, aligned with canonical upstream
