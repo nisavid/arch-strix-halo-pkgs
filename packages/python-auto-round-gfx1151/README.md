@@ -6,8 +6,8 @@
 - Scaffold template: `native-wheel-pypi`
 - Recipe build method: `pip`
 - Upstream repo: `https://github.com/intel/auto-round`
-- Package version: `0.12.3`
-- Recipe revision: `a1d7a68 (20260427, 16 commits touching recipe path)`
+- Package version: `0.13.0`
+- Recipe revision: `3f15f9f (20260508, 17 commits touching recipe path)`
 - Recipe steps: `32`
 - Recipe dependencies: `cpython, pytorch`
 - Recorded reference packages: `none`
@@ -42,6 +42,7 @@ quantization-tooling dependency window.
 
 - Check llmcompressor's AutoRound dependency bounds before updating.
 - After publishing a rebuilt package, verify `import auto_round` and `from auto_round.schemes import PRESET_SCHEMES` through the installed local Python lane.
+- On 2026-05-31, update to AutoRound 0.13.0 for the current PyPI source drift; keep deploy/install and installed import/API smokes as explicit gates.
 
 ## Maintainer Starting Points
 

@@ -6,7 +6,7 @@
 
 pkgname=lemonade-server
 pkgver=10.6.0
-pkgrel=8
+pkgrel=9
 pkgdesc='Local AI server runtime rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://github.com/nisavid/lemonade
@@ -99,12 +99,12 @@ package() {
   install -Dm644 /dev/stdin "$pkgdir/etc/lemonade/conf.d/10-llamacpp-gfx1151.conf" <<'EOF'
 LEMONADE_LLAMACPP_ROCM_BIN=/usr/bin/llama-server-hip-gfx1151
 LEMONADE_LLAMACPP_VULKAN_BIN=/usr/bin/llama-server-vulkan-gfx1151
-LEMONADE_LLAMACPP_ROCM_VERSION=b9357
-LEMONADE_LLAMACPP_VULKAN_VERSION=b9357
-LEMONADE_LLAMACPP_ROCM_RELEASE_URL=https://github.com/ggml-org/llama.cpp/releases/tag/b9357
-LEMONADE_LLAMACPP_VULKAN_RELEASE_URL=https://github.com/ggml-org/llama.cpp/releases/tag/b9357
-LEMONADE_LLAMACPP_ROCM_LABEL=System llama-server-hip-gfx1151 llama.cpp b9357
-LEMONADE_LLAMACPP_VULKAN_LABEL=System llama-server-vulkan-gfx1151 llama.cpp b9357
+LEMONADE_LLAMACPP_ROCM_VERSION=b9442
+LEMONADE_LLAMACPP_VULKAN_VERSION=b9442
+LEMONADE_LLAMACPP_ROCM_RELEASE_URL=https://github.com/ggml-org/llama.cpp/releases/tag/b9442
+LEMONADE_LLAMACPP_VULKAN_RELEASE_URL=https://github.com/ggml-org/llama.cpp/releases/tag/b9442
+LEMONADE_LLAMACPP_ROCM_LABEL=System llama-server-hip-gfx1151 llama.cpp b9442
+LEMONADE_LLAMACPP_VULKAN_LABEL=System llama-server-vulkan-gfx1151 llama.cpp b9442
 EOF
 
   install -Dm644 "$srcdir/lemonade/LICENSE" "$pkgdir/usr/share/licenses/lemonade-server/LICENSE"

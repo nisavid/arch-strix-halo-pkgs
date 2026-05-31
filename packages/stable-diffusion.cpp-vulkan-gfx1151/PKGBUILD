@@ -5,7 +5,7 @@
 # Package recipe key: stable_diffusion_cpp
 
 pkgname=stable-diffusion.cpp-vulkan-gfx1151
-pkgver=r652.g92dc726
+pkgver=r663.gbe65ac7
 pkgrel=1
 pkgdesc='stable-diffusion.cpp Vulkan backend rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
@@ -18,7 +18,7 @@ options=()
 provides=(stable-diffusion.cpp-vulkan-gfx1151 stable-diffusion.cpp-vulkan)
 conflicts=(stable-diffusion.cpp-vulkan)
 replaces=()
-source=('stable-diffusion.cpp::git+https://github.com/leejet/stable-diffusion.cpp.git#commit=92dc7268fc4ffb0c0cc0bd52dfcefea91326e797' 'ggml::git+https://github.com/leejet/ggml.git#commit=0ce7ad348a3151e1da9f65d962044546bcaad421' 'sdcpp-webui::git+https://github.com/leejet/sdcpp-webui.git#commit=797ccf80825cc035508ba9b599b2a21953e7f835' 'libwebm::git+https://github.com/webmproject/libwebm.git#commit=5bf12267eea773a32fcf4949de52b0add158a8d5' 'libwebp::git+https://github.com/webmproject/libwebp.git#commit=0c9546f7efc61eac7f79ae115c3f99c91c21c443' 0001-sdxl-clipg-prefix-mapping.patch)
+source=('stable-diffusion.cpp::git+https://github.com/leejet/stable-diffusion.cpp.git#commit=be65ac7511b30379b003626c15224798929e33d4' 'ggml::git+https://github.com/leejet/ggml.git#commit=0ce7ad348a3151e1da9f65d962044546bcaad421' 'sdcpp-webui::git+https://github.com/leejet/sdcpp-webui.git#commit=797ccf80825cc035508ba9b599b2a21953e7f835' 'libwebm::git+https://github.com/webmproject/libwebm.git#commit=5bf12267eea773a32fcf4949de52b0add158a8d5' 'libwebp::git+https://github.com/webmproject/libwebp.git#commit=0c9546f7efc61eac7f79ae115c3f99c91c21c443' 0001-sdxl-clipg-prefix-mapping.patch)
 sha256sums=(SKIP SKIP SKIP SKIP SKIP 044658c55684439e53b464d919740976775133573ea74390b44d51fa2ddd2949)
 
 prepare() {
@@ -122,12 +122,12 @@ package() {
   rm -rf "$pkgdir${install_root}/include" "$pkgdir${install_root}/lib"
   install -Dm644 LICENSE "$pkgdir/usr/share/licenses/stable-diffusion.cpp-vulkan-gfx1151/LICENSE"
   install -d "$pkgdir/usr/bin" "$pkgdir${install_root}"
-  printf '%s\n' "r652.g92dc726" > "$pkgdir${install_root}/version.txt"
+  printf '%s\n' "r663.gbe65ac7" > "$pkgdir${install_root}/version.txt"
   printf '%s\n' "vulkan" > "$pkgdir${install_root}/backend.txt"
   cat > "$pkgdir${install_root}/build-info.env" <<EOF
 PROJECT=stable-diffusion.cpp
 BACKEND=vulkan
-SOURCE_REVISION=92dc7268fc4ffb0c0cc0bd52dfcefea91326e797
+SOURCE_REVISION=be65ac7511b30379b003626c15224798929e33d4
 PACKAGE=stable-diffusion.cpp-vulkan-gfx1151
 EOF
 
