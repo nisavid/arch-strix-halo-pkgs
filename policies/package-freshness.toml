@@ -88,8 +88,8 @@ packages = ["python-pytorch-opt-rocm-gfx1151"]
 priority = "high"
 workflow = "upstream_source_update"
 checks = [
-  { id = "release-branch", role = "primary", kind = "git_ref", repo = "https://github.com/ROCm/pytorch.git", ref = "refs/heads/release/2.12", recorded = "26872debb4452ea6dc898288618a15595e2317d9", comparison = "sha" },
-  { id = "arch", role = "baseline", kind = "arch_package", package = "python-pytorch-opt-rocm", recorded = "2.12.0-1", comparison = "pkgver" },
+  { id = "release-branch", role = "primary", kind = "git_ref", repo = "https://github.com/ROCm/pytorch.git", ref = "refs/heads/release/2.12", recorded = "f8efdb30b5e6d8b1ae3e8744f227416b2aa032c1", comparison = "sha" },
+  { id = "arch", role = "baseline", kind = "arch_package", package = "python-pytorch-opt-rocm", recorded = "2.12.0-2", comparison = "pkgver" },
 ]
 source_contracts = [
   { id = "release-branch-source", packages = ["python-pytorch-opt-rocm-gfx1151"], check_id = "release-branch", source_name = "pytorch", source_kind = "git_commit", origin = "https://github.com/ROCm/pytorch.git", value_policy = "pinned_commit_may_lag_reviewed" },
@@ -339,7 +339,7 @@ packages = ["python-compressed-tensors-gfx1151"]
 priority = "medium"
 workflow = "upstream_source_update"
 checks = [
-  { id = "pypi", role = "primary", kind = "pypi", package = "compressed-tensors", recorded = "0.15.0.1", comparison = "pep440" },
+  { id = "pypi", role = "primary", kind = "pypi", package = "compressed-tensors", recorded = "0.16.0", comparison = "pep440" },
 ]
 
 [families.accelerate]
@@ -355,7 +355,7 @@ packages = ["python-auto-round-gfx1151"]
 priority = "medium"
 workflow = "upstream_source_update"
 checks = [
-  { id = "pypi", role = "primary", kind = "pypi", package = "auto-round", recorded = "0.12.3", comparison = "pep440" },
+  { id = "pypi", role = "primary", kind = "pypi", package = "auto-round", recorded = "0.13.0", comparison = "pep440" },
 ]
 
 [families.llmcompressor]
@@ -410,8 +410,8 @@ packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"]
 priority = "high"
 workflow = "upstream_source_update"
 checks = [
-  { id = "release", role = "primary", kind = "github_release", repo = "ggml-org/llama.cpp", recorded = "b9357", comparison = "prefixed_integer" },
-  { id = "aur-hip", role = "baseline", kind = "aur", package = "llama.cpp-hip", recorded = "b9352-1", comparison = "pkgver" },
+  { id = "release", role = "primary", kind = "github_release", repo = "ggml-org/llama.cpp", recorded = "b9442", comparison = "prefixed_integer" },
+  { id = "aur-hip", role = "baseline", kind = "aur", package = "llama.cpp-hip", recorded = "b9437-1", comparison = "pkgver" },
   { id = "aur-vulkan", role = "baseline", kind = "aur", package = "llama.cpp-vulkan-bin", recorded = "b9222-1", comparison = "pkgver" },
 ]
 source_contracts = [
@@ -423,7 +423,7 @@ packages = ["stable-diffusion.cpp-vulkan-gfx1151"]
 priority = "medium"
 workflow = "upstream_source_update"
 checks = [
-  { id = "master", role = "primary", kind = "git_ref", repo = "https://github.com/leejet/stable-diffusion.cpp.git", ref = "refs/heads/master", recorded = "92dc7268fc4ffb0c0cc0bd52dfcefea91326e797", comparison = "sha" },
+  { id = "master", role = "primary", kind = "git_ref", repo = "https://github.com/leejet/stable-diffusion.cpp.git", ref = "refs/heads/master", recorded = "be65ac7511b30379b003626c15224798929e33d4", comparison = "sha" },
   { id = "aur-vulkan", role = "baseline", kind = "aur", package = "stable-diffusion.cpp-vulkan-git", recorded = "r279.49d6570-1", comparison = "pkgver" },
 ]
 source_contracts = [

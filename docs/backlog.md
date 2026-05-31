@@ -4,37 +4,49 @@
 
 ### Active Unresolved Gates
 
-- llama.cpp b9371 follow-up after b9357 validation: the 2026-05-28 targeted
-  freshness check run during b9357 closeout found upstream `b9371` commit
-  `f12cc6d0fa96d6a3c33952f06b7439ac43a3c3fe` after the adopted b9357 lane. Do
-  not retarget the b9357 adoption in place. Treat b9371 and the matching AUR
-  HIP `b9371-1` baseline as a separate source follow-up; the `b9357..b9371`
-  range includes llama.cpp environment-name, cpp-httplib vendor, Vulkan,
-  WebGPU, Hexagon, CUDA, and CI/build maintenance.
-  Package implementation still requires detailed source diff review, package
-  source update, package build, deploy/install, installed-smoke, and
-  selected-logit live validation.
-- ROCm PyTorch release/2.12 ab32a1f follow-up: the accepted 2026-05-28 targeted
+- llama.cpp b9442 follow-up after b9357 validation: the 2026-05-31 freshness
+  sweep found upstream `b9442` commit
+  `d4c8e2c29ce2fb9a251a0a4a16d6c857b4f70f8c` and AUR HIP `b9437-1`.
+  Source metadata and generated scaffolds now point both llama.cpp backends at
+  b9442, and `lemonade-server` is bumped to `10.6.0-9` for backend metadata.
+  Package build passed in `tools/amerge` plan `156db29f`. Deploy/install,
+  installed-smoke, and selected-logit live validation remain open.
+- ROCm PyTorch release/2.12 f8efdb3 follow-up: the accepted 2026-05-31
   freshness observation found release/2.12 at
-  `ab32a1f4f3aaf18f14c371244a91e0bb9b3abb0d` and the Arch
+  `f8efdb30b5e6d8b1ae3e8744f227416b2aa032c1` and the Arch
   `python-pytorch-opt-rocm 2.12.0-2` baseline. The 26872de runtime-base
-  closeout records that 26872de remains the deployed source target rather than
-  retargeting this lane. Treat ab32a1f as a separate follow-up: the
-  `26872de..ab32a1f` source range includes the large-matrix `triu`/`tril`
-  64-bit indexing fix and the UnaryUfuncInfo lambda syntax fix, and package
-  implementation still requires source update, affected rebuilds,
-  deploy/install, installed-smoke, and live-scenario validation.
-- stable-diffusion.cpp 0e4ee04 follow-up after 92dc726 validation: the
-  2026-05-28 full freshness check found upstream master at
-  `0e4ee04488159b81d95a9ffcd983a077fd5dcb77` after the adopted 92dc726 lane.
-  Treat this as a separate source follow-up; the `92dc726..0e4ee04` range
-  includes ROCm CI frontend-tooling preservation, a diffusion-model runner
-  refactor, architecture-specific LLM norm tensor-name resolution, and Flux2
-  VAE TAE selection. Package implementation still requires source update,
-  submodule-pin review, CLIP-G patch review, package build, deploy/install,
-  published-repo verification, and installed wrapper smokes.
-- Transformers 5.9.0 follow-up: keep this blocked until the ab32a1f follow-up
-  merges, or until the operator explicitly bypasses ab32a1f and declares the
+  closeout remains the deployed source target. Treat f8efdb3 as a separate
+  follow-up: the `26872de..f8efdb3` source range includes the large-matrix
+  `triu`/`tril` 64-bit indexing fix, the UnaryUfuncInfo lambda syntax fix, and
+  a ROCm foreach profiler-test skip. Package implementation still requires
+  source update, affected rebuilds, deploy/install, installed-smoke, and
+  live-scenario validation.
+- stable-diffusion.cpp be65ac7 follow-up after 92dc726 validation: the
+  2026-05-31 freshness sweep found upstream master at
+  `be65ac7511b30379b003626c15224798929e33d4` after the adopted 92dc726 lane.
+  Source metadata and generated scaffolds now point at `r663.gbe65ac7`, and
+  the upstream ggml gitlink still matches the explicit package source pin.
+  CLIP-G patch preparation and package build passed in `tools/amerge` plan
+  `156db29f`. Deploy/install, published-repo verification, and installed
+  wrapper smokes remain open.
+- AITER 0.1.15-rc0 dependency-closure blocker: upstream released v0.1.15-rc0,
+  but the RC requires `flydsl 0.1.9.dev599` from AMD's gfx942/gfx950 staging
+  index and `triton>=3.6`. Keep `python-amd-aiter-gfx1151` on 0.1.14 until
+  FlyDSL and Triton closure is packageable or the final release removes that
+  blocker.
+- compressed-tensors 0.16.0 package build and install: source metadata and
+  generated scaffolds now track the PyPI release. Package build passed in
+  `tools/amerge` plan `156db29f`. Deploy/install and installed import/config
+  smokes remain open.
+- AutoRound 0.13.0 package build and install: source metadata and generated
+  scaffolds now track the PyPI release. Package build passed in `tools/amerge`
+  plan `156db29f`. Deploy/install and installed import/API smokes remain open.
+- vLLM 0.22.0 follow-up: upstream 0.22.0 is reviewed and recorded, but the
+  local package remains on 0.21.0 until the ROCm patch carry, PyTorch/runtime
+  base follow-up, package build, deploy/install, installed smoke, and live
+  scenario gates are handled.
+- Transformers 5.9.0 follow-up: keep this blocked until the f8efdb3 follow-up
+  merges, or until the operator explicitly bypasses f8efdb3 and declares the
   runtime base stable. The local Transformers package is coupled to tokenizers,
   safetensors, Hugging Face Hub, model-surface imports, and vLLM scenarios.
 - GPTQ live-validation lane: the retained

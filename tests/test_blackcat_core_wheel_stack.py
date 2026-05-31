@@ -120,14 +120,14 @@ TOOLING_STACK = {
     "python-auto-round-gfx1151": {
         "template": "native-wheel-pypi",
         "recipe_key": "native_wheels",
-        "upstream_version": "0.12.3",
+        "upstream_version": "0.13.0",
         "provides": ["python-auto-round"],
         "consumer_dep": "python-auto-round-gfx1151",
     },
     "python-compressed-tensors-gfx1151": {
         "template": "native-wheel-pypi",
         "recipe_key": "native_wheels",
-        "upstream_version": "0.15.0.1",
+        "upstream_version": "0.16.0",
         "provides": ["python-compressed-tensors"],
         "consumer_dep": "python-compressed-tensors-gfx1151",
     },
@@ -144,7 +144,7 @@ ENGINE_STACK = {
     "stable-diffusion.cpp-vulkan-gfx1151": {
         "template": "stable-diffusion-cpp",
         "recipe_key": "stable_diffusion_cpp",
-        "upstream_version": "r652.g92dc726",
+        "upstream_version": "r663.gbe65ac7",
         "provides": [
             "stable-diffusion.cpp-vulkan-gfx1151",
             "stable-diffusion.cpp-vulkan",
@@ -373,14 +373,20 @@ def test_blackcat_engine_stack_rendered_output_exists() -> None:
     assert "recursive git submodules" not in readme
     assert "prepare-time network submodule fetches" in readme
     assert "explicit package sources" in readme
-    assert "mode-160000 gitlinks" in readme
-    for submodule_sha in (
-        "0ce7ad348a3151e1da9f65d962044546bcaad421",
+    assert "mode-160000 gitlink" in readme
+    ggml_sha = "0ce7ad348a3151e1da9f65d962044546bcaad421"
+    assert ggml_sha in readme
+    assert ggml_sha in recipe["policy"]["recipe_notes_override"]
+    for package_input in ("sdcpp-webui", "libwebm", "libwebp"):
+        assert package_input in readme
+        assert package_input in recipe["policy"]["recipe_notes_override"]
+    extra_sources = "\n".join(recipe["policy"]["extra_sources"])
+    for package_input_sha in (
         "797ccf80825cc035508ba9b599b2a21953e7f835",
         "5bf12267eea773a32fcf4949de52b0add158a8d5",
         "0c9546f7efc61eac7f79ae115c3f99c91c21c443",
     ):
-        assert submodule_sha in readme
-        assert submodule_sha in recipe["policy"]["recipe_notes_override"]
+        assert package_input_sha in pkgbuild
+        assert package_input_sha in extra_sources
     assert "recursive ggml" not in recipe["policy"]["recipe_notes_override"]
     assert "explicit package sources" in recipe["policy"]["recipe_notes_override"]

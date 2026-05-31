@@ -1,6 +1,43 @@
 # Current State
 
-Status as of 2026-05-28.
+Status as of 2026-05-31.
+
+The 2026-05-31 freshness sweep ran
+`tools/check_package_updates.py --json --fail-on actionable` from a temporary
+writable worktree because this worktree's `.agents` cache directory is mounted
+read-only. The sweep found seven action-required families:
+`python-amd-aiter-gfx1151` v0.1.15-rc0, `python-auto-round-gfx1151` 0.13.0,
+`python-compressed-tensors-gfx1151` 0.16.0, llama.cpp b9442 with AUR HIP
+b9437-1, ROCm PyTorch release/2.12 f8efdb3 with Arch
+`python-pytorch-opt-rocm 2.12.0-2`, stable-diffusion.cpp be65ac7, and vLLM
+0.22.0. The sweep also still reports Transformers 5.9.0 as a tracked candidate.
+
+Source updated: `python-auto-round-gfx1151` now renders from PyPI AutoRound
+0.13.0 as `0.13.0-1`, and `python-compressed-tensors-gfx1151` now renders from
+PyPI compressed-tensors 0.16.0 as `0.16.0-1`. Both llama.cpp backends now render
+from upstream b9442 commit `d4c8e2c29ce2fb9a251a0a4a16d6c857b4f70f8c` as
+`b9442-1`, and `lemonade-server` now renders as `10.6.0-9` so its
+system-managed backend metadata labels the b9442 packaged backends.
+`stable-diffusion.cpp-vulkan-gfx1151` now renders from upstream master commit
+`be65ac7511b30379b003626c15224798929e33d4` as `r663.gbe65ac7-1`; source review
+confirmed the upstream `ggml` gitlink still matches the explicit package source
+pin. Package built: `tools/amerge` build plan `156db29f` completed for
+`python-auto-round-gfx1151 0.13.0-1`,
+`python-compressed-tensors-gfx1151 0.16.0-1`,
+`llama.cpp-hip-gfx1151 b9442-1`, `llama.cpp-vulkan-gfx1151 b9442-1`,
+`stable-diffusion.cpp-vulkan-gfx1151 r663.gbe65ac7-1`, and
+`lemonade-server 10.6.0-9`. Deployed/installed: not complete. Installed-smoked:
+not complete. Live-scenario validated: not complete.
+
+The AITER v0.1.15-rc0, ROCm PyTorch f8efdb3, and vLLM 0.22.0 observations are
+recorded without package source adoption. AITER v0.1.15-rc0 is blocked because
+the release candidate requires `flydsl 0.1.9.dev599` from AMD's gfx942/gfx950
+staging index plus `triton>=3.6`, while this repo has no FlyDSL package closure
+and the current local Triton lane is 3.5.1. ROCm PyTorch f8efdb3 remains a
+tracked runtime-base follow-up after the deployed 26872de stack. vLLM 0.22.0
+remains tracked until the local ROCm patch carry and runtime-base gates are
+handled. Active follow-up work is visible in `docs/backlog.md` and
+`docs/maintainers/update-candidates.toml`.
 
 The 2026-05-26 AOCL 5.3 refresh is adopted. `aocl-utils-gfx1151`
 now renders from upstream AOCL-Utils `5.3.0` with the current AUR
@@ -330,17 +367,16 @@ llama.cpp candidate dispositions were updated,
 candidates, 17 current families, 2 rejected update candidates, and 5 tracked
 update candidates.
 
-The active package ledgers are: llama.cpp b9371 follow-up, ROCm PyTorch
-release/2.12 `ab32a1f` follow-up, stable-diffusion.cpp 0e4ee04 follow-up, and
-Transformers 5.9.0 follow-up. The effective freshness-tracked non-current
-entries are llama.cpp b9371, ROCm PyTorch release/2.12 `ab32a1f`,
-stable-diffusion.cpp 0e4ee04, and Transformers 5.9.0. Each active entry has its
-disposition in `docs/maintainers/update-candidates.toml` and its gate label in
-`docs/backlog.md`. The superseded llama.cpp `b9279`, `b9305`, and `b9334`
-candidates, stable-diffusion.cpp `3a8788c` and `a397e03` candidates, llama.cpp
-b9357, stable-diffusion.cpp 92dc726, and ROCm PyTorch release/2.12 `26872de`
-post-pkgrel live validation are adopted or rejected in the ledger rather than
-left as active tracked work.
+The active package ledgers are: llama.cpp b9442 follow-up, ROCm PyTorch
+release/2.12 `f8efdb3` follow-up, stable-diffusion.cpp be65ac7 follow-up,
+AITER 0.1.15-rc0 dependency-closure blocker, compressed-tensors 0.16.0 and
+AutoRound 0.13.0 build/install follow-up, vLLM 0.22.0 follow-up, and
+Transformers 5.9.0 follow-up. Each active entry has its disposition in
+`docs/maintainers/update-candidates.toml` and its gate label in
+`docs/backlog.md`. Superseded older candidates, including llama.cpp `b9371`,
+stable-diffusion.cpp `0e4ee04`, and ROCm PyTorch release/2.12 `ab32a1f`, are
+replaced by the current 2026-05-31 observations rather than left as active
+tracked work.
 
 The 2026-05-26 package refresh adopts the Lemonade fork `13b1af2` lane through
 source update, package build, deploy/install, installed smoke, and

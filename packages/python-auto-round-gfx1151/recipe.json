@@ -9,12 +9,13 @@
     "source_patches": [],
     "update_notes": [
       "Check llmcompressor's AutoRound dependency bounds before updating.",
-      "After publishing a rebuilt package, verify `import auto_round` and `from auto_round.schemes import PRESET_SCHEMES` through the installed local Python lane."
+      "After publishing a rebuilt package, verify `import auto_round` and `from auto_round.schemes import PRESET_SCHEMES` through the installed local Python lane.",
+      "On 2026-05-31, update to AutoRound 0.13.0 for the current PyPI source drift; keep deploy/install and installed import/API smokes as explicit gates."
     ]
   },
   "name": "python-auto-round-gfx1151",
   "package_name": "python-auto-round-gfx1151",
-  "pkgver": "0.12.3",
+  "pkgver": "0.13.0",
   "policy": {
     "advisory_references": [],
     "arch_reference": [],
@@ -49,6 +50,7 @@
     ],
     "patches_dir": "patches/python-auto-round-gfx1151",
     "pkgdesc": "AutoRound quantization tooling for the Strix Halo Python stack",
+    "pkgrel": 1,
     "provides": [
       "python-auto-round"
     ],
@@ -60,24 +62,25 @@
       "Use --skip-dependency-check because local torch, transformers, numpy, and accelerate packages satisfy upstream runtime requirements under gfx1151 package names."
     ],
     "sha256sums": [
-      "bc3370f7c3dabcae35d7f513e0bea3a1ee60bb9bfe0766ff25e4cc71fdf18f31"
+      "60d6b87640c7d73f49190033c9b5af40d75ee66579479b8277b5383c669bd153"
     ],
     "skip_dependency_check": true,
-    "src_subdir": "auto_round-0.12.3",
+    "src_subdir": "auto_round-0.13.0",
     "template": "native-wheel-pypi",
     "update_notes": [
       "Check llmcompressor's AutoRound dependency bounds before updating.",
-      "After publishing a rebuilt package, verify `import auto_round` and `from auto_round.schemes import PRESET_SCHEMES` through the installed local Python lane."
+      "After publishing a rebuilt package, verify `import auto_round` and `from auto_round.schemes import PRESET_SCHEMES` through the installed local Python lane.",
+      "On 2026-05-31, update to AutoRound 0.13.0 for the current PyPI source drift; keep deploy/install and installed import/API smokes as explicit gates."
     ],
-    "upstream_version": "0.12.3",
+    "upstream_version": "0.13.0",
     "url": "https://github.com/intel/auto-round"
   },
   "provenance": {
     "output_root": "packages",
     "recipe_author": "Blackcat Informatics Inc.",
-    "recipe_commit": "a1d7a68",
-    "recipe_date": "20260427",
-    "recipe_history_count": 16,
+    "recipe_commit": "3f15f9f",
+    "recipe_date": "20260508",
+    "recipe_history_count": 17,
     "recipe_repo": "https://github.com/paudley/ai-notes",
     "recipe_subdir": "strix-halo",
     "repo_subpath": "."
@@ -93,7 +96,7 @@
     "patches": [],
     "phase": "H",
     "repo": null,
-    "src_dir": null,
+    "src_dir": "auto_round-0.13.0",
     "steps": [
       32
     ]

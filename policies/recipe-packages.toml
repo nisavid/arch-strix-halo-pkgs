@@ -213,6 +213,7 @@ update_notes = [
   "Keep the ROCm GCN-arch fallback import-safe on Strix Halo. AMDSMI ASIC-info probes can fail even when the device is visible; that must degrade to torch.cuda probing rather than crashing during module import.",
   "Treat the current external python-torchao-rocm _C-extension failure as a host-package defect, not a blocker for this vLLM lane. Generic startup should stay clean after the local TorchAO-import patch, and the remaining follow-up only matters if this repo needs actual TorchAO custom ops or torchao-backed serving paths that truly require the native extension.",
   "On 2026-05-26, bump pkgrel to 4 for delivery of the vLLM native-extension rebuild against python-pytorch-opt-rocm-gfx1151 2.12.0-2 from ROCm/pytorch release/2.12 commit 26872debb4452ea6dc898288618a15595e2317d9.",
+  "On 2026-05-31, reviewed upstream vLLM 0.22.0 as a follow-up release. The release includes DeepSeek V4 hardening, Model Runner V2 changes, a Rust frontend, multi-tier KV offloading, ROCm DSv4 and AITER cleanup work, and build/dependency churn. Keep the package source on 0.21.0 until the local ROCm patch carry and runtime-base rebuild gates are handled.",
   "Treat runtime validation against the live ROCm stack as mandatory; a successful wheel build is not enough."
 ]
 provides = ["python-vllm-rocm", "python-vllm"]
@@ -341,6 +342,7 @@ update_notes = [
   "On 2026-05-10, adopted ROCm/pytorch release/2.11 at 5223630054ce5ecd7b774d0ea31f2a1b472fb9b3. The refresh preserves the wheel-version alignment for PyTorch 2.11.0, carries the corrected ROCm detection and missing torch/lib guard, and was validated through package build, install, direct PyTorch HIP smoke, vLLM rebuild, and the promoted installed inference scenarios.",
   "On 2026-05-18, opened the coordinated PyTorch 2.12 lane by adopting ROCm/pytorch release/2.12 at 4ddfe99d6da426414b7f0e587cdb1910f1c23eb3 together with TorchVision 0.27.0, because TorchVision 0.27.0 publishes a torch==2.12.0 runtime requirement.",
   "On 2026-05-26, reviewed ROCm/pytorch release/2.12 through 26872debb4452ea6dc898288618a15595e2317d9. The 4ddfe99..26872de range contains the ROCm Inductor static launcher change that loads HSACO images through hipModuleLoadData to avoid retained file descriptors, plus test cleanup commits. Adopt the branch head as a runtime-relevant PyTorch 2.12 pkgrel update and keep the current local patch semantics refreshed against that source.",
+  "On 2026-05-31, reviewed ROCm/pytorch release/2.12 through f8efdb30b5e6d8b1ae3e8744f227416b2aa032c1. The 26872de..f8efdb range includes the large-matrix triu/tril 64-bit indexing fix, the UnaryUfuncInfo lambda syntax fix, and a ROCm foreach profiler-test skip. Keep this as a tracked follow-up until the source pin, affected rebuild set, deploy/install, installed smoke, and live scenario gates are completed.",
   "On 2026-05-26, carry a local AOTriton 0.12 lazy-tensor callback patch while the recipe builds PyTorch's ROCm mem-efficient attention against the packaged python-aotriton-gfx1151 0.12b headers. The patch keeps the existing 0.11 callback shape under a version guard and uses LazyTensor self callbacks for AOTriton 0.12.",
   "Keep the package version aligned with the built wheel version; do not repeat the earlier mismatch where the package claimed 2.11.0 but the built wheel came from develop.",
   "Keep openblas explicit in both depends and makedepends so the build does not drift back to generic host BLAS auto-detection.",
@@ -614,6 +616,7 @@ update_notes = [
   "On 2026-05-14, adopted AITER main d50194cae28f2e22f4dfff19a86577fe2fcbca27 as a post-0.1.13 snapshot because the range carries kernel, JIT, mHC, topk, and MXFP4 changes that are relevant to the local vLLM/AITER validation surface.",
   "On 2026-05-16, adopted upstream release tag v0.1.14-rc0 because prerelease GitHub releases are now intentional source-lane updates for this package.",
   "On 2026-05-25, adopted upstream release tag v0.1.14 because it supersedes the rc0 package lane. The stable release is cut from release/v0.1.14 at bd0534e96 and adds DSv4 fusions, MiniMax fused qknorm/allreduce, FlyDSL and Triton updates, and bug fixes while preserving the local gfx1151 patch carry.",
+  "On 2026-05-31, reviewed upstream release tag v0.1.15-rc0. The RC adds DSv4-Pro/V4-Flash kernels, MoE and FlyDSL updates, Triton accumulator/split-k changes, MHC fused rmsnorm work, and OPUS updates, but it also introduces hard flydsl 0.1.9.dev599 and triton>=3.6 dependencies that are not satisfied by the current local package closure. Keep the package source on 0.1.14 until that dependency story is packaged or the final release removes the blocker.",
   "Treat FlyDSL as a separate tracked package story; do not silently fold an unpublished wheel into this package.",
   "Keep the installed-system JIT runtime patch until upstream AITER stops assuming `hipcc` is on the ambient PATH and correctly imports modules copied to the writable user JIT cache from read-only site-packages installs.",
   "Keep the package's explicit ROCm toolchain exports in `build()` until upstream AITER stops probing `hipconfig` and `hipcc` through ambient shell state. The concrete build failure was `Could not find hipconfig in PATH or ROCM_HOME(/usr)`.",
@@ -1654,7 +1657,8 @@ scaffold_notes = [
 [packages.python-compressed-tensors-gfx1151]
 recipe_key = "native_wheels"
 template = "native-wheel-pypi"
-upstream_version = "0.15.0.1"
+upstream_version = "0.16.0"
+pkgrel = 1
 pkgdesc = "Compressed model tensor format helpers for vLLM quantized checkpoints"
 url = "https://github.com/vllm-project/compressed-tensors"
 license = ["Apache-2.0"]
@@ -1663,14 +1667,15 @@ authoritative_reference = "none"
 advisory_references = []
 divergence_notes = [
   "There is no current Arch-family compressed-tensors package baseline, so this package is closure-first for vLLM compressed-tensors quantization lanes.",
-  "Uses the current-vLLM-compatible compressed-tensors 0.15.0.1 release instead of the older 0.14.0.1 helper version named by Blackcat's llmcompressor quantization notes.",
+  "Uses the current-vLLM-compatible compressed-tensors 0.16.0 release instead of the older 0.14.0.1 helper version named by Blackcat's llmcompressor quantization notes.",
   "Treat llmcompressor as a separate package/dependency-closure decision because llmcompressor 0.10.0.1 pins compressed-tensors 0.14.0.1 and older torch/transformers bounds than the current local stack."
 ]
 update_notes = [
   "Check vLLM's requirements/common.txt and compressed-tensors release metadata together before updating; this package should stay compatible with the installed vLLM quantization import path.",
   "After publishing a rebuilt package, verify `import compressed_tensors` and a minimal config import through the installed local Python lane.",
   "Do not use this package as proof that llmcompressor is installable. Package llmcompressor only after its accelerate, auto-round, NVIDIA-management, torch, transformers, and compressed-tensors dependency story is reconciled.",
-  "Keep the build dependency check skipped while upstream's sdist pins setuptools_scm==8.2.0. The Arch host carries a newer setuptools-scm that builds the pure-Python wheel cleanly."
+  "Keep the build dependency check skipped while upstream's sdist pins setuptools_scm==8.2.0. The Arch host carries a newer setuptools-scm that builds the pure-Python wheel cleanly.",
+  "On 2026-05-31, update to compressed-tensors 0.16.0 for the current vLLM compressed-tensors drift; keep deploy/install and installed import/config smokes as explicit gates."
 ]
 provides = ["python-compressed-tensors"]
 conflicts = ["python-compressed-tensors"]
@@ -1680,14 +1685,14 @@ arch = ["any"]
 pure_python_wheel = true
 skip_dependency_check = true
 pypi_name = "compressed_tensors"
-sha256sums = ["a8e93054e8a5ec49c980b09ed36c4c1249b4a8ee167920a8e461c4da26e78d99"]
-src_subdir = "compressed_tensors-0.15.0.1"
+sha256sums = ["51232ea943bf973d77fc1f3f6044fe3c05adfe6dba26f085b7f6b578a5bd9ba3"]
+src_subdir = "compressed_tensors-0.16.0"
 patches_dir = "patches/python-compressed-tensors-gfx1151"
 recipe_notes_override = """
 This package is the compressed-tensors output for the Blackcat Qwen3-VL
 tooling follow-up lane. Blackcat's quantization helper names
 llmcompressor 0.10.0.1 and compressed-tensors 0.14.0.1, but the current
-vLLM lane expects compressed-tensors 0.15.0.1. Keep this package
+vLLM lane expects compressed-tensors 0.16.0. Keep this package
 aligned with vLLM first, then reconcile llmcompressor as a separate package
 closure.
 
@@ -1758,7 +1763,8 @@ scaffold_notes = [
 [packages.python-auto-round-gfx1151]
 recipe_key = "native_wheels"
 template = "native-wheel-pypi"
-upstream_version = "0.12.3"
+upstream_version = "0.13.0"
+pkgrel = 1
 pkgdesc = "AutoRound quantization tooling for the Strix Halo Python stack"
 url = "https://github.com/intel/auto-round"
 license = ["Apache-2.0"]
@@ -1771,7 +1777,8 @@ divergence_notes = [
 ]
 update_notes = [
   "Check llmcompressor's AutoRound dependency bounds before updating.",
-  "After publishing a rebuilt package, verify `import auto_round` and `from auto_round.schemes import PRESET_SCHEMES` through the installed local Python lane."
+  "After publishing a rebuilt package, verify `import auto_round` and `from auto_round.schemes import PRESET_SCHEMES` through the installed local Python lane.",
+  "On 2026-05-31, update to AutoRound 0.13.0 for the current PyPI source drift; keep deploy/install and installed import/API smokes as explicit gates."
 ]
 provides = ["python-auto-round"]
 conflicts = ["python-auto-round"]
@@ -1779,8 +1786,8 @@ depends = ["python-gfx1151", "python-accelerate-gfx1151", "python-datasets", "py
 makedepends = ["python-build", "python-installer", "python-setuptools", "python-wheel", "rocm-llvm-gfx1151"]
 skip_dependency_check = true
 pypi_name = "auto_round"
-sha256sums = ["bc3370f7c3dabcae35d7f513e0bea3a1ee60bb9bfe0766ff25e4cc71fdf18f31"]
-src_subdir = "auto_round-0.12.3"
+sha256sums = ["60d6b87640c7d73f49190033c9b5af40d75ee66579479b8277b5383c669bd153"]
+src_subdir = "auto_round-0.13.0"
 patches_dir = "patches/python-auto-round-gfx1151"
 recipe_notes_override = """
 This package supplies AutoRound for llmcompressor's AutoRound modifier. It
@@ -2018,7 +2025,7 @@ scaffold_notes = [
 [packages."llama.cpp-hip-gfx1151"]
 recipe_key = "llamacpp"
 template = "llama-cpp"
-upstream_version = "b9357"
+upstream_version = "b9442"
 pkgrel = 1
 pkgdesc = "llama.cpp ROCm backend rebuilt for Strix Halo gfx1151"
 url = "https://github.com/ggml-org/llama.cpp"
@@ -2049,16 +2056,17 @@ update_notes = [
   "On 2026-05-26, adopted upstream llama.cpp b9330 at 328874d054e0eb44591202a23c209cf02c18e3cb. The b9222..b9330 range includes server MTP and draft-resource fixes, prompt token counts in /slots, CMake/UI build refactors, ggml 0.13.0, Vulkan im2col and snake activation updates, and backend probe fixes including ffn_latent MUL_MAT classification, so both packaged backends and Lemonade backend metadata follow the same source snapshot.",
   "On 2026-05-27, updated the package source to upstream llama.cpp b9352 at b4c0549a49be9e6dc59ac9d0a5bc21dbda910774. The b9330..b9352 range includes Vulkan conv2d and coopmat1 work, SYCL pool VMM support, WebGPU MMVQ cleanup, Talkie/Mistral3 model metadata, Hexagon CONCAT/ROPE work, CUDA FWHT sync fixes, and CI workflow refactors; no server patch-carry file changed, but the Vulkan runtime delta and shared model/runtime movement justify refreshing both packaged backends and Lemonade backend metadata.",
   "On 2026-05-28, updated the package source to upstream llama.cpp b9357 at 4d8cc0c56ffba3f8b7fdb0130627fed2a6f71958. The b9352..b9357 range adds MiniCPM5 tokenizer support, fixes the SSL listener log scheme, avoids preferring a dedicated Vulkan transfer queue on AMD UMA devices, and includes CI/docs maintenance. The shared selected-token logits patch still applies cleanly to the unchanged server context/task files.",
+  "On 2026-05-31, updated the package source to upstream llama.cpp b9442 at d4c8e2c29ce2fb9a251a0a4a16d6c857b4f70f8c. The b9357..b9442 range includes llama.cpp environment-name cleanup, cpp-httplib 0.46.0, Vulkan REPEAT, cooperative-matrix vector matmul, BF16 KV-cache FlashAttention, iGPU/RPC device-selection fixes relevant to Strix Halo, ggml 0.13.1, DeepSeek V3.2 support, server ETags/SSE/timeout changes, and UI/build maintenance. The shared selected-token logits patch still requires source-prep verification before this lane is treated as built.",
   "Keep the backend-specific package split explicit until benchmarking proves a routing wrapper is worth maintaining."
 ]
 provides = ["llama.cpp-hip-gfx1151", "llama.cpp-hip"]
 conflicts = ["llama.cpp-hip"]
 depends = ["gcc-libs", "glibc", "hip-runtime-amd-gfx1151", "rocm-core-gfx1151"]
 makedepends = ["cmake", "ninja", "rocm-llvm-gfx1151"]
-src_subdir = "llama.cpp-4d8cc0c56ffba3f8b7fdb0130627fed2a6f71958"
+src_subdir = "llama.cpp-d4c8e2c29ce2fb9a251a0a4a16d6c857b4f70f8c"
 upstream_name = "llama.cpp"
 baseline_kind = "closest-upstream"
-source_refs = ["llama.cpp-4d8cc0c56ffba3f8b7fdb0130627fed2a6f71958.tar.gz::https://github.com/ggml-org/llama.cpp/archive/4d8cc0c56ffba3f8b7fdb0130627fed2a6f71958.tar.gz"]
+source_refs = ["llama.cpp-d4c8e2c29ce2fb9a251a0a4a16d6c857b4f70f8c.tar.gz::https://github.com/ggml-org/llama.cpp/archive/d4c8e2c29ce2fb9a251a0a4a16d6c857b4f70f8c.tar.gz"]
 sha256sums = ["SKIP"]
 source_patches = ["0001-server-return-selected-token-logits.patch"]
 patches_dir = "patches/llama.cpp-common"
@@ -2095,7 +2103,7 @@ scaffold_notes = [
 [packages."llama.cpp-vulkan-gfx1151"]
 recipe_key = "llamacpp"
 template = "llama-cpp"
-upstream_version = "b9357"
+upstream_version = "b9442"
 pkgrel = 1
 pkgdesc = "llama.cpp Vulkan backend rebuilt for Strix Halo gfx1151"
 url = "https://github.com/ggml-org/llama.cpp"
@@ -2126,16 +2134,17 @@ update_notes = [
   "On 2026-05-26, adopted upstream llama.cpp b9330 at 328874d054e0eb44591202a23c209cf02c18e3cb. The b9222..b9330 range includes shared server MTP and draft-resource fixes, prompt token counts in /slots, CMake/UI build refactors, ggml 0.13.0, Vulkan im2col and snake activation updates, and backend probe fixes including ffn_latent MUL_MAT classification, so the Vulkan package follows the same source snapshot as the HIP backend.",
   "On 2026-05-27, updated the package source to upstream llama.cpp b9352 at b4c0549a49be9e6dc59ac9d0a5bc21dbda910774. The b9330..b9352 range includes Vulkan conv2d and coopmat1 work, SYCL pool VMM support, WebGPU MMVQ cleanup, Talkie/Mistral3 model metadata, Hexagon CONCAT/ROPE work, CUDA FWHT sync fixes, and CI workflow refactors; no server patch-carry file changed, but the Vulkan runtime delta and shared model/runtime movement justify refreshing both packaged backends and Lemonade backend metadata.",
   "On 2026-05-28, updated the package source to upstream llama.cpp b9357 at 4d8cc0c56ffba3f8b7fdb0130627fed2a6f71958. The b9352..b9357 range adds MiniCPM5 tokenizer support, fixes the SSL listener log scheme, avoids preferring a dedicated Vulkan transfer queue on AMD UMA devices, and includes CI/docs maintenance. The shared selected-token logits patch still applies cleanly to the unchanged server context/task files.",
+  "On 2026-05-31, updated the package source to upstream llama.cpp b9442 at d4c8e2c29ce2fb9a251a0a4a16d6c857b4f70f8c. The b9357..b9442 range includes llama.cpp environment-name cleanup, cpp-httplib 0.46.0, Vulkan REPEAT, cooperative-matrix vector matmul, BF16 KV-cache FlashAttention, iGPU/RPC device-selection fixes relevant to Strix Halo, ggml 0.13.1, DeepSeek V3.2 support, server ETags/SSE/timeout changes, and UI/build maintenance. The shared selected-token logits patch still requires source-prep verification before this lane is treated as built.",
   "Until then, compare runtime/package expectations against the -bin package and source-build conventions against aur/llama.cpp."
 ]
 provides = ["llama.cpp-vulkan-gfx1151", "llama.cpp-vulkan"]
 conflicts = ["llama.cpp-vulkan"]
 depends = ["gcc-libs", "glibc", "vulkan-icd-loader"]
 makedepends = ["cmake", "ninja", "rocm-llvm-gfx1151", "shaderc", "spirv-headers", "vulkan-headers"]
-src_subdir = "llama.cpp-4d8cc0c56ffba3f8b7fdb0130627fed2a6f71958"
+src_subdir = "llama.cpp-d4c8e2c29ce2fb9a251a0a4a16d6c857b4f70f8c"
 upstream_name = "llama.cpp"
 baseline_kind = "closest-upstream"
-source_refs = ["llama.cpp-4d8cc0c56ffba3f8b7fdb0130627fed2a6f71958.tar.gz::https://github.com/ggml-org/llama.cpp/archive/4d8cc0c56ffba3f8b7fdb0130627fed2a6f71958.tar.gz"]
+source_refs = ["llama.cpp-d4c8e2c29ce2fb9a251a0a4a16d6c857b4f70f8c.tar.gz::https://github.com/ggml-org/llama.cpp/archive/d4c8e2c29ce2fb9a251a0a4a16d6c857b4f70f8c.tar.gz"]
 sha256sums = ["SKIP"]
 source_patches = ["0001-server-return-selected-token-logits.patch"]
 patches_dir = "patches/llama.cpp-common"
@@ -2173,7 +2182,7 @@ scaffold_notes = [
 [packages."stable-diffusion.cpp-vulkan-gfx1151"]
 recipe_key = "stable_diffusion_cpp"
 template = "stable-diffusion-cpp"
-upstream_version = "r652.g92dc726"
+upstream_version = "r663.gbe65ac7"
 pkgdesc = "stable-diffusion.cpp Vulkan backend rebuilt for Strix Halo gfx1151"
 url = "https://github.com/leejet/stable-diffusion.cpp"
 license = ["MIT"]
@@ -2195,28 +2204,27 @@ update_notes = [
   "On 2026-05-26, adopted upstream master at 1ceb5bd9df7784bcdf67dd9ed8bf0198b542ebc9 for LTX temporal and rational latent upscaling, Longcat image/edit support, highres custom sigma and VAE tiling arguments, TAESD preview fixes, macOS rpath fixes, and Windows ROCm BLAS artifact packaging.",
   "On 2026-05-26 review follow-up, verified the upstream mode-160000 gitlinks at 1ceb5bd9df7784bcdf67dd9ed8bf0198b542ebc9 match the explicit ggml, sdcpp-webui, libwebm, and libwebp package source pins and are unchanged from caa823a8c06a51288f0a01bb29e9bd8bcec30a8a.",
   "On 2026-05-27, updated package source metadata to upstream master at 92dc7268fc4ffb0c0cc0bd52dfcefea91326e797 for Microsoft Lens support, GPT-OSS tokenizer and vocabulary additions used by Lens prompts, and permission-denied skipping in recursive LoRA directory scans.",
-  "On 2026-05-27 source review, verified the upstream mode-160000 gitlinks at 92dc7268fc4ffb0c0cc0bd52dfcefea91326e797 match the explicit ggml, examples/server/frontend, thirdparty/libwebm, and thirdparty/libwebp package source pins, and refreshed the CLIP-G patch context so both the prefix-ordering change and Flux te1 remap apply without ignored patch hunks."
+  "On 2026-05-27 source review, verified the upstream mode-160000 gitlinks at 92dc7268fc4ffb0c0cc0bd52dfcefea91326e797 match the explicit ggml, examples/server/frontend, thirdparty/libwebm, and thirdparty/libwebp package source pins, and refreshed the CLIP-G patch context so both the prefix-ordering change and Flux te1 remap apply without ignored patch hunks.",
+  "On 2026-05-31, updated package source metadata to upstream master at be65ac7511b30379b003626c15224798929e33d4 for APG and unconditional SLG support, PiD support, mmap tensor exclusions, graceful allocation-error handling, tokenizer normalization fixes, Gemma3 rope and VRAM propagation fixes, Flux2 VAE TAE correction, and flash-attention wrapper cleanup.",
+  "On 2026-05-31 source review, verified the upstream mode-160000 ggml gitlink at be65ac7511b30379b003626c15224798929e33d4 still matches the explicit ggml package source pin and that no explicit sdcpp-webui, libwebm, or libwebp source pin changed."
 ]
 recipe_notes_override = """
 This package supplies stable-diffusion.cpp as the Blackcat Vulkan image
 generation engine for the Strix Halo stack. The source follows
 leejet/stable-diffusion.cpp master at
-`92dc7268fc4ffb0c0cc0bd52dfcefea91326e797` (`r652.g92dc726`).
-The current source includes Microsoft Lens support, GPT-OSS tokenizer and
-vocabulary additions used by Lens prompts, LTX temporal and rational latent
-upscaling, LTX audio and VAE decoding improvements, highres custom sigma
-support, extra VAE tiling arguments, Longcat image/edit support, TAESD preview
-fixes, and LoRA directory scans that skip permission-denied entries.
+`be65ac7511b30379b003626c15224798929e33d4` (`r663.gbe65ac7`).
+The current source includes APG and unconditional SLG support, PiD support,
+mmap tensor exclusions, graceful allocation-error handling, tokenizer
+normalization fixes, Gemma3 rope and VRAM propagation fixes, Flux2 VAE TAE
+correction, and flash-attention wrapper cleanup.
 
 The package builds the Vulkan backend with ggml, WebP, WebM, and server frontend
 inputs modeled as explicit package sources and staged into the upstream
 submodule paths during prepare().
-At this pin, the upstream recursive git tree records mode-160000 gitlinks for
+At this pin, the upstream recursive git tree records a mode-160000 gitlink for
 `ggml` (`0ce7ad348a3151e1da9f65d962044546bcaad421`),
-`examples/server/frontend` (`797ccf80825cc035508ba9b599b2a21953e7f835`),
-`thirdparty/libwebm` (`5bf12267eea773a32fcf4949de52b0add158a8d5`), and
-`thirdparty/libwebp` (`0c9546f7efc61eac7f79ae115c3f99c91c21c443`), matching
-the explicit package source pins.
+matching the explicit package source pin. The explicit sdcpp-webui, libwebm,
+and libwebp source pins remain package inputs for the local build shape.
 It uses the repo's amdclang/Zen 5 lane, ThinLTO, AOCL-LibM
 linkage, OpenMP CPU fallback, WebP/WebM output support, and release-mode
 Vulkan settings. Runtime payloads live under
@@ -2232,11 +2240,11 @@ provides = ["stable-diffusion.cpp-vulkan-gfx1151", "stable-diffusion.cpp-vulkan"
 conflicts = ["stable-diffusion.cpp-vulkan"]
 depends = ["aocl-libm-gfx1151", "gcc-libs", "glibc", "vulkan-icd-loader"]
 makedepends = ["cmake", "git", "ninja", "patchelf", "pnpm", "rocm-llvm-gfx1151", "shaderc", "spirv-headers", "vulkan-headers"]
-source_refs = ["stable-diffusion.cpp::git+https://github.com/leejet/stable-diffusion.cpp.git#commit=92dc7268fc4ffb0c0cc0bd52dfcefea91326e797"]
+source_refs = ["stable-diffusion.cpp::git+https://github.com/leejet/stable-diffusion.cpp.git#commit=be65ac7511b30379b003626c15224798929e33d4"]
 sha256sums = ["SKIP"]
 src_subdir = "stable-diffusion.cpp"
 upstream_name = "stable-diffusion.cpp"
-upstream_revision = "92dc7268fc4ffb0c0cc0bd52dfcefea91326e797"
+upstream_revision = "be65ac7511b30379b003626c15224798929e33d4"
 baseline_kind = "closest-upstream"
 patches_dir = "packages/stable-diffusion.cpp-vulkan-gfx1151"
 source_patches = ["0001-sdxl-clipg-prefix-mapping.patch"]
@@ -2262,7 +2270,7 @@ recipe_key = "lemonade"
 template = "lemonade-server"
 pkgdesc = "Local AI server runtime rebuilt for Strix Halo gfx1151"
 upstream_version = "10.6.0"
-pkgrel = 8
+pkgrel = 9
 url = "https://github.com/nisavid/lemonade"
 repo = "https://github.com/nisavid/lemonade.git"
 license = ["Apache-2.0"]
@@ -2280,7 +2288,8 @@ update_notes = [
   "Re-test that LEMONADE_LLAMACPP_*_BIN service overrides still apply even when /var/lib/lemonade/config.json already exists.",
   "On 2026-05-26, adopted nisavid/lemonade fork main 13b1af25f84cf08ad5f8bf0ec58980bdfc09c9e7 so the server and app packages stay pinned to the same fork source while the app hides adapter controls for base llamacpp models.",
   "On 2026-05-27, bumped the server package release to refresh packaged system-managed llama.cpp backend metadata for the b9352 HIP and Vulkan backends.",
-  "On 2026-05-28, bumped the server package release to refresh packaged system-managed llama.cpp backend metadata for the b9357 HIP and Vulkan backends."
+  "On 2026-05-28, bumped the server package release to refresh packaged system-managed llama.cpp backend metadata for the b9357 HIP and Vulkan backends.",
+  "On 2026-05-31, bump the server package release to refresh packaged system-managed llama.cpp backend metadata for the b9442 HIP and Vulkan backends."
 ]
 provides = ["lemonade-server"]
 conflicts = []

@@ -5,7 +5,7 @@
 # Package recipe key: native_wheels
 
 pkgname=python-auto-round-gfx1151
-pkgver=0.12.3
+pkgver=0.13.0
 pkgrel=1
 pkgdesc='AutoRound quantization tooling for the Strix Halo Python stack'
 arch=('x86_64')
@@ -18,11 +18,11 @@ options=()
 provides=(python-auto-round)
 conflicts=(python-auto-round)
 replaces=()
-source=(https://files.pythonhosted.org/packages/source/a/auto_round/auto_round-0.12.3.tar.gz)
-sha256sums=(bc3370f7c3dabcae35d7f513e0bea3a1ee60bb9bfe0766ff25e4cc71fdf18f31)
+source=(https://files.pythonhosted.org/packages/source/a/auto_round/auto_round-0.13.0.tar.gz)
+sha256sums=(60d6b87640c7d73f49190033c9b5af40d75ee66579479b8277b5383c669bd153)
 
 build() {
-  cd "$srcdir/auto_round-0.12.3"
+  cd "$srcdir/auto_round-0.13.0"
 
   _setup_compiler_env() {
   local _compiler_root="/opt/rocm/lib/llvm/bin"
@@ -49,7 +49,7 @@ build() {
 }
 
   _setup_compiler_env
-  local _base_flags="-O3 -march=native -mprefer-vector-width=512 -mavx512f -mavx512dq -mavx512vl -mavx512bw -mllvm -enable-gvn-hoist -mllvm -enable-gvn-sink -famd-opt -Wno-error=unused-command-line-argument"
+  local _base_flags="-O3 -march=native -mprefer-vector-width=512 -mavx512f -mavx512dq -mavx512vl -mavx512bw -mllvm -enable-gvn-hoist -mllvm -enable-gvn-sink -Wno-error=unused-command-line-argument"
   local _wheel_flags
   _wheel_flags="$(printf '%s' "${_base_flags}" | sed -E 's/-mllvm (-[^ ]+)/-Xclang -mllvm -Xclang \1/g; s/  +/ /g; s/^ +| +$//g')"
   local _base_cflags="${CFLAGS:-}"
@@ -60,10 +60,10 @@ build() {
   export CXXFLAGS="${_base_cxxflags:+${_base_cxxflags} }${_wheel_flags}"
   export LDFLAGS="${_base_ldflags:+${_base_ldflags} }-famd-opt"
 
-  python -m build --wheel --no-isolation --skip-dependency-check
+  /usr/bin/python -m build --wheel --no-isolation --skip-dependency-check
 }
 
 package() {
-  cd "$srcdir/auto_round-0.12.3"
-  python -m installer --destdir="$pkgdir" dist/*.whl
+  cd "$srcdir/auto_round-0.13.0"
+  /usr/bin/python -m installer --destdir="$pkgdir" dist/*.whl
 }

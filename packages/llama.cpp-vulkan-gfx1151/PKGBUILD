@@ -5,7 +5,7 @@
 # Package recipe key: llamacpp
 
 pkgname=llama.cpp-vulkan-gfx1151
-pkgver=b9357
+pkgver=b9442
 pkgrel=1
 pkgdesc='llama.cpp Vulkan backend rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
@@ -18,11 +18,11 @@ options=()
 provides=(llama.cpp-vulkan-gfx1151 llama.cpp-vulkan)
 conflicts=(llama.cpp-vulkan)
 replaces=()
-source=(llama.cpp-4d8cc0c56ffba3f8b7fdb0130627fed2a6f71958.tar.gz::https://github.com/ggml-org/llama.cpp/archive/4d8cc0c56ffba3f8b7fdb0130627fed2a6f71958.tar.gz 0001-server-return-selected-token-logits.patch)
+source=(llama.cpp-d4c8e2c29ce2fb9a251a0a4a16d6c857b4f70f8c.tar.gz::https://github.com/ggml-org/llama.cpp/archive/d4c8e2c29ce2fb9a251a0a4a16d6c857b4f70f8c.tar.gz 0001-server-return-selected-token-logits.patch)
 sha256sums=(SKIP SKIP)
 
 prepare() {
-  cd "$srcdir/llama.cpp-4d8cc0c56ffba3f8b7fdb0130627fed2a6f71958"
+  cd "$srcdir/llama.cpp-d4c8e2c29ce2fb9a251a0a4a16d6c857b4f70f8c"
 
   if ! patch --dry-run -R -Np1 -i "$srcdir/0001-server-return-selected-token-logits.patch" >/dev/null 2>&1; then
     patch -Np1 -i "$srcdir/0001-server-return-selected-token-logits.patch"
@@ -30,7 +30,7 @@ prepare() {
 }
 
 build() {
-  cd "$srcdir/llama.cpp-4d8cc0c56ffba3f8b7fdb0130627fed2a6f71958"
+  cd "$srcdir/llama.cpp-d4c8e2c29ce2fb9a251a0a4a16d6c857b4f70f8c"
 
   _setup_compiler_env() {
   local _compiler_root="/opt/rocm/lib/llvm/bin"
@@ -103,7 +103,7 @@ build() {
 }
 
 package() {
-  cd "$srcdir/llama.cpp-4d8cc0c56ffba3f8b7fdb0130627fed2a6f71958"
+  cd "$srcdir/llama.cpp-d4c8e2c29ce2fb9a251a0a4a16d6c857b4f70f8c"
   local build_root="$srcdir/build-vulkan"
   local install_root="/opt/llama.cpp-vulkan-gfx1151"
 
@@ -129,5 +129,5 @@ exec /opt/llama.cpp-vulkan-gfx1151/bin/${_base} "\$@"
 EOF
     done
   fi
-  install -Dm644 "$srcdir/llama.cpp-4d8cc0c56ffba3f8b7fdb0130627fed2a6f71958/LICENSE" "$pkgdir/usr/share/licenses/llama.cpp-vulkan-gfx1151/LICENSE"
+  install -Dm644 "$srcdir/llama.cpp-d4c8e2c29ce2fb9a251a0a4a16d6c857b4f70f8c/LICENSE" "$pkgdir/usr/share/licenses/llama.cpp-vulkan-gfx1151/LICENSE"
 }
