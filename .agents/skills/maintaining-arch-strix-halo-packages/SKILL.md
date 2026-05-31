@@ -88,6 +88,12 @@ which divergences are intentional, and where reusable source changes live.
    deploy/install gates, installed smokes, service smokes, and live scenarios.
 8. Update tracked docs if the change altered policy, workflow, verified
    behavior, or remaining validation status.
+9. Treat package ingestion, source updates, fixups, and tracked-candidate
+   reconciliation as unfinished until the repo changes have gone through
+   `$yeet`: commit any verified work, push the topic branch, open a GitHub pull
+   request, address checks and review feedback, and merge through the protected
+   branch flow. Stop before merge only when a real external blocker remains,
+   and state that blocker explicitly.
 
 ## Guardrails
 

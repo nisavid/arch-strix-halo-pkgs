@@ -15,6 +15,12 @@ artifacts.
 
 ## Completion Rule
 
+Host deployment is only the host-mutation phase. If the package lane changed
+tracked repo files, PKGBUILDs, generated outputs, docs, policy, or ledgers,
+the broader package-update task is not complete until the topic branch has
+gone through `$yeet`, GitHub checks/review, and merge, or until a real blocker
+is documented.
+
 When package files, PKGBUILDs, repo metadata, or package versions changed and
 the privileged host mutation was not run, the final response must include the
 exact `tools/amerge ...` handoff command.
