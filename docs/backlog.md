@@ -9,8 +9,16 @@
   `d4c8e2c29ce2fb9a251a0a4a16d6c857b4f70f8c` and AUR HIP `b9437-1`.
   Source metadata and generated scaffolds now point both llama.cpp backends at
   b9442, and `lemonade-server` is bumped to `10.6.0-9` for backend metadata.
-  Package build passed in `tools/amerge` plan `156db29f`. Deploy/install,
-  installed-smoke, and selected-logit live validation remain open.
+  Package build, deploy/install, local-repo verification, installed wrapper
+  smokes, and Lemonade metadata smokes passed. Selected-logit live validation
+  remains open.
+- llama.cpp b9444 follow-up after b9442 deployment: the post-deploy
+  2026-05-31 freshness recheck found upstream `b9444` commit
+  `6f165c1c64f77024686dc969c3de6f030f274add` after the installed b9442 lane.
+  The `b9442..b9444` compare is two commits ahead, with a server weak-ETag
+  handling fix and CPU workflow trigger-path maintenance. Package source
+  update, package build, deploy/install, installed-smoke, and selected-logit
+  live validation remain open.
 - ROCm PyTorch release/2.12 f8efdb3 follow-up: the accepted 2026-05-31
   freshness observation found release/2.12 at
   `f8efdb30b5e6d8b1ae3e8744f227416b2aa032c1` and the Arch
@@ -21,26 +29,11 @@
   a ROCm foreach profiler-test skip. Package implementation still requires
   source update, affected rebuilds, deploy/install, installed-smoke, and
   live-scenario validation.
-- stable-diffusion.cpp be65ac7 follow-up after 92dc726 validation: the
-  2026-05-31 freshness sweep found upstream master at
-  `be65ac7511b30379b003626c15224798929e33d4` after the adopted 92dc726 lane.
-  Source metadata and generated scaffolds now point at `r663.gbe65ac7`, and
-  the upstream ggml gitlink still matches the explicit package source pin.
-  CLIP-G patch preparation and package build passed in `tools/amerge` plan
-  `156db29f`. Deploy/install, published-repo verification, and installed
-  wrapper smokes remain open.
 - AITER 0.1.15-rc0 dependency-closure blocker: upstream released v0.1.15-rc0,
   but the RC requires `flydsl 0.1.9.dev599` from AMD's gfx942/gfx950 staging
   index and `triton>=3.6`. Keep `python-amd-aiter-gfx1151` on 0.1.14 until
   FlyDSL and Triton closure is packageable or the final release removes that
   blocker.
-- compressed-tensors 0.16.0 package build and install: source metadata and
-  generated scaffolds now track the PyPI release. Package build passed in
-  `tools/amerge` plan `156db29f`. Deploy/install and installed import/config
-  smokes remain open.
-- AutoRound 0.13.0 package build and install: source metadata and generated
-  scaffolds now track the PyPI release. Package build passed in `tools/amerge`
-  plan `156db29f`. Deploy/install and installed import/API smokes remain open.
 - vLLM 0.22.0 follow-up: upstream 0.22.0 is reviewed and recorded, but the
   local package remains on 0.21.0 until the ROCm patch carry, PyTorch/runtime
   base follow-up, package build, deploy/install, installed smoke, and live
