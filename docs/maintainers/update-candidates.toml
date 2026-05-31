@@ -406,13 +406,14 @@ previous_recorded = "b9357 / b9357-1 / b9352-1"
 latest = "b9442"
 discovery_status = "stable_update_available"
 disposition = "tracked"
-disposition_reason = "Tracked on 2026-05-31. Package source metadata and generated scaffolds now point both llama.cpp backends at b9442 and bump lemonade-server to refresh system-managed backend metadata. Package build passed in tools/amerge plan 156db29f, but deploy/install, installed-smoke, and selected-logit live validation remain open."
+disposition_reason = "Tracked on 2026-05-31. Package source metadata and generated scaffolds now point both llama.cpp backends at b9442 and bump lemonade-server to refresh system-managed backend metadata. Package build passed in tools/amerge plan 156db29f, deploy/install completed, pacman and local-repo verification report the expected b9442 packages plus lemonade-server 10.6.0-9, installed wrapper and Lemonade metadata smokes passed, and selected-logit live validation remains open."
 salient_changes = [
   "GitHub release b9442 and AUR llama.cpp-hip b9437-1 are available after the adopted b9357 package lane",
   "The release tag resolves to commit d4c8e2c29ce2fb9a251a0a4a16d6c857b4f70f8c",
   "The b9357..b9442 compare is 85 commits ahead, including llama.cpp environment-name cleanup, cpp-httplib 0.46.0, Vulkan REPEAT and BF16 KV-cache FlashAttention, iGPU/RPC device-selection fixes, ggml 0.13.1, DeepSeek V3.2 support, server ETags/SSE/timeout changes, and UI/build maintenance",
   "Generated scaffolds now render llama.cpp-hip-gfx1151 b9442-1, llama.cpp-vulkan-gfx1151 b9442-1, and lemonade-server 10.6.0-9",
-  "Package build passed in tools/amerge plan 156db29f; deploy/install, installed-smoke, and selected-logit live validation remain open",
+  "Package build passed in tools/amerge plan 156db29f; deploy/install, local-repo verification, installed wrapper smokes, and Lemonade backend metadata smokes passed",
+  "Selected-logit live validation remains open for the installed b9442 lane",
 ]
 patch_carry_overlap = true
 package_source_update_needed = false
@@ -420,6 +421,33 @@ host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
 next_gate_label = "llama.cpp b9442 follow-up after b9357 validation"
+last_reviewed = "2026-05-31"
+
+[candidates."llama-cpp-b9444"]
+family = "llama_cpp"
+packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151", "lemonade-server"]
+source_kind = "github_release"
+check_id = "release"
+baseline_source_kind = "aur"
+baseline_latest = "b9437-1"
+previous_recorded = "b9442 / b9437-1 / b9222-1"
+latest = "b9444"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked on 2026-05-31 after the b9442 deploy/install verification. The checker now reports upstream b9444 after the installed b9442 package lane. Keep the source update separate because b9442 is already built, deployed, installed, and wrapper-smoked, while selected-logit live validation remains open for that installed lane."
+salient_changes = [
+  "GitHub release b9444 is available after the installed b9442 package lane",
+  "The release tag resolves to commit 6f165c1c64f77024686dc969c3de6f030f274add",
+  "The b9442..b9444 compare is two commits ahead, including a server weak-ETag handling fix and CPU workflow trigger-path maintenance",
+  "AUR llama.cpp-hip remains at b9437-1 while the Vulkan baseline remains llama.cpp-vulkan-bin b9222-1",
+  "Package source update, package build, deploy/install, installed-smoke, and selected-logit live validation remain open",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "llama.cpp b9444 follow-up after b9442 deployment"
 last_reviewed = "2026-05-31"
 
 [candidates."numpy-2.4.6"]
@@ -692,22 +720,23 @@ baseline_latest = "r279.49d6570-1"
 previous_recorded = "92dc7268fc4ffb0c0cc0bd52dfcefea91326e797"
 latest = "be65ac7511b30379b003626c15224798929e33d4"
 discovery_status = "branch_head_ahead"
-disposition = "tracked"
-disposition_reason = "Tracked on 2026-05-31 after the 92dc726 package closeout. Package source metadata and generated scaffolds now point at be65ac7, the upstream ggml gitlink was reviewed against the explicit package source pin, and package build passed in tools/amerge plan 156db29f, but deploy/install, published-repo verification, and installed wrapper smokes remain open."
+disposition = "adopted"
+disposition_reason = "Adopted on 2026-05-31 after the 92dc726 package closeout. Package source metadata and generated scaffolds now point at be65ac7, the upstream ggml gitlink was reviewed against the explicit package source pin, package build passed in tools/amerge plan 156db29f, deploy/install completed, pacman and local-repo verification report stable-diffusion.cpp-vulkan-gfx1151 r663.gbe65ac7-1, and installed Vulkan CLI/server wrapper startup smokes passed. No model-generation validation is claimed."
 salient_changes = [
   "stable-diffusion.cpp master moved beyond the adopted 92dc726 package lane to be65ac7",
   "The 92dc726..be65ac7 compare is 11 commits ahead, including APG and unconditional SLG support, PiD support, mmap tensor exclusions, graceful allocation-error handling, tokenizer normalization fixes, Gemma3 rope and VRAM propagation fixes, Flux2 VAE TAE correction, and flash-attention wrapper cleanup",
   "AUR stable-diffusion.cpp-vulkan-git baseline remains at r279.49d6570-1",
   "The upstream mode-160000 ggml gitlink still matches the explicit ggml package source pin; the explicit sdcpp-webui, libwebm, and libwebp pins remain package inputs for the local build shape",
   "Generated scaffolds now render stable-diffusion.cpp-vulkan-gfx1151 r663.gbe65ac7",
-  "CLIP-G patch preparation and package build passed in tools/amerge plan 156db29f; deploy/install, published-repo verification, and installed wrapper smokes remain open",
+  "CLIP-G patch preparation and package build passed in tools/amerge plan 156db29f",
+  "Deploy/install, published-repo verification, and installed sd-cli-vulkan-gfx1151 plus sd-server-vulkan-gfx1151 wrapper startup smokes passed",
 ]
 patch_carry_overlap = true
 package_source_update_needed = false
-host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
-next_gate_label = "stable-diffusion.cpp be65ac7 follow-up after 92dc726 validation"
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Adopted; monitor future stable-diffusion.cpp refs through the normal freshness sweep"
 last_reviewed = "2026-05-31"
 
 [candidates."watchfiles-1.2.0"]
@@ -1374,20 +1403,21 @@ check_id = "pypi"
 previous_recorded = "0.15.0.1"
 latest = "0.16.0"
 discovery_status = "stable_update_available"
-disposition = "tracked"
-disposition_reason = "Tracked on 2026-05-31. Source metadata and generated scaffolds now track compressed-tensors 0.16.0 and package build passed in tools/amerge plan 156db29f, but deploy/install and installed import/config smokes remain open."
+disposition = "adopted"
+disposition_reason = "Adopted on 2026-05-31. Source metadata and generated scaffolds now track compressed-tensors 0.16.0, package build passed in tools/amerge plan 156db29f, deploy/install completed, pacman and local-repo verification report python-compressed-tensors-gfx1151 0.16.0-1, and the installed import/config smoke passed."
 salient_changes = [
   "PyPI compressed-tensors 0.16.0 is available after the current 0.15.0.1 package lane",
   "The package remains aligned with vLLM compressed-tensors quantization before llmcompressor is promoted",
   "Generated scaffolds now render python-compressed-tensors-gfx1151 0.16.0-1",
   "Package build passed in tools/amerge plan 156db29f",
+  "Deploy/install, local-repo verification, and installed compressed_tensors import/config smoke passed",
 ]
 patch_carry_overlap = false
 package_source_update_needed = false
-host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
-next_gate_label = "compressed-tensors 0.16.0 package build and install"
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Adopted; monitor future compressed-tensors releases through the normal freshness sweep"
 last_reviewed = "2026-05-31"
 
 [candidates."auto-round-0.13.0-pypi"]
@@ -1398,20 +1428,21 @@ check_id = "pypi"
 previous_recorded = "0.12.3"
 latest = "0.13.0"
 discovery_status = "stable_update_available"
-disposition = "tracked"
-disposition_reason = "Tracked on 2026-05-31. Source metadata and generated scaffolds now track AutoRound 0.13.0 and package build passed in tools/amerge plan 156db29f, but deploy/install and installed import/API smokes remain open."
+disposition = "adopted"
+disposition_reason = "Adopted on 2026-05-31. Source metadata and generated scaffolds now track AutoRound 0.13.0, package build passed in tools/amerge plan 156db29f, deploy/install completed, pacman and local-repo verification report python-auto-round-gfx1151 0.13.0-1, and the installed import/API smoke passed."
 salient_changes = [
   "PyPI auto-round 0.13.0 is available after the adopted 0.12.3 package lane",
   "The package remains part of the local llmcompressor and quantization-tooling closure",
   "Generated scaffolds now render python-auto-round-gfx1151 0.13.0-1",
   "Package build passed in tools/amerge plan 156db29f",
+  "Deploy/install, local-repo verification, and installed auto_round import/API smoke passed",
 ]
 patch_carry_overlap = false
 package_source_update_needed = false
-host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
-next_gate_label = "AutoRound 0.13.0 package build and install"
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Adopted; monitor future AutoRound releases through the normal freshness sweep"
 last_reviewed = "2026-05-31"
 
 [candidates."llmcompressor-0.10.0.2-pypi"]
