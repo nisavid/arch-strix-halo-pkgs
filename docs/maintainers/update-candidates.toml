@@ -553,13 +553,14 @@ previous_recorded = "26872debb4452ea6dc898288618a15595e2317d9 / 2.12.0-1"
 latest = "f8efdb30b5e6d8b1ae3e8744f227416b2aa032c1"
 discovery_status = "branch_head_ahead"
 disposition = "tracked"
-disposition_reason = "Tracked on 2026-05-31 after the 26872de runtime-base closeout. Do not retarget the deployed 26872de closeout to this commit: the current installed and live evidence belongs to adopted 26872de, while the 26872de..f8efdb3 range is new PyTorch runtime drift that still needs its own source update, package build, deploy/install, installed-smoke, and live-scenario validation."
+disposition_reason = "Tracked on 2026-05-31 after the 26872de runtime-base closeout. Do not retarget the deployed 26872de closeout to this commit: the accepted installed and live evidence belongs to adopted 26872de, while the 26872de..f8efdb3 range is new PyTorch runtime drift that still needs its own source update, package build, deploy/install, local-repo verification, published-repo verification, installed-smoke, and live-scenario validation. The reference host now has the intermediate ab32a1f/pkgrel-3 stack installed from a prior handoff, but that unmerged lane is superseded by f8efdb3 and must not be promoted by publishing cached pkgrel-3 artifacts."
 salient_changes = [
   "ROCm/pytorch release/2.12 moved beyond the adopted 26872de package lane",
   "Arch python-pytorch-opt-rocm baseline moved from 2.12.0-1 to 2.12.0-2 during closeout",
   "The 26872de..f8efdb3 range is three commits: the triu/tril 64-bit indexing fix for large matrices, the UnaryUfuncInfo ref lambda syntax fix, and a ROCm foreach profiler-test skip",
-  "The current deployed-stack evidence validates 26872de, not this newer source commit",
-  "Package source update, affected rebuilds, deploy/install, installed-smoke, and live-scenario validation remain open",
+  "The accepted deployed-stack evidence validates 26872de, not this newer source commit",
+  "The reference host currently has intermediate ab32a1f/pkgrel-3 runtime-base packages installed, but that host-only drift remains unreconciled package state for this follow-up",
+  "Package source update, affected rebuilds, deploy/install, local-repo verification, published-repo verification, installed-smoke, and live-scenario validation remain open",
 ]
 patch_carry_overlap = true
 package_source_update_needed = true
