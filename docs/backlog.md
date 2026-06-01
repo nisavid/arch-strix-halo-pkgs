@@ -145,12 +145,15 @@
   standalone source-built `fbgemm_gpu` package that registers
   `torch.ops.fbgemm`; it is not a PyTorch bundle and is not a
   `python-vllm-rocm-gfx1151` runtime dependency in the current stack. Current
-  vLLM ROCm `fbgemm_fp8` coverage is a quantization-format path that selects
-  existing ROCm/AITER/Torch FP8 kernels, and the only visible vLLM code path
-  that imports `fbgemm_gpu` is the `VLLM_USE_FBGEMM` NVFP4 override. Current
-  Transformers exposes `FbgemmFp8Config` and can use `fbgemm_gpu`, but this
-  repo does not yet own a pinned local model or scenario that proves package
-  value on `gfx1151`.
+  upstream vLLM main at `8b8546da1c3ba65097357523bc24199e36eddf65` lists
+  `fbgemm_fp8` among ROCm quantization names, but the source path is still
+  format-level coverage through vLLM's FP8 kernel selector, not proof that a
+  local `fbgemm_gpu` package is required on `gfx1151`. The visible vLLM NVFP4
+  path that imports `fbgemm_gpu` is the forced FBGEMM kernel override; ROCm
+  NVFP4 auto-selection remains emulation-only. Transformers main at
+  `39603d0e5cdb6f00e8d473d7fcbb01032d709181` exposes `FbgemmFp8Config` and can
+  use `fbgemm_gpu`, but this repo does not yet own a pinned local model or
+  scenario that proves package value on `gfx1151`.
   Reopen package implementation only when all of these criteria are true:
   a pinned vLLM or Transformers consumer scenario requires
   `fbgemm_gpu`/`torch.ops.fbgemm` and is not covered by TorchAO,

@@ -100,12 +100,14 @@ top-level setup, but the current sources still do not provide package-level
 consumer. xFormers does not change the vLLM
 scenario surface until a source-built package and consumer path exist. FBGEMM
 is deferred as a standalone package candidate:
-current vLLM ROCm `fbgemm_fp8` is a quantization-format path that selects
-existing ROCm/AITER/Torch FP8 kernels, and the vLLM code path that imports
-`fbgemm_gpu` is the `VLLM_USE_FBGEMM` NVFP4 override rather than a proven
-`gfx1151` validation lane. Add a vLLM FBGEMM scenario only after a pinned model
-or feature path exercises `fbgemm_gpu`/`torch.ops.fbgemm` and proves value over
-the existing TorchAO, compressed-tensors, AITER, and FlashAttention coverage.
+upstream vLLM main at `8b8546da1c3ba65097357523bc24199e36eddf65` lists
+`fbgemm_fp8` for ROCm and exposes a forced FBGEMM NVFP4 kernel path, but the
+current repo has no local vLLM scenario that requires `fbgemm_gpu` on `gfx1151`.
+ROCm NVFP4 auto-selection remains emulation-only in upstream vLLM, and the
+package boundary stays closed until a pinned model or feature path exercises
+`fbgemm_gpu`/`torch.ops.fbgemm` and proves value over the existing TorchAO,
+compressed-tensors, AITER, FlashAttention, Quark, GPTQ, AWQ, and bitsandbytes
+coverage.
 
 ## Gemma 4
 

@@ -545,23 +545,27 @@ source/submodule trust review, HIP extension build, linkage/private-path
 inspection, `python -m xformers.info`, and direct fp16/bf16 attention
 correctness smokes before any consumer scenario.
 
-The 2026-05-27 FBGEMM package-boundary review closes the current wave as a
+The 2026-06-01 FBGEMM package-boundary review keeps the current wave as a
 deferred package candidate rather than an implementation lane. The selected
 boundary is a standalone source-built `fbgemm_gpu` package that registers
 `torch.ops.fbgemm`; it is not part of the PyTorch package and is not a current
 `python-vllm-rocm-gfx1151` runtime dependency. Upstream FBGEMM v1.7.0 remains
 the latest reviewed release and advertises ROCm 7.0/7.1 support, but the
 visible ROCm CI/build automation targets `gfx942`/`gfx950`, and an inspected
-FP8 rowwise grouped GEMM path rejects other architecture names. The current
-vLLM ROCm `fbgemm_fp8` path uses existing ROCm/AITER/Torch FP8 kernels rather
-than importing `fbgemm_gpu`. Transformers exposes a possible
-`FbgemmFp8Config` consumer, but this repo does not yet own a pinned local model
-or scenario that proves `gfx1151` value over TorchAO, compressed-tensors,
-AITER, FlashAttention, Quark, GPTQ, AWQ, or bitsandbytes coverage. No package
-source was changed, no package was built, no deploy/install occurred, no
-installed smoke was run, and no live scenario is claimed for this review. The
-exact reopen criteria live in `docs/backlog.md` and
-`docs/maintainers/rocm-inference-reference.md`; no
+FP8 rowwise grouped GEMM path rejects other architecture names. Current upstream
+vLLM main at `8b8546da1c3ba65097357523bc24199e36eddf65` lists `fbgemm_fp8` for
+ROCm and has an FBGEMM NVFP4 kernel class, but the local package/scenario
+surface still has no pinned `gfx1151` consumer for `fbgemm_gpu`: vLLM's ROCm
+NVFP4 auto-selection remains emulation-only, and the FBGEMM NVFP4 path is a
+forced override. Transformers main at `39603d0e5cdb6f00e8d473d7fcbb01032d709181`
+exposes a possible `FbgemmFp8Config` consumer and imports
+`fbgemm_gpu.experimental.gen_ai` when the package is available, but this repo
+does not yet own a pinned local model or scenario that proves `gfx1151` value
+over TorchAO, compressed-tensors, AITER, FlashAttention, Quark, GPTQ, AWQ, or
+bitsandbytes coverage. No package source was changed, no package was built, no
+deploy/install occurred, no installed smoke was run, and no live scenario is
+claimed for this review. The exact reopen criteria live in `docs/backlog.md`
+and `docs/maintainers/rocm-inference-reference.md`; no
 `docs/maintainers/update-candidates.toml` record is created because FBGEMM is
 not an active freshness-policy family.
 
