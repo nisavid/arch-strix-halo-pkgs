@@ -1,6 +1,6 @@
 # Current State
 
-Status as of 2026-05-31.
+Status as of 2026-06-01.
 
 The 2026-05-31 freshness sweep ran
 `tools/check_package_updates.py --json --fail-on actionable` from a temporary
@@ -493,7 +493,7 @@ built the package, and completed privileged
 deploy/install through the normal package lane.
 
 The 2026-05-26 Quark/AWQ/GPTQ/bitsandbytes/xFormers/FBGEMM candidate triage is
-also docs-only source audit. The 2026-05-27 `amd-quark` authoring-tool blocker
+also docs-only source audit. The 2026-06-01 `amd-quark` authoring-tool blocker
 refresh extends that audit without implementing packages, changing package
 policy, updating package sources, building packages, deploy/installing
 artifacts, running installed smokes, or claiming new live-scenario validation.
@@ -516,11 +516,14 @@ decision work can start after this reconciliation, but live vLLM validation
 waits for artifact provenance/terms acceptance plus the same stable
 runtime-base boundary unless explicitly bypassed. The `amd-quark` package lane
 is blocked and deferred rather than package-ready: PyPI `amd-quark 0.11.2` is
-still wheel-only, public GitHub releases/tags stop at `v0.11.1`, the
-`release/0.11` branch reports `quark/version.txt` as `0.11.1`, PyPI metadata
-excludes Python 3.13+ and declares `numpy<=2.1.3`, AMD's installation guide
-supports Python 3.10, 3.11, and 3.12, and no concrete local authoring consumer
-path is selected. Bitsandbytes, AWQ, xFormers, and FBGEMM remain tracked
+still wheel-only, AMD's direct `amd_quark-0.11.2.zip` download contains that
+wheel plus examples and release-side docs rather than packageable source,
+public GitHub releases/tags stop at `v0.11.1`, the `release/0.11` branch
+reports `quark/version.txt` as `0.11.1`, PyPI metadata excludes Python 3.13+
+and declares `numpy<=2.1.3`, AMD's installation guide supports Python 3.10,
+3.11, and 3.12 while saying Python 3.13 is not currently supported by Quark's
+dependencies, and no concrete local authoring consumer path is selected.
+Bitsandbytes, AWQ, xFormers, and FBGEMM remain tracked
 source/package candidates with source-provenance, source-build,
 installed-smoke, and live-scenario gates before adoption. The 2026-05-27
 xFormers follow-up keeps that lane blocked/deferred rather than

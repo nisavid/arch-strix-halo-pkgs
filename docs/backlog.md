@@ -76,17 +76,20 @@
   candidate, not as a `python-vllm-rocm-gfx1151` runtime dependency. Package
   work is blocked until the chosen release has a public source tag or explicit
   source pin that matches the packaged version, and until Arch Python 3.14 plus
-  `python-numpy-gfx1151 2.4.6` compatibility is resolved. As of the 2026-05-27
+  `python-numpy-gfx1151 2.4.6` compatibility is resolved. As of the 2026-06-01
   source refresh, PyPI `amd-quark 0.11.2` remains the latest release and still
-  publishes only `amd_quark-0.11.2-py3-none-any.whl`; GitHub public
-  releases/tags still stop at `v0.11.1`; the `release/0.11` branch head
-  `210bbb76a1af71d6e5e03f8bea4d3bcf4ef57178` still reports
+  publishes only `amd_quark-0.11.2-py3-none-any.whl`; AMD's direct
+  `amd_quark-0.11.2.zip` download contains that wheel plus examples and
+  release-side docs, not an sdist or source tree with package build metadata;
+  GitHub public releases/tags still stop at `v0.11.1`; the `release/0.11`
+  branch head `210bbb76a1af71d6e5e03f8bea4d3bcf4ef57178` still reports
   `quark/version.txt` as `0.11.1`; PyPI metadata still declares
   `Requires-Python: <3.13,>=3.9.0` and `numpy<=2.1.3`; and AMD's installation
-  guide still limits support to Python 3.10, 3.11, or 3.12. Keep this lane
-  blocked rather than packaging the wheel. Unblock only when a chosen release
-  has a matching public source tag, sdist, or explicit source commit, supports
-  the repo's Python 3.14 and has no upstream NumPy cap below
+  guide still limits support to Python 3.10, 3.11, or 3.12, with Python 3.13
+  not supported by Quark's dependencies. Keep this lane blocked rather than
+  packaging the wheel or ZIP bundle. Unblock only when a chosen release has a
+  matching public source tag, sdist, or explicit source commit, supports the
+  repo's Python 3.14 and has no upstream NumPy cap below
   `python-numpy-gfx1151 2.4.6`, and has a concrete local authoring or
   Quark-exported-model consumer path. After those blockers clear, required
   gates are source verification, package build, deploy/install
