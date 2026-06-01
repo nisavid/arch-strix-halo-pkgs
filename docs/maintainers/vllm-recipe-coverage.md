@@ -90,12 +90,14 @@ source/provenance plan and future vLLM smoke gate live in
 surface remains unpromoted until a source-built package installs cleanly and a
 pinned BitsAndBytes-quantized model proves the vLLM quantization/load path on
 the reference host.
-xFormers remains blocked/deferred after the 2026-05-27 refresh: current vLLM
+xFormers remains blocked/deferred after the 2026-05-31 refresh: current vLLM
 docs list `gfx1151` as supported ROCm hardware for vLLM itself, but the local
 vLLM package, recipe metadata, tools, tests, and scenarios do not depend on
 xFormers. Current Meta/ROCm xFormers CK submodules contain `gfx1151` scout
-evidence, but the top-level package sources do not provide explicit
-package-level `gfx1151` support evidence. xFormers does not change the vLLM
+evidence and the ROCm fork accepts `gfx11`/`gfx12` architecture strings in
+top-level setup, but the current sources still do not provide package-level
+`gfx1151` build proof, a published `gfx1151` package lane, or a repo-owned
+consumer. xFormers does not change the vLLM
 scenario surface until a source-built package and consumer path exist. FBGEMM
 is deferred as a standalone package candidate:
 current vLLM ROCm `fbgemm_fp8` is a quantization-format path that selects
