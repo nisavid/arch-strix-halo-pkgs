@@ -1061,11 +1061,14 @@ previous_recorded = "0.1.14"
 latest = "0.1.15-rc0"
 discovery_status = "stable_update_available"
 disposition = "blocked"
-disposition_reason = "Blocked on 2026-05-31. The release candidate is reviewed, but upstream now requires flydsl 0.1.9.dev599 from AMD's gfx942/gfx950 staging index and triton>=3.6, while this repo does not yet package FlyDSL and the current local Triton lane is 3.5.1. Keep python-amd-aiter-gfx1151 on 0.1.14 until the dependency closure is packaged or the final 0.1.15 release removes the blocker."
+disposition_reason = "Blocked after the 2026-05-31 lane refresh. AITER v0.1.15-rc0 remains the latest upstream release tag, but the RC hard-pins flydsl==0.1.9.dev599 in build and install metadata, runs FlyDSL AOT during build, and requires triton>=3.6.0 for Gluon kernels. Public PyPI now exposes flydsl 0.1.9.dev599 only as CPython manylinux wheels, with no sdist/source artifact to package, and upstream's RC install path still points at AMD's gfx942/gfx950 staging index. This repo also has no Triton 3.6+ ROCm source-lane package; python-triton-gfx1151 still tracks ROCm/triton main_perf at 0ec280cf80dd91e9a86887981a670f2d4541a32b. Keep python-amd-aiter-gfx1151 on 0.1.14 until FlyDSL has a source-packageable local closure and a Triton 3.6+ ROCm source lane is dispositioned, or the final 0.1.15 release removes those blockers."
 salient_changes = [
   "AITER v0.1.15-rc0 is the first release candidate after the adopted 0.1.14 package lane",
+  "The 2026-05-31 lane refresh confirmed no newer AITER final or RC release tag beyond v0.1.15-rc0",
   "The RC adds DSv4-Pro and V4-Flash kernels, MoE and FlyDSL updates, Triton accumulator and split-k changes, MHC fused rmsnorm work, OPUS updates, and CK submodule pin fixes",
-  "The release notes make flydsl 0.1.9.dev599 and triton>=3.6 hard build/runtime dependencies",
+  "The RC makes flydsl==0.1.9.dev599 and triton>=3.6.0 hard build/runtime dependencies",
+  "Public PyPI exposes flydsl 0.1.9.dev599 only as CPython manylinux wheels, with no sdist/source artifact for a source-packageable local closure",
+  "ROCm/triton main_perf remains at 0ec280cf80dd91e9a86887981a670f2d4541a32b, so Triton 3.6+ support would need a separate source-lane package decision rather than consuming PyPI wheels",
   "The local package source remains v0.1.14 until the FlyDSL and Triton dependency story is ready",
 ]
 patch_carry_overlap = true

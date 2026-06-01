@@ -33,10 +33,15 @@
   ab32a1f/pkgrel-3 install; do not promote cached pkgrel-3 artifacts from the
   unmerged ab32a1f lane as canonical repository state.
 - AITER 0.1.15-rc0 dependency-closure blocker: upstream released v0.1.15-rc0,
-  but the RC requires `flydsl 0.1.9.dev599` from AMD's gfx942/gfx950 staging
-  index and `triton>=3.6`. Keep `python-amd-aiter-gfx1151` on 0.1.14 until
-  FlyDSL and Triton closure is packageable or the final release removes that
-  blocker.
+  and the 2026-05-31 lane refresh confirmed that no newer AITER release tag has
+  superseded it. The RC requires `flydsl==0.1.9.dev599`; public PyPI now exposes
+  only CPython manylinux wheels for that prerelease, with no sdist/source
+  artifact to package, and upstream's RC install path still points at AMD's
+  gfx942/gfx950 staging index. The RC also requires `triton>=3.6.0`, while
+  `python-triton-gfx1151` remains on the repo-owned ROCm `main_perf` source at
+  `0ec280cf`. Keep `python-amd-aiter-gfx1151` on 0.1.14 until FlyDSL has a
+  source-packageable local closure and a Triton 3.6+ ROCm source lane is
+  dispositioned, or the final release removes those blockers.
 - vLLM 0.22.0 follow-up: upstream 0.22.0 is reviewed and recorded, but the
   local package remains on 0.21.0 until the ROCm patch carry, PyTorch/runtime
   base follow-up, package build, deploy/install, installed smoke, and live
