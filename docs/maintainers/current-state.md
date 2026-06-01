@@ -14,9 +14,9 @@ b9437-1, ROCm PyTorch release/2.12 f8efdb3 with Arch
 After the b9442 package deploy/install verification, the post-deploy freshness
 recheck found upstream llama.cpp b9444 at
 `6f165c1c64f77024686dc969c3de6f030f274add`; that newer source lane is tracked
-separately and not adopted by the installed b9442 package update.
+separately and not adopted by the b9442 live-validation closeout.
 The post-deploy recheck exits with only intentional unresolved candidates:
-effective counts are 21 adopted update candidates, 17 current families, 2
+effective counts are 22 adopted update candidates, 17 current families, 2
 rejected update candidates, 4 tracked update candidates, and 1 blocked update
 candidate.
 
@@ -35,12 +35,16 @@ pin. Package built: `tools/amerge` build plan `156db29f` completed for
 `llama.cpp-hip-gfx1151 b9442-1`, `llama.cpp-vulkan-gfx1151 b9442-1`,
 `stable-diffusion.cpp-vulkan-gfx1151 r663.gbe65ac7-1`, and
 `lemonade-server 10.6.0-9`. Deployed/installed: complete for those built
-packages; `pacman -Q` reports each expected package version and the local repo
-contains the matching archives. Installed-smoked: complete for AutoRound import,
-compressed-tensors import, llama.cpp HIP and Vulkan server wrapper version
-checks, stable-diffusion.cpp Vulkan CLI and server wrapper startup, Lemonade CLI
-startup, and Lemonade b9442 backend metadata. Live-scenario validated: not
-complete for the llama.cpp selected-logit lane.
+packages; `pacman -Q` reports each expected package version. Local-repo
+verified: the local repo contains the matching archives. Published-repo
+verified: the b9442 handoff recorded matching `strix-halo-gfx1151` sync
+database entries for both b9442 backends and `lemonade-server 10.6.0-9`.
+Installed-smoked: complete for AutoRound import, compressed-tensors import,
+llama.cpp HIP and Vulkan server wrapper version checks, stable-diffusion.cpp
+Vulkan CLI and server wrapper startup, Lemonade CLI startup, and Lemonade b9442
+backend metadata. Live-scenario validated: complete for
+`lemonade.reranking.zerank-2.selected-logit` at
+`docs/worklog/inference-runs/20260531T-llama-b9442-postdeploy-live`.
 
 The AITER v0.1.15-rc0, ROCm PyTorch f8efdb3, and vLLM 0.22.0 observations are
 recorded without package source adoption. AITER v0.1.15-rc0 remains blocked
@@ -400,11 +404,11 @@ llama.cpp candidate dispositions were updated,
 candidates, 17 current families, 2 rejected update candidates, and 5 tracked
 update candidates.
 
-The active package ledgers are: llama.cpp b9442 selected-logit live validation,
-llama.cpp b9444 source follow-up, ROCm PyTorch release/2.12 `f8efdb3`
-follow-up, AITER 0.1.15-rc0 dependency-closure blocker, vLLM 0.22.0 follow-up,
-and Transformers 5.9.0 follow-up. Each active entry has its disposition in
-`docs/maintainers/update-candidates.toml` and its gate label in
+The active package ledger set is four tracked follow-ups plus one blocked
+candidate: llama.cpp b9444 source follow-up, ROCm PyTorch release/2.12
+`f8efdb3` follow-up, vLLM 0.22.0 follow-up, Transformers 5.9.0 follow-up, and
+the AITER 0.1.15-rc0 dependency-closure blocker. Each active entry has its
+disposition in `docs/maintainers/update-candidates.toml` and its gate label in
 `docs/backlog.md`. Superseded older candidates, including llama.cpp `b9371`,
 stable-diffusion.cpp `0e4ee04`, and ROCm PyTorch release/2.12 `ab32a1f`, are
 replaced by the current 2026-05-31 observations rather than left as active

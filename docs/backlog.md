@@ -4,17 +4,9 @@
 
 ### Active Unresolved Gates
 
-- llama.cpp b9442 live validation: the 2026-05-31 freshness
-  sweep found upstream `b9442` commit
-  `d4c8e2c29ce2fb9a251a0a4a16d6c857b4f70f8c` and AUR HIP `b9437-1`.
-  Source metadata and generated scaffolds now point both llama.cpp backends at
-  b9442, and `lemonade-server` is bumped to `10.6.0-9` for backend metadata.
-  Package build, deploy/install, local-repo verification, installed wrapper
-  smokes, and Lemonade metadata smokes passed. Selected-logit live validation
-  remains open.
-- llama.cpp b9444 follow-up after b9442 deployment: the post-deploy
+- llama.cpp b9444 follow-up after b9442 live validation: the post-deploy
   2026-05-31 freshness recheck found upstream `b9444` commit
-  `6f165c1c64f77024686dc969c3de6f030f274add` after the installed b9442 lane.
+  `6f165c1c64f77024686dc969c3de6f030f274add` after the adopted b9442 lane.
   The `b9442..b9444` compare is two commits ahead, with a server weak-ETag
   handling fix and CPU workflow trigger-path maintenance. Package source
   update, package build, deploy/install, installed-smoke, and selected-logit
@@ -243,6 +235,14 @@
   `docs/worklog/inference-runs/20260528T-llama-b9357-postdeploy-help`, and the
   selected-logit live scenario passed at
   `docs/worklog/inference-runs/20260528T-llama-b9357-postdeploy-live`.
+- The llama.cpp b9442 backend refresh is adopted. Both llama.cpp backends render
+  from upstream b9442 as `b9442-1`, `lemonade-server 10.6.0-9` refreshes the
+  packaged system-managed backend labels, package build plan `156db29f`
+  completed, deploy/install completed, local-repo archive verification and the
+  published sync database reported both b9442 backends plus
+  `lemonade-server 10.6.0-9`, installed wrapper and Lemonade metadata smokes
+  passed, and the selected-logit live scenario passed at
+  `docs/worklog/inference-runs/20260531T-llama-b9442-postdeploy-live`.
 - The ROCm PyTorch release/2.12 `26872de` post-pkgrel closeout is adopted.
   `python-pytorch-opt-rocm-gfx1151` tracks ROCm/pytorch release/2.12 commit
   `26872debb4452ea6dc898288618a15595e2317d9` as `2.12.0-2`, and the affected
