@@ -117,25 +117,27 @@
   import, `quantization="awq"`, LLM init, generation, and the ROCm
   `VLLM_USE_TRITON_AWQ` selected-backend assertion to pass.
 - xFormers lane: blocked/deferred until the repo has both a concrete local
-  consumer and explicit `gfx1151` support evidence. The 2026-05-27 refresh
-  found Meta xFormers latest release `v0.0.35` and main
+  consumer and explicit package-level `gfx1151` support evidence. The
+  2026-05-31 refresh found Meta xFormers latest release `v0.0.35` and main
   `c04f47b69b53d60a53916fd61ddd32bdb4a6b927`, with experimental ROCm 7.1
   wheel guidance and CK submodule `50fad035248b154cdfa4505cf5de7465ce146149`
-  containing generic `gfx1151` target references. That is not package-level
-  xFormers support: Meta's ROCm wheel CI still targets `gfx90a gfx942`, and no
-  top-level xFormers build or test lane advertises `gfx1151`. The ROCm fork
-  remains unreleased at `develop`
-  `db55a2f5745ee0a13316f93e968a002b143e35da`; even though its CK submodules
-  contain `gfx1151` references, its top-level build allowlist rejects
-  architectures outside `gfx908`, `gfx90a`, `gfx942`, and `gfx950`.
-  Repo-owned packages, tests, tools, and scenarios have no current xFormers
-  consumer, and existing attention coverage stays with AITER, FlashAttention,
-  and vLLM ROCm paths. Reopen only with a named consumer and upstream/source
-  proof for package-level `gfx1151` support; required gates are pinned source
-  and submodules, source and submodule trust review, local HIP extension build,
-  linkage/private-path inspection, `python -m xformers.info`, and direct
-  fp16/bf16 memory-efficient-attention correctness smokes before any consumer
-  scenario.
+  containing generic `gfx1151` target references. That is scout evidence, not
+  package adoption evidence: Meta's ROCm wheel CI still targets `gfx90a
+  gfx942`, public PyPI carries only a generic Linux wheel plus sdist for
+  `0.0.35`, and no top-level Meta xFormers build or test lane advertises
+  `gfx1151`. The ROCm fork remains unreleased at `develop`
+  `6b467648906fd0317c61e6ad1bc27a2ed14df17e`; its current top-level build
+  path accepts `gfx11`/`gfx12` architecture strings and its recursive
+  submodules contain `gfx1151` scout references, while its wheel/build
+  workflows still target `gfx90a gfx942` and do not publish a `gfx1151`
+  package lane. Repo-owned packages, tests, tools, and scenarios have no
+  current xFormers consumer, and existing attention coverage stays with AITER,
+  FlashAttention, and vLLM ROCm paths. Reopen only with a named consumer and
+  upstream/source proof for package-level `gfx1151` support; required gates are
+  pinned source and submodules, source and submodule trust review, local HIP
+  extension build, linkage/private-path inspection, `python -m xformers.info`,
+  and direct fp16/bf16 memory-efficient-attention correctness smokes before any
+  consumer scenario.
 
 ### Deferred Package Candidates
 
