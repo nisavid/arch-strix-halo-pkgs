@@ -1,6 +1,6 @@
 # vLLM Recipe Coverage
 
-Status as of 2026-05-27.
+Status as of 2026-06-01.
 
 This worklist tracks how official vLLM Gemma and Qwen recipe surfaces map onto
 the local Arch/TheRock `gfx1151` validation stack. These recipes are advisory
@@ -74,10 +74,14 @@ smoke. The artifact metadata is accepted for this bounded scenario because the
 AMD artifact and `Qwen/Qwen3-8B` base model are public, non-gated, and
 Apache-2.0 on Hugging Face. Authoring-tool packaging waits for an explicit
 source pin plus Python 3.14 and `python-numpy-gfx1151 2.4.6` compatibility. The
-2026-05-27 authoring-tool blocker refresh keeps that package lane blocked: PyPI
-`amd-quark 0.11.2` is still wheel-only, public GitHub releases/tags still stop
-at `v0.11.1`, `release/0.11` still reports version `0.11.1`, PyPI still
-excludes Python 3.13+ and declares `numpy<=2.1.3`, and no concrete local
+2026-06-01 authoring-tool blocker refresh keeps that package lane blocked: PyPI
+`amd-quark 0.11.2` is still wheel-only, AMD's direct
+`amd_quark-0.11.2.zip` download contains that wheel plus examples and
+release-side docs rather than packageable source, public GitHub releases/tags
+still stop at `v0.11.1`, `release/0.11` still reports version `0.11.1`, PyPI
+still excludes Python 3.13+ and declares `numpy<=2.1.3`, AMD's installation
+guide still supports Python 3.10, 3.11, and 3.12 while saying Python 3.13 is
+not currently supported by Quark's dependencies, and no concrete local
 authoring consumer path has been selected.
 bitsandbytes is tracked as a separate source-built package candidate because
 upstream AMD ROCm (Preview) support names `gfx1151` as a supported target; the
