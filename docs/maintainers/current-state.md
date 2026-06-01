@@ -43,15 +43,20 @@ startup, and Lemonade b9442 backend metadata. Live-scenario validated: not
 complete for the llama.cpp selected-logit lane.
 
 The AITER v0.1.15-rc0, ROCm PyTorch f8efdb3, and vLLM 0.22.0 observations are
-recorded without package source adoption. AITER v0.1.15-rc0 is blocked because
-the release candidate requires `flydsl 0.1.9.dev599` from AMD's gfx942/gfx950
-staging index plus `triton>=3.6`, while this repo has no FlyDSL package closure
-and the current local Triton lane is 3.5.1. ROCm PyTorch f8efdb3 remains a
-tracked runtime-base follow-up after the deployed 26872de stack and owns the
-reference-host reconciliation for the intermediate ab32a1f/pkgrel-3 install
-described below. vLLM 0.22.0 remains tracked until the local ROCm patch carry
-and runtime-base gates are handled. Active follow-up work is visible in
-`docs/backlog.md` and `docs/maintainers/update-candidates.toml`.
+recorded without package source adoption. AITER v0.1.15-rc0 remains blocked
+after the 2026-05-31 lane refresh: it is still the latest AITER release tag, it
+hard-pins `flydsl==0.1.9.dev599` in build and install metadata, it runs FlyDSL
+AOT during build, and its Gluon kernels require `triton>=3.6.0`. Public PyPI
+now exposes the FlyDSL prerelease only as CPython manylinux wheels, with no
+sdist/source artifact to package, and upstream's RC install path still points at
+AMD's gfx942/gfx950 staging index. The repo-owned Triton package still tracks
+ROCm/triton `main_perf` at `0ec280cf`, so a Triton 3.6+ ROCm source lane also
+needs a separate package decision before AITER can move past 0.1.14. ROCm
+PyTorch f8efdb3 remains a tracked runtime-base follow-up after the deployed
+26872de stack and owns the reference-host reconciliation for the intermediate
+ab32a1f/pkgrel-3 install described below. vLLM 0.22.0 remains tracked until the
+local ROCm patch carry and runtime-base gates are handled. Active follow-up work
+is visible in `docs/backlog.md` and `docs/maintainers/update-candidates.toml`.
 
 The 2026-05-26 AOCL 5.3 refresh is adopted. `aocl-utils-gfx1151`
 now renders from upstream AOCL-Utils `5.3.0` with the current AUR
