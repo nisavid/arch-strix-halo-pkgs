@@ -181,14 +181,13 @@ The scenario stdout proved FlashAttention CK backend import against
 remain ignored worklog evidence and should not be promoted into tracked docs.
 
 The ROCm PyTorch release/2.12 `ab32a1f` follow-up was tracked as separate
-drift rather than replacing the deployed 26872de closeout target until the
-2026-05-31 `f8efdb3` observation superseded it. The
+drift rather than replacing the deployed 26872de closeout target. The
 `26872de..ab32a1f` range has two ROCm commits: the large-matrix `triu`/`tril`
 64-bit indexing fix and the UnaryUfuncInfo lambda syntax fix. The same targeted
 check found the Arch `python-pytorch-opt-rocm 2.12.0-2` baseline, which is
-now tracked with the newer f8efdb3 source follow-up because the source branch
+now tracked with the newer c7badbdf source follow-up because the source branch
 still moved beyond the deployed 26872de stack. The active future package lane
-is the f8efdb3 entry in `docs/backlog.md` and
+is the c7badbdf entry in `docs/backlog.md` and
 `docs/maintainers/update-candidates.toml`.
 
 Post-#63 host reconciliation: the reference host currently has the intermediate
@@ -201,7 +200,7 @@ ab32a1f/pkgrel-3 runtime-base stack installed from a prior handoff, including
 `python-torchvision-rocm-gfx1151 0.27.0-3`, and
 `python-vllm-rocm-gfx1151 0.21.0-5`. That host state is not adopted package
 metadata and should not be repaired by publishing cached pkgrel-3 artifacts from
-the unmerged ab32a1f lane. The f8efdb3 follow-up is the canonical path to
+the unmerged ab32a1f lane. The c7badbdf follow-up is the canonical path to
 reconcile source metadata, package builds, deploy/install state,
 local-repo verification, published-repo verification, installed-smoke evidence,
 live-scenario validation, and published repository contents.
