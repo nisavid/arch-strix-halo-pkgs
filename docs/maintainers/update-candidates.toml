@@ -433,8 +433,8 @@ baseline_latest = "b9437-1"
 previous_recorded = "b9442 / b9437-1 / b9222-1"
 latest = "b9444"
 discovery_status = "stable_update_available"
-disposition = "tracked"
-disposition_reason = "Tracked on 2026-05-31 after the b9442 deploy/install verification, and still tracked after the b9442 selected-logit live validation. The checker now reports upstream b9444 after the adopted b9442 package lane. Keep the source update separate because b9442 is already built, deployed, installed, wrapper-smoked, and live-scenario validated."
+disposition = "rejected"
+disposition_reason = "Superseded by the 2026-06-14 b9637 candidate before package source adoption. The adopted b9442 package lane remains the validated installed stack, and future llama.cpp work should start from the current b9637 freshness candidate rather than this intermediate b9444 observation."
 salient_changes = [
   "GitHub release b9444 is available after the adopted b9442 package lane",
   "The release tag resolves to commit 6f165c1c64f77024686dc969c3de6f030f274add",
@@ -443,12 +443,12 @@ salient_changes = [
   "Package source update, package build, deploy/install, installed-smoke, and selected-logit live validation remain open",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
-next_gate_label = "llama.cpp b9444 follow-up after b9442 live validation"
-last_reviewed = "2026-06-01"
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Superseded by llama.cpp b9637 follow-up"
+last_reviewed = "2026-06-14"
 
 [candidates."numpy-2.4.6"]
 family = "numpy"
@@ -552,8 +552,8 @@ baseline_latest = "2.12.0-2"
 previous_recorded = "26872debb4452ea6dc898288618a15595e2317d9 / 2.12.0-1"
 latest = "f8efdb30b5e6d8b1ae3e8744f227416b2aa032c1"
 discovery_status = "branch_head_ahead"
-disposition = "tracked"
-disposition_reason = "Tracked on 2026-05-31 after the 26872de runtime-base closeout. Do not retarget the deployed 26872de closeout to this commit: the accepted installed and live evidence belongs to adopted 26872de, while the 26872de..f8efdb3 range is new PyTorch runtime drift that still needs its own source update, package build, deploy/install, local-repo verification, published-repo verification, installed-smoke, and live-scenario validation. The reference host now has the intermediate ab32a1f/pkgrel-3 stack installed from a prior handoff, but that unmerged lane is superseded by f8efdb3 and must not be promoted by publishing cached pkgrel-3 artifacts."
+disposition = "rejected"
+disposition_reason = "Superseded by the 2026-06-14 release/2.12 c7badbdf candidate before package source adoption. The accepted installed and live evidence still belongs to adopted 26872de, while the active runtime-base follow-up now starts from c7badbdf and still owns reconciliation of the intermediate ab32a1f/pkgrel-3 host install."
 salient_changes = [
   "ROCm/pytorch release/2.12 moved beyond the adopted 26872de package lane",
   "Arch python-pytorch-opt-rocm baseline moved from 2.12.0-1 to 2.12.0-2 during closeout",
@@ -563,12 +563,12 @@ salient_changes = [
   "Package source update, affected rebuilds, deploy/install, local-repo verification, published-repo verification, installed-smoke, and live-scenario validation remain open",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
-next_gate_label = "ROCm PyTorch release/2.12 f8efdb3 follow-up"
-last_reviewed = "2026-05-31"
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Superseded by ROCm PyTorch release/2.12 c7badbdf follow-up"
+last_reviewed = "2026-06-14"
 
 [candidates."aotriton-0.12b"]
 family = "aotriton"
@@ -863,8 +863,8 @@ baseline_latest = "0.12.0-1"
 previous_recorded = "0.21.0"
 latest = "0.22.0"
 discovery_status = "stable_update_available"
-disposition = "tracked"
-disposition_reason = "Tracked on 2026-05-31. The release is reviewed and recorded, but the package source remains on 0.21.0 until the local ROCm patch carry, PyTorch/runtime-base follow-up, package build, deploy/install, installed smoke, and live scenario gates are handled."
+disposition = "rejected"
+disposition_reason = "Superseded by the 2026-06-14 vLLM 0.23.0 candidate before package source adoption. The local package remains on 0.21.0 until the ROCm patch carry, runtime-base, package build, deploy/install, installed smoke, and live scenario gates are handled against the current release target."
 salient_changes = [
   "vLLM 0.22.0 is available after the adopted 0.21.0 package lane",
   "The release includes DeepSeek V4 hardening, Model Runner V2 changes, a Rust frontend, multi-tier KV offloading, ROCm DSv4 and AITER cleanup work, quantization updates, and dependency/build churn",
@@ -872,12 +872,12 @@ salient_changes = [
   "The local package source remains 0.21.0 until the runtime-base and patch-carry gates are ready",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
-next_gate_label = "vLLM 0.22.0 follow-up"
-last_reviewed = "2026-05-31"
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Superseded by vLLM 0.23.0 follow-up"
+last_reviewed = "2026-06-14"
 
 [candidates."llama-cpp-b8966"]
 family = "llama_cpp"
@@ -1060,8 +1060,8 @@ check_id = "release"
 previous_recorded = "0.1.14"
 latest = "0.1.15-rc0"
 discovery_status = "stable_update_available"
-disposition = "blocked"
-disposition_reason = "Blocked after the 2026-05-31 lane refresh. AITER v0.1.15-rc0 remains the latest upstream release tag, but the RC hard-pins flydsl==0.1.9.dev599 in build and install metadata, runs FlyDSL AOT during build, and requires triton>=3.6.0 for Gluon kernels. Public PyPI now exposes flydsl 0.1.9.dev599 only as CPython manylinux wheels, with no sdist/source artifact to package, and upstream's RC install path still points at AMD's gfx942/gfx950 staging index. This repo also has no Triton 3.6+ ROCm source-lane package; python-triton-gfx1151 still tracks ROCm/triton main_perf at 0ec280cf80dd91e9a86887981a670f2d4541a32b. Keep python-amd-aiter-gfx1151 on 0.1.14 until FlyDSL has a source-packageable local closure and a Triton 3.6+ ROCm source lane is dispositioned, or the final 0.1.15 release removes those blockers."
+disposition = "rejected"
+disposition_reason = "Superseded by the 2026-06-14 AITER 0.1.15.post1 candidate before package source adoption. The FlyDSL and Triton dependency-closure concerns from the RC remain review inputs for the current release candidate disposition."
 salient_changes = [
   "AITER v0.1.15-rc0 is the first release candidate after the adopted 0.1.14 package lane",
   "The 2026-05-31 lane refresh confirmed no newer AITER final or RC release tag beyond v0.1.15-rc0",
@@ -1072,12 +1072,12 @@ salient_changes = [
   "The local package source remains v0.1.14 until the FlyDSL and Triton dependency story is ready",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
-next_gate_label = "AITER 0.1.15-rc0 dependency-closure blocker"
-last_reviewed = "2026-05-31"
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Superseded by AITER 0.1.15.post1 dependency-closure review"
+last_reviewed = "2026-06-14"
 
 [candidates."aotriton-tech-previews-0.11.210b-0.11.52b"]
 family = "aotriton"
@@ -2022,19 +2022,19 @@ covered_checks = [{ source_kind = "github_tags", check_id = "tag" }]
 previous_recorded = "5.8.1"
 latest = "5.9.0"
 discovery_status = "stable_update_available"
-disposition = "tracked"
-disposition_reason = "Accepted as raw freshness drift on 2026-05-27. Keep as a separate Transformers refresh after the runtime base is stable because the package is coupled to tokenizers, safetensors, Hugging Face Hub, model-surface imports, and affected vLLM scenarios."
+disposition = "rejected"
+disposition_reason = "Superseded by the 2026-06-14 Transformers 5.12.0 candidate before package source adoption. Keep future package work tied to the current release target and the runtime-base decision."
 salient_changes = [
   "PyPI and the upstream git tag both report Transformers 5.9.0 after the current 5.8.1 package lane",
   "Review dependency metadata before adoption because the local stack carries package-specific compatibility policy",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
-next_gate_label = "Transformers 5.9.0 follow-up"
-last_reviewed = "2026-05-27"
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Superseded by Transformers 5.12.0 follow-up"
+last_reviewed = "2026-06-14"
 
 [candidates."aiter-main-d50194c"]
 family = "aiter"
@@ -2197,3 +2197,486 @@ next_gate_kind = "none"
 next_gate_path = ""
 next_gate_label = "Adopted; monitor future stable-diffusion.cpp refs through the normal freshness sweep"
 last_reviewed = "2026-05-26"
+
+[candidates."accelerate-1.14.0-pypi"]
+family = "accelerate"
+packages = ["python-accelerate-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+previous_recorded = "1.13.0"
+latest = "1.14.0"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-06-14 freshness sweep. Review dependency metadata and affected local inference helpers before package adoption."
+salient_changes = [
+  "PyPI accelerate 1.14.0 is available after the adopted 1.13.0 package lane",
+  "Package source update, build, deploy/install, installed import smoke, and affected helper review remain open",
+]
+patch_carry_overlap = false
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "accelerate 1.14.0 follow-up"
+last_reviewed = "2026-06-14"
+
+[candidates."aiohttp-3.14.1-pypi"]
+family = "aiohttp"
+packages = ["python-aiohttp-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+previous_recorded = "3.13.5"
+latest = "3.14.1"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-06-14 freshness sweep. Treat this as service-runtime dependency work that needs affected aiohttp, uvicorn, and vLLM import smokes after package build."
+salient_changes = [
+  "PyPI aiohttp 3.14.1 is available after the current 3.13.5 package lane",
+  "Package source update, build, deploy/install, installed import smoke, and affected service-runtime smokes remain open",
+]
+patch_carry_overlap = false
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "aiohttp 3.14.1 follow-up"
+last_reviewed = "2026-06-14"
+
+[candidates."aiter-0.1.15.post1"]
+family = "aiter"
+packages = ["python-amd-aiter-gfx1151"]
+source_kind = "github_release"
+check_id = "release"
+previous_recorded = "0.1.14"
+latest = "0.1.15.post1"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-06-14 freshness sweep. Re-review release metadata against the FlyDSL and Triton dependency-closure concerns from the superseded 0.1.15-rc0 blocker before package source adoption."
+salient_changes = [
+  "AITER 0.1.15.post1 is available after the adopted 0.1.14 package lane",
+  "The superseded 0.1.15-rc0 lane raised FlyDSL source-packageability and Triton 3.6+ ROCm source-lane blockers that remain review inputs",
+  "Package source verification, package build, deploy/install, installed JIT/import smoke, and affected vLLM live validation remain open",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "AITER 0.1.15.post1 dependency-closure review"
+last_reviewed = "2026-06-14"
+
+[candidates."aocl-utils-5.3-aur-epoch"]
+family = "aocl_utils"
+packages = ["aocl-utils-gfx1151"]
+source_kind = "aur"
+check_id = "aur"
+previous_recorded = "5.3.0-1"
+latest = "1:5.3-1"
+discovery_status = "baseline_drift"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-06-14 freshness sweep. Upstream remains current, but the AUR baseline now carries an epoch and needs baseline review before local package metadata changes."
+salient_changes = [
+  "AUR aocl-utils now reports 1:5.3-1 after the adopted 5.3.0-1 baseline",
+  "The upstream AOCL-Utils release check remains current",
+]
+patch_carry_overlap = false
+package_source_update_needed = true
+host_validation_needed = false
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "AOCL-Utils AUR epoch baseline review"
+last_reviewed = "2026-06-14"
+
+[candidates."auto-round-0.13.1-pypi"]
+family = "auto_round"
+packages = ["python-auto-round-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+previous_recorded = "0.13.0"
+latest = "0.13.1"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-06-14 freshness sweep. Keep as a quantization dependency follow-up after the adopted 0.13.0 package lane."
+salient_changes = [
+  "PyPI AutoRound 0.13.1 is available after the adopted 0.13.0 package lane",
+  "Package source update, build, deploy/install, installed import smoke, and affected quantization scenario review remain open",
+]
+patch_carry_overlap = false
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "AutoRound 0.13.1 follow-up"
+last_reviewed = "2026-06-14"
+
+[candidates."compressed-tensors-0.17.1-pypi"]
+family = "compressed_tensors"
+packages = ["python-compressed-tensors-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+previous_recorded = "0.16.0"
+latest = "0.17.1"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-06-14 freshness sweep. Treat as part of the quantization and vLLM dependency closure rather than an isolated Python wheel bump."
+salient_changes = [
+  "PyPI compressed-tensors 0.17.1 is available after the adopted 0.16.0 package lane",
+  "Package source update, build, deploy/install, installed import smoke, and affected vLLM or quantization scenario review remain open",
+]
+patch_carry_overlap = false
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "compressed-tensors 0.17.1 follow-up"
+last_reviewed = "2026-06-14"
+
+[candidates."cryptography-49.0.0-pypi"]
+family = "cryptography"
+packages = ["python-cryptography-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+baseline_source_kind = "arch_package"
+baseline_latest = "48.0.1-1"
+covered_checks = [{ source_kind = "arch_package", check_id = "arch" }]
+previous_recorded = "48.0.0 / 48.0.0-1"
+latest = "49.0.0"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-06-14 freshness sweep. Review Rust and OpenSSL package metadata before source adoption."
+salient_changes = [
+  "PyPI cryptography 49.0.0 is available after the adopted 48.0.0 package lane",
+  "Arch python-cryptography now reports 48.0.1-1",
+  "Package source update, build, deploy/install, and installed import smoke remain open",
+]
+patch_carry_overlap = false
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "cryptography 49.0.0 follow-up"
+last_reviewed = "2026-06-14"
+
+[candidates."ctranslate2-4.8.0"]
+family = "ctranslate2"
+packages = ["ctranslate2-gfx1151"]
+source_kind = "github_release"
+check_id = "release"
+previous_recorded = "4.7.2"
+latest = "4.8.0"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-06-14 freshness sweep. Review the upstream delta against the local ROCm package shape before adoption."
+salient_changes = [
+  "OpenNMT CTranslate2 4.8.0 is available after the adopted 4.7.2 package lane",
+  "The AUR baseline and ROCm fork scout cursor remain unchanged",
+  "Package source update, build, deploy/install, and installed smoke remain open",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "CTranslate2 4.8.0 follow-up"
+last_reviewed = "2026-06-14"
+
+[candidates."lemonade-10.7.0-baseline"]
+family = "lemonade"
+packages = ["lemonade-server", "lemonade-app", "lemonade"]
+source_kind = "github_release"
+check_id = "upstream-release"
+baseline_source_kind = "aur"
+baseline_latest = "10.7.0"
+covered_checks = [
+  { source_kind = "aur", check_id = "aur-server" },
+  { source_kind = "aur", check_id = "aur-desktop" },
+]
+previous_recorded = "10.6.0 / 10.6.0-1"
+latest = "10.7.0"
+discovery_status = "baseline_drift"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-06-14 freshness sweep. The local fork-main source is current, but upstream and AUR baselines now report 10.7.0 and need baseline review before the local fork package lane moves."
+salient_changes = [
+  "Canonical upstream Lemonade now reports 10.7.0",
+  "AUR lemonade-server now reports 10.7.0-3 and AUR lemonade-desktop now reports 10.7.0-1",
+  "The package source lane still records the local fork-main commit 13b1af25f84cf08ad5f8bf0ec58980bdfc09c9e7",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "Lemonade 10.7.0 baseline review"
+last_reviewed = "2026-06-14"
+
+[candidates."llama-cpp-b9637"]
+family = "llama_cpp"
+packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151", "lemonade-server"]
+source_kind = "github_release"
+check_id = "release"
+baseline_source_kind = "aur"
+baseline_latest = "b9627-1"
+covered_checks = [{ source_kind = "aur", check_id = "aur-hip" }]
+previous_recorded = "b9442 / b9437-1"
+latest = "b9637"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-06-14 freshness sweep. This supersedes the b9444 follow-up as the active llama.cpp source lane after the adopted b9442 stack."
+salient_changes = [
+  "GitHub release b9637 is available after the adopted b9442 package lane",
+  "AUR llama.cpp-hip now reports b9627-1 while the Vulkan baseline remains b9222-1",
+  "Package source update, package build, deploy/install, installed-smoke, Lemonade backend metadata review, and selected-logit live validation remain open",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "llama.cpp b9637 follow-up after b9442 live validation"
+last_reviewed = "2026-06-14"
+
+[candidates."llmcompressor-0.11.0-pypi"]
+family = "llmcompressor"
+packages = ["python-llmcompressor-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+previous_recorded = "0.10.0.2"
+latest = "0.11.0"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-06-14 freshness sweep. Re-check upstream dependency metadata against the local runtime stack before deciding whether this remains blocked or becomes package work."
+salient_changes = [
+  "PyPI llmcompressor 0.11.0 is available after the rejected 0.10.0.2 candidate",
+  "Compatibility with the local PyTorch, Transformers, safetensors, compressed-tensors, and vLLM closure still needs review",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "llmcompressor 0.11.0 compatibility review"
+last_reviewed = "2026-06-14"
+
+[candidates."mistral-common-1.11.3"]
+family = "mistral_common"
+packages = ["python-mistral-common-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+previous_recorded = "1.11.2"
+latest = "1.11.3"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-06-14 freshness sweep. Review package metadata against the local Transformers and vLLM model-surface closure before adoption."
+salient_changes = [
+  "PyPI mistral-common 1.11.3 is available after the adopted 1.11.2 package lane",
+  "The AUR python-mistral-common baseline remains at 1.8.6-1",
+  "Package source update, build, deploy/install, installed import smoke, and affected model-surface review remain open",
+]
+patch_carry_overlap = false
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "mistral-common 1.11.3 follow-up"
+last_reviewed = "2026-06-14"
+
+[candidates."python-3.14.6-cpython"]
+family = "python"
+packages = ["python-gfx1151"]
+source_kind = "python_ftp"
+check_id = "cpython"
+previous_recorded = "3.14.5"
+latest = "3.14.6"
+discovery_status = "baseline_drift"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-06-14 freshness sweep. The Arch package remains current at 3.14.5-1, but the CPython source baseline needs point-release review before package source metadata or rebuild work moves."
+salient_changes = [
+  "CPython source release 3.14.6 is available after the recorded 3.14.5 source baseline",
+  "Arch python remains at the recorded 3.14.5-1 package baseline",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "CPython 3.14.6 baseline review"
+last_reviewed = "2026-06-14"
+
+[candidates."rocm-pytorch-release-2.12-c7badbdf"]
+family = "rocm_pytorch"
+packages = [
+  "python-pytorch-opt-rocm-gfx1151",
+  "python-amd-aiter-gfx1151",
+  "python-flash-attn-rocm-gfx1151",
+  "python-torchao-rocm-gfx1151",
+  "python-torch-migraphx-gfx1151",
+  "python-torchvision-rocm-gfx1151",
+  "python-vllm-rocm-gfx1151",
+]
+source_kind = "git_ref"
+check_id = "release-branch"
+baseline_source_kind = "arch_package"
+baseline_latest = "2.12.0-4"
+covered_checks = [{ source_kind = "arch_package", check_id = "arch" }]
+previous_recorded = "f8efdb30b5e6d8b1ae3e8744f227416b2aa032c1 / 2.12.0-2"
+latest = "c7badbdf3d33d945a0ed4536aac5303bc933e6ee"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-06-14 freshness sweep. This supersedes f8efdb3 as the active release/2.12 runtime-base source follow-up while preserving the same source, rebuild, deploy/install, repo verification, installed-smoke, and live-scenario gates."
+salient_changes = [
+  "ROCm/pytorch release/2.12 moved from f8efdb30b5e6d8b1ae3e8744f227416b2aa032c1 to c7badbdf3d33d945a0ed4536aac5303bc933e6ee",
+  "Arch python-pytorch-opt-rocm moved from 2.12.0-2 to 2.12.0-4",
+  "The lane still owns reconciliation of the reference host's intermediate ab32a1f/pkgrel-3 runtime-base install",
+  "Package source update, affected rebuilds, deploy/install, local-repo verification, published-repo verification, installed-smoke, and live-scenario validation remain open",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "ROCm PyTorch release/2.12 c7badbdf follow-up"
+last_reviewed = "2026-06-14"
+
+[candidates."safetensors-0.8.0-pypi"]
+family = "safetensors"
+packages = ["python-safetensors-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+previous_recorded = "0.7.0"
+latest = "0.8.0"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-06-14 freshness sweep. Review compatibility with Transformers, compressed-tensors, and vLLM before package adoption."
+salient_changes = [
+  "PyPI safetensors 0.8.0 is available after the current 0.7.0 package lane",
+  "Arch python-safetensors remains at 0.7.0-2",
+  "Package source update, build, deploy/install, installed import smoke, and affected model-loading scenario review remain open",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "safetensors 0.8.0 follow-up"
+last_reviewed = "2026-06-14"
+
+[candidates."stable-diffusion-cpp-bb90bfa"]
+family = "stable_diffusion_cpp"
+packages = ["stable-diffusion.cpp-vulkan-gfx1151"]
+source_kind = "git_ref"
+check_id = "master"
+baseline_source_kind = "aur"
+baseline_latest = "r660.d2797b8-1"
+covered_checks = [{ source_kind = "aur", check_id = "aur-vulkan" }]
+previous_recorded = "be65ac7511b30379b003626c15224798929e33d4 / r279.49d6570-1"
+latest = "bb90bfa00f858c7df6502e75f31c4440d4d11fde"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-06-14 freshness sweep. Review the source and submodule delta before package source adoption and installed wrapper smoke."
+salient_changes = [
+  "stable-diffusion.cpp master moved from be65ac7511b30379b003626c15224798929e33d4 to bb90bfa00f858c7df6502e75f31c4440d4d11fde",
+  "AUR stable-diffusion.cpp Vulkan baseline now reports r660.d2797b8-1",
+  "Source review, submodule review, package source update, build, deploy/install, and installed wrapper smoke remain open",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "stable-diffusion.cpp bb90bfa follow-up"
+last_reviewed = "2026-06-14"
+
+[candidates."blackcat-ai-notes-dbfb70e"]
+family = "therock"
+packages = ["therock-gfx1151"]
+source_kind = "submodule"
+check_id = "ai-notes"
+previous_recorded = "3f15f9f1318491c9ee03782d8b2ebd41391de118"
+latest = "dbfb70efc26fccf6ab2b00ee60ff0c96d37d37b0"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-06-14 freshness sweep. Review the Blackcat Informatics recipe diff before adopting any submodule, TheRock, package policy, or rendered output changes."
+salient_changes = [
+  "The upstream ai-notes submodule cursor moved from 3f15f9f1318491c9ee03782d8b2ebd41391de118 to dbfb70efc26fccf6ab2b00ee60ff0c96d37d37b0",
+  "The TheRock release check remains current at 7.13",
+  "Submodule adoption, affected scaffold render, package build, deploy/install, and validation are not part of this reconciliation lane",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "Blackcat ai-notes dbfb70e recipe review"
+last_reviewed = "2026-06-14"
+
+[candidates."torch-migraphx-29aabb9"]
+family = "torch_migraphx"
+packages = ["python-torch-migraphx-gfx1151"]
+source_kind = "git_ref"
+check_id = "master"
+previous_recorded = "b94b985586a051fbee19aefe8c934bb7c1a9df0a"
+latest = "29aabb9cb40073c3510eb6887728aa4c2d7009a9"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-06-14 freshness sweep. Review the source delta against the PyTorch runtime-base lane before package adoption."
+salient_changes = [
+  "Torch-MIGraphX master moved from b94b985586a051fbee19aefe8c934bb7c1a9df0a to 29aabb9cb40073c3510eb6887728aa4c2d7009a9",
+  "The release tag baseline remains v1.1",
+  "Package source update, build, deploy/install, installed import smoke, and affected compiled scenario validation remain open",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "Torch-MIGraphX 29aabb9 follow-up"
+last_reviewed = "2026-06-14"
+
+[candidates."transformers-5.12.0-pypi"]
+family = "transformers"
+packages = ["python-transformers-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+covered_checks = [{ source_kind = "github_tags", check_id = "tag" }]
+previous_recorded = "5.8.1"
+latest = "5.12.0"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-06-14 freshness sweep. Keep behind the runtime-base decision unless the operator explicitly declares the current runtime base stable enough for a separate Transformers lane."
+salient_changes = [
+  "PyPI and the upstream git tag both report Transformers 5.12.0 after the local 5.8.1 package lane",
+  "The package is coupled to tokenizers, safetensors, Hugging Face Hub, model-surface imports, and vLLM scenarios",
+  "Package source update, build, deploy/install, installed import smoke, and affected live scenarios remain open",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "Transformers 5.12.0 follow-up"
+last_reviewed = "2026-06-14"
+
+[candidates."vllm-0.23.0"]
+family = "vllm"
+packages = ["python-vllm-rocm-gfx1151"]
+source_kind = "github_release"
+check_id = "release"
+baseline_source_kind = "aur"
+baseline_latest = "0.12.0-1"
+previous_recorded = "0.21.0"
+latest = "0.23.0"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-06-14 freshness sweep. Refresh only after the ROCm patch carry, runtime-base, package build, deploy/install, installed smoke, and live scenario gates are planned together."
+salient_changes = [
+  "vLLM 0.23.0 is available after the local 0.21.0 package lane",
+  "The AUR python-vllm baseline remains at 0.12.0-1",
+  "The package carries substantial local ROCm, Gemma, Qwen, TorchAO, FlashAttention, SageMaker, and startup-laziness patch material that must be refreshed before source adoption",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "vLLM 0.23.0 follow-up"
+last_reviewed = "2026-06-14"
