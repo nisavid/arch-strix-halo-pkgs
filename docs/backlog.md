@@ -4,44 +4,86 @@
 
 ### Active Unresolved Gates
 
-- llama.cpp b9444 follow-up after b9442 live validation: the post-deploy
-  2026-05-31 freshness recheck found upstream `b9444` commit
-  `6f165c1c64f77024686dc969c3de6f030f274add` after the adopted b9442 lane.
-  The `b9442..b9444` compare is two commits ahead, with a server weak-ETag
-  handling fix and CPU workflow trigger-path maintenance. Package source
-  update, package build, deploy/install, installed-smoke, and selected-logit
-  live validation remain open.
-- ROCm PyTorch release/2.12 f8efdb3 follow-up: the accepted 2026-05-31
-  freshness observation found release/2.12 at
-  `f8efdb30b5e6d8b1ae3e8744f227416b2aa032c1` and the Arch
-  `python-pytorch-opt-rocm 2.12.0-2` baseline. The 26872de runtime-base
-  closeout remains the deployed source target. Treat f8efdb3 as a separate
-  follow-up: the `26872de..f8efdb3` source range includes the large-matrix
-  `triu`/`tril` 64-bit indexing fix, the UnaryUfuncInfo lambda syntax fix, and
-  a ROCm foreach profiler-test skip. Package implementation still requires
-  source update, affected rebuilds, deploy/install, local-repo verification,
-  published-repo verification, installed-smoke, and live-scenario validation.
-  This lane also owns reconciliation of the reference host's intermediate
-  ab32a1f/pkgrel-3 install; do not promote cached pkgrel-3 artifacts from the
-  unmerged ab32a1f lane as canonical repository state.
-- AITER 0.1.15-rc0 dependency-closure blocker: upstream released v0.1.15-rc0,
-  and the 2026-05-31 lane refresh confirmed that no newer AITER release tag has
-  superseded it. The RC requires `flydsl==0.1.9.dev599`; public PyPI now exposes
-  only CPython manylinux wheels for that prerelease, with no sdist/source
-  artifact to package, and upstream's RC install path still points at AMD's
-  gfx942/gfx950 staging index. The RC also requires `triton>=3.6.0`, while
-  `python-triton-gfx1151` remains on the repo-owned ROCm `main_perf` source at
-  `0ec280cf`. Keep `python-amd-aiter-gfx1151` on 0.1.14 until FlyDSL has a
-  source-packageable local closure and a Triton 3.6+ ROCm source lane is
-  dispositioned, or the final release removes those blockers.
-- vLLM 0.22.0 follow-up: upstream 0.22.0 is reviewed and recorded, but the
-  local package remains on 0.21.0 until the ROCm patch carry, PyTorch/runtime
-  base follow-up, package build, deploy/install, installed smoke, and live
-  scenario gates are handled.
-- Transformers 5.9.0 follow-up: keep this blocked until the f8efdb3 follow-up
-  merges, or until the operator explicitly bypasses f8efdb3 and declares the
-  runtime base stable. The local Transformers package is coupled to tokenizers,
-  safetensors, Hugging Face Hub, model-surface imports, and vLLM scenarios.
+- Blackcat ai-notes dbfb70e recipe review: the 2026-06-14 freshness sweep found
+  the recipe submodule upstream at `dbfb70efc26fccf6ab2b00ee60ff0c96d37d37b0`
+  while this repo records `3f15f9f1318491c9ee03782d8b2ebd41391de118`. Review
+  the recipe diff before any package implementation and adopt only package or
+  policy changes that belong in this repo.
+- CPython 3.14.6 baseline review: the Arch package remains at `3.14.5-1`, but
+  the CPython source baseline is now `3.14.6`. Review the point-release delta
+  before deciding whether `python-gfx1151` source metadata or package rebuilds
+  should move.
+- ROCm PyTorch release/2.12 c7badbdf follow-up: release/2.12 now reports
+  `c7badbdf3d33d945a0ed4536aac5303bc933e6ee`, and Arch
+  `python-pytorch-opt-rocm` is now `2.12.0-4`. This supersedes the f8efdb3
+  source follow-up as the active runtime-base package lane while preserving the
+  same gate shape: source update, affected rebuilds, deploy/install,
+  local-repo verification, published-repo verification, installed-smoke, and
+  live-scenario validation. This lane still owns reconciliation of the
+  reference host's intermediate ab32a1f/pkgrel-3 install.
+- AITER 0.1.15.post1 dependency-closure review: upstream now reports
+  `0.1.15.post1` after the previous 0.1.15-rc0 blocker. Re-review the release
+  metadata against the existing FlyDSL and Triton dependency-closure concerns
+  before package source adoption; required gates remain source verification,
+  package build, deploy/install, installed JIT/import smoke, and affected vLLM
+  live validation.
+- llama.cpp b9637 follow-up after b9442 live validation: upstream now reports
+  `b9637` and AUR HIP now reports `b9627-1` after the adopted b9442 lane. This
+  supersedes the b9444 follow-up as the active llama.cpp source lane; package
+  source update, package build, deploy/install, installed-smoke, Lemonade
+  backend metadata review, and selected-logit live validation remain open.
+- vLLM 0.23.0 follow-up: upstream now reports `0.23.0` after the local
+  `0.21.0` package lane. Refresh only after the ROCm patch carry,
+  runtime-base, package build, deploy/install, installed smoke, and live
+  scenario gates are planned together.
+- Transformers 5.12.0 follow-up: PyPI and the upstream tag now report
+  `5.12.0` after the local `5.8.1` package lane. Keep this behind the runtime
+  base decision unless the operator explicitly declares the current runtime
+  base stable enough for a separate Transformers lane.
+- safetensors 0.8.0 follow-up: PyPI now reports `0.8.0` while Arch remains at
+  `0.7.0-2`. Review compatibility with Transformers, compressed-tensors, and
+  vLLM before package adoption.
+- compressed-tensors 0.17.1 follow-up: PyPI now reports `0.17.1` after the
+  adopted `0.16.0` package lane. Treat it as part of the quantization and vLLM
+  dependency closure, not as an isolated Python wheel bump.
+- AutoRound 0.13.1 follow-up: PyPI now reports `0.13.1` after the adopted
+  `0.13.0` package lane. Package source update, build, deploy/install, import
+  smoke, and any affected quantization scenario review remain open.
+- llmcompressor 0.11.0 compatibility review: PyPI now reports `0.11.0` after
+  the rejected `0.10.0.2` candidate. Re-check upstream dependency metadata
+  against the local runtime stack before deciding whether this remains blocked
+  or becomes package work.
+- mistral-common 1.11.3 follow-up: PyPI now reports `1.11.3` while the AUR
+  baseline remains `1.8.6-1`. Review package metadata against the local
+  Transformers and vLLM model-surface closure before adoption.
+- accelerate 1.14.0 follow-up: PyPI now reports `1.14.0` after the adopted
+  `1.13.0` package lane. Review dependency metadata and affected local
+  inference helpers before package adoption.
+- aiohttp 3.14.1 follow-up: PyPI now reports `3.14.1` after the current
+  `3.13.5` package lane. Treat this as service-runtime dependency work that
+  needs affected aiohttp/uvicorn/vLLM import smokes after package build.
+- cryptography 49.0.0 follow-up: PyPI now reports `49.0.0`, and Arch now
+  reports `48.0.1-1` after the adopted `48.0.0` lane. Review Rust/OpenSSL
+  package metadata before source adoption.
+- CTranslate2 4.8.0 follow-up: upstream now reports `4.8.0`; the AUR baseline
+  and ROCm fork scout cursor remain unchanged. Review the upstream delta
+  against the local ROCm package shape before adoption.
+- Lemonade 10.7.0 baseline review: the fork-main source remains at
+  `13b1af25f84cf08ad5f8bf0ec58980bdfc09c9e7`, while upstream and AUR baselines
+  now report `10.7.0`. Review upstream/AUR baseline drift before deciding
+  whether the local fork package lane should move.
+- AOCL-Utils AUR epoch baseline review: upstream remains current, but the AUR
+  baseline now reports `1:5.3-1` after the adopted `5.3.0-1` lane. Review this
+  as baseline drift before changing local package metadata.
+- stable-diffusion.cpp bb90bfa follow-up: upstream master now reports
+  `bb90bfa00f858c7df6502e75f31c4440d4d11fde`, and the AUR Vulkan baseline
+  reports `r660.d2797b8-1`. Review the source and submodule delta before
+  package source adoption, rebuild, deploy/install, and installed wrapper
+  smoke.
+- Torch-MIGraphX 29aabb9 follow-up: upstream master now reports
+  `29aabb9cb40073c3510eb6887728aa4c2d7009a9` while the release tag baseline
+  remains `v1.1`. Review the source delta against the PyTorch runtime-base
+  lane before package adoption.
 - GPTQ live-validation lane: the retained
   `vllm.qwen3_5.35b-a3b-gptq-int4.text.basic` scenario pins the official
   `Qwen/Qwen3.5-35B-A3B-GPTQ-Int4` model revision and model-card license

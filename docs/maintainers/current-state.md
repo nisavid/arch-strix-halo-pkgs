@@ -1,24 +1,38 @@
 # Current State
 
-Status as of 2026-06-01.
+Status as of 2026-06-14.
 
-The 2026-05-31 freshness sweep ran
-`tools/check_package_updates.py --json --fail-on actionable` from a temporary
-writable worktree because this worktree's `.agents` cache directory is mounted
-read-only. The sweep found seven action-required families:
-`python-amd-aiter-gfx1151` v0.1.15-rc0, `python-auto-round-gfx1151` 0.13.0,
-`python-compressed-tensors-gfx1151` 0.16.0, llama.cpp b9442 with AUR HIP
-b9437-1, ROCm PyTorch release/2.12 f8efdb3 with Arch
-`python-pytorch-opt-rocm 2.12.0-2`, stable-diffusion.cpp be65ac7, and vLLM
-0.22.0. The sweep also still reports Transformers 5.9.0 as a tracked candidate.
-After the b9442 package deploy/install verification, the post-deploy freshness
-recheck found upstream llama.cpp b9444 at
-`6f165c1c64f77024686dc969c3de6f030f274add`; that newer source lane is tracked
-separately and not adopted by the b9442 live-validation closeout.
-The post-deploy recheck exits with only intentional unresolved candidates:
-effective counts are 22 adopted update candidates, 17 current families, 2
-rejected update candidates, 4 tracked update candidates, and 1 blocked update
-candidate.
+The 2026-06-14 freshness sweep ran
+`tools/check_package_updates.py --json --fail-on actionable` from a fresh
+worktree at `origin/main` commit `ab1fff5`. The checker did not use a cache and
+exited `10` before disposition because it found 20 action-required families:
+accelerate 1.14.0, aiohttp 3.14.1, AITER 0.1.15.post1, AOCL-Utils AUR
+`1:5.3-1` baseline drift, AutoRound 0.13.1, compressed-tensors 0.17.1,
+cryptography 49.0.0 with Arch `48.0.1-1`, CTranslate2 4.8.0, Lemonade 10.7.0
+baseline drift, llama.cpp b9637 with AUR HIP b9627-1, llmcompressor 0.11.0,
+mistral-common 1.11.3, CPython 3.14.6 baseline drift, ROCm PyTorch release/2.12
+`c7badbdf3d33d945a0ed4536aac5303bc933e6ee` with Arch
+`python-pytorch-opt-rocm 2.12.0-4`, safetensors 0.8.0, stable-diffusion.cpp
+`bb90bfa00f858c7df6502e75f31c4440d4d11fde`, Blackcat `ai-notes` submodule
+`dbfb70efc26fccf6ab2b00ee60ff0c96d37d37b0`, Torch-MIGraphX
+`29aabb9cb40073c3510eb6887728aa4c2d7009a9`, Transformers 5.12.0, and vLLM
+0.23.0. These are dispositioned as tracked update candidates in
+`docs/maintainers/update-candidates.toml` and are visible in `docs/backlog.md`.
+The older b9444, f8efdb3, AITER 0.1.15-rc0, vLLM 0.22.0, and Transformers
+5.9.0 candidates are superseded by the current 2026-06-14 observations. After
+disposition, a forced checker rerun exits `0` with effective counts of 20
+tracked update candidates, 10 adopted update candidates, 14 current families,
+and 1 rejected update candidate.
+
+No package implementation, package build, deploy/install, host mutation,
+installed smoke, or live inference validation is claimed for the 2026-06-14
+reconciliation. Active follow-up work starts with recipe and baseline review,
+then the ROCm PyTorch runtime-base lane, then coupled runtime consumers
+including AITER, vLLM, Transformers, safetensors, compressed-tensors,
+llmcompressor, mistral-common, AutoRound, accelerate, and Torch-MIGraphX.
+Independent package lanes such as llama.cpp/Lemonade, stable-diffusion.cpp,
+CTranslate2, aiohttp, cryptography, AOCL-Utils baseline review, and CPython
+baseline review remain separate tracked work.
 
 Source updated: `python-auto-round-gfx1151` now renders from PyPI AutoRound
 0.13.0 as `0.13.0-1`, and `python-compressed-tensors-gfx1151` now renders from
@@ -46,21 +60,18 @@ backend metadata. Live-scenario validated: complete for
 `lemonade.reranking.zerank-2.selected-logit` at
 `docs/worklog/inference-runs/20260531T-llama-b9442-postdeploy-live`.
 
-The AITER v0.1.15-rc0, ROCm PyTorch f8efdb3, and vLLM 0.22.0 observations are
-recorded without package source adoption. AITER v0.1.15-rc0 remains blocked
-after the 2026-05-31 lane refresh: it is still the latest AITER release tag, it
-hard-pins `flydsl==0.1.9.dev599` in build and install metadata, it runs FlyDSL
-AOT during build, and its Gluon kernels require `triton>=3.6.0`. Public PyPI
-now exposes the FlyDSL prerelease only as CPython manylinux wheels, with no
-sdist/source artifact to package, and upstream's RC install path still points at
-AMD's gfx942/gfx950 staging index. The repo-owned Triton package still tracks
-ROCm/triton `main_perf` at `0ec280cf`, so a Triton 3.6+ ROCm source lane also
-needs a separate package decision before AITER can move past 0.1.14. ROCm
-PyTorch f8efdb3 remains a tracked runtime-base follow-up after the deployed
-26872de stack and owns the reference-host reconciliation for the intermediate
-ab32a1f/pkgrel-3 install described below. vLLM 0.22.0 remains tracked until the
-local ROCm patch carry and runtime-base gates are handled. Active follow-up work
-is visible in `docs/backlog.md` and `docs/maintainers/update-candidates.toml`.
+The AITER 0.1.15.post1, ROCm PyTorch c7badbdf, and vLLM 0.23.0 observations are
+recorded without package source adoption. AITER 0.1.15.post1 supersedes the
+0.1.15-rc0 blocker as the active release target, but the FlyDSL
+source-packageability and Triton 3.6+ ROCm source-lane concerns from the RC
+remain review inputs until release metadata proves they are gone or a local
+dependency closure exists. ROCm PyTorch c7badbdf supersedes f8efdb3 as the
+active release/2.12 runtime-base follow-up after the deployed 26872de stack and
+still owns the reference-host reconciliation for the intermediate
+ab32a1f/pkgrel-3 install described below. vLLM 0.23.0 supersedes the 0.22.0
+candidate and remains tracked until the local ROCm patch carry and runtime-base
+gates are handled. Active follow-up work is visible in `docs/backlog.md` and
+`docs/maintainers/update-candidates.toml`.
 
 The 2026-05-26 AOCL 5.3 refresh is adopted. `aocl-utils-gfx1151`
 now renders from upstream AOCL-Utils `5.3.0` with the current AUR
