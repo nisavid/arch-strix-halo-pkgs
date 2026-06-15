@@ -258,6 +258,11 @@ validate_stage() {
 
   local -a needed
   needed=("${(@f)$(readelf -d $onnx_lib | sed -n 's/.*Shared library: \[\([^]]*\)\].*/\1/p')}")
+  if (( ${needed[(I)libprotobuf.so.34*]} || ${needed[(I)libutf8_validity.so.34*]} )); then
+    print -u2 "staged libmigraphx_onnx.so needs: ${(j:, :)needed}"
+    fail "staged MIGraphX ONNX library still links protobuf 34-era libraries"
+  fi
+
   if (( ! ${needed[(I)$protobuf_soname]} )); then
     print -u2 "staged libmigraphx_onnx.so needs: ${(j:, :)needed}"
     fail "staged MIGraphX ONNX library is not linked against $protobuf_soname"
@@ -266,11 +271,6 @@ validate_stage() {
   if (( ! ${needed[(I)$utf8_validity_soname]} )); then
     print -u2 "staged libmigraphx_onnx.so needs: ${(j:, :)needed}"
     fail "staged MIGraphX ONNX library is not linked against $utf8_validity_soname"
-  fi
-
-  if (( ${needed[(I)libprotobuf.so.34*]} || ${needed[(I)libutf8_validity.so.34*]} )); then
-    print -u2 "staged libmigraphx_onnx.so needs: ${(j:, :)needed}"
-    fail "staged MIGraphX ONNX library still links protobuf 34-era libraries"
   fi
 
   status "checking staged Python import"

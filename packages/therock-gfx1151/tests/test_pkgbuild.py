@@ -56,6 +56,9 @@ def test_migraphx_staging_pins_system_protobuf_and_rejects_stale_soname():
     assert "read_soname /usr/lib/libutf8_validity.so" in text
     assert "libprotobuf.so.34*" in text
     assert "libutf8_validity.so.34*" in text
+    assert text.index("staged MIGraphX ONNX library still links protobuf 34-era libraries") < text.index(
+        "staged MIGraphX ONNX library is not linked against $protobuf_soname"
+    )
     assert text.index("local -a needed") < text.index('status "checking staged Python import"')
 
 
