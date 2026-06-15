@@ -26,8 +26,7 @@ lemonade.reranking.zerank-2.selected-logit --run-root
 docs/worklog/inference-runs/20260615T-lemonade-10.7-postdeploy` passed three
 scenarios with zero failures.
 
-The ROCm PyTorch release/2.12 `c7badbdf` runtime-base source lane is prepared,
-built, deployed, and installed, but its host-validation gate remains open.
+The ROCm PyTorch release/2.12 `c7badbdf` runtime-base source lane is adopted.
 `python-pytorch-opt-rocm-gfx1151` pins ROCm/pytorch
 `c7badbdf3d33d945a0ed4536aac5303bc933e6ee` and renders as `2.12.0-4`,
 matching the current Arch `python-pytorch-opt-rocm 2.12.0-4` baseline. The
@@ -43,7 +42,7 @@ native consumers are versioned beyond the unmerged ab32a1f/pkgrel-3 host drift:
 `tools/amerge build` plan `20260615T064435-54276c27` produced all seven
 runtime-base bundle artifacts. Deployed/installed: complete on 2026-06-15; the
 local package repo, configured `strix-halo-gfx1151` repo view, and `pacman -Q`
-all report the seven expected versions. Installed-smoked: partial. `torch`,
+all report the seven expected versions. Installed-smoked: complete. `torch`,
 AITER, FlashAttention, TorchAO, TorchVision, and vLLM imports passed, and the
 FlashAttention CK backend-import scenario passed. The AMDMIGraphX protobuf-35
 repair is built, published, installed, and post-install smoked:
@@ -54,9 +53,18 @@ repair is built, published, installed, and post-install smoked:
 `docs/worklog/inference-runs/20260615T-pytorch-c7badbdf-migraphx-protobuf35-postinstall-agent`.
 The TheRock render also makes the staged `magma-gfx1151`,
 `rocm-gdb-gfx1151`, and `rocprofiler-compute-gfx1151` payloads explicit in
-`therock-gfx1151`. Live-scenario validated: not complete; the agent sandbox
-cannot access `/dev/kfd`, so GPU live scenarios remain operator-owned after the
-MIGraphX/protobuf ABI repair.
+`therock-gfx1151`. Live-scenario validated: complete for the selected
+runtime-base gate. The operator-owned live rerun passed
+`torch-migraphx.resnet-tiny.dynamo` and `torch-migraphx.resnet-tiny.pt2e` at
+`docs/worklog/inference-runs/20260615T-pytorch-c7badbdf-migraphx-protobuf35-live`.
+The same run found that `vllm.qwen3_5.0_8b.text.basic` could not import
+Transformers because installed Arch `python-scikit-learn 1.9.0-1` needed
+`narwhals.stable.v2`; after `python-narwhals 2.22.1-1` was present,
+`vllm.qwen3_5.0_8b.text.basic` passed at
+`docs/worklog/inference-runs/20260615T-pytorch-c7badbdf-vllm-narwhals-postinstall`.
+Keep that as host package-closure context rather than a vLLM package
+dependency: scikit-learn declares `narwhals>=2.0.1`, while vLLM and
+Transformers only encounter it through optional ambient scikit-learn imports.
 
 The AOCL-Utils AUR epoch baseline review is complete. Current AUR
 `aocl-utils 1:5.3-1` carries epoch 1 because upstream exposes the AOCL-Utils
@@ -91,25 +99,28 @@ The older b9444, f8efdb3, AITER 0.1.15-rc0, vLLM 0.22.0, and Transformers
 5.9.0 candidates are superseded by the current 2026-06-14 observations. After
 the 2026-06-14 disposition, a forced checker rerun exited `0`.
 
-A 2026-06-15 forced checker rerun after the Wave 0 review updates found newer
-Lemonade fork-main, llama.cpp, and Torch-MIGraphX heads. The post-deploy
-checker rerun for the c7badbdf branch also retargeted llama.cpp to b9644 and
-llmcompressor to 0.12.0. Those are tracked follow-up candidates in
-`docs/maintainers/update-candidates.toml` and remain visible in
-`docs/backlog.md`; no package source adoption, build, deploy/install, installed
-smoke, or live validation is claimed for those follow-ups in this branch.
-After retargeting, the cache-aware checker rerun exited `0` with no
-undispositioned update candidates; several unrelated provider queries still
-reported network failures and need a future successful freshness rerun.
+A 2026-06-15 forced checker rerun after the Wave 0 review updates found a newer
+Lemonade fork-main head, which is now adopted as the Lemonade 10.7.0 lane
+recorded above. The same review found newer llama.cpp and Torch-MIGraphX heads,
+and the post-deploy checker rerun for the c7badbdf branch retargeted llama.cpp
+to b9644 and llmcompressor to 0.12.0. Those remaining observations are tracked
+follow-up candidates in `docs/maintainers/update-candidates.toml` and remain
+visible in `docs/backlog.md`; no package source adoption, build,
+deploy/install, installed smoke, or live validation is claimed for those
+follow-ups in this branch. After retargeting, the cache-aware checker rerun
+exited `0` with no undispositioned update candidates; several unrelated
+provider queries still reported network failures and need a future successful
+freshness rerun.
 
-No package implementation, package build, deploy/install, host mutation,
-installed smoke, or live inference validation is claimed for the 2026-06-14
-reconciliation. Active follow-up work starts with baseline review, then the
-ROCm PyTorch runtime-base lane, then coupled runtime consumers
-including AITER, vLLM, Transformers, safetensors, compressed-tensors,
-llmcompressor, mistral-common, AutoRound, accelerate, and Torch-MIGraphX.
-Independent package lanes such as llama.cpp/Lemonade, stable-diffusion.cpp,
-CTranslate2, aiohttp, and cryptography remain separate tracked work.
+The 2026-06-14 reconciliation itself did not claim package implementation,
+package build, deploy/install, host mutation, installed smoke, or live
+inference validation. The ROCm PyTorch c7badbdf runtime-base lane is now
+adopted as recorded above, so active follow-up work starts with coupled runtime
+consumers including AITER, vLLM, Transformers, safetensors,
+compressed-tensors, llmcompressor, mistral-common, AutoRound, accelerate, and
+Torch-MIGraphX. Independent package lanes such as llama.cpp/Lemonade,
+stable-diffusion.cpp, CTranslate2, aiohttp, and cryptography remain separate
+tracked work.
 
 The CPython 3.14.6 source cursor review is complete as of 2026-06-15. CPython
 3.14.6 was released on 2026-06-10 with security and crash fixes, but
@@ -147,17 +158,16 @@ backend metadata. Live-scenario validated: complete for
 `lemonade.reranking.zerank-2.selected-logit` at
 `docs/worklog/inference-runs/20260531T-llama-b9442-postdeploy-live`.
 
-The AITER 0.1.15.post1, ROCm PyTorch c7badbdf, and vLLM 0.23.0 observations are
-recorded without package source adoption. AITER 0.1.15.post1 supersedes the
-0.1.15-rc0 blocker as the active release target, but the FlyDSL
-source-packageability and Triton 3.6+ ROCm source-lane concerns from the RC
-remain review inputs until release metadata proves they are gone or a local
-dependency closure exists. ROCm PyTorch c7badbdf supersedes f8efdb3 as the
-active release/2.12 runtime-base follow-up after the deployed 26872de stack and
-still owns the reference-host reconciliation for the intermediate
-ab32a1f/pkgrel-3 install described below. vLLM 0.23.0 supersedes the 0.22.0
-candidate and remains tracked until the local ROCm patch carry and runtime-base
-gates are handled. Active follow-up work is visible in `docs/backlog.md` and
+The AITER 0.1.15.post1 and vLLM 0.23.0 observations are recorded without
+package source adoption. AITER 0.1.15.post1 supersedes the 0.1.15-rc0 blocker
+as the active release target, but the FlyDSL source-packageability and Triton
+3.6+ ROCm source-lane concerns from the RC remain review inputs until release
+metadata proves they are gone or a local dependency closure exists. ROCm
+PyTorch c7badbdf is now adopted as the active release/2.12 runtime-base lane,
+superseding f8efdb3 and reconciling the intermediate ab32a1f/pkgrel-3 host
+drift described below. vLLM 0.23.0 supersedes the 0.22.0 candidate and remains
+tracked until the local ROCm patch carry and runtime-base gates are handled.
+Active follow-up work is visible in `docs/backlog.md` and
 `docs/maintainers/update-candidates.toml`.
 
 The Blackcat ai-notes `dbfb70efc26fccf6ab2b00ee60ff0c96d37d37b0` recipe
@@ -291,23 +301,23 @@ drift rather than replacing the deployed 26872de closeout target. The
 `26872de..ab32a1f` range has two ROCm commits: the large-matrix `triu`/`tril`
 64-bit indexing fix and the UnaryUfuncInfo lambda syntax fix. The same targeted
 check found the Arch `python-pytorch-opt-rocm 2.12.0-2` baseline, which is
-now tracked with the newer c7badbdf source follow-up because the source branch
-still moved beyond the deployed 26872de stack. The active future package lane
-is the c7badbdf entry in `docs/backlog.md` and
+reconciled by the adopted c7badbdf runtime-base lane because the source branch
+moved beyond both the deployed 26872de stack and the intermediate ab32a1f host
+drift. The adopted c7badbdf entry remains in
 `docs/maintainers/update-candidates.toml`.
 
-Post-#63 host reconciliation: the reference host currently has the intermediate
-ab32a1f/pkgrel-3 runtime-base stack installed from a prior handoff, including
+Post-#63 host reconciliation previously recorded an intermediate ab32a1f/pkgrel-3
+runtime-base stack from a prior handoff, including
 `python-pytorch-opt-rocm-gfx1151 2.12.0-3`,
 `python-amd-aiter-gfx1151 0.1.14-3`,
 `python-flash-attn-rocm-gfx1151 2.8.4-13`,
 `python-torchao-rocm-gfx1151 0.17.0-5`,
 `python-torch-migraphx-gfx1151 1.2-8`,
 `python-torchvision-rocm-gfx1151 0.27.0-3`, and
-`python-vllm-rocm-gfx1151 0.21.0-5`. That host state is not adopted package
-metadata and should not be repaired by publishing cached pkgrel-3 artifacts from
-the unmerged ab32a1f lane. The c7badbdf follow-up is the canonical path to
-reconcile source metadata, package builds, deploy/install state,
+`python-vllm-rocm-gfx1151 0.21.0-5`. That host state was not adopted package
+metadata and was not repaired by publishing cached pkgrel-3 artifacts from the
+unmerged ab32a1f lane. The adopted c7badbdf lane is the canonical
+reconciliation for source metadata, package builds, deploy/install state,
 local-repo verification, published-repo verification, installed-smoke evidence,
 live-scenario validation, and published repository contents.
 

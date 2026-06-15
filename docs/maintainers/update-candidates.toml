@@ -553,14 +553,14 @@ previous_recorded = "26872debb4452ea6dc898288618a15595e2317d9 / 2.12.0-1"
 latest = "f8efdb30b5e6d8b1ae3e8744f227416b2aa032c1"
 discovery_status = "branch_head_ahead"
 disposition = "rejected"
-disposition_reason = "Superseded by the 2026-06-14 release/2.12 c7badbdf candidate before package source adoption. The accepted installed and live evidence still belongs to adopted 26872de, while the active runtime-base follow-up now starts from c7badbdf and still owns reconciliation of the intermediate ab32a1f/pkgrel-3 host install."
+disposition_reason = "Superseded by the 2026-06-14 release/2.12 c7badbdf candidate before f8efdb3 package source adoption. The accepted installed and live evidence still belongs to adopted 26872de, while the adopted c7badbdf lane reconciles the intermediate ab32a1f/pkgrel-3 host install."
 salient_changes = [
   "ROCm/pytorch release/2.12 moved beyond the adopted 26872de package lane",
   "Arch python-pytorch-opt-rocm baseline moved from 2.12.0-1 to 2.12.0-2 during closeout",
   "The 26872de..f8efdb3 range is three commits: the triu/tril 64-bit indexing fix for large matrices, the UnaryUfuncInfo ref lambda syntax fix, and a ROCm foreach profiler-test skip",
   "The accepted deployed-stack evidence validates 26872de, not this newer source commit",
-  "The reference host currently has intermediate ab32a1f/pkgrel-3 runtime-base packages installed, but that host-only drift remains unreconciled package state for this follow-up",
-  "Package source update, affected rebuilds, deploy/install, local-repo verification, published-repo verification, installed-smoke, and live-scenario validation remain open",
+  "The intermediate ab32a1f/pkgrel-3 host drift is reconciled by the later adopted c7badbdf lane",
+  "The package source update, affected rebuilds, deploy/install, local-repo verification, published-repo verification, installed-smoke, and live-scenario validation gates moved to the later c7badbdf lane and are no longer active for f8efdb3",
 ]
 patch_carry_overlap = true
 package_source_update_needed = false
@@ -2535,8 +2535,8 @@ covered_checks = [{ source_kind = "arch_package", check_id = "arch" }]
 previous_recorded = "f8efdb30b5e6d8b1ae3e8744f227416b2aa032c1 / 2.12.0-2"
 latest = "c7badbdf3d33d945a0ed4536aac5303bc933e6ee"
 discovery_status = "branch_head_ahead"
-disposition = "tracked"
-disposition_reason = "Source-prepared, package-built, deployed, and installed on 2026-06-15. This supersedes f8efdb3 as the active release/2.12 runtime-base lane: python-pytorch-opt-rocm-gfx1151 now pins c7badbdf and uses pkgrel 4 to align with Arch python-pytorch-opt-rocm 2.12.0-4, while affected native consumers are pkgrel-bumped beyond the unmerged ab32a1f host-drift artifacts. Local and published repo verification passed. The AMDMIGraphX protobuf-35 repair is also built, published, installed, and post-install smoked; selected live GPU scenario validation remains open and operator-owned."
+disposition = "adopted"
+disposition_reason = "Adopted on 2026-06-15. This supersedes f8efdb3 as the active release/2.12 runtime-base lane: python-pytorch-opt-rocm-gfx1151 now pins c7badbdf and uses pkgrel 4 to align with Arch python-pytorch-opt-rocm 2.12.0-4, while affected native consumers are pkgrel-bumped beyond the unmerged ab32a1f host-drift artifacts. Package build, deploy/install, local and published repo verification, installed import smokes, the AMDMIGraphX protobuf-35 repair, Torch-MIGraphX PT2E import, selected Torch-MIGraphX live scenarios, and the selected vLLM Qwen3.5 live scenario passed."
 salient_changes = [
   "ROCm/pytorch release/2.12 moved from f8efdb30b5e6d8b1ae3e8744f227416b2aa032c1 to c7badbdf3d33d945a0ed4536aac5303bc933e6ee",
   "Arch python-pytorch-opt-rocm moved from 2.12.0-2 to 2.12.0-4",
@@ -2549,15 +2549,17 @@ salient_changes = [
   "The staged render also makes magma-gfx1151, rocm-gdb-gfx1151, and rocprofiler-compute-gfx1151 explicit because those payloads are present in the staged TheRock root",
   "The rendered TheRock split package build completed for therock-gfx1151 7.13.0-2, the built migraphx-gfx1151 archive preserves the protobuf-35 linkage, and the local repo install now exposes that linkage on the reference host",
   "torch-migraphx.pt2e.quantizer-import passed after the AMDMIGraphX protobuf-35 repair at docs/worklog/inference-runs/20260615T-pytorch-c7badbdf-migraphx-protobuf35-postinstall-agent",
-  "The lane still owns reconciliation of the reference host's intermediate ab32a1f/pkgrel-3 runtime-base install",
-  "Run selected live GPU scenarios after the installed AMDMIGraphX protobuf-35 repair",
+  "torch-migraphx.resnet-tiny.dynamo and torch-migraphx.resnet-tiny.pt2e passed at docs/worklog/inference-runs/20260615T-pytorch-c7badbdf-migraphx-protobuf35-live",
+  "vllm.qwen3_5.0_8b.text.basic passed after python-narwhals was present on the host at docs/worklog/inference-runs/20260615T-pytorch-c7badbdf-vllm-narwhals-postinstall",
+  "The vLLM narwhals miss is host package-closure context, not a vLLM dependency: installed scikit-learn declares narwhals>=2.0.1 and Transformers reaches it through optional ambient scikit-learn imports",
+  "The lane reconciles the reference host's intermediate ab32a1f/pkgrel-3 runtime-base install",
 ]
 patch_carry_overlap = true
 package_source_update_needed = false
-host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
-next_gate_label = "Run ROCm PyTorch c7badbdf post-repair live validation"
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Adopted; monitor future ROCm PyTorch release/2.12 movement through the normal freshness sweep"
 last_reviewed = "2026-06-15"
 
 [candidates."safetensors-0.8.0-pypi"]
