@@ -2565,7 +2565,15 @@ last_reviewed = "2026-06-15"
 
 [candidates."rocm-pytorch-release-2.12-7f71453"]
 family = "rocm_pytorch"
-packages = ["python-pytorch-opt-rocm-gfx1151"]
+packages = [
+  "python-pytorch-opt-rocm-gfx1151",
+  "python-amd-aiter-gfx1151",
+  "python-flash-attn-rocm-gfx1151",
+  "python-torchao-rocm-gfx1151",
+  "python-torch-migraphx-gfx1151",
+  "python-torchvision-rocm-gfx1151",
+  "python-vllm-rocm-gfx1151",
+]
 source_kind = "git_ref"
 check_id = "release-branch"
 baseline_source_kind = "arch_package"
