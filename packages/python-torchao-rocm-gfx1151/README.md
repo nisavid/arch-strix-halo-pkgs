@@ -74,6 +74,7 @@ in the Gemma 4 online TorchAO run.
 - Keep the repo-local tools/torchao_vllm_smoke.py helper passing for both the tiny serialized checkpoint and the Gemma 4 online quantization path. Treat the serialized Gemma 4 real-model checkpoint path as blocked until the TorchAO/vLLM tensor metadata mismatch is fixed.
 - Keep -famd-opt out of TorchAO wheel CFLAGS/CXXFLAGS while retaining it in LDFLAGS as a clang driver link flag; do not move it back into the wheel compile flags without a fresh TorchAO extension build failure that requires it there.
 - On 2026-05-26, bump pkgrel to 4 for delivery of the TorchAO extension rebuild against python-pytorch-opt-rocm-gfx1151 2.12.0-2 from ROCm/pytorch release/2.12 commit 26872debb4452ea6dc898288618a15595e2317d9.
+- On 2026-06-15, bump pkgrel to 6 for the c7badbdf runtime-base rebuild so TorchAO supersedes the unmerged ab32a1f/pkgrel-5 host-drift artifact.
 
 ## Maintainer Starting Points
 

@@ -2,9 +2,7 @@ diff --git i/aten/src/ATen/native/transformers/hip/aotriton_adapter.h w/aten/src
 index e40376ae0c3..7d58eb1c804 100644
 --- i/aten/src/ATen/native/transformers/hip/aotriton_adapter.h
 +++ w/aten/src/ATen/native/transformers/hip/aotriton_adapter.h
-@@ -127,8 +127,7 @@ struct LazyTensorContext {
--
-+
+@@ -127,7 +127,6 @@ struct LazyTensorContext {
  template<int kRank, bool kRequireZeros>
  struct LazyTensorFunctions : public LazyTensorContext {
 -  static aotriton::TensorView<kRank> acquire(void* cookie) {
@@ -16,8 +14,7 @@ index e40376ae0c3..7d58eb1c804 100644
 @@ -141,8 +140,21 @@ struct LazyTensorFunctions : public LazyTensorContext {
      return mk_aotensor<kRank>(ctx->tensor, ctx->tensor_name);
    }
--
-+
+
 -  static void dispose(void* cookie) {
 +#if AOTRITON_VERSION_CURRENT >= AOTRITON_VERSION_INT(0, 12)
 +  static aotriton::TensorView<kRank> acquire(aotriton::LazyTensor<kRank>* self) {
@@ -35,6 +32,5 @@ index e40376ae0c3..7d58eb1c804 100644
 +  }
 +#endif
  };
--
-+
+
  template<int kRank, bool kRequireZeros>

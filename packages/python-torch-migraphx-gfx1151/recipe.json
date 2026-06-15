@@ -21,7 +21,8 @@
       "Keep the numpy metadata patch while the local package depends on the repo's numpy 2.x lane.",
       "Re-run host-device FX lowering after every MIGraphX, PyTorch, TorchAO, or Torch-MIGraphX rebuild.",
       "Re-run the PT2E quantizer import and tiny torch.compile backend smokes after every PyTorch, TorchAO, or Torch-MIGraphX rebuild because those lanes depend on moved TorchAO APIs and PyTorch AOTAutograd import ordering.",
-      "On 2026-05-26, bump pkgrel to 7 for delivery of the Torch-MIGraphX rebuild against python-pytorch-opt-rocm-gfx1151 2.12.0-2 and python-torchao-rocm-gfx1151 0.17.0-4."
+      "On 2026-05-26, bump pkgrel to 7 for delivery of the Torch-MIGraphX rebuild against python-pytorch-opt-rocm-gfx1151 2.12.0-2 and python-torchao-rocm-gfx1151 0.17.0-4.",
+      "On 2026-06-15, bump pkgrel to 9 for the c7badbdf runtime-base rebuild so Torch-MIGraphX supersedes the unmerged ab32a1f/pkgrel-8 host-drift artifact."
     ]
   },
   "name": "python-torch-migraphx-gfx1151",
@@ -66,7 +67,7 @@
     ],
     "patches_dir": "packages/python-torch-migraphx-gfx1151",
     "pkgdesc": "PyTorch integration for MIGraphX on the local ROCm gfx1151 stack",
-    "pkgrel": 7,
+    "pkgrel": 9,
     "provides": [
       "python-torch-migraphx",
       "torch-migraphx"
@@ -96,7 +97,8 @@
       "Keep the numpy metadata patch while the local package depends on the repo's numpy 2.x lane.",
       "Re-run host-device FX lowering after every MIGraphX, PyTorch, TorchAO, or Torch-MIGraphX rebuild.",
       "Re-run the PT2E quantizer import and tiny torch.compile backend smokes after every PyTorch, TorchAO, or Torch-MIGraphX rebuild because those lanes depend on moved TorchAO APIs and PyTorch AOTAutograd import ordering.",
-      "On 2026-05-26, bump pkgrel to 7 for delivery of the Torch-MIGraphX rebuild against python-pytorch-opt-rocm-gfx1151 2.12.0-2 and python-torchao-rocm-gfx1151 0.17.0-4."
+      "On 2026-05-26, bump pkgrel to 7 for delivery of the Torch-MIGraphX rebuild against python-pytorch-opt-rocm-gfx1151 2.12.0-2 and python-torchao-rocm-gfx1151 0.17.0-4.",
+      "On 2026-06-15, bump pkgrel to 9 for the c7badbdf runtime-base rebuild so Torch-MIGraphX supersedes the unmerged ab32a1f/pkgrel-8 host-drift artifact."
     ],
     "upstream_version": "1.2",
     "url": "https://github.com/ROCm/torch_migraphx"

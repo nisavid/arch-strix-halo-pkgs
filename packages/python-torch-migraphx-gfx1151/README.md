@@ -66,6 +66,7 @@ the local Python 3.14 and PyTorch 2.11 stack.
 - Re-run host-device FX lowering after every MIGraphX, PyTorch, TorchAO, or Torch-MIGraphX rebuild.
 - Re-run the PT2E quantizer import and tiny torch.compile backend smokes after every PyTorch, TorchAO, or Torch-MIGraphX rebuild because those lanes depend on moved TorchAO APIs and PyTorch AOTAutograd import ordering.
 - On 2026-05-26, bump pkgrel to 7 for delivery of the Torch-MIGraphX rebuild against python-pytorch-opt-rocm-gfx1151 2.12.0-2 and python-torchao-rocm-gfx1151 0.17.0-4.
+- On 2026-06-15, bump pkgrel to 9 for the c7badbdf runtime-base rebuild so Torch-MIGraphX supersedes the unmerged ab32a1f/pkgrel-8 host-drift artifact.
 
 ## Maintainer Starting Points
 

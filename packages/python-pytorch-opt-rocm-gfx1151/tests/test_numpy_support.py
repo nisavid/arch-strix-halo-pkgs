@@ -39,8 +39,8 @@ def _needed_entries(path: Path) -> str:
 
 def test_pkgbuild_makes_numpy_available_at_build_time():
     text = PKGBUILD.read_text()
-    assert "pkgrel=2" in text
-    assert "26872debb4452ea6dc898288618a15595e2317d9" in text
+    assert "pkgrel=4" in text
+    assert "c7badbdf3d33d945a0ed4536aac5303bc933e6ee" in text
     assert "python-numpy-gfx1151" in text
     assert "openmp" in text
     assert "openblas" in text

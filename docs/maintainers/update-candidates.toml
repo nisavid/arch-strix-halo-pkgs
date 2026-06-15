@@ -2536,20 +2536,23 @@ previous_recorded = "f8efdb30b5e6d8b1ae3e8744f227416b2aa032c1 / 2.12.0-2"
 latest = "c7badbdf3d33d945a0ed4536aac5303bc933e6ee"
 discovery_status = "branch_head_ahead"
 disposition = "tracked"
-disposition_reason = "Tracked from the 2026-06-14 freshness sweep. This supersedes f8efdb3 as the active release/2.12 runtime-base source follow-up while preserving the same source, rebuild, deploy/install, repo verification, installed-smoke, and live-scenario gates."
+disposition_reason = "Source-prepared and package-built on 2026-06-15. This supersedes f8efdb3 as the active release/2.12 runtime-base lane: python-pytorch-opt-rocm-gfx1151 now pins c7badbdf and uses pkgrel 4 to align with Arch python-pytorch-opt-rocm 2.12.0-4, while affected native consumers are pkgrel-bumped beyond the unmerged ab32a1f host-drift artifacts. Deploy/install, repo verification, installed-smoke, and live-scenario gates remain open."
 salient_changes = [
   "ROCm/pytorch release/2.12 moved from f8efdb30b5e6d8b1ae3e8744f227416b2aa032c1 to c7badbdf3d33d945a0ed4536aac5303bc933e6ee",
   "Arch python-pytorch-opt-rocm moved from 2.12.0-2 to 2.12.0-4",
+  "The f8efdb..c7badbdf upstream range changes test coverage and NCCL symmetric-memory source gating without touching local patch paths",
+  "Local metadata now renders python-pytorch-opt-rocm-gfx1151 2.12.0-4, python-amd-aiter-gfx1151 0.1.14-4, python-flash-attn-rocm-gfx1151 2.8.4-14, python-torchao-rocm-gfx1151 0.17.0-6, python-torch-migraphx-gfx1151 1.2-9, python-torchvision-rocm-gfx1151 0.27.0-4, and python-vllm-rocm-gfx1151 0.21.0-6",
+  "Package build plan 20260615T064435-54276c27 produced all seven runtime-base bundle artifacts",
   "The lane still owns reconciliation of the reference host's intermediate ab32a1f/pkgrel-3 runtime-base install",
-  "Package source update, affected rebuilds, deploy/install, local-repo verification, published-repo verification, installed-smoke, and live-scenario validation remain open",
+  "Deploy/install, local-repo verification, published-repo verification, installed-smoke, and live-scenario validation remain open",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
+package_source_update_needed = false
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "ROCm PyTorch release/2.12 c7badbdf follow-up"
-last_reviewed = "2026-06-14"
+next_gate_label = "Deploy/install ROCm PyTorch c7badbdf runtime-base bundle"
+last_reviewed = "2026-06-15"
 
 [candidates."safetensors-0.8.0-pypi"]
 family = "safetensors"
