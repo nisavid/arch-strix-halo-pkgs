@@ -18,11 +18,11 @@ options=(staticlibs '!lto')
 provides=(aocl-utils)
 conflicts=(aocl-utils)
 replaces=()
-source=(https://github.com/amd/aocl-utils/archive/refs/tags/5.3.0.tar.gz)
-sha256sums=(3d2fcad3a27d90e50dddbdcef55edbf9f73bb58096f9f682cf5ea6b4f9bd4bfa)
+source=(https://github.com/amd/aocl-utils/archive/refs/tags/5.3.tar.gz)
+sha256sums=(0e29afbbda3b81528380d2dbf7dae1ed6825d8c69e0abfcce53cc6cf90430e69)
 
 build() {
-  cd "$srcdir/aocl-utils-5.3.0"
+  cd "$srcdir/aocl-utils-5.3"
 
   _setup_compiler_env() {
   local _compiler_root="/opt/rocm/lib/llvm/bin"
@@ -68,6 +68,6 @@ build() {
 }
 
 package() {
-  cd "$srcdir/aocl-utils-5.3.0"
+  cd "$srcdir/aocl-utils-5.3"
   DESTDIR="$pkgdir" cmake --install build
 }

@@ -28,8 +28,8 @@ packages = ["aocl-utils-gfx1151"]
 priority = "medium"
 workflow = "upstream_source_update"
 checks = [
-  { id = "release", role = "primary", kind = "github_release", repo = "amd/aocl-utils", recorded = "5.3.0", comparison = "pep440" },
-  { id = "aur", role = "baseline", kind = "aur", package = "aocl-utils", recorded = "5.3.0-1", comparison = "pkgver" },
+  { id = "release", role = "primary", kind = "github_release", repo = "amd/aocl-utils", recorded = "5.3", comparison = "pep440" },
+  { id = "aur", role = "baseline", kind = "aur", package = "aocl-utils", recorded = "1:5.3-1", comparison = "pkgver" },
 ]
 
 [families.aocl_libm]
