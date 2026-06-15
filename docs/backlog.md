@@ -10,27 +10,6 @@
   advisory CachyOS znver4 package remains on the 3.14.5 source lane. Move the
   package source only when the Arch baseline moves or a coordinated
   system-interpreter rebuild lane opens.
-- Run ROCm PyTorch c7badbdf post-repair live validation:
-  release/2.12 now reports
-  `c7badbdf3d33d945a0ed4536aac5303bc933e6ee`, and Arch
-  `python-pytorch-opt-rocm` is now `2.12.0-4`. This supersedes the f8efdb3
-  source follow-up as the active runtime-base package lane while preserving the
-  same gate shape. Source metadata is prepared for c7badbdf with
-  `python-pytorch-opt-rocm-gfx1151 2.12.0-4` and affected native-consumer
-  pkgrels beyond the unmerged ab32a1f host drift. Package build plan
-  `20260615T064435-54276c27` produced the runtime-base bundle artifacts, and
-  deploy/install plus local/published repo verification completed on
-  2026-06-15. Installed smokes are partial: `torch`, AITER, FlashAttention,
-  TorchAO, TorchVision, and vLLM imports pass, and the FlashAttention CK
-  backend-import scenario passes. The AMDMIGraphX protobuf-35 repair is built,
-  published, installed, and post-install smoked: `migraphx-gfx1151 7.13.0-2`
-  from the local `strix-halo-gfx1151` repo now links `libmigraphx_onnx.so`
-  against `libprotobuf.so.35.0.0` and `libutf8_validity.so.35.0.0`, and
-  `torch-migraphx.pt2e.quantizer-import` passed at
-  `docs/worklog/inference-runs/20260615T-pytorch-c7badbdf-migraphx-protobuf35-postinstall-agent`.
-  Selected live GPU scenarios remain open and operator-owned. This lane still
-  owns reconciliation of the reference host's intermediate ab32a1f/pkgrel-3
-  install.
 - AITER 0.1.15.post1 dependency-closure review: upstream now reports
   `0.1.15.post1` after the previous 0.1.15-rc0 blocker. Re-review the release
   metadata against the existing FlyDSL and Triton dependency-closure concerns
