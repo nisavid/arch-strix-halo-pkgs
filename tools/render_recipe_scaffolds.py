@@ -767,7 +767,9 @@ build() {{
     CXXFLAGS="${{_base_cflags}} -famd-opt -Wno-error=unused-command-line-argument" \\
     LDFLAGS="-Wl,-O1 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now -Wl,-z,pack-relative-relocs -flto=auto -fuse-ld=lld"
 
-  make EXTRA_CFLAGS="${{_base_cflags}} -famd-opt -Wno-error=unused-command-line-argument" -j"$(nproc)"
+  make PROFILE_TASK="-S -m test --pgo --timeout=\\$(TESTTIMEOUT)" \\
+    EXTRA_CFLAGS="${{_base_cflags}} -famd-opt -Wno-error=unused-command-line-argument" \\
+    -j"$(nproc)"
 }}
 
 package() {{

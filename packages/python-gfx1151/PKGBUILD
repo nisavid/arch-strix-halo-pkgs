@@ -5,7 +5,7 @@
 # Package recipe key: cpython
 
 pkgname=python-gfx1151
-pkgver=3.14.5
+pkgver=3.14.6
 pkgrel=1
 pkgdesc='The Python programming language rebuilt with amdclang for Strix Halo gfx1151'
 arch=('x86_64')
@@ -15,21 +15,21 @@ depends=(bzip2 expat gdbm libffi libnsl libxcrypt mpdecimal openssl tzdata zlib 
 makedepends=(bluez-libs gdb rocm-llvm-gfx1151 sqlite tk ttf-font xorg-server-xvfb xz)
 optdepends=('python-setuptools: for building Python packages using tooling that is usually bundled with Python' 'python-pip: for installing Python packages using tooling that is usually bundled with Python' 'python-pipx: for installing Python software not packaged on Arch Linux' 'sqlite: for a default database integration' 'xz: for lzma' 'tk: for tkinter')
 options=()
-provides=(python=3.14.5 python3 python-externally-managed)
+provides=(python=3.14.6 python3 python-externally-managed)
 conflicts=(python)
 replaces=(python python3 python-externally-managed)
-source=(https://www.python.org/ftp/python/3.14.5/Python-3.14.5.tar.xz)
-sha256sums=(7e32597b99e5d9a39abed35de4693fa169df3e5850d4c334337ffd6a19a36db6)
+source=(https://www.python.org/ftp/python/3.14.6/Python-3.14.6.tar.xz)
+sha256sums=(143b1dddefaec3bd2e21e3b839b34a2b7fb9842272883c576420d605e9f30c63)
 
 prepare() {
-  cd "$srcdir/Python-3.14.5"
+  cd "$srcdir/Python-3.14.6"
 
   rm -r Modules/expat
   rm -r Modules/_decimal/libmpdec
 }
 
 build() {
-  cd "$srcdir/Python-3.14.5"
+  cd "$srcdir/Python-3.14.6"
 
   _setup_compiler_env() {
   local _compiler_root="/opt/rocm/lib/llvm/bin"
@@ -83,21 +83,23 @@ build() {
     CXXFLAGS="${_base_cflags} -famd-opt -Wno-error=unused-command-line-argument" \
     LDFLAGS="-Wl,-O1 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now -Wl,-z,pack-relative-relocs -flto=auto -fuse-ld=lld"
 
-  make EXTRA_CFLAGS="${_base_cflags} -famd-opt -Wno-error=unused-command-line-argument" -j"$(nproc)"
+  make PROFILE_TASK="-S -m test --pgo --timeout=\$(TESTTIMEOUT)" \
+    EXTRA_CFLAGS="${_base_cflags} -famd-opt -Wno-error=unused-command-line-argument" \
+    -j"$(nproc)"
 }
 
 package() {
-  cd "$srcdir/Python-3.14.5"
+  cd "$srcdir/Python-3.14.6"
   make DESTDIR="$pkgdir" install
 
   local _debug_prefix="/usr/src/debug/python-gfx1151"
-  local _sanitized_src="${_debug_prefix}/Python-3.14.5"
+  local _sanitized_src="${_debug_prefix}/Python-3.14.6"
   local _sysconfig="$pkgdir/usr/lib/python3.14/_sysconfigdata__linux_x86_64-linux-gnu.py"
   local _sysconfig_json="$pkgdir/usr/lib/python3.14/_sysconfig_vars__linux_x86_64-linux-gnu.json"
   local _config_makefile="$pkgdir/usr/lib/python3.14/config-3.14-x86_64-linux-gnu/Makefile"
   local _python_config="$pkgdir/usr/bin/python3.14-config"
 
-  sed -i     -e "s|$srcdir/Python-3.14.5|${_sanitized_src}|g"     -e "s|$srcdir|${_debug_prefix}|g"     -e "s|/tmp/pkg/src/Python-3.14.5|${_sanitized_src}|g"     "${_sysconfig}" "${_sysconfig_json}" "${_config_makefile}" "${_python_config}"
+  sed -i     -e "s|$srcdir/Python-3.14.6|${_sanitized_src}|g"     -e "s|$srcdir|${_debug_prefix}|g"     -e "s|/tmp/pkg/src/Python-3.14.6|${_sanitized_src}|g"     "${_sysconfig}" "${_sysconfig_json}" "${_config_makefile}" "${_python_config}"
   rm -f "$pkgdir/usr/lib/python3.14/__pycache__/_sysconfigdata__linux_x86_64-linux-gnu."*.pyc
 
   ln -sf python3 "$pkgdir/usr/bin/python"

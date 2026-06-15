@@ -2420,7 +2420,7 @@ next_gate_path = ""
 next_gate_label = "Adopted; monitor future Lemonade releases through the normal freshness sweep"
 last_reviewed = "2026-06-15"
 
-[candidates."llama-cpp-b9644"]
+[candidates."llama-cpp-b9660"]
 family = "llama_cpp"
 packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151", "lemonade-server"]
 source_kind = "github_release"
@@ -2429,12 +2429,12 @@ baseline_source_kind = "aur"
 baseline_latest = "b9641-1"
 covered_checks = [{ source_kind = "aur", check_id = "aur-hip" }]
 previous_recorded = "b9442 / b9437-1"
-latest = "b9644"
+latest = "b9660"
 discovery_status = "stable_update_available"
 disposition = "tracked"
-disposition_reason = "Tracked from the 2026-06-15 post-deploy freshness rerun. This supersedes the b9637 and b9642 follow-ups as the active llama.cpp source lane after the adopted b9442 stack."
+disposition_reason = "Tracked from the 2026-06-15 Python fast-track freshness rerun. This supersedes the b9637, b9642, and b9644 follow-ups as the active llama.cpp source lane after the adopted b9442 stack."
 salient_changes = [
-  "GitHub release b9644 is available after the adopted b9442 package lane",
+  "GitHub release b9660 is available after the adopted b9442 package lane",
   "AUR llama.cpp-hip now reports b9641-1 while the Vulkan baseline remains b9222-1",
   "Package source update, package build, deploy/install, installed-smoke, Lemonade backend metadata review, and selected-logit live validation remain open",
 ]
@@ -2443,7 +2443,7 @@ package_source_update_needed = true
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "llama.cpp b9644 follow-up after b9442 live validation"
+next_gate_label = "llama.cpp b9660 follow-up after b9442 live validation"
 last_reviewed = "2026-06-15"
 
 [candidates."llmcompressor-0.12.0-pypi"]
@@ -2500,20 +2500,21 @@ previous_recorded = "3.14.5"
 latest = "3.14.6"
 discovery_status = "baseline_drift"
 disposition = "tracked"
-disposition_reason = "Reviewed on 2026-06-15. CPython 3.14.6 is a security and crash-fix point release, but python-gfx1151 remains pinned to 3.14.5 because core/python is still 3.14.5-1 and the advisory CachyOS znver4 package is still 3.14.5. Move the package source only when the Arch baseline moves or a coordinated system-interpreter rebuild lane opens."
+disposition_reason = "Fast-tracked on 2026-06-15 after source review. python-gfx1151 source metadata now tracks CPython 3.14.6 without waiting for Arch or CachyOS to move, and build plan eabfcfe6 produced python-gfx1151 3.14.6-1 after isolating CPython's PGO profile task from ambient installed site-packages. Deploy/install, installed interpreter smoke, and affected torch/vLLM smokes remain open before adoption."
 salient_changes = [
   "CPython 3.14.6 was released on 2026-06-10 with security fixes for bz2 decompressor reuse, tarfile link-target filtering, bundled expat 2.8.1/CVE-2026-45186, ftplib PASV handling, unicodedata normalization denial of service, XML hash-flooding hardening, and xmlrpc method-name escaping.",
   "The v3.14.5..v3.14.6 upstream range contains 179 commits touching 300 files, including C/API ABI data, locale, curses, ssl, sqlite, tarfile, XML, unicode, and free-threading fixes.",
-  "Arch core/python remains at 3.14.5-1 and is flagged out of date for 3.14.6.",
+  "Arch core/python remains at 3.14.5-1 and is flagged out of date for 3.14.6; Arch remains an integration reference rather than a blocker for this patch-release source bump.",
   "CachyOS cachyos-znver4/python remains on the 3.14.5 source lane at pkgrel 4, with advisory BOLT/profiled-build packaging still not adopted here.",
-  "The local package source stays on CPython 3.14.5 so the system interpreter remains aligned with the authoritative Arch integration baseline.",
+  "python-gfx1151 now uses the official CPython 3.14.6 source tarball with sha256 143b1dddefaec3bd2e21e3b839b34a2b7fb9842272883c576420d605e9f30c63.",
+  "Build plan eabfcfe6 produced python-gfx1151 3.14.6-1; the generated PKGBUILD runs CPython's PGO profile task with -S so training does not import ambient installed site-packages.",
 ]
 patch_carry_overlap = true
 package_source_update_needed = false
-host_validation_needed = false
+host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "CPython 3.14.6 source cursor follow-up"
+next_gate_label = "CPython 3.14.6 deploy/install and installed-smoke lane"
 last_reviewed = "2026-06-15"
 
 [candidates."rocm-pytorch-release-2.12-c7badbdf"]
@@ -2562,6 +2563,32 @@ next_gate_path = ""
 next_gate_label = "Adopted; monitor future ROCm PyTorch release/2.12 movement through the normal freshness sweep"
 last_reviewed = "2026-06-15"
 
+[candidates."rocm-pytorch-release-2.12-7f71453"]
+family = "rocm_pytorch"
+packages = ["python-pytorch-opt-rocm-gfx1151"]
+source_kind = "git_ref"
+check_id = "release-branch"
+baseline_source_kind = "arch_package"
+baseline_latest = "2.12.0-4"
+covered_checks = [{ source_kind = "arch_package", check_id = "arch" }]
+previous_recorded = "c7badbdf3d33d945a0ed4536aac5303bc933e6ee / 2.12.0-4"
+latest = "7f7145337ddec35249faaa02ab3a9aea87b25029"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-06-15 Python fast-track freshness rerun. The ROCm/pytorch release/2.12 branch moved again after the adopted c7badbdf runtime-base lane; review the upstream range and affected runtime-base rebuild gates before package source adoption."
+salient_changes = [
+  "ROCm/pytorch release/2.12 moved from adopted c7badbdf3d33d945a0ed4536aac5303bc933e6ee to 7f7145337ddec35249faaa02ab3a9aea87b25029",
+  "Arch python-pytorch-opt-rocm remains at the adopted 2.12.0-4 baseline",
+  "Package source review, package source update decision, affected runtime-base rebuilds, deploy/install, installed smokes, and affected live scenarios remain open",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "ROCm PyTorch release/2.12 7f71453 follow-up"
+last_reviewed = "2026-06-15"
+
 [candidates."safetensors-0.8.0-pypi"]
 family = "safetensors"
 packages = ["python-safetensors-gfx1151"]
@@ -2585,7 +2612,7 @@ next_gate_path = "docs/backlog.md"
 next_gate_label = "safetensors 0.8.0 follow-up"
 last_reviewed = "2026-06-14"
 
-[candidates."stable-diffusion-cpp-bb90bfa"]
+[candidates."stable-diffusion-cpp-5a34bc7"]
 family = "stable_diffusion_cpp"
 packages = ["stable-diffusion.cpp-vulkan-gfx1151"]
 source_kind = "git_ref"
@@ -2594,12 +2621,12 @@ baseline_source_kind = "aur"
 baseline_latest = "r660.d2797b8-1"
 covered_checks = [{ source_kind = "aur", check_id = "aur-vulkan" }]
 previous_recorded = "be65ac7511b30379b003626c15224798929e33d4 / r279.49d6570-1"
-latest = "bb90bfa00f858c7df6502e75f31c4440d4d11fde"
+latest = "5a34bc7f6e0621dd2f899daa64476eac667d7ed3"
 discovery_status = "branch_head_ahead"
 disposition = "tracked"
-disposition_reason = "Tracked from the 2026-06-14 freshness sweep. Review the source and submodule delta before package source adoption and installed wrapper smoke."
+disposition_reason = "Tracked from the 2026-06-15 Python fast-track freshness rerun. This supersedes the bb90bfa follow-up as the active stable-diffusion.cpp source lane; review the source and submodule delta before package source adoption and installed wrapper smoke."
 salient_changes = [
-  "stable-diffusion.cpp master moved from be65ac7511b30379b003626c15224798929e33d4 to bb90bfa00f858c7df6502e75f31c4440d4d11fde",
+  "stable-diffusion.cpp master moved from be65ac7511b30379b003626c15224798929e33d4 to 5a34bc7f6e0621dd2f899daa64476eac667d7ed3",
   "AUR stable-diffusion.cpp Vulkan baseline now reports r660.d2797b8-1",
   "Source review, submodule review, package source update, build, deploy/install, and installed wrapper smoke remain open",
 ]
@@ -2608,8 +2635,8 @@ package_source_update_needed = true
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "stable-diffusion.cpp bb90bfa follow-up"
-last_reviewed = "2026-06-14"
+next_gate_label = "stable-diffusion.cpp 5a34bc7 follow-up"
+last_reviewed = "2026-06-15"
 
 [candidates."blackcat-ai-notes-dbfb70e"]
 family = "therock"
@@ -2660,19 +2687,19 @@ next_gate_path = "docs/backlog.md"
 next_gate_label = "Torch-MIGraphX ef3f901 follow-up"
 last_reviewed = "2026-06-15"
 
-[candidates."transformers-5.12.0-pypi"]
+[candidates."transformers-5.12.1-pypi"]
 family = "transformers"
 packages = ["python-transformers-gfx1151"]
 source_kind = "pypi"
 check_id = "pypi"
 covered_checks = [{ source_kind = "github_tags", check_id = "tag" }]
 previous_recorded = "5.8.1"
-latest = "5.12.0"
+latest = "5.12.1"
 discovery_status = "stable_update_available"
 disposition = "tracked"
-disposition_reason = "Tracked from the 2026-06-14 freshness sweep. Keep behind the runtime-base decision unless the operator explicitly declares the current runtime base stable enough for a separate Transformers lane."
+disposition_reason = "Tracked from the 2026-06-15 Python fast-track freshness rerun. This supersedes the 5.12.0 follow-up; keep it coupled to the runtime and model-surface closure unless the operator explicitly declares the current runtime base stable enough for a separate Transformers lane."
 salient_changes = [
-  "PyPI and the upstream git tag both report Transformers 5.12.0 after the local 5.8.1 package lane",
+  "PyPI and the upstream git tag both report Transformers 5.12.1 after the local 5.8.1 package lane",
   "The package is coupled to tokenizers, safetensors, Hugging Face Hub, model-surface imports, and vLLM scenarios",
   "Package source update, build, deploy/install, installed import smoke, and affected live scenarios remain open",
 ]
@@ -2681,8 +2708,8 @@ package_source_update_needed = true
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "Transformers 5.12.0 follow-up"
-last_reviewed = "2026-06-14"
+next_gate_label = "Transformers 5.12.1 follow-up"
+last_reviewed = "2026-06-15"
 
 [candidates."vllm-0.23.0"]
 family = "vllm"

@@ -12,13 +12,13 @@
     "update_notes": [
       "Always diff against the current Arch python PKGBUILD first, then inspect CachyOS for any CPU-tuning or toolchain deltas worth carrying.",
       "Treat system-Python replacement as gated on a fresh torch/vLLM smoke run after any major Python, ROCm, or recipe change.",
-      "Keep the package aligned with Arch's Python 3.14 package until a coordinated interpreter rebuild lane is opened for the local ROCm and vLLM stack.",
-      "The reviewed CPython source cursor is 3.14.6; keep python-gfx1151 source on the Arch-aligned 3.14.5 pin until core/python moves or a coordinated system-interpreter rebuild lane opens."
+      "Adopt CPython 3.14 patch releases after source review without waiting for Arch or CachyOS to move; keep those packages as integration references.",
+      "Treat patch-release source bumps as coordinated interpreter rebuild lanes until package build, deploy/install, installed smoke, and affected runtime smokes pass."
     ]
   },
   "name": "python-gfx1151",
   "package_name": "python-gfx1151",
-  "pkgver": "3.14.5",
+  "pkgver": "3.14.6",
   "policy": {
     "advisory_references": [
       "cachyos-znver4/python"
@@ -74,7 +74,7 @@
     "patches_dir": "patches/python-gfx1151",
     "pkgdesc": "The Python programming language rebuilt with amdclang for Strix Halo gfx1151",
     "provides": [
-      "python=3.14.5",
+      "python=3.14.6",
       "python3",
       "python-externally-managed"
     ],
@@ -88,25 +88,26 @@
     "scaffold_notes": [
       "This scaffold is intentionally rebased onto current Arch/Cachy Python 3.14.x instead of the recipe's older CPython 3.13.12 pin.",
       "The scaffold preserves the recipe's rule that all vllm-env.sh compiler flags must be unset before configure so AOCL-LibM does not contaminate the PGO training run.",
+      "The scaffold runs CPython's PGO profile task with -S so training uses the source tree and build extension path without importing ambient installed site-packages.",
       "Before production cutover, verify feature parity with the current Arch python package, especially tkinter, sqlite extension loading, PEP 668, and debug-path sanitization.",
       "The scaffold intentionally disables ensurepip so pip stays split into separate packages, matching Arch system integration more closely.",
       "The scaffold uses the official CPython release tarball rather than a git mirror because the package is pinned to a tagged release and full VCS fetches are unnecessarily expensive here.",
       "Treat the system-Python replacement as gated on a successful Python-3.14 vLLM smoke test against the coherent TheRock ROCm stack."
     ],
     "sha256sums": [
-      "7e32597b99e5d9a39abed35de4693fa169df3e5850d4c334337ffd6a19a36db6"
+      "143b1dddefaec3bd2e21e3b839b34a2b7fb9842272883c576420d605e9f30c63"
     ],
     "source_type": "tarball",
-    "source_url": "https://www.python.org/ftp/python/3.14.5/Python-3.14.5.tar.xz",
-    "src_subdir": "Python-3.14.5",
+    "source_url": "https://www.python.org/ftp/python/3.14.6/Python-3.14.6.tar.xz",
+    "src_subdir": "Python-3.14.6",
     "template": "autoconf-python",
     "update_notes": [
       "Always diff against the current Arch python PKGBUILD first, then inspect CachyOS for any CPU-tuning or toolchain deltas worth carrying.",
       "Treat system-Python replacement as gated on a fresh torch/vLLM smoke run after any major Python, ROCm, or recipe change.",
-      "Keep the package aligned with Arch's Python 3.14 package until a coordinated interpreter rebuild lane is opened for the local ROCm and vLLM stack.",
-      "The reviewed CPython source cursor is 3.14.6; keep python-gfx1151 source on the Arch-aligned 3.14.5 pin until core/python moves or a coordinated system-interpreter rebuild lane opens."
+      "Adopt CPython 3.14 patch releases after source review without waiting for Arch or CachyOS to move; keep those packages as integration references.",
+      "Treat patch-release source bumps as coordinated interpreter rebuild lanes until package build, deploy/install, installed smoke, and affected runtime smokes pass."
     ],
-    "upstream_version": "3.14.5",
+    "upstream_version": "3.14.6",
     "url": "https://www.python.org/"
   },
   "provenance": {
@@ -129,7 +130,7 @@
     "patches": [],
     "phase": "B",
     "repo": "https://github.com/python/cpython.git",
-    "src_dir": "Python-3.14.5",
+    "src_dir": "Python-3.14.6",
     "steps": [
       8
     ]
