@@ -2383,51 +2383,53 @@ next_gate_path = "docs/backlog.md"
 next_gate_label = "CTranslate2 4.8.0 follow-up"
 last_reviewed = "2026-06-14"
 
-[candidates."lemonade-10.7.0-baseline"]
+[candidates."lemonade-fork-e18b9c1"]
 family = "lemonade"
 packages = ["lemonade-server", "lemonade-app", "lemonade"]
-source_kind = "github_release"
-check_id = "upstream-release"
-baseline_source_kind = "aur"
-baseline_latest = "10.7.0"
+source_kind = "git_ref"
+check_id = "fork-main"
+baseline_source_kind = "github_release"
+baseline_latest = "10.7.0 / 10.7.0-3 / 10.7.0-1"
 covered_checks = [
+  { source_kind = "github_release", check_id = "upstream-release" },
   { source_kind = "aur", check_id = "aur-server" },
   { source_kind = "aur", check_id = "aur-desktop" },
 ]
-previous_recorded = "10.6.0 / 10.6.0-1"
-latest = "10.7.0"
-discovery_status = "baseline_drift"
+previous_recorded = "13b1af25f84cf08ad5f8bf0ec58980bdfc09c9e7 / 10.6.0 / 10.6.0-1"
+latest = "e18b9c1e352df8ab5aff2ff353402f1ec77c47f2"
+discovery_status = "branch_head_ahead"
 disposition = "tracked"
-disposition_reason = "Tracked from the 2026-06-14 freshness sweep. The local fork-main source is current, but upstream and AUR baselines now report 10.7.0 and need baseline review before the local fork package lane moves."
+disposition_reason = "Tracked from the 2026-06-15 freshness rerun. The local fork-main source moved to e18b9c1 while upstream remains at 10.7.0, AUR lemonade-server now reports 10.7.0-3, and AUR lemonade-desktop reports 10.7.0-1. Review fork/upstream/AUR drift before the local fork package lane moves."
 salient_changes = [
+  "nisavid/lemonade fork main moved from 13b1af25f84cf08ad5f8bf0ec58980bdfc09c9e7 to e18b9c1e352df8ab5aff2ff353402f1ec77c47f2",
   "Canonical upstream Lemonade now reports 10.7.0",
   "AUR lemonade-server now reports 10.7.0-3 and AUR lemonade-desktop now reports 10.7.0-1",
-  "The package source lane still records the local fork-main commit 13b1af25f84cf08ad5f8bf0ec58980bdfc09c9e7",
+  "Package source review, package metadata update, package build, deploy/install, installed Lemonade smokes, and affected live validation remain open",
 ]
 patch_carry_overlap = true
 package_source_update_needed = true
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "Lemonade 10.7.0 baseline review"
-last_reviewed = "2026-06-14"
+next_gate_label = "Lemonade fork e18b9c1 and 10.7.0 baseline review"
+last_reviewed = "2026-06-15"
 
-[candidates."llama-cpp-b9637"]
+[candidates."llama-cpp-b9642"]
 family = "llama_cpp"
 packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151", "lemonade-server"]
 source_kind = "github_release"
 check_id = "release"
 baseline_source_kind = "aur"
-baseline_latest = "b9627-1"
+baseline_latest = "b9641-1"
 covered_checks = [{ source_kind = "aur", check_id = "aur-hip" }]
 previous_recorded = "b9442 / b9437-1"
-latest = "b9637"
+latest = "b9642"
 discovery_status = "stable_update_available"
 disposition = "tracked"
-disposition_reason = "Tracked from the 2026-06-14 freshness sweep. This supersedes the b9444 follow-up as the active llama.cpp source lane after the adopted b9442 stack."
+disposition_reason = "Tracked from the 2026-06-15 freshness rerun. This supersedes the b9637 follow-up as the active llama.cpp source lane after the adopted b9442 stack."
 salient_changes = [
-  "GitHub release b9637 is available after the adopted b9442 package lane",
-  "AUR llama.cpp-hip now reports b9627-1 while the Vulkan baseline remains b9222-1",
+  "GitHub release b9642 is available after the adopted b9442 package lane",
+  "AUR llama.cpp-hip now reports b9641-1 while the Vulkan baseline remains b9222-1",
   "Package source update, package build, deploy/install, installed-smoke, Lemonade backend metadata review, and selected-logit live validation remain open",
 ]
 patch_carry_overlap = true
@@ -2435,8 +2437,8 @@ package_source_update_needed = true
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "llama.cpp b9637 follow-up after b9442 live validation"
-last_reviewed = "2026-06-14"
+next_gate_label = "llama.cpp b9642 follow-up after b9442 live validation"
+last_reviewed = "2026-06-15"
 
 [candidates."llmcompressor-0.11.0-pypi"]
 family = "llmcompressor"
@@ -2618,18 +2620,18 @@ next_gate_path = ""
 next_gate_label = "Rejected; monitor future ai-notes recipe movement through the normal freshness sweep"
 last_reviewed = "2026-06-15"
 
-[candidates."torch-migraphx-29aabb9"]
+[candidates."torch-migraphx-ef3f901"]
 family = "torch_migraphx"
 packages = ["python-torch-migraphx-gfx1151"]
 source_kind = "git_ref"
 check_id = "master"
 previous_recorded = "b94b985586a051fbee19aefe8c934bb7c1a9df0a"
-latest = "29aabb9cb40073c3510eb6887728aa4c2d7009a9"
+latest = "ef3f901b7e76d96091c5a6b02966fcb3eafcb057"
 discovery_status = "branch_head_ahead"
 disposition = "tracked"
-disposition_reason = "Tracked from the 2026-06-14 freshness sweep. Review the source delta against the PyTorch runtime-base lane before package adoption."
+disposition_reason = "Tracked from the 2026-06-15 freshness rerun. Review the source delta against the PyTorch runtime-base lane before package adoption."
 salient_changes = [
-  "Torch-MIGraphX master moved from b94b985586a051fbee19aefe8c934bb7c1a9df0a to 29aabb9cb40073c3510eb6887728aa4c2d7009a9",
+  "Torch-MIGraphX master moved from b94b985586a051fbee19aefe8c934bb7c1a9df0a to ef3f901b7e76d96091c5a6b02966fcb3eafcb057",
   "The release tag baseline remains v1.1",
   "Package source update, build, deploy/install, installed import smoke, and affected compiled scenario validation remain open",
 ]
@@ -2638,8 +2640,8 @@ package_source_update_needed = true
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "Torch-MIGraphX 29aabb9 follow-up"
-last_reviewed = "2026-06-14"
+next_gate_label = "Torch-MIGraphX ef3f901 follow-up"
+last_reviewed = "2026-06-15"
 
 [candidates."transformers-5.12.0-pypi"]
 family = "transformers"

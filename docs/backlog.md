@@ -24,8 +24,8 @@
   before package source adoption; required gates remain source verification,
   package build, deploy/install, installed JIT/import smoke, and affected vLLM
   live validation.
-- llama.cpp b9637 follow-up after b9442 live validation: upstream now reports
-  `b9637` and AUR HIP now reports `b9627-1` after the adopted b9442 lane. This
+- llama.cpp b9642 follow-up after b9442 live validation: upstream now reports
+  `b9642` and AUR HIP now reports `b9641-1` after the adopted b9442 lane. This
   supersedes the b9444 follow-up as the active llama.cpp source lane; package
   source update, package build, deploy/install, installed-smoke, Lemonade
   backend metadata review, and selected-logit live validation remain open.
@@ -65,17 +65,17 @@
 - CTranslate2 4.8.0 follow-up: upstream now reports `4.8.0`; the AUR baseline
   and ROCm fork scout cursor remain unchanged. Review the upstream delta
   against the local ROCm package shape before adoption.
-- Lemonade 10.7.0 baseline review: the fork-main source remains at
-  `13b1af25f84cf08ad5f8bf0ec58980bdfc09c9e7`, while upstream and AUR baselines
-  now report `10.7.0`. Review upstream/AUR baseline drift before deciding
+- Lemonade fork e18b9c1 and 10.7.0 baseline review: the fork-main source now
+  reports `e18b9c1e352df8ab5aff2ff353402f1ec77c47f2`, while upstream and AUR
+  baselines now report `10.7.0`. Review fork/upstream/AUR drift before deciding
   whether the local fork package lane should move.
 - stable-diffusion.cpp bb90bfa follow-up: upstream master now reports
   `bb90bfa00f858c7df6502e75f31c4440d4d11fde`, and the AUR Vulkan baseline
   reports `r660.d2797b8-1`. Review the source and submodule delta before
   package source adoption, rebuild, deploy/install, and installed wrapper
   smoke.
-- Torch-MIGraphX 29aabb9 follow-up: upstream master now reports
-  `29aabb9cb40073c3510eb6887728aa4c2d7009a9` while the release tag baseline
+- Torch-MIGraphX ef3f901 follow-up: upstream master now reports
+  `ef3f901b7e76d96091c5a6b02966fcb3eafcb057` while the release tag baseline
   remains `v1.1`. Review the source delta against the PyTorch runtime-base
   lane before package adoption.
 - GPTQ live-validation lane: the retained
