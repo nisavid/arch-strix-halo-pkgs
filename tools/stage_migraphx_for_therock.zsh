@@ -204,13 +204,17 @@ build_and_install_migraphx() {
   emulate -L zsh
   local disable_versions
   disable_versions=$(python_disable_versions)
+  local protobuf_lib_dir=${protobuf_dir%/cmake/protobuf}
   local ck=OFF
   local mlir=OFF
   (( with_composable_kernel )) && ck=ON
   (( with_mlir )) && mlir=ON
   [[ -d $protobuf_dir ]] || fail "protobuf CMake config directory is missing: $protobuf_dir"
-  [[ $(read_soname /usr/lib/libprotobuf.so) == $protobuf_soname ]] || fail "system protobuf SONAME must be $protobuf_soname"
-  [[ $(read_soname /usr/lib/libutf8_validity.so) == $utf8_validity_soname ]] || fail "system utf8 validity SONAME must be $utf8_validity_soname"
+  [[ $protobuf_lib_dir != $protobuf_dir ]] || fail "protobuf CMake config directory must end with /cmake/protobuf: $protobuf_dir"
+  [[ -f $protobuf_lib_dir/libprotobuf.so ]] || fail "protobuf library is missing: $protobuf_lib_dir/libprotobuf.so"
+  [[ -f $protobuf_lib_dir/libutf8_validity.so ]] || fail "utf8 validity library is missing: $protobuf_lib_dir/libutf8_validity.so"
+  [[ $(read_soname $protobuf_lib_dir/libprotobuf.so) == $protobuf_soname ]] || fail "protobuf SONAME must be $protobuf_soname"
+  [[ $(read_soname $protobuf_lib_dir/libutf8_validity.so) == $utf8_validity_soname ]] || fail "utf8 validity SONAME must be $utf8_validity_soname"
   local -a configure_args=(
     -S $src
     -B $src/build

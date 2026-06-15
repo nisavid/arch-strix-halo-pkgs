@@ -86,8 +86,9 @@ def test_stage_migraphx_builds_install_target_only():
 def test_stage_migraphx_validates_protobuf_35_before_import():
     script = SCRIPT.read_text()
 
-    assert "system protobuf SONAME must be $protobuf_soname" in script
-    assert "system utf8 validity SONAME must be $utf8_validity_soname" in script
+    assert 'local protobuf_lib_dir=${protobuf_dir%/cmake/protobuf}' in script
+    assert "protobuf SONAME must be $protobuf_soname" in script
+    assert "utf8 validity SONAME must be $utf8_validity_soname" in script
     assert "staged MIGraphX ONNX library is not linked against $protobuf_soname" in script
     assert "staged MIGraphX ONNX library is not linked against $utf8_validity_soname" in script
 
