@@ -236,6 +236,7 @@ def test_math_and_ml_dependency_policy_tracks_arch_baseline_shape():
         "python-tabulate",
         "python-textual",
         "rocprofiler-sdk-gfx1151",
+        "rocprofiler-systems-gfx1151",
     ]
     assert packages["miopen-gfx1151"]["depends"] == [
         "bzip2",

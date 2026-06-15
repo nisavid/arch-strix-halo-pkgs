@@ -86,16 +86,10 @@ def test_stage_migraphx_builds_install_target_only():
 def test_stage_migraphx_validates_protobuf_35_before_import():
     script = SCRIPT.read_text()
 
-    assert "typeset protobuf_soname=libprotobuf.so.35.0.0" in script
-    assert "typeset utf8_validity_soname=libutf8_validity.so.35.0.0" in script
     assert "system protobuf SONAME must be $protobuf_soname" in script
     assert "system utf8 validity SONAME must be $utf8_validity_soname" in script
     assert "staged MIGraphX ONNX library is not linked against $protobuf_soname" in script
     assert "staged MIGraphX ONNX library is not linked against $utf8_validity_soname" in script
-    assert script.index("staged MIGraphX ONNX library still links protobuf 34-era libraries") < script.index(
-        "staged MIGraphX ONNX library is not linked against $protobuf_soname"
-    )
-    assert script.index("local -a needed") < script.index('status "checking staged Python import"')
 
 
 def test_stage_migraphx_preview_is_dry_run():

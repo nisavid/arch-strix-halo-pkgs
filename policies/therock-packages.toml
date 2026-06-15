@@ -242,7 +242,11 @@ depends = ["fmt", "google-glog", "hip-runtime-amd-gfx1151", "hsa-amd-aqlprofile-
 [packages."rocprofiler-compute-gfx1151"]
 desc = "rocprofiler-compute from TheRock for gfx1151"
 provides = ["rocprofiler-compute"]
-depends = ["gcc-libs", "glibc", "python-gfx1151", "python-astunparse", "python-numpy-gfx1151", "python-pandas", "python-pyyaml-gfx1151", "python-sqlalchemy", "python-tabulate", "python-textual", "rocprofiler-sdk-gfx1151"]
+depends = ["gcc-libs", "glibc", "python-gfx1151", "python-astunparse", "python-numpy-gfx1151", "python-pandas", "python-pyyaml-gfx1151", "python-sqlalchemy", "python-tabulate", "python-textual", "rocprofiler-sdk-gfx1151", "rocprofiler-systems-gfx1151"]
+post_copy_commands = [
+  "mkdir -p \"${pkgdir}/opt/rocm/bin\"",
+  "ln -s ../libexec/rocprofiler-compute/rocprof-compute \"${pkgdir}/opt/rocm/bin/rocprof-compute\"",
+]
 
 [packages."roctracer-gfx1151"]
 desc = "ROCm tracer libraries from TheRock for gfx1151"
