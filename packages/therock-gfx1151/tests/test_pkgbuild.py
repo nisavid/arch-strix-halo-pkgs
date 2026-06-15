@@ -19,7 +19,7 @@ MIGRAPHX_PTH = MIGRAPHX_PKGDIR / "usr/lib/python3.14/site-packages/migraphx.pth"
 def test_migraphx_package_exports_python_import_hook():
     text = PKGBUILD.read_text()
     assert "package_migraphx-gfx1151()" in text
-    assert "depends=('gcc-libs' 'glibc' 'hip-runtime-amd-gfx1151' 'miopen-hip-gfx1151' 'msgpack-cxx' 'protobuf' 'python-gfx1151' 'rocblas-gfx1151' 'rocm-core-gfx1151' 'sqlite')" in text
+    assert "depends=('gcc-libs' 'glibc' 'hip-runtime-amd-gfx1151' 'miopen-hip-gfx1151' 'msgpack-cxx' 'libprotobuf.so=35.0.0-64' 'python-gfx1151' 'rocblas-gfx1151' 'rocm-core-gfx1151' 'sqlite')" in text
     assert "migraphx.pth" in text
     assert "import sqlite3" in text
     assert "/opt/rocm/lib" in text
@@ -31,7 +31,7 @@ def test_migraphx_package_exports_python_import_hook():
         "hip-runtime-amd-gfx1151",
         "miopen-hip-gfx1151",
         "msgpack-cxx",
-        "protobuf",
+        "libprotobuf.so=35.0.0-64",
         "python-gfx1151",
         "rocblas-gfx1151",
         "rocm-core-gfx1151",
@@ -49,10 +49,35 @@ def test_migraphx_filelist_contains_runtime_payload():
 def test_migraphx_staging_pins_system_protobuf_and_rejects_stale_soname():
     text = STAGE_MIGRAPHX.read_text()
     assert "typeset protobuf_dir=/usr/lib/cmake/protobuf" in text
+    assert "typeset protobuf_soname=libprotobuf.so.35.0.0" in text
+    assert "typeset utf8_validity_soname=libutf8_validity.so.35.0.0" in text
     assert "-Dprotobuf_DIR=$protobuf_dir" in text
-    assert "readelf -d /usr/lib/libprotobuf.so" in text
+    assert "read_soname /usr/lib/libprotobuf.so" in text
+    assert "read_soname /usr/lib/libutf8_validity.so" in text
     assert "libprotobuf.so.34*" in text
     assert "libutf8_validity.so.34*" in text
+    assert text.index("local -a needed") < text.index('status "checking staged Python import"')
+
+
+def test_rocprofiler_compute_manifest_tracks_runtime_dependencies():
+    text = PKGBUILD.read_text()
+    assert "package_rocprofiler-compute-gfx1151()" in text
+    assert "depends=('gcc-libs' 'glibc' 'python-gfx1151' 'python-astunparse' 'python-numpy-gfx1151' 'python-pandas' 'python-pyyaml-gfx1151' 'python-sqlalchemy' 'python-tabulate' 'python-textual' 'rocprofiler-sdk-gfx1151')" in text
+
+    manifest = json.loads(MANIFEST.read_text())
+    assert manifest["packages"]["rocprofiler-compute-gfx1151"]["depends"] == [
+        "gcc-libs",
+        "glibc",
+        "python-gfx1151",
+        "python-astunparse",
+        "python-numpy-gfx1151",
+        "python-pandas",
+        "python-pyyaml-gfx1151",
+        "python-sqlalchemy",
+        "python-tabulate",
+        "python-textual",
+        "rocprofiler-sdk-gfx1151",
+    ]
 
 
 def test_built_migraphx_package_preloads_sqlite_before_import_path():

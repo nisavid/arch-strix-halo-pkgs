@@ -9,6 +9,8 @@ typeset src=/tmp/AMDMIGraphX
 typeset jobs=${$(nproc 2>/dev/null):-1}
 typeset targets=gfx1151
 typeset protobuf_dir=/usr/lib/cmake/protobuf
+typeset protobuf_soname=libprotobuf.so.35.0.0
+typeset utf8_validity_soname=libutf8_validity.so.35.0.0
 typeset clean=0
 typeset deploy=0
 typeset skip_build=0
@@ -38,7 +40,7 @@ Options:
   -h, --help         show this help
 
 Typical:
-  tools/stage_migraphx_for_therock.zsh --clean --deploy
+  tools/stage_migraphx_for_therock.zsh --clean
 EOF
 }
 
@@ -54,6 +56,12 @@ status() {
 run() {
   print -P "%F{blue}$%f ${(q-)@}"
   "$@" || fail "command failed: ${(q-)@}"
+}
+
+read_soname() {
+  emulate -L zsh
+  local lib=$1
+  readelf -d $lib | sed -n 's/.*Library soname: \[\([^]]*\)\].*/\1/p'
 }
 
 require_cmds() {
@@ -201,6 +209,8 @@ build_and_install_migraphx() {
   (( with_composable_kernel )) && ck=ON
   (( with_mlir )) && mlir=ON
   [[ -d $protobuf_dir ]] || fail "protobuf CMake config directory is missing: $protobuf_dir"
+  [[ $(read_soname /usr/lib/libprotobuf.so) == $protobuf_soname ]] || fail "system protobuf SONAME must be $protobuf_soname"
+  [[ $(read_soname /usr/lib/libutf8_validity.so) == $utf8_validity_soname ]] || fail "system utf8 validity SONAME must be $utf8_validity_soname"
   local -a configure_args=(
     -S $src
     -B $src/build
@@ -243,6 +253,26 @@ validate_stage() {
   \) -print | wc -l)
   (( found_count > 0 )) || fail "staged root still has no MIGraphX payload"
 
+  local onnx_lib=$stage/opt/rocm/lib/migraphx/lib/libmigraphx_onnx.so
+  [[ -f $onnx_lib ]] || fail "missing staged MIGraphX ONNX library: $onnx_lib"
+
+  local -a needed
+  needed=("${(@f)$(readelf -d $onnx_lib | sed -n 's/.*Shared library: \[\([^]]*\)\].*/\1/p')}")
+  if (( ! ${needed[(I)$protobuf_soname]} )); then
+    print -u2 "staged libmigraphx_onnx.so needs: ${(j:, :)needed}"
+    fail "staged MIGraphX ONNX library is not linked against $protobuf_soname"
+  fi
+
+  if (( ! ${needed[(I)$utf8_validity_soname]} )); then
+    print -u2 "staged libmigraphx_onnx.so needs: ${(j:, :)needed}"
+    fail "staged MIGraphX ONNX library is not linked against $utf8_validity_soname"
+  fi
+
+  if (( ${needed[(I)libprotobuf.so.34*]} || ${needed[(I)libutf8_validity.so.34*]} )); then
+    print -u2 "staged libmigraphx_onnx.so needs: ${(j:, :)needed}"
+    fail "staged MIGraphX ONNX library still links protobuf 34-era libraries"
+  fi
+
   status "checking staged Python import"
   run env LD_LIBRARY_PATH=$stage/opt/rocm/lib:${LD_LIBRARY_PATH-} \
     PYTHONPATH=$stage/opt/rocm/lib \
@@ -250,25 +280,6 @@ validate_stage() {
 import migraphx
 print(migraphx.__file__)
 PY
-
-  local onnx_lib=$stage/opt/rocm/lib/migraphx/lib/libmigraphx_onnx.so
-  [[ -f $onnx_lib ]] || fail "missing staged MIGraphX ONNX library: $onnx_lib"
-
-  local protobuf_soname
-  protobuf_soname=$(readelf -d /usr/lib/libprotobuf.so | sed -n 's/.*Library soname: \[\(libprotobuf\.so[^]]*\)\].*/\1/p')
-  [[ -n $protobuf_soname ]] || fail "could not determine system protobuf SONAME"
-
-  local -a needed
-  needed=("${(@f)$(readelf -d $onnx_lib | sed -n 's/.*Shared library: \[\([^]]*\)\].*/\1/p')}")
-  if (( ! ${needed[(I)$protobuf_soname]} )); then
-    print -u2 "staged libmigraphx_onnx.so needs: ${(j:, :)needed}"
-    fail "staged MIGraphX ONNX library is not linked against system $protobuf_soname"
-  fi
-
-  if (( ${needed[(I)libprotobuf.so.34*]} || ${needed[(I)libutf8_validity.so.34*]} )); then
-    print -u2 "staged libmigraphx_onnx.so needs: ${(j:, :)needed}"
-    fail "staged MIGraphX ONNX library still links protobuf 34-era libraries"
-  fi
 }
 
 render_and_deploy() {
