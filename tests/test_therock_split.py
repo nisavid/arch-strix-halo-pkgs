@@ -185,6 +185,18 @@ def test_core_runtime_dependency_policy_tracks_arch_baseline_shape():
         "comgr-gfx1151",
         "hsa-rocr-gfx1151",
     ]
+    assert packages["rocm-gdb-gfx1151"]["depends"] == [
+        "bash",
+        "gmp",
+        "guile",
+        "libelf",
+        "mpfr",
+        "ncurses",
+        "readline",
+        "rocm-dbgapi-gfx1151",
+        "rocm-debug-agent-gfx1151",
+        "xz",
+    ]
 
 
 def test_math_and_ml_dependency_policy_tracks_arch_baseline_shape():

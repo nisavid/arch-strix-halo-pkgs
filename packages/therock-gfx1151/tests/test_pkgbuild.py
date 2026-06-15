@@ -86,6 +86,26 @@ def test_rocprofiler_compute_manifest_tracks_runtime_dependencies():
     ]
 
 
+def test_rocm_gdb_manifest_tracks_non_rocm_runtime_dependencies():
+    text = PKGBUILD.read_text()
+    assert "package_rocm-gdb-gfx1151()" in text
+    assert "depends=('bash' 'gmp' 'guile' 'libelf' 'mpfr' 'ncurses' 'readline' 'rocm-dbgapi-gfx1151' 'rocm-debug-agent-gfx1151' 'xz')" in text
+
+    manifest = json.loads(MANIFEST.read_text())
+    assert manifest["packages"]["rocm-gdb-gfx1151"]["depends"] == [
+        "bash",
+        "gmp",
+        "guile",
+        "libelf",
+        "mpfr",
+        "ncurses",
+        "readline",
+        "rocm-dbgapi-gfx1151",
+        "rocm-debug-agent-gfx1151",
+        "xz",
+    ]
+
+
 def test_built_migraphx_package_preloads_sqlite_before_import_path():
     if not MIGRAPHX_PKGDIR.exists():
         pytest.skip("built package tree is not present in this checkout")

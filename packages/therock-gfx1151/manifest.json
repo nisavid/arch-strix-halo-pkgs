@@ -580,8 +580,16 @@
     },
     "rocm-gdb-gfx1151": {
       "depends": [
+        "bash",
+        "gmp",
+        "guile",
+        "libelf",
+        "mpfr",
+        "ncurses",
+        "readline",
         "rocm-dbgapi-gfx1151",
-        "rocm-debug-agent-gfx1151"
+        "rocm-debug-agent-gfx1151",
+        "xz"
       ],
       "fileless": false,
       "files": 89,

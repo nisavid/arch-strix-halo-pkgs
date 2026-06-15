@@ -213,7 +213,7 @@ depends = ["rocm-core-gfx1151", "hip-runtime-amd-gfx1151", "rocm-dbgapi-gfx1151"
 [packages."rocm-gdb-gfx1151"]
 desc = "ROCm GDB from TheRock for gfx1151"
 provides = ["rocm-gdb"]
-depends = ["rocm-dbgapi-gfx1151", "rocm-debug-agent-gfx1151"]
+depends = ["bash", "gmp", "guile", "libelf", "mpfr", "ncurses", "readline", "rocm-dbgapi-gfx1151", "rocm-debug-agent-gfx1151", "xz"]
 
 [packages."rocprofiler-register-gfx1151"]
 desc = "rocprofiler-register from TheRock for gfx1151"
