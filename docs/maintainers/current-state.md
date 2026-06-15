@@ -63,8 +63,9 @@ Transformers because installed Arch `python-scikit-learn 1.9.0-1` needed
 `vllm.qwen3_5.0_8b.text.basic` passed at
 `docs/worklog/inference-runs/20260615T-pytorch-c7badbdf-vllm-narwhals-postinstall`.
 Keep that as host package-closure context rather than a vLLM package
-dependency: scikit-learn declares `narwhals>=2.0.1`, while vLLM and
-Transformers only encounter it through optional ambient scikit-learn imports.
+dependency. vLLM did not gain a direct narwhals dependency; Transformers reached
+narwhals through optional ambient scikit-learn imports, and the installed
+scikit-learn package declares `narwhals>=2.0.1`.
 
 The AOCL-Utils AUR epoch baseline review is complete. Current AUR
 `aocl-utils 1:5.3-1` carries epoch 1 because upstream exposes the AOCL-Utils
@@ -103,14 +104,14 @@ A 2026-06-15 forced checker rerun after the Wave 0 review updates found a newer
 Lemonade fork-main head, which is now adopted as the Lemonade 10.7.0 lane
 recorded above. The same review found newer llama.cpp and Torch-MIGraphX heads,
 and the post-deploy checker rerun for the c7badbdf branch retargeted llama.cpp
-to b9644 and llmcompressor to 0.12.0. Those remaining observations are tracked
-follow-up candidates in `docs/maintainers/update-candidates.toml` and remain
-visible in `docs/backlog.md`; no package source adoption, build,
-deploy/install, installed smoke, or live validation is claimed for those
-follow-ups in this branch. After retargeting, the cache-aware checker rerun
-exited `0` with no undispositioned update candidates; several unrelated
-provider queries still reported network failures and need a future successful
-freshness rerun.
+to b9644 and llmcompressor to 0.12.0. Torch-MIGraphX was not retargeted in this
+branch. Those remaining observations are tracked follow-up candidates in
+`docs/maintainers/update-candidates.toml` and remain visible in
+`docs/backlog.md`; no package source adoption, build, deploy/install, installed
+smoke, or live validation is claimed for those follow-ups in this branch. After
+retargeting, the cache-aware checker rerun exited `0` with no undispositioned
+update candidates; several unrelated provider queries still reported network
+failures and need a future successful freshness rerun.
 
 The 2026-06-14 reconciliation itself did not claim package implementation,
 package build, deploy/install, host mutation, installed smoke, or live

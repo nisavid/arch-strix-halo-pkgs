@@ -52,8 +52,9 @@ def test_migraphx_staging_pins_system_protobuf_and_rejects_stale_soname():
     assert "typeset protobuf_soname=libprotobuf.so.35.0.0" in text
     assert "typeset utf8_validity_soname=libutf8_validity.so.35.0.0" in text
     assert "-Dprotobuf_DIR=$protobuf_dir" in text
-    assert "read_soname /usr/lib/libprotobuf.so" in text
-    assert "read_soname /usr/lib/libutf8_validity.so" in text
+    assert 'local protobuf_lib_dir=${protobuf_dir%/cmake/protobuf}' in text
+    assert "read_soname $protobuf_lib_dir/libprotobuf.so" in text
+    assert "read_soname $protobuf_lib_dir/libutf8_validity.so" in text
     assert "libprotobuf.so.34*" in text
     assert "libutf8_validity.so.34*" in text
     assert text.index("staged MIGraphX ONNX library still links protobuf 34-era libraries") < text.index(
