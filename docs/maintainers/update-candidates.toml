@@ -2489,18 +2489,21 @@ previous_recorded = "3.14.5"
 latest = "3.14.6"
 discovery_status = "baseline_drift"
 disposition = "tracked"
-disposition_reason = "Tracked from the 2026-06-14 freshness sweep. The Arch package remains current at 3.14.5-1, but the CPython source baseline needs point-release review before package source metadata or rebuild work moves."
+disposition_reason = "Reviewed on 2026-06-15. CPython 3.14.6 is a security and crash-fix point release, but python-gfx1151 remains pinned to 3.14.5 because core/python is still 3.14.5-1 and the advisory CachyOS znver4 package is still 3.14.5. Move the package source only when the Arch baseline moves or a coordinated system-interpreter rebuild lane opens."
 salient_changes = [
-  "CPython source release 3.14.6 is available after the recorded 3.14.5 source baseline",
-  "Arch python remains at the recorded 3.14.5-1 package baseline",
+  "CPython 3.14.6 was released on 2026-06-10 with security fixes for bz2 decompressor reuse, tarfile link-target filtering, bundled expat 2.8.1/CVE-2026-45186, ftplib PASV handling, unicodedata normalization denial of service, XML hash-flooding hardening, and xmlrpc method-name escaping.",
+  "The v3.14.5..v3.14.6 upstream range contains 179 commits touching 300 files, including C/API ABI data, locale, curses, ssl, sqlite, tarfile, XML, unicode, and free-threading fixes.",
+  "Arch core/python remains at 3.14.5-1 and is flagged out of date for 3.14.6.",
+  "CachyOS cachyos-znver4/python remains on the 3.14.5 source lane at pkgrel 4, with advisory BOLT/profiled-build packaging still not adopted here.",
+  "The local package source stays on CPython 3.14.5 so the system interpreter remains aligned with the authoritative Arch integration baseline.",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
-host_validation_needed = true
+package_source_update_needed = false
+host_validation_needed = false
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "CPython 3.14.6 baseline review"
-last_reviewed = "2026-06-14"
+next_gate_label = "CPython 3.14.6 source cursor follow-up"
+last_reviewed = "2026-06-15"
 
 [candidates."rocm-pytorch-release-2.12-c7badbdf"]
 family = "rocm_pytorch"

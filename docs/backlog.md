@@ -4,10 +4,12 @@
 
 ### Active Unresolved Gates
 
-- CPython 3.14.6 baseline review: the Arch package remains at `3.14.5-1`, but
-  the CPython source baseline is now `3.14.6`. Review the point-release delta
-  before deciding whether `python-gfx1151` source metadata or package rebuilds
-  should move.
+- CPython 3.14.6 source cursor follow-up: the CPython 3.14.6 point release is
+  reviewed, and `python-gfx1151` remains pinned to CPython `3.14.5` while the
+  authoritative Arch `core/python` baseline remains `3.14.5-1` and the
+  advisory CachyOS znver4 package remains on the 3.14.5 source lane. Move the
+  package source only when the Arch baseline moves or a coordinated
+  system-interpreter rebuild lane opens.
 - ROCm PyTorch release/2.12 c7badbdf follow-up: release/2.12 now reports
   `c7badbdf3d33d945a0ed4536aac5303bc933e6ee`, and Arch
   `python-pytorch-opt-rocm` is now `2.12.0-4`. This supersedes the f8efdb3

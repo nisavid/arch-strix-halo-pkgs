@@ -30,8 +30,18 @@ ROCm PyTorch runtime-base lane, then coupled runtime consumers
 including AITER, vLLM, Transformers, safetensors, compressed-tensors,
 llmcompressor, mistral-common, AutoRound, accelerate, and Torch-MIGraphX.
 Independent package lanes such as llama.cpp/Lemonade, stable-diffusion.cpp,
-CTranslate2, aiohttp, cryptography, AOCL-Utils baseline review, and CPython
-baseline review remain separate tracked work.
+CTranslate2, aiohttp, cryptography, and AOCL-Utils baseline review remain
+separate tracked work.
+
+The CPython 3.14.6 source cursor review is complete as of 2026-06-15. CPython
+3.14.6 was released on 2026-06-10 with security and crash fixes, but
+`python-gfx1151` remains pinned to CPython 3.14.5 because the authoritative
+Arch `core/python` baseline is still `3.14.5-1` and the advisory CachyOS znver4
+package is still on the 3.14.5 source lane. No package source update, package
+build, deploy/install, installed smoke, or live inference validation is claimed
+for this review. The reviewed CPython freshness cursor is now 3.14.6, and the
+remaining tracked gate is to move only after the Arch baseline moves or a
+coordinated system-interpreter rebuild lane opens.
 
 Source updated: `python-auto-round-gfx1151` now renders from PyPI AutoRound
 0.13.0 as `0.13.0-1`, and `python-compressed-tensors-gfx1151` now renders from
