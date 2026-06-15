@@ -2,6 +2,30 @@
 
 Status as of 2026-06-15.
 
+The Lemonade 10.7.0 source adoption is complete. Source updated:
+`lemonade-server`, `lemonade-app`, and `lemonade` render as `10.7.0-1` from
+`nisavid/lemonade` fork main commit
+`e18b9c1e352df8ab5aff2ff353402f1ec77c47f2`, which syncs upstream Lemonade
+v10.7.0. The freshness policy records upstream Lemonade `10.7.0`, AUR
+`lemonade-server 10.7.0-3`, and AUR `lemonade-desktop 10.7.0-1` as reviewed
+baselines. The Lemonade server patch carry contains four patches for XDNA2
+detection and the system-managed packaged llama.cpp backend story, and those
+patches apply to the v10.7.0 source. Package built: `tools/amerge build` plan
+`20260615T060038-cfa1ca5f` produced `lemonade-server 10.7.0-1`,
+`lemonade-app 10.7.0-1`, and `lemonade 10.7.0-1`. Deployed/installed:
+`tools/amerge deploy` plan `20260615T061400-faf5b90e` installed all three
+packages, and `pacman -Q` reports `lemonade-server 10.7.0-1`,
+`lemonade-app 10.7.0-1`, and `lemonade 10.7.0-1`. Local-repo verified:
+`repo/x86_64` contains the matching archives and sync database entries.
+Published-repo verified: complete; `/srv/pacman/strix-halo-gfx1151/x86_64`
+contains the matching archives, and the `strix-halo-gfx1151` sync database
+contains entries for all three `10.7.0-1` packages. Installed-smoked and
+live-scenario validated: `python tools/run_inference_scenarios.py --scenario
+lemonade.cli.help --scenario lemonade.server.help --scenario
+lemonade.reranking.zerank-2.selected-logit --run-root
+docs/worklog/inference-runs/20260615T-lemonade-10.7-postdeploy` passed three
+scenarios with zero failures.
+
 The AOCL-Utils AUR epoch baseline review is complete. Current AUR
 `aocl-utils 1:5.3-1` carries epoch 1 because upstream exposes the AOCL-Utils
 5.3.0 source tree through tag `5.3`; the former `5.3.0` archive URL no longer

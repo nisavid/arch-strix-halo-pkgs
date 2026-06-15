@@ -2396,22 +2396,28 @@ covered_checks = [
   { source_kind = "aur", check_id = "aur-desktop" },
 ]
 previous_recorded = "13b1af25f84cf08ad5f8bf0ec58980bdfc09c9e7 / 10.6.0 / 10.6.0-1"
-latest = "e18b9c1e352df8ab5aff2ff353402f1ec77c47f2"
+latest = "e18b9c1e352df8ab5aff2ff353402f1ec77c47f2 / 10.7.0 / 10.7.0-3 / 10.7.0-1"
 discovery_status = "branch_head_ahead"
-disposition = "tracked"
-disposition_reason = "Tracked from the 2026-06-15 freshness rerun. The local fork-main source moved to e18b9c1 while upstream remains at 10.7.0, AUR lemonade-server now reports 10.7.0-3, and AUR lemonade-desktop reports 10.7.0-1. Review fork/upstream/AUR drift before the local fork package lane moves."
+disposition = "adopted"
+disposition_reason = "Adopted on 2026-06-15. Package metadata pins nisavid/lemonade fork main e18b9c1e352df8ab5aff2ff353402f1ec77c47f2, renders Lemonade packages as 10.7.0, records upstream 10.7.0 plus AUR server 10.7.0-3 and desktop 10.7.0-1 as reviewed baselines, refreshes the local patch carry, package build plan 20260615T060038-cfa1ca5f produced lemonade-server 10.7.0-1, lemonade-app 10.7.0-1, and lemonade 10.7.0-1, deploy plan 20260615T061400-faf5b90e installed them, pacman -Q reports the expected 10.7.0-1 versions, local and published repo verification passed, and the Lemonade CLI/server plus selected-logit live scenarios passed at docs/worklog/inference-runs/20260615T-lemonade-10.7-postdeploy."
 salient_changes = [
-  "nisavid/lemonade fork main moved from 13b1af25f84cf08ad5f8bf0ec58980bdfc09c9e7 to e18b9c1e352df8ab5aff2ff353402f1ec77c47f2",
-  "Canonical upstream Lemonade now reports 10.7.0",
-  "AUR lemonade-server now reports 10.7.0-3 and AUR lemonade-desktop now reports 10.7.0-1",
-  "Package source review, package metadata update, package build, deploy/install, installed Lemonade smokes, and affected live validation remain open",
+  "nisavid/lemonade fork main now reports e18b9c1e352df8ab5aff2ff353402f1ec77c47f2, which syncs upstream v10.7.0",
+  "Canonical upstream Lemonade reports 10.7.0",
+  "AUR lemonade-server reports 10.7.0-3 and AUR lemonade-desktop reports 10.7.0-1",
+  "lemonade-server and lemonade-app now render as 10.7.0-1 from the fork source; the lemonade meta package renders as 10.7.0-1",
+  "The Lemonade server patch carry contains four patches that apply to the v10.7.0 source",
+  "tools/amerge build plan 20260615T060038-cfa1ca5f produced lemonade-server 10.7.0-1, lemonade-app 10.7.0-1, and lemonade 10.7.0-1 package archives",
+  "tools/amerge deploy plan 20260615T061400-faf5b90e installed all three packages, and pacman -Q reports lemonade-server 10.7.0-1, lemonade-app 10.7.0-1, and lemonade 10.7.0-1",
+  "Local repo verification passed for the 10.7.0-1 archives and sync database entries",
+  "Lemonade CLI/server help smokes and lemonade.reranking.zerank-2.selected-logit passed at docs/worklog/inference-runs/20260615T-lemonade-10.7-postdeploy",
+  "Published repo verification passed after republishing the Lemonade 10.7.0-1 archives and strix-halo-gfx1151 sync database entries",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
-next_gate_label = "Lemonade fork e18b9c1 and 10.7.0 baseline review"
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Adopted; monitor future Lemonade releases through the normal freshness sweep"
 last_reviewed = "2026-06-15"
 
 [candidates."llama-cpp-b9642"]

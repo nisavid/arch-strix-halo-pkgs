@@ -10,14 +10,14 @@
 - Scaffold template: `lemonade-server`
 - Recipe build method: `pip`
 - Upstream repo: `https://github.com/nisavid/lemonade.git`
-- Package version: `10.6.0`
+- Package version: `10.7.0`
 - Recipe revision: `3f15f9f (20260508, 17 commits touching recipe path)`
 - Recipe steps: `34, 35, 36`
 - Recipe dependencies: `therock, llamacpp`
 - Recorded reference packages: `aur/lemonade-server, aur/lemonade-desktop`
 - Authoritative reference package: `aur/lemonade-server`
 - Advisory reference packages: `aur/lemonade-desktop`
-- Applied source patch files/actions: `5`
+- Applied source patch files/actions: `4`
 
 ## Recipe notes
 
@@ -36,14 +36,13 @@ Reinstalling at compatible versions resolves conflicts.
 ## Scaffold notes
 
 - Server/runtime package; llama.cpp backends are optdepends, not hard deps.
-- Pinned to nisavid/lemonade main commit 13b1af25f84cf08ad5f8bf0ec58980bdfc09c9e7, whose CMake project version is 10.6.0.
+- Pinned to nisavid/lemonade main commit e18b9c1e352df8ab5aff2ff353402f1ec77c47f2, whose CMake project version is 10.7.0.
 - Uses upstream's lemond.service unit name; do not ship the pre-10.3 lemonade-server.service name in this package.
 - Installs /etc/lemonade/conf.d/10-llamacpp-gfx1151.conf so the packaged ROCm and Vulkan llama.cpp wrapper binaries are exposed to the service as system-managed backends.
 - The system-managed backend patch also folds in the config-load and CLI/backend-table changes needed for those service-provided overrides to stay visible after config.json already exists.
 - Export the packaged llama.cpp revision and ggml release URL in the system-managed backend env overlay so the GUI shows the packaged backend metadata instead of upstream downloader defaults.
 - Pkgrel 2 replaces shell-interpolated llama.cpp --version probing with Lemonade's argv-based ProcessManager capture path in the system-managed backend patch.
-- Temporarily carries config-load diagnostics to verify the service cache path, config existence checks, and parse/merge path while debugging config reset behavior.
-- Keeps legacy environment migration as a sparse overlay so service-provided backend paths override config.json without resetting unrelated user config keys to defaults.
+- Keeps the backend environment overlay sparse so service-provided backend paths override config.json without resetting unrelated user config keys to defaults.
 
 ## Intentional Divergences
 
@@ -60,6 +59,7 @@ Reinstalling at compatible versions resolves conflicts.
 - On 2026-05-27, bumped the server package release to refresh packaged system-managed llama.cpp backend metadata for the b9352 HIP and Vulkan backends.
 - On 2026-05-28, bumped the server package release to refresh packaged system-managed llama.cpp backend metadata for the b9357 HIP and Vulkan backends.
 - On 2026-05-31, bumped the server package release to refresh packaged system-managed llama.cpp backend metadata for the b9442 HIP and Vulkan backends.
+- On 2026-06-15, adopted nisavid/lemonade fork main e18b9c1e352df8ab5aff2ff353402f1ec77c47f2, which syncs upstream Lemonade v10.7.0.
 
 ## Maintainer Starting Points
 

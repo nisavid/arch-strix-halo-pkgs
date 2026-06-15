@@ -5,8 +5,8 @@
 # Package recipe key: lemonade
 
 pkgname=lemonade-server
-pkgver=10.6.0
-pkgrel=9
+pkgver=10.7.0
+pkgrel=1
 pkgdesc='Local AI server runtime rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://github.com/nisavid/lemonade
@@ -18,8 +18,8 @@ options=()
 provides=(lemonade-server)
 conflicts=()
 replaces=()
-source=('lemonade::git+https://github.com/nisavid/lemonade.git#commit=13b1af25f84cf08ad5f8bf0ec58980bdfc09c9e7' 0001-linux-npu-fallback-to-pci-id-when-accel-open-fails.patch 0002-llamacpp-external-backends-are-system-managed.patch 0003-remove-llamacpp-system-backend.patch 0004-system-managed-llamacpp-metadata.patch 0005-log-config-load-diagnostics.patch)
-sha256sums=(SKIP SKIP SKIP SKIP SKIP SKIP)
+source=('lemonade::git+https://github.com/nisavid/lemonade.git#commit=e18b9c1e352df8ab5aff2ff353402f1ec77c47f2' 0001-linux-npu-fallback-to-pci-id-when-accel-open-fails.patch 0002-llamacpp-external-backends-are-system-managed.patch 0003-remove-llamacpp-system-backend.patch 0004-system-managed-llamacpp-metadata.patch)
+sha256sums=(SKIP SKIP SKIP SKIP SKIP)
 
 prepare() {
   cd "$srcdir/lemonade"
@@ -28,7 +28,6 @@ prepare() {
   patch -Np1 -i "$srcdir/0002-llamacpp-external-backends-are-system-managed.patch"
   patch -Np1 -i "$srcdir/0003-remove-llamacpp-system-backend.patch"
   patch -Np1 -i "$srcdir/0004-system-managed-llamacpp-metadata.patch"
-  patch -Np1 -i "$srcdir/0005-log-config-load-diagnostics.patch"
 }
 
 build() {
