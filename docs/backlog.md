@@ -25,10 +25,15 @@
   backend-import scenario passes. Torch-MIGraphX import and the PT2E
   quantizer-import scenario fail because installed `migraphx-gfx1151 7.13.0-2`
   links `libmigraphx_onnx.so` against `libprotobuf.so.34.1.0` while the host has
-  protobuf 35. Repair or rebuild the TheRock/MIGraphX protobuf ABI surface, then
-  rerun Torch-MIGraphX import/PT2E, installed smokes, and selected live
-  scenarios. This lane still owns reconciliation of the reference host's
-  intermediate ab32a1f/pkgrel-3 install.
+  protobuf 35. A staged AMDMIGraphX repair now builds and renders a
+  TheRock/MIGraphX payload whose `libmigraphx_onnx.so` links against
+  `libprotobuf.so.35.0.0` and `libutf8_validity.so.35.0.0`; the render also
+  makes the staged `magma-gfx1151`, `rocm-gdb-gfx1151`, and
+  `rocprofiler-compute-gfx1151` payloads explicit in `therock-gfx1151`. Arch
+  package build, repo publication, install, Torch-MIGraphX import/PT2E rerun,
+  installed smokes, and selected live scenarios remain open. This lane still
+  owns reconciliation of the reference host's intermediate ab32a1f/pkgrel-3
+  install.
 - AITER 0.1.15.post1 dependency-closure review: upstream now reports
   `0.1.15.post1` after the previous 0.1.15-rc0 blocker. Re-review the release
   metadata against the existing FlyDSL and Triton dependency-closure concerns

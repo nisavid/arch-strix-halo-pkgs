@@ -2536,7 +2536,7 @@ previous_recorded = "f8efdb30b5e6d8b1ae3e8744f227416b2aa032c1 / 2.12.0-2"
 latest = "c7badbdf3d33d945a0ed4536aac5303bc933e6ee"
 discovery_status = "branch_head_ahead"
 disposition = "tracked"
-disposition_reason = "Source-prepared, package-built, deployed, and installed on 2026-06-15. This supersedes f8efdb3 as the active release/2.12 runtime-base lane: python-pytorch-opt-rocm-gfx1151 now pins c7badbdf and uses pkgrel 4 to align with Arch python-pytorch-opt-rocm 2.12.0-4, while affected native consumers are pkgrel-bumped beyond the unmerged ab32a1f host-drift artifacts. Local and published repo verification passed, but installed-smoke and live-scenario gates remain open because Torch-MIGraphX now fails through the installed migraphx-gfx1151/protobuf ABI."
+disposition_reason = "Source-prepared, package-built, deployed, and installed on 2026-06-15. This supersedes f8efdb3 as the active release/2.12 runtime-base lane: python-pytorch-opt-rocm-gfx1151 now pins c7badbdf and uses pkgrel 4 to align with Arch python-pytorch-opt-rocm 2.12.0-4, while affected native consumers are pkgrel-bumped beyond the unmerged ab32a1f host-drift artifacts. Local and published repo verification passed, but installed-smoke and live-scenario gates remain open because Torch-MIGraphX hit the installed migraphx-gfx1151/protobuf ABI. A staged TheRock/MIGraphX protobuf-35 repair is prepared and rendered, but not yet package-built, published, installed, or post-install validated."
 salient_changes = [
   "ROCm/pytorch release/2.12 moved from f8efdb30b5e6d8b1ae3e8744f227416b2aa032c1 to c7badbdf3d33d945a0ed4536aac5303bc933e6ee",
   "Arch python-pytorch-opt-rocm moved from 2.12.0-2 to 2.12.0-4",
@@ -2546,8 +2546,10 @@ salient_changes = [
   "Deploy/install and local/published repo verification completed on 2026-06-15 for all seven runtime-base bundle packages",
   "Post-deploy imports pass for torch, AITER, FlashAttention, TorchAO, TorchVision, and vLLM, and the FlashAttention CK backend-import scenario passes",
   "Torch-MIGraphX import and the PT2E quantizer-import scenario fail because installed migraphx-gfx1151 7.13.0-2 links libmigraphx_onnx.so against libprotobuf.so.34.1.0 while the host has protobuf 35",
+  "A staged AMDMIGraphX repair now links libmigraphx_onnx.so against libprotobuf.so.35.0.0 and libutf8_validity.so.35.0.0 and renders the TheRock package base from that staged payload",
+  "The staged render also makes magma-gfx1151, rocm-gdb-gfx1151, and rocprofiler-compute-gfx1151 explicit because those payloads are present in the staged TheRock root",
   "The lane still owns reconciliation of the reference host's intermediate ab32a1f/pkgrel-3 runtime-base install",
-  "Repair or rebuild the TheRock/MIGraphX protobuf ABI surface, then rerun Torch-MIGraphX import/PT2E, installed smokes, and selected live scenarios",
+  "Build, publish, and install the rendered TheRock/MIGraphX protobuf-35 repair, then rerun Torch-MIGraphX import/PT2E, installed smokes, and selected live scenarios",
 ]
 patch_carry_overlap = true
 package_source_update_needed = false

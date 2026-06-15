@@ -338,12 +338,12 @@
         "rocm-openmp-gfx1151"
       ],
       "fileless": false,
-      "files": 0,
+      "files": 80,
       "provides": [
         "magma-hip",
         "hipmagma"
       ],
-      "rendered": false,
+      "rendered": true,
       "replaces": [
         "magma-hip",
         "hipmagma"
@@ -363,7 +363,7 @@
         "sqlite"
       ],
       "fileless": false,
-      "files": 598,
+      "files": 605,
       "provides": [
         "migraphx"
       ],
@@ -584,11 +584,11 @@
         "rocm-debug-agent-gfx1151"
       ],
       "fileless": false,
-      "files": 0,
+      "files": 89,
       "provides": [
         "rocm-gdb"
       ],
-      "rendered": false
+      "rendered": true
     },
     "rocm-gfx1151": {
       "depends": [
@@ -840,11 +840,11 @@
     "rocprofiler-compute-gfx1151": {
       "depends": [],
       "fileless": false,
-      "files": 0,
+      "files": 4140,
       "provides": [
         "rocprofiler-compute"
       ],
-      "rendered": false
+      "rendered": true
     },
     "rocprofiler-register-gfx1151": {
       "depends": [

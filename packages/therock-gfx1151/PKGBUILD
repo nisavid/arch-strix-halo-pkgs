@@ -24,6 +24,7 @@ pkgname=(
   'hipsparselt-gfx1151'
   'hsa-amd-aqlprofile-gfx1151'
   'hsa-rocr-gfx1151'
+  'magma-gfx1151'
   'migraphx-gfx1151'
   'miopen-gfx1151'
   'miopen-hip-gfx1151'
@@ -38,6 +39,7 @@ pkgname=(
   'rocm-debug-agent-gfx1151'
   'rocm-developer-tools-gfx1151'
   'rocm-device-libs-gfx1151'
+  'rocm-gdb-gfx1151'
   'rocm-gfx1151'
   'rocm-hip-gfx1151'
   'rocm-hip-libraries-gfx1151'
@@ -56,6 +58,7 @@ pkgname=(
   'rocm-sysdeps-gfx1151'
   'rocminfo-gfx1151'
   'rocprim-gfx1151'
+  'rocprofiler-compute-gfx1151'
   'rocprofiler-register-gfx1151'
   'rocprofiler-sdk-gfx1151'
   'rocprofiler-sdk-rocpd-gfx1151'
@@ -285,6 +288,16 @@ package_hsa-rocr-gfx1151() {
     depends=('gcc-libs' 'glibc' 'rocm-core-gfx1151' 'rocm-device-libs-gfx1151' 'rocprofiler-register-gfx1151' 'rocm-sysdeps-gfx1151')
     _require_therock_root
     _copy_from_filelist 'hsa-rocr-gfx1151'
+}
+
+package_magma-gfx1151() {
+    pkgdesc='Matrix Algebra on GPU and Multicore Architectures from TheRock for gfx1151'
+    provides=('magma-hip' 'hipmagma')
+    conflicts=('hipmagma' 'magma' 'magma-hip' 'rocm-gfx1151-bin')
+    replaces=('magma-hip' 'hipmagma')
+    depends=('blas' 'lapack' 'hip-runtime-amd-gfx1151' 'hipblas-gfx1151' 'hipsparse-gfx1151' 'rocm-openmp-gfx1151')
+    _require_therock_root
+    _copy_from_filelist 'magma-gfx1151'
 }
 
 package_migraphx-gfx1151() {
@@ -564,6 +577,15 @@ package_rocm-device-libs-gfx1151() {
     _copy_from_filelist 'rocm-device-libs-gfx1151'
 }
 
+package_rocm-gdb-gfx1151() {
+    pkgdesc='ROCm GDB from TheRock for gfx1151'
+    provides=('rocm-gdb')
+    conflicts=('rocm-gdb' 'rocm-gfx1151-bin')
+    depends=('rocm-dbgapi-gfx1151' 'rocm-debug-agent-gfx1151')
+    _require_therock_root
+    _copy_from_filelist 'rocm-gdb-gfx1151'
+}
+
 package_rocm-gfx1151() {
     pkgdesc='Meta package for the local TheRock ROCm stack tuned for gfx1151'
     provides=('rocm')
@@ -722,6 +744,15 @@ package_rocprim-gfx1151() {
     depends=('rocm-core-gfx1151' 'hip-runtime-amd-gfx1151')
     _require_therock_root
     _copy_from_filelist 'rocprim-gfx1151'
+}
+
+package_rocprofiler-compute-gfx1151() {
+    pkgdesc='rocprofiler-compute from TheRock for gfx1151'
+    provides=('rocprofiler-compute')
+    conflicts=('rocm-gfx1151-bin' 'rocprofiler-compute')
+    depends=()
+    _require_therock_root
+    _copy_from_filelist 'rocprofiler-compute-gfx1151'
 }
 
 package_rocprofiler-register-gfx1151() {
