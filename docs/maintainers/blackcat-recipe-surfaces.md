@@ -1,6 +1,6 @@
 # Blackcat Recipe Surface Policy
 
-Status as of 2026-05-26.
+Status as of 2026-06-15.
 
 This document classifies the remaining Blackcat Informatics recipe surfaces
 from the committed `upstream/ai-notes` submodule at
