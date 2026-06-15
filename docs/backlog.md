@@ -65,10 +65,6 @@
 - CTranslate2 4.8.0 follow-up: upstream now reports `4.8.0`; the AUR baseline
   and ROCm fork scout cursor remain unchanged. Review the upstream delta
   against the local ROCm package shape before adoption.
-- Lemonade fork e18b9c1 and 10.7.0 baseline review: the fork-main source now
-  reports `e18b9c1e352df8ab5aff2ff353402f1ec77c47f2`, while upstream and AUR
-  baselines now report `10.7.0`. Review fork/upstream/AUR drift before deciding
-  whether the local fork package lane should move.
 - stable-diffusion.cpp bb90bfa follow-up: upstream master now reports
   `bb90bfa00f858c7df6502e75f31c4440d4d11fde`, and the AUR Vulkan baseline
   reports `r660.d2797b8-1`. Review the source and submodule delta before

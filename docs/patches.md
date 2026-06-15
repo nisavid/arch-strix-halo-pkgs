@@ -46,10 +46,6 @@ becomes durable, prefer a named patch that another maintainer can review.
   - Makes the Lemonade GUI and backend API report the packaged `llama.cpp`
     revision and upstream `ggml-org/llama.cpp` release URL for the local ROCm
     and Vulkan lanes.
-- [Log config-load diagnostics](../packages/lemonade-server/0005-log-config-load-diagnostics.patch)
-  - Temporarily logs the resolved cache/config paths, filesystem existence
-    checks, and config parse/merge path so service restarts can identify why an
-    existing `config.json` appears to be ignored.
 
 ## llama.cpp
 

@@ -100,7 +100,7 @@ def test_system_backend_metadata_overrides_require_external_backend():
 def test_backend_lifecycle_fix_lives_in_pinned_fork_source():
     text = PKGBUILD.read_text()
 
-    assert "13b1af25f84cf08ad5f8bf0ec58980bdfc09c9e7" in text
+    assert "e18b9c1e352df8ab5aff2ff353402f1ec77c47f2" in text
     assert "0006-keep-llamacpp-backends-alive-after-threaded-loads.patch" not in text
 
 

@@ -46,7 +46,7 @@ def test_pkgbuild_keeps_tauri_glib_on_webkit_compatible_series():
 def test_reranking_error_fix_lives_in_pinned_fork_source():
     text = PKGBUILD.read_text()
 
-    assert "13b1af25f84cf08ad5f8bf0ec58980bdfc09c9e7" in text
+    assert "e18b9c1e352df8ab5aff2ff353402f1ec77c47f2" in text
     assert "0002-surface-reranking-server-errors.patch" not in text
 
 

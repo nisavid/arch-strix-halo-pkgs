@@ -13,8 +13,7 @@
       "0001-linux-npu-fallback-to-pci-id-when-accel-open-fails.patch",
       "0002-llamacpp-external-backends-are-system-managed.patch",
       "0003-remove-llamacpp-system-backend.patch",
-      "0004-system-managed-llamacpp-metadata.patch",
-      "0005-log-config-load-diagnostics.patch"
+      "0004-system-managed-llamacpp-metadata.patch"
     ],
     "update_notes": [
       "Track the nisavid/lemonade fork's main branch as the package source lane; use canonical upstream releases and AUR packages as baselines for compatibility review.",
@@ -23,7 +22,8 @@
       "On 2026-05-26, adopted nisavid/lemonade fork main 13b1af25f84cf08ad5f8bf0ec58980bdfc09c9e7 so the server and app packages stay pinned to the same fork source while the app hides adapter controls for base llamacpp models.",
       "On 2026-05-27, bumped the server package release to refresh packaged system-managed llama.cpp backend metadata for the b9352 HIP and Vulkan backends.",
       "On 2026-05-28, bumped the server package release to refresh packaged system-managed llama.cpp backend metadata for the b9357 HIP and Vulkan backends.",
-      "On 2026-05-31, bumped the server package release to refresh packaged system-managed llama.cpp backend metadata for the b9442 HIP and Vulkan backends."
+      "On 2026-05-31, bumped the server package release to refresh packaged system-managed llama.cpp backend metadata for the b9442 HIP and Vulkan backends.",
+      "On 2026-06-15, adopted nisavid/lemonade fork main e18b9c1e352df8ab5aff2ff353402f1ec77c47f2, which syncs upstream Lemonade v10.7.0."
     ]
   },
   "name": "lemonade-server",
@@ -32,7 +32,7 @@
     "llama.cpp-vulkan-gfx1151"
   ],
   "package_name": "lemonade-server",
-  "pkgver": "10.6.0",
+  "pkgver": "10.7.0",
   "policy": {
     "advisory_references": [
       "aur/lemonade-desktop"
@@ -56,15 +56,13 @@
       "SKIP",
       "SKIP",
       "SKIP",
-      "SKIP",
       "SKIP"
     ],
     "extra_sources": [
       "0001-linux-npu-fallback-to-pci-id-when-accel-open-fails.patch",
       "0002-llamacpp-external-backends-are-system-managed.patch",
       "0003-remove-llamacpp-system-backend.patch",
-      "0004-system-managed-llamacpp-metadata.patch",
-      "0005-log-config-load-diagnostics.patch"
+      "0004-system-managed-llamacpp-metadata.patch"
     ],
     "license": [
       "Apache-2.0"
@@ -83,7 +81,7 @@
     ],
     "patches_dir": "packages/lemonade-server",
     "pkgdesc": "Local AI server runtime rebuilt for Strix Halo gfx1151",
-    "pkgrel": 9,
+    "pkgrel": 1,
     "provides": [
       "lemonade-server"
     ],
@@ -91,20 +89,19 @@
     "repo": "https://github.com/nisavid/lemonade.git",
     "scaffold_notes": [
       "Server/runtime package; llama.cpp backends are optdepends, not hard deps.",
-      "Pinned to nisavid/lemonade main commit 13b1af25f84cf08ad5f8bf0ec58980bdfc09c9e7, whose CMake project version is 10.6.0.",
+      "Pinned to nisavid/lemonade main commit e18b9c1e352df8ab5aff2ff353402f1ec77c47f2, whose CMake project version is 10.7.0.",
       "Uses upstream's lemond.service unit name; do not ship the pre-10.3 lemonade-server.service name in this package.",
       "Installs /etc/lemonade/conf.d/10-llamacpp-gfx1151.conf so the packaged ROCm and Vulkan llama.cpp wrapper binaries are exposed to the service as system-managed backends.",
       "The system-managed backend patch also folds in the config-load and CLI/backend-table changes needed for those service-provided overrides to stay visible after config.json already exists.",
       "Export the packaged llama.cpp revision and ggml release URL in the system-managed backend env overlay so the GUI shows the packaged backend metadata instead of upstream downloader defaults.",
       "Pkgrel 2 replaces shell-interpolated llama.cpp --version probing with Lemonade's argv-based ProcessManager capture path in the system-managed backend patch.",
-      "Temporarily carries config-load diagnostics to verify the service cache path, config existence checks, and parse/merge path while debugging config reset behavior.",
-      "Keeps legacy environment migration as a sparse overlay so service-provided backend paths override config.json without resetting unrelated user config keys to defaults."
+      "Keeps the backend environment overlay sparse so service-provided backend paths override config.json without resetting unrelated user config keys to defaults."
     ],
     "sha256sums": [
       "SKIP"
     ],
     "source_refs": [
-      "lemonade::git+https://github.com/nisavid/lemonade.git#commit=13b1af25f84cf08ad5f8bf0ec58980bdfc09c9e7"
+      "lemonade::git+https://github.com/nisavid/lemonade.git#commit=e18b9c1e352df8ab5aff2ff353402f1ec77c47f2"
     ],
     "src_subdir": "lemonade",
     "template": "lemonade-server",
@@ -115,10 +112,11 @@
       "On 2026-05-26, adopted nisavid/lemonade fork main 13b1af25f84cf08ad5f8bf0ec58980bdfc09c9e7 so the server and app packages stay pinned to the same fork source while the app hides adapter controls for base llamacpp models.",
       "On 2026-05-27, bumped the server package release to refresh packaged system-managed llama.cpp backend metadata for the b9352 HIP and Vulkan backends.",
       "On 2026-05-28, bumped the server package release to refresh packaged system-managed llama.cpp backend metadata for the b9357 HIP and Vulkan backends.",
-      "On 2026-05-31, bumped the server package release to refresh packaged system-managed llama.cpp backend metadata for the b9442 HIP and Vulkan backends."
+      "On 2026-05-31, bumped the server package release to refresh packaged system-managed llama.cpp backend metadata for the b9442 HIP and Vulkan backends.",
+      "On 2026-06-15, adopted nisavid/lemonade fork main e18b9c1e352df8ab5aff2ff353402f1ec77c47f2, which syncs upstream Lemonade v10.7.0."
     ],
     "upstream_name": "lemonade-server",
-    "upstream_version": "10.6.0",
+    "upstream_version": "10.7.0",
     "url": "https://github.com/nisavid/lemonade"
   },
   "provenance": {

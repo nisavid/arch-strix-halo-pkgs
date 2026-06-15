@@ -1,16 +1,14 @@
 diff --git a/src/cpp/server/system_info.cpp b/src/cpp/server/system_info.cpp
-index 6af271c..cb26d5d 100644
+index 69af1a94..0372fa36 100644
 --- a/src/cpp/server/system_info.cpp
 +++ b/src/cpp/server/system_info.cpp
-@@ -124,10 +124,7 @@ struct RecipeBackendDef {
- //
+@@ -451,9 +451,6 @@ struct RecipeBackendDef {
  // Empty family set {} means "all families of that device type"
  static const std::vector<RecipeBackendDef> RECIPE_DEFS = {
--    // llamacpp with multiple backends (order = preference)
+     // llamacpp with multiple backends (order = preference)
 -    {"llamacpp", "system", {"linux"}, {
--        {"cpu", {"x86_64"}}, // Placeholder, actual check is PATH-based
+-        {"cpu", {"x86_64", "arm64"}}, // Placeholder, actual check is PATH-based
 -    }},
-+    // llamacpp with multiple backends (order = preference: metal > vulkan > rocm > cpu)
      {"llamacpp", "metal", {"macos"},
      {
          {"metal", {}},
