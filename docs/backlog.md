@@ -29,11 +29,12 @@
   TheRock/MIGraphX payload whose `libmigraphx_onnx.so` links against
   `libprotobuf.so.35.0.0` and `libutf8_validity.so.35.0.0`; the render also
   makes the staged `magma-gfx1151`, `rocm-gdb-gfx1151`, and
-  `rocprofiler-compute-gfx1151` payloads explicit in `therock-gfx1151`. Arch
-  package build, repo publication, install, Torch-MIGraphX import/PT2E rerun,
-  installed smokes, and selected live scenarios remain open. This lane still
-  owns reconciliation of the reference host's intermediate ab32a1f/pkgrel-3
-  install.
+  `rocprofiler-compute-gfx1151` payloads explicit in `therock-gfx1151`. The
+  rendered TheRock split package build completed for `therock-gfx1151 7.13.0-2`,
+  and the built `migraphx-gfx1151` archive preserves the protobuf-35 linkage.
+  Repo publication, install, Torch-MIGraphX import/PT2E rerun, installed
+  smokes, and selected live scenarios remain open. This lane still owns
+  reconciliation of the reference host's intermediate ab32a1f/pkgrel-3 install.
 - AITER 0.1.15.post1 dependency-closure review: upstream now reports
   `0.1.15.post1` after the previous 0.1.15-rc0 blocker. Re-review the release
   metadata against the existing FlyDSL and Triton dependency-closure concerns
