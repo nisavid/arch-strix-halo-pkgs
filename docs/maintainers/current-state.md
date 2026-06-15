@@ -35,6 +35,15 @@ The older b9444, f8efdb3, AITER 0.1.15-rc0, vLLM 0.22.0, and Transformers
 5.9.0 candidates are superseded by the current 2026-06-14 observations. After
 the 2026-06-14 disposition, a forced checker rerun exited `0`.
 
+A 2026-06-15 forced checker rerun after the Wave 0 review updates found newer
+Lemonade fork-main, llama.cpp, and Torch-MIGraphX heads. Those are retargeted
+as tracked follow-up candidates in `docs/maintainers/update-candidates.toml`
+and remain visible in `docs/backlog.md`; no package source adoption, build,
+deploy/install, installed smoke, or live validation is claimed for those three
+follow-ups in this branch. After retargeting, the forced checker rerun exited
+`0` with effective counts of 18 tracked update candidates, 11 adopted update
+candidates, 14 current families, and 2 rejected update candidates.
+
 No package implementation, package build, deploy/install, host mutation,
 installed smoke, or live inference validation is claimed for the 2026-06-14
 reconciliation. Active follow-up work starts with baseline review, then the
