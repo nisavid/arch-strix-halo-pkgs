@@ -4,11 +4,6 @@
 
 ### Active Unresolved Gates
 
-- Blackcat ai-notes dbfb70e recipe review: the 2026-06-14 freshness sweep found
-  the recipe submodule upstream at `dbfb70efc26fccf6ab2b00ee60ff0c96d37d37b0`
-  while this repo records `3f15f9f1318491c9ee03782d8b2ebd41391de118`. Review
-  the recipe diff before any package implementation and adopt only package or
-  policy changes that belong in this repo.
 - CPython 3.14.6 baseline review: the Arch package remains at `3.14.5-1`, but
   the CPython source baseline is now `3.14.6`. Review the point-release delta
   before deciding whether `python-gfx1151` source metadata or package rebuilds
