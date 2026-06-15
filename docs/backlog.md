@@ -26,7 +26,7 @@
   live validation.
 - llama.cpp b9642 follow-up after b9442 live validation: upstream now reports
   `b9642` and AUR HIP now reports `b9641-1` after the adopted b9442 lane. This
-  supersedes the b9444 follow-up as the active llama.cpp source lane; package
+  supersedes the b9637 follow-up as the active llama.cpp source lane; package
   source update, package build, deploy/install, installed-smoke, Lemonade
   backend metadata review, and selected-logit live validation remain open.
 - vLLM 0.23.0 follow-up: upstream now reports `0.23.0` after the local
