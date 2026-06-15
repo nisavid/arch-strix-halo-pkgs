@@ -23,6 +23,7 @@ def test_stage_migraphx_script_help_keeps_deploy_out_of_typical_path():
     assert "--deploy" in result.stdout
     assert "--skip-build" in result.stdout
     assert "--stage PATH" in result.stdout
+    assert "--protobuf-dir PATH" in result.stdout
     assert "--with-ck" in result.stdout
     assert "--with-mlir" in result.stdout
 
