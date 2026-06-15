@@ -52,11 +52,13 @@ host has protobuf 35. A staged AMDMIGraphX repair now builds and renders a
 TheRock/MIGraphX payload whose `libmigraphx_onnx.so` links against
 `libprotobuf.so.35.0.0` and `libutf8_validity.so.35.0.0`; the render also makes
 the staged `magma-gfx1151`, `rocm-gdb-gfx1151`, and
-`rocprofiler-compute-gfx1151` payloads explicit in `therock-gfx1151`.
-TheRock/MIGraphX Arch package build, repo publication, install, and
-Torch-MIGraphX import/PT2E rerun remain open. Live-scenario validated: not
-complete; the agent sandbox cannot access `/dev/kfd`, so GPU live scenarios
-remain operator-owned after the MIGraphX/protobuf ABI repair is installed.
+`rocprofiler-compute-gfx1151` payloads explicit in `therock-gfx1151`. The
+rendered TheRock split package build completed for `therock-gfx1151 7.13.0-2`,
+and the built `migraphx-gfx1151` archive preserves the protobuf-35 linkage.
+Repo publication, install, and Torch-MIGraphX import/PT2E rerun remain open.
+Live-scenario validated: not complete; the agent sandbox cannot access
+`/dev/kfd`, so GPU live scenarios remain operator-owned after the
+MIGraphX/protobuf ABI repair is installed.
 
 The AOCL-Utils AUR epoch baseline review is complete. Current AUR
 `aocl-utils 1:5.3-1` carries epoch 1 because upstream exposes the AOCL-Utils
