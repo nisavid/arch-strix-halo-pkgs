@@ -9,6 +9,7 @@ REPO_PACKAGES = REPO_ROOT / "packages"
 PKGBUILD = REPO_ROOT / "packages/therock-gfx1151/PKGBUILD"
 MANIFEST = REPO_ROOT / "packages/therock-gfx1151/manifest.json"
 MIGRAPHX_FILELIST = REPO_ROOT / "packages/therock-gfx1151/filelists/migraphx-gfx1151.txt"
+STAGE_MIGRAPHX = REPO_ROOT / "tools/stage_migraphx_for_therock.zsh"
 AMDSMI_PKGDIR = REPO_ROOT / "packages/therock-gfx1151/pkg/amdsmi-gfx1151"
 AMDSMI_PTH = AMDSMI_PKGDIR / "usr/lib/python3.14/site-packages/amd_smi.pth"
 MIGRAPHX_PKGDIR = REPO_ROOT / "packages/therock-gfx1151/pkg/migraphx-gfx1151"
@@ -43,6 +44,15 @@ def test_migraphx_filelist_contains_runtime_payload():
     assert "opt/rocm/bin/migraphx-driver" in paths
     assert any(path.startswith("opt/rocm/lib/migraphx/lib/libmigraphx.so") for path in paths)
     assert any(path.startswith("opt/rocm/lib/migraphx.cpython-") for path in paths)
+
+
+def test_migraphx_staging_pins_system_protobuf_and_rejects_stale_soname():
+    text = STAGE_MIGRAPHX.read_text()
+    assert "typeset protobuf_dir=/usr/lib/cmake/protobuf" in text
+    assert "-Dprotobuf_DIR=$protobuf_dir" in text
+    assert "readelf -d /usr/lib/libprotobuf.so" in text
+    assert "libprotobuf.so.34*" in text
+    assert "libutf8_validity.so.34*" in text
 
 
 def test_built_migraphx_package_preloads_sqlite_before_import_path():

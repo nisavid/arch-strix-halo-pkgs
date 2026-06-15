@@ -186,6 +186,7 @@ opt/rocm/lib/migraphx/include/migraphx/copy_assignable_function.hpp
 opt/rocm/lib/migraphx/include/migraphx/cpp_generator.hpp
 opt/rocm/lib/migraphx/include/migraphx/dead_code_elimination.hpp
 opt/rocm/lib/migraphx/include/migraphx/dfor.hpp
+opt/rocm/lib/migraphx/include/migraphx/dim_like.hpp
 opt/rocm/lib/migraphx/include/migraphx/dom_info.hpp
 opt/rocm/lib/migraphx/include/migraphx/dyn_output.hpp
 opt/rocm/lib/migraphx/include/migraphx/dynamic_loader.hpp
@@ -240,6 +241,7 @@ opt/rocm/lib/migraphx/include/migraphx/gpu/config.hpp
 opt/rocm/lib/migraphx/include/migraphx/gpu/context.hpp
 opt/rocm/lib/migraphx/include/migraphx/gpu/contiguous.hpp
 opt/rocm/lib/migraphx/include/migraphx/gpu/convolution.hpp
+opt/rocm/lib/migraphx/include/migraphx/gpu/cross_compile_device.hpp
 opt/rocm/lib/migraphx/include/migraphx/gpu/device/config.hpp
 opt/rocm/lib/migraphx/include/migraphx/gpu/device/contiguous.hpp
 opt/rocm/lib/migraphx/include/migraphx/gpu/device/fill.hpp
@@ -251,6 +253,7 @@ opt/rocm/lib/migraphx/include/migraphx/gpu/eliminate_data_type_for_gpu.hpp
 opt/rocm/lib/migraphx/include/migraphx/gpu/fixed_pad.hpp
 opt/rocm/lib/migraphx/include/migraphx/gpu/fuse_ck.hpp
 opt/rocm/lib/migraphx/include/migraphx/gpu/fuse_mlir.hpp
+opt/rocm/lib/migraphx/include/migraphx/gpu/fuse_mlss.hpp
 opt/rocm/lib/migraphx/include/migraphx/gpu/fuse_ops.hpp
 opt/rocm/lib/migraphx/include/migraphx/gpu/gemm.hpp
 opt/rocm/lib/migraphx/include/migraphx/gpu/gemm_impl.hpp
@@ -267,6 +270,7 @@ opt/rocm/lib/migraphx/include/migraphx/gpu/lowering.hpp
 opt/rocm/lib/migraphx/include/migraphx/gpu/lrn.hpp
 opt/rocm/lib/migraphx/include/migraphx/gpu/miopen.hpp
 opt/rocm/lib/migraphx/include/migraphx/gpu/mlir.hpp
+opt/rocm/lib/migraphx/include/migraphx/gpu/mlss_conv_op.hpp
 opt/rocm/lib/migraphx/include/migraphx/gpu/name.hpp
 opt/rocm/lib/migraphx/include/migraphx/gpu/oper.hpp
 opt/rocm/lib/migraphx/include/migraphx/gpu/pack_args.hpp
@@ -315,6 +319,7 @@ opt/rocm/lib/migraphx/include/migraphx/match/gelu_tanh.hpp
 opt/rocm/lib/migraphx/include/migraphx/match/layernorm.hpp
 opt/rocm/lib/migraphx/include/migraphx/match/softmax.hpp
 opt/rocm/lib/migraphx/include/migraphx/matcher.hpp
+opt/rocm/lib/migraphx/include/migraphx/md5.hpp
 opt/rocm/lib/migraphx/include/migraphx/memory_coloring.hpp
 opt/rocm/lib/migraphx/include/migraphx/module.hpp
 opt/rocm/lib/migraphx/include/migraphx/module_ref.hpp
@@ -498,6 +503,7 @@ opt/rocm/lib/migraphx/include/migraphx/param_utils.hpp
 opt/rocm/lib/migraphx/include/migraphx/pass.hpp
 opt/rocm/lib/migraphx/include/migraphx/pass_manager.hpp
 opt/rocm/lib/migraphx/include/migraphx/permutation.hpp
+opt/rocm/lib/migraphx/include/migraphx/picked_variant.hpp
 opt/rocm/lib/migraphx/include/migraphx/pmr.hpp
 opt/rocm/lib/migraphx/include/migraphx/pmr/unordered_map.hpp
 opt/rocm/lib/migraphx/include/migraphx/pmr/unordered_set.hpp
@@ -544,6 +550,7 @@ opt/rocm/lib/migraphx/include/migraphx/shape.hpp
 opt/rocm/lib/migraphx/include/migraphx/shape_for_each.hpp
 opt/rocm/lib/migraphx/include/migraphx/shape_transform_descriptor.hpp
 opt/rocm/lib/migraphx/include/migraphx/simple_par_for.hpp
+opt/rocm/lib/migraphx/include/migraphx/simple_parser.hpp
 opt/rocm/lib/migraphx/include/migraphx/simplify_algebra.hpp
 opt/rocm/lib/migraphx/include/migraphx/simplify_dyn_ops.hpp
 opt/rocm/lib/migraphx/include/migraphx/simplify_qdq.hpp

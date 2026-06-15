@@ -8,6 +8,7 @@ typeset stage=/tmp/therock-migraphx-stage
 typeset src=/tmp/AMDMIGraphX
 typeset jobs=${$(nproc 2>/dev/null):-1}
 typeset targets=gfx1151
+typeset protobuf_dir=/usr/lib/cmake/protobuf
 typeset clean=0
 typeset deploy=0
 typeset skip_build=0
@@ -25,6 +26,9 @@ Options:
   --stage PATH       staged filesystem root (default: /tmp/therock-migraphx-stage)
   --src PATH         AMDMIGraphX checkout path (default: /tmp/AMDMIGraphX)
   --targets VALUE    GPU target list passed as -DGPU_TARGETS (default: gfx1151)
+  --protobuf-dir PATH
+                     protobuf CMake config directory used for AMDMIGraphX
+                     ONNX parsing (default: /usr/lib/cmake/protobuf)
   -j, --jobs N       parallel build jobs (default: nproc)
   --clean            remove the stage and source dirs before starting
   --skip-build       reuse an existing source build and only install/render/deploy
@@ -55,7 +59,7 @@ run() {
 require_cmds() {
   emulate -L zsh
   local cmd
-  for cmd in git rsync cmake ninja python find; do
+  for cmd in git rsync cmake ninja python find readelf; do
     command -v $cmd >/dev/null 2>&1 || fail "missing required command: $cmd"
   done
 }
@@ -196,6 +200,7 @@ build_and_install_migraphx() {
   local mlir=OFF
   (( with_composable_kernel )) && ck=ON
   (( with_mlir )) && mlir=ON
+  [[ -d $protobuf_dir ]] || fail "protobuf CMake config directory is missing: $protobuf_dir"
   local -a configure_args=(
     -S $src
     -B $src/build
@@ -203,6 +208,7 @@ build_and_install_migraphx() {
     -DCMAKE_BUILD_TYPE=Release
     -DCMAKE_INSTALL_PREFIX=/opt/rocm
     "-DCMAKE_PREFIX_PATH=$stage/opt/rocm;/opt/rocm"
+    -Dprotobuf_DIR=$protobuf_dir
     -DCMAKE_C_COMPILER=/opt/rocm/lib/llvm/bin/amdclang
     -DCMAKE_CXX_COMPILER=/opt/rocm/lib/llvm/bin/amdclang++
     -DGPU_TARGETS=$targets
@@ -244,6 +250,25 @@ validate_stage() {
 import migraphx
 print(migraphx.__file__)
 PY
+
+  local onnx_lib=$stage/opt/rocm/lib/migraphx/lib/libmigraphx_onnx.so
+  [[ -f $onnx_lib ]] || fail "missing staged MIGraphX ONNX library: $onnx_lib"
+
+  local protobuf_soname
+  protobuf_soname=$(readelf -d /usr/lib/libprotobuf.so | sed -n 's/.*Library soname: \[\(libprotobuf\.so[^]]*\)\].*/\1/p')
+  [[ -n $protobuf_soname ]] || fail "could not determine system protobuf SONAME"
+
+  local -a needed
+  needed=("${(@f)$(readelf -d $onnx_lib | sed -n 's/.*Shared library: \[\([^]]*\)\].*/\1/p')}")
+  if (( ! ${needed[(I)$protobuf_soname]} )); then
+    print -u2 "staged libmigraphx_onnx.so needs: ${(j:, :)needed}"
+    fail "staged MIGraphX ONNX library is not linked against system $protobuf_soname"
+  fi
+
+  if (( ${needed[(I)libprotobuf.so.34*]} || ${needed[(I)libutf8_validity.so.34*]} )); then
+    print -u2 "staged libmigraphx_onnx.so needs: ${(j:, :)needed}"
+    fail "staged MIGraphX ONNX library still links protobuf 34-era libraries"
+  fi
 }
 
 render_and_deploy() {
@@ -284,6 +309,11 @@ while (( $# )); do
       shift
       (( $# )) || fail "--targets needs a value"
       targets=$1
+      ;;
+    --protobuf-dir)
+      shift
+      (( $# )) || fail "--protobuf-dir needs a path"
+      protobuf_dir=$1
       ;;
     -j|--jobs)
       shift
