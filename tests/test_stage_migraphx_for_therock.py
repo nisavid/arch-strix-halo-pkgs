@@ -92,6 +92,9 @@ def test_stage_migraphx_validates_protobuf_35_before_import():
     assert "system utf8 validity SONAME must be $utf8_validity_soname" in script
     assert "staged MIGraphX ONNX library is not linked against $protobuf_soname" in script
     assert "staged MIGraphX ONNX library is not linked against $utf8_validity_soname" in script
+    assert script.index("staged MIGraphX ONNX library still links protobuf 34-era libraries") < script.index(
+        "staged MIGraphX ONNX library is not linked against $protobuf_soname"
+    )
     assert script.index("local -a needed") < script.index('status "checking staged Python import"')
 
 
