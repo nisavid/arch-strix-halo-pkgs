@@ -65,7 +65,8 @@ def test_migraphx_staging_pins_system_protobuf_and_rejects_stale_soname():
 def test_rocprofiler_compute_manifest_tracks_runtime_dependencies():
     text = PKGBUILD.read_text()
     assert "package_rocprofiler-compute-gfx1151()" in text
-    assert "depends=('gcc-libs' 'glibc' 'python-gfx1151' 'python-astunparse' 'python-numpy-gfx1151' 'python-pandas' 'python-pyyaml-gfx1151' 'python-sqlalchemy' 'python-tabulate' 'python-textual' 'rocprofiler-sdk-gfx1151')" in text
+    assert "depends=('gcc-libs' 'glibc' 'python-gfx1151' 'python-astunparse' 'python-numpy-gfx1151' 'python-pandas' 'python-pyyaml-gfx1151' 'python-sqlalchemy' 'python-tabulate' 'python-textual' 'rocprofiler-sdk-gfx1151' 'rocprofiler-systems-gfx1151')" in text
+    assert 'ln -s ../libexec/rocprofiler-compute/rocprof-compute "${pkgdir}/opt/rocm/bin/rocprof-compute"' in text
 
     manifest = json.loads(MANIFEST.read_text())
     assert manifest["packages"]["rocprofiler-compute-gfx1151"]["depends"] == [
@@ -80,6 +81,7 @@ def test_rocprofiler_compute_manifest_tracks_runtime_dependencies():
         "python-tabulate",
         "python-textual",
         "rocprofiler-sdk-gfx1151",
+        "rocprofiler-systems-gfx1151",
     ]
 
 

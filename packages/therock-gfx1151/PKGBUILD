@@ -750,9 +750,11 @@ package_rocprofiler-compute-gfx1151() {
     pkgdesc='rocprofiler-compute from TheRock for gfx1151'
     provides=('rocprofiler-compute')
     conflicts=('rocm-gfx1151-bin' 'rocprofiler-compute')
-    depends=('gcc-libs' 'glibc' 'python-gfx1151' 'python-astunparse' 'python-numpy-gfx1151' 'python-pandas' 'python-pyyaml-gfx1151' 'python-sqlalchemy' 'python-tabulate' 'python-textual' 'rocprofiler-sdk-gfx1151')
+    depends=('gcc-libs' 'glibc' 'python-gfx1151' 'python-astunparse' 'python-numpy-gfx1151' 'python-pandas' 'python-pyyaml-gfx1151' 'python-sqlalchemy' 'python-tabulate' 'python-textual' 'rocprofiler-sdk-gfx1151' 'rocprofiler-systems-gfx1151')
     _require_therock_root
     _copy_from_filelist 'rocprofiler-compute-gfx1151'
+    mkdir -p "${pkgdir}/opt/rocm/bin"
+    ln -s ../libexec/rocprofiler-compute/rocprof-compute "${pkgdir}/opt/rocm/bin/rocprof-compute"
 }
 
 package_rocprofiler-register-gfx1151() {

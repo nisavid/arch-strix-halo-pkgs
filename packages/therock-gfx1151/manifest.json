@@ -849,7 +849,8 @@
         "python-sqlalchemy",
         "python-tabulate",
         "python-textual",
-        "rocprofiler-sdk-gfx1151"
+        "rocprofiler-sdk-gfx1151",
+        "rocprofiler-systems-gfx1151"
       ],
       "fileless": false,
       "files": 4140,
