@@ -41,6 +41,7 @@ source tree, not from a pip install).
 - Keep the paired PyTorch package import-clean enough that TorchVision does not need any build-only rocsolver soname shim. If a shim becomes necessary again, treat that as a PyTorch/runtime-lane regression rather than reintroducing the workaround here.
 - Keep the installed torchvision extension RPATH pointed at the sibling torch/lib directory so torchvision operators register without requiring LD_LIBRARY_PATH.
 - On 2026-05-26, bump pkgrel to 2 for delivery of the TorchVision extension rebuild against python-pytorch-opt-rocm-gfx1151 2.12.0-2 from ROCm/pytorch release/2.12 commit 26872debb4452ea6dc898288618a15595e2317d9.
+- On 2026-06-15, bump pkgrel to 4 for the c7badbdf runtime-base rebuild so TorchVision supersedes the unmerged ab32a1f/pkgrel-3 host-drift artifact.
 
 ## Maintainer Starting Points
 

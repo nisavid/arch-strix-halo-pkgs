@@ -77,6 +77,10 @@ The 2026-05-26 PyTorch `2.12.0-2` rebuild lane bumps this package to
 the refreshed local torch headers. Keep the direct CK backend-import smoke as
 the installed gate before claiming engine integration behavior.
 
+The 2026-06-15 PyTorch `c7badbdf` runtime-base lane bumps this package to
+`2.8.4-14` so it supersedes both the adopted 26872de/pkgrel-12 package and the
+unmerged ab32a1f/pkgrel-13 host-drift artifact.
+
 ## Current Evidence
 
 On 2026-04-22, `tools/amerge build python-flash-attn-rocm-gfx1151` built

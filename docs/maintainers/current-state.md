@@ -26,6 +26,25 @@ lemonade.reranking.zerank-2.selected-logit --run-root
 docs/worklog/inference-runs/20260615T-lemonade-10.7-postdeploy` passed three
 scenarios with zero failures.
 
+The ROCm PyTorch release/2.12 `c7badbdf` runtime-base source lane is prepared
+and built but not deployed or installed. `python-pytorch-opt-rocm-gfx1151` pins
+ROCm/pytorch `c7badbdf3d33d945a0ed4536aac5303bc933e6ee` and renders as
+`2.12.0-4`, matching the current Arch `python-pytorch-opt-rocm 2.12.0-4`
+baseline. The `f8efdb..c7badbdf` upstream range changes test coverage and NCCL
+symmetric-memory source gating without touching local patch paths. Affected
+native consumers are versioned beyond the unmerged ab32a1f/pkgrel-3 host drift:
+`python-amd-aiter-gfx1151 0.1.14-4`,
+`python-flash-attn-rocm-gfx1151 2.8.4-14`,
+`python-torchao-rocm-gfx1151 0.17.0-6`,
+`python-torch-migraphx-gfx1151 1.2-9`,
+`python-torchvision-rocm-gfx1151 0.27.0-4`, and
+`python-vllm-rocm-gfx1151 0.21.0-6`. Source updated: complete. Package built:
+`tools/amerge build` plan `20260615T064435-54276c27` produced all seven
+runtime-base bundle artifacts. Deployed/installed: not complete.
+Installed-smoked: not complete. Live-scenario validated: not complete. The next
+gate is operator-owned deploy/install, followed by repo verification, installed
+smokes, and selected live scenarios.
+
 The AOCL-Utils AUR epoch baseline review is complete. Current AUR
 `aocl-utils 1:5.3-1` carries epoch 1 because upstream exposes the AOCL-Utils
 5.3.0 source tree through tag `5.3`; the former `5.3.0` archive URL no longer

@@ -6,7 +6,7 @@
 
 pkgname=python-torchvision-rocm-gfx1151
 pkgver=0.27.0
-pkgrel=2
+pkgrel=4
 pkgdesc='Datasets, transforms, and models for computer vision with ROCm support, rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://github.com/pytorch/vision

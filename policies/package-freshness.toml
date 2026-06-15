@@ -88,8 +88,8 @@ packages = ["python-pytorch-opt-rocm-gfx1151"]
 priority = "high"
 workflow = "upstream_source_update"
 checks = [
-  { id = "release-branch", role = "primary", kind = "git_ref", repo = "https://github.com/ROCm/pytorch.git", ref = "refs/heads/release/2.12", recorded = "f8efdb30b5e6d8b1ae3e8744f227416b2aa032c1", comparison = "sha" },
-  { id = "arch", role = "baseline", kind = "arch_package", package = "python-pytorch-opt-rocm", recorded = "2.12.0-2", comparison = "pkgver" },
+  { id = "release-branch", role = "primary", kind = "git_ref", repo = "https://github.com/ROCm/pytorch.git", ref = "refs/heads/release/2.12", recorded = "c7badbdf3d33d945a0ed4536aac5303bc933e6ee", comparison = "sha" },
+  { id = "arch", role = "baseline", kind = "arch_package", package = "python-pytorch-opt-rocm", recorded = "2.12.0-4", comparison = "pkgver" },
 ]
 source_contracts = [
   { id = "release-branch-source", packages = ["python-pytorch-opt-rocm-gfx1151"], check_id = "release-branch", source_name = "pytorch", source_kind = "git_commit", origin = "https://github.com/ROCm/pytorch.git", value_policy = "pinned_commit_may_lag_reviewed" },

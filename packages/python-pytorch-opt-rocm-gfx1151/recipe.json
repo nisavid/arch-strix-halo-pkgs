@@ -19,7 +19,7 @@
       "2ca8044d626da3cf146c22e2d5164f53ad7ee45f0b79b0ec91c3503a5ab5f299",
       "84377437090b8ca9bf550158b93554b47650d476e6d56c94c52426150ff1c40d",
       "de81964675e483440b7cf64da6915deb701d1d31460f0b69a88c97277026032b",
-      "27ec1a3c71e81a40060b126b7035df160b8cdc4271a1f181ff8db8140305c1c3"
+      "4d3e0a0185bbbb7d045d9011dfdcbf31f636d94845a14f85f443c841bb9f0a4a"
     ],
     "source_patches": [
       "0001-setup-allow-skipping-build-deps.patch",
@@ -40,6 +40,8 @@
       "On 2026-05-10, adopted ROCm/pytorch release/2.11 at 5223630054ce5ecd7b774d0ea31f2a1b472fb9b3. The refresh preserves the wheel-version alignment for PyTorch 2.11.0, carries the corrected ROCm detection and missing torch/lib guard, and was validated through package build, install, direct PyTorch HIP smoke, vLLM rebuild, and the promoted installed inference scenarios.",
       "On 2026-05-18, opened the coordinated PyTorch 2.12 lane by adopting ROCm/pytorch release/2.12 at 4ddfe99d6da426414b7f0e587cdb1910f1c23eb3 together with TorchVision 0.27.0, because TorchVision 0.27.0 publishes a torch==2.12.0 runtime requirement.",
       "On 2026-05-26, reviewed ROCm/pytorch release/2.12 through 26872debb4452ea6dc898288618a15595e2317d9. The 4ddfe99..26872de range contains the ROCm Inductor static launcher change that loads HSACO images through hipModuleLoadData to avoid retained file descriptors, plus test cleanup commits. Adopt the branch head as a runtime-relevant PyTorch 2.12 pkgrel update and keep the current local patch semantics refreshed against that source.",
+      "On 2026-05-31, reviewed ROCm/pytorch release/2.12 through f8efdb30b5e6d8b1ae3e8744f227416b2aa032c1. The 26872de..f8efdb range includes the large-matrix triu/tril 64-bit indexing fix, the UnaryUfuncInfo lambda syntax fix, and a ROCm foreach profiler-test skip. Keep this as a tracked follow-up until the source pin, affected rebuild set, deploy/install, installed smoke, and live scenario gates are completed.",
+      "On 2026-06-15, adopt ROCm/pytorch release/2.12 at c7badbdf3d33d945a0ed4536aac5303bc933e6ee as the canonical runtime-base source lane. The f8efdb..c7badbdf range changes test coverage and NCCL symmetric-memory device-support gating without touching the local patch paths; use pkgrel 4 to align with Arch python-pytorch-opt-rocm 2.12.0-4 and to supersede the unmerged ab32a1f/pkgrel-3 host drift.",
       "On 2026-05-26, carry a local AOTriton 0.12 lazy-tensor callback patch while the recipe builds PyTorch's ROCm mem-efficient attention against the packaged python-aotriton-gfx1151 0.12b headers. The patch keeps the existing 0.11 callback shape under a version guard and uses LazyTensor self callbacks for AOTriton 0.12.",
       "Keep the package version aligned with the built wheel version; do not repeat the earlier mismatch where the package claimed 2.11.0 but the built wheel came from develop.",
       "Keep openblas explicit in both depends and makedepends so the build does not drift back to generic host BLAS auto-detection.",
@@ -120,7 +122,7 @@
     ],
     "patches_dir": "patches/python-pytorch-opt-rocm-gfx1151",
     "pkgdesc": "Tensors and dynamic neural networks in Python with ROCm acceleration, rebuilt for Strix Halo gfx1151",
-    "pkgrel": 2,
+    "pkgrel": 4,
     "provides": [
       "python-pytorch-opt-rocm=2.12.0",
       "python-pytorch-rocm=2.12.0",
@@ -141,7 +143,7 @@
       "Keep ROCm BLAS GEMM/BGEMM template specializations exported from libtorch_hip.so so same-library ROCm native objects can resolve their dynamic references at import time."
     ],
     "source_refs": [
-      "pytorch::git+https://github.com/ROCm/pytorch.git#commit=26872debb4452ea6dc898288618a15595e2317d9"
+      "pytorch::git+https://github.com/ROCm/pytorch.git#commit=c7badbdf3d33d945a0ed4536aac5303bc933e6ee"
     ],
     "src_subdir": "pytorch",
     "template": "python-project-pytorch-rocm",
@@ -153,6 +155,8 @@
       "On 2026-05-10, adopted ROCm/pytorch release/2.11 at 5223630054ce5ecd7b774d0ea31f2a1b472fb9b3. The refresh preserves the wheel-version alignment for PyTorch 2.11.0, carries the corrected ROCm detection and missing torch/lib guard, and was validated through package build, install, direct PyTorch HIP smoke, vLLM rebuild, and the promoted installed inference scenarios.",
       "On 2026-05-18, opened the coordinated PyTorch 2.12 lane by adopting ROCm/pytorch release/2.12 at 4ddfe99d6da426414b7f0e587cdb1910f1c23eb3 together with TorchVision 0.27.0, because TorchVision 0.27.0 publishes a torch==2.12.0 runtime requirement.",
       "On 2026-05-26, reviewed ROCm/pytorch release/2.12 through 26872debb4452ea6dc898288618a15595e2317d9. The 4ddfe99..26872de range contains the ROCm Inductor static launcher change that loads HSACO images through hipModuleLoadData to avoid retained file descriptors, plus test cleanup commits. Adopt the branch head as a runtime-relevant PyTorch 2.12 pkgrel update and keep the current local patch semantics refreshed against that source.",
+      "On 2026-05-31, reviewed ROCm/pytorch release/2.12 through f8efdb30b5e6d8b1ae3e8744f227416b2aa032c1. The 26872de..f8efdb range includes the large-matrix triu/tril 64-bit indexing fix, the UnaryUfuncInfo lambda syntax fix, and a ROCm foreach profiler-test skip. Keep this as a tracked follow-up until the source pin, affected rebuild set, deploy/install, installed smoke, and live scenario gates are completed.",
+      "On 2026-06-15, adopt ROCm/pytorch release/2.12 at c7badbdf3d33d945a0ed4536aac5303bc933e6ee as the canonical runtime-base source lane. The f8efdb..c7badbdf range changes test coverage and NCCL symmetric-memory device-support gating without touching the local patch paths; use pkgrel 4 to align with Arch python-pytorch-opt-rocm 2.12.0-4 and to supersede the unmerged ab32a1f/pkgrel-3 host drift.",
       "On 2026-05-26, carry a local AOTriton 0.12 lazy-tensor callback patch while the recipe builds PyTorch's ROCm mem-efficient attention against the packaged python-aotriton-gfx1151 0.12b headers. The patch keeps the existing 0.11 callback shape under a version guard and uses LazyTensor self callbacks for AOTriton 0.12.",
       "Keep the package version aligned with the built wheel version; do not repeat the earlier mismatch where the package claimed 2.11.0 but the built wheel came from develop.",
       "Keep openblas explicit in both depends and makedepends so the build does not drift back to generic host BLAS auto-detection.",

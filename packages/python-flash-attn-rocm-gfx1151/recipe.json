@@ -1,7 +1,7 @@
 {
   "package_name": "python-flash-attn-rocm-gfx1151",
   "pkgver": "2.8.4",
-  "pkgrel": 12,
+  "pkgrel": 14,
   "description": "FlashAttention ROCm CK backend experiment for the local gfx1151 stack",
   "upstream": {
     "repo": "https://github.com/ROCm/flash-attention",
@@ -43,7 +43,8 @@
     "Keep direct flash_attn CK build/import, qkvpacked, variable-length, and direct paged-KV smokes as the first validation gate before any engine integration scenario; the current installed 2.8.4-10 direct gate passed on 2026-04-23, while the Qwen3.5 vLLM CK consumer remains blocked deeper in CK paged-KV.",
     "Keep the Triton AMD smoke explicit because runtime backend selection still depends on FLASH_ATTENTION_TRITON_AMD_ENABLE.",
     "Treat FLASH_ATTENTION_TRITON_AMD_AUTOTUNE=TRUE as a performance follow-up, not part of the initial correctness gate.",
-    "On 2026-05-26, bump pkgrel to 12 for delivery of the CK extension rebuild against python-pytorch-opt-rocm-gfx1151 2.12.0-2 from ROCm/pytorch release/2.12 commit 26872debb4452ea6dc898288618a15595e2317d9."
+    "On 2026-05-26, bump pkgrel to 12 for delivery of the CK extension rebuild against python-pytorch-opt-rocm-gfx1151 2.12.0-2 from ROCm/pytorch release/2.12 commit 26872debb4452ea6dc898288618a15595e2317d9.",
+    "On 2026-06-15, bump pkgrel to 14 for the c7badbdf runtime-base rebuild so FlashAttention supersedes the unmerged ab32a1f/pkgrel-13 host-drift artifact."
   ],
   "status": "testing"
 }

@@ -118,6 +118,8 @@ recorded in .aiter-status file ("enabled" or "disabled").
 - Keep the ROCm GCN-arch fallback import-safe on Strix Halo. AMDSMI ASIC-info probes can fail even when the device is visible; that must degrade to torch.cuda probing rather than crashing during module import.
 - Treat the current external python-torchao-rocm _C-extension failure as a host-package defect, not a blocker for this vLLM lane. Generic startup should stay clean after the local TorchAO-import patch, and the remaining follow-up only matters if this repo needs actual TorchAO custom ops or torchao-backed serving paths that truly require the native extension.
 - On 2026-05-26, bump pkgrel to 4 for delivery of the vLLM native-extension rebuild against python-pytorch-opt-rocm-gfx1151 2.12.0-2 from ROCm/pytorch release/2.12 commit 26872debb4452ea6dc898288618a15595e2317d9.
+- On 2026-06-15, bump pkgrel to 6 for the c7badbdf runtime-base rebuild so the package supersedes the unmerged ab32a1f/pkgrel-5 host-drift artifact as well as the adopted 26872de/pkgrel-4 package.
+- On 2026-05-31, reviewed upstream vLLM 0.22.0 as a follow-up release. The release includes DeepSeek V4 hardening, Model Runner V2 changes, a Rust frontend, multi-tier KV offloading, ROCm DSv4 and AITER cleanup work, and build/dependency churn. Keep the package source on 0.21.0 until the local ROCm patch carry and runtime-base rebuild gates are handled.
 - Treat runtime validation against the live ROCm stack as mandatory; a successful wheel build is not enough.
 
 ## Maintainer Starting Points

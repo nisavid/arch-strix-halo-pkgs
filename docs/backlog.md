@@ -10,14 +10,19 @@
   advisory CachyOS znver4 package remains on the 3.14.5 source lane. Move the
   package source only when the Arch baseline moves or a coordinated
   system-interpreter rebuild lane opens.
-- ROCm PyTorch release/2.12 c7badbdf follow-up: release/2.12 now reports
+- Deploy/install ROCm PyTorch c7badbdf runtime-base bundle: release/2.12 now
+  reports
   `c7badbdf3d33d945a0ed4536aac5303bc933e6ee`, and Arch
   `python-pytorch-opt-rocm` is now `2.12.0-4`. This supersedes the f8efdb3
   source follow-up as the active runtime-base package lane while preserving the
-  same gate shape: source update, affected rebuilds, deploy/install,
-  local-repo verification, published-repo verification, installed-smoke, and
-  live-scenario validation. This lane still owns reconciliation of the
-  reference host's intermediate ab32a1f/pkgrel-3 install.
+  same gate shape. Source metadata is prepared for c7badbdf with
+  `python-pytorch-opt-rocm-gfx1151 2.12.0-4` and affected native-consumer
+  pkgrels beyond the unmerged ab32a1f host drift. Package build plan
+  `20260615T064435-54276c27` produced the runtime-base bundle artifacts;
+  deploy/install, local-repo verification, published-repo verification,
+  installed-smoke, and live-scenario validation remain open. This lane still
+  owns reconciliation of the reference host's intermediate ab32a1f/pkgrel-3
+  install.
 - AITER 0.1.15.post1 dependency-closure review: upstream now reports
   `0.1.15.post1` after the previous 0.1.15-rc0 blocker. Re-review the release
   metadata against the existing FlyDSL and Triton dependency-closure concerns

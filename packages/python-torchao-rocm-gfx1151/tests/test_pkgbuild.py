@@ -22,7 +22,7 @@ def test_pkgbuild_uses_torch_2_11_compatible_torchao_lane():
 
     assert "pkgname=python-torchao-rocm-gfx1151" in text
     assert "pkgver=0.17.0" in text
-    assert "pkgrel=4" in text
+    assert "pkgrel=6" in text
     assert "python-pytorch-opt-rocm-gfx1151" in text
     assert "VERSION_SUFFIX=" in text
     assert "ROCM_HOME=/opt/rocm" in text
