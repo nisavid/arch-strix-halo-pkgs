@@ -104,14 +104,14 @@ A 2026-06-15 forced checker rerun after the Wave 0 review updates found a newer
 Lemonade fork-main head, which is now adopted as the Lemonade 10.7.0 lane
 recorded above. The same review found newer llama.cpp and Torch-MIGraphX heads,
 and the post-deploy checker rerun for the c7badbdf branch retargeted llama.cpp
-to b9644 and llmcompressor to 0.12.0. Torch-MIGraphX was not retargeted in this
-branch. Those remaining observations are tracked follow-up candidates in
-`docs/maintainers/update-candidates.toml` and remain visible in
-`docs/backlog.md`; no package source adoption, build, deploy/install, installed
-smoke, or live validation is claimed for those follow-ups in this branch. After
-retargeting, the cache-aware checker rerun exited `0` with no undispositioned
-update candidates; several unrelated provider queries still reported network
-failures and need a future successful freshness rerun.
+to b9644 and llmcompressor to 0.12.0. The Python fast-track policy change then
+invalidated the checker cache and forced a fresh network sweep. That sweep
+retargeted llama.cpp to b9660, stable-diffusion.cpp to
+`5a34bc7f6e0621dd2f899daa64476eac667d7ed3`, Transformers to 5.12.1, and ROCm
+PyTorch release/2.12 to `7f7145337ddec35249faaa02ab3a9aea87b25029`; each is
+tracked in `docs/maintainers/update-candidates.toml` and visible in
+`docs/backlog.md`. No package source adoption, build, deploy/install, installed
+smoke, or live validation is claimed for those retargeted follow-ups.
 
 The 2026-06-14 reconciliation itself did not claim package implementation,
 package build, deploy/install, host mutation, installed smoke, or live
@@ -123,15 +123,17 @@ Torch-MIGraphX. Independent package lanes such as llama.cpp/Lemonade,
 stable-diffusion.cpp, CTranslate2, aiohttp, and cryptography remain separate
 tracked work.
 
-The CPython 3.14.6 source cursor review is complete as of 2026-06-15. CPython
-3.14.6 was released on 2026-06-10 with security and crash fixes, but
-`python-gfx1151` remains pinned to CPython 3.14.5 because the authoritative
-Arch `core/python` baseline is still `3.14.5-1` and the advisory CachyOS znver4
-package is still on the 3.14.5 source lane. No package source update, package
-build, deploy/install, installed smoke, or live inference validation is claimed
-for this review. The reviewed CPython freshness cursor is now 3.14.6, and the
-remaining tracked gate is to move only after the Arch baseline moves or a
-coordinated system-interpreter rebuild lane opens.
+The CPython 3.14.6 patch-release source lane is active as of 2026-06-15.
+CPython 3.14.6 was released on 2026-06-10 with security and crash fixes, and
+`python-gfx1151` now tracks the official 3.14.6 source tarball even though the
+authoritative Arch `core/python` baseline and advisory CachyOS znver4 package
+remain on 3.14.5. Arch and CachyOS remain integration references, not blockers
+for accepted CPython patch releases. Source updated: complete. Package built:
+complete; `tools/amerge` build plan `eabfcfe6` produced `python-gfx1151
+3.14.6-1` after isolating CPython's PGO profile task from ambient installed
+site-packages. Deployed/installed: not complete. Installed-smoked and affected
+torch/vLLM-smoked: not complete. The remaining tracked gate is the coordinated
+deploy/install, installed interpreter smoke, and affected runtime smoke lane.
 
 Source updated: `python-auto-round-gfx1151` now renders from PyPI AutoRound
 0.13.0 as `0.13.0-1`, and `python-compressed-tensors-gfx1151` now renders from

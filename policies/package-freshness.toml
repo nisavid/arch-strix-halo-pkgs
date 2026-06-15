@@ -52,7 +52,7 @@ checks = [
   { id = "cpython", role = "baseline", kind = "python_ftp", recorded = "3.14.6", comparison = "pep440", series = "3.14" },
 ]
 source_contracts = [
-  { id = "cpython-source", packages = ["python-gfx1151"], check_id = "cpython", source_kind = "python_source_archive", origin = "python_ftp", value_policy = "pinned_may_lag_reviewed" },
+  { id = "cpython-source", packages = ["python-gfx1151"], check_id = "cpython", source_kind = "python_source_archive", origin = "python_ftp", value_policy = "matches_reviewed" },
 ]
 
 [families.vllm]

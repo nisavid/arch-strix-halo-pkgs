@@ -4,32 +4,37 @@
 
 ### Active Unresolved Gates
 
-- CPython 3.14.6 source cursor follow-up: the CPython 3.14.6 point release is
-  reviewed, and `python-gfx1151` remains pinned to CPython `3.14.5` while the
-  authoritative Arch `core/python` baseline remains `3.14.5-1` and the
-  advisory CachyOS znver4 package remains on the 3.14.5 source lane. Move the
-  package source only when the Arch baseline moves or a coordinated
-  system-interpreter rebuild lane opens.
+- CPython 3.14.6 deploy/install and installed-smoke lane: `python-gfx1151` source
+  metadata now tracks the reviewed CPython `3.14.6` point release even though
+  Arch `core/python` and advisory CachyOS remain on 3.14.5. Package build plan
+  `eabfcfe6` produced `python-gfx1151 3.14.6-1`; deploy/install, installed
+  interpreter smoke, and affected torch/vLLM smoke gates remain open before
+  adoption.
 - AITER 0.1.15.post1 dependency-closure review: upstream now reports
   `0.1.15.post1` after the previous 0.1.15-rc0 blocker. Re-review the release
   metadata against the existing FlyDSL and Triton dependency-closure concerns
   before package source adoption; required gates remain source verification,
   package build, deploy/install, installed JIT/import smoke, and affected vLLM
   live validation.
-- llama.cpp b9644 follow-up after b9442 live validation: upstream now reports
-  `b9644` and AUR HIP now reports `b9641-1` after the adopted b9442 lane. This
-  supersedes the b9637 and b9642 follow-ups as the active llama.cpp source lane;
+- llama.cpp b9660 follow-up after b9442 live validation: upstream now reports
+  `b9660` and AUR HIP now reports `b9641-1` after the adopted b9442 lane. This
+  supersedes the b9637, b9642, and b9644 follow-ups as the active llama.cpp source lane;
   package source update, package build, deploy/install, installed-smoke,
   Lemonade backend metadata review, and selected-logit live validation remain
   open.
+- ROCm PyTorch release/2.12 7f71453 follow-up: release/2.12 now reports
+  `7f7145337ddec35249faaa02ab3a9aea87b25029` after the adopted c7badbdf
+  runtime-base lane, while Arch `python-pytorch-opt-rocm` remains at
+  `2.12.0-4`. Review the upstream range and affected runtime-base rebuild
+  gates before package source adoption.
 - vLLM 0.23.0 follow-up: upstream now reports `0.23.0` after the local
   `0.21.0` package lane. Refresh only after the ROCm patch carry,
   runtime-base, package build, deploy/install, installed smoke, and live
   scenario gates are planned together.
-- Transformers 5.12.0 follow-up: PyPI and the upstream tag now report
-  `5.12.0` after the local `5.8.1` package lane. Keep this behind the runtime
-  base decision unless the operator explicitly declares the current runtime
-  base stable enough for a separate Transformers lane.
+- Transformers 5.12.1 follow-up: PyPI and the upstream tag now report
+  `5.12.1` after the local `5.8.1` package lane. Keep this coupled to the
+  runtime and model-surface closure unless the operator explicitly declares the
+  current runtime base stable enough for a separate Transformers lane.
 - safetensors 0.8.0 follow-up: PyPI now reports `0.8.0` while Arch remains at
   `0.7.0-2`. Review compatibility with Transformers, compressed-tensors, and
   vLLM before package adoption.
@@ -58,8 +63,8 @@
 - CTranslate2 4.8.0 follow-up: upstream now reports `4.8.0`; the AUR baseline
   and ROCm fork scout cursor remain unchanged. Review the upstream delta
   against the local ROCm package shape before adoption.
-- stable-diffusion.cpp bb90bfa follow-up: upstream master now reports
-  `bb90bfa00f858c7df6502e75f31c4440d4d11fde`, and the AUR Vulkan baseline
+- stable-diffusion.cpp 5a34bc7 follow-up: upstream master now reports
+  `5a34bc7f6e0621dd2f899daa64476eac667d7ed3`, and the AUR Vulkan baseline
   reports `r660.d2797b8-1`. Review the source and submodule delta before
   package source adoption, rebuild, deploy/install, and installed wrapper
   smoke.
@@ -641,6 +646,9 @@
 
 ## Repository Hygiene
 
+- Migrate active backlog coordination to GitHub Issues. Issue #74 owns the
+  policy/tooling cleanup needed before `docs/backlog.md` stops being the
+  primary active work queue.
 - Normalize package patches so reviewable source changes live as patch files.
 - Remove or ignore transient session/worklog docs once durable content has been
   extracted.

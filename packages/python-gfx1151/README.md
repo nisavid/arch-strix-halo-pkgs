@@ -6,7 +6,7 @@
 - Scaffold template: `autoconf-python`
 - Recipe build method: `autoconf`
 - Upstream repo: `https://github.com/python/cpython.git`
-- Package version: `3.14.5`
+- Package version: `3.14.6`
 - Recipe revision: `3f15f9f (20260508, 17 commits touching recipe path)`
 - Recipe steps: `8`
 - Recipe dependencies: `therock`
@@ -34,6 +34,7 @@ vllm-env.sh is re-sourced after build to restore flags.
 
 - This scaffold is intentionally rebased onto current Arch/Cachy Python 3.14.x instead of the recipe's older CPython 3.13.12 pin.
 - The scaffold preserves the recipe's rule that all vllm-env.sh compiler flags must be unset before configure so AOCL-LibM does not contaminate the PGO training run.
+- The scaffold runs CPython's PGO profile task with -S so training uses the source tree and build extension path without importing ambient installed site-packages.
 - Before production cutover, verify feature parity with the current Arch python package, especially tkinter, sqlite extension loading, PEP 668, and debug-path sanitization.
 - The scaffold intentionally disables ensurepip so pip stays split into separate packages, matching Arch system integration more closely.
 - The scaffold uses the official CPython release tarball rather than a git mirror because the package is pinned to a tagged release and full VCS fetches are unnecessarily expensive here.
@@ -48,8 +49,8 @@ vllm-env.sh is re-sourced after build to restore flags.
 
 - Always diff against the current Arch python PKGBUILD first, then inspect CachyOS for any CPU-tuning or toolchain deltas worth carrying.
 - Treat system-Python replacement as gated on a fresh torch/vLLM smoke run after any major Python, ROCm, or recipe change.
-- Keep the package aligned with Arch's Python 3.14 package until a coordinated interpreter rebuild lane is opened for the local ROCm and vLLM stack.
-- The reviewed CPython source cursor is 3.14.6; keep python-gfx1151 source on the Arch-aligned 3.14.5 pin until core/python moves or a coordinated system-interpreter rebuild lane opens.
+- Adopt CPython 3.14 patch releases after source review without waiting for Arch or CachyOS to move; keep those packages as integration references.
+- Treat patch-release source bumps as coordinated interpreter rebuild lanes until package build, deploy/install, installed smoke, and affected runtime smokes pass.
 
 ## Maintainer Starting Points
 
