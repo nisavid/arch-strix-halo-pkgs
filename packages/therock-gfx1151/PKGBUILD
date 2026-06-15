@@ -304,7 +304,7 @@ package_migraphx-gfx1151() {
     pkgdesc='MIGraphX from TheRock for gfx1151'
     provides=('migraphx')
     conflicts=('migraphx' 'rocm-gfx1151-bin')
-    depends=('gcc-libs' 'glibc' 'hip-runtime-amd-gfx1151' 'miopen-hip-gfx1151' 'msgpack-cxx' 'protobuf' 'python-gfx1151' 'rocblas-gfx1151' 'rocm-core-gfx1151' 'sqlite')
+    depends=('gcc-libs' 'glibc' 'hip-runtime-amd-gfx1151' 'miopen-hip-gfx1151' 'msgpack-cxx' 'libprotobuf.so=35.0.0-64' 'python-gfx1151' 'rocblas-gfx1151' 'rocm-core-gfx1151' 'sqlite')
     _require_therock_root
     _copy_from_filelist 'migraphx-gfx1151'
     install -Dm644 /dev/stdin "${pkgdir}/usr/lib/python3.14/site-packages/migraphx.pth" <<'EOF'
@@ -750,7 +750,7 @@ package_rocprofiler-compute-gfx1151() {
     pkgdesc='rocprofiler-compute from TheRock for gfx1151'
     provides=('rocprofiler-compute')
     conflicts=('rocm-gfx1151-bin' 'rocprofiler-compute')
-    depends=()
+    depends=('gcc-libs' 'glibc' 'python-gfx1151' 'python-astunparse' 'python-numpy-gfx1151' 'python-pandas' 'python-pyyaml-gfx1151' 'python-sqlalchemy' 'python-tabulate' 'python-textual' 'rocprofiler-sdk-gfx1151')
     _require_therock_root
     _copy_from_filelist 'rocprofiler-compute-gfx1151'
 }

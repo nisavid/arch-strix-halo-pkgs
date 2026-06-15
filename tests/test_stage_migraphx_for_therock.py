@@ -10,7 +10,7 @@ def test_stage_migraphx_script_has_valid_zsh_syntax():
     subprocess.run(["zsh", "-n", str(SCRIPT)], check=True)
 
 
-def test_stage_migraphx_script_help_documents_deploy_one_liner():
+def test_stage_migraphx_script_help_keeps_deploy_out_of_typical_path():
     result = subprocess.run(
         [str(SCRIPT), "--help"],
         check=True,
@@ -18,7 +18,9 @@ def test_stage_migraphx_script_help_documents_deploy_one_liner():
         text=True,
     )
 
-    assert "tools/stage_migraphx_for_therock.zsh --clean --deploy" in result.stdout
+    assert "tools/stage_migraphx_for_therock.zsh --clean\n" in result.stdout
+    assert "tools/stage_migraphx_for_therock.zsh --clean --deploy" not in result.stdout
+    assert "--deploy" in result.stdout
     assert "--skip-build" in result.stdout
     assert "--stage PATH" in result.stdout
     assert "--with-ck" in result.stdout
@@ -79,6 +81,18 @@ def test_stage_migraphx_builds_install_target_only():
 
     assert "cmake --build $src/build --target install -j$jobs" in script
     assert "cmake --build $src/build -j$jobs" not in script
+
+
+def test_stage_migraphx_validates_protobuf_35_before_import():
+    script = SCRIPT.read_text()
+
+    assert "typeset protobuf_soname=libprotobuf.so.35.0.0" in script
+    assert "typeset utf8_validity_soname=libutf8_validity.so.35.0.0" in script
+    assert "system protobuf SONAME must be $protobuf_soname" in script
+    assert "system utf8 validity SONAME must be $utf8_validity_soname" in script
+    assert "staged MIGraphX ONNX library is not linked against $protobuf_soname" in script
+    assert "staged MIGraphX ONNX library is not linked against $utf8_validity_soname" in script
+    assert script.index("local -a needed") < script.index('status "checking staged Python import"')
 
 
 def test_stage_migraphx_preview_is_dry_run():

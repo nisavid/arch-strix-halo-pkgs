@@ -218,11 +218,24 @@ def test_math_and_ml_dependency_policy_tracks_arch_baseline_shape():
         "hip-runtime-amd-gfx1151",
         "miopen-hip-gfx1151",
         "msgpack-cxx",
-        "protobuf",
+        "libprotobuf.so=35.0.0-64",
         "python-gfx1151",
         "rocblas-gfx1151",
         "rocm-core-gfx1151",
         "sqlite",
+    ]
+    assert packages["rocprofiler-compute-gfx1151"]["depends"] == [
+        "gcc-libs",
+        "glibc",
+        "python-gfx1151",
+        "python-astunparse",
+        "python-numpy-gfx1151",
+        "python-pandas",
+        "python-pyyaml-gfx1151",
+        "python-sqlalchemy",
+        "python-tabulate",
+        "python-textual",
+        "rocprofiler-sdk-gfx1151",
     ]
     assert packages["miopen-gfx1151"]["depends"] == [
         "bzip2",

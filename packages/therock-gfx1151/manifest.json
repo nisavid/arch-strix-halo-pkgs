@@ -356,7 +356,7 @@
         "hip-runtime-amd-gfx1151",
         "miopen-hip-gfx1151",
         "msgpack-cxx",
-        "protobuf",
+        "libprotobuf.so=35.0.0-64",
         "python-gfx1151",
         "rocblas-gfx1151",
         "rocm-core-gfx1151",
@@ -838,7 +838,19 @@
       "rendered": true
     },
     "rocprofiler-compute-gfx1151": {
-      "depends": [],
+      "depends": [
+        "gcc-libs",
+        "glibc",
+        "python-gfx1151",
+        "python-astunparse",
+        "python-numpy-gfx1151",
+        "python-pandas",
+        "python-pyyaml-gfx1151",
+        "python-sqlalchemy",
+        "python-tabulate",
+        "python-textual",
+        "rocprofiler-sdk-gfx1151"
+      ],
       "fileless": false,
       "files": 4140,
       "provides": [
