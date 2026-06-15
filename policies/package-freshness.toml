@@ -49,7 +49,7 @@ priority = "high"
 workflow = "upstream_source_update"
 checks = [
   { id = "arch", role = "primary", kind = "arch_package", package = "python", recorded = "3.14.5-1", comparison = "pkgver" },
-  { id = "cpython", role = "baseline", kind = "python_ftp", recorded = "3.14.5", comparison = "pep440", series = "3.14" },
+  { id = "cpython", role = "baseline", kind = "python_ftp", recorded = "3.14.6", comparison = "pep440", series = "3.14" },
 ]
 source_contracts = [
   { id = "cpython-source", packages = ["python-gfx1151"], check_id = "cpython", source_kind = "python_source_archive", origin = "python_ftp", value_policy = "pinned_may_lag_reviewed" },
