@@ -16,18 +16,17 @@ mistral-common 1.11.3, CPython 3.14.6 baseline drift, ROCm PyTorch release/2.12
 `bb90bfa00f858c7df6502e75f31c4440d4d11fde`, Blackcat `ai-notes` submodule
 `dbfb70efc26fccf6ab2b00ee60ff0c96d37d37b0`, Torch-MIGraphX
 `29aabb9cb40073c3510eb6887728aa4c2d7009a9`, Transformers 5.12.0, and vLLM
-0.23.0. These are dispositioned as tracked update candidates in
-`docs/maintainers/update-candidates.toml` and are visible in `docs/backlog.md`.
+0.23.0. Those findings are dispositioned in
+`docs/maintainers/update-candidates.toml`; active tracked candidates are visible
+in `docs/backlog.md`.
 The older b9444, f8efdb3, AITER 0.1.15-rc0, vLLM 0.22.0, and Transformers
 5.9.0 candidates are superseded by the current 2026-06-14 observations. After
-disposition, a forced checker rerun exits `0` with effective counts of 20
-tracked update candidates, 10 adopted update candidates, 14 current families,
-and 1 rejected update candidate.
+the 2026-06-14 disposition, a forced checker rerun exited `0`.
 
 No package implementation, package build, deploy/install, host mutation,
 installed smoke, or live inference validation is claimed for the 2026-06-14
-reconciliation. Active follow-up work starts with recipe and baseline review,
-then the ROCm PyTorch runtime-base lane, then coupled runtime consumers
+reconciliation. Active follow-up work starts with baseline review, then the
+ROCm PyTorch runtime-base lane, then coupled runtime consumers
 including AITER, vLLM, Transformers, safetensors, compressed-tensors,
 llmcompressor, mistral-common, AutoRound, accelerate, and Torch-MIGraphX.
 Independent package lanes such as llama.cpp/Lemonade, stable-diffusion.cpp,
@@ -72,6 +71,23 @@ ab32a1f/pkgrel-3 install described below. vLLM 0.23.0 supersedes the 0.22.0
 candidate and remains tracked until the local ROCm patch carry and runtime-base
 gates are handled. Active follow-up work is visible in `docs/backlog.md` and
 `docs/maintainers/update-candidates.toml`.
+
+The Blackcat ai-notes `dbfb70efc26fccf6ab2b00ee60ff0c96d37d37b0` recipe
+candidate is rejected after source review. The Strix Halo diff from
+`3f15f9f1318491c9ee03782d8b2ebd41391de118` changes only Blackcat's
+source-built `build-vllm.sh` and `vllm-env.sh` scripts: stale copied
+llama.cpp shared libraries are deleted before a venv-style install is
+refreshed, and source-built llama.cpp backend directories are kept out of
+`LD_LIBRARY_PATH` so ROCm, Vulkan, and Atomic libraries do not mix. The current
+package shape already owns the durable behavior through isolated
+`llama.cpp-hip-gfx1151` and `llama.cpp-vulkan-gfx1151` prefixes, executable
+RUNPATHs, and Lemonade's system-managed suffixed backend binaries. Atomic
+TurboQuant remains a blocked package candidate requiring user/source-risk
+approval before package policy, so the repo does not bump the ai-notes
+submodule or rerender package scaffolds for this script-only delta. Source
+updated: no package source ref changed. Package built: not applicable.
+Deployed/installed: not applicable. Installed-smoked: not applicable.
+Live-scenario validated: not applicable.
 
 The 2026-05-26 AOCL 5.3 refresh is adopted. `aocl-utils-gfx1151`
 now renders from upstream AOCL-Utils `5.3.0` with the current AUR

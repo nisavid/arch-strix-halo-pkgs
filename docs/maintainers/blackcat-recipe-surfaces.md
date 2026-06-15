@@ -7,6 +7,13 @@ from the committed `upstream/ai-notes` submodule at
 `3f15f9f1318491c9ee03782d8b2ebd41391de118`. It is a package-policy and
 validation planning surface only; it does not add package implementations.
 
+The later reviewed `dbfb70efc26fccf6ab2b00ee60ff0c96d37d37b0` recipe cursor
+does not change these package-boundary decisions. Its Strix Halo delta is
+source-built venv script hardening for llama.cpp artifact cleanup and
+`LD_LIBRARY_PATH` isolation; the local package shape already owns the durable
+runtime behavior through backend-specific package prefixes and executable
+RUNPATHs.
+
 The package set in `policies/recipe-packages.toml`, package-local READMEs,
 `docs/maintainers/update-candidates.toml`, and
 `docs/maintainers/current-state.md` remains authoritative for package state.

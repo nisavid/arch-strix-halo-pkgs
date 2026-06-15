@@ -2594,20 +2594,23 @@ check_id = "ai-notes"
 previous_recorded = "3f15f9f1318491c9ee03782d8b2ebd41391de118"
 latest = "dbfb70efc26fccf6ab2b00ee60ff0c96d37d37b0"
 discovery_status = "branch_head_ahead"
-disposition = "tracked"
-disposition_reason = "Tracked from the 2026-06-14 freshness sweep. Review the Blackcat Informatics recipe diff before adopting any submodule, TheRock, package policy, or rendered output changes."
+disposition = "rejected"
+disposition_reason = "Reviewed on 2026-06-15. The dbfb70e Strix Halo recipe diff only hardens Blackcat's source-built venv scripts: llama.cpp install cleanup removes stale copied shared libraries, and vllm-env.sh keeps source-built llama.cpp backend directories off LD_LIBRARY_PATH. This repo's package-owned llama.cpp backends already install isolated backend prefixes with executable RUNPATHs and Lemonade uses system-managed suffixed backend binaries, while the Atomic TurboQuant side backend remains blocked pending user/source-risk review. Do not bump the submodule or rerender package scaffolds for this script-only delta."
 salient_changes = [
   "The upstream ai-notes submodule cursor moved from 3f15f9f1318491c9ee03782d8b2ebd41391de118 to dbfb70efc26fccf6ab2b00ee60ff0c96d37d37b0",
-  "The TheRock release check remains current at 7.13",
-  "Submodule adoption, affected scaffold render, package build, deploy/install, and validation are not part of this reconciliation lane",
+  "The Strix Halo diff changes only strix-halo/build-vllm.sh and strix-halo/vllm-env.sh",
+  "build-vllm.sh deletes stale libggml, libllama, and libmtmd shared libraries from a source-built llama.cpp install directory before copying new artifacts",
+  "vllm-env.sh removes source-built ROCm, Vulkan, and Atomic llama.cpp backend directories from PATH/LD_LIBRARY_PATH and relies on per-binary RUNPATH to avoid backend library mixing",
+  "The local llama.cpp packages already install backend-specific prefixes and patch executable RUNPATHs, and Lemonade resolves the packaged HIP/Vulkan backends through system-managed suffixed binaries",
+  "The Atomic TurboQuant backend remains blocked outside this lane and does not justify submodule adoption",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
-next_gate_label = "Blackcat ai-notes dbfb70e recipe review"
-last_reviewed = "2026-06-14"
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_path = ""
+next_gate_label = "Rejected; monitor future ai-notes recipe movement through the normal freshness sweep"
+last_reviewed = "2026-06-15"
 
 [candidates."torch-migraphx-29aabb9"]
 family = "torch_migraphx"
