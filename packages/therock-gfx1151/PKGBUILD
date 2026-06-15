@@ -581,7 +581,7 @@ package_rocm-gdb-gfx1151() {
     pkgdesc='ROCm GDB from TheRock for gfx1151'
     provides=('rocm-gdb')
     conflicts=('rocm-gdb' 'rocm-gfx1151-bin')
-    depends=('bash' 'gmp' 'guile' 'libelf' 'mpfr' 'ncurses' 'readline' 'rocm-dbgapi-gfx1151' 'rocm-debug-agent-gfx1151' 'xz')
+    depends=('bash' 'expat' 'gcc-libs' 'glibc' 'gmp' 'guile' 'libelf' 'mpfr' 'ncurses' 'python-gfx1151' 'readline' 'rocm-dbgapi-gfx1151' 'rocm-debug-agent-gfx1151' 'xz' 'zlib' 'zstd')
     _require_therock_root
     _copy_from_filelist 'rocm-gdb-gfx1151'
 }

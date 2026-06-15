@@ -187,15 +187,21 @@ def test_core_runtime_dependency_policy_tracks_arch_baseline_shape():
     ]
     assert packages["rocm-gdb-gfx1151"]["depends"] == [
         "bash",
+        "expat",
+        "gcc-libs",
+        "glibc",
         "gmp",
         "guile",
         "libelf",
         "mpfr",
         "ncurses",
+        "python-gfx1151",
         "readline",
         "rocm-dbgapi-gfx1151",
         "rocm-debug-agent-gfx1151",
         "xz",
+        "zlib",
+        "zstd",
     ]
 
 

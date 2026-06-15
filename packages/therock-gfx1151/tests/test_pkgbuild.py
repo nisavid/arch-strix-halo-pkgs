@@ -89,20 +89,26 @@ def test_rocprofiler_compute_manifest_tracks_runtime_dependencies():
 def test_rocm_gdb_manifest_tracks_non_rocm_runtime_dependencies():
     text = PKGBUILD.read_text()
     assert "package_rocm-gdb-gfx1151()" in text
-    assert "depends=('bash' 'gmp' 'guile' 'libelf' 'mpfr' 'ncurses' 'readline' 'rocm-dbgapi-gfx1151' 'rocm-debug-agent-gfx1151' 'xz')" in text
+    assert "depends=('bash' 'expat' 'gcc-libs' 'glibc' 'gmp' 'guile' 'libelf' 'mpfr' 'ncurses' 'python-gfx1151' 'readline' 'rocm-dbgapi-gfx1151' 'rocm-debug-agent-gfx1151' 'xz' 'zlib' 'zstd')" in text
 
     manifest = json.loads(MANIFEST.read_text())
     assert manifest["packages"]["rocm-gdb-gfx1151"]["depends"] == [
         "bash",
+        "expat",
+        "gcc-libs",
+        "glibc",
         "gmp",
         "guile",
         "libelf",
         "mpfr",
         "ncurses",
+        "python-gfx1151",
         "readline",
         "rocm-dbgapi-gfx1151",
         "rocm-debug-agent-gfx1151",
         "xz",
+        "zlib",
+        "zstd",
     ]
 
 
