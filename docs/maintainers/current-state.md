@@ -1,6 +1,18 @@
 # Current State
 
-Status as of 2026-06-14.
+Status as of 2026-06-15.
+
+The AOCL-Utils AUR epoch baseline review is complete. Current AUR
+`aocl-utils 1:5.3-1` carries epoch 1 because upstream exposes the AOCL-Utils
+5.3.0 source tree through tag `5.3`; the former `5.3.0` archive URL no longer
+resolves. `aocl-utils-gfx1151` now renders as `5.3.0-1` from the current `5.3`
+archive, with the matching AUR checksum and archive root. The AUR diff does
+not change dependencies, options, install layout, patches, or runtime contract.
+Source updated: package source metadata only. Package built:
+`tools/amerge build` plan `20260615T055900-7ddc6d97` produced
+`aocl-utils-gfx1151 5.3.0-1`. Deployed/installed: not required by this review.
+Installed-smoked: not required by this review. Live-scenario validated: not
+applicable.
 
 The 2026-06-14 freshness sweep ran
 `tools/check_package_updates.py --json --fail-on actionable` from a fresh
@@ -30,8 +42,7 @@ ROCm PyTorch runtime-base lane, then coupled runtime consumers
 including AITER, vLLM, Transformers, safetensors, compressed-tensors,
 llmcompressor, mistral-common, AutoRound, accelerate, and Torch-MIGraphX.
 Independent package lanes such as llama.cpp/Lemonade, stable-diffusion.cpp,
-CTranslate2, aiohttp, cryptography, and AOCL-Utils baseline review remain
-separate tracked work.
+CTranslate2, aiohttp, and cryptography remain separate tracked work.
 
 The CPython 3.14.6 source cursor review is complete as of 2026-06-15. CPython
 3.14.6 was released on 2026-06-10 with security and crash fixes, but
@@ -100,9 +111,11 @@ Deployed/installed: not applicable. Installed-smoked: not applicable.
 Live-scenario validated: not applicable.
 
 The 2026-05-26 AOCL 5.3 refresh is adopted. `aocl-utils-gfx1151`
-now renders from upstream AOCL-Utils `5.3.0` with the current AUR
-`aocl-utils 5.3.0-1` baseline, and `aocl-libm-gfx1151` now renders from
-upstream AOCL-LibM `5.3`. The AOCL-LibM SCons compatibility patch is refreshed
+renders from upstream AOCL-Utils `5.3.0` with the current AUR
+`aocl-utils 1:5.3-1` baseline, and `aocl-libm-gfx1151` now renders from
+upstream AOCL-LibM `5.3`. The AOCL-Utils source archive uses upstream tag
+`5.3` while the source tree version remains `5.3.0`. The AOCL-LibM SCons
+compatibility patch is refreshed
 for the 5.3 source layout and still passes resolved `ALM_CC` and `ALM_CXX`
 compiler paths to SCons because upstream validates those variables as existing
 paths.

@@ -29,7 +29,8 @@ CMAKE_CXX_CLANG_TIDY=/bin/true prevents auto-detection.
 
 ## Scaffold notes
 
-- This scaffold is rebased onto the current AUR aocl-utils 5.3.0 package rather than the older aocc-specific variant.
+- This scaffold is rebased onto the current AUR aocl-utils 1:5.3-1 package rather than the older aocc-specific variant.
+- The package keeps pkgver 5.3.0 because upstream version.txt still reports 5.3.0, while the source archive follows the current upstream tag name 5.3.
 - The older AUR aocl-utils-aocc package remains stale advisory context because it captures the AOCC-specific lane, even though the current non-AOCC aocl-utils package is the closer baseline for this toolchain.
 - The recipe intentionally disables LTO because AOCL-LibM links AOCL-Utils archives with GNU ld.
 - Build testing showed -famd-opt is a compile-time no-op here, so the scaffold keeps it out of the AOCL-Utils compile flags while still using amdclang as the compiler baseline.
@@ -43,7 +44,7 @@ CMAKE_CXX_CLANG_TIDY=/bin/true prevents auto-detection.
 ## Update Notes
 
 - When the AUR baseline changes, re-check license packaging and install layout against aur/aocl-utils first, then compare any AOCC-specific drift from aur/aocl-utils-aocc.
-- The current AUR aocl-utils baseline is 5.3.0-1; aocl-utils-aocc remains stale advisory context for the AOCC-specific lane.
+- The current AUR aocl-utils baseline is 1:5.3-1 because upstream exposes the 5.3 source archive through tag 5.3 while the source tree still reports AOCL-Utils 5.3.0.
 - If the recipe starts carrying source patches here, convert them into patch files under patches/aocl-utils-gfx1151 rather than inline shell edits.
 
 ## Maintainer Starting Points

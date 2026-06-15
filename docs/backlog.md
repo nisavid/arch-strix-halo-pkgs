@@ -69,9 +69,6 @@
   `13b1af25f84cf08ad5f8bf0ec58980bdfc09c9e7`, while upstream and AUR baselines
   now report `10.7.0`. Review upstream/AUR baseline drift before deciding
   whether the local fork package lane should move.
-- AOCL-Utils AUR epoch baseline review: upstream remains current, but the AUR
-  baseline now reports `1:5.3-1` after the adopted `5.3.0-1` lane. Review this
-  as baseline drift before changing local package metadata.
 - stable-diffusion.cpp bb90bfa follow-up: upstream master now reports
   `bb90bfa00f858c7df6502e75f31c4440d4d11fde`, and the AUR Vulkan baseline
   reports `r660.d2797b8-1`. Review the source and submodule delta before
