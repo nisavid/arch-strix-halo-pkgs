@@ -564,7 +564,7 @@ package_rocm-developer-tools-gfx1151() {
     pkgdesc='Meta package for ROCm developer tools from TheRock for gfx1151'
     provides=('rocm-developer-tools')
     conflicts=('rocm-developer-tools' 'rocm-gfx1151-bin')
-    depends=('rocm-llvm-gfx1151' 'rocm-cmake-gfx1151' 'rocprofiler-systems-gfx1151' 'rocprofiler-sdk-gfx1151' 'roctracer-gfx1151')
+    depends=('rocm-llvm-gfx1151' 'rocm-cmake-gfx1151' 'rocm-gdb-gfx1151' 'rocprofiler-compute-gfx1151' 'rocprofiler-systems-gfx1151' 'rocprofiler-sdk-gfx1151' 'roctracer-gfx1151')
     return 0
 }
 
