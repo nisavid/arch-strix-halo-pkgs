@@ -26,11 +26,12 @@ lemonade.reranking.zerank-2.selected-logit --run-root
 docs/worklog/inference-runs/20260615T-lemonade-10.7-postdeploy` passed three
 scenarios with zero failures.
 
-The ROCm PyTorch release/2.12 `c7badbdf` runtime-base source lane is prepared
-and built but not deployed or installed. `python-pytorch-opt-rocm-gfx1151` pins
-ROCm/pytorch `c7badbdf3d33d945a0ed4536aac5303bc933e6ee` and renders as
-`2.12.0-4`, matching the current Arch `python-pytorch-opt-rocm 2.12.0-4`
-baseline. The `f8efdb..c7badbdf` upstream range changes test coverage and NCCL
+The ROCm PyTorch release/2.12 `c7badbdf` runtime-base source lane is prepared,
+built, deployed, and installed, but its host-validation gate remains open.
+`python-pytorch-opt-rocm-gfx1151` pins ROCm/pytorch
+`c7badbdf3d33d945a0ed4536aac5303bc933e6ee` and renders as `2.12.0-4`,
+matching the current Arch `python-pytorch-opt-rocm 2.12.0-4` baseline. The
+`f8efdb..c7badbdf` upstream range changes test coverage and NCCL
 symmetric-memory source gating without touching local patch paths. Affected
 native consumers are versioned beyond the unmerged ab32a1f/pkgrel-3 host drift:
 `python-amd-aiter-gfx1151 0.1.14-4`,
@@ -40,10 +41,18 @@ native consumers are versioned beyond the unmerged ab32a1f/pkgrel-3 host drift:
 `python-torchvision-rocm-gfx1151 0.27.0-4`, and
 `python-vllm-rocm-gfx1151 0.21.0-6`. Source updated: complete. Package built:
 `tools/amerge build` plan `20260615T064435-54276c27` produced all seven
-runtime-base bundle artifacts. Deployed/installed: not complete.
-Installed-smoked: not complete. Live-scenario validated: not complete. The next
-gate is operator-owned deploy/install, followed by repo verification, installed
-smokes, and selected live scenarios.
+runtime-base bundle artifacts. Deployed/installed: complete on 2026-06-15; the
+local package repo, configured `strix-halo-gfx1151` repo view, and `pacman -Q`
+all report the seven expected versions. Installed-smoked: partial. `torch`,
+AITER, FlashAttention, TorchAO, TorchVision, and vLLM imports passed, and the
+FlashAttention CK backend-import scenario passed. Torch-MIGraphX import and
+the PT2E quantizer-import scenario fail because installed `migraphx-gfx1151
+7.13.0-2` links `libmigraphx_onnx.so` against `libprotobuf.so.34.1.0` while the
+host has protobuf 35. Live-scenario validated: not complete; the agent sandbox
+cannot access `/dev/kfd`, so GPU live scenarios remain operator-owned after the
+MIGraphX/protobuf ABI blocker is repaired. The next gate is a TheRock/MIGraphX
+protobuf-35 ABI repair, then rerun Torch-MIGraphX import/PT2E, installed smokes,
+and selected live scenarios.
 
 The AOCL-Utils AUR epoch baseline review is complete. Current AUR
 `aocl-utils 1:5.3-1` carries epoch 1 because upstream exposes the AOCL-Utils
@@ -79,13 +88,15 @@ The older b9444, f8efdb3, AITER 0.1.15-rc0, vLLM 0.22.0, and Transformers
 the 2026-06-14 disposition, a forced checker rerun exited `0`.
 
 A 2026-06-15 forced checker rerun after the Wave 0 review updates found newer
-Lemonade fork-main, llama.cpp, and Torch-MIGraphX heads. Those are retargeted
-as tracked follow-up candidates in `docs/maintainers/update-candidates.toml`
-and remain visible in `docs/backlog.md`; no package source adoption, build,
-deploy/install, installed smoke, or live validation is claimed for those three
-follow-ups in this branch. After retargeting, the forced checker rerun exited
-`0` with effective counts of 18 tracked update candidates, 11 adopted update
-candidates, 14 current families, and 2 rejected update candidates.
+Lemonade fork-main, llama.cpp, and Torch-MIGraphX heads. The post-deploy
+checker rerun for the c7badbdf branch also retargeted llama.cpp to b9644 and
+llmcompressor to 0.12.0. Those are tracked follow-up candidates in
+`docs/maintainers/update-candidates.toml` and remain visible in
+`docs/backlog.md`; no package source adoption, build, deploy/install, installed
+smoke, or live validation is claimed for those follow-ups in this branch.
+After retargeting, the cache-aware checker rerun exited `0` with no
+undispositioned update candidates; several unrelated provider queries still
+reported network failures and need a future successful freshness rerun.
 
 No package implementation, package build, deploy/install, host mutation,
 installed smoke, or live inference validation is claimed for the 2026-06-14

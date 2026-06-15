@@ -2420,7 +2420,7 @@ next_gate_path = ""
 next_gate_label = "Adopted; monitor future Lemonade releases through the normal freshness sweep"
 last_reviewed = "2026-06-15"
 
-[candidates."llama-cpp-b9642"]
+[candidates."llama-cpp-b9644"]
 family = "llama_cpp"
 packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151", "lemonade-server"]
 source_kind = "github_release"
@@ -2429,12 +2429,12 @@ baseline_source_kind = "aur"
 baseline_latest = "b9641-1"
 covered_checks = [{ source_kind = "aur", check_id = "aur-hip" }]
 previous_recorded = "b9442 / b9437-1"
-latest = "b9642"
+latest = "b9644"
 discovery_status = "stable_update_available"
 disposition = "tracked"
-disposition_reason = "Tracked from the 2026-06-15 freshness rerun. This supersedes the b9637 follow-up as the active llama.cpp source lane after the adopted b9442 stack."
+disposition_reason = "Tracked from the 2026-06-15 post-deploy freshness rerun. This supersedes the b9637 and b9642 follow-ups as the active llama.cpp source lane after the adopted b9442 stack."
 salient_changes = [
-  "GitHub release b9642 is available after the adopted b9442 package lane",
+  "GitHub release b9644 is available after the adopted b9442 package lane",
   "AUR llama.cpp-hip now reports b9641-1 while the Vulkan baseline remains b9222-1",
   "Package source update, package build, deploy/install, installed-smoke, Lemonade backend metadata review, and selected-logit live validation remain open",
 ]
@@ -2443,21 +2443,21 @@ package_source_update_needed = true
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "llama.cpp b9642 follow-up after b9442 live validation"
+next_gate_label = "llama.cpp b9644 follow-up after b9442 live validation"
 last_reviewed = "2026-06-15"
 
-[candidates."llmcompressor-0.11.0-pypi"]
+[candidates."llmcompressor-0.12.0-pypi"]
 family = "llmcompressor"
 packages = ["python-llmcompressor-gfx1151"]
 source_kind = "pypi"
 check_id = "pypi"
 previous_recorded = "0.10.0.2"
-latest = "0.11.0"
+latest = "0.12.0"
 discovery_status = "stable_update_available"
 disposition = "tracked"
-disposition_reason = "Tracked from the 2026-06-14 freshness sweep. Re-check upstream dependency metadata against the local runtime stack before deciding whether this remains blocked or becomes package work."
+disposition_reason = "Tracked from the 2026-06-15 post-deploy freshness rerun. Re-check upstream dependency metadata against the local runtime stack before deciding whether this remains blocked or becomes package work."
 salient_changes = [
-  "PyPI llmcompressor 0.11.0 is available after the rejected 0.10.0.2 candidate",
+  "PyPI llmcompressor 0.12.0 is available after the rejected 0.10.0.2 candidate",
   "Compatibility with the local PyTorch, Transformers, safetensors, compressed-tensors, and vLLM closure still needs review",
 ]
 patch_carry_overlap = true
@@ -2465,8 +2465,8 @@ package_source_update_needed = true
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "llmcompressor 0.11.0 compatibility review"
-last_reviewed = "2026-06-14"
+next_gate_label = "llmcompressor 0.12.0 compatibility review"
+last_reviewed = "2026-06-15"
 
 [candidates."mistral-common-1.11.3"]
 family = "mistral_common"
@@ -2536,22 +2536,25 @@ previous_recorded = "f8efdb30b5e6d8b1ae3e8744f227416b2aa032c1 / 2.12.0-2"
 latest = "c7badbdf3d33d945a0ed4536aac5303bc933e6ee"
 discovery_status = "branch_head_ahead"
 disposition = "tracked"
-disposition_reason = "Source-prepared and package-built on 2026-06-15. This supersedes f8efdb3 as the active release/2.12 runtime-base lane: python-pytorch-opt-rocm-gfx1151 now pins c7badbdf and uses pkgrel 4 to align with Arch python-pytorch-opt-rocm 2.12.0-4, while affected native consumers are pkgrel-bumped beyond the unmerged ab32a1f host-drift artifacts. Deploy/install, repo verification, installed-smoke, and live-scenario gates remain open."
+disposition_reason = "Source-prepared, package-built, deployed, and installed on 2026-06-15. This supersedes f8efdb3 as the active release/2.12 runtime-base lane: python-pytorch-opt-rocm-gfx1151 now pins c7badbdf and uses pkgrel 4 to align with Arch python-pytorch-opt-rocm 2.12.0-4, while affected native consumers are pkgrel-bumped beyond the unmerged ab32a1f host-drift artifacts. Local and published repo verification passed, but installed-smoke and live-scenario gates remain open because Torch-MIGraphX now fails through the installed migraphx-gfx1151/protobuf ABI."
 salient_changes = [
   "ROCm/pytorch release/2.12 moved from f8efdb30b5e6d8b1ae3e8744f227416b2aa032c1 to c7badbdf3d33d945a0ed4536aac5303bc933e6ee",
   "Arch python-pytorch-opt-rocm moved from 2.12.0-2 to 2.12.0-4",
   "The f8efdb..c7badbdf upstream range changes test coverage and NCCL symmetric-memory source gating without touching local patch paths",
   "Local metadata now renders python-pytorch-opt-rocm-gfx1151 2.12.0-4, python-amd-aiter-gfx1151 0.1.14-4, python-flash-attn-rocm-gfx1151 2.8.4-14, python-torchao-rocm-gfx1151 0.17.0-6, python-torch-migraphx-gfx1151 1.2-9, python-torchvision-rocm-gfx1151 0.27.0-4, and python-vllm-rocm-gfx1151 0.21.0-6",
   "Package build plan 20260615T064435-54276c27 produced all seven runtime-base bundle artifacts",
+  "Deploy/install and local/published repo verification completed on 2026-06-15 for all seven runtime-base bundle packages",
+  "Post-deploy imports pass for torch, AITER, FlashAttention, TorchAO, TorchVision, and vLLM, and the FlashAttention CK backend-import scenario passes",
+  "Torch-MIGraphX import and the PT2E quantizer-import scenario fail because installed migraphx-gfx1151 7.13.0-2 links libmigraphx_onnx.so against libprotobuf.so.34.1.0 while the host has protobuf 35",
   "The lane still owns reconciliation of the reference host's intermediate ab32a1f/pkgrel-3 runtime-base install",
-  "Deploy/install, local-repo verification, published-repo verification, installed-smoke, and live-scenario validation remain open",
+  "Repair or rebuild the TheRock/MIGraphX protobuf ABI surface, then rerun Torch-MIGraphX import/PT2E, installed smokes, and selected live scenarios",
 ]
 patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = true
 next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
-next_gate_label = "Deploy/install ROCm PyTorch c7badbdf runtime-base bundle"
+next_gate_label = "Resolve ROCm PyTorch c7badbdf post-deploy Torch-MIGraphX blocker"
 last_reviewed = "2026-06-15"
 
 [candidates."safetensors-0.8.0-pypi"]

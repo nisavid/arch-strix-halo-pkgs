@@ -22,7 +22,8 @@
       "Re-run host-device FX lowering after every MIGraphX, PyTorch, TorchAO, or Torch-MIGraphX rebuild.",
       "Re-run the PT2E quantizer import and tiny torch.compile backend smokes after every PyTorch, TorchAO, or Torch-MIGraphX rebuild because those lanes depend on moved TorchAO APIs and PyTorch AOTAutograd import ordering.",
       "On 2026-05-26, bump pkgrel to 7 for delivery of the Torch-MIGraphX rebuild against python-pytorch-opt-rocm-gfx1151 2.12.0-2 and python-torchao-rocm-gfx1151 0.17.0-4.",
-      "On 2026-06-15, bump pkgrel to 9 for the c7badbdf runtime-base rebuild so Torch-MIGraphX supersedes the unmerged ab32a1f/pkgrel-8 host-drift artifact."
+      "On 2026-06-15, bump pkgrel to 9 for the c7badbdf runtime-base rebuild so Torch-MIGraphX supersedes the unmerged ab32a1f/pkgrel-8 host-drift artifact.",
+      "Post-deploy on 2026-06-15, Torch-MIGraphX import and the PT2E quantizer-import scenario fail below this package because installed migraphx-gfx1151 7.13.0-2 links libmigraphx_onnx.so against libprotobuf.so.34.1.0 while the host has protobuf 35. Repair or rebuild the TheRock/MIGraphX protobuf ABI surface before rerunning Torch-MIGraphX validation."
     ]
   },
   "name": "python-torch-migraphx-gfx1151",
@@ -98,7 +99,8 @@
       "Re-run host-device FX lowering after every MIGraphX, PyTorch, TorchAO, or Torch-MIGraphX rebuild.",
       "Re-run the PT2E quantizer import and tiny torch.compile backend smokes after every PyTorch, TorchAO, or Torch-MIGraphX rebuild because those lanes depend on moved TorchAO APIs and PyTorch AOTAutograd import ordering.",
       "On 2026-05-26, bump pkgrel to 7 for delivery of the Torch-MIGraphX rebuild against python-pytorch-opt-rocm-gfx1151 2.12.0-2 and python-torchao-rocm-gfx1151 0.17.0-4.",
-      "On 2026-06-15, bump pkgrel to 9 for the c7badbdf runtime-base rebuild so Torch-MIGraphX supersedes the unmerged ab32a1f/pkgrel-8 host-drift artifact."
+      "On 2026-06-15, bump pkgrel to 9 for the c7badbdf runtime-base rebuild so Torch-MIGraphX supersedes the unmerged ab32a1f/pkgrel-8 host-drift artifact.",
+      "Post-deploy on 2026-06-15, Torch-MIGraphX import and the PT2E quantizer-import scenario fail below this package because installed migraphx-gfx1151 7.13.0-2 links libmigraphx_onnx.so against libprotobuf.so.34.1.0 while the host has protobuf 35. Repair or rebuild the TheRock/MIGraphX protobuf ABI surface before rerunning Torch-MIGraphX validation."
     ],
     "upstream_version": "1.2",
     "url": "https://github.com/ROCm/torch_migraphx"

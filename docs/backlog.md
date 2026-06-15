@@ -10,27 +10,33 @@
   advisory CachyOS znver4 package remains on the 3.14.5 source lane. Move the
   package source only when the Arch baseline moves or a coordinated
   system-interpreter rebuild lane opens.
-- Deploy/install ROCm PyTorch c7badbdf runtime-base bundle: release/2.12 now
-  reports
+- Resolve ROCm PyTorch c7badbdf post-deploy Torch-MIGraphX blocker:
+  release/2.12 now reports
   `c7badbdf3d33d945a0ed4536aac5303bc933e6ee`, and Arch
   `python-pytorch-opt-rocm` is now `2.12.0-4`. This supersedes the f8efdb3
   source follow-up as the active runtime-base package lane while preserving the
   same gate shape. Source metadata is prepared for c7badbdf with
   `python-pytorch-opt-rocm-gfx1151 2.12.0-4` and affected native-consumer
   pkgrels beyond the unmerged ab32a1f host drift. Package build plan
-  `20260615T064435-54276c27` produced the runtime-base bundle artifacts;
-  deploy/install, local-repo verification, published-repo verification,
-  installed-smoke, and live-scenario validation remain open. This lane still
-  owns reconciliation of the reference host's intermediate ab32a1f/pkgrel-3
-  install.
+  `20260615T064435-54276c27` produced the runtime-base bundle artifacts, and
+  deploy/install plus local/published repo verification completed on
+  2026-06-15. Installed smokes are partial: `torch`, AITER, FlashAttention,
+  TorchAO, TorchVision, and vLLM imports pass, and the FlashAttention CK
+  backend-import scenario passes. Torch-MIGraphX import and the PT2E
+  quantizer-import scenario fail because installed `migraphx-gfx1151 7.13.0-2`
+  links `libmigraphx_onnx.so` against `libprotobuf.so.34.1.0` while the host has
+  protobuf 35. Repair or rebuild the TheRock/MIGraphX protobuf ABI surface, then
+  rerun Torch-MIGraphX import/PT2E, installed smokes, and selected live
+  scenarios. This lane still owns reconciliation of the reference host's
+  intermediate ab32a1f/pkgrel-3 install.
 - AITER 0.1.15.post1 dependency-closure review: upstream now reports
   `0.1.15.post1` after the previous 0.1.15-rc0 blocker. Re-review the release
   metadata against the existing FlyDSL and Triton dependency-closure concerns
   before package source adoption; required gates remain source verification,
   package build, deploy/install, installed JIT/import smoke, and affected vLLM
   live validation.
-- llama.cpp b9642 follow-up after b9442 live validation: upstream now reports
-  `b9642` and AUR HIP now reports `b9641-1` after the adopted b9442 lane. This
+- llama.cpp b9644 follow-up after b9442 live validation: upstream now reports
+  `b9644` and AUR HIP now reports `b9641-1` after the adopted b9442 lane. This
   supersedes the b9637 follow-up as the active llama.cpp source lane; package
   source update, package build, deploy/install, installed-smoke, Lemonade
   backend metadata review, and selected-logit live validation remain open.
@@ -51,7 +57,7 @@
 - AutoRound 0.13.1 follow-up: PyPI now reports `0.13.1` after the adopted
   `0.13.0` package lane. Package source update, build, deploy/install, import
   smoke, and any affected quantization scenario review remain open.
-- llmcompressor 0.11.0 compatibility review: PyPI now reports `0.11.0` after
+- llmcompressor 0.12.0 compatibility review: PyPI now reports `0.12.0` after
   the rejected `0.10.0.2` candidate. Re-check upstream dependency metadata
   against the local runtime stack before deciding whether this remains blocked
   or becomes package work.
