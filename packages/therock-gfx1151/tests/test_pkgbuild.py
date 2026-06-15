@@ -113,6 +113,23 @@ def test_rocm_gdb_manifest_tracks_non_rocm_runtime_dependencies():
     ]
 
 
+def test_developer_tools_meta_depends_on_debug_and_profile_tools():
+    text = PKGBUILD.read_text()
+    assert "package_rocm-developer-tools-gfx1151()" in text
+    assert "depends=('rocm-llvm-gfx1151' 'rocm-cmake-gfx1151' 'rocm-gdb-gfx1151' 'rocprofiler-compute-gfx1151' 'rocprofiler-systems-gfx1151' 'rocprofiler-sdk-gfx1151' 'roctracer-gfx1151')" in text
+
+    manifest = json.loads(MANIFEST.read_text())
+    assert manifest["packages"]["rocm-developer-tools-gfx1151"]["depends"] == [
+        "rocm-llvm-gfx1151",
+        "rocm-cmake-gfx1151",
+        "rocm-gdb-gfx1151",
+        "rocprofiler-compute-gfx1151",
+        "rocprofiler-systems-gfx1151",
+        "rocprofiler-sdk-gfx1151",
+        "roctracer-gfx1151",
+    ]
+
+
 def test_built_migraphx_package_preloads_sqlite_before_import_path():
     if not MIGRAPHX_PKGDIR.exists():
         pytest.skip("built package tree is not present in this checkout")

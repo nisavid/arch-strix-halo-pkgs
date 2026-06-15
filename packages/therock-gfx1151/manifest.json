@@ -556,6 +556,8 @@
       "depends": [
         "rocm-llvm-gfx1151",
         "rocm-cmake-gfx1151",
+        "rocm-gdb-gfx1151",
+        "rocprofiler-compute-gfx1151",
         "rocprofiler-systems-gfx1151",
         "rocprofiler-sdk-gfx1151",
         "roctracer-gfx1151"
