@@ -45,20 +45,18 @@ runtime-base bundle artifacts. Deployed/installed: complete on 2026-06-15; the
 local package repo, configured `strix-halo-gfx1151` repo view, and `pacman -Q`
 all report the seven expected versions. Installed-smoked: partial. `torch`,
 AITER, FlashAttention, TorchAO, TorchVision, and vLLM imports passed, and the
-FlashAttention CK backend-import scenario passed. Torch-MIGraphX import and
-the PT2E quantizer-import scenario fail because installed `migraphx-gfx1151
-7.13.0-2` links `libmigraphx_onnx.so` against `libprotobuf.so.34.1.0` while the
-host has protobuf 35. A staged AMDMIGraphX repair now builds and renders a
-TheRock/MIGraphX payload whose `libmigraphx_onnx.so` links against
-`libprotobuf.so.35.0.0` and `libutf8_validity.so.35.0.0`; the render also makes
-the staged `magma-gfx1151`, `rocm-gdb-gfx1151`, and
-`rocprofiler-compute-gfx1151` payloads explicit in `therock-gfx1151`. The
-rendered TheRock split package build completed for `therock-gfx1151 7.13.0-2`,
-and the built `migraphx-gfx1151` archive preserves the protobuf-35 linkage.
-Repo publication, install, and Torch-MIGraphX import/PT2E rerun remain open.
-Live-scenario validated: not complete; the agent sandbox cannot access
-`/dev/kfd`, so GPU live scenarios remain operator-owned after the
-MIGraphX/protobuf ABI repair is installed.
+FlashAttention CK backend-import scenario passed. The AMDMIGraphX protobuf-35
+repair is built, published, installed, and post-install smoked:
+`migraphx-gfx1151 7.13.0-2` from the local `strix-halo-gfx1151` repo now links
+`libmigraphx_onnx.so` against `libprotobuf.so.35.0.0` and
+`libutf8_validity.so.35.0.0`, and
+`torch-migraphx.pt2e.quantizer-import` passed at
+`docs/worklog/inference-runs/20260615T-pytorch-c7badbdf-migraphx-protobuf35-postinstall-agent`.
+The TheRock render also makes the staged `magma-gfx1151`,
+`rocm-gdb-gfx1151`, and `rocprofiler-compute-gfx1151` payloads explicit in
+`therock-gfx1151`. Live-scenario validated: not complete; the agent sandbox
+cannot access `/dev/kfd`, so GPU live scenarios remain operator-owned after the
+MIGraphX/protobuf ABI repair.
 
 The AOCL-Utils AUR epoch baseline review is complete. Current AUR
 `aocl-utils 1:5.3-1` carries epoch 1 because upstream exposes the AOCL-Utils

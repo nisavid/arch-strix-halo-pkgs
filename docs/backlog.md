@@ -10,7 +10,7 @@
   advisory CachyOS znver4 package remains on the 3.14.5 source lane. Move the
   package source only when the Arch baseline moves or a coordinated
   system-interpreter rebuild lane opens.
-- Resolve ROCm PyTorch c7badbdf post-deploy Torch-MIGraphX blocker:
+- Run ROCm PyTorch c7badbdf post-repair live validation:
   release/2.12 now reports
   `c7badbdf3d33d945a0ed4536aac5303bc933e6ee`, and Arch
   `python-pytorch-opt-rocm` is now `2.12.0-4`. This supersedes the f8efdb3
@@ -22,19 +22,15 @@
   deploy/install plus local/published repo verification completed on
   2026-06-15. Installed smokes are partial: `torch`, AITER, FlashAttention,
   TorchAO, TorchVision, and vLLM imports pass, and the FlashAttention CK
-  backend-import scenario passes. Torch-MIGraphX import and the PT2E
-  quantizer-import scenario fail because installed `migraphx-gfx1151 7.13.0-2`
-  links `libmigraphx_onnx.so` against `libprotobuf.so.34.1.0` while the host has
-  protobuf 35. A staged AMDMIGraphX repair now builds and renders a
-  TheRock/MIGraphX payload whose `libmigraphx_onnx.so` links against
-  `libprotobuf.so.35.0.0` and `libutf8_validity.so.35.0.0`; the render also
-  makes the staged `magma-gfx1151`, `rocm-gdb-gfx1151`, and
-  `rocprofiler-compute-gfx1151` payloads explicit in `therock-gfx1151`. The
-  rendered TheRock split package build completed for `therock-gfx1151 7.13.0-2`,
-  and the built `migraphx-gfx1151` archive preserves the protobuf-35 linkage.
-  Repo publication, install, Torch-MIGraphX import/PT2E rerun, installed
-  smokes, and selected live scenarios remain open. This lane still owns
-  reconciliation of the reference host's intermediate ab32a1f/pkgrel-3 install.
+  backend-import scenario passes. The AMDMIGraphX protobuf-35 repair is built,
+  published, installed, and post-install smoked: `migraphx-gfx1151 7.13.0-2`
+  from the local `strix-halo-gfx1151` repo now links `libmigraphx_onnx.so`
+  against `libprotobuf.so.35.0.0` and `libutf8_validity.so.35.0.0`, and
+  `torch-migraphx.pt2e.quantizer-import` passed at
+  `docs/worklog/inference-runs/20260615T-pytorch-c7badbdf-migraphx-protobuf35-postinstall-agent`.
+  Selected live GPU scenarios remain open and operator-owned. This lane still
+  owns reconciliation of the reference host's intermediate ab32a1f/pkgrel-3
+  install.
 - AITER 0.1.15.post1 dependency-closure review: upstream now reports
   `0.1.15.post1` after the previous 0.1.15-rc0 blocker. Re-review the release
   metadata against the existing FlyDSL and Triton dependency-closure concerns
