@@ -16,16 +16,29 @@
   before package source adoption; required gates remain source verification,
   package build, deploy/install, installed JIT/import smoke, and affected vLLM
   live validation.
-- llama.cpp b9660 follow-up after b9442 live validation: upstream now reports
-  `b9660` and AUR HIP now reports `b9641-1` after the adopted b9442 lane. This
-  supersedes the b9637, b9642, and b9644 follow-ups as the active llama.cpp source lane;
-  package source update, package build, deploy/install, installed-smoke,
+- DuckDB 1.5.4 follow-up: PyPI now reports `1.5.4` after the adopted
+  `1.5.3` package lane, while Arch `python-duckdb` remains at `1.5.3-1`.
+  Review release metadata against the current native-wheel package shape before
+  package source adoption; package source update, build, deploy/install,
+  installed import smoke, and the tiny in-memory query smoke remain open.
+- Lemonade 10.8.0 baseline review: upstream Lemonade now reports `10.8.0`,
+  and AUR `lemonade-server` plus `lemonade-desktop` now report `10.8.0-1`
+  after the adopted 10.7.0 package lane. The packaged fork-main source remains
+  at the adopted `e18b9c1e352df8ab5aff2ff353402f1ec77c47f2` cursor. Review
+  the upstream release, fork sync state, local patch carry, and backend
+  metadata before package source adoption; build, deploy/install, CLI/server
+  smokes, and selected-logit live validation remain open.
+- llama.cpp b9692 follow-up after b9442 live validation: upstream now reports
+  `b9692` and AUR HIP now reports `b9692-1` after the adopted b9442 lane. This
+  supersedes the b9637, b9642, b9644, and b9660 follow-ups as the active
+  llama.cpp source lane. Package source update, package build, deploy/install,
+  installed-smoke,
   Lemonade backend metadata review, and selected-logit live validation remain
   open.
-- ROCm PyTorch release/2.12 7f71453 follow-up: release/2.12 now reports
-  `7f7145337ddec35249faaa02ab3a9aea87b25029` after the adopted c7badbdf
-  runtime-base lane, while Arch `python-pytorch-opt-rocm` remains at
-  `2.12.0-4`. Review the upstream range and affected runtime-base rebuild
+- ROCm PyTorch release/2.12 caf158f follow-up: release/2.12 now reports
+  `caf158f174aeaf3860cbf66dfa8a37be1d1ca824` after the adopted c7badbdf
+  runtime-base lane, while Arch `python-pytorch-opt-rocm` now reports
+  `2.12.0-5`. Review the upstream range and affected runtime-base rebuild
   gates before package source adoption.
 - vLLM 0.23.0 follow-up: upstream now reports `0.23.0` after the local
   `0.21.0` package lane. Refresh only after the ROCm patch carry,
@@ -63,8 +76,8 @@
 - CTranslate2 4.8.0 follow-up: upstream now reports `4.8.0`; the AUR baseline
   and ROCm fork scout cursor remain unchanged. Review the upstream delta
   against the local ROCm package shape before adoption.
-- stable-diffusion.cpp 5a34bc7 follow-up: upstream master now reports
-  `5a34bc7f6e0621dd2f899daa64476eac667d7ed3`, and the AUR Vulkan baseline
+- stable-diffusion.cpp 7f0e728 follow-up: upstream master now reports
+  `7f0e728b7d42f2490dfa5dd9539082d904f2f6b2`, and the AUR Vulkan baseline
   reports `r660.d2797b8-1`. Review the source and submodule delta before
   package source adoption, rebuild, deploy/install, and installed wrapper
   smoke.
@@ -72,6 +85,11 @@
   `ef3f901b7e76d96091c5a6b02966fcb3eafcb057` while the release tag baseline
   remains `v1.1`. Review the source delta against the PyTorch runtime-base
   lane before package adoption.
+- TorchVision 0.27.1 follow-up: upstream now reports `0.27.1` after the
+  adopted `0.27.0` package lane, while AUR `python-torchvision-rocm` remains at
+  `0.27.0-1`. Review the release against the active PyTorch runtime-base lane
+  before package source adoption; rebuild, deploy/install, installed import
+  smoke, and NMS registration smoke remain open.
 - GPTQ live-validation lane: the retained
   `vllm.qwen3_5.35b-a3b-gptq-int4.text.basic` scenario pins the official
   `Qwen/Qwen3.5-35B-A3B-GPTQ-Int4` model revision and model-card license

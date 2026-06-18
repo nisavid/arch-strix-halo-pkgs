@@ -1,6 +1,6 @@
 # Current State
 
-Status as of 2026-06-15.
+Status as of 2026-06-17.
 
 The Lemonade 10.7.0 source adoption is complete. Source updated:
 `lemonade-server`, `lemonade-app`, and `lemonade` render as `10.7.0-1` from
@@ -108,10 +108,22 @@ to b9644 and llmcompressor to 0.12.0. The Python fast-track policy change then
 invalidated the checker cache and forced a fresh network sweep. That sweep
 retargeted llama.cpp to b9660, stable-diffusion.cpp to
 `5a34bc7f6e0621dd2f899daa64476eac667d7ed3`, Transformers to 5.12.1, and ROCm
-PyTorch release/2.12 to `7f7145337ddec35249faaa02ab3a9aea87b25029`; each is
-tracked in `docs/maintainers/update-candidates.toml` and visible in
-`docs/backlog.md`. No package source adoption, build, deploy/install, installed
-smoke, or live validation is claimed for those retargeted follow-ups.
+PyTorch release/2.12 to `7f7145337ddec35249faaa02ab3a9aea87b25029`.
+
+The 2026-06-17 freshness sweep ran
+`tools/check_package_updates.py --json --fail-on actionable` from a current
+`origin/main` worktree at commit `c8b3181`. The checker did not use a cache and
+exited `10` before disposition because it found six action-required families:
+DuckDB 1.5.4, Lemonade 10.8.0 upstream and AUR baseline drift, llama.cpp b9692
+with AUR HIP b9692-1, ROCm PyTorch release/2.12
+`caf158f174aeaf3860cbf66dfa8a37be1d1ca824` with Arch
+`python-pytorch-opt-rocm 2.12.0-5`, stable-diffusion.cpp
+`7f0e728b7d42f2490dfa5dd9539082d904f2f6b2`, and TorchVision 0.27.1. Those
+findings are now tracked in `docs/maintainers/update-candidates.toml` and
+visible in `docs/backlog.md`, superseding the older llama.cpp b9660,
+stable-diffusion.cpp 5a34bc7, and ROCm PyTorch 7f71453 follow-up cursors. No
+package source adoption, build, deploy/install, installed smoke, or live
+validation is claimed for these retargeted follow-ups.
 
 The 2026-06-14 reconciliation itself did not claim package implementation,
 package build, deploy/install, host mutation, installed smoke, or live
