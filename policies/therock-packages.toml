@@ -1,7 +1,7 @@
 [repo]
 pkgbase = "therock-gfx1151"
 pkgver = "7.13.0"
-pkgrel = 2
+pkgrel = 3
 suffix = "-gfx1151"
 url = "https://github.com/ROCm/TheRock"
 license = ["custom:AMD"]
@@ -386,7 +386,7 @@ provides = ["rocshmem"]
 [packages."migraphx-gfx1151"]
 desc = "MIGraphX from TheRock for gfx1151"
 provides = ["migraphx"]
-depends = ["gcc-libs", "glibc", "hip-runtime-amd-gfx1151", "miopen-hip-gfx1151", "msgpack-cxx", "libprotobuf.so=35.0.0-64", "python-gfx1151", "rocblas-gfx1151", "rocm-core-gfx1151", "sqlite"]
+depends = ["gcc-libs", "glibc", "hip-runtime-amd-gfx1151", "miopen-hip-gfx1151", "msgpack-cxx", "libprotobuf.so=35.1.0-64", "python-gfx1151", "rocblas-gfx1151", "rocm-core-gfx1151", "sqlite"]
 
 [packages."magma-gfx1151"]
 desc = "Matrix Algebra on GPU and Multicore Architectures from TheRock for gfx1151"

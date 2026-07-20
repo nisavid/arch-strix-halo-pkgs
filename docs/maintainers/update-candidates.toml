@@ -2743,3 +2743,404 @@ next_gate_kind = "backlog"
 next_gate_path = "docs/backlog.md"
 next_gate_label = "vLLM 0.23.0 follow-up"
 last_reviewed = "2026-06-14"
+
+[candidates."aiter-0.1.18"]
+family = "aiter"
+packages = ["python-amd-aiter-gfx1151"]
+source_kind = "github_release"
+check_id = "release"
+previous_recorded = "0.1.14"
+latest = "0.1.18"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-07-20 freshness sweep. Review the stable release dependency closure against the local FlyDSL, Triton, PyTorch, and vLLM lanes before package adoption."
+salient_changes = ["AITER 0.1.18 supersedes the 0.1.15.post1 follow-up", "Source review, package build, deploy/install, JIT import smoke, and affected vLLM validation remain open"]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "AITER 0.1.18 dependency-closure review"
+last_reviewed = "2026-07-20"
+
+[candidates."aotriton-0.13b"]
+family = "aotriton"
+packages = ["python-aotriton-gfx1151"]
+source_kind = "github_release"
+check_id = "release"
+covered_checks = [{ source_kind = "arch_package", check_id = "arch" }]
+baseline_latest = "0.13b-2"
+previous_recorded = "0.12b / 0.11.2b-1"
+latest = "0.13b"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-07-20 freshness sweep. Coordinate the source update with PyTorch attention headers and affected native consumers."
+salient_changes = ["AOTriton 0.13b and Arch 0.13b-2 supersede the packaged 0.12b lane"]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "AOTriton 0.13b runtime-base review"
+last_reviewed = "2026-07-20"
+
+[candidates."asyncpg-0.31.0-3-arch"]
+family = "asyncpg"
+packages = ["python-asyncpg-gfx1151"]
+source_kind = "arch_package"
+check_id = "arch"
+previous_recorded = "0.31.0-2"
+latest = "0.31.0-3"
+discovery_status = "baseline_drift"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-07-20 freshness sweep. PyPI remains 0.31.0; review the Arch pkgrel-only delta before changing local metadata."
+salient_changes = ["Arch python-asyncpg advanced to 0.31.0-3 while the upstream version stayed current"]
+patch_carry_overlap = false
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "asyncpg Arch pkgrel baseline review"
+last_reviewed = "2026-07-20"
+
+[candidates."auto-round-0.14.2-pypi"]
+family = "auto_round"
+packages = ["python-auto-round-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+previous_recorded = "0.13.0"
+latest = "0.14.2"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-07-20 freshness sweep. Keep this update coupled to the local quantization and inference consumer closure."
+salient_changes = ["AutoRound 0.14.2 supersedes the 0.13.1 follow-up"]
+patch_carry_overlap = false
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "AutoRound 0.14.2 follow-up"
+last_reviewed = "2026-07-20"
+
+[candidates."ctranslate2-4.8.1"]
+family = "ctranslate2"
+packages = ["ctranslate2-gfx1151"]
+source_kind = "github_release"
+check_id = "release"
+previous_recorded = "4.7.2"
+latest = "4.8.1"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-07-20 freshness sweep. Review upstream against the local HIP package and Open WebUI/faster-whisper consumer."
+salient_changes = ["CTranslate2 4.8.1 supersedes the 4.8.0 follow-up"]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "CTranslate2 4.8.1 follow-up"
+last_reviewed = "2026-07-20"
+
+[candidates."duckdb-1.5.4-pypi"]
+family = "duckdb"
+packages = ["python-duckdb-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+covered_checks = [{ source_kind = "arch_package", check_id = "arch" }]
+baseline_latest = "1.5.4-1"
+previous_recorded = "1.5.3 / 1.5.3-1"
+latest = "1.5.4"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-07-20 freshness sweep. Review the native extension update and Arch baseline before adoption."
+salient_changes = ["DuckDB 1.5.4 and Arch python-duckdb 1.5.4-1 supersede the adopted 1.5.3 lane"]
+patch_carry_overlap = false
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "DuckDB 1.5.4 follow-up"
+last_reviewed = "2026-07-20"
+
+[candidates."lemonade-11.0.0-baseline-blocked"]
+family = "lemonade"
+packages = ["lemonade-server", "lemonade-app", "lemonade"]
+source_kind = "github_release"
+check_id = "upstream-release"
+covered_checks = [{ source_kind = "aur", check_id = "aur-server" }]
+baseline_latest = "11.0.0"
+previous_recorded = "10.7.0 / 10.7.0-3"
+latest = "11.0.0"
+discovery_status = "query_failed"
+disposition = "blocked"
+disposition_reason = "Blocked from the 2026-07-20 freshness sweep. Upstream reached 11.0.0 while the configured AUR server baseline disappeared; the redundant desktop check is removed, and a replacement server baseline plus fork review are required before adoption."
+salient_changes = ["Upstream Lemonade 11.0.0 is available while the pinned fork remains on 10.7.0", "The retained AUR server baseline query fails because the package name is absent"]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "Lemonade 11.0 baseline-policy review"
+last_reviewed = "2026-07-20"
+
+[candidates."llama-cpp-b10069"]
+family = "llama_cpp"
+packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"]
+source_kind = "github_release"
+check_id = "release"
+covered_checks = [{ source_kind = "aur", check_id = "aur-hip" }]
+baseline_latest = "b10068-1"
+previous_recorded = "b9442 / b9437-1"
+latest = "b10069"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-07-20 freshness sweep. This supersedes b9660 and remains a coordinated HIP, Vulkan, and Lemonade backend lane."
+salient_changes = ["llama.cpp b10069 and AUR HIP b10068-1 are available after b9442"]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "llama.cpp b10069 follow-up"
+last_reviewed = "2026-07-20"
+
+[candidates."mistral-common-1.11.6-pypi"]
+family = "mistral_common"
+packages = ["python-mistral-common-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+previous_recorded = "1.11.2"
+latest = "1.11.6"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-07-20 freshness sweep. Review metadata against the Transformers and vLLM model-surface closure."
+salient_changes = ["mistral-common 1.11.6 supersedes the 1.11.3 follow-up"]
+patch_carry_overlap = false
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "mistral-common 1.11.6 follow-up"
+last_reviewed = "2026-07-20"
+
+[candidates."numpy-2.5.1-pypi"]
+family = "numpy"
+packages = ["python-numpy-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+covered_checks = [{ source_kind = "arch_package", check_id = "arch" }]
+baseline_latest = "2.5.1-1"
+previous_recorded = "2.4.6 / 2.4.6-1"
+latest = "2.5.1"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-07-20 freshness sweep. Treat the NumPy C-ABI update as a coordinated native-consumer rebuild lane."
+salient_changes = ["NumPy 2.5.1 and Arch python-numpy 2.5.1-1 supersede the adopted 2.4.6 lane"]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "NumPy 2.5.1 native-consumer review"
+last_reviewed = "2026-07-20"
+
+[candidates."pillow-12.3.0-pypi"]
+family = "pillow"
+packages = ["python-pillow-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+covered_checks = [{ source_kind = "arch_package", check_id = "arch" }]
+baseline_latest = "12.3.0-1"
+previous_recorded = "12.2.0 / 12.2.0-1"
+latest = "12.3.0"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-07-20 freshness sweep. Review source and image-codec integration before package adoption."
+salient_changes = ["Pillow 12.3.0 and Arch python-pillow 12.3.0-1 are available after 12.2.0"]
+patch_carry_overlap = false
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "Pillow 12.3.0 follow-up"
+last_reviewed = "2026-07-20"
+
+[candidates."python-3.14.6-1-arch"]
+family = "python"
+packages = ["python-gfx1151"]
+source_kind = "arch_package"
+check_id = "arch"
+previous_recorded = "3.14.5-1"
+latest = "3.14.6-1"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-07-20 freshness sweep. Local CPython 3.14.6 source and build are complete; Arch now aligns, while deploy/install and runtime smokes remain open."
+salient_changes = ["Arch core/python now reports 3.14.6-1, aligning with the built local package"]
+patch_carry_overlap = true
+package_source_update_needed = false
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "CPython 3.14.6 deploy/install and runtime smoke"
+last_reviewed = "2026-07-20"
+
+[candidates."rocm-pytorch-release-2.12-ba36841"]
+family = "rocm_pytorch"
+packages = ["python-pytorch-opt-rocm-gfx1151"]
+source_kind = "git_ref"
+check_id = "release-branch"
+covered_checks = [{ source_kind = "arch_package", check_id = "arch" }]
+baseline_latest = "2.13.0-4"
+previous_recorded = "c7badbdf3d33d945a0ed4536aac5303bc933e6ee / 2.12.0-4"
+latest = "ba368418a507ac1ca8c83c696b288b08a7dc4c01"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-07-20 freshness sweep. This supersedes 7f71453; review release/2.12 movement and the Arch 2.13 baseline separately before changing the validated runtime base."
+salient_changes = ["ROCm PyTorch release/2.12 moved to ba368418 after c7badbdf", "Arch python-pytorch-opt-rocm moved to 2.13.0-4"]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "ROCm PyTorch ba368418 runtime-base review"
+last_reviewed = "2026-07-20"
+
+[candidates."sentencepiece-0.2.2-pypi"]
+family = "sentencepiece"
+packages = ["python-sentencepiece-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+previous_recorded = "0.2.1"
+latest = "0.2.2"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-07-20 freshness sweep. Review the source build and tokenizer consumers before adoption."
+salient_changes = ["sentencepiece 0.2.2 is available after the local 0.2.1 lane"]
+patch_carry_overlap = false
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "sentencepiece 0.2.2 follow-up"
+last_reviewed = "2026-07-20"
+
+[candidates."stable-diffusion-cpp-ea4e566"]
+family = "stable_diffusion_cpp"
+packages = ["stable-diffusion.cpp-vulkan-gfx1151"]
+source_kind = "git_ref"
+check_id = "master"
+covered_checks = [{ source_kind = "aur", check_id = "aur-vulkan" }]
+baseline_source_kind = "aur"
+baseline_latest = "r726.9956436-1"
+previous_recorded = "be65ac7511b30379b003626c15224798929e33d4 / r279.49d6570-1"
+latest = "ea4e566ccffa10f853ecc3f29e74b1820bc91beb"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-07-20 freshness sweep. This supersedes 5a34bc7 and requires recursive source, patch, frontend, and Vulkan wrapper review."
+salient_changes = ["stable-diffusion.cpp advanced to ea4e566 and the AUR Vulkan baseline to r726.9956436-1"]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "stable-diffusion.cpp ea4e566 follow-up"
+last_reviewed = "2026-07-20"
+
+[candidates."therock-7.14"]
+family = "therock"
+packages = ["therock-gfx1151"]
+source_kind = "github_release"
+check_id = "release"
+covered_checks = [{ source_kind = "submodule", check_id = "ai-notes" }]
+previous_recorded = "7.13 / 3f15f9f1318491c9ee03782d8b2ebd41391de118"
+latest = "7.14"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-07-20 freshness sweep. Keep the broad TheRock 7.14 migration separate from the urgent protobuf 35.1 ABI rebuild of validated TheRock 7.13."
+salient_changes = ["TheRock 7.14 is available after validated 7.13", "The protobuf repair remains a pkgrel-only 7.13 rebuild; 7.14 needs a complete staged-family validation lane"]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "TheRock 7.14 staged-family upgrade"
+last_reviewed = "2026-07-20"
+
+[candidates."torchvision-0.28.0"]
+family = "torchvision"
+packages = ["python-torchvision-rocm-gfx1151"]
+source_kind = "github_release"
+check_id = "release"
+covered_checks = [{ source_kind = "aur", check_id = "aur" }]
+baseline_latest = "0.28.0-1"
+previous_recorded = "0.27.0"
+latest = "0.28.0"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-07-20 freshness sweep. Coordinate TorchVision 0.28.0 with its required PyTorch runtime-base version."
+salient_changes = ["TorchVision 0.28.0 and AUR 0.28.0-1 supersede the local 0.27.0 lane"]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "TorchVision 0.28.0 runtime-base review"
+last_reviewed = "2026-07-20"
+
+[candidates."transformers-5.14.1-pypi"]
+family = "transformers"
+packages = ["python-transformers-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+covered_checks = [{ source_kind = "github_tags", check_id = "tag" }]
+previous_recorded = "5.8.1"
+latest = "5.14.1"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-07-20 freshness sweep. This supersedes 5.12.1 and remains coupled to tokenizer, model-surface, and vLLM compatibility."
+salient_changes = ["PyPI and the upstream tag report Transformers 5.14.1 after the local 5.8.1 lane"]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "Transformers 5.14.1 follow-up"
+last_reviewed = "2026-07-20"
+
+[candidates."vllm-0.25.1"]
+family = "vllm"
+packages = ["python-vllm-rocm-gfx1151"]
+source_kind = "github_release"
+check_id = "release"
+previous_recorded = "0.21.0"
+latest = "0.25.1"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-07-20 freshness sweep. This supersedes 0.23.0; refresh only as a coordinated ROCm patch, runtime-base, package, and live-scenario lane."
+salient_changes = ["vLLM 0.25.1 is available after the local 0.21.0 lane"]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "vLLM 0.25.1 follow-up"
+last_reviewed = "2026-07-20"
+
+[candidates."yarl-1.24.5-pypi"]
+family = "yarl"
+packages = ["python-yarl-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+previous_recorded = "1.24.2"
+latest = "1.24.5"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-07-20 freshness sweep. Review the native extension update with aiohttp and service-runtime consumers."
+salient_changes = ["yarl 1.24.5 is available after the adopted 1.24.2 lane"]
+patch_carry_overlap = false
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "backlog"
+next_gate_path = "docs/backlog.md"
+next_gate_label = "yarl 1.24.5 follow-up"
+last_reviewed = "2026-07-20"

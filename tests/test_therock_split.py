@@ -217,6 +217,7 @@ def test_core_runtime_dependency_policy_tracks_arch_baseline_shape():
 def test_math_and_ml_dependency_policy_tracks_arch_baseline_shape():
     policy = therock_split.load_policy(REPO_ROOT / "policies/therock-packages.toml")
     packages = policy["packages"]
+    assert policy["repo"]["pkgrel"] == 3
 
     assert packages["rocblas-gfx1151"]["depends"] == [
         "cblas",
@@ -245,7 +246,7 @@ def test_math_and_ml_dependency_policy_tracks_arch_baseline_shape():
         "hip-runtime-amd-gfx1151",
         "miopen-hip-gfx1151",
         "msgpack-cxx",
-        "libprotobuf.so=35.0.0-64",
+        "libprotobuf.so=35.1.0-64",
         "python-gfx1151",
         "rocblas-gfx1151",
         "rocm-core-gfx1151",

@@ -356,7 +356,7 @@
         "hip-runtime-amd-gfx1151",
         "miopen-hip-gfx1151",
         "msgpack-cxx",
-        "libprotobuf.so=35.0.0-64",
+        "libprotobuf.so=35.1.0-64",
         "python-gfx1151",
         "rocblas-gfx1151",
         "rocm-core-gfx1151",

@@ -1,6 +1,35 @@
 # Current State
 
-Status as of 2026-06-15.
+Status as of 2026-07-20.
+
+The 2026-07-20 cache-aware freshness sweep ran
+`tools/check_package_updates.py --json --fail-on actionable` from current
+`main` at `c8b3181`. It found 19 action-required families and one query-failed
+family after more than 24 hours without a completed sweep. The new release,
+branch, and baseline observations are dispositioned as tracked follow-ups in
+`docs/maintainers/update-candidates.toml` and summarized in
+`docs/backlog.md`. Lemonade is blocked pending baseline-policy review because
+upstream reached 11.0.0 while the configured AUR `lemonade-server` package no
+longer resolves. The redundant vanished `lemonade-desktop` freshness check is
+removed; generated package reference metadata is unchanged. TheRock 7.14 is
+tracked as a separate staged-family upgrade and does not replace the validated
+TheRock 7.13 base for the urgent protobuf 35.1 ABI rebuild.
+
+The protobuf 35.1 MIGraphX ABI repair is source-updated and package-built.
+`therock-gfx1151` remains on 7.13.0 and advances to pkgrel 3. The staging
+workflow pins AMDMIGraphX commit
+`b69836e6c97de179a80d764d24574edba7ba1b1b`, builds against authenticated
+protobuf 35.1 and matching Abseil inputs in an isolated prefix, and uses
+pybind11's canonical CMake directory rather than the relocationally unsafe
+`/lib/cmake/pybind11` symlink. Both staged and packaged
+`libmigraphx_onnx.so` and `libmigraphx_tf.so` require
+`libprotobuf.so.35.1.0` and `libutf8_validity.so.35.1.0`, with no protobuf
+35.0 or 34 dependency. `migraphx-gfx1151 7.13.0-3` declares
+`libprotobuf.so=35.1.0-64`; amerge build plan `027a6134` completed, and the
+focused tests, package-local tests, full 387-test repo suite, Zsh syntax, staged
+import, archive metadata, packaged ELF, and package-graph gates pass.
+Deployed/installed: not complete. Installed-smoked and live-scenario validated:
+not complete; those gates wait for the privileged deploy/install handoff.
 
 The Lemonade 10.7.0 source adoption is complete. Source updated:
 `lemonade-server`, `lemonade-app`, and `lemonade` render as `10.7.0-1` from

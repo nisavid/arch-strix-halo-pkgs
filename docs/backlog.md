@@ -4,6 +4,35 @@
 
 ### Active Unresolved Gates
 
+- 2026-07-20 freshness follow-ups remain separate package-review lanes:
+  - AITER 0.1.18 dependency-closure review
+  - AOTriton 0.13b runtime-base review
+  - asyncpg Arch pkgrel baseline review
+  - AutoRound 0.14.2 follow-up
+  - CTranslate2 4.8.1 follow-up
+  - DuckDB 1.5.4 follow-up
+  - Lemonade 11.0 baseline-policy review
+  - llama.cpp b10069 follow-up
+  - mistral-common 1.11.6 follow-up
+  - NumPy 2.5.1 native-consumer review
+  - Pillow 12.3.0 follow-up
+  - CPython 3.14.6 deploy/install and runtime smoke
+  - ROCm PyTorch ba368418 runtime-base review
+  - sentencepiece 0.2.2 follow-up
+  - stable-diffusion.cpp ea4e566 follow-up
+  - TheRock 7.14 staged-family upgrade
+  - TorchVision 0.28.0 runtime-base review
+  - Transformers 5.14.1 follow-up
+  - vLLM 0.25.1 follow-up
+  - yarl 1.24.5 follow-up
+  Arch Python 3.14.6-1 now aligns with the already built local CPython 3.14.6
+  package, whose deploy/install and runtime-smoke gates remain open. Lemonade
+  11.0 baseline review is blocked because the configured AUR
+  `lemonade-server` baseline no longer resolves; the redundant vanished
+  `lemonade-desktop` check is removed from freshness policy. Choose a
+  replacement server baseline and review the fork source lane before adoption.
+  Keep the urgent protobuf 35.1 ABI rebuild on validated TheRock 7.13 as a
+  pkgrel-only repair; do not fold TheRock 7.14 into that repair.
 - CPython 3.14.6 deploy/install and installed-smoke lane: `python-gfx1151` source
   metadata now tracks the reviewed CPython `3.14.6` point release even though
   Arch `core/python` and advisory CachyOS remain on 3.14.5. Package build plan

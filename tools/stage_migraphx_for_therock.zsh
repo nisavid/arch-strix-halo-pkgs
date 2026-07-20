@@ -8,9 +8,10 @@ typeset stage=/tmp/therock-migraphx-stage
 typeset src=/tmp/AMDMIGraphX
 typeset jobs=${$(nproc 2>/dev/null):-1}
 typeset targets=gfx1151
+typeset migraphx_ref=b69836e6c97de179a80d764d24574edba7ba1b1b
 typeset protobuf_dir=/usr/lib/cmake/protobuf
-typeset protobuf_soname=libprotobuf.so.35.0.0
-typeset utf8_validity_soname=libutf8_validity.so.35.0.0
+typeset protobuf_soname=libprotobuf.so.35.1.0
+typeset utf8_validity_soname=libutf8_validity.so.35.1.0
 typeset clean=0
 typeset deploy=0
 typeset skip_build=0
@@ -28,6 +29,8 @@ Options:
   --stage PATH       staged filesystem root (default: /tmp/therock-migraphx-stage)
   --src PATH         AMDMIGraphX checkout path (default: /tmp/AMDMIGraphX)
   --targets VALUE    GPU target list passed as -DGPU_TARGETS (default: gfx1151)
+  --migraphx-ref REF AMDMIGraphX commit to build
+                     (default: b69836e6c97de179a80d764d24574edba7ba1b1b)
   --protobuf-dir PATH
                      protobuf CMake config directory used for AMDMIGraphX
                      ONNX parsing (default: /usr/lib/cmake/protobuf)
@@ -99,14 +102,15 @@ PY
 
 clone_or_update_source() {
   emulate -L zsh
-  if [[ -d $src/.git ]]; then
-    status "updating AMDMIGraphX checkout at $src"
-    run git -C $src fetch --depth 1 origin develop
-    run git -C $src checkout --detach FETCH_HEAD
-  else
-    status "cloning AMDMIGraphX into $src"
-    run git clone --depth 1 --branch develop https://github.com/ROCm/AMDMIGraphX.git $src
+  if [[ ! -d $src/.git ]]; then
+    [[ ! -e $src ]] || fail "AMDMIGraphX source path exists without a Git checkout: $src"
+    status "initializing AMDMIGraphX checkout at $src"
+    run git init $src
+    run git -C $src remote add origin https://github.com/ROCm/AMDMIGraphX.git
   fi
+  status "fetching AMDMIGraphX revision $migraphx_ref"
+  run git -C $src fetch --depth 1 origin $migraphx_ref
+  run git -C $src checkout --detach FETCH_HEAD
 }
 
 patch_migraphx_source_for_staged_root() {
@@ -204,7 +208,10 @@ build_and_install_migraphx() {
   emulate -L zsh
   local disable_versions
   disable_versions=$(python_disable_versions)
+  local pybind11_dir
+  pybind11_dir=$(python -m pybind11 --cmakedir)
   local protobuf_lib_dir=${protobuf_dir%/cmake/protobuf}
+  local protobuf_prefix=${protobuf_lib_dir:h}
   local ck=OFF
   local mlir=OFF
   (( with_composable_kernel )) && ck=ON
@@ -221,8 +228,9 @@ build_and_install_migraphx() {
     -G Ninja
     -DCMAKE_BUILD_TYPE=Release
     -DCMAKE_INSTALL_PREFIX=/opt/rocm
-    "-DCMAKE_PREFIX_PATH=$stage/opt/rocm;/opt/rocm"
+    "-DCMAKE_PREFIX_PATH=$protobuf_prefix;$stage/opt/rocm;/opt/rocm"
     -Dprotobuf_DIR=$protobuf_dir
+    -Dpybind11_DIR=$pybind11_dir
     -DCMAKE_C_COMPILER=/opt/rocm/lib/llvm/bin/amdclang
     -DCMAKE_CXX_COMPILER=/opt/rocm/lib/llvm/bin/amdclang++
     -DGPU_TARGETS=$targets
@@ -237,11 +245,14 @@ build_and_install_migraphx() {
   run cmake $configure_args
 
   status "building and installing AMDMIGraphX into $stage"
-  run env DESTDIR=$stage cmake --build $src/build --target install -j$jobs
+  run env LD_LIBRARY_PATH=$protobuf_lib_dir:${LD_LIBRARY_PATH-} \
+    DESTDIR=$stage \
+    cmake --build $src/build --target install -j$jobs
 }
 
 validate_stage() {
   emulate -L zsh
+  local protobuf_lib_dir=${protobuf_dir%/cmake/protobuf}
   status "checking staged MIGraphX payload"
   run find $stage/opt/rocm \( \
     -name migraphx-driver -o \
@@ -257,28 +268,37 @@ validate_stage() {
   \) -print | wc -l)
   (( found_count > 0 )) || fail "staged root still has no MIGraphX payload"
 
-  local onnx_lib=$stage/opt/rocm/lib/migraphx/lib/libmigraphx_onnx.so
-  [[ -f $onnx_lib ]] || fail "missing staged MIGraphX ONNX library: $onnx_lib"
+  local -a parser_libs=(
+    $stage/opt/rocm/lib/migraphx/lib/libmigraphx_onnx.so
+    $stage/opt/rocm/lib/migraphx/lib/libmigraphx_tf.so
+  )
 
   local -a needed
-  needed=("${(@f)$(readelf -d $onnx_lib | sed -n 's/.*Shared library: \[\([^]]*\)\].*/\1/p')}")
-  if (( ${needed[(I)libprotobuf.so.34*]} || ${needed[(I)libutf8_validity.so.34*]} )); then
-    print -u2 "staged libmigraphx_onnx.so needs: ${(j:, :)needed}"
-    fail "staged MIGraphX ONNX library still links protobuf 34-era libraries"
-  fi
+  local parser_lib
+  for parser_lib in $parser_libs; do
+    [[ -f $parser_lib ]] || fail "missing staged MIGraphX parser library: $parser_lib"
+    needed=("${(@f)$(readelf -d $parser_lib | sed -n 's/.*Shared library: \[\([^]]*\)\].*/\1/p')}")
+    if (( ${needed[(I)libprotobuf.so.35.0*]} ||
+          ${needed[(I)libutf8_validity.so.35.0*]} ||
+          ${needed[(I)libprotobuf.so.34*]} ||
+          ${needed[(I)libutf8_validity.so.34*]} )); then
+      print -u2 "staged ${parser_lib:t} needs: ${(j:, :)needed}"
+      fail "staged MIGraphX parser library still links a stale protobuf ABI"
+    fi
 
-  if (( ! ${needed[(I)$protobuf_soname]} )); then
-    print -u2 "staged libmigraphx_onnx.so needs: ${(j:, :)needed}"
-    fail "staged MIGraphX ONNX library is not linked against $protobuf_soname"
-  fi
+    if (( ! ${needed[(I)$protobuf_soname]} )); then
+      print -u2 "staged ${parser_lib:t} needs: ${(j:, :)needed}"
+      fail "staged MIGraphX parser library is not linked against $protobuf_soname"
+    fi
 
-  if (( ! ${needed[(I)$utf8_validity_soname]} )); then
-    print -u2 "staged libmigraphx_onnx.so needs: ${(j:, :)needed}"
-    fail "staged MIGraphX ONNX library is not linked against $utf8_validity_soname"
-  fi
+    if (( ! ${needed[(I)$utf8_validity_soname]} )); then
+      print -u2 "staged ${parser_lib:t} needs: ${(j:, :)needed}"
+      fail "staged MIGraphX parser library is not linked against $utf8_validity_soname"
+    fi
+  done
 
   status "checking staged Python import"
-  run env LD_LIBRARY_PATH=$stage/opt/rocm/lib:${LD_LIBRARY_PATH-} \
+  run env LD_LIBRARY_PATH=$protobuf_lib_dir:$stage/opt/rocm/lib:${LD_LIBRARY_PATH-} \
     PYTHONPATH=$stage/opt/rocm/lib \
     python - <<'PY'
 import migraphx
@@ -324,6 +344,11 @@ while (( $# )); do
       shift
       (( $# )) || fail "--targets needs a value"
       targets=$1
+      ;;
+    --migraphx-ref)
+      shift
+      (( $# )) || fail "--migraphx-ref needs a value"
+      migraphx_ref=$1
       ;;
     --protobuf-dir)
       shift
@@ -373,7 +398,9 @@ if (( skip_build )); then
   [[ -d $src/build ]] || fail "--skip-build needs an existing build dir: $src/build"
   copy_current_rocm_into_stage
   status "installing existing AMDMIGraphX build into $stage"
-  run env DESTDIR=$stage cmake --build $src/build --target install -j$jobs
+  run env LD_LIBRARY_PATH=${protobuf_dir%/cmake/protobuf}:${LD_LIBRARY_PATH-} \
+    DESTDIR=$stage \
+    cmake --build $src/build --target install -j$jobs
 else
   copy_current_rocm_into_stage
   clone_or_update_source
