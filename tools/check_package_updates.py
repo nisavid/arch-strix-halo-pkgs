@@ -42,10 +42,11 @@ STATUS_PRECEDENCE = [
     "manual_review_required",
     "current",
 ]
-TOOL_VERSION = 5
+TOOL_VERSION = 6
 CACHE_PATH = Path(".agents/session/dependency-freshness-cache.json")
 CANDIDATE_LEDGER_PATH = Path("docs/maintainers/update-candidates.toml")
 RECIPE_POLICY_PATH = Path("policies/recipe-packages.toml")
+TRACKER_REPOSITORY = "nisavid/arch-strix-halo-pkgs"
 ACTIONABLE_STATUSES = {
     "stable_update_available",
     "candidate_head_ahead",
@@ -96,6 +97,7 @@ class FakeClients:
         arch: dict | None = None,
         python_ftp: list[str] | None = None,
         submodules: dict | None = None,
+        github_issues: dict | None = None,
         fail: dict | None = None,
         allow_missing: bool = False,
     ) -> None:
@@ -107,6 +109,8 @@ class FakeClients:
         self.arch = arch or {}
         self.python_ftp = python_ftp or []
         self.submodules = submodules or {}
+        self.github_issues = github_issues or {}
+        self.github_issue_calls: list[tuple[str, int]] = []
         self.fail = fail or {}
         self.allow_missing = allow_missing
 
@@ -160,6 +164,16 @@ class FakeClients:
             f"{path}:{remote_ref}",
             f"submodule:{path}:{remote_ref}",
             "",
+        )
+
+    def github_issue(self, repository: str, issue_number: int) -> dict:
+        self.github_issue_calls.append((repository, issue_number))
+        key = f"{repository}#{issue_number}"
+        return self._value(
+            self.github_issues,
+            key,
+            f"github_issue:{key}",
+            {},
         )
 
 
@@ -287,6 +301,23 @@ class RealClients:
         first = result.stdout.splitlines()[0] if result.stdout.splitlines() else ""
         return first.split()[0] if first else ""
 
+    def github_issue(self, repository: str, issue_number: int) -> dict:
+        payload = self._json(
+            f"https://api.github.com/repos/{repository}/issues/{issue_number}"
+        )
+        repository_url = str(payload.get("repository_url", ""))
+        repository_identity = repository_url.removeprefix(
+            "https://api.github.com/repos/"
+        )
+        issue = {
+            "number": payload.get("number"),
+            "state": payload.get("state"),
+            "repository": repository_identity,
+        }
+        if "pull_request" in payload:
+            issue["pull_request"] = payload["pull_request"]
+        return issue
+
     def submodule_url(self, path: str) -> str:
         gitmodules = self.repo_root / ".gitmodules"
         if not gitmodules.exists():
@@ -359,12 +390,12 @@ def load_candidate_ledger(repo_root: str | Path) -> dict[str, dict]:
         payload = tomllib.loads(text)
     except tomllib.TOMLDecodeError as exc:
         raise RuntimeError(f"CANDIDATE_LEDGER_INVALID: {path}: {exc}") from exc
-    raw_schema_version = payload.get("schema_version", 0)
-    try:
-        schema_version = int(raw_schema_version)
-    except (TypeError, ValueError):
-        schema_version = 0
-    if schema_version != 1:
+    raw_schema_version = payload.get("schema_version")
+    if (
+        not isinstance(raw_schema_version, int)
+        or isinstance(raw_schema_version, bool)
+        or raw_schema_version != 2
+    ):
         raise RuntimeError(
             f"CANDIDATE_LEDGER_SCHEMA_UNSUPPORTED: {path}: {raw_schema_version!r}"
         )
@@ -378,8 +409,174 @@ def load_candidate_ledger(repo_root: str | Path) -> dict[str, dict]:
         disposition = str(candidate.get("disposition", ""))
         if disposition not in VALID_CANDIDATE_DISPOSITIONS:
             raise RuntimeError(f"CANDIDATE_LEDGER_DISPOSITION_INVALID: {candidate_id}")
+        gate_kind = candidate.get("next_gate_kind")
+        issue_number = candidate.get("next_gate_issue")
+        gate_label = candidate.get("next_gate_label")
+        if not isinstance(gate_label, str) or not gate_label.strip():
+            raise RuntimeError(
+                f"CANDIDATE_LEDGER_GATE_LABEL_INVALID: {candidate_id}"
+            )
+        if "next_gate_path" in candidate:
+            raise RuntimeError(
+                f"CANDIDATE_LEDGER_GATE_PATH_FORBIDDEN: {candidate_id}"
+            )
+        if disposition in {"tracked", "blocked"}:
+            if gate_kind != "github_issue":
+                raise RuntimeError(
+                    f"CANDIDATE_LEDGER_GATE_KIND_INVALID: {candidate_id}"
+                )
+            if (
+                not isinstance(issue_number, int)
+                or isinstance(issue_number, bool)
+                or issue_number <= 0
+            ):
+                raise RuntimeError(
+                    f"CANDIDATE_LEDGER_GATE_ISSUE_INVALID: {candidate_id}"
+                )
+        elif gate_kind != "none" or "next_gate_issue" in candidate:
+            raise RuntimeError(
+                f"CANDIDATE_LEDGER_TERMINAL_GATE_INVALID: {candidate_id}"
+            )
         normalized[candidate_id] = {**candidate, "id": candidate_id}
     return normalized
+
+
+def run_tracker_validation(
+    repo_root: str | Path, *, clients: FakeClients | RealClients | None = None
+) -> dict:
+    ledger_path = candidate_ledger_path(Path(repo_root))
+    try:
+        candidates = load_candidate_ledger(repo_root)
+    except RuntimeError as exc:
+        return {
+            "tracker_validation": {
+                "requested": True,
+                "repository": TRACKER_REPOSITORY,
+                "summary": {"query_failed": 1},
+                "issues": [],
+                "errors": [
+                    {
+                        "status": "query_failed",
+                        "message": f"TRACKER_LEDGER_INVALID: {exc}",
+                    }
+                ],
+            }
+        }
+    if not ledger_path.exists():
+        return {
+            "tracker_validation": {
+                "requested": True,
+                "repository": TRACKER_REPOSITORY,
+                "summary": {"query_failed": 1},
+                "issues": [],
+                "errors": [
+                    {
+                        "status": "query_failed",
+                        "message": f"TRACKER_LEDGER_MISSING: {ledger_path}",
+                    }
+                ],
+            }
+        }
+    active_by_issue: dict[int, list[str]] = defaultdict(list)
+    for candidate in candidates.values():
+        if candidate["disposition"] not in {"tracked", "blocked"}:
+            continue
+        active_by_issue[candidate["next_gate_issue"]].append(candidate["id"])
+
+    clients = clients or RealClients(repo_root=repo_root)
+    results = []
+    summary: Counter = Counter()
+    for issue_number, candidate_ids in sorted(active_by_issue.items()):
+        result = {
+            "issue": issue_number,
+            "candidate_ids": sorted(candidate_ids),
+        }
+        try:
+            issue = clients.github_issue(TRACKER_REPOSITORY, issue_number)
+        except QueryFailed as exc:
+            status = "query_failed"
+            message = f"TRACKER_ISSUE_QUERY_FAILED: #{issue_number}: {exc}"
+        except Exception as exc:  # Defensive boundary for injected clients.
+            status = "query_failed"
+            message = f"TRACKER_ISSUE_QUERY_FAILED: #{issue_number}: {exc}"
+        else:
+            if not isinstance(issue, dict) or not {
+                "number",
+                "state",
+                "repository",
+            }.issubset(issue):
+                status = "query_failed"
+                message = f"TRACKER_ISSUE_QUERY_FAILED: #{issue_number}: malformed response"
+            elif (
+                not isinstance(issue.get("number"), int)
+                or isinstance(issue.get("number"), bool)
+                or not isinstance(issue.get("state"), str)
+                or not isinstance(issue.get("repository"), str)
+                or not issue.get("repository")
+            ):
+                status = "query_failed"
+                message = f"TRACKER_ISSUE_QUERY_FAILED: #{issue_number}: malformed response"
+            elif issue.get("number") != issue_number:
+                status = "metadata_mismatch"
+                message = (
+                    f"TRACKER_ISSUE_NUMBER_MISMATCH: #{issue_number}: "
+                    f"received {issue.get('number')!r}"
+                )
+            elif issue.get("repository") != TRACKER_REPOSITORY:
+                status = "metadata_mismatch"
+                message = (
+                    f"TRACKER_ISSUE_REPOSITORY_MISMATCH: #{issue_number}: "
+                    f"{issue.get('repository')!r}"
+                )
+            elif "pull_request" in issue:
+                status = "metadata_mismatch"
+                message = f"TRACKER_REFERENCE_IS_PULL_REQUEST: #{issue_number}"
+            elif issue.get("state") == "closed":
+                status = "metadata_mismatch"
+                message = f"TRACKER_ISSUE_CLOSED: #{issue_number}"
+            elif issue.get("state") != "open":
+                status = "query_failed"
+                message = (
+                    f"TRACKER_ISSUE_QUERY_FAILED: #{issue_number}: "
+                    f"invalid state {issue.get('state')!r}"
+                )
+            else:
+                status = "open"
+                message = f"TRACKER_ISSUE_OPEN: #{issue_number}"
+        result.update({"status": status, "message": message})
+        results.append(result)
+        summary[status] += 1
+
+    return {
+        "tracker_validation": {
+            "requested": True,
+            "repository": TRACKER_REPOSITORY,
+            "summary": dict(sorted(summary.items())),
+            "issues": results,
+            "errors": [],
+        }
+    }
+
+
+def tracker_validation_has_status(report: dict, status: str) -> bool:
+    return any(
+        result.get("status") == status
+        for key in ("issues", "errors")
+        for result in report["tracker_validation"].get(key, [])
+    )
+
+
+def format_tracker_validation(report: dict) -> str:
+    lines = ["status             issue  candidates  message"]
+    for issue in report["tracker_validation"]["issues"]:
+        candidates = ",".join(issue["candidate_ids"])
+        lines.append(
+            f"{issue['status']:<18} #{issue['issue']:<5} {candidates}  "
+            f"{issue['message']}"
+        )
+    for error in report["tracker_validation"].get("errors", []):
+        lines.append(f"{error['status']:<18} -      {error['message']}")
+    return "\n".join(lines)
 
 
 def metadata_mismatch(message: str) -> dict:
@@ -1325,6 +1522,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--only", action="append", default=[])
     parser.add_argument("--json", action="store_true")
     parser.add_argument("--refresh", action="store_true")
+    parser.add_argument(
+        "--validate-trackers",
+        action="store_true",
+        help="validate active candidate issue references without running freshness providers",
+    )
     parser.add_argument("--max-age-hours", type=float, default=24)
     parser.add_argument("--fail-on", choices=["actionable"])
     return parser.parse_args(argv)
@@ -1339,6 +1541,23 @@ def main(argv: list[str] | None = None, *, clients: FakeClients | None = None) -
         if not policy.exists():
             print(f"POLICY_NOT_FOUND: {policy}", file=sys.stderr)
             return 2
+
+    if args.validate_trackers:
+        report = run_tracker_validation(
+            repo_root,
+            clients=clients or RealClients(repo_root=repo_root),
+        )
+        if args.json:
+            print(json.dumps(report, indent=2, sort_keys=True))
+        else:
+            print(format_tracker_validation(report))
+        if tracker_validation_has_status(report, "query_failed"):
+            return 3
+        if args.fail_on == "actionable" and tracker_validation_has_status(
+            report, "metadata_mismatch"
+        ):
+            return 10
+        return 0
 
     report = run_check(
         repo_root,

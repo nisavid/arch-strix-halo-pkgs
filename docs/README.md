@@ -32,7 +32,8 @@ serves a different reader.
   classifies remaining Blackcat recipe surfaces and tooling-helper candidates
   as adopted, tracked, rejected, or blocked.
 - [Update Workflows](maintainers/update-workflows.md) covers package update
-  paths, including the 24-hour dependency freshness sweep.
+  paths, including the 24-hour dependency freshness sweep and explicit GitHub
+  issue-liveness validation for active candidates.
 - [Dependency Freshness Sweep](maintainers/update-workflows.md#0-dependency-freshness-sweep)
   is the first gate to check before unrelated backlog work when it is due.
 - [ROCm Inference Reference](maintainers/rocm-inference-reference.md) collects
@@ -43,11 +44,15 @@ serves a different reader.
 
 ## If You Are Picking Up Work
 
-- [Backlog](backlog.md) is the active worklist. It favors current follow-up
-  work over historical run logs.
+- [Backlog](backlog.md) is a compact discovery index for active GitHub issues.
+  Follow the linked issue for the authoritative scope, dependencies, status,
+  and completion evidence.
+- [Update Candidate Ledger](maintainers/update-candidates.toml) records durable
+  package-candidate dispositions and routes every active tracked or blocked
+  candidate to its repo-local GitHub issue.
 - [Current State](maintainers/current-state.md) is the first place to check
-  before claiming a package or scenario is installed, validated, blocked, or
-  stale.
+  for evidence before claiming a package or scenario is installed, validated,
+  blocked, or stale.
 - [FlashAttention CK paged-KV boundary](maintainers/flashattention-ck-paged-kv.md)
   records the latest tabled vLLM CK consumer lane and the gates required before
   reopening it.

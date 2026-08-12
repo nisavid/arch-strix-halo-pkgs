@@ -84,9 +84,22 @@ version, branch head, baseline package, or canonical recipe input is not handled
 merely because `policies/package-freshness.toml` records the latest value.
 
 Every actionable freshness result must end in one of these durable dispositions:
-adopted, tracked, rejected, or blocked. Active dispositions live in
-`docs/maintainers/update-candidates.toml`; active follow-up work must also be
-visible in `docs/backlog.md`.
+adopted, tracked, rejected, or blocked. Every disposition lives in
+`docs/maintainers/update-candidates.toml`.
+
+The schema-v2 candidate ledger separates disposition from execution tracking:
+
+- Every `tracked` or `blocked` record uses
+  `next_gate_kind = "github_issue"`, a positive integer `next_gate_issue`, and
+  a non-empty `next_gate_label`. The issue must be open in
+  `nisavid/arch-strix-halo-pkgs`; pull requests and issues from other
+  repositories do not satisfy the contract.
+- Every terminal `adopted` or `rejected` record uses
+  `next_gate_kind = "none"`, omits `next_gate_issue`, and keeps a non-empty
+  `next_gate_label` that states the completed disposition.
+- The referenced GitHub issue owns active scope, dependencies, status, and
+  completion evidence. `docs/backlog.md` is a compact discovery index for those
+  issues, not a second work queue or checklist.
 
 Do not close a refresh by only updating `policies/package-freshness.toml`. Each
 candidate must have a disposition in the update-candidate ledger before the
@@ -99,8 +112,25 @@ a candidate; review runtime and user-facing platform relevance too.
 `adopted` means the package source decision and the derived validation gates
 are complete. If build, downstream rebuild, deploy/install, installed-smoke,
 service-smoke, or live-scenario gates remain open, keep the candidate
-`tracked` or `blocked` and point `next_gate_*` plus `docs/backlog.md` at that
-work.
+`tracked` or `blocked` and point its `next_gate_*` fields at the issue that owns
+that work.
+
+Tracker validation is explicit and separate from dependency freshness. The
+ordinary freshness commands do not query GitHub issue liveness. After changing
+the candidate ledger or tracker routing, and before closing a development arc,
+run:
+
+```sh
+tools/check_package_updates.py --validate-trackers --json --fail-on actionable
+```
+
+This mode queries each unique active issue once and does not run a freshness
+sweep. An open issue with matching issue metadata passes. A closed issue,
+repository mismatch, or pull-request response is action-required; a missing,
+inaccessible, or malformed response fails closed as a query failure. Resolve
+the failure, reopen or replace the issue, or move every affected candidate to
+an accurate terminal disposition before closeout. A query failure exits `3`;
+with `--fail-on actionable`, an action-required result exits `10`.
 
 When one update candidate covers multiple equivalent checks for the same
 source lane, such as a PyPI release and the matching upstream git tag, record
@@ -138,10 +168,11 @@ Classify each affected contract into the strongest gate it needs:
   model behavior, dynamic backend/plugin selection, or documented scenario
   expectations can change
 
-Record unresolved gates in `docs/maintainers/update-candidates.toml` and
-`docs/backlog.md`. Final and PR summaries must distinguish source updated,
-package built, deployed/installed, installed-smoked, and live-scenario
-validated states.
+Record unresolved candidate gates in
+`docs/maintainers/update-candidates.toml` and their referenced GitHub issues;
+keep `docs/backlog.md` limited to discovery links. Final and PR summaries must
+distinguish source updated, package built, deployed/installed,
+installed-smoked, and live-scenario validated states.
 
 The cache is valid only when the policy digest still matches and the cached
 report is younger than `--max-age-hours` (24 by default). The digest includes

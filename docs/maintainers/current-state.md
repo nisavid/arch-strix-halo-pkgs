@@ -10,18 +10,28 @@ A policy-forced sweep completed at `2026-08-12T02:47:52-04:00` after retiring
 the removed `lemonade-server` and `lemonade-desktop` AUR package names as
 automated Lemonade freshness baselines. The uncached sweep covered 45 families:
 23 reported a stable update, five baseline drift, three branch-head movement,
-and fourteen a current source cursor.
+and fourteen a current source cursor. An uncached closeout sweep at
+`2026-08-12T04:18:51-04:00`, after the schema-v2 checker and ledger migration,
+reproduced those results.
 
 The sweep covered all 45 configured families. The reconciliation records every
 candidate requiring disposition in `docs/maintainers/update-candidates.toml`.
 Applying the reconciled ledger to that run yielded 27 tracked families, four
 rejected families, one blocked Lemonade family, five adopted families, and
 eight current families.
-The active gates are visible in `docs/backlog.md` while schema v1 remains
-authoritative. Lemonade stays blocked until W0 freezes the reviewed fork and
-coupled llama.cpp sources. AutoRound 0.14.2, compressed-tensors 0.18.0, and
-llmcompressor 0.13.0 are rejected for this convergence line; a separate active
-candidate owns the required compressed-tensors 0.17.0 W2A lane.
+The schema-v2 ledger records every active tracked or blocked candidate against
+a repo-local GitHub issue; those issues own the active gates, and
+`docs/backlog.md` is their compact discovery index. Terminal adopted and
+rejected records do not retain issue gates. Lemonade stays blocked until W0
+freezes the reviewed fork and coupled llama.cpp sources. AutoRound 0.14.2,
+compressed-tensors 0.18.0, and llmcompressor 0.13.0 are rejected for this
+convergence line; a separate active candidate owns the required
+compressed-tensors 0.17.0 W2A lane.
+
+The explicit closeout tracker validation queried the ten unique issue gates
+referenced by the 29 active candidate records. All ten were open issues in the
+canonical repository; no closed, mismatched, inaccessible, or malformed
+tracker was accepted.
 
 This reconciliation changes maintenance metadata only. It does not claim a
 package source update, package build, deployment or installation, installed
@@ -729,8 +739,8 @@ does not yet own a pinned local model or scenario that proves `gfx1151` value
 over TorchAO, compressed-tensors, AITER, FlashAttention, Quark, GPTQ, AWQ, or
 bitsandbytes coverage. No package source was changed, no package was built, no
 deploy/install occurred, no installed smoke was run, and no live scenario is
-claimed for this review. The exact reopen criteria live in `docs/backlog.md`
-and `docs/maintainers/rocm-inference-reference.md`; no
+claimed for this review. The exact reopen criteria live in
+`docs/maintainers/rocm-inference-reference.md`; no
 `docs/maintainers/update-candidates.toml` record is created because FBGEMM is
 not an active freshness-policy family.
 

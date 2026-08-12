@@ -21,4 +21,6 @@ def test_docs_reference_new_rebuild_and_inference_entrypoints():
     assert "tools/run_inference_scenarios.py" in local_repo
     assert "tools/run_patch_audit_host_checks.sh" not in local_repo
     assert "tools/run_inference_scenarios.py" in current_state
-    assert "Qwen3.5" in backlog
+    assert "https://github.com/nisavid/arch-strix-halo-pkgs/issues/" in backlog
+    assert "non-issue" in backlog.lower()
+    assert "- [ ]" not in backlog

@@ -45,17 +45,19 @@ assembled and where it diverges.
 
 ## What It Packages
 
-The stack currently includes these major layers:
+The stack currently includes these major layers. The candidate column describes
+the 2026-08 issue-primary convergence line, not installed or adopted package
+state:
 
-| Layer | Package examples | Current lane |
+| Layer | Package examples | 2026-08 candidate line |
 | --- | --- | --- |
-| ROCm foundation | `therock-gfx1151`, `rocm-gfx1151`, split ROCm libraries | TheRock `7.13` stable repin tracked for `gfx1151` |
-| Host math and Python | `aocl-utils-gfx1151`, `aocl-libm-gfx1151`, `python-gfx1151` | AOCL `5.2.2`, Python `3.14.5` |
-| ML runtime | `python-pytorch-opt-rocm-gfx1151`, `python-triton-gfx1151`, `python-aotriton-gfx1151` | ROCm PyTorch `2.11`, ROCm Triton main-perf, AOTriton `0.11.2b` |
-| Inference engines | `python-vllm-rocm-gfx1151`, `python-amd-aiter-gfx1151`, `python-flash-attn-rocm-gfx1151` | vLLM `0.21.0`, AITER `v0.1.14-rc0`, ROCm FlashAttention `2.8.4` |
-| Graph and quantization experiments | `python-torchao-rocm-gfx1151`, `python-torch-migraphx-gfx1151` | TorchAO `0.17.0`, Torch-MIGraphX `1.2` |
-| Model runners | `llama.cpp-hip-gfx1151`, `llama.cpp-vulkan-gfx1151` | llama.cpp `b9165` HIP and Vulkan backends |
-| Frontend and service layer | `lemonade`, `lemonade-server`, `lemonade-app` | Lemonade `10.5.0` with packaged backend discovery |
+| ROCm foundation | `therock-gfx1151`, `rocm-gfx1151`, split ROCm libraries | TheRock `7.14` in [W1](https://github.com/nisavid/arch-strix-halo-pkgs/issues/108) |
+| Host math and Python | `aocl-utils-gfx1151`, `aocl-libm-gfx1151`, `python-gfx1151` | CPython `3.14.7` in [W1](https://github.com/nisavid/arch-strix-halo-pkgs/issues/108); AOCL remains governed by current package evidence |
+| ML runtime | `python-pytorch-opt-rocm-gfx1151`, `python-triton-gfx1151`, `python-aotriton-gfx1151` | ROCm PyTorch `2.13`, exact ROCm Triton `3.8`, and AOTriton `0.13b` in [W2A](https://github.com/nisavid/arch-strix-halo-pkgs/issues/109) |
+| Inference engines | `python-vllm-rocm-gfx1151`, `python-amd-aiter-gfx1151`, `python-flash-attn-rocm-gfx1151` | TorchVision `0.28` and vLLM `0.27.1` in [W2A](https://github.com/nisavid/arch-strix-halo-pkgs/issues/111); AITER `0.1.19.post2` stays [experimental](https://github.com/nisavid/arch-strix-halo-pkgs/issues/119) |
+| Graph and quantization experiments | `python-torchao-rocm-gfx1151`, `python-torch-migraphx-gfx1151` | TorchAO `0.18.0` and Torch-MIGraphX `ef3f901` remain [nonblocking extensions](https://github.com/nisavid/arch-strix-halo-pkgs/issues/118) |
+| Model runners | `llama.cpp-hip-gfx1151`, `llama.cpp-vulkan-gfx1151` | llama.cpp `b10369` HIP and Vulkan backends in [W2B](https://github.com/nisavid/arch-strix-halo-pkgs/issues/113) |
+| Frontend and service layer | `lemonade`, `lemonade-server`, `lemonade-app` | Lemonade `11.5.2` waits on [W0 source freeze](https://github.com/nisavid/arch-strix-halo-pkgs/issues/105) before the [W2B family build](https://github.com/nisavid/arch-strix-halo-pkgs/issues/113) |
 
 Hand-maintained recipe packages carry package-local READMEs and `recipe.json`
 files with exact baselines, patch notes, and update hints. The generated
@@ -83,17 +85,19 @@ Strix Halo-specific policy across the stack:
   blocked, and merely advisory work
 
 The patch overview is in [docs/patches.md](docs/patches.md). Current validated
-state, active refresh candidates, and known blockers are in
-[docs/maintainers/current-state.md](docs/maintainers/current-state.md) and
-[docs/backlog.md](docs/backlog.md).
+state and known blockers are in
+[docs/maintainers/current-state.md](docs/maintainers/current-state.md). Active
+candidate records point to their repo-local GitHub issues, with
+[docs/backlog.md](docs/backlog.md) providing a compact discovery index.
 
-The active refresh lane adopts source pins for `llama.cpp` `b8992`, ROCm
-PyTorch release/2.11 at `443606e`, AITER `a0f2539`, and
-`mistral-common 1.11.1`. Package-build gates for that lane are complete; treat
-host deploy/install, installed-smoke, and live-scenario validation as recorded
-in the maintainer docs. The final pkgrel-only artifacts for `lemonade-server`
-and `python-pytorch-opt-rocm-gfx1151` are built but still need host
-publish/install before the reference host reflects those release identifiers.
+The 2026-08 convergence route is issue-primary. Its blocking candidate line is
+CPython `3.14.7`, TheRock `7.14`, ROCm PyTorch `2.13` with exact ROCm Triton
+`3.8` and AOTriton `0.13b`, the selected Transformers `5.15` dependency
+closure, TorchVision `0.28`, vLLM `0.27.1`, llama.cpp `b10369` for both HIP and
+Vulkan, and the reviewed Lemonade fork selected after W0. These are candidates,
+not adoption claims; their exact gates and dispositions live in the linked
+execution issues and candidate ledger. Installed, built, deployed, smoked, and
+live-validated state remains evidence-owned by the maintainer docs.
 
 ## Quick Start
 
@@ -149,9 +153,9 @@ resume, and inference-smoke workflows.
 ### I Want To Understand The Repo
 
 - [Documentation index](docs/README.md) orients you by task and audience.
-- [Current state](docs/maintainers/current-state.md) records what is installed,
-  validated, blocked, or merely planned.
-- [Backlog](docs/backlog.md) records active follow-up work.
+- [Current state](docs/maintainers/current-state.md) records evidence for what
+  is installed, validated, or blocked.
+- [Backlog](docs/backlog.md) indexes the GitHub issues that own active work.
 - [Patch inventory](docs/patches.md) explains the notable source changes.
 - [TheRock generator architecture](docs/architecture/therock-generator.md)
   explains the generated ROCm split packages.
@@ -178,7 +182,7 @@ boundary so the next maintainer does not rediscover it from terminal scrollback.
 | `tools/` | Repo maintenance tools, including `amerge`, package renderers, freshness checks, and inference smokes |
 | `generators/` | TheRock split-package generation code |
 | `inference/scenarios/` | Tracked local inference scenario catalog |
-| `docs/` | User, maintainer, architecture, policy, state, and backlog documentation |
+| `docs/` | User, maintainer, architecture, policy, evidence, and work-discovery documentation |
 | `upstream/ai-notes/` | Blackcat Informatics recipe input submodule |
 
 ## Upstream And Baseline Inputs

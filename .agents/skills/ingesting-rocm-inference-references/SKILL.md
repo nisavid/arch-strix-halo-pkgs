@@ -19,7 +19,8 @@ smallest durable sink:
 | Item | Sink |
 | --- | --- |
 | Source index, diagrams, concepts | `docs/maintainers/rocm-inference-reference.md` |
-| Source, tool, or experiment | `docs/backlog.md` |
+| Actionable source, package, scenario, tool, or experiment | Repository-local GitHub issue |
+| Navigation link or intentionally unscheduled work | `docs/backlog.md` as a curated issue index or explicit non-issue disposition |
 | Existing verified blocker or live state | `docs/maintainers/current-state.md` |
 | vLLM recipe or flag surface | `docs/maintainers/vllm-recipe-coverage.md` |
 | Runnable local coverage | `inference/scenarios/` plus catalog tests |
@@ -35,12 +36,17 @@ For every source, record:
 - status: `validated`, `planned`, `advisory-only`, or
   `requires-host-validation`
 - affected existing failures, or `no affected tracked failure found`
+- the owning repository-local GitHub issue for every actionable item, or an
+  explicit non-issue disposition when no execution work is being scheduled
 
 If the active environment supports explicit parallel delegation and the user
 has requested or allowed it, split broad source sets by source group. Otherwise
 process sources serially. Every pass returns the same source disposition
-fields. The main agent reconciles every item into a sink, defers it with a
-reason, or rejects it as not useful here.
+fields. The main agent preserves reference facts in the appropriate durable
+document and routes every actionable item to a repository-local GitHub issue.
+It may add that issue to the backlog's curated issue index, record an explicit
+non-issue disposition, or reject the item as not useful here. Backlog prose is
+not execution authority.
 
 ## Guardrails
 
@@ -49,7 +55,7 @@ reason, or rejects it as not useful here.
 - Do not copy long upstream prose or images. Use short summaries, exact URLs,
   and Mermaid diagrams when a diagram is useful.
 - Do not create a package entry until source audit and package policy justify
-  it. Backlog candidates are not validated packages.
+  it. An issue candidate is not a validated package.
 - Do not mark vLLM, quantization, or FlashAttention failures unblocked without
   a local scenario result and current-state update.
 - Delete `.agents/session/` extraction notes after durable docs are updated.
