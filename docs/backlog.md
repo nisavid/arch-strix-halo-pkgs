@@ -4,74 +4,61 @@
 
 ### Active Unresolved Gates
 
-- CPython 3.14.6 deploy/install and installed-smoke lane: `python-gfx1151` source
-  metadata now tracks the reviewed CPython `3.14.6` point release even though
-  Arch `core/python` and advisory CachyOS remain on 3.14.5. Package build plan
-  `eabfcfe6` produced `python-gfx1151 3.14.6-1`; deploy/install, installed
-  interpreter smoke, and affected torch/vLLM smoke gates remain open before
-  adoption.
-- AITER 0.1.15.post1 dependency-closure review: upstream now reports
-  `0.1.15.post1` after the previous 0.1.15-rc0 blocker. Re-review the release
-  metadata against the existing FlyDSL and Triton dependency-closure concerns
-  before package source adoption; required gates remain source verification,
-  package build, deploy/install, installed JIT/import smoke, and affected vLLM
-  live validation.
-- llama.cpp b9660 follow-up after b9442 live validation: upstream now reports
-  `b9660` and AUR HIP now reports `b9641-1` after the adopted b9442 lane. This
-  supersedes the b9637, b9642, and b9644 follow-ups as the active llama.cpp source lane;
-  package source update, package build, deploy/install, installed-smoke,
-  Lemonade backend metadata review, and selected-logit live validation remain
-  open.
-- ROCm PyTorch release/2.12 7f71453 follow-up: release/2.12 now reports
-  `7f7145337ddec35249faaa02ab3a9aea87b25029` after the adopted c7badbdf
-  runtime-base lane, while Arch `python-pytorch-opt-rocm` remains at
-  `2.12.0-4`. Review the upstream range and affected runtime-base rebuild
-  gates before package source adoption.
-- vLLM 0.23.0 follow-up: upstream now reports `0.23.0` after the local
-  `0.21.0` package lane. Refresh only after the ROCm patch carry,
-  runtime-base, package build, deploy/install, installed smoke, and live
-  scenario gates are planned together.
-- Transformers 5.12.1 follow-up: PyPI and the upstream tag now report
-  `5.12.1` after the local `5.8.1` package lane. Keep this coupled to the
-  runtime and model-surface closure unless the operator explicitly declares the
-  current runtime base stable enough for a separate Transformers lane.
-- safetensors 0.8.0 follow-up: PyPI now reports `0.8.0` while Arch remains at
-  `0.7.0-2`. Review compatibility with Transformers, compressed-tensors, and
-  vLLM before package adoption.
-- compressed-tensors 0.17.1 follow-up: PyPI now reports `0.17.1` after the
-  adopted `0.16.0` package lane. Treat it as part of the quantization and vLLM
-  dependency closure, not as an isolated Python wheel bump.
-- AutoRound 0.13.1 follow-up: PyPI now reports `0.13.1` after the adopted
-  `0.13.0` package lane. Package source update, build, deploy/install, import
-  smoke, and any affected quantization scenario review remain open.
-- llmcompressor 0.12.0 compatibility review: PyPI now reports `0.12.0` after
-  the rejected `0.10.0.2` candidate. Re-check upstream dependency metadata
-  against the local runtime stack before deciding whether this remains blocked
-  or becomes package work.
-- mistral-common 1.11.3 follow-up: PyPI now reports `1.11.3` while the AUR
-  baseline remains `1.8.6-1`. Review package metadata against the local
-  Transformers and vLLM model-surface closure before adoption.
-- accelerate 1.14.0 follow-up: PyPI now reports `1.14.0` after the adopted
-  `1.13.0` package lane. Review dependency metadata and affected local
-  inference helpers before package adoption.
-- aiohttp 3.14.1 follow-up: PyPI now reports `3.14.1` after the current
-  `3.13.5` package lane. Treat this as service-runtime dependency work that
-  needs affected aiohttp/uvicorn/vLLM import smokes after package build.
-- cryptography 49.0.0 follow-up: PyPI now reports `49.0.0`, and Arch now
-  reports `48.0.1-1` after the adopted `48.0.0` lane. Review Rust/OpenSSL
-  package metadata before source adoption.
-- CTranslate2 4.8.0 follow-up: upstream now reports `4.8.0`; the AUR baseline
-  and ROCm fork scout cursor remain unchanged. Review the upstream delta
-  against the local ROCm package shape before adoption.
-- stable-diffusion.cpp 5a34bc7 follow-up: upstream master now reports
-  `5a34bc7f6e0621dd2f899daa64476eac667d7ed3`, and the AUR Vulkan baseline
-  reports `r660.d2797b8-1`. Review the source and submodule delta before
-  package source adoption, rebuild, deploy/install, and installed wrapper
-  smoke.
-- Torch-MIGraphX ef3f901 follow-up: upstream master now reports
-  `ef3f901b7e76d96091c5a6b02966fcb3eafcb057` while the release tag baseline
-  remains `v1.1`. Review the source delta against the PyTorch runtime-base
-  lane before package adoption.
+The 2026-08-12 freshness reconciliation assigns every current candidate to a
+settled execution lane or explicit non-core disposition. None of these active
+items is complete or adopted; each candidate retains only the source, build,
+install, smoke, or live gates that its affected contract requires.
+
+Foundation:
+
+- **CPython 3.14.7 W1 foundation**: establish the selected interpreter before
+  TheRock and downstream runtime work.
+- **TheRock 7.14 W1 foundation**: stage, render, own, build, sign, and validate
+  the complete payload-derived family.
+
+PyTorch/vLLM closure:
+
+- **AOTriton 0.13b W2A closure**
+- **ROCm PyTorch 2.13 W2A closure**
+- **ROCm Triton 3.8 W2A closure**: replace the stale `main_perf` source lane
+  with PyTorch 2.13's exact `4cff872` pin and its compatible LLVM closure.
+- **TorchVision 0.28 W2A closure**
+- **Transformers 5.15.0 W2A closure**
+- **safetensors 0.8.0 W2A closure**
+- **mistral-common 1.11.7 W2A closure**
+- **NumPy 2.5.2 W2A closure**
+- **Pillow 12.3.0 W2A closure**
+- **compressed-tensors 0.17.0 W2A closure**: retain vLLM 0.27's exact selected
+  dependency instead of adopting the newer 0.18 line.
+- **vLLM 0.27.1 W2A closure**: build last against the complete selected
+  dependency line.
+
+Lemonade closure:
+
+- **llama.cpp b10369 W2B closure**: freeze one revision and shared patch set
+  for both blocking HIP and Vulkan variants.
+- **Lemonade 11.5.2 W0 source-freeze blocker**: freeze the reviewed fork source
+  before W2B; the retired AUR package names are no longer freshness selectors.
+
+Dynamic W0 dependency-closure review:
+
+- **accelerate 1.14.0 W0 closure review**
+- **aiohttp 3.14.3 W0 closure review**
+- **asyncpg 0.31.0-3 W0 closure review**
+- **cryptography 50.0.0 W0 closure review**
+- **DuckDB 1.5.5 W0 closure review**
+- **pydantic-core 2.48.0 W0 closure review**
+- **SentencePiece 0.2.2 W0 closure review**
+- **yarl 1.24.5 W0 closure review**
+- **zstandard 0.25.0-3 W0 closure review**
+
+Nonblocking retained lanes:
+
+- **TorchAO 0.18.0 supported-extension closure**
+- **Torch-MIGraphX ef3f901 supported-extension closure**
+- **AITER 0.1.19.post2 experimental closure**
+- **independent CTranslate2 4.8.1 refresh**
+- **independent stable-diffusion.cpp bcc7e29 refresh**
 - GPTQ live-validation lane: the retained
   `vllm.qwen3_5.35b-a3b-gptq-int4.text.basic` scenario pins the official
   `Qwen/Qwen3.5-35B-A3B-GPTQ-Int4` model revision and model-card license
