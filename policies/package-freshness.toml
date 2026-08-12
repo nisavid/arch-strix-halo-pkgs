@@ -112,8 +112,11 @@ packages = ["python-triton-gfx1151"]
 priority = "high"
 workflow = "upstream_source_update"
 checks = [
-  { id = "main-perf", role = "primary", kind = "git_ref", repo = "https://github.com/ROCm/triton.git", ref = "refs/heads/main_perf", recorded = "0ec280cf80dd91e9a86887981a670f2d4541a32b", comparison = "sha" },
+  { id = "release-branch", role = "primary", kind = "git_ref", repo = "https://github.com/ROCm/triton.git", ref = "refs/heads/release/internal/3.8.x", recorded = "4cff872ced001ea92d9fcf05b3f6517e2b486d19", comparison = "sha" },
   { id = "arch", role = "baseline", kind = "arch_package", package = "python-triton", recorded = "3.5.1-4", comparison = "pkgver" },
+]
+source_contracts = [
+  { id = "release-branch-source", packages = ["python-triton-gfx1151"], check_id = "release-branch", source_name = "triton", source_kind = "git_commit", origin = "https://github.com/ROCm/triton.git", value_policy = "pinned_commit_may_lag_reviewed" },
 ]
 
 [families.aotriton]
@@ -440,6 +443,4 @@ workflow = "upstream_source_update"
 checks = [
   { id = "fork-main", role = "primary", kind = "git_ref", repo = "https://github.com/nisavid/lemonade.git", ref = "refs/heads/main", recorded = "e18b9c1e352df8ab5aff2ff353402f1ec77c47f2", comparison = "sha" },
   { id = "upstream-release", role = "baseline", kind = "github_release", repo = "lemonade-sdk/lemonade", recorded = "10.7.0", tag_prefix = "v", comparison = "pep440" },
-  { id = "aur-server", role = "baseline", kind = "aur", package = "lemonade-server", recorded = "10.7.0-3", comparison = "pkgver" },
-  { id = "aur-desktop", role = "baseline", kind = "aur", package = "lemonade-desktop", recorded = "10.7.0-1", comparison = "pkgver" },
 ]

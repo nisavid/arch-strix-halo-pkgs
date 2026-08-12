@@ -1,14 +1,41 @@
 # Current State
 
-Status as of 2026-06-15.
+The package, deployment, and live-validation narrative below remains a
+2026-06-15 snapshot. The freshness admission state was reconciled on
+2026-08-12 as follows.
+
+## 2026-08-12 Freshness Admission
+
+A policy-forced sweep completed at `2026-08-12T02:47:52-04:00` after retiring
+the removed `lemonade-server` and `lemonade-desktop` AUR package names as
+automated Lemonade freshness baselines. The uncached sweep covered 45 families:
+23 reported a stable update, five baseline drift, three branch-head movement,
+and fourteen a current source cursor.
+
+The preserved sweep report records all 45 results. The reconciliation records
+every candidate requiring disposition in
+`docs/maintainers/update-candidates.toml`. Re-evaluating that exact sweep with
+the reconciled ledger yields 27 tracked families, four rejected families, one
+blocked Lemonade family, five adopted families, and eight current families.
+The active gates are visible in `docs/backlog.md` while schema v1 remains
+authoritative. Lemonade stays blocked until W0 freezes the reviewed fork and
+coupled llama.cpp sources. AutoRound 0.14.2, compressed-tensors 0.18.0, and
+llmcompressor 0.13.0 are rejected for this convergence line; a separate active
+candidate owns the required compressed-tensors 0.17.0 W2A lane.
+
+This reconciliation changes maintenance metadata only. It does not claim a
+package source update, package build, deployment or installation, installed
+smoke, service smoke, or live-scenario validation. The freshness evidence is
+due again 24 hours after the recorded completion or sooner if package policy,
+package directories, checker behavior, or relevant source metadata changes.
 
 The Lemonade 10.7.0 source adoption is complete. Source updated:
 `lemonade-server`, `lemonade-app`, and `lemonade` render as `10.7.0-1` from
 `nisavid/lemonade` fork main commit
 `e18b9c1e352df8ab5aff2ff353402f1ec77c47f2`, which syncs upstream Lemonade
-v10.7.0. The freshness policy records upstream Lemonade `10.7.0`, AUR
-`lemonade-server 10.7.0-3`, and AUR `lemonade-desktop 10.7.0-1` as reviewed
-baselines. The Lemonade server patch carry contains four patches for XDNA2
+v10.7.0. The 2026-06-15 review recorded upstream Lemonade `10.7.0`, AUR
+`lemonade-server 10.7.0-3`, and AUR `lemonade-desktop 10.7.0-1` as its then
+current baselines. The Lemonade server patch carry contains four patches for XDNA2
 detection and the system-managed packaged llama.cpp backend story, and those
 patches apply to the v10.7.0 source. Package built: `tools/amerge build` plan
 `20260615T060038-cfa1ca5f` produced `lemonade-server 10.7.0-1`,
