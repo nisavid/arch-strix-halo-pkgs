@@ -6,8 +6,10 @@ succeed before an operator-approved substrate is implemented and bound.
 
 from ._authority import (
     AuthorityBackend,
+    AuthorityErrorCode,
     AuthorityRole,
     AuthorityUnavailable,
+    ControlAuthorityError,
     CriticalOperationKind,
     DeclaredEffect,
     EffectClass,
@@ -35,6 +37,7 @@ from ._authority import (
     TerminalOutcome,
     production_authority,
     require_promotable,
+    validate_operation_coordinates,
 )
 from ._evaluation import (
     ActiveContractContext,
@@ -73,6 +76,7 @@ from ._evaluation import (
 from ._promotion import (
     AtomicEvidenceCut,
     BoundEvaluation,
+    OperationObligation,
     PromotionAuthority,
     PromotionAuthorityChallenge,
     PromotionContract,
@@ -83,6 +87,7 @@ from ._promotion import (
     RegisteredAttempt,
     RegisteredOperation,
     admit_promotion,
+    assess_operation_obligations,
     assess_promotion_cut,
     registration_set_digest,
 )
@@ -111,11 +116,13 @@ __all__ = [
     "Attestation",
     "AttestationOutcome",
     "AuthorityBackend",
+    "AuthorityErrorCode",
     "AuthorityRole",
     "AuthorityUnavailable",
     "BoundEvaluation",
     "CanonicalizationError",
     "ConditionalApplicability",
+    "ControlAuthorityError",
     "ControlRecord",
     "ControlRecordError",
     "CriticalOperationKind",
@@ -145,6 +152,7 @@ __all__ = [
     "NotApplicable",
     "NotDue",
     "OperationBinding",
+    "OperationObligation",
     "OperationResult",
     "OperationState",
     "OperationSubject",
@@ -180,10 +188,12 @@ __all__ = [
     "admit_promotion",
     "apply_invalidation",
     "assess_evidence_satisfaction",
+    "assess_operation_obligations",
     "assess_promotion_cut",
     "evaluate_evidence",
     "production_authority",
     "registration_set_digest",
     "require_evaluation_pass",
     "require_promotable",
+    "validate_operation_coordinates",
 ]

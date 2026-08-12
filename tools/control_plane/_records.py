@@ -16,7 +16,6 @@ from types import MappingProxyType
 from typing import Any
 
 from ._authority import (
-    _OPERATION_COORDINATES,
     CriticalOperationKind,
     EffectClass,
     GenerationBindingMode,
@@ -24,6 +23,7 @@ from ._authority import (
     LifecyclePhase,
     OperationSubjectKind,
     OperationTargetKind,
+    validate_operation_coordinates,
 )
 
 SCHEMA_NAME = "arch_strix_halo.control_record"
@@ -154,7 +154,6 @@ RECORD_SCHEMAS: Mapping[str, RecordSchema] = MappingProxyType(
                 ),
                 "assignment_id": _field(FieldKind.IDENTIFIER),
                 "authorization_policy_digest": _field(FieldKind.DIGEST),
-                "context_digest": _field(FieldKind.DIGEST),
                 "dependency_projection_digest": _field(FieldKind.DIGEST),
                 "gate_digest": _field(FieldKind.DIGEST),
                 "impact": _field(FieldKind.ENUM, "advisory", "blocking"),
@@ -164,6 +163,13 @@ RECORD_SCHEMAS: Mapping[str, RecordSchema] = MappingProxyType(
                 "validity_policy_digest": _field(FieldKind.DIGEST),
             },
             optional={"predicate_digest": _field(FieldKind.DIGEST)},
+        ),
+        "assignment_set": _record_schema(
+            "assignment_set",
+            required={
+                "assignment_digests": _field(FieldKind.DIGEST_LIST),
+                "requirements_digest": _field(FieldKind.DIGEST),
+            },
         ),
         "attempt": _record_schema(
             "attempt",
@@ -615,6 +621,49 @@ RECORD_SCHEMAS: Mapping[str, RecordSchema] = MappingProxyType(
                 "rollback_contract_digest": _field(FieldKind.DIGEST),
             },
         ),
+        "operation_obligation": _record_schema(
+            "operation_obligation",
+            required={
+                "generation_binding": _field(
+                    FieldKind.GENERATION_BINDING,
+                    *(mode.value for mode in GenerationBindingMode),
+                ),
+                "generation_class": _field(
+                    FieldKind.ENUM,
+                    *(generation_class.value for generation_class in GenerationClass),
+                ),
+                "intent_digest": _field(FieldKind.DIGEST),
+                "lifecycle_phase": _field(
+                    FieldKind.ENUM,
+                    *(phase.value for phase in LifecyclePhase),
+                ),
+                "obligation_id": _field(FieldKind.STABLE_IDENTIFIER),
+                "operation_kind": _field(
+                    FieldKind.ENUM,
+                    *(kind.value for kind in CriticalOperationKind),
+                ),
+                "subject_digest": _field(FieldKind.DIGEST),
+                "subject_kind": _field(
+                    FieldKind.ENUM,
+                    *(kind.value for kind in OperationSubjectKind),
+                ),
+                "target_id": _field(FieldKind.STABLE_IDENTIFIER),
+                "target_kind": _field(
+                    FieldKind.ENUM,
+                    *(kind.value for kind in OperationTargetKind),
+                ),
+            },
+        ),
+        "operation_obligation_set": _record_schema(
+            "operation_obligation_set",
+            required={
+                "obligation_digests": _field(
+                    FieldKind.DIGEST_LIST,
+                    allow_empty=True,
+                ),
+                "requirements_digest": _field(FieldKind.DIGEST),
+            },
+        ),
         "predicate_proof": _record_schema(
             "predicate_proof",
             required={
@@ -681,6 +730,7 @@ RECORD_SCHEMAS: Mapping[str, RecordSchema] = MappingProxyType(
                 "expected_active_generation_digest": _field(FieldKind.DIGEST),
                 "generation_digest": _field(FieldKind.DIGEST),
                 "obligation_digests": _field(FieldKind.DIGEST_LIST),
+                "operation_obligation_set_digest": _field(FieldKind.DIGEST),
                 "phase": _field(
                     FieldKind.ENUM,
                     "accepted",
@@ -705,6 +755,9 @@ RECORD_SCHEMAS: Mapping[str, RecordSchema] = MappingProxyType(
                 "impact": _field(FieldKind.ENUM, "advisory", "blocking"),
                 "obligation_id": _field(FieldKind.STABLE_IDENTIFIER),
                 "occurrence_digest": _field(FieldKind.DIGEST),
+            },
+            optional={
+                "scenario_operation_obligation_digest": _field(FieldKind.DIGEST),
             },
         ),
         "protected_state": _record_schema(
@@ -744,6 +797,7 @@ RECORD_SCHEMAS: Mapping[str, RecordSchema] = MappingProxyType(
             required={
                 "authorization_digest": _field(FieldKind.DIGEST),
                 "destination_generation_digest": _field(FieldKind.DIGEST),
+                "exact_state_generation_digest": _field(FieldKind.DIGEST),
                 "exact_state_snapshot_digest": _field(FieldKind.DIGEST),
                 "generation_binding": _field(
                     FieldKind.GENERATION_BINDING,
@@ -793,6 +847,7 @@ RECORD_SCHEMAS: Mapping[str, RecordSchema] = MappingProxyType(
                 "origin_generation_digest": _field(FieldKind.DIGEST),
                 "rollback_id": _field(FieldKind.IDENTIFIER),
                 "target_digest": _field(FieldKind.DIGEST),
+                "target_generation_digest": _field(FieldKind.DIGEST),
                 "terminal_gate_digest": _field(FieldKind.DIGEST),
             },
         ),
@@ -1528,14 +1583,41 @@ def _validate_record_semantics(record_kind: str, payload: Mapping[str, Any]) -> 
                 "critical operation prestate and intended state must differ",
             )
         operation_kind = CriticalOperationKind(payload["operation_kind"])
-        actual_coordinates = (
-            OperationSubjectKind(payload["subject_kind"]),
-            OperationTargetKind(payload["target_kind"]),
-            GenerationBindingMode(payload["generation_binding"]["mode"]),
-            GenerationClass(payload["generation_class"]),
-            LifecyclePhase(payload["lifecycle_phase"]),
-        )
-        if actual_coordinates not in _OPERATION_COORDINATES[operation_kind]:
+        try:
+            validate_operation_coordinates(
+                operation_kind,
+                OperationSubjectKind(payload["subject_kind"]),
+                OperationTargetKind(payload["target_kind"]),
+                GenerationBindingMode(payload["generation_binding"]["mode"]),
+                GenerationClass(payload["generation_class"]),
+                LifecyclePhase(payload["lifecycle_phase"]),
+            )
+        except ValueError:
+            _invalid_payload_semantics(
+                record_kind,
+                "operation envelope coordinates are invalid for operation kind",
+            )
+        generation_binding = payload["generation_binding"]
+        if (
+            payload["subject_kind"] == "generation"
+            and payload["subject_digest"]
+            != generation_binding.get("generation_digest")
+        ):
+            _invalid_payload_semantics(
+                record_kind,
+                "generation subject must equal the bound generation",
+            )
+    elif record_kind == "operation_obligation":
+        try:
+            validate_operation_coordinates(
+                CriticalOperationKind(payload["operation_kind"]),
+                OperationSubjectKind(payload["subject_kind"]),
+                OperationTargetKind(payload["target_kind"]),
+                GenerationBindingMode(payload["generation_binding"]["mode"]),
+                GenerationClass(payload["generation_class"]),
+                LifecyclePhase(payload["lifecycle_phase"]),
+            )
+        except ValueError:
             _invalid_payload_semantics(
                 record_kind,
                 "operation envelope coordinates are invalid for operation kind",
@@ -1584,6 +1666,16 @@ def _validate_record_semantics(record_kind: str, payload: Mapping[str, Any]) -> 
             _invalid_payload_semantics(
                 record_kind,
                 "generation binding must name the exact origin generation",
+            )
+        target_generation_field = (
+            "exact_state_generation_digest"
+            if record_kind == "recovery"
+            else "target_generation_digest"
+        )
+        if payload[target_generation_field] != destination:
+            _invalid_payload_semantics(
+                record_kind,
+                "target protected-state generation must equal destination generation",
             )
     elif record_kind == "inclusion_edge":
         if payload["active_contract_digest"] == payload["preassembly_context_digest"]:

@@ -18,6 +18,7 @@ from control_plane import (
     ControlRecord,
     GateImpact,
     NonPromotionalEvidence,
+    OperationObligation,
     PromotionAuthorityChallenge,
     PromotionContract,
     PromotionDenied,
@@ -27,6 +28,7 @@ from control_plane import (
     RegisteredAttempt,
     RegisteredOperation,
     admit_promotion,
+    assess_operation_obligations,
     assess_promotion_cut,
     registration_set_digest,
 )
@@ -53,7 +55,13 @@ def _identity(record_id: str, identity_id: str, identity_type: str, seed: str):
     )
 
 
-def _generation(record_id: str, generation_id: str, seed: str) -> ControlRecord:
+def _generation(
+    record_id: str,
+    generation_id: str,
+    seed: str,
+    *,
+    generation_class: str = "c",
+) -> ControlRecord:
     return ControlRecord.build(
         kind="generation",
         record_id=record_id,
@@ -62,36 +70,47 @@ def _generation(record_id: str, generation_id: str, seed: str) -> ControlRecord:
             "generation_id": generation_id,
             "input_closure_digest": digest("a"),
             "manifest_digest": digest("b"),
-            "generation_class": "c",
+            "generation_class": generation_class,
         },
     )
 
 
-def _registered_operation(
-    fixture: Fixture,
+def _build_registered_operation(
     *,
+    subject_digest: str,
+    context_digest: str,
+    candidate_generation: ControlRecord,
+    target_state: ControlRecord,
+    operation_id: str = "blocking-scenario-1",
+    operation_kind: str = "blocking_scenario",
+    subject_kind: str = "gate_occurrence",
+    lifecycle_phase: str = "accepted",
+    target_kind: str = "live_root",
+    target_id: str = "reference-host",
+    generation_class: str = "c",
+    generation_binding: dict[str, object] | None = None,
     intent_sequence: int = 4,
+    terminal_sequence: int = 5,
     outcome: str = "succeeded",
     poststate_digest: str | None = None,
 ) -> RegisteredOperation:
-    operation_subject_digest = fixture.attempt.intent_record.digest()
     intent = ControlRecord.build(
         kind="intent",
-        record_id="intent:blocking-scenario:1",
+        record_id=f"intent:{operation_id}",
         payload={
             "actor_identity_digest": digest("0"),
-            "context_digest": fixture.bound.context_record.digest(),
-            "intent_id": "blocking-scenario-1",
+            "context_digest": context_digest,
+            "intent_id": operation_id,
             "intent_type": "critical_operation",
             "journal_sequence": intent_sequence,
             "operation_plan_digest": digest("3"),
             "registered_at": "2026-08-12T10:10:30Z",
-            "subject_digest": operation_subject_digest,
+            "subject_digest": subject_digest,
         },
     )
     operation = ControlRecord.build(
         kind="operation",
-        record_id="operation:blocking-scenario:1",
+        record_id=f"operation:{operation_id}",
         payload={
             "authority_head_digest": digest("9"),
             "declared_effects": [
@@ -102,35 +121,36 @@ def _registered_operation(
                 }
             ],
             "expected_protected_state_digest": digest("1"),
-            "generation_binding": {
-                "generation_digest": fixture.candidate_generation.digest(),
+            "generation_binding": generation_binding
+            or {
+                "generation_digest": candidate_generation.digest(),
                 "mode": "required_generation",
             },
-            "generation_class": "c",
-            "intended_protected_state_digest": fixture.target_state.digest(),
+            "generation_class": generation_class,
+            "intended_protected_state_digest": target_state.digest(),
             "intent_digest": intent.digest(),
-            "lifecycle_phase": "accepted",
-            "operation_id": "blocking-scenario-1",
-            "operation_kind": "blocking_scenario",
+            "lifecycle_phase": lifecycle_phase,
+            "operation_id": operation_id,
+            "operation_kind": operation_kind,
             "plan_digest": digest("3"),
             "recovery_contract_digest": digest("4"),
             "recovery_target_digest": digest("5"),
-            "subject_digest": operation_subject_digest,
-            "subject_kind": "gate_occurrence",
-            "target_id": "reference-host",
-            "target_kind": "live_root",
+            "subject_digest": subject_digest,
+            "subject_kind": subject_kind,
+            "target_id": target_id,
+            "target_kind": target_kind,
             "terminal_validator_digest": digest("6"),
         },
     )
     terminal = ControlRecord.build(
         kind="terminal_record",
-        record_id="terminal:blocking-scenario:1",
+        record_id=f"terminal:{operation_id}",
         payload={
             "completed_at": "2026-08-12T10:11:00Z",
-            "journal_sequence": 5,
+            "journal_sequence": terminal_sequence,
             "operation_digest": operation.digest(),
             "outcome": outcome,
-            "poststate_digest": poststate_digest or fixture.target_state.digest(),
+            "poststate_digest": poststate_digest or target_state.digest(),
             "terminal_type": "critical_operation",
             "validator_attestation_digests": [digest("7")],
         },
@@ -139,6 +159,56 @@ def _registered_operation(
         intent_record=intent,
         operation_record=operation,
         terminal_record=terminal,
+    )
+
+
+def _operation_obligation(
+    operation: RegisteredOperation,
+    *,
+    obligation_id: str,
+) -> OperationObligation:
+    payload = operation.operation_record.payload
+    record = ControlRecord.build(
+        kind="operation_obligation",
+        record_id=f"operation-obligation:{obligation_id}",
+        payload={
+            "generation_binding": dict(payload["generation_binding"]),
+            "generation_class": payload["generation_class"],
+            "intent_digest": operation.intent_record.digest(),
+            "lifecycle_phase": payload["lifecycle_phase"],
+            "obligation_id": obligation_id,
+            "operation_kind": payload["operation_kind"],
+            "subject_digest": payload["subject_digest"],
+            "subject_kind": payload["subject_kind"],
+            "target_id": payload["target_id"],
+            "target_kind": payload["target_kind"],
+        },
+    )
+    return OperationObligation(record)
+
+
+def _registered_operation(
+    fixture: Fixture,
+    *,
+    intent_sequence: int = 4,
+    outcome: str = "succeeded",
+    poststate_digest: str | None = None,
+) -> RegisteredOperation:
+    obligation = fixture.contract.operation_obligations[0].obligation_record.payload
+    return _build_registered_operation(
+        subject_digest=obligation["subject_digest"],
+        context_digest=fixture.bound.context_record.digest(),
+        candidate_generation=fixture.candidate_generation,
+        target_state=fixture.target_state,
+        operation_id="blocking-scenario-1",
+        operation_kind=obligation["operation_kind"],
+        subject_kind=obligation["subject_kind"],
+        lifecycle_phase=fixture.contract.phase.value,
+        target_kind=obligation["target_kind"],
+        target_id=obligation["target_id"],
+        intent_sequence=intent_sequence,
+        outcome=outcome,
+        poststate_digest=poststate_digest,
     )
 
 
@@ -227,7 +297,14 @@ def _fixture(
     phase: PromotionPhase = PromotionPhase.ACCEPTED,
     preassembly: bool = False,
     not_applicable: bool = False,
+    scenario_gate: bool | None = None,
+    scenario_target_kind: str | None = None,
+    scenario_target_id: str = "reference-host",
+    include_repository_publication: bool = False,
+    include_root_installation: bool = False,
 ) -> Fixture:
+    if scenario_gate is None:
+        scenario_gate = impact is GateImpact.BLOCKING
     requirements = ControlRecord.build(
         kind="requirements",
         record_id="requirements:w0",
@@ -240,17 +317,6 @@ def _fixture(
             "requirements_version": 1,
         },
     )
-    validation_contract = ControlRecord.build(
-        kind="validation_contract",
-        record_id="validation-contract:w0",
-        payload={
-            "approval_digest": digest("4"),
-            "assignments_digest": digest("b"),
-            "authorization_policy_digest": digest("5"),
-            "contract_id": "w0-validation-contract",
-            "requirements_digest": requirements.digest(),
-        },
-    )
     candidate = _generation("generation:candidate", "candidate-c", "4")
     prior = _generation("generation:prior", "prior-c", "5")
     accepted = candidate if phase is PromotionPhase.ACCEPTED else prior
@@ -261,35 +327,11 @@ def _fixture(
         record_id="protected-state:target",
         payload={
             "fence_epoch": 7,
-            "generation_digest": active.digest(),
+            "generation_digest": candidate.digest(),
             "observed_at": "2026-08-12T09:15:00Z",
             "projection_id": "active-generation",
             "state_digest": digest("7"),
             "target_digest": target.digest(),
-        },
-    )
-    if preassembly:
-        context_bindings = {
-            "artifact_digests": [digest("8")],
-            "profile_digest": digest("9"),
-            "source_closure_digest": digest("a"),
-        }
-        context_type = "preassembly_profile"
-    else:
-        context_bindings = {
-            "contract_digest": validation_contract.digest(),
-            "generation_digest": candidate.digest(),
-        }
-        context_type = "active_contract"
-    context = ControlRecord.build(
-        kind="validation_context",
-        record_id="context:w0-candidate",
-        payload={
-            "assignments_digest": digest("b"),
-            "context_id": "w0-candidate",
-            "context_type": context_type,
-            "requirements_digest": requirements.digest(),
-            **context_bindings,
         },
     )
     subject = _identity("identity:subject", "generation-c", "subject", "c")
@@ -314,7 +356,6 @@ def _fixture(
         "applicability": "conditional" if not_applicable else "unconditional",
         "assignment_id": "control-plane",
         "authorization_policy_digest": digest("2"),
-        "context_digest": context.digest(),
         "dependency_projection_digest": dependency_projection.digest(),
         "gate_digest": gate.digest(),
         "impact": impact.value,
@@ -329,6 +370,49 @@ def _fixture(
         kind="assignment",
         record_id="assignment:control-plane",
         payload=assignment_payload,
+    )
+    assignment_set = ControlRecord.build(
+        kind="assignment_set",
+        record_id="assignment-set:w0",
+        payload={
+            "assignment_digests": [assignment.digest()],
+            "requirements_digest": requirements.digest(),
+        },
+    )
+    validation_contract = ControlRecord.build(
+        kind="validation_contract",
+        record_id="validation-contract:w0",
+        payload={
+            "approval_digest": digest("4"),
+            "assignments_digest": assignment_set.digest(),
+            "authorization_policy_digest": digest("5"),
+            "contract_id": "w0-validation-contract",
+            "requirements_digest": requirements.digest(),
+        },
+    )
+    if preassembly:
+        context_bindings = {
+            "artifact_digests": [digest("8")],
+            "profile_digest": digest("9"),
+            "source_closure_digest": digest("a"),
+        }
+        context_type = "preassembly_profile"
+    else:
+        context_bindings = {
+            "contract_digest": validation_contract.digest(),
+            "generation_digest": candidate.digest(),
+        }
+        context_type = "active_contract"
+    context = ControlRecord.build(
+        kind="validation_context",
+        record_id="context:w0-candidate",
+        payload={
+            "assignments_digest": assignment_set.digest(),
+            "context_id": "w0-candidate",
+            "context_type": context_type,
+            "requirements_digest": requirements.digest(),
+            **context_bindings,
+        },
     )
     actor = _identity("identity:validator", "validator-w0", "principal", "7")
     intent = ControlRecord.build(
@@ -466,17 +550,110 @@ def _fixture(
             "validator_attestation_digests": [evidence.digest()],
         },
     )
+    promotion_target_kind = (
+        "isolated_root"
+        if phase is PromotionPhase.PREVALIDATED
+        else "package_repository"
+        if phase is PromotionPhase.PUBLISHED
+        else "live_root"
+    )
+    operations: list[RegisteredOperation] = []
+    operation_obligations: list[OperationObligation] = []
+    scenario_operation_obligation: OperationObligation | None = None
+    next_operation_sequence = 4
+    if scenario_gate:
+        scenario_operation = _build_registered_operation(
+            subject_digest=intent.digest(),
+            context_digest=context.digest(),
+            candidate_generation=candidate,
+            target_state=target_state,
+            lifecycle_phase=phase.value,
+            target_kind=scenario_target_kind or promotion_target_kind,
+            target_id=scenario_target_id,
+            intent_sequence=next_operation_sequence,
+            terminal_sequence=next_operation_sequence + 1,
+        )
+        next_operation_sequence += 2
+        operations.append(scenario_operation)
+        scenario_operation_obligation = _operation_obligation(
+            scenario_operation,
+            obligation_id="blocking-scenario-1",
+        )
+        operation_obligations.append(scenario_operation_obligation)
+    if include_repository_publication:
+        publication = _build_registered_operation(
+            subject_digest=candidate.digest(),
+            subject_kind="generation",
+            context_digest=context.digest(),
+            candidate_generation=candidate,
+            target_state=target_state,
+            operation_id="repository-publication-1",
+            operation_kind="repository_publication",
+            lifecycle_phase=phase.value,
+            target_kind="package_repository",
+            target_id=target.payload["identity_id"],
+            intent_sequence=next_operation_sequence,
+            terminal_sequence=next_operation_sequence + 1,
+        )
+        next_operation_sequence += 2
+        operations.append(publication)
+        operation_obligations.append(
+            _operation_obligation(
+                publication,
+                obligation_id="repository-publication-1",
+            )
+        )
+    if include_root_installation:
+        installation = _build_registered_operation(
+            subject_digest=candidate.digest(),
+            subject_kind="generation",
+            context_digest=context.digest(),
+            candidate_generation=candidate,
+            target_state=target_state,
+            operation_id="package-installation-1",
+            operation_kind="package_installation",
+            lifecycle_phase=phase.value,
+            target_kind="live_root",
+            target_id=target.payload["identity_id"],
+            intent_sequence=next_operation_sequence,
+            terminal_sequence=next_operation_sequence + 1,
+        )
+        next_operation_sequence += 2
+        operations.append(installation)
+        operation_obligations.append(
+            _operation_obligation(
+                installation,
+                obligation_id="package-installation-1",
+            )
+        )
+    obligation_payload = {
+        "assignment_digest": assignment.digest(),
+        "impact": impact.value,
+        "obligation_id": "control-plane",
+        "occurrence_digest": intent.digest(),
+    }
+    if scenario_operation_obligation is not None:
+        obligation_payload["scenario_operation_obligation_digest"] = (
+            scenario_operation_obligation.obligation_digest
+        )
     obligation_record = ControlRecord.build(
         kind="promotion_obligation",
         record_id="promotion-obligation:control-plane",
-        payload={
-            "assignment_digest": assignment.digest(),
-            "impact": impact.value,
-            "obligation_id": "control-plane",
-            "occurrence_digest": intent.digest(),
-        },
+        payload=obligation_payload,
     )
     obligation = PromotionObligation(obligation_record)
+    operation_obligations_tuple = tuple(operation_obligations)
+    operations_tuple = tuple(operations)
+    operation_obligation_set = ControlRecord.build(
+        kind="operation_obligation_set",
+        record_id="operation-obligation-set:w0",
+        payload={
+            "obligation_digests": [
+                item.obligation_digest for item in operation_obligations_tuple
+            ],
+            "requirements_digest": requirements.digest(),
+        },
+    )
     registered_attempt = RegisteredAttempt(
         obligation_record=obligation_record,
         intent_record=intent,
@@ -492,22 +669,26 @@ def _fixture(
             "expected_active_generation_digest": active.digest(),
             "generation_digest": candidate.digest(),
             "obligation_digests": [obligation_record.digest()],
+            "operation_obligation_set_digest": operation_obligation_set.digest(),
             "phase": phase.value,
             "requirements_digest": requirements.digest(),
             "target_digest": target.digest(),
-            "target_kind": "live_root",
+            "target_kind": promotion_target_kind,
             "target_protected_state_digest": target_state.digest(),
             "validation_contract_digest": validation_contract.digest(),
         },
     )
     contract = PromotionContract(
         requirements_record=requirements,
+        assignment_set_record=assignment_set,
+        operation_obligation_set_record=operation_obligation_set,
         validation_contract_record=validation_contract,
         generation_record=candidate,
         target_record=target,
         target_protected_state_record=target_state,
         contract_record=contract_record,
         obligations=(obligation,),
+        operation_obligations=operation_obligations_tuple,
     )
     cut_record = ControlRecord.build(
         kind="atomic_evidence_cut",
@@ -518,7 +699,7 @@ def _fixture(
             "attempt_digests": [attempt_record.digest()],
             "authority_head_digest": digest("9"),
             "authority_manifest_digest": digest("a"),
-            "complete_through_sequence": 3,
+            "complete_through_sequence": max(3, next_operation_sequence - 1),
             "completeness_proof_digest": digest("b"),
             "contract_digest": contract_record.digest(),
             "evaluation_digests": [evaluation.digest()],
@@ -528,14 +709,18 @@ def _fixture(
                 [inclusion_edge.digest()] if inclusion_edge is not None else []
             ),
             "journal_head_digest": digest("d"),
-            "operation_digests": [],
-            "operation_terminal_digests": [],
+            "operation_digests": [
+                item.operation_digest for item in operations_tuple
+            ],
+            "operation_terminal_digests": [
+                item.terminal_digest for item in operations_tuple
+            ],
             "phase": phase.value,
             "registration_set_digest": registration_set_digest(
                 (registered_attempt,)
             ),
             "target_digest": target.digest(),
-            "target_kind": "live_root",
+            "target_kind": promotion_target_kind,
             "target_protected_state_digest": target_state.digest(),
         },
     )
@@ -550,6 +735,7 @@ def _fixture(
         inclusion_edge_records=(
             (inclusion_edge,) if inclusion_edge is not None else ()
         ),
+        operations=operations_tuple,
     )
     return Fixture(
         contract=contract,
@@ -579,6 +765,69 @@ def test_atomic_cut_assesses_total_canonical_obligation_coverage():
     )
 
 
+def test_promotion_contract_requires_canonical_assignment_and_operation_sets():
+    fixture = _fixture()
+
+    assert fixture.validation_contract.payload["assignments_digest"] != digest("b")
+    assert "operation_obligation_set_digest" in fixture.contract.contract_record.payload
+
+
+def test_blocking_scenario_requires_an_explicit_acyclic_gate_link():
+    fixture = _fixture()
+    unlinked_obligation_record = ControlRecord.build(
+        kind="promotion_obligation",
+        record_id="promotion-obligation:control-plane:unlinked",
+        payload={
+            key: value
+            for key, value in _payload(fixture.obligation.obligation_record).items()
+            if key != "scenario_operation_obligation_digest"
+        },
+    )
+    unlinked_obligation = PromotionObligation(unlinked_obligation_record)
+    unlinked_contract_record = ControlRecord.build(
+        kind="promotion_contract",
+        record_id="promotion-contract:w0:unlinked",
+        payload={
+            **_payload(fixture.contract.contract_record),
+            "obligation_digests": [unlinked_obligation.obligation_digest],
+        },
+    )
+
+    with pytest.raises(ValueError, match="explicit scenario-gate link"):
+        replace(
+            fixture.contract,
+            contract_record=unlinked_contract_record,
+            obligations=(unlinked_obligation,),
+        )
+
+    assert "promotion_obligation_digest" not in (
+        fixture.contract.operation_obligations[0].obligation_record.payload
+    )
+
+
+def test_blocking_occurrence_requires_one_exact_critical_operation():
+    fixture = _fixture()
+    incomplete_cut_record = ControlRecord.build(
+        kind="atomic_evidence_cut",
+        record_id="atomic-evidence-cut:missing-operation",
+        payload={
+            **_payload(fixture.cut.cut_record),
+            "operation_digests": [],
+            "operation_terminal_digests": [],
+        },
+    )
+    incomplete_cut = replace(
+        fixture.cut,
+        cut_record=incomplete_cut_record,
+        operations=(),
+    )
+
+    with pytest.raises(PromotionDenied) as exc_info:
+        assess_promotion_cut(fixture.contract, incomplete_cut)
+
+    assert exc_info.value.code == "PROMOTION_OPERATIONS_INCOMPLETE"
+
+
 def test_atomic_cut_binds_the_complete_critical_operation_set():
     fixture = _fixture()
     operation = _registered_operation(fixture)
@@ -593,6 +842,365 @@ def test_atomic_cut_binds_the_complete_critical_operation_set():
     assert cut.cut_record.payload["operation_terminal_digests"] == (
         operation.terminal_digest,
     )
+
+
+def test_critical_operation_must_bind_the_cut_authority_head():
+    fixture = _fixture()
+    operation = _registered_operation(fixture)
+    changed_operation_record = ControlRecord.build(
+        kind="operation",
+        record_id="operation:blocking-scenario:foreign-authority",
+        payload={
+            **_payload(operation.operation_record),
+            "authority_head_digest": digest("8"),
+        },
+    )
+    changed_terminal_record = ControlRecord.build(
+        kind="terminal_record",
+        record_id="terminal:blocking-scenario:foreign-authority",
+        payload={
+            **_payload(operation.terminal_record),
+            "operation_digest": changed_operation_record.digest(),
+        },
+    )
+    changed_operation = replace(
+        operation,
+        operation_record=changed_operation_record,
+        terminal_record=changed_terminal_record,
+    )
+    cut = _cut_with_operation(fixture, changed_operation)
+
+    with pytest.raises(PromotionDenied) as exc_info:
+        assess_promotion_cut(fixture.contract, cut)
+
+    assert exc_info.value.code == "PROMOTION_OPERATION_BINDING_MISMATCH"
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {
+            "generation_binding": {
+                "generation_digest": digest("8"),
+                "mode": "required_generation",
+            }
+        },
+        {"lifecycle_phase": "active"},
+        {"target_id": "different-service", "target_kind": "service"},
+        {"operation_kind": "recovery", "subject_kind": "control_record"},
+    ],
+)
+def test_critical_operation_matches_every_exact_obligation_coordinate(changes):
+    fixture = _fixture()
+    operation = fixture.cut.operations[0]
+    changed_operation_record = ControlRecord.build(
+        kind="operation",
+        record_id=f"operation:blocking-scenario:changed:{len(changes)}",
+        payload={**_payload(operation.operation_record), **changes},
+    )
+    changed_terminal_record = ControlRecord.build(
+        kind="terminal_record",
+        record_id=f"terminal:blocking-scenario:changed:{len(changes)}",
+        payload={
+            **_payload(operation.terminal_record),
+            "operation_digest": changed_operation_record.digest(),
+        },
+    )
+    changed_operation = replace(
+        operation,
+        operation_record=changed_operation_record,
+        terminal_record=changed_terminal_record,
+    )
+    cut = _cut_with_operation(fixture, changed_operation)
+
+    with pytest.raises(PromotionDenied) as exc_info:
+        assess_promotion_cut(fixture.contract, cut)
+
+    assert exc_info.value.code == "PROMOTION_OPERATION_BINDING_MISMATCH"
+
+
+def test_critical_operation_generation_class_is_an_exact_obligation_coordinate():
+    fixture = _fixture(
+        phase=PromotionPhase.PUBLISHED,
+        scenario_gate=False,
+        include_repository_publication=True,
+    )
+    operation = fixture.cut.operations[0]
+    foundation_operation_record = ControlRecord.build(
+        kind="operation",
+        record_id="operation:repository-publication:foundation-substitution",
+        payload={
+            **_payload(operation.operation_record),
+            "generation_class": "f",
+        },
+    )
+    foundation_terminal_record = ControlRecord.build(
+        kind="terminal_record",
+        record_id="terminal:repository-publication:foundation-substitution",
+        payload={
+            **_payload(operation.terminal_record),
+            "operation_digest": foundation_operation_record.digest(),
+        },
+    )
+    foundation_operation = replace(
+        operation,
+        operation_record=foundation_operation_record,
+        terminal_record=foundation_terminal_record,
+    )
+    cut = _cut_with_operation(fixture, foundation_operation)
+
+    with pytest.raises(PromotionDenied) as exc_info:
+        assess_promotion_cut(fixture.contract, cut)
+
+    assert exc_info.value.code == "PROMOTION_OPERATION_BINDING_MISMATCH"
+
+
+def test_critical_operation_cannot_substitute_another_intent_for_the_same_subject():
+    fixture = _fixture()
+    operation = fixture.cut.operations[0]
+    substituted_intent = ControlRecord.build(
+        kind="intent",
+        record_id="intent:blocking-scenario:substituted",
+        payload=_payload(operation.intent_record),
+    )
+    substituted_operation_record = ControlRecord.build(
+        kind="operation",
+        record_id="operation:blocking-scenario:substituted",
+        payload={
+            **_payload(operation.operation_record),
+            "intent_digest": substituted_intent.digest(),
+        },
+    )
+    substituted_terminal_record = ControlRecord.build(
+        kind="terminal_record",
+        record_id="terminal:blocking-scenario:substituted",
+        payload={
+            **_payload(operation.terminal_record),
+            "operation_digest": substituted_operation_record.digest(),
+        },
+    )
+    substituted = RegisteredOperation(
+        intent_record=substituted_intent,
+        operation_record=substituted_operation_record,
+        terminal_record=substituted_terminal_record,
+    )
+    cut = _cut_with_operation(fixture, substituted)
+
+    with pytest.raises(PromotionDenied) as exc_info:
+        assess_promotion_cut(fixture.contract, cut)
+
+    assert exc_info.value.code == "PROMOTION_OPERATION_BINDING_MISMATCH"
+
+
+def test_generic_operation_matcher_allows_two_intents_for_the_same_subject():
+    fixture = _fixture()
+    subject_digest = fixture.attempt.intent_record.digest()
+    first = _build_registered_operation(
+        subject_digest=subject_digest,
+        context_digest=fixture.bound.context_record.digest(),
+        candidate_generation=fixture.candidate_generation,
+        target_state=fixture.target_state,
+        operation_id="blocking-scenario-first",
+        intent_sequence=4,
+        terminal_sequence=5,
+    )
+    second = _build_registered_operation(
+        subject_digest=subject_digest,
+        context_digest=fixture.bound.context_record.digest(),
+        candidate_generation=fixture.candidate_generation,
+        target_state=fixture.target_state,
+        operation_id="blocking-scenario-second",
+        intent_sequence=6,
+        terminal_sequence=7,
+    )
+    obligations = (
+        _operation_obligation(first, obligation_id="blocking-scenario-first"),
+        _operation_obligation(second, obligation_id="blocking-scenario-second"),
+    )
+
+    matched = assess_operation_obligations(
+        obligations,
+        (first, second),
+        authority_head_digest=digest("9"),
+    )
+
+    assert matched == (first.operation_digest, second.operation_digest)
+    assert first.intent_record.digest() != second.intent_record.digest()
+    assert (
+        first.operation_record.payload["subject_digest"]
+        == second.operation_record.payload["subject_digest"]
+    )
+
+
+def test_generic_operation_matcher_covers_foundation_and_b0_authority_rows():
+    foundation = _generation(
+        "generation:foundation",
+        "foundation-f",
+        "e",
+        generation_class="f",
+    )
+    baseline = _generation(
+        "generation:baseline",
+        "baseline-b0",
+        "f",
+        generation_class="b0",
+    )
+    target = _identity("identity:generic-target", "generic-target", "target", "1")
+
+    def protected_state(
+        record_id: str,
+        generation: ControlRecord,
+        seed: str,
+    ) -> ControlRecord:
+        return ControlRecord.build(
+            kind="protected_state",
+            record_id=record_id,
+            payload={
+                "fence_epoch": 1,
+                "generation_digest": generation.digest(),
+                "observed_at": "2026-08-12T09:15:00Z",
+                "projection_id": "generic-projection",
+                "state_digest": digest(seed),
+                "target_digest": target.digest(),
+            },
+        )
+
+    foundation_operation = _build_registered_operation(
+        subject_digest=foundation.digest(),
+        subject_kind="generation",
+        context_digest=digest("2"),
+        candidate_generation=foundation,
+        target_state=protected_state("protected-state:foundation", foundation, "3"),
+        operation_id="foundation-installation",
+        operation_kind="package_installation",
+        lifecycle_phase="foundation_validation",
+        target_kind="isolated_root",
+        target_id="foundation-root",
+        generation_class="f",
+        intent_sequence=1,
+        terminal_sequence=2,
+    )
+    baseline_operation = _build_registered_operation(
+        subject_digest=digest("4"),
+        subject_kind="composite_authority",
+        context_digest=digest("5"),
+        candidate_generation=baseline,
+        target_state=protected_state("protected-state:baseline", baseline, "6"),
+        operation_id="baseline-capture",
+        operation_kind="composite_authority_transition",
+        lifecycle_phase="captured",
+        target_kind="composite_register",
+        target_id="authority-register",
+        generation_class="b0",
+        generation_binding={
+            "generation_digest": baseline.digest(),
+            "mode": "b0_capture_sentinel",
+            "sentinel_digest": digest("7"),
+        },
+        intent_sequence=3,
+        terminal_sequence=4,
+    )
+    obligations = (
+        _operation_obligation(
+            foundation_operation,
+            obligation_id="foundation-installation",
+        ),
+        _operation_obligation(
+            baseline_operation,
+            obligation_id="baseline-capture",
+        ),
+    )
+
+    matched = assess_operation_obligations(
+        obligations,
+        (foundation_operation, baseline_operation),
+        authority_head_digest=digest("9"),
+    )
+
+    assert matched == (
+        foundation_operation.operation_digest,
+        baseline_operation.operation_digest,
+    )
+
+
+def test_published_blocking_proof_can_require_repository_publication_without_scenario_mutation():
+    fixture = _fixture(
+        phase=PromotionPhase.PUBLISHED,
+        scenario_gate=False,
+        include_repository_publication=True,
+    )
+
+    assessment = assess_promotion_cut(fixture.contract, fixture.cut)
+
+    assert assessment.phase is PromotionPhase.PUBLISHED
+    assert fixture.obligation.impact is GateImpact.BLOCKING
+    assert fixture.obligation.scenario_operation_obligation_digest is None
+    assert tuple(
+        item.obligation_record.payload["operation_kind"]
+        for item in fixture.contract.operation_obligations
+    ) == ("repository_publication",)
+
+
+def test_promotion_contract_is_a_c_generation_consumer_of_generic_obligations():
+    fixture = _fixture(
+        phase=PromotionPhase.PUBLISHED,
+        scenario_gate=False,
+    )
+    foundation = _generation(
+        "generation:foundation:not-promotion",
+        "foundation-f",
+        "e",
+        generation_class="f",
+    )
+    foundation_state = ControlRecord.build(
+        kind="protected_state",
+        record_id="protected-state:foundation:not-promotion",
+        payload={
+            **_payload(fixture.target_state),
+            "generation_digest": foundation.digest(),
+        },
+    )
+    foundation_contract_record = ControlRecord.build(
+        kind="promotion_contract",
+        record_id="promotion-contract:foundation:not-promotion",
+        payload={
+            **_payload(fixture.contract.contract_record),
+            "generation_digest": foundation.digest(),
+            "target_protected_state_digest": foundation_state.digest(),
+        },
+    )
+
+    with pytest.raises(ValueError, match="C generation"):
+        replace(
+            fixture.contract,
+            generation_record=foundation,
+            target_protected_state_record=foundation_state,
+            contract_record=foundation_contract_record,
+        )
+
+
+def test_phase_total_operations_can_bind_live_root_and_service_targets():
+    fixture = _fixture(
+        phase=PromotionPhase.ACTIVE,
+        scenario_target_kind="service",
+        scenario_target_id="inference-service",
+        include_root_installation=True,
+    )
+
+    assessment = assess_promotion_cut(fixture.contract, fixture.cut)
+
+    assert assessment.phase is PromotionPhase.ACTIVE
+    assert {
+        (
+            item.obligation_record.payload["target_kind"],
+            item.obligation_record.payload["target_id"],
+        )
+        for item in fixture.contract.operation_obligations
+    } == {
+        ("service", "inference-service"),
+        ("live_root", "reference-host"),
+    }
+    assert fixture.contract.target.kind.value == "live_root"
 
 
 def test_failed_critical_operation_cannot_satisfy_promotion():
@@ -731,6 +1339,33 @@ def test_registered_attempt_orders_timestamps_as_instants_not_wire_strings():
         )
 
 
+def test_evidence_observation_cannot_precede_attempt_start():
+    fixture = _fixture()
+    early_attestation = ControlRecord.build(
+        kind="attestation",
+        record_id="attestation:control-plane:pre-attempt",
+        payload={
+            **_payload(fixture.bound.evidence_records[0]),
+            "observed_at": "2026-08-12T09:35:00Z",
+        },
+    )
+    evaluation = ControlRecord.build(
+        kind="evaluation",
+        record_id="evaluation:control-plane:pre-attempt",
+        payload={
+            **_payload(fixture.bound.evaluation_record),
+            "attestation_digests": [early_attestation.digest()],
+        },
+    )
+
+    with pytest.raises(ValueError, match="attempt start"):
+        replace(
+            fixture.bound,
+            evidence_records=(early_attestation,),
+            evaluation_record=evaluation,
+        )
+
+
 def test_prevalidated_cut_preserves_the_prior_active_and_accepted_generation():
     fixture = _fixture(phase=PromotionPhase.PREVALIDATED)
 
@@ -738,6 +1373,41 @@ def test_prevalidated_cut_preserves_the_prior_active_and_accepted_generation():
 
     assert assessment.phase is PromotionPhase.PREVALIDATED
     assert fixture.cut.active_generation_record == fixture.prior_generation
+    assert (
+        fixture.cut.target_protected_state_record.payload["generation_digest"]
+        == fixture.candidate_generation.digest()
+    )
+
+
+@pytest.mark.parametrize(
+    ("phase", "accepted_is_candidate", "active_is_candidate"),
+    [
+        (PromotionPhase.PUBLISHED, False, False),
+        (PromotionPhase.PREVALIDATED, False, False),
+        (PromotionPhase.ACTIVE, False, True),
+        (PromotionPhase.ACCEPTED, True, True),
+    ],
+)
+def test_target_state_binds_candidate_independently_of_global_pointers(
+    phase,
+    accepted_is_candidate,
+    active_is_candidate,
+):
+    fixture = _fixture(
+        phase=phase,
+        scenario_gate=False if phase is PromotionPhase.PUBLISHED else None,
+    )
+
+    assert (
+        fixture.cut.target_protected_state_record.payload["generation_digest"]
+        == fixture.candidate_generation.digest()
+    )
+    assert (
+        fixture.cut.accepted_generation_record == fixture.candidate_generation
+    ) is accepted_is_candidate
+    assert (
+        fixture.cut.active_generation_record == fixture.candidate_generation
+    ) is active_is_candidate
 
 
 def test_accepted_contract_requires_both_pointers_to_equal_the_candidate():
@@ -871,6 +1541,21 @@ def test_preassembly_evidence_requires_a_verified_inclusion_edge_without_relabel
     )
     with pytest.raises((TypeError, ValueError), match="inclusion_edge_record"):
         replace(fixture.bound, inclusion_edge_record=None)
+
+
+def test_preassembly_inclusion_cannot_be_verified_before_its_evaluation():
+    fixture = _fixture(preassembly=True)
+    early_edge = ControlRecord.build(
+        kind="inclusion_edge",
+        record_id="inclusion-edge:control-plane:early",
+        payload={
+            **_payload(fixture.bound.inclusion_edge_record),
+            "verified_at": "2026-08-12T09:59:59Z",
+        },
+    )
+
+    with pytest.raises(ValueError, match="inclusion edge verification"):
+        replace(fixture.bound, inclusion_edge_record=early_edge)
 
 
 def test_complete_semantics_backed_by_fake_authority_remain_nonpromotional():

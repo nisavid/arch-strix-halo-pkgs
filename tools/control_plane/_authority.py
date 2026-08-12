@@ -9,6 +9,61 @@ _DIGEST_RE = re.compile(r"sha256:[0-9a-f]{64}\Z")
 _IDENTIFIER_RE = re.compile(r"[a-z][a-z0-9]*(?:[-_][a-z0-9]+)*\Z")
 
 
+class AuthorityErrorCode(StrEnum):
+    """Closed machine-readable failures across authority and promotion seams."""
+
+    AUTHORITY_BINDING_MISMATCH = "AUTHORITY_BINDING_MISMATCH"
+    AUTHORITY_CAPABILITY_CONSUMED = "AUTHORITY_CAPABILITY_CONSUMED"
+    AUTHORITY_CAPABILITY_UNKNOWN = "AUTHORITY_CAPABILITY_UNKNOWN"
+    AUTHORITY_EFFECT_ENFORCEMENT_MISSING = "AUTHORITY_EFFECT_ENFORCEMENT_MISSING"
+    AUTHORITY_EFFECT_OBSERVATION_MISSING = "AUTHORITY_EFFECT_OBSERVATION_MISSING"
+    AUTHORITY_FENCE_STALE = "AUTHORITY_FENCE_STALE"
+    AUTHORITY_FORBIDDEN_EFFECT_OBSERVED = "AUTHORITY_FORBIDDEN_EFFECT_OBSERVED"
+    AUTHORITY_INTENT_DUPLICATE = "AUTHORITY_INTENT_DUPLICATE"
+    AUTHORITY_INTENT_MISSING = "AUTHORITY_INTENT_MISSING"
+    AUTHORITY_OBSERVATION_MISSING = "AUTHORITY_OBSERVATION_MISSING"
+    AUTHORITY_OPERATION_UNKNOWN = "AUTHORITY_OPERATION_UNKNOWN"
+    AUTHORITY_PRESTATE_MISMATCH = "AUTHORITY_PRESTATE_MISMATCH"
+    AUTHORITY_RECOVERY_BINDING_MISMATCH = "AUTHORITY_RECOVERY_BINDING_MISMATCH"
+    AUTHORITY_RECOVERY_FAILURE_MISMATCH = "AUTHORITY_RECOVERY_FAILURE_MISMATCH"
+    AUTHORITY_RECOVERY_FENCE_MISSING = "AUTHORITY_RECOVERY_FENCE_MISSING"
+    AUTHORITY_RECOVERY_OWNER_MISMATCH = "AUTHORITY_RECOVERY_OWNER_MISMATCH"
+    AUTHORITY_RECOVERY_PHASE_INVALID = "AUTHORITY_RECOVERY_PHASE_INVALID"
+    AUTHORITY_RECOVERY_PRESTATE_MISMATCH = "AUTHORITY_RECOVERY_PRESTATE_MISMATCH"
+    AUTHORITY_RECOVERY_VALIDATION_FAILED = "AUTHORITY_RECOVERY_VALIDATION_FAILED"
+    AUTHORITY_ROLLBACK_PHASE_INVALID = "AUTHORITY_ROLLBACK_PHASE_INVALID"
+    AUTHORITY_ROLLBACK_PRESTATE_MISMATCH = "AUTHORITY_ROLLBACK_PRESTATE_MISMATCH"
+    AUTHORITY_ROLLBACK_UNAVAILABLE = "AUTHORITY_ROLLBACK_UNAVAILABLE"
+    AUTHORITY_ROLLBACK_VALIDATION_FAILED = "AUTHORITY_ROLLBACK_VALIDATION_FAILED"
+    AUTHORITY_SUBSTRATE_FORBIDDEN = "AUTHORITY_SUBSTRATE_FORBIDDEN"
+    AUTHORITY_SUBSTRATE_UNBOUND = "AUTHORITY_SUBSTRATE_UNBOUND"
+    AUTHORITY_TARGET_GUARDED = "AUTHORITY_TARGET_GUARDED"
+    AUTHORITY_TARGET_GUARD_MISMATCH = "AUTHORITY_TARGET_GUARD_MISMATCH"
+    AUTHORITY_TERMINAL_NOT_PASS = "AUTHORITY_TERMINAL_NOT_PASS"
+    AUTHORITY_TERMINAL_PHASE_INVALID = "AUTHORITY_TERMINAL_PHASE_INVALID"
+    AUTHORITY_TERMINAL_STATE_MISMATCH = "AUTHORITY_TERMINAL_STATE_MISMATCH"
+    AUTHORITY_TERMINAL_VALIDATOR_MISMATCH = "AUTHORITY_TERMINAL_VALIDATOR_MISMATCH"
+    AUTHORITY_TOPOLOGY_INCOMPLETE = "AUTHORITY_TOPOLOGY_INCOMPLETE"
+    AUTHORITY_TOPOLOGY_UNBOUND = "AUTHORITY_TOPOLOGY_UNBOUND"
+    EVIDENCE_NONPROMOTIONAL = "EVIDENCE_NONPROMOTIONAL"
+    PROMOTION_ATTEMPTS_INCOMPLETE = "PROMOTION_ATTEMPTS_INCOMPLETE"
+    PROMOTION_ATTEMPT_DID_NOT_PASS = "PROMOTION_ATTEMPT_DID_NOT_PASS"
+    PROMOTION_AUTHORITY_PROOF_MISMATCH = "PROMOTION_AUTHORITY_PROOF_MISMATCH"
+    PROMOTION_CONTRACT_MISMATCH = "PROMOTION_CONTRACT_MISMATCH"
+    PROMOTION_EVIDENCE_BINDING_MISMATCH = "PROMOTION_EVIDENCE_BINDING_MISMATCH"
+    PROMOTION_EVIDENCE_DID_NOT_PASS = "PROMOTION_EVIDENCE_DID_NOT_PASS"
+    PROMOTION_EVIDENCE_INCOMPLETE = "PROMOTION_EVIDENCE_INCOMPLETE"
+    PROMOTION_EVIDENCE_NOT_CURRENT = "PROMOTION_EVIDENCE_NOT_CURRENT"
+    PROMOTION_GENERATION_MISMATCH = "PROMOTION_GENERATION_MISMATCH"
+    PROMOTION_INCLUSION_EDGE_MISMATCH = "PROMOTION_INCLUSION_EDGE_MISMATCH"
+    PROMOTION_OPERATIONS_INCOMPLETE = "PROMOTION_OPERATIONS_INCOMPLETE"
+    PROMOTION_OPERATION_BINDING_MISMATCH = "PROMOTION_OPERATION_BINDING_MISMATCH"
+    PROMOTION_OPERATION_DID_NOT_PASS = "PROMOTION_OPERATION_DID_NOT_PASS"
+    PROMOTION_PHASE_MISMATCH = "PROMOTION_PHASE_MISMATCH"
+    PROMOTION_TARGET_MISMATCH = "PROMOTION_TARGET_MISMATCH"
+    PROMOTION_TARGET_STATE_MISMATCH = "PROMOTION_TARGET_STATE_MISMATCH"
+
+
 def _require_digest(value: object, *, field: str) -> str:
     if not isinstance(value, str) or not _DIGEST_RE.fullmatch(value):
         raise ValueError(f"{field} must be a canonical sha256 digest")
@@ -24,9 +79,9 @@ def _require_identifier(value: object, *, field: str) -> str:
 class ControlAuthorityError(RuntimeError):
     """Base error with a stable machine-readable failure code."""
 
-    def __init__(self, code: str, message: str) -> None:
-        self.code = code
-        super().__init__(f"{code}: {message}")
+    def __init__(self, code: AuthorityErrorCode | str, message: str) -> None:
+        self.code = AuthorityErrorCode(code)
+        super().__init__(f"{self.code.value}: {message}")
 
 
 class AuthorityUnavailable(ControlAuthorityError):
@@ -191,11 +246,13 @@ class ProtectedStateSnapshot:
     """Content-addressed capture of one declared protected-state projection."""
 
     record_digest: str
+    generation_digest: str
     projection_digest: str
     state_digest: str
 
     def __post_init__(self) -> None:
         _require_digest(self.record_digest, field="snapshot.record_digest")
+        _require_digest(self.generation_digest, field="snapshot.generation_digest")
         _require_digest(self.projection_digest, field="snapshot.projection_digest")
         _require_digest(self.state_digest, field="snapshot.state_digest")
 
@@ -251,6 +308,13 @@ class RollbackRecoveryContract:
             self.recovery_destination_generation_digest,
             field="recovery_destination_generation_digest",
         )
+        if (
+            self.recovery_target.generation_digest
+            != self.recovery_destination_generation_digest
+        ):
+            raise ValueError(
+                "recovery target generation must equal recovery destination"
+            )
         if self.recovery_origin_generation_digest is not None:
             _require_digest(
                 self.recovery_origin_generation_digest,
@@ -452,6 +516,44 @@ _OPERATION_COORDINATES = {
 }
 
 
+def validate_operation_coordinates(
+    operation_kind: CriticalOperationKind,
+    subject_kind: OperationSubjectKind,
+    target_kind: OperationTargetKind,
+    generation_binding_mode: GenerationBindingMode,
+    generation_class: GenerationClass,
+    lifecycle_phase: LifecyclePhase,
+) -> None:
+    """Validate one exact typed critical-operation coordinate row."""
+
+    typed_values = (
+        (operation_kind, CriticalOperationKind, "operation_kind"),
+        (subject_kind, OperationSubjectKind, "subject_kind"),
+        (target_kind, OperationTargetKind, "target_kind"),
+        (
+            generation_binding_mode,
+            GenerationBindingMode,
+            "generation_binding_mode",
+        ),
+        (generation_class, GenerationClass, "generation_class"),
+        (lifecycle_phase, LifecyclePhase, "lifecycle_phase"),
+    )
+    for value, expected_type, field_name in typed_values:
+        if not isinstance(value, expected_type):
+            raise TypeError(f"{field_name} must be a {expected_type.__name__}")
+    actual = (
+        subject_kind,
+        target_kind,
+        generation_binding_mode,
+        generation_class,
+        lifecycle_phase,
+    )
+    if actual not in _OPERATION_COORDINATES[operation_kind]:
+        raise ValueError(
+            "operation envelope coordinates are invalid for operation kind"
+        )
+
+
 @dataclass(frozen=True)
 class SubstrateBinding:
     """A declared provider for one production authority role.
@@ -534,17 +636,14 @@ class OperationBinding:
             raise TypeError("generation must be a GenerationBinding")
         if not isinstance(self.rollback, RollbackRecoveryContract):
             raise TypeError("rollback must be a RollbackRecoveryContract")
-        actual = (
+        validate_operation_coordinates(
+            self.operation_kind,
             self.subject.kind,
             self.target.kind,
             self.generation.mode,
             self.generation_class,
             self.lifecycle_phase,
         )
-        if actual not in _OPERATION_COORDINATES[self.operation_kind]:
-            raise ValueError(
-                "operation envelope coordinates are invalid for operation kind"
-            )
         if (
             self.subject.kind is OperationSubjectKind.GENERATION
             and self.subject.record_digest != self.generation.generation_digest

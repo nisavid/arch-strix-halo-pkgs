@@ -25,6 +25,7 @@ from control_plane import (
 EXPECTED_RECORD_KINDS = {
     "approval",
     "assignment",
+    "assignment_set",
     "attempt",
     "attestation",
     "atomic_evidence_cut",
@@ -44,6 +45,8 @@ EXPECTED_RECORD_KINDS = {
     "intent",
     "invalidation",
     "operation",
+    "operation_obligation",
+    "operation_obligation_set",
     "predicate_proof",
     "promotion_authority_proof",
     "promotion_contract",
@@ -85,7 +88,6 @@ VALID_PAYLOADS = {
         "applicability": "unconditional",
         "assignment_id": "assignment_1",
         "authorization_policy_digest": DIGEST_1,
-        "context_digest": DIGEST_2,
         "dependency_projection_digest": DIGEST_3,
         "gate_digest": DIGEST_4,
         "impact": "blocking",
@@ -93,6 +95,10 @@ VALID_PAYLOADS = {
         "separation_policy_digest": DIGEST_6,
         "subject_digest": DIGEST_7,
         "validity_policy_digest": DIGEST_8,
+    },
+    "assignment_set": {
+        "assignment_digests": [DIGEST_1, DIGEST_2],
+        "requirements_digest": DIGEST_3,
     },
     "attempt": {
         "actor_identity_digest": DIGEST_1,
@@ -332,6 +338,25 @@ VALID_PAYLOADS = {
         "target_kind": "live_root",
         "terminal_validator_digest": DIGEST_8,
     },
+    "operation_obligation": {
+        "generation_binding": {
+            "generation_digest": DIGEST_1,
+            "mode": "required_generation",
+        },
+        "generation_class": "c",
+        "intent_digest": DIGEST_2,
+        "lifecycle_phase": "active",
+        "obligation_id": "activation_1",
+        "operation_kind": "package_installation",
+        "subject_digest": DIGEST_1,
+        "subject_kind": "generation",
+        "target_id": "reference_host",
+        "target_kind": "live_root",
+    },
+    "operation_obligation_set": {
+        "obligation_digests": [DIGEST_1, DIGEST_2],
+        "requirements_digest": DIGEST_3,
+    },
     "predicate_proof": {
         "actor_identity_digest": DIGEST_1,
         "actor_role": "validator",
@@ -371,6 +396,7 @@ VALID_PAYLOADS = {
         "expected_active_generation_digest": DIGEST_2,
         "generation_digest": DIGEST_3,
         "obligation_digests": [DIGEST_4, DIGEST_5],
+        "operation_obligation_set_digest": DIGEST_8,
         "phase": "prevalidated",
         "requirements_digest": DIGEST_6,
         "target_digest": DIGEST_7,
@@ -383,6 +409,7 @@ VALID_PAYLOADS = {
         "impact": "blocking",
         "obligation_id": "w0_control_plane",
         "occurrence_digest": DIGEST_2,
+        "scenario_operation_obligation_digest": DIGEST_3,
     },
     "protected_state": {
         "fence_epoch": 1,
@@ -403,6 +430,7 @@ VALID_PAYLOADS = {
     "recovery": {
         "authorization_digest": DIGEST_1,
         "destination_generation_digest": DIGEST_2,
+        "exact_state_generation_digest": DIGEST_2,
         "exact_state_snapshot_digest": DIGEST_3,
         "generation_binding": {
             "generation_digest": DIGEST_7,
@@ -440,6 +468,7 @@ VALID_PAYLOADS = {
         "origin_generation_digest": DIGEST_3,
         "rollback_id": "rollback_1",
         "target_digest": DIGEST_4,
+        "target_generation_digest": DIGEST_1,
         "terminal_gate_digest": DIGEST_5,
     },
     "requirements": {
@@ -835,6 +864,7 @@ def test_each_restricted_record_family_rejects_malformed_typed_digests(
                 }
             },
         ),
+        ("recovery", {"exact_state_generation_digest": DIGEST_9}),
         (
             "rollback",
             {
@@ -844,6 +874,7 @@ def test_each_restricted_record_family_rejects_malformed_typed_digests(
                 }
             },
         ),
+        ("rollback", {"target_generation_digest": DIGEST_9}),
         (
             "rollback",
             {"generation_binding": {"mode": "no_generation"}},
@@ -1221,12 +1252,16 @@ def test_promotion_records_bind_total_obligations_and_an_atomic_evidence_cut() -
         "obligation_id",
         "occurrence_digest",
     }
+    assert set(obligation_schema.optional_fields) == {
+        "scenario_operation_obligation_digest"
+    }
     assert set(contract_schema.required_fields) == {
         "contract_id",
         "expected_accepted_generation_digest",
         "expected_active_generation_digest",
         "generation_digest",
         "obligation_digests",
+        "operation_obligation_set_digest",
         "phase",
         "requirements_digest",
         "target_digest",
@@ -1243,6 +1278,20 @@ def test_promotion_records_bind_total_obligations_and_an_atomic_evidence_cut() -
         "authorization_policy_digest",
         "contract_id",
         "requirements_digest",
+    }
+
+    operation_obligation_schema = RECORD_SCHEMAS["operation_obligation"]
+    assert set(operation_obligation_schema.required_fields) == {
+        "generation_binding",
+        "generation_class",
+        "intent_digest",
+        "lifecycle_phase",
+        "obligation_id",
+        "operation_kind",
+        "subject_digest",
+        "subject_kind",
+        "target_id",
+        "target_kind",
     }
 
     obligation = ControlRecord.build(
@@ -1287,6 +1336,79 @@ def test_promotion_records_bind_total_obligations_and_an_atomic_evidence_cut() -
     assert mismatched_operation_terminals.value.code is (
         RecordErrorCode.INVALID_PAYLOAD_SEMANTICS
     )
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {
+            **VALID_PAYLOADS["operation_obligation"],
+            "generation_binding": {
+                "generation_digest": DIGEST_1,
+                "mode": "required_generation",
+            },
+            "generation_class": "f",
+            "lifecycle_phase": "foundation_validation",
+            "operation_kind": "package_installation",
+            "subject_digest": DIGEST_1,
+            "subject_kind": "generation",
+            "target_kind": "isolated_root",
+        },
+        {
+            **VALID_PAYLOADS["operation_obligation"],
+            "generation_binding": {
+                "generation_digest": DIGEST_1,
+                "mode": "b0_capture_sentinel",
+                "sentinel_digest": DIGEST_9,
+            },
+            "generation_class": "b0",
+            "lifecycle_phase": "captured",
+            "operation_kind": "composite_authority_transition",
+            "subject_digest": DIGEST_8,
+            "subject_kind": "composite_authority",
+            "target_id": "authority_register",
+            "target_kind": "composite_register",
+        },
+    ],
+)
+def test_operation_obligations_represent_foundation_and_b0_coordinates(payload):
+    obligation = ControlRecord.build(
+        kind="operation_obligation",
+        record_id=f"operation_obligation:{payload['generation_class']}",
+        payload=payload,
+    )
+
+    assert obligation.payload["lifecycle_phase"] == payload["lifecycle_phase"]
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"generation_class": "c", "lifecycle_phase": "foundation_validation"},
+        {"target_kind": "service"},
+        {
+            "generation_binding": {
+                "generation_digest": DIGEST_1,
+                "mode": "required_generation",
+            },
+            "generation_class": "b0",
+            "lifecycle_phase": "captured",
+            "operation_kind": "composite_authority_transition",
+            "subject_digest": DIGEST_8,
+            "subject_kind": "composite_authority",
+            "target_kind": "composite_register",
+        },
+    ],
+)
+def test_operation_obligations_reject_impossible_authority_coordinates(changes):
+    with pytest.raises(RecordValidationError) as exc_info:
+        ControlRecord.build(
+            kind="operation_obligation",
+            record_id="operation_obligation:invalid",
+            payload={**VALID_PAYLOADS["operation_obligation"], **changes},
+        )
+
+    assert exc_info.value.code is RecordErrorCode.INVALID_PAYLOAD_SEMANTICS
 
 
 def test_promotion_authority_proof_binds_the_exact_authority_view_and_cut() -> None:

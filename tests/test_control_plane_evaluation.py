@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-import sys
+
 import pytest
 
 TOOLS_DIR = Path(__file__).resolve().parents[1] / "tools"
@@ -15,24 +16,25 @@ from control_plane import (
     ApplicableUnknown,
     Attestation,
     AttestationOutcome,
-    Currency,
     ConditionalApplicability,
+    ControlRecord,
+    Currency,
     DependencyBinding,
     DependencyKey,
-    EvidenceEvaluation,
     EvaluationInputError,
+    EvidenceEvaluation,
     EvidenceNotCurrent,
     EvidenceSatisfaction,
     EvidenceUnknown,
     GateAssignment,
     GateImpact,
-    InvalidationPolicy,
     InvalidationEvent,
+    InvalidationPolicy,
+    NonPromotionalContext,
     NotApplicable,
     NotDue,
-    NonPromotionalContext,
-    PredicateProof,
     PreassemblyContext,
+    PredicateProof,
     SeparationPolicy,
     UnconditionalApplicability,
     UnknownReason,
@@ -43,7 +45,6 @@ from control_plane import (
     require_evaluation_pass,
 )
 
-
 NOW = datetime(2026, 8, 12, 9, 0, tzinfo=UTC)
 CONTRACT_DIGEST = "sha256:" + "1" * 64
 OTHER_CONTRACT_DIGEST = "sha256:" + "2" * 64
@@ -51,23 +52,56 @@ PROFILE_DIGEST = "sha256:" + "3" * 64
 SOURCE_CLOSURE_DIGEST = "sha256:" + "4" * 64
 ARTIFACT_DIGEST = "sha256:" + "5" * 64
 SOURCE_DIGEST = "sha256:" + "6" * 64
+REQUIREMENTS_DIGEST = "sha256:" + "7" * 64
+ASSIGNMENTS_DIGEST = "sha256:" + "8" * 64
+GENERATION_DIGEST = "sha256:" + "9" * 64
 
 
 def _active_context(*, contract_digest: str = CONTRACT_DIGEST) -> ActiveContractContext:
     return ActiveContractContext(
         context_id="w0-generation-c",
+        requirements_digest=REQUIREMENTS_DIGEST,
+        assignments_digest=ASSIGNMENTS_DIGEST,
         contract_digest=contract_digest,
-        generation_id="generation-c",
+        generation_digest=GENERATION_DIGEST,
     )
 
 
 def _preassembly_context() -> PreassemblyContext:
     return PreassemblyContext(
         context_id="preassembly:foundation",
+        requirements_digest=REQUIREMENTS_DIGEST,
+        assignments_digest=ASSIGNMENTS_DIGEST,
         profile_digest=PROFILE_DIGEST,
         source_closure_digest=SOURCE_CLOSURE_DIGEST,
-        artifact_digest=ARTIFACT_DIGEST,
+        artifact_digests=(ARTIFACT_DIGEST,),
     )
+
+
+@pytest.mark.parametrize("context", [_active_context(), _preassembly_context()])
+def test_validation_context_value_objects_round_trip_canonical_records(context):
+    record = context.to_record(record_id=f"validation-context:{context.context_id}")
+    restored = type(context).from_record(record)
+
+    assert restored == context
+    assert record.payload["context_type"] == context.kind.value
+
+
+def test_preassembly_context_preserves_the_exact_artifact_plurality():
+    context = _preassembly_context()
+    second = "sha256:" + "a" * 64
+    record = ControlRecord.build(
+        kind="validation_context",
+        record_id="validation-context:preassembly-many",
+        payload={
+            **dict(context.to_record(record_id="validation-context:one").payload),
+            "artifact_digests": [ARTIFACT_DIGEST, second],
+        },
+    )
+
+    restored = PreassemblyContext.from_record(record)
+
+    assert restored.artifact_digests == (ARTIFACT_DIGEST, second)
 
 
 def _assignment(**changes: object) -> GateAssignment:
@@ -208,24 +242,30 @@ def test_assignment_construction_detaches_mutable_dependency_and_separation_inpu
         pytest.param(
             lambda: ActiveContractContext(
                 context_id="",
+                requirements_digest=REQUIREMENTS_DIGEST,
+                assignments_digest=ASSIGNMENTS_DIGEST,
                 contract_digest=CONTRACT_DIGEST,
-                generation_id="generation-c",
+                generation_digest=GENERATION_DIGEST,
             ),
             id="empty-active-context-id",
         ),
         pytest.param(
             lambda: ActiveContractContext(
                 context_id="w0-generation-c",
+                requirements_digest=REQUIREMENTS_DIGEST,
+                assignments_digest=ASSIGNMENTS_DIGEST,
                 contract_digest="sha256:not-canonical",
-                generation_id="generation-c",
+                generation_digest=GENERATION_DIGEST,
             ),
             id="malformed-contract-digest",
         ),
         pytest.param(
             lambda: ActiveContractContext(
                 context_id="w0-generation-c",
+                requirements_digest=REQUIREMENTS_DIGEST,
+                assignments_digest=ASSIGNMENTS_DIGEST,
                 contract_digest=CONTRACT_DIGEST,
-                generation_id="generation-c",
+                generation_digest=GENERATION_DIGEST,
                 kind=_preassembly_context().kind,
             ),
             id="wrong-active-context-tag",
@@ -233,18 +273,22 @@ def test_assignment_construction_detaches_mutable_dependency_and_separation_inpu
         pytest.param(
             lambda: PreassemblyContext(
                 context_id="preassembly:foundation",
+                requirements_digest=REQUIREMENTS_DIGEST,
+                assignments_digest=ASSIGNMENTS_DIGEST,
                 profile_digest=PROFILE_DIGEST,
                 source_closure_digest="sha256:not-canonical",
-                artifact_digest=ARTIFACT_DIGEST,
+                artifact_digests=(ARTIFACT_DIGEST,),
             ),
             id="malformed-preassembly-digest",
         ),
         pytest.param(
             lambda: PreassemblyContext(
                 context_id="preassembly:foundation",
+                requirements_digest=REQUIREMENTS_DIGEST,
+                assignments_digest=ASSIGNMENTS_DIGEST,
                 profile_digest=PROFILE_DIGEST,
                 source_closure_digest=SOURCE_CLOSURE_DIGEST,
-                artifact_digest=ARTIFACT_DIGEST,
+                artifact_digests=(ARTIFACT_DIGEST,),
                 kind=_active_context().kind,
             ),
             id="wrong-preassembly-context-tag",

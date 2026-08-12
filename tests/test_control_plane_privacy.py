@@ -1,9 +1,8 @@
-from pathlib import Path
 import json
 import sys
+from pathlib import Path
 
 import pytest
-
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 TOOLS_DIR = REPO_ROOT / "tools"
@@ -15,7 +14,6 @@ from control_plane import (
     PrivacyEnvelopeError,
     RecordErrorCode,
 )
-
 
 DIGEST_1 = "sha256:" + "1" * 64
 DIGEST_2 = "sha256:" + "2" * 64

@@ -12,8 +12,10 @@ if str(TOOLS_DIR) not in sys.path:
     sys.path.insert(0, str(TOOLS_DIR))
 
 from control_plane import (
+    AuthorityErrorCode,
     AuthorityRole,
     AuthorityUnavailable,
+    ControlAuthorityError,
     CriticalOperationKind,
     DeclaredEffect,
     EffectClass,
@@ -38,6 +40,7 @@ from control_plane import (
     TerminalOutcome,
     production_authority,
     require_promotable,
+    validate_operation_coordinates,
 )
 from control_plane.testing import InMemoryAuthority
 
@@ -59,6 +62,15 @@ RECOVERY_CONTRACT = "sha256:" + "f" * 64
 RECOVERY_DESTINATION = "sha256:" + "0" * 64
 
 
+def test_authority_failures_export_a_closed_typed_error_code():
+    error = ControlAuthorityError(
+        AuthorityErrorCode.AUTHORITY_TOPOLOGY_UNBOUND,
+        "unbound",
+    )
+
+    assert error.code is AuthorityErrorCode.AUTHORITY_TOPOLOGY_UNBOUND
+
+
 def test_generation_binding_modes_are_closed_and_bind_required_generations():
     binding = GenerationBinding(
         mode=GenerationBindingMode.REQUIRED_GENERATION,
@@ -75,6 +87,219 @@ def test_generation_binding_modes_are_closed_and_bind_required_generations():
         )
     with pytest.raises(TypeError, match="GenerationBindingMode"):
         GenerationBinding(mode="emergency_root")  # type: ignore[arg-type]
+
+
+def test_shared_operation_coordinate_validator_accepts_every_legal_row():
+    required = GenerationBindingMode.REQUIRED_GENERATION
+    legal_rows = {
+        CriticalOperationKind.REPOSITORY_PUBLICATION: {
+            (
+                OperationSubjectKind.GENERATION,
+                OperationTargetKind.PACKAGE_REPOSITORY,
+                required,
+                generation_class,
+                LifecyclePhase.PUBLISHED,
+            )
+            for generation_class in (GenerationClass.F, GenerationClass.C)
+        },
+        CriticalOperationKind.PACKAGE_INSTALLATION: {
+            (
+                OperationSubjectKind.GENERATION,
+                OperationTargetKind.ISOLATED_ROOT,
+                required,
+                GenerationClass.F,
+                LifecyclePhase.FOUNDATION_VALIDATION,
+            ),
+            (
+                OperationSubjectKind.GENERATION,
+                OperationTargetKind.ISOLATED_ROOT,
+                required,
+                GenerationClass.C,
+                LifecyclePhase.PREVALIDATED,
+            ),
+            (
+                OperationSubjectKind.GENERATION,
+                OperationTargetKind.LIVE_ROOT,
+                required,
+                GenerationClass.C,
+                LifecyclePhase.ACTIVE,
+            ),
+        },
+        CriticalOperationKind.TRUST_POLICY_MUTATION: {
+            (
+                OperationSubjectKind.CONTROL_RECORD,
+                target_kind,
+                required,
+                GenerationClass.C,
+                lifecycle_phase,
+            )
+            for target_kind, lifecycle_phase in (
+                (OperationTargetKind.ISOLATED_ROOT, LifecyclePhase.PREVALIDATED),
+                (OperationTargetKind.LIVE_ROOT, LifecyclePhase.ACTIVE),
+            )
+        },
+        CriticalOperationKind.BLOCKING_SCENARIO: {
+            (
+                OperationSubjectKind.GATE_OCCURRENCE,
+                target_kind,
+                required,
+                generation_class,
+                lifecycle_phase,
+            )
+            for generation_class, lifecycle_phase, target_kinds in (
+                (
+                    GenerationClass.F,
+                    LifecyclePhase.FOUNDATION_VALIDATION,
+                    (OperationTargetKind.ISOLATED_ROOT,),
+                ),
+                (
+                    GenerationClass.C,
+                    LifecyclePhase.PREVALIDATED,
+                    (OperationTargetKind.ISOLATED_ROOT, OperationTargetKind.SERVICE),
+                ),
+                (
+                    GenerationClass.C,
+                    LifecyclePhase.ACTIVE,
+                    (OperationTargetKind.LIVE_ROOT, OperationTargetKind.SERVICE),
+                ),
+                (
+                    GenerationClass.C,
+                    LifecyclePhase.ACCEPTED,
+                    (OperationTargetKind.LIVE_ROOT, OperationTargetKind.SERVICE),
+                ),
+            )
+            for target_kind in target_kinds
+        },
+        CriticalOperationKind.COMPOSITE_AUTHORITY_TRANSITION: {
+            (
+                OperationSubjectKind.COMPOSITE_AUTHORITY,
+                OperationTargetKind.COMPOSITE_REGISTER,
+                GenerationBindingMode.B0_CAPTURE_SENTINEL,
+                GenerationClass.B0,
+                LifecyclePhase.CAPTURED,
+            ),
+            *(
+                (
+                    OperationSubjectKind.COMPOSITE_AUTHORITY,
+                    OperationTargetKind.COMPOSITE_REGISTER,
+                    required,
+                    GenerationClass.C,
+                    lifecycle_phase,
+                )
+                for lifecycle_phase in (
+                    LifecyclePhase.PUBLISHED,
+                    LifecyclePhase.PREVALIDATED,
+                    LifecyclePhase.ACTIVE,
+                    LifecyclePhase.ACCEPTED,
+                )
+            ),
+        },
+        CriticalOperationKind.ROLLBACK: {
+            (
+                OperationSubjectKind.GENERATION,
+                target_kind,
+                required,
+                generation_class,
+                lifecycle_phase,
+            )
+            for generation_class, lifecycle_phase, target_kind in (
+                (
+                    GenerationClass.F,
+                    LifecyclePhase.FOUNDATION_VALIDATION,
+                    OperationTargetKind.ISOLATED_ROOT,
+                ),
+                (
+                    GenerationClass.C,
+                    LifecyclePhase.PREVALIDATED,
+                    OperationTargetKind.ISOLATED_ROOT,
+                ),
+                (
+                    GenerationClass.C,
+                    LifecyclePhase.ACTIVE,
+                    OperationTargetKind.LIVE_ROOT,
+                ),
+            )
+        },
+        CriticalOperationKind.RECOVERY: {
+            (
+                OperationSubjectKind.CONTROL_RECORD,
+                target_kind,
+                required,
+                generation_class,
+                lifecycle_phase,
+            )
+            for generation_class, lifecycle_phase, target_kind in (
+                (
+                    GenerationClass.F,
+                    LifecyclePhase.FOUNDATION_VALIDATION,
+                    OperationTargetKind.ISOLATED_ROOT,
+                ),
+                (
+                    GenerationClass.C,
+                    LifecyclePhase.PREVALIDATED,
+                    OperationTargetKind.ISOLATED_ROOT,
+                ),
+                (
+                    GenerationClass.C,
+                    LifecyclePhase.ACTIVE,
+                    OperationTargetKind.LIVE_ROOT,
+                ),
+                (
+                    GenerationClass.C,
+                    LifecyclePhase.ACCEPTED,
+                    OperationTargetKind.LIVE_ROOT,
+                ),
+            )
+        },
+    }
+
+    assert sum(map(len, legal_rows.values())) == 26
+    for operation_kind, rows in legal_rows.items():
+        for row in rows:
+            validate_operation_coordinates(operation_kind, *row)
+
+
+@pytest.mark.parametrize(
+    ("operation_kind", "coordinates"),
+    [
+        (
+            CriticalOperationKind.COMPOSITE_AUTHORITY_TRANSITION,
+            (
+                OperationSubjectKind.COMPOSITE_AUTHORITY,
+                OperationTargetKind.COMPOSITE_REGISTER,
+                GenerationBindingMode.REQUIRED_GENERATION,
+                GenerationClass.B0,
+                LifecyclePhase.CAPTURED,
+            ),
+        ),
+        (
+            CriticalOperationKind.PACKAGE_INSTALLATION,
+            (
+                OperationSubjectKind.GENERATION,
+                OperationTargetKind.ISOLATED_ROOT,
+                GenerationBindingMode.REQUIRED_GENERATION,
+                GenerationClass.C,
+                LifecyclePhase.FOUNDATION_VALIDATION,
+            ),
+        ),
+        (
+            CriticalOperationKind.REPOSITORY_PUBLICATION,
+            (
+                OperationSubjectKind.GENERATION,
+                OperationTargetKind.ISOLATED_ROOT,
+                GenerationBindingMode.REQUIRED_GENERATION,
+                GenerationClass.F,
+                LifecyclePhase.PUBLISHED,
+            ),
+        ),
+    ],
+)
+def test_shared_operation_coordinate_validator_rejects_adjacent_invalid_rows(
+    operation_kind,
+    coordinates,
+):
+    with pytest.raises(ValueError, match="operation envelope coordinates"):
+        validate_operation_coordinates(operation_kind, *coordinates)
 
 
 def test_b0_capture_binds_an_exact_pre_generation_sentinel_and_output():
@@ -143,6 +368,7 @@ def test_b0_capture_rejects_a_sentinel_free_generation_exemption():
 def typed_operation_binding() -> OperationBinding:
     expected = ProtectedStateSnapshot(
         record_digest="sha256:" + "f" * 64,
+        generation_digest=RECOVERY_DESTINATION,
         projection_digest=PROJECTION,
         state_digest=OLD_STATE,
     )
@@ -165,6 +391,7 @@ def typed_operation_binding() -> OperationBinding:
         expected_state=expected,
         intended_state=ProtectedStateSnapshot(
             record_digest="sha256:" + "0" * 64,
+            generation_digest=GENERATION,
             projection_digest=PROJECTION,
             state_digest=INTENDED,
         ),
@@ -403,6 +630,16 @@ def test_recovery_only_contract_requires_an_exact_recovery_target():
             mode=RecoveryMode.RECOVERY_ONLY,
             recovery_plan_digest=RECOVERY_PLAN,
             recovery_owner_role="recovery-owner",
+        )
+
+
+def test_recovery_target_generation_must_equal_the_recovery_destination():
+    binding = typed_operation_binding()
+
+    with pytest.raises(ValueError, match="recovery target generation"):
+        replace(
+            binding.rollback,
+            recovery_destination_generation_digest="sha256:" + "e" * 64,
         )
 
 

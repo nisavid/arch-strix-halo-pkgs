@@ -14,10 +14,12 @@ from datetime import datetime, timedelta
 from enum import StrEnum
 from typing import TypeAlias
 
+from ._records import ControlRecord
+
 
 class ContextKind(StrEnum):
     ACTIVE_CONTRACT = "active_contract"
-    PREASSEMBLY = "preassembly"
+    PREASSEMBLY = "preassembly_profile"
 
 
 class GateImpact(StrEnum):
@@ -112,33 +114,106 @@ class DependencyBinding:
 @dataclass(frozen=True, slots=True)
 class ActiveContractContext:
     context_id: str
+    requirements_digest: str
+    assignments_digest: str
     contract_digest: str
-    generation_id: str
+    generation_digest: str
     kind: ContextKind = ContextKind.ACTIVE_CONTRACT
 
     def __post_init__(self) -> None:
         _require_stable_id(self.context_id, field="context_id")
+        _require_digest(self.requirements_digest, field="requirements_digest")
+        _require_digest(self.assignments_digest, field="assignments_digest")
         _require_digest(self.contract_digest, field="contract_digest")
-        _require_stable_id(self.generation_id, field="generation_id")
+        _require_digest(self.generation_digest, field="generation_digest")
         if self.kind is not ContextKind.ACTIVE_CONTRACT:
             raise ValueError("active contract context must use the active_contract tag")
+
+    @classmethod
+    def from_record(cls, record: ControlRecord) -> ActiveContractContext:
+        if not isinstance(record, ControlRecord) or record.kind != "validation_context":
+            raise TypeError("record must be a validation_context ControlRecord")
+        payload = record.payload
+        if payload["context_type"] != ContextKind.ACTIVE_CONTRACT.value:
+            raise ValueError("validation context is not active_contract")
+        return cls(
+            context_id=payload["context_id"],
+            requirements_digest=payload["requirements_digest"],
+            assignments_digest=payload["assignments_digest"],
+            contract_digest=payload["contract_digest"],
+            generation_digest=payload["generation_digest"],
+        )
+
+    def to_record(self, *, record_id: str) -> ControlRecord:
+        return ControlRecord.build(
+            kind="validation_context",
+            record_id=record_id,
+            payload={
+                "assignments_digest": self.assignments_digest,
+                "context_id": self.context_id,
+                "context_type": self.kind.value,
+                "contract_digest": self.contract_digest,
+                "generation_digest": self.generation_digest,
+                "requirements_digest": self.requirements_digest,
+            },
+        )
 
 
 @dataclass(frozen=True, slots=True)
 class PreassemblyContext:
     context_id: str
+    requirements_digest: str
+    assignments_digest: str
     profile_digest: str
     source_closure_digest: str
-    artifact_digest: str
+    artifact_digests: tuple[str, ...]
     kind: ContextKind = ContextKind.PREASSEMBLY
 
     def __post_init__(self) -> None:
         _require_stable_id(self.context_id, field="context_id")
+        _require_digest(self.requirements_digest, field="requirements_digest")
+        _require_digest(self.assignments_digest, field="assignments_digest")
         _require_digest(self.profile_digest, field="profile_digest")
         _require_digest(self.source_closure_digest, field="source_closure_digest")
-        _require_digest(self.artifact_digest, field="artifact_digest")
+        artifacts = tuple(self.artifact_digests)
+        if not artifacts or len(artifacts) != len(set(artifacts)):
+            raise ValueError("artifact_digests must be nonempty and unique")
+        for artifact_digest in artifacts:
+            _require_digest(artifact_digest, field="artifact_digests item")
+        object.__setattr__(self, "artifact_digests", artifacts)
         if self.kind is not ContextKind.PREASSEMBLY:
             raise ValueError("preassembly context must use the preassembly tag")
+
+    @classmethod
+    def from_record(cls, record: ControlRecord) -> PreassemblyContext:
+        if not isinstance(record, ControlRecord) or record.kind != "validation_context":
+            raise TypeError("record must be a validation_context ControlRecord")
+        payload = record.payload
+        if payload["context_type"] != ContextKind.PREASSEMBLY.value:
+            raise ValueError("validation context is not preassembly_profile")
+        return cls(
+            context_id=payload["context_id"],
+            requirements_digest=payload["requirements_digest"],
+            assignments_digest=payload["assignments_digest"],
+            profile_digest=payload["profile_digest"],
+            source_closure_digest=payload["source_closure_digest"],
+            artifact_digests=tuple(payload["artifact_digests"]),
+        )
+
+    def to_record(self, *, record_id: str) -> ControlRecord:
+        return ControlRecord.build(
+            kind="validation_context",
+            record_id=record_id,
+            payload={
+                "artifact_digests": list(self.artifact_digests),
+                "assignments_digest": self.assignments_digest,
+                "context_id": self.context_id,
+                "context_type": self.kind.value,
+                "profile_digest": self.profile_digest,
+                "requirements_digest": self.requirements_digest,
+                "source_closure_digest": self.source_closure_digest,
+            },
+        )
 
 
 ValidationContext: TypeAlias = ActiveContractContext | PreassemblyContext
