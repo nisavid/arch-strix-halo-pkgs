@@ -2,7 +2,7 @@ from pathlib import Path
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-CONTEXT = REPO_ROOT / "CONTEXT.md"
+CONTEXT = REPO_ROOT / "docs/architecture/convergence-domain.md"
 ARCHITECTURE = REPO_ROOT / "docs/architecture/convergence-control-plane.md"
 DOC_INDEX = REPO_ROOT / "docs/README.md"
 CURRENT_STATE = REPO_ROOT / "docs/maintainers/current-state.md"
@@ -12,11 +12,15 @@ AGENTS = REPO_ROOT / "AGENTS.md"
 def test_control_plane_language_and_architecture_are_durable():
     context = CONTEXT.read_text(encoding="utf-8")
     architecture = ARCHITECTURE.read_text(encoding="utf-8")
+    normalized_architecture = " ".join(architecture.split())
 
     assert "**Attestation**" in context
     assert "**Evaluation**" in context
     assert "**Promotional evidence**" in context
     assert "content-addressed record proves identity and integrity" in architecture
+    assert "canonical record core" in normalized_architecture
+    assert "named recovery-successor execution" in normalized_architecture
+    assert "currency is orthogonal" in normalized_architecture
     assert "does not turn the repository into a production authority" in architecture
 
 

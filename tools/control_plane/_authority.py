@@ -1,19 +1,24 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from enum import StrEnum
-import re
 from typing import Protocol, runtime_checkable
-
 
 _DIGEST_RE = re.compile(r"sha256:[0-9a-f]{64}\Z")
 _IDENTIFIER_RE = re.compile(r"[a-z][a-z0-9]*(?:[-_][a-z0-9]+)*\Z")
-_GENERATION_BINDINGS = {
-    "required_generation",
-    "b0_capture_sentinel",
-    "no_generation",
-    "emergency_root",
-}
+
+
+def _require_digest(value: object, *, field: str) -> str:
+    if not isinstance(value, str) or not _DIGEST_RE.fullmatch(value):
+        raise ValueError(f"{field} must be a canonical sha256 digest")
+    return value
+
+
+def _require_identifier(value: object, *, field: str) -> str:
+    if not isinstance(value, str) or not _IDENTIFIER_RE.fullmatch(value):
+        raise ValueError(f"{field} must be a lowercase stable identifier")
+    return value
 
 
 class ControlAuthorityError(RuntimeError):
@@ -45,6 +50,406 @@ class AuthorityRole(StrEnum):
     FENCED_TARGET_LEASE = "fenced_target_lease"
     RECOVERY_ROOT = "recovery_root"
     TRUSTED_TIME = "trusted_time"
+
+
+class GenerationBindingMode(StrEnum):
+    """Closed generation-coordinate modes accepted by critical operations."""
+
+    REQUIRED_GENERATION = "required_generation"
+    B0_CAPTURE_SENTINEL = "b0_capture_sentinel"
+    NO_GENERATION = "no_generation"
+
+
+class GenerationClass(StrEnum):
+    """Immutable artifact-state class bound into a critical operation."""
+
+    B0 = "b0"
+    F = "f"
+    C = "c"
+
+
+class LifecyclePhase(StrEnum):
+    """Closed lifecycle coordinate for an operation's exact generation."""
+
+    CAPTURED = "captured"
+    FOUNDATION_VALIDATION = "foundation_validation"
+    PUBLISHED = "published"
+    PREVALIDATED = "prevalidated"
+    ACTIVE = "active"
+    ACCEPTED = "accepted"
+
+
+@dataclass(frozen=True)
+class GenerationBinding:
+    """Bind an operation to an exact generation, or to an explicit absence."""
+
+    mode: GenerationBindingMode
+    generation_digest: str | None = None
+    sentinel_digest: str | None = None
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.mode, GenerationBindingMode):
+            raise TypeError("mode must be a GenerationBindingMode")
+        if self.mode is GenerationBindingMode.REQUIRED_GENERATION:
+            if self.generation_digest is None:
+                raise ValueError("required_generation requires generation_digest")
+            _require_digest(self.generation_digest, field="generation_digest")
+            if self.sentinel_digest is not None:
+                raise ValueError("required_generation forbids sentinel_digest")
+        elif self.mode is GenerationBindingMode.B0_CAPTURE_SENTINEL:
+            if self.generation_digest is None or self.sentinel_digest is None:
+                raise ValueError(
+                    "b0_capture_sentinel requires generation_digest and sentinel_digest"
+                )
+            _require_digest(self.generation_digest, field="generation_digest")
+            _require_digest(self.sentinel_digest, field="sentinel_digest")
+        elif self.generation_digest is not None or self.sentinel_digest is not None:
+            raise ValueError("no_generation forbids generation_digest and sentinel_digest")
+
+
+class CriticalOperationKind(StrEnum):
+    REPOSITORY_PUBLICATION = "repository_publication"
+    PACKAGE_INSTALLATION = "package_installation"
+    TRUST_POLICY_MUTATION = "trust_policy_mutation"
+    BLOCKING_SCENARIO = "blocking_scenario"
+    COMPOSITE_AUTHORITY_TRANSITION = "composite_authority_transition"
+    ROLLBACK = "rollback"
+    RECOVERY = "recovery"
+
+
+class OperationSubjectKind(StrEnum):
+    CONTROL_RECORD = "control_record"
+    GENERATION = "generation"
+    COMPOSITE_AUTHORITY = "composite_authority"
+    GATE_OCCURRENCE = "gate_occurrence"
+
+
+class OperationTargetKind(StrEnum):
+    PACKAGE_REPOSITORY = "package_repository"
+    ISOLATED_ROOT = "isolated_root"
+    LIVE_ROOT = "live_root"
+    SERVICE = "service"
+    COMPOSITE_REGISTER = "composite_register"
+
+
+class EffectClass(StrEnum):
+    ADMISSIBLE = "admissible"
+    FORBIDDEN_TRANSIENT = "forbidden_transient"
+    POSTSTATE_OBSERVABLE = "poststate_observable"
+
+
+class RecoveryMode(StrEnum):
+    EXACT_ROLLBACK = "exact_rollback"
+    RECOVERY_ONLY = "recovery_only"
+
+
+class TerminalOutcome(StrEnum):
+    PASS = "pass"
+    FAIL = "fail"
+    UNKNOWN = "unknown"
+
+
+class OperationState(StrEnum):
+    INTENT_REGISTERED = "intent_registered"
+    CAPABILITY_ISSUED = "capability_issued"
+    PRECHECK_FAILED = "precheck_failed"
+    MUTATED_PENDING_VALIDATION = "mutated_pending_validation"
+    SUCCEEDED = "succeeded"
+    ROLLBACK_REQUIRED = "rollback_required"
+    ROLLBACK_PENDING_VALIDATION = "rollback_pending_validation"
+    ROLLED_BACK = "rolled_back"
+    RECOVERY_REQUIRED = "recovery_required"
+    RECOVERY_CAPABILITY_ISSUED = "recovery_capability_issued"
+    RECOVERY_PENDING_VALIDATION = "recovery_pending_validation"
+    RECOVERED = "recovered"
+
+
+@dataclass(frozen=True)
+class OperationSubject:
+    kind: OperationSubjectKind
+    record_digest: str
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.kind, OperationSubjectKind):
+            raise TypeError("kind must be an OperationSubjectKind")
+        _require_digest(self.record_digest, field="subject.record_digest")
+
+
+@dataclass(frozen=True)
+class OperationTarget:
+    kind: OperationTargetKind
+    target_id: str
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.kind, OperationTargetKind):
+            raise TypeError("kind must be an OperationTargetKind")
+        _require_identifier(self.target_id, field="target.target_id")
+
+
+@dataclass(frozen=True)
+class ProtectedStateSnapshot:
+    """Content-addressed capture of one declared protected-state projection."""
+
+    record_digest: str
+    projection_digest: str
+    state_digest: str
+
+    def __post_init__(self) -> None:
+        _require_digest(self.record_digest, field="snapshot.record_digest")
+        _require_digest(self.projection_digest, field="snapshot.projection_digest")
+        _require_digest(self.state_digest, field="snapshot.state_digest")
+
+
+@dataclass(frozen=True)
+class DeclaredEffect:
+    effect_id: str
+    classification: EffectClass
+    projection_digest: str
+
+    def __post_init__(self) -> None:
+        _require_identifier(self.effect_id, field="effect.effect_id")
+        if not isinstance(self.classification, EffectClass):
+            raise TypeError("classification must be an EffectClass")
+        _require_digest(self.projection_digest, field="effect.projection_digest")
+
+
+@dataclass(frozen=True)
+class RollbackRecoveryContract:
+    """Exact rollback target or fail-closed recovery-only disposition."""
+
+    mode: RecoveryMode
+    recovery_plan_digest: str
+    recovery_owner_role: str
+    recovery_contract_digest: str | None = None
+    recovery_target: ProtectedStateSnapshot | None = None
+    recovery_destination_generation_digest: str | None = None
+    recovery_origin_generation_digest: str | None = None
+    rollback_target: ProtectedStateSnapshot | None = None
+    rollback_plan_digest: str | None = None
+    rollback_validator_digest: str | None = None
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.mode, RecoveryMode):
+            raise TypeError("mode must be a RecoveryMode")
+        _require_digest(self.recovery_plan_digest, field="recovery_plan_digest")
+        _require_identifier(self.recovery_owner_role, field="recovery_owner_role")
+        if (
+            self.recovery_contract_digest is None
+            or self.recovery_target is None
+            or self.recovery_destination_generation_digest is None
+        ):
+            raise ValueError(
+                "recovery requires contract, target, and destination generation"
+            )
+        _require_digest(
+            self.recovery_contract_digest,
+            field="recovery_contract_digest",
+        )
+        if not isinstance(self.recovery_target, ProtectedStateSnapshot):
+            raise TypeError("recovery_target must be a ProtectedStateSnapshot")
+        _require_digest(
+            self.recovery_destination_generation_digest,
+            field="recovery_destination_generation_digest",
+        )
+        if self.recovery_origin_generation_digest is not None:
+            _require_digest(
+                self.recovery_origin_generation_digest,
+                field="recovery_origin_generation_digest",
+            )
+        rollback_fields = (
+            self.rollback_target,
+            self.rollback_plan_digest,
+            self.rollback_validator_digest,
+        )
+        if self.mode is RecoveryMode.EXACT_ROLLBACK:
+            if any(value is None for value in rollback_fields):
+                raise ValueError("exact_rollback requires target, plan, and validator")
+            if not isinstance(self.rollback_target, ProtectedStateSnapshot):
+                raise TypeError("rollback_target must be a ProtectedStateSnapshot")
+            _require_digest(self.rollback_plan_digest, field="rollback_plan_digest")
+            _require_digest(
+                self.rollback_validator_digest,
+                field="rollback_validator_digest",
+            )
+        elif any(value is not None for value in rollback_fields):
+            raise ValueError("recovery_only forbids rollback target, plan, and validator")
+
+
+_OPERATION_COORDINATES = {
+    CriticalOperationKind.REPOSITORY_PUBLICATION: frozenset(
+        {
+            (
+                OperationSubjectKind.GENERATION,
+                OperationTargetKind.PACKAGE_REPOSITORY,
+                GenerationBindingMode.REQUIRED_GENERATION,
+                generation_class,
+                LifecyclePhase.PUBLISHED,
+            )
+            for generation_class in (GenerationClass.F, GenerationClass.C)
+        }
+    ),
+    CriticalOperationKind.PACKAGE_INSTALLATION: frozenset(
+        {
+            (
+                OperationSubjectKind.GENERATION,
+                OperationTargetKind.ISOLATED_ROOT,
+                GenerationBindingMode.REQUIRED_GENERATION,
+                GenerationClass.F,
+                LifecyclePhase.FOUNDATION_VALIDATION,
+            ),
+            (
+                OperationSubjectKind.GENERATION,
+                OperationTargetKind.ISOLATED_ROOT,
+                GenerationBindingMode.REQUIRED_GENERATION,
+                GenerationClass.C,
+                LifecyclePhase.PREVALIDATED,
+            ),
+            (
+                OperationSubjectKind.GENERATION,
+                OperationTargetKind.LIVE_ROOT,
+                GenerationBindingMode.REQUIRED_GENERATION,
+                GenerationClass.C,
+                LifecyclePhase.ACTIVE,
+            ),
+        }
+    ),
+    CriticalOperationKind.TRUST_POLICY_MUTATION: frozenset(
+        {
+            (
+                OperationSubjectKind.CONTROL_RECORD,
+                OperationTargetKind.ISOLATED_ROOT,
+                GenerationBindingMode.REQUIRED_GENERATION,
+                GenerationClass.C,
+                LifecyclePhase.PREVALIDATED,
+            ),
+            (
+                OperationSubjectKind.CONTROL_RECORD,
+                OperationTargetKind.LIVE_ROOT,
+                GenerationBindingMode.REQUIRED_GENERATION,
+                GenerationClass.C,
+                LifecyclePhase.ACTIVE,
+            ),
+        }
+    ),
+    CriticalOperationKind.BLOCKING_SCENARIO: frozenset(
+        {
+            (
+                OperationSubjectKind.GATE_OCCURRENCE,
+                target_kind,
+                GenerationBindingMode.REQUIRED_GENERATION,
+                generation_class,
+                lifecycle_phase,
+            )
+            for generation_class, lifecycle_phase, target_kinds in (
+                (
+                    GenerationClass.F,
+                    LifecyclePhase.FOUNDATION_VALIDATION,
+                    (OperationTargetKind.ISOLATED_ROOT,),
+                ),
+                (
+                    GenerationClass.C,
+                    LifecyclePhase.PREVALIDATED,
+                    (OperationTargetKind.ISOLATED_ROOT, OperationTargetKind.SERVICE),
+                ),
+                (
+                    GenerationClass.C,
+                    LifecyclePhase.ACTIVE,
+                    (OperationTargetKind.LIVE_ROOT, OperationTargetKind.SERVICE),
+                ),
+                (
+                    GenerationClass.C,
+                    LifecyclePhase.ACCEPTED,
+                    (OperationTargetKind.LIVE_ROOT, OperationTargetKind.SERVICE),
+                ),
+            )
+            for target_kind in target_kinds
+        }
+    ),
+    CriticalOperationKind.COMPOSITE_AUTHORITY_TRANSITION: frozenset(
+        {
+            (
+                OperationSubjectKind.COMPOSITE_AUTHORITY,
+                OperationTargetKind.COMPOSITE_REGISTER,
+                GenerationBindingMode.B0_CAPTURE_SENTINEL,
+                GenerationClass.B0,
+                LifecyclePhase.CAPTURED,
+            ),
+            *(
+                (
+                    OperationSubjectKind.COMPOSITE_AUTHORITY,
+                    OperationTargetKind.COMPOSITE_REGISTER,
+                    GenerationBindingMode.REQUIRED_GENERATION,
+                    GenerationClass.C,
+                    phase,
+                )
+                for phase in (
+                    LifecyclePhase.PUBLISHED,
+                    LifecyclePhase.PREVALIDATED,
+                    LifecyclePhase.ACTIVE,
+                    LifecyclePhase.ACCEPTED,
+                )
+            ),
+        }
+    ),
+    CriticalOperationKind.ROLLBACK: frozenset(
+        {
+            (
+                OperationSubjectKind.GENERATION,
+                OperationTargetKind.ISOLATED_ROOT,
+                GenerationBindingMode.REQUIRED_GENERATION,
+                GenerationClass.F,
+                LifecyclePhase.FOUNDATION_VALIDATION,
+            ),
+            (
+                OperationSubjectKind.GENERATION,
+                OperationTargetKind.ISOLATED_ROOT,
+                GenerationBindingMode.REQUIRED_GENERATION,
+                GenerationClass.C,
+                LifecyclePhase.PREVALIDATED,
+            ),
+            (
+                OperationSubjectKind.GENERATION,
+                OperationTargetKind.LIVE_ROOT,
+                GenerationBindingMode.REQUIRED_GENERATION,
+                GenerationClass.C,
+                LifecyclePhase.ACTIVE,
+            ),
+        }
+    ),
+    CriticalOperationKind.RECOVERY: frozenset(
+        {
+            (
+                OperationSubjectKind.CONTROL_RECORD,
+                target_kind,
+                GenerationBindingMode.REQUIRED_GENERATION,
+                generation_class,
+                lifecycle_phase,
+            )
+            for generation_class, lifecycle_phase, target_kind in (
+                (
+                    GenerationClass.F,
+                    LifecyclePhase.FOUNDATION_VALIDATION,
+                    OperationTargetKind.ISOLATED_ROOT,
+                ),
+                (
+                    GenerationClass.C,
+                    LifecyclePhase.PREVALIDATED,
+                    OperationTargetKind.ISOLATED_ROOT,
+                ),
+                (
+                    GenerationClass.C,
+                    LifecyclePhase.ACTIVE,
+                    OperationTargetKind.LIVE_ROOT,
+                ),
+                (
+                    GenerationClass.C,
+                    LifecyclePhase.ACCEPTED,
+                    OperationTargetKind.LIVE_ROOT,
+                ),
+            )
+        }
+    ),
+}
 
 
 @dataclass(frozen=True)
@@ -84,48 +489,231 @@ class ProductionTopology:
 
 @dataclass(frozen=True)
 class OperationBinding:
-    """Exact identity and state coordinates for one guarded operation."""
+    """Exact typed contract for one guarded protected-state operation."""
 
     operation_id: str
+    operation_kind: CriticalOperationKind
+    generation_class: GenerationClass
+    lifecycle_phase: LifecyclePhase
     intent_digest: str
     plan_digest: str
-    subject_digest: str
-    target_id: str
-    expected_state_digest: str
-    intended_state_digest: str
-    generation_binding: str
-    rollback_target_digest: str
-    fence_epoch: int
+    authority_head_digest: str
+    subject: OperationSubject
+    target: OperationTarget
+    expected_state: ProtectedStateSnapshot
+    intended_state: ProtectedStateSnapshot
+    generation: GenerationBinding
+    effects: tuple[DeclaredEffect, ...]
+    rollback: RollbackRecoveryContract
+    terminal_validator_digest: str
 
     def __post_init__(self) -> None:
-        if not isinstance(self.operation_id, str) or not _IDENTIFIER_RE.fullmatch(
-            self.operation_id
-        ):
-            raise ValueError("operation_id must be a lowercase stable identifier")
-        if not isinstance(self.target_id, str) or not _IDENTIFIER_RE.fullmatch(
-            self.target_id
-        ):
-            raise ValueError("target_id must be a lowercase stable identifier")
+        _require_identifier(self.operation_id, field="operation_id")
+        if not isinstance(self.operation_kind, CriticalOperationKind):
+            raise TypeError("operation_kind must be a CriticalOperationKind")
+        if not isinstance(self.generation_class, GenerationClass):
+            raise TypeError("generation_class must be a GenerationClass")
+        if not isinstance(self.lifecycle_phase, LifecyclePhase):
+            raise TypeError("lifecycle_phase must be a LifecyclePhase")
         for field_name in (
             "intent_digest",
             "plan_digest",
-            "subject_digest",
-            "expected_state_digest",
-            "intended_state_digest",
-            "rollback_target_digest",
+            "authority_head_digest",
+            "terminal_validator_digest",
         ):
-            value = getattr(self, field_name)
-            if not isinstance(value, str) or not _DIGEST_RE.fullmatch(value):
-                raise ValueError(f"{field_name} must be a canonical sha256 digest")
-        if self.generation_binding not in _GENERATION_BINDINGS:
-            choices = ", ".join(sorted(_GENERATION_BINDINGS))
-            raise ValueError(f"generation_binding must be one of: {choices}")
+            _require_digest(getattr(self, field_name), field=field_name)
+        if not isinstance(self.subject, OperationSubject):
+            raise TypeError("subject must be an OperationSubject")
+        if not isinstance(self.target, OperationTarget):
+            raise TypeError("target must be an OperationTarget")
+        if not isinstance(self.expected_state, ProtectedStateSnapshot):
+            raise TypeError("expected_state must be a ProtectedStateSnapshot")
+        if not isinstance(self.intended_state, ProtectedStateSnapshot):
+            raise TypeError("intended_state must be a ProtectedStateSnapshot")
+        if not isinstance(self.generation, GenerationBinding):
+            raise TypeError("generation must be a GenerationBinding")
+        if not isinstance(self.rollback, RollbackRecoveryContract):
+            raise TypeError("rollback must be a RollbackRecoveryContract")
+        actual = (
+            self.subject.kind,
+            self.target.kind,
+            self.generation.mode,
+            self.generation_class,
+            self.lifecycle_phase,
+        )
+        if actual not in _OPERATION_COORDINATES[self.operation_kind]:
+            raise ValueError(
+                "operation envelope coordinates are invalid for operation kind"
+            )
+        if (
+            self.subject.kind is OperationSubjectKind.GENERATION
+            and self.subject.record_digest != self.generation.generation_digest
+        ):
+            raise ValueError("generation subject must equal the bound generation")
+        effects = tuple(self.effects)
+        object.__setattr__(self, "effects", effects)
+        if not effects or any(not isinstance(effect, DeclaredEffect) for effect in effects):
+            raise ValueError("effects must contain declared effects")
+        effect_ids = [effect.effect_id for effect in effects]
+        if len(effect_ids) != len(set(effect_ids)):
+            raise ValueError("effects contain duplicate effect_id values")
+        projection = self.expected_state.projection_digest
+        if self.intended_state.projection_digest != projection:
+            raise ValueError("expected and intended states must use one projection")
+        if self.expected_state.state_digest == self.intended_state.state_digest:
+            raise ValueError("critical operation prestate and intended state must differ")
+        if any(effect.projection_digest != projection for effect in effects):
+            raise ValueError("every declared effect projection must match protected state")
+        rollback_target = self.rollback.rollback_target
+        if (
+            rollback_target is not None
+            and rollback_target.projection_digest != projection
+        ):
+            raise ValueError("rollback target must use the operation projection")
+        if self.rollback.recovery_target.projection_digest != projection:
+            raise ValueError("recovery target must use the operation projection")
+        if (
+            self.generation.generation_digest is not None
+            and self.rollback.recovery_origin_generation_digest
+            != self.generation.generation_digest
+        ):
+            raise ValueError(
+                "recovery origin must equal the operation generation"
+            )
+
+
+@dataclass(frozen=True)
+class FencedCapability:
+    """Exclusive, single-use authority to perform one exact binding."""
+
+    capability_id: str
+    operation_id: str
+    intent_digest: str
+    plan_digest: str
+    authority_head_digest: str
+    subject_digest: str
+    target: OperationTarget
+    intended_state_digest: str
+    fence_epoch: int
+
+    def __post_init__(self) -> None:
+        _require_digest(self.capability_id, field="capability_id")
+        _require_identifier(self.operation_id, field="operation_id")
+        for field_name in (
+            "intent_digest",
+            "plan_digest",
+            "authority_head_digest",
+            "subject_digest",
+            "intended_state_digest",
+        ):
+            _require_digest(getattr(self, field_name), field=field_name)
+        if not isinstance(self.target, OperationTarget):
+            raise TypeError("target must be an OperationTarget")
         if (
             not isinstance(self.fence_epoch, int)
             or isinstance(self.fence_epoch, bool)
             or self.fence_epoch <= 0
         ):
             raise ValueError("fence_epoch must be a positive integer")
+
+
+@dataclass(frozen=True)
+class RecoveryCapability:
+    """Fenced authority for one named successor of one proven failed operation."""
+
+    fenced: FencedCapability
+    predecessor_operation_id: str
+    predecessor_failure_record_digest: str
+    predecessor_fence_epoch: int
+    recovery_contract_digest: str
+    recovery_owner_role: str
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.fenced, FencedCapability):
+            raise TypeError("fenced must be a FencedCapability")
+        _require_identifier(
+            self.predecessor_operation_id,
+            field="predecessor_operation_id",
+        )
+        _require_digest(
+            self.predecessor_failure_record_digest,
+            field="predecessor_failure_record_digest",
+        )
+        if (
+            not isinstance(self.predecessor_fence_epoch, int)
+            or isinstance(self.predecessor_fence_epoch, bool)
+            or self.predecessor_fence_epoch <= 0
+        ):
+            raise ValueError("predecessor_fence_epoch must be a positive integer")
+        _require_digest(
+            self.recovery_contract_digest,
+            field="recovery_contract_digest",
+        )
+        _require_identifier(
+            self.recovery_owner_role,
+            field="recovery_owner_role",
+        )
+
+    @property
+    def capability_id(self) -> str:
+        return self.fenced.capability_id
+
+
+@dataclass(frozen=True)
+class TerminalObservation:
+    """Content-addressed terminal validator observation for an operation phase."""
+
+    record_digest: str
+    validator_digest: str
+    observed_state: ProtectedStateSnapshot
+    outcome: TerminalOutcome
+    observed_effect_ids: frozenset[str] = frozenset()
+    interval_enforced_effect_ids: frozenset[str] = frozenset()
+    interval_violation_effect_ids: frozenset[str] = frozenset()
+
+    def __post_init__(self) -> None:
+        _require_digest(self.record_digest, field="terminal.record_digest")
+        _require_digest(self.validator_digest, field="terminal.validator_digest")
+        if not isinstance(self.observed_state, ProtectedStateSnapshot):
+            raise TypeError("observed_state must be a ProtectedStateSnapshot")
+        if not isinstance(self.outcome, TerminalOutcome):
+            raise TypeError("outcome must be a TerminalOutcome")
+        for collection_name in (
+            "observed_effect_ids",
+            "interval_enforced_effect_ids",
+            "interval_violation_effect_ids",
+        ):
+            values = frozenset(getattr(self, collection_name))
+            object.__setattr__(self, collection_name, values)
+            for effect_id in values:
+                _require_identifier(effect_id, field=collection_name)
+
+
+@dataclass(frozen=True)
+class OperationResult:
+    operation_id: str
+    state: OperationState
+    record_digest: str
+    failure_code: str | None = None
+    failure_record_digest: str | None = None
+
+    def __post_init__(self) -> None:
+        _require_identifier(self.operation_id, field="operation_id")
+        if not isinstance(self.state, OperationState):
+            raise TypeError("state must be an OperationState")
+        _require_digest(self.record_digest, field="record_digest")
+        if self.failure_record_digest is not None:
+            _require_digest(
+                self.failure_record_digest,
+                field="failure_record_digest",
+            )
+        if (
+            self.state is OperationState.RECOVERY_REQUIRED
+            and self.failure_record_digest is None
+        ):
+            raise ValueError(
+                "recovery-required result must bind the exact failure record"
+            )
 
 
 @dataclass(frozen=True)
@@ -149,11 +737,78 @@ class NonPromotionalEvidenceView:
 class AuthorityBackend(Protocol):
     """High-level seam implemented by fake and future production adapters."""
 
-    def observe_active(self) -> str: ...
+    def observe_active(self) -> ProtectedStateSnapshot: ...
 
     def append_intent(self, binding: OperationBinding) -> object: ...
 
-    def guarded_compare_and_swap(self, binding: OperationBinding) -> object: ...
+    def acquire_capability(
+        self,
+        binding: OperationBinding,
+        *,
+        fence_epoch: int,
+    ) -> FencedCapability: ...
+
+    def guarded_compare_and_swap(
+        self,
+        binding: OperationBinding,
+        *,
+        capability: FencedCapability,
+        observed_state: ProtectedStateSnapshot,
+    ) -> OperationResult: ...
+
+    def terminalize_operation(
+        self,
+        binding: OperationBinding,
+        observation: TerminalObservation,
+    ) -> OperationResult: ...
+
+    def acquire_rollback_capability(
+        self,
+        binding: OperationBinding,
+        *,
+        fence_epoch: int,
+    ) -> FencedCapability: ...
+
+    def execute_rollback(
+        self,
+        binding: OperationBinding,
+        *,
+        capability: FencedCapability,
+        observed_state: ProtectedStateSnapshot,
+    ) -> OperationResult: ...
+
+    def terminalize_rollback(
+        self,
+        binding: OperationBinding,
+        observation: TerminalObservation,
+    ) -> OperationResult: ...
+
+    def acquire_recovery_capability(
+        self,
+        failed_binding: OperationBinding,
+        recovery_binding: OperationBinding,
+        *,
+        failure: OperationResult,
+        owner_role: str,
+        fence_epoch: int,
+    ) -> RecoveryCapability: ...
+
+    def execute_recovery(
+        self,
+        failed_binding: OperationBinding,
+        recovery_binding: OperationBinding,
+        *,
+        failure: OperationResult,
+        capability: RecoveryCapability,
+        observed_state: ProtectedStateSnapshot,
+    ) -> OperationResult: ...
+
+    def terminalize_recovery(
+        self,
+        failed_binding: OperationBinding,
+        recovery_binding: OperationBinding,
+        observation: TerminalObservation,
+    ) -> OperationResult: ...
 
     def evidence_view(self) -> object: ...
 

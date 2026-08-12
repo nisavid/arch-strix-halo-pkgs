@@ -36,12 +36,19 @@ referenced by those 29 active candidate records. All ten were open issues in the
 canonical repository; no closed, mismatched, inaccessible, or malformed
 tracker was accepted.
 
+This reconciliation changes maintenance metadata only. It does not claim a
+package source update, package build, deployment or installation, installed
+smoke, service smoke, or live-scenario validation. The freshness evidence is
+due again 24 hours after the recorded completion or sooner if package policy,
+package directories, checker behavior, or relevant source metadata changes.
+
 ## 2026-08-12 W0 Repository Control Boundary
 
 Repository control schemas now define strict content-addressed records for the
 accepted convergence evidence families, tagged validation contexts, immutable
 attestations and derived evaluations, dependency-scoped invalidation, guarded
-operation bindings, composite authority state, and privacy-safe public
+operation bindings, fenced rollback and recovery successors, canonical
+promotion-cut assessment, composite authority state, and privacy-safe public
 envelopes. The repository adapter is explicitly nonpromotional: behavioral
 success in memory, a Git object, a mutable local file, or target-host logs
 cannot authorize publication, installation, activation, or acceptance.
@@ -56,12 +63,6 @@ protected-state mutation.
 This is a maintainer-tooling and documentation source update. It does not update
 a package source, build a package, deploy or install a package, run an installed
 smoke, change a service, or validate a live inference scenario.
-
-This reconciliation changes maintenance metadata only. It does not claim a
-package source update, package build, deployment or installation, installed
-smoke, service smoke, or live-scenario validation. The freshness evidence is
-due again 24 hours after the recorded completion or sooner if package policy,
-package directories, checker behavior, or relevant source metadata changes.
 
 The Lemonade 10.7.0 source adoption is complete. Source updated:
 `lemonade-server`, `lemonade-app`, and `lemonade` render as `10.7.0-1` from

@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 import sys
 
 import pytest
@@ -16,23 +17,96 @@ from control_plane import (
 )
 
 
-OPAQUE_REF = "opaque:v1:ABCDEFGHIJKLMNOPQRSTUV"
+DIGEST_1 = "sha256:" + "1" * 64
+DIGEST_2 = "sha256:" + "2" * 64
+DIGEST_3 = "sha256:" + "3" * 64
+DIGEST_4 = "sha256:" + "4" * 64
+DIGEST_5 = "sha256:" + "5" * 64
+DIGEST_6 = "sha256:" + "6" * 64
+TIMESTAMP = "2026-08-12T10:00:00Z"
+
+
+def _gate_payload() -> dict[str, object]:
+    return {
+        "assertion_digest": DIGEST_1,
+        "evidence_shape_digest": DIGEST_2,
+        "fixture_role_digest": DIGEST_3,
+        "gate_id": "gate_1",
+        "validator_digest": DIGEST_4,
+    }
+
+
+def _attestation_payload(**changes: object) -> dict[str, object]:
+    payload = {
+        "actor_identity_digest": DIGEST_1,
+        "actor_role": "validator",
+        "assignment_digest": DIGEST_2,
+        "context_digest": DIGEST_3,
+        "dependency_projection_digest": DIGEST_4,
+        "gate_digest": DIGEST_5,
+        "observed_at": TIMESTAMP,
+        "outcome": "pass",
+        "raw_payload_reference_digest": DIGEST_6,
+        "subject_digest": DIGEST_6,
+    }
+    payload.update(changes)
+    return payload
+
+
+def _evaluation_payload() -> dict[str, object]:
+    return {
+        "admissible": False,
+        "applicability": "applicable",
+        "assignment_digest": DIGEST_1,
+        "attestation_digests": [DIGEST_2],
+        "context_digest": DIGEST_3,
+        "currency": "current",
+        "dependency_projection_digest": DIGEST_4,
+        "evaluated_at": TIMESTAMP,
+        "outcome": "blocked",
+    }
+
+
+def test_opaque_reference_is_derived_instead_of_caller_selected() -> None:
+    restricted = ControlRecord.build(
+        kind="gate",
+        record_id="gate_1",
+        payload=_gate_payload(),
+    )
+
+    envelope = restricted.public_envelope(
+        opaque_reference_key=b"r" * 32,
+    )
+
+    assert envelope.payload["binding"]["opaque_ref"] == (
+        "opaque_hmac_sha256:v1:"
+        "aGckuknkI3vsBra-uuRCj6nwZQKzsaFtq3sDcLlIuLU"
+    )
+    assert "private-host" not in envelope.payload["binding"]["opaque_ref"]
+    assert envelope.record_id.startswith("public_envelope_sha256:v1:")
+    assert len(envelope.record_id) == len("public_envelope_sha256:v1:") + 64
+
+    with pytest.raises(TypeError):
+        restricted.public_envelope(  # type: ignore[call-arg]
+            envelope_id="private-host:/restricted/path",
+            opaque_reference_key=b"r" * 32,
+        )
+    with pytest.raises(TypeError):
+        restricted.public_envelope(  # type: ignore[call-arg]
+            opaque_ref="opaque:v1:private-host-identity",
+            opaque_reference_key=b"r" * 32,
+        )
 
 
 def test_public_envelope_exports_only_schema_owned_metadata_and_safe_bindings() -> None:
     restricted = ControlRecord.build(
         kind="attestation",
         record_id="attestation_1",
-        payload={
-            "notes": "owner@example.invalid",
-            "outcome": "pass",
-            "token": "token_should_never_leave_restricted_storage",
-        },
+        payload=_attestation_payload(),
     )
 
     envelope = restricted.public_envelope(
-        envelope_id="envelope_1",
-        opaque_ref=OPAQUE_REF,
+        opaque_reference_key=b"r" * 32,
         commitment_key=b"k" * 32,
     )
 
@@ -42,72 +116,64 @@ def test_public_envelope_exports_only_schema_owned_metadata_and_safe_bindings() 
     assert envelope.payload["binding"] == {
         "keyed_commitment": (
             "hmac_sha256:"
-            "d4d0564be32454013b39cd16274972f3de67fd3ee0e28ae2b3cad4af82e40d47"
+            "90ba835600e3079298449973b6f8be4719acc3f7a0465868bdda7b8ce2b3cd54"
         ),
-        "opaque_ref": OPAQUE_REF,
+        "opaque_ref": (
+            "opaque_hmac_sha256:v1:"
+            "SRhmDFI5_A9394t8pDqRALas0zEfCt1yMvVthXHQTjU"
+        ),
     }
     wire = envelope.canonical_bytes()
-    assert b"owner@example.invalid" not in wire
-    assert b"token_should_never_leave_restricted_storage" not in wire
+    assert DIGEST_1.encode() not in wire
+    assert DIGEST_6.encode() not in wire
     assert restricted.digest().encode() not in wire
+    assert ControlRecord.parse(wire).canonical_bytes() == wire
 
 
 def test_public_envelope_accepts_each_safe_binding_independently() -> None:
     restricted = ControlRecord.build(
         kind="evaluation",
         record_id="evaluation_1",
-        payload={"outcome": "blocked"},
+        payload=_evaluation_payload(),
     )
 
     by_reference = restricted.public_envelope(
-        envelope_id="envelope_reference_1",
-        opaque_ref=OPAQUE_REF,
+        opaque_reference_key=b"r" * 32,
     )
     by_commitment = restricted.public_envelope(
-        envelope_id="envelope_commitment_1",
         commitment_key=b"c" * 32,
     )
 
-    assert by_reference.payload["binding"] == {"opaque_ref": OPAQUE_REF}
+    assert set(by_reference.payload["binding"]) == {"opaque_ref"}
     assert set(by_commitment.payload["binding"]) == {"keyed_commitment"}
 
 
 @pytest.mark.parametrize(
-    ("opaque_ref", "commitment_key", "code"),
+    ("opaque_reference_key", "commitment_key", "code"),
     [
         (None, None, RecordErrorCode.PRIVACY_BINDING_REQUIRED),
-        ("opaque:v1:short", None, RecordErrorCode.INVALID_OPAQUE_REF),
+        (b"weak", None, RecordErrorCode.INVALID_OPAQUE_REFERENCE_KEY),
         (None, b"weak", RecordErrorCode.INVALID_COMMITMENT_KEY),
     ],
 )
 def test_public_envelope_fails_closed_without_a_safe_binding(
-    opaque_ref: str | None,
+    opaque_reference_key: bytes | None,
     commitment_key: bytes | None,
     code: RecordErrorCode,
 ) -> None:
-    restricted = ControlRecord.build(kind="gate", record_id="gate_1", payload={})
+    restricted = ControlRecord.build(
+        kind="gate",
+        record_id="gate_1",
+        payload=_gate_payload(),
+    )
 
     with pytest.raises(PrivacyEnvelopeError) as caught:
         restricted.public_envelope(
-            envelope_id="envelope_1",
-            opaque_ref=opaque_ref,
+            opaque_reference_key=opaque_reference_key,
             commitment_key=commitment_key,
         )
 
     assert caught.value.code is code
-
-
-def test_public_envelope_rejects_raw_private_digest_as_an_opaque_reference() -> None:
-    restricted = ControlRecord.build(kind="gate", record_id="gate_1", payload={})
-    guessable_ref = f"opaque:v1:{restricted.digest().removeprefix('sha256:')}"
-
-    with pytest.raises(PrivacyEnvelopeError) as caught:
-        restricted.public_envelope(
-            envelope_id="envelope_1",
-            opaque_ref=guessable_ref,
-        )
-
-    assert caught.value.code is RecordErrorCode.INVALID_OPAQUE_REF
 
 
 def test_public_envelope_kind_cannot_bypass_the_schema_owned_projection() -> None:
@@ -121,20 +187,63 @@ def test_public_envelope_kind_cannot_bypass_the_schema_owned_projection() -> Non
     assert caught.value.code is RecordErrorCode.INVALID_PUBLIC_ENVELOPE
 
 
-@pytest.mark.parametrize("unsafe_outcome", ["operator_email", True, 1])
-def test_public_envelope_rejects_unrecognized_values_in_allowlisted_fields(
-    unsafe_outcome: object,
-) -> None:
-    restricted = ControlRecord.build(
-        kind="attestation",
-        record_id="attestation_1",
-        payload={"outcome": unsafe_outcome},
-    )
-
-    with pytest.raises(PrivacyEnvelopeError) as caught:
-        restricted.public_envelope(
-            envelope_id="envelope_1",
-            opaque_ref=OPAQUE_REF,
+def test_direct_constructor_cannot_bypass_public_envelope_validation() -> None:
+    with pytest.raises(TypeError):
+        ControlRecord(  # type: ignore[call-arg]
+            kind="public_envelope",
+            record_id="/private/host",
+            payload={"secret": "token"},
+            _digest="sha256:" + "0" * 64,
         )
 
-    assert caught.value.code is RecordErrorCode.UNSAFE_PUBLIC_VALUE
+
+def test_public_envelope_rejects_a_detached_signature_privacy_channel() -> None:
+    restricted = ControlRecord.build(
+        kind="gate",
+        record_id="gate_1",
+        payload=_gate_payload(),
+    )
+    envelope = restricted.public_envelope(opaque_reference_key=b"r" * 32)
+    document = json.loads(envelope.canonical_bytes())
+    document["signature"] = {
+        "private_host": "private-host",
+        "private_path": "/restricted/path",
+    }
+    wire = json.dumps(
+        document,
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    ).encode()
+
+    with pytest.raises(PrivacyEnvelopeError) as caught:
+        ControlRecord.parse(wire)
+
+    assert caught.value.code is RecordErrorCode.INVALID_PUBLIC_ENVELOPE
+
+
+def test_restricted_signature_is_never_copied_into_a_public_envelope() -> None:
+    unsigned = ControlRecord.build(
+        kind="gate",
+        record_id="gate_1",
+        payload=_gate_payload(),
+    )
+    restricted = ControlRecord.build(
+        kind="gate",
+        record_id="gate_1",
+        payload=_gate_payload(),
+        signature={
+            "algorithm": "ed25519",
+            "signed_digest": unsigned.digest(),
+            "signer_identity_digest": DIGEST_6,
+            "value": (
+                "c3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nz"
+                "c3Nzc3Nzc3Nzc3Nzc3Nzcw"
+            ),
+        },
+    )
+
+    envelope = restricted.public_envelope(opaque_reference_key=b"r" * 32)
+
+    assert envelope.signature is None
+    assert b"signer_identity_digest" not in envelope.canonical_bytes()

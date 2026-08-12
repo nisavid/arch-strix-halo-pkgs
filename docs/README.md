@@ -24,6 +24,8 @@ serves a different reader.
 - [Convergence Control Plane](architecture/convergence-control-plane.md)
   explains immutable control records, evidence evaluation, privacy envelopes,
   and the fail-closed production-authority seam.
+- [Convergence Domain](architecture/convergence-domain.md) defines the precise
+  language used by the control-plane contracts.
 - [TheRock Generator Status](maintainers/therock-generator-status.md) records
   current generator coverage and known gaps.
 

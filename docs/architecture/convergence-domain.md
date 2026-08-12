@@ -1,4 +1,4 @@
-# Stack Convergence
+# Stack Convergence Domain
 
 This context names the evidence and authority concepts used to move the local
 inference stack from reviewed inputs to one accepted, continuously coherent
@@ -17,6 +17,13 @@ The reusable assertion, validator contract, fixture requirements, and evidence
 shape for one validation capability. Whether the gate blocks a lifecycle step
 belongs to its assignment, not to the definition.
 _Avoid_: Check, test case
+
+**Requirements baseline**:
+The immutable, approved definition and complete requirement set under which a
+validation contract is interpreted. The composite authority manifest points to
+the requirements record; the requirements record points outward to its
+definition and never back to the composite manifest.
+_Avoid_: Manifest, policy file
 
 **Assignment**:
 The lifecycle-specific use of a gate, including applicability, blocking or
@@ -57,10 +64,17 @@ before a generation exists. Incorporation into a generation never relabels the
 original evidence.
 _Avoid_: Generation evidence
 
+**Verified inclusion edge**:
+An immutable approval that binds exact preassembly context, source closure,
+artifacts, assignments, and evaluations into one active contract and generation
+without relabeling the source evidence.
+_Avoid_: Copy, promotion by reference
+
 **Generation**:
-An immutable manifest of one coherent stack state and its lifecycle phase. B0
-is the captured recovery generation, F is the isolated foundation-validation
-generation, and C is the complete convergence generation.
+An immutable manifest of one coherent stack state and its generation class. B0
+is the captured recovery class, F is the isolated foundation-validation class,
+and C is the complete convergence class. Captured, published, foundation
+validation, prevalidated, active, and accepted are lifecycle phases.
 _Avoid_: Build, release
 
 **Critical operation**:
@@ -98,3 +112,10 @@ The fail-closed state entered when protected state or its restoration cannot be
 proven exact. Serving remains drained until an authorized recovery path proves
 a complete target generation.
 _Avoid_: Rollback failure
+
+**Recovery successor**:
+A distinct guarded operation authorized by the named recovery owner after a
+proven failed terminal. It inherits the failed target exclusively, binds that
+terminal and fence, advances the fence, and must validate the exact recovery
+target before ordinary work can resume.
+_Avoid_: Retry, manual fix
