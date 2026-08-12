@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 
@@ -104,7 +105,9 @@ def test_rocm_inference_reference_preserves_source_disposition():
 
 
 def test_rocm_inference_ingestion_skill_routes_actionable_work_to_issues():
-    text = INGESTION_SKILL.read_text(encoding="utf-8")
+    text = re.sub(
+        r"\s+", " ", INGESTION_SKILL.read_text(encoding="utf-8")
+    )
 
     assert "name: ingesting-rocm-inference-references" in text
     assert "description: Use when" in text

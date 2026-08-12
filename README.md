@@ -47,7 +47,17 @@ assembled and where it diverges.
 
 The stack currently includes these major layers. The candidate column describes
 the 2026-08 issue-primary convergence line, not installed or adopted package
-state:
+state. Its W0-W2B links point to execution work units nested under the
+[W0](https://github.com/nisavid/arch-strix-halo-pkgs/issues/96),
+[W1](https://github.com/nisavid/arch-strix-halo-pkgs/issues/97),
+[W2A](https://github.com/nisavid/arch-strix-halo-pkgs/issues/98), and
+[W2B](https://github.com/nisavid/arch-strix-halo-pkgs/issues/99) wave issues
+under [execution umbrella #95](https://github.com/nisavid/arch-strix-halo-pkgs/issues/95).
+The W2A runtime work units [#109](https://github.com/nisavid/arch-strix-halo-pkgs/issues/109)
+and [#111](https://github.com/nisavid/arch-strix-halo-pkgs/issues/111) remain
+distinct. W2B work unit [#113](https://github.com/nisavid/arch-strix-halo-pkgs/issues/113)
+intentionally owns both llama.cpp HIP/Vulkan closure and the coherent Lemonade
+family build because those source and package gates are coupled.
 
 | Layer | Package examples | 2026-08 candidate line |
 | --- | --- | --- |
@@ -56,8 +66,8 @@ state:
 | ML runtime | `python-pytorch-opt-rocm-gfx1151`, `python-triton-gfx1151`, `python-aotriton-gfx1151` | ROCm PyTorch `2.13`, exact ROCm Triton `3.8`, and AOTriton `0.13b` in [W2A](https://github.com/nisavid/arch-strix-halo-pkgs/issues/109) |
 | Inference engines | `python-vllm-rocm-gfx1151`, `python-amd-aiter-gfx1151`, `python-flash-attn-rocm-gfx1151` | TorchVision `0.28` and vLLM `0.27.1` in [W2A](https://github.com/nisavid/arch-strix-halo-pkgs/issues/111); AITER `0.1.19.post2` stays [experimental](https://github.com/nisavid/arch-strix-halo-pkgs/issues/119) |
 | Graph and quantization experiments | `python-torchao-rocm-gfx1151`, `python-torch-migraphx-gfx1151` | TorchAO `0.18.0` and Torch-MIGraphX `ef3f901` remain [nonblocking extensions](https://github.com/nisavid/arch-strix-halo-pkgs/issues/118) |
-| Model runners | `llama.cpp-hip-gfx1151`, `llama.cpp-vulkan-gfx1151` | llama.cpp `b10369` HIP and Vulkan backends in [W2B](https://github.com/nisavid/arch-strix-halo-pkgs/issues/113) |
-| Frontend and service layer | `lemonade`, `lemonade-server`, `lemonade-app` | Lemonade `11.5.2` waits on [W0 source freeze](https://github.com/nisavid/arch-strix-halo-pkgs/issues/105) before the [W2B family build](https://github.com/nisavid/arch-strix-halo-pkgs/issues/113) |
+| Model runners | `llama.cpp-hip-gfx1151`, `llama.cpp-vulkan-gfx1151` | llama.cpp `b10369` HIP and Vulkan backends in the [W2B Lemonade/llama.cpp work unit](https://github.com/nisavid/arch-strix-halo-pkgs/issues/113) |
+| Frontend and service layer | `lemonade`, `lemonade-server`, `lemonade-app` | Lemonade `11.5.2` waits on [W0 source freeze](https://github.com/nisavid/arch-strix-halo-pkgs/issues/105) before the [W2B Lemonade/llama.cpp family build](https://github.com/nisavid/arch-strix-halo-pkgs/issues/113) |
 
 Hand-maintained recipe packages carry package-local READMEs and `recipe.json`
 files with exact baselines, patch notes, and update hints. The generated
