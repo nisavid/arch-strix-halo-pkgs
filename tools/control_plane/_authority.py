@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import hashlib
+import json
 import re
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from enum import StrEnum
 from typing import Protocol, runtime_checkable
 
@@ -172,6 +174,14 @@ class CriticalOperationKind(StrEnum):
     RECOVERY = "recovery"
 
 
+class CapabilityType(StrEnum):
+    """Closed mutation domains for fenced capabilities."""
+
+    OPERATION = "operation"
+    ROLLBACK = "rollback"
+    RECOVERY = "recovery"
+
+
 class OperationSubjectKind(StrEnum):
     CONTROL_RECORD = "control_record"
     GENERATION = "generation"
@@ -258,6 +268,29 @@ class ProtectedStateSnapshot:
 
 
 @dataclass(frozen=True)
+class RollbackTarget:
+    """Exact protected-state snapshot selected as a rollback destination."""
+
+    protected_state: ProtectedStateSnapshot
+    destination_generation_digest: str
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.protected_state, ProtectedStateSnapshot):
+            raise TypeError("protected_state must be a ProtectedStateSnapshot")
+        _require_digest(
+            self.destination_generation_digest,
+            field="destination_generation_digest",
+        )
+        if (
+            self.protected_state.generation_digest
+            != self.destination_generation_digest
+        ):
+            raise ValueError(
+                "rollback target snapshot generation must equal rollback destination"
+            )
+
+
+@dataclass(frozen=True)
 class DeclaredEffect:
     effect_id: str
     classification: EffectClass
@@ -281,7 +314,7 @@ class RollbackRecoveryContract:
     recovery_target: ProtectedStateSnapshot | None = None
     recovery_destination_generation_digest: str | None = None
     recovery_origin_generation_digest: str | None = None
-    rollback_target: ProtectedStateSnapshot | None = None
+    rollback_target: RollbackTarget | None = None
     rollback_plan_digest: str | None = None
     rollback_validator_digest: str | None = None
 
@@ -328,8 +361,8 @@ class RollbackRecoveryContract:
         if self.mode is RecoveryMode.EXACT_ROLLBACK:
             if any(value is None for value in rollback_fields):
                 raise ValueError("exact_rollback requires target, plan, and validator")
-            if not isinstance(self.rollback_target, ProtectedStateSnapshot):
-                raise TypeError("rollback_target must be a ProtectedStateSnapshot")
+            if not isinstance(self.rollback_target, RollbackTarget):
+                raise TypeError("rollback_target must be a RollbackTarget")
             _require_digest(self.rollback_plan_digest, field="rollback_plan_digest")
             _require_digest(
                 self.rollback_validator_digest,
@@ -485,30 +518,84 @@ _OPERATION_COORDINATES = {
             (
                 OperationSubjectKind.CONTROL_RECORD,
                 target_kind,
-                GenerationBindingMode.REQUIRED_GENERATION,
+                generation_binding_mode,
                 generation_class,
                 lifecycle_phase,
             )
-            for generation_class, lifecycle_phase, target_kind in (
+            for (
+                target_kind,
+                generation_binding_mode,
+                generation_class,
+                lifecycle_phase,
+            ) in (
                 (
+                    OperationTargetKind.PACKAGE_REPOSITORY,
+                    GenerationBindingMode.REQUIRED_GENERATION,
+                    GenerationClass.F,
+                    LifecyclePhase.PUBLISHED,
+                ),
+                (
+                    OperationTargetKind.PACKAGE_REPOSITORY,
+                    GenerationBindingMode.REQUIRED_GENERATION,
+                    GenerationClass.C,
+                    LifecyclePhase.PUBLISHED,
+                ),
+                (
+                    OperationTargetKind.ISOLATED_ROOT,
+                    GenerationBindingMode.REQUIRED_GENERATION,
                     GenerationClass.F,
                     LifecyclePhase.FOUNDATION_VALIDATION,
-                    OperationTargetKind.ISOLATED_ROOT,
                 ),
                 (
+                    OperationTargetKind.ISOLATED_ROOT,
+                    GenerationBindingMode.REQUIRED_GENERATION,
                     GenerationClass.C,
                     LifecyclePhase.PREVALIDATED,
-                    OperationTargetKind.ISOLATED_ROOT,
                 ),
                 (
+                    OperationTargetKind.LIVE_ROOT,
+                    GenerationBindingMode.REQUIRED_GENERATION,
                     GenerationClass.C,
                     LifecyclePhase.ACTIVE,
-                    OperationTargetKind.LIVE_ROOT,
                 ),
                 (
+                    OperationTargetKind.LIVE_ROOT,
+                    GenerationBindingMode.REQUIRED_GENERATION,
                     GenerationClass.C,
                     LifecyclePhase.ACCEPTED,
-                    OperationTargetKind.LIVE_ROOT,
+                ),
+                *(
+                    (
+                        OperationTargetKind.SERVICE,
+                        GenerationBindingMode.REQUIRED_GENERATION,
+                        GenerationClass.C,
+                        lifecycle_phase,
+                    )
+                    for lifecycle_phase in (
+                        LifecyclePhase.PREVALIDATED,
+                        LifecyclePhase.ACTIVE,
+                        LifecyclePhase.ACCEPTED,
+                    )
+                ),
+                (
+                    OperationTargetKind.COMPOSITE_REGISTER,
+                    GenerationBindingMode.B0_CAPTURE_SENTINEL,
+                    GenerationClass.B0,
+                    LifecyclePhase.CAPTURED,
+                ),
+                *(
+                    (
+                        OperationTargetKind.COMPOSITE_REGISTER,
+                        GenerationBindingMode.REQUIRED_GENERATION,
+                        GenerationClass.C,
+                        lifecycle_phase,
+                    )
+                    for lifecycle_phase in (
+                        LifecyclePhase.PUBLISHED,
+                        LifecyclePhase.PREVALIDATED,
+                        LifecyclePhase.ACTIVE,
+                        LifecyclePhase.ACCEPTED,
+                    )
                 ),
             )
         }
@@ -609,6 +696,18 @@ class OperationBinding:
     rollback: RollbackRecoveryContract
     terminal_validator_digest: str
 
+    def digest(self) -> str:
+        """Return a deterministic digest of the complete immutable binding."""
+
+        material = json.dumps(
+            asdict(self),
+            ensure_ascii=True,
+            allow_nan=False,
+            separators=(",", ":"),
+            sort_keys=True,
+        ).encode("utf-8")
+        return "sha256:" + hashlib.sha256(material).hexdigest()
+
     def __post_init__(self) -> None:
         _require_identifier(self.operation_id, field="operation_id")
         if not isinstance(self.operation_kind, CriticalOperationKind):
@@ -666,7 +765,7 @@ class OperationBinding:
         rollback_target = self.rollback.rollback_target
         if (
             rollback_target is not None
-            and rollback_target.projection_digest != projection
+            and rollback_target.protected_state.projection_digest != projection
         ):
             raise ValueError("rollback target must use the operation projection")
         if self.rollback.recovery_target.projection_digest != projection:
@@ -686,34 +785,46 @@ class FencedCapability:
     """Exclusive, single-use authority to perform one exact binding."""
 
     capability_id: str
+    capability_type: CapabilityType
+    operation_digest: str
     operation_id: str
     intent_digest: str
     plan_digest: str
     authority_head_digest: str
     subject_digest: str
     target: OperationTarget
-    intended_state_digest: str
+    intended_state: ProtectedStateSnapshot
     fence_epoch: int
 
     def __post_init__(self) -> None:
         _require_digest(self.capability_id, field="capability_id")
+        if not isinstance(self.capability_type, CapabilityType):
+            raise TypeError("capability_type must be a CapabilityType")
+        _require_digest(self.operation_digest, field="operation_digest")
         _require_identifier(self.operation_id, field="operation_id")
         for field_name in (
             "intent_digest",
             "plan_digest",
             "authority_head_digest",
             "subject_digest",
-            "intended_state_digest",
         ):
             _require_digest(getattr(self, field_name), field=field_name)
         if not isinstance(self.target, OperationTarget):
             raise TypeError("target must be an OperationTarget")
+        if not isinstance(self.intended_state, ProtectedStateSnapshot):
+            raise TypeError("intended_state must be a ProtectedStateSnapshot")
         if (
             not isinstance(self.fence_epoch, int)
             or isinstance(self.fence_epoch, bool)
             or self.fence_epoch <= 0
         ):
             raise ValueError("fence_epoch must be a positive integer")
+
+    @property
+    def intended_state_digest(self) -> str:
+        """Compatibility view of the exact protected-state binding."""
+
+        return self.intended_state.state_digest
 
 
 @dataclass(frozen=True)
@@ -730,6 +841,8 @@ class RecoveryCapability:
     def __post_init__(self) -> None:
         if not isinstance(self.fenced, FencedCapability):
             raise TypeError("fenced must be a FencedCapability")
+        if self.fenced.capability_type is not CapabilityType.RECOVERY:
+            raise ValueError("recovery capability requires a recovery fence")
         _require_identifier(
             self.predecessor_operation_id,
             field="predecessor_operation_id",

@@ -146,6 +146,48 @@ def test_public_envelope_accepts_each_safe_binding_independently() -> None:
     assert set(by_commitment.payload["binding"]) == {"keyed_commitment"}
 
 
+def test_retention_metadata_envelopes_do_not_expose_the_raw_record_or_lease_link(
+) -> None:
+    lease = ControlRecord.build(
+        kind="retention_lease",
+        record_id="retention_lease_1",
+        payload={
+            "expires_at": TIMESTAMP,
+            "issued_at": "2026-08-12T09:00:00Z",
+            "key_version": "evidence_key_v1",
+            "lease_id": "retention_lease_1",
+            "status": "active",
+        },
+    )
+    reference = ControlRecord.build(
+        kind="restricted_reference",
+        record_id="restricted_reference_1",
+        payload={
+            "created_at": TIMESTAMP,
+            "key_version": "evidence_key_v1",
+            "reference_id": "restricted_reference_1",
+            "restricted_record_digest": DIGEST_1,
+            "retention_lease_digest": lease.digest(),
+            "storage_authority_digest": DIGEST_2,
+        },
+    )
+
+    lease_envelope = lease.public_envelope(opaque_reference_key=b"r" * 32)
+    reference_envelope = reference.public_envelope(
+        opaque_reference_key=b"r" * 32
+    )
+
+    assert lease_envelope.payload["public"] == {"status": "active"}
+    assert reference_envelope.payload["public"] == {}
+    for wire in (
+        lease_envelope.canonical_bytes(),
+        reference_envelope.canonical_bytes(),
+    ):
+        assert DIGEST_1.encode() not in wire
+        assert lease.digest().encode() not in wire
+        assert reference.digest().encode() not in wire
+
+
 @pytest.mark.parametrize(
     ("opaque_reference_key", "commitment_key", "code"),
     [

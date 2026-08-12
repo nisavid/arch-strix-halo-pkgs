@@ -35,6 +35,7 @@ from control_plane import (
     ProtectedStateSnapshot,
     RecoveryMode,
     RollbackRecoveryContract,
+    RollbackTarget,
     SubstrateBinding,
     TerminalObservation,
     TerminalOutcome,
@@ -260,6 +261,223 @@ def test_shared_operation_coordinate_validator_accepts_every_legal_row():
 
 
 @pytest.mark.parametrize(
+    ("target_kind", "generation_class", "lifecycle_phase"),
+    [
+        (
+            OperationTargetKind.PACKAGE_REPOSITORY,
+            GenerationClass.F,
+            LifecyclePhase.PUBLISHED,
+        ),
+        (
+            OperationTargetKind.PACKAGE_REPOSITORY,
+            GenerationClass.C,
+            LifecyclePhase.PUBLISHED,
+        ),
+        (
+            OperationTargetKind.ISOLATED_ROOT,
+            GenerationClass.F,
+            LifecyclePhase.FOUNDATION_VALIDATION,
+        ),
+        (
+            OperationTargetKind.ISOLATED_ROOT,
+            GenerationClass.C,
+            LifecyclePhase.PREVALIDATED,
+        ),
+        (
+            OperationTargetKind.LIVE_ROOT,
+            GenerationClass.C,
+            LifecyclePhase.ACTIVE,
+        ),
+        (
+            OperationTargetKind.LIVE_ROOT,
+            GenerationClass.C,
+            LifecyclePhase.ACCEPTED,
+        ),
+        (
+            OperationTargetKind.SERVICE,
+            GenerationClass.C,
+            LifecyclePhase.PREVALIDATED,
+        ),
+        (
+            OperationTargetKind.SERVICE,
+            GenerationClass.C,
+            LifecyclePhase.ACTIVE,
+        ),
+        (
+            OperationTargetKind.SERVICE,
+            GenerationClass.C,
+            LifecyclePhase.ACCEPTED,
+        ),
+        (
+            OperationTargetKind.COMPOSITE_REGISTER,
+            GenerationClass.B0,
+            LifecyclePhase.CAPTURED,
+        ),
+        (
+            OperationTargetKind.COMPOSITE_REGISTER,
+            GenerationClass.C,
+            LifecyclePhase.PUBLISHED,
+        ),
+        (
+            OperationTargetKind.COMPOSITE_REGISTER,
+            GenerationClass.C,
+            LifecyclePhase.PREVALIDATED,
+        ),
+        (
+            OperationTargetKind.COMPOSITE_REGISTER,
+            GenerationClass.C,
+            LifecyclePhase.ACTIVE,
+        ),
+        (
+            OperationTargetKind.COMPOSITE_REGISTER,
+            GenerationClass.C,
+            LifecyclePhase.ACCEPTED,
+        ),
+    ],
+)
+def test_recovery_coordinates_cover_every_mutating_target_and_phase(
+    target_kind,
+    generation_class,
+    lifecycle_phase,
+):
+    validate_operation_coordinates(
+        CriticalOperationKind.RECOVERY,
+        OperationSubjectKind.CONTROL_RECORD,
+        target_kind,
+        (
+            GenerationBindingMode.B0_CAPTURE_SENTINEL
+            if generation_class is GenerationClass.B0
+            else GenerationBindingMode.REQUIRED_GENERATION
+        ),
+        generation_class,
+        lifecycle_phase,
+    )
+
+
+def test_b0_capture_recovery_rejects_required_generation_reclassification():
+    with pytest.raises(ValueError, match="operation envelope coordinates"):
+        validate_operation_coordinates(
+            CriticalOperationKind.RECOVERY,
+            OperationSubjectKind.CONTROL_RECORD,
+            OperationTargetKind.COMPOSITE_REGISTER,
+            GenerationBindingMode.REQUIRED_GENERATION,
+            GenerationClass.B0,
+            LifecyclePhase.CAPTURED,
+        )
+
+
+@pytest.mark.parametrize(
+    "source_changes",
+    [
+        {
+            "operation_kind": CriticalOperationKind.REPOSITORY_PUBLICATION,
+            "generation_class": GenerationClass.C,
+            "lifecycle_phase": LifecyclePhase.PUBLISHED,
+            "target": OperationTarget(
+                kind=OperationTargetKind.PACKAGE_REPOSITORY,
+                target_id="candidate-repository",
+            ),
+        },
+        {
+            "operation_kind": CriticalOperationKind.BLOCKING_SCENARIO,
+            "generation_class": GenerationClass.C,
+            "lifecycle_phase": LifecyclePhase.ACTIVE,
+            "subject": OperationSubject(
+                kind=OperationSubjectKind.GATE_OCCURRENCE,
+                record_digest=SUBJECT,
+            ),
+            "target": OperationTarget(
+                kind=OperationTargetKind.SERVICE,
+                target_id="inference-service",
+            ),
+        },
+        {
+            "operation_kind": CriticalOperationKind.COMPOSITE_AUTHORITY_TRANSITION,
+            "generation_class": GenerationClass.C,
+            "lifecycle_phase": LifecyclePhase.ACTIVE,
+            "subject": OperationSubject(
+                kind=OperationSubjectKind.COMPOSITE_AUTHORITY,
+                record_digest=SUBJECT,
+            ),
+            "target": OperationTarget(
+                kind=OperationTargetKind.COMPOSITE_REGISTER,
+                target_id="authority-register",
+            ),
+        },
+    ],
+)
+def test_recovery_successor_preserves_the_failed_target_and_advances_its_fence(
+    source_changes,
+):
+    source = replace(
+        typed_operation_binding(),
+        rollback=replace(
+            typed_operation_binding().rollback,
+            mode=RecoveryMode.RECOVERY_ONLY,
+            rollback_target=None,
+            rollback_plan_digest=None,
+            rollback_validator_digest=None,
+        ),
+        **source_changes,
+    )
+    authority = InMemoryAuthority(initial_active_state=source.expected_state)
+    authority.append_intent(source)
+    capability = authority.acquire_capability(source, fence_epoch=1)
+    authority.guarded_compare_and_swap(
+        source,
+        capability=capability,
+        observed_state=source.expected_state,
+    )
+    failure = authority.terminalize_operation(
+        source,
+        TerminalObservation(
+            record_digest="sha256:" + "d" * 64,
+            validator_digest=TERMINAL_VALIDATOR,
+            observed_state=source.intended_state,
+            outcome=TerminalOutcome.FAIL,
+        ),
+    )
+    successor = replace(
+        typed_operation_binding(),
+        operation_id=f"recovery-{source.target.kind.value}",
+        operation_kind=CriticalOperationKind.RECOVERY,
+        generation_class=source.generation_class,
+        lifecycle_phase=source.lifecycle_phase,
+        intent_digest="sha256:" + "e" * 64,
+        plan_digest=RECOVERY_PLAN,
+        subject=OperationSubject(
+            kind=OperationSubjectKind.CONTROL_RECORD,
+            record_digest=RECOVERY_CONTRACT,
+        ),
+        target=source.target,
+        expected_state=source.intended_state,
+        intended_state=source.rollback.recovery_target,
+        generation=GenerationBinding(
+            mode=GenerationBindingMode.REQUIRED_GENERATION,
+            generation_digest=RECOVERY_DESTINATION,
+        ),
+        rollback=replace(
+            typed_operation_binding().rollback,
+            rollback_target=_rollback_target(source.intended_state),
+            recovery_origin_generation_digest=RECOVERY_DESTINATION,
+        ),
+    )
+    authority.append_intent(successor)
+
+    recovery_capability = authority.acquire_recovery_capability(
+        source,
+        successor,
+        failure=failure,
+        owner_role="recovery-owner",
+        fence_epoch=2,
+    )
+
+    assert recovery_capability.fenced.target == source.target
+    assert recovery_capability.predecessor_fence_epoch == 1
+    assert recovery_capability.fenced.fence_epoch == 2
+
+
+@pytest.mark.parametrize(
     ("operation_kind", "coordinates"),
     [
         (
@@ -365,6 +583,13 @@ def test_b0_capture_rejects_a_sentinel_free_generation_exemption():
         )
 
 
+def _rollback_target(snapshot: ProtectedStateSnapshot) -> RollbackTarget:
+    return RollbackTarget(
+        protected_state=snapshot,
+        destination_generation_digest=snapshot.generation_digest,
+    )
+
+
 def typed_operation_binding() -> OperationBinding:
     expected = ProtectedStateSnapshot(
         record_digest="sha256:" + "f" * 64,
@@ -408,7 +633,7 @@ def typed_operation_binding() -> OperationBinding:
         ),
         rollback=RollbackRecoveryContract(
             mode=RecoveryMode.EXACT_ROLLBACK,
-            rollback_target=expected,
+            rollback_target=_rollback_target(expected),
             rollback_plan_digest=ROLLBACK,
             rollback_validator_digest=ROLLBACK_VALIDATOR,
             recovery_plan_digest=RECOVERY_PLAN,
@@ -422,12 +647,25 @@ def typed_operation_binding() -> OperationBinding:
     )
 
 
-def _registered_recovery_successor():
+def _registered_recovery_successor(
+    *,
+    source: OperationBinding | None = None,
+    recovery_target: ProtectedStateSnapshot | None = None,
+    recovery_generation_class: GenerationClass | None = None,
+    recovery_lifecycle_phase: LifecyclePhase | None = None,
+    recovery_terminal_validator_digest: str = TERMINAL_VALIDATOR,
+):
+    source = source if source is not None else typed_operation_binding()
     failed_binding = replace(
-        typed_operation_binding(),
+        source,
         rollback=replace(
-            typed_operation_binding().rollback,
+            source.rollback,
             mode=RecoveryMode.RECOVERY_ONLY,
+            recovery_target=(
+                recovery_target
+                if recovery_target is not None
+                else source.rollback.recovery_target
+            ),
             rollback_target=None,
             rollback_plan_digest=None,
             rollback_validator_digest=None,
@@ -454,12 +692,23 @@ def _registered_recovery_successor():
         typed_operation_binding(),
         operation_id="op-recovery-001",
         operation_kind=CriticalOperationKind.RECOVERY,
+        generation_class=(
+            recovery_generation_class
+            if recovery_generation_class is not None
+            else failed_binding.generation_class
+        ),
+        lifecycle_phase=(
+            recovery_lifecycle_phase
+            if recovery_lifecycle_phase is not None
+            else failed_binding.lifecycle_phase
+        ),
         intent_digest="sha256:" + "e" * 64,
         plan_digest=RECOVERY_PLAN,
         subject=OperationSubject(
             kind=OperationSubjectKind.CONTROL_RECORD,
             record_digest=RECOVERY_CONTRACT,
         ),
+        target=failed_binding.target,
         expected_state=failed_binding.intended_state,
         intended_state=failed_binding.rollback.recovery_target,
         generation=GenerationBinding(
@@ -468,16 +717,93 @@ def _registered_recovery_successor():
         ),
         rollback=replace(
             typed_operation_binding().rollback,
-            rollback_target=failed_binding.intended_state,
+            rollback_target=_rollback_target(failed_binding.intended_state),
             recovery_origin_generation_digest=RECOVERY_DESTINATION,
         ),
+        terminal_validator_digest=recovery_terminal_validator_digest,
     )
     authority.append_intent(recovery_binding)
     return authority, failed_binding, recovery_binding, failure
 
 
-def _rollback_required_authority():
-    binding = typed_operation_binding()
+def _registered_b0_recovery_successor(*, sentinel_digest: str):
+    source = replace(
+        typed_operation_binding(),
+        operation_kind=CriticalOperationKind.COMPOSITE_AUTHORITY_TRANSITION,
+        generation_class=GenerationClass.B0,
+        lifecycle_phase=LifecyclePhase.CAPTURED,
+        subject=OperationSubject(
+            kind=OperationSubjectKind.COMPOSITE_AUTHORITY,
+            record_digest=SUBJECT,
+        ),
+        target=OperationTarget(
+            kind=OperationTargetKind.COMPOSITE_REGISTER,
+            target_id="authority-register",
+        ),
+        generation=GenerationBinding(
+            mode=GenerationBindingMode.B0_CAPTURE_SENTINEL,
+            generation_digest=GENERATION,
+            sentinel_digest="sha256:" + "5" * 64,
+        ),
+        rollback=replace(
+            typed_operation_binding().rollback,
+            mode=RecoveryMode.RECOVERY_ONLY,
+            rollback_target=None,
+            rollback_plan_digest=None,
+            rollback_validator_digest=None,
+        ),
+    )
+    authority = InMemoryAuthority(initial_active_state=source.expected_state)
+    authority.append_intent(source)
+    capability = authority.acquire_capability(source, fence_epoch=1)
+    authority.guarded_compare_and_swap(
+        source,
+        capability=capability,
+        observed_state=source.expected_state,
+    )
+    failure = authority.terminalize_operation(
+        source,
+        TerminalObservation(
+            record_digest="sha256:" + "d" * 64,
+            validator_digest=TERMINAL_VALIDATOR,
+            observed_state=source.intended_state,
+            outcome=TerminalOutcome.FAIL,
+        ),
+    )
+    successor = replace(
+        typed_operation_binding(),
+        operation_id="recovery-composite-register",
+        operation_kind=CriticalOperationKind.RECOVERY,
+        generation_class=GenerationClass.B0,
+        lifecycle_phase=LifecyclePhase.CAPTURED,
+        intent_digest="sha256:" + "e" * 64,
+        plan_digest=RECOVERY_PLAN,
+        subject=OperationSubject(
+            kind=OperationSubjectKind.CONTROL_RECORD,
+            record_digest=RECOVERY_CONTRACT,
+        ),
+        target=source.target,
+        expected_state=source.intended_state,
+        intended_state=source.rollback.recovery_target,
+        generation=GenerationBinding(
+            mode=GenerationBindingMode.B0_CAPTURE_SENTINEL,
+            generation_digest=RECOVERY_DESTINATION,
+            sentinel_digest=sentinel_digest,
+        ),
+        rollback=replace(
+            typed_operation_binding().rollback,
+            rollback_target=_rollback_target(source.intended_state),
+            recovery_origin_generation_digest=RECOVERY_DESTINATION,
+        ),
+    )
+    authority.append_intent(successor)
+    return authority, source, successor, failure
+
+
+def _rollback_required_authority(
+    binding: OperationBinding | None = None,
+):
+    binding = binding if binding is not None else typed_operation_binding()
     authority = InMemoryAuthority(initial_active_state=binding.expected_state)
     authority.append_intent(binding)
     capability = authority.acquire_capability(binding, fence_epoch=1)
@@ -510,7 +836,8 @@ def test_operation_binding_is_typed_and_binds_the_complete_protected_state_contr
     assert binding.intended_state.state_digest == INTENDED
     assert binding.generation.mode is GenerationBindingMode.REQUIRED_GENERATION
     assert binding.effects[0].classification is EffectClass.POSTSTATE_OBSERVABLE
-    assert binding.rollback.rollback_target == binding.expected_state
+    assert binding.rollback.rollback_target is not None
+    assert binding.rollback.rollback_target.protected_state == binding.expected_state
     assert (
         binding.rollback.recovery_destination_generation_digest
         == RECOVERY_DESTINATION
@@ -643,6 +970,66 @@ def test_recovery_target_generation_must_equal_the_recovery_destination():
         )
 
 
+def test_b0_recovery_successor_must_inherit_the_failed_capture_sentinel():
+    authority, source, successor, failure = _registered_b0_recovery_successor(
+        sentinel_digest="sha256:" + "6" * 64,
+    )
+
+    with pytest.raises(AuthorityUnavailable) as mismatch:
+        authority.acquire_recovery_capability(
+            source,
+            successor,
+            failure=failure,
+            owner_role="recovery-owner",
+            fence_epoch=2,
+        )
+
+    assert mismatch.value.code == "AUTHORITY_RECOVERY_BINDING_MISMATCH"
+
+
+def test_b0_recovery_successor_can_advance_the_same_sentinel_bound_target():
+    sentinel = "sha256:" + "5" * 64
+    authority, source, successor, failure = _registered_b0_recovery_successor(
+        sentinel_digest=sentinel,
+    )
+
+    capability = authority.acquire_recovery_capability(
+        source,
+        successor,
+        failure=failure,
+        owner_role="recovery-owner",
+        fence_epoch=2,
+    )
+
+    assert successor.generation.sentinel_digest == sentinel
+    assert capability.fenced.target == source.target
+    assert capability.predecessor_fence_epoch == 1
+    assert capability.fenced.fence_epoch == 2
+
+
+def test_rollback_target_binds_an_exact_snapshot_and_destination_generation():
+    snapshot = ProtectedStateSnapshot(
+        record_digest="sha256:" + "f" * 64,
+        generation_digest=RECOVERY_DESTINATION,
+        projection_digest=PROJECTION,
+        state_digest=OLD_STATE,
+    )
+
+    target = RollbackTarget(
+        protected_state=snapshot,
+        destination_generation_digest=RECOVERY_DESTINATION,
+    )
+
+    assert target.protected_state.record_digest == "sha256:" + "f" * 64
+    assert target.protected_state.projection_digest == PROJECTION
+    assert target.protected_state.state_digest == OLD_STATE
+    with pytest.raises(ValueError, match="snapshot generation"):
+        replace(
+            target,
+            destination_generation_digest="sha256:" + "e" * 64,
+        )
+
+
 def test_fake_operation_needs_a_fenced_capability_and_terminal_validation_to_succeed():
     binding = typed_operation_binding()
     authority = InMemoryAuthority(initial_active_state=binding.expected_state)
@@ -678,6 +1065,142 @@ def test_fake_operation_needs_a_fenced_capability_and_terminal_validation_to_suc
             observed_state=binding.expected_state,
         )
     assert exc_info.value.code == "AUTHORITY_CAPABILITY_CONSUMED"
+
+
+def test_forward_capability_rejects_a_foreign_snapshot_with_the_same_state_digest():
+    binding = typed_operation_binding()
+    foreign_binding = replace(
+        binding,
+        intended_state=replace(
+            binding.intended_state,
+            record_digest="sha256:" + "4" * 64,
+        ),
+    )
+    authority = InMemoryAuthority(initial_active_state=binding.expected_state)
+    foreign_authority = InMemoryAuthority(
+        initial_active_state=foreign_binding.expected_state
+    )
+    authority.append_intent(binding)
+    foreign_authority.append_intent(foreign_binding)
+    authority.acquire_capability(binding, fence_epoch=1)
+    foreign_capability = foreign_authority.acquire_capability(
+        foreign_binding,
+        fence_epoch=1,
+    )
+
+    with pytest.raises(AuthorityUnavailable) as exc_info:
+        authority.guarded_compare_and_swap(
+            binding,
+            capability=foreign_capability,
+            observed_state=binding.expected_state,
+        )
+
+    assert exc_info.value.code == "AUTHORITY_CAPABILITY_UNKNOWN"
+    assert authority.observe_active() == binding.expected_state
+    assert authority.operation_state(binding.operation_id) is OperationState.CAPABILITY_ISSUED
+
+
+def test_forward_capability_rejects_a_foreign_binding_with_another_validator():
+    binding = typed_operation_binding()
+    foreign_binding = replace(
+        binding,
+        terminal_validator_digest="sha256:" + "4" * 64,
+    )
+    authority = InMemoryAuthority(initial_active_state=binding.expected_state)
+    foreign_authority = InMemoryAuthority(
+        initial_active_state=foreign_binding.expected_state
+    )
+    authority.append_intent(binding)
+    foreign_authority.append_intent(foreign_binding)
+    authority.acquire_capability(binding, fence_epoch=1)
+    foreign_capability = foreign_authority.acquire_capability(
+        foreign_binding,
+        fence_epoch=1,
+    )
+
+    with pytest.raises(AuthorityUnavailable) as exc_info:
+        authority.guarded_compare_and_swap(
+            binding,
+            capability=foreign_capability,
+            observed_state=binding.expected_state,
+        )
+
+    assert exc_info.value.code == "AUTHORITY_CAPABILITY_UNKNOWN"
+    assert authority.observe_active() == binding.expected_state
+
+
+def _cross_domain_capabilities():
+    base = typed_operation_binding()
+    binding = replace(
+        base,
+        plan_digest=ROLLBACK,
+        rollback=replace(
+            base.rollback,
+            rollback_target=_rollback_target(base.intended_state),
+        ),
+    )
+    forward_authority = InMemoryAuthority(initial_active_state=binding.expected_state)
+    forward_authority.append_intent(binding)
+    forward_capability = forward_authority.acquire_capability(
+        binding,
+        fence_epoch=2,
+    )
+    rollback_authority, binding = _rollback_required_authority(binding)
+    rollback_capability = rollback_authority.acquire_rollback_capability(
+        binding,
+        fence_epoch=2,
+    )
+    return (
+        binding,
+        forward_authority,
+        forward_capability,
+        rollback_authority,
+        rollback_capability,
+    )
+
+
+def test_rollback_rejects_a_replayed_forward_capability():
+    (
+        binding,
+        _forward_authority,
+        forward_capability,
+        rollback_authority,
+        rollback_capability,
+    ) = _cross_domain_capabilities()
+
+    assert forward_capability.capability_type.value == "operation"
+    assert rollback_capability.capability_type.value == "rollback"
+    assert forward_capability.operation_digest == binding.digest()
+    assert rollback_capability.operation_digest == binding.digest()
+    assert forward_capability.capability_id != rollback_capability.capability_id
+
+    with pytest.raises(AuthorityUnavailable) as exc_info:
+        rollback_authority.execute_rollback(
+            binding,
+            capability=forward_capability,
+            observed_state=binding.intended_state,
+        )
+
+    assert exc_info.value.code == "AUTHORITY_BINDING_MISMATCH"
+
+
+def test_forward_operation_rejects_a_replayed_rollback_capability():
+    (
+        binding,
+        forward_authority,
+        _forward_capability,
+        _rollback_authority,
+        rollback_capability,
+    ) = _cross_domain_capabilities()
+
+    with pytest.raises(AuthorityUnavailable) as exc_info:
+        forward_authority.guarded_compare_and_swap(
+            binding,
+            capability=rollback_capability,
+            observed_state=binding.expected_state,
+        )
+
+    assert exc_info.value.code == "AUTHORITY_CAPABILITY_UNKNOWN"
 
 
 def test_terminal_failure_requires_exact_rollback_and_successful_validation():
@@ -734,7 +1257,10 @@ def test_rollback_rejects_a_substituted_registered_target():
     )
     forged_binding = replace(
         binding,
-        rollback=replace(binding.rollback, rollback_target=forged_target),
+        rollback=replace(
+            binding.rollback,
+            rollback_target=_rollback_target(forged_target),
+        ),
     )
 
     with pytest.raises(AuthorityUnavailable) as exc_info:
@@ -758,6 +1284,46 @@ def test_rollback_rejects_a_substituted_registered_target():
     assert rollback_capability.fence_epoch == 2
 
 
+def test_rollback_capability_rejects_a_foreign_snapshot_with_the_same_state_digest():
+    binding = typed_operation_binding()
+    foreign_target = replace(
+        binding.rollback.rollback_target,
+        protected_state=replace(
+            binding.expected_state,
+            record_digest="sha256:" + "4" * 64,
+        ),
+    )
+    foreign_binding = replace(
+        binding,
+        rollback=replace(binding.rollback, rollback_target=foreign_target),
+    )
+    authority, binding = _rollback_required_authority(binding)
+    foreign_authority, foreign_binding = _rollback_required_authority(
+        foreign_binding
+    )
+    local_capability = authority.acquire_rollback_capability(binding, fence_epoch=2)
+    foreign_capability = foreign_authority.acquire_rollback_capability(
+        foreign_binding,
+        fence_epoch=2,
+    )
+
+    with pytest.raises(AuthorityUnavailable) as exc_info:
+        authority.execute_rollback(
+            binding,
+            capability=foreign_capability,
+            observed_state=binding.intended_state,
+        )
+
+    assert exc_info.value.code == "AUTHORITY_BINDING_MISMATCH"
+    assert authority.observe_active() == binding.intended_state
+    pending = authority.execute_rollback(
+        binding,
+        capability=local_capability,
+        observed_state=binding.intended_state,
+    )
+    assert pending.state is OperationState.ROLLBACK_PENDING_VALIDATION
+
+
 def test_rollback_execution_rechecks_the_registered_target():
     authority, binding = _rollback_required_authority()
     rollback_capability = authority.acquire_rollback_capability(
@@ -769,8 +1335,11 @@ def test_rollback_execution_rechecks_the_registered_target():
         rollback=replace(
             binding.rollback,
             rollback_target=replace(
-                binding.expected_state,
-                record_digest="sha256:" + "4" * 64,
+                binding.rollback.rollback_target,
+                protected_state=replace(
+                    binding.expected_state,
+                    record_digest="sha256:" + "4" * 64,
+                ),
             ),
         ),
     )
@@ -937,7 +1506,7 @@ def test_named_recovery_successor_restores_the_target_under_the_failed_fence():
         ),
         rollback=replace(
             typed_operation_binding().rollback,
-            rollback_target=failed_binding.intended_state,
+            rollback_target=_rollback_target(failed_binding.intended_state),
             recovery_origin_generation_digest=RECOVERY_DESTINATION,
         ),
     )
@@ -1028,6 +1597,79 @@ def test_recovery_execution_rechecks_the_registered_target():
     assert pending.state is OperationState.RECOVERY_PENDING_VALIDATION
 
 
+def test_recovery_capability_rejects_a_foreign_snapshot_with_the_same_state_digest():
+    authority, failed_binding, recovery_binding, failure = (
+        _registered_recovery_successor()
+    )
+    foreign_target = replace(
+        recovery_binding.intended_state,
+        record_digest="sha256:" + "4" * 64,
+    )
+    (
+        foreign_authority,
+        foreign_failed_binding,
+        foreign_recovery_binding,
+        foreign_failure,
+    ) = _registered_recovery_successor(recovery_target=foreign_target)
+    local_capability = authority.acquire_recovery_capability(
+        failed_binding,
+        recovery_binding,
+        failure=failure,
+        owner_role="recovery-owner",
+        fence_epoch=2,
+    )
+    foreign_capability = foreign_authority.acquire_recovery_capability(
+        foreign_failed_binding,
+        foreign_recovery_binding,
+        failure=foreign_failure,
+        owner_role="recovery-owner",
+        fence_epoch=2,
+    )
+
+    with pytest.raises(AuthorityUnavailable) as exc_info:
+        authority.execute_recovery(
+            failed_binding,
+            recovery_binding,
+            failure=failure,
+            capability=foreign_capability,
+            observed_state=failed_binding.intended_state,
+        )
+
+    assert exc_info.value.code == "AUTHORITY_CAPABILITY_UNKNOWN"
+    assert authority.observe_active() == failed_binding.intended_state
+    pending = authority.execute_recovery(
+        failed_binding,
+        recovery_binding,
+        failure=failure,
+        capability=local_capability,
+        observed_state=failed_binding.intended_state,
+    )
+    assert pending.state is OperationState.RECOVERY_PENDING_VALIDATION
+
+
+def test_recovery_capability_requires_a_recovery_domain_fence():
+    authority, failed_binding, recovery_binding, failure = (
+        _registered_recovery_successor()
+    )
+    capability = authority.acquire_recovery_capability(
+        failed_binding,
+        recovery_binding,
+        failure=failure,
+        owner_role="recovery-owner",
+        fence_epoch=2,
+    )
+    capability_type = type(capability.fenced.capability_type)
+
+    with pytest.raises(ValueError, match="requires a recovery fence"):
+        replace(
+            capability,
+            fenced=replace(
+                capability.fenced,
+                capability_type=capability_type.OPERATION,
+            ),
+        )
+
+
 def test_recovery_acquisition_rechecks_the_registered_successor():
     authority, failed_binding, recovery_binding, failure = (
         _registered_recovery_successor()
@@ -1063,6 +1705,55 @@ def test_recovery_acquisition_rechecks_the_registered_successor():
         fence_epoch=2,
     )
     assert recovery_capability.fenced.fence_epoch == 2
+
+
+def test_recovery_successor_cannot_reclassify_the_failed_lifecycle_phase():
+    authority, failed_binding, recovery_binding, failure = (
+        _registered_recovery_successor(
+            recovery_lifecycle_phase=LifecyclePhase.ACCEPTED,
+        )
+    )
+
+    with pytest.raises(AuthorityUnavailable) as exc_info:
+        authority.acquire_recovery_capability(
+            failed_binding,
+            recovery_binding,
+            failure=failure,
+            owner_role="recovery-owner",
+            fence_epoch=2,
+        )
+
+    assert exc_info.value.code == "AUTHORITY_RECOVERY_BINDING_MISMATCH"
+
+
+def test_recovery_successor_cannot_reclassify_the_failed_generation_class():
+    source = replace(
+        typed_operation_binding(),
+        operation_kind=CriticalOperationKind.REPOSITORY_PUBLICATION,
+        generation_class=GenerationClass.F,
+        lifecycle_phase=LifecyclePhase.PUBLISHED,
+        target=OperationTarget(
+            kind=OperationTargetKind.PACKAGE_REPOSITORY,
+            target_id="foundation-repository",
+        ),
+    )
+    authority, failed_binding, recovery_binding, failure = (
+        _registered_recovery_successor(
+            source=source,
+            recovery_generation_class=GenerationClass.C,
+        )
+    )
+
+    with pytest.raises(AuthorityUnavailable) as exc_info:
+        authority.acquire_recovery_capability(
+            failed_binding,
+            recovery_binding,
+            failure=failure,
+            owner_role="recovery-owner",
+            fence_epoch=2,
+        )
+
+    assert exc_info.value.code == "AUTHORITY_RECOVERY_BINDING_MISMATCH"
 
 
 def test_recovery_terminal_rechecks_the_registered_validator():
@@ -1212,7 +1903,7 @@ def test_recovery_rejects_the_wrong_owner_or_failure_terminal():
         ),
         rollback=replace(
             typed_operation_binding().rollback,
-            rollback_target=failed_binding.intended_state,
+            rollback_target=_rollback_target(failed_binding.intended_state),
             recovery_origin_generation_digest=RECOVERY_DESTINATION,
         ),
     )

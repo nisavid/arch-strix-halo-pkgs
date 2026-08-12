@@ -621,6 +621,22 @@ RECORD_SCHEMAS: Mapping[str, RecordSchema] = MappingProxyType(
                 "rollback_contract_digest": _field(FieldKind.DIGEST),
             },
         ),
+        "operation_attestation": _record_schema(
+            "operation_attestation",
+            required={
+                "observed_at": _field(FieldKind.TIMESTAMP),
+                "operation_digest": _field(FieldKind.DIGEST),
+                "outcome": _field(
+                    FieldKind.ENUM,
+                    "failed",
+                    "succeeded",
+                    "unknown",
+                ),
+                "poststate_digest": _field(FieldKind.DIGEST),
+                "subject_digest": _field(FieldKind.DIGEST),
+                "validator_digest": _field(FieldKind.DIGEST),
+            },
+        ),
         "operation_obligation": _record_schema(
             "operation_obligation",
             required={
@@ -802,6 +818,7 @@ RECORD_SCHEMAS: Mapping[str, RecordSchema] = MappingProxyType(
                 "generation_binding": _field(
                     FieldKind.GENERATION_BINDING,
                     GenerationBindingMode.REQUIRED_GENERATION.value,
+                    GenerationBindingMode.B0_CAPTURE_SENTINEL.value,
                 ),
                 "incident_digest": _field(FieldKind.DIGEST),
                 "origin_generation_digest": _field(FieldKind.DIGEST),
@@ -830,7 +847,6 @@ RECORD_SCHEMAS: Mapping[str, RecordSchema] = MappingProxyType(
                 "issued_at": _field(FieldKind.TIMESTAMP),
                 "key_version": _field(FieldKind.IDENTIFIER),
                 "lease_id": _field(FieldKind.IDENTIFIER),
-                "restricted_reference_digest": _field(FieldKind.DIGEST),
                 "status": _field(FieldKind.ENUM, "active", "expired", "revoked"),
             },
             optional={"rotation_history_digest": _field(FieldKind.DIGEST)},
@@ -848,6 +864,9 @@ RECORD_SCHEMAS: Mapping[str, RecordSchema] = MappingProxyType(
                 "rollback_id": _field(FieldKind.IDENTIFIER),
                 "target_digest": _field(FieldKind.DIGEST),
                 "target_generation_digest": _field(FieldKind.DIGEST),
+                "target_projection_digest": _field(FieldKind.DIGEST),
+                "target_protected_state_digest": _field(FieldKind.DIGEST),
+                "target_state_digest": _field(FieldKind.DIGEST),
                 "terminal_gate_digest": _field(FieldKind.DIGEST),
             },
         ),

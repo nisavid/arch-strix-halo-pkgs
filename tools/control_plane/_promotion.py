@@ -305,8 +305,12 @@ class PromotionContract:
             raise ValueError(
                 "accepted phase requires accepted and active candidate generation"
             )
-        if phase is PromotionPhase.ACTIVE and active != candidate:
-            raise ValueError("active phase requires the active candidate generation")
+        if phase is PromotionPhase.ACTIVE and (
+            active != candidate or accepted == candidate
+        ):
+            raise ValueError(
+                "active phase requires the active candidate and a prior accepted generation"
+            )
         if phase in {PromotionPhase.PUBLISHED, PromotionPhase.PREVALIDATED} and (
             accepted != active or active == candidate
         ):
@@ -429,6 +433,7 @@ class RegisteredOperation:
     intent_record: ControlRecord
     operation_record: ControlRecord
     terminal_record: ControlRecord
+    validator_attestation_records: tuple[ControlRecord, ...]
 
     def __post_init__(self) -> None:
         _record(self.intent_record, field="intent_record", kind="intent")
@@ -437,6 +442,12 @@ class RegisteredOperation:
         intent = self.intent_record.payload
         operation = self.operation_record.payload
         terminal = self.terminal_record.payload
+        validator_attestations = tuple(self.validator_attestation_records)
+        object.__setattr__(
+            self,
+            "validator_attestation_records",
+            validator_attestations,
+        )
         if intent["intent_type"] != "critical_operation":
             raise ValueError("registered operation requires a critical-operation intent")
         if operation["intent_digest"] != self.intent_record.digest():
@@ -449,6 +460,18 @@ class RegisteredOperation:
             raise ValueError("registered operation requires a critical-operation terminal")
         if terminal["operation_digest"] != self.operation_record.digest():
             raise ValueError("terminal does not bind critical operation")
+        for attestation_record in validator_attestations:
+            _record(
+                attestation_record,
+                field="validator_attestation_records item",
+                kind="operation_attestation",
+            )
+        if tuple(terminal["validator_attestation_digests"]) != tuple(
+            item.digest() for item in validator_attestations
+        ):
+            raise ValueError(
+                "terminal does not bind the exact operation validator attestations"
+            )
         if intent["journal_sequence"] >= terminal["journal_sequence"]:
             raise ValueError("journal order must be intent before operation terminal")
         if (
@@ -457,10 +480,29 @@ class RegisteredOperation:
             != operation["intended_protected_state_digest"]
         ):
             raise ValueError("operation terminal does not bind intended protected state")
-        if parse_canonical_timestamp(intent["registered_at"]) > parse_canonical_timestamp(
-            terminal["completed_at"]
-        ):
+        registered_at = parse_canonical_timestamp(intent["registered_at"])
+        completed_at = parse_canonical_timestamp(terminal["completed_at"])
+        if registered_at > completed_at:
             raise ValueError("operation terminal cannot precede intent registration")
+        for attestation_record in validator_attestations:
+            attestation = attestation_record.payload
+            if attestation["operation_digest"] != self.operation_record.digest():
+                raise ValueError(
+                    "validator attestation does not bind the critical operation"
+                )
+            if attestation["subject_digest"] != operation["subject_digest"]:
+                raise ValueError("validator attestation does not bind operation subject")
+            if attestation["validator_digest"] != operation["terminal_validator_digest"]:
+                raise ValueError("validator attestation does not bind terminal validator")
+            if attestation["outcome"] != terminal["outcome"]:
+                raise ValueError("validator attestation does not bind terminal outcome")
+            if attestation["poststate_digest"] != terminal["poststate_digest"]:
+                raise ValueError("validator attestation does not bind terminal poststate")
+            observed_at = parse_canonical_timestamp(attestation["observed_at"])
+            if not registered_at <= observed_at <= completed_at:
+                raise ValueError(
+                    "validator attestation observation must occur between intent and terminal"
+                )
 
     @property
     def operation_digest(self) -> str:
@@ -676,6 +718,7 @@ class AtomicEvidenceCut:
     evaluations: tuple[BoundEvaluation, ...]
     inclusion_edge_records: tuple[ControlRecord, ...] = ()
     operations: tuple[RegisteredOperation, ...] = ()
+    validator_attestation_records: tuple[ControlRecord, ...] = ()
 
     def __post_init__(self) -> None:
         _record(self.cut_record, field="cut_record", kind="atomic_evidence_cut")
@@ -699,10 +742,16 @@ class AtomicEvidenceCut:
         evaluations = tuple(self.evaluations)
         edges = tuple(self.inclusion_edge_records)
         operations = tuple(self.operations)
+        validator_attestations = tuple(self.validator_attestation_records)
         object.__setattr__(self, "attempts", attempts)
         object.__setattr__(self, "evaluations", evaluations)
         object.__setattr__(self, "inclusion_edge_records", edges)
         object.__setattr__(self, "operations", operations)
+        object.__setattr__(
+            self,
+            "validator_attestation_records",
+            validator_attestations,
+        )
         if any(not isinstance(item, RegisteredAttempt) for item in attempts):
             raise TypeError("attempts must contain RegisteredAttempt values")
         if any(not isinstance(item, BoundEvaluation) for item in evaluations):
@@ -711,6 +760,23 @@ class AtomicEvidenceCut:
             _record(edge, field="inclusion_edge_records item", kind="inclusion_edge")
         if any(not isinstance(item, RegisteredOperation) for item in operations):
             raise TypeError("operations must contain RegisteredOperation values")
+        for attestation_record in validator_attestations:
+            _record(
+                attestation_record,
+                field="validator_attestation_records item",
+                kind="operation_attestation",
+            )
+        expected_validator_attestations = tuple(
+            attestation_record.digest()
+            for operation in operations
+            for attestation_record in operation.validator_attestation_records
+        )
+        if tuple(item.digest() for item in validator_attestations) != (
+            expected_validator_attestations
+        ):
+            raise ValueError(
+                "atomic cut does not bind exact operation validator attestations"
+            )
         payload = self.cut_record.payload
         expected = {
             "accepted_generation_digest": self.accepted_generation_record.digest(),
@@ -1005,6 +1071,7 @@ def assess_promotion_cut(
             attempt.assignment_digest != obligation.assignment_digest
             or attempt.occurrence_digest != obligation.occurrence_digest
             or bound.assignment_digest != obligation.assignment_digest
+            or bound.assignment_record.payload["impact"] != obligation.impact.value
         ):
             _deny(
                 "PROMOTION_EVIDENCE_BINDING_MISMATCH",

@@ -7,9 +7,11 @@ from dataclasses import dataclass
 
 from ._authority import (
     AuthorityUnavailable,
+    CapabilityType,
     CriticalOperationKind,
     EffectClass,
     FencedCapability,
+    GenerationBindingMode,
     NonPromotionalEvidenceView,
     NonPromotionalReceipt,
     OperationBinding,
@@ -30,6 +32,15 @@ class JournalEntry:
     operation_id: str | None
     record_digest: str
     active_digest: str | None
+
+
+def _snapshot_identity(snapshot: ProtectedStateSnapshot) -> tuple[str, ...]:
+    return (
+        snapshot.record_digest,
+        snapshot.generation_digest,
+        snapshot.projection_digest,
+        snapshot.state_digest,
+    )
 
 
 class InMemoryAuthority:
@@ -139,6 +150,8 @@ class InMemoryAuthority:
             )
         material = "\0".join(
             (
+                CapabilityType.OPERATION.value,
+                binding.digest(),
                 binding.operation_id,
                 binding.intent_digest,
                 binding.plan_digest,
@@ -146,19 +159,21 @@ class InMemoryAuthority:
                 binding.subject.record_digest,
                 binding.target.kind.value,
                 binding.target.target_id,
-                binding.intended_state.state_digest,
+                *_snapshot_identity(binding.intended_state),
                 str(fence_epoch),
             )
         ).encode("utf-8")
         capability = FencedCapability(
             capability_id="sha256:" + hashlib.sha256(material).hexdigest(),
+            capability_type=CapabilityType.OPERATION,
+            operation_digest=binding.digest(),
             operation_id=binding.operation_id,
             intent_digest=binding.intent_digest,
             plan_digest=binding.plan_digest,
             authority_head_digest=binding.authority_head_digest,
             subject_digest=binding.subject.record_digest,
             target=binding.target,
-            intended_state_digest=binding.intended_state.state_digest,
+            intended_state=binding.intended_state,
             fence_epoch=fence_epoch,
         )
         self._issued_capabilities[capability.capability_id] = capability
@@ -337,8 +352,11 @@ class InMemoryAuthority:
             )
         rollback_target = binding.rollback.rollback_target
         assert rollback_target is not None
+        protected_state = rollback_target.protected_state
         material = "\0".join(
             (
+                CapabilityType.ROLLBACK.value,
+                binding.digest(),
                 binding.operation_id,
                 binding.intent_digest,
                 binding.rollback.rollback_plan_digest or "",
@@ -346,19 +364,21 @@ class InMemoryAuthority:
                 binding.subject.record_digest,
                 binding.target.kind.value,
                 binding.target.target_id,
-                rollback_target.state_digest,
+                *_snapshot_identity(protected_state),
                 str(fence_epoch),
             )
         ).encode("utf-8")
         capability = FencedCapability(
             capability_id="sha256:" + hashlib.sha256(material).hexdigest(),
+            capability_type=CapabilityType.ROLLBACK,
+            operation_digest=binding.digest(),
             operation_id=binding.operation_id,
             intent_digest=binding.intent_digest,
             plan_digest=binding.rollback.rollback_plan_digest or "",
             authority_head_digest=binding.authority_head_digest,
             subject_digest=binding.subject.record_digest,
             target=binding.target,
-            intended_state_digest=rollback_target.state_digest,
+            intended_state=protected_state,
             fence_epoch=fence_epoch,
         )
         self._issued_capabilities[capability.capability_id] = capability
@@ -391,16 +411,23 @@ class InMemoryAuthority:
         issued = self._issued_capabilities.get(capability.capability_id)
         rollback_target = binding.rollback.rollback_target
         rollback_plan = binding.rollback.rollback_plan_digest
+        protected_state = (
+            rollback_target.protected_state
+            if rollback_target is not None
+            else None
+        )
         if (
             issued != capability
-            or rollback_target is None
+            or protected_state is None
             or rollback_plan is None
+            or capability.capability_type is not CapabilityType.ROLLBACK
+            or capability.operation_digest != binding.digest()
             or capability.operation_id != binding.operation_id
             or capability.plan_digest != rollback_plan
             or capability.authority_head_digest != binding.authority_head_digest
             or capability.subject_digest != binding.subject.record_digest
             or capability.target != binding.target
-            or capability.intended_state_digest != rollback_target.state_digest
+            or capability.intended_state != protected_state
         ):
             raise AuthorityUnavailable(
                 "AUTHORITY_BINDING_MISMATCH",
@@ -423,12 +450,12 @@ class InMemoryAuthority:
             )
             self._remember_recovery_failure(binding, result)
             return result
-        self._active_state = rollback_target
+        self._active_state = protected_state
         self._states[binding.operation_id] = OperationState.ROLLBACK_PENDING_VALIDATION
         receipt = self._append(
             kind="rollback_transition",
             operation_id=binding.operation_id,
-            record_digest=rollback_target.record_digest,
+            record_digest=protected_state.record_digest,
         )
         return OperationResult(
             operation_id=binding.operation_id,
@@ -454,7 +481,12 @@ class InMemoryAuthority:
                 "AUTHORITY_ROLLBACK_PHASE_INVALID",
                 "rollback is not awaiting terminal validation",
             )
-        target = binding.rollback.rollback_target
+        rollback_target = binding.rollback.rollback_target
+        target = (
+            rollback_target.protected_state
+            if rollback_target is not None
+            else None
+        )
         validator = binding.rollback.rollback_validator_digest
         passed = (
             target is not None
@@ -531,10 +563,19 @@ class InMemoryAuthority:
         if (
             recovery_binding.operation_kind is not CriticalOperationKind.RECOVERY
             or recovery_binding.target != failed_binding.target
+            or recovery_binding.generation_class is not failed_binding.generation_class
+            or recovery_binding.lifecycle_phase is not failed_binding.lifecycle_phase
             or recovery_binding.plan_digest != contract.recovery_plan_digest
             or recovery_binding.subject.record_digest
             != contract.recovery_contract_digest
             or recovery_binding.intended_state != contract.recovery_target
+            or recovery_binding.generation.mode is not failed_binding.generation.mode
+            or (
+                failed_binding.generation.mode
+                is GenerationBindingMode.B0_CAPTURE_SENTINEL
+                and recovery_binding.generation.sentinel_digest
+                != failed_binding.generation.sentinel_digest
+            )
             or recovery_binding.generation.generation_digest
             != contract.recovery_destination_generation_digest
         ):
@@ -561,6 +602,8 @@ class InMemoryAuthority:
         assert recovery_contract_digest is not None
         material = "\0".join(
             (
+                CapabilityType.RECOVERY.value,
+                recovery_binding.digest(),
                 recovery_binding.operation_id,
                 recovery_binding.intent_digest,
                 recovery_binding.plan_digest,
@@ -568,7 +611,7 @@ class InMemoryAuthority:
                 recovery_binding.subject.record_digest,
                 recovery_binding.target.kind.value,
                 recovery_binding.target.target_id,
-                recovery_binding.intended_state.state_digest,
+                *_snapshot_identity(recovery_binding.intended_state),
                 failed_binding.operation_id,
                 failure_record_digest,
                 str(predecessor_fence_epoch),
@@ -579,13 +622,15 @@ class InMemoryAuthority:
         ).encode("utf-8")
         fenced = FencedCapability(
             capability_id="sha256:" + hashlib.sha256(material).hexdigest(),
+            capability_type=CapabilityType.RECOVERY,
+            operation_digest=recovery_binding.digest(),
             operation_id=recovery_binding.operation_id,
             intent_digest=recovery_binding.intent_digest,
             plan_digest=recovery_binding.plan_digest,
             authority_head_digest=recovery_binding.authority_head_digest,
             subject_digest=recovery_binding.subject.record_digest,
             target=recovery_binding.target,
-            intended_state_digest=recovery_binding.intended_state.state_digest,
+            intended_state=recovery_binding.intended_state,
             fence_epoch=fence_epoch,
         )
         capability = RecoveryCapability(
@@ -661,6 +706,8 @@ class InMemoryAuthority:
                 failure_record_digest,
                 remembered[1],
             )
+            or capability.fenced.capability_type is not CapabilityType.RECOVERY
+            or capability.fenced.operation_digest != recovery_binding.digest()
             or capability.fenced.operation_id != recovery_binding.operation_id
             or capability.fenced.intent_digest != recovery_binding.intent_digest
             or capability.fenced.plan_digest != recovery_binding.plan_digest
@@ -669,8 +716,7 @@ class InMemoryAuthority:
             or capability.fenced.subject_digest
             != recovery_binding.subject.record_digest
             or capability.fenced.target != recovery_binding.target
-            or capability.fenced.intended_state_digest
-            != recovery_binding.intended_state.state_digest
+            or capability.fenced.intended_state != recovery_binding.intended_state
         ):
             raise AuthorityUnavailable(
                 "AUTHORITY_RECOVERY_BINDING_MISMATCH",
@@ -849,13 +895,15 @@ class InMemoryAuthority:
         capability: FencedCapability,
     ) -> bool:
         return (
-            capability.operation_id == binding.operation_id
+            capability.capability_type is CapabilityType.OPERATION
+            and capability.operation_digest == binding.digest()
+            and capability.operation_id == binding.operation_id
             and capability.intent_digest == binding.intent_digest
             and capability.plan_digest == binding.plan_digest
             and capability.authority_head_digest == binding.authority_head_digest
             and capability.subject_digest == binding.subject.record_digest
             and capability.target == binding.target
-            and capability.intended_state_digest == binding.intended_state.state_digest
+            and capability.intended_state == binding.intended_state
         )
 
     def _append(

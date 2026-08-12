@@ -45,6 +45,7 @@ EXPECTED_RECORD_KINDS = {
     "intent",
     "invalidation",
     "operation",
+    "operation_attestation",
     "operation_obligation",
     "operation_obligation_set",
     "predicate_proof",
@@ -338,6 +339,14 @@ VALID_PAYLOADS = {
         "target_kind": "live_root",
         "terminal_validator_digest": DIGEST_8,
     },
+    "operation_attestation": {
+        "observed_at": TIMESTAMP,
+        "operation_digest": DIGEST_1,
+        "outcome": "succeeded",
+        "poststate_digest": DIGEST_2,
+        "subject_digest": DIGEST_3,
+        "validator_digest": DIGEST_4,
+    },
     "operation_obligation": {
         "generation_binding": {
             "generation_digest": DIGEST_1,
@@ -455,7 +464,6 @@ VALID_PAYLOADS = {
         "issued_at": "2026-08-12T09:00:00Z",
         "key_version": "evidence_key_v1",
         "lease_id": "retention_lease_1",
-        "restricted_reference_digest": DIGEST_1,
         "status": "active",
     },
     "rollback": {
@@ -469,6 +477,9 @@ VALID_PAYLOADS = {
         "rollback_id": "rollback_1",
         "target_digest": DIGEST_4,
         "target_generation_digest": DIGEST_1,
+        "target_projection_digest": DIGEST_6,
+        "target_protected_state_digest": DIGEST_7,
+        "target_state_digest": DIGEST_8,
         "terminal_gate_digest": DIGEST_5,
     },
     "requirements": {
@@ -735,14 +746,15 @@ def test_each_restricted_record_family_rejects_malformed_typed_digests(
 ) -> None:
     payload = deepcopy(VALID_PAYLOADS[kind])
     schema = RECORD_SCHEMAS[kind]
+    typed_fields = {**schema.required_fields, **schema.optional_fields}
     digest_field = next(
         field
-        for field, field_schema in schema.required_fields.items()
+        for field, field_schema in typed_fields.items()
         if field_schema.kind.value in {"digest", "digest_list"}
     )
     payload[digest_field] = (
         ["sha256:not-a-digest"]
-        if schema.required_fields[digest_field].kind.value == "digest_list"
+        if typed_fields[digest_field].kind.value == "digest_list"
         else "sha256:not-a-digest"
     )
 
@@ -1134,6 +1146,28 @@ def test_operation_and_capability_bind_the_complete_authority_coordinates() -> N
     assert capability.payload["single_use_scope_digest"] == DIGEST_7
 
 
+def test_operation_attestation_binds_the_exact_terminal_validator_observation() -> None:
+    schema = RECORD_SCHEMAS["operation_attestation"]
+
+    assert set(schema.required_fields) == {
+        "observed_at",
+        "operation_digest",
+        "outcome",
+        "poststate_digest",
+        "subject_digest",
+        "validator_digest",
+    }
+    assert not schema.optional_fields
+
+    attestation = ControlRecord.build(
+        kind="operation_attestation",
+        record_id="operation_attestation_record_1",
+        payload=VALID_PAYLOADS["operation_attestation"],
+    )
+
+    assert attestation.payload["validator_digest"] == DIGEST_4
+
+
 def test_recovery_capability_binds_the_failed_terminal_and_predecessor_fence() -> None:
     recovery_payload = {
         **VALID_PAYLOADS["capability"],
@@ -1174,6 +1208,68 @@ def test_recovery_capability_binds_the_failed_terminal_and_predecessor_fence() -
     assert stale_fence.value.code is RecordErrorCode.INVALID_PAYLOAD_SEMANTICS
 
 
+def test_recovery_record_preserves_a_failed_b0_capture_sentinel() -> None:
+    recovery = ControlRecord.build(
+        kind="recovery",
+        record_id="b0_recovery_record_1",
+        payload={
+            **VALID_PAYLOADS["recovery"],
+            "generation_binding": {
+                "generation_digest": DIGEST_7,
+                "mode": "b0_capture_sentinel",
+                "sentinel_digest": DIGEST_9,
+            },
+        },
+    )
+
+    assert recovery.payload["generation_binding"] == {
+        "generation_digest": DIGEST_7,
+        "mode": "b0_capture_sentinel",
+        "sentinel_digest": DIGEST_9,
+    }
+    assert recovery.payload["origin_generation_digest"] == DIGEST_7
+    assert recovery.payload["destination_generation_digest"] == DIGEST_2
+
+
+def test_rollback_record_binds_the_exact_destination_snapshot_without_a_reverse_edge(
+) -> None:
+    protected_state = ControlRecord.build(
+        kind="protected_state",
+        record_id="rollback_protected_state_record_1",
+        payload=VALID_PAYLOADS["protected_state"],
+    )
+    rollback = ControlRecord.build(
+        kind="rollback",
+        record_id="rollback_record_1",
+        payload={
+            **VALID_PAYLOADS["rollback"],
+            "destination_generation_digest": protected_state.payload[
+                "generation_digest"
+            ],
+            "target_generation_digest": protected_state.payload[
+                "generation_digest"
+            ],
+            "target_protected_state_digest": protected_state.digest(),
+            "target_state_digest": protected_state.payload["state_digest"],
+        },
+    )
+
+    assert rollback.payload["target_protected_state_digest"] == protected_state.digest()
+    assert rollback.payload["target_projection_digest"] == DIGEST_6
+    assert rollback.payload["target_state_digest"] == DIGEST_2
+    with pytest.raises(RecordValidationError) as reverse_edge:
+        ControlRecord.build(
+            kind="protected_state",
+            record_id="rollback_protected_state_record_2",
+            payload={
+                **VALID_PAYLOADS["protected_state"],
+                "rollback_digest": rollback.digest(),
+            },
+        )
+
+    assert reverse_edge.value.code is RecordErrorCode.UNKNOWN_PAYLOAD_FIELD
+
+
 def test_attempt_and_terminal_records_form_a_one_way_content_addressed_dag() -> None:
     attempt_schema = RECORD_SCHEMAS["attempt"]
 
@@ -1192,6 +1288,37 @@ def test_attempt_and_terminal_records_form_a_one_way_content_addressed_dag() -> 
         )
 
     assert terminal_decision.value.code is RecordErrorCode.INVALID_PAYLOAD_FIELD
+    assert reverse_reference.value.code is RecordErrorCode.UNKNOWN_PAYLOAD_FIELD
+
+
+def test_restricted_reference_and_retention_lease_form_a_realizable_one_way_dag(
+) -> None:
+    lease = ControlRecord.build(
+        kind="retention_lease",
+        record_id="retention_lease_record_1",
+        payload=VALID_PAYLOADS["retention_lease"],
+    )
+    reference = ControlRecord.build(
+        kind="restricted_reference",
+        record_id="restricted_reference_record_1",
+        payload={
+            **VALID_PAYLOADS["restricted_reference"],
+            "retention_lease_digest": lease.digest(),
+        },
+    )
+
+    assert reference.payload["retention_lease_digest"] == lease.digest()
+    assert "restricted_reference_digest" not in lease.payload
+    with pytest.raises(RecordValidationError) as reverse_reference:
+        ControlRecord.build(
+            kind="retention_lease",
+            record_id="retention_lease_record_2",
+            payload={
+                **VALID_PAYLOADS["retention_lease"],
+                "restricted_reference_digest": reference.digest(),
+            },
+        )
+
     assert reverse_reference.value.code is RecordErrorCode.UNKNOWN_PAYLOAD_FIELD
 
 

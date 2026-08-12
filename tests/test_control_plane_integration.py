@@ -142,6 +142,19 @@ def _build_registered_operation(
             "terminal_validator_digest": digest("6"),
         },
     )
+    terminal_poststate_digest = poststate_digest or target_state.digest()
+    validator_attestation = ControlRecord.build(
+        kind="operation_attestation",
+        record_id=f"operation-attestation:{operation_id}",
+        payload={
+            "observed_at": "2026-08-12T10:10:45Z",
+            "operation_digest": operation.digest(),
+            "outcome": outcome,
+            "poststate_digest": terminal_poststate_digest,
+            "subject_digest": subject_digest,
+            "validator_digest": operation.payload["terminal_validator_digest"],
+        },
+    )
     terminal = ControlRecord.build(
         kind="terminal_record",
         record_id=f"terminal:{operation_id}",
@@ -150,15 +163,16 @@ def _build_registered_operation(
             "journal_sequence": terminal_sequence,
             "operation_digest": operation.digest(),
             "outcome": outcome,
-            "poststate_digest": poststate_digest or target_state.digest(),
+            "poststate_digest": terminal_poststate_digest,
             "terminal_type": "critical_operation",
-            "validator_attestation_digests": [digest("7")],
+            "validator_attestation_digests": [validator_attestation.digest()],
         },
     )
     return RegisteredOperation(
         intent_record=intent,
         operation_record=operation,
         terminal_record=terminal,
+        validator_attestation_records=(validator_attestation,),
     )
 
 
@@ -226,7 +240,85 @@ def _cut_with_operation(
             "operation_terminal_digests": [operation.terminal_digest],
         },
     )
-    return replace(fixture.cut, cut_record=cut_record, operations=(operation,))
+    return replace(
+        fixture.cut,
+        cut_record=cut_record,
+        operations=(operation,),
+        validator_attestation_records=operation.validator_attestation_records,
+    )
+
+
+def _rebind_registered_operation(
+    operation: RegisteredOperation,
+    *,
+    record_suffix: str,
+    intent_record: ControlRecord | None = None,
+    operation_record: ControlRecord | None = None,
+) -> RegisteredOperation:
+    intent = intent_record or operation.intent_record
+    rebound_operation = operation_record or operation.operation_record
+    terminal_payload = {
+        **_payload(operation.terminal_record),
+        "operation_digest": rebound_operation.digest(),
+    }
+    validator_attestations = tuple(
+        ControlRecord.build(
+            kind="operation_attestation",
+            record_id=f"operation-attestation:{record_suffix}:{index}",
+            payload={
+                **_payload(attestation_record),
+                "operation_digest": rebound_operation.digest(),
+                "outcome": terminal_payload["outcome"],
+                "poststate_digest": terminal_payload["poststate_digest"],
+                "subject_digest": rebound_operation.payload["subject_digest"],
+                "validator_digest": rebound_operation.payload[
+                    "terminal_validator_digest"
+                ],
+            },
+        )
+        for index, attestation_record in enumerate(
+            operation.validator_attestation_records,
+            start=1,
+        )
+    )
+    terminal_payload["validator_attestation_digests"] = [
+        item.digest() for item in validator_attestations
+    ]
+    terminal = ControlRecord.build(
+        kind="terminal_record",
+        record_id=f"terminal:{record_suffix}",
+        payload=terminal_payload,
+    )
+    return RegisteredOperation(
+        intent_record=intent,
+        operation_record=rebound_operation,
+        terminal_record=terminal,
+        validator_attestation_records=validator_attestations,
+    )
+
+
+def _replace_operation_validator_attestations(
+    operation: RegisteredOperation,
+    validator_attestations: tuple[ControlRecord, ...],
+    *,
+    record_suffix: str,
+) -> RegisteredOperation:
+    terminal = ControlRecord.build(
+        kind="terminal_record",
+        record_id=f"terminal:{record_suffix}",
+        payload={
+            **_payload(operation.terminal_record),
+            "validator_attestation_digests": [
+                item.digest() for item in validator_attestations
+            ],
+        },
+    )
+    return RegisteredOperation(
+        intent_record=operation.intent_record,
+        operation_record=operation.operation_record,
+        terminal_record=terminal,
+        validator_attestation_records=validator_attestations,
+    )
 
 
 @dataclass(frozen=True)
@@ -736,6 +828,11 @@ def _fixture(
             (inclusion_edge,) if inclusion_edge is not None else ()
         ),
         operations=operations_tuple,
+        validator_attestation_records=tuple(
+            attestation_record
+            for operation in operations_tuple
+            for attestation_record in operation.validator_attestation_records
+        ),
     )
     return Fixture(
         contract=contract,
@@ -770,6 +867,55 @@ def test_promotion_contract_requires_canonical_assignment_and_operation_sets():
 
     assert fixture.validation_contract.payload["assignments_digest"] != digest("b")
     assert "operation_obligation_set_digest" in fixture.contract.contract_record.payload
+
+
+def test_promotion_rejects_an_obligation_relabelled_from_blocking_to_advisory():
+    fixture = _fixture(scenario_gate=False)
+    advisory_obligation_record = ControlRecord.build(
+        kind="promotion_obligation",
+        record_id="promotion-obligation:control-plane:advisory-substitution",
+        payload={
+            **_payload(fixture.obligation.obligation_record),
+            "impact": "advisory",
+        },
+    )
+    advisory_obligation = PromotionObligation(advisory_obligation_record)
+    contract_record = ControlRecord.build(
+        kind="promotion_contract",
+        record_id="promotion-contract:w0:advisory-substitution",
+        payload={
+            **_payload(fixture.contract.contract_record),
+            "obligation_digests": [advisory_obligation.obligation_digest],
+        },
+    )
+    contract = replace(
+        fixture.contract,
+        contract_record=contract_record,
+        obligations=(advisory_obligation,),
+    )
+    attempt = replace(
+        fixture.attempt,
+        obligation_record=advisory_obligation_record,
+    )
+    cut_record = ControlRecord.build(
+        kind="atomic_evidence_cut",
+        record_id="atomic-evidence-cut:w0:advisory-substitution",
+        payload={
+            **_payload(fixture.cut.cut_record),
+            "contract_digest": contract.contract_digest,
+            "registration_set_digest": registration_set_digest((attempt,)),
+        },
+    )
+    cut = replace(
+        fixture.cut,
+        cut_record=cut_record,
+        attempts=(attempt,),
+    )
+
+    with pytest.raises(PromotionDenied) as exc_info:
+        assess_promotion_cut(contract, cut)
+
+    assert exc_info.value.code == "PROMOTION_EVIDENCE_BINDING_MISMATCH"
 
 
 def test_blocking_scenario_requires_an_explicit_acyclic_gate_link():
@@ -820,6 +966,7 @@ def test_blocking_occurrence_requires_one_exact_critical_operation():
         fixture.cut,
         cut_record=incomplete_cut_record,
         operations=(),
+        validator_attestation_records=(),
     )
 
     with pytest.raises(PromotionDenied) as exc_info:
@@ -844,6 +991,148 @@ def test_atomic_cut_binds_the_complete_critical_operation_set():
     )
 
 
+def test_atomic_cut_carries_the_exact_operation_validator_attestations():
+    fixture = _fixture()
+    operation = fixture.cut.operations[0]
+
+    assert fixture.cut.validator_attestation_records == (
+        *operation.validator_attestation_records,
+    )
+
+
+def test_registered_operation_rejects_an_unresolved_terminal_attestation_digest():
+    operation = _fixture().cut.operations[0]
+    terminal = ControlRecord.build(
+        kind="terminal_record",
+        record_id="terminal:blocking-scenario:unresolved-attestation",
+        payload={
+            **_payload(operation.terminal_record),
+            "validator_attestation_digests": [digest("f")],
+        },
+    )
+
+    with pytest.raises(ValueError, match="exact operation validator attestations"):
+        replace(operation, terminal_record=terminal)
+
+
+def test_registered_operation_rejects_missing_terminal_attestation_material():
+    operation = _fixture().cut.operations[0]
+
+    with pytest.raises(ValueError, match="exact operation validator attestations"):
+        replace(operation, validator_attestation_records=())
+
+
+def test_registered_operation_rejects_an_attestation_from_another_operation():
+    fixture = _fixture()
+    operation = fixture.cut.operations[0]
+    other = _build_registered_operation(
+        subject_digest=operation.operation_record.payload["subject_digest"],
+        context_digest=fixture.bound.context_record.digest(),
+        candidate_generation=fixture.candidate_generation,
+        target_state=fixture.target_state,
+        operation_id="blocking-scenario-other",
+        intent_sequence=6,
+        terminal_sequence=7,
+    )
+
+    with pytest.raises(ValueError, match="critical operation"):
+        _replace_operation_validator_attestations(
+            operation,
+            other.validator_attestation_records,
+            record_suffix="blocking-scenario:substituted-attestation",
+        )
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        ("operation_digest", digest("a"), "critical operation"),
+        ("subject_digest", digest("b"), "operation subject"),
+        ("validator_digest", digest("c"), "terminal validator"),
+        ("outcome", "failed", "terminal outcome"),
+        ("poststate_digest", digest("d"), "terminal poststate"),
+    ],
+)
+def test_operation_validator_attestation_binds_every_terminal_coordinate(
+    field,
+    value,
+    message,
+):
+    operation = _fixture().cut.operations[0]
+    changed_attestation = ControlRecord.build(
+        kind="operation_attestation",
+        record_id=f"operation-attestation:changed:{field}",
+        payload={
+            **_payload(operation.validator_attestation_records[0]),
+            field: value,
+        },
+    )
+
+    with pytest.raises(ValueError, match=message):
+        _replace_operation_validator_attestations(
+            operation,
+            (changed_attestation,),
+            record_suffix=f"blocking-scenario:changed-attestation:{field}",
+        )
+
+
+@pytest.mark.parametrize(
+    "observed_at",
+    [
+        "2026-08-12T10:10:29Z",
+        "2026-08-12T10:11:01Z",
+    ],
+)
+def test_operation_validator_attestation_must_be_observed_during_the_operation(
+    observed_at,
+):
+    operation = _fixture().cut.operations[0]
+    changed_attestation = ControlRecord.build(
+        kind="operation_attestation",
+        record_id="operation-attestation:outside-operation",
+        payload={
+            **_payload(operation.validator_attestation_records[0]),
+            "observed_at": observed_at,
+        },
+    )
+
+    with pytest.raises(ValueError, match="between intent and terminal"):
+        _replace_operation_validator_attestations(
+            operation,
+            (changed_attestation,),
+            record_suffix="blocking-scenario:attestation-outside-operation",
+        )
+
+
+def test_atomic_cut_rejects_missing_operation_validator_attestation_material():
+    cut = _fixture().cut
+
+    with pytest.raises(ValueError, match="exact operation validator attestations"):
+        replace(cut, validator_attestation_records=())
+
+
+def test_atomic_cut_rejects_extra_operation_validator_attestation_material():
+    fixture = _fixture()
+    other = _build_registered_operation(
+        subject_digest=fixture.attempt.intent_record.digest(),
+        context_digest=fixture.bound.context_record.digest(),
+        candidate_generation=fixture.candidate_generation,
+        target_state=fixture.target_state,
+        operation_id="blocking-scenario-extra-attestation",
+        intent_sequence=6,
+        terminal_sequence=7,
+    )
+
+    with pytest.raises(ValueError, match="exact operation validator attestations"):
+        replace(
+            fixture.cut,
+            validator_attestation_records=(
+                *fixture.cut.validator_attestation_records,
+                *other.validator_attestation_records,
+            ),
+        )
+
+
 def test_critical_operation_must_bind_the_cut_authority_head():
     fixture = _fixture()
     operation = _registered_operation(fixture)
@@ -855,18 +1144,10 @@ def test_critical_operation_must_bind_the_cut_authority_head():
             "authority_head_digest": digest("8"),
         },
     )
-    changed_terminal_record = ControlRecord.build(
-        kind="terminal_record",
-        record_id="terminal:blocking-scenario:foreign-authority",
-        payload={
-            **_payload(operation.terminal_record),
-            "operation_digest": changed_operation_record.digest(),
-        },
-    )
-    changed_operation = replace(
+    changed_operation = _rebind_registered_operation(
         operation,
+        record_suffix="blocking-scenario:foreign-authority",
         operation_record=changed_operation_record,
-        terminal_record=changed_terminal_record,
     )
     cut = _cut_with_operation(fixture, changed_operation)
 
@@ -898,18 +1179,10 @@ def test_critical_operation_matches_every_exact_obligation_coordinate(changes):
         record_id=f"operation:blocking-scenario:changed:{len(changes)}",
         payload={**_payload(operation.operation_record), **changes},
     )
-    changed_terminal_record = ControlRecord.build(
-        kind="terminal_record",
-        record_id=f"terminal:blocking-scenario:changed:{len(changes)}",
-        payload={
-            **_payload(operation.terminal_record),
-            "operation_digest": changed_operation_record.digest(),
-        },
-    )
-    changed_operation = replace(
+    changed_operation = _rebind_registered_operation(
         operation,
+        record_suffix=f"blocking-scenario:changed:{len(changes)}",
         operation_record=changed_operation_record,
-        terminal_record=changed_terminal_record,
     )
     cut = _cut_with_operation(fixture, changed_operation)
 
@@ -934,18 +1207,10 @@ def test_critical_operation_generation_class_is_an_exact_obligation_coordinate()
             "generation_class": "f",
         },
     )
-    foundation_terminal_record = ControlRecord.build(
-        kind="terminal_record",
-        record_id="terminal:repository-publication:foundation-substitution",
-        payload={
-            **_payload(operation.terminal_record),
-            "operation_digest": foundation_operation_record.digest(),
-        },
-    )
-    foundation_operation = replace(
+    foundation_operation = _rebind_registered_operation(
         operation,
+        record_suffix="repository-publication:foundation-substitution",
         operation_record=foundation_operation_record,
-        terminal_record=foundation_terminal_record,
     )
     cut = _cut_with_operation(fixture, foundation_operation)
 
@@ -971,18 +1236,11 @@ def test_critical_operation_cannot_substitute_another_intent_for_the_same_subjec
             "intent_digest": substituted_intent.digest(),
         },
     )
-    substituted_terminal_record = ControlRecord.build(
-        kind="terminal_record",
-        record_id="terminal:blocking-scenario:substituted",
-        payload={
-            **_payload(operation.terminal_record),
-            "operation_digest": substituted_operation_record.digest(),
-        },
-    )
-    substituted = RegisteredOperation(
+    substituted = _rebind_registered_operation(
+        operation,
+        record_suffix="blocking-scenario:substituted",
         intent_record=substituted_intent,
         operation_record=substituted_operation_record,
-        terminal_record=substituted_terminal_record,
     )
     cut = _cut_with_operation(fixture, substituted)
 
@@ -1419,6 +1677,23 @@ def test_accepted_contract_requires_both_pointers_to_equal_the_candidate():
     )
 
     with pytest.raises(ValueError, match="accepted phase"):
+        replace(fixture.contract, contract_record=invalid_record)
+
+
+def test_active_contract_requires_the_accepted_pointer_to_remain_prior():
+    fixture = _fixture(phase=PromotionPhase.ACTIVE)
+    invalid_record = ControlRecord.build(
+        kind="promotion_contract",
+        record_id="promotion-contract:invalid-active",
+        payload={
+            **_payload(fixture.contract.contract_record),
+            "expected_accepted_generation_digest": (
+                fixture.candidate_generation.digest()
+            ),
+        },
+    )
+
+    with pytest.raises(ValueError, match="active phase"):
         replace(fixture.contract, contract_record=invalid_record)
 
 
