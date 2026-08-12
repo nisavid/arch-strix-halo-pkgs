@@ -129,7 +129,9 @@ def test_rocm_inference_ingestion_skill_routes_actionable_work_to_issues():
 
 
 def test_package_maintenance_skill_uses_schema_v2_issue_gates():
-    text = PACKAGE_SKILL.read_text(encoding="utf-8")
+    text = re.sub(
+        r"\s+", " ", PACKAGE_SKILL.read_text(encoding="utf-8")
+    )
 
     assert "`next_gate_kind = \"github_issue\"`" in text
     assert "`next_gate_issue`" in text
