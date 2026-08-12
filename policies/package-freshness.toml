@@ -113,10 +113,11 @@ priority = "high"
 workflow = "upstream_source_update"
 checks = [
   { id = "release-branch", role = "primary", kind = "git_ref", repo = "https://github.com/ROCm/triton.git", ref = "refs/heads/release/internal/3.8.x", recorded = "4cff872ced001ea92d9fcf05b3f6517e2b486d19", comparison = "sha" },
+  { id = "packaged-main-perf", role = "baseline", kind = "git_ref", repo = "https://github.com/ROCm/triton.git", ref = "refs/heads/main_perf", recorded = "0ec280cf80dd91e9a86887981a670f2d4541a32b", comparison = "sha" },
   { id = "arch", role = "baseline", kind = "arch_package", package = "python-triton", recorded = "3.5.1-4", comparison = "pkgver" },
 ]
 source_contracts = [
-  { id = "release-branch-source", packages = ["python-triton-gfx1151"], check_id = "release-branch", source_name = "triton", source_kind = "git_commit", origin = "https://github.com/ROCm/triton.git", value_policy = "pinned_commit_may_lag_reviewed" },
+  { id = "packaged-main-perf-source", packages = ["python-triton-gfx1151"], check_id = "packaged-main-perf", source_name = "triton", source_kind = "git_commit", origin = "https://github.com/ROCm/triton.git", value_policy = "matches_reviewed" },
 ]
 
 [families.aotriton]
