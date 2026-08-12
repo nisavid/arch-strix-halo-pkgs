@@ -15,6 +15,11 @@ historical provenance, not current work authority. New actionable package or
 scenario work requires an open repository issue; the backlog only indexes
 selected issues and explicit non-issue dispositions.
 
+Legacy `planned` and `requires-host-validation` rows without an open issue are
+explicit historical, non-issue reference dispositions, not scheduled work.
+Promoting one to active execution requires creating an open issue and updating
+the row to link it.
+
 Status labels:
 
 - `validated`: a local host run or package result proves the behavior.

@@ -121,7 +121,7 @@ the candidate ledger or tracker routing, and before closing a development arc,
 run:
 
 ```sh
-tools/check_package_updates.py --validate-trackers --json --fail-on actionable
+python tools/check_package_updates.py --validate-trackers --json --fail-on actionable
 ```
 
 This mode queries each unique active issue once and does not run a freshness

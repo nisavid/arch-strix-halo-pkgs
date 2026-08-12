@@ -441,42 +441,41 @@ def load_candidate_ledger(repo_root: str | Path) -> dict[str, dict]:
     return normalized
 
 
+def _tracker_error_report(message: str) -> dict:
+    return {
+        "tracker_validation": {
+            "requested": True,
+            "repository": TRACKER_REPOSITORY,
+            "summary": {"query_failed": 1},
+            "issues": [],
+            "errors": [{"status": "query_failed", "message": message}],
+        }
+    }
+
+
+def _is_valid_tracker_issue_payload(issue: object) -> bool:
+    if not isinstance(issue, dict):
+        return False
+    number = issue.get("number")
+    return (
+        isinstance(number, int)
+        and not isinstance(number, bool)
+        and isinstance(issue.get("state"), str)
+        and isinstance(issue.get("repository"), str)
+        and bool(issue.get("repository"))
+    )
+
+
 def run_tracker_validation(
     repo_root: str | Path, *, clients: FakeClients | RealClients | None = None
 ) -> dict:
     ledger_path = candidate_ledger_path(Path(repo_root))
+    if not ledger_path.exists():
+        return _tracker_error_report(f"TRACKER_LEDGER_MISSING: {ledger_path}")
     try:
         candidates = load_candidate_ledger(repo_root)
     except RuntimeError as exc:
-        return {
-            "tracker_validation": {
-                "requested": True,
-                "repository": TRACKER_REPOSITORY,
-                "summary": {"query_failed": 1},
-                "issues": [],
-                "errors": [
-                    {
-                        "status": "query_failed",
-                        "message": f"TRACKER_LEDGER_INVALID: {exc}",
-                    }
-                ],
-            }
-        }
-    if not ledger_path.exists():
-        return {
-            "tracker_validation": {
-                "requested": True,
-                "repository": TRACKER_REPOSITORY,
-                "summary": {"query_failed": 1},
-                "issues": [],
-                "errors": [
-                    {
-                        "status": "query_failed",
-                        "message": f"TRACKER_LEDGER_MISSING: {ledger_path}",
-                    }
-                ],
-            }
-        }
+        return _tracker_error_report(f"TRACKER_LEDGER_INVALID: {exc}")
     active_by_issue: dict[int, list[str]] = defaultdict(list)
     for candidate in candidates.values():
         if candidate["disposition"] not in {"tracked", "blocked"}:
@@ -493,27 +492,11 @@ def run_tracker_validation(
         }
         try:
             issue = clients.github_issue(TRACKER_REPOSITORY, issue_number)
-        except QueryFailed as exc:
-            status = "query_failed"
-            message = f"TRACKER_ISSUE_QUERY_FAILED: #{issue_number}: {exc}"
-        except Exception as exc:  # Defensive boundary for injected clients.
+        except Exception as exc:  # noqa: BLE001 - defensive injected-client boundary.
             status = "query_failed"
             message = f"TRACKER_ISSUE_QUERY_FAILED: #{issue_number}: {exc}"
         else:
-            if not isinstance(issue, dict) or not {
-                "number",
-                "state",
-                "repository",
-            }.issubset(issue):
-                status = "query_failed"
-                message = f"TRACKER_ISSUE_QUERY_FAILED: #{issue_number}: malformed response"
-            elif (
-                not isinstance(issue.get("number"), int)
-                or isinstance(issue.get("number"), bool)
-                or not isinstance(issue.get("state"), str)
-                or not isinstance(issue.get("repository"), str)
-                or not issue.get("repository")
-            ):
+            if not _is_valid_tracker_issue_payload(issue):
                 status = "query_failed"
                 message = f"TRACKER_ISSUE_QUERY_FAILED: #{issue_number}: malformed response"
             elif issue.get("number") != issue_number:
@@ -567,16 +550,31 @@ def tracker_validation_has_status(report: dict, status: str) -> bool:
 
 
 def format_tracker_validation(report: dict) -> str:
-    lines = ["status             issue  candidates  message"]
-    for issue in report["tracker_validation"]["issues"]:
-        candidates = ",".join(issue["candidate_ids"])
-        lines.append(
-            f"{issue['status']:<18} #{issue['issue']:<5} {candidates}  "
-            f"{issue['message']}"
+    padded_columns = 3
+    rows = [("status", "issue", "candidates", "message")]
+    rows.extend(
+        (
+            issue["status"],
+            f"#{issue['issue']}",
+            ",".join(issue["candidate_ids"]),
+            issue["message"],
         )
-    for error in report["tracker_validation"].get("errors", []):
-        lines.append(f"{error['status']:<18} -      {error['message']}")
-    return "\n".join(lines)
+        for issue in report["tracker_validation"]["issues"]
+    )
+    rows.extend(
+        (error["status"], "-", "-", error["message"])
+        for error in report["tracker_validation"].get("errors", [])
+    )
+    widths = [
+        max(len(row[index]) for row in rows) for index in range(padded_columns)
+    ]
+    return "\n".join(
+        "  ".join(
+            row[index].ljust(widths[index]) for index in range(padded_columns)
+        )
+        + f"  {row[3]}"
+        for row in rows
+    )
 
 
 def metadata_mismatch(message: str) -> dict:
@@ -1408,7 +1406,7 @@ def run_check(
     repo_root: str | Path,
     *,
     refresh: bool = False,
-    clients: FakeClients | None = None,
+    clients: FakeClients | RealClients | None = None,
     only: list[str] | None = None,
     max_age_hours: float = 24,
     validate_only: bool = False,
@@ -1532,7 +1530,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def main(argv: list[str] | None = None, *, clients: FakeClients | None = None) -> int:
+def main(
+    argv: list[str] | None = None,
+    *,
+    clients: FakeClients | RealClients | None = None,
+) -> int:
     args = parse_args(argv)
     repo_root = Path(args.repo_root)
     if args.policy != "policies/package-freshness.toml":
@@ -1543,10 +1545,7 @@ def main(argv: list[str] | None = None, *, clients: FakeClients | None = None) -
             return 2
 
     if args.validate_trackers:
-        report = run_tracker_validation(
-            repo_root,
-            clients=clients or RealClients(repo_root=repo_root),
-        )
+        report = run_tracker_validation(repo_root, clients=clients)
         if args.json:
             print(json.dumps(report, indent=2, sort_keys=True))
         else:

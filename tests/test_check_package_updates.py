@@ -1347,6 +1347,48 @@ def test_tracker_validation_missing_ledger_is_fail_closed(tmp_path, capsys):
     ]
 
 
+def test_tracker_validation_invalid_existing_ledger_is_fail_closed(
+    tmp_path, capsys
+):
+    write_candidate_ledger(
+        tmp_path,
+        """
+        schema_version = 2
+
+        [candidates.vllm]
+        disposition = "tracked"
+        next_gate_kind = "none"
+        next_gate_label = "Invalid active gate"
+        """,
+    )
+
+    code = updates.main(
+        ["--repo-root", str(tmp_path), "--validate-trackers", "--json"],
+        clients=updates.FakeClients(),
+    )
+    report = json.loads(capsys.readouterr().out)
+
+    assert code == 3
+    assert report["tracker_validation"]["summary"] == {"query_failed": 1}
+    assert "TRACKER_LEDGER_INVALID" in report["tracker_validation"]["errors"][0][
+        "message"
+    ]
+
+
+def test_tracker_validation_human_error_rows_keep_fixed_columns(tmp_path):
+    report = updates.run_tracker_validation(
+        tmp_path, clients=updates.FakeClients()
+    )
+
+    header, error = updates.format_tracker_validation(report).splitlines()
+    expected_message = (
+        f"TRACKER_LEDGER_MISSING: {updates.candidate_ledger_path(tmp_path)}"
+    )
+
+    assert header == "status        issue  candidates  message"
+    assert error == f"query_failed  -      -           {expected_message}"
+
+
 def test_schema_v2_candidate_requires_nonblank_gate_label(tmp_path):
     write_candidate_ledger(
         tmp_path,
