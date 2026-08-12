@@ -1324,6 +1324,30 @@ def test_rollback_capability_rejects_a_foreign_snapshot_with_the_same_state_dige
     assert pending.state is OperationState.ROLLBACK_PENDING_VALIDATION
 
 
+def test_newer_rollback_fence_supersedes_an_unconsumed_capability():
+    authority, binding = _rollback_required_authority()
+    superseded = authority.acquire_rollback_capability(binding, fence_epoch=2)
+    current = authority.acquire_rollback_capability(binding, fence_epoch=3)
+
+    with pytest.raises(AuthorityUnavailable) as exc_info:
+        authority.execute_rollback(
+            binding,
+            capability=superseded,
+            observed_state=binding.intended_state,
+        )
+
+    assert exc_info.value.code == "AUTHORITY_FENCE_STALE"
+    assert authority.observe_active() == binding.intended_state
+    assert authority.operation_state(binding.operation_id) is OperationState.ROLLBACK_REQUIRED
+
+    pending = authority.execute_rollback(
+        binding,
+        capability=current,
+        observed_state=binding.intended_state,
+    )
+    assert pending.state is OperationState.ROLLBACK_PENDING_VALIDATION
+
+
 def test_rollback_execution_rechecks_the_registered_target():
     authority, binding = _rollback_required_authority()
     rollback_capability = authority.acquire_rollback_capability(

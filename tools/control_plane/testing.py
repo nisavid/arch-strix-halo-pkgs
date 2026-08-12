@@ -381,6 +381,17 @@ class InMemoryAuthority:
             intended_state=protected_state,
             fence_epoch=fence_epoch,
         )
+        superseded_ids = (
+            capability_id
+            for capability_id, issued in self._issued_capabilities.items()
+            if issued.capability_type is CapabilityType.ROLLBACK
+            and (
+                issued.target == binding.target
+                or issued.operation_id == binding.operation_id
+            )
+        )
+        for capability_id in tuple(superseded_ids):
+            self._issued_capabilities.pop(capability_id)
         self._issued_capabilities[capability.capability_id] = capability
         self._last_fence_epochs[binding.target] = fence_epoch
         self._operation_fence_epochs[binding.operation_id] = fence_epoch
@@ -407,6 +418,15 @@ class InMemoryAuthority:
             raise AuthorityUnavailable(
                 "AUTHORITY_CAPABILITY_CONSUMED",
                 "the rollback capability has already been consumed",
+            )
+        if (
+            capability.fence_epoch != self._last_fence_epochs.get(binding.target)
+            or capability.fence_epoch
+            != self._operation_fence_epochs.get(binding.operation_id)
+        ):
+            raise AuthorityUnavailable(
+                "AUTHORITY_FENCE_STALE",
+                "the rollback capability does not hold the current fence epoch",
             )
         issued = self._issued_capabilities.get(capability.capability_id)
         rollback_target = binding.rollback.rollback_target
