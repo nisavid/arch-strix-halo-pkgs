@@ -72,6 +72,24 @@ which divergences are intentional, and where reusable source changes live.
      candidate a durable disposition in
      `docs/maintainers/update-candidates.toml`: `adopted`, `tracked`,
      `rejected`, or `blocked`.
+   - Route every active `tracked` or `blocked` candidate to a repo-local
+     GitHub issue. Schema-v2 records use
+     `next_gate_kind = "github_issue"`, a positive `next_gate_issue`, and a
+     nonblank `next_gate_label`. Terminal `adopted` and `rejected` records use
+     `next_gate_kind = "none"` and omit `next_gate_issue`.
+   - Before relying on active candidate gates, run:
+
+     ```sh
+     python tools/check_package_updates.py --validate-trackers --json --fail-on actionable
+     ```
+
+     Resolve every closed, mismatched, or inaccessible tracker.
+   - Keep `docs/backlog.md` as a curated issue index plus explicit non-issue
+     dispositions. It does not own active execution state or duplicate issue
+     acceptance checklists.
+   - Before closing an issue that still owns an active candidate, either make
+     the candidate terminal or move it to another open repo-local issue and
+     validate the tracker again.
    - Do not close a refresh by only updating `policies/package-freshness.toml`.
    - Treat patch carry overlap as a reason to prioritize update review.
    - Treat absence of backend build-system changes as insufficient rejection
@@ -99,6 +117,8 @@ which divergences are intentional, and where reusable source changes live.
 
 - Do not leave new maintenance knowledge only in chat history or ignored
   session files.
+- Do not leave actionable package work in backlog prose without an owning
+  repo-local GitHub issue.
 - Do not silently mix incompatible ROCm-family lanes.
 - Do not accept a transient build workaround as the permanent package story.
 - Do not freeze scoutable details in repo guidance when a current file or tool

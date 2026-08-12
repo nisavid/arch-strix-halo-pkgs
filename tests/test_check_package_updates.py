@@ -46,7 +46,10 @@ def write_recipe_policy(root: Path, body: str) -> Path:
 def write_candidate_ledger(root: Path, body: str) -> Path:
     ledger = root / "docs" / "maintainers" / "update-candidates.toml"
     ledger.parent.mkdir(parents=True, exist_ok=True)
-    ledger.write_text(textwrap.dedent(body), encoding="utf-8")
+    content = textwrap.dedent(body)
+    if "schema_version" not in content:
+        content = "schema_version = 2\n\n" + content
+    ledger.write_text(content, encoding="utf-8")
     return ledger
 
 
@@ -1190,7 +1193,7 @@ def test_load_candidate_ledger_reads_tracked_candidate(tmp_path):
     write_candidate_ledger(
         tmp_path,
         """
-        schema_version = 1
+        schema_version = 2
 
         [candidates.vllm-0_20_0]
         family = "vllm"
@@ -1205,8 +1208,8 @@ def test_load_candidate_ledger_reads_tracked_candidate(tmp_path):
         patch_carry_overlap = true
         package_source_update_needed = true
         host_validation_needed = true
-        next_gate_kind = "backlog"
-        next_gate_path = "docs/backlog.md"
+        next_gate_kind = "github_issue"
+        next_gate_issue = 1
         next_gate_label = "vLLM 0.20.0 package update"
         last_reviewed = "2026-04-28"
         """,
@@ -1219,11 +1222,537 @@ def test_load_candidate_ledger_reads_tracked_candidate(tmp_path):
     assert ledger["vllm-0_20_0"]["latest"] == "0.20.0"
 
 
+def test_load_candidate_ledger_reads_tracked_github_issue_candidate(tmp_path):
+    write_candidate_ledger(
+        tmp_path,
+        """
+        schema_version = 2
+
+        [candidates.vllm-0_27_1]
+        family = "vllm"
+        packages = ["python-vllm-rocm-gfx1151"]
+        source_kind = "github_release"
+        previous_recorded = "0.21.0"
+        latest = "0.27.1"
+        discovery_status = "stable_update_available"
+        disposition = "tracked"
+        disposition_reason = "Owned by the W2A execution issue."
+        salient_changes = ["Selected serving-line release"]
+        patch_carry_overlap = true
+        package_source_update_needed = true
+        host_validation_needed = true
+        next_gate_kind = "github_issue"
+        next_gate_issue = 123
+        next_gate_label = "Build and validate the W2A runtime closure"
+        last_reviewed = "2026-08-12"
+        """,
+    )
+
+    ledger = updates.load_candidate_ledger(tmp_path)
+
+    assert ledger["vllm-0_27_1"]["next_gate_kind"] == "github_issue"
+    assert ledger["vllm-0_27_1"]["next_gate_issue"] == 123
+
+
+def test_schema_v2_active_candidate_requires_positive_github_issue(tmp_path):
+    write_candidate_ledger(
+        tmp_path,
+        """
+        schema_version = 2
+
+        [candidates.vllm-0_27_1]
+        disposition = "tracked"
+        next_gate_kind = "github_issue"
+        next_gate_issue = 0
+        next_gate_label = "Build and validate the W2A runtime closure"
+        """,
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match="CANDIDATE_LEDGER_GATE_ISSUE_INVALID: vllm-0_27_1",
+    ):
+        updates.load_candidate_ledger(tmp_path)
+
+
+def test_schema_v2_active_candidate_rejects_boolean_issue_number(tmp_path):
+    write_candidate_ledger(
+        tmp_path,
+        """
+        [candidates.vllm]
+        disposition = "blocked"
+        next_gate_kind = "github_issue"
+        next_gate_issue = true
+        next_gate_label = "Resolve the vLLM blocker"
+        """,
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match="CANDIDATE_LEDGER_GATE_ISSUE_INVALID: vllm",
+    ):
+        updates.load_candidate_ledger(tmp_path)
+
+
+def test_schema_v2_terminal_candidate_requires_none_without_issue(tmp_path):
+    write_candidate_ledger(
+        tmp_path,
+        """
+        [candidates.vllm]
+        disposition = "rejected"
+        next_gate_kind = "none"
+        next_gate_label = "Rejected for the selected runtime line"
+        """,
+    )
+
+    ledger = updates.load_candidate_ledger(tmp_path)
+
+    assert ledger["vllm"]["next_gate_kind"] == "none"
+    assert "next_gate_issue" not in ledger["vllm"]
+
+
+def test_candidate_ledger_rejects_schema_v1_after_cutover(tmp_path):
+    path = updates.candidate_ledger_path(tmp_path)
+    path.parent.mkdir(parents=True)
+    path.write_text("schema_version = 1\n", encoding="utf-8")
+
+    with pytest.raises(
+        RuntimeError,
+        match=r"CANDIDATE_LEDGER_SCHEMA_UNSUPPORTED: .*: 1",
+    ):
+        updates.load_candidate_ledger(tmp_path)
+
+
+@pytest.mark.parametrize("schema", ["2.5", '"2"', "true"])
+def test_candidate_ledger_rejects_non_integer_schema_two(tmp_path, schema):
+    path = updates.candidate_ledger_path(tmp_path)
+    path.parent.mkdir(parents=True)
+    path.write_text(f"schema_version = {schema}\n", encoding="utf-8")
+
+    with pytest.raises(RuntimeError, match="CANDIDATE_LEDGER_SCHEMA_UNSUPPORTED"):
+        updates.load_candidate_ledger(tmp_path)
+
+
+def test_tracker_validation_missing_ledger_is_fail_closed(tmp_path, capsys):
+    code = updates.main(
+        ["--repo-root", str(tmp_path), "--validate-trackers", "--json"],
+        clients=updates.FakeClients(),
+    )
+    report = json.loads(capsys.readouterr().out)
+
+    assert code == 3
+    assert report["tracker_validation"]["summary"] == {"query_failed": 1}
+    assert "TRACKER_LEDGER_MISSING" in report["tracker_validation"]["errors"][0][
+        "message"
+    ]
+
+
+def test_schema_v2_candidate_requires_nonblank_gate_label(tmp_path):
+    write_candidate_ledger(
+        tmp_path,
+        """
+        schema_version = 2
+
+        [candidates.vllm]
+        disposition = "tracked"
+        next_gate_kind = "github_issue"
+        next_gate_issue = 111
+        next_gate_label = "  "
+        """,
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match="CANDIDATE_LEDGER_GATE_LABEL_INVALID: vllm",
+    ):
+        updates.load_candidate_ledger(tmp_path)
+
+
+def test_schema_v2_candidate_rejects_non_string_gate_label(tmp_path):
+    write_candidate_ledger(
+        tmp_path,
+        """
+        [candidates.vllm]
+        disposition = "tracked"
+        next_gate_kind = "github_issue"
+        next_gate_issue = 111
+        next_gate_label = 123
+        """,
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match="CANDIDATE_LEDGER_GATE_LABEL_INVALID: vllm",
+    ):
+        updates.load_candidate_ledger(tmp_path)
+
+
+@pytest.mark.parametrize(
+    ("candidate_body", "message"),
+    [
+        (
+            """
+            disposition = "tracked"
+            next_gate_kind = "backlog"
+            next_gate_issue = 123
+            next_gate_label = "W2A runtime closure"
+            """,
+            "CANDIDATE_LEDGER_GATE_KIND_INVALID",
+        ),
+        (
+            """
+            disposition = "tracked"
+            next_gate_kind = "github_issue"
+            next_gate_issue = 123
+            next_gate_path = "docs/backlog.md"
+            next_gate_label = "W2A runtime closure"
+            """,
+            "CANDIDATE_LEDGER_GATE_PATH_FORBIDDEN",
+        ),
+        (
+            """
+            disposition = "adopted"
+            next_gate_kind = "github_issue"
+            next_gate_issue = 123
+            next_gate_label = "W2A runtime closure"
+            """,
+            "CANDIDATE_LEDGER_TERMINAL_GATE_INVALID",
+        ),
+    ],
+)
+def test_schema_v2_rejects_inconsistent_gate_fields(
+    tmp_path, candidate_body, message
+):
+    write_candidate_ledger(
+        tmp_path,
+        "schema_version = 2\n\n[candidates.vllm]\n"
+        + textwrap.dedent(candidate_body),
+    )
+
+    with pytest.raises(RuntimeError, match=f"{message}: vllm"):
+        updates.load_candidate_ledger(tmp_path)
+
+
+def test_validate_trackers_accepts_open_repo_issue(tmp_path, capsys):
+    write_candidate_ledger(
+        tmp_path,
+        """
+        schema_version = 2
+
+        [candidates.vllm]
+        disposition = "tracked"
+        next_gate_kind = "github_issue"
+        next_gate_issue = 111
+        next_gate_label = "Build TorchVision and vLLM"
+        """,
+    )
+    clients = updates.FakeClients(
+        github_issues={
+            "nisavid/arch-strix-halo-pkgs#111": {
+                "number": 111,
+                "state": "open",
+                "repository": "nisavid/arch-strix-halo-pkgs",
+            }
+        }
+    )
+
+    code = updates.main(
+        [
+            "--repo-root",
+            str(tmp_path),
+            "--validate-trackers",
+            "--json",
+            "--fail-on",
+            "actionable",
+        ],
+        clients=clients,
+    )
+    report = json.loads(capsys.readouterr().out)
+
+    assert code == 0
+    assert report["tracker_validation"]["requested"] is True
+    assert report["tracker_validation"]["summary"] == {"open": 1}
+
+
+def test_validate_trackers_human_output_includes_issue_result_message(
+    tmp_path, capsys
+):
+    write_candidate_ledger(
+        tmp_path,
+        """
+        schema_version = 2
+
+        [candidates.vllm]
+        disposition = "tracked"
+        next_gate_kind = "github_issue"
+        next_gate_issue = 111
+        next_gate_label = "Build TorchVision and vLLM"
+        """,
+    )
+    clients = updates.FakeClients(
+        github_issues={
+            "nisavid/arch-strix-halo-pkgs#111": {
+                "number": 111,
+                "state": "closed",
+                "repository": "nisavid/arch-strix-halo-pkgs",
+            }
+        }
+    )
+
+    code = updates.main(
+        ["--repo-root", str(tmp_path), "--validate-trackers"],
+        clients=clients,
+    )
+    output = capsys.readouterr().out
+
+    assert code == 0
+    assert "TRACKER_ISSUE_CLOSED: #111" in output
+
+
+def test_github_issue_client_normalizes_api_metadata():
+    issue_url = (
+        "https://api.github.com/repos/nisavid/arch-strix-halo-pkgs/issues/111"
+    )
+    client = updates.RealClients(
+        transport=updates.StaticTransport(
+            {
+                issue_url: json.dumps(
+                    {
+                        "number": 111,
+                        "state": "open",
+                        "repository_url": (
+                            "https://api.github.com/repos/"
+                            "nisavid/arch-strix-halo-pkgs"
+                        ),
+                    }
+                )
+            }
+        )
+    )
+
+    assert client.github_issue("nisavid/arch-strix-halo-pkgs", 111) == {
+        "number": 111,
+        "state": "open",
+        "repository": "nisavid/arch-strix-halo-pkgs",
+    }
+
+
+def test_validate_trackers_queries_shared_issue_once(tmp_path, capsys):
+    write_candidate_ledger(
+        tmp_path,
+        """
+        schema_version = 2
+
+        [candidates.pytorch]
+        disposition = "tracked"
+        next_gate_kind = "github_issue"
+        next_gate_issue = 109
+        next_gate_label = "Build the W2A compiler and PyTorch foundation"
+
+        [candidates.triton]
+        disposition = "tracked"
+        next_gate_kind = "github_issue"
+        next_gate_issue = 109
+        next_gate_label = "Build the W2A compiler and PyTorch foundation"
+        """,
+    )
+    clients = updates.FakeClients(
+        github_issues={
+            "nisavid/arch-strix-halo-pkgs#109": {
+                "number": 109,
+                "state": "open",
+                "repository": "nisavid/arch-strix-halo-pkgs",
+            }
+        }
+    )
+
+    code = updates.main(
+        ["--repo-root", str(tmp_path), "--validate-trackers", "--json"],
+        clients=clients,
+    )
+    capsys.readouterr()
+
+    assert code == 0
+    assert clients.github_issue_calls == [
+        ("nisavid/arch-strix-halo-pkgs", 109)
+    ]
+
+
+@pytest.mark.parametrize(
+    ("issue", "fail", "expected_status", "expected_code", "message"),
+    [
+        (
+            {
+                "number": 111,
+                "state": "closed",
+                "repository": "nisavid/arch-strix-halo-pkgs",
+            },
+            {},
+            "metadata_mismatch",
+            10,
+            "TRACKER_ISSUE_CLOSED",
+        ),
+        (
+            {
+                "number": 111,
+                "state": "open",
+                "repository": "another/repository",
+            },
+            {},
+            "metadata_mismatch",
+            10,
+            "TRACKER_ISSUE_REPOSITORY_MISMATCH",
+        ),
+        (
+            {
+                "number": 111,
+                "state": "open",
+                "repository": "nisavid/arch-strix-halo-pkgs",
+                "pull_request": {"url": "https://api.github.com/pulls/111"},
+            },
+            {},
+            "metadata_mismatch",
+            10,
+            "TRACKER_REFERENCE_IS_PULL_REQUEST",
+        ),
+        (
+            {
+                "number": 111,
+                "state": "unexpected",
+                "repository": "nisavid/arch-strix-halo-pkgs",
+            },
+            {},
+            "query_failed",
+            3,
+            "TRACKER_ISSUE_QUERY_FAILED",
+        ),
+        (
+            None,
+            {"github_issue:nisavid/arch-strix-halo-pkgs#111": "not found"},
+            "query_failed",
+            3,
+            "TRACKER_ISSUE_QUERY_FAILED",
+        ),
+    ],
+)
+def test_validate_trackers_fails_closed(
+    tmp_path,
+    capsys,
+    issue,
+    fail,
+    expected_status,
+    expected_code,
+    message,
+):
+    write_candidate_ledger(
+        tmp_path,
+        """
+        schema_version = 2
+
+        [candidates.vllm]
+        disposition = "tracked"
+        next_gate_kind = "github_issue"
+        next_gate_issue = 111
+        next_gate_label = "Build TorchVision and vLLM"
+        """,
+    )
+    github_issues = (
+        {"nisavid/arch-strix-halo-pkgs#111": issue} if issue is not None else {}
+    )
+    clients = updates.FakeClients(github_issues=github_issues, fail=fail)
+
+    code = updates.main(
+        [
+            "--repo-root",
+            str(tmp_path),
+            "--validate-trackers",
+            "--json",
+            "--fail-on",
+            "actionable",
+        ],
+        clients=clients,
+    )
+    report = json.loads(capsys.readouterr().out)
+
+    assert code == expected_code
+    assert report["tracker_validation"]["summary"] == {expected_status: 1}
+    assert message in report["tracker_validation"]["issues"][0]["message"]
+
+
+def test_validate_trackers_rejects_pull_request_marker_even_when_empty(
+    tmp_path, capsys
+):
+    write_candidate_ledger(
+        tmp_path,
+        """
+        [candidates.vllm]
+        disposition = "tracked"
+        next_gate_kind = "github_issue"
+        next_gate_issue = 111
+        next_gate_label = "Build TorchVision and vLLM"
+        """,
+    )
+    clients = updates.FakeClients(
+        github_issues={
+            "nisavid/arch-strix-halo-pkgs#111": {
+                "number": 111,
+                "state": "open",
+                "repository": "nisavid/arch-strix-halo-pkgs",
+                "pull_request": {},
+            }
+        }
+    )
+
+    code = updates.main(
+        [
+            "--repo-root",
+            str(tmp_path),
+            "--validate-trackers",
+            "--json",
+            "--fail-on",
+            "actionable",
+        ],
+        clients=clients,
+    )
+    report = json.loads(capsys.readouterr().out)
+
+    assert code == 10
+    issue = report["tracker_validation"]["issues"][0]
+    assert issue["message"] == "TRACKER_REFERENCE_IS_PULL_REQUEST: #111"
+
+
+def test_default_freshness_mode_does_not_query_trackers(tmp_path, capsys):
+    write_candidate_ledger(
+        tmp_path,
+        """
+        schema_version = 2
+
+        [candidates.vllm]
+        disposition = "tracked"
+        next_gate_kind = "github_issue"
+        next_gate_issue = 111
+        next_gate_label = "Build TorchVision and vLLM"
+        """,
+    )
+    clients = updates.FakeClients(
+        fail={"github_issue:nisavid/arch-strix-halo-pkgs#111": "must not query"}
+    )
+
+    code = updates.main(
+        ["--repo-root", str(tmp_path), "--json"],
+        clients=clients,
+    )
+    capsys.readouterr()
+
+    assert code == 0
+    assert clients.github_issue_calls == []
+
+
 def test_load_candidate_ledger_uses_table_key_as_id(tmp_path):
     write_candidate_ledger(
         tmp_path,
         """
-        schema_version = 1
+        schema_version = 2
 
         [candidates.vllm-0_20_0]
         id = "wrong"
@@ -1239,8 +1768,8 @@ def test_load_candidate_ledger_uses_table_key_as_id(tmp_path):
         patch_carry_overlap = true
         package_source_update_needed = true
         host_validation_needed = true
-        next_gate_kind = "backlog"
-        next_gate_path = "docs/backlog.md"
+        next_gate_kind = "github_issue"
+        next_gate_issue = 1
         next_gate_label = "vLLM 0.20.0 package update"
         last_reviewed = "2026-04-28"
         """,
@@ -1276,7 +1805,7 @@ def test_load_candidate_ledger_reports_unreadable_text(tmp_path):
 
 
 def test_policy_digest_reports_unreadable_candidate_ledger(tmp_path, monkeypatch):
-    write_candidate_ledger(tmp_path, "schema_version = 1")
+    write_candidate_ledger(tmp_path, "schema_version = 2")
 
     original_read_bytes = Path.read_bytes
 
@@ -1319,7 +1848,7 @@ def test_tracked_candidate_changes_effective_status_without_hiding_discovery_sta
     write_candidate_ledger(
         tmp_path,
         """
-        schema_version = 1
+        schema_version = 2
 
         [candidates.vllm-0_20_0]
         family = "vllm"
@@ -1334,8 +1863,8 @@ def test_tracked_candidate_changes_effective_status_without_hiding_discovery_sta
         patch_carry_overlap = true
         package_source_update_needed = true
         host_validation_needed = true
-        next_gate_kind = "backlog"
-        next_gate_path = "docs/backlog.md"
+        next_gate_kind = "github_issue"
+        next_gate_issue = 1
         next_gate_label = "vLLM 0.20.0 package update"
         last_reviewed = "2026-04-28"
         """,
@@ -1375,7 +1904,7 @@ def test_candidate_can_cover_related_primary_checks(tmp_path):
     write_candidate_ledger(
         tmp_path,
         """
-        schema_version = 1
+        schema_version = 2
 
         [candidates.transformers-5_9_0]
         family = "transformers"
@@ -1392,8 +1921,8 @@ def test_candidate_can_cover_related_primary_checks(tmp_path):
         patch_carry_overlap = true
         package_source_update_needed = true
         host_validation_needed = true
-        next_gate_kind = "backlog"
-        next_gate_path = "docs/backlog.md"
+        next_gate_kind = "github_issue"
+        next_gate_issue = 1
         next_gate_label = "Transformers 5.9.0 package update"
         last_reviewed = "2026-05-21"
         """,
@@ -1425,7 +1954,7 @@ def test_candidate_discovery_status_must_match_family_status(tmp_path):
     write_candidate_ledger(
         tmp_path,
         """
-        schema_version = 1
+        schema_version = 2
 
         [candidates.vllm-0_20_0]
         family = "vllm"
@@ -1440,8 +1969,8 @@ def test_candidate_discovery_status_must_match_family_status(tmp_path):
         patch_carry_overlap = true
         package_source_update_needed = true
         host_validation_needed = true
-        next_gate_kind = "backlog"
-        next_gate_path = "docs/backlog.md"
+        next_gate_kind = "github_issue"
+        next_gate_issue = 1
         next_gate_label = "vLLM 0.20.0 package update"
         last_reviewed = "2026-04-28"
         """,
@@ -1476,7 +2005,7 @@ def test_candidate_previous_recorded_must_match_reported_check(tmp_path):
     write_candidate_ledger(
         tmp_path,
         """
-        schema_version = 1
+        schema_version = 2
 
         [candidates.vllm-0_20_0]
         family = "vllm"
@@ -1491,8 +2020,8 @@ def test_candidate_previous_recorded_must_match_reported_check(tmp_path):
         patch_carry_overlap = true
         package_source_update_needed = true
         host_validation_needed = true
-        next_gate_kind = "backlog"
-        next_gate_path = "docs/backlog.md"
+        next_gate_kind = "github_issue"
+        next_gate_issue = 1
         next_gate_label = "vLLM 0.20.0 package update"
         last_reviewed = "2026-04-28"
         """,
@@ -1527,7 +2056,7 @@ def test_metadata_mismatch_is_not_dispositioned_by_candidate(tmp_path):
     write_candidate_ledger(
         tmp_path,
         """
-        schema_version = 1
+        schema_version = 2
 
         [candidates.vllm-0_20_0]
         family = "vllm"
@@ -1542,8 +2071,8 @@ def test_metadata_mismatch_is_not_dispositioned_by_candidate(tmp_path):
         patch_carry_overlap = true
         package_source_update_needed = true
         host_validation_needed = true
-        next_gate_kind = "backlog"
-        next_gate_path = "docs/backlog.md"
+        next_gate_kind = "github_issue"
+        next_gate_issue = 1
         next_gate_label = "vLLM 0.20.0 package update"
         last_reviewed = "2026-04-28"
         """,
@@ -1575,7 +2104,7 @@ def test_duplicate_matching_candidates_are_invalid(tmp_path):
     write_candidate_ledger(
         tmp_path,
         """
-        schema_version = 1
+        schema_version = 2
 
         [candidates.vllm-0_20_0-a]
         family = "vllm"
@@ -1590,8 +2119,8 @@ def test_duplicate_matching_candidates_are_invalid(tmp_path):
         patch_carry_overlap = true
         package_source_update_needed = true
         host_validation_needed = true
-        next_gate_kind = "backlog"
-        next_gate_path = "docs/backlog.md"
+        next_gate_kind = "github_issue"
+        next_gate_issue = 1
         next_gate_label = "vLLM 0.20.0 package update"
         last_reviewed = "2026-04-28"
 
@@ -1608,8 +2137,8 @@ def test_duplicate_matching_candidates_are_invalid(tmp_path):
         patch_carry_overlap = true
         package_source_update_needed = true
         host_validation_needed = true
-        next_gate_kind = "backlog"
-        next_gate_path = "docs/backlog.md"
+        next_gate_kind = "github_issue"
+        next_gate_issue = 1
         next_gate_label = "Duplicate vLLM 0.20.0 package update"
         last_reviewed = "2026-04-28"
         """,
@@ -1644,7 +2173,7 @@ def test_tracked_candidate_does_not_hide_other_actionable_check(tmp_path):
     write_candidate_ledger(
         tmp_path,
         """
-        schema_version = 1
+        schema_version = 2
 
         [candidates.vllm-0_20_0]
         family = "vllm"
@@ -1659,8 +2188,8 @@ def test_tracked_candidate_does_not_hide_other_actionable_check(tmp_path):
         patch_carry_overlap = true
         package_source_update_needed = true
         host_validation_needed = true
-        next_gate_kind = "backlog"
-        next_gate_path = "docs/backlog.md"
+        next_gate_kind = "github_issue"
+        next_gate_issue = 1
         next_gate_label = "vLLM 0.20.0 package update"
         last_reviewed = "2026-04-28"
         """,
@@ -1700,7 +2229,7 @@ def test_tracked_candidate_does_not_hide_lower_precedence_actionable_check(tmp_p
     write_candidate_ledger(
         tmp_path,
         """
-        schema_version = 1
+        schema_version = 2
 
         [candidates.vllm-0_20_0]
         family = "vllm"
@@ -1715,8 +2244,8 @@ def test_tracked_candidate_does_not_hide_lower_precedence_actionable_check(tmp_p
         patch_carry_overlap = true
         package_source_update_needed = true
         host_validation_needed = true
-        next_gate_kind = "backlog"
-        next_gate_path = "docs/backlog.md"
+        next_gate_kind = "github_issue"
+        next_gate_issue = 1
         next_gate_label = "vLLM 0.20.0 package update"
         last_reviewed = "2026-04-28"
         """,
@@ -1757,7 +2286,7 @@ def test_tracked_candidate_covers_matching_baseline_drift(tmp_path):
     write_candidate_ledger(
         tmp_path,
         """
-        schema_version = 1
+        schema_version = 2
 
         [candidates.llama-cpp-b8955]
         family = "llama_cpp"
@@ -1772,8 +2301,8 @@ def test_tracked_candidate_covers_matching_baseline_drift(tmp_path):
         patch_carry_overlap = true
         package_source_update_needed = true
         host_validation_needed = true
-        next_gate_kind = "backlog"
-        next_gate_path = "docs/backlog.md"
+        next_gate_kind = "github_issue"
+        next_gate_issue = 1
         next_gate_label = "llama.cpp b8955 runtime rebuild lane"
         last_reviewed = "2026-04-28"
         """,
@@ -1814,7 +2343,7 @@ def test_tracked_current_candidate_covers_later_matching_baseline_drift(tmp_path
     write_candidate_ledger(
         tmp_path,
         """
-        schema_version = 1
+        schema_version = 2
 
         [candidates.llama-cpp-b8955]
         family = "llama_cpp"
@@ -1829,8 +2358,8 @@ def test_tracked_current_candidate_covers_later_matching_baseline_drift(tmp_path
         patch_carry_overlap = true
         package_source_update_needed = true
         host_validation_needed = true
-        next_gate_kind = "backlog"
-        next_gate_path = "docs/backlog.md"
+        next_gate_kind = "github_issue"
+        next_gate_issue = 1
         next_gate_label = "llama.cpp b8955 runtime rebuild lane"
         last_reviewed = "2026-04-28"
         """,
@@ -1867,7 +2396,7 @@ def test_current_blocked_candidate_remains_actionable(tmp_path):
     write_candidate_ledger(
         tmp_path,
         """
-        schema_version = 1
+        schema_version = 2
 
         [candidates.vllm-0_20_0]
         family = "vllm"
@@ -1882,8 +2411,8 @@ def test_current_blocked_candidate_remains_actionable(tmp_path):
         patch_carry_overlap = true
         package_source_update_needed = true
         host_validation_needed = true
-        next_gate_kind = "backlog"
-        next_gate_path = "docs/backlog.md"
+        next_gate_kind = "github_issue"
+        next_gate_issue = 1
         next_gate_label = "vLLM 0.20.0 package update"
         last_reviewed = "2026-04-28"
         """,
@@ -1928,7 +2457,7 @@ def test_blocked_candidate_is_actionable_for_fail_on_actionable(tmp_path):
     write_candidate_ledger(
         tmp_path,
         """
-        schema_version = 1
+        schema_version = 2
 
         [candidates.vllm-0_20_0]
         family = "vllm"
@@ -1943,8 +2472,8 @@ def test_blocked_candidate_is_actionable_for_fail_on_actionable(tmp_path):
         patch_carry_overlap = true
         package_source_update_needed = true
         host_validation_needed = true
-        next_gate_kind = "backlog"
-        next_gate_path = "docs/backlog.md"
+        next_gate_kind = "github_issue"
+        next_gate_issue = 1
         next_gate_label = "vLLM 0.20.0 package update"
         last_reviewed = "2026-04-28"
         """,
@@ -1986,7 +2515,7 @@ def test_blocked_candidate_precedes_matching_query_failure(tmp_path):
     write_candidate_ledger(
         tmp_path,
         """
-        schema_version = 1
+        schema_version = 2
 
         [candidates.aiter-main]
         family = "aiter"
@@ -2002,8 +2531,8 @@ def test_blocked_candidate_precedes_matching_query_failure(tmp_path):
         patch_carry_overlap = true
         package_source_update_needed = true
         host_validation_needed = true
-        next_gate_kind = "backlog"
-        next_gate_path = "docs/backlog.md"
+        next_gate_kind = "github_issue"
+        next_gate_issue = 1
         next_gate_label = "AITER provider retry"
         last_reviewed = "2026-04-28"
         """,
@@ -2048,7 +2577,7 @@ def test_blocked_query_candidate_without_check_id_does_not_hide_same_kind_failur
     write_candidate_ledger(
         tmp_path,
         """
-        schema_version = 1
+        schema_version = 2
 
         [candidates.vllm-release-provider]
         family = "vllm"
@@ -2063,8 +2592,8 @@ def test_blocked_query_candidate_without_check_id_does_not_hide_same_kind_failur
         patch_carry_overlap = true
         package_source_update_needed = true
         host_validation_needed = true
-        next_gate_kind = "backlog"
-        next_gate_path = "docs/backlog.md"
+        next_gate_kind = "github_issue"
+        next_gate_issue = 1
         next_gate_label = "vLLM release provider retry"
         last_reviewed = "2026-04-28"
         """,
@@ -2114,7 +2643,7 @@ def test_blocked_query_candidate_does_not_hide_additional_failed_check(tmp_path)
     write_candidate_ledger(
         tmp_path,
         """
-        schema_version = 1
+        schema_version = 2
 
         [candidates.vllm-release-provider]
         family = "vllm"
@@ -2130,8 +2659,8 @@ def test_blocked_query_candidate_does_not_hide_additional_failed_check(tmp_path)
         patch_carry_overlap = true
         package_source_update_needed = true
         host_validation_needed = true
-        next_gate_kind = "backlog"
-        next_gate_path = "docs/backlog.md"
+        next_gate_kind = "github_issue"
+        next_gate_issue = 1
         next_gate_label = "vLLM release provider retry"
         last_reviewed = "2026-04-28"
         """,
@@ -2179,7 +2708,7 @@ def test_blocked_query_candidate_does_not_hide_actionable_check(tmp_path):
     write_candidate_ledger(
         tmp_path,
         """
-        schema_version = 1
+        schema_version = 2
 
         [candidates.vllm-release-provider]
         family = "vllm"
@@ -2195,8 +2724,8 @@ def test_blocked_query_candidate_does_not_hide_actionable_check(tmp_path):
         patch_carry_overlap = true
         package_source_update_needed = true
         host_validation_needed = true
-        next_gate_kind = "backlog"
-        next_gate_path = "docs/backlog.md"
+        next_gate_kind = "github_issue"
+        next_gate_issue = 1
         next_gate_label = "vLLM release provider retry"
         last_reviewed = "2026-04-28"
         """,
@@ -2239,7 +2768,7 @@ def test_non_query_blocked_candidate_does_not_hide_query_failure(tmp_path):
     write_candidate_ledger(
         tmp_path,
         """
-        schema_version = 1
+        schema_version = 2
 
         [candidates.vllm-0_20_0]
         family = "vllm"
@@ -2254,8 +2783,8 @@ def test_non_query_blocked_candidate_does_not_hide_query_failure(tmp_path):
         patch_carry_overlap = true
         package_source_update_needed = true
         host_validation_needed = true
-        next_gate_kind = "backlog"
-        next_gate_path = "docs/backlog.md"
+        next_gate_kind = "github_issue"
+        next_gate_issue = 1
         next_gate_label = "vLLM 0.20.0 package update"
         last_reviewed = "2026-04-28"
         """,
@@ -2287,7 +2816,7 @@ def test_blocked_query_candidate_does_not_hide_different_failed_check(tmp_path):
     write_candidate_ledger(
         tmp_path,
         """
-        schema_version = 1
+        schema_version = 2
 
         [candidates.vllm-release-provider]
         family = "vllm"
@@ -2303,8 +2832,8 @@ def test_blocked_query_candidate_does_not_hide_different_failed_check(tmp_path):
         patch_carry_overlap = true
         package_source_update_needed = true
         host_validation_needed = true
-        next_gate_kind = "backlog"
-        next_gate_path = "docs/backlog.md"
+        next_gate_kind = "github_issue"
+        next_gate_issue = 1
         next_gate_label = "vLLM release provider retry"
         last_reviewed = "2026-04-28"
         """,
@@ -2351,7 +2880,7 @@ def test_empty_candidate_latest_does_not_match_empty_query_result(tmp_path):
     write_candidate_ledger(
         tmp_path,
         """
-        schema_version = 1
+        schema_version = 2
 
         [candidates.aiter-main]
         family = "aiter"
@@ -2366,8 +2895,8 @@ def test_empty_candidate_latest_does_not_match_empty_query_result(tmp_path):
         patch_carry_overlap = true
         package_source_update_needed = false
         host_validation_needed = true
-        next_gate_kind = "backlog"
-        next_gate_path = "docs/backlog.md"
+        next_gate_kind = "github_issue"
+        next_gate_issue = 1
         next_gate_label = "AITER provider retry"
         last_reviewed = "2026-04-28"
         """,
@@ -2401,7 +2930,7 @@ def test_recorded_latest_with_open_tracked_candidate_is_not_plain_current(tmp_pa
     write_candidate_ledger(
         tmp_path,
         """
-        schema_version = 1
+        schema_version = 2
 
         [candidates.vllm-0_20_0]
         family = "vllm"
@@ -2416,8 +2945,8 @@ def test_recorded_latest_with_open_tracked_candidate_is_not_plain_current(tmp_pa
         patch_carry_overlap = true
         package_source_update_needed = true
         host_validation_needed = true
-        next_gate_kind = "backlog"
-        next_gate_path = "docs/backlog.md"
+        next_gate_kind = "github_issue"
+        next_gate_issue = 1
         next_gate_label = "vLLM 0.20.0 package update"
         last_reviewed = "2026-04-28"
         """,
@@ -2453,7 +2982,7 @@ def test_stale_tracked_candidate_does_not_satisfy_current_family(tmp_path):
     write_candidate_ledger(
         tmp_path,
         """
-        schema_version = 1
+        schema_version = 2
 
         [candidates.vllm-0_20_0]
         family = "vllm"
@@ -2468,8 +2997,8 @@ def test_stale_tracked_candidate_does_not_satisfy_current_family(tmp_path):
         patch_carry_overlap = true
         package_source_update_needed = true
         host_validation_needed = true
-        next_gate_kind = "backlog"
-        next_gate_path = "docs/backlog.md"
+        next_gate_kind = "github_issue"
+        next_gate_issue = 1
         next_gate_label = "vLLM 0.20.0 package update"
         last_reviewed = "2026-04-28"
         """,
@@ -2506,7 +3035,7 @@ def test_format_table_shows_effective_status(tmp_path):
     write_candidate_ledger(
         tmp_path,
         """
-        schema_version = 1
+        schema_version = 2
 
         [candidates.vllm-0_20_0]
         family = "vllm"
@@ -2521,8 +3050,8 @@ def test_format_table_shows_effective_status(tmp_path):
         patch_carry_overlap = true
         package_source_update_needed = true
         host_validation_needed = true
-        next_gate_kind = "backlog"
-        next_gate_path = "docs/backlog.md"
+        next_gate_kind = "github_issue"
+        next_gate_issue = 1
         next_gate_label = "vLLM 0.20.0 package update"
         last_reviewed = "2026-04-28"
         """,
@@ -2543,17 +3072,28 @@ def test_format_table_shows_effective_status(tmp_path):
 
 def test_real_update_candidate_ledger_is_valid():
     repo = Path(__file__).resolve().parents[1]
+    payload = tomllib.loads(
+        (repo / "docs/maintainers/update-candidates.toml").read_text(
+            encoding="utf-8"
+        )
+    )
 
     ledger = updates.load_candidate_ledger(repo)
 
+    assert payload["schema_version"] == 2
     assert ledger
     for candidate in ledger.values():
         assert candidate["id"]
         assert candidate["family"]
         assert candidate["packages"]
         assert candidate["disposition"] in updates.VALID_CANDIDATE_DISPOSITIONS
-        if candidate["disposition"] == "tracked":
-            assert candidate["next_gate_path"] == "docs/backlog.md"
+        assert "next_gate_path" not in candidate
+        if candidate["disposition"] in {"tracked", "blocked"}:
+            assert candidate["next_gate_kind"] == "github_issue"
+            assert candidate["next_gate_issue"] > 0
+        else:
+            assert candidate["next_gate_kind"] == "none"
+            assert "next_gate_issue" not in candidate
         date.fromisoformat(candidate["last_reviewed"])
         assert candidate["salient_changes"]
 
@@ -2577,7 +3117,7 @@ def test_update_workflow_requires_candidate_disposition():
         assert "Do not close a refresh by only updating" in surface
 
 
-def test_tracked_candidates_are_visible_in_backlog():
+def test_active_candidate_issues_are_indexed_in_backlog():
     repo = Path(__file__).resolve().parents[1]
     candidates = updates.load_candidate_ledger(repo)
     backlog = re.sub(
@@ -2586,11 +3126,17 @@ def test_tracked_candidates_are_visible_in_backlog():
         (repo / "docs/backlog.md").read_text(encoding="utf-8"),
     )
 
-    for candidate in candidates.values():
-        if candidate["disposition"] != "tracked":
-            continue
-        assert candidate["next_gate_path"] == "docs/backlog.md"
-        assert candidate["next_gate_label"] in backlog, candidate["id"]
+    issue_numbers = {
+        candidate["next_gate_issue"]
+        for candidate in candidates.values()
+        if candidate["disposition"] in {"tracked", "blocked"}
+    }
+    for issue_number in issue_numbers:
+        issue_url = (
+            "https://github.com/nisavid/arch-strix-halo-pkgs/issues/"
+            f"{issue_number}"
+        )
+        assert issue_url in backlog, issue_number
 
 
 def test_cache_is_reused_when_policy_digest_matches(tmp_path):

@@ -53,7 +53,7 @@ wrapper guard is not safe.
 
 | Source | Source type | Retrieved | Validation status | Ingestion destination | Next gate | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| <https://github.com/Dao-AILab/flash-attention/issues/1579> | upstream GitHub issue | 2026-04-24 | `advisory-only` | this file; `docs/backlog.md`; `docs/maintainers/current-state.md` | direct CK 64-page reproducer | The issue asks whether ROCm CK can support smaller paged-KV block sizes such as 8, 16, 32, and 64 for vLLM V1. It has no upstream resolution yet. |
+| <https://github.com/Dao-AILab/flash-attention/issues/1579> | upstream GitHub issue | 2026-04-24 | `advisory-only` | this file; `docs/maintainers/current-state.md` | direct CK 64-page reproducer | The issue asks whether ROCm CK can support smaller paged-KV block sizes such as 8, 16, 32, and 64 for vLLM V1. It has no upstream resolution yet. |
 | <https://github.com/Dao-AILab/flash-attention/pull/1198> | upstream GitHub PR | 2026-04-24 | `advisory-only` | this file | source trace before any CK patch | Added CK page-kvcache support. The same 128-divisibility guard appears in this lane. |
 | <https://github.com/Dao-AILab/flash-attention/pull/1431> | upstream GitHub PR | 2026-04-24 | `advisory-only` | this file | source trace before any CK patch | Added ROCm CK variable-length paged attention. Tests covered `None`, `256`, and `512`, not `64`. |
 | <https://github.com/Dao-AILab/flash-attention/issues/1627> | upstream GitHub issue | 2026-04-24 | `advisory-only` | this file | compare against any future FA3 ROCm path | Upstream maintainer states that FlashAttention-3 has no page-size restriction. This argues against a model-level impossibility. |
@@ -153,4 +153,5 @@ correctness plus a clean vLLM scenario on the reference host.
 - `packages/python-vllm-rocm-gfx1151/README.md`: vLLM adapter and backend-gate
   boundaries.
 - `docs/maintainers/current-state.md`: latest installed host evidence.
-- `docs/backlog.md`: deferred follow-up position.
+- `docs/backlog.md`: compact index recording this lane's explicit non-issue
+  deferred disposition; create a repository issue before reopening the work.

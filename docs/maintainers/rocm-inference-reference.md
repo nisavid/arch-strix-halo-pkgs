@@ -9,6 +9,12 @@ planning the Strix Halo `gfx1151` inference stack. Upstream ROCm documents
 often describe MI300X, MI350X, CDNA, or Instinct systems; treat those details as
 `advisory-only` until a local scenario validates them here.
 
+Some older rows name `docs/backlog.md` as an ingestion destination because that
+file was the active queue when the source was reviewed. Those entries are
+historical provenance, not current work authority. New actionable package or
+scenario work requires an open repository issue; the backlog only indexes
+selected issues and explicit non-issue dispositions.
+
 Status labels:
 
 - `validated`: a local host run or package result proves the behavior.

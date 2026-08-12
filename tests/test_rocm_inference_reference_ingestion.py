@@ -103,7 +103,7 @@ def test_rocm_inference_reference_preserves_source_disposition():
     assert "ResNet50 PT2E quantization" in torch_migraphx["gate"]
 
 
-def test_rocm_inference_ingestion_skill_covers_required_sinks():
+def test_rocm_inference_ingestion_skill_routes_actionable_work_to_issues():
     text = INGESTION_SKILL.read_text(encoding="utf-8")
 
     assert "name: ingesting-rocm-inference-references" in text
@@ -119,6 +119,23 @@ def test_rocm_inference_ingestion_skill_covers_required_sinks():
     assert "validated" in text
     assert "advisory-only" in text
     assert "requires-host-validation" in text
+    assert "repository-local GitHub issue" in text
+    assert "curated issue index" in text
+    assert "explicit non-issue disposition" in text
+    assert "| Source, tool, or experiment | `docs/backlog.md` |" not in text
+
+
+def test_package_maintenance_skill_uses_schema_v2_issue_gates():
+    text = PACKAGE_SKILL.read_text(encoding="utf-8")
+
+    assert "`next_gate_kind = \"github_issue\"`" in text
+    assert "`next_gate_issue`" in text
+    assert "`next_gate_label`" in text
+    assert "`next_gate_kind = \"none\"`" in text
+    assert "--validate-trackers" in text
+    assert "repo-local GitHub issue" in text
+    assert "curated issue index" in text
+    assert "non-issue" in text
 
 
 def test_rocm_inference_reference_is_discoverable():
@@ -140,26 +157,21 @@ def test_rocm_inference_reference_is_discoverable():
         assert trigger in combined
 
 
-def test_rocm_inference_backlog_and_state_are_guarded():
+def test_rocm_inference_backlog_indexes_work_without_replacing_evidence_docs():
     backlog = BACKLOG.read_text(encoding="utf-8")
     current_state = CURRENT_STATE.read_text(encoding="utf-8")
     reference = REFERENCE_DOC.read_text(encoding="utf-8")
     coverage = VLLM_COVERAGE.read_text(encoding="utf-8")
 
-    assert "Newly discovered ROCm inference candidates" in backlog
-    assert "python-torch-migraphx-gfx1151" in backlog
-    assert "torch.compile(..., backend=\"migraphx\")" in backlog
-    assert "ResNet50 PT2E quantization" in backlog
+    assert "https://github.com/nisavid/arch-strix-halo-pkgs/issues/" in backlog
+    assert "non-issue" in backlog.lower()
+    assert "- [ ]" not in backlog
     assert "python-torchao-rocm-gfx1151 0.17.0-2" in current_state
     assert "python-torch-migraphx-gfx1151 1.2-2" in current_state
     assert "python-torch-migraphx-gfx1151 1.2-3" in current_state
     assert "MIGraphX-backed" in current_state
     assert "`SplitModule`" in current_state
     assert "installed `1.2-3` package" in reference
-    assert "FlashAttention CK" in backlog
-    assert "FlashAttention Triton" in backlog
-    assert "Freshness sweep triage gate" not in backlog
-    assert "requires host validation" in backlog
     assert "ROCm inference reference boundary" in current_state
     assert "does not change validated host behavior" in current_state
     assert "triaged on 2026-04-22" in current_state

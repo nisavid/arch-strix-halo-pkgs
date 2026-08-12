@@ -41,8 +41,16 @@ without chat history.
   stop for candidate disposition. Do not close a refresh by only updating
   `policies/package-freshness.toml`.
   Each candidate must be adopted, tracked, rejected, or blocked in
-  `docs/maintainers/update-candidates.toml`, and active tracked candidates must
-  stay visible in `docs/backlog.md`.
+  `docs/maintainers/update-candidates.toml`. Active tracked and blocked records
+  must point to an open issue in this repository with
+  `next_gate_kind = "github_issue"`, a positive `next_gate_issue`, and a
+  non-empty `next_gate_label`; adopted and rejected records use
+  `next_gate_kind = "none"` and omit `next_gate_issue`. Treat the referenced
+  issue as work authority and `docs/backlog.md` as a compact discovery index,
+  not as a second checklist. The ordinary freshness sweep does not query issue
+  liveness. When candidate routing changes or a development arc closes, run the
+  explicit tracker validation described in
+  `docs/maintainers/update-workflows.md`.
 - When package source refs, patches, build flags, dependency metadata, install
   layout, generated outputs, service/config files, CLI/API behavior, or runtime
   contracts change, derive the affected validation set before PR or closeout.

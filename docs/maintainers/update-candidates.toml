@@ -1,4 +1,4 @@
-schema_version = 1
+schema_version = 2
 
 [candidates."therock-7.13-stable"]
 family = "therock"
@@ -20,7 +20,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future TheRock releases through the normal freshness sweep"
 last_reviewed = "2026-05-18"
 
@@ -43,7 +42,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future AOCL-LibM releases through the normal freshness sweep"
 last_reviewed = "2026-05-26"
 
@@ -67,7 +65,6 @@ patch_carry_overlap = false
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future AOCL-Utils releases through the normal freshness sweep"
 last_reviewed = "2026-05-26"
 
@@ -92,7 +89,6 @@ patch_carry_overlap = false
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future DuckDB releases through the normal freshness sweep"
 last_reviewed = "2026-05-26"
 
@@ -115,7 +111,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future httptools releases through the normal freshness sweep"
 last_reviewed = "2026-05-26"
 
@@ -144,7 +139,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future Lemonade releases through the normal freshness sweep"
 last_reviewed = "2026-05-26"
 
@@ -171,7 +165,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future Lemonade fork movement through the normal freshness sweep"
 last_reviewed = "2026-05-26"
 
@@ -195,7 +188,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future llama.cpp releases through the normal freshness sweep"
 last_reviewed = "2026-05-19"
 
@@ -219,7 +211,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Superseded by llama.cpp b9352 follow-up"
 last_reviewed = "2026-05-26"
 
@@ -243,7 +234,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Superseded by llama.cpp b9352 follow-up"
 last_reviewed = "2026-05-26"
 
@@ -275,7 +265,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future llama.cpp releases through the normal freshness sweep"
 last_reviewed = "2026-05-27"
 
@@ -300,7 +289,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Superseded by llama.cpp b9352 follow-up"
 last_reviewed = "2026-05-27"
 
@@ -332,7 +320,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future llama.cpp releases through the normal freshness sweep"
 last_reviewed = "2026-05-27"
 
@@ -364,7 +351,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future llama.cpp releases through the normal freshness sweep"
 last_reviewed = "2026-05-28"
 
@@ -391,7 +377,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Superseded by llama.cpp b9442 and b9444 candidates"
 last_reviewed = "2026-05-31"
 
@@ -419,7 +404,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future llama.cpp releases through the normal freshness sweep"
 last_reviewed = "2026-06-01"
 
@@ -446,7 +430,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Superseded by llama.cpp b9637 follow-up"
 last_reviewed = "2026-06-14"
 
@@ -469,7 +452,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future NumPy releases through the normal freshness sweep"
 last_reviewed = "2026-05-19"
 
@@ -494,7 +476,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future ROCm PyTorch release/2.12 movement through the normal freshness sweep"
 last_reviewed = "2026-05-19"
 
@@ -530,7 +511,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future ROCm PyTorch release/2.12 movement through the normal freshness sweep"
 last_reviewed = "2026-05-28"
 
@@ -566,7 +546,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Superseded by ROCm PyTorch release/2.12 c7badbdf follow-up"
 last_reviewed = "2026-06-14"
 
@@ -590,7 +569,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future AOTriton releases through the normal freshness sweep"
 last_reviewed = "2026-05-19"
 
@@ -611,7 +589,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future stable-diffusion.cpp refs through the normal freshness sweep"
 last_reviewed = "2026-05-19"
 
@@ -633,7 +610,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Superseded by stable-diffusion.cpp 1ceb5bd follow-up"
 last_reviewed = "2026-05-26"
 
@@ -655,7 +631,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Superseded by stable-diffusion.cpp 1ceb5bd follow-up"
 last_reviewed = "2026-05-26"
 
@@ -678,7 +653,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future stable-diffusion.cpp refs through the normal freshness sweep"
 last_reviewed = "2026-05-26"
 
@@ -707,7 +681,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future stable-diffusion.cpp refs through the normal freshness sweep"
 last_reviewed = "2026-05-27"
 
@@ -736,7 +709,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future stable-diffusion.cpp refs through the normal freshness sweep"
 last_reviewed = "2026-05-31"
 
@@ -758,7 +730,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future watchfiles releases through the normal freshness sweep"
 last_reviewed = "2026-05-19"
 
@@ -781,7 +752,6 @@ patch_carry_overlap = false
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future yarl releases through the normal freshness sweep"
 last_reviewed = "2026-05-26"
 
@@ -803,7 +773,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; any remaining recipe surface requires a new explicit candidate"
 last_reviewed = "2026-08-12"
 
@@ -826,7 +795,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future upstream releases through the normal freshness sweep"
 last_reviewed = "2026-04-29"
 
@@ -849,7 +817,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future vLLM releases through the normal freshness sweep"
 last_reviewed = "2026-05-03"
 
@@ -875,7 +842,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Superseded by vLLM 0.23.0 follow-up"
 last_reviewed = "2026-06-14"
 
@@ -900,7 +866,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future upstream releases through the normal freshness sweep"
 last_reviewed = "2026-04-29"
 
@@ -924,7 +889,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future ROCm PyTorch refs through the normal freshness sweep"
 last_reviewed = "2026-04-29"
 
@@ -954,7 +918,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future AITER refs through the normal freshness sweep"
 last_reviewed = "2026-04-29"
 
@@ -978,7 +941,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future AITER refs through the normal freshness sweep"
 last_reviewed = "2026-05-01"
 
@@ -1003,7 +965,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future AITER refs through the normal freshness sweep"
 last_reviewed = "2026-05-03"
 
@@ -1025,7 +986,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future AITER prereleases through the normal freshness sweep"
 last_reviewed = "2026-05-18"
 
@@ -1048,7 +1008,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future AITER stable releases through the normal freshness sweep"
 last_reviewed = "2026-05-25"
 
@@ -1075,7 +1034,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Superseded by AITER 0.1.15.post1 dependency-closure review"
 last_reviewed = "2026-06-14"
 
@@ -1096,7 +1054,6 @@ patch_carry_overlap = false
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "No follow-up unless AOTriton publishes a stable or gfx1151-relevant release"
 last_reviewed = "2026-05-16"
 
@@ -1117,7 +1074,6 @@ patch_carry_overlap = false
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "No follow-up needed unless later AITER changes overlap gfx1151 kernels or package carry"
 last_reviewed = "2026-05-03"
 
@@ -1140,7 +1096,6 @@ patch_carry_overlap = false
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "No follow-up needed unless later ROCm PyTorch changes overlap gfx1151 package carry"
 last_reviewed = "2026-04-29"
 
@@ -1164,7 +1119,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future ROCm PyTorch refs through the normal freshness sweep"
 last_reviewed = "2026-05-01"
 
@@ -1191,7 +1145,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future llama.cpp releases through the normal freshness sweep"
 last_reviewed = "2026-05-03"
 
@@ -1214,7 +1167,6 @@ patch_carry_overlap = false
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "No follow-up needed unless later llama.cpp changes overlap the HIP, Vulkan, server, or Lemonade runtime lanes"
 last_reviewed = "2026-05-03"
 
@@ -1238,7 +1190,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future Lemonade releases through the normal freshness sweep"
 last_reviewed = "2026-04-29"
 
@@ -1259,7 +1210,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future Transformers releases through the normal freshness sweep"
 last_reviewed = "2026-04-29"
 
@@ -1281,7 +1231,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future mistral-common releases through the normal freshness sweep"
 last_reviewed = "2026-05-01"
 
@@ -1308,7 +1257,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future llama.cpp releases through the normal freshness sweep"
 last_reviewed = "2026-05-01"
 
@@ -1332,7 +1280,6 @@ patch_carry_overlap = false
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "No follow-up needed unless later llama.cpp changes overlap the HIP, Vulkan, server, or Lemonade runtime lanes"
 last_reviewed = "2026-05-01"
 
@@ -1353,7 +1300,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "No tokenizers package update until the local Transformers lane admits tokenizers 0.23.1 or newer"
 last_reviewed = "2026-05-01"
 
@@ -1374,7 +1320,6 @@ patch_carry_overlap = false
 package_source_update_needed = true
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future accelerate releases through the normal freshness sweep"
 last_reviewed = "2026-05-07"
 
@@ -1395,7 +1340,6 @@ patch_carry_overlap = false
 package_source_update_needed = true
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future auto-round releases through the normal freshness sweep"
 last_reviewed = "2026-05-07"
 
@@ -1420,7 +1364,6 @@ patch_carry_overlap = false
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future compressed-tensors releases through the normal freshness sweep"
 last_reviewed = "2026-05-31"
 
@@ -1445,7 +1388,6 @@ patch_carry_overlap = false
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future AutoRound releases through the normal freshness sweep"
 last_reviewed = "2026-05-31"
 
@@ -1466,7 +1408,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "No llmcompressor package update until upstream metadata admits the local runtime stack or a separate compatibility-patch lane is planned"
 last_reviewed = "2026-05-03"
 
@@ -1488,7 +1429,6 @@ patch_carry_overlap = true
 package_source_update_needed = true
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future AITER refs through the normal freshness sweep"
 last_reviewed = "2026-05-10"
 
@@ -1512,7 +1452,6 @@ patch_carry_overlap = false
 package_source_update_needed = true
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future llama.cpp releases through the normal freshness sweep"
 last_reviewed = "2026-05-07"
 
@@ -1532,7 +1471,6 @@ patch_carry_overlap = false
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "No package follow-up needed for the AITER CI-only candidate"
 last_reviewed = "2026-05-07"
 
@@ -1553,7 +1491,6 @@ patch_carry_overlap = false
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "No package follow-up needed for the AITER gfx950 FMHA candidate"
 last_reviewed = "2026-05-07"
 
@@ -1575,7 +1512,6 @@ patch_carry_overlap = false
 package_source_update_needed = true
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future Transformers releases through the normal freshness sweep"
 last_reviewed = "2026-05-10"
 
@@ -1597,7 +1533,6 @@ patch_carry_overlap = false
 package_source_update_needed = true
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future mistral-common releases through the normal freshness sweep"
 last_reviewed = "2026-05-10"
 
@@ -1621,7 +1556,6 @@ patch_carry_overlap = false
 package_source_update_needed = true
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future cryptography releases through the normal freshness sweep"
 last_reviewed = "2026-05-07"
 
@@ -1642,7 +1576,6 @@ patch_carry_overlap = false
 package_source_update_needed = true
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future orjson releases through the normal freshness sweep"
 last_reviewed = "2026-05-07"
 
@@ -1664,7 +1597,6 @@ patch_carry_overlap = true
 package_source_update_needed = true
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future stable-diffusion.cpp refs through the normal freshness sweep"
 last_reviewed = "2026-05-07"
 
@@ -1687,7 +1619,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future CPython 3.14 point releases through the normal freshness sweep"
 last_reviewed = "2026-05-18"
 
@@ -1714,7 +1645,6 @@ patch_carry_overlap = false
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future Arch python-pydantic ABI movement through the normal freshness sweep"
 last_reviewed = "2026-05-26"
 
@@ -1739,7 +1669,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future OpenNMT CTranslate2 releases through the normal freshness sweep"
 last_reviewed = "2026-05-24"
 
@@ -1760,7 +1689,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future AITER releases through the normal freshness sweep"
 last_reviewed = "2026-05-11"
 
@@ -1784,7 +1712,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future Lemonade releases through the normal freshness sweep"
 last_reviewed = "2026-05-11"
 
@@ -1807,7 +1734,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future Lemonade fork-main refs through the normal freshness sweep"
 last_reviewed = "2026-05-18"
 
@@ -1830,7 +1756,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future llama.cpp releases through the normal freshness sweep"
 last_reviewed = "2026-05-11"
 
@@ -1853,7 +1778,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future ROCm PyTorch refs through the normal freshness sweep"
 last_reviewed = "2026-05-11"
 
@@ -1874,7 +1798,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; any remaining recipe surface requires a new explicit candidate"
 last_reviewed = "2026-08-12"
 
@@ -1895,7 +1818,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future Torch-MIGraphX refs through the normal freshness sweep"
 last_reviewed = "2026-05-11"
 
@@ -1918,7 +1840,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future vLLM releases through the normal freshness sweep"
 last_reviewed = "2026-05-11"
 
@@ -1939,7 +1860,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Superseded by later adopted AITER main refreshes"
 last_reviewed = "2026-05-15"
 
@@ -1962,7 +1882,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Superseded by later adopted llama.cpp refreshes"
 last_reviewed = "2026-05-15"
 
@@ -1987,7 +1906,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future llama.cpp releases through the normal freshness sweep"
 last_reviewed = "2026-05-14"
 
@@ -2009,7 +1927,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future Transformers releases through the normal freshness sweep"
 last_reviewed = "2026-05-14"
 
@@ -2032,7 +1949,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Superseded by Transformers 5.12.0 follow-up"
 last_reviewed = "2026-06-14"
 
@@ -2055,7 +1971,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future AITER refs through the normal freshness sweep"
 last_reviewed = "2026-05-14"
 
@@ -2077,7 +1992,6 @@ patch_carry_overlap = false
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "No follow-up needed unless later ROCm PyTorch changes overlap gfx1151 package carry"
 last_reviewed = "2026-05-14"
 
@@ -2100,7 +2014,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future TorchVision releases through the normal freshness sweep"
 last_reviewed = "2026-05-19"
 
@@ -2125,7 +2038,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future vLLM releases through the normal freshness sweep"
 last_reviewed = "2026-05-19"
 
@@ -2146,7 +2058,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future AITER refs through the normal freshness sweep"
 last_reviewed = "2026-05-26"
 
@@ -2171,7 +2082,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future llama.cpp releases through the normal freshness sweep"
 last_reviewed = "2026-05-26"
 
@@ -2194,7 +2104,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future stable-diffusion.cpp refs through the normal freshness sweep"
 last_reviewed = "2026-05-26"
 
@@ -2215,8 +2124,8 @@ salient_changes = [
 patch_carry_overlap = false
 package_source_update_needed = true
 host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
+next_gate_kind = "github_issue"
+next_gate_issue = 105
 next_gate_label = "accelerate 1.14.0 W0 closure review"
 last_reviewed = "2026-08-12"
 
@@ -2238,7 +2147,6 @@ patch_carry_overlap = false
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Superseded by aiohttp 3.14.3 W0 closure review"
 last_reviewed = "2026-08-12"
 
@@ -2261,7 +2169,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Superseded by AITER 0.1.19.post2 experimental closure"
 last_reviewed = "2026-08-12"
 
@@ -2286,7 +2193,6 @@ patch_carry_overlap = false
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future AOCL-Utils releases through the normal freshness sweep"
 last_reviewed = "2026-06-15"
 
@@ -2308,7 +2214,6 @@ patch_carry_overlap = false
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Rejected; no selected serving-stack consumer"
 last_reviewed = "2026-08-12"
 
@@ -2330,7 +2235,6 @@ patch_carry_overlap = false
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Rejected; W2A retains compressed-tensors 0.17.0 exactly"
 last_reviewed = "2026-08-12"
 
@@ -2356,7 +2260,6 @@ patch_carry_overlap = false
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Superseded by cryptography 50.0.0 W0 closure review"
 last_reviewed = "2026-08-12"
 
@@ -2379,7 +2282,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Superseded by independent CTranslate2 4.8.1 refresh"
 last_reviewed = "2026-08-12"
 
@@ -2416,7 +2318,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future Lemonade releases through the normal freshness sweep"
 last_reviewed = "2026-06-15"
 
@@ -2442,7 +2343,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Superseded by llama.cpp b10369 W2B closure"
 last_reviewed = "2026-08-12"
 
@@ -2464,7 +2364,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Rejected; incompatible with the selected convergence line"
 last_reviewed = "2026-08-12"
 
@@ -2487,7 +2386,6 @@ patch_carry_overlap = false
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Superseded by mistral-common 1.11.7 W2A closure"
 last_reviewed = "2026-08-12"
 
@@ -2513,7 +2411,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Superseded by CPython 3.14.7 W1 foundation"
 last_reviewed = "2026-08-12"
 
@@ -2559,7 +2456,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Adopted; monitor future ROCm PyTorch release/2.12 movement through the normal freshness sweep"
 last_reviewed = "2026-06-15"
 
@@ -2593,7 +2489,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Superseded by ROCm PyTorch 2.13 W2A closure"
 last_reviewed = "2026-08-12"
 
@@ -2615,8 +2510,8 @@ salient_changes = [
 patch_carry_overlap = true
 package_source_update_needed = true
 host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
+next_gate_kind = "github_issue"
+next_gate_issue = 110
 next_gate_label = "safetensors 0.8.0 W2A closure"
 last_reviewed = "2026-08-12"
 
@@ -2642,7 +2537,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Superseded by independent stable-diffusion.cpp bcc7e29 refresh"
 last_reviewed = "2026-08-12"
 
@@ -2668,7 +2562,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Rejected; monitor future ai-notes recipe movement through the normal freshness sweep"
 last_reviewed = "2026-06-15"
 
@@ -2690,8 +2583,8 @@ salient_changes = [
 patch_carry_overlap = true
 package_source_update_needed = true
 host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
+next_gate_kind = "github_issue"
+next_gate_issue = 118
 next_gate_label = "Torch-MIGraphX ef3f901 supported-extension closure"
 last_reviewed = "2026-08-12"
 
@@ -2715,7 +2608,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Superseded by Transformers 5.15.0 W2A closure"
 last_reviewed = "2026-08-12"
 
@@ -2740,7 +2632,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Superseded by vLLM 0.27.1 W2A closure"
 last_reviewed = "2026-08-12"
 
@@ -2761,8 +2652,8 @@ salient_changes = [
 patch_carry_overlap = false
 package_source_update_needed = true
 host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
+next_gate_kind = "github_issue"
+next_gate_issue = 105
 next_gate_label = "aiohttp 3.14.3 W0 closure review"
 last_reviewed = "2026-08-12"
 
@@ -2783,8 +2674,8 @@ salient_changes = [
 patch_carry_overlap = true
 package_source_update_needed = true
 host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
+next_gate_kind = "github_issue"
+next_gate_issue = 119
 next_gate_label = "AITER 0.1.19.post2 experimental closure"
 last_reviewed = "2026-08-12"
 
@@ -2808,8 +2699,8 @@ salient_changes = [
 patch_carry_overlap = true
 package_source_update_needed = true
 host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
+next_gate_kind = "github_issue"
+next_gate_issue = 109
 next_gate_label = "AOTriton 0.13b W2A closure"
 last_reviewed = "2026-08-12"
 
@@ -2830,8 +2721,8 @@ salient_changes = [
 patch_carry_overlap = false
 package_source_update_needed = true
 host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
+next_gate_kind = "github_issue"
+next_gate_issue = 105
 next_gate_label = "asyncpg 0.31.0-3 W0 closure review"
 last_reviewed = "2026-08-12"
 
@@ -2853,7 +2744,6 @@ patch_carry_overlap = false
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Rejected; no selected serving-stack consumer"
 last_reviewed = "2026-08-12"
 
@@ -2875,7 +2765,6 @@ patch_carry_overlap = false
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Rejected; W2A retains compressed-tensors 0.17.0 exactly"
 last_reviewed = "2026-08-12"
 
@@ -2899,8 +2788,8 @@ salient_changes = [
 patch_carry_overlap = false
 package_source_update_needed = true
 host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
+next_gate_kind = "github_issue"
+next_gate_issue = 105
 next_gate_label = "cryptography 50.0.0 W0 closure review"
 last_reviewed = "2026-08-12"
 
@@ -2921,8 +2810,8 @@ salient_changes = [
 patch_carry_overlap = true
 package_source_update_needed = true
 host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
+next_gate_kind = "github_issue"
+next_gate_issue = 120
 next_gate_label = "independent CTranslate2 4.8.1 refresh"
 last_reviewed = "2026-08-12"
 
@@ -2946,8 +2835,8 @@ salient_changes = [
 patch_carry_overlap = false
 package_source_update_needed = true
 host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
+next_gate_kind = "github_issue"
+next_gate_issue = 105
 next_gate_label = "DuckDB 1.5.5 W0 closure review"
 last_reviewed = "2026-08-12"
 
@@ -2969,8 +2858,8 @@ salient_changes = [
 patch_carry_overlap = true
 package_source_update_needed = true
 host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
+next_gate_kind = "github_issue"
+next_gate_issue = 105
 next_gate_label = "Lemonade 11.5.2 W0 source-freeze blocker"
 last_reviewed = "2026-08-12"
 
@@ -2995,8 +2884,8 @@ salient_changes = [
 patch_carry_overlap = true
 package_source_update_needed = true
 host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
+next_gate_kind = "github_issue"
+next_gate_issue = 113
 next_gate_label = "llama.cpp b10369 W2B closure"
 last_reviewed = "2026-08-12"
 
@@ -3018,7 +2907,6 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_path = ""
 next_gate_label = "Rejected; incompatible with the selected convergence line"
 last_reviewed = "2026-08-12"
 
@@ -3039,8 +2927,8 @@ salient_changes = [
 patch_carry_overlap = false
 package_source_update_needed = true
 host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
+next_gate_kind = "github_issue"
+next_gate_issue = 110
 next_gate_label = "mistral-common 1.11.7 W2A closure"
 last_reviewed = "2026-08-12"
 
@@ -3064,8 +2952,8 @@ salient_changes = [
 patch_carry_overlap = true
 package_source_update_needed = true
 host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
+next_gate_kind = "github_issue"
+next_gate_issue = 110
 next_gate_label = "NumPy 2.5.2 W2A closure"
 last_reviewed = "2026-08-12"
 
@@ -3089,8 +2977,8 @@ salient_changes = [
 patch_carry_overlap = false
 package_source_update_needed = true
 host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
+next_gate_kind = "github_issue"
+next_gate_issue = 110
 next_gate_label = "Pillow 12.3.0 W2A closure"
 last_reviewed = "2026-08-12"
 
@@ -3111,8 +2999,8 @@ salient_changes = [
 patch_carry_overlap = false
 package_source_update_needed = true
 host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
+next_gate_kind = "github_issue"
+next_gate_issue = 105
 next_gate_label = "pydantic-core 2.48.0 W0 closure review"
 last_reviewed = "2026-08-12"
 
@@ -3136,8 +3024,8 @@ salient_changes = [
 patch_carry_overlap = true
 package_source_update_needed = true
 host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
+next_gate_kind = "github_issue"
+next_gate_issue = 108
 next_gate_label = "CPython 3.14.7 W1 foundation"
 last_reviewed = "2026-08-12"
 
@@ -3161,8 +3049,8 @@ salient_changes = [
 patch_carry_overlap = true
 package_source_update_needed = true
 host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
+next_gate_kind = "github_issue"
+next_gate_issue = 109
 next_gate_label = "ROCm PyTorch 2.13 W2A closure"
 last_reviewed = "2026-08-12"
 
@@ -3186,8 +3074,8 @@ salient_changes = [
 patch_carry_overlap = false
 package_source_update_needed = true
 host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
+next_gate_kind = "github_issue"
+next_gate_issue = 105
 next_gate_label = "SentencePiece 0.2.2 W0 closure review"
 last_reviewed = "2026-08-12"
 
@@ -3212,8 +3100,8 @@ salient_changes = [
 patch_carry_overlap = true
 package_source_update_needed = true
 host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
+next_gate_kind = "github_issue"
+next_gate_issue = 121
 next_gate_label = "independent stable-diffusion.cpp bcc7e29 refresh"
 last_reviewed = "2026-08-12"
 
@@ -3235,8 +3123,8 @@ salient_changes = [
 patch_carry_overlap = true
 package_source_update_needed = true
 host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
+next_gate_kind = "github_issue"
+next_gate_issue = 108
 next_gate_label = "TheRock 7.14 W1 foundation"
 last_reviewed = "2026-08-12"
 
@@ -3258,8 +3146,8 @@ salient_changes = [
 patch_carry_overlap = true
 package_source_update_needed = true
 host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
+next_gate_kind = "github_issue"
+next_gate_issue = 118
 next_gate_label = "TorchAO 0.18.0 supported-extension closure"
 last_reviewed = "2026-08-12"
 
@@ -3283,8 +3171,8 @@ salient_changes = [
 patch_carry_overlap = true
 package_source_update_needed = true
 host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
+next_gate_kind = "github_issue"
+next_gate_issue = 111
 next_gate_label = "TorchVision 0.28 W2A closure"
 last_reviewed = "2026-08-12"
 
@@ -3306,8 +3194,8 @@ salient_changes = [
 patch_carry_overlap = true
 package_source_update_needed = true
 host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
+next_gate_kind = "github_issue"
+next_gate_issue = 110
 next_gate_label = "Transformers 5.15.0 W2A closure"
 last_reviewed = "2026-08-12"
 
@@ -3328,8 +3216,8 @@ salient_changes = [
 patch_carry_overlap = true
 package_source_update_needed = true
 host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
+next_gate_kind = "github_issue"
+next_gate_issue = 111
 next_gate_label = "vLLM 0.27.1 W2A closure"
 last_reviewed = "2026-08-12"
 
@@ -3350,8 +3238,8 @@ salient_changes = [
 patch_carry_overlap = false
 package_source_update_needed = true
 host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
+next_gate_kind = "github_issue"
+next_gate_issue = 105
 next_gate_label = "yarl 1.24.5 W0 closure review"
 last_reviewed = "2026-08-12"
 
@@ -3372,8 +3260,8 @@ salient_changes = [
 patch_carry_overlap = false
 package_source_update_needed = true
 host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
+next_gate_kind = "github_issue"
+next_gate_issue = 105
 next_gate_label = "zstandard 0.25.0-3 W0 closure review"
 last_reviewed = "2026-08-12"
 
@@ -3395,8 +3283,8 @@ salient_changes = [
 patch_carry_overlap = true
 package_source_update_needed = true
 host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
+next_gate_kind = "github_issue"
+next_gate_issue = 109
 next_gate_label = "ROCm Triton 3.8 W2A closure"
 last_reviewed = "2026-08-12"
 
@@ -3418,7 +3306,7 @@ salient_changes = [
 patch_carry_overlap = false
 package_source_update_needed = true
 host_validation_needed = true
-next_gate_kind = "backlog"
-next_gate_path = "docs/backlog.md"
+next_gate_kind = "github_issue"
+next_gate_issue = 110
 next_gate_label = "compressed-tensors 0.17.0 W2A closure"
 last_reviewed = "2026-08-12"
