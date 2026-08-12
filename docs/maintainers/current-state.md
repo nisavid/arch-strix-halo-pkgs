@@ -12,11 +12,11 @@ automated Lemonade freshness baselines. The uncached sweep covered 45 families:
 23 reported a stable update, five baseline drift, three branch-head movement,
 and fourteen a current source cursor.
 
-The preserved sweep report records all 45 results. The reconciliation records
-every candidate requiring disposition in
-`docs/maintainers/update-candidates.toml`. Re-evaluating that exact sweep with
-the reconciled ledger yields 27 tracked families, four rejected families, one
-blocked Lemonade family, five adopted families, and eight current families.
+The sweep covered all 45 configured families. The reconciliation records every
+candidate requiring disposition in `docs/maintainers/update-candidates.toml`.
+Applying the reconciled ledger to that run yielded 27 tracked families, four
+rejected families, one blocked Lemonade family, five adopted families, and
+eight current families.
 The active gates are visible in `docs/backlog.md` while schema v1 remains
 authoritative. Lemonade stays blocked until W0 freezes the reviewed fork and
 coupled llama.cpp sources. AutoRound 0.14.2, compressed-tensors 0.18.0, and
