@@ -83,6 +83,10 @@ without chat history.
 
 ## Read These Documents When Their Trigger Applies
 
+- When changing convergence control records, evidence evaluation, promotion,
+  critical-operation authority, or privacy envelopes, read:
+  - `CONTEXT.md`
+  - `docs/architecture/convergence-control-plane.md`
 - When changing TheRock split-package generation, manifest ownership, or output
   shape, read:
   - `docs/architecture/therock-generator.md`
