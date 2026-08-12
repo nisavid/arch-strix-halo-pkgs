@@ -4,13 +4,18 @@ from __future__ import annotations
 
 import hashlib
 from dataclasses import dataclass, replace
-from datetime import datetime
 from enum import StrEnum
+from typing import Protocol, runtime_checkable
 
-from ._authority import ControlAuthorityError, OperationTarget, OperationTargetKind
-from ._authority import require_promotable
+from ._authority import (
+    ControlAuthorityError,
+    NonPromotionalEvidence,
+    OperationTarget,
+    OperationTargetKind,
+    require_promotable,
+)
 from ._evaluation import GateImpact
-from ._records import ControlRecord
+from ._records import ControlRecord, parse_canonical_timestamp
 
 
 def _record(value: object, *, field: str, kind: str) -> ControlRecord:
@@ -19,10 +24,6 @@ def _record(value: object, *, field: str, kind: str) -> ControlRecord:
     if value.kind != kind:
         raise ValueError(f"{field} must be a canonical {kind} record")
     return value
-
-
-def _moment(value: str) -> datetime:
-    return datetime.fromisoformat(value.removesuffix("Z") + "+00:00")
 
 
 class PromotionPhase(StrEnum):
@@ -67,6 +68,7 @@ class PromotionContract:
     """Canonical requirements and total obligation set for one promotion phase."""
 
     requirements_record: ControlRecord
+    validation_contract_record: ControlRecord
     generation_record: ControlRecord
     target_record: ControlRecord
     target_protected_state_record: ControlRecord
@@ -75,6 +77,11 @@ class PromotionContract:
 
     def __post_init__(self) -> None:
         _record(self.requirements_record, field="requirements_record", kind="requirements")
+        _record(
+            self.validation_contract_record,
+            field="validation_contract_record",
+            kind="validation_contract",
+        )
         _record(self.generation_record, field="generation_record", kind="generation")
         _record(self.target_record, field="target_record", kind="identity")
         _record(
@@ -100,8 +107,15 @@ class PromotionContract:
             raise ValueError("contract contains duplicate obligations")
 
         payload = self.contract_record.payload
+        validation_contract = self.validation_contract_record.payload
+        if (
+            validation_contract["requirements_digest"]
+            != self.requirements_record.digest()
+        ):
+            raise ValueError("validation contract does not bind requirements")
         expected = {
             "requirements_digest": self.requirements_record.digest(),
+            "validation_contract_digest": self.validation_contract_record.digest(),
             "generation_digest": self.generation_record.digest(),
             "target_digest": self.target_record.digest(),
             "target_protected_state_digest": self.target_protected_state_record.digest(),
@@ -193,7 +207,11 @@ class RegisteredAttempt:
         terminal_sequence = terminal["journal_sequence"]
         if not intent_sequence < attempt_sequence < terminal_sequence:
             raise ValueError("journal order must be intent before attempt before terminal")
-        if not intent["registered_at"] <= attempt["started_at"] <= terminal["completed_at"]:
+        if not (
+            parse_canonical_timestamp(intent["registered_at"])
+            <= parse_canonical_timestamp(attempt["started_at"])
+            <= parse_canonical_timestamp(terminal["completed_at"])
+        ):
             raise ValueError("attempt timestamps do not follow registration order")
 
     @property
@@ -211,6 +229,59 @@ class RegisteredAttempt:
     @property
     def occurrence_digest(self) -> str:
         return self.intent_record.digest()
+
+    @property
+    def terminal_sequence(self) -> int:
+        return self.terminal_record.payload["journal_sequence"]
+
+
+@dataclass(frozen=True, slots=True)
+class RegisteredOperation:
+    """One canonical critical operation and its append-only terminal."""
+
+    intent_record: ControlRecord
+    operation_record: ControlRecord
+    terminal_record: ControlRecord
+
+    def __post_init__(self) -> None:
+        _record(self.intent_record, field="intent_record", kind="intent")
+        _record(self.operation_record, field="operation_record", kind="operation")
+        _record(self.terminal_record, field="terminal_record", kind="terminal_record")
+        intent = self.intent_record.payload
+        operation = self.operation_record.payload
+        terminal = self.terminal_record.payload
+        if intent["intent_type"] != "critical_operation":
+            raise ValueError("registered operation requires a critical-operation intent")
+        if operation["intent_digest"] != self.intent_record.digest():
+            raise ValueError("critical operation does not bind intent")
+        if intent["operation_plan_digest"] != operation["plan_digest"]:
+            raise ValueError("operation intent does not bind plan")
+        if intent["subject_digest"] != operation["subject_digest"]:
+            raise ValueError("operation intent does not bind subject")
+        if terminal["terminal_type"] != "critical_operation":
+            raise ValueError("registered operation requires a critical-operation terminal")
+        if terminal["operation_digest"] != self.operation_record.digest():
+            raise ValueError("terminal does not bind critical operation")
+        if intent["journal_sequence"] >= terminal["journal_sequence"]:
+            raise ValueError("journal order must be intent before operation terminal")
+        if (
+            terminal["outcome"] == "succeeded"
+            and terminal["poststate_digest"]
+            != operation["intended_protected_state_digest"]
+        ):
+            raise ValueError("operation terminal does not bind intended protected state")
+        if parse_canonical_timestamp(intent["registered_at"]) > parse_canonical_timestamp(
+            terminal["completed_at"]
+        ):
+            raise ValueError("operation terminal cannot precede intent registration")
+
+    @property
+    def operation_digest(self) -> str:
+        return self.operation_record.digest()
+
+    @property
+    def terminal_digest(self) -> str:
+        return self.terminal_record.digest()
 
     @property
     def terminal_sequence(self) -> int:
@@ -280,7 +351,9 @@ class BoundEvaluation:
                         raise ValueError(f"attestation does not bind assignment {field}")
                 if payload["outcome"] != evaluation["outcome"]:
                     raise ValueError("evaluation outcome does not match attestation")
-                if _moment(payload["observed_at"]) > _moment(evaluation["evaluated_at"]):
+                if parse_canonical_timestamp(
+                    payload["observed_at"]
+                ) > parse_canonical_timestamp(evaluation["evaluated_at"]):
                     raise ValueError("evaluation cannot precede an attestation")
             if tuple(evaluation["attestation_digests"]) != tuple(
                 item.digest() for item in evidence_records
@@ -319,7 +392,9 @@ class BoundEvaluation:
                     raise ValueError(f"predicate proof does not bind assignment {field}")
             if evaluation["predicate_proof_digest"] != proof.digest():
                 raise ValueError("evaluation does not bind predicate proof")
-            if _moment(payload["observed_at"]) > _moment(evaluation["evaluated_at"]):
+            if parse_canonical_timestamp(
+                payload["observed_at"]
+            ) > parse_canonical_timestamp(evaluation["evaluated_at"]):
                 raise ValueError("evaluation cannot precede predicate proof")
         elif evidence_records:
             raise ValueError("unknown or not-due evaluation cannot bind terminal evidence")
@@ -401,6 +476,7 @@ class AtomicEvidenceCut:
     attempts: tuple[RegisteredAttempt, ...]
     evaluations: tuple[BoundEvaluation, ...]
     inclusion_edge_records: tuple[ControlRecord, ...] = ()
+    operations: tuple[RegisteredOperation, ...] = ()
 
     def __post_init__(self) -> None:
         _record(self.cut_record, field="cut_record", kind="atomic_evidence_cut")
@@ -423,15 +499,19 @@ class AtomicEvidenceCut:
         attempts = tuple(self.attempts)
         evaluations = tuple(self.evaluations)
         edges = tuple(self.inclusion_edge_records)
+        operations = tuple(self.operations)
         object.__setattr__(self, "attempts", attempts)
         object.__setattr__(self, "evaluations", evaluations)
         object.__setattr__(self, "inclusion_edge_records", edges)
+        object.__setattr__(self, "operations", operations)
         if any(not isinstance(item, RegisteredAttempt) for item in attempts):
             raise TypeError("attempts must contain RegisteredAttempt values")
         if any(not isinstance(item, BoundEvaluation) for item in evaluations):
             raise TypeError("evaluations must contain BoundEvaluation values")
         for edge in edges:
             _record(edge, field="inclusion_edge_records item", kind="inclusion_edge")
+        if any(not isinstance(item, RegisteredOperation) for item in operations):
+            raise TypeError("operations must contain RegisteredOperation values")
         payload = self.cut_record.payload
         expected = {
             "accepted_generation_digest": self.accepted_generation_record.digest(),
@@ -443,6 +523,10 @@ class AtomicEvidenceCut:
                 item.evaluation_record_digest for item in evaluations
             ),
             "inclusion_edge_digests": tuple(item.digest() for item in edges),
+            "operation_digests": tuple(item.operation_digest for item in operations),
+            "operation_terminal_digests": tuple(
+                item.terminal_digest for item in operations
+            ),
             "registration_set_digest": registration_set_digest(attempts),
         }
         for field, value in expected.items():
@@ -456,7 +540,7 @@ class AtomicEvidenceCut:
             raise ValueError("cut protected state does not bind active generation")
         if any(
             item.terminal_sequence > payload["complete_through_sequence"]
-            for item in attempts
+            for item in (*attempts, *operations)
         ):
             raise ValueError("cut does not include every terminal sequence")
 
@@ -481,12 +565,124 @@ class PromotionCutAssessment:
     authoritative: bool = False
 
 
+@dataclass(frozen=True, slots=True)
+class PromotionAuthorityChallenge:
+    """Exact immutable cut coordinates a production authority must verify."""
+
+    promotion_contract_digest: str
+    validation_contract_digest: str
+    atomic_evidence_cut_digest: str
+    authority_adapter_identity_digest: str
+    authority_view_digest: str
+    authority_manifest_digest: str
+    authority_head_digest: str
+    journal_head_digest: str
+    completeness_proof_digest: str
+    fork_proof_digest: str
+    complete_through_sequence: int
+    attempt_digests: tuple[str, ...]
+    evaluation_digests: tuple[str, ...]
+    inclusion_edge_digests: tuple[str, ...]
+    operation_digests: tuple[str, ...]
+    operation_terminal_digests: tuple[str, ...]
+
+    @classmethod
+    def from_cut(
+        cls,
+        contract: PromotionContract,
+        cut: AtomicEvidenceCut,
+        *,
+        authority_adapter_identity_digest: str,
+        authority_view_digest: str,
+    ) -> PromotionAuthorityChallenge:
+        payload = cut.cut_record.payload
+        return cls(
+            promotion_contract_digest=contract.contract_digest,
+            validation_contract_digest=contract.validation_contract_record.digest(),
+            atomic_evidence_cut_digest=cut.cut_record_digest,
+            authority_adapter_identity_digest=authority_adapter_identity_digest,
+            authority_view_digest=authority_view_digest,
+            authority_manifest_digest=payload["authority_manifest_digest"],
+            authority_head_digest=payload["authority_head_digest"],
+            journal_head_digest=payload["journal_head_digest"],
+            completeness_proof_digest=payload["completeness_proof_digest"],
+            fork_proof_digest=payload["fork_proof_digest"],
+            complete_through_sequence=payload["complete_through_sequence"],
+            attempt_digests=tuple(payload["attempt_digests"]),
+            evaluation_digests=tuple(payload["evaluation_digests"]),
+            inclusion_edge_digests=tuple(payload["inclusion_edge_digests"]),
+            operation_digests=tuple(payload["operation_digests"]),
+            operation_terminal_digests=tuple(
+                payload["operation_terminal_digests"]
+            ),
+        )
+
+
+@runtime_checkable
+class PromotionAuthority(Protocol):
+    """Reconstruct an exact authoritative cut and return its canonical proof.
+
+    Implementations must verify the journal/view identity, exact record sets,
+    completeness proof, and fork proof from their authoritative substrate. A
+    proof that merely echoes the caller's challenge is non-authoritative.
+    """
+
+    @property
+    def authority_adapter_identity_digest(self) -> str: ...
+
+    @property
+    def authority_view_digest(self) -> str: ...
+
+    def verify_promotion_cut(
+        self,
+        challenge: PromotionAuthorityChallenge,
+    ) -> ControlRecord: ...
+
+
 class PromotionDenied(ControlAuthorityError):
     """The canonical cut cannot satisfy every promotion obligation."""
 
 
 def _deny(code: str, message: str) -> None:
     raise PromotionDenied(code, message)
+
+
+def _verify_authority_proof(
+    proof_record: ControlRecord,
+    challenge: PromotionAuthorityChallenge,
+) -> None:
+    proof = _record(
+        proof_record,
+        field="promotion authority proof",
+        kind="promotion_authority_proof",
+    ).payload
+    expected = {
+        "atomic_evidence_cut_digest": challenge.atomic_evidence_cut_digest,
+        "attempt_digests": challenge.attempt_digests,
+        "authority_adapter_identity_digest": (
+            challenge.authority_adapter_identity_digest
+        ),
+        "authority_head_digest": challenge.authority_head_digest,
+        "authority_manifest_digest": challenge.authority_manifest_digest,
+        "authority_view_digest": challenge.authority_view_digest,
+        "complete_through_sequence": challenge.complete_through_sequence,
+        "completeness_proof_digest": challenge.completeness_proof_digest,
+        "evaluation_digests": challenge.evaluation_digests,
+        "fork_proof_digest": challenge.fork_proof_digest,
+        "inclusion_edge_digests": challenge.inclusion_edge_digests,
+        "journal_head_digest": challenge.journal_head_digest,
+        "operation_digests": challenge.operation_digests,
+        "operation_terminal_digests": challenge.operation_terminal_digests,
+        "promotion_contract_digest": challenge.promotion_contract_digest,
+        "validation_contract_digest": challenge.validation_contract_digest,
+    }
+    for field, value in expected.items():
+        actual = tuple(proof[field]) if field.endswith("_digests") else proof[field]
+        if actual != value:
+            _deny(
+                "PROMOTION_AUTHORITY_PROOF_MISMATCH",
+                f"authority proof does not bind exact {field}",
+            )
 
 
 def assess_promotion_cut(
@@ -566,8 +762,11 @@ def assess_promotion_cut(
         context = bound.context_record.payload
         if context["context_type"] == "active_contract":
             if (
-                context["contract_digest"] != contract.requirements_record.digest()
+                context["contract_digest"]
+                != contract.validation_contract_record.digest()
                 or context["requirements_digest"] != contract.requirements_record.digest()
+                or context["assignments_digest"]
+                != contract.validation_contract_record.payload["assignments_digest"]
                 or context["generation_digest"] != contract.generation_digest
             ):
                 _deny(
@@ -580,7 +779,7 @@ def assess_promotion_cut(
             edge_payload = edge.payload
             if (
                 edge_payload["active_contract_digest"]
-                != contract.requirements_record.digest()
+                != contract.validation_contract_record.digest()
                 or edge_payload["generation_digest"] != contract.generation_digest
             ):
                 _deny(
@@ -590,6 +789,33 @@ def assess_promotion_cut(
             expected_edges.add(edge.digest())
 
         evaluation = bound.evaluation_record.payload
+        applicability = evaluation["applicability"]
+        outcome = evaluation["outcome"]
+        expected_terminal_outcome = {
+            ("applicable", "blocked"): "failed",
+            ("applicable", "fail"): "failed",
+            ("applicable", "pass"): "succeeded",
+            ("applicable_unknown", "unknown"): "unknown",
+            ("not_applicable", "not_applicable"): "succeeded",
+            ("not_due", "unknown"): "unknown",
+        }.get((applicability, outcome))
+        if (
+            expected_terminal_outcome is None
+            or attempt.terminal_record.payload["outcome"]
+            != expected_terminal_outcome
+            or (
+                attempt.attempt_record.payload["decision"] == "blocked"
+                and not (
+                    applicability == "applicable"
+                    and outcome == "blocked"
+                    and expected_terminal_outcome == "failed"
+                )
+            )
+        ):
+            _deny(
+                "PROMOTION_ATTEMPT_DID_NOT_PASS",
+                "attempt admission and terminal outcome do not support its evaluation",
+            )
         if evaluation["currency"] != "current" or not evaluation["admissible"]:
             _deny("PROMOTION_EVIDENCE_NOT_CURRENT", "evidence is stale or inadmissible")
         if obligation.impact is GateImpact.BLOCKING:
@@ -608,6 +834,14 @@ def assess_promotion_cut(
         _deny("PROMOTION_EVIDENCE_INCOMPLETE", "evaluation set contains extra attempts")
     if {item.digest() for item in cut.inclusion_edge_records} != expected_edges:
         _deny("PROMOTION_INCLUSION_EDGE_MISMATCH", "cut inclusion-edge set is not exact")
+    if any(
+        item.terminal_record.payload["outcome"] != "succeeded"
+        for item in cut.operations
+    ):
+        _deny(
+            "PROMOTION_OPERATION_DID_NOT_PASS",
+            "a critical operation did not terminalize successfully",
+        )
     return PromotionCutAssessment(
         contract_digest=contract.contract_digest,
         generation_digest=contract.generation_digest,
@@ -620,9 +854,25 @@ def assess_promotion_cut(
 def admit_promotion(
     contract: PromotionContract,
     cut: AtomicEvidenceCut,
-    evidence_view: object,
+    authority: object,
 ) -> PromotionCutAssessment:
     """Admit only after the production authority proves cut provenance."""
 
-    require_promotable(evidence_view)
-    return replace(assess_promotion_cut(contract, cut), authoritative=True)
+    assessment = assess_promotion_cut(contract, cut)
+    if not isinstance(authority, PromotionAuthority):
+        raise NonPromotionalEvidence(
+            "EVIDENCE_NONPROMOTIONAL",
+            "authority cannot independently verify an exact promotion cut",
+        )
+    challenge = PromotionAuthorityChallenge.from_cut(
+        contract,
+        cut,
+        authority_adapter_identity_digest=(
+            authority.authority_adapter_identity_digest
+        ),
+        authority_view_digest=authority.authority_view_digest,
+    )
+    proof_record = authority.verify_promotion_cut(challenge)
+    _verify_authority_proof(proof_record, challenge)
+    require_promotable(authority)
+    return replace(assessment, authoritative=True)

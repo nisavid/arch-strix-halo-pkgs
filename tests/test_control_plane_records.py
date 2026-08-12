@@ -1,10 +1,9 @@
-from pathlib import Path
-from copy import deepcopy
 import json
 import sys
+from copy import deepcopy
+from pathlib import Path
 
 import pytest
-
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 TOOLS_DIR = REPO_ROOT / "tools"
@@ -19,10 +18,9 @@ from control_plane import (
     CanonicalizationError,
     ControlRecord,
     ControlRecordError,
-    RecordValidationError,
     RecordErrorCode,
+    RecordValidationError,
 )
-
 
 EXPECTED_RECORD_KINDS = {
     "approval",
@@ -47,6 +45,7 @@ EXPECTED_RECORD_KINDS = {
     "invalidation",
     "operation",
     "predicate_proof",
+    "promotion_authority_proof",
     "promotion_contract",
     "promotion_obligation",
     "protected_state",
@@ -58,6 +57,7 @@ EXPECTED_RECORD_KINDS = {
     "rollback",
     "requirements",
     "terminal_record",
+    "validation_contract",
     "validation_context",
 }
 
@@ -129,6 +129,8 @@ VALID_PAYLOADS = {
         "generation_digest": DIGEST_3,
         "inclusion_edge_digests": [],
         "journal_head_digest": DIGEST_4,
+        "operation_digests": [],
+        "operation_terminal_digests": [],
         "phase": "prevalidated",
         "registration_set_digest": DIGEST_5,
         "target_digest": DIGEST_6,
@@ -342,6 +344,27 @@ VALID_PAYLOADS = {
         "predicate_digest": DIGEST_6,
         "subject_digest": DIGEST_7,
     },
+    "promotion_authority_proof": {
+        "atomic_evidence_cut_digest": DIGEST_1,
+        "attempt_digests": [DIGEST_2],
+        "authority_adapter_identity_digest": DIGEST_3,
+        "authority_head_digest": DIGEST_4,
+        "authority_manifest_digest": DIGEST_5,
+        "authority_view_digest": DIGEST_6,
+        "complete_through_sequence": 42,
+        "completeness_proof_digest": DIGEST_7,
+        "evaluation_digests": [DIGEST_8],
+        "fork_proof_digest": DIGEST_9,
+        "inclusion_edge_digests": [],
+        "journal_head_digest": DIGEST_1,
+        "operation_digests": [],
+        "operation_terminal_digests": [],
+        "promotion_contract_digest": DIGEST_2,
+        "proof_id": "promotion_authority_proof_1",
+        "validation_contract_digest": DIGEST_3,
+        "verified_at": TIMESTAMP,
+        "verifier_identity_digest": DIGEST_4,
+    },
     "promotion_contract": {
         "contract_id": "w0_prevalidated_contract",
         "expected_accepted_generation_digest": DIGEST_1,
@@ -353,6 +376,7 @@ VALID_PAYLOADS = {
         "target_digest": DIGEST_7,
         "target_kind": "live_root",
         "target_protected_state_digest": DIGEST_8,
+        "validation_contract_digest": DIGEST_9,
     },
     "promotion_obligation": {
         "assignment_digest": DIGEST_1,
@@ -436,6 +460,13 @@ VALID_PAYLOADS = {
         "terminal_type": "gate_attempt",
         "validator_attestation_digests": [DIGEST_5],
     },
+    "validation_contract": {
+        "approval_digest": DIGEST_1,
+        "assignments_digest": DIGEST_2,
+        "authorization_policy_digest": DIGEST_3,
+        "contract_id": "active_validation_contract",
+        "requirements_digest": DIGEST_4,
+    },
     "validation_context": {
         "assignments_digest": DIGEST_1,
         "context_id": "active_contract_context_1",
@@ -445,6 +476,160 @@ VALID_PAYLOADS = {
         "requirements_digest": DIGEST_4,
     },
 }
+
+
+PUBLIC_PROJECTION_VARIANTS = (
+    ("approval", {"decision": "approved"}, {}, ()),
+    ("approval", {"decision": "rejected"}, {"decision": "rejected"}, ()),
+    ("assignment", {"applicability": "unconditional"}, {}, ()),
+    (
+        "assignment",
+        {"applicability": "conditional"},
+        {"applicability": "conditional", "predicate_digest": DIGEST_9},
+        (),
+    ),
+    ("attestation", {"outcome": "blocked"}, {"outcome": "blocked"}, ()),
+    ("attestation", {"outcome": "fail"}, {"outcome": "fail"}, ()),
+    ("attestation", {"outcome": "pass"}, {}, ()),
+    ("attestation", {"outcome": "unknown"}, {"outcome": "unknown"}, ()),
+    (
+        "authority_register",
+        {"status": "absent"},
+        {"quorum_receipt_digests": [], "status": "absent"},
+        ("selected_manifest_digest",),
+    ),
+    (
+        "authority_register",
+        {"status": "corrupt"},
+        {"quorum_receipt_digests": [], "status": "corrupt"},
+        ("selected_manifest_digest",),
+    ),
+    ("authority_register", {"status": "valid"}, {}, ()),
+    ("capability", {"status": "active"}, {}, ()),
+    ("capability", {"status": "consumed"}, {"status": "consumed"}, ()),
+    ("capability", {"status": "revoked"}, {"status": "revoked"}, ()),
+    (
+        "evaluation",
+        {"applicability": "applicable", "outcome": "blocked"},
+        {"outcome": "blocked"},
+        (),
+    ),
+    (
+        "evaluation",
+        {"applicability": "applicable", "outcome": "fail"},
+        {"outcome": "fail"},
+        (),
+    ),
+    (
+        "evaluation",
+        {"applicability": "applicable", "outcome": "pass"},
+        {},
+        (),
+    ),
+    (
+        "evaluation",
+        {"applicability": "applicable_unknown", "outcome": "unknown"},
+        {
+            "admissible": False,
+            "applicability": "applicable_unknown",
+            "attestation_digests": [],
+            "outcome": "unknown",
+        },
+        (),
+    ),
+    (
+        "evaluation",
+        {"applicability": "not_applicable", "outcome": "not_applicable"},
+        {
+            "applicability": "not_applicable",
+            "attestation_digests": [],
+            "outcome": "not_applicable",
+            "predicate_proof_digest": DIGEST_9,
+        },
+        (),
+    ),
+    (
+        "evaluation",
+        {"applicability": "not_due", "outcome": "unknown"},
+        {
+            "admissible": False,
+            "applicability": "not_due",
+            "attestation_digests": [],
+            "outcome": "unknown",
+        },
+        (),
+    ),
+    ("exception", {"status": "active"}, {}, ()),
+    ("exception", {"status": "expired"}, {"status": "expired"}, ()),
+    ("exception", {"status": "revoked"}, {"status": "revoked"}, ()),
+    (
+        "invalidation",
+        {"status": "closed"},
+        {"closed_at": TIMESTAMP, "status": "closed"},
+        (),
+    ),
+    ("invalidation", {"status": "open"}, {}, ()),
+    ("readiness", {"status": "not_ready"}, {"status": "not_ready"}, ()),
+    ("readiness", {"status": "ready"}, {}, ()),
+    ("retention_lease", {"status": "active"}, {}, ()),
+    (
+        "retention_lease",
+        {"status": "expired"},
+        {"status": "expired"},
+        (),
+    ),
+    (
+        "retention_lease",
+        {"status": "revoked"},
+        {"status": "revoked"},
+        (),
+    ),
+    ("terminal_record", {"outcome": "failed"}, {"outcome": "failed"}, ()),
+    ("terminal_record", {"outcome": "succeeded"}, {}, ()),
+    ("terminal_record", {"outcome": "unknown"}, {"outcome": "unknown"}, ()),
+)
+
+
+@pytest.mark.parametrize(
+    ("kind", "expected_public", "changes", "removed_fields"),
+    PUBLIC_PROJECTION_VARIANTS,
+)
+def test_public_envelope_projects_every_schema_declared_public_variant(
+    kind: str,
+    expected_public: dict[str, object],
+    changes: dict[str, object],
+    removed_fields: tuple[str, ...],
+) -> None:
+    payload = deepcopy(VALID_PAYLOADS[kind])
+    payload.update(changes)
+    for field in removed_fields:
+        payload.pop(field)
+
+    envelope = ControlRecord.build(
+        kind=kind,
+        record_id=f"{kind}_record_1",
+        payload=payload,
+    ).public_envelope(opaque_reference_key=b"r" * 32)
+
+    assert envelope.payload["public"] == expected_public
+
+
+def test_public_projection_variants_cover_the_declared_field_schemas() -> None:
+    expected = {
+        (kind, field, choice)
+        for kind, schema in RECORD_SCHEMAS.items()
+        for field in schema.public_fields
+        for choice in (
+            schema.required_fields.get(field) or schema.optional_fields[field]
+        ).choices
+    }
+    covered = {
+        (kind, field, value)
+        for kind, public, _changes, _removed in PUBLIC_PROJECTION_VARIANTS
+        for field, value in public.items()
+    }
+
+    assert covered == expected
 
 
 def test_identity_family_has_a_closed_semantic_payload_schema() -> None:
@@ -750,6 +935,97 @@ def test_variant_records_reject_semantically_incoherent_payloads(
     assert caught.value.code is RecordErrorCode.INVALID_PAYLOAD_SEMANTICS
 
 
+@pytest.mark.parametrize(
+    ("kind", "earlier_field", "later_field"),
+    [
+        ("capability", "issued_at", "expires_at"),
+        ("retention_lease", "issued_at", "expires_at"),
+    ],
+)
+def test_strict_timestamp_ordering_rejects_equivalent_fractional_instants(
+    kind: str,
+    earlier_field: str,
+    later_field: str,
+) -> None:
+    payload = deepcopy(VALID_PAYLOADS[kind])
+    payload[earlier_field] = "2026-08-12T10:00:00.10Z"
+    payload[later_field] = "2026-08-12T10:00:00.1Z"
+
+    with pytest.raises(RecordValidationError) as caught:
+        ControlRecord.build(
+            kind=kind,
+            record_id=f"{kind}_record_1",
+            payload=payload,
+        )
+
+    assert caught.value.code is RecordErrorCode.INVALID_PAYLOAD_SEMANTICS
+
+
+def test_non_strict_timestamp_ordering_accepts_equivalent_fractional_instants(
+) -> None:
+    payload = deepcopy(VALID_PAYLOADS["invalidation"])
+    payload.update(
+        {
+            "closed_at": "2026-08-12T10:00:00.10Z",
+            "opened_at": "2026-08-12T10:00:00.1Z",
+            "status": "closed",
+        }
+    )
+
+    record = ControlRecord.build(
+        kind="invalidation",
+        record_id="invalidation_record_1",
+        payload=payload,
+    )
+
+    assert record.payload["closed_at"] == "2026-08-12T10:00:00.10Z"
+
+
+@pytest.mark.parametrize(
+    ("kind", "earlier_field", "later_field"),
+    [
+        ("capability", "issued_at", "expires_at"),
+        ("retention_lease", "issued_at", "expires_at"),
+    ],
+)
+def test_strict_timestamp_ordering_rejects_equivalent_rfc3339_offsets(
+    kind: str,
+    earlier_field: str,
+    later_field: str,
+) -> None:
+    payload = deepcopy(VALID_PAYLOADS[kind])
+    payload[earlier_field] = "2026-08-12T10:00:00Z"
+    payload[later_field] = "2026-08-12T11:00:00+01:00"
+
+    with pytest.raises(RecordValidationError) as caught:
+        ControlRecord.build(
+            kind=kind,
+            record_id=f"{kind}_record_1",
+            payload=payload,
+        )
+
+    assert caught.value.code is RecordErrorCode.INVALID_PAYLOAD_SEMANTICS
+
+
+def test_non_strict_timestamp_ordering_accepts_equivalent_rfc3339_offsets() -> None:
+    payload = deepcopy(VALID_PAYLOADS["invalidation"])
+    payload.update(
+        {
+            "closed_at": "2026-08-12T11:00:00+01:00",
+            "opened_at": "2026-08-12T10:00:00Z",
+            "status": "closed",
+        }
+    )
+
+    record = ControlRecord.build(
+        kind="invalidation",
+        record_id="invalidation_record_1",
+        payload=payload,
+    )
+
+    assert record.payload["closed_at"] == "2026-08-12T11:00:00+01:00"
+
+
 def test_operation_and_capability_bind_the_complete_authority_coordinates() -> None:
     operation_schema = RECORD_SCHEMAS["operation"]
     capability_schema = RECORD_SCHEMAS["capability"]
@@ -937,6 +1213,7 @@ def test_promotion_records_bind_total_obligations_and_an_atomic_evidence_cut() -
     obligation_schema = RECORD_SCHEMAS["promotion_obligation"]
     contract_schema = RECORD_SCHEMAS["promotion_contract"]
     cut_schema = RECORD_SCHEMAS["atomic_evidence_cut"]
+    validation_contract_schema = RECORD_SCHEMAS["validation_contract"]
 
     assert set(obligation_schema.required_fields) == {
         "assignment_digest",
@@ -955,10 +1232,18 @@ def test_promotion_records_bind_total_obligations_and_an_atomic_evidence_cut() -
         "target_digest",
         "target_kind",
         "target_protected_state_digest",
+        "validation_contract_digest",
     }
     assert set(cut_schema.required_fields) == set(
         VALID_PAYLOADS["atomic_evidence_cut"]
     )
+    assert set(validation_contract_schema.required_fields) == {
+        "approval_digest",
+        "assignments_digest",
+        "authorization_policy_digest",
+        "contract_id",
+        "requirements_digest",
+    }
 
     obligation = ControlRecord.build(
         kind="promotion_obligation",
@@ -975,10 +1260,79 @@ def test_promotion_records_bind_total_obligations_and_an_atomic_evidence_cut() -
         record_id="atomic_evidence_cut_record_1",
         payload=VALID_PAYLOADS["atomic_evidence_cut"],
     )
+    validation_contract = ControlRecord.build(
+        kind="validation_contract",
+        record_id="validation_contract_record_1",
+        payload=VALID_PAYLOADS["validation_contract"],
+    )
 
     assert obligation.payload["impact"] == "blocking"
     assert contract.payload["obligation_digests"] == (DIGEST_4, DIGEST_5)
+    assert contract.payload["validation_contract_digest"] == DIGEST_9
     assert cut.payload["inclusion_edge_digests"] == ()
+    assert cut.payload["operation_digests"] == ()
+    assert cut.payload["operation_terminal_digests"] == ()
+    assert validation_contract.payload["assignments_digest"] == DIGEST_2
+
+    with pytest.raises(RecordValidationError) as mismatched_operation_terminals:
+        ControlRecord.build(
+            kind="atomic_evidence_cut",
+            record_id="atomic_evidence_cut_record_2",
+            payload={
+                **VALID_PAYLOADS["atomic_evidence_cut"],
+                "operation_digests": [DIGEST_1],
+            },
+        )
+
+    assert mismatched_operation_terminals.value.code is (
+        RecordErrorCode.INVALID_PAYLOAD_SEMANTICS
+    )
+
+
+def test_promotion_authority_proof_binds_the_exact_authority_view_and_cut() -> None:
+    schema = RECORD_SCHEMAS["promotion_authority_proof"]
+
+    assert set(schema.required_fields) == set(
+        VALID_PAYLOADS["promotion_authority_proof"]
+    )
+    assert all(
+        schema.required_fields[field].allow_empty
+        for field in (
+            "attempt_digests",
+            "evaluation_digests",
+            "inclusion_edge_digests",
+            "operation_digests",
+            "operation_terminal_digests",
+        )
+    )
+
+    proof = ControlRecord.build(
+        kind="promotion_authority_proof",
+        record_id="promotion_authority_proof_record_1",
+        payload=VALID_PAYLOADS["promotion_authority_proof"],
+    )
+
+    assert proof.payload["authority_adapter_identity_digest"] == DIGEST_3
+    assert proof.payload["authority_view_digest"] == DIGEST_6
+
+    invalid_payloads = [
+        {
+            **VALID_PAYLOADS["promotion_authority_proof"],
+            "complete_through_sequence": 0,
+        },
+        {
+            **VALID_PAYLOADS["promotion_authority_proof"],
+            "operation_digests": [DIGEST_1],
+        },
+    ]
+    for payload in invalid_payloads:
+        with pytest.raises(RecordValidationError) as caught:
+            ControlRecord.build(
+                kind="promotion_authority_proof",
+                record_id="promotion_authority_proof_record_2",
+                payload=payload,
+            )
+        assert caught.value.code is RecordErrorCode.INVALID_PAYLOAD_SEMANTICS
 
 
 def test_terminal_records_use_closed_gate_and_operation_variants() -> None:

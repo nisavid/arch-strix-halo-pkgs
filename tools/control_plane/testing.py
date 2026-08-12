@@ -55,7 +55,7 @@ class InMemoryAuthority:
         self._last_fence_epochs: dict[object, int] = {}
         self._operation_fence_epochs: dict[str, int] = {}
         self._recovery_failures: dict[str, tuple[OperationResult, int]] = {}
-        self._recovery_predecessors: dict[str, tuple[str, str]] = {}
+        self._recovery_predecessors: dict[str, tuple[str, str, int]] = {}
 
     @property
     def journal_entries(self) -> tuple[JournalEntry, ...]:
@@ -310,6 +310,11 @@ class InMemoryAuthority:
         *,
         fence_epoch: int,
     ) -> FencedCapability:
+        binding = self._registered_binding(
+            binding,
+            code="AUTHORITY_BINDING_MISMATCH",
+            message="rollback does not bind the registered operation",
+        )
         if self._states.get(binding.operation_id) is not OperationState.ROLLBACK_REQUIRED:
             raise AuthorityUnavailable(
                 "AUTHORITY_ROLLBACK_PHASE_INVALID",
@@ -368,6 +373,11 @@ class InMemoryAuthority:
         capability: FencedCapability,
         observed_state: ProtectedStateSnapshot,
     ) -> OperationResult:
+        binding = self._registered_binding(
+            binding,
+            code="AUTHORITY_BINDING_MISMATCH",
+            message="rollback does not bind the registered operation",
+        )
         if self._states.get(binding.operation_id) is not OperationState.ROLLBACK_REQUIRED:
             raise AuthorityUnavailable(
                 "AUTHORITY_ROLLBACK_PHASE_INVALID",
@@ -431,6 +441,11 @@ class InMemoryAuthority:
         binding: OperationBinding,
         observation: TerminalObservation,
     ) -> OperationResult:
+        binding = self._registered_binding(
+            binding,
+            code="AUTHORITY_BINDING_MISMATCH",
+            message="rollback does not bind the registered operation",
+        )
         if (
             self._states.get(binding.operation_id)
             is not OperationState.ROLLBACK_PENDING_VALIDATION
@@ -478,11 +493,16 @@ class InMemoryAuthority:
         owner_role: str,
         fence_epoch: int,
     ) -> RecoveryCapability:
-        if self._bindings.get(failed_binding.operation_id) != failed_binding:
-            raise AuthorityUnavailable(
-                "AUTHORITY_BINDING_MISMATCH",
-                "recovery predecessor does not bind the registered operation",
-            )
+        failed_binding = self._registered_binding(
+            failed_binding,
+            code="AUTHORITY_RECOVERY_BINDING_MISMATCH",
+            message="recovery predecessor does not bind the registered operation",
+        )
+        recovery_binding = self._registered_binding(
+            recovery_binding,
+            code="AUTHORITY_RECOVERY_BINDING_MISMATCH",
+            message="recovery successor does not bind the registered operation",
+        )
         if self._states.get(failed_binding.operation_id) is not OperationState.RECOVERY_REQUIRED:
             raise AuthorityUnavailable(
                 "AUTHORITY_RECOVERY_PHASE_INVALID",
@@ -503,8 +523,7 @@ class InMemoryAuthority:
                 "AUTHORITY_RECOVERY_OWNER_MISMATCH",
                 "the acting role is not the named recovery owner",
             )
-        registered = self._pending.get(recovery_binding.operation_id)
-        if registered != recovery_binding:
+        if self._pending.get(recovery_binding.operation_id) != recovery_binding:
             raise AuthorityUnavailable(
                 "AUTHORITY_INTENT_MISSING",
                 "the recovery successor has no matching registered intent",
@@ -584,6 +603,7 @@ class InMemoryAuthority:
         self._recovery_predecessors[recovery_binding.operation_id] = (
             failed_binding.operation_id,
             failure_record_digest,
+            predecessor_fence_epoch,
         )
         self._states[recovery_binding.operation_id] = (
             OperationState.RECOVERY_CAPABILITY_ISSUED
@@ -604,6 +624,16 @@ class InMemoryAuthority:
         capability: RecoveryCapability,
         observed_state: ProtectedStateSnapshot,
     ) -> OperationResult:
+        failed_binding = self._registered_binding(
+            failed_binding,
+            code="AUTHORITY_RECOVERY_BINDING_MISMATCH",
+            message="recovery predecessor does not bind the registered operation",
+        )
+        recovery_binding = self._registered_binding(
+            recovery_binding,
+            code="AUTHORITY_RECOVERY_BINDING_MISMATCH",
+            message="recovery successor does not bind the registered operation",
+        )
         issued = self._issued_recovery_capabilities.get(capability.capability_id)
         if capability.capability_id in self._consumed_capabilities:
             raise AuthorityUnavailable(
@@ -625,7 +655,12 @@ class InMemoryAuthority:
             or capability.predecessor_operation_id != failed_binding.operation_id
             or capability.predecessor_failure_record_digest != failure_record_digest
             or capability.predecessor_fence_epoch != remembered[1]
-            or link != (failed_binding.operation_id, failure_record_digest)
+            or link
+            != (
+                failed_binding.operation_id,
+                failure_record_digest,
+                remembered[1],
+            )
             or capability.fenced.operation_id != recovery_binding.operation_id
             or capability.fenced.intent_digest != recovery_binding.intent_digest
             or capability.fenced.plan_digest != recovery_binding.plan_digest
@@ -684,6 +719,16 @@ class InMemoryAuthority:
         recovery_binding: OperationBinding,
         observation: TerminalObservation,
     ) -> OperationResult:
+        failed_binding = self._registered_binding(
+            failed_binding,
+            code="AUTHORITY_RECOVERY_BINDING_MISMATCH",
+            message="recovery predecessor does not bind the registered operation",
+        )
+        recovery_binding = self._registered_binding(
+            recovery_binding,
+            code="AUTHORITY_RECOVERY_BINDING_MISMATCH",
+            message="recovery successor does not bind the registered operation",
+        )
         if (
             self._states.get(recovery_binding.operation_id)
             is not OperationState.RECOVERY_PENDING_VALIDATION
@@ -693,10 +738,23 @@ class InMemoryAuthority:
                 "recovery is not awaiting terminal validation",
             )
         link = self._recovery_predecessors.get(recovery_binding.operation_id)
-        if link is None or link[0] != failed_binding.operation_id:
+        remembered = self._recovery_failures.get(failed_binding.operation_id)
+        failure_record_digest = (
+            remembered[0].failure_record_digest if remembered is not None else None
+        )
+        expected_link = (
+            (
+                failed_binding.operation_id,
+                failure_record_digest,
+                remembered[1],
+            )
+            if failure_record_digest is not None and remembered is not None
+            else None
+        )
+        if link != expected_link:
             raise AuthorityUnavailable(
                 "AUTHORITY_RECOVERY_BINDING_MISMATCH",
-                "recovery no longer binds the failed predecessor",
+                "recovery no longer binds the exact failed predecessor",
             )
         required_effects = {
             effect.effect_id
@@ -759,6 +817,18 @@ class InMemoryAuthority:
             operation_id=binding.operation_id,
             record_digest=failure_digest,
         )
+
+    def _registered_binding(
+        self,
+        binding: OperationBinding,
+        *,
+        code: str,
+        message: str,
+    ) -> OperationBinding:
+        registered = self._bindings.get(binding.operation_id)
+        if registered != binding:
+            raise AuthorityUnavailable(code, message)
+        return registered
 
     def _remember_recovery_failure(
         self,

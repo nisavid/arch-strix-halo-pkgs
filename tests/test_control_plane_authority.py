@@ -195,6 +195,82 @@ def typed_operation_binding() -> OperationBinding:
     )
 
 
+def _registered_recovery_successor():
+    failed_binding = replace(
+        typed_operation_binding(),
+        rollback=replace(
+            typed_operation_binding().rollback,
+            mode=RecoveryMode.RECOVERY_ONLY,
+            rollback_target=None,
+            rollback_plan_digest=None,
+            rollback_validator_digest=None,
+        ),
+    )
+    authority = InMemoryAuthority(initial_active_state=failed_binding.expected_state)
+    authority.append_intent(failed_binding)
+    capability = authority.acquire_capability(failed_binding, fence_epoch=1)
+    authority.guarded_compare_and_swap(
+        failed_binding,
+        capability=capability,
+        observed_state=failed_binding.expected_state,
+    )
+    failure = authority.terminalize_operation(
+        failed_binding,
+        TerminalObservation(
+            record_digest="sha256:" + "d" * 64,
+            validator_digest=TERMINAL_VALIDATOR,
+            observed_state=failed_binding.intended_state,
+            outcome=TerminalOutcome.FAIL,
+        ),
+    )
+    recovery_binding = replace(
+        typed_operation_binding(),
+        operation_id="op-recovery-001",
+        operation_kind=CriticalOperationKind.RECOVERY,
+        intent_digest="sha256:" + "e" * 64,
+        plan_digest=RECOVERY_PLAN,
+        subject=OperationSubject(
+            kind=OperationSubjectKind.CONTROL_RECORD,
+            record_digest=RECOVERY_CONTRACT,
+        ),
+        expected_state=failed_binding.intended_state,
+        intended_state=failed_binding.rollback.recovery_target,
+        generation=GenerationBinding(
+            mode=GenerationBindingMode.REQUIRED_GENERATION,
+            generation_digest=RECOVERY_DESTINATION,
+        ),
+        rollback=replace(
+            typed_operation_binding().rollback,
+            rollback_target=failed_binding.intended_state,
+            recovery_origin_generation_digest=RECOVERY_DESTINATION,
+        ),
+    )
+    authority.append_intent(recovery_binding)
+    return authority, failed_binding, recovery_binding, failure
+
+
+def _rollback_required_authority():
+    binding = typed_operation_binding()
+    authority = InMemoryAuthority(initial_active_state=binding.expected_state)
+    authority.append_intent(binding)
+    capability = authority.acquire_capability(binding, fence_epoch=1)
+    authority.guarded_compare_and_swap(
+        binding,
+        capability=capability,
+        observed_state=binding.expected_state,
+    )
+    authority.terminalize_operation(
+        binding,
+        TerminalObservation(
+            record_digest="sha256:" + "2" * 64,
+            validator_digest=TERMINAL_VALIDATOR,
+            observed_state=binding.intended_state,
+            outcome=TerminalOutcome.FAIL,
+        ),
+    )
+    return authority, binding
+
+
 def test_operation_binding_is_typed_and_binds_the_complete_protected_state_contract():
     binding = typed_operation_binding()
 
@@ -413,6 +489,122 @@ def test_terminal_failure_requires_exact_rollback_and_successful_validation():
     assert rolled_back.state is OperationState.ROLLED_BACK
 
 
+def test_rollback_rejects_a_substituted_registered_target():
+    authority, binding = _rollback_required_authority()
+    forged_target = replace(
+        binding.expected_state,
+        record_digest="sha256:" + "4" * 64,
+    )
+    forged_binding = replace(
+        binding,
+        rollback=replace(binding.rollback, rollback_target=forged_target),
+    )
+
+    with pytest.raises(AuthorityUnavailable) as exc_info:
+        rollback_capability = authority.acquire_rollback_capability(
+            forged_binding,
+            fence_epoch=2,
+        )
+        authority.execute_rollback(
+            forged_binding,
+            capability=rollback_capability,
+            observed_state=binding.intended_state,
+        )
+
+    assert exc_info.value.code == "AUTHORITY_BINDING_MISMATCH"
+    assert authority.observe_active() == binding.intended_state
+    assert authority.operation_state(binding.operation_id) is OperationState.ROLLBACK_REQUIRED
+    rollback_capability = authority.acquire_rollback_capability(
+        binding,
+        fence_epoch=2,
+    )
+    assert rollback_capability.fence_epoch == 2
+
+
+def test_rollback_execution_rechecks_the_registered_target():
+    authority, binding = _rollback_required_authority()
+    rollback_capability = authority.acquire_rollback_capability(
+        binding,
+        fence_epoch=2,
+    )
+    forged_binding = replace(
+        binding,
+        rollback=replace(
+            binding.rollback,
+            rollback_target=replace(
+                binding.expected_state,
+                record_digest="sha256:" + "4" * 64,
+            ),
+        ),
+    )
+
+    with pytest.raises(AuthorityUnavailable) as exc_info:
+        authority.execute_rollback(
+            forged_binding,
+            capability=rollback_capability,
+            observed_state=binding.intended_state,
+        )
+
+    assert exc_info.value.code == "AUTHORITY_BINDING_MISMATCH"
+    assert authority.observe_active() == binding.intended_state
+    assert authority.operation_state(binding.operation_id) is OperationState.ROLLBACK_REQUIRED
+    pending = authority.execute_rollback(
+        binding,
+        capability=rollback_capability,
+        observed_state=binding.intended_state,
+    )
+    assert pending.state is OperationState.ROLLBACK_PENDING_VALIDATION
+
+
+def test_rollback_terminal_rechecks_the_registered_validator():
+    authority, binding = _rollback_required_authority()
+    rollback_capability = authority.acquire_rollback_capability(
+        binding,
+        fence_epoch=2,
+    )
+    authority.execute_rollback(
+        binding,
+        capability=rollback_capability,
+        observed_state=binding.intended_state,
+    )
+    forged_validator = "sha256:" + "4" * 64
+    forged_binding = replace(
+        binding,
+        rollback=replace(
+            binding.rollback,
+            rollback_validator_digest=forged_validator,
+        ),
+    )
+
+    with pytest.raises(AuthorityUnavailable) as exc_info:
+        authority.terminalize_rollback(
+            forged_binding,
+            TerminalObservation(
+                record_digest="sha256:" + "3" * 64,
+                validator_digest=forged_validator,
+                observed_state=binding.expected_state,
+                outcome=TerminalOutcome.PASS,
+            ),
+        )
+
+    assert exc_info.value.code == "AUTHORITY_BINDING_MISMATCH"
+    assert authority.observe_active() == binding.expected_state
+    assert (
+        authority.operation_state(binding.operation_id)
+        is OperationState.ROLLBACK_PENDING_VALIDATION
+    )
+    rolled_back = authority.terminalize_rollback(
+        binding,
+        TerminalObservation(
+            record_digest="sha256:" + "5" * 64,
+            validator_digest=ROLLBACK_VALIDATOR,
+            observed_state=binding.expected_state,
+            outcome=TerminalOutcome.PASS,
+        ),
+    )
+    assert rolled_back.state is OperationState.ROLLED_BACK
+
+
 def test_failed_rollback_enters_guarded_recovery_and_keeps_the_target_exclusive():
     binding = typed_operation_binding()
     authority = InMemoryAuthority(initial_active_state=binding.expected_state)
@@ -553,6 +745,188 @@ def test_named_recovery_successor_restores_the_target_under_the_failed_fence():
     assert recovered.state is OperationState.RECOVERED
     assert authority.operation_state(failed_binding.operation_id) is OperationState.RECOVERED
     assert authority.operation_state(recovery_binding.operation_id) is OperationState.RECOVERED
+
+
+def test_recovery_execution_rechecks_the_registered_target():
+    authority, failed_binding, recovery_binding, failure = (
+        _registered_recovery_successor()
+    )
+    recovery_capability = authority.acquire_recovery_capability(
+        failed_binding,
+        recovery_binding,
+        failure=failure,
+        owner_role="recovery-owner",
+        fence_epoch=2,
+    )
+    forged_binding = replace(
+        recovery_binding,
+        intended_state=replace(
+            recovery_binding.intended_state,
+            record_digest="sha256:" + "4" * 64,
+        ),
+    )
+
+    with pytest.raises(AuthorityUnavailable) as exc_info:
+        authority.execute_recovery(
+            failed_binding,
+            forged_binding,
+            failure=failure,
+            capability=recovery_capability,
+            observed_state=failed_binding.intended_state,
+        )
+
+    assert exc_info.value.code == "AUTHORITY_RECOVERY_BINDING_MISMATCH"
+    assert authority.observe_active() == failed_binding.intended_state
+    assert (
+        authority.operation_state(recovery_binding.operation_id)
+        is OperationState.RECOVERY_CAPABILITY_ISSUED
+    )
+    pending = authority.execute_recovery(
+        failed_binding,
+        recovery_binding,
+        failure=failure,
+        capability=recovery_capability,
+        observed_state=failed_binding.intended_state,
+    )
+    assert pending.state is OperationState.RECOVERY_PENDING_VALIDATION
+
+
+def test_recovery_acquisition_rechecks_the_registered_successor():
+    authority, failed_binding, recovery_binding, failure = (
+        _registered_recovery_successor()
+    )
+    forged_binding = replace(
+        recovery_binding,
+        intended_state=replace(
+            recovery_binding.intended_state,
+            record_digest="sha256:" + "4" * 64,
+        ),
+    )
+
+    with pytest.raises(AuthorityUnavailable) as exc_info:
+        authority.acquire_recovery_capability(
+            failed_binding,
+            forged_binding,
+            failure=failure,
+            owner_role="recovery-owner",
+            fence_epoch=2,
+        )
+
+    assert exc_info.value.code == "AUTHORITY_RECOVERY_BINDING_MISMATCH"
+    assert authority.observe_active() == failed_binding.intended_state
+    assert (
+        authority.operation_state(recovery_binding.operation_id)
+        is OperationState.INTENT_REGISTERED
+    )
+    recovery_capability = authority.acquire_recovery_capability(
+        failed_binding,
+        recovery_binding,
+        failure=failure,
+        owner_role="recovery-owner",
+        fence_epoch=2,
+    )
+    assert recovery_capability.fenced.fence_epoch == 2
+
+
+def test_recovery_terminal_rechecks_the_registered_validator():
+    authority, failed_binding, recovery_binding, failure = (
+        _registered_recovery_successor()
+    )
+    recovery_capability = authority.acquire_recovery_capability(
+        failed_binding,
+        recovery_binding,
+        failure=failure,
+        owner_role="recovery-owner",
+        fence_epoch=2,
+    )
+    authority.execute_recovery(
+        failed_binding,
+        recovery_binding,
+        failure=failure,
+        capability=recovery_capability,
+        observed_state=failed_binding.intended_state,
+    )
+    forged_validator = "sha256:" + "4" * 64
+    forged_binding = replace(
+        recovery_binding,
+        terminal_validator_digest=forged_validator,
+    )
+
+    with pytest.raises(AuthorityUnavailable) as exc_info:
+        authority.terminalize_recovery(
+            failed_binding,
+            forged_binding,
+            TerminalObservation(
+                record_digest="sha256:" + "f" * 64,
+                validator_digest=forged_validator,
+                observed_state=recovery_binding.intended_state,
+                outcome=TerminalOutcome.PASS,
+                observed_effect_ids=frozenset({"package-database"}),
+            ),
+        )
+
+    assert exc_info.value.code == "AUTHORITY_RECOVERY_BINDING_MISMATCH"
+    assert authority.observe_active() == recovery_binding.intended_state
+    assert (
+        authority.operation_state(recovery_binding.operation_id)
+        is OperationState.RECOVERY_PENDING_VALIDATION
+    )
+    recovered = authority.terminalize_recovery(
+        failed_binding,
+        recovery_binding,
+        TerminalObservation(
+            record_digest="sha256:" + "5" * 64,
+            validator_digest=TERMINAL_VALIDATOR,
+            observed_state=recovery_binding.intended_state,
+            outcome=TerminalOutcome.PASS,
+            observed_effect_ids=frozenset({"package-database"}),
+        ),
+    )
+    assert recovered.state is OperationState.RECOVERED
+
+
+def test_recovery_terminal_rechecks_the_registered_failure_predecessor():
+    authority, failed_binding, recovery_binding, failure = (
+        _registered_recovery_successor()
+    )
+    recovery_capability = authority.acquire_recovery_capability(
+        failed_binding,
+        recovery_binding,
+        failure=failure,
+        owner_role="recovery-owner",
+        fence_epoch=2,
+    )
+    authority.execute_recovery(
+        failed_binding,
+        recovery_binding,
+        failure=failure,
+        capability=recovery_capability,
+        observed_state=failed_binding.intended_state,
+    )
+    forged_failed_binding = replace(
+        failed_binding,
+        terminal_validator_digest="sha256:" + "4" * 64,
+    )
+
+    with pytest.raises(AuthorityUnavailable) as exc_info:
+        authority.terminalize_recovery(
+            forged_failed_binding,
+            recovery_binding,
+            TerminalObservation(
+                record_digest="sha256:" + "f" * 64,
+                validator_digest=TERMINAL_VALIDATOR,
+                observed_state=recovery_binding.intended_state,
+                outcome=TerminalOutcome.PASS,
+                observed_effect_ids=frozenset({"package-database"}),
+            ),
+        )
+
+    assert exc_info.value.code == "AUTHORITY_RECOVERY_BINDING_MISMATCH"
+    assert authority.observe_active() == recovery_binding.intended_state
+    assert (
+        authority.operation_state(recovery_binding.operation_id)
+        is OperationState.RECOVERY_PENDING_VALIDATION
+    )
 
 
 def test_recovery_rejects_the_wrong_owner_or_failure_terminal():

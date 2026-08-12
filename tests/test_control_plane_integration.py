@@ -18,12 +18,14 @@ from control_plane import (
     ControlRecord,
     GateImpact,
     NonPromotionalEvidence,
+    PromotionAuthorityChallenge,
     PromotionContract,
     PromotionDenied,
     PromotionObligation,
     PromotionPhase,
     RecordValidationError,
     RegisteredAttempt,
+    RegisteredOperation,
     admit_promotion,
     assess_promotion_cut,
     registration_set_digest,
@@ -65,6 +67,98 @@ def _generation(record_id: str, generation_id: str, seed: str) -> ControlRecord:
     )
 
 
+def _registered_operation(
+    fixture: Fixture,
+    *,
+    intent_sequence: int = 4,
+    outcome: str = "succeeded",
+    poststate_digest: str | None = None,
+) -> RegisteredOperation:
+    operation_subject_digest = fixture.attempt.intent_record.digest()
+    intent = ControlRecord.build(
+        kind="intent",
+        record_id="intent:blocking-scenario:1",
+        payload={
+            "actor_identity_digest": digest("0"),
+            "context_digest": fixture.bound.context_record.digest(),
+            "intent_id": "blocking-scenario-1",
+            "intent_type": "critical_operation",
+            "journal_sequence": intent_sequence,
+            "operation_plan_digest": digest("3"),
+            "registered_at": "2026-08-12T10:10:30Z",
+            "subject_digest": operation_subject_digest,
+        },
+    )
+    operation = ControlRecord.build(
+        kind="operation",
+        record_id="operation:blocking-scenario:1",
+        payload={
+            "authority_head_digest": digest("9"),
+            "declared_effects": [
+                {
+                    "classification": "poststate_observable",
+                    "effect_id": "scenario-result",
+                    "projection_digest": digest("8"),
+                }
+            ],
+            "expected_protected_state_digest": digest("1"),
+            "generation_binding": {
+                "generation_digest": fixture.candidate_generation.digest(),
+                "mode": "required_generation",
+            },
+            "generation_class": "c",
+            "intended_protected_state_digest": fixture.target_state.digest(),
+            "intent_digest": intent.digest(),
+            "lifecycle_phase": "accepted",
+            "operation_id": "blocking-scenario-1",
+            "operation_kind": "blocking_scenario",
+            "plan_digest": digest("3"),
+            "recovery_contract_digest": digest("4"),
+            "recovery_target_digest": digest("5"),
+            "subject_digest": operation_subject_digest,
+            "subject_kind": "gate_occurrence",
+            "target_id": "reference-host",
+            "target_kind": "live_root",
+            "terminal_validator_digest": digest("6"),
+        },
+    )
+    terminal = ControlRecord.build(
+        kind="terminal_record",
+        record_id="terminal:blocking-scenario:1",
+        payload={
+            "completed_at": "2026-08-12T10:11:00Z",
+            "journal_sequence": 5,
+            "operation_digest": operation.digest(),
+            "outcome": outcome,
+            "poststate_digest": poststate_digest or fixture.target_state.digest(),
+            "terminal_type": "critical_operation",
+            "validator_attestation_digests": [digest("7")],
+        },
+    )
+    return RegisteredOperation(
+        intent_record=intent,
+        operation_record=operation,
+        terminal_record=terminal,
+    )
+
+
+def _cut_with_operation(
+    fixture: Fixture,
+    operation: RegisteredOperation,
+) -> AtomicEvidenceCut:
+    cut_record = ControlRecord.build(
+        kind="atomic_evidence_cut",
+        record_id="atomic-evidence-cut:with-operation",
+        payload={
+            **_payload(fixture.cut.cut_record),
+            "complete_through_sequence": 5,
+            "operation_digests": [operation.operation_digest],
+            "operation_terminal_digests": [operation.terminal_digest],
+        },
+    )
+    return replace(fixture.cut, cut_record=cut_record, operations=(operation,))
+
+
 @dataclass(frozen=True)
 class Fixture:
     contract: PromotionContract
@@ -73,10 +167,57 @@ class Fixture:
     attempt: RegisteredAttempt
     obligation: PromotionObligation
     requirements: ControlRecord
+    validation_contract: ControlRecord
     candidate_generation: ControlRecord
     prior_generation: ControlRecord
     target: ControlRecord
     target_state: ControlRecord
+
+
+class RecordingPromotionAuthority:
+    authority_adapter_identity_digest = digest("1")
+    authority_view_digest = digest("2")
+
+    def __init__(self, *, proof_changes: dict[str, object] | None = None):
+        self.proof_changes = proof_changes or {}
+        self.challenge: PromotionAuthorityChallenge | None = None
+
+    def verify_promotion_cut(
+        self,
+        challenge: PromotionAuthorityChallenge,
+    ) -> ControlRecord:
+        self.challenge = challenge
+        payload = {
+            "atomic_evidence_cut_digest": challenge.atomic_evidence_cut_digest,
+            "attempt_digests": list(challenge.attempt_digests),
+            "authority_adapter_identity_digest": (
+                challenge.authority_adapter_identity_digest
+            ),
+            "authority_head_digest": challenge.authority_head_digest,
+            "authority_manifest_digest": challenge.authority_manifest_digest,
+            "authority_view_digest": challenge.authority_view_digest,
+            "complete_through_sequence": challenge.complete_through_sequence,
+            "completeness_proof_digest": challenge.completeness_proof_digest,
+            "evaluation_digests": list(challenge.evaluation_digests),
+            "fork_proof_digest": challenge.fork_proof_digest,
+            "inclusion_edge_digests": list(challenge.inclusion_edge_digests),
+            "journal_head_digest": challenge.journal_head_digest,
+            "operation_digests": list(challenge.operation_digests),
+            "operation_terminal_digests": list(
+                challenge.operation_terminal_digests
+            ),
+            "promotion_contract_digest": challenge.promotion_contract_digest,
+            "proof_id": "promotion-proof-1",
+            "validation_contract_digest": challenge.validation_contract_digest,
+            "verified_at": "2026-08-12T10:12:00Z",
+            "verifier_identity_digest": digest("3"),
+            **self.proof_changes,
+        }
+        return ControlRecord.build(
+            kind="promotion_authority_proof",
+            record_id="promotion-authority-proof:1",
+            payload=payload,
+        )
 
 
 def _fixture(
@@ -97,6 +238,17 @@ def _fixture(
             "requirement_digests": [digest("3")],
             "requirements_id": "w0-requirements",
             "requirements_version": 1,
+        },
+    )
+    validation_contract = ControlRecord.build(
+        kind="validation_contract",
+        record_id="validation-contract:w0",
+        payload={
+            "approval_digest": digest("4"),
+            "assignments_digest": digest("b"),
+            "authorization_policy_digest": digest("5"),
+            "contract_id": "w0-validation-contract",
+            "requirements_digest": requirements.digest(),
         },
     )
     candidate = _generation("generation:candidate", "candidate-c", "4")
@@ -125,7 +277,7 @@ def _fixture(
         context_type = "preassembly_profile"
     else:
         context_bindings = {
-            "contract_digest": requirements.digest(),
+            "contract_digest": validation_contract.digest(),
             "generation_digest": candidate.digest(),
         }
         context_type = "active_contract"
@@ -274,7 +426,7 @@ def _fixture(
             kind="inclusion_edge",
             record_id="inclusion-edge:control-plane:1",
             payload={
-                "active_contract_digest": requirements.digest(),
+                "active_contract_digest": validation_contract.digest(),
                 "approval_digest": digest("8"),
                 "artifact_digests": list(context.payload["artifact_digests"]),
                 "assignment_digests": [assignment.digest()],
@@ -345,10 +497,12 @@ def _fixture(
             "target_digest": target.digest(),
             "target_kind": "live_root",
             "target_protected_state_digest": target_state.digest(),
+            "validation_contract_digest": validation_contract.digest(),
         },
     )
     contract = PromotionContract(
         requirements_record=requirements,
+        validation_contract_record=validation_contract,
         generation_record=candidate,
         target_record=target,
         target_protected_state_record=target_state,
@@ -374,6 +528,8 @@ def _fixture(
                 [inclusion_edge.digest()] if inclusion_edge is not None else []
             ),
             "journal_head_digest": digest("d"),
+            "operation_digests": [],
+            "operation_terminal_digests": [],
             "phase": phase.value,
             "registration_set_digest": registration_set_digest(
                 (registered_attempt,)
@@ -402,6 +558,7 @@ def _fixture(
         attempt=registered_attempt,
         obligation=obligation,
         requirements=requirements,
+        validation_contract=validation_contract,
         candidate_generation=candidate,
         prior_generation=prior,
         target=target,
@@ -419,6 +576,58 @@ def test_atomic_cut_assesses_total_canonical_obligation_coverage():
     assert assessment.authoritative is False
     assert assessment.obligation_evaluation_digests == (
         fixture.bound.evaluation_record.digest(),
+    )
+
+
+def test_atomic_cut_binds_the_complete_critical_operation_set():
+    fixture = _fixture()
+    operation = _registered_operation(fixture)
+    cut = _cut_with_operation(fixture, operation)
+
+    assessment = assess_promotion_cut(fixture.contract, cut)
+
+    assert assessment.authoritative is False
+    assert cut.cut_record.payload["operation_digests"] == (
+        operation.operation_digest,
+    )
+    assert cut.cut_record.payload["operation_terminal_digests"] == (
+        operation.terminal_digest,
+    )
+
+
+def test_failed_critical_operation_cannot_satisfy_promotion():
+    fixture = _fixture()
+    operation = _registered_operation(
+        fixture,
+        outcome="failed",
+        poststate_digest=digest("0"),
+    )
+    cut = _cut_with_operation(fixture, operation)
+
+    with pytest.raises(PromotionDenied) as exc_info:
+        assess_promotion_cut(fixture.contract, cut)
+
+    assert exc_info.value.code == "PROMOTION_OPERATION_DID_NOT_PASS"
+
+
+def test_critical_operation_intent_must_precede_its_terminal_in_the_journal():
+    fixture = _fixture()
+
+    with pytest.raises(ValueError, match="journal order"):
+        _registered_operation(fixture, intent_sequence=6)
+
+
+def test_active_context_binds_a_validation_contract_distinct_from_requirements():
+    fixture = _fixture()
+
+    assert fixture.validation_contract.digest() != fixture.requirements.digest()
+    assert (
+        fixture.validation_contract.payload["requirements_digest"]
+        == fixture.requirements.digest()
+    )
+    assert (
+        fixture.bound.context_record.payload["contract_digest"]
+        == fixture.validation_contract.digest()
     )
 
 
@@ -474,6 +683,52 @@ def test_registration_set_digest_binds_the_complete_terminal_record():
     assert registration_set_digest((fixture.attempt,)) != registration_set_digest(
         (changed_attempt,)
     )
+
+
+def test_registered_attempt_orders_timestamps_as_instants_not_wire_strings():
+    fixture = _fixture()
+    late_intent = ControlRecord.build(
+        kind="intent",
+        record_id="intent:control-plane:late",
+        payload={
+            **_payload(fixture.attempt.intent_record),
+            "registered_at": "2026-08-12T09:40:00.1Z",
+        },
+    )
+    early_attempt = ControlRecord.build(
+        kind="attempt",
+        record_id="attempt:control-plane:early",
+        payload={
+            **_payload(fixture.attempt.attempt_record),
+            "intent_digest": late_intent.digest(),
+            "started_at": "2026-08-12T09:40:00Z",
+        },
+    )
+    obligation = ControlRecord.build(
+        kind="promotion_obligation",
+        record_id="promotion-obligation:control-plane:late",
+        payload={
+            **_payload(fixture.attempt.obligation_record),
+            "occurrence_digest": late_intent.digest(),
+        },
+    )
+    terminal = ControlRecord.build(
+        kind="terminal_record",
+        record_id="terminal:control-plane:late-intent",
+        payload={
+            **_payload(fixture.attempt.terminal_record),
+            "attempt_digest": early_attempt.digest(),
+        },
+    )
+
+    with pytest.raises(ValueError, match="timestamps"):
+        replace(
+            fixture.attempt,
+            obligation_record=obligation,
+            intent_record=late_intent,
+            attempt_record=early_attempt,
+            terminal_record=terminal,
+        )
 
 
 def test_prevalidated_cut_preserves_the_prior_active_and_accepted_generation():
@@ -555,6 +810,53 @@ def test_failed_attestation_cannot_be_relabelled_as_not_applicable():
         )
 
 
+def test_blocked_attempt_and_failed_terminal_cannot_satisfy_a_blocking_pass():
+    fixture = _fixture()
+    blocked_attempt_record = ControlRecord.build(
+        kind="attempt",
+        record_id="attempt:control-plane:blocked",
+        payload={
+            **_payload(fixture.attempt.attempt_record),
+            "decision": "blocked",
+        },
+    )
+    failed_terminal_record = ControlRecord.build(
+        kind="terminal_record",
+        record_id="terminal:control-plane:failed",
+        payload={
+            **_payload(fixture.attempt.terminal_record),
+            "attempt_digest": blocked_attempt_record.digest(),
+            "outcome": "failed",
+        },
+    )
+    blocked_attempt = replace(
+        fixture.attempt,
+        attempt_record=blocked_attempt_record,
+        terminal_record=failed_terminal_record,
+    )
+    bound = replace(fixture.bound, attempt_record=blocked_attempt_record)
+    cut_record = ControlRecord.build(
+        kind="atomic_evidence_cut",
+        record_id="atomic-evidence-cut:blocked",
+        payload={
+            **_payload(fixture.cut.cut_record),
+            "attempt_digests": [blocked_attempt_record.digest()],
+            "registration_set_digest": registration_set_digest((blocked_attempt,)),
+        },
+    )
+    cut = replace(
+        fixture.cut,
+        cut_record=cut_record,
+        attempts=(blocked_attempt,),
+        evaluations=(bound,),
+    )
+
+    with pytest.raises(PromotionDenied) as exc_info:
+        assess_promotion_cut(fixture.contract, cut)
+
+    assert exc_info.value.code == "PROMOTION_ATTEMPT_DID_NOT_PASS"
+
+
 def test_preassembly_evidence_requires_a_verified_inclusion_edge_without_relabelling():
     fixture = _fixture(preassembly=True)
 
@@ -562,6 +864,11 @@ def test_preassembly_evidence_requires_a_verified_inclusion_edge_without_relabel
 
     assert assessment.authoritative is False
     assert fixture.bound.context_record.payload["context_type"] == "preassembly_profile"
+    assert fixture.bound.inclusion_edge_record is not None
+    assert (
+        fixture.bound.inclusion_edge_record.payload["active_contract_digest"]
+        == fixture.validation_contract.digest()
+    )
     with pytest.raises((TypeError, ValueError), match="inclusion_edge_record"):
         replace(fixture.bound, inclusion_edge_record=None)
 
@@ -575,3 +882,43 @@ def test_complete_semantics_backed_by_fake_authority_remain_nonpromotional():
         admit_promotion(fixture.contract, fixture.cut, authority.evidence_view())
 
     assert exc_info.value.code == "EVIDENCE_NONPROMOTIONAL"
+
+
+def test_exact_authority_proof_still_cannot_promote_without_production_authority():
+    fixture = _fixture()
+    operation = _registered_operation(fixture)
+    cut = _cut_with_operation(fixture, operation)
+    authority = RecordingPromotionAuthority()
+
+    with pytest.raises(NonPromotionalEvidence) as exc_info:
+        admit_promotion(fixture.contract, cut, authority)
+
+    assert exc_info.value.code == "EVIDENCE_NONPROMOTIONAL"
+    assert authority.challenge is not None
+    assert authority.challenge.atomic_evidence_cut_digest == cut.cut_record_digest
+    assert authority.challenge.promotion_contract_digest == fixture.contract.contract_digest
+    assert (
+        authority.challenge.validation_contract_digest
+        == fixture.validation_contract.digest()
+    )
+    assert (
+        authority.challenge.authority_adapter_identity_digest
+        == authority.authority_adapter_identity_digest
+    )
+    assert authority.challenge.authority_view_digest == authority.authority_view_digest
+    assert authority.challenge.operation_digests == (operation.operation_digest,)
+    assert authority.challenge.operation_terminal_digests == (
+        operation.terminal_digest,
+    )
+
+
+def test_authority_proof_must_bind_the_exact_cut_and_fork_proof():
+    fixture = _fixture()
+    authority = RecordingPromotionAuthority(
+        proof_changes={"fork_proof_digest": digest("f")}
+    )
+
+    with pytest.raises(PromotionDenied) as exc_info:
+        admit_promotion(fixture.contract, fixture.cut, authority)
+
+    assert exc_info.value.code == "PROMOTION_AUTHORITY_PROOF_MISMATCH"

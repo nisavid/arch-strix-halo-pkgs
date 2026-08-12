@@ -7,11 +7,11 @@ evaluation.
 
 from __future__ import annotations
 
+import re
 from collections.abc import Iterable
 from dataclasses import dataclass, replace
 from datetime import datetime, timedelta
 from enum import StrEnum
-import re
 from typing import TypeAlias
 
 

@@ -3,19 +3,20 @@
 from __future__ import annotations
 
 import base64
-from collections.abc import Mapping
-from dataclasses import dataclass
-from datetime import datetime
-from enum import Enum
 import hashlib
 import hmac
 import json
 import re
+import unicodedata
+from collections.abc import Mapping
+from dataclasses import dataclass
+from datetime import datetime
+from enum import Enum
 from types import MappingProxyType
 from typing import Any
-import unicodedata
 
 from ._authority import (
+    _OPERATION_COORDINATES,
     CriticalOperationKind,
     EffectClass,
     GenerationBindingMode,
@@ -23,9 +24,7 @@ from ._authority import (
     LifecyclePhase,
     OperationSubjectKind,
     OperationTargetKind,
-    _OPERATION_COORDINATES,
 )
-
 
 SCHEMA_NAME = "arch_strix_halo.control_record"
 SCHEMA_VERSION = 1
@@ -50,7 +49,7 @@ _STABLE_IDENTIFIER_PATTERN = re.compile(
 )
 _TIMESTAMP_PATTERN = re.compile(
     r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}"
-    r"(?:\.[0-9]{1,6})?Z$"
+    r"(?:\.[0-9]{1,6})?(?:Z|[+-][0-9]{2}:[0-9]{2})$"
 )
 
 
@@ -71,6 +70,18 @@ class FieldKind(str, Enum):
     STABLE_IDENTIFIER = "stable_identifier"
     TEXT = "text"
     TIMESTAMP = "timestamp"
+
+
+def parse_canonical_timestamp(value: str) -> datetime:
+    """Parse one schema-valid RFC 3339 timestamp as an aware instant."""
+
+    if type(value) is not str or not _TIMESTAMP_PATTERN.fullmatch(value):
+        raise ValueError("timestamp is not canonical RFC 3339")
+    normalized = value[:-1] + "+00:00" if value.endswith("Z") else value
+    parsed = datetime.fromisoformat(normalized)
+    if parsed.tzinfo is None:
+        raise ValueError("timestamp must identify an aware instant")
+    return parsed
 
 
 @dataclass(frozen=True, slots=True)
@@ -215,6 +226,14 @@ RECORD_SCHEMAS: Mapping[str, RecordSchema] = MappingProxyType(
                     allow_empty=True,
                 ),
                 "journal_head_digest": _field(FieldKind.DIGEST),
+                "operation_digests": _field(
+                    FieldKind.DIGEST_LIST,
+                    allow_empty=True,
+                ),
+                "operation_terminal_digests": _field(
+                    FieldKind.DIGEST_LIST,
+                    allow_empty=True,
+                ),
                 "phase": _field(
                     FieldKind.ENUM,
                     "accepted",
@@ -611,6 +630,47 @@ RECORD_SCHEMAS: Mapping[str, RecordSchema] = MappingProxyType(
                 "subject_digest": _field(FieldKind.DIGEST),
             },
         ),
+        "promotion_authority_proof": _record_schema(
+            "promotion_authority_proof",
+            required={
+                "atomic_evidence_cut_digest": _field(FieldKind.DIGEST),
+                "attempt_digests": _field(
+                    FieldKind.DIGEST_LIST,
+                    allow_empty=True,
+                ),
+                "authority_adapter_identity_digest": _field(FieldKind.DIGEST),
+                "authority_head_digest": _field(FieldKind.DIGEST),
+                "authority_manifest_digest": _field(FieldKind.DIGEST),
+                "authority_view_digest": _field(FieldKind.DIGEST),
+                "complete_through_sequence": _field(
+                    FieldKind.NONNEGATIVE_INTEGER
+                ),
+                "completeness_proof_digest": _field(FieldKind.DIGEST),
+                "evaluation_digests": _field(
+                    FieldKind.DIGEST_LIST,
+                    allow_empty=True,
+                ),
+                "fork_proof_digest": _field(FieldKind.DIGEST),
+                "inclusion_edge_digests": _field(
+                    FieldKind.DIGEST_LIST,
+                    allow_empty=True,
+                ),
+                "journal_head_digest": _field(FieldKind.DIGEST),
+                "operation_digests": _field(
+                    FieldKind.DIGEST_LIST,
+                    allow_empty=True,
+                ),
+                "operation_terminal_digests": _field(
+                    FieldKind.DIGEST_LIST,
+                    allow_empty=True,
+                ),
+                "promotion_contract_digest": _field(FieldKind.DIGEST),
+                "proof_id": _field(FieldKind.STABLE_IDENTIFIER),
+                "validation_contract_digest": _field(FieldKind.DIGEST),
+                "verified_at": _field(FieldKind.TIMESTAMP),
+                "verifier_identity_digest": _field(FieldKind.DIGEST),
+            },
+        ),
         "promotion_contract": _record_schema(
             "promotion_contract",
             required={
@@ -635,6 +695,7 @@ RECORD_SCHEMAS: Mapping[str, RecordSchema] = MappingProxyType(
                     *(kind.value for kind in OperationTargetKind),
                 ),
                 "target_protected_state_digest": _field(FieldKind.DIGEST),
+                "validation_contract_digest": _field(FieldKind.DIGEST),
             },
         ),
         "promotion_obligation": _record_schema(
@@ -775,6 +836,16 @@ RECORD_SCHEMAS: Mapping[str, RecordSchema] = MappingProxyType(
                 "operation_digest": _field(FieldKind.DIGEST),
             },
         ),
+        "validation_contract": _record_schema(
+            "validation_contract",
+            required={
+                "approval_digest": _field(FieldKind.DIGEST),
+                "assignments_digest": _field(FieldKind.DIGEST),
+                "authorization_policy_digest": _field(FieldKind.DIGEST),
+                "contract_id": _field(FieldKind.STABLE_IDENTIFIER),
+                "requirements_digest": _field(FieldKind.DIGEST),
+            },
+        ),
         "validation_context": _record_schema(
             "validation_context",
             required={
@@ -798,72 +869,6 @@ RECORD_SCHEMAS: Mapping[str, RecordSchema] = MappingProxyType(
     }
 )
 RECORD_KINDS = frozenset(RECORD_SCHEMAS)
-
-_PUBLIC_ENUM_VALUES: Mapping[str, frozenset[str]] = MappingProxyType(
-    {
-        "applicability": frozenset(
-            {
-                "applicable",
-                "applicable_unknown",
-                "conditional",
-                "not_applicable",
-                "not_due",
-                "unconditional",
-            }
-        ),
-        "decision": frozenset({"approved", "rejected"}),
-        "outcome": frozenset(
-            {
-                "accepted",
-                "blocked",
-                "fail",
-                "failed",
-                "not_applicable",
-                "pass",
-                "rejected",
-                "succeeded",
-                "unknown",
-            }
-        ),
-        "state": frozenset(
-            {
-                "active",
-                "blocked",
-                "cancelled",
-                "completed",
-                "created",
-                "failed",
-                "inactive",
-                "pending",
-                "running",
-                "succeeded",
-                "unknown",
-            }
-        ),
-        "status": frozenset(
-            {
-                "accepted",
-                "active",
-                "blocked",
-                "closed",
-                "current",
-                "expired",
-                "inactive",
-                "invalid",
-                "not_ready",
-                "open",
-                "pending",
-                "ready",
-                "rejected",
-                "revoked",
-                "stale",
-                "unknown",
-                "valid",
-            }
-        ),
-    }
-)
-
 
 class RecordErrorCode(str, Enum):
     """Stable failure codes for record producers and consumers."""
@@ -1274,19 +1279,13 @@ def _validate_field_value(
             )
         return
     if schema.kind is FieldKind.TIMESTAMP:
-        if type(value) is not str or not _TIMESTAMP_PATTERN.fullmatch(value):
-            _invalid_payload_field(
-                record_kind,
-                field,
-                "must be an RFC 3339 UTC timestamp",
-            )
         try:
-            datetime.fromisoformat(value.removesuffix("Z") + "+00:00")
-        except ValueError:
+            parse_canonical_timestamp(value)
+        except (TypeError, ValueError):
             _invalid_payload_field(
                 record_kind,
                 field,
-                "must be an RFC 3339 UTC timestamp",
+                "must be a canonical RFC 3339 timestamp with an explicit offset",
             )
         return
     raise AssertionError(f"unhandled field kind: {schema.kind}")
@@ -1366,7 +1365,9 @@ def _validate_record_semantics(record_kind: str, payload: Mapping[str, Any]) -> 
                 record_kind,
                 "closed_at is present exactly when the episode is closed",
             )
-        if closed and payload["closed_at"] < payload["opened_at"]:
+        if closed and parse_canonical_timestamp(
+            payload["closed_at"]
+        ) < parse_canonical_timestamp(payload["opened_at"]):
             _invalid_payload_semantics(
                 record_kind,
                 "closed_at cannot precede opened_at",
@@ -1467,19 +1468,23 @@ def _validate_record_semantics(record_kind: str, payload: Mapping[str, Any]) -> 
                 "old and candidate manifests must differ",
             )
         joint_fields = {"recovery_policy", "witness_roster"}
-        if joint_fields & set(payload["changed_fields"]):
-            if payload["quorum_mode"] != "joint_consensus":
-                _invalid_payload_semantics(
-                    record_kind,
-                    "recovery-policy and witness-roster changes require joint consensus",
-                )
+        if (
+            joint_fields & set(payload["changed_fields"])
+            and payload["quorum_mode"] != "joint_consensus"
+        ):
+            _invalid_payload_semantics(
+                record_kind,
+                "recovery-policy and witness-roster changes require joint consensus",
+            )
     elif record_kind == "capability":
         if payload["fence_epoch"] <= 0:
             _invalid_payload_semantics(
                 record_kind,
                 "fence_epoch must be positive",
             )
-        if payload["issued_at"] >= payload["expires_at"]:
+        issued_at = parse_canonical_timestamp(payload["issued_at"])
+        expires_at = parse_canonical_timestamp(payload["expires_at"])
+        if issued_at >= expires_at:
             _invalid_payload_semantics(
                 record_kind,
                 "capability expiry must follow issuance",
@@ -1546,7 +1551,9 @@ def _validate_record_semantics(record_kind: str, payload: Mapping[str, Any]) -> 
                 "generation subject must equal the bound generation",
             )
     elif record_kind == "retention_lease":
-        if payload["issued_at"] >= payload["expires_at"]:
+        issued_at = parse_canonical_timestamp(payload["issued_at"])
+        expires_at = parse_canonical_timestamp(payload["expires_at"])
+        if issued_at >= expires_at:
             _invalid_payload_semantics(
                 record_kind,
                 "retention lease expiry must follow issuance",
@@ -1584,11 +1591,18 @@ def _validate_record_semantics(record_kind: str, payload: Mapping[str, Any]) -> 
                 record_kind,
                 "inclusion edge must cross from preassembly into an active contract",
             )
-    elif record_kind == "atomic_evidence_cut":
+    elif record_kind == "atomic_evidence_cut" or record_kind == "promotion_authority_proof":
         if payload["complete_through_sequence"] <= 0:
             _invalid_payload_semantics(
                 record_kind,
                 "complete_through_sequence must be positive",
+            )
+        if len(payload["operation_digests"]) != len(
+            payload["operation_terminal_digests"]
+        ):
+            _invalid_payload_semantics(
+                record_kind,
+                "every critical operation requires one terminal record",
             )
     elif record_kind == "terminal_record":
         if payload["journal_sequence"] <= 0:
@@ -1612,10 +1626,22 @@ def _validate_record_semantics(record_kind: str, payload: Mapping[str, Any]) -> 
             )
 
 
-def _is_safe_public_value(field: str, value: Any) -> bool:
-    if field == "blocking":
-        return type(value) is bool
-    return type(value) is str and value in _PUBLIC_ENUM_VALUES[field]
+def _is_safe_public_value(
+    record_kind: str,
+    field: str,
+    value: Any,
+) -> bool:
+    schema = RECORD_SCHEMAS[record_kind]
+    field_schema = schema.required_fields.get(field)
+    if field_schema is None:
+        field_schema = schema.optional_fields.get(field)
+    if field_schema is None:
+        return False
+    try:
+        _validate_field_value(record_kind, field, field_schema, value)
+    except RecordValidationError:
+        return False
+    return True
 
 
 def _validate_opaque_ref(
@@ -1693,7 +1719,7 @@ def _validate_public_envelope_payload(payload: Mapping[str, Any]) -> None:
             "public envelope metadata exceeds the source schema allowlist",
         )
     for field, value in public.items():
-        if not _is_safe_public_value(field, value):
+        if not _is_safe_public_value(source_kind, field, value):
             raise PrivacyEnvelopeError(
                 RecordErrorCode.UNSAFE_PUBLIC_VALUE,
                 f"allowlisted public field has an unrecognized value: {field!r}",
@@ -1793,7 +1819,7 @@ class ControlRecord:
         record_id: str,
         payload: Mapping[str, Any],
         signature: Mapping[str, Any] | None = None,
-    ) -> "ControlRecord":
+    ) -> ControlRecord:
         if kind == "public_envelope":
             raise PrivacyEnvelopeError(
                 RecordErrorCode.INVALID_PUBLIC_ENVELOPE,
@@ -1816,7 +1842,7 @@ class ControlRecord:
         payload: Mapping[str, Any],
         signature: Mapping[str, Any] | None = None,
         allow_public_envelope: bool,
-    ) -> "ControlRecord":
+    ) -> ControlRecord:
         if kind == "public_envelope" and not allow_public_envelope:
             raise PrivacyEnvelopeError(
                 RecordErrorCode.INVALID_PUBLIC_ENVELOPE,
@@ -1908,7 +1934,7 @@ class ControlRecord:
         return record
 
     @classmethod
-    def parse(cls, wire: bytes | str) -> "ControlRecord":
+    def parse(cls, wire: bytes | str) -> ControlRecord:
         if isinstance(wire, bytes):
             raw = wire
         elif isinstance(wire, str):
@@ -2031,7 +2057,7 @@ class ControlRecord:
         *,
         opaque_reference_key: bytes | None = None,
         commitment_key: bytes | None = None,
-    ) -> "ControlRecord":
+    ) -> ControlRecord:
         """Project schema-owned metadata with a non-guessable restricted binding."""
 
         if opaque_reference_key is None and commitment_key is None:
@@ -2075,7 +2101,7 @@ class ControlRecord:
             if field not in self.payload:
                 continue
             value = self.payload[field]
-            if not _is_safe_public_value(field, value):
+            if not _is_safe_public_value(self.kind, field, value):
                 raise PrivacyEnvelopeError(
                     RecordErrorCode.UNSAFE_PUBLIC_VALUE,
                     f"allowlisted public field has an unrecognized value: {field!r}",
