@@ -2573,11 +2573,35 @@ check_id = "master"
 previous_recorded = "b94b985586a051fbee19aefe8c934bb7c1a9df0a"
 latest = "ef3f901b7e76d96091c5a6b02966fcb3eafcb057"
 discovery_status = "branch_head_ahead"
-disposition = "tracked"
-disposition_reason = "Reconciled on 2026-08-12. Keep Torch-MIGraphX as a supported extension blocked by the final W1 foundation and W2A PyTorch closure, not as a convergence blocker."
+disposition = "rejected"
+disposition_reason = "Superseded on 2026-08-13 before package adoption by the newer Torch-MIGraphX 549b54d supported-extension candidate."
 salient_changes = [
   "Torch-MIGraphX master moved from b94b985586a051fbee19aefe8c934bb7c1a9df0a to ef3f901b7e76d96091c5a6b02966fcb3eafcb057",
   "The release tag baseline remains v1.1",
+  "The source was not adopted before a newer master revision superseded this observation",
+]
+patch_carry_overlap = true
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_label = "Superseded by Torch-MIGraphX 549b54d supported-extension closure"
+last_reviewed = "2026-08-13"
+
+[candidates."torch-migraphx-549b54d"]
+family = "torch_migraphx"
+packages = ["python-torch-migraphx-gfx1151"]
+source_kind = "git_ref"
+check_id = "master"
+baseline_source_kind = "github_tags"
+baseline_latest = "v1.1"
+previous_recorded = "b94b985586a051fbee19aefe8c934bb7c1a9df0a"
+latest = "549b54dd733f6af42942fac6b66a748b4b4bcd4a"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-08-13 freshness sweep as a supported extension blocked by the final W1 foundation and W2A PyTorch closure, not as a convergence blocker."
+salient_changes = [
+  "Torch-MIGraphX master moved from b94b985586a051fbee19aefe8c934bb7c1a9df0a to 549b54dd733f6af42942fac6b66a748b4b4bcd4a",
+  "The release tag baseline remains current at v1.1",
   "Package source update, build, deploy/install, installed import smoke, and affected compiled scenario validation remain open",
 ]
 patch_carry_overlap = true
@@ -2585,8 +2609,8 @@ package_source_update_needed = true
 host_validation_needed = true
 next_gate_kind = "github_issue"
 next_gate_issue = 118
-next_gate_label = "Torch-MIGraphX ef3f901 supported-extension closure"
-last_reviewed = "2026-08-12"
+next_gate_label = "Torch-MIGraphX 549b54d supported-extension closure"
+last_reviewed = "2026-08-13"
 
 [candidates."transformers-5.12.1-pypi"]
 family = "transformers"
@@ -2874,11 +2898,36 @@ covered_checks = [{ source_kind = "aur", check_id = "aur-hip" }]
 previous_recorded = "b9442 / b9437-1"
 latest = "b10369"
 discovery_status = "stable_update_available"
-disposition = "tracked"
-disposition_reason = "Tracked from the 2026-08-12 forced freshness sweep. W0 must freeze one llama.cpp revision and shared patch set for the blocking W2B HIP and Vulkan package unit."
+disposition = "rejected"
+disposition_reason = "Superseded on 2026-08-13 before package adoption by the newer shared HIP/Vulkan llama.cpp b10375 W2B candidate."
 salient_changes = [
   "GitHub release b10369 is available after the adopted b9442 package lane",
   "AUR llama.cpp-hip reports b10362-1 while the Vulkan baseline remains current at b9222-1",
+  "The source was not adopted before a newer release and HIP baseline superseded this observation",
+]
+patch_carry_overlap = true
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_label = "Superseded by llama.cpp b10375 W2B closure"
+last_reviewed = "2026-08-13"
+
+[candidates."llama-cpp-b10375"]
+family = "llama_cpp"
+packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"]
+source_kind = "github_release"
+check_id = "release"
+baseline_source_kind = "aur"
+baseline_latest = "b10380-1"
+covered_checks = [{ source_kind = "aur", check_id = "aur-hip" }]
+previous_recorded = "b9442 / b9437-1"
+latest = "b10375"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-08-13 freshness sweep. W2B must freeze one llama.cpp revision and shared patch set for the blocking HIP and Vulkan package unit."
+salient_changes = [
+  "GitHub release b10375 is available after the adopted b9442 package lane",
+  "AUR llama.cpp-hip reports b10380-1 while the Vulkan baseline remains current at b9222-1",
   "Both repo-owned variants must share one revision and patch set and pass their separate backend gates",
 ]
 patch_carry_overlap = true
@@ -2886,8 +2935,8 @@ package_source_update_needed = true
 host_validation_needed = true
 next_gate_kind = "github_issue"
 next_gate_issue = 113
-next_gate_label = "llama.cpp b10369 W2B closure"
-last_reviewed = "2026-08-12"
+next_gate_label = "llama.cpp b10375 W2B closure"
+last_reviewed = "2026-08-13"
 
 [candidates."llmcompressor-0.13.0-pypi"]
 family = "llmcompressor"
@@ -3013,12 +3062,12 @@ baseline_source_kind = "python_ftp"
 baseline_latest = "3.14.7"
 covered_checks = [{ source_kind = "python_ftp", check_id = "cpython" }]
 previous_recorded = "3.14.5-1 / 3.14.6"
-latest = "3.14.6-1"
+latest = "3.14.7-1"
 discovery_status = "stable_update_available"
 disposition = "tracked"
-disposition_reason = "Tracked from the 2026-08-12 freshness sweep. The accepted W1 foundation establishes CPython 3.14.7 before TheRock and downstream runtime work."
+disposition_reason = "Retargeted by the 2026-08-13 freshness sweep. The accepted W1 foundation establishes CPython 3.14.7 before TheRock and downstream runtime work."
 salient_changes = [
-  "Arch core/python reports 3.14.6-1 after the recorded 3.14.5-1 baseline",
+  "Arch core/python reports 3.14.7-1 after the recorded 3.14.5-1 baseline",
   "CPython reports 3.14.7 after the local 3.14.6 source lane",
 ]
 patch_carry_overlap = true
@@ -3027,7 +3076,7 @@ host_validation_needed = true
 next_gate_kind = "github_issue"
 next_gate_issue = 108
 next_gate_label = "CPython 3.14.7 W1 foundation"
-last_reviewed = "2026-08-12"
+last_reviewed = "2026-08-13"
 
 [candidates."rocm-pytorch-release-2.13-e5cb54f"]
 family = "rocm_pytorch"
@@ -3090,11 +3139,36 @@ covered_checks = [{ source_kind = "aur", check_id = "aur-vulkan" }]
 previous_recorded = "be65ac7511b30379b003626c15224798929e33d4 / r279.49d6570-1"
 latest = "bcc7e29568b94a25f78e99d34a8fa048d77536b1"
 discovery_status = "branch_head_ahead"
-disposition = "tracked"
-disposition_reason = "Tracked from the 2026-08-12 forced freshness sweep as an independent stable-diffusion.cpp package refresh outside the convergence graph."
+disposition = "rejected"
+disposition_reason = "Superseded on 2026-08-13 before package adoption by the newer independent stable-diffusion.cpp de298c2 refresh candidate."
 salient_changes = [
   "stable-diffusion.cpp master reports bcc7e29568b94a25f78e99d34a8fa048d77536b1 after the recorded package source",
   "The AUR Vulkan baseline reports r786.cfd4cff-1",
+  "The source was not adopted before a newer master revision superseded this observation",
+]
+patch_carry_overlap = true
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_label = "Superseded by independent stable-diffusion.cpp de298c2 refresh"
+last_reviewed = "2026-08-13"
+
+[candidates."stable-diffusion-cpp-de298c2"]
+family = "stable_diffusion_cpp"
+packages = ["stable-diffusion.cpp-vulkan-gfx1151"]
+source_kind = "git_ref"
+check_id = "master"
+baseline_source_kind = "aur"
+baseline_latest = "r786.cfd4cff-1"
+covered_checks = [{ source_kind = "aur", check_id = "aur-vulkan" }]
+previous_recorded = "be65ac7511b30379b003626c15224798929e33d4 / r279.49d6570-1"
+latest = "de298c225bed97c3f9026b73cd7b71e7879bd41b"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-08-13 freshness sweep as an independent stable-diffusion.cpp package refresh outside the convergence graph."
+salient_changes = [
+  "stable-diffusion.cpp master reports de298c225bed97c3f9026b73cd7b71e7879bd41b after the recorded package source",
+  "The AUR Vulkan baseline remains r786.cfd4cff-1",
   "The source and recursive submodule delta require review before package adoption",
 ]
 patch_carry_overlap = true
@@ -3102,8 +3176,8 @@ package_source_update_needed = true
 host_validation_needed = true
 next_gate_kind = "github_issue"
 next_gate_issue = 121
-next_gate_label = "independent stable-diffusion.cpp bcc7e29 refresh"
-last_reviewed = "2026-08-12"
+next_gate_label = "independent stable-diffusion.cpp de298c2 refresh"
+last_reviewed = "2026-08-13"
 
 [candidates."therock-7.14-stable"]
 family = "therock"
