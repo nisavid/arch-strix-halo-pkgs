@@ -2,7 +2,36 @@
 
 The package, deployment, and live-validation narrative below remains a
 2026-06-15 snapshot. The freshness admission state was reconciled on
-2026-08-12 as follows.
+2026-08-13 as follows.
+
+## 2026-08-13 Freshness Admission
+
+A cache-aware sweep completed without a reusable cache at
+`2026-08-13T01:48:01-04:00` and covered all 45 configured families. After the
+candidate dispositions below were recorded, a closeout sweep completed at
+`2026-08-13T02:02:14-04:00` without a reusable cache; final verification then
+reused that matching entry. The sweep found four observations newer than the
+2026-08-12 candidate ledger: llama.cpp
+`b10375` with AUR HIP baseline `b10380-1`, Arch and upstream CPython `3.14.7`,
+stable-diffusion.cpp master
+`de298c225bed97c3f9026b73cd7b71e7879bd41b`, and Torch-MIGraphX master
+`549b54dd733f6af42942fac6b66a748b4b4bcd4a`.
+
+The ledger preserves the three superseded source observations as terminal
+records and tracks their successors through the same open execution issues:
+llama.cpp in issue #113, CPython in issue #108, stable-diffusion.cpp in issue
+#121, and Torch-MIGraphX in issue #118. Applying the acted-on ledger yields 27
+tracked effective family results, four rejected families, one blocked
+Lemonade family, five adopted families, and eight current families. The
+checker therefore still exits `10` solely because the Lemonade source freeze
+remains deliberately blocked in issue #105; changing that disposition merely
+to obtain a zero exit would erase a real W0 gate.
+
+This sweep and disposition update do not claim a package source update,
+package build, deployment or installation, installed smoke, service smoke, or
+live-scenario validation. The freshness evidence is due again after
+`2026-08-14T02:02:14-04:00`, or sooner if package policy, package directories,
+checker behavior, or relevant source metadata changes.
 
 ## 2026-08-12 Freshness Admission
 
@@ -41,6 +70,28 @@ package source update, package build, deployment or installation, installed
 smoke, service smoke, or live-scenario validation. The freshness evidence is
 due again 24 hours after the recorded completion or sooner if package policy,
 package directories, checker behavior, or relevant source metadata changes.
+
+## 2026-08-12 W0 Repository Control Boundary
+
+Repository control schemas now define strict content-addressed records for the
+accepted convergence evidence families, tagged validation contexts, immutable
+attestations and derived evaluations, dependency-scoped invalidation, guarded
+operation bindings, fenced rollback and recovery successors, canonical
+promotion-cut assessment, composite authority state, and privacy-safe public
+envelopes. The repository adapter is explicitly nonpromotional: behavioral
+success in memory, a Git object, a mutable local file, or target-host logs
+cannot authorize publication, installation, activation, or acceptance.
+
+The production adapter contract fails closed. No production signer, immutable
+evidence store, append-only journal, rollback-resistant register/quorum,
+witness roster, target fence, recovery root, or trusted-time source is selected
+by repository code. The operator-approved production substrate topology remains
+open in issue #104, so this work does not establish W0 authority or permit a
+protected-state mutation.
+
+This is a maintainer-tooling and documentation source update. It does not update
+a package source, build a package, deploy or install a package, run an installed
+smoke, change a service, or validate a live inference scenario.
 
 The Lemonade 10.7.0 source adoption is complete. Source updated:
 `lemonade-server`, `lemonade-app`, and `lemonade` render as `10.7.0-1` from

@@ -21,6 +21,11 @@ serves a different reader.
   CachyOS, AUR, upstream projects, and recipe inputs are used as baselines.
 - [TheRock Generator Architecture](architecture/therock-generator.md) explains
   how the generated ROCm split packages are rendered from TheRock output.
+- [Convergence Control Plane](architecture/convergence-control-plane.md)
+  explains immutable control records, evidence evaluation, privacy envelopes,
+  and the fail-closed production-authority seam.
+- [Convergence Domain](architecture/convergence-domain.md) defines the precise
+  language used by the control-plane contracts.
 - [TheRock Generator Status](maintainers/therock-generator-status.md) records
   current generator coverage and known gaps.
 
