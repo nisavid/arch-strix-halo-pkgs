@@ -51,6 +51,26 @@ _TIMESTAMP_PATTERN = re.compile(
     r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}"
     r"(?:\.[0-9]{1,6})?(?:Z|[+-][0-9]{2}:[0-9]{2})$"
 )
+_EVALUATION_MISSING_UNKNOWN_REASONS = frozenset(
+    {"missing_applicability_proof", "missing_attestation"}
+)
+_EVALUATION_PROOF_UNKNOWN_REASONS = frozenset({"applicability_proof_mismatch"})
+_EVALUATION_ATTESTATION_UNKNOWN_REASONS = frozenset(
+    {
+        "assignment_mismatch",
+        "context_mismatch",
+        "dependency_mismatch",
+        "gate_mismatch",
+        "reported_unknown",
+        "separation_violation",
+        "subject_mismatch",
+    }
+)
+_EVALUATION_UNKNOWN_REASONS = (
+    _EVALUATION_MISSING_UNKNOWN_REASONS
+    | _EVALUATION_PROOF_UNKNOWN_REASONS
+    | _EVALUATION_ATTESTATION_UNKNOWN_REASONS
+)
 
 
 class FieldKind(str, Enum):
@@ -60,6 +80,7 @@ class FieldKind(str, Enum):
     DECLARED_EFFECT_LIST = "declared_effect_list"
     DIGEST = "digest"
     DIGEST_LIST = "digest_list"
+    DIGEST_SEQUENCE = "digest_sequence"
     ENUM = "enum"
     ENUM_LIST = "enum_list"
     GENERATION_BINDING = "generation_binding"
@@ -131,12 +152,29 @@ def _record_schema(
 
 RECORD_SCHEMAS: Mapping[str, RecordSchema] = MappingProxyType(
     {
+        "acceptance_request": _record_schema(
+            "acceptance_request",
+            required={
+                "acceptance_authorization_digest": _field(FieldKind.DIGEST),
+                "atomic_evidence_cut_digest": _field(FieldKind.DIGEST),
+                "final_service_anchor_receipt_digest": _field(
+                    FieldKind.DIGEST
+                ),
+                "generation_digest": _field(FieldKind.DIGEST),
+                "predecessor_checkpoint_digest": _field(FieldKind.DIGEST),
+                "promotion_contract_digest": _field(FieldKind.DIGEST),
+                "requested_at": _field(FieldKind.TIMESTAMP),
+                "target_digest": _field(FieldKind.DIGEST),
+                "target_protected_state_digest": _field(FieldKind.DIGEST),
+            },
+        ),
         "approval": _record_schema(
             "approval",
             "decision",
             required={
                 "action": _field(FieldKind.IDENTIFIER),
                 "actor_identity_digest": _field(FieldKind.DIGEST),
+                "actor_role": _field(FieldKind.IDENTIFIER),
                 "authorization_digest": _field(FieldKind.DIGEST),
                 "decided_at": _field(FieldKind.TIMESTAMP),
                 "decision": _field(FieldKind.ENUM, "approved", "rejected"),
@@ -155,6 +193,11 @@ RECORD_SCHEMAS: Mapping[str, RecordSchema] = MappingProxyType(
                 "assignment_id": _field(FieldKind.IDENTIFIER),
                 "authorization_policy_digest": _field(FieldKind.DIGEST),
                 "dependency_projection_digest": _field(FieldKind.DIGEST),
+                "execution_requirement": _field(
+                    FieldKind.ENUM,
+                    "blocking_scenario",
+                    "evidence_only",
+                ),
                 "gate_digest": _field(FieldKind.DIGEST),
                 "impact": _field(FieldKind.ENUM, "advisory", "blocking"),
                 "invalidation_policy_digest": _field(FieldKind.DIGEST),
@@ -217,6 +260,10 @@ RECORD_SCHEMAS: Mapping[str, RecordSchema] = MappingProxyType(
                 "accepted_generation_digest": _field(FieldKind.DIGEST),
                 "active_generation_digest": _field(FieldKind.DIGEST),
                 "attempt_digests": _field(FieldKind.DIGEST_LIST),
+                "capability_digests": _field(
+                    FieldKind.DIGEST_LIST,
+                    allow_empty=True,
+                ),
                 "authority_head_digest": _field(FieldKind.DIGEST),
                 "authority_manifest_digest": _field(FieldKind.DIGEST),
                 "complete_through_sequence": _field(
@@ -224,6 +271,7 @@ RECORD_SCHEMAS: Mapping[str, RecordSchema] = MappingProxyType(
                 ),
                 "completeness_proof_digest": _field(FieldKind.DIGEST),
                 "contract_digest": _field(FieldKind.DIGEST),
+                "currency_proof_digests": _field(FieldKind.DIGEST_LIST),
                 "evaluation_digests": _field(FieldKind.DIGEST_LIST),
                 "fork_proof_digest": _field(FieldKind.DIGEST),
                 "generation_digest": _field(FieldKind.DIGEST),
@@ -240,6 +288,11 @@ RECORD_SCHEMAS: Mapping[str, RecordSchema] = MappingProxyType(
                     FieldKind.DIGEST_LIST,
                     allow_empty=True,
                 ),
+                "observation_digests": _field(
+                    FieldKind.DIGEST_LIST,
+                    allow_empty=True,
+                ),
+                "observed_at": _field(FieldKind.TIMESTAMP),
                 "phase": _field(
                     FieldKind.ENUM,
                     "accepted",
@@ -265,6 +318,7 @@ RECORD_SCHEMAS: Mapping[str, RecordSchema] = MappingProxyType(
                     FieldKind.DIGEST_LIST,
                     allow_empty=True,
                 ),
+                "register_head_digest": _field(FieldKind.DIGEST),
                 "register_id": _field(FieldKind.IDENTIFIER),
                 "sequence": _field(FieldKind.NONNEGATIVE_INTEGER),
                 "status": _field(FieldKind.ENUM, "absent", "corrupt", "valid"),
@@ -282,6 +336,87 @@ RECORD_SCHEMAS: Mapping[str, RecordSchema] = MappingProxyType(
                 "separation_policy_digest": _field(FieldKind.DIGEST),
                 "subject_kind": _field(FieldKind.IDENTIFIER),
                 "validity_policy_digest": _field(FieldKind.DIGEST),
+            },
+            optional={
+                "allowed_actor_identity_digests": _field(
+                    FieldKind.DIGEST_LIST,
+                    allow_empty=True,
+                ),
+                "allowed_actor_roles": _field(
+                    FieldKind.IDENTIFIER_LIST,
+                    allow_empty=True,
+                ),
+            },
+        ),
+        "baseline_restoration_receipt": _record_schema(
+            "baseline_restoration_receipt",
+            required={
+                "candidate_live_protected_state_digest": _field(
+                    FieldKind.DIGEST
+                ),
+                "captured_checkpoint_digest": _field(FieldKind.DIGEST),
+                "captured_generation_digest": _field(FieldKind.DIGEST),
+                "captured_protected_state_digest": _field(FieldKind.DIGEST),
+                "isolated_install_operation_digest": _field(FieldKind.DIGEST),
+                "isolated_install_operation_terminal_digest": _field(
+                    FieldKind.DIGEST
+                ),
+                "live_prestate_protected_state_digest": _field(
+                    FieldKind.DIGEST
+                ),
+                "post_restoration_gate_terminal_digest": _field(
+                    FieldKind.DIGEST
+                ),
+                "post_restoration_smoke_attempt_digest": _field(
+                    FieldKind.DIGEST
+                ),
+                "post_restoration_smoke_evaluation_digest": _field(
+                    FieldKind.DIGEST
+                ),
+                "phase_establishing_operation_obligation_digest": _field(
+                    FieldKind.DIGEST
+                ),
+                "post_restoration_smoke_contract_digest": _field(
+                    FieldKind.DIGEST
+                ),
+                "prevalidated_promotion_contract_digest": _field(
+                    FieldKind.DIGEST
+                ),
+                "receipt_id": _field(FieldKind.STABLE_IDENTIFIER),
+                "rehearsal_install_operation_digest": _field(FieldKind.DIGEST),
+                "rehearsal_install_operation_terminal_digest": _field(
+                    FieldKind.DIGEST
+                ),
+                "restoration_evidence_cut_digest": _field(FieldKind.DIGEST),
+                "restoration_operation_digest": _field(FieldKind.DIGEST),
+                "restoration_operation_terminal_digest": _field(
+                    FieldKind.DIGEST
+                ),
+                "restored_generation_digest": _field(FieldKind.DIGEST),
+                "restored_fence_epoch": _field(FieldKind.NONNEGATIVE_INTEGER),
+                "restored_projection_digest": _field(FieldKind.DIGEST),
+                "restored_protected_state_digest": _field(FieldKind.DIGEST),
+                "rollback_digest": _field(FieldKind.DIGEST),
+                "target_digest": _field(FieldKind.DIGEST),
+            },
+        ),
+        "backend_provenance": _record_schema(
+            "backend_provenance",
+            required={
+                "authorization_digest": _field(FieldKind.DIGEST),
+                "backend_id": _field(FieldKind.STABLE_IDENTIFIER),
+                "backend_manifest_digest": _field(FieldKind.DIGEST),
+                "configuration_digest": _field(FieldKind.DIGEST),
+                "driver_device_digest": _field(FieldKind.DIGEST),
+                "generation_digest": _field(FieldKind.DIGEST),
+                "model_identity_digest": _field(FieldKind.DIGEST),
+                "observed_at": _field(FieldKind.TIMESTAMP),
+                "observer_identity_digest": _field(FieldKind.DIGEST),
+                "package_manifest_digest": _field(FieldKind.DIGEST),
+                "process_epoch": _field(FieldKind.IDENTIFIER),
+                "provenance_id": _field(FieldKind.STABLE_IDENTIFIER),
+                "service_protected_state_digest": _field(FieldKind.DIGEST),
+                "target_digest": _field(FieldKind.DIGEST),
             },
         ),
         "capability": _record_schema(
@@ -335,51 +470,135 @@ RECORD_SCHEMAS: Mapping[str, RecordSchema] = MappingProxyType(
         "composite_authority": _record_schema(
             "composite_authority",
             required={
+                "accepted_generation_digest": _field(FieldKind.DIGEST),
                 "active_generation_digest": _field(FieldKind.DIGEST),
                 "authorization_policy_digest": _field(FieldKind.DIGEST),
                 "contract_digest": _field(FieldKind.DIGEST),
                 "fallback_digest": _field(FieldKind.DIGEST),
                 "inventory_digest": _field(FieldKind.DIGEST),
                 "manifest_id": _field(FieldKind.IDENTIFIER),
+                "quorum_policy_digest": _field(FieldKind.DIGEST),
                 "recovery_policy_digest": _field(FieldKind.DIGEST),
                 "requirements_digest": _field(FieldKind.DIGEST),
+                "rollback_generation_digest": _field(FieldKind.DIGEST),
                 "rollback_registry_digest": _field(FieldKind.DIGEST),
                 "witness_roster_digest": _field(FieldKind.DIGEST),
+            },
+        ),
+        "composite_authority_checkpoint": _record_schema(
+            "composite_authority_checkpoint",
+            required={
+                "authorization_digest": _field(FieldKind.DIGEST),
+                "change_set_digest": _field(FieldKind.DIGEST),
+                "checkpoint_id": _field(FieldKind.STABLE_IDENTIFIER),
+                "committed_at": _field(FieldKind.TIMESTAMP),
+                "quorum_receipt_digests": _field(FieldKind.DIGEST_LIST),
+                "register_head_digest": _field(FieldKind.DIGEST),
+                "register_id": _field(FieldKind.STABLE_IDENTIFIER),
+                "register_observation_digest": _field(FieldKind.DIGEST),
+                "register_sequence": _field(FieldKind.NONNEGATIVE_INTEGER),
+                "selected_manifest_digest": _field(FieldKind.DIGEST),
+                "signer_identity_digest": _field(FieldKind.DIGEST),
             },
         ),
         "composite_change_set": _record_schema(
             "composite_change_set",
             required={
-                "authorization_digest": _field(FieldKind.DIGEST),
-                "binding_mode": _field(
+                "authorization_action": _field(
                     FieldKind.ENUM,
-                    "b0_capture_sentinel",
-                    "no_generation",
-                    "required_generation",
+                    "reinstate_composite_authority",
+                    "transition_composite_authority",
                 ),
+                "authorization_digest": _field(FieldKind.DIGEST),
                 "candidate_manifest_digest": _field(FieldKind.DIGEST),
                 "change_set_id": _field(FieldKind.IDENTIFIER),
                 "changed_fields": _field(
                     FieldKind.ENUM_LIST,
+                    "accepted_generation",
                     "active_generation",
                     "authorization_policy",
                     "contract",
                     "fallback",
                     "inventory",
+                    "quorum_policy",
                     "recovery_policy",
                     "requirements",
+                    "rollback_generation",
                     "rollback_registry",
                     "witness_roster",
+                    allow_empty=True,
                 ),
                 "coordinator_identity_digest": _field(FieldKind.DIGEST),
+                "generation_binding": _field(
+                    FieldKind.GENERATION_BINDING,
+                    GenerationBindingMode.REQUIRED_GENERATION.value,
+                    GenerationBindingMode.B0_CAPTURE_SENTINEL.value,
+                    GenerationBindingMode.NO_GENERATION.value,
+                ),
                 "old_manifest_digest": _field(FieldKind.DIGEST),
                 "quorum_mode": _field(
                     FieldKind.ENUM,
                     "existing",
                     "joint_consensus",
+                    "recovery_root",
                 ),
                 "rollback_manifest_digest": _field(FieldKind.DIGEST),
                 "terminal_rule": _field(FieldKind.ENUM, "conjunctive"),
+                "transition_mode": _field(
+                    FieldKind.ENUM,
+                    "acceptance",
+                    "activation",
+                    "control_update",
+                    "register_reinstatement",
+                ),
+            },
+            optional={
+                "current_authority_register_observation_digest": _field(
+                    FieldKind.DIGEST
+                ),
+                "prior_committed_checkpoint_digest": _field(FieldKind.DIGEST),
+            },
+        ),
+        "composite_fallback_reference": _record_schema(
+            "composite_fallback_reference",
+            required={
+                "authorization_digest": _field(FieldKind.DIGEST),
+                "committed_checkpoint_digest": _field(FieldKind.DIGEST),
+                "reference_id": _field(FieldKind.STABLE_IDENTIFIER),
+                "referenced_manifest_digest": _field(FieldKind.DIGEST),
+            },
+        ),
+        "dependency_projection": _record_schema(
+            "dependency_projection",
+            required={
+                "dependency_digests": _field(
+                    FieldKind.DIGEST_SEQUENCE,
+                    allow_empty=True,
+                ),
+                "dependency_keys": _field(
+                    FieldKind.IDENTIFIER_LIST,
+                    allow_empty=True,
+                ),
+                "projection_id": _field(FieldKind.STABLE_IDENTIFIER),
+            },
+        ),
+        "evidence_currency_proof": _record_schema(
+            "evidence_currency_proof",
+            required={
+                "evaluated_dependency_projection_digest": _field(
+                    FieldKind.DIGEST
+                ),
+                "evaluation_digest": _field(FieldKind.DIGEST),
+                "inclusion_edge_digests": _field(
+                    FieldKind.DIGEST_LIST,
+                    allow_empty=True,
+                ),
+                "invalidation_policy_digest": _field(FieldKind.DIGEST),
+                "invalidation_stream_checkpoint_digest": _field(
+                    FieldKind.DIGEST
+                ),
+                "trusted_time_observation_digest": _field(FieldKind.DIGEST),
+                "validity_policy_digest": _field(FieldKind.DIGEST),
             },
         ),
         "evaluation": _record_schema(
@@ -387,7 +606,6 @@ RECORD_SCHEMAS: Mapping[str, RecordSchema] = MappingProxyType(
             "applicability",
             "outcome",
             required={
-                "admissible": _field(FieldKind.BOOL),
                 "applicability": _field(
                     FieldKind.ENUM,
                     "applicable",
@@ -401,7 +619,6 @@ RECORD_SCHEMAS: Mapping[str, RecordSchema] = MappingProxyType(
                     allow_empty=True,
                 ),
                 "context_digest": _field(FieldKind.DIGEST),
-                "currency": _field(FieldKind.ENUM, "current", "stale"),
                 "dependency_projection_digest": _field(FieldKind.DIGEST),
                 "evaluated_at": _field(FieldKind.TIMESTAMP),
                 "outcome": _field(
@@ -413,7 +630,13 @@ RECORD_SCHEMAS: Mapping[str, RecordSchema] = MappingProxyType(
                     "unknown",
                 ),
             },
-            optional={"predicate_proof_digest": _field(FieldKind.DIGEST)},
+            optional={
+                "predicate_proof_digest": _field(FieldKind.DIGEST),
+                "unknown_reason": _field(
+                    FieldKind.ENUM,
+                    *_EVALUATION_UNKNOWN_REASONS,
+                ),
+            },
         ),
         "exception": _record_schema(
             "exception",
@@ -482,10 +705,34 @@ RECORD_SCHEMAS: Mapping[str, RecordSchema] = MappingProxyType(
             },
             optional={"base_model_digest": _field(FieldKind.DIGEST)},
         ),
+        "final_service_anchor_receipt": _record_schema(
+            "final_service_anchor_receipt",
+            required={
+                "anchor_id": _field(FieldKind.STABLE_IDENTIFIER),
+                "backend_provenance_digest": _field(FieldKind.DIGEST),
+                "evidence_cut_digest": _field(FieldKind.DIGEST),
+                "expires_at": _field(FieldKind.TIMESTAMP),
+                "final_restart_operation_digest": _field(FieldKind.DIGEST),
+                "final_restart_operation_terminal_digest": _field(
+                    FieldKind.DIGEST
+                ),
+                "generation_digest": _field(FieldKind.DIGEST),
+                "issued_at": _field(FieldKind.TIMESTAMP),
+                "predecessor_service_anchor_receipt_digest": _field(
+                    FieldKind.DIGEST
+                ),
+                "process_epoch": _field(FieldKind.IDENTIFIER),
+                "promotion_contract_digest": _field(FieldKind.DIGEST),
+                "readiness_digest": _field(FieldKind.DIGEST),
+                "service_protected_state_digest": _field(FieldKind.DIGEST),
+                "target_digest": _field(FieldKind.DIGEST),
+            },
+        ),
         "gate": _record_schema(
             "gate",
             required={
                 "assertion_digest": _field(FieldKind.DIGEST),
+                "attestation_authorization_digest": _field(FieldKind.DIGEST),
                 "evidence_shape_digest": _field(FieldKind.DIGEST),
                 "fixture_role_digest": _field(FieldKind.DIGEST),
                 "gate_id": _field(FieldKind.IDENTIFIER),
@@ -494,6 +741,7 @@ RECORD_SCHEMAS: Mapping[str, RecordSchema] = MappingProxyType(
             optional={
                 "dependency_keys": _field(FieldKind.IDENTIFIER_LIST),
                 "label": _field(FieldKind.TEXT),
+                "predicate_authorization_digest": _field(FieldKind.DIGEST),
             },
         ),
         "generation": _record_schema(
@@ -577,6 +825,88 @@ RECORD_SCHEMAS: Mapping[str, RecordSchema] = MappingProxyType(
             },
             optional={"closed_at": _field(FieldKind.TIMESTAMP)},
         ),
+        "invalidation_policy": _record_schema(
+            "invalidation_policy",
+            required={
+                "dependency_keys": _field(
+                    FieldKind.IDENTIFIER_LIST,
+                    allow_empty=True,
+                ),
+                "policy_id": _field(FieldKind.STABLE_IDENTIFIER),
+            },
+        ),
+        "invalidation_stream_checkpoint": _record_schema(
+            "invalidation_stream_checkpoint",
+            required={
+                "authority_head_digest": _field(FieldKind.DIGEST),
+                "authority_manifest_digest": _field(FieldKind.DIGEST),
+                "authority_view_digest": _field(FieldKind.DIGEST),
+                "checkpoint_id": _field(FieldKind.STABLE_IDENTIFIER),
+                "checkpointed_at": _field(FieldKind.TIMESTAMP),
+                "complete_through_sequence": _field(
+                    FieldKind.NONNEGATIVE_INTEGER
+                ),
+                "completeness_proof_digest": _field(FieldKind.DIGEST),
+                "current_dependency_projection_digest": _field(
+                    FieldKind.DIGEST
+                ),
+                "fork_proof_digest": _field(FieldKind.DIGEST),
+                "invalidation_policy_digest": _field(FieldKind.DIGEST),
+                "stream_head_digest": _field(FieldKind.DIGEST),
+                "stream_id": _field(FieldKind.STABLE_IDENTIFIER),
+            },
+        ),
+        "installed_inventory": _record_schema(
+            "installed_inventory",
+            required={
+                "authorization_digest": _field(FieldKind.DIGEST),
+                "configuration_digest": _field(FieldKind.DIGEST),
+                "driver_device_digest": _field(FieldKind.DIGEST),
+                "generation_digest": _field(FieldKind.DIGEST),
+                "inventory_id": _field(FieldKind.STABLE_IDENTIFIER),
+                "model_identity_digests": _field(
+                    FieldKind.DIGEST_LIST,
+                    allow_empty=True,
+                ),
+                "observed_at": _field(FieldKind.TIMESTAMP),
+                "observer_identity_digest": _field(FieldKind.DIGEST),
+                "package_manifest_digest": _field(FieldKind.DIGEST),
+            },
+        ),
+        "lifecycle_checkpoint": _record_schema(
+            "lifecycle_checkpoint",
+            required={
+                "checkpoint_id": _field(FieldKind.STABLE_IDENTIFIER),
+                "established_at": _field(FieldKind.TIMESTAMP),
+                "generation_class": _field(
+                    FieldKind.ENUM,
+                    *(generation_class.value for generation_class in GenerationClass),
+                ),
+                "generation_digest": _field(FieldKind.DIGEST),
+                "phase": _field(
+                    FieldKind.ENUM,
+                    *(phase.value for phase in LifecyclePhase),
+                ),
+                "target_digest": _field(FieldKind.DIGEST),
+                "target_protected_state_digest": _field(FieldKind.DIGEST),
+            },
+            optional={
+                "acceptance_request_digest": _field(FieldKind.DIGEST),
+                "approval_digest": _field(FieldKind.DIGEST),
+                "authority_proof_digest": _field(FieldKind.DIGEST),
+                "baseline_restoration_receipt_digest": _field(
+                    FieldKind.DIGEST
+                ),
+                "contract_digest": _field(FieldKind.DIGEST),
+                "evidence_cut_digest": _field(FieldKind.DIGEST),
+                "final_service_anchor_receipt_digest": _field(
+                    FieldKind.DIGEST
+                ),
+                "predecessor_checkpoint_digest": _field(FieldKind.DIGEST),
+                "root_authorization_digest": _field(FieldKind.DIGEST),
+                "service_anchor_receipt_digest": _field(FieldKind.DIGEST),
+            },
+        ),
         "operation": _record_schema(
             "operation",
             required={
@@ -611,6 +941,7 @@ RECORD_SCHEMAS: Mapping[str, RecordSchema] = MappingProxyType(
                     *(kind.value for kind in OperationSubjectKind),
                 ),
                 "target_id": _field(FieldKind.STABLE_IDENTIFIER),
+                "target_digest": _field(FieldKind.DIGEST),
                 "target_kind": _field(
                     FieldKind.ENUM,
                     *(kind.value for kind in OperationTargetKind),
@@ -658,6 +989,8 @@ RECORD_SCHEMAS: Mapping[str, RecordSchema] = MappingProxyType(
                     FieldKind.ENUM,
                     *(kind.value for kind in CriticalOperationKind),
                 ),
+                "operation_digest": _field(FieldKind.DIGEST),
+                "operation_requirement_digest": _field(FieldKind.DIGEST),
                 "subject_digest": _field(FieldKind.DIGEST),
                 "subject_kind": _field(
                     FieldKind.ENUM,
@@ -677,7 +1010,120 @@ RECORD_SCHEMAS: Mapping[str, RecordSchema] = MappingProxyType(
                     FieldKind.DIGEST_LIST,
                     allow_empty=True,
                 ),
+                "operation_requirement_set_digest": _field(FieldKind.DIGEST),
                 "requirements_digest": _field(FieldKind.DIGEST),
+            },
+        ),
+        "operation_requirement": _record_schema(
+            "operation_requirement",
+            required={
+                "declared_effects": _field(FieldKind.DECLARED_EFFECT_LIST),
+                "generation_binding_mode": _field(
+                    FieldKind.ENUM,
+                    *(mode.value for mode in GenerationBindingMode),
+                ),
+                "generation_binding_role": _field(
+                    FieldKind.ENUM,
+                    "b0_capture_sentinel",
+                    "candidate_generation",
+                    "captured_baseline_generation",
+                    "no_generation",
+                    "predecessor_generation",
+                ),
+                "generation_class": _field(
+                    FieldKind.ENUM,
+                    *(generation_class.value for generation_class in GenerationClass),
+                ),
+                "lifecycle_phase": _field(
+                    FieldKind.ENUM,
+                    *(phase.value for phase in LifecyclePhase),
+                ),
+                "operation_kind": _field(
+                    FieldKind.ENUM,
+                    *(kind.value for kind in CriticalOperationKind),
+                ),
+                "plan_digest": _field(FieldKind.DIGEST),
+                "purpose": _field(
+                    FieldKind.ENUM,
+                    "baseline_rehearsal_install",
+                    "baseline_restoration",
+                    "blocking_scenario",
+                    "final_service_restart",
+                    "phase_transition",
+                    "service_anchor",
+                    "service_restart",
+                ),
+                "realization_condition": _field(
+                    FieldKind.ENUM,
+                    "always",
+                    "when_assignment_applicable",
+                ),
+                "recovery_contract_digest": _field(FieldKind.DIGEST),
+                "recovery_target_role": _field(
+                    FieldKind.ENUM,
+                    "captured_baseline",
+                    "expected_prestate",
+                    "predecessor_state",
+                ),
+                "requirement_id": _field(FieldKind.STABLE_IDENTIFIER),
+                "subject_binding_role": _field(
+                    FieldKind.ENUM,
+                    "candidate_generation",
+                    "captured_baseline",
+                    "composite_authority",
+                    "control_record",
+                    "gate_occurrence",
+                ),
+                "subject_kind": _field(
+                    FieldKind.ENUM,
+                    *(kind.value for kind in OperationSubjectKind),
+                ),
+                "target_digest": _field(FieldKind.DIGEST),
+                "target_id": _field(FieldKind.STABLE_IDENTIFIER),
+                "target_kind": _field(
+                    FieldKind.ENUM,
+                    *(kind.value for kind in OperationTargetKind),
+                ),
+                "terminal_validator_digest": _field(FieldKind.DIGEST),
+            },
+            optional={
+                "assignment_digest": _field(FieldKind.DIGEST),
+                "rollback_contract_digest": _field(FieldKind.DIGEST),
+            },
+        ),
+        "operation_requirement_set": _record_schema(
+            "operation_requirement_set",
+            required={
+                "operation_requirement_digests": _field(
+                    FieldKind.DIGEST_LIST,
+                    allow_empty=True,
+                ),
+                "requirements_digest": _field(FieldKind.DIGEST),
+            },
+        ),
+        "operation_realization": _record_schema(
+            "operation_realization",
+            required={
+                "observed_prestate_digest": _field(FieldKind.DIGEST),
+                "operation_digest": _field(FieldKind.DIGEST),
+                "operation_obligation_digest": _field(FieldKind.DIGEST),
+                "operation_requirement_digest": _field(FieldKind.DIGEST),
+                "realization_id": _field(FieldKind.STABLE_IDENTIFIER),
+                "resolved_generation_binding": _field(
+                    FieldKind.GENERATION_BINDING,
+                    *(mode.value for mode in GenerationBindingMode),
+                ),
+                "resolved_subject_digest": _field(FieldKind.DIGEST),
+            },
+        ),
+        "operation_realization_set": _record_schema(
+            "operation_realization_set",
+            required={
+                "operation_obligation_set_digest": _field(FieldKind.DIGEST),
+                "operation_realization_digests": _field(
+                    FieldKind.DIGEST_LIST,
+                    allow_empty=True,
+                ),
             },
         ),
         "predicate_proof": _record_schema(
@@ -707,10 +1153,18 @@ RECORD_SCHEMAS: Mapping[str, RecordSchema] = MappingProxyType(
                 "authority_head_digest": _field(FieldKind.DIGEST),
                 "authority_manifest_digest": _field(FieldKind.DIGEST),
                 "authority_view_digest": _field(FieldKind.DIGEST),
+                "capability_digests": _field(
+                    FieldKind.DIGEST_LIST,
+                    allow_empty=True,
+                ),
                 "complete_through_sequence": _field(
                     FieldKind.NONNEGATIVE_INTEGER
                 ),
                 "completeness_proof_digest": _field(FieldKind.DIGEST),
+                "currency_proof_digests": _field(
+                    FieldKind.DIGEST_LIST,
+                    allow_empty=True,
+                ),
                 "evaluation_digests": _field(
                     FieldKind.DIGEST_LIST,
                     allow_empty=True,
@@ -729,11 +1183,30 @@ RECORD_SCHEMAS: Mapping[str, RecordSchema] = MappingProxyType(
                     FieldKind.DIGEST_LIST,
                     allow_empty=True,
                 ),
+                "observation_digests": _field(
+                    FieldKind.DIGEST_LIST,
+                    allow_empty=True,
+                ),
+                "phase": _field(
+                    FieldKind.ENUM,
+                    "accepted",
+                    "active",
+                    "prevalidated",
+                    "published",
+                ),
+                "predecessor_checkpoint_digest": _field(FieldKind.DIGEST),
                 "promotion_contract_digest": _field(FieldKind.DIGEST),
                 "proof_id": _field(FieldKind.STABLE_IDENTIFIER),
                 "validation_contract_digest": _field(FieldKind.DIGEST),
                 "verified_at": _field(FieldKind.TIMESTAMP),
                 "verifier_identity_digest": _field(FieldKind.DIGEST),
+            },
+            optional={
+                "acceptance_request_digest": _field(FieldKind.DIGEST),
+                "approval_digest": _field(FieldKind.DIGEST),
+                "final_service_anchor_receipt_digest": _field(
+                    FieldKind.DIGEST
+                ),
             },
         ),
         "promotion_contract": _record_schema(
@@ -747,6 +1220,8 @@ RECORD_SCHEMAS: Mapping[str, RecordSchema] = MappingProxyType(
                 "generation_digest": _field(FieldKind.DIGEST),
                 "obligation_digests": _field(FieldKind.DIGEST_LIST),
                 "operation_obligation_set_digest": _field(FieldKind.DIGEST),
+                "operation_realization_set_digest": _field(FieldKind.DIGEST),
+                "predecessor_checkpoint_digest": _field(FieldKind.DIGEST),
                 "phase": _field(
                     FieldKind.ENUM,
                     "accepted",
@@ -762,6 +1237,18 @@ RECORD_SCHEMAS: Mapping[str, RecordSchema] = MappingProxyType(
                 ),
                 "target_protected_state_digest": _field(FieldKind.DIGEST),
                 "validation_contract_digest": _field(FieldKind.DIGEST),
+            },
+            optional={
+                "acceptance_authorization_digest": _field(FieldKind.DIGEST),
+                "baseline_restoration_receipt_digest": _field(
+                    FieldKind.DIGEST
+                ),
+                "phase_establishing_operation_obligation_digest": _field(
+                    FieldKind.DIGEST
+                ),
+                "predecessor_service_anchor_receipt_digest": _field(
+                    FieldKind.DIGEST
+                ),
             },
         ),
         "promotion_obligation": _record_schema(
@@ -781,10 +1268,18 @@ RECORD_SCHEMAS: Mapping[str, RecordSchema] = MappingProxyType(
             required={
                 "fence_epoch": _field(FieldKind.NONNEGATIVE_INTEGER),
                 "generation_digest": _field(FieldKind.DIGEST),
+                "lifecycle_phase": _field(
+                    FieldKind.ENUM,
+                    *(phase.value for phase in LifecyclePhase),
+                ),
                 "observed_at": _field(FieldKind.TIMESTAMP),
                 "projection_id": _field(FieldKind.IDENTIFIER),
                 "state_digest": _field(FieldKind.DIGEST),
                 "target_digest": _field(FieldKind.DIGEST),
+                "target_kind": _field(
+                    FieldKind.ENUM,
+                    *(kind.value for kind in OperationTargetKind),
+                ),
             },
             optional={"process_epoch": _field(FieldKind.IDENTIFIER)},
         ),
@@ -796,14 +1291,40 @@ RECORD_SCHEMAS: Mapping[str, RecordSchema] = MappingProxyType(
                 "source_kind": _field(FieldKind.IDENTIFIER),
             },
         ),
+        "quorum_policy": _record_schema(
+            "quorum_policy",
+            required={
+                "policy_id": _field(FieldKind.STABLE_IDENTIFIER),
+                "threshold": _field(FieldKind.NONNEGATIVE_INTEGER),
+                "witness_roster_digest": _field(FieldKind.DIGEST),
+            },
+        ),
+        "quorum_receipt": _record_schema(
+            "quorum_receipt",
+            required={
+                "approval_digests": _field(FieldKind.DIGEST_LIST),
+                "approved_at": _field(FieldKind.TIMESTAMP),
+                "authorization_digest": _field(FieldKind.DIGEST),
+                "change_set_digest": _field(FieldKind.DIGEST),
+                "quorum_policy_digest": _field(FieldKind.DIGEST),
+                "receipt_id": _field(FieldKind.STABLE_IDENTIFIER),
+                "side": _field(FieldKind.ENUM, "candidate", "existing"),
+                "witness_roster_digest": _field(FieldKind.DIGEST),
+            },
+        ),
         "readiness": _record_schema(
             "readiness",
             "status",
             required={
+                "backend_manifest_digest": _field(FieldKind.DIGEST),
+                "backend_provenance_digest": _field(FieldKind.DIGEST),
                 "generation_digest": _field(FieldKind.DIGEST),
-                "manifest_digest": _field(FieldKind.DIGEST),
-                "observation_digests": _field(FieldKind.DIGEST_LIST),
                 "observed_at": _field(FieldKind.TIMESTAMP),
+                "process_epoch": _field(FieldKind.IDENTIFIER),
+                "service_health_observation_digests": _field(
+                    FieldKind.DIGEST_LIST
+                ),
+                "service_protected_state_digest": _field(FieldKind.DIGEST),
                 "status": _field(FieldKind.ENUM, "not_ready", "ready"),
                 "target_digest": _field(FieldKind.DIGEST),
             },
@@ -825,6 +1346,18 @@ RECORD_SCHEMAS: Mapping[str, RecordSchema] = MappingProxyType(
                 "recovery_id": _field(FieldKind.IDENTIFIER),
                 "target_digest": _field(FieldKind.DIGEST),
                 "terminal_gate_digest": _field(FieldKind.DIGEST),
+            },
+        ),
+        "recovery_policy": _record_schema(
+            "recovery_policy",
+            required={
+                "authorization_digest": _field(FieldKind.DIGEST),
+                "policy_id": _field(FieldKind.STABLE_IDENTIFIER),
+                "recovery_contract_digests": _field(FieldKind.DIGEST_LIST),
+                "recovery_owner_roles": _field(FieldKind.IDENTIFIER_LIST),
+                "recovery_root_digest": _field(FieldKind.DIGEST),
+                "separation_policy_digest": _field(FieldKind.DIGEST),
+                "validity_policy_digest": _field(FieldKind.DIGEST),
             },
         ),
         "restricted_reference": _record_schema(
@@ -851,6 +1384,20 @@ RECORD_SCHEMAS: Mapping[str, RecordSchema] = MappingProxyType(
             },
             optional={"rotation_history_digest": _field(FieldKind.DIGEST)},
         ),
+        "restored_baseline_smoke_contract": _record_schema(
+            "restored_baseline_smoke_contract",
+            required={
+                "assignment_digest": _field(FieldKind.DIGEST),
+                "attestation_authorization_digest": _field(FieldKind.DIGEST),
+                "expected_outcome": _field(FieldKind.ENUM, "pass"),
+                "gate_digest": _field(FieldKind.DIGEST),
+                "restored_protected_state_digest": _field(FieldKind.DIGEST),
+                "smoke_contract_id": _field(FieldKind.STABLE_IDENTIFIER),
+                "target_digest": _field(FieldKind.DIGEST),
+                "validation_contract_digest": _field(FieldKind.DIGEST),
+                "validator_digest": _field(FieldKind.DIGEST),
+            },
+        ),
         "rollback": _record_schema(
             "rollback",
             required={
@@ -868,6 +1415,72 @@ RECORD_SCHEMAS: Mapping[str, RecordSchema] = MappingProxyType(
                 "target_protected_state_digest": _field(FieldKind.DIGEST),
                 "target_state_digest": _field(FieldKind.DIGEST),
                 "terminal_gate_digest": _field(FieldKind.DIGEST),
+            },
+        ),
+        "rollback_registry": _record_schema(
+            "rollback_registry",
+            required={
+                "authorization_digest": _field(FieldKind.DIGEST),
+                "established_at": _field(FieldKind.TIMESTAMP),
+                "registry_head_digest": _field(FieldKind.DIGEST),
+                "registry_id": _field(FieldKind.STABLE_IDENTIFIER),
+                "rollback_digests": _field(FieldKind.DIGEST_LIST),
+                "selected_rollback_digest": _field(FieldKind.DIGEST),
+            },
+        ),
+        "separation_policy": _record_schema(
+            "separation_policy",
+            required={
+                "forbidden_actor_identity_digests": _field(
+                    FieldKind.DIGEST_LIST,
+                    allow_empty=True,
+                ),
+                "policy_id": _field(FieldKind.STABLE_IDENTIFIER),
+                "required_actor_roles": _field(
+                    FieldKind.IDENTIFIER_LIST,
+                    allow_empty=True,
+                ),
+            },
+        ),
+        "service_anchor_receipt": _record_schema(
+            "service_anchor_receipt",
+            required={
+                "active_evidence_cut_digest": _field(FieldKind.DIGEST),
+                "active_phase_operation_terminal_digest": _field(
+                    FieldKind.DIGEST
+                ),
+                "active_promotion_contract_digest": _field(FieldKind.DIGEST),
+                "anchor_id": _field(FieldKind.STABLE_IDENTIFIER),
+                "backend_provenance_digest": _field(FieldKind.DIGEST),
+                "establishing_operation_digest": _field(FieldKind.DIGEST),
+                "expires_at": _field(FieldKind.TIMESTAMP),
+                "generation_digest": _field(FieldKind.DIGEST),
+                "issued_at": _field(FieldKind.TIMESTAMP),
+                "operation_terminal_digest": _field(FieldKind.DIGEST),
+                "process_epoch": _field(FieldKind.IDENTIFIER),
+                "readiness_digest": _field(FieldKind.DIGEST),
+                "service_protected_state_digest": _field(FieldKind.DIGEST),
+                "target_digest": _field(FieldKind.DIGEST),
+            },
+        ),
+        "service_health_observation": _record_schema(
+            "service_health_observation",
+            required={
+                "authorization_digest": _field(FieldKind.DIGEST),
+                "backend_provenance_digest": _field(FieldKind.DIGEST),
+                "generation_digest": _field(FieldKind.DIGEST),
+                "observation_id": _field(FieldKind.STABLE_IDENTIFIER),
+                "observed_at": _field(FieldKind.TIMESTAMP),
+                "observer_identity_digest": _field(FieldKind.DIGEST),
+                "process_epoch": _field(FieldKind.IDENTIFIER),
+                "service_protected_state_digest": _field(FieldKind.DIGEST),
+                "status": _field(
+                    FieldKind.ENUM,
+                    "not_ready",
+                    "ready",
+                    "unknown",
+                ),
+                "target_digest": _field(FieldKind.DIGEST),
             },
         ),
         "requirements": _record_schema(
@@ -902,12 +1515,27 @@ RECORD_SCHEMAS: Mapping[str, RecordSchema] = MappingProxyType(
                     "critical_operation",
                     "gate_attempt",
                 ),
-                "validator_attestation_digests": _field(FieldKind.DIGEST_LIST),
+                "validator_attestation_digests": _field(
+                    FieldKind.DIGEST_LIST,
+                    allow_empty=True,
+                ),
             },
             optional={
                 "assignment_digest": _field(FieldKind.DIGEST),
                 "attempt_digest": _field(FieldKind.DIGEST),
+                "capability_digest": _field(FieldKind.DIGEST),
                 "operation_digest": _field(FieldKind.DIGEST),
+                "predicate_proof_digest": _field(FieldKind.DIGEST),
+            },
+        ),
+        "trusted_time_observation": _record_schema(
+            "trusted_time_observation",
+            required={
+                "authority_head_digest": _field(FieldKind.DIGEST),
+                "observation_id": _field(FieldKind.STABLE_IDENTIFIER),
+                "observed_at": _field(FieldKind.TIMESTAMP),
+                "time_authority_digest": _field(FieldKind.DIGEST),
+                "time_proof_digest": _field(FieldKind.DIGEST),
             },
         ),
         "validation_contract": _record_schema(
@@ -917,6 +1545,11 @@ RECORD_SCHEMAS: Mapping[str, RecordSchema] = MappingProxyType(
                 "assignments_digest": _field(FieldKind.DIGEST),
                 "authorization_policy_digest": _field(FieldKind.DIGEST),
                 "contract_id": _field(FieldKind.STABLE_IDENTIFIER),
+                "max_live_attempt_seconds": _field(
+                    FieldKind.NONNEGATIVE_INTEGER
+                ),
+                "max_suite_seconds": _field(FieldKind.NONNEGATIVE_INTEGER),
+                "operation_requirement_set_digest": _field(FieldKind.DIGEST),
                 "requirements_digest": _field(FieldKind.DIGEST),
             },
         ),
@@ -938,6 +1571,37 @@ RECORD_SCHEMAS: Mapping[str, RecordSchema] = MappingProxyType(
                 "generation_digest": _field(FieldKind.DIGEST),
                 "profile_digest": _field(FieldKind.DIGEST),
                 "source_closure_digest": _field(FieldKind.DIGEST),
+            },
+        ),
+        "validity_policy": _record_schema(
+            "validity_policy",
+            required={
+                "expiry_rule": _field(
+                    FieldKind.ENUM,
+                    "earliest_constituent_expiry",
+                ),
+                "policy_id": _field(FieldKind.STABLE_IDENTIFIER),
+            },
+            optional={
+                "attestation_max_age_seconds": _field(
+                    FieldKind.NONNEGATIVE_INTEGER
+                ),
+                "evidence_cut_max_age_seconds": _field(
+                    FieldKind.NONNEGATIVE_INTEGER
+                ),
+                "inclusion_edge_max_age_seconds": _field(
+                    FieldKind.NONNEGATIVE_INTEGER
+                ),
+                "predicate_proof_max_age_seconds": _field(
+                    FieldKind.NONNEGATIVE_INTEGER
+                ),
+            },
+        ),
+        "witness_roster": _record_schema(
+            "witness_roster",
+            required={
+                "roster_id": _field(FieldKind.STABLE_IDENTIFIER),
+                "witness_identity_digests": _field(FieldKind.DIGEST_LIST),
             },
         ),
     }
@@ -995,6 +1659,23 @@ class RecordValidationError(ControlRecordError):
 
 class PrivacyEnvelopeError(ControlRecordError):
     """A public projection would lack a safe binding or disclose unsafe data."""
+
+
+def _require_exact_record_kind(value: object) -> str:
+    if type(value) is not str:
+        raise CanonicalizationError(
+            RecordErrorCode.INVALID_TYPE,
+            "record kind must be an exact string",
+        )
+    return value
+
+
+def _require_base_record_factory(cls: type[object]) -> None:
+    if cls is not ControlRecord:
+        raise CanonicalizationError(
+            RecordErrorCode.INVALID_TYPE,
+            "control record factories require the exact ControlRecord class",
+        )
 
 
 def _is_unicode_noncharacter(codepoint: int) -> bool:
@@ -1259,8 +1940,22 @@ def _validate_field_value(
                 field,
                 "must be a nonempty digest array",
             )
+        for item in value:
+            if not isinstance(item, str) or not _DIGEST_PATTERN.fullmatch(item):
+                raise RecordValidationError(
+                    RecordErrorCode.INVALID_DIGEST,
+                    f"{record_kind}.{field} contains a malformed sha256 digest",
+                )
         if len(value) != len(set(value)):
             _invalid_payload_field(record_kind, field, "must not contain duplicates")
+        return
+    if schema.kind is FieldKind.DIGEST_SEQUENCE:
+        if not isinstance(value, list) or (not value and not schema.allow_empty):
+            _invalid_payload_field(
+                record_kind,
+                field,
+                "must be a nonempty digest array",
+            )
         for item in value:
             if not isinstance(item, str) or not _DIGEST_PATTERN.fullmatch(item):
                 raise RecordValidationError(
@@ -1283,8 +1978,6 @@ def _validate_field_value(
                 field,
                 "must be a nonempty enum array",
             )
-        if len(value) != len(set(value)):
-            _invalid_payload_field(record_kind, field, "must not contain duplicates")
         for item in value:
             if type(item) is not str or item not in schema.choices:
                 _invalid_payload_field(
@@ -1292,6 +1985,8 @@ def _validate_field_value(
                     field,
                     f"contains a value outside {sorted(schema.choices)!r}",
                 )
+        if len(value) != len(set(value)):
+            _invalid_payload_field(record_kind, field, "must not contain duplicates")
         return
     if schema.kind is FieldKind.GENERATION_BINDING:
         _validate_generation_binding(record_kind, field, schema, value)
@@ -1311,8 +2006,6 @@ def _validate_field_value(
                 field,
                 "must be a nonempty identifier array",
             )
-        if len(value) != len(set(value)):
-            _invalid_payload_field(record_kind, field, "must not contain duplicates")
         for item in value:
             if type(item) is not str or not _IDENTIFIER_PATTERN.fullmatch(item):
                 _invalid_payload_field(
@@ -1320,6 +2013,8 @@ def _validate_field_value(
                     field,
                     "contains a noncanonical identifier",
                 )
+        if len(value) != len(set(value)):
+            _invalid_payload_field(record_kind, field, "must not contain duplicates")
         return
     if schema.kind is FieldKind.NONNEGATIVE_INTEGER:
         if type(value) is not int or value < 0:
@@ -1406,6 +2101,39 @@ def _validate_record_semantics(record_kind: str, payload: Mapping[str, Any]) -> 
                 record_kind,
                 "conditional applicability requires exactly one predicate digest",
             )
+        if (
+            payload["execution_requirement"] == "blocking_scenario"
+            and payload["impact"] != "blocking"
+        ):
+            _invalid_payload_semantics(
+                record_kind,
+                "a blocking scenario requires blocking impact",
+            )
+    elif record_kind == "dependency_projection":
+        dependency_keys = payload["dependency_keys"]
+        if len(dependency_keys) != len(payload["dependency_digests"]):
+            _invalid_payload_semantics(
+                record_kind,
+                "dependency keys and digests must have equal lengths",
+            )
+        if tuple(dependency_keys) != tuple(sorted(dependency_keys)):
+            _invalid_payload_semantics(
+                record_kind,
+                "dependency bindings must be ordered by dependency key",
+            )
+    elif record_kind == "invalidation_policy":
+        dependency_keys = payload["dependency_keys"]
+        if tuple(dependency_keys) != tuple(sorted(dependency_keys)):
+            _invalid_payload_semantics(
+                record_kind,
+                "invalidation dependency keys must be in canonical order",
+            )
+    elif record_kind == "invalidation_stream_checkpoint":
+        if payload["complete_through_sequence"] <= 0:
+            _invalid_payload_semantics(
+                record_kind,
+                "complete_through_sequence must be positive",
+            )
     elif record_kind == "attempt":
         if payload["journal_sequence"] <= 0:
             _invalid_payload_semantics(
@@ -1449,10 +2177,10 @@ def _validate_record_semantics(record_kind: str, payload: Mapping[str, Any]) -> 
     elif record_kind == "evaluation":
         applicability = payload["applicability"]
         outcome = payload["outcome"]
-        admissible = payload["admissible"]
-        currency = payload["currency"]
-        has_attestations = bool(payload["attestation_digests"])
+        attestation_count = len(payload["attestation_digests"])
+        has_attestations = attestation_count > 0
         has_predicate_proof = "predicate_proof_digest" in payload
+        unknown_reason = payload.get("unknown_reason")
         allowed_outcomes = {
             "applicable": {"blocked", "fail", "pass"},
             "applicable_unknown": {"unknown"},
@@ -1464,16 +2192,6 @@ def _validate_record_semantics(record_kind: str, payload: Mapping[str, Any]) -> 
                 record_kind,
                 "outcome does not match the applicability state",
             )
-        if currency == "stale" and admissible:
-            _invalid_payload_semantics(
-                record_kind,
-                "stale evidence cannot be admissible",
-            )
-        if applicability in {"applicable_unknown", "not_due"} and admissible:
-            _invalid_payload_semantics(
-                record_kind,
-                "unknown or not-due evidence cannot be admissible",
-            )
         if applicability == "not_applicable":
             if has_attestations or not has_predicate_proof:
                 _invalid_payload_semantics(
@@ -1481,15 +2199,39 @@ def _validate_record_semantics(record_kind: str, payload: Mapping[str, Any]) -> 
                     "not-applicable evaluation requires one predicate proof and no attestations",
                 )
         elif applicability == "applicable":
-            if not has_attestations or has_predicate_proof:
+            if not has_attestations:
                 _invalid_payload_semantics(
                     record_kind,
-                    "applicable evaluation requires attestations and no predicate proof",
+                    "applicable evaluation requires attestations",
+                )
+        elif applicability == "applicable_unknown":
+            if unknown_reason is None:
+                _invalid_payload_semantics(
+                    record_kind,
+                    "applicable-unknown evaluation requires one unknown reason",
+                )
+            if unknown_reason == "missing_applicability_proof":
+                coherent_provenance = not has_attestations and not has_predicate_proof
+            elif unknown_reason == "missing_attestation":
+                coherent_provenance = not has_attestations
+            elif unknown_reason in _EVALUATION_PROOF_UNKNOWN_REASONS:
+                coherent_provenance = not has_attestations and has_predicate_proof
+            else:
+                coherent_provenance = attestation_count == 1
+            if not coherent_provenance:
+                _invalid_payload_semantics(
+                    record_kind,
+                    "applicable-unknown reason does not bind its exact evidence provenance",
                 )
         elif has_attestations or has_predicate_proof:
             _invalid_payload_semantics(
                 record_kind,
-                "unknown or not-due evaluation cannot claim terminal evidence",
+                "not-due evaluation cannot claim terminal evidence",
+            )
+        if applicability != "applicable_unknown" and unknown_reason is not None:
+            _invalid_payload_semantics(
+                record_kind,
+                "unknown_reason is present exactly for applicable-unknown evaluations",
             )
     elif record_kind == "validation_context":
         active = payload["context_type"] == "active_contract"
@@ -1535,20 +2277,161 @@ def _validate_record_semantics(record_kind: str, payload: Mapping[str, Any]) -> 
                 record_kind,
                 "subject_kind must name a registered control-record family",
             )
-    elif record_kind == "composite_change_set":
-        if payload["old_manifest_digest"] == payload["candidate_manifest_digest"]:
+        allowed_identities = payload.get("allowed_actor_identity_digests", ())
+        allowed_roles = payload.get("allowed_actor_roles", ())
+        if not allowed_identities and not allowed_roles:
             _invalid_payload_semantics(
                 record_kind,
-                "old and candidate manifests must differ",
+                "authorization requires at least one allowed actor identity or role",
             )
-        joint_fields = {"recovery_policy", "witness_roster"}
-        if (
-            joint_fields & set(payload["changed_fields"])
-            and payload["quorum_mode"] != "joint_consensus"
-        ):
+    elif record_kind == "composite_change_set":
+        changed_fields = tuple(payload["changed_fields"])
+        if changed_fields != tuple(sorted(changed_fields)):
             _invalid_payload_semantics(
                 record_kind,
-                "recovery-policy and witness-roster changes require joint consensus",
+                "changed fields must be in canonical order",
+            )
+        transition_mode = payload["transition_mode"]
+        old_manifest = payload["old_manifest_digest"]
+        candidate_manifest = payload["candidate_manifest_digest"]
+        rollback_manifest = payload["rollback_manifest_digest"]
+        reinstatement = transition_mode == "register_reinstatement"
+        has_prior_checkpoint = "prior_committed_checkpoint_digest" in payload
+        has_current_register_observation = (
+            "current_authority_register_observation_digest" in payload
+        )
+        expected_action = (
+            "reinstate_composite_authority"
+            if reinstatement
+            else "transition_composite_authority"
+        )
+        if payload["authorization_action"] != expected_action:
+            _invalid_payload_semantics(
+                record_kind,
+                "authorization action must match the transition mode",
+            )
+        if reinstatement != has_prior_checkpoint:
+            _invalid_payload_semantics(
+                record_kind,
+                "only register reinstatement binds a prior committed checkpoint",
+            )
+        if reinstatement != has_current_register_observation:
+            _invalid_payload_semantics(
+                record_kind,
+                "only register reinstatement binds the current authority-register observation",
+            )
+        if not reinstatement:
+            if old_manifest == candidate_manifest:
+                _invalid_payload_semantics(
+                    record_kind,
+                    "a composite transition requires distinct old and candidate manifests",
+                )
+            if rollback_manifest != old_manifest:
+                _invalid_payload_semantics(
+                    record_kind,
+                    "a composite transition must roll back to the exact old manifest",
+                )
+            if not changed_fields:
+                _invalid_payload_semantics(
+                    record_kind,
+                    "a composite transition requires a nonempty projection change set",
+                )
+            if "fallback" not in changed_fields:
+                _invalid_payload_semantics(
+                    record_kind,
+                    "a composite transition must bind the old manifest as fallback",
+                )
+            generation_fields = {
+                "accepted_generation",
+                "active_generation",
+                "rollback_generation",
+            }
+            changed_generations = generation_fields & set(changed_fields)
+            binding_mode = payload["generation_binding"]["mode"]
+            if transition_mode == "control_update" and (
+                changed_generations
+                or binding_mode != GenerationBindingMode.NO_GENERATION.value
+            ):
+                _invalid_payload_semantics(
+                    record_kind,
+                    "control update cannot change generation pointers",
+                )
+            if transition_mode == "activation" and (
+                "active_generation" not in changed_generations
+                or "accepted_generation" in changed_generations
+                or binding_mode
+                != GenerationBindingMode.REQUIRED_GENERATION.value
+            ):
+                _invalid_payload_semantics(
+                    record_kind,
+                    "activation changes the active pointer and preserves accepted",
+                )
+            if transition_mode == "acceptance" and (
+                changed_generations != {"accepted_generation"}
+                or binding_mode
+                != GenerationBindingMode.REQUIRED_GENERATION.value
+            ):
+                _invalid_payload_semantics(
+                    record_kind,
+                    "acceptance changes only the accepted generation pointer",
+                )
+            joint_fields = {
+                "quorum_policy",
+                "recovery_policy",
+                "witness_roster",
+            }
+            expected_quorum_mode = (
+                "joint_consensus"
+                if joint_fields & set(changed_fields)
+                else "existing"
+            )
+            if payload["quorum_mode"] != expected_quorum_mode:
+                _invalid_payload_semantics(
+                    record_kind,
+                    "quorum mode must be derived from the changed authority projections",
+                )
+        else:
+            if not old_manifest == candidate_manifest == rollback_manifest:
+                _invalid_payload_semantics(
+                    record_kind,
+                    "register reinstatement must select the exact prior whole manifest",
+                )
+            if changed_fields:
+                _invalid_payload_semantics(
+                    record_kind,
+                    "register reinstatement cannot change manifest projections",
+                )
+            if payload["quorum_mode"] != "recovery_root":
+                _invalid_payload_semantics(
+                    record_kind,
+                    "register reinstatement requires recovery-root authority",
+                )
+            if (
+                payload["generation_binding"]["mode"]
+                != GenerationBindingMode.NO_GENERATION.value
+            ):
+                _invalid_payload_semantics(
+                    record_kind,
+                    "register reinstatement has no generation projection change",
+                )
+    elif record_kind == "composite_authority_checkpoint":
+        if payload["register_sequence"] <= 0:
+            _invalid_payload_semantics(
+                record_kind,
+                "committed checkpoint register sequence must be positive",
+            )
+    elif record_kind == "quorum_policy":
+        if payload["threshold"] <= 0:
+            _invalid_payload_semantics(
+                record_kind,
+                "quorum threshold must be positive",
+            )
+    elif record_kind == "witness_roster":
+        witnesses = tuple(payload["witness_identity_digests"])
+        if witnesses != tuple(sorted(witnesses)):
+            _invalid_payload_semantics(
+                record_kind,
+                "witness identities must be in canonical order",
             )
     elif record_kind == "capability":
         if payload["fence_epoch"] <= 0:
@@ -1651,6 +2534,133 @@ def _validate_record_semantics(record_kind: str, payload: Mapping[str, Any]) -> 
                 record_kind,
                 "generation subject must equal the bound generation",
             )
+    elif record_kind == "operation_requirement":
+        try:
+            validate_operation_coordinates(
+                CriticalOperationKind(payload["operation_kind"]),
+                OperationSubjectKind(payload["subject_kind"]),
+                OperationTargetKind(payload["target_kind"]),
+                GenerationBindingMode(payload["generation_binding_mode"]),
+                GenerationClass(payload["generation_class"]),
+                LifecyclePhase(payload["lifecycle_phase"]),
+            )
+        except ValueError:
+            _invalid_payload_semantics(
+                record_kind,
+                "operation requirement coordinates are invalid for operation kind",
+            )
+        subject_kind_by_role = {
+            "candidate_generation": "generation",
+            "captured_baseline": "generation",
+            "composite_authority": "composite_authority",
+            "control_record": "control_record",
+            "gate_occurrence": "gate_occurrence",
+        }
+        if (
+            payload["subject_kind"]
+            != subject_kind_by_role[payload["subject_binding_role"]]
+        ):
+            _invalid_payload_semantics(
+                record_kind,
+                "subject binding role contradicts the operation subject kind",
+            )
+        generation_mode_by_role = {
+            "b0_capture_sentinel": "b0_capture_sentinel",
+            "candidate_generation": "required_generation",
+            "captured_baseline_generation": "required_generation",
+            "no_generation": "no_generation",
+            "predecessor_generation": "required_generation",
+        }
+        if (
+            payload["generation_binding_mode"]
+            != generation_mode_by_role[payload["generation_binding_role"]]
+        ):
+            _invalid_payload_semantics(
+                record_kind,
+                "generation binding role contradicts the generation binding mode",
+            )
+        gate_occurrence = payload["subject_binding_role"] == "gate_occurrence"
+        has_assignment = "assignment_digest" in payload
+        if gate_occurrence != has_assignment:
+            _invalid_payload_semantics(
+                record_kind,
+                "gate-occurrence requirements bind one assignment and other requirements forbid it",
+            )
+        if gate_occurrence:
+            purpose = payload["purpose"]
+            realization_condition = payload["realization_condition"]
+            final_restart = purpose == "final_service_restart"
+            conditional_scenario = purpose in {
+                "blocking_scenario",
+                "service_anchor",
+                "service_restart",
+            }
+            if (
+                final_restart
+                and realization_condition != "always"
+            ) or (
+                not final_restart
+                and (
+                    not conditional_scenario
+                    or realization_condition != "when_assignment_applicable"
+                )
+            ):
+                _invalid_payload_semantics(
+                    record_kind,
+                    "gate-occurrence requirements realize conditional scenarios or one always-realized final restart",
+                )
+        elif payload["realization_condition"] != "always":
+            _invalid_payload_semantics(
+                record_kind,
+                "nongate operation requirements are always realized",
+            )
+        purpose_coordinates = {
+            "baseline_rehearsal_install": (
+                "package_installation",
+                "live_root",
+                "c",
+                "active",
+            ),
+            "baseline_restoration": (
+                "rollback",
+                "live_root",
+                "c",
+                "active",
+            ),
+            "service_anchor": (
+                "blocking_scenario",
+                "service",
+                "c",
+                "active",
+            ),
+            "service_restart": (
+                "blocking_scenario",
+                "service",
+                "c",
+                "active",
+            ),
+            "final_service_restart": (
+                "blocking_scenario",
+                "service",
+                "c",
+                "active",
+            ),
+        }
+        required_coordinates = purpose_coordinates.get(payload["purpose"])
+        actual_coordinates = (
+            payload["operation_kind"],
+            payload["target_kind"],
+            payload["generation_class"],
+            payload["lifecycle_phase"],
+        )
+        if (
+            required_coordinates is not None
+            and actual_coordinates != required_coordinates
+        ):
+            _invalid_payload_semantics(
+                record_kind,
+                "operation requirement purpose has invalid authority coordinates",
+            )
     elif record_kind == "retention_lease":
         issued_at = parse_canonical_timestamp(payload["issued_at"])
         expires_at = parse_canonical_timestamp(payload["expires_at"])
@@ -1658,6 +2668,43 @@ def _validate_record_semantics(record_kind: str, payload: Mapping[str, Any]) -> 
             _invalid_payload_semantics(
                 record_kind,
                 "retention lease expiry must follow issuance",
+            )
+    elif record_kind == "recovery_policy":
+        contract_digests = tuple(payload["recovery_contract_digests"])
+        owner_roles = tuple(payload["recovery_owner_roles"])
+        if contract_digests != tuple(sorted(contract_digests)):
+            _invalid_payload_semantics(
+                record_kind,
+                "recovery contracts must be in canonical order",
+            )
+        if owner_roles != tuple(sorted(owner_roles)):
+            _invalid_payload_semantics(
+                record_kind,
+                "recovery owner roles must be in canonical order",
+            )
+    elif record_kind in {
+        "final_service_anchor_receipt",
+        "service_anchor_receipt",
+    }:
+        issued_at = parse_canonical_timestamp(payload["issued_at"])
+        expires_at = parse_canonical_timestamp(payload["expires_at"])
+        if (expires_at - issued_at).total_seconds() != 300:
+            _invalid_payload_semantics(
+                record_kind,
+                "service anchor health lease must last exactly five minutes",
+            )
+    elif record_kind == "validation_contract":
+        max_live_attempt_seconds = payload["max_live_attempt_seconds"]
+        max_suite_seconds = payload["max_suite_seconds"]
+        if not 0 < max_live_attempt_seconds <= 3600:
+            _invalid_payload_semantics(
+                record_kind,
+                "live-attempt budget must be positive and no more than 60 minutes",
+            )
+        if not 0 < max_suite_seconds <= 28800:
+            _invalid_payload_semantics(
+                record_kind,
+                "suite budget must be positive and no more than eight hours",
             )
     elif record_kind == "requirements":
         version = payload["requirements_version"]
@@ -1696,11 +2743,92 @@ def _validate_record_semantics(record_kind: str, payload: Mapping[str, Any]) -> 
                 record_kind,
                 "target protected-state generation must equal destination generation",
             )
+    elif record_kind == "rollback_registry":
+        if payload["selected_rollback_digest"] not in payload["rollback_digests"]:
+            _invalid_payload_semantics(
+                record_kind,
+                "selected rollback must be an exact member of the registry",
+            )
     elif record_kind == "inclusion_edge":
         if payload["active_contract_digest"] == payload["preassembly_context_digest"]:
             _invalid_payload_semantics(
                 record_kind,
                 "inclusion edge must cross from preassembly into an active contract",
+            )
+    elif record_kind == "lifecycle_checkpoint":
+        coordinate = (payload["generation_class"], payload["phase"])
+        legal_coordinates = {
+            ("b0", "captured"),
+            ("f", "foundation_validation"),
+            ("c", "published"),
+            ("c", "prevalidated"),
+            ("c", "active"),
+            ("c", "accepted"),
+        }
+        if coordinate not in legal_coordinates:
+            _invalid_payload_semantics(
+                record_kind,
+                "generation class and lifecycle phase are not a legal checkpoint",
+            )
+        nonroot_fields = {
+            "authority_proof_digest",
+            "contract_digest",
+            "evidence_cut_digest",
+            "predecessor_checkpoint_digest",
+        }
+        present_nonroot_fields = nonroot_fields & set(payload)
+        root = coordinate == ("b0", "captured")
+        foundation = coordinate == ("f", "foundation_validation")
+        has_root_authorization = "root_authorization_digest" in payload
+        if root:
+            if present_nonroot_fields or not has_root_authorization:
+                _invalid_payload_semantics(
+                    record_kind,
+                    "captured B0 root requires root authorization and forbids nonroot material",
+                )
+        elif foundation:
+            if present_nonroot_fields != {"predecessor_checkpoint_digest"} or has_root_authorization:
+                _invalid_payload_semantics(
+                    record_kind,
+                    "foundation checkpoint requires only its structural predecessor",
+                )
+        elif present_nonroot_fields != nonroot_fields or has_root_authorization:
+            _invalid_payload_semantics(
+                record_kind,
+                "C checkpoint requires contract, cut, proof, and predecessor",
+            )
+        acceptance_fields = {
+            "acceptance_request_digest",
+            "approval_digest",
+            "final_service_anchor_receipt_digest",
+        }
+        present_acceptance_fields = acceptance_fields & set(payload)
+        accepted = coordinate == ("c", "accepted")
+        if accepted and present_acceptance_fields != acceptance_fields:
+            _invalid_payload_semantics(
+                record_kind,
+                "accepted checkpoint requires request and approval",
+            )
+        if not accepted and present_acceptance_fields:
+            _invalid_payload_semantics(
+                record_kind,
+                "nonaccepted checkpoint forbids request and approval",
+            )
+        if (
+            "baseline_restoration_receipt_digest" in payload
+            and coordinate != ("c", "prevalidated")
+        ):
+            _invalid_payload_semantics(
+                record_kind,
+                "only a prevalidated C checkpoint may bind baseline restoration",
+            )
+        if (
+            "service_anchor_receipt_digest" in payload
+            and coordinate != ("c", "active")
+        ):
+            _invalid_payload_semantics(
+                record_kind,
+                "only an active C checkpoint may authorize a service anchor",
             )
     elif record_kind == "atomic_evidence_cut" or record_kind == "promotion_authority_proof":
         if payload["complete_through_sequence"] <= 0:
@@ -1708,12 +2836,72 @@ def _validate_record_semantics(record_kind: str, payload: Mapping[str, Any]) -> 
                 record_kind,
                 "complete_through_sequence must be positive",
             )
-        if len(payload["operation_digests"]) != len(
-            payload["operation_terminal_digests"]
+        operation_count = len(payload["operation_digests"])
+        if (
+            operation_count != len(payload["operation_terminal_digests"])
+            or operation_count != len(payload["capability_digests"])
         ):
             _invalid_payload_semantics(
                 record_kind,
-                "every critical operation requires one terminal record",
+                "every critical operation requires one capability and terminal record",
+            )
+        if len(payload["evaluation_digests"]) != len(
+            payload["currency_proof_digests"]
+        ):
+            _invalid_payload_semantics(
+                record_kind,
+                "every evaluation requires one exact currency proof",
+            )
+        if record_kind == "promotion_authority_proof":
+            acceptance_fields = {
+                "acceptance_request_digest",
+                "approval_digest",
+                "final_service_anchor_receipt_digest",
+            }
+            present_acceptance_fields = acceptance_fields & set(payload)
+            if payload["phase"] == "accepted":
+                if present_acceptance_fields != acceptance_fields:
+                    _invalid_payload_semantics(
+                        record_kind,
+                        "accepted proof requires request and approval",
+                    )
+            elif present_acceptance_fields:
+                _invalid_payload_semantics(
+                    record_kind,
+                    "nonaccepted proof forbids request and approval",
+                )
+    elif record_kind == "promotion_contract":
+        phase_operation_field = "phase_establishing_operation_obligation_digest"
+        acceptance_field = "acceptance_authorization_digest"
+        restoration_field = "baseline_restoration_receipt_digest"
+        service_anchor_field = "predecessor_service_anchor_receipt_digest"
+        phase = payload["phase"]
+        accepted = payload["phase"] == "accepted"
+        if accepted:
+            if (
+                acceptance_field not in payload
+                or service_anchor_field not in payload
+                or phase_operation_field in payload
+            ):
+                _invalid_payload_semantics(
+                    record_kind,
+                    "accepted contract requires acceptance authorization and its predecessor service anchor and forbids a phase operation",
+                )
+        elif phase_operation_field not in payload or acceptance_field in payload:
+            _invalid_payload_semantics(
+                record_kind,
+                "nonaccepted contract requires a phase operation and forbids acceptance authorization",
+            )
+        active = phase == "active"
+        if active != (restoration_field in payload):
+            _invalid_payload_semantics(
+                record_kind,
+                "active contract requires one baseline restoration receipt and other phases forbid it",
+            )
+        if service_anchor_field in payload and not accepted:
+            _invalid_payload_semantics(
+                record_kind,
+                "only an accepted contract may consume a service anchor receipt",
             )
     elif record_kind == "terminal_record":
         if payload["journal_sequence"] <= 0:
@@ -1724,16 +2912,31 @@ def _validate_record_semantics(record_kind: str, payload: Mapping[str, Any]) -> 
         gate_fields = {"assignment_digest", "attempt_digest"}
         has_gate_fields = gate_fields & set(payload)
         has_operation = "operation_digest" in payload
+        has_capability = "capability_digest" in payload
+        has_predicate_proof = "predicate_proof_digest" in payload
         if payload["terminal_type"] == "gate_attempt":
-            if has_gate_fields != gate_fields or has_operation:
+            if has_gate_fields != gate_fields or has_operation or has_capability:
                 _invalid_payload_semantics(
                     record_kind,
-                    "gate-attempt terminal requires assignment/attempt and forbids operation",
+                    "gate-attempt terminal requires assignment/attempt and forbids operation capability",
                 )
-        elif has_gate_fields or not has_operation:
+        elif (
+            has_gate_fields
+            or not has_operation
+            or not has_capability
+            or has_predicate_proof
+        ):
             _invalid_payload_semantics(
                 record_kind,
-                "critical-operation terminal requires operation and forbids gate coordinates",
+                "critical-operation terminal requires operation/capability and forbids gate coordinates",
+            )
+        elif (
+            payload["outcome"] == "succeeded"
+            and not payload["validator_attestation_digests"]
+        ):
+            _invalid_payload_semantics(
+                record_kind,
+                "successful critical-operation terminal requires validator evidence",
             )
 
 
@@ -1903,6 +3106,12 @@ def _validate_detached_signature(
             RecordErrorCode.INVALID_SIGNATURE,
             "detached ed25519 signature must contain 64 bytes",
         )
+    canonical_value = base64.urlsafe_b64encode(decoded).rstrip(b"=").decode("ascii")
+    if not hmac.compare_digest(value, canonical_value):
+        raise RecordValidationError(
+            RecordErrorCode.INVALID_SIGNATURE,
+            "detached ed25519 signature must use canonical base64url pad bits",
+        )
 
 
 def _public_envelope_record_id(payload: Mapping[str, Any]) -> str:
@@ -1923,6 +3132,31 @@ class ControlRecord:
     signature: Mapping[str, Any] | None = None
 
     @classmethod
+    def signing_digest(
+        cls,
+        *,
+        kind: str,
+        record_id: str,
+        payload: Mapping[str, Any],
+    ) -> str:
+        """Return the validated canonical core digest for detached signing."""
+
+        _require_base_record_factory(cls)
+        kind = _require_exact_record_kind(kind)
+        if kind == "public_envelope":
+            raise PrivacyEnvelopeError(
+                RecordErrorCode.INVALID_PUBLIC_ENVELOPE,
+                "public envelopes must be derived from a restricted record",
+            )
+        return cls._build(
+            kind=kind,
+            record_id=record_id,
+            payload=payload,
+            allow_public_envelope=False,
+            allow_unsigned_required_signature=True,
+        ).digest()
+
+    @classmethod
     def build(
         cls,
         *,
@@ -1931,6 +3165,8 @@ class ControlRecord:
         payload: Mapping[str, Any],
         signature: Mapping[str, Any] | None = None,
     ) -> ControlRecord:
+        _require_base_record_factory(cls)
+        kind = _require_exact_record_kind(kind)
         if kind == "public_envelope":
             raise PrivacyEnvelopeError(
                 RecordErrorCode.INVALID_PUBLIC_ENVELOPE,
@@ -1953,16 +3189,14 @@ class ControlRecord:
         payload: Mapping[str, Any],
         signature: Mapping[str, Any] | None = None,
         allow_public_envelope: bool,
+        allow_unsigned_required_signature: bool = False,
     ) -> ControlRecord:
+        _require_base_record_factory(cls)
+        kind = _require_exact_record_kind(kind)
         if kind == "public_envelope" and not allow_public_envelope:
             raise PrivacyEnvelopeError(
                 RecordErrorCode.INVALID_PUBLIC_ENVELOPE,
                 "public envelopes must be derived from a restricted record",
-            )
-        if not isinstance(kind, str):
-            raise CanonicalizationError(
-                RecordErrorCode.INVALID_TYPE,
-                "record kind must be a string",
             )
         if kind not in RECORD_KINDS:
             raise ControlRecordError(
@@ -2023,6 +3257,26 @@ class ControlRecord:
                 normalized_signature,
                 record_digest=digest,
             )
+        signature_required = kind == "composite_authority_checkpoint"
+        if (
+            signature_required
+            and normalized_signature is None
+            and not allow_unsigned_required_signature
+        ):
+            raise RecordValidationError(
+                RecordErrorCode.INVALID_SIGNATURE,
+                "composite authority checkpoint requires a detached signature",
+            )
+        if (
+            signature_required
+            and normalized_signature is not None
+            and normalized_signature["signer_identity_digest"]
+            != normalized_payload["signer_identity_digest"]
+        ):
+            raise RecordValidationError(
+                RecordErrorCode.INVALID_SIGNATURE,
+                "checkpoint signature must use the bound signer identity",
+            )
         record = object.__new__(cls)
         object.__setattr__(record, "kind", kind)
         object.__setattr__(record, "record_id", normalized_record_id)
@@ -2046,9 +3300,10 @@ class ControlRecord:
 
     @classmethod
     def parse(cls, wire: bytes | str) -> ControlRecord:
-        if isinstance(wire, bytes):
+        _require_base_record_factory(cls)
+        if type(wire) is bytes:
             raw = wire
-        elif isinstance(wire, str):
+        elif type(wire) is str:
             try:
                 raw = wire.encode("utf-8")
             except UnicodeEncodeError as error:
@@ -2128,7 +3383,12 @@ class ControlRecord:
                 f"unsupported schema version: {document['schema_version']!r}",
             )
         kind = document["kind"]
-        if not isinstance(kind, str) or kind not in RECORD_KINDS:
+        if type(kind) is not str:
+            raise RecordValidationError(
+                RecordErrorCode.INVALID_TYPE,
+                "record kind must be an exact string",
+            )
+        if kind not in RECORD_KINDS:
             raise RecordValidationError(
                 RecordErrorCode.UNSUPPORTED_KIND,
                 f"record kind is not registered: {kind!r}",
@@ -2171,6 +3431,21 @@ class ControlRecord:
     ) -> ControlRecord:
         """Project schema-owned metadata with a non-guessable restricted binding."""
 
+        try:
+            source = _require_canonical_control_record(
+                self,
+                field="public envelope source",
+            )
+        except TypeError as error:
+            raise PrivacyEnvelopeError(
+                RecordErrorCode.INVALID_TYPE,
+                "public envelope source must be an exact ControlRecord",
+            ) from error
+        except ValueError as error:
+            raise PrivacyEnvelopeError(
+                RecordErrorCode.DIGEST_MISMATCH,
+                "public envelope source does not match its canonical record identity",
+            ) from error
         if opaque_reference_key is None and commitment_key is None:
             raise PrivacyEnvelopeError(
                 RecordErrorCode.PRIVACY_BINDING_REQUIRED,
@@ -2186,7 +3461,7 @@ class ControlRecord:
             )
             opaque_token = hmac.new(
                 reference_key,
-                _OPAQUE_REFERENCE_DOMAIN + self._digest.encode("ascii"),
+                _OPAQUE_REFERENCE_DOMAIN + source._digest.encode("ascii"),
                 hashlib.sha256,
             ).digest()
             encoded_token = base64.urlsafe_b64encode(opaque_token).rstrip(b"=")
@@ -2202,17 +3477,17 @@ class ControlRecord:
             )
             commitment = hmac.new(
                 validated_commitment_key,
-                _PUBLIC_COMMITMENT_DOMAIN + self._digest.encode("ascii"),
+                _PUBLIC_COMMITMENT_DOMAIN + source._digest.encode("ascii"),
                 hashlib.sha256,
             ).hexdigest()
             binding["keyed_commitment"] = f"hmac_sha256:{commitment}"
 
         public: dict[str, bool | str] = {}
-        for field in sorted(RECORD_SCHEMAS[self.kind].public_fields):
-            if field not in self.payload:
+        for field in sorted(RECORD_SCHEMAS[source.kind].public_fields):
+            if field not in source.payload:
                 continue
-            value = self.payload[field]
-            if not _is_safe_public_value(self.kind, field, value):
+            value = source.payload[field]
+            if not _is_safe_public_value(source.kind, field, value):
                 raise PrivacyEnvelopeError(
                     RecordErrorCode.UNSAFE_PUBLIC_VALUE,
                     f"allowlisted public field has an unrecognized value: {field!r}",
@@ -2222,7 +3497,7 @@ class ControlRecord:
         envelope_payload = {
             "binding": binding,
             "public": public,
-            "source_kind": self.kind,
+            "source_kind": source.kind,
         }
         return ControlRecord._build(
             kind="public_envelope",
@@ -2243,6 +3518,45 @@ class ControlRecord:
         if self.signature is not None:
             document["signature"] = _plain(self.signature)
         return _canonical_json(document)
+
+
+def _require_canonical_control_record(
+    value: object,
+    *,
+    field: str,
+    kind: str | None = None,
+) -> ControlRecord:
+    """Admit one exact, internally consistent base control record."""
+
+    if type(value) is not ControlRecord:
+        raise TypeError(f"{field} must be an exact ControlRecord")
+    record_kind = object.__getattribute__(value, "kind")
+    if type(record_kind) is not str:
+        raise TypeError(f"{field}.kind must be an exact string")
+    if kind is not None:
+        if type(kind) is not str:
+            raise TypeError("expected record kind must be an exact string")
+        if record_kind != kind:
+            raise ValueError(f"{field} must be a canonical {kind} record")
+    try:
+        rebuilt = ControlRecord._build(
+            kind=record_kind,
+            record_id=object.__getattribute__(value, "record_id"),
+            payload=_plain(object.__getattribute__(value, "payload")),
+            signature=_plain(object.__getattribute__(value, "signature")),
+            allow_public_envelope=record_kind == "public_envelope",
+        )
+        stored_digest = object.__getattribute__(value, "_digest")
+        integrity_matches = (
+            type(stored_digest) is str
+            and hmac.compare_digest(stored_digest, rebuilt.digest())
+            and value.canonical_bytes() == rebuilt.canonical_bytes()
+        )
+    except (ControlRecordError, AttributeError, TypeError, ValueError) as error:
+        raise ValueError(f"{field} fails canonical integrity") from error
+    if not integrity_matches:
+        raise ValueError(f"{field} fails canonical integrity")
+    return value
 
 
 def _reject_duplicate_pairs(pairs: list[tuple[str, Any]]) -> dict[str, Any]:

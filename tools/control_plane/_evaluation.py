@@ -9,12 +9,12 @@ from __future__ import annotations
 
 import re
 from collections.abc import Iterable
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import StrEnum
 from typing import TypeAlias
 
-from ._records import ControlRecord
+from ._records import ControlRecord, _require_canonical_control_record
 
 
 class ContextKind(StrEnum):
@@ -54,6 +54,10 @@ class UnknownReason(StrEnum):
 
 _STABLE_ID_RE = re.compile(r"[a-z][a-z0-9]*(?:[-_:][a-z0-9]+)*\Z")
 _DIGEST_RE = re.compile(r"sha256:[0-9a-f]{64}\Z")
+
+
+def _record(value: object, *, field: str, kind: str) -> ControlRecord:
+    return _require_canonical_control_record(value, field=field, kind=kind)
 
 
 def _require_stable_id(value: object, *, field: str) -> None:
@@ -131,9 +135,11 @@ class ActiveContractContext:
 
     @classmethod
     def from_record(cls, record: ControlRecord) -> ActiveContractContext:
-        if not isinstance(record, ControlRecord) or record.kind != "validation_context":
-            raise TypeError("record must be a validation_context ControlRecord")
-        payload = record.payload
+        payload = _record(
+            record,
+            field="record",
+            kind="validation_context",
+        ).payload
         if payload["context_type"] != ContextKind.ACTIVE_CONTRACT.value:
             raise ValueError("validation context is not active_contract")
         return cls(
@@ -186,9 +192,11 @@ class PreassemblyContext:
 
     @classmethod
     def from_record(cls, record: ControlRecord) -> PreassemblyContext:
-        if not isinstance(record, ControlRecord) or record.kind != "validation_context":
-            raise TypeError("record must be a validation_context ControlRecord")
-        payload = record.payload
+        payload = _record(
+            record,
+            field="record",
+            kind="validation_context",
+        ).payload
         if payload["context_type"] != ContextKind.PREASSEMBLY.value:
             raise ValueError("validation context is not preassembly_profile")
         return cls(
@@ -289,37 +297,77 @@ class InvalidationEvent:
 
 @dataclass(frozen=True, slots=True)
 class SeparationPolicy:
-    required_attestor_roles: frozenset[str] = frozenset()
-    forbidden_attestor_principals: frozenset[str] = frozenset()
+    """Actor qualifications that are distinct from authorization grants.
+
+    Every required role must belong to the actor identity, and the selected
+    acting role must be one of those required roles when the set is nonempty.
+    A separate authorization policy must allow the identity or selected role.
+    """
+
+    required_actor_roles: frozenset[str] = frozenset()
+    forbidden_actor_principals: frozenset[str] = frozenset()
 
     def __post_init__(self) -> None:
         roles = _as_unique_frozenset(
-            self.required_attestor_roles,
-            field="required_attestor_roles",
+            self.required_actor_roles,
+            field="required_actor_roles",
             item_type=str,
         )
         principals = _as_unique_frozenset(
-            self.forbidden_attestor_principals,
-            field="forbidden_attestor_principals",
+            self.forbidden_actor_principals,
+            field="forbidden_actor_principals",
             item_type=str,
         )
         for role in roles:
-            _require_stable_id(role, field="required_attestor_roles item")
+            _require_stable_id(role, field="required_actor_roles item")
         for principal in principals:
             _require_stable_id(
                 principal,
-                field="forbidden_attestor_principals item",
+                field="forbidden_actor_principals item",
             )
         object.__setattr__(
             self,
-            "required_attestor_roles",
+            "required_actor_roles",
             roles,
         )
         object.__setattr__(
             self,
-            "forbidden_attestor_principals",
+            "forbidden_actor_principals",
             principals,
         )
+
+
+def _normalize_actor_identity_roles(
+    actor_identity_roles: object,
+    *,
+    actor_role: str,
+) -> frozenset[str]:
+    roles = _as_unique_frozenset(
+        actor_identity_roles,
+        field="actor_identity_roles",
+        item_type=str,
+    )
+    for role in roles:
+        _require_stable_id(role, field="actor_identity_roles item")
+    if actor_role not in roles:
+        raise ValueError("actor_role must belong to actor_identity_roles")
+    return roles
+
+
+def _actor_satisfies_separation(
+    policy: SeparationPolicy,
+    *,
+    actor_principal: str,
+    actor_role: str,
+    actor_identity_roles: frozenset[str],
+) -> bool:
+    required_roles = policy.required_actor_roles
+    return (
+        actor_principal not in policy.forbidden_actor_principals
+        and actor_role in actor_identity_roles
+        and required_roles <= actor_identity_roles
+        and (not required_roles or actor_role in required_roles)
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -382,6 +430,8 @@ class GateAssignment:
 
 @dataclass(frozen=True, slots=True)
 class Attestation:
+    """Historical outcome with roles resolved from the named actor identity."""
+
     attestation_id: str
     assignment_id: str
     subject_id: str
@@ -392,6 +442,7 @@ class Attestation:
     dependency_projection: frozenset[DependencyBinding]
     actor_principal: str
     actor_role: str
+    actor_identity_roles: frozenset[str]
 
     def __post_init__(self) -> None:
         _require_stable_id(self.attestation_id, field="attestation_id")
@@ -424,10 +475,20 @@ class Attestation:
         )
         _require_stable_id(self.actor_principal, field="actor_principal")
         _require_stable_id(self.actor_role, field="actor_role")
+        object.__setattr__(
+            self,
+            "actor_identity_roles",
+            _normalize_actor_identity_roles(
+                self.actor_identity_roles,
+                actor_role=self.actor_role,
+            ),
+        )
 
 
 @dataclass(frozen=True, slots=True)
 class PredicateProof:
+    """Predicate result with roles resolved from the named actor identity."""
+
     proof_id: str
     assignment_id: str
     subject_id: str
@@ -439,6 +500,7 @@ class PredicateProof:
     dependency_projection: frozenset[DependencyBinding]
     actor_principal: str
     actor_role: str
+    actor_identity_roles: frozenset[str]
 
     def __post_init__(self) -> None:
         _require_stable_id(self.proof_id, field="proof_id")
@@ -472,12 +534,21 @@ class PredicateProof:
         )
         _require_stable_id(self.actor_principal, field="actor_principal")
         _require_stable_id(self.actor_role, field="actor_role")
+        object.__setattr__(
+            self,
+            "actor_identity_roles",
+            _normalize_actor_identity_roles(
+                self.actor_identity_roles,
+                actor_role=self.actor_role,
+            ),
+        )
 
 
 @dataclass(frozen=True, slots=True)
 class Applicable:
     outcome: AttestationOutcome
     attestation: Attestation
+    predicate_proof: PredicateProof | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.outcome, AttestationOutcome):
@@ -488,12 +559,18 @@ class Applicable:
             raise ValueError("unknown evidence must use ApplicableUnknown")
         if self.outcome is not self.attestation.outcome:
             raise ValueError("outcome must match the attestation outcome")
+        if self.predicate_proof is not None:
+            if not isinstance(self.predicate_proof, PredicateProof):
+                raise TypeError("predicate_proof must be a PredicateProof or None")
+            if not self.predicate_proof.is_applicable:
+                raise ValueError("an applicable predicate proof must prove true")
 
 
 @dataclass(frozen=True, slots=True)
 class ApplicableUnknown:
     reason: UnknownReason
     attestation: Attestation | None = None
+    predicate_proof: PredicateProof | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.reason, UnknownReason):
@@ -503,6 +580,40 @@ class ApplicableUnknown:
             Attestation,
         ):
             raise TypeError("attestation must be an Attestation or None")
+        if self.predicate_proof is not None and not isinstance(
+            self.predicate_proof,
+            PredicateProof,
+        ):
+            raise TypeError("predicate_proof must be a PredicateProof or None")
+        attestation_derived_reasons = {
+            UnknownReason.ASSIGNMENT_MISMATCH,
+            UnknownReason.CONTEXT_MISMATCH,
+            UnknownReason.DEPENDENCY_MISMATCH,
+            UnknownReason.GATE_MISMATCH,
+            UnknownReason.REPORTED_UNKNOWN,
+            UnknownReason.SEPARATION_VIOLATION,
+            UnknownReason.SUBJECT_MISMATCH,
+        }
+        if (self.reason in attestation_derived_reasons) != (
+            self.attestation is not None
+        ):
+            raise ValueError(
+                "attestation-derived unknown reasons require exactly one attestation"
+            )
+        if (
+            self.reason is UnknownReason.MISSING_APPLICABILITY_PROOF
+            and self.predicate_proof is not None
+        ):
+            raise ValueError(
+                "missing-applicability-proof state cannot bind a predicate proof"
+            )
+        if (
+            self.reason is UnknownReason.APPLICABILITY_PROOF_MISMATCH
+            and self.predicate_proof is None
+        ):
+            raise ValueError(
+                "applicability-proof mismatch requires its exact predicate proof"
+            )
 
 
 @dataclass(frozen=True, slots=True)
@@ -524,8 +635,10 @@ class NotDue:
 EvaluationState: TypeAlias = Applicable | ApplicableUnknown | NotApplicable | NotDue
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, init=False)
 class EvidenceEvaluation:
+    """A factory-derived evidence verdict whose currency cannot be caller-selected."""
+
     assignment: GateAssignment
     state: EvaluationState
     currency: Currency
@@ -555,6 +668,36 @@ class EvidenceEvaluation:
 
         if isinstance(self.state, Applicable):
             attestation = self.state.attestation
+            applicability = self.assignment.applicability
+            predicate_proof = self.state.predicate_proof
+            if isinstance(applicability, ConditionalApplicability):
+                if predicate_proof is None:
+                    raise ValueError(
+                        "conditional applicable evidence requires one true predicate proof"
+                    )
+                if (
+                    predicate_proof.assignment_id
+                    != self.assignment.assignment_id
+                    or predicate_proof.subject_id != self.assignment.subject_id
+                    or predicate_proof.gate_id != self.assignment.gate_id
+                    or predicate_proof.context != self.assignment.context
+                    or predicate_proof.predicate_id != applicability.predicate_id
+                    or predicate_proof.dependency_projection
+                    != self.assignment.dependency_projection
+                    or not _actor_satisfies_separation(
+                        self.assignment.separation,
+                        actor_principal=predicate_proof.actor_principal,
+                        actor_role=predicate_proof.actor_role,
+                        actor_identity_roles=predicate_proof.actor_identity_roles,
+                    )
+                ):
+                    raise ValueError(
+                        "applicable predicate proof must match its conditional assignment"
+                    )
+            elif predicate_proof is not None:
+                raise ValueError(
+                    "unconditional applicable evidence cannot bind a predicate proof"
+                )
             if (
                 attestation.assignment_id != self.assignment.assignment_id
                 or attestation.subject_id != self.assignment.subject_id
@@ -565,6 +708,55 @@ class EvidenceEvaluation:
             ):
                 raise ValueError(
                     "applicable evidence must match its assignment coordinates"
+                )
+        elif isinstance(self.state, ApplicableUnknown):
+            reason = self.state.reason
+            predicate_proof = self.state.predicate_proof
+            applicability = self.assignment.applicability
+            if isinstance(applicability, ConditionalApplicability):
+                if reason is UnknownReason.MISSING_APPLICABILITY_PROOF:
+                    if predicate_proof is not None:
+                        raise ValueError(
+                            "missing applicability proof cannot bind predicate evidence"
+                        )
+                elif predicate_proof is None:
+                    raise ValueError(
+                        "conditional post-proof unknown requires its exact predicate proof"
+                    )
+                else:
+                    proof_matches = (
+                        predicate_proof.assignment_id
+                        == self.assignment.assignment_id
+                        and predicate_proof.subject_id == self.assignment.subject_id
+                        and predicate_proof.gate_id == self.assignment.gate_id
+                        and predicate_proof.context == self.assignment.context
+                        and predicate_proof.predicate_id == applicability.predicate_id
+                        and predicate_proof.dependency_projection
+                        == self.assignment.dependency_projection
+                        and _actor_satisfies_separation(
+                            self.assignment.separation,
+                            actor_principal=predicate_proof.actor_principal,
+                            actor_role=predicate_proof.actor_role,
+                            actor_identity_roles=(
+                                predicate_proof.actor_identity_roles
+                            ),
+                        )
+                    )
+                    if reason is UnknownReason.APPLICABILITY_PROOF_MISMATCH:
+                        if proof_matches:
+                            raise ValueError(
+                                "applicability-proof mismatch must bind a mismatching proof"
+                            )
+                    elif not proof_matches or not predicate_proof.is_applicable:
+                        raise ValueError(
+                            "conditional post-proof unknown requires a matching true proof"
+                        )
+            elif predicate_proof is not None or reason in {
+                UnknownReason.MISSING_APPLICABILITY_PROOF,
+                UnknownReason.APPLICABILITY_PROOF_MISMATCH,
+            }:
+                raise ValueError(
+                    "unconditional unknown evidence forbids applicability-proof provenance"
                 )
         elif isinstance(self.state, NotApplicable):
             proof = self.state.proof
@@ -580,6 +772,12 @@ class EvidenceEvaluation:
                 != self.assignment.applicability.predicate_id
                 or proof.dependency_projection
                 != self.assignment.dependency_projection
+                or not _actor_satisfies_separation(
+                    self.assignment.separation,
+                    actor_principal=proof.actor_principal,
+                    actor_role=proof.actor_role,
+                    actor_identity_roles=proof.actor_identity_roles,
+                )
             ):
                 raise ValueError(
                     "not-applicable proof must match its conditional assignment"
@@ -627,6 +825,30 @@ class EvidenceEvaluation:
     @property
     def invalidation_event_ids(self) -> tuple[str, ...]:
         return tuple(event.event_id for event in self.invalidation_events)
+
+
+def _derive_evaluation(
+    *,
+    assignment: GateAssignment,
+    state: EvaluationState,
+    currency: Currency,
+    evaluated_at: datetime,
+    observed_at: datetime,
+    invalidation_events: Iterable[InvalidationEvent] = (),
+) -> EvidenceEvaluation:
+    evaluation = object.__new__(EvidenceEvaluation)
+    object.__setattr__(evaluation, "assignment", assignment)
+    object.__setattr__(evaluation, "state", state)
+    object.__setattr__(evaluation, "currency", currency)
+    object.__setattr__(evaluation, "evaluated_at", evaluated_at)
+    object.__setattr__(evaluation, "observed_at", observed_at)
+    object.__setattr__(
+        evaluation,
+        "invalidation_events",
+        invalidation_events,
+    )
+    evaluation.__post_init__()
+    return evaluation
 
 
 @dataclass(frozen=True, slots=True)
@@ -683,7 +905,7 @@ def evaluate_evidence(
 
     _require_aware(trusted_time, field="trusted_time")
     if not due:
-        return EvidenceEvaluation(
+        return _derive_evaluation(
             assignment=assignment,
             state=NotDue(),
             currency=Currency.CURRENT,
@@ -694,7 +916,7 @@ def evaluate_evidence(
     predicate_is_stale = False
     if isinstance(assignment.applicability, ConditionalApplicability):
         if applicability_proof is None:
-            return EvidenceEvaluation(
+            return _derive_evaluation(
                 assignment=assignment,
                 state=ApplicableUnknown(
                     reason=UnknownReason.MISSING_APPLICABILITY_PROOF
@@ -711,6 +933,12 @@ def evaluate_evidence(
             raise EvaluationInputError(
                 "applicability proof observation is after trusted_time"
             )
+        predicate_observed_at = applicability_proof.observed_at
+        predicate_is_stale = (
+            assignment.validity.max_age is not None
+            and trusted_time
+            > applicability_proof.observed_at + assignment.validity.max_age
+        )
         proof_matches = (
             applicability_proof.assignment_id == assignment.assignment_id
             and applicability_proof.subject_id == assignment.subject_id
@@ -720,32 +948,28 @@ def evaluate_evidence(
             == assignment.applicability.predicate_id
             and applicability_proof.dependency_projection
             == assignment.dependency_projection
-            and (
-                not assignment.separation.required_attestor_roles
-                or applicability_proof.actor_role
-                in assignment.separation.required_attestor_roles
+            and _actor_satisfies_separation(
+                assignment.separation,
+                actor_principal=applicability_proof.actor_principal,
+                actor_role=applicability_proof.actor_role,
+                actor_identity_roles=applicability_proof.actor_identity_roles,
             )
-            and applicability_proof.actor_principal
-            not in assignment.separation.forbidden_attestor_principals
         )
         if not proof_matches:
-            return EvidenceEvaluation(
+            return _derive_evaluation(
                 assignment=assignment,
                 state=ApplicableUnknown(
-                    reason=UnknownReason.APPLICABILITY_PROOF_MISMATCH
+                    reason=UnknownReason.APPLICABILITY_PROOF_MISMATCH,
+                    predicate_proof=applicability_proof,
                 ),
-                currency=Currency.CURRENT,
+                currency=(
+                    Currency.STALE if predicate_is_stale else Currency.CURRENT
+                ),
                 evaluated_at=trusted_time,
                 observed_at=applicability_proof.observed_at,
             )
-        predicate_observed_at = applicability_proof.observed_at
-        predicate_is_stale = (
-            assignment.validity.max_age is not None
-            and trusted_time
-            > applicability_proof.observed_at + assignment.validity.max_age
-        )
         if not applicability_proof.is_applicable:
-            return EvidenceEvaluation(
+            return _derive_evaluation(
                 assignment=assignment,
                 state=NotApplicable(proof=applicability_proof),
                 currency=(
@@ -755,16 +979,39 @@ def evaluate_evidence(
                 observed_at=applicability_proof.observed_at,
             )
     if attestation is None:
-        return EvidenceEvaluation(
+        return _derive_evaluation(
             assignment=assignment,
-            state=ApplicableUnknown(reason=UnknownReason.MISSING_ATTESTATION),
-            currency=Currency.CURRENT,
+            state=ApplicableUnknown(
+                reason=UnknownReason.MISSING_ATTESTATION,
+                predicate_proof=(
+                    applicability_proof
+                    if isinstance(
+                        assignment.applicability,
+                        ConditionalApplicability,
+                    )
+                    else None
+                ),
+            ),
+            currency=(
+                Currency.STALE if predicate_is_stale else Currency.CURRENT
+            ),
             evaluated_at=trusted_time,
-            observed_at=trusted_time,
+            observed_at=predicate_observed_at or trusted_time,
         )
     _require_aware(attestation.observed_at, field="attestation.observed_at")
     if attestation.observed_at > trusted_time:
         raise EvaluationInputError("attestation observation is after trusted_time")
+    attestation_is_stale = (
+        assignment.validity.max_age is not None
+        and trusted_time > attestation.observed_at + assignment.validity.max_age
+    )
+    retained_evidence_is_stale = predicate_is_stale or attestation_is_stale
+    retained_observed_at = attestation.observed_at
+    if predicate_observed_at is not None:
+        retained_observed_at = min(
+            retained_observed_at,
+            predicate_observed_at,
+        )
     mismatch_reason: UnknownReason | None = None
     if attestation.assignment_id != assignment.assignment_id:
         mismatch_reason = UnknownReason.ASSIGNMENT_MISMATCH
@@ -776,43 +1023,54 @@ def evaluate_evidence(
         mismatch_reason = UnknownReason.CONTEXT_MISMATCH
     elif attestation.dependency_projection != assignment.dependency_projection:
         mismatch_reason = UnknownReason.DEPENDENCY_MISMATCH
-    elif (
-        assignment.separation.required_attestor_roles
-        and attestation.actor_role
-        not in assignment.separation.required_attestor_roles
-    ) or (
-        attestation.actor_principal
-        in assignment.separation.forbidden_attestor_principals
+    elif not _actor_satisfies_separation(
+        assignment.separation,
+        actor_principal=attestation.actor_principal,
+        actor_role=attestation.actor_role,
+        actor_identity_roles=attestation.actor_identity_roles,
     ):
         mismatch_reason = UnknownReason.SEPARATION_VIOLATION
     elif attestation.outcome is AttestationOutcome.UNKNOWN:
         mismatch_reason = UnknownReason.REPORTED_UNKNOWN
     if mismatch_reason is not None:
-        return EvidenceEvaluation(
+        return _derive_evaluation(
             assignment=assignment,
             state=ApplicableUnknown(
                 reason=mismatch_reason,
                 attestation=attestation,
+                predicate_proof=(
+                    applicability_proof
+                    if isinstance(
+                        assignment.applicability,
+                        ConditionalApplicability,
+                    )
+                    else None
+                ),
             ),
-            currency=Currency.CURRENT,
+            currency=(
+                Currency.STALE
+                if retained_evidence_is_stale
+                else Currency.CURRENT
+            ),
             evaluated_at=trusted_time,
-            observed_at=attestation.observed_at,
+            observed_at=retained_observed_at,
         )
-    currency = Currency.STALE if predicate_is_stale else Currency.CURRENT
-    if (
-        assignment.validity.max_age is not None
-        and trusted_time > attestation.observed_at + assignment.validity.max_age
-    ):
-        currency = Currency.STALE
-    observed_at = attestation.observed_at
-    if predicate_observed_at is not None:
-        observed_at = min(observed_at, predicate_observed_at)
-    return EvidenceEvaluation(
+    return _derive_evaluation(
         assignment=assignment,
-        state=Applicable(outcome=attestation.outcome, attestation=attestation),
-        currency=currency,
+        state=Applicable(
+            outcome=attestation.outcome,
+            attestation=attestation,
+            predicate_proof=applicability_proof
+            if isinstance(assignment.applicability, ConditionalApplicability)
+            else None,
+        ),
+        currency=(
+            Currency.STALE
+            if retained_evidence_is_stale
+            else Currency.CURRENT
+        ),
         evaluated_at=trusted_time,
-        observed_at=observed_at,
+        observed_at=retained_observed_at,
     )
 
 
@@ -844,6 +1102,10 @@ def apply_invalidation(
 
     _require_aware(trusted_time, field="trusted_time")
     _require_aware(event.observed_at, field="event.observed_at")
+    if trusted_time < evaluation.evaluated_at:
+        raise EvaluationInputError(
+            "trusted_time is before source evaluation evaluated_at"
+        )
     if event.observed_at > trusted_time:
         raise EvaluationInputError("invalidation event is after trusted_time")
     if event.event_id in evaluation.invalidation_event_ids:
@@ -858,10 +1120,12 @@ def apply_invalidation(
     )
     if not affected_keys or event.observed_at < evaluation.observed_at:
         return evaluation
-    return replace(
-        evaluation,
+    return _derive_evaluation(
+        assignment=evaluation.assignment,
+        state=evaluation.state,
         currency=Currency.STALE,
         evaluated_at=trusted_time,
+        observed_at=evaluation.observed_at,
         invalidation_events=(*evaluation.invalidation_events, event),
     )
 

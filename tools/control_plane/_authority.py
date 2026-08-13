@@ -37,12 +37,14 @@ class AuthorityErrorCode(StrEnum):
     AUTHORITY_ROLLBACK_PRESTATE_MISMATCH = "AUTHORITY_ROLLBACK_PRESTATE_MISMATCH"
     AUTHORITY_ROLLBACK_UNAVAILABLE = "AUTHORITY_ROLLBACK_UNAVAILABLE"
     AUTHORITY_ROLLBACK_VALIDATION_FAILED = "AUTHORITY_ROLLBACK_VALIDATION_FAILED"
+    AUTHORITY_STATE_RECORD_REBOUND = "AUTHORITY_STATE_RECORD_REBOUND"
     AUTHORITY_SUBSTRATE_FORBIDDEN = "AUTHORITY_SUBSTRATE_FORBIDDEN"
     AUTHORITY_SUBSTRATE_UNBOUND = "AUTHORITY_SUBSTRATE_UNBOUND"
     AUTHORITY_TARGET_GUARDED = "AUTHORITY_TARGET_GUARDED"
     AUTHORITY_TARGET_GUARD_MISMATCH = "AUTHORITY_TARGET_GUARD_MISMATCH"
     AUTHORITY_TERMINAL_NOT_PASS = "AUTHORITY_TERMINAL_NOT_PASS"
     AUTHORITY_TERMINAL_PHASE_INVALID = "AUTHORITY_TERMINAL_PHASE_INVALID"
+    AUTHORITY_TERMINAL_RECORD_REUSED = "AUTHORITY_TERMINAL_RECORD_REUSED"
     AUTHORITY_TERMINAL_STATE_MISMATCH = "AUTHORITY_TERMINAL_STATE_MISMATCH"
     AUTHORITY_TERMINAL_VALIDATOR_MISMATCH = "AUTHORITY_TERMINAL_VALIDATOR_MISMATCH"
     AUTHORITY_TOPOLOGY_INCOMPLETE = "AUTHORITY_TOPOLOGY_INCOMPLETE"
@@ -67,15 +69,30 @@ class AuthorityErrorCode(StrEnum):
 
 
 def _require_digest(value: object, *, field: str) -> str:
-    if not isinstance(value, str) or not _DIGEST_RE.fullmatch(value):
+    if not isinstance(value, str):
+        raise TypeError(f"{field} must be a canonical sha256 digest")
+    canonical = str.__str__(value)
+    if not _DIGEST_RE.fullmatch(canonical):
         raise ValueError(f"{field} must be a canonical sha256 digest")
-    return value
+    return canonical
 
 
 def _require_identifier(value: object, *, field: str) -> str:
-    if not isinstance(value, str) or not _IDENTIFIER_RE.fullmatch(value):
+    if not isinstance(value, str):
+        raise TypeError(f"{field} must be a lowercase stable identifier")
+    canonical = str.__str__(value)
+    if not _IDENTIFIER_RE.fullmatch(canonical):
         raise ValueError(f"{field} must be a lowercase stable identifier")
-    return value
+    return canonical
+
+
+def _require_positive_integer(value: object, *, field: str) -> int:
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise TypeError(f"{field} must be a positive integer")
+    canonical = int.__int__(value)
+    if canonical <= 0:
+        raise ValueError(f"{field} must be a positive integer")
+    return canonical
 
 
 class ControlAuthorityError(RuntimeError):
@@ -136,7 +153,7 @@ class LifecyclePhase(StrEnum):
     ACCEPTED = "accepted"
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class GenerationBinding:
     """Bind an operation to an exact generation, or to an explicit absence."""
 
@@ -150,7 +167,14 @@ class GenerationBinding:
         if self.mode is GenerationBindingMode.REQUIRED_GENERATION:
             if self.generation_digest is None:
                 raise ValueError("required_generation requires generation_digest")
-            _require_digest(self.generation_digest, field="generation_digest")
+            object.__setattr__(
+                self,
+                "generation_digest",
+                _require_digest(
+                    self.generation_digest,
+                    field="generation_digest",
+                ),
+            )
             if self.sentinel_digest is not None:
                 raise ValueError("required_generation forbids sentinel_digest")
         elif self.mode is GenerationBindingMode.B0_CAPTURE_SENTINEL:
@@ -158,10 +182,23 @@ class GenerationBinding:
                 raise ValueError(
                     "b0_capture_sentinel requires generation_digest and sentinel_digest"
                 )
-            _require_digest(self.generation_digest, field="generation_digest")
-            _require_digest(self.sentinel_digest, field="sentinel_digest")
+            object.__setattr__(
+                self,
+                "generation_digest",
+                _require_digest(
+                    self.generation_digest,
+                    field="generation_digest",
+                ),
+            )
+            object.__setattr__(
+                self,
+                "sentinel_digest",
+                _require_digest(self.sentinel_digest, field="sentinel_digest"),
+            )
         elif self.generation_digest is not None or self.sentinel_digest is not None:
-            raise ValueError("no_generation forbids generation_digest and sentinel_digest")
+            raise ValueError(
+                "no_generation forbids generation_digest and sentinel_digest"
+            )
 
 
 class CriticalOperationKind(StrEnum):
@@ -229,7 +266,41 @@ class OperationState(StrEnum):
     RECOVERED = "recovered"
 
 
-@dataclass(frozen=True)
+_OPERATION_FAILURE_STATES = frozenset(
+    {
+        OperationState.PRECHECK_FAILED,
+        OperationState.ROLLBACK_REQUIRED,
+        OperationState.RECOVERY_REQUIRED,
+    }
+)
+_FORWARD_TERMINAL_FAILURE_CODES = frozenset(
+    {
+        AuthorityErrorCode.AUTHORITY_EFFECT_ENFORCEMENT_MISSING,
+        AuthorityErrorCode.AUTHORITY_EFFECT_OBSERVATION_MISSING,
+        AuthorityErrorCode.AUTHORITY_FORBIDDEN_EFFECT_OBSERVED,
+        AuthorityErrorCode.AUTHORITY_TERMINAL_NOT_PASS,
+        AuthorityErrorCode.AUTHORITY_TERMINAL_STATE_MISMATCH,
+        AuthorityErrorCode.AUTHORITY_TERMINAL_VALIDATOR_MISMATCH,
+    }
+)
+_OPERATION_FAILURE_CODES = {
+    OperationState.PRECHECK_FAILED: frozenset(
+        {AuthorityErrorCode.AUTHORITY_PRESTATE_MISMATCH}
+    ),
+    OperationState.ROLLBACK_REQUIRED: _FORWARD_TERMINAL_FAILURE_CODES,
+    OperationState.RECOVERY_REQUIRED: _FORWARD_TERMINAL_FAILURE_CODES
+    | frozenset(
+        {
+            AuthorityErrorCode.AUTHORITY_RECOVERY_PRESTATE_MISMATCH,
+            AuthorityErrorCode.AUTHORITY_RECOVERY_VALIDATION_FAILED,
+            AuthorityErrorCode.AUTHORITY_ROLLBACK_PRESTATE_MISMATCH,
+            AuthorityErrorCode.AUTHORITY_ROLLBACK_VALIDATION_FAILED,
+        }
+    ),
+}
+
+
+@dataclass(frozen=True, slots=True)
 class OperationSubject:
     kind: OperationSubjectKind
     record_digest: str
@@ -237,10 +308,14 @@ class OperationSubject:
     def __post_init__(self) -> None:
         if not isinstance(self.kind, OperationSubjectKind):
             raise TypeError("kind must be an OperationSubjectKind")
-        _require_digest(self.record_digest, field="subject.record_digest")
+        object.__setattr__(
+            self,
+            "record_digest",
+            _require_digest(self.record_digest, field="subject.record_digest"),
+        )
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class OperationTarget:
     kind: OperationTargetKind
     target_id: str
@@ -248,26 +323,53 @@ class OperationTarget:
     def __post_init__(self) -> None:
         if not isinstance(self.kind, OperationTargetKind):
             raise TypeError("kind must be an OperationTargetKind")
-        _require_identifier(self.target_id, field="target.target_id")
+        object.__setattr__(
+            self,
+            "target_id",
+            _require_identifier(self.target_id, field="target.target_id"),
+        )
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class ProtectedStateSnapshot:
     """Content-addressed capture of one declared protected-state projection."""
 
     record_digest: str
     generation_digest: str
+    lifecycle_phase: LifecyclePhase
     projection_digest: str
     state_digest: str
+    process_epoch: str | None = None
 
     def __post_init__(self) -> None:
-        _require_digest(self.record_digest, field="snapshot.record_digest")
-        _require_digest(self.generation_digest, field="snapshot.generation_digest")
-        _require_digest(self.projection_digest, field="snapshot.projection_digest")
-        _require_digest(self.state_digest, field="snapshot.state_digest")
+        if not isinstance(self.lifecycle_phase, LifecyclePhase):
+            raise TypeError("snapshot.lifecycle_phase must be a LifecyclePhase")
+        for field_name in (
+            "record_digest",
+            "generation_digest",
+            "projection_digest",
+            "state_digest",
+        ):
+            object.__setattr__(
+                self,
+                field_name,
+                _require_digest(
+                    getattr(self, field_name),
+                    field=f"snapshot.{field_name}",
+                ),
+            )
+        if self.process_epoch is not None:
+            object.__setattr__(
+                self,
+                "process_epoch",
+                _require_identifier(
+                    self.process_epoch,
+                    field="snapshot.process_epoch",
+                ),
+            )
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class RollbackTarget:
     """Exact protected-state snapshot selected as a rollback destination."""
 
@@ -277,33 +379,45 @@ class RollbackTarget:
     def __post_init__(self) -> None:
         if not isinstance(self.protected_state, ProtectedStateSnapshot):
             raise TypeError("protected_state must be a ProtectedStateSnapshot")
-        _require_digest(
-            self.destination_generation_digest,
-            field="destination_generation_digest",
+        object.__setattr__(
+            self,
+            "destination_generation_digest",
+            _require_digest(
+                self.destination_generation_digest,
+                field="destination_generation_digest",
+            ),
         )
-        if (
-            self.protected_state.generation_digest
-            != self.destination_generation_digest
-        ):
+        if self.protected_state.generation_digest != self.destination_generation_digest:
             raise ValueError(
                 "rollback target snapshot generation must equal rollback destination"
             )
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class DeclaredEffect:
     effect_id: str
     classification: EffectClass
     projection_digest: str
 
     def __post_init__(self) -> None:
-        _require_identifier(self.effect_id, field="effect.effect_id")
+        object.__setattr__(
+            self,
+            "effect_id",
+            _require_identifier(self.effect_id, field="effect.effect_id"),
+        )
         if not isinstance(self.classification, EffectClass):
             raise TypeError("classification must be an EffectClass")
-        _require_digest(self.projection_digest, field="effect.projection_digest")
+        object.__setattr__(
+            self,
+            "projection_digest",
+            _require_digest(
+                self.projection_digest,
+                field="effect.projection_digest",
+            ),
+        )
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class RollbackRecoveryContract:
     """Exact rollback target or fail-closed recovery-only disposition."""
 
@@ -321,8 +435,22 @@ class RollbackRecoveryContract:
     def __post_init__(self) -> None:
         if not isinstance(self.mode, RecoveryMode):
             raise TypeError("mode must be a RecoveryMode")
-        _require_digest(self.recovery_plan_digest, field="recovery_plan_digest")
-        _require_identifier(self.recovery_owner_role, field="recovery_owner_role")
+        object.__setattr__(
+            self,
+            "recovery_plan_digest",
+            _require_digest(
+                self.recovery_plan_digest,
+                field="recovery_plan_digest",
+            ),
+        )
+        object.__setattr__(
+            self,
+            "recovery_owner_role",
+            _require_identifier(
+                self.recovery_owner_role,
+                field="recovery_owner_role",
+            ),
+        )
         if (
             self.recovery_contract_digest is None
             or self.recovery_target is None
@@ -331,15 +459,23 @@ class RollbackRecoveryContract:
             raise ValueError(
                 "recovery requires contract, target, and destination generation"
             )
-        _require_digest(
-            self.recovery_contract_digest,
-            field="recovery_contract_digest",
+        object.__setattr__(
+            self,
+            "recovery_contract_digest",
+            _require_digest(
+                self.recovery_contract_digest,
+                field="recovery_contract_digest",
+            ),
         )
         if not isinstance(self.recovery_target, ProtectedStateSnapshot):
             raise TypeError("recovery_target must be a ProtectedStateSnapshot")
-        _require_digest(
-            self.recovery_destination_generation_digest,
-            field="recovery_destination_generation_digest",
+        object.__setattr__(
+            self,
+            "recovery_destination_generation_digest",
+            _require_digest(
+                self.recovery_destination_generation_digest,
+                field="recovery_destination_generation_digest",
+            ),
         )
         if (
             self.recovery_target.generation_digest
@@ -349,9 +485,13 @@ class RollbackRecoveryContract:
                 "recovery target generation must equal recovery destination"
             )
         if self.recovery_origin_generation_digest is not None:
-            _require_digest(
-                self.recovery_origin_generation_digest,
-                field="recovery_origin_generation_digest",
+            object.__setattr__(
+                self,
+                "recovery_origin_generation_digest",
+                _require_digest(
+                    self.recovery_origin_generation_digest,
+                    field="recovery_origin_generation_digest",
+                ),
             )
         rollback_fields = (
             self.rollback_target,
@@ -363,13 +503,26 @@ class RollbackRecoveryContract:
                 raise ValueError("exact_rollback requires target, plan, and validator")
             if not isinstance(self.rollback_target, RollbackTarget):
                 raise TypeError("rollback_target must be a RollbackTarget")
-            _require_digest(self.rollback_plan_digest, field="rollback_plan_digest")
-            _require_digest(
-                self.rollback_validator_digest,
-                field="rollback_validator_digest",
+            object.__setattr__(
+                self,
+                "rollback_plan_digest",
+                _require_digest(
+                    self.rollback_plan_digest,
+                    field="rollback_plan_digest",
+                ),
+            )
+            object.__setattr__(
+                self,
+                "rollback_validator_digest",
+                _require_digest(
+                    self.rollback_validator_digest,
+                    field="rollback_validator_digest",
+                ),
             )
         elif any(value is not None for value in rollback_fields):
-            raise ValueError("recovery_only forbids rollback target, plan, and validator")
+            raise ValueError(
+                "recovery_only forbids rollback target, plan, and validator"
+            )
 
 
 _OPERATION_COORDINATES = {
@@ -641,7 +794,7 @@ def validate_operation_coordinates(
         )
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class SubstrateBinding:
     """A declared provider for one production authority role.
 
@@ -656,15 +809,16 @@ class SubstrateBinding:
     def __post_init__(self) -> None:
         if not isinstance(self.role, AuthorityRole):
             raise TypeError("role must be an AuthorityRole")
-        if not isinstance(self.provider, str) or not _IDENTIFIER_RE.fullmatch(
-            self.provider
-        ):
+        try:
+            provider = _require_identifier(self.provider, field="provider")
+        except (TypeError, ValueError) as error:
             raise ValueError(
                 "provider must be a lowercase identifier using '-' or '_' separators"
-            )
+            ) from error
+        object.__setattr__(self, "provider", provider)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class ProductionTopology:
     bindings: tuple[SubstrateBinding, ...]
 
@@ -676,7 +830,7 @@ class ProductionTopology:
             raise ValueError("production topology contains duplicate authority roles")
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class OperationBinding:
     """Exact typed contract for one guarded protected-state operation."""
 
@@ -709,7 +863,11 @@ class OperationBinding:
         return "sha256:" + hashlib.sha256(material).hexdigest()
 
     def __post_init__(self) -> None:
-        _require_identifier(self.operation_id, field="operation_id")
+        object.__setattr__(
+            self,
+            "operation_id",
+            _require_identifier(self.operation_id, field="operation_id"),
+        )
         if not isinstance(self.operation_kind, CriticalOperationKind):
             raise TypeError("operation_kind must be a CriticalOperationKind")
         if not isinstance(self.generation_class, GenerationClass):
@@ -722,7 +880,11 @@ class OperationBinding:
             "authority_head_digest",
             "terminal_validator_digest",
         ):
-            _require_digest(getattr(self, field_name), field=field_name)
+            object.__setattr__(
+                self,
+                field_name,
+                _require_digest(getattr(self, field_name), field=field_name),
+            )
         if not isinstance(self.subject, OperationSubject):
             raise TypeError("subject must be an OperationSubject")
         if not isinstance(self.target, OperationTarget):
@@ -735,6 +897,44 @@ class OperationBinding:
             raise TypeError("generation must be a GenerationBinding")
         if not isinstance(self.rollback, RollbackRecoveryContract):
             raise TypeError("rollback must be a RollbackRecoveryContract")
+        state_records = [
+            self.expected_state,
+            self.intended_state,
+            self.rollback.recovery_target,
+        ]
+        if self.rollback.rollback_target is not None:
+            state_records.append(self.rollback.rollback_target.protected_state)
+        state_record_claims: dict[
+            str,
+            tuple[str, LifecyclePhase, str, str, str | None],
+        ] = {}
+        for state in state_records:
+            assert state is not None
+            content = (
+                state.generation_digest,
+                state.lifecycle_phase,
+                state.projection_digest,
+                state.state_digest,
+                state.process_epoch,
+            )
+            existing = state_record_claims.setdefault(state.record_digest, content)
+            if existing != content:
+                raise ValueError(
+                    "one protected-state record digest cannot bind distinct content"
+                )
+        if self.intended_state.lifecycle_phase is not self.lifecycle_phase:
+            raise ValueError(
+                "intended protected-state lifecycle phase must equal the operation lifecycle phase"
+            )
+        rollback_target = self.rollback.rollback_target
+        if (
+            rollback_target is not None
+            and rollback_target.protected_state.lifecycle_phase
+            is not self.expected_state.lifecycle_phase
+        ):
+            raise ValueError(
+                "rollback target lifecycle phase must equal the expected source phase"
+            )
         validate_operation_coordinates(
             self.operation_kind,
             self.subject.kind,
@@ -750,7 +950,9 @@ class OperationBinding:
             raise ValueError("generation subject must equal the bound generation")
         effects = tuple(self.effects)
         object.__setattr__(self, "effects", effects)
-        if not effects or any(not isinstance(effect, DeclaredEffect) for effect in effects):
+        if not effects or any(
+            not isinstance(effect, DeclaredEffect) for effect in effects
+        ):
             raise ValueError("effects must contain declared effects")
         effect_ids = [effect.effect_id for effect in effects]
         if len(effect_ids) != len(set(effect_ids)):
@@ -758,11 +960,44 @@ class OperationBinding:
         projection = self.expected_state.projection_digest
         if self.intended_state.projection_digest != projection:
             raise ValueError("expected and intended states must use one projection")
-        if self.expected_state.state_digest == self.intended_state.state_digest:
-            raise ValueError("critical operation prestate and intended state must differ")
+        validation_only_recovery = (
+            self.operation_kind is CriticalOperationKind.RECOVERY
+            and self.expected_state.record_digest != self.intended_state.record_digest
+            and (
+                self.expected_state.generation_digest,
+                self.expected_state.lifecycle_phase,
+                self.expected_state.projection_digest,
+                self.expected_state.state_digest,
+                self.expected_state.process_epoch,
+            )
+            == (
+                self.intended_state.generation_digest,
+                self.intended_state.lifecycle_phase,
+                self.intended_state.projection_digest,
+                self.intended_state.state_digest,
+                self.intended_state.process_epoch,
+            )
+        )
+        if (
+            self.expected_state.state_digest == self.intended_state.state_digest
+            and not validation_only_recovery
+        ):
+            raise ValueError(
+                "critical operation prestate and intended state must differ"
+            )
         if any(effect.projection_digest != projection for effect in effects):
-            raise ValueError("every declared effect projection must match protected state")
-        rollback_target = self.rollback.rollback_target
+            raise ValueError(
+                "every declared effect projection must match protected state"
+            )
+        generation_state = (
+            self.expected_state
+            if self.operation_kind is CriticalOperationKind.ROLLBACK
+            else self.intended_state
+        )
+        if self.generation.generation_digest != generation_state.generation_digest:
+            raise ValueError(
+                "operation generation must equal the rollback origin or intended state"
+            )
         if (
             rollback_target is not None
             and rollback_target.protected_state.projection_digest != projection
@@ -775,12 +1010,10 @@ class OperationBinding:
             and self.rollback.recovery_origin_generation_digest
             != self.generation.generation_digest
         ):
-            raise ValueError(
-                "recovery origin must equal the operation generation"
-            )
+            raise ValueError("recovery origin must equal the operation generation")
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class FencedCapability:
     """Exclusive, single-use authority to perform one exact binding."""
 
@@ -797,28 +1030,43 @@ class FencedCapability:
     fence_epoch: int
 
     def __post_init__(self) -> None:
-        _require_digest(self.capability_id, field="capability_id")
+        object.__setattr__(
+            self,
+            "capability_id",
+            _require_digest(self.capability_id, field="capability_id"),
+        )
         if not isinstance(self.capability_type, CapabilityType):
             raise TypeError("capability_type must be a CapabilityType")
-        _require_digest(self.operation_digest, field="operation_digest")
-        _require_identifier(self.operation_id, field="operation_id")
+        object.__setattr__(
+            self,
+            "operation_digest",
+            _require_digest(self.operation_digest, field="operation_digest"),
+        )
+        object.__setattr__(
+            self,
+            "operation_id",
+            _require_identifier(self.operation_id, field="operation_id"),
+        )
         for field_name in (
             "intent_digest",
             "plan_digest",
             "authority_head_digest",
             "subject_digest",
         ):
-            _require_digest(getattr(self, field_name), field=field_name)
+            object.__setattr__(
+                self,
+                field_name,
+                _require_digest(getattr(self, field_name), field=field_name),
+            )
         if not isinstance(self.target, OperationTarget):
             raise TypeError("target must be an OperationTarget")
         if not isinstance(self.intended_state, ProtectedStateSnapshot):
             raise TypeError("intended_state must be a ProtectedStateSnapshot")
-        if (
-            not isinstance(self.fence_epoch, int)
-            or isinstance(self.fence_epoch, bool)
-            or self.fence_epoch <= 0
-        ):
-            raise ValueError("fence_epoch must be a positive integer")
+        object.__setattr__(
+            self,
+            "fence_epoch",
+            _require_positive_integer(self.fence_epoch, field="fence_epoch"),
+        )
 
     @property
     def intended_state_digest(self) -> str:
@@ -827,7 +1075,7 @@ class FencedCapability:
         return self.intended_state.state_digest
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class RecoveryCapability:
     """Fenced authority for one named successor of one proven failed operation."""
 
@@ -843,39 +1091,67 @@ class RecoveryCapability:
             raise TypeError("fenced must be a FencedCapability")
         if self.fenced.capability_type is not CapabilityType.RECOVERY:
             raise ValueError("recovery capability requires a recovery fence")
-        _require_identifier(
-            self.predecessor_operation_id,
-            field="predecessor_operation_id",
+        object.__setattr__(
+            self,
+            "predecessor_operation_id",
+            _require_identifier(
+                self.predecessor_operation_id,
+                field="predecessor_operation_id",
+            ),
         )
-        _require_digest(
-            self.predecessor_failure_record_digest,
-            field="predecessor_failure_record_digest",
+        object.__setattr__(
+            self,
+            "predecessor_failure_record_digest",
+            _require_digest(
+                self.predecessor_failure_record_digest,
+                field="predecessor_failure_record_digest",
+            ),
         )
-        if (
-            not isinstance(self.predecessor_fence_epoch, int)
-            or isinstance(self.predecessor_fence_epoch, bool)
-            or self.predecessor_fence_epoch <= 0
-        ):
-            raise ValueError("predecessor_fence_epoch must be a positive integer")
-        _require_digest(
-            self.recovery_contract_digest,
-            field="recovery_contract_digest",
+        object.__setattr__(
+            self,
+            "predecessor_fence_epoch",
+            _require_positive_integer(
+                self.predecessor_fence_epoch,
+                field="predecessor_fence_epoch",
+            ),
         )
-        _require_identifier(
-            self.recovery_owner_role,
-            field="recovery_owner_role",
+        object.__setattr__(
+            self,
+            "recovery_contract_digest",
+            _require_digest(
+                self.recovery_contract_digest,
+                field="recovery_contract_digest",
+            ),
         )
+        object.__setattr__(
+            self,
+            "recovery_owner_role",
+            _require_identifier(
+                self.recovery_owner_role,
+                field="recovery_owner_role",
+            ),
+        )
+        if self.predecessor_operation_id == self.fenced.operation_id:
+            raise ValueError(
+                "recovery predecessor operation must differ from successor operation"
+            )
+        if self.predecessor_fence_epoch >= self.fenced.fence_epoch:
+            raise ValueError("recovery predecessor fence must precede successor fence")
+        if self.recovery_contract_digest != self.fenced.subject_digest:
+            raise ValueError("recovery contract must equal fenced subject")
 
     @property
     def capability_id(self) -> str:
         return self.fenced.capability_id
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class TerminalObservation:
     """Content-addressed terminal validator observation for an operation phase."""
 
     record_digest: str
+    operation_digest: str
+    capability_digest: str
     validator_digest: str
     observed_state: ProtectedStateSnapshot
     outcome: TerminalOutcome
@@ -884,8 +1160,20 @@ class TerminalObservation:
     interval_violation_effect_ids: frozenset[str] = frozenset()
 
     def __post_init__(self) -> None:
-        _require_digest(self.record_digest, field="terminal.record_digest")
-        _require_digest(self.validator_digest, field="terminal.validator_digest")
+        for field_name in (
+            "record_digest",
+            "operation_digest",
+            "capability_digest",
+            "validator_digest",
+        ):
+            object.__setattr__(
+                self,
+                field_name,
+                _require_digest(
+                    getattr(self, field_name),
+                    field=f"terminal.{field_name}",
+                ),
+            )
         if not isinstance(self.observed_state, ProtectedStateSnapshot):
             raise TypeError("observed_state must be a ProtectedStateSnapshot")
         if not isinstance(self.outcome, TerminalOutcome):
@@ -895,13 +1183,14 @@ class TerminalObservation:
             "interval_enforced_effect_ids",
             "interval_violation_effect_ids",
         ):
-            values = frozenset(getattr(self, collection_name))
-            object.__setattr__(self, collection_name, values)
-            for effect_id in values:
+            values = frozenset(
                 _require_identifier(effect_id, field=collection_name)
+                for effect_id in getattr(self, collection_name)
+            )
+            object.__setattr__(self, collection_name, values)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class OperationResult:
     operation_id: str
     state: OperationState
@@ -910,46 +1199,120 @@ class OperationResult:
     failure_record_digest: str | None = None
 
     def __post_init__(self) -> None:
-        _require_identifier(self.operation_id, field="operation_id")
+        object.__setattr__(
+            self,
+            "operation_id",
+            _require_identifier(self.operation_id, field="operation_id"),
+        )
         if not isinstance(self.state, OperationState):
             raise TypeError("state must be an OperationState")
-        _require_digest(self.record_digest, field="record_digest")
+        object.__setattr__(
+            self,
+            "record_digest",
+            _require_digest(self.record_digest, field="record_digest"),
+        )
+        failure_code: AuthorityErrorCode | None = None
+        if self.failure_code is not None:
+            if not isinstance(self.failure_code, str):
+                raise TypeError("failure_code must be a declared AuthorityErrorCode")
+            try:
+                failure_code = AuthorityErrorCode(str.__str__(self.failure_code))
+            except ValueError as error:
+                raise ValueError(
+                    "failure_code must be a declared AuthorityErrorCode"
+                ) from error
+            object.__setattr__(self, "failure_code", failure_code.value)
         if self.failure_record_digest is not None:
-            _require_digest(
-                self.failure_record_digest,
-                field="failure_record_digest",
+            object.__setattr__(
+                self,
+                "failure_record_digest",
+                _require_digest(
+                    self.failure_record_digest,
+                    field="failure_record_digest",
+                ),
             )
-        if (
-            self.state is OperationState.RECOVERY_REQUIRED
-            and self.failure_record_digest is None
+        if self.state in _OPERATION_FAILURE_STATES and (
+            self.failure_code is None or self.failure_record_digest is None
         ):
             raise ValueError(
-                "recovery-required result must bind the exact failure record"
+                "failure state requires a failure code and exact failure record"
             )
+        if self.state not in _OPERATION_FAILURE_STATES and (
+            self.failure_code is not None or self.failure_record_digest is not None
+        ):
+            raise ValueError("nonfailure state forbids failure metadata")
+        if (
+            failure_code is not None
+            and self.state in _OPERATION_FAILURE_STATES
+            and failure_code not in _OPERATION_FAILURE_CODES[self.state]
+        ):
+            raise ValueError("failure_code is not valid for operation state")
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class NonPromotionalReceipt:
+    """Instance-scoped nonpromotional receipt from one local or test authority."""
+
     receipt_id: str
     sequence: int
     kind: str
     operation_id: str | None
     record_digest: str
 
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "receipt_id",
+            _require_digest(self.receipt_id, field="receipt_id"),
+        )
+        object.__setattr__(
+            self,
+            "sequence",
+            _require_positive_integer(self.sequence, field="sequence"),
+        )
+        object.__setattr__(
+            self,
+            "kind",
+            _require_identifier(self.kind, field="kind"),
+        )
+        if self.operation_id is not None:
+            object.__setattr__(
+                self,
+                "operation_id",
+                _require_identifier(self.operation_id, field="operation_id"),
+            )
+        object.__setattr__(
+            self,
+            "record_digest",
+            _require_digest(self.record_digest, field="record_digest"),
+        )
 
-@dataclass(frozen=True)
+
+@dataclass(frozen=True, slots=True)
 class NonPromotionalEvidenceView:
-    """Evidence view produced by deterministic local or test adapters."""
+    """Instance-scoped nonpromotional evidence from a local or test authority.
+
+    Canonical content derives deterministically within that authority instance,
+    but receipt identities intentionally differ across instances.
+    """
 
     adapter_id: str
     receipts: tuple[NonPromotionalReceipt, ...]
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "adapter_id",
+            _require_identifier(self.adapter_id, field="adapter_id"),
+        )
+        object.__setattr__(self, "receipts", tuple(self.receipts))
 
 
 @runtime_checkable
 class AuthorityBackend(Protocol):
     """High-level seam implemented by fake and future production adapters."""
 
-    def observe_active(self) -> ProtectedStateSnapshot: ...
+    def observe_active(self, target: OperationTarget) -> ProtectedStateSnapshot: ...
 
     def append_intent(self, binding: OperationBinding) -> object: ...
 
@@ -1055,9 +1418,7 @@ def production_authority(
                 "AUTHORITY_SUBSTRATE_FORBIDDEN",
                 f"{binding.provider!r} cannot provide {binding.role.value} authority",
             )
-    missing_roles = set(AuthorityRole) - {
-        binding.role for binding in topology.bindings
-    }
+    missing_roles = set(AuthorityRole) - {binding.role for binding in topology.bindings}
     if missing_roles:
         missing = ", ".join(sorted(role.value for role in missing_roles))
         raise AuthorityUnavailable(

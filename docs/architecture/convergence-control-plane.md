@@ -22,12 +22,14 @@ records those substrates, production construction fails closed.
    immutable evidence;
 3. assess a complete canonical promotion cut without claiming authority;
 4. produce privacy-safe public envelopes for restricted evidence; and
-5. exercise the authority interface with deterministic nonpromotional adapters
-   while rejecting unbound production authority.
+5. exercise the authority interface with isolated nonpromotional adapters while
+   rejecting unbound production authority.
 
-Callers and tests cross the same interface exported by `control_plane`.
-`RECORD_KINDS` and `RECORD_SCHEMAS` are public inspection surfaces; allocation,
-semantic validators, evaluation helpers, and adapter receipts remain internal.
+Callers and tests use the main interface exported by `control_plane`, except
+that explicit authority and allocation fixtures live in `control_plane.testing`.
+`RECORD_KINDS` and `RECORD_SCHEMAS` are public inspection surfaces; production
+allocation helpers, semantic validators, evaluation helpers, and adapter
+receipts remain internal.
 
 ## Record Families
 
@@ -116,10 +118,10 @@ operator-approved substrate, not caller-selected trust flags.
 `control_plane.testing.InMemoryAuthority` is memory-only, requires explicit
 observations, records intent before transition, compares exact expected state,
 keeps failed targets exclusively guarded through rollback or recovery, and
-issues deterministic test receipts. Its evidence view is a distinct
-nonpromotional type. Structural promotion assessment can explain whether a
-canonical cut is complete, but promotion admission always rejects fake
-authority.
+issues instance-scoped test receipts that cannot be replayed across adapter
+instances. Its evidence view is a distinct nonpromotional type. Structural
+promotion assessment can explain whether a canonical cut is complete, but
+promotion admission always rejects fake authority.
 
 Production construction rejects Git, mutable local files, and target-host logs
 as authority. It also rejects every otherwise plausible configuration until a
