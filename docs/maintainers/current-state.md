@@ -1,8 +1,46 @@
 # Current State
 
 The package, deployment, and live-validation narrative below remains a
-2026-06-15 snapshot. The freshness admission state was reconciled on
-2026-08-12 as follows.
+2026-06-15 snapshot. The latest freshness sweep and its acted-on Lemonade
+transition are recorded first; older reconciliations remain as dated history.
+
+## 2026-08-21 Freshness Sweep and Lemonade v11.7.0 Source Line
+
+An uncached dependency-freshness sweep completed at
+`2026-08-21T04:10:03-04:00` across all 45 configured families. The raw report
+found 26 stable updates, five branch-head movements, three baseline drifts, and
+eleven current families. Against the pre-transition ledger, 12 families were
+action-required, 19 were tracked, four were rejected, two were adopted, and
+eight were current.
+
+After the Lemonade ledger transition, a second uncached verification at
+`2026-08-21T04:14:16-04:00` classified Lemonade as tracked and yielded 20
+tracked families, four rejected families, two adopted families, eight current
+families, and eleven action-required families.
+
+This route acts on the Lemonade result. The former
+`lemonade-upstream-11.5.2` blocker is terminalized as superseded before package
+adoption. `lemonade-v11.7.0-source-line` now tracks the canonical upstream
+v11.7.0 baseline, tag commit
+`2b6a7d77c71e551736f6cc8473dc46f479cd156b`, and the settled published-ref
+topology. The topology requires moving the canonical `upstream-stable` ref to
+exact v11.7.0 by lease only after the forward portable-residency campaign
+revision lands. W0 therefore owns the baseline and topology decision only.
+The upstream ref-topology decision is closed, so issue 105 is no longer
+blocked on the Lemonade human-in-the-loop choice.
+Issue 112 owns the final production-qualified Lemonade fork source and coupled
+source closure; issue 113 owns package rendering, builds, and validation.
+
+The sweep also found eleven other families that still lack a disposition for
+their newest observation: AITER, AOCL-LibM, AOCL-Utils, llama.cpp, orjson,
+CPython, ROCm PyTorch, stable-diffusion.cpp, Torch-MIGraphX, Transformers, and
+Triton. They remain action-required, so this is not a repository-wide
+freshness closeout and `--fail-on actionable` remains expected to exit 10 until
+those observations are reconciled. No package source was updated for Lemonade
+v11.7.0. No package was rendered, built,
+deployed/installed, installed-smoked, service-smoked, or live-scenario
+validated. The maintained package source remains Lemonade 10.7.0 at fork
+commit `e18b9c1e352df8ab5aff2ff353402f1ec77c47f2`.
 
 ## 2026-08-12 Freshness Admission
 

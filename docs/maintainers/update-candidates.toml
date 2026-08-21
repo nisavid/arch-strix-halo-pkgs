@@ -2848,20 +2848,46 @@ check_id = "upstream-release"
 previous_recorded = "10.7.0"
 latest = "11.5.2"
 discovery_status = "baseline_drift"
-disposition = "blocked"
-disposition_reason = "Blocked on 2026-08-12. The obsolete AUR freshness selectors are removed, but W0 must still freeze one reviewed Lemonade-fork commit and the coupled llama.cpp source before W2B package integration can proceed."
+disposition = "rejected"
+disposition_reason = "Superseded on 2026-08-21 before package adoption by the Lemonade v11.7.0 source-line candidate."
 salient_changes = [
   "Canonical upstream Lemonade reports 11.5.2 after the recorded 10.7.0 baseline",
   "The recorded fork-main commit remains unchanged and cannot satisfy the settled fork-owned behavior boundary without a new reviewed source freeze",
   "The former lemonade-server and lemonade-desktop AUR package names no longer resolve and are retired as automated freshness baselines",
 ]
 patch_carry_overlap = true
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_label = "Superseded by Lemonade v11.7.0 source-line closure"
+last_reviewed = "2026-08-21"
+
+[candidates."lemonade-v11.7.0-source-line"]
+family = "lemonade"
+packages = ["lemonade-server", "lemonade-app", "lemonade"]
+source_kind = "git_ref"
+check_id = "fork-main"
+baseline_source_kind = "github_release"
+baseline_latest = "11.7.0"
+covered_checks = [{ source_kind = "github_release", check_id = "upstream-release" }]
+previous_recorded = "e18b9c1e352df8ab5aff2ff353402f1ec77c47f2 / 10.7.0"
+latest = "9c6748986851c758bab48d6172e0141d8a25e2d5"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-08-21 freshness sweep. W0 selected the upstream v11.7.0 baseline and published stable-ref topology only; issue 112 owns the final production-qualified fork pin after the forward campaign revision lands, and issue 113 owns package rendering and builds."
+salient_changes = [
+  "Canonical upstream Lemonade v11.7.0 resolves to tag commit 2b6a7d77c71e551736f6cc8473dc46f479cd156b",
+  "The published upstream-stable topology is settled: move the ref to exact v11.7.0 by lease only after the forward portable-residency campaign revision lands",
+  "The observed fork-main head is 9c6748986851c758bab48d6172e0141d8a25e2d5, but no fork commit is accepted by this baseline-only transition",
+  "The package source remains Lemonade 10.7.0 at e18b9c1e352df8ab5aff2ff353402f1ec77c47f2; issue 112 owns the final fork and coupled source freeze, while issue 113 owns rendering, builds, and package validation",
+]
+patch_carry_overlap = true
 package_source_update_needed = true
 host_validation_needed = true
 next_gate_kind = "github_issue"
-next_gate_issue = 105
-next_gate_label = "Lemonade 11.5.2 W0 source-freeze blocker"
-last_reviewed = "2026-08-12"
+next_gate_issue = 112
+next_gate_label = "Lemonade v11.7.0 production-qualified fork source"
+last_reviewed = "2026-08-21"
 
 [candidates."llama-cpp-b10369"]
 family = "llama_cpp"
