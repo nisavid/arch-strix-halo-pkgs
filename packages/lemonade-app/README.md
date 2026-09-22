@@ -36,7 +36,7 @@ Reinstalling at compatible versions resolves conflicts.
 - Carry a local Tauri Cargo patch that keeps the direct Linux glib dependency on the webkit2gtk-compatible 0.18 series until upstream's glib 0.20 bump builds cleanly.
 - Route Cargo and npm caches into the package build tree so the Tauri build does not depend on user-local cache state.
 - Install a /usr/bin/lemonade-app wrapper that launches the packaged Tauri binary from /usr/share/lemonade-app so the shipped desktop entry resolves on PATH.
-- Pinned to nisavid/lemonade main commit 187b4a25f154ff905486b8bf85e006cd1f2a9820, whose CMake project version is 11.7.0. The pin is the lemonade entry in the [source_pins] table of policies/recipe-packages.toml, so lemonade-app always builds the same fork commit as lemonade-server.
+- Pinned to nisavid/lemonade main commit 3d5991033e4cb28152ace4013f7f22a52c3bd617, whose CMake project version is 11.7.0. The pin is the lemonade entry in the [source_pins] table of policies/recipe-packages.toml, so lemonade-app always builds the same fork commit as lemonade-server.
 
 ## Intentional Divergences
 

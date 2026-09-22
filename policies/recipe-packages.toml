@@ -10,7 +10,7 @@ output_root = "packages"
 # the renderer and the freshness checker, so a repin is a one-line change here.
 [source_pins]
 # nisavid/lemonade fork main, built by lemonade-server and lemonade-app.
-lemonade = "187b4a25f154ff905486b8bf85e006cd1f2a9820"
+lemonade = "3d5991033e4cb28152ace4013f7f22a52c3bd617"
 
 [packages.aocl-utils-gfx1151]
 recipe_key = "aocl_utils"
