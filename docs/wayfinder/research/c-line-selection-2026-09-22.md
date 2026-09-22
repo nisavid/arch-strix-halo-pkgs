@@ -318,8 +318,10 @@ Prometheus text, with 7.0.0 installed. If the gate fails, package 8.x.
 
 These sweep families are not in C's regenerated closure. They are
 Arch-replacement optimization packages or belong to other lanes, and none of
-the selected vLLM, Transformers or PyTorch packages requires them. Each stays
-at the sweep's value and is dispositioned on its own:
+the selected vLLM, Transformers or PyTorch packages requires them. Their
+sweep records route to post-closeout maintenance
+([#147](https://github.com/nisavid/arch-strix-halo-pkgs/issues/147)) at the
+values the sweep observed:
 
 - orjson 3.12.0, zstandard 0.25.0, cryptography 50.0.1, duckdb 1.5.5 and
   asyncpg 0.31.0: no C-line package depends on them.

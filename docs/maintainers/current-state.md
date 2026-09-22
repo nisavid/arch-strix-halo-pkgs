@@ -30,7 +30,8 @@ ledger holds 35 active tracked candidate records and no blocked records; the
 extra record is `llama-cpp-v0.4.1`, which stands as the W2B rebuild target
 without matching a family result. The explicit tracker validation queried
 their nine unique issue gates, and all nine were open issues in this
-repository.
+repository. The [closeout sweep](#closeout-sweep) below supersedes these
+counts.
 
 This sweep is also the one fresh sweep that freezes the version universe for
 candidate generation C ([issue #105](https://github.com/nisavid/arch-strix-halo-pkgs/issues/105)).
