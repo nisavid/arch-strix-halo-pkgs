@@ -136,6 +136,7 @@ def test_pkgbuild_blackholes_remote_model_endpoints_for_lemond():
         "[Service]",
         f"Environment=HF_ENDPOINT={BLACKHOLE_ENDPOINT}",
         f"Environment=MODELSCOPE_ENDPOINT={BLACKHOLE_ENDPOINT}",
+        f"Environment=MODEL_ENDPOINT={BLACKHOLE_ENDPOINT}",
     ]
 
 
@@ -228,7 +229,9 @@ def test_built_package_installs_offline_defaults_and_endpoint_drop_in():
     assert defaults["offline"] is True
     assert defaults["no_fetch_executables"] is True
     assert defaults["llamacpp"]["args"] == "--no-mmap"
-    assert f"Environment=HF_ENDPOINT={BLACKHOLE_ENDPOINT}" in NO_REMOTE_FETCH_DROPIN.read_text()
+    dropin = NO_REMOTE_FETCH_DROPIN.read_text()
+    assert f"Environment=HF_ENDPOINT={BLACKHOLE_ENDPOINT}" in dropin
+    assert f"Environment=MODEL_ENDPOINT={BLACKHOLE_ENDPOINT}" in dropin
     assert not (PKG_ROOT / "usr/share/metainfo").exists()
     assert "backup = etc/lemonade/conf.d/zz-secrets.conf" in PKGINFO.read_text()
 
