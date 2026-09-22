@@ -24,19 +24,19 @@ should remain rendered.
 ### TheRock 7.14.1 lane
 
 The policy now targets TheRock 7.14.1 (#108). The committed render in
-`packages/therock-gfx1151/` is still the 7.13 render described below; it is
-replaced once MIGraphX 2.16.1 is built into the staged 7.14.1 payload. The
-pre-MIGraphX dry render of the pinned 7.14.1 gfx1151 stage
-(`--pre-migraphx-dry-render`) is clean and renders 68 of the 72 policy-defined
-packages; `migraphx-gfx1151` has only its flatbuffers payload until the
-MIGraphX build lands. Not rendered: `hipfort-gfx1151`, `mivisionx-gfx1151`,
+`packages/therock-gfx1151/` is the 7.14.1 render (`7.14.1-1`), made from the
+pinned 7.14.1 gfx1151 stage after MIGraphX 2.16.1 was built into it. The
+render is clean (no `UNMAPPED_COMPONENT`, `KPACK_REF_UNOWNED`, or
+`SONAME_DEPEND_UNRESOLVED`) and renders 68 of the 72 policy-defined
+packages. `migraphx-gfx1151` depends on `libprotobuf.so=36.1.0-64`, taken
+from the staged parser's `DT_NEEDED`. Not rendered: `hipfort-gfx1151`, `mivisionx-gfx1151`,
 `rpp-gfx1151` (no payload, as before) and `magma-gfx1151` (MAGMA left the
 7.14.1 payload). `hiptensor-gfx1151` renders again, and the new
 `rocalution-gfx1151` and `hipfile-gfx1151` render. The payload decisions,
 removals, and kpack ownership are recorded in
 `packages/therock-gfx1151/README.md`.
 
-### TheRock 7.13 render
+### TheRock 7.13 render (superseded)
 
 The generated family is payload-driven. The current rendered output includes
 66 of the 70 policy-defined packages. Four packages are present in policy
@@ -161,6 +161,7 @@ The generator is no longer exploratory. The follow-up work is maintenance:
 - keep dependency and replacement metadata healthy
 - keep the generated family aligned with the local repo and live cutover story
 - rerender `hipfort-gfx1151`, `mivisionx-gfx1151`, `rpp-gfx1151`, and
-  `magma-gfx1151` when a staged TheRock root contains those payloads
+  `magma-gfx1151` when a staged TheRock root contains those payloads; the
+  installed PyTorch still needs `libmagma.so` (see the package README)
 - revisit the Arch/CachyOS baseline audit when upstream distro package
   surfaces or TheRock payloads change

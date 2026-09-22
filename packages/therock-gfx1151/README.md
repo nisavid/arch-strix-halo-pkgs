@@ -34,9 +34,10 @@ valid. For a staged install tree, point it at that staging root instead.
 ## Source lane
 
 `policies/therock-packages.toml` targets TheRock 7.14.1 (`7.14.1-1`), the
-C-line foundation F pick (#108). The rendered files in this directory are still
-the 7.13 render (`7.13.0-2`) until the 7.14.1 stage has MIGraphX built into it;
-render this directory only from that complete stage.
+C-line foundation F pick (#108). The rendered files in this directory are the
+7.14.1 render (`7.14.1-1`, 68 packages), made from the pinned payload stage
+after MIGraphX 2.16.1 was built into it. Render this directory only from that
+complete stage.
 
 The earlier lane was the upstream `therock-7.13` release. The host runs
 `7.13.0-3`, the MIGraphX rebuild against protobuf 35.1 from the unmerged
@@ -154,8 +155,8 @@ drops:
 - the vendored top-level `opt/rocm/libhipcxx/` tree (816 files from
   `hip-gfx1151`); `include/libhipcxx` and `lib/cmake/libhipcxx` remain;
 - the hipSOLVER Fortran library (`libhipsolver_fortran.so*`);
-- MAGMA entirely, so `magma-gfx1151` no longer renders; the PyTorch lane
-  carries a MAGMA patch and must confirm it builds without MAGMA;
+- MAGMA entirely, so `magma-gfx1151` no longer renders (see
+  [magma after 7.13](#magma-after-713));
 - `share/miopen/db/*`, which held only gfx908/gfx90a/gfx942/gfx950 data.
 
 Upstream gap: the tarball ships the rocpd and roctx Python bindings (and the
@@ -184,7 +185,21 @@ or version-lane differences only: `nlohmann` headers, `.hipInfo`,
 `share/modulefiles`, `share/therock`, and the expected `rocmCoreTargets` /
 `librocm-core.so` version suffix changes.
 
-## magma baseline
+## magma after 7.13
+
+The 7.14.1 payload has no MAGMA, so this family no longer builds
+`magma-gfx1151`. The host still has `magma-gfx1151 7.13.0-3` installed, and
+the installed `python-pytorch-opt-rocm-gfx1151 2.12.0-4` needs it:
+`libtorch_hip.so` has `DT_NEEDED libmagma.so`. Its PKGBUILD does not declare
+that depend, so pacman does not know about it. The 7.14.1 install
+transaction must therefore keep `magma-gfx1151` until the PyTorch lane is
+rebuilt without MAGMA or given another MAGMA source. Remove it in that
+transaction only once no installed package needs `libmagma.so`. The sonames
+`libmagma.so` needs (`libhipblas.so.3`, `libhipsparse.so.4`, and
+`libamdhip64.so.7`) still exist in 7.14.1, but nobody has tested the 7.13
+MAGMA build against the 7.14.1 libraries.
+
+## magma baseline (7.13)
 
 `magma-gfx1151` follows Arch `magma-hip` package metadata for its public
 package interface while using the TheRock payload. It provides and replaces

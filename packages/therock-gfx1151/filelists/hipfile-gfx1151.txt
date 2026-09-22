@@ -1,0 +1,11 @@
+opt/rocm/bin/ais-check
+opt/rocm/bin/ais-stats
+opt/rocm/include/hipfile-api-trace.h
+opt/rocm/include/hipfile.h
+opt/rocm/lib/cmake/hipfile/hipfile-config-version.cmake
+opt/rocm/lib/cmake/hipfile/hipfile-config.cmake
+opt/rocm/lib/cmake/hipfile/hipfile-targets-release.cmake
+opt/rocm/lib/cmake/hipfile/hipfile-targets.cmake
+opt/rocm/lib/libhipfile.so
+opt/rocm/lib/libhipfile.so.0
+opt/rocm/lib/libhipfile.so.0.3.0
