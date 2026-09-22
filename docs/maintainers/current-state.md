@@ -126,12 +126,12 @@ family, and eight current families. Applying the ledger yielded 29 tracked
 families, seven rejected families (AOTriton, TorchVision, Transformers,
 compressed-tensors, mistral-common, AutoRound, and llmcompressor), one
 adopted family, and eight current families. Lemonade fork main had moved two
-commits past the frozen candidate `187b4a25f` to `586e1900f`: a docs refresh
-and a `serde_with` bump in the Tauri app. `lemonade-fork-586e190` tracks that
-drift to the upstream-sync repackage (#141), and the #137 repin stays on the
-frozen candidate. The ledger holds 36 active tracked records and no blocked
-records. The explicit tracker validation found all 13 unique issue gates open
-in this repository.
+commits past `187b4a25f` to `586e1900f`: a docs refresh and a `serde_with`
+bump in the Tauri app. Those are the additions the Lemonade candidate freeze
+(nisavid/lemonade#155) named, so `lemonade-fork-586e190` is tracked to the
+#137 repin, which consumes whichever commit #155 freezes. The ledger holds 36
+active tracked records and no blocked records. The explicit tracker
+validation found all 12 unique issue gates open in this repository.
 
 Apart from the pydantic-core source update and build, this admission changes
 maintenance metadata only. No other package source was updated, and no

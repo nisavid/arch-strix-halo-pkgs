@@ -4079,9 +4079,9 @@ previous_recorded = "e18b9c1e352df8ab5aff2ff353402f1ec77c47f2 / 10.7.0"
 latest = "586e1900f8883bae3e128c258bcb51e43e046792"
 discovery_status = "branch_head_ahead"
 disposition = "tracked"
-disposition_reason = "Tracked from the 2026-09-22 closeout sweep for #105 and #136. Lemonade is exempt from the #105 freeze for candidate generation C (docs/wayfinder/research/c-line-selection-2026-09-22.md), and the Lemonade repin (#137) stays on the frozen fork candidate 187b4a25f (lemonade-fork-187b4a2). Fork main moved two commits past that candidate after the freeze; the next fork candidate, which includes them, routes to the upstream-sync repackage (#141)."
+disposition_reason = "Tracked from the 2026-09-22 closeout sweep for #105 and #136. Lemonade is exempt from the #105 freeze for candidate generation C and follows the deployed, validated fork commit. Fork main moved two commits past 187b4a25f after the sweep started: a docs refresh (nisavid/lemonade#161) and the Tauri serde_with bump (nisavid/lemonade#162), which are the additions the Lemonade candidate freeze (nisavid/lemonade#155) named. The Lemonade repin (#137) consumes whichever commit #155 freezes; if #155 freezes an earlier commit, this record moves to the upstream-sync repackage (#141)."
 salient_changes = [
-  "Fork main 586e1900f8883bae3e128c258bcb51e43e046792 is two commits ahead of the frozen candidate 187b4a25f154ff905486b8bf85e006cd1f2a9820 and zero behind",
+  "Fork main 586e1900f8883bae3e128c258bcb51e43e046792 is two commits ahead of 187b4a25f154ff905486b8bf85e006cd1f2a9820 and zero behind",
   "The two commits are an agent scout-map docs refresh (nisavid/lemonade#161) and a serde_with 3.21.0 bump in src/app/src-tauri (nisavid/lemonade#162)",
   "Canonical upstream Lemonade still reports 11.9.0",
 ]
@@ -4089,6 +4089,6 @@ patch_carry_overlap = true
 package_source_update_needed = true
 host_validation_needed = true
 next_gate_kind = "github_issue"
-next_gate_issue = 141
-next_gate_label = "Lemonade fork 586e190 post-freeze drift; next fork candidate in the upstream-sync repackage"
+next_gate_issue = 137
+next_gate_label = "Lemonade fork 586e190 repin candidate (pending nisavid/lemonade#155)"
 last_reviewed = "2026-09-22"
