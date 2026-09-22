@@ -5,13 +5,15 @@
 # --scenario id, or asks for --tag validation-window. `mutates-service` marks
 # scenarios that load or unload models on the running lemond.service;
 # `isolated-lemond` marks scenarios that start a private lemond with a
-# temporary cache directory and leave the service config untouched.
+# temporary cache directory and leave the service config untouched. Pins,
+# budget, and displacement use the isolated lemond because they change pins,
+# config, and residency; the service-facing pin check is read-only.
 #
 # Operator inputs come from the run-time environment, never from this file:
 # - `--model-path Qwen/Qwen3-0.6B-GGUF=<testing HF hub cache>/.../Qwen3-0.6B-Q8_0.gguf`
 # - `LEMONADE_API_KEY` or `LEMONADE_API_KEY_FILE`, and optionally
-#   `LEMONADE_ADMIN_API_KEY` or `LEMONADE_ADMIN_API_KEY_FILE`, once the service
-#   requires a loopback key.
+#   `LEMONADE_ADMIN_API_KEY` or `LEMONADE_ADMIN_API_KEY_FILE`, when the host's
+#   service configuration carries a key. Keys never go in argv or output.
 #
 # See docs/maintainers/lemonade-live-validation.md for provisioning, the
 # operator checklist, and the Kokoro TTS decision.
@@ -449,6 +451,152 @@ value = "offline_config_ok"
 kind = "stdout.contains"
 value = "no_bundled_backend_ok"
 
+[[scenario]]
+id = "lemonade.nofetch.preplaced-load-missing-model"
+summary = "Loading a pre-placed GGUF and requesting an absent model fetch nothing: no download or install log lines, unchanged model and backend caches, and no remote connections from lemond"
+tags = [
+  "live-validation",
+  "validation-window",
+  "mutates-service",
+  "lemonade",
+  "nofetch",
+  "llamacpp",
+  "gguf",
+]
+source_url = "https://huggingface.co/Qwen/Qwen3-0.6B-GGUF"
+
+[scenario.model_provenance]
+repo_id = "Qwen/Qwen3-0.6B-GGUF"
+revision = "23749fefcc72300e3a2ad315e1317431b06b590a"
+file = "Qwen3-0.6B-Q8_0.gguf"
+sha256 = "9465e63a22add5354d9bb4b99e90117043c7124007664907259bd16d043bb031"
+license = "apache-2.0"
+base_model = "Qwen/Qwen3-0.6B"
+terms_status = "accepted"
+terms_gate = "Official public, non-gated Apache-2.0 Qwen GGUF; re-review if the revision, file digest, license, or gating changes."
+
+[scenario.given]
+engine = "lemonade"
+model = "Qwen/Qwen3-0.6B-GGUF"
+lemonade_model = "user.Qwen3-0.6B-Q8_0-GGUF"
+tool = "lemonade_live_smoke.nofetch"
+
+[scenario.when]
+argv = [
+  "--base-url",
+  "http://127.0.0.1:13305/api/v1",
+  "--backend",
+  "rocm",
+  "--expect-checkpoint",
+  "Qwen/Qwen3-0.6B-GGUF:Q8_0",
+  "--missing-model",
+  "Tiny-Test-Model-GGUF",
+]
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "offline_config_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "endpoint_blackhole_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "network_attribution_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "model_sha256_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "completion_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "preplaced_no_fetch_log_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "preplaced_model_cache_unchanged_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "preplaced_backend_cache_unchanged_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "preplaced_no_remote_connection_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "missing_model_absent_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "missing_model_refused_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "missing_no_fetch_log_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "missing_model_cache_unchanged_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "missing_backend_cache_unchanged_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "missing_no_remote_connection_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "no_fetch_ok"
+
+[[scenario]]
+id = "lemonade.pins.service-consumer-pins"
+summary = "The running service reports the zembed-1 Q4_K_M and zerank-2 Q8_0 consumer models as pinned, loaded, and free of pin load errors"
+tags = ["live-validation", "validation-window", "lemonade", "pins", "read-only", "zembed", "zerank"]
+
+[scenario.given]
+engine = "lemonade"
+model = "builtin"
+tool = "lemonade_live_smoke.service-pins"
+
+[scenario.when]
+argv = [
+  "--base-url",
+  "http://127.0.0.1:13305/api/v1",
+  "--expect-pin",
+  "user.zembed-1-Q4_K_M-GGUF-Q4_K_M=Q4_K_M",
+  "--expect-pin",
+  "zerank-2-GGUF=Q8_0",
+]
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "service_pin user.zembed-1-Q4_K_M-GGUF-Q4_K_M"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "service_pin zerank-2-GGUF"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "service_pins_ok"
+
 # The runner has no manual-step support, so the app check is an operator
 # checklist in the catalog. The loader ignores this table.
 [[operator_checklist]]
@@ -457,7 +605,7 @@ summary = "Operator launches the Lemonade app, exercises its pin and startup con
 tags = ["live-validation", "validation-window", "lemonade-app", "operator"]
 prerequisites = [
   "The lemonade.llamacpp.rocm.qwen3-0.6b-q8-0.completion scenario passed in this validation window.",
-  "If the service requires a loopback key, launch the app with the same LEMONADE_API_KEY environment the service expects.",
+  "If the service configuration carries an API key, launch the app with the same LEMONADE_API_KEY environment the service expects.",
   "Record GET /api/v1/pins and GET /api/v1/health before starting so pins and residency can be restored.",
 ]
 steps = [

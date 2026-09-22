@@ -7,7 +7,17 @@ from typing import Any
 from . import ExecutionPlan, pinned_sha256_args, required_model_binding
 
 
-LIVE_SMOKE_MODES = {"text", "provenance", "lifecycle", "pins", "budget", "displacement"}
+LIVE_SMOKE_MODES = {
+    "text",
+    "provenance",
+    "nofetch",
+    "service-pins",
+    "lifecycle",
+    "pins",
+    "budget",
+    "displacement",
+}
+DIGEST_SERVICE_MODES = {"text", "nofetch"}
 ISOLATED_LEMOND_MODES = {"lifecycle", "pins", "budget", "displacement"}
 GGUF_BINDING_MODES = {"pins", "budget", "displacement"}
 
@@ -33,7 +43,7 @@ def _live_smoke_plan(
     if mode in ISOLATED_LEMOND_MODES:
         server_log = scenario_run_root / "server.log"
         command += ["--server-log", str(server_log)]
-    if mode == "text" or mode in GGUF_BINDING_MODES:
+    if mode in DIGEST_SERVICE_MODES or mode in GGUF_BINDING_MODES:
         command += pinned_sha256_args(definition)
     return ExecutionPlan(command=[*command, *argv], server_log_path=server_log)
 

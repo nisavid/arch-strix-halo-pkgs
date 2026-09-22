@@ -6,6 +6,10 @@ Modes that target the running service (``--base-url``):
 - ``text``: load a provisioned GGUF on one llama.cpp backend, complete text,
   and prove that the backend process belongs to the packaged llama.cpp.
 - ``provenance``: read-only package, file-ownership, and config provenance.
+- ``nofetch``: load a pre-placed model and request an absent one while
+  watching the service journal, the model and backend caches, and lemond's
+  sockets; nothing may be downloaded, installed, or fetched remotely.
+- ``service-pins``: read-only check that consumer models are pinned and loaded.
 
 Modes that start their own ``lemond`` from the packaged binary, with a
 temporary cache directory, offline config, and packaged llama.cpp backends:
@@ -20,10 +24,13 @@ from __future__ import annotations
 
 import argparse
 from collections.abc import Callable, Iterator, Mapping
+import ipaddress
 import json
 import os
 from pathlib import Path
+import pwd
 import re
+import shlex
 import shutil
 import socket
 import subprocess
@@ -43,7 +50,8 @@ from llamacpp_server_smoke import (
 )
 
 
-MODES = ("text", "provenance", "lifecycle", "pins", "budget", "displacement")
+SERVICE_MODES = ("text", "provenance", "nofetch", "service-pins")
+MODES = (*SERVICE_MODES, "lifecycle", "pins", "budget", "displacement")
 FAMILY_PACKAGES = (
     "lemonade",
     "lemonade-server",
@@ -428,6 +436,393 @@ def run_provenance(
     print("provenance_ok")
 
 
+# --- No-fetch evidence (service) --------------------------------------------
+
+BLACKHOLE_ENV_KEYS = ("HF_ENDPOINT", "MODELSCOPE_ENDPOINT")
+# Log lines that the candidate emits only while downloading or installing a
+# model or backend. "downloaded=" and "already downloaded" do not match.
+FETCH_LOG_RE = re.compile(
+    r"(?i)(?:\bdownloading\b|download complete|\bdownloaded(?::| archive| tarball)"
+    r"|all files downloaded|not cached, downloading|fetching repository"
+    r"|\binstalling\b|installation complete|\bupgrading\b|\breinstalling\b)"
+)
+SS_USERS_RE = re.compile(r"pid=(\d+)")
+
+
+def _peer_host_port(address: str) -> tuple[str, str]:
+    host, _, port = address.rpartition(":")
+    host = host.strip("[]").split("%", 1)[0]
+    return host, port
+
+
+def is_loopback_host(host: str) -> bool:
+    if host == "localhost":
+        return True
+    try:
+        address = ipaddress.ip_address(host)
+    except ValueError:
+        return False
+    mapped = getattr(address, "ipv4_mapped", None)
+    return (mapped or address).is_loopback
+
+
+def blackhole_ports(env: Mapping[str, str]) -> set[str]:
+    """Require every download endpoint to point at loopback; return its ports."""
+    ports: set[str] = set()
+    for key in BLACKHOLE_ENV_KEYS:
+        value = env.get(key, "")
+        parsed = parse.urlsplit(value)
+        if not parsed.hostname or not is_loopback_host(parsed.hostname):
+            raise AssertionError(
+                f"endpoint_blackhole_missing: the service's {key} must name a loopback "
+                "endpoint so a download attempt cannot leave the host"
+            )
+        ports.add(str(parsed.port or (443 if parsed.scheme == "https" else 80)))
+    return ports
+
+
+def parse_ss(text: str) -> list[dict[str, Any]]:
+    """Parse `ss -tanpH` rows into state, peer, and owning pids."""
+    rows = []
+    for line in text.splitlines():
+        fields = line.split()
+        if len(fields) < 5:
+            continue
+        host, port = _peer_host_port(fields[4])
+        pids = {int(pid) for pid in SS_USERS_RE.findall(" ".join(fields[5:]))}
+        rows.append({"state": fields[0], "peer_host": host, "peer_port": port, "pids": pids})
+    return rows
+
+
+def snapshot_tree(root: Path) -> dict[str, tuple[Any, ...]]:
+    """List a cache tree by relative path, type, size, and mtime; hashing is too slow."""
+    if not root.exists():
+        return {}
+    entries: dict[str, tuple[Any, ...]] = {}
+
+    def fail(exc: OSError) -> None:
+        raise AssertionError(f"cache_unreadable: {exc.strerror}; run with read access to the service caches")
+
+    for dirpath, dirnames, filenames in os.walk(root, onerror=fail):
+        base = Path(dirpath)
+        for name in [*dirnames, *filenames]:
+            path = base / name
+            rel = str(path.relative_to(root))
+            st = path.lstat()
+            if path.is_symlink():
+                entries[rel] = ("link", os.readlink(path))
+            elif path.is_dir():
+                entries[rel] = ("dir",)
+            else:
+                entries[rel] = ("file", st.st_size, st.st_mtime_ns)
+    return entries
+
+
+def tree_changes(before: Mapping[str, Any], after: Mapping[str, Any]) -> list[str]:
+    return sorted(key for key in set(before) | set(after) if before.get(key) != after.get(key))
+
+
+class ServiceHost:
+    """Read-only views of the systemd service: pids, env, journal, sockets, caches."""
+
+    def __init__(self, service: str, *, runner: Runner = subprocess.run, proc_root: Path = Path("/proc")) -> None:
+        self.service = service
+        self.runner = runner
+        self.proc_root = proc_root
+
+    def show(self, prop: str) -> str:
+        return run_command(
+            ["systemctl", "show", "-p", prop, "--value", self.service], runner=self.runner
+        ).strip()
+
+    def main_pid(self) -> int:
+        pid = int(self.show("MainPID") or 0)
+        if pid <= 0:
+            raise AssertionError(f"{self.service} has no running main process")
+        return pid
+
+    def process_tree(self, pid: int) -> set[int]:
+        pids, pending = set(), [pid]
+        while pending:
+            current = pending.pop()
+            pids.add(current)
+            for children in (self.proc_root / str(current) / "task").glob("*/children"):
+                try:
+                    pending += [int(child) for child in children.read_text().split()]
+                except OSError:
+                    continue
+        return pids
+
+    def service_env(self, keys: tuple[str, ...]) -> dict[str, str]:
+        """Read only `keys`: unit Environment= first, then /proc environ if readable."""
+        env: dict[str, str] = {}
+        for item in shlex.split(self.show("Environment")):
+            key, sep, value = item.partition("=")
+            if sep and key in keys:
+                env[key] = value
+        if all(key in env for key in keys):
+            return env
+        try:
+            raw = (self.proc_root / str(self.main_pid()) / "environ").read_bytes()
+        except OSError:
+            return env
+        for item in raw.split(b"\0"):
+            key, sep, value = item.decode("utf-8", errors="replace").partition("=")
+            if sep and key in keys:
+                env.setdefault(key, value)
+        return env
+
+    def endpoint_env(self) -> dict[str, str]:
+        return self.service_env(BLACKHOLE_ENV_KEYS)
+
+    def cache_dir(self) -> Path:
+        """The service's cache dir: lemond's positional argv, LEMONADE_CACHE_DIR, then ~user."""
+        argv = (self.proc_root / str(self.main_pid()) / "cmdline").read_bytes().split(b"\0")
+        if len(argv) > 1 and argv[1] and not argv[1].startswith(b"-"):
+            return Path(argv[1].decode())
+        env_dir = self.service_env(("LEMONADE_CACHE_DIR",)).get("LEMONADE_CACHE_DIR")
+        if env_dir:
+            return Path(env_dir)
+        return Path(pwd.getpwnam(self.show("User") or "root").pw_dir) / ".cache" / "lemonade"
+
+    def sockets(self) -> list[dict[str, Any]]:
+        return parse_ss(run_command(["ss", "-tanpH"], runner=self.runner))
+
+    def journal_since(self, since: float) -> list[str]:
+        output = run_command(
+            ["journalctl", "-u", self.service, "--since", f"@{int(since)}", "--no-pager", "-q", "-o", "short-unix"],
+            runner=self.runner,
+        )
+        lines = []
+        for line in output.splitlines():
+            stamp, _, rest = line.partition(" ")
+            try:
+                if float(stamp) < since:
+                    continue
+            except ValueError:
+                pass
+            lines.append(rest)
+        return lines
+
+
+class FetchWatch:
+    """Observe one phase: cache trees, service journal, and lemond-tree sockets."""
+
+    def __init__(
+        self,
+        host: ServiceHost,
+        *,
+        caches: Mapping[str, Path],
+        blackhole: set[str],
+        expect_log: str,
+        interval: float = 0.2,
+        journal_timeout: float = 10.0,
+        clock: Callable[[], float] = time.time,
+    ) -> None:
+        self.host = host
+        self.expect_log = expect_log
+        self.journal_timeout = journal_timeout
+        self.caches = caches
+        self.blackhole = blackhole
+        self.interval = interval
+        self.clock = clock
+        self.remote: set[tuple[str, str]] = set()
+        self.blackhole_hits = 0
+        self.samples = 0
+        self._stop = threading.Event()
+        self._thread = threading.Thread(target=self._run, daemon=True)
+        self.error: BaseException | None = None
+
+    def sample(self) -> None:
+        tree = self.host.process_tree(self.host.main_pid())
+        for row in self.host.sockets():
+            if row["state"] == "LISTEN" or not row["pids"] & tree:
+                continue
+            if not is_loopback_host(row["peer_host"]):
+                self.remote.add((row["peer_host"], row["peer_port"]))
+            elif row["peer_port"] in self.blackhole:
+                self.blackhole_hits += 1
+        self.samples += 1
+
+    def _run(self) -> None:
+        while not self._stop.is_set():
+            try:
+                self.sample()
+            except BaseException as exc:  # noqa: BLE001 - surfaced by verify().
+                self.error = exc
+                return
+            self._stop.wait(self.interval)
+
+    def __enter__(self) -> "FetchWatch":
+        self.before = {name: snapshot_tree(path) for name, path in self.caches.items()}
+        self.since = self.clock()
+        self._thread.start()
+        return self
+
+    def _collect(self) -> None:
+        self._stop.set()
+        self._thread.join(timeout=30.0)
+        self.sample()
+        self.after = {name: snapshot_tree(path) for name, path in self.caches.items()}
+        # journald can trail the HTTP response; wait until the phase's own line lands.
+        deadline = time.monotonic() + self.journal_timeout
+        while True:
+            self.journal = self.host.journal_since(self.since)
+            if any(self.expect_log in line for line in self.journal) or time.monotonic() >= deadline:
+                return
+            time.sleep(0.5)
+
+    def __exit__(self, exc_type: Any, *exc_info: Any) -> None:
+        try:
+            self._collect()
+        except BaseException:
+            if exc_type is None:
+                raise
+            # Never mask the phase's own failure with an evidence-collection error.
+
+    def verify(self, phase: str) -> None:
+        if self.error is not None:
+            raise AssertionError(f"{phase}: socket sampling failed: {self.error}")
+        if not any(self.expect_log in line for line in self.journal):
+            raise AssertionError(
+                f"{phase}: the service journal has no line naming {self.expect_log}; "
+                "run with access to the system journal"
+            )
+        fetch_lines = [line for line in self.journal if FETCH_LOG_RE.search(line)]
+        print(f"{phase}_journal_lines", len(self.journal))
+        print(f"{phase}_fetch_log_lines", len(fetch_lines))
+        if fetch_lines:
+            raise AssertionError(f"{phase}: the service logged {len(fetch_lines)} download or install lines")
+        print(f"{phase}_no_fetch_log_ok")
+        for name in self.caches:
+            changes = tree_changes(self.before[name], self.after[name])
+            print(f"{phase}_{name}_entries", len(self.after[name]), f"changed={len(changes)}")
+            if changes:
+                raise AssertionError(f"{phase}: {name} changed in {len(changes)} entries")
+            print(f"{phase}_{name}_unchanged_ok")
+        print(f"{phase}_socket_samples", self.samples)
+        print(f"{phase}_remote_connections", len(self.remote))
+        print(f"{phase}_blackhole_connects", self.blackhole_hits)
+        if self.remote:
+            raise AssertionError(f"{phase}: lemond connected to {len(self.remote)} non-loopback peers")
+        if self.blackhole_hits:
+            raise AssertionError(f"{phase}: lemond connected to the download blackhole")
+        print(f"{phase}_no_remote_connection_ok")
+
+
+def require_socket_attribution(host: ServiceHost) -> None:
+    """ss -p must see lemond's own sockets, or an empty sample would prove nothing."""
+    tree = host.process_tree(host.main_pid())
+    if not any(row["pids"] & tree for row in host.sockets()):
+        raise AssertionError(
+            "network_attribution_unavailable: ss -p cannot see lemond's sockets; "
+            "run with privileges that let ss attribute the service's sockets"
+        )
+    print("network_attribution_ok")
+
+
+def run_nofetch(
+    client: LemonadeClient,
+    *,
+    host: ServiceHost,
+    model: str,
+    missing_model: str,
+    backend: str,
+    ctx_size: int,
+    expect_checkpoint: str | None,
+    expect_sha256: str | None,
+    interval: float = 0.2,
+    journal_timeout: float = 10.0,
+    text: Callable[..., None] = run_text,
+) -> None:
+    config = client.get("/internal/config")
+    for key in ("offline", "no_fetch_executables"):
+        if config.get(key) is not True:
+            raise AssertionError(f"service config {key} is {config.get(key)!r}, expected true")
+    print("offline_config_ok")
+    blackhole = blackhole_ports(host.endpoint_env())
+    print("endpoint_blackhole_ok")
+    require_socket_attribution(host)
+
+    storage = (client.get("/system-info").get("model_storage") or {}).get("path")
+    if not storage:
+        raise AssertionError("system-info reports no model_storage path")
+    caches = {"model_cache": Path(str(storage)), "backend_cache": host.cache_dir() / "bin"}
+
+    with FetchWatch(
+        host, caches=caches, blackhole=blackhole, expect_log=model,
+        interval=interval, journal_timeout=journal_timeout,
+    ) as watch:
+        text(
+            client,
+            model=model,
+            backend=backend,
+            ctx_size=ctx_size,
+            expect_checkpoint=expect_checkpoint,
+            expect_sha256=expect_sha256,
+        )
+    watch.verify("preplaced")
+
+    status, payload = client.request("GET", f"/models/{quote_model(missing_model)}", check=False)
+    info = payload.get("data", payload) if isinstance(payload, dict) else {}
+    if status < 400 and isinstance(info, dict) and info.get("downloaded"):
+        raise AssertionError(f"missing_model_present: {missing_model} is downloaded; pick an absent model")
+    print("missing_model_absent_ok")
+    was_loaded = loaded_entry(client.get("/health"), missing_model) is not None
+    with FetchWatch(
+        host, caches=caches, blackhole=blackhole, expect_log=missing_model,
+        interval=interval, journal_timeout=journal_timeout,
+    ) as watch:
+        refusal = load_refusal(client, missing_model, ctx_size=ctx_size)
+        if refusal is None and not was_loaded:
+            client.request("POST", "/unload", {"model_name": missing_model}, check=False)
+    print("missing_model_refusal", json.dumps(refusal))
+    if refusal is None:
+        raise AssertionError(f"loading absent model {missing_model} succeeded; it was fetched")
+    if loaded_entry(client.get("/health"), missing_model) is not None:
+        raise AssertionError(f"{missing_model} became resident after a refused load")
+    print("missing_model_refused_ok")
+    watch.verify("missing")
+    print("no_fetch_ok")
+
+
+# --- Consumer pins (service, read-only) --------------------------------------
+
+
+def parse_expected_pins(values: list[str]) -> list[tuple[str, str]]:
+    pins = []
+    for value in values:
+        model, sep, variant = value.partition("=")
+        if not sep or not model or not variant:
+            raise SystemExit(f"--expect-pin takes MODEL=VARIANT, got {value!r}")
+        pins.append((model, variant))
+    return pins
+
+
+def run_service_pins(client: LemonadeClient, *, expected: list[tuple[str, str]]) -> None:
+    if not expected:
+        raise SystemExit("service-pins mode requires at least one --expect-pin")
+    pins = {str(pin.get("model_name")): pin for pin in client.get("/pins").get("data", [])}
+    health = client.get("/health")
+    for model, variant in expected:
+        pin = pins.get(model)
+        if pin is None:
+            raise AssertionError(f"{model} is not pinned; pins: {sorted(pins)}")
+        if pin.get("load_error"):
+            raise AssertionError(f"pinned {model} failed to load: {pin['load_error']}")
+        if not pin.get("loaded"):
+            raise AssertionError(f"pinned {model} is not loaded")
+        entry = loaded_entry(health, model)
+        if entry is None or not entry.get("pinned"):
+            raise AssertionError(f"{model} is not resident as pinned in /health")
+        checkpoint = main_checkpoint(model_info(client, model)) or ""
+        quant = checkpoint.rpartition(":")[2]
+        if variant.lower() not in quant.lower():
+            raise AssertionError(f"{model} checkpoint {checkpoint!r} is not the {variant} variant")
+        print("service_pin", model, checkpoint)
+    print("service_pins_ok")
+
+
 def _free_port(host: str) -> int:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.bind((host, 0))
@@ -799,6 +1194,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--repo", default="strix-halo-gfx1151")
     parser.add_argument("--service", default="lemond.service")
     parser.add_argument("--server-log", type=Path)
+    parser.add_argument("--missing-model", default="Tiny-Test-Model-GGUF", help="absent model for nofetch mode")
+    parser.add_argument(
+        "--expect-pin", action="append", default=[], help="MODEL=VARIANT that service-pins mode requires"
+    )
     parser.add_argument("--stream-tokens", type=int, default=2048)
     parser.add_argument("--startup-timeout", type=float, default=180.0)
     parser.add_argument("--request-timeout", type=float, default=600.0)
@@ -808,7 +1207,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 def main(argv: list[str] | None = None) -> None:
     args = parse_args(argv)
     print("mode", args.mode)
-    if args.mode in {"text", "provenance"}:
+    if args.mode in SERVICE_MODES:
         client = LemonadeClient(
             args.base_url,
             api_key=resolve_api_key(),
@@ -826,6 +1225,21 @@ def main(argv: list[str] | None = None) -> None:
                 expect_checkpoint=args.expect_checkpoint,
                 expect_sha256=args.expect_sha256,
             )
+        elif args.mode == "nofetch":
+            if not args.model:
+                raise SystemExit("nofetch mode requires --model")
+            run_nofetch(
+                client,
+                host=ServiceHost(args.service),
+                model=args.model,
+                missing_model=args.missing_model,
+                backend=args.backend,
+                ctx_size=args.ctx_size,
+                expect_checkpoint=args.expect_checkpoint,
+                expect_sha256=args.expect_sha256,
+            )
+        elif args.mode == "service-pins":
+            run_service_pins(client, expected=parse_expected_pins(args.expect_pin))
         else:
             run_provenance(client, repo=args.repo, service=args.service)
         return

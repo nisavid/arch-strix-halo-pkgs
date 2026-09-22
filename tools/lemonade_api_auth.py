@@ -1,4 +1,4 @@
-"""Resolve optional Lemonade loopback API keys from the run-time environment.
+"""Resolve optional Lemonade API keys from the run-time environment.
 
 Scenario TOML never carries keys or credential paths. Operators supply them
 when running scenarios, either as a value or as a path to a credential file
