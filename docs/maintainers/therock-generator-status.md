@@ -21,6 +21,23 @@ stamps `pkgver` from `policies/therock-packages.toml`. The repo-local
 Using `/` is valid only when the live install root contains every payload that
 should remain rendered.
 
+### TheRock 7.14.1 lane
+
+The policy now targets TheRock 7.14.1 (#108). The committed render in
+`packages/therock-gfx1151/` is still the 7.13 render described below; it is
+replaced once MIGraphX 2.16.1 is built into the staged 7.14.1 payload. The
+pre-MIGraphX dry render of the pinned 7.14.1 gfx1151 stage
+(`--pre-migraphx-dry-render`) is clean and renders 68 of the 72 policy-defined
+packages; `migraphx-gfx1151` has only its flatbuffers payload until the
+MIGraphX build lands. Not rendered: `hipfort-gfx1151`, `mivisionx-gfx1151`,
+`rpp-gfx1151` (no payload, as before) and `magma-gfx1151` (MAGMA left the
+7.14.1 payload). `hiptensor-gfx1151` renders again, and the new
+`rocalution-gfx1151` and `hipfile-gfx1151` render. The payload decisions,
+removals, and kpack ownership are recorded in
+`packages/therock-gfx1151/README.md`.
+
+### TheRock 7.13 render
+
 The generated family is payload-driven. The current rendered output includes
 66 of the 70 policy-defined packages. Four packages are present in policy
 metadata but not rendered because their expected installed payloads are absent
@@ -120,6 +137,11 @@ The generator and policy now handle:
   that package's payload
 - package copy from staged roots outside `/` without embedding the staging path
   in packaged file paths
+- kpack-split payloads: `.rocm_kpack_ref` markers are resolved to their
+  `opt/rocm/.kpack/` archives, and a missing, ignored, or out-of-graph archive
+  fails as `KPACK_REF_UNOWNED`
+- soname depends rendered from staged ELF `DT_NEEDED` entries
+  (`soname_depends`), used for the MIGraphX protobuf depend
 
 ## Current caveat
 
@@ -138,7 +160,7 @@ The generator is no longer exploratory. The follow-up work is maintenance:
 - keep policy current when TheRock adds or reshapes components
 - keep dependency and replacement metadata healthy
 - keep the generated family aligned with the local repo and live cutover story
-- rerender `hipfort-gfx1151`, `hiptensor-gfx1151`, `mivisionx-gfx1151`, and
-  `rpp-gfx1151` when a staged TheRock root contains those payloads
+- rerender `hipfort-gfx1151`, `mivisionx-gfx1151`, `rpp-gfx1151`, and
+  `magma-gfx1151` when a staged TheRock root contains those payloads
 - revisit the Arch/CachyOS baseline audit when upstream distro package
   surfaces or TheRock payloads change
