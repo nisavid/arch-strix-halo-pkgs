@@ -30,15 +30,22 @@ becomes durable, prefer a named patch that another maintainer can review.
 
 ## Lemonade
 
+The Lemonade patches apply to the `nisavid/lemonade` fork commit named by the
+`lemonade` entry in the `[source_pins]` table of
+`policies/recipe-packages.toml`. That fork commit contains upstream Lemonade
+v11.7.0 (`2b6a7d7`).
+
 - [Linux NPU fallback when accel-device opens fail](../packages/lemonade-server/0001-linux-npu-fallback-to-pci-id-when-accel-open-fails.patch)
   - Falls back to PCI identification when `/dev/accel/*` probing fails even
     though the hardware is still identifiable from sysfs.
 - [Treat packaged HIP and Vulkan `llama.cpp` backends as system-managed](../packages/lemonade-server/0002-llamacpp-external-backends-are-system-managed.patch)
   - Makes Lemonade treat the packaged ROCm and Vulkan `llama.cpp` backends as
-    system-managed backends rather than downloadable runtimes.
-  - Includes the config-load, backend-table, and CLI presentation changes that
-    keep the override visible after the first startup without resetting
-    unrelated keys loaded from `config.json` back to defaults.
+    system-managed backends rather than downloadable runtimes, and reads their
+    version from `llama-server --version` through an argv-based process call.
+  - Lemonade 11.7 reads `LEMONADE_LLAMACPP_*_BIN` from the environment ahead
+    of `config.json` on every backend lookup. The patch therefore no longer
+    carries the config-load environment overlay or the CLI backend-table
+    change that older bases needed.
 - [Remove the generic `llamacpp:system` backend](../packages/lemonade-server/0003-remove-llamacpp-system-backend.patch)
   - Keeps this custom build focused on the explicit HIP and Vulkan lanes this
     repo packages.

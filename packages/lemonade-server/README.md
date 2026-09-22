@@ -10,7 +10,7 @@
 - Scaffold template: `lemonade-server`
 - Recipe build method: `pip`
 - Upstream repo: `https://github.com/nisavid/lemonade.git`
-- Package version: `10.7.0`
+- Package version: `11.7.0`
 - Recipe revision: `3f15f9f (20260508, 17 commits touching recipe path)`
 - Recipe steps: `34, 35, 36`
 - Recipe dependencies: `therock, llamacpp`
@@ -36,19 +36,23 @@ Reinstalling at compatible versions resolves conflicts.
 ## Scaffold notes
 
 - Server/runtime package; llama.cpp backends are optdepends, not hard deps.
-- Pinned to nisavid/lemonade main commit e18b9c1e352df8ab5aff2ff353402f1ec77c47f2, whose CMake project version is 10.7.0.
+- Pinned to nisavid/lemonade main commit 187b4a25f154ff905486b8bf85e006cd1f2a9820, whose CMake project version is 11.7.0. The pin is the lemonade entry in the [source_pins] table of policies/recipe-packages.toml, so lemonade-server and lemonade-app always build the same fork commit.
+- Configures with BUILD_TESTING=OFF; upstream 11.7 includes CTest, and the distro build does not need its C++ test binaries.
 - Uses upstream's lemond.service unit name; do not ship the pre-10.3 lemonade-server.service name in this package.
-- Installs /etc/lemonade/conf.d/10-llamacpp-gfx1151.conf so the packaged ROCm and Vulkan llama.cpp wrapper binaries are exposed to the service as system-managed backends.
-- The system-managed backend patch also folds in the config-load and CLI/backend-table changes needed for those service-provided overrides to stay visible after config.json already exists.
-- Export the packaged llama.cpp revision and ggml release URL in the system-managed backend env overlay so the GUI shows the packaged backend metadata instead of upstream downloader defaults.
-- Pkgrel 2 replaces shell-interpolated llama.cpp --version probing with Lemonade's argv-based ProcessManager capture path in the system-managed backend patch.
-- Keeps the backend environment overlay sparse so service-provided backend paths override config.json without resetting unrelated user config keys to defaults.
+- Installs /etc/lemonade/conf.d/10-llamacpp-gfx1151.conf so the packaged ROCm and Vulkan llama.cpp wrapper binaries are exposed to the service as system-managed backends. lemond reads LEMONADE_LLAMACPP_*_BIN from the environment ahead of config.json on every backend lookup, so the refreshed system-managed backend patch no longer carries the older config-load environment overlay or the CLI backend-table change.
+- Exports the packaged llama.cpp revision and ggml release URL in the same conf.d file so the GUI shows the packaged backend metadata instead of upstream downloader defaults.
+- The system-managed backend patch probes llama-server --version through Lemonade's argv-based ProcessManager capture path, not a shell.
+- Marks /etc/lemonade/conf.d/zz-secrets.conf as a backup file so an upgrade keeps local API-key edits. 10-llamacpp-gfx1151.conf stays package-owned so each release refreshes the backend metadata.
+- Replaces upstream's full /usr/share/lemonade/defaults.json with a sparse distro overlay: offline, no_fetch_executables, an explicit ROCm llama.cpp backend, prefer_system off, the packaged rocm_bin and vulkan_bin paths, and --no-mmap llama.cpp args. With --no-mmap set, lemond omits its iGPU --load-mode default, which the packaged llama.cpp b9442 does not accept. lemond merges the overlay over its built-in defaults and under config.json, so keys an existing config.json already sets still win. The overlay leaves host, port, broadcast, and API-key settings to the host.
+- Installs /usr/lib/systemd/system/lemond.service.d/20-no-remote-model-fetch.conf, which sets HF_ENDPOINT and MODELSCOPE_ENDPOINT to a refused loopback port. lemond's model registry reads both variables on every request, and llama-server children inherit them. A value set in /etc/lemonade/conf.d overrides the drop-in, because systemd applies EnvironmentFile after Environment.
+- Removes /usr/share/metainfo because the web-app MetaInfo names lemonade-web-app.desktop as its launchable, and this package removes that desktop entry.
 
 ## Intentional Divergences
 
 - This custom build treats the ROCm and Vulkan llama.cpp backends as packaged system-managed backends rather than Lemonade-managed runtime downloads.
 - Carries local patches for Linux XDNA2 detection and the system-managed llama.cpp backend story that are specific to this Strix Halo packaging lane.
 - Builds from the nisavid/lemonade fork so this package can consume local upstream fixes before they are available from the canonical Lemonade repository.
+- Ships offline, no-fetch distro defaults and a systemd drop-in that points the Hugging Face and ModelScope endpoints at a refused loopback port, so lemond does not download models or backend executables on its own.
 
 ## Update Notes
 
@@ -60,6 +64,7 @@ Reinstalling at compatible versions resolves conflicts.
 - On 2026-05-28, bumped the server package release to refresh packaged system-managed llama.cpp backend metadata for the b9357 HIP and Vulkan backends.
 - On 2026-05-31, bumped the server package release to refresh packaged system-managed llama.cpp backend metadata for the b9442 HIP and Vulkan backends.
 - On 2026-06-15, adopted nisavid/lemonade fork main e18b9c1e352df8ab5aff2ff353402f1ec77c47f2, which syncs upstream Lemonade v10.7.0.
+- On 2026-09-22, repinned the source to nisavid/lemonade fork main at Lemonade 11.7.0; the fork commit contains upstream v11.7.0 (2b6a7d7), and the lemonade entry in [source_pins] holds the selected commit. Refreshed patches 0002-0004 for the new base, and added the zz-secrets.conf backup entry, the offline distro defaults, and the model-endpoint drop-in. Issue 137 tracks build and host validation.
 
 ## Maintainer Starting Points
 

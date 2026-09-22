@@ -5,7 +5,7 @@
 # Package recipe key: lemonade
 
 pkgname=lemonade-app
-pkgver=10.7.0
+pkgver=11.7.0
 pkgrel=1
 pkgdesc='Lemonade desktop app rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
@@ -18,8 +18,8 @@ options=()
 provides=(lemonade-desktop)
 conflicts=(lemonade-desktop)
 replaces=(lemonade-desktop)
-source=('lemonade::git+https://github.com/nisavid/lemonade.git#commit=e18b9c1e352df8ab5aff2ff353402f1ec77c47f2' 0001-keep-tauri-glib-on-webkit-compatible-series.patch)
-sha256sums=(SKIP SKIP)
+source=('lemonade::git+https://github.com/nisavid/lemonade.git#commit=187b4a25f154ff905486b8bf85e006cd1f2a9820' 0001-keep-tauri-glib-on-webkit-compatible-series.patch)
+sha256sums=(SKIP a1206e0fedcdaa87a725719cade8a499aaaa401bce0c9a5442bc57f95e0be177)
 
 _apply_patch_if_needed() {
   local _patch="$srcdir/$1"

@@ -19,6 +19,8 @@ render_recipe_scaffolds = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = render_recipe_scaffolds
 SPEC.loader.exec_module(render_recipe_scaffolds)
 
+import recipe_policy  # noqa: E402
+
 
 def init_recipe_repo(recipe_root: Path) -> None:
     recipe_dir = recipe_root / "strix-halo"
@@ -1153,3 +1155,87 @@ def test_render_recipe_json_keeps_explicit_extra_source_checksums_in_policy() ->
     assert "source_patch_sha256sums" not in recipe_json["maintenance"]
     assert recipe_json["policy"]["extra_sources"] == ["extra-data.tar.gz"]
     assert recipe_json["policy"]["extra_sha256sums"] == ["abc123"]
+
+
+SAMPLE_RECIPE_PKG = {
+    "repo": "https://example.invalid/sample.git",
+    "method": "meta",
+    "phase": "package",
+    "steps": [],
+    "depends_on": [],
+    "notes": "",
+}
+SAMPLE_DEFAULTS = {
+    "recipe_repo": "https://github.com/paudley/ai-notes",
+    "recipe_subdir": "strix-halo",
+    "recipe_author": "Blackcat Informatics Inc.",
+}
+
+
+def test_render_pkgbuild_emits_backup_only_when_policy_sets_it() -> None:
+    policy_pkg = {
+        "recipe_key": "sample",
+        "template": "meta-package",
+        "pkgdesc": "Sample",
+        "url": "https://example.invalid/sample",
+        "license": ["MIT"],
+        "src_subdir": "sample",
+    }
+
+    plain = render_recipe_scaffolds.render_pkgbuild(
+        "sample", policy_pkg, SAMPLE_RECIPE_PKG, "1.2.3", SAMPLE_DEFAULTS
+    )
+    with_backup = render_recipe_scaffolds.render_pkgbuild(
+        "sample",
+        {**policy_pkg, "backup": ["etc/sample/secrets.conf"]},
+        SAMPLE_RECIPE_PKG,
+        "1.2.3",
+        SAMPLE_DEFAULTS,
+    )
+
+    assert "backup=" not in plain
+    assert "replaces=()\nbackup=(etc/sample/secrets.conf)\nsource=()\n" in with_backup
+
+
+def test_recipe_policy_expands_source_pins_in_package_values() -> None:
+    resolved = recipe_policy.resolve_recipe_policy(
+        {
+            "source_pins": {"sample": "0123abcd"},
+            "packages": {
+                "sample-a": {
+                    "source_refs": [
+                        "sample::git+https://example.invalid/sample.git#commit={source_pins.sample}"
+                    ],
+                    "scaffold_notes": ["Pinned to {source_pins.sample}."],
+                    "pkgrel": 1,
+                },
+                "sample-b": {"source_refs": ["plain-source"]},
+            },
+        }
+    )
+
+    sample_a = resolved["packages"]["sample-a"]
+    assert sample_a["source_refs"] == [
+        "sample::git+https://example.invalid/sample.git#commit=0123abcd"
+    ]
+    assert sample_a["scaffold_notes"] == ["Pinned to 0123abcd."]
+    assert sample_a["pkgrel"] == 1
+    assert resolved["packages"]["sample-b"]["source_refs"] == ["plain-source"]
+
+
+def test_recipe_policy_rejects_unknown_source_pins() -> None:
+    with pytest.raises(KeyError, match="unknown source pin: missing"):
+        recipe_policy.resolve_recipe_policy(
+            {"packages": {"sample": {"source_refs": ["x#commit={source_pins.missing}"]}}}
+        )
+
+
+def test_real_lemonade_packages_share_one_source_pin() -> None:
+    policy = recipe_policy.load_recipe_policy(REPO_ROOT / "policies/recipe-packages.toml")
+    pin = policy["source_pins"]["lemonade"]
+    expected = f"lemonade::git+https://github.com/nisavid/lemonade.git#commit={pin}"
+
+    for package in ("lemonade-server", "lemonade-app"):
+        assert policy["packages"][package]["source_refs"] == [expected]
+        pkgbuild = (REPO_ROOT / "packages" / package / "PKGBUILD").read_text(encoding="utf-8")
+        assert f"'{expected}'" in pkgbuild

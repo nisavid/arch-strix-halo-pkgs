@@ -1,10 +1,21 @@
 from pathlib import Path
+import re
+import sys
 
 import pytest
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
+TOOLS_DIR = REPO_ROOT / "tools"
+if str(TOOLS_DIR) not in sys.path:
+    sys.path.insert(0, str(TOOLS_DIR))
+
+from recipe_policy import load_recipe_policy  # noqa: E402
+
+
 PKGBUILD = REPO_ROOT / "packages/lemonade-app/PKGBUILD"
+SERVER_PKGBUILD = REPO_ROOT / "packages/lemonade-server/PKGBUILD"
+RECIPE_POLICY = REPO_ROOT / "policies/recipe-packages.toml"
 GLIB_PATCH = (
     REPO_ROOT
     / "packages/lemonade-app/0001-keep-tauri-glib-on-webkit-compatible-series.patch"
@@ -43,11 +54,20 @@ def test_pkgbuild_keeps_tauri_glib_on_webkit_compatible_series():
     assert '+glib = "0.18"' in text
 
 
-def test_reranking_error_fix_lives_in_pinned_fork_source():
+def test_pkgbuild_builds_the_same_pinned_fork_commit_as_the_server():
+    text = PKGBUILD.read_text()
+    pin = load_recipe_policy(RECIPE_POLICY)["source_pins"]["lemonade"]
+
+    assert re.fullmatch(r"[0-9a-f]{40}", pin)
+    assert f"'lemonade::git+https://github.com/nisavid/lemonade.git#commit={pin}'" in text
+    assert f"#commit={pin}'" in SERVER_PKGBUILD.read_text()
+    assert "0002-surface-reranking-server-errors.patch" not in text
+
+
+def test_pkgbuild_checksums_the_local_patch():
     text = PKGBUILD.read_text()
 
-    assert "e18b9c1e352df8ab5aff2ff353402f1ec77c47f2" in text
-    assert "0002-surface-reranking-server-errors.patch" not in text
+    assert re.search(r"^sha256sums=\(SKIP [0-9a-f]{64}\)$", text, re.MULTILINE)
 
 
 def test_built_package_ships_desktop_launcher_wrapper():
