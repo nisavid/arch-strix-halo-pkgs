@@ -262,3 +262,23 @@ def test_prepared_source_contains_zerank_selected_logit_adapter():
     assert '"llamacpp_reranking_logit_scale": 5.0' in models_text
     assert "ZEROENTROPY_LOGIT_SCORE_ADAPTER" in header_text
     assert "token_logits" in adapter_text
+
+
+def test_pkgbuild_declares_runtime_library_depends():
+    # Owning packages of lemond's DT_NEEDED libraries, as namcap maps them.
+    text = PKGBUILD.read_text()
+    match = re.search(r"^depends=\(([^)]*)\)", text, re.MULTILINE)
+    assert match is not None
+    assert set(match.group(1).split()) == {
+        "brotli",
+        "curl",
+        "glibc",
+        "libcap",
+        "libdrm",
+        "libgcc",
+        "libstdc++",
+        "libwebsockets",
+        "systemd-libs",
+        "zlib",
+        "zstd",
+    }

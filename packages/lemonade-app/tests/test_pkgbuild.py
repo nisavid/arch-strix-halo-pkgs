@@ -84,3 +84,24 @@ def test_desktop_entry_uses_packaged_launcher_name():
 
     text = DESKTOP_FILE.read_text()
     assert "Exec=lemonade-app" in text
+
+
+def test_pkgbuild_declares_runtime_library_depends():
+    # Owning packages of the Tauri binary's DT_NEEDED libraries, plus the server.
+    import re
+
+    text = PKGBUILD.read_text()
+    match = re.search(r"^depends=\(([^)]*)\)", text, re.MULTILINE)
+    assert match is not None
+    assert set(match.group(1).split()) == {
+        "cairo",
+        "dbus",
+        "gdk-pixbuf2",
+        "glib2",
+        "glibc",
+        "gtk3",
+        "lemonade-server",
+        "libgcc",
+        "libsoup3",
+        "webkit2gtk-4.1",
+    }
