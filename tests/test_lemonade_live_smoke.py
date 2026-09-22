@@ -236,12 +236,18 @@ class FakeLemond:
         self.calls: list[tuple[str, str]] = []
         self.timeout = 5.0
         self.busy_model: str | None = None
+        self.model_storage = Path("/service-hf-cache")
+        self.auto_pull = False
 
     def _refuse(self, message: str) -> tuple[int, Any]:
         return 500, {"error": {"message": message}}
 
     def _load(self, payload: dict[str, Any]) -> tuple[int, Any]:
         name = payload["model_name"]
+        if name not in self.models:
+            return 404, {"error": {"message": f"Model not found: {name}"}}
+        if not self.models[name].get("downloaded") and not self.auto_pull:
+            return self._refuse(f"Failed to load model: {name} is not downloaded")
         ctx = int(payload.get("ctx_size", 4096))
         predicted = 1.7 + ctx * 114688 / 2**30
         configured = self.config["max_gpu_memory_occupancy_gb"]
@@ -287,7 +293,10 @@ class FakeLemond:
                 "files": [{"role": "main", "exists": True, "path": str(SERVICE_GGUF)}]
             }
         if path.startswith("/models/"):
-            return 200, self.models[path.removeprefix("/models/")]
+            name = path.removeprefix("/models/")
+            if name not in self.models:
+                return 404, {"error": {"message": f"Model not found: {name}"}}
+            return 200, self.models[name]
         if path == "/load":
             return self._load(payload)
         if path == "/unload":
@@ -319,6 +328,7 @@ class FakeLemond:
             return 200, {}
         if path == "/system-info":
             return 200, {
+                "model_storage": {"path": str(self.model_storage)},
                 "devices": {
                     "amd_gpu": [
                         {
@@ -611,3 +621,346 @@ def test_provenance_rejects_mixed_foreign_altered_or_online_family():
     bundled.config["llamacpp"]["rocm_bin"] = "builtin"
     with pytest.raises(AssertionError, match="bundled backend"):
         _run_provenance(bundled, _pacman_runner())
+
+
+# --- No-fetch evidence and consumer pins -------------------------------------
+
+LEMOND_PID = 4000
+LLAMA_PID = 4001
+BLACKHOLE_ENV = "HF_ENDPOINT=http://127.0.0.1:9 MODELSCOPE_ENDPOINT=http://[::1]:9"
+
+
+def _listen_row(pid: int = LEMOND_PID) -> str:
+    return f'LISTEN 0 512 0.0.0.0:13305 0.0.0.0:* users:(("lemond",pid={pid},fd=7))'
+
+
+class FakeHost(live.ServiceHost):
+    """ServiceHost over a fake runner and /proc tree; journal lines are injected."""
+
+    def __init__(self, tmp_path: Path, *, environment: str = BLACKHOLE_ENV) -> None:
+        self.proc = tmp_path / "proc"
+        (self.proc / str(LEMOND_PID) / "task" / str(LEMOND_PID)).mkdir(parents=True)
+        (self.proc / str(LEMOND_PID) / "task" / str(LEMOND_PID) / "children").write_text(f"{LLAMA_PID}\n")
+        (self.proc / str(LEMOND_PID) / "cmdline").write_bytes(b"/usr/bin/lemond\0")
+        self.environment = environment
+        self.user_home = tmp_path / "home"
+        self.ss_rows = [_listen_row()]
+        self.journal: list[str] = []
+        self.commands: list[list[str]] = []
+        super().__init__("lemond.service", runner=self._run, proc_root=self.proc)
+
+    def _run(self, argv, **kwargs):
+        self.commands.append(argv)
+        if argv[:2] == ["systemctl", "show"]:
+            values = {"MainPID": str(LEMOND_PID), "Environment": self.environment, "User": "lemonade"}
+            stdout = values[argv[3]] + "\n"
+        elif argv[0] == "ss":
+            stdout = "\n".join(self.ss_rows) + "\n"
+        elif argv[0] == "journalctl":
+            stdout = "".join(f"{time.time():.6f} host lemond[{LEMOND_PID}]: {line}\n" for line in self.journal)
+        else:
+            raise AssertionError(f"unexpected command {argv}")
+        return subprocess.CompletedProcess(argv, 0, stdout=stdout, stderr="")
+
+    def cache_dir(self) -> Path:
+        return self.user_home / ".cache" / "lemonade"
+
+
+def _nofetch_setup(tmp_path: Path):
+    server = FakeLemond(models=[MODEL, "Tiny-Test-Model-GGUF"])
+    server.models["Tiny-Test-Model-GGUF"]["downloaded"] = False
+    server.model_storage = tmp_path / "hf-cache"
+    (server.model_storage / "models--Qwen--Qwen3-0.6B-GGUF" / "blobs").mkdir(parents=True)
+    (server.model_storage / "models--Qwen--Qwen3-0.6B-GGUF" / "blobs" / "abc").write_bytes(b"gguf")
+    host = FakeHost(tmp_path)
+    (host.cache_dir() / "bin").mkdir(parents=True)
+    return server, host
+
+
+def _fake_text(host: FakeHost, *, journal=(), ss_rows=(), touch: Path | None = None):
+    def text(client, **kwargs):
+        host.journal += [f"Ensuring model loaded: {kwargs['model']}", *journal]
+        host.ss_rows += list(ss_rows)
+        if touch is not None:
+            touch.write_text("x", encoding="utf-8")
+        print("completion_ok")
+
+    return text
+
+
+def _run_nofetch(server, host, **kwargs):
+    original = server._load
+
+    def logged_load(payload):
+        host.journal.append(f"Ensuring model loaded: {payload['model_name']}")
+        return original(payload)
+
+    server._load = logged_load
+    live.run_nofetch(
+        server,
+        host=host,
+        model=MODEL,
+        missing_model=kwargs.pop("missing_model", "Tiny-Test-Model-GGUF"),
+        backend="rocm",
+        ctx_size=4096,
+        expect_checkpoint=None,
+        expect_sha256=None,
+        interval=0.01,
+        text=kwargs.pop("text", _fake_text(host)),
+    )
+
+
+def test_ss_parsing_and_loopback_detection():
+    rows = live.parse_ss(
+        "\n".join(
+            [
+                _listen_row(),
+                'ESTAB 0 0 127.0.0.1:41000 127.0.0.1:8001 users:(("lemond",pid=4000,fd=9))',
+                'SYN-SENT 0 1 198.51.100.5:50000 [2600:1f18::1]:443 users:(("llama-server",pid=4001,fd=3))',
+                "ESTAB 0 0 [::ffff:127.0.0.1]:13305 [::ffff:127.0.0.1]:5000",
+                "ESTAB 0 0 127.0.0.53%lo:53 127.0.0.53%lo:40000",
+            ]
+        )
+    )
+
+    assert [row["state"] for row in rows] == ["LISTEN", "ESTAB", "SYN-SENT", "ESTAB", "ESTAB"]
+    assert rows[1]["pids"] == {LEMOND_PID}
+    assert (rows[2]["peer_host"], rows[2]["peer_port"], rows[2]["pids"]) == ("2600:1f18::1", "443", {LLAMA_PID})
+    assert rows[3]["pids"] == set()
+    for row, loopback in zip(rows[1:], (True, False, True, True)):
+        assert live.is_loopback_host(row["peer_host"]) is loopback
+    assert live.is_loopback_host("localhost")
+    assert not live.is_loopback_host("huggingface.co")
+
+
+def test_blackhole_ports_require_loopback_endpoints():
+    assert live.blackhole_ports(
+        {"HF_ENDPOINT": "http://127.0.0.1:9", "MODELSCOPE_ENDPOINT": "https://localhost"}
+    ) == {"9", "443"}
+    for env in (
+        {"HF_ENDPOINT": "http://127.0.0.1:9"},
+        {"HF_ENDPOINT": "https://huggingface.co", "MODELSCOPE_ENDPOINT": "http://127.0.0.1:9"},
+    ):
+        with pytest.raises(AssertionError, match="endpoint_blackhole_missing"):
+            live.blackhole_ports(env)
+
+
+def test_fetch_log_pattern_matches_fetches_but_not_cache_state():
+    fetches = [
+        "Model not downloaded, downloading...",
+        "Model not cached, downloading from Hugging Face...",
+        "Downloading model: unsloth/gemma-3-270m-it-GGUF",
+        "Downloaded: model.gguf",
+        "Fetching repository file list from Hugging Face",
+        "Installing llama-server (version: b1234)",
+        "TheRock installation complete",
+    ]
+    quiet = [
+        "Added 'x' to cache (downloaded=1)",
+        "Model already downloaded and do_not_upgrade=true, using cached version",
+        "Uninstalling llamacpp:rocm",
+        "Ensuring model loaded: user.Qwen3-0.6B-Q8_0-GGUF",
+    ]
+    assert all(live.FETCH_LOG_RE.search(line) for line in fetches)
+    assert not any(live.FETCH_LOG_RE.search(line) for line in quiet)
+
+
+def test_snapshot_tree_detects_new_resized_and_relinked_entries(tmp_path: Path):
+    root = tmp_path / "cache"
+    (root / "snapshots").mkdir(parents=True)
+    (root / "blob").write_bytes(b"a")
+    (root / "snapshots" / "model.gguf").symlink_to(root / "blob")
+    before = live.snapshot_tree(root)
+
+    assert live.tree_changes(before, live.snapshot_tree(root)) == []
+    (root / "blob.incomplete").write_bytes(b"")
+    (root / "snapshots" / "model.gguf").unlink()
+    (root / "snapshots" / "model.gguf").symlink_to(root / "blob.incomplete")
+    assert live.tree_changes(before, live.snapshot_tree(root)) == ["blob.incomplete", "snapshots/model.gguf"]
+    assert live.snapshot_tree(tmp_path / "absent") == {}
+
+
+def test_service_host_reads_only_blackhole_env_and_filters_journal(tmp_path: Path):
+    host = FakeHost(tmp_path, environment="LEMONADE_API_KEY=secret")
+    (host.proc / str(LEMOND_PID) / "environ").write_bytes(
+        b"LEMONADE_API_KEY=secret\0HF_ENDPOINT=http://127.0.0.1:9\0MODELSCOPE_ENDPOINT=http://127.0.0.1:9\0"
+    )
+
+    assert host.endpoint_env() == {
+        "HF_ENDPOINT": "http://127.0.0.1:9",
+        "MODELSCOPE_ENDPOINT": "http://127.0.0.1:9",
+    }
+    assert host.process_tree(LEMOND_PID) == {LEMOND_PID, LLAMA_PID}
+    host.journal = ["Ensuring model loaded: m"]
+    assert host.journal_since(time.time() - 60) == [f"host lemond[{LEMOND_PID}]: Ensuring model loaded: m"]
+    assert host.journal_since(time.time() + 60) == []
+    journal_argv = next(argv for argv in host.commands if argv[0] == "journalctl")
+    assert journal_argv[:3] == ["journalctl", "-u", "lemond.service"]
+
+
+def test_service_host_cache_dir_prefers_argv_then_env(tmp_path: Path):
+    host = FakeHost(tmp_path, environment="LEMONADE_CACHE_DIR=/srv/lemonade-cache")
+    assert live.ServiceHost.cache_dir(host) == Path("/srv/lemonade-cache")
+    (host.proc / str(LEMOND_PID) / "cmdline").write_bytes(b"/usr/bin/lemond\0/srv/other\0--port\0" + b"13305\0")
+    assert live.ServiceHost.cache_dir(host) == Path("/srv/other")
+    (host.proc / str(LEMOND_PID) / "cmdline").write_bytes(b"/usr/bin/lemond\0--port\0" + b"13305\0")
+    assert live.ServiceHost.cache_dir(host) == Path("/srv/lemonade-cache")
+
+
+def test_nofetch_proves_no_download_log_cache_change_or_remote_connection(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    server, host = _nofetch_setup(tmp_path)
+    host.ss_rows.append('ESTAB 0 0 127.0.0.1:41000 127.0.0.1:8001 users:(("lemond",pid=4000,fd=9))')
+
+    _run_nofetch(server, host)
+
+    out = capsys.readouterr().out
+    for marker in (
+        "offline_config_ok",
+        "endpoint_blackhole_ok",
+        "network_attribution_ok",
+        "completion_ok",
+        "preplaced_no_fetch_log_ok",
+        "preplaced_model_cache_unchanged_ok",
+        "preplaced_backend_cache_unchanged_ok",
+        "preplaced_no_remote_connection_ok",
+        "missing_model_absent_ok",
+        "missing_model_refused_ok",
+        "missing_no_fetch_log_ok",
+        "missing_model_cache_unchanged_ok",
+        "missing_backend_cache_unchanged_ok",
+        "missing_no_remote_connection_ok",
+        "no_fetch_ok",
+    ):
+        assert marker in out
+    assert str(tmp_path) not in out
+    assert "Tiny-Test-Model-GGUF" not in server.loaded
+
+
+@pytest.mark.parametrize(
+    ("change", "message"),
+    [
+        ({"journal": ["Model not downloaded, downloading..."]}, "download or install lines"),
+        ({"ss_rows": ['SYN-SENT 0 1 198.51.100.2:5000 203.0.113.9:443 users:(("lemond",pid=4000,fd=12))']}, "non-loopback"),
+        ({"ss_rows": ['SYN-SENT 0 1 127.0.0.1:5000 127.0.0.1:9 users:(("lemond",pid=4001,fd=12))']}, "blackhole"),
+        ({"touch": "model"}, "model_cache changed"),
+        ({"touch": "backend"}, "backend_cache changed"),
+    ],
+)
+def test_nofetch_fails_on_each_kind_of_fetch_evidence(tmp_path: Path, change: dict, message: str):
+    server, host = _nofetch_setup(tmp_path)
+    touch = change.pop("touch", None)
+    if touch == "model":
+        change["touch"] = server.model_storage / "models--Qwen--Qwen3-0.6B-GGUF" / "blobs" / "new.incomplete"
+    elif touch == "backend":
+        change["touch"] = host.cache_dir() / "bin" / "llama-server"
+
+    with pytest.raises(AssertionError, match=message):
+        _run_nofetch(server, host, text=_fake_text(host, **change))
+
+
+def test_nofetch_ignores_remote_sockets_of_other_processes(tmp_path: Path):
+    server, host = _nofetch_setup(tmp_path)
+    other = 'ESTAB 0 0 198.51.100.2:5000 203.0.113.9:443 users:(("firefox",pid=77,fd=12))'
+
+    _run_nofetch(server, host, text=_fake_text(host, ss_rows=[other]))
+
+
+def test_nofetch_missing_model_must_fail_loudly_and_be_absent(tmp_path: Path):
+    server, host = _nofetch_setup(tmp_path)
+    server.models["Tiny-Test-Model-GGUF"]["downloaded"] = True
+    with pytest.raises(AssertionError, match="missing_model_present"):
+        _run_nofetch(server, host)
+
+    server, host = _nofetch_setup(tmp_path / "second")
+    server.auto_pull = True
+    with pytest.raises(AssertionError, match="succeeded; it was fetched"):
+        _run_nofetch(server, host)
+    assert "Tiny-Test-Model-GGUF" not in server.loaded
+
+    server, host = _nofetch_setup(tmp_path / "third")
+    _run_nofetch(server, host, missing_model="user.never-registered")
+
+
+def test_nofetch_preconditions_block_before_any_load(tmp_path: Path):
+    server, host = _nofetch_setup(tmp_path)
+    host.environment = ""
+    with pytest.raises(AssertionError, match="endpoint_blackhole_missing"):
+        _run_nofetch(server, host)
+
+    server, host = _nofetch_setup(tmp_path / "second")
+    host.ss_rows = ['LISTEN 0 512 0.0.0.0:13305 0.0.0.0:*']
+    with pytest.raises(AssertionError, match="network_attribution_unavailable"):
+        _run_nofetch(server, host)
+
+    server, host = _nofetch_setup(tmp_path / "third")
+    server.config["offline"] = False
+    with pytest.raises(AssertionError, match="offline"):
+        _run_nofetch(server, host)
+    assert ("POST", "/load") not in server.calls
+
+
+def _pinned_server() -> FakeLemond:
+    zembed, zerank = "user.zembed-1-Q4_K_M-GGUF-Q4_K_M", "zerank-2-GGUF"
+    server = FakeLemond(models=[zembed, zerank])
+    server.models[zembed]["checkpoint"] = "example/zembed-1-Q4_K_M-GGUF:zembed-1-q4_k_m.gguf"
+    server.models[zerank]["checkpoint"] = "mradermacher/zerank-2-GGUF:Q8_0"
+    for pid, name in enumerate((zembed, zerank), start=200):
+        server.config["pinned_models"].append(name)
+        server.loaded[name] = {"model_name": name, "pid": pid, "pinned": True, "is_busy": False}
+    return server
+
+
+PINS = [("user.zembed-1-Q4_K_M-GGUF-Q4_K_M", "Q4_K_M"), ("zerank-2-GGUF", "Q8_0")]
+
+
+def test_service_pins_accepts_pinned_loaded_consumer_models(capsys: pytest.CaptureFixture[str]):
+    server = _pinned_server()
+
+    live.run_service_pins(server, expected=PINS)
+
+    out = capsys.readouterr().out
+    assert "service_pin user.zembed-1-Q4_K_M-GGUF-Q4_K_M" in out
+    assert "service_pin zerank-2-GGUF mradermacher/zerank-2-GGUF:Q8_0" in out
+    assert "service_pins_ok" in out
+    assert all(method == "GET" for method, _ in server.calls)
+
+
+def test_service_pins_rejects_missing_unloaded_or_wrong_variant():
+    server = _pinned_server()
+    with pytest.raises(AssertionError, match="is not the Q4_K_M variant"):
+        live.run_service_pins(server, expected=[("zerank-2-GGUF", "Q4_K_M")])
+
+    server.config["pinned_models"].remove("zerank-2-GGUF")
+    with pytest.raises(AssertionError, match="zerank-2-GGUF is not pinned"):
+        live.run_service_pins(server, expected=PINS)
+
+    server = _pinned_server()
+    del server.loaded["zerank-2-GGUF"]
+    with pytest.raises(AssertionError, match="is not loaded"):
+        live.run_service_pins(server, expected=PINS)
+
+    assert live.parse_expected_pins(["a=Q8_0"]) == [("a", "Q8_0")]
+    with pytest.raises(SystemExit):
+        live.parse_expected_pins(["a"])
+
+
+def test_nofetch_requires_journal_evidence_for_each_phase(tmp_path: Path):
+    server, host = _nofetch_setup(tmp_path)
+    host.journal_since = lambda since: []
+
+    with pytest.raises(AssertionError, match="journal has no line naming"):
+        live.run_nofetch(
+            server,
+            host=host,
+            model=MODEL,
+            missing_model="Tiny-Test-Model-GGUF",
+            backend="rocm",
+            ctx_size=4096,
+            expect_checkpoint=None,
+            expect_sha256=None,
+            interval=0.01,
+            journal_timeout=0.0,
+            text=lambda client, **kwargs: None,
+        )

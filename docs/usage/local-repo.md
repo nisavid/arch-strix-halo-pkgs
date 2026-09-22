@@ -284,7 +284,7 @@ Scenarios tagged `validation-window` load models into, or start alongside, the
 live Lemonade service. Broad selections skip them. Select them with
 `--tag validation-window`, `--scenario <id>`, or `--include-validation-window`.
 See [Lemonade Live Validation](../maintainers/lemonade-live-validation.md).
-When the Lemonade service requires a loopback API key, the Lemonade scenarios
+When the Lemonade service is configured with an API key, the Lemonade scenarios
 read `LEMONADE_API_KEY` or `LEMONADE_API_KEY_FILE` from the environment.
 
 The scenario catalog lives under `inference/scenarios/`. The harness writes run

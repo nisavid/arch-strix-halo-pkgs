@@ -843,6 +843,42 @@ def test_lemonade_adapter_builds_live_service_text_command(tmp_path: Path):
     assert plan.server_log_path is None
 
 
+def test_lemonade_adapter_builds_service_nofetch_and_pins_commands(tmp_path: Path):
+    def plan_for(mode: str, given: dict, argv: list[str]):
+        return build_execution_plan(
+            scenario(
+                {
+                    "id": f"lemonade.live.{mode}",
+                    "given": {"engine": "lemonade", "tool": f"lemonade_live_smoke.{mode}", **given},
+                    "when": {"argv": argv},
+                }
+            ),
+            repo_root=REPO_ROOT,
+            scenario_run_root=tmp_path,
+            model_bindings={},
+        )
+
+    nofetch = plan_for(
+        "nofetch",
+        {"model": GGUF_MODEL, "lemonade_model": "user.Qwen3-0.6B-Q8_0-GGUF"},
+        ["--missing-model", "Tiny-Test-Model-GGUF"],
+    )
+    assert nofetch.command == [
+        sys.executable,
+        str(REPO_ROOT / "tools/lemonade_live_smoke.py"),
+        "nofetch",
+        "--model",
+        "user.Qwen3-0.6B-Q8_0-GGUF",
+        "--missing-model",
+        "Tiny-Test-Model-GGUF",
+    ]
+    assert nofetch.server_log_path is None
+
+    pins = plan_for("service-pins", {"model": "builtin"}, ["--expect-pin", "zerank-2-GGUF=Q8_0"])
+    assert pins.command[2:] == ["service-pins", "--expect-pin", "zerank-2-GGUF=Q8_0"]
+    assert pins.server_log_path is None
+
+
 def test_lemonade_adapter_builds_isolated_lemond_commands(tmp_path: Path):
     def plan_for(mode: str, model: str, bindings: dict[str, str]):
         return build_execution_plan(
@@ -905,7 +941,7 @@ def test_adapters_forward_the_pinned_model_digest(tmp_path: Path):
             "tool": "llamacpp_server_smoke.completion",
         }
     )
-    for mode in ("text", "pins", "budget", "displacement"):
+    for mode in ("text", "nofetch", "pins", "budget", "displacement"):
         live = plan_for({"engine": "lemonade", "model": GGUF_MODEL, "tool": f"lemonade_live_smoke.{mode}"})
         assert live[-2:] == ["--expect-sha256", "ab" * 32]
     assert direct[-2:] == ["--expect-sha256", "ab" * 32]

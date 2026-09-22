@@ -1265,6 +1265,8 @@ LEMONADE_LIVE_SCENARIOS = {
     "lemonade.budget.gtt-admit-refuse",
     "lemonade.residency.pinned-busy-not-displaced",
     "lemonade.provenance.family-no-fallback",
+    "lemonade.nofetch.preplaced-load-missing-model",
+    "lemonade.pins.service-consumer-pins",
 }
 
 
@@ -1280,8 +1282,12 @@ def test_lemonade_live_validation_scenarios_are_gated_and_share_one_gguf():
         assert {"live-validation", "validation-window"} <= tags
         assert "smoke" not in tags
 
-    for backend in ("rocm", "vulkan"):
-        scenario = by_id[f"lemonade.llamacpp.{backend}.qwen3-0.6b-q8-0.completion"]
+    for scenario_id in (
+        "lemonade.llamacpp.rocm.qwen3-0.6b-q8-0.completion",
+        "lemonade.llamacpp.vulkan.qwen3-0.6b-q8-0.completion",
+        "lemonade.nofetch.preplaced-load-missing-model",
+    ):
+        scenario = by_id[scenario_id]
         assert "mutates-service" in scenario.tags
         assert scenario.definition["given"]["lemonade_model"] == "user.Qwen3-0.6B-Q8_0-GGUF"
     for scenario_id in (
@@ -1291,10 +1297,25 @@ def test_lemonade_live_validation_scenarios_are_gated_and_share_one_gguf():
         "lemonade.residency.pinned-busy-not-displaced",
     ):
         assert "isolated-lemond" in by_id[scenario_id].tags
-    assert "read-only" in by_id["lemonade.provenance.family-no-fallback"].tags
+    for scenario_id in ("lemonade.provenance.family-no-fallback", "lemonade.pins.service-consumer-pins"):
+        assert "read-only" in by_id[scenario_id].tags
+        assert "mutates-service" not in by_id[scenario_id].tags
+
+    nofetch = by_id["lemonade.nofetch.preplaced-load-missing-model"].definition
+    markers = {item["value"] for item in nofetch["then"]["assert"] if item["kind"] == "stdout.contains"}
+    for phase in ("preplaced", "missing"):
+        for evidence in ("no_fetch_log", "model_cache_unchanged", "backend_cache_unchanged", "no_remote_connection"):
+            assert f"{phase}_{evidence}_ok" in markers
+    assert {"endpoint_blackhole_ok", "network_attribution_ok", "missing_model_refused_ok"} <= markers
+    assert "--missing-model" in nofetch["when"]["argv"]
+
+    pins_argv = by_id["lemonade.pins.service-consumer-pins"].definition["when"]["argv"]
+    pooling = {s.id: s for s in scenarios}
+    assert f"{pooling['lemonade.pooling.zembed-1-q4-k-m.embeddings'].model}=Q4_K_M" in pins_argv
+    assert f"{pooling['lemonade.reranking.zerank-2.selected-logit'].model}=Q8_0" in pins_argv
 
     gguf_users = [s for s in scenarios if s.id in LEMONADE_LIVE_SCENARIOS and s.model != "builtin"]
-    assert len(gguf_users) == 7
+    assert len(gguf_users) == 8
     for scenario in gguf_users:
         provenance = scenario.definition["model_provenance"]
         assert scenario.model == "Qwen/Qwen3-0.6B-GGUF"

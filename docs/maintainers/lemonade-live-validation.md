@@ -23,6 +23,8 @@ work is tracked in issue #138.
 | Budget admit and refuse, with APU GTT counted | `lemonade.budget.gtt-admit-refuse` |
 | Pinned and in-use models never displaced | `lemonade.residency.pinned-busy-not-displaced` |
 | Package provenance; no silent downloader, bundled-backend fallback, or foreign or mixed package | `lemonade.provenance.family-no-fallback` |
+| No fetch on load: journal, cache-diff, and network evidence, plus a missing model that fails loudly | `lemonade.nofetch.preplaced-load-missing-model` |
+| The service keeps the consumer models `zembed-1` Q4_K_M and `zerank-2` Q8_0 pinned and loaded | `lemonade.pins.service-consumer-pins` |
 | Embeddings, both rerankers, and selected-logit | the existing `lemonade.pooling.*` and `lemonade.reranking.zerank-2.selected-logit` scenarios |
 | App launch with pin and startup controls, plus one text interaction | the `lemonade.app.pin-startup-text` operator checklist in the same TOML file |
 | Kokoro TTS and the app's TTS interaction | deferred to generation C W2B (#113); see below |
@@ -50,7 +52,54 @@ model from anything other than the packaged llama.cpp.
   config are never touched, and the temporary state is removed on exit. These
   scenarios still load models on the shared GPU.
 - `read-only`: the provenance scenario only reads pacman, systemd, and the
-  service's `/internal/config`.
+  service's `/internal/config`. The consumer-pins scenario only reads the
+  service's `/pins`, `/health`, and `/models/<id>`.
+
+The pins, budget, and displacement scenarios use an isolated `lemond` rather
+than the service. Each one pins and unpins models, changes
+`max_gpu_memory_occupancy_gb`, restarts `lemond`, or needs a one-slot
+configuration so that it can force a displacement. On the service, those steps
+would rewrite the host's `config.json` and `pinned_models`. They would also
+unload models that clients are using. The isolated `lemond` runs the same
+packaged binary and backends. Its private config makes the admission and
+displacement results deterministic. The service's own pins are checked
+read-only by `lemonade.pins.service-consumer-pins`.
+
+## No-Fetch Evidence
+
+`lemonade.nofetch.preplaced-load-missing-model` runs two phases against the
+service. Each phase collects three kinds of evidence:
+
+- Journal: `journalctl -u lemond.service` over the phase window must contain
+  no download or install lines. The phase must also show a line naming the
+  loaded model, which proves that the journal is readable.
+- Caches: the model cache and the backend cache (`<cache dir>/bin`) are listed
+  before and after the phase. Every path, type, size, mtime, and symlink target
+  must match. The model cache path comes from the service's `/system-info`
+  `model_storage.path`. The cache dir comes from `lemond`'s argv, then
+  `LEMONADE_CACHE_DIR`, then the service user's `~/.cache/lemonade`. Output
+  reports only entry counts, never paths.
+- Network: `ss -tanp` is sampled throughout the phase. No socket owned by
+  `lemond` or its children may have a non-loopback peer or connect to the
+  download blackhole's port.
+
+In the first phase, the service loads and completes with the pre-placed test
+GGUF, using the same checks as the text scenario. In the second phase, the
+scenario loads `Tiny-Test-Model-GGUF`, a small catalog model that must not be
+downloaded. The load must fail with a non-2xx status or an explicit error, and
+the model must not become resident.
+
+Preconditions are checked before anything is loaded. The service config must
+have `offline` and `no_fetch_executables` set to true. `HF_ENDPOINT` and
+`MODELSCOPE_ENDPOINT` must both name loopback endpoints. `ss -p` must be able
+to attribute the service's listening socket to `lemond`.
+
+Expected result on candidate `187b4a25f`: `/load` of a registered model that is
+not downloaded calls the download path even when `offline` is true. The
+blackhole stops the bytes, but the attempt is logged as `Model not downloaded,
+downloading...`. The missing phase therefore fails `missing_no_fetch_log_ok`
+until the fork refuses that load offline, or the lead accepts a blackholed
+attempt as a loud failure.
 
 All of these scenarios carry `validation-window`. Broad selections skip them,
 so select them explicitly:
@@ -77,7 +126,18 @@ selection. `--scenario <id>` always selects the named scenario.
 
   The text scenarios fail with `model_not_provisioned` rather than let a load
   download the model.
-- When the service requires a loopback API key, set `LEMONADE_API_KEY` or
+- For the no-fetch scenario, set `HF_ENDPOINT` and `MODELSCOPE_ENDPOINT` to a
+  loopback blackhole in a `lemond.service` drop-in `Environment=` line.
+  `systemctl show` exposes that line, so the scenario can verify it. Values in
+  `EnvironmentFile=` are visible only when the runner can read the service's
+  `/proc/<pid>/environ`, and the scenario reads only those two keys. Run the
+  scenario with privileges that let it read the system journal, the service's
+  model and backend caches, and the process owner of `lemond`'s sockets in
+  `ss -p`.
+- Pre-place the consumer models `user.zembed-1-Q4_K_M-GGUF-Q4_K_M` and
+  `zerank-2-GGUF` (`mradermacher/zerank-2-GGUF:Q8_0`), and pin them in the
+  service config. The consumer-pins scenario only reads them.
+- When the host's service configuration carries an API key, set `LEMONADE_API_KEY` or
   `LEMONADE_API_KEY_FILE` in the runner's environment. For `/internal/*`, set
   `LEMONADE_ADMIN_API_KEY` or `LEMONADE_ADMIN_API_KEY_FILE`; if neither is
   set, the regular key is used. A `*_FILE` variable can name a systemd
