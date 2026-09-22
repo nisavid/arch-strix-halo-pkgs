@@ -18,7 +18,7 @@
   },
   "name": "python-pydantic-core-gfx1151",
   "package_name": "python-pydantic-core-gfx1151",
-  "pkgver": "2.46.4",
+  "pkgver": "2.46.5",
   "policy": {
     "advisory_references": [
       "cachyos-extra-znver4/python-pydantic-core"
@@ -67,9 +67,9 @@
       "Use the shared Rust-wheel renderer so linker selection, path remapping, and znver5 codegen stay aligned with orjson and cryptography."
     ],
     "sha256sums": [
-      "62f875393d7f270851f20523dd2e29f082bcc82292d66db2b64ea71f64b6e1c1"
+      "10416c15b8839ecc4ef4d0885da76da6fd0f67333a0eb8aff6d93c4b8f2910fc"
     ],
-    "src_subdir": "pydantic_core-2.46.4",
+    "src_subdir": "pydantic_core-2.46.5",
     "template": "rust-wheel-pypi",
     "update_notes": [
       "Check Arch python-pydantic and python-pydantic-core together before updating; upstream pydantic normally constrains the pydantic-core ABI tightly.",
@@ -77,7 +77,7 @@
       "After publishing a rebuilt package, verify `import pydantic_core` and a tiny `pydantic.BaseModel` validation through the installed local Python lane.",
       "Record newer PyPI pydantic-core releases as baseline drift while the package follows Arch's pydantic-core ABI for the installed pydantic package."
     ],
-    "upstream_version": "2.46.4",
+    "upstream_version": "2.46.5",
     "url": "https://github.com/pydantic/pydantic-core"
   },
   "provenance": {
@@ -100,7 +100,7 @@
     "patches": [],
     "phase": "H",
     "repo": null,
-    "src_dir": "pydantic_core-2.46.4",
+    "src_dir": "pydantic_core-2.46.5",
     "steps": [
       31
     ]
