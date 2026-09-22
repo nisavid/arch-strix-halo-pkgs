@@ -860,11 +860,12 @@ def test_nofetch_fails_on_each_kind_of_fetch_evidence(tmp_path: Path, change: di
         _run_nofetch(server, host, text=_fake_text(host, **change))
 
 
-def test_nofetch_ignores_remote_sockets_of_other_processes(tmp_path: Path):
+def test_nofetch_ignores_other_processes_and_inbound_lan_clients(tmp_path: Path):
     server, host = _nofetch_setup(tmp_path)
     other = 'ESTAB 0 0 198.51.100.2:5000 203.0.113.9:443 users:(("firefox",pid=77,fd=12))'
+    inbound = 'ESTAB 0 0 198.51.100.2:13305 198.51.100.7:52000 users:(("lemond",pid=4000,fd=14))'
 
-    _run_nofetch(server, host, text=_fake_text(host, ss_rows=[other]))
+    _run_nofetch(server, host, text=_fake_text(host, ss_rows=[other, inbound]))
 
 
 def test_nofetch_missing_model_must_fail_loudly_and_be_absent(tmp_path: Path):

@@ -482,15 +482,18 @@ def blackhole_ports(env: Mapping[str, str]) -> set[str]:
 
 
 def parse_ss(text: str) -> list[dict[str, Any]]:
-    """Parse `ss -tanpH` rows into state, peer, and owning pids."""
+    """Parse `ss -tanpH` rows into state, local port, peer, and owning pids."""
     rows = []
     for line in text.splitlines():
         fields = line.split()
         if len(fields) < 5:
             continue
+        local_port = _peer_host_port(fields[3])[1]
         host, port = _peer_host_port(fields[4])
         pids = {int(pid) for pid in SS_USERS_RE.findall(" ".join(fields[5:]))}
-        rows.append({"state": fields[0], "peer_host": host, "peer_port": port, "pids": pids})
+        rows.append(
+            {"state": fields[0], "local_port": local_port, "peer_host": host, "peer_port": port, "pids": pids}
+        )
     return rows
 
 
@@ -635,8 +638,11 @@ class FetchWatch:
 
     def sample(self) -> None:
         tree = self.host.process_tree(self.host.main_pid())
-        for row in self.host.sockets():
-            if row["state"] == "LISTEN" or not row["pids"] & tree:
+        rows = self.host.sockets()
+        # Clients may reach the service over the LAN; accepted connections are not fetches.
+        listen_ports = {r["local_port"] for r in rows if r["state"] == "LISTEN" and r["pids"] & tree}
+        for row in rows:
+            if row["state"] == "LISTEN" or not row["pids"] & tree or row["local_port"] in listen_ports:
                 continue
             if not is_loopback_host(row["peer_host"]):
                 self.remote.add((row["peer_host"], row["peer_port"]))
