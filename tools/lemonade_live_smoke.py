@@ -474,7 +474,12 @@ class IsolatedLemond:
             self.args.server_log.parent.mkdir(parents=True, exist_ok=True)
             self.log_handle = self.args.server_log.open("a", encoding="utf-8")
         self.port = port
-        self.start()
+        try:
+            self.start()
+        except BaseException:
+            # `with` skips __exit__ when __enter__ raises; never orphan lemond.
+            self.__exit__(None, None, None)
+            raise
         return self
 
     def __exit__(self, *exc_info: Any) -> None:
