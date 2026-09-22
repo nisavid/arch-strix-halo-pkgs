@@ -5,7 +5,7 @@
 # Package recipe key: lemonade
 
 pkgname=lemonade-server
-pkgver=10.7.0
+pkgver=11.7.0
 pkgrel=1
 pkgdesc='Local AI server runtime rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
@@ -18,8 +18,9 @@ options=()
 provides=(lemonade-server)
 conflicts=()
 replaces=()
-source=('lemonade::git+https://github.com/nisavid/lemonade.git#commit=e18b9c1e352df8ab5aff2ff353402f1ec77c47f2' 0001-linux-npu-fallback-to-pci-id-when-accel-open-fails.patch 0002-llamacpp-external-backends-are-system-managed.patch 0003-remove-llamacpp-system-backend.patch 0004-system-managed-llamacpp-metadata.patch)
-sha256sums=(SKIP SKIP SKIP SKIP SKIP)
+backup=(etc/lemonade/conf.d/zz-secrets.conf)
+source=('lemonade::git+https://github.com/nisavid/lemonade.git#commit=187b4a25f154ff905486b8bf85e006cd1f2a9820' 0001-linux-npu-fallback-to-pci-id-when-accel-open-fails.patch 0002-llamacpp-external-backends-are-system-managed.patch 0003-remove-llamacpp-system-backend.patch 0004-system-managed-llamacpp-metadata.patch)
+sha256sums=(SKIP 84149e7e765b80de94b0058edf930ee61ca39ceee534bff4e01fdd7e050cfb27 521d5a3b6d65c74dae9735ef7ca9434b1dac33f0b734e5d1208d67bc36d3ed9d 6e5a0345f2b7bede467045fa12f42f4d0773a7a782b169b0009d12de1d08155d 5ec6cbf9d6c06e1d4c31930060b73627591c4dfe188d234719cf3a403db319b0)
 
 prepare() {
   cd "$srcdir/lemonade"
@@ -74,7 +75,8 @@ build() {
     -DCMAKE_C_FLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument" \
     -DCMAKE_CXX_FLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument" \
     -DBUILD_ELECTRON_APP=OFF \
-    -DBUILD_WEB_APP=ON
+    -DBUILD_WEB_APP=ON \
+    -DBUILD_TESTING=OFF
 
   cmake --build "${build_root}" -j"$(nproc)"
 }
@@ -85,9 +87,12 @@ package() {
 
   DESTDIR="$pkgdir" cmake --install "${build_root}"
 
+  # The web-app MetaInfo names lemonade-web-app.desktop as its launchable.
+  # This package removes that desktop entry, so drop the dangling component.
   rm -rf "$pkgdir/usr/share/applications" \
          "$pkgdir/usr/share/pixmaps" \
          "$pkgdir/usr/share/icons" \
+         "$pkgdir/usr/share/metainfo" \
          "$pkgdir/usr/share/lemonade-app" \
          "$pkgdir/usr/bin/lemonade-app"
 
@@ -102,8 +107,30 @@ LEMONADE_LLAMACPP_ROCM_VERSION=b9442
 LEMONADE_LLAMACPP_VULKAN_VERSION=b9442
 LEMONADE_LLAMACPP_ROCM_RELEASE_URL=https://github.com/ggml-org/llama.cpp/releases/tag/b9442
 LEMONADE_LLAMACPP_VULKAN_RELEASE_URL=https://github.com/ggml-org/llama.cpp/releases/tag/b9442
-LEMONADE_LLAMACPP_ROCM_LABEL=System llama-server-hip-gfx1151 llama.cpp b9442
-LEMONADE_LLAMACPP_VULKAN_LABEL=System llama-server-vulkan-gfx1151 llama.cpp b9442
+EOF
+
+  # Replace upstream's full copy of its built-in defaults with a sparse distro
+  # overlay. lemond merges it over the built-in defaults and under config.json.
+  install -Dm644 /dev/stdin "$pkgdir/usr/share/lemonade/defaults.json" <<'EOF'
+{
+  "llamacpp": {
+    "args": "--no-mmap",
+    "backend": "rocm",
+    "prefer_system": false,
+    "rocm_bin": "/usr/bin/llama-server-hip-gfx1151",
+    "vulkan_bin": "/usr/bin/llama-server-vulkan-gfx1151"
+  },
+  "no_fetch_executables": true,
+  "offline": true
+}
+EOF
+
+  # Send Hugging Face and ModelScope requests from lemond and its llama-server
+  # children to a refused loopback port, so no model is fetched implicitly.
+  install -Dm644 /dev/stdin "$pkgdir/usr/lib/systemd/system/lemond.service.d/20-no-remote-model-fetch.conf" <<'EOF'
+[Service]
+Environment=HF_ENDPOINT=http://127.0.0.1:9
+Environment=MODELSCOPE_ENDPOINT=http://127.0.0.1:9
 EOF
 
   install -Dm644 "$srcdir/lemonade/LICENSE" "$pkgdir/usr/share/licenses/lemonade-server/LICENSE"

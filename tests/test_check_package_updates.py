@@ -273,6 +273,40 @@ def test_source_contract_validation_accepts_branch_source_bound_to_git_ref(
     assert report["families"][0]["status"] == "current"
 
 
+def test_source_contract_validation_expands_shared_source_pins(tmp_path):
+    write_pkg(tmp_path, "lemonade-server")
+    write_policy(
+        tmp_path,
+        """
+        [families.lemonade]
+        packages = ["lemonade-server"]
+        priority = "medium"
+        workflow = "upstream_source_update"
+        checks = [{ id = "fork-main", role = "primary", kind = "git_ref", repo = "https://github.com/nisavid/lemonade.git", ref = "refs/heads/main", recorded = "abc123", comparison = "sha" }]
+        """,
+    )
+    write_recipe_policy(
+        tmp_path,
+        """
+        [source_pins]
+        lemonade = "abc123"
+
+        [packages.lemonade-server]
+        template = "lemonade-server"
+        source_refs = ["lemonade::git+https://github.com/nisavid/lemonade.git#commit={source_pins.lemonade}"]
+        """,
+    )
+
+    facts = updates.recipe_source_facts(tmp_path)
+
+    assert [fact["value"] for fact in facts["lemonade-server"]] == ["abc123"]
+    clients = updates.FakeClients(
+        git_refs={"https://github.com/nisavid/lemonade.git:refs/heads/main": "abc123"}
+    )
+    report = updates.run_check(tmp_path, refresh=True, clients=clients)
+    assert report["families"][0]["status"] == "current"
+
+
 def test_source_contract_validation_accepts_aiter_prerelease_tag_source(
     tmp_path,
 ):
@@ -3323,8 +3357,8 @@ def test_real_lemonade_freshness_tracks_fork_main_source_commit():
             continue
         assert check["role"] == "baseline", check_id
 
-    recipe_policy = tomllib.loads(
-        (repo / "policies/recipe-packages.toml").read_text(encoding="utf-8")
+    recipe_policy = updates.resolve_recipe_policy(
+        tomllib.loads((repo / "policies/recipe-packages.toml").read_text(encoding="utf-8"))
     )
     package_entries = recipe_policy["packages"]
     source_commits = set()

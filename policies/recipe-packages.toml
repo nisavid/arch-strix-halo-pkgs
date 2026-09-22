@@ -5,6 +5,13 @@ recipe_author = "Blackcat Informatics Inc."
 repo_subpath = "."
 output_root = "packages"
 
+# Source revisions that several packages build. Package values refer to a pin
+# as "{source_pins.<name>}"; tools/recipe_policy.py expands the references for
+# the renderer and the freshness checker, so a repin is a one-line change here.
+[source_pins]
+# nisavid/lemonade fork main, built by lemonade-server and lemonade-app.
+lemonade = "187b4a25f154ff905486b8bf85e006cd1f2a9820"
+
 [packages.aocl-utils-gfx1151]
 recipe_key = "aocl_utils"
 template = "cmake"
@@ -2280,7 +2287,7 @@ scaffold_notes = [
 recipe_key = "lemonade"
 template = "lemonade-server"
 pkgdesc = "Local AI server runtime rebuilt for Strix Halo gfx1151"
-upstream_version = "10.7.0"
+upstream_version = "11.7.0"
 pkgrel = 1
 url = "https://github.com/nisavid/lemonade"
 repo = "https://github.com/nisavid/lemonade.git"
@@ -2291,7 +2298,8 @@ advisory_references = ["aur/lemonade-desktop"]
 divergence_notes = [
   "This custom build treats the ROCm and Vulkan llama.cpp backends as packaged system-managed backends rather than Lemonade-managed runtime downloads.",
   "Carries local patches for Linux XDNA2 detection and the system-managed llama.cpp backend story that are specific to this Strix Halo packaging lane.",
-  "Builds from the nisavid/lemonade fork so this package can consume local upstream fixes before they are available from the canonical Lemonade repository."
+  "Builds from the nisavid/lemonade fork so this package can consume local upstream fixes before they are available from the canonical Lemonade repository.",
+  "Ships offline, no-fetch distro defaults and a systemd drop-in that points the Hugging Face and ModelScope endpoints at a refused loopback port, so lemond does not download models or backend executables on its own."
 ]
 update_notes = [
   "Track the nisavid/lemonade fork's main branch as the package source lane; use canonical upstream releases and AUR packages as baselines for compatibility review.",
@@ -2301,7 +2309,8 @@ update_notes = [
   "On 2026-05-27, bumped the server package release to refresh packaged system-managed llama.cpp backend metadata for the b9352 HIP and Vulkan backends.",
   "On 2026-05-28, bumped the server package release to refresh packaged system-managed llama.cpp backend metadata for the b9357 HIP and Vulkan backends.",
   "On 2026-05-31, bumped the server package release to refresh packaged system-managed llama.cpp backend metadata for the b9442 HIP and Vulkan backends.",
-  "On 2026-06-15, adopted nisavid/lemonade fork main e18b9c1e352df8ab5aff2ff353402f1ec77c47f2, which syncs upstream Lemonade v10.7.0."
+  "On 2026-06-15, adopted nisavid/lemonade fork main e18b9c1e352df8ab5aff2ff353402f1ec77c47f2, which syncs upstream Lemonade v10.7.0.",
+  "On 2026-09-22, repinned the source to nisavid/lemonade fork main at Lemonade 11.7.0; the fork commit contains upstream v11.7.0 (2b6a7d7), and the lemonade entry in [source_pins] holds the selected commit. Refreshed patches 0002-0004 for the new base, and added the zz-secrets.conf backup entry, the offline distro defaults, and the model-endpoint drop-in. Issue 137 tracks build and host validation."
 ]
 provides = ["lemonade-server"]
 conflicts = []
@@ -2311,10 +2320,11 @@ optdepends = [
   "llama.cpp-hip-gfx1151: llama.cpp ROCm backend",
   "llama.cpp-vulkan-gfx1151: llama.cpp Vulkan backend"
 ]
+backup = ["etc/lemonade/conf.d/zz-secrets.conf"]
 src_subdir = "lemonade"
 upstream_name = "lemonade-server"
 baseline_kind = "closest-upstream"
-source_refs = ["lemonade::git+https://github.com/nisavid/lemonade.git#commit=e18b9c1e352df8ab5aff2ff353402f1ec77c47f2"]
+source_refs = ["lemonade::git+https://github.com/nisavid/lemonade.git#commit={source_pins.lemonade}"]
 recipe_branch_override = "main"
 sha256sums = ["SKIP"]
 extra_sources = [
@@ -2323,7 +2333,12 @@ extra_sources = [
   "0003-remove-llamacpp-system-backend.patch",
   "0004-system-managed-llamacpp-metadata.patch",
 ]
-extra_sha256sums = ["SKIP", "SKIP", "SKIP", "SKIP"]
+extra_sha256sums = [
+  "84149e7e765b80de94b0058edf930ee61ca39ceee534bff4e01fdd7e050cfb27",
+  "521d5a3b6d65c74dae9735ef7ca9434b1dac33f0b734e5d1208d67bc36d3ed9d",
+  "6e5a0345f2b7bede467045fa12f42f4d0773a7a782b169b0009d12de1d08155d",
+  "5ec6cbf9d6c06e1d4c31930060b73627591c4dfe188d234719cf3a403db319b0",
+]
 source_patches = [
   "0001-linux-npu-fallback-to-pci-id-when-accel-open-fails.patch",
   "0002-llamacpp-external-backends-are-system-managed.patch",
@@ -2333,19 +2348,22 @@ source_patches = [
 patches_dir = "packages/lemonade-server"
 scaffold_notes = [
   "Server/runtime package; llama.cpp backends are optdepends, not hard deps.",
-  "Pinned to nisavid/lemonade main commit e18b9c1e352df8ab5aff2ff353402f1ec77c47f2, whose CMake project version is 10.7.0.",
+  "Pinned to nisavid/lemonade main commit {source_pins.lemonade}, whose CMake project version is 11.7.0. The pin is the lemonade entry in the [source_pins] table of policies/recipe-packages.toml, so lemonade-server and lemonade-app always build the same fork commit.",
+  "Configures with BUILD_TESTING=OFF; upstream 11.7 includes CTest, and the distro build does not need its C++ test binaries.",
   "Uses upstream's lemond.service unit name; do not ship the pre-10.3 lemonade-server.service name in this package.",
-  "Installs /etc/lemonade/conf.d/10-llamacpp-gfx1151.conf so the packaged ROCm and Vulkan llama.cpp wrapper binaries are exposed to the service as system-managed backends.",
-  "The system-managed backend patch also folds in the config-load and CLI/backend-table changes needed for those service-provided overrides to stay visible after config.json already exists.",
-  "Export the packaged llama.cpp revision and ggml release URL in the system-managed backend env overlay so the GUI shows the packaged backend metadata instead of upstream downloader defaults.",
-  "Pkgrel 2 replaces shell-interpolated llama.cpp --version probing with Lemonade's argv-based ProcessManager capture path in the system-managed backend patch.",
-  "Keeps the backend environment overlay sparse so service-provided backend paths override config.json without resetting unrelated user config keys to defaults."
+  "Installs /etc/lemonade/conf.d/10-llamacpp-gfx1151.conf so the packaged ROCm and Vulkan llama.cpp wrapper binaries are exposed to the service as system-managed backends. lemond reads LEMONADE_LLAMACPP_*_BIN from the environment ahead of config.json on every backend lookup, so the refreshed system-managed backend patch no longer carries the older config-load environment overlay or the CLI backend-table change.",
+  "Exports the packaged llama.cpp revision and ggml release URL in the same conf.d file so the GUI shows the packaged backend metadata instead of upstream downloader defaults.",
+  "The system-managed backend patch probes llama-server --version through Lemonade's argv-based ProcessManager capture path, not a shell.",
+  "Marks /etc/lemonade/conf.d/zz-secrets.conf as a backup file so an upgrade keeps local API-key edits. 10-llamacpp-gfx1151.conf stays package-owned so each release refreshes the backend metadata.",
+  "Replaces upstream's full /usr/share/lemonade/defaults.json with a sparse distro overlay: offline, no_fetch_executables, an explicit ROCm llama.cpp backend, prefer_system off, the packaged rocm_bin and vulkan_bin paths, and --no-mmap llama.cpp args. With --no-mmap set, lemond omits its iGPU --load-mode default, which the packaged llama.cpp b9442 does not accept. lemond merges the overlay over its built-in defaults and under config.json, so keys an existing config.json already sets still win. The overlay leaves host, port, broadcast, and API-key settings to the host.",
+  "Installs /usr/lib/systemd/system/lemond.service.d/20-no-remote-model-fetch.conf, which sets HF_ENDPOINT and MODELSCOPE_ENDPOINT to a refused loopback port. lemond's model registry reads both variables on every request, and llama-server children inherit them. A value set in /etc/lemonade/conf.d overrides the drop-in, because systemd applies EnvironmentFile after Environment.",
+  "Removes /usr/share/metainfo because the web-app MetaInfo names lemonade-web-app.desktop as its launchable, and this package removes that desktop entry."
 ]
 
 [packages."lemonade-app"]
 recipe_key = "lemonade"
 template = "lemonade-app"
-upstream_version = "10.7.0"
+upstream_version = "11.7.0"
 pkgdesc = "Lemonade desktop app rebuilt for Strix Halo gfx1151"
 pkgrel = 1
 url = "https://github.com/nisavid/lemonade"
@@ -2362,7 +2380,8 @@ update_notes = [
   "Track the nisavid/lemonade fork's main branch as the package source lane; use the closest desktop/app packages as packaging baselines only.",
   "Keep the provides/conflicts story accurate while Arch/AUR naming remains in transition.",
   "On 2026-05-26, adopted nisavid/lemonade fork main 13b1af25f84cf08ad5f8bf0ec58980bdfc09c9e7 so base llamacpp model options do not show reranking adapter controls.",
-  "On 2026-06-15, adopted nisavid/lemonade fork main e18b9c1e352df8ab5aff2ff353402f1ec77c47f2, which syncs upstream Lemonade v10.7.0."
+  "On 2026-06-15, adopted nisavid/lemonade fork main e18b9c1e352df8ab5aff2ff353402f1ec77c47f2, which syncs upstream Lemonade v10.7.0.",
+  "On 2026-09-22, repinned the source to nisavid/lemonade fork main at Lemonade 11.7.0, together with lemonade-server through the lemonade entry in [source_pins]; the fork commit contains upstream v11.7.0 (2b6a7d7). The Tauri glib patch applies unchanged. Issue 137 tracks build and host validation."
 ]
 provides = ["lemonade-desktop"]
 conflicts = ["lemonade-desktop"]
@@ -2372,12 +2391,12 @@ makedepends = ["cargo", "cmake", "git", "ninja", "nodejs", "npm", "rocm-llvm-gfx
 src_subdir = "lemonade"
 upstream_name = "lemonade-app"
 baseline_kind = "closest-upstream"
-source_refs = ["lemonade::git+https://github.com/nisavid/lemonade.git#commit=e18b9c1e352df8ab5aff2ff353402f1ec77c47f2"]
+source_refs = ["lemonade::git+https://github.com/nisavid/lemonade.git#commit={source_pins.lemonade}"]
 sha256sums = ["SKIP"]
 extra_sources = [
   "0001-keep-tauri-glib-on-webkit-compatible-series.patch",
 ]
-extra_sha256sums = ["SKIP"]
+extra_sha256sums = ["a1206e0fedcdaa87a725719cade8a499aaaa401bce0c9a5442bc57f95e0be177"]
 source_patches = [
   "0001-keep-tauri-glib-on-webkit-compatible-series.patch",
 ]
@@ -2387,13 +2406,13 @@ scaffold_notes = [
   "Carry a local Tauri Cargo patch that keeps the direct Linux glib dependency on the webkit2gtk-compatible 0.18 series until upstream's glib 0.20 bump builds cleanly.",
   "Route Cargo and npm caches into the package build tree so the Tauri build does not depend on user-local cache state.",
   "Install a /usr/bin/lemonade-app wrapper that launches the packaged Tauri binary from /usr/share/lemonade-app so the shipped desktop entry resolves on PATH.",
-  "Pinned to nisavid/lemonade main commit e18b9c1e352df8ab5aff2ff353402f1ec77c47f2, whose CMake project version is 10.7.0."
+  "Pinned to nisavid/lemonade main commit {source_pins.lemonade}, whose CMake project version is 11.7.0. The pin is the lemonade entry in the [source_pins] table of policies/recipe-packages.toml, so lemonade-app always builds the same fork commit as lemonade-server."
 ]
 
 [packages."lemonade"]
 recipe_key = "lemonade"
 template = "meta-package"
-upstream_version = "10.7.0"
+upstream_version = "11.7.0"
 pkgdesc = "Meta package for Lemonade and llama.cpp backend packages"
 url = "https://github.com/nisavid/lemonade"
 license = ["Apache-2.0"]

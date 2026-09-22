@@ -7,7 +7,7 @@
 - Scaffold template: `lemonade-app`
 - Recipe build method: `pip`
 - Upstream repo: `https://github.com/nisavid/lemonade.git`
-- Package version: `10.7.0`
+- Package version: `11.7.0`
 - Recipe revision: `3f15f9f (20260508, 17 commits touching recipe path)`
 - Recipe steps: `34, 35, 36`
 - Recipe dependencies: `therock, llamacpp`
@@ -36,7 +36,7 @@ Reinstalling at compatible versions resolves conflicts.
 - Carry a local Tauri Cargo patch that keeps the direct Linux glib dependency on the webkit2gtk-compatible 0.18 series until upstream's glib 0.20 bump builds cleanly.
 - Route Cargo and npm caches into the package build tree so the Tauri build does not depend on user-local cache state.
 - Install a /usr/bin/lemonade-app wrapper that launches the packaged Tauri binary from /usr/share/lemonade-app so the shipped desktop entry resolves on PATH.
-- Pinned to nisavid/lemonade main commit e18b9c1e352df8ab5aff2ff353402f1ec77c47f2, whose CMake project version is 10.7.0.
+- Pinned to nisavid/lemonade main commit 187b4a25f154ff905486b8bf85e006cd1f2a9820, whose CMake project version is 11.7.0. The pin is the lemonade entry in the [source_pins] table of policies/recipe-packages.toml, so lemonade-app always builds the same fork commit as lemonade-server.
 
 ## Intentional Divergences
 
@@ -49,6 +49,7 @@ Reinstalling at compatible versions resolves conflicts.
 - Keep the provides/conflicts story accurate while Arch/AUR naming remains in transition.
 - On 2026-05-26, adopted nisavid/lemonade fork main 13b1af25f84cf08ad5f8bf0ec58980bdfc09c9e7 so base llamacpp model options do not show reranking adapter controls.
 - On 2026-06-15, adopted nisavid/lemonade fork main e18b9c1e352df8ab5aff2ff353402f1ec77c47f2, which syncs upstream Lemonade v10.7.0.
+- On 2026-09-22, repinned the source to nisavid/lemonade fork main at Lemonade 11.7.0, together with lemonade-server through the lemonade entry in [source_pins]; the fork commit contains upstream v11.7.0 (2b6a7d7). The Tauri glib patch applies unchanged. Issue 137 tracks build and host validation.
 
 ## Maintainer Starting Points
 

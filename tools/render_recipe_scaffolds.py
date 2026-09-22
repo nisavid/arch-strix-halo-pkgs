@@ -12,6 +12,7 @@ import textwrap
 import tomllib
 from pathlib import Path
 
+from recipe_policy import load_recipe_policy
 from recipe_repo import RECIPE_ROOT_ENV_VAR, resolve_recipe_dir, resolve_recipe_root
 
 try:
@@ -232,18 +233,56 @@ def preserved_pkgrel(package_name: str, version: str) -> int:
     return int(pkgrel_match.group(1))
 
 
+LEMONADE_LLAMACPP_ROCM_BIN = "/usr/bin/llama-server-hip-gfx1151"
+LEMONADE_LLAMACPP_VULKAN_BIN = "/usr/bin/llama-server-vulkan-gfx1151"
+# Connections to the loopback discard port are refused, so a model registry
+# request sent here fails at once instead of reaching the network.
+LEMONADE_BLACKHOLE_ENDPOINT = "http://127.0.0.1:9"
+
+
 def lemonade_llamacpp_env_lines() -> list[str]:
     hip_rev = sibling_package_upstream_revision("llama.cpp-hip-gfx1151")
     vulkan_rev = sibling_package_upstream_revision("llama.cpp-vulkan-gfx1151")
     return [
-        "LEMONADE_LLAMACPP_ROCM_BIN=/usr/bin/llama-server-hip-gfx1151",
-        "LEMONADE_LLAMACPP_VULKAN_BIN=/usr/bin/llama-server-vulkan-gfx1151",
+        f"LEMONADE_LLAMACPP_ROCM_BIN={LEMONADE_LLAMACPP_ROCM_BIN}",
+        f"LEMONADE_LLAMACPP_VULKAN_BIN={LEMONADE_LLAMACPP_VULKAN_BIN}",
         f"LEMONADE_LLAMACPP_ROCM_VERSION={hip_rev}",
         f"LEMONADE_LLAMACPP_VULKAN_VERSION={vulkan_rev}",
         f"LEMONADE_LLAMACPP_ROCM_RELEASE_URL=https://github.com/ggml-org/llama.cpp/releases/tag/{hip_rev}",
         f"LEMONADE_LLAMACPP_VULKAN_RELEASE_URL=https://github.com/ggml-org/llama.cpp/releases/tag/{vulkan_rev}",
-        f"LEMONADE_LLAMACPP_ROCM_LABEL=System llama-server-hip-gfx1151 llama.cpp {hip_rev}",
-        f"LEMONADE_LLAMACPP_VULKAN_LABEL=System llama-server-vulkan-gfx1151 llama.cpp {vulkan_rev}",
+    ]
+
+
+def lemonade_distro_defaults() -> dict:
+    """Return the sparse /usr/share/lemonade/defaults.json overlay.
+
+    lemond deep-merges this file over its built-in defaults on every start,
+    under config.json. It seeds a fresh install and fills keys that an
+    existing config.json lacks, but never overrides a key config.json sets.
+    It does not set host, port, broadcast, or any API-key setting; those stay
+    with the host.
+    """
+    return {
+        "offline": True,
+        "no_fetch_executables": True,
+        "llamacpp": {
+            # --no-mmap in the llama.cpp args stops lemond from adding its
+            # iGPU "--load-mode none" default, a flag the packaged llama.cpp
+            # does not accept.
+            "args": "--no-mmap",
+            "backend": "rocm",
+            "prefer_system": False,
+            "rocm_bin": LEMONADE_LLAMACPP_ROCM_BIN,
+            "vulkan_bin": LEMONADE_LLAMACPP_VULKAN_BIN,
+        },
+    }
+
+
+def lemonade_no_remote_model_fetch_dropin_lines() -> list[str]:
+    return [
+        "[Service]",
+        f"Environment=HF_ENDPOINT={LEMONADE_BLACKHOLE_ENDPOINT}",
+        f"Environment=MODELSCOPE_ENDPOINT={LEMONADE_BLACKHOLE_ENDPOINT}",
     ]
 
 
@@ -553,7 +592,8 @@ build() {{
     -DCMAKE_C_FLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument" \\
     -DCMAKE_CXX_FLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument" \\
     -DBUILD_ELECTRON_APP=OFF \\
-    -DBUILD_WEB_APP=ON
+    -DBUILD_WEB_APP=ON \\
+    -DBUILD_TESTING=OFF
 
   cmake --build "${{build_root}}" -j"$(nproc)"
 }}
@@ -564,9 +604,12 @@ package() {{
 
   DESTDIR="$pkgdir" cmake --install "${{build_root}}"
 
+  # The web-app MetaInfo names lemonade-web-app.desktop as its launchable.
+  # This package removes that desktop entry, so drop the dangling component.
   rm -rf "$pkgdir/usr/share/applications" \\
          "$pkgdir/usr/share/pixmaps" \\
          "$pkgdir/usr/share/icons" \\
+         "$pkgdir/usr/share/metainfo" \\
          "$pkgdir/usr/share/lemonade-app" \\
          "$pkgdir/usr/bin/lemonade-app"
 
@@ -576,6 +619,18 @@ package() {{
 
   install -Dm644 /dev/stdin "$pkgdir/etc/lemonade/conf.d/10-llamacpp-gfx1151.conf" <<'EOF'
 {chr(10).join(lemonade_llamacpp_env_lines())}
+EOF
+
+  # Replace upstream's full copy of its built-in defaults with a sparse distro
+  # overlay. lemond merges it over the built-in defaults and under config.json.
+  install -Dm644 /dev/stdin "$pkgdir/usr/share/lemonade/defaults.json" <<'EOF'
+{json.dumps(lemonade_distro_defaults(), indent=2, sort_keys=True)}
+EOF
+
+  # Send Hugging Face and ModelScope requests from lemond and its llama-server
+  # children to a refused loopback port, so no model is fetched implicitly.
+  install -Dm644 /dev/stdin "$pkgdir/usr/lib/systemd/system/lemond.service.d/20-no-remote-model-fetch.conf" <<'EOF'
+{chr(10).join(lemonade_no_remote_model_fetch_dropin_lines())}
 EOF
 
   install -Dm644 "$srcdir/{src_subdir}/LICENSE" "$pkgdir/usr/share/licenses/{package_name}/LICENSE"
@@ -1703,6 +1758,8 @@ def render_pkgbuild(package_name: str, policy_pkg: dict, recipe_pkg: dict, versi
     makedepends = policy_pkg.get("makedepends", [])
     optdepends = policy_pkg.get("optdepends", [])
     options = policy_pkg.get("options", [])
+    backup = policy_pkg.get("backup", [])
+    backup_line = f"backup={bash_array(backup)}\n" if backup else ""
     license_items = policy_pkg.get("license", [])
     arch_items = policy_pkg.get("arch", ["x86_64"])
     arch_array = "(" + " ".join(f"'{item}'" for item in arch_items) + ")"
@@ -1736,7 +1793,7 @@ options={bash_array(options)}
 provides={bash_array(provides)}
 conflicts={bash_array(conflicts)}
 replaces={bash_array(replaces)}
-source={source_refs}
+{backup_line}source={source_refs}
 sha256sums={sha256sums}
 
 {prepare_body}{method_body}
@@ -1983,7 +2040,7 @@ def main() -> int:
         print(exc, file=sys.stderr)
         return 2
 
-    policy = load_toml(policy_path)
+    policy = load_recipe_policy(policy_path)
     defaults = dict(policy.get("defaults", {}))
     recipe_manifest = load_recipe_manifest(recipe_dir)
     defaults.update(recipe_revision(recipe_root, args.recipe_subdir))
