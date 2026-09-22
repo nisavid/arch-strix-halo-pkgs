@@ -195,6 +195,21 @@ def test_isolated_config_is_offline_and_uses_packaged_backends(tmp_path: Path):
     assert config["llamacpp"]["vulkan_bin"] == "/opt/llama.cpp-vulkan-gfx1151/bin"
 
 
+def test_isolated_lemond_cleans_up_when_startup_fails(tmp_path: Path):
+    args = live.parse_args(
+        ["lifecycle", "--lemond", "/bin/false", "--server-log", str(tmp_path / "server.log")]
+    )
+    inst = live.IsolatedLemond(args)
+
+    with pytest.raises(RuntimeError, match="exited during startup"):
+        with inst:
+            pass
+
+    assert inst.root is not None
+    assert not inst.root.exists()
+    assert inst.proc is not None and inst.proc.poll() is not None
+
+
 class FakeLemond:
     """A small in-memory lemond that honors pins, busy models, one slot, and a budget."""
 
