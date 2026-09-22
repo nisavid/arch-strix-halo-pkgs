@@ -1,12 +1,23 @@
 [repo]
 pkgbase = "therock-gfx1151"
-pkgver = "7.13.0"
-pkgrel = 2
+pkgver = "7.14.1"
+pkgrel = 1
 suffix = "-gfx1151"
 url = "https://github.com/ROCm/TheRock"
 license = ["custom:AMD"]
 scan_roots = ["opt/rocm"]
 bundle_conflict = "rocm-gfx1151-bin"
+
+# Pinned TheRock dist payload, consumed by tools/stage_therock_payload.py.
+# AMD publishes no checksum sidecar, so the sha256 was recorded at first fetch
+# (2026-09-22). The tarball root is the ROCm prefix; it extracts into
+# <stage>/opt/rocm. gfx_arch substitutes @GFXARCH@ in the .rocm_kpack_ref
+# search paths that the generator's KPACK_REF_UNOWNED check resolves.
+[payload]
+url = "https://repo.amd.com/rocm/tarball-multi-arch/therock-dist-linux-gfx1151-7.14.1.tar.gz"
+sha256 = "c40e8f2bd6630a7d11557c762b99c6fa8afb04c9bd0e51ed1675ee1ca24afb00"
+size = 1713467716
+gfx_arch = "gfx1151"
 
 [filters]
 ignore_globs = [
