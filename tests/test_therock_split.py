@@ -1,4 +1,5 @@
 import importlib.util
+import json
 from pathlib import Path
 import subprocess
 import sys
@@ -409,3 +410,267 @@ def test_generated_copy_helper_copies_from_staged_root_without_stage_prefix(tmp_
         ],
         check=True,
     )
+
+
+# --- ELF helpers, KPACK_REF_UNOWNED and soname depends ---------------------------
+
+
+def msgpack(value: object) -> bytes:
+    import struct
+
+    if isinstance(value, dict):
+        return bytes([0x80 | len(value)]) + b"".join(msgpack(k) + msgpack(v) for k, v in value.items())
+    if isinstance(value, list):
+        return bytes([0x90 | len(value)]) + b"".join(msgpack(item) for item in value)
+    data = value.encode()
+    if len(data) < 32:
+        return bytes([0xA0 | len(data)]) + data
+    return struct.pack(">BB", 0xD9, len(data)) + data
+
+
+def make_elf(path: Path, *, kpack_ref: bytes | None = None, needed: list[str] | None = None) -> Path:
+    """Write a minimal little-endian ELF64 file with the requested sections."""
+    import struct
+
+    sections: list[tuple[str, int, bytes, int]] = []
+    if kpack_ref is not None:
+        sections.append((".rocm_kpack_ref", 1, kpack_ref, 0))
+    if needed is not None:
+        dynstr = b"\0"
+        offsets = []
+        for name in needed:
+            offsets.append(len(dynstr))
+            dynstr += name.encode() + b"\0"
+        sections.append((".dynstr", 3, dynstr, 0))
+        dynstr_index = len(sections)
+        dynamic = b"".join(struct.pack("<qQ", 1, offset) for offset in offsets) + struct.pack("<qQ", 0, 0)
+        sections.append((".dynamic", 6, dynamic, dynstr_index))
+
+    shstrtab = b"\0"
+    name_offsets = []
+    for name, *_rest in sections:
+        name_offsets.append(len(shstrtab))
+        shstrtab += name.encode() + b"\0"
+    shstrtab_name = len(shstrtab)
+    shstrtab += b".shstrtab\0"
+
+    body = b""
+    offsets = []
+    for _name, _type, data, _link in sections:
+        offsets.append(64 + len(body))
+        body += data
+    shstrtab_offset = 64 + len(body)
+    body += shstrtab
+    shoff = 64 + len(body)
+    shnum = len(sections) + 2
+
+    header = b"\x7fELF" + bytes([2, 1, 1]) + b"\0" * 9
+    header += struct.pack("<HHIQQQIHHHHHH", 3, 62, 1, 0, 0, shoff, 0, 64, 0, 0, 64, shnum, shnum - 1)
+    headers = b"\0" * 64
+    for (_name, sh_type, data, link), name_offset, offset in zip(sections, name_offsets, offsets):
+        headers += struct.pack("<IIQQQQIIQQ", name_offset, sh_type, 0, 0, offset, len(data), link, 0, 1, 0)
+    headers += struct.pack("<IIQQQQIIQQ", shstrtab_name, 3, 0, 0, shstrtab_offset, len(shstrtab), 0, 0, 1, 0)
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(header + body + headers)
+    return path
+
+
+def kpack_marker(*search_paths: str) -> bytes:
+    return msgpack({"kpack_search_paths": list(search_paths), "kernel_name": "math-libs/lib/librocfoo.so.1"})
+
+
+def kpack_policy(**overrides) -> dict:
+    policy = {
+        "repo": {"suffix": "-gfx1151"},
+        "payload": {"gfx_arch": "gfx1151"},
+        "packages": {
+            "rocfoo-gfx1151": {"depends": ["rocbar-gfx1151"]},
+            "rocbar-gfx1151": {"depends": []},
+            "rocbaz-gfx1151": {"depends": []},
+        },
+    }
+    policy.update(overrides)
+    return policy
+
+
+def test_elf_reader_matches_the_written_sections(tmp_path: Path):
+    marker = kpack_marker("../.kpack/foo_lib_@GFXARCH@.kpack")
+    elf = make_elf(tmp_path / "libfoo.so", kpack_ref=marker, needed=["libprotobuf.so.36.1.0", "libc.so.6"])
+
+    assert therock_split.is_elf(elf)
+    assert therock_split.read_elf_section(elf, ".rocm_kpack_ref") == marker
+    assert therock_split.read_elf_section(elf, ".hip_fatbin") is None
+    assert therock_split.read_elf_needed(elf) == ["libprotobuf.so.36.1.0", "libc.so.6"]
+    assert therock_split.msgpack_decode(marker)["kpack_search_paths"] == ["../.kpack/foo_lib_@GFXARCH@.kpack"]
+
+
+def test_kpack_search_paths_resolve_relative_to_the_library_directory():
+    resolve = therock_split.resolve_kpack_search_path
+
+    assert resolve("opt/rocm/lib/librocfoo.so.1", "../.kpack/foo_lib_@GFXARCH@.kpack", "gfx1151") == (
+        "opt/rocm/.kpack/foo_lib_gfx1151.kpack"
+    )
+    assert resolve("opt/rocm/lib/librocfoo.so.1", "/opt/rocm/.kpack/foo.kpack", "gfx1151") == "opt/rocm/.kpack/foo.kpack"
+
+
+def _kpack_failures(tmp_path: Path, owners: dict, policy: dict | None = None) -> list:
+    make_elf(tmp_path / "opt/rocm/lib/librocfoo.so.1", kpack_ref=kpack_marker("../.kpack/foo_lib_@GFXARCH@.kpack"))
+    make_elf(tmp_path / "opt/rocm/lib/libplain.so.1", needed=["libc.so.6"])
+    archive = tmp_path / "opt/rocm/.kpack/foo_lib_gfx1151.kpack"
+    archive.parent.mkdir(parents=True, exist_ok=True)
+    archive.write_bytes(b"KPAK\x01")
+    failures: list = []
+    therock_split.check_kpack_refs(tmp_path, policy or kpack_policy(), owners, failures)
+    return failures
+
+
+def test_kpack_ref_owned_by_the_library_package_or_a_direct_depend_passes(tmp_path: Path):
+    for archive_owner in ("rocfoo-gfx1151", "rocbar-gfx1151"):
+        owners = {
+            "opt/rocm/lib/librocfoo.so.1": "rocfoo-gfx1151",
+            "opt/rocm/lib/libplain.so.1": "rocbaz-gfx1151",
+            "opt/rocm/.kpack/foo_lib_gfx1151.kpack": archive_owner,
+        }
+        assert _kpack_failures(tmp_path, owners) == []
+
+
+def test_kpack_ref_to_an_ignored_archive_fails(tmp_path: Path):
+    owners = {
+        "opt/rocm/lib/librocfoo.so.1": "rocfoo-gfx1151",
+        "opt/rocm/.kpack/foo_lib_gfx1151.kpack": therock_split.IGNORED,
+    }
+    failures = _kpack_failures(tmp_path, owners)
+
+    assert [failure.kind for failure in failures] == ["kpack_ref_unowned"]
+    rendered = failures[0].render()
+    assert rendered.startswith("KPACK_REF_UNOWNED: opt/rocm/lib/librocfoo.so.1")
+    assert "ignored by policy filters" in rendered
+
+
+def test_kpack_ref_to_an_archive_outside_the_dependency_graph_fails(tmp_path: Path):
+    owners = {
+        "opt/rocm/lib/librocfoo.so.1": "rocfoo-gfx1151",
+        "opt/rocm/.kpack/foo_lib_gfx1151.kpack": "rocbaz-gfx1151",
+    }
+    failures = _kpack_failures(tmp_path, owners)
+
+    assert len(failures) == 1
+    assert "owned by rocbaz-gfx1151, which rocfoo-gfx1151 does not depend on" in failures[0].detail
+
+
+def test_kpack_ref_without_a_staged_archive_fails(tmp_path: Path):
+    owners = {"opt/rocm/lib/librocfoo.so.1": "rocfoo-gfx1151"}
+    failures = _kpack_failures(tmp_path, owners)
+
+    assert len(failures) == 1
+    assert "no kpack archive from opt/rocm/.kpack/foo_lib_gfx1151.kpack" in failures[0].detail
+
+
+def test_kpack_ref_resolves_the_policy_gfx_arch(tmp_path: Path):
+    owners = {
+        "opt/rocm/lib/librocfoo.so.1": "rocfoo-gfx1151",
+        "opt/rocm/.kpack/foo_lib_gfx1151.kpack": "rocfoo-gfx1151",
+    }
+    failures = _kpack_failures(tmp_path, owners, kpack_policy(payload={"gfx_arch": "gfx1100"}))
+
+    assert len(failures) == 1
+    assert "opt/rocm/.kpack/foo_lib_gfx1100.kpack" in failures[0].detail
+
+
+def test_soname_depends_are_rendered_from_the_staged_elf(tmp_path: Path):
+    library = "opt/rocm/lib/migraphx/lib/libmigraphx_onnx.so"
+    make_elf(tmp_path / library, needed=["libprotobuf.so.36.1.0", "libutf8_validity.so.36.1.0"])
+    policy = {"packages": {"migraphx-gfx1151": {"soname_depends": [{"library": library, "needed": "libprotobuf.so"}]}}}
+    failures: list = []
+
+    derived = therock_split.derive_soname_depends(tmp_path, policy, {"migraphx-gfx1151": [library]}, failures)
+
+    assert failures == []
+    assert derived == {"migraphx-gfx1151": ["libprotobuf.so=36.1.0-64"]}
+    assert therock_split.derive_soname_depends(tmp_path, policy, {}, failures) == {}
+
+
+def test_soname_depends_fail_loudly_unless_skipping_for_a_dry_render(tmp_path: Path, capsys):
+    library = "opt/rocm/lib/migraphx/lib/libmigraphx_onnx.so"
+    policy = {"packages": {"migraphx-gfx1151": {"soname_depends": [{"library": library, "needed": "libprotobuf.so"}]}}}
+    files = {"migraphx-gfx1151": ["opt/rocm/include/flatbuffers/base.h"]}
+
+    failures: list = []
+    assert therock_split.derive_soname_depends(tmp_path, policy, files, failures) == {}
+    assert [failure.render().splitlines()[0] for failure in failures] == ["SONAME_DEPEND_UNRESOLVED: migraphx-gfx1151"]
+
+    failures = []
+    assert therock_split.derive_soname_depends(tmp_path, policy, files, failures, skip_missing=True) == {}
+    assert failures == []
+    assert "SONAME_DEPEND_SKIPPED: migraphx-gfx1151" in capsys.readouterr().err
+
+    make_elf(tmp_path / library, needed=["libprotobuf.so.35.1.0", "libprotobuf.so.36.1.0"])
+    failures = []
+    assert therock_split.derive_soname_depends(tmp_path, policy, files, failures) == {}
+    assert "needs 2 libprotobuf.so SONAMEs" in failures[0].detail
+
+
+GENERATOR_POLICY = """
+[repo]
+pkgbase = "therock-gfx1151"
+pkgver = "7.14.1"
+pkgrel = 1
+suffix = "-gfx1151"
+url = "https://github.com/ROCm/TheRock"
+license = ["custom:AMD"]
+scan_roots = ["opt/rocm"]
+bundle_conflict = "rocm-gfx1151-bin"
+
+[payload]
+gfx_arch = "gfx1151"
+
+[filters]
+ignore_globs = [@IGNORE@]
+
+[packages."rocfoo-gfx1151"]
+desc = "rocFOO"
+provides = ["rocfoo"]
+depends = ["glibc"]
+soname_depends = [{ library = "opt/rocm/lib/librocfoo.so.1", needed = "libprotobuf.so" }]
+
+[aliases.library_prefixes]
+"rocfoo" = "rocfoo-gfx1151"
+
+[overrides.path_owners]
+"opt/rocm/.kpack/foo_lib_gfx1151.kpack" = "rocfoo-gfx1151"
+"""
+
+
+def run_generator(tmp_path: Path, root: Path, ignore: str) -> subprocess.CompletedProcess[str]:
+    policy = tmp_path / "policy.toml"
+    policy.write_text(GENERATOR_POLICY.replace("@IGNORE@", ignore))
+    return subprocess.run(
+        [sys.executable, str(MODULE_PATH), "--root", str(root), "--policy", str(policy), "--output", str(tmp_path / "out")],
+        capture_output=True,
+        text=True,
+    )
+
+
+def test_generator_render_enforces_kpack_ownership_and_renders_soname_depends(tmp_path: Path):
+    root = tmp_path / "root"
+    make_elf(
+        root / "opt/rocm/lib/librocfoo.so.1",
+        kpack_ref=kpack_marker("../.kpack/foo_lib_@GFXARCH@.kpack"),
+        needed=["libprotobuf.so.36.1.0"],
+    )
+    (root / "opt/rocm/.kpack").mkdir(parents=True)
+    (root / "opt/rocm/.kpack/foo_lib_gfx1151.kpack").write_bytes(b"KPAK\x01")
+
+    failed = run_generator(tmp_path, root, '"opt/rocm/.kpack/**"')
+    assert failed.returncode == 2
+    assert "KPACK_REF_UNOWNED: opt/rocm/lib/librocfoo.so.1" in failed.stderr
+    assert not (tmp_path / "out").exists()
+
+    rendered = run_generator(tmp_path, root, "")
+    assert rendered.returncode == 0, rendered.stderr
+    filelist = (tmp_path / "out/filelists/rocfoo-gfx1151.txt").read_text().splitlines()
+    assert "opt/rocm/.kpack/foo_lib_gfx1151.kpack" in filelist
+    assert "depends=('glibc' 'libprotobuf.so=36.1.0-64')" in (tmp_path / "out/PKGBUILD").read_text()
+    manifest = json.loads((tmp_path / "out/manifest.json").read_text())
+    assert manifest["packages"]["rocfoo-gfx1151"]["depends"] == ["glibc", "libprotobuf.so=36.1.0-64"]
