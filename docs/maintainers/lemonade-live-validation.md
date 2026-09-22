@@ -40,6 +40,26 @@ compare the backend
 process's executable against `pacman -Qo`, so they fail if Lemonade serves the
 model from anything other than the packaged llama.cpp.
 
+## Loaded-Library Provenance
+
+A packaged executable is not enough: with `backend=rocm`, `lemond` prepends
+cached TheRock library directories to the backend's `LD_LIBRARY_PATH`, so a
+cached runtime can shadow the packaged one. After the completion, while the
+backend `llama-server` is still running, the Lemonade text scenarios and the
+no-fetch pre-placed phase read `/proc/<pid>/maps`. They select every mapped
+ROCm, HIP, ggml, llama, or mtmd shared object and require:
+
+- none of them lies under `lemond`'s cache `bin/` directory;
+- each one resolves to an owner with `pacman -Qo`;
+- every owner is listed in the local repo (`pacman -Slq strix-halo-gfx1151`);
+- the ggml and llama objects are owned by the selected backend package; and
+- the ROCm backend maps the HIP runtime (`libamdhip64`).
+
+Output reports counts and package names only, never library or cache paths.
+Reading another user's `maps` needs the same privileges as reading that
+process's memory map, so run these scenarios with access to the service's
+processes; otherwise they fail with `backend_maps_unreadable`.
+
 ## Scenario Classes
 
 - `mutates-service`: loads and unloads the test model on the running
@@ -80,27 +100,35 @@ service. Each phase collects three kinds of evidence:
   `LEMONADE_CACHE_DIR`, then the service user's `~/.cache/lemonade`. Output
   reports only entry counts, never paths.
 - Network: `ss -tanp` is sampled throughout the phase. No socket owned by
-  `lemond` or its children may have a non-loopback peer or connect to the
-  download blackhole's port. Connections accepted on one of `lemond`'s
+  `lemond` or its children may have a non-loopback peer. In the pre-placed
+  phase, none may connect to the download blackhole's port either. Connections accepted on one of `lemond`'s
   listening ports are client traffic, such as LAN consumers, and are ignored.
 
 In the first phase, the service loads and completes with the pre-placed test
 GGUF, using the same checks as the text scenario. In the second phase, the
 scenario loads `Tiny-Test-Model-GGUF`, a small catalog model that must not be
-downloaded. The load must fail with a non-2xx status or an explicit error, and
-the model must not become resident.
+downloaded. The phase passes when all of these hold:
+
+- the load fails loudly, with a non-2xx status or an explicit error, and the
+  model does not become resident;
+- the model and backend caches are unchanged; and
+- `lemond` and its children made no non-loopback connection.
 
 Preconditions are checked before anything is loaded. The service config must
 have `offline` and `no_fetch_executables` set to true. `HF_ENDPOINT` and
 `MODELSCOPE_ENDPOINT` must both name loopback endpoints. `ss -p` must be able
 to attribute the service's listening socket to `lemond`.
 
-Expected result on candidate `187b4a25f`: `/load` of a registered model that is
-not downloaded calls the download path even when `offline` is true. The
-blackhole stops the bytes, but the attempt is logged as `Model not downloaded,
-downloading...`. The missing phase therefore fails `missing_no_fetch_log_ok`
-until the fork refuses that load offline, or the lead accepts a blackholed
-attempt as a loud failure.
+On candidate `187b4a25f`, `/load` of a registered model that is not
+downloaded calls the download path even when `offline` is true. The blackhole
+stops the bytes, but the attempt is logged as `Model not downloaded,
+downloading...`. Under the lead's ruling for #138, a logged, blackholed attempt
+in the missing phase is an observation, not a failure. The scenario prints
+`missing_blackholed_fetch_attempt_recorded` with the log-line and blackhole
+connect counts, and does not print `missing_no_fetch_log_ok`. The pre-placed
+phase keeps the strict check: any download or install line, or any blackhole
+connect, fails it. When the fork refuses that load offline, the missing phase
+prints `missing_no_fetch_log_ok` again, and the recorded marker disappears.
 
 All of these scenarios carry `validation-window`. Broad selections skip them,
 so select them explicitly:

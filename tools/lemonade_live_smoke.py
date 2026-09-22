@@ -4,11 +4,14 @@
 Modes that target the running service (``--base-url``):
 
 - ``text``: load a provisioned GGUF on one llama.cpp backend, complete text,
-  and prove that the backend process belongs to the packaged llama.cpp.
+  and prove that the backend process and every ROCm/HIP/ggml/llama shared
+  object it maps belong to repo packages, none from lemond's cache.
 - ``provenance``: read-only package, file-ownership, and config provenance.
 - ``nofetch``: load a pre-placed model and request an absent one while
   watching the service journal, the model and backend caches, and lemond's
-  sockets; nothing may be downloaded, installed, or fetched remotely.
+  sockets. The pre-placed load may log no download; the absent model must fail
+  loudly with unchanged caches and no non-loopback connection, and a logged,
+  blackholed download attempt is recorded rather than failed.
 - ``service-pins``: read-only check that consumer models are pinned and loaded.
 
 Modes that start their own ``lemond`` from the packaged binary, with a
@@ -23,7 +26,7 @@ temporary cache directory, offline config, and packaged llama.cpp backends:
 from __future__ import annotations
 
 import argparse
-from collections.abc import Callable, Iterator, Mapping
+from collections.abc import Callable, Iterable, Iterator, Mapping
 import ipaddress
 import json
 import os
@@ -80,6 +83,14 @@ CONFIGURED_BUDGET_GB = 0.5
 BUSY_PROMPT = "Count upward from 1 to 5000, separated by commas: 1, 2, 3,"
 CAPACITY_RE = re.compile(r"cannot fit within effective capacity ([0-9]+(?:\.[0-9]+)?) GB")
 OWNER_RE = re.compile(r" is owned by (\S+) ")
+# Shared objects whose provenance the text scenarios prove: llama.cpp's own
+# libraries and the ROCm/HIP runtime stack a backend can pull in.
+BACKEND_LIB_RE = re.compile(
+    r"^lib(?:ggml|llama|mtmd|amdhip|hip|hsa|roc|amd_comgr|rccl|miopen)[^/]*\.so(?:\.[0-9.]+)?$",
+    re.IGNORECASE,
+)
+LLAMACPP_LIB_RE = re.compile(r"^lib(?:ggml|llama|mtmd)", re.IGNORECASE)
+HIP_RUNTIME_LIB_RE = re.compile(r"^libamdhip64\.so")
 ALTERED_RE = re.compile(r"(\d+) altered files?")
 
 
@@ -278,6 +289,91 @@ def package_owner(path: str | Path, *, runner: Runner = subprocess.run) -> str:
     return match.group(1)
 
 
+def repo_package_names(repo: str, *, runner: Runner = subprocess.run) -> set[str]:
+    return set(run_command(["pacman", "-Slq", repo], runner=runner).split())
+
+
+def mapped_libraries(pid: int, *, proc_root: Path = Path("/proc")) -> set[str]:
+    """Paths of the ROCm/HIP/ggml/llama shared objects mapped into `pid`."""
+    try:
+        text = (proc_root / str(pid) / "maps").read_text(encoding="utf-8", errors="replace")
+    except OSError as exc:
+        raise AssertionError(
+            f"backend_maps_unreadable: {exc.strerror}; run with privileges that can "
+            "read the backend process's memory map"
+        ) from None
+    paths: set[str] = set()
+    for line in text.splitlines():
+        fields = line.split(None, 5)
+        if len(fields) < 6:
+            continue
+        path = fields[5].strip().removesuffix(" (deleted)")
+        if path.startswith("/") and BACKEND_LIB_RE.match(Path(path).name):
+            paths.add(path)
+    return paths
+
+
+def _under(path: str, roots: Iterable[Path]) -> bool:
+    candidate = Path(path)
+    for root in roots:
+        for base in {root, Path(os.path.realpath(root))}:
+            if candidate.is_relative_to(base):
+                return True
+    return False
+
+
+def verify_backend_libraries(
+    paths: set[str],
+    *,
+    backend: str,
+    repo: str,
+    repo_packages: set[str],
+    cache_bins: Iterable[Path],
+    owner_of: Callable[[str], str],
+) -> None:
+    """Every mapped ROCm/HIP/ggml/llama object must come from a repo package.
+
+    With backend=rocm, lemond prepends cached TheRock lib dirs to the backend's
+    LD_LIBRARY_PATH, so a cached runtime can shadow the packaged one even when
+    the executable is packaged. Output carries counts and package names only.
+    """
+    names = [Path(path).name for path in paths]
+    print("backend_libraries", len(paths))
+    if not any(LLAMACPP_LIB_RE.match(name) for name in names):
+        raise AssertionError("backend_libraries_missing: no ggml or llama shared object is mapped")
+    if backend == "rocm" and not any(HIP_RUNTIME_LIB_RE.match(name) for name in names):
+        raise AssertionError("backend_libraries_missing: the rocm backend has no HIP runtime mapped")
+    cached = [path for path in paths if _under(path, cache_bins)]
+    print("backend_libraries_from_cache", len(cached))
+    if cached:
+        raise AssertionError(f"{len(cached)} backend libraries load from lemond's cache bin directory")
+    owners: dict[str, int] = {}
+    unowned = 0
+    llamacpp_owners: set[str] = set()
+    for path in sorted(paths):
+        try:
+            owner = owner_of(path)
+        except AssertionError:
+            unowned += 1
+            continue
+        owners[owner] = owners.get(owner, 0) + 1
+        if LLAMACPP_LIB_RE.match(Path(path).name):
+            llamacpp_owners.add(owner)
+    print("backend_libraries_unowned", unowned)
+    if unowned:
+        raise AssertionError(f"{unowned} backend libraries are not owned by any package")
+    for owner, count in sorted(owners.items()):
+        print("backend_library_package", owner, count)
+    outside = sorted(set(owners) - repo_packages)
+    if outside:
+        raise AssertionError(f"backend libraries owned by packages outside {repo}: {outside}")
+    if llamacpp_owners != {BACKEND_PACKAGES[backend]}:
+        raise AssertionError(
+            f"ggml/llama libraries are owned by {sorted(llamacpp_owners)}, not {BACKEND_PACKAGES[backend]}"
+        )
+    print("backend_libraries_repo_owned_ok")
+
+
 def parse_pacman_info(text: str) -> dict[str, str]:
     fields: dict[str, str] = {}
     key = None
@@ -303,9 +399,13 @@ def run_text(
     ctx_size: int,
     expect_checkpoint: str | None,
     expect_sha256: str | None = None,
+    repo: str = "strix-halo-gfx1151",
+    cache_bins: Iterable[Path] = (),
     owner_of: Callable[[str], str] = package_owner,
     executable_of: Callable[[int], str] = process_executable,
     digest_of: Callable[[Path], str] = file_sha256,
+    libraries_of: Callable[[int], set[str]] = mapped_libraries,
+    repo_packages_of: Callable[[str], set[str]] = repo_package_names,
 ) -> None:
     info = model_info(client, model)
     if not info.get("downloaded"):
@@ -354,6 +454,16 @@ def run_text(
         print("completion_text", json.dumps(text))
         validate_completion(text)
         print("completion_ok")
+
+        # After a completion, so lazily loaded backend libraries are mapped too.
+        verify_backend_libraries(
+            libraries_of(int(entry["pid"])),
+            backend=backend,
+            repo=repo,
+            repo_packages=repo_packages_of(repo),
+            cache_bins=cache_bins,
+            owner_of=owner_of,
+        )
     finally:
         if not was_loaded:
             client.request("POST", "/unload", {"model_name": model}, check=False)
@@ -686,7 +796,13 @@ class FetchWatch:
                 raise
             # Never mask the phase's own failure with an evidence-collection error.
 
-    def verify(self, phase: str) -> None:
+    def verify(self, phase: str, *, record_blackholed_attempt: bool = False) -> None:
+        """Fail on fetch evidence; optionally record a blackholed attempt instead.
+
+        With `record_blackholed_attempt`, download log lines and connects to the
+        loopback blackhole are printed as an observation, not a failure. Cache
+        changes and non-loopback connections still fail.
+        """
         if self.error is not None:
             raise AssertionError(f"{phase}: socket sampling failed: {self.error}")
         if not any(self.expect_log in line for line in self.journal):
@@ -697,9 +813,10 @@ class FetchWatch:
         fetch_lines = [line for line in self.journal if FETCH_LOG_RE.search(line)]
         print(f"{phase}_journal_lines", len(self.journal))
         print(f"{phase}_fetch_log_lines", len(fetch_lines))
-        if fetch_lines:
+        if fetch_lines and not record_blackholed_attempt:
             raise AssertionError(f"{phase}: the service logged {len(fetch_lines)} download or install lines")
-        print(f"{phase}_no_fetch_log_ok")
+        if not fetch_lines:
+            print(f"{phase}_no_fetch_log_ok")
         for name in self.caches:
             changes = tree_changes(self.before[name], self.after[name])
             print(f"{phase}_{name}_entries", len(self.after[name]), f"changed={len(changes)}")
@@ -711,8 +828,14 @@ class FetchWatch:
         print(f"{phase}_blackhole_connects", self.blackhole_hits)
         if self.remote:
             raise AssertionError(f"{phase}: lemond connected to {len(self.remote)} non-loopback peers")
-        if self.blackhole_hits:
+        if self.blackhole_hits and not record_blackholed_attempt:
             raise AssertionError(f"{phase}: lemond connected to the download blackhole")
+        if fetch_lines or self.blackhole_hits:
+            print(
+                f"{phase}_blackholed_fetch_attempt_recorded",
+                f"log_lines={len(fetch_lines)}",
+                f"blackhole_connects={self.blackhole_hits}",
+            )
         print(f"{phase}_no_remote_connection_ok")
 
 
@@ -737,6 +860,7 @@ def run_nofetch(
     ctx_size: int,
     expect_checkpoint: str | None,
     expect_sha256: str | None,
+    repo: str = "strix-halo-gfx1151",
     interval: float = 0.2,
     journal_timeout: float = 10.0,
     text: Callable[..., None] = run_text,
@@ -766,6 +890,8 @@ def run_nofetch(
             ctx_size=ctx_size,
             expect_checkpoint=expect_checkpoint,
             expect_sha256=expect_sha256,
+            repo=repo,
+            cache_bins=(caches["backend_cache"],),
         )
     watch.verify("preplaced")
 
@@ -788,7 +914,11 @@ def run_nofetch(
     if loaded_entry(client.get("/health"), missing_model) is not None:
         raise AssertionError(f"{missing_model} became resident after a refused load")
     print("missing_model_refused_ok")
-    watch.verify("missing")
+    # Ruling for candidate 187b4a25f: /load of a registered-but-absent model
+    # logs a download attempt even with offline=true. The phase passes when the
+    # load fails loudly, the caches are unchanged, and lemond made no
+    # non-loopback connection; a logged, blackholed attempt is recorded.
+    watch.verify("missing", record_blackholed_attempt=True)
     print("no_fetch_ok")
 
 
@@ -1230,6 +1360,8 @@ def main(argv: list[str] | None = None) -> None:
                 ctx_size=args.ctx_size,
                 expect_checkpoint=args.expect_checkpoint,
                 expect_sha256=args.expect_sha256,
+                repo=args.repo,
+                cache_bins=(ServiceHost(args.service).cache_dir() / "bin",),
             )
         elif args.mode == "nofetch":
             if not args.model:
@@ -1243,6 +1375,7 @@ def main(argv: list[str] | None = None) -> None:
                 ctx_size=args.ctx_size,
                 expect_checkpoint=args.expect_checkpoint,
                 expect_sha256=args.expect_sha256,
+                repo=args.repo,
             )
         elif args.mode == "service-pins":
             run_service_pins(client, expected=parse_expected_pins(args.expect_pin))

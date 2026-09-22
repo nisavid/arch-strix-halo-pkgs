@@ -104,7 +104,7 @@ value = "offloaded (\\d+)/\\1 layers to GPU"
 
 [[scenario]]
 id = "lemonade.llamacpp.rocm.qwen3-0.6b-q8-0.completion"
-summary = "The Lemonade service completes text with the same GGUF on the packaged HIP llama.cpp backend"
+summary = "The Lemonade service completes text with the same GGUF on the packaged HIP llama.cpp backend, and every ROCm/HIP/ggml/llama shared object the backend maps comes from a repo package"
 tags = [
   "live-validation",
   "validation-window",
@@ -167,9 +167,13 @@ value = "backend_package_ok"
 kind = "stdout.contains"
 value = "completion_ok"
 
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "backend_libraries_repo_owned_ok"
+
 [[scenario]]
 id = "lemonade.llamacpp.vulkan.qwen3-0.6b-q8-0.completion"
-summary = "The Lemonade service completes text with the same GGUF on the packaged Vulkan llama.cpp backend"
+summary = "The Lemonade service completes text with the same GGUF on the packaged Vulkan llama.cpp backend, and every ROCm/HIP/ggml/llama shared object the backend maps comes from a repo package"
 tags = [
   "live-validation",
   "validation-window",
@@ -231,6 +235,10 @@ value = "backend_package_ok"
 [[scenario.then.assert]]
 kind = "stdout.contains"
 value = "completion_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "backend_libraries_repo_owned_ok"
 
 [[scenario]]
 id = "lemonade.lifecycle.restart-config-hip-discovery"
@@ -453,7 +461,7 @@ value = "no_bundled_backend_ok"
 
 [[scenario]]
 id = "lemonade.nofetch.preplaced-load-missing-model"
-summary = "Loading a pre-placed GGUF and requesting an absent model fetch nothing: no download or install log lines, unchanged model and backend caches, and no remote connections from lemond"
+summary = "Loading a pre-placed GGUF fetches nothing, and loading an absent model fails loudly with unchanged model and backend caches and no remote connection from lemond; a logged, blackholed attempt is recorded"
 tags = [
   "live-validation",
   "validation-window",
@@ -519,6 +527,10 @@ value = "completion_ok"
 
 [[scenario.then.assert]]
 kind = "stdout.contains"
+value = "backend_libraries_repo_owned_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
 value = "preplaced_no_fetch_log_ok"
 
 [[scenario.then.assert]]
@@ -540,10 +552,6 @@ value = "missing_model_absent_ok"
 [[scenario.then.assert]]
 kind = "stdout.contains"
 value = "missing_model_refused_ok"
-
-[[scenario.then.assert]]
-kind = "stdout.contains"
-value = "missing_no_fetch_log_ok"
 
 [[scenario.then.assert]]
 kind = "stdout.contains"
