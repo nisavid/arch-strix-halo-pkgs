@@ -81,7 +81,8 @@ service. Each phase collects three kinds of evidence:
   reports only entry counts, never paths.
 - Network: `ss -tanp` is sampled throughout the phase. No socket owned by
   `lemond` or its children may have a non-loopback peer or connect to the
-  download blackhole's port.
+  download blackhole's port. Connections accepted on one of `lemond`'s
+  listening ports are client traffic, such as LAN consumers, and are ignored.
 
 In the first phase, the service loads and completes with the pre-placed test
 GGUF, using the same checks as the text scenario. In the second phase, the
