@@ -20,6 +20,7 @@ execution tickets are:
 - [Lemonade upstream-sync repackage](https://github.com/nisavid/arch-strix-halo-pkgs/issues/141)
 - [research branch, draft PR, and worktree reconciliation](https://github.com/nisavid/arch-strix-halo-pkgs/issues/142)
 - [signing and verifiability follow-up](https://github.com/nisavid/arch-strix-halo-pkgs/issues/143)
+- [upstream drift deferred by the generation C version freeze](https://github.com/nisavid/arch-strix-halo-pkgs/issues/147)
 
 Outside the resurrection scope:
 

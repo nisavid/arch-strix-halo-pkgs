@@ -38,7 +38,10 @@ Issue 105 selects C's coherent PyTorch and vLLM line within this frozen
 universe; the 2026-08-11 line pick is superseded. Lemonade is exempt from the
 freeze and follows the deployed, validated fork commit. Later upstream drift
 routes to post-closeout maintenance unless it is a security fix or a build
-breakage.
+breakage. Until C closes out, later sweeps disposition that drift as tracked to
+[the post-closeout drift issue](https://github.com/nisavid/arch-strix-halo-pkgs/issues/147);
+security fixes and build breakage are tracked to the C work unit that owns
+the family.
 
 The superseded tracked and blocked records were terminalized as rejected.
 The former `lemonade-upstream-11.5.2` blocker was closed as superseded before
