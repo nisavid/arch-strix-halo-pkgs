@@ -95,7 +95,7 @@
     "repo": "https://github.com/nisavid/lemonade.git",
     "scaffold_notes": [
       "Server/runtime package; llama.cpp backends are optdepends, not hard deps.",
-      "Pinned to nisavid/lemonade main commit 187b4a25f154ff905486b8bf85e006cd1f2a9820, whose CMake project version is 11.7.0. The pin is the lemonade entry in the [source_pins] table of policies/recipe-packages.toml, so lemonade-server and lemonade-app always build the same fork commit.",
+      "Pinned to nisavid/lemonade main commit 3d5991033e4cb28152ace4013f7f22a52c3bd617, whose CMake project version is 11.7.0. The pin is the lemonade entry in the [source_pins] table of policies/recipe-packages.toml, so lemonade-server and lemonade-app always build the same fork commit.",
       "Configures with BUILD_TESTING=OFF; upstream 11.7 includes CTest, and the distro build does not need its C++ test binaries.",
       "Uses upstream's lemond.service unit name; do not ship the pre-10.3 lemonade-server.service name in this package.",
       "Installs /etc/lemonade/conf.d/10-llamacpp-gfx1151.conf so the packaged ROCm and Vulkan llama.cpp wrapper binaries are exposed to the service as system-managed backends. lemond reads LEMONADE_LLAMACPP_*_BIN from the environment ahead of config.json on every backend lookup, so the refreshed system-managed backend patch no longer carries the older config-load environment overlay or the CLI backend-table change.",
@@ -110,7 +110,7 @@
       "SKIP"
     ],
     "source_refs": [
-      "lemonade::git+https://github.com/nisavid/lemonade.git#commit=187b4a25f154ff905486b8bf85e006cd1f2a9820"
+      "lemonade::git+https://github.com/nisavid/lemonade.git#commit=3d5991033e4cb28152ace4013f7f22a52c3bd617"
     ],
     "src_subdir": "lemonade",
     "template": "lemonade-server",

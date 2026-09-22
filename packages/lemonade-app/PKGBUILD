@@ -18,7 +18,7 @@ options=()
 provides=(lemonade-desktop)
 conflicts=(lemonade-desktop)
 replaces=(lemonade-desktop)
-source=('lemonade::git+https://github.com/nisavid/lemonade.git#commit=187b4a25f154ff905486b8bf85e006cd1f2a9820' 0001-keep-tauri-glib-on-webkit-compatible-series.patch)
+source=('lemonade::git+https://github.com/nisavid/lemonade.git#commit=3d5991033e4cb28152ace4013f7f22a52c3bd617' 0001-keep-tauri-glib-on-webkit-compatible-series.patch)
 sha256sums=(SKIP a1206e0fedcdaa87a725719cade8a499aaaa401bce0c9a5442bc57f95e0be177)
 
 _apply_patch_if_needed() {
