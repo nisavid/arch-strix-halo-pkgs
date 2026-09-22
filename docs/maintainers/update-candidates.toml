@@ -2115,19 +2115,18 @@ check_id = "pypi"
 previous_recorded = "1.13.0"
 latest = "1.14.0"
 discovery_status = "stable_update_available"
-disposition = "tracked"
-disposition_reason = "Reconciled on 2026-08-12. Keep accelerate 1.14.0 tracked until W0 regenerates the selected PyTorch/vLLM dependency closure and either assigns it to W2A or records a non-core disposition."
+disposition = "rejected"
+disposition_reason = "Superseded by accelerate-1.15.0-pypi from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep."
 salient_changes = [
   "PyPI accelerate 1.14.0 is available after the adopted 1.13.0 package lane",
   "Package source update, build, deploy/install, installed import smoke, and affected helper review remain open",
 ]
 patch_carry_overlap = false
-package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "github_issue"
-next_gate_issue = 105
-next_gate_label = "accelerate 1.14.0 W0 closure review"
-last_reviewed = "2026-08-12"
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_label = "Superseded by accelerate-1.15.0-pypi"
+last_reviewed = "2026-09-22"
 
 [candidates."aiohttp-3.14.1-pypi"]
 family = "aiohttp"
@@ -2573,20 +2572,19 @@ check_id = "master"
 previous_recorded = "b94b985586a051fbee19aefe8c934bb7c1a9df0a"
 latest = "ef3f901b7e76d96091c5a6b02966fcb3eafcb057"
 discovery_status = "branch_head_ahead"
-disposition = "tracked"
-disposition_reason = "Reconciled on 2026-08-12. Keep Torch-MIGraphX as a supported extension blocked by the final W1 foundation and W2A PyTorch closure, not as a convergence blocker."
+disposition = "rejected"
+disposition_reason = "Superseded by torch-migraphx-5afb9ff from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep."
 salient_changes = [
   "Torch-MIGraphX master moved from b94b985586a051fbee19aefe8c934bb7c1a9df0a to ef3f901b7e76d96091c5a6b02966fcb3eafcb057",
   "The release tag baseline remains v1.1",
   "Package source update, build, deploy/install, installed import smoke, and affected compiled scenario validation remain open",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "github_issue"
-next_gate_issue = 118
-next_gate_label = "Torch-MIGraphX ef3f901 supported-extension closure"
-last_reviewed = "2026-08-12"
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_label = "Superseded by torch-migraphx-5afb9ff"
+last_reviewed = "2026-09-22"
 
 [candidates."transformers-5.12.1-pypi"]
 family = "transformers"
@@ -2665,19 +2663,18 @@ check_id = "release"
 previous_recorded = "0.1.14"
 latest = "0.1.19.post2"
 discovery_status = "stable_update_available"
-disposition = "tracked"
-disposition_reason = "Tracked from the 2026-08-12 freshness sweep as an experimental lane outside convergence. AITER 0.1.19.post2 pins source-available FlyDSL 0.3.0 but selects Triton 3.7 while the accepted PyTorch line selects Triton 3.8."
+disposition = "rejected"
+disposition_reason = "Superseded by aiter-0.1.22.post1 from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep."
 salient_changes = [
   "AITER 0.1.19.post2 is available after the adopted 0.1.14 package lane",
   "The retained experiment requires an exact source-built FlyDSL closure and explicit system-Triton boundary validation",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "github_issue"
-next_gate_issue = 119
-next_gate_label = "AITER 0.1.19.post2 experimental closure"
-last_reviewed = "2026-08-12"
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_label = "Superseded by aiter-0.1.22.post1"
+last_reviewed = "2026-09-22"
 
 [candidates."aotriton-0.13b"]
 family = "aotriton"
@@ -2690,19 +2687,18 @@ covered_checks = [{ source_kind = "arch_package", check_id = "arch" }]
 previous_recorded = "0.12b / 0.11.2b-1"
 latest = "0.13b"
 discovery_status = "stable_update_available"
-disposition = "tracked"
-disposition_reason = "Tracked from the 2026-08-12 freshness sweep. AOTriton 0.13b is a convergence-critical W2A sibling input to the accepted PyTorch 2.13 line."
+disposition = "rejected"
+disposition_reason = "Superseded by aotriton-0.14b from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep."
 salient_changes = [
   "AOTriton 0.13b is available after the local 0.12b source lane",
   "Arch python-pytorch-triton-rocm-aotriton reports 0.13b-2",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "github_issue"
-next_gate_issue = 109
-next_gate_label = "AOTriton 0.13b W2A closure"
-last_reviewed = "2026-08-12"
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_label = "Superseded by aotriton-0.14b"
+last_reviewed = "2026-09-22"
 
 [candidates."asyncpg-0.31.0-3-arch"]
 family = "asyncpg"
@@ -2779,19 +2775,18 @@ covered_checks = [{ source_kind = "arch_package", check_id = "arch" }]
 previous_recorded = "48.0.0 / 48.0.0-1"
 latest = "50.0.0"
 discovery_status = "stable_update_available"
-disposition = "tracked"
-disposition_reason = "Tracked from the 2026-08-12 freshness sweep. W0 must choose between the repo-owned optimized wheel and a signed external prerequisite after regenerating the selected closure."
+disposition = "rejected"
+disposition_reason = "Superseded by cryptography-50.0.1-pypi from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep."
 salient_changes = [
   "PyPI cryptography 50.0.0 is available after the local 48.0.0 source lane",
   "Arch python-cryptography reports 49.0.0-1",
 ]
 patch_carry_overlap = false
-package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "github_issue"
-next_gate_issue = 105
-next_gate_label = "cryptography 50.0.0 W0 closure review"
-last_reviewed = "2026-08-12"
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_label = "Superseded by cryptography-50.0.1-pypi"
+last_reviewed = "2026-09-22"
 
 [candidates."ctranslate2-4.8.1"]
 family = "ctranslate2"
@@ -2801,19 +2796,18 @@ check_id = "release"
 previous_recorded = "4.7.2"
 latest = "4.8.1"
 discovery_status = "stable_update_available"
-disposition = "tracked"
-disposition_reason = "Tracked from the 2026-08-12 freshness sweep as an independent CTranslate2 package refresh outside the convergence graph."
+disposition = "rejected"
+disposition_reason = "Superseded by ctranslate2-4.8.2 from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep."
 salient_changes = [
   "OpenNMT CTranslate2 4.8.1 is available after the adopted 4.7.2 package lane",
   "The AUR baseline and ROCm fork scout cursor remain current",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "github_issue"
-next_gate_issue = 120
-next_gate_label = "independent CTranslate2 4.8.1 refresh"
-last_reviewed = "2026-08-12"
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_label = "Superseded by ctranslate2-4.8.2"
+last_reviewed = "2026-09-22"
 
 [candidates."duckdb-1.5.5-pypi"]
 family = "duckdb"
@@ -2848,20 +2842,19 @@ check_id = "upstream-release"
 previous_recorded = "10.7.0"
 latest = "11.5.2"
 discovery_status = "baseline_drift"
-disposition = "blocked"
-disposition_reason = "Blocked on 2026-08-12. The obsolete AUR freshness selectors are removed, but W0 must still freeze one reviewed Lemonade-fork commit and the coupled llama.cpp source before W2B package integration can proceed."
+disposition = "rejected"
+disposition_reason = "Superseded on 2026-09-22 before package adoption by lemonade-fork-187b4a2 from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep. The approved end state pins the fork candidate that nisavid/lemonade#155 freezes instead of an upstream-baseline source freeze."
 salient_changes = [
   "Canonical upstream Lemonade reports 11.5.2 after the recorded 10.7.0 baseline",
   "The recorded fork-main commit remains unchanged and cannot satisfy the settled fork-owned behavior boundary without a new reviewed source freeze",
   "The former lemonade-server and lemonade-desktop AUR package names no longer resolve and are retired as automated freshness baselines",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "github_issue"
-next_gate_issue = 105
-next_gate_label = "Lemonade 11.5.2 W0 source-freeze blocker"
-last_reviewed = "2026-08-12"
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_label = "Superseded by lemonade-fork-187b4a2 (#137)"
+last_reviewed = "2026-09-22"
 
 [candidates."llama-cpp-b10369"]
 family = "llama_cpp"
@@ -2874,20 +2867,19 @@ covered_checks = [{ source_kind = "aur", check_id = "aur-hip" }]
 previous_recorded = "b9442 / b9437-1"
 latest = "b10369"
 discovery_status = "stable_update_available"
-disposition = "tracked"
-disposition_reason = "Tracked from the 2026-08-12 forced freshness sweep. W0 must freeze one llama.cpp revision and shared patch set for the blocking W2B HIP and Vulkan package unit."
+disposition = "rejected"
+disposition_reason = "Superseded by llama-cpp-v0.4.1 from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep. Upstream reclassified b-number builds as prereleases starting with v0.2.0 on 2026-08-21, so b10369 is no longer a stable release."
 salient_changes = [
   "GitHub release b10369 is available after the adopted b9442 package lane",
   "AUR llama.cpp-hip reports b10362-1 while the Vulkan baseline remains current at b9222-1",
   "Both repo-owned variants must share one revision and patch set and pass their separate backend gates",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "github_issue"
-next_gate_issue = 113
-next_gate_label = "llama.cpp b10369 W2B closure"
-last_reviewed = "2026-08-12"
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_label = "Superseded by llama-cpp-v0.4.1"
+last_reviewed = "2026-09-22"
 
 [candidates."llmcompressor-0.13.0-pypi"]
 family = "llmcompressor"
@@ -2918,19 +2910,18 @@ check_id = "pypi"
 previous_recorded = "1.11.2"
 latest = "1.11.7"
 discovery_status = "stable_update_available"
-disposition = "tracked"
-disposition_reason = "Tracked from the 2026-08-12 freshness sweep. mistral-common 1.11.7 belongs to the accepted W2A model/runtime dependency closure."
+disposition = "rejected"
+disposition_reason = "Superseded by mistral-common-1.12.0 from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep."
 salient_changes = [
   "PyPI mistral-common 1.11.7 is available after the adopted 1.11.2 package lane",
   "The AUR python-mistral-common baseline remains at 1.8.6-1",
 ]
 patch_carry_overlap = false
-package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "github_issue"
-next_gate_issue = 110
-next_gate_label = "mistral-common 1.11.7 W2A closure"
-last_reviewed = "2026-08-12"
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_label = "Superseded by mistral-common-1.12.0"
+last_reviewed = "2026-09-22"
 
 [candidates."numpy-2.5.2-pypi"]
 family = "numpy"
@@ -2943,19 +2934,18 @@ covered_checks = [{ source_kind = "arch_package", check_id = "arch" }]
 previous_recorded = "2.4.6 / 2.4.6-1"
 latest = "2.5.2"
 discovery_status = "stable_update_available"
-disposition = "tracked"
-disposition_reason = "Tracked from the 2026-08-12 freshness sweep as a foundational W2A Python dependency whose exact constraints must be regenerated with the selected runtime closure."
+disposition = "rejected"
+disposition_reason = "Superseded by numpy-2.5.3-pypi from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep."
 salient_changes = [
   "PyPI NumPy 2.5.2 is available after the local 2.4.6 package lane",
   "Arch python-numpy reports 2.5.2-1",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "github_issue"
-next_gate_issue = 110
-next_gate_label = "NumPy 2.5.2 W2A closure"
-last_reviewed = "2026-08-12"
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_label = "Superseded by numpy-2.5.3-pypi"
+last_reviewed = "2026-09-22"
 
 [candidates."pillow-12.3.0-pypi"]
 family = "pillow"
@@ -2990,19 +2980,18 @@ check_id = "pypi"
 previous_recorded = "2.47.0"
 latest = "2.48.0"
 discovery_status = "baseline_drift"
-disposition = "tracked"
-disposition_reason = "Tracked from the 2026-08-12 freshness sweep. W0 must validate the selected pydantic ABI pair and decide whether pydantic-core remains repo-owned before assigning a successor lane."
+disposition = "rejected"
+disposition_reason = "Superseded by pydantic-core-2.46.5-1-arch from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep."
 salient_changes = [
   "The authoritative Arch python-pydantic-core package remains at 2.46.4-1",
   "The reviewed PyPI compatibility cursor advanced from 2.47.0 to 2.48.0",
 ]
 patch_carry_overlap = false
-package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "github_issue"
-next_gate_issue = 105
-next_gate_label = "pydantic-core 2.48.0 W0 closure review"
-last_reviewed = "2026-08-12"
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_label = "Superseded by pydantic-core-2.46.5-1-arch"
+last_reviewed = "2026-09-22"
 
 [candidates."python-3.14.7-cpython"]
 family = "python"
@@ -3015,19 +3004,18 @@ covered_checks = [{ source_kind = "python_ftp", check_id = "cpython" }]
 previous_recorded = "3.14.5-1 / 3.14.6"
 latest = "3.14.6-1"
 discovery_status = "stable_update_available"
-disposition = "tracked"
-disposition_reason = "Tracked from the 2026-08-12 freshness sweep. The accepted W1 foundation establishes CPython 3.14.7 before TheRock and downstream runtime work."
+disposition = "rejected"
+disposition_reason = "Superseded by python-3.14.7-1-arch from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep."
 salient_changes = [
   "Arch core/python reports 3.14.6-1 after the recorded 3.14.5-1 baseline",
   "CPython reports 3.14.7 after the local 3.14.6 source lane",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "github_issue"
-next_gate_issue = 108
-next_gate_label = "CPython 3.14.7 W1 foundation"
-last_reviewed = "2026-08-12"
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_label = "Superseded by python-3.14.7-1-arch"
+last_reviewed = "2026-09-22"
 
 [candidates."rocm-pytorch-release-2.13-e5cb54f"]
 family = "rocm_pytorch"
@@ -3040,19 +3028,18 @@ covered_checks = [{ source_kind = "arch_package", check_id = "arch" }]
 previous_recorded = "c7badbdf3d33d945a0ed4536aac5303bc933e6ee / 2.12.0-4"
 latest = "e5cb54f4b2ea2e0d9a70e6eb63b851b935c6dbd0"
 discovery_status = "branch_head_ahead"
-disposition = "tracked"
-disposition_reason = "Tracked from the 2026-08-12 freshness sweep. The immutable W2A source freeze must select the accepted ROCm PyTorch 2.13 line together with Triton 3.8 and AOTriton 0.13b."
+disposition = "rejected"
+disposition_reason = "Superseded by rocm-pytorch-release-2.12-13da086 from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep."
 salient_changes = [
   "The selected ROCm PyTorch release branch reports e5cb54f4b2ea2e0d9a70e6eb63b851b935c6dbd0 after the adopted release/2.12 cursor",
   "Arch python-pytorch-opt-rocm reports 2.13.0-4",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "github_issue"
-next_gate_issue = 109
-next_gate_label = "ROCm PyTorch 2.13 W2A closure"
-last_reviewed = "2026-08-12"
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_label = "Superseded by rocm-pytorch-release-2.12-13da086"
+last_reviewed = "2026-09-22"
 
 [candidates."sentencepiece-0.2.2-pypi"]
 family = "sentencepiece"
@@ -3090,20 +3077,19 @@ covered_checks = [{ source_kind = "aur", check_id = "aur-vulkan" }]
 previous_recorded = "be65ac7511b30379b003626c15224798929e33d4 / r279.49d6570-1"
 latest = "bcc7e29568b94a25f78e99d34a8fa048d77536b1"
 discovery_status = "branch_head_ahead"
-disposition = "tracked"
-disposition_reason = "Tracked from the 2026-08-12 forced freshness sweep as an independent stable-diffusion.cpp package refresh outside the convergence graph."
+disposition = "rejected"
+disposition_reason = "Superseded by stable-diffusion-cpp-c92d73c from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep."
 salient_changes = [
   "stable-diffusion.cpp master reports bcc7e29568b94a25f78e99d34a8fa048d77536b1 after the recorded package source",
   "The AUR Vulkan baseline reports r786.cfd4cff-1",
   "The source and recursive submodule delta require review before package adoption",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "github_issue"
-next_gate_issue = 121
-next_gate_label = "independent stable-diffusion.cpp bcc7e29 refresh"
-last_reviewed = "2026-08-12"
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_label = "Superseded by stable-diffusion-cpp-c92d73c"
+last_reviewed = "2026-09-22"
 
 [candidates."therock-7.14-stable"]
 family = "therock"
@@ -3114,19 +3100,18 @@ covered_checks = [{ source_kind = "submodule", check_id = "ai-notes" }]
 previous_recorded = "7.13 / 3f15f9f1318491c9ee03782d8b2ebd41391de118"
 latest = "7.14"
 discovery_status = "stable_update_available"
-disposition = "tracked"
-disposition_reason = "Tracked from the 2026-08-12 freshness sweep. W1 must stage, render, own, build, sign, and validate the complete TheRock 7.14 payload as one foundation family."
+disposition = "rejected"
+disposition_reason = "Superseded by therock-7.14.1-stable from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep."
 salient_changes = [
   "TheRock 7.14 is available after the adopted 7.13 foundation",
   "The Blackcat ai-notes cursor remains dbfb70efc26fccf6ab2b00ee60ff0c96d37d37b0 and is reviewed as a separate script-only input rather than an adopted source bump",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "github_issue"
-next_gate_issue = 108
-next_gate_label = "TheRock 7.14 W1 foundation"
-last_reviewed = "2026-08-12"
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_label = "Superseded by therock-7.14.1-stable"
+last_reviewed = "2026-09-22"
 
 [candidates."torchao-0.18.0-pypi"]
 family = "torchao"
@@ -3162,19 +3147,18 @@ covered_checks = [{ source_kind = "aur", check_id = "aur" }]
 previous_recorded = "0.27.0 / 0.27.0-1"
 latest = "0.28.0"
 discovery_status = "stable_update_available"
-disposition = "tracked"
-disposition_reason = "Tracked from the 2026-08-12 freshness sweep. TorchVision 0.28 is the accepted W2A consumer built after PyTorch 2.13."
+disposition = "rejected"
+disposition_reason = "Superseded by torchvision-0.29.0 from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep."
 salient_changes = [
   "TorchVision 0.28.0 is available after the local 0.27.0 package lane",
   "The AUR baseline reports 0.28.0-1",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "github_issue"
-next_gate_issue = 111
-next_gate_label = "TorchVision 0.28 W2A closure"
-last_reviewed = "2026-08-12"
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_label = "Superseded by torchvision-0.29.0"
+last_reviewed = "2026-09-22"
 
 [candidates."transformers-5.15.0-pypi"]
 family = "transformers"
@@ -3185,19 +3169,18 @@ covered_checks = [{ source_kind = "github_tags", check_id = "tag" }]
 previous_recorded = "5.8.1"
 latest = "5.15.0"
 discovery_status = "stable_update_available"
-disposition = "tracked"
-disposition_reason = "Tracked from the 2026-08-12 freshness sweep. Transformers 5.15 is part of the accepted W2A model/runtime dependency closure."
+disposition = "rejected"
+disposition_reason = "Superseded by transformers-5.17.0-pypi from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep."
 salient_changes = [
   "PyPI and the upstream tag report Transformers 5.15.0 after the local 5.8.1 package lane",
   "The selected line excludes llmcompressor 0.13.0 because that release caps Transformers at 5.14.1",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "github_issue"
-next_gate_issue = 110
-next_gate_label = "Transformers 5.15.0 W2A closure"
-last_reviewed = "2026-08-12"
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_label = "Superseded by transformers-5.17.0-pypi"
+last_reviewed = "2026-09-22"
 
 [candidates."vllm-0.27.1"]
 family = "vllm"
@@ -3207,19 +3190,18 @@ check_id = "release"
 previous_recorded = "0.21.0"
 latest = "0.27.1"
 discovery_status = "stable_update_available"
-disposition = "tracked"
-disposition_reason = "Tracked from the 2026-08-12 freshness sweep. vLLM 0.27.1 is the current release in the accepted 0.27 W2A line and must build last after the complete dependency closure."
+disposition = "rejected"
+disposition_reason = "Superseded by vllm-0.30.0 from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep."
 salient_changes = [
   "vLLM 0.27.1 is available after the local 0.21.0 package lane",
   "The AUR python-vllm baseline remains current at 0.12.0-1 and is advisory only",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "github_issue"
-next_gate_issue = 111
-next_gate_label = "vLLM 0.27.1 W2A closure"
-last_reviewed = "2026-08-12"
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_label = "Superseded by vllm-0.30.0"
+last_reviewed = "2026-09-22"
 
 [candidates."yarl-1.24.5-pypi"]
 family = "yarl"
@@ -3229,19 +3211,18 @@ check_id = "pypi"
 previous_recorded = "1.24.2"
 latest = "1.24.5"
 discovery_status = "stable_update_available"
-disposition = "tracked"
-disposition_reason = "Tracked from the 2026-08-12 freshness sweep. W0 must confirm yarl through the selected aiohttp dependency closure before W2A assignment."
+disposition = "rejected"
+disposition_reason = "Superseded by yarl-1.25.1-pypi from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep."
 salient_changes = [
   "PyPI yarl 1.24.5 is available after the adopted 1.24.2 package lane",
   "The current package is a direct repo-owned dependency of aiohttp",
 ]
 patch_carry_overlap = false
-package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "github_issue"
-next_gate_issue = 105
-next_gate_label = "yarl 1.24.5 W0 closure review"
-last_reviewed = "2026-08-12"
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_label = "Superseded by yarl-1.25.1-pypi"
+last_reviewed = "2026-09-22"
 
 [candidates."zstandard-0.25.0-3-arch"]
 family = "zstandard"
@@ -3273,20 +3254,19 @@ check_id = "release-branch"
 previous_recorded = "0ec280cf80dd91e9a86887981a670f2d4541a32b"
 latest = "4cff872ced001ea92d9fcf05b3f6517e2b486d19"
 discovery_status = "branch_head_ahead"
-disposition = "tracked"
-disposition_reason = "Tracked as the exact ROCm Triton 3.8 source selected by the accepted PyTorch 2.13 W2A line. The stale main_perf package source must not be treated as current merely because that branch stopped moving."
+disposition = "rejected"
+disposition_reason = "Superseded by triton-3.8.x-669b31a from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep."
 salient_changes = [
   "ROCm PyTorch 2.13 pins ROCm Triton 3.8.0 commit 4cff872ced001ea92d9fcf05b3f6517e2b486d19",
   "The selected release/internal/3.8.x lane replaces the stale main_perf source cursor",
   "The exact compatible LLVM source closure and local patch carry still require implementation review",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "github_issue"
-next_gate_issue = 109
-next_gate_label = "ROCm Triton 3.8 W2A closure"
-last_reviewed = "2026-08-12"
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_label = "Superseded by triton-3.8.x-669b31a"
+last_reviewed = "2026-09-22"
 
 [candidates."compressed-tensors-0.17.0-selected"]
 family = "compressed_tensors"
@@ -3296,17 +3276,686 @@ check_id = "pypi"
 previous_recorded = "0.16.0"
 latest = "0.17.0"
 discovery_status = "stable_update_available"
-disposition = "tracked"
-disposition_reason = "Tracked as the exact compressed-tensors dependency selected by vLLM 0.27. The separately reviewed 0.18.0 candidate remains rejected for this convergence line."
+disposition = "rejected"
+disposition_reason = "Superseded by compressed-tensors-0.19.0-pypi from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep."
 salient_changes = [
   "vLLM 0.27 requires compressed-tensors 0.17.0 exactly",
   "The current local package remains at 0.16.0",
   "The newer compressed-tensors 0.18.0 line is not a substitute for the selected dependency",
 ]
 patch_carry_overlap = false
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_label = "Superseded by compressed-tensors-0.19.0-pypi"
+last_reviewed = "2026-09-22"
+
+[candidates."therock-7.14.1-stable"]
+family = "therock"
+packages = ["therock-gfx1151"]
+source_kind = "github_release"
+check_id = "release"
+covered_checks = [{ source_kind = "submodule", check_id = "ai-notes" }]
+previous_recorded = "7.13 / 3f15f9f1318491c9ee03782d8b2ebd41391de118"
+latest = "7.14.1"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep for candidate generation C. W1 foundation F (#108: CPython 3.14.x, TheRock 7.14.x, MIGraphX 2.16) must stage, render, own, build, and validate the complete TheRock 7.14.1 payload as one foundation family."
+salient_changes = [
+  "TheRock 7.14.1 is the newest stable release after the adopted 7.13 foundation and the previously tracked 7.14",
+  "The Blackcat ai-notes cursor still reports dbfb70efc26fccf6ab2b00ee60ff0c96d37d37b0 after the recorded 3f15f9f1318491c9ee03782d8b2ebd41391de118; it is reviewed with the foundation as a script-only input",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "github_issue"
+next_gate_issue = 108
+next_gate_label = "TheRock 7.14.1 W1 foundation"
+last_reviewed = "2026-09-22"
+
+[candidates."python-3.14.7-1-arch"]
+family = "python"
+packages = ["python-gfx1151"]
+source_kind = "arch_package"
+check_id = "arch"
+baseline_source_kind = "python_ftp"
+baseline_latest = "3.14.7"
+covered_checks = [{ source_kind = "python_ftp", check_id = "cpython" }]
+previous_recorded = "3.14.5-1 / 3.14.6"
+latest = "3.14.7-1"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep for candidate generation C. W1 foundation F (#108) establishes CPython 3.14.7 before TheRock and downstream runtime work."
+salient_changes = [
+  "Arch core/python reports 3.14.7-1 after the recorded 3.14.5-1 baseline",
+  "CPython reports 3.14.7 after the local 3.14.6 source lane",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "github_issue"
+next_gate_issue = 108
+next_gate_label = "CPython 3.14.7 W1 foundation"
+last_reviewed = "2026-09-22"
+
+[candidates."rocm-pytorch-release-2.12-13da086"]
+family = "rocm_pytorch"
+packages = ["python-pytorch-opt-rocm-gfx1151"]
+source_kind = "git_ref"
+check_id = "release-branch"
+baseline_source_kind = "arch_package"
+baseline_latest = "2.14.0-1"
+covered_checks = [{ source_kind = "arch_package", check_id = "arch" }]
+previous_recorded = "c7badbdf3d33d945a0ed4536aac5303bc933e6ee / 2.12.0-4"
+latest = "13da08625e0d25586351146b4c444f5263997ef8"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep for candidate generation C. #105 selects C's coherent line within the 2026-09-22 frozen universe and rejects or rehomes records outside the selected line. This frozen universe supersedes the 2026-08-11 pick (ROCm PyTorch 2.13, Triton 3.8, AOTriton 0.13b, TorchVision 0.28, vLLM 0.27, Transformers 5.15, and compressed-tensors 0.17.0)."
+salient_changes = [
+  "The policy's ROCm PyTorch release/2.12 cursor moved from c7badbdf3d33d945a0ed4536aac5303bc933e6ee to 13da08625e0d25586351146b4c444f5263997ef8",
+  "Arch python-pytorch-opt-rocm reports 2.14.0-1 after the recorded 2.12.0-4 baseline",
+  "The 2026-08-11 ROCm PyTorch 2.13 pick is superseded; #105 selects C's PyTorch release line",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "github_issue"
+next_gate_issue = 105
+next_gate_label = "ROCm PyTorch 13da086 C line selection"
+last_reviewed = "2026-09-22"
+
+[candidates."triton-3.8.x-669b31a"]
+family = "triton"
+packages = ["python-triton-gfx1151"]
+source_kind = "git_ref"
+check_id = "release-branch"
+previous_recorded = "4cff872ced001ea92d9fcf05b3f6517e2b486d19"
+latest = "669b31acc1dd1b3fd93286afd5db67f65d9f7557"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep for candidate generation C. #105 selects C's coherent line within the 2026-09-22 frozen universe and rejects or rehomes records outside the selected line. This frozen universe supersedes the 2026-08-11 pick (ROCm PyTorch 2.13, Triton 3.8, AOTriton 0.13b, TorchVision 0.28, vLLM 0.27, Transformers 5.15, and compressed-tensors 0.17.0)."
+salient_changes = [
+  "ROCm Triton release/internal/3.8.x moved from 4cff872ced001ea92d9fcf05b3f6517e2b486d19 to 669b31acc1dd1b3fd93286afd5db67f65d9f7557",
+  "The packaged main_perf cursor and Arch python-triton 3.5.1-4 baseline are unchanged",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "github_issue"
+next_gate_issue = 105
+next_gate_label = "Triton 669b31a C line selection"
+last_reviewed = "2026-09-22"
+
+[candidates."aotriton-0.14b"]
+family = "aotriton"
+packages = ["python-aotriton-gfx1151"]
+source_kind = "github_release"
+check_id = "release"
+baseline_source_kind = "arch_package"
+baseline_latest = "0.13b-2"
+covered_checks = [{ source_kind = "arch_package", check_id = "arch" }]
+previous_recorded = "0.12b / 0.11.2b-1"
+latest = "0.14b"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep for candidate generation C. #105 selects C's coherent line within the 2026-09-22 frozen universe and rejects or rehomes records outside the selected line. This frozen universe supersedes the 2026-08-11 pick (ROCm PyTorch 2.13, Triton 3.8, AOTriton 0.13b, TorchVision 0.28, vLLM 0.27, Transformers 5.15, and compressed-tensors 0.17.0)."
+salient_changes = [
+  "AOTriton 0.14b is the newest stable release after the local 0.12b lane and the previously tracked 0.13b",
+  "Arch aotriton reports 0.13b-2 after the recorded 0.11.2b-1 baseline",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "github_issue"
+next_gate_issue = 105
+next_gate_label = "AOTriton 0.14b C line selection"
+last_reviewed = "2026-09-22"
+
+[candidates."torchvision-0.29.0"]
+family = "torchvision"
+packages = ["python-torchvision-rocm-gfx1151"]
+source_kind = "github_release"
+check_id = "release"
+baseline_source_kind = "aur"
+baseline_latest = "0.29.0-1"
+covered_checks = [{ source_kind = "aur", check_id = "aur" }]
+previous_recorded = "0.27.0 / 0.27.0-1"
+latest = "0.29.0"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep for candidate generation C. #105 selects C's coherent line within the 2026-09-22 frozen universe and rejects or rehomes records outside the selected line. This frozen universe supersedes the 2026-08-11 pick (ROCm PyTorch 2.13, Triton 3.8, AOTriton 0.13b, TorchVision 0.28, vLLM 0.27, Transformers 5.15, and compressed-tensors 0.17.0)."
+salient_changes = [
+  "TorchVision 0.29.0 is the newest stable release after the local 0.27.0 lane and the previously tracked 0.28.0",
+  "The AUR baseline reports 0.29.0-1 after the recorded 0.27.0-1",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "github_issue"
+next_gate_issue = 105
+next_gate_label = "TorchVision 0.29.0 C line selection"
+last_reviewed = "2026-09-22"
+
+[candidates."vllm-0.30.0"]
+family = "vllm"
+packages = ["python-vllm-rocm-gfx1151"]
+source_kind = "github_release"
+check_id = "release"
+previous_recorded = "0.21.0"
+latest = "0.30.0"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep for candidate generation C. #105 selects C's coherent line within the 2026-09-22 frozen universe and rejects or rehomes records outside the selected line. This frozen universe supersedes the 2026-08-11 pick (ROCm PyTorch 2.13, Triton 3.8, AOTriton 0.13b, TorchVision 0.28, vLLM 0.27, Transformers 5.15, and compressed-tensors 0.17.0)."
+salient_changes = [
+  "vLLM 0.30.0 is the newest stable release after the local 0.21.0 lane and the previously tracked 0.27.1",
+  "The AUR vLLM baseline remains at 0.12.0-1",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "github_issue"
+next_gate_issue = 105
+next_gate_label = "vLLM 0.30.0 C line selection"
+last_reviewed = "2026-09-22"
+
+[candidates."transformers-5.17.0-pypi"]
+family = "transformers"
+packages = ["python-transformers-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+covered_checks = [{ source_kind = "github_tags", check_id = "tag" }]
+previous_recorded = "5.8.1"
+latest = "5.17.0"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep for candidate generation C. #105 selects C's coherent line within the 2026-09-22 frozen universe and rejects or rehomes records outside the selected line. This frozen universe supersedes the 2026-08-11 pick (ROCm PyTorch 2.13, Triton 3.8, AOTriton 0.13b, TorchVision 0.28, vLLM 0.27, Transformers 5.15, and compressed-tensors 0.17.0)."
+salient_changes = [
+  "PyPI and the upstream tag report Transformers 5.17.0 after the local 5.8.1 lane and the previously tracked 5.15.0",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "github_issue"
+next_gate_issue = 105
+next_gate_label = "Transformers 5.17.0 C line selection"
+last_reviewed = "2026-09-22"
+
+[candidates."compressed-tensors-0.19.0-pypi"]
+family = "compressed_tensors"
+packages = ["python-compressed-tensors-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+previous_recorded = "0.16.0"
+latest = "0.19.0"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep for candidate generation C. #105 selects C's coherent line within the 2026-09-22 frozen universe and rejects or rehomes records outside the selected line. This frozen universe supersedes the 2026-08-11 pick (ROCm PyTorch 2.13, Triton 3.8, AOTriton 0.13b, TorchVision 0.28, vLLM 0.27, Transformers 5.15, and compressed-tensors 0.17.0)."
+salient_changes = [
+  "PyPI compressed-tensors 0.19.0 is available after the local 0.16.0 lane and the previously selected 0.17.0",
+  "The selected C line decides the exact compressed-tensors version its vLLM consumer requires",
+]
+patch_carry_overlap = false
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "github_issue"
+next_gate_issue = 105
+next_gate_label = "compressed-tensors 0.19.0 C line selection"
+last_reviewed = "2026-09-22"
+
+[candidates."numpy-2.5.3-pypi"]
+family = "numpy"
+packages = ["python-numpy-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+baseline_source_kind = "arch_package"
+baseline_latest = "2.5.3-1"
+covered_checks = [{ source_kind = "arch_package", check_id = "arch" }]
+previous_recorded = "2.4.6 / 2.4.6-1"
+latest = "2.5.3"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep for candidate generation C. The W2A model dependency closure (#110) keeps ownership of NumPy."
+salient_changes = [
+  "PyPI NumPy 2.5.3 is available after the local 2.4.6 lane and the previously tracked 2.5.2",
+  "Arch python-numpy reports 2.5.3-1",
+]
+patch_carry_overlap = true
 package_source_update_needed = true
 host_validation_needed = true
 next_gate_kind = "github_issue"
 next_gate_issue = 110
-next_gate_label = "compressed-tensors 0.17.0 W2A closure"
-last_reviewed = "2026-08-12"
+next_gate_label = "NumPy 2.5.3 W2A closure"
+last_reviewed = "2026-09-22"
+
+[candidates."mistral-common-1.12.0"]
+family = "mistral_common"
+packages = ["python-mistral-common-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+previous_recorded = "1.11.2"
+latest = "1.12.0"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep for candidate generation C. The W2A model dependency closure (#110) keeps ownership of mistral-common."
+salient_changes = [
+  "PyPI mistral-common 1.12.0 is available after the local 1.11.2 lane and the previously tracked 1.11.7",
+  "The AUR baseline remains at 1.8.6-1",
+]
+patch_carry_overlap = false
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "github_issue"
+next_gate_issue = 110
+next_gate_label = "mistral-common 1.12.0 W2A closure"
+last_reviewed = "2026-09-22"
+
+[candidates."accelerate-1.15.0-pypi"]
+family = "accelerate"
+packages = ["python-accelerate-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+previous_recorded = "1.13.0"
+latest = "1.15.0"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep for candidate generation C. W0 closure review (#105) decides whether Accelerate remains in C's regenerated dependency closure."
+salient_changes = [
+  "PyPI Accelerate 1.15.0 is available after the local 1.13.0 lane and the previously tracked 1.14.0",
+]
+patch_carry_overlap = false
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "github_issue"
+next_gate_issue = 105
+next_gate_label = "Accelerate 1.15.0 W0 closure review"
+last_reviewed = "2026-09-22"
+
+[candidates."cryptography-50.0.1-pypi"]
+family = "cryptography"
+packages = ["python-cryptography-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+baseline_source_kind = "arch_package"
+baseline_latest = "50.0.1-1"
+covered_checks = [{ source_kind = "arch_package", check_id = "arch" }]
+previous_recorded = "48.0.0 / 48.0.0-1"
+latest = "50.0.1"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep for candidate generation C. W0 closure review (#105) decides whether cryptography remains in C's regenerated dependency closure."
+salient_changes = [
+  "PyPI cryptography 50.0.1 is available after the local 48.0.0 lane and the previously tracked 50.0.0",
+  "Arch python-cryptography reports 50.0.1-1",
+  "Security-relevant: cryptography 50.0.0 fixes CVE-2026-69247, a Bleichenbacher oracle in PKCS#7 decryption of untrusted messages; 50.0.1 only rebuilds upstream wheels against OpenSSL 4.0.2",
+]
+patch_carry_overlap = false
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "github_issue"
+next_gate_issue = 105
+next_gate_label = "cryptography 50.0.1 W0 closure review"
+last_reviewed = "2026-09-22"
+
+[candidates."pydantic-core-2.46.5-1-arch"]
+family = "pydantic_core"
+packages = ["python-pydantic-core-gfx1151"]
+source_kind = "arch_package"
+check_id = "arch"
+baseline_source_kind = "pypi"
+baseline_latest = "2.49.0"
+covered_checks = [{ source_kind = "pypi", check_id = "pypi" }]
+previous_recorded = "2.46.4-1 / 2.47.0"
+latest = "2.46.5-1"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep for candidate generation C. W0 closure review (#105) decides whether pydantic-core remains in C's regenerated dependency closure."
+salient_changes = [
+  "Arch python-pydantic-core reports 2.46.5-1 after the recorded 2.46.4-1 source baseline",
+  "PyPI pydantic_core reports 2.49.0 after the recorded 2.47.0 and the previously tracked 2.48.0",
+]
+patch_carry_overlap = false
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "github_issue"
+next_gate_issue = 105
+next_gate_label = "pydantic-core 2.46.5-1 W0 closure review"
+last_reviewed = "2026-09-22"
+
+[candidates."yarl-1.25.1-pypi"]
+family = "yarl"
+packages = ["python-yarl-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+previous_recorded = "1.24.2"
+latest = "1.25.1"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep for candidate generation C. W0 closure review (#105) decides whether yarl remains in C's regenerated dependency closure."
+salient_changes = [
+  "PyPI yarl 1.25.1 is available after the local 1.24.2 lane and the previously tracked 1.24.5",
+]
+patch_carry_overlap = false
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "github_issue"
+next_gate_issue = 105
+next_gate_label = "yarl 1.25.1 W0 closure review"
+last_reviewed = "2026-09-22"
+
+[candidates."multidict-6.9.1-pypi"]
+family = "multidict"
+packages = ["python-multidict-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+previous_recorded = "6.7.1"
+latest = "6.9.1"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep for candidate generation C. W0 closure review (#105) decides whether multidict remains in C's regenerated dependency closure."
+salient_changes = [
+  "PyPI multidict 6.9.1 is available after the local 6.7.1 lane",
+]
+patch_carry_overlap = false
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "github_issue"
+next_gate_issue = 105
+next_gate_label = "multidict 6.9.1 W0 closure review"
+last_reviewed = "2026-09-22"
+
+[candidates."orjson-3.12.0-pypi"]
+family = "orjson"
+packages = ["python-orjson-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+baseline_source_kind = "arch_package"
+baseline_latest = "3.12.0-1"
+covered_checks = [{ source_kind = "arch_package", check_id = "arch" }]
+previous_recorded = "3.11.9 / 3.11.8-1"
+latest = "3.12.0"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep for candidate generation C. W0 closure review (#105) decides whether orjson remains in C's regenerated dependency closure."
+salient_changes = [
+  "PyPI orjson 3.12.0 is available after the local 3.11.9 lane",
+  "Arch python-orjson reports 3.12.0-1 after the recorded 3.11.8-1",
+]
+patch_carry_overlap = false
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "github_issue"
+next_gate_issue = 105
+next_gate_label = "orjson 3.12.0 W0 closure review"
+last_reviewed = "2026-09-22"
+
+[candidates."watchfiles-1.3.0-pypi"]
+family = "watchfiles"
+packages = ["python-watchfiles-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+previous_recorded = "1.2.0"
+latest = "1.3.0"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep for candidate generation C. W0 closure review (#105) decides whether watchfiles remains in C's regenerated dependency closure."
+salient_changes = [
+  "PyPI watchfiles 1.3.0 is available after the local 1.2.0 lane",
+]
+patch_carry_overlap = false
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "github_issue"
+next_gate_issue = 105
+next_gate_label = "watchfiles 1.3.0 W0 closure review"
+last_reviewed = "2026-09-22"
+
+[candidates."tokenizers-0.23.2-pypi"]
+family = "tokenizers"
+packages = ["python-tokenizers-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+previous_recorded = "0.23.1"
+latest = "0.23.2"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep for candidate generation C. W0 closure review (#105) decides whether tokenizers remains in C's regenerated dependency closure."
+salient_changes = [
+  "PyPI tokenizers 0.23.2 is available after the local 0.23.1 lane",
+]
+patch_carry_overlap = false
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "github_issue"
+next_gate_issue = 105
+next_gate_label = "tokenizers 0.23.2 W0 closure review"
+last_reviewed = "2026-09-22"
+
+[candidates."aocl-libm-5.3.2"]
+family = "aocl_libm"
+packages = ["aocl-libm-gfx1151"]
+source_kind = "github_release"
+check_id = "release"
+previous_recorded = "5.3"
+latest = "5.3.2"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep for candidate generation C. W0 closure review (#105) decides whether AOCL-LibM remains in C's regenerated dependency closure."
+salient_changes = [
+  "AOCL-LibM 5.3.2 is the newest stable release after the adopted 5.3 lane",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "github_issue"
+next_gate_issue = 105
+next_gate_label = "AOCL-LibM 5.3.2 W0 closure review"
+last_reviewed = "2026-09-22"
+
+[candidates."aocl-utils-5.3.2"]
+family = "aocl_utils"
+packages = ["aocl-utils-gfx1151"]
+source_kind = "github_release"
+check_id = "release"
+baseline_source_kind = "aur"
+baseline_latest = "1:5.3.2-1"
+covered_checks = [{ source_kind = "aur", check_id = "aur" }]
+previous_recorded = "5.3 / 1:5.3-1"
+latest = "5.3.2"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep for candidate generation C. W0 closure review (#105) decides whether AOCL-Utils remains in C's regenerated dependency closure."
+salient_changes = [
+  "AOCL-Utils 5.3.2 is the newest stable release after the adopted 5.3 lane",
+  "The AUR baseline reports 1:5.3.2-1 after the recorded 1:5.3-1",
+]
+patch_carry_overlap = false
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "github_issue"
+next_gate_issue = 105
+next_gate_label = "AOCL-Utils 5.3.2 W0 closure review"
+last_reviewed = "2026-09-22"
+
+[candidates."aiter-0.1.22.post1"]
+family = "aiter"
+packages = ["python-amd-aiter-gfx1151"]
+source_kind = "github_release"
+check_id = "release"
+previous_recorded = "0.1.14"
+latest = "0.1.22.post1"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep for candidate generation C. AITER stays a nonblocking documented-hold lane: #119 owns the AITER and FlyDSL experimental closure, which does not block C."
+salient_changes = [
+  "AITER 0.1.22.post1 is the newest stable release after the local 0.1.14 lane and the previously tracked 0.1.19.post2",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "github_issue"
+next_gate_issue = 119
+next_gate_label = "AITER 0.1.22.post1 experimental closure"
+last_reviewed = "2026-09-22"
+
+[candidates."ctranslate2-4.8.2"]
+family = "ctranslate2"
+packages = ["ctranslate2-gfx1151"]
+source_kind = "github_release"
+check_id = "release"
+previous_recorded = "4.7.2"
+latest = "4.8.2"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep for candidate generation C. CTranslate2 stays a nonblocking documented-hold lane: #120 owns the independent CTranslate2 refresh, which does not block C."
+salient_changes = [
+  "CTranslate2 4.8.2 is the newest stable release after the local 4.7.2 lane and the previously tracked 4.8.1",
+  "The AUR baseline and the ROCm fork scout cursor are unchanged",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "github_issue"
+next_gate_issue = 120
+next_gate_label = "CTranslate2 4.8.2 independent refresh"
+last_reviewed = "2026-09-22"
+
+[candidates."stable-diffusion-cpp-c92d73c"]
+family = "stable_diffusion_cpp"
+packages = ["stable-diffusion.cpp-vulkan-gfx1151"]
+source_kind = "git_ref"
+check_id = "master"
+baseline_source_kind = "aur"
+baseline_latest = "r881.17860c0-1"
+covered_checks = [{ source_kind = "aur", check_id = "aur-vulkan" }]
+previous_recorded = "be65ac7511b30379b003626c15224798929e33d4 / r279.49d6570-1"
+latest = "c92d73c408515c94beef32161bb5960764fde7a0"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep for candidate generation C. stable-diffusion.cpp stays a nonblocking documented-hold lane: #121 owns the independent stable-diffusion.cpp refresh, which does not block C."
+salient_changes = [
+  "stable-diffusion.cpp master moved from be65ac7511b30379b003626c15224798929e33d4 to c92d73c408515c94beef32161bb5960764fde7a0, past the previously tracked bcc7e29",
+  "The AUR Vulkan baseline reports r881.17860c0-1 after the recorded r279.49d6570-1",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "github_issue"
+next_gate_issue = 121
+next_gate_label = "stable-diffusion.cpp c92d73c independent refresh"
+last_reviewed = "2026-09-22"
+
+[candidates."torch-migraphx-5afb9ff"]
+family = "torch_migraphx"
+packages = ["python-torch-migraphx-gfx1151"]
+source_kind = "git_ref"
+check_id = "master"
+previous_recorded = "b94b985586a051fbee19aefe8c934bb7c1a9df0a"
+latest = "5afb9ffdd7f5489727bdfbb323f1b2584e3676c2"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep for candidate generation C. Torch-MIGraphX stays a nonblocking documented-hold lane: #118 owns the supported TorchAO and Torch-MIGraphX extensions, which does not block C."
+salient_changes = [
+  "Torch-MIGraphX master moved from b94b985586a051fbee19aefe8c934bb7c1a9df0a to 5afb9ffdd7f5489727bdfbb323f1b2584e3676c2, past the previously tracked ef3f901",
+  "The upstream tag baseline remains v1.1",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "github_issue"
+next_gate_issue = 118
+next_gate_label = "Torch-MIGraphX 5afb9ff supported-extension closure"
+last_reviewed = "2026-09-22"
+
+[candidates."auto-round-0.15.1-pypi"]
+family = "auto_round"
+packages = ["python-auto-round-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+previous_recorded = "0.13.0"
+latest = "0.15.1"
+discovery_status = "stable_update_available"
+disposition = "rejected"
+disposition_reason = "Rejected on 2026-09-22 from the freshness sweep (#136). AutoRound is an upstream-scope exclusion for this convergence line under the 2026-09-22 approved end state (#135, Out of scope)."
+salient_changes = [
+  "PyPI AutoRound 0.15.1 is available after the local 0.13.0 lane",
+]
+patch_carry_overlap = false
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_label = "Rejected; upstream-scope exclusion for this convergence line"
+last_reviewed = "2026-09-22"
+
+[candidates."llmcompressor-0.14.0-pypi"]
+family = "llmcompressor"
+packages = ["python-llmcompressor-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+previous_recorded = "0.10.0.2"
+latest = "0.14.0"
+discovery_status = "stable_update_available"
+disposition = "rejected"
+disposition_reason = "Rejected on 2026-09-22 from the freshness sweep (#136). llmcompressor is an upstream-scope exclusion for this convergence line under the 2026-09-22 approved end state (#135, Out of scope)."
+salient_changes = [
+  "PyPI llmcompressor 0.14.0 is available after the local 0.10.0.2 lane",
+]
+patch_carry_overlap = true
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_label = "Rejected; upstream-scope exclusion for this convergence line"
+last_reviewed = "2026-09-22"
+
+[candidates."lemonade-fork-187b4a2"]
+family = "lemonade"
+packages = ["lemonade-server", "lemonade-app", "lemonade"]
+source_kind = "git_ref"
+check_id = "fork-main"
+baseline_source_kind = "github_release"
+baseline_latest = "11.9.0"
+covered_checks = [{ source_kind = "github_release", check_id = "upstream-release" }]
+previous_recorded = "e18b9c1e352df8ab5aff2ff353402f1ec77c47f2 / 10.7.0"
+latest = "187b4a25f154ff905486b8bf85e006cd1f2a9820"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-09-22 freshness sweep (#136). Lemonade is exempt from the #105 freeze for candidate generation C and follows the deployed, validated commit. The Lemonade repin (#137) consumes the fork candidate frozen by nisavid/lemonade#155 as an exact fork main commit pin with no fork tag. The upstream 11.9.0 baseline drift routes to the upstream-sync repackage (#141)."
+salient_changes = [
+  "Fork main 187b4a25f154ff905486b8bf85e006cd1f2a9820 is upstream v11.7.0 (2b6a7d77c71e551736f6cc8473dc46f479cd156b) plus 230 fork commits",
+  "The fork's upstream-stable ref already points at exact v11.7.0",
+  "Canonical upstream Lemonade reports 11.9.0; fork main is 85 commits behind it",
+  "The package source remains Lemonade 10.7.0 at e18b9c1e352df8ab5aff2ff353402f1ec77c47f2",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "github_issue"
+next_gate_issue = 137
+next_gate_label = "Lemonade fork 187b4a25f repin; upstream 11.9.0 baseline routes to #141 after the sync"
+last_reviewed = "2026-09-22"
+
+[candidates."llama-cpp-v0.4.1"]
+family = "llama_cpp"
+packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"]
+source_kind = "github_tags"
+check_id = "stable-tag"
+baseline_source_kind = "arch_package"
+baseline_latest = "0.4.1-1"
+covered_checks = [{ source_kind = "arch_package", check_id = "arch" }]
+previous_recorded = "b9442"
+latest = "0.4.1"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Frozen by the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep, as the llama.cpp revision for the candidate generation C W2B rebuild: upstream stable v0.4.1, which is b10964 at b29c606e28a01b1bc8c1351026a0fa6e616bf6c4. The standalone Lemonade repin (#137) stays on b9442. When W2B adopts, set the release check's recorded value to b10964 and mark this record adopted."
+salient_changes = [
+  "Upstream switched to semantic versioning with v0.2.0 on 2026-08-21; since then, b-number builds are published as GitHub prereleases",
+  "v0.4.1 is the newest stable release (2026-09-14; ggml 0.24.0) and matches b10964; it is 1522 commits ahead of b9442",
+  "Arch moved llama.cpp to [extra] as llama-cpp 0.4.1-1, with ggml-hip and ggml-vulkan 0.24.0-2; the AUR llama.cpp, llama.cpp-hip, and llama.cpp-vulkan-bin baselines were deleted",
+  "Both repo-owned variants must share one revision and patch set and pass their separate backend gates",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "github_issue"
+next_gate_issue = 113
+next_gate_label = "llama.cpp v0.4.1 (b10964) W2B rebuild"
+last_reviewed = "2026-09-22"
