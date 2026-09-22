@@ -4,7 +4,7 @@ from pathlib import Path
 import sys
 from typing import Any
 
-from . import ExecutionPlan, required_model_binding
+from . import ExecutionPlan, pinned_sha256_args, required_model_binding
 
 
 def build_execution_plan(
@@ -32,6 +32,7 @@ def build_execution_plan(
                 entrypoint,
                 "--server-log",
                 str(server_log),
+                *pinned_sha256_args(definition),
                 *argv,
             ],
             server_log_path=server_log,

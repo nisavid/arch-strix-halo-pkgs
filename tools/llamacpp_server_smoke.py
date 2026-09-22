@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
 import socket
@@ -24,6 +25,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=0)
     parser.add_argument("--ctx-size", type=int, default=4096)
+    parser.add_argument("--expect-sha256", help="required SHA-256 of the GGUF file")
     parser.add_argument("--server-log", type=Path)
     parser.add_argument("--startup-timeout", type=float, default=180.0)
     parser.add_argument("--request-timeout", type=float, default=300.0)
@@ -104,9 +106,28 @@ def _stop(proc: subprocess.Popen) -> None:
         proc.wait(timeout=15.0)
 
 
+def file_sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for block in iter(lambda: handle.read(1 << 20), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def verify_sha256(path: Path, expected: str | None, *, label: str = "model_sha256") -> None:
+    """Require the exercised file to be the pinned artifact when a digest is declared."""
+    if not expected:
+        return
+    actual = file_sha256(path)
+    if actual != expected.lower():
+        raise AssertionError(f"{label} mismatch: expected {expected}, got {actual}")
+    print(f"{label}_ok")
+
+
 def run_smoke(args: argparse.Namespace) -> None:
     if not args.model_path.is_file():
         raise FileNotFoundError(f"GGUF model binding is not a file: {args.model_path}")
+    verify_sha256(args.model_path, args.expect_sha256)
     if args.port == 0:
         args.port = _free_port(args.host)
     base_url = f"http://{args.host}:{args.port}"

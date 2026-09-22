@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
 import subprocess
@@ -18,10 +19,17 @@ if str(TOOLS_DIR) not in sys.path:
 
 import lemonade_live_smoke as live
 from lemonade_api_auth import auth_headers, resolve_admin_api_key, resolve_api_key
-from llamacpp_server_smoke import completion_text, server_command, validate_completion
+from llamacpp_server_smoke import (
+    completion_text,
+    server_command,
+    validate_completion,
+    verify_sha256,
+)
 
 
 MODEL = "user.Qwen3-0.6B-Q8_0-GGUF"
+PINNED_SHA256 = "9465e63a22add5354d9bb4b99e90117043c7124007664907259bd16d043bb031"
+SERVICE_GGUF = Path("/service-cache/Qwen3-0.6B-Q8_0.gguf")
 EXTRA_A = "extra.lemonade-live-a.gguf"
 EXTRA_B = "extra.lemonade-live-b.gguf"
 
@@ -274,6 +282,10 @@ class FakeLemond:
             return 200, {"version": "11.7.0", "all_models_loaded": list(self.loaded.values())}
         if path == "/models":
             return 200, {"data": list(self.models.values())}
+        if path.startswith("/models/") and path.endswith("/files?include_paths=true"):
+            return 200, {
+                "files": [{"role": "main", "exists": True, "path": str(SERVICE_GGUF)}]
+            }
         if path.startswith("/models/"):
             return 200, self.models[path.removeprefix("/models/")]
         if path == "/load":
@@ -373,15 +385,61 @@ def test_text_mode_proves_packaged_backend_and_restores_residency(capsys: pytest
         model=MODEL,
         backend="vulkan",
         ctx_size=4096,
-        expect_checkpoint="Qwen/Qwen3-0.6B-GGUF",
+        expect_checkpoint="Qwen/Qwen3-0.6B-GGUF:Q8_0",
+        expect_sha256=PINNED_SHA256,
         owner_of=lambda path: "llama.cpp-vulkan-gfx1151",
         executable_of=lambda pid: "/opt/llama.cpp-vulkan-gfx1151/bin/llama-server",
+        digest_of=lambda path: PINNED_SHA256 if path == SERVICE_GGUF else "other",
     )
 
     out = capsys.readouterr().out
-    for marker in ("model_provisioned_ok", "backend_selected_ok", "backend_package_ok", "completion_ok", "residency_restored"):
+    for marker in (
+        "model_sha256_ok",
+        "model_provisioned_ok",
+        "backend_selected_ok",
+        "backend_package_ok",
+        "completion_ok",
+        "residency_restored",
+    ):
         assert marker in out
+    assert str(SERVICE_GGUF) not in out
     assert MODEL not in server.loaded
+
+
+def test_text_mode_requires_the_pinned_checkpoint_and_digest():
+    server = FakeLemond(models=[MODEL])
+
+    with pytest.raises(AssertionError, match="not 'Qwen/Qwen3-0.6B-GGUF:Q4_0'"):
+        live.run_text(
+            server,
+            model=MODEL,
+            backend="rocm",
+            ctx_size=4096,
+            expect_checkpoint="Qwen/Qwen3-0.6B-GGUF:Q4_0",
+        )
+    with pytest.raises(AssertionError, match="model_sha256 mismatch"):
+        live.run_text(
+            server,
+            model=MODEL,
+            backend="rocm",
+            ctx_size=4096,
+            expect_checkpoint="Qwen/Qwen3-0.6B-GGUF:Q8_0",
+            expect_sha256=PINNED_SHA256,
+            digest_of=lambda path: "0" * 64,
+        )
+    assert ("POST", "/load") not in server.calls
+
+
+def test_bound_gguf_digest_is_verified(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+    gguf = tmp_path / "model.gguf"
+    gguf.write_bytes(b"gguf")
+    digest = hashlib.sha256(b"gguf").hexdigest()
+
+    verify_sha256(gguf, None)
+    verify_sha256(gguf, digest.upper())
+    assert "model_sha256_ok" in capsys.readouterr().out
+    with pytest.raises(AssertionError, match="model_sha256 mismatch"):
+        verify_sha256(gguf, "0" * 64)
 
 
 def test_text_mode_rejects_bundled_backend_and_still_restores(capsys: pytest.CaptureFixture[str]):

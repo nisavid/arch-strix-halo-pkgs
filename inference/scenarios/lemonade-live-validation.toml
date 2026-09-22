@@ -44,6 +44,10 @@ value = 0
 
 [[scenario.then.assert]]
 kind = "stdout.contains"
+value = "model_sha256_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
 value = "completion_ok"
 
 [[scenario.then.assert]]
@@ -79,6 +83,10 @@ tool = "llamacpp_server_smoke.completion"
 [[scenario.then.assert]]
 kind = "exit_code.equals"
 value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "model_sha256_ok"
 
 [[scenario.then.assert]]
 kind = "stdout.contains"
@@ -130,12 +138,16 @@ argv = [
   "--backend",
   "rocm",
   "--expect-checkpoint",
-  "Qwen/Qwen3-0.6B-GGUF",
+  "Qwen/Qwen3-0.6B-GGUF:Q8_0",
 ]
 
 [[scenario.then.assert]]
 kind = "exit_code.equals"
 value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "model_sha256_ok"
 
 [[scenario.then.assert]]
 kind = "stdout.contains"
@@ -191,12 +203,16 @@ argv = [
   "--backend",
   "vulkan",
   "--expect-checkpoint",
-  "Qwen/Qwen3-0.6B-GGUF",
+  "Qwen/Qwen3-0.6B-GGUF:Q8_0",
 ]
 
 [[scenario.then.assert]]
 kind = "exit_code.equals"
 value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "model_sha256_ok"
 
 [[scenario.then.assert]]
 kind = "stdout.contains"
@@ -271,6 +287,10 @@ value = 0
 
 [[scenario.then.assert]]
 kind = "stdout.contains"
+value = "model_sha256_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
 value = "pin_persisted_ok"
 
 [[scenario.then.assert]]
@@ -309,6 +329,10 @@ tool = "lemonade_live_smoke.budget"
 [[scenario.then.assert]]
 kind = "exit_code.equals"
 value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "model_sha256_ok"
 
 [[scenario.then.assert]]
 kind = "stdout.contains"
@@ -354,6 +378,10 @@ tool = "lemonade_live_smoke.displacement"
 [[scenario.then.assert]]
 kind = "exit_code.equals"
 value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "model_sha256_ok"
 
 [[scenario.then.assert]]
 kind = "stdout.contains"

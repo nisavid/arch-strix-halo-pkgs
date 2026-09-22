@@ -884,3 +884,28 @@ def test_lemonade_adapter_builds_isolated_lemond_commands(tmp_path: Path):
         plan_for("budget", GGUF_MODEL, {})
     with pytest.raises(ValueError, match="UNSUPPORTED_LEMONADE_LIVE_MODE"):
         plan_for("reboot", "builtin", {})
+
+
+def test_adapters_forward_the_pinned_model_digest(tmp_path: Path):
+    provenance = {"sha256": "ab" * 32}
+
+    def plan_for(given: dict) -> list[str]:
+        return build_execution_plan(
+            {"id": "pinned", "given": given, "model_provenance": provenance},
+            repo_root=REPO_ROOT,
+            scenario_run_root=tmp_path,
+            model_bindings={GGUF_MODEL: GGUF_PATH},
+        ).command
+
+    direct = plan_for(
+        {
+            "engine": "llama.cpp",
+            "model": GGUF_MODEL,
+            "entrypoint": "llama-server-vulkan-gfx1151",
+            "tool": "llamacpp_server_smoke.completion",
+        }
+    )
+    for mode in ("text", "pins", "budget", "displacement"):
+        live = plan_for({"engine": "lemonade", "model": GGUF_MODEL, "tool": f"lemonade_live_smoke.{mode}"})
+        assert live[-2:] == ["--expect-sha256", "ab" * 32]
+    assert direct[-2:] == ["--expect-sha256", "ab" * 32]
