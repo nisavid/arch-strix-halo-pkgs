@@ -1454,3 +1454,50 @@ value = "missing marker"
     )
     assert scenario_result["ok"] is False
     assert "stdout.contains" in scenario_result["failures"][0]
+
+
+def write_validation_window_scenarios(tmp_path: Path) -> Path:
+    scenario_dir = tmp_path / "inference" / "scenarios"
+    scenario_dir.mkdir(parents=True)
+    (scenario_dir / "sample.toml").write_text(
+        """
+[[scenario]]
+id = "lemonade.demo.help"
+summary = "demo help"
+tags = ["smoke"]
+
+[scenario.given]
+engine = "lemonade"
+model = "builtin"
+entrypoint = "lemonade"
+
+[[scenario]]
+id = "lemonade.demo.live"
+summary = "demo live"
+tags = ["validation-window", "mutates-service"]
+
+[scenario.given]
+engine = "lemonade"
+model = "builtin"
+entrypoint = "lemonade"
+""",
+        encoding="utf-8",
+    )
+    return scenario_dir
+
+
+def test_validation_window_scenarios_require_explicit_opt_in(tmp_path: Path):
+    scenario_dir = write_validation_window_scenarios(tmp_path)
+
+    def selected(*args: str) -> list[str]:
+        result = run_runner("--scenario-dir", str(scenario_dir), "--dry-run", *args)
+        assert result.returncode == 0, result.stderr
+        return json.loads(result.stdout)["selected_ids"]
+
+    assert selected("--engine", "lemonade") == ["lemonade.demo.help"]
+    assert selected("--engine", "lemonade", "--include-validation-window") == [
+        "lemonade.demo.help",
+        "lemonade.demo.live",
+    ]
+    assert selected("--tag", "validation-window") == ["lemonade.demo.live"]
+    assert selected("--scenario", "lemonade.demo.live") == ["lemonade.demo.live"]

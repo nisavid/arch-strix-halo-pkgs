@@ -1253,3 +1253,73 @@ def test_lemonade_help_smokes_assert_current_help_markers():
     assert {"kind": "output.contains", "value": "Lightweight LLM server"} in server_assertions
     assert {"kind": "output.contains", "value": "OPTIONS:"} in cli_assertions
     assert {"kind": "output.contains", "value": "OPTIONS:"} in server_assertions
+
+
+LEMONADE_LIVE_SCENARIOS = {
+    "llama.cpp.hip.qwen3-0.6b-q8-0.completion",
+    "llama.cpp.vulkan.qwen3-0.6b-q8-0.completion",
+    "lemonade.llamacpp.rocm.qwen3-0.6b-q8-0.completion",
+    "lemonade.llamacpp.vulkan.qwen3-0.6b-q8-0.completion",
+    "lemonade.lifecycle.restart-config-hip-discovery",
+    "lemonade.pins.persistence-startup-restore",
+    "lemonade.budget.gtt-admit-refuse",
+    "lemonade.residency.pinned-busy-not-displaced",
+    "lemonade.provenance.family-no-fallback",
+}
+
+
+def test_lemonade_live_validation_scenarios_are_gated_and_share_one_gguf():
+    from inference.scenario_loader import select_scenarios
+
+    scenarios = load_scenarios(REPO_ROOT / "inference/scenarios")
+    by_id = {scenario.id: scenario for scenario in scenarios}
+
+    assert LEMONADE_LIVE_SCENARIOS <= set(by_id)
+    for scenario_id in LEMONADE_LIVE_SCENARIOS:
+        tags = set(by_id[scenario_id].tags)
+        assert {"live-validation", "validation-window"} <= tags
+        assert "smoke" not in tags
+
+    for backend in ("rocm", "vulkan"):
+        scenario = by_id[f"lemonade.llamacpp.{backend}.qwen3-0.6b-q8-0.completion"]
+        assert "mutates-service" in scenario.tags
+        assert scenario.definition["given"]["lemonade_model"] == "user.Qwen3-0.6B-Q8_0-GGUF"
+    for scenario_id in (
+        "lemonade.lifecycle.restart-config-hip-discovery",
+        "lemonade.pins.persistence-startup-restore",
+        "lemonade.budget.gtt-admit-refuse",
+        "lemonade.residency.pinned-busy-not-displaced",
+    ):
+        assert "isolated-lemond" in by_id[scenario_id].tags
+    assert "read-only" in by_id["lemonade.provenance.family-no-fallback"].tags
+
+    gguf_users = [s for s in scenarios if s.id in LEMONADE_LIVE_SCENARIOS and s.model != "builtin"]
+    assert len(gguf_users) == 7
+    for scenario in gguf_users:
+        provenance = scenario.definition["model_provenance"]
+        assert scenario.model == "Qwen/Qwen3-0.6B-GGUF"
+        assert provenance["file"] == "Qwen3-0.6B-Q8_0.gguf"
+        assert provenance["revision"] == "23749fefcc72300e3a2ad315e1317431b06b590a"
+        assert provenance["terms_status"] == "accepted"
+
+    broad = select_scenarios(
+        scenarios, engines={"lemonade", "llama.cpp"}, models=set(), scenario_ids=set()
+    )
+    assert not LEMONADE_LIVE_SCENARIOS & {scenario.id for scenario in broad}
+
+
+def test_lemonade_app_operator_checklist_lives_in_the_catalog():
+    document = tomllib.loads(
+        (REPO_ROOT / "inference/scenarios/lemonade-live-validation.toml").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    checklists = {item["id"]: item for item in document["operator_checklist"]}
+    app = checklists["lemonade.app.pin-startup-text"]
+    steps = "\n".join(app["steps"])
+    assert "validation-window" in app["tags"]
+    assert "Pin control" in steps
+    assert "pinned_models" in steps
+    assert "text reply" in steps
+    assert "Restore" in steps

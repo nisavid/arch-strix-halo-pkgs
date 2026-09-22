@@ -1,0 +1,443 @@
+# Lemonade live-validation bar for the standalone Lemonade family.
+#
+# Every scenario here carries the `validation-window` tag, so broad selections
+# skip it unless the operator passes --include-validation-window, selects it by
+# --scenario id, or asks for --tag validation-window. `mutates-service` marks
+# scenarios that load or unload models on the running lemond.service;
+# `isolated-lemond` marks scenarios that start a private lemond with a
+# temporary cache directory and leave the service config untouched.
+#
+# Operator inputs come from the run-time environment, never from this file:
+# - `--model-path Qwen/Qwen3-0.6B-GGUF=<testing HF hub cache>/.../Qwen3-0.6B-Q8_0.gguf`
+# - `LEMONADE_API_KEY` or `LEMONADE_API_KEY_FILE`, and optionally
+#   `LEMONADE_ADMIN_API_KEY` or `LEMONADE_ADMIN_API_KEY_FILE`, once the service
+#   requires a loopback key.
+#
+# See docs/maintainers/lemonade-live-validation.md for provisioning, the
+# operator checklist, and the Kokoro TTS decision.
+
+[[scenario]]
+id = "llama.cpp.hip.qwen3-0.6b-q8-0.completion"
+summary = "Packaged HIP llama-server serves the Qwen3 0.6B Q8_0 GGUF fully offloaded and completes text"
+tags = ["live-validation", "validation-window", "llama.cpp", "hip", "gguf", "text-generation"]
+source_url = "https://huggingface.co/Qwen/Qwen3-0.6B-GGUF"
+
+[scenario.model_provenance]
+repo_id = "Qwen/Qwen3-0.6B-GGUF"
+revision = "23749fefcc72300e3a2ad315e1317431b06b590a"
+file = "Qwen3-0.6B-Q8_0.gguf"
+sha256 = "9465e63a22add5354d9bb4b99e90117043c7124007664907259bd16d043bb031"
+license = "apache-2.0"
+base_model = "Qwen/Qwen3-0.6B"
+terms_status = "accepted"
+terms_gate = "Official public, non-gated Apache-2.0 Qwen GGUF; re-review if the revision, file digest, license, or gating changes."
+
+[scenario.given]
+engine = "llama.cpp"
+model = "Qwen/Qwen3-0.6B-GGUF"
+entrypoint = "llama-server-hip-gfx1151"
+tool = "llamacpp_server_smoke.completion"
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "completion_ok"
+
+[[scenario.then.assert]]
+kind = "server_log.regex"
+value = "(?i)found \\d+ ROCm devices"
+
+[[scenario.then.assert]]
+kind = "server_log.regex"
+value = "offloaded (\\d+)/\\1 layers to GPU"
+
+[[scenario]]
+id = "llama.cpp.vulkan.qwen3-0.6b-q8-0.completion"
+summary = "Packaged Vulkan llama-server serves the Qwen3 0.6B Q8_0 GGUF fully offloaded and completes text"
+tags = ["live-validation", "validation-window", "llama.cpp", "vulkan", "gguf", "text-generation"]
+source_url = "https://huggingface.co/Qwen/Qwen3-0.6B-GGUF"
+
+[scenario.model_provenance]
+repo_id = "Qwen/Qwen3-0.6B-GGUF"
+revision = "23749fefcc72300e3a2ad315e1317431b06b590a"
+file = "Qwen3-0.6B-Q8_0.gguf"
+sha256 = "9465e63a22add5354d9bb4b99e90117043c7124007664907259bd16d043bb031"
+license = "apache-2.0"
+base_model = "Qwen/Qwen3-0.6B"
+terms_status = "accepted"
+terms_gate = "Official public, non-gated Apache-2.0 Qwen GGUF; re-review if the revision, file digest, license, or gating changes."
+
+[scenario.given]
+engine = "llama.cpp"
+model = "Qwen/Qwen3-0.6B-GGUF"
+entrypoint = "llama-server-vulkan-gfx1151"
+tool = "llamacpp_server_smoke.completion"
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "completion_ok"
+
+[[scenario.then.assert]]
+kind = "server_log.regex"
+value = "(?i)found \\d+ Vulkan devices"
+
+[[scenario.then.assert]]
+kind = "server_log.regex"
+value = "offloaded (\\d+)/\\1 layers to GPU"
+
+[[scenario]]
+id = "lemonade.llamacpp.rocm.qwen3-0.6b-q8-0.completion"
+summary = "The Lemonade service completes text with the same GGUF on the packaged HIP llama.cpp backend"
+tags = [
+  "live-validation",
+  "validation-window",
+  "mutates-service",
+  "lemonade",
+  "llamacpp",
+  "rocm",
+  "gguf",
+  "text-generation",
+]
+source_url = "https://huggingface.co/Qwen/Qwen3-0.6B-GGUF"
+
+[scenario.model_provenance]
+repo_id = "Qwen/Qwen3-0.6B-GGUF"
+revision = "23749fefcc72300e3a2ad315e1317431b06b590a"
+file = "Qwen3-0.6B-Q8_0.gguf"
+sha256 = "9465e63a22add5354d9bb4b99e90117043c7124007664907259bd16d043bb031"
+license = "apache-2.0"
+base_model = "Qwen/Qwen3-0.6B"
+terms_status = "accepted"
+terms_gate = "Official public, non-gated Apache-2.0 Qwen GGUF; re-review if the revision, file digest, license, or gating changes."
+
+[scenario.given]
+engine = "lemonade"
+model = "Qwen/Qwen3-0.6B-GGUF"
+lemonade_model = "user.Qwen3-0.6B-Q8_0-GGUF"
+tool = "lemonade_live_smoke.text"
+
+[scenario.when]
+argv = [
+  "--base-url",
+  "http://127.0.0.1:13305/api/v1",
+  "--backend",
+  "rocm",
+  "--expect-checkpoint",
+  "Qwen/Qwen3-0.6B-GGUF",
+]
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "model_provisioned_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "backend_package llama.cpp-hip-gfx1151"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "backend_package_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "completion_ok"
+
+[[scenario]]
+id = "lemonade.llamacpp.vulkan.qwen3-0.6b-q8-0.completion"
+summary = "The Lemonade service completes text with the same GGUF on the packaged Vulkan llama.cpp backend"
+tags = [
+  "live-validation",
+  "validation-window",
+  "mutates-service",
+  "lemonade",
+  "llamacpp",
+  "vulkan",
+  "gguf",
+  "text-generation",
+]
+source_url = "https://huggingface.co/Qwen/Qwen3-0.6B-GGUF"
+
+[scenario.model_provenance]
+repo_id = "Qwen/Qwen3-0.6B-GGUF"
+revision = "23749fefcc72300e3a2ad315e1317431b06b590a"
+file = "Qwen3-0.6B-Q8_0.gguf"
+sha256 = "9465e63a22add5354d9bb4b99e90117043c7124007664907259bd16d043bb031"
+license = "apache-2.0"
+base_model = "Qwen/Qwen3-0.6B"
+terms_status = "accepted"
+terms_gate = "Official public, non-gated Apache-2.0 Qwen GGUF; re-review if the revision, file digest, license, or gating changes."
+
+[scenario.given]
+engine = "lemonade"
+model = "Qwen/Qwen3-0.6B-GGUF"
+lemonade_model = "user.Qwen3-0.6B-Q8_0-GGUF"
+tool = "lemonade_live_smoke.text"
+
+[scenario.when]
+argv = [
+  "--base-url",
+  "http://127.0.0.1:13305/api/v1",
+  "--backend",
+  "vulkan",
+  "--expect-checkpoint",
+  "Qwen/Qwen3-0.6B-GGUF",
+]
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "model_provisioned_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "backend_package llama.cpp-vulkan-gfx1151"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "backend_package_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "completion_ok"
+
+[[scenario]]
+id = "lemonade.lifecycle.restart-config-hip-discovery"
+summary = "Packaged lemond starts, persists config, restarts with config preserved, and reports the gfx1151 HIP device"
+tags = ["live-validation", "validation-window", "isolated-lemond", "lemonade", "lifecycle", "hip"]
+
+[scenario.given]
+engine = "lemonade"
+model = "builtin"
+tool = "lemonade_live_smoke.lifecycle"
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "hip_discovery_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "config_persisted_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "isolated_server_restarted"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "config_preserved_ok"
+
+[[scenario]]
+id = "lemonade.pins.persistence-startup-restore"
+summary = "A pinned model is persisted to config, restored and re-pinned at startup, and unpinning removes the persisted pin"
+tags = ["live-validation", "validation-window", "isolated-lemond", "lemonade", "pins", "gguf"]
+source_url = "https://huggingface.co/Qwen/Qwen3-0.6B-GGUF"
+
+[scenario.model_provenance]
+repo_id = "Qwen/Qwen3-0.6B-GGUF"
+revision = "23749fefcc72300e3a2ad315e1317431b06b590a"
+file = "Qwen3-0.6B-Q8_0.gguf"
+sha256 = "9465e63a22add5354d9bb4b99e90117043c7124007664907259bd16d043bb031"
+license = "apache-2.0"
+base_model = "Qwen/Qwen3-0.6B"
+terms_status = "accepted"
+terms_gate = "Official public, non-gated Apache-2.0 Qwen GGUF; re-review if the revision, file digest, license, or gating changes."
+
+[scenario.given]
+engine = "lemonade"
+model = "Qwen/Qwen3-0.6B-GGUF"
+tool = "lemonade_live_smoke.pins"
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "pin_persisted_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "pin_restored_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "pin_restored_pinned_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "pin_removed_ok"
+
+[[scenario]]
+id = "lemonade.budget.gtt-admit-refuse"
+summary = "The predictive occupancy budget counts APU GTT, admits a fitting load, and refuses oversized or over-budget loads without residency"
+tags = ["live-validation", "validation-window", "isolated-lemond", "lemonade", "budget", "gtt", "gguf"]
+source_url = "https://huggingface.co/Qwen/Qwen3-0.6B-GGUF"
+
+[scenario.model_provenance]
+repo_id = "Qwen/Qwen3-0.6B-GGUF"
+revision = "23749fefcc72300e3a2ad315e1317431b06b590a"
+file = "Qwen3-0.6B-Q8_0.gguf"
+sha256 = "9465e63a22add5354d9bb4b99e90117043c7124007664907259bd16d043bb031"
+license = "apache-2.0"
+base_model = "Qwen/Qwen3-0.6B"
+terms_status = "accepted"
+terms_gate = "Official public, non-gated Apache-2.0 Qwen GGUF; re-review if the revision, file digest, license, or gating changes."
+
+[scenario.given]
+engine = "lemonade"
+model = "Qwen/Qwen3-0.6B-GGUF"
+tool = "lemonade_live_smoke.budget"
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "apu_gtt_reported_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "budget_refuse_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "gtt_counted_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "budget_admit_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "configured_budget_refuse_ok"
+
+[[scenario]]
+id = "lemonade.residency.pinned-busy-not-displaced"
+summary = "With one LLM slot, a load never displaces a pinned or in-use model, while an idle unpinned model is displaced as a control"
+tags = ["live-validation", "validation-window", "isolated-lemond", "lemonade", "residency", "pins", "gguf"]
+source_url = "https://huggingface.co/Qwen/Qwen3-0.6B-GGUF"
+
+[scenario.model_provenance]
+repo_id = "Qwen/Qwen3-0.6B-GGUF"
+revision = "23749fefcc72300e3a2ad315e1317431b06b590a"
+file = "Qwen3-0.6B-Q8_0.gguf"
+sha256 = "9465e63a22add5354d9bb4b99e90117043c7124007664907259bd16d043bb031"
+license = "apache-2.0"
+base_model = "Qwen/Qwen3-0.6B"
+terms_status = "accepted"
+terms_gate = "Official public, non-gated Apache-2.0 Qwen GGUF; re-review if the revision, file digest, license, or gating changes."
+
+[scenario.given]
+engine = "lemonade"
+model = "Qwen/Qwen3-0.6B-GGUF"
+tool = "lemonade_live_smoke.displacement"
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "pinned_not_displaced_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "busy_window_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "in_use_not_displaced_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "busy_request_completed_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "idle_displacement_control_ok"
+
+[[scenario]]
+id = "lemonade.provenance.family-no-fallback"
+summary = "All five Lemonade family packages come from the local repo with one packager, own the service and backend binaries, and the service is offline with no bundled-backend fallback"
+tags = ["live-validation", "validation-window", "lemonade", "provenance", "read-only"]
+
+[scenario.given]
+engine = "lemonade"
+model = "builtin"
+tool = "lemonade_live_smoke.provenance"
+
+[scenario.when]
+argv = [
+  "--base-url",
+  "http://127.0.0.1:13305/api/v1",
+  "--repo",
+  "strix-halo-gfx1151",
+]
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "family_packager_uniform_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "no_foreign_package_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "service_executable_owned_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "package_files_unaltered_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "offline_config_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "no_bundled_backend_ok"
+
+# The runner has no manual-step support, so the app check is an operator
+# checklist in the catalog. The loader ignores this table.
+[[operator_checklist]]
+id = "lemonade.app.pin-startup-text"
+summary = "Operator launches the Lemonade app, exercises its pin and startup controls, and completes one text interaction"
+tags = ["live-validation", "validation-window", "lemonade-app", "operator"]
+prerequisites = [
+  "The lemonade.llamacpp.rocm.qwen3-0.6b-q8-0.completion scenario passed in this validation window.",
+  "If the service requires a loopback key, launch the app with the same LEMONADE_API_KEY environment the service expects.",
+  "Record GET /api/v1/pins and GET /api/v1/health before starting so pins and residency can be restored.",
+]
+steps = [
+  "Launch lemonade-app from the desktop session; confirm it connects to the local lemond and shows the installed lemonade-server version.",
+  "In Model Manager, load user.Qwen3-0.6B-Q8_0-GGUF, then use its Pin control; confirm GET /api/v1/pins lists it with loaded true.",
+  "Confirm the persisted pin is the startup-load control: the service config pinned_models now contains the model.",
+  "Use the Unpin control; confirm the model leaves GET /api/v1/pins and the service config pinned_models.",
+  "In chat, send one prompt to user.Qwen3-0.6B-Q8_0-GGUF and confirm a text reply renders.",
+  "Restore the recorded pins and residency, then close the app.",
+]
+record = "Record pass or fail per step with the app and lemonade-server package versions in docs/maintainers/current-state.md."

@@ -766,3 +766,121 @@ def test_torch_migraphx_adapter_builds_smoke_command(tmp_path: Path):
         "5",
     ]
     assert plan.server_log_path is None
+
+
+GGUF_MODEL = "Qwen/Qwen3-0.6B-GGUF"
+GGUF_PATH = "/models/Qwen3-0.6B-Q8_0.gguf"
+
+
+def test_llamacpp_adapter_builds_bound_server_smoke_command(tmp_path: Path):
+    definition = scenario(
+        {
+            "id": "llama.cpp.hip.qwen3-0.6b-q8-0.completion",
+            "given": {
+                "engine": "llama.cpp",
+                "model": GGUF_MODEL,
+                "entrypoint": "llama-server-hip-gfx1151",
+                "tool": "llamacpp_server_smoke.completion",
+            },
+        }
+    )
+
+    plan = build_execution_plan(
+        definition,
+        repo_root=REPO_ROOT,
+        scenario_run_root=tmp_path,
+        model_bindings={GGUF_MODEL: GGUF_PATH},
+    )
+
+    assert plan.command == [
+        sys.executable,
+        str(REPO_ROOT / "tools/llamacpp_server_smoke.py"),
+        GGUF_PATH,
+        "--server",
+        "llama-server-hip-gfx1151",
+        "--server-log",
+        str(tmp_path / "server.log"),
+    ]
+    assert plan.server_log_path == tmp_path / "server.log"
+
+    with pytest.raises(ValueError, match="MODEL_PATH_BINDING_REQUIRED"):
+        build_execution_plan(
+            definition,
+            repo_root=REPO_ROOT,
+            scenario_run_root=tmp_path,
+            model_bindings={},
+        )
+
+
+def test_lemonade_adapter_builds_live_service_text_command(tmp_path: Path):
+    plan = build_execution_plan(
+        scenario(
+            {
+                "id": "lemonade.llamacpp.rocm.qwen3-0.6b-q8-0.completion",
+                "given": {
+                    "engine": "lemonade",
+                    "model": GGUF_MODEL,
+                    "lemonade_model": "user.Qwen3-0.6B-Q8_0-GGUF",
+                    "tool": "lemonade_live_smoke.text",
+                },
+                "when": {"argv": ["--backend", "rocm"]},
+            }
+        ),
+        repo_root=REPO_ROOT,
+        scenario_run_root=tmp_path,
+        model_bindings={},
+    )
+
+    assert plan.command == [
+        sys.executable,
+        str(REPO_ROOT / "tools/lemonade_live_smoke.py"),
+        "text",
+        "--model",
+        "user.Qwen3-0.6B-Q8_0-GGUF",
+        "--backend",
+        "rocm",
+    ]
+    assert plan.server_log_path is None
+
+
+def test_lemonade_adapter_builds_isolated_lemond_commands(tmp_path: Path):
+    def plan_for(mode: str, model: str, bindings: dict[str, str]):
+        return build_execution_plan(
+            scenario(
+                {
+                    "id": f"lemonade.live.{mode}",
+                    "given": {
+                        "engine": "lemonade",
+                        "model": model,
+                        "tool": f"lemonade_live_smoke.{mode}",
+                    },
+                }
+            ),
+            repo_root=REPO_ROOT,
+            scenario_run_root=tmp_path,
+            model_bindings=bindings,
+        )
+
+    pins = plan_for("pins", GGUF_MODEL, {GGUF_MODEL: GGUF_PATH})
+    assert pins.command == [
+        sys.executable,
+        str(REPO_ROOT / "tools/lemonade_live_smoke.py"),
+        "pins",
+        "--gguf",
+        GGUF_PATH,
+        "--server-log",
+        str(tmp_path / "server.log"),
+    ]
+    assert pins.server_log_path == tmp_path / "server.log"
+
+    lifecycle = plan_for("lifecycle", "builtin", {})
+    assert "--gguf" not in lifecycle.command
+    assert lifecycle.server_log_path == tmp_path / "server.log"
+
+    provenance = plan_for("provenance", "builtin", {})
+    assert provenance.server_log_path is None
+
+    with pytest.raises(ValueError, match="MODEL_PATH_BINDING_REQUIRED"):
+        plan_for("budget", GGUF_MODEL, {})
+    with pytest.raises(ValueError, match="UNSUPPORTED_LEMONADE_LIVE_MODE"):
+        plan_for("reboot", "builtin", {})

@@ -4,6 +4,10 @@ from dataclasses import dataclass
 from pathlib import Path
 import tomllib
 
+# Scenarios that load models into, or start alongside, the live Lemonade
+# service run only when an operator opts in during a validation window.
+VALIDATION_WINDOW_TAG = "validation-window"
+
 
 @dataclass(frozen=True)
 class Scenario:
@@ -64,6 +68,7 @@ def select_scenarios(
     scenario_ids: set[str],
     tags: set[str] | None = None,
     include_exploratory: bool = False,
+    include_validation_window: bool = False,
 ) -> list[Scenario]:
     requested_tags = tags or set()
     selected: list[Scenario] = []
@@ -85,6 +90,13 @@ def select_scenarios(
             not include_exploratory
             and not scenario_ids
             and "exploratory" in scenario.tags
+        ):
+            continue
+        if (
+            not include_validation_window
+            and not scenario_ids
+            and VALIDATION_WINDOW_TAG in scenario.tags
+            and VALIDATION_WINDOW_TAG not in requested_tags
         ):
             continue
         selected.append(scenario)
