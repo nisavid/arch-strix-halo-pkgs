@@ -283,6 +283,7 @@ def lemonade_no_remote_model_fetch_dropin_lines() -> list[str]:
         "[Service]",
         f"Environment=HF_ENDPOINT={LEMONADE_BLACKHOLE_ENDPOINT}",
         f"Environment=MODELSCOPE_ENDPOINT={LEMONADE_BLACKHOLE_ENDPOINT}",
+        f"Environment=MODEL_ENDPOINT={LEMONADE_BLACKHOLE_ENDPOINT}",
     ]
 
 
@@ -629,6 +630,7 @@ EOF
 
   # Send Hugging Face and ModelScope requests from lemond and its llama-server
   # children to a refused loopback port, so no model is fetched implicitly.
+  # llama-server reads MODEL_ENDPOINT ahead of HF_ENDPOINT, so set both.
   install -Dm644 /dev/stdin "$pkgdir/usr/lib/systemd/system/lemond.service.d/20-no-remote-model-fetch.conf" <<'EOF'
 {chr(10).join(lemonade_no_remote_model_fetch_dropin_lines())}
 EOF

@@ -127,10 +127,12 @@ EOF
 
   # Send Hugging Face and ModelScope requests from lemond and its llama-server
   # children to a refused loopback port, so no model is fetched implicitly.
+  # llama-server reads MODEL_ENDPOINT ahead of HF_ENDPOINT, so set both.
   install -Dm644 /dev/stdin "$pkgdir/usr/lib/systemd/system/lemond.service.d/20-no-remote-model-fetch.conf" <<'EOF'
 [Service]
 Environment=HF_ENDPOINT=http://127.0.0.1:9
 Environment=MODELSCOPE_ENDPOINT=http://127.0.0.1:9
+Environment=MODEL_ENDPOINT=http://127.0.0.1:9
 EOF
 
   install -Dm644 "$srcdir/lemonade/LICENSE" "$pkgdir/usr/share/licenses/lemonade-server/LICENSE"
