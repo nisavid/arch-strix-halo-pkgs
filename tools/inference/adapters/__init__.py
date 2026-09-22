@@ -14,6 +14,14 @@ class ExecutionPlan:
     env: dict[str, str] | None = None
 
 
+def required_model_binding(given: dict[str, Any], model_bindings: dict[str, str]) -> str:
+    """Return the local path bound to a scenario model; never fall back to a download."""
+    model = str(given["model"])
+    if model not in model_bindings:
+        raise ValueError(f"MODEL_PATH_BINDING_REQUIRED: {model}")
+    return model_bindings[model]
+
+
 def _definition_for(scenario: Scenario | dict[str, Any]) -> dict[str, Any]:
     if isinstance(scenario, Scenario):
         return scenario.definition

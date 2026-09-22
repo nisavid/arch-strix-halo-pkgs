@@ -41,6 +41,9 @@ serves a different reader.
   profiling references that may affect future package or scenario work.
 - [vLLM Recipe Coverage](maintainers/vllm-recipe-coverage.md) tracks which
   official vLLM recipe surfaces are validated, planned, advisory, or blocked.
+- [Lemonade Live Validation](maintainers/lemonade-live-validation.md) maps the
+  Lemonade family's live-validation bar to tracked scenarios, operator inputs,
+  and the Kokoro TTS deferral.
 
 ## If You Are Picking Up Work
 

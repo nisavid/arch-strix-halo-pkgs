@@ -8,6 +8,8 @@ import math
 from typing import Any, Iterable
 from urllib import error, request
 
+from lemonade_api_auth import auth_headers, resolve_api_key
+
 
 EMBEDDING_PROMPTS = [
     "query: Which city is the capital of France?",
@@ -46,7 +48,7 @@ def _post_json(url: str, payload: dict[str, Any], *, timeout: float) -> dict[str
     req = request.Request(
         url,
         data=body,
-        headers={"Content-Type": "application/json"},
+        headers={"Content-Type": "application/json", **auth_headers(resolve_api_key())},
         method="POST",
     )
     try:
