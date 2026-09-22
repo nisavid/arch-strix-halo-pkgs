@@ -6,6 +6,27 @@ identity and disposition live in
 `docs/maintainers/update-candidates.toml`; validated and blocked outcomes live
 in `docs/maintainers/current-state.md`.
 
+## Resurrection
+
+The [resurrection map](https://github.com/nisavid/arch-strix-halo-pkgs/issues/135)
+carries this repository through deployment and runtime validation. Its
+execution tickets are:
+
+- [2026-09-22 freshness sweep dispositions](https://github.com/nisavid/arch-strix-halo-pkgs/issues/136)
+- [Lemonade repin to the frozen fork candidate](https://github.com/nisavid/arch-strix-halo-pkgs/issues/137),
+  [Lemonade live-validation scenarios](https://github.com/nisavid/arch-strix-halo-pkgs/issues/138),
+  [Lemonade build, publish, and install handoff](https://github.com/nisavid/arch-strix-halo-pkgs/issues/139), and
+  [installed Lemonade smoke and live validation](https://github.com/nisavid/arch-strix-halo-pkgs/issues/140)
+- [Lemonade upstream-sync repackage](https://github.com/nisavid/arch-strix-halo-pkgs/issues/141)
+- [research branch, draft PR, and worktree reconciliation](https://github.com/nisavid/arch-strix-halo-pkgs/issues/142)
+- [signing and verifiability follow-up](https://github.com/nisavid/arch-strix-halo-pkgs/issues/143)
+
+Outside the resurrection scope:
+
+- [the signed Lemonade pacman lane](https://github.com/nisavid/arch-strix-halo-pkgs/issues/125),
+  deferred to the signing and verifiability follow-up
+- [the local Qwen MTP runtime for Hindsight](https://github.com/nisavid/arch-strix-halo-pkgs/issues/131)
+
 ## Stack Convergence
 
 The [stack-convergence umbrella](https://github.com/nisavid/arch-strix-halo-pkgs/issues/95)
@@ -72,8 +93,9 @@ spine:
 
 ## Tracker Maintenance
 
-[Issue #74](https://github.com/nisavid/arch-strix-halo-pkgs/issues/74) owns the
-one-time issue-primary cutover. After that cutover, an active ledger record may
-reference only an open issue in this repository. Before closing or repurposing
-an execution issue, transition every referenced candidate to a terminal
-disposition or rehome it to an open successor issue.
+The one-time issue-primary cutover
+([issue #74](https://github.com/nisavid/arch-strix-halo-pkgs/issues/74)) is
+complete. An active ledger record may reference only an open issue in this
+repository. Before closing or repurposing an execution issue, transition every
+referenced candidate to a terminal disposition or rehome it to an open
+successor issue.

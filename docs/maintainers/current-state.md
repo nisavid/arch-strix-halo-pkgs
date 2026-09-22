@@ -1,8 +1,59 @@
 # Current State
 
 The package, deployment, and live-validation narrative below remains a
-2026-06-15 snapshot. The freshness admission state was reconciled on
-2026-08-12 as follows.
+2026-06-15 snapshot. The latest freshness sweep and its acted-on Lemonade
+transition are recorded first; older reconciliations remain as dated history.
+
+## 2026-09-22 Freshness Admission
+
+An uncached sweep started at `2026-09-22T15:56:39-04:00` found 28
+action-required families and one query failure across the 45 configured
+families. The llama.cpp query failure came from upstream changes, not from the
+checker: Arch moved llama.cpp into its official repositories and the AUR
+`llama.cpp-hip` and `llama.cpp-vulkan-bin` baselines were deleted, and upstream
+switched to semantic versioning with v0.2.0, publishing b-number builds as
+GitHub prereleases since then. The llama.cpp freshness policy now checks the
+upstream `v`-prefixed stable tags (`stable-tag`, recorded 0.4.1) against the
+Arch `llama-cpp` and `ggml-hip` baselines. The b-number `release` check and its
+source contract are unchanged.
+
+Every non-current family now has a disposition in
+`docs/maintainers/update-candidates.toml`. The final uncached sweep completed
+at `2026-09-22T16:31:25-04:00` and exited 0 with `--fail-on actionable`. It
+reported 29 stable updates, five branch-head movements, two baseline drifts,
+one prerelease-only family (llama.cpp), and eight current families. Applying
+the ledger yielded 34 tracked families, two rejected families (AutoRound and
+llmcompressor, which are upstream-scope exclusions for this convergence line),
+one adopted family, and eight current families, including llama.cpp. The
+ledger holds 35 active tracked candidate records and no blocked records; the
+extra record is `llama-cpp-v0.4.1`, which stands as the W2B rebuild target
+without matching a family result. The explicit tracker validation queried
+their nine unique issue gates, and all nine were open issues in this
+repository.
+
+This sweep is also the one fresh sweep that freezes the version universe for
+candidate generation C ([issue #105](https://github.com/nisavid/arch-strix-halo-pkgs/issues/105)).
+Issue 105 selects C's coherent PyTorch and vLLM line within this frozen
+universe; the 2026-08-11 line pick is superseded. Lemonade is exempt from the
+freeze and follows the deployed, validated fork commit. Later upstream drift
+routes to post-closeout maintenance unless it is a security fix or a build
+breakage.
+
+The superseded tracked and blocked records were terminalized as rejected.
+The former `lemonade-upstream-11.5.2` blocker was closed as superseded before
+package adoption. `lemonade-fork-187b4a2` now tracks fork main
+`187b4a25f154ff905486b8bf85e006cd1f2a9820` for the
+[Lemonade repin](https://github.com/nisavid/arch-strix-halo-pkgs/issues/137),
+and the upstream 11.9.0 baseline drift routes to the
+[upstream-sync repackage](https://github.com/nisavid/arch-strix-halo-pkgs/issues/141).
+
+This admission changes maintenance metadata only. No package source was
+updated, and no package was rendered, built, deployed/installed,
+installed-smoked, service-smoked, or live-scenario validated. The maintained
+Lemonade package source remains 10.7.0 at fork commit
+`e18b9c1e352df8ab5aff2ff353402f1ec77c47f2`. The freshness evidence is due
+again 24 hours after the recorded completion, or sooner if package policy,
+package directories, checker behavior, or relevant source metadata changes.
 
 ## 2026-08-12 Freshness Admission
 
