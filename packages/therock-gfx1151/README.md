@@ -88,7 +88,9 @@ Steps, in order:
    then renders this directory and previews the amerge plan. The build needs
    CPython 3.14.7 (`python-gfx1151`) as the active `python` and
    `python3.14-config`. MLIR stays off; see
-   [the no-MLIR stubs](../../docs/patches.md#migraphx-therock-stage).
+   [the no-MLIR stubs](../../docs/patches.md#migraphx-therock-stage). The
+   same section records the `rocm_add_version_resource` configure shim for
+   the staged rocm-cmake 0.14.0.
 4. Build the split family with `_THEROCK_ROOT=<stage>`.
 
 `migraphx-gfx1151` gets its `libprotobuf.so=<ver>-64` depend from the staged

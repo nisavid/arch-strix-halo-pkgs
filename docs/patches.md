@@ -138,6 +138,15 @@ becomes durable, prefer a named patch that another maintainer can review.
     rocMLIR disabled.
   - The former `RockEnums.h` include guard is no longer carried: upstream #4962
     moved that include inside `#ifdef MIGRAPHX_MLIR` before 2.16.
+- `rocm_add_version_resource` configure shim, written by the same script and
+  passed as `CMAKE_PROJECT_INCLUDE`
+  - AMDMIGraphX 2.16.1 calls `rocm_add_version_resource` for each library and
+    tool. Its pinned rocm-cmake (`1d4652ae`) defines it, but the rocm-cmake
+    0.14.0 that TheRock 7.14.1 ships does not, so configure fails against the
+    stage. Upstream only writes a Windows `.rc` version resource under
+    `if(WIN32)`, so the shim defines a no-op. The script adds it only when the
+    staged rocm-cmake modules lack the function; drop it once the TheRock
+    payload carries a rocm-cmake that defines it.
 
 ## Torch-MIGraphX
 

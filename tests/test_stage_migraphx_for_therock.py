@@ -220,3 +220,14 @@ def test_stage_migraphx_preview_is_dry_run():
     script = SCRIPT.read_text()
 
     assert "tools/amerge run therock-gfx1151 --dry-run --preview=tree --color=never" in script
+
+
+def test_stage_migraphx_shims_rocm_add_version_resource_only_when_the_stage_lacks_it():
+    script = SCRIPT.read_text()
+
+    # TheRock 7.14.1 ships rocm-cmake 0.14.0, which predates the upstream
+    # function; upstream only acts on WIN32, so the shim is a Linux no-op.
+    assert "grep -q 'function(rocm_add_version_resource' $rocm_cmake_dir/*.cmake && return" in script
+    assert "function(rocm_add_version_resource TARGET NAME DESCRIPTION)\nendfunction()" in script
+    assert "configure_args+=(-DCMAKE_PROJECT_INCLUDE=$rocm_cmake_compat)" in script
+    assert script.index("write_rocm_cmake_compat\n  build_and_install_migraphx") > 0

@@ -24,6 +24,7 @@ typeset -ra protobuf_pkgs=(
 typeset protobuf_soname=
 typeset utf8_validity_soname=
 typeset absl_soname_suffix=
+typeset rocm_cmake_compat=
 typeset clean=0
 typeset deploy=0
 typeset skip_build=0
@@ -294,6 +295,26 @@ path.write_text(text)
 PY
 }
 
+write_rocm_cmake_compat() {
+  emulate -L zsh
+  local rocm_cmake_dir=$stage/opt/rocm/share/rocmcmakebuildtools/cmake
+  rocm_cmake_compat=
+  [[ -d $rocm_cmake_dir ]] || fail "staged rocm-cmake modules are missing: $rocm_cmake_dir"
+  grep -q 'function(rocm_add_version_resource' $rocm_cmake_dir/*.cmake && return
+
+  # AMDMIGraphX 2.16 calls rocm_add_version_resource, which its pinned
+  # rocm-cmake (1d4652ae) defines, but the rocm-cmake 0.14.0 that TheRock
+  # 7.14.1 ships predates it. The upstream function only writes a Windows .rc
+  # version resource under if(WIN32), so it is a no-op on Linux. Define that
+  # no-op before project() modules load; a stage rocm-cmake that defines the
+  # function would replace it on include.
+  rocm_cmake_compat=$src/.ashp/rocm-cmake-compat.cmake
+  status "adding the Linux no-op rocm_add_version_resource that the staged rocm-cmake lacks"
+  run mkdir -p ${rocm_cmake_compat:h}
+  print -r -- 'function(rocm_add_version_resource TARGET NAME DESCRIPTION)
+endfunction()' >| $rocm_cmake_compat
+}
+
 build_and_install_migraphx() {
   emulate -L zsh
   local rocm=$stage/opt/rocm
@@ -325,6 +346,7 @@ build_and_install_migraphx() {
     -DROCM_ENABLE_CLANG_TIDY=OFF
     -DPYTHON_DISABLE_VERSIONS=$disable_versions
   )
+  [[ -z $rocm_cmake_compat ]] || configure_args+=(-DCMAKE_PROJECT_INCLUDE=$rocm_cmake_compat)
   local -a build_env=(
     ROCM_PATH=$rocm
     HIP_PATH=$rocm
@@ -521,6 +543,7 @@ if (( skip_build )); then
 else
   clone_or_update_source
   patch_migraphx_source_for_staged_root
+  write_rocm_cmake_compat
   build_and_install_migraphx
 fi
 
