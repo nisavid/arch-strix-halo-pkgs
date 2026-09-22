@@ -51,13 +51,95 @@ package adoption. `lemonade-fork-187b4a2` now tracks fork main
 and the upstream 11.9.0 baseline drift routes to the
 [upstream-sync repackage](https://github.com/nisavid/arch-strix-halo-pkgs/issues/141).
 
-This admission changes maintenance metadata only. No package source was
-updated, and no package was rendered, built, deployed/installed,
-installed-smoked, service-smoked, or live-scenario validated. The maintained
-Lemonade package source remains 10.7.0 at fork commit
-`e18b9c1e352df8ab5aff2ff353402f1ec77c47f2`. The freshness evidence is due
-again 24 hours after the recorded completion, or sooner if package policy,
-package directories, checker behavior, or relevant source metadata changes.
+### Generation C line selection
+
+Issue 105 selected C's version line within the frozen universe. The dated
+record is
+[`docs/wayfinder/research/c-line-selection-2026-09-22.md`](../wayfinder/research/c-line-selection-2026-09-22.md),
+with the corrections from three adversarial verification passes applied:
+
+- Foundation: CPython 3.14.7, TheRock 7.14.1 (`f51dc6c9`; ai-notes
+  `dbfb70ef`), and MIGraphX 2.16.1 at `2487b688`.
+- PyTorch lane: ROCm PyTorch `release/2.12` `13da0862` (2.12.0), ROCm Triton
+  3.8.0 `669b31ac`, AOTriton 0.13b, and TorchVision 0.27.1.
+- Serving closure: vLLM 0.30.0, Transformers 5.16.1, tokenizers 0.23.2,
+  safetensors 0.8.0, compressed-tensors 0.17.0, mistral-common 1.11.7, NumPy
+  2.5.3 (fallback 2.4.6), and pydantic-core 2.46.5 with Arch pydantic 2.13.5.
+- Divergence: `prometheus-fastapi-instrumentator` stays at the host's 7.0.0
+  behind an OpenAI-serving `/metrics` gate in W6.
+- W5 removals by default: llmcompressor, AutoRound, and AITER. The owner can
+  override.
+
+The candidate ledger now routes the selection to its execution issues:
+[#108](https://github.com/nisavid/arch-strix-halo-pkgs/issues/108) (W1
+foundation), [#109](https://github.com/nisavid/arch-strix-halo-pkgs/issues/109)
+(PyTorch, Triton, AOTriton),
+[#110](https://github.com/nisavid/arch-strix-halo-pkgs/issues/110) (model and
+runtime dependencies),
+[#111](https://github.com/nisavid/arch-strix-halo-pkgs/issues/111)
+(TorchVision, vLLM), and the nonblocking lanes #118 through #121. Where the
+selection is older than the sweep's latest, the sweep record is rejected as
+outside the selected line and a standing tracked record carries the selected
+version: AOTriton 0.13b, TorchVision 0.27.1, Transformers 5.16.1,
+compressed-tensors 0.17.0, and mistral-common 1.11.7. DuckDB, asyncpg,
+zstandard, cryptography, orjson, AOCL-LibM, and AOCL-Utils are not in C's
+regenerated closure and route to post-closeout maintenance (#147). No active
+record points at #105.
+
+The sweep's TheRock `release` check masked the stable `therock-10.0` release
+(published 2026-08-26). `latest_github_release` takes the first stable
+release in GitHub API order, not the PEP 440 maximum, so it reported 7.14.1.
+TheRock 7.14.1 stays: the approved end state names TheRock 7.14.x, and AMD
+publishes no gfx1151 10.0 dist tarball. The checker fix is routed to #147 and
+is not part of this admission.
+
+### pydantic-core host hazard
+
+The host has `python-pydantic` 2.13.4 with `python-pydantic-core-gfx1151`
+2.46.4. Arch `python-pydantic` 2.13.5 requires pydantic-core 2.46.5 exactly
+but depends on an unversioned `python-pydantic-core`. A routine host sync would
+therefore install a mismatched pair, and `import pydantic` would raise
+`SystemError` for vLLM, FastAPI, OpenAI, mistral-common, and huggingface-hub
+consumers.
+
+Fix status:
+
+- Source updated: `python-pydantic-core-gfx1151` now tracks 2.46.5, rendered
+  through `tools/render_recipe_scaffolds.py`.
+- Package built: `tools/amerge build` plan `2301b532` produced
+  `python-pydantic-core-gfx1151-2.46.5-1-x86_64.pkg.tar.zst`. An
+  extracted-archive smoke imported it with pydantic 2.13.5 and validated a
+  `BaseModel`.
+- Not published, deployed/installed, or installed-smoked. The install rides
+  the Lemonade family install window
+  ([#139](https://github.com/nisavid/arch-strix-halo-pkgs/issues/139)), with
+  the installed import and `BaseModel` smoke afterward. Until then, hold
+  `python-pydantic` at 2.13.4 through any host sync.
+
+### Closeout sweep
+
+A forced sweep after the selection completed at `2026-09-22T17:19:38-04:00`
+and exited 0 with `--fail-on actionable`. It reported the same 29 stable
+updates, five branch-head movements, two baseline drifts, one prerelease-only
+family, and eight current families. Applying the ledger yielded 29 tracked
+families, seven rejected families (AOTriton, TorchVision, Transformers,
+compressed-tensors, mistral-common, AutoRound, and llmcompressor), one
+adopted family, and eight current families. Lemonade fork main had moved two
+commits past the frozen candidate `187b4a25f` to `586e1900f`: a docs refresh
+and a `serde_with` bump in the Tauri app. `lemonade-fork-586e190` tracks that
+drift to the upstream-sync repackage (#141), and the #137 repin stays on the
+frozen candidate. The ledger holds 36 active tracked records and no blocked
+records. The explicit tracker validation found all 13 unique issue gates open
+in this repository.
+
+Apart from the pydantic-core source update and build, this admission changes
+maintenance metadata only. No other package source was updated, and no
+package was deployed/installed, installed-smoked, service-smoked, or
+live-scenario validated. The maintained Lemonade package source remains
+10.7.0 at fork commit `e18b9c1e352df8ab5aff2ff353402f1ec77c47f2`. The
+freshness evidence is due again 24 hours after the closeout sweep completed,
+or sooner if package policy, package directories, checker behavior, or
+relevant source metadata changes.
 
 ## 2026-08-12 Freshness Admission
 
