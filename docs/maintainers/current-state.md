@@ -8,18 +8,19 @@ transition are recorded first; older reconciliations remain as dated history.
 
 An uncached sweep started at `2026-09-22T15:56:39-04:00` found 28
 action-required families and one query failure across the 45 configured
-families. The llama.cpp query failure came from upstream changes, not from the
-checker: Arch moved llama.cpp into its official repositories and the AUR
-`llama.cpp-hip` and `llama.cpp-vulkan-bin` baselines were deleted, and upstream
-switched to semantic versioning with v0.2.0, publishing b-number builds as
-GitHub prereleases since then. The llama.cpp freshness policy now checks the
+families. The llama.cpp query failure came from an upstream change, not from
+the checker: Arch moved llama.cpp into its official repositories and the AUR
+`llama.cpp-hip` and `llama.cpp-vulkan-bin` baselines were deleted. Separately,
+upstream switched to semantic versioning with v0.2.0 and has published
+b-number builds as GitHub prereleases since then, so the b-number `release`
+check reports only prereleases. The llama.cpp freshness policy now checks the
 upstream `v`-prefixed stable tags (`stable-tag`, recorded 0.4.1) against the
 Arch `llama-cpp` and `ggml-hip` baselines. The b-number `release` check and its
 source contract are unchanged.
 
 Every non-current family now has a disposition in
 `docs/maintainers/update-candidates.toml`. The final uncached sweep completed
-at `2026-09-22T16:31:25-04:00` and exited 0 with `--fail-on actionable`. It
+at `2026-09-22T16:35:44-04:00` and exited 0 with `--fail-on actionable`. It
 reported 29 stable updates, five branch-head movements, two baseline drifts,
 one prerelease-only family (llama.cpp), and eight current families. Applying
 the ledger yielded 34 tracked families, two rejected families (AutoRound and
