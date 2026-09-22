@@ -36,7 +36,16 @@
       "lemonade-desktop"
     ],
     "depends": [
-      "lemonade-server"
+      "cairo",
+      "dbus",
+      "gdk-pixbuf2",
+      "glib2",
+      "glibc",
+      "gtk3",
+      "lemonade-server",
+      "libgcc",
+      "libsoup3",
+      "webkit2gtk-4.1"
     ],
     "divergence_notes": [
       "Tracks the renamed upstream lemonade-app payload while still providing lemonade-desktop compatibility for local package replacement.",

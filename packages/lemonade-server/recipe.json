@@ -50,7 +50,17 @@
     "baseline_kind": "closest-upstream",
     "conflicts": [],
     "depends": [
-      "glibc"
+      "brotli",
+      "curl",
+      "glibc",
+      "libcap",
+      "libdrm",
+      "libgcc",
+      "libstdc++",
+      "libwebsockets",
+      "systemd-libs",
+      "zlib",
+      "zstd"
     ],
     "divergence_notes": [
       "This custom build treats the ROCm and Vulkan llama.cpp backends as packaged system-managed backends rather than Lemonade-managed runtime downloads.",
