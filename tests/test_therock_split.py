@@ -135,13 +135,21 @@ def test_rocm_debug_agent_tracks_arch_rocr_debug_agent_baseline():
     ]
 
 
-def test_absent_hiptensor_and_rpp_payloads_do_not_render_fileless_compat_packages():
+def test_payload_packages_are_not_fileless_compat_packages():
     policy = therock_split.load_policy(REPO_ROOT / "policies/therock-packages.toml")
 
-    assert "fileless" not in policy["packages"]["hiptensor-gfx1151"]
-    assert "fileless" not in policy["packages"]["rpp-gfx1151"]
-    assert "hiptensor-gfx1151" not in policy["packages"]["rocm-hip-libraries-gfx1151"]["depends"]
+    for name in ("hiptensor-gfx1151", "rpp-gfx1151", "rocalution-gfx1151", "hipfile-gfx1151"):
+        assert "fileless" not in policy["packages"][name]
+    # rpp has no payload in the TheRock 7.14.1 stage, so no meta package may pull it.
     assert "rpp-gfx1151" not in policy["packages"]["rocm-ml-libraries-gfx1151"]["depends"]
+
+
+def test_hip_libraries_meta_pulls_the_7_14_1_payload_libraries():
+    policy = therock_split.load_policy(REPO_ROOT / "policies/therock-packages.toml")
+    depends = policy["packages"]["rocm-hip-libraries-gfx1151"]["depends"]
+
+    for name in ("hiptensor-gfx1151", "rocalution-gfx1151", "hipfile-gfx1151"):
+        assert name in depends
 
 
 def test_core_runtime_dependency_policy_tracks_arch_baseline_shape():
@@ -246,11 +254,38 @@ def test_math_and_ml_dependency_policy_tracks_arch_baseline_shape():
         "hip-runtime-amd-gfx1151",
         "miopen-hip-gfx1151",
         "msgpack-cxx",
-        "libprotobuf.so=35.0.0-64",
         "python-gfx1151",
         "rocblas-gfx1151",
         "rocm-core-gfx1151",
         "sqlite",
+    ]
+    assert packages["migraphx-gfx1151"]["soname_depends"] == [
+        {"library": "opt/rocm/lib/migraphx/lib/libmigraphx_onnx.so", "needed": "libprotobuf.so"},
+    ]
+    assert packages["hipsparselt-gfx1151"]["depends"] == [
+        "gcc-libs",
+        "glibc",
+        "hip-runtime-amd-gfx1151",
+        "hipsparse-gfx1151",
+        "lapack",
+        "msgpack-cxx",
+        "rocblas-gfx1151",
+        "rocm-core-gfx1151",
+        "rocm-smi-lib-gfx1151",
+        "rocminfo-gfx1151",
+        "roctracer-gfx1151",
+    ]
+    assert packages["rocalution-gfx1151"]["depends"] == [
+        "gcc-libs",
+        "glibc",
+        "hip-runtime-amd-gfx1151",
+        "openmp",
+        "rocblas-gfx1151",
+        "rocm-core-gfx1151",
+        "rocprim-gfx1151",
+        "rocrand-gfx1151",
+        "rocsolver-gfx1151",
+        "rocsparse-gfx1151",
     ]
     assert packages["rocprofiler-compute-gfx1151"]["depends"] == [
         "gcc-libs",
@@ -410,6 +445,188 @@ def test_generated_copy_helper_copies_from_staged_root_without_stage_prefix(tmp_
         ],
         check=True,
     )
+
+
+# --- TheRock 7.14.1 payload policy -------------------------------------------------
+
+
+KPACK_ARCHIVE_OWNERS = {
+    "blas_lib": "rocblas-gfx1151",
+    "fft_lib": "rocfft-gfx1151",
+    "hiptensor_lib": "hiptensor-gfx1151",
+    "rand_lib": "rocrand-gfx1151",
+    "rccl_lib": "rccl-gfx1151",
+    "rocalution_lib": "rocalution-gfx1151",
+}
+
+# kpack-split libraries in the TheRock 7.14.1 gfx1151 dist tarball and the
+# archive that each one's .rocm_kpack_ref marker names.
+KPACK_SPLIT_LIBRARIES = {
+    "opt/rocm/lib/librocblas.so.5.5": "blas_lib",
+    "opt/rocm/lib/libhipblaslt.so.1.4": "blas_lib",
+    "opt/rocm/lib/librocsparse.so.1.0": "blas_lib",
+    "opt/rocm/lib/librocsolver.so.0.10": "blas_lib",
+    "opt/rocm/lib/libhipsparselt.so.0.2": "blas_lib",
+    "opt/rocm/lib/librocfft.so.0.1": "fft_lib",
+    "opt/rocm/lib/librocrand.so.1.1": "rand_lib",
+    "opt/rocm/lib/librccl.so.1.0": "rccl_lib",
+    "opt/rocm/lib/libhiptensor.so.0.1": "hiptensor_lib",
+    "opt/rocm/lib/librocalution_hip.so.1.0.0": "rocalution_lib",
+}
+
+
+def repo_policy() -> dict:
+    return therock_split.load_policy(REPO_ROOT / "policies/therock-packages.toml")
+
+
+def test_policy_owns_every_kpack_archive_through_the_library_dependency_graph():
+    policy = repo_policy()
+    classifier = therock_split.Classifier(policy)
+
+    for archive, owner in KPACK_ARCHIVE_OWNERS.items():
+        assert classifier.classify(f"opt/rocm/.kpack/{archive}_gfx1151.kpack") == owner
+
+    for library, archive in KPACK_SPLIT_LIBRARIES.items():
+        library_owner = classifier.classify(library)
+        archive_owner = KPACK_ARCHIVE_OWNERS[archive]
+        assert library_owner == archive_owner or archive_owner in policy["packages"][library_owner]["depends"], library
+    assert classifier.failures == []
+    assert not any(".kpack" in pattern for pattern in policy["filters"]["ignore_globs"])
+
+
+def test_policy_maps_7_14_1_payload_additions():
+    classifier = therock_split.Classifier(repo_policy())
+    expected = {
+        "opt/rocm/include/rocalution/rocalution.hpp": "rocalution-gfx1151",
+        "opt/rocm/lib/cmake/rocalution/rocalution-config.cmake": "rocalution-gfx1151",
+        "opt/rocm/lib/librocalution.so.1.0": "rocalution-gfx1151",
+        "opt/rocm/lib/librocalution_hip.so.1.0.0": "rocalution-gfx1151",
+        "opt/rocm/include/hipfile.h": "hipfile-gfx1151",
+        "opt/rocm/include/hipfile-api-trace.h": "hipfile-gfx1151",
+        "opt/rocm/lib/cmake/hipfile/hipfile-config.cmake": "hipfile-gfx1151",
+        "opt/rocm/lib/libhipfile.so.0.3.0": "hipfile-gfx1151",
+        "opt/rocm/bin/ais-check": "hipfile-gfx1151",
+        "opt/rocm/bin/ais-stats": "hipfile-gfx1151",
+        "opt/rocm/include/hiptensor/hiptensor.h": "hiptensor-gfx1151",
+        "opt/rocm/lib/cmake/hiptensor/hiptensor-config.cmake": "hiptensor-gfx1151",
+        "opt/rocm/lib/libhiptensor.so.0.1": "hiptensor-gfx1151",
+        "opt/rocm/include/nccl.h": "rccl-gfx1151",
+        "opt/rocm/include/nccl_device.h": "rccl-gfx1151",
+        "opt/rocm/include/nccl_device/impl/core__funcs.h": "rccl-gfx1151",
+        "opt/rocm/include/rocprof-trace-decoder/rocprof_trace_decoder/cxx/code_printing.hpp": "rocprofiler-systems-gfx1151",
+        "opt/rocm/lib/cmake/rocprof-trace-decoder/rocprof-trace-decoder-config.cmake": "rocprofiler-systems-gfx1151",
+        "opt/rocm/lib/python/site-packages/rocprofsys/__init__.py": "rocprofiler-systems-gfx1151",
+        "opt/rocm/lib/hipdnn_frontend_python.abi3.so": "miopen-hip-gfx1151",
+        "opt/rocm/bin/hrr-playback": "hip-runtime-amd-gfx1151",
+        "opt/rocm/bin/amdllvm": "rocm-llvm-gfx1151",
+    }
+
+    for path, owner in expected.items():
+        assert classifier.classify(path) == owner, path
+    assert classifier.failures == []
+
+
+def test_policy_ignores_7_14_1_payload_that_is_not_packaged():
+    classifier = therock_split.Classifier(repo_policy())
+    ignored = [
+        "opt/rocm/include/rocjitsu/rocjitsu.h",
+        "opt/rocm/lib/librocjitsu.so",
+        "opt/rocm/share/rocjitsu/schemas/config.schema.json",
+        "opt/rocm/lib/librocdxg.so.1.1.0",
+        "opt/rocm/lib/cmake/rocdxg/rocdxg-config.cmake",
+        "opt/rocm/lib/pkgconfig/librocdxg.pc",
+        "opt/rocm/lib/cmake/rocprofiler-sdk-tests/rocprofiler-sdk-tests-config.cmake",
+        "opt/rocm/share/rocprofiler-sdk-tests/setup-env.sh",
+        "opt/rocm/lib/python3.10/site-packages/rocpd/libpyrocpd.cpython-310-x86_64-linux-gnu.so",
+        "opt/rocm/lib/python3.13/site-packages/roctx/__init__.py",
+        "opt/rocm/lib/python/site-packages/rocprofsys/libpyrocprofsys.cpython-313-x86_64-linux-gnu.so",
+    ]
+
+    for path in ignored:
+        assert classifier.classify(path) == therock_split.IGNORED, path
+    assert classifier.failures == []
+
+
+def test_policy_drops_removed_iree_and_stale_rocm_smi_rules():
+    policy = repo_policy()
+    aliases = policy["aliases"]
+
+    for name in ("iree", "IREE", "mlir-c"):
+        assert name not in aliases["component_dirs"]
+    for name in ("IREECompiler", "iree_compiler"):
+        assert name not in aliases["library_prefixes"]
+    assert "post_copy_commands" not in policy["packages"]["rocm-smi-lib-gfx1151"]
+    for name in ("python3.10", "python3.11", "python3.12", "python3.13"):
+        assert f"opt/rocm/lib/{name}" not in policy["overrides"]["path_owners"]
+
+
+def test_policy_rewrites_ci_build_paths_and_fails_on_leftovers():
+    packages = repo_policy()["packages"]
+    leaks = {
+        "rocprofiler-sdk-gfx1151": "opt/rocm/lib/cmake/rocprofiler-sdk/rocprofiler-sdk-config.cmake",
+        "hsa-rocr-gfx1151": "opt/rocm/lib/cmake/hsakmt/hsakmtTargets.cmake",
+        "rocm-core-gfx1151": "opt/rocm/share/pkgconfig/nlohmann_json.pc",
+        "migraphx-gfx1151": "opt/rocm/lib/pkgconfig/flatbuffers.pc",
+    }
+
+    for pkg, path in leaks.items():
+        commands = "\n".join(packages[pkg]["post_copy_commands"])
+        assert path in commands, pkg
+        assert "! grep -n '/__w/'" in commands, pkg
+        assert "CI_PATH_LEAK" in commands, pkg
+
+
+def test_ci_path_fixups_rewrite_the_7_14_1_leaks(tmp_path: Path):
+    packages = repo_policy()["packages"]
+    pkgdir = tmp_path / "pkg"
+    ci = "/__w/rockrel/rockrel/build"
+    files = {
+        "opt/rocm/lib/cmake/rocprofiler-sdk/rocprofiler-sdk-config.cmake": (
+            f"find_package(hip CONFIG HINTS\n        {ci}/core/clr/dist/lib/cmake/hip\n        {ci}/dist/rocm)\n"
+        ),
+        "opt/rocm/lib/cmake/hsakmt/hsakmtTargets.cmake": (
+            f'INTERFACE_LINK_LIBRARIES "-L{ci}/third-party/sysdeps/linux/libdrm/build/stage/lib/rocm_sysdeps/lib/pkgconfig/../../lib;\\$<LINK_ONLY:-ldrm>"\n'
+        ),
+        "opt/rocm/share/pkgconfig/nlohmann_json.pc": f"prefix={ci}/third-party/nlohmann-json/stage\nincludedir=${{prefix}}/include\n",
+        "opt/rocm/lib/pkgconfig/flatbuffers.pc": (
+            f"libdir={ci}/third-party/flatbuffers/stage/lib\nincludedir={ci}/third-party/flatbuffers/stage/include\n"
+        ),
+    }
+    for rel, text in files.items():
+        (pkgdir / rel).parent.mkdir(parents=True, exist_ok=True)
+        (pkgdir / rel).write_text(text)
+
+    script = ["set -e", f'pkgdir="{pkgdir}"', "fixups() {"]
+    for pkg in ("rocprofiler-sdk-gfx1151", "hsa-rocr-gfx1151", "migraphx-gfx1151"):
+        script.extend(packages[pkg]["post_copy_commands"])
+    script.extend(command for command in packages["rocm-core-gfx1151"]["post_copy_commands"] if "nlohmann" in command)
+    script.extend(["}", "fixups"])
+    subprocess.run(["bash", "-c", "\n".join(script)], check=True)
+
+    rewritten = {rel: (pkgdir / rel).read_text() for rel in files}
+    assert all("/__w/" not in text for text in rewritten.values())
+    assert "/opt/rocm/lib/cmake/hip\n        /opt/rocm)" in rewritten[
+        "opt/rocm/lib/cmake/rocprofiler-sdk/rocprofiler-sdk-config.cmake"
+    ]
+    assert '"-L${_IMPORT_PREFIX}/lib/rocm_sysdeps/lib;' in rewritten["opt/rocm/lib/cmake/hsakmt/hsakmtTargets.cmake"]
+    assert rewritten["opt/rocm/share/pkgconfig/nlohmann_json.pc"].startswith("prefix=/opt/rocm\n")
+    assert rewritten["opt/rocm/lib/pkgconfig/flatbuffers.pc"] == "libdir=/opt/rocm/lib\nincludedir=/opt/rocm/include\n"
+
+
+def test_ci_path_fixups_fail_the_package_when_a_leak_survives(tmp_path: Path):
+    commands = repo_policy()["packages"]["migraphx-gfx1151"]["post_copy_commands"]
+    pc = tmp_path / "pkg/opt/rocm/lib/pkgconfig/flatbuffers.pc"
+    pc.parent.mkdir(parents=True)
+    pc.write_text("libdir=/x\nCflags: -I/__w/rockrel/rockrel/build/include\n")
+
+    result = subprocess.run(
+        ["bash", "-c", "\n".join([f'pkgdir="{tmp_path / "pkg"}"', "fixups() {", *commands, "}", "fixups"])],
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 1
+    assert "CI_PATH_LEAK" in result.stderr
 
 
 # --- ELF helpers, KPACK_REF_UNOWNED and soname depends ---------------------------
