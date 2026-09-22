@@ -28,6 +28,15 @@ becomes durable, prefer a named patch that another maintainer can review.
   - Keeps macro-redefinition warnings from failing the build while preserving
     AOCL-LibM 5.3's native compiler-feature and linker probes.
 
+## CPython
+
+- [Build Python with POSIX 2024](../packages/python-gfx1151/0001-build-python-with-posix-2024.patch)
+  - A verbatim copy of upstream cpython `927eb448` (gh-144309). It raises the
+    configure feature macros from POSIX 2008 to POSIX 2024.
+  - Carried for parity with Arch `core/python` 3.14.7-1, the authoritative
+    reference, which applies the same commit. Drop it once a CPython 3.14
+    release contains the commit or Arch stops carrying it.
+
 ## Lemonade
 
 - [Linux NPU fallback when accel-device opens fail](../packages/lemonade-server/0001-linux-npu-fallback-to-pci-id-when-accel-open-fails.patch)

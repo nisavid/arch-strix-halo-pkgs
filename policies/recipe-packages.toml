@@ -92,7 +92,7 @@ scaffold_notes = [
 [packages.python-gfx1151]
 recipe_key = "cpython"
 template = "autoconf-python"
-upstream_version = "3.14.6"
+upstream_version = "3.14.7"
 pkgdesc = "The Python programming language rebuilt with amdclang for Strix Halo gfx1151"
 url = "https://www.python.org/"
 license = ["PSF-2.0"]
@@ -101,13 +101,15 @@ authoritative_reference = "core/python"
 advisory_references = ["cachyos-znver4/python"]
 divergence_notes = [
   "Uses the Arch system-Python package shape as the integration baseline while layering in the recipe's amdclang plus PGO/LTO approach.",
-  "Intentionally keeps pip/setuptools split out of the base interpreter package and preserves Arch's externally managed environment behavior."
+  "Intentionally keeps pip/setuptools split out of the base interpreter package and preserves Arch's externally managed environment behavior.",
+  "Carries Arch core/python's POSIX-2024 build backport (cpython 927eb448, gh-144309) as a verbatim upstream patch file so the configure feature macros match the Arch integration baseline."
 ]
 update_notes = [
   "Always diff against the current Arch python PKGBUILD first, then inspect CachyOS for any CPU-tuning or toolchain deltas worth carrying.",
   "Treat system-Python replacement as gated on a fresh torch/vLLM smoke run after any major Python, ROCm, or recipe change.",
   "Adopt CPython 3.14 patch releases after source review without waiting for Arch or CachyOS to move; keep those packages as integration references.",
-  "Treat patch-release source bumps as coordinated interpreter rebuild lanes until package build, deploy/install, installed smoke, and affected runtime smokes pass."
+  "Treat patch-release source bumps as coordinated interpreter rebuild lanes until package build, deploy/install, installed smoke, and affected runtime smokes pass.",
+  "Drop 0001-build-python-with-posix-2024.patch once the CPython 3.14 release branch contains cpython 927eb448 or Arch core/python stops carrying it."
 ]
 recipe_notes_override = """
 Python 3.14.x built with PGO + LTO + amdclang for Zen 5.
@@ -122,7 +124,7 @@ LDFLAGS, causing AOCL-LibM to be linked, which breaks PGO training
 (test_math fails on signed zero and subnormal number handling).
 
 vllm-env.sh is re-sourced after build to restore flags."""
-provides = ["python=3.14.6", "python3", "python-externally-managed"]
+provides = ["python=3.14.7", "python3", "python-externally-managed"]
 conflicts = ["python"]
 replaces = ["python", "python3", "python-externally-managed"]
 depends = ["bzip2", "expat", "gdbm", "libffi", "libnsl", "libxcrypt", "mpdecimal", "openssl", "tzdata", "zlib", "zstd"]
@@ -137,11 +139,13 @@ optdepends = [
 ]
 compiler_dep = "rocm-llvm-gfx1151"
 source_type = "tarball"
-source_url = "https://www.python.org/ftp/python/3.14.6/Python-3.14.6.tar.xz"
-sha256sums = ["143b1dddefaec3bd2e21e3b839b34a2b7fb9842272883c576420d605e9f30c63"]
-src_subdir = "Python-3.14.6"
+source_url = "https://www.python.org/ftp/python/3.14.7/Python-3.14.7.tar.xz"
+sha256sums = ["3b48dac8fb59f62eaa67ac83c1eb12bda1b7a08406dd286e252c11a66be27f81"]
+source_patches = ["0001-build-python-with-posix-2024.patch"]
+extra_sha256sums = ["76d1307b5f73ed9eb5e46b672c8f55bd93474173f4ca834a54d0ee7536fa0a7f"]
+src_subdir = "Python-3.14.7"
 install_prefix = "/usr"
-patches_dir = "patches/python-gfx1151"
+patches_dir = "packages/python-gfx1151"
 scaffold_notes = [
   "This scaffold is intentionally rebased onto current Arch/Cachy Python 3.14.x instead of the recipe's older CPython 3.13.12 pin.",
   "The scaffold preserves the recipe's rule that all vllm-env.sh compiler flags must be unset before configure so AOCL-LibM does not contaminate the PGO training run.",

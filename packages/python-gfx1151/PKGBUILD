@@ -5,7 +5,7 @@
 # Package recipe key: cpython
 
 pkgname=python-gfx1151
-pkgver=3.14.6
+pkgver=3.14.7
 pkgrel=1
 pkgdesc='The Python programming language rebuilt with amdclang for Strix Halo gfx1151'
 arch=('x86_64')
@@ -15,21 +15,22 @@ depends=(bzip2 expat gdbm libffi libnsl libxcrypt mpdecimal openssl tzdata zlib 
 makedepends=(bluez-libs gdb rocm-llvm-gfx1151 sqlite tk ttf-font xorg-server-xvfb xz)
 optdepends=('python-setuptools: for building Python packages using tooling that is usually bundled with Python' 'python-pip: for installing Python packages using tooling that is usually bundled with Python' 'python-pipx: for installing Python software not packaged on Arch Linux' 'sqlite: for a default database integration' 'xz: for lzma' 'tk: for tkinter')
 options=()
-provides=(python=3.14.6 python3 python-externally-managed)
+provides=(python=3.14.7 python3 python-externally-managed)
 conflicts=(python)
 replaces=(python python3 python-externally-managed)
-source=(https://www.python.org/ftp/python/3.14.6/Python-3.14.6.tar.xz)
-sha256sums=(143b1dddefaec3bd2e21e3b839b34a2b7fb9842272883c576420d605e9f30c63)
+source=(https://www.python.org/ftp/python/3.14.7/Python-3.14.7.tar.xz 0001-build-python-with-posix-2024.patch)
+sha256sums=(3b48dac8fb59f62eaa67ac83c1eb12bda1b7a08406dd286e252c11a66be27f81 76d1307b5f73ed9eb5e46b672c8f55bd93474173f4ca834a54d0ee7536fa0a7f)
 
 prepare() {
-  cd "$srcdir/Python-3.14.6"
+  cd "$srcdir/Python-3.14.7"
 
   rm -r Modules/expat
   rm -r Modules/_decimal/libmpdec
+  patch -Np1 -i "$srcdir/0001-build-python-with-posix-2024.patch"
 }
 
 build() {
-  cd "$srcdir/Python-3.14.6"
+  cd "$srcdir/Python-3.14.7"
 
   _setup_compiler_env() {
   local _compiler_root="/opt/rocm/lib/llvm/bin"
@@ -89,17 +90,17 @@ build() {
 }
 
 package() {
-  cd "$srcdir/Python-3.14.6"
+  cd "$srcdir/Python-3.14.7"
   make DESTDIR="$pkgdir" install
 
   local _debug_prefix="/usr/src/debug/python-gfx1151"
-  local _sanitized_src="${_debug_prefix}/Python-3.14.6"
+  local _sanitized_src="${_debug_prefix}/Python-3.14.7"
   local _sysconfig="$pkgdir/usr/lib/python3.14/_sysconfigdata__linux_x86_64-linux-gnu.py"
   local _sysconfig_json="$pkgdir/usr/lib/python3.14/_sysconfig_vars__linux_x86_64-linux-gnu.json"
   local _config_makefile="$pkgdir/usr/lib/python3.14/config-3.14-x86_64-linux-gnu/Makefile"
   local _python_config="$pkgdir/usr/bin/python3.14-config"
 
-  sed -i     -e "s|$srcdir/Python-3.14.6|${_sanitized_src}|g"     -e "s|$srcdir|${_debug_prefix}|g"     -e "s|/tmp/pkg/src/Python-3.14.6|${_sanitized_src}|g"     "${_sysconfig}" "${_sysconfig_json}" "${_config_makefile}" "${_python_config}"
+  sed -i     -e "s|$srcdir/Python-3.14.7|${_sanitized_src}|g"     -e "s|$srcdir|${_debug_prefix}|g"     -e "s|/tmp/pkg/src/Python-3.14.7|${_sanitized_src}|g"     "${_sysconfig}" "${_sysconfig_json}" "${_config_makefile}" "${_python_config}"
   rm -f "$pkgdir/usr/lib/python3.14/__pycache__/_sysconfigdata__linux_x86_64-linux-gnu."*.pyc
 
   ln -sf python3 "$pkgdir/usr/bin/python"
