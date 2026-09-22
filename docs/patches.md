@@ -127,6 +127,18 @@ becomes durable, prefer a named patch that another maintainer can review.
   - Keeps `torchao.quantization.pt2e` importable on Python 3.14 by guarding
     `typing.Union` alias metadata writes.
 
+## MIGraphX (TheRock stage)
+
+- No-MLIR build stubs, applied inline by
+  [`tools/stage_migraphx_for_therock.zsh`](../tools/stage_migraphx_for_therock.zsh)
+  - AMDMIGraphX 2.16.1 (`2487b688`) still exports `dump_mlir_to_file`,
+    `is_module_fusible`, `adjust_param_shapes`, and `dump_mlir_to_mxr` from
+    `mlir.hpp` without defining them in the `MIGRAPHX_MLIR`-off branch of
+    `src/targets/gpu/mlir.cpp`. The stubs let the repo build MIGraphX with
+    rocMLIR disabled.
+  - The former `RockEnums.h` include guard is no longer carried: upstream #4962
+    moved that include inside `#ifdef MIGRAPHX_MLIR` before 2.16.
+
 ## Torch-MIGraphX
 
 - [Import migrated PT2E quantization from TorchAO](../packages/python-torch-migraphx-gfx1151/0001-import-pt2e-quantization-from-torchao.patch)

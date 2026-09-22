@@ -1,5 +1,7 @@
 import json
 from pathlib import Path
+import re
+import tomllib
 
 import pytest
 
@@ -8,6 +10,7 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 REPO_PACKAGES = REPO_ROOT / "packages"
 PKGBUILD = REPO_ROOT / "packages/therock-gfx1151/PKGBUILD"
 MANIFEST = REPO_ROOT / "packages/therock-gfx1151/manifest.json"
+POLICY = REPO_ROOT / "policies/therock-packages.toml"
 MIGRAPHX_FILELIST = REPO_ROOT / "packages/therock-gfx1151/filelists/migraphx-gfx1151.txt"
 STAGE_MIGRAPHX = REPO_ROOT / "tools/stage_migraphx_for_therock.zsh"
 AMDSMI_PKGDIR = REPO_ROOT / "packages/therock-gfx1151/pkg/amdsmi-gfx1151"
@@ -16,27 +19,36 @@ MIGRAPHX_PKGDIR = REPO_ROOT / "packages/therock-gfx1151/pkg/migraphx-gfx1151"
 MIGRAPHX_PTH = MIGRAPHX_PKGDIR / "usr/lib/python3.14/site-packages/migraphx.pth"
 
 
+def migraphx_policy() -> dict:
+    with POLICY.open("rb") as fh:
+        return tomllib.load(fh)["packages"]["migraphx-gfx1151"]
+
+
+def split_protobuf_depend(depends: list[str]) -> tuple[list[str], list[str]]:
+    protobuf = [dep for dep in depends if re.fullmatch(r"libprotobuf\.so=\d+(\.\d+)*-64", dep)]
+    return [dep for dep in depends if dep not in protobuf], protobuf
+
+
 def test_migraphx_package_exports_python_import_hook():
     text = PKGBUILD.read_text()
     assert "package_migraphx-gfx1151()" in text
-    assert "depends=('gcc-libs' 'glibc' 'hip-runtime-amd-gfx1151' 'miopen-hip-gfx1151' 'msgpack-cxx' 'libprotobuf.so=35.0.0-64' 'python-gfx1151' 'rocblas-gfx1151' 'rocm-core-gfx1151' 'sqlite')" in text
     assert "migraphx.pth" in text
     assert "import sqlite3" in text
     assert "/opt/rocm/lib" in text
 
+    # The protobuf soname depend is rendered from the staged ONNX parser, so
+    # its version follows the protobuf that MIGraphX was built against.
+    policy_depends = migraphx_policy()["depends"]
+    function = text[text.index("package_migraphx-gfx1151()") :]
+    rendered = re.search(r"^    depends=\((.*)\)$", function, re.MULTILINE).group(1)
+    rendered_rest, rendered_protobuf = split_protobuf_depend(re.findall(r"'([^']+)'", rendered))
+    assert sorted(rendered_rest) == sorted(policy_depends)
+    assert len(rendered_protobuf) == 1
+
     manifest = json.loads(MANIFEST.read_text())
-    assert manifest["packages"]["migraphx-gfx1151"]["depends"] == [
-        "gcc-libs",
-        "glibc",
-        "hip-runtime-amd-gfx1151",
-        "miopen-hip-gfx1151",
-        "msgpack-cxx",
-        "libprotobuf.so=35.0.0-64",
-        "python-gfx1151",
-        "rocblas-gfx1151",
-        "rocm-core-gfx1151",
-        "sqlite",
-    ]
+    manifest_rest, manifest_protobuf = split_protobuf_depend(manifest["packages"]["migraphx-gfx1151"]["depends"])
+    assert sorted(manifest_rest) == sorted(policy_depends)
+    assert manifest_protobuf == rendered_protobuf
 
 
 def test_migraphx_filelist_contains_runtime_payload():
@@ -46,21 +58,16 @@ def test_migraphx_filelist_contains_runtime_payload():
     assert any(path.startswith("opt/rocm/lib/migraphx.cpython-") for path in paths)
 
 
-def test_migraphx_staging_pins_system_protobuf_and_rejects_stale_soname():
+def test_migraphx_staging_and_policy_agree_on_the_protobuf_parser():
     text = STAGE_MIGRAPHX.read_text()
-    assert "typeset protobuf_dir=/usr/lib/cmake/protobuf" in text
-    assert "typeset protobuf_soname=libprotobuf.so.35.0.0" in text
-    assert "typeset utf8_validity_soname=libutf8_validity.so.35.0.0" in text
+    assert "protobuf_soname=$(read_soname $protobuf_lib_dir/libprotobuf.so)" in text
     assert "-Dprotobuf_DIR=$protobuf_dir" in text
-    assert 'local protobuf_lib_dir=${protobuf_dir%/cmake/protobuf}' in text
-    assert "read_soname $protobuf_lib_dir/libprotobuf.so" in text
-    assert "read_soname $protobuf_lib_dir/libutf8_validity.so" in text
-    assert "libprotobuf.so.34*" in text
-    assert "libutf8_validity.so.34*" in text
-    assert text.index("staged MIGraphX ONNX library still links protobuf 34-era libraries") < text.index(
-        "staged MIGraphX ONNX library is not linked against $protobuf_soname"
-    )
+    assert "staged MIGraphX parser library is not linked against $protobuf_soname" in text
     assert text.index("local -a needed") < text.index('status "checking staged Python import"')
+
+    soname_depends = migraphx_policy()["soname_depends"]
+    assert soname_depends == [{"library": "opt/rocm/lib/migraphx/lib/libmigraphx_onnx.so", "needed": "libprotobuf.so"}]
+    assert "$stage/" + soname_depends[0]["library"] in text
 
 
 def test_rocprofiler_compute_manifest_tracks_runtime_dependencies():
