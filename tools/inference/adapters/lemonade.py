@@ -4,7 +4,7 @@ from pathlib import Path
 import sys
 from typing import Any
 
-from . import ExecutionPlan, required_model_binding
+from . import ExecutionPlan, pinned_sha256_args, required_model_binding
 
 
 LIVE_SMOKE_MODES = {"text", "provenance", "lifecycle", "pins", "budget", "displacement"}
@@ -13,7 +13,7 @@ GGUF_BINDING_MODES = {"pins", "budget", "displacement"}
 
 
 def _live_smoke_plan(
-    given: dict[str, Any],
+    definition: dict[str, Any],
     *,
     mode: str,
     argv: list[str],
@@ -23,6 +23,7 @@ def _live_smoke_plan(
 ) -> ExecutionPlan:
     if mode not in LIVE_SMOKE_MODES:
         raise ValueError(f"UNSUPPORTED_LEMONADE_LIVE_MODE: {mode}")
+    given = definition["given"]
     command = [sys.executable, str(repo_root / "tools/lemonade_live_smoke.py"), mode]
     if "lemonade_model" in given:
         command += ["--model", str(given["lemonade_model"])]
@@ -32,6 +33,8 @@ def _live_smoke_plan(
     if mode in ISOLATED_LEMOND_MODES:
         server_log = scenario_run_root / "server.log"
         command += ["--server-log", str(server_log)]
+    if mode == "text" or mode in GGUF_BINDING_MODES:
+        command += pinned_sha256_args(definition)
     return ExecutionPlan(command=[*command, *argv], server_log_path=server_log)
 
 
@@ -76,7 +79,7 @@ def build_execution_plan(
             )
         if tool_name.startswith("lemonade_live_smoke."):
             return _live_smoke_plan(
-                given,
+                definition,
                 mode=tool_name.rsplit(".", 1)[1],
                 argv=argv,
                 repo_root=repo_root,

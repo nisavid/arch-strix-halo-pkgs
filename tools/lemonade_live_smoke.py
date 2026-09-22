@@ -34,7 +34,13 @@ from typing import Any
 from urllib import error, parse, request
 
 from lemonade_api_auth import auth_headers, resolve_admin_api_key, resolve_api_key
-from llamacpp_server_smoke import COMPLETION_PROMPT, completion_text, validate_completion
+from llamacpp_server_smoke import (
+    COMPLETION_PROMPT,
+    completion_text,
+    file_sha256,
+    validate_completion,
+    verify_sha256,
+)
 
 
 MODES = ("text", "provenance", "lifecycle", "pins", "budget", "displacement")
@@ -168,6 +174,23 @@ def model_info(client: LemonadeClient, model: str) -> dict[str, Any]:
     return payload
 
 
+def main_checkpoint(info: Mapping[str, Any]) -> str | None:
+    checkpoints = info.get("checkpoints")
+    if isinstance(checkpoints, dict) and checkpoints.get("main"):
+        return str(checkpoints["main"])
+    checkpoint = info.get("checkpoint")
+    return str(checkpoint) if checkpoint else None
+
+
+def main_model_file(client: LemonadeClient, model: str) -> Path:
+    """Resolve the service's local main model file; the path is never printed."""
+    payload = client.get(f"/models/{quote_model(model)}/files?include_paths=true")
+    for item in payload.get("files", []):
+        if item.get("role") == "main" and item.get("exists") and item.get("path"):
+            return Path(str(item["path"]))
+    raise AssertionError(f"{model} has no resolved main model file")
+
+
 def load_refusal(client: LemonadeClient, model: str, **options: Any) -> str | None:
     """Try a load that should be refused; return the refusal, or None if admitted."""
     status, payload = client.request(
@@ -271,8 +294,10 @@ def run_text(
     backend: str,
     ctx_size: int,
     expect_checkpoint: str | None,
+    expect_sha256: str | None = None,
     owner_of: Callable[[str], str] = package_owner,
     executable_of: Callable[[int], str] = process_executable,
+    digest_of: Callable[[Path], str] = file_sha256,
 ) -> None:
     info = model_info(client, model)
     if not info.get("downloaded"):
@@ -280,10 +305,17 @@ def run_text(
             f"model_not_provisioned: {model}; provision it explicitly before the "
             "validation window instead of letting a load download it"
         )
-    if expect_checkpoint and expect_checkpoint not in json.dumps(
-        info.get("checkpoints") or info.get("checkpoint")
-    ):
-        raise AssertionError(f"{model} checkpoint does not come from {expect_checkpoint}: {info!r}")
+    checkpoint = main_checkpoint(info)
+    if expect_checkpoint and checkpoint != expect_checkpoint:
+        raise AssertionError(f"{model} checkpoint is {checkpoint!r}, not {expect_checkpoint!r}")
+    if expect_sha256:
+        path = main_model_file(client, model)
+        actual = digest_of(path)
+        if actual != expect_sha256.lower():
+            raise AssertionError(
+                f"model_sha256 mismatch for {model}: expected {expect_sha256}, got {actual}"
+            )
+        print("model_sha256_ok")
     print("model_provisioned_ok")
 
     was_loaded = loaded_entry(client.get("/health"), model) is not None
@@ -753,7 +785,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("mode", choices=MODES)
     parser.add_argument("--base-url", default="http://127.0.0.1:13305/api/v1")
     parser.add_argument("--model", help="Lemonade model id for text mode")
-    parser.add_argument("--expect-checkpoint", help="checkpoint source the text model must use")
+    parser.add_argument("--expect-checkpoint", help="exact main checkpoint the text model must use")
+    parser.add_argument("--expect-sha256", help="required SHA-256 of the exercised GGUF file")
     parser.add_argument("--backend", choices=sorted(BACKEND_PACKAGES), default="rocm")
     parser.add_argument("--ctx-size", type=int, default=4096)
     parser.add_argument("--gguf", type=Path, help="local GGUF file for isolated modes")
@@ -791,6 +824,7 @@ def main(argv: list[str] | None = None) -> None:
                 backend=args.backend,
                 ctx_size=args.ctx_size,
                 expect_checkpoint=args.expect_checkpoint,
+                expect_sha256=args.expect_sha256,
             )
         else:
             run_provenance(client, repo=args.repo, service=args.service)
@@ -799,6 +833,8 @@ def main(argv: list[str] | None = None) -> None:
     needs_gguf = args.mode != "lifecycle"
     if needs_gguf and (args.gguf is None or not args.gguf.is_file()):
         raise SystemExit(f"{args.mode} mode requires --gguf pointing at a local GGUF file")
+    if needs_gguf:
+        verify_sha256(args.gguf, args.expect_sha256)
     with IsolatedLemond(args, gguf=args.gguf if needs_gguf else None) as inst:
         if args.mode == "lifecycle":
             run_lifecycle(inst, expect_family=args.expect_gpu_family)

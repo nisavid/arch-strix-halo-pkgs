@@ -29,7 +29,12 @@ work is tracked in issue #138.
 
 All four text scenarios use the same file:
 `Qwen/Qwen3-0.6B-GGUF` at revision `23749fefcc72300e3a2ad315e1317431b06b590a`,
-`Qwen3-0.6B-Q8_0.gguf`. The Lemonade scenarios compare the backend
+`Qwen3-0.6B-Q8_0.gguf`. Every scenario that exercises it checks the file's
+SHA-256 against the pinned digest before reporting success. The direct and
+isolated scenarios hash the bound file. The service scenarios require the exact
+`Qwen/Qwen3-0.6B-GGUF:Q8_0` checkpoint and hash the service's resolved main
+file, so the runner must be able to read that file. The Lemonade scenarios also
+compare the backend
 process's executable against `pacman -Qo`, so they fail if Lemonade serves the
 model from anything other than the packaged llama.cpp.
 
