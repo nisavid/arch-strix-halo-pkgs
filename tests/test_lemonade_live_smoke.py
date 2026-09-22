@@ -400,6 +400,8 @@ def test_text_mode_proves_packaged_backend_and_restores_residency(capsys: pytest
         owner_of=lambda path: "llama.cpp-vulkan-gfx1151",
         executable_of=lambda pid: "/opt/llama.cpp-vulkan-gfx1151/bin/llama-server",
         digest_of=lambda path: PINNED_SHA256 if path == SERVICE_GGUF else "other",
+        libraries_of=lambda pid: {"/opt/llama.cpp-vulkan-gfx1151/lib/libggml-vulkan.so"},
+        repo_packages_of=lambda repo: {"llama.cpp-vulkan-gfx1151"},
     )
 
     out = capsys.readouterr().out
@@ -409,6 +411,7 @@ def test_text_mode_proves_packaged_backend_and_restores_residency(capsys: pytest
         "backend_selected_ok",
         "backend_package_ok",
         "completion_ok",
+        "backend_libraries_repo_owned_ok",
         "residency_restored",
     ):
         assert marker in out
@@ -468,6 +471,131 @@ def test_text_mode_rejects_bundled_backend_and_still_restores(capsys: pytest.Cap
 
     assert MODEL not in server.loaded
     assert "residency_restored" in capsys.readouterr().out
+
+
+ROCM_LIBS = {
+    "/opt/llama.cpp-hip-gfx1151/lib/libggml-hip.so": "llama.cpp-hip-gfx1151",
+    "/opt/llama.cpp-hip-gfx1151/lib/libllama.so": "llama.cpp-hip-gfx1151",
+    "/opt/rocm/lib/libamdhip64.so.7": "hip-runtime-amd-gfx1151",
+    "/opt/rocm/lib/libhsa-runtime64.so.1": "hsa-rocr-gfx1151",
+}
+REPO_PACKAGES = {"llama.cpp-hip-gfx1151", "hip-runtime-amd-gfx1151", "hsa-rocr-gfx1151"}
+LEMOND_CACHE_BIN = Path("/var/cache/lemond-test/bin")
+
+
+def _owner_from(owners: dict[str, str]):
+    def owner_of(path: str) -> str:
+        if path not in owners:
+            raise AssertionError(f"pacman -Qo {path} exited 1: error: No package owns {path}")
+        return owners[path]
+
+    return owner_of
+
+
+def _verify_libs(owners: dict[str, str], *, paths=None, backend="rocm", repo_packages=REPO_PACKAGES):
+    live.verify_backend_libraries(
+        set(owners) if paths is None else set(paths),
+        backend=backend,
+        repo="strix-halo-gfx1151",
+        repo_packages=repo_packages,
+        cache_bins=(LEMOND_CACHE_BIN,),
+        owner_of=_owner_from(owners),
+    )
+
+
+def test_mapped_libraries_selects_backend_objects_from_proc_maps(tmp_path: Path):
+    maps = tmp_path / "proc" / "4001" / "maps"
+    maps.parent.mkdir(parents=True)
+    maps.write_text(
+        "\n".join(
+            [
+                "7f00-7f10 r-xp 00000000 00:1f 11 /opt/llama.cpp-hip-gfx1151/lib/libggml-hip.so",
+                "7f10-7f20 r--p 00010000 00:1f 11 /opt/llama.cpp-hip-gfx1151/lib/libggml-hip.so",
+                "7f20-7f30 r-xp 00000000 00:1f 12 /opt/rocm/lib/libamdhip64.so.7.1.0",
+                "7f30-7f40 r-xp 00000000 00:1f 13 /usr/lib/libc.so.6",
+                "7f40-7f50 r-xp 00000000 00:1f 14 /var/cache/lemond-test/bin/rocm/libhsa-runtime64.so.1 (deleted)",
+                "7f50-7f60 rw-p 00000000 00:00 0 [heap]",
+                "7f60-7f70 rw-p 00000000 00:00 0",
+            ]
+        )
+        + "\n"
+    )
+
+    assert live.mapped_libraries(4001, proc_root=tmp_path / "proc") == {
+        "/opt/llama.cpp-hip-gfx1151/lib/libggml-hip.so",
+        "/opt/rocm/lib/libamdhip64.so.7.1.0",
+        "/var/cache/lemond-test/bin/rocm/libhsa-runtime64.so.1",
+    }
+    with pytest.raises(AssertionError, match="backend_maps_unreadable"):
+        live.mapped_libraries(4002, proc_root=tmp_path / "proc")
+
+
+def test_backend_libraries_must_come_from_repo_packages(capsys: pytest.CaptureFixture[str]):
+    _verify_libs(ROCM_LIBS)
+
+    out = capsys.readouterr().out
+    assert "backend_libraries 4" in out
+    assert "backend_libraries_from_cache 0" in out
+    assert "backend_library_package llama.cpp-hip-gfx1151 2" in out
+    assert "backend_library_package hip-runtime-amd-gfx1151 1" in out
+    assert "backend_libraries_repo_owned_ok" in out
+    assert "/opt/" not in out
+
+
+@pytest.mark.parametrize(
+    ("mutate", "message"),
+    [
+        (lambda owners: owners.update({f"{LEMOND_CACHE_BIN}/rocm/libhsa-runtime64.so.1": "x"}), "from lemond's cache bin"),
+        (lambda owners: owners.update({"/opt/rocm/lib/libhsa-runtime64.so.1": "hsa-rocr"}), "outside strix-halo-gfx1151"),
+        (lambda owners: owners.update({"/opt/llama.cpp-hip-gfx1151/lib/libllama.so": "hip-runtime-amd-gfx1151"}), "ggml/llama libraries are owned by"),
+    ],
+)
+def test_backend_libraries_reject_cache_unowned_foreign_or_missing_objects(mutate, message):
+    owners = dict(ROCM_LIBS)
+    mutate(owners)
+    with pytest.raises(AssertionError, match=message):
+        _verify_libs(owners)
+
+
+def test_backend_libraries_reject_unowned_objects_and_a_missing_hip_runtime():
+    owners = dict(ROCM_LIBS)
+    del owners["/opt/rocm/lib/libhsa-runtime64.so.1"]
+    with pytest.raises(AssertionError, match="1 backend libraries are not owned by any package"):
+        _verify_libs(owners, paths=ROCM_LIBS)
+
+    del owners["/opt/rocm/lib/libamdhip64.so.7"]
+    with pytest.raises(AssertionError, match="no HIP runtime mapped"):
+        _verify_libs(owners)
+
+
+def test_backend_libraries_require_llamacpp_objects():
+    with pytest.raises(AssertionError, match="no ggml or llama shared object"):
+        _verify_libs({"/opt/rocm/lib/libamdhip64.so.7": "hip-runtime-amd-gfx1151"})
+
+
+def test_text_mode_rejects_cached_therock_runtime_and_still_restores(capsys: pytest.CaptureFixture[str]):
+    server = FakeLemond(models=[MODEL])
+    libs = {**ROCM_LIBS, f"{LEMOND_CACHE_BIN}/therock/lib/libamdhip64.so.7": "unowned"}
+
+    with pytest.raises(AssertionError, match="1 backend libraries load from lemond's cache bin"):
+        live.run_text(
+            server,
+            model=MODEL,
+            backend="rocm",
+            ctx_size=4096,
+            expect_checkpoint=None,
+            cache_bins=(LEMOND_CACHE_BIN,),
+            owner_of=lambda path: ROCM_LIBS.get(path, "llama.cpp-hip-gfx1151"),
+            executable_of=lambda pid: "/opt/llama.cpp-hip-gfx1151/bin/llama-server",
+            libraries_of=lambda pid: set(libs),
+            repo_packages_of=lambda repo: REPO_PACKAGES,
+        )
+
+    out = capsys.readouterr().out
+    assert "completion_ok" in out
+    assert "residency_restored" in out
+    assert str(LEMOND_CACHE_BIN) not in out
+    assert MODEL not in server.loaded
 
 
 def test_text_mode_refuses_unprovisioned_model_without_loading():
@@ -882,6 +1010,72 @@ def test_nofetch_missing_model_must_fail_loudly_and_be_absent(tmp_path: Path):
 
     server, host = _nofetch_setup(tmp_path / "third")
     _run_nofetch(server, host, missing_model="user.never-registered")
+
+
+def _attempt_on_missing_load(server, host, *, ss_rows=(), touch: Path | None = None):
+    """Make the refused missing-model load log and blackhole a download attempt."""
+    original = server._load
+
+    def attempting_load(payload):
+        if payload["model_name"] == "Tiny-Test-Model-GGUF":
+            host.journal.append("Model not downloaded, downloading...")
+            host.ss_rows += list(ss_rows)
+            if touch is not None:
+                touch.write_text("x", encoding="utf-8")
+        return original(payload)
+
+    server._load = attempting_load
+
+
+BLACKHOLE_CONNECT = 'SYN-SENT 0 1 127.0.0.1:5000 127.0.0.1:9 users:(("lemond",pid=4000,fd=12))'
+
+
+def test_nofetch_records_a_blackholed_attempt_for_the_missing_model(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    server, host = _nofetch_setup(tmp_path)
+    _attempt_on_missing_load(server, host, ss_rows=[BLACKHOLE_CONNECT])
+
+    _run_nofetch(server, host)
+
+    out = capsys.readouterr().out
+    assert "preplaced_no_fetch_log_ok" in out
+    assert "missing_model_refused_ok" in out
+    assert "missing_fetch_log_lines 1" in out
+    assert "missing_no_fetch_log_ok" not in out
+    assert "missing_blackholed_fetch_attempt_recorded log_lines=1 blackhole_connects=" in out
+    assert "missing_model_cache_unchanged_ok" in out
+    assert "missing_no_remote_connection_ok" in out
+    assert "no_fetch_ok" in out
+
+
+@pytest.mark.parametrize(
+    ("change", "message"),
+    [
+        ({"ss_rows": ['SYN-SENT 0 1 198.51.100.2:5000 203.0.113.9:443 users:(("lemond",pid=4000,fd=12))']}, "missing: lemond connected to 1 non-loopback"),
+        ({"touch": "model"}, "missing: model_cache changed"),
+        ({"touch": "backend"}, "missing: backend_cache changed"),
+    ],
+)
+def test_nofetch_missing_model_attempt_fails_on_remote_or_cache_evidence(
+    tmp_path: Path, change: dict, message: str
+):
+    server, host = _nofetch_setup(tmp_path)
+    touch = change.pop("touch", None)
+    if touch == "model":
+        change["touch"] = server.model_storage / "models--Qwen--Qwen3-0.6B-GGUF" / "blobs" / "tiny.incomplete"
+    elif touch == "backend":
+        change["touch"] = host.cache_dir() / "bin" / "llama-server"
+    _attempt_on_missing_load(server, host, **change)
+
+    with pytest.raises(AssertionError, match=message):
+        _run_nofetch(server, host)
+
+
+def test_nofetch_preplaced_phase_keeps_the_strict_download_check(tmp_path: Path):
+    server, host = _nofetch_setup(tmp_path)
+    with pytest.raises(AssertionError, match="preplaced: the service logged 1 download"):
+        _run_nofetch(server, host, text=_fake_text(host, journal=["Model not downloaded, downloading..."]))
 
 
 def test_nofetch_preconditions_block_before_any_load(tmp_path: Path):
