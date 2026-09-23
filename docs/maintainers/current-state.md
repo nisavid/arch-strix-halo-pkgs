@@ -4,6 +4,25 @@ The package, deployment, and live-validation narrative below remains a
 2026-06-15 snapshot. The latest freshness sweep and its acted-on Lemonade
 transition are recorded first; older reconciliations remain as dated history.
 
+## 2026-09-23 Lemonade Args-Merge Fix
+
+After the M3 repin, `lemonade-server 11.7.0-1` was built and installed under
+#139. It could not load any qwen35 or qwen35moe model, including the host's
+pinned chat model. `RecipeOptions::inherit` kept the quote characters of the
+architecture default `--chat-template-kwargs '{"preserve_thinking":true}'`
+when it merged that value into the non-empty global `llamacpp.args` (the
+distro defaults always set `--no-mmap`). It then quoted the value again, so
+llama-server rejected a quoted JSON string and exited. `lemonade-server
+11.7.0-2` carries patch 0005, which tokenizes both sides without keeping
+quotes; see [Patch Inventory](../patches.md). A standalone C++ check against
+the pinned `custom_args.h` confirms that the merged argv value is exactly
+`{"preserve_thinking":true}`, that `--no-mmap` stays present, and that a value
+with spaces still round-trips. The unpatched merge fails the JSON and
+spaced-value checks. `lemonade.chat.pinned-user-model.qwen35moe` is the live
+guard. This is a source update only: 11.7.0-2 was not built,
+deployed/installed, installed-smoked, or live-scenario validated in this
+change; #139 and #140 own those gates.
+
 ## 2026-09-22 Freshness Admission
 
 An uncached sweep started at `2026-09-22T15:56:39-04:00` found 28

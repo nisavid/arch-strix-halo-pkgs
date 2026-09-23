@@ -679,6 +679,63 @@ value = "service_pin zerank-2-GGUF"
 kind = "stdout.contains"
 value = "service_pins_ok"
 
+# Pinned chat model regression guard (#139, #140). lemonade-server 11.7.0-1
+# handed llama-server a quoted --chat-template-kwargs value for every qwen35
+# and qwen35moe model, so the pinned chat model never loaded. The model id is
+# chosen per host at run time: --chat-model, else LEMONADE_PINNED_CHAT_MODEL,
+# else the tool's default. It is mutates-service only because the chat request
+# implicitly loads that already-pinned, downloaded model when it is not
+# resident; it never unloads, pins, unpins, or changes config.
+[[scenario]]
+id = "lemonade.chat.pinned-user-model.qwen35moe"
+summary = "The service answers a chat request with the pinned qwen35moe user model, whose backend receives --chat-template-kwargs as JSON, and the pin then reports loaded with no load_error"
+tags = [
+  "live-validation",
+  "validation-window",
+  "mutates-service",
+  "lemonade",
+  "chat",
+  "pins",
+  "qwen35moe",
+  "llamacpp",
+  "gguf",
+]
+
+[scenario.given]
+engine = "lemonade"
+model = "builtin"
+tool = "lemonade_live_smoke.pinned-chat"
+
+[scenario.when]
+argv = [
+  "--base-url",
+  "http://127.0.0.1:13305/api/v1",
+]
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "chat_model_pinned_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "chat_completion_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "chat_template_kwargs_json_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "pinned_chat_model_loaded_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "pinned_chat_ok"
+
 # The runner has no manual-step support, so the app check is an operator
 # checklist in the catalog. The loader ignores this table.
 [[operator_checklist]]

@@ -1556,6 +1556,159 @@ def test_service_pins_rejects_missing_unloaded_or_wrong_variant():
         live.parse_expected_pins(["a"])
 
 
+CHAT_MODEL = "Qwen3.6-35B-A3B-MTP-GGUF-UD-Q4_K_XL"
+PRESERVE_THINKING = '{"preserve_thinking":true}'
+
+
+def _chat_pinned_server(*, loaded: bool = False) -> FakeLemond:
+    server = FakeLemond(models=[CHAT_MODEL])
+    server.config["pinned_models"].append(CHAT_MODEL)
+    if loaded:
+        server.loaded[CHAT_MODEL] = {"model_name": CHAT_MODEL, "pid": 300, "pinned": True, "is_busy": False}
+    return server
+
+
+def _backend_argv(kwargs_value: str = PRESERVE_THINKING):
+    return lambda pid: [
+        "/opt/llama.cpp-hip-gfx1151/bin/llama-server",
+        "--no-mmap",
+        "--chat-template-kwargs",
+        kwargs_value,
+    ]
+
+
+def test_pinned_chat_auto_loads_the_pinned_model_and_answers(capsys: pytest.CaptureFixture[str]):
+    server = _chat_pinned_server()
+
+    live.run_pinned_chat(server, model=CHAT_MODEL, argv_of=_backend_argv())
+
+    out = capsys.readouterr().out
+    assert "chat_model_pinned_ok" in out
+    assert "chat_completion_ok" in out
+    assert "chat_template_kwargs_json_ok" in out
+    assert "pinned_chat_model_loaded_ok" in out
+    assert "pinned_chat_ok" in out
+    # Read-only apart from the implicit load the chat request performs.
+    assert [call for call in server.calls if call[0] != "GET"] == [("POST", "/chat/completions")]
+    assert CHAT_MODEL in server.loaded
+
+
+def test_pinned_chat_refuses_an_unpinned_or_absent_model_before_chatting():
+    server = FakeLemond(models=[CHAT_MODEL])
+    with pytest.raises(AssertionError, match="is not pinned"):
+        live.run_pinned_chat(server, model=CHAT_MODEL, argv_of=_backend_argv())
+    assert ("POST", "/chat/completions") not in server.calls
+
+    server = _chat_pinned_server()
+    server.models[CHAT_MODEL]["downloaded"] = False
+    with pytest.raises(AssertionError, match="model_not_provisioned"):
+        live.run_pinned_chat(server, model=CHAT_MODEL, argv_of=_backend_argv())
+    assert ("POST", "/chat/completions") not in server.calls
+
+
+def test_pinned_chat_rejects_quoted_chat_template_kwargs():
+    # The 11.7.0-1 regression: the merged *_args kept the single quotes.
+    server = _chat_pinned_server(loaded=True)
+    with pytest.raises(AssertionError, match="chat-template-kwargs is not a JSON object"):
+        live.run_pinned_chat(
+            server, model=CHAT_MODEL, argv_of=_backend_argv(f"'{PRESERVE_THINKING}'")
+        )
+
+
+def test_pinned_chat_fails_on_an_empty_reply_or_a_pin_load_error():
+    server = _chat_pinned_server(loaded=True)
+    original = server._dispatch
+
+    def empty_reply(method, path, payload):
+        if path == "/chat/completions":
+            return 200, {"choices": [{"message": {"role": "assistant", "content": ""}}]}
+        return original(method, path, payload)
+
+    server._dispatch = empty_reply
+    with pytest.raises(AssertionError, match="empty chat completion"):
+        live.run_pinned_chat(server, model=CHAT_MODEL, argv_of=_backend_argv())
+
+    server = _chat_pinned_server(loaded=True)
+    original_pins = server._dispatch
+
+    def load_error(method, path, payload):
+        status, body = original_pins(method, path, payload)
+        if path == "/pins" and method == "GET":
+            body["data"][0]["load_error"] = "llama-server exited with code 1"
+        return status, body
+
+    server._dispatch = load_error
+    with pytest.raises(AssertionError, match="load_error"):
+        live.run_pinned_chat(server, model=CHAT_MODEL, argv_of=_backend_argv())
+
+
+def _unreadable_argv(pid):
+    raise AssertionError(f"backend_cmdline_unreadable: pid {pid}: Permission denied")
+
+
+@pytest.mark.parametrize(
+    ("argv_of", "drop_resident", "message"),
+    [
+        (lambda pid: ["/opt/llama.cpp-hip-gfx1151/bin/llama-server", "--no-mmap"], False, "has no --chat-template-kwargs"),
+        (_unreadable_argv, False, "backend_cmdline_unreadable"),
+        (_backend_argv(), True, "is not resident after the chat request"),
+    ],
+)
+def test_pinned_chat_fails_loudly_without_backend_evidence(argv_of, drop_resident, message):
+    server = _chat_pinned_server(loaded=True)
+    if drop_resident:
+        original = server._dispatch
+
+        def no_residency(method, path, payload):
+            status, body = original(method, path, payload)
+            if path == "/health":
+                body = {**body, "all_models_loaded": []}
+            return status, body
+
+        server._dispatch = no_residency
+    with pytest.raises(AssertionError, match=message):
+        live.run_pinned_chat(server, model=CHAT_MODEL, argv_of=argv_of)
+
+
+def test_pinned_chat_reads_the_equals_form_and_real_proc_cmdline(tmp_path: Path, capsys):
+    server = _chat_pinned_server(loaded=True)
+    equals_form = lambda pid: ["llama-server", f"--chat-template-kwargs={PRESERVE_THINKING}"]
+    live.run_pinned_chat(server, model=CHAT_MODEL, argv_of=equals_form)
+    assert "chat_template_kwargs_json_ok" in capsys.readouterr().out
+
+    (tmp_path / "300").mkdir()
+    (tmp_path / "300" / "cmdline").write_bytes(b"llama-server\0--chat-template-kwargs\0" + PRESERVE_THINKING.encode() + b"\0")
+    assert live.process_argv(300, proc_root=tmp_path) == ["llama-server", "--chat-template-kwargs", PRESERVE_THINKING]
+    with pytest.raises(AssertionError, match="backend_cmdline_unreadable"):
+        live.process_argv(301, proc_root=tmp_path)
+
+
+def test_pinned_chat_accepts_a_reasoning_only_reply(capsys: pytest.CaptureFixture[str]):
+    server = _chat_pinned_server(loaded=True)
+    original = server._dispatch
+
+    def reasoning_only(method, path, payload):
+        if path == "/chat/completions":
+            message = {"role": "assistant", "content": "", "reasoning_content": "Thinking."}
+            return 200, {"choices": [{"message": message}]}
+        return original(method, path, payload)
+
+    server._dispatch = reasoning_only
+    live.run_pinned_chat(server, model=CHAT_MODEL, argv_of=_backend_argv())
+    assert "chat_completion_ok" in capsys.readouterr().out
+
+
+def test_pinned_chat_model_comes_from_the_flag_then_the_env_then_the_default(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    monkeypatch.delenv(live.PINNED_CHAT_MODEL_ENV, raising=False)
+    assert live.parse_args(["pinned-chat"]).chat_model == live.DEFAULT_PINNED_CHAT_MODEL
+    assert live.DEFAULT_PINNED_CHAT_MODEL == CHAT_MODEL
+    monkeypatch.setenv(live.PINNED_CHAT_MODEL_ENV, "Other-Pinned-GGUF")
+    assert live.parse_args(["pinned-chat"]).chat_model == "Other-Pinned-GGUF"
+    assert live.parse_args(["pinned-chat", "--chat-model", "Cli-GGUF"]).chat_model == "Cli-GGUF"
+
+
 def test_nofetch_requires_journal_evidence_for_each_phase(tmp_path: Path):
     server, host = _nofetch_setup(tmp_path)
     host.journal_after = lambda cursor: ([], cursor)

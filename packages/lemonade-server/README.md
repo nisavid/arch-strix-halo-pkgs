@@ -17,7 +17,7 @@
 - Recorded reference packages: `aur/lemonade-server, aur/lemonade-desktop`
 - Authoritative reference package: `aur/lemonade-server`
 - Advisory reference packages: `aur/lemonade-desktop`
-- Applied source patch files/actions: `4`
+- Applied source patch files/actions: `5`
 
 ## Recipe notes
 
@@ -65,6 +65,7 @@ Reinstalling at compatible versions resolves conflicts.
 - On 2026-05-31, bumped the server package release to refresh packaged system-managed llama.cpp backend metadata for the b9442 HIP and Vulkan backends.
 - On 2026-06-15, adopted nisavid/lemonade fork main e18b9c1e352df8ab5aff2ff353402f1ec77c47f2, which syncs upstream Lemonade v10.7.0.
 - On 2026-09-22, repinned the source to nisavid/lemonade fork main at Lemonade 11.7.0; the fork commit contains upstream v11.7.0 (2b6a7d7), and the lemonade entry in [source_pins] holds the selected commit. Refreshed patches 0002-0004 for the new base, and added the zz-secrets.conf backup entry, the offline distro defaults, and the model-endpoint drop-in. Issue 137 pins the frozen fork commit 3d5991033; issue 139 tracks the build, publish, install, and host validation.
+- On 2026-09-23, released 11.7.0-2 with patch 0005, which makes RecipeOptions::inherit tokenize merged *_args without keeping quotes. At 3d5991033 the merge wrapped quoted values in their quote characters and then quoted them again, so llama-server received a literal '{"preserve_thinking":true}' for the qwen35 and qwen35moe --chat-template-kwargs architecture default and exited. The distro defaults always set --no-mmap, so every qwen35 and qwen35moe model failed to load. Upstream #3265 (7b5657d80, first released in v11.8.0) replaces this merge path; drop patch 0005 at the M6 11.9 upstream sync that issue 141 tracks. Issues 139 and 140 track the regression.
 
 ## Maintainer Starting Points
 

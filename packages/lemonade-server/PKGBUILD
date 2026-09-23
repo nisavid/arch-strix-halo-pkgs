@@ -6,7 +6,7 @@
 
 pkgname=lemonade-server
 pkgver=11.7.0
-pkgrel=1
+pkgrel=2
 pkgdesc='Local AI server runtime rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://github.com/nisavid/lemonade
@@ -19,8 +19,8 @@ provides=(lemonade-server)
 conflicts=()
 replaces=()
 backup=(etc/lemonade/conf.d/zz-secrets.conf)
-source=('lemonade::git+https://github.com/nisavid/lemonade.git#commit=3d5991033e4cb28152ace4013f7f22a52c3bd617' 0001-linux-npu-fallback-to-pci-id-when-accel-open-fails.patch 0002-llamacpp-external-backends-are-system-managed.patch 0003-remove-llamacpp-system-backend.patch 0004-system-managed-llamacpp-metadata.patch)
-sha256sums=(SKIP 84149e7e765b80de94b0058edf930ee61ca39ceee534bff4e01fdd7e050cfb27 521d5a3b6d65c74dae9735ef7ca9434b1dac33f0b734e5d1208d67bc36d3ed9d 6e5a0345f2b7bede467045fa12f42f4d0773a7a782b169b0009d12de1d08155d 5ec6cbf9d6c06e1d4c31930060b73627591c4dfe188d234719cf3a403db319b0)
+source=('lemonade::git+https://github.com/nisavid/lemonade.git#commit=3d5991033e4cb28152ace4013f7f22a52c3bd617' 0001-linux-npu-fallback-to-pci-id-when-accel-open-fails.patch 0002-llamacpp-external-backends-are-system-managed.patch 0003-remove-llamacpp-system-backend.patch 0004-system-managed-llamacpp-metadata.patch 0005-merge-custom-args-without-keeping-quotes.patch)
+sha256sums=(SKIP 84149e7e765b80de94b0058edf930ee61ca39ceee534bff4e01fdd7e050cfb27 521d5a3b6d65c74dae9735ef7ca9434b1dac33f0b734e5d1208d67bc36d3ed9d 6e5a0345f2b7bede467045fa12f42f4d0773a7a782b169b0009d12de1d08155d 5ec6cbf9d6c06e1d4c31930060b73627591c4dfe188d234719cf3a403db319b0 fe54e0c8182d564b46fe9252c45f7dc5e549440486224bf62effe86ccdc1628c)
 
 prepare() {
   cd "$srcdir/lemonade"
@@ -29,6 +29,7 @@ prepare() {
   patch -Np1 -i "$srcdir/0002-llamacpp-external-backends-are-system-managed.patch"
   patch -Np1 -i "$srcdir/0003-remove-llamacpp-system-backend.patch"
   patch -Np1 -i "$srcdir/0004-system-managed-llamacpp-metadata.patch"
+  patch -Np1 -i "$srcdir/0005-merge-custom-args-without-keeping-quotes.patch"
 }
 
 build() {
