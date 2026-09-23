@@ -286,8 +286,6 @@ provides = ["rocprofiler-compute"]
 depends = ["gcc-libs", "glibc", "python-gfx1151", "python-astunparse", "python-numpy-gfx1151", "python-pandas", "python-pyyaml-gfx1151", "python-sqlalchemy", "python-tabulate", "python-textual", "rocprofiler-sdk-gfx1151", "rocprofiler-systems-gfx1151"]
 post_copy_commands = [
   "sed -i -e '/^dash-bootstrap-components==/d' -e '/^dash-svg==/d' -e '/^dash==/d' -e '/^plotext==/d' -e '/^plotille==/d' -e '/^textual_plotext==/d' \"${pkgdir}/opt/rocm/libexec/rocprofiler-compute/requirements.txt\"",
-  "mkdir -p \"${pkgdir}/opt/rocm/bin\"",
-  "ln -s ../libexec/rocprofiler-compute/rocprof-compute \"${pkgdir}/opt/rocm/bin/rocprof-compute\"",
 ]
 
 [packages."roctracer-gfx1151"]
@@ -766,6 +764,9 @@ fileless = true
 "opt/rocm/.kpack/rand_lib_gfx1151.kpack" = "rocrand-gfx1151"
 "opt/rocm/.kpack/rccl_lib_gfx1151.kpack" = "rccl-gfx1151"
 "opt/rocm/.kpack/rocalution_lib_gfx1151.kpack" = "rocalution-gfx1151"
+# 7.14.1 ships its own bin/rocprof-compute launcher; without this entry the
+# "rocprof" binary prefix hands it to rocprofiler-systems.
+"opt/rocm/bin/rocprof-compute" = "rocprofiler-compute-gfx1151"
 "opt/rocm/bin/clinfo" = "rocm-opencl-runtime-gfx1151"
 "opt/rocm/bin/flatc" = "migraphx-gfx1151"
 "opt/rocm/etc/OpenCL" = "rocm-opencl-runtime-gfx1151"

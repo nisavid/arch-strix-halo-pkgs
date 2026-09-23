@@ -779,8 +779,6 @@ package_rocprofiler-compute-gfx1151() {
     _require_therock_root
     _copy_from_filelist 'rocprofiler-compute-gfx1151'
     sed -i -e '/^dash-bootstrap-components==/d' -e '/^dash-svg==/d' -e '/^dash==/d' -e '/^plotext==/d' -e '/^plotille==/d' -e '/^textual_plotext==/d' "${pkgdir}/opt/rocm/libexec/rocprofiler-compute/requirements.txt"
-    mkdir -p "${pkgdir}/opt/rocm/bin"
-    ln -s ../libexec/rocprofiler-compute/rocprof-compute "${pkgdir}/opt/rocm/bin/rocprof-compute"
 }
 
 package_rocprofiler-register-gfx1151() {

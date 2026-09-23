@@ -1,5 +1,4 @@
 opt/rocm/bin/rocprof-attach
-opt/rocm/bin/rocprof-compute
 opt/rocm/bin/rocprof-sys-attach
 opt/rocm/bin/rocprof-sys-avail
 opt/rocm/bin/rocprof-sys-causal

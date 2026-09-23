@@ -1,3 +1,4 @@
+opt/rocm/bin/rocprof-compute
 opt/rocm/lib/rocprofiler-compute/librocprofiler-compute-tool.so
 opt/rocm/libexec/rocprofiler-compute/CTestTestfile.cmake
 opt/rocm/libexec/rocprofiler-compute/VERSION

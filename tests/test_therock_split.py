@@ -519,11 +519,19 @@ def test_policy_maps_7_14_1_payload_additions():
         "opt/rocm/lib/hipdnn_frontend_python.abi3.so": "miopen-hip-gfx1151",
         "opt/rocm/bin/hrr-playback": "hip-runtime-amd-gfx1151",
         "opt/rocm/bin/amdllvm": "rocm-llvm-gfx1151",
+        "opt/rocm/bin/rocprof-compute": "rocprofiler-compute-gfx1151",
     }
 
     for path, owner in expected.items():
         assert classifier.classify(path) == owner, path
     assert classifier.failures == []
+
+
+def test_rocprof_compute_launcher_is_not_also_synthesized():
+    # 7.14.1 ships bin/rocprof-compute; a post-copy symlink to the same path
+    # would put it in two packages.
+    commands = repo_policy()["packages"]["rocprofiler-compute-gfx1151"].get("post_copy_commands", [])
+    assert not any("bin/rocprof-compute" in command for command in commands)
 
 
 def test_policy_ignores_7_14_1_payload_that_is_not_packaged():

@@ -139,6 +139,11 @@ validation therefore needs one kernel per archive family, not only rocBLAS.
   `hipdnn_frontend_python.abi3.so` goes to `miopen-hip-gfx1151` with hipDNN;
   `hrr-playback` goes to `hip-runtime-amd-gfx1151`; and the `amdllvm`
   symlink goes to `rocm-llvm-gfx1151`.
+- `bin/rocprof-compute` is now an upstream Python launcher, owned by
+  `rocprofiler-compute-gfx1151`. The 7.13 policy made that path a symlink
+  in `rocprofiler-compute-gfx1151`, and the `rocprof` binary prefix gave the
+  new launcher to `rocprofiler-systems-gfx1151`, so both packages shipped the
+  path and could not be installed together.
 - CI build paths (`/__w/rockrel/...`) in `rocprofiler-sdk-config.cmake`,
   `hsakmtTargets.cmake`, `nlohmann_json.pc`, and `flatbuffers.pc` are rewritten
   at package time, and each package fails with `CI_PATH_LEAK` if one survives.
