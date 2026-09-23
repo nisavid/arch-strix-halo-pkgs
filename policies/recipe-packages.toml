@@ -885,7 +885,7 @@ scaffold_notes = [
 [packages.python-tokenizers-gfx1151]
 recipe_key = "rust_wheels"
 template = "rust-wheel-pypi"
-upstream_version = "0.22.2"
+upstream_version = "0.23.2"
 pkgdesc = "Fast state-of-the-art tokenizers rebuilt for Strix Halo gfx1151"
 url = "https://github.com/huggingface/tokenizers"
 license = ["Apache-2.0"]
@@ -899,7 +899,8 @@ divergence_notes = [
 update_notes = [
   "Check the current Hugging Face tokenizers release and Cachy package before updating; Transformers metadata can constrain this package.",
   "On 2026-05-01, reviewed PyPI tokenizers 0.23.1 but kept the package on 0.22.2 because Transformers 5.7.0 declares tokenizers<=0.23.0,>=0.22.0.",
-  "After publishing a rebuilt package, verify `import tokenizers` and a tiny tokenizer construction through the installed local Python lane."
+  "After publishing a rebuilt package, verify `import tokenizers` and a tiny tokenizer construction through the installed local Python lane.",
+  "On 2026-09-22, update to tokenizers 0.23.2 for the generation-C W2A closure (#110), built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7. Transformers 5.16.1 requires tokenizers >=0.23.1,<0.24."
 ]
 provides = ["python-tokenizers"]
 conflicts = ["python-tokenizers"]
@@ -907,8 +908,8 @@ depends = ["glibc", "libgcc", "python-gfx1151"]
 makedepends = ["cargo", "python-build", "python-installer", "python-maturin", "python-wheel", "rocm-llvm-gfx1151", "rust"]
 isolated_cargo_home = false
 pypi_name = "tokenizers"
-sha256sums = ["473b83b915e547aa366d1eee11806deaf419e17be16310ac0a14077f1e28f917"]
-src_subdir = "tokenizers-0.22.2"
+sha256sums = ["7f0f085686b9de0d0079e6f874ae053600db64c5d13049e0bbc0119926d25aac"]
+src_subdir = "tokenizers-0.23.2"
 patches_dir = "patches/python-tokenizers-gfx1151"
 recipe_notes_override = """
 This package is the tokenizers output from the shared `rust_wheels` recipe

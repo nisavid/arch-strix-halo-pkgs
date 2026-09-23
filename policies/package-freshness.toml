@@ -196,7 +196,7 @@ packages = ["python-tokenizers-gfx1151"]
 priority = "medium"
 workflow = "upstream_source_update"
 checks = [
-  { id = "pypi", role = "primary", kind = "pypi", package = "tokenizers", recorded = "0.23.1", comparison = "pep440" },
+  { id = "pypi", role = "primary", kind = "pypi", package = "tokenizers", recorded = "0.23.2", comparison = "pep440" },
 ]
 source_contracts = [
   { id = "pypi-source", packages = ["python-tokenizers-gfx1151"], check_id = "pypi", source_kind = "pypi_sdist", origin = "pypi:tokenizers", value_policy = "pinned_may_lag_reviewed" },

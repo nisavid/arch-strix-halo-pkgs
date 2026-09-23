@@ -6,8 +6,8 @@
 - Scaffold template: `rust-wheel-pypi`
 - Recipe build method: `cargo`
 - Upstream repo: `https://github.com/huggingface/tokenizers`
-- Package version: `0.22.2`
-- Recipe revision: `a1d7a68 (20260427, 16 commits touching recipe path)`
+- Package version: `0.23.2`
+- Recipe revision: `3f15f9f (20260508, 17 commits touching recipe path)`
 - Recipe steps: `31`
 - Recipe dependencies: `cpython`
 - Recorded reference packages: `cachyos/python-tokenizers`
@@ -43,6 +43,7 @@ znver5 Rust codegen lane as the rest of the optimized local wheel stack.
 - Check the current Hugging Face tokenizers release and Cachy package before updating; Transformers metadata can constrain this package.
 - On 2026-05-01, reviewed PyPI tokenizers 0.23.1 but kept the package on 0.22.2 because Transformers 5.7.0 declares tokenizers<=0.23.0,>=0.22.0.
 - After publishing a rebuilt package, verify `import tokenizers` and a tiny tokenizer construction through the installed local Python lane.
+- On 2026-09-22, update to tokenizers 0.23.2 for the generation-C W2A closure (#110), built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7. Transformers 5.16.1 requires tokenizers >=0.23.1,<0.24.
 
 ## Maintainer Starting Points
 

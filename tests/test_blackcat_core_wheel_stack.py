@@ -16,7 +16,7 @@ CORE_STACK = {
     "python-tokenizers-gfx1151": {
         "template": "rust-wheel-pypi",
         "recipe_key": "rust_wheels",
-        "upstream_version": "0.22.2",
+        "upstream_version": "0.23.2",
         "provides": ["python-tokenizers"],
         "consumer_dep": "python-tokenizers-gfx1151",
     },
