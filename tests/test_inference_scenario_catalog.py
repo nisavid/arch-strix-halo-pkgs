@@ -1267,6 +1267,7 @@ LEMONADE_LIVE_SCENARIOS = {
     "lemonade.provenance.family-no-fallback",
     "lemonade.nofetch.preplaced-load-missing-model",
     "lemonade.pins.service-consumer-pins",
+    "lemonade.chat.pinned-user-model.qwen35moe",
 }
 
 
@@ -1328,6 +1329,25 @@ def test_lemonade_live_validation_scenarios_are_gated_and_share_one_gguf():
         assert {"kind": "stdout.contains", "value": "backend_libraries_repo_owned_ok"} in asserts
     # The missing model is chosen per host at run time (--missing-model or its env override).
     assert not any(arg.split("=", 1)[0] == "--missing-model" for arg in nofetch["when"]["argv"])
+
+    chat = by_id["lemonade.chat.pinned-user-model.qwen35moe"]
+    assert chat.definition["given"]["tool"] == "lemonade_live_smoke.pinned-chat"
+    assert {"lemonade", "chat", "pins", "qwen35moe"} <= set(chat.tags)
+    # The chat request can load the pinned model on the service, but never unloads it.
+    assert "mutates-service" in chat.tags
+    assert not {"read-only", "isolated-lemond"} & set(chat.tags)
+    chat_markers = {
+        item["value"] for item in chat.definition["then"]["assert"] if item["kind"] == "stdout.contains"
+    }
+    assert {
+        "chat_model_pinned_ok",
+        "chat_completion_ok",
+        "chat_template_kwargs_json_ok",
+        "pinned_chat_model_loaded_ok",
+        "pinned_chat_ok",
+    } <= chat_markers
+    # The model is chosen per host at run time (--chat-model or its env override).
+    assert not any(arg.split("=", 1)[0] == "--chat-model" for arg in chat.definition["when"]["argv"])
 
     pins_argv = by_id["lemonade.pins.service-consumer-pins"].definition["when"]["argv"]
     pooling = {s.id: s for s in scenarios}

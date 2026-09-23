@@ -2290,7 +2290,7 @@ recipe_key = "lemonade"
 template = "lemonade-server"
 pkgdesc = "Local AI server runtime rebuilt for Strix Halo gfx1151"
 upstream_version = "11.7.0"
-pkgrel = 1
+pkgrel = 2
 url = "https://github.com/nisavid/lemonade"
 repo = "https://github.com/nisavid/lemonade.git"
 license = ["Apache-2.0"]
@@ -2312,7 +2312,8 @@ update_notes = [
   "On 2026-05-28, bumped the server package release to refresh packaged system-managed llama.cpp backend metadata for the b9357 HIP and Vulkan backends.",
   "On 2026-05-31, bumped the server package release to refresh packaged system-managed llama.cpp backend metadata for the b9442 HIP and Vulkan backends.",
   "On 2026-06-15, adopted nisavid/lemonade fork main e18b9c1e352df8ab5aff2ff353402f1ec77c47f2, which syncs upstream Lemonade v10.7.0.",
-  "On 2026-09-22, repinned the source to nisavid/lemonade fork main at Lemonade 11.7.0; the fork commit contains upstream v11.7.0 (2b6a7d7), and the lemonade entry in [source_pins] holds the selected commit. Refreshed patches 0002-0004 for the new base, and added the zz-secrets.conf backup entry, the offline distro defaults, and the model-endpoint drop-in. Issue 137 pins the frozen fork commit 3d5991033; issue 139 tracks the build, publish, install, and host validation."
+  "On 2026-09-22, repinned the source to nisavid/lemonade fork main at Lemonade 11.7.0; the fork commit contains upstream v11.7.0 (2b6a7d7), and the lemonade entry in [source_pins] holds the selected commit. Refreshed patches 0002-0004 for the new base, and added the zz-secrets.conf backup entry, the offline distro defaults, and the model-endpoint drop-in. Issue 137 pins the frozen fork commit 3d5991033; issue 139 tracks the build, publish, install, and host validation.",
+  "On 2026-09-23, released 11.7.0-2 with patch 0005, which makes RecipeOptions::inherit tokenize merged *_args without keeping quotes. At 3d5991033 the merge wrapped quoted values in their quote characters and then quoted them again, so llama-server received a literal '{\"preserve_thinking\":true}' for the qwen35 and qwen35moe --chat-template-kwargs architecture default and exited. The distro defaults always set --no-mmap, so every qwen35 and qwen35moe model failed to load. Upstream #3265 (7b5657d80, first released in v11.8.0) replaces this merge path; drop patch 0005 at the M6 11.9 upstream sync that issue 141 tracks. Issues 139 and 140 track the regression."
 ]
 provides = ["lemonade-server"]
 conflicts = []
@@ -2346,18 +2347,21 @@ extra_sources = [
   "0002-llamacpp-external-backends-are-system-managed.patch",
   "0003-remove-llamacpp-system-backend.patch",
   "0004-system-managed-llamacpp-metadata.patch",
+  "0005-merge-custom-args-without-keeping-quotes.patch",
 ]
 extra_sha256sums = [
   "84149e7e765b80de94b0058edf930ee61ca39ceee534bff4e01fdd7e050cfb27",
   "521d5a3b6d65c74dae9735ef7ca9434b1dac33f0b734e5d1208d67bc36d3ed9d",
   "6e5a0345f2b7bede467045fa12f42f4d0773a7a782b169b0009d12de1d08155d",
   "5ec6cbf9d6c06e1d4c31930060b73627591c4dfe188d234719cf3a403db319b0",
+  "fe54e0c8182d564b46fe9252c45f7dc5e549440486224bf62effe86ccdc1628c",
 ]
 source_patches = [
   "0001-linux-npu-fallback-to-pci-id-when-accel-open-fails.patch",
   "0002-llamacpp-external-backends-are-system-managed.patch",
   "0003-remove-llamacpp-system-backend.patch",
   "0004-system-managed-llamacpp-metadata.patch",
+  "0005-merge-custom-args-without-keeping-quotes.patch",
 ]
 patches_dir = "packages/lemonade-server"
 scaffold_notes = [

@@ -24,6 +24,10 @@ SYSTEM_METADATA_PATCH = (
     REPO_ROOT
     / "packages/lemonade-server/0004-system-managed-llamacpp-metadata.patch"
 )
+ARGS_MERGE_PATCH = (
+    REPO_ROOT
+    / "packages/lemonade-server/0005-merge-custom-args-without-keeping-quotes.patch"
+)
 PKG_ROOT = REPO_ROOT / "packages/lemonade-server/pkg/lemonade-server"
 CONF = PKG_ROOT / "etc/lemonade/conf.d/10-llamacpp-gfx1151.conf"
 DISTRO_DEFAULTS = PKG_ROOT / "usr/share/lemonade/defaults.json"
@@ -176,10 +180,54 @@ def test_pkgbuild_builds_the_pinned_fork_commit():
 
 def test_pkgbuild_checksums_every_local_patch():
     sums = _pkgbuild_value(PKGBUILD, "sha256sums").strip("()").split()
+    local_patches = sorted(PKGBUILD.parent.glob("*.patch"))
 
     assert sums[0] == "SKIP"
-    assert len(sums) == 5
+    assert len(sums) == 1 + len(local_patches) == 6
     assert all(re.fullmatch(r"[0-9a-f]{64}", item) for item in sums[1:])
+
+
+def _prepare_patch_order():
+    text = PKGBUILD.read_text()
+    prepare = re.search(r"^prepare\(\) \{\n(.*?)^\}", text, re.DOTALL | re.MULTILINE)
+    assert prepare, "PKGBUILD has no prepare()"
+    return re.findall(r'patch -Np1 -i "\$srcdir/([^"]+)"', prepare.group(1))
+
+
+def test_pkgbuild_applies_args_merge_fix_last():
+    # 0005 carries upstream #3265's effect for 11.7: merged *_args keep
+    # quoted JSON values such as qwen35's --chat-template-kwargs intact.
+    assert _prepare_patch_order() == [
+        "0001-linux-npu-fallback-to-pci-id-when-accel-open-fails.patch",
+        "0002-llamacpp-external-backends-are-system-managed.patch",
+        "0003-remove-llamacpp-system-backend.patch",
+        "0004-system-managed-llamacpp-metadata.patch",
+        ARGS_MERGE_PATCH.name,
+    ]
+    assert ARGS_MERGE_PATCH.name in _pkgbuild_value(PKGBUILD, "source")
+
+
+def test_args_merge_patch_tokenizes_without_keeping_quotes():
+    text = ARGS_MERGE_PATCH.read_text()
+
+    assert re.findall(r"^diff --git a/(\S+)", text, re.MULTILINE) == [
+        "src/cpp/server/recipe_options.cpp"
+    ]
+    for side in ("target", "incoming"):
+        call = f"auto {side}_tokens = lemon::utils::parse_custom_args({side}_str"
+        assert f"-                {call}, true);" in text
+        assert f"+                {call}, false);" in text
+
+
+def test_prepared_source_merges_custom_args_without_keeping_quotes():
+    recipe_options = SOURCE_TREE / "src/cpp/server/recipe_options.cpp"
+    if not recipe_options.exists():
+        pytest.skip("prepared lemonade source is not present")
+
+    text = recipe_options.read_text()
+    for side in ("target", "incoming"):
+        assert f"parse_custom_args({side}_str, false)" in text
+        assert f"parse_custom_args({side}_str, true)" not in text
 
 
 def _current_pkgbuild_version():

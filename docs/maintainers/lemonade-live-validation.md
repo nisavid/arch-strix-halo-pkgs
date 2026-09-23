@@ -25,6 +25,7 @@ work is tracked in issue #138.
 | Package provenance; no silent downloader, bundled-backend fallback, or foreign or mixed package | `lemonade.provenance.family-no-fallback` |
 | No fetch on `/load`, inference auto-load, or Ollama auto-load: journal, cache-diff, and network evidence, plus a registered but absent model that fails loudly on each path | `lemonade.nofetch.preplaced-load-missing-model` |
 | The service keeps the consumer models `zembed-1` Q4_K_M and `zerank-2` Q8_0 pinned and loaded | `lemonade.pins.service-consumer-pins` |
+| The service answers chat with the pinned qwen35moe user model, and the pin stays loaded with no load error | `lemonade.chat.pinned-user-model.qwen35moe` |
 | Embeddings, both rerankers, and selected-logit | the existing `lemonade.pooling.*` and `lemonade.reranking.zerank-2.selected-logit` scenarios |
 | App launch with pin and startup controls, plus one text interaction | the `lemonade.app.pin-startup-text` operator checklist in the same TOML file |
 | Kokoro TTS and the app's TTS interaction | deferred to generation C W2B (#113); see below |
@@ -66,6 +67,12 @@ processes; otherwise they fail with `backend_maps_unreadable`.
 - `mutates-service`: loads and unloads the test model on the running
   `lemond.service`. It unloads the model on exit if the model was not already
   resident. It never changes pins or config.
+  - Exception: the pinned-chat scenario never unloads. Its one service change
+    is the chat request's implicit load of a model that is already pinned and
+    downloaded, which leaves the pinned model resident as the service intends.
+    When the model was not resident, that load can displace other unpinned
+    models. Otherwise it reads only the service's `/pins`, `/models/<id>`, and
+    `/health`, and the backend's `/proc/<pid>/cmdline`.
 - `isolated-lemond`: starts a private `lemond` from `/usr/bin/lemond` with a
   temporary cache directory. The config is offline, backend fetching is
   disabled, and the packaged llama.cpp backends are used. The scenario reaches
@@ -85,6 +92,44 @@ unload models that clients are using. The isolated `lemond` runs the same
 packaged binary and backends. Its private config makes the admission and
 displacement results deterministic. The service's own pins are checked
 read-only by `lemonade.pins.service-consumer-pins`.
+
+## Pinned Chat Model
+
+`lemonade.chat.pinned-user-model.qwen35moe` guards the chat path of the host's
+pinned qwen35moe model.
+lemonade-server 11.7.0-1 merged the qwen35 and qwen35moe architecture default
+`--chat-template-kwargs '{"preserve_thinking":true}'` into the global
+llama.cpp args in a way that kept the single quotes. llama-server then failed
+to parse the JSON and exited, so no qwen35 or qwen35moe model could load.
+11.7.0-2 carries patch 0005 (see [Patch Inventory](../patches.md)).
+
+The scenario runs `tools/lemonade_live_smoke.py pinned-chat` against the
+running service:
+
+1. `GET /api/v1/pins` must list the model, and `GET /api/v1/models/<id>` must
+   report `downloaded: true` (`chat_model_pinned_ok`). Otherwise the scenario
+   fails before it sends a chat request, so it never loads an unpinned model
+   or starts a download.
+2. `POST /api/v1/chat/completions` with one user message must return a
+   non-empty reply (`chat_completion_ok`). A reply whose only text is
+   `reasoning_content` counts, because a thinking model can spend its token
+   budget on reasoning.
+3. The model's backend process, found through `/health`, must receive a JSON
+   object after `--chat-template-kwargs` in its `/proc/<pid>/cmdline`
+   (`chat_template_kwargs_json_ok`). On 11.7.0-1 the load itself fails, so
+   the scenario already fails at step 2; this check also catches a quoted
+   value when a backend tolerates it.
+4. `GET /api/v1/pins` must then report the model as loaded with no
+   `load_error` (`pinned_chat_model_loaded_ok`, then `pinned_chat_ok`).
+
+The model id is chosen per host at run time. The default is
+`Qwen3.6-35B-A3B-MTP-GGUF-UD-Q4_K_XL`. Pass `--chat-model <id>` to the tool,
+or set `LEMONADE_PINNED_CHAT_MODEL=<id>` in the environment of
+`tools/run_inference_scenarios.py`, which the scenario inherits. The catalog
+does not pin the id. An override must still name a qwen35 or qwen35moe model,
+because step 3 checks the `--chat-template-kwargs` value that only those
+architecture defaults add. Pin and provision that model in the service config
+before the window.
 
 ## No-Fetch Evidence
 
@@ -231,6 +276,9 @@ selection. `--scenario <id>` always selects the named scenario.
 - Pre-place the consumer models `user.zembed-1-Q4_K_M-GGUF-Q4_K_M` and
   `zerank-2-GGUF` (`mradermacher/zerank-2-GGUF:Q8_0`), and pin them in the
   service config. The consumer-pins scenario only reads them.
+- For the pinned-chat scenario, pre-place and pin the host's qwen35moe chat
+  model, and name it with `LEMONADE_PINNED_CHAT_MODEL` when it is not the
+  default id.
 - When the host's service configuration carries an API key, set `LEMONADE_API_KEY` or
   `LEMONADE_API_KEY_FILE` in the runner's environment. For `/internal/*`, set
   `LEMONADE_ADMIN_API_KEY` or `LEMONADE_ADMIN_API_KEY_FILE`; if neither is

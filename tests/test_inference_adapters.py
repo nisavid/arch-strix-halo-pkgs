@@ -878,6 +878,10 @@ def test_lemonade_adapter_builds_service_nofetch_and_pins_commands(tmp_path: Pat
     assert pins.command[2:] == ["service-pins", "--expect-pin", "zerank-2-GGUF=Q8_0"]
     assert pins.server_log_path is None
 
+    chat = plan_for("pinned-chat", {"model": "builtin"}, ["--base-url", "http://127.0.0.1:13305/api/v1"])
+    assert chat.command[2:] == ["pinned-chat", "--base-url", "http://127.0.0.1:13305/api/v1"]
+    assert chat.server_log_path is None
+
 
 def test_lemonade_adapter_builds_isolated_lemond_commands(tmp_path: Path):
     def plan_for(mode: str, model: str, bindings: dict[str, str]):

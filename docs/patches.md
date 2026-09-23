@@ -53,6 +53,28 @@ v11.7.0 (`2b6a7d7`).
   - Makes the Lemonade GUI and backend API report the packaged `llama.cpp`
     revision and upstream `ggml-org/llama.cpp` release URL for the local ROCm
     and Vulkan lanes.
+- [Merge custom args without keeping quotes](../packages/lemonade-server/0005-merge-custom-args-without-keeping-quotes.patch)
+  - Makes `RecipeOptions::inherit` tokenize both `*_args` strings with
+    `parse_custom_args(..., false)` before it merges them.
+    `map_to_args_string` already quotes values that contain spaces or quotes,
+    so a merged value such as `{"preserve_thinking":true}` or `"a b"` reaches
+    the child process as one unquoted argv value. Merged values that start
+    with `-` and are not numbers, or that are empty, remain unsupported until
+    the upstream sync: the first becomes a separate flag and the second is
+    dropped.
+  - Without the patch, the merge keeps the quote characters as part of the
+    value and then quotes it again. llama-server then receives
+    `'{"preserve_thinking":true}'` for the qwen35 and qwen35moe
+    `--chat-template-kwargs` architecture default, fails to parse the JSON,
+    and exits. The merge runs whenever model or architecture args meet
+    non-empty global `llamacpp.args`, and the distro defaults always set
+    `--no-mmap`, so every qwen35 and qwen35moe model failed to load.
+  - Upstream fixed this in
+    [lemonade-sdk/lemonade#3265](https://github.com/lemonade-sdk/lemonade/pull/3265)
+    (`7b5657d80`, first released in v11.8.0), which replaces this merge path
+    with scoped argument resolution. Drop this patch at the M6 11.9 upstream
+    sync, which [issue 141](https://github.com/nisavid/arch-strix-halo-pkgs/issues/141)
+    tracks.
 
 ## llama.cpp
 

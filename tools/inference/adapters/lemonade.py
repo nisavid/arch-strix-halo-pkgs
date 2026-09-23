@@ -12,6 +12,7 @@ LIVE_SMOKE_MODES = {
     "provenance",
     "nofetch",
     "service-pins",
+    "pinned-chat",
     "lifecycle",
     "pins",
     "budget",

@@ -15,6 +15,10 @@ Modes that target the running service (``--base-url``):
   logged, blackholed download attempt is recorded rather than failed; the
   pre-placed paths may log no download.
 - ``service-pins``: read-only check that consumer models are pinned and loaded.
+- ``pinned-chat``: chat through ``/chat/completions`` with an already-pinned,
+  downloaded user model, then require its pin to report loaded with no
+  ``load_error``. The only service change is the chat request's implicit load
+  of that pinned model.
 
 Modes that start their own ``lemond`` from the packaged binary, with a
 temporary cache directory, offline config, and packaged llama.cpp backends:
@@ -56,7 +60,7 @@ from llamacpp_server_smoke import (
 )
 
 
-SERVICE_MODES = ("text", "provenance", "nofetch", "service-pins")
+SERVICE_MODES = ("text", "provenance", "nofetch", "service-pins", "pinned-chat")
 MODES = (*SERVICE_MODES, "lifecycle", "pins", "budget", "displacement")
 FAMILY_PACKAGES = (
     "lemonade",
@@ -1150,6 +1154,102 @@ def run_service_pins(client: LemonadeClient, *, expected: list[tuple[str, str]])
     print("service_pins_ok")
 
 
+# --- Pinned user-model chat (service) -----------------------------------------
+
+DEFAULT_PINNED_CHAT_MODEL = "Qwen3.6-35B-A3B-MTP-GGUF-UD-Q4_K_XL"
+PINNED_CHAT_MODEL_ENV = "LEMONADE_PINNED_CHAT_MODEL"
+PINNED_CHAT_PROMPT = "Reply with one short sentence: what is the capital of France?"
+PINNED_CHAT_MAX_TOKENS = 1024
+
+
+def process_argv(pid: int, *, proc_root: Path = Path("/proc")) -> list[str]:
+    try:
+        raw = (proc_root / str(pid) / "cmdline").read_bytes()
+    except OSError as exc:
+        raise AssertionError(f"backend_cmdline_unreadable: pid {pid}: {exc.strerror}") from exc
+    return [item.decode("utf-8", errors="replace") for item in raw.split(b"\0") if item]
+
+
+def _flag_value(argv: list[str], flag: str) -> str | None:
+    for index, item in enumerate(argv):
+        if item == flag and index + 1 < len(argv):
+            return argv[index + 1]
+        if item.startswith(flag + "="):
+            return item.removeprefix(flag + "=")
+    return None
+
+
+def _service_pin(client: LemonadeClient, model: str) -> dict[str, Any] | None:
+    for pin in client.get("/pins").get("data", []) or []:
+        if pin.get("model_name") == model:
+            return pin
+    return None
+
+
+def run_pinned_chat(
+    client: LemonadeClient,
+    *,
+    model: str,
+    max_tokens: int = PINNED_CHAT_MAX_TOKENS,
+    argv_of: Callable[[int], list[str]] = process_argv,
+) -> None:
+    # Preconditions, before any request that could load or fetch a model.
+    pin = _service_pin(client, model)
+    if pin is None:
+        raise AssertionError(f"{model} is not pinned on the service; pin it before the validation window")
+    if not model_info(client, model).get("downloaded"):
+        raise AssertionError(
+            f"model_not_provisioned: {model}; provision it explicitly before the "
+            "validation window instead of letting a chat request download it"
+        )
+    print("chat_model_pinned_ok", model)
+
+    payload = client.post(
+        "/chat/completions",
+        {
+            "model": model,
+            "messages": [{"role": "user", "content": PINNED_CHAT_PROMPT}],
+            "max_tokens": max_tokens,
+        },
+    )
+    choices = payload.get("choices") or [{}]
+    message = choices[0].get("message") or {}
+    content = str(message.get("content") or "")
+    reasoning = str(message.get("reasoning_content") or "")
+    print("chat_content_chars", len(content.strip()))
+    print("chat_reasoning_chars", len(reasoning.strip()))
+    if not content.strip() and not reasoning.strip():
+        raise AssertionError(f"empty chat completion from {model}")
+    print("chat_completion_ok")
+
+    entry = loaded_entry(client.get("/health"), model)
+    if entry is None or entry.get("pid") is None:
+        raise AssertionError(f"{model} is not resident after the chat request")
+    # The qwen35 and qwen35moe architecture defaults pass this JSON through
+    # the merged llamacpp_args; 11.7.0-1 handed llama-server a quoted string.
+    kwargs = _flag_value(argv_of(int(entry["pid"])), "--chat-template-kwargs")
+    if kwargs is None:
+        raise AssertionError(f"{model} backend argv has no --chat-template-kwargs")
+    try:
+        parsed = json.loads(kwargs)
+    except json.JSONDecodeError:
+        parsed = None
+    if not isinstance(parsed, dict):
+        raise AssertionError(f"--chat-template-kwargs is not a JSON object: {kwargs!r}")
+    print("chat_template_kwargs", json.dumps(parsed, sort_keys=True))
+    print("chat_template_kwargs_json_ok")
+
+    pin = _service_pin(client, model)
+    if pin is None:
+        raise AssertionError(f"{model} is no longer pinned after the chat request")
+    if pin.get("load_error"):
+        raise AssertionError(f"pinned {model} reports load_error: {scrub_paths(str(pin['load_error']))}")
+    if not pin.get("loaded"):
+        raise AssertionError(f"pinned {model} is not loaded after the chat request")
+    print("pinned_chat_model_loaded_ok")
+    print("pinned_chat_ok")
+
+
 def _free_port(host: str) -> int:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.bind((host, 0))
@@ -1530,6 +1630,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--expect-pin", action="append", default=[], help="MODEL=VARIANT that service-pins mode requires"
     )
+    parser.add_argument(
+        "--chat-model",
+        default=os.environ.get(PINNED_CHAT_MODEL_ENV) or DEFAULT_PINNED_CHAT_MODEL,
+        help=f"pinned, downloaded model for pinned-chat mode (default: ${PINNED_CHAT_MODEL_ENV}, "
+        f"else {DEFAULT_PINNED_CHAT_MODEL})",
+    )
     parser.add_argument("--stream-tokens", type=int, default=2048)
     parser.add_argument("--startup-timeout", type=float, default=180.0)
     parser.add_argument("--request-timeout", type=float, default=600.0)
@@ -1575,6 +1681,8 @@ def main(argv: list[str] | None = None) -> None:
             )
         elif args.mode == "service-pins":
             run_service_pins(client, expected=parse_expected_pins(args.expect_pin))
+        elif args.mode == "pinned-chat":
+            run_pinned_chat(client, model=args.chat_model)
         else:
             run_provenance(client, repo=args.repo, service=args.service)
         return
