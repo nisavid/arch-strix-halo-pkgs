@@ -351,7 +351,7 @@ packages = ["python-accelerate-gfx1151"]
 priority = "medium"
 workflow = "upstream_source_update"
 checks = [
-  { id = "pypi", role = "primary", kind = "pypi", package = "accelerate", recorded = "1.13.0", comparison = "pep440" },
+  { id = "pypi", role = "primary", kind = "pypi", package = "accelerate", recorded = "1.15.0", comparison = "pep440" },
 ]
 
 [families.auto_round]

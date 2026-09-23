@@ -113,7 +113,7 @@ TOOLING_STACK = {
     "python-accelerate-gfx1151": {
         "template": "native-wheel-pypi",
         "recipe_key": "native_wheels",
-        "upstream_version": "1.13.0",
+        "upstream_version": "1.15.0",
         "provides": ["python-accelerate"],
         "consumer_dep": "python-accelerate-gfx1151",
     },

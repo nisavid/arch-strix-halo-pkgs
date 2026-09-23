@@ -1742,7 +1742,7 @@ scaffold_notes = [
 [packages.python-accelerate-gfx1151]
 recipe_key = "native_wheels"
 template = "native-wheel-pypi"
-upstream_version = "1.13.0"
+upstream_version = "1.15.0"
 pkgdesc = "Hugging Face multi-device training helpers for the Strix Halo Python stack"
 url = "https://github.com/huggingface/accelerate"
 license = ["Apache-2.0"]
@@ -1755,7 +1755,8 @@ divergence_notes = [
 ]
 update_notes = [
   "Check llmcompressor and auto-round release metadata before updating; this package should stay inside the active quantization-tooling dependency bounds.",
-  "After publishing a rebuilt package, verify `import accelerate` through the installed local Python lane."
+  "After publishing a rebuilt package, verify `import accelerate` through the installed local Python lane.",
+  "On 2026-09-22, update to Accelerate 1.15.0 for the generation-C W2A closure (#110), built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7."
 ]
 provides = ["python-accelerate"]
 conflicts = ["python-accelerate"]
@@ -1765,8 +1766,8 @@ arch = ["any"]
 pure_python_wheel = true
 skip_dependency_check = true
 pypi_name = "accelerate"
-sha256sums = ["d631b4e0f5b3de4aff2d7e9e6857d164810dfc3237d54d017f075122d057b236"]
-src_subdir = "accelerate-1.13.0"
+sha256sums = ["5654f8c5eaa0d4fa68b33e287a97765da6849bf6d51dcac874e73fbbddfb6134"]
+src_subdir = "accelerate-1.15.0"
 patches_dir = "patches/python-accelerate-gfx1151"
 recipe_notes_override = """
 This package supplies the Hugging Face accelerate dependency needed by the

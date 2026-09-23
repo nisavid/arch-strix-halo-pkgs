@@ -6,8 +6,8 @@
 - Scaffold template: `native-wheel-pypi`
 - Recipe build method: `pip`
 - Upstream repo: `https://github.com/huggingface/accelerate`
-- Package version: `1.13.0`
-- Recipe revision: `a1d7a68 (20260427, 16 commits touching recipe path)`
+- Package version: `1.15.0`
+- Recipe revision: `3f15f9f (20260508, 17 commits touching recipe path)`
 - Recipe steps: `32`
 - Recipe dependencies: `cpython, pytorch`
 - Recorded reference packages: `none`
@@ -43,6 +43,7 @@ quantization-tooling dependency window.
 
 - Check llmcompressor and auto-round release metadata before updating; this package should stay inside the active quantization-tooling dependency bounds.
 - After publishing a rebuilt package, verify `import accelerate` through the installed local Python lane.
+- On 2026-09-22, update to Accelerate 1.15.0 for the generation-C W2A closure (#110), built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7.
 
 ## Maintainer Starting Points
 
