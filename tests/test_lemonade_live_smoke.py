@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import struct
 from pathlib import Path
 import subprocess
 import sys
@@ -266,7 +267,7 @@ class FakeLemond:
     """A small in-memory lemond that honors pins, busy models, one slot, and a budget."""
 
     def __init__(self, *, models: list[str], capacity_gb: float = 96.5) -> None:
-        self.models = {name: {"id": name, "downloaded": True, "checkpoint": "Qwen/Qwen3-0.6B-GGUF:Q8_0"} for name in models}
+        self.models = {name: {"id": name, "downloaded": True, "checkpoint": "Qwen/Qwen3-0.6B-GGUF:Q8_0", "recipe": "llamacpp"} for name in models}
         self.loaded: dict[str, dict[str, Any]] = {}
         self.config: dict[str, Any] = {
             "global_timeout": 600,
@@ -405,7 +406,7 @@ class FakeLemond:
                 status, body = self._load({"model_name": name, "ctx_size": payload.get("ctx_size", 4096)})
                 if status >= 400:
                     return status, body
-            return 200, {"choices": [{"message": {"role": "assistant", "content": "OK"}}]}
+            return 200, {"choices": [{"message": {"role": "assistant", "content": "OK"}, "finish_reason": "stop"}]}
         if path == "/api/chat":
             # Ollama auto-load: lemond strips ":latest" and answers 404 on any load failure.
             name = payload["model"].removesuffix(":latest")
@@ -1568,6 +1569,29 @@ def _chat_pinned_server(*, loaded: bool = False) -> FakeLemond:
     return server
 
 
+def _qwen35moe(path: Path) -> str:
+    assert path == SERVICE_GGUF
+    return "qwen35moe"
+
+
+def _pinned_chat(server, **kwargs):
+    kwargs.setdefault("argv_of", _backend_argv())
+    kwargs.setdefault("architecture_of", _qwen35moe)
+    return live.run_pinned_chat(server, model=CHAT_MODEL, **kwargs)
+
+
+def _gguf_string(text: str) -> bytes:
+    return struct.pack("<Q", len(text.encode())) + text.encode()
+
+
+def _gguf_bytes(kvs: list[tuple[str, int, bytes]]) -> bytes:
+    """A GGUF v3 header with the given (key, value type, encoded value) pairs and no tensors."""
+    out = b"GGUF" + struct.pack("<IQQ", 3, 0, len(kvs))
+    for key, value_type, value in kvs:
+        out += _gguf_string(key) + struct.pack("<I", value_type) + value
+    return out
+
+
 def _backend_argv(kwargs_value: str = PRESERVE_THINKING):
     return lambda pid: [
         "/opt/llama.cpp-hip-gfx1151/bin/llama-server",
@@ -1580,7 +1604,7 @@ def _backend_argv(kwargs_value: str = PRESERVE_THINKING):
 def test_pinned_chat_auto_loads_the_pinned_model_and_answers(capsys: pytest.CaptureFixture[str]):
     server = _chat_pinned_server()
 
-    live.run_pinned_chat(server, model=CHAT_MODEL, argv_of=_backend_argv())
+    _pinned_chat(server)
 
     out = capsys.readouterr().out
     assert "chat_model_pinned_ok" in out
@@ -1596,13 +1620,13 @@ def test_pinned_chat_auto_loads_the_pinned_model_and_answers(capsys: pytest.Capt
 def test_pinned_chat_refuses_an_unpinned_or_absent_model_before_chatting():
     server = FakeLemond(models=[CHAT_MODEL])
     with pytest.raises(AssertionError, match="is not pinned"):
-        live.run_pinned_chat(server, model=CHAT_MODEL, argv_of=_backend_argv())
+        _pinned_chat(server)
     assert ("POST", "/chat/completions") not in server.calls
 
     server = _chat_pinned_server()
     server.models[CHAT_MODEL]["downloaded"] = False
     with pytest.raises(AssertionError, match="model_not_provisioned"):
-        live.run_pinned_chat(server, model=CHAT_MODEL, argv_of=_backend_argv())
+        _pinned_chat(server)
     assert ("POST", "/chat/completions") not in server.calls
 
 
@@ -1610,9 +1634,7 @@ def test_pinned_chat_rejects_quoted_chat_template_kwargs():
     # The 11.7.0-1 regression: the merged *_args kept the single quotes.
     server = _chat_pinned_server(loaded=True)
     with pytest.raises(AssertionError, match="chat-template-kwargs is not a JSON object"):
-        live.run_pinned_chat(
-            server, model=CHAT_MODEL, argv_of=_backend_argv(f"'{PRESERVE_THINKING}'")
-        )
+        _pinned_chat(server, argv_of=_backend_argv(f"'{PRESERVE_THINKING}'"))
 
 
 def test_pinned_chat_fails_on_an_empty_reply_or_a_pin_load_error():
@@ -1621,12 +1643,12 @@ def test_pinned_chat_fails_on_an_empty_reply_or_a_pin_load_error():
 
     def empty_reply(method, path, payload):
         if path == "/chat/completions":
-            return 200, {"choices": [{"message": {"role": "assistant", "content": ""}}]}
+            return 200, {"choices": [{"message": {"role": "assistant", "content": ""}, "finish_reason": "stop"}]}
         return original(method, path, payload)
 
     server._dispatch = empty_reply
     with pytest.raises(AssertionError, match="empty chat completion"):
-        live.run_pinned_chat(server, model=CHAT_MODEL, argv_of=_backend_argv())
+        _pinned_chat(server)
 
     server = _chat_pinned_server(loaded=True)
     original_pins = server._dispatch
@@ -1639,7 +1661,7 @@ def test_pinned_chat_fails_on_an_empty_reply_or_a_pin_load_error():
 
     server._dispatch = load_error
     with pytest.raises(AssertionError, match="load_error"):
-        live.run_pinned_chat(server, model=CHAT_MODEL, argv_of=_backend_argv())
+        _pinned_chat(server)
 
 
 def _unreadable_argv(pid):
@@ -1667,13 +1689,13 @@ def test_pinned_chat_fails_loudly_without_backend_evidence(argv_of, drop_residen
 
         server._dispatch = no_residency
     with pytest.raises(AssertionError, match=message):
-        live.run_pinned_chat(server, model=CHAT_MODEL, argv_of=argv_of)
+        _pinned_chat(server, argv_of=argv_of)
 
 
 def test_pinned_chat_reads_the_equals_form_and_real_proc_cmdline(tmp_path: Path, capsys):
     server = _chat_pinned_server(loaded=True)
     equals_form = lambda pid: ["llama-server", f"--chat-template-kwargs={PRESERVE_THINKING}"]
-    live.run_pinned_chat(server, model=CHAT_MODEL, argv_of=equals_form)
+    _pinned_chat(server, argv_of=equals_form)
     assert "chat_template_kwargs_json_ok" in capsys.readouterr().out
 
     (tmp_path / "300").mkdir()
@@ -1690,11 +1712,11 @@ def test_pinned_chat_accepts_a_reasoning_only_reply(capsys: pytest.CaptureFixtur
     def reasoning_only(method, path, payload):
         if path == "/chat/completions":
             message = {"role": "assistant", "content": "", "reasoning_content": "Thinking."}
-            return 200, {"choices": [{"message": message}]}
+            return 200, {"choices": [{"message": message, "finish_reason": "stop"}]}
         return original(method, path, payload)
 
     server._dispatch = reasoning_only
-    live.run_pinned_chat(server, model=CHAT_MODEL, argv_of=_backend_argv())
+    _pinned_chat(server)
     assert "chat_completion_ok" in capsys.readouterr().out
 
 
@@ -1707,6 +1729,92 @@ def test_pinned_chat_model_comes_from_the_flag_then_the_env_then_the_default(
     monkeypatch.setenv(live.PINNED_CHAT_MODEL_ENV, "Other-Pinned-GGUF")
     assert live.parse_args(["pinned-chat"]).chat_model == "Other-Pinned-GGUF"
     assert live.parse_args(["pinned-chat", "--chat-model", "Cli-GGUF"]).chat_model == "Cli-GGUF"
+
+
+def test_gguf_architecture_reads_general_architecture_past_other_keys(tmp_path: Path):
+    gguf = tmp_path / "model.gguf"
+    gguf.write_bytes(
+        _gguf_bytes(
+            [
+                ("general.type", 8, _gguf_string("model")),
+                ("general.file_type", 4, struct.pack("<I", 15)),
+                ("general.tags", 9, struct.pack("<IQ", 8, 2) + _gguf_string("a") + _gguf_string("bc")),
+                ("general.architecture", 8, _gguf_string("qwen35moe")),
+            ]
+        )
+    )
+    assert live.gguf_architecture(gguf) == "qwen35moe"
+
+
+@pytest.mark.parametrize(
+    "content",
+    [b"", b"NOTGGUF-at-all", _gguf_bytes([("general.name", 8, _gguf_string("x"))])],
+)
+def test_gguf_architecture_fails_closed_on_unreadable_or_missing_metadata(tmp_path: Path, content: bytes):
+    gguf = tmp_path / "model.gguf"
+    gguf.write_bytes(content)
+    with pytest.raises(AssertionError, match="chat_model_architecture_unverified"):
+        live.gguf_architecture(gguf)
+    with pytest.raises(AssertionError, match="chat_model_architecture_unverified"):
+        live.gguf_architecture(tmp_path / "absent.gguf")
+
+
+def test_pinned_chat_verifies_the_qwen35_architecture_before_chatting(capsys: pytest.CaptureFixture[str]):
+    server = _chat_pinned_server()
+    _pinned_chat(server, architecture_of=lambda path: "qwen35")
+    out = capsys.readouterr().out
+    assert "chat_model_architecture qwen35" in out
+    assert "chat_model_architecture_ok" in out
+    assert str(SERVICE_GGUF) not in out
+
+    server = _chat_pinned_server()
+    with pytest.raises(AssertionError, match="llama is not qwen35 or qwen35moe"):
+        _pinned_chat(server, architecture_of=lambda path: "llama")
+    assert ("POST", "/chat/completions") not in server.calls
+
+
+def test_pinned_chat_fails_closed_when_the_architecture_is_unverifiable():
+    server = _chat_pinned_server()
+
+    def unreadable(path: Path) -> str:
+        raise AssertionError("chat_model_architecture_unverified: Permission denied")
+
+    with pytest.raises(AssertionError, match="chat_model_architecture_unverified"):
+        _pinned_chat(server, architecture_of=unreadable)
+    assert ("POST", "/chat/completions") not in server.calls
+
+    server = _chat_pinned_server()
+    server.models[CHAT_MODEL]["recipe"] = "flm"
+    with pytest.raises(AssertionError, match="not a llamacpp model"):
+        _pinned_chat(server)
+    assert ("POST", "/chat/completions") not in server.calls
+
+
+def test_pinned_chat_requires_the_merged_preserve_thinking_default():
+    # Other JSON means the qwen35/qwen35moe architecture default never merged.
+    for value in ('{"enable_thinking":false}', '{"preserve_thinking":"true"}'):
+        server = _chat_pinned_server(loaded=True)
+        with pytest.raises(AssertionError, match="preserve_thinking"):
+            _pinned_chat(server, argv_of=_backend_argv(value))
+
+
+def test_pinned_chat_requires_a_stopped_reply_within_a_reasoning_safe_budget():
+    with pytest.raises(ValueError, match="at least 512"):
+        _pinned_chat(_chat_pinned_server(loaded=True), max_tokens=16)
+
+    server = _chat_pinned_server(loaded=True)
+    original = server._dispatch
+
+    def truncated(method, path, payload):
+        if path == "/chat/completions":
+            assert payload["max_tokens"] >= 512
+            message = {"role": "assistant", "content": "", "reasoning_content": "Thinking about"}
+            return 200, {"choices": [{"message": message, "finish_reason": "length"}]}
+        return original(method, path, payload)
+
+    server._dispatch = truncated
+    with pytest.raises(AssertionError, match="finish_reason 'length'"):
+        _pinned_chat(server)
 
 
 def test_nofetch_requires_journal_evidence_for_each_phase(tmp_path: Path):

@@ -15,10 +15,11 @@ Modes that target the running service (``--base-url``):
   logged, blackholed download attempt is recorded rather than failed; the
   pre-placed paths may log no download.
 - ``service-pins``: read-only check that consumer models are pinned and loaded.
-- ``pinned-chat``: chat through ``/chat/completions`` with an already-pinned,
-  downloaded user model, then require its pin to report loaded with no
-  ``load_error``. The only service change is the chat request's implicit load
-  of that pinned model.
+- ``pinned-chat``: verify that an already-pinned, downloaded user model is a
+  qwen35 or qwen35moe GGUF, chat through ``/chat/completions``, require the
+  merged ``preserve_thinking`` default in its backend argv, then require its pin
+  to report loaded with no ``load_error``. The only service change is the chat
+  request's implicit load of that pinned model.
 
 Modes that start their own ``lemond`` from the packaged binary, with a
 temporary cache directory, offline config, and packaged llama.cpp backends:
@@ -1159,7 +1160,76 @@ def run_service_pins(client: LemonadeClient, *, expected: list[tuple[str, str]])
 DEFAULT_PINNED_CHAT_MODEL = "Qwen3.6-35B-A3B-MTP-GGUF-UD-Q4_K_XL"
 PINNED_CHAT_MODEL_ENV = "LEMONADE_PINNED_CHAT_MODEL"
 PINNED_CHAT_PROMPT = "Reply with one short sentence: what is the capital of France?"
+# A thinking model spends tokens on reasoning_content first; a small budget
+# (16 tokens) ends in finish_reason "length" with empty content.
 PINNED_CHAT_MAX_TOKENS = 1024
+PINNED_CHAT_MIN_MAX_TOKENS = 512
+# The GGUF architectures whose architecture_defaults.json entry merges
+# --chat-template-kwargs '{"preserve_thinking":true}' into llamacpp_args.
+PINNED_CHAT_ARCHITECTURES = ("qwen35", "qwen35moe")
+GGUF_MAGIC = b"GGUF"
+_GGUF_SCALAR_SIZES = {0: 1, 1: 1, 2: 2, 3: 2, 4: 4, 5: 4, 6: 4, 7: 1, 10: 8, 11: 8, 12: 8}
+_GGUF_STRING = 8
+_GGUF_ARRAY = 9
+_GGUF_MAX_STRING = 1 << 20
+
+
+def gguf_architecture(path: Path) -> str:
+    """Return a GGUF file's ``general.architecture``; fail closed when it cannot be read."""
+
+    def unverified(reason: str) -> AssertionError:
+        return AssertionError(f"chat_model_architecture_unverified: {reason}")
+
+    try:
+        with path.open("rb") as handle:
+
+            def take(size: int) -> bytes:
+                data = handle.read(size)
+                if len(data) != size:
+                    raise unverified("truncated GGUF header")
+                return data
+
+            def u32() -> int:
+                return int.from_bytes(take(4), "little")
+
+            def u64() -> int:
+                return int.from_bytes(take(8), "little")
+
+            def string() -> bytes:
+                size = u64()
+                if size > _GGUF_MAX_STRING:
+                    raise unverified("oversized GGUF string")
+                return take(size)
+
+            def skip(value_type: int) -> None:
+                if value_type == _GGUF_STRING:
+                    string()
+                elif value_type == _GGUF_ARRAY:
+                    item_type, count = u32(), u64()
+                    if item_type in _GGUF_SCALAR_SIZES:
+                        handle.seek(_GGUF_SCALAR_SIZES[item_type] * count, os.SEEK_CUR)
+                    else:
+                        for _ in range(count):
+                            skip(item_type)
+                elif value_type in _GGUF_SCALAR_SIZES:
+                    take(_GGUF_SCALAR_SIZES[value_type])
+                else:
+                    raise unverified(f"unknown GGUF value type {value_type}")
+
+            if handle.read(4) != GGUF_MAGIC:
+                raise unverified("not a GGUF file")
+            if u32() < 2:
+                raise unverified("unsupported GGUF version")
+            u64()  # tensor count
+            for _ in range(u64()):
+                key = string()
+                value_type = u32()
+                if key == b"general.architecture" and value_type == _GGUF_STRING:
+                    return string().decode("utf-8", errors="replace")
+                skip(value_type)
+    except OSError as exc:
+        raise unverified(exc.strerror or type(exc).__name__) from exc
+    raise unverified("no general.architecture key")
 
 
 def process_argv(pid: int, *, proc_root: Path = Path("/proc")) -> list[str]:
@@ -1192,17 +1262,38 @@ def run_pinned_chat(
     model: str,
     max_tokens: int = PINNED_CHAT_MAX_TOKENS,
     argv_of: Callable[[int], list[str]] = process_argv,
+    architecture_of: Callable[[Path], str] = gguf_architecture,
 ) -> None:
+    if max_tokens < PINNED_CHAT_MIN_MAX_TOKENS:
+        raise ValueError(
+            f"pinned-chat max_tokens must be at least {PINNED_CHAT_MIN_MAX_TOKENS}; "
+            "a thinking model spends a small budget on reasoning"
+        )
     # Preconditions, before any request that could load or fetch a model.
     pin = _service_pin(client, model)
     if pin is None:
         raise AssertionError(f"{model} is not pinned on the service; pin it before the validation window")
-    if not model_info(client, model).get("downloaded"):
+    info = model_info(client, model)
+    if not info.get("downloaded"):
         raise AssertionError(
             f"model_not_provisioned: {model}; provision it explicitly before the "
             "validation window instead of letting a chat request download it"
         )
     print("chat_model_pinned_ok", model)
+    # The scenario guards the qwen35/qwen35moe architecture-default merge, so a
+    # model override must name one of those. The model id proves nothing; read
+    # general.architecture from the GGUF the service resolves, and fail closed
+    # when it cannot be read.
+    if info.get("recipe") != "llamacpp":
+        raise AssertionError(f"{model} is not a llamacpp model (recipe {info.get('recipe')!r})")
+    architecture = architecture_of(main_model_file(client, model))
+    print("chat_model_architecture", architecture)
+    if architecture not in PINNED_CHAT_ARCHITECTURES:
+        raise AssertionError(
+            f"{model} GGUF architecture {architecture} is not qwen35 or qwen35moe; "
+            "pinned-chat guards their --chat-template-kwargs default"
+        )
+    print("chat_model_architecture_ok")
 
     payload = client.post(
         "/chat/completions",
@@ -1216,8 +1307,12 @@ def run_pinned_chat(
     message = choices[0].get("message") or {}
     content = str(message.get("content") or "")
     reasoning = str(message.get("reasoning_content") or "")
+    finish_reason = choices[0].get("finish_reason")
     print("chat_content_chars", len(content.strip()))
     print("chat_reasoning_chars", len(reasoning.strip()))
+    print("chat_finish_reason", finish_reason)
+    if finish_reason != "stop":
+        raise AssertionError(f"chat completion from {model} ended with finish_reason {finish_reason!r}, not 'stop'")
     if not content.strip() and not reasoning.strip():
         raise AssertionError(f"empty chat completion from {model}")
     print("chat_completion_ok")
@@ -1236,6 +1331,10 @@ def run_pinned_chat(
         parsed = None
     if not isinstance(parsed, dict):
         raise AssertionError(f"--chat-template-kwargs is not a JSON object: {kwargs!r}")
+    if parsed.get("preserve_thinking") is not True:
+        raise AssertionError(
+            f"--chat-template-kwargs lacks the merged qwen35 default preserve_thinking=true: {kwargs!r}"
+        )
     print("chat_template_kwargs", json.dumps(parsed, sort_keys=True))
     print("chat_template_kwargs_json_ok")
 

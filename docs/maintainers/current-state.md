@@ -14,7 +14,11 @@ when it merged that value into the non-empty global `llamacpp.args` (the
 distro defaults always set `--no-mmap`). It then quoted the value again, so
 llama-server rejected a quoted JSON string and exited. `lemonade-server
 11.7.0-2` carries patch 0005, which tokenizes both sides without keeping
-quotes; see [Patch Inventory](../patches.md). A standalone C++ check against
+quotes; see [Patch Inventory](../patches.md). The regression is fork-only:
+fork commit `e3d08ffa6` stacked a second quoting layer on upstream's merge,
+and upstream builds produce the correct argv. The fork fix is
+nisavid/lemonade#168, and patch 0005 drops at the Lemonade repin to a fork
+commit that contains it. A standalone C++ check against
 the pinned `custom_args.h` confirms that the merged argv value is exactly
 `{"preserve_thinking":true}`, that `--no-mmap` stays present, and that a value
 with spaces still round-trips. The unpatched merge fails the JSON and

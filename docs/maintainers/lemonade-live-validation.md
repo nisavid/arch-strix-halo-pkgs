@@ -71,8 +71,9 @@ processes; otherwise they fail with `backend_maps_unreadable`.
     is the chat request's implicit load of a model that is already pinned and
     downloaded, which leaves the pinned model resident as the service intends.
     When the model was not resident, that load can displace other unpinned
-    models. Otherwise it reads only the service's `/pins`, `/models/<id>`, and
-    `/health`, and the backend's `/proc/<pid>/cmdline`.
+    models. Otherwise it reads only the service's `/pins`, `/models/<id>`,
+    `/models/<id>/files`, and `/health`, the header of the model's GGUF file,
+    and the backend's `/proc/<pid>/cmdline`.
 - `isolated-lemond`: starts a private `lemond` from `/usr/bin/lemond` with a
   temporary cache directory. The config is offline, backend fetching is
   disabled, and the packaged llama.cpp backends are used. The scenario reaches
@@ -110,26 +111,39 @@ running service:
    report `downloaded: true` (`chat_model_pinned_ok`). Otherwise the scenario
    fails before it sends a chat request, so it never loads an unpinned model
    or starts a download.
-2. `POST /api/v1/chat/completions` with one user message must return a
-   non-empty reply (`chat_completion_ok`). A reply whose only text is
-   `reasoning_content` counts, because a thinking model can spend its token
-   budget on reasoning.
-3. The model's backend process, found through `/health`, must receive a JSON
-   object after `--chat-template-kwargs` in its `/proc/<pid>/cmdline`
-   (`chat_template_kwargs_json_ok`). On 11.7.0-1 the load itself fails, so
-   the scenario already fails at step 2; this check also catches a quoted
-   value when a backend tolerates it.
-4. `GET /api/v1/pins` must then report the model as loaded with no
+2. The model must use the `llamacpp` recipe, and the `general.architecture`
+   key in the header of its main GGUF file must be `qwen35` or `qwen35moe`
+   (`chat_model_architecture <arch>`, then `chat_model_architecture_ok`). The
+   tool finds the file through `GET /api/v1/models/<id>/files?include_paths=true`
+   and never prints its path. The model id proves nothing, so this check
+   covers any `--chat-model` or `LEMONADE_PINNED_CHAT_MODEL` override. It
+   fails closed: an unreadable, truncated, or non-GGUF file, or a header
+   without the key, fails with `chat_model_architecture_unverified` before
+   the chat request.
+3. `POST /api/v1/chat/completions` with one user message and a
+   `max_tokens` budget of 1024 must return `finish_reason: "stop"` and a
+   non-empty `content` or `reasoning_content` (`chat_completion_ok`). A
+   thinking model fills a small budget with reasoning: a 16-token probe ends
+   with `finish_reason: "length"` and empty `content`. The tool refuses a
+   budget below 512.
+4. The model's backend process, found through `/health`, must receive a JSON
+   object with `"preserve_thinking": true` after `--chat-template-kwargs` in
+   its `/proc/<pid>/cmdline` (`chat_template_kwargs_json_ok`). That value
+   comes only from the qwen35 and qwen35moe architecture default after it
+   merges with the global args. A quoted value, other JSON, a missing flag, or
+   an unreadable cmdline fails. On 11.7.0-1 the load itself fails, so the
+   scenario already fails at step 3; this check also catches a quoted value
+   when a backend tolerates it.
+5. `GET /api/v1/pins` must then report the model as loaded with no
    `load_error` (`pinned_chat_model_loaded_ok`, then `pinned_chat_ok`).
 
 The model id is chosen per host at run time. The default is
 `Qwen3.6-35B-A3B-MTP-GGUF-UD-Q4_K_XL`. Pass `--chat-model <id>` to the tool,
 or set `LEMONADE_PINNED_CHAT_MODEL=<id>` in the environment of
 `tools/run_inference_scenarios.py`, which the scenario inherits. The catalog
-does not pin the id. An override must still name a qwen35 or qwen35moe model,
-because step 3 checks the `--chat-template-kwargs` value that only those
-architecture defaults add. Pin and provision that model in the service config
-before the window.
+does not pin the id. Step 2 rejects an override that is not a qwen35 or
+qwen35moe GGUF. Pin and provision that model in the service config before
+the window.
 
 ## No-Fetch Evidence
 
