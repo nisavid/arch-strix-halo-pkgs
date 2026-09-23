@@ -840,7 +840,6 @@ class FakeHost(live.ServiceHost):
         self.user_home = tmp_path / "home"
         self.ss_rows = [_listen_row()]
         self.journal: list[str] = []
-        self.stamps: list[float] = []
         self.commands: list[list[str]] = []
         super().__init__("lemond.service", runner=self._run, proc_root=self.proc)
 
@@ -852,11 +851,14 @@ class FakeHost(live.ServiceHost):
         elif argv[0] == "ss":
             stdout = "\n".join(self.ss_rows) + "\n"
         elif argv[0] == "journalctl":
-            # A line is stamped when a query first sees it, so each phase sees only its own lines.
-            self.stamps += [time.time()] * (len(self.journal) - len(self.stamps))
-            stdout = "".join(
-                f"{stamp:.6f} host lemond[{LEMOND_PID}]: {line}\n" for stamp, line in zip(self.stamps, self.journal)
-            )
+            # Entry i has cursor "c<i>"; this mirrors journalctl -n 1 and --after-cursor.
+            entries = list(enumerate(self.journal))
+            if "-n" in argv:
+                entries = entries[-int(argv[argv.index("-n") + 1]):] if entries else []
+            if "--after-cursor" in argv:
+                after = int(argv[argv.index("--after-cursor") + 1].removeprefix("c"))
+                entries = entries[after + 1:]
+            stdout = "".join(json.dumps({"__CURSOR": f"c{i}", "MESSAGE": line}) + "\n" for i, line in entries)
         else:
             raise AssertionError(f"unexpected command {argv}")
         return subprocess.CompletedProcess(argv, 0, stdout=stdout, stderr="")
@@ -905,6 +907,7 @@ def _run_nofetch(server, host, **kwargs):
         expect_checkpoint=None,
         expect_sha256=None,
         interval=0.01,
+        journal_settle=0.0,
         text=kwargs.pop("text", _fake_text(host)),
     )
 
@@ -1020,11 +1023,16 @@ def test_service_host_reads_only_blackhole_env_and_filters_journal(tmp_path: Pat
         "MODELSCOPE_ENDPOINT": "http://127.0.0.1:9",
     }
     assert host.process_tree(LEMOND_PID) == {LEMOND_PID, LLAMA_PID}
-    host.journal = ["Ensuring model loaded: m"]
-    assert host.journal_since(time.time() - 60) == [f"host lemond[{LEMOND_PID}]: Ensuring model loaded: m"]
-    assert host.journal_since(time.time() + 60) == []
+    assert host.journal_cursor() is None
+    assert host.journal_after(None) == ([], None)
+    host.journal = ["Ensuring model loaded: m", "second"]
+    assert host.journal_cursor() == "c1"
+    assert host.journal_after(None) == (["Ensuring model loaded: m", "second"], "c1")
+    assert host.journal_after("c0") == (["second"], "c1")
+    assert host.journal_after("c1") == ([], "c1")
     journal_argv = next(argv for argv in host.commands if argv[0] == "journalctl")
     assert journal_argv[:3] == ["journalctl", "-u", "lemond.service"]
+    assert ["-o", "json"] == journal_argv[journal_argv.index("-o"):journal_argv.index("-o") + 2]
 
 
 def test_service_host_cache_dir_prefers_argv_then_env(tmp_path: Path):
@@ -1155,6 +1163,142 @@ def test_nofetch_unloads_a_resident_preplaced_model_and_restores_it(
     assert server.calls.index(("POST", "/unload")) < server.calls.index(("POST", "/chat/completions"))
 
 
+def _resident_model_that_cannot_be_restored(server) -> None:
+    server.loaded[MODEL] = {
+        "model_name": MODEL,
+        "pid": 50,
+        "pinned": False,
+        "is_busy": False,
+        "recipe_options": {"llamacpp_backend": "vulkan", "ctx_size": 8192},
+    }
+    original = server._dispatch
+
+    def dispatch(method, path, payload):
+        if method == "POST" and path == "/load" and (payload or {}).get("llamacpp_backend") == "vulkan":
+            return 500, {"error": {"message": "restore refused"}}
+        return original(method, path, payload)
+
+    server._dispatch = dispatch
+
+
+def test_nofetch_restore_failure_does_not_mask_a_phase_failure(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    server, host = _nofetch_setup(tmp_path)
+    _resident_model_that_cannot_be_restored(server)
+    _evidence_on(server, host, route="/chat/completions", model=MODEL, journal=["Downloading model: x"])
+
+    with pytest.raises(AssertionError, match="preplaced_inference: the service logged 1 download"):
+        _run_nofetch(server, host)
+    out = capsys.readouterr().out
+    assert f"preplaced_residency_restore_failed: {MODEL} was resident" in out
+    assert "preplaced_residency_restored" not in out
+
+
+def test_nofetch_restore_failure_fails_when_the_phases_passed(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    server, host = _nofetch_setup(tmp_path)
+    _resident_model_that_cannot_be_restored(server)
+
+    with pytest.raises(AssertionError, match=f"{MODEL} was resident before the scenario and could not be restored"):
+        _run_nofetch(server, host)
+    assert "missing_load" not in capsys.readouterr().out
+
+
+def _watch(host: FakeHost, tmp_path: Path, **kwargs) -> live.FetchWatch:
+    return live.FetchWatch(
+        host, caches={"model_cache": tmp_path / "cache"}, blackhole={"9"},
+        interval=0.01, journal_timeout=1.0, settle=0.0, **kwargs,
+    )
+
+
+def test_fetch_watch_windows_exclude_lines_from_before_the_phase(tmp_path: Path):
+    host = FakeHost(tmp_path)
+    host.journal = ["Downloading model: earlier phase"]
+    with _watch(host, tmp_path, expect_log="m") as phase:
+        host.journal.append("Ensuring model loaded: m")
+    assert phase.journal == ["Ensuring model loaded: m"]
+    assert (phase.start_cursor, phase.end_cursor) == ("c0", "c1")
+
+
+def test_fetch_watch_charges_a_late_fetch_line_to_its_own_phase(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    host = FakeHost(tmp_path)
+    with _watch(host, tmp_path, expect_log="m") as first:
+        host.journal.append("Ensuring model loaded: m")
+    first.verify("preplaced_inference")
+    # The first request's download line lands only after its window closed.
+    host.journal.append("Model not cached, downloading from Hugging Face...")
+
+    with pytest.raises(AssertionError, match="preplaced_inference: .* after the phase settled"):
+        first.trailing()
+
+    # In record mode the late line is recorded for the same phase, and the next
+    # same-model window starts after it, so it cannot be charged to that phase.
+    first.verify("missing_inference", record_blackholed_attempt=True)
+    cursor = first.trailing()
+    assert "missing_inference_blackholed_fetch_attempt_recorded trailing_log_lines=1" in capsys.readouterr().out
+    with _watch(host, tmp_path, expect_log="m", start_cursor=cursor) as second:
+        host.journal.append("Ensuring model loaded: m")
+    second.verify("missing_ollama")
+    assert second.journal == ["Ensuring model loaded: m"]
+    assert "missing_ollama_no_fetch_log_ok" in capsys.readouterr().out
+
+
+def test_fetch_watch_waits_for_the_journal_to_settle(tmp_path: Path):
+    host = FakeHost(tmp_path)
+    reads = 0
+    original = host.journal_after
+
+    def journal_after(cursor):
+        nonlocal reads
+        reads += 1
+        if reads == 2:  # journald flushes the download line one poll after the phase's own line.
+            host.journal.append("Downloading model: m")
+        return original(cursor)
+
+    host.journal_after = journal_after
+    with _watch(host, tmp_path, expect_log="m") as phase:
+        host.journal.append("Ensuring model loaded: m")
+    phase.settle = 0.3
+    phase._collect()
+    assert phase.journal == ["Ensuring model loaded: m", "Downloading model: m"]
+
+
+def test_nofetch_phase_windows_are_contiguous(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    server, host = _nofetch_setup(tmp_path)
+    starts: list = []
+    ends: list = []
+    enter, trailing = live.FetchWatch.__enter__, live.FetchWatch.trailing
+
+    def record_enter(self):
+        result = enter(self)
+        starts.append(self.start_cursor)
+        return result
+
+    def record_trailing(self):
+        ends.append(trailing(self))
+        return ends[-1]
+
+    monkeypatch.setattr(live.FetchWatch, "__enter__", record_enter)
+    monkeypatch.setattr(live.FetchWatch, "trailing", record_trailing)
+    _run_nofetch(server, host)
+    # Each later same-model phase starts exactly where the previous trailing check ended.
+    assert len(starts) == len(ends) == 6
+    assert starts[1:3] == ends[0:2]
+    assert starts[4:6] == ends[3:5]
+
+
+def test_missing_model_defaults_to_the_env_override(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.delenv(live.MISSING_MODEL_ENV, raising=False)
+    assert live.parse_args(["nofetch"]).missing_model == live.DEFAULT_MISSING_MODEL
+    monkeypatch.setenv(live.MISSING_MODEL_ENV, "Other-Absent-GGUF")
+    assert live.parse_args(["nofetch"]).missing_model == "Other-Absent-GGUF"
+    assert live.parse_args(["nofetch", "--missing-model", "Cli-GGUF"]).missing_model == "Cli-GGUF"
+
+
 def test_nofetch_ignores_other_processes_and_inbound_lan_clients(tmp_path: Path):
     server, host = _nofetch_setup(tmp_path)
     other = 'ESTAB 0 0 198.51.100.2:5000 203.0.113.9:443 users:(("firefox",pid=77,fd=12))'
@@ -1171,7 +1315,7 @@ def test_nofetch_missing_model_must_be_registered_and_absent(tmp_path: Path):
 
     server, host = _nofetch_setup(tmp_path / "second")
     server.models["Tiny-Test-Model-GGUF"]["downloaded"] = True
-    with pytest.raises(AssertionError, match="missing_model_present"):
+    with pytest.raises(AssertionError, match=f"missing_model_present: .*{live.MISSING_MODEL_ENV}"):
         _run_nofetch(server, host)
     assert ("POST", "/load") not in server.calls
 
@@ -1328,7 +1472,7 @@ def test_service_pins_rejects_missing_unloaded_or_wrong_variant():
 
 def test_nofetch_requires_journal_evidence_for_each_phase(tmp_path: Path):
     server, host = _nofetch_setup(tmp_path)
-    host.journal_since = lambda since: []
+    host.journal_after = lambda cursor: ([], cursor)
 
     with pytest.raises(AssertionError, match="journal has no line naming"):
         live.run_nofetch(
