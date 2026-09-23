@@ -1176,6 +1176,7 @@ scaffold_notes = [
 recipe_key = "native_wheels"
 template = "native-wheel-pypi"
 upstream_version = "6.0.3"
+pkgrel = 2
 pkgdesc = "Python bindings for YAML with libYAML rebuilt for Strix Halo gfx1151"
 url = "https://github.com/yaml/pyyaml"
 license = ["MIT"]
@@ -1188,7 +1189,8 @@ divergence_notes = [
 ]
 update_notes = [
   "Check Arch python-yaml first for Cython, libyaml, and build-backend changes before updating.",
-  "After publishing a rebuilt package, verify `import yaml` and confirm the libYAML-backed loader is available through the installed local Python lane."
+  "After publishing a rebuilt package, verify `import yaml` and confirm the libYAML-backed loader is available through the installed local Python lane.",
+  "On 2026-09-22, bump pkgrel to 2 for the generation-C W2A closure (#110), built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7. The source is unchanged; the rebuild keeps the package out of the previous generation's repo."
 ]
 provides = ["python-yaml", "python-pyyaml"]
 conflicts = ["python-yaml", "python-pyyaml"]
