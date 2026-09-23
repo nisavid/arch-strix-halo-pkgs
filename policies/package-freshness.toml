@@ -279,7 +279,7 @@ packages = ["python-watchfiles-gfx1151"]
 priority = "medium"
 workflow = "upstream_source_update"
 checks = [
-  { id = "pypi", role = "primary", kind = "pypi", package = "watchfiles", recorded = "1.2.0", comparison = "pep440" },
+  { id = "pypi", role = "primary", kind = "pypi", package = "watchfiles", recorded = "1.3.0", comparison = "pep440" },
 ]
 
 [families.uvloop]

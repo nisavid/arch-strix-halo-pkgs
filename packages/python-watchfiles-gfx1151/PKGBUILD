@@ -5,7 +5,7 @@
 # Package recipe key: rust_wheels
 
 pkgname=python-watchfiles-gfx1151
-pkgver=1.2.0
+pkgver=1.3.0
 pkgrel=1
 pkgdesc='Simple, modern, and high-performance file watching rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
@@ -18,11 +18,11 @@ options=()
 provides=(python-watchfiles)
 conflicts=(python-watchfiles)
 replaces=()
-source=(https://files.pythonhosted.org/packages/source/w/watchfiles/watchfiles-1.2.0.tar.gz)
-sha256sums=(c995fba777f1ea992f090f9236e9284cf7a5d1a0130dd5a3d82c598cacd76838)
+source=(https://files.pythonhosted.org/packages/source/w/watchfiles/watchfiles-1.3.0.tar.gz)
+sha256sums=(99aee4a07847c06820765fd7b1b49ceac4f3f711ccb7d104655a33231de1c207)
 
 build() {
-  cd "$srcdir/watchfiles-1.2.0"
+  cd "$srcdir/watchfiles-1.3.0"
 
   _setup_compiler_env() {
   local _compiler_root="/opt/rocm/lib/llvm/bin"
@@ -63,11 +63,11 @@ build() {
 }
 
 package() {
-  cd "$srcdir/watchfiles-1.2.0"
+  cd "$srcdir/watchfiles-1.3.0"
   python -m installer --destdir="$pkgdir" dist/*.whl
 
   local _debug_prefix="/usr/src/debug/python-watchfiles-gfx1151"
   find "$pkgdir/usr/lib" -type f -path '*/sboms/*.json' -print0 | while IFS= read -r -d '' _file; do
-    sed -i       -e "s|$srcdir/watchfiles-1.2.0|${_debug_prefix}/watchfiles-1.2.0|g"       -e "s|$srcdir|${_debug_prefix}|g"       -e "s|/tmp/pkg/src/watchfiles-1.2.0|${_debug_prefix}/watchfiles-1.2.0|g"       "$_file" 2>/dev/null || true
+    sed -i       -e "s|$srcdir/watchfiles-1.3.0|${_debug_prefix}/watchfiles-1.3.0|g"       -e "s|$srcdir|${_debug_prefix}|g"       -e "s|/tmp/pkg/src/watchfiles-1.3.0|${_debug_prefix}/watchfiles-1.3.0|g"       "$_file" 2>/dev/null || true
   done
 }
