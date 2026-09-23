@@ -118,6 +118,27 @@ _setup_compiler_env() {
     )
 
 
+def build_jobs_snippet() -> str:
+    """Shell helper that reads the job cap from makepkg's MAKEFLAGS.
+
+    A host or build-root makepkg.conf caps parallelism there, and an explicit
+    -j or MAX_JOBS in build() overrides every other cap, so builds must not
+    hardcode $(nproc).
+    """
+    return textwrap.dedent(
+        """\
+_build_jobs() {
+  if [[ ${MAKEFLAGS:-} =~ (^|[[:space:]])-j[[:space:]]*([0-9]+) ]]; then
+    printf '%s\\n' "${BASH_REMATCH[2]}"
+  else
+    nproc
+  fi
+}
+
+"""
+    )
+
+
 def render_source_refs(policy_pkg: dict, recipe_pkg: dict) -> tuple[str, str]:
     template = policy_pkg["template"]
     if template == "meta-package":
@@ -576,7 +597,7 @@ prepare() {{
 build() {{
   cd "$srcdir/{src_subdir}"
 
-  {compiler_env_snippet(compiler_root)}  _setup_compiler_env
+  {compiler_env_snippet(compiler_root)}  {build_jobs_snippet()}  _setup_compiler_env
   local amdclang="$CC"
   local amdclangxx="$CXX"
   local build_root="$srcdir/build-{package_name}"
@@ -596,7 +617,7 @@ build() {{
     -DBUILD_WEB_APP=ON \\
     -DBUILD_TESTING=OFF
 
-  cmake --build "${{build_root}}" -j"$(nproc)"
+  cmake --build "${{build_root}}" -j"$(_build_jobs)"
 }}
 
 package() {{
@@ -672,7 +693,7 @@ prepare() {{
 build() {{
   cd "$srcdir/{src_subdir}"
 
-  {compiler_env_snippet(compiler_root)}  _setup_compiler_env
+  {compiler_env_snippet(compiler_root)}  {build_jobs_snippet()}  _setup_compiler_env
   local amdclang="$CC"
   local amdclangxx="$CXX"
   local build_root="$srcdir/build-{package_name}"
@@ -699,7 +720,7 @@ build() {{
     -DBUILD_ELECTRON_APP=OFF \
     -DBUILD_WEB_APP=OFF
 
-  cmake --build "${{build_root}}" --target tauri-app -j"$(nproc)"
+  cmake --build "${{build_root}}" --target tauri-app -j"$(_build_jobs)"
 }}
 
 package() {{
@@ -755,11 +776,11 @@ EOF
 build() {{
   cd "$srcdir/{src_subdir}"
 
-  {compiler_env_snippet(compiler_root)}  _setup_compiler_env
+  {compiler_env_snippet(compiler_root)}  {build_jobs_snippet()}  _setup_compiler_env
   local amdclang="{compiler_root}/amdclang"
   local amdclangxx="{compiler_root}/amdclang++"
 
-  scons -j"$(nproc)" \\
+  scons -j"$(_build_jobs)" \\
     ALM_CC="${{amdclang}}" \\
     ALM_CXX="${{amdclangxx}}" \\
     --arch_config=avx512 \\
@@ -796,7 +817,7 @@ prepare() {{
 build() {{
   cd "$srcdir/{src_subdir}"
 
-  {compiler_env_snippet(compiler_root)}  _setup_compiler_env
+  {compiler_env_snippet(compiler_root)}  {build_jobs_snippet()}  _setup_compiler_env
   local amdclang="$CC"
   local amdclangxx="$CXX"
   local _debug_prefix="/usr/src/debug/{package_name}"
@@ -826,7 +847,7 @@ build() {{
 
   make PROFILE_TASK="-S -m test --pgo --timeout=\\$(TESTTIMEOUT)" \\
     EXTRA_CFLAGS="${{_base_cflags}} -famd-opt -Wno-error=unused-command-line-argument" \\
-    -j"$(nproc)"
+    -j"$(_build_jobs)"
 }}
 
 package() {{
@@ -1088,7 +1109,7 @@ build() {{
     esac
   done < <(env -0)
 
-  {compiler_env_snippet(compiler_root)}  _setup_compiler_env
+  {compiler_env_snippet(compiler_root)}  {build_jobs_snippet()}  _setup_compiler_env
   local _rocm_llvm_bin="{compiler_root}"
   export PATH="${{PATH}}:/opt/rocm/bin"
   # PyTorch also invokes non-CMake compiler probes; keep those on ROCm LLVM.
@@ -1127,7 +1148,7 @@ build() {{
   export ROCM_PATH="/opt/rocm"
   export HIP_CLANG_PATH="${{_rocm_llvm_bin}}"
   export CMAKE_PREFIX_PATH="${{OpenBLAS_HOME}}:/opt/rocm"
-  export MAX_JOBS="$(nproc)"
+  export MAX_JOBS="${{MAX_JOBS:-$(_build_jobs)}}"
   export PYTORCH_BUILD_VERSION="{upstream_version}"
   export PYTORCH_BUILD_NUMBER=1
 

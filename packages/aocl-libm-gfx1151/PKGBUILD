@@ -54,11 +54,19 @@ build() {
   fi
 }
 
+  _build_jobs() {
+  if [[ ${MAKEFLAGS:-} =~ (^|[[:space:]])-j[[:space:]]*([0-9]+) ]]; then
+    printf '%s\n' "${BASH_REMATCH[2]}"
+  else
+    nproc
+  fi
+}
+
   _setup_compiler_env
   local amdclang="/opt/rocm/lib/llvm/bin/amdclang"
   local amdclangxx="/opt/rocm/lib/llvm/bin/amdclang++"
 
-  scons -j"$(nproc)" \
+  scons -j"$(_build_jobs)" \
     ALM_CC="${amdclang}" \
     ALM_CXX="${amdclangxx}" \
     --arch_config=avx512 \
