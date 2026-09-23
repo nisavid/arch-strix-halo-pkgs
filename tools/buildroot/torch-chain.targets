@@ -1,7 +1,8 @@
 # Build-root targets for the generation-C torch chain (W2A).
 # Resolve with: c_buildroot.py resolve --targets-file tools/buildroot/torch-chain.targets
 # NumPy, PyYAML, Pillow and psutil are the W2A gfx1151 builds, so resolve
-# with ashp-w2a as a foundation repo.
+# with ashp-w2a as a foundation repo. python-triton-gfx1151 is the W2A ROCm
+# Triton 3.8 build (#109); AOTriton and PyTorch both build against it.
 base-devel
 ccache
 git
@@ -43,6 +44,7 @@ python-pillow-gfx1151
 python-scipy
 python-tabulate
 python-psutil-gfx1151
+python-triton-gfx1151
 rocm-llvm-gfx1151
 rocm-core-gfx1151
 rocm-hip-sdk-gfx1151

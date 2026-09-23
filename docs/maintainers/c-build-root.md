@@ -291,3 +291,48 @@ compiler, HIP driver and launcher do the rest:
   `python-triton` does not declare one either.
 
 `verify` found no violations after the add. Nothing was installed on the host.
+
+## W2A AOTriton 0.13b (#109)
+
+On 2026-09-23 `python-aotriton-gfx1151` 0.13b-1 was built and published to
+`ashp-w2a`. The root was re-locked from `torch-chain.targets`, which now
+names `python-triton-gfx1151` (424 packages), and repopulated in place.
+
+- **Source:** tag `0.13b` at `6e00ef3e`, with the vendored Triton staged from
+  the `db82b800` package source, the same hyperjump commit 0.12b pinned.
+- **Carry:** 0001 (gate the vendored Triton's NVIDIA and GSan artifacts) is
+  byte-identical to 0.12b. The masked `c44b870b` cherry-pick is gone from the
+  renderer template, because that commit is not in the pinned history.
+- **Build:** `makepkg -Cf --nodeps` with `--net`, in about 81 minutes. The
+  build needs network by design: configure installs `requirements.txt` and the
+  `aotriton` code generator into a disposable venv, clones the `ROCm/aiter`
+  tag named in `third_party/aiter.txt` (`v0.1.11`) for its kernel sources, and
+  the vendored Triton wheel build downloads its own LLVM into `TRITON_HOME`.
+  The build has 22,892 ninja steps: the vendored Triton wheel, about 1,960 C++
+  shim objects, then about 20,900 gfx1151 kernel images.
+- **Memory:** 14 ninja jobs plus the nested Triton build left about 33 GiB
+  available. The template now caps the nested Triton's links with
+  `TRITON_PARALLEL_LINK_JOBS` (default 2), as the standalone Triton template
+  does.
+- **Disk:** the build tree peaked at about 16 GiB. 7.2 GiB of that was the
+  vendored Triton's downloaded LLVM and NVIDIA toolchains in `TRITON_HOME`,
+  which nothing reads once the nested wheel is installed; it was deleted while
+  the kernels compiled to stay under the disk cap. Plan for about 16 GiB free
+  per AOTriton build.
+- **Output:** 137 MB installed: `libaotriton_v2.so.0.13.0`, the
+  `pyaotriton` extension in `/usr/lib`, headers, CMake config and the
+  `aotriton.images/amd-gfx115x` kernel archives. `libaotriton_v2.so` links
+  TheRock's HIP runtime plus `liblzma`, `libstdc++` and `libgcc_s`; the
+  package does not yet declare `xz`, and neither does Arch.
+- The `.BUILDINFO` step prints an `alpm` initialization error because the root
+  has no pacman database. It is cosmetic; the package metadata is complete.
+
+The in-root smoke ran on the gfx1151 GPU (`enter --gpu`) without torch:
+
+- `import pyaotriton` loads `/usr/lib/pyaotriton.cpython-314-x86_64-linux-gnu.so`.
+- The v3 `attn_fwd` operator ran on fp16 Q, K and V of shape (2, 4, 256, 64)
+  held in `pyaotriton.HipMemory` buffers, non-causal and causal. Both returned
+  `hipSuccess` and matched a NumPy float32 reference within 1.1e-3 max
+  absolute error.
+
+`verify` found no violations after the add. Nothing was installed on the host.
