@@ -1386,12 +1386,6 @@ package() {{
                     'git -C "$srcdir/{src_subdir}" submodule update --init --recursive --force'.format(src_subdir=src_subdir),
                 ]
             )
-        prepare_lines.extend(
-            [
-                "# Keep vendored Triton aligned with the standalone Python-3.14 compatibility fix we already apply in python-triton-gfx1151.",
-                'git -C "$srcdir/{src_subdir}/third_party/triton" cherry-pick -n c44b870bdd9e1ea8933fd4057b6b59a5e6e5407b || true'.format(src_subdir=src_subdir),
-            ]
-        )
         for patch_name in policy_pkg.get("source_patches", []):
             prepare_lines.extend(
                 [
@@ -1404,6 +1398,8 @@ package() {{
 build() {{
   {compiler_env_snippet(compiler_root)}  _setup_compiler_env
   export TRITON_HOME="$srcdir/.triton-home"
+  # The nested vendored Triton links libtriton and its tools against static LLVM and MLIR.
+  export TRITON_PARALLEL_LINK_JOBS="${{TRITON_PARALLEL_LINK_JOBS:-2}}"
   export PIP_CACHE_DIR="$srcdir/.pip-cache"
   export PYTHONPYCACHEPREFIX="$srcdir/.python-pycache"
   if [[ -n "${{AOTRITON_REUSE_BUILD:-}}" && -f "$srcdir/build/build.ninja" ]]; then

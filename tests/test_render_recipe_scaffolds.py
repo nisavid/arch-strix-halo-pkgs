@@ -735,9 +735,11 @@ def test_aotriton_renderer_stages_pinned_submodule_sources() -> None:
 
     assert 'cp -a "$srcdir/aotriton-aiter" "$srcdir/aotriton/third_party/aiter"' in pkgbuild
     assert "git submodule update --init --recursive" not in pkgbuild
-    assert "cherry-pick -n c44b870bdd9e1ea8933fd4057b6b59a5e6e5407b" in pkgbuild
+    # The old ast.Num cherry-pick is not in the pinned vendored Triton history; it was a masked no-op.
+    assert "cherry-pick" not in pkgbuild
     assert 'patch -Np1 -i "$srcdir/0001-gate-vendored-triton-nvidia-build-artifacts.patch"' in pkgbuild
     assert 'export TRITON_HOME="$srcdir/.triton-home"' in pkgbuild
+    assert 'export TRITON_PARALLEL_LINK_JOBS="${TRITON_PARALLEL_LINK_JOBS:-2}"' in pkgbuild
     assert 'export PIP_CACHE_DIR="$srcdir/.pip-cache"' in pkgbuild
     assert 'export PYTHONPYCACHEPREFIX="$srcdir/.python-pycache"' in pkgbuild
 
