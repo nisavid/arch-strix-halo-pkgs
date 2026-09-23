@@ -128,8 +128,8 @@ def build_jobs_snippet() -> str:
     return textwrap.dedent(
         """\
 _build_jobs() {
-  if [[ ${MAKEFLAGS:-} =~ (^|[[:space:]])-j[[:space:]]*([0-9]+) ]]; then
-    printf '%s\\n' "${BASH_REMATCH[2]}"
+  if [[ ${MAKEFLAGS:-} =~ (^|[[:space:]])(-j[[:space:]]*|--jobs[=[:space:]])([0-9]+) ]]; then
+    printf '%s\\n' "${BASH_REMATCH[3]}"
   else
     nproc
   fi

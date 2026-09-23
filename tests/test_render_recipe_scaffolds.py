@@ -1244,7 +1244,15 @@ def test_real_lemonade_packages_share_one_source_pin() -> None:
 
 @pytest.mark.parametrize(
     ("makeflags", "expected"),
-    [("-j12", "12"), ("-j 6 -l8", "6"), ("--output-sync -j20", "20"), ("", None)],
+    [
+        ("-j12", "12"),
+        ("-j 6 -l8", "6"),
+        ("--output-sync -j20", "20"),
+        ("--jobs=8", "8"),
+        ("-l4 --jobs 3", "3"),
+        ("-j", None),
+        ("", None),
+    ],
 )
 def test_build_jobs_helper_reads_the_makeflags_job_cap(makeflags: str, expected: str | None) -> None:
     script = render_recipe_scaffolds.build_jobs_snippet() + "_build_jobs\n"
