@@ -286,6 +286,17 @@ class FakeLemond:
         # Request paths on which an absent model is fetched instead of refused.
         self.auto_pull_paths: set[str] = set()
         self.current_path = ""
+        # Canonical name -> the name listing surfaces emit (bare for a precedence winner).
+        self.listed: dict[str, str] = {}
+
+    def _listed(self, name: str) -> str:
+        return self.listed.get(name, name)
+
+    def _resolve(self, name: str) -> str:
+        """Accept a listed bare name as input, as lemond does, and return the canonical name."""
+        if name in self.models:
+            return name
+        return next((canonical for canonical, bare in self.listed.items() if bare == name), name)
 
     def _refuse(self, message: str) -> tuple[int, Any]:
         return 500, {"error": {"message": message}}
@@ -335,7 +346,8 @@ class FakeLemond:
         if path == "/health":
             for name, entry in self.loaded.items():
                 entry["is_busy"] = name == self.busy_model
-            return 200, {"version": "11.7.0", "all_models_loaded": list(self.loaded.values())}
+            loaded = [{**entry, "model_name": self._listed(entry["model_name"])} for entry in self.loaded.values()]
+            return 200, {"version": "11.7.0", "all_models_loaded": loaded}
         if path == "/models":
             return 200, {"data": list(self.models.values())}
         if path.startswith("/models/") and path.endswith("/files?include_paths=true"):
@@ -343,7 +355,7 @@ class FakeLemond:
                 "files": [{"role": "main", "exists": True, "path": str(SERVICE_GGUF)}]
             }
         if path.startswith("/models/"):
-            name = path.removeprefix("/models/")
+            name = self._resolve(path.removeprefix("/models/"))
             if name not in self.models:
                 return 404, {"error": {"message": f"Model not found: {name}"}}
             return 200, self.models[name]
@@ -359,7 +371,7 @@ class FakeLemond:
         if path == "/pins":
             return 200, {
                 "data": [
-                    {"model_name": name, "loaded": name in self.loaded, "load_error": None}
+                    {"model_name": self._listed(name), "loaded": name in self.loaded, "load_error": None}
                     for name in self.config["pinned_models"]
                 ]
             }
@@ -728,8 +740,21 @@ def test_displacement_fails_when_a_pinned_model_is_evicted():
         live.run_displacement(FakeInstance(server), ctx_size=4096, stream_tokens=64)
 
 
-def _pacman_runner(*, packagers: dict[str, str] | None = None, foreign: str = "", altered: int = 0):
+SECRETS = "/etc/lemonade/conf.d/zz-secrets.conf"
+UNREADABLE = live.UNREADABLE_CHECKSUM
+
+
+def _pacman_runner(
+    *,
+    packagers: dict[str, str] | None = None,
+    foreign: str = "",
+    alterations: dict[str, tuple[str, ...]] | None = None,
+    backups: str = "None",
+    counted: int | None = None,
+):
+    """Fake pacman; `alterations` and `backups` apply to lemonade-server only."""
     packagers = packagers or {}
+    alterations = alterations or {}
 
     def runner(argv, capture_output, text):
         command = argv[:2]
@@ -752,8 +777,17 @@ def _pacman_runner(*, packagers: dict[str, str] | None = None, foreign: str = ""
                 )
             stdout = f"{path} is owned by {owner} 1-1\n"
         elif command == ["pacman", "-Qkk"]:
-            stdout = f"{argv[2]}: 10 total files, {altered} altered files\n"
-            code = 1 if altered else 0
+            package = argv[2]
+            found = alterations if package == "lemonade-server" else {}
+            count = len(found) if counted is None or package != "lemonade-server" else counted
+            stdout = f"{package}: 10 total files, {count} altered files\n"
+            stderr = "".join(
+                f"warning: {package}: {path} ({reason})\n" for path, reasons in found.items() for reason in reasons
+            )
+            return subprocess.CompletedProcess(argv, 1 if count else 0, stdout=stdout, stderr=stderr)
+        elif command == ["pacman", "-Qii"]:
+            listed = backups if argv[2] == "lemonade-server" else "None"
+            stdout = f"Name : {argv[2]}\nBackup Files : {listed}\nExtended Data : pkgtype=pkg\n"
         elif argv[0] == "systemctl":
             stdout = "4242\n"
         else:
@@ -799,13 +833,58 @@ def test_provenance_accepts_uniform_repo_family(capsys: pytest.CaptureFixture[st
         assert marker in out
 
 
+def test_provenance_records_an_unreadable_backup_file_without_counting_it(capsys: pytest.CaptureFixture[str]):
+    runner = _pacman_runner(alterations={SECRETS: (UNREADABLE,)}, backups=f"{SECRETS} [unreadable]")
+
+    _run_provenance(_provenance_server(), runner)
+
+    out = capsys.readouterr().out
+    assert "package_backup_unreadable lemonade-server etc/lemonade/conf.d/zz-secrets.conf" in out
+    assert "package_files_unaltered_ok" in out
+
+
+def test_provenance_counts_unverifiable_or_drifted_files_as_altered():
+    # A checksum failure on a file pacman does not list as an unreadable backup still counts.
+    for backups in ("None", f"{SECRETS} [unmodified]"):
+        runner = _pacman_runner(alterations={SECRETS: (UNREADABLE,)}, backups=backups)
+        with pytest.raises(AssertionError, match="zz-secrets.conf \\(failed to calculate"):
+            _run_provenance(_provenance_server(), runner)
+
+    # The M4 dry-run host: service-user-owned config dirs and a hand-edited resource.
+    defaults = "/usr/share/lemonade-server/resources/architecture_defaults.json"
+    runner = _pacman_runner(
+        alterations={
+            "/etc/lemonade": ("UID mismatch", "GID mismatch"),
+            SECRETS: (UNREADABLE,),
+            defaults: ("Modification time mismatch", "Size mismatch", "SHA256 checksum mismatch"),
+        },
+        backups=f"{SECRETS} [unreadable]",
+    )
+    with pytest.raises(AssertionError) as caught:
+        _run_provenance(_provenance_server(), runner)
+    # Package-archive paths survive the scrubbed one-line error report.
+    message = live.scrub_paths(str(caught.value))
+    assert "etc/lemonade (GID mismatch, UID mismatch)" in message
+    assert "usr/share/lemonade-server/resources/architecture_defaults.json (Modification time" in message
+    assert "<path>" not in message
+    assert "zz-secrets" not in message
+
+    # A count that the named paths do not account for fails closed.
+    runner = _pacman_runner(alterations={"/usr/bin/lemond": ("Size mismatch",)}, counted=2)
+    with pytest.raises(AssertionError, match="counts 2 altered files but names 1"):
+        _run_provenance(_provenance_server(), runner)
+
+
 def test_provenance_rejects_mixed_foreign_altered_or_online_family():
     with pytest.raises(AssertionError, match="packager differs"):
         _run_provenance(_provenance_server(), _pacman_runner(packagers={"lemonade-app": "Other"}))
     with pytest.raises(AssertionError, match="foreign"):
         _run_provenance(_provenance_server(), _pacman_runner(foreign="lemonade-server\n"))
     with pytest.raises(AssertionError, match="altered"):
-        _run_provenance(_provenance_server(), _pacman_runner(altered=1))
+        _run_provenance(
+            _provenance_server(),
+            _pacman_runner(alterations={"/usr/bin/lemond": ("SHA256 checksum mismatch",)}),
+        )
 
     online = _provenance_server()
     online.config["offline"] = False
@@ -1536,6 +1615,33 @@ def test_service_pins_accepts_pinned_loaded_consumer_models(capsys: pytest.Captu
     assert "service_pin zerank-2-GGUF mradermacher/zerank-2-GGUF:Q8_0" in out
     assert "service_pins_ok" in out
     assert all(method == "GET" for method, _ in server.calls)
+
+
+def test_service_pins_matches_a_bare_listing_to_its_canonical_pin(capsys: pytest.CaptureFixture[str]):
+    zembed = "user.zembed-1-Q4_K_M-GGUF-Q4_K_M"
+    server = _pinned_server()
+    server.listed[zembed] = live.bare_model_name(zembed)
+
+    live.run_service_pins(server, expected=PINS)
+
+    out = capsys.readouterr().out
+    assert "service_pin_alias user.zembed-1-Q4_K_M-GGUF-Q4_K_M zembed-1-Q4_K_M-GGUF-Q4_K_M" in out
+    assert "service_pins_ok" in out
+    assert live.bare_model_name("Qwen3.5-4B-GGUF") == "Qwen3.5-4B-GGUF"
+    assert live.bare_model_name("user.") == "user."
+
+
+def test_service_pins_rejects_an_alias_that_resolves_to_another_model():
+    zembed = "user.zembed-1-Q4_K_M-GGUF-Q4_K_M"
+    bare = live.bare_model_name(zembed)
+    server = _pinned_server()
+    # A different model owns the bare name and holds the pin.
+    server.models[bare] = {"id": bare, "downloaded": True, "checkpoint": "other/zembed-1-GGUF:Q4_K_M"}
+    server.config["pinned_models"][server.config["pinned_models"].index(zembed)] = bare
+    server.loaded[bare] = {**server.loaded.pop(zembed), "model_name": bare}
+
+    with pytest.raises(AssertionError, match="resolve to different checkpoints"):
+        live.run_service_pins(server, expected=PINS)
 
 
 def test_service_pins_rejects_missing_unloaded_or_wrong_variant():
