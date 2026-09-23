@@ -174,6 +174,36 @@ def test_host_version_is_taken_from_host_cache(tmp_path):
     assert {p["kind"] for p in lock["problems"]} == {"missing-file"}  # cmake has no file anywhere
 
 
+def test_host_version_is_not_used_when_it_breaks_a_version_constraint(tmp_path):
+    cache = tmp_path / "cache"
+    cache.mkdir()
+    (cache / "glibc-2.43-2-x86_64.pkg.tar.zst").touch()
+    (cache / "glibc-2.44-1-x86_64.pkg.tar.zst").touch()
+    cfg = config(tmp_path, installed={"glibc": "2.43-2"}, host_cache=cache)
+    glibc = by_name(cbr.resolve(["cmake", "glibc>=2.44"], cfg))["glibc"]
+    assert glibc["version"] == "2.44-1", "the installed 2.43-2 does not meet glibc>=2.44"
+    assert glibc["source"] == "core"
+    assert glibc["sha256_db"] == "dd"
+
+
+def test_exact_pins_from_host_locked_packages_do_not_evict_host_versions(tmp_path):
+    # The DB's systemd 2 pins systemd-libs=2, but the host runs systemd 1 with
+    # systemd-libs 1. Both come from the host cache as a consistent pair.
+    db = write_db(tmp_path / "core.db", [
+        desc("systemd", "2-1", depends=["systemd-libs=2"], sha256="s2"),
+        desc("systemd-libs", "2-1", sha256="l2"),
+    ])
+    cache = tmp_path / "cache"
+    cache.mkdir()
+    for name in ("systemd-1-1", "systemd-libs-1-1"):
+        (cache / f"{name}-x86_64.pkg.tar.zst").touch()
+    cfg = cbr.ResolveConfig(repos=[("core", cbr.read_db(db, "core"))], foundation=[], host_cache=cache,
+                            installed={"systemd": "1-1", "systemd-libs": "1-1"})
+    pkgs = by_name(cbr.resolve(["systemd"], cfg))
+    assert pkgs["systemd"]["version"] == "1-1"
+    assert pkgs["systemd-libs"]["version"] == "1-1"
+
+
 def test_forbidden_repo_names_never_come_from_host_cache(tmp_path):
     cache = tmp_path / "cache"
     cache.mkdir()

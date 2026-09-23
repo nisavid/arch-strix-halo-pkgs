@@ -40,7 +40,7 @@ import shutil
 import subprocess
 import sys
 import tarfile
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Callable, Iterable, Mapping, Sequence
 
@@ -271,18 +271,24 @@ def resolve(targets: Sequence[str], cfg: ResolveConfig) -> dict:
         return cands[0]
 
     selected: dict[str, Pkg] = {}
+    # Every (dependency, needed-by) pair each selected package answers, so that
+    # a host version is only substituted when it meets the binding ones.
+    required: dict[str, list[tuple[str, str]]] = {}
     trace: list[str] = []
     problems: list[dict[str, str]] = []
     queue: list[tuple[str, str]] = [(t, "<target>") for t in targets]
     while queue:
         dep, why = queue.pop(0)
-        if any(satisfies(p, dep) for p in selected.values()):
+        hit = next((p for p in selected.values() if satisfies(p, dep)), None)
+        if hit is not None:
+            required[hit.name].append((dep, why))
             continue
         pkg = find(dep)
         if pkg is None:
             problems.append(problem("unresolved", split_dep(dep)[0], f"{dep} needed by {why}"))
             continue
         selected[pkg.name] = pkg
+        required[pkg.name] = [(dep, why)]
         trace.append(f"{pkg.repo}/{pkg.name} {pkg.version} <- {dep} ({why})")
         queue.extend((d, pkg.name) for d in pkg.depends)
 
@@ -291,6 +297,20 @@ def resolve(targets: Sequence[str], cfg: ResolveConfig) -> dict:
             for q in selected.values():
                 if q is not p and satisfies(q, c):
                     problems.append(problem("conflict", p.name, f"conflicts with {q.name} ({c})"))
+
+    def binding(why: str) -> bool:
+        # Targets, foundation packages and packages that will come at their DB
+        # version state real constraints. A host-installed userland package is
+        # locked at its host version, whose own depends the host already meets,
+        # so the exact pins in its newer DB entry do not bind.
+        if why == "<target>":
+            return True
+        needer = selected[why]
+        return needer.repo in foundation_rank or needer.name not in cfg.installed
+
+    def host_version_fits(p: Pkg, version: str, needs: list[tuple[str, str]]) -> bool:
+        host = replace(p, version=version)
+        return all(satisfies(host, d) for d, why in needs if binding(why))
 
     packages = []
     for p in sorted(selected.values(), key=lambda p: p.name):
@@ -302,6 +322,7 @@ def resolve(targets: Sequence[str], cfg: ResolveConfig) -> dict:
             and p.name in cfg.installed
             and p.name not in cfg.forbidden_names
             and cfg.host_cache is not None
+            and host_version_fits(p, cfg.installed[p.name], required[p.name])
         )
         if use_host:
             hv = cfg.installed[p.name]
