@@ -188,6 +188,24 @@ def test_core_blackcat_wheel_stack_rendered_outputs_exist() -> None:
         assert "Blackcat" in readme
 
 
+def test_pydantic_core_conflicts_with_older_arch_pydantic() -> None:
+    # Arch python-pydantic pins pydantic-core exactly but depends on it
+    # unversioned, so pacman must refuse pydantic-core 2.46.5 next to an older
+    # pydantic that would make `import pydantic` raise SystemError.
+    package_name = "python-pydantic-core-gfx1151"
+    guard = "python-pydantic<2.13.5"
+    policy = tomllib.loads((REPO_ROOT / "policies/recipe-packages.toml").read_text())[
+        "packages"
+    ][package_name]
+    package_dir = REPO_ROOT / "packages" / package_name
+    recipe = json.loads((package_dir / "recipe.json").read_text())["policy"]
+    pkgbuild = (package_dir / "PKGBUILD").read_text()
+
+    assert policy["conflicts"] == ["python-pydantic-core", guard]
+    assert recipe["conflicts"] == ["python-pydantic-core", guard]
+    assert f"conflicts=(python-pydantic-core '{guard}')" in pkgbuild
+
+
 def test_consumers_prefer_local_core_stack_packages() -> None:
     packages = tomllib.loads((REPO_ROOT / "policies/recipe-packages.toml").read_text())[
         "packages"

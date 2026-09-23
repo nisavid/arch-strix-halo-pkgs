@@ -29,7 +29,8 @@
     ],
     "authoritative_reference": "extra/python-pydantic-core",
     "conflicts": [
-      "python-pydantic-core"
+      "python-pydantic-core",
+      "python-pydantic<2.13.5"
     ],
     "depends": [
       "glibc",
