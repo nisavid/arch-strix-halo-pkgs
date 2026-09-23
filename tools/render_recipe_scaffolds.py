@@ -1304,7 +1304,22 @@ PY
   patchelf --set-rpath "${{_rpath}}" "${{_extension}}"
 }}"""
     elif template == "python-project-triton-rocm":
-        python_subdir = f"{src_subdir}/python"
+        # Triton 3.8 keeps pyproject.toml and setup.py at the repo root.
+        python_subdir = src_subdir
+        # The pinned upstream LLVM build Triton's cmake/llvm-info.json names,
+        # staged through source=() so the build never downloads it.
+        llvm_dir = policy_pkg.get("triton_llvm_dir")
+        if not llvm_dir:
+            print(
+                f"TRITON_LLVM_DIR_MISSING: {package_name} needs triton_llvm_dir",
+                file=sys.stderr,
+            )
+            print(
+                "HINT: pin Triton's LLVM tarball in source_refs and name its unpacked "
+                "top-level directory in triton_llvm_dir.",
+                file=sys.stderr,
+            )
+            raise SystemExit(2)
         source_patches = policy_pkg.get("source_patches", [])
         if source_patches:
             prepare_lines.extend(
@@ -1330,7 +1345,14 @@ build() {{
   {compiler_env_snippet(compiler_root)}  _setup_compiler_env
   export ROCM_HOME="/opt/rocm"
   export ROCM_PATH="/opt/rocm"
-  unset LLVM_SYSPATH
+  # Offline build: LLVM comes from the pinned source tarball, nlohmann-json
+  # from the system, and nothing else is downloaded.
+  export TRITON_OFFLINE_BUILD=ON
+  export LLVM_SYSPATH="$srcdir/{llvm_dir}"
+  export JSON_SYSPATH=/usr
+  export TRITON_HOME="$srcdir/.triton-home"
+  # Each libtriton and triton-* tool link pulls in static LLVM and MLIR.
+  export TRITON_PARALLEL_LINK_JOBS="${{TRITON_PARALLEL_LINK_JOBS:-2}}"
   export TRITON_BUILD_PROTON=OFF
   if command -v ccache >/dev/null 2>&1; then
     export TRITON_BUILD_WITH_CCACHE=true

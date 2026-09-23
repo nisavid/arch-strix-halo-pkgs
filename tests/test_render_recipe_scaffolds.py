@@ -464,26 +464,37 @@ def test_native_wheel_build_env_quotes_values() -> None:
     assert "export SAMPLE_FLAGS='alpha beta'" in pkgbuild
 
 
-def test_triton_rocm_renderer_prefers_source_patches_over_inline_sed() -> None:
-    pkgbuild = render_recipe_scaffolds.render_pkgbuild(
+def _render_triton_rocm(**policy_overrides) -> str:
+    policy = {
+        "recipe_key": "triton",
+        "template": "python-project-triton-rocm",
+        "upstream_version": "3.8.0+git669b31ac",
+        "pkgdesc": "Triton",
+        "url": "https://triton-lang.org/main/index.html",
+        "license": ["MIT"],
+        "src_subdir": "triton",
+        "source_refs": [
+            "triton::git+https://github.com/ROCm/triton.git#commit=669b31acc1dd1b3fd93286afd5db67f65d9f7557",
+            "llvm-5f07f818-ubuntu-x64-1.tar.gz::https://oaitriton.blob.core.windows.net/public/llvm-builds/llvm-5f07f818-ubuntu-x64-1.tar.gz",
+        ],
+        "sha256sums": [
+            "SKIP",
+            "62dd9524eed689360882a7ae06132182b4a724ca5dfdca77667556fcef940022",
+        ],
+        "source_patches": [
+            "0001-python-3.14-and-pybind11-build-system.patch",
+            "0002-disable-werror-with-therock-llvm-headers.patch",
+        ],
+        "triton_llvm_dir": "llvm-5f07f818-ubuntu-x64-1",
+    }
+    for key, value in policy_overrides.items():
+        if value is None:
+            policy.pop(key, None)
+        else:
+            policy[key] = value
+    return render_recipe_scaffolds.render_pkgbuild(
         "python-triton-gfx1151",
-        {
-            "recipe_key": "triton",
-            "template": "python-project-triton-rocm",
-            "upstream_version": "3.0.0+git0ec280cf",
-            "pkgdesc": "Triton",
-            "url": "https://triton-lang.org/main/index.html",
-            "license": ["MIT"],
-            "src_subdir": "triton",
-            "source_refs": [
-                "triton::git+https://github.com/ROCm/triton.git#commit=0ec280cf80dd91e9a86887981a670f2d4541a32b"
-            ],
-            "source_patches": [
-                "0001-python-3.14-and-pybind11-build-system.patch",
-                "0002-disable-werror-with-therock-llvm-headers.patch",
-                "0003-attrs-descriptor-repr-for-inductor.patch",
-            ],
-        },
+        policy,
         {
             "repo": "https://github.com/ROCm/triton.git",
             "method": "pip",
@@ -501,7 +512,7 @@ def test_triton_rocm_renderer_prefers_source_patches_over_inline_sed() -> None:
                 }
             ],
         },
-        "3.0.0+git0ec280cf",
+        policy["upstream_version"],
         {
             "recipe_repo": "https://github.com/paudley/ai-notes",
             "recipe_subdir": "strix-halo",
@@ -509,11 +520,36 @@ def test_triton_rocm_renderer_prefers_source_patches_over_inline_sed() -> None:
         },
     )
 
+
+def test_triton_rocm_renderer_prefers_source_patches_over_inline_sed() -> None:
+    pkgbuild = _render_triton_rocm()
+
     assert 'patch -Np1 -i "$srcdir/0001-python-3.14-and-pybind11-build-system.patch"' in pkgbuild
-    assert 'patch -Np1 -i "$srcdir/0003-attrs-descriptor-repr-for-inductor.patch"' in pkgbuild
+    assert 'patch -Np1 -i "$srcdir/0002-disable-werror-with-therock-llvm-headers.patch"' in pkgbuild
     assert "aten/src/ATen/native/hip/linalg/BatchLinearAlgebra.cpp" not in pkgbuild
     assert "sed -i" not in pkgbuild
     assert "git cherry-pick" not in pkgbuild
+
+
+def test_triton_rocm_renderer_builds_offline_from_the_repo_root() -> None:
+    pkgbuild = _render_triton_rocm()
+
+    assert 'cd "$srcdir/triton/python"' not in pkgbuild
+    assert pkgbuild.count('cd "$srcdir/triton"\n') == 3
+    assert "unset LLVM_SYSPATH" not in pkgbuild
+    assert "export TRITON_OFFLINE_BUILD=ON" in pkgbuild
+    assert 'export LLVM_SYSPATH="$srcdir/llvm-5f07f818-ubuntu-x64-1"' in pkgbuild
+    assert "export JSON_SYSPATH=/usr" in pkgbuild
+    assert 'export TRITON_HOME="$srcdir/.triton-home"' in pkgbuild
+    assert "llvm-5f07f818-ubuntu-x64-1.tar.gz::https://oaitriton.blob.core.windows.net/" in pkgbuild
+    assert "62dd9524eed689360882a7ae06132182b4a724ca5dfdca77667556fcef940022" in pkgbuild
+
+
+def test_triton_rocm_renderer_requires_a_pinned_llvm_dir(capsys) -> None:
+    with pytest.raises(SystemExit):
+        _render_triton_rocm(triton_llvm_dir=None)
+
+    assert "TRITON_LLVM_DIR_MISSING" in capsys.readouterr().err
 
 
 def test_aocl_libm_renderer_prefers_source_patches_over_inline_sed() -> None:
