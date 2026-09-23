@@ -44,7 +44,7 @@ CORE_STACK = {
     "python-pillow-gfx1151": {
         "template": "native-wheel-pypi",
         "recipe_key": "native_wheels",
-        "upstream_version": "12.2.0",
+        "upstream_version": "12.3.0",
         "provides": ["python-pillow"],
         "consumer_dep": "python-pillow-gfx1151",
     },

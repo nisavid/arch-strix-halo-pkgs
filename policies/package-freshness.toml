@@ -270,7 +270,7 @@ packages = ["python-pillow-gfx1151"]
 priority = "medium"
 workflow = "upstream_source_update"
 checks = [
-  { id = "pypi", role = "primary", kind = "pypi", package = "pillow", recorded = "12.2.0", comparison = "pep440" },
+  { id = "pypi", role = "primary", kind = "pypi", package = "pillow", recorded = "12.3.0", comparison = "pep440" },
   { id = "arch", role = "baseline", kind = "arch_package", package = "python-pillow", recorded = "12.2.0-1", comparison = "pkgver" },
 ]
 

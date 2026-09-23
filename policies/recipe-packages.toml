@@ -1266,7 +1266,7 @@ scaffold_notes = [
 [packages.python-pillow-gfx1151]
 recipe_key = "native_wheels"
 template = "native-wheel-pypi"
-upstream_version = "12.2.0"
+upstream_version = "12.3.0"
 pkgdesc = "Python Imaging Library fork rebuilt for Strix Halo gfx1151"
 url = "https://github.com/python-pillow/Pillow"
 license = ["MIT-CMU"]
@@ -1275,11 +1275,12 @@ authoritative_reference = "extra/python-pillow"
 advisory_references = []
 divergence_notes = [
   "Follows Arch's Pillow package shape while rebuilding the native extension through the Blackcat native-wheel compiler lane.",
-  "Uses the current Arch/PyPI 12.2.0 release instead of the older Blackcat recipe example pin because this package is a normal Arch-facing local replacement."
+  "Uses the current PyPI 12.3.0 release instead of the older Blackcat recipe example pin because this package is a normal Arch-facing local replacement."
 ]
 update_notes = [
   "Check Arch first for image-library dependency and optional-integration drift before updating.",
-  "After publishing a rebuilt package, verify `from PIL import Image` and a tiny in-memory image round trip through the installed local Python lane."
+  "After publishing a rebuilt package, verify `from PIL import Image` and a tiny in-memory image round trip through the installed local Python lane.",
+  "On 2026-09-22, update to Pillow 12.3.0 for the generation-C W2A closure (#110), built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7."
 ]
 provides = ["python-pillow"]
 conflicts = ["python-pillow"]
@@ -1293,8 +1294,8 @@ optdepends = [
   "tk: for the ImageTK module"
 ]
 pypi_name = "pillow"
-sha256sums = ["a830b1a40919539d07806aa58e1b114df53ddd43213d9c8b75847eee6c0182b5"]
-src_subdir = "pillow-12.2.0"
+sha256sums = ["3b8182a766685eaa002637e28b4ec8d6b18819a0c71f579bf0dbaa5830297cce"]
+src_subdir = "pillow-12.3.0"
 patches_dir = "patches/python-pillow-gfx1151"
 recipe_notes_override = """
 This package is the Pillow output from the shared `native_wheels` recipe
