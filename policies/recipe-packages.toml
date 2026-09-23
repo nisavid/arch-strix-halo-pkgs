@@ -473,46 +473,48 @@ scaffold_notes = [
 [packages.python-triton-gfx1151]
 recipe_key = "triton"
 template = "python-project-triton-rocm"
-upstream_version = "3.0.0+git0ec280cf"
-pkgdesc = "Language and compiler for custom deep-learning primitives, rebuilt from the ROCm performance fork for Strix Halo gfx1151"
+upstream_version = "3.8.0+git669b31ac"
+pkgdesc = "Language and compiler for custom deep-learning primitives, rebuilt from the ROCm Triton release lane for Strix Halo gfx1151"
 url = "https://triton-lang.org/main/index.html"
 license = ["MIT"]
 arch_reference = ["extra/python-triton", "cachyos-extra-znver4/python-triton"]
 authoritative_reference = "extra/python-triton"
 advisory_references = ["cachyos-extra-znver4/python-triton"]
 divergence_notes = [
-  "Uses Arch's Python packaging and integration baseline but deliberately swaps in ROCm/triton main_perf for the source lane.",
-  "Builds Triton's compatible sidecar LLVM instead of trying to force the ROCm fork onto TheRock's installed LLVM API line."
+  "Uses Arch's Python packaging and integration baseline but deliberately swaps in ROCm/triton `release/internal/3.8.x` for the source lane: the exact Triton commit that the packaged ROCm PyTorch `release/2.12` commit pins in `.ci/docker/ci_commit_pins/triton.txt`.",
+  "Builds against the upstream LLVM build that Triton's `cmake/llvm-info.json` names (`llvm-5f07f818-ubuntu-x64-1`), pinned in source=() by sha256, instead of TheRock's LLVM. Arch builds triton-lang's LLVM fork from source instead."
 ]
 update_notes = [
-  "Check Arch's current Triton Python packaging first for Python-version fixes and install layout changes, then re-evaluate whether ROCm/triton still needs its separate LLVM lane.",
-  "Keep pkgver and provides aligned with the ROCm fork's generated wheel metadata from python/setup.py; do not reuse Arch's triton-lang release version when the source lane is ROCm/triton main_perf.",
+  "Take the Triton commit from the packaged ROCm PyTorch commit's `.ci/docker/ci_commit_pins/triton.txt`; do not follow the `release/internal/3.8.x` head on its own.",
+  "On each source move, re-read `cmake/llvm-info.json`. When `llvm_hash`, `build_number` or the `ubuntu-x64` sha256 changes, update the LLVM tarball source ref, its sha256 and `triton_llvm_dir` together. `cmake/llvm-build-info.json` is not read by the build.",
+  "The build is offline (`TRITON_OFFLINE_BUILD=ON`): LLVM comes from the pinned tarball and nlohmann-json from the system (`JSON_SYSPATH=/usr`). Upstream pins nlohmann-json v3.11.3 in `cmake/json-version.txt`; the header-only Arch package is newer.",
+  "Keep pkgver and provides aligned with the wheel version from setup.py: `3.8.0` plus the `+git<short-hash>` suffix it adds for a non-release git branch, which is what a makepkg checkout is.",
+  "Check Arch's current Triton Python packaging for Python-version fixes and install layout changes.",
   "Keep local source edits as patch files; this package is a likely upstream-candidate area.",
-  "The `AttrsDescriptor.__repr__` patch is runtime correctness carry. If it is absent from the installed package, torch.compile / Inductor can emit syntactically invalid generated Python."
+  "The 3.0-era `AttrsDescriptor.__repr__` patch was dropped at 3.8: the class no longer exists, and torch 2.12 Inductor takes its dict path when the class is absent."
 ]
-provides = ["python-triton=3.0.0+git0ec280cf"]
+provides = ["python-triton=3.8.0+git669b31ac"]
 conflicts = ["python-triton"]
-depends = ["glibc", "libgcc", "python-gfx1151"]
-makedepends = ["cmake", "git", "ninja", "pybind11", "python-build", "python-installer", "python-setuptools", "python-wheel"]
-source_refs = ["triton::git+https://github.com/ROCm/triton.git#commit=0ec280cf80dd91e9a86887981a670f2d4541a32b"]
+depends = ["glibc", "libgcc", "libstdc++", "python-gfx1151", "zlib"]
+makedepends = ["cmake", "git", "ninja", "nlohmann-json", "pybind11", "python-build", "python-installer", "python-setuptools", "python-wheel"]
+source_refs = [
+  "triton::git+https://github.com/ROCm/triton.git#commit=669b31acc1dd1b3fd93286afd5db67f65d9f7557",
+  "llvm-5f07f818-ubuntu-x64-1.tar.gz::https://oaitriton.blob.core.windows.net/public/llvm-builds/llvm-5f07f818-ubuntu-x64-1.tar.gz"
+]
 source_patches = [
   "0001-python-3.14-and-pybind11-build-system.patch",
-  "0002-disable-werror-with-therock-llvm-headers.patch",
-  "0003-attrs-descriptor-repr-for-inductor.patch"
+  "0002-disable-werror-with-therock-llvm-headers.patch"
 ]
 source_patches_replace_recipe_patches = true
-sha256sums = ["SKIP"]
+sha256sums = ["SKIP", "62dd9524eed689360882a7ae06132182b4a724ca5dfdca77667556fcef940022"]
+triton_llvm_dir = "llvm-5f07f818-ubuntu-x64-1"
 src_subdir = "triton"
 patches_dir = "packages/python-triton-gfx1151"
 recipe_notes_override = """
-ROCm performance fork of Triton. Keep this package on ROCm/triton main_perf
-and its compatible sidecar LLVM path; do not point it at TheRock LLVM.
-
-The gfx1151 Inductor carry is `0003-attrs-descriptor-repr-for-inductor.patch`,
-listed in `maintenance.source_patches` and applied by the renderer in
-`prepare()`. Without that patch, torch Inductor can serialize
-`AttrsDescriptor` with the default angle-bracket object repr and emit invalid
-generated Python.
+ROCm Triton release lane. The package follows the Triton commit that the
+packaged ROCm PyTorch commit pins, and builds offline against the upstream LLVM
+build that Triton's `cmake/llvm-info.json` names. Do not point it at TheRock
+LLVM.
 
 When switching compilation configurations, clear stale Inductor and Triton
 caches before diagnosing mismatched guard-expression failures. The vLLM
@@ -520,15 +522,13 @@ compile cache is config-hash-keyed and does not require routine manual
 clearing.
 """
 scaffold_notes = [
-  "Authoritative base: Arch python-triton 3.5.1-4 for distro integration and Python-3.14 carry patches.",
-  "The recipe intentionally swaps in ROCm/triton main_perf instead of upstream triton-lang/triton. That makes Arch's package an advisory base rather than a source-identical one.",
-  "Do not point Triton at TheRock's LLVM. The recipe notes that this ROCm fork still expects an older LLVM API line and must use its own compatible LLVM path instead.",
-  "The renderer must include the package source patches in `prepare()` for this package. The `AttrsDescriptor.__repr__` edit is a runtime correctness patch, not cosmetic metadata; if it is absent from the installed package, torch.compile / Inductor can emit syntactically invalid generated Python.",
+  "Authoritative base: Arch python-triton for distro integration and Python-3.14 carry patches.",
+  "The recipe swaps in ROCm/triton instead of upstream triton-lang/triton. That makes Arch's package an advisory base rather than a source-identical one.",
+  "Triton 3.8 keeps `pyproject.toml` and `setup.py` at the repo root; the renderer builds and installs from there, not from `python/`.",
+  "Do not point Triton at TheRock's LLVM. It needs the exact LLVM revision in `cmake/llvm-info.json`; the renderer exports `LLVM_SYSPATH` to the unpacked `triton_llvm_dir` tarball.",
+  "The renderer caps concurrent links with `TRITON_PARALLEL_LINK_JOBS` (default 2), because each link pulls in static LLVM and MLIR.",
   "Rebuild and reinstall `python-triton-gfx1151` after patch-carry changes before treating compiled vLLM probes as repaired on the host."
 ]
-
-[packages.python-triton-gfx1151.recipe_patch_file_rewrites]
-"triton/backends/compiler.py" = "python/triton/backends/compiler.py"
 
 [packages.python-aotriton-gfx1151]
 recipe_key = "aotriton"
@@ -745,7 +745,7 @@ update_notes = [
 ]
 provides = ["python-orjson"]
 conflicts = ["python-orjson"]
-depends = ["glibc", "libgcc", "python-gfx1151"]
+depends = ["glibc", "libgcc", "libstdc++", "python-gfx1151", "zlib"]
 makedepends = ["cargo", "python-build", "python-installer", "python-maturin", "python-wheel", "rocm-llvm-gfx1151", "rust"]
 pypi_name = "orjson"
 sha256sums = ["4fef17e1f8722c11587a6ef18e35902450221da0028e65dbaaa543619e68e48f"]
@@ -904,7 +904,7 @@ update_notes = [
 ]
 provides = ["python-tokenizers"]
 conflicts = ["python-tokenizers"]
-depends = ["glibc", "libgcc", "python-gfx1151"]
+depends = ["glibc", "libgcc", "libstdc++", "python-gfx1151", "zlib"]
 makedepends = ["cargo", "python-build", "python-installer", "python-maturin", "python-wheel", "rocm-llvm-gfx1151", "rust"]
 isolated_cargo_home = false
 pypi_name = "tokenizers"

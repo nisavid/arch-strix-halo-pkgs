@@ -5,32 +5,31 @@
 # Package recipe key: triton
 
 pkgname=python-triton-gfx1151
-pkgver=3.0.0+git0ec280cf
+pkgver=3.8.0+git669b31ac
 pkgrel=1
-pkgdesc='Language and compiler for custom deep-learning primitives, rebuilt from the ROCm performance fork for Strix Halo gfx1151'
+pkgdesc='Language and compiler for custom deep-learning primitives, rebuilt from the ROCm Triton release lane for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://triton-lang.org/main/index.html
 license=(MIT)
-depends=(glibc libgcc python-gfx1151)
-makedepends=(cmake git ninja pybind11 python-build python-installer python-setuptools python-wheel)
+depends=(glibc libgcc libstdc++ python-gfx1151 zlib)
+makedepends=(cmake git ninja nlohmann-json pybind11 python-build python-installer python-setuptools python-wheel)
 optdepends=()
 options=()
-provides=(python-triton=3.0.0+git0ec280cf)
+provides=(python-triton=3.8.0+git669b31ac)
 conflicts=(python-triton)
 replaces=()
-source=('triton::git+https://github.com/ROCm/triton.git#commit=0ec280cf80dd91e9a86887981a670f2d4541a32b' 0001-python-3.14-and-pybind11-build-system.patch 0002-disable-werror-with-therock-llvm-headers.patch 0003-attrs-descriptor-repr-for-inductor.patch)
-sha256sums=(SKIP SKIP SKIP SKIP)
+source=('triton::git+https://github.com/ROCm/triton.git#commit=669b31acc1dd1b3fd93286afd5db67f65d9f7557' llvm-5f07f818-ubuntu-x64-1.tar.gz::https://oaitriton.blob.core.windows.net/public/llvm-builds/llvm-5f07f818-ubuntu-x64-1.tar.gz 0001-python-3.14-and-pybind11-build-system.patch 0002-disable-werror-with-therock-llvm-headers.patch)
+sha256sums=(SKIP 62dd9524eed689360882a7ae06132182b4a724ca5dfdca77667556fcef940022 SKIP SKIP)
 
 prepare() {
   cd "$srcdir/triton"
 
   patch -Np1 -i "$srcdir/0001-python-3.14-and-pybind11-build-system.patch"
   patch -Np1 -i "$srcdir/0002-disable-werror-with-therock-llvm-headers.patch"
-  patch -Np1 -i "$srcdir/0003-attrs-descriptor-repr-for-inductor.patch"
 }
 
 build() {
-  cd "$srcdir/triton/python"
+  cd "$srcdir/triton"
   _setup_compiler_env() {
   local _compiler_root="/opt/rocm/lib/llvm/bin"
   local _ccache_dir="$srcdir/.ccache/bin"
@@ -58,7 +57,14 @@ build() {
   _setup_compiler_env
   export ROCM_HOME="/opt/rocm"
   export ROCM_PATH="/opt/rocm"
-  unset LLVM_SYSPATH
+  # Offline build: LLVM comes from the pinned source tarball, nlohmann-json
+  # from the system, and nothing else is downloaded.
+  export TRITON_OFFLINE_BUILD=ON
+  export LLVM_SYSPATH="$srcdir/llvm-5f07f818-ubuntu-x64-1"
+  export JSON_SYSPATH=/usr
+  export TRITON_HOME="$srcdir/.triton-home"
+  # Each libtriton and triton-* tool link pulls in static LLVM and MLIR.
+  export TRITON_PARALLEL_LINK_JOBS="${TRITON_PARALLEL_LINK_JOBS:-2}"
   export TRITON_BUILD_PROTON=OFF
   if command -v ccache >/dev/null 2>&1; then
     export TRITON_BUILD_WITH_CCACHE=true
@@ -70,7 +76,7 @@ build() {
 }
 
 package() {
-  cd "$srcdir/triton/python"
+  cd "$srcdir/triton"
   python -m installer --destdir="$pkgdir" dist/*.whl
   install -Dm644 "$srcdir/triton/LICENSE" "$pkgdir/usr/share/licenses/python-triton-gfx1151/LICENSE"
 }

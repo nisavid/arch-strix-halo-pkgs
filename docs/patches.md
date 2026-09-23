@@ -109,14 +109,15 @@ becomes durable, prefer a named patch that another maintainer can review.
 ## Triton
 
 - [Python 3.14 and pybind11 build-system compatibility](../packages/python-triton-gfx1151/0001-python-3.14-and-pybind11-build-system.patch)
-  - Keeps the ROCm Triton fork on the repo's Python 3.14 lane while using the
-    Arch-provided build tools from the package metadata.
-- [Disable `-Werror` with TheRock LLVM headers](../packages/python-triton-gfx1151/0002-disable-werror-with-therock-llvm-headers.patch)
-  - Prevents warning-only differences in the local LLVM/header lane from
-    failing the package build.
-- [Add `AttrsDescriptor.__repr__` for Inductor codegen](../packages/python-triton-gfx1151/0003-attrs-descriptor-repr-for-inductor.patch)
-  - Keeps `torch.compile` / Inductor-generated Python valid when it serializes
-    Triton metadata with `repr()`.
+  - Drops the `cmake==4.0` and `ninja` pins from the root `pyproject.toml`
+    build requirements, so the no-isolation build uses Arch's cmake, ninja and
+    pybind11.
+- [Disable `-Werror` for the packaged build](../packages/python-triton-gfx1151/0002-disable-werror-with-therock-llvm-headers.patch)
+  - Keeps warnings from amdclang against the pinned upstream LLVM 5f07f818
+    headers from failing the package build.
+- The 3.0-era `AttrsDescriptor.__repr__` patch was dropped at Triton 3.8,
+  because the class no longer exists and torch 2.12 Inductor takes its dict
+  path without it.
 
 ## TorchAO
 

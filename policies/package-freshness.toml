@@ -112,12 +112,13 @@ packages = ["python-triton-gfx1151"]
 priority = "high"
 workflow = "upstream_source_update"
 checks = [
-  { id = "release-branch", role = "primary", kind = "git_ref", repo = "https://github.com/ROCm/triton.git", ref = "refs/heads/release/internal/3.8.x", recorded = "4cff872ced001ea92d9fcf05b3f6517e2b486d19", comparison = "sha" },
-  { id = "packaged-main-perf", role = "baseline", kind = "git_ref", repo = "https://github.com/ROCm/triton.git", ref = "refs/heads/main_perf", recorded = "0ec280cf80dd91e9a86887981a670f2d4541a32b", comparison = "sha" },
+  { id = "release-branch", role = "primary", kind = "git_ref", repo = "https://github.com/ROCm/triton.git", ref = "refs/heads/release/internal/3.8.x", recorded = "669b31acc1dd1b3fd93286afd5db67f65d9f7557", comparison = "sha" },
   { id = "arch", role = "baseline", kind = "arch_package", package = "python-triton", recorded = "3.5.1-4", comparison = "pkgver" },
 ]
 source_contracts = [
-  { id = "packaged-main-perf-source", packages = ["python-triton-gfx1151"], check_id = "packaged-main-perf", source_name = "triton", source_kind = "git_commit", origin = "https://github.com/ROCm/triton.git", value_policy = "matches_reviewed" },
+  { id = "release-branch-source", packages = ["python-triton-gfx1151"], check_id = "release-branch", source_name = "triton", source_kind = "git_commit", origin = "https://github.com/ROCm/triton.git", value_policy = "matches_reviewed" },
+  # The pinned LLVM build is whatever cmake/llvm-info.json names at the Triton commit.
+  { id = "llvm-prebuilt", packages = ["python-triton-gfx1151"], check_id = "release-branch", source_name = "llvm-5f07f818-ubuntu-x64-1.tar.gz", source_kind = "source", origin = "https://oaitriton.blob.core.windows.net/public/llvm-builds/llvm-5f07f818-ubuntu-x64-1.tar.gz", value_policy = "owned_by_primary_release" },
 ]
 
 [families.aotriton]

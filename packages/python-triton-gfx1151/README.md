@@ -6,25 +6,21 @@
 - Scaffold template: `python-project-triton-rocm`
 - Recipe build method: `pip`
 - Upstream repo: `https://github.com/ROCm/triton.git`
-- Package version: `3.0.0+git0ec280cf`
-- Recipe revision: `a1d7a68 (20260427, 16 commits touching recipe path)`
+- Package version: `3.8.0+git669b31ac`
+- Recipe revision: `3f15f9f (20260508, 17 commits touching recipe path)`
 - Recipe steps: `15, 16, 17`
 - Recipe dependencies: `therock, pytorch`
 - Recorded reference packages: `extra/python-triton, cachyos-extra-znver4/python-triton`
 - Authoritative reference package: `extra/python-triton`
 - Advisory reference packages: `cachyos-extra-znver4/python-triton`
-- Applied source patch files/actions: `3`
+- Applied source patch files/actions: `2`
 
 ## Recipe notes
 
-ROCm performance fork of Triton. Keep this package on ROCm/triton main_perf
-and its compatible sidecar LLVM path; do not point it at TheRock LLVM.
-
-The gfx1151 Inductor carry is `0003-attrs-descriptor-repr-for-inductor.patch`,
-listed in `maintenance.source_patches` and applied by the renderer in
-`prepare()`. Without that patch, torch Inductor can serialize
-`AttrsDescriptor` with the default angle-bracket object repr and emit invalid
-generated Python.
+ROCm Triton release lane. The package follows the Triton commit that the
+packaged ROCm PyTorch commit pins, and builds offline against the upstream LLVM
+build that Triton's `cmake/llvm-info.json` names. Do not point it at TheRock
+LLVM.
 
 When switching compilation configurations, clear stale Inductor and Triton
 caches before diagnosing mismatched guard-expression failures. The vLLM
@@ -34,23 +30,27 @@ clearing.
 
 ## Scaffold notes
 
-- Authoritative base: Arch python-triton 3.5.1-4 for distro integration and Python-3.14 carry patches.
-- The recipe intentionally swaps in ROCm/triton main_perf instead of upstream triton-lang/triton. That makes Arch's package an advisory base rather than a source-identical one.
-- Do not point Triton at TheRock's LLVM. The recipe notes that this ROCm fork still expects an older LLVM API line and must use its own compatible LLVM path instead.
-- The renderer must include the package source patches in `prepare()` for this package. The `AttrsDescriptor.__repr__` edit is a runtime correctness patch, not cosmetic metadata; if it is absent from the installed package, torch.compile / Inductor can emit syntactically invalid generated Python.
+- Authoritative base: Arch python-triton for distro integration and Python-3.14 carry patches.
+- The recipe swaps in ROCm/triton instead of upstream triton-lang/triton. That makes Arch's package an advisory base rather than a source-identical one.
+- Triton 3.8 keeps `pyproject.toml` and `setup.py` at the repo root; the renderer builds and installs from there, not from `python/`.
+- Do not point Triton at TheRock's LLVM. It needs the exact LLVM revision in `cmake/llvm-info.json`; the renderer exports `LLVM_SYSPATH` to the unpacked `triton_llvm_dir` tarball.
+- The renderer caps concurrent links with `TRITON_PARALLEL_LINK_JOBS` (default 2), because each link pulls in static LLVM and MLIR.
 - Rebuild and reinstall `python-triton-gfx1151` after patch-carry changes before treating compiled vLLM probes as repaired on the host.
 
 ## Intentional Divergences
 
-- Uses Arch's Python packaging and integration baseline but deliberately swaps in ROCm/triton main_perf for the source lane.
-- Builds Triton's compatible sidecar LLVM instead of trying to force the ROCm fork onto TheRock's installed LLVM API line.
+- Uses Arch's Python packaging and integration baseline but deliberately swaps in ROCm/triton `release/internal/3.8.x` for the source lane: the exact Triton commit that the packaged ROCm PyTorch `release/2.12` commit pins in `.ci/docker/ci_commit_pins/triton.txt`.
+- Builds against the upstream LLVM build that Triton's `cmake/llvm-info.json` names (`llvm-5f07f818-ubuntu-x64-1`), pinned in source=() by sha256, instead of TheRock's LLVM. Arch builds triton-lang's LLVM fork from source instead.
 
 ## Update Notes
 
-- Check Arch's current Triton Python packaging first for Python-version fixes and install layout changes, then re-evaluate whether ROCm/triton still needs its separate LLVM lane.
-- Keep pkgver and provides aligned with the ROCm fork's generated wheel metadata from python/setup.py; do not reuse Arch's triton-lang release version when the source lane is ROCm/triton main_perf.
+- Take the Triton commit from the packaged ROCm PyTorch commit's `.ci/docker/ci_commit_pins/triton.txt`; do not follow the `release/internal/3.8.x` head on its own.
+- On each source move, re-read `cmake/llvm-info.json`. When `llvm_hash`, `build_number` or the `ubuntu-x64` sha256 changes, update the LLVM tarball source ref, its sha256 and `triton_llvm_dir` together. `cmake/llvm-build-info.json` is not read by the build.
+- The build is offline (`TRITON_OFFLINE_BUILD=ON`): LLVM comes from the pinned tarball and nlohmann-json from the system (`JSON_SYSPATH=/usr`). Upstream pins nlohmann-json v3.11.3 in `cmake/json-version.txt`; the header-only Arch package is newer.
+- Keep pkgver and provides aligned with the wheel version from setup.py: `3.8.0` plus the `+git<short-hash>` suffix it adds for a non-release git branch, which is what a makepkg checkout is.
+- Check Arch's current Triton Python packaging for Python-version fixes and install layout changes.
 - Keep local source edits as patch files; this package is a likely upstream-candidate area.
-- The `AttrsDescriptor.__repr__` patch is runtime correctness carry. If it is absent from the installed package, torch.compile / Inductor can emit syntactically invalid generated Python.
+- The 3.0-era `AttrsDescriptor.__repr__` patch was dropped at 3.8: the class no longer exists, and torch 2.12 Inductor takes its dict path when the class is absent.
 
 ## Maintainer Starting Points
 
