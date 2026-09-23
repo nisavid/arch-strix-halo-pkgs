@@ -930,7 +930,7 @@ scaffold_notes = [
 [packages.python-safetensors-gfx1151]
 recipe_key = "rust_wheels"
 template = "rust-wheel-pypi"
-upstream_version = "0.7.0"
+upstream_version = "0.8.0"
 pkgdesc = "Safe tensor serialization format rebuilt for Strix Halo gfx1151"
 url = "https://github.com/huggingface/safetensors"
 license = ["Apache-2.0"]
@@ -943,7 +943,8 @@ divergence_notes = [
 ]
 update_notes = [
   "Check Arch first for release and dependency metadata, then verify Transformers and TorchAO scenario compatibility before updating.",
-  "After publishing a rebuilt package, verify `import safetensors` and a tiny tensor save/load round trip through the installed local Python lane."
+  "After publishing a rebuilt package, verify `import safetensors` and a tiny tensor save/load round trip through the installed local Python lane.",
+  "On 2026-09-22, update to safetensors 0.8.0 for the generation-C W2A closure (#110), built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7. Transformers 5.16.1 requires safetensors >=0.8.0."
 ]
 provides = ["python-safetensors"]
 conflicts = ["python-safetensors"]
@@ -955,8 +956,8 @@ optdepends = [
   "python-tensorflow: usage with tensorflow"
 ]
 pypi_name = "safetensors"
-sha256sums = ["07663963b67e8bd9f0b8ad15bb9163606cd27cc5a1b96235a50d8369803b96b0"]
-src_subdir = "safetensors-0.7.0"
+sha256sums = ["fabaf3e0f18a6618d9b36560682562157f77c2b71fcffc7b432be2baed9d753d"]
+src_subdir = "safetensors-0.8.0"
 patches_dir = "patches/python-safetensors-gfx1151"
 recipe_notes_override = """
 safetensors is the model/checkpoint tensor I/O path for Transformers, vLLM,

@@ -23,7 +23,7 @@ CORE_STACK = {
     "python-safetensors-gfx1151": {
         "template": "rust-wheel-pypi",
         "recipe_key": "rust_wheels",
-        "upstream_version": "0.7.0",
+        "upstream_version": "0.8.0",
         "provides": ["python-safetensors"],
         "consumer_dep": "python-safetensors-gfx1151",
     },

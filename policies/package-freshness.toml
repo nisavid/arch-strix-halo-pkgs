@@ -207,7 +207,7 @@ packages = ["python-safetensors-gfx1151"]
 priority = "medium"
 workflow = "upstream_source_update"
 checks = [
-  { id = "pypi", role = "primary", kind = "pypi", package = "safetensors", recorded = "0.7.0", comparison = "pep440" },
+  { id = "pypi", role = "primary", kind = "pypi", package = "safetensors", recorded = "0.8.0", comparison = "pep440" },
   { id = "arch", role = "baseline", kind = "arch_package", package = "python-safetensors", recorded = "0.7.0-2", comparison = "pkgver" },
 ]
 
