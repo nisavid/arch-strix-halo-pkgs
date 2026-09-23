@@ -320,7 +320,8 @@ selection. `--scenario <id>` always selects the named scenario.
   accepts that alias only when both ids resolve to the same main checkpoint,
   and prints it as `service_pin_alias`. A listing under another prefix, such
   as `extra.zembed-1-Q4_K_M-GGUF-Q4_K_M`, is a different registration and
-  never matches.
+  never matches. A bare expected id likewise never matches a prefixed
+  listing.
 
 ## Kokoro TTS Decision
 
