@@ -975,7 +975,7 @@ scaffold_notes = [
 [packages.python-sentencepiece-gfx1151]
 recipe_key = "native_wheels"
 template = "native-wheel-pypi"
-upstream_version = "0.2.1"
+upstream_version = "0.2.2"
 pkgdesc = "Python wrapper for SentencePiece rebuilt for Strix Halo gfx1151"
 url = "https://github.com/google/sentencepiece"
 license = ["Apache-2.0"]
@@ -989,23 +989,25 @@ divergence_notes = [
 update_notes = [
   "Re-check against Cachy first, then consult the AUR source and git variants if the maintained package lags a needed upstream change.",
   "If the upstream build backend changes, keep the package metadata focused on the system cmake/toolchain story rather than reviving venv-local wrapper assumptions.",
-  "After publishing a rebuilt package, verify the installed host extension with readelf or ldd before treating the host lane as current."
+  "After publishing a rebuilt package, verify the installed host extension with readelf or ldd before treating the host lane as current.",
+  "On 2026-09-22, update to sentencepiece 0.2.2 for the generation-C W2A closure (#110), built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7. Drop the bundled-build patch: 0.2.2 setup.py no longer probes pkg-config for a system SentencePiece and always builds the bundled library. Add 0001-use-bundled-abseil-cpp-offline.patch: 0.2.2 CMake runs a FetchContent git clone of abseil-cpp 20260526.0 even though the sdist already ships that tree, which fails in an offline build."
 ]
 provides = ["python-sentencepiece"]
 conflicts = ["python-sentencepiece"]
 depends = ["gcc-libs", "glibc", "python-gfx1151"]
 makedepends = ["cmake", "ninja", "python-build", "python-installer", "python-wheel", "rocm-llvm-gfx1151"]
 optdepends = ["python-protobuf"]
-source_patches = ["0001-bundle-sentencepiece-by-default.patch"]
-extra_sha256sums = ["04b134d04727093b49455d44126988d104ea7019bbe6c72b7e2f8ddeb3686bb1"]
+source_patches = ["0001-use-bundled-abseil-cpp-offline.patch"]
+extra_sha256sums = ["0b16fe8e9c9b786d5c2c952857b6b44db632c313fb8a7d6940552fb321404eba"]
 pypi_name = "sentencepiece"
-sha256sums = ["8138cec27c2f2282f4a34d9a016e3374cd40e5c6e9cb335063db66a0a3b71fad"]
-src_subdir = "sentencepiece-0.2.1"
+sha256sums = ["3d2b5e824b5622038dc7b490897efe05ebbbb9e7350fc142f3ecc8789ef9bdf6"]
+src_subdir = "sentencepiece-0.2.2"
 patches_dir = "patches/python-sentencepiece-gfx1151"
 scaffold_notes = [
   "The current CachyOS python-sentencepiece package is the closest maintained baseline, while the AUR python-sentencepiece and python-sentencepiece-git packages remain advisory references for patching and split-package expectations.",
   "The original recipe fixes a broken pip-installed cmake wrapper inside the venv. In Arch packaging that should translate to using the system cmake toolchain directly.",
-  "The bundled-build patch prefers the bundled SentencePiece library by default and only uses the system pkg-config sentencepiece path when SENTENCEPIECE_USE_SYSTEM=1 is explicitly set."
+  "Since 0.2.2, upstream setup.py always builds the bundled SentencePiece library and never probes pkg-config for a system one, so the former bundled-build patch is gone.",
+  "The offline-abseil patch makes the bundled CMake build use the abseil-cpp 20260526.0 tree that the sdist ships, and fetch it only when that tree is absent. Drop it when upstream stops fetching over the shipped tree."
 ]
 recipe_notes_override = """
 This package is the SentencePiece output from the shared `native_wheels`
@@ -1023,8 +1025,8 @@ probing rejects -mllvm as "unused command line argument".
 -famd-opt moved to LDFLAGS (link-time-only driver flag, no-op at
 compile time -- triggers -Werror=unused in compile-only probes).
 
-The bundled-build patch is effective when the built `_sentencepiece` extension
-has no dynamic dependency on host `libsentencepiece.so.0` or
+Upstream builds the bundled library, so the built `_sentencepiece` extension
+must have no dynamic dependency on host `libsentencepiece.so.0` or
 `libsentencepiece_train.so.0`. Treat the repo-built package lane as current
 only after the installed host extension matches that dependency shape.
 """
