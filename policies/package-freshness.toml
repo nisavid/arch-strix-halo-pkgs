@@ -405,8 +405,8 @@ packages = ["python-transformers-gfx1151"]
 priority = "medium"
 workflow = "upstream_source_update"
 checks = [
-  { id = "pypi", role = "primary", kind = "pypi", package = "transformers", recorded = "5.8.1", comparison = "pep440" },
-  { id = "tag", role = "primary", kind = "github_tags", repo = "huggingface/transformers", recorded = "5.8.1", tag_prefix = "v", comparison = "pep440", include_prereleases = false },
+  { id = "pypi", role = "primary", kind = "pypi", package = "transformers", recorded = "5.16.1", comparison = "pep440" },
+  { id = "tag", role = "primary", kind = "github_tags", repo = "huggingface/transformers", recorded = "5.16.1", tag_prefix = "v", comparison = "pep440", include_prereleases = false },
 ]
 
 [families.llama_cpp]
