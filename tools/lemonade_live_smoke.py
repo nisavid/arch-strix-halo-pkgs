@@ -39,6 +39,7 @@ import shlex
 import shutil
 import socket
 import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -301,7 +302,7 @@ def run_command(
     completed = runner(argv, capture_output=True, text=True)
     if completed.returncode not in ok_codes:
         raise AssertionError(
-            f"{' '.join(argv)} exited {completed.returncode}: {completed.stderr.strip()}"
+            f"{scrub_paths(' '.join(argv))} exited {completed.returncode}: {scrub_paths(completed.stderr.strip())}"
         )
     return completed.stdout
 
@@ -936,8 +937,12 @@ def run_nofetch(
         )
     print("missing_model_registered_ok")
     info = payload.get("data", payload) if isinstance(payload, dict) else {}
-    if isinstance(info, dict) and info.get("downloaded"):
-        raise AssertionError(f"missing_model_present: {missing_model} is downloaded; pick an absent model")
+    downloaded = info.get("downloaded") if isinstance(info, dict) else None
+    if downloaded is not False:
+        raise AssertionError(
+            f"missing_model_present: {missing_model} reports downloaded={downloaded!r}; "
+            "pick a registered model that is not downloaded"
+        )
     print("missing_model_absent_ok")
     if loaded_entry(client.get("/health"), missing_model) is not None:
         raise AssertionError(f"missing_model_resident: {missing_model} is already loaded")
@@ -1491,5 +1496,15 @@ def main(argv: list[str] | None = None) -> None:
             run_displacement(inst, ctx_size=args.ctx_size, stream_tokens=args.stream_tokens)
 
 
+def run_cli(argv: list[str] | None = None) -> int:
+    """Run main(); report a failure as one scrubbed line instead of a traceback."""
+    try:
+        main(argv)
+    except Exception as exc:  # noqa: BLE001 - every failure is reported, scrubbed.
+        print(f"error: {type(exc).__name__}: {scrub_paths(str(exc))}", file=sys.stderr)
+        return 1
+    return 0
+
+
 if __name__ == "__main__":
-    main()
+    raise SystemExit(run_cli())

@@ -74,6 +74,29 @@ def test_client_sends_admin_key_only_to_internal_endpoints():
     assert ollama_request.get_header("Authorization") == "Bearer regular"
 
 
+def test_failures_are_reported_without_host_paths(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    cached = tmp_path / "cache" / "bin" / "llama-server"
+
+    def runner(argv, **kwargs):
+        return subprocess.CompletedProcess(argv, 1, stdout="", stderr=f"error: No package owns {cached}")
+
+    with pytest.raises(AssertionError) as excinfo:
+        live.package_owner(cached, runner=runner)
+    assert str(tmp_path) not in str(excinfo.value)
+
+    def failing_main(argv=None):
+        raise AssertionError(f"backend process is owned by nothing at {cached}")
+
+    monkeypatch.setattr(live, "main", failing_main)
+    assert live.run_cli([]) == 1
+    err = capsys.readouterr().err
+    assert err.startswith("error: AssertionError: backend process is owned by nothing at <path>")
+    assert str(tmp_path) not in err
+    assert "Traceback" not in err
+
+
 def test_scrub_paths_hides_cache_and_host_paths_but_keeps_packaged_bins(tmp_path: Path):
     cache = tmp_path / "hf-cache"
     text = (
@@ -1151,6 +1174,11 @@ def test_nofetch_missing_model_must_be_registered_and_absent(tmp_path: Path):
     with pytest.raises(AssertionError, match="missing_model_present"):
         _run_nofetch(server, host)
     assert ("POST", "/load") not in server.calls
+
+    server, host = _nofetch_setup(tmp_path / "third")
+    del server.models["Tiny-Test-Model-GGUF"]["downloaded"]
+    with pytest.raises(AssertionError, match="missing_model_present: .*downloaded=None"):
+        _run_nofetch(server, host)
 
 
 @pytest.mark.parametrize("path", list(AUTO_PULL_ROUTES))
