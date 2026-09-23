@@ -84,7 +84,11 @@ outside the selected line and a standing tracked record carries the selected
 version: AOTriton 0.13b, TorchVision 0.27.1, Transformers 5.16.1,
 compressed-tensors 0.17.0, and mistral-common 1.11.7. DuckDB, asyncpg,
 zstandard, cryptography, orjson, AOCL-LibM, and AOCL-Utils are not in C's
-regenerated closure and route to post-closeout maintenance (#147). No active
+regenerated closure and route to post-closeout maintenance (#147). That
+includes the cryptography security refresh: cryptography 50.0.0 fixes
+CVE-2026-69247 in PKCS#7 decryption, but no installed consumer of the host's
+`python-cryptography-gfx1151` 48.0.0-1 calls the PKCS#7 decryption APIs, and
+the owner has not yet answered whether to admit the refresh earlier. No active
 record points at #105.
 
 The sweep's TheRock `release` check masked the stable `therock-10.0` release
@@ -128,10 +132,13 @@ compressed-tensors, mistral-common, AutoRound, and llmcompressor), one
 adopted family, and eight current families. Lemonade fork main had moved two
 commits past `187b4a25f` to `586e1900f`: a docs refresh and a `serde_with`
 bump in the Tauri app. Those are the additions the Lemonade candidate freeze
-(nisavid/lemonade#155) named, so `lemonade-fork-586e190` is tracked to the
-#137 repin, which consumes whichever commit #155 freezes. The ledger holds 36
-active tracked records and no blocked records. The explicit tracker
-validation found all 12 unique issue gates open in this repository.
+(nisavid/lemonade#155) named. A cache-aware rerun on 2026-09-22 found fork
+main one commit further, at `3d5991033`: a CI and test-target fix for the
+macOS and Fedora package jobs (nisavid/lemonade#160). #155 froze that commit, so
+`lemonade-fork-3d59910` is tracked to the #137 repin and supersedes
+`lemonade-fork-586e190`. The ledger holds 36 active tracked records and no
+blocked records. The explicit tracker validation found all 12 unique issue
+gates open in this repository.
 
 Apart from the pydantic-core source update and build, this admission changes
 maintenance metadata only. No other package source was updated, and no
