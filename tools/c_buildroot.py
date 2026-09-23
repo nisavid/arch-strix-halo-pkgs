@@ -537,6 +537,9 @@ def populate(lock: dict, root: Path, *, uid: int | None = None, gid: int | None 
     return manifest
 
 
+MOUNT_POINTS = ("build", "pkgdest", "srcdest", "ccache")
+
+
 def add_build_user(root: Path, uid: int, gid: int) -> None:
     for rel, line in (("etc/passwd", f"builder:x:{uid}:{gid}::/build:/bin/bash"),
                       ("etc/group", f"builder:x:{gid}:")):
@@ -547,7 +550,9 @@ def add_build_user(root: Path, uid: int, gid: int) -> None:
         text = path.read_text() if path.exists() else ""
         if not any(l.startswith("builder:") for l in text.splitlines()):
             path.write_text(text + ("" if text.endswith("\n") or not text else "\n") + line + "\n")
-    (root / "build").mkdir(exist_ok=True)
+    # enter mounts the root read-only, so bwrap cannot create its bind targets.
+    for mount in MOUNT_POINTS:
+        (root / mount).mkdir(exist_ok=True)
 
 
 def add_packages(root: Path, archives: Sequence[Path], source: str, *, allow_overwrite: bool = False,

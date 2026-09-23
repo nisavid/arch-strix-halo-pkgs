@@ -268,6 +268,8 @@ def test_populate_add_and_verify(tmp_path):
 
     assert (root / "opt/rocm/lib/libfoo.so").read_text() == "foo"
     assert "builder:x:1234:1234::/build:/bin/bash" in (root / "etc/passwd").read_text()
+    # enter binds these into a read-only root, so populate must create them.
+    assert all((root / d).is_dir() for d in ("build", "pkgdest", "srcdest", "ccache"))
     manifest = cbr.load_manifest(root)
     assert [e["name"] for e in manifest] == ["glibc", "rocm-core-gfx1151"]
     assert cbr.read_file_list(root, "rocm-core-gfx1151") == ["opt/rocm/.info/version", "opt/rocm/lib/libfoo.so"]
