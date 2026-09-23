@@ -131,7 +131,7 @@ The missing phases use `Tiny-Test-Model-GGUF`, a small `llamacpp` model in the
 candidate's built-in catalog. Before anything is loaded, `GET
 /api/v1/models/<id>` must return a status below 400
 (`missing_model_registered_ok`), so each phase really reaches the offline
-download path, and the model must not be downloaded
+download path, and it must report `downloaded: false`
 (`missing_model_absent_ok`). A missing phase passes when all of these hold:
 
 - the request fails loudly, with status >= 400 or an explicit error, and the
@@ -154,10 +154,12 @@ have `offline` and `no_fetch_executables` set to true. `HF_ENDPOINT` and
 to attribute the service's listening socket to `lemond`.
 
 Output never names a cache path or another host-specific path. Evidence is
-reported as counts. Refusal text and error messages are scrubbed: a path under
-the model cache, the backend cache, or the cache dir becomes `<model_cache>`,
-`<backend_cache>`, or `<lemonade_cache>`, and any other absolute path becomes
-`<path>`. The only paths printed are package-owned `/usr/bin` paths, such as
+reported as counts. In the no-fetch scenario's refusal and auto-load failure
+text, a path under the model cache, the backend cache, or the cache dir becomes
+`<model_cache>`, `<backend_cache>`, or `<lemonade_cache>`. Every other printed
+refusal, client error, and command error, and the one-line `error:` report that
+replaces a traceback when a check fails, turns any absolute path into `<path>`.
+The only paths printed are package-owned `/usr/bin` paths, such as
 `/usr/bin/lemond` in the provenance scenario.
 
 All of these scenarios carry `validation-window`. Broad selections skip them,
