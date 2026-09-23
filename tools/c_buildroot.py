@@ -737,6 +737,51 @@ def bwrap_args(root: Path, opts: EnterOptions) -> list[str]:
     return args
 
 
+# `enter` runs builds only inside the host's memory-capped build slice. The
+# host's makepkg and ninja shims cannot see into the bubblewrap root, so the
+# whole bwrap invocation is launched in the slice, and every compiler inside it
+# inherits the cap and the raised OOM score.
+BUILD_SLICE = "builds.slice"
+BUILD_OOM_SCORE_ADJ = "500"
+
+
+def current_cgroup(proc_cgroup: Path = Path("/proc/self/cgroup")) -> str:
+    """The cgroup v2 path of this process, such as /user.slice/.../builds.slice/run-x.scope."""
+    for line in proc_cgroup.read_text().splitlines():
+        hierarchy, _, path = line.partition("::")
+        if hierarchy == "0":
+            return path
+    raise BuildRootError(f"no cgroup v2 entry in {proc_cgroup}")
+
+
+def require_build_slice(runner: Callable[..., subprocess.CompletedProcess] = subprocess.run) -> None:
+    """Refuse to build unless the build slice is loaded with a finite MemoryMax.
+
+    `systemd-run --slice=` would otherwise create an uncapped transient slice.
+    """
+    shown = runner(["systemctl", "--user", "show", BUILD_SLICE, "-p", "LoadState", "-p", "MemoryMax"],
+                   capture_output=True, text=True, check=False)
+    props = dict(line.partition("=")[::2] for line in shown.stdout.splitlines() if "=" in line)
+    if shown.returncode != 0 or props.get("LoadState") != "loaded":
+        raise BuildRootError(f"{BUILD_SLICE} is not loaded; the host memory guards are not live")
+    if props.get("MemoryMax", "infinity") in ("", "infinity"):
+        raise BuildRootError(f"{BUILD_SLICE} has no MemoryMax; refusing to build without a memory cap")
+
+
+def slice_wrapped(args: Sequence[str], *, cgroup: str | None = None,
+                  runner: Callable[..., subprocess.CompletedProcess] = subprocess.run) -> list[str]:
+    """Wrap a bwrap command so it runs in the build slice with a raised OOM score.
+
+    Inside the slice already, only choom is added; otherwise a new scope is
+    started in the slice.
+    """
+    require_build_slice(runner)
+    choom = ["choom", "-n", BUILD_OOM_SCORE_ADJ, "--", *args]
+    if BUILD_SLICE in (current_cgroup() if cgroup is None else cgroup).split("/"):
+        return choom
+    return ["systemd-run", "--user", "--scope", f"--slice={BUILD_SLICE}", *choom]
+
+
 def run_in_root(root: Path, cmd: Sequence[str], opts: EnterOptions | None = None, *, rw: bool = False,
                 check: bool = True, capture: bool = False) -> subprocess.CompletedProcess:
     opts = opts or EnterOptions()
@@ -953,7 +998,7 @@ def _enter_opts(a: argparse.Namespace) -> EnterOptions:
 
 def cmd_enter(a: argparse.Namespace) -> int:
     cmd = a.command or ["bash"]
-    args = bwrap_args(Path(a.root).absolute(), _enter_opts(a)) + cmd
+    args = slice_wrapped(bwrap_args(Path(a.root).absolute(), _enter_opts(a)) + cmd)
     os.execvp(args[0], args)
     return 127
 

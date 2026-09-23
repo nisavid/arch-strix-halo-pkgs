@@ -49,6 +49,18 @@ it that way:
    (read-only). With `--net` it also binds `/etc/resolv.conf`.
    `LD_LIBRARY_PATH`, `PYTHONPATH`, `ROCM_PATH`, `HIP_PATH` and
    `CMAKE_PREFIX_PATH` are never passed in.
+   `enter` launches the whole bubblewrap command in the host's memory-capped
+   `builds.slice`: outside the slice it starts
+   `systemd-run --user --scope --slice=builds.slice choom -n 500 -- bwrap …`,
+   and inside the slice it adds only `choom -n 500`. Every process in the
+   root inherits the cap and the raised OOM score, so an overrun kills a
+   compiler and fails the build without touching the launching process. The
+   host's makepkg and ninja shims cannot see into the root, which is why the
+   launch itself is wrapped. `enter` refuses to start unless `builds.slice` is
+   loaded with a finite `MemoryMax`, because `systemd-run --slice=` would
+   otherwise create an uncapped slice. This replaces the earlier `SIGSTOP`
+   throttle, which paused new jobs but left running compilers holding their
+   memory.
 4. **Ownership proof.** `populate` and `add` record every package's file list
    under `ROOT/.ashp-root/`. `verify` walks `/opt` and fails when any file is
    unowned, when any `/opt/rocm` file is owned by a non-foundation package,
@@ -149,10 +161,13 @@ for about 30 GiB, and `$STAGING` for the directory that holds the
 `tools/buildroot/makepkg.conf` follows the host's CachyOS makepkg.conf, with
 these deliberate choices:
 
-- **Parallelism is 14 jobs.** This covers `MAKEFLAGS`, `NINJAFLAGS`, and the
-  exported `MAX_JOBS` and `CMAKE_BUILD_PARALLEL_LEVEL`. The host keeps large
-  models resident and has about 37 GiB free, and hipcc at `-j32` is
-  OOM-killed.
+- **Parallelism defaults to 6 jobs.** This covers `MAKEFLAGS`, `NINJAFLAGS`,
+  and the exported `MAX_JOBS`, `CMAKE_BUILD_PARALLEL_LEVEL` and
+  `CARGO_BUILD_JOBS`. Builds run in `builds.slice` (32G, no swap), and heavy
+  hipcc units such as PyTorch's CK GEMM kernels peak near 4G each. Override it
+  per build with `enter --setenv ASHP_BUILD_JOBS=N`: 4 for FlashAttention's CK
+  kernels, 8 for TorchVision. Raise a count only after a first run's
+  `memory.peak` stays under 20G.
 - **ccache is on, with `CCACHE_MAXSIZE=2G`.** `ccache` is therefore a
   torch-chain target. Pass `enter --ccache DIR` to share one cache across
   builds.

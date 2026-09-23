@@ -462,8 +462,14 @@ def test_pinned_makepkg_conf_values():
     script = f'source "{cbr.DEFAULT_MAKEPKG_CONF}"; ' \
              'printf "%s\\n" "$MAKEFLAGS" "$NINJAFLAGS" "$MAX_JOBS" "$CMAKE_BUILD_PARALLEL_LEVEL" ' \
              '"${INTEGRITY_CHECK[*]}" "${BUILDENV[*]}" "$PKGEXT" "${PKGDEST-unset}"'
-    out = subprocess.run(["bash", "-c", script], capture_output=True, text=True, check=True).stdout.splitlines()
-    assert out[:4] == ["-j14", "-j14", "14", "14"]
+    def run(**env):
+        return subprocess.run(["bash", "-c", script], env={"PATH": "/usr/bin:/bin", **env},
+                              capture_output=True, text=True, check=True).stdout.splitlines()
+
+    # The default fits builds.slice; `enter --setenv ASHP_BUILD_JOBS=N` overrides it.
+    assert run(ASHP_BUILD_JOBS="8")[:4] == ["-j8", "-j8", "8", "8"]
+    out = run()
+    assert out[:4] == ["-j6", "-j6", "6", "6"]
     assert out[4] == "b2"
     assert "ccache" in out[5].split() and "!distcc" in out[5].split()
     assert out[6] == ".pkg.tar.zst"
@@ -493,3 +499,47 @@ def test_remove_drops_only_files_no_other_package_owns(tmp_path):
     assert [e["name"] for e in cbr.load_manifest(root)] == ["other"]
     with pytest.raises(cbr.BuildRootError, match="not in the root"):
         cbr.remove_packages(root, ["python-numpy"], post_install=False)
+
+
+def _systemctl(stdout: str, returncode: int = 0):
+    def runner(argv, **kwargs):
+        assert argv[:4] == ["systemctl", "--user", "show", "builds.slice"]
+        return subprocess.CompletedProcess(argv, returncode, stdout=stdout, stderr="")
+    return runner
+
+
+CAPPED = _systemctl("LoadState=loaded\nMemoryMax=34359738368\n")
+OUTSIDE = "/user.slice/user-1000.slice/user@1000.service/app.slice/app-x.scope"
+INSIDE = "/user.slice/user-1000.slice/user@1000.service/builds.slice/run-r1.scope"
+
+
+def test_enter_starts_a_scope_in_the_build_slice_with_a_raised_oom_score():
+    wrapped = cbr.slice_wrapped(["bwrap", "--", "makepkg"], cgroup=OUTSIDE, runner=CAPPED)
+    assert wrapped == ["systemd-run", "--user", "--scope", "--slice=builds.slice",
+                       "choom", "-n", "500", "--", "bwrap", "--", "makepkg"]
+
+
+def test_enter_inside_the_build_slice_only_raises_the_oom_score():
+    wrapped = cbr.slice_wrapped(["bwrap", "--", "makepkg"], cgroup=INSIDE, runner=CAPPED)
+    assert wrapped == ["choom", "-n", "500", "--", "bwrap", "--", "makepkg"]
+
+
+@pytest.mark.parametrize("runner", [
+    _systemctl("LoadState=not-found\nMemoryMax=infinity\n"),
+    _systemctl("LoadState=loaded\nMemoryMax=infinity\n"),
+    _systemctl("", returncode=1),
+])
+def test_enter_refuses_without_a_capped_build_slice(runner):
+    # An uncapped or missing slice must fail before any wrapping, even inside it.
+    for cgroup in (OUTSIDE, INSIDE):
+        with pytest.raises(cbr.BuildRootError, match="builds.slice"):
+            cbr.slice_wrapped(["bwrap"], cgroup=cgroup, runner=runner)
+
+
+def test_current_cgroup_reads_the_v2_entry(tmp_path):
+    proc = tmp_path / "cgroup"
+    proc.write_text(f"0::{INSIDE}\n")
+    assert cbr.current_cgroup(proc) == INSIDE
+    proc.write_text("1:name=systemd:/x\n")
+    with pytest.raises(cbr.BuildRootError):
+        cbr.current_cgroup(proc)
