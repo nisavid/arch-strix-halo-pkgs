@@ -318,7 +318,9 @@ selection. `--scenario <id>` always selects the named scenario.
   precedence for that name, so a canonical `--expect-pin` id such as
   `user.zembed-1-Q4_K_M-GGUF-Q4_K_M` matches its bare listing. The scenario
   accepts that alias only when both ids resolve to the same main checkpoint,
-  and prints it as `service_pin_alias`.
+  and prints it as `service_pin_alias`. A listing under another prefix, such
+  as `extra.zembed-1-Q4_K_M-GGUF-Q4_K_M`, is a different registration and
+  never matches.
 
 ## Kokoro TTS Decision
 

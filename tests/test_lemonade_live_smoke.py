@@ -1631,6 +1631,22 @@ def test_service_pins_matches_a_bare_listing_to_its_canonical_pin(capsys: pytest
     assert live.bare_model_name("user.") == "user."
 
 
+def test_service_pins_never_match_a_listing_under_another_prefix():
+    zembed = "user.zembed-1-Q4_K_M-GGUF-Q4_K_M"
+    other = "extra." + live.bare_model_name(zembed)
+    server = _pinned_server()
+    # Another registration with the same checkpoint holds the pin under its own prefix.
+    server.models[other] = {**server.models[zembed], "id": other}
+    server.config["pinned_models"][server.config["pinned_models"].index(zembed)] = other
+    server.loaded[other] = {**server.loaded.pop(zembed), "model_name": other}
+
+    with pytest.raises(AssertionError, match=f"{zembed} is not pinned"):
+        live.run_service_pins(server, expected=PINS)
+    # A bare expected id is not widened to a prefixed listing either.
+    with pytest.raises(AssertionError, match="is not pinned"):
+        live.run_service_pins(server, expected=[(live.bare_model_name(zembed), "Q4_K_M")])
+
+
 def test_service_pins_rejects_an_alias_that_resolves_to_another_model():
     zembed = "user.zembed-1-Q4_K_M-GGUF-Q4_K_M"
     bare = live.bare_model_name(zembed)

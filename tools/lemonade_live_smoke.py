@@ -1197,16 +1197,18 @@ def parse_expected_pins(values: list[str]) -> list[tuple[str, str]]:
 
 
 def listed_pin(client: LemonadeClient, pins: Mapping[str, Any], model: str) -> str | None:
-    """Return the name /pins lists for `model`: the model itself, or its one bare or canonical alias.
+    """Return the name /pins lists for `model`: the model itself, or its bare listing.
 
-    An alias counts only when both ids resolve to the same main checkpoint.
+    A canonical id such as user.foo matches a listed bare foo, which is how
+    lemond lists a precedence winner, and only when both ids resolve to the
+    same main checkpoint. A listing under another prefix, such as extra.foo,
+    is a different registration and never matches.
     """
     if model in pins:
         return model
-    aliases = [name for name in pins if bare_model_name(name) == bare_model_name(model)]
-    if len(aliases) != 1:
+    listed = bare_model_name(model)
+    if listed == model or listed not in pins:
         return None
-    listed = aliases[0]
     if main_checkpoint(model_info(client, model)) != main_checkpoint(model_info(client, listed)):
         raise AssertionError(f"{model} and pinned {listed} resolve to different checkpoints")
     print("service_pin_alias", model, listed)
