@@ -13,7 +13,8 @@
       "Check Arch python-pydantic and python-pydantic-core together before updating; upstream pydantic normally constrains the pydantic-core ABI tightly.",
       "Do not adopt a newer pydantic-core release from recipe notes alone; keep pydantic-core aligned with the installed pydantic ABI unless this repo also carries and validates a matching pydantic package.",
       "After publishing a rebuilt package, verify `import pydantic_core` and a tiny `pydantic.BaseModel` validation through the installed local Python lane.",
-      "Record newer PyPI pydantic-core releases as baseline drift while the package follows Arch's pydantic-core ABI for the installed pydantic package."
+      "Record newer PyPI pydantic-core releases as baseline drift while the package follows Arch's pydantic-core ABI for the installed pydantic package.",
+      "The conflicts pin the one python-pydantic release that requires this pydantic-core version; move both python-pydantic bounds with each pydantic-core update and bump pkgrel whenever they change without a version change."
     ]
   },
   "name": "python-pydantic-core-gfx1151",
@@ -30,7 +31,8 @@
     "authoritative_reference": "extra/python-pydantic-core",
     "conflicts": [
       "python-pydantic-core",
-      "python-pydantic<2.13.5"
+      "python-pydantic<2.13.5",
+      "python-pydantic>2.13.5"
     ],
     "depends": [
       "glibc",
@@ -77,7 +79,8 @@
       "Check Arch python-pydantic and python-pydantic-core together before updating; upstream pydantic normally constrains the pydantic-core ABI tightly.",
       "Do not adopt a newer pydantic-core release from recipe notes alone; keep pydantic-core aligned with the installed pydantic ABI unless this repo also carries and validates a matching pydantic package.",
       "After publishing a rebuilt package, verify `import pydantic_core` and a tiny `pydantic.BaseModel` validation through the installed local Python lane.",
-      "Record newer PyPI pydantic-core releases as baseline drift while the package follows Arch's pydantic-core ABI for the installed pydantic package."
+      "Record newer PyPI pydantic-core releases as baseline drift while the package follows Arch's pydantic-core ABI for the installed pydantic package.",
+      "The conflicts pin the one python-pydantic release that requires this pydantic-core version; move both python-pydantic bounds with each pydantic-core update and bump pkgrel whenever they change without a version change."
     ],
     "upstream_version": "2.46.5",
     "url": "https://github.com/pydantic/pydantic-core"

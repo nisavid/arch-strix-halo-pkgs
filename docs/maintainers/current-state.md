@@ -115,8 +115,8 @@ Fix status:
 - Package built: `tools/amerge build` plan `2301b532` produced
   `python-pydantic-core-gfx1151-2.46.5-1-x86_64.pkg.tar.zst`. An
   extracted-archive smoke imported it with pydantic 2.13.5 and validated a
-  `BaseModel`. That archive predates the `python-pydantic<2.13.5` conflict
-  that the Lemonade repin (#137) added, so it must not be published. The
+  `BaseModel`. That archive predates the exact `python-pydantic` 2.13.5
+  conflicts that the Lemonade repin (#137) added, so it must not be published. The
   guarded source renders as `2.46.5-2`, which the #139 build must produce.
 - Not published, deployed/installed, or installed-smoked. The install rides
   the Lemonade family install window
@@ -154,17 +154,19 @@ relevant source metadata changes.
 
 ### Lemonade repin source update
 
-The Lemonade repin (#137) moved `lemonade-server`, `lemonade-app`, and
-`lemonade` to the frozen fork main commit `3d5991033`, whose CMake project
-version is 11.7.0 and which contains upstream v11.7.0. The freshness policy
+The Lemonade repin (#137) moved `lemonade-server` and `lemonade-app` to the
+frozen fork main commit `3d5991033`, whose CMake project version is 11.7.0 and
+which contains upstream v11.7.0, and moved the source-free `lemonade` meta
+package to version 11.7.0 to match. The freshness policy
 now records that commit as the `fork-main` cursor and 11.7.0 as the
 `upstream-release` baseline. `lemonade-fork-3d59910` stays tracked, with its
 gate moved to the
 [Lemonade family build and install handoff](https://github.com/nisavid/arch-strix-halo-pkgs/issues/139).
 The new `lemonade-upstream-11.9.0` record tracks the 11.7.0 to 11.9.0
-baseline drift to #141. The same change adds a `python-pydantic<2.13.5`
-conflict to `python-pydantic-core-gfx1151` and bumps it to `2.46.5-2`, so
-pacman cannot pair pydantic-core 2.46.5 with an older Arch pydantic. The two
+baseline drift to #141. The same change adds `python-pydantic<2.13.5` and
+`python-pydantic>2.13.5` conflicts to `python-pydantic-core-gfx1151` and bumps
+it to `2.46.5-2`, so pacman cannot pair pydantic-core 2.46.5 with any Arch
+pydantic other than 2.13.5. The two
 packages are installed together in the #139 transaction.
 
 A refreshed sweep with `--fail-on actionable` exited 0 and reported 29 tracked,
