@@ -184,7 +184,7 @@ packages = ["python-pydantic-core-gfx1151"]
 priority = "medium"
 workflow = "upstream_source_update"
 checks = [
-  { id = "arch", role = "primary", kind = "arch_package", package = "python-pydantic-core", recorded = "2.46.4-1", comparison = "pkgver" },
+  { id = "arch", role = "primary", kind = "arch_package", package = "python-pydantic-core", recorded = "2.46.5-1", comparison = "pkgver" },
   { id = "pypi", role = "baseline", kind = "pypi", package = "pydantic_core", recorded = "2.47.0", comparison = "pep440" },
 ]
 source_contracts = [
