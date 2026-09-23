@@ -75,7 +75,12 @@ def test_rocprofiler_compute_manifest_tracks_runtime_dependencies():
     assert "package_rocprofiler-compute-gfx1151()" in text
     assert "depends=('gcc-libs' 'glibc' 'python-gfx1151' 'python-astunparse' 'python-numpy-gfx1151' 'python-pandas' 'python-pyyaml-gfx1151' 'python-sqlalchemy' 'python-tabulate' 'python-textual' 'rocprofiler-sdk-gfx1151' 'rocprofiler-systems-gfx1151')" in text
     assert "sed -i -e '/^dash-bootstrap-components==/d' -e '/^dash-svg==/d' -e '/^dash==/d' -e '/^plotext==/d' -e '/^plotille==/d' -e '/^textual_plotext==/d'" in text
-    assert 'ln -s ../libexec/rocprofiler-compute/rocprof-compute "${pkgdir}/opt/rocm/bin/rocprof-compute"' in text
+    # 7.14.1 ships its own bin/rocprof-compute launcher in the payload, so the
+    # package copies it and no longer synthesizes a symlink at that path.
+    assert "bin/rocprof-compute\"" not in text
+    filelists = REPO_ROOT / "packages/therock-gfx1151/filelists"
+    owners = [path.stem for path in filelists.glob("*.txt") if "opt/rocm/bin/rocprof-compute" in path.read_text().splitlines()]
+    assert owners == ["rocprofiler-compute-gfx1151"]
 
     manifest = json.loads(MANIFEST.read_text())
     assert manifest["packages"]["rocprofiler-compute-gfx1151"]["depends"] == [
