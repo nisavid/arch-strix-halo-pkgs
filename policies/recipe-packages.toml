@@ -1222,6 +1222,7 @@ scaffold_notes = [
 recipe_key = "native_wheels"
 template = "native-wheel-pypi"
 upstream_version = "7.2.2"
+pkgrel = 2
 pkgdesc = "Cross-platform process and system utilities rebuilt for Strix Halo gfx1151"
 url = "https://github.com/giampaolo/psutil"
 license = ["BSD-3-Clause"]
@@ -1234,7 +1235,8 @@ divergence_notes = [
 ]
 update_notes = [
   "Check Arch first for release and dependency metadata before updating.",
-  "After publishing a rebuilt package, verify `import psutil` and a minimal process or virtual-memory probe through the installed local Python lane."
+  "After publishing a rebuilt package, verify `import psutil` and a minimal process or virtual-memory probe through the installed local Python lane.",
+  "On 2026-09-22, bump pkgrel to 2 for the generation-C W2A closure (#110), built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7. The source is unchanged; the rebuild keeps the package out of the previous generation's repo."
 ]
 provides = ["python-psutil"]
 conflicts = ["python-psutil"]
