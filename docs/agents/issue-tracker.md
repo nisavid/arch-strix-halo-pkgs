@@ -7,11 +7,14 @@ operations.
 
 - **Create an issue**: `gh issue create --title "..." --body "..."`. Use a
   heredoc for multi-line bodies.
-- **Read an issue**: `gh issue view <number> --comments`, filtering comments by
-  `jq` and also fetching labels.
+- **Read an issue**:
+  `gh issue view <number> --json number,title,body,labels,comments`, adding
+  `--jq '<expr>'` to filter. Don't use `--comments` here: without a terminal it
+  prints only the comment text, with no title, body, or labels.
 - **List issues**:
-  `gh issue list --state open --json number,title,body,labels,comments --jq '[.[] | {number, title, body, labels: [.labels[].name], comments: [.comments[].body]}]'`
-  with appropriate `--label` and `--state` filters.
+  `gh issue list --state open --limit 1000 --json number,title,body,labels,comments --jq '[.[] | {number, title, body, labels: [.labels[].name], comments: [.comments[].body]}]'`
+  with appropriate `--label` and `--state` filters. Without `--limit`, `gh`
+  stops at 30 issues.
 - **Comment on an issue**: `gh issue comment <number> --body "..."`
 - **Apply / remove labels**: `gh issue edit <number> --add-label "..."` /
   `--remove-label "..."`
@@ -31,9 +34,11 @@ the `gh pr` equivalents:
 - **Read a PR**: `gh pr view <number> --comments` and `gh pr diff <number>` for
   the diff.
 - **List external PRs for triage**:
-  `gh pr list --state open --json number,title,body,labels,author,authorAssociation,comments`
+  `gh search prs --repo <owner>/<repo> --state open --limit 1000 --json number,title,body,labels,author,authorAssociation,commentsCount`
   then keep only `authorAssociation` of `CONTRIBUTOR`, `FIRST_TIME_CONTRIBUTOR`,
-  or `NONE` (drop `OWNER`/`MEMBER`/`COLLABORATOR`).
+  or `NONE` (drop `OWNER`/`MEMBER`/`COLLABORATOR`). `gh pr list` has no
+  `authorAssociation` field; read a PR's comments with
+  `gh pr view <number> --json comments`.
 - **Comment / label / close**: `gh pr comment`,
   `gh pr edit --add-label`/`--remove-label`, `gh pr close`.
 
@@ -46,7 +51,7 @@ Create a GitHub issue.
 
 ## When a skill says "fetch the relevant ticket"
 
-Run `gh issue view <number> --comments`.
+Run `gh issue view <number> --json number,title,body,labels,comments`.
 
 ## Wayfinding operations
 
@@ -69,11 +74,13 @@ tickets.
   blockers only, the live gate). Where dependencies aren't available, fall back
   to a `Blocked by: #<n>, #<n>` line at the top of the child body. A ticket is
   unblocked when every blocker is closed.
-- **Frontier query**: list the map's open children
-  (`gh issue list --state open`, scoped to the map's sub-issues / task list),
-  drop any with an open blocker (`issue_dependencies_summary.blocked_by > 0`, or
-  an open issue in the `Blocked by` line) or an assignee; first in map order
-  wins.
+- **Frontier query**: read the map's children in map order from the sub-issues
+  endpoint, keep the open ones with no assignee and no open blocker, and take
+  the first:
+  `gh api repos/<owner>/<repo>/issues/<map>/sub_issues --paginate --jq '.[] | select(.state == "open" and (.assignees | length) == 0 and .issue_dependencies_summary.blocked_by == 0) | .number' | head -n 1`.
+  No output means the frontier is empty. Where sub-issues aren't enabled, walk
+  the map body's task list in order instead, dropping tickets that are closed,
+  assigned, or have an open issue in their `Blocked by` line.
 - **Claim**: `gh issue edit <n> --add-assignee @me`, the session's first write.
 - **Resolve**: `gh issue comment <n> --body "<answer>"`, then
   `gh issue close <n>`, then append a context pointer (gist + link) to the map's
