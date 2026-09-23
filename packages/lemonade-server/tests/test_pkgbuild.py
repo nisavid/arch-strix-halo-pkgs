@@ -195,8 +195,9 @@ def _prepare_patch_order():
 
 
 def test_pkgbuild_applies_args_merge_fix_last():
-    # 0005 carries upstream #3265's effect for 11.7: merged *_args keep
-    # quoted JSON values such as qwen35's --chat-template-kwargs intact.
+    # 0005 is the stopgap for the fork-only double-quoting regression until the
+    # repin to a fork commit with nisavid/lemonade#168: merged *_args keep quoted
+    # JSON values such as qwen35's --chat-template-kwargs intact.
     assert _prepare_patch_order() == [
         "0001-linux-npu-fallback-to-pci-id-when-accel-open-fails.patch",
         "0002-llamacpp-external-backends-are-system-managed.patch",

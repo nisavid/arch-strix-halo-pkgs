@@ -1341,6 +1341,7 @@ def test_lemonade_live_validation_scenarios_are_gated_and_share_one_gguf():
     }
     assert {
         "chat_model_pinned_ok",
+        "chat_model_architecture_ok",
         "chat_completion_ok",
         "chat_template_kwargs_json_ok",
         "pinned_chat_model_loaded_ok",

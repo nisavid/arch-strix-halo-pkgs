@@ -683,12 +683,14 @@ value = "service_pins_ok"
 # handed llama-server a quoted --chat-template-kwargs value for every qwen35
 # and qwen35moe model, so the pinned chat model never loaded. The model id is
 # chosen per host at run time: --chat-model, else LEMONADE_PINNED_CHAT_MODEL,
-# else the tool's default. It is mutates-service only because the chat request
-# implicitly loads that already-pinned, downloaded model when it is not
-# resident; it never unloads, pins, unpins, or changes config.
+# else the tool's default. Whatever the id, the tool reads general.architecture
+# from the model's GGUF before chatting and fails unless it is qwen35 or
+# qwen35moe, or when it cannot read it. It is mutates-service only because the
+# chat request implicitly loads that already-pinned, downloaded model when it is
+# not resident; it never unloads, pins, unpins, or changes config.
 [[scenario]]
 id = "lemonade.chat.pinned-user-model.qwen35moe"
-summary = "The service answers a chat request with the pinned qwen35moe user model, whose backend receives --chat-template-kwargs as JSON, and the pin then reports loaded with no load_error"
+summary = "The service answers a chat request with the pinned qwen35 or qwen35moe user model, whose backend receives the merged --chat-template-kwargs JSON with preserve_thinking true, and the pin then reports loaded with no load_error"
 tags = [
   "live-validation",
   "validation-window",
@@ -719,6 +721,10 @@ value = 0
 [[scenario.then.assert]]
 kind = "stdout.contains"
 value = "chat_model_pinned_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "chat_model_architecture_ok"
 
 [[scenario.then.assert]]
 kind = "stdout.contains"

@@ -59,9 +59,11 @@ v11.7.0 (`2b6a7d7`).
     `map_to_args_string` already quotes values that contain spaces or quotes,
     so a merged value such as `{"preserve_thinking":true}` or `"a b"` reaches
     the child process as one unquoted argv value. Merged values that start
-    with `-` and are not numbers, or that are empty, remain unsupported until
-    the upstream sync: the first becomes a separate flag and the second is
-    dropped.
+    with `-` and are not numbers, or that are empty, remain unsupported while
+    this patch carries: the first becomes a separate flag and the second is
+    dropped. The unpatched fork breaks them too, by double-quoting them. The
+    packaged `llamacpp.args` (`--no-mmap`) and the architecture defaults at
+    `3d5991033` carry no such value. The fork fix below covers them.
   - Without the patch, the merge keeps the quote characters as part of the
     value and then quotes it again. llama-server then receives
     `'{"preserve_thinking":true}'` for the qwen35 and qwen35moe
@@ -69,12 +71,26 @@ v11.7.0 (`2b6a7d7`).
     and exits. The merge runs whenever model or architecture args meet
     non-empty global `llamacpp.args`, and the distro defaults always set
     `--no-mmap`, so every qwen35 and qwen35moe model failed to load.
-  - Upstream fixed this in
-    [lemonade-sdk/lemonade#3265](https://github.com/lemonade-sdk/lemonade/pull/3265)
-    (`7b5657d80`, first released in v11.8.0), which replaces this merge path
-    with scoped argument resolution. Drop this patch at the M6 11.9 upstream
-    sync, which [issue 141](https://github.com/nisavid/arch-strix-halo-pkgs/issues/141)
-    tracks.
+  - This is a fork-only regression. Fork commit `e3d08ffa6` added
+    `quote_custom_arg_value()` to `map_to_args_string`, which stacks a second
+    quoting layer on upstream's `keep_quotes=true` merge
+    ([lemonade-sdk/lemonade#1920](https://github.com/lemonade-sdk/lemonade/pull/1920)).
+    Upstream v11.6.0, v11.7.0, and v11.9.0 produce the correct argv. The two
+    mechanisms first coexist in the fork's v10.6.0 merge, and the qwen35
+    architecture default that exposes them arrived with its v11.6.0 merge.
+  - The fork fix is
+    [nisavid/lemonade#168](https://github.com/nisavid/lemonade/issues/168),
+    "Stop double-quoting merged custom args", in the fork's `custom_args.h`.
+    Drop this patch at the Lemonade repin to a fork commit that contains
+    #168: the upstream-synced fork main that the M6 repackage in
+    [issue 141](https://github.com/nisavid/arch-strix-halo-pkgs/issues/141)
+    adopts.
+  - [lemonade-sdk/lemonade#3265](https://github.com/lemonade-sdk/lemonade/pull/3265)
+    (`7b5657d80`, first released in v11.8.0) is context only, not the drop
+    condition. It moves the merge into `recipe_arg_resolver.h`
+    `merge_custom_args`, which still parses with `keep_quotes=true`, so with
+    the fork's `custom_args.h` the regression returns after the 11.9 sync
+    unless #168 lands, and this patch no longer applies there.
 
 ## llama.cpp
 
