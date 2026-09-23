@@ -8,7 +8,7 @@
       "This custom build treats the ROCm and Vulkan llama.cpp backends as packaged system-managed backends rather than Lemonade-managed runtime downloads.",
       "Carries local patches for Linux XDNA2 detection and the system-managed llama.cpp backend story that are specific to this Strix Halo packaging lane.",
       "Builds from the nisavid/lemonade fork so this package can consume local upstream fixes before they are available from the canonical Lemonade repository.",
-      "Ships offline, no-fetch distro defaults and a systemd drop-in that points the Hugging Face and ModelScope endpoints at a refused loopback port, so lemond does not download models or backend executables on its own."
+      "Ships offline, no-fetch distro defaults and a systemd drop-in that points the Hugging Face, ModelScope, and llama.cpp model endpoints (HF_ENDPOINT, MODELSCOPE_ENDPOINT, and MODEL_ENDPOINT) at a refused loopback port, so lemond does not download models or backend executables on its own."
     ],
     "source_patches": [
       "0001-linux-npu-fallback-to-pci-id-when-accel-open-fails.patch",
@@ -25,7 +25,7 @@
       "On 2026-05-28, bumped the server package release to refresh packaged system-managed llama.cpp backend metadata for the b9357 HIP and Vulkan backends.",
       "On 2026-05-31, bumped the server package release to refresh packaged system-managed llama.cpp backend metadata for the b9442 HIP and Vulkan backends.",
       "On 2026-06-15, adopted nisavid/lemonade fork main e18b9c1e352df8ab5aff2ff353402f1ec77c47f2, which syncs upstream Lemonade v10.7.0.",
-      "On 2026-09-22, repinned the source to nisavid/lemonade fork main at Lemonade 11.7.0; the fork commit contains upstream v11.7.0 (2b6a7d7), and the lemonade entry in [source_pins] holds the selected commit. Refreshed patches 0002-0004 for the new base, and added the zz-secrets.conf backup entry, the offline distro defaults, and the model-endpoint drop-in. Issue 137 tracks build and host validation."
+      "On 2026-09-22, repinned the source to nisavid/lemonade fork main at Lemonade 11.7.0; the fork commit contains upstream v11.7.0 (2b6a7d7), and the lemonade entry in [source_pins] holds the selected commit. Refreshed patches 0002-0004 for the new base, and added the zz-secrets.conf backup entry, the offline distro defaults, and the model-endpoint drop-in. Issue 137 pins the frozen fork commit 3d5991033; issue 139 tracks the build, publish, install, and host validation."
     ]
   },
   "name": "lemonade-server",
@@ -66,7 +66,7 @@
       "This custom build treats the ROCm and Vulkan llama.cpp backends as packaged system-managed backends rather than Lemonade-managed runtime downloads.",
       "Carries local patches for Linux XDNA2 detection and the system-managed llama.cpp backend story that are specific to this Strix Halo packaging lane.",
       "Builds from the nisavid/lemonade fork so this package can consume local upstream fixes before they are available from the canonical Lemonade repository.",
-      "Ships offline, no-fetch distro defaults and a systemd drop-in that points the Hugging Face and ModelScope endpoints at a refused loopback port, so lemond does not download models or backend executables on its own."
+      "Ships offline, no-fetch distro defaults and a systemd drop-in that points the Hugging Face, ModelScope, and llama.cpp model endpoints (HF_ENDPOINT, MODELSCOPE_ENDPOINT, and MODEL_ENDPOINT) at a refused loopback port, so lemond does not download models or backend executables on its own."
     ],
     "extra_sha256sums": [
       "84149e7e765b80de94b0058edf930ee61ca39ceee534bff4e01fdd7e050cfb27",
@@ -133,7 +133,7 @@
       "On 2026-05-28, bumped the server package release to refresh packaged system-managed llama.cpp backend metadata for the b9357 HIP and Vulkan backends.",
       "On 2026-05-31, bumped the server package release to refresh packaged system-managed llama.cpp backend metadata for the b9442 HIP and Vulkan backends.",
       "On 2026-06-15, adopted nisavid/lemonade fork main e18b9c1e352df8ab5aff2ff353402f1ec77c47f2, which syncs upstream Lemonade v10.7.0.",
-      "On 2026-09-22, repinned the source to nisavid/lemonade fork main at Lemonade 11.7.0; the fork commit contains upstream v11.7.0 (2b6a7d7), and the lemonade entry in [source_pins] holds the selected commit. Refreshed patches 0002-0004 for the new base, and added the zz-secrets.conf backup entry, the offline distro defaults, and the model-endpoint drop-in. Issue 137 tracks build and host validation."
+      "On 2026-09-22, repinned the source to nisavid/lemonade fork main at Lemonade 11.7.0; the fork commit contains upstream v11.7.0 (2b6a7d7), and the lemonade entry in [source_pins] holds the selected commit. Refreshed patches 0002-0004 for the new base, and added the zz-secrets.conf backup entry, the offline distro defaults, and the model-endpoint drop-in. Issue 137 pins the frozen fork commit 3d5991033; issue 139 tracks the build, publish, install, and host validation."
     ],
     "upstream_name": "lemonade-server",
     "upstream_version": "11.7.0",

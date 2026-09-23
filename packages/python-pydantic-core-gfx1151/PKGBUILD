@@ -6,7 +6,7 @@
 
 pkgname=python-pydantic-core-gfx1151
 pkgver=2.46.5
-pkgrel=1
+pkgrel=2
 pkgdesc='Core validation logic for pydantic rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://github.com/pydantic/pydantic-core

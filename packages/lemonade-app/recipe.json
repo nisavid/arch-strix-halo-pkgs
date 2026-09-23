@@ -16,7 +16,7 @@
       "Keep the provides/conflicts story accurate while Arch/AUR naming remains in transition.",
       "On 2026-05-26, adopted nisavid/lemonade fork main 13b1af25f84cf08ad5f8bf0ec58980bdfc09c9e7 so base llamacpp model options do not show reranking adapter controls.",
       "On 2026-06-15, adopted nisavid/lemonade fork main e18b9c1e352df8ab5aff2ff353402f1ec77c47f2, which syncs upstream Lemonade v10.7.0.",
-      "On 2026-09-22, repinned the source to nisavid/lemonade fork main at Lemonade 11.7.0, together with lemonade-server through the lemonade entry in [source_pins]; the fork commit contains upstream v11.7.0 (2b6a7d7). The Tauri glib patch applies unchanged. Issue 137 tracks build and host validation."
+      "On 2026-09-22, repinned the source to nisavid/lemonade fork main at Lemonade 11.7.0, together with lemonade-server through the lemonade entry in [source_pins]; the fork commit contains upstream v11.7.0 (2b6a7d7). The Tauri glib patch applies unchanged. Issue 137 pins the frozen fork commit 3d5991033; issue 139 tracks the build, publish, install, and host validation."
     ]
   },
   "name": "lemonade-app",
@@ -101,7 +101,7 @@
       "Keep the provides/conflicts story accurate while Arch/AUR naming remains in transition.",
       "On 2026-05-26, adopted nisavid/lemonade fork main 13b1af25f84cf08ad5f8bf0ec58980bdfc09c9e7 so base llamacpp model options do not show reranking adapter controls.",
       "On 2026-06-15, adopted nisavid/lemonade fork main e18b9c1e352df8ab5aff2ff353402f1ec77c47f2, which syncs upstream Lemonade v10.7.0.",
-      "On 2026-09-22, repinned the source to nisavid/lemonade fork main at Lemonade 11.7.0, together with lemonade-server through the lemonade entry in [source_pins]; the fork commit contains upstream v11.7.0 (2b6a7d7). The Tauri glib patch applies unchanged. Issue 137 tracks build and host validation."
+      "On 2026-09-22, repinned the source to nisavid/lemonade fork main at Lemonade 11.7.0, together with lemonade-server through the lemonade entry in [source_pins]; the fork commit contains upstream v11.7.0 (2b6a7d7). The Tauri glib patch applies unchanged. Issue 137 pins the frozen fork commit 3d5991033; issue 139 tracks the build, publish, install, and host validation."
     ],
     "upstream_name": "lemonade-app",
     "upstream_version": "11.7.0",
