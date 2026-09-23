@@ -1500,6 +1500,7 @@ scaffold_notes = [
 recipe_key = "native_wheels"
 template = "native-wheel-pypi"
 upstream_version = "1.8.0"
+pkgrel = 2
 pkgdesc = "Immutable list implementation rebuilt for Strix Halo gfx1151"
 url = "https://github.com/aio-libs/frozenlist"
 license = ["Apache-2.0"]
@@ -1512,7 +1513,8 @@ divergence_notes = [
 ]
 update_notes = [
   "Check Arch first for release and build-backend metadata before updating.",
-  "After publishing a rebuilt package, verify `import frozenlist` and a minimal FrozenList construction probe through the installed local Python lane."
+  "After publishing a rebuilt package, verify `import frozenlist` and a minimal FrozenList construction probe through the installed local Python lane.",
+  "On 2026-09-22, bump pkgrel to 2 for the generation-C W2A closure (#110), built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7. The source is unchanged; the rebuild keeps the package out of the previous generation's repo. aiohttp needs it in the build root."
 ]
 provides = ["python-frozenlist"]
 conflicts = ["python-frozenlist"]
