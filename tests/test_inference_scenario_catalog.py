@@ -1326,7 +1326,8 @@ def test_lemonade_live_validation_scenarios_are_gated_and_share_one_gguf():
     ):
         asserts = by_id[scenario_id].definition["then"]["assert"]
         assert {"kind": "stdout.contains", "value": "backend_libraries_repo_owned_ok"} in asserts
-    assert "--missing-model" in nofetch["when"]["argv"]
+    # The missing model is chosen per host at run time (--missing-model or its env override).
+    assert "--missing-model" not in nofetch["when"]["argv"]
 
     pins_argv = by_id["lemonade.pins.service-consumer-pins"].definition["when"]["argv"]
     pooling = {s.id: s for s in scenarios}

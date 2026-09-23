@@ -497,8 +497,6 @@ argv = [
   "rocm",
   "--expect-checkpoint",
   "Qwen/Qwen3-0.6B-GGUF:Q8_0",
-  "--missing-model",
-  "Tiny-Test-Model-GGUF",
 ]
 
 [[scenario.then.assert]]

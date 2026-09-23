@@ -727,25 +727,45 @@ class ServiceHost:
     def sockets(self) -> list[dict[str, Any]]:
         return parse_ss(run_command(["ss", "-tanpH"], runner=self.runner))
 
-    def journal_since(self, since: float) -> list[str]:
+    def _journal_entries(self, *extra: str) -> list[tuple[str, str]]:
         output = run_command(
-            ["journalctl", "-u", self.service, "--since", f"@{int(since)}", "--no-pager", "-q", "-o", "short-unix"],
-            runner=self.runner,
+            ["journalctl", "-u", self.service, "--no-pager", "-q", "-o", "json", *extra], runner=self.runner
         )
-        lines = []
+        entries = []
         for line in output.splitlines():
-            stamp, _, rest = line.partition(" ")
-            try:
-                if float(stamp) < since:
-                    continue
-            except ValueError:
-                pass
-            lines.append(rest)
-        return lines
+            if not line.strip():
+                continue
+            record = json.loads(line)
+            message = record.get("MESSAGE", "")
+            if isinstance(message, list):  # journald encodes non-UTF-8 messages as byte arrays.
+                message = bytes(message).decode("utf-8", "replace")
+            entries.append((str(record["__CURSOR"]), str(message)))
+        return entries
+
+    def journal_cursor(self) -> str | None:
+        """Cursor of the unit's newest journal entry, or None when it has none."""
+        entries = self._journal_entries("-n", "1")
+        return entries[-1][0] if entries else None
+
+    def journal_after(self, cursor: str | None) -> tuple[list[str], str | None]:
+        """Messages strictly after `cursor`, and the cursor of the last one returned."""
+        entries = self._journal_entries(*(("--after-cursor", cursor) if cursor else ()))
+        return [message for _, message in entries], (entries[-1][0] if entries else cursor)
+
+
+_CAPTURE = object()
 
 
 class FetchWatch:
-    """Observe one phase: cache trees, service journal, and lemond-tree sockets."""
+    """Observe one phase: cache trees, service journal, and lemond-tree sockets.
+
+    The phase's journal window is bounded by cursors: it starts after
+    `start_cursor` (by default, the newest entry when the phase begins) and ends
+    once the phase's own line has landed and the journal has been quiet for
+    `settle` seconds. `trailing()` then reads the lines that arrived after the
+    window closed and charges them to this phase, and its cursor starts the
+    next phase, so consecutive windows neither overlap nor leave a gap.
+    """
 
     def __init__(
         self,
@@ -756,18 +776,22 @@ class FetchWatch:
         expect_log: str,
         interval: float = 0.2,
         journal_timeout: float = 10.0,
-        clock: Callable[[], float] = time.time,
+        settle: float = 1.0,
+        start_cursor: Any = _CAPTURE,
     ) -> None:
         self.host = host
         self.expect_log = expect_log
         self.journal_timeout = journal_timeout
+        self.settle = settle
+        self.start_cursor = start_cursor
         self.caches = caches
         self.blackhole = blackhole
         self.interval = interval
-        self.clock = clock
         self.remote: set[tuple[str, str]] = set()
         self.blackhole_hits = 0
         self.samples = 0
+        self.phase: str | None = None
+        self.record_blackholed_attempt = False
         self._stop = threading.Event()
         self._thread = threading.Thread(target=self._run, daemon=True)
         self.error: BaseException | None = None
@@ -797,7 +821,8 @@ class FetchWatch:
 
     def __enter__(self) -> "FetchWatch":
         self.before = {name: snapshot_tree(path) for name, path in self.caches.items()}
-        self.since = self.clock()
+        if self.start_cursor is _CAPTURE:
+            self.start_cursor = self.host.journal_cursor()
         self._thread.start()
         return self
 
@@ -806,13 +831,22 @@ class FetchWatch:
         self._thread.join(timeout=30.0)
         self.sample()
         self.after = {name: snapshot_tree(path) for name, path in self.caches.items()}
-        # journald can trail the HTTP response; wait until the phase's own line lands.
+        # journald can trail the HTTP response: wait for the phase's own line,
+        # then until the journal has been quiet for `settle` seconds.
+        self.journal: list[str] = []
+        self.end_cursor = self.start_cursor
         deadline = time.monotonic() + self.journal_timeout
+        quiet_since = time.monotonic()
         while True:
-            self.journal = self.host.journal_since(self.since)
-            if any(self.expect_log in line for line in self.journal) or time.monotonic() >= deadline:
+            lines, self.end_cursor = self.host.journal_after(self.end_cursor)
+            now = time.monotonic()
+            if lines:
+                self.journal += lines
+                quiet_since = now
+            seen = any(self.expect_log in line for line in self.journal)
+            if (seen and now - quiet_since >= self.settle) or now >= deadline:
                 return
-            time.sleep(0.5)
+            time.sleep(min(0.2, max(self.settle, 0.01)))
 
     def __exit__(self, exc_type: Any, *exc_info: Any) -> None:
         try:
@@ -829,6 +863,8 @@ class FetchWatch:
         loopback blackhole are printed as an observation, not a failure. Cache
         changes and non-loopback connections still fail.
         """
+        self.phase = phase
+        self.record_blackholed_attempt = record_blackholed_attempt
         if self.error is not None:
             raise AssertionError(f"{phase}: socket sampling failed: {self.error}")
         if not any(self.expect_log in line for line in self.journal):
@@ -864,6 +900,23 @@ class FetchWatch:
             )
         print(f"{phase}_no_remote_connection_ok")
 
+    def trailing(self) -> str | None:
+        """Charge lines that landed after the window closed to this phase.
+
+        Returns the cursor that starts the next phase's window.
+        """
+        phase = self.phase or self.expect_log
+        lines, cursor = self.host.journal_after(self.end_cursor)
+        fetch_lines = [line for line in lines if FETCH_LOG_RE.search(line)]
+        print(f"{phase}_trailing_fetch_log_lines", len(fetch_lines))
+        if fetch_lines:
+            if not self.record_blackholed_attempt:
+                raise AssertionError(
+                    f"{phase}: the service logged {len(fetch_lines)} download or install lines after the phase settled"
+                )
+            print(f"{phase}_blackholed_fetch_attempt_recorded", f"trailing_log_lines={len(fetch_lines)}")
+        return cursor
+
 
 def require_socket_attribution(host: ServiceHost) -> None:
     """ss -p must see lemond's own sockets, or an empty sample would prove nothing."""
@@ -875,6 +928,11 @@ def require_socket_attribution(host: ServiceHost) -> None:
         )
     print("network_attribution_ok")
 
+
+# A registered but absent model for the missing phases. The default is a small
+# catalog model; a host that already downloaded it overrides the id at run time.
+DEFAULT_MISSING_MODEL = "Tiny-Test-Model-GGUF"
+MISSING_MODEL_ENV = "LEMONADE_NOFETCH_MISSING_MODEL"
 
 # The candidate's three implicit auto-pull paths. Each one downloads a
 # registered model that is not cached before loading it, even with offline=true.
@@ -916,6 +974,7 @@ def run_nofetch(
     repo: str = "strix-halo-gfx1151",
     interval: float = 0.2,
     journal_timeout: float = 10.0,
+    journal_settle: float = 1.0,
     text: Callable[..., None] = run_text,
 ) -> None:
     config = client.get("/internal/config")
@@ -933,7 +992,8 @@ def run_nofetch(
     if status >= 400:
         raise AssertionError(
             f"missing_model_unregistered: GET /models/{missing_model} returned {status}; "
-            "pick a model the candidate registers so each path reaches its download path"
+            "pick a model the candidate registers so each path reaches its download path "
+            f"and pass it with --missing-model or {MISSING_MODEL_ENV}"
         )
     print("missing_model_registered_ok")
     info = payload.get("data", payload) if isinstance(payload, dict) else {}
@@ -941,7 +1001,7 @@ def run_nofetch(
     if downloaded is not False:
         raise AssertionError(
             f"missing_model_present: {missing_model} reports downloaded={downloaded!r}; "
-            "pick a registered model that is not downloaded"
+            f"pick a registered model that is not downloaded and pass it with --missing-model or {MISSING_MODEL_ENV}"
         )
     print("missing_model_absent_ok")
     if loaded_entry(client.get("/health"), missing_model) is not None:
@@ -954,16 +1014,18 @@ def run_nofetch(
     caches = {"model_cache": Path(str(storage)), "backend_cache": cache_dir / "bin"}
     scrub_roots = {**caches, "lemonade_cache": cache_dir}
 
-    def watch(phase_model: str) -> FetchWatch:
+    def watch(phase_model: str, start_cursor: Any = _CAPTURE) -> FetchWatch:
         return FetchWatch(
             host, caches=caches, blackhole=blackhole, expect_log=phase_model,
-            interval=interval, journal_timeout=journal_timeout,
+            interval=interval, journal_timeout=journal_timeout, settle=journal_settle,
+            start_cursor=start_cursor,
         )
 
     # Every path must actually auto-load, so the pre-placed model starts unloaded.
     initial = loaded_entry(client.get("/health"), model)
     if initial is not None:
         client.post("/unload", {"model_name": model})
+    phases_ok = False
     try:
         with watch(model) as phase:
             text(
@@ -980,7 +1042,8 @@ def run_nofetch(
 
         for path in AUTO_PULL_PATHS[1:]:
             name = f"preplaced_{path}"
-            with watch(model) as phase:
+            # Same-model phases chain: this window starts where the last one's trailing check ended.
+            with watch(model, phase.trailing()) as phase:
                 try:
                     refusal = request_refusal(*send_auto_pull(client, path, model, ctx_size=ctx_size))
                     if refusal is not None:
@@ -991,21 +1054,29 @@ def run_nofetch(
                     client.request("POST", "/unload", {"model_name": model}, check=False)
             print(f"{name}_autoload_ok")
             phase.verify(name)
+        phase.trailing()
+        phases_ok = True
     finally:
         if initial is not None:
             options = initial.get("recipe_options") or {}
             client.request("POST", "/load", {**options, "model_name": model}, check=False)
             if loaded_entry(client.get("/health"), model) is None:
-                raise AssertionError(f"{model} was resident before the scenario and could not be restored")
-            print("preplaced_residency_restored")
+                message = f"{model} was resident before the scenario and could not be restored"
+                if phases_ok:
+                    raise AssertionError(message)
+                # Never mask the phase failure that is already propagating.
+                print(f"preplaced_residency_restore_failed: {message}")
+            else:
+                print("preplaced_residency_restored")
 
     # Ruling for candidate 3d5991033 (#138): offline=true does not stop the
     # implicit auto-pull of a registered-but-absent model on any path. A path
     # passes when the request fails loudly, the caches are unchanged, and lemond
     # made no non-loopback connection; a logged, blackholed attempt is recorded.
+    start: Any = _CAPTURE
     for path in AUTO_PULL_PATHS:
         name = f"missing_{path}"
-        with watch(missing_model) as phase:
+        with watch(missing_model, start) as phase:
             refusal = request_refusal(*send_auto_pull(client, path, missing_model, ctx_size=ctx_size))
             if refusal is None:
                 client.request("POST", "/unload", {"model_name": missing_model}, check=False)
@@ -1016,6 +1087,7 @@ def run_nofetch(
             raise AssertionError(f"{name}: {missing_model} became resident after a refused request")
         print(f"{name}_refused_ok")
         phase.verify(name, record_blackholed_attempt=True)
+        start = phase.trailing()
     print("no_fetch_ok")
 
 
@@ -1427,7 +1499,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--repo", default="strix-halo-gfx1151")
     parser.add_argument("--service", default="lemond.service")
     parser.add_argument("--server-log", type=Path)
-    parser.add_argument("--missing-model", default="Tiny-Test-Model-GGUF", help="absent model for nofetch mode")
+    parser.add_argument(
+        "--missing-model",
+        default=os.environ.get(MISSING_MODEL_ENV) or DEFAULT_MISSING_MODEL,
+        help=f"registered but not downloaded model for nofetch mode (default: ${MISSING_MODEL_ENV}, "
+        f"else {DEFAULT_MISSING_MODEL})",
+    )
     parser.add_argument(
         "--expect-pin", action="append", default=[], help="MODEL=VARIANT that service-pins mode requires"
     )

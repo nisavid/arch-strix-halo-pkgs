@@ -103,9 +103,21 @@ the service: once for the pre-placed test GGUF and once for a registered but
 absent model. Each phase collects three kinds of evidence and prints its own
 markers, prefixed with the phase name:
 
-- Journal: `journalctl -u lemond.service` over the phase window must contain
-  no download or install lines. The phase must also show a line naming the
-  phase's model, which proves that the journal is readable.
+- Journal: `journalctl -u lemond.service` over the phase window. The window
+  must show a line naming the phase's model, which proves that the journal is
+  readable. In a pre-placed phase, the window must contain no download or
+  install lines. In a missing phase, a download line is the blackholed attempt
+  and is recorded, not failed, until the upstream offline refusal lands (see
+  below).
+- Journal window: each window is bounded by journal cursors, not timestamps. It
+  starts after the newest entry when the phase begins and closes once the
+  phase's own line has landed and the journal has been quiet for a settle
+  period (one second by default). Lines that land after the window closes are
+  read before the next phase starts and charged to the phase that just ended,
+  printed as `<phase>_trailing_fetch_log_lines`; a late download line fails a
+  pre-placed phase and is recorded for a missing phase. Consecutive same-model
+  phases chain their cursors, so a late line from one request can't be
+  attributed to the next.
 - Caches: the model cache and the backend cache (`<cache dir>/bin`) are listed
   before and after the phase. Every path, type, size, mtime, and symlink target
   must match. The model cache path comes from the service's `/system-info`
@@ -127,9 +139,21 @@ test model after each pre-placed phase. When the model was resident before the
 scenario, it is unloaded first and reloaded with its previous recipe options
 once the pre-placed phases finish; only then does the scenario print
 `preplaced_residency_restored`, so the catalog does not assert that marker.
+If that reload fails after the pre-placed phases passed, the scenario fails. If
+a pre-placed phase already failed, the scenario prints
+`preplaced_residency_restore_failed: ...` and reports the phase's own failure,
+so the restore error never hides the no-fetch evidence.
 
-The missing phases use `Tiny-Test-Model-GGUF`, a small `llamacpp` model in the
-candidate's built-in catalog. Before anything is loaded, `GET
+The missing phases need a model the candidate registers but has not
+downloaded. The default is `Tiny-Test-Model-GGUF`, a small `llamacpp` model in
+the candidate's built-in catalog. A host may already have it, so the id is
+chosen per host at run time: pass `--missing-model <id>` to
+`tools/lemonade_live_smoke.py nofetch`, or set
+`LEMONADE_NOFETCH_MISSING_MODEL=<id>` in the environment of
+`tools/run_inference_scenarios.py`, which the scenario inherits. The catalog
+does not pin the id. To pick one before the run, list the registered models
+with `GET /api/v1/models?show_all=true` and choose a small `llamacpp` entry
+that reports `downloaded: false`. Before anything is loaded, `GET
 /api/v1/models/<id>` must return a status below 400
 (`missing_model_registered_ok`), so each phase really reaches the offline
 download path, and it must report `downloaded: false`
