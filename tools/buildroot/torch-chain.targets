@@ -1,0 +1,62 @@
+# Build-root targets for the generation-C torch chain (W2A).
+# Resolve with: c_buildroot.py resolve --targets-file tools/buildroot/torch-chain.targets
+# python-numpy, python-yaml and python-pillow are Arch stand-ins until the
+# gfx1151 builds of those packages are in the W2A output repo; then replace
+# them with the -gfx1151 names.
+base-devel
+ccache
+git
+cmake
+ninja
+pybind11
+nlohmann-json
+patchelf
+unzip
+openblas
+openmp
+ffmpeg
+libjpeg-turbo
+libpng
+python-gfx1151
+python-build
+python-installer
+python-setuptools
+python-setuptools-scm
+python-wheel
+python-pip
+python-cffi
+python-requests
+python-six
+python-filelock
+python-iniconfig
+python-msgpack
+python-numpy
+python-packaging
+python-pandas
+python-pluggy
+python-yaml
+python-fsspec
+python-jinja
+python-networkx
+python-sympy
+python-typing_extensions
+python-pillow
+python-scipy
+python-tabulate
+python-psutil
+rocm-llvm-gfx1151
+rocm-core-gfx1151
+rocm-hip-sdk-gfx1151
+rocm-openmp-gfx1151
+hip-gfx1151
+hip-runtime-amd-gfx1151
+hipsparselt-gfx1151
+hipblaslt-gfx1151
+amdsmi-gfx1151
+composable-kernel-gfx1151
+hsa-amd-aqlprofile-gfx1151
+miopen-hip-gfx1151
+rccl-gfx1151
+rocblas-gfx1151
+rocminfo-gfx1151
+migraphx-gfx1151

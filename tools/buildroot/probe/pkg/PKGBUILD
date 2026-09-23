@@ -1,0 +1,20 @@
+# Probe package for the rootless build root; never published.
+pkgname=ashp-hip-probe
+pkgver=1
+pkgrel=1
+pkgdesc='Rootless build-root probe: tiny HIP library'
+arch=(x86_64)
+license=(MIT)
+depends=(hip-runtime-amd-gfx1151)
+makedepends=(cmake ninja hip-gfx1151 rocm-llvm-gfx1151)
+options=(!debug)
+
+build() {
+  cmake -S "$startdir/../cmake" -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_HIP_COMPILER=/opt/rocm/lib/llvm/bin/clang++
+  cmake --build build
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+}
