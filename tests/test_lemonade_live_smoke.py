@@ -907,7 +907,7 @@ def _run_nofetch(server, host, **kwargs):
         expect_checkpoint=None,
         expect_sha256=None,
         interval=0.01,
-        journal_settle=0.0,
+        journal_settle=kwargs.pop("journal_settle", 0.0),
         text=kwargs.pop("text", _fake_text(host)),
     )
 
@@ -1160,7 +1160,9 @@ def test_nofetch_unloads_a_resident_preplaced_model_and_restores_it(
     out = capsys.readouterr().out
     assert "preplaced_residency_restored" in out
     assert server.loaded[MODEL]["recipe_options"]["llamacpp_backend"] == "vulkan"
-    assert server.calls.index(("POST", "/unload")) < server.calls.index(("POST", "/chat/completions"))
+    # The missing phases run first; the model is unloaded before the pre-placed phases.
+    completions = [i for i, call in enumerate(server.calls) if call == ("POST", "/chat/completions")]
+    assert completions[0] < server.calls.index(("POST", "/unload")) < completions[-1]
 
 
 def _resident_model_that_cannot_be_restored(server) -> None:
@@ -1203,7 +1205,59 @@ def test_nofetch_restore_failure_fails_when_the_phases_passed(
 
     with pytest.raises(AssertionError, match=f"{MODEL} was resident before the scenario and could not be restored"):
         _run_nofetch(server, host)
-    assert "missing_load" not in capsys.readouterr().out
+    assert "preplaced_ollama_no_remote_connection_ok" in capsys.readouterr().out
+
+
+def _restore_request_raises(server, exc: BaseException, *, on: tuple[str, str]) -> None:
+    """Make one request of the residency restore (its /load, or the /health after it) raise."""
+    original = server.request
+    restoring = False
+
+    def request(method, path, payload=None, **kwargs):
+        nonlocal restoring
+        if (method, path) == ("POST", "/load") and (payload or {}).get("llamacpp_backend") == "vulkan":
+            restoring = True
+        if restoring and (method, path) == on:
+            raise exc
+        return original(method, path, payload, **kwargs)
+
+    server.request = request
+
+
+@pytest.mark.parametrize(
+    ("exc", "on"),
+    [
+        (live.error.URLError(ConnectionRefusedError(111, "Connection refused")), ("POST", "/load")),
+        (ConnectionResetError(104, "Connection reset by peer"), ("POST", "/load")),
+        (live.LemonadeError("GET /health -> 503: restarting"), ("GET", "/health")),
+    ],
+)
+def test_nofetch_restore_errors_do_not_mask_a_phase_failure(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], exc: BaseException, on: tuple[str, str]
+):
+    server, host = _nofetch_setup(tmp_path)
+    server.loaded[MODEL] = {
+        "model_name": MODEL, "pid": 50, "pinned": False, "is_busy": False,
+        "recipe_options": {"llamacpp_backend": "vulkan", "ctx_size": 8192},
+    }
+    _restore_request_raises(server, exc, on=on)
+    _evidence_on(server, host, route="/chat/completions", model=MODEL, journal=["Downloading model: x"])
+
+    with pytest.raises(AssertionError, match="preplaced_inference: the service logged 1 download"):
+        _run_nofetch(server, host)
+    assert f"preplaced_residency_restore_failed: {MODEL} was resident" in capsys.readouterr().out
+
+
+def test_nofetch_restore_errors_fail_when_the_phases_passed(tmp_path: Path):
+    server, host = _nofetch_setup(tmp_path)
+    server.loaded[MODEL] = {
+        "model_name": MODEL, "pid": 50, "pinned": False, "is_busy": False,
+        "recipe_options": {"llamacpp_backend": "vulkan", "ctx_size": 8192},
+    }
+    _restore_request_raises(server, live.error.URLError("Connection refused"), on=("POST", "/load"))
+
+    with pytest.raises(AssertionError, match=f"{MODEL} was resident .* could not be restored: .*Connection refused"):
+        _run_nofetch(server, host)
 
 
 def _watch(host: FakeHost, tmp_path: Path, **kwargs) -> live.FetchWatch:
@@ -1222,32 +1276,40 @@ def test_fetch_watch_windows_exclude_lines_from_before_the_phase(tmp_path: Path)
     assert (phase.start_cursor, phase.end_cursor) == ("c0", "c1")
 
 
-def test_fetch_watch_charges_a_late_fetch_line_to_its_own_phase(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str]
-):
+def test_fetch_watch_windows_are_contiguous(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
     host = FakeHost(tmp_path)
     with _watch(host, tmp_path, expect_log="m") as first:
         host.journal.append("Ensuring model loaded: m")
-    first.verify("preplaced_inference")
-    # The first request's download line lands only after its window closed.
+    first.verify("missing_ollama", record_blackholed_attempt=True)
+    # A download line that lands after the first window closed belongs to the
+    # next window, which starts at the first one's end cursor.
     host.journal.append("Model not cached, downloading from Hugging Face...")
+    with _watch(host, tmp_path, expect_log="p", start_cursor=first.end_cursor) as second:
+        host.journal.append("Ensuring model loaded: p")
+    assert second.start_cursor == first.end_cursor == "c0"
+    assert second.journal == ["Model not cached, downloading from Hugging Face...", "Ensuring model loaded: p"]
+    with pytest.raises(AssertionError, match="preplaced_load: the service logged 1 download"):
+        second.verify("preplaced_load")
+    out = capsys.readouterr().out
+    assert "missing_ollama_no_fetch_log_ok" in out
+    assert "missing_ollama_blackholed_fetch_attempt_recorded" not in out
 
-    with pytest.raises(AssertionError, match="preplaced_inference: .* after the phase settled"):
-        first.trailing()
 
-    # In record mode the late line is recorded for the same phase, and the next
-    # same-model window starts after it, so it cannot be charged to that phase.
-    first.verify("missing_inference", record_blackholed_attempt=True)
-    cursor = first.trailing()
-    assert "missing_inference_blackholed_fetch_attempt_recorded trailing_log_lines=1" in capsys.readouterr().out
-    with _watch(host, tmp_path, expect_log="m", start_cursor=cursor) as second:
+def test_fetch_watch_prints_either_the_clean_or_the_recorded_marker(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    host = FakeHost(tmp_path)
+    with _watch(host, tmp_path, expect_log="m") as phase:
         host.journal.append("Ensuring model loaded: m")
-    second.verify("missing_ollama")
-    assert second.journal == ["Ensuring model loaded: m"]
-    assert "missing_ollama_no_fetch_log_ok" in capsys.readouterr().out
+        host.ss_rows.append(BLACKHOLE_CONNECT)
+    phase.verify("missing_load", record_blackholed_attempt=True)
+    out = capsys.readouterr().out
+    assert "missing_load_blackholed_fetch_attempt_recorded log_lines=0 blackhole_connects=" in out
+    assert "missing_load_no_fetch_log_ok" not in out
 
 
-def test_fetch_watch_waits_for_the_journal_to_settle(tmp_path: Path):
+@pytest.mark.parametrize(("settle", "collected"), [(0.3, True), (0.0, False)])
+def test_fetch_watch_waits_for_the_journal_to_settle(tmp_path: Path, settle: float, collected: bool):
     host = FakeHost(tmp_path)
     reads = 0
     original = host.journal_after
@@ -1259,36 +1321,52 @@ def test_fetch_watch_waits_for_the_journal_to_settle(tmp_path: Path):
             host.journal.append("Downloading model: m")
         return original(cursor)
 
-    host.journal_after = journal_after
     with _watch(host, tmp_path, expect_log="m") as phase:
         host.journal.append("Ensuring model loaded: m")
-    phase.settle = 0.3
-    phase._collect()
-    assert phase.journal == ["Ensuring model loaded: m", "Downloading model: m"]
+        phase.settle = settle
+        host.journal_after = journal_after
+    # Read 1 returns the phase's own line; only the settle wait makes read 2.
+    assert ("Downloading model: m" in phase.journal) is collected
 
 
-def test_nofetch_phase_windows_are_contiguous(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+def test_nofetch_phase_windows_are_contiguous_and_charge_each_line_once(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
     server, host = _nofetch_setup(tmp_path)
-    starts: list = []
-    ends: list = []
-    enter, trailing = live.FetchWatch.__enter__, live.FetchWatch.trailing
+    watches: list = []
+    enter = live.FetchWatch.__enter__
 
     def record_enter(self):
-        result = enter(self)
-        starts.append(self.start_cursor)
-        return result
-
-    def record_trailing(self):
-        ends.append(trailing(self))
-        return ends[-1]
+        watches.append(self)
+        return enter(self)
 
     monkeypatch.setattr(live.FetchWatch, "__enter__", record_enter)
-    monkeypatch.setattr(live.FetchWatch, "trailing", record_trailing)
-    _run_nofetch(server, host)
-    # Each later same-model phase starts exactly where the previous trailing check ended.
-    assert len(starts) == len(ends) == 6
-    assert starts[1:3] == ends[0:2]
-    assert starts[4:6] == ends[3:5]
+    _run_nofetch(server, host, journal_settle=0.01)
+    # The missing phases run first; only the last missing and the last pre-placed window settle.
+    assert [w.expect_log for w in watches] == ["Tiny-Test-Model-GGUF"] * 3 + [MODEL] * 3
+    assert [w.settle > 0 for w in watches] == [False, False, True, False, False, True]
+    for previous, current in zip(watches, watches[1:]):
+        assert current.start_cursor == previous.end_cursor
+    assert [line for w in watches for line in w.journal] == host.journal
+
+
+def test_nofetch_late_missing_attempt_fails_in_the_strict_window(tmp_path: Path):
+    server, host = _nofetch_setup(tmp_path)
+    original = server._dispatch
+    state = {"ollama": False, "late": False}
+
+    def dispatch(method, path, payload):
+        if (method, path) == ("POST", "/api/chat") and "Tiny" in (payload or {}).get("model", ""):
+            state["ollama"] = True
+        elif (method, path) == ("GET", "/health") and state["ollama"] and not state["late"]:
+            # The last missing attempt is logged only after its window closed.
+            state["late"] = True
+            host.journal.append("Model not cached, downloading from Hugging Face...")
+        return original(method, path, payload)
+
+    server._dispatch = dispatch
+    with pytest.raises(AssertionError, match="preplaced_load: the service logged 1 download"):
+        _run_nofetch(server, host)
 
 
 def test_missing_model_defaults_to_the_env_override(monkeypatch: pytest.MonkeyPatch):
@@ -1352,7 +1430,15 @@ def test_nofetch_records_a_blackholed_attempt_on_each_missing_path(
 ):
     server, host = _nofetch_setup(tmp_path)
     _attempt_on_missing(server, host, ss_rows=[BLACKHOLE_CONNECT])
+    original = server._dispatch
 
+    def dispatch(method, path, payload):
+        if (method, path) == ("GET", "/health"):
+            # A refused connect to the blackhole is gone once its phase's window has closed.
+            host.ss_rows = [row for row in host.ss_rows if row != BLACKHOLE_CONNECT]
+        return original(method, path, payload)
+
+    server._dispatch = dispatch
     _run_nofetch(server, host)
 
     out = capsys.readouterr().out

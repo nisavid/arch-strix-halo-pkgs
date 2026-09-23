@@ -8,12 +8,12 @@ Modes that target the running service (``--base-url``):
   object it maps belong to repo packages, none from lemond's cache.
 - ``provenance``: read-only package, file-ownership, and config provenance.
 - ``nofetch``: drive each implicit auto-pull path (``/load``, OpenAI-style
-  inference auto-load, and Ollama auto-load) for a pre-placed model and for a
-  registered but absent one while watching the service journal, the model and
-  backend caches, and lemond's sockets. The pre-placed paths may log no
-  download; the absent model must fail loudly on every path with unchanged
-  caches and no non-loopback connection, and a logged, blackholed download
-  attempt is recorded rather than failed.
+  inference auto-load, and Ollama auto-load) for a registered but absent model
+  and then for a pre-placed one while watching the service journal, the model
+  and backend caches, and lemond's sockets. The absent model must fail loudly
+  on every path with unchanged caches and no non-loopback connection, and a
+  logged, blackholed download attempt is recorded rather than failed; the
+  pre-placed paths may log no download.
 - ``service-pins``: read-only check that consumer models are pinned and loaded.
 
 Modes that start their own ``lemond`` from the packaged binary, with a
@@ -759,12 +759,13 @@ _CAPTURE = object()
 class FetchWatch:
     """Observe one phase: cache trees, service journal, and lemond-tree sockets.
 
-    The phase's journal window is bounded by cursors: it starts after
-    `start_cursor` (by default, the newest entry when the phase begins) and ends
-    once the phase's own line has landed and the journal has been quiet for
-    `settle` seconds. `trailing()` then reads the lines that arrived after the
-    window closed and charges them to this phase, and its cursor starts the
-    next phase, so consecutive windows neither overlap nor leave a gap.
+    Phase journal windows are contiguous and bounded by journal cursors. A
+    window starts at `start_cursor` (by default, the newest entry when the
+    phase begins), which is the previous phase's end cursor. It ends once the
+    phase's own line has landed; with `settle`, it then stays open until the
+    journal has been quiet for `settle` seconds, capped at `journal_timeout`.
+    The next phase starts at `end_cursor`, so every journal line is charged to
+    exactly one phase.
     """
 
     def __init__(
@@ -776,7 +777,7 @@ class FetchWatch:
         expect_log: str,
         interval: float = 0.2,
         journal_timeout: float = 10.0,
-        settle: float = 1.0,
+        settle: float = 0.0,
         start_cursor: Any = _CAPTURE,
     ) -> None:
         self.host = host
@@ -784,14 +785,14 @@ class FetchWatch:
         self.journal_timeout = journal_timeout
         self.settle = settle
         self.start_cursor = start_cursor
+        self.end_cursor = start_cursor
         self.caches = caches
         self.blackhole = blackhole
         self.interval = interval
         self.remote: set[tuple[str, str]] = set()
         self.blackhole_hits = 0
         self.samples = 0
-        self.phase: str | None = None
-        self.record_blackholed_attempt = False
+        self.journal: list[str] = []
         self._stop = threading.Event()
         self._thread = threading.Thread(target=self._run, daemon=True)
         self.error: BaseException | None = None
@@ -823,30 +824,39 @@ class FetchWatch:
         self.before = {name: snapshot_tree(path) for name, path in self.caches.items()}
         if self.start_cursor is _CAPTURE:
             self.start_cursor = self.host.journal_cursor()
+        self.end_cursor = self.start_cursor
         self._thread.start()
         return self
 
-    def _collect(self) -> None:
-        self._stop.set()
-        self._thread.join(timeout=30.0)
-        self.sample()
-        self.after = {name: snapshot_tree(path) for name, path in self.caches.items()}
+    def _read_journal(self) -> None:
         # journald can trail the HTTP response: wait for the phase's own line,
-        # then until the journal has been quiet for `settle` seconds.
-        self.journal: list[str] = []
-        self.end_cursor = self.start_cursor
+        # then, with `settle`, until the journal has been quiet that long.
         deadline = time.monotonic() + self.journal_timeout
-        quiet_since = time.monotonic()
+        seen_at = quiet_since = None
         while True:
             lines, self.end_cursor = self.host.journal_after(self.end_cursor)
             now = time.monotonic()
+            self.journal += lines
             if lines:
-                self.journal += lines
                 quiet_since = now
-            seen = any(self.expect_log in line for line in self.journal)
-            if (seen and now - quiet_since >= self.settle) or now >= deadline:
+            if seen_at is None and any(self.expect_log in line for line in self.journal):
+                seen_at = quiet_since = now
+                deadline = now + self.journal_timeout
+            if seen_at is not None and now - quiet_since >= self.settle:
+                return
+            if now >= deadline:
                 return
             time.sleep(min(0.2, max(self.settle, 0.01)))
+
+    def _collect(self) -> None:
+        # Sockets are sampled until the journal window closes, settle included.
+        try:
+            self._read_journal()
+        finally:
+            self._stop.set()
+            self._thread.join(timeout=30.0)
+        self.sample()
+        self.after = {name: snapshot_tree(path) for name, path in self.caches.items()}
 
     def __exit__(self, exc_type: Any, *exc_info: Any) -> None:
         try:
@@ -861,10 +871,10 @@ class FetchWatch:
 
         With `record_blackholed_attempt`, download log lines and connects to the
         loopback blackhole are printed as an observation, not a failure. Cache
-        changes and non-loopback connections still fail.
+        changes and non-loopback connections still fail. A phase prints either
+        `<phase>_no_fetch_log_ok` or `<phase>_blackholed_fetch_attempt_recorded`,
+        never both.
         """
-        self.phase = phase
-        self.record_blackholed_attempt = record_blackholed_attempt
         if self.error is not None:
             raise AssertionError(f"{phase}: socket sampling failed: {self.error}")
         if not any(self.expect_log in line for line in self.journal):
@@ -877,8 +887,6 @@ class FetchWatch:
         print(f"{phase}_fetch_log_lines", len(fetch_lines))
         if fetch_lines and not record_blackholed_attempt:
             raise AssertionError(f"{phase}: the service logged {len(fetch_lines)} download or install lines")
-        if not fetch_lines:
-            print(f"{phase}_no_fetch_log_ok")
         for name in self.caches:
             changes = tree_changes(self.before[name], self.after[name])
             print(f"{phase}_{name}_entries", len(self.after[name]), f"changed={len(changes)}")
@@ -898,24 +906,9 @@ class FetchWatch:
                 f"log_lines={len(fetch_lines)}",
                 f"blackhole_connects={self.blackhole_hits}",
             )
+        else:
+            print(f"{phase}_no_fetch_log_ok")
         print(f"{phase}_no_remote_connection_ok")
-
-    def trailing(self) -> str | None:
-        """Charge lines that landed after the window closed to this phase.
-
-        Returns the cursor that starts the next phase's window.
-        """
-        phase = self.phase or self.expect_log
-        lines, cursor = self.host.journal_after(self.end_cursor)
-        fetch_lines = [line for line in lines if FETCH_LOG_RE.search(line)]
-        print(f"{phase}_trailing_fetch_log_lines", len(fetch_lines))
-        if fetch_lines:
-            if not self.record_blackholed_attempt:
-                raise AssertionError(
-                    f"{phase}: the service logged {len(fetch_lines)} download or install lines after the phase settled"
-                )
-            print(f"{phase}_blackholed_fetch_attempt_recorded", f"trailing_log_lines={len(fetch_lines)}")
-        return cursor
 
 
 def require_socket_attribution(host: ServiceHost) -> None:
@@ -961,6 +954,37 @@ def send_auto_pull(client: LemonadeClient, path: str, model: str, *, ctx_size: i
     raise ValueError(f"unknown auto-pull path {path!r}")
 
 
+def restore_preplaced_residency(
+    client: LemonadeClient,
+    model: str,
+    initial: Mapping[str, Any],
+    *,
+    phases_ok: bool,
+    scrub_roots: Mapping[str, Path],
+) -> None:
+    """Reload `model` with its previous recipe options.
+
+    A restore failure fails the scenario only when the phases passed; otherwise
+    it is printed, and the phase failure that is already propagating is kept.
+    """
+    message = f"{model} was resident before the scenario and could not be restored"
+    options = initial.get("recipe_options") or {}
+    try:
+        client.request("POST", "/load", {**options, "model_name": model}, check=False)
+        restored = loaded_entry(client.get("/health"), model) is not None
+    except (LemonadeError, error.URLError, OSError) as exc:
+        if phases_ok:
+            raise AssertionError(f"{message}: {scrub_paths(str(exc), scrub_roots)}") from exc
+        print(f"preplaced_residency_restore_failed: {message}: {scrub_paths(str(exc), scrub_roots)}")
+        return
+    if restored:
+        print("preplaced_residency_restored")
+    elif phases_ok:
+        raise AssertionError(message)
+    else:
+        print(f"preplaced_residency_restore_failed: {message}")
+
+
 def run_nofetch(
     client: LemonadeClient,
     *,
@@ -974,7 +998,7 @@ def run_nofetch(
     repo: str = "strix-halo-gfx1151",
     interval: float = 0.2,
     journal_timeout: float = 10.0,
-    journal_settle: float = 1.0,
+    journal_settle: float = 3.0,
     text: Callable[..., None] = run_text,
 ) -> None:
     config = client.get("/internal/config")
@@ -1014,12 +1038,38 @@ def run_nofetch(
     caches = {"model_cache": Path(str(storage)), "backend_cache": cache_dir / "bin"}
     scrub_roots = {**caches, "lemonade_cache": cache_dir}
 
-    def watch(phase_model: str, start_cursor: Any = _CAPTURE) -> FetchWatch:
+    def watch(phase_model: str, start_cursor: Any, *, settle: bool = False) -> FetchWatch:
         return FetchWatch(
             host, caches=caches, blackhole=blackhole, expect_log=phase_model,
-            interval=interval, journal_timeout=journal_timeout, settle=journal_settle,
-            start_cursor=start_cursor,
+            interval=interval, journal_timeout=journal_timeout,
+            settle=journal_settle if settle else 0.0, start_cursor=start_cursor,
         )
+
+    # Phase windows are contiguous: each one starts at the previous one's end
+    # cursor, so every journal line is charged to exactly one phase. The missing
+    # phases run first and the last one settles: a late missing attempt lands in
+    # a later missing window, where it is recorded, or in a strict pre-placed
+    # window, where it fails. A late pre-placed line is never recorded.
+    cursor: Any = _CAPTURE
+
+    # Ruling for candidate 3d5991033 (#138): offline=true does not stop the
+    # implicit auto-pull of a registered-but-absent model on any path. A path
+    # passes when the request fails loudly, the caches are unchanged, and lemond
+    # made no non-loopback connection; a logged, blackholed attempt is recorded.
+    for path in AUTO_PULL_PATHS:
+        name = f"missing_{path}"
+        with watch(missing_model, cursor, settle=path == AUTO_PULL_PATHS[-1]) as phase:
+            refusal = request_refusal(*send_auto_pull(client, path, missing_model, ctx_size=ctx_size))
+            if refusal is None:
+                client.request("POST", "/unload", {"model_name": missing_model}, check=False)
+        cursor = phase.end_cursor
+        print(f"{name}_refusal", json.dumps(scrub_paths(refusal, scrub_roots) if refusal else refusal))
+        if refusal is None:
+            raise AssertionError(f"{name}: {missing_model} was admitted; it was fetched")
+        if loaded_entry(client.get("/health"), missing_model) is not None:
+            raise AssertionError(f"{name}: {missing_model} became resident after a refused request")
+        print(f"{name}_refused_ok")
+        phase.verify(name, record_blackholed_attempt=True)
 
     # Every path must actually auto-load, so the pre-placed model starts unloaded.
     initial = loaded_entry(client.get("/health"), model)
@@ -1027,7 +1077,7 @@ def run_nofetch(
         client.post("/unload", {"model_name": model})
     phases_ok = False
     try:
-        with watch(model) as phase:
+        with watch(model, cursor) as phase:
             text(
                 client,
                 model=model,
@@ -1038,12 +1088,13 @@ def run_nofetch(
                 repo=repo,
                 cache_bins=(caches["backend_cache"],),
             )
+        cursor = phase.end_cursor
         phase.verify("preplaced_load")
 
         for path in AUTO_PULL_PATHS[1:]:
             name = f"preplaced_{path}"
-            # Same-model phases chain: this window starts where the last one's trailing check ended.
-            with watch(model, phase.trailing()) as phase:
+            # The last window closes only after the journal has been quiet.
+            with watch(model, cursor, settle=path == AUTO_PULL_PATHS[-1]) as phase:
                 try:
                     refusal = request_refusal(*send_auto_pull(client, path, model, ctx_size=ctx_size))
                     if refusal is not None:
@@ -1052,42 +1103,13 @@ def run_nofetch(
                         raise AssertionError(f"{name}: {model} is not resident after the request")
                 finally:
                     client.request("POST", "/unload", {"model_name": model}, check=False)
+            cursor = phase.end_cursor
             print(f"{name}_autoload_ok")
             phase.verify(name)
-        phase.trailing()
         phases_ok = True
     finally:
         if initial is not None:
-            options = initial.get("recipe_options") or {}
-            client.request("POST", "/load", {**options, "model_name": model}, check=False)
-            if loaded_entry(client.get("/health"), model) is None:
-                message = f"{model} was resident before the scenario and could not be restored"
-                if phases_ok:
-                    raise AssertionError(message)
-                # Never mask the phase failure that is already propagating.
-                print(f"preplaced_residency_restore_failed: {message}")
-            else:
-                print("preplaced_residency_restored")
-
-    # Ruling for candidate 3d5991033 (#138): offline=true does not stop the
-    # implicit auto-pull of a registered-but-absent model on any path. A path
-    # passes when the request fails loudly, the caches are unchanged, and lemond
-    # made no non-loopback connection; a logged, blackholed attempt is recorded.
-    start: Any = _CAPTURE
-    for path in AUTO_PULL_PATHS:
-        name = f"missing_{path}"
-        with watch(missing_model, start) as phase:
-            refusal = request_refusal(*send_auto_pull(client, path, missing_model, ctx_size=ctx_size))
-            if refusal is None:
-                client.request("POST", "/unload", {"model_name": missing_model}, check=False)
-        print(f"{name}_refusal", json.dumps(scrub_paths(refusal, scrub_roots) if refusal else refusal))
-        if refusal is None:
-            raise AssertionError(f"{name}: {missing_model} was admitted; it was fetched")
-        if loaded_entry(client.get("/health"), missing_model) is not None:
-            raise AssertionError(f"{name}: {missing_model} became resident after a refused request")
-        print(f"{name}_refused_ok")
-        phase.verify(name, record_blackholed_attempt=True)
-        start = phase.trailing()
+            restore_preplaced_residency(client, model, initial, phases_ok=phases_ok, scrub_roots=scrub_roots)
     print("no_fetch_ok")
 
 
