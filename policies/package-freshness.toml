@@ -157,7 +157,7 @@ packages = ["python-numpy-gfx1151"]
 priority = "medium"
 workflow = "upstream_source_update"
 checks = [
-  { id = "pypi", role = "primary", kind = "pypi", package = "numpy", recorded = "2.4.6", comparison = "pep440" },
+  { id = "pypi", role = "primary", kind = "pypi", package = "numpy", recorded = "2.5.3", comparison = "pep440" },
   { id = "arch", role = "baseline", kind = "arch_package", package = "python-numpy", recorded = "2.4.6-1", comparison = "pkgver" },
 ]
 

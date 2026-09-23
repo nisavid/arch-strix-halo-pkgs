@@ -676,7 +676,7 @@ scaffold_notes = [
 [packages.python-numpy-gfx1151]
 recipe_key = "native_wheels"
 template = "native-wheel-pypi"
-upstream_version = "2.4.6"
+upstream_version = "2.5.3"
 pkgdesc = "Scientific tools for Python rebuilt for Strix Halo gfx1151"
 url = "https://github.com/numpy/numpy"
 license = ["custom"]
@@ -691,7 +691,8 @@ divergence_notes = [
 update_notes = [
   "Re-check BLAS/LAPACK provider handling and any Arch downstream patches whenever numpy or Python major/minor changes.",
   "Validate that OpenBLAS remains the active Meson provider after toolchain or Intel oneMKL updates, and keep the explicit provider pins if contamination returns.",
-  "If future recipe changes add real source patches, keep them as patch files instead of further growing shell flag transforms."
+  "If future recipe changes add real source patches, keep them as patch files instead of further growing shell flag transforms.",
+  "On 2026-09-22, update to NumPy 2.5.3 for the generation-C W2A closure (#110), built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7. The fallback is 2.4.6 if the torch, TorchVision or vLLM NumPy interop smokes fail."
 ]
 provides = ["python-numpy"]
 conflicts = ["python-numpy"]
@@ -700,8 +701,8 @@ makedepends = ["meson", "ninja", "patchelf", "python-build", "python-installer",
 optdepends = []
 build_config_settings = ["setup-args=-Dblas=openblas", "setup-args=-Dlapack=openblas", "setup-args=-Dallow-noblas=false"]
 pypi_name = "numpy"
-sha256sums = ["f3a3570c4a2a16746ac2c31a7c7c7b0c186b95ce902e33db6f28094ed7387dda"]
-src_subdir = "numpy-2.4.6"
+sha256sums = ["df2d5874ff183595a4ba404edd04f6bd9b5505c1d7708573f6a6c17489a67563"]
+src_subdir = "numpy-2.5.3"
 patches_dir = "patches/python-numpy-gfx1151"
 recipe_notes_override = """
 This package is the NumPy output from the shared `native_wheels` recipe
