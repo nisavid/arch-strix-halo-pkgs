@@ -1049,7 +1049,11 @@ build() {{
     export CMAKE_CXX_COMPILER_LAUNCHER="$(command -v ccache)"
   fi
   export CFLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument"
-  export CXXFLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument"
+  # GCC 16 libstdc++ <format> (pulled in by <chrono> under C++20) spells
+  # [[__gnu__::__noinline__]], and HIP's host_defines.h defines __noinline__
+  # as a macro in plain C++ sources that include hip_runtime.h. Parse <format>
+  # first so the macro cannot reach it; the include is empty before C++20.
+  export CXXFLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument -include format"
   export LDFLAGS="-fuse-ld=lld"
   export PYTORCH_ROCM_ARCH="gfx1151"
   export USE_ROCM=1
