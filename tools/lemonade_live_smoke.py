@@ -74,9 +74,11 @@ BACKEND_PACKAGES = {
     "rocm": "llama.cpp-hip-gfx1151",
     "vulkan": "llama.cpp-vulkan-gfx1151",
 }
+# The packaged backend entry points, as lemonade-server's defaults.json sets
+# them. lemond executes this path, so it must be the file, not its directory.
 DEFAULT_BACKEND_BINS = {
-    "rocm": "/opt/llama.cpp-hip-gfx1151/bin",
-    "vulkan": "/opt/llama.cpp-vulkan-gfx1151/bin",
+    "rocm": "/usr/bin/llama-server-hip-gfx1151",
+    "vulkan": "/usr/bin/llama-server-vulkan-gfx1151",
 }
 OWNED_PATHS = {
     "/usr/bin/lemond": "lemonade-server",
@@ -1582,12 +1584,20 @@ class IsolatedLemond:
         self.start()
 
     def extra_model(self, stem: str) -> str:
+        """Return the id /models lists for the staged extra model `stem`.
+
+        lemond lists a precedence winner by its bare name, so the imported
+        model appears as `stem` rather than `extra.stem`. The isolated
+        instance has no registered models and no built-in of that name, so a
+        bare listing can only be the staged file. The listed form is returned
+        because /health and /pins report the same form.
+        """
         payload = self.client.get("/models")
         ids = [str(item.get("id")) for item in payload.get("data", [])]
-        for candidate in (f"extra.{stem}", f"extra.{stem}.gguf"):
+        for candidate in (f"extra.{stem}", f"extra.{stem}.gguf", stem, f"{stem}.gguf"):
             if candidate in ids:
                 return candidate
-        raise AssertionError(f"extra model {stem} not discovered; extra models: {[i for i in ids if i.startswith('extra.')]}")
+        raise AssertionError(f"extra model {stem} not discovered; models: {sorted(ids)}")
 
 
 def _require_resident(client: LemonadeClient, model: str, *, pid: Any = None) -> dict[str, Any]:
@@ -1644,7 +1654,10 @@ def run_pins(inst: IsolatedLemond, *, ctx_size: int, timeout: float) -> None:
     model = inst.extra_model(EXTRA_MODEL_STEMS[0])
     inst.client.post("/load", {"model_name": model, "ctx_size": ctx_size})
     inst.client.post("/pins", {"model_name": model})
-    if model not in inst.config_file().get("pinned_models", []):
+    # config.json persists the canonical id, while /pins and /health list the
+    # precedence winner bare; extra_model() only ever returns an imported model.
+    persisted = {model, model if model.startswith("extra.") else f"extra.{model}"}
+    if not persisted & set(inst.config_file().get("pinned_models", [])):
         raise AssertionError("pin was not persisted to config.json pinned_models")
     print("pin_persisted_ok")
 
@@ -1657,7 +1670,7 @@ def run_pins(inst: IsolatedLemond, *, ctx_size: int, timeout: float) -> None:
     print("pin_restored_pinned_ok")
 
     inst.client.request("DELETE", f"/pins/{quote_model(model)}")
-    if model in inst.config_file().get("pinned_models", []):
+    if persisted & set(inst.config_file().get("pinned_models", [])):
         raise AssertionError("unpin did not remove the persisted pin")
     print("pin_removed_ok")
 
