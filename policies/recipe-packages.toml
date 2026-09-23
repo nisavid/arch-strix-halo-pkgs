@@ -1681,7 +1681,7 @@ scaffold_notes = [
 [packages.python-compressed-tensors-gfx1151]
 recipe_key = "native_wheels"
 template = "native-wheel-pypi"
-upstream_version = "0.16.0"
+upstream_version = "0.17.0"
 pkgrel = 1
 pkgdesc = "Compressed model tensor format helpers for vLLM quantized checkpoints"
 url = "https://github.com/vllm-project/compressed-tensors"
@@ -1691,7 +1691,7 @@ authoritative_reference = "none"
 advisory_references = []
 divergence_notes = [
   "There is no current Arch-family compressed-tensors package baseline, so this package is closure-first for vLLM compressed-tensors quantization lanes.",
-  "Uses the current-vLLM-compatible compressed-tensors 0.16.0 release instead of the older 0.14.0.1 helper version named by Blackcat's llmcompressor quantization notes.",
+  "Uses the current-vLLM-compatible compressed-tensors 0.17.0 release (the vLLM 0.28 through 0.30 pin) instead of the older 0.14.0.1 helper version named by Blackcat's llmcompressor quantization notes.",
   "Treat llmcompressor as a separate package/dependency-closure decision because llmcompressor 0.10.0.1 pins compressed-tensors 0.14.0.1 and older torch/transformers bounds than the current local stack."
 ]
 update_notes = [
@@ -1699,7 +1699,8 @@ update_notes = [
   "After publishing a rebuilt package, verify `import compressed_tensors` and a minimal config import through the installed local Python lane.",
   "Do not use this package as proof that llmcompressor is installable. Package llmcompressor only after its accelerate, auto-round, NVIDIA-management, torch, transformers, and compressed-tensors dependency story is reconciled.",
   "Keep the build dependency check skipped while upstream's sdist pins setuptools_scm==8.2.0. The Arch host carries a newer setuptools-scm that builds the pure-Python wheel cleanly.",
-  "On 2026-05-31, update to compressed-tensors 0.16.0 for the current vLLM compressed-tensors drift; keep deploy/install and installed import/config smokes as explicit gates."
+  "On 2026-05-31, update to compressed-tensors 0.16.0 for the current vLLM compressed-tensors drift; keep deploy/install and installed import/config smokes as explicit gates.",
+  "On 2026-09-22, update to compressed-tensors 0.17.0 for the generation-C W2A closure (#110), built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7. vLLM 0.28 through 0.30 pin compressed-tensors ==0.17.0."
 ]
 provides = ["python-compressed-tensors"]
 conflicts = ["python-compressed-tensors"]
@@ -1709,14 +1710,14 @@ arch = ["any"]
 pure_python_wheel = true
 skip_dependency_check = true
 pypi_name = "compressed_tensors"
-sha256sums = ["51232ea943bf973d77fc1f3f6044fe3c05adfe6dba26f085b7f6b578a5bd9ba3"]
-src_subdir = "compressed_tensors-0.16.0"
+sha256sums = ["15c20d06bdbcf35b51fc99fd125e7b9be1e1855567c33b7a46dfac26ad6fb126"]
+src_subdir = "compressed_tensors-0.17.0"
 patches_dir = "patches/python-compressed-tensors-gfx1151"
 recipe_notes_override = """
 This package is the compressed-tensors output for the Blackcat Qwen3-VL
 tooling follow-up lane. Blackcat's quantization helper names
 llmcompressor 0.10.0.1 and compressed-tensors 0.14.0.1, but the current
-vLLM lane expects compressed-tensors 0.16.0. Keep this package
+vLLM lane expects compressed-tensors 0.17.0. Keep this package
 aligned with vLLM first, then reconcile llmcompressor as a separate package
 closure.
 

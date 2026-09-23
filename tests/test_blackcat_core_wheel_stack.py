@@ -127,7 +127,7 @@ TOOLING_STACK = {
     "python-compressed-tensors-gfx1151": {
         "template": "native-wheel-pypi",
         "recipe_key": "native_wheels",
-        "upstream_version": "0.16.0",
+        "upstream_version": "0.17.0",
         "provides": ["python-compressed-tensors"],
         "consumer_dep": "python-compressed-tensors-gfx1151",
     },

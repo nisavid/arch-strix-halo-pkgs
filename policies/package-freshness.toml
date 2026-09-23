@@ -343,7 +343,7 @@ packages = ["python-compressed-tensors-gfx1151"]
 priority = "medium"
 workflow = "upstream_source_update"
 checks = [
-  { id = "pypi", role = "primary", kind = "pypi", package = "compressed-tensors", recorded = "0.16.0", comparison = "pep440" },
+  { id = "pypi", role = "primary", kind = "pypi", package = "compressed-tensors", recorded = "0.17.0", comparison = "pep440" },
 ]
 
 [families.accelerate]
