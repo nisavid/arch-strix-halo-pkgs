@@ -183,7 +183,7 @@ def test_llamacpp_scenario_log_regexes_match_b9442_verbosity_4_lines():
     by_id = {scenario["id"]: scenario for scenario in catalog["scenario"]}
     # Lines as llama-server b9442 prints them at -lv 4.
     lines = {
-        "hip": "llama_prepare_model_devices: using device ROCm0 (Radeon 8060S Graphics) (0000:c6:00.0) - 40454 MiB free",
+        "hip": "llama_prepare_model_devices: using device ROCm0 (Radeon 8060S Graphics) (0000:00:00.0) - 1024 MiB free",
         "vulkan": "llama_prepare_model_devices: using device Vulkan0 (AMD Radeon 8060S Graphics (RADV STRIX_HALO))",
     }
     offload = "load_tensors: offloaded 29/29 layers to GPU"
