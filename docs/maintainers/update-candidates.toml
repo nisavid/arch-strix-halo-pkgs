@@ -3580,11 +3580,13 @@ previous_recorded = "48.0.0 / 48.0.0-1"
 latest = "50.0.1"
 discovery_status = "stable_update_available"
 disposition = "tracked"
-disposition_reason = "Tracked from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep. #105 selects C's version line (docs/wayfinder/research/c-line-selection-2026-09-22.md). cryptography 50.0.1 is not in C's regenerated closure: no selected vLLM, Transformers or PyTorch package requires it. It stays at the sweep's value and is refreshed in post-closeout maintenance (#147). cryptography 50.0.0 fixes CVE-2026-69247 (PKCS#7 decryption of untrusted messages); admitting it earlier is an owner security decision."
+disposition_reason = "Tracked from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep. #105 selects C's version line (docs/wayfinder/research/c-line-selection-2026-09-22.md). cryptography 50.0.1 is not in C's regenerated closure: no selected vLLM, Transformers or PyTorch package requires it. It stays at the sweep's value and is refreshed in post-closeout maintenance (#147). cryptography 50.0.0 fixes CVE-2026-69247 (PKCS#7 decryption of untrusted messages). Security-exception decision, 2026-09-22: the maintainers routed the security refresh to post-closeout maintenance (#147) first, not to a C work unit; the owner has been asked whether to admit it earlier and has not yet answered, so #147 stays the gate until the owner decides. Exposure review, 2026-09-22: the host has python-cryptography-gfx1151 48.0.0-1 installed, which provides python-cryptography system-wide. A read-only search of every installed Python consumer's site-packages and the systemd-ukify script found no call to the PKCS#7 decryption APIs (pkcs7_decrypt_der, pkcs7_decrypt_pem, pkcs7_decrypt_smime or the underlying decrypt_der, decrypt_pem and decrypt_smime bindings). The only installed PKCS#7 user is Samba's certificate auto-enrollment Group Policy extension, which calls load_der_pkcs7_certificates to parse certificate bundles and does not decrypt. No installed consumer therefore decrypts untrusted PKCS#7 messages through cryptography; a new consumer that does would reopen the early-admission question."
 salient_changes = [
   "PyPI cryptography 50.0.1 is available after the local 48.0.0 lane and the previously tracked 50.0.0",
   "Arch python-cryptography reports 50.0.1-1",
   "Security-relevant: cryptography 50.0.0 fixes CVE-2026-69247, a Bleichenbacher oracle in PKCS#7 decryption of untrusted messages; 50.0.1 only rebuilds upstream wheels against OpenSSL 4.0.2",
+  "Security refresh routed to post-closeout maintenance (#147) on 2026-09-22; the owner has been asked about earlier admission and has not answered",
+  "No installed consumer of the host's python-cryptography-gfx1151 48.0.0-1 calls the PKCS#7 decryption APIs; Samba's Group Policy certificate auto-enrollment only loads PKCS#7 certificate bundles",
 ]
 patch_carry_overlap = false
 package_source_update_needed = true
@@ -4078,11 +4080,37 @@ covered_checks = [{ source_kind = "github_release", check_id = "upstream-release
 previous_recorded = "e18b9c1e352df8ab5aff2ff353402f1ec77c47f2 / 10.7.0"
 latest = "586e1900f8883bae3e128c258bcb51e43e046792"
 discovery_status = "branch_head_ahead"
-disposition = "tracked"
-disposition_reason = "Tracked from the 2026-09-22 closeout sweep for #105 and #136. Lemonade is exempt from the #105 freeze for candidate generation C and follows the deployed, validated fork commit. Fork main moved two commits past 187b4a25f after the sweep started: a docs refresh (nisavid/lemonade#161) and the Tauri serde_with bump (nisavid/lemonade#162), which are the additions the Lemonade candidate freeze (nisavid/lemonade#155) named. The Lemonade repin (#137) consumes whichever commit #155 freezes; if #155 freezes an earlier commit, this record moves to the upstream-sync repackage (#141)."
+disposition = "rejected"
+disposition_reason = "Superseded on 2026-09-22 before package adoption by lemonade-fork-3d59910. The Lemonade candidate freeze (nisavid/lemonade#155) froze fork main 3d5991033, one commit after 586e1900f, and the Lemonade repin (#137) consumes that commit."
 salient_changes = [
   "Fork main 586e1900f8883bae3e128c258bcb51e43e046792 is two commits ahead of 187b4a25f154ff905486b8bf85e006cd1f2a9820 and zero behind",
   "The two commits are an agent scout-map docs refresh (nisavid/lemonade#161) and a serde_with 3.21.0 bump in src/app/src-tauri (nisavid/lemonade#162)",
+  "Canonical upstream Lemonade still reports 11.9.0",
+]
+patch_carry_overlap = true
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_label = "Superseded by lemonade-fork-3d59910 (#137)"
+last_reviewed = "2026-09-22"
+
+[candidates."lemonade-fork-3d59910"]
+family = "lemonade"
+packages = ["lemonade-server", "lemonade-app", "lemonade"]
+source_kind = "git_ref"
+check_id = "fork-main"
+baseline_source_kind = "github_release"
+baseline_latest = "11.9.0"
+covered_checks = [{ source_kind = "github_release", check_id = "upstream-release" }]
+previous_recorded = "e18b9c1e352df8ab5aff2ff353402f1ec77c47f2 / 10.7.0"
+latest = "3d5991033e4cb28152ace4013f7f22a52c3bd617"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "Tracked from a 2026-09-22 cache-aware rerun of the closeout sweep for #105 and #136. Lemonade is exempt from the #105 freeze for candidate generation C and follows the deployed, validated fork commit. The Lemonade candidate freeze (nisavid/lemonade#155) closed on 2026-09-22 with fork main 3d5991033 as the frozen commit, pinned as an exact commit with no fork tag. The Lemonade repin (#137) consumes that commit. The upstream 11.9.0 baseline drift routes to the upstream-sync repackage (#141)."
+salient_changes = [
+  "Fork main 3d5991033e4cb28152ace4013f7f22a52c3bd617 is one commit ahead of 586e1900f8883bae3e128c258bcb51e43e046792 and three ahead of 187b4a25f154ff905486b8bf85e006cd1f2a9820, zero behind",
+  "The new commit makes the macOS .dmg and Fedora .rpm CI jobs pass (nisavid/lemonade#160); it touches only the CI workflow, C++ test sources, and test-target links in CMakeLists.txt, not shipped server or app code",
+  "nisavid/lemonade#155 froze 3d5991033e4cb28152ace4013f7f22a52c3bd617 as the Lemonade candidate",
   "Canonical upstream Lemonade still reports 11.9.0",
 ]
 patch_carry_overlap = true
@@ -4090,5 +4118,5 @@ package_source_update_needed = true
 host_validation_needed = true
 next_gate_kind = "github_issue"
 next_gate_issue = 137
-next_gate_label = "Lemonade fork 586e190 repin candidate (pending nisavid/lemonade#155)"
+next_gate_label = "Lemonade fork 3d5991033 frozen candidate repin (nisavid/lemonade#155)"
 last_reviewed = "2026-09-22"
