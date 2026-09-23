@@ -1303,13 +1303,22 @@ def test_lemonade_live_validation_scenarios_are_gated_and_share_one_gguf():
 
     nofetch = by_id["lemonade.nofetch.preplaced-load-missing-model"].definition
     markers = {item["value"] for item in nofetch["then"]["assert"] if item["kind"] == "stdout.contains"}
-    for phase in ("preplaced", "missing"):
-        for evidence in ("model_cache_unchanged", "backend_cache_unchanged", "no_remote_connection"):
-            assert f"{phase}_{evidence}_ok" in markers
-    # The missing phase records a logged, blackholed attempt instead of failing on it.
-    assert "preplaced_no_fetch_log_ok" in markers
-    assert "missing_no_fetch_log_ok" not in markers
-    assert {"endpoint_blackhole_ok", "network_attribution_ok", "missing_model_refused_ok"} <= markers
+    # Each implicit auto-pull path runs for the pre-placed and the missing model.
+    for path in ("load", "inference", "ollama"):
+        for phase in (f"preplaced_{path}", f"missing_{path}"):
+            for evidence in ("model_cache_unchanged", "backend_cache_unchanged", "no_remote_connection"):
+                assert f"{phase}_{evidence}_ok" in markers
+        # The missing phases record a logged, blackholed attempt instead of failing on it.
+        assert f"preplaced_{path}_no_fetch_log_ok" in markers
+        assert f"missing_{path}_no_fetch_log_ok" not in markers
+        assert f"missing_{path}_refused_ok" in markers
+    assert {"preplaced_inference_autoload_ok", "preplaced_ollama_autoload_ok"} <= markers
+    assert {
+        "endpoint_blackhole_ok",
+        "network_attribution_ok",
+        "missing_model_registered_ok",
+        "missing_model_absent_ok",
+    } <= markers
     for scenario_id in (
         "lemonade.llamacpp.rocm.qwen3-0.6b-q8-0.completion",
         "lemonade.llamacpp.vulkan.qwen3-0.6b-q8-0.completion",
