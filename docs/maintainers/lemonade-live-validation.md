@@ -99,9 +99,10 @@ cached before they load it:
 | Ollama auto-load | `POST /api/chat` (at the server root) naming `<model>:latest`; `lemond` strips `:latest` | `preplaced_ollama`, `missing_ollama` |
 
 `lemonade.nofetch.preplaced-load-missing-model` runs each path twice against
-the service: once for the pre-placed test GGUF and once for a registered but
-absent model. Each phase collects three kinds of evidence and prints its own
-markers, prefixed with the phase name:
+the service: once for a registered but absent model and once for the
+pre-placed test GGUF. The three missing phases run first, then the three
+pre-placed phases. Each phase collects three kinds of evidence and prints its
+own markers, prefixed with the phase name:
 
 - Journal: `journalctl -u lemond.service` over the phase window. The window
   must show a line naming the phase's model, which proves that the journal is
@@ -109,22 +110,27 @@ markers, prefixed with the phase name:
   install lines. In a missing phase, a download line is the blackholed attempt
   and is recorded, not failed, until the upstream offline refusal lands (see
   below).
-- Journal window: each window is bounded by journal cursors, not timestamps. It
-  starts after the newest entry when the phase begins and closes once the
-  phase's own line has landed and the journal has been quiet for a settle
-  period (one second by default). Lines that land after the window closes are
-  read before the next phase starts and charged to the phase that just ended,
-  printed as `<phase>_trailing_fetch_log_lines`; a late download line fails a
-  pre-placed phase and is recorded for a missing phase. Consecutive same-model
-  phases chain their cursors, so a late line from one request can't be
-  attributed to the next.
+- Journal window: the six windows are contiguous and bounded by journal
+  cursors, not timestamps. The first window starts after the newest entry when
+  the scenario's first phase begins. Each later window starts at the previous
+  window's end cursor, so every journal line is charged to exactly one phase.
+  A window closes once the phase's own line has landed. The last missing
+  window and the last pre-placed window then stay open until the journal has
+  been quiet for a settle period (three seconds by default), for at most the
+  journal timeout (ten seconds by default) after the phase's own line. A line that lands after its own window closed
+  is charged to the next phase. Because the missing phases run first and the
+  last one settles, a late attempt from a missing phase can only land in a
+  later missing window, where it is recorded, or in a pre-placed window, where
+  it fails the scenario. A late line from a pre-placed phase can never be
+  recorded as an allowed attempt.
 - Caches: the model cache and the backend cache (`<cache dir>/bin`) are listed
   before and after the phase. Every path, type, size, mtime, and symlink target
   must match. The model cache path comes from the service's `/system-info`
   `model_storage.path`. The cache dir comes from `lemond`'s argv, then
   `LEMONADE_CACHE_DIR`, then the service user's `~/.cache/lemonade`.
-- Network: `ss -tanp` is sampled throughout the phase. No socket owned by
-  `lemond` or its children may have a non-loopback peer. In the pre-placed
+- Network: `ss -tanp` is sampled throughout the phase, including its settle
+  period. No socket owned by `lemond` or its children may have a non-loopback
+  peer. In the pre-placed
   phases, none may connect to the download blackhole's port either.
   Connections accepted on one of `lemond`'s listening ports are client
   traffic, such as LAN consumers, and are ignored.
@@ -136,11 +142,13 @@ leave the model resident, and each prints `<phase>_autoload_ok`. Any download
 or install line, cache change, non-loopback connection, or blackhole connect
 fails the phase. Every path must really auto-load, so the scenario unloads the
 test model after each pre-placed phase. When the model was resident before the
-scenario, it is unloaded first and reloaded with its previous recipe options
-once the pre-placed phases finish; only then does the scenario print
+scenario, it is unloaded before the pre-placed phases and reloaded with its
+previous recipe options once they finish; only then does the scenario print
 `preplaced_residency_restored`, so the catalog does not assert that marker.
-If that reload fails after the pre-placed phases passed, the scenario fails. If
-a pre-placed phase already failed, the scenario prints
+If that reload fails after the pre-placed phases passed, the scenario fails.
+The reload fails when the model is not resident afterward, or when its `/load`
+or `/health` request raises, for example because `lemond` restarted. If a
+pre-placed phase already failed, the scenario prints
 `preplaced_residency_restore_failed: ...` and reports the phase's own failure,
 so the restore error never hides the no-fetch evidence.
 
@@ -168,8 +176,8 @@ The blackhole stops the bytes, but the attempt is logged, for example as
 `Model not cached, downloading from Hugging Face...`. Under the lead's ruling
 for #138, a logged, blackholed attempt in a missing phase is an observation,
 not a failure. The phase prints `<phase>_blackholed_fetch_attempt_recorded`
-with the log-line and blackhole connect counts, and does not print
-`<phase>_no_fetch_log_ok`. When the fork refuses these requests offline
+with the log-line and blackhole connect counts. Each phase prints either that
+marker or `<phase>_no_fetch_log_ok`, never both. When the fork refuses these requests offline
 (nisavid/lemonade#155), the missing phases print `<phase>_no_fetch_log_ok`
 again, and the recorded marker disappears.
 
