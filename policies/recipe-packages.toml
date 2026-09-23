@@ -1580,7 +1580,7 @@ scaffold_notes = [
 [packages.python-yarl-gfx1151]
 recipe_key = "native_wheels"
 template = "native-wheel-pypi"
-upstream_version = "1.24.2"
+upstream_version = "1.25.1"
 pkgdesc = "Yet another URL library rebuilt for Strix Halo gfx1151"
 url = "https://github.com/aio-libs/yarl/"
 license = ["Apache-2.0"]
@@ -1593,15 +1593,16 @@ divergence_notes = [
 ]
 update_notes = [
   "Check Arch first for release and build-backend metadata before updating.",
-  "After publishing a rebuilt package, verify `import yarl` and a minimal URL construction probe through the installed local Python lane."
+  "After publishing a rebuilt package, verify `import yarl` and a minimal URL construction probe through the installed local Python lane.",
+  "On 2026-09-22, update to yarl 1.25.1 for the generation-C W2A closure (#110), built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7."
 ]
 provides = ["python-yarl"]
 conflicts = ["python-yarl"]
 depends = ["glibc", "python-gfx1151", "python-idna", "python-multidict-gfx1151", "python-propcache"]
 makedepends = ["cython", "python-build", "python-expandvars", "python-installer", "python-setuptools", "python-wheel", "rocm-llvm-gfx1151"]
 pypi_name = "yarl"
-sha256sums = ["9ac374123c6fd7abf64d1fec93962b0bd4ee2c19751755a762a72dd96c0378f8"]
-src_subdir = "yarl-1.24.2"
+sha256sums = ["03dd38de09bc213e9a8b29761eec33ee1d5318dac0e49d8af36e4d27830e23a7"]
+src_subdir = "yarl-1.25.1"
 patches_dir = "patches/python-yarl-gfx1151"
 recipe_notes_override = """
 This package is the yarl output from the shared `native_wheels` recipe phase.

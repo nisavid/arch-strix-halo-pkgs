@@ -96,7 +96,7 @@ SERVICE_STACK = {
     "python-yarl-gfx1151": {
         "template": "native-wheel-pypi",
         "recipe_key": "native_wheels",
-        "upstream_version": "1.24.2",
+        "upstream_version": "1.25.1",
         "provides": ["python-yarl"],
         "consumer_dep": "python-yarl-gfx1151",
     },

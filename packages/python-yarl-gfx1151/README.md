@@ -6,7 +6,7 @@
 - Scaffold template: `native-wheel-pypi`
 - Recipe build method: `pip`
 - Upstream repo: `https://github.com/aio-libs/yarl/`
-- Package version: `1.24.2`
+- Package version: `1.25.1`
 - Recipe revision: `3f15f9f (20260508, 17 commits touching recipe path)`
 - Recipe steps: `32`
 - Recipe dependencies: `cpython, pytorch`
@@ -42,6 +42,7 @@ same optimized service/runtime stack.
 
 - Check Arch first for release and build-backend metadata before updating.
 - After publishing a rebuilt package, verify `import yarl` and a minimal URL construction probe through the installed local Python lane.
+- On 2026-09-22, update to yarl 1.25.1 for the generation-C W2A closure (#110), built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7.
 
 ## Maintainer Starting Points
 
