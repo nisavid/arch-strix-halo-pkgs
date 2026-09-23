@@ -77,12 +77,13 @@ tickets.
 - **Frontier query**: read the map's children in map order from the sub-issues
   endpoint, keep the open ones with no assignee and no open blocker, and take
   the first:
-  `gh api repos/<owner>/<repo>/issues/<map>/sub_issues --paginate --jq '.[] | select(.state == "open" and (.assignees | length) == 0 and .issue_dependencies_summary.blocked_by == 0) | .number' | head -n 1`.
-  No output means the frontier is empty. The query relies on native
-  dependencies; in a repo without them, also drop candidates whose `Blocked by`
-  line names an open issue. Where sub-issues aren't enabled, walk the map body's
-  task list in order instead, dropping tickets that are closed, assigned, or
-  have an open issue in their `Blocked by` line.
+  `gh api repos/<owner>/<repo>/issues/<map>/sub_issues --paginate --jq '.[] | select(.state == "open" and (.assignees | length) == 0 and (.issue_dependencies_summary.blocked_by // 0) == 0) | .number' | head -n 1`.
+  No output means the frontier is empty. The `// 0` keeps children whose native
+  dependency data is missing; in a repo without native dependencies, drop the
+  `head -n 1` and take the first listed child whose `Blocked by` line names no
+  open issue. Where sub-issues aren't enabled, walk the map body's task list in
+  order instead, dropping tickets that are closed, assigned, or have an open
+  issue in their `Blocked by` line.
 - **Claim**: `gh issue edit <n> --add-assignee @me`, the session's first write.
 - **Resolve**: `gh issue comment <n> --body "<answer>"`, then
   `gh issue close <n>`, then append a context pointer (gist + link) to the map's
