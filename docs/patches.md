@@ -119,6 +119,17 @@ becomes durable, prefer a named patch that another maintainer can review.
   because the class no longer exists and torch 2.12 Inductor takes its dict
   path without it.
 
+## AOTriton
+
+- [Gate vendored Triton NVIDIA build artifacts](../packages/python-aotriton-gfx1151/0001-gate-vendored-triton-nvidia-build-artifacts.patch)
+  - Backend-gates the NVIDIA plugin wiring in the vendored hyperjump Triton
+    (`db82b800`) and stops it from building the CUDA GSan runtime, which
+    AOTriton never uses for gfx1151. The patch is unchanged from 0.12b to
+    0.13b because both releases pin the same Triton commit.
+- The old `c44b870b` Python 3.14 `ast.Num` cherry-pick was dropped at 0.13b.
+  That commit is not in the pinned Triton history, the tree has no `ast.Num`,
+  and the masked `|| true` cherry-pick had been a no-op.
+
 ## TorchAO
 
 - [Honor `PYTORCH_ROCM_ARCH` instead of hard-coding `gfx942`](../packages/python-torchao-rocm-gfx1151/0001-setup.py-honor-pytorch-rocm-arch.patch)
