@@ -252,3 +252,42 @@ The in-root smoke ran under Python 3.14.7 and passed:
 compressed-tensors and Accelerate import torch when they load, so their smoke
 covers only metadata and bytecode compilation until torch is in `ashp-w2a`.
 Nothing here was installed on the host.
+
+## W2A ROCm Triton 3.8 (#109)
+
+On 2026-09-22 `python-triton-gfx1151` 3.8.0+git669b31ac-1 was built in a
+fresh `torch-chain.targets` root (423 packages) and published to `ashp-w2a`.
+
+- **Source:** ROCm/triton `release/internal/3.8.x` at `669b31ac`, the pin in
+  ROCm PyTorch `13da0862` `.ci/docker/ci_commit_pins/triton.txt`.
+- **Carry:** refreshed 0001 (root `pyproject.toml` build requirements) and
+  0002 (`-Werror`). The 3.0-era `AttrsDescriptor.__repr__` patch was dropped.
+- **LLVM:** the `llvm-5f07f818-ubuntu-x64-1.tar.gz` prebuilt that
+  `cmake/llvm-info.json` names, pinned in `source=()` by sha256. The build ran
+  with `TRITON_OFFLINE_BUILD=ON` and no network, with `LLVM_SYSPATH` on the
+  unpacked tarball and `JSON_SYSPATH=/usr` (Arch nlohmann-json).
+- **Build:** about 22 minutes with 14 compile jobs and 2 link jobs
+  (`TRITON_PARALLEL_LINK_JOBS`). The build tree peaked at about 5.3 GiB.
+- **Linkage:** `libtriton.so` links only libz, libstdc++, libgcc_s, libm and
+  libc; LLVM and MLIR are static. The package depends on `libstdc++` and
+  `zlib` for that reason.
+- **makepkg warning:** `triton/backends/nvidia/lib/gsan.ll`, the NVIDIA GSan
+  runtime IR, records its source path under the build root's `/build/src`.
+  It is unused on ROCm and carries no host path.
+
+The in-root smoke ran on the gfx1151 GPU (`enter --gpu`). torch is not in the
+root yet, and Triton's `GPUDriver` imports torch for device and stream
+queries, so the smoke installs a small `torch` shim that answers those queries
+through the HIP runtime and allocates buffers with `hipMalloc`. Triton's own
+compiler, HIP driver and launcher do the rest:
+
+- `import triton` reports 3.8.0; the distribution version is
+  3.8.0+git669b31ac. The backends are `amd` and `nvidia`.
+- The active target is `GPUTarget('hip', 'gfx1151', 32)`.
+- A `@triton.jit` vector add over 98,432 float32 values compiled through
+  TTIR, TTGIR, LLIR, AMDGCN and HSACO for gfx1151 and matched NumPy exactly.
+- Triton compiles its HIP launcher with the root's C compiler on first use, so
+  a runtime without a C compiler cannot launch kernels. Arch's
+  `python-triton` does not declare one either.
+
+`verify` found no violations after the add. Nothing was installed on the host.
