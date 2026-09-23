@@ -6,8 +6,8 @@
 - Scaffold template: `native-wheel-pypi`
 - Recipe build method: `pip`
 - Upstream repo: `https://github.com/aio-libs/aiohttp`
-- Package version: `3.13.5`
-- Recipe revision: `a1d7a68 (20260427, 16 commits touching recipe path)`
+- Package version: `3.14.3`
+- Recipe revision: `3f15f9f (20260508, 17 commits touching recipe path)`
 - Recipe steps: `32`
 - Recipe dependencies: `cpython, pytorch`
 - Recorded reference packages: `extra/python-aiohttp`
@@ -46,6 +46,7 @@ amdclang native-wheel lane.
 - Check Arch first for llhttp, Cython, and dependency metadata before updating.
 - Keep AIOHTTP_USE_SYSTEM_DEPS=1 in the build environment unless upstream changes how system llhttp is selected.
 - After publishing a rebuilt package, verify `import aiohttp` and a minimal ClientSession construction path through the installed local Python lane.
+- On 2026-09-22, update to aiohttp 3.14.3 for the generation-C W2A closure (#110), built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7.
 
 ## Maintainer Starting Points
 

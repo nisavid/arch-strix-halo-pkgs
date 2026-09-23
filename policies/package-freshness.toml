@@ -335,7 +335,7 @@ packages = ["python-aiohttp-gfx1151"]
 priority = "medium"
 workflow = "upstream_source_update"
 checks = [
-  { id = "pypi", role = "primary", kind = "pypi", package = "aiohttp", recorded = "3.13.5", comparison = "pep440" },
+  { id = "pypi", role = "primary", kind = "pypi", package = "aiohttp", recorded = "3.14.3", comparison = "pep440" },
 ]
 
 [families.compressed_tensors]

@@ -82,7 +82,7 @@ SERVICE_STACK = {
     "python-aiohttp-gfx1151": {
         "template": "native-wheel-pypi",
         "recipe_key": "native_wheels",
-        "upstream_version": "3.13.5",
+        "upstream_version": "3.14.3",
         "provides": ["python-aiohttp"],
         "consumer_dep": "python-aiohttp-gfx1151",
     },
