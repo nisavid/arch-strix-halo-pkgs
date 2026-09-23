@@ -3,6 +3,11 @@
 # NumPy, PyYAML, Pillow and psutil are the W2A gfx1151 builds, so resolve
 # with ashp-w2a as a foundation repo. python-triton-gfx1151 is the W2A ROCm
 # Triton 3.8 build (#109); AOTriton and PyTorch both build against it.
+# python-aotriton-gfx1151 is the W2A AOTriton 0.13b build that PyTorch's
+# mem-efficient attention links. rocprofiler-sdk-gfx1151 is what kineto
+# links for ROCm profiling (librocprofiler-sdk.so); PyTorch's configure fails
+# without it. Its marker headers include rocprofiler-sdk-roctx headers, but the
+# package does not depend on rocprofiler-sdk-roctx-gfx1151, so name that too.
 base-devel
 ccache
 git
@@ -45,6 +50,7 @@ python-scipy
 python-tabulate
 python-psutil-gfx1151
 python-triton-gfx1151
+python-aotriton-gfx1151
 rocm-llvm-gfx1151
 rocm-core-gfx1151
 rocm-hip-sdk-gfx1151
@@ -60,4 +66,6 @@ miopen-hip-gfx1151
 rccl-gfx1151
 rocblas-gfx1151
 rocminfo-gfx1151
+rocprofiler-sdk-gfx1151
+rocprofiler-sdk-roctx-gfx1151
 migraphx-gfx1151
