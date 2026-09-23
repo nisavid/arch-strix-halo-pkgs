@@ -69,6 +69,14 @@ build() {
   fi
 }
 
+  _build_jobs() {
+  if [[ ${MAKEFLAGS:-} =~ (^|[[:space:]])-j[[:space:]]*([0-9]+) ]]; then
+    printf '%s\n' "${BASH_REMATCH[2]}"
+  else
+    nproc
+  fi
+}
+
   _setup_compiler_env
   local amdclang="$CC"
   local amdclangxx="$CXX"
@@ -88,7 +96,7 @@ build() {
   rm -rf "${build_root}"
   cmake -B "${build_root}" -GNinja .     -DCMAKE_C_COMPILER="${amdclang}"     -DCMAKE_CXX_COMPILER="${amdclangxx}"     -DCMAKE_BUILD_TYPE=Release     -DCMAKE_INSTALL_PREFIX="${install_root}"     -DCMAKE_C_FLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument"     -DCMAKE_CXX_FLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument"     -DBUILD_ELECTRON_APP=OFF     -DBUILD_WEB_APP=OFF
 
-  cmake --build "${build_root}" --target tauri-app -j"$(nproc)"
+  cmake --build "${build_root}" --target tauri-app -j"$(_build_jobs)"
 }
 
 package() {

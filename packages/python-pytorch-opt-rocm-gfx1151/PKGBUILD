@@ -96,6 +96,14 @@ build() {
   fi
 }
 
+  _build_jobs() {
+  if [[ ${MAKEFLAGS:-} =~ (^|[[:space:]])-j[[:space:]]*([0-9]+) ]]; then
+    printf '%s\n' "${BASH_REMATCH[2]}"
+  else
+    nproc
+  fi
+}
+
   _setup_compiler_env
   local _rocm_llvm_bin="/opt/rocm/lib/llvm/bin"
   export PATH="${PATH}:/opt/rocm/bin"
@@ -135,7 +143,7 @@ build() {
   export ROCM_PATH="/opt/rocm"
   export HIP_CLANG_PATH="${_rocm_llvm_bin}"
   export CMAKE_PREFIX_PATH="${OpenBLAS_HOME}:/opt/rocm"
-  export MAX_JOBS="$(nproc)"
+  export MAX_JOBS="${MAX_JOBS:-$(_build_jobs)}"
   export PYTORCH_BUILD_VERSION="2.12.0"
   export PYTORCH_BUILD_NUMBER=1
 

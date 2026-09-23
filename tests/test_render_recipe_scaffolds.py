@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -1239,3 +1240,35 @@ def test_real_lemonade_packages_share_one_source_pin() -> None:
         assert policy["packages"][package]["source_refs"] == [expected]
         pkgbuild = (REPO_ROOT / "packages" / package / "PKGBUILD").read_text(encoding="utf-8")
         assert f"'{expected}'" in pkgbuild
+
+
+@pytest.mark.parametrize(
+    ("makeflags", "expected"),
+    [("-j12", "12"), ("-j 6 -l8", "6"), ("--output-sync -j20", "20"), ("", None)],
+)
+def test_build_jobs_helper_reads_the_makeflags_job_cap(makeflags: str, expected: str | None) -> None:
+    script = render_recipe_scaffolds.build_jobs_snippet() + "_build_jobs\n"
+    result = subprocess.run(
+        ["bash", "-c", script],
+        env={"PATH": "/usr/bin:/bin", "MAKEFLAGS": makeflags},
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    nproc = subprocess.run(["nproc"], capture_output=True, text=True, check=True).stdout.strip()
+    assert result.stdout.strip() == (expected or nproc)
+
+
+def test_pkgbuilds_take_parallelism_from_makepkg() -> None:
+    hardcoded = re.compile(r'(-j\s*"?\$\(nproc\)|MAX_JOBS="?\$\(nproc\))')
+    offenders = [
+        str(path.relative_to(REPO_ROOT))
+        for path in sorted((REPO_ROOT / "packages").glob("*/PKGBUILD"))
+        if hardcoded.search(path.read_text(encoding="utf-8"))
+    ]
+    assert offenders == []
+    assert not hardcoded.search(MODULE_PATH.read_text(encoding="utf-8"))
+    pytorch = (REPO_ROOT / "packages/python-pytorch-opt-rocm-gfx1151/PKGBUILD").read_text(encoding="utf-8")
+    assert 'export MAX_JOBS="${MAX_JOBS:-$(_build_jobs)}"' in pytorch
+    for package in ("aocl-libm-gfx1151", "lemonade-app", "lemonade-server", "python-gfx1151"):
+        assert '-j"$(_build_jobs)"' in (REPO_ROOT / "packages" / package / "PKGBUILD").read_text(encoding="utf-8")

@@ -55,6 +55,14 @@ build() {
   fi
 }
 
+  _build_jobs() {
+  if [[ ${MAKEFLAGS:-} =~ (^|[[:space:]])-j[[:space:]]*([0-9]+) ]]; then
+    printf '%s\n' "${BASH_REMATCH[2]}"
+  else
+    nproc
+  fi
+}
+
   _setup_compiler_env
   local amdclang="$CC"
   local amdclangxx="$CXX"
@@ -85,7 +93,7 @@ build() {
 
   make PROFILE_TASK="-S -m test --pgo --timeout=\$(TESTTIMEOUT)" \
     EXTRA_CFLAGS="${_base_cflags} -famd-opt -Wno-error=unused-command-line-argument" \
-    -j"$(nproc)"
+    -j"$(_build_jobs)"
 }
 
 package() {

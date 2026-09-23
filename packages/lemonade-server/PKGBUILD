@@ -59,6 +59,14 @@ build() {
   fi
 }
 
+  _build_jobs() {
+  if [[ ${MAKEFLAGS:-} =~ (^|[[:space:]])-j[[:space:]]*([0-9]+) ]]; then
+    printf '%s\n' "${BASH_REMATCH[2]}"
+  else
+    nproc
+  fi
+}
+
   _setup_compiler_env
   local amdclang="$CC"
   local amdclangxx="$CXX"
@@ -79,7 +87,7 @@ build() {
     -DBUILD_WEB_APP=ON \
     -DBUILD_TESTING=OFF
 
-  cmake --build "${build_root}" -j"$(nproc)"
+  cmake --build "${build_root}" -j"$(_build_jobs)"
 }
 
 package() {
