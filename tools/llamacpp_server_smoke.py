@@ -65,6 +65,10 @@ def server_command(args: argparse.Namespace) -> list[str]:
         str(args.ctx_size),
         "-ngl",
         "999",
+        # llama.cpp prints the selected device and the layer-offload summary
+        # only at verbosity 4 (b9442); the scenarios assert on both.
+        "-lv",
+        "4",
     ]
 
 

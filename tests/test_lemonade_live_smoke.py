@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import struct
 from pathlib import Path
 import subprocess
@@ -164,11 +165,59 @@ def test_llamacpp_server_command_offloads_all_layers_and_completion_checks_paris
         "4096",
         "-ngl",
         "999",
+        "-lv",
+        "4",
     ]
     assert completion_text({"choices": [{"text": " Paris."}]}) == " Paris."
     validate_completion(" Paris.")
     with pytest.raises(AssertionError, match="Paris"):
         validate_completion(" Lyon.")
+
+
+def test_llamacpp_scenario_log_regexes_match_b9442_verbosity_4_lines():
+    import tomllib
+
+    catalog = tomllib.loads(
+        (Path(__file__).resolve().parents[1] / "inference/scenarios/lemonade-live-validation.toml").read_text()
+    )
+    by_id = {scenario["id"]: scenario for scenario in catalog["scenario"]}
+    # Lines as llama-server b9442 prints them at -lv 4.
+    lines = {
+        "hip": "llama_prepare_model_devices: using device ROCm0 (Radeon 8060S Graphics) (0000:c6:00.0) - 40454 MiB free",
+        "vulkan": "llama_prepare_model_devices: using device Vulkan0 (AMD Radeon 8060S Graphics (RADV STRIX_HALO))",
+    }
+    offload = "load_tensors: offloaded 29/29 layers to GPU"
+    for backend, device_line in lines.items():
+        regexes = [
+            item["value"]
+            for item in by_id[f"llama.cpp.{backend}.qwen3-0.6b-q8-0.completion"]["then"]["assert"]
+            if item["kind"] == "server_log.regex"
+        ]
+        assert len(regexes) == 2
+        assert re.search(regexes[0], device_line)
+        assert re.search(regexes[1], offload)
+        # A partial offload must not pass.
+        assert not re.search(regexes[1], "load_tensors: offloaded 20/29 layers to GPU")
+
+
+def test_isolated_extra_model_accepts_the_bare_listing():
+    class Client:
+        def __init__(self, ids):
+            self.ids = ids
+
+        def get(self, path):
+            assert path == "/models"
+            return {"data": [{"id": model_id} for model_id in self.ids]}
+
+    inst = object.__new__(live.IsolatedLemond)
+    # lemond lists a precedence-winning imported model by its bare name.
+    inst.client = Client(["Qwen3-0.6B-GGUF", "lemonade-live-a", "lemonade-live-b"])
+    assert inst.extra_model("lemonade-live-a") == "lemonade-live-a"
+    inst.client = Client(["extra.lemonade-live-a"])
+    assert inst.extra_model("lemonade-live-a") == "extra.lemonade-live-a"
+    inst.client = Client(["Qwen3-0.6B-GGUF"])
+    with pytest.raises(AssertionError, match="extra model lemonade-live-a not discovered"):
+        inst.extra_model("lemonade-live-a")
 
 
 def test_refusal_and_system_info_parsers():
@@ -244,8 +293,8 @@ def test_isolated_config_is_offline_and_uses_packaged_backends(tmp_path: Path):
     assert config["broadcast"] is False
     assert config["max_loaded_models"] == 1
     assert config["pinned_models"] == []
-    assert config["llamacpp"]["rocm_bin"] == "/opt/llama.cpp-hip-gfx1151/bin"
-    assert config["llamacpp"]["vulkan_bin"] == "/opt/llama.cpp-vulkan-gfx1151/bin"
+    assert config["llamacpp"]["rocm_bin"] == "/usr/bin/llama-server-hip-gfx1151"
+    assert config["llamacpp"]["vulkan_bin"] == "/usr/bin/llama-server-vulkan-gfx1151"
 
 
 def test_isolated_lemond_cleans_up_when_startup_fails(tmp_path: Path):
@@ -302,7 +351,7 @@ class FakeLemond:
         return 500, {"error": {"message": message}}
 
     def _load(self, payload: dict[str, Any]) -> tuple[int, Any]:
-        name = payload["model_name"]
+        name = self._resolve(payload["model_name"])
         if name not in self.models:
             return 404, {"error": {"message": f"Model not found: {name}"}}
         fetches = self.auto_pull or self.current_path in self.auto_pull_paths
@@ -349,7 +398,7 @@ class FakeLemond:
             loaded = [{**entry, "model_name": self._listed(entry["model_name"])} for entry in self.loaded.values()]
             return 200, {"version": "11.7.0", "all_models_loaded": loaded}
         if path == "/models":
-            return 200, {"data": list(self.models.values())}
+            return 200, {"data": [{**model, "id": self._listed(model["id"])} for model in self.models.values()]}
         if path.startswith("/models/") and path.endswith("/files?include_paths=true"):
             return 200, {
                 "files": [{"role": "main", "exists": True, "path": str(SERVICE_GGUF)}]
@@ -365,8 +414,10 @@ class FakeLemond:
             self.loaded.pop(payload["model_name"], None)
             return 200, {"status": "success"}
         if path == "/pins" and method == "POST":
-            self.config["pinned_models"].append(payload["model_name"])
-            self.loaded[payload["model_name"]]["pinned"] = True
+            # lemond persists the canonical id, whichever form the request used.
+            name = self._resolve(payload["model_name"])
+            self.config["pinned_models"].append(name)
+            self.loaded[name]["pinned"] = True
             return 200, {"status": "success"}
         if path == "/pins":
             return 200, {
@@ -376,7 +427,7 @@ class FakeLemond:
                 ]
             }
         if path.startswith("/pins/") and method == "DELETE":
-            name = path.removeprefix("/pins/")
+            name = self._resolve(path.removeprefix("/pins/"))
             self.config["pinned_models"].remove(name)
             if name in self.loaded:
                 self.loaded[name]["pinned"] = False
@@ -464,6 +515,22 @@ class FakeInstance:
 
     def extra_model(self, stem: str) -> str:
         return f"extra.{stem}.gguf"
+
+
+def test_run_pins_matches_the_bare_listing_to_the_canonical_persisted_pin(capsys: pytest.CaptureFixture[str]):
+    # As on the candidate: /models, /pins and /health list the imported model
+    # bare, while config.json persists its canonical id.
+    server = FakeLemond(models=["extra.lemonade-live-a"])
+    server.listed = {"extra.lemonade-live-a": "lemonade-live-a"}
+    inst = FakeInstance(server)
+    inst.extra_model = lambda stem: live.IsolatedLemond.extra_model(inst, stem)
+
+    live.run_pins(inst, ctx_size=4096, timeout=1.0)
+
+    out = capsys.readouterr().out
+    for marker in ("pin_persisted_ok", "pin_restored_ok", "pin_restored_pinned_ok", "pin_removed_ok"):
+        assert marker in out
+    assert server.config["pinned_models"] == []
 
 
 def test_text_mode_proves_packaged_backend_and_restores_residency(capsys: pytest.CaptureFixture[str]):

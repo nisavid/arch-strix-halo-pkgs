@@ -54,7 +54,7 @@ value = "completion_ok"
 
 [[scenario.then.assert]]
 kind = "server_log.regex"
-value = "(?i)found \\d+ ROCm devices"
+value = "(?i)using device ROCm\\d+"
 
 [[scenario.then.assert]]
 kind = "server_log.regex"
@@ -96,7 +96,7 @@ value = "completion_ok"
 
 [[scenario.then.assert]]
 kind = "server_log.regex"
-value = "(?i)found \\d+ Vulkan devices"
+value = "(?i)using device Vulkan\\d+"
 
 [[scenario.then.assert]]
 kind = "server_log.regex"
