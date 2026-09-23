@@ -859,7 +859,7 @@ update_notes = [
   "Record newer PyPI pydantic-core releases as baseline drift while the package follows Arch's pydantic-core ABI for the installed pydantic package."
 ]
 provides = ["python-pydantic-core"]
-conflicts = ["python-pydantic-core"]
+conflicts = ["python-pydantic-core", "python-pydantic<2.13.5"]
 depends = ["glibc", "libgcc", "python-gfx1151", "python-typing-inspection", "python-typing_extensions"]
 makedepends = ["cargo", "python-build", "python-installer", "python-maturin", "python-wheel", "rocm-llvm-gfx1151", "rust"]
 pypi_name = "pydantic_core"

@@ -46,10 +46,11 @@ the family.
 
 The superseded tracked and blocked records were terminalized as rejected.
 The former `lemonade-upstream-11.5.2` blocker was closed as superseded before
-package adoption. `lemonade-fork-187b4a2` now tracks fork main
-`187b4a25f154ff905486b8bf85e006cd1f2a9820` for the
-[Lemonade repin](https://github.com/nisavid/arch-strix-halo-pkgs/issues/137),
-and the upstream 11.9.0 baseline drift routes to the
+package adoption. The fork candidates `lemonade-fork-187b4a2` and
+`lemonade-fork-586e190` were later superseded by `lemonade-fork-3d59910`, the
+frozen fork main commit `3d5991033e4cb28152ace4013f7f22a52c3bd617` that the
+[Lemonade repin](https://github.com/nisavid/arch-strix-halo-pkgs/issues/137)
+consumes. The upstream 11.9.0 baseline drift routes to the
 [upstream-sync repackage](https://github.com/nisavid/arch-strix-halo-pkgs/issues/141).
 
 ### Generation C line selection
@@ -148,6 +149,27 @@ live-scenario validated. The maintained Lemonade package source remains
 freshness evidence is due again 24 hours after the closeout sweep completed,
 or sooner if package policy, package directories, checker behavior, or
 relevant source metadata changes.
+
+### Lemonade repin source update
+
+The Lemonade repin (#137) moved `lemonade-server`, `lemonade-app`, and
+`lemonade` to the frozen fork main commit `3d5991033`, whose CMake project
+version is 11.7.0 and which contains upstream v11.7.0. The freshness policy
+now records that commit as the `fork-main` cursor and 11.7.0 as the
+`upstream-release` baseline. `lemonade-fork-3d59910` stays tracked, with its
+gate moved to the
+[Lemonade family build and install handoff](https://github.com/nisavid/arch-strix-halo-pkgs/issues/139).
+The new `lemonade-upstream-11.9.0` record tracks the 11.7.0 to 11.9.0
+baseline drift to #141. The same change adds a `python-pydantic<2.13.5`
+conflict to `python-pydantic-core-gfx1151`, so pacman cannot pair
+pydantic-core 2.46.5 with an older Arch pydantic. The two packages are
+installed together in the #139 transaction.
+
+A refreshed sweep with `--fail-on actionable` exited 0 and reported 29 tracked,
+seven rejected, one adopted, and eight current families. The explicit tracker
+validation found all 12 unique issue gates open. This is a source update only:
+no package was built for M3, deployed/installed, installed-smoked, or
+live-scenario validated.
 
 ## 2026-08-12 Freshness Admission
 
