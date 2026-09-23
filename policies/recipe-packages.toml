@@ -857,10 +857,11 @@ update_notes = [
   "Check Arch python-pydantic and python-pydantic-core together before updating; upstream pydantic normally constrains the pydantic-core ABI tightly.",
   "Do not adopt a newer pydantic-core release from recipe notes alone; keep pydantic-core aligned with the installed pydantic ABI unless this repo also carries and validates a matching pydantic package.",
   "After publishing a rebuilt package, verify `import pydantic_core` and a tiny `pydantic.BaseModel` validation through the installed local Python lane.",
-  "Record newer PyPI pydantic-core releases as baseline drift while the package follows Arch's pydantic-core ABI for the installed pydantic package."
+  "Record newer PyPI pydantic-core releases as baseline drift while the package follows Arch's pydantic-core ABI for the installed pydantic package.",
+  "The conflicts pin the one python-pydantic release that requires this pydantic-core version; move both python-pydantic bounds with each pydantic-core update and bump pkgrel whenever they change without a version change."
 ]
 provides = ["python-pydantic-core"]
-conflicts = ["python-pydantic-core", "python-pydantic<2.13.5"]
+conflicts = ["python-pydantic-core", "python-pydantic<2.13.5", "python-pydantic>2.13.5"]
 depends = ["glibc", "libgcc", "python-gfx1151", "python-typing-inspection", "python-typing_extensions"]
 makedepends = ["cargo", "python-build", "python-installer", "python-maturin", "python-wheel", "rocm-llvm-gfx1151", "rust"]
 pypi_name = "pydantic_core"
@@ -2416,6 +2417,7 @@ src_subdir = "lemonade"
 upstream_name = "lemonade-app"
 baseline_kind = "closest-upstream"
 source_refs = ["lemonade::git+https://github.com/nisavid/lemonade.git#commit={source_pins.lemonade}"]
+recipe_branch_override = "main"
 sha256sums = ["SKIP"]
 extra_sources = [
   "0001-keep-tauri-glib-on-webkit-compatible-series.patch",
