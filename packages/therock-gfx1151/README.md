@@ -124,6 +124,68 @@ render and build pass and the first kernel launch fails
 (`ROCRAND_STATUS_LAUNCH_FAILURE` in the gate-0 rocRAND probe). Installed
 validation therefore needs one kernel per archive family, not only rocBLAS.
 
+## Kernel smoke and package checks
+
+`tools/therock_kpack_smoke.py` launches at least one kernel per archive family
+and fails a family that no probe reached or whose archive is missing:
+
+| Probe | Archive | What runs |
+| --- | --- | --- |
+| `hip` | none | device enumeration; needs a `gfx1151` device |
+| `rocrand` | `rand_lib` | XORWOW `generate_uniform` |
+| `rocblas` | `blas_lib` | `sgemm` and `sscal` |
+| `rocsolver` | `blas_lib` | `sgetrf` plus `sgetrs` |
+| `rocfft` | none | FFT with runtime-compiled (RTC) kernels |
+| `rocfft-callback` | `fft_lib` | FFT with a hipRTC load callback, so rocFFT loads its default store callback from the archive |
+| `rccl` | `rccl_lib` | one-rank `PreMulSum` all-reduce, which needs a kernel, unlike a plain one-rank sum |
+| `hiptensor` | `hiptensor_lib` | f32 permutation; the contraction is informational, since hipTensor returns `ARCH_MISMATCH` on gfx1151 |
+| `rocalution` | `rocalution_lib` | CSR SpMV and scale on the accelerator; compiles a tiny host C++ program, so it needs `c++` |
+| `migraphx` (opt-in) | none | imports MIGraphX, parses a two-node ONNX model, and runs it on the `ref` and `gpu` targets; needs `numpy` and `onnx` |
+
+Installed host:
+
+```bash
+python tools/therock_kpack_smoke.py probe --json <report.json>
+```
+
+Staged packages, rootless, before any install. Extract the built archives into
+`<root>` with `bsdtar -xpf`, leaving out `.PKGINFO`, `.BUILDINFO`, `.MTREE`, and
+`.INSTALL`, then:
+
+```bash
+python tools/therock_kpack_smoke.py check-packages --repo <repo-dir> --root <root>
+python tools/therock_kpack_smoke.py probe --sandbox-root <root> --sandbox-python \
+  --extra-lib-dir <protobuf-36.1-prefix>/usr/lib \
+  --probe hip --probe rocrand --probe rocblas --probe rocsolver --probe rocfft \
+  --probe rocfft-callback --probe rccl --probe hiptensor --probe rocalution --probe migraphx
+```
+
+`--sandbox-root` runs the probes in bubblewrap. The host filesystem is
+read-only, `/dev/kfd` and `/dev/dri` pass through, `<root>/opt/rocm` replaces
+`/opt/rocm`, and a directory under the workdir becomes a writable `/tmp`.
+Without a writable `/tmp`, comgr cannot build the HIP blit kernels and every
+handle that allocates device memory fails, which looks like a packaging fault.
+`--sandbox-python` also replaces the host CPython with the staged one and keeps
+the host site-packages. The extra library directory supplies protobuf 36.1 and
+Abseil 20260817 to the MIGraphX parsers before the host has them.
+
+`check-packages` fails when a path is in two packages (pacman would refuse the
+transaction), when the extracted root and the package file lists differ, and
+when a kpack-split library cannot reach its archive through its package's
+declared depends. The last check reuses the generator's `KPACK_REF_UNOWNED`
+check, but reads the built packages.
+
+Known upstream gap: `rocfft-callback` aborts with `Cannot create GlobalVar
+Obj for symbol: _ZL30store_cb_default_complex_float.static.<hash>`. The
+`fft_lib` code object names rocFFT's static default callbacks with a
+different `.static` hash than `librocfft` registers, so any rocFFT or hipFFT
+plan that runs with a user callback aborts. Plans without callbacks are
+unaffected. This is ROCm/TheRock#5444, which is closed upstream but still
+present in the 7.14.1 dist tarball; the 7.13 flat payload passes the same
+probe. The tool reports this failure signature as `XFAIL`, reports any other
+failure of the probe as `FAIL`, and reports a pass as `XPASS` so the gap can be
+retired.
+
 ## 7.14.1 payload decisions
 
 - New packages: `rocalution-gfx1151` (Arch `rocalution` depends) and
