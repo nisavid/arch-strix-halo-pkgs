@@ -396,7 +396,7 @@ packages = ["python-mistral-common-gfx1151"]
 priority = "medium"
 workflow = "upstream_source_update"
 checks = [
-  { id = "pypi", role = "primary", kind = "pypi", package = "mistral_common", recorded = "1.11.2", comparison = "pep440" },
+  { id = "pypi", role = "primary", kind = "pypi", package = "mistral_common", recorded = "1.11.7", comparison = "pep440" },
   { id = "aur", role = "baseline", kind = "aur", package = "python-mistral-common", recorded = "1.8.6-1", comparison = "pkgver" },
 ]
 
