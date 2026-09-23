@@ -100,6 +100,11 @@ BACKEND_LIB_RE = re.compile(
 LLAMACPP_LIB_RE = re.compile(r"^lib(?:ggml|llama|mtmd)", re.IGNORECASE)
 HIP_RUNTIME_LIB_RE = re.compile(r"^libamdhip64\.so")
 ALTERED_RE = re.compile(r"(\d+) altered files?")
+# pacman -Qkk names each altered path on stderr, one line per failed property.
+QKK_WARNING_RE = re.compile(r"^warning: (?P<package>\S+): (?P<path>/.*) \((?P<reason>[^()]+)\)$")
+# A file the invoking user cannot read fails only its checksum step.
+UNREADABLE_CHECKSUM = "failed to calculate SHA256 checksum"
+BACKUP_STATUS_RE = re.compile(r"(/\S+) \[(\w+)\]")
 # Absolute paths in service-supplied text. Package-owned /usr/bin paths are
 # generic interfaces; every other absolute path may name host-specific state.
 _PATH_BODY = r"[^\s\"'`,;()\[\]{}<>]"
@@ -213,6 +218,19 @@ def loaded_entry(health: Mapping[str, Any], model: str) -> dict[str, Any] | None
         if model in {item.get("model_name"), item.get("id")}:
             return item
     return None
+
+
+# Canonical model-id source prefixes. The candidate lists a model under its
+# bare name when it wins precedence for that name, keeps the prefix when it is
+# shadowed, and accepts either form as input.
+CANONICAL_SOURCES = ("user.", "extra.", "builtin.")
+
+
+def bare_model_name(model: str) -> str:
+    for prefix in CANONICAL_SOURCES:
+        if model.startswith(prefix) and len(model) > len(prefix):
+            return model[len(prefix) :]
+    return model
 
 
 def model_info(client: LemonadeClient, model: str) -> dict[str, Any]:
@@ -501,6 +519,56 @@ def run_text(
             print("residency_restored")
 
 
+def package_alterations(package: str, *, runner: Runner = subprocess.run) -> dict[str, set[str]]:
+    """Map each path that pacman -Qkk reports altered to its failed properties."""
+    completed = runner(["pacman", "-Qkk", package], capture_output=True, text=True)
+    if completed.returncode not in (0, 1):
+        raise AssertionError(f"pacman -Qkk {package} exited {completed.returncode}")
+    match = ALTERED_RE.search(completed.stdout)
+    if match is None:
+        raise AssertionError(f"could not parse pacman -Qkk {package} output: {completed.stdout.strip()!r}")
+    reasons: dict[str, set[str]] = {}
+    for line in completed.stderr.splitlines():
+        found = QKK_WARNING_RE.match(line.strip())
+        if found and found["package"] == package:
+            reasons.setdefault(found["path"], set()).add(found["reason"])
+    if len(reasons) != int(match.group(1)):
+        raise AssertionError(
+            f"pacman -Qkk {package} counts {match.group(1)} altered files but names {len(reasons)}"
+        )
+    return reasons
+
+
+def backup_statuses(package: str, *, runner: Runner = subprocess.run) -> dict[str, str]:
+    """Map each backup file of `package` to its pacman -Qii status, such as unreadable."""
+    info = parse_pacman_info(run_command(["pacman", "-Qii", package], runner=runner))
+    return dict(BACKUP_STATUS_RE.findall(info.get("Backup Files", "")))
+
+
+def require_unaltered(package: str, *, runner: Runner = subprocess.run) -> None:
+    """Fail on any altered package file, except a backup file this user cannot read.
+
+    pacman reports a backup file's content mismatch as a notice and does not
+    count it as altered, so for a root-only backup file such as
+    zz-secrets.conf, the only counted content failure a non-root check can
+    report is the unreadable checksum. When that is the file's only failure,
+    the file is recorded, not counted as altered; any other failure counts.
+    Files are named by their path inside the package archive, as pacman's own
+    file list records them, so the scrubbed error report keeps them.
+    """
+    reasons = package_alterations(package, runner=runner)
+    unreadable = {path for path, why in reasons.items() if why == {UNREADABLE_CHECKSUM}}
+    if unreadable:
+        statuses = backup_statuses(package, runner=runner)
+        unreadable = {path for path in unreadable if statuses.get(path) == "unreadable"}
+    for path in sorted(unreadable):
+        print("package_backup_unreadable", package, path.lstrip("/"))
+    altered = sorted(set(reasons) - unreadable)
+    if altered:
+        detail = "; ".join(f"{path.lstrip('/')} ({', '.join(sorted(reasons[path]))})" for path in altered)
+        raise AssertionError(f"pacman -Qkk {package} reported altered files: {detail}")
+
+
 def run_provenance(
     client: LemonadeClient,
     *,
@@ -549,10 +617,7 @@ def run_provenance(
     print("service_executable_owned_ok")
 
     for package in FAMILY_PACKAGES:
-        output = run_command(["pacman", "-Qkk", package], runner=runner, ok_codes=frozenset({0, 1}))
-        match = ALTERED_RE.search(output)
-        if match is None or int(match.group(1)) != 0:
-            raise AssertionError(f"pacman -Qkk {package} reported altered files: {output.strip()}")
+        require_unaltered(package, runner=runner)
     print("package_files_unaltered_ok")
 
     config = client.get("/internal/config")
@@ -1131,23 +1196,41 @@ def parse_expected_pins(values: list[str]) -> list[tuple[str, str]]:
     return pins
 
 
+def listed_pin(client: LemonadeClient, pins: Mapping[str, Any], model: str) -> str | None:
+    """Return the name /pins lists for `model`: the model itself, or its one bare or canonical alias.
+
+    An alias counts only when both ids resolve to the same main checkpoint.
+    """
+    if model in pins:
+        return model
+    aliases = [name for name in pins if bare_model_name(name) == bare_model_name(model)]
+    if len(aliases) != 1:
+        return None
+    listed = aliases[0]
+    if main_checkpoint(model_info(client, model)) != main_checkpoint(model_info(client, listed)):
+        raise AssertionError(f"{model} and pinned {listed} resolve to different checkpoints")
+    print("service_pin_alias", model, listed)
+    return listed
+
+
 def run_service_pins(client: LemonadeClient, *, expected: list[tuple[str, str]]) -> None:
     if not expected:
         raise SystemExit("service-pins mode requires at least one --expect-pin")
     pins = {str(pin.get("model_name")): pin for pin in client.get("/pins").get("data", [])}
     health = client.get("/health")
     for model, variant in expected:
-        pin = pins.get(model)
-        if pin is None:
+        listed = listed_pin(client, pins, model)
+        if listed is None:
             raise AssertionError(f"{model} is not pinned; pins: {sorted(pins)}")
+        pin = pins[listed]
         if pin.get("load_error"):
             raise AssertionError(f"pinned {model} failed to load: {pin['load_error']}")
         if not pin.get("loaded"):
             raise AssertionError(f"pinned {model} is not loaded")
-        entry = loaded_entry(health, model)
+        entry = loaded_entry(health, listed) or loaded_entry(health, model)
         if entry is None or not entry.get("pinned"):
             raise AssertionError(f"{model} is not resident as pinned in /health")
-        checkpoint = main_checkpoint(model_info(client, model)) or ""
+        checkpoint = main_checkpoint(model_info(client, listed)) or ""
         quant = checkpoint.rpartition(":")[2]
         if variant.lower() not in quant.lower():
             raise AssertionError(f"{model} checkpoint {checkpoint!r} is not the {variant} variant")

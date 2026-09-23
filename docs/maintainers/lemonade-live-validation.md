@@ -251,8 +251,11 @@ text, a path under the model cache, the backend cache, or the cache dir becomes
 `<model_cache>`, `<backend_cache>`, or `<lemonade_cache>`. Every other printed
 refusal, client error, and command error, and the one-line `error:` report that
 replaces a traceback when a check fails, turns any absolute path into `<path>`.
-The only paths printed are package-owned `/usr/bin` paths, such as
-`/usr/bin/lemond` in the provenance scenario.
+The only absolute paths printed are package-owned `/usr/bin` paths, such as
+`/usr/bin/lemond` in the provenance scenario. The provenance scenario names an
+altered or unreadable package file by its path inside the package archive, such
+as `etc/lemonade/conf.d/zz-secrets.conf`, which comes from the package's own
+file list rather than the host layout.
 
 All of these scenarios carry `validation-window`. Broad selections skip them,
 so select them explicitly:
@@ -301,6 +304,21 @@ selection. `--scenario <id>` always selects the named scenario.
 - The provenance scenario expects the service config to have `offline` and
   `no_fetch_executables` set to true. It also expects `llamacpp.rocm_bin` and
   `llamacpp.vulkan_bin` to be absolute paths owned by the packaged backends.
+- The provenance scenario fails on any file that `pacman -Qkk` reports altered
+  in a Lemonade family package, including ownership drift on a packaged
+  directory such as `/etc/lemonade`. The one exception is a backup file that
+  the runner cannot read, such as the root-only `zz-secrets.conf`: `pacman
+  -Qii` marks it `[unreadable]`. pacman reports a backup file's size,
+  modification-time, or checksum mismatch as a `backup file:` notice and does
+  not count it as altered, so for that file the only counted content failure
+  a non-root run can report is the unreadable checksum. When that is the
+  file's only failure, the scenario prints it as `package_backup_unreadable`
+  and does not count it as altered; any other failure on it still counts.
+- The service's `/pins` lists a pinned model by its bare name when it wins
+  precedence for that name, so a canonical `--expect-pin` id such as
+  `user.zembed-1-Q4_K_M-GGUF-Q4_K_M` matches its bare listing. The scenario
+  accepts that alias only when both ids resolve to the same main checkpoint,
+  and prints it as `service_pin_alias`.
 
 ## Kokoro TTS Decision
 
