@@ -69,6 +69,27 @@ def test_client_sends_admin_key_only_to_internal_endpoints():
     assert api_request.get_header("Authorization") == "Bearer regular"
     assert internal_request.full_url == "http://127.0.0.1:13305/internal/config"
     assert internal_request.get_header("Authorization") == "Bearer admin"
+    ollama_request = client._request_obj("POST", "/api/chat", {"model": "m:latest"})
+    assert ollama_request.full_url == "http://127.0.0.1:13305/api/chat"
+    assert ollama_request.get_header("Authorization") == "Bearer regular"
+
+
+def test_scrub_paths_hides_cache_and_host_paths_but_keeps_packaged_bins(tmp_path: Path):
+    cache = tmp_path / "hf-cache"
+    text = (
+        f"open {cache}/models--x/blobs/abc failed; backend {tmp_path}/lemonade/bin/llama-server; "
+        "exe /usr/bin/lemond; home /home/user/.cache/x; url http://127.0.0.1:9/api/models; ratio 1/2"
+    )
+
+    scrubbed = live.scrub_paths(text, {"model_cache": cache})
+
+    assert str(tmp_path) not in scrubbed
+    assert "open <model_cache> failed" in scrubbed
+    assert "backend <path>;" in scrubbed
+    assert "/usr/bin/lemond" in scrubbed
+    assert "home <path>;" in scrubbed
+    assert "http://127.0.0.1:9/api/models" in scrubbed
+    assert "ratio 1/2" in scrubbed
 
 
 def test_pooling_smoke_sends_optional_api_key(monkeypatch: pytest.MonkeyPatch):
@@ -238,6 +259,9 @@ class FakeLemond:
         self.busy_model: str | None = None
         self.model_storage = Path("/service-hf-cache")
         self.auto_pull = False
+        # Request paths on which an absent model is fetched instead of refused.
+        self.auto_pull_paths: set[str] = set()
+        self.current_path = ""
 
     def _refuse(self, message: str) -> tuple[int, Any]:
         return 500, {"error": {"message": message}}
@@ -246,7 +270,8 @@ class FakeLemond:
         name = payload["model_name"]
         if name not in self.models:
             return 404, {"error": {"message": f"Model not found: {name}"}}
-        if not self.models[name].get("downloaded") and not self.auto_pull:
+        fetches = self.auto_pull or self.current_path in self.auto_pull_paths
+        if not self.models[name].get("downloaded") and not fetches:
             return self._refuse(f"Failed to load model: {name} is not downloaded")
         ctx = int(payload.get("ctx_size", 4096))
         predicted = 1.7 + ctx * 114688 / 2**30
@@ -282,6 +307,7 @@ class FakeLemond:
         return status, body
 
     def _dispatch(self, method: str, path: str, payload: Any) -> tuple[int, Any]:
+        self.current_path = path
         if path == "/health":
             for name, entry in self.loaded.items():
                 entry["is_busy"] = name == self.busy_model
@@ -349,6 +375,23 @@ class FakeLemond:
             }
         if path == "/completions":
             return 200, {"choices": [{"text": " Paris."}]}
+        if path == "/chat/completions":
+            # Inference auto-load: load a model that is not resident, then answer.
+            name = payload["model"]
+            if name not in self.loaded:
+                status, body = self._load({"model_name": name, "ctx_size": payload.get("ctx_size", 4096)})
+                if status >= 400:
+                    return status, body
+            return 200, {"choices": [{"message": {"role": "assistant", "content": "OK"}}]}
+        if path == "/api/chat":
+            # Ollama auto-load: lemond strips ":latest" and answers 404 on any load failure.
+            name = payload["model"].removesuffix(":latest")
+            if name not in self.loaded:
+                ctx = (payload.get("options") or {}).get("num_ctx", 4096)
+                status, _ = self._load({"model_name": name, "ctx_size": ctx})
+                if status >= 400:
+                    return 404, {"error": f"model '{name}' not found, try pulling it first"}
+            return 200, {"model": name, "message": {"role": "assistant", "content": "OK"}, "done": True}
         raise AssertionError(f"unexpected request {method} {path}")
 
     def get(self, path: str, **kwargs):
@@ -547,7 +590,7 @@ def test_backend_libraries_must_come_from_repo_packages(capsys: pytest.CaptureFi
     [
         (lambda owners: owners.update({f"{LEMOND_CACHE_BIN}/rocm/libhsa-runtime64.so.1": "x"}), "from lemond's cache bin"),
         (lambda owners: owners.update({"/opt/rocm/lib/libhsa-runtime64.so.1": "hsa-rocr"}), "outside strix-halo-gfx1151"),
-        (lambda owners: owners.update({"/opt/llama.cpp-hip-gfx1151/lib/libllama.so": "hip-runtime-amd-gfx1151"}), "ggml/llama libraries are owned by"),
+        (lambda owners: owners.update({"/opt/llama.cpp-hip-gfx1151/lib/libllama.so": "hip-runtime-amd-gfx1151"}), "ggml/llama/mtmd libraries are owned by"),
     ],
 )
 def test_backend_libraries_reject_cache_unowned_foreign_or_missing_objects(mutate, message):
@@ -569,7 +612,7 @@ def test_backend_libraries_reject_unowned_objects_and_a_missing_hip_runtime():
 
 
 def test_backend_libraries_require_llamacpp_objects():
-    with pytest.raises(AssertionError, match="no ggml or llama shared object"):
+    with pytest.raises(AssertionError, match="no ggml, llama, or mtmd shared object"):
         _verify_libs({"/opt/rocm/lib/libamdhip64.so.7": "hip-runtime-amd-gfx1151"})
 
 
@@ -774,6 +817,7 @@ class FakeHost(live.ServiceHost):
         self.user_home = tmp_path / "home"
         self.ss_rows = [_listen_row()]
         self.journal: list[str] = []
+        self.stamps: list[float] = []
         self.commands: list[list[str]] = []
         super().__init__("lemond.service", runner=self._run, proc_root=self.proc)
 
@@ -785,7 +829,11 @@ class FakeHost(live.ServiceHost):
         elif argv[0] == "ss":
             stdout = "\n".join(self.ss_rows) + "\n"
         elif argv[0] == "journalctl":
-            stdout = "".join(f"{time.time():.6f} host lemond[{LEMOND_PID}]: {line}\n" for line in self.journal)
+            # A line is stamped when a query first sees it, so each phase sees only its own lines.
+            self.stamps += [time.time()] * (len(self.journal) - len(self.stamps))
+            stdout = "".join(
+                f"{stamp:.6f} host lemond[{LEMOND_PID}]: {line}\n" for stamp, line in zip(self.stamps, self.journal)
+            )
         else:
             raise AssertionError(f"unexpected command {argv}")
         return subprocess.CompletedProcess(argv, 0, stdout=stdout, stderr="")
@@ -836,6 +884,36 @@ def _run_nofetch(server, host, **kwargs):
         interval=0.01,
         text=kwargs.pop("text", _fake_text(host)),
     )
+
+
+AUTO_PULL_ROUTES = {"load": "/load", "inference": "/chat/completions", "ollama": "/api/chat"}
+PHASES = [f"{kind}_{path}" for kind in ("preplaced", "missing") for path in AUTO_PULL_ROUTES]
+
+
+def _evidence_on(server, host, *, route: str, model: str, journal=(), ss_rows=(), touch: Path | None = None, reply=None):
+    """When `route` names `model`, add fetch evidence or replace the reply."""
+    original = server._dispatch
+
+    def dispatch(method, path, payload):
+        named = (payload or {}).get("model_name") or (payload or {}).get("model") or ""
+        if method == "POST" and path == route and named.removesuffix(":latest") == model:
+            host.journal += list(journal)
+            host.ss_rows += list(ss_rows)
+            if touch is not None:
+                touch.write_text("x", encoding="utf-8")
+            if reply is not None:
+                return reply
+        return original(method, path, payload)
+
+    server._dispatch = dispatch
+
+
+def _touch_target(server, host, kind: str | None, name: str) -> Path | None:
+    if kind == "model":
+        return server.model_storage / "models--Qwen--Qwen3-0.6B-GGUF" / "blobs" / name
+    if kind == "backend":
+        return host.cache_dir() / "bin" / "llama-server"
+    return None
 
 
 def test_ss_parsing_and_loopback_detection():
@@ -944,26 +1022,35 @@ def test_nofetch_proves_no_download_log_cache_change_or_remote_connection(
     _run_nofetch(server, host)
 
     out = capsys.readouterr().out
-    for marker in (
+    markers = [
         "offline_config_ok",
         "endpoint_blackhole_ok",
         "network_attribution_ok",
-        "completion_ok",
-        "preplaced_no_fetch_log_ok",
-        "preplaced_model_cache_unchanged_ok",
-        "preplaced_backend_cache_unchanged_ok",
-        "preplaced_no_remote_connection_ok",
+        "missing_model_registered_ok",
         "missing_model_absent_ok",
-        "missing_model_refused_ok",
-        "missing_no_fetch_log_ok",
-        "missing_model_cache_unchanged_ok",
-        "missing_backend_cache_unchanged_ok",
-        "missing_no_remote_connection_ok",
+        "completion_ok",
+        "preplaced_inference_autoload_ok",
+        "preplaced_ollama_autoload_ok",
+        "missing_load_refused_ok",
+        "missing_inference_refused_ok",
+        "missing_ollama_refused_ok",
         "no_fetch_ok",
-    ):
+    ]
+    for phase in PHASES:
+        markers += [
+            f"{phase}_no_fetch_log_ok",
+            f"{phase}_model_cache_unchanged_ok",
+            f"{phase}_backend_cache_unchanged_ok",
+            f"{phase}_no_remote_connection_ok",
+        ]
+    for marker in markers:
         assert marker in out
+    assert "blackholed_fetch_attempt_recorded" not in out
     assert str(tmp_path) not in out
+    for route in AUTO_PULL_ROUTES.values():
+        assert ("POST", route) in server.calls
     assert "Tiny-Test-Model-GGUF" not in server.loaded
+    assert MODEL not in server.loaded
 
 
 @pytest.mark.parametrize(
@@ -978,14 +1065,71 @@ def test_nofetch_proves_no_download_log_cache_change_or_remote_connection(
 )
 def test_nofetch_fails_on_each_kind_of_fetch_evidence(tmp_path: Path, change: dict, message: str):
     server, host = _nofetch_setup(tmp_path)
-    touch = change.pop("touch", None)
-    if touch == "model":
-        change["touch"] = server.model_storage / "models--Qwen--Qwen3-0.6B-GGUF" / "blobs" / "new.incomplete"
-    elif touch == "backend":
-        change["touch"] = host.cache_dir() / "bin" / "llama-server"
+    change = dict(change)
+    touch = _touch_target(server, host, change.pop("touch", None), "new.incomplete")
+    if touch is not None:
+        change["touch"] = touch
 
-    with pytest.raises(AssertionError, match=message):
+    with pytest.raises(AssertionError, match=f"preplaced_load: .*{message}"):
         _run_nofetch(server, host, text=_fake_text(host, **change))
+
+
+@pytest.mark.parametrize("path", ["inference", "ollama"])
+@pytest.mark.parametrize(
+    ("change", "message"),
+    [
+        ({"journal": ["Model not cached, downloading from Hugging Face..."]}, "download or install lines"),
+        ({"ss_rows": ['SYN-SENT 0 1 198.51.100.2:5000 203.0.113.9:443 users:(("lemond",pid=4000,fd=12))']}, "non-loopback"),
+        ({"ss_rows": ['SYN-SENT 0 1 127.0.0.1:5000 127.0.0.1:9 users:(("lemond",pid=4000,fd=12))']}, "blackhole"),
+        ({"touch": "model"}, "model_cache changed"),
+        ({"touch": "backend"}, "backend_cache changed"),
+    ],
+)
+def test_nofetch_preplaced_auto_load_paths_keep_the_strict_check(
+    tmp_path: Path, path: str, change: dict, message: str
+):
+    server, host = _nofetch_setup(tmp_path)
+    change = dict(change)
+    touch = _touch_target(server, host, change.pop("touch", None), "auto.incomplete")
+    _evidence_on(server, host, route=AUTO_PULL_ROUTES[path], model=MODEL, touch=touch, **change)
+
+    with pytest.raises(AssertionError, match=f"preplaced_{path}: .*{message}"):
+        _run_nofetch(server, host)
+    assert MODEL not in server.loaded
+
+
+@pytest.mark.parametrize("path", ["inference", "ollama"])
+def test_nofetch_preplaced_auto_load_must_load_the_model(tmp_path: Path, path: str):
+    server, host = _nofetch_setup(tmp_path)
+    reply = (500, {"error": {"message": f"cannot open {server.model_storage}/models--Qwen/blobs/abc"}})
+    _evidence_on(
+        server, host, route=AUTO_PULL_ROUTES[path], model=MODEL, journal=[f"Auto-loading model: {MODEL}"], reply=reply
+    )
+
+    with pytest.raises(AssertionError, match=f"preplaced_{path}: auto-load of .* failed") as excinfo:
+        _run_nofetch(server, host)
+    assert str(tmp_path) not in str(excinfo.value)
+    assert "<model_cache>" in str(excinfo.value)
+
+
+def test_nofetch_unloads_a_resident_preplaced_model_and_restores_it(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    server, host = _nofetch_setup(tmp_path)
+    server.loaded[MODEL] = {
+        "model_name": MODEL,
+        "pid": 50,
+        "pinned": False,
+        "is_busy": False,
+        "recipe_options": {"llamacpp_backend": "vulkan", "ctx_size": 8192},
+    }
+
+    _run_nofetch(server, host)
+
+    out = capsys.readouterr().out
+    assert "preplaced_residency_restored" in out
+    assert server.loaded[MODEL]["recipe_options"]["llamacpp_backend"] == "vulkan"
+    assert server.calls.index(("POST", "/unload")) < server.calls.index(("POST", "/chat/completions"))
 
 
 def test_nofetch_ignores_other_processes_and_inbound_lan_clients(tmp_path: Path):
@@ -996,86 +1140,99 @@ def test_nofetch_ignores_other_processes_and_inbound_lan_clients(tmp_path: Path)
     _run_nofetch(server, host, text=_fake_text(host, ss_rows=[other, inbound]))
 
 
-def test_nofetch_missing_model_must_fail_loudly_and_be_absent(tmp_path: Path):
+def test_nofetch_missing_model_must_be_registered_and_absent(tmp_path: Path):
     server, host = _nofetch_setup(tmp_path)
+    with pytest.raises(AssertionError, match="missing_model_unregistered"):
+        _run_nofetch(server, host, missing_model="user.never-registered")
+    assert ("POST", "/load") not in server.calls
+
+    server, host = _nofetch_setup(tmp_path / "second")
     server.models["Tiny-Test-Model-GGUF"]["downloaded"] = True
     with pytest.raises(AssertionError, match="missing_model_present"):
         _run_nofetch(server, host)
+    assert ("POST", "/load") not in server.calls
 
-    server, host = _nofetch_setup(tmp_path / "second")
-    server.auto_pull = True
-    with pytest.raises(AssertionError, match="succeeded; it was fetched"):
+
+@pytest.mark.parametrize("path", list(AUTO_PULL_ROUTES))
+def test_nofetch_missing_model_must_fail_loudly_on_each_path(tmp_path: Path, path: str):
+    server, host = _nofetch_setup(tmp_path)
+    server.auto_pull_paths = {AUTO_PULL_ROUTES[path]}
+
+    with pytest.raises(AssertionError, match=f"missing_{path}: Tiny-Test-Model-GGUF was admitted; it was fetched"):
         _run_nofetch(server, host)
     assert "Tiny-Test-Model-GGUF" not in server.loaded
-
-    server, host = _nofetch_setup(tmp_path / "third")
-    _run_nofetch(server, host, missing_model="user.never-registered")
-
-
-def _attempt_on_missing_load(server, host, *, ss_rows=(), touch: Path | None = None):
-    """Make the refused missing-model load log and blackhole a download attempt."""
-    original = server._load
-
-    def attempting_load(payload):
-        if payload["model_name"] == "Tiny-Test-Model-GGUF":
-            host.journal.append("Model not downloaded, downloading...")
-            host.ss_rows += list(ss_rows)
-            if touch is not None:
-                touch.write_text("x", encoding="utf-8")
-        return original(payload)
-
-    server._load = attempting_load
 
 
 BLACKHOLE_CONNECT = 'SYN-SENT 0 1 127.0.0.1:5000 127.0.0.1:9 users:(("lemond",pid=4000,fd=12))'
 
 
-def test_nofetch_records_a_blackholed_attempt_for_the_missing_model(
+def _attempt_on_missing(server, host, *, paths=tuple(AUTO_PULL_ROUTES), **evidence):
+    """Make the refused missing-model requests log and blackhole a download attempt."""
+    for path in paths:
+        _evidence_on(
+            server, host, route=AUTO_PULL_ROUTES[path], model="Tiny-Test-Model-GGUF",
+            journal=["Model not cached, downloading from Hugging Face..."], **evidence,
+        )
+
+
+def test_nofetch_records_a_blackholed_attempt_on_each_missing_path(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
     server, host = _nofetch_setup(tmp_path)
-    _attempt_on_missing_load(server, host, ss_rows=[BLACKHOLE_CONNECT])
+    _attempt_on_missing(server, host, ss_rows=[BLACKHOLE_CONNECT])
 
     _run_nofetch(server, host)
 
     out = capsys.readouterr().out
-    assert "preplaced_no_fetch_log_ok" in out
-    assert "missing_model_refused_ok" in out
-    assert "missing_fetch_log_lines 1" in out
-    assert "missing_no_fetch_log_ok" not in out
-    assert "missing_blackholed_fetch_attempt_recorded log_lines=1 blackhole_connects=" in out
-    assert "missing_model_cache_unchanged_ok" in out
-    assert "missing_no_remote_connection_ok" in out
+    assert "preplaced_load_no_fetch_log_ok" in out
+    for path in AUTO_PULL_ROUTES:
+        phase = f"missing_{path}"
+        assert f"{phase}_refused_ok" in out
+        assert f"{phase}_fetch_log_lines 1" in out
+        assert f"{phase}_no_fetch_log_ok" not in out
+        assert f"{phase}_blackholed_fetch_attempt_recorded log_lines=1 blackhole_connects=" in out
+        assert f"{phase}_model_cache_unchanged_ok" in out
+        assert f"{phase}_no_remote_connection_ok" in out
     assert "no_fetch_ok" in out
 
 
+def test_nofetch_missing_refusals_are_printed_without_host_paths(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    server, host = _nofetch_setup(tmp_path)
+    refusal = f"Failed to download into {host.cache_dir()}/bin and {server.model_storage}/models--unsloth"
+    _evidence_on(
+        server, host, route="/load", model="Tiny-Test-Model-GGUF",
+        journal=["Ensuring model loaded: Tiny-Test-Model-GGUF"], reply=(500, {"error": {"message": refusal}}),
+    )
+
+    _run_nofetch(server, host)
+
+    out = capsys.readouterr().out
+    assert "missing_load_refusal" in out
+    assert "<backend_cache>" in out and "<model_cache>" in out
+    assert str(tmp_path) not in out
+
+
+@pytest.mark.parametrize("path", list(AUTO_PULL_ROUTES))
 @pytest.mark.parametrize(
     ("change", "message"),
     [
-        ({"ss_rows": ['SYN-SENT 0 1 198.51.100.2:5000 203.0.113.9:443 users:(("lemond",pid=4000,fd=12))']}, "missing: lemond connected to 1 non-loopback"),
-        ({"touch": "model"}, "missing: model_cache changed"),
-        ({"touch": "backend"}, "missing: backend_cache changed"),
+        ({"ss_rows": ['SYN-SENT 0 1 198.51.100.2:5000 203.0.113.9:443 users:(("lemond",pid=4000,fd=12))']}, "lemond connected to 1 non-loopback"),
+        ({"touch": "model"}, "model_cache changed"),
+        ({"touch": "backend"}, "backend_cache changed"),
     ],
 )
 def test_nofetch_missing_model_attempt_fails_on_remote_or_cache_evidence(
-    tmp_path: Path, change: dict, message: str
+    tmp_path: Path, path: str, change: dict, message: str
 ):
     server, host = _nofetch_setup(tmp_path)
-    touch = change.pop("touch", None)
-    if touch == "model":
-        change["touch"] = server.model_storage / "models--Qwen--Qwen3-0.6B-GGUF" / "blobs" / "tiny.incomplete"
-    elif touch == "backend":
-        change["touch"] = host.cache_dir() / "bin" / "llama-server"
-    _attempt_on_missing_load(server, host, **change)
+    change = dict(change)
+    touch = _touch_target(server, host, change.pop("touch", None), "tiny.incomplete")
+    _attempt_on_missing(server, host, paths=(path,), touch=touch, **change)
 
-    with pytest.raises(AssertionError, match=message):
+    with pytest.raises(AssertionError, match=f"missing_{path}: {message}"):
         _run_nofetch(server, host)
-
-
-def test_nofetch_preplaced_phase_keeps_the_strict_download_check(tmp_path: Path):
-    server, host = _nofetch_setup(tmp_path)
-    with pytest.raises(AssertionError, match="preplaced: the service logged 1 download"):
-        _run_nofetch(server, host, text=_fake_text(host, journal=["Model not downloaded, downloading..."]))
 
 
 def test_nofetch_preconditions_block_before_any_load(tmp_path: Path):

@@ -23,7 +23,7 @@ work is tracked in issue #138.
 | Budget admit and refuse, with APU GTT counted | `lemonade.budget.gtt-admit-refuse` |
 | Pinned and in-use models never displaced | `lemonade.residency.pinned-busy-not-displaced` |
 | Package provenance; no silent downloader, bundled-backend fallback, or foreign or mixed package | `lemonade.provenance.family-no-fallback` |
-| No fetch on load: journal, cache-diff, and network evidence, plus a missing model that fails loudly | `lemonade.nofetch.preplaced-load-missing-model` |
+| No fetch on `/load`, inference auto-load, or Ollama auto-load: journal, cache-diff, and network evidence, plus a registered but absent model that fails loudly on each path | `lemonade.nofetch.preplaced-load-missing-model` |
 | The service keeps the consumer models `zembed-1` Q4_K_M and `zerank-2` Q8_0 pinned and loaded | `lemonade.pins.service-consumer-pins` |
 | Embeddings, both rerankers, and selected-logit | the existing `lemonade.pooling.*` and `lemonade.reranking.zerank-2.selected-logit` scenarios |
 | App launch with pin and startup controls, plus one text interaction | the `lemonade.app.pin-startup-text` operator checklist in the same TOML file |
@@ -52,10 +52,11 @@ ROCm, HIP, ggml, llama, or mtmd shared object and require:
 - none of them lies under `lemond`'s cache `bin/` directory;
 - each one resolves to an owner with `pacman -Qo`;
 - every owner is listed in the local repo (`pacman -Slq strix-halo-gfx1151`);
-- the ggml and llama objects are owned by the selected backend package; and
+- the ggml, llama, and mtmd objects are owned by the selected backend package; and
 - the ROCm backend maps the HIP runtime (`libamdhip64`).
 
-Output reports counts and package names only, never library or cache paths.
+Output reports counts, package names, and the backend executable's file name
+only, never library or cache paths.
 Reading another user's `maps` needs the same privileges as reading that
 process's memory map, so run these scenarios with access to the service's
 processes; otherwise they fail with `backend_maps_unreadable`.
@@ -87,48 +88,77 @@ read-only by `lemonade.pins.service-consumer-pins`.
 
 ## No-Fetch Evidence
 
-`lemonade.nofetch.preplaced-load-missing-model` runs two phases against the
-service. Each phase collects three kinds of evidence:
+On the frozen Lemonade candidate `3d5991033`, `offline: true` does not stop an
+implicit auto-pull. Three request paths download a registered model that is not
+cached before they load it:
+
+| Path | Request the scenario sends | Phase names |
+| --- | --- | --- |
+| `/load` | `POST /api/v1/load` with `model_name` | `preplaced_load`, `missing_load` |
+| Inference auto-load | `POST /api/v1/chat/completions` naming a model that is not loaded | `preplaced_inference`, `missing_inference` |
+| Ollama auto-load | `POST /api/chat` (at the server root) naming `<model>:latest`; `lemond` strips `:latest` | `preplaced_ollama`, `missing_ollama` |
+
+`lemonade.nofetch.preplaced-load-missing-model` runs each path twice against
+the service: once for the pre-placed test GGUF and once for a registered but
+absent model. Each phase collects three kinds of evidence and prints its own
+markers, prefixed with the phase name:
 
 - Journal: `journalctl -u lemond.service` over the phase window must contain
   no download or install lines. The phase must also show a line naming the
-  loaded model, which proves that the journal is readable.
+  phase's model, which proves that the journal is readable.
 - Caches: the model cache and the backend cache (`<cache dir>/bin`) are listed
   before and after the phase. Every path, type, size, mtime, and symlink target
   must match. The model cache path comes from the service's `/system-info`
   `model_storage.path`. The cache dir comes from `lemond`'s argv, then
-  `LEMONADE_CACHE_DIR`, then the service user's `~/.cache/lemonade`. Output
-  reports only entry counts, never paths.
+  `LEMONADE_CACHE_DIR`, then the service user's `~/.cache/lemonade`.
 - Network: `ss -tanp` is sampled throughout the phase. No socket owned by
   `lemond` or its children may have a non-loopback peer. In the pre-placed
-  phase, none may connect to the download blackhole's port either. Connections accepted on one of `lemond`'s
-  listening ports are client traffic, such as LAN consumers, and are ignored.
+  phases, none may connect to the download blackhole's port either.
+  Connections accepted on one of `lemond`'s listening ports are client
+  traffic, such as LAN consumers, and are ignored.
 
-In the first phase, the service loads and completes with the pre-placed test
-GGUF, using the same checks as the text scenario. In the second phase, the
-scenario loads `Tiny-Test-Model-GGUF`, a small catalog model that must not be
-downloaded. The phase passes when all of these hold:
+The pre-placed phases are strict. `preplaced_load` loads and completes with
+the test GGUF, using the same checks as the text scenario. `preplaced_inference`
+and `preplaced_ollama` must auto-load the model: the request must succeed and
+leave the model resident, and each prints `<phase>_autoload_ok`. Any download
+or install line, cache change, non-loopback connection, or blackhole connect
+fails the phase. Every path must really auto-load, so the scenario unloads the
+test model first when it is already resident, unloads it after each phase, and
+reloads it with its previous recipe options at the end
+(`preplaced_residency_restored`).
 
-- the load fails loudly, with a non-2xx status or an explicit error, and the
-  model does not become resident;
+The missing phases use `Tiny-Test-Model-GGUF`, a small `llamacpp` model in the
+candidate's built-in catalog. Before anything is loaded, `GET
+/api/v1/models/<id>` must return a status below 400
+(`missing_model_registered_ok`), so each phase really reaches the offline
+download path, and the model must not be downloaded
+(`missing_model_absent_ok`). A missing phase passes when all of these hold:
+
+- the request fails loudly, with status >= 400 or an explicit error, and the
+  model does not become resident (`<phase>_refused_ok`);
 - the model and backend caches are unchanged; and
 - `lemond` and its children made no non-loopback connection.
+
+The blackhole stops the bytes, but the attempt is logged, for example as
+`Model not cached, downloading from Hugging Face...`. Under the lead's ruling
+for #138, a logged, blackholed attempt in a missing phase is an observation,
+not a failure. The phase prints `<phase>_blackholed_fetch_attempt_recorded`
+with the log-line and blackhole connect counts, and does not print
+`<phase>_no_fetch_log_ok`. When the fork refuses these requests offline
+(nisavid/lemonade#155), the missing phases print `<phase>_no_fetch_log_ok`
+again, and the recorded marker disappears.
 
 Preconditions are checked before anything is loaded. The service config must
 have `offline` and `no_fetch_executables` set to true. `HF_ENDPOINT` and
 `MODELSCOPE_ENDPOINT` must both name loopback endpoints. `ss -p` must be able
 to attribute the service's listening socket to `lemond`.
 
-On candidate `187b4a25f`, `/load` of a registered model that is not
-downloaded calls the download path even when `offline` is true. The blackhole
-stops the bytes, but the attempt is logged as `Model not downloaded,
-downloading...`. Under the lead's ruling for #138, a logged, blackholed attempt
-in the missing phase is an observation, not a failure. The scenario prints
-`missing_blackholed_fetch_attempt_recorded` with the log-line and blackhole
-connect counts, and does not print `missing_no_fetch_log_ok`. The pre-placed
-phase keeps the strict check: any download or install line, or any blackhole
-connect, fails it. When the fork refuses that load offline, the missing phase
-prints `missing_no_fetch_log_ok` again, and the recorded marker disappears.
+Output never names a cache path or another host-specific path. Evidence is
+reported as counts. Refusal text and error messages are scrubbed: a path under
+the model cache, the backend cache, or the cache dir becomes `<model_cache>`,
+`<backend_cache>`, or `<lemonade_cache>`, and any other absolute path becomes
+`<path>`. The only paths printed are package-owned `/usr/bin` paths, such as
+`/usr/bin/lemond` in the provenance scenario.
 
 All of these scenarios carry `validation-window`. Broad selections skip them,
 so select them explicitly:
@@ -177,7 +207,7 @@ selection. `--scenario <id>` always selects the named scenario.
 
 ## Kokoro TTS Decision
 
-The pinned Lemonade candidate (`nisavid/lemonade` fork main `187b4a25f`) can
+The frozen Lemonade candidate (`nisavid/lemonade` fork main `3d5991033`) can
 run Kokoro with a local backend directory and `no_fetch_executables`. However,
 its `backend_versions.json` records no digest for the `lemonade-sdk/Kokoros`
 runtime asset, so a pre-provisioned runtime cannot have its version and digest

@@ -126,7 +126,7 @@ def verify_sha256(path: Path, expected: str | None, *, label: str = "model_sha25
 
 def run_smoke(args: argparse.Namespace) -> None:
     if not args.model_path.is_file():
-        raise FileNotFoundError(f"GGUF model binding is not a file: {args.model_path}")
+        raise FileNotFoundError("GGUF model binding is not a file")
     verify_sha256(args.model_path, args.expect_sha256)
     if args.port == 0:
         args.port = _free_port(args.host)

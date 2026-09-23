@@ -461,7 +461,7 @@ value = "no_bundled_backend_ok"
 
 [[scenario]]
 id = "lemonade.nofetch.preplaced-load-missing-model"
-summary = "Loading a pre-placed GGUF fetches nothing, and loading an absent model fails loudly with unchanged model and backend caches and no remote connection from lemond; a logged, blackholed attempt is recorded"
+summary = "On each implicit auto-pull path (/load, OpenAI-style inference auto-load, Ollama auto-load), a pre-placed GGUF loads without fetching, and a registered but absent model fails loudly with unchanged model and backend caches and no remote connection from lemond; a logged, blackholed attempt is recorded"
 tags = [
   "live-validation",
   "validation-window",
@@ -519,6 +519,14 @@ value = "network_attribution_ok"
 
 [[scenario.then.assert]]
 kind = "stdout.contains"
+value = "missing_model_registered_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "missing_model_absent_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
 value = "model_sha256_ok"
 
 [[scenario.then.assert]]
@@ -531,39 +539,107 @@ value = "backend_libraries_repo_owned_ok"
 
 [[scenario.then.assert]]
 kind = "stdout.contains"
-value = "preplaced_no_fetch_log_ok"
+value = "preplaced_load_no_fetch_log_ok"
 
 [[scenario.then.assert]]
 kind = "stdout.contains"
-value = "preplaced_model_cache_unchanged_ok"
+value = "preplaced_load_model_cache_unchanged_ok"
 
 [[scenario.then.assert]]
 kind = "stdout.contains"
-value = "preplaced_backend_cache_unchanged_ok"
+value = "preplaced_load_backend_cache_unchanged_ok"
 
 [[scenario.then.assert]]
 kind = "stdout.contains"
-value = "preplaced_no_remote_connection_ok"
+value = "preplaced_load_no_remote_connection_ok"
 
 [[scenario.then.assert]]
 kind = "stdout.contains"
-value = "missing_model_absent_ok"
+value = "preplaced_inference_autoload_ok"
 
 [[scenario.then.assert]]
 kind = "stdout.contains"
-value = "missing_model_refused_ok"
+value = "preplaced_inference_no_fetch_log_ok"
 
 [[scenario.then.assert]]
 kind = "stdout.contains"
-value = "missing_model_cache_unchanged_ok"
+value = "preplaced_inference_model_cache_unchanged_ok"
 
 [[scenario.then.assert]]
 kind = "stdout.contains"
-value = "missing_backend_cache_unchanged_ok"
+value = "preplaced_inference_backend_cache_unchanged_ok"
 
 [[scenario.then.assert]]
 kind = "stdout.contains"
-value = "missing_no_remote_connection_ok"
+value = "preplaced_inference_no_remote_connection_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "preplaced_ollama_autoload_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "preplaced_ollama_no_fetch_log_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "preplaced_ollama_model_cache_unchanged_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "preplaced_ollama_backend_cache_unchanged_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "preplaced_ollama_no_remote_connection_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "missing_load_refused_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "missing_load_model_cache_unchanged_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "missing_load_backend_cache_unchanged_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "missing_load_no_remote_connection_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "missing_inference_refused_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "missing_inference_model_cache_unchanged_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "missing_inference_backend_cache_unchanged_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "missing_inference_no_remote_connection_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "missing_ollama_refused_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "missing_ollama_model_cache_unchanged_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "missing_ollama_backend_cache_unchanged_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "missing_ollama_no_remote_connection_ok"
 
 [[scenario.then.assert]]
 kind = "stdout.contains"

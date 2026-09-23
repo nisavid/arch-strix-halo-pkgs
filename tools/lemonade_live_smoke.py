@@ -7,11 +7,13 @@ Modes that target the running service (``--base-url``):
   and prove that the backend process and every ROCm/HIP/ggml/llama shared
   object it maps belong to repo packages, none from lemond's cache.
 - ``provenance``: read-only package, file-ownership, and config provenance.
-- ``nofetch``: load a pre-placed model and request an absent one while
-  watching the service journal, the model and backend caches, and lemond's
-  sockets. The pre-placed load may log no download; the absent model must fail
-  loudly with unchanged caches and no non-loopback connection, and a logged,
-  blackholed download attempt is recorded rather than failed.
+- ``nofetch``: drive each implicit auto-pull path (``/load``, OpenAI-style
+  inference auto-load, and Ollama auto-load) for a pre-placed model and for a
+  registered but absent one while watching the service journal, the model and
+  backend caches, and lemond's sockets. The pre-placed paths may log no
+  download; the absent model must fail loudly on every path with unchanged
+  caches and no non-loopback connection, and a logged, blackholed download
+  attempt is recorded rather than failed.
 - ``service-pins``: read-only check that consumer models are pinned and loaded.
 
 Modes that start their own ``lemond`` from the packaged binary, with a
@@ -92,6 +94,25 @@ BACKEND_LIB_RE = re.compile(
 LLAMACPP_LIB_RE = re.compile(r"^lib(?:ggml|llama|mtmd)", re.IGNORECASE)
 HIP_RUNTIME_LIB_RE = re.compile(r"^libamdhip64\.so")
 ALTERED_RE = re.compile(r"(\d+) altered files?")
+# Absolute paths in service-supplied text. Package-owned /usr/bin paths are
+# generic interfaces; every other absolute path may name host-specific state.
+_PATH_BODY = r"[^\s\"'`,;()\[\]{}<>]"
+ABSOLUTE_PATH_RE = re.compile(r"(?<![\w.:/~-])/(?!usr/bin/)" + _PATH_BODY + "+")
+
+
+def scrub_paths(text: str, roots: Mapping[str, Path] | None = None) -> str:
+    """Replace absolute paths in `text`: `roots` by `<name>`, others by `<path>`."""
+    named = []
+    for name, root in (roots or {}).items():
+        for base in {str(root), os.path.realpath(root)}:
+            if base.rstrip("/"):
+                named.append((base.rstrip("/"), name))
+    for base, name in sorted(named, key=lambda item: -len(item[0])):
+        text = re.sub(re.escape(base) + r"(?:/" + _PATH_BODY + "*)?", f"<{name}>", text)
+    return ABSOLUTE_PATH_RE.sub("<path>", text)
+
+
+OLLAMA_ROUTE_PREFIX = "/api/"
 
 
 class LemonadeError(RuntimeError):
@@ -127,8 +148,10 @@ class LemonadeClient:
         self.timeout = timeout
 
     def _request_obj(self, method: str, path: str, payload: Any) -> request.Request:
+        # /internal/* and the Ollama-compatible /api/* routes live at the server root.
         internal = path.startswith("/internal/")
-        url = (self.root_url if internal else self.base_url) + path
+        root = internal or path.startswith(OLLAMA_ROUTE_PREFIX)
+        url = (self.root_url if root else self.base_url) + path
         headers = auth_headers(self.admin_api_key if internal else self.api_key)
         data = None
         if payload is not None:
@@ -159,7 +182,7 @@ class LemonadeClient:
             parsed = {"raw": body}
         message = error_message(parsed)
         if check and (status >= 400 or message):
-            raise LemonadeError(f"{method} {path} -> {status}: {message or body[:500]}")
+            raise LemonadeError(f"{method} {path} -> {status}: {scrub_paths(message or body[:500])}")
         return status, parsed
 
     def get(self, path: str, **kwargs: Any) -> Any:
@@ -210,15 +233,17 @@ def main_model_file(client: LemonadeClient, model: str) -> Path:
     raise AssertionError(f"{model} has no resolved main model file")
 
 
-def load_refusal(client: LemonadeClient, model: str, **options: Any) -> str | None:
-    """Try a load that should be refused; return the refusal, or None if admitted."""
-    status, payload = client.request(
-        "POST", "/load", {"model_name": model, **options}, check=False
-    )
+def request_refusal(status: int, payload: Any) -> str | None:
+    """A refusal is status >= 400 or an explicit error; return it, or None."""
     message = error_message(payload)
     if status < 400 and not message:
         return None
     return message or json.dumps(payload, sort_keys=True)
+
+
+def load_refusal(client: LemonadeClient, model: str, **options: Any) -> str | None:
+    """Try a load that should be refused; return the refusal, or None if admitted."""
+    return request_refusal(*client.request("POST", "/load", {"model_name": model, **options}, check=False))
 
 
 def refusal_capacity_gb(message: str | None) -> float | None:
@@ -294,7 +319,7 @@ def repo_package_names(repo: str, *, runner: Runner = subprocess.run) -> set[str
 
 
 def mapped_libraries(pid: int, *, proc_root: Path = Path("/proc")) -> set[str]:
-    """Paths of the ROCm/HIP/ggml/llama shared objects mapped into `pid`."""
+    """Paths of the ROCm/HIP/ggml/llama/mtmd shared objects mapped into `pid`."""
     try:
         text = (proc_root / str(pid) / "maps").read_text(encoding="utf-8", errors="replace")
     except OSError as exc:
@@ -331,7 +356,7 @@ def verify_backend_libraries(
     cache_bins: Iterable[Path],
     owner_of: Callable[[str], str],
 ) -> None:
-    """Every mapped ROCm/HIP/ggml/llama object must come from a repo package.
+    """Every mapped ROCm/HIP/ggml/llama/mtmd object must come from a repo package.
 
     With backend=rocm, lemond prepends cached TheRock lib dirs to the backend's
     LD_LIBRARY_PATH, so a cached runtime can shadow the packaged one even when
@@ -340,7 +365,7 @@ def verify_backend_libraries(
     names = [Path(path).name for path in paths]
     print("backend_libraries", len(paths))
     if not any(LLAMACPP_LIB_RE.match(name) for name in names):
-        raise AssertionError("backend_libraries_missing: no ggml or llama shared object is mapped")
+        raise AssertionError("backend_libraries_missing: no ggml, llama, or mtmd shared object is mapped")
     if backend == "rocm" and not any(HIP_RUNTIME_LIB_RE.match(name) for name in names):
         raise AssertionError("backend_libraries_missing: the rocm backend has no HIP runtime mapped")
     cached = [path for path in paths if _under(path, cache_bins)]
@@ -369,7 +394,7 @@ def verify_backend_libraries(
         raise AssertionError(f"backend libraries owned by packages outside {repo}: {outside}")
     if llamacpp_owners != {BACKEND_PACKAGES[backend]}:
         raise AssertionError(
-            f"ggml/llama libraries are owned by {sorted(llamacpp_owners)}, not {BACKEND_PACKAGES[backend]}"
+            f"ggml/llama/mtmd libraries are owned by {sorted(llamacpp_owners)}, not {BACKEND_PACKAGES[backend]}"
         )
     print("backend_libraries_repo_owned_ok")
 
@@ -440,7 +465,7 @@ def run_text(
 
         executable = executable_of(int(entry["pid"]))
         owner = owner_of(executable)
-        print("backend_executable", executable)
+        print("backend_executable", Path(executable).name)
         print("backend_package", owner)
         if owner != BACKEND_PACKAGES[backend]:
             raise AssertionError(f"backend process is owned by {owner}, not {BACKEND_PACKAGES[backend]}")
@@ -513,7 +538,7 @@ def run_provenance(
     service_executable = executable_of(main_pid)
     service_owner = package_owner(service_executable, runner=runner)
     if service_owner != "lemonade-server":
-        raise AssertionError(f"{service} runs {service_executable} owned by {service_owner}")
+        raise AssertionError(f"{service} runs an executable owned by {service_owner}, not lemonade-server")
     print("service_executable", service_executable)
     print("service_executable_owned_ok")
 
@@ -850,6 +875,33 @@ def require_socket_attribution(host: ServiceHost) -> None:
     print("network_attribution_ok")
 
 
+# The candidate's three implicit auto-pull paths. Each one downloads a
+# registered model that is not cached before loading it, even with offline=true.
+AUTO_PULL_PATHS = ("load", "inference", "ollama")
+AUTO_PULL_PROMPT = "Reply with one word."
+
+
+def send_auto_pull(client: LemonadeClient, path: str, model: str, *, ctx_size: int) -> tuple[int, Any]:
+    """Name `model` on one auto-pull path; return the status and payload."""
+    if path == "load":
+        return client.request("POST", "/load", {"model_name": model, "ctx_size": ctx_size}, check=False)
+    messages = [{"role": "user", "content": AUTO_PULL_PROMPT}]
+    if path == "inference":
+        # OpenAI-style chat completion naming a model that is not loaded.
+        payload = {"model": model, "messages": messages, "max_tokens": 4, "temperature": 0, "ctx_size": ctx_size}
+        return client.request("POST", "/chat/completions", payload, check=False)
+    if path == "ollama":
+        # Ollama-compatible chat; Ollama clients send name:tag, and lemond strips ":latest".
+        payload = {
+            "model": f"{model}:latest",
+            "messages": messages,
+            "stream": False,
+            "options": {"num_ctx": ctx_size, "num_predict": 4, "temperature": 0},
+        }
+        return client.request("POST", "/api/chat", payload, check=False)
+    raise ValueError(f"unknown auto-pull path {path!r}")
+
+
 def run_nofetch(
     client: LemonadeClient,
     *,
@@ -874,51 +926,91 @@ def run_nofetch(
     print("endpoint_blackhole_ok")
     require_socket_attribution(host)
 
+    # The missing phases must reach the candidate's download path, so the model
+    # has to be registered with the service and not downloaded.
+    status, payload = client.request("GET", f"/models/{quote_model(missing_model)}", check=False)
+    if status >= 400:
+        raise AssertionError(
+            f"missing_model_unregistered: GET /models/{missing_model} returned {status}; "
+            "pick a model the candidate registers so each path reaches its download path"
+        )
+    print("missing_model_registered_ok")
+    info = payload.get("data", payload) if isinstance(payload, dict) else {}
+    if isinstance(info, dict) and info.get("downloaded"):
+        raise AssertionError(f"missing_model_present: {missing_model} is downloaded; pick an absent model")
+    print("missing_model_absent_ok")
+    if loaded_entry(client.get("/health"), missing_model) is not None:
+        raise AssertionError(f"missing_model_resident: {missing_model} is already loaded")
+
     storage = (client.get("/system-info").get("model_storage") or {}).get("path")
     if not storage:
         raise AssertionError("system-info reports no model_storage path")
-    caches = {"model_cache": Path(str(storage)), "backend_cache": host.cache_dir() / "bin"}
+    cache_dir = host.cache_dir()
+    caches = {"model_cache": Path(str(storage)), "backend_cache": cache_dir / "bin"}
+    scrub_roots = {**caches, "lemonade_cache": cache_dir}
 
-    with FetchWatch(
-        host, caches=caches, blackhole=blackhole, expect_log=model,
-        interval=interval, journal_timeout=journal_timeout,
-    ) as watch:
-        text(
-            client,
-            model=model,
-            backend=backend,
-            ctx_size=ctx_size,
-            expect_checkpoint=expect_checkpoint,
-            expect_sha256=expect_sha256,
-            repo=repo,
-            cache_bins=(caches["backend_cache"],),
+    def watch(phase_model: str) -> FetchWatch:
+        return FetchWatch(
+            host, caches=caches, blackhole=blackhole, expect_log=phase_model,
+            interval=interval, journal_timeout=journal_timeout,
         )
-    watch.verify("preplaced")
 
-    status, payload = client.request("GET", f"/models/{quote_model(missing_model)}", check=False)
-    info = payload.get("data", payload) if isinstance(payload, dict) else {}
-    if status < 400 and isinstance(info, dict) and info.get("downloaded"):
-        raise AssertionError(f"missing_model_present: {missing_model} is downloaded; pick an absent model")
-    print("missing_model_absent_ok")
-    was_loaded = loaded_entry(client.get("/health"), missing_model) is not None
-    with FetchWatch(
-        host, caches=caches, blackhole=blackhole, expect_log=missing_model,
-        interval=interval, journal_timeout=journal_timeout,
-    ) as watch:
-        refusal = load_refusal(client, missing_model, ctx_size=ctx_size)
-        if refusal is None and not was_loaded:
-            client.request("POST", "/unload", {"model_name": missing_model}, check=False)
-    print("missing_model_refusal", json.dumps(refusal))
-    if refusal is None:
-        raise AssertionError(f"loading absent model {missing_model} succeeded; it was fetched")
-    if loaded_entry(client.get("/health"), missing_model) is not None:
-        raise AssertionError(f"{missing_model} became resident after a refused load")
-    print("missing_model_refused_ok")
-    # Ruling for candidate 187b4a25f: /load of a registered-but-absent model
-    # logs a download attempt even with offline=true. The phase passes when the
-    # load fails loudly, the caches are unchanged, and lemond made no
-    # non-loopback connection; a logged, blackholed attempt is recorded.
-    watch.verify("missing", record_blackholed_attempt=True)
+    # Every path must actually auto-load, so the pre-placed model starts unloaded.
+    initial = loaded_entry(client.get("/health"), model)
+    if initial is not None:
+        client.post("/unload", {"model_name": model})
+    try:
+        with watch(model) as phase:
+            text(
+                client,
+                model=model,
+                backend=backend,
+                ctx_size=ctx_size,
+                expect_checkpoint=expect_checkpoint,
+                expect_sha256=expect_sha256,
+                repo=repo,
+                cache_bins=(caches["backend_cache"],),
+            )
+        phase.verify("preplaced_load")
+
+        for path in AUTO_PULL_PATHS[1:]:
+            name = f"preplaced_{path}"
+            with watch(model) as phase:
+                try:
+                    refusal = request_refusal(*send_auto_pull(client, path, model, ctx_size=ctx_size))
+                    if refusal is not None:
+                        raise AssertionError(f"{name}: auto-load of {model} failed: {scrub_paths(refusal, scrub_roots)}")
+                    if loaded_entry(client.get("/health"), model) is None:
+                        raise AssertionError(f"{name}: {model} is not resident after the request")
+                finally:
+                    client.request("POST", "/unload", {"model_name": model}, check=False)
+            print(f"{name}_autoload_ok")
+            phase.verify(name)
+    finally:
+        if initial is not None:
+            options = initial.get("recipe_options") or {}
+            client.request("POST", "/load", {**options, "model_name": model}, check=False)
+            if loaded_entry(client.get("/health"), model) is None:
+                raise AssertionError(f"{model} was resident before the scenario and could not be restored")
+            print("preplaced_residency_restored")
+
+    # Ruling for candidate 3d5991033 (#138): offline=true does not stop the
+    # implicit auto-pull of a registered-but-absent model on any path. A path
+    # passes when the request fails loudly, the caches are unchanged, and lemond
+    # made no non-loopback connection; a logged, blackholed attempt is recorded.
+    for path in AUTO_PULL_PATHS:
+        name = f"missing_{path}"
+        with watch(missing_model) as phase:
+            refusal = request_refusal(*send_auto_pull(client, path, missing_model, ctx_size=ctx_size))
+            if refusal is None:
+                client.request("POST", "/unload", {"model_name": missing_model}, check=False)
+        print(f"{name}_refusal", json.dumps(scrub_paths(refusal, scrub_roots) if refusal else refusal))
+        if refusal is None:
+            raise AssertionError(f"{name}: {missing_model} was admitted; it was fetched")
+        if loaded_entry(client.get("/health"), missing_model) is not None:
+            raise AssertionError(f"{name}: {missing_model} became resident after a refused request")
+        print(f"{name}_refused_ok")
+        phase.verify(name, record_blackholed_attempt=True)
     print("no_fetch_ok")
 
 
@@ -1199,7 +1291,7 @@ def run_budget(inst: IsolatedLemond, *, ctx_size: int) -> None:
     model = inst.extra_model(EXTRA_MODEL_STEMS[0])
     refusal = load_refusal(inst.client, model, ctx_size=OVERSIZED_CTX_SIZE)
     capacity_gb = refusal_capacity_gb(refusal)
-    print("budget_refusal", json.dumps(refusal))
+    print("budget_refusal", json.dumps(scrub_paths(refusal) if refusal else refusal))
     if capacity_gb is None:
         raise AssertionError("oversized load was not refused by the occupancy budget")
     _require_not_resident(inst.client, model)
@@ -1218,7 +1310,7 @@ def run_budget(inst: IsolatedLemond, *, ctx_size: int) -> None:
     inst.client.post("/unload", {"model_name": model})
     inst.client.post("/internal/set", {"max_gpu_memory_occupancy_gb": CONFIGURED_BUDGET_GB})
     refusal = load_refusal(inst.client, model, ctx_size=ctx_size)
-    print("configured_budget_refusal", json.dumps(refusal))
+    print("configured_budget_refusal", json.dumps(scrub_paths(refusal) if refusal else refusal))
     if refusal_capacity_gb(refusal) != CONFIGURED_BUDGET_GB:
         raise AssertionError("configured occupancy budget did not bound admission")
     _require_not_resident(inst.client, model)
@@ -1281,7 +1373,7 @@ def run_displacement(inst: IsolatedLemond, *, ctx_size: int, stream_tokens: int)
     client.post("/pins", {"model_name": first})
     pid = _require_resident(client, first)["pid"]
     refusal = load_refusal(client, second, ctx_size=ctx_size)
-    print("pinned_refusal", json.dumps(refusal))
+    print("pinned_refusal", json.dumps(scrub_paths(refusal) if refusal else refusal))
     if refusal is None:
         raise AssertionError("loading a second model displaced the pinned model")
     _require_resident(client, first, pid=pid)
@@ -1295,7 +1387,7 @@ def run_displacement(inst: IsolatedLemond, *, ctx_size: int, stream_tokens: int)
             raise AssertionError("busy_window_missed: the stream ended before the displacement attempt")
         print("busy_window_ok")
         refusal = load_refusal(client, second, ctx_size=ctx_size)
-        print("in_use_refusal", json.dumps(refusal))
+        print("in_use_refusal", json.dumps(scrub_paths(refusal) if refusal else refusal))
         if refusal is None:
             raise AssertionError("loading a second model displaced the in-use model")
         _require_resident(client, first, pid=pid)
