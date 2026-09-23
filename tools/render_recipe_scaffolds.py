@@ -1058,6 +1058,9 @@ build() {{
   export OpenBLAS_HOME="${{OpenBLAS_HOME:-/usr}}"
   export USE_LAPACK=1
   export USE_ROCM_CK_GEMM=1
+  # The generation-C foundation ships no MAGMA; build without it so the result
+  # never depends on whichever MAGMA a build host happens to have.
+  export USE_MAGMA=0
   export AOTRITON_INSTALLED_PREFIX="/usr"
   export USE_CUDA=0
   export USE_NCCL=0
@@ -1070,7 +1073,8 @@ build() {{
   export ROCM_PATH="/opt/rocm"
   export HIP_CLANG_PATH="${{_rocm_llvm_bin}}"
   export CMAKE_PREFIX_PATH="${{OpenBLAS_HOME}}:/opt/rocm"
-  export MAX_JOBS="$(nproc)"
+  # Honor a job cap from makepkg.conf; the build root pins it for memory.
+  export MAX_JOBS="${{MAX_JOBS:-$(nproc)}}"
   export PYTORCH_BUILD_VERSION="{upstream_version}"
   export PYTORCH_BUILD_NUMBER=1
 

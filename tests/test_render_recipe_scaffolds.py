@@ -875,6 +875,9 @@ def test_pytorch_rocm_renderer_uses_source_patches_for_magma_fix() -> None:
     assert 'export ROCM_PATH="/opt/rocm"' in pkgbuild
     assert 'export HIP_CLANG_PATH="${_rocm_llvm_bin}"' in pkgbuild
     assert "NPY_TARGET_VERSION" not in pkgbuild
+    assert "export USE_MAGMA=0" in pkgbuild
+    assert 'export MAX_JOBS="${MAX_JOBS:-$(nproc)}"' in pkgbuild
+    assert 'export MAX_JOBS="$(nproc)"' not in pkgbuild
     assert "cmake -P build/torch/headeronly/cmake_install.cmake" in pkgbuild
     assert "cmake -P build/c10/cmake_install.cmake" in pkgbuild
     assert "cmake -P build/caffe2/cmake_install.cmake" in pkgbuild
