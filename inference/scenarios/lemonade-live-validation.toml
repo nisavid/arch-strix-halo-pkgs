@@ -742,6 +742,66 @@ value = "pinned_chat_model_loaded_ok"
 kind = "stdout.contains"
 value = "pinned_chat_ok"
 
+# Service twin of the isolated lemonade.reranking.zerank-2.selected-logit
+# smoke: the same tool in --base-url mode starts no lemond and reranks through
+# the running service. It is mutates-service only because a rerank request
+# implicitly loads zerank-2-GGUF when it is not resident; it never unloads,
+# pins, unpins, or changes config. The pin itself is checked by
+# lemonade.pins.service-consumer-pins.
+[[scenario]]
+id = "lemonade.reranking.zerank-2.selected-logit.service"
+summary = "The running service reranks with its pinned built-in zerank-2-GGUF through the zeroentropy selected-logit adapter"
+tags = [
+  "live-validation",
+  "validation-window",
+  "mutates-service",
+  "lemonade",
+  "rerank",
+  "reranking",
+  "zerank",
+  "zeroentropy",
+  "selected-logit",
+]
+
+[scenario.given]
+engine = "lemonade"
+model = "zerank-2-GGUF"
+tool = "lemonade_zerank_smoke.selected-logit"
+
+[scenario.when]
+argv = [
+  "--base-url",
+  "http://127.0.0.1:13305/api/v1",
+]
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "mode selected-logit"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "zerank_adapter_options_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "capital_france_order_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "arithmetic_order_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "health_adapter_options_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "zerank_rerank_ok"
+
 # The runner has no manual-step support, so the app check is an operator
 # checklist in the catalog. The loader ignores this table.
 [[operator_checklist]]

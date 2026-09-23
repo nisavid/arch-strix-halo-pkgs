@@ -1268,6 +1268,7 @@ LEMONADE_LIVE_SCENARIOS = {
     "lemonade.nofetch.preplaced-load-missing-model",
     "lemonade.pins.service-consumer-pins",
     "lemonade.chat.pinned-user-model.qwen35moe",
+    "lemonade.reranking.zerank-2.selected-logit.service",
 }
 
 
@@ -1330,6 +1331,28 @@ def test_lemonade_live_validation_scenarios_are_gated_and_share_one_gguf():
     # The missing model is chosen per host at run time (--missing-model or its env override).
     assert not any(arg.split("=", 1)[0] == "--missing-model" for arg in nofetch["when"]["argv"])
 
+    rerank = by_id["lemonade.reranking.zerank-2.selected-logit.service"]
+    isolated_rerank = by_id["lemonade.reranking.zerank-2.selected-logit"]
+    # The same selected-logit tool and model as the isolated smoke, aimed at the running service.
+    assert rerank.definition["given"]["tool"] == isolated_rerank.definition["given"]["tool"]
+    assert rerank.definition["given"]["model"] == isolated_rerank.definition["given"]["model"] == "zerank-2-GGUF"
+    assert "model_provenance" not in rerank.definition
+    assert rerank.definition["when"]["argv"] == ["--base-url", "http://127.0.0.1:13305/api/v1"]
+    rerank_markers = {
+        item["value"] for item in rerank.definition["then"]["assert"] if item["kind"] == "stdout.contains"
+    }
+    assert {
+        "mode selected-logit",
+        "zerank_adapter_options_ok",
+        "capital_france_order_ok",
+        "arithmetic_order_ok",
+        "health_adapter_options_ok",
+        "zerank_rerank_ok",
+    } <= rerank_markers
+    # A rerank request can load the pinned model on the service, but never unloads it.
+    assert "mutates-service" in rerank.tags
+    assert not {"read-only", "isolated-lemond"} & set(rerank.tags)
+
     chat = by_id["lemonade.chat.pinned-user-model.qwen35moe"]
     assert chat.definition["given"]["tool"] == "lemonade_live_smoke.pinned-chat"
     assert {"lemonade", "chat", "pins", "qwen35moe"} <= set(chat.tags)
@@ -1355,7 +1378,10 @@ def test_lemonade_live_validation_scenarios_are_gated_and_share_one_gguf():
     assert f"{pooling['lemonade.pooling.zembed-1-q4-k-m.embeddings'].model}=Q4_K_M" in pins_argv
     assert f"{pooling['lemonade.reranking.zerank-2.selected-logit'].model}=Q8_0" in pins_argv
 
-    gguf_users = [s for s in scenarios if s.id in LEMONADE_LIVE_SCENARIOS and s.model != "builtin"]
+    # zerank-2-GGUF names the service's built-in model, not a GGUF file binding.
+    gguf_users = [
+        s for s in scenarios if s.id in LEMONADE_LIVE_SCENARIOS and s.model not in {"builtin", "zerank-2-GGUF"}
+    ]
     assert len(gguf_users) == 8
     for scenario in gguf_users:
         provenance = scenario.definition["model_provenance"]

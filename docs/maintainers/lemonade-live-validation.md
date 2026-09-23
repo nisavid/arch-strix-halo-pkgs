@@ -27,6 +27,7 @@ work is tracked in issue #138.
 | The service keeps the consumer models `zembed-1` Q4_K_M and `zerank-2` Q8_0 pinned and loaded | `lemonade.pins.service-consumer-pins` |
 | The service answers chat with the pinned qwen35moe user model, and the pin stays loaded with no load error | `lemonade.chat.pinned-user-model.qwen35moe` |
 | Embeddings, both rerankers, and selected-logit | the existing `lemonade.pooling.*` and `lemonade.reranking.zerank-2.selected-logit` scenarios |
+| The service reranks with its pinned `zerank-2-GGUF` through the zeroentropy selected-logit adapter | `lemonade.reranking.zerank-2.selected-logit.service` |
 | App launch with pin and startup controls, plus one text interaction | the `lemonade.app.pin-startup-text` operator checklist in the same TOML file |
 | Kokoro TTS and the app's TTS interaction | deferred to generation C W2B (#113); see below |
 
@@ -74,6 +75,12 @@ processes; otherwise they fail with `backend_maps_unreadable`.
     models. Otherwise it reads only the service's `/pins`, `/models/<id>`,
     `/models/<id>/files`, and `/health`, the header of the model's GGUF file,
     and the backend's `/proc/<pid>/cmdline`.
+  - Exception: the service rerank scenario never unloads either. Its one
+    service change is the rerank request's implicit load of `zerank-2-GGUF`,
+    which can displace other unpinned models when that model was not
+    resident. Otherwise it reads only the service's `/models/zerank-2-GGUF`
+    and `/health`, and posts two `/reranking` requests. It does not check the
+    pin itself; the consumer-pins scenario does.
 - `isolated-lemond`: starts a private `lemond` from `/usr/bin/lemond` with a
   temporary cache directory. The config is offline, backend fetching is
   disabled, and the packaged llama.cpp backends are used. The scenario reaches
