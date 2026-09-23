@@ -6,8 +6,8 @@
 - Scaffold template: `native-wheel-pypi`
 - Recipe build method: `pip`
 - Upstream repo: `https://github.com/aio-libs/multidict`
-- Package version: `6.7.1`
-- Recipe revision: `a1d7a68 (20260427, 16 commits touching recipe path)`
+- Package version: `6.9.1`
+- Recipe revision: `3f15f9f (20260508, 17 commits touching recipe path)`
 - Recipe steps: `32`
 - Recipe dependencies: `cpython, pytorch`
 - Recorded reference packages: `extra/python-multidict, cachyos-extra-znver4/python-multidict`
@@ -42,6 +42,7 @@ in the same optimized service/runtime stack.
 
 - Check Arch first for release and build-backend metadata before updating.
 - After publishing a rebuilt package, verify `import multidict` and a minimal MultiDict construction probe through the installed local Python lane.
+- On 2026-09-22, update to multidict 6.9.1 for the generation-C W2A closure (#110), built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7.
 
 ## Maintainer Starting Points
 

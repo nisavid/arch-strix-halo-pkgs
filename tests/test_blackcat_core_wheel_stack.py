@@ -89,7 +89,7 @@ SERVICE_STACK = {
     "python-multidict-gfx1151": {
         "template": "native-wheel-pypi",
         "recipe_key": "native_wheels",
-        "upstream_version": "6.7.1",
+        "upstream_version": "6.9.1",
         "provides": ["python-multidict"],
         "consumer_dep": "python-multidict-gfx1151",
     },

@@ -319,7 +319,7 @@ packages = ["python-multidict-gfx1151"]
 priority = "medium"
 workflow = "upstream_source_update"
 checks = [
-  { id = "pypi", role = "primary", kind = "pypi", package = "multidict", recorded = "6.7.1", comparison = "pep440" },
+  { id = "pypi", role = "primary", kind = "pypi", package = "multidict", recorded = "6.9.1", comparison = "pep440" },
 ]
 
 [families.yarl]

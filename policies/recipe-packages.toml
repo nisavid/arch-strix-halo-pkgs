@@ -1537,7 +1537,7 @@ scaffold_notes = [
 [packages.python-multidict-gfx1151]
 recipe_key = "native_wheels"
 template = "native-wheel-pypi"
-upstream_version = "6.7.1"
+upstream_version = "6.9.1"
 pkgdesc = "Asyncio-based multidict implementation rebuilt for Strix Halo gfx1151"
 url = "https://github.com/aio-libs/multidict"
 license = ["Apache-2.0"]
@@ -1550,15 +1550,16 @@ divergence_notes = [
 ]
 update_notes = [
   "Check Arch first for release and build-backend metadata before updating.",
-  "After publishing a rebuilt package, verify `import multidict` and a minimal MultiDict construction probe through the installed local Python lane."
+  "After publishing a rebuilt package, verify `import multidict` and a minimal MultiDict construction probe through the installed local Python lane.",
+  "On 2026-09-22, update to multidict 6.9.1 for the generation-C W2A closure (#110), built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7."
 ]
 provides = ["python-multidict"]
 conflicts = ["python-multidict"]
 depends = ["glibc", "python-gfx1151"]
 makedepends = ["cython", "python-build", "python-installer", "python-setuptools", "python-wheel", "rocm-llvm-gfx1151"]
 pypi_name = "multidict"
-sha256sums = ["ec6652a1bee61c53a3e5776b6049172c53b6aaba34f18c9ad04f82712bac623d"]
-src_subdir = "multidict-6.7.1"
+sha256sums = ["0f06e60fa190aa7abd0914c2a766736fdc8e9f34878c4346338534b73d1b20e2"]
+src_subdir = "multidict-6.9.1"
 patches_dir = "patches/python-multidict-gfx1151"
 recipe_notes_override = """
 This package is the multidict output from the shared `native_wheels` recipe
