@@ -123,9 +123,10 @@ and `preplaced_ollama` must auto-load the model: the request must succeed and
 leave the model resident, and each prints `<phase>_autoload_ok`. Any download
 or install line, cache change, non-loopback connection, or blackhole connect
 fails the phase. Every path must really auto-load, so the scenario unloads the
-test model first when it is already resident, unloads it after each phase, and
-reloads it with its previous recipe options at the end
-(`preplaced_residency_restored`).
+test model after each pre-placed phase. When the model was resident before the
+scenario, it is unloaded first and reloaded with its previous recipe options
+once the pre-placed phases finish; only then does the scenario print
+`preplaced_residency_restored`, so the catalog does not assert that marker.
 
 The missing phases use `Tiny-Test-Model-GGUF`, a small `llamacpp` model in the
 candidate's built-in catalog. Before anything is loaded, `GET
