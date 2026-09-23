@@ -216,8 +216,17 @@ def quote_model(model: str) -> str:
 
 
 def loaded_entry(health: Mapping[str, Any], model: str) -> dict[str, Any] | None:
+    """Return the /health entry for `model`, matching its listed form too.
+
+    A registered model (user.X) always wins precedence for its bare name, so
+    /health lists it as X. extra. and builtin. ids are not widened: either can
+    be shadowed, and then the bare listing names another model.
+    """
+    names = {model}
+    if model.startswith("user.") and len(model) > len("user."):
+        names.add(model[len("user."):])
     for item in health.get("all_models_loaded", []) or []:
-        if model in {item.get("model_name"), item.get("id")}:
+        if names & {item.get("model_name"), item.get("id")}:
             return item
     return None
 

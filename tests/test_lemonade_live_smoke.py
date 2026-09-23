@@ -200,6 +200,17 @@ def test_llamacpp_scenario_log_regexes_match_b9442_verbosity_4_lines():
         assert not re.search(regexes[1], "load_tensors: offloaded 20/29 layers to GPU")
 
 
+def test_loaded_entry_matches_a_registered_model_by_its_bare_listing():
+    health = {"all_models_loaded": [{"model_name": "Qwen3-0.6B-Q8_0-GGUF", "pid": 7}]}
+    # /health lists the registered precedence winner bare.
+    assert live.loaded_entry(health, "user.Qwen3-0.6B-Q8_0-GGUF") == {"model_name": "Qwen3-0.6B-Q8_0-GGUF", "pid": 7}
+    assert live.loaded_entry(health, "Qwen3-0.6B-Q8_0-GGUF") is not None
+    # extra. and builtin. ids can be shadowed, so they are never widened.
+    assert live.loaded_entry(health, "extra.Qwen3-0.6B-Q8_0-GGUF") is None
+    assert live.loaded_entry(health, "builtin.Qwen3-0.6B-Q8_0-GGUF") is None
+    assert live.loaded_entry(health, "user.") is None
+
+
 def test_isolated_extra_model_accepts_the_bare_listing():
     class Client:
         def __init__(self, ids):
