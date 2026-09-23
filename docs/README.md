@@ -36,6 +36,9 @@ serves a different reader.
   issue-liveness validation for active candidates.
 - [Dependency Freshness Sweep](maintainers/update-workflows.md#0-dependency-freshness-sweep)
   is the first gate to check before unrelated backlog work when it is due.
+- [Generation-C Build Root](maintainers/c-build-root.md) explains the
+  rootless bubblewrap root that W2A packages are built in, and why it cannot
+  pick up the host's ROCm 7.13.
 - [ROCm Inference Reference](maintainers/rocm-inference-reference.md) collects
   upstream ROCm, vLLM, FlashAttention, AITER, MIGraphX, quantization, and
   profiling references that may affect future package or scenario work.
