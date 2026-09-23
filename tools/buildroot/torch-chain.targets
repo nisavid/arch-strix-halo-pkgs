@@ -1,8 +1,7 @@
 # Build-root targets for the generation-C torch chain (W2A).
 # Resolve with: c_buildroot.py resolve --targets-file tools/buildroot/torch-chain.targets
-# python-numpy, python-yaml and python-pillow are Arch stand-ins until the
-# gfx1151 builds of those packages are in the W2A output repo; then replace
-# them with the -gfx1151 names.
+# NumPy, PyYAML, Pillow and psutil are the W2A gfx1151 builds, so resolve
+# with ashp-w2a as a foundation repo.
 base-devel
 ccache
 git
@@ -30,20 +29,20 @@ python-six
 python-filelock
 python-iniconfig
 python-msgpack
-python-numpy
+python-numpy-gfx1151
 python-packaging
 python-pandas
 python-pluggy
-python-yaml
+python-pyyaml-gfx1151
 python-fsspec
 python-jinja
 python-networkx
 python-sympy
 python-typing_extensions
-python-pillow
+python-pillow-gfx1151
 python-scipy
 python-tabulate
-python-psutil
+python-psutil-gfx1151
 rocm-llvm-gfx1151
 rocm-core-gfx1151
 rocm-hip-sdk-gfx1151

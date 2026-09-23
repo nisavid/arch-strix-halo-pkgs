@@ -13,6 +13,8 @@ at the paths the host will have after W5.
 | --- | --- |
 | `makepkg.conf` | The one makepkg.conf for root builds. `enter` binds it read-only at `/etc/makepkg.conf`. |
 | `torch-chain.targets` | Targets for the torch-chain root (base-devel, build tools, F and the torch makedepends). |
+| `py-closure.targets` | Extra build tools for the #110 model/runtime Python closure: meson-python, Cython, maturin, the Rust toolchain and `llvm`. Resolve it together with `torch-chain.targets` to build the closure. |
+| `model-closure.targets` | The #110 closure packages as built into `ashp-w2a`. Resolve it together with `torch-chain.targets` to get a root that can import them. |
 | `probe/` | The no-leak probe: a hipcc program, a CMake HIP library and a makepkg package. |
 
 Nothing in this flow needs root, sudo or `pacman -S/-U/-Sy`, and nothing
@@ -98,14 +100,25 @@ for about 30 GiB, and `$STAGING` for the directory that holds the
      --targets-file tools/buildroot/torch-chain.targets
    ```
 
+   A userland package the host has installed is locked at the host's version
+   when that file is in the package cache, so the root matches the host.
+   The host version is skipped when it fails a version constraint from a
+   target, a foundation package, or a package locked at its DB version. For
+   example, `python-pydantic>=2.13.5` in `model-closure.targets` keeps a host
+   pydantic 2.13.4 out. Exact pins in the newer DB entry of a package that is
+   itself locked at the host version do not count, because the host pair is
+   already consistent.
+
    The command exits nonzero while the lock has problems. `missing-file`
    problems are fixed with
    `c_buildroot.py fetch LOCK --dest $WORK/cache/pkgs`. Pass the same dir as
    `--cache` on later re-locks.
 3. **Populate.** `c_buildroot.py populate LOCK $WORK/root` extracts the lock
    into a fresh root, then runs `ldconfig` and `update-ca-trust` inside it. It
-   also adds a `builder` user with your uid. The torch-chain lock is 423
-   packages and about 10 GiB, and it populates in about a minute.
+   also adds a `builder` user with your uid, and it creates the `/build`,
+   `/pkgdest`, `/srcdest` and `/ccache` mount points that `enter` binds into
+   the read-only root. The torch-chain lock is 423 packages and about 10 GiB,
+   and it populates in about a minute.
 4. **Verify and probe.** Run
    `c_buildroot.py verify $WORK/root --foundation-repo ashp-w1-staging --foundation-repo ashp-w2a --forbid-repo strix-halo-gfx1151 --expect-rocm 7.14.1`.
    Then run `c_buildroot.py probe` with the same repo flags and an empty
@@ -165,9 +178,6 @@ held nothing from `strix-halo-gfx1151`.
 
 ## Known gaps
 
-- `torch-chain.targets` still uses the Arch `python-numpy`, `python-yaml` and
-  `python-pillow` as stand-ins. Replace them with the gfx1151 builds once
-  those are in `ashp-w2a`.
 - F has no `magma-gfx1151`. The generation-C torch is built with
   `USE_MAGMA=0`.
 - `hipcc-gfx1151` and `hip-runtime-amd-gfx1151` do not depend on
@@ -177,3 +187,68 @@ held nothing from `strix-halo-gfx1151`.
 - vLLM's makedepends bring in `rust`, because `python-setuptools-rust`
   depends on it. The vLLM step must either fetch crates explicitly or disable
   the Rust extensions, and its checks must assert which choice was made.
+  `py-closure.targets` also carries `rust`; leave that file out of the vLLM
+  root unless the vLLM step chooses to build its Rust extensions.
+- A bare `rust` target resolves to the host's `rustup`, which provides an
+  unversioned `rust` and would download a toolchain at build time. Name the
+  target with a version floor (`rust>=1:1.90`) so the real Arch toolchain wins.
+- `python-gfx1151`'s `sysconfig` sets `AR=/usr/bin/llvm-ar`, which setuptools
+  `build_clib` uses (Pillow), but `python-gfx1151` does not depend on `llvm`.
+  The host has `llvm` installed, so only the root shows the gap;
+  `py-closure.targets` lists `llvm` for it.
+- The maturin wheels (tokenizers, safetensors, watchfiles, pydantic-core) fetch
+  crates from crates.io at build time, so they build with `enter --net`.
+  Crates are cached under the ccache dir (`CARGO_HOME=/ccache/cargo`).
+
+## W2A model/runtime closure (#110)
+
+On 2026-09-22 the #110 closure was built in the root and published to
+`ashp-w2a`. The build root was `torch-chain.targets` plus
+`py-closure.targets` (445 packages). The smoke root was `torch-chain.targets`
+plus `model-closure.targets` (465 packages), with compressed-tensors and
+Accelerate added by `c_buildroot.py add`. `verify` found no violations in
+either root.
+
+| Package | Version | Build notes |
+| --- | --- | --- |
+| `python-numpy-gfx1151` | 2.5.3-1 | OpenBLAS for BLAS and LAPACK, amdclang 23 |
+| `python-pyyaml-gfx1151` | 6.0.3-2 | Same source, rebuilt |
+| `python-psutil-gfx1151` | 7.2.2-2 | Same source, rebuilt |
+| `python-pillow-gfx1151` | 12.3.0-1 | Needed `llvm` in the root (see Known gaps) |
+| `python-frozenlist-gfx1151` | 1.8.0-2 | Same source, rebuilt for aiohttp |
+| `python-multidict-gfx1151` | 6.9.1-1 | |
+| `python-yarl-gfx1151` | 1.25.1-1 | |
+| `python-aiohttp-gfx1151` | 3.14.3-1 | System llhttp |
+| `python-sentencepiece-gfx1151` | 0.2.2-1 | Offline abseil patch; built with no network |
+| `python-tokenizers-gfx1151` | 0.23.2-1 | Built with `--net` for crates |
+| `python-safetensors-gfx1151` | 0.8.0-1 | Built with `--net` for crates |
+| `python-watchfiles-gfx1151` | 1.3.0-1 | Built with `--net` for crates |
+| `python-pydantic-core-gfx1151` | 2.46.5-1 | Built with `--net` for crates; pairs with Arch pydantic 2.13.5 |
+| `python-transformers-gfx1151` | 5.16.1-1 | Pure Python |
+| `python-mistral-common-gfx1151` | 1.11.7-1 | Pure Python |
+| `python-compressed-tensors-gfx1151` | 0.17.0-1 | Pure Python |
+| `python-accelerate-gfx1151` | 1.15.0-1 | Pure Python |
+
+The in-root smoke ran under Python 3.14.7 and passed:
+
+- NumPy: OpenBLAS for BLAS and LAPACK, and a linear-algebra check.
+- PyYAML: the libyaml loader.
+- Pillow: PNG, JPEG, WebP, AVIF, TIFF and JPEG 2000 round trips, plus the
+  freetype, lcms, raqm and libimagequant features.
+- psutil: memory and process probes.
+- tokenizers: BPE training and encoding.
+- safetensors: a NumPy round trip.
+- Transformers: `transformers.models.gemma4` and a fast tokenizer.
+- mistral-common: `ReasoningEffort` and a chat request.
+- pydantic 2.13.5 with pydantic-core 2.46.5: model validation.
+- aiohttp: the C HTTP parser and a `ClientSession`.
+- frozenlist, multidict and yarl: their C extensions loaded.
+- sentencepiece: training and a round trip. The extension links no
+  sentencepiece, protobuf or abseil library.
+- watchfiles and huggingface-hub 1.32.0: import checks.
+- Linkage: `ldd` resolved all libraries for all 41 native extensions in the
+  root.
+
+compressed-tensors and Accelerate import torch when they load, so their smoke
+covers only metadata and bytecode compilation until torch is in `ashp-w2a`.
+Nothing here was installed on the host.
