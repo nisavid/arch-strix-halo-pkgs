@@ -139,7 +139,7 @@ and fails a family that no probe reached or whose archive is missing:
 | `rocfft-callback` | `fft_lib` | FFT with a hipRTC load callback, so rocFFT loads its default store callback from the archive |
 | `rccl` | `rccl_lib` | one-rank `PreMulSum` all-reduce, which needs a kernel, unlike a plain one-rank sum |
 | `hiptensor` | `hiptensor_lib` | f32 permutation; the contraction is informational, since hipTensor returns `ARCH_MISMATCH` on gfx1151 |
-| `rocalution` | `rocalution_lib` | CSR SpMV and scale on the accelerator; compiles a tiny host C++ program, so it needs `c++` |
+| `rocalution` | `rocalution_lib` | 20 rounds of CSR SpMV and scale on the accelerator; compiles a tiny host C++ program, so it needs `c++` |
 | `migraphx` (opt-in) | none | imports MIGraphX, parses a two-node ONNX model, and runs it on the `ref` and `gpu` targets; needs `numpy` and `onnx` |
 
 Installed host:
@@ -169,6 +169,11 @@ handle that allocates device memory fails, which looks like a packaging fault.
 the host site-packages. The extra library directory supplies protobuf 36.1 and
 Abseil 20260817 to the MIGraphX parsers before the host has them.
 
+With an empty directory bound over `/opt/rocm/.kpack`, every archive probe
+fails and `hip` and `rocfft` still pass, so each archive probe depends on its
+archive. That includes `rocfft-callback`, which then fails with an ordinary
+`FAIL`, not the known-gap `XFAIL`.
+
 `check-packages` fails when a path is in two packages (pacman would refuse the
 transaction), when the extracted root and the package file lists differ, and
 when a kpack-split library cannot reach its archive through its package's
@@ -185,6 +190,15 @@ present in the 7.14.1 dist tarball; the 7.13 flat payload passes the same
 probe. The tool reports this failure signature as `XFAIL`, reports any other
 failure of the probe as `FAIL`, and reports a pass as `XPASS` so the gap can be
 retired.
+
+Unresolved gap: on the 7.14.1 payload, rocALUTION CSR SpMV returns a wrong
+result in a few percent of runs. In the bad runs only row 0 of the result is
+written. Calling rocSPARSE `csrmv` directly on the same matrix, with or without
+analysis, gave no wrong result in 300 runs. The `rocalution` probe runs 20
+rounds. It reports `XFAIL` when some rounds are wrong and some right (the
+`rocalution_lib` kernels load, but the results cannot be trusted), and `FAIL`
+when every round is wrong or there is no accelerator. The root cause is not
+isolated yet.
 
 ## 7.14.1 payload decisions
 

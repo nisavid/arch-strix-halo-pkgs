@@ -81,6 +81,15 @@ class KnownGap:
 
 
 KNOWN_GAPS: dict[str, KnownGap] = {
+    "rocalution": KnownGap(
+        signature=r"intermittent wrong CSR SpMV",
+        note=(
+            "unresolved: on the 7.14.1 payload, rocALUTION CSR SpMV returns a wrong "
+            "result in a few percent of runs (only row 0 written), while rocSPARSE "
+            "csrmv on the same matrix does not; the rocalution_lib kernels do load "
+            "and most runs are right"
+        ),
+    ),
     "rocfft-callback": KnownGap(
         signature=r"Cannot create GlobalVar Obj for symbol: _ZL\d+(load|store)_cb_default",
         note=(
@@ -771,6 +780,8 @@ def probe_hiptensor(lib_dir: Path, arch: str, workdir: Path) -> dict:
     return detail
 
 
+ROCALUTION_ITERATIONS = 20
+ROCALUTION_INTERMITTENT_EXIT = 3
 ROCALUTION_SOURCE = r"""
 #include <rocalution/rocalution.hpp>
 #include <cmath>
@@ -778,6 +789,8 @@ ROCALUTION_SOURCE = r"""
 
 using namespace rocalution;
 
+// Exit 0: every SpMV right. Exit 3: some wrong, some right. Exit 1: all wrong
+// or the scale is wrong. Exit 2: no accelerator.
 int main()
 {
     init_rocalution();
@@ -788,32 +801,47 @@ int main()
         return 2;
     }
     const int n = 64;
-    LocalMatrix<float> mat;
-    LocalVector<float> x, y;
-    int*   row = new int[n + 1];
-    int*   col = new int[n];
-    float* val = new float[n];
-    for(int i = 0; i < n; ++i)
+    const int iterations = ITERATIONS;
+    int wrong = 0;
+    float last_bad = 0.0f;
+    bool scale_ok = true;
+    for(int iter = 0; iter < iterations; ++iter)
     {
-        row[i] = i;
-        col[i] = i;
-        val[i] = 2.0f;
+        LocalMatrix<float> mat;
+        LocalVector<float> x, y;
+        int*   row = new int[n + 1];
+        int*   col = new int[n];
+        float* val = new float[n];
+        for(int i = 0; i < n; ++i)
+        {
+            row[i] = i;
+            col[i] = i;
+            val[i] = 2.0f;
+        }
+        row[n] = n;
+        mat.SetDataPtrCSR(&row, &col, &val, "A", n, n, n);
+        x.Allocate("x", n);
+        y.Allocate("y", n);
+        x.Ones();
+        mat.MoveToAccelerator();
+        x.MoveToAccelerator();
+        y.MoveToAccelerator();
+        mat.Apply(x, &y);
+        const float spmv = y.Reduce();
+        if(std::fabs(spmv - 2.0f * n) >= 1e-3f)
+        {
+            ++wrong;
+            last_bad = spmv;
+        }
+        x.Scale(3.0f);
+        scale_ok = scale_ok && std::fabs(x.Reduce() - 3.0f * n) < 1e-3f;
     }
-    row[n] = n;
-    mat.SetDataPtrCSR(&row, &col, &val, "A", n, n, n);
-    x.Allocate("x", n);
-    y.Allocate("y", n);
-    x.Ones();
-    mat.MoveToAccelerator();
-    x.MoveToAccelerator();
-    y.MoveToAccelerator();
-    mat.Apply(x, &y);
-    x.Scale(3.0f);
-    const float spmv = y.Reduce();
-    const float scaled = x.Reduce();
-    std::printf("spmv_sum=%g scale_sum=%g\n", static_cast<double>(spmv), static_cast<double>(scaled));
+    std::printf("spmv_wrong=%d/%d last_bad_sum=%g expected_sum=%d scale_ok=%d\n",
+                wrong, iterations, static_cast<double>(last_bad), 2 * n, scale_ok ? 1 : 0);
     stop_rocalution();
-    return (std::fabs(spmv - 2.0f * n) < 1e-3f && std::fabs(scaled - 3.0f * n) < 1e-3f) ? 0 : 1;
+    if(!scale_ok || wrong == iterations)
+        return 1;
+    return wrong ? 3 : 0;
 }
 """
 
@@ -831,7 +859,9 @@ def probe_rocalution(lib_dir: Path, arch: str, workdir: Path) -> dict:
     include_dir = lib_dir.parent / "include"
     source = workdir / "rocalution_probe.cpp"
     binary = workdir / "rocalution_probe"
-    source.write_text(ROCALUTION_SOURCE)
+    source.write_text(
+        ROCALUTION_SOURCE.replace("ITERATIONS", str(ROCALUTION_ITERATIONS))
+    )
     compile_cmd = [
         compiler,
         "-std=c++17",
@@ -856,9 +886,12 @@ def probe_rocalution(lib_dir: Path, arch: str, workdir: Path) -> dict:
         check=False,
     )
     output = (ran.stdout + ran.stderr).strip()
+    summary = output.splitlines()[-1] if output else ""
+    if ran.returncode == ROCALUTION_INTERMITTENT_EXIT:
+        raise ProbeFailure(f"intermittent wrong CSR SpMV: {summary}")
     if ran.returncode:
         raise ProbeFailure(f"exit {ran.returncode}: {output[-2000:]}")
-    return {"spmv_and_scale": output.splitlines()[-1]}
+    return {"spmv_and_scale": summary}
 
 
 def probe_migraphx(lib_dir: Path, arch: str, workdir: Path) -> dict:

@@ -316,3 +316,16 @@ def test_check_packages_fails_on_a_path_owned_twice(tmp_path: Path, capsys):
     assert smoke.read_package_archive(
         repo / "a-gfx1151-1-1-x86_64.pkg.tar.gz"
     ).depends == ["glibc"]
+
+
+def test_intermittent_rocalution_spmv_is_a_known_gap_but_total_failure_is_not():
+    intermittent = failing(
+        "rocalution",
+        "ProbeFailure: intermittent wrong CSR SpMV: spmv_wrong=1/20 last_bad_sum=2",
+    )
+    no_accelerator = failing("rocalution", "ProbeFailure: exit 2: no accelerator")
+
+    assert smoke.classify(intermittent) == "XFAIL"
+    assert smoke.classify(no_accelerator) == "FAIL"
+    coverage = smoke.kpack_coverage(["rocalution_lib_gfx1151.kpack"], [no_accelerator], ARCH)
+    assert coverage["uncovered"] == ["rocalution_lib"]
