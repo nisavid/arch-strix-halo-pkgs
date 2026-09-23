@@ -204,6 +204,10 @@ def test_pydantic_core_conflicts_with_older_arch_pydantic() -> None:
     assert policy["conflicts"] == ["python-pydantic-core", guard]
     assert recipe["conflicts"] == ["python-pydantic-core", guard]
     assert f"conflicts=(python-pydantic-core '{guard}')" in pkgbuild
+    # The 2.46.5-1 archive predates the guard, so the guarded build needs a
+    # new pkgrel rather than a second archive under the same version.
+    assert policy["pkgrel"] == 2
+    assert "pkgrel=2" in pkgbuild
 
 
 def test_consumers_prefer_local_core_stack_packages() -> None:

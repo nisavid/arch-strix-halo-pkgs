@@ -115,7 +115,9 @@ Fix status:
 - Package built: `tools/amerge build` plan `2301b532` produced
   `python-pydantic-core-gfx1151-2.46.5-1-x86_64.pkg.tar.zst`. An
   extracted-archive smoke imported it with pydantic 2.13.5 and validated a
-  `BaseModel`.
+  `BaseModel`. That archive predates the `python-pydantic<2.13.5` conflict
+  that the Lemonade repin (#137) added, so it must not be published. The
+  guarded source renders as `2.46.5-2`, which the #139 build must produce.
 - Not published, deployed/installed, or installed-smoked. The install rides
   the Lemonade family install window
   ([#139](https://github.com/nisavid/arch-strix-halo-pkgs/issues/139)), with
@@ -161,9 +163,9 @@ gate moved to the
 [Lemonade family build and install handoff](https://github.com/nisavid/arch-strix-halo-pkgs/issues/139).
 The new `lemonade-upstream-11.9.0` record tracks the 11.7.0 to 11.9.0
 baseline drift to #141. The same change adds a `python-pydantic<2.13.5`
-conflict to `python-pydantic-core-gfx1151`, so pacman cannot pair
-pydantic-core 2.46.5 with an older Arch pydantic. The two packages are
-installed together in the #139 transaction.
+conflict to `python-pydantic-core-gfx1151` and bumps it to `2.46.5-2`, so
+pacman cannot pair pydantic-core 2.46.5 with an older Arch pydantic. The two
+packages are installed together in the #139 transaction.
 
 A refreshed sweep with `--fail-on actionable` exited 0 and reported 29 tracked,
 seven rejected, one adopted, and eight current families. The explicit tracker
