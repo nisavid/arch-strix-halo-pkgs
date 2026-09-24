@@ -200,6 +200,23 @@ def test_llamacpp_scenario_log_regexes_match_b9442_verbosity_4_lines():
         assert not re.search(regexes[1], "load_tensors: offloaded 20/29 layers to GPU")
 
 
+def test_backend_library_filter_keeps_resolved_rocm_sonames():
+    # /proc/<pid>/maps shows resolved files; TheRock's HIP runtime carries a build id.
+    for name in (
+        "libamdhip64.so.7.13.26176-79e85e1468",
+        "libhipblas.so.3.4",
+        "libhsa-runtime64.so.1.21.0",
+        "libggml-hip.so.0.13.1",
+        "librocm_sysdeps_drm.so.2",
+        "libllama.so",
+    ):
+        assert live.BACKEND_LIB_RE.match(name), name
+        if name.startswith("libamdhip64"):
+            assert live.HIP_RUNTIME_LIB_RE.match(name)
+    for name in ("libc.so.6", "libamdhip64.so.debug", "libstdc++.so.6.0.33", "libamdhip64.a"):
+        assert not live.BACKEND_LIB_RE.match(name), name
+
+
 def test_loaded_entry_matches_a_registered_model_by_its_bare_listing():
     health = {"all_models_loaded": [{"model_name": "Qwen3-0.6B-Q8_0-GGUF", "pid": 7}]}
     # /health lists the registered precedence winner bare.

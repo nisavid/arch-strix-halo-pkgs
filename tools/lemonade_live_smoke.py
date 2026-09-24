@@ -95,8 +95,10 @@ CAPACITY_RE = re.compile(r"cannot fit within effective capacity ([0-9]+(?:\.[0-9
 OWNER_RE = re.compile(r" is owned by (\S+) ")
 # Shared objects whose provenance the text scenarios prove: llama.cpp's own
 # libraries and the ROCm/HIP runtime stack a backend can pull in.
+# /proc/<pid>/maps names the resolved file, whose version suffix may carry a
+# build id: TheRock ships libamdhip64.so.7.13.26176-79e85e1468.
 BACKEND_LIB_RE = re.compile(
-    r"^lib(?:ggml|llama|mtmd|amdhip|hip|hsa|roc|amd_comgr|rccl|miopen)[^/]*\.so(?:\.[0-9.]+)?$",
+    r"^lib(?:ggml|llama|mtmd|amdhip|hip|hsa|roc|amd_comgr|rccl|miopen)[^/]*\.so(?:\.[0-9][0-9A-Za-z._+-]*)?$",
     re.IGNORECASE,
 )
 LLAMACPP_LIB_RE = re.compile(r"^lib(?:ggml|llama|mtmd)", re.IGNORECASE)
