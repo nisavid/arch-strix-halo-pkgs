@@ -1,0 +1,105 @@
+{
+  "maintenance": {
+    "advisory_references": [],
+    "authoritative_reference": "aur/python-prometheus-fastapi-instrumentator",
+    "divergence_notes": [
+      "Tracks upstream prometheus-fastapi-instrumentator 8.1.0 from PyPI instead of the AUR 7.0.0 baseline, because vLLM 0.30.0 requires >=8.0.0 (v8 unblocks Starlette >=1.0) and the vLLM package must not depend on a foreign AUR provider.",
+      "Keeps the package pure-Python and architecture-independent; there are no Strix-specific native flags to carry.",
+      "Depends on python-gfx1151 so the vLLM server stack stays on the repo-managed Python lane. Upstream requires starlette and prometheus-client only; fastapi is not a runtime requirement of this package."
+    ],
+    "source_patches": [],
+    "update_notes": [
+      "Check vLLM's requirements/common.txt floor (prometheus-fastapi-instrumentator >=8.0.0 at vLLM 0.30.0) and the upstream CHANGELOG together before updating.",
+      "Re-check the upstream runtime requirements (starlette >=1.0.0,<2.0.0 and prometheus-client >=0.8.0,<1.0.0 at 8.1.0) against Arch python-starlette and python-prometheus_client.",
+      "After publishing a rebuilt package, verify `from prometheus_fastapi_instrumentator import Instrumentator` and instrument a minimal FastAPI app through the installed local Python lane, then rerun the vLLM server smoke, which serves `/metrics` through this package.",
+      "On 2026-09-25, added at 8.1.0 for the generation-C W2A closure (#110). It is built later in the rootless C build root with the vLLM package; until then the vLLM server smoke has no >=8 provider."
+    ]
+  },
+  "name": "python-prometheus-fastapi-instrumentator-gfx1151",
+  "package_name": "python-prometheus-fastapi-instrumentator-gfx1151",
+  "pkgver": "8.1.0",
+  "policy": {
+    "advisory_references": [],
+    "arch": [
+      "any"
+    ],
+    "arch_reference": [
+      "aur/python-prometheus-fastapi-instrumentator"
+    ],
+    "authoritative_reference": "aur/python-prometheus-fastapi-instrumentator",
+    "conflicts": [
+      "python-prometheus-fastapi-instrumentator"
+    ],
+    "depends": [
+      "python-gfx1151",
+      "python-prometheus_client",
+      "python-starlette"
+    ],
+    "divergence_notes": [
+      "Tracks upstream prometheus-fastapi-instrumentator 8.1.0 from PyPI instead of the AUR 7.0.0 baseline, because vLLM 0.30.0 requires >=8.0.0 (v8 unblocks Starlette >=1.0) and the vLLM package must not depend on a foreign AUR provider.",
+      "Keeps the package pure-Python and architecture-independent; there are no Strix-specific native flags to carry.",
+      "Depends on python-gfx1151 so the vLLM server stack stays on the repo-managed Python lane. Upstream requires starlette and prometheus-client only; fastapi is not a runtime requirement of this package."
+    ],
+    "license": [
+      "ISC"
+    ],
+    "makedepends": [
+      "python-build",
+      "python-installer",
+      "python-poetry-core"
+    ],
+    "patches_dir": "patches/python-prometheus-fastapi-instrumentator-gfx1151",
+    "pkgdesc": "Prometheus metrics instrumentation for FastAPI and Starlette apps, for the Strix Halo vLLM server stack",
+    "provides": [
+      "python-prometheus-fastapi-instrumentator"
+    ],
+    "pure_python_wheel": true,
+    "pypi_name": "prometheus_fastapi_instrumentator",
+    "recipe_key": "native_wheels",
+    "recipe_notes_override": "This package supplies the Prometheus metrics middleware that the vLLM\nOpenAI-compatible server uses for `/metrics`. It is pure Python, but it\nbelongs in the local package closure because vLLM 0.30.0 requires\nprometheus-fastapi-instrumentator >=8.0.0, and the only Arch-family package\nis the AUR 7.0.0 build, which predates Starlette 1.0 support.\n",
+    "scaffold_notes": [
+      "Part of the vLLM API server dependency closure (#110).",
+      "Renders through the Blackcat native-wheel lane in pure-Python mode, like compressed-tensors and Accelerate; Blackcat's recipe does not name this package.",
+      "Builds with the Arch poetry-core backend and keeps Python build dependency checking on, because poetry-core >=2.0 is the only build requirement."
+    ],
+    "sha256sums": [
+      "b77f3043665e8d28e2bbd21017506195a43d9adf1d402d01bf95b494b7e560e1"
+    ],
+    "src_subdir": "prometheus_fastapi_instrumentator-8.1.0",
+    "template": "native-wheel-pypi",
+    "update_notes": [
+      "Check vLLM's requirements/common.txt floor (prometheus-fastapi-instrumentator >=8.0.0 at vLLM 0.30.0) and the upstream CHANGELOG together before updating.",
+      "Re-check the upstream runtime requirements (starlette >=1.0.0,<2.0.0 and prometheus-client >=0.8.0,<1.0.0 at 8.1.0) against Arch python-starlette and python-prometheus_client.",
+      "After publishing a rebuilt package, verify `from prometheus_fastapi_instrumentator import Instrumentator` and instrument a minimal FastAPI app through the installed local Python lane, then rerun the vLLM server smoke, which serves `/metrics` through this package.",
+      "On 2026-09-25, added at 8.1.0 for the generation-C W2A closure (#110). It is built later in the rootless C build root with the vLLM package; until then the vLLM server smoke has no >=8 provider."
+    ],
+    "upstream_version": "8.1.0",
+    "url": "https://github.com/trallnag/prometheus-fastapi-instrumentator"
+  },
+  "provenance": {
+    "output_root": "packages",
+    "recipe_author": "Blackcat Informatics Inc.",
+    "recipe_commit": "3f15f9f",
+    "recipe_date": "20260508",
+    "recipe_history_count": 17,
+    "recipe_repo": "https://github.com/paudley/ai-notes",
+    "recipe_subdir": "strix-halo",
+    "repo_subpath": "."
+  },
+  "recipe": {
+    "branch": null,
+    "depends_on": [
+      "cpython",
+      "pytorch"
+    ],
+    "method": "pip",
+    "notes": "This package supplies the Prometheus metrics middleware that the vLLM\nOpenAI-compatible server uses for `/metrics`. It is pure Python, but it\nbelongs in the local package closure because vLLM 0.30.0 requires\nprometheus-fastapi-instrumentator >=8.0.0, and the only Arch-family package\nis the AUR 7.0.0 build, which predates Starlette 1.0 support.\n",
+    "patches": [],
+    "phase": "H",
+    "repo": null,
+    "src_dir": "prometheus_fastapi_instrumentator-8.1.0",
+    "steps": [
+      32
+    ]
+  }
+}

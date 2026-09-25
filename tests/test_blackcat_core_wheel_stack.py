@@ -107,6 +107,13 @@ SERVICE_STACK = {
         "provides": ["python-frozenlist"],
         "consumer_dep": "python-frozenlist-gfx1151",
     },
+    "python-prometheus-fastapi-instrumentator-gfx1151": {
+        "template": "native-wheel-pypi",
+        "recipe_key": "native_wheels",
+        "upstream_version": "8.1.0",
+        "provides": ["python-prometheus-fastapi-instrumentator"],
+        "consumer_dep": "python-prometheus-fastapi-instrumentator-gfx1151",
+    },
 }
 
 TOOLING_STACK = {
@@ -256,6 +263,9 @@ def test_blackcat_service_wheel_stack_rendered_outputs_exist() -> None:
         assert "Blackcat" in readme
         if package_name == "python-frozenlist-gfx1151":
             assert recipe["policy"]["patches_dir"] == "patches/python-frozenlist-gfx1151"
+        if package_name == "python-prometheus-fastapi-instrumentator-gfx1151":
+            assert "arch=('any')" in pkgbuild
+            assert "_setup_compiler_env" not in pkgbuild
 
 
 def test_service_consumers_prefer_local_blackcat_packages() -> None:
@@ -271,6 +281,8 @@ def test_service_consumers_prefer_local_blackcat_packages() -> None:
     assert "python-httptools-gfx1151" in vllm_deps
     assert "python-msgspec-gfx1151" in vllm_deps
     assert "python-aiohttp-gfx1151" in vllm_deps
+    assert "python-prometheus-fastapi-instrumentator-gfx1151" in vllm_deps
+    assert "python-prometheus-fastapi-instrumentator" not in vllm_deps
     assert "python-frozenlist-gfx1151" in aiohttp_deps
     assert "python-multidict-gfx1151" in aiohttp_deps
     assert "python-yarl-gfx1151" in aiohttp_deps

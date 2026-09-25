@@ -3310,3 +3310,26 @@ next_gate_kind = "github_issue"
 next_gate_issue = 110
 next_gate_label = "compressed-tensors 0.17.0 W2A closure"
 last_reviewed = "2026-08-12"
+
+[candidates."prometheus-fastapi-instrumentator-8.1.0-selected"]
+family = "prometheus_fastapi_instrumentator"
+packages = ["python-prometheus-fastapi-instrumentator-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+previous_recorded = "none"
+latest = "8.1.0"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked as the new W2A closure package that meets vLLM 0.30.0's prometheus-fastapi-instrumentator >=8.0.0 floor. The AUR baseline is 7.0.0. The package source is pinned; the build, root add, and vLLM server smoke remain open."
+salient_changes = [
+  "vLLM 0.30.0 requires prometheus-fastapi-instrumentator >=8.0.0; v8 supports Starlette >=1.0",
+  "The AUR python-prometheus-fastapi-instrumentator baseline is 7.0.0-2",
+  "8.1.0 requires starlette >=1.0.0,<2.0.0 and prometheus-client >=0.8.0,<1.0.0, which Arch python-starlette 1.6.0 and python-prometheus_client 0.26.0 meet",
+]
+patch_carry_overlap = false
+package_source_update_needed = false
+host_validation_needed = true
+next_gate_kind = "github_issue"
+next_gate_issue = 110
+next_gate_label = "prometheus-fastapi-instrumentator 8.1.0 W2A closure"
+last_reviewed = "2026-09-25"

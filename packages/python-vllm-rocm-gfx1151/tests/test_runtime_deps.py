@@ -78,3 +78,39 @@ def test_vllm_readme_records_the_0_30_requirement_floors():
     assert "prometheus-fastapi-instrumentator >=8.0.0" in readme
     assert "fastapi[standard] >=0.133.0,<0.137.0" in readme
     assert "transformers >=5.10.4" in readme
+
+
+def test_vllm_depends_on_the_local_instrumentator_v8_lane():
+    # vLLM 0.30.0 requires prometheus-fastapi-instrumentator >= 8.0.0, and the
+    # AUR package is 7.0.0, so the dependency must name the W2A closure lane.
+    depends = pkgbuild_array("depends")
+
+    assert "python-prometheus-fastapi-instrumentator-gfx1151" in depends
+    assert "python-prometheus-fastapi-instrumentator" not in depends
+
+
+def test_vllm_depends_on_the_pinned_compressed_tensors_lane():
+    # vLLM 0.30.0 pins compressed-tensors == 0.17.0, which the W2A closure
+    # builds as python-compressed-tensors-gfx1151 0.17.0.
+    depends = pkgbuild_array("depends")
+
+    assert "python-compressed-tensors-gfx1151" in depends
+    assert "python-compressed-tensors" not in depends
+
+
+def test_vllm_leaves_mcp_and_llguidance_out_of_depends():
+    # mcp >=2,<3 and llguidance >=1.7,<1.8 are tracked #110 gaps: Arch has
+    # mcp 1.29.0 and nothing packages llguidance. vLLM 0.30.0 imports neither
+    # on the `vllm serve` startup path.
+    depends = pkgbuild_array("depends")
+
+    assert "python-mcp" not in depends
+    assert "python-llguidance" not in depends
+
+
+def test_vllm_readme_records_the_mcp_and_llguidance_gaps():
+    readme = " ".join((PKGBUILD.parent / "README.md").read_text().split())
+
+    assert "mcp >=2.0.0,<3.0.0" in readme
+    assert "llguidance >=1.7.0,<1.8.0" in readme
+    assert "optdepends once packaged" in readme

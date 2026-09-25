@@ -392,6 +392,15 @@ checks = [
   { id = "tag", role = "baseline", kind = "github_tags", repo = "ROCm/torch_migraphx", recorded = "1.1", comparison = "pep440", include_prereleases = false },
 ]
 
+[families.prometheus_fastapi_instrumentator]
+packages = ["python-prometheus-fastapi-instrumentator-gfx1151"]
+priority = "medium"
+workflow = "upstream_source_update"
+checks = [
+  { id = "pypi", role = "primary", kind = "pypi", package = "prometheus-fastapi-instrumentator", recorded = "8.1.0", comparison = "pep440" },
+  { id = "aur", role = "baseline", kind = "aur", package = "python-prometheus-fastapi-instrumentator", recorded = "7.0.0-2", comparison = "pkgver" },
+]
+
 [families.mistral_common]
 packages = ["python-mistral-common-gfx1151"]
 priority = "medium"
