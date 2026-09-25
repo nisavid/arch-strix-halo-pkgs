@@ -1,4 +1,5 @@
 import json
+import subprocess
 from pathlib import Path
 import re
 import sys
@@ -444,3 +445,137 @@ def test_pkgbuild_declares_runtime_library_depends():
         "zlib",
         "zstd",
     }
+
+
+def _rendered_lemond_unit_check():
+    """The _check_lemond_unit definition exactly as package() declares it."""
+    match = re.search(
+        r"^(  _check_lemond_unit\(\) \{\n.*?^  \}\n)", PKGBUILD.read_text(), re.DOTALL | re.MULTILINE
+    )
+    assert match, "no _check_lemond_unit definition in PKGBUILD"
+    return match.group(1)
+
+
+def _run_lemond_unit_check_like_makepkg(unit_path):
+    # makepkg runs package() with errexit and errtrace on and an ERR trap that
+    # aborts the build with "A failure occurred in package()"; mirror that.
+    script = (
+        "shopt -o -s errexit errtrace\n"
+        "trap 'echo MAKEPKG_ERR_TRAP >&2; exit 4' ERR\n"
+        "package() {\n"
+        + _rendered_lemond_unit_check()
+        + '  _check_lemond_unit "$1"\n'
+        "  echo PACKAGE_CONTINUED\n"
+        "}\n"
+        "package \"$1\"\n"
+    )
+    return subprocess.run(
+        ["bash", "-c", script, "bash", str(unit_path)],
+        env={"PATH": "/usr/bin:/bin"},
+        capture_output=True,
+        text=True,
+    )
+
+
+LEMOND_UNIT_EXPECTED = """\
+[Unit]
+Description=Lemonade Server
+
+[Service]
+StateDirectory=lemonade
+CacheDirectory=lemonade
+CacheDirectoryMode=0755
+EnvironmentFile=-/etc/default/lemond
+ExecStart=/usr/bin/lemond
+
+[Install]
+WantedBy=multi-user.target
+"""
+
+
+def test_unit_check_passes_under_makepkg_errexit_without_a_drop_in_dir(tmp_path):
+    # Upstream installs lemond.service and no lemond.service.d directory.
+    unit = tmp_path / "lemond.service"
+    unit.write_text(LEMOND_UNIT_EXPECTED)
+
+    result = _run_lemond_unit_check_like_makepkg(unit)
+
+    assert result.returncode == 0, result.stderr
+    assert "PACKAGE_CONTINUED" in result.stdout
+    assert "MAKEPKG_ERR_TRAP" not in result.stderr
+
+
+def test_unit_check_passes_under_makepkg_errexit_with_an_empty_drop_in_dir(tmp_path):
+    unit = tmp_path / "lemond.service"
+    unit.write_text(LEMOND_UNIT_EXPECTED)
+    (tmp_path / "lemond.service.d").mkdir()
+
+    result = _run_lemond_unit_check_like_makepkg(unit)
+
+    assert result.returncode == 0, result.stderr
+    assert "PACKAGE_CONTINUED" in result.stdout
+
+
+def test_unit_check_fails_under_makepkg_errexit_on_an_upstream_drop_in(tmp_path):
+    unit = tmp_path / "lemond.service"
+    unit.write_text(LEMOND_UNIT_EXPECTED)
+    (tmp_path / "lemond.service.d").mkdir()
+    (tmp_path / "lemond.service.d" / "10-upstream.conf").write_text(
+        "[Service]\nEnvironmentFile=-/etc/lemonade/extra.env\n"
+    )
+
+    result = _run_lemond_unit_check_like_makepkg(unit)
+
+    assert result.returncode != 0
+    assert "PACKAGE_CONTINUED" not in result.stdout
+    assert "LEMOND_UNIT_LAYOUT: upstream installs" in result.stderr
+    assert "10-upstream.conf" in result.stderr
+
+
+@pytest.mark.parametrize(
+    ("unit", "message"),
+    [
+        (
+            LEMOND_UNIT_EXPECTED.replace("CacheDirectory=lemonade\n", ""),
+            "lacks CacheDirectory=lemonade",
+        ),
+        (
+            LEMOND_UNIT_EXPECTED.replace("EnvironmentFile=-/etc/default/lemond\n", ""),
+            "lacks EnvironmentFile=-/etc/default/lemond",
+        ),
+        (
+            LEMOND_UNIT_EXPECTED.replace("ExecStart=/usr/bin/lemond\n", ""),
+            "lacks ExecStart=/usr/bin/lemond",
+        ),
+        (
+            LEMOND_UNIT_EXPECTED.replace(
+                "ExecStart=/usr/bin/lemond\n",
+                "ExecStart=/usr/bin/lemond\nExecStart = /usr/bin/lemond /var/cache/lemonade\n",
+            ),
+            "overrides lemond's config or cache dir",
+        ),
+        (
+            LEMOND_UNIT_EXPECTED.replace(
+                "ExecStart=/usr/bin/lemond\n",
+                "ExecStart=/usr/bin/lemond\nEnvironment=HOME=/srv/lemonade\n",
+            ),
+            "overrides lemond's config or cache dir",
+        ),
+        (
+            LEMOND_UNIT_EXPECTED.replace(
+                "ExecStart=/usr/bin/lemond\n",
+                "ExecStart=/usr/bin/lemond\nEnvironmentFile=-/etc/lemonade/extra.env\n",
+            ),
+            "lists an EnvironmentFile= that 30-env-files.conf would drop",
+        ),
+    ],
+)
+def test_unit_check_fails_under_makepkg_errexit_on_a_changed_unit(tmp_path, unit, message):
+    unit_path = tmp_path / "lemond.service"
+    unit_path.write_text(unit)
+
+    result = _run_lemond_unit_check_like_makepkg(unit_path)
+
+    assert result.returncode != 0
+    assert "PACKAGE_CONTINUED" not in result.stdout
+    assert f"LEMOND_UNIT_LAYOUT: {unit_path} {message}" in result.stderr

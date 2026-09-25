@@ -1263,14 +1263,7 @@ def test_lemond_unit_check_accepts_only_the_split_config_and_cache_layout(
 ) -> None:
     unit_path = tmp_path / "lemond.service"
     unit_path.write_text(unit, encoding="utf-8")
-    script = render_recipe_scaffolds.lemond_unit_check_snippet() + '_check_lemond_unit "$1"\n'
-
-    result = subprocess.run(
-        ["bash", "-c", script, "bash", str(unit_path)],
-        env={"PATH": "/usr/bin:/bin"},
-        capture_output=True,
-        text=True,
-    )
+    result = _run_lemond_unit_check(unit_path)
 
     assert (result.returncode == 0) is ok, result.stderr
     if not ok:
@@ -1278,7 +1271,13 @@ def test_lemond_unit_check_accepts_only_the_split_config_and_cache_layout(
 
 
 def _run_lemond_unit_check(unit_path: Path) -> subprocess.CompletedProcess[str]:
-    script = render_recipe_scaffolds.lemond_unit_check_snippet() + '_check_lemond_unit "$1"\n'
+    # makepkg runs package() with errexit, errtrace, and an ERR trap.
+    script = (
+        "shopt -o -s errexit errtrace\n"
+        "trap 'exit 4' ERR\n"
+        + render_recipe_scaffolds.lemond_unit_check_snippet()
+        + '_check_lemond_unit "$1"\n'
+    )
     return subprocess.run(
         ["bash", "-c", script, "bash", str(unit_path)],
         env={"PATH": "/usr/bin:/bin"},
@@ -1311,6 +1310,15 @@ def test_lemond_unit_check_rejects_upstream_drop_ins(tmp_path: Path, dropin: str
     assert result.returncode != 0
     assert "LEMOND_UNIT_LAYOUT" in result.stderr
     assert dropin in result.stderr
+
+
+def test_lemond_unit_check_accepts_a_missing_drop_in_dir(tmp_path: Path) -> None:
+    unit_path = tmp_path / "lemond.service"
+    unit_path.write_text(LEMOND_UNIT_OK, encoding="utf-8")
+
+    result = _run_lemond_unit_check(unit_path)
+
+    assert result.returncode == 0, result.stderr
 
 
 def test_lemond_unit_check_accepts_an_empty_drop_in_dir(tmp_path: Path) -> None:
