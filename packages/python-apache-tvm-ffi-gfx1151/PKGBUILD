@@ -63,7 +63,7 @@ build() {
   export LDFLAGS="${_base_ldflags:+${_base_ldflags} }-famd-opt"
 
   rm -rf dist build
-  /usr/bin/python -m build --wheel --no-isolation
+  /usr/bin/python -m build --wheel --no-isolation --skip-dependency-check
 }
 
 package() {

@@ -36,6 +36,7 @@ TVM-FFI bindings on the local amdclang native-wheel lane.
 - Pins 0.2.3 instead of the latest release: vLLM 0.30.0 requires xgrammar >=0.2.1,<1.0.0, its CUDA and CPU CI locks test 0.2.3 (the ROCm lock tests 0.2.1), and 0.2.3 publishes CPython 3.14 wheels.
 - Builds the C++ grammar engine and its TVM-FFI bindings through the Blackcat native-wheel compiler lane with amdclang and Zen 5 flags, against python-apache-tvm-ffi-gfx1151.
 - Carries every upstream runtime requirement from the published metadata, mapped to the local lanes: apache-tvm-ffi, pydantic, torch, transformers, triton, numpy and typing-extensions.
+- Builds with `skip_dependency_check = true`: scikit-build-core's `get_requires_for_build_wheel` hook asks the no-isolation frontend for the PyPI `cmake` distribution, but Arch supplies CMake as `/usr/bin/cmake`, which the scikit-build-core backend finds and uses, so the frontend dependency check is stricter than the actual build.
 
 ## Update Notes
 

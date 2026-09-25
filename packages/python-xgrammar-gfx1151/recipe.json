@@ -6,7 +6,8 @@
       "Builds xgrammar 0.2.3 from the PyPI sdist instead of repacking a wheel like the AUR package, whose 0.2.x packages also omit the apache-tvm-ffi dependency and fail at `import xgrammar` with `No module named 'tvm_ffi'`.",
       "Pins 0.2.3 instead of the latest release: vLLM 0.30.0 requires xgrammar >=0.2.1,<1.0.0, its CUDA and CPU CI locks test 0.2.3 (the ROCm lock tests 0.2.1), and 0.2.3 publishes CPython 3.14 wheels.",
       "Builds the C++ grammar engine and its TVM-FFI bindings through the Blackcat native-wheel compiler lane with amdclang and Zen 5 flags, against python-apache-tvm-ffi-gfx1151.",
-      "Carries every upstream runtime requirement from the published metadata, mapped to the local lanes: apache-tvm-ffi, pydantic, torch, transformers, triton, numpy and typing-extensions."
+      "Carries every upstream runtime requirement from the published metadata, mapped to the local lanes: apache-tvm-ffi, pydantic, torch, transformers, triton, numpy and typing-extensions.",
+      "Builds with `skip_dependency_check = true`: scikit-build-core's `get_requires_for_build_wheel` hook asks the no-isolation frontend for the PyPI `cmake` distribution, but Arch supplies CMake as `/usr/bin/cmake`, which the scikit-build-core backend finds and uses, so the frontend dependency check is stricter than the actual build."
     ],
     "source_patches": [],
     "update_notes": [
@@ -50,7 +51,8 @@
       "Builds xgrammar 0.2.3 from the PyPI sdist instead of repacking a wheel like the AUR package, whose 0.2.x packages also omit the apache-tvm-ffi dependency and fail at `import xgrammar` with `No module named 'tvm_ffi'`.",
       "Pins 0.2.3 instead of the latest release: vLLM 0.30.0 requires xgrammar >=0.2.1,<1.0.0, its CUDA and CPU CI locks test 0.2.3 (the ROCm lock tests 0.2.1), and 0.2.3 publishes CPython 3.14 wheels.",
       "Builds the C++ grammar engine and its TVM-FFI bindings through the Blackcat native-wheel compiler lane with amdclang and Zen 5 flags, against python-apache-tvm-ffi-gfx1151.",
-      "Carries every upstream runtime requirement from the published metadata, mapped to the local lanes: apache-tvm-ffi, pydantic, torch, transformers, triton, numpy and typing-extensions."
+      "Carries every upstream runtime requirement from the published metadata, mapped to the local lanes: apache-tvm-ffi, pydantic, torch, transformers, triton, numpy and typing-extensions.",
+      "Builds with `skip_dependency_check = true`: scikit-build-core's `get_requires_for_build_wheel` hook asks the no-isolation frontend for the PyPI `cmake` distribution, but Arch supplies CMake as `/usr/bin/cmake`, which the scikit-build-core backend finds and uses, so the frontend dependency check is stricter than the actual build."
     ],
     "license": [
       "Apache-2.0"
@@ -81,6 +83,7 @@
       "f76423630ae3ac4e090cb38ce1e30e7bcc69b3dee4d22d94353944386a4c6f18"
     ],
     "single_wheel_install": true,
+    "skip_dependency_check": true,
     "src_subdir": "xgrammar-0.2.3",
     "template": "native-wheel-pypi",
     "update_notes": [

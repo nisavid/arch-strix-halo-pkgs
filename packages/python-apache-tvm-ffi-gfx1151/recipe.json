@@ -5,7 +5,8 @@
     "divergence_notes": [
       "Pins 0.1.10 instead of the AUR 0.1.14.post1 package: xgrammar 0.2.3 requires apache-tvm-ffi >=0.1.9 at build and run time, and vLLM 0.30.0 requirements/rocm.txt pins apache-tvm-ffi ==0.1.10, so 0.1.10 meets both.",
       "Builds the C++ core, the bundled libbacktrace and the Cython module through the Blackcat native-wheel compiler lane with amdclang and Zen 5 flags. The wheel is a cp312-abi3 wheel (pyproject `wheel.py-api = \"cp312\"`).",
-      "Depends on glibc, libgcc, libstdc++, python-gfx1151 and python-typing_extensions. Upstream 0.1.10 declares only typing-extensions >=4.5."
+      "Depends on glibc, libgcc, libstdc++, python-gfx1151 and python-typing_extensions. Upstream 0.1.10 declares only typing-extensions >=4.5.",
+      "Builds with `skip_dependency_check = true`: scikit-build-core's `get_requires_for_build_wheel` hook asks the no-isolation frontend for the PyPI `cmake` distribution, but Arch supplies CMake as `/usr/bin/cmake`, which the scikit-build-core backend finds and uses, so the frontend dependency check is stricter than the actual build."
     ],
     "source_patches": [],
     "update_notes": [
@@ -38,7 +39,8 @@
     "divergence_notes": [
       "Pins 0.1.10 instead of the AUR 0.1.14.post1 package: xgrammar 0.2.3 requires apache-tvm-ffi >=0.1.9 at build and run time, and vLLM 0.30.0 requirements/rocm.txt pins apache-tvm-ffi ==0.1.10, so 0.1.10 meets both.",
       "Builds the C++ core, the bundled libbacktrace and the Cython module through the Blackcat native-wheel compiler lane with amdclang and Zen 5 flags. The wheel is a cp312-abi3 wheel (pyproject `wheel.py-api = \"cp312\"`).",
-      "Depends on glibc, libgcc, libstdc++, python-gfx1151 and python-typing_extensions. Upstream 0.1.10 declares only typing-extensions >=4.5."
+      "Depends on glibc, libgcc, libstdc++, python-gfx1151 and python-typing_extensions. Upstream 0.1.10 declares only typing-extensions >=4.5.",
+      "Builds with `skip_dependency_check = true`: scikit-build-core's `get_requires_for_build_wheel` hook asks the no-isolation frontend for the PyPI `cmake` distribution, but Arch supplies CMake as `/usr/bin/cmake`, which the scikit-build-core backend finds and uses, so the frontend dependency check is stricter than the actual build."
     ],
     "license": [
       "Apache-2.0"
@@ -70,6 +72,7 @@
       "974c208766c304c780c17c6d405449e862f83b22c7b6b2b8c28b29d55a806ae3"
     ],
     "single_wheel_install": true,
+    "skip_dependency_check": true,
     "src_subdir": "apache_tvm_ffi-0.1.10",
     "template": "native-wheel-pypi",
     "update_notes": [

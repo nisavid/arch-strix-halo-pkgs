@@ -1,8 +1,11 @@
+import re
 import subprocess
+import tomllib
 from pathlib import Path
 
 
 PKGBUILD = Path(__file__).resolve().parents[1] / "PKGBUILD"
+RECIPE_POLICY = Path(__file__).resolve().parents[3] / "policies" / "recipe-packages.toml"
 
 
 def pkgbuild_value(expr: str) -> list[str]:
@@ -72,3 +75,24 @@ def test_runtime_depends_follow_the_published_metadata():
 def test_replaces_the_aur_package_name():
     assert pkgbuild_value('"${provides[@]}"') == ["python-xgrammar"]
     assert pkgbuild_value('"${conflicts[@]}"') == ["python-xgrammar"]
+
+
+def test_skips_the_frontend_dependency_check_for_the_pypi_cmake_requirement():
+    # scikit-build-core's get_requires_for_build_wheel hook asks for the PyPI
+    # cmake distribution, which a no-isolation `python -m build` then reports
+    # as unmet. Arch supplies cmake as /usr/bin/cmake, which the backend uses.
+    build_lines = [
+        line
+        for line in re.sub(r"\\\n\s*", " ", PKGBUILD.read_text()).splitlines()
+        if "python -m build" in line
+    ]
+    assert build_lines
+    assert all("--skip-dependency-check" in line for line in build_lines)
+
+    policy = tomllib.loads(RECIPE_POLICY.read_text(encoding="utf-8"))
+    entry = policy["packages"]["python-xgrammar-gfx1151"]
+    assert entry["skip_dependency_check"] is True
+    assert any(
+        "scikit-build-core" in note and "cmake" in note and "/usr/bin/cmake" in note
+        for note in entry["divergence_notes"]
+    )

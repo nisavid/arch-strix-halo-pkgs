@@ -1905,7 +1905,8 @@ advisory_references = []
 divergence_notes = [
   "Pins 0.1.10 instead of the AUR 0.1.14.post1 package: xgrammar 0.2.3 requires apache-tvm-ffi >=0.1.9 at build and run time, and vLLM 0.30.0 requirements/rocm.txt pins apache-tvm-ffi ==0.1.10, so 0.1.10 meets both.",
   "Builds the C++ core, the bundled libbacktrace and the Cython module through the Blackcat native-wheel compiler lane with amdclang and Zen 5 flags. The wheel is a cp312-abi3 wheel (pyproject `wheel.py-api = \"cp312\"`).",
-  "Depends on glibc, libgcc, libstdc++, python-gfx1151 and python-typing_extensions. Upstream 0.1.10 declares only typing-extensions >=4.5."
+  "Depends on glibc, libgcc, libstdc++, python-gfx1151 and python-typing_extensions. Upstream 0.1.10 declares only typing-extensions >=4.5.",
+  "Builds with `skip_dependency_check = true`: scikit-build-core's `get_requires_for_build_wheel` hook asks the no-isolation frontend for the PyPI `cmake` distribution, but Arch supplies CMake as `/usr/bin/cmake`, which the scikit-build-core backend finds and uses, so the frontend dependency check is stricter than the actual build."
 ]
 update_notes = [
   "Move this pin with xgrammar: re-check xgrammar's pyproject apache-tvm-ffi floor and vLLM's requirements/rocm.txt pin together before updating.",
@@ -1916,6 +1917,7 @@ update_notes = [
 ]
 provides = ["python-apache-tvm-ffi"]
 conflicts = ["python-apache-tvm-ffi"]
+skip_dependency_check = true
 depends = ["glibc", "libgcc", "libstdc++", "python-gfx1151", "python-typing_extensions"]
 makedepends = ["cmake", "cython", "ninja", "python-build", "python-installer", "python-scikit-build-core", "python-setuptools-scm", "rocm-llvm-gfx1151"]
 pypi_name = "apache_tvm_ffi"
@@ -1950,7 +1952,8 @@ divergence_notes = [
   "Builds xgrammar 0.2.3 from the PyPI sdist instead of repacking a wheel like the AUR package, whose 0.2.x packages also omit the apache-tvm-ffi dependency and fail at `import xgrammar` with `No module named 'tvm_ffi'`.",
   "Pins 0.2.3 instead of the latest release: vLLM 0.30.0 requires xgrammar >=0.2.1,<1.0.0, its CUDA and CPU CI locks test 0.2.3 (the ROCm lock tests 0.2.1), and 0.2.3 publishes CPython 3.14 wheels.",
   "Builds the C++ grammar engine and its TVM-FFI bindings through the Blackcat native-wheel compiler lane with amdclang and Zen 5 flags, against python-apache-tvm-ffi-gfx1151.",
-  "Carries every upstream runtime requirement from the published metadata, mapped to the local lanes: apache-tvm-ffi, pydantic, torch, transformers, triton, numpy and typing-extensions."
+  "Carries every upstream runtime requirement from the published metadata, mapped to the local lanes: apache-tvm-ffi, pydantic, torch, transformers, triton, numpy and typing-extensions.",
+  "Builds with `skip_dependency_check = true`: scikit-build-core's `get_requires_for_build_wheel` hook asks the no-isolation frontend for the PyPI `cmake` distribution, but Arch supplies CMake as `/usr/bin/cmake`, which the scikit-build-core backend finds and uses, so the frontend dependency check is stricter than the actual build."
 ]
 update_notes = [
   "Check vLLM's requirements/common.txt specifier and its requirements/test CI locks together before updating, and move python-apache-tvm-ffi-gfx1151 with it when the tvm-ffi floor changes.",
@@ -1961,6 +1964,7 @@ update_notes = [
 ]
 provides = ["python-xgrammar"]
 conflicts = ["python-xgrammar"]
+skip_dependency_check = true
 depends = ["glibc", "libgcc", "libstdc++", "python-apache-tvm-ffi-gfx1151", "python-gfx1151", "python-numpy-gfx1151", "python-pydantic", "python-pytorch-opt-rocm-gfx1151", "python-transformers-gfx1151", "python-triton-gfx1151", "python-typing_extensions"]
 makedepends = ["cmake", "ninja", "python-apache-tvm-ffi-gfx1151", "python-build", "python-installer", "python-scikit-build-core", "rocm-llvm-gfx1151"]
 pypi_name = "xgrammar"
