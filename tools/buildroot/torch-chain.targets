@@ -69,3 +69,8 @@ rocminfo-gfx1151
 rocprofiler-sdk-gfx1151
 rocprofiler-sdk-roctx-gfx1151
 migraphx-gfx1151
+# MIGraphX 2.16.1 in foundation F (#108) links Arch protobuf 36.1 and Abseil
+# 20260817. It pins libprotobuf.so=36.1.0-64 but names no Abseil version, and
+# protobuf depends on plain abseil-cpp, so the host's older pair would win.
+protobuf>=36.1
+abseil-cpp>=20260817.0

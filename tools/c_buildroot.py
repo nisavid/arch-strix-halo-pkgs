@@ -308,9 +308,17 @@ def resolve(targets: Sequence[str], cfg: ResolveConfig) -> dict:
         needer = selected[why]
         return needer.repo in foundation_rank or needer.name not in cfg.installed
 
-    def host_version_fits(p: Pkg, version: str, needs: list[tuple[str, str]]) -> bool:
-        host = replace(p, version=version)
-        return all(satisfies(host, d) for d, why in needs if binding(why))
+    def host_version_fits(p: Pkg, version: str, archive: Path, needs: list[tuple[str, str]]) -> bool:
+        # Judge the host package by its own provides, not the DB entry's: a
+        # soname pin such as libprotobuf.so=36.1.0-64 names the DB version.
+        # Read them only when a binding need goes through a provide; if they
+        # cannot be read, such a need is not met.
+        binding_needs = [d for d, why in needs if binding(why)]
+        provides: list[str] = []
+        if any(split_dep(d)[0] != p.name for d in binding_needs):
+            provides = archive_provides(archive)
+        host = replace(p, version=version, provides=provides)
+        return all(satisfies(host, d) for d in binding_needs)
 
     packages = []
     for p in sorted(selected.values(), key=lambda p: p.name):
@@ -322,7 +330,6 @@ def resolve(targets: Sequence[str], cfg: ResolveConfig) -> dict:
             and p.name in cfg.installed
             and p.name not in cfg.forbidden_names
             and cfg.host_cache is not None
-            and host_version_fits(p, cfg.installed[p.name], required[p.name])
         )
         if use_host:
             hv = cfg.installed[p.name]
@@ -330,7 +337,7 @@ def resolve(targets: Sequence[str], cfg: ResolveConfig) -> dict:
                 c for c in cfg.host_cache.glob(f"{p.name}-{hv}-*.pkg.tar.*")
                 if not c.name.endswith(".sig") and _archive_matches(c.name, p.name, hv)
             )
-            if hits:
+            if hits and host_version_fits(p, hv, hits[0], required[p.name]):
                 path, version, source = hits[0], hv, f"host-cache({p.repo})"
                 sha = p.sha256 if hv == p.version else ""
         if path is None and p.repo in cfg.pools:
@@ -375,6 +382,17 @@ def _archive_matches(filename: str, name: str, version: str) -> bool:
         return False
     rest = filename[len(prefix):]
     return re.match(r"^[A-Za-z0-9_]+\.pkg\.tar\.[a-z0-9]+$", rest) is not None
+
+
+def archive_provides(archive: Path) -> list[str]:
+    """The provides in a package file's .PKGINFO, or [] when it cannot be read."""
+    try:
+        out = subprocess.run(["bsdtar", "-xOf", str(archive), ".PKGINFO"], capture_output=True, text=True)
+    except OSError:
+        return []
+    if out.returncode != 0:
+        return []
+    return [line.split(" = ", 1)[1] for line in out.stdout.splitlines() if line.startswith("provides = ")]
 
 
 def summarize_lock(lock: dict) -> str:

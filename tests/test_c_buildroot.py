@@ -50,10 +50,11 @@ def write_db(path: Path, entries: list[str]) -> Path:
     return path
 
 
-def make_pkg(path: Path, name: str, version: str, files: dict[str, str]) -> Path:
+def make_pkg(path: Path, name: str, version: str, files: dict[str, str], provides=()) -> Path:
     """Write a minimal package archive with a .PKGINFO and the given files."""
     with tarfile.open(path, "w:gz") as tf:
-        pkginfo = f"pkgname = {name}\npkgver = {version}\narch = x86_64\n".encode()
+        pkginfo = f"pkgname = {name}\npkgver = {version}\narch = x86_64\n"
+        pkginfo = (pkginfo + "".join(f"provides = {p}\n" for p in provides)).encode()
         info = tarfile.TarInfo(".PKGINFO")
         info.size = len(pkginfo)
         tf.addfile(info, io.BytesIO(pkginfo))
@@ -202,6 +203,59 @@ def test_exact_pins_from_host_locked_packages_do_not_evict_host_versions(tmp_pat
     pkgs = by_name(cbr.resolve(["systemd"], cfg))
     assert pkgs["systemd"]["version"] == "1-1"
     assert pkgs["systemd-libs"]["version"] == "1-1"
+
+
+def soname_config(tmp_path, host_version, host_provides):
+    # A foundation package pins a soname that only the newer sync protobuf
+    # provides, as migraphx-gfx1151 pins libprotobuf.so=36.1.0-64 (#108).
+    found = write_db(tmp_path / "found.db", [
+        desc("migraphx-gfx1151", "7.14.1-1", depends=["libprotobuf.so=36.1.0-64"], sha256="mg"),
+    ])
+    core = write_db(tmp_path / "core.db", [
+        desc("protobuf", "36.1-2", provides=["libprotobuf.so=36.1.0-64"], sha256="pb"),
+    ])
+    pool = tmp_path / "pool"
+    pool.mkdir()
+    (pool / "migraphx-gfx1151-7.14.1-1-x86_64.pkg.tar.zst").touch()
+    cache = tmp_path / "cache"
+    cache.mkdir()
+    make_pkg(cache / f"protobuf-{host_version}-x86_64.pkg.tar.zst", "protobuf", host_version, {},
+             provides=host_provides)
+    (cache / "protobuf-36.1-2-x86_64.pkg.tar.zst").touch()
+    return cbr.ResolveConfig(
+        repos=[("found", cbr.read_db(found, "found")), ("core", cbr.read_db(core, "core"))],
+        foundation=["found"], pools={"found": pool}, host_cache=cache,
+        installed={"protobuf": host_version},
+    )
+
+
+@needs_bsdtar
+def test_host_version_is_not_used_when_its_own_provides_miss_a_soname_pin(tmp_path):
+    cfg = soname_config(tmp_path, "35.1-1", ["libprotobuf.so=35.1.0-64"])
+    lock = cbr.resolve(["migraphx-gfx1151"], cfg)
+    protobuf = by_name(lock)["protobuf"]
+    assert protobuf["version"] == "36.1-2", "host protobuf 35.1 provides libprotobuf.so=35.1.0-64 only"
+    assert protobuf["source"] == "core"
+    assert protobuf["path"].endswith("protobuf-36.1-2-x86_64.pkg.tar.zst")
+    assert protobuf["sha256_db"] == "pb"
+    assert lock["problems"] == []
+
+
+@needs_bsdtar
+def test_host_version_is_used_when_its_own_provides_meet_a_soname_pin(tmp_path):
+    cfg = soname_config(tmp_path, "36.1-1", ["libprotobuf.so=36.1.0-64"])
+    protobuf = by_name(cbr.resolve(["migraphx-gfx1151"], cfg))["protobuf"]
+    assert protobuf["version"] == "36.1-1"
+    assert protobuf["source"] == "host-cache(core)"
+    assert protobuf["path"].endswith("protobuf-36.1-1-x86_64.pkg.tar.zst")
+
+
+def test_host_version_without_readable_provides_is_not_used_for_a_soname_pin(tmp_path):
+    cfg = soname_config(tmp_path, "36.1-1", ["libprotobuf.so=36.1.0-64"])
+    (tmp_path / "cache" / "protobuf-36.1-1-x86_64.pkg.tar.zst").write_bytes(b"")
+    protobuf = by_name(cbr.resolve(["migraphx-gfx1151"], cfg))["protobuf"]
+    assert protobuf["version"] == "36.1-2", "unreadable host metadata cannot prove the soname"
+    assert protobuf["source"] == "core"
 
 
 def test_forbidden_repo_names_never_come_from_host_cache(tmp_path):
