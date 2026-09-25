@@ -96,3 +96,57 @@ def test_skips_the_frontend_dependency_check_for_the_pypi_cmake_requirement():
         "scikit-build-core" in note and "cmake" in note and "/usr/bin/cmake" in note
         for note in entry["divergence_notes"]
     )
+
+
+def test_archives_with_the_rocm_llvm_tools_that_match_amdclang():
+    text = PKGBUILD.read_text()
+
+    assert "-Ccmake.define.CMAKE_AR=/opt/rocm/lib/llvm/bin/llvm-ar" in text
+    assert "-Ccmake.define.CMAKE_RANLIB=/opt/rocm/lib/llvm/bin/llvm-ranlib" in text
+
+
+def _fake_wheel(dist: Path, files: dict[str, bytes]) -> None:
+    import zipfile
+
+    dist.mkdir(parents=True)
+    name = "xgrammar-0.2.3"
+    records = []
+    payload = {
+        **files,
+        f"{name}.dist-info/METADATA": b"Metadata-Version: 2.1\nName: xgrammar\nVersion: 0.2.3\n",
+        f"{name}.dist-info/WHEEL": b"Wheel-Version: 1.0\nGenerator: test\nRoot-Is-Purelib: false\nTag: cp314-cp314-linux_x86_64\n",
+    }
+    with zipfile.ZipFile(dist / f"{name}-cp314-cp314-linux_x86_64.whl", "w") as wheel:
+        for member, data in payload.items():
+            wheel.writestr(member, data)
+            records.append(f"{member},,")
+        wheel.writestr(f"{name}.dist-info/RECORD", "\n".join(records + [f"{name}.dist-info/RECORD,,"]) + "\n")
+
+
+def run_package(tmp_path: Path, files: dict[str, bytes]) -> subprocess.CompletedProcess:
+    srcdir = tmp_path / "src"
+    _fake_wheel(srcdir / "xgrammar-0.2.3" / "dist", files)
+    return subprocess.run(
+        ["bash", "-c", 'source "$1" && package', "bash", str(PKGBUILD)],
+        capture_output=True,
+        text=True,
+        env={"PATH": "/usr/bin:/bin", "srcdir": str(srcdir), "pkgdir": str(tmp_path / "pkg")},
+    )
+
+
+def test_package_rejects_a_wheel_without_the_generated_ffi_stubs(tmp_path):
+    # base.py imports xgrammar.tvm_ffi_binding._ffi_api, which only the
+    # build-time tvm-ffi stub generation writes; the sdist does not carry it.
+    result = run_package(tmp_path, {"xgrammar/__init__.py": b""})
+
+    assert result.returncode != 0
+    assert "xgrammar/tvm_ffi_binding/_ffi_api.py" in result.stderr
+
+
+def test_package_accepts_a_wheel_with_the_generated_ffi_stubs(tmp_path):
+    result = run_package(
+        tmp_path,
+        {"xgrammar/__init__.py": b"", "xgrammar/tvm_ffi_binding/_ffi_api.py": b""},
+    )
+
+    assert result.returncode == 0, result.stderr

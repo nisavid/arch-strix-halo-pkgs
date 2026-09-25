@@ -7,7 +7,9 @@
       "Pins 0.2.3 instead of the latest release: vLLM 0.30.0 requires xgrammar >=0.2.1,<1.0.0, its CUDA and CPU CI locks test 0.2.3 (the ROCm lock tests 0.2.1), and 0.2.3 publishes CPython 3.14 wheels.",
       "Builds the C++ grammar engine and its TVM-FFI bindings through the Blackcat native-wheel compiler lane with amdclang and Zen 5 flags, against python-apache-tvm-ffi-gfx1151.",
       "Carries every upstream runtime requirement from the published metadata, mapped to the local lanes: apache-tvm-ffi, pydantic, torch, transformers, triton, numpy and typing-extensions.",
-      "Builds with `skip_dependency_check = true`: scikit-build-core's `get_requires_for_build_wheel` hook asks the no-isolation frontend for the PyPI `cmake` distribution, but Arch supplies CMake as `/usr/bin/cmake`, which the scikit-build-core backend finds and uses, so the frontend dependency check is stricter than the actual build."
+      "Builds with `skip_dependency_check = true`: scikit-build-core's `get_requires_for_build_wheel` hook asks the no-isolation frontend for the PyPI `cmake` distribution, but Arch supplies CMake as `/usr/bin/cmake`, which the scikit-build-core backend finds and uses, so the frontend dependency check is stricter than the actual build.",
+      "Passes `CMAKE_AR` and `CMAKE_RANLIB` as the ROCm LLVM `llvm-ar` and `llvm-ranlib`: upstream CMake adds `-flto=auto`, and those tools match amdclang and index LLVM bitcode archives, following the python-pytorch-opt-rocm-gfx1151 convention.",
+      "package() fails unless the wheel carries `xgrammar/tvm_ffi_binding/_ffi_api.py`. The sdist does not ship the `tvm_ffi_binding` stubs; `tvm_ffi_configure_target(... STUB_DIR ...)` in `cpp/tvm_ffi/CMakeLists.txt` writes them at build time by loading the built bindings through tvm_ffi, and `xgrammar/base.py` imports them."
     ],
     "source_patches": [],
     "update_notes": [
@@ -29,7 +31,9 @@
     "authoritative_reference": "aur/python-xgrammar",
     "build_config_settings": [
       "cmake.define.XGRAMMAR_ENABLE_CPPTRACE=OFF",
-      "cmake.define.XGRAMMAR_BUILD_CXX_TESTS=OFF"
+      "cmake.define.XGRAMMAR_BUILD_CXX_TESTS=OFF",
+      "cmake.define.CMAKE_AR=/opt/rocm/lib/llvm/bin/llvm-ar",
+      "cmake.define.CMAKE_RANLIB=/opt/rocm/lib/llvm/bin/llvm-ranlib"
     ],
     "conflicts": [
       "python-xgrammar"
@@ -52,7 +56,9 @@
       "Pins 0.2.3 instead of the latest release: vLLM 0.30.0 requires xgrammar >=0.2.1,<1.0.0, its CUDA and CPU CI locks test 0.2.3 (the ROCm lock tests 0.2.1), and 0.2.3 publishes CPython 3.14 wheels.",
       "Builds the C++ grammar engine and its TVM-FFI bindings through the Blackcat native-wheel compiler lane with amdclang and Zen 5 flags, against python-apache-tvm-ffi-gfx1151.",
       "Carries every upstream runtime requirement from the published metadata, mapped to the local lanes: apache-tvm-ffi, pydantic, torch, transformers, triton, numpy and typing-extensions.",
-      "Builds with `skip_dependency_check = true`: scikit-build-core's `get_requires_for_build_wheel` hook asks the no-isolation frontend for the PyPI `cmake` distribution, but Arch supplies CMake as `/usr/bin/cmake`, which the scikit-build-core backend finds and uses, so the frontend dependency check is stricter than the actual build."
+      "Builds with `skip_dependency_check = true`: scikit-build-core's `get_requires_for_build_wheel` hook asks the no-isolation frontend for the PyPI `cmake` distribution, but Arch supplies CMake as `/usr/bin/cmake`, which the scikit-build-core backend finds and uses, so the frontend dependency check is stricter than the actual build.",
+      "Passes `CMAKE_AR` and `CMAKE_RANLIB` as the ROCm LLVM `llvm-ar` and `llvm-ranlib`: upstream CMake adds `-flto=auto`, and those tools match amdclang and index LLVM bitcode archives, following the python-pytorch-opt-rocm-gfx1151 convention.",
+      "package() fails unless the wheel carries `xgrammar/tvm_ffi_binding/_ffi_api.py`. The sdist does not ship the `tvm_ffi_binding` stubs; `tvm_ffi_configure_target(... STUB_DIR ...)` in `cpp/tvm_ffi/CMakeLists.txt` writes them at build time by loading the built bindings through tvm_ffi, and `xgrammar/base.py` imports them."
     ],
     "license": [
       "Apache-2.0"
@@ -94,7 +100,10 @@
       "On 2026-09-25, added at 0.2.3 for the generation-C W2A closure (#110, #111). vLLM 0.30.0 imports xgrammar at module level in `vllm/parser/harmony.py`, which every vLLM process reaches, and uses it for `response_format` json_schema requests. The upstream build compiles 22 C++ sources plus the bindings; expect about 5-10 minutes of CPU time. It is built in the rootless C build root in the vLLM lease job, after python-apache-tvm-ffi-gfx1151."
     ],
     "upstream_version": "0.2.3",
-    "url": "https://github.com/mlc-ai/xgrammar"
+    "url": "https://github.com/mlc-ai/xgrammar",
+    "wheel_required_files": [
+      "xgrammar/tvm_ffi_binding/_ffi_api.py"
+    ]
   },
   "provenance": {
     "output_root": "packages",

@@ -37,6 +37,8 @@ TVM-FFI bindings on the local amdclang native-wheel lane.
 - Builds the C++ grammar engine and its TVM-FFI bindings through the Blackcat native-wheel compiler lane with amdclang and Zen 5 flags, against python-apache-tvm-ffi-gfx1151.
 - Carries every upstream runtime requirement from the published metadata, mapped to the local lanes: apache-tvm-ffi, pydantic, torch, transformers, triton, numpy and typing-extensions.
 - Builds with `skip_dependency_check = true`: scikit-build-core's `get_requires_for_build_wheel` hook asks the no-isolation frontend for the PyPI `cmake` distribution, but Arch supplies CMake as `/usr/bin/cmake`, which the scikit-build-core backend finds and uses, so the frontend dependency check is stricter than the actual build.
+- Passes `CMAKE_AR` and `CMAKE_RANLIB` as the ROCm LLVM `llvm-ar` and `llvm-ranlib`: upstream CMake adds `-flto=auto`, and those tools match amdclang and index LLVM bitcode archives, following the python-pytorch-opt-rocm-gfx1151 convention.
+- package() fails unless the wheel carries `xgrammar/tvm_ffi_binding/_ffi_api.py`. The sdist does not ship the `tvm_ffi_binding` stubs; `tvm_ffi_configure_target(... STUB_DIR ...)` in `cpp/tvm_ffi/CMakeLists.txt` writes them at build time by loading the built bindings through tvm_ffi, and `xgrammar/base.py` imports them.
 
 ## Update Notes
 

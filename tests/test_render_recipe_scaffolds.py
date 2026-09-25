@@ -1292,3 +1292,124 @@ def test_render_recipe_json_keeps_explicit_extra_source_checksums_in_policy() ->
     assert "source_patch_sha256sums" not in recipe_json["maintenance"]
     assert recipe_json["policy"]["extra_sources"] == ["extra-data.tar.gz"]
     assert recipe_json["policy"]["extra_sha256sums"] == ["abc123"]
+
+
+def _render_native_wheel(**policy_overrides) -> str:
+    policy = {
+        "recipe_key": "sample",
+        "template": "native-wheel-pypi",
+        "upstream_version": "1.2.3",
+        "pkgdesc": "Sample native wheel",
+        "url": "https://example.invalid/sample-native",
+        "license": ["MIT"],
+        "pypi_name": "sample-native",
+        "sha256sums": ["0" * 64],
+        "src_subdir": "sample-native-1.2.3",
+        "single_wheel_install": True,
+    }
+    policy.update(policy_overrides)
+    return render_recipe_scaffolds.render_pkgbuild(
+        "sample-native-gfx1151",
+        policy,
+        {
+            "repo": "",
+            "method": "pip",
+            "phase": "package",
+            "steps": [],
+            "depends_on": [],
+            "notes": "",
+        },
+        "1.2.3",
+        {
+            "recipe_repo": "https://github.com/paudley/ai-notes",
+            "recipe_subdir": "strix-halo",
+            "recipe_author": "Blackcat Informatics Inc.",
+        },
+    )
+
+
+def _run_bash(pkgbuild_path: Path, script: str, **env: str) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        ["bash", "-c", f'source "$1"\n{script}', "bash", str(pkgbuild_path)],
+        capture_output=True,
+        text=True,
+        env={"PATH": "/usr/bin:/bin", **env},
+    )
+
+
+def test_native_wheel_drop_lto_from_cflags_keeps_cxx_lto(tmp_path: Path) -> None:
+    pkgbuild = _render_native_wheel(drop_lto_from_cflags=True)
+    path = tmp_path / "PKGBUILD"
+    path.write_text(pkgbuild, encoding="utf-8")
+
+    result = _run_bash(
+        path,
+        '_drop_lto_from_cflags\nprintf "%s\\n%s\\n" "$CFLAGS" "$CXXFLAGS"',
+        CFLAGS="-O3 -flto=auto -pipe -ffat-lto-objects -Xclang -mllvm -Xclang -enable-gvn-sink -flto",
+        CXXFLAGS="-O3 -flto=auto",
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.splitlines() == [
+        "-O3 -pipe -Xclang -mllvm -Xclang -enable-gvn-sink",
+        "-O3 -flto=auto",
+    ]
+    build = pkgbuild[pkgbuild.index("build() {") :]
+    assert build.index('export CFLAGS="${_base_cflags') < build.index("  _drop_lto_from_cflags\n")
+    assert build.index("  _drop_lto_from_cflags\n") < build.index("/usr/bin/python -m build")
+
+
+def test_native_wheel_without_drop_lto_leaves_cflags_alone() -> None:
+    pkgbuild = _render_native_wheel()
+
+    assert "_drop_lto_from_cflags" not in pkgbuild
+
+
+def _write_fake_wheel(dist: Path, files: dict[str, bytes]) -> None:
+    import zipfile
+
+    dist.mkdir(parents=True)
+    name = "sample_native-1.2.3"
+    records = []
+    with zipfile.ZipFile(dist / f"{name}-py3-none-any.whl", "w") as wheel:
+        payload = {
+            **files,
+            f"{name}.dist-info/METADATA": b"Metadata-Version: 2.1\nName: sample-native\nVersion: 1.2.3\n",
+            f"{name}.dist-info/WHEEL": b"Wheel-Version: 1.0\nGenerator: test\nRoot-Is-Purelib: true\nTag: py3-none-any\n",
+        }
+        for member, data in payload.items():
+            wheel.writestr(member, data)
+            records.append(f"{member},,")
+        wheel.writestr(f"{name}.dist-info/RECORD", "\n".join(records + [f"{name}.dist-info/RECORD,,"]) + "\n")
+
+
+@pytest.mark.parametrize(
+    ("files", "ok", "message"),
+    [
+        (
+            {"sample/_ffi_api.py": b"", "sample/lib/libsample.so": b"\x7fELF..no debug info in ELF executable.."},
+            True,
+            "",
+        ),
+        ({"sample/lib/libsample.so": b"no debug info in ELF executable"}, False, "sample/_ffi_api.py"),
+        ({"sample/_ffi_api.py": b"", "sample/lib/libsample.so": b"\x7fELF"}, False, "no debug info in ELF executable"),
+    ],
+)
+def test_native_wheel_package_guards_required_wheel_contents(
+    tmp_path: Path, files: dict[str, bytes], ok: bool, message: str
+) -> None:
+    pkgbuild = _render_native_wheel(
+        wheel_required_files=["sample/_ffi_api.py"],
+        wheel_required_strings=[
+            {"path": "sample/lib/libsample.so", "text": "no debug info in ELF executable"}
+        ],
+    )
+    path = tmp_path / "PKGBUILD"
+    path.write_text(pkgbuild, encoding="utf-8")
+    srcdir = tmp_path / "src"
+    _write_fake_wheel(srcdir / "sample-native-1.2.3" / "dist", files)
+
+    result = _run_bash(path, "package", srcdir=str(srcdir), pkgdir=str(tmp_path / "pkg"))
+
+    assert (result.returncode == 0) is ok, result.stderr
+    assert message in result.stderr

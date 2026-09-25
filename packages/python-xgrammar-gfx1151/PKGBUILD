@@ -65,7 +65,9 @@ build() {
   rm -rf dist build
   /usr/bin/python -m build --wheel --no-isolation --skip-dependency-check \
     -Ccmake.define.XGRAMMAR_ENABLE_CPPTRACE=OFF \
-    -Ccmake.define.XGRAMMAR_BUILD_CXX_TESTS=OFF
+    -Ccmake.define.XGRAMMAR_BUILD_CXX_TESTS=OFF \
+    -Ccmake.define.CMAKE_AR=/opt/rocm/lib/llvm/bin/llvm-ar \
+    -Ccmake.define.CMAKE_RANLIB=/opt/rocm/lib/llvm/bin/llvm-ranlib
 }
 
 package() {
@@ -76,4 +78,9 @@ package() {
     return 1
   fi
   /usr/bin/python -m installer --destdir="$pkgdir" "${_wheels[0]}"
+  local _site="$pkgdir$(/usr/bin/python -c 'import sysconfig; print(sysconfig.get_path("platlib"))')"
+  if [[ ! -f "${_site}/"xgrammar/tvm_ffi_binding/_ffi_api.py ]]; then
+    printf 'wheel is missing %s\n' xgrammar/tvm_ffi_binding/_ffi_api.py >&2
+    return 1
+  fi
 }

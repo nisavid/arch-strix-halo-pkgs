@@ -1654,12 +1654,58 @@ package() {{
   # flags avoids compile-only probes treating it as unused.
   export LDFLAGS="${{_base_ldflags:+${{_base_ldflags}} }}-famd-opt"
 """
+        drop_lto_helper = ""
+        if policy_pkg.get("drop_lto_from_cflags", False):
+            # C compiles only: CXXFLAGS and LDFLAGS keep makepkg's LTO flags.
+            drop_lto_helper = """\
+# Remove LTO flags from CFLAGS only; the divergence notes in README.md say
+# which C compile needs native objects.
+_drop_lto_from_cflags() {
+  local _flag _kept=()
+  for _flag in ${CFLAGS:-}; do
+    case "${_flag}" in
+      -flto|-flto=*|-ffat-lto-objects) ;;
+      *) _kept+=("${_flag}") ;;
+    esac
+  done
+  export CFLAGS="${_kept[*]}"
+}
+
+"""
+            native_wheel_build_preamble += "  _drop_lto_from_cflags\n"
+        package_guard_lines = []
+        required_files = policy_pkg.get("wheel_required_files", [])
+        required_strings = policy_pkg.get("wheel_required_strings", [])
+        if required_files or required_strings:
+            package_guard_lines.append(
+                'local _site="$pkgdir$(/usr/bin/python -c \'import sysconfig; print(sysconfig.get_path("platlib"))\')"'
+            )
+        for rel in required_files:
+            package_guard_lines.extend(
+                [
+                    f'if [[ ! -f "${{_site}}/"{shell_quote(rel)} ]]; then',
+                    f"  printf 'wheel is missing %s\\n' {shell_quote(rel)} >&2",
+                    "  return 1",
+                    "fi",
+                ]
+            )
+        for entry in required_strings:
+            rel, text = entry["path"], entry["text"]
+            package_guard_lines.extend(
+                [
+                    f'if ! grep -aqF -- {shell_quote(text)} "${{_site}}/"{shell_quote(rel)}; then',
+                    f"  printf '%s does not contain %s\\n' {shell_quote(rel)} {shell_quote(text)} >&2",
+                    "  return 1",
+                    "fi",
+                ]
+            )
+        package_guards = "".join(f"\n  {line}" for line in package_guard_lines)
         build_env_section = build_env_exports
         if native_wheel_build_preamble and build_env_section.startswith("\n"):
             build_env_section = build_env_section[1:]
         post_build_env_gap = "\n" if (native_wheel_build_preamble or build_env_section or clean_build_outputs) else ""
         build_body = f"""\
-build() {{
+{drop_lto_helper}build() {{
   cd "$srcdir/{src_subdir}"
 
 {native_wheel_build_preamble}{build_env_section}{clean_build_outputs}{post_build_env_gap}  {build_command}
@@ -1667,7 +1713,7 @@ build() {{
 
 package() {{
   cd "$srcdir/{src_subdir}"
-  {installer_command}
+  {installer_command}{package_guards}
 }}"""
     elif template == "python-project-torch-migraphx":
         for patch_name in policy_pkg.get("source_patches", []):
