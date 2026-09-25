@@ -57,3 +57,20 @@ def test_pkgbuild_builds_one_wheel_without_an_aiter_fallback():
 
     assert text.count("pip wheel . --no-build-isolation --no-deps --wheel-dir dist -v") == 1
     assert "python setup.py clean" not in text
+
+
+def test_pkgbuild_pins_findhip_clang_path_past_the_ccache_wrapper():
+    # CXX resolves to the ccache wrapper symlink, and FindHIP.cmake derives
+    # HIP_CLANG_PATH from REALPATH(HIP_CXX_COMPILER), which defaults to
+    # CMAKE_CXX_COMPILER. That yields the ccache binary's directory, which
+    # FindHIP bakes into the hipcc_cmake_linker_helper link rules for _C.abi3.so.
+    text = PKGBUILD.read_text()
+    build = text[text.index("build() {") : text.index("package() {")]
+
+    define = "-DHIP_CXX_COMPILER=/opt/rocm/lib/llvm/bin/amdclang++"
+    cmake_args = next(
+        line for line in build.splitlines() if 'export CMAKE_ARGS="' in line
+    )
+    assert define in cmake_args
+    assert build.index("_setup_compiler_env\n") < build.index(define)
+    assert build.index(define) < build.index("pip wheel .")

@@ -68,7 +68,9 @@ def test_pkgbuild_passes_clean_hip_version_to_cmake():
     assert "HIP_PATH=/opt/rocm ROCM_PATH=/opt/rocm" in text
     assert "/opt/rocm/bin/hipconfig --version" in text
     assert "VLLM_HIP_VERSION_MISSING" in text
-    assert 'export CMAKE_ARGS="-DHIP_VERSION=${_hip_version%%-*} ${CMAKE_ARGS:-}"' in text
+    cmake_args = next(line for line in text.splitlines() if 'export CMAKE_ARGS="' in line)
+    assert cmake_args.strip().startswith('export CMAKE_ARGS="-DHIP_VERSION=${_hip_version%%-*} ')
+    assert cmake_args.strip().endswith(' ${CMAKE_ARGS:-}"')
 
 
 def test_patch_reduces_rocm_large_head_prefill_tile_to_16():

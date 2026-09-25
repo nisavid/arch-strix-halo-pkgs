@@ -150,7 +150,12 @@ build() {
     echo "VLLM_HIP_VERSION_MISSING: hipconfig failed" >&2
     return 1
   fi
-  export CMAKE_ARGS="-DHIP_VERSION=${_hip_version%%-*} ${CMAKE_ARGS:-}"
+  # CXX resolves to the ccache wrapper symlink. Torch's LoadHIP.cmake loads
+  # ROCm's FindHIP.cmake, which takes HIP_CLANG_PATH from the realpath of
+  # HIP_CXX_COMPILER (default CMAKE_CXX_COMPILER), i.e. the ccache binary's
+  # directory, and bakes it into the HIP shared-module link rule. Name the
+  # ROCm LLVM driver so hipcc links _C.abi3.so with ROCm clang.
+  export CMAKE_ARGS="-DHIP_VERSION=${_hip_version%%-*} -DHIP_CXX_COMPILER=/opt/rocm/lib/llvm/bin/amdclang++ ${CMAKE_ARGS:-}"
   export VLLM_VERSION_OVERRIDE="${pkgver}"
 
   # The Rust frontend (vllm-rs) and _rust_tool_parser are optional unless
