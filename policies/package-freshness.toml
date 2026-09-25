@@ -388,7 +388,7 @@ packages = ["python-torch-migraphx-gfx1151"]
 priority = "medium"
 workflow = "upstream_source_update"
 checks = [
-  { id = "master", role = "primary", kind = "git_ref", repo = "https://github.com/ROCm/torch_migraphx.git", ref = "refs/heads/master", recorded = "b94b985586a051fbee19aefe8c934bb7c1a9df0a", comparison = "sha" },
+  { id = "master", role = "primary", kind = "git_ref", repo = "https://github.com/ROCm/torch_migraphx.git", ref = "refs/heads/master", recorded = "5afb9ffdd7f5489727bdfbb323f1b2584e3676c2", comparison = "sha" },
   { id = "tag", role = "baseline", kind = "github_tags", repo = "ROCm/torch_migraphx", recorded = "1.1", comparison = "pep440", include_prereleases = false },
 ]
 

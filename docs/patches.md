@@ -148,12 +148,9 @@ becomes durable, prefer a named patch that another maintainer can review.
 
 ## Torch-MIGraphX
 
-- [Import migrated PT2E quantization from TorchAO](../packages/python-torch-migraphx-gfx1151/0001-import-pt2e-quantization-from-torchao.patch)
-  - Lets Torch-MIGraphX populate `torch.ops.quantized_decomposed` on the local
-    PyTorch 2.11 stack, where PT2E quantization lives under TorchAO.
 - [Keep Dynamo registration lazy](../packages/python-torch-migraphx-gfx1151/0002-keep-dynamo-registration-lazy.patch)
   - Keeps base import and the FX lowering path usable while Dynamo backend
-    registration remains opt-in on this Python 3.14 and PyTorch 2.11 stack.
+    registration remains opt-in on this Python 3.14 and PyTorch 2.12 stack.
 - [Relax numpy runtime metadata cap](../packages/python-torch-migraphx-gfx1151/0003-relax-numpy-runtime-cap.patch)
   - Matches the wheel metadata to the repo's NumPy 2.x lane after host FX
     lowering validation.
