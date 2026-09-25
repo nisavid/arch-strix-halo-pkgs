@@ -36,7 +36,7 @@ Reinstalling at compatible versions resolves conflicts.
 - Carry a local Tauri Cargo patch that keeps the direct Linux glib dependency on the webkit2gtk-compatible 0.18 series until upstream's glib 0.20 bump builds cleanly.
 - Route Cargo and npm caches into the package build tree so the Tauri build does not depend on user-local cache state.
 - Install a /usr/bin/lemonade-app wrapper that launches the packaged Tauri binary from /usr/share/lemonade-app so the shipped desktop entry resolves on PATH.
-- Pinned to nisavid/lemonade commit 66c7642e818f85116af362ed49ce6468ea01ebed, the fork's upstream v11.9.0 sync (nisavid/lemonade#175), whose CMake project version is 11.9.0. The pin is the lemonade entry in the [source_pins] table of policies/recipe-packages.toml, so lemonade-app always builds the same fork commit as lemonade-server.
+- Pinned to nisavid/lemonade commit b6616eb3b6d31c3d7dbffffdb23e24adda1292a1, the merge commit of the fork's upstream v11.9.0 sync (nisavid/lemonade#175), whose CMake project version is 11.9.0. The pin is the lemonade entry in the [source_pins] table of policies/recipe-packages.toml, so lemonade-app always builds the same fork commit as lemonade-server.
 
 ## Intentional Divergences
 
@@ -50,7 +50,7 @@ Reinstalling at compatible versions resolves conflicts.
 - On 2026-05-26, adopted nisavid/lemonade fork main 13b1af25f84cf08ad5f8bf0ec58980bdfc09c9e7 so base llamacpp model options do not show reranking adapter controls.
 - On 2026-06-15, adopted nisavid/lemonade fork main e18b9c1e352df8ab5aff2ff353402f1ec77c47f2, which syncs upstream Lemonade v10.7.0.
 - On 2026-09-22, repinned the source to nisavid/lemonade fork main at Lemonade 11.7.0, together with lemonade-server through the lemonade entry in [source_pins]; the fork commit contains upstream v11.7.0 (2b6a7d7). The Tauri glib patch applies unchanged. Issue 137 pins the frozen fork commit 3d5991033; issue 139 tracks the build, publish, install, and host validation.
-- On 2026-09-25, repinned the source to the fork's upstream v11.9.0 sync together with lemonade-server (issue 141, nisavid/lemonade#175) and set the package version to 11.9.0. The Tauri Cargo manifest and lockfile are unchanged from the 11.7.0 pin, so the glib patch applies unchanged.
+- On 2026-09-25, repinned the source to the merge commit of the fork's upstream v11.9.0 sync together with lemonade-server (issue 141, nisavid/lemonade#175) and set the package version to 11.9.0. The Tauri Cargo manifest and lockfile are unchanged from the 11.7.0 pin, so the glib patch applies unchanged.
 
 ## Maintainer Starting Points
 

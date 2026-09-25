@@ -443,6 +443,6 @@ packages = ["lemonade-server", "lemonade-app", "lemonade"]
 priority = "medium"
 workflow = "upstream_source_update"
 checks = [
-  { id = "fork-main", role = "primary", kind = "git_ref", repo = "https://github.com/nisavid/lemonade.git", ref = "refs/heads/main", recorded = "66c7642e818f85116af362ed49ce6468ea01ebed", comparison = "sha" },
+  { id = "fork-main", role = "primary", kind = "git_ref", repo = "https://github.com/nisavid/lemonade.git", ref = "refs/heads/main", recorded = "b6616eb3b6d31c3d7dbffffdb23e24adda1292a1", comparison = "sha" },
   { id = "upstream-release", role = "baseline", kind = "github_release", repo = "lemonade-sdk/lemonade", recorded = "11.9.0", tag_prefix = "v", comparison = "pep440" },
 ]
