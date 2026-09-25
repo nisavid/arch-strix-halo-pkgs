@@ -220,6 +220,7 @@ update_notes = [
   "The ROCm CMake build still fetches vLLM's vendored triton_kernels from ROCm/triton at a pinned commit through FetchContent, so the wheel build needs network. The PKGBUILD clears stale `.deps/triton_kernels-*` state first. Setting TRITON_KERNELS_SRC_DIR to a pinned source entry would make the build offline.",
   "vLLM 0.30.0 runs Model Runner V2 by default. `VLLM_USE_V2_MODEL_RUNNER=0` restores Model Runner V1 until v0.32; the padded-drafter spec-decode carry covers only the V1 path.",
   "vLLM 0.30.0 mirrors HIP_VISIBLE_DEVICES into CUDA_VISIBLE_DEVICES at import and raises if both are set to different values. Prefer HIP_VISIBLE_DEVICES for device selection. As of 2026-09-25 no tracked scenario, smoke helper, or service unit sets either variable.",
+  "`python -m vllm.entrypoints.openai.api_server` is deprecated in 0.30.0. The tracked server smoke helpers launch `python -m vllm.entrypoints.cli.main serve` from the active interpreter instead.",
   "Treat runtime validation against the live ROCm stack as mandatory; a successful wheel build is not enough."
 ]
 provides = ["python-vllm-rocm", "python-vllm"]

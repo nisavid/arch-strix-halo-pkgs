@@ -307,8 +307,8 @@ def build_server_command(args: argparse.Namespace) -> list[str]:
     command = [
         sys.executable,
         "-m",
-        "vllm.entrypoints.openai.api_server",
-        "--model",
+        "vllm.entrypoints.cli.main",
+        "serve",
         args.model,
         "--host",
         args.host,

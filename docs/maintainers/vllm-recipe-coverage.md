@@ -156,7 +156,9 @@ coverage.
 | Qwen media embedding tuning | `--mm-processor-kwargs '{"videos_kwargs":{"size":{"longest_edge":469762048,"shortest_edge":4096}}}'` | `validated` by reduced `media-embedding` with bounded image dummy profiling | Keep the full video/media stress shapes separate from this tiny local image fixture. |
 
 The Qwen server helper now covers the reduced local scenario set with
-`python -m vllm.entrypoints.openai.api_server`:
+`python -m vllm.entrypoints.cli.main serve`, which replaces the
+`python -m vllm.entrypoints.openai.api_server` entry point that vLLM 0.30.0
+deprecates:
 
 - `vllm.qwen3_6.35b-a3b.server.reasoning`
 - `vllm.qwen3_6.35b-a3b.server.reasoning-disabled`

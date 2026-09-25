@@ -3022,7 +3022,7 @@ The following smoke checks have already passed on the reference host:
 - The tracked host-side follow-up helper for OpenAI-compatible server smokes is
   now `tools/gemma4_server_smoke.py`.
   - `--mode basic` launches
-    `python -m vllm.entrypoints.openai.api_server` from the active interpreter
+    `python -m vllm.entrypoints.cli.main serve` from the active interpreter
     and sends a plain `/v1/chat/completions` request, so the smoke does not
     depend on interactive-shell `PATH` setup
   - for the current `google/gemma-4-26B-A4B-it` validation lane, the helper

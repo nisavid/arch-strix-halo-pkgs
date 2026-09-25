@@ -36,7 +36,15 @@ def test_reasoning_dry_run_enables_reasoning_parser_and_thinking() -> None:
     )
 
     command = plan["server_command"]
-    assert command[:3] == [sys.executable, "-m", "vllm.entrypoints.openai.api_server"]
+    assert command[:5] == [
+        sys.executable,
+        "-m",
+        "vllm.entrypoints.cli.main",
+        "serve",
+        "/models/google/gemma-4-E2B-it",
+    ]
+    assert "--model" not in command
+    assert "vllm.entrypoints.openai.api_server" not in command
     assert "--reasoning-parser" in command
     assert "gemma4" in command
     assert "--tool-call-parser" not in command
