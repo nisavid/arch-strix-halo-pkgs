@@ -39,6 +39,9 @@ serves a different reader.
 - [Generation-C Build Root](maintainers/c-build-root.md) explains the
   rootless bubblewrap root that W2A packages are built in, and why it cannot
   pick up the host's ROCm 7.13.
+- [LTO Configure Probe Audit](maintainers/lto-configure-probe-audit.md)
+  records the #168 audit of makepkg LTO against object-probing configure
+  scripts, with per-lane verdicts and the mitigations.
 - [ROCm Inference Reference](maintainers/rocm-inference-reference.md) collects
   upstream ROCm, vLLM, FlashAttention, AITER, MIGraphX, quantization, and
   profiling references that may affect future package or scenario work.

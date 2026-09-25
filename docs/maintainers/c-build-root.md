@@ -237,6 +237,9 @@ these deliberate choices:
   makepkg.conf uses `sha256`. The setting only affects `makepkg -g`.
 - **`PKGDEST` and `SRCDEST` are not set** in the file. `enter --pkgdest` and
   `--srcdest` set them.
+- **LTO is on (`-flto=auto`).** Configure scripts that read their test
+  objects can misdetect under it. See the
+  [LTO Configure Probe Audit](lto-configure-probe-audit.md).
 
 ## Probe results
 
