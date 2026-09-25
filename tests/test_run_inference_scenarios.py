@@ -752,7 +752,7 @@ def test_vllm_flash_attn_vit_wrapper_dry_run_resolves_command_and_env():
     assert planned["env"] == {"FLASH_ATTENTION_TRITON_AMD_ENABLE": "TRUE"}
 
 
-def test_flash_attn_engine_selector_includes_ck_and_triton_scenarios():
+def test_flash_attn_engine_selector_keeps_aiter_triton_scenarios_exploratory():
     result = run_runner(
         "--scenario-dir",
         str(REPO_ROOT / "inference/scenarios"),
@@ -769,8 +769,6 @@ def test_flash_attn_engine_selector_includes_ck_and_triton_scenarios():
         "flash-attn.ck.varlen-tiny",
         "flash-attn.ck.varlen-tiny-d256",
         "flash-attn.ck.varlen-paged-kv",
-        "flash-attn.triton-amd.backend-import",
-        "flash-attn.triton-amd.qkvpacked-tiny",
     ]
 
 

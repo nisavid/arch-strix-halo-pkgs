@@ -18,14 +18,29 @@ The package also prepares `csrc/composable_kernel` at
 branch. The older `main_perf` CK submodule does not expose `gfx11` FMHA codegen
 factories.
 
+AITER is not a build or runtime input on the CK path. With
+`FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE`, `setup.py` takes its `ck` branch
+(`ROCM_BACKEND = "ck"`); only the `triton` branch installs the bundled
+`third_party/aiter`, and patch 0001 skips that install anyway. At runtime,
+`flash_attn/flash_attn_interface.py` imports
+`aiter.ops.triton._triton_kernels.flash_attn_triton_amd` only when
+`FLASH_ATTENTION_TRITON_AMD_ENABLE=TRUE`; otherwise it loads the CK
+`flash_attn_2_cuda` extension, and no other `flash_attn` module references
+AITER. The package therefore lists `python-amd-aiter-gfx1151` only as an
+optional dependency.
+
 `FLASH_ATTENTION_TRITON_AMD_ENABLE=TRUE` remains the explicit runtime selector
-for the packaged Triton AMD path through repo-owned AITER. Treat
-`FLASH_ATTENTION_TRITON_AMD_AUTOTUNE=TRUE` as a later performance experiment.
+for the Triton AMD path, which needs `python-amd-aiter-gfx1151` installed.
+Treat `FLASH_ATTENTION_TRITON_AMD_AUTOTUNE=TRUE` as a later performance
+experiment.
 
 ## Local Boundaries
 
-- Depends on repo-owned `python-amd-aiter-gfx1151`,
-  `python-triton-gfx1151`, and `python-pytorch-opt-rocm-gfx1151`.
+- Depends on repo-owned `python-triton-gfx1151` and
+  `python-pytorch-opt-rocm-gfx1151`. The CK extension links libtorch, so
+  every torch rebuild needs a FlashAttention rebuild.
+- Lists repo-owned `python-amd-aiter-gfx1151` as an optional dependency for
+  the Triton AMD backend only.
 - Skips FlashAttention setup's bundled `third_party/aiter` install because
   AITER is packaged and patched separately in this repo.
 - Relaxes upstream wheel metadata from `triton==3.5.1` to `triton` so the
@@ -80,6 +95,11 @@ the installed gate before claiming engine integration behavior.
 The 2026-06-15 PyTorch `c7badbdf` runtime-base lane bumps this package to
 `2.8.4-14` so it supersedes both the adopted 26872de/pkgrel-12 package and the
 unmerged ab32a1f/pkgrel-13 host-drift artifact.
+
+The 2026-09-25 W2A lane bumps this package to `2.8.4-15`. It rebuilds the CK
+extension against `python-pytorch-opt-rocm-gfx1151 2.12.0-5` and the Python
+3.14 foundation, and moves `python-amd-aiter-gfx1151` from `depends` to
+`optdepends`. The source commit and patches 0001-0009 are unchanged.
 
 ## Current Evidence
 

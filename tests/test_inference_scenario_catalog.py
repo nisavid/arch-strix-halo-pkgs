@@ -173,6 +173,14 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
         "triton-amd",
         "kernel-probe",
     }
+    # The CK-built package no longer depends on AITER, so the Triton AMD
+    # scenarios stay out of broad selections and name the AITER requirement.
+    for scenario_id in [
+        "flash-attn.triton-amd.backend-import",
+        "flash-attn.triton-amd.qkvpacked-tiny",
+        "vllm.flash-attn.triton-amd.vit-wrapper",
+    ]:
+        assert tags_by_id[scenario_id] >= {"exploratory", "aiter"}
     assert "blocked" in tags_by_id[
         "vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors-blocked"
     ]

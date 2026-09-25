@@ -1,4 +1,5 @@
 import json
+import shlex
 import tomllib
 from pathlib import Path
 
@@ -20,12 +21,18 @@ CK_DISABLE_PAGED_KV_PATCH = PACKAGE / "0008-disable-ck-varlen-paged-kv-in-forwar
 CK_VLLM_WRAPPER_PATCH = PACKAGE / "0009-accept-vllm-varlen-wrapper-keywords.patch"
 
 
+def _bash_array(text, name):
+    start = text.index(f"\n{name}=(") + len(name) + 3
+    body = text[start : text.index(")\n", start)]
+    return shlex.split(body)
+
+
 def test_pkgbuild_tracks_rocm_flash_attention_ck_experiment():
     text = PKGBUILD.read_text(encoding="utf-8")
 
     assert "pkgname=python-flash-attn-rocm-gfx1151" in text
     assert "pkgver=2.8.4" in text
-    assert "pkgrel=14" in text
+    assert "pkgrel=15" in text
     assert "3f94643fb41bcedded28c85185a8e11d42ef1592" in text
     assert "url=https://github.com/ROCm/flash-attention" in text
     assert "FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE" in text
@@ -171,15 +178,28 @@ def test_pkgbuild_carries_gfx1151_ck_experiment():
 def test_pkgbuild_uses_repo_owned_rocm_runtime_instead_of_bundled_deps():
     text = PKGBUILD.read_text(encoding="utf-8")
 
+    depends = _bash_array(text, "depends")
+    makedepends = _bash_array(text, "makedepends")
+    optdepends = _bash_array(text, "optdepends")
+
     for dependency in [
         "python-gfx1151",
         "python-pytorch-opt-rocm-gfx1151",
         "python-triton-gfx1151",
-        "python-amd-aiter-gfx1151",
         "python-einops",
-        "python-packaging",
     ]:
-        assert dependency in text
+        assert dependency in depends
+    assert "python-packaging" in makedepends
+
+    # The CK build (FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE) never imports
+    # AITER, so it is only an optional runtime input for the Triton AMD path.
+    assert "FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE" in text
+    assert not any("aiter" in item for item in depends + makedepends)
+    assert any(
+        item.startswith("python-amd-aiter-gfx1151:")
+        and "FLASH_ATTENTION_TRITON_AMD_ENABLE=TRUE" in item
+        for item in optdepends
+    )
 
     assert "pip install" not in text
     assert "third_party/aiter" not in text
@@ -201,6 +221,7 @@ def test_patch_carry_records_rocm_runtime_boundaries():
     assert "FLASH_ATTENTION_TRITON_AMD_ENABLE=TRUE" in readme
     assert "FLASH_ATTENTION_TRITON_AMD_AUTOTUNE=TRUE" in readme
     assert "python-amd-aiter-gfx1151" in readme
+    assert "AITER is not a build or runtime input on the CK path" in readme
     assert "python-flash-attn-rocm-gfx1151 2.8.4-10" in readme
     assert "flash-attn.ck.varlen-paged-kv" in readme
     assert "Qwen3.5 vLLM CK consumer remains blocked" in json.dumps(recipe)
