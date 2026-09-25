@@ -177,7 +177,7 @@ value = "basic_ok"
 
 [[scenario.then.assert]]
 kind = "output.contains"
-value = "Using TRITON backend for Unquantized MoE"
+value = "Using TRITON Unquantized MoE backend out of potential backends"
 
 [[scenario]]
 id = "vllm.qwen3_6.35b-a3b.text.unquantized-moe-no-aiter-compiled"
@@ -258,7 +258,7 @@ value = "basic_ok"
 
 [[scenario.then.assert]]
 kind = "output.contains"
-value = "Using TRITON backend for Unquantized MoE"
+value = "Using TRITON Unquantized MoE backend out of potential backends"
 
 [[scenario]]
 id = "vllm.qwen3_6.35b-a3b.server.reasoning"
@@ -288,7 +288,7 @@ value = "reasoning_ok"
 
 [[scenario.then.assert]]
 kind = "server_log.contains"
-value = "Using TRITON backend for Unquantized MoE"
+value = "Using TRITON Unquantized MoE backend out of potential backends"
 
 [[scenario]]
 id = "vllm.qwen3_6.35b-a3b.server.reasoning-disabled"
@@ -318,7 +318,7 @@ value = "reasoning_disabled_ok"
 
 [[scenario.then.assert]]
 kind = "server_log.contains"
-value = "Using TRITON backend for Unquantized MoE"
+value = "Using TRITON Unquantized MoE backend out of potential backends"
 
 [[scenario]]
 id = "vllm.qwen3_6.35b-a3b.server.mtp"
@@ -348,7 +348,7 @@ value = "mtp_ok"
 
 [[scenario.then.assert]]
 kind = "server_log.contains"
-value = "Using TRITON backend for Unquantized MoE"
+value = "Using TRITON Unquantized MoE backend out of potential backends"
 
 [[scenario]]
 id = "vllm.qwen3_6.35b-a3b.server.tool"
@@ -378,7 +378,7 @@ value = "tool_ok"
 
 [[scenario.then.assert]]
 kind = "server_log.contains"
-value = "Using TRITON backend for Unquantized MoE"
+value = "Using TRITON Unquantized MoE backend out of potential backends"
 
 [[scenario]]
 id = "vllm.qwen3_6.35b-a3b.server.benchmark-lite"
@@ -408,7 +408,7 @@ value = "benchmark_lite_ok"
 
 [[scenario.then.assert]]
 kind = "server_log.contains"
-value = "Using TRITON backend for Unquantized MoE"
+value = "Using TRITON Unquantized MoE backend out of potential backends"
 
 [[scenario]]
 id = "vllm.qwen3_6.35b-a3b.server.advanced-selectors"
@@ -438,7 +438,7 @@ value = "advanced_selectors_ok"
 
 [[scenario.then.assert]]
 kind = "server_log.contains"
-value = "Using TRITON backend for Unquantized MoE"
+value = "Using TRITON Unquantized MoE backend out of potential backends"
 
 [[scenario]]
 id = "vllm.qwen3_6.35b-a3b.server.long-context-reduced"
@@ -468,7 +468,7 @@ value = "long_context_reduced_ok"
 
 [[scenario.then.assert]]
 kind = "server_log.contains"
-value = "Using TRITON backend for Unquantized MoE"
+value = "Using TRITON Unquantized MoE backend out of potential backends"
 
 [[scenario]]
 id = "vllm.qwen3_6.35b-a3b.server.media-embedding"
@@ -498,7 +498,7 @@ value = "media_embedding_ok"
 
 [[scenario.then.assert]]
 kind = "server_log.contains"
-value = "Using TRITON backend for Unquantized MoE"
+value = "Using TRITON Unquantized MoE backend out of potential backends"
 
 [[scenario]]
 id = "vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors-blocked"

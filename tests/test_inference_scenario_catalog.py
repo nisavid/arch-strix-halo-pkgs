@@ -12,6 +12,14 @@ if str(TOOLS_DIR) not in sys.path:
 
 from inference.scenario_loader import load_scenarios
 
+# vLLM 0.30.0 (ced6857a) logs "Using TRITON Unquantized MoE backend out of
+# potential backends: [...]." from fused_moe/oracle/unquantized.py. The
+# backend list varies by platform, so scenarios match the stable prefix.
+TRITON_UNQUANTIZED_MOE_LOG = (
+    "Using TRITON Unquantized MoE backend out of potential backends"
+)
+STALE_UNQUANTIZED_MOE_LOG = "backend for Unquantized MoE"
+
 
 def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     scenarios = load_scenarios(REPO_ROOT / "inference/scenarios")
@@ -505,7 +513,7 @@ def test_qwen_server_scenarios_record_reduced_local_contract():
             {"kind": "stdout.contains", "value": ok_marker},
             {
                 "kind": "server_log.contains",
-                "value": "Using TRITON backend for Unquantized MoE",
+                "value": TRITON_UNQUANTIZED_MOE_LOG,
             },
         ):
             assert expected in assertions
@@ -1254,7 +1262,7 @@ def test_qwen3_6_unquantized_moe_control_records_validation_contract():
         {"kind": "stdout.contains", "value": "basic_ok"},
         {
             "kind": "output.contains",
-            "value": "Using TRITON backend for Unquantized MoE",
+            "value": TRITON_UNQUANTIZED_MOE_LOG,
         },
     ):
         assert expected in assertions
@@ -1317,7 +1325,7 @@ def test_qwen3_6_unquantized_moe_compiled_control_records_validation_contract():
         {"kind": "stdout.contains", "value": "basic_ok"},
         {
             "kind": "output.contains",
-            "value": "Using TRITON backend for Unquantized MoE",
+            "value": TRITON_UNQUANTIZED_MOE_LOG,
         },
     ):
         assert expected in assertions
@@ -1363,3 +1371,15 @@ def test_lemonade_help_smokes_assert_current_help_markers():
     assert {"kind": "output.contains", "value": "Lightweight LLM server"} in server_assertions
     assert {"kind": "output.contains", "value": "OPTIONS:"} in cli_assertions
     assert {"kind": "output.contains", "value": "OPTIONS:"} in server_assertions
+
+
+def test_vllm_scenarios_do_not_assert_pre_0_30_moe_log_wording():
+    scenarios = load_scenarios(REPO_ROOT / "inference/scenarios")
+
+    stale = [
+        scenario.id
+        for scenario in scenarios
+        for assertion in scenario.definition.get("then", {}).get("assert", [])
+        if STALE_UNQUANTIZED_MOE_LOG in str(assertion.get("value", ""))
+    ]
+    assert stale == []
