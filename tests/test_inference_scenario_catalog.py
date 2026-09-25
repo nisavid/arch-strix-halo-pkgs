@@ -876,10 +876,14 @@ def test_quantization_lane_probes_record_root_cause_contracts():
             "kind": "output.regex",
             "value": r"Selected \w*Fp8BlockScaledMMKernel for Fp8LinearMethod",
         },
-        {"kind": "output.not_contains", "value": "ImportError"},
         {"kind": "output.not_contains", "value": "ModuleNotFoundError"},
     ):
         assert expected in fp8_dense.definition["then"]["assert"]
+    # The kernel-selection marker already proves the startup imports ran, and a
+    # bare "ImportError" would also match harmless optional-import warnings.
+    assert {"kind": "output.not_contains", "value": "ImportError"} not in (
+        fp8_dense.definition["then"]["assert"]
+    )
     # A bare "fp8" also matched the config summary printed before LLM().
     assert {"kind": "output.contains", "value": "fp8"} not in fp8_dense.definition[
         "then"

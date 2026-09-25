@@ -535,10 +535,6 @@ value = 'Selected \w*Fp8BlockScaledMMKernel for Fp8LinearMethod'
 
 [[scenario.then.assert]]
 kind = "output.not_contains"
-value = "ImportError"
-
-[[scenario.then.assert]]
-kind = "output.not_contains"
 value = "ModuleNotFoundError"
 
 [[scenario]]
