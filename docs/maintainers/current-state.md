@@ -12,10 +12,11 @@ the Lemonade family to the fork's upstream v11.9.0 sync. Only the source is
 updated:
 
 - **Source updated:** `lemonade-server`, `lemonade-app`, and `lemonade` are
-  at 11.9.0-1. The pin is `66c7642e8`, the head of the fork's
-  `nisavid/sync-upstream-v11.9.0` branch (nisavid/lemonade#175). When that PR
-  merges, its merge commit replaces the pin in `[source_pins]` and in the
-  fork-main freshness cursor. Patch 0005 is dropped, because the sync contains
+  at 11.9.0-1. The pin is `b6616eb3b`, the merge commit of the fork's
+  upstream v11.9.0 sync (nisavid/lemonade#175), in `[source_pins]` and the
+  fork-main freshness cursor. Beyond the sync-branch head `66c7642e8` that the
+  branch first pinned, the merge adds only the pinned-reload eviction fix
+  (`553d923`, a three-line `server.cpp` change). Patch 0005 is dropped, because the sync contains
   the fork fix for nisavid/lemonade#168. Patches 0001-0004 and the app's glib
   patch apply unchanged. The package follows the 11.9 service layout: the
   config and cache dirs are split, and the distro defaults gain
@@ -30,11 +31,14 @@ updated:
   `config.json` sparse, including the host binding, and verifies the JSON
   migration into `/var/lib/lemonade`. Then the M4 scenario set and the
   Open WebUI zembed and zerank re-smoke must pass.
-- **Freshness:** a Lemonade-only checker run on 2026-09-25 reported fork-main
-  `branch_head_ahead`, because fork main (`2cb1a9147`) is not the pinned sync
-  head. That clears when the merge commit is pinned. It also found a new
-  upstream release, `v2026.39.1` (2026-09-23, calendar versioning), past the
-  11.9.0 baseline. That release has no candidate disposition yet.
+- **Freshness:** a Lemonade-only checker run on 2026-09-25 after the
+  merge-commit repin reported fork-main `current` at `b6616eb3b`. The
+  upstream-release check reports `baseline_drift` to `v2026.39.1`
+  (2026-09-23), the first calendar-versioned release. By owner decision on
+  2026-09-25, the resurrection finishes on v11.9.0, and the calendar-versioned
+  line follows under nisavid/lemonade#176. The
+  `lemonade-upstream-2026.39.1` candidate is tracked under #163, which packages
+  that line after the fork sync.
 
 ## 2026-09-24 Lemonade M4 Live Validation
 

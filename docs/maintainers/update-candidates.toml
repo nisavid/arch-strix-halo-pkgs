@@ -4131,11 +4131,11 @@ previous_recorded = "11.7.0"
 latest = "11.9.0"
 discovery_status = "baseline_drift"
 disposition = "tracked"
-disposition_reason = "Tracked on 2026-09-22 when the Lemonade repin (#137) recorded the upstream-release baseline at 11.7.0, the upstream release that frozen fork main 3d5991033 contains. Canonical upstream Lemonade reports 11.9.0. On 2026-09-25 the upstream-sync repackage (#141) adopted 11.9.0 as the upstream-release baseline, repinned lemonade-server and lemonade-app to the fork's upstream v11.9.0 sync (nisavid/lemonade#175), set the family version to 11.9.0, dropped patch 0005, and followed the 11.9 service layout. The source is updated only: the pin is the sync-branch head until #175 merges, and package build, publish, install, installed smoke, the M4 scenario set, and the Open WebUI zembed and zerank re-smoke remain open under #141, so the candidate stays tracked until that revalidation passes."
+disposition_reason = "Tracked on 2026-09-22 when the Lemonade repin (#137) recorded the upstream-release baseline at 11.7.0, the upstream release that frozen fork main 3d5991033 contains. Canonical upstream Lemonade reports 11.9.0. On 2026-09-25 the upstream-sync repackage (#141) adopted 11.9.0 as the upstream-release baseline, repinned lemonade-server and lemonade-app to the fork's upstream v11.9.0 sync (nisavid/lemonade#175), then to its merge commit b6616eb3b, set the family version to 11.9.0, dropped patch 0005, and followed the 11.9 service layout. The source is updated only: package build, publish, install, installed smoke, the M4 scenario set, and the Open WebUI zembed and zerank re-smoke remain open under #141, so the candidate stays tracked until that revalidation passes."
 salient_changes = [
   "Canonical upstream Lemonade reports 11.9.0 after the recorded 11.7.0 baseline",
   "The upstream-release baseline is recorded at 11.9.0, and lemonade-server, lemonade-app, and lemonade package 11.9.0",
-  "The source pin is the head of the fork's upstream v11.9.0 sync branch (66c7642e818f85116af362ed49ce6468ea01ebed), which contains upstream v11.9.0 (bb39eafc22aa7e57fc7aeb8b7d384d70b44a4531) and the fork fix for nisavid/lemonade#168; the merge commit replaces it when nisavid/lemonade#175 merges",
+  "The source pin is b6616eb3b6d31c3d7dbffffdb23e24adda1292a1, the merge commit of the fork's upstream v11.9.0 sync (nisavid/lemonade#175), which contains upstream v11.9.0 (bb39eafc22aa7e57fc7aeb8b7d384d70b44a4531), the fork fix for nisavid/lemonade#168, and the pinned-reload eviction fix (553d923)",
   "Patch 0005 is dropped; patches 0001-0004 and the app's glib patch apply unchanged",
   "Lemonade 11.9 splits the service config dir (/var/lib/lemonade) from its cache dir (/var/cache/lemonade), makes config.json sparse, and moves the service environment file to /etc/default/lemond",
 ]
@@ -4144,5 +4144,28 @@ package_source_update_needed = false
 host_validation_needed = true
 next_gate_kind = "github_issue"
 next_gate_issue = 141
-next_gate_label = "Lemonade 11.9.0 sync merge-commit pin, package build, publish, owner redeploy, and revalidation"
+next_gate_label = "Lemonade 11.9.0 package build, publish, owner redeploy, and revalidation"
+last_reviewed = "2026-09-25"
+
+[candidates."lemonade-upstream-2026.39.1"]
+family = "lemonade"
+packages = ["lemonade-server", "lemonade-app", "lemonade"]
+source_kind = "github_release"
+check_id = "upstream-release"
+previous_recorded = "11.9.0"
+latest = "2026.39.1"
+discovery_status = "baseline_drift"
+disposition = "tracked"
+disposition_reason = "Tracked on 2026-09-25 when the Lemonade freshness check reported upstream release v2026.39.1 (2026-09-23), the first calendar-versioned Lemonade release, past the 11.9.0 baseline. The owner decided on 2026-09-25 that the resurrection finishes on v11.9.0 (#141) and that the calendar-versioned line follows under nisavid/lemonade#176, which syncs the fork to the latest stable calendar-versioned upstream release. ASHP #163 tracks packaging that line once the fork sync lands."
+salient_changes = [
+  "Canonical upstream Lemonade reports 2026.39.1 after the 11.9.0 baseline",
+  "Upstream Lemonade moves from semantic to calendar versioning with this release",
+  "The fork has not synced the release yet; nisavid/lemonade#176 owns that sync",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "github_issue"
+next_gate_issue = 163
+next_gate_label = "Lemonade calendar-versioned release packaging, blocked on the fork sync in nisavid/lemonade#176"
 last_reviewed = "2026-09-25"
