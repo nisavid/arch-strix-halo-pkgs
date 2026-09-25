@@ -1198,6 +1198,126 @@ def test_render_pkgbuild_emits_backup_only_when_policy_sets_it() -> None:
     assert "replaces=()\nbackup=(etc/sample/secrets.conf)\nsource=()\n" in with_backup
 
 
+def test_render_pkgbuild_ignores_an_install_script_key() -> None:
+    # No package ships a pacman scriptlet; owner config is never rewritten.
+    policy_pkg = {
+        "recipe_key": "sample",
+        "template": "meta-package",
+        "pkgdesc": "Sample",
+        "url": "https://example.invalid/sample",
+        "license": ["MIT"],
+        "src_subdir": "sample",
+        "install": "sample.install",
+    }
+
+    rendered = render_recipe_scaffolds.render_pkgbuild(
+        "sample", policy_pkg, SAMPLE_RECIPE_PKG, "1.2.3", SAMPLE_DEFAULTS
+    )
+
+    assert "install=" not in rendered
+
+
+def test_real_lemonade_server_backs_up_both_secrets_files() -> None:
+    policy = recipe_policy.load_recipe_policy(REPO_ROOT / "policies/recipe-packages.toml")
+    server = policy["packages"]["lemonade-server"]
+
+    assert "install" not in server
+    assert server["backup"] == ["etc/default/lemond", "etc/lemonade/conf.d/zz-secrets.conf"]
+
+
+LEMOND_UNIT_OK = """\
+[Service]
+StateDirectory=lemonade
+CacheDirectory=lemonade
+CacheDirectoryMode=0755
+EnvironmentFile=-/etc/default/lemond
+ExecStart=/usr/bin/lemond
+"""
+
+
+@pytest.mark.parametrize(
+    ("unit", "ok"),
+    [
+        (LEMOND_UNIT_OK, True),
+        (LEMOND_UNIT_OK.replace("CacheDirectory=lemonade\n", ""), False),
+        (LEMOND_UNIT_OK.replace("CacheDirectoryMode=0755", "CacheDirectoryMode=0700"), False),
+        (LEMOND_UNIT_OK.replace("ExecStart=/usr/bin/lemond", "ExecStart=/usr/bin/lemond /var/cache/lemonade"), False),
+        (LEMOND_UNIT_OK.replace("EnvironmentFile=-/etc/default/lemond", "EnvironmentFile=-/etc/lemonade/conf.d/*.conf"), False),
+        # 30-env-files.conf resets the list, so any other upstream entry would be dropped.
+        (LEMOND_UNIT_OK + "EnvironmentFile=-/etc/lemonade/conf.d/*.conf\n", False),
+        (LEMOND_UNIT_OK + "EnvironmentFile=-/etc/default/lemond\n", False),
+        (LEMOND_UNIT_OK + "EnvironmentFile = /etc/lemonade/extra.env\n", False),
+        (LEMOND_UNIT_OK + "  EnvironmentFile=/etc/lemonade/extra.env\n", False),
+        (LEMOND_UNIT_OK + "Environment=LEMONADE_CACHE_DIR=/srv/lemonade\n", False),
+        (LEMOND_UNIT_OK + "Environment=HOME=/srv/lemonade\n", False),
+        (LEMOND_UNIT_OK + "Environment=XDG_CONFIG_HOME=/srv\n", False),
+    ],
+)
+def test_lemond_unit_check_accepts_only_the_split_config_and_cache_layout(
+    tmp_path: Path, unit: str, ok: bool
+) -> None:
+    unit_path = tmp_path / "lemond.service"
+    unit_path.write_text(unit, encoding="utf-8")
+    script = render_recipe_scaffolds.lemond_unit_check_snippet() + '_check_lemond_unit "$1"\n'
+
+    result = subprocess.run(
+        ["bash", "-c", script, "bash", str(unit_path)],
+        env={"PATH": "/usr/bin:/bin"},
+        capture_output=True,
+        text=True,
+    )
+
+    assert (result.returncode == 0) is ok, result.stderr
+    if not ok:
+        assert "LEMOND_UNIT_LAYOUT" in result.stderr
+
+
+def _run_lemond_unit_check(unit_path: Path) -> subprocess.CompletedProcess[str]:
+    script = render_recipe_scaffolds.lemond_unit_check_snippet() + '_check_lemond_unit "$1"\n'
+    return subprocess.run(
+        ["bash", "-c", script, "bash", str(unit_path)],
+        env={"PATH": "/usr/bin:/bin"},
+        capture_output=True,
+        text=True,
+    )
+
+
+@pytest.mark.parametrize(
+    "dropin",
+    [
+        # 30-env-files.conf resets EnvironmentFile=, so it would silently drop
+        # an EnvironmentFile= from any upstream drop-in that sorts before it.
+        "10-upstream.conf",
+        # The package's own names must not already be taken by upstream.
+        "20-no-remote-model-fetch.conf",
+        "30-env-files.conf",
+        "99-late.conf",
+    ],
+)
+def test_lemond_unit_check_rejects_upstream_drop_ins(tmp_path: Path, dropin: str) -> None:
+    unit_path = tmp_path / "lemond.service"
+    unit_path.write_text(LEMOND_UNIT_OK, encoding="utf-8")
+    dropin_dir = tmp_path / "lemond.service.d"
+    dropin_dir.mkdir()
+    (dropin_dir / dropin).write_text("[Service]\nEnvironmentFile=-/etc/lemonade/extra.env\n")
+
+    result = _run_lemond_unit_check(unit_path)
+
+    assert result.returncode != 0
+    assert "LEMOND_UNIT_LAYOUT" in result.stderr
+    assert dropin in result.stderr
+
+
+def test_lemond_unit_check_accepts_an_empty_drop_in_dir(tmp_path: Path) -> None:
+    unit_path = tmp_path / "lemond.service"
+    unit_path.write_text(LEMOND_UNIT_OK, encoding="utf-8")
+    (tmp_path / "lemond.service.d").mkdir()
+
+    result = _run_lemond_unit_check(unit_path)
+
+    assert result.returncode == 0, result.stderr
+
+
 def test_recipe_policy_expands_source_pins_in_package_values() -> None:
     resolved = recipe_policy.resolve_recipe_policy(
         {

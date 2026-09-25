@@ -305,10 +305,23 @@ LEMONADE_LLAMACPP_VULKAN_BIN = "/usr/bin/llama-server-vulkan-gfx1151"
 LEMONADE_BLACKHOLE_ENDPOINT = "http://127.0.0.1:9"
 
 
+LEMONADE_LLAMACPP_ENV_FILE = "/usr/lib/lemonade/llamacpp-gfx1151.env"
+
+
 def lemonade_llamacpp_env_lines() -> list[str]:
+    """Return the package env file for the packaged llama.cpp backends.
+
+    lemond reads LEMONADE_LLAMACPP_*_BIN from its environment ahead of
+    config.json on every backend lookup, and the system-managed metadata patch
+    reads the version and release URL only from the environment. The
+    30-env-files.conf drop-in loads this file last.
+    """
     hip_rev = sibling_package_upstream_revision("llama.cpp-hip-gfx1151")
     vulkan_rev = sibling_package_upstream_revision("llama.cpp-vulkan-gfx1151")
     return [
+        "# Packaged llama.cpp backends for lemond. lemond.service.d/30-env-files.conf",
+        "# loads this file last. To override a key, add an EnvironmentFile= in a",
+        "# drop-in under /etc/systemd/system/lemond.service.d/ that sorts after it.",
         f"LEMONADE_LLAMACPP_ROCM_BIN={LEMONADE_LLAMACPP_ROCM_BIN}",
         f"LEMONADE_LLAMACPP_VULKAN_BIN={LEMONADE_LLAMACPP_VULKAN_BIN}",
         f"LEMONADE_LLAMACPP_ROCM_VERSION={hip_rev}",
@@ -318,18 +331,73 @@ def lemonade_llamacpp_env_lines() -> list[str]:
     ]
 
 
+def lemonade_env_files_dropin_lines() -> list[str]:
+    """Return the lemond.service drop-in that owns the EnvironmentFile= order.
+
+    Upstream's 11.9 unit lists only EnvironmentFile=-/etc/default/lemond, and
+    the build check fails if it lists anything else, because the reset here
+    would drop it.
+    """
+    return [
+        "# lemonade-server owns the whole EnvironmentFile= list of lemond.service.",
+        "# systemd reads the files in this order, a later file overrides an earlier",
+        "# one, and any EnvironmentFile= value overrides an Environment= value, such",
+        "# as the 20-no-remote-model-fetch.conf blackholes.",
+        "[Service]",
+        "# Clear the list first. systemd keeps a repeated path at its first position,",
+        "# so listing upstream's /etc/default/lemond again without this reset would",
+        "# not move it after conf.d. The build fails if upstream's unit lists any",
+        "# other EnvironmentFile=, which this reset would drop.",
+        "EnvironmentFile=",
+        "# Optional settings in the pre-11.9 location, including the packaged",
+        "# zz-secrets.conf placeholder, read in glob order.",
+        "EnvironmentFile=-/etc/lemonade/conf.d/*.conf",
+        "# Optional: upstream's env file for HF_TOKEN, LEMONADE_API_KEY, and",
+        "# LEMONADE_ADMIN_API_KEY. It overrides conf.d.",
+        "EnvironmentFile=-/etc/default/lemond",
+        "# Required: the packaged llama.cpp backends, read last so that a stale",
+        "# LEMONADE_LLAMACPP_* key in a file above cannot replace them. To override",
+        "# one, add an EnvironmentFile= in a drop-in under",
+        "# /etc/systemd/system/lemond.service.d/ that sorts after this one; an",
+        "# Environment= line cannot, because every env file overrides it.",
+        f"EnvironmentFile={LEMONADE_LLAMACPP_ENV_FILE}",
+    ]
+
+
+def lemonade_legacy_secrets_placeholder_lines() -> list[str]:
+    """Return upstream's 11.7 zz-secrets.conf placeholder, byte for byte.
+
+    Shipping the same bytes as 11.7 keeps pacman from writing a .pacnew next
+    to an owner-edited copy, which stays in place and keeps loading through
+    the conf.d glob.
+    """
+    return [
+        "# Installed as /etc/lemonade/conf.d/zz-secrets.conf so it loads after other",
+        "# drop-ins and keeps secrets separate from the base config file.",
+        "#LEMONADE_API_KEY=",
+    ]
+
+
 def lemonade_distro_defaults() -> dict:
     """Return the sparse /usr/share/lemonade/defaults.json overlay.
 
     lemond deep-merges this file over its built-in defaults on every start,
-    under config.json. It seeds a fresh install and fills keys that an
-    existing config.json lacks, but never overrides a key config.json sets.
-    It does not set host, port, broadcast, or any API-key setting; those stay
-    with the host.
+    under config.json. It fills keys that config.json lacks, but never
+    overrides a key config.json sets. Since Lemonade 11.9, every config write
+    also prunes config.json keys that equal these merged defaults. It does not
+    set host, port, broadcast, or any API-key setting; those stay with the
+    host.
     """
     return {
         "offline": True,
         "no_fetch_executables": True,
+        # Upstream's default already; pinned so an upstream flip cannot turn
+        # on implicit model updates.
+        "auto_update_models": False,
+        # Pins count toward residency, so a slot limit would refuse every new
+        # load once the pins fill it; the GTT-aware occupancy budget is the
+        # admission bound instead.
+        "max_loaded_models": -1,
         "llamacpp": {
             # --no-mmap in the llama.cpp args stops lemond from adding its
             # iGPU "--load-mode none" default, a flag the packaged llama.cpp
@@ -341,6 +409,50 @@ def lemonade_distro_defaults() -> dict:
             "vulkan_bin": LEMONADE_LLAMACPP_VULKAN_BIN,
         },
     }
+
+
+def lemond_unit_check_snippet() -> str:
+    """Return a shell function that fails unless the unit keeps 11.9's layout.
+
+    lemond's config dir is $STATE_DIRECTORY and its cache dir is
+    $CACHE_DIRECTORY only when ExecStart passes no cache-dir argument and no
+    LEMONADE_CACHE_DIR, HOME, or XDG_* override applies. The unit must also
+    list exactly one EnvironmentFile=, upstream's -/etc/default/lemond,
+    because 30-env-files.conf resets the list and would drop any other.
+    Upstream must install no lemond.service.d drop-in either: the reset would
+    also drop an EnvironmentFile= from one that sorts before 30-env-files.conf.
+    The package runs this check before it installs its own drop-ins.
+    """
+    return """_check_lemond_unit() {
+  local _unit="$1" _line
+  for _line in \\
+    'StateDirectory=lemonade' \\
+    'CacheDirectory=lemonade' \\
+    'CacheDirectoryMode=0755' \\
+    'EnvironmentFile=-/etc/default/lemond' \\
+    'ExecStart=/usr/bin/lemond'; do
+    if ! grep -qxF -- "${_line}" "${_unit}"; then
+      echo "LEMOND_UNIT_LAYOUT: ${_unit} lacks ${_line}" >&2
+      return 1
+    fi
+  done
+  if [[ $(grep -c '^ExecStart=' "${_unit}") -ne 1 ]] ||
+    grep -qE '^Environment=.*(LEMONADE_CACHE_DIR|HOME|XDG_[A-Z_]+)=' "${_unit}"; then
+    echo "LEMOND_UNIT_LAYOUT: ${_unit} overrides lemond's config or cache dir" >&2
+    return 1
+  fi
+  if [[ $(grep -cE '^[[:space:]]*EnvironmentFile[[:space:]]*=' "${_unit}") -ne 1 ]]; then
+    echo "LEMOND_UNIT_LAYOUT: ${_unit} lists an EnvironmentFile= that 30-env-files.conf would drop" >&2
+    return 1
+  fi
+  local _dropin
+  _dropin=$(find "${_unit}.d" -mindepth 1 -print -quit 2>/dev/null)
+  if [[ -n ${_dropin} ]]; then
+    echo "LEMOND_UNIT_LAYOUT: upstream installs ${_dropin}; 30-env-files.conf would drop its EnvironmentFile= lines" >&2
+    return 1
+  fi
+}
+"""
 
 
 def lemonade_no_remote_model_fetch_dropin_lines() -> list[str]:
@@ -683,8 +795,21 @@ package() {{
     find "$pkgdir/usr/share" -type f \\( -name '*.desktop' -o -name '*.png' -o -name '*.svg' \\) -delete
   fi
 
-  install -Dm644 /dev/stdin "$pkgdir/etc/lemonade/conf.d/10-llamacpp-gfx1151.conf" <<'EOF'
+  # Upstream's unit splits the config dir (StateDirectory) from the cache
+  # dir (CacheDirectory), lists only /etc/default/lemond as its
+  # EnvironmentFile=, and ships no lemond.service.d drop-in; fail the build
+  # if it stops doing so.
+{textwrap.indent(lemond_unit_check_snippet(), '  ').rstrip()}
+  _check_lemond_unit "$pkgdir/usr/lib/systemd/system/lemond.service"
+
+  install -Dm644 /dev/stdin "$pkgdir{LEMONADE_LLAMACPP_ENV_FILE}" <<'EOF'
 {chr(10).join(lemonade_llamacpp_env_lines())}
+EOF
+
+  # Keep shipping 11.7's secrets placeholder as a backup file, so an
+  # owner-edited copy stays in place and keeps loading through conf.d.
+  install -Dm660 /dev/stdin "$pkgdir/etc/lemonade/conf.d/zz-secrets.conf" <<'EOF'
+{chr(10).join(lemonade_legacy_secrets_placeholder_lines())}
 EOF
 
   # Replace upstream's full copy of its built-in defaults with a sparse distro
@@ -696,8 +821,16 @@ EOF
   # Send Hugging Face and ModelScope requests from lemond and its llama-server
   # children to a refused loopback port, so no model is fetched implicitly.
   # llama-server reads MODEL_ENDPOINT ahead of HF_ENDPOINT, so set both.
+  # An owner env file can still override these on purpose, because systemd
+  # applies EnvironmentFile= after Environment=.
   install -Dm644 /dev/stdin "$pkgdir/usr/lib/systemd/system/lemond.service.d/20-no-remote-model-fetch.conf" <<'EOF'
 {chr(10).join(lemonade_no_remote_model_fetch_dropin_lines())}
+EOF
+
+  # Own the whole EnvironmentFile= order: conf.d, then /etc/default/lemond,
+  # then the packaged llama.cpp env file.
+  install -Dm644 /dev/stdin "$pkgdir/usr/lib/systemd/system/lemond.service.d/30-env-files.conf" <<'EOF'
+{chr(10).join(lemonade_env_files_dropin_lines())}
 EOF
 
   install -Dm644 "$srcdir/{src_subdir}/LICENSE" "$pkgdir/usr/share/licenses/{package_name}/LICENSE"
