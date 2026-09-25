@@ -445,8 +445,12 @@ def lemond_unit_check_snippet() -> str:
     echo "LEMOND_UNIT_LAYOUT: ${_unit} lists an EnvironmentFile= that 30-env-files.conf would drop" >&2
     return 1
   fi
-  local _dropin
-  _dropin=$(find "${_unit}.d" -mindepth 1 -print -quit 2>/dev/null)
+  # makepkg runs package() under errexit with an ERR trap, and find exits
+  # nonzero on a missing directory, so only search a drop-in dir that exists.
+  local _dropin=
+  if [[ -d ${_unit}.d ]]; then
+    _dropin=$(find "${_unit}.d" -mindepth 1 -print -quit)
+  fi
   if [[ -n ${_dropin} ]]; then
     echo "LEMOND_UNIT_LAYOUT: upstream installs ${_dropin}; 30-env-files.conf would drop its EnvironmentFile= lines" >&2
     return 1
