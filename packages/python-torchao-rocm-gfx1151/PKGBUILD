@@ -18,8 +18,8 @@ options=()
 provides=(python-torchao python-torchao-rocm)
 conflicts=(python-torchao python-torchao-rocm)
 replaces=()
-source=('torchao::git+https://github.com/pytorch/ao.git#tag=v0.18.0' 0001-setup.py-honor-pytorch-rocm-arch.patch)
-sha256sums=(SKIP SKIP)
+source=('torchao::git+https://github.com/pytorch/ao.git#tag=v0.18.0' 0001-setup.py-honor-pytorch-rocm-arch.patch 0003-swizzle-include-format-before-hip-runtime.patch)
+sha256sums=(SKIP SKIP SKIP)
 
 prepare() {
   cd "$srcdir/torchao"
@@ -30,6 +30,9 @@ prepare() {
   fi
   if ! patch --dry-run -R -Np1 -i "$srcdir/0001-setup.py-honor-pytorch-rocm-arch.patch" >/dev/null 2>&1; then
     patch -Np1 -i "$srcdir/0001-setup.py-honor-pytorch-rocm-arch.patch"
+  fi
+  if ! patch --dry-run -R -Np1 -i "$srcdir/0003-swizzle-include-format-before-hip-runtime.patch" >/dev/null 2>&1; then
+    patch -Np1 -i "$srcdir/0003-swizzle-include-format-before-hip-runtime.patch"
   fi
 }
 

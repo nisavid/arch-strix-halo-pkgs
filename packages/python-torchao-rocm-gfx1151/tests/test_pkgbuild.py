@@ -10,6 +10,12 @@ PATCH = (
     / "packages/python-torchao-rocm-gfx1151/"
     / "0001-setup.py-honor-pytorch-rocm-arch.patch"
 )
+SWIZZLE_PATCH = (
+    REPO_ROOT
+    / "packages/python-torchao-rocm-gfx1151/"
+    / "0003-swizzle-include-format-before-hip-runtime.patch"
+)
+PATCHES_DOC = REPO_ROOT / "docs/patches.md"
 PT2E_PATCH = (
     REPO_ROOT
     / "packages/python-torchao-rocm-gfx1151/"
@@ -41,6 +47,30 @@ def test_patch_makes_rocm_arch_configurable():
     assert '--offload-arch=gfx942' in text
     assert '+        rocm_arch = os.getenv("PYTORCH_ROCM_ARCH", "gfx942")' in text
     assert '+        extra_compile_args["nvcc"].append(f"--offload-arch={rocm_arch}")' in text
+
+
+def test_swizzle_patch_parses_format_before_hip_host_macros():
+    # In plain C++ mode, hip/amd_detail/host_defines.h defines __noinline__
+    # as an empty macro. GCC 16 <format> spells [[__gnu__::__noinline__]],
+    # which then becomes [[__gnu__::]] when ATen reaches <chrono>.
+    pkgbuild = PKGBUILD.read_text()
+    patch = SWIZZLE_PATCH.read_text()
+
+    assert SWIZZLE_PATCH.name in pkgbuild
+    assert f'patch -Np1 -i "$srcdir/{SWIZZLE_PATCH.name}"' in pkgbuild
+    assert "+++ b/torchao/csrc/rocm/swizzle/swizzle.cpp" in patch
+    added = [line[1:] for line in patch.splitlines() if line.startswith("+") and not line.startswith("+++")]
+    body = [line for line in patch.splitlines() if line[:1] in " +" and not line.startswith("+++")]
+    assert "#include <format>" in added
+    assert body.index("+#include <format>") < body.index(" #include <hip/hip_runtime.h>")
+    assert "rocm-systems/issues/9897" in patch
+
+
+def test_swizzle_patch_records_provenance_and_drop_condition():
+    for text in (README.read_text(), RECIPE_JSON.read_text(), PATCHES_DOC.read_text()):
+        assert SWIZZLE_PATCH.name in text
+        assert "rocm-systems/issues/9897" in text
+        assert "pytorch/ao/pull/4697" in text
 
 
 def test_pt2e_union_alias_patch_is_retired_upstream():

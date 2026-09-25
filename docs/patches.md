@@ -148,6 +148,19 @@ becomes durable, prefer a named patch that another maintainer can review.
 - [Honor `PYTORCH_ROCM_ARCH` instead of hard-coding `gfx942`](../packages/python-torchao-rocm-gfx1151/0001-setup.py-honor-pytorch-rocm-arch.patch)
   - Makes the upstream ROCm build use an explicit environment-selected target
     arch so the local package can build for `gfx1151`.
+- [Include `<format>` before the HIP runtime in `swizzle.cpp`](../packages/python-torchao-rocm-gfx1151/0003-swizzle-include-format-before-hip-runtime.patch)
+  - `amdclang++` compiles `torchao/csrc/rocm/swizzle/swizzle.cpp` as plain
+    C++. In that mode `hip/amd_detail/host_defines.h` defines `__noinline__`
+    as an empty macro, so GCC 16 `<format>` (reached through ATen's
+    `<chrono>`) turns `[[__gnu__::__noinline__]]` into `[[__gnu__::]]` and
+    fails with `expected identifier`. Parsing `<format>` first keeps the
+    attribute intact. HIP bug:
+    https://github.com/ROCm/rocm-systems/issues/9897. Upstream TorchAO
+    removed `swizzle.cpp` on `main` in
+    https://github.com/pytorch/ao/pull/4697 (commit `ac1a803c60`, after
+    `v0.18.0`). Drop the patch at the first packaged TorchAO release without
+    `swizzle.cpp`, or once the packaged HIP headers stop defining
+    `__noinline__` in plain C++ mode.
 
 ## Torch-MIGraphX
 

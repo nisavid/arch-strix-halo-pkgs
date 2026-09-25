@@ -13,7 +13,7 @@
 - Recorded reference packages: `extra/python-pytorch-opt-rocm, extra/python-pytorch-rocm`
 - Authoritative reference package: `none`
 - Advisory reference packages: `extra/python-pytorch-opt-rocm, extra/python-pytorch-rocm`
-- Applied source patch files/actions: `1`
+- Applied source patch files/actions: `2`
 
 ## Recipe notes
 
@@ -32,6 +32,18 @@ extension builds. The local package exports `VERSION_SUFFIX=` to keep the
 wheel on the stable release version, exports `ROCM_HOME=/opt/rocm` so
 PyTorch's extension helpers use the real split-layout ROCm headers, and
 patches `setup.py` so the ROCm target arch follows `PYTORCH_ROCM_ARCH`.
+
+`0003-swizzle-include-format-before-hip-runtime.patch` makes `torchao/csrc/rocm/swizzle/swizzle.cpp` include
+`<format>` before `<hip/hip_runtime.h>`. `amdclang++` compiles that file as
+plain C++, where `hip/amd_detail/host_defines.h` defines `__noinline__` as an
+empty macro. GCC 16 `<format>`, which ATen reaches through `<chrono>`, spells
+`[[__gnu__::__noinline__]]`; after the macro runs, clang rejects the attribute
+with `expected identifier`. The HIP bug is
+https://github.com/ROCm/rocm-systems/issues/9897. Upstream TorchAO removed
+`swizzle.cpp` on `main` in https://github.com/pytorch/ao/pull/4697 (after
+`v0.18.0`), so drop the patch at the first TorchAO release without that file,
+or earlier if the packaged HIP headers stop defining `__noinline__` in plain
+C++ mode.
 
 The staged package was verified locally with:
 - `readelf -d` showing `RUNPATH [$ORIGIN:$ORIGIN/../torch/lib:/opt/rocm/lib]`
@@ -69,6 +81,7 @@ in the Gemma 4 online TorchAO run.
 
 - There is no standalone TorchAO package in Arch-family repositories, so this package is closure-first and tracks the upstream TorchAO compatibility matrix against the local PyTorch ROCm lane.
 - Carries a package-local ROCm patch so the source build honors PYTORCH_ROCM_ARCH instead of hard-coding gfx942, exports ROCM_HOME=/opt/rocm so PyTorch picks up the real split-layout HIP headers, and carries a post-install RPATH fix so the optional _C extension can resolve torch/lib at runtime.
+- Carries 0003-swizzle-include-format-before-hip-runtime.patch so the plain-C++ ROCm swizzle TU parses libstdc++ <format> before HIP's host-mode empty __noinline__ macro can corrupt GCC 16's [[__gnu__::__noinline__]] attribute.
 
 ## Update Notes
 
@@ -81,6 +94,7 @@ in the Gemma 4 online TorchAO run.
 - On 2026-05-26, bump pkgrel to 4 for delivery of the TorchAO extension rebuild against python-pytorch-opt-rocm-gfx1151 2.12.0-2 from ROCm/pytorch release/2.12 commit 26872debb4452ea6dc898288618a15595e2317d9.
 - On 2026-06-15, bump pkgrel to 6 for the c7badbdf runtime-base rebuild so TorchAO supersedes the unmerged ab32a1f/pkgrel-5 host-drift artifact.
 - On 2026-09-25, update to TorchAO 0.18.0 (tag v0.18.0, commit 5f2baf9d575cf732362594c998c399902942531f) for the rebuild against python-pytorch-opt-rocm-gfx1151 2.12.0-5. Patch 0001 applies with a 10-line offset. Patch 0002 is dropped because 0.18.0 guards the typing.Union __module__ writes with sys.version_info < (3, 14). 0.18.0 raises the minimum PyTorch to 2.11 and removes the v1 AffineQuantizedTensor and layout stack; Int8WeightOnlyConfig version 1 is gone, and version 2 is the default. Recheck the vLLM TorchAO scenarios and tools/torchao_vllm_smoke.py after the rebuild.
+- On 2026-09-25, add 0003-swizzle-include-format-before-hip-runtime.patch after the first 0.18.0-1 build failed in torchao/csrc/rocm/swizzle/swizzle.cpp with 'expected identifier' at GCC 16 <format> [[__gnu__::__noinline__]]; pkgrel stays 1 because no 0.18.0-1 artifact was built or published. Drop the patch when the packaged TorchAO release no longer ships swizzle.cpp (upstream removed it on main in https://github.com/pytorch/ao/pull/4697, commit ac1a803c60, after v0.18.0) or when the packaged HIP headers stop defining __noinline__ in plain C++ mode (https://github.com/ROCm/rocm-systems/issues/9897).
 
 ## Maintainer Starting Points
 
