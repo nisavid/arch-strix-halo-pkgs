@@ -4131,16 +4131,18 @@ previous_recorded = "11.7.0"
 latest = "11.9.0"
 discovery_status = "baseline_drift"
 disposition = "tracked"
-disposition_reason = "Tracked on 2026-09-22 when the Lemonade repin (#137) recorded the upstream-release baseline at 11.7.0, the upstream release that frozen fork main 3d5991033 contains. Canonical upstream Lemonade reports 11.9.0. The fork follows upstream through its upstream-sync lane, and the packages move to a synced line only through the upstream-sync repackage and revalidation (#141)."
+disposition_reason = "Tracked on 2026-09-22 when the Lemonade repin (#137) recorded the upstream-release baseline at 11.7.0, the upstream release that frozen fork main 3d5991033 contains. Canonical upstream Lemonade reports 11.9.0. On 2026-09-25 the upstream-sync repackage (#141) adopted 11.9.0 as the upstream-release baseline, repinned lemonade-server and lemonade-app to the fork's upstream v11.9.0 sync (nisavid/lemonade#175), set the family version to 11.9.0, dropped patch 0005, and followed the 11.9 service layout. The source is updated only: the pin is the sync-branch head until #175 merges, and package build, publish, install, installed smoke, the M4 scenario set, and the Open WebUI zembed and zerank re-smoke remain open under #141, so the candidate stays tracked until that revalidation passes."
 salient_changes = [
   "Canonical upstream Lemonade reports 11.9.0 after the recorded 11.7.0 baseline",
-  "Frozen fork main 3d5991033e4cb28152ace4013f7f22a52c3bd617 contains upstream v11.7.0 (2b6a7d77c71e551736f6cc8473dc46f479cd156b)",
-  "The fork-main cursor is current at 3d5991033e4cb28152ace4013f7f22a52c3bd617",
+  "The upstream-release baseline is recorded at 11.9.0, and lemonade-server, lemonade-app, and lemonade package 11.9.0",
+  "The source pin is the head of the fork's upstream v11.9.0 sync branch (66c7642e818f85116af362ed49ce6468ea01ebed), which contains upstream v11.9.0 (bb39eafc22aa7e57fc7aeb8b7d384d70b44a4531) and the fork fix for nisavid/lemonade#168; the merge commit replaces it when nisavid/lemonade#175 merges",
+  "Patch 0005 is dropped; patches 0001-0004 and the app's glib patch apply unchanged",
+  "Lemonade 11.9 splits the service config dir (/var/lib/lemonade) from its cache dir (/var/cache/lemonade), makes config.json sparse, and moves the service environment file to /etc/default/lemond",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
+package_source_update_needed = false
 host_validation_needed = true
 next_gate_kind = "github_issue"
 next_gate_issue = 141
-next_gate_label = "Lemonade upstream 11.9.0 sync repackage and revalidation"
-last_reviewed = "2026-09-22"
+next_gate_label = "Lemonade 11.9.0 sync merge-commit pin, package build, publish, owner redeploy, and revalidation"
+last_reviewed = "2026-09-25"

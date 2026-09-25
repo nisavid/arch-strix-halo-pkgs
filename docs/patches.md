@@ -32,8 +32,13 @@ becomes durable, prefer a named patch that another maintainer can review.
 
 The Lemonade patches apply to the `nisavid/lemonade` fork commit named by the
 `lemonade` entry in the `[source_pins]` table of
-`policies/recipe-packages.toml`. That fork commit contains upstream Lemonade
-v11.7.0 (`2b6a7d7`).
+`policies/recipe-packages.toml`. That fork commit is the fork's upstream
+v11.9.0 sync ([nisavid/lemonade#175](https://github.com/nisavid/lemonade/pull/175)),
+which contains upstream Lemonade v11.9.0 (`bb39eaf`). At the 11.9.0 repin
+([issue 141](https://github.com/nisavid/arch-strix-halo-pkgs/issues/141)),
+patches 0001-0004 applied in order with line offsets only and no fuzz, and the
+upstream changes to the patched files do not touch the patched hunks, so they
+are carried unchanged.
 
 - [Linux NPU fallback when accel-device opens fail](../packages/lemonade-server/0001-linux-npu-fallback-to-pci-id-when-accel-open-fails.patch)
   - Falls back to PCI identification when `/dev/accel/*` probing fails even
@@ -42,10 +47,10 @@ v11.7.0 (`2b6a7d7`).
   - Makes Lemonade treat the packaged ROCm and Vulkan `llama.cpp` backends as
     system-managed backends rather than downloadable runtimes, and reads their
     version from `llama-server --version` through an argv-based process call.
-  - Lemonade 11.7 reads `LEMONADE_LLAMACPP_*_BIN` from the environment ahead
-    of `config.json` on every backend lookup. The patch therefore no longer
-    carries the config-load environment overlay or the CLI backend-table
-    change that older bases needed.
+  - Lemonade reads `LEMONADE_LLAMACPP_*_BIN` from the environment ahead of
+    `config.json` on every backend lookup (still true at 11.9.0). The patch
+    therefore no longer carries the config-load environment overlay or the
+    CLI backend-table change that older bases needed.
 - [Remove the generic `llamacpp:system` backend](../packages/lemonade-server/0003-remove-llamacpp-system-backend.patch)
   - Keeps this custom build focused on the explicit HIP and Vulkan lanes this
     repo packages.
@@ -53,44 +58,27 @@ v11.7.0 (`2b6a7d7`).
   - Makes the Lemonade GUI and backend API report the packaged `llama.cpp`
     revision and upstream `ggml-org/llama.cpp` release URL for the local ROCm
     and Vulkan lanes.
-- [Merge custom args without keeping quotes](../packages/lemonade-server/0005-merge-custom-args-without-keeping-quotes.patch)
-  - Makes `RecipeOptions::inherit` tokenize both `*_args` strings with
-    `parse_custom_args(..., false)` before it merges them.
-    `map_to_args_string` already quotes values that contain spaces or quotes,
-    so a merged value such as `{"preserve_thinking":true}` or `"a b"` reaches
-    the child process as one unquoted argv value. Merged values that start
-    with `-` and are not numbers, or that are empty, remain unsupported while
-    this patch carries: the first becomes a separate flag and the second is
-    dropped. The unpatched fork breaks them too, by double-quoting them. The
-    packaged `llamacpp.args` (`--no-mmap`) and the architecture defaults at
-    `3d5991033` carry no such value. The fork fix below covers them.
-  - Without the patch, the merge keeps the quote characters as part of the
-    value and then quotes it again. llama-server then receives
-    `'{"preserve_thinking":true}'` for the qwen35 and qwen35moe
-    `--chat-template-kwargs` architecture default, fails to parse the JSON,
-    and exits. The merge runs whenever model or architecture args meet
-    non-empty global `llamacpp.args`, and the distro defaults always set
-    `--no-mmap`, so every qwen35 and qwen35moe model failed to load.
-  - This is a fork-only regression. Fork commit `e3d08ffa6` added
-    `quote_custom_arg_value()` to `map_to_args_string`, which stacks a second
-    quoting layer on upstream's `keep_quotes=true` merge
-    ([lemonade-sdk/lemonade#1920](https://github.com/lemonade-sdk/lemonade/pull/1920)).
-    Upstream v11.6.0, v11.7.0, and v11.9.0 produce the correct argv. The two
-    mechanisms first coexist in the fork's v10.6.0 merge, and the qwen35
-    architecture default that exposes them arrived with its v11.6.0 merge.
-  - The fork fix is
-    [nisavid/lemonade#168](https://github.com/nisavid/lemonade/issues/168),
-    "Stop double-quoting merged custom args", in the fork's `custom_args.h`.
-    Drop this patch at the Lemonade repin to a fork commit that contains
-    #168: the upstream-synced fork main that the M6 repackage in
-    [issue 141](https://github.com/nisavid/arch-strix-halo-pkgs/issues/141)
-    adopts.
-  - [lemonade-sdk/lemonade#3265](https://github.com/lemonade-sdk/lemonade/pull/3265)
-    (`7b5657d80`, first released in v11.8.0) is context only, not the drop
-    condition. It moves the merge into `recipe_arg_resolver.h`
-    `merge_custom_args`, which still parses with `keep_quotes=true`, so with
-    the fork's `custom_args.h` the regression returns after the 11.9 sync
-    unless #168 lands, and this patch no longer applies there.
+  - It reads `LEMONADE_LLAMACPP_{ROCM,VULKAN}_{VERSION,RELEASE_URL}` only
+    from the process environment. From 11.9.0 the package sets them, with the
+    `*_BIN` paths, in `/usr/lib/lemonade/llamacpp-gfx1151.env` instead of
+    `/etc/lemonade/conf.d/10-llamacpp-gfx1151.conf`, with the same values. Its
+    `lemond.service.d/30-env-files.conf` drop-in loads that file after
+    conf.d and `/etc/default/lemond`, so a stale owner key cannot shadow it.
+
+Retired: patch 0005, "Merge custom args without keeping quotes", was a
+stopgap in `lemonade-server 11.7.0-2` for a fork-only regression. Fork commit
+`e3d08ffa6` stacked a second quoting layer on upstream's `keep_quotes=true`
+merge
+([lemonade-sdk/lemonade#1920](https://github.com/lemonade-sdk/lemonade/pull/1920)),
+so llama-server received `'{"preserve_thinking":true}'` for the qwen35 and
+qwen35moe `--chat-template-kwargs` architecture default and exited. The fork
+fix,
+[nisavid/lemonade#168](https://github.com/nisavid/lemonade/issues/168)
+(`2cb1a91`, PR 169), is merged into the v11.9.0 sync (`9038fb0`), so the
+patch was dropped at the 11.9.0 repin. It would no longer apply there anyway:
+upstream moved the merge into `recipe_arg_resolver.h`
+([lemonade-sdk/lemonade#3265](https://github.com/lemonade-sdk/lemonade/pull/3265)).
+`lemonade.chat.pinned-user-model.qwen35moe` remains the live guard.
 
 ## llama.cpp
 
