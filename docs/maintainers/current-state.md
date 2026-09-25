@@ -117,6 +117,13 @@ so the pass stands with this deviation recorded.
 - **Stored custom-arg values:** checked for leftovers of the fork quoting
   regression; there were none.
 
+**Ledger closeout (2026-09-25):** #139 and #140 closed as completed. With
+build, publish, install, and live validation done, `lemonade-fork-3d59910`
+is adopted. `pydantic-core-2.46.5-1-arch`, installed in the same
+transaction, is adopted after its installed smoke (see the pydantic-core
+host hazard below). `lemonade-upstream-11.9.0` stays tracked under the M6
+repackage (#141).
+
 ## 2026-09-23 Lemonade Args-Merge Fix
 
 After the M3 repin, `lemonade-server 11.7.0-1` was built and installed under
@@ -254,11 +261,19 @@ Fix status:
   `BaseModel`. That archive predates the exact `python-pydantic` 2.13.5
   conflicts that the Lemonade repin (#137) added, so it must not be published. The
   guarded source renders as `2.46.5-2`, which the #139 build must produce.
-- Not published, deployed/installed, or installed-smoked. The install rides
-  the Lemonade family install window
-  ([#139](https://github.com/nisavid/arch-strix-halo-pkgs/issues/139)), with
-  the installed import and `BaseModel` smoke afterward. Until then, hold
-  `python-pydantic` at 2.13.4 through any host sync.
+- Published: the #139 build produced the guarded `2.46.5-2` and published
+  it to the `strix-halo-gfx1151` repo in M3.
+- Deployed/installed: with Arch `python-pydantic` 2.13.5 in the Lemonade
+  family transaction
+  ([#139](https://github.com/nisavid/arch-strix-halo-pkgs/issues/139)) on
+  2026-09-23. The host hazard is closed, and `python-pydantic` no longer
+  needs to be held.
+- Installed-smoked on 2026-09-25: `pacman -Qkk` is clean for both packages,
+  and the `pydantic_core` module is owned by
+  `python-pydantic-core-gfx1151 2.46.5-2`. Python 3.14.6 imports pydantic
+  2.13.5 with `pydantic_core` 2.46.5, coerces a `BaseModel` field, and
+  raises `ValidationError` on invalid input. The
+  `pydantic-core-2.46.5-1-arch` candidate is adopted.
 
 ### Closeout sweep
 
