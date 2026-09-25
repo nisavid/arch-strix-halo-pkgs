@@ -58,7 +58,7 @@ states are recorded separately:
 | Pinned qwen35moe chat | `lemonade.chat.pinned-user-model.qwen35moe` | pass |
 | Embeddings (zembed) | `lemonade.pooling.zembed-1-q4-k-m.embeddings` | pass |
 | Rerankers | `lemonade.pooling.bge-reranker-v2-m3.rerank`, `lemonade.reranking.zerank-2.selected-logit` (isolated), `lemonade.reranking.zerank-2.selected-logit.service` | pass |
-| App launch with pin and startup controls, plus one text interaction | `lemonade.app.pin-startup-text` (operator checklist) | pending: owner GUI step |
+| App launch with pin and startup controls, plus one text interaction | `lemonade.app.pin-startup-text` (operator checklist) | pass (owner, 2026-09-25; see below) |
 | Kokoro TTS and the app's TTS interaction | none | deferred to generation C W2B (#113) |
 
 The Open WebUI consumer scenarios for zembed and zerank belong to arch-pkgs
@@ -76,13 +76,26 @@ unchanged.
 Ollama auto-load:
 - Every path refused it.
 - The model cache and the backend cache were unchanged.
-- There were no non-loopback connections.
+- No non-loopback outbound connection from `lemond` or its children was
+  observed during the sampled phases. The check excludes client connections
+  accepted on the service's listening port.
 - Each logged, blackholed download attempt was recorded.
 
-The pre-placed test model then loaded on each path, with no download logged,
-unchanged caches and no remote connection. The ROCm backend's 26 mapped
+The pre-placed test model then loaded on each path with no download logged,
+unchanged caches, and no non-loopback outbound connection observed. The ROCm backend's 26 mapped
 ROCm, HIP and llama.cpp libraries are all owned by `strix-halo-gfx1151`
 packages. None come from lemond's cache.
+
+**App operator checklist** (`lemonade.app.pin-startup-text`): the owner ran it
+in the desktop session on 2026-09-25 against `lemonade-app 11.7.0-1` and
+`lemonade-server 11.7.0-2`. All five steps passed:
+1. The app launched and its About dialog showed version 11.7.0.
+2. Pinning the built-in `Qwen3-0.6B-GGUF` listed it in `/api/v1/pins` as
+   loaded and added it to the persisted `pinned_models`.
+3. Unpinning removed it from both, leaving the five owner pins loaded.
+4. One chat prompt rendered a text reply.
+5. The model was unloaded, and the final pins and persisted `pinned_models`
+   were exactly the five owner pins, all loaded.
 
 **Owner decisions recorded during M4:**
 - **Slot limit:** `max_loaded_models` changed from 2 to -1 (unlimited) on
