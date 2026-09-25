@@ -117,12 +117,24 @@ so the pass stands with this deviation recorded.
 - **Stored custom-arg values:** checked for leftovers of the fork quoting
   regression; there were none.
 
-**Ledger closeout (2026-09-25):** #139 and #140 closed as completed. With
-build, publish, install, and live validation done, `lemonade-fork-3d59910`
-is adopted. `pydantic-core-2.46.5-1-arch`, installed in the same
-transaction, is adopted after its installed smoke (see the pydantic-core
-host hazard below). `lemonade-upstream-11.9.0` stays tracked under the M6
-repackage (#141).
+**Ledger closeout (2026-09-25):** #139 and #140 closed as completed. The
+first #139 build, from main `d129835`, published `lemonade-app` and
+`lemonade` 11.7.0-1, `python-pydantic-core-gfx1151` 2.46.5-2, and the
+unchanged llama.cpp b9442 backends. The 11.7.0-2 server build above replaced
+only `lemonade-server`.
+- `lemonade-fork-3d59910` is adopted: its build, publish, install, and
+  live-validation gates are done. Kokoro TTS was deferred to #113 by
+  decision and does not gate this candidate.
+- `pydantic-core-2.46.5-1-arch`, installed in the same transaction, is
+  adopted after its installed smoke (see the pydantic-core host hazard
+  below).
+- `lemonade-upstream-11.9.0` stays tracked under the M6 repackage (#141).
+
+The explicit tracker validation then found all 11 unique issue gates open.
+The 24-hour freshness sweep was not rerun for this closeout, and it is due.
+A cache-aware Lemonade check already reports fork main past `3d5991033` and
+a new upstream release. Neither Lemonade record matches that result, so it
+needs a disposition in that sweep.
 
 ## 2026-09-23 Lemonade Args-Merge Fix
 
@@ -244,12 +256,13 @@ is not part of this admission.
 
 ### pydantic-core host hazard
 
-The host has `python-pydantic` 2.13.4 with `python-pydantic-core-gfx1151`
-2.46.4. Arch `python-pydantic` 2.13.5 requires pydantic-core 2.46.5 exactly
-but depends on an unversioned `python-pydantic-core`. A routine host sync would
-therefore install a mismatched pair, and `import pydantic` would raise
-`SystemError` for vLLM, FastAPI, OpenAI, mistral-common, and huggingface-hub
-consumers.
+Closed on 2026-09-23 by the #139 install; see the fix status below. Before
+that install, the host had `python-pydantic` 2.13.4 with
+`python-pydantic-core-gfx1151` 2.46.4. Arch `python-pydantic` 2.13.5 requires
+pydantic-core 2.46.5 exactly but depends on an unversioned
+`python-pydantic-core`. A routine host sync would therefore have installed a
+mismatched pair, and `import pydantic` would have raised `SystemError` for
+vLLM, FastAPI, OpenAI, mistral-common, and huggingface-hub consumers.
 
 Fix status:
 
@@ -259,12 +272,12 @@ Fix status:
   `python-pydantic-core-gfx1151-2.46.5-1-x86_64.pkg.tar.zst`. An
   extracted-archive smoke imported it with pydantic 2.13.5 and validated a
   `BaseModel`. That archive predates the exact `python-pydantic` 2.13.5
-  conflicts that the Lemonade repin (#137) added, so it must not be published. The
-  guarded source renders as `2.46.5-2`, which the #139 build must produce.
-- Published: the #139 build produced the guarded `2.46.5-2` and published
-  it to the `strix-halo-gfx1151` repo in M3.
-- Deployed/installed: with Arch `python-pydantic` 2.13.5 in the Lemonade
-  family transaction
+  conflicts that the Lemonade repin (#137) added, so it was not published.
+  The guarded source renders as `2.46.5-2`.
+- Published: the #139 build produced `2.46.5-2` and published it to the
+  `strix-halo-gfx1151` repo.
+- Deployed/installed: installed alongside Arch `python-pydantic` 2.13.5 in
+  the Lemonade family transaction
   ([#139](https://github.com/nisavid/arch-strix-halo-pkgs/issues/139)) on
   2026-09-23. The host hazard is closed, and `python-pydantic` no longer
   needs to be held.
@@ -272,8 +285,7 @@ Fix status:
   and the `pydantic_core` module is owned by
   `python-pydantic-core-gfx1151 2.46.5-2`. Python 3.14.6 imports pydantic
   2.13.5 with `pydantic_core` 2.46.5, coerces a `BaseModel` field, and
-  raises `ValidationError` on invalid input. The
-  `pydantic-core-2.46.5-1-arch` candidate is adopted.
+  raises `ValidationError` on invalid input.
 
 ### Closeout sweep
 
