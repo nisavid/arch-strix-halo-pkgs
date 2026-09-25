@@ -12,7 +12,7 @@ at the paths the host will have after W5.
 | File | Purpose |
 | --- | --- |
 | `makepkg.conf` | The one makepkg.conf for root builds. `enter` binds it read-only at `/etc/makepkg.conf`. |
-| `torch-chain.targets` | Targets for the torch-chain root (base-devel, build tools, F and the torch makedepends). |
+| `torch-chain.targets` | Targets for the torch-chain root (base-devel, build tools, F, the torch makedepends and the protobuf and Abseil floors that MIGraphX needs). |
 | `py-closure.targets` | Extra build tools for the #110 model/runtime Python closure: meson-python, Cython, maturin, the Rust toolchain and `llvm`. Resolve it together with `torch-chain.targets` to build the closure. |
 | `model-closure.targets` | The #110 closure packages as built into `ashp-w2a`. Resolve it together with `torch-chain.targets` to get a root that can import them. |
 | `vllm-build.targets` | Build tools for the vLLM 0.30.0 package (#111): setuptools-rust, semantic-version and the Arch Rust toolchain. Resolve it together with `torch-chain.targets`. |
@@ -120,7 +120,9 @@ for about 30 GiB, and `$STAGING` for the directory that holds the
    example, `python-pydantic>=2.13.5` in `model-closure.targets` keeps a host
    pydantic 2.13.4 out. Exact pins in the newer DB entry of a package that is
    itself locked at the host version do not count, because the host pair is
-   already consistent.
+   already consistent. A constraint on a provide, such as a soname pin, is
+   checked against the provides in the host file's own `.PKGINFO`, not the
+   DB entry's; see [the F protobuf and Abseil contract](#f-protobuf-and-abseil-contract-108).
 
    The command exits nonzero while the lock has problems. `missing-file`
    problems are fixed with
@@ -409,3 +411,33 @@ names both.
 
 A fresh vLLM root is `torch-chain.targets` plus `vllm-build.targets`, with the
 W2A torch-chain builds added.
+
+## F protobuf and Abseil contract (#108)
+
+MIGraphX 2.16.1 (`migraphx-gfx1151` 7.14.1-1 in F) is linked against Arch
+protobuf 36.1 and Abseil 20260817 on purpose. Its package declares
+`libprotobuf.so=36.1.0-64` and no Abseil dependency, and protobuf depends on
+plain `abseil-cpp`. Abseil has no soname in the package graph, so nothing but
+this contract ties the two versions together.
+
+- **Build roots.** `torch-chain.targets` names `protobuf>=36.1` and
+  `abseil-cpp>=20260817.0`. The other targets files are always resolved with
+  it, so they need no pins of their own.
+- **Resolver fix.** Before this fix, `resolve` checked a host substitute
+  against the sync DB entry's provides. A host protobuf 35.1 therefore passed
+  for `libprotobuf.so=36.1.0-64`, because the 36.1 DB entry provides it. The
+  W2A lock recorded protobuf 35.1 from the host cache under the 36.1 file name
+  with no sync-DB sha256. Abseil then stayed at the host's 20260526, because
+  the only package that needed it was the host-locked protobuf. `resolve` now
+  reads the host file's own `.PKGINFO` provides and uses the host version only
+  when those meet every binding constraint. If it cannot read them, it does
+  not use the host version for any binding constraint on a provide.
+- **Existing W2A root.** A root populated before the fix holds protobuf 35.1
+  and Abseil 20260526. Before the torch-migraphx smokes are re-run, re-lock the
+  root with the fixed tool and the pinned targets, `fetch` the new files,
+  `populate` a fresh root, and `add` the W2A-built packages back into it.
+- **Host at W5.** The host moves to protobuf 36.1 and Abseil 20260817 in the
+  W5 transaction, through a full `pacman -Syu`. Never install F or protobuf
+  with a partial `pacman -U`: pacman tracks the protobuf soname, but not the
+  Abseil version, so a partial update can leave a protobuf 36.1 that needs
+  Abseil 20260817 on top of an older Abseil.
