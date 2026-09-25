@@ -64,6 +64,7 @@
       "vLLM 0.30.0 mirrors HIP_VISIBLE_DEVICES into CUDA_VISIBLE_DEVICES at import and raises if both are set to different values. Prefer HIP_VISIBLE_DEVICES for device selection. As of 2026-09-25 no tracked scenario, smoke helper, or service unit sets either variable.",
       "`python -m vllm.entrypoints.openai.api_server` is deprecated in 0.30.0. The tracked server smoke helpers launch `python -m vllm.entrypoints.cli.main serve` from the active interpreter instead.",
       "vLLM 0.30.0 requirement floors. This repo does not write versions into depends, because the package graph matches depends by exact name, so the floors are recorded here. Met by the W2A lanes: transformers >=5.10.4 (python-transformers-gfx1151 5.16.1), mistral_common[image] >=1.11.6 (python-mistral-common-gfx1151 1.11.7), safetensors >=0.6.2 (python-safetensors-gfx1151 0.8.0). Met by Arch: huggingface_hub >=1.31.0 (python-huggingface-hub 1:1.32.0; `model-closure.targets` floors it because older host versions exist), openai >=2.25.0 (python-openai), starlette >=1.0.1 (python-starlette), jsonschema >=4.23.0 (python-jsonschema). Not met: prometheus-fastapi-instrumentator >=8.0.0 has only AUR 7.0.0 (the open #110 gap), and Arch python-fastapi is above the fastapi[standard] >=0.133.0,<0.137.0 cap; upstream caps it for model-hosting-container-standards (SageMaker) handler overrides, which this package leaves optional. Not in depends: compressed-tensors ==0.17.0 (python-compressed-tensors-gfx1151 0.17.0 is in the W2A closure), mcp >=2.0.0,<3.0.0 and llguidance >=1.7.0,<1.8.0.",
+      "On 2026-09-25, dropped python-diskcache from depends and optdepends. vLLM 0.30.0 at ced6857a has no diskcache user: requirements/, setup.py, and pyproject.toml do not list it, and the outlines index cache in `vllm/v1/structured_output/utils.py` is vLLM's own SQLite-backed `OutlinesDiskCache`. Re-add it only if a packaged consumer imports `diskcache` again.",
       "Treat runtime validation against the live ROCm stack as mandatory; a successful wheel build is not enough."
     ]
   },
@@ -154,7 +155,6 @@
       "rocm-llvm-gfx1151"
     ],
     "optdepends": [
-      "python-diskcache: third-party outlines-based structured-output integrations; vLLM 0.30.0 itself no longer imports it",
       "python-gguf: GGUF checkpoints through the out-of-tree vllm-gguf-plugin (vllm[extra-quant]), which is not packaged here"
     ],
     "options": [
@@ -260,6 +260,7 @@
       "vLLM 0.30.0 mirrors HIP_VISIBLE_DEVICES into CUDA_VISIBLE_DEVICES at import and raises if both are set to different values. Prefer HIP_VISIBLE_DEVICES for device selection. As of 2026-09-25 no tracked scenario, smoke helper, or service unit sets either variable.",
       "`python -m vllm.entrypoints.openai.api_server` is deprecated in 0.30.0. The tracked server smoke helpers launch `python -m vllm.entrypoints.cli.main serve` from the active interpreter instead.",
       "vLLM 0.30.0 requirement floors. This repo does not write versions into depends, because the package graph matches depends by exact name, so the floors are recorded here. Met by the W2A lanes: transformers >=5.10.4 (python-transformers-gfx1151 5.16.1), mistral_common[image] >=1.11.6 (python-mistral-common-gfx1151 1.11.7), safetensors >=0.6.2 (python-safetensors-gfx1151 0.8.0). Met by Arch: huggingface_hub >=1.31.0 (python-huggingface-hub 1:1.32.0; `model-closure.targets` floors it because older host versions exist), openai >=2.25.0 (python-openai), starlette >=1.0.1 (python-starlette), jsonschema >=4.23.0 (python-jsonschema). Not met: prometheus-fastapi-instrumentator >=8.0.0 has only AUR 7.0.0 (the open #110 gap), and Arch python-fastapi is above the fastapi[standard] >=0.133.0,<0.137.0 cap; upstream caps it for model-hosting-container-standards (SageMaker) handler overrides, which this package leaves optional. Not in depends: compressed-tensors ==0.17.0 (python-compressed-tensors-gfx1151 0.17.0 is in the W2A closure), mcp >=2.0.0,<3.0.0 and llguidance >=1.7.0,<1.8.0.",
+      "On 2026-09-25, dropped python-diskcache from depends and optdepends. vLLM 0.30.0 at ced6857a has no diskcache user: requirements/, setup.py, and pyproject.toml do not list it, and the outlines index cache in `vllm/v1/structured_output/utils.py` is vLLM's own SQLite-backed `OutlinesDiskCache`. Re-add it only if a packaged consumer imports `diskcache` again.",
       "Treat runtime validation against the live ROCm stack as mandatory; a successful wheel build is not enough."
     ],
     "upstream_version": "0.30.0",

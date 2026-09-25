@@ -47,16 +47,21 @@ def test_vllm_depends_on_the_new_0_30_common_requirements():
     assert "python-safetensors" not in depends
 
 
-def test_vllm_moves_gguf_and_diskcache_to_optdepends_with_reasons():
-    # vLLM 0.30.0 dropped both from requirements/common.txt and imports
-    # neither; GGUF loading moved to the out-of-tree vllm-gguf-plugin.
+def test_vllm_moves_gguf_to_optdepends_with_reason():
+    # vLLM 0.30.0 dropped gguf from requirements/common.txt and no longer
+    # imports it; GGUF loading moved to the out-of-tree vllm-gguf-plugin.
     depends = pkgbuild_array("depends")
     optdepends = optdepends_by_name()
 
-    for name in ("python-gguf", "python-diskcache"):
-        assert name not in depends
-        assert optdepends.get(name), f"{name} needs an optdepends reason"
-    assert "vllm-gguf-plugin" in optdepends["python-gguf"]
+    assert "python-gguf" not in depends
+    assert "vllm-gguf-plugin" in optdepends.get("python-gguf", "")
+
+
+def test_vllm_drops_diskcache_entirely():
+    # vLLM 0.30.0 at ced6857a has no diskcache user: the outlines index cache
+    # is vLLM's own SQLite-backed OutlinesDiskCache.
+    assert "python-diskcache" not in pkgbuild_array("depends")
+    assert "python-diskcache" not in optdepends_by_name()
 
 
 def test_vllm_depends_carry_no_version_operators():
