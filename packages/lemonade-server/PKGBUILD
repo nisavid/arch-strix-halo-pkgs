@@ -169,8 +169,8 @@ package() {
         return 1
       fi
     done
-    if [[ $(grep -c '^ExecStart=' "${_unit}") -ne 1 ]] ||
-      grep -qE '^Environment=.*(LEMONADE_CACHE_DIR|HOME|XDG_[A-Z_]+)=' "${_unit}"; then
+    if [[ $(grep -cE '^[[:space:]]*ExecStart[[:space:]]*=' "${_unit}") -ne 1 ]] ||
+      grep -qE '^[[:space:]]*Environment[[:space:]]*=.*(LEMONADE_CACHE_DIR|HOME|XDG_[A-Z_]+)=' "${_unit}"; then
       echo "LEMOND_UNIT_LAYOUT: ${_unit} overrides lemond's config or cache dir" >&2
       return 1
     fi

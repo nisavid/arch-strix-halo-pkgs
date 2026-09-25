@@ -82,10 +82,10 @@ processes; otherwise they fail with `backend_maps_unreadable`.
     and `/health`, and posts two `/reranking` requests. It does not check the
     pin itself; the consumer-pins scenario does.
 - `isolated-lemond`: starts a private `lemond` from `/usr/bin/lemond` with a
-  temporary cache directory, which also holds its config. When the inherited
-  `XDG_RUNTIME_DIR` is unset or unwritable, it gets a private runtime dir under
-  the same temporary root. The config is offline, backend fetching is
-  disabled, and the packaged llama.cpp backends are used. The scenario reaches
+  temporary cache directory, which also holds its config. It always gets a
+  private `XDG_RUNTIME_DIR` under the same temporary root, never the inherited
+  one. The config is offline, backend fetching is disabled, and the packaged
+  llama.cpp backends are used. The scenario reaches
   the test GGUF through a temporary `extra_models_dir`. The service's pins and
   config are never touched, and the temporary state is removed on exit. These
   scenarios still load models on the shared GPU.
@@ -167,9 +167,10 @@ has to account for it:
   `lemond` has no positional argument and no `LEMONADE_CACHE_DIR`, so the
   no-fetch cache diff and the check that loaded libraries do not come from
   the cache's `bin/` watch `/var/cache/lemonade` rather than the drained
-  legacy dir. The isolated `lemond` gets a private `XDG_RUNTIME_DIR` when the
-  inherited one is unset or unwritable, as it can be under `sudo`, because
-  the 11.9 `lemond` fails at startup without a writable runtime dir. It also
+  legacy dir. The isolated `lemond` always gets a private `XDG_RUNTIME_DIR`,
+  because the 11.9 `lemond` fails at startup without a writable runtime dir
+  and `sudo` can leave the inherited one unset or owned by another user,
+  where files would outlive the temporary root's cleanup. It also
   drops `CACHE_DIRECTORY`, `STATE_DIRECTORY`, and `RUNTIME_DIRECTORY` from
   the isolated `lemond`'s environment, because `lemond` takes its dirs from
   them: a runner started inside a systemd unit would otherwise make the

@@ -1578,12 +1578,12 @@ class IsolatedLemond:
         }
         # Lemonade 11.9 lemond throws at startup without a writable runtime dir,
         # and sudo can leave XDG_RUNTIME_DIR unset or pointing at another user's.
-        inherited = env.get("XDG_RUNTIME_DIR", "")
-        if not (inherited and os.path.isdir(inherited) and os.access(inherited, os.W_OK)):
-            assert self.root is not None
-            runtime_dir = self.root / "runtime"
-            runtime_dir.mkdir(mode=0o700, exist_ok=True)
-            env["XDG_RUNTIME_DIR"] = str(runtime_dir)
+        # Never reuse the inherited one: files lemond left there would outlive
+        # the private root's cleanup.
+        assert self.root is not None
+        runtime_dir = self.root / "runtime"
+        runtime_dir.mkdir(mode=0o700, exist_ok=True)
+        env["XDG_RUNTIME_DIR"] = str(runtime_dir)
         self.proc = subprocess.Popen(
             [
                 self.args.lemond,

@@ -1251,6 +1251,11 @@ ExecStart=/usr/bin/lemond
         (LEMOND_UNIT_OK + "Environment=LEMONADE_CACHE_DIR=/srv/lemonade\n", False),
         (LEMOND_UNIT_OK + "Environment=HOME=/srv/lemonade\n", False),
         (LEMOND_UNIT_OK + "Environment=XDG_CONFIG_HOME=/srv\n", False),
+        # systemd ignores whitespace around "=", so spaced directives count too.
+        (LEMOND_UNIT_OK + "ExecStart = /usr/bin/lemond /var/cache/lemonade\n", False),
+        (LEMOND_UNIT_OK + "  ExecStart=/usr/bin/lemond\n", False),
+        (LEMOND_UNIT_OK + "Environment = HOME=/srv/lemonade\n", False),
+        (LEMOND_UNIT_OK + "  Environment=XDG_CONFIG_HOME=/srv\n", False),
     ],
 )
 def test_lemond_unit_check_accepts_only_the_split_config_and_cache_layout(

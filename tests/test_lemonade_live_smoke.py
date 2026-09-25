@@ -363,11 +363,13 @@ def _isolated_runtime_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tu
     return seen, state
 
 
-def test_isolated_lemond_gives_lemond_a_private_runtime_dir_when_none_is_usable(
+def test_isolated_lemond_always_gives_lemond_a_private_runtime_dir(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
     # Lemonade 11.9 lemond throws at startup without a writable runtime dir,
-    # and sudo can leave XDG_RUNTIME_DIR unset or pointing at another user's dir.
+    # and sudo can leave XDG_RUNTIME_DIR unset or pointing at another user's
+    # dir, so the isolated lemond never reuses the inherited one: anything it
+    # left there would outlive the private root's cleanup.
     monkeypatch.delenv("XDG_RUNTIME_DIR", raising=False)
     seen, state = _isolated_runtime_dir(tmp_path, monkeypatch)
     assert Path(seen).parent.name.startswith("lemonade-live-") and state == "writable"
@@ -376,14 +378,13 @@ def test_isolated_lemond_gives_lemond_a_private_runtime_dir_when_none_is_usable(
     seen, state = _isolated_runtime_dir(tmp_path, monkeypatch)
     assert Path(seen).parent.name.startswith("lemonade-live-") and state == "writable"
 
-
-def test_isolated_lemond_keeps_a_writable_inherited_runtime_dir(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-):
-    runtime = tmp_path / "runtime"
-    runtime.mkdir(mode=0o700)
-    monkeypatch.setenv("XDG_RUNTIME_DIR", str(runtime))
-    assert _isolated_runtime_dir(tmp_path, monkeypatch) == (str(runtime), "writable")
+    inherited = tmp_path / "runtime"
+    inherited.mkdir(mode=0o700)
+    monkeypatch.setenv("XDG_RUNTIME_DIR", str(inherited))
+    seen, state = _isolated_runtime_dir(tmp_path, monkeypatch)
+    assert seen != str(inherited)
+    assert Path(seen).parent.name.startswith("lemonade-live-") and state == "writable"
+    assert list(inherited.iterdir()) == []
 
 
 def test_isolated_lemond_drops_the_runner_units_systemd_directories(
