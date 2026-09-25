@@ -1,0 +1,13 @@
+# Build tools for python-vllm-rocm-gfx1151 0.30.0 (W2A, #111).
+# Resolve together with torch-chain.targets:
+#   c_buildroot.py resolve --targets-file tools/buildroot/torch-chain.targets \
+#     --targets-file tools/buildroot/vllm-build.targets ...
+# vLLM's setup.py imports setuptools_rust, which imports semantic_version.
+# The PKGBUILD names both as makedepends.
+python-setuptools-rust
+python-semantic-version
+# python-setuptools-rust depends on rust. The version floor keeps a host rustup,
+# which provides an unversioned `rust`, from standing in for the real toolchain;
+# rustup would download one at build time. The vLLM build still skips its Rust
+# extensions: build() sets CARGO=/usr/bin/false and RUSTUP_AUTO_INSTALL=0.
+rust>=1:1.90

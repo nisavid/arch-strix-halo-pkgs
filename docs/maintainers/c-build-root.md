@@ -15,6 +15,7 @@ at the paths the host will have after W5.
 | `torch-chain.targets` | Targets for the torch-chain root (base-devel, build tools, F and the torch makedepends). |
 | `py-closure.targets` | Extra build tools for the #110 model/runtime Python closure: meson-python, Cython, maturin, the Rust toolchain and `llvm`. Resolve it together with `torch-chain.targets` to build the closure. |
 | `model-closure.targets` | The #110 closure packages as built into `ashp-w2a`. Resolve it together with `torch-chain.targets` to get a root that can import them. |
+| `vllm-build.targets` | Build tools for the vLLM 0.30.0 package (#111): setuptools-rust, semantic-version and the Arch Rust toolchain. Resolve it together with `torch-chain.targets`. |
 | `probe/` | The no-leak probe: a hipcc program, a CMake HIP library and a makepkg package. |
 
 Nothing in this flow needs root, sudo or `pacman -S/-U/-Sy`, and nothing
@@ -200,10 +201,11 @@ held nothing from `strix-halo-gfx1151`.
   predates F and was already in 7.13. The torch-chain targets list
   `hip-gfx1151` explicitly.
 - vLLM's makedepends bring in `rust`, because `python-setuptools-rust`
-  depends on it. The vLLM step must either fetch crates explicitly or disable
-  the Rust extensions, and its checks must assert which choice was made.
-  `py-closure.targets` also carries `rust`; leave that file out of the vLLM
-  root unless the vLLM step chooses to build its Rust extensions.
+  depends on it. The vLLM package disables the Rust extensions
+  (`CARGO=/usr/bin/false`, `RUSTUP_AUTO_INSTALL=0`) and fails if the wheel
+  contains them. `vllm-build.targets` names the toolchain with a version floor.
+  `py-closure.targets` also carries `rust` and the maturin tools; the vLLM root
+  does not need that file.
 - A bare `rust` target resolves to the host's `rustup`, which provides an
   unversioned `rust` and would download a toolchain at build time. Name the
   target with a version floor (`rust>=1:1.90`) so the real Arch toolchain wins.
@@ -378,3 +380,32 @@ to `ashp-w2a`, and added to the root.
   BLAS backend is hipBLASLt (reported as `Cublaslt`) without
   `TORCH_BLAS_PREFER_HIPBLASLT`; `scaled_dot_product_attention` passes; and
   `torch.compile` through Triton passes.
+
+## W2A vLLM build tools (#111)
+
+On 2026-09-25 the vLLM 0.30.0 build tools were added to the root before the
+vLLM build, so the root matches the package's makedepends. vLLM's `setup.py`
+imports `setuptools_rust`, which imports `semantic_version`, and the package
+names both.
+
+- **Targets:** `vllm-build.targets` lists `python-setuptools-rust`,
+  `python-semantic-version` and `rust>=1:1.90`.
+- **Lock:** `resolve` over `torch-chain.targets` plus `vllm-build.targets`
+  produced 434 packages with no problems. Against the root's manifest the lock
+  adds seven packages and changes no versions:
+  - `python-setuptools-rust` 1.13.0-1 and `python-semantic-version` 2.10.0-9
+    (host cache, `extra`);
+  - `rust` 1:1.98.1-1.1 (`cachyos-extra-znver4`, from the fetch cache);
+  - `compiler-rt`, `lld` and `libgit2`, which `rust` depends on, and `llhttp`
+    (host cache, `cachyos-extra-znver4`).
+  Each file's sha256 matched its sync DB entry.
+- **Add:** `c_buildroot.py add` extracted the seven files with the lock's
+  source label for each. The root's W2A builds (PyTorch, TorchVision and
+  FlashAttention) stay in place.
+- **Checks:** `verify` found 437 packages, 21,875 `/opt` files and no
+  violations. Inside the root, `import setuptools_rust, semantic_version`
+  reports setuptools-rust 1.13.0 and semantic-version 2.10.0 under Python
+  3.14.7.
+
+A fresh vLLM root is `torch-chain.targets` plus `vllm-build.targets`, with the
+W2A torch-chain builds added.
