@@ -145,9 +145,6 @@ becomes durable, prefer a named patch that another maintainer can review.
 - [Honor `PYTORCH_ROCM_ARCH` instead of hard-coding `gfx942`](../packages/python-torchao-rocm-gfx1151/0001-setup.py-honor-pytorch-rocm-arch.patch)
   - Makes the upstream ROCm build use an explicit environment-selected target
     arch so the local package can build for `gfx1151`.
-- [Python 3.14 PT2E union aliases](../packages/python-torchao-rocm-gfx1151/0002-python-3.14-pt2e-union-aliases.patch)
-  - Keeps `torchao.quantization.pt2e` importable on Python 3.14 by guarding
-    `typing.Union` alias metadata writes.
 
 ## Torch-MIGraphX
 

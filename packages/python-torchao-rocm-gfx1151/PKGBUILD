@@ -5,8 +5,8 @@
 # Package recipe key: native_wheels
 
 pkgname=python-torchao-rocm-gfx1151
-pkgver=0.17.0
-pkgrel=6
+pkgver=0.18.0
+pkgrel=1
 pkgdesc='Package for applying ao techniques to GPU models with ROCm, rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://github.com/pytorch/ao
@@ -18,8 +18,8 @@ options=()
 provides=(python-torchao python-torchao-rocm)
 conflicts=(python-torchao python-torchao-rocm)
 replaces=()
-source=('torchao::git+https://github.com/pytorch/ao.git#tag=v0.17.0' 0001-setup.py-honor-pytorch-rocm-arch.patch 0002-python-3.14-pt2e-union-aliases.patch)
-sha256sums=(SKIP SKIP SKIP)
+source=('torchao::git+https://github.com/pytorch/ao.git#tag=v0.18.0' 0001-setup.py-honor-pytorch-rocm-arch.patch)
+sha256sums=(SKIP SKIP)
 
 prepare() {
   cd "$srcdir/torchao"
@@ -30,9 +30,6 @@ prepare() {
   fi
   if ! patch --dry-run -R -Np1 -i "$srcdir/0001-setup.py-honor-pytorch-rocm-arch.patch" >/dev/null 2>&1; then
     patch -Np1 -i "$srcdir/0001-setup.py-honor-pytorch-rocm-arch.patch"
-  fi
-  if ! patch --dry-run -R -Np1 -i "$srcdir/0002-python-3.14-pt2e-union-aliases.patch" >/dev/null 2>&1; then
-    patch -Np1 -i "$srcdir/0002-python-3.14-pt2e-union-aliases.patch"
   fi
 }
 

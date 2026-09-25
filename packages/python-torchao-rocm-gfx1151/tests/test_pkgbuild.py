@@ -17,12 +17,13 @@ PT2E_PATCH = (
 )
 
 
-def test_pkgbuild_uses_torch_2_11_compatible_torchao_lane():
+def test_pkgbuild_uses_torch_2_12_compatible_torchao_lane():
     text = PKGBUILD.read_text()
 
     assert "pkgname=python-torchao-rocm-gfx1151" in text
-    assert "pkgver=0.17.0" in text
-    assert "pkgrel=6" in text
+    assert "pkgver=0.18.0" in text
+    assert "pkgrel=1" in text
+    assert "ao.git#tag=v0.18.0" in text
     assert "python-pytorch-opt-rocm-gfx1151" in text
     assert "VERSION_SUFFIX=" in text
     assert "ROCM_HOME=/opt/rocm" in text
@@ -31,7 +32,7 @@ def test_pkgbuild_uses_torch_2_11_compatible_torchao_lane():
     assert 'export CCACHE_DIR="${_ccache_cache}"' in text
     assert "patchelf" in text
     assert PATCH.name in text
-    assert PT2E_PATCH.name in text
+    assert PT2E_PATCH.name not in text
 
 
 def test_patch_makes_rocm_arch_configurable():
@@ -42,28 +43,30 @@ def test_patch_makes_rocm_arch_configurable():
     assert '+        extra_compile_args["nvcc"].append(f"--offload-arch={rocm_arch}")' in text
 
 
-def test_pt2e_patch_handles_python_3_14_union_aliases():
-    text = PT2E_PATCH.read_text()
+def test_pt2e_union_alias_patch_is_retired_upstream():
+    # TorchAO 0.18.0 guards the typing.Union __module__ writes with
+    # sys.version_info < (3, 14), so the local Python 3.14 patch is gone.
+    readme = README.read_text()
 
-    assert "ObserverOrFakeQuantize.__module__" in text
-    assert "except AttributeError" in text
+    assert not PT2E_PATCH.exists()
+    assert PT2E_PATCH.name not in RECIPE_JSON.read_text()
+    assert "sys.version_info < (3, 14)" in readme
 
 
 def test_package_docs_record_compatibility_and_runpath_story():
     readme = README.read_text()
     recipe = RECIPE_JSON.read_text()
 
-    assert "0.17.0" in readme
+    assert "0.18.0" in readme
     assert "torch 2.11.0+" in readme
+    assert "python-pytorch-opt-rocm-gfx1151 2.12.0" in readme
     assert "VERSION_SUFFIX" in readme
     assert "ROCM_HOME=/opt/rocm" in readme
     assert "torch/lib" in readme
-    assert "PT2E" in readme
     assert "tools/torchao_vllm_smoke.py" in readme
     assert "Stored version is not the same as current default version" in readme
-    assert "0.17.0" in recipe
+    assert "0.18.0" in recipe
     assert "ROCM_HOME=/opt/rocm" in recipe
-    assert PT2E_PATCH.name in recipe
     assert "tools/torchao_vllm_smoke.py" in recipe
 
 

@@ -379,8 +379,8 @@ packages = ["python-torchao-rocm-gfx1151"]
 priority = "medium"
 workflow = "upstream_source_update"
 checks = [
-  { id = "pypi", role = "primary", kind = "pypi", package = "torchao", recorded = "0.17.0", comparison = "pep440" },
-  { id = "tag", role = "primary", kind = "github_tags", repo = "pytorch/ao", recorded = "0.17.0", tag_prefix = "v", comparison = "pep440", include_prereleases = false },
+  { id = "pypi", role = "primary", kind = "pypi", package = "torchao", recorded = "0.18.0", comparison = "pep440" },
+  { id = "tag", role = "primary", kind = "github_tags", repo = "pytorch/ao", recorded = "0.18.0", tag_prefix = "v", comparison = "pep440", include_prereleases = false },
 ]
 
 [families.torch_migraphx]
