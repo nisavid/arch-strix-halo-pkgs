@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Strix Halo Packaging <packaging@example.invalid>
+Date: Tue, 22 Sep 2026 00:00:00 +0000
+Subject: [PATCH] Do not install the system AOTriton prefix into torch
+
+When AOTRITON_INSTALLED_PREFIX points at the system prefix (/usr), upstream
+installs $prefix/lib and $prefix/include into torch/, which copies the whole
+system library tree and fails on unreadable Python bytecode. Arch carries the
+same one-hunk removal as aotriton_disable_install.patch.
+
+---
+ cmake/External/aotriton.cmake | 4 ----
+ 1 file changed, 4 deletions(-)
+
+diff --git a/cmake/External/aotriton.cmake b/cmake/External/aotriton.cmake
+index 12ad8fa..6217c6e 100644
+--- a/cmake/External/aotriton.cmake
++++ b/cmake/External/aotriton.cmake
+@@ -248,10 +248,6 @@ if(NOT __AOTRITON_INCLUDED)
+ 
+   # Note it is INSTALL"ED"
+   if(DEFINED ENV{AOTRITON_INSTALLED_PREFIX})
+-    install(DIRECTORY
+-            $ENV{AOTRITON_INSTALLED_PREFIX}/lib
+-            $ENV{AOTRITON_INSTALLED_PREFIX}/include
+-            DESTINATION ${__AOTRITON_INSTALL_DIR})
+     set(__AOTRITON_INSTALL_DIR "$ENV{AOTRITON_INSTALLED_PREFIX}")
+     message(STATUS "Using Preinstalled AOTriton at ${__AOTRITON_INSTALL_DIR}")
+   elseif(DEFINED ENV{AOTRITON_INSTALL_FROM_SOURCE})

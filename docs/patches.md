@@ -105,6 +105,16 @@ becomes durable, prefer a named patch that another maintainer can review.
   - Loads NumPy's OpenBLAS provider before PyTorch loads ROCm global
     dependencies, keeping `import torch` stable on the installed TheRock 7.13
     runtime stack.
+- [Enable CK GEMM on gfx1151](../packages/python-pytorch-opt-rocm-gfx1151/0005-enable-ck-gemm-on-gfx1151.patch)
+  - Adds gfx1151 to `Context::ckSupported()`. Refreshed at `13da0862`, where
+    upstream's list dropped gfx90a and is now `gfx942` and `gfx950`.
+- [Do not install the system AOTriton prefix into torch](../packages/python-pytorch-opt-rocm-gfx1151/0010-disable-system-aotriton-install.patch)
+  - Removes the `aotriton.cmake` rule that copies `$AOTRITON_INSTALLED_PREFIX`
+    `lib` and `include` (the system `/usr`) into `torch/`. Arch carries the
+    same hunk as `aotriton_disable_install.patch`.
+- The AOTriton 0.12 lazy-tensor callback patch (0009) was dropped at
+  `13da0862`, because upstream `LazyTensorFunctions` now handles the 0.12+
+  callback shape behind `AOTRITON_VERSION_INT(0, 12)`.
 
 ## Triton
 

@@ -351,3 +351,30 @@ The in-root smoke ran on the gfx1151 GPU (`enter --gpu`) without torch:
   absolute error.
 
 `verify` found no violations after the add. Nothing was installed on the host.
+
+## W2A ROCm PyTorch 2.12 (#109)
+
+On 2026-09-25 `python-pytorch-opt-rocm-gfx1151` 2.12.0-5 was built, published
+to `ashp-w2a`, and added to the root.
+
+- **Source:** ROCm PyTorch `release/2.12` at `13da0862`, with `USE_MAGMA=0` and
+  `PYTORCH_ROCM_ARCH=gfx1151`, against the root's ROCm Triton 3.8.0 and
+  AOTriton 0.13b.
+- **Carry:** 0001-0004 and 0006-0008 are kept. 0005 is refreshed for the CK
+  architecture list. 0009, the AOTriton 0.12 lazy-tensor callbacks, is dropped.
+  0010 is new: it disables the build's own system AOTriton install.
+- **Build:** `makepkg -ef --nodeps --holdver`, with no network, in 64 minutes
+  over 7,586 ninja steps. `build()` deliberately rebuilds from a fresh CMake
+  state, so an interrupted build restarts from zero, and ccache is disabled.
+- **Memory:** it ran inside `builds.slice` (32G cap, no swap) as a detached
+  user service under the heavy-work lease, with `ASHP_BUILD_JOBS=6`. The
+  service's `memory.peak` was 7.8 GiB, with no OOM events. An earlier attempt
+  at 14 jobs, without the slice, drove the host into OOM kills.
+- **Output:** a 132 MB package. makepkg warned that some binaries reference
+  `$srcdir` (embedded build paths) and that `.BUILDINFO` has no installed-package
+  list; the root has no pacman database.
+- **Root smoke** (`enter --gpu`): torch 2.12.0 with HIP 7.14.60850;
+  `has_magma` is False; the device is gfx1151; a matmul passes; the preferred
+  BLAS backend is hipBLASLt (reported as `Cublaslt`) without
+  `TORCH_BLAS_PREFER_HIPBLASLT`; `scaled_dot_product_attention` passes; and
+  `torch.compile` through Triton passes.
