@@ -135,6 +135,12 @@ def test_vllm_depends_on_every_lease_job_runtime_lane():
     assert set(LEASE_JOB_PACKAGES) - transitive <= depends
 
 
+def test_the_root_has_ps_for_the_scenario_runner():
+    # tools/inference/runner.py runs `ps -eo ...` before each vLLM scenario to
+    # find stale engine cores, so the in-root runner fails without procps-ng.
+    assert "procps-ng" in root_targets()
+
+
 def test_the_sagemaker_standards_lane_is_gone():
     # The 0016 carry makes model_hosting_container_standards optional, so the
     # lane f6708a6 added is not part of the required runtime set. It stays a

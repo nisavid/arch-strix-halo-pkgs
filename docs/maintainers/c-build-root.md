@@ -15,7 +15,7 @@ at the paths the host will have after W5.
 | `torch-chain.targets` | Targets for the torch-chain root (base-devel, build tools, F, the torch makedepends and the protobuf and Abseil floors that MIGraphX needs). |
 | `py-closure.targets` | Extra build tools for the #110 model/runtime Python closure: meson-python, Cython, maturin, the Rust toolchain and `llvm`. Resolve it together with `torch-chain.targets` to build the closure. |
 | `model-closure.targets` | The #110 closure packages as built into `ashp-w2a`. Resolve it together with `torch-chain.targets` to get a root that can import them. |
-| `vllm-build.targets` | Build tools for the vLLM 0.30.0 package (#111): setuptools-rust, semantic-version, the Arch Rust toolchain, poetry-core and the build tools of the small closure packages that the vLLM lease job builds first. It also lists the Arch runtime closure for the in-root vLLM import and server smoke. Resolve it together with `torch-chain.targets` and `model-closure.targets`. |
+| `vllm-build.targets` | Build tools for the vLLM 0.30.0 package (#111): setuptools-rust, semantic-version, the Arch Rust toolchain, poetry-core and the build tools of the small closure packages that the vLLM lease job builds first. It also lists the Arch runtime closure for the in-root vLLM import and server smoke, and `procps-ng` for the scenario runner's `ps`. Resolve it together with `torch-chain.targets` and `model-closure.targets`. |
 | `probe/` | The no-leak probe: a hipcc program, a CMake HIP library and a makepkg package. |
 
 Nothing in this flow needs root, sudo or `pacman -S/-U/-Sy`, and nothing
@@ -622,6 +622,13 @@ to `ashp-w2a` and added to the root before the next one.
   (`cython`, `libuv`, `llhttp`, `nasm`, `python-maturin`,
   `python-hatchling` and `python-scikit-build-core`). The root must be
   re-locked and repopulated from the three targets files before the job.
+- **Scenario runner:** `tools/inference/runner.py` runs `ps` before each
+  vLLM scenario to find stale engine cores, and neither base-devel nor the
+  vLLM closure pulls in procps-ng, so `vllm-build.targets` names it. A
+  2026-09-25 resolve of the three targets files against the v3 lock inputs
+  added only `procps-ng` (from `cachyos-core-znver4`) and changed no versions;
+  its files clash with nothing in the root, so a live root takes it through
+  `fetch` and `add` instead of a repopulate.
 - **openai-harmony:** the rust-wheel template keeps `CARGO_HOME` under
   `$srcdir/.cargo`, which overrides the `CARGO_HOME=/ccache/cargo` that
   `w2a-build.sh` passes, and sets `RUSTUP_AUTO_INSTALL=0`. maturin fetches
@@ -657,6 +664,14 @@ w2a-build.sh python-vllm-rocm-gfx1151 6 net
   libbacktrace and picojson, and the only fetching submodule builds
   (googletest, cpptrace) stay off. tvm-ffi goes first because xgrammar's
   CMake finds tvm_ffi through the installed Python package.
+- `python-apache-tvm-ffi-gfx1151` 0.1.10-1 shipped a libbacktrace without an
+  ELF reader (LTO hid ELF from its configure probe), which crashed and then
+  deadlocked on the first raised TVM-FFI error and hung xgrammar's stub
+  generation. 0.1.10-2 compiles that C code without LTO and turns off the
+  segfault backtrace handler; its README has the details. Before building
+  xgrammar, check inside the root that
+  `timeout 60 python -c "import tvm_ffi.core as c; print(c._object_type_key_to_index('no.such.Key'))"`
+  prints promptly instead of hanging.
 - vLLM needs `net` because its ROCm CMake build fetches `triton_kernels`
   through FetchContent. 6 jobs matches the PyTorch build, whose peak was
   7.8 GiB.

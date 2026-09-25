@@ -70,3 +70,7 @@ python-hatchling
 # Cython (above) and setuptools-scm (torch-chain.targets). Neither needs
 # nanobind: xgrammar 0.2.x binds through tvm-ffi.
 python-scikit-build-core
+# The inference scenario runner (tools/inference/runner.py) runs `ps` before
+# each vLLM scenario to find stale engine cores, so in-root scenario runs need
+# procps-ng; base-devel does not pull it in.
+procps-ng
