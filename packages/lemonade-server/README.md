@@ -10,14 +10,14 @@
 - Scaffold template: `lemonade-server`
 - Recipe build method: `pip`
 - Upstream repo: `https://github.com/nisavid/lemonade.git`
-- Package version: `11.7.0`
+- Package version: `11.9.0`
 - Recipe revision: `3f15f9f (20260508, 17 commits touching recipe path)`
 - Recipe steps: `34, 35, 36`
 - Recipe dependencies: `therock, llamacpp`
 - Recorded reference packages: `aur/lemonade-server, aur/lemonade-desktop`
 - Authoritative reference package: `aur/lemonade-server`
 - Advisory reference packages: `aur/lemonade-desktop`
-- Applied source patch files/actions: `5`
+- Applied source patch files/actions: `4`
 
 ## Recipe notes
 
@@ -36,8 +36,8 @@ Reinstalling at compatible versions resolves conflicts.
 ## Scaffold notes
 
 - Server/runtime package; llama.cpp backends are optdepends, not hard deps.
-- Pinned to nisavid/lemonade main commit 3d5991033e4cb28152ace4013f7f22a52c3bd617, whose CMake project version is 11.7.0. The pin is the lemonade entry in the [source_pins] table of policies/recipe-packages.toml, so lemonade-server and lemonade-app always build the same fork commit.
-- Configures with BUILD_TESTING=OFF; upstream 11.7 includes CTest, and the distro build does not need its C++ test binaries.
+- Pinned to nisavid/lemonade commit 66c7642e818f85116af362ed49ce6468ea01ebed, the fork's upstream v11.9.0 sync (nisavid/lemonade#175), whose CMake project version is 11.9.0. The pin is the lemonade entry in the [source_pins] table of policies/recipe-packages.toml, so lemonade-server and lemonade-app always build the same fork commit.
+- Configures with BUILD_TESTING=OFF; upstream includes CTest, and the distro build does not need its C++ test binaries.
 - Uses upstream's lemond.service unit name; do not ship the pre-10.3 lemonade-server.service name in this package.
 - Installs /etc/lemonade/conf.d/10-llamacpp-gfx1151.conf so the packaged ROCm and Vulkan llama.cpp wrapper binaries are exposed to the service as system-managed backends. lemond reads LEMONADE_LLAMACPP_*_BIN from the environment ahead of config.json on every backend lookup, so the refreshed system-managed backend patch no longer carries the older config-load environment overlay or the CLI backend-table change.
 - Exports the packaged llama.cpp revision and ggml release URL in the same conf.d file so the GUI shows the packaged backend metadata instead of upstream downloader defaults.
@@ -66,6 +66,7 @@ Reinstalling at compatible versions resolves conflicts.
 - On 2026-06-15, adopted nisavid/lemonade fork main e18b9c1e352df8ab5aff2ff353402f1ec77c47f2, which syncs upstream Lemonade v10.7.0.
 - On 2026-09-22, repinned the source to nisavid/lemonade fork main at Lemonade 11.7.0; the fork commit contains upstream v11.7.0 (2b6a7d7), and the lemonade entry in [source_pins] holds the selected commit. Refreshed patches 0002-0004 for the new base, and added the zz-secrets.conf backup entry, the offline distro defaults, and the model-endpoint drop-in. Issue 137 pins the frozen fork commit 3d5991033; issue 139 tracks the build, publish, install, and host validation.
 - On 2026-09-23, released 11.7.0-2 with patch 0005, which makes RecipeOptions::inherit tokenize merged *_args without keeping quotes. At 3d5991033 the merge wrapped quoted values in their quote characters and then quoted them again, so llama-server received a literal '{"preserve_thinking":true}' for the qwen35 and qwen35moe --chat-template-kwargs architecture default and exited. The distro defaults always set --no-mmap, so every qwen35 and qwen35moe model failed to load. The regression is fork-only: fork commit e3d08ffa6 added quote_custom_arg_value to map_to_args_string, which stacks on upstream's keep_quotes=true merge (lemonade-sdk/lemonade#1920), while upstream v11.6.0, v11.7.0, and v11.9.0 produce the correct argv. The fork fix is nisavid/lemonade#168; drop patch 0005 at the Lemonade repin to a fork commit that contains #168, which is the upstream-synced fork main that the issue 141 (M6) repackage adopts. Upstream #3265 (7b5657d80, first released in v11.8.0) is context only: it moves the merge to recipe_arg_resolver.h, which still keeps quotes, so it does not fix the fork. Issues 139 and 140 track the regression.
+- On 2026-09-25, repinned the source to the fork's upstream v11.9.0 sync (issue 141, nisavid/lemonade#175) and set the package version to 11.9.0. The sync contains upstream v11.9.0 (bb39eaf) and the fork fix for nisavid/lemonade#168 (2cb1a91, PR 169), so patch 0005 is dropped. Patches 0001-0004 apply unchanged to the new base with line offsets only and no fuzz; the upstream changes in the patched files do not touch the patched hunks.
 
 ## Maintainer Starting Points
 
