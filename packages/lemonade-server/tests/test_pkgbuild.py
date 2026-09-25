@@ -29,7 +29,13 @@ DROPPED_ARGS_MERGE_PATCH = (
     / "packages/lemonade-server/0005-merge-custom-args-without-keeping-quotes.patch"
 )
 PKG_ROOT = REPO_ROOT / "packages/lemonade-server/pkg/lemonade-server"
-CONF = PKG_ROOT / "etc/lemonade/conf.d/10-llamacpp-gfx1151.conf"
+LLAMACPP_ENV_TARGET = "/usr/lib/lemonade/llamacpp-gfx1151.env"
+LLAMACPP_ENV = PKG_ROOT / LLAMACPP_ENV_TARGET.lstrip("/")
+ENV_FILES_DROPIN_TARGET = "/usr/lib/systemd/system/lemond.service.d/30-env-files.conf"
+ENV_FILES_DROPIN = PKG_ROOT / ENV_FILES_DROPIN_TARGET.lstrip("/")
+ENV_FILE = PKG_ROOT / "etc/default/lemond"
+SECRETS_TARGET = "/etc/lemonade/conf.d/zz-secrets.conf"
+SECRETS = PKG_ROOT / SECRETS_TARGET.lstrip("/")
 DISTRO_DEFAULTS = PKG_ROOT / "usr/share/lemonade/defaults.json"
 NO_REMOTE_FETCH_DROPIN = (
     PKG_ROOT / "usr/lib/systemd/system/lemond.service.d/20-no-remote-model-fetch.conf"
@@ -53,14 +59,23 @@ def _pkgbuild_value(path, key):
     raise AssertionError(f"{key} not found in {path}")
 
 
-def _heredoc(text, target):
+def _heredoc(text, target, mode="644"):
     match = re.search(
-        rf'install -Dm644 /dev/stdin "\$pkgdir{re.escape(target)}" <<\'EOF\'\n(.*?)\nEOF\n',
+        rf'install -Dm{mode} /dev/stdin "\$pkgdir{re.escape(target)}" <<\'EOF\'\n(.*?)\nEOF\n',
         text,
         re.DOTALL,
     )
-    assert match, f"no heredoc install for {target}"
+    assert match, f"no mode {mode} heredoc install for {target}"
     return match.group(1)
+
+
+def _assignments(text):
+    """The KEY=value lines of an env file or unit drop-in, as (key, value)."""
+    return [
+        tuple(line.split("=", 1))
+        for line in text.splitlines()
+        if line and not line.startswith(("#", ";", "["))
+    ]
 
 
 EXPECTED_LLAMACPP_VERSION = _pkgbuild_value(LLAMACPP_HIP_PKGBUILD, "pkgver")
@@ -71,15 +86,84 @@ EXPECTED_RELEASE_URL = (
 LEMONADE_PIN = load_recipe_policy(RECIPE_POLICY)["source_pins"]["lemonade"]
 
 
-def test_pkgbuild_exports_system_managed_llamacpp_metadata():
-    text = _heredoc(PKGBUILD.read_text(), "/etc/lemonade/conf.d/10-llamacpp-gfx1151.conf")
-    assert f"LEMONADE_LLAMACPP_ROCM_BIN={HIP_SERVER}" in text
-    assert f"LEMONADE_LLAMACPP_VULKAN_BIN={VULKAN_SERVER}" in text
-    assert f"LEMONADE_LLAMACPP_ROCM_VERSION={EXPECTED_LLAMACPP_VERSION}" in text
-    assert f"LEMONADE_LLAMACPP_VULKAN_VERSION={EXPECTED_LLAMACPP_VERSION}" in text
-    assert f"LEMONADE_LLAMACPP_ROCM_RELEASE_URL={EXPECTED_RELEASE_URL}" in text
-    assert f"LEMONADE_LLAMACPP_VULKAN_RELEASE_URL={EXPECTED_RELEASE_URL}" in text
-    assert "_LABEL=" not in text
+EXPECTED_ENV_FILES_DROPIN = """\
+# lemonade-server owns the whole EnvironmentFile= list of lemond.service.
+# systemd reads the files in this order, a later file overrides an earlier
+# one, and any EnvironmentFile= value overrides an Environment= value, such
+# as the 20-no-remote-model-fetch.conf blackholes.
+[Service]
+# Clear the list first. systemd keeps a repeated path at its first position,
+# so listing upstream's /etc/default/lemond again without this reset would
+# not move it after conf.d. The build fails if upstream's unit lists any
+# other EnvironmentFile=, which this reset would drop.
+EnvironmentFile=
+# Optional settings in the pre-11.9 location, including the packaged
+# zz-secrets.conf placeholder, read in glob order.
+EnvironmentFile=-/etc/lemonade/conf.d/*.conf
+# Optional: upstream's env file for HF_TOKEN, LEMONADE_API_KEY, and
+# LEMONADE_ADMIN_API_KEY. It overrides conf.d.
+EnvironmentFile=-/etc/default/lemond
+# Required: the packaged llama.cpp backends, read last so that a stale
+# LEMONADE_LLAMACPP_* key in a file above cannot replace them. To override
+# one, add an EnvironmentFile= in a drop-in under
+# /etc/systemd/system/lemond.service.d/ that sorts after this one; an
+# Environment= line cannot, because every env file overrides it.
+EnvironmentFile=/usr/lib/lemonade/llamacpp-gfx1151.env"""
+
+
+def test_pkgbuild_owns_the_service_environment_file_order_in_one_drop_in():
+    assert _heredoc(PKGBUILD.read_text(), ENV_FILES_DROPIN_TARGET) == EXPECTED_ENV_FILES_DROPIN
+
+
+def test_pkgbuild_ships_the_llamacpp_backends_as_a_package_env_file():
+    # lemond reads LEMONADE_LLAMACPP_*_BIN from its environment ahead of
+    # config.json, and patch 0004 reads the version and release URL only from
+    # the environment.
+    text = _heredoc(PKGBUILD.read_text(), LLAMACPP_ENV_TARGET)
+    assert _assignments(text) == [
+        ("LEMONADE_LLAMACPP_ROCM_BIN", HIP_SERVER),
+        ("LEMONADE_LLAMACPP_VULKAN_BIN", VULKAN_SERVER),
+        ("LEMONADE_LLAMACPP_ROCM_VERSION", EXPECTED_LLAMACPP_VERSION),
+        ("LEMONADE_LLAMACPP_VULKAN_VERSION", EXPECTED_LLAMACPP_VERSION),
+        ("LEMONADE_LLAMACPP_ROCM_RELEASE_URL", EXPECTED_RELEASE_URL),
+        ("LEMONADE_LLAMACPP_VULKAN_RELEASE_URL", EXPECTED_RELEASE_URL),
+    ]
+
+
+def test_pkgbuild_ships_only_the_env_files_and_blackhole_drop_ins():
+    text = PKGBUILD.read_text()
+    assert re.findall(r'"\$pkgdir/usr/lib/systemd/system/lemond\.service\.d/([^"]+)"', text) == [
+        "20-no-remote-model-fetch.conf",
+        "30-env-files.conf",
+    ]
+    assert "10-llamacpp-gfx1151.conf" not in text
+
+
+def test_pkgbuild_keeps_the_legacy_secrets_placeholder_private():
+    # Byte-identical to the 11.7 placeholder, so pacman leaves an
+    # owner-edited copy in place instead of writing a .pacnew; the conf.d
+    # glob keeps loading it. A .pacsave would not match that glob.
+    assert _heredoc(PKGBUILD.read_text(), SECRETS_TARGET, mode="660") == (
+        "# Installed as /etc/lemonade/conf.d/zz-secrets.conf so it loads after other\n"
+        "# drop-ins and keeps secrets separate from the base config file.\n"
+        "#LEMONADE_API_KEY="
+    )
+
+
+def test_pkgbuild_drop_ins_keep_the_config_and_cache_split():
+    # A cache-dir argument, LEMONADE_CACHE_DIR, HOME, or XDG_* override would
+    # make lemond's config dir follow the cache dir.
+    text = PKGBUILD.read_text()
+    for target in (
+        LLAMACPP_ENV_TARGET,
+        ENV_FILES_DROPIN_TARGET,
+        "/usr/lib/systemd/system/lemond.service.d/20-no-remote-model-fetch.conf",
+    ):
+        dropin = _heredoc(text, target)
+        assert "ExecStart" not in dropin
+        for key, _ in _assignments(dropin):
+            assert key not in ("LEMONADE_CACHE_DIR", "HOME")
+            assert not key.startswith("XDG_")
 
 
 def test_pkgbuild_keeps_upstream_lemond_service_install():
@@ -88,11 +172,29 @@ def test_pkgbuild_keeps_upstream_lemond_service_install():
     assert "lemonade-server.service" not in text
 
 
-def test_pkgbuild_preserves_secrets_drop_in_across_upgrades():
+def test_pkgbuild_preserves_both_secrets_files_across_upgrades():
     text = PKGBUILD.read_text()
 
-    assert "backup=(etc/lemonade/conf.d/zz-secrets.conf)\n" in text
-    assert "10-llamacpp-gfx1151.conf" not in _pkgbuild_value(PKGBUILD, "backup")
+    assert "backup=(etc/default/lemond etc/lemonade/conf.d/zz-secrets.conf)\n" in text
+
+
+def test_pkgbuild_writes_no_owner_config_from_a_scriptlet():
+    assert not re.search(r"^install=", PKGBUILD.read_text(), re.MULTILINE)
+    assert not list(PKGBUILD.parent.glob("*.install"))
+
+
+def test_pkgbuild_checks_the_upstream_unit_layout_after_install():
+    text = PKGBUILD.read_text()
+    package = text[text.index("package() {"):]
+
+    assert "_check_lemond_unit() {" in package
+    assert '_check_lemond_unit "$pkgdir/usr/lib/systemd/system/lemond.service"' in package
+    assert package.index("cmake --install") < package.index('_check_lemond_unit "$pkgdir')
+    # The check rejects any upstream lemond.service.d drop-in, so it must run
+    # before the package installs its own.
+    for dropin in sorted(set(re.findall(r'"\$pkgdir(/usr/lib/systemd/system/lemond\.service\.d/[^"]+)"', package))):
+        assert package.index('_check_lemond_unit "$pkgdir') < package.index(dropin), dropin
+    assert package.index('_check_lemond_unit "$pkgdir') < package.index(ENV_FILES_DROPIN_TARGET)
 
 
 def test_pkgbuild_skips_upstream_test_binaries():
@@ -112,6 +214,8 @@ def test_pkgbuild_ships_offline_distro_defaults():
     assert defaults == {
         "offline": True,
         "no_fetch_executables": True,
+        "auto_update_models": False,
+        "max_loaded_models": -1,
         "llamacpp": {
             "args": "--no-mmap",
             "backend": "rocm",
@@ -241,7 +345,8 @@ def _require_current_package_image():
 def test_built_package_installs_system_managed_llamacpp_metadata():
     _require_current_package_image()
 
-    text = CONF.read_text()
+    assert ENV_FILES_DROPIN.read_text().rstrip("\n") == EXPECTED_ENV_FILES_DROPIN
+    text = LLAMACPP_ENV.read_text()
     assert f"LEMONADE_LLAMACPP_ROCM_VERSION={EXPECTED_LLAMACPP_VERSION}" in text
     assert f"LEMONADE_LLAMACPP_VULKAN_VERSION={EXPECTED_LLAMACPP_VERSION}" in text
     assert f"LEMONADE_LLAMACPP_ROCM_RELEASE_URL={EXPECTED_RELEASE_URL}" in text
@@ -255,6 +360,29 @@ def test_built_package_installs_renamed_lemond_service():
     assert not OLD_SERVICE.exists()
 
 
+def test_built_package_unit_splits_config_and_cache():
+    _require_current_package_image()
+
+    lines = SERVICE.read_text().splitlines()
+    assert "StateDirectory=lemonade" in lines
+    assert "CacheDirectory=lemonade" in lines
+    assert "CacheDirectoryMode=0755" in lines
+    assert "EnvironmentFile=-/etc/default/lemond" in lines
+    assert [line for line in lines if line.startswith("ExecStart=")] == [
+        "ExecStart=/usr/bin/lemond"
+    ]
+
+
+def test_built_package_ships_the_secrets_env_file_private():
+    _require_current_package_image()
+
+    assert ENV_FILE.stat().st_mode & 0o777 == 0o640
+    assert SECRETS.stat().st_mode & 0o777 == 0o660
+    pkginfo = PKGINFO.read_text()
+    assert "backup = etc/default/lemond" in pkginfo
+    assert "backup = etc/lemonade/conf.d/zz-secrets.conf" in pkginfo
+
+
 def test_built_package_installs_offline_defaults_and_endpoint_drop_in():
     _require_current_package_image()
 
@@ -262,11 +390,12 @@ def test_built_package_installs_offline_defaults_and_endpoint_drop_in():
     assert defaults["offline"] is True
     assert defaults["no_fetch_executables"] is True
     assert defaults["llamacpp"]["args"] == "--no-mmap"
+    assert defaults["max_loaded_models"] == -1
+    assert defaults["auto_update_models"] is False
     dropin = NO_REMOTE_FETCH_DROPIN.read_text()
     assert f"Environment=HF_ENDPOINT={BLACKHOLE_ENDPOINT}" in dropin
     assert f"Environment=MODEL_ENDPOINT={BLACKHOLE_ENDPOINT}" in dropin
     assert not (PKG_ROOT / "usr/share/metainfo").exists()
-    assert "backup = etc/lemonade/conf.d/zz-secrets.conf" in PKGINFO.read_text()
 
 
 def test_prepared_source_contains_zerank_selected_logit_adapter():
