@@ -1,0 +1,122 @@
+{
+  "maintenance": {
+    "advisory_references": [],
+    "authoritative_reference": "aur/python-xgrammar",
+    "divergence_notes": [
+      "Builds xgrammar 0.2.3 from the PyPI sdist instead of repacking a wheel like the AUR package, whose 0.2.x packages also omit the apache-tvm-ffi dependency and fail at `import xgrammar` with `No module named 'tvm_ffi'`.",
+      "Pins 0.2.3 instead of the latest release: vLLM 0.30.0 requires xgrammar >=0.2.1,<1.0.0, its CUDA and CPU CI locks test 0.2.3 (the ROCm lock tests 0.2.1), and 0.2.3 publishes CPython 3.14 wheels.",
+      "Builds the C++ grammar engine and its TVM-FFI bindings through the Blackcat native-wheel compiler lane with amdclang and Zen 5 flags, against python-apache-tvm-ffi-gfx1151.",
+      "Carries every upstream runtime requirement from the published metadata, mapped to the local lanes: apache-tvm-ffi, pydantic, torch, transformers, triton, numpy and typing-extensions."
+    ],
+    "source_patches": [],
+    "update_notes": [
+      "Check vLLM's requirements/common.txt specifier and its requirements/test CI locks together before updating, and move python-apache-tvm-ffi-gfx1151 with it when the tvm-ffi floor changes.",
+      "The build is CPU-only. CMakeLists.txt enables only CXX and never looks for CUDA; the CUDA token-bitmask kernel is a runtime JIT that vLLM does not call on ROCm, where Model Runner V2 applies bitmasks with its own Triton kernel. The package passes XGRAMMAR_ENABLE_CPPTRACE=OFF and XGRAMMAR_BUILD_CXX_TESTS=OFF explicitly, because both would build submodules.",
+      "Upstream CMake adds `-Wall -Wextra -Werror` and `-flto=auto`. A 2026-09-25 syntax-only probe compiled all 22 C++ sources with amdclang 23, the lane's Zen 5 flags and those warnings without an error; the first package build is the full check. amdclang links with ld.lld, which reads the LTO bitcode archives.",
+      "After publishing a rebuilt package, verify `import xgrammar`, then compile the Gemma 4 structured-output smoke schema with `xgrammar.GrammarCompiler` and fill a token bitmask on CPU through the installed local Python lane.",
+      "On 2026-09-25, added at 0.2.3 for the generation-C W2A closure (#110, #111). vLLM 0.30.0 imports xgrammar at module level in `vllm/parser/harmony.py`, which every vLLM process reaches, and uses it for `response_format` json_schema requests. The upstream build compiles 22 C++ sources plus the bindings; expect about 5-10 minutes of CPU time. It is built in the rootless C build root in the vLLM lease job, after python-apache-tvm-ffi-gfx1151."
+    ]
+  },
+  "name": "python-xgrammar-gfx1151",
+  "package_name": "python-xgrammar-gfx1151",
+  "pkgver": "0.2.3",
+  "policy": {
+    "advisory_references": [],
+    "arch_reference": [
+      "aur/python-xgrammar"
+    ],
+    "authoritative_reference": "aur/python-xgrammar",
+    "build_config_settings": [
+      "cmake.define.XGRAMMAR_ENABLE_CPPTRACE=OFF",
+      "cmake.define.XGRAMMAR_BUILD_CXX_TESTS=OFF"
+    ],
+    "conflicts": [
+      "python-xgrammar"
+    ],
+    "depends": [
+      "glibc",
+      "libgcc",
+      "libstdc++",
+      "python-apache-tvm-ffi-gfx1151",
+      "python-gfx1151",
+      "python-numpy-gfx1151",
+      "python-pydantic",
+      "python-pytorch-opt-rocm-gfx1151",
+      "python-transformers-gfx1151",
+      "python-triton-gfx1151",
+      "python-typing_extensions"
+    ],
+    "divergence_notes": [
+      "Builds xgrammar 0.2.3 from the PyPI sdist instead of repacking a wheel like the AUR package, whose 0.2.x packages also omit the apache-tvm-ffi dependency and fail at `import xgrammar` with `No module named 'tvm_ffi'`.",
+      "Pins 0.2.3 instead of the latest release: vLLM 0.30.0 requires xgrammar >=0.2.1,<1.0.0, its CUDA and CPU CI locks test 0.2.3 (the ROCm lock tests 0.2.1), and 0.2.3 publishes CPython 3.14 wheels.",
+      "Builds the C++ grammar engine and its TVM-FFI bindings through the Blackcat native-wheel compiler lane with amdclang and Zen 5 flags, against python-apache-tvm-ffi-gfx1151.",
+      "Carries every upstream runtime requirement from the published metadata, mapped to the local lanes: apache-tvm-ffi, pydantic, torch, transformers, triton, numpy and typing-extensions."
+    ],
+    "license": [
+      "Apache-2.0"
+    ],
+    "makedepends": [
+      "cmake",
+      "ninja",
+      "python-apache-tvm-ffi-gfx1151",
+      "python-build",
+      "python-installer",
+      "python-scikit-build-core",
+      "rocm-llvm-gfx1151"
+    ],
+    "patches_dir": "patches/python-xgrammar-gfx1151",
+    "pkgdesc": "Structured generation grammar engine rebuilt for Strix Halo gfx1151",
+    "provides": [
+      "python-xgrammar"
+    ],
+    "pypi_name": "xgrammar",
+    "recipe_key": "native_wheels",
+    "recipe_notes_override": "xgrammar is the grammar engine behind vLLM's default structured-output\nbackend. vLLM 0.30.0 imports it at module level in `vllm/parser/harmony.py`,\nwhich the engine core, the offline `LLM` and the API server all reach, so no\nvLLM process starts without it. The package builds the C++ engine and its\nTVM-FFI bindings on the local amdclang native-wheel lane.\n",
+    "scaffold_notes": [
+      "Part of the vLLM runtime dependency closure (#110).",
+      "Renders through the Blackcat native-wheel lane; Blackcat's recipe does not name this package.",
+      "scikit-build-core drives CMake with the ninja generator. CMake finds tvm_ffi through the installed python-apache-tvm-ffi-gfx1151 package, so that lane must be in the root before this build."
+    ],
+    "sha256sums": [
+      "f76423630ae3ac4e090cb38ce1e30e7bcc69b3dee4d22d94353944386a4c6f18"
+    ],
+    "single_wheel_install": true,
+    "src_subdir": "xgrammar-0.2.3",
+    "template": "native-wheel-pypi",
+    "update_notes": [
+      "Check vLLM's requirements/common.txt specifier and its requirements/test CI locks together before updating, and move python-apache-tvm-ffi-gfx1151 with it when the tvm-ffi floor changes.",
+      "The build is CPU-only. CMakeLists.txt enables only CXX and never looks for CUDA; the CUDA token-bitmask kernel is a runtime JIT that vLLM does not call on ROCm, where Model Runner V2 applies bitmasks with its own Triton kernel. The package passes XGRAMMAR_ENABLE_CPPTRACE=OFF and XGRAMMAR_BUILD_CXX_TESTS=OFF explicitly, because both would build submodules.",
+      "Upstream CMake adds `-Wall -Wextra -Werror` and `-flto=auto`. A 2026-09-25 syntax-only probe compiled all 22 C++ sources with amdclang 23, the lane's Zen 5 flags and those warnings without an error; the first package build is the full check. amdclang links with ld.lld, which reads the LTO bitcode archives.",
+      "After publishing a rebuilt package, verify `import xgrammar`, then compile the Gemma 4 structured-output smoke schema with `xgrammar.GrammarCompiler` and fill a token bitmask on CPU through the installed local Python lane.",
+      "On 2026-09-25, added at 0.2.3 for the generation-C W2A closure (#110, #111). vLLM 0.30.0 imports xgrammar at module level in `vllm/parser/harmony.py`, which every vLLM process reaches, and uses it for `response_format` json_schema requests. The upstream build compiles 22 C++ sources plus the bindings; expect about 5-10 minutes of CPU time. It is built in the rootless C build root in the vLLM lease job, after python-apache-tvm-ffi-gfx1151."
+    ],
+    "upstream_version": "0.2.3",
+    "url": "https://github.com/mlc-ai/xgrammar"
+  },
+  "provenance": {
+    "output_root": "packages",
+    "recipe_author": "Blackcat Informatics Inc.",
+    "recipe_commit": "3f15f9f",
+    "recipe_date": "20260508",
+    "recipe_history_count": 17,
+    "recipe_repo": "https://github.com/paudley/ai-notes",
+    "recipe_subdir": "strix-halo",
+    "repo_subpath": "."
+  },
+  "recipe": {
+    "branch": null,
+    "depends_on": [
+      "cpython",
+      "pytorch"
+    ],
+    "method": "pip",
+    "notes": "xgrammar is the grammar engine behind vLLM's default structured-output\nbackend. vLLM 0.30.0 imports it at module level in `vllm/parser/harmony.py`,\nwhich the engine core, the offline `LLM` and the API server all reach, so no\nvLLM process starts without it. The package builds the C++ engine and its\nTVM-FFI bindings on the local amdclang native-wheel lane.\n",
+    "patches": [],
+    "phase": "H",
+    "repo": null,
+    "src_dir": "xgrammar-0.2.3",
+    "steps": [
+      32
+    ]
+  }
+}

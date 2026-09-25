@@ -869,9 +869,21 @@ def test_quantization_lane_probes_record_root_cause_contracts():
             "value": "config_quantization_config_present true",
         },
         {"kind": "stdout.contains", "value": "config_model_type qwen3_5"},
-        {"kind": "output.contains", "value": "fp8"},
+        # vLLM logs the block-FP8 linear kernel choice only after the startup
+        # imports, the engine core and the Fp8LinearMethod layers are up, so
+        # the blocked exit comes from the FP8 path and not from startup.
+        {
+            "kind": "output.regex",
+            "value": r"Selected \w*Fp8BlockScaledMMKernel for Fp8LinearMethod",
+        },
+        {"kind": "output.not_contains", "value": "ImportError"},
+        {"kind": "output.not_contains", "value": "ModuleNotFoundError"},
     ):
         assert expected in fp8_dense.definition["then"]["assert"]
+    # A bare "fp8" also matched the config summary printed before LLM().
+    assert {"kind": "output.contains", "value": "fp8"} not in fp8_dense.definition[
+        "then"
+    ]["assert"]
 
     gptq_int4 = by_id["vllm.qwen3_5.35b-a3b-gptq-int4.text.basic"]
     assert gptq_int4.model == "Qwen/Qwen3.5-35B-A3B-GPTQ-Int4"

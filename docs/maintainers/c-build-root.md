@@ -484,47 +484,63 @@ Still missing from the root, and not Arch packages:
 - vLLM depends that no sync DB carries: einops, py-cpuinfo and pybase64. The
   host has them from AUR or an older Arch build. The lease job builds them
   as `-gfx1151` lanes.
-- `common.txt` entries with no Arch or ASHP package: `depyf`, `anthropic`,
-  `lm-format-enforcer`, `outlines_core`, `xgrammar`, `fastapi-cli`,
-  `model-hosting-container-standards`,
+- `xgrammar` and its runtime dependency `apache-tvm-ffi`: vLLM imports
+  xgrammar in every process. The lease job builds both as `-gfx1151` lanes.
+- `common.txt` entries with no Arch or ASHP package, none of them on the
+  required runtime set: `depyf`, `anthropic`, `lm-format-enforcer`,
+  `outlines_core`, `fastapi-cli`, `model-hosting-container-standards`,
   `opentelemetry-semantic-conventions-ai`, and the tracked #110 gaps `mcp`
-  (Arch has 1.29.0) and `llguidance`. `xgrammar` and
-  `model-hosting-container-standards` are startup imports; see the lease job
-  section below.
+  (Arch has 1.29.0) and `llguidance`.
 - Arch cannot meet these exact pins: `lark ==1.2.2` (Arch
   `python-lark-parser` 1.3.1 is in the root), `numba ==0.65.0` and
   `grpcio ==1.78.0` (the root has grpcio 1.83.0 through OpenTelemetry).
 - The `rocm.txt` feature and test extras are not in the root: `datasets`,
   `peft`, `pytest-asyncio`, `tensorizer`, `runai-model-streamer`,
-  `conch-triton-kernels`, `timm`, `amd-quark`, `tilelang`, `apache-tvm-ffi`,
+  `conch-triton-kernels`, `timm`, `amd-quark`, `tilelang`,
   `fastsafetensors`, `mooncake-transfer-engine-rocm` and
   `grpcio-reflection`.
 - The pip `ninja` module; the Arch `ninja` binary is in the root.
 
 ## W2A vLLM lease job closure (#110, #111)
 
-On 2026-09-25 the vLLM 0.30.0 runtime set was audited against `ced6857a`. The
-set required before w2a-validate is what `vllm serve` imports at module level
-before it serves a request, plus the imports on the request paths the W2A
-scenarios exercise. The small closure packages are built in the vLLM lease
-job, leaves first, and each is published to `ashp-w2a` and added to the root
-before the next one.
+On 2026-09-25 the vLLM 0.30.0 runtime set was audited against `ced6857a`
+with the 0016 carry applied. The set required before w2a-validate is what
+`vllm serve` imports at module level before it serves a request, plus the
+imports on the request paths the W2A scenarios exercise. The small closure
+packages are built in the vLLM lease job, leaves first, and each is published
+to `ashp-w2a` and added to the root before the next one.
 
 - **Rebuilds:** `python-uvloop-gfx1151` 0.22.1, `python-httptools-gfx1151`
   0.8.0, `python-msgspec-gfx1151` 0.21.1 and
   `python-openai-harmony-gfx1151` 0.0.8 are already at the latest PyPI
   releases, and no candidate selects a newer one, so each gets pkgrel 2 with
   the source unchanged.
-- **New lanes:** `python-einops-gfx1151` 0.8.2, `python-py-cpuinfo-gfx1151`
-  9.0.0 and `python-model-hosting-container-standards-gfx1151` 0.1.16 are pure
-  Python. `python-pybase64-gfx1151` 1.5.0 builds its C extension and the
-  bundled libbase64 with cmake, and sets `CIBUILDWHEEL=1` so the build fails
-  instead of shipping the pure-Python fallback.
+- **New lanes:** `python-einops-gfx1151` 0.8.2 and
+  `python-py-cpuinfo-gfx1151` 9.0.0 are pure Python.
+  `python-pybase64-gfx1151` 1.5.0 builds its C extension and the bundled
+  libbase64 with cmake, and sets `CIBUILDWHEEL=1` so the build fails instead
+  of shipping the pure-Python fallback.
+- **xgrammar:** `vllm/parser/__init__.py` imports `vllm/parser/harmony.py`,
+  which imports xgrammar at module level, and the engine core, the offline
+  `LLM` and the API server all reach `vllm.parser`. `python-xgrammar-gfx1151`
+  0.2.3 is the version vLLM's CUDA and CPU CI locks test (the ROCm lock tests
+  0.2.1), and it ships CPython 3.14 wheels. xgrammar 0.2.3 needs
+  apache-tvm-ffi >=0.1.9 to build and to import, and vLLM's `rocm.txt` pins
+  apache-tvm-ffi ==0.1.10, so `python-apache-tvm-ffi-gfx1151` is 0.1.10.
+  Both are scikit-build-core CMake builds with no CUDA: tvm-ffi compiles 23
+  C++ sources, the bundled libbacktrace (33 C files) and one Cython module;
+  xgrammar compiles 22 C++ sources and its TVM-FFI bindings, with
+  cpptrace and the C++ tests off. Expect a few minutes of CPU time for
+  tvm-ffi and about 5-10 minutes for xgrammar.
+- **SageMaker:** the 0016 carry makes the model-hosting-container-standards
+  import optional in `serve/sagemaker/api_router.py` and
+  `serve/lora/api_router.py`, so `vllm serve` starts without it and skips the
+  SageMaker-specific and runtime LoRA update routes. It is a #110 gap, not a
+  lane; packaging it would pull in the supervisor daemon.
 - **Targets:** `vllm-build.targets` adds the lease job's build tools
-  (`cython`, `libuv`, `llhttp`, `nasm`, `python-maturin` and
-  `python-hatchling`) and the model-hosting-container-standards runtime
-  (`python-jmespath` and `supervisor`). The root must be re-locked and
-  repopulated from the three targets files before the job.
+  (`cython`, `libuv`, `llhttp`, `nasm`, `python-maturin`,
+  `python-hatchling` and `python-scikit-build-core`). The root must be
+  re-locked and repopulated from the three targets files before the job.
 - **openai-harmony:** the rust-wheel template keeps `CARGO_HOME` under
   `$srcdir/.cargo`, which overrides the `CARGO_HOME=/ccache/cargo` that
   `w2a-build.sh` passes, and sets `RUSTUP_AUTO_INSTALL=0`. maturin fetches
@@ -536,35 +552,42 @@ directories (`w2a-build.sh` defaults to an older W2A worktree):
 ```sh
 w2a-build.sh python-py-cpuinfo-gfx1151 2
 w2a-build.sh python-einops-gfx1151 2
-w2a-build.sh python-model-hosting-container-standards-gfx1151 2
 w2a-build.sh python-prometheus-fastapi-instrumentator-gfx1151 2
 w2a-build.sh python-msgspec-gfx1151 6
 w2a-build.sh python-httptools-gfx1151 6
 w2a-build.sh python-uvloop-gfx1151 6
 w2a-build.sh python-pybase64-gfx1151 6
 w2a-build.sh python-openai-harmony-gfx1151 6 net
+w2a-build.sh python-apache-tvm-ffi-gfx1151 6
+w2a-build.sh python-xgrammar-gfx1151 6
 w2a-build.sh python-vllm-rocm-gfx1151 6 net
 ```
 
-- The four pure-Python wheels compile nothing, so 2 jobs is enough, and they
+- The three pure-Python wheels compile nothing, so 2 jobs is enough, and they
   need no network after the fetch step.
 - msgspec, httptools, uvloop and pybase64 each compile a few C files; 6 is
   the root's default and stays far below the slice cap.
 - openai-harmony needs `net` for its crates. Its rustc jobs follow
   `ASHP_BUILD_JOBS` through `CARGO_BUILD_JOBS`.
+- apache-tvm-ffi and xgrammar each compile a few dozen C and C++ files, so 6
+  jobs is enough; scikit-build-core's `cmake --build` follows
+  `CMAKE_BUILD_PARALLEL_LEVEL`, which the root's `makepkg.conf` sets from
+  `ASHP_BUILD_JOBS`. Neither needs `net`: the sdists carry dlpack,
+  libbacktrace and picojson, and the only fetching submodule builds
+  (googletest, cpptrace) stay off. tvm-ffi goes first because xgrammar's
+  CMake finds tvm_ffi through the installed Python package.
 - vLLM needs `net` because its ROCm CMake build fetches `triton_kernels`
   through FetchContent. 6 jobs matches the PyTorch build, whose peak was
   7.8 GiB.
-- The leaves do not depend on each other, so their order only puts the cheap
-  builds first. vLLM goes last so that the root holds its whole runtime set
-  when it is smoked.
+- The other leaves do not depend on each other, so their order only puts the
+  cheap builds first. vLLM goes last so that the root holds its whole runtime
+  set when it is smoked.
 
-Blocker: vLLM 0.30.0 imports `xgrammar` at module level in
-`vllm/parser/harmony.py`, and the engine core reaches it through
-`vllm/v1/structured_output/__init__.py` and `vllm.parser`. The engine cannot
-start without it, and structured outputs use it on the request path. No Arch
-or ASHP package provides it. xgrammar 0.2.8 is a C++ build
-(scikit-build-core) that depends on apache-tvm-ffi >=0.1.11, another C++
-build with no Arch package, so it waits for a lead decision. The lease job
-can build vLLM without it, but the vLLM import and server smoke fail until an
-xgrammar lane is in the root.
+CPU drive prerequisite: importing `vllm.platforms.rocm` without a GPU calls
+`torch.cuda.get_device_properties("cuda")` (`vllm/platforms/rocm.py`, when
+amdsmi finds no device), so a GPU-less import drive of the ROCm branches needs
+a fake-ROCm shim first. Replace `torch.cuda.get_device_properties` with a
+function that returns an object with `gcnArchName="gfx1151"`, `major=11`,
+`minor=5`, a `name` and `total_memory`, then set
+`vllm.platforms.current_platform = RocmPlatform()`. Run the drive once without
+the shim, where the platform stays unspecified, and once with it.

@@ -526,9 +526,20 @@ value = "config_model_type qwen3_5"
 kind = "stdout.contains"
 value = "config_quantization_config_present true"
 
+# vLLM logs the block-FP8 linear kernel choice only after its startup imports,
+# the engine core and the Fp8LinearMethod layers are up, so the expected exit 1
+# comes from the FP8 path. A startup ImportError must not satisfy this probe.
 [[scenario.then.assert]]
-kind = "output.contains"
-value = "fp8"
+kind = "output.regex"
+value = 'Selected \w*Fp8BlockScaledMMKernel for Fp8LinearMethod'
+
+[[scenario.then.assert]]
+kind = "output.not_contains"
+value = "ImportError"
+
+[[scenario.then.assert]]
+kind = "output.not_contains"
+value = "ModuleNotFoundError"
 
 [[scenario]]
 id = "vllm.qwen3_5.35b-a3b-gptq-int4.text.basic"

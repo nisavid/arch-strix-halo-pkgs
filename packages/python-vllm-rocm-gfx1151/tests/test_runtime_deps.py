@@ -128,16 +128,58 @@ def test_vllm_depends_on_the_local_w2a_closure_lanes():
 
 def test_vllm_depends_on_its_undeclared_startup_imports():
     # At ced6857a, `vllm serve` imports these at module level before it
-    # serves a request: regex (vllm/v1/worker/gpu_worker.py and others),
+    # serves a request: regex (vllm/v1/worker/gpu_worker.py and others) and
     # partial_json_parser (vllm/tool_parsers/utils.py through the tool parser
-    # manager) and model_hosting_container_standards
-    # (vllm/entrypoints/serve/sagemaker/api_router.py through
-    # vllm/entrypoints/launchers/app.py).
+    # manager).
     depends = pkgbuild_array("depends")
 
     assert "python-regex" in depends
     assert "python-partial-json-parser" in depends
-    assert "python-model-hosting-container-standards-gfx1151" in depends
+
+
+def test_vllm_depends_on_the_local_xgrammar_lane():
+    # vllm/parser/__init__.py imports vllm/parser/harmony.py, which imports
+    # xgrammar at module level, and the engine core, the offline LLM and the
+    # API server all reach vllm.parser. No Arch package provides xgrammar, so
+    # the dependency names the W2A closure lane.
+    depends = pkgbuild_array("depends")
+
+    assert "python-xgrammar-gfx1151" in depends
+    assert "python-xgrammar" not in depends
+
+
+def test_vllm_leaves_sagemaker_standards_out_of_depends():
+    # The 0016 carry makes the model_hosting_container_standards import
+    # optional, so `vllm serve` starts without it. Packaging it would pull in
+    # the supervisor daemon for routes W2A does not use.
+    depends = pkgbuild_array("depends")
+
+    assert "python-model-hosting-container-standards-gfx1151" not in depends
+    assert "python-model-hosting-container-standards" not in depends
+
+
+def test_vllm_readme_records_the_sagemaker_standards_gap():
+    readme = " ".join((PKGBUILD.parent / "README.md").read_text().split())
+
+    assert "model-hosting-container-standards >=0.1.14,<1.0.0" in readme
+    assert "SageMaker container standards are not installed" in readme
+
+
+def test_0016_keeps_the_sagemaker_standards_import_optional():
+    # This hunk is what lets the depends leave model-hosting-container-standards
+    # out: without it, vllm/entrypoints/launchers/app.py fails to import the
+    # SageMaker router and `vllm serve` cannot build its app.
+    patch = (
+        PKGBUILD.parent / "0016-rocm-refresh-local-carry-for-vllm-0.30.0.patch"
+    ).read_text()
+    router = patch.split(
+        "diff --git a/vllm/entrypoints/serve/sagemaker/api_router.py", 1
+    )[1].split("diff --git", 1)[0]
+
+    assert "-import model_hosting_container_standards.sagemaker as sagemaker_standards" in router
+    assert "+try:\n+    import model_hosting_container_standards.sagemaker as sagemaker_standards\n+except ModuleNotFoundError:\n+    sagemaker_standards = None" in router
+    assert '+            "SageMaker container standards are not installed; skipping "\n+            "SageMaker-specific API routes."' in router
+    assert "+    if sagemaker_standards is None:\n+        return app\n     return sagemaker_standards.bootstrap(app)" in router
 
 
 def test_vllm_leaves_optional_common_requirements_as_optdepends():
@@ -163,8 +205,20 @@ def test_vllm_leaves_optional_common_requirements_as_optdepends():
         assert optdepends.get(name), name
 
 
-def test_vllm_readme_records_the_xgrammar_startup_blocker():
+def test_vllm_readme_records_the_xgrammar_lane():
     readme = " ".join((PKGBUILD.parent / "README.md").read_text().split())
 
     assert "xgrammar >=0.2.1,<1.0.0" in readme
     assert "vllm/parser/harmony.py" in readme
+    assert "python-xgrammar-gfx1151 0.2.3" in readme
+    assert "Startup blocker" not in readme
+
+
+def test_vllm_readme_records_the_exploratory_scenario_gaps():
+    # torchaudio (Gemma 4 audio resampling), amd-quark (Quark MXFP4
+    # emulation) and aiter (moe-aiter and the Triton AMD ViT wrapper) are on
+    # exploratory scenario request paths only.
+    readme = " ".join((PKGBUILD.parent / "README.md").read_text().split())
+
+    for text in ("torchaudio", "amd-quark", "python-amd-aiter-gfx1151"):
+        assert text in readme

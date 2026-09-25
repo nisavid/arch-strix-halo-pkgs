@@ -204,6 +204,13 @@ def _assertion_failures(
             if failure is not None:
                 failures.append(f"{kind}: {failure}")
             continue
+        if kind.endswith(".not_contains"):
+            source_name = kind.removesuffix(".not_contains")
+            if source_name not in sources:
+                raise ValueError(f"UNKNOWN_ASSERTION_KIND: {kind}")
+            if str(expected) in sources[source_name]:
+                failures.append(f"{kind}: found {expected!r}")
+            continue
         if kind == "exit_code.equals":
             if exit_code != int(expected):
                 failures.append(f"{kind}: expected {expected}, got {exit_code}")

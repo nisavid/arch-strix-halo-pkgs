@@ -1,0 +1,111 @@
+{
+  "maintenance": {
+    "advisory_references": [],
+    "authoritative_reference": "aur/python-apache-tvm-ffi",
+    "divergence_notes": [
+      "Pins 0.1.10 instead of the AUR 0.1.14.post1 package: xgrammar 0.2.3 requires apache-tvm-ffi >=0.1.9 at build and run time, and vLLM 0.30.0 requirements/rocm.txt pins apache-tvm-ffi ==0.1.10, so 0.1.10 meets both.",
+      "Builds the C++ core, the bundled libbacktrace and the Cython module through the Blackcat native-wheel compiler lane with amdclang and Zen 5 flags. The wheel is a cp312-abi3 wheel (pyproject `wheel.py-api = \"cp312\"`).",
+      "Depends on glibc, libgcc, libstdc++, python-gfx1151 and python-typing_extensions. Upstream 0.1.10 declares only typing-extensions >=4.5."
+    ],
+    "source_patches": [],
+    "update_notes": [
+      "Move this pin with xgrammar: re-check xgrammar's pyproject apache-tvm-ffi floor and vLLM's requirements/rocm.txt pin together before updating.",
+      "xgrammar links libtvm_ffi.so and compiles against these headers, so rebuild python-xgrammar-gfx1151 after any update.",
+      "The build is CPU-only: CMakeLists.txt enables CXX and C, and the pyproject passes TVM_FFI_BUILD_TESTS=OFF (googletest would need a fetch). No CUDA probe runs.",
+      "After publishing a rebuilt package, verify `import tvm_ffi`, `tvm_ffi.core` and `python -m tvm_ffi.config --libfiles` through the installed local Python lane.",
+      "On 2026-09-25, added at 0.1.10 for the generation-C W2A closure (#110, #111) as the runtime and build dependency of python-xgrammar-gfx1151. vLLM 0.30.0 imports xgrammar in every process, and xgrammar imports tvm_ffi (`xgrammar/base.py`, `exception.py` and `load_binding.py`). The upstream build compiles 23 C++ sources, 33 libbacktrace C files and one Cython module; expect a few minutes of CPU time. It is built in the rootless C build root in the vLLM lease job."
+    ]
+  },
+  "name": "python-apache-tvm-ffi-gfx1151",
+  "package_name": "python-apache-tvm-ffi-gfx1151",
+  "pkgver": "0.1.10",
+  "policy": {
+    "advisory_references": [],
+    "arch_reference": [
+      "aur/python-apache-tvm-ffi"
+    ],
+    "authoritative_reference": "aur/python-apache-tvm-ffi",
+    "conflicts": [
+      "python-apache-tvm-ffi"
+    ],
+    "depends": [
+      "glibc",
+      "libgcc",
+      "libstdc++",
+      "python-gfx1151",
+      "python-typing_extensions"
+    ],
+    "divergence_notes": [
+      "Pins 0.1.10 instead of the AUR 0.1.14.post1 package: xgrammar 0.2.3 requires apache-tvm-ffi >=0.1.9 at build and run time, and vLLM 0.30.0 requirements/rocm.txt pins apache-tvm-ffi ==0.1.10, so 0.1.10 meets both.",
+      "Builds the C++ core, the bundled libbacktrace and the Cython module through the Blackcat native-wheel compiler lane with amdclang and Zen 5 flags. The wheel is a cp312-abi3 wheel (pyproject `wheel.py-api = \"cp312\"`).",
+      "Depends on glibc, libgcc, libstdc++, python-gfx1151 and python-typing_extensions. Upstream 0.1.10 declares only typing-extensions >=4.5."
+    ],
+    "license": [
+      "Apache-2.0"
+    ],
+    "makedepends": [
+      "cmake",
+      "cython",
+      "ninja",
+      "python-build",
+      "python-installer",
+      "python-scikit-build-core",
+      "python-setuptools-scm",
+      "rocm-llvm-gfx1151"
+    ],
+    "patches_dir": "patches/python-apache-tvm-ffi-gfx1151",
+    "pkgdesc": "Apache TVM FFI ABI and Python bindings rebuilt for Strix Halo gfx1151",
+    "provides": [
+      "python-apache-tvm-ffi"
+    ],
+    "pypi_name": "apache_tvm_ffi",
+    "recipe_key": "native_wheels",
+    "recipe_notes_override": "apache-tvm-ffi supplies the TVM FFI ABI, its shared library and its Cython\nbindings. xgrammar 0.2.x builds its Python bindings as a TVM-FFI module and\nimports tvm_ffi at run time, and vLLM 0.30.0 imports xgrammar in every\nprocess. The package builds the C++ core and the Cython module on the local\namdclang native-wheel lane.\n",
+    "scaffold_notes": [
+      "Part of the vLLM runtime dependency closure (#110), as the xgrammar dependency.",
+      "Renders through the Blackcat native-wheel lane; Blackcat's recipe does not name this package.",
+      "scikit-build-core drives CMake with the ninja generator and runs Cython; setuptools-scm reads the version from the sdist metadata."
+    ],
+    "sha256sums": [
+      "974c208766c304c780c17c6d405449e862f83b22c7b6b2b8c28b29d55a806ae3"
+    ],
+    "single_wheel_install": true,
+    "src_subdir": "apache_tvm_ffi-0.1.10",
+    "template": "native-wheel-pypi",
+    "update_notes": [
+      "Move this pin with xgrammar: re-check xgrammar's pyproject apache-tvm-ffi floor and vLLM's requirements/rocm.txt pin together before updating.",
+      "xgrammar links libtvm_ffi.so and compiles against these headers, so rebuild python-xgrammar-gfx1151 after any update.",
+      "The build is CPU-only: CMakeLists.txt enables CXX and C, and the pyproject passes TVM_FFI_BUILD_TESTS=OFF (googletest would need a fetch). No CUDA probe runs.",
+      "After publishing a rebuilt package, verify `import tvm_ffi`, `tvm_ffi.core` and `python -m tvm_ffi.config --libfiles` through the installed local Python lane.",
+      "On 2026-09-25, added at 0.1.10 for the generation-C W2A closure (#110, #111) as the runtime and build dependency of python-xgrammar-gfx1151. vLLM 0.30.0 imports xgrammar in every process, and xgrammar imports tvm_ffi (`xgrammar/base.py`, `exception.py` and `load_binding.py`). The upstream build compiles 23 C++ sources, 33 libbacktrace C files and one Cython module; expect a few minutes of CPU time. It is built in the rootless C build root in the vLLM lease job."
+    ],
+    "upstream_version": "0.1.10",
+    "url": "https://github.com/apache/tvm-ffi"
+  },
+  "provenance": {
+    "output_root": "packages",
+    "recipe_author": "Blackcat Informatics Inc.",
+    "recipe_commit": "3f15f9f",
+    "recipe_date": "20260508",
+    "recipe_history_count": 17,
+    "recipe_repo": "https://github.com/paudley/ai-notes",
+    "recipe_subdir": "strix-halo",
+    "repo_subpath": "."
+  },
+  "recipe": {
+    "branch": null,
+    "depends_on": [
+      "cpython",
+      "pytorch"
+    ],
+    "method": "pip",
+    "notes": "apache-tvm-ffi supplies the TVM FFI ABI, its shared library and its Cython\nbindings. xgrammar 0.2.x builds its Python bindings as a TVM-FFI module and\nimports tvm_ffi at run time, and vLLM 0.30.0 imports xgrammar in every\nprocess. The package builds the C++ core and the Cython module on the local\namdclang native-wheel lane.\n",
+    "patches": [],
+    "phase": "H",
+    "repo": null,
+    "src_dir": "apache_tvm_ffi-0.1.10",
+    "steps": [
+      32
+    ]
+  }
+}

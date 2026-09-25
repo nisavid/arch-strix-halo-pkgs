@@ -5,6 +5,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 RUNNER = REPO_ROOT / "tools/run_inference_scenarios.py"
@@ -1452,6 +1454,60 @@ value = "missing marker"
     )
     assert scenario_result["ok"] is False
     assert "stdout.contains" in scenario_result["failures"][0]
+
+
+@pytest.mark.parametrize(
+    ("stdout", "ok"),
+    [("startup ok", True), ("ModuleNotFoundError: No module named 'xgrammar'", False)],
+)
+def test_runner_not_contains_rejects_forbidden_output(
+    tmp_path: Path, stdout: str, ok: bool
+):
+    script = write_fake_command_script(tmp_path)
+    scenario_dir = tmp_path / "inference" / "scenarios"
+    scenario_dir.mkdir(parents=True)
+    run_root = tmp_path / "run"
+    (scenario_dir / "generic.toml").write_text(
+        f"""
+[[scenario]]
+id = "lemonade.fake.forbidden"
+summary = "fake command must not print an import failure"
+
+[scenario.given]
+engine = "lemonade"
+model = "builtin"
+entrypoint = "{sys.executable}"
+
+[scenario.when]
+argv = ["{script}", "--stdout", "{stdout}"]
+
+[[scenario.then.assert]]
+kind = "output.not_contains"
+value = "ModuleNotFoundError"
+""",
+        encoding="utf-8",
+    )
+
+    result = run_runner(
+        "--scenario-dir",
+        str(scenario_dir),
+        "--run-root",
+        str(run_root),
+        "--scenario",
+        "lemonade.fake.forbidden",
+    )
+
+    scenario_result = json.loads(
+        (run_root / "scenarios" / "lemonade.fake.forbidden" / "result.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert scenario_result["ok"] is ok
+    assert result.returncode == (0 if ok else 1)
+    if not ok:
+        assert scenario_result["failures"] == [
+            "output.not_contains: found 'ModuleNotFoundError'"
+        ]
 
 
 def test_dry_run_carries_attention_backend_prediction(tmp_path: Path):

@@ -65,8 +65,8 @@ llhttp
 nasm
 python-maturin
 python-hatchling
-# python-model-hosting-container-standards-gfx1151 runtime closure beyond
-# FastAPI, Starlette, pydantic and httpx: vLLM 0.30.0 imports it while
-# `vllm serve` builds its app.
-python-jmespath
-supervisor
+# apache-tvm-ffi and xgrammar build with scikit-build-core, which drives the
+# cmake and ninja that torch-chain.targets names; apache-tvm-ffi also runs
+# Cython (above) and setuptools-scm (torch-chain.targets). Neither needs
+# nanobind: xgrammar 0.2.x binds through tvm-ffi.
+python-scikit-build-core

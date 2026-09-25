@@ -427,13 +427,22 @@ checks = [
   { id = "aur", role = "baseline", kind = "aur", package = "python-pybase64", recorded = "1.4.2-1", comparison = "pkgver" },
 ]
 
-[families.model_hosting_container_standards]
-packages = ["python-model-hosting-container-standards-gfx1151"]
+[families.apache_tvm_ffi]
+packages = ["python-apache-tvm-ffi-gfx1151"]
 priority = "medium"
 workflow = "upstream_source_update"
 checks = [
-  { id = "pypi", role = "primary", kind = "pypi", package = "model-hosting-container-standards", recorded = "0.1.16", comparison = "pep440" },
-  { id = "aur", role = "baseline", kind = "aur", package = "python-model-hosting-container-standards", recorded = "0.1.16-1", comparison = "pkgver" },
+  { id = "pypi", role = "primary", kind = "pypi", package = "apache-tvm-ffi", recorded = "0.1.10", comparison = "pep440" },
+  { id = "aur", role = "baseline", kind = "aur", package = "python-apache-tvm-ffi", recorded = "0.1.14.post1-1", comparison = "pkgver" },
+]
+
+[families.xgrammar]
+packages = ["python-xgrammar-gfx1151"]
+priority = "medium"
+workflow = "upstream_source_update"
+checks = [
+  { id = "pypi", role = "primary", kind = "pypi", package = "xgrammar", recorded = "0.2.3", comparison = "pep440" },
+  { id = "aur", role = "baseline", kind = "aur", package = "python-xgrammar", recorded = "0.2.5.post1-1", comparison = "pkgver" },
 ]
 
 [families.mistral_common]

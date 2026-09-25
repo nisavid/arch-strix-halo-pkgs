@@ -135,13 +135,6 @@ SERVICE_STACK = {
         "provides": ["python-pybase64"],
         "consumer_dep": "python-pybase64-gfx1151",
     },
-    "python-model-hosting-container-standards-gfx1151": {
-        "template": "native-wheel-pypi",
-        "recipe_key": "native_wheels",
-        "upstream_version": "0.1.16",
-        "provides": ["python-model-hosting-container-standards"],
-        "consumer_dep": "python-model-hosting-container-standards-gfx1151",
-    },
 }
 
 TOOLING_STACK = {
@@ -315,7 +308,6 @@ def test_service_consumers_prefer_local_blackcat_packages() -> None:
         "python-einops-gfx1151",
         "python-py-cpuinfo-gfx1151",
         "python-pybase64-gfx1151",
-        "python-model-hosting-container-standards-gfx1151",
     ):
         assert SERVICE_STACK[package_name]["consumer_dep"] in vllm_deps
         assert SERVICE_STACK[package_name]["provides"][0] not in vllm_deps

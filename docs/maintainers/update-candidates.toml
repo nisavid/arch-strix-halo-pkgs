@@ -3404,25 +3404,93 @@ next_gate_issue = 110
 next_gate_label = "pybase64 1.5.0 W2A closure"
 last_reviewed = "2026-09-25"
 
-[candidates."model-hosting-container-standards-0.1.16-selected"]
-family = "model_hosting_container_standards"
-packages = ["python-model-hosting-container-standards-gfx1151"]
+[candidates."apache-tvm-ffi-0.1.10-selected"]
+family = "apache_tvm_ffi"
+packages = ["python-apache-tvm-ffi-gfx1151"]
 source_kind = "pypi"
 check_id = "pypi"
 previous_recorded = "none"
-latest = "0.1.16"
+latest = "0.1.10"
 discovery_status = "stable_update_available"
 disposition = "tracked"
-disposition_reason = "Tracked as the new W2A closure package for vLLM 0.30.0's model-hosting-container-standards >=0.1.14,<1.0.0 requirement, which `vllm serve` imports while it builds its app. No Arch sync repo carries it. The package source is pinned; the build, root add, and vLLM server smoke remain open."
+disposition_reason = "Tracked as the new W2A closure package that xgrammar 0.2.3 needs to build and import. xgrammar requires apache-tvm-ffi >=0.1.9, and vLLM 0.30.0 requirements/rocm.txt pins apache-tvm-ffi ==0.1.10, so 0.1.10 meets both. No Arch sync repo carries it. The package source is pinned; the build, root add, and vLLM import and server smoke remain open."
 salient_changes = [
-  "vLLM 0.30.0 imports model_hosting_container_standards.sagemaker at module level in vllm/entrypoints/serve/sagemaker/api_router.py, which vllm/entrypoints/launchers/app.py imports",
-  "0.1.16 requires fastapi, starlette >=0.49.1, pydantic, jmespath, httpx, setuptools and supervisor >=4.2.0, which Arch packages meet",
-  "vLLM caps fastapi below 0.137.0 for this package's handler overrides; Arch python-fastapi is above the cap",
+  "xgrammar 0.2.x imports tvm_ffi at module level and builds its bindings as a TVM-FFI module",
+  "vLLM 0.30.0 requirements/rocm.txt pins apache-tvm-ffi ==0.1.10; its ROCm CI lock also resolves 0.1.10",
+  "0.1.10 is a scikit-build-core CMake and Cython build with no CUDA; it requires only typing-extensions >=4.5 at run time",
 ]
 patch_carry_overlap = false
 package_source_update_needed = false
 host_validation_needed = true
 next_gate_kind = "github_issue"
 next_gate_issue = 110
-next_gate_label = "model-hosting-container-standards 0.1.16 W2A closure"
+next_gate_label = "apache-tvm-ffi 0.1.10 W2A closure"
+last_reviewed = "2026-09-25"
+
+[candidates."apache-tvm-ffi-0.1.14.post1-pypi"]
+family = "apache_tvm_ffi"
+packages = ["python-apache-tvm-ffi-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+previous_recorded = "0.1.10"
+latest = "0.1.14.post1"
+discovery_status = "stable_update_available"
+disposition = "rejected"
+disposition_reason = "Rejected on 2026-09-25 for the vLLM 0.30.0 line. vLLM's requirements/rocm.txt pins apache-tvm-ffi ==0.1.10, and the W2A xgrammar 0.2.3 lane builds against 0.1.10. Revisit with the next vLLM or xgrammar update."
+salient_changes = [
+  "PyPI apache-tvm-ffi 0.1.14.post1 is available after the selected 0.1.10",
+  "The AUR python-apache-tvm-ffi baseline is 0.1.14.post1-1",
+  "vLLM 0.30.0 pins apache-tvm-ffi ==0.1.10 for ROCm",
+]
+patch_carry_overlap = false
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_label = "Rejected; W2A keeps apache-tvm-ffi 0.1.10 with vLLM 0.30.0"
+last_reviewed = "2026-09-25"
+
+[candidates."xgrammar-0.2.3-selected"]
+family = "xgrammar"
+packages = ["python-xgrammar-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+previous_recorded = "none"
+latest = "0.2.3"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked as the new W2A closure package for vLLM 0.30.0's xgrammar >=0.2.1,<1.0.0 requirement. vLLM imports xgrammar in every process, so no scenario starts without it. 0.2.3 is the version vLLM's CUDA and CPU CI locks test and ships CPython 3.14 wheels. No Arch sync repo carries it, and the AUR package omits apache-tvm-ffi. The package source is pinned; the build, root add, and vLLM import, structured-output and server smoke remain open."
+salient_changes = [
+  "vLLM 0.30.0 imports xgrammar at module level in vllm/parser/harmony.py, which the engine core, the offline LLM and the API server all reach",
+  "vLLM's CUDA and CPU CI locks test xgrammar 0.2.3; the ROCm lock tests 0.2.1",
+  "0.2.3 requires apache-tvm-ffi >=0.1.9, pydantic, torch, transformers, triton, numpy and typing-extensions",
+  "The AUR python-xgrammar baseline is 0.2.5.post1-1, a wheel repack without the apache-tvm-ffi dependency",
+]
+patch_carry_overlap = false
+package_source_update_needed = false
+host_validation_needed = true
+next_gate_kind = "github_issue"
+next_gate_issue = 110
+next_gate_label = "xgrammar 0.2.3 W2A closure"
+last_reviewed = "2026-09-25"
+
+[candidates."xgrammar-0.2.8-pypi"]
+family = "xgrammar"
+packages = ["python-xgrammar-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+previous_recorded = "0.2.3"
+latest = "0.2.8"
+discovery_status = "stable_update_available"
+disposition = "rejected"
+disposition_reason = "Rejected on 2026-09-25 for the vLLM 0.30.0 line. vLLM's CI locks test xgrammar 0.2.3 (CUDA and CPU) and 0.2.1 (ROCm), not 0.2.8, and 0.2.8 needs apache-tvm-ffi >=0.1.11, above vLLM's ROCm pin of 0.1.10. Revisit with the next vLLM update."
+salient_changes = [
+  "PyPI xgrammar 0.2.8 is available after the selected 0.2.3",
+  "xgrammar 0.2.8 requires apache-tvm-ffi >=0.1.11",
+  "No vLLM 0.30.0 CI lock tests xgrammar 0.2.8",
+]
+patch_carry_overlap = false
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_label = "Rejected; W2A keeps xgrammar 0.2.3 with vLLM 0.30.0"
 last_reviewed = "2026-09-25"
