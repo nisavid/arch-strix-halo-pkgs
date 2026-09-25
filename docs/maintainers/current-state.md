@@ -97,6 +97,12 @@ in the desktop session on 2026-09-25 against `lemonade-app 11.7.0-1` and
 5. The model was unloaded, and the final pins and persisted `pinned_models`
    were exactly the five owner pins, all loaded.
 
+The checklist names the registered `user.Qwen3-0.6B-Q8_0-GGUF`. The owner
+used the built-in `Qwen3-0.6B-GGUF` instead, which is the same base model
+under a different registration. The checklist tests the app's pin,
+startup-pin and chat controls, which work the same for any registration,
+so the pass stands with this deviation recorded.
+
 **Owner decisions recorded during M4:**
 - **Slot limit:** `max_loaded_models` changed from 2 to -1 (unlimited) on
   2026-09-24. With five pins filling both LLM slots, every new LLM load
