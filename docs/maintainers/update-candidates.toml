@@ -4130,21 +4130,49 @@ check_id = "upstream-release"
 previous_recorded = "11.7.0"
 latest = "11.9.0"
 discovery_status = "baseline_drift"
-disposition = "tracked"
-disposition_reason = "Tracked on 2026-09-22 when the Lemonade repin (#137) recorded the upstream-release baseline at 11.7.0, the upstream release that frozen fork main 3d5991033 contains. Canonical upstream Lemonade reports 11.9.0. On 2026-09-25 the upstream-sync repackage (#141) adopted 11.9.0 as the upstream-release baseline, repinned lemonade-server and lemonade-app to the fork's upstream v11.9.0 sync (nisavid/lemonade#175), then to its merge commit b6616eb3b, set the family version to 11.9.0, dropped patch 0005, and followed the 11.9 service layout. The source is updated only: package build, publish, install, installed smoke, the M4 scenario set, and the Open WebUI zembed and zerank re-smoke remain open under #141, so the candidate stays tracked until that revalidation passes."
+disposition = "adopted"
+disposition_reason = "Adopted on 2026-09-25 after being tracked from 2026-09-22, when the Lemonade repin (#137) recorded the upstream-release baseline at 11.7.0, the upstream release that frozen fork main 3d5991033 contains, while canonical upstream Lemonade reported 11.9.0. The upstream-sync repackage (#141) adopted 11.9.0 as the upstream-release baseline, repinned lemonade-server and lemonade-app to b6616eb3b, the merge commit of the fork's upstream v11.9.0 sync (nisavid/lemonade#175), set the family version to 11.9.0, dropped patch 0005, and followed the 11.9 service layout (#165, with the errexit-safe unit guard from #166). M6 then built the family from main fce9532, published it to both strix-halo-gfx1151 repo databases, and the owner installed it with pacman -U of exactly the three archives after a soname and depend seam check. The installed smoke passed, and live validation passed: the M4 unprivileged set 17/17, the root subset 3/3, the app operator checklist, and the Open WebUI request-shape seam 5/5. The full Open WebUI S6 re-smoke runs in the arch-pkgs M5 trial. The receipts are in the 2026-09-25 Lemonade M6 Redeploy and Revalidation section of docs/maintainers/current-state.md. The calendar-versioned upstream line is tracked separately as lemonade-upstream-2026.39.1 (#163)."
 salient_changes = [
   "Canonical upstream Lemonade reports 11.9.0 after the recorded 11.7.0 baseline",
   "The upstream-release baseline is recorded at 11.9.0, and lemonade-server, lemonade-app, and lemonade package 11.9.0",
   "The source pin is b6616eb3b6d31c3d7dbffffdb23e24adda1292a1, the merge commit of the fork's upstream v11.9.0 sync (nisavid/lemonade#175), which contains upstream v11.9.0 (bb39eafc22aa7e57fc7aeb8b7d384d70b44a4531), the fork fix for nisavid/lemonade#168, and the pinned-reload eviction fix (553d923)",
   "Patch 0005 is dropped; patches 0001-0004 and the app's glib patch apply unchanged",
   "Lemonade 11.9 splits the service config dir (/var/lib/lemonade) from its cache dir (/var/cache/lemonade), makes config.json sparse, and moves the service environment file to /etc/default/lemond",
+  "M6 built lemonade-server, lemonade-app, and lemonade 11.9.0-1 from main fce9532 in the memory-capped builds.slice, with each .BUILDINFO PKGBUILD checksum equal to its PKGBUILD, and published exactly those three archives to both strix-halo-gfx1151 repo databases",
+  "The owner installed the three archives with pacman -U after every NEEDED soname and depend was satisfied without -Syu; the first start migrated the legacy JSON state into /var/lib/lemonade with identical checksums, and config.json was rewritten sparse, keeping every non-default key",
+  "M6 live validation passed: the M4 unprivileged set 17/17, the root subset 3/3, the app operator checklist, and the Open WebUI request-shape seam 5/5; follow-ups are nisavid/lemonade#177, #178, and #179",
 ]
 patch_carry_overlap = true
 package_source_update_needed = false
-host_validation_needed = true
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_label = "Adopted; built, published, installed, and live-validated in M6 (#141)"
+last_reviewed = "2026-09-25"
+
+[candidates."lemonade-fork-b33524f"]
+family = "lemonade"
+packages = ["lemonade-server", "lemonade-app", "lemonade"]
+source_kind = "git_ref"
+check_id = "fork-main"
+baseline_source_kind = "github_release"
+baseline_latest = "2026.39.1"
+covered_checks = [{ source_kind = "github_release", check_id = "upstream-release" }]
+previous_recorded = "b6616eb3b6d31c3d7dbffffdb23e24adda1292a1 / 11.9.0"
+latest = "b33524f521acdf19ff74a70b279d35073dfce66c"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "Tracked on 2026-09-25 when the cache-aware Lemonade check run for the M6 closeout (#141) reported fork main at b33524f521, one commit past the b6616eb3b pin. That commit is nisavid/lemonade#173, which M6 deliberately excluded from the 11.9.0 repack. It changes only the fork's CMake build: Ninja compile and link job pools sized from available memory, their CTest fixtures, and one AGENTS.md line, with no server or app source change. ASHP #163 packages the fork's calendar-versioned sync, which is the next Lemonade repin and moves the pin past this commit. The same check still reports the upstream v2026.39.1 baseline drift, which lemonade-upstream-2026.39.1 records under #163; this record covers that check too, so that one record matches the whole family result."
+salient_changes = [
+  "Fork main b33524f521acdf19ff74a70b279d35073dfce66c is one commit ahead of the b6616eb3b6d31c3d7dbffffdb23e24adda1292a1 pin, zero behind",
+  "The commit is nisavid/lemonade#173: a new cmake/MemoryAwareJobPools.cmake module, its inclusion in CMakeLists.txt, its CTest fixtures, and one AGENTS.md line",
+  "M6 deliberately excluded nisavid/lemonade#173 from the 11.9.0 repack; no shipped server or app code changes",
+]
+patch_carry_overlap = false
+package_source_update_needed = true
+host_validation_needed = false
 next_gate_kind = "github_issue"
-next_gate_issue = 141
-next_gate_label = "Lemonade 11.9.0 package build, publish, owner redeploy, and revalidation"
+next_gate_issue = 163
+next_gate_label = "Lemonade calendar-versioned release packaging, the next Lemonade repin past fork main b33524f"
 last_reviewed = "2026-09-25"
 
 [candidates."lemonade-upstream-2026.39.1"]
