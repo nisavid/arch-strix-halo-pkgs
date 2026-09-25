@@ -150,6 +150,27 @@ def test_gemma4_server_smoke_plans_known_answer_and_long_decode_requests():
     assert "PELICAN" in long_decode["messages"][0]["content"]
 
 
+def test_gemma4_server_smoke_wide_long_decode_sizes_the_26b_lane_past_its_window():
+    result = run_helper(
+        "google/gemma-4-26B-A4B-it",
+        "--mode",
+        "basic",
+        "--long-decode",
+        "--long-decode-count",
+        "250",
+        "--dry-run",
+    )
+
+    assert result.returncode == 0, result.stderr
+    plan = json.loads(result.stdout)
+    command = plan["server_command"]
+    assert command_value(command, "--max-model-len") == "1536"
+    assert command_value(command, "--max-num-batched-tokens") == "32"
+    long_decode = plan["long_decode_request_payload"]
+    assert long_decode["max_tokens"] == 1250
+    assert "count from 1 to 250" in long_decode["messages"][0]["content"]
+
+
 def test_gemma4_server_smoke_explicit_max_model_len_wins_over_long_decode_default():
     result = run_helper(
         "google/gemma-4-E2B-it",

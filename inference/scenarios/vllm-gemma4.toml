@@ -9,7 +9,7 @@ model = "google/gemma-4-26B-A4B-it"
 tool = "gemma4_text_smoke"
 
 [scenario.when]
-argv = ["--known-answer", "--long-decode"]
+argv = ["--known-answer", "--long-decode", "--long-decode-count", "250"]
 
 [scenario.attention_backend]
 expected = "TRITON_ATTN"
@@ -59,7 +59,7 @@ model = "google/gemma-4-26B-A4B-it"
 tool = "gemma4_server_smoke.basic"
 
 [scenario.when]
-argv = ["--known-answer", "--long-decode"]
+argv = ["--known-answer", "--long-decode", "--long-decode-count", "250"]
 
 [scenario.attention_backend]
 expected = "TRITON_ATTN"

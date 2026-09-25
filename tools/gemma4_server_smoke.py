@@ -22,7 +22,8 @@ from gemma4_smoke_common import (
     KNOWN_ANSWER_PROMPT,
     LONG_DECODE_DEFAULT_COUNT,
     LONG_DECODE_MAX_MODEL_LEN,
-    LONG_DECODE_MAX_TOKENS,
+    long_decode_max_model_len,
+    long_decode_max_tokens,
     long_decode_prompt,
     validate_basic_chat_text,
     validate_known_answer_text,
@@ -158,7 +159,8 @@ def parse_args() -> argparse.Namespace:
             "after the mode check, send a greedy counting request of several "
             "hundred tokens and require every number in order plus a code word "
             "recalled from the prompt; raises the default --max-model-len to "
-            f"{LONG_DECODE_MAX_MODEL_LEN}"
+            f"at least {LONG_DECODE_MAX_MODEL_LEN}, more for a larger "
+            "--long-decode-count"
         ),
     )
     parser.add_argument(
@@ -303,7 +305,7 @@ def effective_max_model_len(args: argparse.Namespace) -> int:
     else:
         default = 512
     if getattr(args, "long_decode", False):
-        return max(default, LONG_DECODE_MAX_MODEL_LEN)
+        return max(default, long_decode_max_model_len(args.long_decode_count))
     return default
 
 
@@ -605,7 +607,7 @@ def build_long_decode_payload(args: argparse.Namespace) -> dict[str, object]:
         "messages": [
             {"role": "user", "content": long_decode_prompt(args.long_decode_count)}
         ],
-        "max_tokens": request_max_tokens(args, LONG_DECODE_MAX_TOKENS),
+        "max_tokens": request_max_tokens(args, long_decode_max_tokens(args.long_decode_count)),
         "temperature": 0.0,
     }
 

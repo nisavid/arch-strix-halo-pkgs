@@ -268,6 +268,22 @@ def test_gemma4_promoted_scenarios_gate_on_output_correctness_without_aiter():
         assert {"kind": "exit_code.equals", "value": 0} in assertions
 
 
+def test_gemma4_26b_long_decode_crosses_the_1024_token_sliding_window():
+    # 26B-A4B slides over 1024 tokens; counting to 250 is 1146 generated
+    # tokens after a 68-token prompt. E2B (512-token window) keeps 150.
+    by_id = {scenario.id: scenario for scenario in _gemma4_scenarios()}
+
+    for scenario_id, count in (
+        ("vllm.gemma4.26b-a4b.text.basic", "250"),
+        ("vllm.gemma4.26b-a4b.server.basic", "250"),
+    ):
+        argv = by_id[scenario_id].definition["when"]["argv"]
+        assert argv[argv.index("--long-decode-count") + 1] == count, scenario_id
+
+    e2b_argv = by_id["vllm.gemma4.e2b.server.basic"].definition["when"]["argv"]
+    assert "--long-decode-count" not in e2b_argv
+
+
 def test_gemma4_26b_scenarios_expect_auto_selected_triton_moe():
     by_id = {scenario.id: scenario for scenario in _gemma4_scenarios()}
 

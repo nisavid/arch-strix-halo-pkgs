@@ -93,12 +93,14 @@ def test_gemma4_text_smoke_help_lists_correctness_checks():
 
 
 def test_gemma4_text_smoke_long_decode_raises_default_max_model_len():
-    basic = SimpleNamespace(max_model_len=None, long_decode=False)
-    long_decode = SimpleNamespace(max_model_len=None, long_decode=True)
-    explicit = SimpleNamespace(max_model_len=2048, long_decode=True)
+    basic = SimpleNamespace(max_model_len=None, long_decode=False, long_decode_count=150)
+    long_decode = SimpleNamespace(max_model_len=None, long_decode=True, long_decode_count=150)
+    wide = SimpleNamespace(max_model_len=None, long_decode=True, long_decode_count=250)
+    explicit = SimpleNamespace(max_model_len=2048, long_decode=True, long_decode_count=250)
 
     assert effective_max_model_len(basic) == 128
     assert effective_max_model_len(long_decode) == 1024
+    assert effective_max_model_len(wide) == 1536
     assert effective_max_model_len(explicit) == 2048
 
 
@@ -117,3 +119,11 @@ def test_gemma4_text_smoke_correctness_checks_are_opt_in_and_greedy_sized():
     checks[1].validate(
         ", ".join(str(value) for value in range(1, 121)) + "\nCode word: PELICAN"
     )
+
+
+def test_gemma4_text_smoke_long_decode_max_tokens_follow_the_count():
+    wide = SimpleNamespace(known_answer=False, long_decode=True, long_decode_count=250)
+
+    (check,) = correctness_checks(wide)
+    assert "count from 1 to 250" in check.prompt
+    assert check.max_tokens == 1250

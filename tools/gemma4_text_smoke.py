@@ -17,7 +17,8 @@ from gemma4_smoke_common import (
     KNOWN_ANSWER_PROMPT,
     LONG_DECODE_DEFAULT_COUNT,
     LONG_DECODE_MAX_MODEL_LEN,
-    LONG_DECODE_MAX_TOKENS,
+    long_decode_max_model_len,
+    long_decode_max_tokens,
     long_decode_prompt,
     validate_basic_chat_text,
     validate_known_answer_text,
@@ -58,8 +59,8 @@ def parse_args() -> argparse.Namespace:
         type=int,
         default=None,
         help=(
-            f"defaults to {BASIC_MAX_MODEL_LEN}, or {LONG_DECODE_MAX_MODEL_LEN} "
-            "with --long-decode"
+            f"defaults to {BASIC_MAX_MODEL_LEN}, or with --long-decode to at "
+            f"least {LONG_DECODE_MAX_MODEL_LEN}, raised to fit --long-decode-count"
         ),
     )
     parser.add_argument("--max-tokens", type=int, default=16)
@@ -100,7 +101,7 @@ def effective_max_model_len(args: argparse.Namespace) -> int:
     if args.max_model_len is not None:
         return args.max_model_len
     if args.long_decode:
-        return LONG_DECODE_MAX_MODEL_LEN
+        return long_decode_max_model_len(args.long_decode_count)
     return BASIC_MAX_MODEL_LEN
 
 
@@ -120,7 +121,7 @@ def correctness_checks(args: argparse.Namespace) -> list[CorrectnessCheck]:
             CorrectnessCheck(
                 name="long_decode",
                 prompt=long_decode_prompt(args.long_decode_count),
-                max_tokens=LONG_DECODE_MAX_TOKENS,
+                max_tokens=long_decode_max_tokens(args.long_decode_count),
                 validate=partial(
                     validate_long_decode_text,
                     count=args.long_decode_count,

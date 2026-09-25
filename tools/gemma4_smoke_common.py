@@ -53,11 +53,29 @@ LONG_DECODE_CODE_WORD = "PELICAN"
 LONG_DECODE_DEFAULT_COUNT = 150
 # Counting to 150 is about 650 Gemma 4 tokens: long enough to cross the E2B
 # 512-token sliding window, so recalling the code word at the end depends on
-# the full-attention layers.
+# the full-attention layers. The 26B-A4B window is 1024 tokens, so its lanes
+# count to 250: 1146 generated tokens after a 68-token chat prompt.
 LONG_DECODE_MAX_TOKENS = 800
 LONG_DECODE_MAX_MODEL_LEN = 1024
+# Gemma 4 splits digits, so each number up to 999 costs at most five tokens:
+# three digits plus ", ". The smaller numbers' savings cover the code-word
+# trailer.
+LONG_DECODE_TOKENS_PER_NUMBER = 5
+# Room for the ~68-token chat prompt plus the server's request reserve.
+LONG_DECODE_PROMPT_HEADROOM = 192
+LONG_DECODE_MAX_MODEL_LEN_STEP = 256
 
 INTEGER_RE = re.compile(r"\d+")
+
+
+def long_decode_max_tokens(count: int = LONG_DECODE_DEFAULT_COUNT) -> int:
+    return max(LONG_DECODE_MAX_TOKENS, LONG_DECODE_TOKENS_PER_NUMBER * count)
+
+
+def long_decode_max_model_len(count: int = LONG_DECODE_DEFAULT_COUNT) -> int:
+    needed = long_decode_max_tokens(count) + LONG_DECODE_PROMPT_HEADROOM
+    step = LONG_DECODE_MAX_MODEL_LEN_STEP
+    return max(LONG_DECODE_MAX_MODEL_LEN, -(-needed // step) * step)
 
 
 def long_decode_prompt(count: int = LONG_DECODE_DEFAULT_COUNT) -> str:
