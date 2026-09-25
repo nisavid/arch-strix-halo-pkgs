@@ -100,7 +100,7 @@ packages = ["python-torchvision-rocm-gfx1151"]
 priority = "medium"
 workflow = "upstream_source_update"
 checks = [
-  { id = "release", role = "primary", kind = "github_release", repo = "pytorch/vision", recorded = "0.27.0", tag_prefix = "v", comparison = "pep440", include_prereleases = false },
+  { id = "release", role = "primary", kind = "github_release", repo = "pytorch/vision", recorded = "0.27.1", tag_prefix = "v", comparison = "pep440", include_prereleases = false },
   { id = "aur", role = "baseline", kind = "aur", package = "python-torchvision-rocm", recorded = "0.27.0-1", comparison = "pkgver" },
 ]
 source_contracts = [

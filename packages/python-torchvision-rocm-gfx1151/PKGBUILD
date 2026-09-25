@@ -5,8 +5,8 @@
 # Package recipe key: torchvision
 
 pkgname=python-torchvision-rocm-gfx1151
-pkgver=0.27.0
-pkgrel=4
+pkgver=0.27.1
+pkgrel=1
 pkgdesc='Datasets, transforms, and models for computer vision with ROCm support, rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://github.com/pytorch/vision
@@ -15,11 +15,11 @@ depends=(ffmpeg libjpeg-turbo libpng python-numpy-gfx1151 python-pillow-gfx1151 
 makedepends=(cmake miopen-hip-gfx1151 ninja patchelf python-gfx1151 python-installer python-pip python-setuptools rocm-llvm-gfx1151)
 optdepends=()
 options=()
-provides=(python-torchvision-rocm=0.27.0 python-torchvision=0.27.0)
+provides=(python-torchvision-rocm=0.27.1 python-torchvision=0.27.1)
 conflicts=(python-torchvision-rocm python-torchvision)
 replaces=()
-source=(https://github.com/pytorch/vision/archive/refs/tags/v0.27.0.tar.gz 0001-setup-relative-sources.patch)
-sha256sums=(04c588d80e63903e1e4444db8a1c32dc56e4080ed48782555e1d00752d6edb17 4318e3ac610fbc70563edda12ed137fead517d7617173d6ac7bdfcccabe00d7f)
+source=(https://github.com/pytorch/vision/archive/refs/tags/v0.27.1.tar.gz 0001-setup-relative-sources.patch)
+sha256sums=(705d5ab7d01af9ece3bfbb1486eed3c23a2f68414fcc9c9a88910fb3c018c3db 4318e3ac610fbc70563edda12ed137fead517d7617173d6ac7bdfcccabe00d7f)
 
 _apply_patch_if_needed() {
   local _patch_name="$1"
@@ -42,13 +42,13 @@ _apply_patch_if_needed() {
 }
 
 prepare() {
-  cd "$srcdir/vision-0.27.0"
+  cd "$srcdir/vision-0.27.1"
 
   _apply_patch_if_needed "0001-setup-relative-sources.patch"
 }
 
 build() {
-  cd "$srcdir/vision-0.27.0"
+  cd "$srcdir/vision-0.27.1"
 
     _apply_patch_if_needed "0001-setup-relative-sources.patch"
 
@@ -96,7 +96,7 @@ build() {
 }
 
 package() {
-  cd "$srcdir/vision-0.27.0"
+  cd "$srcdir/vision-0.27.1"
   export PYTHONPYCACHEPREFIX="$srcdir/.python-pycache"
   local _wheel
   _wheel="$(ls dist/torchvision-*.whl 2>/dev/null | tail -n 1)"
