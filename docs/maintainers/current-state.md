@@ -4,12 +4,146 @@ The package, deployment, and live-validation narrative below remains a
 2026-06-15 snapshot. The latest freshness sweep and its acted-on Lemonade
 transition are recorded first; older reconciliations remain as dated history.
 
+## 2026-09-25 Lemonade M6 Redeploy and Revalidation
+
+M6 took the 11.9.0 repackage below through every gate of
+[issue 141](https://github.com/nisavid/arch-strix-halo-pkgs/issues/141). The
+states are recorded separately:
+
+- **Source updated:** main `fce9532`, which contains #165 and #166.
+  - #165 is the 11.9.0 repack. It pins `b6616eb3b`, the merge commit of the
+    fork's upstream v11.9.0 sync (nisavid/lemonade#175). The fork's
+    nisavid/lemonade#173 is deliberately excluded.
+  - #166 makes the package's unit guard errexit-safe.
+  - Patches 0001-0004 and the app's glib patch are carried; patch 0005 is
+    dropped.
+- **Built:** on 2026-09-25 from 11:05:14Z to 11:08:55Z, under the heavy-work
+  lease in the memory-capped `builds.slice`, by unprivileged `makepkg -Cf`
+  (never `-s` or `sudo`). `lemonade-server` took 67 s, `lemonade-app` 153 s,
+  and `lemonade` 1 s. The scope's `memory.peak` was 7.0 GiB, with no OOM
+  events. Each archive's `.BUILDINFO` PKGBUILD checksum equals its PKGBUILD
+  at `fce9532`. The first build attempt, from #165 alone, failed in
+  `package()` on the unit-guard errexit bug that #166 fixed.
+
+  | Archive | sha256 |
+  | --- | --- |
+  | `lemonade-server-11.9.0-1` | `3754d73298b4538023a68bfdb9c8862e3ec5f38b25db671c364b303803c0303d` |
+  | `lemonade-app-11.9.0-1` | `d6d4210dd4bf38323fe374af683a5fd0fba626392d1478845df613ec870b5779` |
+  | `lemonade-11.9.0-1` | `90a63bd98bd22bedc11304caf88aaa45416d2181bfeb704c72fa344945f290d0` |
+
+- **Published:** to both `strix-halo-gfx1151` repo databases by the M3 method:
+  database backups, `cp -n` with a checksum check, and `repo-add` of exactly
+  these three archives without `-R`. In each database exactly three entries
+  changed, and each `%SHA256SUM%` matches its archive.
+- **Seam check before install:** every `NEEDED` soname and every depend of the
+  three archives was satisfied by the current host without `-Syu`
+  (`lemonade-server` 13 sonames, `lemonade-app` 14, `lemonade` 0). The host
+  had pending protobuf, Abseil, gRPC and ONNX upgrades, so the install was
+  `pacman -U` of exactly the three files, never `-Sy` or `-S`. pacman changed
+  exactly those three packages. This check is a new gate in M6.
+- **Deployed/installed:** by the owner in an exclusive window on 2026-09-25,
+  from about 13:58Z to 15:05Z.
+  - The 11.9 layout is live. The package drop-in `30-env-files.conf` owns
+    the `EnvironmentFile=` order: conf.d, then `/etc/default/lemond`, then
+    `/usr/lib/lemonade/llamacpp-gfx1151.env`. `/etc/default/lemond` (0640)
+    and `zz-secrets.conf` (0660) are unmodified backup files, and there are
+    no `.pacnew` or `.pacsave` files.
+  - The first start migrated the legacy JSON state into `/var/lib/lemonade`
+    with identical sha256s. `model_storage.path` is unchanged.
+  - `config.json` was rewritten sparse by a generic computation against
+    `lemond`'s merged defaults: the built-ins at `b6616eb3b` plus the
+    packaged overlay. It keeps every non-default key, including the full
+    live llama.cpp args, and the owner reviewed it in redacted form before
+    the install.
+  - The service environment adds only `CACHE_DIRECTORY`.
+- **Installed-smoked:** the service is active on 11.9.0, and all five owner
+  pins are loaded (`pins_same`, `pins_loaded`). `model_storage_same` holds.
+  All four llama-server processes carry `--no-mmap`. No legacy cache dir
+  remains, and no env keys were removed.
+- **Live-scenario validated:** the M4 set, the root subset, the app
+  checklist, and the Open WebUI seam pass. The runs used main `fce9532`.
+
+| Check | Scope | Result |
+| --- | --- | --- |
+| The M4 unprivileged scenario set: the same 17 scenario ids as the M4 run of record | unprivileged | 17/17 |
+| `lemonade.llamacpp.rocm.qwen3-0.6b-q8-0.completion`, `lemonade.llamacpp.vulkan.qwen3-0.6b-q8-0.completion`, `lemonade.nofetch.preplaced-load-missing-model` | root | 3/3 |
+| `lemonade.app.pin-startup-text` (operator checklist) | owner | pass |
+| Open WebUI request shapes against the 11.9 service | unprivileged | 5/5 |
+| nisavid/lemonade `test/server_env_vars.py` at `b6616eb3b` | unprivileged, free test port | 35/38; the 3 failures are expected |
+
+- **Provenance rerun:** `lemonade.provenance.family-no-fallback` first
+  failed, because it compares the installed versions against the host's
+  local sync database copy. That copy is stale by design: `pacman -U` ran
+  without `-Sy`. Re-run read-only against the published repo database
+  through a private `pacman --dbpath`, it passes with `provenance_ok`. The
+  host's local `strix-halo-gfx1151` sync database copy stays at 11.7 until
+  the next full `-Syu` (W5), which is expected.
+- **App checklist:** the app reported version 11.9.0. Pinning and unpinning
+  were reflected in the live and persisted pins, the chat reply rendered,
+  and the five owner pins stayed intact.
+- **Open WebUI seam:** the five request shapes that Open WebUI sends all
+  passed against the 11.9 service:
+  - embeddings on zembed returned 2 vectors of dimension 2560;
+  - rerank with `top_n` on both `/reranking` and `/rerank` returned results
+    that carry `index` and `relevance_score`, with the correct top index;
+  - `chat/completions` on the pinned chat model passed both non-streaming
+    and SSE streaming. The answer was correct, the reasoning was in
+    `reasoning_content`, and the stream ended in `[DONE]`.
+
+  The full Open WebUI S6 re-smoke (arch-pkgs PR #94 at `2dc97e8`) is blocked
+  by design before the cutover and exits 75, because no arch-pkgs
+  Open WebUI of record is deployed yet. It runs in the M5 trial
+  (arch-pkgs #89). By owner ruling, the owner's Open WebUI UI spot check is
+  N/A: there is no configured consumer, and the request shapes cover the
+  seam.
+- **Fork env-var tests:** `test/server_env_vars.py` ran against the
+  installed `lemond` on a free test port, leaving the live service untouched:
+  the same PID, 0 restarts, and health 200 throughout. The three
+  `TestDefaults` failures are two stale fork assertions, filed as
+  nisavid/lemonade#179 (`ctx_size` 4096 against the fork's 11.9 default of
+  -1, and `global_timeout` 300 against 600), plus `max_loaded_models = -1`,
+  which is the packaged overlay's intended distro setting.
+
+**Host customization.** On the reference host, the service's cache dir stays
+at upstream's `/var/cache/lemonade`, which is bind-mounted from a host data
+volume through `/etc/fstab` (`bind,nofail`). This follows the host's
+existing convention for other `/var` data. `CacheDirectory=` gives `lemond`
+a mount dependency, so the service fails closed if the volume is missing.
+
+**Findings and follow-ups:**
+- [nisavid/lemonade#177](https://github.com/nisavid/lemonade/issues/177):
+  `lemond` does not exit after "Cleanup complete", so systemd kills it with
+  SIGKILL at the host's 10-second stop timeout. It happens on 11.7 and 11.9.
+  The proposed mitigation after M6 is a packaged `TimeoutStopSec=30s`
+  drop-in, which is not done.
+- [nisavid/lemonade#178](https://github.com/nisavid/lemonade/issues/178):
+  rerank ignores `top_n` and returns every result. Open WebUI truncates on
+  the client side, so this is harmless for that consumer.
+- [nisavid/lemonade#179](https://github.com/nisavid/lemonade/issues/179): the
+  stale `TestDefaults` assertions in `test/server_env_vars.py`.
+- **Known condition:** the Lemonade-managed vllm and sd-cpp backends are
+  unused. Their venvs contain absolute paths from their original location,
+  so they need a reinstall if they are ever used; `no_fetch_executables`
+  blocks an automatic fetch.
+
+**Candidate closeout:** `lemonade-upstream-11.9.0` is adopted, because its
+build, publish, install, installed-smoke, and live-validation gates are
+done. `lemonade-upstream-2026.39.1` stays tracked under #163.
+
+**Freshness at closeout:** the cache-aware Lemonade check run for this
+closeout reported fork main at `b33524f52`, one commit past the `b6616eb3b`
+pin. That commit is nisavid/lemonade#173, a build-only CMake change that M6
+deliberately excluded. The new `lemonade-fork-b33524f` candidate tracks it
+under #163, the next Lemonade repin, and also covers the v2026.39.1 baseline
+drift that the same check reports. With it, the Lemonade check exits 0, and
+the explicit tracker validation finds all 11 unique issue gates open.
+
 ## 2026-09-25 Lemonade 11.9.0 Repackage (Source Only)
 
 The M6 repackage for
 [issue 141](https://github.com/nisavid/arch-strix-halo-pkgs/issues/141) moves
-the Lemonade family to the fork's upstream v11.9.0 sync. Only the source is
-updated:
+the Lemonade family to the fork's upstream v11.9.0 sync. This record covers
+the source update:
 
 - **Source updated:** `lemonade-server`, `lemonade-app`, and `lemonade` are
   at 11.9.0-1. The pin is `b6616eb3b`, the merge commit of the fork's
@@ -27,10 +161,8 @@ updated:
   script writes owner config. See the package README and
   [Lemonade Live Validation](lemonade-live-validation.md#service-configuration-from-119).
 - **Built, published, deployed/installed, installed-smoked, live-scenario
-  validated:** not yet. The owner redeploy rewrites the service
-  `config.json` sparse, including the host binding, and verifies the JSON
-  migration into `/var/lib/lemonade`. Then the M4 scenario set and the
-  Open WebUI zembed and zerank re-smoke must pass.
+  validated:** done in M6 from main `fce9532`; see the 2026-09-25 Lemonade
+  M6 Redeploy and Revalidation section above.
 - **Freshness:** a Lemonade-only checker run on 2026-09-25 after the
   merge-commit repin reported fork-main `current` at `b6616eb3b`. The
   upstream-release check reports `baseline_drift` to `v2026.39.1`
