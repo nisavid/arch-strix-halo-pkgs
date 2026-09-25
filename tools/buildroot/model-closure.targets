@@ -2,10 +2,12 @@
 # Resolve together with torch-chain.targets to get a root that can import the
 # closure; their runtime dependencies come in through the package depends.
 # python-compressed-tensors-gfx1151 and python-accelerate-gfx1151 depend on
-# python-pytorch-opt-rocm-gfx1151. Add them here once torch is in ashp-w2a;
-# until then `c_buildroot.py add` them, and python-loguru below carries the one
-# runtime dependency of theirs that nothing else pulls in.
+# python-pytorch-opt-rocm-gfx1151, which is now in ashp-w2a. vLLM 0.30.0 pins
+# compressed-tensors ==0.17.0, so it is listed here; Accelerate has no vLLM
+# consumer and is still added with `c_buildroot.py add` when a smoke needs it.
+# python-loguru is the one runtime dependency of theirs that nothing else pulls in.
 python-loguru
+python-compressed-tensors-gfx1151
 python-numpy-gfx1151
 python-pyyaml-gfx1151
 python-pillow-gfx1151

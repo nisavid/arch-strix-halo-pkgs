@@ -15,7 +15,7 @@ at the paths the host will have after W5.
 | `torch-chain.targets` | Targets for the torch-chain root (base-devel, build tools, F, the torch makedepends and the protobuf and Abseil floors that MIGraphX needs). |
 | `py-closure.targets` | Extra build tools for the #110 model/runtime Python closure: meson-python, Cython, maturin, the Rust toolchain and `llvm`. Resolve it together with `torch-chain.targets` to build the closure. |
 | `model-closure.targets` | The #110 closure packages as built into `ashp-w2a`. Resolve it together with `torch-chain.targets` to get a root that can import them. |
-| `vllm-build.targets` | Build tools for the vLLM 0.30.0 package (#111): setuptools-rust, semantic-version and the Arch Rust toolchain. Resolve it together with `torch-chain.targets`. |
+| `vllm-build.targets` | Build tools for the vLLM 0.30.0 package (#111): setuptools-rust, semantic-version, the Arch Rust toolchain and poetry-core. It also lists the Arch runtime closure for the in-root vLLM import and server smoke. Resolve it together with `torch-chain.targets` and `model-closure.targets`. |
 | `probe/` | The no-leak probe: a hipcc program, a CMake HIP library and a makepkg package. |
 
 Nothing in this flow needs root, sudo or `pacman -S/-U/-Sy`, and nothing
@@ -409,8 +409,8 @@ names both.
   reports setuptools-rust 1.13.0 and semantic-version 2.10.0 under Python
   3.14.7.
 
-A fresh vLLM root is `torch-chain.targets` plus `vllm-build.targets`, with the
-W2A torch-chain builds added.
+A fresh vLLM root is `torch-chain.targets`, `model-closure.targets` and
+`vllm-build.targets`, with the W2A torch-chain builds added.
 
 ## F protobuf and Abseil contract (#108)
 
@@ -441,3 +441,58 @@ this contract ties the two versions together.
   with a partial `pacman -U`: pacman tracks the protobuf soname, but not the
   Abseil version, so a partial update can leave a protobuf 36.1 that needs
   Abseil 20260817 on top of an older Abseil.
+
+## W2A vLLM runtime closure (#110, #111)
+
+On 2026-09-25 the Arch runtime closure for vLLM 0.30.0 was added to the root,
+so that the vLLM package can be imported and served there once it is built.
+Before the change, `importlib.util.find_spec` in the root found only 16 of 87
+import names: those of vLLM 0.30.0 `requirements/common.txt` and
+`requirements/rocm.txt`, and of the package's other ASHP depends. The root held
+build tools only.
+
+- **Targets:** `vllm-build.targets` now lists the Arch packages that
+  `python-vllm-rocm-gfx1151` depends on, the `common.txt` entries that Arch
+  packages but the depends do not name yet, and `python-poetry-core`, which
+  builds `python-prometheus-fastapi-instrumentator-gfx1151`.
+  `model-closure.targets` now names `python-compressed-tensors-gfx1151`,
+  because torch is in `ashp-w2a`.
+- **Lock:** `resolve` over `torch-chain.targets`, `model-closure.targets` and
+  `vllm-build.targets` produced 580 packages. Against the root's manifest it
+  adds 145 packages and changes no versions. The W2A builds that were added
+  by hand (TorchVision, TorchAO, Torch-MIGraphX and FlashAttention) are not in
+  the lock and stay in the root. Three OpenTelemetry exporter files were not
+  in the host cache; `fetch` downloaded them, and every added file's sha256
+  matched its sync DB entry.
+- **Add:** 133 host-cache or sync-DB packages, and 12 `ashp-w2a` closure
+  builds (Transformers, tokenizers, safetensors, mistral-common, pydantic-core,
+  aiohttp with frozenlist, multidict and yarl, sentencepiece, watchfiles and
+  compressed-tensors), each with its lock source label. Arch `python-opencv` brings in Qt 6, VTK and Open MPI.
+- **Checks:** `verify` found 584 packages and no violations. Inside the root,
+  FastAPI, Starlette, uvicorn, OpenAI, pydantic with pydantic-core 2.46.5,
+  Transformers, tokenizers, safetensors, mistral-common, OpenCV, pyzmq, regex,
+  tiktoken, protobuf, huggingface-hub, compressed-tensors and the
+  OpenTelemetry SDK import without a GPU.
+
+Still missing from the root, and not Arch packages:
+
+- W2A rebuilds of existing ASHP packages: `python-uvloop-gfx1151`,
+  `python-httptools-gfx1151`, `python-msgspec-gfx1151` and
+  `python-openai-harmony-gfx1151`, which are vLLM depends, and the new
+  `python-prometheus-fastapi-instrumentator-gfx1151`.
+- vLLM depends that no sync DB carries: `python-einops`, `python-py-cpuinfo`
+  and `python-pybase64`. The host has them from AUR or an older Arch build.
+- `common.txt` entries with no Arch or ASHP package: `depyf`, `anthropic`,
+  `lm-format-enforcer`, `outlines_core`, `xgrammar`, `fastapi-cli`,
+  `model-hosting-container-standards`,
+  `opentelemetry-semantic-conventions-ai`, and the tracked #110 gaps `mcp`
+  (Arch has 1.29.0) and `llguidance`.
+- Arch cannot meet these exact pins: `lark ==1.2.2` (Arch
+  `python-lark-parser` 1.3.1 is in the root), `numba ==0.65.0` and
+  `grpcio ==1.78.0` (the root has grpcio 1.83.0 through OpenTelemetry).
+- The `rocm.txt` feature and test extras are not in the root: `datasets`,
+  `peft`, `pytest-asyncio`, `tensorizer`, `runai-model-streamer`,
+  `conch-triton-kernels`, `timm`, `amd-quark`, `tilelang`, `apache-tvm-ffi`,
+  `fastsafetensors`, `mooncake-transfer-engine-rocm` and
+  `grpcio-reflection`.
+- The pip `ninja` module; the Arch `ninja` binary is in the root.

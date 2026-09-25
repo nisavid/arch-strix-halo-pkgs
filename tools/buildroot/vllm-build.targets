@@ -1,6 +1,7 @@
 # Build tools for python-vllm-rocm-gfx1151 0.30.0 (W2A, #111).
-# Resolve together with torch-chain.targets:
+# Resolve together with torch-chain.targets and model-closure.targets:
 #   c_buildroot.py resolve --targets-file tools/buildroot/torch-chain.targets \
+#     --targets-file tools/buildroot/model-closure.targets \
 #     --targets-file tools/buildroot/vllm-build.targets ...
 # vLLM's setup.py imports setuptools_rust, which imports semantic_version.
 # The PKGBUILD names both as makedepends.
@@ -11,3 +12,45 @@ python-semantic-version
 # rustup would download one at build time. The vLLM build still skips its Rust
 # extensions: build() sets CARGO=/usr/bin/false and RUSTUP_AUTO_INSTALL=0.
 rust>=1:1.90
+
+# Runtime closure for the in-root vLLM import and server smoke (#110, #111).
+# The closure's W2A builds (Transformers, tokenizers, safetensors, mistral-common,
+# pydantic-core, aiohttp, watchfiles and compressed-tensors) come from there.
+# These are the Arch packages that python-vllm-rocm-gfx1151 depends on, plus the
+# vLLM 0.30.0 requirements/common.txt entries that Arch packages and the
+# depends do not name yet (regex, protobuf, tiktoken, partial-json-parser,
+# python-json-logger, setproctitle, prometheus_client, the fastapi[standard]
+# extras and OpenTelemetry). Pins that Arch cannot meet stay out: lark ==1.2.2,
+# numba ==0.65.0, grpcio ==1.78.0 and mcp >=2.0.0,<3.0.0.
+numactl
+python-blake3
+python-cachetools
+python-cbor2
+python-cloudpickle
+python-fastapi
+python-ijson
+python-importlib-metadata
+python-jsonschema
+python-openai
+python-opencv
+python-pyzmq
+python-soundfile
+python-starlette
+python-tqdm
+uvicorn
+python-regex
+python-protobuf
+python-tiktoken
+python-partial-json-parser
+python-json-logger
+python-setproctitle
+python-prometheus_client
+python-httpx
+python-python-multipart
+python-email-validator
+python-opentelemetry-sdk
+python-opentelemetry-api
+python-opentelemetry-exporter-otlp
+# python-prometheus-fastapi-instrumentator-gfx1151 builds with poetry-core in
+# the vLLM lease job.
+python-poetry-core
