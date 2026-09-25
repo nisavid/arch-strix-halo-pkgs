@@ -4,6 +4,38 @@ The package, deployment, and live-validation narrative below remains a
 2026-06-15 snapshot. The latest freshness sweep and its acted-on Lemonade
 transition are recorded first; older reconciliations remain as dated history.
 
+## 2026-09-25 Lemonade 11.9.0 Repackage (Source Only)
+
+The M6 repackage for
+[issue 141](https://github.com/nisavid/arch-strix-halo-pkgs/issues/141) moves
+the Lemonade family to the fork's upstream v11.9.0 sync. Only the source is
+updated:
+
+- **Source updated:** `lemonade-server`, `lemonade-app`, and `lemonade` are
+  at 11.9.0-1. The pin is `66c7642e8`, the head of the fork's
+  `nisavid/sync-upstream-v11.9.0` branch (nisavid/lemonade#175). When that PR
+  merges, its merge commit replaces the pin in `[source_pins]` and in the
+  fork-main freshness cursor. Patch 0005 is dropped, because the sync contains
+  the fork fix for nisavid/lemonade#168. Patches 0001-0004 and the app's glib
+  patch apply unchanged. The package follows the 11.9 service layout: the
+  config and cache dirs are split, and the distro defaults gain
+  `max_loaded_models: -1`. The `30-env-files.conf` drop-in owns the service's
+  `EnvironmentFile=` order: conf.d, then `/etc/default/lemond`, then the
+  packaged llama.cpp env file, which moves out of conf.d. Both
+  `/etc/default/lemond` and `zz-secrets.conf` are backup files, and no install
+  script writes owner config. See the package README and
+  [Lemonade Live Validation](lemonade-live-validation.md#service-configuration-from-119).
+- **Built, published, deployed/installed, installed-smoked, live-scenario
+  validated:** not yet. The owner redeploy rewrites the service
+  `config.json` sparse, including the host binding, and verifies the JSON
+  migration into `/var/lib/lemonade`. Then the M4 scenario set and the
+  Open WebUI zembed and zerank re-smoke must pass.
+- **Freshness:** a Lemonade-only checker run on 2026-09-25 reported fork-main
+  `branch_head_ahead`, because fork main (`2cb1a9147`) is not the pinned sync
+  head. That clears when the merge commit is pinned. It also found a new
+  upstream release, `v2026.39.1` (2026-09-23, calendar versioning), past the
+  11.9.0 baseline. That release has no candidate disposition yet.
+
 ## 2026-09-24 Lemonade M4 Live Validation
 
 M4 validated the installed Lemonade family against the X4 bar (#140). The

@@ -82,7 +82,9 @@ processes; otherwise they fail with `backend_maps_unreadable`.
     and `/health`, and posts two `/reranking` requests. It does not check the
     pin itself; the consumer-pins scenario does.
 - `isolated-lemond`: starts a private `lemond` from `/usr/bin/lemond` with a
-  temporary cache directory. The config is offline, backend fetching is
+  temporary cache directory, which also holds its config. When the inherited
+  `XDG_RUNTIME_DIR` is unset or unwritable, it gets a private runtime dir under
+  the same temporary root. The config is offline, backend fetching is
   disabled, and the packaged llama.cpp backends are used. The scenario reaches
   the test GGUF through a temporary `extra_models_dir`. The service's pins and
   config are never touched, and the temporary state is removed on exit. These
@@ -101,6 +103,78 @@ packaged binary and backends. Its private config makes the admission and
 displacement results deterministic. The service's own pins are checked
 read-only by `lemonade.pins.service-consumer-pins`.
 
+## Service Configuration From 11.9
+
+Lemonade 11.9 changes where the service keeps its state, and the redeploy for
+[issue 141](https://github.com/nisavid/arch-strix-halo-pkgs/issues/141)
+has to account for it:
+
+- The config dir is `/var/lib/lemonade` (`StateDirectory=`). It holds
+  `config.json`, `user_models.json`, `recipe_options.json`, `jobs.json`, and
+  `mcp_servers.json`. The cache dir is `/var/cache/lemonade`
+  (`CacheDirectory=`, mode 0755), which holds `bin/` and `aliases.json`.
+  Hugging Face models stay under the service user's home,
+  `/var/lib/lemonade/.cache/huggingface/hub`, unless `models_dir` is set. On
+  its first start, `lemond` moves the five JSON files out of the old cache dir,
+  `/var/lib/lemonade/.cache/lemonade`, without overwriting, and merges the
+  rest of that tree into `/var/cache/lemonade`.
+- `config.json` is sparse. Every `/internal/set` and every pin change drops
+  keys that equal the merged defaults, including the packaged
+  `/usr/share/lemonade/defaults.json`. A full `config.json` left by 11.7 keeps
+  its frozen defaults until the first such write.
+- `--host`, `--port`, and `--broadcast` are runtime-only, and `LEMONADE_*`
+  variables only seed a `config.json` that does not exist yet. The host
+  binding must be in `config.json`.
+- **Service environment:** upstream's 11.9 unit reads only
+  `/etc/default/lemond`. The package's
+  `lemond.service.d/30-env-files.conf` resets that list and sets the whole
+  order, so later files override earlier ones:
+  1. `-/etc/lemonade/conf.d/*.conf`, in glob order, so the pre-11.9 settings
+     keep loading, including an edited `zz-secrets.conf`;
+  2. `-/etc/default/lemond`, which overrides conf.d;
+  3. `/usr/lib/lemonade/llamacpp-gfx1151.env`, the packaged
+     `LEMONADE_LLAMACPP_*` backends, which overrides a stale key in either
+     owner file.
+
+  The reset is required: systemd keeps a repeated `EnvironmentFile=` path at
+  its first position, so listing `/etc/default/lemond` again without it would
+  leave that file ahead of conf.d. The build fails if upstream's unit lists
+  any `EnvironmentFile=` other than `-/etc/default/lemond`, or if upstream
+  installs any `lemond.service.d/` drop-in, whose `EnvironmentFile=` lines the
+  reset would silently drop. No install script
+  writes owner config, and moving conf.d settings into `/etc/default/lemond`
+  is optional. Both secrets files are backup files; the package ships 11.7's
+  `zz-secrets.conf` placeholder unchanged, so pacman leaves an edited copy in
+  place. If the package dropped it, pacman would save an edited copy as
+  `zz-secrets.conf.pacsave`, which the glob does not match.
+- **Overrides:** every `EnvironmentFile=` value overrides `Environment=`, so
+  an owner env file that sets `HF_ENDPOINT`, `MODELSCOPE_ENDPOINT`, or
+  `MODEL_ENDPOINT` overrides the blackholes in `20-no-remote-model-fetch.conf`.
+  That is an explicit owner act, not a silent downloader. To override a
+  `LEMONADE_LLAMACPP_*` key, add an owner drop-in under
+  `/etc/systemd/system/lemond.service.d/` that sorts after `30-`, such as
+  `40-llamacpp-override.conf`, with its own `EnvironmentFile=` line. An
+  `Environment=` line there does not override a key the package env file
+  sets.
+- **Slot limit:** the host runs `max_loaded_models: -1` (unlimited). Pins
+  count toward residency, so with the five owner pins a slot limit of 2
+  refused every new LLM load with 409. The GTT-aware occupancy budget remains
+  the admission bound, and routing-helper pools keep their fixed limit of 1.
+  From 11.9.0, `lemonade-server` ships `-1` in its packaged `defaults.json`,
+  so a new config gets it and a config without the key inherits it.
+- **Live-smoke tooling on the 11.9 layout:** `tools/lemonade_live_smoke.py`
+  resolves the service's cache dir from the unit's `CacheDirectory=` when
+  `lemond` has no positional argument and no `LEMONADE_CACHE_DIR`, so the
+  no-fetch cache diff and the check that loaded libraries do not come from
+  the cache's `bin/` watch `/var/cache/lemonade` rather than the drained
+  legacy dir. The isolated `lemond` gets a private `XDG_RUNTIME_DIR` when the
+  inherited one is unset or unwritable, as it can be under `sudo`, because
+  the 11.9 `lemond` fails at startup without a writable runtime dir. It also
+  drops `CACHE_DIRECTORY`, `STATE_DIRECTORY`, and `RUNTIME_DIRECTORY` from
+  the isolated `lemond`'s environment, because `lemond` takes its dirs from
+  them: a runner started inside a systemd unit would otherwise make the
+  isolated `lemond` relocate that unit's own files.
+
 ## Pinned Chat Model
 
 `lemonade.chat.pinned-user-model.qwen35moe` guards the chat path of the host's
@@ -109,7 +183,9 @@ lemonade-server 11.7.0-1 merged the qwen35 and qwen35moe architecture default
 `--chat-template-kwargs '{"preserve_thinking":true}'` into the global
 llama.cpp args in a way that kept the single quotes. llama-server then failed
 to parse the JSON and exited, so no qwen35 or qwen35moe model could load.
-11.7.0-2 carries patch 0005 (see [Patch Inventory](../patches.md)).
+11.7.0-2 carries patch 0005 (see [Patch Inventory](../patches.md)). From
+11.9.0 the fork fix, nisavid/lemonade#168, replaces that patch, and this
+scenario stays its live guard.
 
 The scenario runs `tools/lemonade_live_smoke.py pinned-chat` against the
 running service:
@@ -192,8 +268,11 @@ own markers, prefixed with the phase name:
 - Caches: the model cache and the backend cache (`<cache dir>/bin`) are listed
   before and after the phase. Every path, type, size, mtime, and symlink target
   must match. The model cache path comes from the service's `/system-info`
-  `model_storage.path`. The cache dir comes from `lemond`'s argv, then
-  `LEMONADE_CACHE_DIR`, then the service user's `~/.cache/lemonade`.
+  `model_storage.path`. The cache dir comes from `lemond`'s positional
+  argument, then `LEMONADE_CACHE_DIR`, then the unit's `CacheDirectory=` (read
+  with `systemctl show -p CacheDirectory --value`; a relative value is under
+  `/var/cache`), then the service user's `~/.cache/lemonade`. The 11.7 unit
+  sets no `CacheDirectory=`, so it falls through to the last.
 - Network: `ss -tanp` is sampled throughout the phase, including its settle
   period. No socket owned by `lemond` or its children may have a non-loopback
   peer. In the pre-placed
@@ -261,7 +340,7 @@ replaces a traceback when a check fails, turns any absolute path into `<path>`.
 The only absolute paths printed are package-owned `/usr/bin` paths, such as
 `/usr/bin/lemond` in the provenance scenario. The provenance scenario names an
 altered or unreadable package file by its path inside the package archive, such
-as `etc/lemonade/conf.d/zz-secrets.conf`, which comes from the package's own
+as `etc/default/lemond`, which comes from the package's own
 file list rather than the host layout.
 
 All of these scenarios carry `validation-window`. Broad selections skip them,
@@ -289,14 +368,19 @@ selection. `--scenario <id>` always selects the named scenario.
 
   The text scenarios fail with `model_not_provisioned` rather than let a load
   download the model.
-- For the no-fetch scenario, set `HF_ENDPOINT` and `MODELSCOPE_ENDPOINT` to a
-  loopback blackhole in a `lemond.service` drop-in `Environment=` line.
-  `systemctl show` exposes that line, so the scenario can verify it. Values in
-  `EnvironmentFile=` are visible only when the runner can read the service's
-  `/proc/<pid>/environ`, and the scenario reads only those two keys. Run the
-  scenario with privileges that let it read the system journal, the service's
-  model and backend caches, and the process owner of `lemond`'s sockets in
-  `ss -p`.
+- The no-fetch scenario requires `HF_ENDPOINT`, `MODELSCOPE_ENDPOINT`, and
+  `MODEL_ENDPOINT` to name a loopback blackhole, as the packaged
+  `20-no-remote-model-fetch.conf` sets them. Because an owner env file
+  overrides that drop-in's `Environment=` lines, the precondition reads the
+  effective values from the running `lemond`'s `/proc/<MainPID>/environ`, and
+  reads only those three keys. It prints `endpoint_blackhole_source effective`
+  and fails when an owner override moved any of them off loopback. Only when
+  that file is unreadable does it fall back to the unit's `Environment=` from
+  `systemctl show`, and print `endpoint_blackhole_source unit_config`; that
+  fallback cannot see an env-file override. Run the scenario as root: it
+  needs to read the system journal, the service's model and backend caches,
+  and the process owner of `lemond`'s sockets in `ss -p`, and a root run also
+  reads the effective values.
 - Pre-place the consumer models `user.zembed-1-Q4_K_M-GGUF-Q4_K_M` and
   `zerank-2-GGUF` (`mradermacher/zerank-2-GGUF:Q8_0`), and pin them in the
   service config. The consumer-pins scenario only reads them.
@@ -314,7 +398,8 @@ selection. `--scenario <id>` always selects the named scenario.
 - The provenance scenario fails on any file that `pacman -Qkk` reports altered
   in a Lemonade family package, including ownership drift on a packaged
   directory such as `/etc/lemonade`. The one exception is a backup file that
-  the runner cannot read, such as the root-only `zz-secrets.conf`: `pacman
+  the runner cannot read, such as the root-only `/etc/default/lemond`
+  (`zz-secrets.conf` through 11.7): `pacman
   -Qii` marks it `[unreadable]`. pacman reports a backup file's size,
   modification-time, or checksum mismatch as a `backup file:` notice and does
   not count it as altered, so for that file the only counted content failure
