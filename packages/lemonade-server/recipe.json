@@ -14,8 +14,7 @@
       "0001-linux-npu-fallback-to-pci-id-when-accel-open-fails.patch",
       "0002-llamacpp-external-backends-are-system-managed.patch",
       "0003-remove-llamacpp-system-backend.patch",
-      "0004-system-managed-llamacpp-metadata.patch",
-      "0005-merge-custom-args-without-keeping-quotes.patch"
+      "0004-system-managed-llamacpp-metadata.patch"
     ],
     "update_notes": [
       "Track the nisavid/lemonade fork's main branch as the package source lane; use canonical upstream releases and AUR packages as baselines for compatibility review.",
@@ -27,7 +26,8 @@
       "On 2026-05-31, bumped the server package release to refresh packaged system-managed llama.cpp backend metadata for the b9442 HIP and Vulkan backends.",
       "On 2026-06-15, adopted nisavid/lemonade fork main e18b9c1e352df8ab5aff2ff353402f1ec77c47f2, which syncs upstream Lemonade v10.7.0.",
       "On 2026-09-22, repinned the source to nisavid/lemonade fork main at Lemonade 11.7.0; the fork commit contains upstream v11.7.0 (2b6a7d7), and the lemonade entry in [source_pins] holds the selected commit. Refreshed patches 0002-0004 for the new base, and added the zz-secrets.conf backup entry, the offline distro defaults, and the model-endpoint drop-in. Issue 137 pins the frozen fork commit 3d5991033; issue 139 tracks the build, publish, install, and host validation.",
-      "On 2026-09-23, released 11.7.0-2 with patch 0005, which makes RecipeOptions::inherit tokenize merged *_args without keeping quotes. At 3d5991033 the merge wrapped quoted values in their quote characters and then quoted them again, so llama-server received a literal '{\"preserve_thinking\":true}' for the qwen35 and qwen35moe --chat-template-kwargs architecture default and exited. The distro defaults always set --no-mmap, so every qwen35 and qwen35moe model failed to load. The regression is fork-only: fork commit e3d08ffa6 added quote_custom_arg_value to map_to_args_string, which stacks on upstream's keep_quotes=true merge (lemonade-sdk/lemonade#1920), while upstream v11.6.0, v11.7.0, and v11.9.0 produce the correct argv. The fork fix is nisavid/lemonade#168; drop patch 0005 at the Lemonade repin to a fork commit that contains #168, which is the upstream-synced fork main that the issue 141 (M6) repackage adopts. Upstream #3265 (7b5657d80, first released in v11.8.0) is context only: it moves the merge to recipe_arg_resolver.h, which still keeps quotes, so it does not fix the fork. Issues 139 and 140 track the regression."
+      "On 2026-09-23, released 11.7.0-2 with patch 0005, which makes RecipeOptions::inherit tokenize merged *_args without keeping quotes. At 3d5991033 the merge wrapped quoted values in their quote characters and then quoted them again, so llama-server received a literal '{\"preserve_thinking\":true}' for the qwen35 and qwen35moe --chat-template-kwargs architecture default and exited. The distro defaults always set --no-mmap, so every qwen35 and qwen35moe model failed to load. The regression is fork-only: fork commit e3d08ffa6 added quote_custom_arg_value to map_to_args_string, which stacks on upstream's keep_quotes=true merge (lemonade-sdk/lemonade#1920), while upstream v11.6.0, v11.7.0, and v11.9.0 produce the correct argv. The fork fix is nisavid/lemonade#168; drop patch 0005 at the Lemonade repin to a fork commit that contains #168, which is the upstream-synced fork main that the issue 141 (M6) repackage adopts. Upstream #3265 (7b5657d80, first released in v11.8.0) is context only: it moves the merge to recipe_arg_resolver.h, which still keeps quotes, so it does not fix the fork. Issues 139 and 140 track the regression.",
+      "On 2026-09-25, repinned the source to the fork's upstream v11.9.0 sync (issue 141, nisavid/lemonade#175) and set the package version to 11.9.0. The sync contains upstream v11.9.0 (bb39eaf) and the fork fix for nisavid/lemonade#168 (2cb1a91, PR 169), so patch 0005 is dropped. Patches 0001-0004 apply unchanged to the new base with line offsets only and no fuzz; the upstream changes in the patched files do not touch the patched hunks."
     ]
   },
   "name": "lemonade-server",
@@ -36,7 +36,7 @@
     "llama.cpp-vulkan-gfx1151"
   ],
   "package_name": "lemonade-server",
-  "pkgver": "11.7.0",
+  "pkgver": "11.9.0",
   "policy": {
     "advisory_references": [
       "aur/lemonade-desktop"
@@ -74,15 +74,13 @@
       "84149e7e765b80de94b0058edf930ee61ca39ceee534bff4e01fdd7e050cfb27",
       "521d5a3b6d65c74dae9735ef7ca9434b1dac33f0b734e5d1208d67bc36d3ed9d",
       "6e5a0345f2b7bede467045fa12f42f4d0773a7a782b169b0009d12de1d08155d",
-      "5ec6cbf9d6c06e1d4c31930060b73627591c4dfe188d234719cf3a403db319b0",
-      "fe54e0c8182d564b46fe9252c45f7dc5e549440486224bf62effe86ccdc1628c"
+      "5ec6cbf9d6c06e1d4c31930060b73627591c4dfe188d234719cf3a403db319b0"
     ],
     "extra_sources": [
       "0001-linux-npu-fallback-to-pci-id-when-accel-open-fails.patch",
       "0002-llamacpp-external-backends-are-system-managed.patch",
       "0003-remove-llamacpp-system-backend.patch",
-      "0004-system-managed-llamacpp-metadata.patch",
-      "0005-merge-custom-args-without-keeping-quotes.patch"
+      "0004-system-managed-llamacpp-metadata.patch"
     ],
     "license": [
       "Apache-2.0"
@@ -101,7 +99,7 @@
     ],
     "patches_dir": "packages/lemonade-server",
     "pkgdesc": "Local AI server runtime rebuilt for Strix Halo gfx1151",
-    "pkgrel": 2,
+    "pkgrel": 1,
     "provides": [
       "lemonade-server"
     ],
@@ -109,8 +107,8 @@
     "repo": "https://github.com/nisavid/lemonade.git",
     "scaffold_notes": [
       "Server/runtime package; llama.cpp backends are optdepends, not hard deps.",
-      "Pinned to nisavid/lemonade main commit 3d5991033e4cb28152ace4013f7f22a52c3bd617, whose CMake project version is 11.7.0. The pin is the lemonade entry in the [source_pins] table of policies/recipe-packages.toml, so lemonade-server and lemonade-app always build the same fork commit.",
-      "Configures with BUILD_TESTING=OFF; upstream 11.7 includes CTest, and the distro build does not need its C++ test binaries.",
+      "Pinned to nisavid/lemonade commit 66c7642e818f85116af362ed49ce6468ea01ebed, the fork's upstream v11.9.0 sync (nisavid/lemonade#175), whose CMake project version is 11.9.0. The pin is the lemonade entry in the [source_pins] table of policies/recipe-packages.toml, so lemonade-server and lemonade-app always build the same fork commit.",
+      "Configures with BUILD_TESTING=OFF; upstream includes CTest, and the distro build does not need its C++ test binaries.",
       "Uses upstream's lemond.service unit name; do not ship the pre-10.3 lemonade-server.service name in this package.",
       "Installs /etc/lemonade/conf.d/10-llamacpp-gfx1151.conf so the packaged ROCm and Vulkan llama.cpp wrapper binaries are exposed to the service as system-managed backends. lemond reads LEMONADE_LLAMACPP_*_BIN from the environment ahead of config.json on every backend lookup, so the refreshed system-managed backend patch no longer carries the older config-load environment overlay or the CLI backend-table change.",
       "Exports the packaged llama.cpp revision and ggml release URL in the same conf.d file so the GUI shows the packaged backend metadata instead of upstream downloader defaults.",
@@ -124,7 +122,7 @@
       "SKIP"
     ],
     "source_refs": [
-      "lemonade::git+https://github.com/nisavid/lemonade.git#commit=3d5991033e4cb28152ace4013f7f22a52c3bd617"
+      "lemonade::git+https://github.com/nisavid/lemonade.git#commit=66c7642e818f85116af362ed49ce6468ea01ebed"
     ],
     "src_subdir": "lemonade",
     "template": "lemonade-server",
@@ -138,10 +136,11 @@
       "On 2026-05-31, bumped the server package release to refresh packaged system-managed llama.cpp backend metadata for the b9442 HIP and Vulkan backends.",
       "On 2026-06-15, adopted nisavid/lemonade fork main e18b9c1e352df8ab5aff2ff353402f1ec77c47f2, which syncs upstream Lemonade v10.7.0.",
       "On 2026-09-22, repinned the source to nisavid/lemonade fork main at Lemonade 11.7.0; the fork commit contains upstream v11.7.0 (2b6a7d7), and the lemonade entry in [source_pins] holds the selected commit. Refreshed patches 0002-0004 for the new base, and added the zz-secrets.conf backup entry, the offline distro defaults, and the model-endpoint drop-in. Issue 137 pins the frozen fork commit 3d5991033; issue 139 tracks the build, publish, install, and host validation.",
-      "On 2026-09-23, released 11.7.0-2 with patch 0005, which makes RecipeOptions::inherit tokenize merged *_args without keeping quotes. At 3d5991033 the merge wrapped quoted values in their quote characters and then quoted them again, so llama-server received a literal '{\"preserve_thinking\":true}' for the qwen35 and qwen35moe --chat-template-kwargs architecture default and exited. The distro defaults always set --no-mmap, so every qwen35 and qwen35moe model failed to load. The regression is fork-only: fork commit e3d08ffa6 added quote_custom_arg_value to map_to_args_string, which stacks on upstream's keep_quotes=true merge (lemonade-sdk/lemonade#1920), while upstream v11.6.0, v11.7.0, and v11.9.0 produce the correct argv. The fork fix is nisavid/lemonade#168; drop patch 0005 at the Lemonade repin to a fork commit that contains #168, which is the upstream-synced fork main that the issue 141 (M6) repackage adopts. Upstream #3265 (7b5657d80, first released in v11.8.0) is context only: it moves the merge to recipe_arg_resolver.h, which still keeps quotes, so it does not fix the fork. Issues 139 and 140 track the regression."
+      "On 2026-09-23, released 11.7.0-2 with patch 0005, which makes RecipeOptions::inherit tokenize merged *_args without keeping quotes. At 3d5991033 the merge wrapped quoted values in their quote characters and then quoted them again, so llama-server received a literal '{\"preserve_thinking\":true}' for the qwen35 and qwen35moe --chat-template-kwargs architecture default and exited. The distro defaults always set --no-mmap, so every qwen35 and qwen35moe model failed to load. The regression is fork-only: fork commit e3d08ffa6 added quote_custom_arg_value to map_to_args_string, which stacks on upstream's keep_quotes=true merge (lemonade-sdk/lemonade#1920), while upstream v11.6.0, v11.7.0, and v11.9.0 produce the correct argv. The fork fix is nisavid/lemonade#168; drop patch 0005 at the Lemonade repin to a fork commit that contains #168, which is the upstream-synced fork main that the issue 141 (M6) repackage adopts. Upstream #3265 (7b5657d80, first released in v11.8.0) is context only: it moves the merge to recipe_arg_resolver.h, which still keeps quotes, so it does not fix the fork. Issues 139 and 140 track the regression.",
+      "On 2026-09-25, repinned the source to the fork's upstream v11.9.0 sync (issue 141, nisavid/lemonade#175) and set the package version to 11.9.0. The sync contains upstream v11.9.0 (bb39eaf) and the fork fix for nisavid/lemonade#168 (2cb1a91, PR 169), so patch 0005 is dropped. Patches 0001-0004 apply unchanged to the new base with line offsets only and no fuzz; the upstream changes in the patched files do not touch the patched hunks."
     ],
     "upstream_name": "lemonade-server",
-    "upstream_version": "11.7.0",
+    "upstream_version": "11.9.0",
     "url": "https://github.com/nisavid/lemonade"
   },
   "provenance": {

@@ -3378,6 +3378,20 @@ def test_real_lemonade_freshness_tracks_fork_main_source_commit():
     assert source_commits == {fork_main["recorded"]}
 
 
+def test_real_lemonade_upstream_baseline_is_the_packaged_upstream_release():
+    repo = Path(__file__).resolve().parents[1]
+    lemonade = updates.policy_families(repo)["lemonade"]
+    baseline = {check["id"]: check for check in lemonade["checks"]}["upstream-release"]
+    packages = tomllib.loads(
+        (repo / "policies/recipe-packages.toml").read_text(encoding="utf-8")
+    )["packages"]
+
+    assert baseline["role"] == "baseline"
+    assert baseline["recorded"] == "11.9.0"
+    for package in ("lemonade-server", "lemonade-app", "lemonade"):
+        assert packages[package]["upstream_version"] == baseline["recorded"], package
+
+
 def test_github_release_client_ignores_drafts_and_respects_prerelease_flag():
     client = updates.RealClients(
         transport=updates.StaticTransport(
