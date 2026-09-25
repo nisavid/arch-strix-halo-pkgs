@@ -340,6 +340,79 @@ def test_isolated_lemond_cleans_up_when_startup_fails(tmp_path: Path):
     assert inst.proc is not None and inst.proc.poll() is not None
 
 
+def _isolated_runtime_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[str, str]:
+    """Start IsolatedLemond on a stub lemond; return the XDG_RUNTIME_DIR it saw and its state."""
+    report = tmp_path / "runtime-dir"
+    stub = tmp_path / "lemond"
+    stub.write_text(
+        "#!/bin/sh\n"
+        'state=missing\n'
+        '[ -d "$XDG_RUNTIME_DIR" ] && [ -w "$XDG_RUNTIME_DIR" ] && state=writable\n'
+        'printf "%s\\n%s\\n" "$XDG_RUNTIME_DIR" "$state" > "$STUB_REPORT"\n'
+        "exit 1\n"
+    )
+    stub.chmod(0o755)
+    monkeypatch.setenv("STUB_REPORT", str(report))
+    args = live.parse_args(["lifecycle", "--lemond", str(stub), "--server-log", str(tmp_path / "server.log")])
+    inst = live.IsolatedLemond(args)
+    with pytest.raises(RuntimeError, match="exited during startup"):
+        with inst:
+            pass
+    assert inst.root is not None and not inst.root.exists()
+    seen, state = report.read_text().splitlines()
+    return seen, state
+
+
+def test_isolated_lemond_gives_lemond_a_private_runtime_dir_when_none_is_usable(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    # Lemonade 11.9 lemond throws at startup without a writable runtime dir,
+    # and sudo can leave XDG_RUNTIME_DIR unset or pointing at another user's dir.
+    monkeypatch.delenv("XDG_RUNTIME_DIR", raising=False)
+    seen, state = _isolated_runtime_dir(tmp_path, monkeypatch)
+    assert Path(seen).parent.name.startswith("lemonade-live-") and state == "writable"
+
+    monkeypatch.setenv("XDG_RUNTIME_DIR", str(tmp_path / "absent"))
+    seen, state = _isolated_runtime_dir(tmp_path, monkeypatch)
+    assert Path(seen).parent.name.startswith("lemonade-live-") and state == "writable"
+
+
+def test_isolated_lemond_keeps_a_writable_inherited_runtime_dir(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    runtime = tmp_path / "runtime"
+    runtime.mkdir(mode=0o700)
+    monkeypatch.setenv("XDG_RUNTIME_DIR", str(runtime))
+    assert _isolated_runtime_dir(tmp_path, monkeypatch) == (str(runtime), "writable")
+
+
+def test_isolated_lemond_drops_the_runner_units_systemd_directories(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    # lemond takes its config dir from STATE_DIRECTORY and its cache and
+    # runtime dirs from CACHE_DIRECTORY and RUNTIME_DIRECTORY, so a runner
+    # started inside a systemd unit would make the isolated lemond move the
+    # runner unit's own files.
+    report = tmp_path / "unit-dirs"
+    stub = tmp_path / "lemond"
+    stub.write_text(
+        "#!/bin/sh\n"
+        'printf "%s\\n" "${CACHE_DIRECTORY-unset}" "${STATE_DIRECTORY-unset}"'
+        ' "${RUNTIME_DIRECTORY-unset}" "${KEPT_BY_RUNNER-unset}" > "$STUB_REPORT"\n'
+        "exit 1\n"
+    )
+    stub.chmod(0o755)
+    monkeypatch.setenv("STUB_REPORT", str(report))
+    for key in ("CACHE_DIRECTORY", "STATE_DIRECTORY", "RUNTIME_DIRECTORY"):
+        monkeypatch.setenv(key, str(tmp_path / "runner-unit" / key.lower()))
+    monkeypatch.setenv("KEPT_BY_RUNNER", "kept")
+    args = live.parse_args(["lifecycle", "--lemond", str(stub), "--server-log", str(tmp_path / "server.log")])
+    with pytest.raises(RuntimeError, match="exited during startup"):
+        with live.IsolatedLemond(args):
+            pass
+    assert report.read_text().splitlines() == ["unset", "unset", "unset", "kept"]
+
+
 class FakeLemond:
     """A small in-memory lemond that honors pins, busy models, one slot, and a budget."""
 
@@ -996,7 +1069,9 @@ def test_provenance_rejects_mixed_foreign_altered_or_online_family():
 
 LEMOND_PID = 4000
 LLAMA_PID = 4001
-BLACKHOLE_ENV = "HF_ENDPOINT=http://127.0.0.1:9 MODELSCOPE_ENDPOINT=http://[::1]:9"
+BLACKHOLE_ENV = (
+    "HF_ENDPOINT=http://127.0.0.1:9 MODELSCOPE_ENDPOINT=http://[::1]:9 MODEL_ENDPOINT=http://127.0.0.1:9"
+)
 
 
 def _listen_row(pid: int = LEMOND_PID) -> str:
@@ -1012,6 +1087,7 @@ class FakeHost(live.ServiceHost):
         (self.proc / str(LEMOND_PID) / "task" / str(LEMOND_PID) / "children").write_text(f"{LLAMA_PID}\n")
         (self.proc / str(LEMOND_PID) / "cmdline").write_bytes(b"/usr/bin/lemond\0")
         self.environment = environment
+        self.cache_directory = ""  # 11.7's unit sets no CacheDirectory=.
         self.user_home = tmp_path / "home"
         self.ss_rows = [_listen_row()]
         self.journal: list[str] = []
@@ -1021,7 +1097,12 @@ class FakeHost(live.ServiceHost):
     def _run(self, argv, **kwargs):
         self.commands.append(argv)
         if argv[:2] == ["systemctl", "show"]:
-            values = {"MainPID": str(LEMOND_PID), "Environment": self.environment, "User": "lemonade"}
+            values = {
+                "MainPID": str(LEMOND_PID),
+                "Environment": self.environment,
+                "User": "lemonade",
+                "CacheDirectory": self.cache_directory,
+            }
             stdout = values[argv[3]] + "\n"
         elif argv[0] == "ss":
             stdout = "\n".join(self.ss_rows) + "\n"
@@ -1142,11 +1223,25 @@ def test_ss_parsing_and_loopback_detection():
 
 def test_blackhole_ports_require_loopback_endpoints():
     assert live.blackhole_ports(
-        {"HF_ENDPOINT": "http://127.0.0.1:9", "MODELSCOPE_ENDPOINT": "https://localhost"}
+        {
+            "HF_ENDPOINT": "http://127.0.0.1:9",
+            "MODELSCOPE_ENDPOINT": "https://localhost",
+            "MODEL_ENDPOINT": "http://[::1]:9",
+        }
     ) == {"9", "443"}
     for env in (
-        {"HF_ENDPOINT": "http://127.0.0.1:9"},
-        {"HF_ENDPOINT": "https://huggingface.co", "MODELSCOPE_ENDPOINT": "http://127.0.0.1:9"},
+        {"HF_ENDPOINT": "http://127.0.0.1:9", "MODELSCOPE_ENDPOINT": "http://127.0.0.1:9"},
+        {
+            "HF_ENDPOINT": "https://huggingface.co",
+            "MODELSCOPE_ENDPOINT": "http://127.0.0.1:9",
+            "MODEL_ENDPOINT": "http://127.0.0.1:9",
+        },
+        # llama-server reads MODEL_ENDPOINT ahead of HF_ENDPOINT.
+        {
+            "HF_ENDPOINT": "http://127.0.0.1:9",
+            "MODELSCOPE_ENDPOINT": "http://127.0.0.1:9",
+            "MODEL_ENDPOINT": "https://huggingface.co",
+        },
     ):
         with pytest.raises(AssertionError, match="endpoint_blackhole_missing"):
             live.blackhole_ports(env)
@@ -1190,13 +1285,18 @@ def test_snapshot_tree_detects_new_resized_and_relinked_entries(tmp_path: Path):
 def test_service_host_reads_only_blackhole_env_and_filters_journal(tmp_path: Path):
     host = FakeHost(tmp_path, environment="LEMONADE_API_KEY=secret")
     (host.proc / str(LEMOND_PID) / "environ").write_bytes(
-        b"LEMONADE_API_KEY=secret\0HF_ENDPOINT=http://127.0.0.1:9\0MODELSCOPE_ENDPOINT=http://127.0.0.1:9\0"
+        b"LEMONADE_API_KEY=secret\0HF_ENDPOINT=http://127.0.0.1:9\0"
+        b"MODELSCOPE_ENDPOINT=http://127.0.0.1:9\0MODEL_ENDPOINT=http://127.0.0.1:9\0"
     )
 
-    assert host.endpoint_env() == {
-        "HF_ENDPOINT": "http://127.0.0.1:9",
-        "MODELSCOPE_ENDPOINT": "http://127.0.0.1:9",
-    }
+    assert host.endpoint_env() == (
+        {
+            "HF_ENDPOINT": "http://127.0.0.1:9",
+            "MODELSCOPE_ENDPOINT": "http://127.0.0.1:9",
+            "MODEL_ENDPOINT": "http://127.0.0.1:9",
+        },
+        "effective",
+    )
     assert host.process_tree(LEMOND_PID) == {LEMOND_PID, LLAMA_PID}
     assert host.journal_cursor() is None
     assert host.journal_after(None) == ([], None)
@@ -1210,13 +1310,64 @@ def test_service_host_reads_only_blackhole_env_and_filters_journal(tmp_path: Pat
     assert ["-o", "json"] == journal_argv[journal_argv.index("-o"):journal_argv.index("-o") + 2]
 
 
+def test_service_host_endpoint_env_prefers_the_running_process(tmp_path: Path):
+    # An owner env file overrides the unit's Environment=, so the running
+    # lemond's environ is the effective value.
+    host = FakeHost(tmp_path)
+    (host.proc / str(LEMOND_PID) / "environ").write_bytes(
+        b"HF_ENDPOINT=http://127.0.0.1:19\0MODELSCOPE_ENDPOINT=http://127.0.0.1:19\0"
+    )
+
+    assert host.endpoint_env() == (
+        {"HF_ENDPOINT": "http://127.0.0.1:19", "MODELSCOPE_ENDPOINT": "http://127.0.0.1:19"},
+        "effective",
+    )
+
+
+def test_service_host_endpoint_env_falls_back_to_the_unit_config(tmp_path: Path):
+    host = FakeHost(tmp_path, environment=BLACKHOLE_ENV + " LEMONADE_API_KEY=secret")
+
+    assert host.endpoint_env() == (
+        {
+            "HF_ENDPOINT": "http://127.0.0.1:9",
+            "MODELSCOPE_ENDPOINT": "http://[::1]:9",
+            "MODEL_ENDPOINT": "http://127.0.0.1:9",
+        },
+        "unit_config",
+    )
+
+
 def test_service_host_cache_dir_prefers_argv_then_env(tmp_path: Path):
     host = FakeHost(tmp_path, environment="LEMONADE_CACHE_DIR=/srv/lemonade-cache")
+    host.cache_directory = "lemonade"
     assert live.ServiceHost.cache_dir(host) == Path("/srv/lemonade-cache")
     (host.proc / str(LEMOND_PID) / "cmdline").write_bytes(b"/usr/bin/lemond\0/srv/other\0--port\0" + b"13305\0")
     assert live.ServiceHost.cache_dir(host) == Path("/srv/other")
     (host.proc / str(LEMOND_PID) / "cmdline").write_bytes(b"/usr/bin/lemond\0--port\0" + b"13305\0")
     assert live.ServiceHost.cache_dir(host) == Path("/srv/lemonade-cache")
+
+
+def test_service_host_cache_dir_follows_the_unit_cache_directory(tmp_path: Path):
+    # Lemonade 11.9's unit: bare ExecStart, CacheDirectory=lemonade.
+    host = FakeHost(tmp_path, environment="")
+    host.cache_directory = "lemonade"
+    assert live.ServiceHost.cache_dir(host) == Path("/var/cache/lemonade")
+    host.cache_directory = "/srv/lemonade-cache"
+    assert live.ServiceHost.cache_dir(host) == Path("/srv/lemonade-cache")
+    host.cache_directory = "lemonade other"
+    assert live.ServiceHost.cache_dir(host) == Path("/var/cache/lemonade")
+    host.cache_directory = "lemonade:lemonade-link"
+    assert live.ServiceHost.cache_dir(host) == Path("/var/cache/lemonade")
+
+
+def test_service_host_cache_dir_falls_back_to_the_service_user_home(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    # Lemonade 11.7's unit sets no CacheDirectory=, so the legacy dir applies.
+    host = FakeHost(tmp_path, environment="")
+    homes = {"lemonade": argparse.Namespace(pw_dir=str(tmp_path / "lemonade-home"))}
+    monkeypatch.setattr(live.pwd, "getpwnam", homes.__getitem__)
+    assert live.ServiceHost.cache_dir(host) == tmp_path / "lemonade-home" / ".cache" / "lemonade"
 
 
 def test_nofetch_proves_no_download_log_cache_change_or_remote_connection(
@@ -1230,6 +1381,7 @@ def test_nofetch_proves_no_download_log_cache_change_or_remote_connection(
     out = capsys.readouterr().out
     markers = [
         "offline_config_ok",
+        "endpoint_blackhole_source unit_config",
         "endpoint_blackhole_ok",
         "network_attribution_ok",
         "missing_model_registered_ok",
@@ -1666,6 +1818,25 @@ def test_nofetch_missing_model_attempt_fails_on_remote_or_cache_evidence(
 
     with pytest.raises(AssertionError, match=f"missing_{path}: {message}"):
         _run_nofetch(server, host)
+
+
+def test_nofetch_fails_when_an_owner_override_removes_the_effective_blackhole(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    # The unit still lists the blackholes, but an owner env file replaced one.
+    server, host = _nofetch_setup(tmp_path)
+    (host.proc / str(LEMOND_PID) / "environ").write_bytes(
+        b"HF_ENDPOINT=https://huggingface.co\0MODELSCOPE_ENDPOINT=http://127.0.0.1:9\0"
+        b"MODEL_ENDPOINT=http://127.0.0.1:9\0"
+    )
+
+    with pytest.raises(AssertionError, match="endpoint_blackhole_missing: the service's HF_ENDPOINT"):
+        _run_nofetch(server, host)
+
+    out = capsys.readouterr().out
+    assert "endpoint_blackhole_source effective" in out
+    assert "endpoint_blackhole_ok" not in out
+    assert ("POST", "/load") not in server.calls
 
 
 def test_nofetch_preconditions_block_before_any_load(tmp_path: Path):

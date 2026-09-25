@@ -657,7 +657,9 @@ def run_provenance(
 
 # --- No-fetch evidence (service) --------------------------------------------
 
-BLACKHOLE_ENV_KEYS = ("HF_ENDPOINT", "MODELSCOPE_ENDPOINT")
+# llama-server reads MODEL_ENDPOINT ahead of HF_ENDPOINT, so check all three.
+BLACKHOLE_ENV_KEYS = ("HF_ENDPOINT", "MODELSCOPE_ENDPOINT", "MODEL_ENDPOINT")
+SYSTEMD_UNIT_DIR_ENV_KEYS = frozenset({"CACHE_DIRECTORY", "STATE_DIRECTORY", "RUNTIME_DIRECTORY"})
 # Log lines that the candidate emits only while downloading or installing a
 # model or backend. "downloaded=" and "already downloaded" do not match.
 FETCH_LOG_RE = re.compile(
@@ -775,36 +777,54 @@ class ServiceHost:
                     continue
         return pids
 
-    def service_env(self, keys: tuple[str, ...]) -> dict[str, str]:
-        """Read only `keys`: unit Environment= first, then /proc environ if readable."""
-        env: dict[str, str] = {}
-        for item in shlex.split(self.show("Environment")):
-            key, sep, value = item.partition("=")
-            if sep and key in keys:
-                env[key] = value
-        if all(key in env for key in keys):
-            return env
+    def effective_env(self, keys: tuple[str, ...]) -> tuple[dict[str, str], str]:
+        """Read only `keys`, and say where they came from.
+
+        The running lemond's /proc environ is the effective value, because an
+        owner env file (conf.d/*.conf, /etc/default/lemond) overrides the
+        unit's Environment=. Only when that is unreadable, as for a non-root
+        run, fall back to the unit's Environment=.
+        """
         try:
             raw = (self.proc_root / str(self.main_pid()) / "environ").read_bytes()
         except OSError:
-            return env
+            env: dict[str, str] = {}
+            for item in shlex.split(self.show("Environment")):
+                key, sep, value = item.partition("=")
+                if sep and key in keys:
+                    env[key] = value
+            return env, "unit_config"
+        env = {}
         for item in raw.split(b"\0"):
             key, sep, value = item.decode("utf-8", errors="replace").partition("=")
             if sep and key in keys:
-                env.setdefault(key, value)
-        return env
+                env[key] = value
+        return env, "effective"
 
-    def endpoint_env(self) -> dict[str, str]:
-        return self.service_env(BLACKHOLE_ENV_KEYS)
+    def service_env(self, keys: tuple[str, ...]) -> dict[str, str]:
+        return self.effective_env(keys)[0]
+
+    def endpoint_env(self) -> tuple[dict[str, str], str]:
+        return self.effective_env(BLACKHOLE_ENV_KEYS)
 
     def cache_dir(self) -> Path:
-        """The service's cache dir: lemond's positional argv, LEMONADE_CACHE_DIR, then ~user."""
+        """The service's cache dir, in the order lemond resolves it.
+
+        lemond's positional argv, then LEMONADE_CACHE_DIR, then the unit's
+        CacheDirectory= (Lemonade 11.9; systemd exports it as CACHE_DIRECTORY,
+        and a relative value lives under /var/cache), then the legacy
+        ~user/.cache/lemonade that 11.7's unit relies on.
+        """
         argv = (self.proc_root / str(self.main_pid()) / "cmdline").read_bytes().split(b"\0")
         if len(argv) > 1 and argv[1] and not argv[1].startswith(b"-"):
             return Path(argv[1].decode())
         env_dir = self.service_env(("LEMONADE_CACHE_DIR",)).get("LEMONADE_CACHE_DIR")
         if env_dir:
             return Path(env_dir)
+        # CacheDirectory= may list several dirs, each optionally "dir:symlink".
+        unit_dirs = self.show("CacheDirectory").split()
+        if unit_dirs:
+            return Path("/var/cache") / unit_dirs[0].split(":", 1)[0]
         return Path(pwd.getpwnam(self.show("User") or "root").pw_dir) / ".cache" / "lemonade"
 
     def sockets(self) -> list[dict[str, Any]]:
@@ -1089,7 +1109,9 @@ def run_nofetch(
         if config.get(key) is not True:
             raise AssertionError(f"service config {key} is {config.get(key)!r}, expected true")
     print("offline_config_ok")
-    blackhole = blackhole_ports(host.endpoint_env())
+    endpoint_env, endpoint_source = host.endpoint_env()
+    print("endpoint_blackhole_source", endpoint_source)
+    blackhole = blackhole_ports(endpoint_env)
     print("endpoint_blackhole_ok")
     require_socket_attribution(host)
 
@@ -1546,7 +1568,22 @@ class IsolatedLemond:
         return json.loads((self.cache_dir / "config.json").read_text(encoding="utf-8"))
 
     def start(self) -> None:
-        env = {key: value for key, value in os.environ.items() if not key.startswith("LEMONADE_")}
+        # lemond reads its config, cache, and runtime dirs from the systemd
+        # unit directory variables, so a runner started inside a unit would
+        # otherwise make the isolated lemond relocate that unit's own files.
+        env = {
+            key: value
+            for key, value in os.environ.items()
+            if not key.startswith("LEMONADE_") and key not in SYSTEMD_UNIT_DIR_ENV_KEYS
+        }
+        # Lemonade 11.9 lemond throws at startup without a writable runtime dir,
+        # and sudo can leave XDG_RUNTIME_DIR unset or pointing at another user's.
+        inherited = env.get("XDG_RUNTIME_DIR", "")
+        if not (inherited and os.path.isdir(inherited) and os.access(inherited, os.W_OK)):
+            assert self.root is not None
+            runtime_dir = self.root / "runtime"
+            runtime_dir.mkdir(mode=0o700, exist_ok=True)
+            env["XDG_RUNTIME_DIR"] = str(runtime_dir)
         self.proc = subprocess.Popen(
             [
                 self.args.lemond,
