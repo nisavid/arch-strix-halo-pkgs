@@ -11,9 +11,8 @@ PKGBUILD = PKG_DIR / "PKGBUILD"
 def test_dflash_speculators_config_parser_is_upstream_in_current_vllm():
     pkgbuild_text = PKGBUILD.read_text(encoding="utf-8")
 
-    assert "pkgver=0.21.0" in pkgbuild_text
+    assert "pkgver=0.30.0" in pkgbuild_text
     assert "0013-speculators-dflash-config-parsing.patch" not in pkgbuild_text
-    assert (
-        'grep -Fq \'def update_dflash(config_dict: dict, pre_trained_config: dict) -> None:\''
-        in pkgbuild_text
-    )
+    # DFlash parsing is upstream code, so the source-patch sentinels do not
+    # check it.
+    assert "speculators/algos.py" not in pkgbuild_text

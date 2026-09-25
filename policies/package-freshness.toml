@@ -60,7 +60,7 @@ packages = ["python-vllm-rocm-gfx1151"]
 priority = "high"
 workflow = "upstream_source_update"
 checks = [
-  { id = "release", role = "primary", kind = "github_release", repo = "vllm-project/vllm", recorded = "0.21.0", tag_prefix = "v", comparison = "pep440", include_prereleases = false },
+  { id = "release", role = "primary", kind = "github_release", repo = "vllm-project/vllm", recorded = "0.30.0", tag_prefix = "v", comparison = "pep440", include_prereleases = false },
   { id = "aur", role = "baseline", kind = "aur", package = "python-vllm", recorded = "0.12.0-1", comparison = "pkgver" },
 ]
 

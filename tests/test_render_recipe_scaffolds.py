@@ -303,6 +303,103 @@ def test_vllm_renderer_defines_source_variables_without_patches() -> None:
     assert "_apply_all_source_patches" not in pkgbuild
 
 
+def _render_vllm_0_30_pkgbuild() -> str:
+    return render_recipe_scaffolds.render_pkgbuild(
+        "python-vllm-rocm-gfx1151",
+        {
+            "recipe_key": "vllm",
+            "template": "python-project-vllm",
+            "upstream_version": "0.30.0",
+            "pkgdesc": "vLLM ROCm",
+            "url": "https://github.com/vllm-project/vllm",
+            "license": ["Apache-2.0"],
+            "source_type": "tarball",
+            "source_url": "https://github.com/vllm-project/vllm/archive/refs/tags/v0.30.0.tar.gz",
+            "sha256sums": ["0" * 64],
+            "source_patches": ["0016-rocm-refresh-local-carry-for-vllm-0.30.0.patch"],
+            "src_subdir": "vllm-0.30.0",
+        },
+        {
+            "repo": "https://github.com/vllm-project/vllm",
+            "method": "pip",
+            "phase": "package",
+            "steps": [],
+            "depends_on": [],
+            "notes": "",
+        },
+        "0.30.0",
+        {
+            "recipe_repo": "https://github.com/paudley/ai-notes",
+            "recipe_subdir": "strix-halo",
+            "recipe_author": "Blackcat Informatics Inc.",
+        },
+    )
+
+
+def test_vllm_renderer_builds_one_wheel_without_aiter() -> None:
+    pkgbuild = _render_vllm_0_30_pkgbuild()
+
+    assert "VLLM_ROCM_USE_AITER" not in pkgbuild
+    assert "python setup.py clean" not in pkgbuild
+    assert pkgbuild.count("pip wheel . --no-build-isolation --no-deps --wheel-dir dist -v") == 1
+
+
+def test_vllm_renderer_skips_optional_rust_extensions_and_checks_the_wheel() -> None:
+    pkgbuild = _render_vllm_0_30_pkgbuild()
+
+    assert "unset VLLM_REQUIRE_RUST_FRONTEND" in pkgbuild
+    assert "export CARGO=/usr/bin/false" in pkgbuild
+    assert "export CARGO_NET_OFFLINE=true" in pkgbuild
+    assert "export RUSTUP_AUTO_INSTALL=0" in pkgbuild
+    build_env = pkgbuild.index("export CARGO=/usr/bin/false")
+    wheel_build = pkgbuild.index("pip wheel . --no-build-isolation")
+    wheel_check = pkgbuild.index("VLLM_RUST_ARTIFACT_UNEXPECTED")
+    assert build_env < wheel_build < wheel_check
+    assert "grep -Eq '^vllm/(_rust_[^/]*[.]so|vllm-rs)$'" in pkgbuild
+
+
+def test_vllm_renderer_checks_the_0_30_carry_sentinels() -> None:
+    pkgbuild = _render_vllm_0_30_pkgbuild()
+    start = pkgbuild.index("_source_tree_has_all_source_patches() {")
+    end = pkgbuild.index("\n}\n", start)
+    sentinels = pkgbuild[start:end]
+
+    for sentinel, path in (
+        ('requires-python = ">=3.10,<3.15"', "pyproject.toml"),
+        ("def _selected_subcommand() -> str | None:", "vllm/entrypoints/cli/main.py"),
+        ("using vllm_bfloat16 = __hip_bfloat16;", "csrc/libtorch_stable/cuda_vec_utils.cuh"),
+        (
+            "def torchao_version_at_least(torchao_version: str) -> bool:",
+            "vllm/model_executor/layers/quantization/torchao_utils.py",
+        ),
+        (
+            "Use PyTorch top-k/top-p filtering on large-vocabulary ROCm",
+            "vllm/v1/sample/ops/topk_topp_sampler.py",
+        ),
+        ("Keep valid_count type stable across branches", "vllm/v1/spec_decode/utils.py"),
+        (
+            "def rocm_flash_attn_supports_vllm_varlen_api() -> bool:",
+            "vllm/v1/attention/backends/fa_utils.py",
+        ),
+        (
+            "NOTE(gfx1151): On AMD HIP, restrict autotune search",
+            "vllm/third_party/flash_linear_attention/ops/chunk_delta_h.py",
+        ),
+    ):
+        assert f"grep -Fq '{sentinel}'" in sentinels
+        assert path in sentinels
+
+    for dropped in (
+        "csrc/cuda_vec_utils.cuh",
+        "cmake/hipify.py",
+        "vllm/_aiter_ops.py",
+        "vllm/platforms/rocm.py",
+        "vllm/triton_utils/jit_monitor.py",
+        "speculators/algos.py",
+    ):
+        assert dropped not in sentinels
+
+
 def test_rust_wheel_renderer_applies_source_patches() -> None:
     pkgbuild = render_recipe_scaffolds.render_pkgbuild(
         "sample-rust-gfx1151",

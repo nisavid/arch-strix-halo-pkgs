@@ -63,22 +63,25 @@ becomes durable, prefer a named patch that another maintainer can review.
 
 ## vLLM
 
-- [ROCm local carry refreshed for vLLM 0.20.0](../packages/python-vllm-rocm-gfx1151/0016-rocm-refresh-local-carry-for-vllm-0.20.0.patch)
-  - Consolidates the package-local ROCm, Gemma, Qwen, TorchAO, CLI laziness,
-    sampler, EAGLE/MTP, and FlashAttention interface carry on top of upstream
-    vLLM 0.20.0.
+- [ROCm local carry re-ported for vLLM 0.30.0](../packages/python-vllm-rocm-gfx1151/0016-rocm-refresh-local-carry-for-vllm-0.30.0.patch)
+  - Re-ports the 0.21.0 carry onto upstream vLLM 0.30.0 (`ced6857a`). Of the
+    29 per-file sections, 12 are kept (two at moved paths) and 17 are dropped
+    as upstream-equivalent, obsolete with Triton 3.8, or AITER-only.
+  - Forwards CFLAGS, CXXFLAGS and HIPFLAGS from `setup.py` into the CMake ROCm
+    build, and keeps the HIP `vllm_bfloat16` aliases in
+    `csrc/libtorch_stable/cuda_vec_utils.cuh`.
+  - Keeps `vllm --version` metadata-only and plain `vllm --help` off the serve
+    runtime, and keeps SageMaker and TorchAO optional on startup paths.
   - Keeps large-head ROCm prefill paths such as Gemma 4 global attention under
     the gfx1151 LDS/shared-memory limit.
-  - Keeps Qwen speculative decoding compiling on ROCm/Triton by forcing the
-    padded drafter batch `valid_count` path to one scalar dtype across Triton
-    branches.
-  - Lets vLLM detect the packaged pure-Python `flash_attn` interface that
-    exposes AITER's Triton AMD backend, while keeping CK/direct FlashAttention
-    promotion behind the imported paged-KV surface and kernel behavior needed
-    by the vLLM engine route.
-  - Uses upstream vLLM 0.20.0 Python 3.14 metadata and DFlash support instead
-    of retaining the former local Python-version and narrow DFlash parser
-    backport patches.
+  - Keeps the Qwen3.5/GDN FLA autotune restriction and float32 gate exponents
+    on AMD, the large-vocabulary top-k/top-p PyTorch fallback, and the padded
+    EAGLE/MTP drafter `valid_count` dtype fix.
+  - Keeps CK/direct FlashAttention promotion behind the imported paged-KV
+    varlen surface needed by the vLLM engine route.
+  - Drops the gfx1x AITER enablement, the Gemma 4 AITER preference and the
+    hybrid AITER handling. AITER is off the required gfx1151 path, and Gemma 4
+    now selects upstream `TRITON_ATTN`.
   - The current Qwen CK consumer boundary is inside CK paged-KV behavior: the
     normal hybrid path presents 64-token pages, while diagnostics that force
     128-divisible pages progress to a GPU fault. That boundary is documented in

@@ -857,26 +857,18 @@ _source_tree_has_all_source_patches() {
   [[ -f pyproject.toml ]] || return 1
   grep -Fq 'requires-python = ">=3.10,<3.15"' pyproject.toml &&
     grep -Fq 'def _selected_subcommand() -> str | None:' vllm/entrypoints/cli/main.py &&
-    grep -Fq 'using vllm_bfloat16 = __hip_bfloat16;' csrc/cuda_vec_utils.cuh &&
-    grep -Fq 'expected_hipified_path' cmake/hipify.py &&
-    grep -Fq 'return on_mi3xx() or on_gfx1x()' vllm/_aiter_ops.py &&
+    grep -Fq 'using vllm_bfloat16 = __hip_bfloat16;' \
+      csrc/libtorch_stable/cuda_vec_utils.cuh &&
     grep -Fq 'def torchao_version_at_least(torchao_version: str) -> bool:' \
       vllm/model_executor/layers/quantization/torchao_utils.py &&
-    grep -Fq 'Hybrid models need TRITON_ATTN' vllm/platforms/rocm.py &&
     grep -Fq 'Use PyTorch top-k/top-p filtering on large-vocabulary ROCm' \
       vllm/v1/sample/ops/topk_topp_sampler.py &&
     grep -Fq 'Keep valid_count type stable across branches' \
       vllm/v1/spec_decode/utils.py &&
-    grep -Fq 'def _triton_knobs():' \
-      vllm/triton_utils/jit_monitor.py &&
-    grep -Fq 'knobs = _triton_knobs()' \
-      vllm/triton_utils/jit_monitor.py &&
-    grep -Fq 'def update_dflash(config_dict: dict, pre_trained_config: dict) -> None:' \
-      vllm/transformers_utils/configs/speculators/algos.py &&
-    grep -Fq 'def _flash_attn_uses_triton_rocm() -> bool:' \
-      vllm/platforms/rocm.py &&
     grep -Fq 'def rocm_flash_attn_supports_vllm_varlen_api() -> bool:' \
-      vllm/v1/attention/backends/fa_utils.py
+      vllm/v1/attention/backends/fa_utils.py &&
+    grep -Fq 'NOTE(gfx1151): On AMD HIP, restrict autotune search' \
+      vllm/third_party/flash_linear_attention/ops/chunk_delta_h.py
 }
 
 _apply_all_source_patches() {
@@ -954,19 +946,31 @@ build() {{
   fi
   export CMAKE_ARGS="-DHIP_VERSION=${{_hip_version%%-*}} ${{CMAKE_ARGS:-}}"
   export VLLM_VERSION_OVERRIDE="${{pkgver}}"
-  export VLLM_ROCM_USE_AITER=1
+
+  # The Rust frontend (vllm-rs) and _rust_tool_parser are optional unless
+  # VLLM_REQUIRE_RUST_FRONTEND is set. This package skips them: cargo is
+  # disabled and rustup may not install the rust-toolchain.toml channel, so
+  # setuptools-rust reports them as failed optional extensions.
+  unset VLLM_REQUIRE_RUST_FRONTEND
+  export CARGO=/usr/bin/false
+  export CARGO_NET_OFFLINE=true
+  export RUSTUP_AUTO_INSTALL=0
 
   rm -rf .deps/triton_kernels-*
 
   mkdir -p dist
   rm -f dist/*.whl
 
-  if ! pip wheel . --no-build-isolation --no-deps --wheel-dir dist -v; then
-    unset VLLM_ROCM_USE_AITER
-    python setup.py clean 2>/dev/null || true
-    find . -name "*.so" -path "*/build/*" -delete 2>/dev/null || true
-    pip wheel . --no-build-isolation --no-deps --wheel-dir dist -v
-  fi
+  pip wheel . --no-build-isolation --no-deps --wheel-dir dist -v
+
+  local _wheel _members
+  for _wheel in dist/*.whl; do
+    _members="$(python -c 'import sys, zipfile; print("\\n".join(zipfile.ZipFile(sys.argv[1]).namelist()))' "${{_wheel}}")"
+    if grep -Eq '^vllm/(_rust_[^/]*[.]so|vllm-rs)$' <<<"${{_members}}"; then
+      echo "VLLM_RUST_ARTIFACT_UNEXPECTED: ${{_wheel}} contains Rust extensions this package skips" >&2
+      return 1
+    fi
+  done
 }}
 
 package() {{
