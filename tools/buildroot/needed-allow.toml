@@ -1,0 +1,560 @@
+# Accepted linkage findings for `c_buildroot.py verify`.
+#
+# verify reads every host-architecture ELF object under /usr/bin, /usr/lib and
+# /opt/rocm in the root. It fails on a DT_NEEDED entry that does not resolve
+# inside the root, and on a DT_RUNPATH or DT_RPATH entry that is not under
+# /usr or /opt/rocm and not relative to $ORIGIN, unless an entry here covers
+# the finding. It also fails on any entry here that covers nothing, so remove
+# an entry as soon as its finding is gone.
+#
+# [[needed]]  package, object, soname, reason, optional issue
+# [[runpath]] package, object, entry,  reason, optional issue
+#
+# `package` is the package that owns the object. `object` is an fnmatch
+# pattern for the object's path in the root, and `soname` or `entry` is an
+# fnmatch pattern for the unresolved soname or the RUNPATH/RPATH directory.
+# Use an exact value unless one cause covers a family, and say so in the
+# reason. A real defect that must not block the build carries its tracking
+# issue. Never add a finding that a correct lock or a package fix should cure.
+
+# --- needed: plugin ---
+# Optional plugins and tools whose provider is an optdepend that is not in the root. Nothing in the W2A chain loads them.
+[[needed]]
+package = "avahi"
+object = "/usr/bin/*"
+soname = "libgtk-3.so.0"
+reason = "avahi's GTK 3 UI tools and library; gtk3 is not in the root."
+
+[[needed]]
+package = "avahi"
+object = "/usr/lib/libavahi-ui-gtk3.so.0.1.4"
+soname = "libgdk-3.so.0"
+reason = "avahi's GTK 3 UI tools and library; gtk3 is not in the root."
+
+[[needed]]
+package = "avahi"
+object = "/usr/lib/libavahi-ui-gtk3.so.0.1.4"
+soname = "libgtk-3.so.0"
+reason = "avahi's GTK 3 UI tools and library; gtk3 is not in the root."
+
+[[needed]]
+package = "glibc"
+object = "/usr/bin/memusagestat"
+soname = "libgd.so.3"
+reason = "glibc's memusagestat needs gd (an optdepend), not in the root."
+
+[[needed]]
+package = "glycin"
+object = "/usr/lib/glycin-loaders/2+/glycin-heif"
+soname = "libheif.so.1"
+reason = "glycin's HEIF loader needs libheif, not in the root."
+
+[[needed]]
+package = "groff"
+object = "/usr/bin/gxditview"
+soname = "libXaw.so.7"
+reason = "groff's X11 tools need libxaw/libxt, not in the root."
+
+[[needed]]
+package = "groff"
+object = "/usr/bin/gxditview"
+soname = "libXmu.so.6"
+reason = "groff's X11 tools need libxaw/libxt, not in the root."
+
+[[needed]]
+package = "groff"
+object = "/usr/bin/*"
+soname = "libXt.so.6"
+reason = "groff's X11 tools need libxaw/libxt, not in the root."
+
+[[needed]]
+package = "jack2"
+object = "/usr/lib/jack/jack_firewire.so"
+soname = "libffado.so.2"
+reason = "JACK's FireWire backend needs libffado, not in the root."
+
+[[needed]]
+package = "libtiff"
+object = "/usr/bin/tiffgt"
+soname = "libglut.so.3"
+reason = "libtiff's tiffgt viewer needs freeglut, not in the root."
+
+[[needed]]
+package = "lm_sensors"
+object = "/usr/bin/sensord"
+soname = "librrd.so.8"
+reason = "lm_sensors' sensord needs rrdtool, not in the root."
+
+[[needed]]
+package = "openmpi"
+object = "/usr/lib/openmpi/*"
+soname = "libucc.so.1"
+reason = "Open MPI UCC collectives; ucc is not in the root."
+
+[[needed]]
+package = "openucx"
+object = "/usr/lib/ucx/*"
+soname = "libibverbs.so.1"
+reason = "UCX InfiniBand, EFA and RDMA transports and the MAD perftest; rdma-core and the IB management libraries are not in the root."
+
+[[needed]]
+package = "openucx"
+object = "/usr/lib/ucx/libuct_ib_efa.so.0.0.0"
+soname = "libefa.so.1"
+reason = "UCX InfiniBand, EFA and RDMA transports and the MAD perftest; rdma-core and the IB management libraries are not in the root."
+
+[[needed]]
+package = "openucx"
+object = "/usr/lib/ucx/*"
+soname = "libmlx5.so.1"
+reason = "UCX InfiniBand, EFA and RDMA transports and the MAD perftest; rdma-core and the IB management libraries are not in the root."
+
+[[needed]]
+package = "openucx"
+object = "/usr/lib/ucx/libuct_rdmacm.so.0.0.0"
+soname = "librdmacm.so.1"
+reason = "UCX InfiniBand, EFA and RDMA transports and the MAD perftest; rdma-core and the IB management libraries are not in the root."
+
+[[needed]]
+package = "openucx"
+object = "/usr/lib/ucx/libucx_perftest_mad.so.0.0.0"
+soname = "libibmad.so.5"
+reason = "UCX InfiniBand, EFA and RDMA transports and the MAD perftest; rdma-core and the IB management libraries are not in the root."
+
+[[needed]]
+package = "openucx"
+object = "/usr/lib/ucx/libucx_perftest_mad.so.0.0.0"
+soname = "libibumad.so.3"
+reason = "UCX InfiniBand, EFA and RDMA transports and the MAD perftest; rdma-core and the IB management libraries are not in the root."
+
+[[needed]]
+package = "pinentry"
+object = "/usr/bin/pinentry-gnome3"
+soname = "libgcr-base-3.so.1"
+reason = "pinentry's GNOME, GTK and Qt frontends; their toolkits are not in the root."
+
+[[needed]]
+package = "pinentry"
+object = "/usr/bin/pinentry-gtk"
+soname = "libgdk-3.so.0"
+reason = "pinentry's GNOME, GTK and Qt frontends; their toolkits are not in the root."
+
+[[needed]]
+package = "pinentry"
+object = "/usr/bin/pinentry-gtk"
+soname = "libgtk-3.so.0"
+reason = "pinentry's GNOME, GTK and Qt frontends; their toolkits are not in the root."
+
+[[needed]]
+package = "pinentry"
+object = "/usr/bin/pinentry-qt"
+soname = "libKF6GuiAddons.so.6"
+reason = "pinentry's GNOME, GTK and Qt frontends; their toolkits are not in the root."
+
+[[needed]]
+package = "pinentry"
+object = "/usr/bin/pinentry-qt"
+soname = "libKF6WindowSystem.so.6"
+reason = "pinentry's GNOME, GTK and Qt frontends; their toolkits are not in the root."
+
+[[needed]]
+package = "qt6-base"
+object = "/usr/lib/qt6/plugins/platformthemes/libqgtk3.so"
+soname = "libgdk-3.so.0"
+reason = "Qt 6 platform theme and SQL driver plugins; GTK 3 and the database client libraries are not in the root."
+
+[[needed]]
+package = "qt6-base"
+object = "/usr/lib/qt6/plugins/platformthemes/libqgtk3.so"
+soname = "libgtk-3.so.0"
+reason = "Qt 6 platform theme and SQL driver plugins; GTK 3 and the database client libraries are not in the root."
+
+[[needed]]
+package = "qt6-base"
+object = "/usr/lib/qt6/plugins/sqldrivers/libqsqlibase.so"
+soname = "libfbclient.so.2"
+reason = "Qt 6 platform theme and SQL driver plugins; GTK 3 and the database client libraries are not in the root."
+
+[[needed]]
+package = "qt6-base"
+object = "/usr/lib/qt6/plugins/sqldrivers/libqsqlmysql.so"
+soname = "libmariadb.so.3"
+reason = "Qt 6 platform theme and SQL driver plugins; GTK 3 and the database client libraries are not in the root."
+
+[[needed]]
+package = "qt6-base"
+object = "/usr/lib/qt6/plugins/sqldrivers/libqsqlodbc.so"
+soname = "libodbc.so.2"
+reason = "Qt 6 platform theme and SQL driver plugins; GTK 3 and the database client libraries are not in the root."
+
+[[needed]]
+package = "qt6-base"
+object = "/usr/lib/qt6/plugins/sqldrivers/libqsqlpsql.so"
+soname = "libpq.so.5"
+reason = "Qt 6 platform theme and SQL driver plugins; GTK 3 and the database client libraries are not in the root."
+
+[[needed]]
+package = "v4l-utils"
+object = "/usr/bin/qv4l2"
+soname = "libQt6Core5Compat.so.6"
+reason = "v4l-utils' qv4l2 GUI needs qt6-5compat, not in the root."
+
+[[needed]]
+package = "vtk"
+object = "/usr/lib/*vtk*"
+soname = "libcatalyst.so.3"
+reason = "Optional VTK I/O, rendering and accelerator modules pulled in through opencv; their providers are VTK optdepends that are not in the root."
+
+[[needed]]
+package = "vtk"
+object = "/usr/lib/*vtk*"
+soname = "libviskores_*-1.1.so.1.1"
+reason = "Optional VTK I/O, rendering and accelerator modules pulled in through opencv; their providers are VTK optdepends that are not in the root."
+
+[[needed]]
+package = "vtk"
+object = "/usr/lib/libvtkFiltersONNX.so.1"
+soname = "libonnxruntime.so.1"
+reason = "Optional VTK I/O, rendering and accelerator modules pulled in through opencv; their providers are VTK optdepends that are not in the root."
+
+[[needed]]
+package = "vtk"
+object = "/usr/lib/libvtkGUISupportQtQuick.so.1"
+soname = "libQt6Quick.so.6"
+reason = "Optional VTK I/O, rendering and accelerator modules pulled in through opencv; their providers are VTK optdepends that are not in the root."
+
+[[needed]]
+package = "vtk"
+object = "/usr/lib/*vtk*"
+soname = "libproj.so.25"
+reason = "Optional VTK I/O, rendering and accelerator modules pulled in through opencv; their providers are VTK optdepends that are not in the root."
+
+[[needed]]
+package = "vtk"
+object = "/usr/lib/*vtk*"
+soname = "libgdal.so.39"
+reason = "Optional VTK I/O, rendering and accelerator modules pulled in through opencv; their providers are VTK optdepends that are not in the root."
+
+[[needed]]
+package = "vtk"
+object = "/usr/lib/*vtk*"
+soname = "libadios2_cxx*.so.2.12"
+reason = "Optional VTK I/O, rendering and accelerator modules pulled in through opencv; their providers are VTK optdepends that are not in the root."
+
+[[needed]]
+package = "vtk"
+object = "/usr/lib/libvtkIOAlembic.so.1"
+soname = "libAlembic.so.1.8"
+reason = "Optional VTK I/O, rendering and accelerator modules pulled in through opencv; their providers are VTK optdepends that are not in the root."
+
+[[needed]]
+package = "vtk"
+object = "/usr/lib/*vtk*"
+soname = "libcgns.so.4.5"
+reason = "Optional VTK I/O, rendering and accelerator modules pulled in through opencv; their providers are VTK optdepends that are not in the root."
+
+[[needed]]
+package = "vtk"
+object = "/usr/lib/*vtk*"
+soname = "libgl2ps.so.1"
+reason = "Optional VTK I/O, rendering and accelerator modules pulled in through opencv; their providers are VTK optdepends that are not in the root."
+
+[[needed]]
+package = "vtk"
+object = "/usr/lib/libvtkIOExportPDF.so.1"
+soname = "libhpdf.so.2.4"
+reason = "Optional VTK I/O, rendering and accelerator modules pulled in through opencv; their providers are VTK optdepends that are not in the root."
+
+[[needed]]
+package = "vtk"
+object = "/usr/lib/libvtkIOLAS.so.1"
+soname = "liblas.so.3"
+reason = "Optional VTK I/O, rendering and accelerator modules pulled in through opencv; their providers are VTK optdepends that are not in the root."
+
+[[needed]]
+package = "vtk"
+object = "/usr/lib/*vtk*"
+soname = "libnetcdf.so.22"
+reason = "Optional VTK I/O, rendering and accelerator modules pulled in through opencv; their providers are VTK optdepends that are not in the root."
+
+[[needed]]
+package = "vtk"
+object = "/usr/lib/libvtkIOMySQL.so.1"
+soname = "libmariadb.so.3"
+reason = "Optional VTK I/O, rendering and accelerator modules pulled in through opencv; their providers are VTK optdepends that are not in the root."
+
+[[needed]]
+package = "vtk"
+object = "/usr/lib/libvtkIOOCCT.so.1"
+soname = "libTK*.so.7.9"
+reason = "Optional VTK I/O, rendering and accelerator modules pulled in through opencv; their providers are VTK optdepends that are not in the root."
+
+[[needed]]
+package = "vtk"
+object = "/usr/lib/libvtkIOODBC.so.1"
+soname = "libodbc.so.2"
+reason = "Optional VTK I/O, rendering and accelerator modules pulled in through opencv; their providers are VTK optdepends that are not in the root."
+
+[[needed]]
+package = "vtk"
+object = "/usr/lib/libvtkIOOpenVDB.so.1"
+soname = "libopenvdb.so.13.0"
+reason = "Optional VTK I/O, rendering and accelerator modules pulled in through opencv; their providers are VTK optdepends that are not in the root."
+
+[[needed]]
+package = "vtk"
+object = "/usr/lib/libvtkIOPDAL.so.1"
+soname = "libpdalcpp.so.20"
+reason = "Optional VTK I/O, rendering and accelerator modules pulled in through opencv; their providers are VTK optdepends that are not in the root."
+
+[[needed]]
+package = "vtk"
+object = "/usr/lib/libvtkIOPostgreSQL.so.1"
+soname = "libpq.so.5"
+reason = "Optional VTK I/O, rendering and accelerator modules pulled in through opencv; their providers are VTK optdepends that are not in the root."
+
+[[needed]]
+package = "vtk"
+object = "/usr/lib/libvtkRenderingAnari.so.1"
+soname = "libanari.so.0"
+reason = "Optional VTK I/O, rendering and accelerator modules pulled in through opencv; their providers are VTK optdepends that are not in the root."
+
+[[needed]]
+package = "vtk"
+object = "/usr/lib/libvtkRenderingOpenVR.so.1"
+soname = "libopenvr_api.so"
+reason = "Optional VTK I/O, rendering and accelerator modules pulled in through opencv; their providers are VTK optdepends that are not in the root."
+
+[[needed]]
+package = "vtk"
+object = "/usr/lib/libvtkRenderingOpenXR.so.1"
+soname = "libopenxr_loader.so.1"
+reason = "Optional VTK I/O, rendering and accelerator modules pulled in through opencv; their providers are VTK optdepends that are not in the root."
+
+[[needed]]
+package = "vtk"
+object = "/usr/lib/libvtkRenderingRayTracing.so.1"
+soname = "libOpenImageDenoise.so.2"
+reason = "Optional VTK I/O, rendering and accelerator modules pulled in through opencv; their providers are VTK optdepends that are not in the root."
+
+[[needed]]
+package = "vtk"
+object = "/usr/lib/libvtkRenderingRayTracing.so.1"
+soname = "libospray.so.3"
+reason = "Optional VTK I/O, rendering and accelerator modules pulled in through opencv; their providers are VTK optdepends that are not in the root."
+
+[[needed]]
+package = "vtk"
+object = "/usr/lib/libvtkRenderingTk.so.1"
+soname = "libtcl.so"
+reason = "Optional VTK I/O, rendering and accelerator modules pulled in through opencv; their providers are VTK optdepends that are not in the root."
+
+[[needed]]
+package = "vtk"
+object = "/usr/lib/libvtkRenderingTk.so.1"
+soname = "libtk.so"
+reason = "Optional VTK I/O, rendering and accelerator modules pulled in through opencv; their providers are VTK optdepends that are not in the root."
+
+
+# --- needed: cuda ---
+# CUDA-only variants. They need the NVIDIA driver and CUDA runtime, which this AMD-only stack never has.
+[[needed]]
+package = "openmpi"
+object = "/usr/lib/openmpi/*"
+soname = "libcuda.so.1"
+reason = "openmpi's CUDA-only components; the NVIDIA driver and CUDA runtime are never in this AMD-only root."
+
+[[needed]]
+package = "openucx"
+object = "/usr/lib/ucx/*"
+soname = "libcuda.so.1"
+reason = "openucx's CUDA-only components; the NVIDIA driver and CUDA runtime are never in this AMD-only root."
+
+[[needed]]
+package = "openucx"
+object = "/usr/lib/ucx/*"
+soname = "libcudart.so.13"
+reason = "openucx's CUDA-only components; the NVIDIA driver and CUDA runtime are never in this AMD-only root."
+
+[[needed]]
+package = "openucx"
+object = "/usr/lib/ucx/libuct_cuda.so.0.0.0"
+soname = "libnvidia-ml.so.1"
+reason = "openucx's CUDA-only components; the NVIDIA driver and CUDA runtime are never in this AMD-only root."
+
+
+# --- needed: i386 ---
+# 32-bit compiler-rt runtimes. An x86_64 root has no 32-bit libc (lib32 multilib), and no W2A build targets i386.
+[[needed]]
+package = "compiler-rt"
+object = "/usr/lib/clang/*/lib/linux/libclang_rt.*-i386.so"
+soname = "*"
+reason = "32-bit compiler-rt runtimes. An x86_64 root has no 32-bit libc (lib32 multilib), and no W2A build targets i386."
+
+
+# --- needed: loaded ---
+# False positives: the object is only ever loaded by a process that has already loaded these libraries by soname, which the static check does not model.
+[[needed]]
+package = "python-torchvision-rocm-gfx1151"
+object = "/usr/lib/python3.14/site-packages/torchvision/image.so"
+soname = "libc10.so"
+reason = "Loaded only through `import torchvision`, after torch has loaded libc10.so and libtorch_cpu.so."
+
+[[needed]]
+package = "python-torchvision-rocm-gfx1151"
+object = "/usr/lib/python3.14/site-packages/torchvision/image.so"
+soname = "libtorch_cpu.so"
+reason = "Loaded only through `import torchvision`, after torch has loaded libc10.so and libtorch_cpu.so."
+
+[[needed]]
+package = "systemd"
+object = "/usr/lib/systemd/libsystemd-core-*.so"
+soname = "libsystemd-shared-*.so"
+reason = "Loaded only by systemd's executables, whose RUNPATH /usr/lib/systemd has already loaded libsystemd-shared."
+
+
+# --- needed: tkinter ---
+# Python's optional _tkinter extension; Tcl/Tk is an optdepend that no W2A build or smoke uses.
+[[needed]]
+package = "python-gfx1151"
+object = "/usr/lib/python3.14/lib-dynload/_tkinter.cpython-314-x86_64-linux-gnu.so"
+soname = "libtcl8.6.so"
+reason = "Python's optional _tkinter extension; Tcl/Tk is an optdepend that no W2A build or smoke uses."
+
+[[needed]]
+package = "python-gfx1151"
+object = "/usr/lib/python3.14/lib-dynload/_tkinter.cpython-314-x86_64-linux-gnu.so"
+soname = "libtk8.6.so"
+reason = "Python's optional _tkinter extension; Tcl/Tk is an optdepend that no W2A build or smoke uses."
+
+
+# --- needed: F ---
+# Real defects in the F foundation packages (TheRock): objects that miss their own rocm_sysdeps or sibling libraries because their RUNPATH names TheRock's CI build tree. Tracked in the foundation issue so they do not block W2A.
+[[needed]]
+package = "amdsmi-gfx1151"
+object = "/opt/rocm/share/amd_smi/amdsmi/libamd_smi.so"
+soname = "librocm_sysdeps_*"
+reason = "Real defects in the F foundation packages (TheRock): objects that miss their own rocm_sysdeps or sibling libraries because their RUNPATH names TheRock's CI build tree. Tracked in the foundation issue so they do not block W2A."
+issue = 108
+
+[[needed]]
+package = "rocm-llvm-gfx1151"
+object = "/opt/rocm/lib/llvm/bin/llvm-omp-kernel-replay"
+soname = "librocm_sysdeps_*"
+reason = "Real defects in the F foundation packages (TheRock): objects that miss their own rocm_sysdeps or sibling libraries because their RUNPATH names TheRock's CI build tree. Tracked in the foundation issue so they do not block W2A."
+issue = 108
+
+[[needed]]
+package = "rocm-sysdeps-gfx1151"
+object = "/opt/rocm/lib/rocm_sysdeps/bin/xmlwf"
+soname = "librocm_sysdeps_*"
+reason = "Real defects in the F foundation packages (TheRock): objects that miss their own rocm_sysdeps or sibling libraries because their RUNPATH names TheRock's CI build tree. Tracked in the foundation issue so they do not block W2A."
+issue = 108
+
+[[needed]]
+package = "rocprofiler-sdk-gfx1151"
+object = "/opt/rocm/lib/rocprofiler-sdk/*"
+soname = "librocprofiler-sdk-rocpd.so.1"
+reason = "Real defects in the F foundation packages (TheRock): objects that miss their own rocm_sysdeps or sibling libraries because their RUNPATH names TheRock's CI build tree. Tracked in the foundation issue so they do not block W2A."
+issue = 108
+
+
+# --- needed: torch ---
+# Real defect in the W2A PyTorch package: torch_shm_manager's RUNPATH is the PyTorch build tree instead of $ORIGIN/../lib, so it cannot find libc10.so and libshm.so. Tracked in the PyTorch issue.
+[[needed]]
+package = "python-pytorch-opt-rocm-gfx1151"
+object = "/usr/lib/python3.14/site-packages/torch/bin/torch_shm_manager"
+soname = "libc10.so"
+reason = "Real defect in the W2A PyTorch package: torch_shm_manager's RUNPATH is the PyTorch build tree instead of $ORIGIN/../lib, so it cannot find libc10.so and libshm.so. Tracked in the PyTorch issue."
+issue = 109
+
+[[needed]]
+package = "python-pytorch-opt-rocm-gfx1151"
+object = "/usr/lib/python3.14/site-packages/torch/bin/torch_shm_manager"
+soname = "libshm.so"
+reason = "Real defect in the W2A PyTorch package: torch_shm_manager's RUNPATH is the PyTorch build tree instead of $ORIGIN/../lib, so it cannot find libc10.so and libshm.so. Tracked in the PyTorch issue."
+issue = 109
+
+
+# --- runpath: F ---
+# Real defects in the F foundation packages (TheRock): objects that miss their own rocm_sysdeps or sibling libraries because their RUNPATH names TheRock's CI build tree. Tracked in the foundation issue so they do not block W2A.
+[[runpath]]
+package = "amdsmi-gfx1151"
+object = "/opt/rocm/share/amd_smi/amdsmi/libamd_smi.so"
+entry = "/__w/*"
+reason = "Real defects in the F foundation packages (TheRock): objects that miss their own rocm_sysdeps or sibling libraries because their RUNPATH names TheRock's CI build tree. Tracked in the foundation issue so they do not block W2A."
+issue = 108
+
+[[runpath]]
+package = "hipblaslt-gfx1151"
+object = "/opt/rocm/share/hipblaslt/tensilelite/rocisa/libstinkytofu.so.0.1.0"
+entry = "/__w/*"
+reason = "Real defects in the F foundation packages (TheRock): objects that miss their own rocm_sysdeps or sibling libraries because their RUNPATH names TheRock's CI build tree. Tracked in the foundation issue so they do not block W2A."
+issue = 108
+
+[[runpath]]
+package = "hsa-amd-aqlprofile-gfx1151"
+object = "/opt/rocm/lib/libhsa-amd-aqlprofile64.so"
+entry = "/__w/*"
+reason = "Real defects in the F foundation packages (TheRock): objects that miss their own rocm_sysdeps or sibling libraries because their RUNPATH names TheRock's CI build tree. Tracked in the foundation issue so they do not block W2A."
+issue = 108
+
+[[runpath]]
+package = "miopen-hip-gfx1151"
+object = "/opt/rocm/*"
+entry = "/__w/*"
+reason = "Real defects in the F foundation packages (TheRock): objects that miss their own rocm_sysdeps or sibling libraries because their RUNPATH names TheRock's CI build tree. Tracked in the foundation issue so they do not block W2A."
+issue = 108
+
+[[runpath]]
+package = "rocm-language-runtime-gfx1151"
+object = "/opt/rocm/*"
+entry = "/__w/*"
+reason = "Real defects in the F foundation packages (TheRock): objects that miss their own rocm_sysdeps or sibling libraries because their RUNPATH names TheRock's CI build tree. Tracked in the foundation issue so they do not block W2A."
+issue = 108
+
+[[runpath]]
+package = "rocm-sysdeps-gfx1151"
+object = "/opt/rocm/lib/rocm_sysdeps/bin/xmlwf"
+entry = "/__w/*"
+reason = "Real defects in the F foundation packages (TheRock): objects that miss their own rocm_sysdeps or sibling libraries because their RUNPATH names TheRock's CI build tree. Tracked in the foundation issue so they do not block W2A."
+issue = 108
+
+[[runpath]]
+package = "rocrand-gfx1151"
+object = "/opt/rocm/lib/librocrand.so.1.1"
+entry = "/__w/*"
+reason = "Real defects in the F foundation packages (TheRock): objects that miss their own rocm_sysdeps or sibling libraries because their RUNPATH names TheRock's CI build tree. Tracked in the foundation issue so they do not block W2A."
+issue = 108
+
+[[runpath]]
+package = "rocsparse-gfx1151"
+object = "/opt/rocm/lib/rocsparse/*"
+entry = "/__w/*"
+reason = "Real defects in the F foundation packages (TheRock): objects that miss their own rocm_sysdeps or sibling libraries because their RUNPATH names TheRock's CI build tree. Tracked in the foundation issue so they do not block W2A."
+issue = 108
+
+
+# --- runpath: torch ---
+# Real defect in the W2A PyTorch package: torch_shm_manager's RUNPATH is the PyTorch build tree instead of $ORIGIN/../lib, so it cannot find libc10.so and libshm.so. Tracked in the PyTorch issue.
+[[runpath]]
+package = "python-pytorch-opt-rocm-gfx1151"
+object = "/usr/lib/python3.14/site-packages/torch/bin/torch_shm_manager"
+entry = "/build/*"
+reason = "Real defect in the W2A PyTorch package: torch_shm_manager's RUNPATH is the PyTorch build tree instead of $ORIGIN/../lib, so it cannot find libc10.so and libshm.so. Tracked in the PyTorch issue."
+issue = 109
+
+
+# --- runpath: arch ---
+# Upstream Arch packaging leaks its /startdir build tree into a RUNPATH. The directory never exists, so the entry is inert; it is not an ASHP package.
+[[runpath]]
+package = "boost-libs"
+object = "/usr/lib/python3.14/site-packages/boost/mpi.so"
+entry = "/startdir/*"
+reason = "Upstream Arch boost-libs leaks its /startdir build tree into a RUNPATH; the directory never exists, so the entry is inert."
+
+[[runpath]]
+package = "sdl3"
+object = "/usr/bin/testcontroller"
+entry = "/startdir/*"
+reason = "Upstream Arch sdl3 leaks its /startdir build tree into a RUNPATH; the directory never exists, so the entry is inert."
