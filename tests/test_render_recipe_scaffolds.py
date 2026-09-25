@@ -571,6 +571,49 @@ def test_aocl_libm_renderer_prefers_source_patches_over_inline_sed() -> None:
     assert "patchelf --set-rpath /usr/lib" in pkgbuild
 
 
+def test_autoconf_python_renderer_applies_source_patches_after_unbundling() -> None:
+    patch_name = "0001-build-python-with-posix-2024.patch"
+    pkgbuild = render_recipe_scaffolds.render_pkgbuild(
+        "python-gfx1151",
+        {
+            "recipe_key": "cpython",
+            "template": "autoconf-python",
+            "upstream_version": "3.14.7",
+            "pkgdesc": "Python",
+            "url": "https://www.python.org/",
+            "license": ["PSF-2.0"],
+            "source_type": "tarball",
+            "source_url": "https://www.python.org/ftp/python/3.14.7/Python-3.14.7.tar.xz",
+            "sha256sums": ["0" * 64],
+            "source_patches": [patch_name],
+            "extra_sha256sums": ["1" * 64],
+            "src_subdir": "Python-3.14.7",
+            "install_prefix": "/usr",
+        },
+        {
+            "repo": "https://github.com/python/cpython.git",
+            "method": "autoconf",
+            "phase": "package",
+            "steps": [],
+            "depends_on": [],
+            "notes": "",
+        },
+        "3.14.7",
+        {
+            "recipe_repo": "https://github.com/paudley/ai-notes",
+            "recipe_subdir": "strix-halo",
+            "recipe_author": "Blackcat Informatics Inc.",
+        },
+    )
+
+    prepare = pkgbuild.split("prepare() {", 1)[1].split("\n}", 1)[0]
+    assert prepare.index("rm -r Modules/_decimal/libmpdec") < prepare.index(
+        f'patch -Np1 -i "$srcdir/{patch_name}"'
+    )
+    assert f"Python-3.14.7.tar.xz {patch_name})" in pkgbuild
+    assert f"sha256sums=({'0' * 64} {'1' * 64})" in pkgbuild
+
+
 def test_torch_migraphx_renderer_keeps_rocm_compiler_and_rpath() -> None:
     pkgbuild = render_recipe_scaffolds.render_pkgbuild(
         "python-torch-migraphx-gfx1151",

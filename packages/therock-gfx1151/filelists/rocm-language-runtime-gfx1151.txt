@@ -1,5 +1,6 @@
 opt/rocm/bin/rdcd
 opt/rocm/bin/rdci
+opt/rocm/bin/roccoremerge
 opt/rocm/include/rdc/rdc.h
 opt/rocm/lib/cmake/rdc/rdc-config-version.cmake
 opt/rocm/lib/cmake/rdc/rdc-config.cmake
@@ -1351,13 +1352,6 @@ opt/rocm/lib/rdc/grpc/lib/rocm_sysdeps/lib/librocm_sysdeps_z.so.1
 opt/rocm/lib/rdc/grpc/lib/rocm_sysdeps/lib/librocm_sysdeps_z.so.1.3.2
 opt/rocm/lib/rdc/grpc/lib/rocm_sysdeps/lib/libz.so
 opt/rocm/lib/rdc/grpc/lib/rocm_sysdeps/lib/pkgconfig/zlib.pc
-opt/rocm/lib/rdc/grpc/lib/rocm_sysdeps/share/doc/zlib/zlib/LICENSE
-opt/rocm/lib/rdc/grpc/lib/rocm_sysdeps/share/doc/zlib/zlib/algorithm.txt
-opt/rocm/lib/rdc/grpc/lib/rocm_sysdeps/share/doc/zlib/zlib/crc-doc.1.0.pdf
-opt/rocm/lib/rdc/grpc/lib/rocm_sysdeps/share/doc/zlib/zlib/rfc1950.txt
-opt/rocm/lib/rdc/grpc/lib/rocm_sysdeps/share/doc/zlib/zlib/rfc1951.txt
-opt/rocm/lib/rdc/grpc/lib/rocm_sysdeps/share/doc/zlib/zlib/rfc1952.txt
-opt/rocm/lib/rdc/grpc/lib/rocm_sysdeps/share/doc/zlib/zlib/txtvsbin.txt
 opt/rocm/lib/rdc/hsaco/gfx1010/binary_search_kernels.hsaco
 opt/rocm/lib/rdc/hsaco/gfx1010/gpuReadWrite_kernels.hsaco
 opt/rocm/lib/rdc/hsaco/gfx1011/binary_search_kernels.hsaco
@@ -1432,3 +1426,7 @@ opt/rocm/libexec/rdc/python_binding/rdc_prometheus_example.yml
 opt/rocm/libexec/rdc/python_binding/rdc_rest_api.py
 opt/rocm/libexec/rdc/rdc.service
 opt/rocm/share/rdc/conf/rdc_options.conf
+opt/rocm/share/rdc/rdctst_tests/libgtest.so
+opt/rocm/share/rdc/rdctst_tests/libgtest.so.1.14.0
+opt/rocm/share/rdc/rdctst_tests/libgtest_main.so
+opt/rocm/share/rdc/rdctst_tests/libgtest_main.so.1.14.0

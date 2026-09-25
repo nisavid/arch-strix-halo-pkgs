@@ -983,12 +983,16 @@ package() {{
 }}"""
     elif template == "autoconf-python":
         pybasever = ".".join(policy_pkg["upstream_version"].split(".")[:2])
+        python_patch_lines = "".join(
+            f'\n  patch -Np1 -i "$srcdir/{patch_name}"'
+            for patch_name in policy_pkg.get("source_patches", [])
+        )
         build_body = f"""\
 prepare() {{
   cd "$srcdir/{src_subdir}"
 
   rm -r Modules/expat
-  rm -r Modules/_decimal/libmpdec
+  rm -r Modules/_decimal/libmpdec{python_patch_lines}
 }}
 
 build() {{
