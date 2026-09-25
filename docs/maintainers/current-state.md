@@ -4,6 +4,100 @@ The package, deployment, and live-validation narrative below remains a
 2026-06-15 snapshot. The latest freshness sweep and its acted-on Lemonade
 transition are recorded first; older reconciliations remain as dated history.
 
+## 2026-09-24 Lemonade M4 Live Validation
+
+M4 validated the installed Lemonade family against the X4 bar (#140). The
+states are recorded separately:
+
+- **Source updated:** `lemonade-server 11.7.0-2` (patch 0005) from #152, with
+  the job-count fix from #156. The scenario fixes found by the first live runs
+  are #157, #158, #159 and #160.
+- **Built:** from main `66439a6` inside the memory-capped `builds.slice`,
+  with `MAKEFLAGS=-j10` (ninja ran `-j 10`). The build took 2m22s, and the
+  scope's `memory.peak` was 3.0 GiB with no OOM events. The archive's
+  sha256 is
+  `0737c0b208b4580452f9c8d7ae7f032b17e82403d621942f279bcc2de5353ddc`, and its
+  `.BUILDINFO` PKGBUILD checksum equals main's PKGBUILD. Against 11.7.0-1,
+  only `usr/bin/lemond` and `usr/bin/lemonade` differ.
+- **Published:** 2026-09-23 to both `strix-halo-gfx1151` repo databases.
+  In each database exactly one entry changed, and the database checksum
+  matches the archive.
+- **Deployed/installed:** by the owner on 2026-09-23 (#139). `lemond` restarted
+  on 11.7.0-2, which replaced the host's temporary hand edit of
+  `architecture_defaults.json`.
+- **Installed-smoked:** the post-install checks passed.
+  - The family comes from `strix-halo-gfx1151`: repo order beats the
+    `lemonade-server 11.9.0` builds in CachyOS and Arch `extra`.
+  - `pacman -Qkk` is clean apart from the root-only `zz-secrets.conf`.
+  - The no-fetch drop-in and the endpoint blackholes are live.
+  - `offline` and `no_fetch_executables` are true, and `--no-mmap` is in the
+    llama.cpp args.
+  - All five owner pins are loaded.
+  - The four help smokes pass.
+- **Live-scenario validated:** 20 of 20, in two runs of record:
+  - unprivileged run `run-20260924T001234Z` at main `cd1bf6a`: 17/17;
+  - root run `root-run-2` at main `95412d0` on 2026-09-25: 3/3. An identical
+    run at the same commit on 2026-09-24 also passed 3/3, and the 2026-09-25
+    run replaced its artifacts. These three scenarios read the backend's
+    `/proc/<pid>/maps`, the backend cache and `ss -p` owners, which needs
+    root. #160, the only change between the two commits, touches just the
+    backend-library check that these three use.
+
+| X4 behavior | Scenario id | Result |
+| --- | --- | --- |
+| Installed smokes | `lemonade.cli.help`, `lemonade.server.help`, `llama.cpp.hip.help`, `llama.cpp.vulkan.help` | pass |
+| GGUF text, direct, HIP and Vulkan | `llama.cpp.hip.qwen3-0.6b-q8-0.completion`, `llama.cpp.vulkan.qwen3-0.6b-q8-0.completion` | pass (all 29 of 29 layers offloaded) |
+| GGUF text via Lemonade, HIP and Vulkan | `lemonade.llamacpp.rocm.qwen3-0.6b-q8-0.completion`, `lemonade.llamacpp.vulkan.qwen3-0.6b-q8-0.completion` | pass (root) |
+| Start and restart with config preserved; HIP discovery | `lemonade.lifecycle.restart-config-hip-discovery` | pass |
+| Pin persistence and startup restore | `lemonade.pins.persistence-startup-restore` | pass |
+| Budget admit and refuse, with GTT counted | `lemonade.budget.gtt-admit-refuse` | pass (effective capacity 58.08 GB) |
+| Pinned and in-use models never displaced | `lemonade.residency.pinned-busy-not-displaced` | pass |
+| Provenance; no foreign or mixed package | `lemonade.provenance.family-no-fallback` | pass |
+| No silent downloader | `lemonade.nofetch.preplaced-load-missing-model` | pass (root) |
+| Consumer pins on the service | `lemonade.pins.service-consumer-pins` | pass |
+| Pinned qwen35moe chat | `lemonade.chat.pinned-user-model.qwen35moe` | pass |
+| Embeddings (zembed) | `lemonade.pooling.zembed-1-q4-k-m.embeddings` | pass |
+| Rerankers | `lemonade.pooling.bge-reranker-v2-m3.rerank`, `lemonade.reranking.zerank-2.selected-logit` (isolated), `lemonade.reranking.zerank-2.selected-logit.service` | pass |
+| App launch with pin and startup controls, plus one text interaction | `lemonade.app.pin-startup-text` (operator checklist) | pending: owner GUI step |
+| Kokoro TTS and the app's TTS interaction | none | deferred to generation C W2B (#113) |
+
+The Open WebUI consumer scenarios for zembed and zerank belong to arch-pkgs
+(M5, arch-pkgs #59). This record is their prerequisite receipt. The seam
+receipt ids are `lemonade.pins.service-consumer-pins`,
+`lemonade.pooling.zembed-1-q4-k-m.embeddings`,
+`lemonade.reranking.zerank-2.selected-logit`,
+`lemonade.reranking.zerank-2.selected-logit.service` and
+`lemonade.pins.persistence-startup-restore`. The confirmed endpoint is
+`http://127.0.0.1:13305/api/v1`, and the bind address and port are
+unchanged.
+
+**No-silent-downloader proof (root).** The host's registered but absent
+`Qwen3.5-0.8B-GGUF` was requested through `/load`, inference auto-load and
+Ollama auto-load:
+- Every path refused it.
+- The model cache and the backend cache were unchanged.
+- There were no non-loopback connections.
+- Each logged, blackholed download attempt was recorded.
+
+The pre-placed test model then loaded on each path, with no download logged,
+unchanged caches and no remote connection. The ROCm backend's 26 mapped
+ROCm, HIP and llama.cpp libraries are all owned by `strix-halo-gfx1151`
+packages. None come from lemond's cache.
+
+**Owner decisions recorded during M4:**
+- **Slot limit:** `max_loaded_models` changed from 2 to -1 (unlimited) on
+  2026-09-24. With five pins filling both LLM slots, every new LLM load
+  returned 409. The fork's host contract is that pins count toward residency
+  and the host runs -1. The GTT-aware occupancy budget remains the admission
+  bound. The source of the earlier 2 is indeterminate: it predates the
+  retained journal, and no ASHP tool writes service config. The setting
+  survived two later `lemond` restarts. The M6 repackage ships -1 in the
+  packaged `defaults.json` (#141).
+- **Config directory ownership:** `/etc/lemonade` and `conf.d` reset to
+  `root:root`, the ownership the package ships.
+- **Stored custom-arg values:** checked for leftovers of the fork quoting
+  regression; there were none.
+
 ## 2026-09-23 Lemonade Args-Merge Fix
 
 After the M3 repin, `lemonade-server 11.7.0-1` was built and installed under
