@@ -221,16 +221,29 @@ update_notes = [
   "vLLM 0.30.0 runs Model Runner V2 by default. `VLLM_USE_V2_MODEL_RUNNER=0` restores Model Runner V1 until v0.32; the padded-drafter spec-decode carry covers only the V1 path.",
   "vLLM 0.30.0 mirrors HIP_VISIBLE_DEVICES into CUDA_VISIBLE_DEVICES at import and raises if both are set to different values. Prefer HIP_VISIBLE_DEVICES for device selection. As of 2026-09-25 no tracked scenario, smoke helper, or service unit sets either variable.",
   "`python -m vllm.entrypoints.openai.api_server` is deprecated in 0.30.0. The tracked server smoke helpers launch `python -m vllm.entrypoints.cli.main serve` from the active interpreter instead.",
-  "vLLM 0.30.0 requirement floors. This repo does not write versions into depends, because the package graph matches depends by exact name, so the floors are recorded here. Met by the W2A lanes: transformers >=5.10.4 (python-transformers-gfx1151 5.16.1), mistral_common[image] >=1.11.6 (python-mistral-common-gfx1151 1.11.7), safetensors >=0.6.2 (python-safetensors-gfx1151 0.8.0). Met by Arch: huggingface_hub >=1.31.0 (python-huggingface-hub 1:1.32.0; `model-closure.targets` floors it because older host versions exist), openai >=2.25.0 (python-openai), starlette >=1.0.1 (python-starlette), jsonschema >=4.23.0 (python-jsonschema). Met by the W2A closure lanes added on 2026-09-25: prometheus-fastapi-instrumentator >=8.0.0 (python-prometheus-fastapi-instrumentator-gfx1151 8.1.0, replacing the AUR 7.0.0 name) and compressed-tensors ==0.17.0 (python-compressed-tensors-gfx1151 0.17.0). Not met: Arch python-fastapi is above the fastapi[standard] >=0.133.0,<0.137.0 cap; upstream caps it for model-hosting-container-standards (SageMaker) handler overrides, which this package leaves optional.",
+  "vLLM 0.30.0 requirement floors. This repo does not write versions into depends, because the package graph matches depends by exact name, so the floors are recorded here. Met by the W2A lanes: transformers >=5.10.4 (python-transformers-gfx1151 5.16.1), mistral_common[image] >=1.11.6 (python-mistral-common-gfx1151 1.11.7), safetensors >=0.6.2 (python-safetensors-gfx1151 0.8.0). Met by Arch: huggingface_hub >=1.31.0 (python-huggingface-hub 1:1.32.0; `model-closure.targets` floors it because older host versions exist), openai >=2.25.0 (python-openai), starlette >=1.0.1 (python-starlette), jsonschema >=4.23.0 (python-jsonschema). Met by the W2A closure lanes added on 2026-09-25: prometheus-fastapi-instrumentator >=8.0.0 (python-prometheus-fastapi-instrumentator-gfx1151 8.1.0, replacing the AUR 7.0.0 name) and compressed-tensors ==0.17.0 (python-compressed-tensors-gfx1151 0.17.0). Not met: Arch python-fastapi is above the fastapi[standard] >=0.133.0,<0.137.0 cap; upstream caps it because a FastAPI route-tree change breaks model-hosting-container-standards handler overrides. The server smoke is the check.",
   "Known #110 gaps, optdepends once packaged and never depends: mcp >=2.0.0,<3.0.0 (Arch python-mcp is 1.29.0) and llguidance >=1.7.0,<1.8.0 (no Arch or ASHP package). At ced6857a neither is imported while `vllm serve` starts. mcp is imported only inside `MCPToolServer` and its session helpers in `vllm/entrypoints/mcp/tool_server.py`, which `init_tool_server` builds only for `--tool-server` URLs; the other mcp imports sit under `TYPE_CHECKING`. llguidance is a `LazyLoader` in `vllm/v1/structured_output/backend_guidance.py`, a `TYPE_CHECKING` import in `vllm/tokenizers/mistral.py`, and an `is_llguidance_installed()`-guarded import in mistral-common. Without llguidance, `--tool-server` MCP URLs, the `guidance` structured-output backend, and the `auto` backend's guidance fallback for grammars that xgrammar rejects fail at request time.",
   "On 2026-09-25, dropped python-diskcache from depends and optdepends. vLLM 0.30.0 at ced6857a has no diskcache user: requirements/, setup.py, and pyproject.toml do not list it, and the outlines index cache in `vllm/v1/structured_output/utils.py` is vLLM's own SQLite-backed `OutlinesDiskCache`. Re-add it only if a packaged consumer imports `diskcache` again.",
-  "Treat runtime validation against the live ROCm stack as mandatory; a successful wheel build is not enough."
+  "Treat runtime validation against the live ROCm stack as mandatory; a successful wheel build is not enough.",
+  "On 2026-09-25, audited the vLLM 0.30.0 runtime set against ced6857a for the W2A closure (#110, #111). The required set is the modules `vllm serve` imports at module level before it serves a request, plus the imports on the request paths the W2A scenarios exercise. einops, py-cpuinfo and pybase64 now come from the W2A closure lanes python-einops-gfx1151, python-py-cpuinfo-gfx1151 and python-pybase64-gfx1151. The audit added three undeclared startup imports to depends: regex (`vllm/v1/worker/gpu_worker.py` and others), partial-json-parser (`vllm/tool_parsers/utils.py`, through the tool parser manager that the server entry imports) and model-hosting-container-standards (`vllm/entrypoints/serve/sagemaker/api_router.py`, which `vllm/entrypoints/launchers/app.py` imports to build the app), from the new python-model-hosting-container-standards-gfx1151 lane.",
+  "common.txt entries that Arch packages but the W2A runtime set does not import are optdepends: OpenTelemetry sdk, api and exporter-otlp (a guarded import in `vllm/tracing/otel.py`, used for --otlp-traces-endpoint), setproctitle (a guarded import in `vllm/utils/system_utils.py`), python-json-logger (named only by a user logging config), tiktoken (imported only by `vllm/tokenizers/kimi_audio.py`) and protobuf (vLLM never imports it; Transformers needs it only to convert a SentencePiece tokenizer when a checkpoint has no tokenizer.json).",
+  "Startup blocker: xgrammar >=0.2.1,<1.0.0 is a module-level import of `vllm/parser/harmony.py`, which `vllm/parser/__init__.py` imports; `vllm/v1/structured_output/__init__.py` imports `vllm.parser.engine.adapters`, and the engine core imports that package. The engine therefore cannot start without xgrammar, and structured outputs use it on the request path. No Arch or ASHP package provides it; xgrammar 0.2.8 is a C++ build that needs apache-tvm-ffi >=0.1.11, another C++ build with no Arch package. It is not in depends until its lane exists.",
+  "Known #110 gaps, optdepends once packaged and never depends: depyf ==0.20.0 (imported only for compile debug dumps and a CUDA-graph error message), anthropic >=0.71.0 (vLLM does not import it at ced6857a), lm-format-enforcer ==0.11.3 and outlines_core ==0.2.14 (their structured-output backends load only when requested), lark ==1.2.2 (vLLM does not import it; Arch python-lark-parser is 1.3.1), fastapi-cli (the `fastapi` command), opentelemetry-semantic-conventions-ai (vLLM does not import it), and from rocm.txt numba ==0.65.0 (only the CPU n-gram speculative proposer and two processors import it) and grpcio ==1.78.0 (only the gRPC server launcher imports it)."
 ]
 provides = ["python-vllm-rocm", "python-vllm"]
 conflicts = ["python-vllm-rocm", "python-vllm"]
-depends = ["amdsmi-gfx1151", "numactl", "python-aiohttp-gfx1151", "python-blake3", "python-cachetools", "python-cbor2", "python-cloudpickle", "python-compressed-tensors-gfx1151", "python-einops", "python-fastapi", "python-gfx1151", "python-httptools-gfx1151", "python-huggingface-hub", "python-ijson", "python-importlib-metadata", "python-jsonschema", "python-mistral-common-gfx1151", "python-msgspec-gfx1151", "python-openai", "python-openai-harmony-gfx1151", "python-opencv", "python-prometheus-fastapi-instrumentator-gfx1151", "python-psutil-gfx1151", "python-py-cpuinfo", "python-pybase64", "python-pydantic", "python-pytorch-opt-rocm-gfx1151", "python-pyzmq", "python-safetensors-gfx1151", "python-soundfile", "python-starlette", "python-sympy", "python-torchvision-rocm-gfx1151", "python-tqdm", "python-transformers-gfx1151", "python-triton-gfx1151", "python-uvloop-gfx1151", "python-watchfiles-gfx1151", "rocblas-gfx1151", "uvicorn"]
+depends = ["amdsmi-gfx1151", "numactl", "python-aiohttp-gfx1151", "python-blake3", "python-cachetools", "python-cbor2", "python-cloudpickle", "python-compressed-tensors-gfx1151", "python-einops-gfx1151", "python-fastapi", "python-gfx1151", "python-httptools-gfx1151", "python-huggingface-hub", "python-ijson", "python-importlib-metadata", "python-jsonschema", "python-mistral-common-gfx1151", "python-model-hosting-container-standards-gfx1151", "python-msgspec-gfx1151", "python-openai", "python-openai-harmony-gfx1151", "python-opencv", "python-partial-json-parser", "python-prometheus-fastapi-instrumentator-gfx1151", "python-psutil-gfx1151", "python-py-cpuinfo-gfx1151", "python-pybase64-gfx1151", "python-pydantic", "python-pytorch-opt-rocm-gfx1151", "python-pyzmq", "python-regex", "python-safetensors-gfx1151", "python-soundfile", "python-starlette", "python-sympy", "python-torchvision-rocm-gfx1151", "python-tqdm", "python-transformers-gfx1151", "python-triton-gfx1151", "python-uvloop-gfx1151", "python-watchfiles-gfx1151", "rocblas-gfx1151", "uvicorn"]
 makedepends = ["cmake", "ninja", "python-installer", "python-pip", "python-semantic-version", "python-setuptools", "python-setuptools-rust", "python-setuptools-scm", "python-wheel", "rocm-llvm-gfx1151"]
-optdepends = ["python-gguf: GGUF checkpoints through the out-of-tree vllm-gguf-plugin (vllm[extra-quant]), which is not packaged here"]
+optdepends = [
+  "python-gguf: GGUF checkpoints through the out-of-tree vllm-gguf-plugin (vllm[extra-quant]), which is not packaged here",
+  "python-json-logger: JSON log formatting through a VLLM_LOGGING_CONFIG_PATH logging config",
+  "python-opentelemetry-api: OpenTelemetry request tracing (--otlp-traces-endpoint)",
+  "python-opentelemetry-exporter-otlp: OpenTelemetry request tracing (--otlp-traces-endpoint)",
+  "python-opentelemetry-sdk: OpenTelemetry request tracing (--otlp-traces-endpoint)",
+  "python-protobuf: slow SentencePiece tokenizer conversion in Transformers for checkpoints without tokenizer.json",
+  "python-setproctitle: named vLLM engine and worker processes",
+  "python-tiktoken: the Kimi-Audio tokenizer"
+]
 options = ["!lto"]
 source_type = "tarball"
 source_url = "https://github.com/vllm-project/vllm/archive/refs/tags/v0.30.0.tar.gz"
@@ -282,6 +295,7 @@ scaffold_notes = [
 recipe_key = "rust_wheels"
 template = "rust-wheel-pypi"
 upstream_version = "0.0.8"
+pkgrel = 2
 pkgdesc = "OpenAI Harmony response-format library rebuilt for Strix Halo gfx1151"
 url = "https://github.com/openai/harmony"
 license = ["Apache-2.0"]
@@ -295,7 +309,8 @@ divergence_notes = [
 update_notes = [
   "Check the current AUR python-openai-harmony package first, then confirm upstream pyproject.toml build-backend and dependency metadata before carrying any build changes forward.",
   "Keep python-pydantic as a hard runtime dependency unless upstream removes it from the published project metadata.",
-  "Treat extra Rust LTO or PGO tuning as opt-in only after verifying the current maturin/cargo lane exposes a maintainable configuration; today the applicable default is explicit znver5 plus opt-level=3."
+  "Treat extra Rust LTO or PGO tuning as opt-in only after verifying the current maturin/cargo lane exposes a maintainable configuration; today the applicable default is explicit znver5 plus opt-level=3.",
+  "On 2026-09-25, bump pkgrel to 2 for the generation-C W2A closure (#110, #111), to be built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7 in the vLLM lease job. The source is unchanged; the rebuild keeps the package out of the previous generation's repo. vLLM imports it while `vllm serve` parses its arguments, so the W2A root needs a generation-C build. The rust-wheel template keeps `CARGO_HOME` under `$srcdir/.cargo`, which overrides the build helper's shared cargo cache, and sets `RUSTUP_AUTO_INSTALL=0`. The cargo fetch runs inside build(), so the build needs `enter --net`."
 ]
 provides = ["python-openai-harmony"]
 conflicts = ["python-openai-harmony"]
@@ -1380,6 +1395,7 @@ scaffold_notes = [
 recipe_key = "native_wheels"
 template = "native-wheel-pypi"
 upstream_version = "0.22.1"
+pkgrel = 2
 pkgdesc = "Ultra-fast asyncio event loop rebuilt for Strix Halo gfx1151"
 url = "https://github.com/MagicStack/uvloop"
 license = ["Apache-2.0", "MIT"]
@@ -1393,7 +1409,8 @@ divergence_notes = [
 update_notes = [
   "Check Arch first for libuv and Cython build metadata before updating.",
   "Keep the package-local system-libuv patch unless upstream changes the build backend to expose a stable PEP 517 config setting for the same choice.",
-  "After publishing a rebuilt package, verify `import uvloop` and a minimal `uvloop.new_event_loop()` probe through the installed local Python lane."
+  "After publishing a rebuilt package, verify `import uvloop` and a minimal `uvloop.new_event_loop()` probe through the installed local Python lane.",
+  "On 2026-09-25, bump pkgrel to 2 for the generation-C W2A closure (#110, #111), to be built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7 in the vLLM lease job. The source is unchanged; the rebuild keeps the package out of the previous generation's repo. uvicorn and `vllm serve` use it as the event loop, so the W2A root needs a generation-C build."
 ]
 provides = ["python-uvloop"]
 conflicts = ["python-uvloop"]
@@ -1423,6 +1440,7 @@ scaffold_notes = [
 recipe_key = "native_wheels"
 template = "native-wheel-pypi"
 upstream_version = "0.8.0"
+pkgrel = 2
 pkgdesc = "Fast HTTP parser rebuilt for Strix Halo gfx1151"
 url = "https://github.com/MagicStack/httptools"
 license = ["MIT"]
@@ -1437,7 +1455,8 @@ update_notes = [
   "Check Arch first for llhttp and Cython build metadata before updating.",
   "Keep the package-local system-llhttp patch unless upstream changes the build backend to expose a stable PEP 517 config setting for the same choice.",
   "Keep `skip_dependency_check = true` while the PyPI sdist pins an exact setuptools build requirement; Arch builds httptools from source without that equality gate, and this package uses the repo's system setuptools in the same no-isolation lane.",
-  "After publishing a rebuilt package, verify `import httptools` through the installed local Python lane."
+  "After publishing a rebuilt package, verify `import httptools` through the installed local Python lane.",
+  "On 2026-09-25, bump pkgrel to 2 for the generation-C W2A closure (#110, #111), to be built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7 in the vLLM lease job. The source is unchanged; the rebuild keeps the package out of the previous generation's repo. uvicorn uses it as the HTTP parser for `vllm serve`, so the W2A root needs a generation-C build."
 ]
 provides = ["python-httptools"]
 conflicts = ["python-httptools"]
@@ -1471,6 +1490,7 @@ scaffold_notes = [
 recipe_key = "native_wheels"
 template = "native-wheel-pypi"
 upstream_version = "0.21.1"
+pkgrel = 2
 pkgdesc = "Fast serialization and validation library rebuilt for Strix Halo gfx1151"
 url = "https://github.com/jcrist/msgspec"
 license = ["BSD-3-Clause"]
@@ -1483,7 +1503,8 @@ divergence_notes = [
 ]
 update_notes = [
   "Check Arch first for release and dependency metadata before updating.",
-  "After publishing a rebuilt package, verify `import msgspec` and a minimal JSON encode/decode probe through the installed local Python lane."
+  "After publishing a rebuilt package, verify `import msgspec` and a minimal JSON encode/decode probe through the installed local Python lane.",
+  "On 2026-09-25, bump pkgrel to 2 for the generation-C W2A closure (#110, #111), to be built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7 in the vLLM lease job. The source is unchanged; the rebuild keeps the package out of the previous generation's repo. vLLM imports it at engine startup, so the W2A root needs a generation-C build."
 ]
 provides = ["python-msgspec"]
 conflicts = ["python-msgspec"]
@@ -1734,6 +1755,183 @@ scaffold_notes = [
   "Part of the vLLM API server dependency closure (#110).",
   "Renders through the Blackcat native-wheel lane in pure-Python mode, like compressed-tensors and Accelerate; Blackcat's recipe does not name this package.",
   "Builds with the Arch poetry-core backend and keeps Python build dependency checking on, because poetry-core >=2.0 is the only build requirement."
+]
+
+[packages.python-einops-gfx1151]
+recipe_key = "native_wheels"
+template = "native-wheel-pypi"
+upstream_version = "0.8.2"
+pkgdesc = "Flexible tensor operations for readable deep-learning code, for the Strix Halo vLLM stack"
+url = "https://github.com/arogozhnikov/einops"
+license = ["MIT"]
+arch_reference = ["aur/python-einops"]
+authoritative_reference = "aur/python-einops"
+advisory_references = []
+divergence_notes = [
+  "Tracks the upstream einops 0.8.2 PyPI release instead of the AUR package, which packages an unreleased 0.9.0dev snapshot; the vLLM package must not depend on a foreign AUR provider.",
+  "Keeps the package pure-Python and architecture-independent; there are no Strix-specific native flags to carry.",
+  "Depends on python-gfx1151 so the vLLM stack stays on the repo-managed Python lane. Upstream declares no runtime requirements."
+]
+update_notes = [
+  "Check vLLM's requirements/common.txt (einops with no version bound at vLLM 0.30.0) and the upstream release notes together before updating.",
+  "After publishing a rebuilt package, verify `import einops` and a `einops.rearrange` probe on a NumPy array through the installed local Python lane.",
+  "On 2026-09-25, added at 0.8.2 for the generation-C W2A closure (#110, #111). vLLM 0.30.0 imports einops at worker startup (`vllm/model_executor/layers/mamba/ops/ssd_combined.py`, reached from `vllm/v1/worker/utils.py`) and in the Qwen3.5 and Qwen3.6 gated-delta-net layers. It is built in the rootless C build root in the vLLM lease job."
+]
+provides = ["python-einops"]
+conflicts = ["python-einops"]
+depends = ["python-gfx1151"]
+makedepends = ["python-build", "python-hatchling", "python-installer"]
+arch = ["any"]
+pure_python_wheel = true
+pypi_name = "einops"
+sha256sums = ["609da665570e5e265e27283aab09e7f279ade90c4f01bcfca111f3d3e13f2827"]
+src_subdir = "einops-0.8.2"
+patches_dir = "patches/python-einops-gfx1151"
+recipe_notes_override = """
+This package supplies einops, which vLLM 0.30.0 imports at worker startup and
+in several model layers, including the Qwen3.5 and Qwen3.6 gated-delta-net
+attention. It is pure Python, but it belongs in the local package closure
+because no Arch sync repo carries einops and the AUR package tracks an
+unreleased development snapshot.
+"""
+scaffold_notes = [
+  "Part of the vLLM runtime dependency closure (#110).",
+  "Renders through the Blackcat native-wheel lane in pure-Python mode, like compressed-tensors and prometheus-fastapi-instrumentator; Blackcat's recipe does not name this package.",
+  "Builds with the Arch hatchling backend and keeps Python build dependency checking on, because hatchling >=1.10.0 is the only build requirement."
+]
+
+[packages.python-py-cpuinfo-gfx1151]
+recipe_key = "native_wheels"
+template = "native-wheel-pypi"
+upstream_version = "9.0.0"
+pkgdesc = "Pure-Python CPU information probe, for the Strix Halo vLLM stack"
+url = "https://github.com/workhorsy/py-cpuinfo"
+license = ["MIT"]
+arch_reference = []
+authoritative_reference = "none"
+advisory_references = []
+divergence_notes = [
+  "Arch carried python-py-cpuinfo 9.0.0 until it left the sync repos, and no AUR package replaces it, so this package takes over the former Arch name through provides and conflicts.",
+  "Keeps the package pure-Python and architecture-independent; there are no Strix-specific native flags to carry.",
+  "Depends on python-gfx1151 so the vLLM stack stays on the repo-managed Python lane. Upstream declares no runtime requirements."
+]
+update_notes = [
+  "Check vLLM's requirements/common.txt (py-cpuinfo with no version bound at vLLM 0.30.0) and the upstream release notes together before updating.",
+  "After publishing a rebuilt package, verify `import cpuinfo` and `cpuinfo.get_cpu_info()` through the installed local Python lane.",
+  "On 2026-09-25, added at 9.0.0 for the generation-C W2A closure (#110, #111). vLLM 0.30.0 imports cpuinfo from `vllm/usage/usage_lib.py`, which `vllm serve` imports at startup. It is built in the rootless C build root in the vLLM lease job."
+]
+provides = ["python-py-cpuinfo"]
+conflicts = ["python-py-cpuinfo"]
+depends = ["python-gfx1151"]
+makedepends = ["python-build", "python-installer", "python-setuptools", "python-wheel"]
+arch = ["any"]
+pure_python_wheel = true
+pypi_name = "py-cpuinfo"
+sha256sums = ["3cdbbf3fac90dc6f118bfd64384f309edeadd902d7c8fb17f02ffa1fc3f49690"]
+src_subdir = "py-cpuinfo-9.0.0"
+patches_dir = "patches/python-py-cpuinfo-gfx1151"
+recipe_notes_override = """
+This package supplies py-cpuinfo, which vLLM 0.30.0 imports from its usage
+module while `vllm serve` starts. It is pure Python, but it belongs in the
+local package closure because python-py-cpuinfo is no longer in the Arch sync
+repos and no AUR package replaces it.
+"""
+scaffold_notes = [
+  "Part of the vLLM runtime dependency closure (#110).",
+  "Renders through the Blackcat native-wheel lane in pure-Python mode; Blackcat's recipe does not name this package.",
+  "The sdist has no pyproject.toml, so `python -m build` uses the setuptools legacy backend, which needs setuptools and wheel."
+]
+
+[packages.python-pybase64-gfx1151]
+recipe_key = "native_wheels"
+template = "native-wheel-pypi"
+upstream_version = "1.5.0"
+pkgdesc = "Fast SIMD Base64 encoding and decoding rebuilt for Strix Halo gfx1151"
+url = "https://github.com/mayeut/pybase64"
+license = ["BSD-2-Clause"]
+arch_reference = ["aur/python-pybase64"]
+authoritative_reference = "aur/python-pybase64"
+advisory_references = []
+divergence_notes = [
+  "Tracks upstream pybase64 1.5.0 from PyPI instead of the AUR 1.4.2 package, so the vLLM package does not depend on a foreign AUR provider.",
+  "Builds the C extension and its bundled libbase64 through the Blackcat native-wheel compiler lane with amdclang and Zen 5 flags; libbase64 still picks its SIMD codec at run time.",
+  "Sets CIBUILDWHEEL=1 so a failed libbase64 or extension build fails the package instead of falling back to pure Python.",
+  "Depends on glibc and python-gfx1151 only. Upstream 1.5.0 declares no runtime requirements; the AUR package's python-typing_extensions dependency is not needed."
+]
+update_notes = [
+  "Check vLLM's requirements/common.txt (pybase64 with no version bound at vLLM 0.30.0) and the upstream changelog together before updating.",
+  "Re-check setup.py before updating: the extension must stay mandatory under CIBUILDWHEEL=1, and libbase64 must still build with cmake.",
+  "After publishing a rebuilt package, verify `import pybase64`, that `pybase64._pybase64` loads, and a `pybase64.b64encode` and `b64decode` round trip through the installed local Python lane.",
+  "On 2026-09-25, added at 1.5.0 for the generation-C W2A closure (#110, #111). vLLM 0.30.0 imports pybase64 from `vllm/renderers/embed_utils.py`, which `vllm serve` imports at startup, and in its media and pooling paths. It is built in the rootless C build root in the vLLM lease job."
+]
+provides = ["python-pybase64"]
+conflicts = ["python-pybase64"]
+depends = ["glibc", "python-gfx1151"]
+makedepends = ["cmake", "python-build", "python-installer", "python-setuptools", "python-wheel", "rocm-llvm-gfx1151"]
+pypi_name = "pybase64"
+sha256sums = ["545ab2a433769e3b8e1ce2b4f7b07218bbde202f4954fbfe52948b2522120727"]
+src_subdir = "pybase64-1.5.0"
+patches_dir = "patches/python-pybase64-gfx1151"
+build_env = ["CIBUILDWHEEL=1"]
+single_wheel_install = true
+recipe_notes_override = """
+pybase64 supplies the SIMD Base64 codec that vLLM uses for embedded media,
+pooling outputs and prompt embeddings. vLLM 0.30.0 imports it while `vllm
+serve` starts. The package builds the C extension and the bundled libbase64
+static library on the local amdclang native-wheel lane.
+
+Upstream setup.py marks the extension optional unless `CIBUILDWHEEL=1`, and
+silently installs a pure-Python fallback when libbase64 fails to build. This
+package sets `CIBUILDWHEEL=1` so that fallback can never ship.
+"""
+scaffold_notes = [
+  "Part of the vLLM runtime dependency closure (#110).",
+  "Renders through the Blackcat native-wheel lane; Blackcat's recipe does not name this package.",
+  "setup.py drives cmake for the bundled libbase64, so cmake is a makedepend."
+]
+
+[packages.python-model-hosting-container-standards-gfx1151]
+recipe_key = "native_wheels"
+template = "native-wheel-pypi"
+upstream_version = "0.1.16"
+pkgdesc = "Model hosting container toolkit that vLLM's API server bootstraps, for the Strix Halo vLLM stack"
+url = "https://github.com/aws/model-hosting-container-standards"
+license = ["Apache-2.0"]
+arch_reference = ["aur/python-model-hosting-container-standards"]
+authoritative_reference = "aur/python-model-hosting-container-standards"
+advisory_references = []
+divergence_notes = [
+  "Tracks upstream model-hosting-container-standards 0.1.16 from PyPI; the vLLM package must not depend on a foreign AUR provider.",
+  "Keeps the package pure-Python and architecture-independent; there are no Strix-specific native flags to carry.",
+  "Carries every upstream runtime requirement from the published metadata (fastapi, starlette, pydantic, jmespath, httpx, setuptools and supervisor); the AUR package lists only fastapi and pydantic."
+]
+update_notes = [
+  "Check vLLM's requirements/common.txt (model-hosting-container-standards >=0.1.14,<1.0.0 at vLLM 0.30.0) and the upstream release together before updating.",
+  "vLLM caps fastapi below 0.137.0 because a FastAPI route-tree change breaks this package's handler overrides. Arch python-fastapi is above that cap; re-check the server smoke after any FastAPI or package update.",
+  "After publishing a rebuilt package, verify `import model_hosting_container_standards.sagemaker` through the installed local Python lane, then rerun the vLLM server smoke, which bootstraps it when the app is built.",
+  "On 2026-09-25, added at 0.1.16 for the generation-C W2A closure (#110, #111). vLLM 0.30.0 imports it at module level in `vllm/entrypoints/serve/sagemaker/api_router.py`, which `vllm/entrypoints/launchers/app.py` imports, so `vllm serve` cannot start without it. It is built in the rootless C build root in the vLLM lease job."
+]
+provides = ["python-model-hosting-container-standards"]
+conflicts = ["python-model-hosting-container-standards"]
+depends = ["python-fastapi", "python-gfx1151", "python-httpx", "python-jmespath", "python-pydantic", "python-setuptools", "python-starlette", "supervisor"]
+makedepends = ["python-build", "python-installer", "python-poetry-core"]
+arch = ["any"]
+pure_python_wheel = true
+pypi_name = "model_hosting_container_standards"
+sha256sums = ["d34589633900e53c3ee5f7c78280a7cf7e4f6532c35e763341a262fc85cbe84a"]
+src_subdir = "model_hosting_container_standards-0.1.16"
+patches_dir = "patches/python-model-hosting-container-standards-gfx1151"
+recipe_notes_override = """
+This package supplies the SageMaker handler bootstrap that vLLM's
+OpenAI-compatible API server applies to its FastAPI app. vLLM 0.30.0 imports
+it while `vllm serve` builds the app, so the server cannot start without it.
+It is pure Python, but it belongs in the local package closure because no
+Arch sync repo carries it.
+"""
+scaffold_notes = [
+  "Part of the vLLM API server dependency closure (#110).",
+  "Renders through the Blackcat native-wheel lane in pure-Python mode, like prometheus-fastapi-instrumentator; Blackcat's recipe does not name this package.",
+  "Builds with the Arch poetry-core backend and keeps Python build dependency checking on, because poetry-core >=2.0.0,<3.0.0 is the only build requirement."
 ]
 
 [packages.python-compressed-tensors-gfx1151]

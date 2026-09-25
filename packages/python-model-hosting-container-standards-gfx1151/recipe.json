@@ -1,0 +1,110 @@
+{
+  "maintenance": {
+    "advisory_references": [],
+    "authoritative_reference": "aur/python-model-hosting-container-standards",
+    "divergence_notes": [
+      "Tracks upstream model-hosting-container-standards 0.1.16 from PyPI; the vLLM package must not depend on a foreign AUR provider.",
+      "Keeps the package pure-Python and architecture-independent; there are no Strix-specific native flags to carry.",
+      "Carries every upstream runtime requirement from the published metadata (fastapi, starlette, pydantic, jmespath, httpx, setuptools and supervisor); the AUR package lists only fastapi and pydantic."
+    ],
+    "source_patches": [],
+    "update_notes": [
+      "Check vLLM's requirements/common.txt (model-hosting-container-standards >=0.1.14,<1.0.0 at vLLM 0.30.0) and the upstream release together before updating.",
+      "vLLM caps fastapi below 0.137.0 because a FastAPI route-tree change breaks this package's handler overrides. Arch python-fastapi is above that cap; re-check the server smoke after any FastAPI or package update.",
+      "After publishing a rebuilt package, verify `import model_hosting_container_standards.sagemaker` through the installed local Python lane, then rerun the vLLM server smoke, which bootstraps it when the app is built.",
+      "On 2026-09-25, added at 0.1.16 for the generation-C W2A closure (#110, #111). vLLM 0.30.0 imports it at module level in `vllm/entrypoints/serve/sagemaker/api_router.py`, which `vllm/entrypoints/launchers/app.py` imports, so `vllm serve` cannot start without it. It is built in the rootless C build root in the vLLM lease job."
+    ]
+  },
+  "name": "python-model-hosting-container-standards-gfx1151",
+  "package_name": "python-model-hosting-container-standards-gfx1151",
+  "pkgver": "0.1.16",
+  "policy": {
+    "advisory_references": [],
+    "arch": [
+      "any"
+    ],
+    "arch_reference": [
+      "aur/python-model-hosting-container-standards"
+    ],
+    "authoritative_reference": "aur/python-model-hosting-container-standards",
+    "conflicts": [
+      "python-model-hosting-container-standards"
+    ],
+    "depends": [
+      "python-fastapi",
+      "python-gfx1151",
+      "python-httpx",
+      "python-jmespath",
+      "python-pydantic",
+      "python-setuptools",
+      "python-starlette",
+      "supervisor"
+    ],
+    "divergence_notes": [
+      "Tracks upstream model-hosting-container-standards 0.1.16 from PyPI; the vLLM package must not depend on a foreign AUR provider.",
+      "Keeps the package pure-Python and architecture-independent; there are no Strix-specific native flags to carry.",
+      "Carries every upstream runtime requirement from the published metadata (fastapi, starlette, pydantic, jmespath, httpx, setuptools and supervisor); the AUR package lists only fastapi and pydantic."
+    ],
+    "license": [
+      "Apache-2.0"
+    ],
+    "makedepends": [
+      "python-build",
+      "python-installer",
+      "python-poetry-core"
+    ],
+    "patches_dir": "patches/python-model-hosting-container-standards-gfx1151",
+    "pkgdesc": "Model hosting container toolkit that vLLM's API server bootstraps, for the Strix Halo vLLM stack",
+    "provides": [
+      "python-model-hosting-container-standards"
+    ],
+    "pure_python_wheel": true,
+    "pypi_name": "model_hosting_container_standards",
+    "recipe_key": "native_wheels",
+    "recipe_notes_override": "This package supplies the SageMaker handler bootstrap that vLLM's\nOpenAI-compatible API server applies to its FastAPI app. vLLM 0.30.0 imports\nit while `vllm serve` builds the app, so the server cannot start without it.\nIt is pure Python, but it belongs in the local package closure because no\nArch sync repo carries it.\n",
+    "scaffold_notes": [
+      "Part of the vLLM API server dependency closure (#110).",
+      "Renders through the Blackcat native-wheel lane in pure-Python mode, like prometheus-fastapi-instrumentator; Blackcat's recipe does not name this package.",
+      "Builds with the Arch poetry-core backend and keeps Python build dependency checking on, because poetry-core >=2.0.0,<3.0.0 is the only build requirement."
+    ],
+    "sha256sums": [
+      "d34589633900e53c3ee5f7c78280a7cf7e4f6532c35e763341a262fc85cbe84a"
+    ],
+    "src_subdir": "model_hosting_container_standards-0.1.16",
+    "template": "native-wheel-pypi",
+    "update_notes": [
+      "Check vLLM's requirements/common.txt (model-hosting-container-standards >=0.1.14,<1.0.0 at vLLM 0.30.0) and the upstream release together before updating.",
+      "vLLM caps fastapi below 0.137.0 because a FastAPI route-tree change breaks this package's handler overrides. Arch python-fastapi is above that cap; re-check the server smoke after any FastAPI or package update.",
+      "After publishing a rebuilt package, verify `import model_hosting_container_standards.sagemaker` through the installed local Python lane, then rerun the vLLM server smoke, which bootstraps it when the app is built.",
+      "On 2026-09-25, added at 0.1.16 for the generation-C W2A closure (#110, #111). vLLM 0.30.0 imports it at module level in `vllm/entrypoints/serve/sagemaker/api_router.py`, which `vllm/entrypoints/launchers/app.py` imports, so `vllm serve` cannot start without it. It is built in the rootless C build root in the vLLM lease job."
+    ],
+    "upstream_version": "0.1.16",
+    "url": "https://github.com/aws/model-hosting-container-standards"
+  },
+  "provenance": {
+    "output_root": "packages",
+    "recipe_author": "Blackcat Informatics Inc.",
+    "recipe_commit": "3f15f9f",
+    "recipe_date": "20260508",
+    "recipe_history_count": 17,
+    "recipe_repo": "https://github.com/paudley/ai-notes",
+    "recipe_subdir": "strix-halo",
+    "repo_subpath": "."
+  },
+  "recipe": {
+    "branch": null,
+    "depends_on": [
+      "cpython",
+      "pytorch"
+    ],
+    "method": "pip",
+    "notes": "This package supplies the SageMaker handler bootstrap that vLLM's\nOpenAI-compatible API server applies to its FastAPI app. vLLM 0.30.0 imports\nit while `vllm serve` builds the app, so the server cannot start without it.\nIt is pure Python, but it belongs in the local package closure because no\nArch sync repo carries it.\n",
+    "patches": [],
+    "phase": "H",
+    "repo": null,
+    "src_dir": "model_hosting_container_standards-0.1.16",
+    "steps": [
+      32
+    ]
+  }
+}

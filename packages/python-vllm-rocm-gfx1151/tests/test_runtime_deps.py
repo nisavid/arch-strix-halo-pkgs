@@ -114,3 +114,57 @@ def test_vllm_readme_records_the_mcp_and_llguidance_gaps():
     assert "mcp >=2.0.0,<3.0.0" in readme
     assert "llguidance >=1.7.0,<1.8.0" in readme
     assert "optdepends once packaged" in readme
+
+
+def test_vllm_depends_on_the_local_w2a_closure_lanes():
+    # einops, py-cpuinfo and pybase64 have no Arch sync-repo package; the
+    # W2A closure builds them as -gfx1151 lanes that provide the old names.
+    depends = pkgbuild_array("depends")
+
+    for name in ("python-einops", "python-py-cpuinfo", "python-pybase64"):
+        assert f"{name}-gfx1151" in depends
+        assert name not in depends
+
+
+def test_vllm_depends_on_its_undeclared_startup_imports():
+    # At ced6857a, `vllm serve` imports these at module level before it
+    # serves a request: regex (vllm/v1/worker/gpu_worker.py and others),
+    # partial_json_parser (vllm/tool_parsers/utils.py through the tool parser
+    # manager) and model_hosting_container_standards
+    # (vllm/entrypoints/serve/sagemaker/api_router.py through
+    # vllm/entrypoints/launchers/app.py).
+    depends = pkgbuild_array("depends")
+
+    assert "python-regex" in depends
+    assert "python-partial-json-parser" in depends
+    assert "python-model-hosting-container-standards-gfx1151" in depends
+
+
+def test_vllm_leaves_optional_common_requirements_as_optdepends():
+    # These common.txt entries are not imported on the startup path or on the
+    # request paths the W2A scenarios exercise: OpenTelemetry is a guarded
+    # import for --otlp-traces-endpoint, setproctitle is a guarded import,
+    # python-json-logger is only named by a user logging config, tiktoken is
+    # imported only by the Kimi-Audio tokenizer, and vLLM itself never
+    # imports protobuf.
+    depends = pkgbuild_array("depends")
+    optdepends = optdepends_by_name()
+
+    for name in (
+        "python-opentelemetry-sdk",
+        "python-opentelemetry-api",
+        "python-opentelemetry-exporter-otlp",
+        "python-setproctitle",
+        "python-json-logger",
+        "python-tiktoken",
+        "python-protobuf",
+    ):
+        assert name not in depends
+        assert optdepends.get(name), name
+
+
+def test_vllm_readme_records_the_xgrammar_startup_blocker():
+    readme = " ".join((PKGBUILD.parent / "README.md").read_text().split())
+
+    assert "xgrammar >=0.2.1,<1.0.0" in readme
+    assert "vllm/parser/harmony.py" in readme

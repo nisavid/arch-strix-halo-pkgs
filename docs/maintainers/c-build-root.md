@@ -15,7 +15,7 @@ at the paths the host will have after W5.
 | `torch-chain.targets` | Targets for the torch-chain root (base-devel, build tools, F, the torch makedepends and the protobuf and Abseil floors that MIGraphX needs). |
 | `py-closure.targets` | Extra build tools for the #110 model/runtime Python closure: meson-python, Cython, maturin, the Rust toolchain and `llvm`. Resolve it together with `torch-chain.targets` to build the closure. |
 | `model-closure.targets` | The #110 closure packages as built into `ashp-w2a`. Resolve it together with `torch-chain.targets` to get a root that can import them. |
-| `vllm-build.targets` | Build tools for the vLLM 0.30.0 package (#111): setuptools-rust, semantic-version, the Arch Rust toolchain and poetry-core. It also lists the Arch runtime closure for the in-root vLLM import and server smoke. Resolve it together with `torch-chain.targets` and `model-closure.targets`. |
+| `vllm-build.targets` | Build tools for the vLLM 0.30.0 package (#111): setuptools-rust, semantic-version, the Arch Rust toolchain, poetry-core and the build tools of the small closure packages that the vLLM lease job builds first. It also lists the Arch runtime closure for the in-root vLLM import and server smoke. Resolve it together with `torch-chain.targets` and `model-closure.targets`. |
 | `probe/` | The no-leak probe: a hipcc program, a CMake HIP library and a makepkg package. |
 
 Nothing in this flow needs root, sudo or `pacman -S/-U/-Sy`, and nothing
@@ -479,14 +479,18 @@ Still missing from the root, and not Arch packages:
 - W2A rebuilds of existing ASHP packages: `python-uvloop-gfx1151`,
   `python-httptools-gfx1151`, `python-msgspec-gfx1151` and
   `python-openai-harmony-gfx1151`, which are vLLM depends, and the new
-  `python-prometheus-fastapi-instrumentator-gfx1151`.
-- vLLM depends that no sync DB carries: `python-einops`, `python-py-cpuinfo`
-  and `python-pybase64`. The host has them from AUR or an older Arch build.
+  `python-prometheus-fastapi-instrumentator-gfx1151`. The lease job below
+  builds them.
+- vLLM depends that no sync DB carries: einops, py-cpuinfo and pybase64. The
+  host has them from AUR or an older Arch build. The lease job builds them
+  as `-gfx1151` lanes.
 - `common.txt` entries with no Arch or ASHP package: `depyf`, `anthropic`,
   `lm-format-enforcer`, `outlines_core`, `xgrammar`, `fastapi-cli`,
   `model-hosting-container-standards`,
   `opentelemetry-semantic-conventions-ai`, and the tracked #110 gaps `mcp`
-  (Arch has 1.29.0) and `llguidance`.
+  (Arch has 1.29.0) and `llguidance`. `xgrammar` and
+  `model-hosting-container-standards` are startup imports; see the lease job
+  section below.
 - Arch cannot meet these exact pins: `lark ==1.2.2` (Arch
   `python-lark-parser` 1.3.1 is in the root), `numba ==0.65.0` and
   `grpcio ==1.78.0` (the root has grpcio 1.83.0 through OpenTelemetry).
@@ -496,3 +500,71 @@ Still missing from the root, and not Arch packages:
   `fastsafetensors`, `mooncake-transfer-engine-rocm` and
   `grpcio-reflection`.
 - The pip `ninja` module; the Arch `ninja` binary is in the root.
+
+## W2A vLLM lease job closure (#110, #111)
+
+On 2026-09-25 the vLLM 0.30.0 runtime set was audited against `ced6857a`. The
+set required before w2a-validate is what `vllm serve` imports at module level
+before it serves a request, plus the imports on the request paths the W2A
+scenarios exercise. The small closure packages are built in the vLLM lease
+job, leaves first, and each is published to `ashp-w2a` and added to the root
+before the next one.
+
+- **Rebuilds:** `python-uvloop-gfx1151` 0.22.1, `python-httptools-gfx1151`
+  0.8.0, `python-msgspec-gfx1151` 0.21.1 and
+  `python-openai-harmony-gfx1151` 0.0.8 are already at the latest PyPI
+  releases, and no candidate selects a newer one, so each gets pkgrel 2 with
+  the source unchanged.
+- **New lanes:** `python-einops-gfx1151` 0.8.2, `python-py-cpuinfo-gfx1151`
+  9.0.0 and `python-model-hosting-container-standards-gfx1151` 0.1.16 are pure
+  Python. `python-pybase64-gfx1151` 1.5.0 builds its C extension and the
+  bundled libbase64 with cmake, and sets `CIBUILDWHEEL=1` so the build fails
+  instead of shipping the pure-Python fallback.
+- **Targets:** `vllm-build.targets` adds the lease job's build tools
+  (`cython`, `libuv`, `llhttp`, `nasm`, `python-maturin` and
+  `python-hatchling`) and the model-hosting-container-standards runtime
+  (`python-jmespath` and `supervisor`). The root must be re-locked and
+  repopulated from the three targets files before the job.
+- **openai-harmony:** the rust-wheel template keeps `CARGO_HOME` under
+  `$srcdir/.cargo`, which overrides the `CARGO_HOME=/ccache/cargo` that
+  `w2a-build.sh` passes, and sets `RUSTUP_AUTO_INSTALL=0`. maturin fetches
+  crates during `build()`, so the build needs `net`.
+
+Build order, with `W2A_REPO` pointing at a checkout that has these package
+directories (`w2a-build.sh` defaults to an older W2A worktree):
+
+```sh
+w2a-build.sh python-py-cpuinfo-gfx1151 2
+w2a-build.sh python-einops-gfx1151 2
+w2a-build.sh python-model-hosting-container-standards-gfx1151 2
+w2a-build.sh python-prometheus-fastapi-instrumentator-gfx1151 2
+w2a-build.sh python-msgspec-gfx1151 6
+w2a-build.sh python-httptools-gfx1151 6
+w2a-build.sh python-uvloop-gfx1151 6
+w2a-build.sh python-pybase64-gfx1151 6
+w2a-build.sh python-openai-harmony-gfx1151 6 net
+w2a-build.sh python-vllm-rocm-gfx1151 6 net
+```
+
+- The four pure-Python wheels compile nothing, so 2 jobs is enough, and they
+  need no network after the fetch step.
+- msgspec, httptools, uvloop and pybase64 each compile a few C files; 6 is
+  the root's default and stays far below the slice cap.
+- openai-harmony needs `net` for its crates. Its rustc jobs follow
+  `ASHP_BUILD_JOBS` through `CARGO_BUILD_JOBS`.
+- vLLM needs `net` because its ROCm CMake build fetches `triton_kernels`
+  through FetchContent. 6 jobs matches the PyTorch build, whose peak was
+  7.8 GiB.
+- The leaves do not depend on each other, so their order only puts the cheap
+  builds first. vLLM goes last so that the root holds its whole runtime set
+  when it is smoked.
+
+Blocker: vLLM 0.30.0 imports `xgrammar` at module level in
+`vllm/parser/harmony.py`, and the engine core reaches it through
+`vllm/v1/structured_output/__init__.py` and `vllm.parser`. The engine cannot
+start without it, and structured outputs use it on the request path. No Arch
+or ASHP package provides it. xgrammar 0.2.8 is a C++ build
+(scikit-build-core) that depends on apache-tvm-ffi >=0.1.11, another C++
+build with no Arch package, so it waits for a lead decision. The lease job
+can build vLLM without it, but the vLLM import and server smoke fail until an
+xgrammar lane is in the root.

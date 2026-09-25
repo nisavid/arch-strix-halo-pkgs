@@ -4,25 +4,25 @@
 # Recipe attribution: Blackcat Informatics Inc.
 # Package recipe key: native_wheels
 
-pkgname=python-msgspec-gfx1151
-pkgver=0.21.1
-pkgrel=2
-pkgdesc='Fast serialization and validation library rebuilt for Strix Halo gfx1151'
+pkgname=python-pybase64-gfx1151
+pkgver=1.5.0
+pkgrel=1
+pkgdesc='Fast SIMD Base64 encoding and decoding rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
-url=https://github.com/jcrist/msgspec
-license=(BSD-3-Clause)
-depends=(glibc python-gfx1151 python-attrs python-typing_extensions)
-makedepends=(python-build python-installer python-setuptools python-setuptools-scm python-wheel rocm-llvm-gfx1151)
-optdepends=('python-tomli-w: for TOML writing support' 'python-pyyaml-gfx1151: for YAML support')
+url=https://github.com/mayeut/pybase64
+license=(BSD-2-Clause)
+depends=(glibc python-gfx1151)
+makedepends=(cmake python-build python-installer python-setuptools python-wheel rocm-llvm-gfx1151)
+optdepends=()
 options=()
-provides=(python-msgspec)
-conflicts=(python-msgspec)
+provides=(python-pybase64)
+conflicts=(python-pybase64)
 replaces=()
-source=(https://files.pythonhosted.org/packages/source/m/msgspec/msgspec-0.21.1.tar.gz)
-sha256sums=(2313508e394b0d208f8f56892ca9b2799e2561329de9763b19619595a6c0f72c)
+source=(https://files.pythonhosted.org/packages/source/p/pybase64/pybase64-1.5.0.tar.gz)
+sha256sums=(545ab2a433769e3b8e1ce2b4f7b07218bbde202f4954fbfe52948b2522120727)
 
 build() {
-  cd "$srcdir/msgspec-0.21.1"
+  cd "$srcdir/pybase64-1.5.0"
 
   _setup_compiler_env() {
   local _compiler_root="/opt/rocm/lib/llvm/bin"
@@ -61,13 +61,14 @@ build() {
   # -famd-opt is a clang driver link flag here; keeping it out of wheel compile
   # flags avoids compile-only probes treating it as unused.
   export LDFLAGS="${_base_ldflags:+${_base_ldflags} }-famd-opt"
+  export CIBUILDWHEEL=1
 
   rm -rf dist build
   /usr/bin/python -m build --wheel --no-isolation
 }
 
 package() {
-  cd "$srcdir/msgspec-0.21.1"
+  cd "$srcdir/pybase64-1.5.0"
   local _wheels=(dist/*.whl)
   if (( ${#_wheels[@]} != 1 )); then
     printf 'expected exactly one wheel, found %s\n' "${#_wheels[@]}" >&2

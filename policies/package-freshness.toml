@@ -401,6 +401,41 @@ checks = [
   { id = "aur", role = "baseline", kind = "aur", package = "python-prometheus-fastapi-instrumentator", recorded = "7.0.0-2", comparison = "pkgver" },
 ]
 
+[families.einops]
+packages = ["python-einops-gfx1151"]
+priority = "medium"
+workflow = "upstream_source_update"
+checks = [
+  { id = "pypi", role = "primary", kind = "pypi", package = "einops", recorded = "0.8.2", comparison = "pep440" },
+  { id = "aur", role = "baseline", kind = "aur", package = "python-einops", recorded = "0.9.0dev-2", comparison = "pkgver" },
+]
+
+[families.py_cpuinfo]
+packages = ["python-py-cpuinfo-gfx1151"]
+priority = "medium"
+workflow = "upstream_source_update"
+checks = [
+  { id = "pypi", role = "primary", kind = "pypi", package = "py-cpuinfo", recorded = "9.0.0", comparison = "pep440" },
+]
+
+[families.pybase64]
+packages = ["python-pybase64-gfx1151"]
+priority = "medium"
+workflow = "upstream_source_update"
+checks = [
+  { id = "pypi", role = "primary", kind = "pypi", package = "pybase64", recorded = "1.5.0", comparison = "pep440" },
+  { id = "aur", role = "baseline", kind = "aur", package = "python-pybase64", recorded = "1.4.2-1", comparison = "pkgver" },
+]
+
+[families.model_hosting_container_standards]
+packages = ["python-model-hosting-container-standards-gfx1151"]
+priority = "medium"
+workflow = "upstream_source_update"
+checks = [
+  { id = "pypi", role = "primary", kind = "pypi", package = "model-hosting-container-standards", recorded = "0.1.16", comparison = "pep440" },
+  { id = "aur", role = "baseline", kind = "aur", package = "python-model-hosting-container-standards", recorded = "0.1.16-1", comparison = "pkgver" },
+]
+
 [families.mistral_common]
 packages = ["python-mistral-common-gfx1151"]
 priority = "medium"

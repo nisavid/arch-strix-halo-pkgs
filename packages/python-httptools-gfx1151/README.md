@@ -45,6 +45,7 @@ native extension onto the local amdclang native-wheel lane.
 - Keep the package-local system-llhttp patch unless upstream changes the build backend to expose a stable PEP 517 config setting for the same choice.
 - Keep `skip_dependency_check = true` while the PyPI sdist pins an exact setuptools build requirement; Arch builds httptools from source without that equality gate, and this package uses the repo's system setuptools in the same no-isolation lane.
 - After publishing a rebuilt package, verify `import httptools` through the installed local Python lane.
+- On 2026-09-25, bump pkgrel to 2 for the generation-C W2A closure (#110, #111), to be built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7 in the vLLM lease job. The source is unchanged; the rebuild keeps the package out of the previous generation's repo. uvicorn uses it as the HTTP parser for `vllm serve`, so the W2A root needs a generation-C build.
 
 ## Maintainer Starting Points
 

@@ -54,3 +54,19 @@ python-opentelemetry-exporter-otlp
 # python-prometheus-fastapi-instrumentator-gfx1151 builds with poetry-core in
 # the vLLM lease job.
 python-poetry-core
+# The small closure packages that the vLLM lease job builds before vLLM
+# (#110, #111). uvloop and httptools compile Cython against the system libuv
+# and llhttp. openai-harmony builds with maturin (and nasm and perl for its
+# crates) on the rust target above. einops builds with hatchling; pybase64's
+# setup.py drives cmake, which torch-chain.targets names.
+cython
+libuv
+llhttp
+nasm
+python-maturin
+python-hatchling
+# python-model-hosting-container-standards-gfx1151 runtime closure beyond
+# FastAPI, Starlette, pydantic and httpx: vLLM 0.30.0 imports it while
+# `vllm serve` builds its app.
+python-jmespath
+supervisor

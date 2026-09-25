@@ -63,10 +63,14 @@
       "vLLM 0.30.0 runs Model Runner V2 by default. `VLLM_USE_V2_MODEL_RUNNER=0` restores Model Runner V1 until v0.32; the padded-drafter spec-decode carry covers only the V1 path.",
       "vLLM 0.30.0 mirrors HIP_VISIBLE_DEVICES into CUDA_VISIBLE_DEVICES at import and raises if both are set to different values. Prefer HIP_VISIBLE_DEVICES for device selection. As of 2026-09-25 no tracked scenario, smoke helper, or service unit sets either variable.",
       "`python -m vllm.entrypoints.openai.api_server` is deprecated in 0.30.0. The tracked server smoke helpers launch `python -m vllm.entrypoints.cli.main serve` from the active interpreter instead.",
-      "vLLM 0.30.0 requirement floors. This repo does not write versions into depends, because the package graph matches depends by exact name, so the floors are recorded here. Met by the W2A lanes: transformers >=5.10.4 (python-transformers-gfx1151 5.16.1), mistral_common[image] >=1.11.6 (python-mistral-common-gfx1151 1.11.7), safetensors >=0.6.2 (python-safetensors-gfx1151 0.8.0). Met by Arch: huggingface_hub >=1.31.0 (python-huggingface-hub 1:1.32.0; `model-closure.targets` floors it because older host versions exist), openai >=2.25.0 (python-openai), starlette >=1.0.1 (python-starlette), jsonschema >=4.23.0 (python-jsonschema). Met by the W2A closure lanes added on 2026-09-25: prometheus-fastapi-instrumentator >=8.0.0 (python-prometheus-fastapi-instrumentator-gfx1151 8.1.0, replacing the AUR 7.0.0 name) and compressed-tensors ==0.17.0 (python-compressed-tensors-gfx1151 0.17.0). Not met: Arch python-fastapi is above the fastapi[standard] >=0.133.0,<0.137.0 cap; upstream caps it for model-hosting-container-standards (SageMaker) handler overrides, which this package leaves optional.",
+      "vLLM 0.30.0 requirement floors. This repo does not write versions into depends, because the package graph matches depends by exact name, so the floors are recorded here. Met by the W2A lanes: transformers >=5.10.4 (python-transformers-gfx1151 5.16.1), mistral_common[image] >=1.11.6 (python-mistral-common-gfx1151 1.11.7), safetensors >=0.6.2 (python-safetensors-gfx1151 0.8.0). Met by Arch: huggingface_hub >=1.31.0 (python-huggingface-hub 1:1.32.0; `model-closure.targets` floors it because older host versions exist), openai >=2.25.0 (python-openai), starlette >=1.0.1 (python-starlette), jsonschema >=4.23.0 (python-jsonschema). Met by the W2A closure lanes added on 2026-09-25: prometheus-fastapi-instrumentator >=8.0.0 (python-prometheus-fastapi-instrumentator-gfx1151 8.1.0, replacing the AUR 7.0.0 name) and compressed-tensors ==0.17.0 (python-compressed-tensors-gfx1151 0.17.0). Not met: Arch python-fastapi is above the fastapi[standard] >=0.133.0,<0.137.0 cap; upstream caps it because a FastAPI route-tree change breaks model-hosting-container-standards handler overrides. The server smoke is the check.",
       "Known #110 gaps, optdepends once packaged and never depends: mcp >=2.0.0,<3.0.0 (Arch python-mcp is 1.29.0) and llguidance >=1.7.0,<1.8.0 (no Arch or ASHP package). At ced6857a neither is imported while `vllm serve` starts. mcp is imported only inside `MCPToolServer` and its session helpers in `vllm/entrypoints/mcp/tool_server.py`, which `init_tool_server` builds only for `--tool-server` URLs; the other mcp imports sit under `TYPE_CHECKING`. llguidance is a `LazyLoader` in `vllm/v1/structured_output/backend_guidance.py`, a `TYPE_CHECKING` import in `vllm/tokenizers/mistral.py`, and an `is_llguidance_installed()`-guarded import in mistral-common. Without llguidance, `--tool-server` MCP URLs, the `guidance` structured-output backend, and the `auto` backend's guidance fallback for grammars that xgrammar rejects fail at request time.",
       "On 2026-09-25, dropped python-diskcache from depends and optdepends. vLLM 0.30.0 at ced6857a has no diskcache user: requirements/, setup.py, and pyproject.toml do not list it, and the outlines index cache in `vllm/v1/structured_output/utils.py` is vLLM's own SQLite-backed `OutlinesDiskCache`. Re-add it only if a packaged consumer imports `diskcache` again.",
-      "Treat runtime validation against the live ROCm stack as mandatory; a successful wheel build is not enough."
+      "Treat runtime validation against the live ROCm stack as mandatory; a successful wheel build is not enough.",
+      "On 2026-09-25, audited the vLLM 0.30.0 runtime set against ced6857a for the W2A closure (#110, #111). The required set is the modules `vllm serve` imports at module level before it serves a request, plus the imports on the request paths the W2A scenarios exercise. einops, py-cpuinfo and pybase64 now come from the W2A closure lanes python-einops-gfx1151, python-py-cpuinfo-gfx1151 and python-pybase64-gfx1151. The audit added three undeclared startup imports to depends: regex (`vllm/v1/worker/gpu_worker.py` and others), partial-json-parser (`vllm/tool_parsers/utils.py`, through the tool parser manager that the server entry imports) and model-hosting-container-standards (`vllm/entrypoints/serve/sagemaker/api_router.py`, which `vllm/entrypoints/launchers/app.py` imports to build the app), from the new python-model-hosting-container-standards-gfx1151 lane.",
+      "common.txt entries that Arch packages but the W2A runtime set does not import are optdepends: OpenTelemetry sdk, api and exporter-otlp (a guarded import in `vllm/tracing/otel.py`, used for --otlp-traces-endpoint), setproctitle (a guarded import in `vllm/utils/system_utils.py`), python-json-logger (named only by a user logging config), tiktoken (imported only by `vllm/tokenizers/kimi_audio.py`) and protobuf (vLLM never imports it; Transformers needs it only to convert a SentencePiece tokenizer when a checkpoint has no tokenizer.json).",
+      "Startup blocker: xgrammar >=0.2.1,<1.0.0 is a module-level import of `vllm/parser/harmony.py`, which `vllm/parser/__init__.py` imports; `vllm/v1/structured_output/__init__.py` imports `vllm.parser.engine.adapters`, and the engine core imports that package. The engine therefore cannot start without xgrammar, and structured outputs use it on the request path. No Arch or ASHP package provides it; xgrammar 0.2.8 is a C++ build that needs apache-tvm-ffi >=0.1.11, another C++ build with no Arch package. It is not in depends until its lane exists.",
+      "Known #110 gaps, optdepends once packaged and never depends: depyf ==0.20.0 (imported only for compile debug dumps and a CUDA-graph error message), anthropic >=0.71.0 (vLLM does not import it at ced6857a), lm-format-enforcer ==0.11.3 and outlines_core ==0.2.14 (their structured-output backends load only when requested), lark ==1.2.2 (vLLM does not import it; Arch python-lark-parser is 1.3.1), fastapi-cli (the `fastapi` command), opentelemetry-semantic-conventions-ai (vLLM does not import it), and from rocm.txt numba ==0.65.0 (only the CPU n-gram speculative proposer and two processors import it) and grpcio ==1.78.0 (only the gRPC server launcher imports it)."
     ]
   },
   "name": "python-vllm-rocm-gfx1151",
@@ -91,7 +95,7 @@
       "python-cbor2",
       "python-cloudpickle",
       "python-compressed-tensors-gfx1151",
-      "python-einops",
+      "python-einops-gfx1151",
       "python-fastapi",
       "python-gfx1151",
       "python-httptools-gfx1151",
@@ -100,17 +104,20 @@
       "python-importlib-metadata",
       "python-jsonschema",
       "python-mistral-common-gfx1151",
+      "python-model-hosting-container-standards-gfx1151",
       "python-msgspec-gfx1151",
       "python-openai",
       "python-openai-harmony-gfx1151",
       "python-opencv",
+      "python-partial-json-parser",
       "python-prometheus-fastapi-instrumentator-gfx1151",
       "python-psutil-gfx1151",
-      "python-py-cpuinfo",
-      "python-pybase64",
+      "python-py-cpuinfo-gfx1151",
+      "python-pybase64-gfx1151",
       "python-pydantic",
       "python-pytorch-opt-rocm-gfx1151",
       "python-pyzmq",
+      "python-regex",
       "python-safetensors-gfx1151",
       "python-soundfile",
       "python-starlette",
@@ -157,7 +164,14 @@
       "rocm-llvm-gfx1151"
     ],
     "optdepends": [
-      "python-gguf: GGUF checkpoints through the out-of-tree vllm-gguf-plugin (vllm[extra-quant]), which is not packaged here"
+      "python-gguf: GGUF checkpoints through the out-of-tree vllm-gguf-plugin (vllm[extra-quant]), which is not packaged here",
+      "python-json-logger: JSON log formatting through a VLLM_LOGGING_CONFIG_PATH logging config",
+      "python-opentelemetry-api: OpenTelemetry request tracing (--otlp-traces-endpoint)",
+      "python-opentelemetry-exporter-otlp: OpenTelemetry request tracing (--otlp-traces-endpoint)",
+      "python-opentelemetry-sdk: OpenTelemetry request tracing (--otlp-traces-endpoint)",
+      "python-protobuf: slow SentencePiece tokenizer conversion in Transformers for checkpoints without tokenizer.json",
+      "python-setproctitle: named vLLM engine and worker processes",
+      "python-tiktoken: the Kimi-Audio tokenizer"
     ],
     "options": [
       "!lto"
@@ -261,10 +275,14 @@
       "vLLM 0.30.0 runs Model Runner V2 by default. `VLLM_USE_V2_MODEL_RUNNER=0` restores Model Runner V1 until v0.32; the padded-drafter spec-decode carry covers only the V1 path.",
       "vLLM 0.30.0 mirrors HIP_VISIBLE_DEVICES into CUDA_VISIBLE_DEVICES at import and raises if both are set to different values. Prefer HIP_VISIBLE_DEVICES for device selection. As of 2026-09-25 no tracked scenario, smoke helper, or service unit sets either variable.",
       "`python -m vllm.entrypoints.openai.api_server` is deprecated in 0.30.0. The tracked server smoke helpers launch `python -m vllm.entrypoints.cli.main serve` from the active interpreter instead.",
-      "vLLM 0.30.0 requirement floors. This repo does not write versions into depends, because the package graph matches depends by exact name, so the floors are recorded here. Met by the W2A lanes: transformers >=5.10.4 (python-transformers-gfx1151 5.16.1), mistral_common[image] >=1.11.6 (python-mistral-common-gfx1151 1.11.7), safetensors >=0.6.2 (python-safetensors-gfx1151 0.8.0). Met by Arch: huggingface_hub >=1.31.0 (python-huggingface-hub 1:1.32.0; `model-closure.targets` floors it because older host versions exist), openai >=2.25.0 (python-openai), starlette >=1.0.1 (python-starlette), jsonschema >=4.23.0 (python-jsonschema). Met by the W2A closure lanes added on 2026-09-25: prometheus-fastapi-instrumentator >=8.0.0 (python-prometheus-fastapi-instrumentator-gfx1151 8.1.0, replacing the AUR 7.0.0 name) and compressed-tensors ==0.17.0 (python-compressed-tensors-gfx1151 0.17.0). Not met: Arch python-fastapi is above the fastapi[standard] >=0.133.0,<0.137.0 cap; upstream caps it for model-hosting-container-standards (SageMaker) handler overrides, which this package leaves optional.",
+      "vLLM 0.30.0 requirement floors. This repo does not write versions into depends, because the package graph matches depends by exact name, so the floors are recorded here. Met by the W2A lanes: transformers >=5.10.4 (python-transformers-gfx1151 5.16.1), mistral_common[image] >=1.11.6 (python-mistral-common-gfx1151 1.11.7), safetensors >=0.6.2 (python-safetensors-gfx1151 0.8.0). Met by Arch: huggingface_hub >=1.31.0 (python-huggingface-hub 1:1.32.0; `model-closure.targets` floors it because older host versions exist), openai >=2.25.0 (python-openai), starlette >=1.0.1 (python-starlette), jsonschema >=4.23.0 (python-jsonschema). Met by the W2A closure lanes added on 2026-09-25: prometheus-fastapi-instrumentator >=8.0.0 (python-prometheus-fastapi-instrumentator-gfx1151 8.1.0, replacing the AUR 7.0.0 name) and compressed-tensors ==0.17.0 (python-compressed-tensors-gfx1151 0.17.0). Not met: Arch python-fastapi is above the fastapi[standard] >=0.133.0,<0.137.0 cap; upstream caps it because a FastAPI route-tree change breaks model-hosting-container-standards handler overrides. The server smoke is the check.",
       "Known #110 gaps, optdepends once packaged and never depends: mcp >=2.0.0,<3.0.0 (Arch python-mcp is 1.29.0) and llguidance >=1.7.0,<1.8.0 (no Arch or ASHP package). At ced6857a neither is imported while `vllm serve` starts. mcp is imported only inside `MCPToolServer` and its session helpers in `vllm/entrypoints/mcp/tool_server.py`, which `init_tool_server` builds only for `--tool-server` URLs; the other mcp imports sit under `TYPE_CHECKING`. llguidance is a `LazyLoader` in `vllm/v1/structured_output/backend_guidance.py`, a `TYPE_CHECKING` import in `vllm/tokenizers/mistral.py`, and an `is_llguidance_installed()`-guarded import in mistral-common. Without llguidance, `--tool-server` MCP URLs, the `guidance` structured-output backend, and the `auto` backend's guidance fallback for grammars that xgrammar rejects fail at request time.",
       "On 2026-09-25, dropped python-diskcache from depends and optdepends. vLLM 0.30.0 at ced6857a has no diskcache user: requirements/, setup.py, and pyproject.toml do not list it, and the outlines index cache in `vllm/v1/structured_output/utils.py` is vLLM's own SQLite-backed `OutlinesDiskCache`. Re-add it only if a packaged consumer imports `diskcache` again.",
-      "Treat runtime validation against the live ROCm stack as mandatory; a successful wheel build is not enough."
+      "Treat runtime validation against the live ROCm stack as mandatory; a successful wheel build is not enough.",
+      "On 2026-09-25, audited the vLLM 0.30.0 runtime set against ced6857a for the W2A closure (#110, #111). The required set is the modules `vllm serve` imports at module level before it serves a request, plus the imports on the request paths the W2A scenarios exercise. einops, py-cpuinfo and pybase64 now come from the W2A closure lanes python-einops-gfx1151, python-py-cpuinfo-gfx1151 and python-pybase64-gfx1151. The audit added three undeclared startup imports to depends: regex (`vllm/v1/worker/gpu_worker.py` and others), partial-json-parser (`vllm/tool_parsers/utils.py`, through the tool parser manager that the server entry imports) and model-hosting-container-standards (`vllm/entrypoints/serve/sagemaker/api_router.py`, which `vllm/entrypoints/launchers/app.py` imports to build the app), from the new python-model-hosting-container-standards-gfx1151 lane.",
+      "common.txt entries that Arch packages but the W2A runtime set does not import are optdepends: OpenTelemetry sdk, api and exporter-otlp (a guarded import in `vllm/tracing/otel.py`, used for --otlp-traces-endpoint), setproctitle (a guarded import in `vllm/utils/system_utils.py`), python-json-logger (named only by a user logging config), tiktoken (imported only by `vllm/tokenizers/kimi_audio.py`) and protobuf (vLLM never imports it; Transformers needs it only to convert a SentencePiece tokenizer when a checkpoint has no tokenizer.json).",
+      "Startup blocker: xgrammar >=0.2.1,<1.0.0 is a module-level import of `vllm/parser/harmony.py`, which `vllm/parser/__init__.py` imports; `vllm/v1/structured_output/__init__.py` imports `vllm.parser.engine.adapters`, and the engine core imports that package. The engine therefore cannot start without xgrammar, and structured outputs use it on the request path. No Arch or ASHP package provides it; xgrammar 0.2.8 is a C++ build that needs apache-tvm-ffi >=0.1.11, another C++ build with no Arch package. It is not in depends until its lane exists.",
+      "Known #110 gaps, optdepends once packaged and never depends: depyf ==0.20.0 (imported only for compile debug dumps and a CUDA-graph error message), anthropic >=0.71.0 (vLLM does not import it at ced6857a), lm-format-enforcer ==0.11.3 and outlines_core ==0.2.14 (their structured-output backends load only when requested), lark ==1.2.2 (vLLM does not import it; Arch python-lark-parser is 1.3.1), fastapi-cli (the `fastapi` command), opentelemetry-semantic-conventions-ai (vLLM does not import it), and from rocm.txt numba ==0.65.0 (only the CPU n-gram speculative proposer and two processors import it) and grpcio ==1.78.0 (only the gRPC server launcher imports it)."
     ],
     "upstream_version": "0.30.0",
     "url": "https://github.com/vllm-project/vllm"

@@ -1519,7 +1519,9 @@ build() {{
 
   {compiler_env_snippet(compiler_root)}  _setup_compiler_env
   local _debug_prefix="/usr/src/debug/{package_name}"
-{cargo_home_exports}  export CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER="$CC"
+{cargo_home_exports}  # Use the installed Rust toolchain; a rustup proxy must never download one.
+  export RUSTUP_AUTO_INSTALL=0
+  export CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER="$CC"
   export RUSTFLAGS="-C target-cpu=znver5 -C opt-level=3 --remap-path-prefix=$srcdir=${{_debug_prefix}}"
   unset CFLAGS CXXFLAGS LDFLAGS
 

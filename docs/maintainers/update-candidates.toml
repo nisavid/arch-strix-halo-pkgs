@@ -3333,3 +3333,96 @@ next_gate_kind = "github_issue"
 next_gate_issue = 110
 next_gate_label = "prometheus-fastapi-instrumentator 8.1.0 W2A closure"
 last_reviewed = "2026-09-25"
+
+[candidates."einops-0.8.2-selected"]
+family = "einops"
+packages = ["python-einops-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+previous_recorded = "none"
+latest = "0.8.2"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked as the new W2A closure package for vLLM 0.30.0's unbounded einops requirement. No Arch sync repo carries einops, and the AUR package is a 0.9.0dev snapshot. The package source is pinned; the build, root add, and vLLM server smoke remain open."
+salient_changes = [
+  "vLLM 0.30.0 imports einops at worker startup and in the Qwen3.5 and Qwen3.6 gated-delta-net layers",
+  "einops 0.8.2 declares no runtime requirements and builds with hatchling >=1.10.0, which Arch python-hatchling meets",
+  "The AUR python-einops baseline is 0.9.0dev-2, an unreleased snapshot",
+]
+patch_carry_overlap = false
+package_source_update_needed = false
+host_validation_needed = true
+next_gate_kind = "github_issue"
+next_gate_issue = 110
+next_gate_label = "einops 0.8.2 W2A closure"
+last_reviewed = "2026-09-25"
+
+[candidates."py-cpuinfo-9.0.0-selected"]
+family = "py_cpuinfo"
+packages = ["python-py-cpuinfo-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+previous_recorded = "none"
+latest = "9.0.0"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked as the new W2A closure package for vLLM 0.30.0's unbounded py-cpuinfo requirement. python-py-cpuinfo has left the Arch sync repos and has no AUR replacement. The package source is pinned; the build, root add, and vLLM server smoke remain open."
+salient_changes = [
+  "vLLM 0.30.0 imports cpuinfo from vllm/usage/usage_lib.py while `vllm serve` starts",
+  "py-cpuinfo 9.0.0 is the latest release and declares no runtime requirements",
+  "The package provides and conflicts with the former Arch name python-py-cpuinfo",
+]
+patch_carry_overlap = false
+package_source_update_needed = false
+host_validation_needed = true
+next_gate_kind = "github_issue"
+next_gate_issue = 110
+next_gate_label = "py-cpuinfo 9.0.0 W2A closure"
+last_reviewed = "2026-09-25"
+
+[candidates."pybase64-1.5.0-selected"]
+family = "pybase64"
+packages = ["python-pybase64-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+previous_recorded = "none"
+latest = "1.5.0"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked as the new W2A closure package for vLLM 0.30.0's unbounded pybase64 requirement. The AUR baseline is 1.4.2. The package source is pinned and the C extension is mandatory; the build, root add, and vLLM server smoke remain open."
+salient_changes = [
+  "vLLM 0.30.0 imports pybase64 from vllm/renderers/embed_utils.py while `vllm serve` starts",
+  "pybase64 1.5.0 builds a C extension over a bundled libbase64 that setup.py builds with cmake",
+  "setup.py falls back to pure Python unless CIBUILDWHEEL=1, which the package sets",
+  "The AUR python-pybase64 baseline is 1.4.2-1",
+]
+patch_carry_overlap = false
+package_source_update_needed = false
+host_validation_needed = true
+next_gate_kind = "github_issue"
+next_gate_issue = 110
+next_gate_label = "pybase64 1.5.0 W2A closure"
+last_reviewed = "2026-09-25"
+
+[candidates."model-hosting-container-standards-0.1.16-selected"]
+family = "model_hosting_container_standards"
+packages = ["python-model-hosting-container-standards-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+previous_recorded = "none"
+latest = "0.1.16"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked as the new W2A closure package for vLLM 0.30.0's model-hosting-container-standards >=0.1.14,<1.0.0 requirement, which `vllm serve` imports while it builds its app. No Arch sync repo carries it. The package source is pinned; the build, root add, and vLLM server smoke remain open."
+salient_changes = [
+  "vLLM 0.30.0 imports model_hosting_container_standards.sagemaker at module level in vllm/entrypoints/serve/sagemaker/api_router.py, which vllm/entrypoints/launchers/app.py imports",
+  "0.1.16 requires fastapi, starlette >=0.49.1, pydantic, jmespath, httpx, setuptools and supervisor >=4.2.0, which Arch packages meet",
+  "vLLM caps fastapi below 0.137.0 for this package's handler overrides; Arch python-fastapi is above the cap",
+]
+patch_carry_overlap = false
+package_source_update_needed = false
+host_validation_needed = true
+next_gate_kind = "github_issue"
+next_gate_issue = 110
+next_gate_label = "model-hosting-container-standards 0.1.16 W2A closure"
+last_reviewed = "2026-09-25"

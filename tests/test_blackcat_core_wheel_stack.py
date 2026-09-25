@@ -114,6 +114,34 @@ SERVICE_STACK = {
         "provides": ["python-prometheus-fastapi-instrumentator"],
         "consumer_dep": "python-prometheus-fastapi-instrumentator-gfx1151",
     },
+    "python-einops-gfx1151": {
+        "template": "native-wheel-pypi",
+        "recipe_key": "native_wheels",
+        "upstream_version": "0.8.2",
+        "provides": ["python-einops"],
+        "consumer_dep": "python-einops-gfx1151",
+    },
+    "python-py-cpuinfo-gfx1151": {
+        "template": "native-wheel-pypi",
+        "recipe_key": "native_wheels",
+        "upstream_version": "9.0.0",
+        "provides": ["python-py-cpuinfo"],
+        "consumer_dep": "python-py-cpuinfo-gfx1151",
+    },
+    "python-pybase64-gfx1151": {
+        "template": "native-wheel-pypi",
+        "recipe_key": "native_wheels",
+        "upstream_version": "1.5.0",
+        "provides": ["python-pybase64"],
+        "consumer_dep": "python-pybase64-gfx1151",
+    },
+    "python-model-hosting-container-standards-gfx1151": {
+        "template": "native-wheel-pypi",
+        "recipe_key": "native_wheels",
+        "upstream_version": "0.1.16",
+        "provides": ["python-model-hosting-container-standards"],
+        "consumer_dep": "python-model-hosting-container-standards-gfx1151",
+    },
 }
 
 TOOLING_STACK = {
@@ -283,6 +311,14 @@ def test_service_consumers_prefer_local_blackcat_packages() -> None:
     assert "python-aiohttp-gfx1151" in vllm_deps
     assert "python-prometheus-fastapi-instrumentator-gfx1151" in vllm_deps
     assert "python-prometheus-fastapi-instrumentator" not in vllm_deps
+    for package_name in (
+        "python-einops-gfx1151",
+        "python-py-cpuinfo-gfx1151",
+        "python-pybase64-gfx1151",
+        "python-model-hosting-container-standards-gfx1151",
+    ):
+        assert SERVICE_STACK[package_name]["consumer_dep"] in vllm_deps
+        assert SERVICE_STACK[package_name]["provides"][0] not in vllm_deps
     assert "python-frozenlist-gfx1151" in aiohttp_deps
     assert "python-multidict-gfx1151" in aiohttp_deps
     assert "python-yarl-gfx1151" in aiohttp_deps
