@@ -1,16 +1,38 @@
 from __future__ import annotations
 
 import argparse
+from dataclasses import dataclass
+from functools import partial
 import importlib.metadata as metadata
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 TOOLS_DIR = Path(__file__).resolve().parent
 if str(TOOLS_DIR) not in sys.path:
     sys.path.insert(0, str(TOOLS_DIR))
 
-from gemma4_smoke_common import validate_basic_chat_text
+from gemma4_smoke_common import (
+    KNOWN_ANSWER_MAX_TOKENS,
+    KNOWN_ANSWER_PROMPT,
+    LONG_DECODE_DEFAULT_COUNT,
+    LONG_DECODE_MAX_MODEL_LEN,
+    LONG_DECODE_MAX_TOKENS,
+    long_decode_prompt,
+    validate_basic_chat_text,
+    validate_known_answer_text,
+    validate_long_decode_text,
+)
+
+BASIC_MAX_MODEL_LEN = 128
+
+
+@dataclass(frozen=True)
+class CorrectnessCheck:
+    name: str
+    prompt: str
+    max_tokens: int
+    validate: Callable[[str], str]
 
 
 def parse_args() -> argparse.Namespace:
@@ -31,7 +53,15 @@ def parse_args() -> argparse.Namespace:
             "otherwise"
         ),
     )
-    parser.add_argument("--max-model-len", type=int, default=128)
+    parser.add_argument(
+        "--max-model-len",
+        type=int,
+        default=None,
+        help=(
+            f"defaults to {BASIC_MAX_MODEL_LEN}, or {LONG_DECODE_MAX_MODEL_LEN} "
+            "with --long-decode"
+        ),
+    )
     parser.add_argument("--max-tokens", type=int, default=16)
     parser.add_argument("--max-num-batched-tokens", type=int, default=None)
     parser.add_argument(
@@ -40,7 +70,64 @@ def parse_args() -> argparse.Namespace:
         default="eager",
         help="use eager correctness mode or allow vLLM compilation/cudagraph paths",
     )
+    parser.add_argument(
+        "--known-answer",
+        action="store_true",
+        help=(
+            "after the basic check, generate greedily for a prompt whose answer "
+            "is known (the first ten primes) and require it exactly"
+        ),
+    )
+    parser.add_argument(
+        "--long-decode",
+        action="store_true",
+        help=(
+            "after the basic check, generate a greedy count of several hundred "
+            "tokens and require every number in order plus a code word recalled "
+            "from the prompt"
+        ),
+    )
+    parser.add_argument(
+        "--long-decode-count",
+        type=int,
+        default=LONG_DECODE_DEFAULT_COUNT,
+        help="last number the long-decode prompt must count to",
+    )
     return parser.parse_args()
+
+
+def effective_max_model_len(args: argparse.Namespace) -> int:
+    if args.max_model_len is not None:
+        return args.max_model_len
+    if args.long_decode:
+        return LONG_DECODE_MAX_MODEL_LEN
+    return BASIC_MAX_MODEL_LEN
+
+
+def correctness_checks(args: argparse.Namespace) -> list[CorrectnessCheck]:
+    checks: list[CorrectnessCheck] = []
+    if args.known_answer:
+        checks.append(
+            CorrectnessCheck(
+                name="known_answer",
+                prompt=KNOWN_ANSWER_PROMPT,
+                max_tokens=KNOWN_ANSWER_MAX_TOKENS,
+                validate=validate_known_answer_text,
+            )
+        )
+    if args.long_decode:
+        checks.append(
+            CorrectnessCheck(
+                name="long_decode",
+                prompt=long_decode_prompt(args.long_decode_count),
+                max_tokens=LONG_DECODE_MAX_TOKENS,
+                validate=partial(
+                    validate_long_decode_text,
+                    count=args.long_decode_count,
+                ),
+            )
+        )
+    return checks
 
 
 def is_gemma4_26b_a4b(model: str) -> bool:
@@ -102,6 +189,7 @@ def main() -> None:
     args = parse_args()
     model = resolved_model_arg(args.model)
     args.gpu_memory_utilization = effective_gpu_memory_utilization(args, model)
+    args.max_model_len = effective_max_model_len(args)
     max_num_batched_tokens = effective_max_num_batched_tokens(args, model)
 
     import torch
@@ -121,16 +209,19 @@ def main() -> None:
     print("max_num_batched_tokens", max_num_batched_tokens)
 
     tokenizer = AutoTokenizer.from_pretrained(model, trust_remote_code=True)
-    messages = [
-        {"role": "system", "content": "You are a helpful assistant."},
-        {"role": "user", "content": "Write exactly five words."},
-    ]
-    prompt = tokenizer.apply_chat_template(
-        messages,
-        tokenize=False,
-        add_generation_prompt=True,
-        enable_thinking=False,
-    )
+
+    def render(user_content: str) -> str:
+        return tokenizer.apply_chat_template(
+            [
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": user_content},
+            ],
+            tokenize=False,
+            add_generation_prompt=True,
+            enable_thinking=False,
+        )
+
+    prompt = render("Write exactly five words.")
     print("rendered_prompt:", repr(prompt))
 
     llm_kwargs = build_llm_kwargs(
@@ -162,6 +253,24 @@ def main() -> None:
             print(f"output_{idx}_stop_reason:", repr(output.stop_reason))
             validate_basic_chat_text(output.text)
     print("basic_ok")
+
+    for check in correctness_checks(args):
+        # One request per generate call keeps each check a single-sequence
+        # greedy decode.
+        (request,) = llm.generate(
+            [render(check.prompt)],
+            SamplingParams(
+                max_tokens=check.max_tokens,
+                min_tokens=1,
+                temperature=0.0,
+            ),
+        )
+        output = request.outputs[0]
+        print(f"{check.name}_text:", repr(output.text))
+        print(f"{check.name}_completion_tokens:", len(output.token_ids))
+        print(f"{check.name}_finish_reason:", repr(output.finish_reason))
+        check.validate(output.text)
+        print(f"{check.name}_ok")
 
 
 if __name__ == "__main__":

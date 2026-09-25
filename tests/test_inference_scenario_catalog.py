@@ -204,28 +204,130 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     ]
 
 
-def test_gemma4_26b_promoted_scenarios_enable_aiter_attention():
-    scenarios = load_scenarios(REPO_ROOT / "inference/scenarios")
-    by_id = {scenario.id: scenario for scenario in scenarios}
+# vLLM v0.30.0 (ced6857a) Gemma4Config.verify_and_update_config forces
+# TRITON_ATTN for every layer when head sizes differ (256 sliding, 512 full)
+# and FA4 is unavailable, which it always is on ROCm. The ROCm selector then
+# logs the configured backend with its "--attention-backend" wording.
+GEMMA4_FORCED_TRITON_LINE = (
+    "Gemma4 model has heterogeneous head dimensions "
+    "{'sliding_attention': 256, 'full_attention': 512}. "
+    "FA4 not available, forcing TRITON_ATTN backend."
+)
+GEMMA4_TRITON_SELECTED_LINE = (
+    "Using TRITON_ATTN backend (selected via --attention-backend)."
+)
+GEMMA4_PROMOTED_IDS = (
+    "vllm.gemma4.26b-a4b.text.basic",
+    "vllm.gemma4.26b-a4b.server.basic",
+    "vllm.gemma4.e2b.server.basic",
+)
 
-    expected_env = {
-        "VLLM_ROCM_USE_AITER": "1",
-        "VLLM_ROCM_USE_AITER_MOE": "0",
-    }
+
+def _gemma4_scenarios():
+    return [
+        scenario
+        for scenario in load_scenarios(REPO_ROOT / "inference/scenarios")
+        if scenario.source_path.name == "vllm-gemma4.toml"
+    ]
+
+
+def _backend_log_source(scenario) -> str:
+    tool = scenario.definition["given"]["tool"]
+    return "server_log" if tool.startswith("gemma4_server_smoke.") else "output"
+
+
+def _forces_attention_backend(scenario) -> bool:
+    argv = (scenario.definition.get("when") or {}).get("argv") or []
+    return "--attention-backend" in argv
+
+
+def test_gemma4_promoted_scenarios_gate_on_output_correctness_without_aiter():
+    by_id = {scenario.id: scenario for scenario in _gemma4_scenarios()}
+
+    for scenario_id in GEMMA4_PROMOTED_IDS:
+        scenario = by_id[scenario_id]
+        when = scenario.definition.get("when") or {}
+        env = when.get("env") or {}
+        assert not any(key.startswith("VLLM_ROCM_USE_AITER") for key in env), (
+            scenario_id
+        )
+        assert "aiter" not in scenario.tags
+        assert "exploratory" not in scenario.tags
+        assert {"--known-answer", "--long-decode"} <= set(when.get("argv") or [])
+        assertions = scenario.definition["then"]["assert"]
+        for marker in ("basic_ok", "known_answer_ok", "long_decode_ok"):
+            assert {"kind": "stdout.contains", "value": marker} in assertions
+        assert {"kind": "exit_code.equals", "value": 0} in assertions
+
+
+def test_gemma4_26b_scenarios_expect_auto_selected_triton_moe():
+    by_id = {scenario.id: scenario for scenario in _gemma4_scenarios()}
 
     text = by_id["vllm.gemma4.26b-a4b.text.basic"]
     server = by_id["vllm.gemma4.26b-a4b.server.basic"]
 
-    assert text.definition["when"]["env"] == expected_env
-    assert server.definition["when"]["env"] == expected_env
     assert {
-        "kind": "server_log.contains",
-        "value": "ROCM_AITER_UNIFIED_ATTN",
-    } in server.definition["then"]["assert"]
+        "kind": "output.contains",
+        "value": "Using TRITON Unquantized MoE backend",
+    } in text.definition["then"]["assert"]
     assert {
         "kind": "server_log.contains",
         "value": "Using TRITON Unquantized MoE backend",
     } in server.definition["then"]["assert"]
+
+
+def test_gemma4_default_backend_scenarios_assert_predicted_triton_attention():
+    checked = []
+    for scenario in _gemma4_scenarios():
+        tool = scenario.definition["given"]["tool"]
+        if not tool.startswith("gemma4_") or _forces_attention_backend(scenario):
+            continue
+        checked.append(scenario.id)
+        source = _backend_log_source(scenario)
+        assertions = scenario.definition["then"]["assert"]
+        for line in (GEMMA4_FORCED_TRITON_LINE, GEMMA4_TRITON_SELECTED_LINE):
+            assert {"kind": f"{source}.contains", "value": line} in assertions, (
+                scenario.id
+            )
+        prediction = scenario.definition["attention_backend"]
+        assert prediction["expected"] == "TRITON_ATTN"
+        # Static until a live w2a-validate run confirms it; a live run that
+        # shows another backend corrects the assertion with evidence.
+        assert prediction["evidence"] == "static-prediction"
+        assert "ced6857a" in prediction["basis"]
+        assert all(
+            "ROCM_AITER" not in str(assertion.get("value", ""))
+            for assertion in assertions
+        ), scenario.id
+
+    assert set(GEMMA4_PROMOTED_IDS) <= set(checked)
+    assert "vllm.gemma4.e2b.server.attn-triton" not in checked
+
+
+def test_gemma4_scenarios_only_enable_aiter_in_tagged_probes():
+    for scenario in _gemma4_scenarios():
+        env = (scenario.definition.get("when") or {}).get("env") or {}
+        argv = (scenario.definition.get("when") or {}).get("argv") or []
+        wants_aiter = (
+            env.get("VLLM_ROCM_USE_AITER") == "1"
+            or env.get("VLLM_ROCM_USE_AITER_MOE") == "1"
+            or any("AITER" in str(arg).upper() for arg in argv)
+        )
+        if wants_aiter:
+            assert {"aiter", "exploratory"} <= set(scenario.tags), scenario.id
+
+
+def test_gemma4_moe_probes_match_vllm_0_30_backend_log():
+    by_id = {scenario.id: scenario for scenario in _gemma4_scenarios()}
+    expected = {
+        "vllm.gemma4.26b-a4b.server.moe-triton": "Using TRITON Unquantized MoE backend",
+        "vllm.gemma4.26b-a4b.server.moe-auto": "Unquantized MoE backend out of potential backends",
+        "vllm.gemma4.26b-a4b.server.moe-aiter": "Using ROCm AITER Unquantized MoE backend",
+    }
+    for scenario_id, value in expected.items():
+        assert {"kind": "server_log.contains", "value": value} in by_id[
+            scenario_id
+        ].definition["then"]["assert"], scenario_id
 
 
 def test_gemma4_aiter_flash_attention_probe_records_current_blocker():

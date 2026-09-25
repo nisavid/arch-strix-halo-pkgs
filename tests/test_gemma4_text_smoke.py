@@ -13,7 +13,9 @@ if str(TOOLS_DIR) not in sys.path:
 
 from gemma4_text_smoke import (
     build_llm_kwargs,
+    correctness_checks,
     effective_gpu_memory_utilization,
+    effective_max_model_len,
     effective_max_num_batched_tokens,
     resolved_model_arg,
 )
@@ -74,3 +76,44 @@ def test_build_llm_kwargs_uses_resolved_model_id():
     assert kwargs["gpu_memory_utilization"] == 0.45
     assert kwargs["max_num_batched_tokens"] == 32
     assert kwargs["enforce_eager"] is True
+
+
+def test_gemma4_text_smoke_help_lists_correctness_checks():
+    result = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "tools/gemma4_text_smoke.py"), "--help"],
+        check=False,
+        timeout=30,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0
+    assert "--known-answer" in result.stdout
+    assert "--long-decode" in result.stdout
+
+
+def test_gemma4_text_smoke_long_decode_raises_default_max_model_len():
+    basic = SimpleNamespace(max_model_len=None, long_decode=False)
+    long_decode = SimpleNamespace(max_model_len=None, long_decode=True)
+    explicit = SimpleNamespace(max_model_len=2048, long_decode=True)
+
+    assert effective_max_model_len(basic) == 128
+    assert effective_max_model_len(long_decode) == 1024
+    assert effective_max_model_len(explicit) == 2048
+
+
+def test_gemma4_text_smoke_correctness_checks_are_opt_in_and_greedy_sized():
+    none = SimpleNamespace(known_answer=False, long_decode=False, long_decode_count=150)
+    both = SimpleNamespace(known_answer=True, long_decode=True, long_decode_count=120)
+
+    assert correctness_checks(none) == []
+    checks = correctness_checks(both)
+    assert [check.name for check in checks] == ["known_answer", "long_decode"]
+    assert "first ten prime numbers" in checks[0].prompt
+    assert checks[0].max_tokens == 64
+    assert "count from 1 to 120" in checks[1].prompt
+    assert checks[1].max_tokens == 800
+    checks[0].validate("2, 3, 5, 7, 11, 13, 17, 19, 23, 29")
+    checks[1].validate(
+        ", ".join(str(value) for value in range(1, 121)) + "\nCode word: PELICAN"
+    )

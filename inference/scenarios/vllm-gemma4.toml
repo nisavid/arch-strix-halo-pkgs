@@ -1,16 +1,20 @@
 [[scenario]]
 id = "vllm.gemma4.26b-a4b.text.basic"
-summary = "Gemma 4 26B A4B text-only offline smoke on the validated eager lane"
-tags = ["smoke", "gemma4", "aiter"]
+summary = "Gemma 4 26B A4B text-only offline eager smoke with known-answer and long-decode output checks"
+tags = ["smoke", "gemma4", "correctness"]
 
 [scenario.given]
 engine = "vllm"
 model = "google/gemma-4-26B-A4B-it"
 tool = "gemma4_text_smoke"
 
-[scenario.when.env]
-VLLM_ROCM_USE_AITER = "1"
-VLLM_ROCM_USE_AITER_MOE = "0"
+[scenario.when]
+argv = ["--known-answer", "--long-decode"]
+
+[scenario.attention_backend]
+expected = "TRITON_ATTN"
+evidence = "static-prediction"
+basis = "vLLM v0.30.0 ced6857a: Gemma4Config forces TRITON_ATTN for all layers because head sizes differ (256 sliding, 512 full) and FA4 is unavailable on ROCm; w2a-validate confirms live"
 
 [[scenario.then.assert]]
 kind = "exit_code.equals"
@@ -24,19 +28,43 @@ value = "generation_ok"
 kind = "stdout.contains"
 value = "basic_ok"
 
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "known_answer_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "long_decode_ok"
+
+[[scenario.then.assert]]
+kind = "output.contains"
+value = "Using TRITON Unquantized MoE backend"
+
+[[scenario.then.assert]]
+kind = "output.contains"
+value = "Gemma4 model has heterogeneous head dimensions {'sliding_attention': 256, 'full_attention': 512}. FA4 not available, forcing TRITON_ATTN backend."
+
+[[scenario.then.assert]]
+kind = "output.contains"
+value = "Using TRITON_ATTN backend (selected via --attention-backend)."
+
 [[scenario]]
 id = "vllm.gemma4.26b-a4b.server.basic"
-summary = "Gemma 4 26B A4B OpenAI-compatible server smoke with AITER attention and Triton MoE"
-tags = ["smoke", "gemma4", "aiter", "server"]
+summary = "Gemma 4 26B A4B OpenAI-compatible server smoke on auto-selected Triton attention and Triton MoE, with known-answer and long-decode output checks"
+tags = ["smoke", "gemma4", "server", "correctness"]
 
 [scenario.given]
 engine = "vllm"
 model = "google/gemma-4-26B-A4B-it"
 tool = "gemma4_server_smoke.basic"
 
-[scenario.when.env]
-VLLM_ROCM_USE_AITER = "1"
-VLLM_ROCM_USE_AITER_MOE = "0"
+[scenario.when]
+argv = ["--known-answer", "--long-decode"]
+
+[scenario.attention_backend]
+expected = "TRITON_ATTN"
+evidence = "static-prediction"
+basis = "vLLM v0.30.0 ced6857a: Gemma4Config forces TRITON_ATTN for all layers because head sizes differ (256 sliding, 512 full) and FA4 is unavailable on ROCm; w2a-validate confirms live"
 
 [[scenario.then.assert]]
 kind = "exit_code.equals"
@@ -47,23 +75,43 @@ kind = "stdout.contains"
 value = "basic_ok"
 
 [[scenario.then.assert]]
-kind = "server_log.contains"
-value = "ROCM_AITER_UNIFIED_ATTN"
+kind = "stdout.contains"
+value = "known_answer_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "long_decode_ok"
 
 [[scenario.then.assert]]
 kind = "server_log.contains"
 value = "Using TRITON Unquantized MoE backend"
 
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Gemma4 model has heterogeneous head dimensions {'sliding_attention': 256, 'full_attention': 512}. FA4 not available, forcing TRITON_ATTN backend."
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Using TRITON_ATTN backend (selected via --attention-backend)."
+
 [[scenario]]
 id = "vllm.gemma4.e2b.server.basic"
-summary = "Gemma 4 E2B OpenAI-compatible text chat smoke"
-tags = ["smoke", "gemma4", "server", "recipe"]
+summary = "Gemma 4 E2B OpenAI-compatible text chat smoke with known-answer and long-decode output checks"
+tags = ["smoke", "gemma4", "server", "recipe", "correctness"]
 
 [scenario.given]
 engine = "vllm"
 model = "google/gemma-4-E2B-it"
 tool = "gemma4_server_smoke.basic"
 
+[scenario.when]
+argv = ["--known-answer", "--long-decode"]
+
+[scenario.attention_backend]
+expected = "TRITON_ATTN"
+evidence = "static-prediction"
+basis = "vLLM v0.30.0 ced6857a: Gemma4Config forces TRITON_ATTN for all layers because head sizes differ (256 sliding, 512 full) and FA4 is unavailable on ROCm; w2a-validate confirms live"
+
 [[scenario.then.assert]]
 kind = "exit_code.equals"
 value = 0
@@ -71,6 +119,22 @@ value = 0
 [[scenario.then.assert]]
 kind = "stdout.contains"
 value = "basic_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "known_answer_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "long_decode_ok"
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Gemma4 model has heterogeneous head dimensions {'sliding_attention': 256, 'full_attention': 512}. FA4 not available, forcing TRITON_ATTN backend."
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Using TRITON_ATTN backend (selected via --attention-backend)."
 
 [[scenario]]
 id = "vllm.gemma4.e2b.server.attn-triton"
@@ -150,6 +214,11 @@ engine = "vllm"
 model = "google/gemma-4-E2B-it"
 tool = "gemma4_server_smoke.reasoning"
 
+[scenario.attention_backend]
+expected = "TRITON_ATTN"
+evidence = "static-prediction"
+basis = "vLLM v0.30.0 ced6857a: Gemma4Config forces TRITON_ATTN for all layers because head sizes differ (256 sliding, 512 full) and FA4 is unavailable on ROCm; w2a-validate confirms live"
+
 [[scenario.then.assert]]
 kind = "exit_code.equals"
 value = 0
@@ -157,6 +226,14 @@ value = 0
 [[scenario.then.assert]]
 kind = "stdout.contains"
 value = "reasoning_ok"
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Gemma4 model has heterogeneous head dimensions {'sliding_attention': 256, 'full_attention': 512}. FA4 not available, forcing TRITON_ATTN backend."
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Using TRITON_ATTN backend (selected via --attention-backend)."
 
 [[scenario]]
 id = "vllm.gemma4.e2b.server.tool"
@@ -168,6 +245,11 @@ engine = "vllm"
 model = "google/gemma-4-E2B-it"
 tool = "gemma4_server_smoke.tool"
 
+[scenario.attention_backend]
+expected = "TRITON_ATTN"
+evidence = "static-prediction"
+basis = "vLLM v0.30.0 ced6857a: Gemma4Config forces TRITON_ATTN for all layers because head sizes differ (256 sliding, 512 full) and FA4 is unavailable on ROCm; w2a-validate confirms live"
+
 [[scenario.then.assert]]
 kind = "exit_code.equals"
 value = 0
@@ -175,6 +257,14 @@ value = 0
 [[scenario.then.assert]]
 kind = "stdout.contains"
 value = "tool_ok"
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Gemma4 model has heterogeneous head dimensions {'sliding_attention': 256, 'full_attention': 512}. FA4 not available, forcing TRITON_ATTN backend."
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Using TRITON_ATTN backend (selected via --attention-backend)."
 
 [[scenario]]
 id = "vllm.gemma4.e2b.server.tool-thinking"
@@ -186,6 +276,11 @@ engine = "vllm"
 model = "google/gemma-4-E2B-it"
 tool = "gemma4_server_smoke.tool-thinking"
 
+[scenario.attention_backend]
+expected = "TRITON_ATTN"
+evidence = "static-prediction"
+basis = "vLLM v0.30.0 ced6857a: Gemma4Config forces TRITON_ATTN for all layers because head sizes differ (256 sliding, 512 full) and FA4 is unavailable on ROCm; w2a-validate confirms live"
+
 [[scenario.then.assert]]
 kind = "exit_code.equals"
 value = 0
@@ -193,6 +288,14 @@ value = 0
 [[scenario.then.assert]]
 kind = "stdout.contains"
 value = "tool_ok"
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Gemma4 model has heterogeneous head dimensions {'sliding_attention': 256, 'full_attention': 512}. FA4 not available, forcing TRITON_ATTN backend."
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Using TRITON_ATTN backend (selected via --attention-backend)."
 
 [[scenario]]
 id = "vllm.gemma4.e2b.server.structured"
@@ -204,6 +307,11 @@ engine = "vllm"
 model = "google/gemma-4-E2B-it"
 tool = "gemma4_server_smoke.structured"
 
+[scenario.attention_backend]
+expected = "TRITON_ATTN"
+evidence = "static-prediction"
+basis = "vLLM v0.30.0 ced6857a: Gemma4Config forces TRITON_ATTN for all layers because head sizes differ (256 sliding, 512 full) and FA4 is unavailable on ROCm; w2a-validate confirms live"
+
 [[scenario.then.assert]]
 kind = "exit_code.equals"
 value = 0
@@ -211,6 +319,14 @@ value = 0
 [[scenario.then.assert]]
 kind = "stdout.contains"
 value = "structured_ok"
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Gemma4 model has heterogeneous head dimensions {'sliding_attention': 256, 'full_attention': 512}. FA4 not available, forcing TRITON_ATTN backend."
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Using TRITON_ATTN backend (selected via --attention-backend)."
 
 [[scenario]]
 id = "vllm.gemma4.e2b.server.structured-thinking"
@@ -222,6 +338,11 @@ engine = "vllm"
 model = "google/gemma-4-E2B-it"
 tool = "gemma4_server_smoke.structured-thinking"
 
+[scenario.attention_backend]
+expected = "TRITON_ATTN"
+evidence = "static-prediction"
+basis = "vLLM v0.30.0 ced6857a: Gemma4Config forces TRITON_ATTN for all layers because head sizes differ (256 sliding, 512 full) and FA4 is unavailable on ROCm; w2a-validate confirms live"
+
 [[scenario.then.assert]]
 kind = "exit_code.equals"
 value = 0
@@ -229,6 +350,14 @@ value = 0
 [[scenario.then.assert]]
 kind = "stdout.contains"
 value = "structured_ok"
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Gemma4 model has heterogeneous head dimensions {'sliding_attention': 256, 'full_attention': 512}. FA4 not available, forcing TRITON_ATTN backend."
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Using TRITON_ATTN backend (selected via --attention-backend)."
 
 [[scenario]]
 id = "vllm.gemma4.e2b.server.benchmark-lite"
@@ -240,6 +369,11 @@ engine = "vllm"
 model = "google/gemma-4-E2B-it"
 tool = "gemma4_server_smoke.benchmark-lite"
 
+[scenario.attention_backend]
+expected = "TRITON_ATTN"
+evidence = "static-prediction"
+basis = "vLLM v0.30.0 ced6857a: Gemma4Config forces TRITON_ATTN for all layers because head sizes differ (256 sliding, 512 full) and FA4 is unavailable on ROCm; w2a-validate confirms live"
+
 [[scenario.then.assert]]
 kind = "exit_code.equals"
 value = 0
@@ -247,6 +381,14 @@ value = 0
 [[scenario.then.assert]]
 kind = "stdout.contains"
 value = "benchmark_lite_ok"
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Gemma4 model has heterogeneous head dimensions {'sliding_attention': 256, 'full_attention': 512}. FA4 not available, forcing TRITON_ATTN backend."
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Using TRITON_ATTN backend (selected via --attention-backend)."
 
 [[scenario]]
 id = "vllm.gemma4.e2b.server.full-feature-text-only"
@@ -258,6 +400,11 @@ engine = "vllm"
 model = "google/gemma-4-E2B-it"
 tool = "gemma4_server_smoke.full-feature-text-only"
 
+[scenario.attention_backend]
+expected = "TRITON_ATTN"
+evidence = "static-prediction"
+basis = "vLLM v0.30.0 ced6857a: Gemma4Config forces TRITON_ATTN for all layers because head sizes differ (256 sliding, 512 full) and FA4 is unavailable on ROCm; w2a-validate confirms live"
+
 [[scenario.then.assert]]
 kind = "exit_code.equals"
 value = 0
@@ -265,6 +412,14 @@ value = 0
 [[scenario.then.assert]]
 kind = "stdout.contains"
 value = "tool_ok"
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Gemma4 model has heterogeneous head dimensions {'sliding_attention': 256, 'full_attention': 512}. FA4 not available, forcing TRITON_ATTN backend."
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Using TRITON_ATTN backend (selected via --attention-backend)."
 
 [[scenario]]
 id = "vllm.gemma4.e2b.server.image"
@@ -276,6 +431,11 @@ engine = "vllm"
 model = "google/gemma-4-E2B-it"
 tool = "gemma4_server_smoke.image"
 
+[scenario.attention_backend]
+expected = "TRITON_ATTN"
+evidence = "static-prediction"
+basis = "vLLM v0.30.0 ced6857a: Gemma4Config forces TRITON_ATTN for all layers because head sizes differ (256 sliding, 512 full) and FA4 is unavailable on ROCm; w2a-validate confirms live"
+
 [[scenario.then.assert]]
 kind = "exit_code.equals"
 value = 0
@@ -283,6 +443,14 @@ value = 0
 [[scenario.then.assert]]
 kind = "stdout.contains"
 value = "image_ok"
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Gemma4 model has heterogeneous head dimensions {'sliding_attention': 256, 'full_attention': 512}. FA4 not available, forcing TRITON_ATTN backend."
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Using TRITON_ATTN backend (selected via --attention-backend)."
 
 [[scenario]]
 id = "vllm.gemma4.e2b.server.multi-image"
@@ -294,6 +462,11 @@ engine = "vllm"
 model = "google/gemma-4-E2B-it"
 tool = "gemma4_server_smoke.multi-image"
 
+[scenario.attention_backend]
+expected = "TRITON_ATTN"
+evidence = "static-prediction"
+basis = "vLLM v0.30.0 ced6857a: Gemma4Config forces TRITON_ATTN for all layers because head sizes differ (256 sliding, 512 full) and FA4 is unavailable on ROCm; w2a-validate confirms live"
+
 [[scenario.then.assert]]
 kind = "exit_code.equals"
 value = 0
@@ -301,6 +474,14 @@ value = 0
 [[scenario.then.assert]]
 kind = "stdout.contains"
 value = "multi-image_ok"
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Gemma4 model has heterogeneous head dimensions {'sliding_attention': 256, 'full_attention': 512}. FA4 not available, forcing TRITON_ATTN backend."
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Using TRITON_ATTN backend (selected via --attention-backend)."
 
 [[scenario]]
 id = "vllm.gemma4.e2b.server.image-dynamic"
@@ -315,6 +496,11 @@ tool = "gemma4_server_smoke.image-dynamic"
 [scenario.when]
 argv = ["--processor-kwargs", "{\"do_pan_and_scan\":true}"]
 
+[scenario.attention_backend]
+expected = "TRITON_ATTN"
+evidence = "static-prediction"
+basis = "vLLM v0.30.0 ced6857a: Gemma4Config forces TRITON_ATTN for all layers because head sizes differ (256 sliding, 512 full) and FA4 is unavailable on ROCm; w2a-validate confirms live"
+
 [[scenario.then.assert]]
 kind = "exit_code.equals"
 value = 0
@@ -322,6 +508,14 @@ value = 0
 [[scenario.then.assert]]
 kind = "stdout.contains"
 value = "image-dynamic_ok"
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Gemma4 model has heterogeneous head dimensions {'sliding_attention': 256, 'full_attention': 512}. FA4 not available, forcing TRITON_ATTN backend."
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Using TRITON_ATTN backend (selected via --attention-backend)."
 
 [[scenario]]
 id = "vllm.gemma4.e2b.server.audio"
@@ -333,6 +527,11 @@ engine = "vllm"
 model = "google/gemma-4-E2B-it"
 tool = "gemma4_server_smoke.audio"
 
+[scenario.attention_backend]
+expected = "TRITON_ATTN"
+evidence = "static-prediction"
+basis = "vLLM v0.30.0 ced6857a: Gemma4Config forces TRITON_ATTN for all layers because head sizes differ (256 sliding, 512 full) and FA4 is unavailable on ROCm; w2a-validate confirms live"
+
 [[scenario.then.assert]]
 kind = "exit_code.equals"
 value = 0
@@ -340,6 +539,14 @@ value = 0
 [[scenario.then.assert]]
 kind = "stdout.contains"
 value = "audio_ok"
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Gemma4 model has heterogeneous head dimensions {'sliding_attention': 256, 'full_attention': 512}. FA4 not available, forcing TRITON_ATTN backend."
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Using TRITON_ATTN backend (selected via --attention-backend)."
 
 [[scenario]]
 id = "vllm.gemma4.e2b.server.video"
@@ -351,6 +558,11 @@ engine = "vllm"
 model = "google/gemma-4-E2B-it"
 tool = "gemma4_server_smoke.video"
 
+[scenario.attention_backend]
+expected = "TRITON_ATTN"
+evidence = "static-prediction"
+basis = "vLLM v0.30.0 ced6857a: Gemma4Config forces TRITON_ATTN for all layers because head sizes differ (256 sliding, 512 full) and FA4 is unavailable on ROCm; w2a-validate confirms live"
+
 [[scenario.then.assert]]
 kind = "exit_code.equals"
 value = 0
@@ -358,6 +570,14 @@ value = 0
 [[scenario.then.assert]]
 kind = "stdout.contains"
 value = "video_ok"
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Gemma4 model has heterogeneous head dimensions {'sliding_attention': 256, 'full_attention': 512}. FA4 not available, forcing TRITON_ATTN backend."
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Using TRITON_ATTN backend (selected via --attention-backend)."
 
 [[scenario]]
 id = "vllm.gemma4.e2b.server.multimodal-tool"
@@ -369,6 +589,11 @@ engine = "vllm"
 model = "google/gemma-4-E2B-it"
 tool = "gemma4_server_smoke.multimodal-tool"
 
+[scenario.attention_backend]
+expected = "TRITON_ATTN"
+evidence = "static-prediction"
+basis = "vLLM v0.30.0 ced6857a: Gemma4Config forces TRITON_ATTN for all layers because head sizes differ (256 sliding, 512 full) and FA4 is unavailable on ROCm; w2a-validate confirms live"
+
 [[scenario.then.assert]]
 kind = "exit_code.equals"
 value = 0
@@ -376,6 +601,14 @@ value = 0
 [[scenario.then.assert]]
 kind = "stdout.contains"
 value = "tool_ok"
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Gemma4 model has heterogeneous head dimensions {'sliding_attention': 256, 'full_attention': 512}. FA4 not available, forcing TRITON_ATTN backend."
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Using TRITON_ATTN backend (selected via --attention-backend)."
 
 [[scenario]]
 id = "vllm.gemma4.e2b.text.compiled"
@@ -397,6 +630,11 @@ argv = [
   "0.35",
 ]
 
+[scenario.attention_backend]
+expected = "TRITON_ATTN"
+evidence = "static-prediction"
+basis = "vLLM v0.30.0 ced6857a: Gemma4Config forces TRITON_ATTN for all layers because head sizes differ (256 sliding, 512 full) and FA4 is unavailable on ROCm; w2a-validate confirms live"
+
 [[scenario.then.assert]]
 kind = "exit_code.equals"
 value = 1
@@ -408,6 +646,14 @@ value = "generation_ok"
 [[scenario.then.assert]]
 kind = "output.contains"
 value = "basic mode response included unexpected non-ASCII content"
+
+[[scenario.then.assert]]
+kind = "output.contains"
+value = "Gemma4 model has heterogeneous head dimensions {'sliding_attention': 256, 'full_attention': 512}. FA4 not available, forcing TRITON_ATTN backend."
+
+[[scenario.then.assert]]
+kind = "output.contains"
+value = "Using TRITON_ATTN backend (selected via --attention-backend)."
 
 [[scenario]]
 id = "vllm.gemma4.26b-a4b.text.compiled"
@@ -422,6 +668,11 @@ tool = "gemma4_text_smoke"
 [scenario.when]
 argv = ["--execution-mode", "compiled"]
 
+[scenario.attention_backend]
+expected = "TRITON_ATTN"
+evidence = "static-prediction"
+basis = "vLLM v0.30.0 ced6857a: Gemma4Config forces TRITON_ATTN for all layers because head sizes differ (256 sliding, 512 full) and FA4 is unavailable on ROCm; w2a-validate confirms live"
+
 [[scenario.then.assert]]
 kind = "exit_code.equals"
 value = 0
@@ -429,6 +680,14 @@ value = 0
 [[scenario.then.assert]]
 kind = "stdout.contains"
 value = "basic_ok"
+
+[[scenario.then.assert]]
+kind = "output.contains"
+value = "Gemma4 model has heterogeneous head dimensions {'sliding_attention': 256, 'full_attention': 512}. FA4 not available, forcing TRITON_ATTN backend."
+
+[[scenario.then.assert]]
+kind = "output.contains"
+value = "Using TRITON_ATTN backend (selected via --attention-backend)."
 
 [[scenario]]
 id = "vllm.gemma4.26b-a4b.server.moe-triton"
@@ -446,6 +705,11 @@ argv = ["--moe-backend", "triton"]
 [scenario.when.env]
 VLLM_ROCM_USE_AITER_MOE = "0"
 
+[scenario.attention_backend]
+expected = "TRITON_ATTN"
+evidence = "static-prediction"
+basis = "vLLM v0.30.0 ced6857a: Gemma4Config forces TRITON_ATTN for all layers because head sizes differ (256 sliding, 512 full) and FA4 is unavailable on ROCm; w2a-validate confirms live"
+
 [[scenario.then.assert]]
 kind = "exit_code.equals"
 value = 0
@@ -456,7 +720,15 @@ value = "basic_ok"
 
 [[scenario.then.assert]]
 kind = "server_log.contains"
-value = "Using TRITON backend for Unquantized MoE"
+value = "Using TRITON Unquantized MoE backend"
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Gemma4 model has heterogeneous head dimensions {'sliding_attention': 256, 'full_attention': 512}. FA4 not available, forcing TRITON_ATTN backend."
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Using TRITON_ATTN backend (selected via --attention-backend)."
 
 [[scenario]]
 id = "vllm.gemma4.26b-a4b.server.moe-auto"
@@ -468,6 +740,11 @@ engine = "vllm"
 model = "google/gemma-4-26B-A4B-it"
 tool = "gemma4_server_smoke.basic"
 
+[scenario.attention_backend]
+expected = "TRITON_ATTN"
+evidence = "static-prediction"
+basis = "vLLM v0.30.0 ced6857a: Gemma4Config forces TRITON_ATTN for all layers because head sizes differ (256 sliding, 512 full) and FA4 is unavailable on ROCm; w2a-validate confirms live"
+
 [[scenario.then.assert]]
 kind = "exit_code.equals"
 value = 0
@@ -478,12 +755,20 @@ value = "basic_ok"
 
 [[scenario.then.assert]]
 kind = "server_log.contains"
-value = "backend for Unquantized MoE"
+value = "Unquantized MoE backend out of potential backends"
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Gemma4 model has heterogeneous head dimensions {'sliding_attention': 256, 'full_attention': 512}. FA4 not available, forcing TRITON_ATTN backend."
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Using TRITON_ATTN backend (selected via --attention-backend)."
 
 [[scenario]]
 id = "vllm.gemma4.26b-a4b.server.moe-aiter"
-summary = "Gemma 4 26B A4B forced AITER MoE backend probe"
-tags = ["smoke", "gemma4", "server", "kernel-probe", "exploratory"]
+summary = "Gemma 4 26B A4B forced AITER MoE backend probe; requires an AITER build, which the no-AITER vLLM 0.30 package is not"
+tags = ["smoke", "gemma4", "server", "kernel-probe", "aiter", "exploratory"]
 
 [scenario.given]
 engine = "vllm"
@@ -496,6 +781,11 @@ argv = ["--moe-backend", "aiter"]
 [scenario.when.env]
 VLLM_ROCM_USE_AITER_MOE = "1"
 
+[scenario.attention_backend]
+expected = "TRITON_ATTN"
+evidence = "static-prediction"
+basis = "vLLM v0.30.0 ced6857a: Gemma4Config forces TRITON_ATTN for all layers because head sizes differ (256 sliding, 512 full) and FA4 is unavailable on ROCm; w2a-validate confirms live"
+
 [[scenario.then.assert]]
 kind = "exit_code.equals"
 value = 0
@@ -506,7 +796,15 @@ value = "basic_ok"
 
 [[scenario.then.assert]]
 kind = "server_log.contains"
-value = "Using ROCm AITER backend for Unquantized MoE"
+value = "Using ROCm AITER Unquantized MoE backend"
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Gemma4 model has heterogeneous head dimensions {'sliding_attention': 256, 'full_attention': 512}. FA4 not available, forcing TRITON_ATTN backend."
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Using TRITON_ATTN backend (selected via --attention-backend)."
 
 [[scenario]]
 id = "vllm.torchao.tiny.prepare"

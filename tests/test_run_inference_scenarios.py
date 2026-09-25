@@ -1452,3 +1452,49 @@ value = "missing marker"
     )
     assert scenario_result["ok"] is False
     assert "stdout.contains" in scenario_result["failures"][0]
+
+
+def test_dry_run_carries_attention_backend_prediction(tmp_path: Path):
+    scenario_dir = tmp_path / "inference" / "scenarios"
+    scenario_dir.mkdir(parents=True)
+    (scenario_dir / "sample.toml").write_text(
+        """
+[[scenario]]
+id = "vllm.demo.backend"
+summary = "demo backend prediction"
+tags = ["smoke"]
+
+[scenario.given]
+engine = "vllm"
+model = "demo-model"
+tool = "gemma4_text_smoke"
+
+[scenario.attention_backend]
+expected = "TRITON_ATTN"
+evidence = "static-prediction"
+basis = "demo basis"
+
+[[scenario.then.assert]]
+kind = "output.contains"
+value = "Using TRITON_ATTN backend"
+""",
+        encoding="utf-8",
+    )
+
+    result = run_runner(
+        "--scenario-dir",
+        str(scenario_dir),
+        "--run-root",
+        str(tmp_path / "run"),
+        "--dry-run",
+        "--scenario",
+        "vllm.demo.backend",
+    )
+
+    assert result.returncode == 0, result.stderr
+    planned = json.loads(result.stdout)["planned"][0]
+    assert planned["attention_backend"] == {
+        "expected": "TRITON_ATTN",
+        "evidence": "static-prediction",
+        "basis": "demo basis",
+    }

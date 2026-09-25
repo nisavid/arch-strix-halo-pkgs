@@ -17,7 +17,17 @@ TOOLS_DIR = Path(__file__).resolve().parent
 if str(TOOLS_DIR) not in sys.path:
     sys.path.insert(0, str(TOOLS_DIR))
 
-from gemma4_smoke_common import validate_basic_chat_text
+from gemma4_smoke_common import (
+    KNOWN_ANSWER_MAX_TOKENS,
+    KNOWN_ANSWER_PROMPT,
+    LONG_DECODE_DEFAULT_COUNT,
+    LONG_DECODE_MAX_MODEL_LEN,
+    LONG_DECODE_MAX_TOKENS,
+    long_decode_prompt,
+    validate_basic_chat_text,
+    validate_known_answer_text,
+    validate_long_decode_text,
+)
 
 SERVER_MODES = (
     "basic",
@@ -133,6 +143,36 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument("--request-timeout", type=float, default=60.0)
+    parser.add_argument(
+        "--known-answer",
+        action="store_true",
+        help=(
+            "after the mode check, send a greedy request whose answer is known "
+            "(the first ten primes) and require it exactly"
+        ),
+    )
+    parser.add_argument(
+        "--long-decode",
+        action="store_true",
+        help=(
+            "after the mode check, send a greedy counting request of several "
+            "hundred tokens and require every number in order plus a code word "
+            "recalled from the prompt; raises the default --max-model-len to "
+            f"{LONG_DECODE_MAX_MODEL_LEN}"
+        ),
+    )
+    parser.add_argument(
+        "--long-decode-count",
+        type=int,
+        default=LONG_DECODE_DEFAULT_COUNT,
+        help="last number the long-decode request must count to",
+    )
+    parser.add_argument(
+        "--long-decode-timeout",
+        type=float,
+        default=600.0,
+        help="seconds to wait for the long-decode response",
+    )
     parser.add_argument(
         "--execution-mode",
         choices=("eager", "compiled"),
@@ -257,10 +297,14 @@ def effective_max_model_len(args: argparse.Namespace) -> int:
     if args.max_model_len is not None:
         return args.max_model_len
     if use_gemma4_26b_a4b_text_only_defaults(args):
-        return 128
-    if args.mode in REASONING_MODES or args.mode in STRUCTURED_MODES:
-        return 1024
-    return 512
+        default = 128
+    elif args.mode in REASONING_MODES or args.mode in STRUCTURED_MODES:
+        default = 1024
+    else:
+        default = 512
+    if getattr(args, "long_decode", False):
+        return max(default, LONG_DECODE_MAX_MODEL_LEN)
+    return default
 
 
 def effective_max_num_batched_tokens(args: argparse.Namespace) -> int | None:
@@ -546,6 +590,26 @@ def build_request_payload(args: argparse.Namespace) -> dict[str, object]:
     return payload
 
 
+def build_known_answer_payload(args: argparse.Namespace) -> dict[str, object]:
+    return {
+        "model": served_model_name(args),
+        "messages": [{"role": "user", "content": KNOWN_ANSWER_PROMPT}],
+        "max_tokens": request_max_tokens(args, KNOWN_ANSWER_MAX_TOKENS),
+        "temperature": 0.0,
+    }
+
+
+def build_long_decode_payload(args: argparse.Namespace) -> dict[str, object]:
+    return {
+        "model": served_model_name(args),
+        "messages": [
+            {"role": "user", "content": long_decode_prompt(args.long_decode_count)}
+        ],
+        "max_tokens": request_max_tokens(args, LONG_DECODE_MAX_TOKENS),
+        "temperature": 0.0,
+    }
+
+
 def build_tool_followup_payload(
     args: argparse.Namespace,
     assistant_message: dict[str, Any],
@@ -594,6 +658,10 @@ def build_plan(args: argparse.Namespace) -> dict[str, object]:
         "request_payload": request_payload,
         "server_log": str(args.server_log),
     }
+    if args.known_answer:
+        plan["known_answer_request_payload"] = build_known_answer_payload(args)
+    if args.long_decode:
+        plan["long_decode_request_payload"] = build_long_decode_payload(args)
     if args.mode in TOOL_MODES:
         plan["followup_request_payload"] = build_tool_followup_payload(
             args,
@@ -748,6 +816,41 @@ def tail_log(path: Path, lines: int = 80) -> str:
     return "\n".join(text[-lines:])
 
 
+def completion_tokens(response: dict[str, Any]) -> object:
+    usage = response.get("usage") or {}
+    return usage.get("completion_tokens")
+
+
+def run_known_answer_check(args: argparse.Namespace, plan: dict[str, object]) -> None:
+    response = post_json(
+        str(plan["request_url"]),
+        args.api_key,
+        dict(plan["known_answer_request_payload"]),
+        args.request_timeout,
+    )
+    print("known_answer_response", json.dumps(response, sort_keys=True))
+    message = extract_message(response)
+    validate_known_answer_text(message.get("content") or "")
+    print("known_answer_ok")
+
+
+def run_long_decode_check(args: argparse.Namespace, plan: dict[str, object]) -> None:
+    response = post_json(
+        str(plan["request_url"]),
+        args.api_key,
+        dict(plan["long_decode_request_payload"]),
+        max(args.request_timeout, args.long_decode_timeout),
+    )
+    print("long_decode_response", json.dumps(response, sort_keys=True))
+    print("long_decode_completion_tokens", completion_tokens(response))
+    message = extract_message(response)
+    validate_long_decode_text(
+        message.get("content") or "",
+        count=args.long_decode_count,
+    )
+    print("long_decode_ok")
+
+
 def run_smoke(args: argparse.Namespace) -> None:
     plan = build_plan(args)
     print("mode", args.mode)
@@ -809,6 +912,11 @@ def run_smoke(args: argparse.Namespace) -> None:
             else:
                 validate_multimodal_response(response)
                 print(f"{args.mode}_ok")
+
+            if args.known_answer:
+                run_known_answer_check(args, plan)
+            if args.long_decode:
+                run_long_decode_check(args, plan)
         except Exception:
             print("server_log_tail_start", file=sys.stderr)
             tail = tail_log(args.server_log)
