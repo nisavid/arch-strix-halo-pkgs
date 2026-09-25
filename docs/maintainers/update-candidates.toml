@@ -4119,7 +4119,7 @@ patch_carry_overlap = true
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
-next_gate_label = "Adopted; built, installed, and live-validated in M4 (#140)"
+next_gate_label = "Adopted; built and installed under #139, live-validated in M4 (#140)"
 last_reviewed = "2026-09-25"
 
 [candidates."lemonade-upstream-11.9.0"]

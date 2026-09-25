@@ -133,8 +133,8 @@ only `lemonade-server`.
 The explicit tracker validation then found all 11 unique issue gates open.
 The 24-hour freshness sweep was not rerun for this closeout, and it is due.
 A cache-aware Lemonade check already reports fork main past `3d5991033` and
-a new upstream release. Neither Lemonade record matches that result, so it
-needs a disposition in that sweep.
+a new upstream release. Neither Lemonade record matches that result, so the
+sweep must give it its own disposition.
 
 ## 2026-09-23 Lemonade Args-Merge Fix
 
@@ -279,8 +279,7 @@ Fix status:
 - Deployed/installed: installed alongside Arch `python-pydantic` 2.13.5 in
   the Lemonade family transaction
   ([#139](https://github.com/nisavid/arch-strix-halo-pkgs/issues/139)) on
-  2026-09-23. The host hazard is closed, and `python-pydantic` no longer
-  needs to be held.
+  2026-09-23. `python-pydantic` no longer needs to be held.
 - Installed-smoked on 2026-09-25: `pacman -Qkk` is clean for both packages,
   and the `pydantic_core` module is owned by
   `python-pydantic-core-gfx1151 2.46.5-2`. Python 3.14.6 imports pydantic
