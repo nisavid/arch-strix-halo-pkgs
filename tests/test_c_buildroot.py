@@ -1,6 +1,7 @@
 import importlib.util
 import io
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -886,12 +887,54 @@ def test_pinned_makepkg_conf_values():
     assert out[7] == "unset", "PKGDEST comes from `enter --pkgdest`, not the pinned conf"
 
 
-def test_repo_files_hold_no_private_paths():
-    for path in [MODULE_PATH, *sorted((REPO_ROOT / "tools/buildroot").rglob("*"))]:
-        if path.is_file():
-            text = path.read_text()
-            for needle in ("/home/",):
-                assert needle not in text, f"{path} mentions {needle}"
+PRIVATE_PATTERNS_ENV = "ASHP_PRIVATE_PATTERNS_FILE"
+
+
+def _local_private_patterns():
+    """Return this host's private path patterns, or None when none are configured.
+
+    The patterns name private local paths, so the list itself must never be
+    committed. Point ASHP_PRIVATE_PATTERNS_FILE at a local file with one literal
+    pattern per line (# starts a comment), or keep the list at the git-ignored
+    .agents/session/private-patterns.txt.
+    """
+    for candidate in (
+        os.environ.get(PRIVATE_PATTERNS_ENV),
+        REPO_ROOT / ".agents/session/private-patterns.txt",
+    ):
+        if candidate and Path(candidate).is_file():
+            lines = Path(candidate).read_text().splitlines()
+            return [line.strip() for line in lines if line.strip() and not line.lstrip().startswith("#")]
+    return None
+
+
+def _build_root_tool_files():
+    return [MODULE_PATH, *sorted(p for p in (REPO_ROOT / "tools/buildroot").rglob("*") if p.is_file())]
+
+
+def test_repo_files_hold_no_home_paths():
+    for path in _build_root_tool_files():
+        assert "/home/" not in path.read_text(), f"{path} mentions a /home/ path"
+
+
+def test_repo_files_hold_no_local_private_paths():
+    patterns = _local_private_patterns()
+    if patterns is None:
+        pytest.skip(f"set {PRIVATE_PATTERNS_ENV} to a local private-pattern file to run this check")
+    for path in _build_root_tool_files():
+        text = path.read_text()
+        for index, needle in enumerate(patterns, 1):
+            # Name the pattern by its line number only, so a failure never echoes it.
+            assert needle not in text, f"{path} matches local private pattern #{index}"
+
+
+def test_this_test_file_names_no_private_path_literals():
+    patterns = _local_private_patterns()
+    if patterns is None:
+        pytest.skip(f"set {PRIVATE_PATTERNS_ENV} to a local private-pattern file to run this check")
+    text = Path(__file__).read_text()
+    for index, needle in enumerate(patterns, 1):
+        assert needle not in text, f"this test file matches local private pattern #{index}"
 
 
 @needs_bsdtar
