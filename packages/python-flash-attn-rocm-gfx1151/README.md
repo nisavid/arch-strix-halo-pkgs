@@ -47,6 +47,12 @@ experiment.
   Arch package dependency stays on `python-triton-gfx1151`.
 - Imports `amdsmi` before FlashAttention reaches `torch`, matching the local
   ROCm import-order guard used elsewhere in the stack.
+- Initializes the CK split-KV forward args
+  (`0010-init-ck-splitkv-args.patch`). The packaged CK commit added
+  `sink_ptr`, `sink_size`, and `logits_soft_cap` to `fmha_fwd_splitkv_args`,
+  and FlashAttention `3f94643f` never sets them. The patch value-initializes
+  the struct and sets the three fields explicitly, backporting the split-KV
+  hunks of upstream `8afc617a` (#2363) that patch 0007 left out.
 
 ## Validation Gates
 
@@ -101,6 +107,16 @@ extension against `python-pytorch-opt-rocm-gfx1151 2.12.0-5` and the Python
 3.14 foundation, and moves `python-amd-aiter-gfx1151` from `depends` to
 `optdepends`. The source commit and patches 0001-0009 are unchanged.
 
+The 2026-09-25 `2.8.4-16` release adds patch 0010, which fixes a GPU memory
+fault in the paged-KV varlen path. `get_ck_fmha_varlen_fwd_splitkv_args()`
+declared `fmha_fwd_splitkv_args args;` without initializing it, so CK read
+leftover host stack contents as `sink_ptr` and dereferenced them in the
+split-KV kernel whenever they were non-null. Rebuild, install, and rerun the
+direct CK scenarios, including `flash-attn.ck.varlen-paged-kv`, before
+claiming the fix on the reference host. Patches 0007 and 0010 should become
+redundant once the package moves to a FlashAttention ref that contains
+upstream `8afc617a`.
+
 ## Current Evidence
 
 On 2026-04-22, `tools/amerge build python-flash-attn-rocm-gfx1151` built
@@ -138,7 +154,10 @@ python-flash-attn-rocm-gfx1151` reports `2.8.4-10`. The installed scenarios
 `flash-attn.ck.varlen-tiny`, `flash-attn.ck.varlen-tiny-d256`, and
 `flash-attn.ck.varlen-paged-kv` passed at run root
 `docs/worklog/inference-runs/20260423T223607`; CK selected
-`flash_attn_2_cuda` with `use_triton_rocm False`.
+`flash_attn_2_cuda` with `use_triton_rocm False`. The paged-KV pass relied on
+undefined behaviour: before patch 0010, the split-KV args carried
+uninitialized `sink_ptr`, `sink_size`, and `logits_soft_cap`, so that pass
+only shows the stack happened to hold a null `sink_ptr` in that run.
 
 The exploratory vLLM Qwen CK consumer probe is tracked as blocked, not passed.
 It confirms that vLLM sees CK (`flash_attn_2_cuda` and

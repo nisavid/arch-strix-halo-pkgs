@@ -23,6 +23,37 @@ gates passes on the reference host:
 - Upstream FlashAttention or CK lands a paged-KV fix that passes the local
   scenario matrix.
 
+## Root Cause Of The Paged-KV GPU Fault
+
+The GPU fault in the CK paged-KV varlen path was a FlashAttention glue bug,
+not a CK page-geometry limit. In `2.8.4-15` and earlier,
+`get_ck_fmha_varlen_fwd_splitkv_args()` in
+`csrc/flash_attn_ck/mha_varlen_fwd.cpp` declared
+`fmha_fwd_splitkv_args args;` without initializing it. The packaged CK
+submodule (`03ce21dd`) added `sink_ptr`, `sink_size`, and `logits_soft_cap` to
+that struct, and FlashAttention `3f94643f` never sets them. CK's split-KV
+kernel dereferences `kargs.sink_ptr` whenever it is non-null, so leftover host
+stack contents made the kernel read an arbitrary address.
+
+Upstream fixed this in ROCm/flash-attention `8afc617a` (#2363), and
+`c661198a` also sets `logits_soft_cap`. Local patch 0007 backported only the
+`fmha_fwd_args` part of #2363. `python-flash-attn-rocm-gfx1151 2.8.4-16`
+carries `0010-init-ck-splitkv-args.patch`, which value-initializes the struct
+and sets the three fields in both split-KV builders. That release is source
+updated only until it is built, installed, and the direct CK scenarios below
+pass on the reference host.
+
+Consequences for the evidence below:
+
+- The `2.8.4-10` `flash-attn.ck.varlen-paged-kv` pass was undefined
+  behaviour. It shows only that the stack held a null `sink_ptr` in that run,
+  not that the paged-KV path was correct.
+- The forced 128-divisible diagnostic faults are consistent with this bug and
+  do not by themselves show a CK page-geometry fault. Rerun them on `2.8.4-16`
+  before drawing conclusions about page geometry.
+- The 64-token page rejection is a separate, still-open boundary: the
+  `page_block_size % 128` guard is unchanged.
+
 ## Local Evidence
 
 The package-level CK surface works for bounded direct tests. With

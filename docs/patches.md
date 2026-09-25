@@ -102,6 +102,22 @@ becomes durable, prefer a named patch that another maintainer can review.
     evidence that the maintained Gemma 4 lane should leave Triton unquantized
     MoE.
 
+## FlashAttention
+
+- [Initialize CK split-KV forward args](../packages/python-flash-attn-rocm-gfx1151/0010-init-ck-splitkv-args.patch)
+  - Value-initializes `fmha_fwd_splitkv_args` and sets `sink_ptr`,
+    `sink_size`, and `logits_soft_cap` in the varlen and kvcache split-KV
+    argument builders. CK `03ce21dd` added those fields and FlashAttention
+    `3f94643f` never set them, so the split-KV kernel dereferenced
+    uninitialized host stack as `sink_ptr` and the paged-KV varlen path
+    faulted the GPU.
+  - Backports the split-KV hunks of upstream `8afc617a` (#2363) and the
+    `logits_soft_cap` line from `c661198a`.
+    [Patch 0007](../packages/python-flash-attn-rocm-gfx1151/0007-adapt-ck-fwd-args-layout.patch)
+    is a partial #2363 backport that covered only `fmha_fwd_args`.
+  - The longer-term fix is to move the package to a FlashAttention ref that
+    contains `8afc617a`, then drop 0007 and 0010.
+
 ## PyTorch
 
 - [Initialize NumPy before ROCm global dependencies](../packages/python-pytorch-opt-rocm-gfx1151/0007-initialize-numpy-before-global-deps.patch)

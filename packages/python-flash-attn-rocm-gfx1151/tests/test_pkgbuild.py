@@ -19,6 +19,19 @@ CK_SMOKE_BUILD_PATCH = PACKAGE / "0006-limit-ck-smoke-build-to-forward-d32.patch
 CK_FWD_ARGS_PATCH = PACKAGE / "0007-adapt-ck-fwd-args-layout.patch"
 CK_DISABLE_PAGED_KV_PATCH = PACKAGE / "0008-disable-ck-varlen-paged-kv-in-forward-smoke.patch"
 CK_VLLM_WRAPPER_PATCH = PACKAGE / "0009-accept-vllm-varlen-wrapper-keywords.patch"
+CK_SPLITKV_INIT_PATCH = PACKAGE / "0010-init-ck-splitkv-args.patch"
+PATCH_SERIES = [
+    "0001-skip-bundled-aiter-install.patch",
+    "0002-import-amdsmi-before-torch.patch",
+    "0003-use-system-triton-package.patch",
+    "0004-enable-gfx1151-ck-codegen.patch",
+    "0005-preserve-packaged-ck-submodule-checkout.patch",
+    "0006-limit-ck-smoke-build-to-forward-d32.patch",
+    "0007-adapt-ck-fwd-args-layout.patch",
+    "0008-disable-ck-varlen-paged-kv-in-forward-smoke.patch",
+    "0009-accept-vllm-varlen-wrapper-keywords.patch",
+    "0010-init-ck-splitkv-args.patch",
+]
 
 
 def _bash_array(text, name):
@@ -32,7 +45,7 @@ def test_pkgbuild_tracks_rocm_flash_attention_ck_experiment():
 
     assert "pkgname=python-flash-attn-rocm-gfx1151" in text
     assert "pkgver=2.8.4" in text
-    assert "pkgrel=15" in text
+    assert "pkgrel=16" in text
     assert "3f94643fb41bcedded28c85185a8e11d42ef1592" in text
     assert "url=https://github.com/ROCm/flash-attention" in text
     assert "FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE" in text
@@ -263,3 +276,44 @@ def test_freshness_policy_covers_flash_attention_branch():
             "comparison": "sha",
         }
     ]
+
+
+def _prepare_patch_loop(text):
+    prepare = text[text.index("prepare() {") : text.index("\nbuild() {")]
+    loop = prepare[prepare.index("for _patch in") : prepare.index("; do")]
+    return shlex.split(loop.removeprefix("for _patch in").replace("\\\n", " "))
+
+
+def test_pkgbuild_applies_full_patch_series_in_order():
+    text = PKGBUILD.read_text(encoding="utf-8")
+    source = _bash_array(text, "source")
+    sums = _bash_array(text, "sha256sums")
+    recipe = json.loads(RECIPE_JSON.read_text(encoding="utf-8"))
+
+    assert source[1:] == PATCH_SERIES
+    assert len(sums) == len(source)
+    assert _prepare_patch_loop(text) == PATCH_SERIES
+    assert recipe["source_patches"] == PATCH_SERIES
+    for name in PATCH_SERIES:
+        assert (PACKAGE / name).is_file()
+
+
+def test_splitkv_init_patch_zeroes_ck_sink_and_soft_cap_fields():
+    patch = CK_SPLITKV_INIT_PATCH.read_text(encoding="utf-8")
+    readme = README.read_text(encoding="utf-8")
+    patches_doc = (REPO_ROOT / "docs/patches.md").read_text(encoding="utf-8")
+
+    assert "8afc617a" in patch
+    assert "#2363" in patch
+    for path in [
+        "csrc/flash_attn_ck/mha_varlen_fwd.cpp",
+        "csrc/flash_attn_ck/mha_fwd_kvcache.cpp",
+    ]:
+        diff = patch[patch.index(f"diff --git a/{path}") :]
+        diff = diff.split("\ndiff --git ", 1)[0]
+        assert "-    fmha_fwd_splitkv_args args;\n+    fmha_fwd_splitkv_args args{};" in diff
+        assert "+    args.sink_ptr = nullptr;" in diff
+        assert "+    args.sink_size = 0;" in diff
+        assert "+    args.logits_soft_cap = 0.0f;" in diff
+    assert "0010-init-ck-splitkv-args.patch" in readme
+    assert "0010-init-ck-splitkv-args.patch" in patches_doc

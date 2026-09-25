@@ -3,7 +3,7 @@
 
 pkgname=python-flash-attn-rocm-gfx1151
 pkgver=2.8.4
-pkgrel=15
+pkgrel=16
 pkgdesc='FlashAttention ROCm CK backend experiment for the local gfx1151 stack'
 arch=('x86_64')
 url=https://github.com/ROCm/flash-attention
@@ -25,8 +25,9 @@ source=('flash-attention::git+https://github.com/ROCm/flash-attention.git#commit
         0006-limit-ck-smoke-build-to-forward-d32.patch
         0007-adapt-ck-fwd-args-layout.patch
         0008-disable-ck-varlen-paged-kv-in-forward-smoke.patch
-        0009-accept-vllm-varlen-wrapper-keywords.patch)
-sha256sums=(SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP)
+        0009-accept-vllm-varlen-wrapper-keywords.patch
+        0010-init-ck-splitkv-args.patch)
+sha256sums=(SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP SKIP)
 
 prepare() {
   cd "$srcdir/flash-attention"
@@ -43,7 +44,8 @@ prepare() {
     0006-limit-ck-smoke-build-to-forward-d32.patch \
     0007-adapt-ck-fwd-args-layout.patch \
     0008-disable-ck-varlen-paged-kv-in-forward-smoke.patch \
-    0009-accept-vllm-varlen-wrapper-keywords.patch; do
+    0009-accept-vllm-varlen-wrapper-keywords.patch \
+    0010-init-ck-splitkv-args.patch; do
     if ! patch --dry-run -R -Np1 -i "$srcdir/${_patch}" >/dev/null 2>&1; then
       patch -Np1 -i "$srcdir/${_patch}"
     fi
