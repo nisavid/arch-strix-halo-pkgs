@@ -28,6 +28,16 @@ def test_pkgbuild_needs_setuptools_rust_to_import_setup_py():
     assert "cargo" not in makedepends
 
 
+def test_pkgbuild_declares_the_setuptools_rust_build_closure_explicitly():
+    # setup.py imports setuptools_rust, which imports semantic_version. The
+    # rootless build root has no pacman, so both are named, not inferred.
+    text = PKGBUILD.read_text()
+    makedepends = text.split("makedepends=(", 1)[1].split(")", 1)[0].split()
+
+    assert "python-setuptools-rust" in makedepends
+    assert "python-semantic-version" in makedepends
+
+
 def test_pkgbuild_skips_optional_rust_extensions_and_rejects_them_in_the_wheel():
     text = PKGBUILD.read_text()
     build = text[text.index("build() {") : text.index("package() {")]
