@@ -21,7 +21,8 @@ Subcommands:
   remove    delete a package's files from the root (e.g. a replaced stand-in)
   publish   copy built package files into a local repo and run repo-add
   enter     run a command inside the root with bubblewrap (ROOT [flags] -- CMD...)
-  verify    check root ownership, forbidden sources and the ROCm version
+  verify    check root ownership, forbidden sources, the ROCm version and
+            that every ELF's DT_NEEDED entries resolve inside the root
   probe     build and run the HIP/CMake/makepkg no-leak probes in the root
 
 Nothing here needs root, sudo or pacman -S/-U/-Sy, and nothing writes to the
@@ -298,48 +299,80 @@ def resolve(targets: Sequence[str], cfg: ResolveConfig) -> dict:
                 if q is not p and satisfies(q, c):
                     problems.append(problem("conflict", p.name, f"conflicts with {q.name} ({c})"))
 
+    # Host substitution. A host-cache file replaces a package's sync-DB entry
+    # only while its dependency cone is unchanged: every depend in the host
+    # file's own .PKGINFO is met by the locked set, and every locked package
+    # that meets it is at the version the host runs. The provides that binding
+    # needs see are the host file's own too, since a soname pin such as
+    # libprotobuf.so=36.1.0-64 names the DB version. A file at the DB version
+    # is the DB's own (populate checks its sha256), so the DB entry describes
+    # it; any other file whose .PKGINFO cannot be read is refused. Refusals
+    # change the locked set, so this runs to a fixpoint.
+    host: dict[str, tuple[Path, Pkg]] = {}
+    for p in selected.values():
+        if (p.repo in foundation_rank or p.repo in cfg.pools or p.name not in cfg.installed
+                or p.name in cfg.forbidden_names or cfg.host_cache is None):
+            continue
+        hv = cfg.installed[p.name]
+        hits = sorted(
+            c for c in cfg.host_cache.glob(f"{p.name}-{hv}-*.pkg.tar.*")
+            if not c.name.endswith(".sig") and _archive_matches(c.name, p.name, hv)
+        )
+        if not hits:
+            continue
+        if hv == p.version:
+            host[p.name] = (hits[0], p)
+            continue
+        meta = archive_metadata(hits[0])
+        if meta is None:
+            trace.append(f"host {p.name} {hv} refused: unreadable .PKGINFO in {hits[0].name}")
+            continue
+        host[p.name] = (hits[0], replace(p, version=hv, depends=meta["depend"], provides=meta["provides"]))
+
     def binding(why: str) -> bool:
         # Targets, foundation packages and packages that will come at their DB
-        # version state real constraints. A host-installed userland package is
-        # locked at its host version, whose own depends the host already meets,
-        # so the exact pins in its newer DB entry do not bind.
+        # version state real constraints. A host-substituted package's own
+        # depends are checked by the cone rule instead, so the exact pins in
+        # its newer DB entry do not bind.
         if why == "<target>":
             return True
-        needer = selected[why]
-        return needer.repo in foundation_rank or needer.name not in cfg.installed
+        return selected[why].repo in foundation_rank or why not in host
 
-    def host_version_fits(p: Pkg, version: str, archive: Path, needs: list[tuple[str, str]]) -> bool:
-        # Judge the host package by its own provides, not the DB entry's: a
-        # soname pin such as libprotobuf.so=36.1.0-64 names the DB version.
-        # Read them only when a binding need goes through a provide; if they
-        # cannot be read, such a need is not met.
-        binding_needs = [d for d, why in needs if binding(why)]
-        provides: list[str] = []
-        if any(split_dep(d)[0] != p.name for d in binding_needs):
-            provides = archive_provides(archive)
-        host = replace(p, version=version, provides=provides)
-        return all(satisfies(host, d) for d in binding_needs)
+    def refusal(name: str, index: Mapping[str, list[Pkg]]) -> str | None:
+        hp = host[name][1]
+        for dep, why in required[name]:
+            if binding(why) and not satisfies(hp, dep):
+                return f"fails {dep} needed by {why}"
+        for dep in hp.depends:
+            meets = [q for q in index.get(split_dep(dep)[0], []) if satisfies(q, dep)]
+            if not meets:
+                return f"its depend {dep} is not in the lock"
+            for q in meets:
+                if cfg.installed.get(q.name) != q.version:
+                    return f"its depend {dep} is locked at {q.name} {q.version}, not the host's"
+        return None
+
+    while True:
+        index: dict[str, list[Pkg]] = {}
+        for n, q in selected.items():
+            q = host[n][1] if n in host else q
+            for key in {q.name, *(split_dep(pr)[0] for pr in q.provides)}:
+                index.setdefault(key, []).append(q)
+        refused = {n: r for n in sorted(host) if (r := refusal(n, index)) is not None}
+        if not refused:
+            break
+        for n, why_not in refused.items():
+            trace.append(f"host {n} {host[n][1].version} refused: {why_not}")
+            del host[n]
 
     packages = []
     for p in sorted(selected.values(), key=lambda p: p.name):
         path: Path | None = None
         version, sha, source = p.version, p.sha256, p.repo
-        use_host = (
-            p.repo not in foundation_rank
-            and p.repo not in cfg.pools
-            and p.name in cfg.installed
-            and p.name not in cfg.forbidden_names
-            and cfg.host_cache is not None
-        )
-        if use_host:
-            hv = cfg.installed[p.name]
-            hits = sorted(
-                c for c in cfg.host_cache.glob(f"{p.name}-{hv}-*.pkg.tar.*")
-                if not c.name.endswith(".sig") and _archive_matches(c.name, p.name, hv)
-            )
-            if hits and host_version_fits(p, hv, hits[0], required[p.name]):
-                path, version, source = hits[0], hv, f"host-cache({p.repo})"
-                sha = p.sha256 if hv == p.version else ""
+        if p.name in host:
+            path, hp = host[p.name]
+            version, source = hp.version, f"host-cache({p.repo})"
+            sha = p.sha256 if hp.version == p.version else ""
         if path is None and p.repo in cfg.pools:
             path = cfg.pools[p.repo] / p.filename
         if path is None:
@@ -384,15 +417,20 @@ def _archive_matches(filename: str, name: str, version: str) -> bool:
     return re.match(r"^[A-Za-z0-9_]+\.pkg\.tar\.[a-z0-9]+$", rest) is not None
 
 
-def archive_provides(archive: Path) -> list[str]:
-    """The provides in a package file's .PKGINFO, or [] when it cannot be read."""
+def archive_metadata(archive: Path) -> dict[str, list[str]] | None:
+    """The depends and provides in a package file's .PKGINFO, or None when it cannot be read."""
     try:
-        out = subprocess.run(["bsdtar", "-xOf", str(archive), ".PKGINFO"], capture_output=True, text=True)
+        out = subprocess.run(["bsdtar", "-qxOf", str(archive), ".PKGINFO"], capture_output=True, text=True)
     except OSError:
-        return []
-    if out.returncode != 0:
-        return []
-    return [line.split(" = ", 1)[1] for line in out.stdout.splitlines() if line.startswith("provides = ")]
+        return None
+    if out.returncode != 0 or "pkgname = " not in out.stdout:
+        return None
+    meta: dict[str, list[str]] = {"depend": [], "provides": []}
+    for line in out.stdout.splitlines():
+        key, sep, value = line.partition(" = ")
+        if sep and key in meta:
+            meta[key].append(value)
+    return meta
 
 
 def summarize_lock(lock: dict) -> str:
@@ -850,7 +888,7 @@ def owner_of(root: Path, index: Mapping[str, dict], path: str) -> dict | None:
 
 
 def verify_root(root: Path, *, foundation: Sequence[str], forbidden_repos: Sequence[str],
-                expect_rocm: str | None) -> dict:
+                expect_rocm: str | None, check_needed: bool = True) -> dict:
     manifest = load_manifest(root)
     index = ownership_index(root, manifest)
     violations: list[str] = []
@@ -879,8 +917,216 @@ def verify_root(root: Path, *, foundation: Sequence[str], forbidden_repos: Seque
     sources: dict[str, int] = {}
     for e in manifest:
         sources[e["source"]] = sources.get(e["source"], 0) + 1
-    return {"packages": len(manifest), "sources": sources, "opt_files_checked": rocm_files,
-            "rocm_version": version, "violations": violations}
+    report = {"packages": len(manifest), "sources": sources, "opt_files_checked": rocm_files,
+              "rocm_version": version}
+    if check_needed:
+        report["elf_files_checked"], report["unresolved_needed"] = unresolved_needed(root, index)
+        for pkg, misses in report["unresolved_needed"].items():
+            more = f" (+{len(misses) - 3} more)" if len(misses) > 3 else ""
+            violations.append(f"unresolved NEEDED in {pkg}: " + "; ".join(misses[:3]) + more)
+    report["violations"] = violations
+    return report
+
+
+# The root-wide DT_NEEDED check. It reads ELF dynamic sections statically and
+# resolves each entry the way ld.so would inside the root: DT_RPATH (only when
+# there is no DT_RUNPATH), DT_RUNPATH, the root's /etc/ld.so.cache, then the
+# default directories. $ORIGIN is the object's own directory in the root.
+# Nothing is loaded or run. LD_LIBRARY_PATH, RPATH inherited from a loading
+# executable and libraries already loaded by soname are not modelled.
+
+NEEDED_SCAN_DIRS = ("/usr/bin", "/usr/lib", "/opt/rocm")
+NEEDED_SKIP_DIRS = ("/usr/lib/debug",)
+DEFAULT_LIB_DIRS = ("/usr/lib", "/lib")
+HOST_MACHINES = {3, 62}  # EM_386, EM_X86_64
+DT_NEEDED, DT_STRTAB, DT_STRSZ, DT_RPATH, DT_RUNPATH = 1, 5, 10, 15, 29
+
+
+@dataclass
+class ElfInfo:
+    elf_class: int
+    machine: int
+    needed: list[str] = field(default_factory=list)
+    runpath: list[str] = field(default_factory=list)
+    rpath: list[str] = field(default_factory=list)
+
+
+def elf_header(path: Path) -> tuple[int, int, int] | None:
+    """(class, machine, type) of an ELF file, or None for anything else."""
+    import struct
+    try:
+        with open(path, "rb") as fh:
+            head = fh.read(20)
+    except OSError:
+        return None
+    if len(head) < 20 or head[:4] != b"\x7fELF" or head[4] not in (1, 2) or head[5] not in (1, 2):
+        return None
+    e_type, machine = struct.unpack(("<" if head[5] == 1 else ">") + "HH", head[16:20])
+    return head[4], machine, e_type
+
+
+def read_elf(path: Path) -> ElfInfo | None:
+    """The dynamic linking entries of an ELF file, read statically; None if it is not ELF."""
+    import struct
+    try:
+        with open(path, "rb") as fh:
+            head = fh.read(64)
+            if len(head) < 52 or head[:4] != b"\x7fELF" or head[4] not in (1, 2) or head[5] not in (1, 2):
+                return None
+            is64, end = head[4] == 2, "<" if head[5] == 1 else ">"
+            machine = struct.unpack(end + "H", head[18:20])[0]
+            info = ElfInfo(head[4], machine)
+            if is64:
+                phoff = struct.unpack(end + "Q", head[32:40])[0]
+                phentsize, phnum = struct.unpack(end + "HH", head[54:58])
+                ph_fmt, dyn_fmt = end + "IIQQQQQQ", end + "qQ"
+            else:
+                phoff = struct.unpack(end + "I", head[28:32])[0]
+                phentsize, phnum = struct.unpack(end + "HH", head[42:46])
+                ph_fmt, dyn_fmt = end + "IIIIIIII", end + "iI"
+            fh.seek(phoff)
+            table = fh.read(phentsize * phnum)
+            loads, dynamic = [], None
+            for i in range(phnum):
+                raw = table[i * phentsize:(i + 1) * phentsize]
+                if len(raw) < struct.calcsize(ph_fmt):
+                    break
+                f = struct.unpack(ph_fmt, raw[:struct.calcsize(ph_fmt)])
+                # (type, offset, vaddr, filesz) in both layouts
+                ph = (f[0], f[2], f[3], f[5]) if is64 else (f[0], f[1], f[2], f[4])
+                if ph[0] == 1:
+                    loads.append(ph)
+                elif ph[0] == 2:
+                    dynamic = ph
+            if dynamic is None:
+                return info
+            fh.seek(dynamic[1])
+            data = fh.read(dynamic[3])
+            step = struct.calcsize(dyn_fmt)
+            tags: list[tuple[int, int]] = []
+            for i in range(0, len(data) - step + 1, step):
+                tag, val = struct.unpack(dyn_fmt, data[i:i + step])
+                if tag == 0:
+                    break
+                tags.append((tag, val))
+            values = dict(tags)
+            strtab, strsz = values.get(DT_STRTAB), values.get(DT_STRSZ)
+            if strtab is None or strsz is None:
+                return info
+            off = next((o + strtab - v for _, o, v, sz in loads if v <= strtab < v + sz), None)
+            if off is None:
+                return info
+            fh.seek(off)
+            strings = fh.read(strsz)
+    except (OSError, struct.error):
+        return None
+
+    def string(at: int) -> str:
+        return strings[at:strings.find(b"\0", at)].decode(errors="replace")
+
+    for tag, val in tags:
+        if tag == DT_NEEDED:
+            info.needed.append(string(val))
+        elif tag == DT_RUNPATH:
+            info.runpath += [d for d in string(val).split(":") if d]
+        elif tag == DT_RPATH:
+            info.rpath += [d for d in string(val).split(":") if d]
+    return info
+
+
+def read_ld_cache(path: Path) -> dict[str, list[str]]:
+    """Soname -> paths from a glibc 'ld.so.cache1.1' file, in cache order; {} if absent."""
+    import struct
+    try:
+        data = path.read_bytes()
+    except OSError:
+        return {}
+    start = data.find(b"glibc-ld.so.cache1.1")
+    if start < 0:
+        return {}
+    nlibs = struct.unpack_from("<I", data, start + 20)[0]
+    out: dict[str, list[str]] = {}
+
+    def string(at: int) -> str:
+        at += start
+        return data[at:data.find(b"\0", at)].decode(errors="replace")
+
+    for i in range(nlibs):
+        _, key, value, _, _ = struct.unpack_from("<iIIIQ", data, start + 48 + 24 * i)
+        out.setdefault(string(key), []).append(string(value))
+    return out
+
+
+def _elf_files(root: Path) -> Iterable[str]:
+    seen: set[str] = set()
+    for top in NEEDED_SCAN_DIRS:
+        real = resolve_in_root(root, top)
+        if real in seen or not (root / real.lstrip("/")).is_dir():
+            continue
+        seen.add(real)
+        stack = [real]
+        while stack:
+            d = stack.pop()
+            if d in NEEDED_SKIP_DIRS:
+                continue
+            try:
+                entries = list(os.scandir(root / d.lstrip("/")))
+            except OSError:
+                continue
+            for e in entries:
+                path = f"{d.rstrip('/')}/{e.name}"
+                if e.is_dir(follow_symlinks=False):
+                    if path not in seen:
+                        stack.append(path)
+                elif e.is_file(follow_symlinks=False):
+                    yield path
+
+
+def unresolved_needed(root: Path, index: Mapping[str, dict]) -> tuple[int, dict[str, list[str]]]:
+    """Check every host-architecture ELF under NEEDED_SCAN_DIRS.
+
+    Returns the number of ELF files checked and the unresolved DT_NEEDED
+    entries as {owning package: ["/path: soname", ...]}.
+    """
+    cache = read_ld_cache(root / "etc/ld.so.cache")
+    headers: dict[str, tuple[int, int, int] | None] = {}
+
+    def fits(path: str, elf_class: int, machine: int) -> bool:
+        try:
+            real = resolve_in_root(root, path)
+        except BuildRootError:
+            return False  # a symlink loop
+        if real not in headers:
+            target = root / real.lstrip("/")
+            headers[real] = elf_header(target) if target.is_file() else None
+        head = headers[real]
+        return head is not None and head[:2] == (elf_class, machine)
+
+    checked = 0
+    found: dict[str, list[str]] = {}
+    for path in _elf_files(root):
+        info = read_elf(root / path.lstrip("/"))
+        if info is None or info.machine not in HOST_MACHINES:
+            continue
+        checked += 1
+        origin = path.rsplit("/", 1)[0] or "/"
+        dirs = []
+        for d in (info.rpath if not info.runpath else []) + info.runpath:
+            d = d.replace("${ORIGIN}", origin).replace("$ORIGIN", origin)
+            d = d.replace("${LIB}", "lib").replace("$LIB", "lib")
+            if d.startswith("/") and "$" not in d:
+                dirs.append(d)
+        for name in info.needed:
+            if "/" in name:
+                ok = name.startswith("/") and fits(name, info.elf_class, info.machine)
+            else:
+                candidates = ([f"{d}/{name}" for d in dirs] + cache.get(name, [])
+                              + [f"{d}/{name}" for d in DEFAULT_LIB_DIRS])
+                ok = any(fits(c, info.elf_class, info.machine) for c in candidates)
+            if not ok:
+                owner = index.get(path.lstrip("/"))
+                found.setdefault(owner["name"] if owner else "(unowned)", []).append(f"{path}: {name}")
+    return checked, {k: sorted(v) for k, v in sorted(found.items())}
 
 
 LDD_RE = re.compile(r"^\s*(\S+)\s+=>\s+(\S+)\s+\(0x")
@@ -1062,7 +1308,8 @@ def cmd_probe(a: argparse.Namespace) -> int:
                     violations.append(f"unexpected runpath entry {entry!r}")
     report = {"returncode": proc.returncode, "libraries": rows, "violations": violations,
               "rocm_version": verify_root(root, foundation=a.foundation_repo,
-                                          forbidden_repos=a.forbid_repo, expect_rocm=None)["rocm_version"]}
+                                          forbidden_repos=a.forbid_repo, expect_rocm=None,
+                                          check_needed=False)["rocm_version"]}
     (work / "probe-report.json").write_text(json.dumps(report, indent=1) + "\n")
     print("\n".join(line for line in log.splitlines() if line.startswith(("compiled", "vadd", "saxpy", "##"))))
     print(f"libraries checked: {len(rows)}; violations: {len(violations)}")

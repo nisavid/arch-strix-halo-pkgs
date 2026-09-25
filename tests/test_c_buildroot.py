@@ -50,11 +50,12 @@ def write_db(path: Path, entries: list[str]) -> Path:
     return path
 
 
-def make_pkg(path: Path, name: str, version: str, files: dict[str, str], provides=()) -> Path:
+def make_pkg(path: Path, name: str, version: str, files: dict[str, str], provides=(), depends=()) -> Path:
     """Write a minimal package archive with a .PKGINFO and the given files."""
     with tarfile.open(path, "w:gz") as tf:
         pkginfo = f"pkgname = {name}\npkgver = {version}\narch = x86_64\n"
-        pkginfo = (pkginfo + "".join(f"provides = {p}\n" for p in provides)).encode()
+        pkginfo += "".join(f"provides = {p}\n" for p in provides)
+        pkginfo = (pkginfo + "".join(f"depend = {d}\n" for d in depends)).encode()
         info = tarfile.TarInfo(".PKGINFO")
         info.size = len(pkginfo)
         tf.addfile(info, io.BytesIO(pkginfo))
@@ -160,10 +161,11 @@ def test_foundation_provider_beats_same_named_userland_package(tmp_path):
     assert "python-numpy" not in pkgs
 
 
+@needs_bsdtar
 def test_host_version_is_taken_from_host_cache(tmp_path):
     cache = tmp_path / "cache"
     cache.mkdir()
-    (cache / "glibc-2.43-2-x86_64.pkg.tar.zst").touch()
+    make_pkg(cache / "glibc-2.43-2-x86_64.pkg.tar.zst", "glibc", "2.43-2", {})
     (cache / "glibc-2.43-2-x86_64.pkg.tar.zst.sig").touch()
     (cache / "glibc-extra-2.43-2-x86_64.pkg.tar.zst").touch()
     lock = cbr.resolve(["cmake"], config(tmp_path, installed={"glibc": "2.43-2"}, host_cache=cache))
@@ -187,6 +189,7 @@ def test_host_version_is_not_used_when_it_breaks_a_version_constraint(tmp_path):
     assert glibc["sha256_db"] == "dd"
 
 
+@needs_bsdtar
 def test_exact_pins_from_host_locked_packages_do_not_evict_host_versions(tmp_path):
     # The DB's systemd 2 pins systemd-libs=2, but the host runs systemd 1 with
     # systemd-libs 1. Both come from the host cache as a consistent pair.
@@ -196,8 +199,8 @@ def test_exact_pins_from_host_locked_packages_do_not_evict_host_versions(tmp_pat
     ])
     cache = tmp_path / "cache"
     cache.mkdir()
-    for name in ("systemd-1-1", "systemd-libs-1-1"):
-        (cache / f"{name}-x86_64.pkg.tar.zst").touch()
+    make_pkg(cache / "systemd-1-1-x86_64.pkg.tar.zst", "systemd", "1-1", {}, depends=["systemd-libs=1"])
+    make_pkg(cache / "systemd-libs-1-1-x86_64.pkg.tar.zst", "systemd-libs", "1-1", {})
     cfg = cbr.ResolveConfig(repos=[("core", cbr.read_db(db, "core"))], foundation=[], host_cache=cache,
                             installed={"systemd": "1-1", "systemd-libs": "1-1"})
     pkgs = by_name(cbr.resolve(["systemd"], cfg))
@@ -256,6 +259,114 @@ def test_host_version_without_readable_provides_is_not_used_for_a_soname_pin(tmp
     protobuf = by_name(cbr.resolve(["migraphx-gfx1151"], cfg))["protobuf"]
     assert protobuf["version"] == "36.1-2", "unreadable host metadata cannot prove the soname"
     assert protobuf["source"] == "core"
+
+
+# The W2A protobuf/Abseil move (#108, #118): the lock moves protobuf and Abseil
+# off the host versions, so every host package whose dependency cone includes
+# them must come at its sync-DB version instead.
+CONE_HOST = {
+    # name: (host version, host .PKGINFO depends, host provides)
+    "protobuf": ("35.1-1", ["abseil-cpp"], ["libprotobuf.so=35.1.0-64"]),
+    "python-protobuf": ("35.1-1", ["protobuf=35.1"], []),
+    "abseil-cpp": ("20260526.0-1", [], []),
+    "re2": ("2:2025.11.05-5", ["abseil-cpp"], []),
+    "python-grpcio": ("1.83.0-1", ["re2"], []),
+    "python-grpcio-tools": ("1.83.0-1", ["python-grpcio"], []),
+    "zlib": ("1.3-1", [], []),
+    "libpng": ("1.6-1", ["zlib"], []),
+}
+CONE_DB = {
+    "protobuf": ("36.1-1", ["abseil-cpp"], ["libprotobuf.so=36.1.0-64"]),
+    "python-protobuf": ("36.1-1", ["protobuf=36.1"], []),
+    "abseil-cpp": ("20260817.0-2", [], []),
+    "re2": ("2:2025.11.05-6", ["abseil-cpp"], []),
+    "python-grpcio": ("1.84.0-1", ["re2", "abseil-cpp"], []),
+    "python-grpcio-tools": ("1.84.0-1", ["python-grpcio", "protobuf"], []),
+    "zlib": ("1.3.1-1", [], []),
+    "libpng": ("1.7-1", ["zlib"], []),
+}
+
+
+def cone_lock(tmp_path, *, unreadable=()):
+    db = write_db(tmp_path / "core.db", [
+        desc(n, v, depends=d, provides=pr, sha256=f"sha-{n}") for n, (v, d, pr) in CONE_DB.items()
+    ])
+    cache = tmp_path / "cache"
+    cache.mkdir()
+    for name, (version, depends, provides) in CONE_HOST.items():
+        archive = cache / f"{name}-{version}-x86_64.pkg.tar.zst"
+        if name in unreadable:
+            archive.write_bytes(b"")
+        else:
+            make_pkg(archive, name, version, {}, provides=provides, depends=depends)
+    for name, (version, _, _) in CONE_DB.items():
+        (cache / f"{name}-{version}-x86_64.pkg.tar.zst").touch()
+    cfg = cbr.ResolveConfig(repos=[("core", cbr.read_db(db, "core"))], foundation=[], host_cache=cache,
+                            installed={n: v for n, (v, _, _) in CONE_HOST.items()})
+    targets = ["protobuf>=36.1", "abseil-cpp>=20260817.0", "python-protobuf", "python-grpcio-tools", "libpng"]
+    lock = cbr.resolve(targets, cfg)
+    assert lock["problems"] == []
+    return by_name(lock)
+
+
+def assert_sync(entry, version):
+    assert (entry["version"], entry["source"]) == (version, "core")
+    assert entry["path"].endswith(f"-{version}-x86_64.pkg.tar.zst")
+    assert entry["sha256_db"] == f"sha-{entry['name']}"
+
+
+@needs_bsdtar
+def test_host_package_with_a_versioned_depend_on_a_moved_package_falls_back(tmp_path):
+    # Host python-protobuf 35.1 declares depend = protobuf=35.1; the lock has protobuf 36.1.
+    pkgs = cone_lock(tmp_path)
+    assert_sync(pkgs["protobuf"], "36.1-1")
+    assert_sync(pkgs["python-protobuf"], "36.1-1")
+
+
+@needs_bsdtar
+def test_host_package_with_an_unversioned_depend_on_a_moved_package_falls_back(tmp_path):
+    # Host re2 links the host Abseil 20260526, which the lock replaces with 20260817.
+    pkgs = cone_lock(tmp_path)
+    assert_sync(pkgs["abseil-cpp"], "20260817.0-2")
+    assert_sync(pkgs["re2"], "2:2025.11.05-6")
+
+
+@needs_bsdtar
+def test_fallbacks_cascade_through_host_packages(tmp_path):
+    # grpcio depends only on re2 and grpcio-tools only on grpcio in the host
+    # files, so each moves only because the one below it moved.
+    pkgs = cone_lock(tmp_path)
+    assert_sync(pkgs["python-grpcio"], "1.84.0-1")
+    assert_sync(pkgs["python-grpcio-tools"], "1.84.0-1")
+
+
+@needs_bsdtar
+def test_host_package_with_an_unchanged_cone_is_still_substituted(tmp_path):
+    pkgs = cone_lock(tmp_path)
+    assert (pkgs["zlib"]["version"], pkgs["zlib"]["source"]) == ("1.3-1", "host-cache(core)")
+    assert (pkgs["libpng"]["version"], pkgs["libpng"]["source"]) == ("1.6-1", "host-cache(core)")
+    assert pkgs["libpng"]["path"].endswith("libpng-1.6-1-x86_64.pkg.tar.zst")
+
+
+@needs_bsdtar
+def test_host_package_with_unreadable_metadata_is_not_substituted(tmp_path):
+    pkgs = cone_lock(tmp_path, unreadable={"zlib"})
+    assert_sync(pkgs["zlib"], "1.3.1-1")
+    assert_sync(pkgs["libpng"], "1.7-1"), "libpng's zlib moved with it"
+
+
+def test_host_package_at_the_db_version_uses_the_db_metadata(tmp_path):
+    # The file is the DB's own, checked by sha256 at populate, so its DB depends stand.
+    db = write_db(tmp_path / "core.db", [desc("zlib", "1.3-1", sha256="z"),
+                                         desc("libpng", "1.6-1", depends=["zlib"], sha256="p")])
+    cache = tmp_path / "cache"
+    cache.mkdir()
+    for name in ("zlib-1.3-1", "libpng-1.6-1"):
+        (cache / f"{name}-x86_64.pkg.tar.zst").touch()
+    cfg = cbr.ResolveConfig(repos=[("core", cbr.read_db(db, "core"))], foundation=[], host_cache=cache,
+                            installed={"zlib": "1.3-1", "libpng": "1.6-1"})
+    pkgs = by_name(cbr.resolve(["libpng"], cfg))
+    assert pkgs["libpng"]["source"] == "host-cache(core)" and pkgs["libpng"]["sha256_db"] == "p"
 
 
 def test_forbidden_repo_names_never_come_from_host_cache(tmp_path):
@@ -456,6 +567,117 @@ def test_check_linkage_maps_every_library_to_an_allowed_owner(tmp_path):
     _, violations = cbr.check_linkage(root, ["/opt/rocm/lib/libamdhip64.so.7"], foundation=["found"],
                                       forbidden_repos=["old"])
     assert violations == ["/opt/rocm/lib/libamdhip64.so.7: owned by forbidden source host-cache(old)"]
+
+
+# --- root-wide ELF NEEDED check ----------------------------------------------
+
+
+def make_elf(path: Path, needed=(), runpath=None, rpath=None, machine=62) -> Path:
+    """Write a minimal little-endian ELF64 shared object with a dynamic section."""
+    import struct
+
+    strtab = b"\0"
+    offsets = {}
+    for s in [*needed, *(x for x in (runpath, rpath) if x)]:
+        offsets[s] = len(strtab)
+        strtab += s.encode() + b"\0"
+    base, str_off = 0x400000, 64 + 2 * 56
+    dyn_off = (str_off + len(strtab) + 7) & ~7
+    dyn = [(1, offsets[n]) for n in needed]
+    if runpath:
+        dyn.append((29, offsets[runpath]))
+    if rpath:
+        dyn.append((15, offsets[rpath]))
+    dyn += [(5, base + str_off), (10, len(strtab)), (0, 0)]
+    dyn_bytes = b"".join(struct.pack("<qQ", t, v) for t, v in dyn)
+    size = dyn_off + len(dyn_bytes)
+    ident = b"\x7fELF" + bytes([2, 1, 1]) + bytes(9)
+    header = ident + struct.pack("<HHIQQQIHHHHHH", 3, machine, 1, 0, 64, 0, 0, 64, 56, 2, 64, 0, 0)
+    load = struct.pack("<IIQQQQQQ", 1, 5, 0, base, base, size, size, 0x1000)
+    dynamic = struct.pack("<IIQQQQQQ", 2, 6, dyn_off, base + dyn_off, base + dyn_off,
+                          len(dyn_bytes), len(dyn_bytes), 8)
+    body = header + load + dynamic + strtab
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(body + bytes(dyn_off - len(body)) + dyn_bytes)
+    return path
+
+
+def write_ld_cache(path: Path, entries: dict[str, str]) -> Path:
+    """Write a glibc 'ld.so.cache1.1' file mapping sonames to paths."""
+    import struct
+
+    header_size, entry_size = 48, 24
+    strings = b""
+    rows = []
+    base = header_size + entry_size * len(entries)
+    for name, target in entries.items():
+        key = base + len(strings)
+        strings += name.encode() + b"\0"
+        value = base + len(strings)
+        strings += target.encode() + b"\0"
+        rows.append(struct.pack("<iIIIQ", 0x0303, key, value, 0, 0))
+    header = b"glibc-ld.so.cache1.1" + struct.pack("<IIB3xI12x", len(entries), len(strings), 2, 0)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(header + b"".join(rows) + strings)
+    return path
+
+
+def needed_root(tmp_path: Path) -> Path:
+    root = tmp_path / "root"
+    (root / cbr.STATE_DIR).mkdir(parents=True)
+    site = "usr/lib/python3.14/site-packages"
+    make_elf(root / "usr/bin/app", needed=["libgood.so.1", "libmissing.so.9"])
+    make_elf(root / "usr/lib/libgood.so.1")
+    (root / "usr/lib/libgood.so").symlink_to("libgood.so.1")
+    make_elf(root / site / "pkg/_ext.so", needed=["libbundled.so.2", "libgood.so.1"],
+             runpath="$ORIGIN/../pkg.libs")
+    make_elf(root / site / "pkg.libs/libbundled.so.2")
+    (root / site / "pkg/__init__.py").write_text("")
+    make_elf(root / "opt/rocm/lib/libcached.so.3")
+    make_elf(root / "opt/rocm/bin/tool", needed=["libcached.so.3"])
+    make_elf(root / "opt/rocm/lib/code.hsaco", needed=["libnothing.so"], machine=224)  # an AMDGPU object
+    write_ld_cache(root / "etc/ld.so.cache", {"libcached.so.3": "/opt/rocm/lib/libcached.so.3"})
+    manifest = [
+        cbr.record_package(root, "app", "1-1", "core", Path("app.pkg"), "a", ["usr/bin/app"]),
+        cbr.record_package(root, "good", "1-1", "core", Path("good.pkg"), "g",
+                           ["usr/lib/libgood.so.1", "usr/lib/libgood.so"]),
+        cbr.record_package(root, "python-pkg", "1-1", "core", Path("pkg.pkg"), "p",
+                           [f"{site}/pkg/_ext.so", f"{site}/pkg/__init__.py", f"{site}/pkg.libs/libbundled.so.2"]),
+        cbr.record_package(root, "rocm-thing", "1-1", "found", Path("r.pkg"), "r",
+                           ["opt/rocm/lib/libcached.so.3", "opt/rocm/bin/tool", "opt/rocm/lib/code.hsaco"]),
+    ]
+    cbr.save_manifest(root, manifest)
+    return root
+
+
+def test_verify_reports_unresolved_needed_entries_by_owning_package(tmp_path):
+    report = cbr.verify_root(needed_root(tmp_path), foundation=["found"], forbidden_repos=[], expect_rocm=None)
+    # _ext.so resolves libbundled.so.2 through $ORIGIN, tool resolves through
+    # the root's ld.so.cache, and libgood.so.1 through the default /usr/lib.
+    assert report["unresolved_needed"] == {"app": ["/usr/bin/app: libmissing.so.9"]}
+    assert report["elf_files_checked"] == 6
+    assert [v for v in report["violations"] if "NEEDED" in v] == [
+        "unresolved NEEDED in app: /usr/bin/app: libmissing.so.9"]
+
+
+def test_origin_runpath_is_relative_to_the_object_not_the_host(tmp_path):
+    root = needed_root(tmp_path)
+    (root / "usr/lib/python3.14/site-packages/pkg.libs/libbundled.so.2").unlink()
+    report = cbr.verify_root(root, foundation=["found"], forbidden_repos=[], expect_rocm=None)
+    assert report["unresolved_needed"] == {
+        "app": ["/usr/bin/app: libmissing.so.9"],
+        "python-pkg": ["/usr/lib/python3.14/site-packages/pkg/_ext.so: libbundled.so.2"],
+    }
+
+
+@pytest.mark.skipif(not Path("/etc/ld.so.cache").exists() or shutil.which("ldconfig") is None,
+                    reason="no host ld.so.cache")
+def test_ld_cache_parser_agrees_with_ldconfig():
+    out = subprocess.run(["ldconfig", "-p"], capture_output=True, text=True, check=True).stdout
+    want = {(line.split(" (", 1)[0].strip(), line.rsplit(" => ", 1)[1].strip())
+            for line in out.splitlines()[1:] if " => " in line}
+    got = {(name, path) for name, paths in cbr.read_ld_cache(Path("/etc/ld.so.cache")).items() for path in paths}
+    assert got == want
 
 
 # --- enter / publish / makepkg.conf ------------------------------------------

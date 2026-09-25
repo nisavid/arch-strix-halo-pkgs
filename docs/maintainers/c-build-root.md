@@ -66,7 +66,10 @@ it that way:
    under `ROOT/.ashp-root/`. `verify` walks `/opt` and fails when any file is
    unowned, when any `/opt/rocm` file is owned by a non-foundation package,
    when a forbidden repo appears in any source, or when
-   `/opt/rocm/.info/version` is not the expected version. `probe` maps every
+   `/opt/rocm/.info/version` is not the expected version. It also reads every
+   host-architecture ELF file under `/usr/bin`, `/usr/lib` (with Python
+   `site-packages`) and `/opt/rocm`, and fails when a `DT_NEEDED` entry does
+   not resolve inside the root. `probe` maps every
    library that `ldd` resolves for its outputs to the package that owns it,
    following symlinks inside the root. It also fails on unresolved libraries,
    unexpected RUNPATH entries, and host paths embedded in the outputs.
@@ -114,15 +117,28 @@ for about 30 GiB, and `$STAGING` for the directory that holds the
    ```
 
    A userland package the host has installed is locked at the host's version
-   when that file is in the package cache, so the root matches the host.
-   The host version is skipped when it fails a version constraint from a
-   target, a foundation package, or a package locked at its DB version. For
-   example, `python-pydantic>=2.13.5` in `model-closure.targets` keeps a host
-   pydantic 2.13.4 out. Exact pins in the newer DB entry of a package that is
-   itself locked at the host version do not count, because the host pair is
-   already consistent. A constraint on a provide, such as a soname pin, is
-   checked against the provides in the host file's own `.PKGINFO`, not the
-   DB entry's; see [the F protobuf and Abseil contract](#f-protobuf-and-abseil-contract-108).
+   when that file is in the package cache and its dependency cone is
+   unchanged, so the root matches the host. The host file's own `.PKGINFO`
+   decides; the newer DB entry's depends and provides do not:
+
+   - It must meet every version constraint from a target, a foundation
+     package, or a package locked at its DB version. For example,
+     `python-pydantic>=2.13.5` in `model-closure.targets` keeps a host
+     pydantic 2.13.4 out. A constraint on a provide, such as a soname pin, is
+     checked against the host file's own provides.
+   - Every `depend` in the host file must be met by the lock, and every locked
+     package that meets it must be at the version the host runs. When the lock
+     moves a package off the host version, every host package that depends on
+     it, by name or through a provide, comes at its sync DB version instead.
+     Those fallbacks can move further packages, so `resolve` repeats the check
+     until nothing changes.
+   - A host file at the DB version is the DB's own file, so the DB entry
+     stands for its `.PKGINFO`. Any other host file whose `.PKGINFO` cannot be
+     read is not used.
+
+   Each refused host version is recorded in the lock's `trace` with the
+   reason. See [the F protobuf and Abseil contract](#f-protobuf-and-abseil-contract-108)
+   for the case that shaped these rules.
 
    The command exits nonzero while the lock has problems. `missing-file`
    problems are fixed with
@@ -136,7 +152,21 @@ for about 30 GiB, and `$STAGING` for the directory that holds the
    and it populates in about a minute.
 4. **Verify and probe.** Run
    `c_buildroot.py verify $WORK/root --foundation-repo ashp-w1-staging --foundation-repo ashp-w2a --forbid-repo strix-halo-gfx1151 --expect-rocm 7.14.1`.
-   Then run `c_buildroot.py probe` with the same repo flags and an empty
+   Besides ownership, sources and the ROCm version, `verify` checks linkage
+   across the whole root without loading anything. It reads the dynamic
+   section of each ELF file under `/usr/bin`, `/usr/lib` and `/opt/rocm`,
+   skipping `/usr/lib/debug` and objects for other machines such as AMDGPU
+   code objects. It resolves each `DT_NEEDED` entry as `ld.so` would: through
+   `DT_RPATH` when there is no `DT_RUNPATH`, then `DT_RUNPATH`, with `$ORIGIN`
+   as the object's directory in the root, then the root's
+   `/etc/ld.so.cache`, then `/usr/lib`. A candidate counts only if it is an
+   ELF file of the same class and machine. The report lists unresolved
+   entries under `unresolved_needed`, grouped by owning package, and any
+   entry fails `verify`. The check does not model `LD_LIBRARY_PATH`, an
+   `RPATH` inherited from the loading executable, or a library that is
+   already loaded by soname, as when a Python extension relies on `import
+   torch` having loaded `libc10.so`. A 584-package root has about 4,000 such
+   files and checks in under 20 seconds. Then run `c_buildroot.py probe` with the same repo flags and an empty
    `--work` dir. Re-run both after each change to the root.
 5. **Build** one package at a time:
 
@@ -428,10 +458,20 @@ this contract ties the two versions together.
   for `libprotobuf.so=36.1.0-64`, because the 36.1 DB entry provides it. The
   W2A lock recorded protobuf 35.1 from the host cache under the 36.1 file name
   with no sync-DB sha256. Abseil then stayed at the host's 20260526, because
-  the only package that needed it was the host-locked protobuf. `resolve` now
-  reads the host file's own `.PKGINFO` provides and uses the host version only
-  when those meet every binding constraint. If it cannot read them, it does
-  not use the host version for any binding constraint on a provide.
+  the only package that needed it was the host-locked protobuf. The first fix
+  judged a host file by its own provides, which moved protobuf to 36.1 and
+  Abseil to 20260817. It still left their consumers at the host versions:
+  python-protobuf 35.1 with `depend = protobuf=35.1`, and re2, python-grpcio
+  and python-grpcio-tools linked against `libabsl_*.so.2605.0.0`, which
+  Abseil 20260817 does not ship. `import grpc` failed in that root. `resolve`
+  now uses a host file only when its dependency cone is unchanged (see
+  [the W2A flow](#the-w2a-flow), step 2). With that rule the lock moves
+  python-protobuf to 36.1, re2 to 2025.11.05-6, python-grpcio and
+  python-grpcio-tools to 1.84.0, and opencv and python-opencv to 5.0.0-12,
+  all at their sync DB versions. On 2026-09-25 the same rule also moved
+  about 115 Python packages to their sync DB versions, because the lock's
+  `python-gfx1151` 3.14.7 is newer than the host's 3.14.6. `verify` now fails on the unresolved Abseil
+  sonames that the first fix left behind.
 - **Existing W2A root.** A root populated before the fix holds protobuf 35.1
   and Abseil 20260526. Before the torch-migraphx smokes are re-run, re-lock the
   root with the fixed tool and the pinned targets, `fetch` the new files,
