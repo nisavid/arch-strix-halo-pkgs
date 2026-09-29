@@ -18,6 +18,7 @@ from gemma4_smoke_common import (
     long_decode_prompt,
     validate_known_answer_text,
     validate_long_decode_text,
+    validate_tool_followup_text,
 )
 
 
@@ -105,3 +106,21 @@ def test_long_decode_budget_scales_with_the_count(
 ):
     assert long_decode_max_tokens(count) == max_tokens
     assert long_decode_max_model_len(count) == max_model_len
+
+
+def test_tool_followup_accepts_an_answer_that_uses_the_tool_result():
+    text = "The weather in Tokyo today is partly cloudy with a temperature of 22 degrees Celsius."
+    assert validate_tool_followup_text(text, expected_any=("22", "cloudy")) == text
+
+
+@pytest.mark.parametrize(
+    ("text", "reason"),
+    [
+        ("It is 22 degrees and cloudy.<turn|>", "leaked control text"),
+        ("The weather is nice today.", "did not use the tool result"),
+        ("", "was empty"),
+    ],
+)
+def test_tool_followup_rejects_leaks_misses_and_empty_output(text: str, reason: str):
+    with pytest.raises(RuntimeError, match=reason):
+        validate_tool_followup_text(text, expected_any=("22", "cloudy"))

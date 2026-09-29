@@ -28,6 +28,7 @@ from gemma4_smoke_common import (
     validate_basic_chat_text,
     validate_known_answer_text,
     validate_long_decode_text,
+    validate_tool_followup_text,
 )
 
 SERVER_MODES = (
@@ -68,6 +69,14 @@ TINY_PNG_DATA_URL = (
     "data:image/png;base64,"
     "iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEklEQVR4nGNkSDjAwMDAxAAGAAzqASQOf3rKAAAAAElFTkSuQmCC"
 )
+# The get_weather result the tool lanes send back; the follow-up answer must
+# repeat at least one of its values.
+WEATHER_TOOL_RESULT = {
+    "temperature": 22,
+    "condition": "Partly cloudy",
+    "unit": "celsius",
+}
+WEATHER_TOOL_RESULT_MARKERS = ("22", "cloudy")
 
 
 def parse_args() -> argparse.Namespace:
@@ -532,7 +541,9 @@ def build_request_payload(args: argparse.Namespace) -> dict[str, object]:
     payload: dict[str, object] = {
         "model": served_model_name(args),
         "messages": [],
-        "max_tokens": request_max_tokens(args, 8 if args.mode == "benchmark-lite" else 16),
+        # benchmark-lite differs from basic only by disabling prefix caching;
+        # it shares the five-word check, which needs about 12 tokens.
+        "max_tokens": request_max_tokens(args, 16),
         "temperature": 0.0,
     }
     if args.mode in {"basic", "benchmark-lite"}:
@@ -567,6 +578,10 @@ def build_request_payload(args: argparse.Namespace) -> dict[str, object]:
             payload["chat_template_kwargs"] = {"enable_thinking": True}
             payload["skip_special_tokens"] = False
             payload["max_tokens"] = request_max_tokens(args, 1024)
+        else:
+            # Gemma 4 pretty-prints the JSON, which runs past 16 tokens before
+            # the answer string closes.
+            payload["max_tokens"] = request_max_tokens(args, 256)
         return payload
     if args.mode in MULTIMODAL_MODES:
         payload["messages"] = [{"role": "user", "content": multimodal_content(args)}]
@@ -587,8 +602,11 @@ def build_request_payload(args: argparse.Namespace) -> dict[str, object]:
     payload["skip_special_tokens"] = False
     if args.mode in {"tool-thinking", "full-feature-text-only"}:
         payload["chat_template_kwargs"] = {"enable_thinking": True}
-    if args.mode == "full-feature-text-only":
-        payload["response_format"] = structured_response_format()
+    # full-feature-text-only asks for structured output on the follow-up, not
+    # here. vLLM 0.30 cannot combine a json_schema response_format with Gemma 4
+    # auto tool calls on one turn: xgrammar constrains the post-reasoning text
+    # to the schema, so the tool call lands inside the JSON and its location
+    # argument comes back as \"Tokyo\", backslashes included.
     return payload
 
 
@@ -620,7 +638,7 @@ def build_tool_followup_payload(
     if not tool_calls:
         raise RuntimeError("tool mode response did not include any tool_calls")
     tool_call = tool_calls[0]
-    return {
+    payload: dict[str, object] = {
         "model": served_model_name(args),
         "messages": [
             {"role": "user", "content": "What is the weather in Tokyo today? Use the tool."},
@@ -628,14 +646,7 @@ def build_tool_followup_payload(
             {
                 "role": "tool",
                 "tool_call_id": tool_call["id"],
-                "content": json.dumps(
-                    {
-                        "temperature": 22,
-                        "condition": "Partly cloudy",
-                        "unit": "celsius",
-                    },
-                    sort_keys=True,
-                ),
+                "content": json.dumps(WEATHER_TOOL_RESULT, sort_keys=True),
             },
         ],
         "tools": build_tool_spec(),
@@ -643,6 +654,14 @@ def build_tool_followup_payload(
         "skip_special_tokens": False,
         "temperature": 0.0,
     }
+    if args.mode == "full-feature-text-only":
+        # Structured output moves here from the tool-call turn; see
+        # build_request_payload. With tools present vLLM defaults tool_choice
+        # to "auto", so pin "none" to keep auto tool parsing off this turn too.
+        payload["response_format"] = structured_response_format()
+        payload["tool_choice"] = "none"
+        payload["chat_template_kwargs"] = {"enable_thinking": True}
+    return payload
 
 
 def build_plan(args: argparse.Namespace) -> dict[str, object]:
@@ -741,17 +760,33 @@ def terminate_process(process: subprocess.Popen[str]) -> None:
         process.wait(timeout=10.0)
 
 
-def extract_message(response: dict[str, Any]) -> dict[str, Any]:
+def extract_choice(response: dict[str, Any]) -> dict[str, Any]:
     choices = response.get("choices") or []
     if not choices:
         raise RuntimeError(f"response did not include any choices: {json.dumps(response, sort_keys=True)}")
-    message = choices[0].get("message")
+    return choices[0]
+
+
+def extract_message(response: dict[str, Any]) -> dict[str, Any]:
+    message = extract_choice(response).get("message")
     if not isinstance(message, dict):
         raise RuntimeError(f"response choice did not include a message: {json.dumps(response, sort_keys=True)}")
     return message
 
 
+def require_untruncated(response: dict[str, Any], *, label: str) -> None:
+    # Report a max_tokens cut as such, not as whatever content check the
+    # partial output would fail next.
+    if extract_choice(response).get("finish_reason") == "length":
+        content = extract_message(response).get("content") or ""
+        raise RuntimeError(
+            f"{label} response truncated at max_tokens budget "
+            f"(finish_reason 'length'): {content!r}"
+        )
+
+
 def validate_basic_response(response: dict[str, Any]) -> dict[str, Any]:
+    require_untruncated(response, label="basic mode")
     message = extract_message(response)
     validate_basic_chat_text(message.get("content") or "")
     return message
@@ -796,10 +831,37 @@ def validate_tool_response(response: dict[str, Any]) -> dict[str, Any]:
     function = tool_calls[0].get("function") or {}
     if function.get("name") != "get_weather":
         raise RuntimeError(f"unexpected tool call: {json.dumps(tool_calls[0], sort_keys=True)}")
+    raw_arguments = function.get("arguments") or ""
+    try:
+        arguments = json.loads(raw_arguments)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"tool call arguments were not JSON: {raw_arguments!r}") from exc
+    # An exact match catches arguments that parse but carry escaped quotes.
+    if not isinstance(arguments, dict) or arguments.get("location") != "Tokyo":
+        raise RuntimeError(f"tool call arguments did not name location 'Tokyo': {raw_arguments!r}")
+    return message
+
+
+def validate_tool_followup_response(response: dict[str, Any]) -> dict[str, Any]:
+    require_untruncated(response, label="tool follow-up")
+    message = extract_message(response)
+    if message.get("tool_calls"):
+        raise RuntimeError(
+            "tool follow-up response called a tool instead of answering: "
+            f"{json.dumps(message['tool_calls'], sort_keys=True)}"
+        )
+    finish_reason = extract_choice(response).get("finish_reason")
+    if finish_reason != "stop":
+        raise RuntimeError(f"tool follow-up response finished with {finish_reason!r}, not 'stop'")
+    validate_tool_followup_text(
+        message.get("content") or "",
+        expected_any=WEATHER_TOOL_RESULT_MARKERS,
+    )
     return message
 
 
 def validate_structured_response(response: dict[str, Any]) -> dict[str, Any]:
+    require_untruncated(response, label="structured")
     message = extract_message(response)
     raw_content = message.get("content") or ""
     try:
@@ -808,6 +870,17 @@ def validate_structured_response(response: dict[str, Any]) -> dict[str, Any]:
         raise RuntimeError(f"structured response was not JSON: {raw_content!r}") from exc
     if not isinstance(payload, dict) or not {"topic", "answer"}.issubset(payload):
         raise RuntimeError(f"structured response did not match smoke schema: {payload!r}")
+    return message
+
+
+def validate_structured_tool_followup_response(response: dict[str, Any]) -> dict[str, Any]:
+    message = validate_structured_response(response)
+    content = (message.get("content") or "").casefold()
+    if not any(marker in content for marker in WEATHER_TOOL_RESULT_MARKERS):
+        raise RuntimeError(
+            "structured tool follow-up did not use the tool result "
+            f"(expected any of {list(WEATHER_TOOL_RESULT_MARKERS)}): {message.get('content')!r}"
+        )
     return message
 
 
@@ -909,7 +982,11 @@ def run_smoke(args: argparse.Namespace) -> None:
                     args.request_timeout,
                 )
                 print("followup_response", json.dumps(followup, sort_keys=True))
-                validate_basic_response(followup)
+                if args.mode == "full-feature-text-only":
+                    validate_structured_tool_followup_response(followup)
+                    print("structured_ok")
+                else:
+                    validate_tool_followup_response(followup)
                 print("tool_ok")
             else:
                 validate_multimodal_response(response)

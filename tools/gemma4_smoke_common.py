@@ -28,6 +28,25 @@ def validate_basic_chat_text(content: str, *, expected_words: int = 5) -> str:
     return stripped
 
 
+# The tool follow-up asks for no particular length, so its answer only has to
+# be readable ASCII that repeats at least one value from the tool result.
+def validate_tool_followup_text(content: str, *, expected_any: tuple[str, ...]) -> str:
+    stripped = _require_clean_ascii(content, label="tool follow-up")
+    # The follow-up keeps special tokens, so leaked turn markers such as
+    # "<turn|>" would otherwise pass as printable ASCII.
+    if any(char in stripped for char in "<>|"):
+        raise RuntimeError(
+            f"tool follow-up response leaked control text: {_excerpt(stripped)!r}"
+        )
+    folded = stripped.casefold()
+    if not any(marker.casefold() in folded for marker in expected_any):
+        raise RuntimeError(
+            "tool follow-up response did not use the tool result "
+            f"(expected any of {list(expected_any)}): {_excerpt(stripped)!r}"
+        )
+    return stripped
+
+
 def _is_ascii_chat_text(text: str) -> bool:
     for char in text:
         if char.isascii() and (
