@@ -2243,9 +2243,14 @@ the model's SentenceTransformers last-token pooling metadata, and normalized
 embedding validation. `vllm.pooling.zerank-2.rerank` runs
 `zeroentropy/zerank-2` through vLLM's classification conversion by deriving the
 score head from the `Yes` token with `method=no_post_processing` and
-`logit_sigma=5.0`, matching the model-card arithmetic ranking fixture. Keep
-tracked scenarios on model IDs plus runtime `--model-path` bindings rather
-than committed cache snapshot paths.
+`logit_sigma=5.0`. This gate and `transformers.zeroentropy.zerank-2.rerank`
+print the raw per-document scores and require the two correct arithmetic
+answers (`4` and `Two plus two equals four.`) to score above the distractor.
+They do not fix the order of the two correct answers: the model card only
+compares `4` with a distractor, and engines disagree on that pair. vLLM 0.30
+and the Lemonade/llama.cpp zerank path rank the sentence first. Keep tracked
+scenarios on model IDs plus runtime `--model-path` bindings rather than
+committed cache snapshot paths.
 
 Lemonade has conventional embedding and reranking endpoints for registered
 `llamacpp` models, and the tracked Lemonade pooling scenarios now cover both.
@@ -2265,11 +2270,11 @@ passed on 2026-04-21 with the cached `zeroentropy/zembed-1` model bound at
 runtime by `--model-path`, finite normalized vectors, and a backpropagation
 related-passage ranking fixture. `transformers.zeroentropy.zerank-2.rerank`
 passed on the same host with the cached `zeroentropy/zerank-2` model bound at
-runtime, finite Yes-logit scores, and the model-card arithmetic ranking
-fixture. The helper uses Transformers directly because these model cards
-document `SentenceTransformer` and `CrossEncoder` usage, while Lemonade's
-documented local endpoints require registered `llamacpp` or `flm` recipes for
-embeddings and `llamacpp` for reranking.
+runtime, finite Yes-logit scores, and both correct arithmetic answers above
+the distractor, with `4` ranked first. The helper uses Transformers directly
+because these model cards document `SentenceTransformer` and `CrossEncoder`
+usage, while Lemonade's documented local endpoints require registered
+`llamacpp` or `flm` recipes for embeddings and `llamacpp` for reranking.
 
 The rebuilt installed stack passed the unquantized Qwen3.6 control on
 2026-04-20 with `HF_HOME=<host HF cache root>` and `Qwen/Qwen3.6-35B-A3B`,
