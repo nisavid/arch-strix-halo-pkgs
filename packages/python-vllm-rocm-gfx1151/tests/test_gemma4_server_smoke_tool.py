@@ -317,7 +317,9 @@ def test_full_feature_dry_run_moves_structured_output_to_followup(
     followup = plan["followup_request_payload"]
     assert followup["response_format"]["type"] == "json_schema"
     assert followup["tool_choice"] == "none"
-    assert followup["chat_template_kwargs"] == {"enable_thinking": True}
+    # Thinking stays on the tool-call turn; the follow-up turns it off so
+    # vLLM's gemma4 reasoner lets the grammar constrain from the first token.
+    assert followup["chat_template_kwargs"] == {"enable_thinking": False}
     assert followup["tools"][0]["function"]["name"] == "get_weather"
     assert followup["messages"][-1]["role"] == "tool"
     # The follow-up carries the whole tool round trip (about 400 prompt
@@ -651,6 +653,19 @@ def test_tool_validation_rejects_escaped_location_argument() -> None:
 
     with pytest.raises(RuntimeError, match="did not name location 'Tokyo'"):
         module.validate_tool_response(E2B_FULL_FEATURE_SCHEMA_TOOL_CALL_RESPONSE)
+
+
+def test_tool_validation_requires_reasoning_when_thinking_is_checked() -> None:
+    module = load_smoke_module()
+    with_reasoning = json.loads(json.dumps(E2B_TOOL_INITIAL_RESPONSE))
+    with_reasoning["choices"][0]["message"]["reasoning"] = "The user wants Tokyo weather; call get_weather."
+    without_reasoning = json.loads(json.dumps(E2B_TOOL_INITIAL_RESPONSE))
+    without_reasoning["choices"][0]["message"]["reasoning"] = None
+
+    module.validate_tool_response(with_reasoning, require_reasoning=True)
+    module.validate_tool_response(without_reasoning)
+    with pytest.raises(RuntimeError, match="did not include reasoning"):
+        module.validate_tool_response(without_reasoning, require_reasoning=True)
 
 
 def test_tool_validation_rejects_non_json_arguments() -> None:

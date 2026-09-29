@@ -658,9 +658,16 @@ def build_tool_followup_payload(
         # Structured output moves here from the tool-call turn; see
         # build_request_payload. With tools present vLLM defaults tool_choice
         # to "auto", so pin "none" to keep auto tool parsing off this turn too.
+        # Thinking stays on the tool-call turn only. With enable_thinking true,
+        # vLLM 0.30's gemma4 reasoner starts the grammar only after <channel|>
+        # or <|tool_call>, and a prompt that ends at a <|tool_response> boundary
+        # counts as still reasoning. A model that answers a tool result directly
+        # never emits either marker, so the schema would be silently skipped.
+        # With thinking off, the prompt counts as past reasoning and the grammar
+        # constrains every token.
         payload["response_format"] = structured_response_format()
         payload["tool_choice"] = "none"
-        payload["chat_template_kwargs"] = {"enable_thinking": True}
+        payload["chat_template_kwargs"] = {"enable_thinking": False}
     return payload
 
 
@@ -823,8 +830,10 @@ def validate_reasoning_response(response: dict[str, Any]) -> dict[str, Any]:
     return message
 
 
-def validate_tool_response(response: dict[str, Any]) -> dict[str, Any]:
+def validate_tool_response(response: dict[str, Any], *, require_reasoning: bool = False) -> dict[str, Any]:
     message = extract_message(response)
+    if require_reasoning and not (message.get("reasoning") or message.get("reasoning_content") or "").strip():
+        raise RuntimeError("tool mode response did not include reasoning with thinking enabled")
     tool_calls = message.get("tool_calls") or []
     if not tool_calls:
         raise RuntimeError("tool mode response did not include a tool call")
@@ -973,7 +982,9 @@ def run_smoke(args: argparse.Namespace) -> None:
                 print("reasoning_field_present", bool(message.get("reasoning") or message.get("reasoning_content")))
                 print("structured_ok")
             elif args.mode in TOOL_MODES:
-                assistant_message = validate_tool_response(response)
+                assistant_message = validate_tool_response(
+                    response, require_reasoning=args.mode == "full-feature-text-only"
+                )
                 followup_payload = build_tool_followup_payload(args, assistant_message)
                 followup = post_json(
                     str(plan["request_url"]),
