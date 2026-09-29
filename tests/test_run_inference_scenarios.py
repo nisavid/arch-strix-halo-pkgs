@@ -816,7 +816,7 @@ def test_quantized_qwen_text_dry_run_includes_probe_options_and_binding(
         str(run_root),
         "--dry-run",
         "--scenario",
-        "vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors-blocked",
+        "vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors",
         "--model-path",
         "surogate/Qwen3.5-0.8B-FP8=/models/qwen35-fp8",
     )
@@ -824,7 +824,7 @@ def test_quantized_qwen_text_dry_run_includes_probe_options_and_binding(
     assert result.returncode == 0
     payload = json.loads(result.stdout)
     assert payload["selected_ids"] == [
-        "vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors-blocked"
+        "vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors"
     ]
     assert payload["planned"][0]["command"] == [
         sys.executable,

@@ -10,6 +10,13 @@ TOOLS_DIR = REPO_ROOT / "tools"
 if str(TOOLS_DIR) not in sys.path:
     sys.path.insert(0, str(TOOLS_DIR))
 
+from gemma4_smoke_common import (
+    long_decode_max_model_len,
+    validate_basic_chat_text,
+    validate_known_answer_text,
+    validate_long_decode_text,
+)
+from inference.runner import _assertion_failures
 from inference.scenario_loader import load_scenarios
 
 # vLLM 0.30.0 (ced6857a) logs "Using TRITON Unquantized MoE backend out of
@@ -82,7 +89,7 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     assert "vllm.pooling.zerank-2.rerank" in ids
     assert "transformers.zeroentropy.zembed-1.embeddings" in ids
     assert "transformers.zeroentropy.zerank-2.rerank" in ids
-    assert "vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors-blocked" in ids
+    assert "vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors" in ids
     assert "vllm.qwen3_5.35b-a3b-gptq-int4.text.basic" in ids
     assert "vllm.qwen3_6.35b-a3b-nvfp4.text.unsupported-rocm-gfx1151" in ids
     assert "llama.cpp.hip.help" in ids
@@ -116,7 +123,8 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     assert "blocked" in tags_by_id[
         "vllm.gemma4.e2b.server.attn-aiter-fa-blocked"
     ]
-    assert "blocked" in tags_by_id["vllm.gemma4.e2b.text.compiled"]
+    assert "compiled-probe" in tags_by_id["vllm.gemma4.e2b.text.compiled"]
+    assert "blocked" not in tags_by_id["vllm.gemma4.e2b.text.compiled"]
     assert "kernel-probe" in tags_by_id["vllm.gemma4.26b-a4b.server.moe-aiter"]
     assert "quantization-probe" in tags_by_id["vllm.gemma4.e2b.torchao.real-model"]
     assert "exploratory" in tags_by_id["vllm.gemma4.e2b.torchao.real-model"]
@@ -135,7 +143,7 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     assert "kernel-probe" in tags_by_id["vllm.qwen3_5.0_8b.text.flash-attn-ck"]
     assert "blocked" in tags_by_id["vllm.qwen3_5.0_8b.text.flash-attn-ck"]
     assert "safetensors" in tags_by_id[
-        "vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors-blocked"
+        "vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors"
     ]
     assert "control" in tags_by_id[
         "vllm.qwen3_6.35b-a3b.text.unquantized-moe-no-aiter-control"
@@ -189,8 +197,8 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
         "vllm.flash-attn.triton-amd.vit-wrapper",
     ]:
         assert tags_by_id[scenario_id] >= {"exploratory", "aiter"}
-    assert "blocked" in tags_by_id[
-        "vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors-blocked"
+    assert "blocked" not in tags_by_id[
+        "vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors"
     ]
     assert "gptq" in tags_by_id["vllm.qwen3_5.35b-a3b-gptq-int4.text.basic"]
     assert "int4" in tags_by_id["vllm.qwen3_5.35b-a3b-gptq-int4.text.basic"]
@@ -809,7 +817,7 @@ def test_flash_attn_scenarios_record_ck_contract():
     }
 
 
-def test_gemma4_e2b_compiled_probe_records_current_blocker():
+def test_gemma4_e2b_compiled_probe_records_output_correctness_contract():
     scenarios = load_scenarios(REPO_ROOT / "inference/scenarios")
     by_id = {scenario.id: scenario for scenario in scenarios}
 
@@ -820,36 +828,118 @@ def test_gemma4_e2b_compiled_probe_records_current_blocker():
         "smoke",
         "gemma4",
         "compiled-probe",
-        "blocked",
         "exploratory",
     }
+    assert "blocked" not in probe.tags
     assert probe.definition["given"]["tool"] == "gemma4_text_smoke"
-    assert probe.definition["when"]["argv"] == [
+    argv = probe.definition["when"]["argv"]
+    assert argv == [
         "--execution-mode",
         "compiled",
         "--max-model-len",
-        "512",
+        "1024",
         "--gpu-memory-utilization",
         "0.35",
+        "--known-answer",
+        "--long-decode",
     ]
+    # The explicit context must still fit the default long decode, which
+    # crosses the E2B 512-token sliding window.
+    max_model_len = int(argv[argv.index("--max-model-len") + 1])
+    assert max_model_len >= long_decode_max_model_len()
 
     assertions = probe.definition["then"]["assert"]
     for expected in (
-        {"kind": "exit_code.equals", "value": 1},
+        {"kind": "exit_code.equals", "value": 0},
         {"kind": "stdout.contains", "value": "generation_ok"},
+        {"kind": "stdout.contains", "value": "basic_ok"},
+        {"kind": "stdout.contains", "value": "known_answer_ok"},
+        {"kind": "stdout.contains", "value": "long_decode_ok"},
+        {"kind": "output.not_contains", "value": "unexpected non-ASCII content"},
+        # Eager mode logs neither line, so together they prove the
+        # torch.compile and CUDA graph path ran.
         {
-            "kind": "output.contains",
-            "value": "basic mode response included unexpected non-ASCII content",
+            "kind": "output.regex",
+            "value": r"torch\.compile (took|and initial profiling/warmup run together took)",
         },
+        {"kind": "output.contains", "value": "Graph capturing finished"},
     ):
         assert expected in assertions
+    assert not any(
+        assertion["kind"] != "output.not_contains"
+        and "non-ASCII" in str(assertion.get("value", ""))
+        for assertion in assertions
+    )
+
+    # Every Gemma 4 decode validator reports corruption with the marker the
+    # probe forbids.
+    for validate in (
+        validate_basic_chat_text,
+        validate_known_answer_text,
+        validate_long_decode_text,
+    ):
+        try:
+            validate("docked calcS \u00e9")
+        except RuntimeError as error:
+            assert "unexpected non-ASCII content" in str(error), validate
+        else:
+            raise AssertionError(f"{validate.__name__} accepted non-ASCII text")
+
+
+def _captured_run_failures(scenario, stdout_lines: tuple[str, ...]) -> list[str]:
+    return _assertion_failures(
+        scenario.definition["then"]["assert"],
+        stdout="\n".join(stdout_lines) + "\n",
+        stderr="",
+        exit_code=0,
+        server_log="",
+        duration_seconds=0.0,
+    )
+
+
+# Minimal stdout excerpt of the 2026-09-29 vLLM 0.30 compiled E2B run (fresh
+# caches, before --known-answer and --long-decode joined the probe), with
+# host paths removed.
+GEMMA4_E2B_COMPILED_CAPTURED_STDOUT = (
+    "max_model_len 512",
+    "INFO 09-29 11:28:38 [config.py:252] " + GEMMA4_FORCED_TRITON_LINE,
+    "(EngineCore pid=31) INFO 09-29 11:28:54 [rocm.py:628] "
+    + GEMMA4_TRITON_SELECTED_LINE,
+    "(EngineCore pid=31) INFO 09-29 11:29:33 [backends.py:393] "
+    "Compiling a graph for compile range (1, 8192) takes 30.15 s",
+    "(EngineCore pid=31) INFO 09-29 11:29:35 [monitor.py:53] "
+    "torch.compile took 37.25 s in total",
+    "(EngineCore pid=31) INFO 09-29 11:29:52 [model_runner.py:1066] "
+    "Graph capturing finished in 13 secs, took 0.56 GiB",
+    "llm_init_ok",
+    "generation_ok",
+    "output_0_text: 'The quick brown fox jumps.'",
+    "output_0_finish_reason: 'stop'",
+    "basic_ok",
+)
+
+
+def test_gemma4_e2b_compiled_probe_accepts_captured_vllm_0_30_run():
+    by_id = {scenario.id: scenario for scenario in _gemma4_scenarios()}
+
+    failures = _captured_run_failures(
+        by_id["vllm.gemma4.e2b.text.compiled"],
+        GEMMA4_E2B_COMPILED_CAPTURED_STDOUT,
+    )
+
+    # The captured run predates the known-answer and long-decode checks, so
+    # only their markers are missing until the strengthened probe runs.
+    assert failures == [
+        "stdout.contains: missing 'known_answer_ok'",
+        "stdout.contains: missing 'long_decode_ok'",
+    ]
 
 
 def test_quantization_lane_probes_record_root_cause_contracts():
     scenarios = load_scenarios(REPO_ROOT / "inference/scenarios")
     by_id = {scenario.id: scenario for scenario in scenarios}
 
-    fp8_dense = by_id["vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors-blocked"]
+    fp8_dense = by_id["vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors"]
     assert fp8_dense.model == "surogate/Qwen3.5-0.8B-FP8"
     assert set(fp8_dense.tags) >= {
         "qwen",
@@ -857,26 +947,31 @@ def test_quantization_lane_probes_record_root_cause_contracts():
         "fp8",
         "safetensors",
         "quantization-probe",
-        "blocked",
         "exploratory",
     }
+    assert "blocked" not in fp8_dense.tags
     assert fp8_dense.definition["given"]["tool"] == "qwen_text_smoke"
     assert fp8_dense.definition["when"]["argv"] == ["--max-model-len", "128"]
     for expected in (
-        {"kind": "exit_code.equals", "value": 1},
+        {"kind": "exit_code.equals", "value": 0},
         {
             "kind": "stdout.contains",
             "value": "config_quantization_config_present true",
         },
         {"kind": "stdout.contains", "value": "config_model_type qwen3_5"},
+        # The smoke prints "quantization None"; only vLLM's engine config,
+        # resolved from the checkpoint, names the FP8 method.
+        {"kind": "output.regex", "value": "quantization=fp8"},
         # vLLM logs the block-FP8 linear kernel choice only after the startup
         # imports, the engine core and the Fp8LinearMethod layers are up, so
-        # the blocked exit comes from the FP8 path and not from startup.
+        # a pass generated through the FP8 path.
         {
             "kind": "output.regex",
             "value": r"Selected \w*Fp8BlockScaledMMKernel for Fp8LinearMethod",
         },
         {"kind": "output.not_contains", "value": "ModuleNotFoundError"},
+        {"kind": "stdout.contains", "value": "generation_ok"},
+        {"kind": "stdout.contains", "value": "basic_ok"},
     ):
         assert expected in fp8_dense.definition["then"]["assert"]
     # The kernel-selection marker already proves the startup imports ran, and a
@@ -1080,6 +1175,49 @@ def test_quantization_lane_probes_record_root_cause_contracts():
         },
     ):
         assert expected in nvfp4.definition["then"]["assert"]
+
+
+# Minimal stdout excerpt of the 2026-09-29 vLLM 0.30 dense block-FP8 run,
+# with host paths and most of the engine config elided. The DeepSelect warning
+# stays because the probe must tolerate that optional-import miss.
+QWEN3_5_FP8_DENSE_CAPTURED_STDOUT = (
+    "config_model_type qwen3_5",
+    "config_quantization_config_present true",
+    "quantization None",
+    "WARNING 09-29 11:18:14 [indexer_topk.py:29] Failed to import the "
+    "DeepSelect extension (vllm._deepselect_C): No module named "
+    "'vllm._deepselect_C'",
+    "(EngineCore pid=38) INFO 09-29 11:18:25 [core.py:123] Initializing a V1 "
+    "LLM engine (v0.30.0) with config: ..., disable_custom_all_reduce=True, "
+    "quantization=fp8, quantization_config=None, enforce_eager=True, ...",
+    "(EngineCore pid=38) INFO 09-29 11:18:27 [__init__.py:726] "
+    "Selected TritonFp8BlockScaledMMKernel for Fp8LinearMethod",
+    "llm_init_ok",
+    "generation_ok",
+    "output_0_text: 'ready'",
+    "output_0_finish_reason: 'stop'",
+    "basic_ok",
+)
+
+
+def test_fp8_dense_probe_accepts_captured_vllm_0_30_run():
+    by_id = {
+        scenario.id: scenario
+        for scenario in load_scenarios(REPO_ROOT / "inference/scenarios")
+    }
+    probe = by_id["vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors"]
+
+    assert _captured_run_failures(probe, QWEN3_5_FP8_DENSE_CAPTURED_STDOUT) == []
+    # Without vLLM's resolved engine config, the smoke's own "quantization
+    # None" summary must not satisfy the FP8 method check.
+    without_engine_config = tuple(
+        line
+        for line in QWEN3_5_FP8_DENSE_CAPTURED_STDOUT
+        if "quantization=fp8" not in line
+    )
+    assert _captured_run_failures(probe, without_engine_config) == [
+        "output.regex: pattern 'quantization=fp8' did not match"
+    ]
 
 
 def test_qwen3_5_compiled_probe_records_validation_contract():

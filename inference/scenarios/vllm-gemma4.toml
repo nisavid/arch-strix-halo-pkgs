@@ -610,10 +610,14 @@ value = "Gemma4 model has heterogeneous head dimensions {'sliding_attention': 25
 kind = "server_log.contains"
 value = "Using TRITON_ATTN backend (selected via --attention-backend)."
 
+# The 2026-04-20 corrupted decode came from vLLM 0.19 on
+# ROCM_AITER_UNIFIED_ATTN; vLLM 0.30 runs Gemma 4 on TRITON_ATTN. The default
+# long decode generates about 650 tokens, past the E2B 512-token sliding
+# window, so the context is 1024.
 [[scenario]]
 id = "vllm.gemma4.e2b.text.compiled"
-summary = "Gemma 4 E2B text-only compiled probe blocked by corrupted output"
-tags = ["smoke", "gemma4", "compiled-probe", "blocked", "exploratory"]
+summary = "Gemma 4 E2B text-only compiled probe (torch.compile and CUDA graphs) with known-answer and long-decode output checks"
+tags = ["smoke", "gemma4", "compiled-probe", "exploratory"]
 
 [scenario.given]
 engine = "vllm"
@@ -625,9 +629,11 @@ argv = [
   "--execution-mode",
   "compiled",
   "--max-model-len",
-  "512",
+  "1024",
   "--gpu-memory-utilization",
   "0.35",
+  "--known-answer",
+  "--long-decode",
 ]
 
 [scenario.attention_backend]
@@ -637,15 +643,40 @@ basis = "vLLM v0.30.0 ced6857a: Gemma4Config forces TRITON_ATTN for all layers b
 
 [[scenario.then.assert]]
 kind = "exit_code.equals"
-value = 1
+value = 0
 
 [[scenario.then.assert]]
 kind = "stdout.contains"
 value = "generation_ok"
 
 [[scenario.then.assert]]
+kind = "stdout.contains"
+value = "basic_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "known_answer_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "long_decode_ok"
+
+[[scenario.then.assert]]
+kind = "output.not_contains"
+value = "unexpected non-ASCII content"
+
+# Eager mode logs neither line. vLLM logs the torch.compile total whether the
+# graphs compile fresh or load from the AOT cache; only a fresh compile logs
+# "Compiling a graph for compile range". With AOT compile off (for example
+# VLLM_DISABLE_COMPILE_CACHE=1) the total reads "torch.compile and initial
+# profiling/warmup run together took" instead.
+[[scenario.then.assert]]
+kind = "output.regex"
+value = "torch\\.compile (took|and initial profiling/warmup run together took)"
+
+[[scenario.then.assert]]
 kind = "output.contains"
-value = "basic mode response included unexpected non-ASCII content"
+value = "Graph capturing finished"
 
 [[scenario.then.assert]]
 kind = "output.contains"

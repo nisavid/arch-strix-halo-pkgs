@@ -3013,7 +3013,7 @@ The following smoke checks have already passed on the reference host:
     WMMA adaptor choices for this code path. Treat a gfx11 OPUS FP8 adaptor as
     new kernel feature work unless upstream lands it.
   - Quantization-lane coverage now includes the retained small FP8 safetensors
-    probe `vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors-blocked` and the retained
+    probe `vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors` and the retained
     GPTQ Int4 safetensors probe
     `vllm.qwen3_5.35b-a3b-gptq-int4.text.basic`, plus the Qwen3.6 NVFP4 probe
     `vllm.qwen3_6.35b-a3b-nvfp4.text.unsupported-rocm-gfx1151`.
