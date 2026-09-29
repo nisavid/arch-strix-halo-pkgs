@@ -407,6 +407,78 @@ soname = "libtorch_cpu.so"
 reason = "Loaded only through `import torchvision`, after torch has loaded libc10.so and libtorch_cpu.so."
 
 [[needed]]
+package = "python-vllm-rocm-gfx1151"
+object = "/usr/lib/python3.14/site-packages/vllm/_C.abi3.so"
+soname = "libc10.so"
+reason = "Loaded only as a torch extension, through `vllm._custom_ops` or `torch.ops`, after `import torch` has loaded libc10, libc10_hip, libtorch_cpu, and libtorch_hip."
+
+[[needed]]
+package = "python-vllm-rocm-gfx1151"
+object = "/usr/lib/python3.14/site-packages/vllm/_C.abi3.so"
+soname = "libc10_hip.so"
+reason = "Loaded only as a torch extension, through `vllm._custom_ops` or `torch.ops`, after `import torch` has loaded libc10, libc10_hip, libtorch_cpu, and libtorch_hip."
+
+[[needed]]
+package = "python-vllm-rocm-gfx1151"
+object = "/usr/lib/python3.14/site-packages/vllm/_C.abi3.so"
+soname = "libtorch_cpu.so"
+reason = "Loaded only as a torch extension, through `vllm._custom_ops` or `torch.ops`, after `import torch` has loaded libc10, libc10_hip, libtorch_cpu, and libtorch_hip."
+
+[[needed]]
+package = "python-vllm-rocm-gfx1151"
+object = "/usr/lib/python3.14/site-packages/vllm/_C_stable_libtorch.abi3.so"
+soname = "libtorch_cpu.so"
+reason = "Loaded only as a torch extension, through `vllm._custom_ops` or `torch.ops`, after `import torch` has loaded libc10, libc10_hip, libtorch_cpu, and libtorch_hip."
+
+[[needed]]
+package = "python-vllm-rocm-gfx1151"
+object = "/usr/lib/python3.14/site-packages/vllm/_C_stable_libtorch.abi3.so"
+soname = "libtorch_hip.so"
+reason = "Loaded only as a torch extension, through `vllm._custom_ops` or `torch.ops`, after `import torch` has loaded libc10, libc10_hip, libtorch_cpu, and libtorch_hip."
+
+[[needed]]
+package = "python-vllm-rocm-gfx1151"
+object = "/usr/lib/python3.14/site-packages/vllm/_moe_C_stable_libtorch.abi3.so"
+soname = "libtorch_cpu.so"
+reason = "Loaded only as a torch extension, through `vllm._custom_ops` or `torch.ops`, after `import torch` has loaded libc10, libc10_hip, libtorch_cpu, and libtorch_hip."
+
+[[needed]]
+package = "python-vllm-rocm-gfx1151"
+object = "/usr/lib/python3.14/site-packages/vllm/_moe_C_stable_libtorch.abi3.so"
+soname = "libtorch_hip.so"
+reason = "Loaded only as a torch extension, through `vllm._custom_ops` or `torch.ops`, after `import torch` has loaded libc10, libc10_hip, libtorch_cpu, and libtorch_hip."
+
+[[needed]]
+package = "python-vllm-rocm-gfx1151"
+object = "/usr/lib/python3.14/site-packages/vllm/_rocm_C.abi3.so"
+soname = "libc10.so"
+reason = "Loaded only as a torch extension, through `vllm._custom_ops` or `torch.ops`, after `import torch` has loaded libc10, libc10_hip, libtorch_cpu, and libtorch_hip."
+
+[[needed]]
+package = "python-vllm-rocm-gfx1151"
+object = "/usr/lib/python3.14/site-packages/vllm/_rocm_C.abi3.so"
+soname = "libc10_hip.so"
+reason = "Loaded only as a torch extension, through `vllm._custom_ops` or `torch.ops`, after `import torch` has loaded libc10, libc10_hip, libtorch_cpu, and libtorch_hip."
+
+[[needed]]
+package = "python-vllm-rocm-gfx1151"
+object = "/usr/lib/python3.14/site-packages/vllm/_rocm_C.abi3.so"
+soname = "libtorch_cpu.so"
+reason = "Loaded only as a torch extension, through `vllm._custom_ops` or `torch.ops`, after `import torch` has loaded libc10, libc10_hip, libtorch_cpu, and libtorch_hip."
+
+[[needed]]
+package = "python-vllm-rocm-gfx1151"
+object = "/usr/lib/python3.14/site-packages/vllm/_rocm_C.abi3.so"
+soname = "libtorch_hip.so"
+reason = "Loaded only as a torch extension, through `vllm._custom_ops` or `torch.ops`, after `import torch` has loaded libc10, libc10_hip, libtorch_cpu, and libtorch_hip."
+
+[[needed]]
+package = "python-xgrammar-gfx1151"
+object = "/usr/lib/python3.14/site-packages/xgrammar/libxgrammar_bindings.so"
+soname = "libtvm_ffi.so"
+reason = "Loaded only by `xgrammar.load_binding`, which imports `tvm_ffi` first; that import has already loaded libtvm_ffi.so."
+
+[[needed]]
 package = "systemd"
 object = "/usr/lib/systemd/libsystemd-core-*.so"
 soname = "libsystemd-shared-*.so"
