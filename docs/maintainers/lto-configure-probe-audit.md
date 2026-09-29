@@ -5,8 +5,8 @@ This record covers the audit tracked in
 sub-issue of W2A #98 that blocks #111. It asks one question: did makepkg's
 link-time optimization (LTO) silently change a configure result in any
 package lane? For W2A through the lease commit `0514904` the answer is no:
-0 lanes are affected and 38 are clear. One vLLM archive check is still
-pending.
+0 lanes are affected and 38 are clear. The vLLM archive check confirmed
+its static verdict on 2026-09-29.
 
 The per-lane build-root details live in
 [Generation-C Build Root](c-build-root.md). This page keeps the cross-lane
@@ -108,7 +108,7 @@ means it appears only in `LDFLAGS`. **no** means it is disabled or stripped.
 | flash-attn 2.8.4-16 | no (`!lto`) | none | CLEAR | 0 markers |
 | torchvision 0.27.1-1 | link-only | none | CLEAR | 0 markers |
 | torch-migraphx 1.2-10 | link-only | none | CLEAR (two audits agree) | 0 markers |
-| vllm 0.30.0-1 | no (`!lto` plus flag stripping) | HIP build uses only a pure-Python FetchContent | CLEAR (static only) | archive check pending, see below |
+| vllm 0.30.0-1 | no (`!lto` plus flag stripping) | HIP build uses only a pure-Python FetchContent | CLEAR | archive check passed on 2026-09-29, see below |
 | openai-harmony 0.0.8-2 | no (flags unset) | none | CLEAR | 0 markers |
 
 ### Foundation (F/W1) lanes
@@ -136,15 +136,16 @@ so the tables hold 37 distinct lanes plus that family.
 Any lane that vendors an autoconf subproject and keeps makepkg LTO should
 adopt both.
 
-## Pending check: vLLM archive
+## vLLM archive check
 
-The vLLM 0.30.0-1 verdict comes from static analysis of the pinned tarball
-and PKGBUILD. Its W2A archive is not built yet. Once it exists, confirm that
-no shipped `.so` carries libbacktrace markers or LLVM bitcode sections:
+The vLLM 0.30.0-1 verdict first came from static analysis of the pinned
+tarball and PKGBUILD. On 2026-09-29, the W2A archive built from `d8ce663`
+confirmed it. None of its 7 shipped `.so` files carries libbacktrace markers
+or LLVM bitcode sections:
 
 ```sh
-bsdtar -xOf <vllm-archive> '*.so' | grep -ac 'backtrace_create_state'   # expect 0
-readelf -S <extracted.so> | grep -E '\.llvmbc|\.llvm\.lto'            # expect no output
+bsdtar -xOf <vllm-archive> '*.so' | grep -ac 'backtrace_create_state'   # 0
+readelf -S <extracted.so> | grep -E '\.llvmbc|\.llvm\.lto'            # no output
 ```
 
 ## Non-blocking follow-ups

@@ -1,8 +1,105 @@
 # Current State
 
 The package, deployment, and live-validation narrative below remains a
-2026-06-15 snapshot. The freshness admission state was reconciled on
-2026-08-12 as follows.
+2026-06-15 snapshot. Dated records come first, newest first; older
+reconciliations remain as dated history.
+
+## 2026-09-29 W2A vLLM 0.30.0 Validation of Record
+
+This is the validation of record for `python-vllm-rocm-gfx1151` 0.30.0 in W2A
+([issue 111](https://github.com/nisavid/arch-strix-halo-pkgs/issues/111),
+under [issue 98](https://github.com/nisavid/arch-strix-halo-pkgs/issues/98)). It
+ran in the isolated W2A build root described in
+[Generation-C Build Root](c-build-root.md): a rootless bubblewrap root with
+GPU access, where each GPU run checks the kernel log for page faults, ring
+timeouts, and resets, and stops further GPU work when it finds one. Nothing was installed on the host. The
+states are recorded separately:
+
+- **Source updated:** `python-vllm-rocm-gfx1151` 0.30.0-1 at branch commit
+  `d8ce663`, which links the HIP modules with ROCm clang
+  (`HIP_CXX_COMPILER=amdclang++`).
+- **Built:** in the W2A root from `d8ce663`, and published to the W2A build
+  repo. The `.BUILDINFO` PKGBUILD checksum equals the committed PKGBUILD. All
+  7 shipped `.so` files report AMD clang 23 only. The #168 archive check
+  ([LTO audit](lto-configure-probe-audit.md)) found 0 libbacktrace markers and
+  0 LLVM bitcode sections.
+- **Root prep:** `accelerate` was added to the root for the TorchAO tiny
+  prepare smoke. `7030916` allowlists the vLLM and xgrammar import-order
+  `NEEDED` entries, so root verification reports 0 violations and 0 stale
+  entries.
+- **Deployed/installed:** no. The package exists only in the W2A root and the
+  W2A build repo; the foundation it links against must not reach the host
+  before W5.
+- **Installed-smoked:** no. The CPU drive and GPU lanes below ran against the
+  package as installed in the W2A root, not on the host.
+- **Live-scenario validated:** in the W2A root only, except G5, which remains
+  open. The tracked scenarios below ran on the gfx1151 GPU inside the root;
+  host live-scenario validation waits for deployment.
+- **CPU drive:** without a GPU, through a fake-ROCm platform shim:
+  `RESULT PASS`, 122/122 gate items. Five info-only checks failed: the
+  torchaudio and amd-quark gaps tracked in #110, AITER (absent by design), a
+  `MultiModalHasher` API drift in an exploratory check, and new top-level
+  module findings.
+- **GPU windows:** 2026-09-29 11:13-11:31Z, 12:12-12:23Z, and 12:49-12:51Z.
+  The live Lemonade service's pinned models were unloaded for each window with
+  the owner's approval, then restored and verified afterward. The windows had
+  0 GPU page faults and no fault-triggered stops.
+
+| GPU lane (final state) | Result |
+| --- | --- |
+| `vllm.torchao.tiny.prepare`, `vllm.torchao.tiny.generate` | pass |
+| `vllm.qwen3_5.0_8b.text.basic` | pass |
+| `vllm.pooling.zembed-1.embeddings`, `vllm.pooling.zerank-2.rerank` | pass |
+| `vllm.gemma4.e2b.server.basic`, `.reasoning`, `.benchmark-lite`, `.structured`, `.structured-thinking`, `.tool`, `.tool-thinking`, `.full-feature-text-only` | 8/8 pass |
+| Probe `vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors` | pass |
+| Probe `vllm.gemma4.e2b.text.compiled` | pass |
+| G5: `vllm.gemma4.26b-a4b.text.basic`, `vllm.gemma4.26b-a4b.server.basic` | not run |
+
+**Harness and scenario fixes:** the failures in the earlier windows were
+harness and scenario defects, not package defects. They are fixed in:
+- `bc9ae42`: the Gemma 4 server smoke checks now match each mode's request.
+  The `benchmark-lite` mode's 8-token cap and plain structured's 16-token cap were too
+  small for the answer, the tool follow-up was checked with a five-word rule
+  it never asks for, and the tool call must now carry `location` "Tokyo"
+  exactly.
+- `6d3e306`: the zerank-2 rerank gate requires both correct answers to score
+  above the distractor. vLLM 0.30 ranks the sentence answer above the bare
+  `4`, which matches the Lemonade zerank smoke.
+- `9d3ee84`: the two probes below are reclassified.
+- `8f4d8db`: the full-feature follow-up turn runs with thinking off, so the
+  structured-output grammar engages.
+
+**Reclassified probes:**
+- `vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors`, renamed from
+  `vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors-blocked`, now asserts a correct
+  generation. The dense block-FP8 path works through vLLM's Triton kernel on
+  gfx1151. The old blocker came from the Qwen3.6-35B-A3B-FP8 MoE fixture and
+  never applied to this dense checkpoint.
+- `vllm.gemma4.e2b.text.compiled` now asserts a correct answer plus the
+  known-answer and long-decode checks at `--max-model-len 1024`, and the E2B
+  compiled path passed them cleanly on `TRITON_ATTN`. The 2026-04-20
+  corrupted output came from the vLLM 0.19 `ROCM_AITER_UNIFIED_ATTN` path,
+  which the 0.30.0 package source no longer enables. The smoke lanes still
+  default to eager.
+
+**vLLM 0.30 limitations:** these are upstream behavior, not package defects;
+[vLLM Recipe Coverage](vllm-recipe-coverage.md#gemma-4) records how the
+full-feature lane avoids them.
+- A `response_format` json_schema on the same turn as Gemma 4 auto tool calls
+  wraps the tool call in the schema and corrupts its arguments.
+- With `enable_thinking` on, the gemma4 reasoner starts the structured-output
+  grammar only after `<channel|>` or `<|tool_call>`. A model that answers
+  without a thought channel, for example right after a tool response, is
+  never constrained. Upstream main still has this; it is not yet reported
+  upstream.
+
+**Not run:** G5, the Gemma 4 26B-A4B lanes `vllm.gemma4.26b-a4b.text.basic`
+and `vllm.gemma4.26b-a4b.server.basic`. They need at least 77.8 GiB of
+`MemAvailable`; even with the live Lemonade service's models unloaded, the
+host reached only 70-76 GiB. They remain a W2A gate.
+
+**Remaining before W2A closeout:** G5, then the W2A PR, which closes #168 with
+its audit doc and carries the #111 closeout.
 
 ## 2026-08-12 Freshness Admission
 
@@ -2718,7 +2815,10 @@ The following smoke checks have already passed on the reference host:
     - keep the gfx1x AITER support plus Gemma 4
       `ROCM_AITER_UNIFIED_ATTN` override in
       `python-vllm-rocm-gfx1151/0016-rocm-refresh-local-carry-for-vllm-0.20.0.patch`
-      because the validated lane still depends on that backend selection
+      because the validated lane still depends on that backend selection.
+      Superseded for the 0.30.0 package source: both were dropped at 0.30.0,
+      so Gemma 4 selects upstream `TRITON_ATTN`; see the package README and
+      the [W2A record](#2026-09-29-w2a-vllm-0300-validation-of-record).
     - keep the broader fused-MoE default-policy carry dropped: the
       2026-04-17 reference-host rerun faulted the GPU as soon as that policy
       forced the AITER CK 2-stage fused-MoE path without an explicit runtime
@@ -2863,7 +2963,13 @@ The following smoke checks have already passed on the reference host:
   - with the same shim and CUDAGraph disabled, the E2B compiled path faulted
     the GPU during initialization/warmup
   - do not remove eager mode for `google/gemma-4-E2B-it`; the
-    E2B compiled path still generates invalid text after the Triton repair
+    E2B compiled path still generates invalid text after the Triton repair.
+    Superseded on 2026-09-29: the corruption came from the vLLM 0.19
+    `ROCM_AITER_UNIFIED_ATTN` path, which the 0.30.0 package source no longer enables, and
+    the strengthened `vllm.gemma4.e2b.text.compiled` probe passed on vLLM
+    0.30.0 in the W2A build root, not on the host; see the
+    [W2A record](#2026-09-29-w2a-vllm-0300-validation-of-record). The smoke
+    lanes still default to eager.
   - `vllm.gemma4.31b.text.compiled` passed on 2026-04-20 with fresh cache roots
     against `google/gemma-4-31B-it`
     in `382.161305` seconds with `enforce_eager=False`,
@@ -2966,7 +3072,11 @@ The following smoke checks have already passed on the reference host:
     a non-fatal fallback marker for this lane
   - The earlier Qwen3.6 FP8 MoE blocker remains useful historical evidence, but
     that checkpoint is no longer the retained cache fixture. Use the small FP8
-    safetensors probe for ongoing local FP8 support checks.
+    safetensors probe for ongoing local FP8 support checks. The MoE blocker
+    never applied to that dense probe: on 2026-09-29,
+    `vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors` passed on vLLM 0.30.0 in the
+    W2A build root through the dense block-FP8 Triton kernel; see the
+    [W2A record](#2026-09-29-w2a-vllm-0300-validation-of-record).
   - The 2026-04-20 rebuilt-stack control for `Qwen/Qwen3.6-35B-A3B` passed
     unquantized with AITER disabled, `--max-num-batched-tokens 32`, and
     `--gpu-memory-utilization 0.9`; the tracked scenario completed in
