@@ -3,11 +3,15 @@
 # closure; their runtime dependencies come in through the package depends.
 # python-compressed-tensors-gfx1151 and python-accelerate-gfx1151 depend on
 # python-pytorch-opt-rocm-gfx1151, which is now in ashp-w2a. vLLM 0.30.0 pins
-# compressed-tensors ==0.17.0, so it is listed here; Accelerate has no vLLM
-# consumer and is still added with `c_buildroot.py add` when a smoke needs it.
+# compressed-tensors ==0.17.0, so it is listed here. vLLM does not import
+# Accelerate, but the TorchAO tiny prepare smoke (tools/torchao_vllm_smoke.py)
+# loads its model with device_map, which Transformers routes through
+# Accelerate. The W2A validation runs that smoke, so Accelerate is listed here
+# as a validation-only target, like procps-ng in vllm-build.targets.
 # python-loguru is the one runtime dependency of theirs that nothing else pulls in.
 python-loguru
 python-compressed-tensors-gfx1151
+python-accelerate-gfx1151
 python-numpy-gfx1151
 python-pyyaml-gfx1151
 python-pillow-gfx1151
