@@ -3446,7 +3446,7 @@ previous_recorded = "0.21.0"
 latest = "0.30.0"
 discovery_status = "stable_update_available"
 disposition = "tracked"
-disposition_reason = "Tracked from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep. #105 selects C's version line (docs/wayfinder/research/c-line-selection-2026-09-22.md). C selects vLLM 0.30.0 (ced6857), built from source against ROCm PyTorch 2.12.0. Its CMake ROCm torch 2.13 expectation is a warning only. prometheus-fastapi-instrumentator stays at the host's 7.0.0 as a divergence behind an OpenAI-serving /metrics gate (W6). The 0016 carry needs a full re-port."
+disposition_reason = "Tracked from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep. #105 selects C's version line (docs/wayfinder/research/c-line-selection-2026-09-22.md). C selects vLLM 0.30.0 (ced6857), built from source against ROCm PyTorch 2.12.0. Its CMake ROCm torch 2.13 expectation is a warning only. vLLM 0.30.0 requires prometheus-fastapi-instrumentator>=8.0.0, so W2A packages 8.1.0 (tracked under #110) instead of keeping the host's 7.0.0. W2A built 0.30.0-1 with the re-ported 0016 carry and validated it in the isolated build root on 2026-09-29 (#111). The Gemma 4 26B-A4B lanes remain open in #169; the W4 qualification and the W5/W6 install, smoke and live gates follow."
 salient_changes = [
   "vLLM 0.30.0 is the newest stable release after the local 0.21.0 lane and the previously tracked 0.27.1",
   "The AUR vLLM baseline remains at 0.12.0-1",
@@ -3455,9 +3455,9 @@ patch_carry_overlap = true
 package_source_update_needed = true
 host_validation_needed = true
 next_gate_kind = "github_issue"
-next_gate_issue = 111
-next_gate_label = "vLLM 0.30.0 against the W2A closure"
-last_reviewed = "2026-09-22"
+next_gate_issue = 169
+next_gate_label = "Gemma 4 26B-A4B lanes, then W4 qualification of exact C"
+last_reviewed = "2026-10-01"
 
 [candidates."transformers-5.17.0-pypi"]
 family = "transformers"
@@ -4056,7 +4056,7 @@ previous_recorded = "0.27.0"
 latest = "0.27.1"
 discovery_status = "stable_update_available"
 disposition = "tracked"
-disposition_reason = "Selected for candidate generation C within the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep. #105 selects C's version line (docs/wayfinder/research/c-line-selection-2026-09-22.md). C selects TorchVision 0.27.1, which matches ROCm release/2.12 and is identical to 0.27.0 except version.txt; a source build derives its torch requirement from the build environment. This standing record carries the execution gate; the sweep's newer observation is rejected as outside the selected line. When the owning issue adopts, mark this record adopted."
+disposition_reason = "Selected for candidate generation C within the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep. #105 selects C's version line (docs/wayfinder/research/c-line-selection-2026-09-22.md). C selects TorchVision 0.27.1, which matches ROCm release/2.12 and is identical to 0.27.0 except version.txt; a source build derives its torch requirement from the build environment. This standing record carries the execution gate; the sweep's newer observation is rejected as outside the selected line. When the owning issue adopts, mark this record adopted. W2A built TorchVision 0.27.1 against PyTorch 2.12 and passed its in-root import, linkage and ownership gates (#111); the W4 qualification of exact C and the W5/W6 install, smoke and live gates follow."
 salient_changes = [
   "TorchVision 0.27.1 pairs with ROCm PyTorch release/2.12; the sweep's 0.29.0 requires torch 2.14",
 ]
@@ -4064,9 +4064,9 @@ patch_carry_overlap = true
 package_source_update_needed = true
 host_validation_needed = true
 next_gate_kind = "github_issue"
-next_gate_issue = 111
-next_gate_label = "TorchVision 0.27.1 against the W2A closure"
-last_reviewed = "2026-09-22"
+next_gate_issue = 115
+next_gate_label = "W4 qualification of exact C"
+last_reviewed = "2026-10-01"
 
 [candidates."lemonade-fork-586e190"]
 family = "lemonade"

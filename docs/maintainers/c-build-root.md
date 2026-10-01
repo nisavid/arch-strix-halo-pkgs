@@ -306,7 +306,7 @@ either root.
 | `python-tokenizers-gfx1151` | 0.23.2-1 | Built with `--net` for crates |
 | `python-safetensors-gfx1151` | 0.8.0-1 | Built with `--net` for crates |
 | `python-watchfiles-gfx1151` | 1.3.0-1 | Built with `--net` for crates |
-| `python-pydantic-core-gfx1151` | 2.46.5-1 | Built with `--net` for crates; pairs with Arch pydantic 2.13.5 |
+| `python-pydantic-core-gfx1151` | 2.46.5-2 | Built with `--net` for crates; pairs with Arch pydantic 2.13.5 exactly through its `conflicts` pins |
 | `python-transformers-gfx1151` | 5.16.1-1 | Pure Python |
 | `python-mistral-common-gfx1151` | 1.11.7-1 | Pure Python |
 | `python-compressed-tensors-gfx1151` | 0.17.0-1 | Pure Python |
@@ -424,6 +424,12 @@ The in-root smoke ran on the gfx1151 GPU (`enter --gpu`) without torch:
 
 On 2026-09-25 `python-pytorch-opt-rocm-gfx1151` 2.12.0-5 was built, published
 to `ashp-w2a`, and added to the root.
+
+Its `.BUILDINFO` PKGBUILD checksum predates main's `_build_jobs` helper, which
+the W2A closure took in when it merged main. The helper only picks a default
+for `MAX_JOBS`, and it never runs in the root, because the root's
+`makepkg.conf` exports `MAX_JOBS`. The built archive is therefore
+output-equivalent to the committed PKGBUILD and was not rebuilt.
 
 - **Source:** ROCm PyTorch `release/2.12` at `13da0862`, with `USE_MAGMA=0` and
   `PYTORCH_ROCM_ARCH=gfx1151`, against the root's ROCm Triton 3.8.0 and

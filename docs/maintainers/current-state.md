@@ -488,7 +488,9 @@ with the corrections from three adversarial verification passes applied:
   safetensors 0.8.0, compressed-tensors 0.17.0, mistral-common 1.11.7, NumPy
   2.5.3 (fallback 2.4.6), and pydantic-core 2.46.5 with Arch pydantic 2.13.5.
 - Divergence: `prometheus-fastapi-instrumentator` stays at the host's 7.0.0
-  behind an OpenAI-serving `/metrics` gate in W6.
+  behind an OpenAI-serving `/metrics` gate in W6. Superseded on 2026-09-29:
+  vLLM 0.30.0 requires `prometheus-fastapi-instrumentator>=8.0.0`, so W2A
+  packages 8.1.0 instead.
 - W5 removals by default: llmcompressor, AutoRound, and AITER. The owner can
   override.
 

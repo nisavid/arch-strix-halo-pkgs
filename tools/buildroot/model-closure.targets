@@ -21,8 +21,8 @@ python-safetensors-gfx1151
 python-transformers-gfx1151
 python-mistral-common-gfx1151
 python-pydantic-core-gfx1151
-# pydantic 2.13.5 requires pydantic-core ==2.46.5 exactly; the host's older
-# pydantic would otherwise win and make `import pydantic` raise SystemError.
+# pydantic 2.13.5 requires pydantic-core ==2.46.5 exactly, and
+# python-pydantic-core-gfx1151 2.46.5-2 conflicts with any other pydantic.
 python-pydantic>=2.13.5
 # vLLM 0.30 requires huggingface-hub >=1.31.0.
 python-huggingface-hub>=1:1.31.0
