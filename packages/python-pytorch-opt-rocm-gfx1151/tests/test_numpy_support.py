@@ -57,7 +57,7 @@ def test_pkgbuild_makes_numpy_available_at_build_time():
     assert "export USE_CUDA=0" in text
     assert "export USE_ROCM=1" in text
     assert "export USE_MAGMA=0" in text
-    assert 'export MAX_JOBS="${MAX_JOBS:-$(nproc)}"' in text
+    assert 'export MAX_JOBS="${MAX_JOBS:-$(_build_jobs)}"' in text
     assert "0006-enable-aten-cuda-api-for-rocm.patch" in text
     assert 'rm -rf build' in text
     assert 'local _ccache_cache="$srcdir/.ccache/cache"' in text

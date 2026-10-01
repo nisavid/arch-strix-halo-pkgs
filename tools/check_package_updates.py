@@ -16,6 +16,12 @@ import tomllib
 from urllib.parse import quote
 from urllib.request import Request, urlopen
 
+TOOLS_DIR = Path(__file__).resolve().parent
+if str(TOOLS_DIR) not in sys.path:
+    sys.path.insert(0, str(TOOLS_DIR))
+
+from recipe_policy import resolve_recipe_policy  # noqa: E402
+
 
 PUBLIC_STATUSES = {
     "current",
@@ -752,7 +758,7 @@ def recipe_source_facts(repo_root: Path) -> dict[str, list[dict]]:
     path = recipe_policy_path(repo_root)
     if not path.exists():
         raise FileNotFoundError(f"Recipe package policy not found: {path}")
-    payload = load_toml(path)
+    payload = resolve_recipe_policy(load_toml(path))
     facts: dict[str, list[dict]] = {}
     for package, policy_pkg in payload.get("packages", {}).items():
         package_facts: list[dict] = []

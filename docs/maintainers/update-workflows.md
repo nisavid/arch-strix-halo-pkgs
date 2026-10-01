@@ -272,7 +272,11 @@ to adopt.
    local patch files, package-local tests, and smoke helpers.
 5. Check whether upstream dependency metadata changed and reconcile it against
    the local pacman dependency closure.
-6. Update the package policy entry in `policies/recipe-packages.toml`.
+6. Update the package policy entry in `policies/recipe-packages.toml`. When
+   several packages build one source revision, as `lemonade-server` and
+   `lemonade-app` do, their `source_refs` and notes refer to a shared entry
+   in the `[source_pins]` table as `{source_pins.<name>}`. Change that entry,
+   not each package.
 7. Re-render the package scaffold.
 8. Apply the carried patch series to a clean new source tree. Refresh patches
    when they apply with fuzz or when nearby upstream context changed.

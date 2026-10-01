@@ -101,6 +101,507 @@ host reached only 70-76 GiB. They remain a W2A gate.
 **Remaining before W2A closeout:** G5, then the W2A PR, which closes #168 with
 its audit doc and carries the #111 closeout.
 
+## 2026-09-25 Lemonade M6 Redeploy and Revalidation
+
+M6 took the 11.9.0 repackage below through every gate of
+[issue 141](https://github.com/nisavid/arch-strix-halo-pkgs/issues/141). The
+states are recorded separately:
+
+- **Source updated:** main `fce9532`, which contains #165 and #166.
+  - #165 is the 11.9.0 repack. It pins `b6616eb3b`, the merge commit of the
+    fork's upstream v11.9.0 sync (nisavid/lemonade#175). The fork's
+    nisavid/lemonade#173 is deliberately excluded.
+  - #166 makes the package's unit guard errexit-safe.
+  - Patches 0001-0004 and the app's glib patch are carried; patch 0005 is
+    dropped.
+- **Built:** on 2026-09-25 from 11:05:14Z to 11:08:55Z, under the heavy-work
+  lease in the memory-capped `builds.slice`, by unprivileged `makepkg -Cf`
+  (never `-s` or `sudo`). `lemonade-server` took 67 s, `lemonade-app` 153 s,
+  and `lemonade` 1 s. The scope's `memory.peak` was 7.0 GiB, with no OOM
+  events. Each archive's `.BUILDINFO` PKGBUILD checksum equals its PKGBUILD
+  at `fce9532`. The first build attempt, from #165 alone, failed in
+  `package()` on the unit-guard errexit bug that #166 fixed.
+
+  | Archive | sha256 |
+  | --- | --- |
+  | `lemonade-server-11.9.0-1` | `3754d73298b4538023a68bfdb9c8862e3ec5f38b25db671c364b303803c0303d` |
+  | `lemonade-app-11.9.0-1` | `d6d4210dd4bf38323fe374af683a5fd0fba626392d1478845df613ec870b5779` |
+  | `lemonade-11.9.0-1` | `90a63bd98bd22bedc11304caf88aaa45416d2181bfeb704c72fa344945f290d0` |
+
+- **Published:** to both `strix-halo-gfx1151` repo databases by the M3 method:
+  database backups, `cp -n` with a checksum check, and `repo-add` of exactly
+  these three archives without `-R`. In each database exactly three entries
+  changed, and each `%SHA256SUM%` matches its archive.
+- **Seam check before install:** every `NEEDED` soname and every depend of the
+  three archives was satisfied by the current host without `-Syu`
+  (`lemonade-server` 13 sonames, `lemonade-app` 14, `lemonade` 0). The host
+  had pending protobuf, Abseil, gRPC and ONNX upgrades, so the install was
+  `pacman -U` of exactly the three files, never `-Sy` or `-S`. pacman changed
+  exactly those three packages. This check is a new gate in M6.
+- **Deployed/installed:** by the owner in an exclusive window on 2026-09-25,
+  from about 13:58Z to 15:05Z.
+  - The 11.9 layout is live. The package drop-in `30-env-files.conf` owns
+    the `EnvironmentFile=` order: conf.d, then `/etc/default/lemond`, then
+    `/usr/lib/lemonade/llamacpp-gfx1151.env`. `/etc/default/lemond` (0640)
+    and `zz-secrets.conf` (0660) are unmodified backup files, and there are
+    no `.pacnew` or `.pacsave` files.
+  - The first start migrated the legacy JSON state into `/var/lib/lemonade`
+    with identical sha256s. `model_storage.path` is unchanged.
+  - `config.json` was rewritten sparse by a generic computation against
+    `lemond`'s merged defaults: the built-ins at `b6616eb3b` plus the
+    packaged overlay. It keeps every non-default key, including the full
+    live llama.cpp args, and the owner reviewed it in redacted form before
+    the install.
+  - The service environment adds only `CACHE_DIRECTORY`.
+- **Installed-smoked:** the service is active on 11.9.0, and all five owner
+  pins are loaded (`pins_same`, `pins_loaded`). `model_storage_same` holds.
+  All four llama-server processes carry `--no-mmap`. No legacy cache dir
+  remains, and no env keys were removed.
+- **Live-scenario validated:** the M4 set, the root subset, the app
+  checklist, and the Open WebUI seam pass. The runs used main `fce9532`.
+
+| Check | Scope | Result |
+| --- | --- | --- |
+| The M4 unprivileged scenario set: the same 17 scenario ids as the M4 run of record | unprivileged | 17/17 |
+| `lemonade.llamacpp.rocm.qwen3-0.6b-q8-0.completion`, `lemonade.llamacpp.vulkan.qwen3-0.6b-q8-0.completion`, `lemonade.nofetch.preplaced-load-missing-model` | root | 3/3 |
+| `lemonade.app.pin-startup-text` (operator checklist) | owner | pass |
+| Open WebUI request shapes against the 11.9 service | unprivileged | 5/5 |
+| nisavid/lemonade `test/server_env_vars.py` at `b6616eb3b` | unprivileged, free test port | 35/38; the 3 failures are expected |
+
+- **Provenance rerun:** `lemonade.provenance.family-no-fallback` first
+  failed, because it compares the installed versions against the host's
+  local sync database copy. That copy is stale by design: `pacman -U` ran
+  without `-Sy`. Re-run read-only against the published repo database
+  through a private `pacman --dbpath`, it passes with `provenance_ok`. The
+  host's local `strix-halo-gfx1151` sync database copy stays at 11.7 until
+  the next full `-Syu` (W5), which is expected.
+- **App checklist:** the app reported version 11.9.0. Pinning and unpinning
+  were reflected in the live and persisted pins, the chat reply rendered,
+  and the five owner pins stayed intact.
+- **Open WebUI seam:** the five request shapes that Open WebUI sends all
+  passed against the 11.9 service:
+  - embeddings on zembed returned 2 vectors of dimension 2560;
+  - rerank with `top_n` on both `/reranking` and `/rerank` returned results
+    that carry `index` and `relevance_score`, with the correct top index;
+  - `chat/completions` on the pinned chat model passed both non-streaming
+    and SSE streaming. The answer was correct, the reasoning was in
+    `reasoning_content`, and the stream ended in `[DONE]`.
+
+  The full Open WebUI S6 re-smoke (arch-pkgs PR #94 at `2dc97e8`) is blocked
+  by design before the cutover and exits 75, because no arch-pkgs
+  Open WebUI of record is deployed yet. It runs in the M5 trial
+  (arch-pkgs #89). By owner ruling, the owner's Open WebUI UI spot check is
+  N/A: there is no configured consumer, and the request shapes cover the
+  seam.
+- **Fork env-var tests:** `test/server_env_vars.py` ran against the
+  installed `lemond` on a free test port, leaving the live service untouched:
+  the same PID, 0 restarts, and health 200 throughout. The three
+  `TestDefaults` failures are two stale fork assertions, filed as
+  nisavid/lemonade#179 (`ctx_size` 4096 against the fork's 11.9 default of
+  -1, and `global_timeout` 300 against 600), plus `max_loaded_models = -1`,
+  which is the packaged overlay's intended distro setting.
+
+**Host customization.** On the reference host, the service's cache dir stays
+at upstream's `/var/cache/lemonade`, which is bind-mounted from a host data
+volume through `/etc/fstab` (`bind,nofail`). This follows the host's
+existing convention for other `/var` data. `CacheDirectory=` gives `lemond`
+a mount dependency, so the service fails closed if the volume is missing.
+
+**Findings and follow-ups:**
+- [nisavid/lemonade#177](https://github.com/nisavid/lemonade/issues/177):
+  `lemond` does not exit after "Cleanup complete", so systemd kills it with
+  SIGKILL at the host's 10-second stop timeout. It happens on 11.7 and 11.9.
+  The proposed mitigation after M6 is a packaged `TimeoutStopSec=30s`
+  drop-in, which is not done.
+- [nisavid/lemonade#178](https://github.com/nisavid/lemonade/issues/178):
+  rerank ignores `top_n` and returns every result. Open WebUI truncates on
+  the client side, so this is harmless for that consumer.
+- [nisavid/lemonade#179](https://github.com/nisavid/lemonade/issues/179): the
+  stale `TestDefaults` assertions in `test/server_env_vars.py`.
+- **Known condition:** the Lemonade-managed vllm and sd-cpp backends are
+  unused. Their venvs contain absolute paths from their original location,
+  so they need a reinstall if they are ever used; `no_fetch_executables`
+  blocks an automatic fetch.
+
+**Candidate closeout:** `lemonade-upstream-11.9.0` is adopted, because its
+build, publish, install, installed-smoke, and live-validation gates are
+done. `lemonade-upstream-2026.39.1` stays tracked under #163.
+
+**Freshness at closeout:** the cache-aware Lemonade check run for this
+closeout reported fork main at `b33524f52`, one commit past the `b6616eb3b`
+pin. That commit is nisavid/lemonade#173, a build-only CMake change that M6
+deliberately excluded. The new `lemonade-fork-b33524f` candidate tracks it
+under #163, the next Lemonade repin, and also covers the v2026.39.1 baseline
+drift that the same check reports. With it, the Lemonade check exits 0, and
+the explicit tracker validation finds all 11 unique issue gates open.
+
+## 2026-09-25 Lemonade 11.9.0 Repackage (Source Only)
+
+The M6 repackage for
+[issue 141](https://github.com/nisavid/arch-strix-halo-pkgs/issues/141) moves
+the Lemonade family to the fork's upstream v11.9.0 sync. This record covers
+the source update:
+
+- **Source updated:** `lemonade-server`, `lemonade-app`, and `lemonade` are
+  at 11.9.0-1. The pin is `b6616eb3b`, the merge commit of the fork's
+  upstream v11.9.0 sync (nisavid/lemonade#175), in `[source_pins]` and the
+  fork-main freshness cursor. Beyond the sync-branch head `66c7642e8` that the
+  branch first pinned, the merge adds only the pinned-reload eviction fix
+  (`553d923`, a three-line `server.cpp` change). Patch 0005 is dropped, because the sync contains
+  the fork fix for nisavid/lemonade#168. Patches 0001-0004 and the app's glib
+  patch apply unchanged. The package follows the 11.9 service layout: the
+  config and cache dirs are split, and the distro defaults gain
+  `max_loaded_models: -1`. The `30-env-files.conf` drop-in owns the service's
+  `EnvironmentFile=` order: conf.d, then `/etc/default/lemond`, then the
+  packaged llama.cpp env file, which moves out of conf.d. Both
+  `/etc/default/lemond` and `zz-secrets.conf` are backup files, and no install
+  script writes owner config. See the package README and
+  [Lemonade Live Validation](lemonade-live-validation.md#service-configuration-from-119).
+- **Built, published, deployed/installed, installed-smoked, live-scenario
+  validated:** done in M6 from main `fce9532`; see the 2026-09-25 Lemonade
+  M6 Redeploy and Revalidation section above.
+- **Freshness:** a Lemonade-only checker run on 2026-09-25 after the
+  merge-commit repin reported fork-main `current` at `b6616eb3b`. The
+  upstream-release check reports `baseline_drift` to `v2026.39.1`
+  (2026-09-23), the first calendar-versioned release. By owner decision on
+  2026-09-25, the resurrection finishes on v11.9.0, and the calendar-versioned
+  line follows under nisavid/lemonade#176. The
+  `lemonade-upstream-2026.39.1` candidate is tracked under #163, which packages
+  that line after the fork sync.
+
+## 2026-09-24 Lemonade M4 Live Validation
+
+M4 validated the installed Lemonade family against the X4 bar (#140). The
+states are recorded separately:
+
+- **Source updated:** `lemonade-server 11.7.0-2` (patch 0005) from #152, with
+  the job-count fix from #156. The scenario fixes found by the first live runs
+  are #157, #158, #159 and #160.
+- **Built:** from main `66439a6` inside the memory-capped `builds.slice`,
+  with `MAKEFLAGS=-j10` (ninja ran `-j 10`). The build took 2m22s, and the
+  scope's `memory.peak` was 3.0 GiB with no OOM events. The archive's
+  sha256 is
+  `0737c0b208b4580452f9c8d7ae7f032b17e82403d621942f279bcc2de5353ddc`, and its
+  `.BUILDINFO` PKGBUILD checksum equals main's PKGBUILD. Against 11.7.0-1,
+  only `usr/bin/lemond` and `usr/bin/lemonade` differ.
+- **Published:** 2026-09-23 to both `strix-halo-gfx1151` repo databases.
+  In each database exactly one entry changed, and the database checksum
+  matches the archive.
+- **Deployed/installed:** by the owner on 2026-09-23 (#139). `lemond` restarted
+  on 11.7.0-2, which replaced the host's temporary hand edit of
+  `architecture_defaults.json`.
+- **Installed-smoked:** the post-install checks passed.
+  - The family comes from `strix-halo-gfx1151`: repo order beats the
+    `lemonade-server 11.9.0` builds in CachyOS and Arch `extra`.
+  - `pacman -Qkk` is clean apart from the root-only `zz-secrets.conf`.
+  - The no-fetch drop-in and the endpoint blackholes are live.
+  - `offline` and `no_fetch_executables` are true, and `--no-mmap` is in the
+    llama.cpp args.
+  - All five owner pins are loaded.
+  - The four help smokes pass.
+- **Live-scenario validated:** 20 of 20, in two runs of record:
+  - unprivileged run `run-20260924T001234Z` at main `cd1bf6a`: 17/17;
+  - root run `root-run-2` at main `95412d0` on 2026-09-25: 3/3. An identical
+    run at the same commit on 2026-09-24 also passed 3/3, and the 2026-09-25
+    run replaced its artifacts. These three scenarios read the backend's
+    `/proc/<pid>/maps`, the backend cache and `ss -p` owners, which needs
+    root. #160, the only change between the two commits, touches just the
+    backend-library check that these three use.
+
+| X4 behavior | Scenario id | Result |
+| --- | --- | --- |
+| Installed smokes | `lemonade.cli.help`, `lemonade.server.help`, `llama.cpp.hip.help`, `llama.cpp.vulkan.help` | pass |
+| GGUF text, direct, HIP and Vulkan | `llama.cpp.hip.qwen3-0.6b-q8-0.completion`, `llama.cpp.vulkan.qwen3-0.6b-q8-0.completion` | pass (all 29 of 29 layers offloaded) |
+| GGUF text via Lemonade, HIP and Vulkan | `lemonade.llamacpp.rocm.qwen3-0.6b-q8-0.completion`, `lemonade.llamacpp.vulkan.qwen3-0.6b-q8-0.completion` | pass (root) |
+| Start and restart with config preserved; HIP discovery | `lemonade.lifecycle.restart-config-hip-discovery` | pass |
+| Pin persistence and startup restore | `lemonade.pins.persistence-startup-restore` | pass |
+| Budget admit and refuse, with GTT counted | `lemonade.budget.gtt-admit-refuse` | pass (effective capacity 58.08 GB) |
+| Pinned and in-use models never displaced | `lemonade.residency.pinned-busy-not-displaced` | pass |
+| Provenance; no foreign or mixed package | `lemonade.provenance.family-no-fallback` | pass |
+| No silent downloader | `lemonade.nofetch.preplaced-load-missing-model` | pass (root) |
+| Consumer pins on the service | `lemonade.pins.service-consumer-pins` | pass |
+| Pinned qwen35moe chat | `lemonade.chat.pinned-user-model.qwen35moe` | pass |
+| Embeddings (zembed) | `lemonade.pooling.zembed-1-q4-k-m.embeddings` | pass |
+| Rerankers | `lemonade.pooling.bge-reranker-v2-m3.rerank`, `lemonade.reranking.zerank-2.selected-logit` (isolated), `lemonade.reranking.zerank-2.selected-logit.service` | pass |
+| App launch with pin and startup controls, plus one text interaction | `lemonade.app.pin-startup-text` (operator checklist) | pass (owner, 2026-09-25; see below) |
+| Kokoro TTS and the app's TTS interaction | none | deferred to generation C W2B (#113) |
+
+The Open WebUI consumer scenarios for zembed and zerank belong to arch-pkgs
+(M5, arch-pkgs #59). This record is their prerequisite receipt. The seam
+receipt ids are `lemonade.pins.service-consumer-pins`,
+`lemonade.pooling.zembed-1-q4-k-m.embeddings`,
+`lemonade.reranking.zerank-2.selected-logit`,
+`lemonade.reranking.zerank-2.selected-logit.service` and
+`lemonade.pins.persistence-startup-restore`. The confirmed endpoint is
+`http://127.0.0.1:13305/api/v1`, and the bind address and port are
+unchanged.
+
+**No-silent-downloader proof (root).** The host's registered but absent
+`Qwen3.5-0.8B-GGUF` was requested through `/load`, inference auto-load and
+Ollama auto-load:
+- Every path refused it.
+- The model cache and the backend cache were unchanged.
+- No non-loopback outbound connection from `lemond` or its children was
+  observed during the sampled phases. The check excludes client connections
+  accepted on the service's listening port.
+- Each logged, blackholed download attempt was recorded.
+
+The pre-placed test model then loaded on each path with no download logged,
+unchanged caches, and no non-loopback outbound connection observed. The ROCm backend's 26 mapped
+ROCm, HIP and llama.cpp libraries are all owned by `strix-halo-gfx1151`
+packages. None come from lemond's cache.
+
+**App operator checklist** (`lemonade.app.pin-startup-text`): the owner ran it
+in the desktop session on 2026-09-25 against `lemonade-app 11.7.0-1` and
+`lemonade-server 11.7.0-2`. All five steps passed:
+1. The app launched and its About dialog showed version 11.7.0.
+2. Pinning the built-in `Qwen3-0.6B-GGUF` listed it in `/api/v1/pins` as
+   loaded and added it to the persisted `pinned_models`.
+3. Unpinning removed it from both, leaving the five owner pins loaded.
+4. One chat prompt rendered a text reply.
+5. The model was unloaded, and the final pins and persisted `pinned_models`
+   were exactly the five owner pins, all loaded.
+
+The checklist names the registered `user.Qwen3-0.6B-Q8_0-GGUF`. The owner
+used the built-in `Qwen3-0.6B-GGUF` instead, which is the same base model
+under a different registration. The checklist tests the app's pin,
+startup-pin and chat controls, which work the same for any registration,
+so the pass stands with this deviation recorded.
+
+**Owner decisions recorded during M4:**
+- **Slot limit:** `max_loaded_models` changed from 2 to -1 (unlimited) on
+  2026-09-24. With five pins filling both LLM slots, every new LLM load
+  returned 409. The fork's host contract is that pins count toward residency
+  and the host runs -1. The GTT-aware occupancy budget remains the admission
+  bound. The source of the earlier 2 is indeterminate: it predates the
+  retained journal, and no ASHP tool writes service config. The setting
+  survived two later `lemond` restarts. The M6 repackage ships -1 in the
+  packaged `defaults.json` (#141).
+- **Config directory ownership:** `/etc/lemonade` and `conf.d` reset to
+  `root:root`, the ownership the package ships.
+- **Stored custom-arg values:** checked for leftovers of the fork quoting
+  regression; there were none.
+
+**Ledger closeout (2026-09-25):** #139 and #140 closed as completed. The
+first #139 build, from main `d129835`, published `lemonade-app` and
+`lemonade` 11.7.0-1, `python-pydantic-core-gfx1151` 2.46.5-2, and the
+unchanged llama.cpp b9442 backends. The 11.7.0-2 server build above replaced
+only `lemonade-server`.
+- `lemonade-fork-3d59910` is adopted: its build, publish, install, and
+  live-validation gates are done. Kokoro TTS was deferred to #113 by
+  decision and does not gate this candidate.
+- `pydantic-core-2.46.5-1-arch`, installed in the same transaction, is
+  adopted after its installed smoke (see the pydantic-core host hazard
+  below).
+- `lemonade-upstream-11.9.0` stays tracked under the M6 repackage (#141).
+
+The explicit tracker validation then found all 11 unique issue gates open.
+The 24-hour freshness sweep was not rerun for this closeout, and it is due.
+A cache-aware Lemonade check already reports fork main past `3d5991033` and
+a new upstream release. Neither Lemonade record matches that result, so the
+sweep must give it its own disposition.
+
+## 2026-09-23 Lemonade Args-Merge Fix
+
+After the M3 repin, `lemonade-server 11.7.0-1` was built and installed under
+#139. It could not load any qwen35 or qwen35moe model, including the host's
+pinned chat model. `RecipeOptions::inherit` kept the quote characters of the
+architecture default `--chat-template-kwargs '{"preserve_thinking":true}'`
+when it merged that value into the non-empty global `llamacpp.args` (the
+distro defaults always set `--no-mmap`). It then quoted the value again, so
+llama-server rejected a quoted JSON string and exited. `lemonade-server
+11.7.0-2` carries patch 0005, which tokenizes both sides without keeping
+quotes; see [Patch Inventory](../patches.md). The regression is fork-only:
+fork commit `e3d08ffa6` stacked a second quoting layer on upstream's merge,
+and upstream builds produce the correct argv. The fork fix is
+nisavid/lemonade#168, and patch 0005 drops at the Lemonade repin to a fork
+commit that contains it. A standalone C++ check against
+the pinned `custom_args.h` confirms that the merged argv value is exactly
+`{"preserve_thinking":true}`, that `--no-mmap` stays present, and that a value
+with spaces still round-trips. The unpatched merge fails the JSON and
+spaced-value checks. `lemonade.chat.pinned-user-model.qwen35moe` is the live
+guard. This is a source update only: 11.7.0-2 was not built,
+deployed/installed, installed-smoked, or live-scenario validated in this
+change; #139 and #140 own those gates.
+
+## 2026-09-22 Freshness Admission
+
+An uncached sweep started at `2026-09-22T15:56:39-04:00` found 28
+action-required families and one query failure across the 45 configured
+families. The llama.cpp query failure came from an upstream change, not from
+the checker: Arch moved llama.cpp into its official repositories and the AUR
+`llama.cpp-hip` and `llama.cpp-vulkan-bin` baselines were deleted. Separately,
+upstream switched to semantic versioning with v0.2.0 and has published
+b-number builds as GitHub prereleases since then, so the b-number `release`
+check reports only prereleases. The llama.cpp freshness policy now checks the
+upstream `v`-prefixed stable tags (`stable-tag`, recorded 0.4.1) against the
+Arch `llama-cpp` and `ggml-hip` baselines. The b-number `release` check and its
+source contract are unchanged.
+
+Every non-current family now has a disposition in
+`docs/maintainers/update-candidates.toml`. The final uncached sweep completed
+at `2026-09-22T16:35:44-04:00` and exited 0 with `--fail-on actionable`. It
+reported 29 stable updates, five branch-head movements, two baseline drifts,
+one prerelease-only family (llama.cpp), and eight current families. Applying
+the ledger yielded 34 tracked families, two rejected families (AutoRound and
+llmcompressor, which are upstream-scope exclusions for this convergence line),
+one adopted family, and eight current families, including llama.cpp. The
+ledger holds 35 active tracked candidate records and no blocked records; the
+extra record is `llama-cpp-v0.4.1`, which stands as the W2B rebuild target
+without matching a family result. The explicit tracker validation queried
+their nine unique issue gates, and all nine were open issues in this
+repository. The [closeout sweep](#closeout-sweep) below supersedes these
+counts.
+
+This sweep is also the one fresh sweep that freezes the version universe for
+candidate generation C ([issue #105](https://github.com/nisavid/arch-strix-halo-pkgs/issues/105)).
+Issue 105 selects C's coherent PyTorch and vLLM line within this frozen
+universe; the 2026-08-11 line pick is superseded. Lemonade is exempt from the
+freeze and follows the deployed, validated fork commit. Later upstream drift
+routes to post-closeout maintenance unless it is a security fix or a build
+breakage. Until C closes out, later sweeps disposition that drift as tracked to
+[the post-closeout drift issue](https://github.com/nisavid/arch-strix-halo-pkgs/issues/147);
+security fixes and build breakage are tracked to the C work unit that owns
+the family.
+
+The superseded tracked and blocked records were terminalized as rejected.
+The former `lemonade-upstream-11.5.2` blocker was closed as superseded before
+package adoption. The fork candidates `lemonade-fork-187b4a2` and
+`lemonade-fork-586e190` were later superseded by `lemonade-fork-3d59910`, the
+frozen fork main commit `3d5991033e4cb28152ace4013f7f22a52c3bd617` that the
+[Lemonade repin](https://github.com/nisavid/arch-strix-halo-pkgs/issues/137)
+consumes. The upstream 11.9.0 baseline drift routes to the
+[upstream-sync repackage](https://github.com/nisavid/arch-strix-halo-pkgs/issues/141).
+
+### Generation C line selection
+
+Issue 105 selected C's version line within the frozen universe. The dated
+record is
+[`docs/wayfinder/research/c-line-selection-2026-09-22.md`](../wayfinder/research/c-line-selection-2026-09-22.md),
+with the corrections from three adversarial verification passes applied:
+
+- Foundation: CPython 3.14.7, TheRock 7.14.1 (`f51dc6c9`; ai-notes
+  `dbfb70ef`), and MIGraphX 2.16.1 at `2487b688`.
+- PyTorch lane: ROCm PyTorch `release/2.12` `13da0862` (2.12.0), ROCm Triton
+  3.8.0 `669b31ac`, AOTriton 0.13b, and TorchVision 0.27.1.
+- Serving closure: vLLM 0.30.0, Transformers 5.16.1, tokenizers 0.23.2,
+  safetensors 0.8.0, compressed-tensors 0.17.0, mistral-common 1.11.7, NumPy
+  2.5.3 (fallback 2.4.6), and pydantic-core 2.46.5 with Arch pydantic 2.13.5.
+- Divergence: `prometheus-fastapi-instrumentator` stays at the host's 7.0.0
+  behind an OpenAI-serving `/metrics` gate in W6.
+- W5 removals by default: llmcompressor, AutoRound, and AITER. The owner can
+  override.
+
+The candidate ledger now routes the selection to its execution issues:
+[#108](https://github.com/nisavid/arch-strix-halo-pkgs/issues/108) (W1
+foundation), [#109](https://github.com/nisavid/arch-strix-halo-pkgs/issues/109)
+(PyTorch, Triton, AOTriton),
+[#110](https://github.com/nisavid/arch-strix-halo-pkgs/issues/110) (model and
+runtime dependencies),
+[#111](https://github.com/nisavid/arch-strix-halo-pkgs/issues/111)
+(TorchVision, vLLM), and the nonblocking lanes #118 through #121. Where the
+selection is older than the sweep's latest, the sweep record is rejected as
+outside the selected line and a standing tracked record carries the selected
+version: AOTriton 0.13b, TorchVision 0.27.1, Transformers 5.16.1,
+compressed-tensors 0.17.0, and mistral-common 1.11.7. DuckDB, asyncpg,
+zstandard, cryptography, orjson, AOCL-LibM, and AOCL-Utils are not in C's
+regenerated closure and route to post-closeout maintenance (#147). That
+includes the cryptography security refresh: cryptography 50.0.0 fixes
+CVE-2026-69247 in PKCS#7 decryption, but no installed consumer of the host's
+`python-cryptography-gfx1151` 48.0.0-1 calls the PKCS#7 decryption APIs, and
+the owner has not yet answered whether to admit the refresh earlier. No active
+record points at #105.
+
+The sweep's TheRock `release` check masked the stable `therock-10.0` release
+(published 2026-08-26). `latest_github_release` takes the first stable
+release in GitHub API order, not the PEP 440 maximum, so it reported 7.14.1.
+TheRock 7.14.1 stays: the approved end state names TheRock 7.14.x, and AMD
+publishes no gfx1151 10.0 dist tarball. The checker fix is routed to #147 and
+is not part of this admission.
+
+### pydantic-core host hazard
+
+Closed on 2026-09-23 by the #139 install; see the fix status below. Before
+that install, the host had `python-pydantic` 2.13.4 with
+`python-pydantic-core-gfx1151` 2.46.4. Arch `python-pydantic` 2.13.5 requires
+pydantic-core 2.46.5 exactly but depends on an unversioned
+`python-pydantic-core`. A routine host sync would therefore have installed a
+mismatched pair, and `import pydantic` would have raised `SystemError` for
+vLLM, FastAPI, OpenAI, mistral-common, and huggingface-hub consumers.
+
+Fix status:
+
+- Source updated: `python-pydantic-core-gfx1151` now tracks 2.46.5, rendered
+  through `tools/render_recipe_scaffolds.py`.
+- Package built: `tools/amerge build` plan `2301b532` produced
+  `python-pydantic-core-gfx1151-2.46.5-1-x86_64.pkg.tar.zst`. An
+  extracted-archive smoke imported it with pydantic 2.13.5 and validated a
+  `BaseModel`. That archive predates the exact `python-pydantic` 2.13.5
+  conflicts that the Lemonade repin (#137) added, so it was not published.
+  The guarded source renders as `2.46.5-2`.
+- Published: the #139 build produced `2.46.5-2` and published it to the
+  `strix-halo-gfx1151` repo.
+- Deployed/installed: installed alongside Arch `python-pydantic` 2.13.5 in
+  the Lemonade family transaction
+  ([#139](https://github.com/nisavid/arch-strix-halo-pkgs/issues/139)) on
+  2026-09-23. `python-pydantic` no longer needs to be held.
+- Installed-smoked on 2026-09-25: `pacman -Qkk` is clean for both packages,
+  and the `pydantic_core` module is owned by
+  `python-pydantic-core-gfx1151 2.46.5-2`. Python 3.14.6 imports pydantic
+  2.13.5 with `pydantic_core` 2.46.5, coerces a `BaseModel` field, and
+  raises `ValidationError` on invalid input.
+
+### Closeout sweep
+
+A forced sweep after the selection completed at `2026-09-22T17:19:38-04:00`
+and exited 0 with `--fail-on actionable`. It reported the same 29 stable
+updates, five branch-head movements, two baseline drifts, one prerelease-only
+family, and eight current families. Applying the ledger yielded 29 tracked
+families, seven rejected families (AOTriton, TorchVision, Transformers,
+compressed-tensors, mistral-common, AutoRound, and llmcompressor), one
+adopted family, and eight current families. Lemonade fork main had moved two
+commits past `187b4a25f` to `586e1900f`: a docs refresh and a `serde_with`
+bump in the Tauri app. Those are the additions the Lemonade candidate freeze
+(nisavid/lemonade#155) named. A cache-aware rerun on 2026-09-22 found fork
+main one commit further, at `3d5991033`: a CI and test-target fix for the
+macOS and Fedora package jobs (nisavid/lemonade#160). #155 froze that commit, so
+`lemonade-fork-3d59910` is tracked to the #137 repin and supersedes
+`lemonade-fork-586e190`. The ledger holds 36 active tracked records and no
+blocked records. The explicit tracker validation found all 12 unique issue
+gates open in this repository.
+
+Apart from the pydantic-core source update and build, this admission changes
+maintenance metadata only. No other package source was updated, and no
+package was deployed/installed, installed-smoked, service-smoked, or
+live-scenario validated. The maintained Lemonade package source remains
+10.7.0 at fork commit `e18b9c1e352df8ab5aff2ff353402f1ec77c47f2`. The
+freshness evidence is due again 24 hours after the closeout sweep completed,
+or sooner if package policy, package directories, checker behavior, or
+relevant source metadata changes.
+
+### Lemonade repin source update
+
+The Lemonade repin (#137) moved `lemonade-server` and `lemonade-app` to the
+frozen fork main commit `3d5991033`, whose CMake project version is 11.7.0 and
+which contains upstream v11.7.0, and moved the source-free `lemonade` meta
+package to version 11.7.0 to match. The freshness policy
+now records that commit as the `fork-main` cursor and 11.7.0 as the
+`upstream-release` baseline. `lemonade-fork-3d59910` stays tracked, with its
+gate moved to the
+[Lemonade family build and install handoff](https://github.com/nisavid/arch-strix-halo-pkgs/issues/139).
+The new `lemonade-upstream-11.9.0` record tracks the 11.7.0 to 11.9.0
+baseline drift to #141. The same change adds `python-pydantic<2.13.5` and
+`python-pydantic>2.13.5` conflicts to `python-pydantic-core-gfx1151` and bumps
+it to `2.46.5-2`, so pacman cannot pair pydantic-core 2.46.5 with any Arch
+pydantic other than 2.13.5. The two
+packages are installed together in the #139 transaction.
+
+A refreshed sweep with `--fail-on actionable` exited 0 and reported 29 tracked,
+seven rejected, one adopted, and eight current families. The explicit tracker
+validation found all 12 unique issue gates open. This is a source update only:
+no package was built for M3, deployed/installed, installed-smoked, or
+live-scenario validated.
+
 ## 2026-08-12 Freshness Admission
 
 A policy-forced sweep completed at `2026-08-12T02:47:52-04:00` after retiring

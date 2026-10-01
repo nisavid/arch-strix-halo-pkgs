@@ -42,6 +42,7 @@ existing cache entries.
 Current kept model IDs include:
 
 - `Dogacel/specdrift-qwen3.6-35b-a3b-eagle3`
+- `Qwen/Qwen3-0.6B-GGUF`
 - `Qwen/Qwen3.5-0.8B`
 - `Qwen/Qwen3.5-35B-A3B-GPTQ-Int4`
 - `Qwen/Qwen3.6-35B-A3B`
@@ -65,6 +66,11 @@ pooling and normalization metadata. `zeroentropy/zerank-2` exercises vLLM's
 causal-LM-to-classification adapter by deriving a one-label classifier from the
 `Yes` token and preserving the model-card score scaling. The Lemonade pooling
 scenarios remain separate because they exercise registered GGUF model paths.
+
+`Qwen/Qwen3-0.6B-GGUF` supplies the single `Qwen3-0.6B-Q8_0.gguf` file used by
+the Lemonade live-validation scenarios. The direct llama.cpp scenarios and the
+isolated `lemond` scenarios read it from this cache through `--model-path`.
+The Lemonade service keeps its own registered copy.
 
 Update this list when tracked scenarios add or remove model IDs. Keep model
 bindings in docs as model IDs plus placeholder cache roots, not concrete

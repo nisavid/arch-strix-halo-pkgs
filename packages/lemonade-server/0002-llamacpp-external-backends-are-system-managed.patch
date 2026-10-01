@@ -1,81 +1,11 @@
-diff --git a/src/cpp/cli/lemonade_client.cpp b/src/cpp/cli/lemonade_client.cpp
-index b8b5e1a..6e9723a 100644
---- a/src/cpp/cli/lemonade_client.cpp
-+++ b/src/cpp/cli/lemonade_client.cpp
-@@ -806,7 +806,9 @@ int LemonadeClient::list_recipes() const {
-                     std::string status_str = backend.state.empty() ? "unsupported" : backend.state;
-
-                     std::string info_col;
--                    if (status_str == "installed" && !backend.version.empty() && backend.version != "unknown") {
-+                    if (status_str == "installed" && !backend.message.empty()) {
-+                        info_col = backend.message;
-+                    } else if (status_str == "installed" && !backend.version.empty() && backend.version != "unknown") {
-                         info_col = backend.version;
-                     } else if (!backend.message.empty()) {
-                         info_col = backend.message;
-diff --git a/src/cpp/server/config_file.cpp b/src/cpp/server/config_file.cpp
-index b9dbbc7..892537e 100644
---- a/src/cpp/server/config_file.cpp
-+++ b/src/cpp/server/config_file.cpp
-@@ -74,6 +74,7 @@ static bool migrate_deprecated_rocm_preview_channel(json& config) {
-
- json ConfigFile::load(const std::string& cache_dir) {
-     json defaults = get_defaults();
-+    json env_overlay = migrate_from_env(defaults);
-     fs::path config_path = utils::path_from_utf8(cache_dir) / "config.json";
-
-     if (!fs::exists(config_path)) {
-@@ -81,7 +82,7 @@ json ConfigFile::load(const std::string& cache_dir) {
-         if (!fs::exists(cache_path)) {
-             fs::create_directories(cache_path);
-         }
--        json config = migrate_from_env(defaults);
-+        json config = utils::JsonUtils::merge(defaults, env_overlay);
-         migrate_deprecated_rocm_preview_channel(config);
-         save(cache_dir, config);
-         return config;
-@@ -105,7 +106,7 @@ json ConfigFile::load(const std::string& cache_dir) {
-         if (!file.is_open()) {
-             LOG(WARNING) << "Could not open " << config_path.string()
-                         << ", using defaults" << std::endl;
--            return defaults;
-+            return utils::JsonUtils::merge(defaults, env_overlay);
-         }
-
-         try {
-@@ -130,11 +131,12 @@ json ConfigFile::load(const std::string& cache_dir) {
-         }
-
-         LOG(WARNING) << "  Using defaults." << std::endl;
--        save(cache_dir, defaults);
--        return defaults;
-+        json repaired = utils::JsonUtils::merge(defaults, env_overlay);
-+        save(cache_dir, repaired);
-+        return repaired;
-     }
-
--    json merged = utils::JsonUtils::merge(defaults, loaded);
-+    json merged = utils::JsonUtils::merge(utils::JsonUtils::merge(defaults, loaded), env_overlay);
-     if (migrate_deprecated_rocm_preview_channel(merged)) {
-         save(cache_dir, merged);
-     }
-@@ -295,7 +297,7 @@ json ConfigFile::migrate_from_env(const json& defaults) {
-                   << oss.str() << std::endl;
-     }
-
--    return utils::JsonUtils::merge(defaults, overlay);
-+    return overlay;
- }
-
- } // namespace lemon
 diff --git a/src/cpp/server/system_info.cpp b/src/cpp/server/system_info.cpp
-index 57cade9..6af271c 100644
+index 30cf73f9f..b0b031998 100644
 --- a/src/cpp/server/system_info.cpp
 +++ b/src/cpp/server/system_info.cpp
-@@ -360,9 +360,57 @@ static bool is_recipe_installed(const std::string& recipe, const std::string& ba
-     return false;
+@@ -706,7 +706,55 @@ static bool is_recipe_installed(const std::string& recipe, const std::string& ba
+     return check.installed;
  }
-
+ 
 +static std::string find_system_managed_external_backend(const std::string& recipe, const std::string& backend) {
 +    if (recipe != "llamacpp") {
 +        return "";
@@ -121,54 +51,10 @@ index 57cade9..6af271c 100644
 +}
 +
  static std::string get_recipe_version(const std::string& recipe, const std::string& backend) {
-     if (recipe == "llamacpp" && backend == "system") {
--        return SystemInfo::get_system_llamacpp_version();
-+        return get_llamacpp_version_from_executable("llama-server");
-+    }
 +    std::string external_binary = find_system_managed_external_backend(recipe, backend);
 +    if (!external_binary.empty()) {
 +        return get_llamacpp_version_from_executable(external_binary);
-     }
-     auto* spec = try_get_spec_for_recipe(recipe);
-     if (spec) {
-@@ -446,6 +494,24 @@ static bool is_bin_pinned_to_latest(const std::string& recipe, const std::string
-     return BackendUtils::get_bin_config_value(recipe, backend) == "latest";
- }
-
-+static std::string get_system_managed_backend_message(const std::string& recipe, const std::string& backend) {
-+    if (recipe == "llamacpp" && (backend == "rocm" || backend == "vulkan")) {
-+        const char* label_env = std::getenv(
-+            backend == "rocm" ? "LEMONADE_LLAMACPP_ROCM_LABEL" : "LEMONADE_LLAMACPP_VULKAN_LABEL");
-+        if (label_env && *label_env) {
-+            return label_env;
-+        }
-+        std::string external_binary = find_system_managed_external_backend(recipe, backend);
-+        std::string binary_name = external_binary.empty() ? "backend" : fs::path(external_binary).filename().string();
-+        std::string version = external_binary.empty() ? "unknown" : get_llamacpp_version_from_executable(external_binary);
-+        if (!version.empty() && version != "unknown") {
-+            return "System " + binary_name + " " + version;
-+        }
-+        return "System " + binary_name;
 +    }
-+    return "system-managed backend";
-+}
-+
- static std::string get_expected_backend_version(const std::string& recipe, const std::string& backend) {
-     static json backend_versions = []() -> json {
-         try {
-@@ -1068,6 +1136,7 @@ json SystemInfo::build_recipes_info(const json& devices) {
-
-             bool version_known = !installed_version.empty() && installed_version != "unknown";
-             bool has_expected = !expected_version.empty();
-+            bool externally_managed = !find_system_managed_external_backend(def.recipe, def.backend).empty();
-             bool latest_pin = is_bin_pinned_to_latest(def.recipe, def.backend);
-             bool needs_update;
-
-@@ -1103,7 +1172,7 @@ json SystemInfo::build_recipes_info(const json& devices) {
-                     && (!version_known
-                         || version_compare(installed_version, expected_version) < 0);
-             } else {
--                needs_update = has_expected
-+                needs_update = !externally_managed && has_expected
-                     && (!version_known || !versions_match(installed_version, expected_version));
-             }
+     // Read the on-disk version.txt generically, then let the backend's ops
+     // override (llamacpp "system" runs llama-server --version; flm queries the
+     // CLI when no file is present).

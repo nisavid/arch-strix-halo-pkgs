@@ -1553,3 +1553,161 @@ def test_vllm_scenarios_do_not_assert_pre_0_30_moe_log_wording():
         if STALE_UNQUANTIZED_MOE_LOG in str(assertion.get("value", ""))
     ]
     assert stale == []
+
+
+LEMONADE_LIVE_SCENARIOS = {
+    "llama.cpp.hip.qwen3-0.6b-q8-0.completion",
+    "llama.cpp.vulkan.qwen3-0.6b-q8-0.completion",
+    "lemonade.llamacpp.rocm.qwen3-0.6b-q8-0.completion",
+    "lemonade.llamacpp.vulkan.qwen3-0.6b-q8-0.completion",
+    "lemonade.lifecycle.restart-config-hip-discovery",
+    "lemonade.pins.persistence-startup-restore",
+    "lemonade.budget.gtt-admit-refuse",
+    "lemonade.residency.pinned-busy-not-displaced",
+    "lemonade.provenance.family-no-fallback",
+    "lemonade.nofetch.preplaced-load-missing-model",
+    "lemonade.pins.service-consumer-pins",
+    "lemonade.chat.pinned-user-model.qwen35moe",
+    "lemonade.reranking.zerank-2.selected-logit.service",
+}
+
+
+def test_lemonade_live_validation_scenarios_are_gated_and_share_one_gguf():
+    from inference.scenario_loader import select_scenarios
+
+    scenarios = load_scenarios(REPO_ROOT / "inference/scenarios")
+    by_id = {scenario.id: scenario for scenario in scenarios}
+
+    assert LEMONADE_LIVE_SCENARIOS <= set(by_id)
+    for scenario_id in LEMONADE_LIVE_SCENARIOS:
+        tags = set(by_id[scenario_id].tags)
+        assert {"live-validation", "validation-window"} <= tags
+        assert "smoke" not in tags
+
+    for scenario_id in (
+        "lemonade.llamacpp.rocm.qwen3-0.6b-q8-0.completion",
+        "lemonade.llamacpp.vulkan.qwen3-0.6b-q8-0.completion",
+        "lemonade.nofetch.preplaced-load-missing-model",
+    ):
+        scenario = by_id[scenario_id]
+        assert "mutates-service" in scenario.tags
+        assert scenario.definition["given"]["lemonade_model"] == "user.Qwen3-0.6B-Q8_0-GGUF"
+    for scenario_id in (
+        "lemonade.lifecycle.restart-config-hip-discovery",
+        "lemonade.pins.persistence-startup-restore",
+        "lemonade.budget.gtt-admit-refuse",
+        "lemonade.residency.pinned-busy-not-displaced",
+    ):
+        assert "isolated-lemond" in by_id[scenario_id].tags
+    for scenario_id in ("lemonade.provenance.family-no-fallback", "lemonade.pins.service-consumer-pins"):
+        assert "read-only" in by_id[scenario_id].tags
+        assert "mutates-service" not in by_id[scenario_id].tags
+
+    nofetch = by_id["lemonade.nofetch.preplaced-load-missing-model"].definition
+    markers = {item["value"] for item in nofetch["then"]["assert"] if item["kind"] == "stdout.contains"}
+    # Each implicit auto-pull path runs for the pre-placed and the missing model.
+    for path in ("load", "inference", "ollama"):
+        for phase in (f"preplaced_{path}", f"missing_{path}"):
+            for evidence in ("model_cache_unchanged", "backend_cache_unchanged", "no_remote_connection"):
+                assert f"{phase}_{evidence}_ok" in markers
+        # The missing phases record a logged, blackholed attempt instead of failing on it.
+        assert f"preplaced_{path}_no_fetch_log_ok" in markers
+        assert f"missing_{path}_no_fetch_log_ok" not in markers
+        assert f"missing_{path}_refused_ok" in markers
+    assert {"preplaced_inference_autoload_ok", "preplaced_ollama_autoload_ok"} <= markers
+    assert {
+        "endpoint_blackhole_ok",
+        "network_attribution_ok",
+        "missing_model_registered_ok",
+        "missing_model_absent_ok",
+    } <= markers
+    for scenario_id in (
+        "lemonade.llamacpp.rocm.qwen3-0.6b-q8-0.completion",
+        "lemonade.llamacpp.vulkan.qwen3-0.6b-q8-0.completion",
+        "lemonade.nofetch.preplaced-load-missing-model",
+    ):
+        asserts = by_id[scenario_id].definition["then"]["assert"]
+        assert {"kind": "stdout.contains", "value": "backend_libraries_repo_owned_ok"} in asserts
+    # The missing model is chosen per host at run time (--missing-model or its env override).
+    assert not any(arg.split("=", 1)[0] == "--missing-model" for arg in nofetch["when"]["argv"])
+
+    rerank = by_id["lemonade.reranking.zerank-2.selected-logit.service"]
+    isolated_rerank = by_id["lemonade.reranking.zerank-2.selected-logit"]
+    # The same selected-logit tool and model as the isolated smoke, aimed at the running service.
+    assert rerank.definition["given"]["tool"] == isolated_rerank.definition["given"]["tool"]
+    assert rerank.definition["given"]["model"] == isolated_rerank.definition["given"]["model"] == "zerank-2-GGUF"
+    assert "model_provenance" not in rerank.definition
+    assert rerank.definition["when"]["argv"] == ["--base-url", "http://127.0.0.1:13305/api/v1"]
+    rerank_markers = {
+        item["value"] for item in rerank.definition["then"]["assert"] if item["kind"] == "stdout.contains"
+    }
+    assert {
+        "mode selected-logit",
+        "zerank_adapter_options_ok",
+        "capital_france_order_ok",
+        "arithmetic_order_ok",
+        "health_adapter_options_ok",
+        "zerank_rerank_ok",
+    } <= rerank_markers
+    # A rerank request can load the pinned model on the service, but never unloads it.
+    assert "mutates-service" in rerank.tags
+    assert not {"read-only", "isolated-lemond"} & set(rerank.tags)
+
+    chat = by_id["lemonade.chat.pinned-user-model.qwen35moe"]
+    assert chat.definition["given"]["tool"] == "lemonade_live_smoke.pinned-chat"
+    assert {"lemonade", "chat", "pins", "qwen35moe"} <= set(chat.tags)
+    # The chat request can load the pinned model on the service, but never unloads it.
+    assert "mutates-service" in chat.tags
+    assert not {"read-only", "isolated-lemond"} & set(chat.tags)
+    chat_markers = {
+        item["value"] for item in chat.definition["then"]["assert"] if item["kind"] == "stdout.contains"
+    }
+    assert {
+        "chat_model_pinned_ok",
+        "chat_model_architecture_ok",
+        "chat_completion_ok",
+        "chat_template_kwargs_json_ok",
+        "pinned_chat_model_loaded_ok",
+        "pinned_chat_ok",
+    } <= chat_markers
+    # The model is chosen per host at run time (--chat-model or its env override).
+    assert not any(arg.split("=", 1)[0] == "--chat-model" for arg in chat.definition["when"]["argv"])
+
+    pins_argv = by_id["lemonade.pins.service-consumer-pins"].definition["when"]["argv"]
+    pooling = {s.id: s for s in scenarios}
+    assert f"{pooling['lemonade.pooling.zembed-1-q4-k-m.embeddings'].model}=Q4_K_M" in pins_argv
+    assert f"{pooling['lemonade.reranking.zerank-2.selected-logit'].model}=Q8_0" in pins_argv
+
+    # zerank-2-GGUF names the service's built-in model, not a GGUF file binding.
+    gguf_users = [
+        s for s in scenarios if s.id in LEMONADE_LIVE_SCENARIOS and s.model not in {"builtin", "zerank-2-GGUF"}
+    ]
+    assert len(gguf_users) == 8
+    for scenario in gguf_users:
+        provenance = scenario.definition["model_provenance"]
+        assert scenario.model == "Qwen/Qwen3-0.6B-GGUF"
+        assert provenance["file"] == "Qwen3-0.6B-Q8_0.gguf"
+        assert provenance["revision"] == "23749fefcc72300e3a2ad315e1317431b06b590a"
+        assert provenance["terms_status"] == "accepted"
+
+    broad = select_scenarios(
+        scenarios, engines={"lemonade", "llama.cpp"}, models=set(), scenario_ids=set()
+    )
+    assert not LEMONADE_LIVE_SCENARIOS & {scenario.id for scenario in broad}
+
+
+def test_lemonade_app_operator_checklist_lives_in_the_catalog():
+    document = tomllib.loads(
+        (REPO_ROOT / "inference/scenarios/lemonade-live-validation.toml").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    checklists = {item["id"]: item for item in document["operator_checklist"]}
+    app = checklists["lemonade.app.pin-startup-text"]
+    steps = "\n".join(app["steps"])
+    assert "validation-window" in app["tags"]
+    assert "Pin control" in steps
+    assert "pinned_models" in steps
+    assert "text reply" in steps
+    assert "Restore" in steps

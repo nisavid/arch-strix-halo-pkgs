@@ -30,15 +30,27 @@ becomes durable, prefer a named patch that another maintainer can review.
 
 ## Lemonade
 
+The Lemonade patches apply to the `nisavid/lemonade` fork commit named by the
+`lemonade` entry in the `[source_pins]` table of
+`policies/recipe-packages.toml`. That fork commit is the fork's upstream
+v11.9.0 sync ([nisavid/lemonade#175](https://github.com/nisavid/lemonade/pull/175)),
+which contains upstream Lemonade v11.9.0 (`bb39eaf`). At the 11.9.0 repin
+([issue 141](https://github.com/nisavid/arch-strix-halo-pkgs/issues/141)),
+patches 0001-0004 applied in order with line offsets only and no fuzz, and the
+upstream changes to the patched files do not touch the patched hunks, so they
+are carried unchanged.
+
 - [Linux NPU fallback when accel-device opens fail](../packages/lemonade-server/0001-linux-npu-fallback-to-pci-id-when-accel-open-fails.patch)
   - Falls back to PCI identification when `/dev/accel/*` probing fails even
     though the hardware is still identifiable from sysfs.
 - [Treat packaged HIP and Vulkan `llama.cpp` backends as system-managed](../packages/lemonade-server/0002-llamacpp-external-backends-are-system-managed.patch)
   - Makes Lemonade treat the packaged ROCm and Vulkan `llama.cpp` backends as
-    system-managed backends rather than downloadable runtimes.
-  - Includes the config-load, backend-table, and CLI presentation changes that
-    keep the override visible after the first startup without resetting
-    unrelated keys loaded from `config.json` back to defaults.
+    system-managed backends rather than downloadable runtimes, and reads their
+    version from `llama-server --version` through an argv-based process call.
+  - Lemonade reads `LEMONADE_LLAMACPP_*_BIN` from the environment ahead of
+    `config.json` on every backend lookup (still true at 11.9.0). The patch
+    therefore no longer carries the config-load environment overlay or the
+    CLI backend-table change that older bases needed.
 - [Remove the generic `llamacpp:system` backend](../packages/lemonade-server/0003-remove-llamacpp-system-backend.patch)
   - Keeps this custom build focused on the explicit HIP and Vulkan lanes this
     repo packages.
@@ -46,6 +58,27 @@ becomes durable, prefer a named patch that another maintainer can review.
   - Makes the Lemonade GUI and backend API report the packaged `llama.cpp`
     revision and upstream `ggml-org/llama.cpp` release URL for the local ROCm
     and Vulkan lanes.
+  - It reads `LEMONADE_LLAMACPP_{ROCM,VULKAN}_{VERSION,RELEASE_URL}` only
+    from the process environment. From 11.9.0 the package sets them, with the
+    `*_BIN` paths, in `/usr/lib/lemonade/llamacpp-gfx1151.env` instead of
+    `/etc/lemonade/conf.d/10-llamacpp-gfx1151.conf`, with the same values. Its
+    `lemond.service.d/30-env-files.conf` drop-in loads that file after
+    conf.d and `/etc/default/lemond`, so a stale owner key cannot shadow it.
+
+Retired: patch 0005, "Merge custom args without keeping quotes", was a
+stopgap in `lemonade-server 11.7.0-2` for a fork-only regression. Fork commit
+`e3d08ffa6` stacked a second quoting layer on upstream's `keep_quotes=true`
+merge
+([lemonade-sdk/lemonade#1920](https://github.com/lemonade-sdk/lemonade/pull/1920)),
+so llama-server received `'{"preserve_thinking":true}'` for the qwen35 and
+qwen35moe `--chat-template-kwargs` architecture default and exited. The fork
+fix,
+[nisavid/lemonade#168](https://github.com/nisavid/lemonade/issues/168)
+(`2cb1a91`, PR 169), is merged into the v11.9.0 sync (`9038fb0`), so the
+patch was dropped at the 11.9.0 repin. It would no longer apply there anyway:
+upstream moved the merge into `recipe_arg_resolver.h`
+([lemonade-sdk/lemonade#3265](https://github.com/lemonade-sdk/lemonade/pull/3265)).
+`lemonade.chat.pinned-user-model.qwen35moe` remains the live guard.
 
 ## llama.cpp
 

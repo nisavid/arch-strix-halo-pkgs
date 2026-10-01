@@ -123,3 +123,21 @@ without chat history.
   - `docs/patches.md`
   - patch files beside the affected package
   - only then any remaining PKGBUILD shell edits
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in this repo's GitHub Issues, via the `gh` CLI; execution work uses
+the `execution:*` sub-issue hierarchy. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five canonical triage labels, verbatim: `needs-triage`, `needs-info`,
+`ready-for-agent`, `ready-for-human`, `wontfix`. See
+`docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `CONTEXT.md` and `docs/adr/` at the repo root, created lazily.
+See `docs/agents/domain.md`.

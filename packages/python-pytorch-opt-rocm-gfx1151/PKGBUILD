@@ -96,6 +96,58 @@ build() {
   fi
 }
 
+  _build_jobs() {
+  # Like GNU make, accept grouped short options (-kj4) and let the last job
+  # option win; a bare -j (unlimited) or no job option falls back to nproc.
+  local _jobs= _word _flags _i
+  local -a _words
+  read -ra _words <<<"${MAKEFLAGS:-}"
+  for ((_i = 0; _i < ${#_words[@]}; _i++)); do
+    _word=${_words[_i]}
+    case $_word in
+      --) break ;;
+      --jobs=*) _jobs=${_word#--jobs=} ;;
+      --jobs)
+        _jobs=
+        if [[ ${_words[_i + 1]:-} =~ ^[0-9]+$ ]]; then
+          _i=$((_i + 1))
+          _jobs=${_words[_i]}
+        fi
+        ;;
+      --*) ;;
+      -*)
+        _flags=${_word#-}
+        while [[ -n $_flags ]]; do
+          case ${_flags:0:1} in
+            j)
+              _jobs=${_flags:1}
+              if [[ -z $_jobs && ${_words[_i + 1]:-} =~ ^[0-9]+$ ]]; then
+                _i=$((_i + 1))
+                _jobs=${_words[_i]}
+              fi
+              break
+              ;;
+            [CfIoW])
+              # These take an argument, attached or in the next word.
+              if [[ -z ${_flags:1} ]]; then
+                _i=$((_i + 1))
+              fi
+              break
+              ;;
+            [lO]) break ;;
+          esac
+          _flags=${_flags:1}
+        done
+        ;;
+    esac
+  done
+  if [[ $_jobs =~ ^[1-9][0-9]*$ ]]; then
+    printf '%s\n' "$_jobs"
+  else
+    nproc
+  fi
+}
+
   _setup_compiler_env
   local _rocm_llvm_bin="/opt/rocm/lib/llvm/bin"
   export PATH="${PATH}:/opt/rocm/bin"
@@ -143,7 +195,7 @@ build() {
   export HIP_CLANG_PATH="${_rocm_llvm_bin}"
   export CMAKE_PREFIX_PATH="${OpenBLAS_HOME}:/opt/rocm"
   # Honor a job cap from makepkg.conf; the build root pins it for memory.
-  export MAX_JOBS="${MAX_JOBS:-$(nproc)}"
+  export MAX_JOBS="${MAX_JOBS:-$(_build_jobs)}"
   export PYTORCH_BUILD_VERSION="2.12.0"
   export PYTORCH_BUILD_NUMBER=1
 

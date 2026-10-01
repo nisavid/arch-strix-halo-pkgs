@@ -216,6 +216,33 @@ def test_core_blackcat_wheel_stack_rendered_outputs_exist() -> None:
         assert "Blackcat" in readme
 
 
+def test_pydantic_core_conflicts_with_every_other_arch_pydantic() -> None:
+    # Arch python-pydantic pins pydantic-core exactly but depends on it
+    # unversioned, so pacman must refuse pydantic-core 2.46.5 next to any
+    # pydantic other than 2.13.5, which would make `import pydantic` fail.
+    package_name = "python-pydantic-core-gfx1151"
+    lower_guard = "python-pydantic<2.13.5"
+    upper_guard = "python-pydantic>2.13.5"
+    policy = tomllib.loads((REPO_ROOT / "policies/recipe-packages.toml").read_text())[
+        "packages"
+    ][package_name]
+    package_dir = REPO_ROOT / "packages" / package_name
+    recipe = json.loads((package_dir / "recipe.json").read_text())["policy"]
+    pkgbuild = (package_dir / "PKGBUILD").read_text()
+
+    expected = ["python-pydantic-core", lower_guard, upper_guard]
+    assert policy["conflicts"] == expected
+    assert recipe["conflicts"] == expected
+    assert (
+        f"conflicts=(python-pydantic-core '{lower_guard}' '{upper_guard}')"
+        in pkgbuild
+    )
+    # The 2.46.5-1 archive predates the guard, so the guarded build needs a
+    # new pkgrel rather than a second archive under the same version.
+    assert policy["pkgrel"] == 2
+    assert "pkgrel=2" in pkgbuild
+
+
 def test_consumers_prefer_local_core_stack_packages() -> None:
     packages = tomllib.loads((REPO_ROOT / "policies/recipe-packages.toml").read_text())[
         "packages"

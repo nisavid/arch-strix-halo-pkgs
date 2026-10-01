@@ -1,0 +1,1962 @@
+#!/usr/bin/env python3
+"""Lemonade live-validation checks for the standalone Lemonade family.
+
+Modes that target the running service (``--base-url``):
+
+- ``text``: load a provisioned GGUF on one llama.cpp backend, complete text,
+  and prove that the backend process and every ROCm/HIP/ggml/llama shared
+  object it maps belong to repo packages, none from lemond's cache.
+- ``provenance``: read-only package, file-ownership, and config provenance.
+- ``nofetch``: drive each implicit auto-pull path (``/load``, OpenAI-style
+  inference auto-load, and Ollama auto-load) for a registered but absent model
+  and then for a pre-placed one while watching the service journal, the model
+  and backend caches, and lemond's sockets. The absent model must fail loudly
+  on every path with unchanged caches and no non-loopback connection, and a
+  logged, blackholed download attempt is recorded rather than failed; the
+  pre-placed paths may log no download.
+- ``service-pins``: read-only check that consumer models are pinned and loaded.
+- ``pinned-chat``: verify that an already-pinned, downloaded user model is a
+  qwen35 or qwen35moe GGUF, chat through ``/chat/completions``, require the
+  merged ``preserve_thinking`` default in its backend argv, then require its pin
+  to report loaded with no ``load_error``. The only service change is the chat
+  request's implicit load of that pinned model.
+
+Modes that start their own ``lemond`` from the packaged binary, with a
+temporary cache directory, offline config, and packaged llama.cpp backends:
+
+- ``lifecycle``: persist config, restart, and check HIP discovery.
+- ``pins``: pin persistence and pinned-model startup restore.
+- ``budget``: GTT-counted occupancy budget admission and refusal.
+- ``displacement``: pinned and in-use models are never displaced.
+"""
+
+from __future__ import annotations
+
+import argparse
+from collections.abc import Callable, Iterable, Iterator, Mapping
+import ipaddress
+import json
+import os
+from pathlib import Path
+import pwd
+import re
+import shlex
+import shutil
+import socket
+import subprocess
+import sys
+import tempfile
+import threading
+import time
+from typing import Any
+from urllib import error, parse, request
+
+from lemonade_api_auth import auth_headers, resolve_admin_api_key, resolve_api_key
+from llamacpp_server_smoke import (
+    COMPLETION_PROMPT,
+    completion_text,
+    file_sha256,
+    validate_completion,
+    verify_sha256,
+)
+
+
+SERVICE_MODES = ("text", "provenance", "nofetch", "service-pins", "pinned-chat")
+MODES = (*SERVICE_MODES, "lifecycle", "pins", "budget", "displacement")
+FAMILY_PACKAGES = (
+    "lemonade",
+    "lemonade-server",
+    "lemonade-app",
+    "llama.cpp-hip-gfx1151",
+    "llama.cpp-vulkan-gfx1151",
+)
+BACKEND_PACKAGES = {
+    "rocm": "llama.cpp-hip-gfx1151",
+    "vulkan": "llama.cpp-vulkan-gfx1151",
+}
+# The packaged backend entry points, as lemonade-server's defaults.json sets
+# them. lemond executes this path, so it must be the file, not its directory.
+DEFAULT_BACKEND_BINS = {
+    "rocm": "/usr/bin/llama-server-hip-gfx1151",
+    "vulkan": "/usr/bin/llama-server-vulkan-gfx1151",
+}
+OWNED_PATHS = {
+    "/usr/bin/lemond": "lemonade-server",
+    "/usr/bin/lemonade-app": "lemonade-app",
+    "/usr/bin/llama-server-hip-gfx1151": "llama.cpp-hip-gfx1151",
+    "/usr/bin/llama-server-vulkan-gfx1151": "llama.cpp-vulkan-gfx1151",
+}
+EXTRA_MODEL_STEMS = ("lemonade-live-a", "lemonade-live-b")
+LIFECYCLE_SENTINEL_TIMEOUT = 777
+OVERSIZED_CTX_SIZE = 4_194_304
+CONFIGURED_BUDGET_GB = 0.5
+BUSY_PROMPT = "Count upward from 1 to 5000, separated by commas: 1, 2, 3,"
+CAPACITY_RE = re.compile(r"cannot fit within effective capacity ([0-9]+(?:\.[0-9]+)?) GB")
+OWNER_RE = re.compile(r" is owned by (\S+) ")
+# Shared objects whose provenance the text scenarios prove: llama.cpp's own
+# libraries and the ROCm/HIP runtime stack a backend can pull in.
+# /proc/<pid>/maps names the resolved file, whose version suffix may carry a
+# build id: TheRock ships libamdhip64.so.7.13.26176-79e85e1468.
+BACKEND_LIB_RE = re.compile(
+    r"^lib(?:ggml|llama|mtmd|amdhip|hip|hsa|roc|amd_comgr|rccl|miopen)[^/]*\.so(?:\.[0-9][0-9A-Za-z._+-]*)?$",
+    re.IGNORECASE,
+)
+LLAMACPP_LIB_RE = re.compile(r"^lib(?:ggml|llama|mtmd)", re.IGNORECASE)
+HIP_RUNTIME_LIB_RE = re.compile(r"^libamdhip64\.so")
+ALTERED_RE = re.compile(r"(\d+) altered files?")
+# pacman -Qkk names each altered path on stderr, one line per failed property.
+QKK_WARNING_RE = re.compile(r"^warning: (?P<package>\S+): (?P<path>/.*) \((?P<reason>[^()]+)\)$")
+# A file the invoking user cannot read fails only its checksum step.
+UNREADABLE_CHECKSUM = "failed to calculate SHA256 checksum"
+BACKUP_STATUS_RE = re.compile(r"(/\S+) \[(\w+)\]")
+# Absolute paths in service-supplied text. Package-owned /usr/bin paths are
+# generic interfaces; every other absolute path may name host-specific state.
+_PATH_BODY = r"[^\s\"'`,;()\[\]{}<>]"
+ABSOLUTE_PATH_RE = re.compile(r"(?<![\w.:/~-])/(?!usr/bin/)" + _PATH_BODY + "+")
+
+
+def scrub_paths(text: str, roots: Mapping[str, Path] | None = None) -> str:
+    """Replace absolute paths in `text`: `roots` by `<name>`, others by `<path>`."""
+    named = []
+    for name, root in (roots or {}).items():
+        for base in {str(root), os.path.realpath(root)}:
+            if base.rstrip("/"):
+                named.append((base.rstrip("/"), name))
+    for base, name in sorted(named, key=lambda item: -len(item[0])):
+        text = re.sub(re.escape(base) + r"(?:/" + _PATH_BODY + "*)?", f"<{name}>", text)
+    return ABSOLUTE_PATH_RE.sub("<path>", text)
+
+
+OLLAMA_ROUTE_PREFIX = "/api/"
+
+
+class LemonadeError(RuntimeError):
+    pass
+
+
+def error_message(payload: Any) -> str | None:
+    if not isinstance(payload, dict):
+        return None
+    err = payload.get("error")
+    if isinstance(err, dict):
+        return str(err.get("message", err))
+    if err:
+        return str(err)
+    if payload.get("status") == "error":
+        return str(payload.get("message", payload))
+    return None
+
+
+class LemonadeClient:
+    def __init__(
+        self,
+        base_url: str,
+        *,
+        api_key: str | None = None,
+        admin_api_key: str | None = None,
+        timeout: float = 600.0,
+    ) -> None:
+        self.base_url = base_url.rstrip("/")
+        self.root_url = self.base_url.removesuffix("/api/v1").removesuffix("/v1")
+        self.api_key = api_key
+        self.admin_api_key = admin_api_key or api_key
+        self.timeout = timeout
+
+    def _request_obj(self, method: str, path: str, payload: Any) -> request.Request:
+        # /internal/* and the Ollama-compatible /api/* routes live at the server root.
+        internal = path.startswith("/internal/")
+        root = internal or path.startswith(OLLAMA_ROUTE_PREFIX)
+        url = (self.root_url if root else self.base_url) + path
+        headers = auth_headers(self.admin_api_key if internal else self.api_key)
+        data = None
+        if payload is not None:
+            data = json.dumps(payload).encode("utf-8")
+            headers["Content-Type"] = "application/json"
+        return request.Request(url, data=data, headers=headers, method=method)
+
+    def request(
+        self,
+        method: str,
+        path: str,
+        payload: Any = None,
+        *,
+        timeout: float | None = None,
+        check: bool = True,
+    ) -> tuple[int, Any]:
+        req = self._request_obj(method, path, payload)
+        try:
+            with request.urlopen(req, timeout=timeout or self.timeout) as response:
+                status = response.status
+                body = response.read().decode("utf-8")
+        except error.HTTPError as exc:
+            status = exc.code
+            body = exc.read().decode("utf-8", errors="replace")
+        try:
+            parsed: Any = json.loads(body) if body.strip() else {}
+        except json.JSONDecodeError:
+            parsed = {"raw": body}
+        message = error_message(parsed)
+        if check and (status >= 400 or message):
+            raise LemonadeError(f"{method} {path} -> {status}: {scrub_paths(message or body[:500])}")
+        return status, parsed
+
+    def get(self, path: str, **kwargs: Any) -> Any:
+        return self.request("GET", path, **kwargs)[1]
+
+    def post(self, path: str, payload: Any, **kwargs: Any) -> Any:
+        return self.request("POST", path, payload, **kwargs)[1]
+
+    def stream_lines(self, path: str, payload: Any, *, timeout: float | None = None) -> Iterator[str]:
+        req = self._request_obj("POST", path, payload)
+        with request.urlopen(req, timeout=timeout or self.timeout) as response:
+            for raw in response:
+                yield raw.decode("utf-8", errors="replace").rstrip("\r\n")
+
+
+def quote_model(model: str) -> str:
+    return parse.quote(model, safe="")
+
+
+def loaded_entry(health: Mapping[str, Any], model: str) -> dict[str, Any] | None:
+    """Return the /health entry for `model`, matching its listed form too.
+
+    A registered model (user.X) always wins precedence for its bare name, so
+    /health lists it as X. extra. and builtin. ids are not widened: either can
+    be shadowed, and then the bare listing names another model.
+    """
+    names = {model}
+    if model.startswith("user.") and len(model) > len("user."):
+        names.add(model[len("user."):])
+    for item in health.get("all_models_loaded", []) or []:
+        if names & {item.get("model_name"), item.get("id")}:
+            return item
+    return None
+
+
+# Canonical model-id source prefixes. The candidate lists a model under its
+# bare name when it wins precedence for that name, keeps the prefix when it is
+# shadowed, and accepts either form as input.
+CANONICAL_SOURCES = ("user.", "extra.", "builtin.")
+
+
+def bare_model_name(model: str) -> str:
+    for prefix in CANONICAL_SOURCES:
+        if model.startswith(prefix) and len(model) > len(prefix):
+            return model[len(prefix) :]
+    return model
+
+
+def model_info(client: LemonadeClient, model: str) -> dict[str, Any]:
+    payload = client.get(f"/models/{quote_model(model)}")
+    if isinstance(payload.get("data"), dict):
+        return payload["data"]
+    return payload
+
+
+def main_checkpoint(info: Mapping[str, Any]) -> str | None:
+    checkpoints = info.get("checkpoints")
+    if isinstance(checkpoints, dict) and checkpoints.get("main"):
+        return str(checkpoints["main"])
+    checkpoint = info.get("checkpoint")
+    return str(checkpoint) if checkpoint else None
+
+
+def main_model_file(client: LemonadeClient, model: str) -> Path:
+    """Resolve the service's local main model file; the path is never printed."""
+    payload = client.get(f"/models/{quote_model(model)}/files?include_paths=true")
+    for item in payload.get("files", []):
+        if item.get("role") == "main" and item.get("exists") and item.get("path"):
+            return Path(str(item["path"]))
+    raise AssertionError(f"{model} has no resolved main model file")
+
+
+def request_refusal(status: int, payload: Any) -> str | None:
+    """A refusal is status >= 400 or an explicit error; return it, or None."""
+    message = error_message(payload)
+    if status < 400 and not message:
+        return None
+    return message or json.dumps(payload, sort_keys=True)
+
+
+def load_refusal(client: LemonadeClient, model: str, **options: Any) -> str | None:
+    """Try a load that should be refused; return the refusal, or None if admitted."""
+    return request_refusal(*client.request("POST", "/load", {"model_name": model, **options}, check=False))
+
+
+def refusal_capacity_gb(message: str | None) -> float | None:
+    if not message:
+        return None
+    match = CAPACITY_RE.search(message)
+    return float(match.group(1)) if match else None
+
+
+def integrated_gpu(system_info: Mapping[str, Any]) -> dict[str, Any]:
+    gpus = (system_info.get("devices") or {}).get("amd_gpu") or []
+    if isinstance(gpus, dict):
+        gpus = [gpus]
+    for gpu in gpus:
+        if gpu.get("available") and (
+            gpu.get("gpu_type") == "integrated" or gpu.get("integrated") is True
+        ):
+            return gpu
+    raise AssertionError(f"no available integrated AMD GPU in system-info: {gpus!r}")
+
+
+def validate_hip_discovery(system_info: Mapping[str, Any], *, expect_family: str) -> dict[str, Any]:
+    gpu = integrated_gpu(system_info)
+    if gpu.get("family") != expect_family:
+        raise AssertionError(f"expected GPU family {expect_family}, got {gpu.get('family')!r}")
+    backends = ((system_info.get("recipes") or {}).get("llamacpp") or {}).get("backends") or {}
+    rocm = backends.get("rocm") or {}
+    if rocm.get("state") != "installed" or "amd_gpu" not in (rocm.get("devices") or []):
+        raise AssertionError(f"llamacpp rocm backend is not installed for amd_gpu: {rocm!r}")
+    return gpu
+
+
+def process_executable(pid: int, *, proc_root: Path = Path("/proc")) -> str:
+    raw = (proc_root / str(pid) / "cmdline").read_bytes()
+    argv0 = raw.split(b"\0", 1)[0].decode("utf-8", errors="replace")
+    if not argv0:
+        raise AssertionError(f"process {pid} has no readable argv[0]")
+    if not argv0.startswith("/"):
+        resolved = shutil.which(argv0)
+        if resolved is None:
+            raise AssertionError(f"process {pid} argv[0] {argv0!r} is not an absolute path")
+        argv0 = resolved
+    return argv0
+
+
+Runner = Callable[..., subprocess.CompletedProcess]
+
+
+def run_command(
+    argv: list[str],
+    *,
+    runner: Runner = subprocess.run,
+    ok_codes: frozenset[int] = frozenset({0}),
+) -> str:
+    completed = runner(argv, capture_output=True, text=True)
+    if completed.returncode not in ok_codes:
+        raise AssertionError(
+            f"{scrub_paths(' '.join(argv))} exited {completed.returncode}: {scrub_paths(completed.stderr.strip())}"
+        )
+    return completed.stdout
+
+
+def package_owner(path: str | Path, *, runner: Runner = subprocess.run) -> str:
+    output = run_command(["pacman", "-Qo", str(path)], runner=runner)
+    match = OWNER_RE.search(output)
+    if match is None:
+        raise AssertionError(f"could not parse pacman -Qo output: {output!r}")
+    return match.group(1)
+
+
+def repo_package_names(repo: str, *, runner: Runner = subprocess.run) -> set[str]:
+    return set(run_command(["pacman", "-Slq", repo], runner=runner).split())
+
+
+def mapped_libraries(pid: int, *, proc_root: Path = Path("/proc")) -> set[str]:
+    """Paths of the ROCm/HIP/ggml/llama/mtmd shared objects mapped into `pid`."""
+    try:
+        text = (proc_root / str(pid) / "maps").read_text(encoding="utf-8", errors="replace")
+    except OSError as exc:
+        raise AssertionError(
+            f"backend_maps_unreadable: {exc.strerror}; run with privileges that can "
+            "read the backend process's memory map"
+        ) from None
+    paths: set[str] = set()
+    for line in text.splitlines():
+        fields = line.split(None, 5)
+        if len(fields) < 6:
+            continue
+        path = fields[5].strip().removesuffix(" (deleted)")
+        if path.startswith("/") and BACKEND_LIB_RE.match(Path(path).name):
+            paths.add(path)
+    return paths
+
+
+def _under(path: str, roots: Iterable[Path]) -> bool:
+    candidate = Path(path)
+    for root in roots:
+        for base in {root, Path(os.path.realpath(root))}:
+            if candidate.is_relative_to(base):
+                return True
+    return False
+
+
+def verify_backend_libraries(
+    paths: set[str],
+    *,
+    backend: str,
+    repo: str,
+    repo_packages: set[str],
+    cache_bins: Iterable[Path],
+    owner_of: Callable[[str], str],
+) -> None:
+    """Every mapped ROCm/HIP/ggml/llama/mtmd object must come from a repo package.
+
+    With backend=rocm, lemond prepends cached TheRock lib dirs to the backend's
+    LD_LIBRARY_PATH, so a cached runtime can shadow the packaged one even when
+    the executable is packaged. Output carries counts and package names only.
+    """
+    names = [Path(path).name for path in paths]
+    print("backend_libraries", len(paths))
+    if not any(LLAMACPP_LIB_RE.match(name) for name in names):
+        raise AssertionError("backend_libraries_missing: no ggml, llama, or mtmd shared object is mapped")
+    if backend == "rocm" and not any(HIP_RUNTIME_LIB_RE.match(name) for name in names):
+        raise AssertionError("backend_libraries_missing: the rocm backend has no HIP runtime mapped")
+    cached = [path for path in paths if _under(path, cache_bins)]
+    print("backend_libraries_from_cache", len(cached))
+    if cached:
+        raise AssertionError(f"{len(cached)} backend libraries load from lemond's cache bin directory")
+    owners: dict[str, int] = {}
+    unowned = 0
+    llamacpp_owners: set[str] = set()
+    for path in sorted(paths):
+        try:
+            owner = owner_of(path)
+        except AssertionError:
+            unowned += 1
+            continue
+        owners[owner] = owners.get(owner, 0) + 1
+        if LLAMACPP_LIB_RE.match(Path(path).name):
+            llamacpp_owners.add(owner)
+    print("backend_libraries_unowned", unowned)
+    if unowned:
+        raise AssertionError(f"{unowned} backend libraries are not owned by any package")
+    for owner, count in sorted(owners.items()):
+        print("backend_library_package", owner, count)
+    outside = sorted(set(owners) - repo_packages)
+    if outside:
+        raise AssertionError(f"backend libraries owned by packages outside {repo}: {outside}")
+    if llamacpp_owners != {BACKEND_PACKAGES[backend]}:
+        raise AssertionError(
+            f"ggml/llama/mtmd libraries are owned by {sorted(llamacpp_owners)}, not {BACKEND_PACKAGES[backend]}"
+        )
+    print("backend_libraries_repo_owned_ok")
+
+
+def parse_pacman_info(text: str) -> dict[str, str]:
+    fields: dict[str, str] = {}
+    key = None
+    for line in text.splitlines():
+        if not line.strip():
+            continue
+        if line[:1].isspace() and key is not None:
+            fields[key] += " " + line.strip()
+            continue
+        name, sep, value = line.partition(":")
+        if not sep:
+            continue
+        key = name.strip()
+        fields[key] = value.strip()
+    return fields
+
+
+def run_text(
+    client: LemonadeClient,
+    *,
+    model: str,
+    backend: str,
+    ctx_size: int,
+    expect_checkpoint: str | None,
+    expect_sha256: str | None = None,
+    repo: str = "strix-halo-gfx1151",
+    cache_bins: Iterable[Path] = (),
+    owner_of: Callable[[str], str] = package_owner,
+    executable_of: Callable[[int], str] = process_executable,
+    digest_of: Callable[[Path], str] = file_sha256,
+    libraries_of: Callable[[int], set[str]] = mapped_libraries,
+    repo_packages_of: Callable[[str], set[str]] = repo_package_names,
+) -> None:
+    info = model_info(client, model)
+    if not info.get("downloaded"):
+        raise AssertionError(
+            f"model_not_provisioned: {model}; provision it explicitly before the "
+            "validation window instead of letting a load download it"
+        )
+    checkpoint = main_checkpoint(info)
+    if expect_checkpoint and checkpoint != expect_checkpoint:
+        raise AssertionError(f"{model} checkpoint is {checkpoint!r}, not {expect_checkpoint!r}")
+    if expect_sha256:
+        path = main_model_file(client, model)
+        actual = digest_of(path)
+        if actual != expect_sha256.lower():
+            raise AssertionError(
+                f"model_sha256 mismatch for {model}: expected {expect_sha256}, got {actual}"
+            )
+        print("model_sha256_ok")
+    print("model_provisioned_ok")
+
+    was_loaded = loaded_entry(client.get("/health"), model) is not None
+    try:
+        client.post("/load", {"model_name": model, "llamacpp_backend": backend, "ctx_size": ctx_size})
+        entry = loaded_entry(client.get("/health"), model)
+        if entry is None:
+            raise AssertionError(f"{model} is not resident after load")
+        selected = (entry.get("recipe_options") or {}).get("llamacpp_backend")
+        if selected != backend:
+            raise AssertionError(f"expected llamacpp_backend {backend}, got {selected!r}")
+        print("backend_selected", backend)
+        print("backend_selected_ok")
+
+        executable = executable_of(int(entry["pid"]))
+        owner = owner_of(executable)
+        print("backend_executable", Path(executable).name)
+        print("backend_package", owner)
+        if owner != BACKEND_PACKAGES[backend]:
+            raise AssertionError(f"backend process is owned by {owner}, not {BACKEND_PACKAGES[backend]}")
+        print("backend_package_ok")
+
+        payload = client.post(
+            "/completions",
+            {"model": model, "prompt": COMPLETION_PROMPT, "max_tokens": 8, "temperature": 0},
+        )
+        text = completion_text(payload)
+        print("completion_text", json.dumps(text))
+        validate_completion(text)
+        print("completion_ok")
+
+        # After a completion, so lazily loaded backend libraries are mapped too.
+        verify_backend_libraries(
+            libraries_of(int(entry["pid"])),
+            backend=backend,
+            repo=repo,
+            repo_packages=repo_packages_of(repo),
+            cache_bins=cache_bins,
+            owner_of=owner_of,
+        )
+    finally:
+        if not was_loaded:
+            client.request("POST", "/unload", {"model_name": model}, check=False)
+            print("residency_restored")
+
+
+def package_alterations(package: str, *, runner: Runner = subprocess.run) -> dict[str, set[str]]:
+    """Map each path that pacman -Qkk reports altered to its failed properties."""
+    completed = runner(["pacman", "-Qkk", package], capture_output=True, text=True)
+    if completed.returncode not in (0, 1):
+        raise AssertionError(f"pacman -Qkk {package} exited {completed.returncode}")
+    match = ALTERED_RE.search(completed.stdout)
+    if match is None:
+        raise AssertionError(f"could not parse pacman -Qkk {package} output: {completed.stdout.strip()!r}")
+    reasons: dict[str, set[str]] = {}
+    for line in completed.stderr.splitlines():
+        found = QKK_WARNING_RE.match(line.strip())
+        if found and found["package"] == package:
+            reasons.setdefault(found["path"], set()).add(found["reason"])
+    if len(reasons) != int(match.group(1)):
+        raise AssertionError(
+            f"pacman -Qkk {package} counts {match.group(1)} altered files but names {len(reasons)}"
+        )
+    return reasons
+
+
+def backup_statuses(package: str, *, runner: Runner = subprocess.run) -> dict[str, str]:
+    """Map each backup file of `package` to its pacman -Qii status, such as unreadable."""
+    info = parse_pacman_info(run_command(["pacman", "-Qii", package], runner=runner))
+    return dict(BACKUP_STATUS_RE.findall(info.get("Backup Files", "")))
+
+
+def require_unaltered(package: str, *, runner: Runner = subprocess.run) -> None:
+    """Fail on any altered package file, except a backup file this user cannot read.
+
+    pacman reports a backup file's content mismatch as a notice and does not
+    count it as altered, so for a root-only backup file such as
+    zz-secrets.conf, the only counted content failure a non-root check can
+    report is the unreadable checksum. When that is the file's only failure,
+    the file is recorded, not counted as altered; any other failure counts.
+    Files are named by their path inside the package archive, as pacman's own
+    file list records them, so the scrubbed error report keeps them.
+    """
+    reasons = package_alterations(package, runner=runner)
+    unreadable = {path for path, why in reasons.items() if why == {UNREADABLE_CHECKSUM}}
+    if unreadable:
+        statuses = backup_statuses(package, runner=runner)
+        unreadable = {path for path in unreadable if statuses.get(path) == "unreadable"}
+    for path in sorted(unreadable):
+        print("package_backup_unreadable", package, path.lstrip("/"))
+    altered = sorted(set(reasons) - unreadable)
+    if altered:
+        detail = "; ".join(f"{path.lstrip('/')} ({', '.join(sorted(reasons[path]))})" for path in altered)
+        raise AssertionError(f"pacman -Qkk {package} reported altered files: {detail}")
+
+
+def run_provenance(
+    client: LemonadeClient,
+    *,
+    repo: str,
+    service: str,
+    runner: Runner = subprocess.run,
+    executable_of: Callable[[int], str] = process_executable,
+    path_is_dir: Callable[[Path], bool] = Path.is_dir,
+) -> None:
+    packagers: set[str] = set()
+    for package in FAMILY_PACKAGES:
+        local = parse_pacman_info(run_command(["pacman", "-Qi", package], runner=runner))
+        synced = parse_pacman_info(run_command(["pacman", "-Si", f"{repo}/{package}"], runner=runner))
+        if local.get("Version") != synced.get("Version"):
+            raise AssertionError(
+                f"{package} installed {local.get('Version')} differs from {repo} {synced.get('Version')}"
+            )
+        if local.get("Packager") != synced.get("Packager"):
+            raise AssertionError(f"{package} installed packager differs from the {repo} build")
+        packagers.add(local.get("Packager", ""))
+        print("package_from_repo", package, local.get("Version"))
+    if len(packagers) != 1:
+        raise AssertionError(f"mixed packagers across the Lemonade family: {len(packagers)} identities")
+    print("family_packager_uniform_ok")
+
+    foreign = set(run_command(["pacman", "-Qmq"], runner=runner, ok_codes=frozenset({0, 1})).split())
+    if foreign & set(FAMILY_PACKAGES):
+        raise AssertionError(f"foreign Lemonade family packages: {sorted(foreign & set(FAMILY_PACKAGES))}")
+    print("no_foreign_package_ok")
+
+    for path, expected in OWNED_PATHS.items():
+        owner = package_owner(path, runner=runner)
+        if owner != expected:
+            raise AssertionError(f"{path} is owned by {owner}, not {expected}")
+        print("owned", path, owner)
+    main_pid = int(
+        run_command(["systemctl", "show", "-p", "MainPID", "--value", service], runner=runner).strip() or 0
+    )
+    if main_pid <= 0:
+        raise AssertionError(f"{service} has no running main process")
+    service_executable = executable_of(main_pid)
+    service_owner = package_owner(service_executable, runner=runner)
+    if service_owner != "lemonade-server":
+        raise AssertionError(f"{service} runs an executable owned by {service_owner}, not lemonade-server")
+    print("service_executable", service_executable)
+    print("service_executable_owned_ok")
+
+    for package in FAMILY_PACKAGES:
+        require_unaltered(package, runner=runner)
+    print("package_files_unaltered_ok")
+
+    config = client.get("/internal/config")
+    for key in ("offline", "no_fetch_executables"):
+        if config.get(key) is not True:
+            raise AssertionError(f"service config {key} is {config.get(key)!r}, expected true")
+    print("offline_config_ok")
+    llamacpp = config.get("llamacpp") or {}
+    for backend, expected in BACKEND_PACKAGES.items():
+        value = str(llamacpp.get(f"{backend}_bin", ""))
+        if not value.startswith("/"):
+            raise AssertionError(
+                f"llamacpp.{backend}_bin={value!r} is not a packaged path; Lemonade could fetch a bundled backend"
+            )
+        target = Path(value)
+        if path_is_dir(target):
+            target = target / "llama-server"
+        owner = package_owner(target, runner=runner)
+        if owner != expected:
+            raise AssertionError(f"llamacpp.{backend}_bin resolves to {owner}, not {expected}")
+    print("no_bundled_backend_ok")
+    print("provenance_ok")
+
+
+# --- No-fetch evidence (service) --------------------------------------------
+
+# llama-server reads MODEL_ENDPOINT ahead of HF_ENDPOINT, so check all three.
+BLACKHOLE_ENV_KEYS = ("HF_ENDPOINT", "MODELSCOPE_ENDPOINT", "MODEL_ENDPOINT")
+SYSTEMD_UNIT_DIR_ENV_KEYS = frozenset({"CACHE_DIRECTORY", "STATE_DIRECTORY", "RUNTIME_DIRECTORY"})
+# Log lines that the candidate emits only while downloading or installing a
+# model or backend. "downloaded=" and "already downloaded" do not match.
+FETCH_LOG_RE = re.compile(
+    r"(?i)(?:\bdownloading\b|download complete|\bdownloaded(?::| archive| tarball)"
+    r"|all files downloaded|not cached, downloading|fetching repository"
+    r"|\binstalling\b|installation complete|\bupgrading\b|\breinstalling\b)"
+)
+SS_USERS_RE = re.compile(r"pid=(\d+)")
+
+
+def _peer_host_port(address: str) -> tuple[str, str]:
+    host, _, port = address.rpartition(":")
+    host = host.strip("[]").split("%", 1)[0]
+    return host, port
+
+
+def is_loopback_host(host: str) -> bool:
+    if host == "localhost":
+        return True
+    try:
+        address = ipaddress.ip_address(host)
+    except ValueError:
+        return False
+    mapped = getattr(address, "ipv4_mapped", None)
+    return (mapped or address).is_loopback
+
+
+def blackhole_ports(env: Mapping[str, str]) -> set[str]:
+    """Require every download endpoint to point at loopback; return its ports."""
+    ports: set[str] = set()
+    for key in BLACKHOLE_ENV_KEYS:
+        value = env.get(key, "")
+        parsed = parse.urlsplit(value)
+        if not parsed.hostname or not is_loopback_host(parsed.hostname):
+            raise AssertionError(
+                f"endpoint_blackhole_missing: the service's {key} must name a loopback "
+                "endpoint so a download attempt cannot leave the host"
+            )
+        ports.add(str(parsed.port or (443 if parsed.scheme == "https" else 80)))
+    return ports
+
+
+def parse_ss(text: str) -> list[dict[str, Any]]:
+    """Parse `ss -tanpH` rows into state, local port, peer, and owning pids."""
+    rows = []
+    for line in text.splitlines():
+        fields = line.split()
+        if len(fields) < 5:
+            continue
+        local_port = _peer_host_port(fields[3])[1]
+        host, port = _peer_host_port(fields[4])
+        pids = {int(pid) for pid in SS_USERS_RE.findall(" ".join(fields[5:]))}
+        rows.append(
+            {"state": fields[0], "local_port": local_port, "peer_host": host, "peer_port": port, "pids": pids}
+        )
+    return rows
+
+
+def snapshot_tree(root: Path) -> dict[str, tuple[Any, ...]]:
+    """List a cache tree by relative path, type, size, and mtime; hashing is too slow."""
+    if not root.exists():
+        return {}
+    entries: dict[str, tuple[Any, ...]] = {}
+
+    def fail(exc: OSError) -> None:
+        raise AssertionError(f"cache_unreadable: {exc.strerror}; run with read access to the service caches")
+
+    for dirpath, dirnames, filenames in os.walk(root, onerror=fail):
+        base = Path(dirpath)
+        for name in [*dirnames, *filenames]:
+            path = base / name
+            rel = str(path.relative_to(root))
+            st = path.lstat()
+            if path.is_symlink():
+                entries[rel] = ("link", os.readlink(path))
+            elif path.is_dir():
+                entries[rel] = ("dir",)
+            else:
+                entries[rel] = ("file", st.st_size, st.st_mtime_ns)
+    return entries
+
+
+def tree_changes(before: Mapping[str, Any], after: Mapping[str, Any]) -> list[str]:
+    return sorted(key for key in set(before) | set(after) if before.get(key) != after.get(key))
+
+
+class ServiceHost:
+    """Read-only views of the systemd service: pids, env, journal, sockets, caches."""
+
+    def __init__(self, service: str, *, runner: Runner = subprocess.run, proc_root: Path = Path("/proc")) -> None:
+        self.service = service
+        self.runner = runner
+        self.proc_root = proc_root
+
+    def show(self, prop: str) -> str:
+        return run_command(
+            ["systemctl", "show", "-p", prop, "--value", self.service], runner=self.runner
+        ).strip()
+
+    def main_pid(self) -> int:
+        pid = int(self.show("MainPID") or 0)
+        if pid <= 0:
+            raise AssertionError(f"{self.service} has no running main process")
+        return pid
+
+    def process_tree(self, pid: int) -> set[int]:
+        pids, pending = set(), [pid]
+        while pending:
+            current = pending.pop()
+            pids.add(current)
+            for children in (self.proc_root / str(current) / "task").glob("*/children"):
+                try:
+                    pending += [int(child) for child in children.read_text().split()]
+                except OSError:
+                    continue
+        return pids
+
+    def effective_env(self, keys: tuple[str, ...]) -> tuple[dict[str, str], str]:
+        """Read only `keys`, and say where they came from.
+
+        The running lemond's /proc environ is the effective value, because an
+        owner env file (conf.d/*.conf, /etc/default/lemond) overrides the
+        unit's Environment=. Only when that is unreadable, as for a non-root
+        run, fall back to the unit's Environment=.
+        """
+        try:
+            raw = (self.proc_root / str(self.main_pid()) / "environ").read_bytes()
+        except OSError:
+            env: dict[str, str] = {}
+            for item in shlex.split(self.show("Environment")):
+                key, sep, value = item.partition("=")
+                if sep and key in keys:
+                    env[key] = value
+            return env, "unit_config"
+        env = {}
+        for item in raw.split(b"\0"):
+            key, sep, value = item.decode("utf-8", errors="replace").partition("=")
+            if sep and key in keys:
+                env[key] = value
+        return env, "effective"
+
+    def service_env(self, keys: tuple[str, ...]) -> dict[str, str]:
+        return self.effective_env(keys)[0]
+
+    def endpoint_env(self) -> tuple[dict[str, str], str]:
+        return self.effective_env(BLACKHOLE_ENV_KEYS)
+
+    def cache_dir(self) -> Path:
+        """The service's cache dir, in the order lemond resolves it.
+
+        lemond's positional argv, then LEMONADE_CACHE_DIR, then the unit's
+        CacheDirectory= (Lemonade 11.9; systemd exports it as CACHE_DIRECTORY,
+        and a relative value lives under /var/cache), then the legacy
+        ~user/.cache/lemonade that 11.7's unit relies on.
+        """
+        argv = (self.proc_root / str(self.main_pid()) / "cmdline").read_bytes().split(b"\0")
+        if len(argv) > 1 and argv[1] and not argv[1].startswith(b"-"):
+            return Path(argv[1].decode())
+        env_dir = self.service_env(("LEMONADE_CACHE_DIR",)).get("LEMONADE_CACHE_DIR")
+        if env_dir:
+            return Path(env_dir)
+        # CacheDirectory= may list several dirs, each optionally "dir:symlink".
+        unit_dirs = self.show("CacheDirectory").split()
+        if unit_dirs:
+            return Path("/var/cache") / unit_dirs[0].split(":", 1)[0]
+        return Path(pwd.getpwnam(self.show("User") or "root").pw_dir) / ".cache" / "lemonade"
+
+    def sockets(self) -> list[dict[str, Any]]:
+        return parse_ss(run_command(["ss", "-tanpH"], runner=self.runner))
+
+    def _journal_entries(self, *extra: str) -> list[tuple[str, str]]:
+        output = run_command(
+            ["journalctl", "-u", self.service, "--no-pager", "-q", "-o", "json", *extra], runner=self.runner
+        )
+        entries = []
+        for line in output.splitlines():
+            if not line.strip():
+                continue
+            record = json.loads(line)
+            message = record.get("MESSAGE", "")
+            if isinstance(message, list):  # journald encodes non-UTF-8 messages as byte arrays.
+                message = bytes(message).decode("utf-8", "replace")
+            entries.append((str(record["__CURSOR"]), str(message)))
+        return entries
+
+    def journal_cursor(self) -> str | None:
+        """Cursor of the unit's newest journal entry, or None when it has none."""
+        entries = self._journal_entries("-n", "1")
+        return entries[-1][0] if entries else None
+
+    def journal_after(self, cursor: str | None) -> tuple[list[str], str | None]:
+        """Messages strictly after `cursor`, and the cursor of the last one returned."""
+        entries = self._journal_entries(*(("--after-cursor", cursor) if cursor else ()))
+        return [message for _, message in entries], (entries[-1][0] if entries else cursor)
+
+
+_CAPTURE = object()
+
+
+class FetchWatch:
+    """Observe one phase: cache trees, service journal, and lemond-tree sockets.
+
+    Phase journal windows are contiguous and bounded by journal cursors. A
+    window starts at `start_cursor` (by default, the newest entry when the
+    phase begins), which is the previous phase's end cursor. It ends once the
+    phase's own line has landed; with `settle`, it then stays open until the
+    journal has been quiet for `settle` seconds, capped at `journal_timeout`.
+    The next phase starts at `end_cursor`, so every journal line is charged to
+    exactly one phase.
+    """
+
+    def __init__(
+        self,
+        host: ServiceHost,
+        *,
+        caches: Mapping[str, Path],
+        blackhole: set[str],
+        expect_log: str,
+        interval: float = 0.2,
+        journal_timeout: float = 10.0,
+        settle: float = 0.0,
+        start_cursor: Any = _CAPTURE,
+    ) -> None:
+        self.host = host
+        self.expect_log = expect_log
+        self.journal_timeout = journal_timeout
+        self.settle = settle
+        self.start_cursor = start_cursor
+        self.end_cursor = start_cursor
+        self.caches = caches
+        self.blackhole = blackhole
+        self.interval = interval
+        self.remote: set[tuple[str, str]] = set()
+        self.blackhole_hits = 0
+        self.samples = 0
+        self.journal: list[str] = []
+        self._stop = threading.Event()
+        self._thread = threading.Thread(target=self._run, daemon=True)
+        self.error: BaseException | None = None
+
+    def sample(self) -> None:
+        tree = self.host.process_tree(self.host.main_pid())
+        rows = self.host.sockets()
+        # Clients may reach the service over the LAN; accepted connections are not fetches.
+        listen_ports = {r["local_port"] for r in rows if r["state"] == "LISTEN" and r["pids"] & tree}
+        for row in rows:
+            if row["state"] == "LISTEN" or not row["pids"] & tree or row["local_port"] in listen_ports:
+                continue
+            if not is_loopback_host(row["peer_host"]):
+                self.remote.add((row["peer_host"], row["peer_port"]))
+            elif row["peer_port"] in self.blackhole:
+                self.blackhole_hits += 1
+        self.samples += 1
+
+    def _run(self) -> None:
+        while not self._stop.is_set():
+            try:
+                self.sample()
+            except BaseException as exc:  # noqa: BLE001 - surfaced by verify().
+                self.error = exc
+                return
+            self._stop.wait(self.interval)
+
+    def __enter__(self) -> "FetchWatch":
+        self.before = {name: snapshot_tree(path) for name, path in self.caches.items()}
+        if self.start_cursor is _CAPTURE:
+            self.start_cursor = self.host.journal_cursor()
+        self.end_cursor = self.start_cursor
+        self._thread.start()
+        return self
+
+    def _read_journal(self) -> None:
+        # journald can trail the HTTP response: wait for the phase's own line,
+        # then, with `settle`, until the journal has been quiet that long.
+        deadline = time.monotonic() + self.journal_timeout
+        seen_at = quiet_since = None
+        while True:
+            lines, self.end_cursor = self.host.journal_after(self.end_cursor)
+            now = time.monotonic()
+            self.journal += lines
+            if lines:
+                quiet_since = now
+            if seen_at is None and any(self.expect_log in line for line in self.journal):
+                seen_at = quiet_since = now
+                deadline = now + self.journal_timeout
+            if seen_at is not None and now - quiet_since >= self.settle:
+                return
+            if now >= deadline:
+                return
+            time.sleep(min(0.2, max(self.settle, 0.01)))
+
+    def _collect(self) -> None:
+        # Sockets are sampled until the journal window closes, settle included.
+        try:
+            self._read_journal()
+        finally:
+            self._stop.set()
+            self._thread.join(timeout=30.0)
+        self.sample()
+        self.after = {name: snapshot_tree(path) for name, path in self.caches.items()}
+
+    def __exit__(self, exc_type: Any, *exc_info: Any) -> None:
+        try:
+            self._collect()
+        except BaseException:
+            if exc_type is None:
+                raise
+            # Never mask the phase's own failure with an evidence-collection error.
+
+    def verify(self, phase: str, *, record_blackholed_attempt: bool = False) -> None:
+        """Fail on fetch evidence; optionally record a blackholed attempt instead.
+
+        With `record_blackholed_attempt`, download log lines and connects to the
+        loopback blackhole are printed as an observation, not a failure. Cache
+        changes and non-loopback connections still fail. A phase prints either
+        `<phase>_no_fetch_log_ok` or `<phase>_blackholed_fetch_attempt_recorded`,
+        never both.
+        """
+        if self.error is not None:
+            raise AssertionError(f"{phase}: socket sampling failed: {self.error}")
+        if not any(self.expect_log in line for line in self.journal):
+            raise AssertionError(
+                f"{phase}: the service journal has no line naming {self.expect_log}; "
+                "run with access to the system journal"
+            )
+        fetch_lines = [line for line in self.journal if FETCH_LOG_RE.search(line)]
+        print(f"{phase}_journal_lines", len(self.journal))
+        print(f"{phase}_fetch_log_lines", len(fetch_lines))
+        if fetch_lines and not record_blackholed_attempt:
+            raise AssertionError(f"{phase}: the service logged {len(fetch_lines)} download or install lines")
+        for name in self.caches:
+            changes = tree_changes(self.before[name], self.after[name])
+            print(f"{phase}_{name}_entries", len(self.after[name]), f"changed={len(changes)}")
+            if changes:
+                raise AssertionError(f"{phase}: {name} changed in {len(changes)} entries")
+            print(f"{phase}_{name}_unchanged_ok")
+        print(f"{phase}_socket_samples", self.samples)
+        print(f"{phase}_remote_connections", len(self.remote))
+        print(f"{phase}_blackhole_connects", self.blackhole_hits)
+        if self.remote:
+            raise AssertionError(f"{phase}: lemond connected to {len(self.remote)} non-loopback peers")
+        if self.blackhole_hits and not record_blackholed_attempt:
+            raise AssertionError(f"{phase}: lemond connected to the download blackhole")
+        if fetch_lines or self.blackhole_hits:
+            print(
+                f"{phase}_blackholed_fetch_attempt_recorded",
+                f"log_lines={len(fetch_lines)}",
+                f"blackhole_connects={self.blackhole_hits}",
+            )
+        else:
+            print(f"{phase}_no_fetch_log_ok")
+        print(f"{phase}_no_remote_connection_ok")
+
+
+def require_socket_attribution(host: ServiceHost) -> None:
+    """ss -p must see lemond's own sockets, or an empty sample would prove nothing."""
+    tree = host.process_tree(host.main_pid())
+    if not any(row["pids"] & tree for row in host.sockets()):
+        raise AssertionError(
+            "network_attribution_unavailable: ss -p cannot see lemond's sockets; "
+            "run with privileges that let ss attribute the service's sockets"
+        )
+    print("network_attribution_ok")
+
+
+# A registered but absent model for the missing phases. The default is a small
+# catalog model; a host that already downloaded it overrides the id at run time.
+DEFAULT_MISSING_MODEL = "Tiny-Test-Model-GGUF"
+MISSING_MODEL_ENV = "LEMONADE_NOFETCH_MISSING_MODEL"
+
+# The candidate's three implicit auto-pull paths. Each one downloads a
+# registered model that is not cached before loading it, even with offline=true.
+AUTO_PULL_PATHS = ("load", "inference", "ollama")
+AUTO_PULL_PROMPT = "Reply with one word."
+
+
+def send_auto_pull(client: LemonadeClient, path: str, model: str, *, ctx_size: int) -> tuple[int, Any]:
+    """Name `model` on one auto-pull path; return the status and payload."""
+    if path == "load":
+        return client.request("POST", "/load", {"model_name": model, "ctx_size": ctx_size}, check=False)
+    messages = [{"role": "user", "content": AUTO_PULL_PROMPT}]
+    if path == "inference":
+        # OpenAI-style chat completion naming a model that is not loaded.
+        payload = {"model": model, "messages": messages, "max_tokens": 4, "temperature": 0, "ctx_size": ctx_size}
+        return client.request("POST", "/chat/completions", payload, check=False)
+    if path == "ollama":
+        # Ollama-compatible chat; Ollama clients send name:tag, and lemond strips ":latest".
+        payload = {
+            "model": f"{model}:latest",
+            "messages": messages,
+            "stream": False,
+            "options": {"num_ctx": ctx_size, "num_predict": 4, "temperature": 0},
+        }
+        return client.request("POST", "/api/chat", payload, check=False)
+    raise ValueError(f"unknown auto-pull path {path!r}")
+
+
+def restore_preplaced_residency(
+    client: LemonadeClient,
+    model: str,
+    initial: Mapping[str, Any],
+    *,
+    phases_ok: bool,
+    scrub_roots: Mapping[str, Path],
+) -> None:
+    """Reload `model` with its previous recipe options.
+
+    A restore failure fails the scenario only when the phases passed; otherwise
+    it is printed, and the phase failure that is already propagating is kept.
+    """
+    message = f"{model} was resident before the scenario and could not be restored"
+    options = initial.get("recipe_options") or {}
+    try:
+        client.request("POST", "/load", {**options, "model_name": model}, check=False)
+        restored = loaded_entry(client.get("/health"), model) is not None
+    except (LemonadeError, error.URLError, OSError) as exc:
+        if phases_ok:
+            raise AssertionError(f"{message}: {scrub_paths(str(exc), scrub_roots)}") from exc
+        print(f"preplaced_residency_restore_failed: {message}: {scrub_paths(str(exc), scrub_roots)}")
+        return
+    if restored:
+        print("preplaced_residency_restored")
+    elif phases_ok:
+        raise AssertionError(message)
+    else:
+        print(f"preplaced_residency_restore_failed: {message}")
+
+
+def run_nofetch(
+    client: LemonadeClient,
+    *,
+    host: ServiceHost,
+    model: str,
+    missing_model: str,
+    backend: str,
+    ctx_size: int,
+    expect_checkpoint: str | None,
+    expect_sha256: str | None,
+    repo: str = "strix-halo-gfx1151",
+    interval: float = 0.2,
+    journal_timeout: float = 10.0,
+    journal_settle: float = 3.0,
+    text: Callable[..., None] = run_text,
+) -> None:
+    config = client.get("/internal/config")
+    for key in ("offline", "no_fetch_executables"):
+        if config.get(key) is not True:
+            raise AssertionError(f"service config {key} is {config.get(key)!r}, expected true")
+    print("offline_config_ok")
+    endpoint_env, endpoint_source = host.endpoint_env()
+    print("endpoint_blackhole_source", endpoint_source)
+    blackhole = blackhole_ports(endpoint_env)
+    print("endpoint_blackhole_ok")
+    require_socket_attribution(host)
+
+    # The missing phases must reach the candidate's download path, so the model
+    # has to be registered with the service and not downloaded.
+    status, payload = client.request("GET", f"/models/{quote_model(missing_model)}", check=False)
+    if status >= 400:
+        raise AssertionError(
+            f"missing_model_unregistered: GET /models/{missing_model} returned {status}; "
+            "pick a model the candidate registers so each path reaches its download path "
+            f"and pass it with --missing-model or {MISSING_MODEL_ENV}"
+        )
+    print("missing_model_registered_ok")
+    info = payload.get("data", payload) if isinstance(payload, dict) else {}
+    downloaded = info.get("downloaded") if isinstance(info, dict) else None
+    if downloaded is not False:
+        raise AssertionError(
+            f"missing_model_present: {missing_model} reports downloaded={downloaded!r}; "
+            f"pick a registered model that is not downloaded and pass it with --missing-model or {MISSING_MODEL_ENV}"
+        )
+    print("missing_model_absent_ok")
+    if loaded_entry(client.get("/health"), missing_model) is not None:
+        raise AssertionError(f"missing_model_resident: {missing_model} is already loaded")
+
+    storage = (client.get("/system-info").get("model_storage") or {}).get("path")
+    if not storage:
+        raise AssertionError("system-info reports no model_storage path")
+    cache_dir = host.cache_dir()
+    caches = {"model_cache": Path(str(storage)), "backend_cache": cache_dir / "bin"}
+    scrub_roots = {**caches, "lemonade_cache": cache_dir}
+
+    def watch(phase_model: str, start_cursor: Any, *, settle: bool = False) -> FetchWatch:
+        return FetchWatch(
+            host, caches=caches, blackhole=blackhole, expect_log=phase_model,
+            interval=interval, journal_timeout=journal_timeout,
+            settle=journal_settle if settle else 0.0, start_cursor=start_cursor,
+        )
+
+    # Phase windows are contiguous: each one starts at the previous one's end
+    # cursor, so every journal line is charged to exactly one phase. The missing
+    # phases run first and the last one settles: a late missing attempt lands in
+    # a later missing window, where it is recorded, or in a strict pre-placed
+    # window, where it fails. A late pre-placed line is never recorded.
+    cursor: Any = _CAPTURE
+
+    # Ruling for candidate 3d5991033 (#138): offline=true does not stop the
+    # implicit auto-pull of a registered-but-absent model on any path. A path
+    # passes when the request fails loudly, the caches are unchanged, and lemond
+    # made no non-loopback connection; a logged, blackholed attempt is recorded.
+    for path in AUTO_PULL_PATHS:
+        name = f"missing_{path}"
+        with watch(missing_model, cursor, settle=path == AUTO_PULL_PATHS[-1]) as phase:
+            refusal = request_refusal(*send_auto_pull(client, path, missing_model, ctx_size=ctx_size))
+            if refusal is None:
+                client.request("POST", "/unload", {"model_name": missing_model}, check=False)
+        cursor = phase.end_cursor
+        print(f"{name}_refusal", json.dumps(scrub_paths(refusal, scrub_roots) if refusal else refusal))
+        if refusal is None:
+            raise AssertionError(f"{name}: {missing_model} was admitted; it was fetched")
+        if loaded_entry(client.get("/health"), missing_model) is not None:
+            raise AssertionError(f"{name}: {missing_model} became resident after a refused request")
+        print(f"{name}_refused_ok")
+        phase.verify(name, record_blackholed_attempt=True)
+
+    # Every path must actually auto-load, so the pre-placed model starts unloaded.
+    initial = loaded_entry(client.get("/health"), model)
+    if initial is not None:
+        client.post("/unload", {"model_name": model})
+    phases_ok = False
+    try:
+        with watch(model, cursor) as phase:
+            text(
+                client,
+                model=model,
+                backend=backend,
+                ctx_size=ctx_size,
+                expect_checkpoint=expect_checkpoint,
+                expect_sha256=expect_sha256,
+                repo=repo,
+                cache_bins=(caches["backend_cache"],),
+            )
+        cursor = phase.end_cursor
+        phase.verify("preplaced_load")
+
+        for path in AUTO_PULL_PATHS[1:]:
+            name = f"preplaced_{path}"
+            # The last window closes only after the journal has been quiet.
+            with watch(model, cursor, settle=path == AUTO_PULL_PATHS[-1]) as phase:
+                try:
+                    refusal = request_refusal(*send_auto_pull(client, path, model, ctx_size=ctx_size))
+                    if refusal is not None:
+                        raise AssertionError(f"{name}: auto-load of {model} failed: {scrub_paths(refusal, scrub_roots)}")
+                    if loaded_entry(client.get("/health"), model) is None:
+                        raise AssertionError(f"{name}: {model} is not resident after the request")
+                finally:
+                    client.request("POST", "/unload", {"model_name": model}, check=False)
+            cursor = phase.end_cursor
+            print(f"{name}_autoload_ok")
+            phase.verify(name)
+        phases_ok = True
+    finally:
+        if initial is not None:
+            restore_preplaced_residency(client, model, initial, phases_ok=phases_ok, scrub_roots=scrub_roots)
+    print("no_fetch_ok")
+
+
+# --- Consumer pins (service, read-only) --------------------------------------
+
+
+def parse_expected_pins(values: list[str]) -> list[tuple[str, str]]:
+    pins = []
+    for value in values:
+        model, sep, variant = value.partition("=")
+        if not sep or not model or not variant:
+            raise SystemExit(f"--expect-pin takes MODEL=VARIANT, got {value!r}")
+        pins.append((model, variant))
+    return pins
+
+
+def listed_pin(client: LemonadeClient, pins: Mapping[str, Any], model: str) -> str | None:
+    """Return the name /pins lists for `model`: the model itself, or its bare listing.
+
+    A canonical id such as user.foo matches a listed bare foo, which is how
+    lemond lists a precedence winner, and only when both ids resolve to the
+    same main checkpoint. A listing under another prefix, such as extra.foo,
+    is a different registration and never matches.
+    """
+    if model in pins:
+        return model
+    listed = bare_model_name(model)
+    if listed == model or listed not in pins:
+        return None
+    if main_checkpoint(model_info(client, model)) != main_checkpoint(model_info(client, listed)):
+        raise AssertionError(f"{model} and pinned {listed} resolve to different checkpoints")
+    print("service_pin_alias", model, listed)
+    return listed
+
+
+def run_service_pins(client: LemonadeClient, *, expected: list[tuple[str, str]]) -> None:
+    if not expected:
+        raise SystemExit("service-pins mode requires at least one --expect-pin")
+    pins = {str(pin.get("model_name")): pin for pin in client.get("/pins").get("data", [])}
+    health = client.get("/health")
+    for model, variant in expected:
+        listed = listed_pin(client, pins, model)
+        if listed is None:
+            raise AssertionError(f"{model} is not pinned; pins: {sorted(pins)}")
+        pin = pins[listed]
+        if pin.get("load_error"):
+            raise AssertionError(f"pinned {model} failed to load: {pin['load_error']}")
+        if not pin.get("loaded"):
+            raise AssertionError(f"pinned {model} is not loaded")
+        entry = loaded_entry(health, listed) or loaded_entry(health, model)
+        if entry is None or not entry.get("pinned"):
+            raise AssertionError(f"{model} is not resident as pinned in /health")
+        checkpoint = main_checkpoint(model_info(client, listed)) or ""
+        quant = checkpoint.rpartition(":")[2]
+        if variant.lower() not in quant.lower():
+            raise AssertionError(f"{model} checkpoint {checkpoint!r} is not the {variant} variant")
+        print("service_pin", model, checkpoint)
+    print("service_pins_ok")
+
+
+# --- Pinned user-model chat (service) -----------------------------------------
+
+DEFAULT_PINNED_CHAT_MODEL = "Qwen3.6-35B-A3B-MTP-GGUF-UD-Q4_K_XL"
+PINNED_CHAT_MODEL_ENV = "LEMONADE_PINNED_CHAT_MODEL"
+PINNED_CHAT_PROMPT = "Reply with one short sentence: what is the capital of France?"
+# A thinking model spends tokens on reasoning_content first; a small budget
+# (16 tokens) ends in finish_reason "length" with empty content.
+PINNED_CHAT_MAX_TOKENS = 1024
+PINNED_CHAT_MIN_MAX_TOKENS = 512
+# The GGUF architectures whose architecture_defaults.json entry merges
+# --chat-template-kwargs '{"preserve_thinking":true}' into llamacpp_args.
+PINNED_CHAT_ARCHITECTURES = ("qwen35", "qwen35moe")
+GGUF_MAGIC = b"GGUF"
+_GGUF_SCALAR_SIZES = {0: 1, 1: 1, 2: 2, 3: 2, 4: 4, 5: 4, 6: 4, 7: 1, 10: 8, 11: 8, 12: 8}
+_GGUF_STRING = 8
+_GGUF_ARRAY = 9
+_GGUF_MAX_STRING = 1 << 20
+
+
+def gguf_architecture(path: Path) -> str:
+    """Return a GGUF file's ``general.architecture``; fail closed when it cannot be read."""
+
+    def unverified(reason: str) -> AssertionError:
+        return AssertionError(f"chat_model_architecture_unverified: {reason}")
+
+    try:
+        with path.open("rb") as handle:
+
+            def take(size: int) -> bytes:
+                data = handle.read(size)
+                if len(data) != size:
+                    raise unverified("truncated GGUF header")
+                return data
+
+            def u32() -> int:
+                return int.from_bytes(take(4), "little")
+
+            def u64() -> int:
+                return int.from_bytes(take(8), "little")
+
+            def string() -> bytes:
+                size = u64()
+                if size > _GGUF_MAX_STRING:
+                    raise unverified("oversized GGUF string")
+                return take(size)
+
+            def skip(value_type: int) -> None:
+                if value_type == _GGUF_STRING:
+                    string()
+                elif value_type == _GGUF_ARRAY:
+                    item_type, count = u32(), u64()
+                    if item_type in _GGUF_SCALAR_SIZES:
+                        handle.seek(_GGUF_SCALAR_SIZES[item_type] * count, os.SEEK_CUR)
+                    else:
+                        for _ in range(count):
+                            skip(item_type)
+                elif value_type in _GGUF_SCALAR_SIZES:
+                    take(_GGUF_SCALAR_SIZES[value_type])
+                else:
+                    raise unverified(f"unknown GGUF value type {value_type}")
+
+            if handle.read(4) != GGUF_MAGIC:
+                raise unverified("not a GGUF file")
+            if u32() < 2:
+                raise unverified("unsupported GGUF version")
+            u64()  # tensor count
+            for _ in range(u64()):
+                key = string()
+                value_type = u32()
+                if key == b"general.architecture" and value_type == _GGUF_STRING:
+                    return string().decode("utf-8", errors="replace")
+                skip(value_type)
+    except OSError as exc:
+        raise unverified(exc.strerror or type(exc).__name__) from exc
+    raise unverified("no general.architecture key")
+
+
+def process_argv(pid: int, *, proc_root: Path = Path("/proc")) -> list[str]:
+    try:
+        raw = (proc_root / str(pid) / "cmdline").read_bytes()
+    except OSError as exc:
+        raise AssertionError(f"backend_cmdline_unreadable: pid {pid}: {exc.strerror}") from exc
+    return [item.decode("utf-8", errors="replace") for item in raw.split(b"\0") if item]
+
+
+def _flag_value(argv: list[str], flag: str) -> str | None:
+    for index, item in enumerate(argv):
+        if item == flag and index + 1 < len(argv):
+            return argv[index + 1]
+        if item.startswith(flag + "="):
+            return item.removeprefix(flag + "=")
+    return None
+
+
+def _service_pin(client: LemonadeClient, model: str) -> dict[str, Any] | None:
+    for pin in client.get("/pins").get("data", []) or []:
+        if pin.get("model_name") == model:
+            return pin
+    return None
+
+
+def run_pinned_chat(
+    client: LemonadeClient,
+    *,
+    model: str,
+    max_tokens: int = PINNED_CHAT_MAX_TOKENS,
+    argv_of: Callable[[int], list[str]] = process_argv,
+    architecture_of: Callable[[Path], str] = gguf_architecture,
+) -> None:
+    if max_tokens < PINNED_CHAT_MIN_MAX_TOKENS:
+        raise ValueError(
+            f"pinned-chat max_tokens must be at least {PINNED_CHAT_MIN_MAX_TOKENS}; "
+            "a thinking model spends a small budget on reasoning"
+        )
+    # Preconditions, before any request that could load or fetch a model.
+    pin = _service_pin(client, model)
+    if pin is None:
+        raise AssertionError(f"{model} is not pinned on the service; pin it before the validation window")
+    info = model_info(client, model)
+    if not info.get("downloaded"):
+        raise AssertionError(
+            f"model_not_provisioned: {model}; provision it explicitly before the "
+            "validation window instead of letting a chat request download it"
+        )
+    print("chat_model_pinned_ok", model)
+    # The scenario guards the qwen35/qwen35moe architecture-default merge, so a
+    # model override must name one of those. The model id proves nothing; read
+    # general.architecture from the GGUF the service resolves, and fail closed
+    # when it cannot be read.
+    if info.get("recipe") != "llamacpp":
+        raise AssertionError(f"{model} is not a llamacpp model (recipe {info.get('recipe')!r})")
+    architecture = architecture_of(main_model_file(client, model))
+    print("chat_model_architecture", architecture)
+    if architecture not in PINNED_CHAT_ARCHITECTURES:
+        raise AssertionError(
+            f"{model} GGUF architecture {architecture} is not qwen35 or qwen35moe; "
+            "pinned-chat guards their --chat-template-kwargs default"
+        )
+    print("chat_model_architecture_ok")
+
+    payload = client.post(
+        "/chat/completions",
+        {
+            "model": model,
+            "messages": [{"role": "user", "content": PINNED_CHAT_PROMPT}],
+            "max_tokens": max_tokens,
+        },
+    )
+    choices = payload.get("choices") or [{}]
+    message = choices[0].get("message") or {}
+    content = str(message.get("content") or "")
+    reasoning = str(message.get("reasoning_content") or "")
+    finish_reason = choices[0].get("finish_reason")
+    print("chat_content_chars", len(content.strip()))
+    print("chat_reasoning_chars", len(reasoning.strip()))
+    print("chat_finish_reason", finish_reason)
+    if finish_reason != "stop":
+        raise AssertionError(f"chat completion from {model} ended with finish_reason {finish_reason!r}, not 'stop'")
+    if not content.strip() and not reasoning.strip():
+        raise AssertionError(f"empty chat completion from {model}")
+    print("chat_completion_ok")
+
+    entry = loaded_entry(client.get("/health"), model)
+    if entry is None or entry.get("pid") is None:
+        raise AssertionError(f"{model} is not resident after the chat request")
+    # The qwen35 and qwen35moe architecture defaults pass this JSON through
+    # the merged llamacpp_args; 11.7.0-1 handed llama-server a quoted string.
+    kwargs = _flag_value(argv_of(int(entry["pid"])), "--chat-template-kwargs")
+    if kwargs is None:
+        raise AssertionError(f"{model} backend argv has no --chat-template-kwargs")
+    try:
+        parsed = json.loads(kwargs)
+    except json.JSONDecodeError:
+        parsed = None
+    if not isinstance(parsed, dict):
+        raise AssertionError(f"--chat-template-kwargs is not a JSON object: {kwargs!r}")
+    if parsed.get("preserve_thinking") is not True:
+        raise AssertionError(
+            f"--chat-template-kwargs lacks the merged qwen35 default preserve_thinking=true: {kwargs!r}"
+        )
+    print("chat_template_kwargs", json.dumps(parsed, sort_keys=True))
+    print("chat_template_kwargs_json_ok")
+
+    pin = _service_pin(client, model)
+    if pin is None:
+        raise AssertionError(f"{model} is no longer pinned after the chat request")
+    if pin.get("load_error"):
+        raise AssertionError(f"pinned {model} reports load_error: {scrub_paths(str(pin['load_error']))}")
+    if not pin.get("loaded"):
+        raise AssertionError(f"pinned {model} is not loaded after the chat request")
+    print("pinned_chat_model_loaded_ok")
+    print("pinned_chat_ok")
+
+
+def _free_port(host: str) -> int:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.bind((host, 0))
+        return int(sock.getsockname()[1])
+
+
+def isolated_config(
+    *,
+    host: str,
+    port: int,
+    models_dir: Path,
+    extra_models_dir: Path,
+    backend_bins: Mapping[str, str],
+) -> dict[str, Any]:
+    return {
+        "host": host,
+        "port": port,
+        "log_level": "debug",
+        "broadcast": False,
+        "inhibit_suspend": False,
+        "offline": True,
+        "no_fetch_executables": True,
+        "auto_check_model_updates": False,
+        "max_loaded_models": 1,
+        "max_gpu_memory_occupancy_gb": -1.0,
+        "pinned_models": [],
+        "models_dir": str(models_dir),
+        "extra_models_dir": str(extra_models_dir),
+        "llamacpp": {
+            "backend": "rocm",
+            "prefer_system": True,
+            "rocm_bin": backend_bins["rocm"],
+            "vulkan_bin": backend_bins["vulkan"],
+        },
+    }
+
+
+class IsolatedLemond:
+    """A private lemond with its own cache dir; nothing outlives the context."""
+
+    def __init__(self, args: argparse.Namespace, *, gguf: Path | None = None) -> None:
+        self.args = args
+        self.gguf = gguf
+        self.proc: subprocess.Popen | None = None
+        self.root: Path | None = None
+        self.log_handle: Any = None
+        self.client = LemonadeClient("http://unused", timeout=args.request_timeout)
+
+    @property
+    def cache_dir(self) -> Path:
+        assert self.root is not None
+        return self.root / "cache"
+
+    def __enter__(self) -> "IsolatedLemond":
+        self.root = Path(tempfile.mkdtemp(prefix="lemonade-live-"))
+        extra_dir = self.root / "extra-models"
+        extra_dir.mkdir()
+        (self.root / "models").mkdir()
+        self.cache_dir.mkdir()
+        if self.gguf is not None:
+            for stem in EXTRA_MODEL_STEMS:
+                (extra_dir / f"{stem}.gguf").symlink_to(self.gguf.resolve())
+        port = self.args.port or _free_port(self.args.host)
+        config = isolated_config(
+            host=self.args.host,
+            port=port,
+            models_dir=self.root / "models",
+            extra_models_dir=extra_dir,
+            backend_bins={"rocm": self.args.rocm_bin, "vulkan": self.args.vulkan_bin},
+        )
+        (self.cache_dir / "config.json").write_text(json.dumps(config), encoding="utf-8")
+        self.client = LemonadeClient(
+            f"http://{self.args.host}:{port}/api/v1", timeout=self.args.request_timeout
+        )
+        if self.args.server_log is not None:
+            self.args.server_log.parent.mkdir(parents=True, exist_ok=True)
+            self.log_handle = self.args.server_log.open("a", encoding="utf-8")
+        self.port = port
+        try:
+            self.start()
+        except BaseException:
+            # `with` skips __exit__ when __enter__ raises; never orphan lemond.
+            self.__exit__(None, None, None)
+            raise
+        return self
+
+    def __exit__(self, *exc_info: Any) -> None:
+        try:
+            self.stop()
+        finally:
+            if self.log_handle is not None:
+                self.log_handle.close()
+            if self.root is not None:
+                shutil.rmtree(self.root, ignore_errors=True)
+
+    def config_file(self) -> dict[str, Any]:
+        return json.loads((self.cache_dir / "config.json").read_text(encoding="utf-8"))
+
+    def start(self) -> None:
+        # lemond reads its config, cache, and runtime dirs from the systemd
+        # unit directory variables, so a runner started inside a unit would
+        # otherwise make the isolated lemond relocate that unit's own files.
+        env = {
+            key: value
+            for key, value in os.environ.items()
+            if not key.startswith("LEMONADE_") and key not in SYSTEMD_UNIT_DIR_ENV_KEYS
+        }
+        # Lemonade 11.9 lemond throws at startup without a writable runtime dir,
+        # and sudo can leave XDG_RUNTIME_DIR unset or pointing at another user's.
+        # Never reuse the inherited one: files lemond left there would outlive
+        # the private root's cleanup.
+        assert self.root is not None
+        runtime_dir = self.root / "runtime"
+        runtime_dir.mkdir(mode=0o700, exist_ok=True)
+        env["XDG_RUNTIME_DIR"] = str(runtime_dir)
+        self.proc = subprocess.Popen(
+            [
+                self.args.lemond,
+                str(self.cache_dir),
+                "--host",
+                self.args.host,
+                "--port",
+                str(self.port),
+            ],
+            stdout=self.log_handle or subprocess.DEVNULL,
+            stderr=subprocess.STDOUT,
+            text=True,
+            env=env,
+        )
+        deadline = time.monotonic() + self.args.startup_timeout
+        last_error: Exception | None = None
+        while time.monotonic() < deadline:
+            if self.proc.poll() is not None:
+                raise RuntimeError(f"isolated lemond exited during startup with {self.proc.returncode}")
+            try:
+                self.client.get("/health", timeout=5.0)
+                return
+            except (LemonadeError, error.URLError, OSError) as exc:
+                last_error = exc
+                time.sleep(0.5)
+        raise TimeoutError(f"isolated lemond did not become healthy: {last_error}")
+
+    def stop(self) -> None:
+        if self.proc is None or self.proc.poll() is not None:
+            return
+        try:
+            self.client.request("POST", "/internal/shutdown", {}, timeout=10.0, check=False)
+        except (error.URLError, OSError):
+            pass
+        for action in (None, self.proc.terminate, self.proc.kill):
+            if action is not None:
+                action()
+            try:
+                self.proc.wait(timeout=15.0)
+                return
+            except subprocess.TimeoutExpired:
+                continue
+
+    def restart(self) -> None:
+        self.stop()
+        self.start()
+
+    def extra_model(self, stem: str) -> str:
+        """Return the id /models lists for the staged extra model `stem`.
+
+        lemond lists a precedence winner by its bare name, so the imported
+        model appears as `stem` rather than `extra.stem`. The isolated
+        instance has no registered models and no built-in of that name, so a
+        bare listing can only be the staged file. The listed form is returned
+        because /health and /pins report the same form.
+        """
+        payload = self.client.get("/models")
+        ids = [str(item.get("id")) for item in payload.get("data", [])]
+        for candidate in (f"extra.{stem}", f"extra.{stem}.gguf", stem, f"{stem}.gguf"):
+            if candidate in ids:
+                return candidate
+        raise AssertionError(f"extra model {stem} not discovered; models: {sorted(ids)}")
+
+
+def _require_resident(client: LemonadeClient, model: str, *, pid: Any = None) -> dict[str, Any]:
+    entry = loaded_entry(client.get("/health"), model)
+    if entry is None:
+        raise AssertionError(f"{model} was displaced")
+    if pid is not None and entry.get("pid") != pid:
+        raise AssertionError(f"{model} backend was replaced: pid {pid} -> {entry.get('pid')}")
+    return entry
+
+
+def _require_not_resident(client: LemonadeClient, model: str) -> None:
+    if loaded_entry(client.get("/health"), model) is not None:
+        raise AssertionError(f"{model} became resident after a refused load")
+
+
+def run_lifecycle(inst: IsolatedLemond, *, expect_family: str) -> None:
+    health = inst.client.get("/health")
+    print("lemond_version", health.get("version"))
+    print("isolated_server_started")
+    gpu = validate_hip_discovery(inst.client.get("/system-info"), expect_family=expect_family)
+    print("hip_device", json.dumps(gpu.get("name")), gpu.get("family"))
+    print("hip_discovery_ok")
+
+    inst.client.post("/internal/set", {"global_timeout": LIFECYCLE_SENTINEL_TIMEOUT})
+    if inst.config_file().get("global_timeout") != LIFECYCLE_SENTINEL_TIMEOUT:
+        raise AssertionError("config change was not persisted to config.json")
+    print("config_persisted_ok")
+    before = inst.client.get("/internal/config")
+    inst.restart()
+    print("isolated_server_restarted")
+    after = inst.client.get("/internal/config")
+    changed = sorted(key for key in set(before) | set(after) if before.get(key) != after.get(key))
+    if changed or after.get("global_timeout") != LIFECYCLE_SENTINEL_TIMEOUT:
+        raise AssertionError(f"config changed across restart: {changed}")
+    print("config_preserved_ok")
+
+
+def _wait_for_pin_restore(client: LemonadeClient, model: str, *, timeout: float) -> None:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        for pin in client.get("/pins").get("data", []):
+            if pin.get("model_name") != model:
+                continue
+            if pin.get("load_error"):
+                raise AssertionError(f"pinned model failed to restore: {pin['load_error']}")
+            if pin.get("loaded"):
+                return
+        time.sleep(1.0)
+    raise AssertionError(f"pinned model {model} was not restored within {timeout:.0f}s")
+
+
+def run_pins(inst: IsolatedLemond, *, ctx_size: int, timeout: float) -> None:
+    model = inst.extra_model(EXTRA_MODEL_STEMS[0])
+    inst.client.post("/load", {"model_name": model, "ctx_size": ctx_size})
+    inst.client.post("/pins", {"model_name": model})
+    # config.json persists the canonical id, while /pins and /health list the
+    # precedence winner bare; extra_model() only ever returns an imported model.
+    persisted = {model, model if model.startswith("extra.") else f"extra.{model}"}
+    if not persisted & set(inst.config_file().get("pinned_models", [])):
+        raise AssertionError("pin was not persisted to config.json pinned_models")
+    print("pin_persisted_ok")
+
+    inst.restart()
+    print("isolated_server_restarted")
+    _wait_for_pin_restore(inst.client, model, timeout=timeout)
+    print("pin_restored_ok")
+    if not _require_resident(inst.client, model).get("pinned"):
+        raise AssertionError("restored model is resident but not pinned")
+    print("pin_restored_pinned_ok")
+
+    inst.client.request("DELETE", f"/pins/{quote_model(model)}")
+    if persisted & set(inst.config_file().get("pinned_models", [])):
+        raise AssertionError("unpin did not remove the persisted pin")
+    print("pin_removed_ok")
+
+
+def run_budget(inst: IsolatedLemond, *, ctx_size: int) -> None:
+    gpu = integrated_gpu(inst.client.get("/system-info"))
+    vram_gb = float(gpu.get("vram_gb", 0.0))
+    gtt_gb = float(gpu.get("virtual_mem_gb", 0.0))
+    print("apu_memory_pools", f"vram_gb={vram_gb:.2f}", f"gtt_gb={gtt_gb:.2f}")
+    if gtt_gb <= 0:
+        raise AssertionError("integrated GPU reports no GTT pool (virtual_mem_gb)")
+    print("apu_gtt_reported_ok")
+
+    model = inst.extra_model(EXTRA_MODEL_STEMS[0])
+    refusal = load_refusal(inst.client, model, ctx_size=OVERSIZED_CTX_SIZE)
+    capacity_gb = refusal_capacity_gb(refusal)
+    print("budget_refusal", json.dumps(scrub_paths(refusal) if refusal else refusal))
+    if capacity_gb is None:
+        raise AssertionError("oversized load was not refused by the occupancy budget")
+    _require_not_resident(inst.client, model)
+    print("budget_refuse_ok")
+    print("effective_capacity_gb", f"{capacity_gb:.2f}")
+    if capacity_gb <= vram_gb:
+        raise AssertionError(
+            f"effective capacity {capacity_gb} GB does not exceed dedicated VRAM {vram_gb} GB"
+        )
+    print("gtt_counted_ok")
+
+    inst.client.post("/load", {"model_name": model, "ctx_size": ctx_size})
+    _require_resident(inst.client, model)
+    print("budget_admit_ok")
+
+    inst.client.post("/unload", {"model_name": model})
+    inst.client.post("/internal/set", {"max_gpu_memory_occupancy_gb": CONFIGURED_BUDGET_GB})
+    refusal = load_refusal(inst.client, model, ctx_size=ctx_size)
+    print("configured_budget_refusal", json.dumps(scrub_paths(refusal) if refusal else refusal))
+    if refusal_capacity_gb(refusal) != CONFIGURED_BUDGET_GB:
+        raise AssertionError("configured occupancy budget did not bound admission")
+    _require_not_resident(inst.client, model)
+    print("configured_budget_refuse_ok")
+
+
+class BusyStream:
+    """Keep one model in use with a streaming completion on a worker thread."""
+
+    def __init__(self, client: LemonadeClient, model: str, *, max_tokens: int) -> None:
+        self.client = client
+        self.model = model
+        self.max_tokens = max_tokens
+        self.started = threading.Event()
+        self.chunks = 0
+        self.finished = False
+        self.error: BaseException | None = None
+        self.thread = threading.Thread(target=self._run, daemon=True)
+
+    def _run(self) -> None:
+        payload = {
+            "model": self.model,
+            "prompt": BUSY_PROMPT,
+            "max_tokens": self.max_tokens,
+            "temperature": 0,
+            "stream": True,
+        }
+        try:
+            for line in self.client.stream_lines("/completions", payload):
+                if not line.startswith("data:"):
+                    continue
+                data = line.removeprefix("data:").strip()
+                if data == "[DONE]":
+                    self.finished = True
+                    break
+                self.chunks += 1
+                self.started.set()
+        except BaseException as exc:  # noqa: BLE001 - surfaced by the caller.
+            self.error = exc
+        finally:
+            self.started.set()
+
+    def __enter__(self) -> "BusyStream":
+        self.thread.start()
+        return self
+
+    def __exit__(self, *exc_info: Any) -> None:
+        self.thread.join(timeout=self.client.timeout)
+
+    def wait_started(self, timeout: float) -> None:
+        if not self.started.wait(timeout) or self.chunks == 0:
+            raise AssertionError(f"busy stream did not start: {self.error!r}")
+
+
+def run_displacement(inst: IsolatedLemond, *, ctx_size: int, stream_tokens: int) -> None:
+    client = inst.client
+    first, second = (inst.extra_model(stem) for stem in EXTRA_MODEL_STEMS)
+
+    client.post("/load", {"model_name": first, "ctx_size": ctx_size})
+    client.post("/pins", {"model_name": first})
+    pid = _require_resident(client, first)["pid"]
+    refusal = load_refusal(client, second, ctx_size=ctx_size)
+    print("pinned_refusal", json.dumps(scrub_paths(refusal) if refusal else refusal))
+    if refusal is None:
+        raise AssertionError("loading a second model displaced the pinned model")
+    _require_resident(client, first, pid=pid)
+    _require_not_resident(client, second)
+    print("pinned_not_displaced_ok")
+
+    client.request("DELETE", f"/pins/{quote_model(first)}")
+    with BusyStream(client, first, max_tokens=stream_tokens) as stream:
+        stream.wait_started(timeout=client.timeout)
+        if not _require_resident(client, first, pid=pid).get("is_busy"):
+            raise AssertionError("busy_window_missed: the stream ended before the displacement attempt")
+        print("busy_window_ok")
+        refusal = load_refusal(client, second, ctx_size=ctx_size)
+        print("in_use_refusal", json.dumps(scrub_paths(refusal) if refusal else refusal))
+        if refusal is None:
+            raise AssertionError("loading a second model displaced the in-use model")
+        _require_resident(client, first, pid=pid)
+        print("in_use_not_displaced_ok")
+    if stream.error is not None or not stream.finished:
+        raise AssertionError(f"in-use request did not complete cleanly: {stream.error!r}")
+    print("busy_request_completed_ok")
+
+    client.post("/load", {"model_name": second, "ctx_size": ctx_size})
+    _require_resident(client, second)
+    if loaded_entry(client.get("/health"), first) is not None:
+        raise AssertionError("idle unpinned model was not displaced; refusals are not attributable")
+    print("idle_displacement_control_ok")
+
+
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Run a Lemonade live-validation check.")
+    parser.add_argument("mode", choices=MODES)
+    parser.add_argument("--base-url", default="http://127.0.0.1:13305/api/v1")
+    parser.add_argument("--model", help="Lemonade model id for text mode")
+    parser.add_argument("--expect-checkpoint", help="exact main checkpoint the text model must use")
+    parser.add_argument("--expect-sha256", help="required SHA-256 of the exercised GGUF file")
+    parser.add_argument("--backend", choices=sorted(BACKEND_PACKAGES), default="rocm")
+    parser.add_argument("--ctx-size", type=int, default=4096)
+    parser.add_argument("--gguf", type=Path, help="local GGUF file for isolated modes")
+    parser.add_argument("--lemond", default="/usr/bin/lemond")
+    parser.add_argument("--host", default="127.0.0.1")
+    parser.add_argument("--port", type=int, default=0)
+    parser.add_argument("--rocm-bin", default=DEFAULT_BACKEND_BINS["rocm"])
+    parser.add_argument("--vulkan-bin", default=DEFAULT_BACKEND_BINS["vulkan"])
+    parser.add_argument("--expect-gpu-family", default="gfx1151")
+    parser.add_argument("--repo", default="strix-halo-gfx1151")
+    parser.add_argument("--service", default="lemond.service")
+    parser.add_argument("--server-log", type=Path)
+    parser.add_argument(
+        "--missing-model",
+        default=os.environ.get(MISSING_MODEL_ENV) or DEFAULT_MISSING_MODEL,
+        help=f"registered but not downloaded model for nofetch mode (default: ${MISSING_MODEL_ENV}, "
+        f"else {DEFAULT_MISSING_MODEL})",
+    )
+    parser.add_argument(
+        "--expect-pin", action="append", default=[], help="MODEL=VARIANT that service-pins mode requires"
+    )
+    parser.add_argument(
+        "--chat-model",
+        default=os.environ.get(PINNED_CHAT_MODEL_ENV) or DEFAULT_PINNED_CHAT_MODEL,
+        help=f"pinned, downloaded model for pinned-chat mode (default: ${PINNED_CHAT_MODEL_ENV}, "
+        f"else {DEFAULT_PINNED_CHAT_MODEL})",
+    )
+    parser.add_argument("--stream-tokens", type=int, default=2048)
+    parser.add_argument("--startup-timeout", type=float, default=180.0)
+    parser.add_argument("--request-timeout", type=float, default=600.0)
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None) -> None:
+    args = parse_args(argv)
+    print("mode", args.mode)
+    if args.mode in SERVICE_MODES:
+        client = LemonadeClient(
+            args.base_url,
+            api_key=resolve_api_key(),
+            admin_api_key=resolve_admin_api_key(),
+            timeout=args.request_timeout,
+        )
+        if args.mode == "text":
+            if not args.model:
+                raise SystemExit("text mode requires --model")
+            run_text(
+                client,
+                model=args.model,
+                backend=args.backend,
+                ctx_size=args.ctx_size,
+                expect_checkpoint=args.expect_checkpoint,
+                expect_sha256=args.expect_sha256,
+                repo=args.repo,
+                cache_bins=(ServiceHost(args.service).cache_dir() / "bin",),
+            )
+        elif args.mode == "nofetch":
+            if not args.model:
+                raise SystemExit("nofetch mode requires --model")
+            run_nofetch(
+                client,
+                host=ServiceHost(args.service),
+                model=args.model,
+                missing_model=args.missing_model,
+                backend=args.backend,
+                ctx_size=args.ctx_size,
+                expect_checkpoint=args.expect_checkpoint,
+                expect_sha256=args.expect_sha256,
+                repo=args.repo,
+            )
+        elif args.mode == "service-pins":
+            run_service_pins(client, expected=parse_expected_pins(args.expect_pin))
+        elif args.mode == "pinned-chat":
+            run_pinned_chat(client, model=args.chat_model)
+        else:
+            run_provenance(client, repo=args.repo, service=args.service)
+        return
+
+    needs_gguf = args.mode != "lifecycle"
+    if needs_gguf and (args.gguf is None or not args.gguf.is_file()):
+        raise SystemExit(f"{args.mode} mode requires --gguf pointing at a local GGUF file")
+    if needs_gguf:
+        verify_sha256(args.gguf, args.expect_sha256)
+    with IsolatedLemond(args, gguf=args.gguf if needs_gguf else None) as inst:
+        if args.mode == "lifecycle":
+            run_lifecycle(inst, expect_family=args.expect_gpu_family)
+        elif args.mode == "pins":
+            run_pins(inst, ctx_size=args.ctx_size, timeout=args.startup_timeout)
+        elif args.mode == "budget":
+            run_budget(inst, ctx_size=args.ctx_size)
+        else:
+            run_displacement(inst, ctx_size=args.ctx_size, stream_tokens=args.stream_tokens)
+
+
+def run_cli(argv: list[str] | None = None) -> int:
+    """Run main(); report a failure as one scrubbed line instead of a traceback."""
+    try:
+        main(argv)
+    except Exception as exc:  # noqa: BLE001 - every failure is reported, scrubbed.
+        print(f"error: {type(exc).__name__}: {scrub_paths(str(exc))}", file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(run_cli())
