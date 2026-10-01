@@ -4,9 +4,11 @@ This record covers the audit tracked in
 [#168](https://github.com/nisavid/arch-strix-halo-pkgs/issues/168), a
 sub-issue of W2A #98 that blocks #111. It asks one question: did makepkg's
 link-time optimization (LTO) silently change a configure result in any
-package lane? For W2A through the lease commit `0514904` the answer is no:
-0 lanes are affected and 38 are clear. The vLLM archive check confirmed
-its static verdict on 2026-09-29.
+package lane? For W2A through the lease commit in
+[#174](https://github.com/nisavid/arch-strix-halo-pkgs/pull/174) that adds
+`procps-ng` to the vLLM root targets, the answer is no: 0 lanes are
+affected and 38 are clear. The vLLM archive check confirmed its static
+verdict on 2026-09-29.
 
 The per-lane build-root details live in
 [Generation-C Build Root](c-build-root.md). This page keeps the cross-lane
@@ -49,9 +51,9 @@ negative result.
 ## Scope and method
 
 - The audit was read-only: no builds, configure A/B runs, GPU work or host
-  changes. It covered the W2A sources at `0514904` and the F/W1 foundation
-  sources, plus pinned sdists and tarballs (sha256-verified when fetched)
-  and string or symbol checks on the shipped W2A archives.
+  changes. It covered the W2A sources at that #174 lease commit and the
+  F/W1 foundation sources, plus pinned sdists and tarballs (sha256-verified
+  when fetched) and string or symbol checks on the shipped W2A archives.
 - The build root's pinned makepkg.conf sets `OPTIONS=(... lto)` and
   `LTOFLAGS=-flto=auto`. makepkg's `lto.sh` appends only to `CFLAGS`,
   `CXXFLAGS` and `LDFLAGS`. It never touches `HIPFLAGS`.
@@ -139,9 +141,9 @@ adopt both.
 ## vLLM archive check
 
 The vLLM 0.30.0-1 verdict first came from static analysis of the pinned
-tarball and PKGBUILD. On 2026-09-29, the W2A archive built from `d8ce663`
-confirmed it. None of its 7 shipped `.so` files carries libbacktrace markers
-or LLVM bitcode sections:
+tarball and PKGBUILD. On 2026-09-29, the W2A archive built from the #174
+commit that links the HIP modules with ROCm clang confirmed it. None of its
+7 shipped `.so` files carries libbacktrace markers or LLVM bitcode sections:
 
 ```sh
 bsdtar -xOf <vllm-archive> '*.so' | grep -ac 'backtrace_create_state'   # 0

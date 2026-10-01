@@ -75,18 +75,18 @@ GPU access, where each GPU run checks the kernel log for page faults, ring
 timeouts, and resets, and stops further GPU work when it finds one. Nothing was installed on the host. The
 states are recorded separately:
 
-- **Source updated:** `python-vllm-rocm-gfx1151` 0.30.0-1 at branch commit
-  `d8ce663`, which links the HIP modules with ROCm clang
-  (`HIP_CXX_COMPILER=amdclang++`).
-- **Built:** in the W2A root from `d8ce663`, and published to the W2A build
+- **Source updated:** `python-vllm-rocm-gfx1151` 0.30.0-1 at the commit in
+  [#174](https://github.com/nisavid/arch-strix-halo-pkgs/pull/174) that
+  links the HIP modules with ROCm clang (`HIP_CXX_COMPILER=amdclang++`).
+- **Built:** in the W2A root from that commit, and published to the W2A build
   repo. The `.BUILDINFO` PKGBUILD checksum equals the committed PKGBUILD. All
   7 shipped `.so` files report AMD clang 23 only. The #168 archive check
   ([LTO audit](lto-configure-probe-audit.md)) found 0 libbacktrace markers and
   0 LLVM bitcode sections.
 - **Root prep:** `accelerate` was added to the root for the TorchAO tiny
-  prepare smoke. `7030916` allowlists the vLLM and xgrammar import-order
-  `NEEDED` entries, so root verification reports 0 violations and 0 stale
-  entries.
+  prepare smoke. A #174 commit allowlists the vLLM and xgrammar
+  import-order `NEEDED` entries, so root verification reports 0 violations
+  and 0 stale entries.
 - **Deployed/installed:** no. The package exists only in the W2A root and the
   W2A build repo; the foundation it links against must not reach the host
   before W5.
@@ -116,17 +116,18 @@ states are recorded separately:
 | G5: `vllm.gemma4.26b-a4b.text.basic`, `vllm.gemma4.26b-a4b.server.basic` | not run |
 
 **Harness and scenario fixes:** the failures in the earlier windows were
-harness and scenario defects, not package defects. They are fixed in:
-- `bc9ae42`: the Gemma 4 server smoke checks now match each mode's request.
+harness and scenario defects, not package defects. They are fixed in
+[#174](https://github.com/nisavid/arch-strix-halo-pkgs/pull/174):
+- Gemma 4 server smoke: the checks now match each mode's request.
   The `benchmark-lite` mode's 8-token cap and plain structured's 16-token cap were too
   small for the answer, the tool follow-up was checked with a five-word rule
   it never asks for, and the tool call must now carry `location` "Tokyo"
   exactly.
-- `6d3e306`: the zerank-2 rerank gate requires both correct answers to score
+- zerank-2 rerank: the gate requires both correct answers to score
   above the distractor. vLLM 0.30 ranks the sentence answer above the bare
   `4`, which matches the Lemonade zerank smoke.
-- `9d3ee84`: the two probes below are reclassified.
-- `8f4d8db`: the full-feature follow-up turn runs with thinking off, so the
+- Probe reclassification: the two probes below are reclassified.
+- Gemma 4 full-feature lane: the follow-up turn runs with thinking off, so the
   structured-output grammar engages.
 
 **Reclassified probes:**
