@@ -2820,19 +2820,18 @@ covered_checks = [{ source_kind = "arch_package", check_id = "arch" }]
 previous_recorded = "1.5.3 / 1.5.3-1"
 latest = "1.5.5"
 discovery_status = "stable_update_available"
-disposition = "tracked"
-disposition_reason = "Re-observed by the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep. #105 selects C's version line (docs/wayfinder/research/c-line-selection-2026-09-22.md). DuckDB 1.5.5 is not in C's regenerated closure: no selected vLLM, Transformers or PyTorch package requires it. It stays at the sweep's value and is refreshed in post-closeout maintenance (#147)."
+disposition = "rejected"
+disposition_reason = "Superseded by duckdb-1.5.6-pypi from the 2026-10-01 freshness sweep."
 salient_changes = [
   "PyPI DuckDB 1.5.5 is available after the adopted 1.5.3 package lane",
   "Arch python-duckdb reports 1.5.5-1",
 ]
 patch_carry_overlap = false
-package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "github_issue"
-next_gate_issue = 147
-next_gate_label = "DuckDB 1.5.5 not in C's closure; post-closeout maintenance"
-last_reviewed = "2026-09-22"
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_label = "Superseded by duckdb-1.5.6-pypi"
+last_reviewed = "2026-10-01"
 
 [candidates."lemonade-upstream-11.5.2"]
 family = "lemonade"
@@ -3485,21 +3484,22 @@ family = "compressed_tensors"
 packages = ["python-compressed-tensors-gfx1151"]
 source_kind = "pypi"
 check_id = "pypi"
-previous_recorded = "0.16.0"
+previous_recorded = "0.16.0 / 0.17.0"
 latest = "0.19.0"
 discovery_status = "stable_update_available"
 disposition = "rejected"
-disposition_reason = "Rejected on 2026-09-22: outside the selected C line: vLLM 0.28 through 0.30 pin compressed-tensors==0.17.0, and 0.19.0 also requires Transformers >=5.16 at runtime and drops the GPTQ act-order paths. #105's C line (docs/wayfinder/research/c-line-selection-2026-09-22.md) selects compressed-tensors 0.17.0 instead; a standing tracked record for the selected version carries the execution gate."
+disposition_reason = "Rejected on 2026-09-22: outside the selected C line: vLLM 0.28 through 0.30 pin compressed-tensors==0.17.0, and 0.19.0 also requires Transformers >=5.16 at runtime and drops the GPTQ act-order paths. #105's C line (docs/wayfinder/research/c-line-selection-2026-09-22.md) selects compressed-tensors 0.17.0 instead; a standing tracked record for the selected version carries the execution gate. Re-observed on 2026-10-01: W2A moved the package source and the policy's recorded value from 0.16.0 to the selected 0.17.0 (#110), and the freshness sweep still reports 0.19.0 as the newest release, so the rejection stands for both recorded values."
 salient_changes = [
   "PyPI compressed-tensors 0.19.0 is available after the local 0.16.0 lane and the previously selected 0.17.0",
   "The selected C line decides the exact compressed-tensors version its vLLM consumer requires",
+  "W2A moved the recorded package lane from 0.16.0 to the selected 0.17.0; the 2026-10-01 sweep re-observed 0.19.0",
 ]
 patch_carry_overlap = false
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
 next_gate_label = "Rejected; outside the selected C line (compressed-tensors 0.17.0)"
-last_reviewed = "2026-09-22"
+last_reviewed = "2026-10-01"
 
 [candidates."numpy-2.5.3-pypi"]
 family = "numpy"
@@ -3531,21 +3531,22 @@ family = "mistral_common"
 packages = ["python-mistral-common-gfx1151"]
 source_kind = "pypi"
 check_id = "pypi"
-previous_recorded = "1.11.2"
+previous_recorded = "1.11.2 / 1.11.7"
 latest = "1.12.0"
 discovery_status = "stable_update_available"
 disposition = "rejected"
-disposition_reason = "Rejected on 2026-09-22: outside the selected C line: mistral-common 1.12.0 is not deprecations-only; it adds new exceptions for malformed tool calls and continuation, a validation mode, and image-loading changes, and vLLM CI tested 1.11.6. #105's C line (docs/wayfinder/research/c-line-selection-2026-09-22.md) selects the conservative mistral-common 1.11.7 instead; a standing tracked record for the selected version carries the execution gate."
+disposition_reason = "Rejected on 2026-09-22: outside the selected C line: mistral-common 1.12.0 is not deprecations-only; it adds new exceptions for malformed tool calls and continuation, a validation mode, and image-loading changes, and vLLM CI tested 1.11.6. #105's C line (docs/wayfinder/research/c-line-selection-2026-09-22.md) selects the conservative mistral-common 1.11.7 instead; a standing tracked record for the selected version carries the execution gate. Re-observed on 2026-10-01: W2A moved the package source and the policy's recorded value from 1.11.2 to the selected 1.11.7 (#110), and the freshness sweep still reports 1.12.0 as the newest release, so the rejection stands for both recorded values."
 salient_changes = [
   "PyPI mistral-common 1.12.0 is available after the local 1.11.2 lane and the previously tracked 1.11.7",
   "The AUR baseline remains at 1.8.6-1",
+  "W2A moved the recorded package lane from 1.11.2 to the selected 1.11.7; the 2026-10-01 sweep re-observed 1.12.0",
 ]
 patch_carry_overlap = false
 package_source_update_needed = false
 host_validation_needed = false
 next_gate_kind = "none"
 next_gate_label = "Rejected; outside the selected C line (mistral-common 1.11.7)"
-last_reviewed = "2026-09-22"
+last_reviewed = "2026-10-01"
 
 [candidates."accelerate-1.15.0-pypi"]
 family = "accelerate"
@@ -3579,8 +3580,8 @@ covered_checks = [{ source_kind = "arch_package", check_id = "arch" }]
 previous_recorded = "48.0.0 / 48.0.0-1"
 latest = "50.0.1"
 discovery_status = "stable_update_available"
-disposition = "tracked"
-disposition_reason = "Tracked from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep. #105 selects C's version line (docs/wayfinder/research/c-line-selection-2026-09-22.md). cryptography 50.0.1 is not in C's regenerated closure: no selected vLLM, Transformers or PyTorch package requires it. It stays at the sweep's value and is refreshed in post-closeout maintenance (#147). cryptography 50.0.0 fixes CVE-2026-69247 (PKCS#7 decryption of untrusted messages). Security-exception decision, 2026-09-22: the maintainers routed the security refresh to post-closeout maintenance (#147) first, not to a C work unit; the owner has been asked whether to admit it earlier and has not yet answered, so #147 stays the gate until the owner decides. Exposure review, 2026-09-22: the host has python-cryptography-gfx1151 48.0.0-1 installed, which provides python-cryptography system-wide. A read-only search of every installed Python consumer's site-packages and the systemd-ukify script found no call to the PKCS#7 decryption APIs (pkcs7_decrypt_der, pkcs7_decrypt_pem, pkcs7_decrypt_smime or the underlying decrypt_der, decrypt_pem and decrypt_smime bindings). The only installed PKCS#7 user is Samba's certificate auto-enrollment Group Policy extension, which calls load_der_pkcs7_certificates to parse certificate bundles and does not decrypt. No installed consumer therefore decrypts untrusted PKCS#7 messages through cryptography; a new consumer that does would reopen the early-admission question."
+disposition = "rejected"
+disposition_reason = "Superseded by cryptography-50.0.2-pypi from the 2026-10-01 freshness sweep."
 salient_changes = [
   "PyPI cryptography 50.0.1 is available after the local 48.0.0 lane and the previously tracked 50.0.0",
   "Arch python-cryptography reports 50.0.1-1",
@@ -3589,12 +3590,11 @@ salient_changes = [
   "No installed consumer of the host's python-cryptography-gfx1151 48.0.0-1 calls the PKCS#7 decryption APIs; Samba's Group Policy certificate auto-enrollment only loads PKCS#7 certificate bundles",
 ]
 patch_carry_overlap = false
-package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "github_issue"
-next_gate_issue = 147
-next_gate_label = "cryptography 50.0.1 not in C's closure; post-closeout maintenance"
-last_reviewed = "2026-09-22"
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_label = "Superseded by cryptography-50.0.2-pypi"
+last_reviewed = "2026-10-01"
 
 [candidates."pydantic-core-2.46.5-1-arch"]
 family = "pydantic_core"
@@ -4381,3 +4381,316 @@ host_validation_needed = false
 next_gate_kind = "none"
 next_gate_label = "Rejected; W2A keeps xgrammar 0.2.3 with vLLM 0.30.0"
 last_reviewed = "2026-09-25"
+
+[candidates."aiter-0.1.24"]
+family = "aiter"
+packages = ["python-amd-aiter-gfx1151"]
+source_kind = "github_release"
+check_id = "release"
+previous_recorded = "0.1.14"
+latest = "0.1.24"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-10-01 freshness sweep under decision X7: the 2026-09-22 sweep (#136) froze C's version universe (#105, docs/wayfinder/research/c-line-selection-2026-09-22.md), and until C closes out, later drift that is neither a security fix nor a build breakage routes to post-closeout maintenance (#147). AITER 0.1.24 was published on 2026-09-28, after the freeze. AITER stays experimental on gfx1151 and outside C's required path, C's W5 transaction removes python-amd-aiter-gfx1151 by default (the owner can override), and the #119 experimental closure keeps the frozen aiter-0.1.22.post1 record."
+salient_changes = [
+  "AITER 0.1.24 is the newest stable release after the local 0.1.14 lane and the frozen 0.1.22.post1",
+  "Published on 2026-09-28, after the 2026-09-22 freeze sweep",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "AITER 0.1.24 past the C freeze; post-closeout maintenance"
+last_reviewed = "2026-10-01"
+
+[candidates."aotriton-0.14.2b"]
+family = "aotriton"
+packages = ["python-aotriton-gfx1151"]
+source_kind = "github_release"
+check_id = "release"
+previous_recorded = "0.13b"
+latest = "0.14.2b"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-10-01 freshness sweep under decision X7: the 2026-09-22 sweep (#136) froze C's version universe (#105, docs/wayfinder/research/c-line-selection-2026-09-22.md), and until C closes out, later drift that is neither a security fix nor a build breakage routes to post-closeout maintenance (#147). C selects AOTriton 0.13b (aotriton-0.13b-c-line, #109). AOTriton 0.14.2b (2026-09-25) keeps the 0.14 API break that replaces VarlenType with VarlenBits, and ROCm PyTorch release/2.12 13da0862 still uses VarlenType, so it is outside the selected line. ROCm's release/2.12 head moved its in-tree AOTriton pin to 0.14.50tp on 2026-09-29, so the post-closeout AOTriton move pairs with a ROCm PyTorch cursor move (rocm-pytorch-release-2.12-d0d6373)."
+salient_changes = [
+  "AOTriton 0.14.2b is the newest stable release after the selected 0.13b and the rejected 0.14b",
+  "Arch python-aotriton still reports 0.13b-2",
+  "ROCm PyTorch release/2.12 bumped its in-tree AOTriton pin from 0.13.50tp to 0.14.50tp on 2026-09-29",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "AOTriton 0.14.2b past the C freeze; post-closeout maintenance"
+last_reviewed = "2026-10-01"
+
+[candidates."auto-round-0.16.0-pypi"]
+family = "auto_round"
+packages = ["python-auto-round-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+previous_recorded = "0.13.0"
+latest = "0.16.0"
+discovery_status = "stable_update_available"
+disposition = "rejected"
+disposition_reason = "Rejected on 2026-10-01 from the freshness sweep. AutoRound is an upstream-scope exclusion for this convergence line under the 2026-09-22 approved end state (#135, Out of scope), and is not in C's regenerated closure (docs/wayfinder/research/c-line-selection-2026-09-22.md, #105). C's W5 transaction removes the installed package by default; the owner can override."
+salient_changes = [
+  "PyPI AutoRound 0.16.0 is available after the local 0.13.0 lane and the rejected 0.15.1",
+]
+patch_carry_overlap = false
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_label = "Rejected; upstream-scope exclusion for this convergence line"
+last_reviewed = "2026-10-01"
+
+[candidates."cryptography-50.0.2-pypi"]
+family = "cryptography"
+packages = ["python-cryptography-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+baseline_source_kind = "arch_package"
+baseline_latest = "50.0.2-1"
+covered_checks = [{ source_kind = "arch_package", check_id = "arch" }]
+previous_recorded = "48.0.0 / 48.0.0-1"
+latest = "50.0.2"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-10-01 freshness sweep under decision X7: the 2026-09-22 sweep (#136) froze C's version universe (#105, docs/wayfinder/research/c-line-selection-2026-09-22.md), and until C closes out, later drift that is neither a security fix nor a build breakage routes to post-closeout maintenance (#147). cryptography 50.0.2 (2026-09-30) is not in C's regenerated closure: no selected vLLM, Transformers or PyTorch package requires it. It supersedes cryptography-50.0.1-pypi and is refreshed in post-closeout maintenance (#147). 50.0.2 rebuilds the upstream wheels against OpenSSL 4.0.3, adds abi3t wheels for free-threaded CPython 3.15 and later, and moves to PyO3 0.29.2; it adds no security fix. The 2026-09-22 security-exception decision for CVE-2026-69247, which 50.0.0 fixes, carries forward unchanged: the security refresh is routed to post-closeout maintenance (#147) first unless the owner admits it earlier, and the 2026-09-22 exposure review found no installed consumer that decrypts untrusted PKCS#7 messages through cryptography. A new consumer that does would reopen the early-admission question."
+salient_changes = [
+  "PyPI cryptography 50.0.2 is available after the local 48.0.0 lane and the previously tracked 50.0.1",
+  "Arch python-cryptography reports 50.0.2-1",
+  "50.0.2 rebuilds upstream wheels against OpenSSL 4.0.3, adds abi3t wheels for free-threaded CPython 3.15 and later, and updates PyO3 to 0.29.2",
+  "Security-relevant: cryptography 50.0.0 fixes CVE-2026-69247, a Bleichenbacher oracle in PKCS#7 decryption of untrusted messages; the security refresh stays routed to post-closeout maintenance (#147)",
+]
+patch_carry_overlap = false
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "cryptography 50.0.2 not in C's closure; post-closeout maintenance"
+last_reviewed = "2026-10-01"
+
+[candidates."duckdb-1.5.6-pypi"]
+family = "duckdb"
+packages = ["python-duckdb-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+baseline_source_kind = "arch_package"
+baseline_latest = "1.5.5-1"
+covered_checks = [{ source_kind = "arch_package", check_id = "arch" }]
+previous_recorded = "1.5.3 / 1.5.3-1"
+latest = "1.5.6"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-10-01 freshness sweep under decision X7: the 2026-09-22 sweep (#136) froze C's version universe (#105, docs/wayfinder/research/c-line-selection-2026-09-22.md), and until C closes out, later drift that is neither a security fix nor a build breakage routes to post-closeout maintenance (#147). DuckDB 1.5.6 (2026-09-28) is not in C's regenerated closure: no selected vLLM, Transformers or PyTorch package requires it. It supersedes duckdb-1.5.5-pypi and is refreshed in post-closeout maintenance (#147)."
+salient_changes = [
+  "PyPI DuckDB 1.5.6 is available after the adopted 1.5.3 package lane and the previously tracked 1.5.5",
+  "Arch python-duckdb still reports 1.5.5-1",
+]
+patch_carry_overlap = false
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "DuckDB 1.5.6 not in C's closure; post-closeout maintenance"
+last_reviewed = "2026-10-01"
+
+[candidates."llama-cpp-v0.5.0"]
+family = "llama_cpp"
+packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"]
+source_kind = "github_tags"
+check_id = "stable-tag"
+baseline_source_kind = "arch_package"
+baseline_latest = "0.5.0-1"
+covered_checks = [{ source_kind = "arch_package", check_id = "arch" }, { source_kind = "arch_package", check_id = "arch-ggml-hip" }]
+previous_recorded = "0.4.1 / 0.4.1-1 / 0.24.0-2"
+latest = "0.5.0"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-10-01 freshness sweep under decision X7: the 2026-09-22 sweep (#136) froze C's version universe (#105, docs/wayfinder/research/c-line-selection-2026-09-22.md), and until C closes out, later drift that is neither a security fix nor a build breakage routes to post-closeout maintenance (#147). C's W2B rebuild (#113) is frozen at upstream stable v0.4.1 (b10964) through llama-cpp-v0.4.1. llama.cpp v0.5.0 (2026-09-23, ggml 0.25.0) is a feature and performance release, not a security fix or a build breakage for that lane, so it routes to post-closeout maintenance."
+salient_changes = [
+  "Upstream stable tag v0.5.0 is available after the frozen v0.4.1",
+  "Arch llama-cpp reports 0.5.0-1 and ggml-hip 0.25.3-1 after the recorded 0.4.1-1 and 0.24.0-2",
+  "The b-number release check still reports only prereleases",
+  "Both repo-owned variants must share one revision and patch set and pass their separate backend gates",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "llama.cpp v0.5.0 past the C freeze; post-closeout maintenance"
+last_reviewed = "2026-10-01"
+
+[candidates."msgspec-0.22.0-pypi"]
+family = "msgspec"
+packages = ["python-msgspec-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+previous_recorded = "0.21.1"
+latest = "0.22.0"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-10-01 freshness sweep under decision X7: the 2026-09-22 sweep (#136) froze C's version universe (#105, docs/wayfinder/research/c-line-selection-2026-09-22.md), and until C closes out, later drift that is neither a security fix nor a build breakage routes to post-closeout maintenance (#147). C selects msgspec 0.21.1, the version the freeze sweep observed, as a direct vLLM 0.30 requirement. msgspec 0.22.0 (2026-09-29) makes gc=False on a Struct type with a weakref slot raise ValueError, because releasing such an instance corrupts memory on CPython 3.12 and later. The W2A vLLM 0.30.0 lanes passed with 0.21.1, and the release is neither a security advisory nor a build breakage for C, so it routes to post-closeout maintenance."
+salient_changes = [
+  "PyPI msgspec 0.22.0 is available after the selected 0.21.1",
+  "0.22.0 rejects gc=False on Struct types with a weakref slot, a combination that corrupted memory on CPython 3.12 and later",
+  "0.22.0 adds frozendict support on Python 3.15 and later",
+]
+patch_carry_overlap = false
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "msgspec 0.22.0 past the C freeze; post-closeout maintenance"
+last_reviewed = "2026-10-01"
+
+[candidates."multidict-7.0.0-pypi"]
+family = "multidict"
+packages = ["python-multidict-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+previous_recorded = "6.9.1"
+latest = "7.0.0"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-10-01 freshness sweep under decision X7: the 2026-09-22 sweep (#136) froze C's version universe (#105, docs/wayfinder/research/c-line-selection-2026-09-22.md), and until C closes out, later drift that is neither a security fix nor a build breakage routes to post-closeout maintenance (#147). C selects multidict 6.9.1 in the aiohttp 3.14.3 closure (multidict-6.9.1-pypi, #110), and aiohttp 3.14.3 requires multidict<7. multidict 7.0.0 (2026-09-26) is a major release that makes istr final and rejects an argument passed both positionally and by name in the C extension. It is outside the selected line and routes to post-closeout maintenance, together with an aiohttp release that admits it."
+salient_changes = [
+  "PyPI multidict 7.0.0 is available after the selected 6.9.1",
+  "aiohttp 3.14.3 requires multidict<7",
+  "7.0.0 makes istr final and adds a public C API",
+]
+patch_carry_overlap = false
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "multidict 7.0.0 past the C freeze; post-closeout maintenance"
+last_reviewed = "2026-10-01"
+
+[candidates."rocm-pytorch-release-2.12-d0d6373"]
+family = "rocm_pytorch"
+packages = ["python-pytorch-opt-rocm-gfx1151"]
+source_kind = "git_ref"
+check_id = "release-branch"
+baseline_source_kind = "arch_package"
+baseline_latest = "2.14.0-1"
+covered_checks = [{ source_kind = "arch_package", check_id = "arch" }]
+previous_recorded = "13da08625e0d25586351146b4c444f5263997ef8 / 2.12.0-4"
+latest = "d0d6373148ec6cdb1e11e9d9379a22cf1f8fe2e7"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-10-01 freshness sweep under decision X7: the 2026-09-22 sweep (#136) froze C's version universe (#105, docs/wayfinder/research/c-line-selection-2026-09-22.md), and until C closes out, later drift that is neither a security fix nor a build breakage routes to post-closeout maintenance (#147). C selects ROCm PyTorch 2.12.0 at release/2.12 13da0862 (rocm-pytorch-release-2.12-13da086, #109). Between 2026-09-23 and 2026-09-29 the branch head moved 11 commits to d0d63731: test skips and fixes, a get_free_port fix, and a bump of the in-tree AOTriton pin from 0.13.50tp to 0.14.50tp. None is a security fix or a build breakage for 13da0862, so the move routes to post-closeout maintenance, together with the AOTriton 0.14 line (aotriton-0.14.2b)."
+salient_changes = [
+  "The ROCm PyTorch release/2.12 head moved from 13da08625e0d25586351146b4c444f5263997ef8 to d0d6373148ec6cdb1e11e9d9379a22cf1f8fe2e7",
+  "The new commits are test skips and fixes, a get_free_port fix, and the in-tree AOTriton pin bump to 0.14.50tp",
+  "Arch python-pytorch-opt-rocm still reports 2.14.0-1 after the recorded 2.12.0-4 baseline",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "ROCm PyTorch release/2.12 d0d6373 past the C freeze; post-closeout maintenance"
+last_reviewed = "2026-10-01"
+
+[candidates."stable-diffusion-cpp-3f8527a"]
+family = "stable_diffusion_cpp"
+packages = ["stable-diffusion.cpp-vulkan-gfx1151"]
+source_kind = "git_ref"
+check_id = "master"
+baseline_source_kind = "aur"
+baseline_latest = "r929.3f8527a-1"
+covered_checks = [{ source_kind = "aur", check_id = "aur-vulkan" }]
+previous_recorded = "be65ac7511b30379b003626c15224798929e33d4 / r279.49d6570-1"
+latest = "3f8527a46c54ecf4cb4ed6003da8e8982283c73c"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-10-01 freshness sweep under decision X7: the 2026-09-22 sweep (#136) froze C's version universe (#105, docs/wayfinder/research/c-line-selection-2026-09-22.md), and until C closes out, later drift that is neither a security fix nor a build breakage routes to post-closeout maintenance (#147). #121 rebuilds stable-diffusion.cpp for C at the frozen c92d73c (stable-diffusion-cpp-c92d73c) because it links rocm-llvm. master moved to 3f8527a on 2026-09-27 with model-family additions, INT8 convrot work, a ggml sync and fixes. None is a security fix or a build breakage for the frozen lane, so it routes to post-closeout maintenance."
+salient_changes = [
+  "stable-diffusion.cpp master moved from be65ac7511b30379b003626c15224798929e33d4 to 3f8527a46c54ecf4cb4ed6003da8e8982283c73c, past the frozen c92d73c",
+  "The AUR Vulkan baseline reports r929.3f8527a-1 after the recorded r279.49d6570-1",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "stable-diffusion.cpp 3f8527a past the C freeze; post-closeout maintenance"
+last_reviewed = "2026-10-01"
+
+[candidates."torch-migraphx-e551a86"]
+family = "torch_migraphx"
+packages = ["python-torch-migraphx-gfx1151"]
+source_kind = "git_ref"
+check_id = "master"
+previous_recorded = "5afb9ffdd7f5489727bdfbb323f1b2584e3676c2"
+latest = "e551a861cf8fc0865d81920fa6f53db210763eed"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-10-01 freshness sweep under decision X7: the 2026-09-22 sweep (#136) froze C's version universe (#105, docs/wayfinder/research/c-line-selection-2026-09-22.md), and until C closes out, later drift that is neither a security fix nor a build breakage routes to post-closeout maintenance (#147). C rebuilds Torch-MIGraphX at the frozen master 5afb9ffd (torch-migraphx-5afb9ff, #118). master moved one commit to e551a861 on 2026-09-24 (\"fix numpy req for py3.13\"), which allows numpy>=2.0 on Python 3.13 and later in setup.py and requirements.txt. Local patch 0003 already relaxes that cap, so the commit is patch-carry reduction, not a security fix or a build breakage. It routes to post-closeout maintenance, where adopting it can drop patch 0003."
+salient_changes = [
+  "Torch-MIGraphX master moved from 5afb9ffdd7f5489727bdfbb323f1b2584e3676c2 to e551a861cf8fc0865d81920fa6f53db210763eed, one commit past the frozen 5afb9ffd",
+  "Upstream now allows numpy>=2.0 on Python 3.13 and later, which local patch 0003 already allows for this package",
+  "The upstream tag baseline remains v1.1",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "Torch-MIGraphX e551a86 past the C freeze; post-closeout maintenance"
+last_reviewed = "2026-10-01"
+
+[candidates."torchvision-0.29.1"]
+family = "torchvision"
+packages = ["python-torchvision-rocm-gfx1151"]
+source_kind = "github_release"
+check_id = "release"
+baseline_source_kind = "aur"
+baseline_latest = "0.29.0-1"
+covered_checks = [{ source_kind = "aur", check_id = "aur" }]
+previous_recorded = "0.27.1 / 0.27.0-1"
+latest = "0.29.1"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-10-01 freshness sweep under decision X7: the 2026-09-22 sweep (#136) froze C's version universe (#105, docs/wayfinder/research/c-line-selection-2026-09-22.md), and until C closes out, later drift that is neither a security fix nor a build breakage routes to post-closeout maintenance (#147). C selects TorchVision 0.27.1 for ROCm PyTorch 2.12.0 (torchvision-0.27.1-c-line, #115). TorchVision 0.29.1 (2026-09-30) relaxes its PyTorch requirement from torch==2.14.0 to torch>=2.14 but still needs PyTorch 2.14, which is outside the selected line. PyTorch 2.14 with TorchVision 0.29 is the next PyTorch lane after closeout, so it routes to post-closeout maintenance."
+salient_changes = [
+  "TorchVision 0.29.1 is the newest stable release after the selected 0.27.1 and the rejected 0.29.0",
+  "0.29.1 requires torch>=2.14; 0.29.0 required torch==2.14.0",
+  "The AUR baseline reports 0.29.0-1 after the recorded 0.27.0-1",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "TorchVision 0.29.1 past the C freeze; post-closeout maintenance"
+last_reviewed = "2026-10-01"
+
+[candidates."transformers-5.18.0-pypi"]
+family = "transformers"
+packages = ["python-transformers-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+covered_checks = [{ source_kind = "github_tags", check_id = "tag" }]
+previous_recorded = "5.16.1"
+latest = "5.18.0"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-10-01 freshness sweep under decision X7: the 2026-09-22 sweep (#136) froze C's version universe (#105, docs/wayfinder/research/c-line-selection-2026-09-22.md), and until C closes out, later drift that is neither a security fix nor a build breakage routes to post-closeout maintenance (#147). C selects Transformers 5.16.1, the version vLLM 0.30 CI tested (transformers-5.16.1-c-line, #110): vLLM 0.30.0 pixtral.py imports symbols that Transformers 5.17 removed, and the fix (vLLM #56108) landed after the v0.30.0 tag. Transformers 5.18.0 (2026-09-30) follows 5.17 and carries no security fix, so it routes to post-closeout maintenance with the next vLLM release."
+salient_changes = [
+  "PyPI and the upstream tag report Transformers 5.18.0 after the selected 5.16.1 and the rejected 5.17.0",
+  "5.18.0 lists breaking changes, including routing ROCm gpt-oss FA3 to aiter-flash-attn and a vLLM video token counting fix",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "Transformers 5.18.0 past the C freeze; post-closeout maintenance"
+last_reviewed = "2026-10-01"

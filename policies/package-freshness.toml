@@ -159,7 +159,7 @@ priority = "medium"
 workflow = "upstream_source_update"
 checks = [
   { id = "pypi", role = "primary", kind = "pypi", package = "numpy", recorded = "2.5.3", comparison = "pep440" },
-  { id = "arch", role = "baseline", kind = "arch_package", package = "python-numpy", recorded = "2.4.6-1", comparison = "pkgver" },
+  { id = "arch", role = "baseline", kind = "arch_package", package = "python-numpy", recorded = "2.5.3-1", comparison = "pkgver" },
 ]
 
 [families.orjson]
@@ -186,7 +186,7 @@ priority = "medium"
 workflow = "upstream_source_update"
 checks = [
   { id = "arch", role = "primary", kind = "arch_package", package = "python-pydantic-core", recorded = "2.46.5-1", comparison = "pkgver" },
-  { id = "pypi", role = "baseline", kind = "pypi", package = "pydantic_core", recorded = "2.47.0", comparison = "pep440" },
+  { id = "pypi", role = "baseline", kind = "pypi", package = "pydantic_core", recorded = "2.49.0", comparison = "pep440" },
 ]
 source_contracts = [
   { id = "arch-compatible-source", packages = ["python-pydantic-core-gfx1151"], check_id = "arch", source_kind = "pypi_sdist", origin = "pypi:pydantic-core", value_policy = "pinned_may_lag_reviewed" },

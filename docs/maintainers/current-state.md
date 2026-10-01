@@ -4,6 +4,66 @@ The package, deployment, and live-validation narrative below remains a
 2026-06-15 snapshot. Dated records come first, newest first; older
 reconciliations remain as dated history.
 
+## 2026-10-01 Freshness Sweep
+
+An uncached sweep on the W2A closure branch started at
+`2026-10-01T00:53:25Z` and stopped with `CANDIDATE_LEDGER_DUPLICATE_MATCH`
+for pydantic-core. Its family reports also showed 15 actionable families
+without a disposition. Four problems came from W2A recording the selected C
+values in `policies/package-freshness.toml` without moving the matching
+baseline or re-keying the ledger:
+
+- **NumPy:** the PyPI value moved to 2.5.3 while the Arch baseline stayed at
+  2.4.6-1, so an earlier run found two NumPy records matching. The baseline
+  now records 2.5.3-1.
+- **pydantic-core:** the Arch primary moved to 2.46.5-1 while the PyPI
+  baseline cursor stayed at 2.47.0. The family dropped to `baseline_drift` on
+  PyPI 2.49.0, which both `pydantic-core-2.48.0-pypi` and the adopted
+  `pydantic-core-2.46.5-1-arch` cover. The cursor now records 2.49.0, the
+  value that adoption reviewed and rejected within the line (it pairs only
+  with pre-release pydantic 2.14.0b2), so the family is current and matches
+  only the adopted record.
+- **compressed-tensors and mistral-common:** the recorded values moved to the
+  selected 0.17.0 and 1.11.7, so the 2026-09-22 rejections of 0.19.0 and
+  1.12.0, keyed to 0.16.0 and 1.11.2, stopped matching. Both rejections are
+  re-observed in place and now cover both recorded values.
+
+The other 13 families had upstream movement after the 2026-09-22 freeze, and
+`origin/main` would report them the same way. Under decision X7 (#147), drift
+that is neither a security fix nor a build breakage for C routes to
+post-closeout maintenance, so 12 are tracked to #147: AITER 0.1.24, AOTriton
+0.14.2b, cryptography 50.0.2, DuckDB 1.5.6, llama.cpp v0.5.0, msgspec 0.22.0,
+multidict 7.0.0, ROCm PyTorch `release/2.12` `d0d63731`, stable-diffusion.cpp
+`3f8527a`, Torch-MIGraphX `e551a861`, TorchVision 0.29.1, and Transformers
+5.18.0. AutoRound 0.16.0 is rejected as an upstream-scope exclusion, like
+0.15.1. The cryptography and DuckDB records supersede the 50.0.1 and 1.5.5
+post-closeout records. None of the new upstream movement is a security fix or
+a build breakage for C:
+
+- cryptography 50.0.2 only rebuilds wheels and updates PyO3, and the
+  2026-09-22 CVE-2026-69247 decision carries forward.
+- Torch-MIGraphX `e551a861` upstreams, for Python 3.13 and later, the numpy
+  relaxation that local patch 0003 carries.
+- ROCm `release/2.12` moved its in-tree AOTriton pin to 0.14.50tp, so the
+  post-closeout AOTriton and PyTorch moves go together.
+
+The confirming uncached sweep started at `2026-10-01T01:15:56Z`, completed at
+`2026-10-01T01:16:27Z`, and exited 0 with `--fail-on actionable`. It reported
+21 stable updates, four branch-head movements, five baseline drifts, and 21
+current families across 51 families. Applying the ledger yielded 37 tracked,
+six rejected (AutoRound, llmcompressor, compressed-tensors, mistral-common,
+apache-tvm-ffi, and xgrammar), two adopted (pydantic-core and httptools), and
+six current families. The ledger holds 51 active tracked records and no
+blocked records. The explicit tracker validation found all 12 unique issue
+gates open in this repository; #147 now carries 17 candidates.
+
+This sweep changes maintenance metadata only. No package source was updated,
+and no package was built, deployed/installed, installed-smoked, or
+live-scenario validated. The freshness evidence is due again 24 hours after
+the confirming sweep completed, or sooner if package policy, package
+directories, the candidate ledger, checker behavior, or relevant source
+metadata changes.
+
 ## 2026-09-29 W2A vLLM 0.30.0 Validation of Record
 
 This is the validation of record for `python-vllm-rocm-gfx1151` 0.30.0 in W2A
