@@ -14,6 +14,7 @@ Generation C's version line is selected in
 
 | Record | Retrieved | Input to | Scope |
 | --- | --- | --- | --- |
+| [python-cryptography-security-applicability-2026-10-01.md](python-cryptography-security-applicability-2026-10-01.md) | 2026-10-01 | [#170](https://github.com/nisavid/arch-strix-halo-pkgs/issues/170), foundation and drift owners | CPython 3.14.8 and cryptography advisory applicability, owner decisions, and affected validation evidence |
 | [c-line-selection-2026-09-22.md](c-line-selection-2026-09-22.md) | 2026-09-22 | [#105](https://github.com/nisavid/arch-strix-halo-pkgs/issues/105) | Generation C's selected version line within the frozen universe, and the W1 build plan |
 | [therock-python-foundation.md](therock-python-foundation.md) | 2026-08-11 | [#84](https://github.com/nisavid/arch-strix-halo-pkgs/issues/84) | TheRock, CPython, and MIGraphX foundation boundary |
 | [rocm-runtime-compatibility.md](rocm-runtime-compatibility.md) | 2026-08-11 | [#85](https://github.com/nisavid/arch-strix-halo-pkgs/issues/85) | ROCm PyTorch, vLLM, and coupled runtime dependency line |
