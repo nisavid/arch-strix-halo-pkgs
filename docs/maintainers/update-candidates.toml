@@ -4418,6 +4418,7 @@ salient_changes = [
   "AOTriton 0.14.2b is the newest stable release after the selected 0.13b and the rejected 0.14b",
   "Arch python-aotriton still reports 0.13b-2",
   "ROCm PyTorch release/2.12 bumped its in-tree AOTriton pin from 0.13.50tp to 0.14.50tp on 2026-09-29",
+  "0.14.2b fixes critical attention kernel bugs over 0.14b: gfx950 flyc precision, and the Triton backward kernel mishandling a non-positive sm_scale. Neither is a security fix or a build breakage for C",
 ]
 patch_carry_overlap = true
 package_source_update_needed = true
@@ -4465,6 +4466,7 @@ salient_changes = [
   "Arch python-cryptography reports 50.0.2-1",
   "50.0.2 rebuilds upstream wheels against OpenSSL 4.0.3, adds abi3t wheels for free-threaded CPython 3.15 and later, and updates PyO3 to 0.29.2",
   "Security-relevant: cryptography 50.0.0 fixes CVE-2026-69247, a Bleichenbacher oracle in PKCS#7 decryption of untrusted messages; the security refresh stays routed to post-closeout maintenance (#147)",
+  "Security-relevant: the installed 48.0.0 is also affected by two advisories fixed in 49.0.0: CVE-2026-69249 (GHSA-jwv3-5hgf-82ww, high), exponential X.509 path building with duplicate self-signed intermediates, and CVE-2026-69248 (GHSA-m2h6-j472-rp4c, medium), wildcard DNS names escaping permittedSubtrees in the verifier. Both affect cryptography.x509.verification users, not the PKCS#7 path reviewed earlier; the owner decides whether the security refresh preempts post-closeout maintenance (#147)",
 ]
 patch_carry_overlap = false
 package_source_update_needed = true
