@@ -4,6 +4,60 @@ The package, deployment, and live-validation narrative below remains a
 2026-06-15 snapshot. Dated records come first, newest first; older
 reconciliations remain as dated history.
 
+## 2026-10-02 MIGraphX Protobuf 36.1 and Abseil Rebuild
+
+Arch `extra` moved protobuf to 36.1 and abseil-cpp to 20260817.0. In the
+installed generation-B `migraphx-gfx1151` 7.13.0-3, both parser libraries link
+`libprotobuf.so.35.1.0` and 78 `libabsl_*.so.2605.0.0` libraries, so the
+pending full upgrade would leave MIGraphX unloadable. This record covers the
+pkgrel-only rebuild to `therock-gfx1151` 7.13.0-4:
+
+- **Source updated:** the branch ports `0ae0d94`, the unmerged 7.13.0-3
+  protobuf 35.1 rebuild, then moves the family to pkgrel 4.
+  `migraphx-gfx1151` now declares `libprotobuf.so=36.1.0-64`,
+  `abseil-cpp>=20260817.0`, and `abseil-cpp<20260818`; the package README
+  explains the range. AMDMIGraphX stays at `b69836e6`. The classifier now
+  ignores the `opt/rocm/bin/rocprof-compute` symlink that
+  `rocprofiler-compute-gfx1151` creates. Before that, a render from a stage
+  copied from the installed `/opt/rocm` also assigned the symlink to
+  `rocprofiler-systems-gfx1151`, so two split packages would own it.
+- **Package built:** on the host, in `builds.slice`, under the heavy-work
+  lease. The stage copied the installed 7.13.0-3 `/opt/rocm` and compiled
+  MIGraphX against an isolated prefix extracted from Arch `protobuf-36.1-1`
+  and `abseil-cpp-20260817.0-2`, whose sha256 sums matched the `extra` sync
+  DB. At `-j12` the stage job took 12m12s, 11m48s of it compiling and
+  installing. Its `memory.peak` was 10.2 GiB, mostly page cache from the
+  `/opt/rocm` copy; sampled anonymous memory peaked at 2.8 GiB, with no OOM
+  events. `makepkg -Cf` packaged all 66 splits in 5m08s, with a
+  `memory.peak` of 3.7 GiB. The `migraphx-gfx1151-7.13.0-4` archive's sha256
+  is `36897303618edbcb7592f9a249992bdfb21cbb69068665602b899035e481884b`.
+- **Build gates passed:**
+  - Both parser libraries link `libprotobuf.so.36.1.0`,
+    `libutf8_validity.so.36.1.0`, and 79 `libabsl_*.so.2608.0.0` libraries.
+    No ELF in the stage or in the packaged MIGraphX links protobuf 34 or 35
+    or Abseil 2605, and no other ELF links protobuf or Abseil.
+  - MIGraphX RUNPATHs hold only `$ORIGIN` entries, and no ELF names the
+    stage. As in 7.13.0-3, `libmigraphx_onnx` keeps one protobuf-header
+    `__FILE__` string from the build prefix, and 12 ELFs keep AMDMIGraphX
+    source paths. Neither is a load path.
+  - The staged module imports. A tiny ONNX model (Add, Relu, MatMul) parses,
+    compiles for the `ref` target, and matches NumPy. The process maps only
+    protobuf 36.1 and Abseil 2608, and it never opens the GPU.
+  - A render from the stage reproduces the committed `PKGBUILD`, manifest,
+    and filelists. Against 7.13.0-3, they differ only in pkgrel and the
+    MIGraphX depends.
+  - Every 7.13.0-4 `.BUILDINFO` records the committed `PKGBUILD` sha256. The
+    other 65 archives match their published 7.13.0-3 payloads by `.MTREE`
+    digest. `migraphx-gfx1151` changes 12 ELFs, the CMake policy range in its
+    targets file, and its depends.
+  - The repo suite and the package-local tests pass.
+- **Not yet done:** published, deployed/installed, installed-smoked, and
+  live-scenario validated. The host must take 7.13.0-4 in the same full
+  `pacman -Syu` that moves protobuf, Abseil, and onnxruntime. No installed
+  smoke was recorded for 7.13.0-3 either.
+- **Freshness:** this policy change invalidates the 2026-10-02 sweep below;
+  rerun it at closeout.
+
 ## 2026-10-02 Freshness Sweep
 
 A cache-aware sweep on the W2A closure branch completed at

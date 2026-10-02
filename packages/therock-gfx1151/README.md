@@ -56,6 +56,15 @@ protobuf or Abseil soname change needs a pkgrel-only MIGraphX rebuild with
 - Both parser libraries must link exactly the pinned protobuf and
   `utf8_validity` sonames, and only `libabsl_*.so.<abseil_soversion>`. Older
   protobuf or Abseil links fail the stage.
+- The stage is a copy of the installed `/opt/rocm`, so it also holds the
+  symlinks that `post_copy_commands` create. The policy's `ignore_globs`
+  must cover them (`test_live_root_render_ignores_post_copy_symlinks`), and
+  a render from the stage must reproduce the committed `PKGBUILD`, manifest,
+  and filelists before packaging.
+- Pass `-j` explicitly; the script defaults to `nproc`. Package from the stage
+  with `_THEROCK_ROOT=<stage> makepkg -Cf`. Every depend is declared per split
+  package, which makepkg does not check, so the build host need not have the
+  new protobuf or Abseil installed.
 
 The package declares both libraries to pacman:
 
