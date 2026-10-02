@@ -1358,7 +1358,6 @@ def cmd_verify(a: argparse.Namespace) -> int:
     return 1 if report["violations"] else 0
 
 
-PROBE_BINARIES = ("hello/hello", "cmakelib/prefix/lib/libsaxpy.so", "cmakelib/prefix/bin/saxpy_probe")
 # Each probe output (relative to the work dir, which the root sees as /build)
 # and the output tree that its $ORIGIN RUNPATH entries must stay inside.
 PROBE_OUTPUTS = {
@@ -1368,6 +1367,23 @@ PROBE_OUTPUTS = {
     "pkgx/usr/lib/libsaxpy.so": "pkgx/usr",
     "pkgx/usr/bin/saxpy_probe": "pkgx/usr",
 }
+# Files the probe reads for embedded host paths: its ELF outputs and the
+# extracted package metadata. The package archive itself is zstd-compressed,
+# so its bytes would hide a path; run.sh extracts it to pkgx/.
+PROBE_LEAK_SCAN = (*PROBE_OUTPUTS, "pkgx/.PKGINFO", "pkgx/.BUILDINFO")
+
+
+def probe_leaks(work: Path, leaks: Iterable[str]) -> list[str]:
+    """Probe outputs that embed one of LEAKS, or that are missing and so cannot be checked."""
+    violations = []
+    for rel in PROBE_LEAK_SCAN:
+        path = work / rel
+        if not path.is_file():
+            violations.append(f"{rel}: missing, so it cannot be checked for host paths")
+            continue
+        data = path.read_bytes()
+        violations += [f"{rel}: embeds host path {leak}" for leak in sorted(set(leaks)) if leak.encode() in data]
+    return violations
 
 
 def probe_runpath_violations(log: str) -> list[str]:
@@ -1418,11 +1434,7 @@ def cmd_probe(a: argparse.Namespace) -> int:
     rows, link_viol = check_linkage(root, ldd_paths(log), foundation=a.foundation_repo,
                                     forbidden_repos=a.forbid_repo)
     violations += link_viol
-    for rel in PROBE_BINARIES + tuple(str(p.relative_to(work)) for p in work.glob("pkg/*.pkg.tar.*")):
-        data = (work / rel).read_bytes() if (work / rel).exists() else b""
-        for leak in {str(root), str(work), str(Path.home())}:
-            if leak.encode() in data:
-                violations.append(f"{rel}: embeds host path {leak}")
+    violations += probe_leaks(work, (str(root), str(work), str(Path.home())))
     violations += probe_runpath_violations(log)
     report = {"returncode": proc.returncode, "libraries": rows, "violations": violations,
               "rocm_version": verify_root(root, foundation=a.foundation_repo,

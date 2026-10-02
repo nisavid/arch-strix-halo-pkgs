@@ -1188,3 +1188,21 @@ def test_probe_refuses_to_build_without_a_capped_build_slice(tmp_path, monkeypat
     with pytest.raises(cbr.BuildRootError, match="builds.slice"):
         run_probe(tmp_path, monkeypatch, slice_ok=False, launched=launched)
     assert launched == []
+
+
+def test_probe_scans_the_extracted_package_files_for_host_paths(tmp_path, monkeypatch):
+    # The package archive is zstd, so only the extracted pkgx/ files can show a leak.
+    outputs = dict(PROBE_CLEAN_OUTPUTS, **{"pkgx/usr/lib/libsaxpy.so": b"\x7fELF ... {work}/cmakelib/build ..."})
+    rc, report, _ = run_probe(tmp_path, monkeypatch, outputs=outputs)
+    leak = f"pkgx/usr/lib/libsaxpy.so: embeds host path {tmp_path / 'work'}"
+    assert leak in report["violations"]
+    assert all(v.startswith("pkgx/usr/lib/libsaxpy.so: embeds host path ") for v in report["violations"])
+    assert rc == 1
+
+
+@pytest.mark.parametrize("missing", ["pkgx/usr/bin/saxpy_probe", "pkgx/.BUILDINFO", "hello/hello"])
+def test_probe_reports_a_missing_output_instead_of_passing_it(tmp_path, monkeypatch, missing):
+    outputs = {k: v for k, v in PROBE_CLEAN_OUTPUTS.items() if k != missing}
+    rc, report, _ = run_probe(tmp_path, monkeypatch, outputs=outputs)
+    assert report["violations"] == [f"{missing}: missing, so it cannot be checked for host paths"]
+    assert rc == 1

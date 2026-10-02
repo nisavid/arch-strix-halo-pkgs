@@ -77,8 +77,11 @@ it that way:
    `probe` maps every
    library that `ldd` resolves for its outputs to the package that owns it,
    following symlinks inside the root. It also fails on unresolved libraries,
-   on host paths embedded in the outputs, and on a RUNPATH entry outside
-   `/opt/rocm` or a `$ORIGIN` entry that leaves the output's own tree.
+   on a RUNPATH entry outside `/opt/rocm` or a `$ORIGIN` entry that leaves the
+   output's own tree, and on host paths embedded in the outputs. That scan
+   reads the ELF files it built and the files and metadata extracted from its
+   package, never the compressed archive, and it fails when an output is
+   missing.
 
 Because `/opt/rocm` inside the root is the same path the host has after W5,
 RUNPATHs, CMake exports, `hipconfig` and `.info/version` are correct by
