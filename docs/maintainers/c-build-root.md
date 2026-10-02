@@ -148,6 +148,25 @@ for about 30 GiB, and `$STAGING` for the directory that holds the
    that it no longer meets as `unsatisfied`. `unresolved`, `replaced` and
    `unsatisfied` need a change to the targets or the repos; `populate` refuses
    a lock with any problem.
+
+   **Bootstrap.** Six `torch-chain.targets` entries are W2A builds: the four
+   #110 gfx1151 lanes (`python-numpy-gfx1151`, `python-pyyaml-gfx1151`,
+   `python-pillow-gfx1151` and `python-psutil-gfx1151`),
+   `python-triton-gfx1151` and `python-aotriton-gfx1151`. Against an empty
+   `ashp-w2a` they are `unresolved`, which `fetch` cannot fix, so the first
+   lock leaves them out:
+
+   ```sh
+   grep -vxE 'python-(numpy|pyyaml|pillow|psutil|triton|aotriton)-gfx1151' \
+     tools/buildroot/torch-chain.targets >$WORK/lock/bootstrap.targets
+   ```
+
+   Lock with `--targets-file $WORK/lock/bootstrap.targets`, populate, and
+   build, publish and add the four #110 lanes (steps 3 to 6). Then build
+   Triton, and AOTriton after it, re-locking after each wave with the targets
+   it added back. Before building PyTorch, re-lock with the full
+   `torch-chain.targets`, which then resolves with no problems. The W2A root
+   was bootstrapped in this order.
 3. **Populate.** `c_buildroot.py populate LOCK $WORK/root` extracts the lock
    into a fresh root, then runs `ldconfig` and `update-ca-trust` inside it. It
    also adds a `builder` user with your uid, and it creates the `/build`,
