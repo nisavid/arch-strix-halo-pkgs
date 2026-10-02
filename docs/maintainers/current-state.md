@@ -171,7 +171,10 @@ longer gate W2A closeout.
 
 **Remaining before W2A closeout:** the W2A PR
 ([#174](https://github.com/nisavid/arch-strix-halo-pkgs/pull/174)), which
-closes #168 with its audit doc and carries the #111 closeout.
+closes #168 with its audit doc and carries the #111 closeout. Two owner
+decisions in its Before-merge list decide whether those closing references
+hold: the FlashAttention CK gate set on #111, which has no recorded run on
+2.8.4-16, and the six root-built lanes that the #168 audit tables omit.
 
 ## 2026-09-25 Lemonade M6 Redeploy and Revalidation
 
