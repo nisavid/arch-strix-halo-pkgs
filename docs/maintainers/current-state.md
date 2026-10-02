@@ -224,6 +224,44 @@ host reached only 70-76 GiB. The owner deferred them to
 sub-issue, to run in a quiet host window ahead of W4 qualification; they no
 longer gate W2A closeout.
 
+**FlashAttention CK gate:** the post-build gate that the FlashAttention
+verdict on #111 set for `python-flash-attn-rocm-gfx1151` passed on
+2026-10-02, in one guarded GPU run in the isolated W2A root from 07:36:45Z to
+07:37:00Z. The gate runs `flash-attn.ck.backend-import`,
+`flash-attn.ck.varlen-tiny` and `flash-attn.ck.varlen-paged-kv` with
+`FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE` and AITER absent from the root.
+The staged scenario definitions, runner and smoke script match this branch.
+The states are recorded separately:
+
+- **Source updated:** 2.8.4-16, which adds
+  `0010-init-ck-splitkv-args.patch`.
+- **Built:** the root carries 2.8.4-16, built on 2026-09-25, and its sha256
+  matches the built archive. In the root it links
+  `python-pytorch-opt-rocm-gfx1151` 2.12.0-5 and ROCm 7.14.1, and it lists
+  AITER only as an optional dependency.
+- **Deployed/installed and installed-smoked:** no. The package exists only in
+  the W2A root.
+- **Live-scenario validated:** in the W2A root only.
+- **AITER absent:** `python-amd-aiter-gfx1151` is not in the root, no root
+  package ships an `aiter` module, and `find_spec("aiter")` and
+  `find_spec("amd_aiter")` both returned `None` in the run.
+- **Guard:** exited 0 with 0 GPU page faults and no ring timeouts or resets.
+  The gate ran once, with no retry, and brought the guard's FlashAttention GPU
+  budget to 4 of 6 runs used. The Lemonade service was already stopped; the
+  run did not touch it, and its state was the same afterward.
+
+| Gate scenario | Result |
+| --- | --- |
+| `flash-attn.ck.backend-import` | pass: `flash_attn_2_cuda` with `use_triton_rocm False` |
+| `flash-attn.ck.varlen-tiny` | pass: finite `(16, 2, 32)` output |
+| `flash-attn.ck.varlen-paged-kv` | pass: finite `(16, 2, 256)` output |
+
+This is the first paged-KV pass on a build with patch 0010, so unlike the
+2.8.4-10 pass it does not depend on an uninitialized `sink_ptr`. It does not
+change the vLLM Qwen CK consumer probe, which stays blocked on the 64-token
+page boundary ([FlashAttention CK Paged-KV
+Boundary](flashattention-ck-paged-kv.md)).
+
 **Remaining before W2A closeout:** the W2A PR
 ([#174](https://github.com/nisavid/arch-strix-halo-pkgs/pull/174)), which
 closes #168 with its audit doc and carries the #111 closeout. The #168
@@ -231,9 +269,10 @@ audit-lanes decision in its Before-merge list is resolved: the owner
 recorded the six root-built lanes that the audit tables omit, four
 Rust/maturin lanes and two pure-Python lanes, as
 [out of scope](lto-configure-probe-audit.md#out-of-scope), so the #168
-closing reference holds. One owner decision in that list still decides
-whether the #111 closing reference holds: the FlashAttention CK gate set on
-#111, which has no recorded run on 2.8.4-16. Separately, the owner decides
+closing reference holds. The FlashAttention CK gate set on #111, the item in
+that list that decided whether the #111 closing reference holds, is
+satisfied: it passed on 2.8.4-16 in the W2A root on 2026-10-02, as recorded
+above, so it no longer blocks that reference. Separately, the owner decides
 whether that PR or a follow-up before W4 adopts the uvloop 0.23.0 security
 fix that the [2026-10-02 sweep](#2026-10-02-freshness-sweep) tracked to
 #110.

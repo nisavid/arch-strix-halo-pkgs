@@ -42,9 +42,14 @@ declares `args;` uninitialized and leaves `logits_soft_cap` unset.
 an ancestor of `8afc617a`. Local patch 0007 backported only the
 `fmha_fwd_args` part of #2363. `python-flash-attn-rocm-gfx1151 2.8.4-16`
 carries `0010-init-ck-splitkv-args.patch`, which value-initializes the struct
-and sets the three fields in both split-KV builders. That release is source
-updated only until it is built, installed, and the direct CK scenarios below
-pass on the reference host.
+and sets the three fields in both split-KV builders. That release is built.
+On 2026-10-02, `flash-attn.ck.backend-import`, `flash-attn.ck.varlen-tiny`
+and `flash-attn.ck.varlen-paged-kv` passed on it in one guarded GPU run in
+the isolated W2A root, with AITER absent and 0 GPU page faults
+([current state](current-state.md#2026-09-29-w2a-vllm-0300-validation-of-record)).
+It is not installed on the reference host, so the fix is not yet claimed
+there: that waits for the install and a pass of the direct CK scenarios
+below on that host.
 
 Consequences for the evidence below:
 
