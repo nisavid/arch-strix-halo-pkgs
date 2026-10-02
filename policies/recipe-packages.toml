@@ -538,7 +538,7 @@ update_notes = [
 provides = ["python-triton=3.8.0+git669b31ac"]
 conflicts = ["python-triton"]
 depends = ["glibc", "libgcc", "libstdc++", "python-gfx1151", "zlib"]
-makedepends = ["cmake", "git", "ninja", "nlohmann-json", "pybind11", "python-build", "python-installer", "python-setuptools", "python-wheel"]
+makedepends = ["cmake", "git", "ninja", "nlohmann-json", "pybind11", "python-build", "python-installer", "python-setuptools", "python-wheel", "rocm-llvm-gfx1151"]
 source_refs = [
   "triton::git+https://github.com/ROCm/triton.git#commit=669b31acc1dd1b3fd93286afd5db67f65d9f7557",
   "llvm-5f07f818-ubuntu-x64-1.tar.gz::https://oaitriton.blob.core.windows.net/public/llvm-builds/llvm-5f07f818-ubuntu-x64-1.tar.gz"

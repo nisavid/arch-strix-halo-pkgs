@@ -387,6 +387,14 @@ fresh `torch-chain.targets` root (423 packages) and published to `ashp-w2a`.
   unpacked tarball and `JSON_SYSPATH=/usr` (Arch nlohmann-json).
 - **Build:** about 22 minutes with 14 compile jobs and 2 link jobs
   (`TRITON_PARALLEL_LINK_JOBS`). The build tree peaked at about 5.3 GiB.
+- **Compiler:** the PKGBUILD selects ROCm's `amdclang` from
+  `/opt/rocm/lib/llvm/bin`, and upstream's `setup.py` builds with the compiler
+  the environment names, so the package now declares `rocm-llvm-gfx1151` in
+  `makedepends`. The published 3.8.0+git669b31ac-1 predates that
+  declaration. Its lock named `rocm-llvm-gfx1151` 7.14.1-1 as a
+  `torch-chain.targets` entry and CMake identified Clang 23.0.0, so its
+  payload is unaffected. A rebuild's `.PKGINFO` makedepend lines and
+  `.BUILDINFO` PKGBUILD checksum will differ from that archive.
 - **Linkage:** `libtriton.so` links only libz, libstdc++, libgcc_s, libm and
   libc; LLVM and MLIR are static. The package depends on `libstdc++` and
   `zlib` for that reason.

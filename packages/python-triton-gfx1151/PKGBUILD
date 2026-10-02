@@ -12,7 +12,7 @@ arch=('x86_64')
 url=https://triton-lang.org/main/index.html
 license=(MIT)
 depends=(glibc libgcc libstdc++ python-gfx1151 zlib)
-makedepends=(cmake git ninja nlohmann-json pybind11 python-build python-installer python-setuptools python-wheel)
+makedepends=(cmake git ninja nlohmann-json pybind11 python-build python-installer python-setuptools python-wheel rocm-llvm-gfx1151)
 optdepends=()
 options=()
 provides=(python-triton=3.8.0+git669b31ac)

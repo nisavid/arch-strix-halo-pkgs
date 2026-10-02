@@ -652,6 +652,27 @@ def test_triton_rocm_renderer_requires_a_pinned_llvm_dir(capsys) -> None:
     assert "TRITON_LLVM_DIR_MISSING" in capsys.readouterr().err
 
 
+def _pkgbuild_dependency_names(text: str) -> set[str]:
+    names: set[str] = set()
+    for match in re.finditer(r"^\s*(?:make)?depends(?:_x86_64)?\+?=\((.*?)\)", text, re.M | re.S):
+        body = re.sub(r"#[^\n]*", "", match.group(1))
+        for word in re.findall(r"""['"]?([^\s'"()]+)['"]?""", body):
+            names.add(re.split(r"[<>=]", word, maxsplit=1)[0])
+    return names
+
+
+def test_pkgbuilds_that_build_with_rocm_clang_declare_rocm_llvm() -> None:
+    # A clean build root has only what the package declares, so a PKGBUILD
+    # that selects a compiler from ROCm's LLVM must pull in its provider.
+    missing = [
+        path.parent.name
+        for path in sorted(REPO_ROOT.glob("packages/*/PKGBUILD"))
+        if "/opt/rocm/lib/llvm/bin" in (text := path.read_text(encoding="utf-8"))
+        and "rocm-llvm-gfx1151" not in _pkgbuild_dependency_names(text)
+    ]
+    assert missing == []
+
+
 def test_aocl_libm_renderer_prefers_source_patches_over_inline_sed() -> None:
     pkgbuild = render_recipe_scaffolds.render_pkgbuild(
         "aocl-libm-gfx1151",
