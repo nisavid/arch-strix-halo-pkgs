@@ -143,8 +143,9 @@ def test_the_root_has_ps_for_the_scenario_runner():
 
 def test_the_sagemaker_standards_lane_is_gone():
     # The 0016 carry makes model_hosting_container_standards optional, so the
-    # lane f6708a6 added is not part of the required runtime set. It stays a
-    # #110 gap (optdepend once packaged), not a lane.
+    # lane that an earlier W2A lease-job commit in #174 added is not part of
+    # the required runtime set. It stays a #110 gap (optdepend once packaged),
+    # not a lane.
     name = "python-model-hosting-container-standards-gfx1151"
     recipe = tomllib.loads((REPO_ROOT / "policies/recipe-packages.toml").read_text())
     freshness = tomllib.loads((REPO_ROOT / "policies/package-freshness.toml").read_text())
