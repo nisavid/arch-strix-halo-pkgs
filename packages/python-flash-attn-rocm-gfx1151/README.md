@@ -114,10 +114,11 @@ leftover host stack contents as `sink_ptr` and dereferenced them in the
 split-KV kernel whenever they were non-null. Rebuild, install, and rerun the
 direct CK scenarios, including `flash-attn.ck.varlen-paged-kv`, before
 claiming the fix on the reference host. The 2026-10-02 W2A-root gate under
-Current Evidence passed those scenarios on `2.8.4-16`, but the package is not
-installed on the reference host yet, so that host gate stays open. Patch 0007
-becomes redundant once
-the package moves to a FlashAttention ref that contains upstream `8afc617a`.
+Current Evidence passed three of them (`flash-attn.ck.backend-import`,
+`flash-attn.ck.varlen-tiny` and `flash-attn.ck.varlen-paged-kv`) on
+`2.8.4-16`, but the package is not installed on the reference host yet, so
+that host gate stays open. Patch 0007 becomes redundant once the package
+moves to a FlashAttention ref that contains upstream `8afc617a`.
 Patch 0010 becomes redundant only when the target source sets `sink_ptr`,
 `sink_size` and `logits_soft_cap` in both split-KV argument builders.
 `8afc617a` sets only the sink fields and still declares `args;`
@@ -182,8 +183,8 @@ isolated W2A build root, in one guarded GPU run with 0 GPU page faults. With
 `FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE` and AITER absent from the root,
 `flash-attn.ck.backend-import` selected `flash_attn_2_cuda` with
 `use_triton_rocm False`, and `flash-attn.ck.varlen-tiny` and
-`flash-attn.ck.varlen-paged-kv` returned finite output. This is the first
-paged-KV pass with patch 0010, so it does not depend on an uninitialized
+`flash-attn.ck.varlen-paged-kv` returned finite output. This paged-KV
+pass is on a build with patch 0010, so it does not depend on an uninitialized
 `sink_ptr`. The package is built and validated in the W2A root only: it is
 not deployed, installed-smoked, or validated on the reference host.
 `docs/maintainers/current-state.md` records the run.
