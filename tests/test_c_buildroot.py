@@ -1054,6 +1054,50 @@ def test_remove_drops_only_files_no_other_package_owns(tmp_path):
         cbr.remove_packages(root, ["python-numpy"], post_install=False)
 
 
+def raw_pkg(path: Path, pkginfo: str, members: dict[str, bytes]) -> Path:
+    """A package archive with exactly these member names, unsafe ones included."""
+    with tarfile.open(path, "w:gz") as tf:
+        for name, data in {".PKGINFO": pkginfo.encode(), **members}.items():
+            info = tarfile.TarInfo(name)
+            info.size = len(data)
+            tf.addfile(info, io.BytesIO(data))
+    return path
+
+
+def empty_root(tmp_path: Path) -> Path:
+    root = base_root(tmp_path)
+    (root / cbr.STATE_DIR).mkdir()
+    cbr.save_manifest(root, [])
+    return root
+
+
+@needs_bsdtar
+@pytest.mark.parametrize("name", ["../../escape", "/abs", "a/b", ".hidden", "-opt", ""])
+def test_add_refuses_a_pkgname_that_pacman_would_refuse(tmp_path, name):
+    root = empty_root(tmp_path)
+    pkg = raw_pkg(tmp_path / "x.pkg.tar.gz", f"pkgname = {name}\npkgver = 1-1\n", {"usr/share/x": b"x"})
+    with pytest.raises(cbr.BuildRootError, match="package name"):
+        cbr.add_packages(root, [pkg], "ashp-w2a", post_install=False)
+    assert not list(tmp_path.rglob("escape.list")) and not (root / "usr/share/x").exists()
+    assert cbr.load_manifest(root) == []
+
+
+@needs_bsdtar
+@pytest.mark.parametrize("member", ["../outside.txt", "usr/../../outside.txt", "/etc/abs.txt"])
+def test_add_refuses_archive_members_that_leave_the_root(tmp_path, member):
+    root = empty_root(tmp_path)
+    pkg = raw_pkg(tmp_path / "x.pkg.tar.gz", "pkgname = x\npkgver = 1-1\n", {member: b"x"})
+    with pytest.raises(cbr.BuildRootError, match="outside the root"):
+        cbr.add_packages(root, [pkg], "ashp-w2a", post_install=False)
+    assert cbr.load_manifest(root) == []
+
+
+def test_record_package_refuses_an_unsafe_name(tmp_path):
+    with pytest.raises(cbr.BuildRootError, match="package name"):
+        cbr.record_package(tmp_path, "../x", "1-1", "core", Path("x.pkg"), "s", [])
+    assert cbr.record_package(tmp_path, "lib32-gcc-libs@x_1.0+git", "1-1", "core", Path("x.pkg"), "s", [])
+
+
 def _systemctl(stdout: str, returncode: int = 0):
     def runner(argv, **kwargs):
         assert argv[:4] == ["systemctl", "--user", "show", "builds.slice"]

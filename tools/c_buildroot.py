@@ -477,6 +477,17 @@ def ownership_index(root: Path, manifest: Iterable[dict]) -> dict[str, dict]:
     return index
 
 
+# pacman's package-name rule. A name is also a file name under the root's
+# state dir, so anything else could write outside it.
+PKGNAME_RE = re.compile(r"^[A-Za-z0-9@_+][A-Za-z0-9@._+-]*$")
+
+
+def check_pkgname(name: str, where: object) -> str:
+    if not PKGNAME_RE.match(name):
+        raise BuildRootError(f"{where}: invalid package name {name!r}")
+    return name
+
+
 def archive_members(archive: Path) -> list[str]:
     out = subprocess.run(["bsdtar", "-tf", str(archive)], capture_output=True, text=True, check=True).stdout
     members = []
@@ -484,6 +495,8 @@ def archive_members(archive: Path) -> list[str]:
         line = line.removeprefix("./")
         if not line or line in PKG_METADATA or line.endswith("/"):
             continue
+        if line.startswith("/") or ".." in line.split("/"):
+            raise BuildRootError(f"{archive}: member {line!r} is outside the root")
         members.append(line)
     return members
 
@@ -499,6 +512,7 @@ def read_pkginfo(archive: Path) -> dict[str, str]:
             info.setdefault(k, v)
     if "pkgname" not in info or "pkgver" not in info:
         raise BuildRootError(f"PACKAGE_METADATA_MISSING: {archive}")
+    check_pkgname(info["pkgname"], archive)
     return info
 
 
@@ -511,6 +525,7 @@ def extract(archive: Path, root: Path) -> None:
 
 def record_package(root: Path, name: str, version: str, source: str, archive: Path, sha: str,
                    members: list[str]) -> dict:
+    check_pkgname(name, archive)
     files = state_dir(root) / FILES_DIR
     files.mkdir(parents=True, exist_ok=True)
     (files / f"{name}.list").write_text("\n".join(members) + ("\n" if members else ""))
