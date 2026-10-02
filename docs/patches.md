@@ -148,8 +148,13 @@ upstream moved the merge into `recipe_arg_resolver.h`
     `logits_soft_cap` line from `c661198a`.
     [Patch 0007](../packages/python-flash-attn-rocm-gfx1151/0007-adapt-ck-fwd-args-layout.patch)
     is a partial #2363 backport that covered only `fmha_fwd_args`.
-  - The longer-term fix is to move the package to a FlashAttention ref that
-    contains `8afc617a`, then drop 0007 and 0010.
+  - Drop 0007 once the package moves to a FlashAttention ref that contains
+    `8afc617a`. Drop 0010 only once the target source sets `sink_ptr`,
+    `sink_size` and `logits_soft_cap` in both split-KV argument builders:
+    `8afc617a` sets only the sink fields, and `c661198a` sets
+    `logits_soft_cap` in the varlen builder only and is not an ancestor of
+    `8afc617a`. If upstream still declares `args;` uninitialized then, keep
+    its value-initialization as a reduced local patch.
 
 ## PyTorch
 

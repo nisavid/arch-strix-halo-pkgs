@@ -113,9 +113,14 @@ declared `fmha_fwd_splitkv_args args;` without initializing it, so CK read
 leftover host stack contents as `sink_ptr` and dereferenced them in the
 split-KV kernel whenever they were non-null. Rebuild, install, and rerun the
 direct CK scenarios, including `flash-attn.ck.varlen-paged-kv`, before
-claiming the fix on the reference host. Patches 0007 and 0010 should become
-redundant once the package moves to a FlashAttention ref that contains
-upstream `8afc617a`.
+claiming the fix on the reference host. Patch 0007 becomes redundant once
+the package moves to a FlashAttention ref that contains upstream `8afc617a`.
+Patch 0010 becomes redundant only when the target source sets `sink_ptr`,
+`sink_size` and `logits_soft_cap` in both split-KV argument builders.
+`8afc617a` sets only the sink fields and still declares `args;`
+uninitialized, and `c661198a` sets `logits_soft_cap` in the varlen builder
+only and is not an ancestor of `8afc617a`. If upstream still leaves `args`
+uninitialized then, keep its value-initialization as a reduced local patch.
 
 ## Current Evidence
 

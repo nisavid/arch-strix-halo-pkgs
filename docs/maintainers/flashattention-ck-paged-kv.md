@@ -35,8 +35,11 @@ that struct, and FlashAttention `3f94643f` never sets them. CK's split-KV
 kernel dereferences `kargs.sink_ptr` whenever it is non-null, so leftover host
 stack contents made the kernel read an arbitrary address.
 
-Upstream fixed this in ROCm/flash-attention `8afc617a` (#2363), and
-`c661198a` also sets `logits_soft_cap`. Local patch 0007 backported only the
+Upstream fixed the sink fields in ROCm/flash-attention `8afc617a` (#2363):
+it sets `sink_ptr` and `sink_size` in both split-KV builders, but still
+declares `args;` uninitialized and leaves `logits_soft_cap` unset.
+`c661198a` sets `logits_soft_cap` in the varlen builder only, and it is not
+an ancestor of `8afc617a`. Local patch 0007 backported only the
 `fmha_fwd_args` part of #2363. `python-flash-attn-rocm-gfx1151 2.8.4-16`
 carries `0010-init-ck-splitkv-args.patch`, which value-initializes the struct
 and sets the three fields in both split-KV builders. That release is source

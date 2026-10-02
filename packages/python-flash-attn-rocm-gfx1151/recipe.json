@@ -48,7 +48,7 @@
     "On 2026-05-26, bump pkgrel to 12 for delivery of the CK extension rebuild against python-pytorch-opt-rocm-gfx1151 2.12.0-2 from ROCm/pytorch release/2.12 commit 26872debb4452ea6dc898288618a15595e2317d9.",
     "On 2026-06-15, bump pkgrel to 14 for the c7badbdf runtime-base rebuild so FlashAttention supersedes the unmerged ab32a1f/pkgrel-13 host-drift artifact.",
     "On 2026-09-25, bump pkgrel to 15 for the W2A rebuild against python-pytorch-opt-rocm-gfx1151 2.12.0-5 and the Python 3.14 foundation, and move python-amd-aiter-gfx1151 from depends to optdepends because the CK build path does not use AITER.",
-    "On 2026-09-25, bump pkgrel to 16 for patch 0010, which initializes the CK split-KV forward args so the paged-KV varlen path no longer passes uninitialized sink_ptr, sink_size, and logits_soft_cap to CK. Drop 0007 and 0010 once the package moves to a FlashAttention ref that contains 8afc617a."
+    "On 2026-09-25, bump pkgrel to 16 for patch 0010, which initializes the CK split-KV forward args so the paged-KV varlen path no longer passes uninitialized sink_ptr, sink_size, and logits_soft_cap to CK. Drop 0007 once the package moves to a FlashAttention ref that contains 8afc617a. Drop 0010 only once the target source sets sink_ptr, sink_size, and logits_soft_cap in both split-KV argument builders: 8afc617a sets only the sink fields and leaves args uninitialized, and c661198a sets logits_soft_cap in the varlen builder only and is not an ancestor of 8afc617a. If upstream still declares args uninitialized then, keep its value-initialization as a reduced local patch."
   ],
   "status": "testing"
 }
