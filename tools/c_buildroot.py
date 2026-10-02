@@ -734,10 +734,12 @@ def bwrap_args(root: Path, opts: EnterOptions) -> list[str]:
     return args
 
 
-# `enter` runs builds only inside the host's memory-capped build slice. The
-# host's makepkg and ninja shims cannot see into the bubblewrap root, so the
-# whole bwrap invocation is launched in the slice, and every compiler inside it
-# inherits the cap and the raised OOM score.
+# `enter` and `probe` run builds only inside the host's memory-capped build
+# slice. The host's makepkg and ninja shims cannot see into the bubblewrap
+# root, so the whole bwrap invocation is launched in the slice, and every
+# compiler inside it inherits the cap and the raised OOM score. The short
+# post-install ldconfig and update-ca-trust runs of populate, add and remove
+# are not builds and go through run_in_root outside the slice.
 BUILD_SLICE = "builds.slice"
 BUILD_OOM_SCORE_ADJ = "500"
 
@@ -1400,10 +1402,13 @@ def cmd_probe(a: argparse.Namespace) -> int:
     work = Path(a.work).absolute()
     if work.exists() and any(work.iterdir()):
         raise BuildRootError(f"probe work dir must be empty: {work}")
-    shutil.copytree(PROBE_DIR, work, dirs_exist_ok=True)
     opts = _enter_opts(a)
     opts.work, opts.gpu = work, True
-    proc = run_in_root(root, ["bash", "/build/run.sh"], opts, check=False, capture=True)
+    # The probe compiles with hipcc, CMake and makepkg, so like `enter` it runs
+    # only inside the capped build slice; slice_wrapped refuses otherwise.
+    argv = slice_wrapped(bwrap_args(root, opts) + ["bash", "/build/run.sh"])
+    shutil.copytree(PROBE_DIR, work, dirs_exist_ok=True)
+    proc = subprocess.run(argv, check=False, capture_output=True, text=True)
     log = proc.stdout + proc.stderr
     (work / "probe.log").write_text(log)
     violations = [] if proc.returncode == 0 else [f"probe script exited {proc.returncode}"]
@@ -1419,7 +1424,7 @@ def cmd_probe(a: argparse.Namespace) -> int:
             if leak.encode() in data:
                 violations.append(f"{rel}: embeds host path {leak}")
     violations += probe_runpath_violations(log)
-    report ={"returncode": proc.returncode, "libraries": rows, "violations": violations,
+    report = {"returncode": proc.returncode, "libraries": rows, "violations": violations,
               "rocm_version": verify_root(root, foundation=a.foundation_repo,
                                           forbidden_repos=a.forbid_repo, expect_rocm=None,
                                           check_needed=False)["rocm_version"]}

@@ -1127,17 +1127,18 @@ PROBE_CLEAN_OUTPUTS = {
 }
 
 
-def run_probe(tmp_path, monkeypatch, *, log=PROBE_OK_LOG, outputs=None, slice_ok=True):
-    """Run `probe` with the root launch faked. Returns (exit code, report or None, launched argvs).
+def run_probe(tmp_path, monkeypatch, *, log=PROBE_OK_LOG, outputs=None, slice_ok=True, launched=None):
+    """Run `probe` with the root launch faked. Returns (exit code, report, launched argvs).
 
     The fake launch writes OUTPUTS (relative to the work dir; bytes may name
     the work dir as {work}) as the probe script would, and prints LOG.
+    LAUNCHED, when given, collects the launched argvs even if the probe raises.
     """
     root = tmp_path / "root"
     (root / cbr.STATE_DIR).mkdir(parents=True)
     cbr.save_manifest(root, [])
     work = tmp_path / "work"
-    launched = []
+    launched = [] if launched is None else launched
 
     def fake_run(argv, **kwargs):
         launched.append(list(argv))
@@ -1170,3 +1171,20 @@ def test_probe_runpath_entries_must_stay_in_their_output_tree(tmp_path, monkeypa
         "pkgx/usr/lib/libsaxpy.so: unexpected runpath entry '/opt/rocmX/lib'",
     ]
     assert rc == 1
+
+
+def test_probe_launches_the_root_in_the_capped_build_slice(tmp_path, monkeypatch):
+    rc, report, launched = run_probe(tmp_path, monkeypatch)
+    assert len(launched) == 1
+    argv = launched[0]
+    assert argv[:8] == ["systemd-run", "--user", "--scope", "--slice=builds.slice", "choom", "-n", "500", "--"]
+    assert argv[8] == "bwrap" and argv[-2:] == ["bash", "/build/run.sh"]
+    assert ("--dev-bind", "/dev/kfd", "/dev/kfd") in zip(argv, argv[1:], argv[2:])
+    assert (rc, report["violations"]) == (0, [])
+
+
+def test_probe_refuses_to_build_without_a_capped_build_slice(tmp_path, monkeypatch):
+    launched = []
+    with pytest.raises(cbr.BuildRootError, match="builds.slice"):
+        run_probe(tmp_path, monkeypatch, slice_ok=False, launched=launched)
+    assert launched == []

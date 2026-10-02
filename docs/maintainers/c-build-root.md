@@ -59,9 +59,12 @@ it that way:
    host's makepkg and ninja shims cannot see into the root, which is why the
    launch itself is wrapped. `enter` refuses to start unless `builds.slice` is
    loaded with a finite `MemoryMax`, because `systemd-run --slice=` would
-   otherwise create an uncapped slice. This replaces the earlier `SIGSTOP`
-   throttle, which paused new jobs but left running compilers holding their
-   memory.
+   otherwise create an uncapped slice. `probe` compiles with hipcc, CMake
+   and makepkg, so it is launched the same way and refuses the same way.
+   The short `ldconfig` and `update-ca-trust` runs after `populate`, `add`
+   and `remove` are not builds and run outside the slice. This replaces the
+   earlier `SIGSTOP` throttle, which paused new jobs but left running
+   compilers holding their memory.
 4. **Ownership proof.** `populate` and `add` record every package's file list
    under `ROOT/.ashp-root/`. `verify` walks `/opt` and fails when any file is
    unowned, when any `/opt/rocm` file is owned by a non-foundation package,
