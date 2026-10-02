@@ -122,8 +122,8 @@ means it appears only in `LDFLAGS`. **no** means it is disabled or stripped.
 | python-gfx1151 3.14.7-1 | yes (`--with-lto`, fat objects) | top-level configure probes read the linked executable | CLEAR | native after link; `DOUBLE_IS_LITTLE_ENDIAN_IEEE754 1` |
 
 Lane names drop the `python-` prefix and `-gfx1151`/`-rocm-gfx1151` suffix
-except in the foundation table. The TheRock split family counts as one row,
-so the tables hold 37 rows: 36 lanes plus that family.
+except in the foundation table. The TheRock split family counts as one lane,
+so the tables hold 37 lanes.
 
 ## Mitigations
 
