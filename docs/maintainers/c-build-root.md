@@ -161,12 +161,24 @@ for about 30 GiB, and `$STAGING` for the directory that holds the
      tools/buildroot/torch-chain.targets >$WORK/lock/bootstrap.targets
    ```
 
-   Lock with `--targets-file $WORK/lock/bootstrap.targets`, populate, and
-   build, publish and add the four #110 lanes (steps 3 to 6). Then build
-   Triton, and AOTriton after it, re-locking after each wave with the targets
-   it added back. Before building PyTorch, re-lock with the full
-   `torch-chain.targets`, which then resolves with no problems. The W2A root
-   was bootstrapped in this order.
+   The four #110 lanes also need build tools that `torch-chain.targets` does
+   not list: Meson, meson-python, Cython, `tk` and `llvm`. Lock the first wave
+   with `--targets-file $WORK/lock/bootstrap.targets --targets-file tools/buildroot/py-closure.targets`.
+   Dependencies still pull the Arch `python-numpy`, `python-yaml` and
+   `python-pillow` into that root, so remove each stand-in before you add its
+   gfx1151 build (step 6). Populate, then build, publish and add the four
+   lanes (steps 3 to 6). Then build Triton, and AOTriton after it. Before
+   each, re-lock with the targets the previous wave added back and populate a
+   fresh root; neither needs `py-closure.targets`. Before building PyTorch,
+   re-lock with the full `torch-chain.targets`, which then resolves with no
+   problems.
+
+   The W2A root followed this order with one difference. Until the gfx1151
+   builds were published, `torch-chain.targets` named the Arch stand-ins
+   (`python-numpy`, `python-yaml`, `python-pillow` and `python-psutil`) and
+   none of the six W2A builds. The first-wave lock was that file plus
+   `py-closure.targets`: the 445-package build root in
+   [W2A model/runtime closure (#110)](#w2a-modelruntime-closure-110).
 3. **Populate.** `c_buildroot.py populate LOCK $WORK/root` extracts the lock
    into a fresh root, then runs `ldconfig` and `update-ca-trust` inside it. It
    also adds a `builder` user with your uid, and it creates the `/build`,
