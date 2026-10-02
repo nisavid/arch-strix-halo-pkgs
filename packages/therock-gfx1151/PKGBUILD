@@ -73,7 +73,7 @@ pkgname=(
   'rocwmma-gfx1151'
 )
 pkgver='7.13.0'
-pkgrel=2
+pkgrel=3
 arch=('x86_64')
 license=('custom:AMD')
 url='https://github.com/ROCm/TheRock'
@@ -304,7 +304,7 @@ package_migraphx-gfx1151() {
     pkgdesc='MIGraphX from TheRock for gfx1151'
     provides=('migraphx')
     conflicts=('migraphx' 'rocm-gfx1151-bin')
-    depends=('gcc-libs' 'glibc' 'hip-runtime-amd-gfx1151' 'miopen-hip-gfx1151' 'msgpack-cxx' 'libprotobuf.so=35.0.0-64' 'python-gfx1151' 'rocblas-gfx1151' 'rocm-core-gfx1151' 'sqlite')
+    depends=('gcc-libs' 'glibc' 'hip-runtime-amd-gfx1151' 'miopen-hip-gfx1151' 'msgpack-cxx' 'libprotobuf.so=35.1.0-64' 'python-gfx1151' 'rocblas-gfx1151' 'rocm-core-gfx1151' 'sqlite')
     _require_therock_root
     _copy_from_filelist 'migraphx-gfx1151'
     install -Dm644 /dev/stdin "${pkgdir}/usr/lib/python3.14/site-packages/migraphx.pth" <<'EOF'

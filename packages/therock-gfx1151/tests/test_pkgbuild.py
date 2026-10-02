@@ -18,8 +18,9 @@ MIGRAPHX_PTH = MIGRAPHX_PKGDIR / "usr/lib/python3.14/site-packages/migraphx.pth"
 
 def test_migraphx_package_exports_python_import_hook():
     text = PKGBUILD.read_text()
+    assert "pkgrel=3" in text
     assert "package_migraphx-gfx1151()" in text
-    assert "depends=('gcc-libs' 'glibc' 'hip-runtime-amd-gfx1151' 'miopen-hip-gfx1151' 'msgpack-cxx' 'libprotobuf.so=35.0.0-64' 'python-gfx1151' 'rocblas-gfx1151' 'rocm-core-gfx1151' 'sqlite')" in text
+    assert "depends=('gcc-libs' 'glibc' 'hip-runtime-amd-gfx1151' 'miopen-hip-gfx1151' 'msgpack-cxx' 'libprotobuf.so=35.1.0-64' 'python-gfx1151' 'rocblas-gfx1151' 'rocm-core-gfx1151' 'sqlite')" in text
     assert "migraphx.pth" in text
     assert "import sqlite3" in text
     assert "/opt/rocm/lib" in text
@@ -31,7 +32,7 @@ def test_migraphx_package_exports_python_import_hook():
         "hip-runtime-amd-gfx1151",
         "miopen-hip-gfx1151",
         "msgpack-cxx",
-        "libprotobuf.so=35.0.0-64",
+        "libprotobuf.so=35.1.0-64",
         "python-gfx1151",
         "rocblas-gfx1151",
         "rocm-core-gfx1151",
@@ -46,19 +47,23 @@ def test_migraphx_filelist_contains_runtime_payload():
     assert any(path.startswith("opt/rocm/lib/migraphx.cpython-") for path in paths)
 
 
-def test_migraphx_staging_pins_system_protobuf_and_rejects_stale_soname():
+def test_migraphx_staging_pins_protobuf_35_1_and_rejects_stale_sonames():
     text = STAGE_MIGRAPHX.read_text()
     assert "typeset protobuf_dir=/usr/lib/cmake/protobuf" in text
-    assert "typeset protobuf_soname=libprotobuf.so.35.0.0" in text
-    assert "typeset utf8_validity_soname=libutf8_validity.so.35.0.0" in text
+    assert "typeset protobuf_soname=libprotobuf.so.35.1.0" in text
+    assert "typeset utf8_validity_soname=libutf8_validity.so.35.1.0" in text
     assert "-Dprotobuf_DIR=$protobuf_dir" in text
     assert 'local protobuf_lib_dir=${protobuf_dir%/cmake/protobuf}' in text
     assert "read_soname $protobuf_lib_dir/libprotobuf.so" in text
     assert "read_soname $protobuf_lib_dir/libutf8_validity.so" in text
+    assert "libprotobuf.so.35.0*" in text
+    assert "libutf8_validity.so.35.0*" in text
     assert "libprotobuf.so.34*" in text
     assert "libutf8_validity.so.34*" in text
-    assert text.index("staged MIGraphX ONNX library still links protobuf 34-era libraries") < text.index(
-        "staged MIGraphX ONNX library is not linked against $protobuf_soname"
+    assert "libmigraphx_onnx.so" in text
+    assert "libmigraphx_tf.so" in text
+    assert text.index("staged MIGraphX parser library still links a stale protobuf ABI") < text.index(
+        "staged MIGraphX parser library is not linked against $protobuf_soname"
     )
     assert text.index("local -a needed") < text.index('status "checking staged Python import"')
 
