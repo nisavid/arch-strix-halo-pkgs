@@ -568,6 +568,7 @@ scaffold_notes = [
   "The recipe swaps in ROCm/triton instead of upstream triton-lang/triton. That makes Arch's package an advisory base rather than a source-identical one.",
   "Triton 3.8 keeps `pyproject.toml` and `setup.py` at the repo root; the renderer builds and installs from there, not from `python/`.",
   "Do not point Triton at TheRock's LLVM. It needs the exact LLVM revision in `cmake/llvm-info.json`; the renderer exports `LLVM_SYSPATH` to the unpacked `triton_llvm_dir` tarball.",
+  "The `rocm-llvm-gfx1151` makedepend does not break that rule. It supplies the `amdclang` that `_setup_compiler_env` builds the extension with, not the LLVM that Triton links; keep it.",
   "The renderer caps concurrent links with `TRITON_PARALLEL_LINK_JOBS` (default 2), because each link pulls in static LLVM and MLIR.",
   "Rebuild and reinstall `python-triton-gfx1151` after patch-carry changes before treating compiled vLLM probes as repaired on the host."
 ]
