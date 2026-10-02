@@ -226,13 +226,17 @@ longer gate W2A closeout.
 
 **Remaining before W2A closeout:** the W2A PR
 ([#174](https://github.com/nisavid/arch-strix-halo-pkgs/pull/174)), which
-closes #168 with its audit doc and carries the #111 closeout. Two owner
-decisions in its Before-merge list decide whether those closing references
-hold: the FlashAttention CK gate set on #111, which has no recorded run on
-2.8.4-16, and the six root-built lanes that the #168 audit tables omit.
-Separately, the owner decides whether that PR or a follow-up before W4
-adopts the uvloop 0.23.0 security fix that the
-[2026-10-02 sweep](#2026-10-02-freshness-sweep) tracked to #110.
+closes #168 with its audit doc and carries the #111 closeout. The #168
+audit-lanes decision in its Before-merge list is resolved: the owner
+recorded the six root-built lanes that the audit tables omit, four
+Rust/maturin lanes and two pure-Python lanes, as
+[out of scope](lto-configure-probe-audit.md#out-of-scope), so the #168
+closing reference holds. One owner decision in that list still decides
+whether the #111 closing reference holds: the FlashAttention CK gate set on
+#111, which has no recorded run on 2.8.4-16. Separately, the owner decides
+whether that PR or a follow-up before W4 adopts the uvloop 0.23.0 security
+fix that the [2026-10-02 sweep](#2026-10-02-freshness-sweep) tracked to
+#110.
 
 ## 2026-09-25 Lemonade M6 Redeploy and Revalidation
 

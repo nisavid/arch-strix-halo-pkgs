@@ -8,7 +8,9 @@ package lane? For W2A through the lease commit in
 [#174](https://github.com/nisavid/arch-strix-halo-pkgs/pull/174) that adds
 `procps-ng` to the vLLM root targets, the answer is no: 0 lanes are
 affected and 37 are clear. The vLLM archive check confirmed its static
-verdict on 2026-09-29.
+verdict on 2026-09-29. Six more root-built lanes, four Rust extensions and
+two pure-Python packages, are [out of scope](#out-of-scope) because none
+runs a configure step for LTO to affect.
 
 The per-lane build-root details live in
 [Generation-C Build Root](c-build-root.md). This page keeps the cross-lane
@@ -123,7 +125,28 @@ means it appears only in `LDFLAGS`. **no** means it is disabled or stripped.
 
 Lane names drop the `python-` prefix and `-gfx1151`/`-rocm-gfx1151` suffix
 except in the foundation table. The TheRock split family counts as one lane,
-so the tables hold 37 lanes.
+so the three tables above hold 37 lanes.
+
+### Out of scope
+
+The W2A root also built six lanes that the tables above omit. By owner
+decision they are out of scope for this audit and are not part of the
+37-lane count. The defect class needs a configure step that compiles a test
+object and then reads it, and none of these lanes runs an autotools, CMake
+or meson configure.
+
+| Lane | Build backend | Why configure-time object probes do not apply |
+| --- | --- | --- |
+| tokenizers 0.23.2-1 | maturin (Cargo, PyO3) | Two crate build scripts compile bundled native code directly through the `cc` crate, with no configure step: `onig_sys` 69.9.3 (oniguruma C) and `esaxx-rs` 0.1.10 (esaxx C++). `onig_sys` writes its `config.h` from fixed values instead of probing |
+| safetensors 0.8.0-1 | maturin (Cargo, PyO3) | Pure Rust: the sdist ships no C sources, and its `Cargo.lock` has no `cc`, `cmake` or `pkg-config` crate |
+| watchfiles 1.3.0-1 | maturin (Cargo, PyO3) | Pure Rust: its `Cargo.lock` has no `cc`, `cmake` or `pkg-config` crate, and `inotify-sys` only declares FFI bindings |
+| pydantic-core 2.46.5-2 | maturin (Cargo, PyO3) | Pure Rust on Linux: the only crate that depends on `cc` is `python3-dll-a`, and only for Windows targets |
+| transformers 5.16.1-1 | setuptools, arch `any` | Pure Python: no extension modules, so nothing native is compiled |
+| mistral-common 1.11.7-1 | setuptools, arch `any` | Pure Python: no extension modules, so nothing native is compiled |
+
+The four Rust PKGBUILDs also unset `CFLAGS`, `CXXFLAGS` and `LDFLAGS` and
+replace `RUSTFLAGS` before `python -m build`, so makepkg's `-flto=auto`
+reaches neither cargo nor the `cc` crate in any of them.
 
 ## Mitigations
 
