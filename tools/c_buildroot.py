@@ -622,14 +622,24 @@ def remove_packages(root: Path, names: Sequence[str], *, post_install: bool = Tr
 # ---------------------------------------------------------------------------
 
 
-def host_repo_targets() -> tuple[set[str], set[Path]]:
-    """Names of the host's pacman repos and the local dirs their file:// servers use."""
-    out = subprocess.run(["pacman-conf", "--repo-list"], capture_output=True, text=True)
-    names = {line.strip() for line in out.stdout.splitlines() if line.strip()}
+def host_repo_targets(runner: Callable[..., subprocess.CompletedProcess] = subprocess.run,
+                      ) -> tuple[set[str], set[Path]]:
+    """Names of the host's pacman repos and the local dirs their file:// servers use.
+
+    A pacman-conf failure raises: an empty answer would silently disable the
+    publish guard. A repo with no Server lines is not a failure.
+    """
+    def conf(*args: str) -> str:
+        try:
+            return runner(["pacman-conf", *args], capture_output=True, text=True, check=True).stdout
+        except (subprocess.CalledProcessError, OSError) as exc:
+            raise BuildRootError(f"pacman-conf {' '.join(args)} failed ({exc}); "
+                                 "cannot tell which repos the host serves") from exc
+
+    names = {line.strip() for line in conf("--repo-list").splitlines() if line.strip()}
     dirs: set[Path] = set()
     for name in names:
-        servers = subprocess.run(["pacman-conf", "--repo", name, "Server"], capture_output=True, text=True)
-        for url in servers.stdout.split():
+        for url in conf("--repo", name, "Server").split():
             if url.startswith("file://"):
                 dirs.add(Path(url[len("file://"):]))
     return names, dirs
@@ -648,9 +658,11 @@ def publish(repo_dir: Path, db_name: str, archives: Sequence[Path], *,
     names, dirs = host_repo_targets() if host_repos is None else host_repos
     if db_name in names:
         raise BuildRootError(f"refusing to publish into {db_name!r}: the host's pacman uses that repo")
-    repo_dir = repo_dir.absolute()
+    # Compare real paths, so a symlink into a served dir cannot pass.
+    repo_dir = repo_dir.resolve()
     for d in dirs:
-        if repo_dir == d.absolute() or d.absolute() in repo_dir.parents:
+        served = d.resolve()
+        if repo_dir == served or served in repo_dir.parents:
             raise BuildRootError(f"refusing to publish into {repo_dir}: a host pacman repo is served from {d}")
     repo_dir.mkdir(parents=True, exist_ok=True)
     db = repo_dir / f"{db_name}.db.tar.zst"

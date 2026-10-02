@@ -99,7 +99,9 @@ for about 30 GiB, and `$STAGING` for the directory that holds the
 1. **Create the output repo.** Run
    `c_buildroot.py publish $WORK/repo ashp-w2a` with no packages to write an
    empty `ashp-w2a` DB. `publish` refuses any repo name the host's pacman uses,
-   and any directory that a host repo serves through `file://`.
+   and any directory that a host repo serves through `file://`. It compares
+   real paths, so a symlink into such a directory is refused too, and it stops
+   with an error when `pacman-conf` fails instead of skipping the check.
 2. **Lock.** Pass the DBs in priority order: staging, then `ashp-w2a`, then the
    host's sync DBs (`/var/lib/pacman/sync/*.db`), with the 7.13 repo as
    `--forbid-db`:

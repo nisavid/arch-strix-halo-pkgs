@@ -895,6 +895,46 @@ def test_publish_refuses_host_repos_and_runs_repo_add(tmp_path):
     assert calls == [["repo-add", "-q", "-R", str(db), str(tmp_path / "r" / pkg.name)]]
 
 
+def test_publish_refuses_a_symlink_into_a_served_repo(tmp_path):
+    served = tmp_path / "srv"
+    (served / "x86_64").mkdir(parents=True)
+    link = tmp_path / "looks-local"
+    link.symlink_to(served / "x86_64")
+    with pytest.raises(cbr.BuildRootError, match="served from"):
+        cbr.publish(link, "ashp-w2a", [], host_repos=({"strix-halo-gfx1151"}, {served}))
+    with pytest.raises(cbr.BuildRootError, match="served from"):
+        cbr.publish(link / "sub", "ashp-w2a", [], host_repos=({"strix-halo-gfx1151"}, {served}))
+    assert list((served / "x86_64").iterdir()) == []
+
+
+def _pacman_conf(repos: dict[str, list[str]], fail: tuple[str, ...] = ()):
+    def runner(argv, **kwargs):
+        assert argv[0] == "pacman-conf"
+        key = "--repo-list" if argv[1] == "--repo-list" else argv[2]
+        if key in fail:
+            if kwargs.get("check"):
+                raise subprocess.CalledProcessError(1, argv, "", "pacman-conf: error")
+            return subprocess.CompletedProcess(argv, 1, "", "pacman-conf: error")
+        out = "".join(f"{r}\n" for r in repos) if key == "--repo-list" else "".join(
+            f"{u}\n" for u in repos[key])
+        return subprocess.CompletedProcess(argv, 0, out, "")
+    return runner
+
+
+def test_host_repo_targets_reads_names_and_file_servers():
+    names, dirs = cbr.host_repo_targets(runner=_pacman_conf(
+        {"core": ["https://mirror.example/core/os/x86_64"], "local-gfx": ["file:///var/local-gfx/x86_64"],
+         "no-servers": []}))
+    assert names == {"core", "local-gfx", "no-servers"}
+    assert dirs == {Path("/var/local-gfx/x86_64")}
+
+
+@pytest.mark.parametrize("failing", ["--repo-list", "local-gfx"])
+def test_publish_guard_fails_closed_when_pacman_conf_fails(failing):
+    with pytest.raises(cbr.BuildRootError, match="pacman-conf"):
+        cbr.host_repo_targets(runner=_pacman_conf({"local-gfx": ["file:///var/local-gfx"]}, fail=(failing,)))
+
+
 def test_pinned_makepkg_conf_values():
     script = f'source "{cbr.DEFAULT_MAKEPKG_CONF}"; ' \
              'printf "%s\\n" "$MAKEFLAGS" "$NINJAFLAGS" "$MAX_JOBS" "$CMAKE_BUILD_PARALLEL_LEVEL" ' \
