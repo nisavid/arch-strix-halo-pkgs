@@ -5,4 +5,5 @@ opt/rocm/lib/cmake/amd_comgr/amd_comgr-targets-release.cmake
 opt/rocm/lib/cmake/amd_comgr/amd_comgr-targets.cmake
 opt/rocm/lib/libamd_comgr.so
 opt/rocm/lib/libamd_comgr.so.3
-opt/rocm/lib/libamd_comgr.so.3.0.0
+opt/rocm/lib/libamd_comgr.so.3.3.0
+opt/rocm/lib/libamd_comgr_hotswap_tool.so

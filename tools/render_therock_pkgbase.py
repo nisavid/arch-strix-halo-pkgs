@@ -41,12 +41,28 @@ def main() -> int:
     parser.add_argument("--output", default="packages/therock-gfx1151", help="output directory relative to this repo")
     parser.add_argument("--policy", default="policies/therock-packages.toml", help="policy file relative to this repo")
     parser.add_argument("--template", default="templates/PKGBUILD.in", help="PKGBUILD template relative to this repo")
+    parser.add_argument(
+        "--pre-migraphx-dry-render",
+        action="store_true",
+        help=(
+            "render a TheRock payload stage before MIGraphX is built into it: a missing "
+            "soname_depends ELF becomes a warning. Requires --output outside packages/"
+        ),
+    )
     args = parser.parse_args()
 
     here = repo_root()
     policy_path = here / args.policy
     template_path = here / args.template
-    output_path = here / args.output
+    output_path = (here / args.output).resolve()
+
+    if args.pre_migraphx_dry_render and output_path.is_relative_to((here / "packages").resolve()):
+        print(
+            "THEROCK_RENDER_FAILED: --pre-migraphx-dry-render output is incomplete and must not land in packages/",
+            file=sys.stderr,
+        )
+        print("HINT: pass --output <scratch-dir> for a dry render.", file=sys.stderr)
+        return 2
 
     try:
         recipe_root = resolve_recipe_root(args.recipe_root, packaging_root=here)
@@ -86,6 +102,7 @@ def main() -> int:
                 recipe_commit,
                 "--recipe-date",
                 recipe_date,
+                *(["--skip-missing-soname-depends"] if args.pre_migraphx_dry_render else []),
             ],
             check=True,
         )

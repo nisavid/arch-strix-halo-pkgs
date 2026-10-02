@@ -6,7 +6,9 @@ import argparse
 import fnmatch
 import json
 import os
+import posixpath
 import re
+import struct
 import sys
 import textwrap
 import tomllib
@@ -21,7 +23,13 @@ STRUCTURED_FAILURES = {
     "ambiguous": "AMBIGUOUS_OWNERSHIP",
     "new_class": "NEW_THEROCK_PACKAGE_CLASS",
     "missing_pkg_meta": "MISSING_PACKAGE_METADATA",
+    "kpack_ref_unowned": "KPACK_REF_UNOWNED",
+    "soname_depend": "SONAME_DEPEND_UNRESOLVED",
 }
+
+IGNORED = "__ignored__"
+KPACK_REF_SECTION = ".rocm_kpack_ref"
+GFXARCH_TOKEN = "@GFXARCH@"
 
 
 @dataclass
@@ -82,7 +90,7 @@ class Classifier:
 
     def classify(self, relpath: str) -> str | None:
         if self.is_ignored(relpath):
-            return "__ignored__"
+            return IGNORED
         if relpath in self.path_owners:
             return self.path_owners[relpath]
 
@@ -110,7 +118,7 @@ class Classifier:
         elif top == "bin" and len(inner) > 1:
             name = inner[1]
             if self._is_bin_noise(inner):
-                return "__ignored__"
+                return IGNORED
             candidates.update(self._match_prefix(name, self.binary_prefixes))
         elif top == "lib" and len(inner) > 1:
             if inner[1] == "cmake" and len(inner) > 2:
@@ -237,6 +245,306 @@ class Classifier:
         if candidates:
             return candidates
         return self._lookup_component(stem, f"include/{filename}")
+
+
+ELF_MAGIC = b"\x7fELF"
+ELFCLASS64 = 2
+ELFDATA2LSB = 1
+SHT_DYNAMIC = 6
+DT_NULL = 0
+DT_NEEDED = 1
+
+
+class ElfError(ValueError):
+    pass
+
+
+def is_elf(path: Path) -> bool:
+    try:
+        with path.open("rb") as fh:
+            return fh.read(4) == ELF_MAGIC
+    except OSError:
+        return False
+
+
+def read_elf_sections(path: Path) -> list[dict]:
+    """Return the section headers of a little-endian ELF64 file.
+
+    Only the headers and the section-name string table are read, so this stays
+    cheap on multi-GiB payload files.
+    """
+    with path.open("rb") as fh:
+        ident = fh.read(16)
+        if ident[:4] != ELF_MAGIC:
+            raise ElfError(f"{path} is not an ELF file")
+        if ident[4] != ELFCLASS64 or ident[5] != ELFDATA2LSB:
+            raise ElfError(f"{path} is not a little-endian ELF64 file")
+        header = fh.read(48)
+        if len(header) < 48:
+            raise ElfError(f"{path} has a truncated ELF header")
+        (e_shoff,) = struct.unpack_from("<Q", header, 0x28 - 16)
+        e_shentsize, e_shnum, e_shstrndx = struct.unpack_from("<HHH", header, 0x3A - 16)
+        if e_shoff == 0:
+            return []
+
+        def section_header(index: int) -> dict:
+            fh.seek(e_shoff + index * e_shentsize)
+            raw = fh.read(64)
+            if len(raw) < 64:
+                raise ElfError(f"{path} has a truncated section header table")
+            name, sh_type, _flags, _addr, offset, size, link, _info, _align, _entsize = struct.unpack(
+                "<IIQQQQIIQQ", raw
+            )
+            return {"name_offset": name, "type": sh_type, "offset": offset, "size": size, "link": link}
+
+        if e_shnum == 0:
+            e_shnum = section_header(0)["size"]
+        if e_shstrndx == 0xFFFF:
+            e_shstrndx = section_header(0)["link"]
+        sections = [section_header(index) for index in range(e_shnum)]
+        if e_shstrndx >= len(sections):
+            raise ElfError(f"{path} has no usable section-name string table")
+        strtab = sections[e_shstrndx]
+        fh.seek(strtab["offset"])
+        names = fh.read(strtab["size"])
+    for section in sections:
+        section["name"] = c_string(names, section["name_offset"])
+    return sections
+
+
+def c_string(table: bytes, offset: int) -> str:
+    end = table.find(b"\0", offset)
+    return table[offset : end if end >= 0 else None].decode("utf-8", "replace")
+
+
+def read_section_bytes(path: Path, section: dict) -> bytes:
+    with path.open("rb") as fh:
+        fh.seek(section["offset"])
+        return fh.read(section["size"])
+
+
+def read_elf_section(path: Path, name: str) -> bytes | None:
+    for section in read_elf_sections(path):
+        if section["name"] == name:
+            return read_section_bytes(path, section)
+    return None
+
+
+def read_elf_needed(path: Path) -> list[str]:
+    """Return the DT_NEEDED entries of an ELF64 shared object or executable."""
+    sections = read_elf_sections(path)
+    needed: list[str] = []
+    for section in sections:
+        if section["type"] != SHT_DYNAMIC:
+            continue
+        dynamic = read_section_bytes(path, section)
+        dynstr = read_section_bytes(path, sections[section["link"]])
+        for offset in range(0, len(dynamic) - 15, 16):
+            tag, value = struct.unpack_from("<qQ", dynamic, offset)
+            if tag == DT_NULL:
+                break
+            if tag == DT_NEEDED:
+                needed.append(c_string(dynstr, value))
+    return needed
+
+
+def msgpack_decode(data: bytes) -> object:
+    """Decode the msgpack subset that TheRock writes into .rocm_kpack_ref markers."""
+
+    def take(pos: int, count: int) -> tuple[bytes, int]:
+        if pos + count > len(data):
+            raise ValueError("truncated msgpack data")
+        return data[pos : pos + count], pos + count
+
+    def unpack(fmt: str, pos: int) -> tuple[int, int]:
+        raw, pos = take(pos, struct.calcsize(fmt))
+        return struct.unpack(fmt, raw)[0], pos
+
+    def decode_str(pos: int, length: int) -> tuple[str, int]:
+        raw, pos = take(pos, length)
+        return raw.decode("utf-8"), pos
+
+    def decode_array(pos: int, length: int) -> tuple[list, int]:
+        items = []
+        for _ in range(length):
+            item, pos = decode(pos)
+            items.append(item)
+        return items, pos
+
+    def decode_map(pos: int, length: int) -> tuple[dict, int]:
+        items = {}
+        for _ in range(length):
+            key, pos = decode(pos)
+            value, pos = decode(pos)
+            items[key] = value
+        return items, pos
+
+    lengths = {0xC4: ">B", 0xC5: ">H", 0xC6: ">I", 0xD9: ">B", 0xDA: ">H", 0xDB: ">I", 0xDC: ">H", 0xDD: ">I", 0xDE: ">H", 0xDF: ">I"}
+    ints = {0xCC: ">B", 0xCD: ">H", 0xCE: ">I", 0xCF: ">Q", 0xD0: ">b", 0xD1: ">h", 0xD2: ">i", 0xD3: ">q"}
+
+    def decode(pos: int) -> tuple[object, int]:
+        raw, pos = take(pos, 1)
+        byte = raw[0]
+        if byte <= 0x7F:
+            return byte, pos
+        if byte >= 0xE0:
+            return byte - 0x100, pos
+        if byte <= 0x8F:
+            return decode_map(pos, byte & 0x0F)
+        if byte <= 0x9F:
+            return decode_array(pos, byte & 0x0F)
+        if byte <= 0xBF:
+            return decode_str(pos, byte & 0x1F)
+        if byte == 0xC0:
+            return None, pos
+        if byte in (0xC2, 0xC3):
+            return byte == 0xC3, pos
+        if byte in ints:
+            return unpack(ints[byte], pos)
+        if byte in lengths:
+            length, pos = unpack(lengths[byte], pos)
+            if byte <= 0xC6:
+                return take(pos, length)
+            if byte <= 0xDB:
+                return decode_str(pos, length)
+            if byte <= 0xDD:
+                return decode_array(pos, length)
+            return decode_map(pos, length)
+        raise ValueError(f"unsupported msgpack type byte 0x{byte:02x}")
+
+    value, _pos = decode(0)
+    return value
+
+
+def gfx_arch(policy: dict) -> str:
+    return policy.get("payload", {}).get("gfx_arch") or policy["repo"].get("suffix", "").lstrip("-")
+
+
+def resolve_kpack_search_path(elf_relpath: str, search_path: str, arch: str) -> str:
+    search_path = search_path.replace(GFXARCH_TOKEN, arch)
+    if search_path.startswith("/"):
+        return posixpath.normpath(search_path.lstrip("/"))
+    return posixpath.normpath(posixpath.join(posixpath.dirname(elf_relpath), search_path))
+
+
+def check_kpack_refs(root: Path, policy: dict, owners: dict[str, str | None], failures: list[Failure]) -> None:
+    """Fail when a kpack-split ELF cannot reach its device-code archive.
+
+    TheRock kpack-split libraries carry no device code on disk. The HIP runtime
+    loads their kernels from the archives named in the .rocm_kpack_ref marker,
+    which resolve relative to the library directory. An archive that is
+    missing, ignored, or owned by a package that the library's package does not
+    depend on directly would render and build cleanly and then fail at the
+    first kernel launch.
+    """
+    arch = gfx_arch(policy)
+    packages = policy["packages"]
+    hint = (
+        "Own the archive with an exact [overrides.path_owners] entry, keep it out of "
+        "[filters].ignore_globs, and make the library's package depend directly on the archive's owner."
+    )
+    for relpath, owner in sorted(owners.items()):
+        if owner is None or owner == IGNORED:
+            continue
+        path = root / relpath
+        if path.is_symlink() or not path.is_file() or not is_elf(path):
+            continue
+        try:
+            marker = read_elf_section(path, KPACK_REF_SECTION)
+        except (ElfError, OSError, struct.error) as exc:
+            failures.append(Failure("kpack_ref_unowned", relpath, f"could not read ELF sections: {exc}", hint))
+            continue
+        if marker is None:
+            continue
+        try:
+            decoded = msgpack_decode(marker)
+            search_paths = decoded.get("kpack_search_paths") if isinstance(decoded, dict) else None
+            if not search_paths or not isinstance(search_paths, list) or not all(isinstance(p, str) for p in search_paths):
+                raise ValueError("kpack_search_paths is missing or is not a list of strings")
+        except (ValueError, UnicodeDecodeError) as exc:
+            failures.append(Failure("kpack_ref_unowned", relpath, f"unreadable {KPACK_REF_SECTION} marker: {exc}", hint))
+            continue
+
+        archives = [resolve_kpack_search_path(relpath, item, arch) for item in search_paths]
+        present = [archive for archive in archives if archive in owners]
+        if not present:
+            failures.append(
+                Failure(
+                    "kpack_ref_unowned",
+                    relpath,
+                    f"{owner} ships no device code on disk, and no kpack archive from {', '.join(archives)} is in the scanned payload",
+                    hint,
+                )
+            )
+            continue
+        allowed = {owner, *packages.get(owner, {}).get("depends", [])}
+        for archive in present:
+            archive_owner = owners[archive]
+            if archive_owner is None:
+                continue  # already reported as UNMAPPED_COMPONENT
+            if archive_owner == IGNORED:
+                detail = f"kpack archive {archive} is ignored by policy filters, so {owner} would ship no device code"
+            elif archive_owner not in allowed:
+                detail = f"kpack archive {archive} is owned by {archive_owner}, which {owner} does not depend on"
+            else:
+                continue
+            failures.append(Failure("kpack_ref_unowned", relpath, detail, hint))
+
+
+def derive_soname_depends(
+    root: Path,
+    policy: dict,
+    package_files: dict[str, list[str]],
+    failures: list[Failure],
+    *,
+    skip_missing: bool = False,
+) -> dict[str, list[str]]:
+    """Render pacman soname depends such as ``libprotobuf.so=36.1.0-64`` from staged ELF files.
+
+    Each ``soname_depends`` entry names a staged ELF and a library stem. The
+    rendered depend takes its version from that ELF's DT_NEEDED entry, so a
+    rebuild against a different protobuf moves the depend without a policy
+    edit. Packages with no payload in the staged root are skipped.
+
+    ``skip_missing`` turns a missing staged ELF into a warning and omits that
+    depend. It exists only for a dry render taken before the ELF is built (the
+    MIGraphX parsers are added to the stage after the TheRock payload), and
+    output rendered with it must not be committed.
+    """
+    derived: dict[str, list[str]] = {}
+    for pkg, meta in sorted(policy["packages"].items()):
+        entries = meta.get("soname_depends", [])
+        if not entries or not package_files.get(pkg):
+            continue
+        for entry in entries:
+            library = entry["library"]
+            stem = entry["needed"]
+            hint = f"Rebuild {library} against the intended {stem}, or fix [packages.\"{pkg}\"].soname_depends."
+            path = root / library
+            if not path.is_file():
+                if skip_missing:
+                    print(f"SONAME_DEPEND_SKIPPED: {pkg}: staged ELF {library} is missing", file=sys.stderr)
+                    continue
+                failures.append(Failure("soname_depend", pkg, f"staged ELF {library} is missing", hint))
+                continue
+            try:
+                needed = read_elf_needed(path)
+            except (ElfError, OSError, struct.error) as exc:
+                failures.append(Failure("soname_depend", pkg, f"could not read DT_NEEDED from {library}: {exc}", hint))
+                continue
+            versions = sorted({name.removeprefix(f"{stem}.") for name in needed if name.startswith(f"{stem}.")})
+            if len(versions) != 1:
+                failures.append(
+                    Failure(
+                        "soname_depend",
+                        pkg,
+                        f"{library} needs {len(versions)} {stem} SONAMEs; DT_NEEDED: {', '.join(needed) or '(none)'}",
+                        hint,
+                    )
+                )
+                continue
+            derived.setdefault(pkg, []).append(f"{stem}={versions[0]}-64")
+    return derived
 
 
 def walk_scan_roots(root: Path, scan_roots: list[str]) -> list[str]:
@@ -406,6 +714,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--recipe-author", default="", help="recipe author attribution string")
     parser.add_argument("--recipe-commit", default="", help="recipe commit used for this render")
     parser.add_argument("--recipe-date", default="", help="recipe commit date in YYYYMMDD form")
+    parser.add_argument(
+        "--skip-missing-soname-depends",
+        action="store_true",
+        help="warn instead of failing when a soname_depends ELF is not staged yet (dry renders only)",
+    )
     return parser.parse_args()
 
 
@@ -429,12 +742,25 @@ def main() -> int:
     classifier = Classifier(policy)
     relpaths = walk_scan_roots(root, policy["repo"]["scan_roots"])
 
+    owners: dict[str, str | None] = {}
     for relpath in relpaths:
         owner = classifier.classify(relpath)
-        if owner and owner != "__ignored__":
+        owners[relpath] = owner
+        if owner and owner != IGNORED:
             classifier.package_files[owner].append(relpath)
 
     ensure_package_metadata(policy["packages"], set(classifier.package_files), classifier.failures)
+    check_kpack_refs(root, policy, owners, classifier.failures)
+    derived = derive_soname_depends(
+        root,
+        policy,
+        classifier.package_files,
+        classifier.failures,
+        skip_missing=args.skip_missing_soname_depends,
+    )
+    for pkg, extra in derived.items():
+        meta = policy["packages"][pkg]
+        meta["depends"] = [*meta.get("depends", []), *extra]
 
     if classifier.failures:
         for failure in classifier.failures:

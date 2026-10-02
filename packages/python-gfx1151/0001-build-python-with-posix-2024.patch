@@ -1,0 +1,86 @@
+From 927eb448aad6436d794ec9f55780013e25609600 Mon Sep 17 00:00:00 2001
+From: Victor Stinner <vstinner@python.org>
+Date: Thu, 29 Jan 2026 13:50:07 +0100
+Subject: [PATCH] gh-144309: Build Python with POSIX 2024 (#144310)
+
+On FreeBSD, the ppoll() function is only visible if the POSIX version
+is 2024 or newer.
+---
+ .../Build/2026-01-28-19-04-12.gh-issue-144309.3sMFOh.rst  | 1 +
+ configure                                                 | 6 +++---
+ configure.ac                                              | 8 ++++----
+ pyconfig.h.in                                             | 2 +-
+ 4 files changed, 9 insertions(+), 8 deletions(-)
+ create mode 100644 Misc/NEWS.d/next/Build/2026-01-28-19-04-12.gh-issue-144309.3sMFOh.rst
+
+diff --git a/Misc/NEWS.d/next/Build/2026-01-28-19-04-12.gh-issue-144309.3sMFOh.rst b/Misc/NEWS.d/next/Build/2026-01-28-19-04-12.gh-issue-144309.3sMFOh.rst
+new file mode 100644
+index 000000000000000..c64ef494d273807
+--- /dev/null
++++ b/Misc/NEWS.d/next/Build/2026-01-28-19-04-12.gh-issue-144309.3sMFOh.rst
+@@ -0,0 +1 @@
++Build Python with POSIX 2024, instead of POSIX 2008. Patch by Victor Stinner.
+diff --git a/configure b/configure
+index 30e35a0f55292ad..cd8983683333cd1 100755
+--- a/configure
++++ b/configure
+@@ -4757,9 +4757,9 @@ esac
+ 
+ if test $define_xopen_source = yes
+ then
+-  # X/Open 7, incorporating POSIX.1-2008
++  # X/Open 8, incorporating POSIX.1-2024
+ 
+-printf "%s\n" "#define _XOPEN_SOURCE 700" >>confdefs.h
++printf "%s\n" "#define _XOPEN_SOURCE 800" >>confdefs.h
+ 
+ 
+   # On Tru64 Unix 4.0F, defining _XOPEN_SOURCE also requires
+@@ -4771,7 +4771,7 @@ printf "%s\n" "#define _XOPEN_SOURCE_EXTENDED 1" >>confdefs.h
+ 
+ 
+ 
+-printf "%s\n" "#define _POSIX_C_SOURCE 200809L" >>confdefs.h
++printf "%s\n" "#define _POSIX_C_SOURCE 202405L" >>confdefs.h
+ 
+ fi
+ 
+diff --git a/configure.ac b/configure.ac
+index bc63d651f580659..e9b45d459fee2ad 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -916,8 +916,8 @@ esac
+ 
+ if test $define_xopen_source = yes
+ then
+-  # X/Open 7, incorporating POSIX.1-2008
+-  AC_DEFINE([_XOPEN_SOURCE], [700],
++  # X/Open 8, incorporating POSIX.1-2024
++  AC_DEFINE([_XOPEN_SOURCE], [800],
+             [Define to the level of X/Open that your system supports])
+ 
+   # On Tru64 Unix 4.0F, defining _XOPEN_SOURCE also requires
+@@ -927,8 +927,8 @@ then
+   AC_DEFINE([_XOPEN_SOURCE_EXTENDED], [1],
+             [Define to activate Unix95-and-earlier features])
+ 
+-  AC_DEFINE([_POSIX_C_SOURCE], [200809L],
+-            [Define to activate features from IEEE Stds 1003.1-2008])
++  AC_DEFINE([_POSIX_C_SOURCE], [202405L],
++            [Define to activate features from IEEE Std 1003.1-2024])
+ fi
+ 
+ # On HP-UX mbstate_t requires _INCLUDE__STDC_A1_SOURCE
+diff --git a/pyconfig.h.in b/pyconfig.h.in
+index 3d901e01fe03c83..e2009b2d9ee57ea 100644
+--- a/pyconfig.h.in
++++ b/pyconfig.h.in
+@@ -2042,7 +2042,7 @@
+ /* Define on NetBSD to activate all library features */
+ #undef _NETBSD_SOURCE
+ 
+-/* Define to activate features from IEEE Stds 1003.1-2008 */
++/* Define to activate features from IEEE Std 1003.1-2024 */
+ #undef _POSIX_C_SOURCE
+ 
+ /* Define if you have POSIX threads, and your system does not define that. */

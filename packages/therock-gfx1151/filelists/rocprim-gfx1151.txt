@@ -69,6 +69,7 @@ opt/rocm/include/rocprim/device/detail/config/device_select_predicate.hpp
 opt/rocm/include/rocprim/device/detail/config/device_select_predicated_flag.hpp
 opt/rocm/include/rocprim/device/detail/config/device_select_unique.hpp
 opt/rocm/include/rocprim/device/detail/config/device_select_unique_by_key.hpp
+opt/rocm/include/rocprim/device/detail/config/device_topk_air.hpp
 opt/rocm/include/rocprim/device/detail/config/device_transform.hpp
 opt/rocm/include/rocprim/device/detail/config/device_transform_pointer.hpp
 opt/rocm/include/rocprim/device/detail/config/device_upper_bound.hpp
@@ -95,6 +96,7 @@ opt/rocm/include/rocprim/device/detail/device_search_n.hpp
 opt/rocm/include/rocprim/device/detail/device_segmented_radix_sort.hpp
 opt/rocm/include/rocprim/device/detail/device_segmented_reduce.hpp
 opt/rocm/include/rocprim/device/detail/device_segmented_scan.hpp
+opt/rocm/include/rocprim/device/detail/device_topk_air.hpp
 opt/rocm/include/rocprim/device/detail/device_transform.hpp
 opt/rocm/include/rocprim/device/detail/lookback_scan_state.hpp
 opt/rocm/include/rocprim/device/detail/ordered_block_id.hpp
@@ -148,6 +150,8 @@ opt/rocm/include/rocprim/device/device_segmented_reduce.hpp
 opt/rocm/include/rocprim/device/device_segmented_reduce_config.hpp
 opt/rocm/include/rocprim/device/device_segmented_scan.hpp
 opt/rocm/include/rocprim/device/device_select.hpp
+opt/rocm/include/rocprim/device/device_topk.hpp
+opt/rocm/include/rocprim/device/device_topk_config.hpp
 opt/rocm/include/rocprim/device/device_transform.hpp
 opt/rocm/include/rocprim/device/device_transform_config.hpp
 opt/rocm/include/rocprim/device/specialization/device_radix_block_sort.hpp

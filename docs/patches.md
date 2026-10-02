@@ -28,6 +28,15 @@ becomes durable, prefer a named patch that another maintainer can review.
   - Keeps macro-redefinition warnings from failing the build while preserving
     AOCL-LibM 5.3's native compiler-feature and linker probes.
 
+## CPython
+
+- [Build Python with POSIX 2024](../packages/python-gfx1151/0001-build-python-with-posix-2024.patch)
+  - A verbatim copy of upstream cpython `927eb448` (gh-144309). It raises the
+    configure feature macros from POSIX 2008 to POSIX 2024.
+  - Carried for parity with Arch `core/python` 3.14.7-1, the authoritative
+    reference, which applies the same commit. Drop it once a CPython 3.14
+    release contains the commit or Arch stops carrying it.
+
 ## Lemonade
 
 The Lemonade patches apply to the `nisavid/lemonade` fork commit named by the
@@ -215,6 +224,27 @@ upstream moved the merge into `recipe_arg_resolver.h`
     `v0.18.0`). Drop the patch at the first packaged TorchAO release without
     `swizzle.cpp`, or once the packaged HIP headers stop defining
     `__noinline__` in plain C++ mode.
+
+## MIGraphX (TheRock stage)
+
+- No-MLIR build stubs, applied inline by
+  [`tools/stage_migraphx_for_therock.zsh`](../tools/stage_migraphx_for_therock.zsh)
+  - AMDMIGraphX 2.16.1 (`2487b688`) still exports `dump_mlir_to_file`,
+    `is_module_fusible`, `adjust_param_shapes`, and `dump_mlir_to_mxr` from
+    `mlir.hpp` without defining them in the `MIGRAPHX_MLIR`-off branch of
+    `src/targets/gpu/mlir.cpp`. The stubs let the repo build MIGraphX with
+    rocMLIR disabled.
+  - The former `RockEnums.h` include guard is no longer carried: upstream #4962
+    moved that include inside `#ifdef MIGRAPHX_MLIR` before 2.16.
+- `rocm_add_version_resource` configure shim, written by the same script and
+  passed as `CMAKE_PROJECT_INCLUDE`
+  - AMDMIGraphX 2.16.1 calls `rocm_add_version_resource` for each library and
+    tool. Its pinned rocm-cmake (`1d4652ae`) defines it, but the rocm-cmake
+    0.14.0 that TheRock 7.14.1 ships does not, so configure fails against the
+    stage. Upstream only writes a Windows `.rc` version resource under
+    `if(WIN32)`, so the shim defines a no-op. The script adds it only when the
+    staged rocm-cmake modules lack the function; drop it once the TheRock
+    payload carries a rocm-cmake that defines it.
 
 ## Torch-MIGraphX
 

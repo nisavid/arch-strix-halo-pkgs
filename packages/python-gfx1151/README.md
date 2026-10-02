@@ -6,14 +6,14 @@
 - Scaffold template: `autoconf-python`
 - Recipe build method: `autoconf`
 - Upstream repo: `https://github.com/python/cpython.git`
-- Package version: `3.14.6`
+- Package version: `3.14.7`
 - Recipe revision: `3f15f9f (20260508, 17 commits touching recipe path)`
 - Recipe steps: `8`
 - Recipe dependencies: `therock`
 - Recorded reference packages: `core/python, cachyos-znver4/python`
 - Authoritative reference package: `core/python`
 - Advisory reference packages: `cachyos-znver4/python`
-- Applied source patch files/actions: `0`
+- Applied source patch files/actions: `1`
 
 ## Recipe notes
 
@@ -44,6 +44,7 @@ vllm-env.sh is re-sourced after build to restore flags.
 
 - Uses the Arch system-Python package shape as the integration baseline while layering in the recipe's amdclang plus PGO/LTO approach.
 - Intentionally keeps pip/setuptools split out of the base interpreter package and preserves Arch's externally managed environment behavior.
+- Carries Arch core/python's POSIX-2024 build backport (cpython 927eb448, gh-144309) as a verbatim upstream patch file so the configure feature macros match the Arch integration baseline.
 
 ## Update Notes
 
@@ -51,6 +52,7 @@ vllm-env.sh is re-sourced after build to restore flags.
 - Treat system-Python replacement as gated on a fresh torch/vLLM smoke run after any major Python, ROCm, or recipe change.
 - Adopt CPython 3.14 patch releases after source review without waiting for Arch or CachyOS to move; keep those packages as integration references.
 - Treat patch-release source bumps as coordinated interpreter rebuild lanes until package build, deploy/install, installed smoke, and affected runtime smokes pass.
+- Drop 0001-build-python-with-posix-2024.patch once the CPython 3.14 release branch contains cpython 927eb448 or Arch core/python stops carrying it.
 
 ## Maintainer Starting Points
 

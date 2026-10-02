@@ -1,3 +1,4 @@
+opt/rocm/bin/hipsparse_mtx2csr
 opt/rocm/include/hipsparse/hipsparse-auxiliary.h
 opt/rocm/include/hipsparse/hipsparse-bfloat16.h
 opt/rocm/include/hipsparse/hipsparse-export.h
@@ -86,4 +87,4 @@ opt/rocm/lib/cmake/hipsparse/hipsparse-targets-release.cmake
 opt/rocm/lib/cmake/hipsparse/hipsparse-targets.cmake
 opt/rocm/lib/libhipsparse.so
 opt/rocm/lib/libhipsparse.so.4
-opt/rocm/lib/libhipsparse.so.4.5.0
+opt/rocm/lib/libhipsparse.so.4.6.0
