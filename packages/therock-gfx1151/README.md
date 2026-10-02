@@ -34,9 +34,47 @@ valid. For a staged install tree, point it at that staging root instead.
 ## Source lane
 
 The official upstream `therock-7.13` release is the current package source
-lane. This rendered package is built from a real 7.13 staged root and reports
-`7.13.0-2`; The package is deployed, installed, and smoke-tested on the
-reference host.
+lane. This rendered package is built from a real 7.13 staged root. Releases
+after `7.13.0-2` change only MIGraphX: `7.13.0-3` rebuilt it for protobuf 35.1,
+and `7.13.0-4` rebuilds it for protobuf 36.1 and Abseil 20260817. Build,
+deploy, and validation status belongs in `docs/maintainers/current-state.md`.
+
+## MIGraphX protobuf and Abseil rebuilds
+
+`migraphx-gfx1151` is the only package in this family that links protobuf and
+Abseil. Its ONNX and TensorFlow parser libraries link `libprotobuf`,
+`libutf8_validity`, and dozens of `libabsl_*` libraries directly, so an Arch
+protobuf or Abseil soname change needs a pkgrel-only MIGraphX rebuild with
+`tools/stage_migraphx_for_therock.zsh`:
+
+- The script pins AMDMIGraphX to one commit (`--migraphx-ref`), so the rebuild
+  changes only the linked ABI.
+- `--protobuf-dir` points at an isolated prefix extracted from the Arch
+  `protobuf` and `abseil-cpp` archives, checked against the sync DB sha256.
+  The prefix's lib directory must hold both, and CMake takes Abseil from its
+  `cmake/absl`.
+- Both parser libraries must link exactly the pinned protobuf and
+  `utf8_validity` sonames, and only `libabsl_*.so.<abseil_soversion>`. Older
+  protobuf or Abseil links fail the stage.
+
+The package declares both libraries to pacman:
+
+- `libprotobuf.so=<version>-64` matches the soname that Arch `protobuf`
+  provides.
+- Arch `abseil-cpp` provides no sonames, so the package declares
+  `abseil-cpp>=20260817.0` and `abseil-cpp<20260818`. Abseil keeps one
+  soversion (`2608.0.0` here) across an LTS's patch releases, so the range
+  admits pkgrel rebuilds and `20260817.x` patches and blocks the next LTS.
+  Without it, an Abseil-only update would leave MIGraphX linking libraries
+  that no longer exist; Arch has already rebuilt protobuf against a new Abseil
+  without changing its provides.
+- Change the stage script's sonames and `abseil_soversion` together with the
+  policy depends. `test_migraphx_depends_match_stage_script_sonames` checks
+  that they agree.
+
+The 7.14 package in the
+[F protobuf and Abseil contract](../../docs/maintainers/c-build-root.md#f-protobuf-and-abseil-contract-108)
+still declares no Abseil dependency.
 
 ## rocm-core baseline
 

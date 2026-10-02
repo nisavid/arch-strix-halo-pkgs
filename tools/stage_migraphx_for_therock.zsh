@@ -10,8 +10,9 @@ typeset jobs=${$(nproc 2>/dev/null):-1}
 typeset targets=gfx1151
 typeset migraphx_ref=b69836e6c97de179a80d764d24574edba7ba1b1b
 typeset protobuf_dir=/usr/lib/cmake/protobuf
-typeset protobuf_soname=libprotobuf.so.35.1.0
-typeset utf8_validity_soname=libutf8_validity.so.35.1.0
+typeset protobuf_soname=libprotobuf.so.36.1.0
+typeset utf8_validity_soname=libutf8_validity.so.36.1.0
+typeset abseil_soversion=2608.0.0
 typeset clean=0
 typeset deploy=0
 typeset skip_build=0
@@ -33,7 +34,9 @@ Options:
                      (default: b69836e6c97de179a80d764d24574edba7ba1b1b)
   --protobuf-dir PATH
                      protobuf CMake config directory used for AMDMIGraphX
-                     ONNX parsing (default: /usr/lib/cmake/protobuf)
+                     ONNX parsing; its lib directory must also hold the
+                     matching Abseil libraries and cmake/absl
+                     (default: /usr/lib/cmake/protobuf)
   -j, --jobs N       parallel build jobs (default: nproc)
   --clean            remove the stage and source dirs before starting
   --skip-build       reuse an existing source build and only install/render/deploy
@@ -212,6 +215,7 @@ build_and_install_migraphx() {
   pybind11_dir=$(python -m pybind11 --cmakedir)
   local protobuf_lib_dir=${protobuf_dir%/cmake/protobuf}
   local protobuf_prefix=${protobuf_lib_dir:h}
+  local absl_dir=$protobuf_lib_dir/cmake/absl
   local ck=OFF
   local mlir=OFF
   (( with_composable_kernel )) && ck=ON
@@ -222,6 +226,9 @@ build_and_install_migraphx() {
   [[ -f $protobuf_lib_dir/libutf8_validity.so ]] || fail "utf8 validity library is missing: $protobuf_lib_dir/libutf8_validity.so"
   [[ $(read_soname $protobuf_lib_dir/libprotobuf.so) == $protobuf_soname ]] || fail "protobuf SONAME must be $protobuf_soname"
   [[ $(read_soname $protobuf_lib_dir/libutf8_validity.so) == $utf8_validity_soname ]] || fail "utf8 validity SONAME must be $utf8_validity_soname"
+  [[ -d $absl_dir ]] || fail "Abseil CMake config directory is missing: $absl_dir"
+  [[ -f $protobuf_lib_dir/libabsl_base.so ]] || fail "Abseil library is missing: $protobuf_lib_dir/libabsl_base.so"
+  [[ $(read_soname $protobuf_lib_dir/libabsl_base.so) == libabsl_base.so.$abseil_soversion ]] || fail "Abseil SONAME must be libabsl_base.so.$abseil_soversion"
   local -a configure_args=(
     -S $src
     -B $src/build
@@ -230,6 +237,7 @@ build_and_install_migraphx() {
     -DCMAKE_INSTALL_PREFIX=/opt/rocm
     "-DCMAKE_PREFIX_PATH=$protobuf_prefix;$stage/opt/rocm;/opt/rocm"
     -Dprotobuf_DIR=$protobuf_dir
+    -Dabsl_DIR=$absl_dir
     -Dpybind11_DIR=$pybind11_dir
     -DCMAKE_C_COMPILER=/opt/rocm/lib/llvm/bin/amdclang
     -DCMAKE_CXX_COMPILER=/opt/rocm/lib/llvm/bin/amdclang++
@@ -273,17 +281,20 @@ validate_stage() {
     $stage/opt/rocm/lib/migraphx/lib/libmigraphx_tf.so
   )
 
-  local -a needed
+  local -a needed abseil_needed off_version_abseil
   local parser_lib
   for parser_lib in $parser_libs; do
     [[ -f $parser_lib ]] || fail "missing staged MIGraphX parser library: $parser_lib"
     needed=("${(@f)$(readelf -d $parser_lib | sed -n 's/.*Shared library: \[\([^]]*\)\].*/\1/p')}")
-    if (( ${needed[(I)libprotobuf.so.35.0*]} ||
+    if (( ${needed[(I)libprotobuf.so.35.1*]} ||
+          ${needed[(I)libutf8_validity.so.35.1*]} ||
+          ${needed[(I)libprotobuf.so.35.0*]} ||
           ${needed[(I)libutf8_validity.so.35.0*]} ||
           ${needed[(I)libprotobuf.so.34*]} ||
-          ${needed[(I)libutf8_validity.so.34*]} )); then
+          ${needed[(I)libutf8_validity.so.34*]} ||
+          ${needed[(I)libabsl_*.so.2605*]} )); then
       print -u2 "staged ${parser_lib:t} needs: ${(j:, :)needed}"
-      fail "staged MIGraphX parser library still links a stale protobuf ABI"
+      fail "staged MIGraphX parser library still links a stale protobuf or Abseil ABI"
     fi
 
     if (( ! ${needed[(I)$protobuf_soname]} )); then
@@ -294,6 +305,19 @@ validate_stage() {
     if (( ! ${needed[(I)$utf8_validity_soname]} )); then
       print -u2 "staged ${parser_lib:t} needs: ${(j:, :)needed}"
       fail "staged MIGraphX parser library is not linked against $utf8_validity_soname"
+    fi
+
+    # Pacman sees Abseil only through the versioned abseil-cpp dependency, so
+    # every Abseil link must match the soversion that dependency allows.
+    abseil_needed=(${(M)needed:#libabsl_*})
+    if (( ! $#abseil_needed )); then
+      print -u2 "staged ${parser_lib:t} needs: ${(j:, :)needed}"
+      fail "staged MIGraphX parser library links no Abseil libraries; expected libabsl_*.so.$abseil_soversion"
+    fi
+    off_version_abseil=(${abseil_needed:#*.so.$abseil_soversion})
+    if (( $#off_version_abseil )); then
+      print -u2 "staged ${parser_lib:t} needs: ${(j:, :)off_version_abseil}"
+      fail "staged MIGraphX parser library is not linked only against Abseil .so.$abseil_soversion"
     fi
   done
 

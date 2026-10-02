@@ -1,5 +1,8 @@
+import os
 from pathlib import Path
 import subprocess
+
+import pytest
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -89,25 +92,126 @@ def test_stage_migraphx_builds_install_target_only():
     assert "cmake --build $src/build -j$jobs" not in script
 
 
-def test_stage_migraphx_validates_protobuf_35_1_before_import():
+def test_stage_migraphx_validates_protobuf_36_1_and_abseil_2608_before_import():
     script = SCRIPT.read_text()
-    assert "typeset protobuf_soname=libprotobuf.so.35.1.0" in script
-    assert "typeset utf8_validity_soname=libutf8_validity.so.35.1.0" in script
+    assert "typeset protobuf_soname=libprotobuf.so.36.1.0" in script
+    assert "typeset utf8_validity_soname=libutf8_validity.so.36.1.0" in script
+    assert "typeset abseil_soversion=2608.0.0" in script
 
     assert 'local protobuf_lib_dir=${protobuf_dir%/cmake/protobuf}' in script
     assert 'local protobuf_prefix=${protobuf_lib_dir:h}' in script
+    assert 'local absl_dir=$protobuf_lib_dir/cmake/absl' in script
     assert '"-DCMAKE_PREFIX_PATH=$protobuf_prefix;$stage/opt/rocm;/opt/rocm"' in script
+    assert "-Dabsl_DIR=$absl_dir" in script
     assert "LD_LIBRARY_PATH=$protobuf_lib_dir:${LD_LIBRARY_PATH-}" in script
     assert "protobuf SONAME must be $protobuf_soname" in script
     assert "utf8 validity SONAME must be $utf8_validity_soname" in script
+    assert "Abseil CMake config directory is missing: $absl_dir" in script
+    assert "Abseil SONAME must be libabsl_base.so.$abseil_soversion" in script
+    assert "libprotobuf.so.35.1*" in script
+    assert "libutf8_validity.so.35.1*" in script
     assert "libprotobuf.so.35.0*" in script
     assert "libutf8_validity.so.35.0*" in script
     assert "libprotobuf.so.34*" in script
     assert "libutf8_validity.so.34*" in script
+    assert "libabsl_*.so.2605*" in script
     assert "libmigraphx_onnx.so" in script
     assert "libmigraphx_tf.so" in script
     assert "staged MIGraphX parser library is not linked against $protobuf_soname" in script
     assert "staged MIGraphX parser library is not linked against $utf8_validity_soname" in script
+
+
+GOOD_PARSER_NEEDED = [
+    "libmigraphx.so.2",
+    "libprotobuf.so.36.1.0",
+    "libutf8_validity.so.36.1.0",
+    "libabsl_log_internal_check_op.so.2608.0.0",
+    "libabsl_strings.so.2608.0.0",
+    "libstdc++.so.6",
+]
+
+
+def _run_skip_build_with_fake_parser_needed(tmp_path: Path, needed: list[str]):
+    """Drive validate_stage with stubbed build tools and a fake readelf."""
+    if not Path("/opt/rocm").is_dir():
+        pytest.skip("the stage script copies from /opt/rocm, which is missing")
+
+    stubs = tmp_path / "bin"
+    stubs.mkdir()
+    for name in ("rsync", "cmake", "ninja"):
+        stub = stubs / name
+        stub.write_text("#!/bin/sh\nexit 0\n")
+        stub.chmod(0o755)
+    readelf = stubs / "readelf"
+    readelf.write_text(
+        "#!/bin/sh\n"
+        "printf '%s\\n' \"$FAKE_PARSER_NEEDED\" | tr ',' '\\n' | while read -r lib; do\n"
+        "  [ -n \"$lib\" ] && printf ' 0x0000000000000001 (NEEDED) Shared library: [%s]\\n' \"$lib\"\n"
+        "done\n"
+        "exit 0\n"
+    )
+    readelf.chmod(0o755)
+    python = stubs / "python"
+    python.write_text("#!/bin/sh\necho 'stub python refuses the import' >&2\nexit 1\n")
+    python.chmod(0o755)
+
+    stage = tmp_path / "stage"
+    parser_dir = stage / "opt/rocm/lib/migraphx/lib"
+    parser_dir.mkdir(parents=True)
+    for lib in ("libmigraphx_onnx.so", "libmigraphx_tf.so"):
+        (parser_dir / lib).write_text("")
+    src = tmp_path / "src"
+    (src / "build").mkdir(parents=True)
+
+    # An empty ZDOTDIR keeps user startup files from putting real tools ahead of the stubs.
+    zdotdir = tmp_path / "zdotdir"
+    zdotdir.mkdir()
+    env = dict(os.environ)
+    env["ZDOTDIR"] = str(zdotdir)
+    env["PATH"] = f"{stubs}:{env['PATH']}"
+    env["FAKE_PARSER_NEEDED"] = ",".join(needed)
+    return subprocess.run(
+        [str(SCRIPT), "--stage", str(stage), "--src", str(src), "--skip-build"],
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+
+
+def test_stage_migraphx_parser_gate_accepts_protobuf_36_1_and_abseil_2608(tmp_path):
+    result = _run_skip_build_with_fake_parser_needed(tmp_path, GOOD_PARSER_NEEDED)
+
+    # The gate passes, so the run reaches the stubbed Python import and stops there.
+    assert result.returncode == 2
+    assert "checking staged Python import" in result.stdout
+    assert "staged MIGraphX parser library" not in result.stderr
+    assert "stub python refuses the import" in result.stderr
+
+
+@pytest.mark.parametrize(
+    ("stale", "message"),
+    [
+        ("libprotobuf.so.35.1.0", "still links a stale protobuf or Abseil ABI"),
+        ("libutf8_validity.so.35.1.0", "still links a stale protobuf or Abseil ABI"),
+        ("libabsl_strings.so.2605.0.0", "still links a stale protobuf or Abseil ABI"),
+        ("libabsl_strings.so.2601.0.0", "is not linked only against Abseil .so.2608.0.0"),
+    ],
+)
+def test_stage_migraphx_parser_gate_rejects_stale_protobuf_and_abseil(tmp_path, stale, message):
+    result = _run_skip_build_with_fake_parser_needed(tmp_path, [*GOOD_PARSER_NEEDED, stale])
+
+    assert result.returncode == 2
+    assert message in result.stderr
+    assert "checking staged Python import" not in result.stdout
+
+
+def test_stage_migraphx_parser_gate_requires_abseil_links(tmp_path):
+    needed = [lib for lib in GOOD_PARSER_NEEDED if not lib.startswith("libabsl_")]
+    result = _run_skip_build_with_fake_parser_needed(tmp_path, needed)
+
+    assert result.returncode == 2
+    assert "staged MIGraphX parser library links no Abseil libraries" in result.stderr
+    assert "checking staged Python import" not in result.stdout
 
 
 def test_stage_migraphx_preview_is_dry_run():
