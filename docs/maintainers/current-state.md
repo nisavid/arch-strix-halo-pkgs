@@ -4,6 +4,53 @@ The package, deployment, and live-validation narrative below remains a
 2026-06-15 snapshot. Dated records come first, newest first; older
 reconciliations remain as dated history.
 
+## 2026-10-02 Freshness Sweep
+
+A cache-aware sweep on the W2A closure branch completed at
+`2026-10-02T06:27:29Z` and exited 10 with `--fail-on actionable`. The
+2026-10-01 dispositions still covered every family except two, which moved
+upstream after that sweep:
+
+- **uvloop 0.23.0** reached PyPI at 2026-10-01T03:15Z. `uvloop-0.23.0-pypi`
+  is tracked to #147, but the release is security-relevant and needs an
+  owner decision. It has no CVE or advisory, and C's 0.22.1-2 built in the W2A
+  root, so it is not a build breakage. It carries
+  [uvloop#740](https://github.com/MagicStack/uvloop/pull/740), which detaches
+  the caller's socket when `create_connection(sock=...)` is cancelled. Before
+  the fix, that socket later closed a reused file descriptor and could corrupt
+  an unrelated transport. Upstream closed
+  [uvloop#645](https://github.com/MagicStack/uvloop/issues/645), a report of
+  uvicorn responses leaking to the wrong requests, with that fix. The path is
+  reachable in C: `vllm serve` runs under uvloop, and vLLM 0.30.0 fetches
+  media URLs through aiohttp 3.14.3, which calls
+  `loop.create_connection(sock=sock)` inside its connect timeout. The owner
+  decides whether this fix preempts #147.
+- **ROCm PyTorch `release/2.12`** moved one commit past the tracked
+  `d0d63731` to `b97872d5`, a test-only fix to `test_lazy_init` for hosts that
+  expose more than 32 GPUs. `rocm-pytorch-release-2.12-b97872d` is tracked to
+  #147 and supersedes the `d0d6373` record. Arch `python-pytorch-opt-rocm`
+  still reports 2.14.0-1. The new record covers that baseline drift the way
+  the `13da086` and `d0d6373` records did, so it needs no separate record.
+
+`policies/package-freshness.toml` is unchanged. As on 2026-10-01, its
+recorded values stay at C's selections, and the ledger records the drift.
+
+The confirming sweep missed the cache because the ledger changed. It started
+at `2026-10-02T06:33:49Z`, completed at `2026-10-02T06:34:14Z`, and exited 0
+with `--fail-on actionable`. It reported 22 stable updates, four branch-head
+movements, five baseline drifts, and 20 current families across 51 families.
+Applying the ledger yielded 38 tracked, six rejected, two adopted, and five
+current families. The ledger holds 52 active tracked records and no blocked
+records. The explicit tracker validation found all 12 unique issue gates open
+in this repository; #147 now carries 18 candidates.
+
+This sweep changes maintenance metadata only. No package source was updated,
+and no package was built, deployed/installed, installed-smoked, or
+live-scenario validated. The freshness evidence is due again 24 hours after
+the confirming sweep completed, or sooner if package policy, package
+directories, the candidate ledger, checker behavior, or relevant source
+metadata changes.
+
 ## 2026-10-01 Freshness Sweep
 
 An uncached sweep on the W2A closure branch started at
