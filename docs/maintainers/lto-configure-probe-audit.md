@@ -7,7 +7,7 @@ link-time optimization (LTO) silently change a configure result in any
 package lane? For W2A through the lease commit in
 [#174](https://github.com/nisavid/arch-strix-halo-pkgs/pull/174) that adds
 `procps-ng` to the vLLM root targets, the answer is no: 0 lanes are
-affected and 38 are clear. The vLLM archive check confirmed its static
+affected and 37 are clear. The vLLM archive check confirmed its static
 verdict on 2026-09-29.
 
 The per-lane build-root details live in
@@ -123,7 +123,7 @@ means it appears only in `LDFLAGS`. **no** means it is disabled or stripped.
 
 Lane names drop the `python-` prefix and `-gfx1151`/`-rocm-gfx1151` suffix
 except in the foundation table. The TheRock split family counts as one row,
-so the tables hold 37 distinct lanes plus that family.
+so the tables hold 37 rows: 36 lanes plus that family.
 
 ## Mitigations
 

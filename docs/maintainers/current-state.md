@@ -41,7 +41,13 @@ post-closeout records. None of the new upstream movement is a security fix or
 a build breakage for C:
 
 - cryptography 50.0.2 only rebuilds wheels and updates PyO3, and the
-  2026-09-22 CVE-2026-69247 decision carries forward.
+  2026-09-22 CVE-2026-69247 decision carries forward. The installed 48.0.0
+  is also in the affected range of two X.509 verifier advisories that 49.0.0
+  fixes: CVE-2026-69249 (high) and CVE-2026-69248 (medium). They affect
+  `cryptography.x509.verification` users, not the PKCS#7 path reviewed
+  earlier. [#170](https://github.com/nisavid/arch-strix-halo-pkgs/issues/170)
+  assesses whether they apply, and the owner decides whether that security
+  refresh preempts #147.
 - Torch-MIGraphX `e551a861` upstreams, for Python 3.13 and later, the numpy
   relaxation that local patch 0003 carries.
 - ROCm `release/2.12` moved its in-tree AOTriton pin to 0.14.50tp, so the
@@ -92,9 +98,10 @@ states are recorded separately:
   before W5.
 - **Installed-smoked:** no. The CPU drive and GPU lanes below ran against the
   package as installed in the W2A root, not on the host.
-- **Live-scenario validated:** in the W2A root only, except G5, which remains
-  open. The tracked scenarios below ran on the gfx1151 GPU inside the root;
-  host live-scenario validation waits for deployment.
+- **Live-scenario validated:** in the W2A root only, except G5, which
+  [#169](https://github.com/nisavid/arch-strix-halo-pkgs/issues/169) owns.
+  The tracked scenarios below ran on the gfx1151 GPU inside the root; host
+  live-scenario validation waits for deployment.
 - **CPU drive:** without a GPU, through a fake-ROCm platform shim:
   `RESULT PASS`, 122/122 gate items. Five info-only checks failed: the
   torchaudio and amd-quark gaps tracked in #110, AITER (absent by design), a
@@ -157,10 +164,14 @@ full-feature lane avoids them.
 **Not run:** G5, the Gemma 4 26B-A4B lanes `vllm.gemma4.26b-a4b.text.basic`
 and `vllm.gemma4.26b-a4b.server.basic`. They need at least 77.8 GiB of
 `MemAvailable`; even with the live Lemonade service's models unloaded, the
-host reached only 70-76 GiB. They remain a W2A gate.
+host reached only 70-76 GiB. The owner deferred them to
+[#169](https://github.com/nisavid/arch-strix-halo-pkgs/issues/169), a W4
+sub-issue, to run in a quiet host window ahead of W4 qualification; they no
+longer gate W2A closeout.
 
-**Remaining before W2A closeout:** G5, then the W2A PR, which closes #168 with
-its audit doc and carries the #111 closeout.
+**Remaining before W2A closeout:** the W2A PR
+([#174](https://github.com/nisavid/arch-strix-halo-pkgs/pull/174)), which
+closes #168 with its audit doc and carries the #111 closeout.
 
 ## 2026-09-25 Lemonade M6 Redeploy and Revalidation
 
