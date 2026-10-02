@@ -11,10 +11,12 @@ A cache-aware sweep on the W2A closure branch completed at
 2026-10-01 dispositions still covered every family except two, which moved
 upstream after that sweep:
 
-- **uvloop 0.23.0** reached PyPI at 2026-10-01T03:15Z. `uvloop-0.23.0-pypi`
-  is tracked to #147, but the release is security-relevant and needs an
-  owner decision. It has no CVE or advisory, and C's 0.22.1-2 built in the W2A
-  root, so it is not a build breakage. It carries
+- **uvloop 0.23.0** reached PyPI at 2026-10-01T03:15Z and carries a security
+  fix, so `uvloop-0.23.0-pypi` falls under X7's security exception: it is
+  tracked to #110, the W2A model/serving closure that owns uvloop's sibling
+  closure records (watchfiles, aiohttp, multidict and yarl), for admission
+  into C. It has no CVE or advisory, and C's 0.22.1-2 built in the W2A root,
+  so it is not a build breakage. It carries
   [uvloop#740](https://github.com/MagicStack/uvloop/pull/740), which detaches
   the caller's socket when `create_connection(sock=...)` is cancelled. Before
   the fix, that socket later closed a reused file descriptor and could corrupt
@@ -22,9 +24,10 @@ upstream after that sweep:
   [uvloop#645](https://github.com/MagicStack/uvloop/issues/645), a report of
   uvicorn responses leaking to the wrong requests, with that fix. The path is
   reachable in C: `vllm serve` runs under uvloop, and vLLM 0.30.0 fetches
-  media URLs through aiohttp 3.14.3, which calls
-  `loop.create_connection(sock=sock)` inside its connect timeout. The owner
-  decides whether this fix preempts #147.
+  media URLs through aiohttp 3.14.3 under its request timeout. aiohttp
+  connects with `loop.create_connection(sock=sock)`, so the timeout or a
+  cancelled request can cancel that call. Whether C adopts 0.23.0 in the W2A
+  closure PR or in a follow-up before W4 is an open owner decision.
 - **ROCm PyTorch `release/2.12`** moved one commit past the tracked
   `d0d63731` to `b97872d5`, a test-only fix to `test_lazy_init` for hosts that
   expose more than 32 GPUs. `rocm-pytorch-release-2.12-b97872d` is tracked to
@@ -42,14 +45,19 @@ movements, five baseline drifts, and 20 current families across 51 families.
 Applying the ledger yielded 38 tracked, six rejected, two adopted, and five
 current families. The ledger holds 52 active tracked records and no blocked
 records. The explicit tracker validation found all 12 unique issue gates open
-in this repository; #147 now carries 18 candidates.
+in this repository.
+
+Routing `uvloop-0.23.0-pypi` from #147 to #110 changed the ledger after the
+confirming sweep, so a rerun missed the cache. It completed at
+`2026-10-02T07:41:03Z`, exited 0 with `--fail-on actionable`, and reported
+the same family counts. The tracker validation again found all 12 unique
+issue gates open; #147 now carries 17 candidates and #110 carries 20.
 
 This sweep changes maintenance metadata only. No package source was updated,
 and no package was built, deployed/installed, installed-smoked, or
 live-scenario validated. The freshness evidence is due again 24 hours after
-the confirming sweep completed, or sooner if package policy, package
-directories, the candidate ledger, checker behavior, or relevant source
-metadata changes.
+the rerun completed, or sooner if package policy, package directories, the
+candidate ledger, checker behavior, or relevant source metadata changes.
 
 ## 2026-10-01 Freshness Sweep
 
@@ -222,6 +230,9 @@ closes #168 with its audit doc and carries the #111 closeout. Two owner
 decisions in its Before-merge list decide whether those closing references
 hold: the FlashAttention CK gate set on #111, which has no recorded run on
 2.8.4-16, and the six root-built lanes that the #168 audit tables omit.
+Separately, the owner decides whether that PR or a follow-up before W4
+adopts the uvloop 0.23.0 security fix that the
+[2026-10-02 sweep](#2026-10-02-freshness-sweep) tracked to #110.
 
 ## 2026-09-25 Lemonade M6 Redeploy and Revalidation
 
