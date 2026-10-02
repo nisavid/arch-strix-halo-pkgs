@@ -280,6 +280,7 @@ def resolve(targets: Sequence[str], cfg: ResolveConfig) -> dict:
     selected: dict[str, Pkg] = {}
     trace: list[str] = []
     problems: list[dict[str, str]] = []
+    unresolved: set[tuple[str, str]] = set()
     queue: list[tuple[str, str]] = [(t, "<target>") for t in targets]
     while queue:
         dep, why = queue.pop(0)
@@ -288,10 +289,27 @@ def resolve(targets: Sequence[str], cfg: ResolveConfig) -> dict:
         pkg = find(dep)
         if pkg is None:
             problems.append(problem("unresolved", split_dep(dep)[0], f"{dep} needed by {why}"))
+            unresolved.add((dep, why))
             continue
+        old = selected.get(pkg.name)
+        if old is not None:
+            # One root holds one version of a name. The swap can strand a
+            # requirement that only the old version met; the pass below reports it.
+            problems.append(problem("replaced", pkg.name,
+                                    f"{old.repo}/{old.name} {old.version} replaced by {pkg.repo}/{pkg.name} "
+                                    f"{pkg.version} for {dep} ({why})"))
         selected[pkg.name] = pkg
         trace.append(f"{pkg.repo}/{pkg.name} {pkg.version} <- {dep} ({why})")
         queue.extend((d, pkg.name) for d in pkg.depends)
+
+    # Recheck every requirement against the final selection.
+    wanted = [(t, "<target>") for t in targets]
+    wanted += [(d, p.name) for p in selected.values() for d in p.depends]
+    for dep, why in wanted:
+        if (dep, why) in unresolved or any(satisfies(p, dep) for p in selected.values()):
+            continue
+        owner = split_dep(dep)[0] if why == "<target>" else why
+        problems.append(problem("unsatisfied", owner, f"{dep} needed by {why} is not met by the locked set"))
 
     for p in selected.values():
         for c in p.conflicts:

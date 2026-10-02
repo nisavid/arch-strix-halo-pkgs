@@ -132,7 +132,13 @@ for about 30 GiB, and `$STAGING` for the directory that holds the
    The command exits nonzero while the lock has problems. `missing-file`
    problems are fixed with
    `c_buildroot.py fetch LOCK --dest $WORK/cache/pkgs`. Pass the same dir as
-   `--cache` on later re-locks.
+   `--cache` on later re-locks. A root holds one version of each package, so
+   when a later requirement makes `resolve` swap a selected package for
+   another version, it records a `replaced` problem. After resolving, it
+   rechecks every target and dependency against the final set and records any
+   that it no longer meets as `unsatisfied`. `unresolved`, `replaced` and
+   `unsatisfied` need a change to the targets or the repos; `populate` refuses
+   a lock with any problem.
 3. **Populate.** `c_buildroot.py populate LOCK $WORK/root` extracts the lock
    into a fresh root, then runs `ldconfig` and `update-ca-trust` inside it. It
    also adds a `builder` user with your uid, and it creates the `/build`,

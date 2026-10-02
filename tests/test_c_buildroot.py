@@ -378,6 +378,32 @@ def test_unresolved_and_missing_files_are_problems(tmp_path):
     assert ("missing-file", "glibc") in kinds
 
 
+def test_a_replaced_selection_is_reported_with_the_dependency_it_leaves_unmet(tmp_path):
+    # app pins lib=1-1 (only r2 has it); other needs lib>=2 (only r3 has it). One root
+    # cannot hold both, so the lock must not come out clean with lib 2-1 alone.
+    r1 = write_db(tmp_path / "r1.db", [desc("app", "1-1", depends=["lib=1-1"]),
+                                       desc("other", "1-1", depends=["lib>=2"])])
+    r2 = write_db(tmp_path / "r2.db", [desc("lib", "1-1")])
+    r3 = write_db(tmp_path / "r3.db", [desc("lib", "2-1")])
+    cfg = cbr.ResolveConfig(repos=[("r1", cbr.read_db(r1, "r1")), ("r2", cbr.read_db(r2, "r2")),
+                                   ("r3", cbr.read_db(r3, "r3"))],
+                            foundation=[], pools={"r1": tmp_path, "r2": tmp_path, "r3": tmp_path})
+    for name in ("app-1-1", "other-1-1", "lib-1-1", "lib-2-1"):
+        (tmp_path / f"{name}-x86_64.pkg.tar.zst").touch()
+    lock = cbr.resolve(["app", "other"], cfg)
+    assert by_name(lock)["lib"]["version"] == "2-1"
+    assert {(p["kind"], p["package"]) for p in lock["problems"]} == {("replaced", "lib"), ("unsatisfied", "app")}
+    unsatisfied = next(p for p in lock["problems"] if p["kind"] == "unsatisfied")
+    assert "lib=1-1" in unsatisfied["detail"]
+    with pytest.raises(cbr.BuildRootError, match="lock has problems"):
+        cbr.populate(lock, tmp_path / "root", post_install=False)
+
+
+def test_a_clean_lock_has_no_unsatisfied_dependencies(tmp_path):
+    lock = cbr.resolve(["hip-runtime-amd-gfx1151", "python-numpy"], config(tmp_path))
+    assert not [p for p in lock["problems"] if p["kind"] in ("replaced", "unsatisfied")]
+
+
 def test_extra_cache_supplies_fetched_files(tmp_path):
     extra = tmp_path / "fetched"
     extra.mkdir()
