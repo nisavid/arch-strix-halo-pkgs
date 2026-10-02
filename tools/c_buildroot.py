@@ -912,10 +912,11 @@ def verify_root(root: Path, *, foundation: Sequence[str], forbidden_repos: Seque
 # The verify allowlist. A committed TOML file lists the known, accepted
 # linkage findings: [[needed]] entries for DT_NEEDED entries that do not
 # resolve in the root, and [[runpath]] entries for RUNPATH or RPATH entries
-# outside /usr and /opt/rocm ($ORIGIN resolved). Every entry names the owning package,
-# an fnmatch pattern for the object path, the soname or path entry pattern and
-# a reason, and optionally a tracking issue. verify fails on any finding no
-# entry covers, and on any entry that covers nothing, so the list stays minimal.
+# outside /usr and /opt/rocm once $ORIGIN is resolved. Every entry names the
+# owning package, an fnmatch pattern for the object path, the soname or path
+# entry pattern and a reason, and optionally a tracking issue. verify fails on
+# any finding no entry covers, and on any entry that covers nothing, so the
+# list stays minimal.
 
 
 @dataclass(frozen=True)
