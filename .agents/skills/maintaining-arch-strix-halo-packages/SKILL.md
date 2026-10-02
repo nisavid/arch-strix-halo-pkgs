@@ -1,6 +1,6 @@
 ---
 name: maintaining-arch-strix-halo-packages
-description: Use when updating, auditing, or extending this repo's package set, checking the 24-hour dependency freshness sweep, or reconciling upstream, Arch, AUR, CachyOS, or Blackcat Informatics recipe drift.
+description: Use when updating, auditing, or extending this repo's package set, preparing deployed-state rollback, verifying retained recovery bundles offline, checking the 24-hour dependency freshness sweep, or reconciling upstream, Arch, AUR, CachyOS, or Blackcat Informatics recipe drift.
 ---
 
 # Maintaining Arch Strix Halo Packages
@@ -19,6 +19,8 @@ which divergences are intentional, and where reusable source changes live.
 - reconcile drift against Arch, CachyOS, or AUR baselines
 - absorb changes from Blackcat Informatics' Strix Halo recipe work
 - add a new recipe-managed package
+- prepare an exact deployed-state recovery capture or an isolated restore handoff
+- verify an already retained recovery bundle offline
 - audit patch carry or package metadata clarity
 - triage ROCm inference package candidates such as MIGraphX,
   Torch-MIGraphX, FlashAttention, AITER, Triton, quantization, or profiling
@@ -42,6 +44,11 @@ which divergences are intentional, and where reusable source changes live.
   - `policies/therock-packages.toml`
 - When changing onboarding, publication, or repair flow, open:
   - `docs/usage/local-repo.md`
+- When preparing deployed-state rollback, capturing or verifying recovery files, or rehearsing
+  an isolated restore, follow `docs/maintainers/stack-recovery.md`. Keep file
+  retention, actual restoration, service health, and the final activation
+  snapshot as separate evidence. Ordinary package builds and source freshness
+  checks do not invoke this recovery branch.
 - When closing a session or handling plan, prompt, or worklog files, open:
   - `docs/policies/documentation-and-session-artifacts.md`
 - When checking deferred blockers or previously verified behavior, open:
