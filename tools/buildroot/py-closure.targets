@@ -1,0 +1,25 @@
+# Build tools for the W2A model/runtime Python closure (#110).
+# Resolve together with torch-chain.targets:
+#   c_buildroot.py resolve --targets-file tools/buildroot/torch-chain.targets \
+#     --targets-file tools/buildroot/py-closure.targets ...
+# rust (and so cargo) is here for the maturin wheels: tokenizers, safetensors,
+# watchfiles and pydantic-core. Their cargo fetch needs `enter --net`. Leave
+# this file out of the vLLM root unless the vLLM step chooses to build its Rust
+# extensions.
+# python-gfx1151's sysconfig sets AR=/usr/bin/llvm-ar, which setuptools build_clib
+# uses (Pillow), so the Arch llvm tools must be present as they are on the host.
+llvm
+meson
+meson-python
+cython
+python-expandvars
+python-pkgconfig
+python-poetry-core
+python-maturin
+# The version floor keeps a host rustup, which provides an unversioned `rust`,
+# from standing in for the real toolchain; rustup would download one at build time.
+rust>=1:1.90
+libyaml
+libwebp
+llhttp
+tk

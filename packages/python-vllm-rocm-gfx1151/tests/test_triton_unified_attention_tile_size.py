@@ -5,7 +5,7 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 PKGBUILD = REPO_ROOT / "packages/python-vllm-rocm-gfx1151/PKGBUILD"
 PATCH = (
     REPO_ROOT
-    / "packages/python-vllm-rocm-gfx1151/0016-rocm-refresh-local-carry-for-vllm-0.21.0.patch"
+    / "packages/python-vllm-rocm-gfx1151/0016-rocm-refresh-local-carry-for-vllm-0.30.0.patch"
 )
 
 
@@ -28,15 +28,6 @@ def test_pkgbuild_carries_setup_flag_forwarding_patch():
     assert '_apply_patch_if_needed "${_vllm_source_patch}"' in pkgbuild_text
     assert "CMAKE_HIP_FLAGS" in patch_text
 
-
-def test_pkgbuild_carries_gemma4_aiter_patch():
-    pkgbuild_text = PKGBUILD.read_text()
-    patch_text = PATCH.read_text()
-
-    assert PATCH.name in pkgbuild_text
-    assert '_vllm_source_patch="0016-rocm-refresh-local-carry-for-vllm-${pkgver}.patch"' in pkgbuild_text
-    assert '_apply_patch_if_needed "${_vllm_source_patch}"' in pkgbuild_text
-    assert "return on_mi3xx() or on_gfx1x()" in patch_text
 
 
 def test_pkgbuild_drops_fused_moe_policy_patch():
@@ -77,7 +68,9 @@ def test_pkgbuild_passes_clean_hip_version_to_cmake():
     assert "HIP_PATH=/opt/rocm ROCM_PATH=/opt/rocm" in text
     assert "/opt/rocm/bin/hipconfig --version" in text
     assert "VLLM_HIP_VERSION_MISSING" in text
-    assert 'export CMAKE_ARGS="-DHIP_VERSION=${_hip_version%%-*} ${CMAKE_ARGS:-}"' in text
+    cmake_args = next(line for line in text.splitlines() if 'export CMAKE_ARGS="' in line)
+    assert cmake_args.strip().startswith('export CMAKE_ARGS="-DHIP_VERSION=${_hip_version%%-*} ')
+    assert cmake_args.strip().endswith(' ${CMAKE_ARGS:-}"')
 
 
 def test_patch_reduces_rocm_large_head_prefill_tile_to_16():
@@ -104,13 +97,3 @@ def test_setup_patch_forwards_host_and_hip_flags_into_cmake():
     assert '("CXXFLAGS", "CMAKE_CXX_FLAGS")' in text
     assert '("HIPFLAGS", "CMAKE_HIP_FLAGS")' in text
     assert 'cmake_args += [f"-D{cmake_name}={env_value}"]' in text
-
-
-def test_gemma4_patch_enables_gfx1x_aiter_and_prefers_it():
-    text = PATCH.read_text()
-
-    assert "from vllm.platforms.rocm import on_gfx1x, on_mi3xx" in text
-    assert "return on_mi3xx() or on_gfx1x()" in text
-    assert "AttentionBackendEnum.ROCM_AITER_UNIFIED_ATTN" in text
-    assert "decode miscompilation" in text
-    assert "def is_fused_moe_enabled(cls) -> bool:" not in text

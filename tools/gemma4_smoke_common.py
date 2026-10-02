@@ -28,6 +28,25 @@ def validate_basic_chat_text(content: str, *, expected_words: int = 5) -> str:
     return stripped
 
 
+# The tool follow-up asks for no particular length, so its answer only has to
+# be readable ASCII that repeats at least one value from the tool result.
+def validate_tool_followup_text(content: str, *, expected_any: tuple[str, ...]) -> str:
+    stripped = _require_clean_ascii(content, label="tool follow-up")
+    # The follow-up keeps special tokens, so leaked turn markers such as
+    # "<turn|>" would otherwise pass as printable ASCII.
+    if any(char in stripped for char in "<>|"):
+        raise RuntimeError(
+            f"tool follow-up response leaked control text: {_excerpt(stripped)!r}"
+        )
+    folded = stripped.casefold()
+    if not any(marker.casefold() in folded for marker in expected_any):
+        raise RuntimeError(
+            "tool follow-up response did not use the tool result "
+            f"(expected any of {list(expected_any)}): {_excerpt(stripped)!r}"
+        )
+    return stripped
+
+
 def _is_ascii_chat_text(text: str) -> bool:
     for char in text:
         if char.isascii() and (
@@ -36,3 +55,119 @@ def _is_ascii_chat_text(text: str) -> bool:
             continue
         return False
     return True
+
+
+# Output-correctness checks for the Gemma 4 decode path. A Triton
+# unified-attention miscompile on gfx1151 shows up as wrong tokens during
+# decode, not as a failed run, so these checks compare greedy output with
+# answers that are known in advance.
+FIRST_TEN_PRIMES = (2, 3, 5, 7, 11, 13, 17, 19, 23, 29)
+KNOWN_ANSWER_PROMPT = (
+    "List the first ten prime numbers in increasing order. "
+    "Output only the numbers, separated by commas."
+)
+KNOWN_ANSWER_MAX_TOKENS = 64
+
+LONG_DECODE_CODE_WORD = "PELICAN"
+LONG_DECODE_DEFAULT_COUNT = 150
+# Counting to 150 is about 650 Gemma 4 tokens: long enough to cross the E2B
+# 512-token sliding window, so recalling the code word at the end depends on
+# the full-attention layers. The 26B-A4B window is 1024 tokens, so its lanes
+# count to 250: 1146 generated tokens after a 68-token chat prompt.
+LONG_DECODE_MAX_TOKENS = 800
+LONG_DECODE_MAX_MODEL_LEN = 1024
+# Gemma 4 splits digits, so each number up to 999 costs at most five tokens:
+# three digits plus ", ". The smaller numbers' savings cover the code-word
+# trailer.
+LONG_DECODE_TOKENS_PER_NUMBER = 5
+# Room for the ~68-token chat prompt plus the server's request reserve.
+LONG_DECODE_PROMPT_HEADROOM = 192
+LONG_DECODE_MAX_MODEL_LEN_STEP = 256
+
+INTEGER_RE = re.compile(r"\d+")
+
+
+def long_decode_max_tokens(count: int = LONG_DECODE_DEFAULT_COUNT) -> int:
+    return max(LONG_DECODE_MAX_TOKENS, LONG_DECODE_TOKENS_PER_NUMBER * count)
+
+
+def long_decode_max_model_len(count: int = LONG_DECODE_DEFAULT_COUNT) -> int:
+    needed = long_decode_max_tokens(count) + LONG_DECODE_PROMPT_HEADROOM
+    step = LONG_DECODE_MAX_MODEL_LEN_STEP
+    return max(LONG_DECODE_MAX_MODEL_LEN, -(-needed // step) * step)
+
+
+def long_decode_prompt(count: int = LONG_DECODE_DEFAULT_COUNT) -> str:
+    return (
+        f"Remember this code word: {LONG_DECODE_CODE_WORD}. "
+        f"First, count from 1 to {count}, writing every number in order, "
+        "separated by commas and spaces. Then, on a new line, write "
+        '"Code word: " followed by the code word. Output nothing else.'
+    )
+
+
+def validate_known_answer_text(content: str) -> str:
+    stripped = _require_clean_ascii(content, label="known-answer")
+    numbers = tuple(int(value) for value in INTEGER_RE.findall(stripped))
+    if numbers != FIRST_TEN_PRIMES:
+        raise RuntimeError(
+            "known-answer response: expected the first ten primes "
+            f"{list(FIRST_TEN_PRIMES)}, got {list(numbers)}: {stripped!r}"
+        )
+    return stripped
+
+
+def validate_long_decode_text(
+    content: str,
+    *,
+    count: int = LONG_DECODE_DEFAULT_COUNT,
+    code_word: str = LONG_DECODE_CODE_WORD,
+) -> str:
+    stripped = _require_clean_ascii(content, label="long-decode")
+    code_word_at = stripped.casefold().rfind(code_word.casefold())
+    last_digit_at = max(
+        (match.end() for match in INTEGER_RE.finditer(stripped)),
+        default=-1,
+    )
+    if code_word_at < 0 or code_word_at < last_digit_at:
+        raise RuntimeError(
+            f"long-decode response did not end with the code word {code_word!r}: "
+            f"{_excerpt(stripped)!r}"
+        )
+    numbers = [int(value) for value in INTEGER_RE.findall(stripped)]
+    expected = list(range(1, count + 1))
+    if numbers != expected:
+        raise RuntimeError(
+            f"long-decode response: expected 1..{count} in order, "
+            f"first divergence {_first_divergence(numbers, expected)}: "
+            f"{_excerpt(stripped)!r}"
+        )
+    return stripped
+
+
+def _require_clean_ascii(content: str, *, label: str) -> str:
+    stripped = content.strip()
+    if not stripped:
+        raise RuntimeError(f"{label} response content was empty")
+    for char in stripped:
+        if char.isascii() and (char.isprintable() or char in "\n\r\t"):
+            continue
+        raise RuntimeError(
+            f"{label} response included unexpected non-ASCII content: "
+            f"{_excerpt(stripped)!r}"
+        )
+    return stripped
+
+
+def _first_divergence(actual: list[int], expected: list[int]) -> str:
+    for index, (got, want) in enumerate(zip(actual, expected)):
+        if got != want:
+            return f"at index {index}: got {got}, expected {want}"
+    return f"after {min(len(actual), len(expected))} numbers: got {len(actual)}, expected {len(expected)}"
+
+
+def _excerpt(text: str, limit: int = 240) -> str:
+    if len(text) <= limit:
+        return text
+    half = limit // 2
+    return f"{text[:half]} ... {text[-half:]}"

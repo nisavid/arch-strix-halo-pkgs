@@ -36,8 +36,8 @@ def _require_or_skip(path: Path | None, label: str) -> Path:
 
 def test_sagemaker_router_is_optional_in_built_package():
     router = _require_or_skip(
-        _resolve_artifact("vllm/entrypoints/sagemaker/api_router.py"),
-        "vllm/entrypoints/sagemaker/api_router.py",
+        _resolve_artifact("vllm/entrypoints/serve/sagemaker/api_router.py"),
+        "vllm/entrypoints/serve/sagemaker/api_router.py",
     )
 
     text = router.read_text()

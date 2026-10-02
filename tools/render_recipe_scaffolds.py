@@ -1116,26 +1116,18 @@ _source_tree_has_all_source_patches() {
   [[ -f pyproject.toml ]] || return 1
   grep -Fq 'requires-python = ">=3.10,<3.15"' pyproject.toml &&
     grep -Fq 'def _selected_subcommand() -> str | None:' vllm/entrypoints/cli/main.py &&
-    grep -Fq 'using vllm_bfloat16 = __hip_bfloat16;' csrc/cuda_vec_utils.cuh &&
-    grep -Fq 'expected_hipified_path' cmake/hipify.py &&
-    grep -Fq 'return on_mi3xx() or on_gfx1x()' vllm/_aiter_ops.py &&
+    grep -Fq 'using vllm_bfloat16 = __hip_bfloat16;' \
+      csrc/libtorch_stable/cuda_vec_utils.cuh &&
     grep -Fq 'def torchao_version_at_least(torchao_version: str) -> bool:' \
       vllm/model_executor/layers/quantization/torchao_utils.py &&
-    grep -Fq 'Hybrid models need TRITON_ATTN' vllm/platforms/rocm.py &&
     grep -Fq 'Use PyTorch top-k/top-p filtering on large-vocabulary ROCm' \
       vllm/v1/sample/ops/topk_topp_sampler.py &&
     grep -Fq 'Keep valid_count type stable across branches' \
       vllm/v1/spec_decode/utils.py &&
-    grep -Fq 'def _triton_knobs():' \
-      vllm/triton_utils/jit_monitor.py &&
-    grep -Fq 'knobs = _triton_knobs()' \
-      vllm/triton_utils/jit_monitor.py &&
-    grep -Fq 'def update_dflash(config_dict: dict, pre_trained_config: dict) -> None:' \
-      vllm/transformers_utils/configs/speculators/algos.py &&
-    grep -Fq 'def _flash_attn_uses_triton_rocm() -> bool:' \
-      vllm/platforms/rocm.py &&
     grep -Fq 'def rocm_flash_attn_supports_vllm_varlen_api() -> bool:' \
-      vllm/v1/attention/backends/fa_utils.py
+      vllm/v1/attention/backends/fa_utils.py &&
+    grep -Fq 'NOTE(gfx1151): On AMD HIP, restrict autotune search' \
+      vllm/third_party/flash_linear_attention/ops/chunk_delta_h.py
 }
 
 _apply_all_source_patches() {
@@ -1211,21 +1203,38 @@ build() {{
     echo "VLLM_HIP_VERSION_MISSING: hipconfig failed" >&2
     return 1
   fi
-  export CMAKE_ARGS="-DHIP_VERSION=${{_hip_version%%-*}} ${{CMAKE_ARGS:-}}"
+  # CXX resolves to the ccache wrapper symlink. Torch's LoadHIP.cmake loads
+  # ROCm's FindHIP.cmake, which takes HIP_CLANG_PATH from the realpath of
+  # HIP_CXX_COMPILER (default CMAKE_CXX_COMPILER), i.e. the ccache binary's
+  # directory, and bakes it into the HIP shared-module link rule. Name the
+  # ROCm LLVM driver so hipcc links _C.abi3.so with ROCm clang.
+  export CMAKE_ARGS="-DHIP_VERSION=${{_hip_version%%-*}} -DHIP_CXX_COMPILER=/opt/rocm/lib/llvm/bin/amdclang++ ${{CMAKE_ARGS:-}}"
   export VLLM_VERSION_OVERRIDE="${{pkgver}}"
-  export VLLM_ROCM_USE_AITER=1
+
+  # The Rust frontend (vllm-rs) and _rust_tool_parser are optional unless
+  # VLLM_REQUIRE_RUST_FRONTEND is set. This package skips them: cargo is
+  # disabled and rustup may not install the rust-toolchain.toml channel, so
+  # setuptools-rust reports them as failed optional extensions.
+  unset VLLM_REQUIRE_RUST_FRONTEND
+  export CARGO=/usr/bin/false
+  export CARGO_NET_OFFLINE=true
+  export RUSTUP_AUTO_INSTALL=0
 
   rm -rf .deps/triton_kernels-*
 
   mkdir -p dist
   rm -f dist/*.whl
 
-  if ! pip wheel . --no-build-isolation --no-deps --wheel-dir dist -v; then
-    unset VLLM_ROCM_USE_AITER
-    python setup.py clean 2>/dev/null || true
-    find . -name "*.so" -path "*/build/*" -delete 2>/dev/null || true
-    pip wheel . --no-build-isolation --no-deps --wheel-dir dist -v
-  fi
+  pip wheel . --no-build-isolation --no-deps --wheel-dir dist -v
+
+  local _wheel _members
+  for _wheel in dist/*.whl; do
+    _members="$(python -c 'import sys, zipfile; print("\\n".join(zipfile.ZipFile(sys.argv[1]).namelist()))' "${{_wheel}}")"
+    if grep -Eq '^vllm/(_rust_[^/]*[.]so|vllm-rs)$' <<<"${{_members}}"; then
+      echo "VLLM_RUST_ARTIFACT_UNEXPECTED: ${{_wheel}} contains Rust extensions this package skips" >&2
+      return 1
+    fi
+  done
 }}
 
 package() {{
@@ -1308,7 +1317,11 @@ build() {{
     export CMAKE_CXX_COMPILER_LAUNCHER="$(command -v ccache)"
   fi
   export CFLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument"
-  export CXXFLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument"
+  # GCC 16 libstdc++ <format> (pulled in by <chrono> under C++20) spells
+  # [[__gnu__::__noinline__]], and HIP's host_defines.h defines __noinline__
+  # as a macro in plain C++ sources that include hip_runtime.h. Parse <format>
+  # first so the macro cannot reach it; the include is empty before C++20.
+  export CXXFLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument -include format"
   export LDFLAGS="-fuse-ld=lld"
   export PYTORCH_ROCM_ARCH="gfx1151"
   export USE_ROCM=1
@@ -1317,6 +1330,9 @@ build() {{
   export OpenBLAS_HOME="${{OpenBLAS_HOME:-/usr}}"
   export USE_LAPACK=1
   export USE_ROCM_CK_GEMM=1
+  # The generation-C foundation ships no MAGMA; build without it so the result
+  # never depends on whichever MAGMA a build host happens to have.
+  export USE_MAGMA=0
   export AOTRITON_INSTALLED_PREFIX="/usr"
   export USE_CUDA=0
   export USE_NCCL=0
@@ -1329,6 +1345,7 @@ build() {{
   export ROCM_PATH="/opt/rocm"
   export HIP_CLANG_PATH="${{_rocm_llvm_bin}}"
   export CMAKE_PREFIX_PATH="${{OpenBLAS_HOME}}:/opt/rocm"
+  # Honor a job cap from makepkg.conf; the build root pins it for memory.
   export MAX_JOBS="${{MAX_JOBS:-$(_build_jobs)}}"
   export PYTORCH_BUILD_VERSION="{upstream_version}"
   export PYTORCH_BUILD_NUMBER=1
@@ -1563,7 +1580,22 @@ PY
   patchelf --set-rpath "${{_rpath}}" "${{_extension}}"
 }}"""
     elif template == "python-project-triton-rocm":
-        python_subdir = f"{src_subdir}/python"
+        # Triton 3.8 keeps pyproject.toml and setup.py at the repo root.
+        python_subdir = src_subdir
+        # The pinned upstream LLVM build Triton's cmake/llvm-info.json names,
+        # staged through source=() so the build never downloads it.
+        llvm_dir = policy_pkg.get("triton_llvm_dir")
+        if not llvm_dir:
+            print(
+                f"TRITON_LLVM_DIR_MISSING: {package_name} needs triton_llvm_dir",
+                file=sys.stderr,
+            )
+            print(
+                "HINT: pin Triton's LLVM tarball in source_refs and name its unpacked "
+                "top-level directory in triton_llvm_dir.",
+                file=sys.stderr,
+            )
+            raise SystemExit(2)
         source_patches = policy_pkg.get("source_patches", [])
         if source_patches:
             prepare_lines.extend(
@@ -1589,7 +1621,14 @@ build() {{
   {compiler_env_snippet(compiler_root)}  _setup_compiler_env
   export ROCM_HOME="/opt/rocm"
   export ROCM_PATH="/opt/rocm"
-  unset LLVM_SYSPATH
+  # Offline build: LLVM comes from the pinned source tarball, nlohmann-json
+  # from the system, and nothing else is downloaded.
+  export TRITON_OFFLINE_BUILD=ON
+  export LLVM_SYSPATH="$srcdir/{llvm_dir}"
+  export JSON_SYSPATH=/usr
+  export TRITON_HOME="$srcdir/.triton-home"
+  # Each libtriton and triton-* tool link pulls in static LLVM and MLIR.
+  export TRITON_PARALLEL_LINK_JOBS="${{TRITON_PARALLEL_LINK_JOBS:-2}}"
   export TRITON_BUILD_PROTON=OFF
   if command -v ccache >/dev/null 2>&1; then
     export TRITON_BUILD_WITH_CCACHE=true
@@ -1623,12 +1662,6 @@ package() {{
                     'git -C "$srcdir/{src_subdir}" submodule update --init --recursive --force'.format(src_subdir=src_subdir),
                 ]
             )
-        prepare_lines.extend(
-            [
-                "# Keep vendored Triton aligned with the standalone Python-3.14 compatibility fix we already apply in python-triton-gfx1151.",
-                'git -C "$srcdir/{src_subdir}/third_party/triton" cherry-pick -n c44b870bdd9e1ea8933fd4057b6b59a5e6e5407b || true'.format(src_subdir=src_subdir),
-            ]
-        )
         for patch_name in policy_pkg.get("source_patches", []):
             prepare_lines.extend(
                 [
@@ -1641,6 +1674,8 @@ package() {{
 build() {{
   {compiler_env_snippet(compiler_root)}  _setup_compiler_env
   export TRITON_HOME="$srcdir/.triton-home"
+  # The nested vendored Triton links libtriton and its tools against static LLVM and MLIR.
+  export TRITON_PARALLEL_LINK_JOBS="${{TRITON_PARALLEL_LINK_JOBS:-2}}"
   export PIP_CACHE_DIR="$srcdir/.pip-cache"
   export PYTHONPYCACHEPREFIX="$srcdir/.python-pycache"
   if [[ -n "${{AOTRITON_REUSE_BUILD:-}}" && -f "$srcdir/build/build.ninja" ]]; then
@@ -1748,7 +1783,9 @@ build() {{
 
   {compiler_env_snippet(compiler_root)}  _setup_compiler_env
   local _debug_prefix="/usr/src/debug/{package_name}"
-{cargo_home_exports}  export CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER="$CC"
+{cargo_home_exports}  # Use the installed Rust toolchain; a rustup proxy must never download one.
+  export RUSTUP_AUTO_INSTALL=0
+  export CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER="$CC"
   export RUSTFLAGS="-C target-cpu=znver5 -C opt-level=3 --remap-path-prefix=$srcdir=${{_debug_prefix}}"
   unset CFLAGS CXXFLAGS LDFLAGS
 
@@ -1881,12 +1918,58 @@ package() {{
   # flags avoids compile-only probes treating it as unused.
   export LDFLAGS="${{_base_ldflags:+${{_base_ldflags}} }}-famd-opt"
 """
+        drop_lto_helper = ""
+        if policy_pkg.get("drop_lto_from_cflags", False):
+            # C compiles only: CXXFLAGS and LDFLAGS keep makepkg's LTO flags.
+            drop_lto_helper = """\
+# Remove LTO flags from CFLAGS only; the divergence notes in README.md say
+# which C compile needs native objects.
+_drop_lto_from_cflags() {
+  local _flag _kept=()
+  for _flag in ${CFLAGS:-}; do
+    case "${_flag}" in
+      -flto|-flto=*|-ffat-lto-objects) ;;
+      *) _kept+=("${_flag}") ;;
+    esac
+  done
+  export CFLAGS="${_kept[*]}"
+}
+
+"""
+            native_wheel_build_preamble += "  _drop_lto_from_cflags\n"
+        package_guard_lines = []
+        required_files = policy_pkg.get("wheel_required_files", [])
+        required_strings = policy_pkg.get("wheel_required_strings", [])
+        if required_files or required_strings:
+            package_guard_lines.append(
+                'local _site="$pkgdir$(/usr/bin/python -c \'import sysconfig; print(sysconfig.get_path("platlib"))\')"'
+            )
+        for rel in required_files:
+            package_guard_lines.extend(
+                [
+                    f'if [[ ! -f "${{_site}}/"{shell_quote(rel)} ]]; then',
+                    f"  printf 'wheel is missing %s\\n' {shell_quote(rel)} >&2",
+                    "  return 1",
+                    "fi",
+                ]
+            )
+        for entry in required_strings:
+            rel, text = entry["path"], entry["text"]
+            package_guard_lines.extend(
+                [
+                    f'if ! grep -aqF -- {shell_quote(text)} "${{_site}}/"{shell_quote(rel)}; then',
+                    f"  printf '%s does not contain %s\\n' {shell_quote(rel)} {shell_quote(text)} >&2",
+                    "  return 1",
+                    "fi",
+                ]
+            )
+        package_guards = "".join(f"\n  {line}" for line in package_guard_lines)
         build_env_section = build_env_exports
         if native_wheel_build_preamble and build_env_section.startswith("\n"):
             build_env_section = build_env_section[1:]
         post_build_env_gap = "\n" if (native_wheel_build_preamble or build_env_section or clean_build_outputs) else ""
         build_body = f"""\
-build() {{
+{drop_lto_helper}build() {{
   cd "$srcdir/{src_subdir}"
 
 {native_wheel_build_preamble}{build_env_section}{clean_build_outputs}{post_build_env_gap}  {build_command}
@@ -1894,7 +1977,7 @@ build() {{
 
 package() {{
   cd "$srcdir/{src_subdir}"
-  {installer_command}
+  {installer_command}{package_guards}
 }}"""
     elif template == "python-project-torch-migraphx":
         for patch_name in policy_pkg.get("source_patches", []):

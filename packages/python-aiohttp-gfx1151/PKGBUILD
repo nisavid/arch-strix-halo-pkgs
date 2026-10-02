@@ -5,7 +5,7 @@
 # Package recipe key: native_wheels
 
 pkgname=python-aiohttp-gfx1151
-pkgver=3.13.5
+pkgver=3.14.3
 pkgrel=1
 pkgdesc='HTTP client/server for asyncio rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
@@ -18,11 +18,11 @@ options=()
 provides=(python-aiohttp)
 conflicts=(python-aiohttp)
 replaces=()
-source=(https://files.pythonhosted.org/packages/source/a/aiohttp/aiohttp-3.13.5.tar.gz)
-sha256sums=(9d98cc980ecc96be6eb4c1994ce35d28d8b1f5e5208a23b421187d1209dbb7d1)
+source=(https://files.pythonhosted.org/packages/source/a/aiohttp/aiohttp-3.14.3.tar.gz)
+sha256sums=(9491196535a88924a60afd5b5f434b5b203b6cc616250878dbdb223a8f7844bc)
 
 build() {
-  cd "$srcdir/aiohttp-3.13.5"
+  cd "$srcdir/aiohttp-3.14.3"
 
   _setup_compiler_env() {
   local _compiler_root="/opt/rocm/lib/llvm/bin"
@@ -49,7 +49,7 @@ build() {
 }
 
   _setup_compiler_env
-  local _base_flags="-O3 -march=native -mprefer-vector-width=512 -mavx512f -mavx512dq -mavx512vl -mavx512bw -mllvm -enable-gvn-hoist -mllvm -enable-gvn-sink -famd-opt -Wno-error=unused-command-line-argument"
+  local _base_flags="-O3 -march=native -mprefer-vector-width=512 -mavx512f -mavx512dq -mavx512vl -mavx512bw -mllvm -enable-gvn-hoist -mllvm -enable-gvn-sink -Wno-error=unused-command-line-argument"
   local _wheel_flags
   _wheel_flags="$(printf '%s' "${_base_flags}" | sed -E 's/-mllvm (-[^ ]+)/-Xclang -mllvm -Xclang \1/g; s/  +/ /g; s/^ +| +$//g')"
   local _base_cflags="${CFLAGS:-}"
@@ -58,13 +58,15 @@ build() {
 
   export CFLAGS="${_base_cflags:+${_base_cflags} }${_wheel_flags}"
   export CXXFLAGS="${_base_cxxflags:+${_base_cxxflags} }${_wheel_flags}"
+  # -famd-opt is a clang driver link flag here; keeping it out of wheel compile
+  # flags avoids compile-only probes treating it as unused.
   export LDFLAGS="${_base_ldflags:+${_base_ldflags} }-famd-opt"
   export AIOHTTP_USE_SYSTEM_DEPS=1
 
-  python -m build --wheel --no-isolation
+  /usr/bin/python -m build --wheel --no-isolation
 }
 
 package() {
-  cd "$srcdir/aiohttp-3.13.5"
-  python -m installer --destdir="$pkgdir" dist/*.whl
+  cd "$srcdir/aiohttp-3.14.3"
+  /usr/bin/python -m installer --destdir="$pkgdir" dist/*.whl
 }

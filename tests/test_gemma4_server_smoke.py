@@ -107,3 +107,85 @@ def test_gemma4_server_smoke_keeps_26b_memory_default_and_allows_override():
     override_plan = json.loads(override_result.stdout)
     assert command_value(default_plan["server_command"], "--gpu-memory-utilization") == "0.75"
     assert command_value(override_plan["server_command"], "--gpu-memory-utilization") == "0.5"
+
+
+def test_gemma4_server_smoke_basic_plan_has_no_correctness_requests_by_default():
+    result = run_helper("google/gemma-4-26B-A4B-it", "--mode", "basic", "--dry-run")
+
+    assert result.returncode == 0, result.stderr
+    plan = json.loads(result.stdout)
+    assert command_value(plan["server_command"], "--max-model-len") == "128"
+    assert "known_answer_request_payload" not in plan
+    assert "long_decode_request_payload" not in plan
+
+
+def test_gemma4_server_smoke_plans_known_answer_and_long_decode_requests():
+    result = run_helper(
+        "google/gemma-4-26B-A4B-it",
+        "--mode",
+        "basic",
+        "--known-answer",
+        "--long-decode",
+        "--dry-run",
+    )
+
+    assert result.returncode == 0, result.stderr
+    plan = json.loads(result.stdout)
+    command = plan["server_command"]
+    # The long decode needs room for ~650 generated tokens, so it lifts the
+    # 26B-A4B basic lane's 128-token default but keeps its batching cap.
+    assert command_value(command, "--max-model-len") == "1024"
+    assert command_value(command, "--max-num-batched-tokens") == "32"
+    assert "--attention-backend" not in command
+
+    known = plan["known_answer_request_payload"]
+    assert known["temperature"] == 0.0
+    assert known["max_tokens"] == 64
+    assert "first ten prime numbers" in known["messages"][0]["content"]
+
+    long_decode = plan["long_decode_request_payload"]
+    assert long_decode["temperature"] == 0.0
+    assert long_decode["max_tokens"] == 800
+    assert "count from 1 to 150" in long_decode["messages"][0]["content"]
+    assert "PELICAN" in long_decode["messages"][0]["content"]
+
+
+def test_gemma4_server_smoke_wide_long_decode_sizes_the_26b_lane_past_its_window():
+    result = run_helper(
+        "google/gemma-4-26B-A4B-it",
+        "--mode",
+        "basic",
+        "--long-decode",
+        "--long-decode-count",
+        "250",
+        "--dry-run",
+    )
+
+    assert result.returncode == 0, result.stderr
+    plan = json.loads(result.stdout)
+    command = plan["server_command"]
+    assert command_value(command, "--max-model-len") == "1536"
+    assert command_value(command, "--max-num-batched-tokens") == "32"
+    long_decode = plan["long_decode_request_payload"]
+    assert long_decode["max_tokens"] == 1250
+    assert "count from 1 to 250" in long_decode["messages"][0]["content"]
+
+
+def test_gemma4_server_smoke_explicit_max_model_len_wins_over_long_decode_default():
+    result = run_helper(
+        "google/gemma-4-E2B-it",
+        "--mode",
+        "basic",
+        "--long-decode",
+        "--long-decode-count",
+        "100",
+        "--max-model-len",
+        "2048",
+        "--dry-run",
+    )
+
+    assert result.returncode == 0, result.stderr
+    plan = json.loads(result.stdout)
+    assert command_value(plan["server_command"], "--max-model-len") == "2048"
+    content = plan["long_decode_request_payload"]["messages"][0]["content"]
+    assert "count from 1 to 100" in content

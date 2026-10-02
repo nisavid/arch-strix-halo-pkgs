@@ -5,7 +5,7 @@
 # Package recipe key: rust_wheels
 
 pkgname=python-tokenizers-gfx1151
-pkgver=0.22.2
+pkgver=0.23.2
 pkgrel=1
 pkgdesc='Fast state-of-the-art tokenizers rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
@@ -18,11 +18,11 @@ options=()
 provides=(python-tokenizers)
 conflicts=(python-tokenizers)
 replaces=()
-source=(https://files.pythonhosted.org/packages/source/t/tokenizers/tokenizers-0.22.2.tar.gz)
-sha256sums=(473b83b915e547aa366d1eee11806deaf419e17be16310ac0a14077f1e28f917)
+source=(https://files.pythonhosted.org/packages/source/t/tokenizers/tokenizers-0.23.2.tar.gz)
+sha256sums=(7f0f085686b9de0d0079e6f874ae053600db64c5d13049e0bbc0119926d25aac)
 
 build() {
-  cd "$srcdir/tokenizers-0.22.2"
+  cd "$srcdir/tokenizers-0.23.2"
 
   _setup_compiler_env() {
   local _compiler_root="/opt/rocm/lib/llvm/bin"
@@ -58,11 +58,11 @@ build() {
 }
 
 package() {
-  cd "$srcdir/tokenizers-0.22.2"
+  cd "$srcdir/tokenizers-0.23.2"
   python -m installer --destdir="$pkgdir" dist/*.whl
 
   local _debug_prefix="/usr/src/debug/python-tokenizers-gfx1151"
   find "$pkgdir/usr/lib" -type f -path '*/sboms/*.json' -print0 | while IFS= read -r -d '' _file; do
-    sed -i       -e "s|$srcdir/tokenizers-0.22.2|${_debug_prefix}/tokenizers-0.22.2|g"       -e "s|$srcdir|${_debug_prefix}|g"       -e "s|/tmp/pkg/src/tokenizers-0.22.2|${_debug_prefix}/tokenizers-0.22.2|g"       "$_file" 2>/dev/null || true
+    sed -i       -e "s|$srcdir/tokenizers-0.23.2|${_debug_prefix}/tokenizers-0.23.2|g"       -e "s|$srcdir|${_debug_prefix}|g"       -e "s|/tmp/pkg/src/tokenizers-0.23.2|${_debug_prefix}/tokenizers-0.23.2|g"       "$_file" 2>/dev/null || true
   done
 }

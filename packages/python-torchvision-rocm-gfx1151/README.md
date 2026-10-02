@@ -6,7 +6,7 @@
 - Scaffold template: `python-project-torchvision-rocm`
 - Recipe build method: `pip`
 - Upstream repo: `https://github.com/pytorch/vision.git`
-- Package version: `0.27.0`
+- Package version: `0.27.1`
 - Recipe revision: `3f15f9f (20260508, 17 commits touching recipe path)`
 - Recipe steps: `13, 14`
 - Recipe dependencies: `pytorch`
@@ -22,7 +22,7 @@ source tree, not from a pip install).
 
 ## Scaffold notes
 
-- Authoritative base: AUR python-torchvision-rocm 0.27.0-1 because it is the closest maintained ROCm packaging lane for torchvision; upstream TorchVision 0.27.0 is paired with the local PyTorch 2.12 lane.
+- Authoritative base: AUR python-torchvision-rocm 0.27.0-1 because it is the closest maintained ROCm packaging lane for torchvision; upstream TorchVision 0.27.1 is paired with the local PyTorch 2.12 lane.
 - Advisory references: python-torchvision-rocm-bin for packaging shape around the ROCm variant and repo python-torchvision for generic Arch Python packaging conventions.
 - The recipe must build against the source-tree torch headers from the paired PyTorch package, not against an arbitrary preinstalled wheel.
 - Carry the setup.py source patch that makes ROCm HIP builds honor NVCC_FLAGS so the package-level source-path sanitizer also applies to .hip translation units.
@@ -42,6 +42,7 @@ source tree, not from a pip install).
 - Keep the installed torchvision extension RPATH pointed at the sibling torch/lib directory so torchvision operators register without requiring LD_LIBRARY_PATH.
 - On 2026-05-26, bump pkgrel to 2 for delivery of the TorchVision extension rebuild against python-pytorch-opt-rocm-gfx1151 2.12.0-2 from ROCm/pytorch release/2.12 commit 26872debb4452ea6dc898288618a15595e2317d9.
 - On 2026-06-15, bump pkgrel to 4 for the c7badbdf runtime-base rebuild so TorchVision supersedes the unmerged ab32a1f/pkgrel-3 host-drift artifact.
+- On 2026-09-25, update to TorchVision 0.27.1 (tag v0.27.1, commit df56172e4d5a8d0cd51384273bc6c5747f5ab931) for the rebuild against python-pytorch-opt-rocm-gfx1151 2.12.0-5. Patch 0001 applies unchanged with offsets only (-3 and +2). setup.py pins torch only from `PYTORCH_VERSION*`; the build leaves those unset, so the wheel requires unpinned `torch`. TorchVision 0.28 stays tracked for the later PyTorch 2.13 lane.
 
 ## Maintainer Starting Points
 

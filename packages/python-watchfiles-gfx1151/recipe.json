@@ -12,12 +12,13 @@
     "update_notes": [
       "Check Arch first for watchfiles release and any maturin/build-backend metadata changes before updating.",
       "On 2026-05-18, adopted watchfiles 1.2.0 while Arch remained at python-watchfiles 1.1.1-3. The upstream release drops Python 3.9, adds Python 3.15 classifiers, raises the Rust MSRV to 1.83, and updates PyO3 to 0.28.3 without changing runtime dependencies beyond anyio.",
-      "After publishing a rebuilt package, verify `import watchfiles` and a minimal Python file-watch import path through the installed local Python lane."
+      "After publishing a rebuilt package, verify `import watchfiles` and a minimal Python file-watch import path through the installed local Python lane.",
+      "On 2026-09-22, update to watchfiles 1.3.0 for the generation-C W2A closure (#110), built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7."
     ]
   },
   "name": "python-watchfiles-gfx1151",
   "package_name": "python-watchfiles-gfx1151",
-  "pkgver": "1.2.0",
+  "pkgver": "1.3.0",
   "policy": {
     "advisory_references": [
       "cachyos-extra-znver4/python-watchfiles"
@@ -65,16 +66,17 @@
       "Use the shared Rust-wheel renderer so Cargo, amdclang linker selection, path remapping, and Zen 5 flags stay aligned with the other Rust wheel packages."
     ],
     "sha256sums": [
-      "c995fba777f1ea992f090f9236e9284cf7a5d1a0130dd5a3d82c598cacd76838"
+      "99aee4a07847c06820765fd7b1b49ceac4f3f711ccb7d104655a33231de1c207"
     ],
-    "src_subdir": "watchfiles-1.2.0",
+    "src_subdir": "watchfiles-1.3.0",
     "template": "rust-wheel-pypi",
     "update_notes": [
       "Check Arch first for watchfiles release and any maturin/build-backend metadata changes before updating.",
       "On 2026-05-18, adopted watchfiles 1.2.0 while Arch remained at python-watchfiles 1.1.1-3. The upstream release drops Python 3.9, adds Python 3.15 classifiers, raises the Rust MSRV to 1.83, and updates PyO3 to 0.28.3 without changing runtime dependencies beyond anyio.",
-      "After publishing a rebuilt package, verify `import watchfiles` and a minimal Python file-watch import path through the installed local Python lane."
+      "After publishing a rebuilt package, verify `import watchfiles` and a minimal Python file-watch import path through the installed local Python lane.",
+      "On 2026-09-22, update to watchfiles 1.3.0 for the generation-C W2A closure (#110), built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7."
     ],
-    "upstream_version": "1.2.0",
+    "upstream_version": "1.3.0",
     "url": "https://github.com/samuelcolvin/watchfiles"
   },
   "provenance": {
@@ -97,7 +99,7 @@
     "patches": [],
     "phase": "H",
     "repo": null,
-    "src_dir": "watchfiles-1.2.0",
+    "src_dir": "watchfiles-1.3.0",
     "steps": [
       31
     ]

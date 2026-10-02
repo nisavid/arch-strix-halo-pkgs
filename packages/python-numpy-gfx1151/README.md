@@ -6,7 +6,7 @@
 - Scaffold template: `native-wheel-pypi`
 - Recipe build method: `pip`
 - Upstream repo: `https://github.com/numpy/numpy`
-- Package version: `2.4.6`
+- Package version: `2.5.3`
 - Recipe revision: `3f15f9f (20260508, 17 commits touching recipe path)`
 - Recipe steps: `32`
 - Recipe dependencies: `cpython, pytorch`
@@ -48,6 +48,7 @@ flag and triggers -Werror=unused in compile-only probes.
 - Re-check BLAS/LAPACK provider handling and any Arch downstream patches whenever numpy or Python major/minor changes.
 - Validate that OpenBLAS remains the active Meson provider after toolchain or Intel oneMKL updates, and keep the explicit provider pins if contamination returns.
 - If future recipe changes add real source patches, keep them as patch files instead of further growing shell flag transforms.
+- On 2026-09-22, update to NumPy 2.5.3 for the generation-C W2A closure (#110), built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7. The fallback is 2.4.6 if the torch, TorchVision or vLLM NumPy interop smokes fail.
 
 ## Maintainer Starting Points
 

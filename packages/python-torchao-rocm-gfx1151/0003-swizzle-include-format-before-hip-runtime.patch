@@ -1,0 +1,15 @@
+--- a/torchao/csrc/rocm/swizzle/swizzle.cpp
++++ b/torchao/csrc/rocm/swizzle/swizzle.cpp
+@@ -1,6 +1,12 @@
+ // setup.py glob includes all *.cpp files
+ // but only build this for ROCm
+ #ifdef USE_ROCM
++// Parse libstdc++ <format> before the HIP runtime headers. When this file is
++// compiled as plain C++, hip/amd_detail/host_defines.h defines __noinline__
++// as an empty macro, and GCC 16 <format> (reached through ATen's <chrono>)
++// spells [[__gnu__::__noinline__]], which then fails to parse.
++// https://github.com/ROCm/rocm-systems/issues/9897
++#include <format>
+ #include <hip/hip_runtime.h>
+ #include <hipblaslt/hipblaslt-ext.hpp>
+ 

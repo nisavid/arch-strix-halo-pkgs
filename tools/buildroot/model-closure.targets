@@ -1,0 +1,34 @@
+# The W2A model/runtime Python closure (#110), as built into ashp-w2a.
+# Resolve together with torch-chain.targets to get a root that can import the
+# closure; their runtime dependencies come in through the package depends.
+# python-compressed-tensors-gfx1151 and python-accelerate-gfx1151 depend on
+# python-pytorch-opt-rocm-gfx1151, which is now in ashp-w2a. vLLM 0.30.0 pins
+# compressed-tensors ==0.17.0, so it is listed here. vLLM does not import
+# Accelerate, but the TorchAO tiny prepare smoke (tools/torchao_vllm_smoke.py)
+# loads its model with device_map, which Transformers routes through
+# Accelerate. The W2A validation runs that smoke, so Accelerate is listed here
+# as a validation-only target, like procps-ng in vllm-build.targets.
+# python-loguru is the one runtime dependency of theirs that nothing else pulls in.
+python-loguru
+python-compressed-tensors-gfx1151
+python-accelerate-gfx1151
+python-numpy-gfx1151
+python-pyyaml-gfx1151
+python-pillow-gfx1151
+python-psutil-gfx1151
+python-tokenizers-gfx1151
+python-safetensors-gfx1151
+python-transformers-gfx1151
+python-mistral-common-gfx1151
+python-pydantic-core-gfx1151
+# pydantic 2.13.5 requires pydantic-core ==2.46.5 exactly, and
+# python-pydantic-core-gfx1151 2.46.5-2 conflicts with any other pydantic.
+python-pydantic>=2.13.5
+# vLLM 0.30 requires huggingface-hub >=1.31.0.
+python-huggingface-hub>=1:1.31.0
+python-aiohttp-gfx1151
+python-frozenlist-gfx1151
+python-multidict-gfx1151
+python-yarl-gfx1151
+python-sentencepiece-gfx1151
+python-watchfiles-gfx1151

@@ -166,8 +166,8 @@ scaffold_notes = [
 [packages.python-vllm-rocm-gfx1151]
 recipe_key = "vllm"
 template = "python-project-vllm"
-upstream_version = "0.21.0"
-pkgrel = 6
+upstream_version = "0.30.0"
+pkgrel = 1
 pkgdesc = "High-throughput and memory-efficient inference engine for LLMs with ROCm, rebuilt for Strix Halo gfx1151"
 url = "https://github.com/vllm-project/vllm"
 license = ["Apache-2.0"]
@@ -176,12 +176,13 @@ authoritative_reference = "aur/python-vllm"
 advisory_references = []
 divergence_notes = [
   "This package is ROCm-specific even though the closest Arch-family baseline is the generic aur/python-vllm package.",
-  "Carries a deliberate Python-3.14 compatibility delta and recipe-specific ROCm/AITER integration that are not part of the generic baseline.",
-  "Carries repo-owned Gemma 4 validation lanes for Strix Halo because the host-proven path is narrower than upstream defaults: AITER unified attention, TRITON unquantized MoE, text-only multimodal limits, and per-checkpoint eager/compiled decisions.",
-  "Carries a repo-owned Qwen3.5 hybrid/GDN patch lane for the parts of Blackcat Informatics' advisory recipe that are still missing from the maintained vLLM package source.",
+  "Carries a deliberate Python-3.14 compatibility delta and recipe-specific ROCm integration that are not part of the generic baseline.",
+  "Carries repo-owned Gemma 4 validation lanes for Strix Halo because the host-proven path is narrower than upstream defaults: text-only multimodal limits and per-checkpoint eager/compiled decisions. From vLLM 0.30.0 the lane runs on upstream TRITON_ATTN without AITER.",
+  "Carries a repo-owned Qwen3.5 GDN patch lane (AMD-restricted FLA autotune grids and float32 gate exponents) for the parts of Blackcat Informatics' advisory recipe that are still missing from the maintained vLLM package source.",
   "Carries a repo-owned Qwen speculative-decoding patch lane for the padded EAGLE/MTP drafter batch Triton kernel on ROCm.",
   "Uses upstream vLLM DFlash model/runtime and speculators config parser support instead of carrying the former narrow parser backport locally.",
-  "Carries a ROCm FlashAttention Triton availability fix so vLLM detects the local pure-Python flash_attn package when it selects AITER's Triton AMD interface.",
+  "Builds one wheel without AITER. The build no longer exports VLLM_ROCM_USE_AITER or retries an AITER-less build, and the local carry no longer enables AITER on gfx1x; AITER is off the required gfx1151 path.",
+  "Skips vLLM's optional Rust extensions, the `vllm-rs` frontend binary and `vllm._rust_tool_parser`, which upstream wheels ship. build() disables cargo and rustup toolchain installs so setuptools-rust reports both as failed optional extensions, and fails if the wheel contains either artifact. They back only the Rust frontend, the Rust tool parsers, and Rust bench paths.",
   "Carries a ROCm CK/direct FlashAttention interface gate that keeps the forced FLASH_ATTN probe blocked at backend selection until the imported flash_attn module exposes vLLM's paged-KV varlen API."
 ]
 update_notes = [
@@ -194,72 +195,94 @@ update_notes = [
   "Keep vllm --version as a metadata-only smoke path. If upstream CLI imports optional OpenAI or Triton modules eagerly again, prefer restoring a lazy import boundary over adding unrelated hard runtime dependencies just for version output.",
   "Treat openai-harmony as a normal runtime-closure package, not an optdepend, if this repo wants GPT-OSS/Harmony paths to work. The current AUR baseline is a good starting point, but it omits the upstream python-pydantic runtime dependency and should not be copied blindly. The reason to package it locally is closure and metadata correctness, not a ROCm-specific patch lane.",
   "Keep the local Mistral Common lane new enough to export mistral_common.protocol.instruct.request.ReasoningEffort. The concrete host failure was python-mistral-common 1.8.6-1, which was too old for the current Transformers/Gemma 4 processor path.",
-  "Keep the vendored triton_kernels path gated on the installed Triton runtime rather than forcing python-triton-gfx1151 to emulate CUDA-only APIs such as triton.language.target_info. On this ROCm lane, treat unavailable vendored Triton kernels as a clean fallback, not as a hard runtime error.",
-  "Keep vLLM's Triton JIT monitor tolerant of ROCm Triton runtimes that do not export triton.knobs. Missing JIT monitor controls should disable the warning/autotuning hook, not abort model execution after the engine is otherwise initialized.",
   "Keep the ROCm large-head unified-attention prefill tile reduction unless upstream vLLM or Triton lands a fix for the 64 KiB LDS overflow. The concrete host failure was Gemma 4 global attention on gfx1151 requesting 66560 bytes of shared memory from the Triton 2D unified-attention kernel.",
   "Keep the setup.py compiler-flag forwarding patch unless upstream starts passing CFLAGS/CXXFLAGS/HIPFLAGS into the CMake ROCm build itself. The concrete packaging failure was $srcdir leaking into shipped extension modules because the HIP lane was built without Arch prefix-map flags.",
   "Keep the PKGBUILD's clean HIP version handoff unless ROCm's CMake HIP probe stops treating unrelated hipconfig stderr as a failed version query. The concrete host failure was inherited Lmod shell-function import warnings on hipconfig stderr causing FindHIP.cmake to cache HIP_VERSION=0.0.0 and reject /opt/rocm.",
+  "Keep the PKGBUILD's -DHIP_CXX_COMPILER=/opt/rocm/lib/llvm/bin/amdclang++ CMake define while CXX resolves to a ccache wrapper symlink. Torch's LoadHIP.cmake loads ROCm's FindHIP.cmake, which sets HIP_CLANG_PATH to the directory of realpath(HIP_CXX_COMPILER), and HIP_CXX_COMPILER defaults to CMAKE_CXX_COMPILER. Through the wrapper that is /usr/bin, the ccache binary's directory, and FindHIP bakes it into the hipcc_cmake_linker_helper shared-module link rule. The concrete build-root failure was `_C.abi3.so` failing to link because /usr/bin/clang++ does not exist in the ROCm build root. On a host with a system clang++, the same rule silently linked the HIP extensions with the system clang driver instead of ROCm LLVM. An exported HIP_CLANG_PATH does not help: FindHIP uses the environment only when the realpath step leaves HIP_CLANG_PATH empty. A 2026-09-25 audit of the other HIP lanes found no other exposure. PyTorch names ROCm amdclang++ as CMAKE_CXX_COMPILER and runs ccache as the compiler launcher. aotriton uses config-mode find_package(hip), which takes its clang root from ROCM_PATH. llama.cpp-hip uses CMake's HIP language with an explicit CMAKE_HIP_COMPILER. FlashAttention, TorchVision, TorchAO, Torch-MIGraphX, and AITER build their extensions through setuptools rather than CMake.",
   "Keep LTO disabled for this package unless the ROCm HIP shared-module link path becomes compatible with it. The concrete host failure was _moe_C.abi3.so / _rocm_C.abi3.so link failure with `LLVM gold plugin has failed to create LTO module: Invalid record`.",
-  "Keep the gfx1x AITER enablement and Gemma 4 ROCM_AITER_UNIFIED_ATTN preference unless upstream lands a ROCm-safe single-backend path for heterogeneous-head Gemma 4 models. The concrete host failure was successful Gemma 4 initialization followed by Triton unified-attention decode miscompilation (`operation scheduled before its operands`) and garbage output on gfx1151.",
-  "Keep the gfx1x AITER and Gemma 4 ROCM_AITER_UNIFIED_ATTN section of the local vLLM carry limited to gfx1x AITER support plus the Gemma 4 backend override, and do not reintroduce the broader fused-MoE default flip unless fresh host validation across real ROCm models proves it safe. The 2026-04-17 reference-host `google/gemma-4-26B-A4B-it` text smoke faulted the GPU when that policy forced the AITER fused-MoE 2-stage path without an explicit runtime override.",
-  "Keep the repo-owned Gemma 4 text-only smoke lanes on `enforce_eager=True` / `--enforce-eager` until separate host validation proves the compiled/CUDAGraph ROCm path is clean for each promoted checkpoint. vLLM documents eager mode as disabling compilation and CUDAGraph capture, so treat relaxing it as a follow-up performance lane rather than a silent default change. On 2026-04-20, fresh-cache compiled probes proved that 26B-A4B and 31B do not require eager for the tracked offline text smoke. E2B still requires eager: the compiled+CUDAGraph probe reached `generation_ok` and then returned corrupted non-ASCII text instead of the expected five-word answer. Run compiled-probe revalidation with fresh `VLLM_CACHE_ROOT`, `TORCHINDUCTOR_CACHE_DIR`, and `TRITON_CACHE_DIR` paths, because stale Inductor artifacts can produce misleading shape-mismatch failures.",
+  "Do not restore the gfx1x AITER enablement or the Gemma 4 ROCM_AITER_UNIFIED_ATTN preference without an explicit AITER lane. Both were dropped at 0.30.0, so Gemma 4 now selects upstream TRITON_ATTN. The 0.21 carry existed because Gemma 4 on Triton unified attention miscompiled during decode (`operation scheduled before its operands`) and produced garbage on gfx1151; the Gemma 4 scenarios must recheck that live on Triton 3.8 before this lane is accepted.",
+  "Keep the repo-owned Gemma 4 text-only smoke lanes on `enforce_eager=True` / `--enforce-eager` until separate host validation proves the compiled/CUDAGraph ROCm path is clean for each promoted checkpoint. vLLM documents eager mode as disabling compilation and CUDAGraph capture, so treat relaxing it as a follow-up performance lane rather than a silent default change. On 2026-04-20, fresh-cache compiled probes proved that 26B-A4B and 31B do not require eager for the tracked offline text smoke. The same day's E2B compiled+CUDAGraph probe reached `generation_ok` and then returned corrupted non-ASCII text instead of the expected five-word answer. That corruption came from the vLLM 0.19 ROCM_AITER_UNIFIED_ATTN path, which this package no longer enables. On 2026-09-29, in the W2A build root, the fresh-cache E2B probe `vllm.gemma4.e2b.text.compiled` passed on vLLM 0.30.0 (TRITON_ATTN forced for Gemma 4, no AITER) with torch.compile and FULL_AND_PIECEWISE CUDAGraph capture, including the known-answer and long-decode checks at a 1024-token context. The smoke lanes still default to eager. Run compiled-probe revalidation with fresh `VLLM_CACHE_ROOT`, `TORCHINDUCTOR_CACHE_DIR`, and `TRITON_CACHE_DIR` paths, because stale Inductor artifacts can produce misleading shape-mismatch failures.",
   "Keep Gemma 4 26B-A4B server startup timeouts long enough for cold reference-host loads. A 300-second budget killed the server while it was still loading safetensors shards; the helper now defaults this constrained 26B-A4B lane to 420 seconds.",
   "Use the tracked `compiled-probe`, `kernel-probe`, `multimodal`, and `quantization-probe` scenario tags for future investigations instead of adding terminal-only one-offs; keep `exploratory` on any scenario that should not run as part of broad package validation.",
-  "Keep the Qwen3.5/GDN section of `0016-rocm-refresh-local-carry-for-vllm-0.21.0.patch` until upstream vLLM lands equivalent ROCm-safe Qwen3.5/GDN handling. The patch carries the still-missing pieces from Blackcat Informatics' advisory lane: AMD-restricted FLA autotune grids, float32 GDN exponent operands, GDN warmup at T=64 only, hybrid block-size realignment after ROCm platform updates, and hybrid full-attention fallback away from AITER attention.",
+  "Keep the Qwen3.5/GDN section of `0016-rocm-refresh-local-carry-for-vllm-0.30.0.patch` until upstream vLLM lands equivalent ROCm-safe Qwen3.5/GDN handling. At 0.30.0 it carries AMD-restricted FLA autotune grids (num_stages [2], BV 32) and float32 exponent operands in `vllm/third_party/flash_linear_attention/ops/`. The hybrid block-size realignment and the hybrid fallback away from AITER attention were dropped, because ROCm no longer raises the block size and both only mattered with AITER.",
   "On 2026-04-20, rebuilt installed Qwen3.5 text smokes passed in both eager and compiled mode. `vllm.qwen3_5.0_8b.text.compiled` ran with `enforce_eager=False`, `torch.compile`, CUDAGraph capture, GDN prefill, ROCM_ATTN, and output `Ready.`, so the tiny Qwen3.5 text lane does not require eager mode under the current installed stack.",
-  "On 2026-04-20, rebuilt installed `Qwen/Qwen3.6-35B-A3B` also passed the unquantized no-AITER control in compiled mode with `enforce_eager=False`, TRITON unquantized MoE, GDN prefill, ROCM_ATTN, torch.compile, CUDAGraph capture, and output `ready`. Keep the FP8 Qwen3.6 probes blocked separately; the unquantized eager and compiled controls both pass.",
+  "On 2026-04-20, rebuilt installed `Qwen/Qwen3.6-35B-A3B` also passed the unquantized no-AITER control in compiled mode with `enforce_eager=False`, TRITON unquantized MoE, GDN prefill, ROCM_ATTN, torch.compile, CUDAGraph capture, and output `ready`. The Qwen3.6 FP8 MoE gate stays untested locally; the unquantized eager and compiled controls both pass.",
   "Do not restore the dropped Gemma 4 ROCm AITER MoE intermediate-padding carry unless a future explicit AITER fused-MoE lane reproduces a real alignment failure after the AITER backend is re-enabled on purpose. The 2026-04-17 validated reference-host lane used TRITON backend for Unquantized MoE, so that patch was removed as dormant carry. The 2026-04-19 forced AITER MoE server probe failed earlier with `ValueError: ROCm AITer MoE backend is not available for this configuration`, while default/automatic and forced Triton MoE server probes passed.",
   "Keep Gemma 4 text-only serving fully text-only by zeroing `image`, `audio`, and `video` in `--limit-mm-per-prompt`. The concrete Gemma 4 26B-A4B server failure was vLLM still entering multimodal warmup and then faulting the GPU during engine initialization when `video` remained implicit.",
   "Keep TorchAO version checks metadata-only on generic startup paths unless upstream reorganizes its quantization imports. The concrete host failure was an external python-torchao-rocm package whose optional _C.abi3.so extension was both missing a usable torch/lib runpath and built against an incompatible PyTorch ABI, causing warning noise during unrelated vLLM startup when vLLM imported the TorchAO quantization module just to ask a version question.",
   "Keep TorchAO runtime validation on the eager lane unless vLLM changes its TorchAO quantization policy. On 2026-04-20, the tiny TorchAO scenarios passed after the self-hosted rebuild, but a direct `--execution-mode compiled` attempt still initialized vLLM with `quantization=torchao` and `enforce_eager=True`, disabling torch.compile and CUDAGraphs.",
   "Keep the merged TorchAO startup-laziness patch intact unless upstream reorganizes its quantization imports. That carry now covers both metadata-only version checks and quantization-registry lazy imports, which are jointly required to keep generic startup paths off the full TorchAO module unless `quantization == \"torchao\"`.",
-  "Keep the merged CLI/runtime-light startup patch intact unless upstream makes the generic startup path import-clean on its own. That carry now keeps plain `vllm --help` off the benchmark tree, OpenAI chat-utils path, Transformers-backed `arg_utils` helpers, and the heavy shared runtime command imports.",
+  "Keep the merged CLI/runtime-light startup patch intact unless upstream makes the generic startup path import-clean on its own. At 0.30.0 it keeps `vllm --version` metadata-only, loads CLI subcommands lazily, and keeps `serve/utils/api_utils.py` import-light, so plain `vllm --help` stays off `arg_utils`, `chat_utils`, Transformers, and the serve runtime. The separate arg_utils and OpenAI-protocol laziness sections were dropped because upstream no longer reaches them on `--help`.",
   "Keep the ROCm top-k/top-p sampler patch unless upstream or the local Triton lane proves `apply_top_k_top_p_triton` safe for large Qwen-family vocabularies on gfx1151. The 2026-04-19 standalone repro faulted the GPU with logits shaped `(32, 248320)`, top-k enabled, and top-p `0.9`, while vLLM's existing PyTorch fallback completed on the same tensor.",
   "Keep the padded EAGLE/MTP drafter count patch unless upstream makes `eagle_prepare_next_token_padded_kernel` keep `valid_count` in one scalar dtype across Triton branches. The concrete ROCm/Triton failure is `Mismatched type for valid_count between then block (uint32) and else block (int1)` when the Qwen MTP server path uses the padded drafter batch.",
   "Treat DFlash as upstream-owned in the current vLLM source lane. Promote runnable DFlash scenarios only after this package's current runtime path passes reference-host validation.",
-  "Keep the FlashAttention Triton availability check aligned with the packaged ROCm flash_attn interface. The local package does not ship a `flash_attn.flash_attn_triton_amd` module; it exposes AITER's Triton AMD backend through `flash_attn.flash_attn_interface` when `FLASH_ATTENTION_TRITON_AMD_ENABLE=TRUE`.",
+  "The FlashAttention Triton availability fix was dropped at 0.30.0: upstream now accepts AITER's `flash_attn_triton_amd` module path itself. The local flash_attn package exposes that backend only when `FLASH_ATTENTION_TRITON_AMD_ENABLE=TRUE` and AITER is installed; otherwise vLLM's ViT path falls back to TORCH_SDPA.",
   "Keep the CK/direct FlashAttention interface gate aligned with the packaged ROCm flash_attn interface. The local CK lane currently exposes a Dao-style direct varlen function and direct smokes, not vLLM's paged-KV varlen call surface required by the V1 `FLASH_ATTN` backend. The gate reports FlashAttention version 2 on ROCm so unsupported CK/direct calls are blocked deeper in the paged-KV CK kernel path.",
-  "Use `surogate/Qwen3.5-0.8B-FP8` as the retained small FP8 safetensors probe. The larger `Qwen/Qwen3.6-35B-A3B-FP8` cache artifact is no longer the local FP8 fixture; keep Qwen3.6 MoE behavior covered by the unquantized base and the RedHatAI NVFP4 probe.",
+  "Use `surogate/Qwen3.5-0.8B-FP8` as the retained small FP8 safetensors probe. The larger `Qwen/Qwen3.6-35B-A3B-FP8` cache artifact is no longer the local FP8 fixture; keep Qwen3.6 MoE behavior covered by the unquantized base and the RedHatAI NVFP4 probe. On 2026-09-29, in the W2A build root, the renamed `vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors` probe (formerly `vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors-blocked`) loaded and generated on vLLM 0.30.0: the dense block-FP8 linears run on vLLM's Triton block-scaled FP8 kernel. Its old blocked expectation was the FP8 MoE gate (`No FP8 MoE backend supports the deployment configuration.`) of the older Qwen3.6 FP8 MoE fixture, which never applied to this dense checkpoint.",
   "Keep patch application idempotent across reused src/ trees. The concrete host failure while cutting pkgrel=14 was a file-adding patch aborting in `prepare()` after a previous failed build left a partially patched source tree behind.",
   "Keep the inherited makepkg compile flags when layering Strix tuning flags. Overwriting CFLAGS/CXXFLAGS drops Arch's build-path prefix maps and can leak $srcdir paths into the shipped ROCm extension modules.",
   "Keep HIP build-path prefix-map flags explicit and forwarded through setup.py. The ROCm extension build does not automatically inherit the host C/C++ prefix-map settings into CMAKE_HIP_FLAGS, so sanitization has to be carried through HIPFLAGS and then bridged into CMake.",
   "Keep SageMaker integration optional unless this repo intentionally packages model_hosting_container_standards; missing SageMaker helpers should disable only SageMaker-specific routes, not the base CLI or local server startup paths.",
-  "Keep the ROCm GCN-arch fallback import-safe on Strix Halo. AMDSMI ASIC-info probes can fail even when the device is visible; that must degrade to torch.cuda probing rather than crashing during module import.",
   "Treat the current external python-torchao-rocm _C-extension failure as a host-package defect, not a blocker for this vLLM lane. Generic startup should stay clean after the local TorchAO-import patch, and the remaining follow-up only matters if this repo needs actual TorchAO custom ops or torchao-backed serving paths that truly require the native extension.",
   "On 2026-05-26, bump pkgrel to 4 for delivery of the vLLM native-extension rebuild against python-pytorch-opt-rocm-gfx1151 2.12.0-2 from ROCm/pytorch release/2.12 commit 26872debb4452ea6dc898288618a15595e2317d9.",
   "On 2026-06-15, bump pkgrel to 6 for the c7badbdf runtime-base rebuild so the package supersedes the unmerged ab32a1f/pkgrel-5 host-drift artifact as well as the adopted 26872de/pkgrel-4 package.",
   "On 2026-05-31, reviewed upstream vLLM 0.22.0 as a follow-up release. The release includes DeepSeek V4 hardening, Model Runner V2 changes, a Rust frontend, multi-tier KV offloading, ROCm DSv4 and AITER cleanup work, and build/dependency churn. Keep the package source on 0.21.0 until the local ROCm patch carry and runtime-base rebuild gates are handled.",
-  "Treat runtime validation against the live ROCm stack as mandatory; a successful wheel build is not enough."
+  "On 2026-09-25, adopted upstream vLLM 0.30.0 (tag v0.30.0, commit ced6857afa0ea7b2e3f0846a62e1394e90f15607) for the W2A rebuild against python-pytorch-opt-rocm-gfx1151 2.12.0-5, Triton 3.8.0, and TheRock 7.14.1. The 0.21.0 carry was split into 29 per-file sections and re-ported: 12 are kept (two at moved paths), and 17 are dropped as upstream-equivalent, obsolete with Triton 3.8, or AITER-only. Dropped: the hipify byproduct copy, CLI lazy exports, arg_utils and OpenAI-protocol laziness, gfx1x AITER enablement, the Gemma 4 AITER preference, the hybrid AITER exclusion and realignment, the AITER unified-attention block size, the amdsmi warning fallback, the FlashAttention Triton availability fix, the vendored triton_kernels gate, and the Triton knobs guard. `patch --dry-run -Np1` applies the new patch to ced6857a with no fuzz.",
+  "The 0.30.0 csrc/libtorch_stable/cuda_vec_utils.cuh bfloat16 alias carry is probably droppable after a green build, because hipify now resolves the header and maps `__nv_bfloat16`. It is kept to avoid a build retry.",
+  "The ROCm CMake build still fetches vLLM's vendored triton_kernels from ROCm/triton at a pinned commit through FetchContent, so the wheel build needs network. The PKGBUILD clears stale `.deps/triton_kernels-*` state first. Setting TRITON_KERNELS_SRC_DIR to a pinned source entry would make the build offline.",
+  "vLLM 0.30.0 runs Model Runner V2 by default. `VLLM_USE_V2_MODEL_RUNNER=0` restores Model Runner V1 until v0.32; the padded-drafter spec-decode carry covers only the V1 path.",
+  "vLLM 0.30.0 mirrors HIP_VISIBLE_DEVICES into CUDA_VISIBLE_DEVICES at import and raises if both are set to different values. Prefer HIP_VISIBLE_DEVICES for device selection. As of 2026-09-25 no tracked scenario, smoke helper, or service unit sets either variable.",
+  "`python -m vllm.entrypoints.openai.api_server` is deprecated in 0.30.0. The tracked server smoke helpers launch `python -m vllm.entrypoints.cli.main serve` from the active interpreter instead.",
+  "vLLM 0.30.0 requirement floors. This repo does not write versions into depends, because the package graph matches depends by exact name, so the floors are recorded here. Met by the W2A lanes: transformers >=5.10.4 (python-transformers-gfx1151 5.16.1), mistral_common[image] >=1.11.6 (python-mistral-common-gfx1151 1.11.7), safetensors >=0.6.2 (python-safetensors-gfx1151 0.8.0). Met by Arch: huggingface_hub >=1.31.0 (python-huggingface-hub 1:1.32.0; `model-closure.targets` floors it because older host versions exist), openai >=2.25.0 (python-openai), starlette >=1.0.1 (python-starlette), jsonschema >=4.23.0 (python-jsonschema). Met by the W2A closure lanes added on 2026-09-25: prometheus-fastapi-instrumentator >=8.0.0 (python-prometheus-fastapi-instrumentator-gfx1151 8.1.0, replacing the AUR 7.0.0 name) and compressed-tensors ==0.17.0 (python-compressed-tensors-gfx1151 0.17.0). Not met: Arch python-fastapi is above the fastapi[standard] >=0.133.0,<0.137.0 cap; upstream caps it because a FastAPI route-tree change breaks model-hosting-container-standards handler overrides. This package leaves model-hosting-container-standards out (see the SageMaker gap below), so the cap does not bind the W2A server; the server smoke is the check.",
+  "Known #110 gaps, optdepends once packaged and never depends: mcp >=2.0.0,<3.0.0 (Arch python-mcp is 1.29.0) and llguidance >=1.7.0,<1.8.0 (no Arch or ASHP package). At ced6857a neither is imported while `vllm serve` starts. mcp is imported only inside `MCPToolServer` and its session helpers in `vllm/entrypoints/mcp/tool_server.py`, which `init_tool_server` builds only for `--tool-server` URLs; the other mcp imports sit under `TYPE_CHECKING`. llguidance is a `LazyLoader` in `vllm/v1/structured_output/backend_guidance.py`, a `TYPE_CHECKING` import in `vllm/tokenizers/mistral.py`, and an `is_llguidance_installed()`-guarded import in mistral-common. Without llguidance, `--tool-server` MCP URLs, the `guidance` structured-output backend, and the `auto` backend's guidance fallback for grammars that xgrammar rejects fail at request time.",
+  "On 2026-09-25, dropped python-diskcache from depends and optdepends. vLLM 0.30.0 at ced6857a has no diskcache user: requirements/, setup.py, and pyproject.toml do not list it, and the outlines index cache in `vllm/v1/structured_output/utils.py` is vLLM's own SQLite-backed `OutlinesDiskCache`. Re-add it only if a packaged consumer imports `diskcache` again.",
+  "Treat runtime validation against the live ROCm stack as mandatory; a successful wheel build is not enough.",
+  "On 2026-09-25, audited the vLLM 0.30.0 runtime set against ced6857a for the W2A closure (#110, #111). The required set is the modules `vllm serve` imports at module level before it serves a request, plus the imports on the request paths the W2A scenarios exercise. einops, py-cpuinfo and pybase64 now come from the W2A closure lanes python-einops-gfx1151, python-py-cpuinfo-gfx1151 and python-pybase64-gfx1151. The audit added two undeclared startup imports to depends: regex (`vllm/v1/worker/gpu_worker.py` and others) and partial-json-parser (`vllm/tool_parsers/utils.py`, through the tool parser manager that the server entry imports). The audit reads vLLM with the 0016 carry applied.",
+  "common.txt entries that Arch packages but the W2A runtime set does not import are optdepends: OpenTelemetry sdk, api and exporter-otlp (a guarded import in `vllm/tracing/otel.py`, used for --otlp-traces-endpoint), setproctitle (a guarded import in `vllm/utils/system_utils.py`), python-json-logger (named only by a user logging config), tiktoken (imported only by `vllm/tokenizers/kimi_audio.py`) and protobuf (vLLM never imports it; Transformers needs it only to convert a SentencePiece tokenizer when a checkpoint has no tokenizer.json).",
+  "xgrammar >=0.2.1,<1.0.0 is a module-level import of `vllm/parser/harmony.py`, which `vllm/parser/__init__.py` imports. The engine core (through `vllm/v1/structured_output/__init__.py`), the offline `LLM` and the API server all reach `vllm.parser`, so no vLLM process starts without it, and structured outputs use it on the request path. No Arch package provides it, so it comes from the W2A closure lane python-xgrammar-gfx1151 0.2.3 (the version vLLM's CUDA and CPU CI locks test), which builds against python-apache-tvm-ffi-gfx1151 0.1.10 (the rocm.txt pin, within xgrammar's >=0.1.9 floor).",
+  "Known #110 gap, an optdepend once packaged and never a depend: model-hosting-container-standards >=0.1.14,<1.0.0 (no Arch package). The 0016 carry makes its import optional in `vllm/entrypoints/serve/sagemaker/api_router.py` and `vllm/entrypoints/serve/lora/api_router.py`; without it, `vllm serve` logs `SageMaker container standards are not installed; skipping ...` and serves without the SageMaker-specific routes and the runtime LoRA update routes. No W2A scenario uses those routes. Packaging it would also pull in the supervisor daemon, and it is the reason for vLLM's fastapi <0.137.0 cap.",
+  "Exploratory-scenario #110 gaps, not needed by the default or previously validated W2A scenarios: torchaudio (vLLM 0.30's default audio resampler in `vllm/multimodal/audio.py`; only `vllm.gemma4.e2b.server.audio` resamples, from an 11025 Hz fixture to 16 kHz), amd-quark ==0.12.post1 (MXFP4 emulation for `vllm.qwen3.8b-quark-amp.text.basic` on non-gfx950 targets) and python-amd-aiter-gfx1151 (`vllm.gemma4.26b-a4b.server.moe-aiter` and `vllm.flash-attn.triton-amd.vit-wrapper`, both tagged aiter and exploratory; AITER is not in the W2A root).",
+  "Known #110 gaps, optdepends once packaged and never depends: depyf ==0.20.0 (imported only for compile debug dumps and a CUDA-graph error message), anthropic >=0.71.0 (vLLM does not import it at ced6857a), lm-format-enforcer ==0.11.3 and outlines_core ==0.2.14 (their structured-output backends load only when requested), lark ==1.2.2 (vLLM does not import it; Arch python-lark-parser is 1.3.1), fastapi-cli (the `fastapi` command), opentelemetry-semantic-conventions-ai (vLLM does not import it), and from rocm.txt numba ==0.65.0 (only the CPU n-gram speculative proposer and two processors import it) and grpcio ==1.78.0 (only the gRPC server launcher imports it)."
 ]
 provides = ["python-vllm-rocm", "python-vllm"]
 conflicts = ["python-vllm-rocm", "python-vllm"]
-depends = ["amdsmi-gfx1151", "numactl", "python-aiohttp-gfx1151", "python-blake3", "python-cachetools", "python-cbor2", "python-cloudpickle", "python-diskcache", "python-einops", "python-fastapi", "python-gguf", "python-gfx1151", "python-httptools-gfx1151", "python-huggingface-hub", "python-ijson", "python-importlib-metadata", "python-mistral-common-gfx1151", "python-msgspec-gfx1151", "python-openai", "python-openai-harmony-gfx1151", "python-opencv", "python-prometheus-fastapi-instrumentator", "python-psutil-gfx1151", "python-py-cpuinfo", "python-pybase64", "python-pydantic", "python-pytorch-opt-rocm-gfx1151", "python-pyzmq", "python-soundfile", "python-starlette", "python-sympy", "python-torchvision-rocm-gfx1151", "python-tqdm", "python-transformers-gfx1151", "python-triton-gfx1151", "python-uvloop-gfx1151", "python-watchfiles-gfx1151", "rocblas-gfx1151", "uvicorn"]
-makedepends = ["cmake", "ninja", "python-installer", "python-pip", "python-setuptools", "python-setuptools-scm", "python-wheel", "rocm-llvm-gfx1151"]
+depends = ["amdsmi-gfx1151", "numactl", "python-aiohttp-gfx1151", "python-blake3", "python-cachetools", "python-cbor2", "python-cloudpickle", "python-compressed-tensors-gfx1151", "python-einops-gfx1151", "python-fastapi", "python-gfx1151", "python-httptools-gfx1151", "python-huggingface-hub", "python-ijson", "python-importlib-metadata", "python-jsonschema", "python-mistral-common-gfx1151", "python-msgspec-gfx1151", "python-openai", "python-openai-harmony-gfx1151", "python-opencv", "python-partial-json-parser", "python-prometheus-fastapi-instrumentator-gfx1151", "python-psutil-gfx1151", "python-py-cpuinfo-gfx1151", "python-pybase64-gfx1151", "python-pydantic", "python-pytorch-opt-rocm-gfx1151", "python-pyzmq", "python-regex", "python-safetensors-gfx1151", "python-soundfile", "python-starlette", "python-sympy", "python-torchvision-rocm-gfx1151", "python-tqdm", "python-transformers-gfx1151", "python-triton-gfx1151", "python-uvloop-gfx1151", "python-watchfiles-gfx1151", "python-xgrammar-gfx1151", "rocblas-gfx1151", "uvicorn"]
+makedepends = ["cmake", "ninja", "python-installer", "python-pip", "python-semantic-version", "python-setuptools", "python-setuptools-rust", "python-setuptools-scm", "python-wheel", "rocm-llvm-gfx1151"]
+optdepends = [
+  "python-gguf: GGUF checkpoints through the out-of-tree vllm-gguf-plugin (vllm[extra-quant]), which is not packaged here",
+  "python-json-logger: JSON log formatting through a VLLM_LOGGING_CONFIG_PATH logging config",
+  "python-opentelemetry-api: OpenTelemetry request tracing (--otlp-traces-endpoint)",
+  "python-opentelemetry-exporter-otlp: OpenTelemetry request tracing (--otlp-traces-endpoint)",
+  "python-opentelemetry-sdk: OpenTelemetry request tracing (--otlp-traces-endpoint)",
+  "python-protobuf: slow SentencePiece tokenizer conversion in Transformers for checkpoints without tokenizer.json",
+  "python-setproctitle: named vLLM engine and worker processes",
+  "python-tiktoken: the Kimi-Audio tokenizer"
+]
 options = ["!lto"]
 source_type = "tarball"
-source_url = "https://github.com/vllm-project/vllm/archive/refs/tags/v0.21.0.tar.gz"
-sha256sums = ["2d4bc9f472437e29f3d37918eebe7d6cd6d15e076995fb98ee0edbbb6e533959"]
-extra_sources = ["0016-rocm-refresh-local-carry-for-vllm-0.21.0.patch"]
+source_url = "https://github.com/vllm-project/vllm/archive/refs/tags/v0.30.0.tar.gz"
+sha256sums = ["36888183808c62ea91c4118a807fca26938520b3dfc0f611f3910bef8627dae8"]
+extra_sources = ["0016-rocm-refresh-local-carry-for-vllm-0.30.0.patch"]
 extra_sha256sums = ["SKIP"]
-source_patches = ["0016-rocm-refresh-local-carry-for-vllm-0.21.0.patch"]
-src_subdir = "vllm-0.21.0"
+source_patches = ["0016-rocm-refresh-local-carry-for-vllm-0.30.0.patch"]
+src_subdir = "vllm-0.30.0"
 patches_dir = "patches/python-vllm-rocm-gfx1151"
 scaffold_notes = [
   "There does not appear to be a current dedicated python-vllm-rocm AUR package; the closest package baseline is the generic AUR python-vllm package, with ROCm-specific integration coming from this recipe.",
-  "Uses the latest stable upstream release tarball, currently v0.21.0, instead of a floating full Git clone.",
+  "Uses the latest stable upstream release tarball, currently v0.30.0, instead of a floating full Git clone.",
   "Carries a package-local CLI import patch so vllm --version remains a metadata-only path instead of importing optional OpenAI and Triton runtime modules at startup.",
-  "Carries a ROCm-specific Triton compatibility patch so the vendored triton_kernels tree is treated as unavailable when the installed Triton runtime lacks CUDA-only APIs such as triton.language.target_info or triton.constexpr_function.",
-  "Carries a ROCm Triton JIT-monitor guard so model execution does not abort when the installed Triton runtime lacks the newer triton.knobs API.",
-  "Carries a ROCm-platform fallback patch so Strix Halo can fall back from AMDSMI ASIC-info lookup to torch.cuda without tripping the import-time warning_once circular import path.",
   "Carries an optional-SageMaker patch so vllm --help and the base OpenAI server routes stay usable when model_hosting_container_standards is not installed.",
   "Carries a ROCm Triton unified-attention tile-size patch so large-head prefill paths such as Gemma 4 global attention do not request more than 64 KiB of LDS/shared memory on gfx1151.",
   "Carries a setup.py flag-forwarding patch so host CFLAGS/CXXFLAGS and HIPFLAGS are passed into the CMake ROCm extension build explicitly. This keeps Arch prefix-map sanitization and Strix tuning flags active in the shipped HIP extension modules.",
   "Passes a clean hipconfig-derived HIP_VERSION into CMake so the ROCm HIP package discovery path does not depend on stderr-clean ambient shell startup state.",
+  "Names ROCm's amdclang++ as HIP_CXX_COMPILER for CMake so FindHIP derives the HIP link driver from ROCm LLVM rather than from the ccache wrapper's realpath (see the divergence notes).",
   "Disables LTO for this package. Re-enabling inherited -flto=* flags makes ROCm shared-module links such as _moe_C.abi3.so and _rocm_C.abi3.so fail with `LLVM gold plugin has failed to create LTO module: Invalid record`.",
-  "Carries a gfx1x AITER enablement patch and a Gemma 4 backend-selection patch so heterogeneous-head Gemma 4 models can prefer ROCM_AITER_UNIFIED_ATTN on Strix Halo instead of forcing the Triton unified-attention backend that currently miscompiles during decode.",
-  "Carries a Qwen3.5 hybrid/GDN patch that keeps AMD FLA autotune away from gfx1151 page-faulting shapes, preserves hybrid block-size alignment after ROCm platform updates, and routes hybrid full-attention layers away from AITER attention because Qwen3.5/GDN can choose non-power-of-2 block sizes.",
+  "Builds one wheel with `pip wheel . --no-build-isolation --no-deps` and no AITER fallback, and skips the optional Rust extensions (see the divergence notes). python-setuptools-rust is a makedepend because setup.py imports it at build time.",
+  "Does not enable AITER on gfx1x. Gemma 4 selects upstream TRITON_ATTN from 0.30.0; the earlier AITER unified-attention results below describe the 0.21 lane, not the current one.",
+  "Gemma 4 gets TRITON_ATTN from the model, not from the ROCm backend priority list: at 0.30.0 `Gemma4Config.verify_and_update_config` forces TRITON_ATTN for every layer because the sliding layers use head size 256 and the full-attention layers 512, and FA4 is never available on ROCm. Without that, sliding layers would take ROCM_ATTN and the 512-wide layers TRITON_ATTN. The Gemma 4 scenarios assert the forcing log line and `Using TRITON_ATTN backend (selected via --attention-backend).` as a static prediction for w2a-validate to confirm live, and the promoted text and server lanes gate on greedy known-answer and long-decode output checks, because a Triton unified-attention miscompile shows up as wrong decode output rather than a failed run.",
+  "Carries a Qwen3.5 GDN patch that keeps AMD FLA autotune away from gfx1151 page-faulting shapes and keeps the gate exponents in float32.",
   "Does not carry the broader fused-MoE default-policy flip, and no longer carries the dormant Gemma 4 AITER-only MoE padding patch. The 2026-04-17 reference-host text/basic-server validation used AITER unified attention but `Using TRITON backend for Unquantized MoE`, so the durable carry stays limited to the host-proven lane.",
-  "The current repo-owned `google/gemma-4-26B-A4B-it` validation lane is tracked through `tools/gemma4_text_smoke.py` and `tools/gemma4_server_smoke.py`. It is text-only basic serving with `--limit-mm-per-prompt {\"image\":0,\"audio\":0,\"video\":0}`, `--max-model-len 128`, `--max-num-batched-tokens 32`, and a 420-second server startup timeout. After installing the repaired Triton package, the fresh-cache 26B-A4B and 31B offline text compiled probes passed with AITER unified attention, torch.compile, and CUDAGraph capture; 26B-A4B also used TRITON unquantized MoE. Do not generalize that to E2B: the fresh-cache E2B compiled+CUDAGraph probe initialized, compiled, captured graphs, and generated corrupted non-ASCII text, while the earlier no-CUDAGraph E2B compiled probe faulted the GPU during initialization/warmup.",
+  "The current repo-owned `google/gemma-4-26B-A4B-it` validation lane is tracked through `tools/gemma4_text_smoke.py` and `tools/gemma4_server_smoke.py`. It is text-only basic serving with `--limit-mm-per-prompt {\"image\":0,\"audio\":0,\"video\":0}`, `--max-num-batched-tokens 32`, and a 420-second server startup timeout. `--max-model-len` defaults to 128; `--long-decode` raises it to fit the count. The promoted 26B-A4B lanes count to 250 (1146 generated tokens after a 68-token chat prompt, past the 1024-token sliding window), which gives `--max-model-len 1536` and `max_tokens` 1250; the 32-token batching cap still holds because vLLM 0.30 keeps chunked prefill on and clamps the default `max_num_seqs` to it. After installing the repaired Triton package, the fresh-cache 26B-A4B and 31B offline text compiled probes passed with AITER unified attention, torch.compile, and CUDAGraph capture; 26B-A4B also used TRITON unquantized MoE. Those were 2026-04-20 results on the vLLM 0.19 line; at the time they did not generalize to E2B, whose fresh-cache compiled+CUDAGraph probe generated corrupted non-ASCII text on ROCM_AITER_UNIFIED_ATTN, and whose earlier no-CUDAGraph compiled probe faulted the GPU during initialization/warmup. The 0.30.0 package source no longer enables that AITER path, and on 2026-09-29 the E2B compiled probe passed in the W2A build root (see the update notes).",
   "The 2026-04-19 26B-A4B MoE backend probes passed for default/automatic MoE and forced `--moe-backend triton`, both with `Using TRITON backend for Unquantized MoE`; forced `--moe-backend aiter` failed fast with `ValueError: ROCm AITer MoE backend is not available for this configuration`. Treat TRITON unquantized MoE as the maintained sparse MoE lane.",
   "The wider Gemma 4 scenario matrix is tracked under `inference/scenarios/vllm-gemma4.toml`. Broad scenario selections skip entries tagged `exploratory` by default, so multimodal, remaining compiled-path, forced-MoE-backend experiments, and real-model TorchAO probes stay opt-in unless a reference-host run explicitly promotes them.",
   "The E2B server scenario matrix also has a tracked forced-attention probe for `--attention-backend TRITON_ATTN`. After the 2026-04-20 self-hosted rebuild, `vllm.gemma4.e2b.server.basic` and `vllm.gemma4.e2b.server.attn-triton` both pass; the old E2B server/AsyncLLM initialization fault no longer reproduces.",
@@ -268,7 +291,7 @@ scaffold_notes = [
   "Depends on the local python-transformers-gfx1151 closure package rather than the distro python-transformers lane because Gemma 4 support first appears in upstream transformers 5.5.x and the older host package did not ship transformers.models.gemma4.",
   "Depends on the local python-mistral-common-gfx1151 closure package rather than the stale host python-mistral-common 1.8.x lane because Transformers 5.5.x imports ReasoningEffort from mistral_common.protocol.instruct.request.",
   "Carries a merged TorchAO startup-laziness patch so generic vLLM startup paths keep TorchAO version checks metadata-only and only import `TorchAOConfig` when `quantization == torchao`. This keeps optional broken host python-torchao-rocm packages from surfacing warning noise on unrelated code paths.",
-  "Carries a merged CLI/runtime-light startup patch so plain `vllm --help` stays off the benchmark latency tree, OpenAI chat-utils tool-call path, Transformers-backed `arg_utils` helpers, and heavy `serve`/`launch`/`run-batch` runtime imports unless the user actually selected those flows.",
+  "Carries a merged CLI/runtime-light startup patch so `vllm --version` stays metadata-only and plain `vllm --help` stays off the benchmark tree, `arg_utils`, `chat_utils`, Transformers, and the heavy `serve`/`launch`/`run-batch` runtime imports unless the user selected those flows.",
   "Carries a ROCm top-k/top-p sampler guard so large-vocabulary Qwen3.5-family runs use vLLM's existing PyTorch filtering fallback instead of the Triton filter path that faulted the GPU on gfx1151.",
   "Carries a padded EAGLE/MTP drafter-count typing patch so Qwen speculative decoding can compile the padded drafter batch Triton kernel on ROCm.",
   "Uses upstream vLLM DFlash support instead of carrying the former narrow speculators config parser patch locally.",
@@ -279,7 +302,7 @@ scaffold_notes = [
   "Preserve makepkg's inherited CFLAGS/CXXFLAGS when layering Strix tuning flags, and feed the same prefix-map flags into HIPFLAGS, so Arch's build-path sanitization survives the ROCm/HIP compile lane too.",
   "Upstream openai-harmony is a small Rust/PyO3 helper library with published manylinux wheels, not a ROCm-specific component. If Arch still lacks an official package, the right local story is a closure package derived from aur/python-openai-harmony. If this repo ingests it locally, it should still inherit the normal Strix build lane for applicable native code: Zen 5 / znver5 CPU tuning, -O3 or equivalent, LTO when compatible, and PGO when the build system exposes a maintainable path.",
   "Do not treat a successful build as sufficient for system-Python cutover; the gate is a real vLLM smoke test after the TheRock ROCm split packages are installed coherently.",
-  "Keep the gfx1151 ROCm/AITER recipe patches in the source package, but evaluate Python-3.14 compatibility separately from ROCm runtime/linker issues.",
+  "Keep the gfx1151 ROCm recipe patches in the source package, but evaluate Python-3.14 compatibility separately from ROCm runtime/linker issues.",
   "The earlier numba-pin idea is not currently part of the actual built package story; treat any numba change as a separate follow-up until it is backed by a real source patch."
 ]
 
@@ -287,6 +310,7 @@ scaffold_notes = [
 recipe_key = "rust_wheels"
 template = "rust-wheel-pypi"
 upstream_version = "0.0.8"
+pkgrel = 2
 pkgdesc = "OpenAI Harmony response-format library rebuilt for Strix Halo gfx1151"
 url = "https://github.com/openai/harmony"
 license = ["Apache-2.0"]
@@ -300,7 +324,8 @@ divergence_notes = [
 update_notes = [
   "Check the current AUR python-openai-harmony package first, then confirm upstream pyproject.toml build-backend and dependency metadata before carrying any build changes forward.",
   "Keep python-pydantic as a hard runtime dependency unless upstream removes it from the published project metadata.",
-  "Treat extra Rust LTO or PGO tuning as opt-in only after verifying the current maturin/cargo lane exposes a maintainable configuration; today the applicable default is explicit znver5 plus opt-level=3."
+  "Treat extra Rust LTO or PGO tuning as opt-in only after verifying the current maturin/cargo lane exposes a maintainable configuration; today the applicable default is explicit znver5 plus opt-level=3.",
+  "On 2026-09-25, bump pkgrel to 2 for the generation-C W2A closure (#110, #111), to be built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7 in the vLLM lease job. The source is unchanged; the rebuild keeps the package out of the previous generation's repo. vLLM imports it while `vllm serve` parses its arguments, so the W2A root needs a generation-C build. The rust-wheel template keeps `CARGO_HOME` under `$srcdir/.cargo`, which overrides the build helper's shared cargo cache, and sets `RUSTUP_AUTO_INSTALL=0`. The cargo fetch runs inside build(), so the build needs `enter --net`."
 ]
 provides = ["python-openai-harmony"]
 conflicts = ["python-openai-harmony"]
@@ -333,11 +358,11 @@ scaffold_notes = [
 recipe_key = "pytorch"
 template = "python-project-pytorch-rocm"
 upstream_version = "2.12.0"
-pkgrel = 4
-source_refs = ["pytorch::git+https://github.com/ROCm/pytorch.git#commit=c7badbdf3d33d945a0ed4536aac5303bc933e6ee"]
+pkgrel = 5
+source_refs = ["pytorch::git+https://github.com/ROCm/pytorch.git#commit=13da08625e0d25586351146b4c444f5263997ef8"]
 recipe_branch_override = "release/2.12"
-source_patches = ["0001-setup-allow-skipping-build-deps.patch", "0002-use-wide-magma-version-encoding.patch", "0003-target-numpy-2-c-api.patch", "0004-drop-hip-clang-abi-compat-flag.patch", "0005-enable-ck-gemm-on-gfx1151.patch", "0006-enable-aten-cuda-api-for-rocm.patch", "0007-initialize-numpy-before-global-deps.patch", "0008-export-rocm-blas-template-specializations.patch", "0009-match-aotriton-0.12-lazy-tensor-callbacks.patch"]
-extra_sha256sums = ["95a46381bedcff873f9765c9b103877aa36f649e649c5b223582732b2ee61cac", "d2da39d5ad4183b4e9ac3dc33a6cad014eb5bb6fd3d27c861fa42f03ddd5b8e4", "8ea6af3334027a5ef3360ca882f54e720ef501ea48288081f35d7404835ccc95", "550c9c8446e65d0dde2d0193637bed9bd775126d79790a3c820e81b969f01b45", "33188a11f6848303b17b76adb97de75f19856ea3caab7452fd5c62289d63006b", "2ca8044d626da3cf146c22e2d5164f53ad7ee45f0b79b0ec91c3503a5ab5f299", "84377437090b8ca9bf550158b93554b47650d476e6d56c94c52426150ff1c40d", "de81964675e483440b7cf64da6915deb701d1d31460f0b69a88c97277026032b", "4d3e0a0185bbbb7d045d9011dfdcbf31f636d94845a14f85f443c841bb9f0a4a"]
+source_patches = ["0001-setup-allow-skipping-build-deps.patch", "0002-use-wide-magma-version-encoding.patch", "0003-target-numpy-2-c-api.patch", "0004-drop-hip-clang-abi-compat-flag.patch", "0005-enable-ck-gemm-on-gfx1151.patch", "0006-enable-aten-cuda-api-for-rocm.patch", "0007-initialize-numpy-before-global-deps.patch", "0008-export-rocm-blas-template-specializations.patch", "0010-disable-system-aotriton-install.patch"]
+extra_sha256sums = ["95a46381bedcff873f9765c9b103877aa36f649e649c5b223582732b2ee61cac", "d2da39d5ad4183b4e9ac3dc33a6cad014eb5bb6fd3d27c861fa42f03ddd5b8e4", "8ea6af3334027a5ef3360ca882f54e720ef501ea48288081f35d7404835ccc95", "550c9c8446e65d0dde2d0193637bed9bd775126d79790a3c820e81b969f01b45", "b8dcc450b0ae6878f3ca1ece4937f9cf0500c89dfcd053d553b3219be6ee5208", "2ca8044d626da3cf146c22e2d5164f53ad7ee45f0b79b0ec91c3503a5ab5f299", "84377437090b8ca9bf550158b93554b47650d476e6d56c94c52426150ff1c40d", "de81964675e483440b7cf64da6915deb701d1d31460f0b69a88c97277026032b", "2063621fd0a83b296041ba0ac8db397341d7bbd026d7719cbb4dfa463a30f8fd"]
 pkgdesc = "Tensors and dynamic neural networks in Python with ROCm acceleration, rebuilt for Strix Halo gfx1151"
 url = "https://pytorch.org"
 license = ["BSD-3-Clause-Modification"]
@@ -359,7 +384,10 @@ update_notes = [
   "On 2026-05-26, reviewed ROCm/pytorch release/2.12 through 26872debb4452ea6dc898288618a15595e2317d9. The 4ddfe99..26872de range contains the ROCm Inductor static launcher change that loads HSACO images through hipModuleLoadData to avoid retained file descriptors, plus test cleanup commits. Adopt the branch head as a runtime-relevant PyTorch 2.12 pkgrel update and keep the current local patch semantics refreshed against that source.",
   "On 2026-05-31, reviewed ROCm/pytorch release/2.12 through f8efdb30b5e6d8b1ae3e8744f227416b2aa032c1. The 26872de..f8efdb range includes the large-matrix triu/tril 64-bit indexing fix, the UnaryUfuncInfo lambda syntax fix, and a ROCm foreach profiler-test skip. Keep this as a tracked follow-up until the source pin, affected rebuild set, deploy/install, installed smoke, and live scenario gates are completed.",
   "On 2026-06-15, adopt ROCm/pytorch release/2.12 at c7badbdf3d33d945a0ed4536aac5303bc933e6ee as the canonical runtime-base source lane. The f8efdb..c7badbdf range changes test coverage and NCCL symmetric-memory device-support gating without touching the local patch paths; use pkgrel 4 to align with Arch python-pytorch-opt-rocm 2.12.0-4 and to supersede the unmerged ab32a1f/pkgrel-3 host drift.",
-  "On 2026-05-26, carry a local AOTriton 0.12 lazy-tensor callback patch while the recipe builds PyTorch's ROCm mem-efficient attention against the packaged python-aotriton-gfx1151 0.12b headers. The patch keeps the existing 0.11 callback shape under a version guard and uses LazyTensor self callbacks for AOTriton 0.12.",
+  "On 2026-09-23, adopted ROCm/pytorch release/2.12 at 13da08625e0d25586351146b4c444f5263997ef8 for the generation-C line (#109), built against TheRock 7.14.1, python-triton-gfx1151 3.8.0 and python-aotriton-gfx1151 0.13b. The c7badbdf..13da0862 range moves the in-tree AOTriton pin to 0.13, drops gfx90a from the CK GEMM list, bumps composable_kernel and carries CUDAGraph pool-release, hipify and Inductor Triton runtime fixes. Patch 0005 was refreshed for the new CK list, 0009 was dropped because upstream LazyTensorFunctions now handles AOTriton 0.12+ callbacks, and 0010 was adopted from Arch's aotriton_disable_install.patch.",
+  "Build with USE_MAGMA=0: the generation-C foundation (TheRock 7.14.1) ships no MAGMA and magma-gfx1151 leaves the stack, so torch.cuda.has_magma is False. Patch 0002 still applies to the canonical linalg source and stays harmless without MAGMA.",
+  "Depend on rocprofiler-sdk-gfx1151: kineto finds librocprofiler-sdk.so at configure time (ROCm 6.4+ path) and libtorch_cpu.so links librocprofiler-sdk.so.1. The earlier package got it only because the host had it installed; the generation-C build root exposed the missing dependency as a ROCPROF_LIBRARY-NOTFOUND configure failure. Kineto's ROCm sources also include rocprofiler-sdk/marker/api_args.h, which includes rocprofiler-sdk-roctx headers that rocprofiler-sdk-gfx1151 does not pull in, so rocprofiler-sdk-roctx-gfx1151 is a makedepend.",
+  "Patch 0010 removes the aotriton.cmake install(DIRECTORY) rule that mirrors the system AOTRITON_INSTALLED_PREFIX (/usr/lib and /usr/include) into torch/. That rule is the likely cause of the tolerated _sysconfigdata install-target failure; keep the tolerant wrapper until a build proves the install target succeeds.",
   "Keep the package version aligned with the built wheel version; do not repeat the earlier mismatch where the package claimed 2.11.0 but the built wheel came from develop.",
   "Keep openblas explicit in both depends and makedepends so the build does not drift back to generic host BLAS auto-detection.",
   "Run PyTorch build subprocesses without inherited Lmod shell-function exports so CMake HIP discovery sees the ROCm hipconfig version and keeps USE_ROCM enabled.",
@@ -390,7 +418,8 @@ depends = [
   "rccl-gfx1151",
   "rocblas-gfx1151",
   "rocm-hip-sdk-gfx1151",
-  "rocm-openmp-gfx1151"
+  "rocm-openmp-gfx1151",
+  "rocprofiler-sdk-gfx1151"
 ]
 makedepends = [
   "cmake",
@@ -409,6 +438,7 @@ makedepends = [
   "python-pyyaml-gfx1151",
   "patchelf",
   "rocm-llvm-gfx1151",
+  "rocprofiler-sdk-roctx-gfx1151",
   "unzip"
 ]
 src_subdir = "pytorch"
@@ -430,8 +460,8 @@ scaffold_notes = [
 [packages.python-torchvision-rocm-gfx1151]
 recipe_key = "torchvision"
 template = "python-project-torchvision-rocm"
-upstream_version = "0.27.0"
-pkgrel = 4
+upstream_version = "0.27.1"
+pkgrel = 1
 pkgdesc = "Datasets, transforms, and models for computer vision with ROCm support, rebuilt for Strix Halo gfx1151"
 url = "https://github.com/pytorch/vision"
 license = ["BSD-3-Clause"]
@@ -450,9 +480,10 @@ update_notes = [
   "Keep the paired PyTorch package import-clean enough that TorchVision does not need any build-only rocsolver soname shim. If a shim becomes necessary again, treat that as a PyTorch/runtime-lane regression rather than reintroducing the workaround here.",
   "Keep the installed torchvision extension RPATH pointed at the sibling torch/lib directory so torchvision operators register without requiring LD_LIBRARY_PATH.",
   "On 2026-05-26, bump pkgrel to 2 for delivery of the TorchVision extension rebuild against python-pytorch-opt-rocm-gfx1151 2.12.0-2 from ROCm/pytorch release/2.12 commit 26872debb4452ea6dc898288618a15595e2317d9.",
-  "On 2026-06-15, bump pkgrel to 4 for the c7badbdf runtime-base rebuild so TorchVision supersedes the unmerged ab32a1f/pkgrel-3 host-drift artifact."
+  "On 2026-06-15, bump pkgrel to 4 for the c7badbdf runtime-base rebuild so TorchVision supersedes the unmerged ab32a1f/pkgrel-3 host-drift artifact.",
+  "On 2026-09-25, update to TorchVision 0.27.1 (tag v0.27.1, commit df56172e4d5a8d0cd51384273bc6c5747f5ab931) for the rebuild against python-pytorch-opt-rocm-gfx1151 2.12.0-5. Patch 0001 applies unchanged with offsets only (-3 and +2). setup.py pins torch only from `PYTORCH_VERSION*`; the build leaves those unset, so the wheel requires unpinned `torch`. TorchVision 0.28 stays tracked for the later PyTorch 2.13 lane."
 ]
-provides = ["python-torchvision-rocm=0.27.0", "python-torchvision=0.27.0"]
+provides = ["python-torchvision-rocm=0.27.1", "python-torchvision=0.27.1"]
 conflicts = ["python-torchvision-rocm", "python-torchvision"]
 depends = [
   "ffmpeg",
@@ -467,12 +498,12 @@ depends = [
 ]
 makedepends = ["cmake", "miopen-hip-gfx1151", "ninja", "patchelf", "python-gfx1151", "python-installer", "python-pip", "python-setuptools", "rocm-llvm-gfx1151"]
 source_type = "tarball"
-source_url = "https://github.com/pytorch/vision/archive/refs/tags/v0.27.0.tar.gz"
-sha256sums = ["04c588d80e63903e1e4444db8a1c32dc56e4080ed48782555e1d00752d6edb17"]
-src_subdir = "vision-0.27.0"
+source_url = "https://github.com/pytorch/vision/archive/refs/tags/v0.27.1.tar.gz"
+sha256sums = ["705d5ab7d01af9ece3bfbb1486eed3c23a2f68414fcc9c9a88910fb3c018c3db"]
+src_subdir = "vision-0.27.1"
 patches_dir = "patches/python-torchvision-rocm-gfx1151"
 scaffold_notes = [
-  "Authoritative base: AUR python-torchvision-rocm 0.27.0-1 because it is the closest maintained ROCm packaging lane for torchvision; upstream TorchVision 0.27.0 is paired with the local PyTorch 2.12 lane.",
+  "Authoritative base: AUR python-torchvision-rocm 0.27.0-1 because it is the closest maintained ROCm packaging lane for torchvision; upstream TorchVision 0.27.1 is paired with the local PyTorch 2.12 lane.",
   "Advisory references: python-torchvision-rocm-bin for packaging shape around the ROCm variant and repo python-torchvision for generic Arch Python packaging conventions.",
   "The recipe must build against the source-tree torch headers from the paired PyTorch package, not against an arbitrary preinstalled wheel.",
   "Carry the setup.py source patch that makes ROCm HIP builds honor NVCC_FLAGS so the package-level source-path sanitizer also applies to .hip translation units.",
@@ -484,46 +515,48 @@ scaffold_notes = [
 [packages.python-triton-gfx1151]
 recipe_key = "triton"
 template = "python-project-triton-rocm"
-upstream_version = "3.0.0+git0ec280cf"
-pkgdesc = "Language and compiler for custom deep-learning primitives, rebuilt from the ROCm performance fork for Strix Halo gfx1151"
+upstream_version = "3.8.0+git669b31ac"
+pkgdesc = "Language and compiler for custom deep-learning primitives, rebuilt from the ROCm Triton release lane for Strix Halo gfx1151"
 url = "https://triton-lang.org/main/index.html"
 license = ["MIT"]
 arch_reference = ["extra/python-triton", "cachyos-extra-znver4/python-triton"]
 authoritative_reference = "extra/python-triton"
 advisory_references = ["cachyos-extra-znver4/python-triton"]
 divergence_notes = [
-  "Uses Arch's Python packaging and integration baseline but deliberately swaps in ROCm/triton main_perf for the source lane.",
-  "Builds Triton's compatible sidecar LLVM instead of trying to force the ROCm fork onto TheRock's installed LLVM API line."
+  "Uses Arch's Python packaging and integration baseline but deliberately swaps in ROCm/triton `release/internal/3.8.x` for the source lane: the exact Triton commit that the packaged ROCm PyTorch `release/2.12` commit pins in `.ci/docker/ci_commit_pins/triton.txt`.",
+  "Builds against the upstream LLVM build that Triton's `cmake/llvm-info.json` names (`llvm-5f07f818-ubuntu-x64-1`), pinned in source=() by sha256, instead of TheRock's LLVM. Arch builds triton-lang's LLVM fork from source instead."
 ]
 update_notes = [
-  "Check Arch's current Triton Python packaging first for Python-version fixes and install layout changes, then re-evaluate whether ROCm/triton still needs its separate LLVM lane.",
-  "Keep pkgver and provides aligned with the ROCm fork's generated wheel metadata from python/setup.py; do not reuse Arch's triton-lang release version when the source lane is ROCm/triton main_perf.",
+  "Take the Triton commit from the packaged ROCm PyTorch commit's `.ci/docker/ci_commit_pins/triton.txt`; do not follow the `release/internal/3.8.x` head on its own.",
+  "On each source move, re-read `cmake/llvm-info.json`. When `llvm_hash`, `build_number` or the `ubuntu-x64` sha256 changes, update the LLVM tarball source ref, its sha256 and `triton_llvm_dir` together. `cmake/llvm-build-info.json` is not read by the build.",
+  "The build is offline (`TRITON_OFFLINE_BUILD=ON`): LLVM comes from the pinned tarball and nlohmann-json from the system (`JSON_SYSPATH=/usr`). Upstream pins nlohmann-json v3.11.3 in `cmake/json-version.txt`; the header-only Arch package is newer.",
+  "Keep pkgver and provides aligned with the wheel version from setup.py: `3.8.0` plus the `+git<short-hash>` suffix it adds for a non-release git branch, which is what a makepkg checkout is.",
+  "Check Arch's current Triton Python packaging for Python-version fixes and install layout changes.",
   "Keep local source edits as patch files; this package is a likely upstream-candidate area.",
-  "The `AttrsDescriptor.__repr__` patch is runtime correctness carry. If it is absent from the installed package, torch.compile / Inductor can emit syntactically invalid generated Python."
+  "The 3.0-era `AttrsDescriptor.__repr__` patch was dropped at 3.8: the class no longer exists, and torch 2.12 Inductor takes its dict path when the class is absent."
 ]
-provides = ["python-triton=3.0.0+git0ec280cf"]
+provides = ["python-triton=3.8.0+git669b31ac"]
 conflicts = ["python-triton"]
-depends = ["glibc", "libgcc", "python-gfx1151"]
-makedepends = ["cmake", "git", "ninja", "pybind11", "python-build", "python-installer", "python-setuptools", "python-wheel"]
-source_refs = ["triton::git+https://github.com/ROCm/triton.git#commit=0ec280cf80dd91e9a86887981a670f2d4541a32b"]
+depends = ["glibc", "libgcc", "libstdc++", "python-gfx1151", "zlib"]
+makedepends = ["cmake", "git", "ninja", "nlohmann-json", "pybind11", "python-build", "python-installer", "python-setuptools", "python-wheel", "rocm-llvm-gfx1151"]
+source_refs = [
+  "triton::git+https://github.com/ROCm/triton.git#commit=669b31acc1dd1b3fd93286afd5db67f65d9f7557",
+  "llvm-5f07f818-ubuntu-x64-1.tar.gz::https://oaitriton.blob.core.windows.net/public/llvm-builds/llvm-5f07f818-ubuntu-x64-1.tar.gz"
+]
 source_patches = [
   "0001-python-3.14-and-pybind11-build-system.patch",
-  "0002-disable-werror-with-therock-llvm-headers.patch",
-  "0003-attrs-descriptor-repr-for-inductor.patch"
+  "0002-disable-werror-with-therock-llvm-headers.patch"
 ]
 source_patches_replace_recipe_patches = true
-sha256sums = ["SKIP"]
+sha256sums = ["SKIP", "62dd9524eed689360882a7ae06132182b4a724ca5dfdca77667556fcef940022"]
+triton_llvm_dir = "llvm-5f07f818-ubuntu-x64-1"
 src_subdir = "triton"
 patches_dir = "packages/python-triton-gfx1151"
 recipe_notes_override = """
-ROCm performance fork of Triton. Keep this package on ROCm/triton main_perf
-and its compatible sidecar LLVM path; do not point it at TheRock LLVM.
-
-The gfx1151 Inductor carry is `0003-attrs-descriptor-repr-for-inductor.patch`,
-listed in `maintenance.source_patches` and applied by the renderer in
-`prepare()`. Without that patch, torch Inductor can serialize
-`AttrsDescriptor` with the default angle-bracket object repr and emit invalid
-generated Python.
+ROCm Triton release lane. The package follows the Triton commit that the
+packaged ROCm PyTorch commit pins, and builds offline against the upstream LLVM
+build that Triton's `cmake/llvm-info.json` names. Do not point it at TheRock
+LLVM.
 
 When switching compilation configurations, clear stale Inductor and Triton
 caches before diagnosing mismatched guard-expression failures. The vLLM
@@ -531,20 +564,19 @@ compile cache is config-hash-keyed and does not require routine manual
 clearing.
 """
 scaffold_notes = [
-  "Authoritative base: Arch python-triton 3.5.1-4 for distro integration and Python-3.14 carry patches.",
-  "The recipe intentionally swaps in ROCm/triton main_perf instead of upstream triton-lang/triton. That makes Arch's package an advisory base rather than a source-identical one.",
-  "Do not point Triton at TheRock's LLVM. The recipe notes that this ROCm fork still expects an older LLVM API line and must use its own compatible LLVM path instead.",
-  "The renderer must include the package source patches in `prepare()` for this package. The `AttrsDescriptor.__repr__` edit is a runtime correctness patch, not cosmetic metadata; if it is absent from the installed package, torch.compile / Inductor can emit syntactically invalid generated Python.",
+  "Authoritative base: Arch python-triton for distro integration and Python-3.14 carry patches.",
+  "The recipe swaps in ROCm/triton instead of upstream triton-lang/triton. That makes Arch's package an advisory base rather than a source-identical one.",
+  "Triton 3.8 keeps `pyproject.toml` and `setup.py` at the repo root; the renderer builds and installs from there, not from `python/`.",
+  "Do not point Triton at TheRock's LLVM. It needs the exact LLVM revision in `cmake/llvm-info.json`; the renderer exports `LLVM_SYSPATH` to the unpacked `triton_llvm_dir` tarball.",
+  "The `rocm-llvm-gfx1151` makedepend does not break that rule. It supplies the `amdclang` that `_setup_compiler_env` builds the extension with, not the LLVM that Triton links; keep it.",
+  "The renderer caps concurrent links with `TRITON_PARALLEL_LINK_JOBS` (default 2), because each link pulls in static LLVM and MLIR.",
   "Rebuild and reinstall `python-triton-gfx1151` after patch-carry changes before treating compiled vLLM probes as repaired on the host."
 ]
-
-[packages.python-triton-gfx1151.recipe_patch_file_rewrites]
-"triton/backends/compiler.py" = "python/triton/backends/compiler.py"
 
 [packages.python-aotriton-gfx1151]
 recipe_key = "aotriton"
 template = "python-project-aotriton"
-upstream_version = "0.12b"
+upstream_version = "0.13b"
 pkgdesc = "Ahead-of-time Triton math library rebuilt for Strix Halo gfx1151"
 url = "https://github.com/ROCm/aotriton"
 license = ["MIT"]
@@ -553,14 +585,16 @@ authoritative_reference = "extra/python-aotriton"
 advisory_references = ["cachyos-extra-znver4/python-aotriton"]
 divergence_notes = [
   "This package stays close to the Arch baseline but deliberately narrows the target arch set to gfx1151 and reuses the recipe's amdclang build lane.",
-  "The nested vendored Triton build is part of the package story here and must carry the same Python-3.14 compatibility patching as the standalone Triton package."
+  "The nested vendored Triton build is part of the package story here: kernels are compiled with the release-pinned hyperjump Triton rather than the system python-triton-gfx1151, which Arch 0.13b-2 inherits through AOTRITON_INHERIT_SYSTEM_SITE_TRITON=ON."
 ]
 update_notes = [
   "When updating, compare against Arch first because this is one of the closest recipe-to-baseline packages in the stack.",
   "Keep the package on stable AOTriton releases for gfx1151. The 0.11.210b and 0.11.52b tech previews are intentionally not adopted because they target gfx942 ASAN and gfx1250 preview builds rather than this package's Strix Halo lane.",
-  "Preserve the reuse-build logic and stale-build-tree cleanup; interrupted AOTriton builds otherwise leave a misleading broken state behind."
+  "Preserve the reuse-build logic and stale-build-tree cleanup; interrupted AOTriton builds otherwise leave a misleading broken state behind.",
+  "Arch 0.13b-2 builds kernels with system Triton through -D AOTRITON_INHERIT_SYSTEM_SITE_TRITON=ON. Adopting that here is a later option that needs its own kernel-generation and runtime test; the vendored hyperjump Triton is the known-good compiler for these kernels.",
+  "The build needs network: configure installs requirements.txt and the aotriton code-generation package into a disposable build venv with pip, v3src clones the ROCm/aiter tag named in third_party/aiter.txt (v0.1.11 at 0.12b and 0.13b) for its aiter kernel sources, and the vendored Triton wheel build downloads its own pinned LLVM into TRITON_HOME under srcdir. That aiter checkout is build-time kernel source only; the package does not depend on python-amd-aiter-gfx1151."
 ]
-provides = ["python-aotriton=0.12b"]
+provides = ["python-aotriton=0.13b"]
 conflicts = ["python-aotriton"]
 depends = ["gcc-libs", "glibc", "hip-runtime-amd-gfx1151", "hipsparselt-gfx1151", "python-gfx1151", "python-triton-gfx1151", "rocm-core-gfx1151"]
 makedepends = [
@@ -581,7 +615,7 @@ makedepends = [
   "rocm-llvm-gfx1151"
 ]
 source_refs = [
-  "aotriton::git+https://github.com/ROCm/aotriton#tag=0.12b",
+  "aotriton::git+https://github.com/ROCm/aotriton#tag=0.13b",
   "aotriton-triton::git+https://github.com/ROCmSoftwarePlatform/triton.git#commit=db82b800cd4b73e3fa586e1819b314f53bfbad4c"
 ]
 source_patches = [
@@ -593,7 +627,7 @@ submodule_sources = { "third_party/triton" = "aotriton-triton" }
 src_subdir = "aotriton"
 patches_dir = "patches/python-aotriton-gfx1151"
 scaffold_notes = [
-  "Arch python-aotriton remains at 0.11.2b-1; the local source lane adopts upstream 0.12b because gfx1151 is now promoted out of the experimental target set.",
+  "The local source lane follows stable upstream AOTriton releases that include gfx1151; 0.13b is the release embedded by the generation-C ROCm PyTorch release/2.12 line, and Arch python-aotriton is also at 0.13b-2.",
   "The recipe and Arch baseline are unusually close here, so preserve Arch's patching approach wherever possible and only layer on the recipe's compiler and install details.",
   "Do not carry forward Arch's broader multi-arch target matrix here. The Strix Halo recipe intentionally narrows AOTRITON_TARGET_ARCH to gfx1151 only so the build does not waste time compiling irrelevant kernels.",
   "The nested vendored Triton build must explicitly disable TRITON_BUILD_UT, otherwise it spends time linking irrelevant C++ unit-test binaries and can fail there before the Python runtime package is produced.",
@@ -601,7 +635,7 @@ scaffold_notes = [
   "AOTriton's release-owned submodules are pinned as package sources and staged into third_party during prepare(); do not reintroduce network submodule updates.",
   "Keep vendored Triton's download, pip, and bytecode caches rooted under srcdir during package builds. Its setup.py otherwise derives TRITON_CACHE_PATH from the builder's home directory, which can leak host-specific paths and fail under sandboxed read-only homes.",
   "Patch the vendored Triton wheel build so optional NVIDIA plugin wiring is backend-gated and the CUDA GSan runtime is not built as an unconditional package artifact. AOTriton does not use CUDA GSan for gfx1151, and that runtime depends on CUDA/GCC layout assumptions that are unrelated to this package.",
-  "The vendored Triton submodule also needs the same Python-3.14 ast.Num compatibility cherry-pick used by python-triton-gfx1151, otherwise AOTriton kernel generation fails inside v3python/compile.py after the nested Triton wheel already built successfully."
+  "Do not reintroduce the old Python-3.14 ast.Num cherry-pick (c44b870b) on the vendored Triton: that commit is not in the db82b800 history that the 0.12b and 0.13b releases pin, the tree has no ast.Num, and the masked `|| true` cherry-pick was a no-op."
 ]
 
 [packages.python-amd-aiter-gfx1151]
@@ -687,7 +721,7 @@ scaffold_notes = [
 [packages.python-numpy-gfx1151]
 recipe_key = "native_wheels"
 template = "native-wheel-pypi"
-upstream_version = "2.4.6"
+upstream_version = "2.5.3"
 pkgdesc = "Scientific tools for Python rebuilt for Strix Halo gfx1151"
 url = "https://github.com/numpy/numpy"
 license = ["custom"]
@@ -702,7 +736,8 @@ divergence_notes = [
 update_notes = [
   "Re-check BLAS/LAPACK provider handling and any Arch downstream patches whenever numpy or Python major/minor changes.",
   "Validate that OpenBLAS remains the active Meson provider after toolchain or Intel oneMKL updates, and keep the explicit provider pins if contamination returns.",
-  "If future recipe changes add real source patches, keep them as patch files instead of further growing shell flag transforms."
+  "If future recipe changes add real source patches, keep them as patch files instead of further growing shell flag transforms.",
+  "On 2026-09-22, update to NumPy 2.5.3 for the generation-C W2A closure (#110), built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7. The fallback is 2.4.6 if the torch, TorchVision or vLLM NumPy interop smokes fail."
 ]
 provides = ["python-numpy"]
 conflicts = ["python-numpy"]
@@ -711,8 +746,8 @@ makedepends = ["meson", "ninja", "patchelf", "python-build", "python-installer",
 optdepends = []
 build_config_settings = ["setup-args=-Dblas=openblas", "setup-args=-Dlapack=openblas", "setup-args=-Dallow-noblas=false"]
 pypi_name = "numpy"
-sha256sums = ["f3a3570c4a2a16746ac2c31a7c7c7b0c186b95ce902e33db6f28094ed7387dda"]
-src_subdir = "numpy-2.4.6"
+sha256sums = ["df2d5874ff183595a4ba404edd04f6bd9b5505c1d7708573f6a6c17489a67563"]
+src_subdir = "numpy-2.5.3"
 patches_dir = "patches/python-numpy-gfx1151"
 recipe_notes_override = """
 This package is the NumPy output from the shared `native_wheels` recipe
@@ -755,7 +790,7 @@ update_notes = [
 ]
 provides = ["python-orjson"]
 conflicts = ["python-orjson"]
-depends = ["glibc", "libgcc", "python-gfx1151"]
+depends = ["glibc", "libgcc", "libstdc++", "python-gfx1151", "zlib"]
 makedepends = ["cargo", "python-build", "python-installer", "python-maturin", "python-wheel", "rocm-llvm-gfx1151", "rust"]
 pypi_name = "orjson"
 sha256sums = ["4fef17e1f8722c11587a6ef18e35902450221da0028e65dbaaa543619e68e48f"]
@@ -897,7 +932,7 @@ scaffold_notes = [
 [packages.python-tokenizers-gfx1151]
 recipe_key = "rust_wheels"
 template = "rust-wheel-pypi"
-upstream_version = "0.22.2"
+upstream_version = "0.23.2"
 pkgdesc = "Fast state-of-the-art tokenizers rebuilt for Strix Halo gfx1151"
 url = "https://github.com/huggingface/tokenizers"
 license = ["Apache-2.0"]
@@ -911,16 +946,17 @@ divergence_notes = [
 update_notes = [
   "Check the current Hugging Face tokenizers release and Cachy package before updating; Transformers metadata can constrain this package.",
   "On 2026-05-01, reviewed PyPI tokenizers 0.23.1 but kept the package on 0.22.2 because Transformers 5.7.0 declares tokenizers<=0.23.0,>=0.22.0.",
-  "After publishing a rebuilt package, verify `import tokenizers` and a tiny tokenizer construction through the installed local Python lane."
+  "After publishing a rebuilt package, verify `import tokenizers` and a tiny tokenizer construction through the installed local Python lane.",
+  "On 2026-09-22, update to tokenizers 0.23.2 for the generation-C W2A closure (#110), built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7. Transformers 5.16.1 requires tokenizers >=0.23.1,<0.24."
 ]
 provides = ["python-tokenizers"]
 conflicts = ["python-tokenizers"]
-depends = ["glibc", "libgcc", "python-gfx1151"]
+depends = ["glibc", "libgcc", "libstdc++", "python-gfx1151", "zlib"]
 makedepends = ["cargo", "python-build", "python-installer", "python-maturin", "python-wheel", "rocm-llvm-gfx1151", "rust"]
 isolated_cargo_home = false
 pypi_name = "tokenizers"
-sha256sums = ["473b83b915e547aa366d1eee11806deaf419e17be16310ac0a14077f1e28f917"]
-src_subdir = "tokenizers-0.22.2"
+sha256sums = ["7f0f085686b9de0d0079e6f874ae053600db64c5d13049e0bbc0119926d25aac"]
+src_subdir = "tokenizers-0.23.2"
 patches_dir = "patches/python-tokenizers-gfx1151"
 recipe_notes_override = """
 This package is the tokenizers output from the shared `rust_wheels` recipe
@@ -941,7 +977,7 @@ scaffold_notes = [
 [packages.python-safetensors-gfx1151]
 recipe_key = "rust_wheels"
 template = "rust-wheel-pypi"
-upstream_version = "0.7.0"
+upstream_version = "0.8.0"
 pkgdesc = "Safe tensor serialization format rebuilt for Strix Halo gfx1151"
 url = "https://github.com/huggingface/safetensors"
 license = ["Apache-2.0"]
@@ -954,7 +990,8 @@ divergence_notes = [
 ]
 update_notes = [
   "Check Arch first for release and dependency metadata, then verify Transformers and TorchAO scenario compatibility before updating.",
-  "After publishing a rebuilt package, verify `import safetensors` and a tiny tensor save/load round trip through the installed local Python lane."
+  "After publishing a rebuilt package, verify `import safetensors` and a tiny tensor save/load round trip through the installed local Python lane.",
+  "On 2026-09-22, update to safetensors 0.8.0 for the generation-C W2A closure (#110), built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7. Transformers 5.16.1 requires safetensors >=0.8.0."
 ]
 provides = ["python-safetensors"]
 conflicts = ["python-safetensors"]
@@ -966,8 +1003,8 @@ optdepends = [
   "python-tensorflow: usage with tensorflow"
 ]
 pypi_name = "safetensors"
-sha256sums = ["07663963b67e8bd9f0b8ad15bb9163606cd27cc5a1b96235a50d8369803b96b0"]
-src_subdir = "safetensors-0.7.0"
+sha256sums = ["fabaf3e0f18a6618d9b36560682562157f77c2b71fcffc7b432be2baed9d753d"]
+src_subdir = "safetensors-0.8.0"
 patches_dir = "patches/python-safetensors-gfx1151"
 recipe_notes_override = """
 safetensors is the model/checkpoint tensor I/O path for Transformers, vLLM,
@@ -987,7 +1024,7 @@ scaffold_notes = [
 [packages.python-sentencepiece-gfx1151]
 recipe_key = "native_wheels"
 template = "native-wheel-pypi"
-upstream_version = "0.2.1"
+upstream_version = "0.2.2"
 pkgdesc = "Python wrapper for SentencePiece rebuilt for Strix Halo gfx1151"
 url = "https://github.com/google/sentencepiece"
 license = ["Apache-2.0"]
@@ -1001,23 +1038,25 @@ divergence_notes = [
 update_notes = [
   "Re-check against Cachy first, then consult the AUR source and git variants if the maintained package lags a needed upstream change.",
   "If the upstream build backend changes, keep the package metadata focused on the system cmake/toolchain story rather than reviving venv-local wrapper assumptions.",
-  "After publishing a rebuilt package, verify the installed host extension with readelf or ldd before treating the host lane as current."
+  "After publishing a rebuilt package, verify the installed host extension with readelf or ldd before treating the host lane as current.",
+  "On 2026-09-22, update to sentencepiece 0.2.2 for the generation-C W2A closure (#110), built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7. Drop the bundled-build patch: 0.2.2 setup.py no longer probes pkg-config for a system SentencePiece and always builds the bundled library. Add 0001-use-bundled-abseil-cpp-offline.patch: 0.2.2 CMake runs a FetchContent git clone of abseil-cpp 20260526.0 even though the sdist already ships that tree, which fails in an offline build."
 ]
 provides = ["python-sentencepiece"]
 conflicts = ["python-sentencepiece"]
 depends = ["gcc-libs", "glibc", "python-gfx1151"]
 makedepends = ["cmake", "ninja", "python-build", "python-installer", "python-wheel", "rocm-llvm-gfx1151"]
 optdepends = ["python-protobuf"]
-source_patches = ["0001-bundle-sentencepiece-by-default.patch"]
-extra_sha256sums = ["04b134d04727093b49455d44126988d104ea7019bbe6c72b7e2f8ddeb3686bb1"]
+source_patches = ["0001-use-bundled-abseil-cpp-offline.patch"]
+extra_sha256sums = ["0b16fe8e9c9b786d5c2c952857b6b44db632c313fb8a7d6940552fb321404eba"]
 pypi_name = "sentencepiece"
-sha256sums = ["8138cec27c2f2282f4a34d9a016e3374cd40e5c6e9cb335063db66a0a3b71fad"]
-src_subdir = "sentencepiece-0.2.1"
+sha256sums = ["3d2b5e824b5622038dc7b490897efe05ebbbb9e7350fc142f3ecc8789ef9bdf6"]
+src_subdir = "sentencepiece-0.2.2"
 patches_dir = "patches/python-sentencepiece-gfx1151"
 scaffold_notes = [
   "The current CachyOS python-sentencepiece package is the closest maintained baseline, while the AUR python-sentencepiece and python-sentencepiece-git packages remain advisory references for patching and split-package expectations.",
   "The original recipe fixes a broken pip-installed cmake wrapper inside the venv. In Arch packaging that should translate to using the system cmake toolchain directly.",
-  "The bundled-build patch prefers the bundled SentencePiece library by default and only uses the system pkg-config sentencepiece path when SENTENCEPIECE_USE_SYSTEM=1 is explicitly set."
+  "Since 0.2.2, upstream setup.py always builds the bundled SentencePiece library and never probes pkg-config for a system one, so the former bundled-build patch is gone.",
+  "The offline-abseil patch makes the bundled CMake build use the abseil-cpp 20260526.0 tree that the sdist ships, and fetch it only when that tree is absent. Drop it when upstream stops fetching over the shipped tree."
 ]
 recipe_notes_override = """
 This package is the SentencePiece output from the shared `native_wheels`
@@ -1035,8 +1074,8 @@ probing rejects -mllvm as "unused command line argument".
 -famd-opt moved to LDFLAGS (link-time-only driver flag, no-op at
 compile time -- triggers -Werror=unused in compile-only probes).
 
-The bundled-build patch is effective when the built `_sentencepiece` extension
-has no dynamic dependency on host `libsentencepiece.so.0` or
+Upstream builds the bundled library, so the built `_sentencepiece` extension
+must have no dynamic dependency on host `libsentencepiece.so.0` or
 `libsentencepiece_train.so.0`. Treat the repo-built package lane as current
 only after the installed host extension matches that dependency shape.
 """
@@ -1188,6 +1227,7 @@ scaffold_notes = [
 recipe_key = "native_wheels"
 template = "native-wheel-pypi"
 upstream_version = "6.0.3"
+pkgrel = 2
 pkgdesc = "Python bindings for YAML with libYAML rebuilt for Strix Halo gfx1151"
 url = "https://github.com/yaml/pyyaml"
 license = ["MIT"]
@@ -1200,7 +1240,8 @@ divergence_notes = [
 ]
 update_notes = [
   "Check Arch python-yaml first for Cython, libyaml, and build-backend changes before updating.",
-  "After publishing a rebuilt package, verify `import yaml` and confirm the libYAML-backed loader is available through the installed local Python lane."
+  "After publishing a rebuilt package, verify `import yaml` and confirm the libYAML-backed loader is available through the installed local Python lane.",
+  "On 2026-09-22, bump pkgrel to 2 for the generation-C W2A closure (#110), built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7. The source is unchanged; the rebuild keeps the package out of the previous generation's repo."
 ]
 provides = ["python-yaml", "python-pyyaml"]
 conflicts = ["python-yaml", "python-pyyaml"]
@@ -1232,6 +1273,7 @@ scaffold_notes = [
 recipe_key = "native_wheels"
 template = "native-wheel-pypi"
 upstream_version = "7.2.2"
+pkgrel = 2
 pkgdesc = "Cross-platform process and system utilities rebuilt for Strix Halo gfx1151"
 url = "https://github.com/giampaolo/psutil"
 license = ["BSD-3-Clause"]
@@ -1244,7 +1286,8 @@ divergence_notes = [
 ]
 update_notes = [
   "Check Arch first for release and dependency metadata before updating.",
-  "After publishing a rebuilt package, verify `import psutil` and a minimal process or virtual-memory probe through the installed local Python lane."
+  "After publishing a rebuilt package, verify `import psutil` and a minimal process or virtual-memory probe through the installed local Python lane.",
+  "On 2026-09-22, bump pkgrel to 2 for the generation-C W2A closure (#110), built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7. The source is unchanged; the rebuild keeps the package out of the previous generation's repo."
 ]
 provides = ["python-psutil"]
 conflicts = ["python-psutil"]
@@ -1274,7 +1317,7 @@ scaffold_notes = [
 [packages.python-pillow-gfx1151]
 recipe_key = "native_wheels"
 template = "native-wheel-pypi"
-upstream_version = "12.2.0"
+upstream_version = "12.3.0"
 pkgdesc = "Python Imaging Library fork rebuilt for Strix Halo gfx1151"
 url = "https://github.com/python-pillow/Pillow"
 license = ["MIT-CMU"]
@@ -1283,11 +1326,12 @@ authoritative_reference = "extra/python-pillow"
 advisory_references = []
 divergence_notes = [
   "Follows Arch's Pillow package shape while rebuilding the native extension through the Blackcat native-wheel compiler lane.",
-  "Uses the current Arch/PyPI 12.2.0 release instead of the older Blackcat recipe example pin because this package is a normal Arch-facing local replacement."
+  "Uses the current PyPI 12.3.0 release instead of the older Blackcat recipe example pin because this package is a normal Arch-facing local replacement."
 ]
 update_notes = [
   "Check Arch first for image-library dependency and optional-integration drift before updating.",
-  "After publishing a rebuilt package, verify `from PIL import Image` and a tiny in-memory image round trip through the installed local Python lane."
+  "After publishing a rebuilt package, verify `from PIL import Image` and a tiny in-memory image round trip through the installed local Python lane.",
+  "On 2026-09-22, update to Pillow 12.3.0 for the generation-C W2A closure (#110), built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7."
 ]
 provides = ["python-pillow"]
 conflicts = ["python-pillow"]
@@ -1301,8 +1345,8 @@ optdepends = [
   "tk: for the ImageTK module"
 ]
 pypi_name = "pillow"
-sha256sums = ["a830b1a40919539d07806aa58e1b114df53ddd43213d9c8b75847eee6c0182b5"]
-src_subdir = "pillow-12.2.0"
+sha256sums = ["3b8182a766685eaa002637e28b4ec8d6b18819a0c71f579bf0dbaa5830297cce"]
+src_subdir = "pillow-12.3.0"
 patches_dir = "patches/python-pillow-gfx1151"
 recipe_notes_override = """
 This package is the Pillow output from the shared `native_wheels` recipe
@@ -1324,7 +1368,7 @@ scaffold_notes = [
 [packages.python-watchfiles-gfx1151]
 recipe_key = "rust_wheels"
 template = "rust-wheel-pypi"
-upstream_version = "1.2.0"
+upstream_version = "1.3.0"
 pkgdesc = "Simple, modern, and high-performance file watching rebuilt for Strix Halo gfx1151"
 url = "https://github.com/samuelcolvin/watchfiles"
 license = ["MIT"]
@@ -1338,15 +1382,16 @@ divergence_notes = [
 update_notes = [
   "Check Arch first for watchfiles release and any maturin/build-backend metadata changes before updating.",
   "On 2026-05-18, adopted watchfiles 1.2.0 while Arch remained at python-watchfiles 1.1.1-3. The upstream release drops Python 3.9, adds Python 3.15 classifiers, raises the Rust MSRV to 1.83, and updates PyO3 to 0.28.3 without changing runtime dependencies beyond anyio.",
-  "After publishing a rebuilt package, verify `import watchfiles` and a minimal Python file-watch import path through the installed local Python lane."
+  "After publishing a rebuilt package, verify `import watchfiles` and a minimal Python file-watch import path through the installed local Python lane.",
+  "On 2026-09-22, update to watchfiles 1.3.0 for the generation-C W2A closure (#110), built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7."
 ]
 provides = ["python-watchfiles"]
 conflicts = ["python-watchfiles"]
 depends = ["glibc", "libgcc", "python-gfx1151", "python-anyio"]
 makedepends = ["cargo", "python-build", "python-installer", "python-maturin", "python-wheel", "rocm-llvm-gfx1151", "rust"]
 pypi_name = "watchfiles"
-sha256sums = ["c995fba777f1ea992f090f9236e9284cf7a5d1a0130dd5a3d82c598cacd76838"]
-src_subdir = "watchfiles-1.2.0"
+sha256sums = ["99aee4a07847c06820765fd7b1b49ceac4f3f711ccb7d104655a33231de1c207"]
+src_subdir = "watchfiles-1.3.0"
 patches_dir = "patches/python-watchfiles-gfx1151"
 recipe_notes_override = """
 This package is the watchfiles output from the shared `rust_wheels` recipe
@@ -1368,6 +1413,7 @@ scaffold_notes = [
 recipe_key = "native_wheels"
 template = "native-wheel-pypi"
 upstream_version = "0.22.1"
+pkgrel = 2
 pkgdesc = "Ultra-fast asyncio event loop rebuilt for Strix Halo gfx1151"
 url = "https://github.com/MagicStack/uvloop"
 license = ["Apache-2.0", "MIT"]
@@ -1381,7 +1427,8 @@ divergence_notes = [
 update_notes = [
   "Check Arch first for libuv and Cython build metadata before updating.",
   "Keep the package-local system-libuv patch unless upstream changes the build backend to expose a stable PEP 517 config setting for the same choice.",
-  "After publishing a rebuilt package, verify `import uvloop` and a minimal `uvloop.new_event_loop()` probe through the installed local Python lane."
+  "After publishing a rebuilt package, verify `import uvloop` and a minimal `uvloop.new_event_loop()` probe through the installed local Python lane.",
+  "On 2026-09-25, bump pkgrel to 2 for the generation-C W2A closure (#110, #111), to be built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7 in the vLLM lease job. The source is unchanged; the rebuild keeps the package out of the previous generation's repo. uvicorn and `vllm serve` use it as the event loop, so the W2A root needs a generation-C build."
 ]
 provides = ["python-uvloop"]
 conflicts = ["python-uvloop"]
@@ -1411,6 +1458,7 @@ scaffold_notes = [
 recipe_key = "native_wheels"
 template = "native-wheel-pypi"
 upstream_version = "0.8.0"
+pkgrel = 2
 pkgdesc = "Fast HTTP parser rebuilt for Strix Halo gfx1151"
 url = "https://github.com/MagicStack/httptools"
 license = ["MIT"]
@@ -1425,7 +1473,8 @@ update_notes = [
   "Check Arch first for llhttp and Cython build metadata before updating.",
   "Keep the package-local system-llhttp patch unless upstream changes the build backend to expose a stable PEP 517 config setting for the same choice.",
   "Keep `skip_dependency_check = true` while the PyPI sdist pins an exact setuptools build requirement; Arch builds httptools from source without that equality gate, and this package uses the repo's system setuptools in the same no-isolation lane.",
-  "After publishing a rebuilt package, verify `import httptools` through the installed local Python lane."
+  "After publishing a rebuilt package, verify `import httptools` through the installed local Python lane.",
+  "On 2026-09-25, bump pkgrel to 2 for the generation-C W2A closure (#110, #111), to be built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7 in the vLLM lease job. The source is unchanged; the rebuild keeps the package out of the previous generation's repo. uvicorn uses it as the HTTP parser for `vllm serve`, so the W2A root needs a generation-C build."
 ]
 provides = ["python-httptools"]
 conflicts = ["python-httptools"]
@@ -1459,6 +1508,7 @@ scaffold_notes = [
 recipe_key = "native_wheels"
 template = "native-wheel-pypi"
 upstream_version = "0.21.1"
+pkgrel = 2
 pkgdesc = "Fast serialization and validation library rebuilt for Strix Halo gfx1151"
 url = "https://github.com/jcrist/msgspec"
 license = ["BSD-3-Clause"]
@@ -1471,7 +1521,8 @@ divergence_notes = [
 ]
 update_notes = [
   "Check Arch first for release and dependency metadata before updating.",
-  "After publishing a rebuilt package, verify `import msgspec` and a minimal JSON encode/decode probe through the installed local Python lane."
+  "After publishing a rebuilt package, verify `import msgspec` and a minimal JSON encode/decode probe through the installed local Python lane.",
+  "On 2026-09-25, bump pkgrel to 2 for the generation-C W2A closure (#110, #111), to be built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7 in the vLLM lease job. The source is unchanged; the rebuild keeps the package out of the previous generation's repo. vLLM imports it at engine startup, so the W2A root needs a generation-C build."
 ]
 provides = ["python-msgspec"]
 conflicts = ["python-msgspec"]
@@ -1507,6 +1558,7 @@ scaffold_notes = [
 recipe_key = "native_wheels"
 template = "native-wheel-pypi"
 upstream_version = "1.8.0"
+pkgrel = 2
 pkgdesc = "Immutable list implementation rebuilt for Strix Halo gfx1151"
 url = "https://github.com/aio-libs/frozenlist"
 license = ["Apache-2.0"]
@@ -1519,7 +1571,8 @@ divergence_notes = [
 ]
 update_notes = [
   "Check Arch first for release and build-backend metadata before updating.",
-  "After publishing a rebuilt package, verify `import frozenlist` and a minimal FrozenList construction probe through the installed local Python lane."
+  "After publishing a rebuilt package, verify `import frozenlist` and a minimal FrozenList construction probe through the installed local Python lane.",
+  "On 2026-09-22, bump pkgrel to 2 for the generation-C W2A closure (#110), built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7. The source is unchanged; the rebuild keeps the package out of the previous generation's repo. aiohttp needs it in the build root."
 ]
 provides = ["python-frozenlist"]
 conflicts = ["python-frozenlist"]
@@ -1542,7 +1595,7 @@ scaffold_notes = [
 [packages.python-multidict-gfx1151]
 recipe_key = "native_wheels"
 template = "native-wheel-pypi"
-upstream_version = "6.7.1"
+upstream_version = "6.9.1"
 pkgdesc = "Asyncio-based multidict implementation rebuilt for Strix Halo gfx1151"
 url = "https://github.com/aio-libs/multidict"
 license = ["Apache-2.0"]
@@ -1555,15 +1608,16 @@ divergence_notes = [
 ]
 update_notes = [
   "Check Arch first for release and build-backend metadata before updating.",
-  "After publishing a rebuilt package, verify `import multidict` and a minimal MultiDict construction probe through the installed local Python lane."
+  "After publishing a rebuilt package, verify `import multidict` and a minimal MultiDict construction probe through the installed local Python lane.",
+  "On 2026-09-22, update to multidict 6.9.1 for the generation-C W2A closure (#110), built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7."
 ]
 provides = ["python-multidict"]
 conflicts = ["python-multidict"]
 depends = ["glibc", "python-gfx1151"]
 makedepends = ["cython", "python-build", "python-installer", "python-setuptools", "python-wheel", "rocm-llvm-gfx1151"]
 pypi_name = "multidict"
-sha256sums = ["ec6652a1bee61c53a3e5776b6049172c53b6aaba34f18c9ad04f82712bac623d"]
-src_subdir = "multidict-6.7.1"
+sha256sums = ["0f06e60fa190aa7abd0914c2a766736fdc8e9f34878c4346338534b73d1b20e2"]
+src_subdir = "multidict-6.9.1"
 patches_dir = "patches/python-multidict-gfx1151"
 recipe_notes_override = """
 This package is the multidict output from the shared `native_wheels` recipe
@@ -1584,7 +1638,7 @@ scaffold_notes = [
 [packages.python-yarl-gfx1151]
 recipe_key = "native_wheels"
 template = "native-wheel-pypi"
-upstream_version = "1.24.2"
+upstream_version = "1.25.1"
 pkgdesc = "Yet another URL library rebuilt for Strix Halo gfx1151"
 url = "https://github.com/aio-libs/yarl/"
 license = ["Apache-2.0"]
@@ -1597,15 +1651,16 @@ divergence_notes = [
 ]
 update_notes = [
   "Check Arch first for release and build-backend metadata before updating.",
-  "After publishing a rebuilt package, verify `import yarl` and a minimal URL construction probe through the installed local Python lane."
+  "After publishing a rebuilt package, verify `import yarl` and a minimal URL construction probe through the installed local Python lane.",
+  "On 2026-09-22, update to yarl 1.25.1 for the generation-C W2A closure (#110), built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7."
 ]
 provides = ["python-yarl"]
 conflicts = ["python-yarl"]
 depends = ["glibc", "python-gfx1151", "python-idna", "python-multidict-gfx1151", "python-propcache"]
 makedepends = ["cython", "python-build", "python-expandvars", "python-installer", "python-setuptools", "python-wheel", "rocm-llvm-gfx1151"]
 pypi_name = "yarl"
-sha256sums = ["9ac374123c6fd7abf64d1fec93962b0bd4ee2c19751755a762a72dd96c0378f8"]
-src_subdir = "yarl-1.24.2"
+sha256sums = ["03dd38de09bc213e9a8b29761eec33ee1d5318dac0e49d8af36e4d27830e23a7"]
+src_subdir = "yarl-1.25.1"
 patches_dir = "patches/python-yarl-gfx1151"
 recipe_notes_override = """
 This package is the yarl output from the shared `native_wheels` recipe phase.
@@ -1626,7 +1681,7 @@ scaffold_notes = [
 [packages.python-aiohttp-gfx1151]
 recipe_key = "native_wheels"
 template = "native-wheel-pypi"
-upstream_version = "3.13.5"
+upstream_version = "3.14.3"
 pkgdesc = "HTTP client/server for asyncio rebuilt for Strix Halo gfx1151"
 url = "https://github.com/aio-libs/aiohttp"
 license = ["Apache-2.0"]
@@ -1640,7 +1695,8 @@ divergence_notes = [
 update_notes = [
   "Check Arch first for llhttp, Cython, and dependency metadata before updating.",
   "Keep AIOHTTP_USE_SYSTEM_DEPS=1 in the build environment unless upstream changes how system llhttp is selected.",
-  "After publishing a rebuilt package, verify `import aiohttp` and a minimal ClientSession construction path through the installed local Python lane."
+  "After publishing a rebuilt package, verify `import aiohttp` and a minimal ClientSession construction path through the installed local Python lane.",
+  "On 2026-09-22, update to aiohttp 3.14.3 for the generation-C W2A closure (#110), built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7."
 ]
 provides = ["python-aiohttp"]
 conflicts = ["python-aiohttp"]
@@ -1653,8 +1709,8 @@ optdepends = [
 ]
 build_env = ["AIOHTTP_USE_SYSTEM_DEPS=1"]
 pypi_name = "aiohttp"
-sha256sums = ["9d98cc980ecc96be6eb4c1994ce35d28d8b1f5e5208a23b421187d1209dbb7d1"]
-src_subdir = "aiohttp-3.13.5"
+sha256sums = ["9491196535a88924a60afd5b5f434b5b203b6cc616250878dbdb223a8f7844bc"]
+src_subdir = "aiohttp-3.14.3"
 patches_dir = "patches/python-aiohttp-gfx1151"
 recipe_notes_override = """
 This package is the aiohttp output from the shared `native_wheels` recipe
@@ -1675,10 +1731,293 @@ scaffold_notes = [
   "Keep dependencies pointed at the local frozenlist, multidict, and yarl packages so the aiohttp closure stays on the repo-owned optimized stack."
 ]
 
+[packages.python-prometheus-fastapi-instrumentator-gfx1151]
+recipe_key = "native_wheels"
+template = "native-wheel-pypi"
+upstream_version = "8.1.0"
+pkgdesc = "Prometheus metrics instrumentation for FastAPI and Starlette apps, for the Strix Halo vLLM server stack"
+url = "https://github.com/trallnag/prometheus-fastapi-instrumentator"
+license = ["ISC"]
+arch_reference = ["aur/python-prometheus-fastapi-instrumentator"]
+authoritative_reference = "aur/python-prometheus-fastapi-instrumentator"
+advisory_references = []
+divergence_notes = [
+  "Tracks upstream prometheus-fastapi-instrumentator 8.1.0 from PyPI instead of the AUR 7.0.0 baseline, because vLLM 0.30.0 requires >=8.0.0 (v8 unblocks Starlette >=1.0) and the vLLM package must not depend on a foreign AUR provider.",
+  "Keeps the package pure-Python and architecture-independent; there are no Strix-specific native flags to carry.",
+  "Depends on python-gfx1151 so the vLLM server stack stays on the repo-managed Python lane. Upstream requires starlette and prometheus-client only; fastapi is not a runtime requirement of this package."
+]
+update_notes = [
+  "Check vLLM's requirements/common.txt floor (prometheus-fastapi-instrumentator >=8.0.0 at vLLM 0.30.0) and the upstream CHANGELOG together before updating.",
+  "Re-check the upstream runtime requirements (starlette >=1.0.0,<2.0.0 and prometheus-client >=0.8.0,<1.0.0 at 8.1.0) against Arch python-starlette and python-prometheus_client.",
+  "After publishing a rebuilt package, verify `from prometheus_fastapi_instrumentator import Instrumentator` and instrument a minimal FastAPI app through the installed local Python lane, then rerun the vLLM server smoke, which serves `/metrics` through this package.",
+  "On 2026-09-25, added at 8.1.0 for the generation-C W2A closure (#110). It is built later in the rootless C build root with the vLLM package; until then the vLLM server smoke has no >=8 provider."
+]
+provides = ["python-prometheus-fastapi-instrumentator"]
+conflicts = ["python-prometheus-fastapi-instrumentator"]
+depends = ["python-gfx1151", "python-prometheus_client", "python-starlette"]
+makedepends = ["python-build", "python-installer", "python-poetry-core"]
+arch = ["any"]
+pure_python_wheel = true
+pypi_name = "prometheus_fastapi_instrumentator"
+sha256sums = ["b77f3043665e8d28e2bbd21017506195a43d9adf1d402d01bf95b494b7e560e1"]
+src_subdir = "prometheus_fastapi_instrumentator-8.1.0"
+patches_dir = "patches/python-prometheus-fastapi-instrumentator-gfx1151"
+recipe_notes_override = """
+This package supplies the Prometheus metrics middleware that the vLLM
+OpenAI-compatible server uses for `/metrics`. It is pure Python, but it
+belongs in the local package closure because vLLM 0.30.0 requires
+prometheus-fastapi-instrumentator >=8.0.0, and the only Arch-family package
+is the AUR 7.0.0 build, which predates Starlette 1.0 support.
+"""
+scaffold_notes = [
+  "Part of the vLLM API server dependency closure (#110).",
+  "Renders through the Blackcat native-wheel lane in pure-Python mode, like compressed-tensors and Accelerate; Blackcat's recipe does not name this package.",
+  "Builds with the Arch poetry-core backend and keeps Python build dependency checking on, because poetry-core >=2.0 is the only build requirement."
+]
+
+[packages.python-einops-gfx1151]
+recipe_key = "native_wheels"
+template = "native-wheel-pypi"
+upstream_version = "0.8.2"
+pkgdesc = "Flexible tensor operations for readable deep-learning code, for the Strix Halo vLLM stack"
+url = "https://github.com/arogozhnikov/einops"
+license = ["MIT"]
+arch_reference = ["aur/python-einops"]
+authoritative_reference = "aur/python-einops"
+advisory_references = []
+divergence_notes = [
+  "Tracks the upstream einops 0.8.2 PyPI release instead of the AUR package, which packages an unreleased 0.9.0dev snapshot; the vLLM package must not depend on a foreign AUR provider.",
+  "Keeps the package pure-Python and architecture-independent; there are no Strix-specific native flags to carry.",
+  "Depends on python-gfx1151 so the vLLM stack stays on the repo-managed Python lane. Upstream declares no runtime requirements."
+]
+update_notes = [
+  "Check vLLM's requirements/common.txt (einops with no version bound at vLLM 0.30.0) and the upstream release notes together before updating.",
+  "After publishing a rebuilt package, verify `import einops` and a `einops.rearrange` probe on a NumPy array through the installed local Python lane.",
+  "On 2026-09-25, added at 0.8.2 for the generation-C W2A closure (#110, #111). vLLM 0.30.0 imports einops at worker startup (`vllm/model_executor/layers/mamba/ops/ssd_combined.py`, reached from `vllm/v1/worker/utils.py`) and in the Qwen3.5 and Qwen3.6 gated-delta-net layers. It is built in the rootless C build root in the vLLM lease job."
+]
+provides = ["python-einops"]
+conflicts = ["python-einops"]
+depends = ["python-gfx1151"]
+makedepends = ["python-build", "python-hatchling", "python-installer"]
+arch = ["any"]
+pure_python_wheel = true
+pypi_name = "einops"
+sha256sums = ["609da665570e5e265e27283aab09e7f279ade90c4f01bcfca111f3d3e13f2827"]
+src_subdir = "einops-0.8.2"
+patches_dir = "patches/python-einops-gfx1151"
+recipe_notes_override = """
+This package supplies einops, which vLLM 0.30.0 imports at worker startup and
+in several model layers, including the Qwen3.5 and Qwen3.6 gated-delta-net
+attention. It is pure Python, but it belongs in the local package closure
+because no Arch sync repo carries einops and the AUR package tracks an
+unreleased development snapshot.
+"""
+scaffold_notes = [
+  "Part of the vLLM runtime dependency closure (#110).",
+  "Renders through the Blackcat native-wheel lane in pure-Python mode, like compressed-tensors and prometheus-fastapi-instrumentator; Blackcat's recipe does not name this package.",
+  "Builds with the Arch hatchling backend and keeps Python build dependency checking on, because hatchling >=1.10.0 is the only build requirement."
+]
+
+[packages.python-py-cpuinfo-gfx1151]
+recipe_key = "native_wheels"
+template = "native-wheel-pypi"
+upstream_version = "9.0.0"
+pkgdesc = "Pure-Python CPU information probe, for the Strix Halo vLLM stack"
+url = "https://github.com/workhorsy/py-cpuinfo"
+license = ["MIT"]
+arch_reference = []
+authoritative_reference = "none"
+advisory_references = []
+divergence_notes = [
+  "Arch carried python-py-cpuinfo 9.0.0 until it left the sync repos, and no AUR package replaces it, so this package takes over the former Arch name through provides and conflicts.",
+  "Keeps the package pure-Python and architecture-independent; there are no Strix-specific native flags to carry.",
+  "Depends on python-gfx1151 so the vLLM stack stays on the repo-managed Python lane. Upstream declares no runtime requirements."
+]
+update_notes = [
+  "Check vLLM's requirements/common.txt (py-cpuinfo with no version bound at vLLM 0.30.0) and the upstream release notes together before updating.",
+  "After publishing a rebuilt package, verify `import cpuinfo` and `cpuinfo.get_cpu_info()` through the installed local Python lane.",
+  "On 2026-09-25, added at 9.0.0 for the generation-C W2A closure (#110, #111). vLLM 0.30.0 imports cpuinfo from `vllm/usage/usage_lib.py`, which `vllm serve` imports at startup. It is built in the rootless C build root in the vLLM lease job."
+]
+provides = ["python-py-cpuinfo"]
+conflicts = ["python-py-cpuinfo"]
+depends = ["python-gfx1151"]
+makedepends = ["python-build", "python-installer", "python-setuptools", "python-wheel"]
+arch = ["any"]
+pure_python_wheel = true
+pypi_name = "py-cpuinfo"
+sha256sums = ["3cdbbf3fac90dc6f118bfd64384f309edeadd902d7c8fb17f02ffa1fc3f49690"]
+src_subdir = "py-cpuinfo-9.0.0"
+patches_dir = "patches/python-py-cpuinfo-gfx1151"
+recipe_notes_override = """
+This package supplies py-cpuinfo, which vLLM 0.30.0 imports from its usage
+module while `vllm serve` starts. It is pure Python, but it belongs in the
+local package closure because python-py-cpuinfo is no longer in the Arch sync
+repos and no AUR package replaces it.
+"""
+scaffold_notes = [
+  "Part of the vLLM runtime dependency closure (#110).",
+  "Renders through the Blackcat native-wheel lane in pure-Python mode; Blackcat's recipe does not name this package.",
+  "The sdist has no pyproject.toml, so `python -m build` uses the setuptools legacy backend, which needs setuptools and wheel."
+]
+
+[packages.python-pybase64-gfx1151]
+recipe_key = "native_wheels"
+template = "native-wheel-pypi"
+upstream_version = "1.5.0"
+pkgdesc = "Fast SIMD Base64 encoding and decoding rebuilt for Strix Halo gfx1151"
+url = "https://github.com/mayeut/pybase64"
+license = ["BSD-2-Clause"]
+arch_reference = ["aur/python-pybase64"]
+authoritative_reference = "aur/python-pybase64"
+advisory_references = []
+divergence_notes = [
+  "Tracks upstream pybase64 1.5.0 from PyPI instead of the AUR 1.4.2 package, so the vLLM package does not depend on a foreign AUR provider.",
+  "Builds the C extension and its bundled libbase64 through the Blackcat native-wheel compiler lane with amdclang and Zen 5 flags; libbase64 still picks its SIMD codec at run time.",
+  "Sets CIBUILDWHEEL=1 so a failed libbase64 or extension build fails the package instead of falling back to pure Python.",
+  "Depends on glibc and python-gfx1151 only. Upstream 1.5.0 declares no runtime requirements; the AUR package's python-typing_extensions dependency is not needed."
+]
+update_notes = [
+  "Check vLLM's requirements/common.txt (pybase64 with no version bound at vLLM 0.30.0) and the upstream changelog together before updating.",
+  "Re-check setup.py before updating: the extension must stay mandatory under CIBUILDWHEEL=1, and libbase64 must still build with cmake.",
+  "After publishing a rebuilt package, verify `import pybase64`, that `pybase64._pybase64` loads, and a `pybase64.b64encode` and `b64decode` round trip through the installed local Python lane.",
+  "On 2026-09-25, added at 1.5.0 for the generation-C W2A closure (#110, #111). vLLM 0.30.0 imports pybase64 from `vllm/renderers/embed_utils.py`, which `vllm serve` imports at startup, and in its media and pooling paths. It is built in the rootless C build root in the vLLM lease job."
+]
+provides = ["python-pybase64"]
+conflicts = ["python-pybase64"]
+depends = ["glibc", "python-gfx1151"]
+makedepends = ["cmake", "python-build", "python-installer", "python-setuptools", "python-wheel", "rocm-llvm-gfx1151"]
+pypi_name = "pybase64"
+sha256sums = ["545ab2a433769e3b8e1ce2b4f7b07218bbde202f4954fbfe52948b2522120727"]
+src_subdir = "pybase64-1.5.0"
+patches_dir = "patches/python-pybase64-gfx1151"
+build_env = ["CIBUILDWHEEL=1"]
+single_wheel_install = true
+recipe_notes_override = """
+pybase64 supplies the SIMD Base64 codec that vLLM uses for embedded media,
+pooling outputs and prompt embeddings. vLLM 0.30.0 imports it while `vllm
+serve` starts. The package builds the C extension and the bundled libbase64
+static library on the local amdclang native-wheel lane.
+
+Upstream setup.py marks the extension optional unless `CIBUILDWHEEL=1`, and
+silently installs a pure-Python fallback when libbase64 fails to build. This
+package sets `CIBUILDWHEEL=1` so that fallback can never ship.
+"""
+scaffold_notes = [
+  "Part of the vLLM runtime dependency closure (#110).",
+  "Renders through the Blackcat native-wheel lane; Blackcat's recipe does not name this package.",
+  "setup.py drives cmake for the bundled libbase64, so cmake is a makedepend."
+]
+
+[packages.python-apache-tvm-ffi-gfx1151]
+recipe_key = "native_wheels"
+template = "native-wheel-pypi"
+upstream_version = "0.1.10"
+pkgdesc = "Apache TVM FFI ABI and Python bindings rebuilt for Strix Halo gfx1151"
+url = "https://github.com/apache/tvm-ffi"
+license = ["Apache-2.0"]
+arch_reference = ["aur/python-apache-tvm-ffi"]
+authoritative_reference = "aur/python-apache-tvm-ffi"
+advisory_references = []
+divergence_notes = [
+  "Pins 0.1.10 instead of the AUR 0.1.14.post1 package: xgrammar 0.2.3 requires apache-tvm-ffi >=0.1.9 at build and run time, and vLLM 0.30.0 requirements/rocm.txt pins apache-tvm-ffi ==0.1.10, so 0.1.10 meets both.",
+  "Builds the C++ core, the bundled libbacktrace and the Cython module through the Blackcat native-wheel compiler lane with amdclang and Zen 5 flags. The wheel is a cp312-abi3 wheel (pyproject `wheel.py-api = \"cp312\"`).",
+  "Depends on glibc, libgcc, libstdc++, python-gfx1151 and python-typing_extensions. Upstream 0.1.10 declares only typing-extensions >=4.5.",
+  "Builds with `skip_dependency_check = true`: scikit-build-core's `get_requires_for_build_wheel` hook asks the no-isolation frontend for the PyPI `cmake` distribution, but Arch supplies CMake as `/usr/bin/cmake`, which the scikit-build-core backend finds and uses, so the frontend dependency check is stricter than the actual build.",
+  "Compiles C without LTO (`drop_lto_from_cflags = true`) while C++ keeps makepkg's `-flto=auto`. The only C code is the bundled libbacktrace, a CMake ExternalProject whose autoconf configure gets `CMAKE_C_FLAGS`. Under `-flto`, its object-format probe (`filetype.awk` on `conftest.o`) reads LLVM bitcode instead of ELF, so configure builds `unknown.c` with `BACKTRACE_SUPPORTED=0`. That backend never sets `syminfo_fn`, and TVM-FFI's backtrace callback then calls a NULL pointer on the first raised error. 0.1.10-1 shipped that build. A 2026-09-25 flag matrix in the W2A root reproduced the crash with LTO whether or not `-enable-gvn-hoist`/`-enable-gvn-sink` were set, and never without LTO; configure with LTO-free CFLAGS and makepkg's LTO LDFLAGS detects `elf.lo` and `BACKTRACE_ELF_SIZE 64`. Drop this when upstream libbacktrace's filetype probe recognizes LLVM bitcode or tvm-ffi stops passing CFLAGS to the configure step; the package() guard catches a regression either way.",
+  "Passes `TVM_FFI_BACKTRACE_ON_SEGFAULT=OFF`. With it ON, the SIGSEGV handler re-enters `TVMFFIBacktrace`, which blocks on the non-recursive mutex the crashing thread already holds, so any crash in the backtrace path hangs the process instead of failing. The trade-off is no TVM-FFI backtrace on a segfault; error backtraces through libbacktrace stay on. Drop this only after upstream makes the handler safe to re-enter.",
+  "Passes `CMAKE_AR` and `CMAKE_RANLIB` as the ROCm LLVM `llvm-ar` and `llvm-ranlib`, which match amdclang and index LLVM bitcode archives, following the python-pytorch-opt-rocm-gfx1151 convention.",
+  "package() fails unless `tvm_ffi/lib/libtvm_ffi.so` contains libbacktrace's elf.c message `no debug info in ELF executable`, so an unknown-format libbacktrace cannot ship again."
+]
+update_notes = [
+  "Move this pin with xgrammar: re-check xgrammar's pyproject apache-tvm-ffi floor and vLLM's requirements/rocm.txt pin together before updating.",
+  "xgrammar links libtvm_ffi.so and compiles against these headers, so rebuild python-xgrammar-gfx1151 after any update.",
+  "The build is CPU-only: CMakeLists.txt enables CXX and C, and the pyproject passes TVM_FFI_BUILD_TESTS=OFF (googletest would need a fetch). No CUDA probe runs.",
+  "After publishing a rebuilt package, verify `import tvm_ffi`, `tvm_ffi.core` and `python -m tvm_ffi.config --libfiles` through the installed local Python lane.",
+  "On 2026-09-25, added at 0.1.10 for the generation-C W2A closure (#110, #111) as the runtime and build dependency of python-xgrammar-gfx1151. vLLM 0.30.0 imports xgrammar in every process, and xgrammar imports tvm_ffi (`xgrammar/base.py`, `exception.py` and `load_binding.py`). The upstream build compiles 23 C++ sources, 33 libbacktrace C files and one Cython module; expect a few minutes of CPU time. It is built in the rootless C build root in the vLLM lease job.",
+  "On 2026-09-25, rebuilt as 0.1.10-2: 0.1.10-1 crashed in libbacktrace on the first raised TVM-FFI error and then deadlocked in its segfault handler, which hung xgrammar's build-time stub generation. After installing a rebuild, run `tvm_ffi.core._object_type_key_to_index('no.such.Key')` under a timeout: it must return promptly instead of hanging."
+]
+provides = ["python-apache-tvm-ffi"]
+conflicts = ["python-apache-tvm-ffi"]
+skip_dependency_check = true
+depends = ["glibc", "libgcc", "libstdc++", "python-gfx1151", "python-typing_extensions"]
+makedepends = ["cmake", "cython", "ninja", "python-build", "python-installer", "python-scikit-build-core", "python-setuptools-scm", "rocm-llvm-gfx1151"]
+pypi_name = "apache_tvm_ffi"
+sha256sums = ["974c208766c304c780c17c6d405449e862f83b22c7b6b2b8c28b29d55a806ae3"]
+src_subdir = "apache_tvm_ffi-0.1.10"
+patches_dir = "patches/python-apache-tvm-ffi-gfx1151"
+pkgrel = 2
+drop_lto_from_cflags = true
+build_config_settings = ["cmake.define.TVM_FFI_BACKTRACE_ON_SEGFAULT=OFF", "cmake.define.CMAKE_AR=/opt/rocm/lib/llvm/bin/llvm-ar", "cmake.define.CMAKE_RANLIB=/opt/rocm/lib/llvm/bin/llvm-ranlib"]
+wheel_required_strings = [{ path = "tvm_ffi/lib/libtvm_ffi.so", text = "no debug info in ELF executable" }]
+single_wheel_install = true
+recipe_notes_override = """
+apache-tvm-ffi supplies the TVM FFI ABI, its shared library and its Cython
+bindings. xgrammar 0.2.x builds its Python bindings as a TVM-FFI module and
+imports tvm_ffi at run time, and vLLM 0.30.0 imports xgrammar in every
+process. The package builds the C++ core and the Cython module on the local
+amdclang native-wheel lane.
+"""
+scaffold_notes = [
+  "Part of the vLLM runtime dependency closure (#110), as the xgrammar dependency.",
+  "Renders through the Blackcat native-wheel lane; Blackcat's recipe does not name this package.",
+  "scikit-build-core drives CMake with the ninja generator and runs Cython; setuptools-scm reads the version from the sdist metadata."
+]
+
+[packages.python-xgrammar-gfx1151]
+recipe_key = "native_wheels"
+template = "native-wheel-pypi"
+upstream_version = "0.2.3"
+pkgdesc = "Structured generation grammar engine rebuilt for Strix Halo gfx1151"
+url = "https://github.com/mlc-ai/xgrammar"
+license = ["Apache-2.0"]
+arch_reference = ["aur/python-xgrammar"]
+authoritative_reference = "aur/python-xgrammar"
+advisory_references = []
+divergence_notes = [
+  "Builds xgrammar 0.2.3 from the PyPI sdist instead of repacking a wheel like the AUR package, whose 0.2.x packages also omit the apache-tvm-ffi dependency and fail at `import xgrammar` with `No module named 'tvm_ffi'`.",
+  "Pins 0.2.3 instead of the latest release: vLLM 0.30.0 requires xgrammar >=0.2.1,<1.0.0, its CUDA and CPU CI locks test 0.2.3 (the ROCm lock tests 0.2.1), and 0.2.3 publishes CPython 3.14 wheels.",
+  "Builds the C++ grammar engine and its TVM-FFI bindings through the Blackcat native-wheel compiler lane with amdclang and Zen 5 flags, against python-apache-tvm-ffi-gfx1151.",
+  "Carries every upstream runtime requirement from the published metadata, mapped to the local lanes: apache-tvm-ffi, pydantic, torch, transformers, triton, numpy and typing-extensions.",
+  "Builds with `skip_dependency_check = true`: scikit-build-core's `get_requires_for_build_wheel` hook asks the no-isolation frontend for the PyPI `cmake` distribution, but Arch supplies CMake as `/usr/bin/cmake`, which the scikit-build-core backend finds and uses, so the frontend dependency check is stricter than the actual build.",
+  "Passes `CMAKE_AR` and `CMAKE_RANLIB` as the ROCm LLVM `llvm-ar` and `llvm-ranlib`: upstream CMake adds `-flto=auto`, and those tools match amdclang and index LLVM bitcode archives, following the python-pytorch-opt-rocm-gfx1151 convention.",
+  "package() fails unless the wheel carries `xgrammar/tvm_ffi_binding/_ffi_api.py`. The sdist does not ship the `tvm_ffi_binding` stubs; `tvm_ffi_configure_target(... STUB_DIR ...)` in `cpp/tvm_ffi/CMakeLists.txt` writes them at build time by loading the built bindings through tvm_ffi, and `xgrammar/base.py` imports them."
+]
+update_notes = [
+  "Check vLLM's requirements/common.txt specifier and its requirements/test CI locks together before updating, and move python-apache-tvm-ffi-gfx1151 with it when the tvm-ffi floor changes.",
+  "The build is CPU-only. CMakeLists.txt enables only CXX and never looks for CUDA; the CUDA token-bitmask kernel is a runtime JIT that vLLM does not call on ROCm, where Model Runner V2 applies bitmasks with its own Triton kernel. The package passes XGRAMMAR_ENABLE_CPPTRACE=OFF and XGRAMMAR_BUILD_CXX_TESTS=OFF explicitly, because both would build submodules.",
+  "Upstream CMake adds `-Wall -Wextra -Werror` and `-flto=auto`. A 2026-09-25 syntax-only probe compiled all 22 C++ sources with amdclang 23, the lane's Zen 5 flags and those warnings without an error; the first package build is the full check. amdclang links with ld.lld, which reads the LTO bitcode archives.",
+  "After publishing a rebuilt package, verify `import xgrammar`, then compile the Gemma 4 structured-output smoke schema with `xgrammar.GrammarCompiler` and fill a token bitmask on CPU through the installed local Python lane.",
+  "On 2026-09-25, added at 0.2.3 for the generation-C W2A closure (#110, #111). vLLM 0.30.0 imports xgrammar at module level in `vllm/parser/harmony.py`, which every vLLM process reaches, and uses it for `response_format` json_schema requests. The upstream build compiles 22 C++ sources plus the bindings; expect about 5-10 minutes of CPU time. It is built in the rootless C build root in the vLLM lease job, after python-apache-tvm-ffi-gfx1151."
+]
+provides = ["python-xgrammar"]
+conflicts = ["python-xgrammar"]
+skip_dependency_check = true
+depends = ["glibc", "libgcc", "libstdc++", "python-apache-tvm-ffi-gfx1151", "python-gfx1151", "python-numpy-gfx1151", "python-pydantic", "python-pytorch-opt-rocm-gfx1151", "python-transformers-gfx1151", "python-triton-gfx1151", "python-typing_extensions"]
+makedepends = ["cmake", "ninja", "python-apache-tvm-ffi-gfx1151", "python-build", "python-installer", "python-scikit-build-core", "rocm-llvm-gfx1151"]
+pypi_name = "xgrammar"
+sha256sums = ["f76423630ae3ac4e090cb38ce1e30e7bcc69b3dee4d22d94353944386a4c6f18"]
+src_subdir = "xgrammar-0.2.3"
+patches_dir = "patches/python-xgrammar-gfx1151"
+build_config_settings = ["cmake.define.XGRAMMAR_ENABLE_CPPTRACE=OFF", "cmake.define.XGRAMMAR_BUILD_CXX_TESTS=OFF", "cmake.define.CMAKE_AR=/opt/rocm/lib/llvm/bin/llvm-ar", "cmake.define.CMAKE_RANLIB=/opt/rocm/lib/llvm/bin/llvm-ranlib"]
+wheel_required_files = ["xgrammar/tvm_ffi_binding/_ffi_api.py"]
+single_wheel_install = true
+recipe_notes_override = """
+xgrammar is the grammar engine behind vLLM's default structured-output
+backend. vLLM 0.30.0 imports it at module level in `vllm/parser/harmony.py`,
+which the engine core, the offline `LLM` and the API server all reach, so no
+vLLM process starts without it. The package builds the C++ engine and its
+TVM-FFI bindings on the local amdclang native-wheel lane.
+"""
+scaffold_notes = [
+  "Part of the vLLM runtime dependency closure (#110).",
+  "Renders through the Blackcat native-wheel lane; Blackcat's recipe does not name this package.",
+  "scikit-build-core drives CMake with the ninja generator. CMake finds tvm_ffi through the installed python-apache-tvm-ffi-gfx1151 package, so that lane must be in the root before this build."
+]
+
 [packages.python-compressed-tensors-gfx1151]
 recipe_key = "native_wheels"
 template = "native-wheel-pypi"
-upstream_version = "0.16.0"
+upstream_version = "0.17.0"
 pkgrel = 1
 pkgdesc = "Compressed model tensor format helpers for vLLM quantized checkpoints"
 url = "https://github.com/vllm-project/compressed-tensors"
@@ -1688,7 +2027,7 @@ authoritative_reference = "none"
 advisory_references = []
 divergence_notes = [
   "There is no current Arch-family compressed-tensors package baseline, so this package is closure-first for vLLM compressed-tensors quantization lanes.",
-  "Uses the current-vLLM-compatible compressed-tensors 0.16.0 release instead of the older 0.14.0.1 helper version named by Blackcat's llmcompressor quantization notes.",
+  "Uses the current-vLLM-compatible compressed-tensors 0.17.0 release (the vLLM 0.28 through 0.30 pin) instead of the older 0.14.0.1 helper version named by Blackcat's llmcompressor quantization notes.",
   "Treat llmcompressor as a separate package/dependency-closure decision because llmcompressor 0.10.0.1 pins compressed-tensors 0.14.0.1 and older torch/transformers bounds than the current local stack."
 ]
 update_notes = [
@@ -1696,7 +2035,8 @@ update_notes = [
   "After publishing a rebuilt package, verify `import compressed_tensors` and a minimal config import through the installed local Python lane.",
   "Do not use this package as proof that llmcompressor is installable. Package llmcompressor only after its accelerate, auto-round, NVIDIA-management, torch, transformers, and compressed-tensors dependency story is reconciled.",
   "Keep the build dependency check skipped while upstream's sdist pins setuptools_scm==8.2.0. The Arch host carries a newer setuptools-scm that builds the pure-Python wheel cleanly.",
-  "On 2026-05-31, update to compressed-tensors 0.16.0 for the current vLLM compressed-tensors drift; keep deploy/install and installed import/config smokes as explicit gates."
+  "On 2026-05-31, update to compressed-tensors 0.16.0 for the current vLLM compressed-tensors drift; keep deploy/install and installed import/config smokes as explicit gates.",
+  "On 2026-09-22, update to compressed-tensors 0.17.0 for the generation-C W2A closure (#110), built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7. vLLM 0.28 through 0.30 pin compressed-tensors ==0.17.0."
 ]
 provides = ["python-compressed-tensors"]
 conflicts = ["python-compressed-tensors"]
@@ -1706,14 +2046,14 @@ arch = ["any"]
 pure_python_wheel = true
 skip_dependency_check = true
 pypi_name = "compressed_tensors"
-sha256sums = ["51232ea943bf973d77fc1f3f6044fe3c05adfe6dba26f085b7f6b578a5bd9ba3"]
-src_subdir = "compressed_tensors-0.16.0"
+sha256sums = ["15c20d06bdbcf35b51fc99fd125e7b9be1e1855567c33b7a46dfac26ad6fb126"]
+src_subdir = "compressed_tensors-0.17.0"
 patches_dir = "patches/python-compressed-tensors-gfx1151"
 recipe_notes_override = """
 This package is the compressed-tensors output for the Blackcat Qwen3-VL
 tooling follow-up lane. Blackcat's quantization helper names
 llmcompressor 0.10.0.1 and compressed-tensors 0.14.0.1, but the current
-vLLM lane expects compressed-tensors 0.16.0. Keep this package
+vLLM lane expects compressed-tensors 0.17.0. Keep this package
 aligned with vLLM first, then reconcile llmcompressor as a separate package
 closure.
 
@@ -1738,7 +2078,7 @@ scaffold_notes = [
 [packages.python-accelerate-gfx1151]
 recipe_key = "native_wheels"
 template = "native-wheel-pypi"
-upstream_version = "1.13.0"
+upstream_version = "1.15.0"
 pkgdesc = "Hugging Face multi-device training helpers for the Strix Halo Python stack"
 url = "https://github.com/huggingface/accelerate"
 license = ["Apache-2.0"]
@@ -1751,7 +2091,8 @@ divergence_notes = [
 ]
 update_notes = [
   "Check llmcompressor and auto-round release metadata before updating; this package should stay inside the active quantization-tooling dependency bounds.",
-  "After publishing a rebuilt package, verify `import accelerate` through the installed local Python lane."
+  "After publishing a rebuilt package, verify `import accelerate` through the installed local Python lane.",
+  "On 2026-09-22, update to Accelerate 1.15.0 for the generation-C W2A closure (#110), built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7."
 ]
 provides = ["python-accelerate"]
 conflicts = ["python-accelerate"]
@@ -1761,8 +2102,8 @@ arch = ["any"]
 pure_python_wheel = true
 skip_dependency_check = true
 pypi_name = "accelerate"
-sha256sums = ["d631b4e0f5b3de4aff2d7e9e6857d164810dfc3237d54d017f075122d057b236"]
-src_subdir = "accelerate-1.13.0"
+sha256sums = ["5654f8c5eaa0d4fa68b33e287a97765da6849bf6d51dcac874e73fbbddfb6134"]
+src_subdir = "accelerate-1.15.0"
 patches_dir = "patches/python-accelerate-gfx1151"
 recipe_notes_override = """
 This package supplies the Hugging Face accelerate dependency needed by the
@@ -1896,8 +2237,8 @@ scaffold_notes = [
 [packages.python-torchao-rocm-gfx1151]
 recipe_key = "native_wheels"
 template = "python-project-torchao"
-upstream_version = "0.17.0"
-pkgrel = 6
+upstream_version = "0.18.0"
+pkgrel = 1
 pkgdesc = "Package for applying ao techniques to GPU models with ROCm, rebuilt for Strix Halo gfx1151"
 url = "https://github.com/pytorch/ao"
 license = ["BSD-3-Clause"]
@@ -1907,29 +2248,48 @@ advisory_references = ["extra/python-pytorch-opt-rocm", "extra/python-pytorch-ro
 divergence_notes = [
   "There is no standalone TorchAO package in Arch-family repositories, so this package is closure-first and tracks the upstream TorchAO compatibility matrix against the local PyTorch ROCm lane.",
   "Carries a package-local ROCm patch so the source build honors PYTORCH_ROCM_ARCH instead of hard-coding gfx942, exports ROCM_HOME=/opt/rocm so PyTorch picks up the real split-layout HIP headers, and carries a post-install RPATH fix so the optional _C extension can resolve torch/lib at runtime.",
-  "Carries a Python 3.14 PT2E compatibility patch so torchao.quantization.pt2e can import after Python made typing.Union aliases immutable for __module__ assignment."
+  "Carries 0003-swizzle-include-format-before-hip-runtime.patch so the plain-C++ ROCm swizzle TU parses libstdc++ <format> before HIP's host-mode empty __noinline__ macro can corrupt GCC 16's [[__gnu__::__noinline__]] attribute."
 ]
 update_notes = [
   "Check the upstream TorchAO compatibility table first during updates; this package must stay on the release line built for the local PyTorch lane rather than a nearby +git snapshot.",
   "Keep VERSION_SUFFIX empty for release builds unless upstream changes its versioning model; +git local versions bypass TorchAO's own compatibility gate and recreate avoidable import-time warnings.",
   "Keep ROCM_HOME=/opt/rocm in the build environment unless the local ROCm packaging layout changes. The host-visible hipcc wrapper may live under /usr/bin, but the headers and shared libraries still come from /opt/rocm.",
   "Re-verify the installed extension with readelf -d and ldd -r after each update. A clean package needs both a usable torch/lib runpath and zero unresolved ATen/Torch symbols once torch/lib is visible.",
-  "Keep the PT2E union-alias patch until upstream TorchAO handles Python 3.14 typing.Union objects without assigning __module__ directly.",
   "Keep the repo-local tools/torchao_vllm_smoke.py helper passing for both the tiny serialized checkpoint and the Gemma 4 online quantization path. Treat the serialized Gemma 4 real-model checkpoint path as blocked until the TorchAO/vLLM tensor metadata mismatch is fixed.",
   "Keep -famd-opt out of TorchAO wheel CFLAGS/CXXFLAGS while retaining it in LDFLAGS as a clang driver link flag; do not move it back into the wheel compile flags without a fresh TorchAO extension build failure that requires it there.",
   "On 2026-05-26, bump pkgrel to 4 for delivery of the TorchAO extension rebuild against python-pytorch-opt-rocm-gfx1151 2.12.0-2 from ROCm/pytorch release/2.12 commit 26872debb4452ea6dc898288618a15595e2317d9.",
-  "On 2026-06-15, bump pkgrel to 6 for the c7badbdf runtime-base rebuild so TorchAO supersedes the unmerged ab32a1f/pkgrel-5 host-drift artifact."
+  "On 2026-06-15, bump pkgrel to 6 for the c7badbdf runtime-base rebuild so TorchAO supersedes the unmerged ab32a1f/pkgrel-5 host-drift artifact.",
+  "On 2026-09-25, update to TorchAO 0.18.0 (tag v0.18.0, commit 5f2baf9d575cf732362594c998c399902942531f) for the rebuild against python-pytorch-opt-rocm-gfx1151 2.12.0-5. Patch 0001 applies with a 10-line offset. Patch 0002 is dropped because 0.18.0 guards the typing.Union __module__ writes with sys.version_info < (3, 14). 0.18.0 raises the minimum PyTorch to 2.11 and removes the v1 AffineQuantizedTensor and layout stack; Int8WeightOnlyConfig version 1 is gone, and version 2 is the default. Recheck the vLLM TorchAO scenarios and tools/torchao_vllm_smoke.py after the rebuild.",
+  "On 2026-09-25, add 0003-swizzle-include-format-before-hip-runtime.patch after the first 0.18.0-1 build failed in torchao/csrc/rocm/swizzle/swizzle.cpp with 'expected identifier' at GCC 16 <format> [[__gnu__::__noinline__]]; pkgrel stays 1 because no 0.18.0-1 artifact was built or published. Drop the patch when the packaged TorchAO release no longer ships swizzle.cpp (upstream removed it on main in https://github.com/pytorch/ao/pull/4697, commit ac1a803c60, after v0.18.0) or when the packaged HIP headers stop defining __noinline__ in plain C++ mode (https://github.com/ROCm/rocm-systems/issues/9897)."
 ]
 recipe_notes_override = """
-Builds TorchAO `0.17.0` from the upstream git tag because that release does
-not publish an sdist on PyPI. This release is the local TorchAO compatibility
-lane for `torch 2.11.0+`.
+Builds TorchAO `0.18.0` from the upstream git tag. The package keeps the git
+source lane that `0.17.0` needed because that release published no sdist on
+PyPI. TorchAO `0.18.0` supports `torch 2.11.0+`, and this package builds it
+against `python-pytorch-opt-rocm-gfx1151 2.12.0`.
+
+TorchAO `0.18.0` guards the `typing.Union` `__module__` writes in
+`torchao.quantization.pt2e` with `sys.version_info < (3, 14)`, so the local
+Python 3.14 PT2E patch that `0.17.0` needed is retired. The release also
+removes the v1 `AffineQuantizedTensor` and layout stack.
 
 TorchAO imports `torch` at build time and still hard-codes `gfx942` for ROCm
 extension builds. The local package exports `VERSION_SUFFIX=` to keep the
 wheel on the stable release version, exports `ROCM_HOME=/opt/rocm` so
 PyTorch's extension helpers use the real split-layout ROCm headers, and
 patches `setup.py` so the ROCm target arch follows `PYTORCH_ROCM_ARCH`.
+
+`0003-swizzle-include-format-before-hip-runtime.patch` makes `torchao/csrc/rocm/swizzle/swizzle.cpp` include
+`<format>` before `<hip/hip_runtime.h>`. `amdclang++` compiles that file as
+plain C++, where `hip/amd_detail/host_defines.h` defines `__noinline__` as an
+empty macro. GCC 16 `<format>`, which ATen reaches through `<chrono>`, spells
+`[[__gnu__::__noinline__]]`; after the macro runs, clang rejects the attribute
+with `expected identifier`. The HIP bug is
+https://github.com/ROCm/rocm-systems/issues/9897. Upstream TorchAO removed
+`swizzle.cpp` on `main` in https://github.com/pytorch/ao/pull/4697 (after
+`v0.18.0`), so drop the patch at the first TorchAO release without that file,
+or earlier if the packaged HIP headers stop defining `__noinline__` in plain
+C++ mode.
 
 The staged package was verified locally with:
 - `readelf -d` showing `RUNPATH [$ORIGIN:$ORIGIN/../torch/lib:/opt/rocm/lib]`
@@ -1947,9 +2307,11 @@ The serialized Gemma 4 real-model path now writes processor files correctly,
 but remains blocked during vLLM weight loading by TorchAO tensor metadata:
 `AttributeError: 'Tensor' object has no attribute 'tensor_data_names'`.
 
-The `Stored version is not the same as current default version` warning is
-expected with TorchAO `0.17.0` when using `Int8WeightOnlyConfig(version=2)`;
-that version is still required for the serialized safetensors path. The ROCm
+The `Stored version is not the same as current default version` warning was
+expected with TorchAO `0.17.0` when using `Int8WeightOnlyConfig(version=2)`.
+TorchAO `0.18.0` makes version 2 the default and removes version 1, so recheck
+whether the warning still appears after the rebuild. Version 2 is still the
+one the serialized safetensors path requires. The ROCm
 custom paged-attention fallback warning is vLLM shape-gated and did not appear
 in the Gemma 4 online TorchAO run.
 """
@@ -1957,25 +2319,24 @@ provides = ["python-torchao", "python-torchao-rocm"]
 conflicts = ["python-torchao", "python-torchao-rocm"]
 depends = ["glibc", "python-gfx1151", "python-pytorch-opt-rocm-gfx1151"]
 makedepends = ["cmake", "git", "ninja", "patchelf", "python-build", "python-installer", "python-setuptools", "python-wheel", "python-pytorch-opt-rocm-gfx1151", "rocm-llvm-gfx1151"]
-source_refs = ["torchao::git+https://github.com/pytorch/ao.git#tag=v0.17.0"]
+source_refs = ["torchao::git+https://github.com/pytorch/ao.git#tag=v0.18.0"]
 sha256sums = ["SKIP"]
 src_subdir = "torchao"
 patches_dir = "patches/python-torchao-rocm-gfx1151"
-extra_sources = ["0001-setup.py-honor-pytorch-rocm-arch.patch", "0002-python-3.14-pt2e-union-aliases.patch"]
-source_patches = ["0001-setup.py-honor-pytorch-rocm-arch.patch", "0002-python-3.14-pt2e-union-aliases.patch"]
+extra_sources = ["0001-setup.py-honor-pytorch-rocm-arch.patch", "0003-swizzle-include-format-before-hip-runtime.patch"]
+source_patches = ["0001-setup.py-honor-pytorch-rocm-arch.patch", "0003-swizzle-include-format-before-hip-runtime.patch"]
 scaffold_notes = [
   "This package follows the repo's native wheel lane but needs two TorchAO-specific corrections: export VERSION_SUFFIX= so the wheel advertises a real release version, and patch the installed _C extension RPATH to include the sibling torch/lib directory.",
-  "TorchAO 0.17.0 does not publish an sdist on PyPI, so the local source-build lane follows the upstream git tag and lets setup.py initialize the pinned cutlass submodule as needed.",
-  "The upstream 0.17.0 setup.py still hard-codes --offload-arch=gfx942 on ROCm, so keep the local source patch that makes the ROCm target arch configurable via PYTORCH_ROCM_ARCH.",
-  "The local build must also export ROCM_HOME=/opt/rocm. On this host, hipcc is visible under /usr/bin, but the actual HIP headers live under /opt/rocm/include; without the explicit prefix, PyTorch's extension helper falls back to ROCM_HOME=/usr and the build dies on hip/hip_runtime.h.",
-  "TorchAO 0.17.0's PT2E package assigns __module__ to typing.Union aliases. Python 3.14 rejects that assignment, so the local package carries a narrow import-compatibility patch."
+  "TorchAO 0.17.0 published no sdist on PyPI, so the local source-build lane follows the upstream git tag and initializes the pinned cutlass submodule in prepare().",
+  "The upstream 0.18.0 setup.py still hard-codes --offload-arch=gfx942 on ROCm, so keep the local source patch that makes the ROCm target arch configurable via PYTORCH_ROCM_ARCH.",
+  "The local build must also export ROCM_HOME=/opt/rocm. On this host, hipcc is visible under /usr/bin, but the actual HIP headers live under /opt/rocm/include; without the explicit prefix, PyTorch's extension helper falls back to ROCM_HOME=/usr and the build dies on hip/hip_runtime.h."
 ]
 
 [packages.python-torch-migraphx-gfx1151]
 recipe_key = "native_wheels"
 template = "python-project-torch-migraphx"
 upstream_version = "1.2"
-pkgrel = 9
+pkgrel = 10
 pkgdesc = "PyTorch integration for MIGraphX on the local ROCm gfx1151 stack"
 url = "https://github.com/ROCm/torch_migraphx"
 license = ["BSD-3-Clause"]
@@ -1984,8 +2345,8 @@ authoritative_reference = "none"
 advisory_references = []
 divergence_notes = [
   "There is no current Arch-family Torch-MIGraphX package baseline, so this package is closure-first and tracks the audited upstream master commit that reports package version 1.2.",
-  "Carries a PT2E compatibility patch because PyTorch 2.11 documents PT2E quantization through TorchAO while current Torch-MIGraphX still imports removed torch.ao quantize_pt2e and quantizer modules.",
-  "Keeps Dynamo registration lazy on base import and preloads PyTorch AOTAutograd before MIGraphX native modules so named-backend registration can import safely on the local Python 3.14 and PyTorch 2.11 stack.",
+  "Requires TorchAO at runtime even though upstream lists it as the quantization extra: on PyTorch 2.11 and newer, Torch-MIGraphX imports PT2E from TorchAO both in dynamo/quantization/_compat.py and in the FX quantized-op converters.",
+  "Keeps Dynamo registration lazy on base import and preloads PyTorch AOTAutograd before MIGraphX native modules so named-backend registration can import safely on the local Python 3.14 and PyTorch 2.12 stack.",
   "Relaxes upstream's numpy <2.0 wheel metadata because the local runtime and FX smoke use the repo's python-numpy-gfx1151 2.x lane."
 ]
 update_notes = [
@@ -1997,12 +2358,18 @@ update_notes = [
   "Re-run the PT2E quantizer import and tiny torch.compile backend smokes after every PyTorch, TorchAO, or Torch-MIGraphX rebuild because those lanes depend on moved TorchAO APIs and PyTorch AOTAutograd import ordering.",
   "On 2026-05-26, bump pkgrel to 7 for delivery of the Torch-MIGraphX rebuild against python-pytorch-opt-rocm-gfx1151 2.12.0-2 and python-torchao-rocm-gfx1151 0.17.0-4.",
   "On 2026-06-15, bump pkgrel to 9 for the c7badbdf runtime-base rebuild so Torch-MIGraphX supersedes the unmerged ab32a1f/pkgrel-8 host-drift artifact.",
-  "After the 2026-06-15 AMDMIGraphX protobuf-35 repair, torch-migraphx.pt2e.quantizer-import passes again; keep live Dynamo/PT2E compile smokes behind installed MIGraphX, PyTorch, TorchAO, or Torch-MIGraphX changes."
+  "After the 2026-06-15 AMDMIGraphX protobuf-35 repair, torch-migraphx.pt2e.quantizer-import passes again; keep live Dynamo/PT2E compile smokes behind installed MIGraphX, PyTorch, TorchAO, or Torch-MIGraphX changes.",
+  "On 2026-09-25, move to upstream master commit 5afb9ffdd7f5489727bdfbb323f1b2584e3676c2 (\"Update to support torch 2.11\") and bump pkgrel to 10 for the rebuild against python-pytorch-opt-rocm-gfx1151 2.12.0-5, python-torchao-rocm-gfx1151 0.18.0, and migraphx-gfx1151 2.16.1 from TheRock 7.14.1. The package version stays 1.2. Patch 0001 is dropped: upstream now imports PT2E from TorchAO on torch 2.11 and newer through dynamo/quantization/_compat.py and fx/converters/quant_ops_converters.py. Patches 0002, 0003, and 0004 apply unchanged. Upstream master e551a861 (2026-09-24) makes the numpy requirement conditional on Python 3.13; review that as a separate candidate that could retire patch 0003."
 ]
 recipe_notes_override = """
 Builds Torch-MIGraphX from audited upstream `master` at
-`b94b985586a051fbee19aefe8c934bb7c1a9df0a` because PyPI and the only upstream
+`5afb9ffdd7f5489727bdfbb323f1b2584e3676c2` because PyPI and the only upstream
 tag remain at `1.1` while current upstream reports package version `1.2`.
+
+That commit supports PyTorch 2.11 and newer upstream: it imports PT2E
+quantization from TorchAO through `dynamo/quantization/_compat.py` and the FX
+quantized-op converters, which retires the local PT2E import patch. TorchAO
+stays a hard runtime dependency because the FX converters import it.
 
 The package is bound to the coherent local ROCm stack: `migraphx-gfx1151`
 provides the Python `migraphx` extension under `/opt/rocm/lib`, PyTorch and
@@ -2021,28 +2388,26 @@ Torch-MIGraphX, and compile bounded ResNet-style CNNs through
 Dynamo registration stays lazy on base import, and the package preloads
 PyTorch AOTAutograd before MIGraphX native modules because importing
 AOTAutograd or `sqlite3` after the MIGraphX Python extension can segfault on
-the local Python 3.14 and PyTorch 2.11 stack.
+the local Python 3.14 and PyTorch 2.12 stack.
 """
 provides = ["python-torch-migraphx", "torch-migraphx"]
 conflicts = ["python-torch-migraphx", "torch-migraphx"]
 depends = ["gcc-libs", "glibc", "migraphx-gfx1151", "python-gfx1151", "python-numpy-gfx1151", "python-packaging", "python-pytorch-opt-rocm-gfx1151", "python-tabulate", "python-torchao-rocm-gfx1151"]
 makedepends = ["git", "patchelf", "python-build", "python-installer", "python-setuptools", "python-wheel", "rocm-llvm-gfx1151"]
-source_refs = ["torch_migraphx::git+https://github.com/ROCm/torch_migraphx.git#commit=b94b985586a051fbee19aefe8c934bb7c1a9df0a"]
+source_refs = ["torch_migraphx::git+https://github.com/ROCm/torch_migraphx.git#commit=5afb9ffdd7f5489727bdfbb323f1b2584e3676c2"]
 sha256sums = ["SKIP"]
 src_subdir = "torch_migraphx"
 patches_dir = "packages/python-torch-migraphx-gfx1151"
 source_patches = [
-  "0001-import-pt2e-quantization-from-torchao.patch",
   "0002-keep-dynamo-registration-lazy.patch",
   "0003-relax-numpy-runtime-cap.patch",
   "0004-preload-aot-autograd-before-native-extension.patch",
 ]
 scaffold_notes = [
-  "Builds from upstream master at b94b985586a051fbee19aefe8c934bb7c1a9df0a because PyPI and the only upstream tag remain at 1.1 while current master reports version 1.2.",
+  "Builds from upstream master at 5afb9ffdd7f5489727bdfbb323f1b2584e3676c2 because PyPI and the only upstream tag remain at 1.1 while current master reports version 1.2.",
   "Uses the ROCm compiler lane explicitly and strips the unsupported -famd-opt flag from wheel C/C++ flags.",
   "Depends on the local MIGraphX split package because the Python binding is installed under /opt/rocm/lib with migraphx.pth.",
   "Relaxes upstream's numpy metadata cap for the repo's numpy 2.x lane.",
-  "Patches Torch-MIGraphX PT2E quantizer imports to use TorchAO's current pt2e.quantizer modules.",
   "Preloads PyTorch AOTAutograd before MIGraphX native modules so torch.compile(..., backend=\"migraphx\") can use the named backend without the import-order segfault."
 ]
 

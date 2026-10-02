@@ -24,7 +24,12 @@ def test_text_only_smoke_tool_uses_tokenizer_not_processor():
     assert "if is_gemma4_e2b(str(model)):" in text
     assert "return 0.35" in text
     assert "return 0.75" in text
-    assert 'parser.add_argument("--max-model-len", type=int, default=128)' in text
+    # The basic lane keeps 128; only --long-decode raises the default.
+    assert "BASIC_MAX_MODEL_LEN = 128" in text
+    assert re.search(
+        r'parser\.add_argument\(\s*"--max-model-len",\s*type=int,\s*default=None,',
+        text,
+    )
     assert 'parser.add_argument("--max-tokens", type=int, default=16)' in text
     assert 'parser.add_argument("--max-num-batched-tokens", type=int, default=None)' in text
     assert 'def effective_max_num_batched_tokens(args: argparse.Namespace, model: str) -> int | None:' in text

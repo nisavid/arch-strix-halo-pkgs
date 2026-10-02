@@ -1,0 +1,76 @@
+# Build-root targets for the generation-C torch chain (W2A).
+# Resolve with: c_buildroot.py resolve --targets-file tools/buildroot/torch-chain.targets
+# NumPy, PyYAML, Pillow and psutil are the W2A gfx1151 builds, so resolve
+# with ashp-w2a as a foundation repo. python-triton-gfx1151 is the W2A ROCm
+# Triton 3.8 build (#109); AOTriton and PyTorch both build against it.
+# python-aotriton-gfx1151 is the W2A AOTriton 0.13b build that PyTorch's
+# mem-efficient attention links. rocprofiler-sdk-gfx1151 is what kineto
+# links for ROCm profiling (librocprofiler-sdk.so); PyTorch's configure fails
+# without it. Its marker headers include rocprofiler-sdk-roctx headers, but the
+# package does not depend on rocprofiler-sdk-roctx-gfx1151, so name that too.
+base-devel
+ccache
+git
+cmake
+ninja
+pybind11
+nlohmann-json
+patchelf
+unzip
+openblas
+openmp
+ffmpeg
+libjpeg-turbo
+libpng
+python-gfx1151
+python-build
+python-installer
+python-setuptools
+python-setuptools-scm
+python-wheel
+python-pip
+python-cffi
+python-requests
+python-six
+python-filelock
+python-iniconfig
+python-msgpack
+python-numpy-gfx1151
+python-packaging
+python-pandas
+python-pluggy
+python-pyyaml-gfx1151
+python-fsspec
+python-jinja
+python-networkx
+python-sympy
+python-typing_extensions
+python-pillow-gfx1151
+python-scipy
+python-tabulate
+python-psutil-gfx1151
+python-triton-gfx1151
+python-aotriton-gfx1151
+rocm-llvm-gfx1151
+rocm-core-gfx1151
+rocm-hip-sdk-gfx1151
+rocm-openmp-gfx1151
+hip-gfx1151
+hip-runtime-amd-gfx1151
+hipsparselt-gfx1151
+hipblaslt-gfx1151
+amdsmi-gfx1151
+composable-kernel-gfx1151
+hsa-amd-aqlprofile-gfx1151
+miopen-hip-gfx1151
+rccl-gfx1151
+rocblas-gfx1151
+rocminfo-gfx1151
+rocprofiler-sdk-gfx1151
+rocprofiler-sdk-roctx-gfx1151
+migraphx-gfx1151
+# MIGraphX 2.16.1 in foundation F (#108) links Arch protobuf 36.1 and Abseil
+# 20260817. It pins libprotobuf.so=36.1.0-64 but names no Abseil version, and
+# protobuf depends on plain abseil-cpp, so the host's older pair would win.
+protobuf>=36.1
+abseil-cpp>=20260817.0

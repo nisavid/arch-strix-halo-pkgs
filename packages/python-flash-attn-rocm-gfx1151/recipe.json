@@ -1,7 +1,7 @@
 {
   "package_name": "python-flash-attn-rocm-gfx1151",
   "pkgver": "2.8.4",
-  "pkgrel": 14,
+  "pkgrel": 16,
   "description": "FlashAttention ROCm CK backend experiment for the local gfx1151 stack",
   "upstream": {
     "repo": "https://github.com/ROCm/flash-attention",
@@ -23,7 +23,8 @@
     "0006-limit-ck-smoke-build-to-forward-d32.patch",
     "0007-adapt-ck-fwd-args-layout.patch",
     "0008-disable-ck-varlen-paged-kv-in-forward-smoke.patch",
-    "0009-accept-vllm-varlen-wrapper-keywords.patch"
+    "0009-accept-vllm-varlen-wrapper-keywords.patch",
+    "0010-init-ck-splitkv-args.patch"
   ],
   "divergence_notes": [
     "Uses the ROCm FlashAttention main_perf branch because the documented AMD CK and Triton backend paths live there.",
@@ -34,9 +35,10 @@
     "Uses the revised CK generator flow by keeping the bounded CK filter only on plain fwd generation because the same filter excludes required gfx11 paged-KV split-KV combine kernels at OPT_DIM=256.",
     "Clears generated build/ FMHA output before CK codegen runs so reused srcdirs cannot leak stale fmha_*wd translation units into later builds.",
     "Adapts the FlashAttention CK forward wrapper to the newer CK fmha_fwd_args layout by filling no-scale/no-sink block-scale and descale fields with zero/null values.",
+    "Value-initializes fmha_fwd_splitkv_args and sets sink_ptr=nullptr, sink_size=0, and logits_soft_cap=0.0f in the varlen and kvcache split-KV argument builders, backporting the split-KV hunks of ROCm/flash-attention 8afc617a (#2363) plus the logits_soft_cap line from c661198a; without them CK 03ce21dd reads uninitialized host stack as sink_ptr and the paged-KV varlen path faults the GPU.",
     "Compiles the paged-KV variable-length split-KV branch only when FLASH_ATTENTION_CK_HAS_SPLITKV is defined by the setup patch.",
     "Extends the public Python flash_attn_varlen_func wrapper to accept the vLLM-shaped CK varlen keyword surface, derive cu_seqlens_k from seqused_k when needed, pass seqused_k and leftpad_k through to CK, copy into an explicit out tensor, tolerate validated all-ones descales and num_splits=0, and reject unsupported scheduler metadata, nontrivial descales, split controls, return_softmax_lse=True, or s_aux values with clear errors.",
-    "Uses repo-owned python-amd-aiter-gfx1151, python-triton-gfx1151, and python-pytorch-opt-rocm-gfx1151 instead of letting setup.py install bundled or PyPI runtime pieces."
+    "Uses repo-owned python-triton-gfx1151 and python-pytorch-opt-rocm-gfx1151 instead of letting setup.py install bundled or PyPI runtime pieces. AITER is not a build or runtime input on the CK path: setup.py installs third_party/aiter only on its Triton branch (patch 0001 skips that too), and flash_attn imports aiter only when FLASH_ATTENTION_TRITON_AMD_ENABLE=TRUE, so python-amd-aiter-gfx1151 is an optdepend for that Triton AMD path."
   ],
   "update_notes": [
     "Recheck the ROCm FlashAttention main_perf branch and CK-tile tags before bumping this package.",
@@ -44,7 +46,9 @@
     "Keep the Triton AMD smoke explicit because runtime backend selection still depends on FLASH_ATTENTION_TRITON_AMD_ENABLE.",
     "Treat FLASH_ATTENTION_TRITON_AMD_AUTOTUNE=TRUE as a performance follow-up, not part of the initial correctness gate.",
     "On 2026-05-26, bump pkgrel to 12 for delivery of the CK extension rebuild against python-pytorch-opt-rocm-gfx1151 2.12.0-2 from ROCm/pytorch release/2.12 commit 26872debb4452ea6dc898288618a15595e2317d9.",
-    "On 2026-06-15, bump pkgrel to 14 for the c7badbdf runtime-base rebuild so FlashAttention supersedes the unmerged ab32a1f/pkgrel-13 host-drift artifact."
+    "On 2026-06-15, bump pkgrel to 14 for the c7badbdf runtime-base rebuild so FlashAttention supersedes the unmerged ab32a1f/pkgrel-13 host-drift artifact.",
+    "On 2026-09-25, bump pkgrel to 15 for the W2A rebuild against python-pytorch-opt-rocm-gfx1151 2.12.0-5 and the Python 3.14 foundation, and move python-amd-aiter-gfx1151 from depends to optdepends because the CK build path does not use AITER.",
+    "On 2026-09-25, bump pkgrel to 16 for patch 0010, which initializes the CK split-KV forward args so the paged-KV varlen path no longer passes uninitialized sink_ptr, sink_size, and logits_soft_cap to CK. Drop 0007 once the package moves to a FlashAttention ref that contains 8afc617a. Drop 0010 only once the target source sets sink_ptr, sink_size, and logits_soft_cap in both split-KV argument builders: 8afc617a sets only the sink fields and leaves args uninitialized, and c661198a sets logits_soft_cap in the varlen builder only and is not an ancestor of 8afc617a. If upstream still declares args uninitialized then, keep its value-initialization as a reduced local patch."
   ],
   "status": "testing"
 }

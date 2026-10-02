@@ -5,7 +5,7 @@
 # Package recipe key: native_wheels
 
 pkgname=python-compressed-tensors-gfx1151
-pkgver=0.16.0
+pkgver=0.17.0
 pkgrel=1
 pkgdesc='Compressed model tensor format helpers for vLLM quantized checkpoints'
 arch=('any')
@@ -18,16 +18,16 @@ options=()
 provides=(python-compressed-tensors)
 conflicts=(python-compressed-tensors)
 replaces=()
-source=(https://files.pythonhosted.org/packages/source/c/compressed_tensors/compressed_tensors-0.16.0.tar.gz)
-sha256sums=(51232ea943bf973d77fc1f3f6044fe3c05adfe6dba26f085b7f6b578a5bd9ba3)
+source=(https://files.pythonhosted.org/packages/source/c/compressed_tensors/compressed_tensors-0.17.0.tar.gz)
+sha256sums=(15c20d06bdbcf35b51fc99fd125e7b9be1e1855567c33b7a46dfac26ad6fb126)
 
 build() {
-  cd "$srcdir/compressed_tensors-0.16.0"
+  cd "$srcdir/compressed_tensors-0.17.0"
 
   /usr/bin/python -m build --wheel --no-isolation --skip-dependency-check
 }
 
 package() {
-  cd "$srcdir/compressed_tensors-0.16.0"
+  cd "$srcdir/compressed_tensors-0.17.0"
   /usr/bin/python -m installer --destdir="$pkgdir" dist/*.whl
 }

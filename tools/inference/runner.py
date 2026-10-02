@@ -20,7 +20,7 @@ def _scenario_metadata(scenario: Scenario) -> dict[str, object]:
         "engine": scenario.engine,
         "model": scenario.model,
     }
-    for key in ("source_url", "model_provenance"):
+    for key in ("source_url", "model_provenance", "attention_backend"):
         if key in scenario.definition:
             metadata[key] = scenario.definition[key]
     if scenario.draft_model is not None:
@@ -203,6 +203,13 @@ def _assertion_failures(
             )
             if failure is not None:
                 failures.append(f"{kind}: {failure}")
+            continue
+        if kind.endswith(".not_contains"):
+            source_name = kind.removesuffix(".not_contains")
+            if source_name not in sources:
+                raise ValueError(f"UNKNOWN_ASSERTION_KIND: {kind}")
+            if str(expected) in sources[source_name]:
+                failures.append(f"{kind}: found {expected!r}")
             continue
         if kind == "exit_code.equals":
             if exit_code != int(expected):

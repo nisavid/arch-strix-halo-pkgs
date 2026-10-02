@@ -306,6 +306,103 @@ def test_vllm_renderer_defines_source_variables_without_patches() -> None:
     assert "_apply_all_source_patches" not in pkgbuild
 
 
+def _render_vllm_0_30_pkgbuild() -> str:
+    return render_recipe_scaffolds.render_pkgbuild(
+        "python-vllm-rocm-gfx1151",
+        {
+            "recipe_key": "vllm",
+            "template": "python-project-vllm",
+            "upstream_version": "0.30.0",
+            "pkgdesc": "vLLM ROCm",
+            "url": "https://github.com/vllm-project/vllm",
+            "license": ["Apache-2.0"],
+            "source_type": "tarball",
+            "source_url": "https://github.com/vllm-project/vllm/archive/refs/tags/v0.30.0.tar.gz",
+            "sha256sums": ["0" * 64],
+            "source_patches": ["0016-rocm-refresh-local-carry-for-vllm-0.30.0.patch"],
+            "src_subdir": "vllm-0.30.0",
+        },
+        {
+            "repo": "https://github.com/vllm-project/vllm",
+            "method": "pip",
+            "phase": "package",
+            "steps": [],
+            "depends_on": [],
+            "notes": "",
+        },
+        "0.30.0",
+        {
+            "recipe_repo": "https://github.com/paudley/ai-notes",
+            "recipe_subdir": "strix-halo",
+            "recipe_author": "Blackcat Informatics Inc.",
+        },
+    )
+
+
+def test_vllm_renderer_builds_one_wheel_without_aiter() -> None:
+    pkgbuild = _render_vllm_0_30_pkgbuild()
+
+    assert "VLLM_ROCM_USE_AITER" not in pkgbuild
+    assert "python setup.py clean" not in pkgbuild
+    assert pkgbuild.count("pip wheel . --no-build-isolation --no-deps --wheel-dir dist -v") == 1
+
+
+def test_vllm_renderer_skips_optional_rust_extensions_and_checks_the_wheel() -> None:
+    pkgbuild = _render_vllm_0_30_pkgbuild()
+
+    assert "unset VLLM_REQUIRE_RUST_FRONTEND" in pkgbuild
+    assert "export CARGO=/usr/bin/false" in pkgbuild
+    assert "export CARGO_NET_OFFLINE=true" in pkgbuild
+    assert "export RUSTUP_AUTO_INSTALL=0" in pkgbuild
+    build_env = pkgbuild.index("export CARGO=/usr/bin/false")
+    wheel_build = pkgbuild.index("pip wheel . --no-build-isolation")
+    wheel_check = pkgbuild.index("VLLM_RUST_ARTIFACT_UNEXPECTED")
+    assert build_env < wheel_build < wheel_check
+    assert "grep -Eq '^vllm/(_rust_[^/]*[.]so|vllm-rs)$'" in pkgbuild
+
+
+def test_vllm_renderer_checks_the_0_30_carry_sentinels() -> None:
+    pkgbuild = _render_vllm_0_30_pkgbuild()
+    start = pkgbuild.index("_source_tree_has_all_source_patches() {")
+    end = pkgbuild.index("\n}\n", start)
+    sentinels = pkgbuild[start:end]
+
+    for sentinel, path in (
+        ('requires-python = ">=3.10,<3.15"', "pyproject.toml"),
+        ("def _selected_subcommand() -> str | None:", "vllm/entrypoints/cli/main.py"),
+        ("using vllm_bfloat16 = __hip_bfloat16;", "csrc/libtorch_stable/cuda_vec_utils.cuh"),
+        (
+            "def torchao_version_at_least(torchao_version: str) -> bool:",
+            "vllm/model_executor/layers/quantization/torchao_utils.py",
+        ),
+        (
+            "Use PyTorch top-k/top-p filtering on large-vocabulary ROCm",
+            "vllm/v1/sample/ops/topk_topp_sampler.py",
+        ),
+        ("Keep valid_count type stable across branches", "vllm/v1/spec_decode/utils.py"),
+        (
+            "def rocm_flash_attn_supports_vllm_varlen_api() -> bool:",
+            "vllm/v1/attention/backends/fa_utils.py",
+        ),
+        (
+            "NOTE(gfx1151): On AMD HIP, restrict autotune search",
+            "vllm/third_party/flash_linear_attention/ops/chunk_delta_h.py",
+        ),
+    ):
+        assert f"grep -Fq '{sentinel}'" in sentinels
+        assert path in sentinels
+
+    for dropped in (
+        "csrc/cuda_vec_utils.cuh",
+        "cmake/hipify.py",
+        "vllm/_aiter_ops.py",
+        "vllm/platforms/rocm.py",
+        "vllm/triton_utils/jit_monitor.py",
+        "speculators/algos.py",
+    ):
+        assert dropped not in sentinels
+
+
 def test_rust_wheel_renderer_applies_source_patches() -> None:
     pkgbuild = render_recipe_scaffolds.render_pkgbuild(
         "sample-rust-gfx1151",
@@ -467,26 +564,37 @@ def test_native_wheel_build_env_quotes_values() -> None:
     assert "export SAMPLE_FLAGS='alpha beta'" in pkgbuild
 
 
-def test_triton_rocm_renderer_prefers_source_patches_over_inline_sed() -> None:
-    pkgbuild = render_recipe_scaffolds.render_pkgbuild(
+def _render_triton_rocm(**policy_overrides) -> str:
+    policy = {
+        "recipe_key": "triton",
+        "template": "python-project-triton-rocm",
+        "upstream_version": "3.8.0+git669b31ac",
+        "pkgdesc": "Triton",
+        "url": "https://triton-lang.org/main/index.html",
+        "license": ["MIT"],
+        "src_subdir": "triton",
+        "source_refs": [
+            "triton::git+https://github.com/ROCm/triton.git#commit=669b31acc1dd1b3fd93286afd5db67f65d9f7557",
+            "llvm-5f07f818-ubuntu-x64-1.tar.gz::https://oaitriton.blob.core.windows.net/public/llvm-builds/llvm-5f07f818-ubuntu-x64-1.tar.gz",
+        ],
+        "sha256sums": [
+            "SKIP",
+            "62dd9524eed689360882a7ae06132182b4a724ca5dfdca77667556fcef940022",
+        ],
+        "source_patches": [
+            "0001-python-3.14-and-pybind11-build-system.patch",
+            "0002-disable-werror-with-therock-llvm-headers.patch",
+        ],
+        "triton_llvm_dir": "llvm-5f07f818-ubuntu-x64-1",
+    }
+    for key, value in policy_overrides.items():
+        if value is None:
+            policy.pop(key, None)
+        else:
+            policy[key] = value
+    return render_recipe_scaffolds.render_pkgbuild(
         "python-triton-gfx1151",
-        {
-            "recipe_key": "triton",
-            "template": "python-project-triton-rocm",
-            "upstream_version": "3.0.0+git0ec280cf",
-            "pkgdesc": "Triton",
-            "url": "https://triton-lang.org/main/index.html",
-            "license": ["MIT"],
-            "src_subdir": "triton",
-            "source_refs": [
-                "triton::git+https://github.com/ROCm/triton.git#commit=0ec280cf80dd91e9a86887981a670f2d4541a32b"
-            ],
-            "source_patches": [
-                "0001-python-3.14-and-pybind11-build-system.patch",
-                "0002-disable-werror-with-therock-llvm-headers.patch",
-                "0003-attrs-descriptor-repr-for-inductor.patch",
-            ],
-        },
+        policy,
         {
             "repo": "https://github.com/ROCm/triton.git",
             "method": "pip",
@@ -504,7 +612,7 @@ def test_triton_rocm_renderer_prefers_source_patches_over_inline_sed() -> None:
                 }
             ],
         },
-        "3.0.0+git0ec280cf",
+        policy["upstream_version"],
         {
             "recipe_repo": "https://github.com/paudley/ai-notes",
             "recipe_subdir": "strix-halo",
@@ -512,11 +620,57 @@ def test_triton_rocm_renderer_prefers_source_patches_over_inline_sed() -> None:
         },
     )
 
+
+def test_triton_rocm_renderer_prefers_source_patches_over_inline_sed() -> None:
+    pkgbuild = _render_triton_rocm()
+
     assert 'patch -Np1 -i "$srcdir/0001-python-3.14-and-pybind11-build-system.patch"' in pkgbuild
-    assert 'patch -Np1 -i "$srcdir/0003-attrs-descriptor-repr-for-inductor.patch"' in pkgbuild
+    assert 'patch -Np1 -i "$srcdir/0002-disable-werror-with-therock-llvm-headers.patch"' in pkgbuild
     assert "aten/src/ATen/native/hip/linalg/BatchLinearAlgebra.cpp" not in pkgbuild
     assert "sed -i" not in pkgbuild
     assert "git cherry-pick" not in pkgbuild
+
+
+def test_triton_rocm_renderer_builds_offline_from_the_repo_root() -> None:
+    pkgbuild = _render_triton_rocm()
+
+    assert 'cd "$srcdir/triton/python"' not in pkgbuild
+    assert pkgbuild.count('cd "$srcdir/triton"\n') == 3
+    assert "unset LLVM_SYSPATH" not in pkgbuild
+    assert "export TRITON_OFFLINE_BUILD=ON" in pkgbuild
+    assert 'export LLVM_SYSPATH="$srcdir/llvm-5f07f818-ubuntu-x64-1"' in pkgbuild
+    assert "export JSON_SYSPATH=/usr" in pkgbuild
+    assert 'export TRITON_HOME="$srcdir/.triton-home"' in pkgbuild
+    assert "llvm-5f07f818-ubuntu-x64-1.tar.gz::https://oaitriton.blob.core.windows.net/" in pkgbuild
+    assert "62dd9524eed689360882a7ae06132182b4a724ca5dfdca77667556fcef940022" in pkgbuild
+
+
+def test_triton_rocm_renderer_requires_a_pinned_llvm_dir(capsys) -> None:
+    with pytest.raises(SystemExit):
+        _render_triton_rocm(triton_llvm_dir=None)
+
+    assert "TRITON_LLVM_DIR_MISSING" in capsys.readouterr().err
+
+
+def _pkgbuild_dependency_names(text: str) -> set[str]:
+    names: set[str] = set()
+    for match in re.finditer(r"^\s*(?:make)?depends(?:_x86_64)?\+?=\((.*?)\)", text, re.M | re.S):
+        body = re.sub(r"#[^\n]*", "", match.group(1))
+        for word in re.findall(r"""['"]?([^\s'"()]+)['"]?""", body):
+            names.add(re.split(r"[<>=]", word, maxsplit=1)[0])
+    return names
+
+
+def test_pkgbuilds_that_build_with_rocm_clang_declare_rocm_llvm() -> None:
+    # A clean build root has only what the package declares, so a PKGBUILD
+    # that selects a compiler from ROCm's LLVM must pull in its provider.
+    missing = [
+        path.parent.name
+        for path in sorted(REPO_ROOT.glob("packages/*/PKGBUILD"))
+        if "/opt/rocm/lib/llvm/bin" in (text := path.read_text(encoding="utf-8"))
+        and "rocm-llvm-gfx1151" not in _pkgbuild_dependency_names(text)
+    ]
+    assert missing == []
 
 
 def test_aocl_libm_renderer_prefers_source_patches_over_inline_sed() -> None:
@@ -702,9 +856,11 @@ def test_aotriton_renderer_stages_pinned_submodule_sources() -> None:
 
     assert 'cp -a "$srcdir/aotriton-aiter" "$srcdir/aotriton/third_party/aiter"' in pkgbuild
     assert "git submodule update --init --recursive" not in pkgbuild
-    assert "cherry-pick -n c44b870bdd9e1ea8933fd4057b6b59a5e6e5407b" in pkgbuild
+    # The old ast.Num cherry-pick is not in the pinned vendored Triton history; it was a masked no-op.
+    assert "cherry-pick" not in pkgbuild
     assert 'patch -Np1 -i "$srcdir/0001-gate-vendored-triton-nvidia-build-artifacts.patch"' in pkgbuild
     assert 'export TRITON_HOME="$srcdir/.triton-home"' in pkgbuild
+    assert 'export TRITON_PARALLEL_LINK_JOBS="${TRITON_PARALLEL_LINK_JOBS:-2}"' in pkgbuild
     assert 'export PIP_CACHE_DIR="$srcdir/.pip-cache"' in pkgbuild
     assert 'export PYTHONPYCACHEPREFIX="$srcdir/.python-pycache"' in pkgbuild
 
@@ -840,6 +996,10 @@ def test_pytorch_rocm_renderer_uses_source_patches_for_magma_fix() -> None:
     assert 'export ROCM_PATH="/opt/rocm"' in pkgbuild
     assert 'export HIP_CLANG_PATH="${_rocm_llvm_bin}"' in pkgbuild
     assert "NPY_TARGET_VERSION" not in pkgbuild
+    assert "export USE_MAGMA=0" in pkgbuild
+    assert "-Wno-error=unused-command-line-argument -include format\"" in pkgbuild
+    assert 'export MAX_JOBS="${MAX_JOBS:-$(_build_jobs)}"' in pkgbuild
+    assert 'export MAX_JOBS="$(nproc)"' not in pkgbuild
     assert "cmake -P build/torch/headeronly/cmake_install.cmake" in pkgbuild
     assert "cmake -P build/c10/cmake_install.cmake" in pkgbuild
     assert "cmake -P build/caffe2/cmake_install.cmake" in pkgbuild
@@ -1156,6 +1316,127 @@ def test_render_recipe_json_keeps_explicit_extra_source_checksums_in_policy() ->
     assert "source_patch_sha256sums" not in recipe_json["maintenance"]
     assert recipe_json["policy"]["extra_sources"] == ["extra-data.tar.gz"]
     assert recipe_json["policy"]["extra_sha256sums"] == ["abc123"]
+
+
+def _render_native_wheel(**policy_overrides) -> str:
+    policy = {
+        "recipe_key": "sample",
+        "template": "native-wheel-pypi",
+        "upstream_version": "1.2.3",
+        "pkgdesc": "Sample native wheel",
+        "url": "https://example.invalid/sample-native",
+        "license": ["MIT"],
+        "pypi_name": "sample-native",
+        "sha256sums": ["0" * 64],
+        "src_subdir": "sample-native-1.2.3",
+        "single_wheel_install": True,
+    }
+    policy.update(policy_overrides)
+    return render_recipe_scaffolds.render_pkgbuild(
+        "sample-native-gfx1151",
+        policy,
+        {
+            "repo": "",
+            "method": "pip",
+            "phase": "package",
+            "steps": [],
+            "depends_on": [],
+            "notes": "",
+        },
+        "1.2.3",
+        {
+            "recipe_repo": "https://github.com/paudley/ai-notes",
+            "recipe_subdir": "strix-halo",
+            "recipe_author": "Blackcat Informatics Inc.",
+        },
+    )
+
+
+def _run_bash(pkgbuild_path: Path, script: str, **env: str) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        ["bash", "-c", f'source "$1"\n{script}', "bash", str(pkgbuild_path)],
+        capture_output=True,
+        text=True,
+        env={"PATH": "/usr/bin:/bin", **env},
+    )
+
+
+def test_native_wheel_drop_lto_from_cflags_keeps_cxx_lto(tmp_path: Path) -> None:
+    pkgbuild = _render_native_wheel(drop_lto_from_cflags=True)
+    path = tmp_path / "PKGBUILD"
+    path.write_text(pkgbuild, encoding="utf-8")
+
+    result = _run_bash(
+        path,
+        '_drop_lto_from_cflags\nprintf "%s\\n%s\\n" "$CFLAGS" "$CXXFLAGS"',
+        CFLAGS="-O3 -flto=auto -pipe -ffat-lto-objects -Xclang -mllvm -Xclang -enable-gvn-sink -flto",
+        CXXFLAGS="-O3 -flto=auto",
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.splitlines() == [
+        "-O3 -pipe -Xclang -mllvm -Xclang -enable-gvn-sink",
+        "-O3 -flto=auto",
+    ]
+    build = pkgbuild[pkgbuild.index("build() {") :]
+    assert build.index('export CFLAGS="${_base_cflags') < build.index("  _drop_lto_from_cflags\n")
+    assert build.index("  _drop_lto_from_cflags\n") < build.index("/usr/bin/python -m build")
+
+
+def test_native_wheel_without_drop_lto_leaves_cflags_alone() -> None:
+    pkgbuild = _render_native_wheel()
+
+    assert "_drop_lto_from_cflags" not in pkgbuild
+
+
+def _write_fake_wheel(dist: Path, files: dict[str, bytes]) -> None:
+    import zipfile
+
+    dist.mkdir(parents=True)
+    name = "sample_native-1.2.3"
+    records = []
+    with zipfile.ZipFile(dist / f"{name}-py3-none-any.whl", "w") as wheel:
+        payload = {
+            **files,
+            f"{name}.dist-info/METADATA": b"Metadata-Version: 2.1\nName: sample-native\nVersion: 1.2.3\n",
+            f"{name}.dist-info/WHEEL": b"Wheel-Version: 1.0\nGenerator: test\nRoot-Is-Purelib: true\nTag: py3-none-any\n",
+        }
+        for member, data in payload.items():
+            wheel.writestr(member, data)
+            records.append(f"{member},,")
+        wheel.writestr(f"{name}.dist-info/RECORD", "\n".join(records + [f"{name}.dist-info/RECORD,,"]) + "\n")
+
+
+@pytest.mark.parametrize(
+    ("files", "ok", "message"),
+    [
+        (
+            {"sample/_ffi_api.py": b"", "sample/lib/libsample.so": b"\x7fELF..no debug info in ELF executable.."},
+            True,
+            "",
+        ),
+        ({"sample/lib/libsample.so": b"no debug info in ELF executable"}, False, "sample/_ffi_api.py"),
+        ({"sample/_ffi_api.py": b"", "sample/lib/libsample.so": b"\x7fELF"}, False, "no debug info in ELF executable"),
+    ],
+)
+def test_native_wheel_package_guards_required_wheel_contents(
+    tmp_path: Path, files: dict[str, bytes], ok: bool, message: str
+) -> None:
+    pkgbuild = _render_native_wheel(
+        wheel_required_files=["sample/_ffi_api.py"],
+        wheel_required_strings=[
+            {"path": "sample/lib/libsample.so", "text": "no debug info in ELF executable"}
+        ],
+    )
+    path = tmp_path / "PKGBUILD"
+    path.write_text(pkgbuild, encoding="utf-8")
+    srcdir = tmp_path / "src"
+    _write_fake_wheel(srcdir / "sample-native-1.2.3" / "dist", files)
+
+    result = _run_bash(path, "package", srcdir=str(srcdir), pkgdir=str(tmp_path / "pkg"))
+
+    assert (result.returncode == 0) is ok, result.stderr
+    assert message in result.stderr
 
 
 SAMPLE_RECIPE_PKG = {

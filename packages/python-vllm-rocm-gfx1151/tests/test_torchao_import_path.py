@@ -5,15 +5,15 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 PKGBUILD = REPO_ROOT / "packages/python-vllm-rocm-gfx1151/PKGBUILD"
 PATCH = (
     REPO_ROOT
-    / "packages/python-vllm-rocm-gfx1151/0016-rocm-refresh-local-carry-for-vllm-0.21.0.patch"
+    / "packages/python-vllm-rocm-gfx1151/0016-rocm-refresh-local-carry-for-vllm-0.30.0.patch"
 )
 
 
 def test_pkgbuild_carries_merged_torchao_and_cli_startup_patches():
     text = PKGBUILD.read_text()
 
-    assert "pkgver=0.21.0" in text
-    assert "pkgrel=6" in text
+    assert "pkgver=0.30.0" in text
+    assert "pkgrel=1" in text
     assert PATCH.name in text
     assert '_vllm_source_patch="0016-rocm-refresh-local-carry-for-vllm-${pkgver}.patch"' in text
     assert '_apply_patch_if_needed "${_vllm_source_patch}"' in text
@@ -50,18 +50,6 @@ def test_merged_cli_patch_keeps_top_level_help_off_runtime_paths():
     assert '+        benchmark_module = _BenchHelpModule()' in text
     assert '+class _BenchHelpSubcommand:' in text
     assert '+            usage=\"vllm bench <bench_type> [options]\",' in text
-    assert "-from vllm.entrypoints.chat_utils import make_tool_call_id" in text
-    assert "+def _make_tool_call_id() -> str:" in text
-    assert '+    from vllm.entrypoints.chat_utils import make_tool_call_id' in text
-    assert "+    id: str = Field(default_factory=_make_tool_call_id)" in text
-    assert "-from vllm.transformers_utils.config import (" in text
-    assert "-from vllm.transformers_utils.gguf_utils import is_gguf" in text
-    assert "-from vllm.transformers_utils.repo_utils import get_model_path" in text
-    assert "-from vllm.transformers_utils.utils import is_cloud_storage" in text
-    assert "+            from vllm.transformers_utils.repo_utils import get_model_path" in text
-    assert "+        from vllm.transformers_utils.gguf_utils import is_gguf" in text
-    assert "+        from vllm.transformers_utils.config import (" in text
-    assert "+        from vllm.transformers_utils.utils import is_cloud_storage" in text
     assert "+class _StaticSubcommand:" in text
     assert "+class _StaticHelpModule:" in text
     assert "+def _selected_subcommand() -> str | None:" in text
@@ -74,3 +62,8 @@ def test_merged_cli_patch_keeps_top_level_help_off_runtime_paths():
     assert "-from vllm.platforms import current_platform" in text
     assert "+    from vllm.engine.arg_utils import EngineArgs" in text
     assert "+    from vllm.platforms import current_platform" in text
+    # 0.30.0 no longer reaches arg_utils or the OpenAI protocol on --help, so
+    # their separate laziness sections were dropped.
+    assert "diff --git a/vllm/engine/arg_utils.py" not in text
+    assert "_make_tool_call_id" not in text
+    assert "+if TYPE_CHECKING:\n+    from vllm.engine.arg_utils import EngineArgs" in text

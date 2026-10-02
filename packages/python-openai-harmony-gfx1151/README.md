@@ -7,7 +7,7 @@
 - Recipe build method: `cargo`
 - Upstream repo: `https://github.com/openai/harmony`
 - Package version: `0.0.8`
-- Recipe revision: `a1d7a68 (20260427, 16 commits touching recipe path)`
+- Recipe revision: `3f15f9f (20260508, 17 commits touching recipe path)`
 - Recipe steps: `31`
 - Recipe dependencies: `cpython`
 - Recorded reference packages: `aur/python-openai-harmony, aur/python-openai-harmony-git`
@@ -46,6 +46,7 @@ settings.
 - Check the current AUR python-openai-harmony package first, then confirm upstream pyproject.toml build-backend and dependency metadata before carrying any build changes forward.
 - Keep python-pydantic as a hard runtime dependency unless upstream removes it from the published project metadata.
 - Treat extra Rust LTO or PGO tuning as opt-in only after verifying the current maturin/cargo lane exposes a maintainable configuration; today the applicable default is explicit znver5 plus opt-level=3.
+- On 2026-09-25, bump pkgrel to 2 for the generation-C W2A closure (#110, #111), to be built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7 in the vLLM lease job. The source is unchanged; the rebuild keeps the package out of the previous generation's repo. vLLM imports it while `vllm serve` parses its arguments, so the W2A root needs a generation-C build. The rust-wheel template keeps `CARGO_HOME` under `$srcdir/.cargo`, which overrides the build helper's shared cargo cache, and sets `RUSTUP_AUTO_INSTALL=0`. The cargo fetch runs inside build(), so the build needs `enter --net`.
 
 ## Maintainer Starting Points
 

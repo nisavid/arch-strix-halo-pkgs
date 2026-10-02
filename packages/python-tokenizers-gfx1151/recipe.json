@@ -10,12 +10,13 @@
     "update_notes": [
       "Check the current Hugging Face tokenizers release and Cachy package before updating; Transformers metadata can constrain this package.",
       "On 2026-05-01, reviewed PyPI tokenizers 0.23.1 but kept the package on 0.22.2 because Transformers 5.7.0 declares tokenizers<=0.23.0,>=0.22.0.",
-      "After publishing a rebuilt package, verify `import tokenizers` and a tiny tokenizer construction through the installed local Python lane."
+      "After publishing a rebuilt package, verify `import tokenizers` and a tiny tokenizer construction through the installed local Python lane.",
+      "On 2026-09-22, update to tokenizers 0.23.2 for the generation-C W2A closure (#110), built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7. Transformers 5.16.1 requires tokenizers >=0.23.1,<0.24."
     ]
   },
   "name": "python-tokenizers-gfx1151",
   "package_name": "python-tokenizers-gfx1151",
-  "pkgver": "0.22.2",
+  "pkgver": "0.23.2",
   "policy": {
     "advisory_references": [],
     "arch_reference": [
@@ -60,24 +61,25 @@
       "Use the shared Rust-wheel renderer so linker selection, path remapping, and znver5 codegen stay aligned with orjson and cryptography."
     ],
     "sha256sums": [
-      "473b83b915e547aa366d1eee11806deaf419e17be16310ac0a14077f1e28f917"
+      "7f0f085686b9de0d0079e6f874ae053600db64c5d13049e0bbc0119926d25aac"
     ],
-    "src_subdir": "tokenizers-0.22.2",
+    "src_subdir": "tokenizers-0.23.2",
     "template": "rust-wheel-pypi",
     "update_notes": [
       "Check the current Hugging Face tokenizers release and Cachy package before updating; Transformers metadata can constrain this package.",
       "On 2026-05-01, reviewed PyPI tokenizers 0.23.1 but kept the package on 0.22.2 because Transformers 5.7.0 declares tokenizers<=0.23.0,>=0.22.0.",
-      "After publishing a rebuilt package, verify `import tokenizers` and a tiny tokenizer construction through the installed local Python lane."
+      "After publishing a rebuilt package, verify `import tokenizers` and a tiny tokenizer construction through the installed local Python lane.",
+      "On 2026-09-22, update to tokenizers 0.23.2 for the generation-C W2A closure (#110), built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7. Transformers 5.16.1 requires tokenizers >=0.23.1,<0.24."
     ],
-    "upstream_version": "0.22.2",
+    "upstream_version": "0.23.2",
     "url": "https://github.com/huggingface/tokenizers"
   },
   "provenance": {
     "output_root": "packages",
     "recipe_author": "Blackcat Informatics Inc.",
-    "recipe_commit": "a1d7a68",
-    "recipe_date": "20260427",
-    "recipe_history_count": 16,
+    "recipe_commit": "3f15f9f",
+    "recipe_date": "20260508",
+    "recipe_history_count": 17,
     "recipe_repo": "https://github.com/paudley/ai-notes",
     "recipe_subdir": "strix-halo",
     "repo_subpath": "."
@@ -92,7 +94,7 @@
     "patches": [],
     "phase": "H",
     "repo": null,
-    "src_dir": null,
+    "src_dir": "tokenizers-0.23.2",
     "steps": [
       31
     ]

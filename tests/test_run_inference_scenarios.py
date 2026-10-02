@@ -5,6 +5,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 RUNNER = REPO_ROOT / "tools/run_inference_scenarios.py"
@@ -752,7 +754,7 @@ def test_vllm_flash_attn_vit_wrapper_dry_run_resolves_command_and_env():
     assert planned["env"] == {"FLASH_ATTENTION_TRITON_AMD_ENABLE": "TRUE"}
 
 
-def test_flash_attn_engine_selector_includes_ck_and_triton_scenarios():
+def test_flash_attn_engine_selector_keeps_aiter_triton_scenarios_exploratory():
     result = run_runner(
         "--scenario-dir",
         str(REPO_ROOT / "inference/scenarios"),
@@ -769,8 +771,6 @@ def test_flash_attn_engine_selector_includes_ck_and_triton_scenarios():
         "flash-attn.ck.varlen-tiny",
         "flash-attn.ck.varlen-tiny-d256",
         "flash-attn.ck.varlen-paged-kv",
-        "flash-attn.triton-amd.backend-import",
-        "flash-attn.triton-amd.qkvpacked-tiny",
     ]
 
 
@@ -816,7 +816,7 @@ def test_quantized_qwen_text_dry_run_includes_probe_options_and_binding(
         str(run_root),
         "--dry-run",
         "--scenario",
-        "vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors-blocked",
+        "vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors",
         "--model-path",
         "surogate/Qwen3.5-0.8B-FP8=/models/qwen35-fp8",
     )
@@ -824,7 +824,7 @@ def test_quantized_qwen_text_dry_run_includes_probe_options_and_binding(
     assert result.returncode == 0
     payload = json.loads(result.stdout)
     assert payload["selected_ids"] == [
-        "vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors-blocked"
+        "vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors"
     ]
     assert payload["planned"][0]["command"] == [
         sys.executable,
@@ -1454,6 +1454,106 @@ value = "missing marker"
     )
     assert scenario_result["ok"] is False
     assert "stdout.contains" in scenario_result["failures"][0]
+
+
+@pytest.mark.parametrize(
+    ("stdout", "ok"),
+    [("startup ok", True), ("ModuleNotFoundError: No module named 'xgrammar'", False)],
+)
+def test_runner_not_contains_rejects_forbidden_output(
+    tmp_path: Path, stdout: str, ok: bool
+):
+    script = write_fake_command_script(tmp_path)
+    scenario_dir = tmp_path / "inference" / "scenarios"
+    scenario_dir.mkdir(parents=True)
+    run_root = tmp_path / "run"
+    (scenario_dir / "generic.toml").write_text(
+        f"""
+[[scenario]]
+id = "lemonade.fake.forbidden"
+summary = "fake command must not print an import failure"
+
+[scenario.given]
+engine = "lemonade"
+model = "builtin"
+entrypoint = "{sys.executable}"
+
+[scenario.when]
+argv = ["{script}", "--stdout", "{stdout}"]
+
+[[scenario.then.assert]]
+kind = "output.not_contains"
+value = "ModuleNotFoundError"
+""",
+        encoding="utf-8",
+    )
+
+    result = run_runner(
+        "--scenario-dir",
+        str(scenario_dir),
+        "--run-root",
+        str(run_root),
+        "--scenario",
+        "lemonade.fake.forbidden",
+    )
+
+    scenario_result = json.loads(
+        (run_root / "scenarios" / "lemonade.fake.forbidden" / "result.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert scenario_result["ok"] is ok
+    assert result.returncode == (0 if ok else 1)
+    if not ok:
+        assert scenario_result["failures"] == [
+            "output.not_contains: found 'ModuleNotFoundError'"
+        ]
+
+
+def test_dry_run_carries_attention_backend_prediction(tmp_path: Path):
+    scenario_dir = tmp_path / "inference" / "scenarios"
+    scenario_dir.mkdir(parents=True)
+    (scenario_dir / "sample.toml").write_text(
+        """
+[[scenario]]
+id = "vllm.demo.backend"
+summary = "demo backend prediction"
+tags = ["smoke"]
+
+[scenario.given]
+engine = "vllm"
+model = "demo-model"
+tool = "gemma4_text_smoke"
+
+[scenario.attention_backend]
+expected = "TRITON_ATTN"
+evidence = "static-prediction"
+basis = "demo basis"
+
+[[scenario.then.assert]]
+kind = "output.contains"
+value = "Using TRITON_ATTN backend"
+""",
+        encoding="utf-8",
+    )
+
+    result = run_runner(
+        "--scenario-dir",
+        str(scenario_dir),
+        "--run-root",
+        str(tmp_path / "run"),
+        "--dry-run",
+        "--scenario",
+        "vllm.demo.backend",
+    )
+
+    assert result.returncode == 0, result.stderr
+    planned = json.loads(result.stdout)["planned"][0]
+    assert planned["attention_backend"] == {
+        "expected": "TRITON_ATTN",
+        "evidence": "static-prediction",
+        "basis": "demo basis",
+    }
 
 
 def write_validation_window_scenarios(tmp_path: Path) -> Path:

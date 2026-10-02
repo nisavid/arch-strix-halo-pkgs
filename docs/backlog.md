@@ -57,6 +57,7 @@ owns the dependency-ordered route. Its blocking spine is:
 - W2B: [Lemonade residency and admission](https://github.com/nisavid/arch-strix-halo-pkgs/issues/112) and
   [the coherent Lemonade package family](https://github.com/nisavid/arch-strix-halo-pkgs/issues/113)
 - W3-W6: [candidate assembly](https://github.com/nisavid/arch-strix-halo-pkgs/issues/114),
+  [the deferred Gemma 4 26B-A4B vLLM lanes](https://github.com/nisavid/arch-strix-halo-pkgs/issues/169),
   [preactivation and recovery](https://github.com/nisavid/arch-strix-halo-pkgs/issues/115),
   [activation](https://github.com/nisavid/arch-strix-halo-pkgs/issues/116), and
   [acceptance](https://github.com/nisavid/arch-strix-halo-pkgs/issues/117)

@@ -10,20 +10,21 @@
       "Stays on a source-build path even though a git variant exists, because the release package is the primary maintenance lane."
     ],
     "source_patch_sha256sums": [
-      "04b134d04727093b49455d44126988d104ea7019bbe6c72b7e2f8ddeb3686bb1"
+      "0b16fe8e9c9b786d5c2c952857b6b44db632c313fb8a7d6940552fb321404eba"
     ],
     "source_patches": [
-      "0001-bundle-sentencepiece-by-default.patch"
+      "0001-use-bundled-abseil-cpp-offline.patch"
     ],
     "update_notes": [
       "Re-check against Cachy first, then consult the AUR source and git variants if the maintained package lags a needed upstream change.",
       "If the upstream build backend changes, keep the package metadata focused on the system cmake/toolchain story rather than reviving venv-local wrapper assumptions.",
-      "After publishing a rebuilt package, verify the installed host extension with readelf or ldd before treating the host lane as current."
+      "After publishing a rebuilt package, verify the installed host extension with readelf or ldd before treating the host lane as current.",
+      "On 2026-09-22, update to sentencepiece 0.2.2 for the generation-C W2A closure (#110), built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7. Drop the bundled-build patch: 0.2.2 setup.py no longer probes pkg-config for a system SentencePiece and always builds the bundled library. Add 0001-use-bundled-abseil-cpp-offline.patch: 0.2.2 CMake runs a FetchContent git clone of abseil-cpp 20260526.0 even though the sdist already ships that tree, which fails in an offline build."
     ]
   },
   "name": "python-sentencepiece-gfx1151",
   "package_name": "python-sentencepiece-gfx1151",
-  "pkgver": "0.2.1",
+  "pkgver": "0.2.2",
   "policy": {
     "advisory_references": [
       "aur/python-sentencepiece",
@@ -68,31 +69,33 @@
     ],
     "pypi_name": "sentencepiece",
     "recipe_key": "native_wheels",
-    "recipe_notes_override": "This package is the SentencePiece output from the shared `native_wheels`\nrecipe phase. That phase also builds numpy, zstandard, asyncpg, and duckdb\nfrom source with Zen 5 optimization flags, but those outputs are tracked as\nseparate packages rather than as dependencies of `python-sentencepiece-gfx1151`.\n\nSentencePiece-specific recipe translation: the original recipe fixes a broken\npip-installed cmake wrapper inside the venv. In Arch packaging, this package\nuses the system cmake toolchain directly.\n\nmeson-based packages (numpy, zstandard): -mllvm flags must be\nrewritten as -Xclang -mllvm -Xclang pairs because meson's compiler\nprobing rejects -mllvm as \"unused command line argument\".\n-famd-opt moved to LDFLAGS (link-time-only driver flag, no-op at\ncompile time -- triggers -Werror=unused in compile-only probes).\n\nThe bundled-build patch is effective when the built `_sentencepiece` extension\nhas no dynamic dependency on host `libsentencepiece.so.0` or\n`libsentencepiece_train.so.0`. Treat the repo-built package lane as current\nonly after the installed host extension matches that dependency shape.\n",
+    "recipe_notes_override": "This package is the SentencePiece output from the shared `native_wheels`\nrecipe phase. That phase also builds numpy, zstandard, asyncpg, and duckdb\nfrom source with Zen 5 optimization flags, but those outputs are tracked as\nseparate packages rather than as dependencies of `python-sentencepiece-gfx1151`.\n\nSentencePiece-specific recipe translation: the original recipe fixes a broken\npip-installed cmake wrapper inside the venv. In Arch packaging, this package\nuses the system cmake toolchain directly.\n\nmeson-based packages (numpy, zstandard): -mllvm flags must be\nrewritten as -Xclang -mllvm -Xclang pairs because meson's compiler\nprobing rejects -mllvm as \"unused command line argument\".\n-famd-opt moved to LDFLAGS (link-time-only driver flag, no-op at\ncompile time -- triggers -Werror=unused in compile-only probes).\n\nUpstream builds the bundled library, so the built `_sentencepiece` extension\nmust have no dynamic dependency on host `libsentencepiece.so.0` or\n`libsentencepiece_train.so.0`. Treat the repo-built package lane as current\nonly after the installed host extension matches that dependency shape.\n",
     "scaffold_notes": [
       "The current CachyOS python-sentencepiece package is the closest maintained baseline, while the AUR python-sentencepiece and python-sentencepiece-git packages remain advisory references for patching and split-package expectations.",
       "The original recipe fixes a broken pip-installed cmake wrapper inside the venv. In Arch packaging that should translate to using the system cmake toolchain directly.",
-      "The bundled-build patch prefers the bundled SentencePiece library by default and only uses the system pkg-config sentencepiece path when SENTENCEPIECE_USE_SYSTEM=1 is explicitly set."
+      "Since 0.2.2, upstream setup.py always builds the bundled SentencePiece library and never probes pkg-config for a system one, so the former bundled-build patch is gone.",
+      "The offline-abseil patch makes the bundled CMake build use the abseil-cpp 20260526.0 tree that the sdist ships, and fetch it only when that tree is absent. Drop it when upstream stops fetching over the shipped tree."
     ],
     "sha256sums": [
-      "8138cec27c2f2282f4a34d9a016e3374cd40e5c6e9cb335063db66a0a3b71fad"
+      "3d2b5e824b5622038dc7b490897efe05ebbbb9e7350fc142f3ecc8789ef9bdf6"
     ],
-    "src_subdir": "sentencepiece-0.2.1",
+    "src_subdir": "sentencepiece-0.2.2",
     "template": "native-wheel-pypi",
     "update_notes": [
       "Re-check against Cachy first, then consult the AUR source and git variants if the maintained package lags a needed upstream change.",
       "If the upstream build backend changes, keep the package metadata focused on the system cmake/toolchain story rather than reviving venv-local wrapper assumptions.",
-      "After publishing a rebuilt package, verify the installed host extension with readelf or ldd before treating the host lane as current."
+      "After publishing a rebuilt package, verify the installed host extension with readelf or ldd before treating the host lane as current.",
+      "On 2026-09-22, update to sentencepiece 0.2.2 for the generation-C W2A closure (#110), built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7. Drop the bundled-build patch: 0.2.2 setup.py no longer probes pkg-config for a system SentencePiece and always builds the bundled library. Add 0001-use-bundled-abseil-cpp-offline.patch: 0.2.2 CMake runs a FetchContent git clone of abseil-cpp 20260526.0 even though the sdist already ships that tree, which fails in an offline build."
     ],
-    "upstream_version": "0.2.1",
+    "upstream_version": "0.2.2",
     "url": "https://github.com/google/sentencepiece"
   },
   "provenance": {
     "output_root": "packages",
     "recipe_author": "Blackcat Informatics Inc.",
-    "recipe_commit": "a1d7a68",
-    "recipe_date": "20260427",
-    "recipe_history_count": 16,
+    "recipe_commit": "3f15f9f",
+    "recipe_date": "20260508",
+    "recipe_history_count": 17,
     "recipe_repo": "https://github.com/paudley/ai-notes",
     "recipe_subdir": "strix-halo",
     "repo_subpath": "."
@@ -104,11 +107,11 @@
       "pytorch"
     ],
     "method": "pip",
-    "notes": "This package is the SentencePiece output from the shared `native_wheels`\nrecipe phase. That phase also builds numpy, zstandard, asyncpg, and duckdb\nfrom source with Zen 5 optimization flags, but those outputs are tracked as\nseparate packages rather than as dependencies of `python-sentencepiece-gfx1151`.\n\nSentencePiece-specific recipe translation: the original recipe fixes a broken\npip-installed cmake wrapper inside the venv. In Arch packaging, this package\nuses the system cmake toolchain directly.\n\nmeson-based packages (numpy, zstandard): -mllvm flags must be\nrewritten as -Xclang -mllvm -Xclang pairs because meson's compiler\nprobing rejects -mllvm as \"unused command line argument\".\n-famd-opt moved to LDFLAGS (link-time-only driver flag, no-op at\ncompile time -- triggers -Werror=unused in compile-only probes).\n\nThe bundled-build patch is effective when the built `_sentencepiece` extension\nhas no dynamic dependency on host `libsentencepiece.so.0` or\n`libsentencepiece_train.so.0`. Treat the repo-built package lane as current\nonly after the installed host extension matches that dependency shape.\n",
+    "notes": "This package is the SentencePiece output from the shared `native_wheels`\nrecipe phase. That phase also builds numpy, zstandard, asyncpg, and duckdb\nfrom source with Zen 5 optimization flags, but those outputs are tracked as\nseparate packages rather than as dependencies of `python-sentencepiece-gfx1151`.\n\nSentencePiece-specific recipe translation: the original recipe fixes a broken\npip-installed cmake wrapper inside the venv. In Arch packaging, this package\nuses the system cmake toolchain directly.\n\nmeson-based packages (numpy, zstandard): -mllvm flags must be\nrewritten as -Xclang -mllvm -Xclang pairs because meson's compiler\nprobing rejects -mllvm as \"unused command line argument\".\n-famd-opt moved to LDFLAGS (link-time-only driver flag, no-op at\ncompile time -- triggers -Werror=unused in compile-only probes).\n\nUpstream builds the bundled library, so the built `_sentencepiece` extension\nmust have no dynamic dependency on host `libsentencepiece.so.0` or\n`libsentencepiece_train.so.0`. Treat the repo-built package lane as current\nonly after the installed host extension matches that dependency shape.\n",
     "patches": [],
     "phase": "H",
     "repo": null,
-    "src_dir": null,
+    "src_dir": "sentencepiece-0.2.2",
     "steps": [
       32
     ]

@@ -177,7 +177,7 @@ value = "basic_ok"
 
 [[scenario.then.assert]]
 kind = "output.contains"
-value = "Using TRITON backend for Unquantized MoE"
+value = "Using TRITON Unquantized MoE backend out of potential backends"
 
 [[scenario]]
 id = "vllm.qwen3_6.35b-a3b.text.unquantized-moe-no-aiter-compiled"
@@ -258,7 +258,7 @@ value = "basic_ok"
 
 [[scenario.then.assert]]
 kind = "output.contains"
-value = "Using TRITON backend for Unquantized MoE"
+value = "Using TRITON Unquantized MoE backend out of potential backends"
 
 [[scenario]]
 id = "vllm.qwen3_6.35b-a3b.server.reasoning"
@@ -288,7 +288,7 @@ value = "reasoning_ok"
 
 [[scenario.then.assert]]
 kind = "server_log.contains"
-value = "Using TRITON backend for Unquantized MoE"
+value = "Using TRITON Unquantized MoE backend out of potential backends"
 
 [[scenario]]
 id = "vllm.qwen3_6.35b-a3b.server.reasoning-disabled"
@@ -318,7 +318,7 @@ value = "reasoning_disabled_ok"
 
 [[scenario.then.assert]]
 kind = "server_log.contains"
-value = "Using TRITON backend for Unquantized MoE"
+value = "Using TRITON Unquantized MoE backend out of potential backends"
 
 [[scenario]]
 id = "vllm.qwen3_6.35b-a3b.server.mtp"
@@ -348,7 +348,7 @@ value = "mtp_ok"
 
 [[scenario.then.assert]]
 kind = "server_log.contains"
-value = "Using TRITON backend for Unquantized MoE"
+value = "Using TRITON Unquantized MoE backend out of potential backends"
 
 [[scenario]]
 id = "vllm.qwen3_6.35b-a3b.server.tool"
@@ -378,7 +378,7 @@ value = "tool_ok"
 
 [[scenario.then.assert]]
 kind = "server_log.contains"
-value = "Using TRITON backend for Unquantized MoE"
+value = "Using TRITON Unquantized MoE backend out of potential backends"
 
 [[scenario]]
 id = "vllm.qwen3_6.35b-a3b.server.benchmark-lite"
@@ -408,7 +408,7 @@ value = "benchmark_lite_ok"
 
 [[scenario.then.assert]]
 kind = "server_log.contains"
-value = "Using TRITON backend for Unquantized MoE"
+value = "Using TRITON Unquantized MoE backend out of potential backends"
 
 [[scenario]]
 id = "vllm.qwen3_6.35b-a3b.server.advanced-selectors"
@@ -438,7 +438,7 @@ value = "advanced_selectors_ok"
 
 [[scenario.then.assert]]
 kind = "server_log.contains"
-value = "Using TRITON backend for Unquantized MoE"
+value = "Using TRITON Unquantized MoE backend out of potential backends"
 
 [[scenario]]
 id = "vllm.qwen3_6.35b-a3b.server.long-context-reduced"
@@ -468,7 +468,7 @@ value = "long_context_reduced_ok"
 
 [[scenario.then.assert]]
 kind = "server_log.contains"
-value = "Using TRITON backend for Unquantized MoE"
+value = "Using TRITON Unquantized MoE backend out of potential backends"
 
 [[scenario]]
 id = "vllm.qwen3_6.35b-a3b.server.media-embedding"
@@ -498,12 +498,16 @@ value = "media_embedding_ok"
 
 [[scenario.then.assert]]
 kind = "server_log.contains"
-value = "Using TRITON backend for Unquantized MoE"
+value = "Using TRITON Unquantized MoE backend out of potential backends"
 
+# The dense block-FP8 checkpoint loads and generates on vLLM 0.30 in eager
+# mode. The exit-1 expectation this probe used to carry came from the Qwen3.6
+# FP8 MoE fixture ("No FP8 MoE backend supports the deployment
+# configuration.") and never applied to this dense checkpoint.
 [[scenario]]
-id = "vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors-blocked"
-summary = "Qwen3.5 0.8B FP8 safetensors quantization probe for gfx1151 FP8 support"
-tags = ["qwen", "qwen3.5", "fp8", "safetensors", "quantization-probe", "exploratory", "blocked"]
+id = "vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors"
+summary = "Qwen3.5 0.8B FP8 safetensors quantization probe for the gfx1151 dense block-FP8 path"
+tags = ["qwen", "qwen3.5", "fp8", "safetensors", "quantization-probe", "exploratory"]
 source_url = "https://huggingface.co/surogate/Qwen3.5-0.8B-FP8"
 
 [scenario.given]
@@ -516,7 +520,7 @@ argv = ["--max-model-len", "128"]
 
 [[scenario.then.assert]]
 kind = "exit_code.equals"
-value = 1
+value = 0
 
 [[scenario.then.assert]]
 kind = "stdout.contains"
@@ -526,9 +530,31 @@ value = "config_model_type qwen3_5"
 kind = "stdout.contains"
 value = "config_quantization_config_present true"
 
+# The smoke passes no --quantization and prints "quantization None", so only
+# vLLM's engine config line, resolved from the checkpoint, can match this.
 [[scenario.then.assert]]
-kind = "output.contains"
-value = "fp8"
+kind = "output.regex"
+value = 'quantization=fp8'
+
+# vLLM logs the block-FP8 linear kernel choice only after its startup imports,
+# the engine core and the Fp8LinearMethod layers are up, so a pass shows the
+# generation ran through the FP8 path. A startup ImportError must not satisfy
+# this probe.
+[[scenario.then.assert]]
+kind = "output.regex"
+value = 'Selected \w*Fp8BlockScaledMMKernel for Fp8LinearMethod'
+
+[[scenario.then.assert]]
+kind = "output.not_contains"
+value = "ModuleNotFoundError"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "generation_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "basic_ok"
 
 [[scenario]]
 id = "vllm.qwen3_5.35b-a3b-gptq-int4.text.basic"
@@ -976,12 +1002,12 @@ caveats = [
 ]
 
 [[recipe_surface]]
-id = "vllm.qwen.recipe.qwen3_5.fp8_safetensors_blocked"
-summary = "Qwen3.5 0.8B FP8 safetensors gfx1151 blocked quantization probe"
+id = "vllm.qwen.recipe.qwen3_5.fp8_safetensors"
+summary = "Qwen3.5 0.8B FP8 safetensors gfx1151 dense block-FP8 quantization probe"
 source_url = "https://huggingface.co/surogate/Qwen3.5-0.8B-FP8"
 model = "surogate/Qwen3.5-0.8B-FP8"
 status = "advisory-only"
-local_scenarios = ["vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors-blocked"]
+local_scenarios = ["vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors"]
 required_flags = [
   "small FP8 safetensors checkpoint",
   "local gfx1151 quantization-probe shape",

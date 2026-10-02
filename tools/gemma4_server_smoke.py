@@ -17,7 +17,19 @@ TOOLS_DIR = Path(__file__).resolve().parent
 if str(TOOLS_DIR) not in sys.path:
     sys.path.insert(0, str(TOOLS_DIR))
 
-from gemma4_smoke_common import validate_basic_chat_text
+from gemma4_smoke_common import (
+    KNOWN_ANSWER_MAX_TOKENS,
+    KNOWN_ANSWER_PROMPT,
+    LONG_DECODE_DEFAULT_COUNT,
+    LONG_DECODE_MAX_MODEL_LEN,
+    long_decode_max_model_len,
+    long_decode_max_tokens,
+    long_decode_prompt,
+    validate_basic_chat_text,
+    validate_known_answer_text,
+    validate_long_decode_text,
+    validate_tool_followup_text,
+)
 
 SERVER_MODES = (
     "basic",
@@ -57,6 +69,14 @@ TINY_PNG_DATA_URL = (
     "data:image/png;base64,"
     "iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEklEQVR4nGNkSDjAwMDAxAAGAAzqASQOf3rKAAAAAElFTkSuQmCC"
 )
+# The get_weather result the tool lanes send back; the follow-up answer must
+# repeat at least one of its values.
+WEATHER_TOOL_RESULT = {
+    "temperature": 22,
+    "condition": "Partly cloudy",
+    "unit": "celsius",
+}
+WEATHER_TOOL_RESULT_MARKERS = ("22", "cloudy")
 
 
 def parse_args() -> argparse.Namespace:
@@ -133,6 +153,37 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument("--request-timeout", type=float, default=60.0)
+    parser.add_argument(
+        "--known-answer",
+        action="store_true",
+        help=(
+            "after the mode check, send a greedy request whose answer is known "
+            "(the first ten primes) and require it exactly"
+        ),
+    )
+    parser.add_argument(
+        "--long-decode",
+        action="store_true",
+        help=(
+            "after the mode check, send a greedy counting request of several "
+            "hundred tokens and require every number in order plus a code word "
+            "recalled from the prompt; raises the default --max-model-len to "
+            f"at least {LONG_DECODE_MAX_MODEL_LEN}, more for a larger "
+            "--long-decode-count"
+        ),
+    )
+    parser.add_argument(
+        "--long-decode-count",
+        type=int,
+        default=LONG_DECODE_DEFAULT_COUNT,
+        help="last number the long-decode request must count to",
+    )
+    parser.add_argument(
+        "--long-decode-timeout",
+        type=float,
+        default=600.0,
+        help="seconds to wait for the long-decode response",
+    )
     parser.add_argument(
         "--execution-mode",
         choices=("eager", "compiled"),
@@ -257,10 +308,14 @@ def effective_max_model_len(args: argparse.Namespace) -> int:
     if args.max_model_len is not None:
         return args.max_model_len
     if use_gemma4_26b_a4b_text_only_defaults(args):
-        return 128
-    if args.mode in REASONING_MODES or args.mode in STRUCTURED_MODES:
-        return 1024
-    return 512
+        default = 128
+    elif args.mode in REASONING_MODES or args.mode in STRUCTURED_MODES:
+        default = 1024
+    else:
+        default = 512
+    if getattr(args, "long_decode", False):
+        return max(default, long_decode_max_model_len(args.long_decode_count))
+    return default
 
 
 def effective_max_num_batched_tokens(args: argparse.Namespace) -> int | None:
@@ -307,8 +362,8 @@ def build_server_command(args: argparse.Namespace) -> list[str]:
     command = [
         sys.executable,
         "-m",
-        "vllm.entrypoints.openai.api_server",
-        "--model",
+        "vllm.entrypoints.cli.main",
+        "serve",
         args.model,
         "--host",
         args.host,
@@ -486,7 +541,9 @@ def build_request_payload(args: argparse.Namespace) -> dict[str, object]:
     payload: dict[str, object] = {
         "model": served_model_name(args),
         "messages": [],
-        "max_tokens": request_max_tokens(args, 8 if args.mode == "benchmark-lite" else 16),
+        # benchmark-lite differs from basic only by disabling prefix caching;
+        # it shares the five-word check, which needs about 12 tokens.
+        "max_tokens": request_max_tokens(args, 16),
         "temperature": 0.0,
     }
     if args.mode in {"basic", "benchmark-lite"}:
@@ -521,6 +578,10 @@ def build_request_payload(args: argparse.Namespace) -> dict[str, object]:
             payload["chat_template_kwargs"] = {"enable_thinking": True}
             payload["skip_special_tokens"] = False
             payload["max_tokens"] = request_max_tokens(args, 1024)
+        else:
+            # Gemma 4 pretty-prints the JSON, which runs past 16 tokens before
+            # the answer string closes.
+            payload["max_tokens"] = request_max_tokens(args, 256)
         return payload
     if args.mode in MULTIMODAL_MODES:
         payload["messages"] = [{"role": "user", "content": multimodal_content(args)}]
@@ -541,9 +602,32 @@ def build_request_payload(args: argparse.Namespace) -> dict[str, object]:
     payload["skip_special_tokens"] = False
     if args.mode in {"tool-thinking", "full-feature-text-only"}:
         payload["chat_template_kwargs"] = {"enable_thinking": True}
-    if args.mode == "full-feature-text-only":
-        payload["response_format"] = structured_response_format()
+    # full-feature-text-only asks for structured output on the follow-up, not
+    # here. vLLM 0.30 cannot combine a json_schema response_format with Gemma 4
+    # auto tool calls on one turn: xgrammar constrains the post-reasoning text
+    # to the schema, so the tool call lands inside the JSON and its location
+    # argument comes back as \"Tokyo\", backslashes included.
     return payload
+
+
+def build_known_answer_payload(args: argparse.Namespace) -> dict[str, object]:
+    return {
+        "model": served_model_name(args),
+        "messages": [{"role": "user", "content": KNOWN_ANSWER_PROMPT}],
+        "max_tokens": request_max_tokens(args, KNOWN_ANSWER_MAX_TOKENS),
+        "temperature": 0.0,
+    }
+
+
+def build_long_decode_payload(args: argparse.Namespace) -> dict[str, object]:
+    return {
+        "model": served_model_name(args),
+        "messages": [
+            {"role": "user", "content": long_decode_prompt(args.long_decode_count)}
+        ],
+        "max_tokens": request_max_tokens(args, long_decode_max_tokens(args.long_decode_count)),
+        "temperature": 0.0,
+    }
 
 
 def build_tool_followup_payload(
@@ -554,7 +638,7 @@ def build_tool_followup_payload(
     if not tool_calls:
         raise RuntimeError("tool mode response did not include any tool_calls")
     tool_call = tool_calls[0]
-    return {
+    payload: dict[str, object] = {
         "model": served_model_name(args),
         "messages": [
             {"role": "user", "content": "What is the weather in Tokyo today? Use the tool."},
@@ -562,14 +646,7 @@ def build_tool_followup_payload(
             {
                 "role": "tool",
                 "tool_call_id": tool_call["id"],
-                "content": json.dumps(
-                    {
-                        "temperature": 22,
-                        "condition": "Partly cloudy",
-                        "unit": "celsius",
-                    },
-                    sort_keys=True,
-                ),
+                "content": json.dumps(WEATHER_TOOL_RESULT, sort_keys=True),
             },
         ],
         "tools": build_tool_spec(),
@@ -577,6 +654,21 @@ def build_tool_followup_payload(
         "skip_special_tokens": False,
         "temperature": 0.0,
     }
+    if args.mode == "full-feature-text-only":
+        # Structured output moves here from the tool-call turn; see
+        # build_request_payload. With tools present vLLM defaults tool_choice
+        # to "auto", so pin "none" to keep auto tool parsing off this turn too.
+        # Thinking stays on the tool-call turn only. With enable_thinking true,
+        # vLLM 0.30's gemma4 reasoner starts the grammar only after <channel|>
+        # or <|tool_call>, and a prompt that ends at a <|tool_response> boundary
+        # counts as still reasoning. A model that answers a tool result directly
+        # never emits either marker, so the schema would be silently skipped.
+        # With thinking off, the prompt counts as past reasoning and the grammar
+        # constrains every token.
+        payload["response_format"] = structured_response_format()
+        payload["tool_choice"] = "none"
+        payload["chat_template_kwargs"] = {"enable_thinking": False}
+    return payload
 
 
 def build_plan(args: argparse.Namespace) -> dict[str, object]:
@@ -594,6 +686,10 @@ def build_plan(args: argparse.Namespace) -> dict[str, object]:
         "request_payload": request_payload,
         "server_log": str(args.server_log),
     }
+    if args.known_answer:
+        plan["known_answer_request_payload"] = build_known_answer_payload(args)
+    if args.long_decode:
+        plan["long_decode_request_payload"] = build_long_decode_payload(args)
     if args.mode in TOOL_MODES:
         plan["followup_request_payload"] = build_tool_followup_payload(
             args,
@@ -671,17 +767,33 @@ def terminate_process(process: subprocess.Popen[str]) -> None:
         process.wait(timeout=10.0)
 
 
-def extract_message(response: dict[str, Any]) -> dict[str, Any]:
+def extract_choice(response: dict[str, Any]) -> dict[str, Any]:
     choices = response.get("choices") or []
     if not choices:
         raise RuntimeError(f"response did not include any choices: {json.dumps(response, sort_keys=True)}")
-    message = choices[0].get("message")
+    return choices[0]
+
+
+def extract_message(response: dict[str, Any]) -> dict[str, Any]:
+    message = extract_choice(response).get("message")
     if not isinstance(message, dict):
         raise RuntimeError(f"response choice did not include a message: {json.dumps(response, sort_keys=True)}")
     return message
 
 
+def require_untruncated(response: dict[str, Any], *, label: str) -> None:
+    # Report a max_tokens cut as such, not as whatever content check the
+    # partial output would fail next.
+    if extract_choice(response).get("finish_reason") == "length":
+        content = extract_message(response).get("content") or ""
+        raise RuntimeError(
+            f"{label} response truncated at max_tokens budget "
+            f"(finish_reason 'length'): {content!r}"
+        )
+
+
 def validate_basic_response(response: dict[str, Any]) -> dict[str, Any]:
+    require_untruncated(response, label="basic mode")
     message = extract_message(response)
     validate_basic_chat_text(message.get("content") or "")
     return message
@@ -718,18 +830,47 @@ def validate_reasoning_response(response: dict[str, Any]) -> dict[str, Any]:
     return message
 
 
-def validate_tool_response(response: dict[str, Any]) -> dict[str, Any]:
+def validate_tool_response(response: dict[str, Any], *, require_reasoning: bool = False) -> dict[str, Any]:
     message = extract_message(response)
+    if require_reasoning and not (message.get("reasoning") or message.get("reasoning_content") or "").strip():
+        raise RuntimeError("tool mode response did not include reasoning with thinking enabled")
     tool_calls = message.get("tool_calls") or []
     if not tool_calls:
         raise RuntimeError("tool mode response did not include a tool call")
     function = tool_calls[0].get("function") or {}
     if function.get("name") != "get_weather":
         raise RuntimeError(f"unexpected tool call: {json.dumps(tool_calls[0], sort_keys=True)}")
+    raw_arguments = function.get("arguments") or ""
+    try:
+        arguments = json.loads(raw_arguments)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"tool call arguments were not JSON: {raw_arguments!r}") from exc
+    # An exact match catches arguments that parse but carry escaped quotes.
+    if not isinstance(arguments, dict) or arguments.get("location") != "Tokyo":
+        raise RuntimeError(f"tool call arguments did not name location 'Tokyo': {raw_arguments!r}")
+    return message
+
+
+def validate_tool_followup_response(response: dict[str, Any]) -> dict[str, Any]:
+    require_untruncated(response, label="tool follow-up")
+    message = extract_message(response)
+    if message.get("tool_calls"):
+        raise RuntimeError(
+            "tool follow-up response called a tool instead of answering: "
+            f"{json.dumps(message['tool_calls'], sort_keys=True)}"
+        )
+    finish_reason = extract_choice(response).get("finish_reason")
+    if finish_reason != "stop":
+        raise RuntimeError(f"tool follow-up response finished with {finish_reason!r}, not 'stop'")
+    validate_tool_followup_text(
+        message.get("content") or "",
+        expected_any=WEATHER_TOOL_RESULT_MARKERS,
+    )
     return message
 
 
 def validate_structured_response(response: dict[str, Any]) -> dict[str, Any]:
+    require_untruncated(response, label="structured")
     message = extract_message(response)
     raw_content = message.get("content") or ""
     try:
@@ -741,11 +882,57 @@ def validate_structured_response(response: dict[str, Any]) -> dict[str, Any]:
     return message
 
 
+def validate_structured_tool_followup_response(response: dict[str, Any]) -> dict[str, Any]:
+    message = validate_structured_response(response)
+    content = (message.get("content") or "").casefold()
+    if not any(marker in content for marker in WEATHER_TOOL_RESULT_MARKERS):
+        raise RuntimeError(
+            "structured tool follow-up did not use the tool result "
+            f"(expected any of {list(WEATHER_TOOL_RESULT_MARKERS)}): {message.get('content')!r}"
+        )
+    return message
+
+
 def tail_log(path: Path, lines: int = 80) -> str:
     if not path.exists():
         return ""
     text = path.read_text(encoding="utf-8", errors="replace").splitlines()
     return "\n".join(text[-lines:])
+
+
+def completion_tokens(response: dict[str, Any]) -> object:
+    usage = response.get("usage") or {}
+    return usage.get("completion_tokens")
+
+
+def run_known_answer_check(args: argparse.Namespace, plan: dict[str, object]) -> None:
+    response = post_json(
+        str(plan["request_url"]),
+        args.api_key,
+        dict(plan["known_answer_request_payload"]),
+        args.request_timeout,
+    )
+    print("known_answer_response", json.dumps(response, sort_keys=True))
+    message = extract_message(response)
+    validate_known_answer_text(message.get("content") or "")
+    print("known_answer_ok")
+
+
+def run_long_decode_check(args: argparse.Namespace, plan: dict[str, object]) -> None:
+    response = post_json(
+        str(plan["request_url"]),
+        args.api_key,
+        dict(plan["long_decode_request_payload"]),
+        max(args.request_timeout, args.long_decode_timeout),
+    )
+    print("long_decode_response", json.dumps(response, sort_keys=True))
+    print("long_decode_completion_tokens", completion_tokens(response))
+    message = extract_message(response)
+    validate_long_decode_text(
+        message.get("content") or "",
+        count=args.long_decode_count,
+    )
+    print("long_decode_ok")
 
 
 def run_smoke(args: argparse.Namespace) -> None:
@@ -795,7 +982,9 @@ def run_smoke(args: argparse.Namespace) -> None:
                 print("reasoning_field_present", bool(message.get("reasoning") or message.get("reasoning_content")))
                 print("structured_ok")
             elif args.mode in TOOL_MODES:
-                assistant_message = validate_tool_response(response)
+                assistant_message = validate_tool_response(
+                    response, require_reasoning=args.mode == "full-feature-text-only"
+                )
                 followup_payload = build_tool_followup_payload(args, assistant_message)
                 followup = post_json(
                     str(plan["request_url"]),
@@ -804,11 +993,20 @@ def run_smoke(args: argparse.Namespace) -> None:
                     args.request_timeout,
                 )
                 print("followup_response", json.dumps(followup, sort_keys=True))
-                validate_basic_response(followup)
+                if args.mode == "full-feature-text-only":
+                    validate_structured_tool_followup_response(followup)
+                    print("structured_ok")
+                else:
+                    validate_tool_followup_response(followup)
                 print("tool_ok")
             else:
                 validate_multimodal_response(response)
                 print(f"{args.mode}_ok")
+
+            if args.known_answer:
+                run_known_answer_check(args, plan)
+            if args.long_decode:
+                run_long_decode_check(args, plan)
         except Exception:
             print("server_log_tail_start", file=sys.stderr)
             tail = tail_log(args.server_log)

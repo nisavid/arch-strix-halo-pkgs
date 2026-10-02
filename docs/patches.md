@@ -96,22 +96,25 @@ upstream moved the merge into `recipe_arg_resolver.h`
 
 ## vLLM
 
-- [ROCm local carry refreshed for vLLM 0.20.0](../packages/python-vllm-rocm-gfx1151/0016-rocm-refresh-local-carry-for-vllm-0.20.0.patch)
-  - Consolidates the package-local ROCm, Gemma, Qwen, TorchAO, CLI laziness,
-    sampler, EAGLE/MTP, and FlashAttention interface carry on top of upstream
-    vLLM 0.20.0.
+- [ROCm local carry re-ported for vLLM 0.30.0](../packages/python-vllm-rocm-gfx1151/0016-rocm-refresh-local-carry-for-vllm-0.30.0.patch)
+  - Re-ports the 0.21.0 carry onto upstream vLLM 0.30.0 (`ced6857a`). Of the
+    29 per-file sections, 12 are kept (two at moved paths) and 17 are dropped
+    as upstream-equivalent, obsolete with Triton 3.8, or AITER-only.
+  - Forwards CFLAGS, CXXFLAGS and HIPFLAGS from `setup.py` into the CMake ROCm
+    build, and keeps the HIP `vllm_bfloat16` aliases in
+    `csrc/libtorch_stable/cuda_vec_utils.cuh`.
+  - Keeps `vllm --version` metadata-only and plain `vllm --help` off the serve
+    runtime, and keeps SageMaker and TorchAO optional on startup paths.
   - Keeps large-head ROCm prefill paths such as Gemma 4 global attention under
     the gfx1151 LDS/shared-memory limit.
-  - Keeps Qwen speculative decoding compiling on ROCm/Triton by forcing the
-    padded drafter batch `valid_count` path to one scalar dtype across Triton
-    branches.
-  - Lets vLLM detect the packaged pure-Python `flash_attn` interface that
-    exposes AITER's Triton AMD backend, while keeping CK/direct FlashAttention
-    promotion behind the imported paged-KV surface and kernel behavior needed
-    by the vLLM engine route.
-  - Uses upstream vLLM 0.20.0 Python 3.14 metadata and DFlash support instead
-    of retaining the former local Python-version and narrow DFlash parser
-    backport patches.
+  - Keeps the Qwen3.5/GDN FLA autotune restriction and float32 gate exponents
+    on AMD, the large-vocabulary top-k/top-p PyTorch fallback, and the padded
+    EAGLE/MTP drafter `valid_count` dtype fix.
+  - Keeps CK/direct FlashAttention promotion behind the imported paged-KV
+    varlen surface needed by the vLLM engine route.
+  - Drops the gfx1x AITER enablement, the Gemma 4 AITER preference and the
+    hybrid AITER handling. AITER is off the required gfx1151 path, and Gemma 4
+    now selects upstream `TRITON_ATTN`.
   - The current Qwen CK consumer boundary is inside CK paged-KV behavior: the
     normal hybrid path presents 64-token pages, while diagnostics that force
     128-divisible pages progress to a GPU fault. That boundary is documented in
@@ -132,42 +135,92 @@ upstream moved the merge into `recipe_arg_resolver.h`
     evidence that the maintained Gemma 4 lane should leave Triton unquantized
     MoE.
 
+## FlashAttention
+
+- [Initialize CK split-KV forward args](../packages/python-flash-attn-rocm-gfx1151/0010-init-ck-splitkv-args.patch)
+  - Value-initializes `fmha_fwd_splitkv_args` and sets `sink_ptr`,
+    `sink_size`, and `logits_soft_cap` in the varlen and kvcache split-KV
+    argument builders. CK `03ce21dd` added those fields and FlashAttention
+    `3f94643f` never set them, so the split-KV kernel dereferenced
+    uninitialized host stack as `sink_ptr` and the paged-KV varlen path
+    faulted the GPU.
+  - Backports the split-KV hunks of upstream `8afc617a` (#2363) and the
+    `logits_soft_cap` line from `c661198a`.
+    [Patch 0007](../packages/python-flash-attn-rocm-gfx1151/0007-adapt-ck-fwd-args-layout.patch)
+    is a partial #2363 backport that covered only `fmha_fwd_args`.
+  - Drop 0007 once the package moves to a FlashAttention ref that contains
+    `8afc617a`. Drop 0010 only once the target source sets `sink_ptr`,
+    `sink_size` and `logits_soft_cap` in both split-KV argument builders:
+    `8afc617a` sets only the sink fields, and `c661198a` sets
+    `logits_soft_cap` in the varlen builder only and is not an ancestor of
+    `8afc617a`. If upstream still declares `args;` uninitialized then, keep
+    its value-initialization as a reduced local patch.
+
 ## PyTorch
 
 - [Initialize NumPy before ROCm global dependencies](../packages/python-pytorch-opt-rocm-gfx1151/0007-initialize-numpy-before-global-deps.patch)
   - Loads NumPy's OpenBLAS provider before PyTorch loads ROCm global
     dependencies, keeping `import torch` stable on the installed TheRock 7.13
     runtime stack.
+- [Enable CK GEMM on gfx1151](../packages/python-pytorch-opt-rocm-gfx1151/0005-enable-ck-gemm-on-gfx1151.patch)
+  - Adds gfx1151 to `Context::ckSupported()`. Refreshed at `13da0862`, where
+    upstream's list dropped gfx90a and is now `gfx942` and `gfx950`.
+- [Do not install the system AOTriton prefix into torch](../packages/python-pytorch-opt-rocm-gfx1151/0010-disable-system-aotriton-install.patch)
+  - Removes the `aotriton.cmake` rule that copies `$AOTRITON_INSTALLED_PREFIX`
+    `lib` and `include` (the system `/usr`) into `torch/`. Arch carries the
+    same hunk as `aotriton_disable_install.patch`.
+- The AOTriton 0.12 lazy-tensor callback patch (0009) was dropped at
+  `13da0862`, because upstream `LazyTensorFunctions` now handles the 0.12+
+  callback shape behind `AOTRITON_VERSION_INT(0, 12)`.
 
 ## Triton
 
 - [Python 3.14 and pybind11 build-system compatibility](../packages/python-triton-gfx1151/0001-python-3.14-and-pybind11-build-system.patch)
-  - Keeps the ROCm Triton fork on the repo's Python 3.14 lane while using the
-    Arch-provided build tools from the package metadata.
-- [Disable `-Werror` with TheRock LLVM headers](../packages/python-triton-gfx1151/0002-disable-werror-with-therock-llvm-headers.patch)
-  - Prevents warning-only differences in the local LLVM/header lane from
-    failing the package build.
-- [Add `AttrsDescriptor.__repr__` for Inductor codegen](../packages/python-triton-gfx1151/0003-attrs-descriptor-repr-for-inductor.patch)
-  - Keeps `torch.compile` / Inductor-generated Python valid when it serializes
-    Triton metadata with `repr()`.
+  - Drops the `cmake==4.0` and `ninja` pins from the root `pyproject.toml`
+    build requirements, so the no-isolation build uses Arch's cmake, ninja and
+    pybind11.
+- [Disable `-Werror` for the packaged build](../packages/python-triton-gfx1151/0002-disable-werror-with-therock-llvm-headers.patch)
+  - Keeps warnings from amdclang against the pinned upstream LLVM 5f07f818
+    headers from failing the package build.
+- The 3.0-era `AttrsDescriptor.__repr__` patch was dropped at Triton 3.8,
+  because the class no longer exists and torch 2.12 Inductor takes its dict
+  path without it.
+
+## AOTriton
+
+- [Gate vendored Triton NVIDIA build artifacts](../packages/python-aotriton-gfx1151/0001-gate-vendored-triton-nvidia-build-artifacts.patch)
+  - Backend-gates the NVIDIA plugin wiring in the vendored hyperjump Triton
+    (`db82b800`) and stops it from building the CUDA GSan runtime, which
+    AOTriton never uses for gfx1151. The patch is unchanged from 0.12b to
+    0.13b because both releases pin the same Triton commit.
+- The old `c44b870b` Python 3.14 `ast.Num` cherry-pick was dropped at 0.13b.
+  That commit is not in the pinned Triton history, the tree has no `ast.Num`,
+  and the masked `|| true` cherry-pick had been a no-op.
 
 ## TorchAO
 
 - [Honor `PYTORCH_ROCM_ARCH` instead of hard-coding `gfx942`](../packages/python-torchao-rocm-gfx1151/0001-setup.py-honor-pytorch-rocm-arch.patch)
   - Makes the upstream ROCm build use an explicit environment-selected target
     arch so the local package can build for `gfx1151`.
-- [Python 3.14 PT2E union aliases](../packages/python-torchao-rocm-gfx1151/0002-python-3.14-pt2e-union-aliases.patch)
-  - Keeps `torchao.quantization.pt2e` importable on Python 3.14 by guarding
-    `typing.Union` alias metadata writes.
+- [Include `<format>` before the HIP runtime in `swizzle.cpp`](../packages/python-torchao-rocm-gfx1151/0003-swizzle-include-format-before-hip-runtime.patch)
+  - `amdclang++` compiles `torchao/csrc/rocm/swizzle/swizzle.cpp` as plain
+    C++. In that mode `hip/amd_detail/host_defines.h` defines `__noinline__`
+    as an empty macro, so GCC 16 `<format>` (reached through ATen's
+    `<chrono>`) turns `[[__gnu__::__noinline__]]` into `[[__gnu__::]]` and
+    fails with `expected identifier`. Parsing `<format>` first keeps the
+    attribute intact. HIP bug:
+    https://github.com/ROCm/rocm-systems/issues/9897. Upstream TorchAO
+    removed `swizzle.cpp` on `main` in
+    https://github.com/pytorch/ao/pull/4697 (commit `ac1a803c60`, after
+    `v0.18.0`). Drop the patch at the first packaged TorchAO release without
+    `swizzle.cpp`, or once the packaged HIP headers stop defining
+    `__noinline__` in plain C++ mode.
 
 ## Torch-MIGraphX
 
-- [Import migrated PT2E quantization from TorchAO](../packages/python-torch-migraphx-gfx1151/0001-import-pt2e-quantization-from-torchao.patch)
-  - Lets Torch-MIGraphX populate `torch.ops.quantized_decomposed` on the local
-    PyTorch 2.11 stack, where PT2E quantization lives under TorchAO.
 - [Keep Dynamo registration lazy](../packages/python-torch-migraphx-gfx1151/0002-keep-dynamo-registration-lazy.patch)
   - Keeps base import and the FX lowering path usable while Dynamo backend
-    registration remains opt-in on this Python 3.14 and PyTorch 2.11 stack.
+    registration remains opt-in on this Python 3.14 and PyTorch 2.12 stack.
 - [Relax numpy runtime metadata cap](../packages/python-torch-migraphx-gfx1151/0003-relax-numpy-runtime-cap.patch)
   - Matches the wheel metadata to the repo's NumPy 2.x lane after host FX
     lowering validation.

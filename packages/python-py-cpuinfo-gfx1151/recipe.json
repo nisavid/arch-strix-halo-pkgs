@@ -1,0 +1,100 @@
+{
+  "maintenance": {
+    "advisory_references": [],
+    "authoritative_reference": "none",
+    "divergence_notes": [
+      "Arch carried python-py-cpuinfo 9.0.0 until it left the sync repos, and no AUR package replaces it, so this package takes over the former Arch name through provides and conflicts.",
+      "Keeps the package pure-Python and architecture-independent; there are no Strix-specific native flags to carry.",
+      "Depends on python-gfx1151 so the vLLM stack stays on the repo-managed Python lane. Upstream declares no runtime requirements."
+    ],
+    "source_patches": [],
+    "update_notes": [
+      "Check vLLM's requirements/common.txt (py-cpuinfo with no version bound at vLLM 0.30.0) and the upstream release notes together before updating.",
+      "After publishing a rebuilt package, verify `import cpuinfo` and `cpuinfo.get_cpu_info()` through the installed local Python lane.",
+      "On 2026-09-25, added at 9.0.0 for the generation-C W2A closure (#110, #111). vLLM 0.30.0 imports cpuinfo from `vllm/usage/usage_lib.py`, which `vllm serve` imports at startup. It is built in the rootless C build root in the vLLM lease job."
+    ]
+  },
+  "name": "python-py-cpuinfo-gfx1151",
+  "package_name": "python-py-cpuinfo-gfx1151",
+  "pkgver": "9.0.0",
+  "policy": {
+    "advisory_references": [],
+    "arch": [
+      "any"
+    ],
+    "arch_reference": [],
+    "authoritative_reference": "none",
+    "conflicts": [
+      "python-py-cpuinfo"
+    ],
+    "depends": [
+      "python-gfx1151"
+    ],
+    "divergence_notes": [
+      "Arch carried python-py-cpuinfo 9.0.0 until it left the sync repos, and no AUR package replaces it, so this package takes over the former Arch name through provides and conflicts.",
+      "Keeps the package pure-Python and architecture-independent; there are no Strix-specific native flags to carry.",
+      "Depends on python-gfx1151 so the vLLM stack stays on the repo-managed Python lane. Upstream declares no runtime requirements."
+    ],
+    "license": [
+      "MIT"
+    ],
+    "makedepends": [
+      "python-build",
+      "python-installer",
+      "python-setuptools",
+      "python-wheel"
+    ],
+    "patches_dir": "patches/python-py-cpuinfo-gfx1151",
+    "pkgdesc": "Pure-Python CPU information probe, for the Strix Halo vLLM stack",
+    "provides": [
+      "python-py-cpuinfo"
+    ],
+    "pure_python_wheel": true,
+    "pypi_name": "py-cpuinfo",
+    "recipe_key": "native_wheels",
+    "recipe_notes_override": "This package supplies py-cpuinfo, which vLLM 0.30.0 imports from its usage\nmodule while `vllm serve` starts. It is pure Python, but it belongs in the\nlocal package closure because python-py-cpuinfo is no longer in the Arch sync\nrepos and no AUR package replaces it.\n",
+    "scaffold_notes": [
+      "Part of the vLLM runtime dependency closure (#110).",
+      "Renders through the Blackcat native-wheel lane in pure-Python mode; Blackcat's recipe does not name this package.",
+      "The sdist has no pyproject.toml, so `python -m build` uses the setuptools legacy backend, which needs setuptools and wheel."
+    ],
+    "sha256sums": [
+      "3cdbbf3fac90dc6f118bfd64384f309edeadd902d7c8fb17f02ffa1fc3f49690"
+    ],
+    "src_subdir": "py-cpuinfo-9.0.0",
+    "template": "native-wheel-pypi",
+    "update_notes": [
+      "Check vLLM's requirements/common.txt (py-cpuinfo with no version bound at vLLM 0.30.0) and the upstream release notes together before updating.",
+      "After publishing a rebuilt package, verify `import cpuinfo` and `cpuinfo.get_cpu_info()` through the installed local Python lane.",
+      "On 2026-09-25, added at 9.0.0 for the generation-C W2A closure (#110, #111). vLLM 0.30.0 imports cpuinfo from `vllm/usage/usage_lib.py`, which `vllm serve` imports at startup. It is built in the rootless C build root in the vLLM lease job."
+    ],
+    "upstream_version": "9.0.0",
+    "url": "https://github.com/workhorsy/py-cpuinfo"
+  },
+  "provenance": {
+    "output_root": "packages",
+    "recipe_author": "Blackcat Informatics Inc.",
+    "recipe_commit": "3f15f9f",
+    "recipe_date": "20260508",
+    "recipe_history_count": 17,
+    "recipe_repo": "https://github.com/paudley/ai-notes",
+    "recipe_subdir": "strix-halo",
+    "repo_subpath": "."
+  },
+  "recipe": {
+    "branch": null,
+    "depends_on": [
+      "cpython",
+      "pytorch"
+    ],
+    "method": "pip",
+    "notes": "This package supplies py-cpuinfo, which vLLM 0.30.0 imports from its usage\nmodule while `vllm serve` starts. It is pure Python, but it belongs in the\nlocal package closure because python-py-cpuinfo is no longer in the Arch sync\nrepos and no AUR package replaces it.\n",
+    "patches": [],
+    "phase": "H",
+    "repo": null,
+    "src_dir": "py-cpuinfo-9.0.0",
+    "steps": [
+      32
+    ]
+  }
+}

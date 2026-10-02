@@ -13,13 +13,18 @@
 - Recorded reference packages: `none`
 - Authoritative reference package: `none`
 - Advisory reference packages: `none`
-- Applied source patch files/actions: `4`
+- Applied source patch files/actions: `3`
 
 ## Recipe notes
 
 Builds Torch-MIGraphX from audited upstream `master` at
-`b94b985586a051fbee19aefe8c934bb7c1a9df0a` because PyPI and the only upstream
+`5afb9ffdd7f5489727bdfbb323f1b2584e3676c2` because PyPI and the only upstream
 tag remain at `1.1` while current upstream reports package version `1.2`.
+
+That commit supports PyTorch 2.11 and newer upstream: it imports PT2E
+quantization from TorchAO through `dynamo/quantization/_compat.py` and the FX
+quantized-op converters, which retires the local PT2E import patch. TorchAO
+stays a hard runtime dependency because the FX converters import it.
 
 The package is bound to the coherent local ROCm stack: `migraphx-gfx1151`
 provides the Python `migraphx` extension under `/opt/rocm/lib`, PyTorch and
@@ -38,23 +43,22 @@ Torch-MIGraphX, and compile bounded ResNet-style CNNs through
 Dynamo registration stays lazy on base import, and the package preloads
 PyTorch AOTAutograd before MIGraphX native modules because importing
 AOTAutograd or `sqlite3` after the MIGraphX Python extension can segfault on
-the local Python 3.14 and PyTorch 2.11 stack.
+the local Python 3.14 and PyTorch 2.12 stack.
 
 
 ## Scaffold notes
 
-- Builds from upstream master at b94b985586a051fbee19aefe8c934bb7c1a9df0a because PyPI and the only upstream tag remain at 1.1 while current master reports version 1.2.
+- Builds from upstream master at 5afb9ffdd7f5489727bdfbb323f1b2584e3676c2 because PyPI and the only upstream tag remain at 1.1 while current master reports version 1.2.
 - Uses the ROCm compiler lane explicitly and strips the unsupported -famd-opt flag from wheel C/C++ flags.
 - Depends on the local MIGraphX split package because the Python binding is installed under /opt/rocm/lib with migraphx.pth.
 - Relaxes upstream's numpy metadata cap for the repo's numpy 2.x lane.
-- Patches Torch-MIGraphX PT2E quantizer imports to use TorchAO's current pt2e.quantizer modules.
 - Preloads PyTorch AOTAutograd before MIGraphX native modules so torch.compile(..., backend="migraphx") can use the named backend without the import-order segfault.
 
 ## Intentional Divergences
 
 - There is no current Arch-family Torch-MIGraphX package baseline, so this package is closure-first and tracks the audited upstream master commit that reports package version 1.2.
-- Carries a PT2E compatibility patch because PyTorch 2.11 documents PT2E quantization through TorchAO while current Torch-MIGraphX still imports removed torch.ao quantize_pt2e and quantizer modules.
-- Keeps Dynamo registration lazy on base import and preloads PyTorch AOTAutograd before MIGraphX native modules so named-backend registration can import safely on the local Python 3.14 and PyTorch 2.11 stack.
+- Requires TorchAO at runtime even though upstream lists it as the quantization extra: on PyTorch 2.11 and newer, Torch-MIGraphX imports PT2E from TorchAO both in dynamo/quantization/_compat.py and in the FX quantized-op converters.
+- Keeps Dynamo registration lazy on base import and preloads PyTorch AOTAutograd before MIGraphX native modules so named-backend registration can import safely on the local Python 3.14 and PyTorch 2.12 stack.
 - Relaxes upstream's numpy <2.0 wheel metadata because the local runtime and FX smoke use the repo's python-numpy-gfx1151 2.x lane.
 
 ## Update Notes
@@ -68,6 +72,7 @@ the local Python 3.14 and PyTorch 2.11 stack.
 - On 2026-05-26, bump pkgrel to 7 for delivery of the Torch-MIGraphX rebuild against python-pytorch-opt-rocm-gfx1151 2.12.0-2 and python-torchao-rocm-gfx1151 0.17.0-4.
 - On 2026-06-15, bump pkgrel to 9 for the c7badbdf runtime-base rebuild so Torch-MIGraphX supersedes the unmerged ab32a1f/pkgrel-8 host-drift artifact.
 - After the 2026-06-15 AMDMIGraphX protobuf-35 repair, torch-migraphx.pt2e.quantizer-import passes again; keep live Dynamo/PT2E compile smokes behind installed MIGraphX, PyTorch, TorchAO, or Torch-MIGraphX changes.
+- On 2026-09-25, move to upstream master commit 5afb9ffdd7f5489727bdfbb323f1b2584e3676c2 ("Update to support torch 2.11") and bump pkgrel to 10 for the rebuild against python-pytorch-opt-rocm-gfx1151 2.12.0-5, python-torchao-rocm-gfx1151 0.18.0, and migraphx-gfx1151 2.16.1 from TheRock 7.14.1. The package version stays 1.2. Patch 0001 is dropped: upstream now imports PT2E from TorchAO on torch 2.11 and newer through dynamo/quantization/_compat.py and fx/converters/quant_ops_converters.py. Patches 0002, 0003, and 0004 apply unchanged. Upstream master e551a861 (2026-09-24) makes the numpy requirement conditional on Python 3.13; review that as a separate candidate that could retire patch 0003.
 
 ## Maintainer Starting Points
 

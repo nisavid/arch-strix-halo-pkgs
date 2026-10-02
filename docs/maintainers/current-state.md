@@ -1,8 +1,281 @@
 # Current State
 
 The package, deployment, and live-validation narrative below remains a
-2026-06-15 snapshot. The latest freshness sweep and its acted-on Lemonade
-transition are recorded first; older reconciliations remain as dated history.
+2026-06-15 snapshot. Dated records come first, newest first; older
+reconciliations remain as dated history.
+
+## 2026-10-02 Freshness Sweep
+
+A cache-aware sweep on the W2A closure branch completed at
+`2026-10-02T06:27:29Z` and exited 10 with `--fail-on actionable`. The
+2026-10-01 dispositions still covered every family except two, which moved
+upstream after that sweep:
+
+- **uvloop 0.23.0** reached PyPI at 2026-10-01T03:15Z and carries a security
+  fix, so `uvloop-0.23.0-pypi` falls under X7's security exception: it is
+  tracked to #110, the W2A model/serving closure that owns uvloop's sibling
+  closure records (watchfiles, aiohttp, multidict and yarl), for admission
+  into C. It has no CVE or advisory, and C's 0.22.1-2 built in the W2A root,
+  so it is not a build breakage. It carries
+  [uvloop#740](https://github.com/MagicStack/uvloop/pull/740), which detaches
+  the caller's socket when `create_connection(sock=...)` is cancelled. Before
+  the fix, that socket later closed a reused file descriptor and could corrupt
+  an unrelated transport. Upstream closed
+  [uvloop#645](https://github.com/MagicStack/uvloop/issues/645), a report of
+  uvicorn responses leaking to the wrong requests, with that fix. The path is
+  reachable in C: `vllm serve` runs under uvloop, and vLLM 0.30.0 fetches
+  media URLs through aiohttp 3.14.3 under its request timeout. aiohttp
+  connects with `loop.create_connection(sock=sock)`, so the timeout or a
+  cancelled request can cancel that call. Whether C adopts 0.23.0 in the W2A
+  closure PR or in a follow-up before W4 is an open owner decision.
+- **ROCm PyTorch `release/2.12`** moved one commit past the tracked
+  `d0d63731` to `b97872d5`, a test-only fix to `test_lazy_init` for hosts that
+  expose more than 32 GPUs. `rocm-pytorch-release-2.12-b97872d` is tracked to
+  #147 and supersedes the `d0d6373` record. Arch `python-pytorch-opt-rocm`
+  still reports 2.14.0-1. The new record covers that baseline drift the way
+  the `13da086` and `d0d6373` records did, so it needs no separate record.
+
+`policies/package-freshness.toml` is unchanged. As on 2026-10-01, its
+recorded values stay at C's selections, and the ledger records the drift.
+
+The confirming sweep missed the cache because the ledger changed. It started
+at `2026-10-02T06:33:49Z`, completed at `2026-10-02T06:34:14Z`, and exited 0
+with `--fail-on actionable`. It reported 22 stable updates, four branch-head
+movements, five baseline drifts, and 20 current families across 51 families.
+Applying the ledger yielded 38 tracked, six rejected, two adopted, and five
+current families. The ledger holds 52 active tracked records and no blocked
+records. The explicit tracker validation found all 12 unique issue gates open
+in this repository.
+
+Routing `uvloop-0.23.0-pypi` from #147 to #110 changed the ledger after the
+confirming sweep, so a rerun missed the cache. It completed at
+`2026-10-02T07:41:03Z`, exited 0 with `--fail-on actionable`, and reported
+the same family counts. The tracker validation again found all 12 unique
+issue gates open; #147 now carries 17 candidates and #110 carries 20.
+
+This sweep changes maintenance metadata only. No package source was updated,
+and no package was built, deployed/installed, installed-smoked, or
+live-scenario validated. The freshness evidence is due again 24 hours after
+the rerun completed, or sooner if package policy, package directories, the
+candidate ledger, checker behavior, or relevant source metadata changes.
+
+## 2026-10-01 Freshness Sweep
+
+An uncached sweep on the W2A closure branch started at
+`2026-10-01T00:53:25Z` and stopped with `CANDIDATE_LEDGER_DUPLICATE_MATCH`
+for pydantic-core. Its family reports also showed 15 actionable families
+without a disposition. Four problems came from W2A recording the selected C
+values in `policies/package-freshness.toml` without moving the matching
+baseline or re-keying the ledger:
+
+- **NumPy:** the PyPI value moved to 2.5.3 while the Arch baseline stayed at
+  2.4.6-1, so an earlier run found two NumPy records matching. The baseline
+  now records 2.5.3-1.
+- **pydantic-core:** the Arch primary moved to 2.46.5-1 while the PyPI
+  baseline cursor stayed at 2.47.0. The family dropped to `baseline_drift` on
+  PyPI 2.49.0, which both `pydantic-core-2.48.0-pypi` and the adopted
+  `pydantic-core-2.46.5-1-arch` cover. The cursor now records 2.49.0, the
+  value that adoption reviewed and rejected within the line (it pairs only
+  with pre-release pydantic 2.14.0b2), so the family is current and matches
+  only the adopted record.
+- **compressed-tensors and mistral-common:** the recorded values moved to the
+  selected 0.17.0 and 1.11.7, so the 2026-09-22 rejections of 0.19.0 and
+  1.12.0, keyed to 0.16.0 and 1.11.2, stopped matching. Both rejections are
+  re-observed in place and now cover both recorded values.
+
+The other 13 families had upstream movement after the 2026-09-22 freeze, and
+`origin/main` would report them the same way. Under decision X7 (#147), drift
+that is neither a security fix nor a build breakage for C routes to
+post-closeout maintenance, so 12 are tracked to #147: AITER 0.1.24, AOTriton
+0.14.2b, cryptography 50.0.2, DuckDB 1.5.6, llama.cpp v0.5.0, msgspec 0.22.0,
+multidict 7.0.0, ROCm PyTorch `release/2.12` `d0d63731`, stable-diffusion.cpp
+`3f8527a`, Torch-MIGraphX `e551a861`, TorchVision 0.29.1, and Transformers
+5.18.0. AutoRound 0.16.0 is rejected as an upstream-scope exclusion, like
+0.15.1. The cryptography and DuckDB records supersede the 50.0.1 and 1.5.5
+post-closeout records. None of the new upstream movement is a security fix or
+a build breakage for C:
+
+- cryptography 50.0.2 only rebuilds wheels and updates PyO3, and the
+  2026-09-22 CVE-2026-69247 decision carries forward. The installed 48.0.0
+  is also in the affected range of two X.509 verifier advisories that 49.0.0
+  fixes: CVE-2026-69249 (high) and CVE-2026-69248 (medium). They affect
+  `cryptography.x509.verification` users, not the PKCS#7 path reviewed
+  earlier. [#170](https://github.com/nisavid/arch-strix-halo-pkgs/issues/170)
+  assesses whether they apply, and the owner decides whether that security
+  refresh preempts #147.
+- Torch-MIGraphX `e551a861` upstreams, for Python 3.13 and later, the numpy
+  relaxation that local patch 0003 carries.
+- ROCm `release/2.12` moved its in-tree AOTriton pin to 0.14.50tp, so the
+  post-closeout AOTriton and PyTorch moves go together.
+
+The confirming uncached sweep started at `2026-10-01T01:15:56Z`, completed at
+`2026-10-01T01:16:27Z`, and exited 0 with `--fail-on actionable`. It reported
+21 stable updates, four branch-head movements, five baseline drifts, and 21
+current families across 51 families. Applying the ledger yielded 37 tracked,
+six rejected (AutoRound, llmcompressor, compressed-tensors, mistral-common,
+apache-tvm-ffi, and xgrammar), two adopted (pydantic-core and httptools), and
+six current families. The ledger holds 51 active tracked records and no
+blocked records. The explicit tracker validation found all 12 unique issue
+gates open in this repository; #147 now carries 17 candidates.
+
+This sweep changes maintenance metadata only. No package source was updated,
+and no package was built, deployed/installed, installed-smoked, or
+live-scenario validated. The freshness evidence is due again 24 hours after
+the confirming sweep completed, or sooner if package policy, package
+directories, the candidate ledger, checker behavior, or relevant source
+metadata changes.
+
+## 2026-09-29 W2A vLLM 0.30.0 Validation of Record
+
+This is the validation of record for `python-vllm-rocm-gfx1151` 0.30.0 in W2A
+([issue 111](https://github.com/nisavid/arch-strix-halo-pkgs/issues/111),
+under [issue 98](https://github.com/nisavid/arch-strix-halo-pkgs/issues/98)). It
+ran in the isolated W2A build root described in
+[Generation-C Build Root](c-build-root.md): a rootless bubblewrap root with
+GPU access, where each GPU run checks the kernel log for page faults, ring
+timeouts, and resets, and stops further GPU work when it finds one. Nothing was installed on the host. The
+states are recorded separately:
+
+- **Source updated:** `python-vllm-rocm-gfx1151` 0.30.0-1 at the commit in
+  [#174](https://github.com/nisavid/arch-strix-halo-pkgs/pull/174) that
+  links the HIP modules with ROCm clang (`HIP_CXX_COMPILER=amdclang++`).
+- **Built:** in the W2A root from that commit, and published to the W2A build
+  repo. The `.BUILDINFO` PKGBUILD checksum equals the committed PKGBUILD. All
+  7 shipped `.so` files report AMD clang 23 only. The #168 archive check
+  ([LTO audit](lto-configure-probe-audit.md)) found 0 libbacktrace markers and
+  0 LLVM bitcode sections.
+- **Root prep:** `accelerate` was added to the root for the TorchAO tiny
+  prepare smoke. A #174 commit allowlists the vLLM and xgrammar
+  import-order `NEEDED` entries, so root verification reports 0 violations
+  and 0 stale entries.
+- **Deployed/installed:** no. The package exists only in the W2A root and the
+  W2A build repo; the foundation it links against must not reach the host
+  before W5.
+- **Installed-smoked:** no. The CPU drive and GPU lanes below ran against the
+  package as installed in the W2A root, not on the host.
+- **Live-scenario validated:** in the W2A root only, except G5, which
+  [#169](https://github.com/nisavid/arch-strix-halo-pkgs/issues/169) owns.
+  The tracked scenarios below ran on the gfx1151 GPU inside the root; host
+  live-scenario validation waits for deployment.
+- **CPU drive:** without a GPU, through a fake-ROCm platform shim:
+  `RESULT PASS`, 122/122 gate items. Five info-only checks failed: the
+  torchaudio and amd-quark gaps tracked in #110, AITER (absent by design), a
+  `MultiModalHasher` API drift in an exploratory check, and new top-level
+  module findings.
+- **GPU windows:** 2026-09-29 11:13-11:31Z, 12:12-12:23Z, and 12:49-12:51Z.
+  The live Lemonade service's pinned models were unloaded for each window with
+  the owner's approval, then restored and verified afterward. The windows had
+  0 GPU page faults and no fault-triggered stops.
+
+| GPU lane (final state) | Result |
+| --- | --- |
+| `vllm.torchao.tiny.prepare`, `vllm.torchao.tiny.generate` | pass |
+| `vllm.qwen3_5.0_8b.text.basic` | pass |
+| `vllm.pooling.zembed-1.embeddings`, `vllm.pooling.zerank-2.rerank` | pass |
+| `vllm.gemma4.e2b.server.basic`, `.reasoning`, `.benchmark-lite`, `.structured`, `.structured-thinking`, `.tool`, `.tool-thinking`, `.full-feature-text-only` | 8/8 pass |
+| Probe `vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors` | pass |
+| Probe `vllm.gemma4.e2b.text.compiled` | pass |
+| G5: `vllm.gemma4.26b-a4b.text.basic`, `vllm.gemma4.26b-a4b.server.basic` | not run |
+
+**Harness and scenario fixes:** the failures in the earlier windows were
+harness and scenario defects, not package defects. They are fixed in
+[#174](https://github.com/nisavid/arch-strix-halo-pkgs/pull/174):
+- Gemma 4 server smoke: the checks now match each mode's request.
+  The `benchmark-lite` mode's 8-token cap and plain structured's 16-token cap were too
+  small for the answer, the tool follow-up was checked with a five-word rule
+  it never asks for, and the tool call must now carry `location` "Tokyo"
+  exactly.
+- zerank-2 rerank: the gate requires both correct answers to score
+  above the distractor. vLLM 0.30 ranks the sentence answer above the bare
+  `4`, which matches the Lemonade zerank smoke.
+- Probe reclassification: the two probes below are reclassified.
+- Gemma 4 full-feature lane: the follow-up turn runs with thinking off, so the
+  structured-output grammar engages.
+
+**Reclassified probes:**
+- `vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors`, renamed from
+  `vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors-blocked`, now asserts a correct
+  generation. The dense block-FP8 path works through vLLM's Triton kernel on
+  gfx1151. The old blocker came from the Qwen3.6-35B-A3B-FP8 MoE fixture and
+  never applied to this dense checkpoint.
+- `vllm.gemma4.e2b.text.compiled` now asserts a correct answer plus the
+  known-answer and long-decode checks at `--max-model-len 1024`, and the E2B
+  compiled path passed them cleanly on `TRITON_ATTN`. The 2026-04-20
+  corrupted output came from the vLLM 0.19 `ROCM_AITER_UNIFIED_ATTN` path,
+  which the 0.30.0 package source no longer enables. The smoke lanes still
+  default to eager.
+
+**vLLM 0.30 limitations:** these are upstream behavior, not package defects;
+[vLLM Recipe Coverage](vllm-recipe-coverage.md#gemma-4) records how the
+full-feature lane avoids them.
+- A `response_format` json_schema on the same turn as Gemma 4 auto tool calls
+  wraps the tool call in the schema and corrupts its arguments.
+- With `enable_thinking` on, the gemma4 reasoner starts the structured-output
+  grammar only after `<channel|>` or `<|tool_call>`. A model that answers
+  without a thought channel, for example right after a tool response, is
+  never constrained. Upstream main still has this; it is not yet reported
+  upstream.
+
+**Not run:** G5, the Gemma 4 26B-A4B lanes `vllm.gemma4.26b-a4b.text.basic`
+and `vllm.gemma4.26b-a4b.server.basic`. They need at least 77.8 GiB of
+`MemAvailable`; even with the live Lemonade service's models unloaded, the
+host reached only 70-76 GiB. The owner deferred them to
+[#169](https://github.com/nisavid/arch-strix-halo-pkgs/issues/169), a W4
+sub-issue, to run in a quiet host window ahead of W4 qualification; they no
+longer gate W2A closeout.
+
+**FlashAttention CK gate:** the post-build gate that the FlashAttention
+verdict on #111 set for `python-flash-attn-rocm-gfx1151` passed on
+2026-10-02, in one guarded GPU run in the isolated W2A root from 07:36:45Z to
+07:37:00Z. The gate runs `flash-attn.ck.backend-import`,
+`flash-attn.ck.varlen-tiny` and `flash-attn.ck.varlen-paged-kv` with
+`FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE` and AITER absent from the root.
+The staged scenario definitions, runner and smoke script match this branch.
+The states are recorded separately:
+
+- **Source updated:** 2.8.4-16, which adds
+  `0010-init-ck-splitkv-args.patch`.
+- **Built:** 2.8.4-16, built on 2026-09-25 and published to the W2A build
+  repo; the root carries it, and its sha256 matches the published archive. In the root it links
+  `python-pytorch-opt-rocm-gfx1151` 2.12.0-5 and ROCm 7.14.1, and it lists
+  AITER only as an optional dependency.
+- **Deployed/installed and installed-smoked:** no. The package exists only in
+  the W2A root.
+- **Live-scenario validated:** in the W2A root only.
+- **AITER absent:** `python-amd-aiter-gfx1151` is not in the root, no root
+  package ships an `aiter` module, and `find_spec("aiter")` and
+  `find_spec("amd_aiter")` both returned `None` in the run.
+- **Guard:** exited 0 with 0 GPU page faults and no ring timeouts or resets.
+  The gate ran once, with no retry, and brought the guard's FlashAttention GPU
+  budget to 4 of 6 runs used. The Lemonade service was already stopped; the
+  run did not touch it, and its state was the same afterward.
+
+| Gate scenario | Result |
+| --- | --- |
+| `flash-attn.ck.backend-import` | pass: `flash_attn_2_cuda` with `use_triton_rocm False` |
+| `flash-attn.ck.varlen-tiny` | pass: finite `(16, 2, 32)` output |
+| `flash-attn.ck.varlen-paged-kv` | pass: finite `(16, 2, 256)` output |
+
+Because this build carries patch 0010, this paged-KV pass, unlike the
+2.8.4-10 pass, does not depend on an uninitialized `sink_ptr`. It does not
+change the vLLM Qwen CK consumer probe, which stays blocked on the 64-token
+page boundary ([FlashAttention CK Paged-KV
+Boundary](flashattention-ck-paged-kv.md)).
+
+**Remaining before W2A closeout:** the W2A PR
+([#174](https://github.com/nisavid/arch-strix-halo-pkgs/pull/174)), which
+closes #168 with its audit doc and carries the #111 closeout. The #168
+audit-lanes decision in its Before-merge list is resolved: the owner
+ruled the six root-built lanes that the audit tables omit, four
+Rust/maturin lanes and two pure-Python lanes,
+[out of scope](lto-configure-probe-audit.md#out-of-scope), so the #168
+closing reference holds. The FlashAttention CK gate set on #111, the item in
+that list that decided whether the #111 closing reference holds, is
+satisfied: it passed on 2.8.4-16 in the W2A root on 2026-10-02, as recorded
+above, so it no longer blocks that reference. Separately, the owner decides
+whether that PR or a follow-up before W4 adopts the uvloop 0.23.0 security
+fix that the [2026-10-02 sweep](#2026-10-02-freshness-sweep) tracked to
+#110.
 
 ## 2026-09-25 Lemonade M6 Redeploy and Revalidation
 
@@ -391,7 +664,9 @@ with the corrections from three adversarial verification passes applied:
   safetensors 0.8.0, compressed-tensors 0.17.0, mistral-common 1.11.7, NumPy
   2.5.3 (fallback 2.4.6), and pydantic-core 2.46.5 with Arch pydantic 2.13.5.
 - Divergence: `prometheus-fastapi-instrumentator` stays at the host's 7.0.0
-  behind an OpenAI-serving `/metrics` gate in W6.
+  behind an OpenAI-serving `/metrics` gate in W6. Superseded on 2026-09-29:
+  vLLM 0.30.0 requires `prometheus-fastapi-instrumentator>=8.0.0`, so W2A
+  packages 8.1.0 instead.
 - W5 removals by default: llmcompressor, AutoRound, and AITER. The owner can
   override.
 
@@ -2744,9 +3019,14 @@ the model's SentenceTransformers last-token pooling metadata, and normalized
 embedding validation. `vllm.pooling.zerank-2.rerank` runs
 `zeroentropy/zerank-2` through vLLM's classification conversion by deriving the
 score head from the `Yes` token with `method=no_post_processing` and
-`logit_sigma=5.0`, matching the model-card arithmetic ranking fixture. Keep
-tracked scenarios on model IDs plus runtime `--model-path` bindings rather
-than committed cache snapshot paths.
+`logit_sigma=5.0`. This gate and `transformers.zeroentropy.zerank-2.rerank`
+print the raw per-document scores and require the two correct arithmetic
+answers (`4` and `Two plus two equals four.`) to score above the distractor.
+They do not fix the order of the two correct answers: the model card only
+compares `4` with a distractor, and engines disagree on that pair. vLLM 0.30
+and the Lemonade/llama.cpp zerank path rank the sentence first. Keep tracked
+scenarios on model IDs plus runtime `--model-path` bindings rather than
+committed cache snapshot paths.
 
 Lemonade has conventional embedding and reranking endpoints for registered
 `llamacpp` models, and the tracked Lemonade pooling scenarios now cover both.
@@ -2766,11 +3046,11 @@ passed on 2026-04-21 with the cached `zeroentropy/zembed-1` model bound at
 runtime by `--model-path`, finite normalized vectors, and a backpropagation
 related-passage ranking fixture. `transformers.zeroentropy.zerank-2.rerank`
 passed on the same host with the cached `zeroentropy/zerank-2` model bound at
-runtime, finite Yes-logit scores, and the model-card arithmetic ranking
-fixture. The helper uses Transformers directly because these model cards
-document `SentenceTransformer` and `CrossEncoder` usage, while Lemonade's
-documented local endpoints require registered `llamacpp` or `flm` recipes for
-embeddings and `llamacpp` for reranking.
+runtime, finite Yes-logit scores, and both correct arithmetic answers above
+the distractor, with `4` ranked first. The helper uses Transformers directly
+because these model cards document `SentenceTransformer` and `CrossEncoder`
+usage, while Lemonade's documented local endpoints require registered
+`llamacpp` or `flm` recipes for embeddings and `llamacpp` for reranking.
 
 The rebuilt installed stack passed the unquantized Qwen3.6 control on
 2026-04-20 with `HF_HOME=<host HF cache root>` and `Qwen/Qwen3.6-35B-A3B`,
@@ -3214,7 +3494,10 @@ The following smoke checks have already passed on the reference host:
     - keep the gfx1x AITER support plus Gemma 4
       `ROCM_AITER_UNIFIED_ATTN` override in
       `python-vllm-rocm-gfx1151/0016-rocm-refresh-local-carry-for-vllm-0.20.0.patch`
-      because the validated lane still depends on that backend selection
+      because the validated lane still depends on that backend selection.
+      Superseded for the 0.30.0 package source: both were dropped at 0.30.0,
+      so Gemma 4 selects upstream `TRITON_ATTN`; see the package README and
+      the [W2A record](#2026-09-29-w2a-vllm-0300-validation-of-record).
     - keep the broader fused-MoE default-policy carry dropped: the
       2026-04-17 reference-host rerun faulted the GPU as soon as that policy
       forced the AITER CK 2-stage fused-MoE path without an explicit runtime
@@ -3359,7 +3642,13 @@ The following smoke checks have already passed on the reference host:
   - with the same shim and CUDAGraph disabled, the E2B compiled path faulted
     the GPU during initialization/warmup
   - do not remove eager mode for `google/gemma-4-E2B-it`; the
-    E2B compiled path still generates invalid text after the Triton repair
+    E2B compiled path still generates invalid text after the Triton repair.
+    Superseded on 2026-09-29: the corruption came from the vLLM 0.19
+    `ROCM_AITER_UNIFIED_ATTN` path, which the 0.30.0 package source no longer enables, and
+    the strengthened `vllm.gemma4.e2b.text.compiled` probe passed on vLLM
+    0.30.0 in the W2A build root, not on the host; see the
+    [W2A record](#2026-09-29-w2a-vllm-0300-validation-of-record). The smoke
+    lanes still default to eager.
   - `vllm.gemma4.31b.text.compiled` passed on 2026-04-20 with fresh cache roots
     against `google/gemma-4-31B-it`
     in `382.161305` seconds with `enforce_eager=False`,
@@ -3462,7 +3751,11 @@ The following smoke checks have already passed on the reference host:
     a non-fatal fallback marker for this lane
   - The earlier Qwen3.6 FP8 MoE blocker remains useful historical evidence, but
     that checkpoint is no longer the retained cache fixture. Use the small FP8
-    safetensors probe for ongoing local FP8 support checks.
+    safetensors probe for ongoing local FP8 support checks. The MoE blocker
+    never applied to that dense probe: on 2026-09-29,
+    `vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors` passed on vLLM 0.30.0 in the
+    W2A build root through the dense block-FP8 Triton kernel; see the
+    [W2A record](#2026-09-29-w2a-vllm-0300-validation-of-record).
   - The 2026-04-20 rebuilt-stack control for `Qwen/Qwen3.6-35B-A3B` passed
     unquantized with AITER disabled, `--max-num-batched-tokens 32`, and
     `--gpu-memory-utilization 0.9`; the tracked scenario completed in
@@ -3509,7 +3802,7 @@ The following smoke checks have already passed on the reference host:
     WMMA adaptor choices for this code path. Treat a gfx11 OPUS FP8 adaptor as
     new kernel feature work unless upstream lands it.
   - Quantization-lane coverage now includes the retained small FP8 safetensors
-    probe `vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors-blocked` and the retained
+    probe `vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors` and the retained
     GPTQ Int4 safetensors probe
     `vllm.qwen3_5.35b-a3b-gptq-int4.text.basic`, plus the Qwen3.6 NVFP4 probe
     `vllm.qwen3_6.35b-a3b-nvfp4.text.unsupported-rocm-gfx1151`.
@@ -3523,7 +3816,7 @@ The following smoke checks have already passed on the reference host:
 - The tracked host-side follow-up helper for OpenAI-compatible server smokes is
   now `tools/gemma4_server_smoke.py`.
   - `--mode basic` launches
-    `python -m vllm.entrypoints.openai.api_server` from the active interpreter
+    `python -m vllm.entrypoints.cli.main serve` from the active interpreter
     and sends a plain `/v1/chat/completions` request, so the smoke does not
     depend on interactive-shell `PATH` setup
   - for the current `google/gemma-4-26B-A4B-it` validation lane, the helper

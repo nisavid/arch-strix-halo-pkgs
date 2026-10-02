@@ -5,7 +5,7 @@
 # Package recipe key: rust_wheels
 
 pkgname=python-safetensors-gfx1151
-pkgver=0.7.0
+pkgver=0.8.0
 pkgrel=1
 pkgdesc='Safe tensor serialization format rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
@@ -18,11 +18,11 @@ options=()
 provides=(python-safetensors)
 conflicts=(python-safetensors)
 replaces=()
-source=(https://files.pythonhosted.org/packages/source/s/safetensors/safetensors-0.7.0.tar.gz)
-sha256sums=(07663963b67e8bd9f0b8ad15bb9163606cd27cc5a1b96235a50d8369803b96b0)
+source=(https://files.pythonhosted.org/packages/source/s/safetensors/safetensors-0.8.0.tar.gz)
+sha256sums=(fabaf3e0f18a6618d9b36560682562157f77c2b71fcffc7b432be2baed9d753d)
 
 build() {
-  cd "$srcdir/safetensors-0.7.0"
+  cd "$srcdir/safetensors-0.8.0"
 
   _setup_compiler_env() {
   local _compiler_root="/opt/rocm/lib/llvm/bin"
@@ -50,8 +50,11 @@ build() {
 
   _setup_compiler_env
   local _debug_prefix="/usr/src/debug/python-safetensors-gfx1151"
+  export HOME="$srcdir/.home"
+  export XDG_CACHE_HOME="$srcdir/.cache"
+  export XDG_DATA_HOME="$srcdir/.local/share"
   export CARGO_HOME="$srcdir/.cargo"
-  mkdir -p "$CARGO_HOME"
+  mkdir -p "$HOME" "$XDG_CACHE_HOME" "$XDG_DATA_HOME" "$CARGO_HOME"
   export CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER="$CC"
   export RUSTFLAGS="-C target-cpu=znver5 -C opt-level=3 --remap-path-prefix=$srcdir=${_debug_prefix}"
   unset CFLAGS CXXFLAGS LDFLAGS
@@ -60,11 +63,11 @@ build() {
 }
 
 package() {
-  cd "$srcdir/safetensors-0.7.0"
+  cd "$srcdir/safetensors-0.8.0"
   python -m installer --destdir="$pkgdir" dist/*.whl
 
   local _debug_prefix="/usr/src/debug/python-safetensors-gfx1151"
   find "$pkgdir/usr/lib" -type f -path '*/sboms/*.json' -print0 | while IFS= read -r -d '' _file; do
-    sed -i       -e "s|$srcdir/safetensors-0.7.0|${_debug_prefix}/safetensors-0.7.0|g"       -e "s|$srcdir|${_debug_prefix}|g"       -e "s|/tmp/pkg/src/safetensors-0.7.0|${_debug_prefix}/safetensors-0.7.0|g"       "$_file" 2>/dev/null || true
+    sed -i       -e "s|$srcdir/safetensors-0.8.0|${_debug_prefix}/safetensors-0.8.0|g"       -e "s|$srcdir|${_debug_prefix}|g"       -e "s|/tmp/pkg/src/safetensors-0.8.0|${_debug_prefix}/safetensors-0.8.0|g"       "$_file" 2>/dev/null || true
   done
 }

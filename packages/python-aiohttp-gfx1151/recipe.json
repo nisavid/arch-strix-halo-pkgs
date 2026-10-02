@@ -10,12 +10,13 @@
     "update_notes": [
       "Check Arch first for llhttp, Cython, and dependency metadata before updating.",
       "Keep AIOHTTP_USE_SYSTEM_DEPS=1 in the build environment unless upstream changes how system llhttp is selected.",
-      "After publishing a rebuilt package, verify `import aiohttp` and a minimal ClientSession construction path through the installed local Python lane."
+      "After publishing a rebuilt package, verify `import aiohttp` and a minimal ClientSession construction path through the installed local Python lane.",
+      "On 2026-09-22, update to aiohttp 3.14.3 for the generation-C W2A closure (#110), built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7."
     ]
   },
   "name": "python-aiohttp-gfx1151",
   "package_name": "python-aiohttp-gfx1151",
-  "pkgver": "3.13.5",
+  "pkgver": "3.14.3",
   "policy": {
     "advisory_references": [],
     "arch_reference": [
@@ -74,24 +75,25 @@
       "Keep dependencies pointed at the local frozenlist, multidict, and yarl packages so the aiohttp closure stays on the repo-owned optimized stack."
     ],
     "sha256sums": [
-      "9d98cc980ecc96be6eb4c1994ce35d28d8b1f5e5208a23b421187d1209dbb7d1"
+      "9491196535a88924a60afd5b5f434b5b203b6cc616250878dbdb223a8f7844bc"
     ],
-    "src_subdir": "aiohttp-3.13.5",
+    "src_subdir": "aiohttp-3.14.3",
     "template": "native-wheel-pypi",
     "update_notes": [
       "Check Arch first for llhttp, Cython, and dependency metadata before updating.",
       "Keep AIOHTTP_USE_SYSTEM_DEPS=1 in the build environment unless upstream changes how system llhttp is selected.",
-      "After publishing a rebuilt package, verify `import aiohttp` and a minimal ClientSession construction path through the installed local Python lane."
+      "After publishing a rebuilt package, verify `import aiohttp` and a minimal ClientSession construction path through the installed local Python lane.",
+      "On 2026-09-22, update to aiohttp 3.14.3 for the generation-C W2A closure (#110), built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7."
     ],
-    "upstream_version": "3.13.5",
+    "upstream_version": "3.14.3",
     "url": "https://github.com/aio-libs/aiohttp"
   },
   "provenance": {
     "output_root": "packages",
     "recipe_author": "Blackcat Informatics Inc.",
-    "recipe_commit": "a1d7a68",
-    "recipe_date": "20260427",
-    "recipe_history_count": 16,
+    "recipe_commit": "3f15f9f",
+    "recipe_date": "20260508",
+    "recipe_history_count": 17,
     "recipe_repo": "https://github.com/paudley/ai-notes",
     "recipe_subdir": "strix-halo",
     "repo_subpath": "."
@@ -107,7 +109,7 @@
     "patches": [],
     "phase": "H",
     "repo": null,
-    "src_dir": null,
+    "src_dir": "aiohttp-3.14.3",
     "steps": [
       32
     ]

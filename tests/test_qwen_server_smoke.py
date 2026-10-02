@@ -41,7 +41,15 @@ def test_qwen_server_smoke_dry_run_uses_compact_json_and_defaults():
     plan = dry_run("reasoning")
     command = plan["server_command"]
 
-    assert command[:3] == [sys.executable, "-m", "vllm.entrypoints.openai.api_server"]
+    assert command[:5] == [
+        sys.executable,
+        "-m",
+        "vllm.entrypoints.cli.main",
+        "serve",
+        "Qwen/Qwen3.6-35B-A3B",
+    ]
+    assert "--model" not in command
+    assert "vllm.entrypoints.openai.api_server" not in command
     assert command_value(command, "--gpu-memory-utilization") == "0.9"
     assert command_value(command, "--max-model-len") == "1024"
     assert command_value(command, "--max-num-batched-tokens") == "32"

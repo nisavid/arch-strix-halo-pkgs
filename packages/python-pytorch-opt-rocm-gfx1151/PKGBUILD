@@ -6,20 +6,20 @@
 
 pkgname=python-pytorch-opt-rocm-gfx1151
 pkgver=2.12.0
-pkgrel=4
+pkgrel=5
 pkgdesc='Tensors and dynamic neural networks in Python with ROCm acceleration, rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://pytorch.org
 license=(BSD-3-Clause-Modification)
-depends=(amdsmi-gfx1151 composable-kernel-gfx1151 hsa-amd-aqlprofile-gfx1151 hipblaslt-gfx1151 miopen-hip-gfx1151 openblas openmp python-aotriton-gfx1151 python-filelock python-fsspec python-gfx1151 python-jinja python-networkx python-numpy-gfx1151 python-sympy python-typing_extensions python-pyyaml-gfx1151 rccl-gfx1151 rocblas-gfx1151 rocm-hip-sdk-gfx1151 rocm-openmp-gfx1151)
-makedepends=(cmake git ninja openblas python-build python-cffi python-installer python-numpy-gfx1151 python-pip python-requests python-setuptools python-six python-triton-gfx1151 python-pyyaml-gfx1151 patchelf rocm-llvm-gfx1151 unzip)
+depends=(amdsmi-gfx1151 composable-kernel-gfx1151 hsa-amd-aqlprofile-gfx1151 hipblaslt-gfx1151 miopen-hip-gfx1151 openblas openmp python-aotriton-gfx1151 python-filelock python-fsspec python-gfx1151 python-jinja python-networkx python-numpy-gfx1151 python-sympy python-typing_extensions python-pyyaml-gfx1151 rccl-gfx1151 rocblas-gfx1151 rocm-hip-sdk-gfx1151 rocm-openmp-gfx1151 rocprofiler-sdk-gfx1151)
+makedepends=(cmake git ninja openblas python-build python-cffi python-installer python-numpy-gfx1151 python-pip python-requests python-setuptools python-six python-triton-gfx1151 python-pyyaml-gfx1151 patchelf rocm-llvm-gfx1151 rocprofiler-sdk-roctx-gfx1151 unzip)
 optdepends=()
 options=()
 provides=(python-pytorch-opt-rocm=2.12.0 python-pytorch-rocm=2.12.0 python-pytorch=2.12.0)
 conflicts=(python-pytorch-opt-rocm python-pytorch-rocm python-pytorch)
 replaces=()
-source=('pytorch::git+https://github.com/ROCm/pytorch.git#commit=c7badbdf3d33d945a0ed4536aac5303bc933e6ee' 0001-setup-allow-skipping-build-deps.patch 0002-use-wide-magma-version-encoding.patch 0003-target-numpy-2-c-api.patch 0004-drop-hip-clang-abi-compat-flag.patch 0005-enable-ck-gemm-on-gfx1151.patch 0006-enable-aten-cuda-api-for-rocm.patch 0007-initialize-numpy-before-global-deps.patch 0008-export-rocm-blas-template-specializations.patch 0009-match-aotriton-0.12-lazy-tensor-callbacks.patch)
-sha256sums=(SKIP 95a46381bedcff873f9765c9b103877aa36f649e649c5b223582732b2ee61cac d2da39d5ad4183b4e9ac3dc33a6cad014eb5bb6fd3d27c861fa42f03ddd5b8e4 8ea6af3334027a5ef3360ca882f54e720ef501ea48288081f35d7404835ccc95 550c9c8446e65d0dde2d0193637bed9bd775126d79790a3c820e81b969f01b45 33188a11f6848303b17b76adb97de75f19856ea3caab7452fd5c62289d63006b 2ca8044d626da3cf146c22e2d5164f53ad7ee45f0b79b0ec91c3503a5ab5f299 84377437090b8ca9bf550158b93554b47650d476e6d56c94c52426150ff1c40d de81964675e483440b7cf64da6915deb701d1d31460f0b69a88c97277026032b 4d3e0a0185bbbb7d045d9011dfdcbf31f636d94845a14f85f443c841bb9f0a4a)
+source=('pytorch::git+https://github.com/ROCm/pytorch.git#commit=13da08625e0d25586351146b4c444f5263997ef8' 0001-setup-allow-skipping-build-deps.patch 0002-use-wide-magma-version-encoding.patch 0003-target-numpy-2-c-api.patch 0004-drop-hip-clang-abi-compat-flag.patch 0005-enable-ck-gemm-on-gfx1151.patch 0006-enable-aten-cuda-api-for-rocm.patch 0007-initialize-numpy-before-global-deps.patch 0008-export-rocm-blas-template-specializations.patch 0010-disable-system-aotriton-install.patch)
+sha256sums=(SKIP 95a46381bedcff873f9765c9b103877aa36f649e649c5b223582732b2ee61cac d2da39d5ad4183b4e9ac3dc33a6cad014eb5bb6fd3d27c861fa42f03ddd5b8e4 8ea6af3334027a5ef3360ca882f54e720ef501ea48288081f35d7404835ccc95 550c9c8446e65d0dde2d0193637bed9bd775126d79790a3c820e81b969f01b45 b8dcc450b0ae6878f3ca1ece4937f9cf0500c89dfcd053d553b3219be6ee5208 2ca8044d626da3cf146c22e2d5164f53ad7ee45f0b79b0ec91c3503a5ab5f299 84377437090b8ca9bf550158b93554b47650d476e6d56c94c52426150ff1c40d de81964675e483440b7cf64da6915deb701d1d31460f0b69a88c97277026032b 2063621fd0a83b296041ba0ac8db397341d7bbd026d7719cbb4dfa463a30f8fd)
 
 prepare() {
   cd "$srcdir/pytorch"
@@ -43,7 +43,7 @@ prepare() {
   _apply_patch_if_needed "0006-enable-aten-cuda-api-for-rocm.patch"
   _apply_patch_if_needed "0007-initialize-numpy-before-global-deps.patch"
   _apply_patch_if_needed "0008-export-rocm-blas-template-specializations.patch"
-  _apply_patch_if_needed "0009-match-aotriton-0.12-lazy-tensor-callbacks.patch"
+  _apply_patch_if_needed "0010-disable-system-aotriton-install.patch"
   # PyTorch's ROCm fork relies on vendored submodules and local hipify-generated sources.
   git -C "$srcdir/pytorch" submodule sync --recursive
   git -C "$srcdir/pytorch" submodule update --init --recursive --force --depth 1 --recommend-shallow
@@ -166,7 +166,11 @@ build() {
     export CMAKE_CXX_COMPILER_LAUNCHER="$(command -v ccache)"
   fi
   export CFLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument"
-  export CXXFLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument"
+  # GCC 16 libstdc++ <format> (pulled in by <chrono> under C++20) spells
+  # [[__gnu__::__noinline__]], and HIP's host_defines.h defines __noinline__
+  # as a macro in plain C++ sources that include hip_runtime.h. Parse <format>
+  # first so the macro cannot reach it; the include is empty before C++20.
+  export CXXFLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument -include format"
   export LDFLAGS="-fuse-ld=lld"
   export PYTORCH_ROCM_ARCH="gfx1151"
   export USE_ROCM=1
@@ -175,6 +179,9 @@ build() {
   export OpenBLAS_HOME="${OpenBLAS_HOME:-/usr}"
   export USE_LAPACK=1
   export USE_ROCM_CK_GEMM=1
+  # The generation-C foundation ships no MAGMA; build without it so the result
+  # never depends on whichever MAGMA a build host happens to have.
+  export USE_MAGMA=0
   export AOTRITON_INSTALLED_PREFIX="/usr"
   export USE_CUDA=0
   export USE_NCCL=0
@@ -187,6 +194,7 @@ build() {
   export ROCM_PATH="/opt/rocm"
   export HIP_CLANG_PATH="${_rocm_llvm_bin}"
   export CMAKE_PREFIX_PATH="${OpenBLAS_HOME}:/opt/rocm"
+  # Honor a job cap from makepkg.conf; the build root pins it for memory.
   export MAX_JOBS="${MAX_JOBS:-$(_build_jobs)}"
   export PYTORCH_BUILD_VERSION="2.12.0"
   export PYTORCH_BUILD_NUMBER=1

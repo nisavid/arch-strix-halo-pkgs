@@ -1,0 +1,104 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: nisavid <nisavid@users.noreply.github.com>
+Date: Fri, 25 Sep 2026 12:00:00 -0400
+Subject: [PATCH] initialize CK split-KV forward args
+
+get_ck_fmha_varlen_fwd_splitkv_args() and get_ck_fmha_fwd_splitkv_args()
+declare `fmha_fwd_splitkv_args args;` without initializing it, then set
+fields one by one. The packaged CK submodule (03ce21dd) added sink_ptr,
+sink_size, and logits_soft_cap to fmha_fwd_splitkv_args, and FlashAttention
+3f94643f never sets them. CK's split-KV kernel dereferences kargs.sink_ptr
+whenever it is non-null, so leftover host stack contents made the paged-KV
+varlen path fault on the GPU.
+
+Value-initialize the struct and set the new fields explicitly, placed as
+upstream places them: sink_ptr and sink_size follow ROCm/flash-attention
+8afc617a ("Update ROCm/CK backend to align with latest ComposableKernel API
+changes", #2363), and logits_soft_cap follows c661198a. The explicit
+value-initialization is local hardening; upstream still declares `args;`.
+
+0007-adapt-ck-fwd-args-layout.patch backported the #2363 fmha_fwd_args
+hunks but not these split-KV hunks. mha_fwd_kvcache.cpp is not compiled
+while fwd_appendkv is excluded, but carries the same fix so the builder
+stays correct if it is re-enabled.
+---
+ csrc/flash_attn_ck/mha_fwd_kvcache.cpp | 6 +++++-
+ csrc/flash_attn_ck/mha_varlen_fwd.cpp  | 6 +++++-
+ 2 files changed, 10 insertions(+), 2 deletions(-)
+
+diff --git a/csrc/flash_attn_ck/mha_fwd_kvcache.cpp b/csrc/flash_attn_ck/mha_fwd_kvcache.cpp
+index 27866f1..1315735 100644
+--- a/csrc/flash_attn_ck/mha_fwd_kvcache.cpp
++++ b/csrc/flash_attn_ck/mha_fwd_kvcache.cpp
+@@ -168,7 +168,7 @@ fmha_fwd_splitkv_args get_ck_fmha_fwd_splitkv_args(bool has_lse,
+     // lse_acc: (split, batch_size, nheads, seqlen_q)
+     // o_acc: (split, batch_size, nheads, seqlen_q, d)
+ 
+-    fmha_fwd_splitkv_args args;
++    fmha_fwd_splitkv_args args{};
+     args.q_ptr = q.data_ptr();
+     args.k_ptr = k.data_ptr();
+     args.v_ptr = v.data_ptr();
+@@ -177,6 +177,7 @@ fmha_fwd_splitkv_args get_ck_fmha_fwd_splitkv_args(bool has_lse,
+     args.o_acc_ptr = out_acc.data_ptr();
+     args.lse_ptr = nullptr;
+     args.o_ptr = out.data_ptr();
++    args.sink_ptr = nullptr;
+ 
+     if (block_table_.has_value())
+     {
+@@ -212,6 +213,8 @@ fmha_fwd_splitkv_args get_ck_fmha_fwd_splitkv_args(bool has_lse,
+     args.scale_p = 1;
+     args.scale_o = 1;
+ 
++    args.logits_soft_cap = 0.0f;
++
+     args.batch_stride_q = q.stride(0);
+     args.stride_q = q.stride(1);
+     args.nhead_stride_q = q.stride(2);
+@@ -261,6 +264,7 @@ fmha_fwd_splitkv_args get_ck_fmha_fwd_splitkv_args(bool has_lse,
+ 
+     args.window_size_left = mask.left;
+     args.window_size_right = mask.right;
++    args.sink_size = 0;
+     args.mask_type = static_cast<ck_tile::index_t>(mask.type);
+ 
+     return args;
+diff --git a/csrc/flash_attn_ck/mha_varlen_fwd.cpp b/csrc/flash_attn_ck/mha_varlen_fwd.cpp
+index fe08e04..362ef07 100644
+--- a/csrc/flash_attn_ck/mha_varlen_fwd.cpp
++++ b/csrc/flash_attn_ck/mha_varlen_fwd.cpp
+@@ -213,7 +213,7 @@ fmha_fwd_splitkv_args get_ck_fmha_varlen_fwd_splitkv_args(bool has_lse,
+     // o_acc: (nheads, split, total_q, d)
+     // block_table: (batch_size, max_num_blocks_per_seq)
+ 
+-    fmha_fwd_splitkv_args args;
++    fmha_fwd_splitkv_args args{};
+     args.q_ptr = q.data_ptr();
+     args.k_ptr = k.data_ptr();
+     args.v_ptr = v.data_ptr();
+@@ -222,6 +222,7 @@ fmha_fwd_splitkv_args get_ck_fmha_varlen_fwd_splitkv_args(bool has_lse,
+     args.o_acc_ptr = out_acc.data_ptr();
+     args.lse_ptr = nullptr;
+     args.o_ptr = out.data_ptr();
++    args.sink_ptr = nullptr;
+ 
+     if (block_table_.has_value())
+     {
+@@ -256,6 +257,8 @@ fmha_fwd_splitkv_args get_ck_fmha_varlen_fwd_splitkv_args(bool has_lse,
+     args.scale_p = 1;
+     args.scale_o = 1;
+ 
++    args.logits_soft_cap = 0.0f;
++
+     args.batch_stride_q = 0;
+     args.stride_q = q.stride(0);
+     args.nhead_stride_q = q.stride(1);
+@@ -305,6 +308,7 @@ fmha_fwd_splitkv_args get_ck_fmha_varlen_fwd_splitkv_args(bool has_lse,
+ 
+     args.window_size_left = mask.left;
+     args.window_size_right = mask.right;
++    args.sink_size = 0;
+     args.mask_type = static_cast<ck_tile::index_t>(mask.type);
+ 
+     return args;
