@@ -59,12 +59,12 @@ it that way:
    host's makepkg and ninja shims cannot see into the root, which is why the
    launch itself is wrapped. `enter` refuses to start unless `builds.slice` is
    loaded with a finite `MemoryMax`, because `systemd-run --slice=` would
-   otherwise create an uncapped slice. `probe` compiles with hipcc, CMake
-   and makepkg, so it is launched the same way and refuses the same way.
-   The short `ldconfig` and `update-ca-trust` runs after `populate`, `add`
-   and `remove` are not builds and run outside the slice. This replaces the
-   earlier `SIGSTOP` throttle, which paused new jobs but left running
-   compilers holding their memory.
+   otherwise create an uncapped slice. This replaces the earlier `SIGSTOP`
+   throttle, which paused new jobs but left running compilers holding their
+   memory. `probe` compiles with hipcc, CMake and makepkg, so it is launched
+   the same way and refuses the same way. The short `ldconfig` and
+   `update-ca-trust` runs after `populate`, `add` and `remove` are not builds
+   and run outside the slice.
 4. **Ownership proof.** `populate` and `add` record every package's file list
    under `ROOT/.ashp-root/`. `verify` walks `/opt` and fails when any file is
    unowned, when any `/opt/rocm` file is owned by a non-foundation package,
@@ -294,6 +294,14 @@ these deliberate choices:
 These results are from 2026-09-22, on the torch-chain root. The lock had 423
 packages: 48 from `ashp-w1-staging` and the rest host-version userland. It
 held nothing from `strix-halo-gfx1151`.
+
+The run predates three `probe` changes: `probe` now launches in the capped
+`builds.slice`, its leak scan reads the extracted package instead of the zstd
+archive, and its RUNPATH check resolves `$ORIGIN` against each output's tree.
+A read-only recheck of the recorded run passes the two new checks: the
+extracted package's ELF files and metadata hold none of the probe's host
+paths, and its `readelf` output has no disallowed RUNPATH entry. A GPU rerun
+of `probe` with the current tool is still open.
 
 | Probe | Result |
 | --- | --- |
