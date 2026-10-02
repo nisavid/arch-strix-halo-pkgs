@@ -74,7 +74,8 @@ it that way:
    `probe` maps every
    library that `ldd` resolves for its outputs to the package that owns it,
    following symlinks inside the root. It also fails on unresolved libraries,
-   unexpected RUNPATH entries, and host paths embedded in the outputs.
+   on host paths embedded in the outputs, and on a RUNPATH entry outside
+   `/opt/rocm` or a `$ORIGIN` entry that leaves the output's own tree.
 
 Because `/opt/rocm` inside the root is the same path the host has after W5,
 RUNPATHs, CMake exports, `hipconfig` and `.info/version` are correct by
@@ -164,10 +165,12 @@ for about 30 GiB, and `$STAGING` for the directory that holds the
      library that is already loaded by soname, as when a Python extension
      relies on `import torch` having loaded `libc10.so`.
    - **RUNPATH.** Every `DT_RUNPATH` and `DT_RPATH` entry must be under `/usr`
-     or `/opt/rocm`, or start with `$ORIGIN`. An entry such as a build or CI
-     tree (`/build`, `/__w`, `/startdir`), `/home`, `/tmp`, `/srv` or a
-     relative path is a hit. Such a directory is absent on the host at best,
-     and at worst it is writable and changes what the object loads.
+     or `/opt/rocm`. A `$ORIGIN` entry is first resolved against the object's
+     directory in the root, so `$ORIGIN/../lib` passes and an entry that
+     climbs out of `/usr` or `/opt/rocm` with `..` fails. An entry such as a
+     build or CI tree (`/build`, `/__w`, `/startdir`), `/home`, `/tmp`, `/srv`
+     or a relative path is a hit. Such a directory is absent on the host at
+     best, and at worst it is writable and changes what the object loads.
 
    The report lists every finding, allowed or not, under `unresolved_needed`
    and `foreign_runpath`, grouped by owning package.

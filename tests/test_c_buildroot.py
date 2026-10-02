@@ -768,6 +768,40 @@ def test_verify_fails_on_runpath_entries_outside_usr_opt_rocm_and_origin(tmp_pat
     ]
 
 
+def test_origin_runpath_entries_must_stay_in_the_install_tree(tmp_path):
+    root = tmp_path / "root"
+    (root / cbr.STATE_DIR).mkdir(parents=True)
+    ext = "usr/lib/python3.14/site-packages/pkg/_ext.so"
+    # From /usr/lib/python3.14/site-packages/pkg: four levels up is /usr, five is /.
+    make_elf(root / ext, runpath="$ORIGIN/../torch/lib:${ORIGIN}/../../../../lib:$ORIGIN/../../../../../tmp/x")
+    make_elf(root / "opt/rocm/lib/libclimb.so.1", runpath="$ORIGIN/../../../var/tmp/x:$ORIGIN:$ORIGINX")
+    cbr.save_manifest(root, [
+        cbr.record_package(root, "python-pkg", "1-1", "core", Path("p.pkg"), "p", [ext]),
+        cbr.record_package(root, "rocm-climb", "1-1", "found", Path("c.pkg"), "c", ["opt/rocm/lib/libclimb.so.1"]),
+    ])
+    report = cbr.verify_root(root, foundation=["found"], forbidden_repos=[], expect_rocm=None)
+    assert report["foreign_runpath"] == {
+        "python-pkg": [f"/{ext}: RUNPATH $ORIGIN/../../../../../tmp/x"],
+        "rocm-climb": ["/opt/rocm/lib/libclimb.so.1: RUNPATH $ORIGIN/../../../var/tmp/x",
+                       "/opt/rocm/lib/libclimb.so.1: RUNPATH $ORIGINX"],
+    }
+
+
+@pytest.mark.parametrize("entry,origin,ok", [
+    ("$ORIGIN", "/usr/lib", True),
+    ("$ORIGIN/../lib", "/usr/bin", True),
+    ("${ORIGIN}/../../lib", "/opt/rocm/lib/llvm", True),
+    ("$ORIGIN/..", "/usr", False),
+    ("$ORIGIN/../../../../tmp/foreign", "/usr/lib/python3.14", False),
+    ("/opt/rocmX/lib", "/usr/lib", False),
+    ("/opt/rocm", "/usr/lib", True),
+    ("/usr/../tmp", "/usr/lib", False),
+    ("lib", "/usr/lib", False),
+])
+def test_runpath_ok_resolves_origin_against_the_object(entry, origin, ok):
+    assert cbr.runpath_ok(entry, origin) is ok
+
+
 def test_allowlisted_runpath_hits_pass_and_stale_ones_fail(tmp_path):
     allow = write_allowlist(tmp_path, '''
 [[runpath]]
@@ -1062,3 +1096,77 @@ def test_current_cgroup_reads_the_v2_entry(tmp_path):
     proc.write_text("1:name=systemd:/x\n")
     with pytest.raises(cbr.BuildRootError):
         cbr.current_cgroup(proc)
+
+
+# --- probe -------------------------------------------------------------------
+
+
+PROBE_OK_LOG = """## run
+vadd OK
+saxpy OK
+## readelf hello/hello
+ 0x000000000000001d (RUNPATH)            Library runpath: [/opt/rocm/lib]
+## ldd hello/hello
+## readelf cmakelib/prefix/lib/libsaxpy.so
+ 0x000000000000001d (RUNPATH)            Library runpath: [/opt/rocm/lib]
+## readelf cmakelib/prefix/bin/saxpy_probe
+ 0x000000000000001d (RUNPATH)            Library runpath: [$ORIGIN/../lib:/opt/rocm/lib]
+## readelf pkgx/usr/bin/saxpy_probe
+ 0x000000000000001d (RUNPATH)            Library runpath: [${ORIGIN}/../lib:/opt/rocm/lib]
+"""
+
+PROBE_CLEAN_OUTPUTS = {
+    "hello/hello": b"\x7fELF hello",
+    "cmakelib/prefix/lib/libsaxpy.so": b"\x7fELF saxpy",
+    "cmakelib/prefix/bin/saxpy_probe": b"\x7fELF probe",
+    "pkg/ashp-hip-probe-1-1-x86_64.pkg.tar.zst": b"(zstd stream)",
+    "pkgx/usr/lib/libsaxpy.so": b"\x7fELF saxpy",
+    "pkgx/usr/bin/saxpy_probe": b"\x7fELF probe",
+    "pkgx/.PKGINFO": b"pkgname = ashp-hip-probe\n",
+    "pkgx/.BUILDINFO": b"builddir = /build/pkg\n",
+}
+
+
+def run_probe(tmp_path, monkeypatch, *, log=PROBE_OK_LOG, outputs=None, slice_ok=True):
+    """Run `probe` with the root launch faked. Returns (exit code, report or None, launched argvs).
+
+    The fake launch writes OUTPUTS (relative to the work dir; bytes may name
+    the work dir as {work}) as the probe script would, and prints LOG.
+    """
+    root = tmp_path / "root"
+    (root / cbr.STATE_DIR).mkdir(parents=True)
+    cbr.save_manifest(root, [])
+    work = tmp_path / "work"
+    launched = []
+
+    def fake_run(argv, **kwargs):
+        launched.append(list(argv))
+        for rel, data in (PROBE_CLEAN_OUTPUTS if outputs is None else outputs).items():
+            path = work / rel
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(data.replace(b"{work}", str(work).encode()))
+        return subprocess.CompletedProcess(argv, 0, stdout=log, stderr="")
+
+    def require_build_slice(runner=None):
+        if not slice_ok:
+            raise cbr.BuildRootError("builds.slice is not loaded; the host memory guards are not live")
+
+    monkeypatch.setattr(cbr, "require_build_slice", require_build_slice)
+    monkeypatch.setattr(cbr, "current_cgroup", lambda *a, **k: OUTSIDE)
+    monkeypatch.setattr(cbr.subprocess, "run", fake_run)
+    a = cbr.build_parser().parse_args(["probe", str(root), "--work", str(work), "--foundation-repo", "found"])
+    rc = cbr.cmd_probe(a)
+    report = json.loads((work / "probe-report.json").read_text())
+    return rc, report, launched
+
+
+def test_probe_runpath_entries_must_stay_in_their_output_tree(tmp_path, monkeypatch):
+    log = PROBE_OK_LOG + """## readelf pkgx/usr/lib/libsaxpy.so
+ 0x000000000000001d (RUNPATH)            Library runpath: [$ORIGIN/../../../../tmp/foreign:/opt/rocmX/lib:/opt/rocm/lib]
+"""
+    rc, report, _ = run_probe(tmp_path, monkeypatch, log=log)
+    assert [v for v in report["violations"] if "runpath" in v] == [
+        "pkgx/usr/lib/libsaxpy.so: unexpected runpath entry '$ORIGIN/../../../../tmp/foreign'",
+        "pkgx/usr/lib/libsaxpy.so: unexpected runpath entry '/opt/rocmX/lib'",
+    ]
+    assert rc == 1

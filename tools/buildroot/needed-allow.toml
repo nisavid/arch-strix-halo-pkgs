@@ -3,8 +3,8 @@
 # verify reads every host-architecture ELF object under /usr/bin, /usr/lib and
 # /opt/rocm in the root. It fails on a DT_NEEDED entry that does not resolve
 # inside the root, and on a DT_RUNPATH or DT_RPATH entry that is not under
-# /usr or /opt/rocm and not relative to $ORIGIN, unless an entry here covers
-# the finding. It also fails on any entry here that covers nothing, so remove
+# /usr or /opt/rocm once $ORIGIN is resolved against the object's directory,
+# unless an entry here covers the finding. It also fails on any entry here that covers nothing, so remove
 # an entry as soon as its finding is gone.
 #
 # [[needed]]  package, object, soname, reason, optional issue

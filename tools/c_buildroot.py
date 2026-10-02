@@ -895,7 +895,7 @@ def verify_root(root: Path, *, foundation: Sequence[str], forbidden_repos: Seque
 # The verify allowlist. A committed TOML file lists the known, accepted
 # linkage findings: [[needed]] entries for DT_NEEDED entries that do not
 # resolve in the root, and [[runpath]] entries for RUNPATH or RPATH entries
-# outside /usr, /opt/rocm and $ORIGIN. Every entry names the owning package,
+# outside /usr and /opt/rocm ($ORIGIN resolved). Every entry names the owning package,
 # an fnmatch pattern for the object path, the soname or path entry pattern and
 # a reason, and optionally a tracking issue. verify fails on any finding no
 # entry covers, and on any entry that covers nothing, so the list stays minimal.
@@ -973,9 +973,10 @@ def _grouped(hits: Iterable[Hit]) -> dict[str, list[str]]:
 # /etc/ld.so.cache, then the default directories. $ORIGIN is the object's own
 # directory in the root. Nothing is loaded or run. LD_LIBRARY_PATH, RPATH
 # inherited from a loading executable and libraries already loaded by soname
-# are not modelled. Each DT_RUNPATH and DT_RPATH entry must be under /usr or
-# /opt/rocm, or relative to $ORIGIN; anything else (a build or CI directory,
-# /home, /tmp, /srv, a relative path) is a hit.
+# are not modelled. Each DT_RUNPATH and DT_RPATH entry, with $ORIGIN resolved
+# against the object's directory, must be under /usr or /opt/rocm; anything
+# else (a build or CI directory, /home, /tmp, /srv, a relative path, or a
+# $ORIGIN entry that climbs out with ..) is a hit.
 
 NEEDED_SCAN_DIRS = ("/usr/bin", "/usr/lib", "/opt/rocm")
 NEEDED_SKIP_DIRS = ("/usr/lib/debug",)
@@ -1125,13 +1126,31 @@ def _elf_files(root: Path) -> Iterable[str]:
                     yield path
 
 
-def runpath_ok(entry: str) -> bool:
-    if entry.startswith(("$ORIGIN", "${ORIGIN}")):
-        return True
-    if not entry.startswith("/"):
+def path_under(path: str, tops: Iterable[str]) -> bool:
+    """True when absolute PATH, normalized, is one of TOPS or below one (by path component)."""
+    if not path.startswith("/"):
         return False
-    norm = posixpath.normpath(entry)
-    return any(norm == top or norm.startswith(top + "/") for top in RUNPATH_TOPS)
+    norm = posixpath.normpath(path)
+    return any(norm == top or norm.startswith(top.rstrip("/") + "/") for top in tops)
+
+
+def expand_origin(entry: str, origin: str) -> str | None:
+    """ENTRY with its leading $ORIGIN or ${ORIGIN} replaced by ORIGIN, or None without one."""
+    for token in ("${ORIGIN}", "$ORIGIN"):
+        if entry == token or entry.startswith(token + "/"):
+            return origin.rstrip("/") + entry[len(token):]
+    return None
+
+
+def runpath_ok(entry: str, origin: str) -> bool:
+    """True when a RUNPATH/RPATH entry stays under /usr or /opt/rocm.
+
+    ORIGIN is the object's directory in the root. A $ORIGIN entry is resolved
+    against it first, so one that climbs out of the install tree fails like
+    the absolute path it names.
+    """
+    expanded = expand_origin(entry, origin)
+    return path_under(entry if expanded is None else expanded, RUNPATH_TOPS)
 
 
 @dataclass
@@ -1170,9 +1189,9 @@ def scan_elves(root: Path, index: Mapping[str, dict]) -> ElfScan:
         scan.checked += 1
         owner = index.get(path.lstrip("/"))
         package = owner["name"] if owner else "(unowned)"
-        for tag, entries in (("RUNPATH", info.runpath), ("RPATH", info.rpath)):
-            scan.runpath += [Hit(package, path, f"{tag} {d}", d) for d in entries if not runpath_ok(d)]
         origin = path.rsplit("/", 1)[0] or "/"
+        for tag, entries in (("RUNPATH", info.runpath), ("RPATH", info.rpath)):
+            scan.runpath += [Hit(package, path, f"{tag} {d}", d) for d in entries if not runpath_ok(d, origin)]
         dirs = []
         for d in (info.rpath if not info.runpath else []) + info.runpath:
             d = d.replace("${ORIGIN}", origin).replace("$ORIGIN", origin)
@@ -1338,6 +1357,42 @@ def cmd_verify(a: argparse.Namespace) -> int:
 
 
 PROBE_BINARIES = ("hello/hello", "cmakelib/prefix/lib/libsaxpy.so", "cmakelib/prefix/bin/saxpy_probe")
+# Each probe output (relative to the work dir, which the root sees as /build)
+# and the output tree that its $ORIGIN RUNPATH entries must stay inside.
+PROBE_OUTPUTS = {
+    "hello/hello": "hello",
+    "cmakelib/prefix/lib/libsaxpy.so": "cmakelib/prefix",
+    "cmakelib/prefix/bin/saxpy_probe": "cmakelib/prefix",
+    "pkgx/usr/lib/libsaxpy.so": "pkgx/usr",
+    "pkgx/usr/bin/saxpy_probe": "pkgx/usr",
+}
+
+
+def probe_runpath_violations(log: str) -> list[str]:
+    """RUNPATH/RPATH entries in the probe's `readelf -d` output that are not allowed.
+
+    An absolute entry must be /opt/rocm or below it. A $ORIGIN entry is
+    resolved against the object's directory under /build and must stay inside
+    that output's tree.
+    """
+    violations = []
+    obj: str | None = None
+    for line in log.splitlines():
+        if line.startswith("## "):
+            obj = line[len("## readelf "):].strip() if line.startswith("## readelf ") else None
+            continue
+        if "RUNPATH" not in line and "RPATH" not in line:
+            continue
+        m = re.search(r"\[(.*)\]", line)
+        for entry in (m.group(1).split(":") if m else []):
+            expanded = expand_origin(entry, posixpath.dirname(f"/build/{obj}")) if obj else None
+            if expanded is not None:
+                ok = obj in PROBE_OUTPUTS and path_under(expanded, (f"/build/{PROBE_OUTPUTS[obj]}",))
+            else:
+                ok = path_under(entry, ("/opt/rocm",))
+            if not ok:
+                violations.append(f"{obj or '(unknown object)'}: unexpected runpath entry {entry!r}")
+    return violations
 
 
 def cmd_probe(a: argparse.Namespace) -> int:
@@ -1363,13 +1418,8 @@ def cmd_probe(a: argparse.Namespace) -> int:
         for leak in {str(root), str(work), str(Path.home())}:
             if leak.encode() in data:
                 violations.append(f"{rel}: embeds host path {leak}")
-    for line in log.splitlines():
-        if "RUNPATH" in line or "RPATH" in line:
-            m = re.search(r"\[(.*)\]", line)
-            for entry in (m.group(1).split(":") if m else []):
-                if not (entry.startswith("/opt/rocm") or entry.startswith("$ORIGIN")):
-                    violations.append(f"unexpected runpath entry {entry!r}")
-    report = {"returncode": proc.returncode, "libraries": rows, "violations": violations,
+    violations += probe_runpath_violations(log)
+    report ={"returncode": proc.returncode, "libraries": rows, "violations": violations,
               "rocm_version": verify_root(root, foundation=a.foundation_repo,
                                           forbidden_repos=a.forbid_repo, expect_rocm=None,
                                           check_needed=False)["rocm_version"]}
