@@ -25,6 +25,9 @@ ignore_globs = [
   "opt/rocm/bin/hipdnn_sample_*",
   "opt/rocm/bin/hipdnn_samples/**",
   "opt/rocm/bin/rdhc",
+  # Created by rocprofiler-compute-gfx1151 post_copy_commands; a stage copied
+  # from an installed /opt/rocm already holds it.
+  "opt/rocm/bin/rocprof-compute",
   "opt/rocm/bin/bn_*",
   "opt/rocm/bin/conv_*",
   "opt/rocm/bin/fused_*",

@@ -1,4 +1,5 @@
 import importlib.util
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -292,6 +293,27 @@ def test_live_root_render_ignores_rocm_core_overlay_files():
     assert classifier.classify("opt/rocm/bin/rdhc") == "__ignored__"
     assert classifier.classify("opt/rocm/share/rdhc/README.md") == "__ignored__"
     assert classifier.classify("opt/rocm/share/rdhc/requirements.txt") == "__ignored__"
+
+
+def test_live_root_render_ignores_post_copy_symlinks():
+    # A stage copied from an installed /opt/rocm already holds the symlinks
+    # that post_copy_commands create; classifying them would make a second
+    # split package own the same path.
+    policy = therock_split.load_policy(REPO_ROOT / "policies/therock-packages.toml")
+    classifier = therock_split.Classifier(policy)
+    link_re = re.compile(r'ln -s \S+ "\$\{pkgdir\}/([^"]+)"')
+    created = [
+        match.group(1)
+        for meta in policy["packages"].values()
+        for command in meta.get("post_copy_commands", [])
+        for match in [link_re.search(command)]
+        if match
+    ]
+
+    assert "opt/rocm/bin/rocprof-compute" in created
+    assert {path: classifier.classify(path) for path in created} == {
+        path: "__ignored__" for path in created
+    }
 
 
 def test_migraphx_payloads_map_to_migraphx_split_package():
