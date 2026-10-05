@@ -60,6 +60,11 @@ pkgrel-only rebuild to `therock-gfx1151` 7.13.0-4:
   `rocprofiler-compute-gfx1151` creates. Before that, a render from a stage
   copied from the installed `/opt/rocm` also assigned the symlink to
   `rocprofiler-systems-gfx1151`, so two split packages would own it.
+  After review, `tools/stage_migraphx_for_therock.zsh` checks every staged
+  MIGraphX ELF, not only the parsers, and fails on any protobuf,
+  `utf8_validity`, or Abseil soname other than the pinned ones. The 7.13.0-4
+  build ran the earlier parser-only gate; the tightened gate accepts copies
+  of the installed 7.13.0-4 payload.
 - **Package built:** on the host, in `builds.slice`, under the heavy-work
   lease. The stage copied the installed 7.13.0-3 `/opt/rocm` and compiled
   MIGraphX against an isolated prefix extracted from Arch `protobuf-36.1-1`
