@@ -27,6 +27,7 @@ def test_stage_migraphx_script_help_keeps_deploy_out_of_typical_path():
     assert "--skip-build" in result.stdout
     assert "--stage PATH" in result.stdout
     assert "--protobuf-dir PATH" in result.stdout
+    assert "--rocm-root PATH" in result.stdout
     assert "--migraphx-ref REF" in result.stdout
     assert "--with-ck" in result.stdout
     assert "--with-mlir" in result.stdout
@@ -101,7 +102,8 @@ def test_stage_migraphx_validates_protobuf_36_1_and_abseil_2608_before_import():
     assert 'local protobuf_lib_dir=${protobuf_dir%/cmake/protobuf}' in script
     assert 'local protobuf_prefix=${protobuf_lib_dir:h}' in script
     assert 'local absl_dir=$protobuf_lib_dir/cmake/absl' in script
-    assert '"-DCMAKE_PREFIX_PATH=$protobuf_prefix;$stage/opt/rocm;/opt/rocm"' in script
+    assert '"-DCMAKE_PREFIX_PATH=$protobuf_prefix;$stage/opt/rocm;$rocm_root"' in script
+    assert "-DCMAKE_CXX_COMPILER=$rocm_root/lib/llvm/bin/amdclang++" in script
     assert "-Dabsl_DIR=$absl_dir" in script
     assert "LD_LIBRARY_PATH=$protobuf_lib_dir:${LD_LIBRARY_PATH-}" in script
     assert "protobuf SONAME must be $protobuf_soname" in script
@@ -133,9 +135,6 @@ GOOD_PARSER_NEEDED = [
 
 def _run_skip_build_with_fake_parser_needed(tmp_path: Path, needed: list[str]):
     """Drive validate_stage with stubbed build tools and a fake readelf."""
-    if not Path("/opt/rocm").is_dir():
-        pytest.skip("the stage script copies from /opt/rocm, which is missing")
-
     stubs = tmp_path / "bin"
     stubs.mkdir()
     for name in ("rsync", "cmake", "ninja"):
@@ -162,6 +161,10 @@ def _run_skip_build_with_fake_parser_needed(tmp_path: Path, needed: list[str]):
         (parser_dir / lib).write_text("")
     src = tmp_path / "src"
     (src / "build").mkdir(parents=True)
+    # The rsync stub copies nothing, so an empty ROCm root keeps the run
+    # independent of any installed ROCm tree.
+    rocm_root = tmp_path / "rocm"
+    rocm_root.mkdir()
 
     # An empty ZDOTDIR keeps user startup files from putting real tools ahead of the stubs.
     zdotdir = tmp_path / "zdotdir"
@@ -171,7 +174,16 @@ def _run_skip_build_with_fake_parser_needed(tmp_path: Path, needed: list[str]):
     env["PATH"] = f"{stubs}:{env['PATH']}"
     env["FAKE_PARSER_NEEDED"] = ",".join(needed)
     return subprocess.run(
-        [str(SCRIPT), "--stage", str(stage), "--src", str(src), "--skip-build"],
+        [
+            str(SCRIPT),
+            "--stage",
+            str(stage),
+            "--src",
+            str(src),
+            "--rocm-root",
+            str(rocm_root),
+            "--skip-build",
+        ],
         capture_output=True,
         text=True,
         env=env,

@@ -6,6 +6,7 @@ setopt err_exit pipe_fail no_unset
 typeset -r REPO_ROOT=${0:A:h:h}
 typeset stage=/tmp/therock-migraphx-stage
 typeset src=/tmp/AMDMIGraphX
+typeset rocm_root=/opt/rocm
 typeset jobs=${$(nproc 2>/dev/null):-1}
 typeset targets=gfx1151
 typeset migraphx_ref=b69836e6c97de179a80d764d24574edba7ba1b1b
@@ -29,6 +30,8 @@ preview the amerge plan, and optionally deploy the refreshed package family.
 Options:
   --stage PATH       staged filesystem root (default: /tmp/therock-migraphx-stage)
   --src PATH         AMDMIGraphX checkout path (default: /tmp/AMDMIGraphX)
+  --rocm-root PATH   installed ROCm tree that seeds the stage and provides
+                     the compilers (default: /opt/rocm)
   --targets VALUE    GPU target list passed as -DGPU_TARGETS (default: gfx1151)
   --migraphx-ref REF AMDMIGraphX commit to build
                      (default: b69836e6c97de179a80d764d24574edba7ba1b1b)
@@ -201,10 +204,10 @@ PY
 
 copy_current_rocm_into_stage() {
   emulate -L zsh
-  [[ -d /opt/rocm ]] || fail "/opt/rocm is missing"
-  status "copying current /opt/rocm into $stage"
+  [[ -d $rocm_root ]] || fail "ROCm root is missing: $rocm_root"
+  status "copying current $rocm_root into $stage"
   run mkdir -p $stage/opt
-  run rsync -aH --no-owner --no-group --delete /opt/rocm/ $stage/opt/rocm/
+  run rsync -aH --no-owner --no-group --delete $rocm_root/ $stage/opt/rocm/
 }
 
 build_and_install_migraphx() {
@@ -235,12 +238,12 @@ build_and_install_migraphx() {
     -G Ninja
     -DCMAKE_BUILD_TYPE=Release
     -DCMAKE_INSTALL_PREFIX=/opt/rocm
-    "-DCMAKE_PREFIX_PATH=$protobuf_prefix;$stage/opt/rocm;/opt/rocm"
+    "-DCMAKE_PREFIX_PATH=$protobuf_prefix;$stage/opt/rocm;$rocm_root"
     -Dprotobuf_DIR=$protobuf_dir
     -Dabsl_DIR=$absl_dir
     -Dpybind11_DIR=$pybind11_dir
-    -DCMAKE_C_COMPILER=/opt/rocm/lib/llvm/bin/amdclang
-    -DCMAKE_CXX_COMPILER=/opt/rocm/lib/llvm/bin/amdclang++
+    -DCMAKE_C_COMPILER=$rocm_root/lib/llvm/bin/amdclang
+    -DCMAKE_CXX_COMPILER=$rocm_root/lib/llvm/bin/amdclang++
     -DGPU_TARGETS=$targets
     -DMIGRAPHX_ENABLE_PYTHON=ON
     -DMIGRAPHX_USE_COMPOSABLEKERNEL=$ck
@@ -363,6 +366,11 @@ while (( $# )); do
       shift
       (( $# )) || fail "--src needs a path"
       src=$1
+      ;;
+    --rocm-root)
+      shift
+      (( $# )) || fail "--rocm-root needs a path"
+      rocm_root=$1
       ;;
     --targets)
       shift
