@@ -1066,6 +1066,51 @@ def test_granite_dry_run_preserves_pin_and_requires_runtime_joins(
     assert not run_root.exists()
 
 
+@pytest.mark.parametrize("mode", ["basic", "tool", "structured"])
+def test_granite_run_refuses_execution_until_runtime_joins(
+    tmp_path: Path, mode: str
+):
+    scenario_id = f"vllm.granite3_1.1b-a400m.server.{mode}"
+    run_root = tmp_path / "run"
+    result = run_runner(
+        "--scenario-dir",
+        str(REPO_ROOT / "inference/scenarios"),
+        "--run-root",
+        str(run_root),
+        "--scenario",
+        scenario_id,
+    )
+
+    assert result.returncode == 1, result.stderr
+    summary = json.loads(result.stdout)
+    assert summary["selected_ids"] == [scenario_id]
+    assert summary["passed"] == 0
+    assert summary["failed"] == 1
+
+    scenario_root = run_root / "scenarios" / scenario_id
+    plan = json.loads((scenario_root / "plan.json").read_text(encoding="utf-8"))
+    failure = plan["planning_failure"]
+    assert failure.startswith(
+        f"SCENARIO_PLAN_FAILED: {scenario_id}: GRANITE_RUNTIME_JOIN_REQUIRED:"
+    )
+    assert plan["command"] is None
+    assert plan["server_log_path"] is None
+
+    scenario_result = json.loads(
+        (scenario_root / "result.json").read_text(encoding="utf-8")
+    )
+    assert summary["results"] == [scenario_result]
+    assert scenario_result["ok"] is False
+    assert scenario_result["exit_code"] is None
+    assert scenario_result["server_log_path"] is None
+    assert scenario_result["failures"] == [failure]
+    assert (scenario_root / "stdout.log").read_text(encoding="utf-8") == ""
+    assert (scenario_root / "stderr.log").read_text(encoding="utf-8") == failure + "\n"
+    assert not (scenario_root / "server.log").exists()
+    assert not (scenario_root / "amd-smi-before.json").exists()
+    assert not (scenario_root / "amd-smi-after.json").exists()
+
+
 @pytest.mark.parametrize(
     ("selection", "expected_returncode"),
     [
