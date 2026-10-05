@@ -54,10 +54,15 @@ protobuf or Abseil soname change needs a pkgrel-only MIGraphX rebuild with
   The prefix's lib directory must hold both, and CMake takes Abseil from its
   `cmake/absl`.
 - Both parser libraries must link the pinned protobuf and `utf8_validity`
-  sonames and `libabsl_*.so.<abseil_soversion>`. Every staged MIGraphX ELF,
-  including `migraphx-driver`, `libmigraphx_c`, and the Python module, may
-  link no other protobuf, `utf8_validity`, or Abseil soname; an older or
-  newer one fails the stage.
+  sonames and `libabsl_*.so.<abseil_soversion>`. The script classifies the
+  stage with the render's generator and policy, then reads `DT_NEEDED` from
+  every regular file (not symlink) that the policy assigns to
+  `migraphx-gfx1151` and that starts with the ELF magic, whatever its name.
+  In 7.13.0-4 those are 14 files, including `migraphx-driver`,
+  `migraphx-hiprtc-driver`, `flatc`, `libIREECompiler.so`, `libmigraphx_c`,
+  and the Python module. None may link another protobuf, `utf8_validity`, or
+  Abseil soname; an older or newer one fails the stage, and so does a stage
+  with fewer such ELFs than `migraphx_min_elfs` (14).
 - The stage is a copy of the installed `/opt/rocm`, so it also holds the
   symlinks that `post_copy_commands` create. The policy's `ignore_globs`
   must cover them (`test_live_root_render_ignores_post_copy_symlinks`), and

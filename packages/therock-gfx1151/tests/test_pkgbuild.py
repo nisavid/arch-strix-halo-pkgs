@@ -62,15 +62,19 @@ def test_migraphx_staging_pins_protobuf_36_1_and_abseil_2608_and_rejects_unpinne
     assert "read_soname $protobuf_lib_dir/libprotobuf.so" in text
     assert "read_soname $protobuf_lib_dir/libutf8_validity.so" in text
     assert "read_soname $protobuf_lib_dir/libabsl_base.so" in text
-    # Every staged MIGraphX ELF, not only the parsers, may link only the pins.
+    # Every regular ELF the policy assigns to migraphx-gfx1151, not only the
+    # parsers, may link only the pins.
     for unpinned in (
         "${${(M)reply:#libprotobuf.so*}:#$protobuf_soname}",
         "${${(M)reply:#libutf8_validity.so*}:#$utf8_validity_soname}",
         "${${(M)reply:#libabsl_*}:#*.so.$abseil_soversion}",
     ):
         assert unpinned in text
-    assert "-name migraphx-driver -o" in text
-    assert "-name 'migraphx.cpython-*.so'" in text
+    assert "listing=$(list_staged_package_elfs migraphx-gfx1151)" in text
+    assert "classifier.classify(relpath) != package" in text
+    assert 'fh.read(4) == b"\\x7fELF"' in text
+    assert "(( $#payload >= migraphx_min_elfs ))" in text
+    assert "-name migraphx-driver" not in text
     assert "libmigraphx_onnx.so" in text
     assert "libmigraphx_tf.so" in text
     unpinned_check = text.index("staged MIGraphX payload links protobuf, utf8_validity, or Abseil other than")

@@ -14,6 +14,9 @@ typeset protobuf_dir=/usr/lib/cmake/protobuf
 typeset protobuf_soname=libprotobuf.so.36.1.0
 typeset utf8_validity_soname=libutf8_validity.so.36.1.0
 typeset abseil_soversion=2608.0.0
+# migraphx-gfx1151 7.13.0-4 ships 14 regular ELF files; the payload gate
+# fails a stage in which it finds fewer.
+typeset migraphx_min_elfs=14
 typeset clean=0
 typeset deploy=0
 typeset skip_build=0
@@ -86,7 +89,7 @@ read_needed() {
 require_cmds() {
   emulate -L zsh
   local cmd
-  for cmd in git rsync cmake ninja python find readelf; do
+  for cmd in git rsync cmake ninja python readelf; do
     command -v $cmd >/dev/null 2>&1 || fail "missing required command: $cmd"
   done
 }
@@ -271,34 +274,68 @@ build_and_install_migraphx() {
     cmake --build $src/build --target install -j$jobs
 }
 
+# Print, one per line and relative to the stage, every regular file (not a
+# symlink) under the policy's scan roots that policies/therock-packages.toml
+# assigns to the named split package and that starts with the ELF magic. The
+# render classifies the stage with the same generator and policy, so this is
+# every regular ELF the package will ship, whatever its name.
+list_staged_package_elfs() {
+  emulate -L zsh
+  local package=$1
+  python - $REPO_ROOT $stage $package <<'PY'
+import sys
+from pathlib import Path
+
+repo_root, root, package = Path(sys.argv[1]), Path(sys.argv[2]), sys.argv[3]
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(repo_root / "generators"))
+import therock_split
+
+policy = therock_split.load_policy(repo_root / "policies/therock-packages.toml")
+classifier = therock_split.Classifier(policy)
+for relpath in therock_split.walk_scan_roots(root, policy["repo"]["scan_roots"]):
+    path = root / relpath
+    if path.is_symlink() or not path.is_file():
+        continue
+    if classifier.classify(relpath) != package:
+        continue
+    with path.open("rb") as fh:
+        if fh.read(4) == b"\x7fELF":
+            print(relpath)
+PY
+}
+
 validate_stage() {
   emulate -L zsh
   local protobuf_lib_dir=${protobuf_dir%/cmake/protobuf}
   status "checking staged MIGraphX payload"
-  # Regular files only; every versioned symlink resolves to one of them.
-  local -a payload
-  payload=(${(f)"$(find $stage/opt/rocm \( \
-    -name migraphx-driver -o \
-    -name 'libmigraphx*.so*' -o \
-    -name 'migraphx.cpython-*.so' \
-  \) -type f -print)"})
+  # Every regular ELF that migraphx-gfx1151 will ship, chosen by package
+  # ownership and ELF magic rather than by name. The package's symlinks
+  # resolve to these files.
+  local listing
+  listing=$(list_staged_package_elfs migraphx-gfx1151) \
+    || fail "cannot list the staged migraphx-gfx1151 ELF files"
+  local -a payload=(${(f)listing})
   (( $#payload )) || fail "staged root still has no MIGraphX payload"
   print -rl -- $payload
+  (( $#payload >= migraphx_min_elfs )) \
+    || fail "staged migraphx-gfx1151 payload has $#payload regular ELF files; expected at least $migraphx_min_elfs"
+  status "checking the DT_NEEDED entries of $#payload staged migraphx-gfx1151 ELF files"
 
   # Pacman sees protobuf and Abseil only through the pinned libprotobuf.so
-  # provide and the versioned abseil-cpp range, so every packaged MIGraphX
-  # ELF, not only the parsers, may link only the pinned sonames.
+  # provide and the versioned abseil-cpp range, so every regular ELF the
+  # package ships, not only the parsers, may link only the pinned sonames.
   local elf
   local -a unpinned
   for elf in $payload; do
-    read_needed $elf
+    read_needed $stage/$elf
     unpinned=(
       ${${(M)reply:#libprotobuf.so*}:#$protobuf_soname}
       ${${(M)reply:#libutf8_validity.so*}:#$utf8_validity_soname}
       ${${(M)reply:#libabsl_*}:#*.so.$abseil_soversion}
     )
     if (( $#unpinned )); then
-      print -u2 "staged ${elf#$stage/} links: ${(j:, :)unpinned}"
+      print -u2 "staged $elf links: ${(j:, :)unpinned}"
       fail "staged MIGraphX payload links protobuf, utf8_validity, or Abseil other than $protobuf_soname, $utf8_validity_soname, and libabsl_*.so.$abseil_soversion"
     fi
   done
