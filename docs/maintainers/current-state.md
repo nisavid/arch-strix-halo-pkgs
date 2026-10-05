@@ -67,11 +67,11 @@ pkgrel-only rebuild to `therock-gfx1151` 7.13.0-4:
   After review, `tools/stage_migraphx_for_therock.zsh` reads `DT_NEEDED`
   from every regular ELF that the policy assigns to `migraphx-gfx1151`,
   selected by package ownership and ELF magic rather than by name, not only
-  from the parsers. It fails on any protobuf, `utf8_validity`, or Abseil
-  soname other than the pinned ones, and on a stage with fewer than 14 such
-  ELFs. The 7.13.0-4 build ran the earlier parser-only gate; the tightened
-  gate checks all 14 regular ELFs in copies of the installed 7.13.0-4
-  payload and accepts them.
+  from the parsers. It fails on any `libprotobuf.so*`,
+  `libutf8_validity.so*`, or `libabsl_*` soname other than the pinned ones,
+  and on a stage with fewer than 14 such ELFs. The 7.13.0-4 build ran the
+  earlier parser-only gate; the tightened gate checks all 14 regular ELFs in
+  copies of the installed 7.13.0-4 payload and accepts them.
 - **Package built:** on the host, in `builds.slice`, under the heavy-work
   lease. The stage copied the installed 7.13.0-3 `/opt/rocm` and compiled
   MIGraphX against an isolated prefix extracted from Arch `protobuf-36.1-1`

@@ -60,9 +60,12 @@ protobuf or Abseil soname change needs a pkgrel-only MIGraphX rebuild with
   `migraphx-gfx1151` and that starts with the ELF magic, whatever its name.
   In 7.13.0-4 those are 14 files, including `migraphx-driver`,
   `migraphx-hiprtc-driver`, `flatc`, `libIREECompiler.so`, `libmigraphx_c`,
-  and the Python module. None may link another protobuf, `utf8_validity`, or
-  Abseil soname; an older or newer one fails the stage, and so does a stage
-  with fewer such ELFs than `migraphx_min_elfs` (14).
+  and the Python module. None may link a `libprotobuf.so*`,
+  `libutf8_validity.so*`, or `libabsl_*` soname other than the pinned one;
+  an older or newer one fails the stage, and so does a stage with fewer such
+  ELFs than `migraphx_min_elfs` (14). The gate does not read the other
+  sonames the `protobuf` package ships (`libprotobuf-lite`, `libprotoc`,
+  `libutf8_range`); no 7.13.0-4 MIGraphX ELF links them.
 - The stage is a copy of the installed `/opt/rocm`, so it also holds the
   symlinks that `post_copy_commands` create. The policy's `ignore_globs`
   must cover them (`test_live_root_render_ignores_post_copy_symlinks`), and

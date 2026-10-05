@@ -118,7 +118,6 @@ def test_stage_migraphx_validates_protobuf_36_1_and_abseil_2608_before_import():
     assert "staged MIGraphX parser library is not linked against $utf8_validity_soname" in script
 
 
-
 GOOD_PARSER_NEEDED = [
     "libmigraphx.so.2016000",
     "libprotobuf.so.36.1.0",
@@ -144,8 +143,8 @@ PYTHON_MODULE = "lib/migraphx.cpython-314-x86_64-linux-gnu.so"
 C_API = "lib/libmigraphx_c.so.3.0"
 
 # The 14 regular ELF files of the installed migraphx-gfx1151 7.13.0-4, as paths
-# under the staged opt/rocm, each mapped to its DT_NEEDED sonames. Only the
-# parsers link protobuf and Abseil.
+# under the staged opt/rocm, each mapped to a representative subset of its
+# DT_NEEDED sonames. Only the parsers link protobuf and Abseil.
 GOOD_PAYLOAD = {
     FLATC: ["libstdc++.so.6", "libc.so.6"],
     DRIVER: MIGRAPHX_USER_NEEDED,
