@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import json
+import subprocess
 import sys
 
 import pytest
@@ -386,3 +387,115 @@ def test_retained_fixture_corpus_matches_the_selected_response_contracts():
             message["content"] = expected["content"]
         response = {"choices": [{"message": message, "finish_reason": expected["finish_reason"]}]}
         assert validate_granite_response(fixture["mode"], response) == message
+
+
+def _run_preparation_cli(*arguments):
+    return subprocess.run(
+        [sys.executable, "-I", "-S", "-B", str(TOOLS_DIR / "granite_server_smoke.py"), *arguments],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+@pytest.mark.parametrize("mode", ["basic", "tool", "structured"])
+def test_preparation_cli_reports_unverified_inputs_and_preserves_the_corpus_request(mode):
+    corpus = json.loads((TOOLS_DIR.parent / "inference/fixtures/granite-3.1-1b-a400m-instruct.json").read_text())
+    expected = next(fixture["request"] for fixture in corpus["fixtures"] if fixture["mode"] == mode)
+
+    result = _run_preparation_cli("proposed-model", "--mode", mode, "--dry-run")
+
+    assert result.returncode == 0, result.stderr
+    preparation = json.loads(result.stdout)
+    assert preparation == {
+        "mode": mode,
+        "status": "preparation-only",
+        "runtime_ready": False,
+        "model": {"value": "proposed-model", "status": "proposed/unverified"},
+        "corpus": {
+            "repo_id": "ibm-granite/granite-3.1-1b-a400m-instruct",
+            "revision": "0da7a48b0276d500ce5922fd2b33944091fc6c09",
+            "sha256": "cfc8740cdf71455fea91064caf3c8545763344c9b71803abf115323a6e98d094",
+        },
+        "request": expected,
+        "unresolved_requirements": [
+            "reviewed fit/fault-stop method",
+            "selected Granite operating envelope",
+            "qualifying immutable C subject",
+        ],
+    }
+
+
+def test_preparation_cli_rejects_execution_without_dry_run():
+    result = _run_preparation_cli("proposed-model", "--mode", "basic")
+
+    assert result.returncode == 2
+    assert result.stdout == ""
+    assert "requires --dry-run" in result.stderr
+    assert "execution is not available" in result.stderr
+
+
+@pytest.mark.parametrize("mode", ["basic", "tool", "structured"])
+@pytest.mark.parametrize("proposed_inputs", [
+    {},
+    {
+        "runtime_ready": True,
+        "model": "different-model",
+        "reviewed fit/fault-stop method": "proposed-method",
+        "selected Granite operating envelope": {"selected": True, "limit": 1e308},
+        "qualifying immutable C subject": {"accepted": True},
+        "other": [None, False, 123, -0.5, "Tokyo"],
+    },
+])
+def test_preparation_cli_retains_finite_proposals_without_resolving_requirements(mode, proposed_inputs):
+    corpus = json.loads((TOOLS_DIR.parent / "inference/fixtures/granite-3.1-1b-a400m-instruct.json").read_text())
+    expected = next(fixture["request"] for fixture in corpus["fixtures"] if fixture["mode"] == mode)
+
+    result = _run_preparation_cli(
+        "proposed-model", "--mode", mode, "--dry-run",
+        "--proposed-inputs-json", json.dumps(proposed_inputs, allow_nan=False),
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert json.loads(result.stdout) == {
+        "mode": mode,
+        "status": "preparation-only",
+        "runtime_ready": False,
+        "model": {"value": "proposed-model", "status": "proposed/unverified"},
+        "corpus": {
+            "repo_id": "ibm-granite/granite-3.1-1b-a400m-instruct",
+            "revision": "0da7a48b0276d500ce5922fd2b33944091fc6c09",
+            "sha256": "cfc8740cdf71455fea91064caf3c8545763344c9b71803abf115323a6e98d094",
+        },
+        "request": expected,
+        "unresolved_requirements": [
+            "reviewed fit/fault-stop method",
+            "selected Granite operating envelope",
+            "qualifying immutable C subject",
+        ],
+        "proposed_inputs": {"values": proposed_inputs, "status": "proposed/unverified"},
+    }
+
+
+@pytest.mark.parametrize("proposed_inputs_json", [
+    "", "{", '{"x":}', "null", "true", "42", '"literal"', "[{}]",
+    '{"x":1,"x":2}',
+    '{"nested":{"x":1,"x":2}}',
+    '{"items":[{"x":1,"x":2}]}',
+    '{"x":NaN}',
+    '{"nested":{"x":Infinity}}',
+    '{"items":[-Infinity]}',
+    '{"x":1e400}',
+    '{"nested":{"x":-1e400}}',
+    '{"items":[1e400]}',
+])
+def test_preparation_cli_rejects_ambiguous_nonfinite_or_nonobject_proposals(proposed_inputs_json):
+    result = _run_preparation_cli(
+        "proposed-model", "--mode", "basic", "--dry-run",
+        "--proposed-inputs-json", proposed_inputs_json,
+    )
+
+    assert result.returncode == 2
+    assert result.stdout == ""
+    assert "--proposed-inputs-json" in result.stderr
+    assert "error: argument --proposed-inputs-json:" in result.stderr
