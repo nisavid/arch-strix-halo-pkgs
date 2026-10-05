@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import json
+import os
 from pathlib import Path
+import subprocess
 import sys
 import tomllib
 
@@ -26,6 +29,71 @@ TRITON_UNQUANTIZED_MOE_LOG = (
     "Using TRITON Unquantized MoE backend out of potential backends"
 )
 STALE_UNQUANTIZED_MOE_LOG = "backend for Unquantized MoE"
+
+
+def test_e2b_long_decode_gate_dry_plan_preserves_binding_envelope_and_logs(tmp_path):
+    model_id = "google/gemma-4-E2B-it"
+    scenario_id = "vllm.gemma4.e2b.server.long-decode"
+    local_model = tmp_path / "checkpoint"
+    run_root = tmp_path / "run"
+    result = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "tools/run_inference_scenarios.py"),
+         "--scenario", scenario_id, "--model-path", f"{model_id}={local_model}",
+         "--run-root", str(run_root), "--dry-run"],
+        cwd=REPO_ROOT, capture_output=True, text=True, check=False,
+        env={**os.environ, "PYTHONPYCACHEPREFIX": "/tmp"},
+    )
+
+    assert result.returncode == 0, result.stderr
+    plan = json.loads(result.stdout)
+    assert plan["selected_ids"] == [scenario_id]
+    assert plan["execution_mode"] == "serial"
+    entry = plan["planned"][0]
+    assert entry["model"] == model_id
+    assert entry["command"][2] == str(local_model)
+    log = run_root / "scenarios" / scenario_id / "server.log"
+    assert entry["server_log_path"] == str(log)
+
+    helper = subprocess.run(
+        [*entry["command"], "--dry-run"],
+        cwd=REPO_ROOT, capture_output=True, text=True, check=False,
+        env={**os.environ, "PYTHONPYCACHEPREFIX": "/tmp"},
+    )
+    assert helper.returncode == 0, helper.stderr
+    helper_plan = json.loads(helper.stdout)
+    command = helper_plan["server_command"]
+    assert command[command.index("serve") + 1] == str(local_model)
+    assert command[command.index("--gpu-memory-utilization") + 1] == "0.35"
+    assert command[command.index("--max-model-len") + 1] == "1536"
+    assert helper_plan["served_model_name"] == model_id
+    assert helper_plan["server_log"] == str(log)
+    assert helper_plan["long_decode_validation"]["min_completion_tokens"] == 1025
+    assert helper_plan["long_decode_validation"]["required_finish_reason"] == "stop"
+    request = helper_plan["long_decode_request_payload"]
+    assert request["model"] == model_id
+    assert request["max_tokens"] == 1250
+    assert "count from 1 to 250" in request["messages"][0]["content"]
+    assert "known_answer_request_payload" in helper_plan
+    assert not run_root.exists()
+
+
+def test_e2b_long_decode_gate_requires_explicit_validation_window_selection():
+    def selected_ids(*selection):
+        result = subprocess.run(
+            [sys.executable, str(REPO_ROOT / "tools/run_inference_scenarios.py"),
+             "--engine", "vllm", "--model", "google/gemma-4-E2B-it",
+             *selection, "--dry-run"],
+            cwd=REPO_ROOT, capture_output=True, text=True, check=False,
+            env={**os.environ, "PYTHONPYCACHEPREFIX": "/tmp"},
+        )
+        assert result.returncode == 0, result.stderr
+        return json.loads(result.stdout)["selected_ids"]
+
+    broad = selected_ids()
+    assert "vllm.gemma4.e2b.server.basic" in broad
+    assert "vllm.gemma4.e2b.server.long-decode" not in broad
+    assert "vllm.gemma4.e2b.server.long-decode" in selected_ids("--include-validation-window")
+    assert "vllm.gemma4.e2b.server.long-decode" in selected_ids("--tag", "validation-window")
 
 
 def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():

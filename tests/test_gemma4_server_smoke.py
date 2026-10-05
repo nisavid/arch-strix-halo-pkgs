@@ -10,6 +10,7 @@ from types import SimpleNamespace
 import sys
 
 from PIL import Image
+import pytest
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -19,6 +20,254 @@ if str(TOOLS_DIR) not in sys.path:
     sys.path.insert(0, str(TOOLS_DIR))
 
 from gemma4_server_smoke import multimodal_content, validate_multimodal_response
+
+
+def test_long_decode_response_accepts_complete_count_and_recall_without_token_floor():
+    from gemma4_server_smoke import validate_long_decode_response
+
+    message = {"content": "1, 2, 3\nCode word: PELICAN"}
+    response = {"choices": [{"message": message, "finish_reason": "stop"}]}
+
+    assert validate_long_decode_response(response, count=3) == message
+
+
+def test_long_decode_response_rejects_truncation_even_with_complete_content():
+    from gemma4_server_smoke import validate_long_decode_response
+
+    response = {
+        "choices": [{
+            "message": {"content": "1, 2, 3\nCode word: PELICAN"},
+            "finish_reason": "length",
+        }],
+    }
+
+    with pytest.raises(RuntimeError, match="truncated"):
+        validate_long_decode_response(response, count=3)
+
+
+def test_long_decode_response_rejects_output_below_requested_token_floor():
+    from gemma4_server_smoke import validate_long_decode_response
+
+    response = {
+        "choices": [{
+            "message": {"content": "1, 2, 3\nCode word: PELICAN"},
+            "finish_reason": "stop",
+        }],
+        "usage": {"completion_tokens": 1024},
+    }
+
+    with pytest.raises(RuntimeError, match="at least 1025"):
+        validate_long_decode_response(response, count=3, min_completion_tokens=1025)
+
+
+@pytest.mark.parametrize("usage", [
+    None, {}, [], "1025", {"completion_tokens": None},
+    {"completion_tokens": True}, {"completion_tokens": "1025"},
+    {"completion_tokens": 1025.0}, {"completion_tokens": 1025.5},
+    {"completion_tokens": float("nan")}, {"completion_tokens": float("inf")},
+    {"completion_tokens": -1},
+])
+def test_long_decode_response_rejects_missing_or_malformed_usage(usage):
+    from gemma4_server_smoke import validate_long_decode_response
+
+    response = {
+        "choices": [{
+            "message": {"content": "1, 2, 3\nCode word: PELICAN"},
+            "finish_reason": "stop",
+        }],
+        "usage": usage,
+    }
+
+    with pytest.raises(RuntimeError, match="completion_tokens.*integer"):
+        validate_long_decode_response(response, count=3, min_completion_tokens=1025)
+
+
+@pytest.mark.parametrize("finish_reason", [None, "", "tool_calls", "content_filter", "unknown"])
+def test_long_decode_response_requires_stop_for_measured_token_gate(finish_reason):
+    from gemma4_server_smoke import validate_long_decode_response
+
+    response = {
+        "choices": [{
+            "message": {"content": "1, 2, 3\nCode word: PELICAN"},
+            "finish_reason": finish_reason,
+        }],
+        "usage": {"completion_tokens": 1025},
+    }
+
+    with pytest.raises(RuntimeError, match="finish_reason.*stop"):
+        validate_long_decode_response(response, count=3, min_completion_tokens=1025)
+
+
+@pytest.mark.parametrize("response", [
+    None, [], {}, {"choices": None}, {"choices": []}, {"choices": "bad"},
+    {"choices": [None]}, {"choices": [{"message": None}]},
+    {"choices": [{"message": {"content": None}}]},
+    {"choices": [{"message": {"content": 7}}]},
+    {"choices": [{"message": {"content": ["1", "2", "3"]}}]},
+])
+def test_long_decode_response_reports_malformed_choice_message_or_content(response):
+    from gemma4_server_smoke import validate_long_decode_response
+
+    with pytest.raises(RuntimeError, match="long-decode response"):
+        validate_long_decode_response(response, count=3)
+
+
+@pytest.mark.parametrize("content", [
+    "1, 3\nCode word: PELICAN", "1, 2, 2, 3\nCode word: PELICAN",
+    "1, 3, 2\nCode word: PELICAN", "1, 2, 3\nCode word: HERON",
+    "PELICAN\n1, 2, 3", "", "1, 2, 3\nCode word: PELICAN🦜",
+])
+def test_long_decode_response_keeps_counting_and_recall_checks_with_token_floor(content):
+    from gemma4_server_smoke import validate_long_decode_response
+
+    response = {
+        "choices": [{"message": {"content": content}, "finish_reason": "stop"}],
+        "usage": {"completion_tokens": 1025},
+    }
+
+    with pytest.raises(RuntimeError):
+        validate_long_decode_response(response, count=3, min_completion_tokens=1025)
+
+
+@pytest.mark.parametrize("tokens", [1025, 1146])
+def test_long_decode_response_accepts_measured_output_at_or_above_token_floor(tokens):
+    from gemma4_server_smoke import validate_long_decode_response
+
+    # Constructed protocol data exercises the gate, not observed model behavior.
+    content = ", ".join(str(number) for number in range(1, 251)) + "\nCode word: PELICAN"
+    message = {"content": content}
+    response = {
+        "choices": [{"message": message, "finish_reason": "stop"}],
+        "usage": {"completion_tokens": tokens},
+    }
+
+    assert validate_long_decode_response(
+        response, count=250, min_completion_tokens=1025,
+    ) == message
+
+
+@pytest.mark.parametrize("finish_reason", [None, "stop"])
+def test_long_decode_response_without_token_floor_does_not_require_usage(finish_reason):
+    from gemma4_server_smoke import validate_long_decode_response
+
+    message = {"content": "1, 2, 3\nCode word: PELICAN"}
+    response = {"choices": [{"message": message, "finish_reason": finish_reason}]}
+
+    assert validate_long_decode_response(response, count=3) == message
+
+
+@pytest.mark.parametrize("minimum", [0, -1, True, "1025", 1025.0])
+def test_long_decode_response_rejects_invalid_minimum(minimum):
+    from gemma4_server_smoke import validate_long_decode_response
+
+    response = {
+        "choices": [{
+            "message": {"content": "1, 2, 3\nCode word: PELICAN"},
+            "finish_reason": "stop",
+        }],
+        "usage": {"completion_tokens": 1025},
+    }
+
+    with pytest.raises(RuntimeError, match="min_completion_tokens.*positive integer"):
+        validate_long_decode_response(response, count=3, min_completion_tokens=minimum)
+
+
+@pytest.mark.parametrize("count", [0, -1, True, None, "3", 3.0])
+def test_long_decode_response_rejects_invalid_count(count):
+    from gemma4_server_smoke import validate_long_decode_response
+
+    response = {"choices": [{"message": {"content": "1, 2, 3\nCode word: PELICAN"}}]}
+
+    with pytest.raises(RuntimeError, match="count.*positive integer"):
+        validate_long_decode_response(response, count=count)
+
+
+def test_gemma4_server_smoke_dry_run_exposes_measured_token_gate():
+    result = run_helper(
+        "google/gemma-4-E2B-it", "--mode", "basic", "--known-answer",
+        "--long-decode", "--long-decode-count", "250",
+        "--long-decode-min-completion-tokens", "1025", "--dry-run",
+    )
+
+    assert result.returncode == 0, result.stderr
+    plan = json.loads(result.stdout)
+    assert plan["long_decode_validation"] == {
+        "count": 250,
+        "min_completion_tokens": 1025,
+        "required_finish_reason": "stop",
+        "reject_truncation": True,
+    }
+    assert command_value(plan["server_command"], "--max-model-len") == "1536"
+    assert plan["long_decode_request_payload"]["max_tokens"] == 1250
+    assert "count from 1 to 250" in plan["long_decode_request_payload"]["messages"][0]["content"]
+    assert "PELICAN" in plan["long_decode_request_payload"]["messages"][0]["content"]
+    assert "known_answer_request_payload" in plan
+
+
+def test_gemma4_server_smoke_dry_run_keeps_default_long_decode_without_token_floor():
+    result = run_helper("google/gemma-4-E2B-it", "--long-decode", "--dry-run")
+
+    assert result.returncode == 0, result.stderr
+    plan = json.loads(result.stdout)
+    assert plan["long_decode_validation"] == {
+        "count": 150,
+        "min_completion_tokens": None,
+        "required_finish_reason": None,
+        "reject_truncation": True,
+    }
+    assert plan["long_decode_request_payload"]["max_tokens"] == 800
+
+
+def test_gemma4_server_smoke_rejects_token_floor_without_long_decode():
+    result = run_helper(
+        "google/gemma-4-E2B-it", "--long-decode-min-completion-tokens", "1025", "--dry-run",
+    )
+
+    assert result.returncode == 2
+    assert "requires --long-decode" in result.stderr
+
+
+@pytest.mark.parametrize("minimum", ["0", "-1"])
+def test_gemma4_server_smoke_rejects_nonpositive_token_floor(minimum):
+    result = run_helper(
+        "google/gemma-4-E2B-it", "--long-decode",
+        "--long-decode-min-completion-tokens", minimum, "--dry-run",
+    )
+
+    assert result.returncode == 2
+    assert "--long-decode-min-completion-tokens must be positive" in result.stderr
+
+
+@pytest.mark.parametrize("count", ["0", "-1"])
+@pytest.mark.parametrize("extra", [[], ["--long-decode"]])
+def test_gemma4_server_smoke_rejects_nonpositive_long_decode_count(count, extra):
+    result = run_helper(
+        "google/gemma-4-E2B-it", *extra, "--long-decode-count", count, "--dry-run",
+    )
+
+    assert result.returncode == 2
+    assert "--long-decode-count must be positive" in result.stderr
+
+
+@pytest.mark.parametrize("extra", [[], ["--max-model-len", "1024"]])
+def test_gemma4_server_smoke_rejects_token_floor_above_request_budget(extra):
+    result = run_helper(
+        "google/gemma-4-E2B-it", "--long-decode",
+        "--long-decode-min-completion-tokens", "1025", *extra, "--dry-run",
+    )
+
+    assert result.returncode == 2
+    assert "minimum exceeds the long-decode request token budget" in result.stderr
+
+
+def test_gemma4_server_smoke_rejects_noninteger_token_floor():
+    result = run_helper(
+        "google/gemma-4-E2B-it", "--long-decode",
+        "--long-decode-min-completion-tokens", "1025.5", "--dry-run",
+    )
+
+    assert result.returncode == 2
+    assert "invalid int value" in result.stderr
 
 
 def run_helper(*args: str) -> subprocess.CompletedProcess[str]:

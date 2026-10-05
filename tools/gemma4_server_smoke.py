@@ -179,6 +179,12 @@ def parse_args() -> argparse.Namespace:
         help="last number the long-decode request must count to",
     )
     parser.add_argument(
+        "--long-decode-min-completion-tokens",
+        type=int,
+        default=None,
+        help="require at least this many observed completion tokens and finish_reason 'stop'",
+    )
+    parser.add_argument(
         "--long-decode-timeout",
         type=float,
         default=600.0,
@@ -232,6 +238,12 @@ def parse_args() -> argparse.Namespace:
     )
     args = parser.parse_args()
 
+    if args.long_decode_min_completion_tokens is not None and not args.long_decode:
+        parser.error("--long-decode-min-completion-tokens requires --long-decode")
+    if args.long_decode_min_completion_tokens is not None and args.long_decode_min_completion_tokens <= 0:
+        parser.error("--long-decode-min-completion-tokens must be positive")
+    if args.long_decode_count <= 0:
+        parser.error("--long-decode-count must be positive")
     if args.mode in TOOL_MODES and args.chat_template is None:
         args.chat_template = default_tool_chat_template(args)
     if args.chat_template is not None:
@@ -247,6 +259,10 @@ def parse_args() -> argparse.Namespace:
         option_name="--processor-kwargs",
     )
     args.server_log = args.server_log.resolve()
+    if args.long_decode_min_completion_tokens is not None:
+        budget = build_long_decode_payload(args)["max_tokens"]
+        if args.long_decode_min_completion_tokens > budget:
+            parser.error("minimum exceeds the long-decode request token budget")
     return args
 
 
@@ -690,6 +706,14 @@ def build_plan(args: argparse.Namespace) -> dict[str, object]:
         plan["known_answer_request_payload"] = build_known_answer_payload(args)
     if args.long_decode:
         plan["long_decode_request_payload"] = build_long_decode_payload(args)
+        plan["long_decode_validation"] = {
+            "count": args.long_decode_count,
+            "min_completion_tokens": args.long_decode_min_completion_tokens,
+            "required_finish_reason": (
+                "stop" if args.long_decode_min_completion_tokens is not None else None
+            ),
+            "reject_truncation": True,
+        }
     if args.mode in TOOL_MODES:
         plan["followup_request_payload"] = build_tool_followup_payload(
             args,
@@ -799,6 +823,45 @@ def validate_basic_response(response: dict[str, Any]) -> dict[str, Any]:
     return message
 
 
+def validate_long_decode_response(
+    response: dict[str, Any],
+    *,
+    count: int = LONG_DECODE_DEFAULT_COUNT,
+    min_completion_tokens: int | None = None,
+) -> dict[str, Any]:
+    if type(count) is not int or count <= 0:
+        raise RuntimeError("long-decode count must be a positive integer")
+    if min_completion_tokens is not None and (
+        type(min_completion_tokens) is not int or min_completion_tokens <= 0
+    ):
+        raise RuntimeError("min_completion_tokens must be a positive integer or None")
+    if not isinstance(response, dict):
+        raise RuntimeError("long-decode response must be an object")
+    choices = response.get("choices")
+    if not isinstance(choices, list) or not choices or not isinstance(choices[0], dict):
+        raise RuntimeError("long-decode response must include a choice object")
+    message = choices[0].get("message")
+    if not isinstance(message, dict) or not isinstance(message.get("content"), str):
+        raise RuntimeError("long-decode response must include a message with text content")
+    require_untruncated(response, label="long-decode")
+    validate_long_decode_text(message["content"], count=count)
+    if min_completion_tokens is not None:
+        if extract_choice(response).get("finish_reason") != "stop":
+            raise RuntimeError("long-decode response finish_reason must be 'stop'")
+        tokens = completion_tokens(response)
+        if type(tokens) is not int or tokens < 0:
+            raise RuntimeError(
+                "long-decode response usage.completion_tokens must be a "
+                "non-negative integer"
+            )
+        if tokens < min_completion_tokens:
+            raise RuntimeError(
+                f"long-decode response: expected at least {min_completion_tokens} "
+                f"completion tokens, got {tokens}"
+            )
+    return message
+
+
 def validate_multimodal_response(response: dict[str, Any]) -> dict[str, Any]:
     message = extract_message(response)
     content = (message.get("content") or "").strip()
@@ -901,8 +964,8 @@ def tail_log(path: Path, lines: int = 80) -> str:
 
 
 def completion_tokens(response: dict[str, Any]) -> object:
-    usage = response.get("usage") or {}
-    return usage.get("completion_tokens")
+    usage = response.get("usage")
+    return usage.get("completion_tokens") if isinstance(usage, dict) else None
 
 
 def run_known_answer_check(args: argparse.Namespace, plan: dict[str, object]) -> None:
@@ -926,12 +989,14 @@ def run_long_decode_check(args: argparse.Namespace, plan: dict[str, object]) -> 
         max(args.request_timeout, args.long_decode_timeout),
     )
     print("long_decode_response", json.dumps(response, sort_keys=True))
-    print("long_decode_completion_tokens", completion_tokens(response))
-    message = extract_message(response)
-    validate_long_decode_text(
-        message.get("content") or "",
+    validate_long_decode_response(
+        response,
         count=args.long_decode_count,
+        min_completion_tokens=args.long_decode_min_completion_tokens,
     )
+    print("long_decode_completion_tokens", completion_tokens(response))
+    if args.long_decode_min_completion_tokens is not None:
+        print("long_decode_token_floor_ok")
     print("long_decode_ok")
 
 

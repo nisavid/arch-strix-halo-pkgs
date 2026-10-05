@@ -137,6 +137,60 @@ kind = "server_log.contains"
 value = "Using TRITON_ATTN backend (selected via --attention-backend)."
 
 [[scenario]]
+id = "vllm.gemma4.e2b.server.long-decode"
+summary = "Gemma 4 E2B server counting and recall gate requiring at least 1025 measured completion tokens"
+tags = ["smoke", "gemma4", "server", "correctness", "long-decode", "validation-window"]
+
+[scenario.given]
+engine = "vllm"
+model = "google/gemma-4-E2B-it"
+tool = "gemma4_server_smoke.basic"
+
+[scenario.when]
+argv = [
+  "--known-answer",
+  "--long-decode",
+  "--long-decode-count", "250",
+  "--long-decode-min-completion-tokens", "1025",
+  "--max-model-len", "1536",
+  "--gpu-memory-utilization", "0.35",
+  "--served-model-name", "google/gemma-4-E2B-it",
+]
+
+[scenario.attention_backend]
+expected = "TRITON_ATTN"
+evidence = "static-prediction"
+basis = "vLLM v0.30.0 ced6857a: Gemma4Config forces TRITON_ATTN for all layers because head sizes differ (256 sliding, 512 full) and FA4 is unavailable on ROCm; this lane remains unrun"
+
+[[scenario.then.assert]]
+kind = "exit_code.equals"
+value = 0
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "basic_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "known_answer_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "long_decode_ok"
+
+[[scenario.then.assert]]
+kind = "stdout.contains"
+value = "long_decode_token_floor_ok"
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Gemma4 model has heterogeneous head dimensions {'sliding_attention': 256, 'full_attention': 512}. FA4 not available, forcing TRITON_ATTN backend."
+
+[[scenario.then.assert]]
+kind = "server_log.contains"
+value = "Using TRITON_ATTN backend (selected via --attention-backend)."
+
+[[scenario]]
 id = "vllm.gemma4.e2b.server.attn-triton"
 summary = "Gemma 4 E2B OpenAI-compatible text chat smoke with forced Triton attention"
 tags = ["smoke", "gemma4", "server", "kernel-probe", "exploratory"]
