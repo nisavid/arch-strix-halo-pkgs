@@ -17,14 +17,18 @@ families had moved upstream after the 2026-10-02 dispositions:
   outside C's required path.
 - **pybase64 1.5.1** (2026-10-04) fixes a use-after-release in `get_buffer`
   ([pybase64#1067](https://github.com/mayeut/pybase64/pull/1067)). The bug
-  is on the error path for buffers that are not single-byte or not 1-D. vLLM
-  0.30.0 decodes request strings with `pybase64.b64decode(embed,
-  validate=True)`, which never reaches that path, so the fix is not
-  reachable in C and does not meet X7's security exception.
+  is on the error path for buffers that are not single-byte or not 1-D.
+  vLLM is pybase64's only consumer in C: only `python-vllm-rocm-gfx1151`
+  depends on `python-pybase64-gfx1151`. At the v0.30.0 tag, vLLM calls
+  pybase64 at 25 sites in 16 files, and the local carry adds none. Every
+  call passes a `str`, `bytes`, or a 1-D byte buffer from
+  `BytesIO.getbuffer()`, so none reaches that error path. The fix is
+  therefore not reachable in C and does not meet X7's security exception.
   `pybase64-1.5.1-pypi` is tracked to #147, and C keeps 1.5.0.
 
-The confirming sweep started at `2026-10-05T02:14:36Z`, completed at
-`2026-10-05T02:15:09Z`, and exited 0 with `--fail-on actionable`. It reported
+The confirming sweep ran after the last ledger edit, whose new policy digest
+forced a network query. It started at `2026-10-05T05:55:01Z`, completed at
+`2026-10-05T05:55:29Z`, and exited 0 with `--fail-on actionable`. It reported
 23 stable updates, four branch-head movements, five baseline drifts, and 19
 current families across 51 families. Applying the ledger yielded 38 tracked,
 six rejected, two adopted, and five current families. The ledger holds 53
