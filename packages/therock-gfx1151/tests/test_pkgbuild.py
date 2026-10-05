@@ -1,4 +1,5 @@
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -18,20 +19,23 @@ MIGRAPHX_PTH = MIGRAPHX_PKGDIR / "usr/lib/python3.14/site-packages/migraphx.pth"
 
 def test_migraphx_package_exports_python_import_hook():
     text = PKGBUILD.read_text()
+    assert "pkgrel=4" in text
     assert "package_migraphx-gfx1151()" in text
-    assert "depends=('gcc-libs' 'glibc' 'hip-runtime-amd-gfx1151' 'miopen-hip-gfx1151' 'msgpack-cxx' 'libprotobuf.so=35.0.0-64' 'python-gfx1151' 'rocblas-gfx1151' 'rocm-core-gfx1151' 'sqlite')" in text
+    assert "depends=('abseil-cpp>=20260817.0' 'abseil-cpp<20260818' 'gcc-libs' 'glibc' 'hip-runtime-amd-gfx1151' 'miopen-hip-gfx1151' 'msgpack-cxx' 'libprotobuf.so=36.1.0-64' 'python-gfx1151' 'rocblas-gfx1151' 'rocm-core-gfx1151' 'sqlite')" in text
     assert "migraphx.pth" in text
     assert "import sqlite3" in text
     assert "/opt/rocm/lib" in text
 
     manifest = json.loads(MANIFEST.read_text())
     assert manifest["packages"]["migraphx-gfx1151"]["depends"] == [
+        "abseil-cpp>=20260817.0",
+        "abseil-cpp<20260818",
         "gcc-libs",
         "glibc",
         "hip-runtime-amd-gfx1151",
         "miopen-hip-gfx1151",
         "msgpack-cxx",
-        "libprotobuf.so=35.0.0-64",
+        "libprotobuf.so=36.1.0-64",
         "python-gfx1151",
         "rocblas-gfx1151",
         "rocm-core-gfx1151",
@@ -46,21 +50,55 @@ def test_migraphx_filelist_contains_runtime_payload():
     assert any(path.startswith("opt/rocm/lib/migraphx.cpython-") for path in paths)
 
 
-def test_migraphx_staging_pins_system_protobuf_and_rejects_stale_soname():
+def test_migraphx_staging_pins_protobuf_36_1_and_abseil_2608_and_rejects_unpinned_sonames():
     text = STAGE_MIGRAPHX.read_text()
     assert "typeset protobuf_dir=/usr/lib/cmake/protobuf" in text
-    assert "typeset protobuf_soname=libprotobuf.so.35.0.0" in text
-    assert "typeset utf8_validity_soname=libutf8_validity.so.35.0.0" in text
+    assert "typeset protobuf_soname=libprotobuf.so.36.1.0" in text
+    assert "typeset utf8_validity_soname=libutf8_validity.so.36.1.0" in text
+    assert "typeset abseil_soversion=2608.0.0" in text
     assert "-Dprotobuf_DIR=$protobuf_dir" in text
+    assert "-Dabsl_DIR=$absl_dir" in text
     assert 'local protobuf_lib_dir=${protobuf_dir%/cmake/protobuf}' in text
     assert "read_soname $protobuf_lib_dir/libprotobuf.so" in text
     assert "read_soname $protobuf_lib_dir/libutf8_validity.so" in text
-    assert "libprotobuf.so.34*" in text
-    assert "libutf8_validity.so.34*" in text
-    assert text.index("staged MIGraphX ONNX library still links protobuf 34-era libraries") < text.index(
-        "staged MIGraphX ONNX library is not linked against $protobuf_soname"
+    assert "read_soname $protobuf_lib_dir/libabsl_base.so" in text
+    # Every regular ELF the policy assigns to migraphx-gfx1151, not only the
+    # parsers, may link only the pins.
+    for unpinned in (
+        "${${(M)reply:#libprotobuf.so*}:#$protobuf_soname}",
+        "${${(M)reply:#libutf8_validity.so*}:#$utf8_validity_soname}",
+        "${${(M)reply:#libabsl_*}:#*.so.$abseil_soversion}",
+    ):
+        assert unpinned in text
+    assert "listing=$(list_staged_package_elfs migraphx-gfx1151)" in text
+    assert "classifier.classify(relpath) != package" in text
+    assert 'fh.read(4) == b"\\x7fELF"' in text
+    assert "(( $#payload >= migraphx_min_elfs ))" in text
+    assert "-name migraphx-driver" not in text
+    assert "libmigraphx_onnx.so" in text
+    assert "libmigraphx_tf.so" in text
+    unpinned_check = text.index("staged MIGraphX payload links protobuf, utf8_validity, or Abseil other than")
+    assert unpinned_check < text.index("staged MIGraphX parser library is not linked against $protobuf_soname")
+    assert unpinned_check < text.index("staged MIGraphX parser library links no Abseil libraries")
+    assert text.index("staged MIGraphX parser library links no Abseil libraries") < text.index(
+        'status "checking staged Python import"'
     )
-    assert text.index("local -a needed") < text.index('status "checking staged Python import"')
+
+
+def test_migraphx_depends_match_stage_script_sonames():
+    text = STAGE_MIGRAPHX.read_text()
+    depends = json.loads(MANIFEST.read_text())["packages"]["migraphx-gfx1151"]["depends"]
+
+    protobuf_version = re.search(r"^typeset protobuf_soname=libprotobuf\.so\.(\S+)$", text, re.M)[1]
+    assert f"libprotobuf.so={protobuf_version}-64" in depends
+
+    # Abseil LTS YYYYMMDD.N ships SOVERSION YYMM.0.0 for every patch release.
+    abseil_soversion = re.search(r"^typeset abseil_soversion=(\S+)$", text, re.M)[1]
+    floor = next(dep for dep in depends if dep.startswith("abseil-cpp>="))
+    ceiling = next(dep for dep in depends if dep.startswith("abseil-cpp<"))
+    lts_date = floor.removeprefix("abseil-cpp>=").split(".")[0]
+    assert abseil_soversion == f"{lts_date[2:6]}.0.0"
+    assert ceiling == f"abseil-cpp<{int(lts_date) + 1}"
 
 
 def test_rocprofiler_compute_manifest_tracks_runtime_dependencies():

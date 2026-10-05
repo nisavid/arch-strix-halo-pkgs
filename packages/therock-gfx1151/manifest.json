@@ -351,12 +351,14 @@
     },
     "migraphx-gfx1151": {
       "depends": [
+        "abseil-cpp>=20260817.0",
+        "abseil-cpp<20260818",
         "gcc-libs",
         "glibc",
         "hip-runtime-amd-gfx1151",
         "miopen-hip-gfx1151",
         "msgpack-cxx",
-        "libprotobuf.so=35.0.0-64",
+        "libprotobuf.so=36.1.0-64",
         "python-gfx1151",
         "rocblas-gfx1151",
         "rocm-core-gfx1151",

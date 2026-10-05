@@ -1,4 +1,5 @@
 import importlib.util
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -217,6 +218,7 @@ def test_core_runtime_dependency_policy_tracks_arch_baseline_shape():
 def test_math_and_ml_dependency_policy_tracks_arch_baseline_shape():
     policy = therock_split.load_policy(REPO_ROOT / "policies/therock-packages.toml")
     packages = policy["packages"]
+    assert policy["repo"]["pkgrel"] == 4
 
     assert packages["rocblas-gfx1151"]["depends"] == [
         "cblas",
@@ -240,12 +242,14 @@ def test_math_and_ml_dependency_policy_tracks_arch_baseline_shape():
         "composable-kernel-gfx1151",
     ]
     assert packages["migraphx-gfx1151"]["depends"] == [
+        "abseil-cpp>=20260817.0",
+        "abseil-cpp<20260818",
         "gcc-libs",
         "glibc",
         "hip-runtime-amd-gfx1151",
         "miopen-hip-gfx1151",
         "msgpack-cxx",
-        "libprotobuf.so=35.0.0-64",
+        "libprotobuf.so=36.1.0-64",
         "python-gfx1151",
         "rocblas-gfx1151",
         "rocm-core-gfx1151",
@@ -289,6 +293,27 @@ def test_live_root_render_ignores_rocm_core_overlay_files():
     assert classifier.classify("opt/rocm/bin/rdhc") == "__ignored__"
     assert classifier.classify("opt/rocm/share/rdhc/README.md") == "__ignored__"
     assert classifier.classify("opt/rocm/share/rdhc/requirements.txt") == "__ignored__"
+
+
+def test_live_root_render_ignores_post_copy_symlinks():
+    # A stage copied from an installed /opt/rocm already holds the symlinks
+    # that post_copy_commands create; classifying them would make a second
+    # split package own the same path.
+    policy = therock_split.load_policy(REPO_ROOT / "policies/therock-packages.toml")
+    classifier = therock_split.Classifier(policy)
+    link_re = re.compile(r'ln -s \S+ "\$\{pkgdir\}/([^"]+)"')
+    created = [
+        match.group(1)
+        for meta in policy["packages"].values()
+        for command in meta.get("post_copy_commands", [])
+        for match in [link_re.search(command)]
+        if match
+    ]
+
+    assert "opt/rocm/bin/rocprof-compute" in created
+    assert {path: classifier.classify(path) for path in created} == {
+        path: "__ignored__" for path in created
+    }
 
 
 def test_migraphx_payloads_map_to_migraphx_split_package():

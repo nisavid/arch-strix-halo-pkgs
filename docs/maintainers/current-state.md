@@ -4,6 +4,125 @@ The package, deployment, and live-validation narrative below remains a
 2026-06-15 snapshot. Dated records come first, newest first; older
 reconciliations remain as dated history.
 
+## 2026-10-05 Freshness Sweep
+
+The MIGraphX rebuild changes package policy, so the sweep ran with
+`--refresh` on that branch. It started at `2026-10-05T02:11:18Z`, completed at
+`2026-10-05T02:11:51Z`, and exited 10 with `--fail-on actionable`. Two
+families had moved upstream after the 2026-10-02 dispositions:
+
+- **AITER 0.1.24.post1** (2026-10-02) is a post release on the v0.1.24 line,
+  with no security fix. `aiter-0.1.24.post1` is tracked to #147 under X7, and
+  it supersedes the `aiter-0.1.24` record. AITER stays experimental and
+  outside C's required path.
+- **pybase64 1.5.1** (2026-10-04) fixes a use-after-release in `get_buffer`
+  ([pybase64#1067](https://github.com/mayeut/pybase64/pull/1067)). The bug
+  is on the error path for buffers that are not single-byte or not 1-D.
+  vLLM is pybase64's only consumer in C: only `python-vllm-rocm-gfx1151`
+  depends on `python-pybase64-gfx1151`. At the v0.30.0 tag, vLLM calls
+  pybase64 at 25 sites in 16 files, and the local carry adds none. Every
+  call passes a `str`, `bytes`, or a 1-D byte buffer from
+  `BytesIO.getbuffer()`, so none reaches that error path. The fix is
+  therefore not reachable in C and does not meet X7's security exception.
+  `pybase64-1.5.1-pypi` is tracked to #147, and C keeps 1.5.0.
+
+The confirming sweep ran after the last ledger edit, whose new policy digest
+forced a network query. It started at `2026-10-05T05:55:01Z`, completed at
+`2026-10-05T05:55:29Z`, and exited 0 with `--fail-on actionable`. It reported
+23 stable updates, four branch-head movements, five baseline drifts, and 19
+current families across 51 families. Applying the ledger yielded 38 tracked,
+six rejected, two adopted, and five current families. The ledger holds 53
+active tracked records and no blocked records. The explicit tracker
+validation found all 12 unique issue gates open in this repository.
+
+Outside the tracked families, Arch `extra` moved `python-huggingface-hub` to
+2.0.0 on 2026-10-02 and to 2.1.1 on 2026-10-04. Transformers 5.8.1 on the
+host and C's selected 5.16.1 both require `huggingface-hub<2.0`, so
+system-Python `import transformers` fails on the host, and C would fail the
+same way after activation. Lemonade and Open WebUI are unaffected. How C
+handles this is an open owner decision.
+
+This sweep changes maintenance metadata only. The freshness evidence is due
+again 24 hours after the confirming sweep completed, or sooner if package
+policy, package directories, the candidate ledger, checker behavior, or
+relevant source metadata changes.
+
+## 2026-10-02 MIGraphX Protobuf 36.1 and Abseil Rebuild
+
+Arch `extra` moved protobuf to 36.1 and abseil-cpp to 20260817.0. In the
+installed `migraphx-gfx1151` 7.13.0-3, both parser libraries link
+`libprotobuf.so.35.1.0` and 78 `libabsl_*.so.2605.0.0` libraries, so the
+pending full upgrade would leave MIGraphX unloadable. This record covers the
+pkgrel-only rebuild to `therock-gfx1151` 7.13.0-4:
+
+- **Source updated:** the branch ports `0ae0d94`, the unmerged 7.13.0-3
+  protobuf 35.1 rebuild, then moves the family to pkgrel 4.
+  `migraphx-gfx1151` now declares `libprotobuf.so=36.1.0-64`,
+  `abseil-cpp>=20260817.0`, and `abseil-cpp<20260818`; the package README
+  explains the range. AMDMIGraphX stays at `b69836e6`. The classifier now
+  ignores the `opt/rocm/bin/rocprof-compute` symlink that
+  `rocprofiler-compute-gfx1151` creates. Before that, a render from a stage
+  copied from the installed `/opt/rocm` also assigned the symlink to
+  `rocprofiler-systems-gfx1151`, so two split packages would own it.
+  After review, `tools/stage_migraphx_for_therock.zsh` reads `DT_NEEDED`
+  from every regular ELF that the policy assigns to `migraphx-gfx1151`,
+  selected by package ownership and ELF magic rather than by name, not only
+  from the parsers. It fails on any `libprotobuf.so*`,
+  `libutf8_validity.so*`, or `libabsl_*` soname other than the pinned ones,
+  and on a stage with fewer than 14 such ELFs. The 7.13.0-4 build ran the
+  earlier parser-only gate; the tightened gate checks all 14 regular ELFs in
+  copies of the installed 7.13.0-4 payload and accepts them.
+- **Package built:** on the host, in `builds.slice`, under the heavy-work
+  lease. The stage copied the installed 7.13.0-3 `/opt/rocm` and compiled
+  MIGraphX against an isolated prefix extracted from Arch `protobuf-36.1-1`
+  and `abseil-cpp-20260817.0-2`, whose sha256 sums matched the `extra` sync
+  DB. At `-j12` the stage job took 12m12s, 11m48s of it compiling and
+  installing. Its `memory.peak` was 10.2 GiB, mostly page cache from the
+  `/opt/rocm` copy; sampled anonymous memory peaked at 2.8 GiB, with no OOM
+  events. `makepkg -Cf` packaged all 66 splits in 5m08s, with a
+  `memory.peak` of 3.7 GiB. The `migraphx-gfx1151-7.13.0-4` archive's sha256
+  is `36897303618edbcb7592f9a249992bdfb21cbb69068665602b899035e481884b`.
+- **Build gates passed:**
+  - Both parser libraries link `libprotobuf.so.36.1.0`,
+    `libutf8_validity.so.36.1.0`, and 79 `libabsl_*.so.2608.0.0` libraries.
+    No ELF in the stage or in the packaged MIGraphX links protobuf 34 or 35
+    or Abseil 2605, and no other ELF links protobuf or Abseil.
+  - MIGraphX RUNPATHs hold only `$ORIGIN` entries, and no ELF names the
+    stage. As in 7.13.0-3, `libmigraphx_onnx` keeps one protobuf-header
+    `__FILE__` string from the build prefix, and 12 ELFs keep AMDMIGraphX
+    source paths. Neither is a load path.
+  - The staged module imports. A tiny ONNX model (Add, Relu, MatMul) parses,
+    compiles for the `ref` target, and matches NumPy. The process maps only
+    protobuf 36.1 and Abseil 2608, and it never opens the GPU.
+  - A render from the stage reproduces the committed `PKGBUILD`, manifest,
+    and filelists. Against 7.13.0-3, they differ only in pkgrel and the
+    MIGraphX depends.
+  - Every 7.13.0-4 `.BUILDINFO` records the committed `PKGBUILD` sha256. The
+    other 65 archives match their published 7.13.0-3 payloads by `.MTREE`
+    digest. `migraphx-gfx1151` changes 12 ELFs, the CMake policy range in its
+    targets file, and its depends.
+  - The repo suite and the package-local tests pass.
+- **Published:** on 2026-10-02, the 66 7.13.0-4 archives were appended to the
+  local repo database without removing the 7.13.0-3 files. A dry-run full
+  upgrade against a scratch database resolved with no dependency breaks.
+- **Deployed/installed:** yes. The owner's full `pacman -Syu` on 2026-10-02
+  installed `migraphx-gfx1151` 7.13.0-4 with protobuf 36.1-1.1 and abseil-cpp
+  20260817.0-2.1. `pacman -Qkk migraphx-gfx1151` reports 650 files and 0
+  altered.
+- **Installed-smoked:** yes, on 2026-10-05 after the reboot into kernel
+  7.2.9:
+  - `migraphx` imports and parses an ONNX `Add` model;
+  - onnxruntime 1.29.0 lists `MIGraphXExecutionProvider`, loads
+    `libonnxruntime_providers_migraphx.so`, and returns the right sum on a
+    CPU run;
+  - faster-whisper, RapidOCR, and Torch-MIGraphX import.
+  A scan of 25,906 executables and libraries under `/usr/lib`, `/usr/bin`,
+  and `/opt` found 7 files still linking protobuf 35.1 or Abseil 2605. All 7
+  belong to the orphaned CachyOS `sentencepiece` 0.2.2-2, which nothing
+  depends on; the repo's `python-sentencepiece-gfx1151` is unaffected.
+- **Live-scenario validated:** no. No GPU inference ran through MIGraphX.
+- **Freshness:** the 2026-10-05 sweep above covers this policy change.
+
 ## 2026-10-02 Freshness Sweep
 
 A cache-aware sweep on the W2A closure branch completed at

@@ -6,11 +6,17 @@ setopt err_exit pipe_fail no_unset
 typeset -r REPO_ROOT=${0:A:h:h}
 typeset stage=/tmp/therock-migraphx-stage
 typeset src=/tmp/AMDMIGraphX
+typeset rocm_root=/opt/rocm
 typeset jobs=${$(nproc 2>/dev/null):-1}
 typeset targets=gfx1151
+typeset migraphx_ref=b69836e6c97de179a80d764d24574edba7ba1b1b
 typeset protobuf_dir=/usr/lib/cmake/protobuf
-typeset protobuf_soname=libprotobuf.so.35.0.0
-typeset utf8_validity_soname=libutf8_validity.so.35.0.0
+typeset protobuf_soname=libprotobuf.so.36.1.0
+typeset utf8_validity_soname=libutf8_validity.so.36.1.0
+typeset abseil_soversion=2608.0.0
+# migraphx-gfx1151 7.13.0-4 ships 14 regular ELF files; the payload gate
+# fails a stage in which it finds fewer.
+typeset migraphx_min_elfs=14
 typeset clean=0
 typeset deploy=0
 typeset skip_build=0
@@ -27,10 +33,16 @@ preview the amerge plan, and optionally deploy the refreshed package family.
 Options:
   --stage PATH       staged filesystem root (default: /tmp/therock-migraphx-stage)
   --src PATH         AMDMIGraphX checkout path (default: /tmp/AMDMIGraphX)
+  --rocm-root PATH   installed ROCm tree that seeds the stage and provides
+                     the compilers (default: /opt/rocm)
   --targets VALUE    GPU target list passed as -DGPU_TARGETS (default: gfx1151)
+  --migraphx-ref REF AMDMIGraphX commit to build
+                     (default: b69836e6c97de179a80d764d24574edba7ba1b1b)
   --protobuf-dir PATH
                      protobuf CMake config directory used for AMDMIGraphX
-                     ONNX parsing (default: /usr/lib/cmake/protobuf)
+                     ONNX parsing; its lib directory must also hold the
+                     matching Abseil libraries and cmake/absl
+                     (default: /usr/lib/cmake/protobuf)
   -j, --jobs N       parallel build jobs (default: nproc)
   --clean            remove the stage and source dirs before starting
   --skip-build       reuse an existing source build and only install/render/deploy
@@ -64,10 +76,20 @@ read_soname() {
   readelf -d $lib | sed -n 's/.*Library soname: \[\([^]]*\)\].*/\1/p'
 }
 
+# Set reply to the DT_NEEDED sonames of one ELF file.
+read_needed() {
+  emulate -L zsh
+  local lib=$1
+  local dynamic
+  dynamic=$(LC_ALL=C readelf -d $lib) || fail "readelf cannot read $lib"
+  reply=(${(M)${(f)dynamic}:#*Shared library: \[*\]})
+  reply=(${${reply#*Shared library: \[}%\]*})
+}
+
 require_cmds() {
   emulate -L zsh
   local cmd
-  for cmd in git rsync cmake ninja python find readelf; do
+  for cmd in git rsync cmake ninja python readelf; do
     command -v $cmd >/dev/null 2>&1 || fail "missing required command: $cmd"
   done
 }
@@ -99,14 +121,15 @@ PY
 
 clone_or_update_source() {
   emulate -L zsh
-  if [[ -d $src/.git ]]; then
-    status "updating AMDMIGraphX checkout at $src"
-    run git -C $src fetch --depth 1 origin develop
-    run git -C $src checkout --detach FETCH_HEAD
-  else
-    status "cloning AMDMIGraphX into $src"
-    run git clone --depth 1 --branch develop https://github.com/ROCm/AMDMIGraphX.git $src
+  if [[ ! -d $src/.git ]]; then
+    [[ ! -e $src ]] || fail "AMDMIGraphX source path exists without a Git checkout: $src"
+    status "initializing AMDMIGraphX checkout at $src"
+    run git init $src
+    run git -C $src remote add origin https://github.com/ROCm/AMDMIGraphX.git
   fi
+  status "fetching AMDMIGraphX revision $migraphx_ref"
+  run git -C $src fetch --depth 1 origin $migraphx_ref
+  run git -C $src checkout --detach FETCH_HEAD
 }
 
 patch_migraphx_source_for_staged_root() {
@@ -194,17 +217,21 @@ PY
 
 copy_current_rocm_into_stage() {
   emulate -L zsh
-  [[ -d /opt/rocm ]] || fail "/opt/rocm is missing"
-  status "copying current /opt/rocm into $stage"
+  [[ -d $rocm_root ]] || fail "ROCm root is missing: $rocm_root"
+  status "copying current $rocm_root into $stage"
   run mkdir -p $stage/opt
-  run rsync -aH --no-owner --no-group --delete /opt/rocm/ $stage/opt/rocm/
+  run rsync -aH --no-owner --no-group --delete $rocm_root/ $stage/opt/rocm/
 }
 
 build_and_install_migraphx() {
   emulate -L zsh
   local disable_versions
   disable_versions=$(python_disable_versions)
+  local pybind11_dir
+  pybind11_dir=$(python -m pybind11 --cmakedir)
   local protobuf_lib_dir=${protobuf_dir%/cmake/protobuf}
+  local protobuf_prefix=${protobuf_lib_dir:h}
+  local absl_dir=$protobuf_lib_dir/cmake/absl
   local ck=OFF
   local mlir=OFF
   (( with_composable_kernel )) && ck=ON
@@ -215,16 +242,21 @@ build_and_install_migraphx() {
   [[ -f $protobuf_lib_dir/libutf8_validity.so ]] || fail "utf8 validity library is missing: $protobuf_lib_dir/libutf8_validity.so"
   [[ $(read_soname $protobuf_lib_dir/libprotobuf.so) == $protobuf_soname ]] || fail "protobuf SONAME must be $protobuf_soname"
   [[ $(read_soname $protobuf_lib_dir/libutf8_validity.so) == $utf8_validity_soname ]] || fail "utf8 validity SONAME must be $utf8_validity_soname"
+  [[ -d $absl_dir ]] || fail "Abseil CMake config directory is missing: $absl_dir"
+  [[ -f $protobuf_lib_dir/libabsl_base.so ]] || fail "Abseil library is missing: $protobuf_lib_dir/libabsl_base.so"
+  [[ $(read_soname $protobuf_lib_dir/libabsl_base.so) == libabsl_base.so.$abseil_soversion ]] || fail "Abseil SONAME must be libabsl_base.so.$abseil_soversion"
   local -a configure_args=(
     -S $src
     -B $src/build
     -G Ninja
     -DCMAKE_BUILD_TYPE=Release
     -DCMAKE_INSTALL_PREFIX=/opt/rocm
-    "-DCMAKE_PREFIX_PATH=$stage/opt/rocm;/opt/rocm"
+    "-DCMAKE_PREFIX_PATH=$protobuf_prefix;$stage/opt/rocm;$rocm_root"
     -Dprotobuf_DIR=$protobuf_dir
-    -DCMAKE_C_COMPILER=/opt/rocm/lib/llvm/bin/amdclang
-    -DCMAKE_CXX_COMPILER=/opt/rocm/lib/llvm/bin/amdclang++
+    -Dabsl_DIR=$absl_dir
+    -Dpybind11_DIR=$pybind11_dir
+    -DCMAKE_C_COMPILER=$rocm_root/lib/llvm/bin/amdclang
+    -DCMAKE_CXX_COMPILER=$rocm_root/lib/llvm/bin/amdclang++
     -DGPU_TARGETS=$targets
     -DMIGRAPHX_ENABLE_PYTHON=ON
     -DMIGRAPHX_USE_COMPOSABLEKERNEL=$ck
@@ -237,48 +269,107 @@ build_and_install_migraphx() {
   run cmake $configure_args
 
   status "building and installing AMDMIGraphX into $stage"
-  run env DESTDIR=$stage cmake --build $src/build --target install -j$jobs
+  run env LD_LIBRARY_PATH=$protobuf_lib_dir:${LD_LIBRARY_PATH-} \
+    DESTDIR=$stage \
+    cmake --build $src/build --target install -j$jobs
+}
+
+# Print, one per line and relative to the stage, every regular file (not a
+# symlink) under the policy's scan roots that policies/therock-packages.toml
+# assigns to the named split package and that starts with the ELF magic. The
+# render classifies the stage with the same generator and policy, so this is
+# every regular ELF the package will ship, whatever its name.
+list_staged_package_elfs() {
+  emulate -L zsh
+  local package=$1
+  python - $REPO_ROOT $stage $package <<'PY'
+import sys
+from pathlib import Path
+
+repo_root, root, package = Path(sys.argv[1]), Path(sys.argv[2]), sys.argv[3]
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(repo_root / "generators"))
+import therock_split
+
+policy = therock_split.load_policy(repo_root / "policies/therock-packages.toml")
+classifier = therock_split.Classifier(policy)
+for relpath in therock_split.walk_scan_roots(root, policy["repo"]["scan_roots"]):
+    path = root / relpath
+    if path.is_symlink() or not path.is_file():
+        continue
+    if classifier.classify(relpath) != package:
+        continue
+    with path.open("rb") as fh:
+        if fh.read(4) == b"\x7fELF":
+            print(relpath)
+PY
 }
 
 validate_stage() {
   emulate -L zsh
+  local protobuf_lib_dir=${protobuf_dir%/cmake/protobuf}
   status "checking staged MIGraphX payload"
-  run find $stage/opt/rocm \( \
-    -name migraphx-driver -o \
-    -name 'libmigraphx*.so*' -o \
-    -name 'migraphx.cpython-*.so' \
-  \) -print
+  # Every regular ELF that migraphx-gfx1151 will ship, chosen by package
+  # ownership and ELF magic rather than by name. The package's symlinks
+  # resolve to these files.
+  local listing
+  listing=$(list_staged_package_elfs migraphx-gfx1151) \
+    || fail "cannot list the staged migraphx-gfx1151 ELF files"
+  local -a payload=(${(f)listing})
+  (( $#payload )) || fail "staged root still has no MIGraphX payload"
+  print -rl -- $payload
+  (( $#payload >= migraphx_min_elfs )) \
+    || fail "staged migraphx-gfx1151 payload has $#payload regular ELF files; expected at least $migraphx_min_elfs"
+  status "checking the DT_NEEDED entries of $#payload staged migraphx-gfx1151 ELF files"
 
-  local found_count
-  found_count=$(find $stage/opt/rocm \( \
-    -name migraphx-driver -o \
-    -name 'libmigraphx*.so*' -o \
-    -name 'migraphx.cpython-*.so' \
-  \) -print | wc -l)
-  (( found_count > 0 )) || fail "staged root still has no MIGraphX payload"
+  # Pacman sees protobuf and Abseil only through the pinned libprotobuf.so
+  # provide and the versioned abseil-cpp range, so every regular ELF the
+  # package ships, not only the parsers, may link only the pinned sonames.
+  local elf
+  local -a unpinned
+  for elf in $payload; do
+    read_needed $stage/$elf
+    unpinned=(
+      ${${(M)reply:#libprotobuf.so*}:#$protobuf_soname}
+      ${${(M)reply:#libutf8_validity.so*}:#$utf8_validity_soname}
+      ${${(M)reply:#libabsl_*}:#*.so.$abseil_soversion}
+    )
+    if (( $#unpinned )); then
+      print -u2 "staged $elf links: ${(j:, :)unpinned}"
+      fail "staged MIGraphX payload links protobuf, utf8_validity, or Abseil other than $protobuf_soname, $utf8_validity_soname, and libabsl_*.so.$abseil_soversion"
+    fi
+  done
 
-  local onnx_lib=$stage/opt/rocm/lib/migraphx/lib/libmigraphx_onnx.so
-  [[ -f $onnx_lib ]] || fail "missing staged MIGraphX ONNX library: $onnx_lib"
+  local -a parser_libs=(
+    $stage/opt/rocm/lib/migraphx/lib/libmigraphx_onnx.so
+    $stage/opt/rocm/lib/migraphx/lib/libmigraphx_tf.so
+  )
 
-  local -a needed
-  needed=("${(@f)$(readelf -d $onnx_lib | sed -n 's/.*Shared library: \[\([^]]*\)\].*/\1/p')}")
-  if (( ${needed[(I)libprotobuf.so.34*]} || ${needed[(I)libutf8_validity.so.34*]} )); then
-    print -u2 "staged libmigraphx_onnx.so needs: ${(j:, :)needed}"
-    fail "staged MIGraphX ONNX library still links protobuf 34-era libraries"
-  fi
+  local -a abseil_needed
+  local parser_lib
+  for parser_lib in $parser_libs; do
+    [[ -f $parser_lib ]] || fail "missing staged MIGraphX parser library: $parser_lib"
+    read_needed $parser_lib
 
-  if (( ! ${needed[(I)$protobuf_soname]} )); then
-    print -u2 "staged libmigraphx_onnx.so needs: ${(j:, :)needed}"
-    fail "staged MIGraphX ONNX library is not linked against $protobuf_soname"
-  fi
+    if (( ! ${reply[(I)$protobuf_soname]} )); then
+      print -u2 "staged ${parser_lib:t} needs: ${(j:, :)reply}"
+      fail "staged MIGraphX parser library is not linked against $protobuf_soname"
+    fi
 
-  if (( ! ${needed[(I)$utf8_validity_soname]} )); then
-    print -u2 "staged libmigraphx_onnx.so needs: ${(j:, :)needed}"
-    fail "staged MIGraphX ONNX library is not linked against $utf8_validity_soname"
-  fi
+    if (( ! ${reply[(I)$utf8_validity_soname]} )); then
+      print -u2 "staged ${parser_lib:t} needs: ${(j:, :)reply}"
+      fail "staged MIGraphX parser library is not linked against $utf8_validity_soname"
+    fi
+
+    abseil_needed=(${(M)reply:#libabsl_*})
+    if (( ! $#abseil_needed )); then
+      print -u2 "staged ${parser_lib:t} needs: ${(j:, :)reply}"
+      fail "staged MIGraphX parser library links no Abseil libraries; expected libabsl_*.so.$abseil_soversion"
+    fi
+  done
 
   status "checking staged Python import"
-  run env LD_LIBRARY_PATH=$stage/opt/rocm/lib:${LD_LIBRARY_PATH-} \
+  run env LD_LIBRARY_PATH=$protobuf_lib_dir:$stage/opt/rocm/lib:${LD_LIBRARY_PATH-} \
     PYTHONPATH=$stage/opt/rocm/lib \
     python - <<'PY'
 import migraphx
@@ -320,10 +411,20 @@ while (( $# )); do
       (( $# )) || fail "--src needs a path"
       src=$1
       ;;
+    --rocm-root)
+      shift
+      (( $# )) || fail "--rocm-root needs a path"
+      rocm_root=$1
+      ;;
     --targets)
       shift
       (( $# )) || fail "--targets needs a value"
       targets=$1
+      ;;
+    --migraphx-ref)
+      shift
+      (( $# )) || fail "--migraphx-ref needs a value"
+      migraphx_ref=$1
       ;;
     --protobuf-dir)
       shift
@@ -373,7 +474,9 @@ if (( skip_build )); then
   [[ -d $src/build ]] || fail "--skip-build needs an existing build dir: $src/build"
   copy_current_rocm_into_stage
   status "installing existing AMDMIGraphX build into $stage"
-  run env DESTDIR=$stage cmake --build $src/build --target install -j$jobs
+  run env LD_LIBRARY_PATH=${protobuf_dir%/cmake/protobuf}:${LD_LIBRARY_PATH-} \
+    DESTDIR=$stage \
+    cmake --build $src/build --target install -j$jobs
 else
   copy_current_rocm_into_stage
   clone_or_update_source

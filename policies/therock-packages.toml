@@ -1,7 +1,7 @@
 [repo]
 pkgbase = "therock-gfx1151"
 pkgver = "7.13.0"
-pkgrel = 2
+pkgrel = 4
 suffix = "-gfx1151"
 url = "https://github.com/ROCm/TheRock"
 license = ["custom:AMD"]
@@ -25,6 +25,9 @@ ignore_globs = [
   "opt/rocm/bin/hipdnn_sample_*",
   "opt/rocm/bin/hipdnn_samples/**",
   "opt/rocm/bin/rdhc",
+  # Created by rocprofiler-compute-gfx1151 post_copy_commands; a stage copied
+  # from an installed /opt/rocm already holds it.
+  "opt/rocm/bin/rocprof-compute",
   "opt/rocm/bin/bn_*",
   "opt/rocm/bin/conv_*",
   "opt/rocm/bin/fused_*",
@@ -386,7 +389,10 @@ provides = ["rocshmem"]
 [packages."migraphx-gfx1151"]
 desc = "MIGraphX from TheRock for gfx1151"
 provides = ["migraphx"]
-depends = ["gcc-libs", "glibc", "hip-runtime-amd-gfx1151", "miopen-hip-gfx1151", "msgpack-cxx", "libprotobuf.so=35.0.0-64", "python-gfx1151", "rocblas-gfx1151", "rocm-core-gfx1151", "sqlite"]
+# Abseil's package provides no sonames, so this range stands in for
+# libabsl_*.so.2608.0.0: it admits pkgrel rebuilds and 20260817.x patch
+# releases, which keep that soversion, and blocks the next Abseil LTS.
+depends = ["abseil-cpp>=20260817.0", "abseil-cpp<20260818", "gcc-libs", "glibc", "hip-runtime-amd-gfx1151", "miopen-hip-gfx1151", "msgpack-cxx", "libprotobuf.so=36.1.0-64", "python-gfx1151", "rocblas-gfx1151", "rocm-core-gfx1151", "sqlite"]
 
 [packages."magma-gfx1151"]
 desc = "Matrix Algebra on GPU and Multicore Architectures from TheRock for gfx1151"
