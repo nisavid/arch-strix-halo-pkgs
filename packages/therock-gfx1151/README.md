@@ -53,9 +53,11 @@ protobuf or Abseil soname change needs a pkgrel-only MIGraphX rebuild with
   `protobuf` and `abseil-cpp` archives, checked against the sync DB sha256.
   The prefix's lib directory must hold both, and CMake takes Abseil from its
   `cmake/absl`.
-- Both parser libraries must link exactly the pinned protobuf and
-  `utf8_validity` sonames, and only `libabsl_*.so.<abseil_soversion>`. Older
-  protobuf or Abseil links fail the stage.
+- Both parser libraries must link the pinned protobuf and `utf8_validity`
+  sonames and `libabsl_*.so.<abseil_soversion>`. Every staged MIGraphX ELF,
+  including `migraphx-driver`, `libmigraphx_c`, and the Python module, may
+  link no other protobuf, `utf8_validity`, or Abseil soname; an older or
+  newer one fails the stage.
 - The stage is a copy of the installed `/opt/rocm`, so it also holds the
   symlinks that `post_copy_commands` create. The policy's `ignore_globs`
   must cover them (`test_live_root_render_ignores_post_copy_symlinks`), and

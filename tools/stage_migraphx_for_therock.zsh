@@ -73,6 +73,16 @@ read_soname() {
   readelf -d $lib | sed -n 's/.*Library soname: \[\([^]]*\)\].*/\1/p'
 }
 
+# Set reply to the DT_NEEDED sonames of one ELF file.
+read_needed() {
+  emulate -L zsh
+  local lib=$1
+  local dynamic
+  dynamic=$(LC_ALL=C readelf -d $lib) || fail "readelf cannot read $lib"
+  reply=(${(M)${(f)dynamic}:#*Shared library: \[*\]})
+  reply=(${${reply#*Shared library: \[}%\]*})
+}
+
 require_cmds() {
   emulate -L zsh
   local cmd
@@ -265,62 +275,59 @@ validate_stage() {
   emulate -L zsh
   local protobuf_lib_dir=${protobuf_dir%/cmake/protobuf}
   status "checking staged MIGraphX payload"
-  run find $stage/opt/rocm \( \
+  # Regular files only; every versioned symlink resolves to one of them.
+  local -a payload
+  payload=(${(f)"$(find $stage/opt/rocm \( \
     -name migraphx-driver -o \
     -name 'libmigraphx*.so*' -o \
     -name 'migraphx.cpython-*.so' \
-  \) -print
+  \) -type f -print)"})
+  (( $#payload )) || fail "staged root still has no MIGraphX payload"
+  print -rl -- $payload
 
-  local found_count
-  found_count=$(find $stage/opt/rocm \( \
-    -name migraphx-driver -o \
-    -name 'libmigraphx*.so*' -o \
-    -name 'migraphx.cpython-*.so' \
-  \) -print | wc -l)
-  (( found_count > 0 )) || fail "staged root still has no MIGraphX payload"
+  # Pacman sees protobuf and Abseil only through the pinned libprotobuf.so
+  # provide and the versioned abseil-cpp range, so every packaged MIGraphX
+  # ELF, not only the parsers, may link only the pinned sonames.
+  local elf
+  local -a unpinned
+  for elf in $payload; do
+    read_needed $elf
+    unpinned=(
+      ${${(M)reply:#libprotobuf.so*}:#$protobuf_soname}
+      ${${(M)reply:#libutf8_validity.so*}:#$utf8_validity_soname}
+      ${${(M)reply:#libabsl_*}:#*.so.$abseil_soversion}
+    )
+    if (( $#unpinned )); then
+      print -u2 "staged ${elf#$stage/} links: ${(j:, :)unpinned}"
+      fail "staged MIGraphX payload links protobuf, utf8_validity, or Abseil other than $protobuf_soname, $utf8_validity_soname, and libabsl_*.so.$abseil_soversion"
+    fi
+  done
 
   local -a parser_libs=(
     $stage/opt/rocm/lib/migraphx/lib/libmigraphx_onnx.so
     $stage/opt/rocm/lib/migraphx/lib/libmigraphx_tf.so
   )
 
-  local -a needed abseil_needed off_version_abseil
+  local -a abseil_needed
   local parser_lib
   for parser_lib in $parser_libs; do
     [[ -f $parser_lib ]] || fail "missing staged MIGraphX parser library: $parser_lib"
-    needed=("${(@f)$(readelf -d $parser_lib | sed -n 's/.*Shared library: \[\([^]]*\)\].*/\1/p')}")
-    if (( ${needed[(I)libprotobuf.so.35.1*]} ||
-          ${needed[(I)libutf8_validity.so.35.1*]} ||
-          ${needed[(I)libprotobuf.so.35.0*]} ||
-          ${needed[(I)libutf8_validity.so.35.0*]} ||
-          ${needed[(I)libprotobuf.so.34*]} ||
-          ${needed[(I)libutf8_validity.so.34*]} ||
-          ${needed[(I)libabsl_*.so.2605*]} )); then
-      print -u2 "staged ${parser_lib:t} needs: ${(j:, :)needed}"
-      fail "staged MIGraphX parser library still links a stale protobuf or Abseil ABI"
-    fi
+    read_needed $parser_lib
 
-    if (( ! ${needed[(I)$protobuf_soname]} )); then
-      print -u2 "staged ${parser_lib:t} needs: ${(j:, :)needed}"
+    if (( ! ${reply[(I)$protobuf_soname]} )); then
+      print -u2 "staged ${parser_lib:t} needs: ${(j:, :)reply}"
       fail "staged MIGraphX parser library is not linked against $protobuf_soname"
     fi
 
-    if (( ! ${needed[(I)$utf8_validity_soname]} )); then
-      print -u2 "staged ${parser_lib:t} needs: ${(j:, :)needed}"
+    if (( ! ${reply[(I)$utf8_validity_soname]} )); then
+      print -u2 "staged ${parser_lib:t} needs: ${(j:, :)reply}"
       fail "staged MIGraphX parser library is not linked against $utf8_validity_soname"
     fi
 
-    # Pacman sees Abseil only through the versioned abseil-cpp dependency, so
-    # every Abseil link must match the soversion that dependency allows.
-    abseil_needed=(${(M)needed:#libabsl_*})
+    abseil_needed=(${(M)reply:#libabsl_*})
     if (( ! $#abseil_needed )); then
-      print -u2 "staged ${parser_lib:t} needs: ${(j:, :)needed}"
+      print -u2 "staged ${parser_lib:t} needs: ${(j:, :)reply}"
       fail "staged MIGraphX parser library links no Abseil libraries; expected libabsl_*.so.$abseil_soversion"
-    fi
-    off_version_abseil=(${abseil_needed:#*.so.$abseil_soversion})
-    if (( $#off_version_abseil )); then
-      print -u2 "staged ${parser_lib:t} needs: ${(j:, :)off_version_abseil}"
-      fail "staged MIGraphX parser library is not linked only against Abseil .so.$abseil_soversion"
     fi
   done
 

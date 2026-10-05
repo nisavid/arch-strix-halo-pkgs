@@ -50,7 +50,7 @@ def test_migraphx_filelist_contains_runtime_payload():
     assert any(path.startswith("opt/rocm/lib/migraphx.cpython-") for path in paths)
 
 
-def test_migraphx_staging_pins_protobuf_36_1_and_abseil_2608_and_rejects_stale_sonames():
+def test_migraphx_staging_pins_protobuf_36_1_and_abseil_2608_and_rejects_unpinned_sonames():
     text = STAGE_MIGRAPHX.read_text()
     assert "typeset protobuf_dir=/usr/lib/cmake/protobuf" in text
     assert "typeset protobuf_soname=libprotobuf.so.36.1.0" in text
@@ -62,22 +62,23 @@ def test_migraphx_staging_pins_protobuf_36_1_and_abseil_2608_and_rejects_stale_s
     assert "read_soname $protobuf_lib_dir/libprotobuf.so" in text
     assert "read_soname $protobuf_lib_dir/libutf8_validity.so" in text
     assert "read_soname $protobuf_lib_dir/libabsl_base.so" in text
-    for stale in (
-        "libprotobuf.so.35.1*",
-        "libutf8_validity.so.35.1*",
-        "libprotobuf.so.35.0*",
-        "libutf8_validity.so.35.0*",
-        "libprotobuf.so.34*",
-        "libutf8_validity.so.34*",
-        "libabsl_*.so.2605*",
+    # Every staged MIGraphX ELF, not only the parsers, may link only the pins.
+    for unpinned in (
+        "${${(M)reply:#libprotobuf.so*}:#$protobuf_soname}",
+        "${${(M)reply:#libutf8_validity.so*}:#$utf8_validity_soname}",
+        "${${(M)reply:#libabsl_*}:#*.so.$abseil_soversion}",
     ):
-        assert stale in text
+        assert unpinned in text
+    assert "-name migraphx-driver -o" in text
+    assert "-name 'migraphx.cpython-*.so'" in text
     assert "libmigraphx_onnx.so" in text
     assert "libmigraphx_tf.so" in text
-    stale_check = text.index("staged MIGraphX parser library still links a stale protobuf or Abseil ABI")
-    assert stale_check < text.index("staged MIGraphX parser library is not linked against $protobuf_soname")
-    assert stale_check < text.index("staged MIGraphX parser library links no Abseil libraries")
-    assert text.index("local -a needed") < text.index('status "checking staged Python import"')
+    unpinned_check = text.index("staged MIGraphX payload links protobuf, utf8_validity, or Abseil other than")
+    assert unpinned_check < text.index("staged MIGraphX parser library is not linked against $protobuf_soname")
+    assert unpinned_check < text.index("staged MIGraphX parser library links no Abseil libraries")
+    assert text.index("staged MIGraphX parser library links no Abseil libraries") < text.index(
+        'status "checking staged Python import"'
+    )
 
 
 def test_migraphx_depends_match_stage_script_sonames():

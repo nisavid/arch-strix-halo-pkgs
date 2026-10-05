@@ -110,13 +110,6 @@ def test_stage_migraphx_validates_protobuf_36_1_and_abseil_2608_before_import():
     assert "utf8 validity SONAME must be $utf8_validity_soname" in script
     assert "Abseil CMake config directory is missing: $absl_dir" in script
     assert "Abseil SONAME must be libabsl_base.so.$abseil_soversion" in script
-    assert "libprotobuf.so.35.1*" in script
-    assert "libutf8_validity.so.35.1*" in script
-    assert "libprotobuf.so.35.0*" in script
-    assert "libutf8_validity.so.35.0*" in script
-    assert "libprotobuf.so.34*" in script
-    assert "libutf8_validity.so.34*" in script
-    assert "libabsl_*.so.2605*" in script
     assert "libmigraphx_onnx.so" in script
     assert "libmigraphx_tf.so" in script
     assert "staged MIGraphX parser library is not linked against $protobuf_soname" in script
@@ -132,8 +125,24 @@ GOOD_PARSER_NEEDED = [
     "libstdc++.so.6",
 ]
 
+ONNX_PARSER = "lib/migraphx/lib/libmigraphx_onnx.so"
+DRIVER = "bin/migraphx-driver"
+PYTHON_MODULE = "lib/migraphx.cpython-314-x86_64-linux-gnu.so"
+C_API = "lib/libmigraphx_c.so.3.0"
 
-def _run_skip_build_with_fake_parser_needed(tmp_path: Path, needed: list[str]):
+# Paths under the staged opt/rocm, each mapped to its DT_NEEDED sonames. Only
+# the parsers link protobuf and Abseil, as in the installed 7.13.0-4 payload.
+GOOD_PAYLOAD = {
+    ONNX_PARSER: GOOD_PARSER_NEEDED,
+    "lib/migraphx/lib/libmigraphx_tf.so": GOOD_PARSER_NEEDED,
+    "lib/migraphx/lib/libmigraphx.so.2.0": ["libstdc++.so.6"],
+    C_API: ["libmigraphx_onnx.so.2", "libmigraphx_tf.so.2", "libmigraphx.so.2"],
+    PYTHON_MODULE: ["libmigraphx_onnx.so.2", "libmigraphx_tf.so.2", "libmigraphx.so.2"],
+    DRIVER: ["libmigraphx_onnx.so.2", "libmigraphx_tf.so.2", "libmigraphx.so.2"],
+}
+
+
+def _run_skip_build_with_fake_payload(tmp_path: Path, payload: dict[str, list[str]]):
     """Drive validate_stage with stubbed build tools and a fake readelf."""
     stubs = tmp_path / "bin"
     stubs.mkdir()
@@ -141,12 +150,14 @@ def _run_skip_build_with_fake_parser_needed(tmp_path: Path, needed: list[str]):
         stub = stubs / name
         stub.write_text("#!/bin/sh\nexit 0\n")
         stub.chmod(0o755)
+    # Each fake ELF holds its DT_NEEDED sonames, one per line.
     readelf = stubs / "readelf"
     readelf.write_text(
         "#!/bin/sh\n"
-        "printf '%s\\n' \"$FAKE_PARSER_NEEDED\" | tr ',' '\\n' | while read -r lib; do\n"
+        "for file; do :; done\n"
+        "while IFS= read -r lib; do\n"
         "  [ -n \"$lib\" ] && printf ' 0x0000000000000001 (NEEDED) Shared library: [%s]\\n' \"$lib\"\n"
-        "done\n"
+        "done < \"$file\"\n"
         "exit 0\n"
     )
     readelf.chmod(0o755)
@@ -155,10 +166,10 @@ def _run_skip_build_with_fake_parser_needed(tmp_path: Path, needed: list[str]):
     python.chmod(0o755)
 
     stage = tmp_path / "stage"
-    parser_dir = stage / "opt/rocm/lib/migraphx/lib"
-    parser_dir.mkdir(parents=True)
-    for lib in ("libmigraphx_onnx.so", "libmigraphx_tf.so"):
-        (parser_dir / lib).write_text("")
+    for relative_path, needed in payload.items():
+        elf = stage / "opt/rocm" / relative_path
+        elf.parent.mkdir(parents=True, exist_ok=True)
+        elf.write_text("".join(f"{lib}\n" for lib in needed))
     src = tmp_path / "src"
     (src / "build").mkdir(parents=True)
     # The rsync stub copies nothing, so an empty ROCm root keeps the run
@@ -172,7 +183,6 @@ def _run_skip_build_with_fake_parser_needed(tmp_path: Path, needed: list[str]):
     env = dict(os.environ)
     env["ZDOTDIR"] = str(zdotdir)
     env["PATH"] = f"{stubs}:{env['PATH']}"
-    env["FAKE_PARSER_NEEDED"] = ",".join(needed)
     return subprocess.run(
         [
             str(SCRIPT),
@@ -190,36 +200,76 @@ def _run_skip_build_with_fake_parser_needed(tmp_path: Path, needed: list[str]):
     )
 
 
-def test_stage_migraphx_parser_gate_accepts_protobuf_36_1_and_abseil_2608(tmp_path):
-    result = _run_skip_build_with_fake_parser_needed(tmp_path, GOOD_PARSER_NEEDED)
+def test_stage_migraphx_payload_gate_accepts_protobuf_36_1_and_abseil_2608(tmp_path):
+    result = _run_skip_build_with_fake_payload(tmp_path, GOOD_PAYLOAD)
 
     # The gate passes, so the run reaches the stubbed Python import and stops there.
     assert result.returncode == 2
     assert "checking staged Python import" in result.stdout
-    assert "staged MIGraphX parser library" not in result.stderr
+    assert "staged MIGraphX" not in result.stderr
     assert "stub python refuses the import" in result.stderr
 
 
+UNPINNED_MESSAGE = (
+    "staged MIGraphX payload links protobuf, utf8_validity, or Abseil other than "
+    "libprotobuf.so.36.1.0, libutf8_validity.so.36.1.0, and libabsl_*.so.2608.0.0"
+)
+
+
 @pytest.mark.parametrize(
-    ("stale", "message"),
+    "unpinned",
     [
-        ("libprotobuf.so.35.1.0", "still links a stale protobuf or Abseil ABI"),
-        ("libutf8_validity.so.35.1.0", "still links a stale protobuf or Abseil ABI"),
-        ("libabsl_strings.so.2605.0.0", "still links a stale protobuf or Abseil ABI"),
-        ("libabsl_strings.so.2601.0.0", "is not linked only against Abseil .so.2608.0.0"),
+        "libprotobuf.so.35.1.0",
+        "libutf8_validity.so.35.1.0",
+        "libprotobuf.so.37.0.0",
+        "libutf8_validity.so.37.0.0",
+        "libabsl_strings.so.2605.0.0",
+        "libabsl_strings.so.2601.0.0",
     ],
 )
-def test_stage_migraphx_parser_gate_rejects_stale_protobuf_and_abseil(tmp_path, stale, message):
-    result = _run_skip_build_with_fake_parser_needed(tmp_path, [*GOOD_PARSER_NEEDED, stale])
+def test_stage_migraphx_payload_gate_rejects_unpinned_parser_links(tmp_path, unpinned):
+    payload = {**GOOD_PAYLOAD, ONNX_PARSER: [*GOOD_PARSER_NEEDED, unpinned]}
+    result = _run_skip_build_with_fake_payload(tmp_path, payload)
 
     assert result.returncode == 2
-    assert message in result.stderr
+    assert f"staged opt/rocm/{ONNX_PARSER} links: {unpinned}\n" in result.stderr
+    assert UNPINNED_MESSAGE in result.stderr
+    assert "checking staged Python import" not in result.stdout
+
+
+@pytest.mark.parametrize(
+    ("elf", "unpinned"),
+    [
+        (DRIVER, ["libprotobuf.so.35.1.0", "libabsl_strings.so.2605.0.0"]),
+        (PYTHON_MODULE, ["libabsl_base.so.2605.0.0"]),
+        (C_API, ["libutf8_validity.so.37.0.0"]),
+    ],
+)
+def test_stage_migraphx_payload_gate_rejects_unpinned_links_outside_parsers(
+    tmp_path, elf, unpinned
+):
+    payload = {**GOOD_PAYLOAD, elf: [*GOOD_PAYLOAD[elf], *unpinned]}
+    result = _run_skip_build_with_fake_payload(tmp_path, payload)
+
+    assert result.returncode == 2
+    assert f"staged opt/rocm/{elf} links: {', '.join(unpinned)}\n" in result.stderr
+    assert UNPINNED_MESSAGE in result.stderr
+    assert "checking staged Python import" not in result.stdout
+
+
+@pytest.mark.parametrize("pinned", ["libprotobuf.so.36.1.0", "libutf8_validity.so.36.1.0"])
+def test_stage_migraphx_parser_gate_requires_pinned_protobuf_links(tmp_path, pinned):
+    needed = [lib for lib in GOOD_PARSER_NEEDED if lib != pinned]
+    result = _run_skip_build_with_fake_payload(tmp_path, {**GOOD_PAYLOAD, ONNX_PARSER: needed})
+
+    assert result.returncode == 2
+    assert f"staged MIGraphX parser library is not linked against {pinned}" in result.stderr
     assert "checking staged Python import" not in result.stdout
 
 
 def test_stage_migraphx_parser_gate_requires_abseil_links(tmp_path):
     needed = [lib for lib in GOOD_PARSER_NEEDED if not lib.startswith("libabsl_")]
-    result = _run_skip_build_with_fake_parser_needed(tmp_path, needed)
+    result = _run_skip_build_with_fake_payload(tmp_path, {**GOOD_PAYLOAD, ONNX_PARSER: needed})
 
     assert result.returncode == 2
     assert "staged MIGraphX parser library links no Abseil libraries" in result.stderr
