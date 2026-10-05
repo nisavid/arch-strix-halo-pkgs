@@ -34,6 +34,8 @@ def validate_granite_response(mode: str, response: Any) -> dict[str, Any]:
     """Validate one nonstreaming response against the selected Granite fixture."""
     if mode not in ("basic", "tool", "structured"):
         raise RuntimeError(f"Unknown Granite fixture mode: {mode!r}")
+    if isinstance(response, dict) and response.get("error") is not None:
+        raise RuntimeError("Granite response must not contain an error")
     choices = response.get("choices") if isinstance(response, dict) else None
     if not isinstance(choices, list) or len(choices) != 1 or not isinstance(choices[0], dict):
         raise RuntimeError("Granite response requires exactly one choice")
@@ -41,6 +43,8 @@ def validate_granite_response(mode: str, response: Any) -> dict[str, Any]:
     message = choice.get("message")
     if not isinstance(message, dict) or message.get("role") != "assistant":
         raise RuntimeError("Granite response requires an assistant message")
+    if message.get("refusal") is not None:
+        raise RuntimeError("Granite response must not contain a refusal")
     expected_finish = "tool_calls" if mode == "tool" else "stop"
     if choice.get("finish_reason") != expected_finish:
         raise RuntimeError(f"Granite {mode} response requires finish_reason {expected_finish}")
@@ -76,14 +80,29 @@ def parse_selected_moe_backend(server_log: str) -> str:
     """Return the oracle's affirmative selection, not its candidate backend list."""
     if not isinstance(server_log, str):
         raise RuntimeError("Granite MoE evidence must be server-log text")
-    names = {
-        match.group(1).strip()
-        for match in re.finditer(
-            r"(?:^|\]\s*|(?<=\.)\s+)Using ([^\n]+?) Unquantized MoE backend out of potential backends: \[[^\]\n]*\]\.",
-            server_log, re.MULTILINE,
-        )
-        if match.group(1).strip()
-    }
+    plain_log = re.sub(r"\x1b\[[0-9;]*m", "", server_log)
+    selection = re.compile(
+        r"(?:(?:\([A-Za-z_][\w.-]* pid=\d+\) )?"
+        r"INFO(?: \d{2}-\d{2} \d{2}:\d{2}:\d{2})? "
+        r"\[(?:[A-Za-z0-9_./-]+/)?unquantized\.py:\d+\] )?"
+        r"Using ([A-Za-z0-9_-]+(?:[ \t]+[A-Za-z0-9_-]+)*) "
+        r"Unquantized MoE backend out of potential backends: \[[^\]\r\n]*\]\."
+    )
+    names: set[str] = set()
+    for line in plain_log.split("\n"):
+        remaining = line.strip(" \t\r")
+        line_names: set[str] = set()
+        while remaining:
+            match = selection.match(remaining)
+            if match is None:
+                break
+            line_names.add(match.group(1))
+            tail = remaining[match.end():]
+            if tail and tail[0] not in " \t":
+                break
+            remaining = tail.lstrip(" \t")
+        else:
+            names.update(line_names)
     if not names:
         raise RuntimeError("Granite server log has no affirmative selected MoE backend")
     if len(names) != 1:

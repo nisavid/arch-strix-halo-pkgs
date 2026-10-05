@@ -21,6 +21,72 @@ def test_basic_response_accepts_the_selected_answer():
     assert validate_granite_response("basic", response) == message
 
 
+def test_basic_response_rejects_an_explicit_error_despite_the_selected_answer():
+    from granite_server_smoke import validate_granite_response
+
+    response = {
+        "error": {"message": "request failed"},
+        "choices": [{"message": {"role": "assistant", "content": "12"}, "finish_reason": "stop"}],
+    }
+
+    with pytest.raises(RuntimeError, match="error"):
+        validate_granite_response("basic", response)
+
+
+def test_basic_response_rejects_a_refusal_despite_the_selected_answer():
+    from granite_server_smoke import validate_granite_response
+
+    response = {"choices": [{
+        "message": {"role": "assistant", "content": "12", "refusal": "request refused"},
+        "finish_reason": "stop",
+    }]}
+
+    with pytest.raises(RuntimeError, match="refusal"):
+        validate_granite_response("basic", response)
+
+
+@pytest.fixture(params=[
+    ("basic", "12", "stop"),
+    ("tool", None, "tool_calls"),
+    ("structured", '{"topic":"ocean","answer":"blue"}', "stop"),
+])
+def selected_fixture_response(request):
+    mode, content, finish = request.param
+    message = {"role": "assistant", "content": content}
+    if mode == "tool":
+        message["tool_calls"] = [{
+            "id": "call_weather", "type": "function",
+            "function": {"name": "get_weather", "arguments": '{"location":"Tokyo","unit":"celsius"}'},
+        }]
+    return mode, {"choices": [{"message": message, "finish_reason": finish}]}
+
+
+@pytest.mark.parametrize("field,value", [
+    ("error", {"message": "request failed"}), ("error", ""), ("error", False), ("error", {}),
+    ("refusal", "request refused"), ("refusal", ""), ("refusal", False), ("refusal", {}),
+])
+def test_selected_results_reject_nonnull_error_or_refusal(selected_fixture_response, field, value):
+    from granite_server_smoke import validate_granite_response
+
+    mode, response = selected_fixture_response
+    target = response if field == "error" else response["choices"][0]["message"]
+    target[field] = value
+
+    with pytest.raises(RuntimeError, match=field):
+        validate_granite_response(mode, response)
+
+
+def test_selected_results_accept_explicit_null_error_and_refusal(selected_fixture_response):
+    from granite_server_smoke import validate_granite_response
+
+    mode, response = selected_fixture_response
+    message = response["choices"][0]["message"]
+    response["error"] = None
+    message["refusal"] = None
+
+    assert validate_granite_response(mode, response) == message
+
+
 @pytest.mark.parametrize("content", [" 12", "12\n", "\t12\t", " \n12\t"])
 def test_basic_response_requires_the_literal_selected_answer(content):
     from granite_server_smoke import validate_granite_response
@@ -187,6 +253,50 @@ def test_moe_parser_accepts_repeated_consistent_selection_without_forcing_a_back
     assert parse_selected_moe_backend(line * 2) == "ROCm AITER"
 
 
+def test_moe_parser_rejects_a_bracketed_negative_diagnostic():
+    from granite_server_smoke import parse_selected_moe_backend
+
+    log = "[not selected] Using TRITON Unquantized MoE backend out of potential backends: ['TRITON']."
+
+    with pytest.raises(RuntimeError, match="no affirmative"):
+        parse_selected_moe_backend(log)
+
+
+@pytest.mark.parametrize("prefix", [
+    "INFO [not selected] ", "[unquantized.py:1] ", "not INFO [unquantized.py:1] ",
+    "WARNING [unquantized.py:1] ", "INFO [diagnostic.py:1] ",
+])
+def test_moe_parser_does_not_treat_arbitrary_metadata_as_an_oracle_record(prefix):
+    from granite_server_smoke import parse_selected_moe_backend
+
+    log = prefix + "Using TRITON Unquantized MoE backend out of potential backends: ['TRITON']."
+
+    with pytest.raises(RuntimeError, match="no affirmative"):
+        parse_selected_moe_backend(log)
+
+
+@pytest.mark.parametrize("location", ["unquantized.py:1", "model_executor/.../oracle/unquantized.py:42"])
+def test_moe_parser_accepts_timestamped_pinned_vllm_info_records(location):
+    from granite_server_smoke import parse_selected_moe_backend
+
+    log = f"INFO 10-05 12:34:56 [{location}] Using TRITON Unquantized MoE backend out of potential backends: ['TRITON']."
+
+    assert parse_selected_moe_backend(log) == "TRITON"
+
+
+@pytest.mark.parametrize("prefix", [
+    "(EngineCore_DP0 pid=42) INFO 10-05 12:34:56 [unquantized.py:1] ",
+    "\x1b[1;36m(Worker_TP0 pid=42)\x1b[0m \x1b[32mINFO\x1b[0m "
+    "\x1b[90m10-05 12:34:56\x1b[0m \x1b[90m[unquantized.py:1]\x1b[0m ",
+])
+def test_moe_parser_accepts_pinned_vllm_process_and_color_formatting(prefix):
+    from granite_server_smoke import parse_selected_moe_backend
+
+    log = prefix + "Using TRITON Unquantized MoE backend out of potential backends: ['TRITON']."
+
+    assert parse_selected_moe_backend(log) == "TRITON"
+
+
 @pytest.mark.parametrize("separator", [" ", "\n"])
 def test_moe_parser_does_not_hide_a_second_conflicting_oracle_record(separator):
     from granite_server_smoke import parse_selected_moe_backend
@@ -204,6 +314,35 @@ def test_moe_parser_accepts_consistent_oracle_records_on_one_line():
     record = "INFO [unquantized.py:1] Using TRITON Unquantized MoE backend out of potential backends: ['TRITON']."
 
     assert parse_selected_moe_backend(record + " " + record) == "TRITON"
+
+
+@pytest.mark.parametrize("log", [
+    "WARNING [diagnostic.py:1] Not selected. Using TRITON Unquantized MoE backend out of potential backends: ['TRITON'].",
+    "WARNING [diagnostic.py:1] Selection rejected. INFO [unquantized.py:1] Using TRITON Unquantized MoE backend out of potential backends: ['TRITON'].",
+    "Using TRITON Unquantized MoE backend out of potential backends: ['TRITON']. (not selected)",
+    "INFO [unquantized.py:1] Using TRITON Unquantized MoE backend out of potential backends: ['TRITON']. Selection rejected.",
+])
+def test_moe_parser_rejects_selection_phrases_inside_diagnostic_lines(log):
+    from granite_server_smoke import parse_selected_moe_backend
+
+    with pytest.raises(RuntimeError, match="no affirmative"):
+        parse_selected_moe_backend(log)
+
+
+@pytest.mark.parametrize("diagnostic", [
+    "WARNING [diagnostic.py:1] Not selected. Using TRITON Unquantized MoE backend out of potential backends: ['TRITON'].",
+    "WARNING [diagnostic.py:1] Selection rejected. INFO [unquantized.py:1] Using TRITON Unquantized MoE backend out of potential backends: ['TRITON'].",
+    "Using TRITON Unquantized MoE backend out of potential backends: ['TRITON']. (not selected)",
+    "INFO [unquantized.py:1] Using TRITON Unquantized MoE backend out of potential backends: ['TRITON']. Selection rejected.",
+])
+@pytest.mark.parametrize("diagnostic_first", [False, True])
+def test_moe_parser_does_not_confuse_diagnostics_with_a_genuine_selection(diagnostic, diagnostic_first):
+    from granite_server_smoke import parse_selected_moe_backend
+
+    genuine = "INFO [unquantized.py:1] Using ROCm AITER Unquantized MoE backend out of potential backends: ['ROCm AITER']."
+    lines = [diagnostic, genuine] if diagnostic_first else [genuine, diagnostic]
+
+    assert parse_selected_moe_backend("\n".join(lines)) == "ROCm AITER"
 
 
 def test_moe_parser_rejects_concatenated_conflicting_messages_without_logger_prefixes():

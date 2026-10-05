@@ -22,10 +22,26 @@ template does not inject a changing date.
   It requires exactly one choice and the fixture's finish reason. Tool arguments
   must be a JSON string; structured content must be a JSON object with the
   selected fields and values. Duplicate JSON fields and non-JSON numbers fail.
+  An explicit non-null response error or assistant refusal fails even when the
+  selected answer is present. Absent or null optional error/refusal fields pass.
 - `parse_selected_moe_backend(server_log)` returns the single consistent backend
   named by an affirmative vLLM unquantized-oracle selection message. Candidate
-  lists alone, negative diagnostics, missing evidence, and conflicting selected
-  names fail. Repeated consistent selections pass. No backend is forced.
+  lists alone and negative diagnostics do not qualify; missing evidence and
+  conflicting selected names fail. Repeated consistent selections pass.
+  No backend is forced.
+  Qualifying records are complete bare messages or `INFO` records located at
+  `unquantized.py:<line>`, with the pinned vLLM timestamp, relative source path,
+  process-name/PID prefix, and ANSI color formatting accepted. Arbitrary bracket
+  labels or diagnostic prefixes do not qualify. Each qualifying line consists
+  entirely of one or more complete oracle records separated by horizontal
+  whitespace. A diagnostic sentence prefix or suffix makes that line
+  nonqualifying; other complete lines can still establish selection. Custom
+  logging formats need an explicit adapter rather than an inferred selection.
+
+The logger-format cases follow vLLM's pinned
+[logger](https://github.com/vllm-project/vllm/blob/ced6857a/vllm/logger.py),
+[formatter](https://github.com/vllm-project/vllm/blob/ced6857a/vllm/logging_utils/formatter.py),
+and [process decorator](https://github.com/vllm-project/vllm/blob/ced6857a/vllm/utils/system_utils.py).
 
 Run `pytest tests/test_granite_server_smoke.py -q` for constructed response and
 log checks. These checks import no GPU or model libraries and run no server.
