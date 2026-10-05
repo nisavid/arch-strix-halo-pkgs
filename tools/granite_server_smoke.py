@@ -114,7 +114,7 @@ def parse_selected_moe_backend(server_log: str) -> str:
     return names.pop()
 
 
-def _proposed_inputs_json(value: str) -> dict[str, Any]:
+def _proposed_inputs_json(value: str) -> str:
     def finite_float(number: str) -> float:
         parsed = float(number)
         if not math.isfinite(parsed):
@@ -132,7 +132,7 @@ def _proposed_inputs_json(value: str) -> dict[str, Any]:
         raise argparse.ArgumentTypeError(f"must be unambiguous finite JSON: {error}") from error
     if not isinstance(parsed, dict):
         raise argparse.ArgumentTypeError("must contain a JSON object")
-    return parsed
+    return value
 
 
 def main() -> None:
@@ -170,12 +170,16 @@ def main() -> None:
             "qualifying immutable C subject",
         ],
     }
+    output = json.dumps(preparation)
     if args.proposed_inputs_json is not None:
-        preparation["proposed_inputs"] = {
-            "values": args.proposed_inputs_json,
-            "status": "proposed/unverified",
-        }
-    print(json.dumps(preparation))
+        # The validated object remains JSON so decimal tokens are not rounded.
+        output = (
+            output[:-1]
+            + ',"proposed_inputs":{"values":'
+            + args.proposed_inputs_json
+            + ',"status":"proposed/unverified"}}'
+        )
+    print(output)
 
 
 if __name__ == "__main__":

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import json
+from decimal import Decimal
 import subprocess
 import sys
 
@@ -475,6 +476,33 @@ def test_preparation_cli_retains_finite_proposals_without_resolving_requirements
         ],
         "proposed_inputs": {"values": proposed_inputs, "status": "proposed/unverified"},
     }
+
+
+@pytest.mark.parametrize("proposed_inputs_json", [
+    '{"x":9007199254740993.0}',
+    '{"x":0.99999999999999999}',
+    '{"x":1e-400}',
+    '{"nested":{"x":9007199254740993.0,"y":0.99999999999999999}}',
+    '{"items":[1e-400,{"x":9007199254740993.0}]}',
+])
+def test_preparation_cli_retains_raw_decimal_proposals_without_rounding(proposed_inputs_json):
+    result = _run_preparation_cli(
+        "proposed-model", "--mode", "basic", "--dry-run",
+        "--proposed-inputs-json", proposed_inputs_json,
+    )
+
+    assert result.returncode == 0, result.stderr
+    preparation = json.loads(result.stdout, parse_float=Decimal)
+    expected = json.loads(proposed_inputs_json, parse_float=Decimal)
+    assert preparation["proposed_inputs"] == {
+        "values": expected, "status": "proposed/unverified",
+    }
+    assert preparation["runtime_ready"] is False
+    assert preparation["unresolved_requirements"] == [
+        "reviewed fit/fault-stop method",
+        "selected Granite operating envelope",
+        "qualifying immutable C subject",
+    ]
 
 
 @pytest.mark.parametrize("proposed_inputs_json", [
