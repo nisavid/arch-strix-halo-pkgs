@@ -46,7 +46,7 @@ relevant source metadata changes.
 ## 2026-10-02 MIGraphX Protobuf 36.1 and Abseil Rebuild
 
 Arch `extra` moved protobuf to 36.1 and abseil-cpp to 20260817.0. In the
-installed generation-B `migraphx-gfx1151` 7.13.0-3, both parser libraries link
+installed `migraphx-gfx1151` 7.13.0-3, both parser libraries link
 `libprotobuf.so.35.1.0` and 78 `libabsl_*.so.2605.0.0` libraries, so the
 pending full upgrade would leave MIGraphX unloadable. This record covers the
 pkgrel-only rebuild to `therock-gfx1151` 7.13.0-4:
