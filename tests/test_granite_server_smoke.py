@@ -507,6 +507,7 @@ def test_preparation_cli_retains_raw_decimal_proposals_without_rounding(proposed
 
 @pytest.mark.parametrize("proposed_inputs_json", [
     "", "{", '{"x":}', "null", "true", "42", '"literal"', "[{}]",
+    pytest.param('{"x":' + '[' * 100000, id="depth-exhaustion"),
     '{"x":1,"x":2}',
     '{"nested":{"x":1,"x":2}}',
     '{"items":[{"x":1,"x":2}]}',
@@ -527,3 +528,4 @@ def test_preparation_cli_rejects_ambiguous_nonfinite_or_nonobject_proposals(prop
     assert result.stdout == ""
     assert "--proposed-inputs-json" in result.stderr
     assert "error: argument --proposed-inputs-json:" in result.stderr
+    assert "Traceback" not in result.stderr

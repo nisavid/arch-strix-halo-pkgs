@@ -128,7 +128,7 @@ def _proposed_inputs_json(value: str) -> str:
             parse_constant=_reject_constant,
             parse_float=finite_float,
         )
-    except ValueError as error:
+    except (ValueError, RecursionError) as error:
         raise argparse.ArgumentTypeError(f"must be unambiguous finite JSON: {error}") from error
     if not isinstance(parsed, dict):
         raise argparse.ArgumentTypeError("must contain a JSON object")
