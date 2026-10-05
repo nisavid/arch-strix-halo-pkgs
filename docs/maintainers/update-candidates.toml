@@ -4390,19 +4390,18 @@ check_id = "release"
 previous_recorded = "0.1.14"
 latest = "0.1.24"
 discovery_status = "stable_update_available"
-disposition = "tracked"
-disposition_reason = "Tracked from the 2026-10-01 freshness sweep under decision X7: the 2026-09-22 sweep (#136) froze C's version universe (#105, docs/wayfinder/research/c-line-selection-2026-09-22.md), and until C closes out, later drift that is neither a security fix nor a build breakage routes to post-closeout maintenance (#147). AITER 0.1.24 was published on 2026-09-28, after the freeze. AITER stays experimental on gfx1151 and outside C's required path, C's W5 transaction removes python-amd-aiter-gfx1151 by default (the owner can override), and the #119 experimental closure keeps the frozen aiter-0.1.22.post1 record."
+disposition = "rejected"
+disposition_reason = "Superseded by aiter-0.1.24.post1 from the 2026-10-05 freshness sweep."
 salient_changes = [
   "AITER 0.1.24 is the newest stable release after the local 0.1.14 lane and the frozen 0.1.22.post1",
   "Published on 2026-09-28, after the 2026-09-22 freeze sweep",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "github_issue"
-next_gate_issue = 147
-next_gate_label = "AITER 0.1.24 past the C freeze; post-closeout maintenance"
-last_reviewed = "2026-10-01"
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_label = "Superseded by aiter-0.1.24.post1"
+last_reviewed = "2026-10-05"
 
 [candidates."aotriton-0.14.2b"]
 family = "aotriton"
@@ -4747,3 +4746,47 @@ next_gate_kind = "github_issue"
 next_gate_issue = 110
 next_gate_label = "uvloop 0.23.0 security-exception refresh (uvloop#740/#645); W2A closure"
 last_reviewed = "2026-10-02"
+
+[candidates."aiter-0.1.24.post1"]
+family = "aiter"
+packages = ["python-amd-aiter-gfx1151"]
+source_kind = "github_release"
+check_id = "release"
+previous_recorded = "0.1.14"
+latest = "0.1.24.post1"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-10-05 freshness sweep under decision X7: the 2026-09-22 sweep (#136) froze C's version universe (#105, docs/wayfinder/research/c-line-selection-2026-09-22.md), and until C closes out, later drift that is neither a security fix nor a build breakage routes to post-closeout maintenance (#147). AITER 0.1.24.post1 (2026-10-02) is a post release on the release/v0.1.24 line with no security fix. AITER stays experimental on gfx1151 and outside C's required path, and the #119 experimental closure keeps the frozen aiter-0.1.22.post1 record. This record supersedes aiter-0.1.24."
+salient_changes = [
+  "AITER 0.1.24.post1 is a post release on top of v0.1.24",
+  "Published on 2026-10-02, after the 2026-09-22 freeze sweep",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "AITER 0.1.24.post1 past the C freeze; post-closeout maintenance"
+last_reviewed = "2026-10-05"
+
+[candidates."pybase64-1.5.1-pypi"]
+family = "pybase64"
+packages = ["python-pybase64-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+previous_recorded = "1.5.0"
+latest = "1.5.1"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Tracked from the 2026-10-05 freshness sweep under decision X7: the 2026-09-22 sweep (#136) froze C's version universe (#105, docs/wayfinder/research/c-line-selection-2026-09-22.md), and until C closes out, later drift that is neither a security fix nor a build breakage routes to post-closeout maintenance (#147). pybase64 1.5.1 (2026-10-04) fixes a use-after-release in get_buffer (mayeut/pybase64#1067): the error path for a buffer that is not single-byte or not 1-D read the released Py_buffer while formatting the TypeError. It has no CVE or advisory. vLLM 0.30.0 calls pybase64.b64decode(embed, validate=True) on request strings decoded from JSON, which never take that buffer-format error path, so the fix is not reachable in C and does not meet the security exception. C keeps pybase64 1.5.0 (pybase64-1.5.0-selected, #110)."
+salient_changes = [
+  "pybase64 1.5.1 formats the TypeError before releasing the buffer in get_buffer",
+  "The bug only triggers on non-byte or multi-dimensional buffer objects",
+]
+patch_carry_overlap = false
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "pybase64 1.5.1 past the C freeze; post-closeout maintenance"
+last_reviewed = "2026-10-05"

@@ -4,6 +4,45 @@ The package, deployment, and live-validation narrative below remains a
 2026-06-15 snapshot. Dated records come first, newest first; older
 reconciliations remain as dated history.
 
+## 2026-10-05 Freshness Sweep
+
+The MIGraphX rebuild changes package policy, so the sweep ran with
+`--refresh` on that branch. It started at `2026-10-05T02:11:18Z`, completed at
+`2026-10-05T02:11:51Z`, and exited 10 with `--fail-on actionable`. Two
+families had moved upstream after the 2026-10-02 dispositions:
+
+- **AITER 0.1.24.post1** (2026-10-02) is a post release on the v0.1.24 line,
+  with no security fix. `aiter-0.1.24.post1` is tracked to #147 under X7, and
+  it supersedes the `aiter-0.1.24` record. AITER stays experimental and
+  outside C's required path.
+- **pybase64 1.5.1** (2026-10-04) fixes a use-after-release in `get_buffer`
+  ([pybase64#1067](https://github.com/mayeut/pybase64/pull/1067)). The bug
+  is on the error path for buffers that are not single-byte or not 1-D. vLLM
+  0.30.0 decodes request strings with `pybase64.b64decode(embed,
+  validate=True)`, which never reaches that path, so the fix is not
+  reachable in C and does not meet X7's security exception.
+  `pybase64-1.5.1-pypi` is tracked to #147, and C keeps 1.5.0.
+
+The confirming sweep started at `2026-10-05T02:14:36Z`, completed at
+`2026-10-05T02:15:09Z`, and exited 0 with `--fail-on actionable`. It reported
+23 stable updates, four branch-head movements, five baseline drifts, and 19
+current families across 51 families. Applying the ledger yielded 38 tracked,
+six rejected, two adopted, and five current families. The ledger holds 53
+active tracked records and no blocked records. The explicit tracker
+validation found all 12 unique issue gates open in this repository.
+
+Outside the tracked families, Arch `extra` moved `python-huggingface-hub` to
+2.0.0 on 2026-10-02 and to 2.1.1 on 2026-10-04. Transformers 5.8.1 on the
+host and C's selected 5.16.1 both require `huggingface-hub<2.0`, so
+system-Python `import transformers` fails on the host, and C would fail the
+same way after activation. Lemonade and Open WebUI are unaffected. How C
+handles this is an open owner decision.
+
+This sweep changes maintenance metadata only. The freshness evidence is due
+again 24 hours after the confirming sweep completed, or sooner if package
+policy, package directories, the candidate ledger, checker behavior, or
+relevant source metadata changes.
+
 ## 2026-10-02 MIGraphX Protobuf 36.1 and Abseil Rebuild
 
 Arch `extra` moved protobuf to 36.1 and abseil-cpp to 20260817.0. In the
@@ -51,12 +90,26 @@ pkgrel-only rebuild to `therock-gfx1151` 7.13.0-4:
     digest. `migraphx-gfx1151` changes 12 ELFs, the CMake policy range in its
     targets file, and its depends.
   - The repo suite and the package-local tests pass.
-- **Not yet done:** published, deployed/installed, installed-smoked, and
-  live-scenario validated. The host must take 7.13.0-4 in the same full
-  `pacman -Syu` that moves protobuf, Abseil, and onnxruntime. No installed
-  smoke was recorded for 7.13.0-3 either.
-- **Freshness:** this policy change invalidates the 2026-10-02 sweep below;
-  rerun it at closeout.
+- **Published:** on 2026-10-02, the 66 7.13.0-4 archives were appended to the
+  local repo database without removing the 7.13.0-3 files. A dry-run full
+  upgrade against a scratch database resolved with no dependency breaks.
+- **Deployed/installed:** yes. The owner's full `pacman -Syu` on 2026-10-02
+  installed `migraphx-gfx1151` 7.13.0-4 with protobuf 36.1-1.1 and abseil-cpp
+  20260817.0-2.1. `pacman -Qkk migraphx-gfx1151` reports 650 files and 0
+  altered.
+- **Installed-smoked:** yes, on 2026-10-05 after the reboot into kernel
+  7.2.9:
+  - `migraphx` imports and parses an ONNX `Add` model;
+  - onnxruntime 1.29.0 lists `MIGraphXExecutionProvider`, loads
+    `libonnxruntime_providers_migraphx.so`, and returns the right sum on a
+    CPU run;
+  - faster-whisper, RapidOCR, and Torch-MIGraphX import.
+  A scan of 25,906 executables and libraries under `/usr/lib`, `/usr/bin`,
+  and `/opt` found 7 files still linking protobuf 35.1 or Abseil 2605. All 7
+  belong to the orphaned CachyOS `sentencepiece` 0.2.2-2, which nothing
+  depends on; the repo's `python-sentencepiece-gfx1151` is unaffected.
+- **Live-scenario validated:** no. No GPU inference ran through MIGraphX.
+- **Freshness:** the 2026-10-05 sweep above covers this policy change.
 
 ## 2026-10-02 Freshness Sweep
 
