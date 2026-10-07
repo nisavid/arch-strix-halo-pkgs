@@ -96,6 +96,33 @@ def test_e2b_long_decode_gate_requires_explicit_validation_window_selection():
     assert "vllm.gemma4.e2b.server.long-decode" in selected_ids("--tag", "validation-window")
 
 
+def test_granite_catalog_entries_supply_only_pinned_fixture_inputs():
+    scenarios = load_scenarios(REPO_ROOT / "inference/scenarios")
+    granite = {
+        scenario.id: scenario
+        for scenario in scenarios
+        if scenario.source_path.name == "vllm-granite.toml"
+    }
+    assert set(granite) == {
+        "vllm.granite3_1.1b-a400m.server.basic",
+        "vllm.granite3_1.1b-a400m.server.tool",
+        "vllm.granite3_1.1b-a400m.server.structured",
+    }
+    for mode in ("basic", "tool", "structured"):
+        scenario = granite[f"vllm.granite3_1.1b-a400m.server.{mode}"]
+        assert {"granite", "server", "correctness", "validation-window"} <= set(
+            scenario.tags
+        )
+        assert scenario.definition["given"] == {
+            "engine": "vllm",
+            "model": "ibm-granite/granite-3.1-1b-a400m-instruct",
+            "tool": f"granite_server_smoke.{mode}",
+        }
+        assert set(scenario.definition) == {
+            "id", "summary", "tags", "source_url", "model_provenance", "given"
+        }
+
+
 def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     scenarios = load_scenarios(REPO_ROOT / "inference/scenarios")
 

@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import argparse
+import hashlib
 import json
+import math
+from pathlib import Path
 import re
 from typing import Any
 
@@ -108,3 +112,75 @@ def parse_selected_moe_backend(server_log: str) -> str:
     if len(names) != 1:
         raise RuntimeError(f"Granite server log has conflicting selected MoE backends: {sorted(names)}")
     return names.pop()
+
+
+def _proposed_inputs_json(value: str) -> str:
+    def finite_float(number: str) -> float:
+        parsed = float(number)
+        if not math.isfinite(parsed):
+            raise ValueError("JSON numbers must be finite")
+        return parsed
+
+    try:
+        parsed = json.loads(
+            value,
+            object_pairs_hook=_unique_object,
+            parse_constant=_reject_constant,
+            parse_float=finite_float,
+        )
+    except (ValueError, RecursionError) as error:
+        raise argparse.ArgumentTypeError(f"must be unambiguous finite JSON: {error}") from error
+    if not isinstance(parsed, dict):
+        raise argparse.ArgumentTypeError("must contain a JSON object")
+    return value
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Prepare a pinned Granite fixture request without executing it.")
+    parser.add_argument("model", help="proposed model reference; not inspected or verified")
+    parser.add_argument("--mode", choices=("basic", "tool", "structured"), required=True)
+    parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument(
+        "--proposed-inputs-json",
+        type=_proposed_inputs_json,
+        help="unverified input proposals as one unambiguous finite JSON object",
+    )
+    args = parser.parse_args()
+    if not args.dry_run:
+        parser.error("Granite CPU preparation requires --dry-run; execution is not available")
+
+    corpus_path = Path(__file__).resolve().parents[1] / "inference/fixtures/granite-3.1-1b-a400m-instruct.json"
+    corpus_bytes = corpus_path.read_bytes()
+    corpus = json.loads(corpus_bytes)
+    fixture = next(fixture for fixture in corpus["fixtures"] if fixture["mode"] == args.mode)
+    preparation = {
+        "mode": args.mode,
+        "status": "preparation-only",
+        "runtime_ready": False,
+        "model": {"value": args.model, "status": "proposed/unverified"},
+        "corpus": {
+            "repo_id": corpus["model_id"],
+            "revision": corpus["revision"],
+            "sha256": hashlib.sha256(corpus_bytes).hexdigest(),
+        },
+        "request": fixture["request"],
+        "unresolved_requirements": [
+            "reviewed fit/fault-stop method",
+            "selected Granite operating envelope",
+            "qualifying immutable C subject",
+        ],
+    }
+    output = json.dumps(preparation)
+    if args.proposed_inputs_json is not None:
+        # The validated object remains JSON so decimal tokens are not rounded.
+        output = (
+            output[:-1]
+            + ',"proposed_inputs":{"values":'
+            + args.proposed_inputs_json
+            + ',"status":"proposed/unverified"}}'
+        )
+    print(output)
+
+
+if __name__ == "__main__":
+    main()

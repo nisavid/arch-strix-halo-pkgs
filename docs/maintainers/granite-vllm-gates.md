@@ -47,6 +47,54 @@ Run `pytest tests/test_granite_server_smoke.py -q` for constructed response and
 log checks. These checks import no GPU or model libraries and run no server.
 They do not establish live model output, selected kernels, or token accounting.
 
+## Preparation-only interfaces
+
+The helper CLI returns one JSON preparation record and requires a model
+reference, fixture mode, and `--dry-run`:
+
+```bash
+python tools/granite_server_smoke.py \
+  ibm-granite/granite-3.1-1b-a400m-instruct --mode basic --dry-run
+```
+
+`--mode` also accepts `tool` and `structured`. The record has
+`status: "preparation-only"` and `runtime_ready: false`. Its `model` object
+retains the supplied reference with `status: "proposed/unverified"`; the helper
+does not inspect a model path. Its `corpus` object records the logical repository,
+revision, and SHA-256 of the retained corpus bytes. The selected logical request
+is unchanged, including its model identity. This CLI reads only that local
+corpus and launches no server or model runtime.
+
+Optional `--proposed-inputs-json` accepts a JSON object and retains it under
+`proposed_inputs.values` with `status: "proposed/unverified"`. Duplicate fields
+at any depth, malformed JSON, nonobjects, and nonfinite numbers fail with an
+argument error and no preparation output. Proposals cannot alter the pinned
+request or satisfy the three `unresolved_requirements`: the reviewed
+fit/fault-stop method, selected Granite operating envelope, and qualifying
+immutable C subject. Without `--dry-run`, the CLI exits with an argument error
+before reading the corpus.
+
+`inference/scenarios/vllm-granite.toml` records the same pin for the three
+`vllm.granite3_1.1b-a400m.server.{basic,tool,structured}` scenarios. They require
+explicit validation-window selection:
+
+```bash
+python tools/run_inference_scenarios.py \
+  --scenario vllm.granite3_1.1b-a400m.server.basic --dry-run
+```
+
+Broad engine, model, and Granite-tag selections exclude them unless
+`--include-validation-window` or the `validation-window` tag opts in. Every
+Granite entry currently returns `GRANITE_RUNTIME_JOIN_REQUIRED` within its
+planning failure, with no command or server-log path. Local model bindings and
+extra arguments do not resolve that join. This catalog preparation adds no
+executable plan; a runtime adapter remains later work.
+
+Constructed CLI and planning checks run with
+`pytest tests/test_granite_server_smoke.py tests/test_inference_scenario_catalog.py tests/test_run_inference_scenarios.py -q`.
+They complement the pure validators; they do not download checkpoints, read
+model files, run GPUs, or qualify C.
+
 ## Runtime join
 
 The corpus contains no operating envelope: context/output budgets, batching,
