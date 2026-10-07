@@ -4,6 +4,48 @@ The package, deployment, and live-validation narrative below remains a
 2026-06-15 snapshot. Dated records come first, newest first; older
 reconciliations remain as dated history.
 
+## 2026-10-07 Freshness Sweep
+
+The due metadata sweep found ten families without a complete current
+disposition: aiohttp, asyncpg, Lemonade, llama.cpp, ROCm PyTorch,
+stable-diffusion.cpp, TheRock, Transformers, Triton, and vLLM. The candidate
+ledger now tracks those observations without changing C's selected versions
+or package sources. Independent baseline values remain explicit review
+inputs; they are not interchangeable source pins. Later drift routes to
+[post-freeze candidate review](https://github.com/nisavid/arch-strix-halo-pkgs/issues/147),
+with Lemonade's calendar-versioned fork and upstream baseline routed to
+[deferred calver packaging](https://github.com/nisavid/arch-strix-halo-pkgs/issues/163).
+This metadata refresh does not assess release contents, security applicability,
+patch carry, or a build-breakage exception. Those assessments and the resulting
+validation gates remain with the owning issues before adoption.
+
+Two existing routes now match their current execution contracts:
+
+- Transformers 5.18.0 remains tracked to
+  [the model-closure move to huggingface-hub 2.x](https://github.com/nisavid/arch-strix-halo-pkgs/issues/183),
+  following the owner's October 5 selection. The later 5.19.0 observation
+  does not change that choice.
+- vLLM 0.30.0 remains tracked to
+  [the required small-MoE and long-decode gates](https://github.com/nisavid/arch-strix-halo-pkgs/issues/179).
+  The deferred Gemma lane is nonblocking, and the later 0.31.0 version move
+  stays separate. Neither this route correction nor the recorded W2A build
+  establishes runtime qualification.
+
+The confirming sweep completed at `2026-10-07T08:11:43Z` and exited 0 with
+`--json --fail-on actionable`. It reported 26 stable updates, five branch-head
+movements, four baseline drifts, and 16 current families across 51 families.
+Applying the ledger yielded 38 tracked, six rejected, two adopted, and five
+current families, with no action-required result or provider query failure.
+The separate `--validate-trackers` run exited 0 and found all 13 unique active
+issue gates open in this repository. The focused freshness tests passed:
+115 tests, with no exclusions.
+
+Only maintenance metadata changed. No package source was updated, no package
+was built or installed, and no installed smoke, server, or live scenario ran.
+The sweep is due again 24 hours after its confirming completion, or sooner
+if package policy, package directories, the candidate ledger, checker behavior,
+or relevant source metadata changes invalidate this evidence.
+
 ## 2026-10-05 Freshness Sweep
 
 The MIGraphX rebuild changes package policy, so the sweep ran with
