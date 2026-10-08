@@ -138,6 +138,12 @@ the primary `source_kind` and `check_id` and list the additional selectors in
 `covered_checks`. Keep `latest` and `previous_recorded` broad enough to cover
 each selected check.
 
+Ordinary release matching requires the selected checks with the family's
+discovery status to agree on the candidate's single `latest` value. Split
+release observations remain action-required; they do not select either
+candidate or become a duplicate-candidate exception. Uncovered actionable
+checks still prevent a whole-family disposition.
+
 ### Validation Gate Derivation
 
 When package source refs, patches, build flags, dependency metadata, install
@@ -179,6 +185,10 @@ report is younger than `--max-age-hours` (24 by default). The digest includes
 the checker version, freshness policy, recipe-package policy,
 update-candidate ledger, discovered package directories, and any `--only`
 selectors.
+
+Increment the checker's `TOOL_VERSION` when matching semantics change. Verify
+through `run_check` that a report cached under the prior version is not reused,
+then run the forced sweep and disposition its observations before closeout.
 
 Durable closeout notes may point future agents at the freshness gate, but the
 instruction must preserve the gate's termination condition: stop before running

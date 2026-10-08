@@ -4,6 +4,44 @@ The package, deployment, and live-validation narrative below remains a
 2026-06-15 snapshot. Dated records come first, newest first; older
 reconciliations remain as dated history.
 
+## 2026-10-08 Freshness Correction and Confirming Sweep
+
+Ordinary candidate matching now leaves split release-provider observations
+action-required instead of matching both recorded candidates. Agreeing PyPI
+and tag observations still select their recorded candidate. The existing
+duplicate, uncovered baseline/ref, current, query-failure, and tracker behavior
+remains covered by the focused suite. Checker version 7 invalidates reports
+cached under the prior semantics; a constructed `run_check` comparison observed
+the actual version-6 cache being bypassed after the version-7 change.
+
+The forced sweep found two newly unhandled observations: Lemonade's upstream
+baseline moved to `2026.41.1` while fork main remained `4bad19a4`, and orjson
+moved to PyPI `3.13.0` with Arch baseline `3.13.0-1`. The ledger tracks the
+Lemonade pair to
+[deferred calver assessment and packaging](https://github.com/nisavid/arch-strix-halo-pkgs/issues/163)
+and orjson to
+[post-freeze source assessment](https://github.com/nisavid/arch-strix-halo-pkgs/issues/147).
+C's selected versions and package sources remain unchanged. Release contents,
+security applicability, patch carry, and derived build/runtime gates stay with
+those owners; metadata routing does not establish adoption.
+
+The confirming sweep completed at `2026-10-08T05:35:23Z` and exited 0 with
+`--refresh --json --fail-on actionable`: 26 stable updates, five branch-head
+movements, four baseline drifts, and 16 current families. The 51-family ledger
+result was 38 tracked, six rejected, two adopted, and five current, with no
+action-required result or provider query failure. Separate tracker validation
+exited 0 and found all 13 unique active issue gates open. The focused freshness
+suite passed 120 tests without exclusions. Normal wrapped bare `pytest` remains
+collection-blocked because installed Transformers requires huggingface-hub
+below 2.0 while the host has 2.1.1; this is not a full-suite pass or a repaired
+model-closure gate.
+
+Only checker behavior, tests, and maintenance records changed. No package
+source was promoted, package built or installed, or GPU/server/live scenario
+run. The sweep is due 24 hours after the confirming completion, or sooner if
+package policy, package directories, the candidate ledger, checker behavior,
+or relevant source metadata changes invalidate it.
+
 ## 2026-10-07 Freshness Sweep
 
 The due metadata sweep found ten families without a complete current

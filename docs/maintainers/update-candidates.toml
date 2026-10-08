@@ -5001,3 +5001,48 @@ next_gate_kind = "github_issue"
 next_gate_issue = 147
 next_gate_label = "vLLM 0.31.0 post-closeout version move"
 last_reviewed = "2026-10-07"
+
+[candidates."lemonade-fork-4bad19a-upstream-2026.41.1"]
+family = "lemonade"
+packages = ["lemonade-server", "lemonade-app", "lemonade"]
+source_kind = "git_ref"
+check_id = "fork-main"
+baseline_source_kind = "github_release"
+baseline_latest = "2026.41.1"
+previous_recorded = "b6616eb3b6d31c3d7dbffffdb23e24adda1292a1 / 11.9.0"
+latest = "4bad19a4b913d4d5d55702bd6222f5214cd8c911"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "The October 8 confirming sweep observes the same fork head and a later independent upstream release baseline. Issue #163 owns the deferred calendar-versioned source assessment and packaging after the resurrection. This record changes no selected source or package and does not establish equivalence between the fork commit and upstream release. The previous 2026.40.0 baseline observation remains historical evidence."
+salient_changes = [
+  "Fork main remains 4bad19a4b913d4d5d55702bd6222f5214cd8c911 after the b6616eb3b6d31c3d7dbffffdb23e24adda1292a1 package pin",
+  "The independent upstream release baseline reports 2026.41.1 after the recorded 11.9.0 and the October 7 observation of 2026.40.0",
+  "Release contents, security applicability, patch carry, and source equivalence remain unassessed; issue #163 owns those decisions and derived validation before adoption",
+]
+next_gate_kind = "github_issue"
+next_gate_issue = 163
+next_gate_label = "Lemonade deferred calver source assessment and packaging"
+last_reviewed = "2026-10-08"
+
+[candidates."orjson-3.13.0-pypi"]
+family = "orjson"
+packages = ["python-orjson-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+baseline_source_kind = "arch_package"
+baseline_latest = "3.13.0-1"
+covered_checks = [{ source_kind = "arch_package", check_id = "arch" }]
+previous_recorded = "3.11.9 / 3.11.8-1"
+latest = "3.13.0"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "The October 8 confirming sweep observes PyPI orjson 3.13.0 and Arch python-orjson 3.13.0-1. Issue #147 owns post-freeze source assessment and disposition because orjson remains outside C's selected model closure. This metadata record changes no selected version, package source, or host state and supplies no release-content, security, build, or runtime assessment."
+salient_changes = [
+  "PyPI reports orjson 3.13.0 after the selected 3.11.9 and the previously tracked 3.12.0",
+  "The independent Arch baseline reports python-orjson 3.13.0-1 after recorded 3.11.8-1",
+  "Issue #147 derives release, patch, build, and runtime assessment before any source adoption",
+]
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "Post-freeze orjson 3.13.0 source assessment and disposition"
+last_reviewed = "2026-10-08"

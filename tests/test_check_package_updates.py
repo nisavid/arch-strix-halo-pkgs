@@ -2015,6 +2015,93 @@ def test_candidate_can_cover_related_primary_checks(tmp_path):
     assert report["families"][0]["effective_status"] == "tracked_update_candidate"
 
 
+@pytest.mark.parametrize(
+    ("pypi_version", "tag_version", "expected_candidate_id", "expected_issue"),
+    [
+        ("5.19.0", "5.18.0", None, None),
+        ("5.18.0", "5.19.0", None, None),
+        ("5.18.0", "5.18.0", "transformers-5.18.0-pypi", 183),
+        ("5.19.0", "5.19.0", "transformers-5.19.0-pypi", 147),
+    ],
+)
+def test_recorded_release_providers_have_accurate_dispositions(
+    tmp_path, pypi_version, tag_version, expected_candidate_id, expected_issue
+):
+    write_pkg(tmp_path, "python-transformers-gfx1151")
+    write_policy(
+        tmp_path,
+        """
+        [families.transformers]
+        packages = ["python-transformers-gfx1151"]
+        priority = "medium"
+        workflow = "upstream_source_update"
+        checks = [
+          { id = "pypi", role = "primary", kind = "pypi", package = "transformers", recorded = "5.16.1", comparison = "pep440" },
+          { id = "tag", role = "primary", kind = "github_tags", repo = "huggingface/transformers", recorded = "5.16.1", tag_prefix = "v", comparison = "pep440", include_prereleases = false },
+        ]
+        """,
+    )
+    write_candidate_ledger(
+        tmp_path,
+        """
+        schema_version = 2
+
+        [candidates."transformers-5.18.0-pypi"]
+        family = "transformers"
+        packages = ["python-transformers-gfx1151"]
+        source_kind = "pypi"
+        check_id = "pypi"
+        covered_checks = [{ source_kind = "github_tags", check_id = "tag" }]
+        previous_recorded = "5.16.1"
+        latest = "5.18.0"
+        discovery_status = "stable_update_available"
+        disposition = "tracked"
+        next_gate_kind = "github_issue"
+        next_gate_issue = 183
+        next_gate_label = "Transformers 5.18.0 C model closure"
+
+        [candidates."transformers-5.19.0-pypi"]
+        family = "transformers"
+        packages = ["python-transformers-gfx1151"]
+        source_kind = "pypi"
+        check_id = "pypi"
+        covered_checks = [{ source_kind = "github_tags", check_id = "tag" }]
+        previous_recorded = "5.16.1"
+        latest = "5.19.0"
+        discovery_status = "stable_update_available"
+        disposition = "tracked"
+        next_gate_kind = "github_issue"
+        next_gate_issue = 147
+        next_gate_label = "Post-freeze Transformers candidate review"
+        """,
+    )
+    clients = updates.FakeClients(
+        pypi={"transformers": {"version": pypi_version}},
+        github_tags={"huggingface/transformers": [f"v{tag_version}"]},
+    )
+
+    report = updates.run_check(tmp_path, refresh=True, clients=clients)
+
+    assert report["summary"] == {"stable_update_available": 1}
+    family = report["families"][0]
+    if expected_candidate_id is None:
+        assert report["effective_summary"] == {"action_required": 1}
+        assert family["effective_status"] == "action_required"
+        assert "candidate" not in family
+    else:
+        assert report["effective_summary"] == {"tracked_update_candidate": 1}
+        assert family["effective_status"] == "tracked_update_candidate"
+        candidate = family["candidate"]
+        assert candidate["id"] == expected_candidate_id
+        assert candidate["latest"] == pypi_version
+        assert candidate["next_gate_kind"] == "github_issue"
+        assert candidate["next_gate_issue"] == expected_issue
+    assert [(check["id"], check["latest"]) for check in family["checks"]] == [
+        ("pypi", pypi_version),
+        ("tag", tag_version),
+    ]
+
+
 def test_candidate_discovery_status_must_match_family_status(tmp_path):
     write_pkg(tmp_path, "python-vllm-rocm-gfx1151")
     write_policy(
@@ -2341,6 +2428,63 @@ def test_tracked_candidate_does_not_hide_lower_precedence_actionable_check(tmp_p
     assert report["families"][0]["effective_status"] == "action_required"
     assert "candidate" not in report["families"][0]
     assert report["effective_summary"] == {"action_required": 1}
+
+
+def test_tracked_release_does_not_hide_uncovered_commit_drift(tmp_path):
+    write_pkg(tmp_path, "python-amd-aiter-gfx1151")
+    write_policy(
+        tmp_path,
+        """
+        [families.aiter]
+        packages = ["python-amd-aiter-gfx1151"]
+        priority = "high"
+        workflow = "upstream_source_update"
+        checks = [
+          { id = "release", role = "primary", kind = "pypi", package = "amd-aiter", recorded = "0.1.12", comparison = "pep440" },
+          { id = "main", role = "candidate", kind = "git_ref", repo = "https://github.com/ROCm/aiter.git", ref = "refs/heads/main", recorded = "cf12b138", comparison = "sha" },
+        ]
+        """,
+    )
+    write_candidate_ledger(
+        tmp_path,
+        """
+        schema_version = 2
+
+        [candidates.aiter-0_1_13]
+        family = "aiter"
+        packages = ["python-amd-aiter-gfx1151"]
+        source_kind = "pypi"
+        check_id = "release"
+        previous_recorded = "0.1.12"
+        latest = "0.1.13"
+        discovery_status = "stable_update_available"
+        disposition = "tracked"
+        next_gate_kind = "github_issue"
+        next_gate_issue = 1
+        next_gate_label = "AITER release update"
+        """,
+    )
+    clients = updates.FakeClients(
+        pypi={"amd-aiter": {"version": "0.1.13"}},
+        git_refs={
+            "https://github.com/ROCm/aiter.git:refs/heads/main": "afddcbf4"
+        },
+    )
+
+    report = updates.run_check(tmp_path, refresh=True, clients=clients)
+
+    assert report["summary"] == {"stable_update_available": 1}
+    assert report["effective_summary"] == {"action_required": 1}
+    family = report["families"][0]
+    assert family["effective_status"] == "action_required"
+    assert "candidate" not in family
+    assert [
+        (check["id"], check["status"], check["recorded"], check["latest"])
+        for check in family["checks"]
+    ] == [
+        ("release", "stable_update_available", "0.1.12", "0.1.13"),
+        ("main", "candidate_head_ahead", "cf12b138", "afddcbf4"),
+    ]
 
 
 def test_tracked_candidate_covers_matching_baseline_drift(tmp_path):
@@ -3256,12 +3400,21 @@ def test_checker_semantics_version_invalidates_existing_cache(tmp_path, monkeypa
     )
 
     monkeypatch.setattr(updates, "TOOL_VERSION", 2)
-    old_digest = updates.policy_digest(tmp_path)
+    first = updates.run_check(
+        tmp_path,
+        refresh=True,
+        clients=updates.FakeClients(pypi={"numpy": {"version": "2.4.4"}}),
+    )
     monkeypatch.setattr(updates, "TOOL_VERSION", 3)
-    new_digest = updates.policy_digest(tmp_path)
+    second = updates.run_check(
+        tmp_path,
+        refresh=False,
+        clients=updates.FakeClients(pypi={"numpy": {"version": "2.4.5"}}),
+    )
 
-    assert updates.TOOL_VERSION >= 3
-    assert old_digest != new_digest
+    assert second["cache"]["used"] is False
+    assert second["cache"]["policy_digest"] != first["cache"]["policy_digest"]
+    assert second["families"][0]["checks"][0]["latest"] == "2.4.5"
 
 
 def test_refresh_bypasses_matching_cache(tmp_path):

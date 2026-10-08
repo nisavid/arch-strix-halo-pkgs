@@ -48,7 +48,7 @@ STATUS_PRECEDENCE = [
     "manual_review_required",
     "current",
 ]
-TOOL_VERSION = 6
+TOOL_VERSION = 7
 CACHE_PATH = Path(".agents/session/dependency-freshness-cache.json")
 CANDIDATE_LEDGER_PATH = Path("docs/maintainers/update-candidates.toml")
 RECIPE_POLICY_PATH = Path("policies/recipe-packages.toml")
@@ -1295,7 +1295,7 @@ def candidate_matches_family(candidate: dict, family: dict) -> bool:
         if candidate_matches_reported_check(candidate, check, family)
         if (latest := str(check.get("latest", "")).strip())
     }
-    if candidate_latest and candidate_latest in latest_values:
+    if candidate_latest and latest_values == {candidate_latest}:
         return not has_uncovered_actionable_check(candidate, family)
     return False
 
