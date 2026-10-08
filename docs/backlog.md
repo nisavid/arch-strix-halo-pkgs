@@ -54,10 +54,12 @@ owns the dependency-ordered route. Its blocking spine is:
 - W2A: [compiler and PyTorch foundation](https://github.com/nisavid/arch-strix-halo-pkgs/issues/109),
   [model dependency closure](https://github.com/nisavid/arch-strix-halo-pkgs/issues/110), and
   [TorchVision and vLLM consumers](https://github.com/nisavid/arch-strix-halo-pkgs/issues/111)
+  The [Transformers 5.18.0 and huggingface-hub 2.x model-closure move](https://github.com/nisavid/arch-strix-halo-pkgs/issues/183)
+  owns the approved follow-up to the selected inference stack's model dependency selection.
 - W2B: [Lemonade residency and admission](https://github.com/nisavid/arch-strix-halo-pkgs/issues/112) and
   [the coherent Lemonade package family](https://github.com/nisavid/arch-strix-halo-pkgs/issues/113)
 - W3-W6: [candidate assembly](https://github.com/nisavid/arch-strix-halo-pkgs/issues/114),
-  [the deferred Gemma 4 26B-A4B vLLM lanes](https://github.com/nisavid/arch-strix-halo-pkgs/issues/169),
+  [the small MoE and long-decode vLLM gate lanes](https://github.com/nisavid/arch-strix-halo-pkgs/issues/179),
   [preactivation and recovery](https://github.com/nisavid/arch-strix-halo-pkgs/issues/115),
   [activation](https://github.com/nisavid/arch-strix-halo-pkgs/issues/116), and
   [acceptance](https://github.com/nisavid/arch-strix-halo-pkgs/issues/117)
@@ -71,6 +73,7 @@ spine:
 - [AITER and FlyDSL experimental closure](https://github.com/nisavid/arch-strix-halo-pkgs/issues/119)
 - [independent CTranslate2 refresh](https://github.com/nisavid/arch-strix-halo-pkgs/issues/120)
 - [independent stable-diffusion.cpp refresh](https://github.com/nisavid/arch-strix-halo-pkgs/issues/121)
+- [the deferred Gemma 4 26B-A4B vLLM lanes](https://github.com/nisavid/arch-strix-halo-pkgs/issues/169)
 - [amd-quark authoring](https://github.com/nisavid/arch-strix-halo-pkgs/issues/77),
   which remains separate and deferred rather than a convergence dependency
 

@@ -135,8 +135,38 @@ with `--fail-on actionable`, an action-required result exits `10`.
 When one update candidate covers multiple equivalent checks for the same
 source lane, such as a PyPI release and the matching upstream git tag, record
 the primary `source_kind` and `check_id` and list the additional selectors in
-`covered_checks`. Keep `latest` and `previous_recorded` broad enough to cover
-each selected check.
+`covered_checks`. Each selector may include a nonempty string `latest` that
+binds its exact normalized reported observation. A selector without `latest`
+inherits the candidate's top-level `latest`, preserving homogeneous release
+checks. Keep `previous_recorded` broad enough to include each historical
+selected cursor.
+
+Heterogeneous observations need separate selector values: an upstream version,
+a distribution package version, and a submodule commit are not interchangeable.
+An explicitly selected actionable check must match both its recorded cursor
+and bound latest observation. A mismatch remains actionable and cannot fall
+through to the generic unselected-baseline version-prefix fallback. That
+fallback remains available only for a baseline not explicitly selected by the
+candidate. Blocked-query matching keeps its existing failed-query exception;
+it does not invent an observed latest value.
+
+Current, baseline-drift, and ordinary candidate matching share exact latest
+validation for every selected nonfailed observation. Ordinary matching also
+requires each selected historical recorded cursor. When the family is current
+or only its baseline drifts, a selected current observation may instead bind
+its promoted cursor to the same observed latest value. This preserves an open
+tracked or blocked obligation after policy cursors advance; it does not excuse
+a stale covered value. A stale record does not attach to an all-current family,
+which remains current without a candidate. Genuine complete duplicate matches
+remain invalid.
+
+For release candidates, selected equivalent primary release providers must
+agree on the candidate's single `latest` value, regardless of their individual
+status. Split releases plus a covered baseline drift remain action-required
+even when both release providers report `current`; ordinary mixed or updated
+splits do too. Heterogeneous baseline and ref observations keep separate
+bindings and do not join release-provider agreement. Uncovered actionable
+checks still prevent a whole-family disposition.
 
 ### Validation Gate Derivation
 
@@ -179,6 +209,10 @@ report is younger than `--max-age-hours` (24 by default). The digest includes
 the checker version, freshness policy, recipe-package policy,
 update-candidate ledger, discovered package directories, and any `--only`
 selectors.
+
+Increment the checker's `TOOL_VERSION` when matching semantics change. Verify
+through `run_check` that a report cached under the prior version is not reused,
+then run the forced sweep and disposition its observations before closeout.
 
 Durable closeout notes may point future agents at the freshness gate, but the
 instruction must preserve the gate's termination condition: stop before running

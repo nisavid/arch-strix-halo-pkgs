@@ -2953,7 +2953,7 @@ source_kind = "pypi"
 check_id = "pypi"
 baseline_source_kind = "arch_package"
 baseline_latest = "12.3.0-1"
-covered_checks = [{ source_kind = "arch_package", check_id = "arch" }]
+covered_checks = [{ source_kind = "arch_package", check_id = "arch", latest = "12.3.0-1" }]
 previous_recorded = "12.2.0 / 12.2.0-1"
 latest = "12.3.0"
 discovery_status = "stable_update_available"
@@ -3047,7 +3047,7 @@ source_kind = "pypi"
 check_id = "pypi"
 baseline_source_kind = "aur"
 baseline_latest = "0.2.2-2"
-covered_checks = [{ source_kind = "aur", check_id = "aur" }]
+covered_checks = [{ source_kind = "aur", check_id = "aur", latest = "0.2.2-2" }]
 previous_recorded = "0.2.1 / 0.2.1-2"
 latest = "0.2.2"
 discovery_status = "stable_update_available"
@@ -3320,7 +3320,7 @@ source_kind = "arch_package"
 check_id = "arch"
 baseline_source_kind = "python_ftp"
 baseline_latest = "3.14.7"
-covered_checks = [{ source_kind = "python_ftp", check_id = "cpython" }]
+covered_checks = [{ source_kind = "python_ftp", check_id = "cpython", latest = "3.14.7" }]
 previous_recorded = "3.14.5-1 / 3.14.6"
 latest = "3.14.7-1"
 discovery_status = "stable_update_available"
@@ -3445,18 +3445,18 @@ previous_recorded = "0.21.0"
 latest = "0.30.0"
 discovery_status = "stable_update_available"
 disposition = "tracked"
-disposition_reason = "Tracked from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep. #105 selects C's version line (docs/wayfinder/research/c-line-selection-2026-09-22.md). C selects vLLM 0.30.0 (ced6857), built from source against ROCm PyTorch 2.12.0. Its CMake ROCm torch 2.13 expectation is a warning only. vLLM 0.30.0 requires prometheus-fastapi-instrumentator>=8.0.0, so W2A packages 8.1.0 (tracked under #110) instead of keeping the host's 7.0.0. W2A built 0.30.0-1 with the re-ported 0016 carry and validated it in the isolated build root on 2026-09-29 (#111). The Gemma 4 26B-A4B lanes remain open in #169; the W4 qualification and the W5/W6 install, smoke and live gates follow."
+disposition_reason = "Tracked from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep. #105 fixes the inference stack's version line (docs/wayfinder/research/c-line-selection-2026-09-22.md). The selected inference stack uses vLLM 0.30.0 (ced6857), built from source against ROCm PyTorch 2.12.0. Its CMake ROCm torch 2.13 expectation is a warning only. vLLM 0.30.0 requires prometheus-fastapi-instrumentator>=8.0.0, so the PyTorch/vLLM dependency closure includes 8.1.0 (tracked under #110) instead of keeping the host's 7.0.0. The PyTorch/vLLM package lane built 0.30.0-1 with the ported local ROCm compatibility patch and validated it in the isolated build root on 2026-09-29 (#111). Issue #179 owns the required Granite small-MoE and Gemma 4 E2B long-decode gates before complete-stack qualification, followed by deployment and installation, installed smoke checks, and live validation. The large-Gemma load-path research in #169 is optional and non-blocking. Issue #183 separately owns the model-closure move and required vLLM 0.30.0 rebuild checks. This record does not establish either runtime lane or an accepted inference stack."
 salient_changes = [
-  "vLLM 0.30.0 is the newest stable release after the local 0.21.0 lane and the previously tracked 0.27.1",
+  "The selected inference stack retains the vLLM 0.30.0 release selected by the September 22 freeze; the later 0.31.0 version move is separate",
   "The AUR vLLM baseline remains at 0.12.0-1",
 ]
 patch_carry_overlap = true
 package_source_update_needed = true
 host_validation_needed = true
 next_gate_kind = "github_issue"
-next_gate_issue = 169
-next_gate_label = "Gemma 4 26B-A4B lanes, then W4 qualification of exact C"
-last_reviewed = "2026-10-01"
+next_gate_issue = 179
+next_gate_label = "Granite small-MoE and Gemma 4 E2B long-decode gates before complete-stack qualification"
+last_reviewed = "2026-10-07"
 
 [candidates."transformers-5.17.0-pypi"]
 family = "transformers"
@@ -3508,7 +3508,7 @@ source_kind = "pypi"
 check_id = "pypi"
 baseline_source_kind = "arch_package"
 baseline_latest = "2.5.3-1"
-covered_checks = [{ source_kind = "arch_package", check_id = "arch" }]
+covered_checks = [{ source_kind = "arch_package", check_id = "arch", latest = "2.5.3-1" }]
 previous_recorded = "2.4.6 / 2.4.6-1"
 latest = "2.5.3"
 discovery_status = "stable_update_available"
@@ -3603,7 +3603,7 @@ source_kind = "arch_package"
 check_id = "arch"
 baseline_source_kind = "pypi"
 baseline_latest = "2.49.0"
-covered_checks = [{ source_kind = "pypi", check_id = "pypi" }]
+covered_checks = [{ source_kind = "pypi", check_id = "pypi", latest = "2.49.0" }]
 previous_recorded = "2.46.4-1 / 2.47.0"
 latest = "2.46.5-1"
 discovery_status = "stable_update_available"
@@ -3759,7 +3759,7 @@ source_kind = "github_release"
 check_id = "release"
 baseline_source_kind = "aur"
 baseline_latest = "1:5.3.2-1"
-covered_checks = [{ source_kind = "aur", check_id = "aur" }]
+covered_checks = [{ source_kind = "aur", check_id = "aur", latest = "1:5.3.2-1" }]
 previous_recorded = "5.3 / 1:5.3-1"
 latest = "5.3.2"
 discovery_status = "stable_update_available"
@@ -4454,7 +4454,7 @@ source_kind = "pypi"
 check_id = "pypi"
 baseline_source_kind = "arch_package"
 baseline_latest = "50.0.2-1"
-covered_checks = [{ source_kind = "arch_package", check_id = "arch" }]
+covered_checks = [{ source_kind = "arch_package", check_id = "arch", latest = "50.0.2-1" }]
 previous_recorded = "48.0.0 / 48.0.0-1"
 latest = "50.0.2"
 discovery_status = "stable_update_available"
@@ -4481,8 +4481,8 @@ packages = ["python-duckdb-gfx1151"]
 source_kind = "pypi"
 check_id = "pypi"
 baseline_source_kind = "arch_package"
-baseline_latest = "1.5.5-1"
-covered_checks = [{ source_kind = "arch_package", check_id = "arch" }]
+baseline_latest = "1.5.6-1"
+covered_checks = [{ source_kind = "arch_package", check_id = "arch", latest = "1.5.6-1" }]
 previous_recorded = "1.5.3 / 1.5.3-1"
 latest = "1.5.6"
 discovery_status = "stable_update_available"
@@ -4490,7 +4490,7 @@ disposition = "tracked"
 disposition_reason = "Tracked from the 2026-10-01 freshness sweep under decision X7: the 2026-09-22 sweep (#136) froze C's version universe (#105, docs/wayfinder/research/c-line-selection-2026-09-22.md), and until C closes out, later drift that is neither a security fix nor a build breakage routes to post-closeout maintenance (#147). DuckDB 1.5.6 (2026-09-28) is not in C's regenerated closure: no selected vLLM, Transformers or PyTorch package requires it. It supersedes duckdb-1.5.5-pypi and is refreshed in post-closeout maintenance (#147)."
 salient_changes = [
   "PyPI DuckDB 1.5.6 is available after the adopted 1.5.3 package lane and the previously tracked 1.5.5",
-  "Arch python-duckdb still reports 1.5.5-1",
+  "The 2026-10-08 sweep observed Arch python-duckdb 1.5.6-1 after the previously recorded 1.5.5-1 baseline",
 ]
 patch_carry_overlap = false
 package_source_update_needed = true
@@ -4498,7 +4498,7 @@ host_validation_needed = true
 next_gate_kind = "github_issue"
 next_gate_issue = 147
 next_gate_label = "DuckDB 1.5.6 not in C's closure; post-closeout maintenance"
-last_reviewed = "2026-10-01"
+last_reviewed = "2026-10-08"
 
 [candidates."llama-cpp-v0.5.0"]
 family = "llama_cpp"
@@ -4653,7 +4653,7 @@ source_kind = "github_release"
 check_id = "release"
 baseline_source_kind = "aur"
 baseline_latest = "0.29.0-1"
-covered_checks = [{ source_kind = "aur", check_id = "aur" }]
+covered_checks = [{ source_kind = "aur", check_id = "aur", latest = "0.29.0-1" }]
 previous_recorded = "0.27.1 / 0.27.0-1"
 latest = "0.29.1"
 discovery_status = "stable_update_available"
@@ -4682,7 +4682,7 @@ previous_recorded = "5.16.1"
 latest = "5.18.0"
 discovery_status = "stable_update_available"
 disposition = "tracked"
-disposition_reason = "Tracked from the 2026-10-01 freshness sweep under decision X7: the 2026-09-22 sweep (#136) froze C's version universe (#105, docs/wayfinder/research/c-line-selection-2026-09-22.md), and until C closes out, later drift that is neither a security fix nor a build breakage routes to post-closeout maintenance (#147). C selects Transformers 5.16.1, the version vLLM 0.30 CI tested (transformers-5.16.1-c-line, #110): vLLM 0.30.0 pixtral.py imports symbols that Transformers 5.17 removed, and the fix (vLLM #56108) landed after the v0.30.0 tag. Transformers 5.18.0 (2026-09-30) follows 5.17 and carries no security fix, so it routes to post-closeout maintenance with the next vLLM release."
+disposition_reason = "Issue #183 records the owner's October 5 decision to move the selected inference stack's model dependency closure to Transformers 5.18.0 and huggingface-hub 2.x. It owns the closure move and its required CPU, compatibility, GPU, online-download, and documentation evidence. The package source remains unchanged in this metadata refresh; the tracked record does not establish adoption or completed validation. The later 5.19.0 observation is a separate post-freeze candidate."
 salient_changes = [
   "PyPI and the upstream tag report Transformers 5.18.0 after the selected 5.16.1 and the rejected 5.17.0",
   "5.18.0 lists breaking changes, including routing ROCm gpt-oss FA3 to aiter-flash-attn and a vLLM video token counting fix",
@@ -4691,9 +4691,9 @@ patch_carry_overlap = true
 package_source_update_needed = true
 host_validation_needed = true
 next_gate_kind = "github_issue"
-next_gate_issue = 147
-next_gate_label = "Transformers 5.18.0 past the C freeze; post-closeout maintenance"
-last_reviewed = "2026-10-01"
+next_gate_issue = 183
+next_gate_label = "Transformers 5.18.0 and huggingface-hub 2.x model closure for the selected inference stack"
+last_reviewed = "2026-10-07"
 
 [candidates."rocm-pytorch-release-2.12-b97872d"]
 family = "rocm_pytorch"
@@ -4790,3 +4790,285 @@ next_gate_kind = "github_issue"
 next_gate_issue = 147
 next_gate_label = "pybase64 1.5.1 past the C freeze; post-closeout maintenance"
 last_reviewed = "2026-10-05"
+
+[candidates."aiohttp-3.14.4-pypi"]
+family = "aiohttp"
+packages = ["python-aiohttp-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+previous_recorded = "3.14.3"
+latest = "3.14.4"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "The October 7 metadata sweep observes this later upstream or baseline value. Issue #147 owns post-freeze candidate review and disposition. The inference stack's selected versions remain unchanged; this routing record neither adopts the candidate nor decides security applicability or a build-breakage exception. The owning lane derives any source, patch, build, and runtime validation work before adoption."
+salient_changes = [
+  "The pypi check reports 3.14.4 after recorded cursor 3.14.3",
+  "Release contents and patch applicability are not assessed by this metadata refresh; the next gate owns that work",
+]
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "Post-freeze aiohttp candidate review and disposition"
+last_reviewed = "2026-10-07"
+
+[candidates."asyncpg-0.32.0-pypi"]
+family = "asyncpg"
+packages = ["python-asyncpg-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+baseline_source_kind = "arch_package"
+baseline_latest = "0.31.0-3"
+previous_recorded = "0.31.0 / 0.31.0-2"
+latest = "0.32.0"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "The October 7 metadata sweep observes this later upstream or baseline value. Issue #147 owns post-freeze candidate review and disposition. The inference stack's selected versions remain unchanged; this routing record neither adopts the candidate nor decides security applicability or a build-breakage exception. The owning lane derives any source, patch, build, and runtime validation work before adoption."
+salient_changes = [
+  "The pypi check reports 0.32.0 after recorded cursor 0.31.0",
+  "The independent Arch baseline still reports 0.31.0-3 after 0.31.0-2; this family disposition retains that observation without equating it with the 0.32.0 source",
+  "Release contents and patch applicability are not assessed by this metadata refresh; the next gate owns that work",
+]
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "Post-freeze asyncpg candidate review and disposition"
+last_reviewed = "2026-10-07"
+
+[candidates."lemonade-fork-4bad19a"]
+family = "lemonade"
+packages = ["lemonade-server","lemonade-app","lemonade"]
+source_kind = "git_ref"
+check_id = "fork-main"
+baseline_source_kind = "github_release"
+baseline_latest = "2026.40.0"
+previous_recorded = "b6616eb3b6d31c3d7dbffffdb23e24adda1292a1 / 11.9.0"
+latest = "4bad19a4b913d4d5d55702bd6222f5214cd8c911"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "The October 7 metadata sweep observes this later Lemonade ref. The owner-deferred calver packaging lane in issue #163 owns review and eventual packaging after the resurrection. This record changes no fork or package source and establishes no source, build, or runtime acceptance."
+salient_changes = [
+  "The fork-main check reports 4bad19a4b913d4d5d55702bd6222f5214cd8c911 after recorded cursor b6616eb3b6d31c3d7dbffffdb23e24adda1292a1",
+  "The independent upstream release baseline reports 2026.40.0 after 11.9.0; no equivalence with the fork commit or source acceptance is established",
+  "Release contents and patch applicability are not assessed by this metadata refresh; the next gate owns that work",
+]
+next_gate_kind = "github_issue"
+next_gate_issue = 163
+next_gate_label = "Lemonade deferred calver fork/package review"
+last_reviewed = "2026-10-07"
+
+[candidates."llama-cpp-v0.6.0"]
+family = "llama_cpp"
+packages = ["llama.cpp-hip-gfx1151","llama.cpp-vulkan-gfx1151"]
+source_kind = "github_tags"
+check_id = "stable-tag"
+baseline_source_kind = "arch_package"
+baseline_latest = "0.6.0-1"
+covered_checks = [{ source_kind = "arch_package", check_id = "arch", latest = "0.6.0-1" }, { source_kind = "arch_package", check_id = "arch-ggml-hip", latest = "0.25.3-2" }]
+previous_recorded = "0.4.1 / 0.4.1-1 / 0.24.0-2"
+latest = "0.6.0"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "The October 7 metadata sweep observes this later upstream or baseline value. Issue #147 owns post-freeze candidate review and disposition. The inference stack's selected versions remain unchanged; this routing record neither adopts the candidate nor decides security applicability or a build-breakage exception. The owning lane derives any source, patch, build, and runtime validation work before adoption."
+salient_changes = [
+  "The stable-tag check reports 0.6.0 after recorded cursor 0.4.1",
+  "Arch llama-cpp reports 0.6.0-1 after 0.4.1-1, and the separate ggml-hip baseline reports 0.25.3-2 after 0.24.0-2; both observations remain review inputs, not equivalent source pins",
+  "The legacy b-number GitHub release check reports v0.6.0 as current; its version-comparison defect remains with issue #147 and does not override the actionable stable-tag check",
+  "Release contents and patch applicability are not assessed by this metadata refresh; the next gate owns that work",
+]
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "Post-freeze llama-cpp candidate review and disposition"
+last_reviewed = "2026-10-07"
+
+[candidates."rocm-pytorch-release-2.12-9ccf2fd"]
+family = "rocm_pytorch"
+packages = ["python-pytorch-opt-rocm-gfx1151"]
+source_kind = "git_ref"
+check_id = "release-branch"
+baseline_source_kind = "arch_package"
+baseline_latest = "2.14.1-1"
+previous_recorded = "13da08625e0d25586351146b4c444f5263997ef8 / 2.12.0-4"
+latest = "9ccf2fd0aab44087b58af23ad20bc961c29bb852"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "The October 7 metadata sweep observes this later upstream or baseline value. Issue #147 owns post-freeze candidate review and disposition. The inference stack's selected versions remain unchanged; this routing record neither adopts the candidate nor decides security applicability or a build-breakage exception. The owning lane derives any source, patch, build, and runtime validation work before adoption."
+salient_changes = [
+  "The release-branch check reports 9ccf2fd0aab44087b58af23ad20bc961c29bb852 after recorded cursor 13da08625e0d25586351146b4c444f5263997ef8",
+  "The October 8 sweep reports the independent Arch baseline at 2.14.1-1 after its earlier 2.14.0-1 observation and the recorded 2.12.0-4 cursor; the selected inference stack retains its selected 2.12.0 source and no baseline adoption is implied",
+  "Release contents and patch applicability are not assessed by this metadata refresh; the next gate owns that work",
+]
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "Post-freeze rocm-pytorch candidate review and disposition"
+last_reviewed = "2026-10-08"
+
+[candidates."stable-diffusion-cpp-a1ded76"]
+family = "stable_diffusion_cpp"
+packages = ["stable-diffusion.cpp-vulkan-gfx1151"]
+source_kind = "git_ref"
+check_id = "master"
+baseline_source_kind = "aur"
+baseline_latest = "r929.3f8527a-1"
+previous_recorded = "be65ac7511b30379b003626c15224798929e33d4 / r279.49d6570-1"
+latest = "a1ded76da5818803fca97a3b433669ef727d32cf"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "The October 7 metadata sweep observes this later upstream or baseline value. Issue #147 owns post-freeze candidate review and disposition. The inference stack's selected versions remain unchanged; this routing record neither adopts the candidate nor decides security applicability or a build-breakage exception. The owning lane derives any source, patch, build, and runtime validation work before adoption."
+salient_changes = [
+  "The master check reports a1ded76da5818803fca97a3b433669ef727d32cf after recorded cursor be65ac7511b30379b003626c15224798929e33d4",
+  "The independent AUR Vulkan baseline still reports r929.3f8527a-1 after r279.49d6570-1; the branch head and baseline are separate review inputs",
+  "Release contents and patch applicability are not assessed by this metadata refresh; the next gate owns that work",
+]
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "Post-freeze stable-diffusion-cpp candidate review and disposition"
+last_reviewed = "2026-10-07"
+
+[candidates."therock-10.1-stable"]
+family = "therock"
+packages = ["therock-gfx1151"]
+source_kind = "github_release"
+check_id = "release"
+covered_checks = [{ source_kind = "submodule", check_id = "ai-notes", latest = "dbfb70efc26fccf6ab2b00ee60ff0c96d37d37b0" }]
+previous_recorded = "7.13 / 3f15f9f1318491c9ee03782d8b2ebd41391de118"
+latest = "10.1"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "The October 7 metadata sweep observes this later upstream or baseline value. Issue #147 owns post-freeze candidate review and disposition. The inference stack's selected versions remain unchanged; this routing record neither adopts the candidate nor decides security applicability or a build-breakage exception. The owning lane derives any source, patch, build, and runtime validation work before adoption."
+salient_changes = [
+  "The release check reports 10.1 after recorded cursor 7.13",
+  "The ai-notes check still reports dbfb70efc26fccf6ab2b00ee60ff0c96d37d37b0 after 3f15f9f1318491c9ee03782d8b2ebd41391de118; this is the already selected foundation input, not a new 10.1 pin",
+  "The therock-7.14.1-stable record and issue #108 retain the selected inference stack's foundation build and validation work; issue #147 owns only the later release review and the deferred checker defect",
+  "Release contents and patch applicability are not assessed by this metadata refresh; the next gate owns that work",
+]
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "Post-freeze therock candidate review and disposition"
+last_reviewed = "2026-10-07"
+
+[candidates."transformers-5.19.0-pypi"]
+family = "transformers"
+packages = ["python-transformers-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+covered_checks = [{ source_kind = "github_tags", check_id = "tag" }]
+previous_recorded = "5.16.1"
+latest = "5.19.0"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "The October 7 metadata sweep observes this later upstream or baseline value. Issue #147 owns post-freeze candidate review and disposition. The inference stack's selected versions remain unchanged; this routing record neither adopts the candidate nor decides security applicability or a build-breakage exception. The owning lane derives any source, patch, build, and runtime validation work before adoption."
+salient_changes = [
+  "The pypi check reports 5.19.0 after recorded cursor 5.16.1",
+  "Release contents and patch applicability are not assessed by this metadata refresh; the next gate owns that work",
+]
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "Post-freeze transformers candidate review and disposition"
+last_reviewed = "2026-10-07"
+
+[candidates."triton-3.8.x-66b3f9f"]
+family = "triton"
+packages = ["python-triton-gfx1151"]
+source_kind = "git_ref"
+check_id = "release-branch"
+previous_recorded = "669b31acc1dd1b3fd93286afd5db67f65d9f7557"
+latest = "66b3f9ff575eb8db6adec658bbf0badd9a8d2e25"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "The October 7 metadata sweep observes this later upstream or baseline value. Issue #147 owns post-freeze candidate review and disposition. The inference stack's selected versions remain unchanged; this routing record neither adopts the candidate nor decides security applicability or a build-breakage exception. The owning lane derives any source, patch, build, and runtime validation work before adoption."
+salient_changes = [
+  "The release-branch check reports 66b3f9ff575eb8db6adec658bbf0badd9a8d2e25 after recorded cursor 669b31acc1dd1b3fd93286afd5db67f65d9f7557",
+  "Release contents and patch applicability are not assessed by this metadata refresh; the next gate owns that work",
+]
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "Post-freeze triton candidate review and disposition"
+last_reviewed = "2026-10-07"
+
+[candidates."vllm-0.31.0"]
+family = "vllm"
+packages = ["python-vllm-rocm-gfx1151"]
+source_kind = "github_release"
+check_id = "release"
+previous_recorded = "0.30.0"
+latest = "0.31.0"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "Issue #183 explicitly leaves the vLLM 0.31.0 version move on post-closeout maintenance in issue #147 while the selected inference stack retains 0.30.0 and the separately required backports. This October 7 routing record does not assess those fixes, adopt 0.31.0, or satisfy source, build, or runtime gates."
+salient_changes = [
+  "The release check reports 0.31.0 after recorded cursor 0.30.0",
+  "Release contents and patch applicability are not assessed by this metadata refresh; the next gate owns that work",
+]
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "vLLM 0.31.0 post-closeout version move"
+last_reviewed = "2026-10-07"
+
+[candidates."lemonade-fork-4bad19a-upstream-2026.41.1"]
+family = "lemonade"
+packages = ["lemonade-server", "lemonade-app", "lemonade"]
+source_kind = "git_ref"
+check_id = "fork-main"
+baseline_source_kind = "github_release"
+baseline_latest = "2026.41.1"
+previous_recorded = "b6616eb3b6d31c3d7dbffffdb23e24adda1292a1 / 11.9.0"
+latest = "4bad19a4b913d4d5d55702bd6222f5214cd8c911"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "The October 8 confirming sweep observes the same fork head and a later independent upstream release baseline. Issue #163 owns the deferred calendar-versioned source assessment and packaging after the resurrection. This record changes no selected source or package and does not establish equivalence between the fork commit and upstream release. The previous 2026.40.0 baseline observation remains historical evidence."
+salient_changes = [
+  "Fork main remains 4bad19a4b913d4d5d55702bd6222f5214cd8c911 after the b6616eb3b6d31c3d7dbffffdb23e24adda1292a1 package pin",
+  "The independent upstream release baseline reports 2026.41.1 after the recorded 11.9.0 and the October 7 observation of 2026.40.0",
+  "Release contents, security applicability, patch carry, and source equivalence remain unassessed; issue #163 owns those decisions and derived validation before adoption",
+]
+next_gate_kind = "github_issue"
+next_gate_issue = 163
+next_gate_label = "Lemonade deferred calver source assessment and packaging"
+last_reviewed = "2026-10-08"
+
+[candidates."orjson-3.13.0-pypi"]
+family = "orjson"
+packages = ["python-orjson-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+baseline_source_kind = "arch_package"
+baseline_latest = "3.13.0-1"
+covered_checks = [{ source_kind = "arch_package", check_id = "arch", latest = "3.13.0-1" }]
+previous_recorded = "3.11.9 / 3.11.8-1"
+latest = "3.13.0"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "The October 8 confirming sweep observes PyPI orjson 3.13.0 and Arch python-orjson 3.13.0-1. Issue #147 owns post-freeze source assessment and disposition because orjson remains outside the selected model closure. This metadata record changes no selected version, package source, or host state and supplies no release-content, security, build, or runtime assessment."
+salient_changes = [
+  "PyPI reports orjson 3.13.0 after the selected 3.11.9 and the previously tracked 3.12.0",
+  "The independent Arch baseline reports python-orjson 3.13.0-1 after recorded 3.11.8-1",
+  "Issue #147 derives release, patch, build, and runtime assessment before any source adoption",
+]
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "Post-freeze orjson 3.13.0 source assessment and disposition"
+last_reviewed = "2026-10-08"
+
+[candidates."python-3.14.7-1-arch-cpython-3.14.8"]
+family = "python"
+packages = ["python-gfx1151"]
+source_kind = "arch_package"
+check_id = "arch"
+baseline_source_kind = "python_ftp"
+baseline_latest = "3.14.8"
+covered_checks = [{ source_kind = "python_ftp", check_id = "cpython", latest = "3.14.8" }]
+previous_recorded = "3.14.5-1 / 3.14.6"
+latest = "3.14.7-1"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "The 2026-10-08 sweep observed the unchanged Arch 3.14.7-1 candidate together with CPython 3.14.8 on FTP. The shared map records the foundation owner's 3.14.8 admission decision, while the published foundation still describes 3.14.7. Issue #108 owns source review, publication, rebuilds, and fresh downstream evidence for the admitted foundation. This record preserves that decision without treating it as published source or completed validation; python-3.14.7-1-arch remains historical selected-line tracking until its owner reconciles the source transition."
+salient_changes = [
+  "Arch core/python reports 3.14.7-1 after the recorded 3.14.5-1 baseline",
+  "CPython FTP reports 3.14.8 after the previously observed 3.14.7",
+  "The recorded 3.14.8 admission remains with the foundation owner; this metadata change neither reopens it nor promotes a source",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "github_issue"
+next_gate_issue = 108
+next_gate_label = "Admitted CPython 3.14.8 foundation source, rebuild, and downstream validation"
+last_reviewed = "2026-10-08"

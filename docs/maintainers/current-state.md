@@ -4,6 +4,250 @@ The package, deployment, and live-validation narrative below remains a
 2026-06-15 snapshot. Dated records come first, newest first; older
 reconciliations remain as dated history.
 
+## 2026-10-08 Shared Candidate Eligibility and Confirming Sweep
+
+Current, baseline-drift, and ordinary candidate matching now validate every
+selected nonfailed observation before attaching a disposition. Each selected
+latest value must match its binding. Current observations on current or
+baseline-only families can retain a promoted policy cursor instead of the
+historical cursor, preserving open tracked and blocked obligations. Release
+candidates also require agreement among selected equivalent primary providers;
+independent package baselines and commit refs keep separate values. Failed-query
+matching retains its separate exception.
+
+Eight public matching regressions reproduced before correction: four
+baseline-only split-release cases incorrectly selected tracked candidates,
+two all-current cases attached stale covered observations, and two stale/correct
+record pairs raised false duplicate errors. The corrected cases pass alongside
+agreeing-release, promoted-cursor, blocked-current, independent Python baseline,
+ref/release, failed-query, and genuine-duplicate controls. An all-current family
+without a matching candidate remains current; the correction does not invent
+drift. Checker version 11 invalidates earlier semantic cache keys. Public
+producer tests construct keys for versions 7, 8, 9, and 10; they do not execute
+those complete historical matcher implementations.
+
+The stricter sweep exposed missing explicit latest values in the existing
+NumPy Arch and pydantic-core PyPI selectors. Their bindings now preserve the
+recorded tracked and adopted dispositions without changing either source
+decision. The independent Arch PyTorch baseline advanced from `2.14.0-1` to
+`2.14.1-1`; the unchanged release/2.12 branch observation retains its routing to
+[post-closeout maintenance](https://github.com/nisavid/arch-strix-halo-pkgs/issues/147).
+That baseline observation is not a source adoption or a release-content/security
+assessment.
+
+The confirming real-provider sweep recorded `2026-10-08T10:53:48Z` and exited 0
+through public `main` with `--refresh --json --fail-on actionable`. Configured
+authenticated GitHub CLI queries supplied public release and tag metadata;
+other providers used ordinary HTTP. The 51 families reported 26 stable updates,
+five branch-head movements, four baseline drifts, and 16 current families.
+Ledger results were 38 tracked, six rejected, two adopted, and five current,
+with no actionable result or provider failure. Separate tracker validation
+exited 0 with all 13 unique active issue gates open.
+
+The focused suite passed 160 tests. The complete source suite passed 1,116
+tests, with two skips and no module exclusions, in the offline CPU environment
+using the existing read-only Hugging Face Hub 1.33.0 overlay. This construction
+does not repair the normal host's Transformers / Hugging Face Hub 2.1.1
+collection incompatibility or qualify the selected model closure. No package
+was built or installed, and no GPU, server, or live scenario ran. The next sweep
+is due 24 hours after this record, or sooner after relevant policy, package,
+ledger, checker, or source-metadata changes.
+
+## 2026-10-08 Equivalent-Release Consensus and Confirming Sweep
+
+Ordinary release-candidate matching now compares every selected equivalent
+primary release provider with the candidate's release value, independently of
+the provider's individual status. Each observation must also satisfy its
+recorded cursor and selector's latest binding. An explicit covered value does
+not permit a mixed updated/current release pair to disagree. Separate package
+baselines and commit refs keep their own bindings; a current release and a
+moving ref can still match a correctly bound ref candidate. Checker version 10
+invalidates reports cached under versions 7, 8, and 9.
+
+Before correction, both public CLI regressions with explicit covered values
+selected a tracked candidate and returned 0 instead of the required 10.
+After correction, both remain action-required and return 10. Agreeing release
+controls and the heterogeneous ref/release control still return 0. The focused
+suite passed 144 tests. The complete source suite passed 1,100 tests, with two
+skips and no module exclusions, in the offline CPU environment using the
+existing read-only Hugging Face Hub 1.33.0 overlay. This constructed environment
+does not repair the normal host's Transformers / Hugging Face Hub 2.1.1
+collection incompatibility or qualify the selected model closure.
+
+The confirming real-provider sweep completed at `2026-10-08T09:18:06Z` and
+exited 0 through the public `main` entrypoint with
+`--refresh --json --fail-on actionable`. Public GitHub release and tag metadata
+used the already configured authenticated GitHub CLI; other providers used
+ordinary HTTP clients. The 51 families reported 26 stable updates, five
+branch-head movements, four baseline drifts, and 16 current families. Ledger
+dispositions were 38 tracked, six rejected, two adopted, and five current,
+with no actionable result or provider failure. Separate tracker validation
+exited 0, with all 13 unique active issue gates open. No candidate record or
+selected package source changed for this correction.
+
+No package was built or installed, and no GPU, server, or live scenario ran.
+The next sweep is due 24 hours after this completion, or sooner when relevant
+policy, package directories, ledger, checker, or source metadata changes.
+
+## 2026-10-08 Mixed-Current Release Binding and Confirming Sweep
+
+Selected primary release providers now retain their recorded-cursor and latest
+bindings even when one provider reports `current`. A mixed updated/current
+pair stays action-required when those bound release observations differ;
+agreeing providers still select the recorded candidate. Heterogeneous package
+baselines and commit refs keep their separate bindings. Checker version 9
+invalidates reports cached under versions 7 and 8. Before correction, both
+mixed-current public checker CLI regressions returned 0 instead of the
+required 10. After correction, both return 10 as required.
+
+The confirming real-provider sweep completed at `2026-10-08T08:37:35Z` and
+exited 0 through the public `main` entrypoint with
+`--refresh --json --fail-on actionable`. It used the already configured
+authenticated GitHub CLI for public release and tag metadata and ordinary
+HTTP clients for the other providers. The 51 families reported 26 stable
+updates, five branch-head movements, four baseline drifts, and 16 current
+families. Ledger dispositions were 38 tracked, six rejected, two adopted,
+and five current, with no actionable result or provider failure. Separate
+tracker validation exited 0, with all 13 unique active issue gates open.
+No candidate record or selected package source changed for this correction.
+
+The focused suite passed 138 tests. The complete source suite passed 1,094
+tests, with two skips and no module exclusions, in an offline CPU environment
+using the existing read-only Hugging Face Hub 1.33.0 overlay. That constructed
+environment does not repair the normal host's Transformers / Hugging Face
+Hub 2.1.1 collection incompatibility or qualify the selected model closure.
+No package was built or installed, and no GPU, server, or live scenario ran.
+The next sweep is due 24 hours after this completion, or sooner when relevant
+policy, package directories, ledger, checker, or source metadata changes.
+
+## 2026-10-08 Covered-Observation Correction and Confirming Sweep
+
+Explicitly covered actionable checks now require both their recorded cursor
+and exact latest observation. Each heterogeneous `covered_checks` selector
+records its own `latest`; homogeneous release selectors can inherit the
+candidate's top-level value. An explicitly selected mismatch stays actionable
+instead of falling through to unselected-baseline matching. Checker version 8
+invalidates version-7 caches. The focused suite observed independently changed
+package-baseline and submodule values becoming actionable and passed 135 tests
+without exclusions.
+
+The stricter sweep exposed seven families requiring reconciliation. Existing
+AOCL-Utils, cryptography, Pillow, SentencePiece, and TorchVision observations
+now have explicit covered values. DuckDB's tracked baseline moved from
+`1.5.5-1` to `1.5.6-1` without adoption. The unchanged Arch Python
+`3.14.7-1` observation now pairs with CPython FTP `3.14.8` in a separate
+record routed to
+[the foundation gate](https://github.com/nisavid/arch-strix-halo-pkgs/issues/108).
+The shared map records the foundation owner's 3.14.8 admission, while the
+published foundation still describes 3.14.7. That owner reconciles source
+publication, rebuilds, and affected downstream evidence; this record does not
+reopen admission or treat it as completed validation. This metadata increment
+changes no selected source, package source, or security-exception decision.
+New baseline observations are not release-content or security assessments.
+
+The confirming sweep completed at `2026-10-08T07:12:54Z` after the final
+ledger edit and exited 0 through `run_check(refresh=True)` with real provider
+clients. The default HTTP route had exhausted GitHub's unauthenticated request
+quota; the confirming run used the already configured authenticated GitHub CLI
+for the same public release, tag, and issue metadata. No credentials were
+extracted, and no constructed provider response was used. It reported
+26 stable updates, five branch-head movements, four baseline drifts, and
+16 current families. The 51-family ledger result was 38 tracked, six rejected,
+two adopted, and five current, with no actionable result or provider failure.
+Separate tracker validation exited 0 with all 13 unique active issue gates
+open. An offline CPU source-test run with a read-only Hugging Face Hub 1.33.0
+overlay passed 1,091 tests, with two skips and no module exclusions. That
+constructed environment does not repair the normal host's Transformers /
+Hugging Face Hub 2.1.1 collection incompatibility or qualify the selected
+inference stack's model closure.
+
+Only checker behavior, tests, and maintenance records changed. No package
+source was promoted, package built or installed, or GPU/server/live scenario
+run. The sweep is due 24 hours after this confirming completion, or sooner
+when package policy, package directories, the candidate ledger, checker
+behavior, or relevant source metadata invalidates it.
+
+## 2026-10-08 Freshness Correction and Confirming Sweep
+
+Ordinary candidate matching now leaves split release-provider observations
+action-required instead of matching both recorded candidates. Agreeing PyPI
+and tag observations still select their recorded candidate. The existing
+duplicate, uncovered baseline/ref, current, query-failure, and tracker behavior
+remains covered by the focused suite. Checker version 7 invalidates reports
+cached under the prior semantics; a constructed `run_check` comparison observed
+the actual version-6 cache being bypassed after the version-7 change.
+
+The forced sweep found two newly unhandled observations: Lemonade's upstream
+baseline moved to `2026.41.1` while fork main remained `4bad19a4`, and orjson
+moved to PyPI `3.13.0` with Arch baseline `3.13.0-1`. The ledger tracks the
+Lemonade pair to
+[deferred calver assessment and packaging](https://github.com/nisavid/arch-strix-halo-pkgs/issues/163)
+and orjson to
+[post-freeze source assessment](https://github.com/nisavid/arch-strix-halo-pkgs/issues/147).
+The inference stack's selected versions and package sources remain unchanged.
+Release contents,
+security applicability, patch carry, and derived build/runtime gates stay with
+those owners; metadata routing does not establish adoption.
+
+The confirming sweep completed at `2026-10-08T05:35:23Z` and exited 0 with
+`--refresh --json --fail-on actionable`: 26 stable updates, five branch-head
+movements, four baseline drifts, and 16 current families. The 51-family ledger
+result was 38 tracked, six rejected, two adopted, and five current, with no
+action-required result or provider query failure. Separate tracker validation
+exited 0 and found all 13 unique active issue gates open. The focused freshness
+suite passed 120 tests without exclusions. Normal wrapped bare `pytest` remains
+collection-blocked because installed Transformers requires huggingface-hub
+below 2.0 while the host has 2.1.1; this is not a full-suite pass or a repaired
+model-closure gate.
+
+Only checker behavior, tests, and maintenance records changed. No package
+source was promoted, package built or installed, or GPU/server/live scenario
+run. The sweep is due 24 hours after the confirming completion, or sooner if
+package policy, package directories, the candidate ledger, checker behavior,
+or relevant source metadata changes invalidate it.
+
+## 2026-10-07 Freshness Sweep
+
+The due metadata sweep found ten families without a complete current
+disposition: aiohttp, asyncpg, Lemonade, llama.cpp, ROCm PyTorch,
+stable-diffusion.cpp, TheRock, Transformers, Triton, and vLLM. The candidate
+ledger now tracks those observations without changing the inference stack's
+selected versions or package sources. Independent baseline values remain explicit review
+inputs; they are not interchangeable source pins. Later drift routes to
+[post-freeze candidate review](https://github.com/nisavid/arch-strix-halo-pkgs/issues/147),
+with Lemonade's calendar-versioned fork and upstream baseline routed to
+[deferred calver packaging](https://github.com/nisavid/arch-strix-halo-pkgs/issues/163).
+This metadata refresh does not assess release contents, security applicability,
+patch carry, or a build-breakage exception. Those assessments and the resulting
+validation gates remain with the owning issues before adoption.
+
+Two existing routes now match their current execution contracts:
+
+- Transformers 5.18.0 remains tracked to
+  [the model-closure move to huggingface-hub 2.x](https://github.com/nisavid/arch-strix-halo-pkgs/issues/183),
+  following the owner's October 5 selection. The later 5.19.0 observation
+  does not change that choice.
+- vLLM 0.30.0 remains tracked to
+  [the required small-MoE and long-decode gates](https://github.com/nisavid/arch-strix-halo-pkgs/issues/179).
+  The deferred Gemma lane is nonblocking, and the later 0.31.0 version move
+  stays separate. Neither this route correction nor the recorded PyTorch/vLLM
+  closure build establishes runtime qualification.
+
+The confirming sweep completed at `2026-10-07T08:11:43Z` and exited 0 with
+`--json --fail-on actionable`. It reported 26 stable updates, five branch-head
+movements, four baseline drifts, and 16 current families across 51 families.
+Applying the ledger yielded 38 tracked, six rejected, two adopted, and five
+current families, with no action-required result or provider query failure.
+The separate `--validate-trackers` run exited 0 and found all 13 unique active
+issue gates open in this repository. The focused freshness tests passed:
+115 tests, with no exclusions.
+
+Only maintenance metadata changed. No package source was updated, no package
+was built or installed, and no installed smoke, server, or live scenario ran.
+The sweep is due again 24 hours after its confirming completion, or sooner
+if package policy, package directories, the candidate ledger, checker behavior,
+or relevant source metadata changes invalidate this evidence.
+
 ## 2026-10-05 Freshness Sweep
 
 The MIGraphX rebuild changes package policy, so the sweep ran with
