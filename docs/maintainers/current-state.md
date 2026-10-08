@@ -4,6 +4,47 @@ The package, deployment, and live-validation narrative below remains a
 2026-06-15 snapshot. Dated records come first, newest first; older
 reconciliations remain as dated history.
 
+## 2026-10-08 Covered-Observation Correction and Confirming Sweep
+
+Explicitly covered actionable checks now require both their recorded cursor
+and exact latest observation. Each heterogeneous `covered_checks` selector
+records its own `latest`; homogeneous release selectors can inherit the
+candidate's top-level value. An explicitly selected mismatch stays actionable
+instead of falling through to unselected-baseline matching. Checker version 8
+invalidates version-7 caches. The focused suite observed independently changed
+package-baseline and submodule values becoming actionable and passed 135 tests
+without exclusions.
+
+The stricter sweep exposed seven families requiring reconciliation. Existing
+AOCL-Utils, cryptography, Pillow, SentencePiece, and TorchVision observations
+now have explicit covered values. DuckDB's tracked baseline moved from
+`1.5.5-1` to `1.5.6-1` without adoption. The unchanged Arch Python
+`3.14.7-1` observation now pairs with CPython FTP `3.14.8` in a separate
+record routed to
+[post-freeze source assessment](https://github.com/nisavid/arch-strix-halo-pkgs/issues/147).
+The existing CPython 3.14.7 foundation remains tracked to
+[the selected foundation gate](https://github.com/nisavid/arch-strix-halo-pkgs/issues/108).
+C's selected versions, package sources, and security-exception decisions remain
+unchanged. New baseline observations are not release-content or security
+assessments.
+
+The confirming sweep completed at `2026-10-08T06:59:16Z` after the final
+ledger edit and exited 0 with `--refresh --fail-on actionable`. It reported
+26 stable updates, five branch-head movements, four baseline drifts, and
+16 current families. The 51-family ledger result was 38 tracked, six rejected,
+two adopted, and five current, with no actionable result or provider failure.
+Separate tracker validation exited 0 with all 13 unique active issue gates
+open. An offline CPU source-test run with a read-only Hugging Face Hub 1.33.0
+overlay passed 1,091 tests, with two skips and no module exclusions. That
+constructed environment does not repair the normal host's Transformers /
+Hugging Face Hub 2.1.1 collection incompatibility or qualify C's model closure.
+
+Only checker behavior, tests, and maintenance records changed. No package
+source was promoted, package built or installed, or GPU/server/live scenario
+run. The sweep is due 24 hours after this confirming completion, or sooner
+when package policy, package directories, the candidate ledger, checker
+behavior, or relevant source metadata invalidates it.
+
 ## 2026-10-08 Freshness Correction and Confirming Sweep
 
 Ordinary candidate matching now leaves split release-provider observations

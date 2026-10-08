@@ -2487,6 +2487,373 @@ def test_tracked_release_does_not_hide_uncovered_commit_drift(tmp_path):
     ]
 
 
+@pytest.mark.parametrize(
+    ("arch_latest", "ggml_latest", "expected_effective"),
+    [
+        ("0.6.0-1", "0.25.3-2", "tracked_update_candidate"),
+        ("0.6.0-2", "0.25.3-2", "action_required"),
+        ("0.6.0-1", "0.26.0-1", "action_required"),
+    ],
+)
+def test_llama_covered_arch_observations_must_remain_bound(
+    tmp_path, arch_latest, ggml_latest, expected_effective
+):
+    write_pkg(tmp_path, "llama.cpp-hip-gfx1151")
+    write_pkg(tmp_path, "llama.cpp-vulkan-gfx1151")
+    write_policy(
+        tmp_path,
+        """
+        [families.llama_cpp]
+        packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"]
+        checks = [
+          { id = "stable-tag", role = "primary", kind = "github_tags", repo = "ggml-org/llama.cpp", recorded = "0.4.1", tag_prefix = "v", comparison = "pep440" },
+          { id = "arch", role = "baseline", kind = "arch_package", package = "llama-cpp", recorded = "0.4.1-1", comparison = "pkgver" },
+          { id = "arch-ggml-hip", role = "baseline", kind = "arch_package", package = "ggml-hip", recorded = "0.24.0-2", comparison = "pkgver" },
+        ]
+        """,
+    )
+    write_candidate_ledger(
+        tmp_path,
+        """
+        [candidates."llama-cpp-v0.6.0"]
+        family = "llama_cpp"
+        packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"]
+        source_kind = "github_tags"
+        check_id = "stable-tag"
+        covered_checks = [
+          { source_kind = "arch_package", check_id = "arch", latest = "0.6.0-1" },
+          { source_kind = "arch_package", check_id = "arch-ggml-hip", latest = "0.25.3-2" },
+        ]
+        previous_recorded = "0.4.1 / 0.4.1-1 / 0.24.0-2"
+        latest = "0.6.0"
+        baseline_latest = "0.6.0-1"
+        discovery_status = "stable_update_available"
+        disposition = "tracked"
+        next_gate_kind = "github_issue"
+        next_gate_issue = 147
+        next_gate_label = "Post-freeze llama-cpp candidate review"
+        """,
+    )
+
+    report = updates.run_check(
+        tmp_path,
+        refresh=True,
+        clients=updates.FakeClients(
+            github_tags={"ggml-org/llama.cpp": ["v0.6.0"]},
+            arch={
+                "llama-cpp": {"version": arch_latest},
+                "ggml-hip": {"version": ggml_latest},
+            },
+        ),
+    )
+
+    assert report["summary"] == {"stable_update_available": 1}
+    assert report["effective_summary"] == {expected_effective: 1}
+    family = report["families"][0]
+    assert family["effective_status"] == expected_effective
+    if expected_effective == "tracked_update_candidate":
+        assert family["candidate"]["id"] == "llama-cpp-v0.6.0"
+        assert family["candidate"]["next_gate_issue"] == 147
+    else:
+        assert "candidate" not in family
+    assert [
+        (check["id"], check["status"], check["recorded"], check["latest"])
+        for check in family["checks"]
+    ] == [
+        ("stable-tag", "stable_update_available", "0.4.1", "0.6.0"),
+        ("arch", "baseline_drift", "0.4.1-1", arch_latest),
+        ("arch-ggml-hip", "baseline_drift", "0.24.0-2", ggml_latest),
+    ]
+
+
+@pytest.mark.parametrize(
+    ("ai_notes_latest", "expected_effective"),
+    [
+        (
+            "dbfb70efc26fccf6ab2b00ee60ff0c96d37d37b0",
+            "tracked_update_candidate",
+        ),
+        ("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "action_required"),
+    ],
+)
+def test_therock_covered_submodule_observation_must_remain_bound(
+    tmp_path, ai_notes_latest, expected_effective
+):
+    write_pkg(tmp_path, "therock-gfx1151")
+    write_policy(
+        tmp_path,
+        """
+        [families.therock]
+        packages = ["therock-gfx1151"]
+        checks = [
+          { id = "release", role = "primary", kind = "github_release", repo = "ROCm/TheRock", recorded = "7.13", tag_prefix = "therock-", comparison = "pep440" },
+          { id = "ai-notes", role = "primary", kind = "submodule", path = "upstream/ai-notes", ref = "refs/heads/main", recorded = "3f15f9f1318491c9ee03782d8b2ebd41391de118", comparison = "sha" },
+        ]
+        """,
+    )
+    write_candidate_ledger(
+        tmp_path,
+        """
+        [candidates."therock-10.1-stable"]
+        family = "therock"
+        packages = ["therock-gfx1151"]
+        source_kind = "github_release"
+        check_id = "release"
+        covered_checks = [
+          { source_kind = "submodule", check_id = "ai-notes", latest = "dbfb70efc26fccf6ab2b00ee60ff0c96d37d37b0" },
+        ]
+        previous_recorded = "7.13 / 3f15f9f1318491c9ee03782d8b2ebd41391de118"
+        latest = "10.1"
+        discovery_status = "stable_update_available"
+        disposition = "tracked"
+        next_gate_kind = "github_issue"
+        next_gate_issue = 147
+        next_gate_label = "Post-freeze TheRock candidate review"
+        """,
+    )
+
+    report = updates.run_check(
+        tmp_path,
+        refresh=True,
+        clients=updates.FakeClients(
+            github_releases={
+                "ROCm/TheRock": [{"tag": "therock-10.1", "prerelease": False}]
+            },
+            submodules={"upstream/ai-notes:refs/heads/main": ai_notes_latest},
+        ),
+    )
+
+    assert report["summary"] == {"stable_update_available": 1}
+    assert report["effective_summary"] == {expected_effective: 1}
+    family = report["families"][0]
+    assert family["effective_status"] == expected_effective
+    if expected_effective == "tracked_update_candidate":
+        assert family["candidate"]["id"] == "therock-10.1-stable"
+        assert family["candidate"]["next_gate_issue"] == 147
+    else:
+        assert "candidate" not in family
+    assert [
+        (check["id"], check["status"], check["recorded"], check["latest"])
+        for check in family["checks"]
+    ] == [
+        ("release", "stable_update_available", "7.13", "10.1"),
+        (
+            "ai-notes",
+            "branch_head_ahead",
+            "3f15f9f1318491c9ee03782d8b2ebd41391de118",
+            ai_notes_latest,
+        ),
+    ]
+
+
+def write_covered_orjson_fixture(
+    root,
+    *,
+    primary_recorded="3.11.9",
+    covered_latest='"3.13.0-1"',
+    previous_recorded="3.11.9 / 3.11.8-1",
+):
+    write_pkg(root, "python-orjson-gfx1151")
+    write_policy(
+        root,
+        f"""
+        [families.orjson]
+        packages = ["python-orjson-gfx1151"]
+        checks = [
+          {{ id = "pypi", role = "primary", kind = "pypi", package = "orjson", recorded = "{primary_recorded}", comparison = "pep440" }},
+          {{ id = "arch", role = "baseline", kind = "arch_package", package = "python-orjson", recorded = "3.11.8-1", comparison = "pkgver" }},
+        ]
+        """,
+    )
+    return write_candidate_ledger(
+        root,
+        f"""
+        [candidates."orjson-3.13.0-pypi"]
+        family = "orjson"
+        packages = ["python-orjson-gfx1151"]
+        source_kind = "pypi"
+        check_id = "pypi"
+        covered_checks = [{{ source_kind = "arch_package", check_id = "arch", latest = {covered_latest} }}]
+        previous_recorded = "{previous_recorded}"
+        latest = "3.13.0"
+        baseline_latest = "3.13.0-1"
+        discovery_status = "stable_update_available"
+        disposition = "tracked"
+        next_gate_kind = "github_issue"
+        next_gate_issue = 147
+        next_gate_label = "Post-freeze orjson source assessment"
+        """,
+    )
+
+
+@pytest.mark.parametrize(
+    ("arch_latest", "expected_effective"),
+    [
+        ("3.13.0-1", "tracked_update_candidate"),
+        ("3.13.0-2", "action_required"),
+    ],
+)
+def test_orjson_covered_arch_observation_must_remain_bound(
+    tmp_path, arch_latest, expected_effective
+):
+    write_covered_orjson_fixture(tmp_path)
+
+    report = updates.run_check(
+        tmp_path,
+        refresh=True,
+        clients=updates.FakeClients(
+            pypi={"orjson": {"version": "3.13.0"}},
+            arch={"python-orjson": {"version": arch_latest}},
+        ),
+    )
+
+    assert report["summary"] == {"stable_update_available": 1}
+    assert report["effective_summary"] == {expected_effective: 1}
+    family = report["families"][0]
+    assert family["effective_status"] == expected_effective
+    if expected_effective == "tracked_update_candidate":
+        assert family["candidate"]["id"] == "orjson-3.13.0-pypi"
+        assert family["candidate"]["next_gate_issue"] == 147
+    else:
+        assert "candidate" not in family
+    assert [
+        (check["id"], check["status"], check["recorded"], check["latest"])
+        for check in family["checks"]
+    ] == [
+        ("pypi", "stable_update_available", "3.11.9", "3.13.0"),
+        ("arch", "baseline_drift", "3.11.8-1", arch_latest),
+    ]
+
+
+def test_explicit_arch_mismatch_cannot_regain_coverage_in_baseline_only_family(
+    tmp_path,
+):
+    write_covered_orjson_fixture(tmp_path, primary_recorded="3.13.0")
+
+    report = updates.run_check(
+        tmp_path,
+        refresh=True,
+        clients=updates.FakeClients(
+            pypi={"orjson": {"version": "3.13.0"}},
+            arch={"python-orjson": {"version": "3.13.0-2"}},
+        ),
+    )
+
+    assert report["summary"] == {"baseline_drift": 1}
+    assert report["effective_summary"] == {"action_required": 1}
+    family = report["families"][0]
+    assert family["effective_status"] == "action_required"
+    assert "candidate" not in family
+    assert [
+        (check["id"], check["status"], check["recorded"], check["latest"])
+        for check in family["checks"]
+    ] == [
+        ("pypi", "current", "3.13.0", "3.13.0"),
+        ("arch", "baseline_drift", "3.11.8-1", "3.13.0-2"),
+    ]
+
+
+def test_explicit_arch_recorded_cursor_must_match_before_baseline_fallback(tmp_path):
+    write_covered_orjson_fixture(
+        tmp_path,
+        primary_recorded="3.13.0",
+        previous_recorded="3.11.9 / 3.11.8",
+    )
+
+    report = updates.run_check(
+        tmp_path,
+        refresh=True,
+        clients=updates.FakeClients(
+            pypi={"orjson": {"version": "3.13.0"}},
+            arch={"python-orjson": {"version": "3.13.0-1"}},
+        ),
+    )
+
+    assert report["summary"] == {"baseline_drift": 1}
+    assert report["effective_summary"] == {"action_required": 1}
+    family = report["families"][0]
+    assert family["effective_status"] == "action_required"
+    assert "candidate" not in family
+    assert family["checks"][1]["recorded"] == "3.11.8-1"
+    assert family["checks"][1]["latest"] == "3.13.0-1"
+
+
+@pytest.mark.parametrize(
+    ("arch_latest", "expected_effective"),
+    [
+        ("3.13.0-1", "tracked_update_candidate"),
+        ("3.13.0-2", "action_required"),
+    ],
+)
+def test_stale_explicit_arch_binding_does_not_create_duplicate_matches(
+    tmp_path, arch_latest, expected_effective
+):
+    ledger = write_covered_orjson_fixture(tmp_path, primary_recorded="3.13.0")
+    with ledger.open("a", encoding="utf-8") as handle:
+        handle.write(
+            textwrap.dedent(
+                """
+                [candidates."orjson-3.13.0-older-arch"]
+                family = "orjson"
+                packages = ["python-orjson-gfx1151"]
+                source_kind = "pypi"
+                check_id = "pypi"
+                covered_checks = [{ source_kind = "arch_package", check_id = "arch", latest = "3.12.0-1" }]
+                previous_recorded = "3.11.9 / 3.11.8-1"
+                latest = "3.13.0"
+                discovery_status = "stable_update_available"
+                disposition = "tracked"
+                next_gate_kind = "github_issue"
+                next_gate_issue = 147
+                next_gate_label = "Earlier orjson Arch observation"
+                """
+            )
+        )
+
+    report = updates.run_check(
+        tmp_path,
+        refresh=True,
+        clients=updates.FakeClients(
+            pypi={"orjson": {"version": "3.13.0"}},
+            arch={"python-orjson": {"version": arch_latest}},
+        ),
+    )
+
+    assert report["summary"] == {"baseline_drift": 1}
+    assert report["effective_summary"] == {expected_effective: 1}
+    family = report["families"][0]
+    assert family["effective_status"] == expected_effective
+    if expected_effective == "tracked_update_candidate":
+        assert family["candidate"]["id"] == "orjson-3.13.0-pypi"
+        assert family["candidate"]["next_gate_issue"] == 147
+    else:
+        assert "candidate" not in family
+    assert [
+        (check["id"], check["status"], check["recorded"], check["latest"])
+        for check in family["checks"]
+    ] == [
+        ("pypi", "current", "3.13.0", "3.13.0"),
+        ("arch", "baseline_drift", "3.11.8-1", arch_latest),
+    ]
+
+
+@pytest.mark.parametrize("covered_latest", ['""', '"   "', "42"])
+def test_malformed_covered_latest_is_an_invalid_ledger_entry(
+    tmp_path, covered_latest
+):
+    write_covered_orjson_fixture(tmp_path, covered_latest=covered_latest)
+
+    with pytest.raises(RuntimeError, match="CANDIDATE_LEDGER"):
+        updates.run_check(
+            tmp_path,
+            refresh=True,
+            clients=updates.FakeClients(
+                pypi={"orjson": {"version": "3.13.0"}},
+                arch={"python-orjson": {"version": "3.13.0-1"}},
+            ),
+        )
+
+
 def test_tracked_candidate_covers_matching_baseline_drift(tmp_path):
     write_pkg(tmp_path, "llama.cpp-hip-gfx1151")
     write_pkg(tmp_path, "llama.cpp-vulkan-gfx1151")
@@ -3415,6 +3782,40 @@ def test_checker_semantics_version_invalidates_existing_cache(tmp_path, monkeypa
     assert second["cache"]["used"] is False
     assert second["cache"]["policy_digest"] != first["cache"]["policy_digest"]
     assert second["families"][0]["checks"][0]["latest"] == "2.4.5"
+
+
+def test_version_seven_cache_is_invalidated_by_version_eight_checker(tmp_path):
+    write_pkg(tmp_path, "python-numpy-gfx1151")
+    write_policy(
+        tmp_path,
+        '[families.numpy]\n'
+        'packages = ["python-numpy-gfx1151"]\n'
+        'checks = [{ id = "pypi", role = "primary", kind = "pypi", '
+        'package = "numpy", recorded = "2.4.4", comparison = "pep440" }]\n',
+    )
+    previous = updates.run_check(
+        tmp_path,
+        refresh=True,
+        clients=updates.FakeClients(pypi={"numpy": {"version": "2.4.4"}}),
+    )
+    # Digest of these fixture files under the version-7 cache contract.
+    legacy_digest = "1e0befb7239d024880bc1ed5fded0fb4fa848421eb26f6dca7e8b0001b1cecdf"
+    previous["cache"].update(
+        {"tool_version": 7, "policy_digest": legacy_digest}
+    )
+    cache_path = tmp_path / ".agents/session/dependency-freshness-cache.json"
+    cache_path.write_text(json.dumps(previous), encoding="utf-8")
+
+    report = updates.run_check(
+        tmp_path,
+        clients=updates.FakeClients(pypi={"numpy": {"version": "2.4.5"}}),
+    )
+
+    assert report["cache"]["used"] is False
+    assert report["cache"]["tool_version"] == 8
+    assert report["cache"]["policy_digest"] != legacy_digest
+    assert report["summary"] == {"stable_update_available": 1}
+    assert report["families"][0]["checks"][0]["latest"] == "2.4.5"
 
 
 def test_refresh_bypasses_matching_cache(tmp_path):

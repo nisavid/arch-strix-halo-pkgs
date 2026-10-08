@@ -48,7 +48,7 @@ STATUS_PRECEDENCE = [
     "manual_review_required",
     "current",
 ]
-TOOL_VERSION = 7
+TOOL_VERSION = 8
 CACHE_PATH = Path(".agents/session/dependency-freshness-cache.json")
 CANDIDATE_LEDGER_PATH = Path("docs/maintainers/update-candidates.toml")
 RECIPE_POLICY_PATH = Path("policies/recipe-packages.toml")
@@ -443,6 +443,13 @@ def load_candidate_ledger(repo_root: str | Path) -> dict[str, dict]:
             raise RuntimeError(
                 f"CANDIDATE_LEDGER_TERMINAL_GATE_INVALID: {candidate_id}"
             )
+        for selector in candidate.get("covered_checks", []):
+            if isinstance(selector, dict) and "latest" in selector:
+                latest = selector["latest"]
+                if not isinstance(latest, str) or not latest.strip():
+                    raise RuntimeError(
+                        f"CANDIDATE_LEDGER_COVERED_LATEST_INVALID: {candidate_id}"
+                    )
         normalized[candidate_id] = {**candidate, "id": candidate_id}
     return normalized
 
@@ -1213,8 +1220,21 @@ def candidate_matches_reported_check(candidate: dict, check: dict, family: dict)
 
 
 def candidate_covers_actionable_check(candidate: dict, check: dict, family: dict) -> bool:
-    if candidate_matches_reported_check(candidate, check, family):
-        return True
+    selected = [
+        selector
+        for selector in candidate_check_selectors(candidate)
+        if candidate_selector_matches_check(candidate, selector, check, family)
+    ]
+    if selected:
+        if not candidate_matches_recorded_value(candidate, check):
+            return False
+        if check.get("status") == "query_failed":
+            return True
+        latest = str(check.get("latest", "")).strip()
+        return bool(latest) and any(
+            latest == str(selector.get("latest", candidate.get("latest", ""))).strip()
+            for selector in selected
+        )
     if check.get("status") != "baseline_drift":
         return False
     latest = str(check.get("latest", "")).strip()

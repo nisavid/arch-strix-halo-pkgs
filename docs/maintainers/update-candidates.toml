@@ -2953,7 +2953,7 @@ source_kind = "pypi"
 check_id = "pypi"
 baseline_source_kind = "arch_package"
 baseline_latest = "12.3.0-1"
-covered_checks = [{ source_kind = "arch_package", check_id = "arch" }]
+covered_checks = [{ source_kind = "arch_package", check_id = "arch", latest = "12.3.0-1" }]
 previous_recorded = "12.2.0 / 12.2.0-1"
 latest = "12.3.0"
 discovery_status = "stable_update_available"
@@ -3047,7 +3047,7 @@ source_kind = "pypi"
 check_id = "pypi"
 baseline_source_kind = "aur"
 baseline_latest = "0.2.2-2"
-covered_checks = [{ source_kind = "aur", check_id = "aur" }]
+covered_checks = [{ source_kind = "aur", check_id = "aur", latest = "0.2.2-2" }]
 previous_recorded = "0.2.1 / 0.2.1-2"
 latest = "0.2.2"
 discovery_status = "stable_update_available"
@@ -3320,7 +3320,7 @@ source_kind = "arch_package"
 check_id = "arch"
 baseline_source_kind = "python_ftp"
 baseline_latest = "3.14.7"
-covered_checks = [{ source_kind = "python_ftp", check_id = "cpython" }]
+covered_checks = [{ source_kind = "python_ftp", check_id = "cpython", latest = "3.14.7" }]
 previous_recorded = "3.14.5-1 / 3.14.6"
 latest = "3.14.7-1"
 discovery_status = "stable_update_available"
@@ -3445,7 +3445,7 @@ previous_recorded = "0.21.0"
 latest = "0.30.0"
 discovery_status = "stable_update_available"
 disposition = "tracked"
-disposition_reason = "Tracked from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep. #105 selects C's version line (docs/wayfinder/research/c-line-selection-2026-09-22.md). C selects vLLM 0.30.0 (ced6857), built from source against ROCm PyTorch 2.12.0. Its CMake ROCm torch 2.13 expectation is a warning only. vLLM 0.30.0 requires prometheus-fastapi-instrumentator>=8.0.0, so W2A packages 8.1.0 (tracked under #110) instead of keeping the host's 7.0.0. W2A built 0.30.0-1 with the re-ported 0016 carry and validated it in the isolated build root on 2026-09-29 (#111). Issue #179 owns the required Granite small-MoE and E2B long-decode gates before C qualification, followed by the W5/W6 install, smoke, and live gates. The large-Gemma load-path research in #169 is optional and non-blocking. Issue #183 separately owns the model-closure move and required vLLM 0.30.0 rebuild checks. This record does not establish either runtime lane or accepted C."
+disposition_reason = "Tracked from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep. #105 selects C's version line (docs/wayfinder/research/c-line-selection-2026-09-22.md). C selects vLLM 0.30.0 (ced6857), built from source against ROCm PyTorch 2.12.0. Its CMake ROCm torch 2.13 expectation is a warning only. vLLM 0.30.0 requires prometheus-fastapi-instrumentator>=8.0.0, so W2A packages 8.1.0 (tracked under #110) instead of keeping the host's 7.0.0. W2A built 0.30.0-1 with the re-ported 0016 carry and validated it in the isolated build root on 2026-09-29 (#111). Issue #179 owns the required Granite small-MoE and E2B long-decode gates before C qualification, followed by deployment and installation, installed smoke checks, and live validation. The large-Gemma load-path research in #169 is optional and non-blocking. Issue #183 separately owns the model-closure move and required vLLM 0.30.0 rebuild checks. This record does not establish either runtime lane or accepted C."
 salient_changes = [
   "C retains the vLLM 0.30.0 release selected by the September 22 freeze; the later 0.31.0 version move is separate",
   "The AUR vLLM baseline remains at 0.12.0-1",
@@ -3759,7 +3759,7 @@ source_kind = "github_release"
 check_id = "release"
 baseline_source_kind = "aur"
 baseline_latest = "1:5.3.2-1"
-covered_checks = [{ source_kind = "aur", check_id = "aur" }]
+covered_checks = [{ source_kind = "aur", check_id = "aur", latest = "1:5.3.2-1" }]
 previous_recorded = "5.3 / 1:5.3-1"
 latest = "5.3.2"
 discovery_status = "stable_update_available"
@@ -4454,7 +4454,7 @@ source_kind = "pypi"
 check_id = "pypi"
 baseline_source_kind = "arch_package"
 baseline_latest = "50.0.2-1"
-covered_checks = [{ source_kind = "arch_package", check_id = "arch" }]
+covered_checks = [{ source_kind = "arch_package", check_id = "arch", latest = "50.0.2-1" }]
 previous_recorded = "48.0.0 / 48.0.0-1"
 latest = "50.0.2"
 discovery_status = "stable_update_available"
@@ -4481,8 +4481,8 @@ packages = ["python-duckdb-gfx1151"]
 source_kind = "pypi"
 check_id = "pypi"
 baseline_source_kind = "arch_package"
-baseline_latest = "1.5.5-1"
-covered_checks = [{ source_kind = "arch_package", check_id = "arch" }]
+baseline_latest = "1.5.6-1"
+covered_checks = [{ source_kind = "arch_package", check_id = "arch", latest = "1.5.6-1" }]
 previous_recorded = "1.5.3 / 1.5.3-1"
 latest = "1.5.6"
 discovery_status = "stable_update_available"
@@ -4490,7 +4490,7 @@ disposition = "tracked"
 disposition_reason = "Tracked from the 2026-10-01 freshness sweep under decision X7: the 2026-09-22 sweep (#136) froze C's version universe (#105, docs/wayfinder/research/c-line-selection-2026-09-22.md), and until C closes out, later drift that is neither a security fix nor a build breakage routes to post-closeout maintenance (#147). DuckDB 1.5.6 (2026-09-28) is not in C's regenerated closure: no selected vLLM, Transformers or PyTorch package requires it. It supersedes duckdb-1.5.5-pypi and is refreshed in post-closeout maintenance (#147)."
 salient_changes = [
   "PyPI DuckDB 1.5.6 is available after the adopted 1.5.3 package lane and the previously tracked 1.5.5",
-  "Arch python-duckdb still reports 1.5.5-1",
+  "The 2026-10-08 sweep observed Arch python-duckdb 1.5.6-1 after the previously recorded 1.5.5-1 baseline",
 ]
 patch_carry_overlap = false
 package_source_update_needed = true
@@ -4498,7 +4498,7 @@ host_validation_needed = true
 next_gate_kind = "github_issue"
 next_gate_issue = 147
 next_gate_label = "DuckDB 1.5.6 not in C's closure; post-closeout maintenance"
-last_reviewed = "2026-10-01"
+last_reviewed = "2026-10-08"
 
 [candidates."llama-cpp-v0.5.0"]
 family = "llama_cpp"
@@ -4653,7 +4653,7 @@ source_kind = "github_release"
 check_id = "release"
 baseline_source_kind = "aur"
 baseline_latest = "0.29.0-1"
-covered_checks = [{ source_kind = "aur", check_id = "aur" }]
+covered_checks = [{ source_kind = "aur", check_id = "aur", latest = "0.29.0-1" }]
 previous_recorded = "0.27.1 / 0.27.0-1"
 latest = "0.29.1"
 discovery_status = "stable_update_available"
@@ -4861,7 +4861,7 @@ source_kind = "github_tags"
 check_id = "stable-tag"
 baseline_source_kind = "arch_package"
 baseline_latest = "0.6.0-1"
-covered_checks = [{ source_kind = "arch_package", check_id = "arch" }, { source_kind = "arch_package", check_id = "arch-ggml-hip" }]
+covered_checks = [{ source_kind = "arch_package", check_id = "arch", latest = "0.6.0-1" }, { source_kind = "arch_package", check_id = "arch-ggml-hip", latest = "0.25.3-2" }]
 previous_recorded = "0.4.1 / 0.4.1-1 / 0.24.0-2"
 latest = "0.6.0"
 discovery_status = "stable_update_available"
@@ -4927,7 +4927,7 @@ family = "therock"
 packages = ["therock-gfx1151"]
 source_kind = "github_release"
 check_id = "release"
-covered_checks = [{ source_kind = "submodule", check_id = "ai-notes" }]
+covered_checks = [{ source_kind = "submodule", check_id = "ai-notes", latest = "dbfb70efc26fccf6ab2b00ee60ff0c96d37d37b0" }]
 previous_recorded = "7.13 / 3f15f9f1318491c9ee03782d8b2ebd41391de118"
 latest = "10.1"
 discovery_status = "stable_update_available"
@@ -5031,7 +5031,7 @@ source_kind = "pypi"
 check_id = "pypi"
 baseline_source_kind = "arch_package"
 baseline_latest = "3.13.0-1"
-covered_checks = [{ source_kind = "arch_package", check_id = "arch" }]
+covered_checks = [{ source_kind = "arch_package", check_id = "arch", latest = "3.13.0-1" }]
 previous_recorded = "3.11.9 / 3.11.8-1"
 latest = "3.13.0"
 discovery_status = "stable_update_available"
@@ -5045,4 +5045,30 @@ salient_changes = [
 next_gate_kind = "github_issue"
 next_gate_issue = 147
 next_gate_label = "Post-freeze orjson 3.13.0 source assessment and disposition"
+last_reviewed = "2026-10-08"
+
+[candidates."python-3.14.7-1-arch-cpython-3.14.8"]
+family = "python"
+packages = ["python-gfx1151"]
+source_kind = "arch_package"
+check_id = "arch"
+baseline_source_kind = "python_ftp"
+baseline_latest = "3.14.8"
+covered_checks = [{ source_kind = "python_ftp", check_id = "cpython", latest = "3.14.8" }]
+previous_recorded = "3.14.5-1 / 3.14.6"
+latest = "3.14.7-1"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "The 2026-10-08 sweep observed the unchanged Arch 3.14.7-1 candidate together with a later CPython 3.14.8 FTP baseline. C still selects CPython 3.14.7 through #108; python-3.14.7-1-arch retains that selected-line obligation. The newly observed baseline pair routes to post-freeze source assessment (#147). Release contents, security applicability, patch carry, and any exception to the frozen line remain unassessed; this observation does not adopt 3.14.8."
+salient_changes = [
+  "Arch core/python reports 3.14.7-1 after the recorded 3.14.5-1 baseline",
+  "CPython FTP reports 3.14.8 after the previously observed 3.14.7",
+  "C's selected CPython 3.14.7 source and foundation gate remain unchanged",
+]
+patch_carry_overlap = true
+package_source_update_needed = true
+host_validation_needed = true
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "CPython 3.14.8 baseline assessment without changing C's 3.14.7 foundation"
 last_reviewed = "2026-10-08"

@@ -135,8 +135,19 @@ with `--fail-on actionable`, an action-required result exits `10`.
 When one update candidate covers multiple equivalent checks for the same
 source lane, such as a PyPI release and the matching upstream git tag, record
 the primary `source_kind` and `check_id` and list the additional selectors in
-`covered_checks`. Keep `latest` and `previous_recorded` broad enough to cover
-each selected check.
+`covered_checks`. Each selector may include a nonempty string `latest` that
+binds its exact normalized reported observation. A selector without `latest`
+inherits the candidate's top-level `latest`, preserving homogeneous release
+checks. Keep `previous_recorded` broad enough to include each selected cursor.
+
+Heterogeneous observations need separate selector values: an upstream version,
+a distribution package version, and a submodule commit are not interchangeable.
+An explicitly selected actionable check must match both its recorded cursor
+and bound latest observation. A mismatch remains actionable and cannot fall
+through to the generic unselected-baseline version-prefix fallback. That
+fallback remains available only for a baseline not explicitly selected by the
+candidate. Blocked-query matching keeps its existing failed-query exception;
+it does not invent an observed latest value.
 
 Ordinary release matching requires the selected checks with the family's
 discovery status to agree on the candidate's single `latest` value. Split
