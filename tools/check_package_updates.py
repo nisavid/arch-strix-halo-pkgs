@@ -48,7 +48,7 @@ STATUS_PRECEDENCE = [
     "manual_review_required",
     "current",
 ]
-TOOL_VERSION = 10
+TOOL_VERSION = 11
 CACHE_PATH = Path(".agents/session/dependency-freshness-cache.json")
 CANDIDATE_LEDGER_PATH = Path("docs/maintainers/update-candidates.toml")
 RECIPE_POLICY_PATH = Path("policies/recipe-packages.toml")
@@ -1219,18 +1219,26 @@ def candidate_matches_reported_check(candidate: dict, check: dict, family: dict)
     ) and candidate_matches_recorded_value(candidate, check)
 
 
-def candidate_covers_actionable_check(candidate: dict, check: dict, family: dict) -> bool:
+def candidate_covers_actionable_check(
+    candidate: dict, check: dict, family: dict, *, allow_promoted_current: bool = False
+) -> bool:
     selected = [
         selector
         for selector in candidate_check_selectors(candidate)
         if candidate_selector_matches_check(candidate, selector, check, family)
     ]
     if selected:
-        if not candidate_matches_recorded_value(candidate, check):
+        latest = str(check.get("latest", "")).strip()
+        promoted_current = (
+            allow_promoted_current
+            and check.get("status") == "current"
+            and latest
+            and latest == str(check.get("recorded", "")).strip()
+        )
+        if not promoted_current and not candidate_matches_recorded_value(candidate, check):
             return False
         if check.get("status") == "query_failed":
             return True
-        latest = str(check.get("latest", "")).strip()
         return bool(latest) and any(
             latest == str(selector.get("latest", candidate.get("latest", ""))).strip()
             for selector in selected
@@ -1267,26 +1275,6 @@ def candidate_matches_family(candidate: dict, family: dict) -> bool:
     if family.get("status") == "metadata_mismatch":
         return False
     if (
-        family.get("status") == "current"
-        and candidate.get("disposition") in VALID_CANDIDATE_DISPOSITIONS
-    ):
-        candidate_latest = str(candidate.get("latest", "")).strip()
-        return any(
-            candidate_latest
-            and candidate_latest == str(check.get("recorded", "")).strip()
-            and candidate_latest == str(check.get("latest", "")).strip()
-            and candidate_matches_check(candidate, check, family)
-            for check in family.get("checks", [])
-        )
-    if family.get("status") == "baseline_drift":
-        return any(
-            check.get("status") == "baseline_drift"
-            and candidate_covers_actionable_check(candidate, check, family)
-            for check in family.get("checks", [])
-        ) and not has_uncovered_actionable_check(candidate, family)
-    if candidate.get("discovery_status") != family.get("status"):
-        return False
-    if (
         family.get("status") == "query_failed"
         and candidate.get("disposition") == "blocked"
         and candidate.get("discovery_status") == "query_failed"
@@ -1308,17 +1296,51 @@ def candidate_matches_family(candidate: dict, family: dict) -> bool:
             for check in family.get("checks", [])
         )
     release_kinds = {"pypi", "github_release", "github_tags", "python_ftp"}
-    selected_release_checks = [
+    selected_checks = [
         check
         for check in family.get("checks", [])
+        if candidate_matches_check(candidate, check, family)
+    ]
+    allow_promoted_current = family.get("status") in {"current", "baseline_drift"}
+    if any(
+        check.get("status") != "query_failed"
+        and not candidate_covers_actionable_check(
+            candidate, check, family, allow_promoted_current=allow_promoted_current
+        )
+        for check in selected_checks
+    ):
+        return False
+    selected_release_checks = [
+        check
+        for check in selected_checks
         if check.get("role") == "primary"
         and check.get("kind") in release_kinds
-        and candidate_matches_check(candidate, check, family)
     ]
-    if any(
-        not candidate_covers_actionable_check(candidate, check, family)
-        for check in selected_release_checks
+    candidate_latest = str(candidate.get("latest", "")).strip()
+    if (
+        candidate.get("source_kind") in release_kinds
+        and selected_release_checks
+        and {str(check.get("latest", "")).strip() for check in selected_release_checks}
+        != {candidate_latest}
     ):
+        return False
+    if (
+        family.get("status") == "current"
+        and candidate.get("disposition") in VALID_CANDIDATE_DISPOSITIONS
+    ):
+        return any(
+            candidate_latest
+            and candidate_latest == str(check.get("recorded", "")).strip()
+            and candidate_latest == str(check.get("latest", "")).strip()
+            for check in selected_checks
+        )
+    if family.get("status") == "baseline_drift":
+        return any(
+            check.get("status") == "baseline_drift"
+            and candidate_covers_actionable_check(candidate, check, family)
+            for check in family.get("checks", [])
+        ) and not has_uncovered_actionable_check(candidate, family)
+    if candidate.get("discovery_status") != family.get("status"):
         return False
     # Only a release candidate's equivalent providers share its release value.
     consensus_checks = (
@@ -1330,7 +1352,6 @@ def candidate_matches_family(candidate: dict, family: dict) -> bool:
             if check.get("status") == family.get("status")
         ]
     )
-    candidate_latest = str(candidate.get("latest", "")).strip()
     latest_values = {
         latest
         for check in consensus_checks

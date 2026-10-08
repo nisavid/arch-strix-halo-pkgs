@@ -138,7 +138,8 @@ the primary `source_kind` and `check_id` and list the additional selectors in
 `covered_checks`. Each selector may include a nonempty string `latest` that
 binds its exact normalized reported observation. A selector without `latest`
 inherits the candidate's top-level `latest`, preserving homogeneous release
-checks. Keep `previous_recorded` broad enough to include each selected cursor.
+checks. Keep `previous_recorded` broad enough to include each historical
+selected cursor.
 
 Heterogeneous observations need separate selector values: an upstream version,
 a distribution package version, and a submodule commit are not interchangeable.
@@ -149,14 +150,23 @@ fallback remains available only for a baseline not explicitly selected by the
 candidate. Blocked-query matching keeps its existing failed-query exception;
 it does not invent an observed latest value.
 
-Ordinary release matching requires every selected primary release provider to
-match its recorded cursor and bound latest observation, including a provider
-reporting `current`. Equivalent providers must agree on the candidate's single
-`latest` value. Split release observations remain action-required, whether both
-providers report updates or one reports `current`; they do not select either
-candidate or become a duplicate-candidate exception. Heterogeneous baseline
-and ref observations keep separate bindings and do not join release-provider
-agreement. Uncovered actionable checks still prevent a whole-family disposition.
+Current, baseline-drift, and ordinary candidate matching share exact latest
+validation for every selected nonfailed observation. Ordinary matching also
+requires each selected historical recorded cursor. When the family is current
+or only its baseline drifts, a selected current observation may instead bind
+its promoted cursor to the same observed latest value. This preserves an open
+tracked or blocked obligation after policy cursors advance; it does not excuse
+a stale covered value. A stale record does not attach to an all-current family,
+which remains current without a candidate. Genuine complete duplicate matches
+remain invalid.
+
+For release candidates, selected equivalent primary release providers must
+agree on the candidate's single `latest` value, regardless of their individual
+status. Split releases plus a covered baseline drift remain action-required
+even when both release providers report `current`; ordinary mixed or updated
+splits do too. Heterogeneous baseline and ref observations keep separate
+bindings and do not join release-provider agreement. Uncovered actionable
+checks still prevent a whole-family disposition.
 
 ### Validation Gate Derivation
 

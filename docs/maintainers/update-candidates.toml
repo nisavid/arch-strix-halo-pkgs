@@ -3508,7 +3508,7 @@ source_kind = "pypi"
 check_id = "pypi"
 baseline_source_kind = "arch_package"
 baseline_latest = "2.5.3-1"
-covered_checks = [{ source_kind = "arch_package", check_id = "arch" }]
+covered_checks = [{ source_kind = "arch_package", check_id = "arch", latest = "2.5.3-1" }]
 previous_recorded = "2.4.6 / 2.4.6-1"
 latest = "2.5.3"
 discovery_status = "stable_update_available"
@@ -3603,7 +3603,7 @@ source_kind = "arch_package"
 check_id = "arch"
 baseline_source_kind = "pypi"
 baseline_latest = "2.49.0"
-covered_checks = [{ source_kind = "pypi", check_id = "pypi" }]
+covered_checks = [{ source_kind = "pypi", check_id = "pypi", latest = "2.49.0" }]
 previous_recorded = "2.46.4-1 / 2.47.0"
 latest = "2.46.5-1"
 discovery_status = "stable_update_available"
@@ -4884,7 +4884,7 @@ packages = ["python-pytorch-opt-rocm-gfx1151"]
 source_kind = "git_ref"
 check_id = "release-branch"
 baseline_source_kind = "arch_package"
-baseline_latest = "2.14.0-1"
+baseline_latest = "2.14.1-1"
 previous_recorded = "13da08625e0d25586351146b4c444f5263997ef8 / 2.12.0-4"
 latest = "9ccf2fd0aab44087b58af23ad20bc961c29bb852"
 discovery_status = "branch_head_ahead"
@@ -4892,13 +4892,13 @@ disposition = "tracked"
 disposition_reason = "The October 7 metadata sweep observes this later upstream or baseline value. Issue #147 owns post-freeze candidate review and disposition. The inference stack's selected versions remain unchanged; this routing record neither adopts the candidate nor decides security applicability or a build-breakage exception. The owning lane derives any source, patch, build, and runtime validation work before adoption."
 salient_changes = [
   "The release-branch check reports 9ccf2fd0aab44087b58af23ad20bc961c29bb852 after recorded cursor 13da08625e0d25586351146b4c444f5263997ef8",
-  "The independent Arch baseline still reports 2.14.0-1 after 2.12.0-4; the selected inference stack retains its selected 2.12.0 source and no baseline adoption is implied",
+  "The October 8 sweep reports the independent Arch baseline at 2.14.1-1 after its earlier 2.14.0-1 observation and the recorded 2.12.0-4 cursor; the selected inference stack retains its selected 2.12.0 source and no baseline adoption is implied",
   "Release contents and patch applicability are not assessed by this metadata refresh; the next gate owns that work",
 ]
 next_gate_kind = "github_issue"
 next_gate_issue = 147
 next_gate_label = "Post-freeze rocm-pytorch candidate review and disposition"
-last_reviewed = "2026-10-07"
+last_reviewed = "2026-10-08"
 
 [candidates."stable-diffusion-cpp-a1ded76"]
 family = "stable_diffusion_cpp"

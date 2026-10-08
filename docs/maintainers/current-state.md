@@ -4,6 +4,55 @@ The package, deployment, and live-validation narrative below remains a
 2026-06-15 snapshot. Dated records come first, newest first; older
 reconciliations remain as dated history.
 
+## 2026-10-08 Shared Candidate Eligibility and Confirming Sweep
+
+Current, baseline-drift, and ordinary candidate matching now validate every
+selected nonfailed observation before attaching a disposition. Each selected
+latest value must match its binding. Current observations on current or
+baseline-only families can retain a promoted policy cursor instead of the
+historical cursor, preserving open tracked and blocked obligations. Release
+candidates also require agreement among selected equivalent primary providers;
+independent package baselines and commit refs keep separate values. Failed-query
+matching retains its separate exception.
+
+Eight public matching regressions reproduced before correction: four
+baseline-only split-release cases incorrectly selected tracked candidates,
+two all-current cases attached stale covered observations, and two stale/correct
+record pairs raised false duplicate errors. The corrected cases pass alongside
+agreeing-release, promoted-cursor, blocked-current, independent Python baseline,
+ref/release, failed-query, and genuine-duplicate controls. An all-current family
+without a matching candidate remains current; the correction does not invent
+drift. Checker version 11 invalidates earlier semantic cache keys. Public
+producer tests construct keys for versions 7, 8, 9, and 10; they do not execute
+those complete historical matcher implementations.
+
+The stricter sweep exposed missing explicit latest values in the existing
+NumPy Arch and pydantic-core PyPI selectors. Their bindings now preserve the
+recorded tracked and adopted dispositions without changing either source
+decision. The independent Arch PyTorch baseline advanced from `2.14.0-1` to
+`2.14.1-1`; the unchanged release/2.12 branch observation retains its routing to
+[post-closeout maintenance](https://github.com/nisavid/arch-strix-halo-pkgs/issues/147).
+That baseline observation is not a source adoption or a release-content/security
+assessment.
+
+The confirming real-provider sweep recorded `2026-10-08T10:53:48Z` and exited 0
+through public `main` with `--refresh --json --fail-on actionable`. Configured
+authenticated GitHub CLI queries supplied public release and tag metadata;
+other providers used ordinary HTTP. The 51 families reported 26 stable updates,
+five branch-head movements, four baseline drifts, and 16 current families.
+Ledger results were 38 tracked, six rejected, two adopted, and five current,
+with no actionable result or provider failure. Separate tracker validation
+exited 0 with all 13 unique active issue gates open.
+
+The focused suite passed 160 tests. The complete source suite passed 1,116
+tests, with two skips and no module exclusions, in the offline CPU environment
+using the existing read-only Hugging Face Hub 1.33.0 overlay. This construction
+does not repair the normal host's Transformers / Hugging Face Hub 2.1.1
+collection incompatibility or qualify the selected model closure. No package
+was built or installed, and no GPU, server, or live scenario ran. The next sweep
+is due 24 hours after this record, or sooner after relevant policy, package,
+ledger, checker, or source-metadata changes.
+
 ## 2026-10-08 Equivalent-Release Consensus and Confirming Sweep
 
 Ordinary release-candidate matching now compares every selected equivalent

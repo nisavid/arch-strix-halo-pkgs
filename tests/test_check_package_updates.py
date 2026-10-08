@@ -2209,6 +2209,290 @@ def test_ref_candidate_keeps_separately_bound_current_release(tmp_path):
     assert code == 0
 
 
+def write_current_release_fixture(
+    tmp_path,
+    *,
+    pypi_version="5.18.0",
+    tag_version="5.18.0",
+    primary_provider="pypi",
+    covered_latest=None,
+    baseline_current=False,
+    covered_arch_latest="5.18.0-1",
+    disposition="tracked",
+):
+    write_pkg(tmp_path, "python-transformers-gfx1151")
+    arch_recorded = "5.18.0-1" if baseline_current else "5.16.1-1"
+    write_policy(
+        tmp_path,
+        f"""
+        [families.transformers]
+        packages = ["python-transformers-gfx1151"]
+        checks = [
+          {{ id = "pypi", role = "primary", kind = "pypi", package = "transformers", recorded = "{pypi_version}", comparison = "pep440" }},
+          {{ id = "tag", role = "primary", kind = "github_tags", repo = "huggingface/transformers", recorded = "{tag_version}", tag_prefix = "v", comparison = "pep440" }},
+          {{ id = "arch", role = "baseline", kind = "arch_package", package = "python-transformers", recorded = "{arch_recorded}", comparison = "pkgver" }},
+        ]
+        """,
+    )
+    kinds = {"pypi": "pypi", "tag": "github_tags"}
+    versions = {"pypi": pypi_version, "tag": tag_version}
+    covered_provider = "tag" if primary_provider == "pypi" else "pypi"
+    covered_value = (
+        f', latest = "{covered_latest}"' if covered_latest is not None else ""
+    )
+    write_candidate_ledger(
+        tmp_path,
+        f"""
+        [candidates."transformers-current"]
+        family = "transformers"
+        packages = ["python-transformers-gfx1151"]
+        source_kind = "{kinds[primary_provider]}"
+        check_id = "{primary_provider}"
+        covered_checks = [
+          {{ source_kind = "{kinds[covered_provider]}", check_id = "{covered_provider}"{covered_value} }},
+          {{ source_kind = "arch_package", check_id = "arch", latest = "{covered_arch_latest}" }},
+        ]
+        previous_recorded = "5.16.1 / 5.16.1-1"
+        latest = "{versions[primary_provider]}"
+        discovery_status = "stable_update_available"
+        disposition = "{disposition}"
+        next_gate_kind = "github_issue"
+        next_gate_issue = 183
+        next_gate_label = "Transformers model closure"
+        """,
+    )
+    return updates.FakeClients(
+        pypi={"transformers": {"version": pypi_version}},
+        github_tags={"huggingface/transformers": [f"v{tag_version}"]},
+        arch={"python-transformers": {"version": "5.18.0-1"}},
+    )
+
+
+@pytest.mark.parametrize(
+    ("pypi_version", "tag_version", "primary_provider", "covered_latest", "expected_effective", "expected_exit"),
+    [
+        ("5.18.0", "5.19.0", "pypi", None, "action_required", 10),
+        ("5.18.0", "5.19.0", "pypi", "5.19.0", "action_required", 10),
+        ("5.19.0", "5.18.0", "tag", None, "action_required", 10),
+        ("5.19.0", "5.18.0", "tag", "5.19.0", "action_required", 10),
+        ("5.18.0", "5.18.0", "pypi", None, "tracked_update_candidate", 0),
+        ("5.18.0", "5.18.0", "pypi", "5.18.0", "tracked_update_candidate", 0),
+        ("5.18.0", "5.18.0", "tag", None, "tracked_update_candidate", 0),
+        ("5.18.0", "5.18.0", "tag", "5.18.0", "tracked_update_candidate", 0),
+    ],
+)
+def test_baseline_drift_requires_agreeing_current_release_observations(
+    tmp_path, capsys, pypi_version, tag_version, primary_provider,
+    covered_latest, expected_effective, expected_exit
+):
+    clients = write_current_release_fixture(
+        tmp_path,
+        pypi_version=pypi_version,
+        tag_version=tag_version,
+        primary_provider=primary_provider,
+        covered_latest=covered_latest,
+    )
+
+    report = updates.run_check(tmp_path, refresh=True, clients=clients)
+    code = updates.main(
+        ["--repo-root", str(tmp_path), "--refresh", "--json", "--fail-on", "actionable"],
+        clients=clients,
+    )
+
+    family = report["families"][0]
+    assert report["summary"] == {"baseline_drift": 1}
+    assert report["effective_summary"] == {expected_effective: 1}
+    assert family["effective_status"] == expected_effective
+    assert [(check["id"], check["status"], check["recorded"], check["latest"]) for check in family["checks"]] == [
+        ("pypi", "current", pypi_version, pypi_version),
+        ("tag", "current", tag_version, tag_version),
+        ("arch", "baseline_drift", "5.16.1-1", "5.18.0-1"),
+    ]
+    if expected_effective == "tracked_update_candidate":
+        candidate = family["candidate"]
+        assert candidate["id"] == "transformers-current"
+        assert candidate["previous_recorded"] == "5.16.1 / 5.16.1-1"
+        assert candidate["latest"] == "5.18.0"
+        assert candidate["next_gate_issue"] == 183
+    else:
+        assert "candidate" not in family
+    assert code == expected_exit
+    assert json.loads(capsys.readouterr().out)["families"][0] == family
+
+
+@pytest.mark.parametrize(
+    ("covered_latest", "covered_arch_latest"),
+    [("5.17.0", "5.18.0-1"), ("5.18.0", "5.17.0-1")],
+)
+def test_current_family_does_not_attach_stale_covered_observations(
+    tmp_path, capsys, covered_latest, covered_arch_latest
+):
+    clients = write_current_release_fixture(
+        tmp_path,
+        baseline_current=True,
+        covered_latest=covered_latest,
+        covered_arch_latest=covered_arch_latest,
+    )
+
+    report = updates.run_check(tmp_path, refresh=True, clients=clients)
+    code = updates.main(
+        ["--repo-root", str(tmp_path), "--refresh", "--json", "--fail-on", "actionable"],
+        clients=clients,
+    )
+
+    family = report["families"][0]
+    assert report["summary"] == {"current": 1}
+    assert report["effective_summary"] == {"current": 1}
+    assert family["effective_status"] == "current"
+    assert "candidate" not in family
+    assert [(check["id"], check["status"], check["latest"]) for check in family["checks"]] == [
+        ("pypi", "current", "5.18.0"),
+        ("tag", "current", "5.18.0"),
+        ("arch", "current", "5.18.0-1"),
+    ]
+    assert code == 0
+    assert json.loads(capsys.readouterr().out)["families"][0] == family
+
+
+@pytest.mark.parametrize("stale_check", ["tag", "arch"])
+def test_current_family_selects_only_the_fully_bound_candidate(
+    tmp_path, capsys, stale_check
+):
+    clients = write_current_release_fixture(
+        tmp_path, baseline_current=True, covered_latest="5.18.0"
+    )
+    ledger = tmp_path / "docs/maintainers/update-candidates.toml"
+    tag_latest = "5.17.0" if stale_check == "tag" else "5.18.0"
+    arch_latest = "5.17.0-1" if stale_check == "arch" else "5.18.0-1"
+    with ledger.open("a", encoding="utf-8") as handle:
+        handle.write(textwrap.dedent(f"""
+        [candidates."transformers-stale"]
+        family = "transformers"
+        packages = ["python-transformers-gfx1151"]
+        source_kind = "pypi"
+        check_id = "pypi"
+        covered_checks = [
+          {{ source_kind = "github_tags", check_id = "tag", latest = "{tag_latest}" }},
+          {{ source_kind = "arch_package", check_id = "arch", latest = "{arch_latest}" }},
+        ]
+        previous_recorded = "5.16.1 / 5.16.1-1"
+        latest = "5.18.0"
+        discovery_status = "stable_update_available"
+        disposition = "tracked"
+        next_gate_kind = "github_issue"
+        next_gate_issue = 183
+        next_gate_label = "Earlier Transformers observation"
+        """))
+
+    report = updates.run_check(tmp_path, refresh=True, clients=clients)
+    code = updates.main(
+        ["--repo-root", str(tmp_path), "--refresh", "--json", "--fail-on", "actionable"],
+        clients=clients,
+    )
+
+    family = report["families"][0]
+    assert report["summary"] == {"current": 1}
+    assert report["effective_summary"] == {"tracked_update_candidate": 1}
+    assert family["candidate"]["id"] == "transformers-current"
+    assert family["candidate"]["next_gate_issue"] == 183
+    assert code == 0
+    assert json.loads(capsys.readouterr().out)["families"][0] == family
+
+
+def test_current_family_keeps_fully_bound_blocked_obligation(tmp_path, capsys):
+    clients = write_current_release_fixture(
+        tmp_path, baseline_current=True, covered_latest="5.18.0", disposition="blocked"
+    )
+
+    report = updates.run_check(tmp_path, refresh=True, clients=clients)
+    code = updates.main(
+        ["--repo-root", str(tmp_path), "--refresh", "--json", "--fail-on", "actionable"],
+        clients=clients,
+    )
+
+    family = report["families"][0]
+    assert report["summary"] == {"current": 1}
+    assert report["effective_summary"] == {"blocked_update_candidate": 1}
+    assert family["candidate"]["id"] == "transformers-current"
+    assert family["candidate"]["previous_recorded"] == "5.16.1 / 5.16.1-1"
+    assert code == 10
+    assert json.loads(capsys.readouterr().out)["families"][0] == family
+
+
+def test_current_complete_duplicate_candidates_are_invalid(tmp_path):
+    clients = write_current_release_fixture(
+        tmp_path, baseline_current=True, covered_latest="5.18.0"
+    )
+    ledger = tmp_path / "docs/maintainers/update-candidates.toml"
+    duplicate = ledger.read_text(encoding="utf-8").split("schema_version = 2", 1)[1]
+    duplicate = duplicate.replace(
+        '[candidates."transformers-current"]',
+        '[candidates."transformers-current-duplicate"]',
+        1,
+    )
+    with ledger.open("a", encoding="utf-8") as handle:
+        handle.write(duplicate)
+
+    with pytest.raises(RuntimeError, match="CANDIDATE_LEDGER_DUPLICATE_MATCH"):
+        updates.run_check(tmp_path, refresh=True, clients=clients)
+    with pytest.raises(RuntimeError, match="CANDIDATE_LEDGER_DUPLICATE_MATCH"):
+        updates.main(
+            ["--repo-root", str(tmp_path), "--refresh", "--json", "--fail-on", "actionable"],
+            clients=clients,
+        )
+
+
+def test_python_candidate_keeps_independent_ftp_baseline_and_prior_record(
+    tmp_path, capsys
+):
+    write_pkg(tmp_path, "python-gfx1151")
+    policy_text = (REPO_ROOT / "policies/package-freshness.toml").read_text(encoding="utf-8")
+    python_section = policy_text.split("[families.python]\n", 1)[1].split("\n[", 1)[0]
+    write_policy(tmp_path, "[families.python]\n" + python_section)
+    ledger_text = (REPO_ROOT / "docs/maintainers/update-candidates.toml").read_text(encoding="utf-8")
+    records = []
+    for candidate_id in (
+        "python-3.14.7-1-arch", "python-3.14.7-1-arch-cpython-3.14.8"
+    ):
+        heading = f'[candidates."{candidate_id}"]'
+        records.append(heading + ledger_text.split(heading, 1)[1].split("\n[", 1)[0])
+    write_candidate_ledger(tmp_path, "\n\n".join(records))
+    write_recipe_policy(
+        tmp_path,
+        (REPO_ROOT / "policies/recipe-packages.toml").read_text(encoding="utf-8"),
+    )
+    for name in ("PKGBUILD", "recipe.json"):
+        (tmp_path / "packages/python-gfx1151" / name).write_bytes(
+            (REPO_ROOT / "packages/python-gfx1151" / name).read_bytes()
+        )
+    clients = updates.FakeClients(
+        arch={"python": {"version": "3.14.7-1"}},
+        python_ftp=["3.14.6", "3.14.7", "3.14.8"],
+    )
+
+    report = updates.run_check(tmp_path, refresh=True, clients=clients)
+    code = updates.main(
+        ["--repo-root", str(tmp_path), "--refresh", "--json", "--fail-on", "actionable"],
+        clients=clients,
+    )
+
+    family = report["families"][0]
+    assert report["summary"] == {"stable_update_available": 1}
+    assert report["effective_summary"] == {"tracked_update_candidate": 1}
+    assert [(check["id"], check["role"], check["status"], check["latest"]) for check in family["checks"]] == [
+        ("arch", "primary", "stable_update_available", "3.14.7-1"),
+        ("cpython", "baseline", "baseline_drift", "3.14.8"),
+    ]
+    assert family["candidate"]["id"] == "python-3.14.7-1-arch-cpython-3.14.8"
+    assert family["candidate"]["latest"] == "3.14.7-1"
+    assert family["candidate"]["covered_checks"] == [
+        {"source_kind": "python_ftp", "check_id": "cpython", "latest": "3.14.8"}
+    ]
+    assert family["candidate"]["next_gate_issue"] == 108
+    assert code == 0
+    assert json.loads(capsys.readouterr().out)["families"][0] == family
+
+
 def test_candidate_discovery_status_must_match_family_status(tmp_path):
     write_pkg(tmp_path, "python-vllm-rocm-gfx1151")
     write_policy(
@@ -3891,16 +4175,9 @@ def test_checker_semantics_version_invalidates_existing_cache(tmp_path, monkeypa
     assert second["families"][0]["checks"][0]["latest"] == "2.4.5"
 
 
-@pytest.mark.parametrize(
-    ("previous_version", "legacy_digest"),
-    [
-        (7, "1e0befb7239d024880bc1ed5fded0fb4fa848421eb26f6dca7e8b0001b1cecdf"),
-        (8, "ba1d9c47817f50b46ffafb9d0c39c67eb8d123932deefab84cba2f711a74de29"),
-        (9, "38c5723226ee0cc2956e258955d6fad4ff8ffd52bd8be41b2f337c0e8b5206c1"),
-    ],
-)
-def test_previous_semantics_cache_is_invalidated_by_version_ten_checker(
-    tmp_path, previous_version, legacy_digest
+@pytest.mark.parametrize("previous_version", [7, 8, 9, 10])
+def test_previous_semantics_cache_is_invalidated_by_version_eleven_checker(
+    tmp_path, monkeypatch, previous_version
 ):
     write_pkg(tmp_path, "python-numpy-gfx1151")
     write_policy(
@@ -3910,16 +4187,13 @@ def test_previous_semantics_cache_is_invalidated_by_version_ten_checker(
         'checks = [{ id = "pypi", role = "primary", kind = "pypi", '
         'package = "numpy", recorded = "2.4.4", comparison = "pep440" }]\n',
     )
-    previous = updates.run_check(
-        tmp_path,
-        refresh=True,
-        clients=updates.FakeClients(pypi={"numpy": {"version": "2.4.4"}}),
-    )
-    previous["cache"].update(
-        {"tool_version": previous_version, "policy_digest": legacy_digest}
-    )
-    cache_path = tmp_path / ".agents/session/dependency-freshness-cache.json"
-    cache_path.write_text(json.dumps(previous), encoding="utf-8")
+    with monkeypatch.context() as producer:
+        producer.setattr(updates, "TOOL_VERSION", previous_version)
+        previous = updates.run_check(
+            tmp_path,
+            refresh=True,
+            clients=updates.FakeClients(pypi={"numpy": {"version": "2.4.4"}}),
+        )
 
     report = updates.run_check(
         tmp_path,
@@ -3927,8 +4201,8 @@ def test_previous_semantics_cache_is_invalidated_by_version_ten_checker(
     )
 
     assert report["cache"]["used"] is False
-    assert report["cache"]["tool_version"] == 10
-    assert report["cache"]["policy_digest"] != legacy_digest
+    assert report["cache"]["tool_version"] == 11
+    assert report["cache"]["policy_digest"] != previous["cache"]["policy_digest"]
     assert report["summary"] == {"stable_update_available": 1}
     assert report["families"][0]["checks"][0]["latest"] == "2.4.5"
 
