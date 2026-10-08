@@ -11,9 +11,11 @@ import base64
 import datetime
 import hashlib
 import json
+import math
 import os
 from pathlib import Path, PurePosixPath
 import platform
+import posixpath
 import re
 import shutil
 import stat
@@ -33,18 +35,35 @@ class RecoveryError(Exception):
     """An actionable refusal with a path-free public diagnostic."""
 
 
-def command(argv: list[str]) -> str:
-    result = subprocess.run(argv, capture_output=True, text=True)
+class CommandTimeout(RecoveryError):
+    """A stalled required command aborts the invocation, not one candidate."""
+
+
+def positive_timeout(value: str) -> float:
+    try:
+        seconds = float(value)
+    except (ValueError, OverflowError):
+        raise argparse.ArgumentTypeError("command timeout must be positive and finite") from None
+    if not math.isfinite(seconds) or seconds <= 0:
+        raise argparse.ArgumentTypeError("command timeout must be positive and finite")
+    return seconds
+
+
+def command(argv: list[str], timeout_seconds: float) -> str:
+    try:
+        result = subprocess.run(argv, capture_output=True, text=True, timeout=timeout_seconds)
+    except subprocess.TimeoutExpired:
+        raise CommandTimeout("required read-only command timed out") from None
     if result.returncode:
         raise RecoveryError("required read-only command failed")
     return result.stdout
 
 
-def installed(root: Path) -> list[dict]:
+def installed(root: Path, timeout_seconds: float) -> list[dict]:
     packages = []
     names = set()
     for line in command(["pacman", "--root", str(root), "--dbpath", str(root / "var/lib/pacman"),
-                         "--config", "/dev/null", "-Q"]).splitlines():
+                         "--config", "/dev/null", "-Q"], timeout_seconds).splitlines():
         fields = line.split()
         if len(fields) != 2 or not NAME.fullmatch(fields[0]) or fields[0] in names:
             raise RecoveryError("invalid or duplicate installed package identity")
@@ -55,8 +74,8 @@ def installed(root: Path) -> list[dict]:
     return sorted(packages, key=lambda item: item["name"])
 
 
-def metadata(path: Path) -> dict:
-    text = command(["bsdtar", "-xOqf", str(path), ".PKGINFO"])
+def metadata(path: Path, timeout_seconds: float) -> dict:
+    text = command(["bsdtar", "-xOqf", str(path), ".PKGINFO"], timeout_seconds)
     values = {}
     for line in text.splitlines():
         if " = " in line:
@@ -104,20 +123,25 @@ def save_private(path: Path, value: dict) -> None:
 
 def inventory(args) -> int:
     root = no_symlink(args.root)
-    identities = installed(root)
-    arches = architectures(root)
+    identities = installed(root, args.command_timeout_seconds)
+    arches = architectures(root, args.command_timeout_seconds)
     wanted = {(p["name"], p["version"]) for p in identities}
     found = {}
     invalid = 0
     for directory in args.archive_dir or [Path("/var/cache/pacman/pkg"),
                                          Path("/srv/pacman/strix-halo-gfx1151/x86_64")]:
         for path in sorted(directory.glob("*.pkg.tar.*")):
-            if path.name.endswith(".sig") or not is_package_archive(path):
+            if path.name.endswith(".sig"):
                 continue
             try:
-                info = metadata(path)
+                path = no_symlink(path)
+                if not is_package_archive(path):
+                    continue
+                info = metadata(path, args.command_timeout_seconds)
                 if info["arch"] not in arches:
                     raise RecoveryError("package architecture is outside source configuration")
+            except CommandTimeout:
+                raise
             except RecoveryError:
                 invalid += 1
                 continue
@@ -126,8 +150,9 @@ def inventory(args) -> int:
                 found[identity] = dict(info, source=str(path.absolute()))
     missing = [p for p in identities if (p["name"], p["version"]) not in found]
     mounts = json.loads(command(["findmnt", "--json", "--target", str(root),
-                                "--output", "TARGET,FSTYPE,FSROOT"]))
-    if installed(root) != identities or architectures(root) != arches:
+                                "--output", "TARGET,FSTYPE,FSROOT"], args.command_timeout_seconds))
+    if (installed(root, args.command_timeout_seconds) != identities
+            or architectures(root, args.command_timeout_seconds) != arches):
         raise RecoveryError("installed inventory changed during observation")
     report = dict(schema=SCHEMA, kind="inventory", source_root=str(root),
                   observed_at=datetime.datetime.now(datetime.timezone.utc).isoformat(),
@@ -138,12 +163,12 @@ def inventory(args) -> int:
     return 10 if missing else 0
 
 
-def architectures(root: Path) -> list[str]:
+def architectures(root: Path, timeout_seconds: float) -> list[str]:
     config = no_symlink(root / "etc/pacman.conf")
     if root != Path("/") and any(line.split("=", 1)[0].strip() == "Include"
                                  for line in config.read_text().splitlines()):
         raise RecoveryError("alternate source root requires a self-contained pacman configuration")
-    values = command(["pacman-conf", "--config", str(config), "Architecture"]).split()
+    values = command(["pacman-conf", "--config", str(config), "Architecture"], timeout_seconds).split()
     if not values or any(not NAME.fullmatch(value) for value in values):
         raise RecoveryError("source pacman architecture policy is unavailable or invalid")
     return sorted({"any", *(platform.machine() if v == "auto" else v for v in values)})
@@ -170,6 +195,42 @@ def relative(text: str) -> str:
     return text
 
 
+def contained_configuration_link(root: Path, rel: str, link: str) -> None:
+    source = PurePosixPath("/", *root.parts[1:])
+
+    def resolve(base, value, active):
+        target = PurePosixPath(value)
+        if target.is_absolute():
+            absolute = PurePosixPath("/", *target.parts[1:])
+            normalized = PurePosixPath(posixpath.normpath(str(absolute)))
+            if source != PurePosixPath("/") and (
+                    absolute.is_relative_to(source) or normalized.is_relative_to(source)):
+                raise RecoveryError("configuration link embeds the physical source root")
+            resolved = []
+            parts = target.parts[1:]
+        else:
+            resolved = list(base)
+            parts = target.parts
+        for part in parts:
+            if part == "..":
+                if resolved:
+                    resolved.pop()
+                elif not target.is_absolute():
+                    raise RecoveryError("configuration link escapes the source root")
+            else:
+                logical = (*resolved, part)
+                candidate = root.joinpath(*logical)
+                if candidate.is_symlink():
+                    if logical in active:
+                        raise RecoveryError("configuration link cycle refused")
+                    resolved = resolve(resolved, os.readlink(candidate), active | {logical})
+                else:
+                    resolved.append(part)
+        return resolved
+
+    resolve(PurePosixPath(rel).parent.parts, link, {PurePosixPath(rel).parts})
+
+
 def configuration(root: Path, paths: list[str]) -> list[dict]:
     records = {}
 
@@ -189,8 +250,7 @@ def configuration(root: Path, paths: list[str]) -> list[dict]:
             record.update(type="file", sha256=digest(path))
         elif stat.S_ISLNK(info.st_mode):
             link = os.readlink(path)
-            if not (root / rel).parent.joinpath(link).resolve().is_relative_to(root):
-                raise RecoveryError("configuration link escapes the source root")
+            contained_configuration_link(root, rel, link)
             record.update(type="symlink", link=link)
         elif stat.S_ISDIR(info.st_mode):
             record["type"] = "directory"
@@ -235,6 +295,21 @@ def pax_acl(value: str) -> set[tuple[str, str, str]]:
     return entries
 
 
+def archive_mtime_ns(member: tarfile.TarInfo) -> int:
+    value = member.pax_headers.get("mtime")
+    if value is None:
+        if type(member.mtime) is not int:
+            raise RecoveryError("configuration archive modification time is unusable")
+        return member.mtime * 1_000_000_000
+    if not isinstance(value, str) or not re.fullmatch(r"[+-]?[0-9]+(?:\.[0-9]+)?", value):
+        raise RecoveryError("configuration archive modification time is unusable")
+    whole, _, fraction = value.lstrip("+-").partition(".")
+    if any(digit != "0" for digit in fraction[9:]):
+        raise RecoveryError("configuration archive modification time is finer than a nanosecond")
+    nanoseconds = int(whole) * 1_000_000_000 + int(fraction[:9].ljust(9, "0"))
+    return -nanoseconds if value.startswith("-") else nanoseconds
+
+
 def check_configuration_archive(path: Path, records: list[dict]) -> None:
     with tarfile.open(path, "r:") as archive:
         members = archive.getmembers()
@@ -245,6 +320,9 @@ def check_configuration_archive(path: Path, records: list[dict]) -> None:
             member = observed[record["path"]]
             if (member.mode, member.uid, member.gid) != (record["mode"], record["uid"], record["gid"]):
                 raise RecoveryError("configuration archive metadata mismatch")
+            if (type(record.get("mtime_ns")) is not int
+                    or archive_mtime_ns(member) != record["mtime_ns"]):
+                raise RecoveryError("configuration archive modification time mismatch")
             xattrs = {}
             for key, value in member.pax_headers.items():
                 if key.startswith("LIBARCHIVE.xattr."):
@@ -286,8 +364,9 @@ def capture(args) -> int:
     if request["purpose"] != "trial":
         raise RecoveryError("only trial capture is supported; final activation capture remains owner-run")
     root = no_symlink(Path(report["source_root"]))
-    identities = installed(root)
-    if identities != report["installed"] or architectures(root) != report["architectures"]:
+    identities = installed(root, args.command_timeout_seconds)
+    if (identities != report["installed"]
+            or architectures(root, args.command_timeout_seconds) != report["architectures"]):
         raise RecoveryError("installed inventory changed since observation")
     packages = sorted(report["packages"], key=lambda item: item["name"])
     if [{"name": p["name"], "version": p["version"]} for p in packages] != identities:
@@ -303,7 +382,7 @@ def capture(args) -> int:
         retained = []
         for index, package in enumerate(packages):
             source = no_symlink(Path(package["source"]))
-            info = metadata(source)
+            info = metadata(source, args.command_timeout_seconds)
             if any(info[key] != package[key] for key in ("name", "version", "arch")):
                 raise RecoveryError("package metadata changed since inventory")
             before = digest(source)
@@ -311,7 +390,8 @@ def capture(args) -> int:
             dest = output / name
             with source.open("rb") as src, open(dest, "xb", opener=lambda p, f: os.open(p, f, 0o600)) as dst:
                 shutil.copyfileobj(src, dst)
-            if digest(dest) != before or digest(source) != before or metadata(dest) != info:
+            if (digest(dest) != before or digest(source) != before
+                    or metadata(dest, args.command_timeout_seconds) != info):
                 raise RecoveryError("package archive changed during capture")
             entry = dict(info, file=name, sha256=before, signature=None)
             signature = source.with_name(source.name + ".sig")
@@ -327,11 +407,11 @@ def capture(args) -> int:
         archive = output / "configuration.tar"
         # libarchive retains numeric ownership, links, ACLs, xattrs, and flags.
         command(["bsdtar", "--format", "pax", "--acls", "--xattrs", "--fflags",
-                 "-cpf", str(archive), "-C", str(root), "--", *paths])
+                 "-cpf", str(archive), "-C", str(root), "--", *paths], args.command_timeout_seconds)
         archive.chmod(0o600)
         check_configuration_archive(archive, configs)
-        if (configuration(root, paths) != configs or installed(root) != identities
-                or architectures(root) != report["architectures"]):
+        if (configuration(root, paths) != configs or installed(root, args.command_timeout_seconds) != identities
+                or architectures(root, args.command_timeout_seconds) != report["architectures"]):
             raise RecoveryError("deployed state changed during capture")
         manifest = dict(schema=SCHEMA, kind="recovery-capture", purpose="trial",
                         source_root=str(root), captured_at=datetime.datetime.now(datetime.timezone.utc).isoformat(),
@@ -346,7 +426,7 @@ def capture(args) -> int:
     return 0
 
 
-def verified(bundle: Path, expected: str) -> dict:
+def verified(bundle: Path, expected: str, timeout_seconds: float) -> dict:
     bundle = no_symlink(bundle)
     manifest_path = bundle / "manifest.json"
     if not re.fullmatch(r"[0-9a-f]{64}", expected) or digest(manifest_path) != expected:
@@ -364,7 +444,8 @@ def verified(bundle: Path, expected: str) -> dict:
         if package["file"] != f"packages/{index:05d}.pkg.tar":
             raise RecoveryError("retained package path mismatch")
         path = bundle / package["file"]
-        if digest(path) != package["sha256"] or metadata(path) != {k: package[k] for k in ("name", "version", "arch")}:
+        if (digest(path) != package["sha256"]
+                or metadata(path, timeout_seconds) != {k: package[k] for k in ("name", "version", "arch")}):
             raise RecoveryError("retained package changed")
         signature = package["signature"]
         if signature is not None:
@@ -378,14 +459,14 @@ def verified(bundle: Path, expected: str) -> dict:
 
 
 def verify(args) -> int:
-    manifest = verified(args.bundle, args.digest)
+    manifest = verified(args.bundle, args.digest, args.command_timeout_seconds)
     print(json.dumps(dict(state="verified-files", packages=len(manifest["packages"]))))
     return 0
 
 
 def prepare_restore(args) -> int:
     bundle = no_symlink(args.bundle)
-    manifest = verified(bundle, args.digest)
+    manifest = verified(bundle, args.digest, args.command_timeout_seconds)
     workspace = no_symlink(args.workspace)
     root = no_symlink(args.root)
     if (not workspace.is_dir() or workspace.stat().st_uid != os.getuid()
@@ -479,6 +560,9 @@ def main() -> int:
     prep.add_argument("--pacman-config", type=Path, required=True)
     prep.add_argument("--output", type=Path, required=True)
     prep.set_defaults(run=prepare_restore)
+    for recovery in (inv, cap, ver, prep):
+        recovery.add_argument("--command-timeout-seconds", type=positive_timeout, default=300,
+                              metavar="SECONDS", help="maximum seconds per external command (default: 300)")
     args = parser.parse_args()
     try:
         return args.run(args)
