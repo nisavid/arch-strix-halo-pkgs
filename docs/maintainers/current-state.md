@@ -516,8 +516,9 @@ states are recorded separately:
   before W5.
 - **Installed-smoked:** no. The CPU drive and GPU lanes below ran against the
   package as installed in the W2A root, not on the host.
-- **Live-scenario validated:** in the W2A root only, except G5, which
-  [#169](https://github.com/nisavid/arch-strix-halo-pkgs/issues/169) owns.
+- **Live-scenario validated:** in the W2A root only. The W4 vLLM gate for
+  mixture-of-experts kernels and long decode is
+  [#179](https://github.com/nisavid/arch-strix-halo-pkgs/issues/179), which replaced the Gemma 4 26B-A4B lanes on 2026-10-02.
   The tracked scenarios below ran on the gfx1151 GPU inside the root; host
   live-scenario validation waits for deployment.
 - **CPU drive:** without a GPU, through a fake-ROCm platform shim:
@@ -538,7 +539,7 @@ states are recorded separately:
 | `vllm.gemma4.e2b.server.basic`, `.reasoning`, `.benchmark-lite`, `.structured`, `.structured-thinking`, `.tool`, `.tool-thinking`, `.full-feature-text-only` | 8/8 pass |
 | Probe `vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors` | pass |
 | Probe `vllm.gemma4.e2b.text.compiled` | pass |
-| G5: `vllm.gemma4.26b-a4b.text.basic`, `vllm.gemma4.26b-a4b.server.basic` | not run |
+| `vllm.gemma4.26b-a4b.text.basic`, `vllm.gemma4.26b-a4b.server.basic` | not run |
 
 **Harness and scenario fixes:** the failures in the earlier windows were
 harness and scenario defects, not package defects. They are fixed in
@@ -579,13 +580,24 @@ full-feature lane avoids them.
   never constrained. Upstream main still has this; it is not yet reported
   upstream.
 
-**Not run:** G5, the Gemma 4 26B-A4B lanes `vllm.gemma4.26b-a4b.text.basic`
+**Not run:** the Gemma 4 26B-A4B lanes `vllm.gemma4.26b-a4b.text.basic`
 and `vllm.gemma4.26b-a4b.server.basic`. They need at least 77.8 GiB of
 `MemAvailable`; even with the live Lemonade service's models unloaded, the
 host reached only 70-76 GiB. The owner deferred them to
-[#169](https://github.com/nisavid/arch-strix-halo-pkgs/issues/169), a W4
-sub-issue, to run in a quiet host window ahead of W4 qualification; they no
-longer gate W2A closeout.
+[#169](https://github.com/nisavid/arch-strix-halo-pkgs/issues/169), and they no
+longer gate W2A closeout. On 2026-10-02 their model load peaked at roughly
+twice the checkpoint size, at least 90 GiB, so the owner replaced them as the
+W4 gate with [#179](https://github.com/nisavid/arch-strix-halo-pkgs/issues/179): a
+small mixture-of-experts lane (IBM Granite 3.1 1B-A400M) and a Gemma 4 E2B
+long-decode lane that generates past 1,024 tokens. #169 stays open as optional
+load-path research.
+
+**W4 vLLM gate status (2026-10-05):** neither #179 lane has run. The opt-in
+E2B long-decode scenario now requires at least 1,025 observed completion tokens
+(#184). The Granite 3.1 1B-A400M lane still needs its fixtures, parser
+assertions, and fit and fault-stop guard; the model download and a GPU window
+are also pending. W4 qualification of exact C follows those lanes and remains
+open.
 
 **FlashAttention CK gate:** the post-build gate that the FlashAttention
 verdict on #111 set for `python-flash-attn-rocm-gfx1151` passed on
