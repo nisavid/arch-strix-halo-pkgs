@@ -65,18 +65,23 @@ def test_loader_preserves_directory_errors(tmp_path):
         load_hip_vector_add_fixture(tmp_path, expected_sha256="a" * 64)
 
 
-def test_loader_preserves_unreadable_file_errors(tmp_path):
+def test_loader_preserves_filesystem_permission_errors(tmp_path, monkeypatch):
     path = tmp_path / "fixture.hip"
     path.write_bytes(b"abc")
-    path.chmod(0)
-    try:
-        with pytest.raises(PermissionError):
+    read_error = PermissionError("constructed filesystem read denial")
+
+    def deny_read(candidate):
+        assert candidate == path
+        raise read_error
+
+    with monkeypatch.context() as filesystem:
+        filesystem.setattr(Path, "read_bytes", deny_read)
+        with pytest.raises(PermissionError) as raised:
             load_hip_vector_add_fixture(
                 path,
                 expected_sha256=ABC_SHA256,
             )
-    finally:
-        path.chmod(0o600)
+    assert raised.value is read_error
 
 
 def test_loader_preserves_opaque_source_bytes_without_decoding(tmp_path):
