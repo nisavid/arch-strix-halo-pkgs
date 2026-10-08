@@ -48,7 +48,7 @@ STATUS_PRECEDENCE = [
     "manual_review_required",
     "current",
 ]
-TOOL_VERSION = 8
+TOOL_VERSION = 9
 CACHE_PATH = Path(".agents/session/dependency-freshness-cache.json")
 CANDIDATE_LEDGER_PATH = Path("docs/maintainers/update-candidates.toml")
 RECIPE_POLICY_PATH = Path("policies/recipe-packages.toml")
@@ -1307,6 +1307,15 @@ def candidate_matches_family(candidate: dict, family: dict) -> bool:
             and not candidate_covers_actionable_check(candidate, check, family)
             for check in family.get("checks", [])
         )
+    # Selected primary releases retain their bindings even when they are current.
+    if any(
+        check.get("role") == "primary"
+        and check.get("kind") in {"pypi", "github_release", "github_tags", "python_ftp"}
+        and candidate_matches_check(candidate, check, family)
+        and not candidate_covers_actionable_check(candidate, check, family)
+        for check in family.get("checks", [])
+    ):
+        return False
     candidate_latest = str(candidate.get("latest", "")).strip()
     latest_values = {
         latest

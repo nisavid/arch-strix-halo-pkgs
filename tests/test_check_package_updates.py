@@ -2020,6 +2020,8 @@ def test_candidate_can_cover_related_primary_checks(tmp_path):
     [
         ("5.19.0", "5.18.0", None, None),
         ("5.18.0", "5.19.0", None, None),
+        ("5.19.0", "5.16.1", None, None),
+        ("5.16.1", "5.19.0", None, None),
         ("5.18.0", "5.18.0", "transformers-5.18.0-pypi", 183),
         ("5.19.0", "5.19.0", "transformers-5.19.0-pypi", 147),
     ],
@@ -2081,14 +2083,27 @@ def test_recorded_release_providers_have_accurate_dispositions(
     )
 
     report = updates.run_check(tmp_path, refresh=True, clients=clients)
+    code = updates.main(
+        [
+            "--repo-root",
+            str(tmp_path),
+            "--refresh",
+            "--json",
+            "--fail-on",
+            "actionable",
+        ],
+        clients=clients,
+    )
 
     assert report["summary"] == {"stable_update_available": 1}
     family = report["families"][0]
     if expected_candidate_id is None:
+        assert code == 10
         assert report["effective_summary"] == {"action_required": 1}
         assert family["effective_status"] == "action_required"
         assert "candidate" not in family
     else:
+        assert code == 0
         assert report["effective_summary"] == {"tracked_update_candidate": 1}
         assert family["effective_status"] == "tracked_update_candidate"
         candidate = family["candidate"]
@@ -3784,7 +3799,16 @@ def test_checker_semantics_version_invalidates_existing_cache(tmp_path, monkeypa
     assert second["families"][0]["checks"][0]["latest"] == "2.4.5"
 
 
-def test_version_seven_cache_is_invalidated_by_version_eight_checker(tmp_path):
+@pytest.mark.parametrize(
+    ("previous_version", "legacy_digest"),
+    [
+        (7, "1e0befb7239d024880bc1ed5fded0fb4fa848421eb26f6dca7e8b0001b1cecdf"),
+        (8, "ba1d9c47817f50b46ffafb9d0c39c67eb8d123932deefab84cba2f711a74de29"),
+    ],
+)
+def test_previous_semantics_cache_is_invalidated_by_version_nine_checker(
+    tmp_path, previous_version, legacy_digest
+):
     write_pkg(tmp_path, "python-numpy-gfx1151")
     write_policy(
         tmp_path,
@@ -3798,10 +3822,8 @@ def test_version_seven_cache_is_invalidated_by_version_eight_checker(tmp_path):
         refresh=True,
         clients=updates.FakeClients(pypi={"numpy": {"version": "2.4.4"}}),
     )
-    # Digest of these fixture files under the version-7 cache contract.
-    legacy_digest = "1e0befb7239d024880bc1ed5fded0fb4fa848421eb26f6dca7e8b0001b1cecdf"
     previous["cache"].update(
-        {"tool_version": 7, "policy_digest": legacy_digest}
+        {"tool_version": previous_version, "policy_digest": legacy_digest}
     )
     cache_path = tmp_path / ".agents/session/dependency-freshness-cache.json"
     cache_path.write_text(json.dumps(previous), encoding="utf-8")
@@ -3812,7 +3834,7 @@ def test_version_seven_cache_is_invalidated_by_version_eight_checker(tmp_path):
     )
 
     assert report["cache"]["used"] is False
-    assert report["cache"]["tool_version"] == 8
+    assert report["cache"]["tool_version"] == 9
     assert report["cache"]["policy_digest"] != legacy_digest
     assert report["summary"] == {"stable_update_available": 1}
     assert report["families"][0]["checks"][0]["latest"] == "2.4.5"

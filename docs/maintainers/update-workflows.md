@@ -149,11 +149,14 @@ fallback remains available only for a baseline not explicitly selected by the
 candidate. Blocked-query matching keeps its existing failed-query exception;
 it does not invent an observed latest value.
 
-Ordinary release matching requires the selected checks with the family's
-discovery status to agree on the candidate's single `latest` value. Split
-release observations remain action-required; they do not select either
-candidate or become a duplicate-candidate exception. Uncovered actionable
-checks still prevent a whole-family disposition.
+Ordinary release matching requires every selected primary release provider to
+match its recorded cursor and bound latest observation, including a provider
+reporting `current`. Equivalent providers must agree on the candidate's single
+`latest` value. Split release observations remain action-required, whether both
+providers report updates or one reports `current`; they do not select either
+candidate or become a duplicate-candidate exception. Heterogeneous baseline
+and ref observations keep separate bindings and do not join release-provider
+agreement. Uncovered actionable checks still prevent a whole-family disposition.
 
 ### Validation Gate Derivation
 
