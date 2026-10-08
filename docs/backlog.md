@@ -55,7 +55,7 @@ owns the dependency-ordered route. Its blocking spine is:
   [model dependency closure](https://github.com/nisavid/arch-strix-halo-pkgs/issues/110), and
   [TorchVision and vLLM consumers](https://github.com/nisavid/arch-strix-halo-pkgs/issues/111)
   The [Transformers 5.18.0 and huggingface-hub 2.x model-closure move](https://github.com/nisavid/arch-strix-halo-pkgs/issues/183)
-  owns the approved follow-up to C's model dependency selection.
+  owns the approved follow-up to the selected inference stack's model dependency selection.
 - W2B: [Lemonade residency and admission](https://github.com/nisavid/arch-strix-halo-pkgs/issues/112) and
   [the coherent Lemonade package family](https://github.com/nisavid/arch-strix-halo-pkgs/issues/113)
 - W3-W6: [candidate assembly](https://github.com/nisavid/arch-strix-halo-pkgs/issues/114),

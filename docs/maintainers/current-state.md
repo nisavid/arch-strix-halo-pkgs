@@ -21,15 +21,20 @@ now have explicit covered values. DuckDB's tracked baseline moved from
 `1.5.5-1` to `1.5.6-1` without adoption. The unchanged Arch Python
 `3.14.7-1` observation now pairs with CPython FTP `3.14.8` in a separate
 record routed to
-[post-freeze source assessment](https://github.com/nisavid/arch-strix-halo-pkgs/issues/147).
-The existing CPython 3.14.7 foundation remains tracked to
-[the selected foundation gate](https://github.com/nisavid/arch-strix-halo-pkgs/issues/108).
-C's selected versions, package sources, and security-exception decisions remain
-unchanged. New baseline observations are not release-content or security
-assessments.
+[the foundation gate](https://github.com/nisavid/arch-strix-halo-pkgs/issues/108).
+The shared map records the foundation owner's 3.14.8 admission, while the
+published foundation still describes 3.14.7. That owner reconciles source
+publication, rebuilds, and affected downstream evidence; this record does not
+reopen admission or treat it as completed validation. This metadata increment
+changes no selected source, package source, or security-exception decision.
+New baseline observations are not release-content or security assessments.
 
-The confirming sweep completed at `2026-10-08T06:59:16Z` after the final
-ledger edit and exited 0 with `--refresh --fail-on actionable`. It reported
+The confirming sweep completed at `2026-10-08T07:12:54Z` after the final
+ledger edit and exited 0 through `run_check(refresh=True)` with real provider
+clients. The default HTTP route had exhausted GitHub's unauthenticated request
+quota; the confirming run used the already configured authenticated GitHub CLI
+for the same public release, tag, and issue metadata. No credentials were
+extracted, and no constructed provider response was used. It reported
 26 stable updates, five branch-head movements, four baseline drifts, and
 16 current families. The 51-family ledger result was 38 tracked, six rejected,
 two adopted, and five current, with no actionable result or provider failure.
@@ -37,7 +42,8 @@ Separate tracker validation exited 0 with all 13 unique active issue gates
 open. An offline CPU source-test run with a read-only Hugging Face Hub 1.33.0
 overlay passed 1,091 tests, with two skips and no module exclusions. That
 constructed environment does not repair the normal host's Transformers /
-Hugging Face Hub 2.1.1 collection incompatibility or qualify C's model closure.
+Hugging Face Hub 2.1.1 collection incompatibility or qualify the selected
+inference stack's model closure.
 
 Only checker behavior, tests, and maintenance records changed. No package
 source was promoted, package built or installed, or GPU/server/live scenario
@@ -62,7 +68,8 @@ Lemonade pair to
 [deferred calver assessment and packaging](https://github.com/nisavid/arch-strix-halo-pkgs/issues/163)
 and orjson to
 [post-freeze source assessment](https://github.com/nisavid/arch-strix-halo-pkgs/issues/147).
-C's selected versions and package sources remain unchanged. Release contents,
+The inference stack's selected versions and package sources remain unchanged.
+Release contents,
 security applicability, patch carry, and derived build/runtime gates stay with
 those owners; metadata routing does not establish adoption.
 
@@ -88,8 +95,8 @@ or relevant source metadata changes invalidate it.
 The due metadata sweep found ten families without a complete current
 disposition: aiohttp, asyncpg, Lemonade, llama.cpp, ROCm PyTorch,
 stable-diffusion.cpp, TheRock, Transformers, Triton, and vLLM. The candidate
-ledger now tracks those observations without changing C's selected versions
-or package sources. Independent baseline values remain explicit review
+ledger now tracks those observations without changing the inference stack's
+selected versions or package sources. Independent baseline values remain explicit review
 inputs; they are not interchangeable source pins. Later drift routes to
 [post-freeze candidate review](https://github.com/nisavid/arch-strix-halo-pkgs/issues/147),
 with Lemonade's calendar-versioned fork and upstream baseline routed to
@@ -107,8 +114,8 @@ Two existing routes now match their current execution contracts:
 - vLLM 0.30.0 remains tracked to
   [the required small-MoE and long-decode gates](https://github.com/nisavid/arch-strix-halo-pkgs/issues/179).
   The deferred Gemma lane is nonblocking, and the later 0.31.0 version move
-  stays separate. Neither this route correction nor the recorded W2A build
-  establishes runtime qualification.
+  stays separate. Neither this route correction nor the recorded PyTorch/vLLM
+  closure build establishes runtime qualification.
 
 The confirming sweep completed at `2026-10-07T08:11:43Z` and exited 0 with
 `--json --fail-on actionable`. It reported 26 stable updates, five branch-head
