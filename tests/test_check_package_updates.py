@@ -2058,7 +2058,7 @@ def test_recorded_release_providers_have_accurate_dispositions(
         disposition = "tracked"
         next_gate_kind = "github_issue"
         next_gate_issue = 183
-        next_gate_label = "Transformers 5.18.0 C model closure"
+        next_gate_label = "Transformers 5.18.0 model closure for the selected inference stack"
 
         [candidates."transformers-5.19.0-pypi"]
         family = "transformers"
