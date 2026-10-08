@@ -9,7 +9,7 @@ import re
 import struct
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class RocblasSgemmFixture:
     """Read-only column-major values and the verified complete-file digest."""
 

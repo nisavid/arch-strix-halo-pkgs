@@ -311,13 +311,36 @@ def test_filesystem_errors_keep_their_normal_subtype(tmp_path, condition, except
             path.chmod(0o600)
 
 
-def test_fixture_fields_cannot_be_reassigned(tmp_path):
+def test_verified_fields_cannot_be_replaced_through_vars():
+    from rocblas_sgemm_fixture import load_rocblas_sgemm_fixture
+
+    fixture = load_rocblas_sgemm_fixture(
+        RETAINED_FIXTURE, expected_sha256=RETAINED_SHA256
+    )
+    with pytest.raises((AttributeError, TypeError)):
+        vars(fixture)["expected_c"] = (0, 0, 0, 0)
+    assert fixture.expected_c == (19, 43, 22, 50)
+    assert fixture.sha256 == RETAINED_SHA256
+
+
+@pytest.mark.parametrize("field", ["a", "b", "expected_c", "alpha", "beta", "sha256"])
+def test_fixture_fields_cannot_be_reassigned(tmp_path, field):
     from rocblas_sgemm_fixture import load_rocblas_sgemm_fixture
 
     path, digest = write_document(tmp_path, selected_document())
     fixture = load_rocblas_sgemm_fixture(path, expected_sha256=digest)
     with pytest.raises(AttributeError):
-        fixture.alpha = 0
+        setattr(fixture, field, None)
+
+
+@pytest.mark.parametrize("field", ["a", "b", "expected_c", "alpha", "beta", "sha256"])
+def test_fixture_fields_cannot_be_deleted(tmp_path, field):
+    from rocblas_sgemm_fixture import load_rocblas_sgemm_fixture
+
+    path, digest = write_document(tmp_path, selected_document())
+    fixture = load_rocblas_sgemm_fixture(path, expected_sha256=digest)
+    with pytest.raises(AttributeError):
+        delattr(fixture, field)
 
 
 def test_fixture_matrix_elements_cannot_be_changed(tmp_path):
