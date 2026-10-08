@@ -48,7 +48,7 @@ STATUS_PRECEDENCE = [
     "manual_review_required",
     "current",
 ]
-TOOL_VERSION = 9
+TOOL_VERSION = 10
 CACHE_PATH = Path(".agents/session/dependency-freshness-cache.json")
 CANDIDATE_LEDGER_PATH = Path("docs/maintainers/update-candidates.toml")
 RECIPE_POLICY_PATH = Path("policies/recipe-packages.toml")
@@ -1307,20 +1307,33 @@ def candidate_matches_family(candidate: dict, family: dict) -> bool:
             and not candidate_covers_actionable_check(candidate, check, family)
             for check in family.get("checks", [])
         )
-    # Selected primary releases retain their bindings even when they are current.
-    if any(
-        check.get("role") == "primary"
-        and check.get("kind") in {"pypi", "github_release", "github_tags", "python_ftp"}
-        and candidate_matches_check(candidate, check, family)
-        and not candidate_covers_actionable_check(candidate, check, family)
+    release_kinds = {"pypi", "github_release", "github_tags", "python_ftp"}
+    selected_release_checks = [
+        check
         for check in family.get("checks", [])
+        if check.get("role") == "primary"
+        and check.get("kind") in release_kinds
+        and candidate_matches_check(candidate, check, family)
+    ]
+    if any(
+        not candidate_covers_actionable_check(candidate, check, family)
+        for check in selected_release_checks
     ):
         return False
+    # Only a release candidate's equivalent providers share its release value.
+    consensus_checks = (
+        selected_release_checks
+        if candidate.get("source_kind") in release_kinds
+        else [
+            check
+            for check in family.get("checks", [])
+            if check.get("status") == family.get("status")
+        ]
+    )
     candidate_latest = str(candidate.get("latest", "")).strip()
     latest_values = {
         latest
-        for check in family.get("checks", [])
-        if check.get("status") == family.get("status")
+        for check in consensus_checks
         if candidate_matches_reported_check(candidate, check, family)
         if (latest := str(check.get("latest", "")).strip())
     }

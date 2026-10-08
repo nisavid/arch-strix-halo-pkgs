@@ -4,6 +4,42 @@ The package, deployment, and live-validation narrative below remains a
 2026-06-15 snapshot. Dated records come first, newest first; older
 reconciliations remain as dated history.
 
+## 2026-10-08 Equivalent-Release Consensus and Confirming Sweep
+
+Ordinary release-candidate matching now compares every selected equivalent
+primary release provider with the candidate's release value, independently of
+the provider's individual status. Each observation must also satisfy its
+recorded cursor and selector's latest binding. An explicit covered value does
+not permit a mixed updated/current release pair to disagree. Separate package
+baselines and commit refs keep their own bindings; a current release and a
+moving ref can still match a correctly bound ref candidate. Checker version 10
+invalidates reports cached under versions 7, 8, and 9.
+
+Before correction, both public CLI regressions with explicit covered values
+selected a tracked candidate and returned 0 instead of the required 10.
+After correction, both remain action-required and return 10. Agreeing release
+controls and the heterogeneous ref/release control still return 0. The focused
+suite passed 144 tests. The complete source suite passed 1,100 tests, with two
+skips and no module exclusions, in the offline CPU environment using the
+existing read-only Hugging Face Hub 1.33.0 overlay. This constructed environment
+does not repair the normal host's Transformers / Hugging Face Hub 2.1.1
+collection incompatibility or qualify the selected model closure.
+
+The confirming real-provider sweep completed at `2026-10-08T09:18:06Z` and
+exited 0 through the public `main` entrypoint with
+`--refresh --json --fail-on actionable`. Public GitHub release and tag metadata
+used the already configured authenticated GitHub CLI; other providers used
+ordinary HTTP clients. The 51 families reported 26 stable updates, five
+branch-head movements, four baseline drifts, and 16 current families. Ledger
+dispositions were 38 tracked, six rejected, two adopted, and five current,
+with no actionable result or provider failure. Separate tracker validation
+exited 0, with all 13 unique active issue gates open. No candidate record or
+selected package source changed for this correction.
+
+No package was built or installed, and no GPU, server, or live scenario ran.
+The next sweep is due 24 hours after this completion, or sooner when relevant
+policy, package directories, ledger, checker, or source metadata changes.
+
 ## 2026-10-08 Mixed-Current Release Binding and Confirming Sweep
 
 Selected primary release providers now retain their recorded-cursor and latest

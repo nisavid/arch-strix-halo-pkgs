@@ -2016,18 +2016,47 @@ def test_candidate_can_cover_related_primary_checks(tmp_path):
 
 
 @pytest.mark.parametrize(
-    ("pypi_version", "tag_version", "expected_candidate_id", "expected_issue"),
+    (
+        "pypi_version",
+        "tag_version",
+        "primary_provider",
+        "covered_latest",
+        "expected_candidate_id",
+        "expected_issue",
+    ),
     [
-        ("5.19.0", "5.18.0", None, None),
-        ("5.18.0", "5.19.0", None, None),
-        ("5.19.0", "5.16.1", None, None),
-        ("5.16.1", "5.19.0", None, None),
-        ("5.18.0", "5.18.0", "transformers-5.18.0-pypi", 183),
-        ("5.19.0", "5.19.0", "transformers-5.19.0-pypi", 147),
+        ("5.19.0", "5.18.0", "pypi", None, None, None),
+        ("5.18.0", "5.19.0", "pypi", None, None, None),
+        ("5.19.0", "5.16.1", "pypi", None, None, None),
+        ("5.16.1", "5.19.0", "pypi", None, None, None),
+        (
+            "5.18.0", "5.18.0", "pypi", None,
+            "transformers-5.18.0-pypi", 183,
+        ),
+        (
+            "5.19.0", "5.19.0", "pypi", None,
+            "transformers-5.19.0-pypi", 147,
+        ),
+        ("5.19.0", "5.16.1", "pypi", "5.16.1", None, None),
+        ("5.16.1", "5.19.0", "tag", "5.16.1", None, None),
+        (
+            "5.19.0", "5.19.0", "pypi", "5.19.0",
+            "transformers-5.19.0-pypi", 147,
+        ),
+        (
+            "5.19.0", "5.19.0", "tag", "5.19.0",
+            "transformers-5.19.0-tag", 147,
+        ),
     ],
 )
 def test_recorded_release_providers_have_accurate_dispositions(
-    tmp_path, pypi_version, tag_version, expected_candidate_id, expected_issue
+    tmp_path,
+    pypi_version,
+    tag_version,
+    primary_provider,
+    covered_latest,
+    expected_candidate_id,
+    expected_issue,
 ):
     write_pkg(tmp_path, "python-transformers-gfx1151")
     write_policy(
@@ -2043,17 +2072,24 @@ def test_recorded_release_providers_have_accurate_dispositions(
         ]
         """,
     )
+    source_kinds = {"pypi": "pypi", "tag": "github_tags"}
+    covered_provider = "tag" if primary_provider == "pypi" else "pypi"
+    covered_latest_field = (
+        f', latest = "{covered_latest}"' if covered_latest is not None else ""
+    )
     write_candidate_ledger(
         tmp_path,
-        """
+        f"""
         schema_version = 2
 
-        [candidates."transformers-5.18.0-pypi"]
+        [candidates."transformers-5.18.0-{primary_provider}"]
         family = "transformers"
         packages = ["python-transformers-gfx1151"]
-        source_kind = "pypi"
-        check_id = "pypi"
-        covered_checks = [{ source_kind = "github_tags", check_id = "tag" }]
+        source_kind = "{source_kinds[primary_provider]}"
+        check_id = "{primary_provider}"
+        covered_checks = [
+          {{ source_kind = "{source_kinds[covered_provider]}", check_id = "{covered_provider}"{covered_latest_field} }},
+        ]
         previous_recorded = "5.16.1"
         latest = "5.18.0"
         discovery_status = "stable_update_available"
@@ -2062,12 +2098,14 @@ def test_recorded_release_providers_have_accurate_dispositions(
         next_gate_issue = 183
         next_gate_label = "Transformers 5.18.0 model closure for the selected inference stack"
 
-        [candidates."transformers-5.19.0-pypi"]
+        [candidates."transformers-5.19.0-{primary_provider}"]
         family = "transformers"
         packages = ["python-transformers-gfx1151"]
-        source_kind = "pypi"
-        check_id = "pypi"
-        covered_checks = [{ source_kind = "github_tags", check_id = "tag" }]
+        source_kind = "{source_kinds[primary_provider]}"
+        check_id = "{primary_provider}"
+        covered_checks = [
+          {{ source_kind = "{source_kinds[covered_provider]}", check_id = "{covered_provider}"{covered_latest_field} }},
+        ]
         previous_recorded = "5.16.1"
         latest = "5.19.0"
         discovery_status = "stable_update_available"
@@ -2115,6 +2153,60 @@ def test_recorded_release_providers_have_accurate_dispositions(
         ("pypi", pypi_version),
         ("tag", tag_version),
     ]
+
+
+def test_ref_candidate_keeps_separately_bound_current_release(tmp_path):
+    write_pkg(tmp_path, "python-amd-aiter-gfx1151")
+    write_policy(
+        tmp_path,
+        """
+        [families.aiter]
+        packages = ["python-amd-aiter-gfx1151"]
+        checks = [
+          { id = "release", role = "primary", kind = "pypi", package = "amd-aiter", recorded = "0.1.12", comparison = "pep440" },
+          { id = "main", role = "candidate", kind = "git_ref", repo = "https://github.com/ROCm/aiter.git", ref = "refs/heads/main", recorded = "cf12b138", comparison = "sha" },
+        ]
+        """,
+    )
+    write_candidate_ledger(
+        tmp_path,
+        """
+        schema_version = 2
+        [candidates.aiter-ref]
+        family = "aiter"
+        packages = ["python-amd-aiter-gfx1151"]
+        source_kind = "git_ref"
+        check_id = "main"
+        covered_checks = [{ source_kind = "pypi", check_id = "release", latest = "0.1.12" }]
+        previous_recorded = "cf12b138/0.1.12"
+        latest = "afddcbf4"
+        discovery_status = "candidate_head_ahead"
+        disposition = "tracked"
+        next_gate_kind = "github_issue"
+        next_gate_issue = 1
+        next_gate_label = "AITER ref assessment"
+        """,
+    )
+    clients = updates.FakeClients(
+        pypi={"amd-aiter": {"version": "0.1.12"}},
+        git_refs={"https://github.com/ROCm/aiter.git:refs/heads/main": "afddcbf4"},
+    )
+
+    report = updates.run_check(tmp_path, refresh=True, clients=clients)
+    code = updates.main(
+        ["--repo-root", str(tmp_path), "--refresh", "--json", "--fail-on", "actionable"],
+        clients=clients,
+    )
+
+    assert report["summary"] == {"candidate_head_ahead": 1}
+    assert report["effective_summary"] == {"tracked_update_candidate": 1}
+    family = report["families"][0]
+    assert family["candidate"]["id"] == "aiter-ref"
+    assert [(check["id"], check["status"], check["latest"]) for check in family["checks"]] == [
+        ("release", "current", "0.1.12"),
+        ("main", "candidate_head_ahead", "afddcbf4"),
+    ]
+    assert code == 0
 
 
 def test_candidate_discovery_status_must_match_family_status(tmp_path):
@@ -3804,9 +3896,10 @@ def test_checker_semantics_version_invalidates_existing_cache(tmp_path, monkeypa
     [
         (7, "1e0befb7239d024880bc1ed5fded0fb4fa848421eb26f6dca7e8b0001b1cecdf"),
         (8, "ba1d9c47817f50b46ffafb9d0c39c67eb8d123932deefab84cba2f711a74de29"),
+        (9, "38c5723226ee0cc2956e258955d6fad4ff8ffd52bd8be41b2f337c0e8b5206c1"),
     ],
 )
-def test_previous_semantics_cache_is_invalidated_by_version_nine_checker(
+def test_previous_semantics_cache_is_invalidated_by_version_ten_checker(
     tmp_path, previous_version, legacy_digest
 ):
     write_pkg(tmp_path, "python-numpy-gfx1151")
@@ -3834,7 +3927,7 @@ def test_previous_semantics_cache_is_invalidated_by_version_nine_checker(
     )
 
     assert report["cache"]["used"] is False
-    assert report["cache"]["tool_version"] == 9
+    assert report["cache"]["tool_version"] == 10
     assert report["cache"]["policy_digest"] != legacy_digest
     assert report["summary"] == {"stable_update_available": 1}
     assert report["families"][0]["checks"][0]["latest"] == "2.4.5"
