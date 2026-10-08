@@ -19,7 +19,7 @@ conditional exposure; no local exploitability claim is confirmed.
 | --- | --- | --- |
 | Research branch base | `9c2a53c911bee6cc70a44bc6e8edfde86a12b84a` | Package metadata and the frozen selection on the published default branch |
 | Foundation F, PR 149 | `b8ee7d6d2576683ee142fb39cc36eeb2709bb175` | CPython 3.14.7-1 recipe, source patch, configuration, and reported staged validation |
-| W2A closure | `df6c8f16713d882899559400fe4d39714a26c999` | Latest reviewed freshness narrative, candidate disposition, and build-root tools |
+| [PyTorch/vLLM build closure](c-line-selection-2026-09-22.md) (W2A) | `df6c8f16713d882899559400fe4d39714a26c999` | Latest reviewed freshness narrative, candidate disposition, and build-root tools |
 | Completed sweep | `d1935e4c1488367ba2cd8a41597247a5d8548a89`, completed `2026-10-01T01:16:27Z` | Discovery and matched ledger disposition; no CPython 3.14.8 security adjudication |
 | Host package inventory | Read-only `pacman -Q` during this investigation | `python-gfx1151` 3.14.6-1; `python-cryptography-gfx1151` 48.0.0-1; Expat 2.8.3-1.1; OpenSSL 3.6.3-1.1 |
 | Installed caller samples | pip 26.2.1-1, AnyIO 4.14.2-1, urllib3 2.7.0-1, Samba 2:4.24.6-1.1 | Static extraction, TLS, and certificate-loading callers described below |
@@ -177,6 +177,10 @@ gates on open issues; do not mark a candidate adopted before derived gates pass.
 The [validation derivation workflow](../../maintainers/update-workflows.md#validation-gate-derivation)
 requires changed artifacts and their consumers to be reassessed. These are
 conditional obligations for the owners, not checks executed by this research.
+
+The [deployed-state rollback baseline](https://github.com/nisavid/arch-strix-halo-pkgs/issues/106)
+(`B0`) consists of the package list and cached package artifacts, configuration
+capture, and pre-activation root snapshot.
 
 | Selected change | Stale evidence and required replacement |
 | --- | --- |
