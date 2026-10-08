@@ -592,12 +592,13 @@ small mixture-of-experts lane (IBM Granite 3.1 1B-A400M) and a Gemma 4 E2B
 long-decode lane that generates past 1,024 tokens. #169 stays open as optional
 load-path research.
 
-**W4 vLLM gate status (2026-10-05):** neither #179 lane has run. The opt-in
-E2B long-decode scenario now requires at least 1,025 observed completion tokens
-(#184). The Granite 3.1 1B-A400M lane still needs its fixtures, parser
-assertions, and fit and fault-stop guard; the model download and a GPU window
-are also pending. W4 qualification of exact C follows those lanes and remains
-open.
+**W4 vLLM gate status (2026-10-08):** neither #179 lane has run. The opt-in
+E2B long-decode scenario requires at least 1,025 observed completion tokens
+(#184). The Granite 3.1 1B-A400M lane has validated pinned CPU fixtures (#185)
+and preparation-only fixture records whose plans stop before any model is
+resolved (#186). It still needs a fit and fault-stop method and an operating
+envelope; the model download and a GPU window are also pending. W4
+qualification of exact C follows those lanes and remains open.
 
 **FlashAttention CK gate:** the post-build gate that the FlashAttention
 verdict on #111 set for `python-flash-attn-rocm-gfx1151` passed on
