@@ -4,6 +4,58 @@ The package, deployment, and live-validation narrative below remains a
 2026-06-15 snapshot. Dated records come first, newest first; older
 reconciliations remain as dated history.
 
+## 2026-10-09 Freshness Dispositions and Confirming Sweep
+
+The daily metadata sweep tracks three new observations without changing the
+selected inference-stack versions or package-source cursors:
+
+- PyPI pydantic-core `2.50.0` is an independent baseline observation; the
+  authoritative Arch primary remains `2.46.5-1`. The historical adopted
+  Arch-compatible pydantic/core pair remains intact. [Post-closeout
+  maintenance](https://github.com/nisavid/arch-strix-halo-pkgs/issues/147)
+  owns assessment and disposition of the newer baseline.
+- stable-diffusion.cpp master
+  `228c707fde018221de74674f1c2f480a9d2b228e` and the independent AUR Vulkan
+  baseline `r948.228c707-1` are tracked with separate exact bindings at
+  [post-closeout maintenance](https://github.com/nisavid/arch-strix-halo-pkgs/issues/147).
+  The older unadopted post-freeze observations `3f8527a` and `a1ded76` are
+  superseded. The selected `c92d73c` rebuild remains with
+  [its existing owner](https://github.com/nisavid/arch-strix-halo-pkgs/issues/121).
+- PyPI tokenizers `0.23.3` is tracked at the [Transformers and Hugging Face
+  Hub compatibility decision](https://github.com/nisavid/arch-strix-halo-pkgs/issues/183).
+  Its [version-specific metadata](https://pypi.org/pypi/tokenizers/0.23.3/json)
+  declares `huggingface-hub<3.0,>=0.16.4`, instead of
+  [0.23.2's](https://pypi.org/pypi/tokenizers/0.23.2/json) `<2.0` upper bound.
+  That removes the metadata-level upper-bound conflict with Hub 2.x; it does
+  not establish runtime compatibility or select adoption. The selected
+  `0.23.2` obligation remains with
+  [its existing owner](https://github.com/nisavid/arch-strix-halo-pkgs/issues/110)
+  until the compatibility decision reconciles it.
+
+The first sweep completed at `2026-10-09T10:58:58Z` with these three
+unhandled observations and no query failure. After their ledger dispositions,
+the real-provider confirming sweep completed at `2026-10-09T11:26:59Z` and
+exited 0 with `--refresh --json --fail-on actionable`. Configured GitHub CLI
+queries supplied public release and tag metadata; other providers used ordinary
+HTTP. Across 51 families, the report has 27 stable updates, five branch-head
+movements, five baseline drifts, and 14 current families. Effective dispositions
+are 39 tracked, six rejected, one adopted, and five current, with no
+action-required result or provider failure. Explicit tracker validation exited
+0 with all 13 unique active issue gates open.
+
+The focused checker suite passed 160 tests. The complete source suite passed
+1,204 tests, with two skips and no module exclusions, in the offline CPU
+environment using the existing read-only Hugging Face Hub 1.33.0 overlay.
+These constructed checks do not repair or qualify the normal host's
+Transformers / Hugging Face Hub 2.1.1 collection incompatibility. No package
+source, build, installation, installed smoke, GPU, server, or live-scenario
+state changed. Release-content, security-applicability, patch, and runtime
+assessment remain with the named owners.
+
+The next sweep is due 24 hours after the confirming sweep, or sooner after
+relevant policy, package, ledger, checker, or source-metadata changes.
+
+
 ## 2026-10-08 Shared Candidate Eligibility and Confirming Sweep
 
 Current, baseline-drift, and ordinary candidate matching now validate every
