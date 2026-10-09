@@ -294,21 +294,31 @@ def test_nonfinite_binary32_sgemm_scalars_are_rejected(tmp_path, field, nonfinit
         ("unreadable", PermissionError),
     ],
 )
-def test_filesystem_errors_keep_their_normal_subtype(tmp_path, condition, exception):
+def test_filesystem_errors_keep_their_normal_subtype(
+    tmp_path, monkeypatch, condition, exception
+):
     from rocblas_sgemm_fixture import load_rocblas_sgemm_fixture
 
     path = tmp_path / "fixture.json"
     if condition == "directory":
         path.mkdir()
     elif condition == "unreadable":
-        path.write_bytes(b"unreadable")
-        path.chmod(0)
-    try:
-        with pytest.raises(exception):
-            load_rocblas_sgemm_fixture(path, expected_sha256="0" * 64)
-    finally:
-        if condition == "unreadable":
-            path.chmod(0o600)
+        path.write_bytes(b"fixture bytes")
+        permission_error = PermissionError("fixture read denied")
+
+        def deny_read(current_path):
+            assert current_path == path
+            raise permission_error
+
+        with monkeypatch.context() as patch:
+            patch.setattr(Path, "read_bytes", deny_read)
+            with pytest.raises(PermissionError) as raised:
+                load_rocblas_sgemm_fixture(path, expected_sha256="0" * 64)
+        assert raised.value is permission_error
+        return
+
+    with pytest.raises(exception):
+        load_rocblas_sgemm_fixture(path, expected_sha256="0" * 64)
 
 
 def test_verified_fields_cannot_be_replaced_through_vars():
