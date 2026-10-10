@@ -4558,20 +4558,19 @@ check_id = "pypi"
 previous_recorded = "6.9.1"
 latest = "7.0.0"
 discovery_status = "stable_update_available"
-disposition = "tracked"
-disposition_reason = "Tracked from the 2026-10-01 freshness sweep under decision X7: the 2026-09-22 sweep (#136) froze C's version universe (#105, docs/wayfinder/research/c-line-selection-2026-09-22.md), and until C closes out, later drift that is neither a security fix nor a build breakage routes to post-closeout maintenance (#147). C selects multidict 6.9.1 in the aiohttp 3.14.3 closure (multidict-6.9.1-pypi, #110), and aiohttp 3.14.3 requires multidict<7. multidict 7.0.0 (2026-09-26) is a major release that makes istr final and rejects an argument passed both positionally and by name in the C extension. It is outside the selected line and routes to post-closeout maintenance, together with an aiohttp release that admits it."
+disposition = "rejected"
+disposition_reason = "Superseded as an unadopted post-freeze observation by multidict-7.1.0-pypi from the October 10 metadata sweep. Issue #147 retains source assessment and disposition for the newer observation. The selected multidict-6.9.1-pypi record and issue #110 remain unchanged. The retained 7.0.0 observations below are historical; this terminalization makes no release-content or security assessment of 7.1.0."
 salient_changes = [
   "PyPI multidict 7.0.0 is available after the selected 6.9.1",
   "aiohttp 3.14.3 requires multidict<7",
   "7.0.0 makes istr final and adds a public C API",
 ]
 patch_carry_overlap = false
-package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "github_issue"
-next_gate_issue = 147
-next_gate_label = "multidict 7.0.0 past the C freeze; post-closeout maintenance"
-last_reviewed = "2026-10-01"
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_label = "Superseded by multidict-7.1.0-pypi; selected 6.9.1 closure unchanged"
+last_reviewed = "2026-10-10"
 
 [candidates."rocm-pytorch-release-2.12-d0d6373"]
 family = "rocm_pytorch"
@@ -4609,19 +4608,18 @@ covered_checks = [{ source_kind = "aur", check_id = "aur-vulkan" }]
 previous_recorded = "be65ac7511b30379b003626c15224798929e33d4 / r279.49d6570-1"
 latest = "3f8527a46c54ecf4cb4ed6003da8e8982283c73c"
 discovery_status = "branch_head_ahead"
-disposition = "tracked"
-disposition_reason = "Tracked from the 2026-10-01 freshness sweep under decision X7: the 2026-09-22 sweep (#136) froze C's version universe (#105, docs/wayfinder/research/c-line-selection-2026-09-22.md), and until C closes out, later drift that is neither a security fix nor a build breakage routes to post-closeout maintenance (#147). #121 rebuilds stable-diffusion.cpp for C at the frozen c92d73c (stable-diffusion-cpp-c92d73c) because it links rocm-llvm. master moved to 3f8527a on 2026-09-27 with model-family additions, INT8 convrot work, a ggml sync and fixes. None is a security fix or a build breakage for the frozen lane, so it routes to post-closeout maintenance."
+disposition = "rejected"
+disposition_reason = "Superseded as an unadopted post-freeze observation by stable-diffusion-cpp-228c707 from the October 9 metadata sweep. Issue #147 retains source assessment and disposition for the newer observation. The selected stable-diffusion-cpp-c92d73c record and issue #121 remain unchanged; this terminalization makes no release-content or security assessment."
 salient_changes = [
   "stable-diffusion.cpp master moved from be65ac7511b30379b003626c15224798929e33d4 to 3f8527a46c54ecf4cb4ed6003da8e8982283c73c, past the frozen c92d73c",
   "The AUR Vulkan baseline reports r929.3f8527a-1 after the recorded r279.49d6570-1",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "github_issue"
-next_gate_issue = 147
-next_gate_label = "stable-diffusion.cpp 3f8527a past the C freeze; post-closeout maintenance"
-last_reviewed = "2026-10-01"
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_label = "Superseded by stable-diffusion-cpp-228c707; selected C rebuild unchanged"
+last_reviewed = "2026-10-09"
 
 [candidates."torch-migraphx-e551a86"]
 family = "torch_migraphx"
@@ -4910,17 +4908,16 @@ baseline_latest = "r929.3f8527a-1"
 previous_recorded = "be65ac7511b30379b003626c15224798929e33d4 / r279.49d6570-1"
 latest = "a1ded76da5818803fca97a3b433669ef727d32cf"
 discovery_status = "branch_head_ahead"
-disposition = "tracked"
-disposition_reason = "The October 7 metadata sweep observes this later upstream or baseline value. Issue #147 owns post-freeze candidate review and disposition. The inference stack's selected versions remain unchanged; this routing record neither adopts the candidate nor decides security applicability or a build-breakage exception. The owning lane derives any source, patch, build, and runtime validation work before adoption."
+disposition = "rejected"
+disposition_reason = "Superseded as an unadopted post-freeze observation by stable-diffusion-cpp-228c707 from the October 9 metadata sweep. Issue #147 retains source assessment and disposition for the newer observation. The selected stable-diffusion-cpp-c92d73c record and issue #121 remain unchanged; this terminalization makes no release-content or security assessment."
 salient_changes = [
   "The master check reports a1ded76da5818803fca97a3b433669ef727d32cf after recorded cursor be65ac7511b30379b003626c15224798929e33d4",
   "The independent AUR Vulkan baseline still reports r929.3f8527a-1 after r279.49d6570-1; the branch head and baseline are separate review inputs",
   "Release contents and patch applicability are not assessed by this metadata refresh; the next gate owns that work",
 ]
-next_gate_kind = "github_issue"
-next_gate_issue = 147
-next_gate_label = "Post-freeze stable-diffusion-cpp candidate review and disposition"
-last_reviewed = "2026-10-07"
+next_gate_kind = "none"
+next_gate_label = "Superseded by stable-diffusion-cpp-228c707; selected C rebuild unchanged"
+last_reviewed = "2026-10-09"
 
 [candidates."therock-10.1-stable"]
 family = "therock"
@@ -5072,3 +5069,128 @@ next_gate_kind = "github_issue"
 next_gate_issue = 108
 next_gate_label = "Admitted CPython 3.14.8 foundation source, rebuild, and downstream validation"
 last_reviewed = "2026-10-08"
+
+[candidates."pydantic-core-2.50.0-pypi"]
+family = "pydantic_core"
+packages = ["python-pydantic-core-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+covered_checks = [{ source_kind = "arch_package", check_id = "arch", latest = "2.46.5-1" }]
+previous_recorded = "2.46.5-1 / 2.49.0"
+latest = "2.50.0"
+discovery_status = "baseline_drift"
+disposition = "tracked"
+disposition_reason = "The October 9 metadata sweep observes PyPI pydantic-core 2.50.0 while the authoritative Arch primary remains 2.46.5-1. Issue #147 owns post-closeout assessment of this independent baseline. The historical pydantic-core-2.46.5-1-arch adoption and selected Arch pydantic ABI pair remain unchanged. This routing does not adopt 2.50.0 or assess release contents, security applicability, or compatibility."
+salient_changes = [
+  "The independent PyPI baseline reports 2.50.0 after recorded 2.49.0",
+  "The Arch primary still reports python-pydantic-core 2.46.5-1; its exact observation is bound separately",
+  "Issue #147 owns source assessment and any derived validation before adoption",
+]
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "Post-closeout pydantic-core 2.50.0 baseline assessment and disposition"
+last_reviewed = "2026-10-09"
+
+[candidates."stable-diffusion-cpp-228c707"]
+family = "stable_diffusion_cpp"
+packages = ["stable-diffusion.cpp-vulkan-gfx1151"]
+source_kind = "git_ref"
+check_id = "master"
+baseline_source_kind = "aur"
+baseline_latest = "r948.228c707-1"
+covered_checks = [{ source_kind = "aur", check_id = "aur-vulkan", latest = "r948.228c707-1" }]
+previous_recorded = "be65ac7511b30379b003626c15224798929e33d4 / r279.49d6570-1"
+latest = "228c707fde018221de74674f1c2f480a9d2b228e"
+discovery_status = "branch_head_ahead"
+disposition = "rejected"
+disposition_reason = "Superseded as an unadopted post-freeze observation by stable-diffusion-cpp-f89d9b1 from the October 10 metadata sweep. Issue #147 retains source assessment and disposition for the newer observation and independently bound AUR baseline. The selected stable-diffusion-cpp-c92d73c record and issue #121 remain unchanged; this terminalization makes no release-content or security assessment."
+salient_changes = [
+  "The master check reports 228c707fde018221de74674f1c2f480a9d2b228e after recorded be65ac7511b30379b003626c15224798929e33d4",
+  "The independent AUR baseline reports r948.228c707-1 after recorded r279.49d6570-1; it is bound separately from the commit",
+  "Earlier unadopted post-freeze observations 3f8527a and a1ded76 are superseded; the selected c92d73c rebuild remains with issue #121",
+]
+next_gate_kind = "none"
+next_gate_label = "Superseded by stable-diffusion-cpp-f89d9b1; selected C rebuild unchanged"
+last_reviewed = "2026-10-10"
+
+[candidates."tokenizers-0.23.3-pypi"]
+family = "tokenizers"
+packages = ["python-tokenizers-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+previous_recorded = "0.23.2"
+latest = "0.23.3"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "The October 9 metadata sweep observes tokenizers 0.23.3. Its PyPI metadata requires huggingface-hub<3.0,>=0.16.4 instead of 0.23.2's <2.0 bound. Issue #183 owns whether to adopt this compatibility candidate for the Transformers 5.18.0 and Hugging Face Hub 2.x closure. The selected tokenizers-0.23.2-pypi obligation and issue #110 remain unchanged until that decision; this record neither selects a version nor completes source, dependency, build, or runtime assessment."
+salient_changes = [
+  "PyPI reports tokenizers 0.23.3 after recorded 0.23.2; the first artifact upload is dated 2026-10-09",
+  "The wider Hugging Face Hub bound is relevant to issue #183's existing resolver-level compatibility question",
+  "Issue #183 owns adoption and derived validation; the selected 0.23.2 obligation remains with issue #110",
+]
+next_gate_kind = "github_issue"
+next_gate_issue = 183
+next_gate_label = "tokenizers 0.23.3 compatibility decision for the Transformers and Hub closure"
+last_reviewed = "2026-10-09"
+
+[candidates."httptools-0.9.0-pypi"]
+family = "httptools"
+packages = ["python-httptools-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+previous_recorded = "0.8.0"
+latest = "0.9.0"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "The October 10 metadata sweep observes httptools 0.9.0 after the recorded 0.8.0. Issue #147 owns post-closeout source assessment and disposition. The historical adopted httptools-0.8.0-pypi record and selected package/source cursors remain unchanged. Release contents, security applicability, dependency compatibility, patch carry, and build-breakage exceptions remain unassessed."
+salient_changes = [
+  "PyPI reports httptools 0.9.0 after recorded 0.8.0",
+  "Issue #147 owns assessment and any derived validation before adoption",
+]
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "Post-closeout httptools 0.9.0 source assessment and disposition"
+last_reviewed = "2026-10-10"
+
+[candidates."multidict-7.1.0-pypi"]
+family = "multidict"
+packages = ["python-multidict-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+previous_recorded = "6.9.1"
+latest = "7.1.0"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "The October 10 metadata sweep observes multidict 7.1.0 after the selected 6.9.1 line. Issue #147 owns post-closeout source assessment and disposition. The selected multidict-6.9.1-pypi record and issue #110 remain unchanged. The unadopted post-freeze 7.0.0 observation is superseded; its historical assessment is retained. Release contents, security applicability, dependency compatibility, and build-breakage exceptions for 7.1.0 remain unassessed."
+salient_changes = [
+  "PyPI reports multidict 7.1.0 after recorded 6.9.1 and the earlier unadopted 7.0.0 observation",
+  "The selected multidict 6.9.1 obligation remains with issue #110; this record selects no replacement closure",
+  "Issue #147 owns assessment and any derived validation before adoption",
+]
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "Post-closeout multidict 7.1.0 source assessment and disposition"
+last_reviewed = "2026-10-10"
+
+[candidates."stable-diffusion-cpp-f89d9b1"]
+family = "stable_diffusion_cpp"
+packages = ["stable-diffusion.cpp-vulkan-gfx1151"]
+source_kind = "git_ref"
+check_id = "master"
+baseline_source_kind = "aur"
+baseline_latest = "r948.228c707-1"
+covered_checks = [{ source_kind = "aur", check_id = "aur-vulkan", latest = "r948.228c707-1" }]
+previous_recorded = "be65ac7511b30379b003626c15224798929e33d4 / r279.49d6570-1"
+latest = "f89d9b13d730eabeede7314ce49dacd18d3c90c2"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "The October 10 metadata sweep observes master f89d9b1 while the independent AUR Vulkan baseline remains r948.228c707-1. Issue #147 owns post-closeout source assessment and disposition. The selected stable-diffusion-cpp-c92d73c record and issue #121 remain unchanged. The unadopted post-freeze 228c707 observation is superseded. Release contents, security applicability, recursive submodule and patch carry, and build-breakage exceptions remain unassessed."
+salient_changes = [
+  "The master check reports f89d9b13d730eabeede7314ce49dacd18d3c90c2 after recorded be65ac7511b30379b003626c15224798929e33d4",
+  "The independent AUR baseline remains r948.228c707-1 after recorded r279.49d6570-1; it is bound separately from the newer commit",
+  "The unadopted 228c707 observation is superseded; the selected c92d73c rebuild remains with issue #121",
+]
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "Post-closeout stable-diffusion.cpp f89d9b1 source assessment and disposition"
+last_reviewed = "2026-10-10"
