@@ -110,8 +110,11 @@ contract. The oracle log establishes backend selection, not every executed
 kernel or the absence of runtime fallback.
 
 [The two vLLM gate lanes](https://github.com/nisavid/arch-strix-halo-pkgs/issues/179)
-join the maintained fit/fault-stop method, normal Lemonade state, and serialized
-resource window before provisioning or execution. Qualification also binds
+join the [maintained fit/fault-stop method](granite-resource-method.md), normal
+Lemonade state, and serialized resource window before provisioning or execution.
+For fit admission, runtime integration, or fault resume, use
+`run-local-inference-scenarios`, read that method before dependent work, and
+record its reviewed revision. Qualification also binds
 [C's selected model closure](https://github.com/nisavid/arch-strix-halo-pkgs/issues/183)
 and [W0's fixture and operating-bound freeze](https://github.com/nisavid/arch-strix-halo-pkgs/issues/107).
 Retain the corpus digest, consumed method revision, immutable C subject, raw
