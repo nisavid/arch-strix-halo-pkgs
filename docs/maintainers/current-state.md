@@ -80,9 +80,8 @@ selected inference-stack versions or package-source cursors:
 The first sweep completed at `2026-10-09T10:58:58Z` with these three
 unhandled observations and no query failure. After their ledger dispositions,
 the real-provider confirming sweep completed at `2026-10-09T11:26:59Z` and
-exited 0 with `--refresh --json --fail-on actionable`. Configured GitHub CLI
-queries supplied public release and tag metadata; other providers used ordinary
-HTTP. Across 51 families, the report has 27 stable updates, five branch-head
+exited 0 with `--refresh --json --fail-on actionable`. Across 51 families,
+the report has 27 stable updates, five branch-head
 movements, five baseline drifts, and 14 current families. Effective dispositions
 are 39 tracked, six rejected, one adopted, and five current, with no
 action-required result or provider failure. Explicit tracker validation exited
