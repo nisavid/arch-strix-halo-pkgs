@@ -4,6 +4,51 @@ The package, deployment, and live-validation narrative below remains a
 2026-06-15 snapshot. Dated records come first, newest first; older
 reconciliations remain as dated history.
 
+## 2026-10-10 Freshness Dispositions and Confirming Sweep
+
+The daily metadata sweep tracks three new observations without changing the
+selected inference-stack versions or package-source cursors:
+
+- PyPI httptools `0.9.0` follows recorded `0.8.0`.
+- PyPI multidict `7.1.0` follows the selected `6.9.1` line. The unadopted
+  `7.0.0` observation is superseded; the selected closure remains with
+  [its existing owner](https://github.com/nisavid/arch-strix-halo-pkgs/issues/110).
+- stable-diffusion.cpp master
+  `f89d9b13d730eabeede7314ce49dacd18d3c90c2` is newer while the independently
+  bound AUR Vulkan baseline remains `r948.228c707-1`. The unadopted `228c707`
+  observation is superseded; the selected `c92d73c` rebuild remains with
+  [its existing owner](https://github.com/nisavid/arch-strix-halo-pkgs/issues/121).
+
+[Post-closeout maintenance](https://github.com/nisavid/arch-strix-halo-pkgs/issues/147)
+owns source assessment and disposition for all three observations. Historical
+adopted records remain intact. Release contents, security applicability,
+dependency compatibility, patch carry, and build-breakage exceptions remain
+unassessed. Tokenizers `0.23.3` retains its separate route to the
+[Transformers and Hugging Face Hub compatibility decision](https://github.com/nisavid/arch-strix-halo-pkgs/issues/183);
+its declared Hub upper bound is `<3.0`, not proof of runtime compatibility.
+
+The first complete sweep finished at `2026-10-10T13:55:52Z` with these three
+unhandled observations and no provider failure. After disposition, the
+real-provider confirming sweep against the proposed ledger completed at
+`2026-10-10T14:04:03Z` and exited 0 with
+`--refresh --json --fail-on actionable`. Across 51 families, the report has
+28 stable updates, five branch-head movements, five baseline drifts, and
+13 current families. Effective dispositions are 40 tracked, six rejected,
+and five current, with no action-required result or provider failure.
+Explicit tracker validation exited 0 with all 13 unique active issue gates
+open. The integrated candidate records match the confirmed proposal.
+
+The integrated source passed the focused checker suite (160 tests) and the
+complete suite (1,204 tests, two skips, no module exclusions) in the offline
+CPU environment using the existing read-only Hugging Face Hub 1.33.0 overlay.
+These checks do not repair or qualify the normal host's Transformers /
+Hugging Face Hub 2.1.1 collection incompatibility.
+
+No package source, build, installation, installed smoke, GPU, server, or
+live-scenario state changed. The next sweep is due 24 hours after the
+confirming sweep, or sooner after relevant policy, package, ledger, checker,
+or source-metadata changes.
+
 ## 2026-10-09 Freshness Dispositions and Confirming Sweep
 
 The daily metadata sweep tracks three new observations without changing the
