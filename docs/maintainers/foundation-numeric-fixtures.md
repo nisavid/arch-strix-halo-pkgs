@@ -4,7 +4,9 @@
 assertions for [Freeze W0 fixtures, probes, Kokoro, and operational bounds](https://github.com/nisavid/arch-strix-halo-pkgs/issues/107).
 `tools/hip_vector_add_fixture.py` loads the selected HIP source with a
 caller-supplied whole-file digest. `tools/rocblas_sgemm_fixture.py` loads and
-verifies the retained rocBLAS input and expected-output bytes. These CPU-only
+verifies the retained rocBLAS input and expected-output bytes.
+`tools/migraphx_add_relu_fixture.py` retains the selected graph bytes and
+decodes the MIGraphX input and expected-output tensors. These CPU-only
 interfaces check numbers and retained bytes; they are not the complete
 nine-probe foundation catalog or a GPU runner.
 
@@ -124,32 +126,91 @@ validator's independent literal oracle. Loading `expected_c` is not an
 observed rocBLAS result. The loader imports no numerical or GPU runtime,
 writes no files, and creates no executable scenario plan.
 
+## Retained MIGraphX inputs
+
+`inference/fixtures/migraphx-add-relu.onnx` retains the selected Add→Relu
+graph. `inference/fixtures/migraphx-add-relu.json` retains x, y, and expected z
+as row-major little-endian binary32 hexadecimal payloads under schema 1.
+Consumers load these files; they do not regenerate the graph at runtime.
+
+| Artifact | Bytes | Whole-file SHA-256 |
+| --- | --- | --- |
+| `migraphx-add-relu.onnx` | 109 | `9895918501d5a1c87dc74c1435b8f2aca52f17b1193d0f0a09ce8cbc421abcf9` |
+| `migraphx-add-relu.json` | 390 | `51c1978fc14288167aec152d3a8b4768f405e519b987c230da7375ad24f17048` |
+
+`tools/migraphx_add_relu_fixture.py` exposes
+`load_migraphx_add_relu_fixture(onnx_path, payload_path, *, expected_onnx_sha256, expected_payload_sha256)`.
+Callers supply both digests from this reviewed record, not digests calculated
+from the files they are about to admit. The loader checks both complete files
+before decoding the payload. It rejects malformed UTF-8 or JSON, duplicate
+object keys, nonstandard JSON constants, extra or missing schema fields,
+incorrect metadata, malformed hexadecimal payloads, and nonfinite values.
+Missing files retain normal filesystem errors. Other validation failures raise
+`ValueError` with the probe and the failed contract.
+
+The return value is a frozen `MigraphxAddReluFixture` containing immutable
+`onnx_bytes`, x, y, and expected_z. The loader does not parse ONNX or execute a
+graph; digest verification binds its bytes to the selected artifact. Its tensor
+contract admits finite binary32 values of the selected shape, while the
+independent `validate_numeric_output("migraphx-add-relu", observed_output)`
+checks the selected numerical answer. Neither interface imports ONNX, NumPy,
+or a GPU runtime.
+
+### Production and replacement procedure
+
+The retained bytes were produced and structurally checked on October 8, 2026,
+with ONNX 1.22.0 and protobuf 7.36.1. Production copied only the graph
+construction in
+[`probe_migraphx` at the pinned source](https://github.com/nisavid/arch-strix-halo-pkgs/blob/b8ee7d6d2576683ee142fb39cc36eeb2709bb175/tools/therock_kpack_smoke.py):
+two FLOAT inputs and one FLOAT output, each with shape `[2,3]`, graph name
+`tiny`, `Add(x,y)->s`, `Relu(s)->z`, default-domain opset 13, and IR 8.
+The complete pinned source file has SHA-256
+`5f83ed81896c2ff24cb804d83e1d9245b11ec1bde04d9094fc42d831f4fd1694`.
+The candidate probe itself was not called because it proceeds into MIGraphX
+execution.
+
+The CPU-only producer checked the model before serialization, used protobuf's
+`SerializeToString(deterministic=True)`, parsed the retained bytes, checked
+them again, and confirmed equality with the constructed model. No weights,
+node attributes, node names, or producer name/version were added. The JSON
+payloads were encoded directly from the selected literals with `struct.pack`
+using `<6f`; the expected answer was not computed by executing the graph.
+
+Any replacement must preserve the selected construction, inputs, and exact
+answer unless the fixture contract is explicitly revised. Record its actual
+producer versions, recheck serialized bytes structurally, retain complete-file
+digests, and rerun
+`pytest tests/test_migraphx_add_relu_fixture.py tests/test_foundation_numeric_fixtures.py -q`.
+Changes to either artifact or its provenance invalidate the prior review;
+refresh the artifact record and obtain independent review before publication.
+
 ## Partial numerical artifact and consumer index
 
-This partial index connects the selected numerical probe IDs to the retained
-inputs and CPU consumers in this revision. MIGraphX has the selected output
-assertion, but its retained graph, payload, and loader preparation is not
-integrated here. The index is not a complete foundation catalog or an
-executable scenario plan.
+This partial index connects the three selected numerical probe IDs to the
+retained inputs and CPU consumers in this revision. It is not a complete
+foundation catalog or an executable scenario plan.
 
 | Probe | Source or retained input | CPU consumer boundary |
 | --- | --- | --- |
 | `hip-vector-add` | `tools/buildroot/probe/hello.hip` | `tools/hip_vector_add_fixture.py` verifies externally pinned complete-file bytes and returns immutable `.source` and `.sha256`; it does not decode, parse, compile, or execute the source. |
 | `rocblas-sgemm` | `inference/fixtures/rocblas-sgemm.json` | `tools/rocblas_sgemm_fixture.py` verifies externally pinned complete-file bytes and decodes fixture values; loading expected C is not an observed SGEMM result. |
-| `migraphx-add-relu` | Selected x and y above; retained graph and payload preparation is not integrated. | `validate_numeric_output("migraphx-add-relu", output)` checks the selected two-row numerical answer; no retained-input loader is integrated here. |
+| `migraphx-add-relu` | `inference/fixtures/migraphx-add-relu.onnx` and `inference/fixtures/migraphx-add-relu.json` | `tools/migraphx_add_relu_fixture.py` verifies both externally pinned files, retains graph bytes, and decodes tensors; it does not parse ONNX or execute the graph. |
 
 ## Evidence and remaining gates
 
 Run the integrated retained-input loader and output-validator checks together:
 
 ```sh
-pytest tests/test_hip_vector_add_fixture.py tests/test_rocblas_sgemm_fixture.py tests/test_foundation_numeric_fixtures.py -q
+pytest tests/test_hip_vector_add_fixture.py tests/test_rocblas_sgemm_fixture.py tests/test_migraphx_add_relu_fixture.py tests/test_foundation_numeric_fixtures.py -q
 ```
 
 The HIP loader checks exercise real-file retention, altered bytes, malformed
 digests, digest validation before file access, ordinary filesystem errors,
 and immutable result fields through the public file-and-digest interface.
 The rocBLAS loader checks use real temporary files and the retained artifact.
+The MIGraphX loader checks use real temporary files and the retained graph
+and payload files for byte integrity, payload validation, and immutable
+returns; they do not parse ONNX or execute the graph.
 The output-validator checks use constructed CPU data; expected values come
 from the selected contract, not a production oracle. The loaders and output
 validator need no GPU imports, subprocesses, model downloads, or model caches.
@@ -158,13 +219,12 @@ Byte integrity and exact finite output equality are independent checks.
 Neither establishes runtime binary32 behavior, target selection, API success,
 compilation, synchronization, package origins, or dependency closure.
 
-The separate MIGraphX retained-artifact and loader preparation must be
-integrated and reviewed before this page describes it as implemented.
 Catalog-dependent execution requires the retained artifact and loader
 revisions to join the final reviewed catalog, reviewed foundation package
 origins and dependencies, per-probe operating bounds, and consumer result
-projections. GPU adapters, per-probe duration/resource limits, and the six
-nonnumerical foundation contracts remain in the fixture-freeze ticket.
+projections. GPU adapters, per-probe duration/resource limits, the six
+nonnumerical foundation contracts, and the selected Kokoro acceptance outcome
+remain in the fixture-freeze ticket.
 W1, W4, and W6 retain their own runtime gates; CPU checks do not satisfy them.
 
 The existing `run-local-inference-scenarios` procedure remains unchanged.
