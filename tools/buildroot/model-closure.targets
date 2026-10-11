@@ -1,4 +1,7 @@
-# The W2A model/runtime Python closure (#110), as built into ashp-w2a.
+# The targets of the W2A model/runtime Python closure (#110). ashp-w2a must
+# hold python-transformers-gfx1151 >=5.18.0 and python-tokenizers-gfx1151
+# >=0.23.3 before this file resolves; docs/maintainers/c-build-root.md ("W2A
+# model closure move") gives the build order.
 # Resolve together with torch-chain.targets to get a root that can import the
 # closure; their runtime dependencies come in through the package depends.
 # python-compressed-tensors-gfx1151 and python-accelerate-gfx1151 depend on
@@ -17,15 +20,10 @@ python-pyyaml-gfx1151
 python-pillow-gfx1151
 python-psutil-gfx1151
 # The closure move (#183): Transformers 5.18.0, tokenizers 0.23.3 and
-# huggingface-hub 2.x enter one lock together. Transformers 5.16.1 and 5.17.0
-# require huggingface-hub <2.0 and fail at import next to hub 2.x, and
-# tokenizers 0.23.2 declares the same <2.0 bound. The 5.16.1-1 and 0.23.2-1
-# builds depend on an unversioned python-huggingface-hub, so only these two
-# floors keep them out of a lock that holds hub 2.x: against an ashp-w2a that
-# still carries them, each floor is `unresolved` and `populate` refuses the
-# lock. Build and publish both packages from a torch-chain.targets plus
-# py-closure.targets root, which holds neither Transformers nor hub, before
-# resolving this file.
+# huggingface-hub 2.x enter one lock together. Transformers 5.16.1 and
+# tokenizers 0.23.2 require huggingface-hub <2.0, but their 5.16.1-1 and
+# 0.23.2-1 builds depend on an unversioned python-huggingface-hub, so only
+# these two floors keep those builds out of a lock that holds hub 2.x.
 python-tokenizers-gfx1151>=0.23.3
 python-safetensors-gfx1151
 python-transformers-gfx1151>=5.18.0

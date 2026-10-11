@@ -127,6 +127,11 @@ docs or CI changes. All eight changes are in vLLM v0.31.0, so drop the patches
 when the package moves to 0.31.0 or later. No two patches in the series touch
 the same file, and each applies to v0.30.0 with no fuzz or offset.
 
+`tools/vllm_backport_smoke.py` has one behavior check per backport. It runs
+against the installed package without a GPU or network and prints one PASS or
+FAIL line per patch, so the same command shows a patch taking effect on a
+rebuilt package and failing on a package that lacks it.
+
 - [Pixtral axial RoPE compatibility for Transformers 5.17+](../packages/python-vllm-rocm-gfx1151/0017-backport-pixtral-axial-rope-for-transformers-5.17.patch)
   - Backports the `vllm/model_executor/models/pixtral.py` hunks of
     [vllm-project/vllm#56108](https://github.com/vllm-project/vllm/pull/56108)

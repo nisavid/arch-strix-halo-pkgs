@@ -230,6 +230,103 @@ def render_source_refs(policy_pkg: dict, recipe_pkg: dict) -> tuple[str, str]:
     return bash_array([source_ref] + extra_sources), bash_array(sha256sums + extra_sha256sums)
 
 
+def vllm_source_patch_sentinels(policy_pkg: dict) -> list[tuple[str, str, str]]:
+    """Resolve the policy's sentinels for the vLLM patches after the local carry.
+
+    The vLLM PKGBUILD re-extracts and repatches the source only when a sentinel
+    is missing from the tree, so a patch that no sentinel covers is skipped
+    silently on a reused src/ tree that predates it. Every patch after the
+    first (the local carry, which the template's built-in sentinels cover)
+    therefore needs one `source_patch_sentinels` entry, keyed by patch name:
+
+      {patch = NAME, text = FIXED_STRING, path = FILE}
+          FILE contains FIXED_STRING only once the patch is applied.
+      {patch = NAME, guarded_by = [NAMES], reason = WHY}
+          An explicit exemption for a patch that leaves nothing to grep for,
+          such as one that only deletes lines. The series is applied in order
+          on a clean tree, so a later patch with a text sentinel guards it.
+
+    Returns (patch, text, path) for each text sentinel, in series order.
+    """
+
+    def refuse(code: str, message: str) -> None:
+        print(f"{code}: {message}", file=sys.stderr)
+        print(
+            "HINT: give every source patch after the local carry one "
+            "source_patch_sentinels entry in policies/recipe-packages.toml.",
+            file=sys.stderr,
+        )
+        raise SystemExit(2)
+
+    later_patches = list(policy_pkg.get("source_patches", []))[1:]
+    entries: dict[str, dict] = {}
+    for entry in policy_pkg.get("source_patch_sentinels", []):
+        name = entry.get("patch") if isinstance(entry, dict) else None
+        if not name:
+            refuse("SOURCE_PATCH_SENTINEL_INVALID", f"entry without a patch name: {entry!r}")
+        if name in entries:
+            refuse("SOURCE_PATCH_SENTINEL_INVALID", f"more than one entry for {name}")
+        if name not in later_patches:
+            refuse(
+                "SOURCE_PATCH_SENTINEL_INVALID",
+                f"{name} is not a source patch after the local carry",
+            )
+        entries[name] = entry
+
+    resolved: list[tuple[str, str, str]] = []
+    for name in later_patches:
+        entry = entries.get(name)
+        if entry is None:
+            refuse(
+                "SOURCE_PATCH_SENTINEL_MISSING",
+                f"{name} has neither a sentinel nor an exemption",
+            )
+        if "guarded_by" in entry:
+            if set(entry) != {"patch", "guarded_by", "reason"} or not str(entry["reason"]).strip():
+                refuse(
+                    "SOURCE_PATCH_SENTINEL_INVALID",
+                    f"{name}: an exemption takes guarded_by and a reason, nothing else",
+                )
+            continue
+        sentinel, sentinel_path = entry.get("text", ""), entry.get("path", "")
+        if (
+            set(entry) != {"patch", "text", "path"}
+            or not sentinel
+            or "'" in sentinel
+            or "\n" in sentinel
+            or not sentinel_path.strip()
+            or any(char.isspace() or char == "'" for char in sentinel_path)
+        ):
+            refuse(
+                "SOURCE_PATCH_SENTINEL_INVALID",
+                f"{name}: a sentinel is a single-line fixed string without single "
+                "quotes plus the path of the file that gains it",
+            )
+        resolved.append((name, sentinel, sentinel_path))
+
+    with_text = {name for name, _, _ in resolved}
+    for name in later_patches:
+        entry = entries[name]
+        if "guarded_by" not in entry:
+            continue
+        guards = entry["guarded_by"]
+        if not isinstance(guards, list) or not guards:
+            refuse("SOURCE_PATCH_SENTINEL_INVALID", f"{name}: guarded_by names no patch")
+        unknown = [guard for guard in guards if guard not in with_text]
+        if unknown:
+            refuse(
+                "SOURCE_PATCH_SENTINEL_INVALID",
+                f"{name}: guarded_by names patches without a text sentinel: {unknown}",
+            )
+        if not any(later_patches.index(guard) > later_patches.index(name) for guard in guards):
+            refuse(
+                "SOURCE_PATCH_SENTINEL_INVALID",
+                f"{name}: guarded_by needs a later patch, because only a later "
+                "patch's sentinel is missing from a tree that lacks this one",
+            )
+    return resolved
+
+
 def slugify_step(step: int) -> str:
     return f"step-{step}"
 
@@ -1091,16 +1188,12 @@ _vllm_tarball="v${{pkgver}}.tar.gz"
                 vllm_patch_apply_lines += f'  _apply_patch_if_needed "{patch_name}"\n'
         # Policy-listed sentinels extend the built-in carry sentinels, so a reused
         # src/ tree that predates a later patch is re-extracted and repatched.
-        vllm_extra_sentinels = ""
-        for sentinel, sentinel_path in policy_pkg.get("source_patch_sentinels", []):
-            if "'" in sentinel or "\n" in sentinel or not sentinel_path.strip():
-                print(
-                    "SOURCE_PATCH_SENTINEL_INVALID: sentinels are single-line fixed strings "
-                    f"without single quotes, each with a path: {sentinel!r}",
-                    file=sys.stderr,
-                )
-                raise SystemExit(2)
-            vllm_extra_sentinels += f" &&\n    grep -Fq '{sentinel}' {sentinel_path}"
+        # Rendering stops when a later patch has neither a sentinel nor an
+        # exemption.
+        vllm_extra_sentinels = "".join(
+            f" &&\n    grep -Fq '{sentinel}' {sentinel_path}"
+            for _, sentinel, sentinel_path in vllm_source_patch_sentinels(policy_pkg)
+        )
         if source_patches:
             patch_helper = """\
 __PATCH_VARS__
@@ -1154,9 +1247,9 @@ _apply_all_source_patches() {
     return 0
   fi
 
-  # Later source patches touch files changed by earlier ones, so reverse-dry-run
-  # checks are not reliable on an already-patched tree. Re-extract and apply the
-  # series once on a known-clean source tree whenever any sentinel is missing.
+  # The sentinels are the only record of which patches a reused tree carries.
+  # When any is missing, re-extract the release tarball and apply the whole
+  # series in order on that clean tree instead of patching on top.
   _reset_source_tree
   cd "${srcdir}/${_vllm_srcdir}"
 

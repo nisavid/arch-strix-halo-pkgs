@@ -2641,19 +2641,18 @@ check_id = "pypi"
 previous_recorded = "3.13.5"
 latest = "3.14.3"
 discovery_status = "stable_update_available"
-disposition = "tracked"
-disposition_reason = "Re-observed by the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep. #105 selects C's version line (docs/wayfinder/research/c-line-selection-2026-09-22.md). C selects aiohttp 3.14.3 for vLLM (>=3.13.3), with multidict 6.9.1 and yarl 1.25.1."
+disposition = "rejected"
+disposition_reason = "Superseded by aiohttp-3.14.5-pypi from the 2026-10-11 closure move. Generation C selected aiohttp 3.14.3 at the 2026-09-22 freeze (#105) and built it for the W2A closure (#110); on 2026-10-11 the owner adopted 3.14.5 under the freeze's security exception, and the package source moved with it."
 salient_changes = [
   "PyPI aiohttp 3.14.3 is available after the current 3.13.5 package lane",
   "The current vLLM package depends on the repo-owned aiohttp lane, but the selected vLLM 0.27 closure must be regenerated before final inclusion",
 ]
 patch_carry_overlap = false
-package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "github_issue"
-next_gate_issue = 110
-next_gate_label = "aiohttp 3.14.3 W2A closure"
-last_reviewed = "2026-09-22"
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_label = "Superseded by aiohttp-3.14.5-pypi"
+last_reviewed = "2026-10-11"
 
 [candidates."aiter-0.1.19.post2"]
 family = "aiter"
@@ -4801,13 +4800,13 @@ previous_recorded = "3.14.3"
 latest = "3.14.4"
 discovery_status = "stable_update_available"
 disposition = "rejected"
-disposition_reason = "Superseded as an unadopted post-freeze observation by aiohttp-3.14.5-pypi from the 2026-10-11 freshness sweep. The newer record carries this release's security content forward: the eight advisories that upstream published on 2026-10-07 name 3.14.4 as the first patched release. Issue #147 retains candidate review and disposition. C's selected aiohttp 3.14.3 (aiohttp-3.14.3-pypi) is unchanged."
+disposition_reason = "Superseded as an unadopted post-freeze observation by aiohttp-3.14.5-pypi from the 2026-10-11 freshness sweep. The newer record carries this release's security content forward: the eight advisories that upstream published on 2026-10-07 name 3.14.4 as the first patched release. On 2026-10-11 the owner adopted 3.14.5 into the model closure move (#183), which carries those fixes."
 salient_changes = [
   "The pypi check reports 3.14.4 after recorded cursor 3.14.3",
   "Release contents and patch applicability are not assessed by this metadata refresh; the next gate owns that work",
 ]
 next_gate_kind = "none"
-next_gate_label = "Superseded by aiohttp-3.14.5-pypi; selected C line unchanged"
+next_gate_label = "Superseded by aiohttp-3.14.5-pypi"
 last_reviewed = "2026-10-11"
 
 [candidates."asyncpg-0.32.0-pypi"]
@@ -5208,16 +5207,19 @@ previous_recorded = "3.14.3"
 latest = "3.14.5"
 discovery_status = "stable_update_available"
 disposition = "tracked"
-disposition_reason = "The 2026-10-11 freshness sweep observes aiohttp 3.14.5 after C's selected 3.14.3. Issue #147 owns post-freeze candidate review and disposition, and C's selected version is unchanged. This record does state the release line's security content, which the superseded 3.14.4 record left unassessed: upstream published eight advisories on 2026-10-07 whose first patched release is 3.14.4, six rated low and two rated medium. vLLM 0.30.0 uses the aiohttp client to fetch request-supplied media, so the client-side advisories are reachable from the served path; the server-side ones are not, because vLLM serves through FastAPI and uvicorn. Whether that reachability makes this a security exception to the version freeze is an owner decision that this record does not make."
+disposition_reason = "Selected for generation C by the owner's 2026-10-11 decision, under the version freeze's security exception, in the model closure move (#183). 3.14.4 is the first patched release for eight advisories that upstream published on 2026-10-07, two rated medium and six low. By advisory title, three low ones concern the aiohttp client (GHSA-494j-54xm-rwp3, GHSA-6cjc-53gc-5rqm and GHSA-gx76-c99x-2c96: cookie handling and connector-pool exhaustion), which vLLM 0.30.0 uses to fetch request-supplied media, so they are reachable from the served path. Three low ones concern an aiohttp server (GHSA-f9xw-jh8m-3mwq, GHSA-5wr8-gcqf-gqf3 and GHSA-pqxq-w44r-73xw), which vLLM does not run. The two medium ones (GHSA-9xw5-w5jj-pvcg and GHSA-2g87-pp6c-29x5) were not classified. The closure move updates the package source to 3.14.5. The package build, the build-root refresh and CPU drive, deployment and installation, installed smoke checks, and live validation remain open, so this record does not establish adoption."
 salient_changes = [
-  "The pypi check reports 3.14.5 after recorded cursor 3.14.3; 3.14.5 itself is a bug-fix release (WebSocket control frames after permessage-deflate)",
-  "3.14.4 is the first patched release for GHSA-9xw5-w5jj-pvcg and GHSA-2g87-pp6c-29x5 (medium) and for GHSA-f9xw-jh8m-3mwq, GHSA-494j-54xm-rwp3, GHSA-5wr8-gcqf-gqf3, GHSA-6cjc-53gc-5rqm, GHSA-gx76-c99x-2c96 and GHSA-pqxq-w44r-73xw (low)",
+  "The pypi check reports 3.14.5 after C's selected 3.14.3; 3.14.5 itself is a bug-fix release (WebSocket control frames after permessage-deflate)",
   "3.14.5 requires yarl >=1.25.1,<2.0 and multidict >=4.5,<8.0; C's yarl 1.25.1 and multidict 6.9.1 satisfy both",
-  "No source, patch, build, or runtime validation is derived here; the owning lane derives it before adoption",
+  "Arch extra python-aiohttp was still 3.14.3-1 on 2026-10-11, so the package is ahead of its Arch reference",
+  "The package source moved to 3.14.5 on 2026-10-11 and supersedes the selected 3.14.3 record",
 ]
+patch_carry_overlap = false
+package_source_update_needed = false
+host_validation_needed = true
 next_gate_kind = "github_issue"
-next_gate_issue = 147
-next_gate_label = "Post-freeze aiohttp 3.14.5 review, including the 3.14.4 security fixes"
+next_gate_issue = 183
+next_gate_label = "aiohttp 3.14.5 package build, build-root refresh, and CPU drive for the model closure move"
 last_reviewed = "2026-10-11"
 
 [candidates."numpy-2.5.4-pypi"]

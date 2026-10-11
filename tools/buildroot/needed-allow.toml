@@ -208,7 +208,13 @@ reason = "Optional VTK I/O, rendering and accelerator modules pulled in through 
 [[needed]]
 package = "vtk"
 object = "/usr/lib/*vtk*"
-soname = "libviskores_*-1.1.so.1.1"
+soname = "libviskores_*.so.1.2"
+reason = "Optional VTK I/O, rendering and accelerator modules pulled in through opencv; their providers are VTK optdepends that are not in the root."
+
+[[needed]]
+package = "vtk"
+object = "/usr/lib/*vtk*"
+soname = "libconduit*.so"
 reason = "Optional VTK I/O, rendering and accelerator modules pulled in through opencv; their providers are VTK optdepends that are not in the root."
 
 [[needed]]

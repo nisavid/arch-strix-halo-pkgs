@@ -52,7 +52,8 @@ def test_rendered_depends_match_the_policy():
 
     assert depends == policy["depends"]
     assert recipe["depends"] == policy["depends"]
-    assert set(depends) == {"glibc", "libgcc", "libstdc++", "python-gfx1151", *HUB_DEPENDS, "zlib"}
+    # The extension links libstdc++, libgcc_s, libm and libc, and nothing else.
+    assert "zlib" not in depends
 
 
 def test_build_never_lets_rustup_download_a_toolchain():

@@ -4,6 +4,9 @@ Patches 0017-0024 are the source hunks of eight upstream vLLM pull requests,
 all in v0.31.0, ported onto v0.30.0. These tests pin which patches are
 carried, what each one touches, and that the PKGBUILD applies the series in
 order and detects a source tree that predates any of them.
+
+The sentinel coverage check that needs no source tarball runs in the default
+suite: tests/test_vllm_source_patch_coverage.py.
 """
 
 import hashlib
@@ -35,9 +38,6 @@ class Backport:
     pull_request: int
     merge_commit: str
     files: tuple[str, ...]
-    # (fixed string, path) the PKGBUILD greps for; None when the patch only
-    # deletes lines.
-    sentinel: tuple[str, str] | None
 
 
 BACKPORTS = (
@@ -46,14 +46,12 @@ BACKPORTS = (
         56108,
         "ec4a3a537068db40afbc9374a67da719c8c9b964",
         ("vllm/model_executor/models/pixtral.py",),
-        ("def position_ids_in_meshgrid(", "vllm/model_executor/models/pixtral.py"),
     ),
     Backport(
         "0018-backport-minimax-m3-video-processor-for-transformers-5.18.patch",
         59613,
         "b558f160a2c0abcb5902acc3c91a14c38a4af173",
         ("vllm/transformers_utils/processors/minimax_m3.py",),
-        None,
     ),
     Backport(
         "0019-backport-gate-per-request-multimodal-kwargs.patch",
@@ -69,24 +67,18 @@ BACKPORTS = (
             "vllm/entrypoints/pooling/factories.py",
             "vllm/renderers/online_renderer.py",
         ),
-        (
-            "def validate_request_mm_kwargs(",
-            "vllm/entrypoints/generate/base/protocol.py",
-        ),
     ),
     Backport(
         "0020-backport-redact-upper-case-addresses-in-error-messages.patch",
         58832,
         "379e9a1ea8a5995464d9bf775bcd36bb03a0995f",
         ("vllm/entrypoints/serve/exception_handling/utils.py",),
-        ("0x[0-9a-fA-F]+>", "vllm/entrypoints/serve/exception_handling/utils.py"),
     ),
     Backport(
         "0021-backport-prefer-fresh-multimodal-payloads-over-stale-receiver-cache.patch",
         57833,
         "7268f6e38ebbb3d61700f16c638c6eba0c88bb0c",
         ("vllm/multimodal/cache.py",),
-        ("Never keep a stale cached tensor under this", "vllm/multimodal/cache.py"),
     ),
     Backport(
         "0022-backport-reject-encoder-cache-hits-with-mismatched-embed-counts.patch",
@@ -96,27 +88,18 @@ BACKPORTS = (
             "vllm/v1/core/encoder_cache_manager.py",
             "vllm/v1/core/sched/scheduler.py",
         ),
-        (
-            "def get_cached_num_encoder_embeds(",
-            "vllm/v1/core/encoder_cache_manager.py",
-        ),
     ),
     Backport(
         "0023-backport-frame-the-multimodal-hash-digest-input.patch",
         54283,
         "a8d1aa9c99b8698a2a78b611b7a10c30e6b3995b",
         ("vllm/multimodal/hasher.py",),
-        ("def iter_value_to_bytes(", "vllm/multimodal/hasher.py"),
     ),
     Backport(
         "0024-backport-fix-incremental-multimodal-block-hashing.patch",
         51694,
         "e6c07ea5763bada5da789ed437851ee1526fd5a8",
         ("vllm/v1/core/kv_cache_utils.py",),
-        (
-            "from vllm.multimodal.utils import get_mm_features_in_window",
-            "vllm/v1/core/kv_cache_utils.py",
-        ),
     ),
 )
 SERIES = [CARRY, *(backport.patch for backport in BACKPORTS)]
@@ -171,7 +154,7 @@ def sentinel_function() -> str:
     return text[start : text.index("\n}\n", start)]
 
 
-def test_package_carries_the_local_carry_and_eight_backports():
+def test_package_carries_the_local_carry_and_its_backports():
     assert sorted(path.name for path in PKG_DIR.glob("*.patch")) == SERIES
 
 
@@ -328,14 +311,21 @@ def test_hasher_backport_frames_the_inline_exif_image_id():
     assert "        return _framed(pickle.dumps(obj))" in added
 
 
+def policy_sentinels() -> dict[str, dict]:
+    recipe = json.loads(RECIPE_JSON.read_text())
+    return {entry["patch"]: entry for entry in recipe["policy"]["source_patch_sentinels"]}
+
+
 @backports
 def test_pkgbuild_sentinel_is_introduced_by_the_patch_it_guards(backport):
-    if backport.sentinel is None:
-        # A deletion-only patch has nothing to grep for; the neighbouring
-        # patches' sentinels bracket it in the ordered series.
-        assert backport.pull_request == 59613
+    entry = policy_sentinels()[backport.patch]
+    if "guarded_by" in entry:
+        # A deletion-only patch has nothing to grep for; a later patch's
+        # sentinel guards it in the ordered series.
+        assert changed_lines(backport.patch, backport.files[0], "+") == []
+        assert any(SERIES.index(guard) > SERIES.index(backport.patch) for guard in entry["guarded_by"])
         return
-    text, path = backport.sentinel
+    text, path = entry["text"], entry["path"]
 
     assert f"grep -Fq '{text}' {path}" in sentinel_function()
     assert any(text in line for line in changed_lines(backport.patch, path, "+"))
