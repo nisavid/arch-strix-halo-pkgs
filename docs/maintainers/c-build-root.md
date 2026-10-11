@@ -767,7 +767,8 @@ before the swap can be abandoned at no cost.
   it is informational: vLLM imports the exporters behind a guard and uses them
   only when a trace endpoint is configured, and no tracked scenario configures
   one. A re-lock cannot cure it, because the lock takes the sync DB versions.
-  Re-check it when Arch moves the remaining OpenTelemetry packages.
+  [The OpenTelemetry split](https://github.com/nisavid/arch-strix-halo-pkgs/issues/196)
+  tracks the re-check for when Arch moves the remaining packages.
 
 ## W2A vLLM lease job closure (#110, #111)
 

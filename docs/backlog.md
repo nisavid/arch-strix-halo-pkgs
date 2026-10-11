@@ -21,6 +21,8 @@ execution tickets are:
 - [research branch, draft PR, and worktree reconciliation](https://github.com/nisavid/arch-strix-halo-pkgs/issues/142)
 - [signing and verifiability follow-up](https://github.com/nisavid/arch-strix-halo-pkgs/issues/143)
 - [upstream drift deferred by the generation C version freeze](https://github.com/nisavid/arch-strix-halo-pkgs/issues/147)
+- [OTLP trace exporters that fail to import against Arch's split OpenTelemetry packages](https://github.com/nisavid/arch-strix-halo-pkgs/issues/196)
+- [render freshness, patch sentinel and checker follow-ups from the model-closure review](https://github.com/nisavid/arch-strix-halo-pkgs/issues/197)
 
 Outside the resurrection scope:
 
@@ -61,6 +63,7 @@ owns the dependency-ordered route. Its blocking spine is:
 - W3-W6: [candidate assembly](https://github.com/nisavid/arch-strix-halo-pkgs/issues/114),
   [the small MoE and long-decode vLLM gate lanes](https://github.com/nisavid/arch-strix-halo-pkgs/issues/179),
   [GPU-lane requalification on assembled C under Transformers 5.18](https://github.com/nisavid/arch-strix-halo-pkgs/issues/194),
+  [the untrusted image-format decision for vLLM's image-chat routes](https://github.com/nisavid/arch-strix-halo-pkgs/issues/195),
   [preactivation and recovery](https://github.com/nisavid/arch-strix-halo-pkgs/issues/115),
   [activation](https://github.com/nisavid/arch-strix-halo-pkgs/issues/116), and
   [acceptance](https://github.com/nisavid/arch-strix-halo-pkgs/issues/117)
