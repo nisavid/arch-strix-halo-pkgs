@@ -16,16 +16,48 @@ python-numpy-gfx1151
 python-pyyaml-gfx1151
 python-pillow-gfx1151
 python-psutil-gfx1151
-python-tokenizers-gfx1151
+# The closure move (#183): Transformers 5.18.0, tokenizers 0.23.3 and
+# huggingface-hub 2.x enter one lock together. Transformers 5.16.1 and 5.17.0
+# require huggingface-hub <2.0 and fail at import next to hub 2.x, and
+# tokenizers 0.23.2 declares the same <2.0 bound. The 5.16.1-1 and 0.23.2-1
+# builds depend on an unversioned python-huggingface-hub, so only these two
+# floors keep them out of a lock that holds hub 2.x: against an ashp-w2a that
+# still carries them, each floor is `unresolved` and `populate` refuses the
+# lock. Build and publish both packages from a torch-chain.targets plus
+# py-closure.targets root, which holds neither Transformers nor hub, before
+# resolving this file.
+python-tokenizers-gfx1151>=0.23.3
 python-safetensors-gfx1151
-python-transformers-gfx1151
+python-transformers-gfx1151>=5.18.0
 python-mistral-common-gfx1151
 python-pydantic-core-gfx1151
 # pydantic 2.13.5 requires pydantic-core ==2.46.5 exactly, and
 # python-pydantic-core-gfx1151 2.46.5-2 conflicts with any other pydantic.
 python-pydantic>=2.13.5
-# vLLM 0.30 requires huggingface-hub >=1.31.0.
-python-huggingface-hub>=1:1.31.0
+# vLLM 0.30 requires huggingface-hub >=1.31.0, Transformers 5.18.0 requires
+# >=1.31.0,<3.0 and tokenizers 0.23.3 requires >=0.16.4,<3.0; both packages
+# carry their range as versioned depends, so `resolve` reports a hub outside
+# it as `unresolved`. The floor is the hub 2.x release the closure move was
+# measured against, so a stale sync DB cannot lock hub 1.x under the 5.18.0
+# closure. Arch packages hub under epoch 1.
+python-huggingface-hub>=1:2.1.1
+# huggingface-hub 2.x's HTTP stack: hub 2.1.1 requires httpx2 >=2.0.0,<3
+# where hub 1.x required httpx. Arch python-huggingface-hub depends on
+# python-httpx2, which depends on python-httpcore2 and python-truststore;
+# they are named so the closure's membership is explicit. httpx2 pins its
+# matching httpcore2 release exactly, and Arch ships the pair at one version.
+# httpx2 and httpcore2 require truststore >=0.10 and build their default TLS
+# context from the system trust store through it, where httpx used certifi.
+python-httpx2>=2.0.0
+python-httpcore2
+python-truststore>=0.10
+# httpx2 2.13.0 requires anyio >=4.10, but Arch python-httpx2 does not depend
+# on python-anyio.
+python-anyio>=4.10
+# huggingface-hub 2.1.1 requires click >=8.4.2,<9 for its `hf` CLI, and Arch
+# python-huggingface-hub depends on an unversioned python-click. The root
+# locked on 2026-09-25 held click 8.3.3.
+python-click>=8.4.2
 python-aiohttp-gfx1151
 python-frozenlist-gfx1151
 python-multidict-gfx1151

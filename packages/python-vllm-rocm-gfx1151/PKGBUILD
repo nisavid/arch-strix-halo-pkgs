@@ -6,7 +6,7 @@
 
 pkgname=python-vllm-rocm-gfx1151
 pkgver=0.30.0
-pkgrel=1
+pkgrel=2
 pkgdesc='High-throughput and memory-efficient inference engine for LLMs with ROCm, rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://github.com/vllm-project/vllm
@@ -18,8 +18,8 @@ options=('!lto')
 provides=(python-vllm-rocm python-vllm)
 conflicts=(python-vllm-rocm python-vllm)
 replaces=()
-source=(https://github.com/vllm-project/vllm/archive/refs/tags/v0.30.0.tar.gz 0016-rocm-refresh-local-carry-for-vllm-0.30.0.patch)
-sha256sums=(36888183808c62ea91c4118a807fca26938520b3dfc0f611f3910bef8627dae8 SKIP)
+source=(https://github.com/vllm-project/vllm/archive/refs/tags/v0.30.0.tar.gz 0016-rocm-refresh-local-carry-for-vllm-0.30.0.patch 0017-backport-pixtral-axial-rope-for-transformers-5.17.patch 0018-backport-minimax-m3-video-processor-for-transformers-5.18.patch 0019-backport-gate-per-request-multimodal-kwargs.patch 0020-backport-redact-upper-case-addresses-in-error-messages.patch 0021-backport-prefer-fresh-multimodal-payloads-over-stale-receiver-cache.patch 0022-backport-reject-encoder-cache-hits-with-mismatched-embed-counts.patch 0023-backport-frame-the-multimodal-hash-digest-input.patch 0024-backport-fix-incremental-multimodal-block-hashing.patch)
+sha256sums=(36888183808c62ea91c4118a807fca26938520b3dfc0f611f3910bef8627dae8 SKIP 6443921260271c6a2b3d01482b58d7ba4cb25b1bd67194cd08b8c24b8c0646ab 195ea85751f6907ad0f3758edf58ee8535f5c7dd846ef6182a32ae0ed0066f78 038b73488420372eb33a74b5912ec72d91e21ef462d02f6c6ecd4deb65d671ed d5312e486f969fb672bb43473f7a9015ed68ad4d4142cf31e7159625edd5c3e9 fa2b8676cf44224a3fdd07c40678a301853b8b9825f283334a2e0a47f5c6770a 36d20fdd43c353df2d39d0f214bffe356c89968c408f4af12d10816deb8d51fc 0c4a0f97e599deeed69d3c0c26dc3d6f5bfbdd53629746da227cb35c6c5fc762 046491adf84589c6e66bb421fab8c9696156125cefa03547b074cb8206d4ab7d)
 
 _vllm_srcdir="vllm-${pkgver}"
 _vllm_tarball="v${pkgver}.tar.gz"
@@ -56,7 +56,14 @@ _source_tree_has_all_source_patches() {
     grep -Fq 'Use PyTorch top-k/top-p filtering on large-vocabulary ROCm'       vllm/v1/sample/ops/topk_topp_sampler.py &&
     grep -Fq 'Keep valid_count type stable across branches'       vllm/v1/spec_decode/utils.py &&
     grep -Fq 'def rocm_flash_attn_supports_vllm_varlen_api() -> bool:'       vllm/v1/attention/backends/fa_utils.py &&
-    grep -Fq 'NOTE(gfx1151): On AMD HIP, restrict autotune search'       vllm/third_party/flash_linear_attention/ops/chunk_delta_h.py
+    grep -Fq 'NOTE(gfx1151): On AMD HIP, restrict autotune search'       vllm/third_party/flash_linear_attention/ops/chunk_delta_h.py &&
+    grep -Fq 'def position_ids_in_meshgrid(' vllm/model_executor/models/pixtral.py &&
+    grep -Fq 'def validate_request_mm_kwargs(' vllm/entrypoints/generate/base/protocol.py &&
+    grep -Fq '0x[0-9a-fA-F]+>' vllm/entrypoints/serve/exception_handling/utils.py &&
+    grep -Fq 'Never keep a stale cached tensor under this' vllm/multimodal/cache.py &&
+    grep -Fq 'def get_cached_num_encoder_embeds(' vllm/v1/core/encoder_cache_manager.py &&
+    grep -Fq 'def iter_value_to_bytes(' vllm/multimodal/hasher.py &&
+    grep -Fq 'from vllm.multimodal.utils import get_mm_features_in_window' vllm/v1/core/kv_cache_utils.py
 }
 
 _apply_all_source_patches() {
@@ -76,6 +83,14 @@ _apply_all_source_patches() {
   cd "${srcdir}/${_vllm_srcdir}"
 
   _apply_patch_if_needed "${_vllm_source_patch}"
+  _apply_patch_if_needed "0017-backport-pixtral-axial-rope-for-transformers-5.17.patch"
+  _apply_patch_if_needed "0018-backport-minimax-m3-video-processor-for-transformers-5.18.patch"
+  _apply_patch_if_needed "0019-backport-gate-per-request-multimodal-kwargs.patch"
+  _apply_patch_if_needed "0020-backport-redact-upper-case-addresses-in-error-messages.patch"
+  _apply_patch_if_needed "0021-backport-prefer-fresh-multimodal-payloads-over-stale-receiver-cache.patch"
+  _apply_patch_if_needed "0022-backport-reject-encoder-cache-hits-with-mismatched-embed-counts.patch"
+  _apply_patch_if_needed "0023-backport-frame-the-multimodal-hash-digest-input.patch"
+  _apply_patch_if_needed "0024-backport-fix-incremental-multimodal-block-hashing.patch"
 
 }
 

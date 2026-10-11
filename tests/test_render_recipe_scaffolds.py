@@ -306,7 +306,7 @@ def test_vllm_renderer_defines_source_variables_without_patches() -> None:
     assert "_apply_all_source_patches" not in pkgbuild
 
 
-def _render_vllm_0_30_pkgbuild() -> str:
+def _render_vllm_0_30_pkgbuild(**policy_overrides) -> str:
     return render_recipe_scaffolds.render_pkgbuild(
         "python-vllm-rocm-gfx1151",
         {
@@ -321,6 +321,7 @@ def _render_vllm_0_30_pkgbuild() -> str:
             "sha256sums": ["0" * 64],
             "source_patches": ["0016-rocm-refresh-local-carry-for-vllm-0.30.0.patch"],
             "src_subdir": "vllm-0.30.0",
+            **policy_overrides,
         },
         {
             "repo": "https://github.com/vllm-project/vllm",
@@ -401,6 +402,72 @@ def test_vllm_renderer_checks_the_0_30_carry_sentinels() -> None:
         "speculators/algos.py",
     ):
         assert dropped not in sentinels
+    assert sentinels.count("grep -Fq") == 8
+
+
+def _vllm_sentinel_function(pkgbuild: str) -> str:
+    start = pkgbuild.index("_source_tree_has_all_source_patches() {")
+    return pkgbuild[start : pkgbuild.index("\n}\n", start)]
+
+
+def test_vllm_renderer_applies_later_patches_in_policy_order() -> None:
+    backports = ["0017-backport-first.patch", "0018-backport-second.patch"]
+    pkgbuild = _render_vllm_0_30_pkgbuild(
+        source_patches=["0016-rocm-refresh-local-carry-for-vllm-0.30.0.patch", *backports],
+        extra_sha256sums=["SKIP", "1" * 64, "2" * 64],
+    )
+    start = pkgbuild.index("_apply_all_source_patches() {")
+    function = pkgbuild[start : pkgbuild.index("\n}\n", start)]
+    applied = [
+        line.strip()
+        for line in function.splitlines()
+        if line.strip().startswith("_apply_patch_if_needed ")
+    ]
+
+    # The local carry follows pkgver; later patches keep their literal names.
+    assert '_vllm_source_patch="0016-rocm-refresh-local-carry-for-vllm-${pkgver}.patch"' in pkgbuild
+    assert applied == [
+        '_apply_patch_if_needed "${_vllm_source_patch}"',
+        '_apply_patch_if_needed "0017-backport-first.patch"',
+        '_apply_patch_if_needed "0018-backport-second.patch"',
+    ]
+    assert (
+        "source=(https://github.com/vllm-project/vllm/archive/refs/tags/v0.30.0.tar.gz "
+        "0016-rocm-refresh-local-carry-for-vllm-0.30.0.patch "
+        "0017-backport-first.patch 0018-backport-second.patch)"
+    ) in pkgbuild
+    assert f"sha256sums=({'0' * 64} SKIP {'1' * 64} {'2' * 64})" in pkgbuild
+
+
+def test_vllm_renderer_appends_policy_source_patch_sentinels() -> None:
+    # Without a sentinel for a later patch, a reused src/ tree that has only
+    # the carry would pass the check and the later patch would be skipped.
+    pkgbuild = _render_vllm_0_30_pkgbuild(
+        source_patch_sentinels=[
+            ["def added_by_a_backport(", "vllm/some/module.py"],
+            ["0x[0-9a-fA-F]+>", "vllm/other/module.py"],
+        ],
+    )
+    sentinels = _vllm_sentinel_function(pkgbuild)
+
+    assert sentinels.count("grep -Fq") == 10
+    assert sentinels.endswith(
+        "      vllm/third_party/flash_linear_attention/ops/chunk_delta_h.py &&\n"
+        "    grep -Fq 'def added_by_a_backport(' vllm/some/module.py &&\n"
+        "    grep -Fq '0x[0-9a-fA-F]+>' vllm/other/module.py"
+    )
+
+
+@pytest.mark.parametrize(
+    "sentinel",
+    [["it's quoted", "vllm/module.py"], ["two\nlines", "vllm/module.py"], ["text", " "]],
+)
+def test_vllm_renderer_rejects_unquotable_source_patch_sentinels(sentinel, capsys) -> None:
+    with pytest.raises(SystemExit) as exc:
+        _render_vllm_0_30_pkgbuild(source_patch_sentinels=[sentinel])
+
+    assert exc.value.code == 2
+    assert "SOURCE_PATCH_SENTINEL_INVALID" in capsys.readouterr().err
 
 
 def test_rust_wheel_renderer_applies_source_patches() -> None:

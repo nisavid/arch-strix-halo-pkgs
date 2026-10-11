@@ -5,24 +5,24 @@
 # Package recipe key: rust_wheels
 
 pkgname=python-tokenizers-gfx1151
-pkgver=0.23.2
+pkgver=0.23.3
 pkgrel=1
 pkgdesc='Fast state-of-the-art tokenizers rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://github.com/huggingface/tokenizers
 license=(Apache-2.0)
-depends=(glibc libgcc python-gfx1151)
+depends=(glibc libgcc libstdc++ python-gfx1151 'python-huggingface-hub>=1:0.16.4' 'python-huggingface-hub<1:3' zlib)
 makedepends=(cargo python-build python-installer python-maturin python-wheel rocm-llvm-gfx1151 rust)
 optdepends=()
 options=()
 provides=(python-tokenizers)
 conflicts=(python-tokenizers)
 replaces=()
-source=(https://files.pythonhosted.org/packages/source/t/tokenizers/tokenizers-0.23.2.tar.gz)
-sha256sums=(7f0f085686b9de0d0079e6f874ae053600db64c5d13049e0bbc0119926d25aac)
+source=(https://files.pythonhosted.org/packages/source/t/tokenizers/tokenizers-0.23.3.tar.gz)
+sha256sums=(cded33237c77caeef62944d32aa9a7ef42bdce2b3497e18d137e072a8c4be438)
 
 build() {
-  cd "$srcdir/tokenizers-0.23.2"
+  cd "$srcdir/tokenizers-0.23.3"
 
   _setup_compiler_env() {
   local _compiler_root="/opt/rocm/lib/llvm/bin"
@@ -50,6 +50,8 @@ build() {
 
   _setup_compiler_env
   local _debug_prefix="/usr/src/debug/python-tokenizers-gfx1151"
+  # Use the installed Rust toolchain; a rustup proxy must never download one.
+  export RUSTUP_AUTO_INSTALL=0
   export CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER="$CC"
   export RUSTFLAGS="-C target-cpu=znver5 -C opt-level=3 --remap-path-prefix=$srcdir=${_debug_prefix}"
   unset CFLAGS CXXFLAGS LDFLAGS
@@ -58,11 +60,11 @@ build() {
 }
 
 package() {
-  cd "$srcdir/tokenizers-0.23.2"
+  cd "$srcdir/tokenizers-0.23.3"
   python -m installer --destdir="$pkgdir" dist/*.whl
 
   local _debug_prefix="/usr/src/debug/python-tokenizers-gfx1151"
   find "$pkgdir/usr/lib" -type f -path '*/sboms/*.json' -print0 | while IFS= read -r -d '' _file; do
-    sed -i       -e "s|$srcdir/tokenizers-0.23.2|${_debug_prefix}/tokenizers-0.23.2|g"       -e "s|$srcdir|${_debug_prefix}|g"       -e "s|/tmp/pkg/src/tokenizers-0.23.2|${_debug_prefix}/tokenizers-0.23.2|g"       "$_file" 2>/dev/null || true
+    sed -i       -e "s|$srcdir/tokenizers-0.23.3|${_debug_prefix}/tokenizers-0.23.3|g"       -e "s|$srcdir|${_debug_prefix}|g"       -e "s|/tmp/pkg/src/tokenizers-0.23.3|${_debug_prefix}/tokenizers-0.23.3|g"       "$_file" 2>/dev/null || true
   done
 }

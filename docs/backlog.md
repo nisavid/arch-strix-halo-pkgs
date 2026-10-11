@@ -60,6 +60,7 @@ owns the dependency-ordered route. Its blocking spine is:
   [the coherent Lemonade package family](https://github.com/nisavid/arch-strix-halo-pkgs/issues/113)
 - W3-W6: [candidate assembly](https://github.com/nisavid/arch-strix-halo-pkgs/issues/114),
   [the small MoE and long-decode vLLM gate lanes](https://github.com/nisavid/arch-strix-halo-pkgs/issues/179),
+  [GPU-lane requalification on assembled C under Transformers 5.18](https://github.com/nisavid/arch-strix-halo-pkgs/issues/194),
   [preactivation and recovery](https://github.com/nisavid/arch-strix-halo-pkgs/issues/115),
   [activation](https://github.com/nisavid/arch-strix-halo-pkgs/issues/116), and
   [acceptance](https://github.com/nisavid/arch-strix-halo-pkgs/issues/117)

@@ -1078,15 +1078,29 @@ _vllm_srcdir="{vllm_srcdir}"
 _vllm_tarball="v${{pkgver}}.tar.gz"
 
 """
+        # The local carry is the first patch and follows pkgver; later patches
+        # (for example upstream backports) keep their literal names.
         vllm_patch_vars = ""
-        vllm_patch_apply_lines = "".join(
-            f'  _apply_patch_if_needed "{patch_name}"\n'
-            for patch_name in source_patches
-        )
-        if len(source_patches) == 1:
-            vllm_patch_name = source_patches[0].replace(upstream_version, "${pkgver}")
-            vllm_patch_vars = f'_vllm_source_patch="{vllm_patch_name}"\n'
-            vllm_patch_apply_lines = '  _apply_patch_if_needed "${_vllm_source_patch}"\n'
+        vllm_patch_apply_lines = ""
+        for index, patch_name in enumerate(source_patches):
+            if index == 0:
+                vllm_patch_name = patch_name.replace(upstream_version, "${pkgver}")
+                vllm_patch_vars = f'_vllm_source_patch="{vllm_patch_name}"\n'
+                vllm_patch_apply_lines += '  _apply_patch_if_needed "${_vllm_source_patch}"\n'
+            else:
+                vllm_patch_apply_lines += f'  _apply_patch_if_needed "{patch_name}"\n'
+        # Policy-listed sentinels extend the built-in carry sentinels, so a reused
+        # src/ tree that predates a later patch is re-extracted and repatched.
+        vllm_extra_sentinels = ""
+        for sentinel, sentinel_path in policy_pkg.get("source_patch_sentinels", []):
+            if "'" in sentinel or "\n" in sentinel or not sentinel_path.strip():
+                print(
+                    "SOURCE_PATCH_SENTINEL_INVALID: sentinels are single-line fixed strings "
+                    f"without single quotes, each with a path: {sentinel!r}",
+                    file=sys.stderr,
+                )
+                raise SystemExit(2)
+            vllm_extra_sentinels += f" &&\n    grep -Fq '{sentinel}' {sentinel_path}"
         if source_patches:
             patch_helper = """\
 __PATCH_VARS__
@@ -1127,7 +1141,7 @@ _source_tree_has_all_source_patches() {
     grep -Fq 'def rocm_flash_attn_supports_vllm_varlen_api() -> bool:' \
       vllm/v1/attention/backends/fa_utils.py &&
     grep -Fq 'NOTE(gfx1151): On AMD HIP, restrict autotune search' \
-      vllm/third_party/flash_linear_attention/ops/chunk_delta_h.py
+      vllm/third_party/flash_linear_attention/ops/chunk_delta_h.py__EXTRA_SENTINELS__
 }
 
 _apply_all_source_patches() {
@@ -1152,7 +1166,7 @@ __PATCH_APPLY_LINES__
 """.replace("__PATCH_VARS__", vllm_patch_vars.rstrip()).replace(
                 "__PATCH_APPLY_LINES__",
                 vllm_patch_apply_lines,
-            )
+            ).replace("__EXTRA_SENTINELS__", vllm_extra_sentinels)
             patch_prepare_cmds = "  _apply_all_source_patches\n"
             patch_build_cmds = "_apply_all_source_patches\n"
         build_body = f"""\

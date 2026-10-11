@@ -4,6 +4,193 @@ The package, deployment, and live-validation narrative below remains a
 2026-06-15 snapshot. Dated records come first, newest first; older
 reconciliations remain as dated history.
 
+## 2026-10-10 Model Closure Source Move to Transformers 5.18.0 and Hugging Face Hub 2.x
+
+This is the source-level part of
+[the model-closure move](https://github.com/nisavid/arch-strix-halo-pkgs/issues/183):
+package sources, build-root closure targets, freshness cursors and candidate
+records. Nothing was built. The isolated W2A root, the W2A build repo and the
+host are unchanged.
+
+Owner decisions this record follows:
+
+- **2026-10-05:** generation C moves to Transformers 5.18.0 and
+  huggingface-hub 2.x, admitted under the build-breakage exception.
+  Transformers 5.16.1 and 5.17.0 require `huggingface-hub<2.0` and fail at
+  import beside Arch's huggingface-hub 2.x.
+- **2026-10-10:** tokenizers moves to 0.23.3 in the same step.
+- **2026-10-10, phase split:** every GPU rerun under 5.18 and the
+  online-download check moved, unchanged, to
+  [GPU-lane requalification on assembled C](https://github.com/nisavid/arch-strix-halo-pkgs/issues/194).
+  The closure move now closes on built packages, the vLLM fixes each with a
+  recorded check, tokenizers 0.23.3, and a passing CPU drive in the refreshed
+  root. No requirement is waived.
+- **The host waits for C.** It keeps Transformers 5.8.1, which fails at
+  import beside its huggingface-hub 2.1.1, until generation C is activated.
+  It gets no separate repair.
+
+The states are recorded separately:
+
+- **Source updated:** yes. `python-transformers-gfx1151` is 5.18.0-1 and
+  `python-tokenizers-gfx1151` is 0.23.3-1, each pinned to the sdist digest
+  PyPI publishes. Both declare the huggingface-hub range of their packaged
+  metadata as versioned depends with Arch's epoch:
+  `python-huggingface-hub>=1:1.31.0` and `<1:3` for Transformers, and
+  `>=1:0.16.4` and `<1:3` for tokenizers. `model-closure.targets` floors
+  Transformers, tokenizers and huggingface-hub together and names hub 2.x's
+  new runtime dependencies.
+- **Package built:** no. Neither package has been built. The W2A build repo
+  still holds Transformers 5.16.1-1 and tokenizers 0.23.2-1.
+- **Deployed/installed:** no, in the W2A root or on the host.
+- **Installed-smoked:** no.
+- **Live-scenario validated:** no. The 2026-10-05 CPU probe is a preassembly
+  diagnostic on a different subject: an overlay of Transformers 5.18.0,
+  huggingface-hub 2.1.1, httpx2, httpcore2 and truststore on the 2026-09-25
+  root, with tokenizers 0.23.2 and click 8.3.3. GPU evidence is not part of
+  the closure move.
+
+`python-vllm-rocm-gfx1151` stays on upstream v0.30.0 and moves to pkgrel 2
+with eight upstream backports on top of the 0016 carry. Each is the source
+change of one vLLM pull request that is in v0.31.0:
+
+- 0017 ([#56108](https://github.com/vllm-project/vllm/pull/56108),
+  `pixtral.py` only, so Laguna stays unsupported on Transformers 5.18) and
+  0018 ([#59613](https://github.com/vllm-project/vllm/pull/59613), the
+  MiniMax-M3 video processor) keep vLLM 0.30.0 working on Transformers 5.18.
+- 0019 ([#58830](https://github.com/vllm-project/vllm/pull/58830)) rejects
+  per-request `mm_processor_kwargs` and `media_io_kwargs` with HTTP 400 unless
+  the server sets `--trust-request-mm-kwargs`. This changes default server
+  behavior: a client that sends either field per request needs the server
+  flag.
+- 0020 ([#58832](https://github.com/vllm-project/vllm/pull/58832)), 0021
+  ([#57833](https://github.com/vllm-project/vllm/pull/57833)), 0022
+  ([#57696](https://github.com/vllm-project/vllm/pull/57696)), 0023
+  ([#54283](https://github.com/vllm-project/vllm/pull/54283), adapted to
+  v0.30.0's inline EXIF ImageID lookup) and 0024
+  ([#51694](https://github.com/vllm-project/vllm/pull/51694)) are the
+  remaining v0.31.0 security and multimodal cache fixes that the packaged
+  server can reach. [Patch Inventory](../patches.md) describes each one.
+
+The carries are **source updated** only: 0.30.0-2 is not built, not installed,
+not installed-smoked and not live-scenario validated. Their preassembly
+evidence is CPU-only, from the 2026-09-25 W2A root without a GPU: a copy of
+the installed 0.30.0-1 package with the eight patch files applied, beside an
+overlay of Transformers 5.18.0 and huggingface-hub 2.1.1.
+
+- 298 of 303 `vllm.model_executor.models` modules import, where the unpatched
+  package imports 287. The 11 it adds are the Pixtral-chain modules. The five
+  that remain also fail on Transformers 5.16.1, for missing optional packages.
+- Pixtral's rotary tables and rotated queries and keys are identical under
+  Transformers 5.16.1 and 5.18.0.
+- The MiniMax-M3 video processor runs where the unpatched one raises
+  `TypeError`.
+- A chat, tokenize or score request that carries per-request multimodal
+  kwargs is rejected by default and accepted with the opt-in flag.
+- The 28 test cases that the six security and cache pull requests added all
+  pass on the patched package, where 27 fail on the unpatched one, and no
+  upstream test that passed before fails after.
+
+Dependency facts, checked against PyPI's version-specific metadata and the
+upstream tags:
+
+- Transformers [5.16.1](https://pypi.org/pypi/transformers/5.16.1/json) to
+  [5.18.0](https://pypi.org/pypi/transformers/5.18.0/json): one runtime
+  requirement changes, `huggingface-hub>=1.5.0,<2.0` to
+  `huggingface-hub>=1.31.0,<3.0`. `numpy>=1.17`, `packaging>=20.0`,
+  `pyyaml>=5.1`, `regex>=2025.10.22`, `safetensors>=0.8.0`,
+  `tokenizers>=0.23.1,<0.24.0`, `tqdm>=4.60` and `typer` are unchanged, and so
+  is every other version the import-time check reads. The wheel the probe
+  measured carries the same requirements and ships
+  `transformers.models.gemma4`.
+- tokenizers [0.23.2](https://pypi.org/pypi/tokenizers/0.23.2/json) to
+  [0.23.3](https://pypi.org/pypi/tokenizers/0.23.3/json): the one requirement,
+  `huggingface-hub>=0.16.4,<2.0`, becomes `<3.0`. 0.23.3 is not a
+  metadata-only release. It removes the truncation early exit that 0.23.2
+  carried, which restores every overflowing encoding, and no run has measured
+  it here.
+- The tokenizers package now depends on huggingface-hub. Its Python files do
+  not import `huggingface_hub`, but the compiled extension imports it when
+  `Tokenizer.from_pretrained` is called, and the published metadata makes it a
+  hard requirement. The September 22 selection record already required that
+  depend; the 0.23.2-1 build did not carry it.
+- huggingface-hub [2.1.1](https://pypi.org/pypi/huggingface-hub/2.1.1/json)
+  requires `httpx2>=2.0.0,<3` where 1.32.0 required `httpx`, and
+  `click>=8.4.2,<9`. httpx2 2.13.0 requires its matching httpcore2,
+  `truststore>=0.10` and `anyio>=4.10`. Arch `python-httpx2` does not depend
+  on `python-anyio`, and Arch `python-huggingface-hub` depends on an
+  unversioned `python-click`, so the targets floor both.
+- No other closure package's metadata excludes these versions: Accelerate
+  1.15.0, mistral-common 1.11.7, compressed-tensors 0.17.0, vLLM 0.30.0,
+  xgrammar 0.2.3 and safetensors 0.8.0 were checked.
+- Re-rendering tokenizers also applies two changes that its policy entry and
+  the shared Rust-wheel template already held: `libstdc++` and `zlib` in
+  depends, and `RUSTUP_AUTO_INSTALL=0` in `build()`. The 0.23.2-1 extension
+  links `libstdc++.so.6` and does not link zlib.
+
+[Generation-C Build Root](c-build-root.md#w2a-model-closure-move-183)
+explains each target line, the build order, and the read-only `resolve`
+results. In short: the old targets let a re-lock pair Transformers 5.16.1-1
+with huggingface-hub 2.1.1 and report no problem; the new targets make that
+lock fail until both packages are published. A refreshed lock also moves 102
+other userland packages to their current versions, which the probe did not
+cover.
+
+Candidate records:
+
+- `transformers-5.18.0-pypi` and `tokenizers-0.23.3-pypi` stay tracked to the
+  closure move, because their build, root refresh, CPU drive, installation
+  and validation gates are open.
+- `transformers-5.16.1-c-line` and `tokenizers-0.23.2-pypi` are superseded by
+  them.
+- `transformers-5.19.0-pypi` keeps its route to
+  [post-closeout maintenance](https://github.com/nisavid/arch-strix-halo-pkgs/issues/147)
+  and now also names the promoted `5.18.0` cursor.
+- `vllm-0.31.0` is unchanged.
+
+The freshness cursors record Transformers `5.18.0` and tokenizers `0.23.3`.
+
+The first sweep these changes required, at `2026-10-11T03:09:17Z`, exited 10:
+five families had moved upstream since the previous day's confirming sweep.
+This change dispositions all five, each superseding the family's previous
+unadopted post-freeze observation:
+
+- aiohttp: PyPI `3.14.5` is tracked to
+  [post-closeout maintenance](https://github.com/nisavid/arch-strix-halo-pkgs/issues/147).
+  Its record states what the superseded `3.14.4` record left unassessed:
+  upstream published eight advisories on 2026-10-07 whose first patched
+  release is 3.14.4, two rated medium and six low, and vLLM 0.30.0 uses the
+  aiohttp client to fetch request-supplied media. Generation C still selects
+  aiohttp 3.14.3. Whether that reachability is a security exception to the
+  version freeze is an owner decision, and it is open.
+- NumPy: PyPI `2.5.4`, a bug-fix release, is tracked to the same issue.
+- Python: Arch `python` `3.14.8-1` now matches the CPython 3.14.8 baseline
+  and is tracked to
+  [the W1 foundation](https://github.com/nisavid/arch-strix-halo-pkgs/issues/108),
+  which owns the admitted 3.14.8 foundation.
+- Lemonade: fork main `3df36c4c5da16eedc6dca54c858be3347ccdf6a9`, one commit
+  past `4bad19a`, is tracked to
+  [calendar-versioned Lemonade packaging](https://github.com/nisavid/arch-strix-halo-pkgs/issues/163).
+- stable-diffusion.cpp: master `2988060a4338a5dcd94721c964a8e87003c1ac8b` is
+  tracked to post-closeout maintenance.
+
+The confirming sweep completed at `2026-10-11T03:41:33Z` with `--refresh` and
+exited 0 with `--json --fail-on actionable`. Across 51 families, the report
+has 28 stable updates, five branch-head movements, five baseline drifts and
+13 current families, with no provider failure. Effective dispositions are 40
+tracked, six rejected and five current. Explicit tracker validation exited 0.
+
+The source suite passed 1,602 tests with two skips. It excluded
+`tests/test_torchao_vllm_smoke.py`, which fails collection on this host for
+the Transformers and huggingface-hub reason above. The Transformers and
+tokenizers package tests passed nine with one skip, which is the check that
+needs a built package. The vLLM package tests passed 145 with three skips,
+with the v0.30.0 source tarball supplied so that the series 0016-0024 is
+applied to real source; they excluded `test_torchao_vllm_smoke_tool.py`,
+whose eight tests fail on this host for the same reason. New tests resolve
+the real targets file over constructed sync DBs: the published packages lock
+beside hub 2.1.1, the 5.16.1-1 and 0.23.2-1 builds do not, and a hub 3
+release is refused.
+
 ## 2026-10-10 Freshness Dispositions and Confirming Sweep
 
 The daily metadata sweep tracks three new observations without changing the

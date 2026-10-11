@@ -14,7 +14,7 @@ at the paths the host will have after W5.
 | `makepkg.conf` | The one makepkg.conf for root builds. `enter` binds it read-only at `/etc/makepkg.conf`. |
 | `torch-chain.targets` | Targets for the torch-chain root (base-devel, build tools, F, the torch makedepends and the protobuf and Abseil floors that MIGraphX needs). |
 | `py-closure.targets` | Extra build tools for the #110 model/runtime Python closure: meson-python, Cython, maturin, the Rust toolchain and `llvm`. Resolve it together with `torch-chain.targets` to build the closure. |
-| `model-closure.targets` | The #110 closure packages as built into `ashp-w2a`. Resolve it together with `torch-chain.targets` to get a root that can import them. |
+| `model-closure.targets` | The #110 closure packages as built into `ashp-w2a`, at the floors of [the #183 closure move](#w2a-model-closure-move-183). Resolve it together with `torch-chain.targets` to get a root that can import them. |
 | `vllm-build.targets` | Build tools for the vLLM 0.30.0 package (#111): setuptools-rust, semantic-version, the Arch Rust toolchain, poetry-core and the build tools of the small closure packages that the vLLM lease job builds first. It also lists the Arch runtime closure for the in-root vLLM import and server smoke, and `procps-ng` for the scenario runner's `ps`. Resolve it together with `torch-chain.targets` and `model-closure.targets`. |
 | `probe/` | The no-leak probe: a hipcc program, a CMake HIP library and a makepkg package. |
 
@@ -654,6 +654,81 @@ Still missing from the root, and not Arch packages:
   `fastsafetensors`, `mooncake-transfer-engine-rocm` and
   `grpcio-reflection`.
 - The pip `ninja` module; the Arch `ninja` binary is in the root.
+
+## W2A model closure move (#183)
+
+On 2026-10-10 the closure's package sources and targets moved to Transformers
+5.18.0, tokenizers 0.23.3 and huggingface-hub 2.x. Nothing was built, fetched,
+populated or added. The W2A root still holds Transformers 5.16.1-1, tokenizers
+0.23.2-1, huggingface-hub 1.32.0 and click 8.3.3 from its 2026-09-25 lock.
+
+- **Why the three move together.** Transformers 5.16.1 and 5.17.0 require
+  huggingface-hub <2.0 and check that range at import, and Arch `extra` now
+  carries huggingface-hub 2.1.1. The 5.16.1-1 and 0.23.2-1 packages depend on
+  an unversioned `python-huggingface-hub`, so the old
+  `python-huggingface-hub>=1:1.31.0` target let a re-lock pair 5.16.1-1 with
+  hub 2.1.1 and report no problem.
+- **Package depends.** `python-transformers-gfx1151` 5.18.0 declares
+  `python-huggingface-hub>=1:1.31.0` and `python-huggingface-hub<1:3`, and
+  `python-tokenizers-gfx1151` 0.23.3 declares
+  `python-huggingface-hub>=1:0.16.4` and `python-huggingface-hub<1:3`. These
+  are the ranges of the packaged metadata. Arch packages huggingface-hub under
+  epoch 1, so each bound carries the epoch; without it, `<3` would reject
+  every epoch-1 hub. When the sync DBs' huggingface-hub is outside either
+  range, `resolve` finds nothing that meets the bound and records an
+  `unresolved` problem.
+- **Targets.** `model-closure.targets` names
+  `python-transformers-gfx1151>=5.18.0` and
+  `python-tokenizers-gfx1151>=0.23.3`. Against an `ashp-w2a` that still
+  carries 5.16.1-1 or 0.23.2-1, each floor is `unresolved`, and `populate`
+  refuses the lock. It floors `python-huggingface-hub>=1:2.1.1`, the release
+  the 2026-10-05 probe measured. It names hub 2.x's HTTP stack
+  (`python-httpx2>=2.0.0`, `python-httpcore2` and `python-truststore>=0.10`),
+  `python-anyio>=4.10`, which httpx2 requires and Arch `python-httpx2` does
+  not depend on, and `python-click>=8.4.2`, which the hub CLI requires and
+  Arch `python-huggingface-hub` depends on unversioned.
+- **Limit of the guard.** `add` extracts archives without a lock, so it can
+  still put hub 2.x beside 5.16.1 in a live root. Move the closure through
+  `resolve` and a fresh `populate`.
+- **Build order.** Build tokenizers 0.23.3 (with `enter --net` for its crates)
+  and then Transformers 5.18.0 in a root resolved from `torch-chain.targets`
+  plus `py-closure.targets`. That root holds neither Transformers nor
+  huggingface-hub, and it has maturin, the Rust toolchain and the wheel build
+  tools. Publish both to `ashp-w2a`, then resolve `torch-chain.targets`,
+  `model-closure.targets` and `vllm-build.targets`, fetch, and populate a
+  fresh root. Add back the W2A builds that no targets file names: TorchVision,
+  TorchAO, Torch-MIGraphX, FlashAttention, the lease-job packages and vLLM.
+
+A read-only `resolve` on 2026-10-10, against that day's sync DBs, gave these
+locks. None was fetched or populated.
+
+| Targets | `ashp-w2a` DB | Result |
+| --- | --- | --- |
+| The three files, with the old `model-closure.targets` | As published | 595 packages. Transformers 5.16.1-1 beside huggingface-hub 1:2.1.1-1, with no problem except two files to fetch. This is the defect. |
+| The three files | As published | Two `unresolved` problems, one for each floored package. |
+| The three files | A scratch copy that carries the 5.18.0-1 and 0.23.3-1 versions and depends | 595 packages. No problem except four files to fetch: the two unbuilt packages, `python-cryptography` and `rust`. |
+| `torch-chain.targets` plus `py-closure.targets` | As published | 449 packages, with no Transformers, tokenizers or huggingface-hub. Two files to fetch. |
+| `torch-chain.targets` plus `model-closure.targets` | The scratch copy | 473 packages. No problem except three files to fetch. |
+
+Against the root's 2026-09-25 lock, the third lock adds `python-httpx2`
+2.13.0-1, `python-httpcore2` 2.13.0-1 and `python-truststore` 0.10.4-3, and
+moves huggingface-hub from 1:1.32.0-1 to 1:2.1.1-1 and click from 8.3.3-1 to
+8.5.0-1. It also adds `python-tomlkit`, which hatchling now depends on, and
+`python-accelerate-gfx1151`, which the targets gained after that lock.
+
+It moves 102 more packages to their current sync DB versions, because every
+userland package is locked at its sync DB version. They include filelock
+3.31.2 to 4.0.1, Starlette 1.6.0 to 1.7.0, uvicorn 0.52.4 to 0.54.0, urllib3
+2.7.0 to 2.8.0, Rust 1.98.1 to 1.99.0, the Arch LLVM libraries, OpenMP,
+compiler-rt and lld 22.1.8 to 23.1.1, VTK 9.6.2 to 9.7.1, Qt 6.11.2 to 6.12.0
+and a newer glibc snapshot.
+
+The 2026-10-05 probe was an overlay on the 2026-09-25 root. It measured
+Transformers 5.18.0, huggingface-hub 2.1.1, httpx2, httpcore2 and truststore
+with tokenizers 0.23.2, click 8.3.3 and that root's userland. tokenizers
+0.23.3, click 8.5.0 and the other moved packages are first exercised by the
+refreshed root's `verify` and CPU drive. A changed VTK or Qt can leave
+`needed-allow.toml` with stale or missing entries, which `verify` reports.
 
 ## W2A vLLM lease job closure (#110, #111)
 

@@ -120,6 +120,77 @@ upstream moved the merge into `recipe_arg_resolver.h`
     128-divisible pages progress to a GPU fault. That boundary is documented in
     [FlashAttention CK paged-KV boundary](maintainers/flashattention-ck-paged-kv.md).
 
+Patches 0017-0024 are upstream backports for the `0.30.0-2` rebuild
+([issue 183](https://github.com/nisavid/arch-strix-halo-pkgs/issues/183)).
+Each carries the source hunks of one vLLM pull request, without its tests,
+docs or CI changes. All eight changes are in vLLM v0.31.0, so drop the patches
+when the package moves to 0.31.0 or later. No two patches in the series touch
+the same file, and each applies to v0.30.0 with no fuzz or offset.
+
+- [Pixtral axial RoPE compatibility for Transformers 5.17+](../packages/python-vllm-rocm-gfx1151/0017-backport-pixtral-axial-rope-for-transformers-5.17.patch)
+  - Backports the `vllm/model_executor/models/pixtral.py` hunks of
+    [vllm-project/vllm#56108](https://github.com/vllm-project/vllm/pull/56108)
+    (`ec4a3a53`). Transformers 5.17 renamed Pixtral's rotary embedding class
+    and moved it to axial RoPE. On v0.30.0 that breaks the import of `pixtral`
+    and of the ten modules that import it: `bee`, `granite4_vision`,
+    `lightonocr`, `llava`, `llava_next`, `llava_next_video`,
+    `llava_onevision`, `mistral3`, `phi4siglip` and `rvl`.
+  - Leaves out the rest of that commit on purpose: its `laguna.py` hunk, its
+    `transformers_utils/config.py` change and its process-wide `validate_rope`
+    change. Laguna stays unsupported on Transformers 5.18.
+- [MiniMax-M3 video processor compatibility for Transformers 5.18](../packages/python-vllm-rocm-gfx1151/0018-backport-minimax-m3-video-processor-for-transformers-5.18.patch)
+  - Backports
+    [vllm-project/vllm#59613](https://github.com/vllm-project/vllm/pull/59613)
+    (`b558f160`). Transformers 5.18 stopped passing `do_convert_rgb` to
+    `_preprocess`, so the unused required parameter raised `TypeError` on the
+    first video. v0.31.0 carries the same change on its release branch.
+- [Gate per-request multimodal processor and media IO kwargs](../packages/python-vllm-rocm-gfx1151/0019-backport-gate-per-request-multimodal-kwargs.patch)
+  - Backports
+    [vllm-project/vllm#58830](https://github.com/vllm-project/vllm/pull/58830)
+    (`31f2e70c`). The API server rejects a non-empty per-request
+    `mm_processor_kwargs` or `media_io_kwargs` with HTTP 400 unless it is
+    started with `--trust-request-mm-kwargs`. An untrusted client could
+    otherwise use those fields to drive unbounded media loading and
+    preprocessing work.
+  - This changes default behavior. Server-level `--mm-processor-kwargs` and
+    `--media-io-kwargs` are unaffected. Set `--trust-request-mm-kwargs` only
+    when every API client is trusted.
+- [Redact upper-case memory addresses in error messages](../packages/python-vllm-rocm-gfx1151/0020-backport-redact-upper-case-addresses-in-error-messages.patch)
+  - Backports
+    [vllm-project/vllm#58832](https://github.com/vllm-project/vllm/pull/58832)
+    (`379e9a1e`). Error messages returned to clients kept object addresses
+    printed with upper-case hex digits, such as the one in a PIL image repr.
+- [Prefer fresh multimodal payloads over a stale receiver cache](../packages/python-vllm-rocm-gfx1151/0021-backport-prefer-fresh-multimodal-payloads-over-stale-receiver-cache.patch)
+  - Backports
+    [vllm-project/vllm#57833](https://github.com/vllm-project/vllm/pull/57833)
+    (`7268f6e3`). After the frontend and engine multimodal caches drifted
+    apart, the engine could substitute a stale cached item for a resent
+    payload and crash on the mismatch.
+- [Reject encoder-cache hits with mismatched embedding counts](../packages/python-vllm-rocm-gfx1151/0022-backport-reject-encoder-cache-hits-with-mismatched-embed-counts.patch)
+  - Backports
+    [vllm-project/vllm#57696](https://github.com/vllm-project/vllm/pull/57696)
+    (`bbc4ddec`). A client-supplied multimodal UUID reused for different
+    content made a request read an encoder-cache entry of the wrong size. The
+    scheduler now fails that request instead of scheduling it.
+- [Frame the multimodal hash digest input](../packages/python-vllm-rocm-gfx1151/0023-backport-frame-the-multimodal-hash-digest-input.patch)
+  - Backports
+    [vllm-project/vllm#54283](https://github.com/vllm-project/vllm/pull/54283)
+    (`a8d1aa9c`). Distinct inputs, including per-request processor kwargs,
+    could serialize to the same digest input and so share a processor-cache
+    and prefix-cache key.
+  - Adapted: v0.30.0 predates
+    [vllm-project/vllm#56576](https://github.com/vllm-project/vllm/pull/56576),
+    which moved the EXIF ImageID lookup into a helper. The two hunks that
+    frame the helper's result are applied to v0.30.0's inline lookup instead.
+    #56576 itself is not carried.
+  - Every multimodal hash changes with this patch.
+- [Fix incremental multimodal block hashing](../packages/python-vllm-rocm-gfx1151/0024-backport-fix-incremental-multimodal-block-hashing.patch)
+  - Backports
+    [vllm-project/vllm#51694](https://github.com/vllm-project/vllm/pull/51694)
+    (`e6c07ea5`). With several multimodal inputs in one KV block, a block hash
+    extended during generation differed from the hash of the same tokens
+    computed in one pass.
+
 ## AITER
 
 - [gfx1x fused-MoE experiment compatibility](../packages/python-amd-aiter-gfx1151/0003-fused-moe-unknown-gfx-falls-back-to-2stage.patch)

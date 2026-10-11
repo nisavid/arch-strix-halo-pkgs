@@ -54,4 +54,6 @@ def test_pkgbuild_sentinels_track_the_0_30_carry():
         assert re.search(
             re.escape(f"grep -Fq '{sentinel}'") + r"\s+" + re.escape(path), sentinels
         ), sentinel
-    assert sentinels.count("grep -Fq") == 8
+    # 8 for the 0016 carry, 7 for the upstream backports
+    # (test_upstream_backports.py).
+    assert sentinels.count("grep -Fq") == 15
