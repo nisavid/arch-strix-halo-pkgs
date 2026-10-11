@@ -68,7 +68,17 @@ procedure and what a re-lock moves. The results:
   1:2.1.1 and click 8.3.3 to 8.5.0), and the other 101 are sync DB movement.
 - **`verify`.** 610 packages and 4,153 ELF files, with no violation, after
   the allowlist took VTK 9.7's optional library names.
-- **CPU drive.** CPU-DRIVE-PENDING
+- **CPU drive.** Run without a GPU against the rebuilt root after the last
+  package was added, with the same staged tools and scenarios as the
+  2026-10-01 drive: `RESULT PASS`, 122 of 122 gate checks, finished at
+  `2026-10-11T07:19:35Z`. Compared with the 2026-10-01 report item by item
+  (159 items), one item differs, and it is informational (next bullet). Six
+  informational items fail where five did; the other five are the known gaps
+  from before (torchaudio, AMD Quark, AITER, a drive check that calls the
+  multimodal hasher with an outdated signature, and the top-level module
+  map). The set of imported top-level modules gains `httpx2`, `httpcore2`
+  and `truststore` and loses `httpcore`. The whole drive peaked at 3.0 GiB of
+  memory in 7 minutes 56 seconds.
 - **OpenTelemetry.** The drive's one changed item is informational: vLLM's
   `is_otel_available()` is false, because Arch `extra` holds a
   [split OpenTelemetry set](https://github.com/nisavid/arch-strix-halo-pkgs/issues/196). vLLM uses the exporters only when a

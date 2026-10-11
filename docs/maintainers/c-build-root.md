@@ -745,18 +745,21 @@ before the swap can be abandoned at no cost.
    `python tools/vllm_backport_smoke.py` inside the root.
 6. **Run the CPU drive against the fresh root**, then compare its report with
    the previous run item by item. A regression that comes from the sync DB
-   movement and not from the move shows up as a changed item.
+   movement and not from the move shows up as a changed item. On 2026-10-11
+   it passed 122 of 122 gate checks, with one informational item changed.
 7. **Swap the roots by renaming**, keeping the old one until the GPU lanes
    have run on the new one. Do this last, once the fresh root's evidence is
    accepted; the tools that default to the root's path then pick up the new
-   one.
+   one. Steps 1 to 6 ran on 2026-10-11. The swap had not run when this record
+   was written.
 
 Build-root memory, for planning a rerun: `populate` charges the page cache
 it fills to its job, so a 12 GiB root shows a 12.6 GiB cgroup peak that is
 almost all reclaimable cache. The vLLM build's own processes peaked at 12.0
 GiB with 6 jobs, and its unit at 24.1 GiB when it shared a unit with a
 populate. The tokenizers and aiohttp builds stayed under 1 GiB of process
-memory, and the backport smoke tool under 1.4 GiB.
+memory, the backport smoke tool under 1.4 GiB, and the CPU drive at 3.0 to
+3.4 GiB over about 8 minutes.
 
 ### What `verify` and the CPU drive found
 
