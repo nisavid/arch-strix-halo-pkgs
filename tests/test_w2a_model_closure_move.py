@@ -1,10 +1,12 @@
 """The generation-C model closure move (#183).
 
 Transformers 5.16.1 and 5.17.0 require huggingface-hub <2.0 and fail at
-import beside hub 2.x, and the 5.16.1-1 and 0.23.2-1 W2A builds depend on an
-unversioned python-huggingface-hub. These tests pin what keeps that pair out
-of a build-root lock: the floors in `model-closure.targets`, and the hub range
-the 5.18.0 and 0.23.3 packages declare with Arch's epoch.
+import beside hub 2.x. The 5.16.1-1 package depends on an unversioned
+python-huggingface-hub and the 0.23.2-1 tokenizers package on none at all, so
+no depend keeps either out of a lock that holds hub 2.x. These tests pin what
+does: the floors in `model-closure.targets`, and the hub range the 5.18.0 and
+0.23.3 packages declare with Arch's epoch. They also pin the aiohttp floor
+that keeps a build without the 2026-10-07 advisory fixes out of a lock.
 """
 
 import importlib.util
@@ -28,6 +30,7 @@ SPEC.loader.exec_module(cbr)
 
 TRANSFORMERS = "python-transformers-gfx1151"
 TOKENIZERS = "python-tokenizers-gfx1151"
+AIOHTTP = "python-aiohttp-gfx1151"
 HUB = "python-huggingface-hub"
 # The W2A builds that the closure move replaces.
 STALE = {
@@ -113,6 +116,12 @@ def test_targets_floor_the_packaged_versions_and_hub_2():
     # An unfloored name would let the stale build satisfy the target.
     assert TRANSFORMERS not in targets
     assert TOKENIZERS not in targets
+    # aiohttp 3.14.4 is the first release with the 2026-10-07 advisory fixes; the
+    # floor is the packaged release, so an earlier build cannot satisfy it.
+    aiohttp = pkgbuild_value(AIOHTTP, '"$pkgver"')[0]
+    assert cbr.version_ok(aiohttp, ">=", "3.14.4")
+    assert f"{AIOHTTP}>={aiohttp}" in targets
+    assert AIOHTTP not in targets
     hub = [cbr.split_dep(t) for t in targets if cbr.split_dep(t)[0] == HUB]
     assert [(op, want) for _, op, want in hub] == [(">=", "1:2.1.1")]
     # hub 2.x's runtime dependencies that Arch pulls in or leaves unversioned.

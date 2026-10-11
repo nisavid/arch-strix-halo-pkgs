@@ -1,7 +1,9 @@
-# The targets of the W2A model/runtime Python closure (#110). ashp-w2a must
-# hold python-transformers-gfx1151 >=5.18.0 and python-tokenizers-gfx1151
-# >=0.23.3 before this file resolves; docs/maintainers/c-build-root.md ("W2A
-# model closure move") gives the build order.
+# The targets of the W2A model/runtime Python closure (#110). Three of them
+# carry a floor: python-transformers-gfx1151, python-tokenizers-gfx1151 and
+# python-aiohttp-gfx1151. A floor keeps every build below it out of a lock, so
+# this file resolves only against an ashp-w2a that holds a build at or above
+# each floor. docs/maintainers/c-build-root.md ("W2A model closure move")
+# gives the build order.
 # Resolve together with torch-chain.targets to get a root that can import the
 # closure; their runtime dependencies come in through the package depends.
 # python-compressed-tensors-gfx1151 and python-accelerate-gfx1151 depend on
@@ -21,9 +23,10 @@ python-pillow-gfx1151
 python-psutil-gfx1151
 # The closure move (#183): Transformers 5.18.0, tokenizers 0.23.3 and
 # huggingface-hub 2.x enter one lock together. Transformers 5.16.1 and
-# tokenizers 0.23.2 require huggingface-hub <2.0, but their 5.16.1-1 and
-# 0.23.2-1 builds depend on an unversioned python-huggingface-hub, so only
-# these two floors keep those builds out of a lock that holds hub 2.x.
+# tokenizers 0.23.2 require huggingface-hub <2.0, but the 5.16.1-1 package
+# depends on an unversioned python-huggingface-hub and the 0.23.2-1 package on
+# none at all, so no depend stops either from locking beside hub 2.x. Only
+# these two floors do.
 python-tokenizers-gfx1151>=0.23.3
 python-safetensors-gfx1151
 python-transformers-gfx1151>=5.18.0
@@ -57,8 +60,8 @@ python-anyio>=4.10
 # locked on 2026-09-25 held click 8.3.3.
 python-click>=8.4.2
 # aiohttp 3.14.4 is the first release patched for the advisories of 2026-10-07,
-# and the closure move (#183) selects 3.14.5. The floor keeps the 3.14.3-1
-# build, which is still in ashp-w2a, out of a new lock.
+# and the closure move (#183) selects 3.14.5. The floor keeps every earlier
+# build out of a lock.
 python-aiohttp-gfx1151>=3.14.5
 python-frozenlist-gfx1151
 python-multidict-gfx1151

@@ -14,9 +14,9 @@ at the paths the host will have after W5.
 | `makepkg.conf` | The one makepkg.conf for root builds. `enter` binds it read-only at `/etc/makepkg.conf`. |
 | `torch-chain.targets` | Targets for the torch-chain root (base-devel, build tools, F, the torch makedepends and the protobuf and Abseil floors that MIGraphX needs). |
 | `py-closure.targets` | Extra build tools for the #110 model/runtime Python closure: meson-python, Cython, maturin, the Rust toolchain and `llvm`. Resolve it together with `torch-chain.targets` to build the closure. |
-| `model-closure.targets` | The targets of the #110 closure, at the floors of [the #183 closure move](#w2a-model-closure-move-183). It resolves only once `ashp-w2a` holds Transformers 5.18.0 and tokenizers 0.23.3 or later. Resolve it together with `torch-chain.targets` to get a root that can import the closure. |
+| `model-closure.targets` | The targets of the #110 closure. Three carry a floor from [the #183 closure move](#w2a-model-closure-move-183): Transformers, tokenizers and aiohttp. A floor keeps every build below it out of a lock, so the file resolves only against an `ashp-w2a` that holds a build at or above each floor. Resolve it together with `torch-chain.targets` to get a root that can import the closure. |
 | `vllm-build.targets` | Build tools for the vLLM 0.30.0 package (#111): setuptools-rust, semantic-version, the Arch Rust toolchain, poetry-core and the build tools of the small closure packages that the vLLM lease job builds first. It also lists the Arch runtime closure for the in-root vLLM import and server smoke, and `procps-ng` for the scenario runner's `ps`. Resolve it together with `torch-chain.targets` and `model-closure.targets`. |
-| `w2a-assembled.targets` | The W2A builds that enter the root after their own builds and that no other targets file names: TorchVision, TorchAO, Torch-MIGraphX, FlashAttention, vLLM and the vLLM runtime lanes that no sync DB carries. Resolve it together with the three files above to lock the whole assembled root, so that the lock is the dependency proof for these packages too. |
+| `w2a-assembled.targets` | The W2A builds that enter the root after their own builds and that no other targets file names: TorchVision, TorchAO, Torch-MIGraphX, FlashAttention, vLLM and the vLLM runtime lanes that no sync DB carries. Resolve it together with `torch-chain.targets`, `model-closure.targets` and `vllm-build.targets` to lock the whole assembled root, so that the lock is the dependency proof for these packages too. |
 | `probe/` | The no-leak probe: a hipcc program, a CMake HIP library and a makepkg package. |
 
 Nothing in this flow needs root, sudo or `pacman -S/-U/-Sy`, and nothing
@@ -660,16 +660,16 @@ Still missing from the root, and not Arch packages:
 
 On 2026-10-10 the closure's package sources and targets moved to Transformers
 5.18.0, tokenizers 0.23.3 and huggingface-hub 2.x, and on 2026-10-11 the
-closure was rebuilt into a fresh root. The root locked on 2026-09-25 held
-Transformers 5.16.1-1, tokenizers 0.23.2-1, huggingface-hub 1.32.0 and click
-8.3.3.
+closure, with aiohttp 3.14.5, was rebuilt into a fresh root. The root locked
+on 2026-09-25 held Transformers 5.16.1-1, tokenizers 0.23.2-1, aiohttp
+3.14.3-1, huggingface-hub 1.32.0 and click 8.3.3.
 
 - **Why the three move together.** Transformers 5.16.1 and 5.17.0 require
   huggingface-hub <2.0 and check that range at import, and Arch `extra` now
-  carries huggingface-hub 2.1.1. The 5.16.1-1 and 0.23.2-1 packages depend on
-  an unversioned `python-huggingface-hub`, so the old
-  `python-huggingface-hub>=1:1.31.0` target let a re-lock pair 5.16.1-1 with
-  hub 2.1.1 and report no problem.
+  carries huggingface-hub 2.1.1. The 5.16.1-1 package depends on an
+  unversioned `python-huggingface-hub`, and the 0.23.2-1 tokenizers package
+  on none at all, so the old `python-huggingface-hub>=1:1.31.0` target let a
+  re-lock pair 5.16.1-1 with hub 2.1.1 and report no problem.
 - **Package depends.** `python-transformers-gfx1151` 5.18.0 declares
   `python-huggingface-hub>=1:1.31.0` and `python-huggingface-hub<1:3`, and
   `python-tokenizers-gfx1151` 0.23.3 declares
@@ -679,22 +679,23 @@ Transformers 5.16.1-1, tokenizers 0.23.2-1, huggingface-hub 1.32.0 and click
   every epoch-1 hub. When the sync DBs' huggingface-hub is outside either
   range, `resolve` finds nothing that meets the bound and records an
   `unresolved` problem.
-- **Targets.** `model-closure.targets` names
-  `python-transformers-gfx1151>=5.18.0` and
-  `python-tokenizers-gfx1151>=0.23.3`. Against an `ashp-w2a` that still
-  carries only 5.16.1-1 or 0.23.2-1, each floor is `unresolved`, and
-  `populate` refuses the lock. It floors `python-huggingface-hub>=1:2.1.1`,
-  the release the 2026-10-05 probe measured. It names hub 2.x's HTTP stack
+- **Targets.** `model-closure.targets` floors three W2A builds:
+  `python-transformers-gfx1151>=5.18.0`, `python-tokenizers-gfx1151>=0.23.3`
+  and `python-aiohttp-gfx1151>=3.14.5`. A floor keeps every build below it
+  out of a lock: against an `ashp-w2a` whose newest build of a floored
+  package is older, that floor is `unresolved`, and `populate` refuses the
+  lock. The aiohttp floor is for the advisories of 2026-10-07, first patched
+  in 3.14.4. The file also floors `python-huggingface-hub>=1:2.1.1`, the
+  release the 2026-10-05 probe measured, and names hub 2.x's HTTP stack
   (`python-httpx2>=2.0.0`, `python-httpcore2` and `python-truststore>=0.10`),
   `python-anyio>=4.10`, which httpx2 requires and Arch `python-httpx2` does
   not depend on, and `python-click>=8.4.2`, which the hub CLI requires and
   Arch `python-huggingface-hub` depends on unversioned.
-  It also floors `python-aiohttp-gfx1151>=3.14.5`, which the move adopts for
-  the aiohttp advisories of 2026-10-07; the 3.14.3-1 build is still in
-  `ashp-w2a`.
 - **Limit of the guard.** `add` extracts archives without a lock, so it can
-  still put hub 2.x beside 5.16.1 in a live root. Move the closure through
-  `resolve` and a fresh `populate`.
+  put hub 2.x beside 5.16.1 in a live root. Change the closure's membership
+  through `resolve` and a fresh `populate`. Use `add` only to place a build
+  the lock already names, such as a rebuild of a package in the root, and
+  prove the lock again afterwards (step 5 below).
 
 ### What a re-lock moves
 
@@ -705,61 +706,102 @@ adds `python-httpx2` 2.13.0-1, `python-httpcore2` 2.13.0-1,
 now depends on), and changes 107 versions. Six of those are the move:
 Transformers, tokenizers, aiohttp, vLLM 0.30.0-1 to 0.30.0-2, huggingface-hub
 1:1.32.0-1 to 1:2.1.1-1 and click 8.3.3-1 to 8.5.0-1. The other 101 are two
-weeks of sync DB movement, including
-filelock 3.31.2 to 4.0.1, Starlette 1.6.0 to 1.7.0, uvicorn 0.52.4 to 0.54.0,
-urllib3 2.7.0 to 2.8.0, Rust 1.98.1 to 1.99.0, the Arch LLVM libraries,
-OpenMP, compiler-rt and lld 22.1.8 to 23.1.1, VTK 9.6.2 to 9.7.1, Qt 6.11.2
-to 6.12.0 and a newer glibc snapshot. The 2026-10-05 probe was an overlay on
-the old root, so it measured none of that movement.
+weeks of sync DB movement, including filelock 3.31.2 to 4.0.1, Starlette
+1.6.0 to 1.7.0, uvicorn 0.52.4 to 0.54.0, urllib3 2.7.0 to 2.8.0, Rust 1.98.1
+to 1.99.0, the Arch LLVM libraries, OpenMP, compiler-rt and lld 22.1.8 to
+23.1.1, VTK 9.6.2 to 9.7.1, Qt 6.11.2 to 6.12.0 and a newer glibc snapshot.
+The 2026-10-05 probe was an overlay on the old root, so it measured none of
+that movement.
 
-### Procedure, as run on 2026-10-11
+### Procedure for moving the closure
 
-The old root stays untouched until the fresh one is proven, so every step
-before the swap can be abandoned at no cost.
+The old root's files stay untouched until the fresh root is proven, so the
+old root remains usable throughout. The build repo does not: `publish`
+replaces a package's entry and archive in `ashp-w2a`, so after step 1 the
+old root's lock no longer resolves from the repo as it stands.
 
 1. **Build the floored packages in a closure-build root and publish them.**
-   A root resolved from `torch-chain.targets` plus `py-closure.targets` (449
-   packages) holds neither Transformers nor huggingface-hub, and it has
-   maturin, the Rust toolchain, Cython and `python-pkgconfig`. tokenizers
-   0.23.3 (with `enter --net` for its crates) and aiohttp 3.14.5 were built
-   there with `makepkg -Cf --nodeps` and published to `ashp-w2a`. aiohttp
-   cannot build in the assembled root, which has no `python-pkgconfig`.
-   Transformers 5.18.0 is a pure-Python wheel and was built in the 2026-09-25
-   root, without being added to it.
-2. **Lock the whole assembled root.** `resolve` over `torch-chain.targets`,
+   A root resolved from `torch-chain.targets` plus `py-closure.targets`
+   holds neither Transformers nor huggingface-hub, and it has maturin, the
+   Rust toolchain, Cython and `python-pkgconfig`. Build there with
+   `makepkg -Cf --nodeps`, with `enter --net` where a build fetches crates,
+   and publish to `ashp-w2a`. aiohttp cannot build in the assembled root,
+   which has no `python-pkgconfig`.
+2. **Lock the whole assembled root.** Resolve `torch-chain.targets`,
    `model-closure.targets`, `vllm-build.targets` and `w2a-assembled.targets`
-   gave 610 packages. Its only problems were two `missing-file` entries,
-   `python-cryptography` and `rust`, which `fetch` downloaded; the second
-   `resolve` had none. `w2a-assembled.targets` names the builds that used to
-   be added back by hand, so this lock is their dependency proof too, vLLM's
-   depends included.
+   together, and `fetch` what is missing. `w2a-assembled.targets` names the
+   builds that used to be added back by hand, so this lock is their
+   dependency proof too, vLLM's depends included.
 3. **Populate a fresh root beside the old one** from that lock, and `verify`
    it.
-4. **Rebuild what the move changes in the fresh root.** vLLM 0.30.0-2 was
-   built there with `enter --net`, published, and added over the 0.30.0-1 the
-   lock had placed. A rebuilt tokenizers and the new aiohttp were added the
-   same way: `add` replaces the same package at any version.
-5. **Prove the lock again.** A second `resolve` over the four targets files
-   must name exactly the root's packages, by version and digest. On
-   2026-10-11 it did: 610 packages and no difference. Then `verify`, and
-   `python tools/vllm_backport_smoke.py` inside the root.
-6. **Run the CPU drive against the fresh root**, then compare its report with
-   the previous run item by item. A regression that comes from the sync DB
-   movement and not from the move shows up as a changed item. On 2026-10-11
-   it passed 122 of 122 gate checks, with one informational item changed.
+4. **Build in the fresh root what must build against the assembled
+   closure.** That is vLLM. Publish it, and `add` it over the build the lock
+   placed.
+5. **Prove the lock again.** Resolve the four targets files to a new lock
+   and compare it with the root's `.ashp-root/manifest.json`: the two must
+   name the same packages, at the same versions, with the lock's `sha256_db`
+   equal to the manifest's `sha256` for every package. No `c_buildroot.py`
+   subcommand does this comparison; it is a few lines over the two JSON
+   files. The digest comparison is what proves the root holds the final
+   build of a package that was rebuilt under one version. Then run `verify`,
+   and `python tools/vllm_backport_smoke.py` inside the root.
+6. **Run the CPU drive against the fresh root**, and compare its report with
+   the previous drive's, item by item, by item name and pass or fail status.
+   A regression that comes from the sync DB movement and not from the move
+   shows up as a changed item. The drive is session tooling that is not
+   tracked in this repo: it runs the tracked smoke tools and the scenario
+   runner's CPU paths inside the root without a GPU, with the fake-ROCm shim
+   described at the end of this document.
 7. **Swap the roots by renaming**, keeping the old one until the GPU lanes
    have run on the new one. Do this last, once the fresh root's evidence is
    accepted; the tools that default to the root's path then pick up the new
-   one. Steps 1 to 6 ran on 2026-10-11. The swap had not run when this record
-   was written.
+   one. Afterwards, check that the root at the default path is the proven
+   one: its manifest against the lock as in step 5, or `verify`.
+
+### What ran on 2026-10-11, in order
+
+The run did not follow the procedure in one pass, because the first
+independent review changed two packages after the fresh root existed.
+
+1. tokenizers 0.23.3-1 and Transformers 5.18.0-1 were built in the
+   2026-09-25 root and published. They were not added to that root.
+2. The whole assembled root was locked: 610 packages, with two
+   `missing-file` problems (`python-cryptography` and `rust`) that `fetch`
+   cured. The fresh root was populated from that lock beside the old one.
+3. vLLM 0.30.0-2 was built in the fresh root, published and added, and a
+   first CPU drive passed 122 of 122 gate checks.
+4. The first review round then changed two packages and adopted a third
+   release. tokenizers lost its `zlib` depend, which the built extension
+   does not link. aiohttp 3.14.5 was adopted. The vLLM PKGBUILD changed in a
+   comment only.
+5. A closure-build root was populated (449 packages). tokenizers was rebuilt
+   there, and aiohttp 3.14.5-1 was built there. Both were published and
+   added to the fresh root. vLLM 0.30.0-2 was rebuilt in the fresh root from
+   the final PKGBUILD, published and added.
+6. The final lock from the four targets files was compared with the fresh
+   root's manifest as in step 5 of the procedure: 610 packages and no
+   difference. `verify` found no violation, the backport smoke tool passed
+   all eight checks, and the CPU drive passed 122 of 122 gate checks.
+
+Two packages were therefore built twice under one version: tokenizers
+0.23.3-1 (the builds differ in one depend) and vLLM 0.30.0-2 (the builds
+differ in one PKGBUILD comment). Each later build replaced the earlier
+archive in the build repo, and no build left that repo: nothing was
+installed on the host or published elsewhere. The accepted builds are the
+later ones, whose `.BUILDINFO` PKGBUILD checksum equals the committed
+PKGBUILD and whose digests the final lock and the root's manifest share.
+`pkgrel` was not bumped for them.
+
+SWAP-STATUS-PENDING
 
 Build-root memory, for planning a rerun: `populate` charges the page cache
 it fills to its job, so a 12 GiB root shows a 12.6 GiB cgroup peak that is
 almost all reclaimable cache. The vLLM build's own processes peaked at 12.0
 GiB with 6 jobs, and its unit at 24.1 GiB when it shared a unit with a
 populate. The tokenizers and aiohttp builds stayed under 1 GiB of process
-memory, the backport smoke tool under 1.4 GiB, and the CPU drive at 3.0 to
-3.4 GiB over about 8 minutes.
+memory, and the backport smoke tool under 1.4 GiB. The CPU drive's unit
+peaked at 3.4 GiB on the first drive and 3.0 GiB on the final one, over about
+8 minutes each.
 
 ### What `verify` and the CPU drive found
 
@@ -772,8 +814,12 @@ memory, the backport smoke tool under 1.4 GiB, and the CPU drive at 3.0 to
   and `paraview-catalyst` with its Conduit dependency) that are not in the
   root, like the other VTK entries. `needed-allow.toml` now carries the
   viskores soname of VTK 9.7 and a `libconduit*.so` entry. With them, `verify`
-  checked 610 packages and 4,153 ELF files and found no violation. A root
-  that still holds VTK 9.6.2 reports the new viskores entry as stale.
+  checked 610 packages and 4,153 ELF files and found no violation. The
+  allowlist now fits a root with VTK 9.7 only. By `verify`'s rules, a root
+  that still holds VTK 9.6.2 fails in three ways: its
+  `libviskores_*-1.1.so.1.1` links are no longer covered, and the VTK 9.7
+  viskores entry and the `libconduit*.so` entry are both stale there. That
+  was not run against the 2026-09-25 root.
 - **OpenTelemetry is split in Arch `extra`.** On 2026-10-11,
   `python-opentelemetry-exporter-otlp-proto-common` and
   `python-opentelemetry-semantic-conventions` are 1.45.0-1, and the API, SDK,

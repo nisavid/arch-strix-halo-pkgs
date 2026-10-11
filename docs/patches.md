@@ -130,7 +130,9 @@ the same file, and each applies to v0.30.0 with no fuzz or offset.
 `tools/vllm_backport_smoke.py` has one behavior check per backport. It runs
 against the installed package without a GPU or network and prints one PASS or
 FAIL line per patch, so the same command shows a patch taking effect on a
-rebuilt package and failing on a package that lacks it.
+rebuilt package and failing on a package that lacks it. The 0017 check is
+decisive only on Transformers 5.17 or later; on older Transformers it passes
+with a "not decisive" note, because the unpatched modules still import there.
 
 - [Pixtral axial RoPE compatibility for Transformers 5.17+](../packages/python-vllm-rocm-gfx1151/0017-backport-pixtral-axial-rope-for-transformers-5.17.patch)
   - Backports the `vllm/model_executor/models/pixtral.py` hunks of
