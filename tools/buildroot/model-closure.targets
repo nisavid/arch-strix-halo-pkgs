@@ -56,7 +56,10 @@ python-anyio>=4.10
 # python-huggingface-hub depends on an unversioned python-click. The root
 # locked on 2026-09-25 held click 8.3.3.
 python-click>=8.4.2
-python-aiohttp-gfx1151
+# aiohttp 3.14.4 is the first release patched for the advisories of 2026-10-07,
+# and the closure move (#183) selects 3.14.5. The floor keeps the 3.14.3-1
+# build, which is still in ashp-w2a, out of a new lock.
+python-aiohttp-gfx1151>=3.14.5
 python-frozenlist-gfx1151
 python-multidict-gfx1151
 python-yarl-gfx1151

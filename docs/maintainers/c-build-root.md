@@ -689,6 +689,9 @@ Transformers 5.16.1-1, tokenizers 0.23.2-1, huggingface-hub 1.32.0 and click
   `python-anyio>=4.10`, which httpx2 requires and Arch `python-httpx2` does
   not depend on, and `python-click>=8.4.2`, which the hub CLI requires and
   Arch `python-huggingface-hub` depends on unversioned.
+  It also floors `python-aiohttp-gfx1151>=3.14.5`, which the move adopts for
+  the aiohttp advisories of 2026-10-07; the 3.14.3-1 build is still in
+  `ashp-w2a`.
 - **Limit of the guard.** `add` extracts archives without a lock, so it can
   still put hub 2.x beside 5.16.1 in a live root. Move the closure through
   `resolve` and a fresh `populate`.
@@ -719,7 +722,9 @@ before the swap can be abandoned at no cost.
    `makepkg -Cf --nodeps` and published to `ashp-w2a`. They were not added to
    that root. A root resolved from `torch-chain.targets` plus
    `py-closure.targets`, which holds neither Transformers nor huggingface-hub,
-   serves as well when no older root exists.
+   serves as well when no older root exists, and it is the only one that can
+   build aiohttp: `python-pkgconfig` is in `py-closure.targets` and not in the
+   assembled root.
 2. **Lock the whole assembled root.** `resolve` over `torch-chain.targets`,
    `model-closure.targets`, `vllm-build.targets` and `w2a-assembled.targets`
    gave 610 packages. Its only problems were two `missing-file` entries,
