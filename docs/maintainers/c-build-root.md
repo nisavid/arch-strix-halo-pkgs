@@ -93,10 +93,14 @@ configs fall back to `PATHS "/opt/rocm"`, and the W2A PKGBUILDs hard-code
 host.
 
 The root has no pacman local DB, so `.BUILDINFO` has no `installed =` lines.
-The provenance record is the lock (`ROOT/.ashp-root/lock.json`) together with
-the manifest (`ROOT/.ashp-root/manifest.json`), which lists each package's
-name, version, source and file sha256. Keep both next to the packages you
-build.
+The provenance record is the lock together with the manifest
+(`ROOT/.ashp-root/manifest.json`), which lists each package's name, version,
+source and file sha256. `populate` writes the lock it used to
+`ROOT/.ashp-root/lock.json`, and `add` changes only the manifest, so after an
+`add` that file no longer describes the root. The lock that does is the one
+resolved again and compared with the manifest, as in step 5 of the procedure
+for moving the closure below. Keep that lock and the manifest next to the
+packages you build.
 
 ## The W2A flow
 
@@ -743,8 +747,10 @@ old root's lock no longer resolves from the repo as it stands.
    equal to the manifest's `sha256` for every package. No `c_buildroot.py`
    subcommand does this comparison; it is a few lines over the two JSON
    files. The digest comparison is what proves the root holds the final
-   build of a package that was rebuilt under one version. Then run `verify`,
-   and `python tools/vllm_backport_smoke.py` inside the root.
+   build of a package that was rebuilt under one version. Keep this lock
+   beside the root: it, not the populate-time `.ashp-root/lock.json`, is now
+   the root's provenance record. Then run `verify`, and
+   `python tools/vllm_backport_smoke.py` inside the root.
 6. **Run the CPU drive against the fresh root**, and compare its report with
    the previous drive's, item by item, by item name and pass or fail status.
    A regression that comes from the sync DB movement and not from the move
@@ -756,7 +762,9 @@ old root's lock no longer resolves from the repo as it stands.
    have run on the new one. Do this last, once the fresh root's evidence is
    accepted; the tools that default to the root's path then pick up the new
    one. Afterwards, check that the root at the default path is the proven
-   one: its manifest against the lock as in step 5, or `verify`.
+   one: its manifest against the lock as in step 5, and `verify`. `verify`
+   alone checks the root only against its own manifest, so it cannot tell
+   which root it is.
 
 ### What ran on 2026-10-11, in order
 
@@ -781,7 +789,10 @@ independent review changed two packages after the fresh root existed.
 6. The final lock from the four targets files was compared with the fresh
    root's manifest as in step 5 of the procedure: 610 packages and no
    difference. `verify` found no violation, the backport smoke tool passed
-   all eight checks, and the CPU drive passed 122 of 122 gate checks.
+   all eight checks, and the CPU drive passed 122 of 122 gate checks. That
+   final lock is kept in the build area beside the root as its record; the
+   root's own `.ashp-root/lock.json` is still the populate-time lock from
+   step 2.
 7. The roots were swapped by renaming at `2026-10-11T17:12:43Z`, on the
    owner's approval. The rebuilt root now occupies the default path, and the
    2026-09-25 root is kept beside it under a dated name. Afterwards the
@@ -796,7 +807,8 @@ archive in the build repo, and no build left that repo: nothing was
 installed on the host or published elsewhere. The accepted builds are the
 later ones, whose `.BUILDINFO` PKGBUILD checksum equals the committed
 PKGBUILD and whose digests the final lock and the root's manifest share.
-`pkgrel` was not bumped for them; the owner accepted that on 2026-10-11.
+`pkgrel` was not bumped for them; the owner accepted that on 2026-10-11
+([comment](https://github.com/nisavid/arch-strix-halo-pkgs/issues/183#issuecomment-6111579499)).
 
 Build-root memory, for planning a rerun: `populate` charges the page cache
 it fills to its job, so a 12 GiB root shows a 12.6 GiB cgroup peak that is

@@ -12,7 +12,7 @@ closure targets, the freshness cursors and the candidate records on
 2026-10-11. Nothing was installed on the host, and no GPU ran.
 
 Owner decisions this record follows, as recorded on
-[the issue](https://github.com/nisavid/arch-strix-halo-pkgs/issues/183#issuecomment-6106254102):
+[the issue](https://github.com/nisavid/arch-strix-halo-pkgs/issues/183) and its comments:
 
 - **2026-10-05:** generation C moves to Transformers 5.18.0 and
   huggingface-hub 2.x, admitted under the build-breakage exception.
@@ -32,14 +32,19 @@ Owner decisions this record follows, as recorded on
   0.23.3, and a passing CPU drive in the rebuilt root. No requirement is
   waived.
 - **2026-10-11:** aiohttp moves to 3.14.5 in the same rebuild, under the
-  security exception.
+  security exception
+  ([comment](https://github.com/nisavid/arch-strix-halo-pkgs/issues/183#issuecomment-6106254102)).
 - **2026-10-11:** [vllm#57731](https://github.com/vllm-project/vllm/pull/57731)
   is not carried, and
   [vllm#60022](https://github.com/vllm-project/vllm/pull/60022) is tracked,
-  not carried.
+  not carried
+  ([comment](https://github.com/nisavid/arch-strix-halo-pkgs/issues/183#issuecomment-6106254102)).
 - **2026-10-11:** tokenizers 0.23.3-1 and vLLM 0.30.0-2, each rebuilt once
-  under an unchanged version before anything consumed them, keep those
-  versions; and the rebuilt root is swapped into the default root path.
+  under an unchanged version, keep those versions; and the rebuilt root is
+  swapped into the default root path
+  ([comment](https://github.com/nisavid/arch-strix-halo-pkgs/issues/183#issuecomment-6111579499)). The earlier builds never left
+  the build repo. The first CPU drive ran on them; the final drive, on the
+  later builds, superseded it.
 
 The states are recorded separately:
 
