@@ -792,7 +792,12 @@ later ones, whose `.BUILDINFO` PKGBUILD checksum equals the committed
 PKGBUILD and whose digests the final lock and the root's manifest share.
 `pkgrel` was not bumped for them.
 
-SWAP-STATUS-PENDING
+The roots have not been swapped (step 7 of the procedure). The rebuilt root
+stands beside the 2026-09-25 root, which still occupies the default path, so
+the tools that default to that path still reach the old closure.
+[The closure move](https://github.com/nisavid/arch-strix-halo-pkgs/issues/183) owns
+the swap, and its first evidence item, that the W2A root carries the new
+closure, waits on it.
 
 Build-root memory, for planning a rerun: `populate` charges the page cache
 it fills to its job, so a 12 GiB root shows a 12.6 GiB cgroup peak that is

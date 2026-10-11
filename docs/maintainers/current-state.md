@@ -51,8 +51,8 @@ The states are recorded separately:
   package's `.BUILDINFO` PKGBUILD checksum equals the committed PKGBUILD.
   [Generation-C Build Root](c-build-root.md#what-ran-on-2026-10-11-in-order)
   has the order and what differed.
-- **Deployed/installed:** in the rebuilt isolated root only. Not on the
-  host.
+- **Deployed/installed:** in the rebuilt isolated root only, which is not
+  yet at the default root path. Not on the host.
 - **Installed-smoked:** in that root only: `verify`, the backport smoke tool
   and the CPU drive below. Not on the host.
 - **Live-scenario validated:** no. GPU evidence is not part of the closure
@@ -221,9 +221,14 @@ the series 0016-0024 is applied to real source; they excluded
 `test_torchao_vllm_smoke_tool.py`, whose eight tests fail on this host for
 the same reason.
 
-Open after this move: the GPU lanes on assembled C, the image-format
-decision, and everything on the host (installation, installed smoke and live
-validation). SWAP-STATUS-PENDING
+Open after this move:
+
+- The build-root swap. The rebuilt root stands beside the 2026-09-25 root,
+  which still occupies the default path. The closure move's issue owns the
+  swap, and its first evidence item waits on it.
+- The GPU lanes on assembled C.
+- The image-format decision, with the other unreleased vLLM security fixes.
+- Everything on the host: installation, installed smoke and live validation.
 
 ## 2026-10-11 Freshness Dispositions and Confirming Sweep
 
