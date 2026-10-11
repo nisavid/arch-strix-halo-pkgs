@@ -3444,10 +3444,11 @@ previous_recorded = "0.21.0"
 latest = "0.30.0"
 discovery_status = "stable_update_available"
 disposition = "tracked"
-disposition_reason = "Tracked from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep. #105 fixes the inference stack's version line (docs/wayfinder/research/c-line-selection-2026-09-22.md). The selected inference stack uses vLLM 0.30.0 (ced6857), built from source against ROCm PyTorch 2.12.0. Its CMake ROCm torch 2.13 expectation is a warning only. vLLM 0.30.0 requires prometheus-fastapi-instrumentator>=8.0.0, so the PyTorch/vLLM dependency closure includes 8.1.0 (tracked under #110) instead of keeping the host's 7.0.0. The PyTorch/vLLM package lane built 0.30.0-1 with the ported local ROCm compatibility patch and validated it in the isolated build root on 2026-09-29 (#111). Issue #179 owns the required Granite small-MoE and Gemma 4 E2B long-decode gates before complete-stack qualification, followed by deployment and installation, installed smoke checks, and live validation. The large-Gemma load-path research in #169 is optional and non-blocking. Issue #183 separately owns the model-closure move and required vLLM 0.30.0 rebuild checks. This record does not establish either runtime lane or an accepted inference stack."
+disposition_reason = "Tracked from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep. #105 fixes the inference stack's version line (docs/wayfinder/research/c-line-selection-2026-09-22.md). The selected inference stack uses vLLM 0.30.0 (ced6857), built from source against ROCm PyTorch 2.12.0. Its CMake ROCm torch 2.13 expectation is a warning only. vLLM 0.30.0 requires prometheus-fastapi-instrumentator>=8.0.0, so the PyTorch/vLLM dependency closure includes 8.1.0 (tracked under #110) instead of keeping the host's 7.0.0. The PyTorch/vLLM package lane built 0.30.0-1 with the ported local ROCm compatibility patch and validated it in the isolated build root on 2026-09-29 (#111). Issue #179 owns the required Granite small-MoE and Gemma 4 E2B long-decode gates before complete-stack qualification, followed by deployment and installation, installed smoke checks, and live validation. The large-Gemma load-path research in #169 is optional and non-blocking. On 2026-10-10 the package source moved to 0.30.0-2 for the model-closure move (#183): the release stays v0.30.0, and the rebuild carries eight upstream backports as patches 0017-0024 (the pixtral.py hunk of vllm#56108 and vllm#59613 for Transformers 5.18, and the six v0.31.0 security and multimodal cache fixes the owner selected on 2026-10-05: vllm#58830, #58832, #57833, #57696, #54283 and #51694). 0.30.0-2 was built on 2026-10-11 in the isolated build root, and `tools/vllm_backport_smoke.py` passed all eight behavior checks on the built package there. The 2026-09-29 validation ran on 0.30.0-1 and does not cover 0.30.0-2; patch 0019 changes default server behavior, and the GPU lanes rerun on assembled C in issue #194. Issue #183 owns the rebuild and its CPU evidence. Issue #195 owns the open decision on vllm#60022, which no release contains yet. This record does not establish either runtime lane or an accepted inference stack."
 salient_changes = [
   "The selected inference stack retains the vLLM 0.30.0 release selected by the September 22 freeze; the later 0.31.0 version move is separate",
   "The AUR vLLM baseline remains at 0.12.0-1",
+  "The package is 0.30.0-2 since 2026-10-10: v0.30.0 with upstream backports 0017-0024 on top of the 0016 carry",
 ]
 patch_carry_overlap = true
 package_source_update_needed = true
@@ -3455,7 +3456,7 @@ host_validation_needed = true
 next_gate_kind = "github_issue"
 next_gate_issue = 179
 next_gate_label = "Granite small-MoE and Gemma 4 E2B long-decode gates before complete-stack qualification"
-last_reviewed = "2026-10-07"
+last_reviewed = "2026-10-11"
 
 [candidates."transformers-5.17.0-pypi"]
 family = "transformers"
@@ -4680,7 +4681,7 @@ previous_recorded = "5.16.1"
 latest = "5.18.0"
 discovery_status = "stable_update_available"
 disposition = "tracked"
-disposition_reason = "Selected for generation C by the owner's 2026-10-05 decision (#183) and admitted under the build-breakage exception: Transformers 5.16.1 and 5.17.0 require huggingface-hub<2.0 and fail at import next to Arch's huggingface-hub 2.x. The 2026-10-10 closure move updates the package source to 5.18.0, declares the packaged huggingface-hub range (>=1.31.0,<3.0) as versioned depends, and floors the build-root closure targets. The package is not built. The package build, the build-root refresh and CPU drive, deployment and installation, installed smoke checks, and live validation remain open, so this record does not establish adoption. Issue #183 owns the build and CPU evidence; the GPU and online-download reruns under 5.18 run on assembled C in issue #194. The later 5.19.0 observation is a separate post-freeze candidate."
+disposition_reason = "Selected for generation C by the owner's 2026-10-05 decision (#183) and admitted under the build-breakage exception: Transformers 5.16.1 and 5.17.0 require huggingface-hub<2.0 and fail at import next to Arch's huggingface-hub 2.x. The 2026-10-10 closure move updates the package source to 5.18.0, declares the packaged huggingface-hub range (>=1.31.0,<3.0) as versioned depends, and floors the build-root closure targets. The package was built on 2026-10-11 in the isolated generation-C build root from the reviewed package source and is in the rebuilt root, which passed `verify`; the root's CPU drive is recorded in docs/maintainers/current-state.md. Deployment and installation on the host, installed smoke checks, and live validation remain open, so this record does not establish adoption. Issue #183 owns the build and CPU evidence; the GPU and online-download reruns under 5.18 run on assembled C in issue #194. The later 5.19.0 observation is a separate post-freeze candidate."
 salient_changes = [
   "PyPI and the upstream tag report Transformers 5.18.0 after the selected 5.16.1 and the rejected 5.17.0",
   "5.18.0 lists breaking changes, including routing ROCm gpt-oss FA3 to aiter-flash-attn and a vLLM video token counting fix",
@@ -4692,8 +4693,8 @@ package_source_update_needed = false
 host_validation_needed = true
 next_gate_kind = "github_issue"
 next_gate_issue = 183
-next_gate_label = "Transformers 5.18.0 package build, build-root refresh, and CPU drive for the model closure move"
-last_reviewed = "2026-10-10"
+next_gate_label = "Transformers 5.18.0 build-root evidence for the model closure move; then GPU requalification in #194"
+last_reviewed = "2026-10-11"
 
 [candidates."rocm-pytorch-release-2.12-b97872d"]
 family = "rocm_pytorch"
@@ -4990,15 +4991,15 @@ previous_recorded = "0.30.0"
 latest = "0.31.0"
 discovery_status = "stable_update_available"
 disposition = "tracked"
-disposition_reason = "Issue #183 explicitly leaves the vLLM 0.31.0 version move on post-closeout maintenance in issue #147 while the selected inference stack retains 0.30.0 and the separately required backports. This October 7 routing record does not assess those fixes, adopt 0.31.0, or satisfy source, build, or runtime gates."
+disposition_reason = "Issue #183 explicitly leaves the vLLM 0.31.0 version move on post-closeout maintenance in issue #147 while the selected inference stack retains 0.30.0 and the separately required backports. This routing record does not adopt 0.31.0 or satisfy source, build, or runtime gates. The 0.30.0-2 package carries eight of v0.31.0's changes as patches 0017-0024, so the 0.31.0 move drops those patches, their sentinel entries and their `tools/vllm_backport_smoke.py` checks. It also brings what 0.30.0-2 deliberately leaves out: vllm#57731 (not carried by owner decision on 2026-10-11), vllm#56576 (malformed EXIF during hashing), and the LoRA, Model Runner V1 and KV-connector fixes that generation C does not reach. The 2026-10-11 assessment of the range is in the vLLM package notes. v0.31.0 caps Transformers below 5.18, which the move must resolve against generation C's 5.18.0."
 salient_changes = [
   "The release check reports 0.31.0 after recorded cursor 0.30.0",
-  "Release contents and patch applicability are not assessed by this metadata refresh; the next gate owns that work",
+  "The security-relevant changes of the release were assessed on 2026-10-11 for the 0.30.0-2 rebuild; the rest of the release contents are not assessed here",
 ]
 next_gate_kind = "github_issue"
 next_gate_issue = 147
 next_gate_label = "vLLM 0.31.0 post-closeout version move"
-last_reviewed = "2026-10-07"
+last_reviewed = "2026-10-11"
 
 [candidates."lemonade-fork-4bad19a-upstream-2026.41.1"]
 family = "lemonade"
@@ -5121,12 +5122,13 @@ previous_recorded = "0.23.2"
 latest = "0.23.3"
 discovery_status = "stable_update_available"
 disposition = "tracked"
-disposition_reason = "Selected for generation C by the owner's 2026-10-10 decision (#183). Its PyPI metadata requires huggingface-hub<3.0,>=0.16.4 instead of 0.23.2's <2.0 bound, which resolves the metadata conflict with Arch's huggingface-hub 2.x. The 2026-10-10 closure move updates the package source to 0.23.3, declares that range as versioned depends, and floors the build-root closure targets. The package is not built. The package build, the build-root refresh and CPU drive, deployment and installation, installed smoke checks, and live validation remain open, so this record does not establish adoption. Issue #183 owns the build and CPU evidence; the GPU reruns run on assembled C in issue #194."
+disposition_reason = "Selected for generation C by the owner's 2026-10-10 decision (#183). Its PyPI metadata requires huggingface-hub<3.0,>=0.16.4 instead of 0.23.2's <2.0 bound, which resolves the metadata conflict with Arch's huggingface-hub 2.x. The 2026-10-10 closure move updates the package source to 0.23.3, declares that range as versioned depends, and floors the build-root closure targets. The package was built on 2026-10-11 in the isolated generation-C build root from the reviewed package source and is in the rebuilt root, which passed `verify`; the root's CPU drive is recorded in docs/maintainers/current-state.md. Deployment and installation on the host, installed smoke checks, and live validation remain open, so this record does not establish adoption. Issue #183 owns the build and CPU evidence; the GPU reruns run on assembled C in issue #194."
 salient_changes = [
   "PyPI reports tokenizers 0.23.3 after recorded 0.23.2; the first artifact upload is dated 2026-10-09",
   "The wider Hugging Face Hub bound resolves issue #183's resolver-level compatibility question",
   "0.23.3 is not a metadata-only release: it removes the truncation early exit present in 0.23.2, which restores every overflowing encoding",
   "The extension imports huggingface_hub when Tokenizer.from_pretrained is called, so the package now depends on python-huggingface-hub",
+  "The built extension links libstdc++, libgcc_s, libm and libc only, so the package depends on libstdc++ and no longer on zlib",
   "The package source moved to 0.23.3 on 2026-10-10 and supersedes the selected 0.23.2 record",
 ]
 patch_carry_overlap = false
@@ -5134,8 +5136,8 @@ package_source_update_needed = false
 host_validation_needed = true
 next_gate_kind = "github_issue"
 next_gate_issue = 183
-next_gate_label = "tokenizers 0.23.3 package build, build-root refresh, and CPU drive for the model closure move"
-last_reviewed = "2026-10-10"
+next_gate_label = "tokenizers 0.23.3 build-root evidence for the model closure move; then GPU requalification in #194"
+last_reviewed = "2026-10-11"
 
 [candidates."httptools-0.9.0-pypi"]
 family = "httptools"
@@ -5207,7 +5209,7 @@ previous_recorded = "3.14.3"
 latest = "3.14.5"
 discovery_status = "stable_update_available"
 disposition = "tracked"
-disposition_reason = "Selected for generation C by the owner's 2026-10-11 decision, under the version freeze's security exception, in the model closure move (#183). 3.14.4 is the first patched release for eight advisories that upstream published on 2026-10-07, two rated medium and six low. By advisory title, three low ones concern the aiohttp client (GHSA-494j-54xm-rwp3, GHSA-6cjc-53gc-5rqm and GHSA-gx76-c99x-2c96: cookie handling and connector-pool exhaustion), which vLLM 0.30.0 uses to fetch request-supplied media, so they are reachable from the served path. Three low ones concern an aiohttp server (GHSA-f9xw-jh8m-3mwq, GHSA-5wr8-gcqf-gqf3 and GHSA-pqxq-w44r-73xw), which vLLM does not run. The two medium ones (GHSA-9xw5-w5jj-pvcg and GHSA-2g87-pp6c-29x5) were not classified. The closure move updates the package source to 3.14.5. The package build, the build-root refresh and CPU drive, deployment and installation, installed smoke checks, and live validation remain open, so this record does not establish adoption."
+disposition_reason = "Selected for generation C by the owner's 2026-10-11 decision, under the version freeze's security exception, in the model closure move (#183). 3.14.4 is the first patched release for eight advisories that upstream published on 2026-10-07, two rated medium and six low. By advisory title, three low ones concern the aiohttp client (GHSA-494j-54xm-rwp3, GHSA-6cjc-53gc-5rqm and GHSA-gx76-c99x-2c96: cookie handling and connector-pool exhaustion), which vLLM 0.30.0 uses to fetch request-supplied media, so they are reachable from the served path. Three low ones concern an aiohttp server (GHSA-f9xw-jh8m-3mwq, GHSA-5wr8-gcqf-gqf3 and GHSA-pqxq-w44r-73xw), which vLLM does not run. The two medium ones (GHSA-9xw5-w5jj-pvcg and GHSA-2g87-pp6c-29x5) were not classified. The closure move updates the package source to 3.14.5. The package was built on 2026-10-11 in the isolated generation-C build root from the reviewed package source and is in the rebuilt root, which passed `verify`; the root's CPU drive is recorded in docs/maintainers/current-state.md. Deployment and installation on the host, installed smoke checks, and live validation remain open, so this record does not establish adoption."
 salient_changes = [
   "The pypi check reports 3.14.5 after C's selected 3.14.3; 3.14.5 itself is a bug-fix release (WebSocket control frames after permessage-deflate)",
   "3.14.5 requires yarl >=1.25.1,<2.0 and multidict >=4.5,<8.0; C's yarl 1.25.1 and multidict 6.9.1 satisfy both",
@@ -5219,7 +5221,7 @@ package_source_update_needed = false
 host_validation_needed = true
 next_gate_kind = "github_issue"
 next_gate_issue = 183
-next_gate_label = "aiohttp 3.14.5 package build, build-root refresh, and CPU drive for the model closure move"
+next_gate_label = "aiohttp 3.14.5 build-root evidence for the model closure move"
 last_reviewed = "2026-10-11"
 
 [candidates."numpy-2.5.4-pypi"]

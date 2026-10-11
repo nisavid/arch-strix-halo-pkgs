@@ -699,12 +699,13 @@ Transformers 5.16.1-1, tokenizers 0.23.2-1, huggingface-hub 1.32.0 and click
 ### What a re-lock moves
 
 Every userland package is locked at its sync DB version, so a re-lock cannot
-add hub 2.x alone. Against the root's 2026-09-25 manifest, the lock of
-2026-10-11 adds `python-httpx2` 2.13.0-1, `python-httpcore2` 2.13.0-1,
+add hub 2.x alone. Against the 2026-09-25 root's manifest, the rebuilt root
+adds `python-httpx2` 2.13.0-1, `python-httpcore2` 2.13.0-1,
 `python-truststore` 0.10.4-3 and `python-tomlkit` 0.15.1-1 (which hatchling
-now depends on), and changes 105 versions. Four of those are the move:
-Transformers, tokenizers, huggingface-hub 1:1.32.0-1 to 1:2.1.1-1 and click
-8.3.3-1 to 8.5.0-1. The rest is two weeks of sync DB movement, including
+now depends on), and changes 107 versions. Six of those are the move:
+Transformers, tokenizers, aiohttp, vLLM 0.30.0-1 to 0.30.0-2, huggingface-hub
+1:1.32.0-1 to 1:2.1.1-1 and click 8.3.3-1 to 8.5.0-1. The other 101 are two
+weeks of sync DB movement, including
 filelock 3.31.2 to 4.0.1, Starlette 1.6.0 to 1.7.0, uvicorn 0.52.4 to 0.54.0,
 urllib3 2.7.0 to 2.8.0, Rust 1.98.1 to 1.99.0, the Arch LLVM libraries,
 OpenMP, compiler-rt and lld 22.1.8 to 23.1.1, VTK 9.6.2 to 9.7.1, Qt 6.11.2
@@ -716,15 +717,15 @@ the old root, so it measured none of that movement.
 The old root stays untouched until the fresh one is proven, so every step
 before the swap can be abandoned at no cost.
 
-1. **Build the two floored packages and publish them without adding them.**
-   tokenizers 0.23.3 (with `enter --net` for its crates) and then
-   Transformers 5.18.0 were built in the 2026-09-25 root with
-   `makepkg -Cf --nodeps` and published to `ashp-w2a`. They were not added to
-   that root. A root resolved from `torch-chain.targets` plus
-   `py-closure.targets`, which holds neither Transformers nor huggingface-hub,
-   serves as well when no older root exists, and it is the only one that can
-   build aiohttp: `python-pkgconfig` is in `py-closure.targets` and not in the
-   assembled root.
+1. **Build the floored packages in a closure-build root and publish them.**
+   A root resolved from `torch-chain.targets` plus `py-closure.targets` (449
+   packages) holds neither Transformers nor huggingface-hub, and it has
+   maturin, the Rust toolchain, Cython and `python-pkgconfig`. tokenizers
+   0.23.3 (with `enter --net` for its crates) and aiohttp 3.14.5 were built
+   there with `makepkg -Cf --nodeps` and published to `ashp-w2a`. aiohttp
+   cannot build in the assembled root, which has no `python-pkgconfig`.
+   Transformers 5.18.0 is a pure-Python wheel and was built in the 2026-09-25
+   root, without being added to it.
 2. **Lock the whole assembled root.** `resolve` over `torch-chain.targets`,
    `model-closure.targets`, `vllm-build.targets` and `w2a-assembled.targets`
    gave 610 packages. Its only problems were two `missing-file` entries,
@@ -736,12 +737,26 @@ before the swap can be abandoned at no cost.
    it.
 4. **Rebuild what the move changes in the fresh root.** vLLM 0.30.0-2 was
    built there with `enter --net`, published, and added over the 0.30.0-1 the
-   lock had placed.
-5. **Run the CPU drive against the fresh root**, then compare its report with
+   lock had placed. A rebuilt tokenizers and the new aiohttp were added the
+   same way: `add` replaces the same package at any version.
+5. **Prove the lock again.** A second `resolve` over the four targets files
+   must name exactly the root's packages, by version and digest. On
+   2026-10-11 it did: 610 packages and no difference. Then `verify`, and
+   `python tools/vllm_backport_smoke.py` inside the root.
+6. **Run the CPU drive against the fresh root**, then compare its report with
    the previous run item by item. A regression that comes from the sync DB
    movement and not from the move shows up as a changed item.
-6. **Swap the roots by renaming**, keeping the old one until the GPU lanes
-   have run on the new one.
+7. **Swap the roots by renaming**, keeping the old one until the GPU lanes
+   have run on the new one. Do this last, once the fresh root's evidence is
+   accepted; the tools that default to the root's path then pick up the new
+   one.
+
+Build-root memory, for planning a rerun: `populate` charges the page cache
+it fills to its job, so a 12 GiB root shows a 12.6 GiB cgroup peak that is
+almost all reclaimable cache. The vLLM build's own processes peaked at 12.0
+GiB with 6 jobs, and its unit at 24.1 GiB when it shared a unit with a
+populate. The tokenizers and aiohttp builds stayed under 1 GiB of process
+memory, and the backport smoke tool under 1.4 GiB.
 
 ### What `verify` and the CPU drive found
 
