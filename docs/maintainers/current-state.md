@@ -37,6 +37,9 @@ Owner decisions this record follows, as recorded on
   is not carried, and
   [vllm#60022](https://github.com/vllm-project/vllm/pull/60022) is tracked,
   not carried.
+- **2026-10-11:** tokenizers 0.23.3-1 and vLLM 0.30.0-2, each rebuilt once
+  under an unchanged version before anything consumed them, keep those
+  versions; and the rebuilt root is swapped into the default root path.
 
 The states are recorded separately:
 
@@ -51,8 +54,9 @@ The states are recorded separately:
   package's `.BUILDINFO` PKGBUILD checksum equals the committed PKGBUILD.
   [Generation-C Build Root](c-build-root.md#what-ran-on-2026-10-11-in-order)
   has the order and what differed.
-- **Deployed/installed:** in the rebuilt isolated root only, which is not
-  yet at the default root path. Not on the host.
+- **Deployed/installed:** in the rebuilt isolated root only. It was swapped
+  into the default root path at `2026-10-11T17:12:43Z`, and the 2026-09-25
+  root is kept beside it. Not on the host.
 - **Installed-smoked:** in that root only: `verify`, the backport smoke tool
   and the CPU drive below. Not on the host.
 - **Live-scenario validated:** no. GPU evidence is not part of the closure
@@ -71,7 +75,8 @@ procedure and what a re-lock moves. The results:
   move (Transformers, tokenizers, aiohttp, vLLM, huggingface-hub 1:1.32.0 to
   1:2.1.1 and click 8.3.3 to 8.5.0), and the other 101 are sync DB movement.
 - **`verify`.** 610 packages and 4,153 ELF files, with no violation, after
-  the allowlist took VTK 9.7's optional library names.
+  the allowlist took VTK 9.7's optional library names. The same held at the
+  default path after the swap, where the manifest again equalled the lock.
 - **CPU drive.** Run without a GPU against the rebuilt root after the last
   package was added: `RESULT PASS`, 122 of 122 gate checks, finished at
   `2026-10-11T07:19:35Z`. The drive is the one of the
@@ -223,9 +228,6 @@ the same reason.
 
 Open after this move:
 
-- The build-root swap. The rebuilt root stands beside the 2026-09-25 root,
-  which still occupies the default path. The closure move's issue owns the
-  swap, and its first evidence item waits on it.
 - The GPU lanes on assembled C.
 - The image-format decision, with the other unreleased vLLM security fixes.
 - Everything on the host: installation, installed smoke and live validation.

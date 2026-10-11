@@ -782,6 +782,12 @@ independent review changed two packages after the fresh root existed.
    root's manifest as in step 5 of the procedure: 610 packages and no
    difference. `verify` found no violation, the backport smoke tool passed
    all eight checks, and the CPU drive passed 122 of 122 gate checks.
+7. The roots were swapped by renaming at `2026-10-11T17:12:43Z`, on the
+   owner's approval. The rebuilt root now occupies the default path, and the
+   2026-09-25 root is kept beside it under a dated name. Afterwards the
+   default-path root's manifest equalled the final lock (610 packages, no
+   difference by version or digest), and `verify` there found no violation
+   in 610 packages and 4,153 ELF files.
 
 Two packages were therefore built twice under one version: tokenizers
 0.23.3-1 (the builds differ in one depend) and vLLM 0.30.0-2 (the builds
@@ -790,14 +796,7 @@ archive in the build repo, and no build left that repo: nothing was
 installed on the host or published elsewhere. The accepted builds are the
 later ones, whose `.BUILDINFO` PKGBUILD checksum equals the committed
 PKGBUILD and whose digests the final lock and the root's manifest share.
-`pkgrel` was not bumped for them.
-
-The roots have not been swapped (step 7 of the procedure). The rebuilt root
-stands beside the 2026-09-25 root, which still occupies the default path, so
-the tools that default to that path still reach the old closure.
-[The closure move](https://github.com/nisavid/arch-strix-halo-pkgs/issues/183) owns
-the swap, and its first evidence item, that the W2A root carries the new
-closure, waits on it.
+`pkgrel` was not bumped for them; the owner accepted that on 2026-10-11.
 
 Build-root memory, for planning a rerun: `populate` charges the page cache
 it fills to its job, so a 12 GiB root shows a 12.6 GiB cgroup peak that is
