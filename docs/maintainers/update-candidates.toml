@@ -4859,7 +4859,7 @@ source_kind = "github_tags"
 check_id = "stable-tag"
 baseline_source_kind = "arch_package"
 baseline_latest = "0.6.0-1"
-covered_checks = [{ source_kind = "arch_package", check_id = "arch", latest = "0.6.0-1" }, { source_kind = "arch_package", check_id = "arch-ggml-hip", latest = "0.25.3-2" }]
+covered_checks = [{ source_kind = "arch_package", check_id = "arch", latest = "0.6.0-1" }, { source_kind = "arch_package", check_id = "arch-ggml-hip", latest = "0.26.0-1" }]
 previous_recorded = "0.4.1 / 0.4.1-1 / 0.24.0-2"
 latest = "0.6.0"
 discovery_status = "stable_update_available"
@@ -4867,14 +4867,14 @@ disposition = "tracked"
 disposition_reason = "The October 7 metadata sweep observes this later upstream or baseline value. Issue #147 owns post-freeze candidate review and disposition. The inference stack's selected versions remain unchanged; this routing record neither adopts the candidate nor decides security applicability or a build-breakage exception. The owning lane derives any source, patch, build, and runtime validation work before adoption."
 salient_changes = [
   "The stable-tag check reports 0.6.0 after recorded cursor 0.4.1",
-  "Arch llama-cpp reports 0.6.0-1 after 0.4.1-1, and the separate ggml-hip baseline reports 0.25.3-2 after 0.24.0-2; both observations remain review inputs, not equivalent source pins",
-  "The legacy b-number GitHub release check reports v0.6.0 as current; its version-comparison defect remains with issue #147 and does not override the actionable stable-tag check",
+  "The October 12 sweep still observes Arch llama-cpp 0.6.0-1, while the separate ggml-hip baseline moves from the October 7 observation of 0.25.3-2 to 0.26.0-1; the recorded cursor remains 0.24.0-2",
+  "The legacy b-number GitHub release check reports prerelease b11574; it is informational and does not select a stable source or override the actionable stable-tag check",
   "Release contents and patch applicability are not assessed by this metadata refresh; the next gate owns that work",
 ]
 next_gate_kind = "github_issue"
 next_gate_issue = 147
 next_gate_label = "Post-freeze llama-cpp candidate review and disposition"
-last_reviewed = "2026-10-07"
+last_reviewed = "2026-10-12"
 
 [candidates."rocm-pytorch-release-2.12-9ccf2fd"]
 family = "rocm_pytorch"
@@ -5194,3 +5194,153 @@ next_gate_kind = "github_issue"
 next_gate_issue = 147
 next_gate_label = "Post-closeout stable-diffusion.cpp f89d9b1 source assessment and disposition"
 last_reviewed = "2026-10-10"
+
+[candidates."aiohttp-3.14.5-pypi"]
+family = "aiohttp"
+packages = ["python-aiohttp-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+previous_recorded = "3.14.3"
+latest = "3.14.5"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "The October 12 main-based sweep observes PyPI 3.14.5. The model-closure move in issue #183 and PR #198 already records the owner's security-exception selection; this metadata-only record preserves that handoff without importing the unmerged package-source or build claims. Issue #110 owns the selected serving closure's remaining integration and validation. The selected 3.14.3 record remains intact until the closure owner reconciles it. No source, adoption, or host state changes here."
+salient_changes = [
+  "PyPI reports 3.14.5 after recorded 3.14.3",
+  "Reconcile this same candidate identity with PR #198 before either overlapping ledger change merges",
+  "The closure owner retains release/security assessment and all derived validation evidence",
+]
+next_gate_kind = "github_issue"
+next_gate_issue = 110
+next_gate_label = "Selected aiohttp 3.14.5 model-closure integration and downstream validation"
+last_reviewed = "2026-10-12"
+
+[candidates."aiter-0.1.25"]
+family = "aiter"
+packages = ["python-amd-aiter-gfx1151"]
+source_kind = "github_release"
+check_id = "release"
+previous_recorded = "0.1.14"
+latest = "0.1.25"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "The October 12 metadata sweep observes stable AITER 0.1.25. Issue #147 owns post-freeze source assessment and disposition. The selected aiter-0.1.22.post1 experimental closure and issue #119 remain unchanged. This observation does not assess release contents, security applicability, patch carry, or build-breakage exceptions and makes no source-selection or adoption decision."
+salient_changes = [
+  "The stable release check reports 0.1.25 after recorded 0.1.14",
+  "Issue #147 owns assessment and any derived validation before adoption",
+]
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "Post-freeze AITER 0.1.25 source assessment and disposition"
+last_reviewed = "2026-10-12"
+
+[candidates."lemonade-fork-3df36c4"]
+family = "lemonade"
+packages = ["lemonade-server", "lemonade-app", "lemonade"]
+source_kind = "git_ref"
+check_id = "fork-main"
+baseline_source_kind = "github_release"
+baseline_latest = "2026.41.1"
+previous_recorded = "b6616eb3b6d31c3d7dbffffdb23e24adda1292a1 / 11.9.0"
+latest = "3df36c4c5da16eedc6dca54c858be3347ccdf6a9"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "The October 12 main-based sweep observes fork main 3df36c4 and the independent upstream baseline 2026.41.1. Issue #163 owns the owner-deferred calendar-versioned source assessment and packaging after the resurrection. This same candidate appears in the unmerged PR #198 ledger; reconcile those records before landing. The current package/fork source and accepted Lemonade milestone are unchanged, and no equivalence between the fork commit and upstream release is established."
+salient_changes = [
+  "Fork main reports 3df36c4c5da16eedc6dca54c858be3347ccdf6a9 after recorded b6616eb3b6d31c3d7dbffffdb23e24adda1292a1",
+  "The independent upstream release baseline remains 2026.41.1 after recorded 11.9.0",
+  "Release contents, security applicability, patch carry, and source equivalence remain with issue #163",
+]
+next_gate_kind = "github_issue"
+next_gate_issue = 163
+next_gate_label = "Lemonade deferred calver source assessment and packaging"
+last_reviewed = "2026-10-12"
+
+[candidates."numpy-2.5.4-pypi"]
+family = "numpy"
+packages = ["python-numpy-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+baseline_source_kind = "arch_package"
+baseline_latest = "2.5.4-1"
+covered_checks = [{ source_kind = "arch_package", check_id = "arch", latest = "2.5.4-1" }]
+previous_recorded = "2.5.3 / 2.5.3-1"
+latest = "2.5.4"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "The October 12 main-based sweep observes PyPI NumPy 2.5.4 and the independent Arch baseline 2.5.4-1. Issue #147 owns post-freeze source assessment and disposition. The selected numpy-2.5.3-pypi obligation and issue #110 remain unchanged. PR #198 contains this same candidate with an earlier Arch observation; reconcile the exact 2.5.4-1 binding before landing. Release contents, security applicability, compatibility, patch carry, and build-breakage exceptions remain unassessed."
+salient_changes = [
+  "PyPI reports 2.5.4 after recorded 2.5.3",
+  "Arch reports 2.5.4-1 after recorded 2.5.3-1; the heterogeneous baseline is bound separately",
+  "No replacement serving closure or source adoption is selected",
+]
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "Post-freeze NumPy 2.5.4 source and Arch-baseline assessment"
+last_reviewed = "2026-10-12"
+
+[candidates."pydantic-core-2.50.1-pypi"]
+family = "pydantic_core"
+packages = ["python-pydantic-core-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+covered_checks = [{ source_kind = "arch_package", check_id = "arch", latest = "2.46.5-1" }]
+previous_recorded = "2.46.5-1 / 2.49.0"
+latest = "2.50.1"
+discovery_status = "baseline_drift"
+disposition = "tracked"
+disposition_reason = "The October 12 sweep observes the independent PyPI baseline 2.50.1 while the authoritative Arch primary remains 2.46.5-1. Issue #147 owns post-closeout assessment and disposition. The historical adopted Arch-compatible pydantic/core pair remains intact. This record does not choose another ABI pair, assess release or security relevance, or adopt the baseline."
+salient_changes = [
+  "The independent PyPI baseline reports 2.50.1 after recorded 2.49.0 and the earlier 2.50.0 observation",
+  "The Arch primary remains 2.46.5-1 and is bound separately",
+]
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "Post-closeout pydantic-core 2.50.1 baseline assessment and disposition"
+last_reviewed = "2026-10-12"
+
+[candidates."python-3.14.8-1-arch"]
+family = "python"
+packages = ["python-gfx1151"]
+source_kind = "arch_package"
+check_id = "arch"
+baseline_source_kind = "python_ftp"
+baseline_latest = "3.14.8"
+covered_checks = [{ source_kind = "python_ftp", check_id = "cpython", latest = "3.14.8" }]
+previous_recorded = "3.14.5-1 / 3.14.6"
+latest = "3.14.8-1"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "The October 12 main-based sweep observes Arch Python 3.14.8-1 beside CPython 3.14.8. The existing foundation owner's 3.14.8 admission remains settled. Issue #108 owns source publication, rebuilds, and fresh downstream validation; this record does not reopen admission or promote a source. The selected 3.14.7 foundation obligation remains until its owner reconciles the transition. Reconcile the same candidate identity preserved in unmerged PR #198 before landing."
+salient_changes = [
+  "Arch reports 3.14.8-1 after recorded 3.14.5-1 and the earlier 3.14.7-1 observation",
+  "CPython FTP remains 3.14.8 after recorded 3.14.6, with its exact binding separate from the Arch package version",
+  "The admitted foundation retains its existing source, rebuild, and downstream gates",
+]
+next_gate_kind = "github_issue"
+next_gate_issue = 108
+next_gate_label = "Admitted CPython 3.14.8 foundation source, rebuild, and downstream validation"
+last_reviewed = "2026-10-12"
+
+[candidates."stable-diffusion-cpp-d637cfb"]
+family = "stable_diffusion_cpp"
+packages = ["stable-diffusion.cpp-vulkan-gfx1151"]
+source_kind = "git_ref"
+check_id = "master"
+baseline_source_kind = "aur"
+baseline_latest = "r948.228c707-1"
+covered_checks = [{ source_kind = "aur", check_id = "aur-vulkan", latest = "r948.228c707-1" }]
+previous_recorded = "be65ac7511b30379b003626c15224798929e33d4 / r279.49d6570-1"
+latest = "d637cfb935feb2254898a8f1524046c958f3df80"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "The October 12 main-based sweep observes master d637cfb while the independent AUR Vulkan baseline remains r948.228c707-1. Issue #147 owns post-closeout source assessment and disposition. The selected stable-diffusion-cpp-c92d73c rebuild and issue #121 remain unchanged. PR #198 retains the intervening 2988060 observation; reconcile its unadopted successor before landing. Release contents, security applicability, recursive submodule and patch carry, and build-breakage exceptions remain unassessed."
+salient_changes = [
+  "Master reports d637cfb935feb2254898a8f1524046c958f3df80 after recorded be65ac7511b30379b003626c15224798929e33d4",
+  "AUR remains r948.228c707-1 after recorded r279.49d6570-1 and is independently bound",
+  "The selected C rebuild remains unchanged",
+]
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "Post-closeout stable-diffusion.cpp d637cfb source assessment and disposition"
+last_reviewed = "2026-10-12"

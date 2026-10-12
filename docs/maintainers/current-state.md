@@ -4,6 +4,61 @@ The package, deployment, and live-validation narrative below remains a
 2026-06-15 snapshot. Dated records come first, newest first; older
 reconciliations remain as dated history.
 
+## 2026-10-12 Main-Based Freshness Dispositions
+
+The daily metadata sweep handles eight newly unmatched observations without
+changing package sources, freshness cursors, or generation C's selected
+versions. `docs/maintainers/update-candidates.toml` records:
+
+- aiohttp `3.14.5` at the existing
+  [serving-closure integration gate](https://github.com/nisavid/arch-strix-halo-pkgs/issues/110),
+  preserving the owner-selected exception in the
+  [model-closure move](https://github.com/nisavid/arch-strix-halo-pkgs/issues/183).
+- Arch Python `3.14.8-1` and the separate CPython `3.14.8` observation at the
+  [existing admitted-foundation gate](https://github.com/nisavid/arch-strix-halo-pkgs/issues/108).
+- Lemonade fork `3df36c4c5da16eedc6dca54c858be3347ccdf6a9` and independent
+  upstream baseline `2026.41.1` at
+  [deferred calver packaging](https://github.com/nisavid/arch-strix-halo-pkgs/issues/163).
+- AITER `0.1.25`, NumPy `2.5.4` with Arch `2.5.4-1`, pydantic-core's
+  independent PyPI baseline `2.50.1`, llama.cpp's updated ggml-hip baseline
+  `0.26.0-1`, and stable-diffusion.cpp master
+  `d637cfb935feb2254898a8f1524046c958f3df80` with unchanged AUR
+  `r948.228c707-1` at
+  [post-closeout assessment](https://github.com/nisavid/arch-strix-halo-pkgs/issues/147).
+
+Five families overlap the October 11 records in the unmerged
+[model-closure PR](https://github.com/nisavid/arch-strix-halo-pkgs/pull/198)
+at `1cbfc38049785aab774c7af2525d7fddd103f352`: aiohttp, Python, Lemonade,
+NumPy, and stable-diffusion.cpp. Preserve that PR's source/build evidence and
+reconcile overlapping ledger identities before the second landing. The newer
+NumPy Arch baseline and stable-diffusion.cpp master are separate observations,
+not reasons to discard its dated evidence. Existing selected and historical
+records remain intact; this metadata update terminalizes none of them.
+
+The initial main-based discovery completed at `2026-10-12T17:22:12Z` with
+eight unhandled families and no provider failure. The uncached confirming
+sweep against this ledger completed at `2026-10-12T17:34:14Z` and exited 0
+with `--json --fail-on actionable`. Its 51 families comprise 29 stable
+updates, five branch-head movements, five baseline drifts, and 12 current
+families. Effective results are 40 tracked, six rejected, and five current,
+with no action-required result or provider failure. Explicit tracker
+validation exited 0 with all 13 unique active issue gates open.
+
+The focused checker suite passes 160 tests. Bare `pytest` still stops during
+collection because the installed Transformers requires Hugging Face Hub
+`<2.0` beside installed Hub `2.1.1`. A separate offline CPU diagnostic passes
+1,587 tests with two skips after excluding only
+`tests/test_torchao_vllm_smoke.py`; that exclusion is not a full-suite pass or
+a host repair. The model-closure and assembled-C gates remain responsible for
+their own current compatibility evidence.
+
+This sweep supplies metadata dispositions, not new release-content, security,
+dependency-compatibility, patch, or runtime assessment. No package source,
+build, deployment/installation, installed smoke, server, GPU, or live-scenario
+state changed. The next sweep is due 24 hours after the confirming sweep,
+or sooner after a relevant policy, package, ledger, checker, or source-metadata
+change, including integration of the model-closure PR.
+
 ## 2026-10-10 Freshness Dispositions and Confirming Sweep
 
 The daily metadata sweep tracks three new observations without changing the
