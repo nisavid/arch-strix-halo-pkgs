@@ -821,10 +821,19 @@ def run_check_in_child(check: Check, scratch: str, timeout: float) -> dict:
     except subprocess.TimeoutExpired:
         record.update(ok=False, detail=f"timed out after {timeout:.0f}s")
         return record
+    tail = (proc.stderr.strip().splitlines() or ["no output"])[-1][:300]
     for line in proc.stdout.splitlines():
         if line.startswith(RESULT_MARKER):
-            return json.loads(line[len(RESULT_MARKER) :])
-    tail = (proc.stderr.strip().splitlines() or ["no output"])[-1][:300]
+            reported = json.loads(line[len(RESULT_MARKER) :])
+            if proc.returncode == 0:
+                return reported
+            # A crash after the record (at shutdown, say) must not pass.
+            reported.update(
+                ok=False,
+                detail=f"the check reported {reported['detail']!r}, "
+                f"but its process exited {proc.returncode}: {tail}",
+            )
+            return reported
     record.update(ok=False, detail=f"the check process exited {proc.returncode}: {tail}")
     return record
 

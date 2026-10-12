@@ -246,6 +246,27 @@ def test_a_check_process_that_dies_or_hangs_is_a_failure(monkeypatch, tmp_path):
     assert record["detail"] == "timed out after 5s"
 
 
+def test_a_passing_record_from_a_process_that_then_fails_is_a_failure(monkeypatch, tmp_path):
+    check = smoke.CHECKS[0]
+    record = {"patch": check.patch, "number": check.number, "summary": "s", "ok": True, "detail": "d"}
+    for returncode in (23, -6):
+
+        def exited(argv, returncode=returncode, **kwargs):
+            return subprocess.CompletedProcess(
+                argv,
+                returncode,
+                stdout=f"{smoke.RESULT_MARKER}{json.dumps(record)}\n",
+                stderr="teardown\nAborted\n",
+            )
+
+        monkeypatch.setattr(smoke.subprocess, "run", exited)
+        result = smoke.run_check_in_child(check, str(tmp_path), timeout=5)
+        assert result["ok"] is False
+        assert result["detail"] == (
+            f"the check reported 'd', but its process exited {returncode}: Aborted"
+        )
+
+
 def test_child_mode_prints_one_marked_record(monkeypatch, capsys):
     check = fake_check("0001", "works")
     monkeypatch.setattr(smoke, "CHECKS", (check,))
