@@ -50,6 +50,9 @@ serves a different reader.
 - [Lemonade Live Validation](maintainers/lemonade-live-validation.md) maps the
   Lemonade family's live-validation bar to tracked scenarios, operator inputs,
   and the Kokoro TTS deferral.
+- [Agentic Memory Model Survey](maintainers/agentic-memory-model-survey.md)
+  compares four tiers of commercial-use memory models, public benchmarks, and
+  the evidence needed for large mixed memory stores.
 
 ## If You Are Picking Up Work
 
