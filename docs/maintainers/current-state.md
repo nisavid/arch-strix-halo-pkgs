@@ -4,6 +4,46 @@ The package, deployment, and live-validation narrative below remains a
 2026-06-15 snapshot. Dated records come first, newest first; older
 reconciliations remain as dated history.
 
+## 2026-10-13 Freshness Dispositions and Confirming Sweep
+
+The daily metadata sweep tracks two newly unmatched observations at
+[post-closeout source assessment](https://github.com/nisavid/arch-strix-halo-pkgs/issues/147):
+CTranslate2 `4.8.3` and stable-diffusion.cpp master
+`1d0a58a35050d285b1d6fb1bc68a92924d35825e`. The independent
+stable-diffusion.cpp AUR baseline remains `r948.228c707-1` and is bound
+separately in `docs/maintainers/update-candidates.toml`.
+
+Generation C's selected CTranslate2 `4.8.2` security-exception refresh and
+[its existing owner](https://github.com/nisavid/arch-strix-halo-pkgs/issues/120)
+remain unchanged. Its selected stable-diffusion.cpp `c92d73c` rebuild and
+[its existing owner](https://github.com/nisavid/arch-strix-halo-pkgs/issues/121)
+also remain unchanged. The October 12 `d637cfb` observation and
+[the model-closure PR's](https://github.com/nisavid/arch-strix-halo-pkgs/pull/198)
+intervening `2988060` record remain retained for the acknowledged integration;
+this increment terminalizes none of them.
+
+The initial cache-aware sweep completed at `2026-10-13T21:06:27Z` with two
+unhandled families and no provider failure. The changed ledger invalidated
+the old cache. The confirming cache-aware sweep completed at
+`2026-10-13T21:10:03Z` with `cache.used = false` and exited 0 under
+`--json --fail-on actionable`. Its 51 families comprise 29 stable updates,
+five branch-head movements, five baseline drifts, and 12 current families.
+Effective results are 40 tracked, six rejected, and five current, with no
+action-required result or provider failure.
+
+Explicit tracker validation exited 0 with all 13 unique active issue gates
+open. The focused checker suite passes 160 tests, and whitespace checks pass.
+This is not a full-suite or installed-runtime result.
+
+These are metadata dispositions, not release-content, security,
+dependency-compatibility, recursive-submodule, patch, or runtime assessments.
+No package source, selected version, build, deployment/installation, installed
+smoke, server, GPU, or live-scenario state changed. The next sweep is due 24
+hours after the confirming completion, or sooner after a relevant policy,
+package, ledger, checker, or source-metadata change. Integration of the
+model-closure PR remains an invalidating change; its protected merge precedes
+the overlapping freshness checkpoint's integration and renewed checks/review.
+
 ## 2026-10-12 Main-Based Freshness Dispositions
 
 The daily metadata sweep handles eight newly unmatched observations without

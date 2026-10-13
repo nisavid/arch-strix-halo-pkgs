@@ -5344,3 +5344,46 @@ next_gate_kind = "github_issue"
 next_gate_issue = 147
 next_gate_label = "Post-closeout stable-diffusion.cpp d637cfb source assessment and disposition"
 last_reviewed = "2026-10-12"
+
+[candidates."ctranslate2-4.8.3"]
+family = "ctranslate2"
+packages = ["ctranslate2-gfx1151"]
+source_kind = "github_release"
+check_id = "release"
+previous_recorded = "4.7.2"
+latest = "4.8.3"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "The October 13 metadata sweep observes stable release 4.8.3. Issue #147 owns post-closeout source assessment and disposition. C's selected 4.8.2 security-exception refresh and issue #120 remain unchanged. Release contents, security applicability, patch carry, and build-breakage exceptions remain unassessed."
+salient_changes = [
+  "The stable release reports 4.8.3 after recorded 4.7.2 and the selected 4.8.2 refresh",
+  "The AUR baseline remains 4.7.1-1 and the ROCm fork scout remains d8536d34e6e606c793b926c6ab773425d11c6b58",
+  "The selected C security-exception refresh remains unchanged",
+]
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "Post-closeout CTranslate2 4.8.3 source assessment and disposition"
+last_reviewed = "2026-10-13"
+
+[candidates."stable-diffusion-cpp-1d0a58a"]
+family = "stable_diffusion_cpp"
+packages = ["stable-diffusion.cpp-vulkan-gfx1151"]
+source_kind = "git_ref"
+check_id = "master"
+baseline_source_kind = "aur"
+baseline_latest = "r948.228c707-1"
+covered_checks = [{ source_kind = "aur", check_id = "aur-vulkan", latest = "r948.228c707-1" }]
+previous_recorded = "be65ac7511b30379b003626c15224798929e33d4 / r279.49d6570-1"
+latest = "1d0a58a35050d285b1d6fb1bc68a92924d35825e"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "The October 13 metadata sweep observes master 1d0a58a while the independent AUR Vulkan baseline remains r948.228c707-1. Issue #147 owns post-closeout source assessment and disposition. The selected stable-diffusion-cpp-c92d73c rebuild and issue #121 remain unchanged. Preserve the October 12 d637cfb observation and PR #198's intervening 2988060 record during the acknowledged integration. Release contents, security applicability, recursive submodule and patch carry, and build-breakage exceptions remain unassessed."
+salient_changes = [
+  "Master reports 1d0a58a35050d285b1d6fb1bc68a92924d35825e after recorded be65ac7511b30379b003626c15224798929e33d4 and the October 12 d637cfb observation",
+  "AUR remains r948.228c707-1 after recorded r279.49d6570-1 and is independently bound",
+  "The selected C rebuild remains unchanged",
+]
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "Post-closeout stable-diffusion.cpp 1d0a58a source assessment and disposition"
+last_reviewed = "2026-10-13"
