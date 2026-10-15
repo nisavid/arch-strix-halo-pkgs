@@ -246,7 +246,8 @@ The states are recorded separately:
   into the default root path at `2026-10-11T17:12:43Z`, and the 2026-09-25
   root is kept beside it. Not on the host.
 - **Installed-smoked:** in that root only: `verify`, the backport smoke tool
-  and the CPU drive below. Not on the host.
+  and the CPU drive below, with the smoke tool rerun after its exit-status
+  fix on 2026-10-13. Not on the host.
 - **Live-scenario validated:** no. GPU evidence is not part of the closure
   move.
 
@@ -341,7 +342,10 @@ network, model files or pytest, runs one behavior check per patch in its own
 process, and prints one PASS or FAIL line per patch.
 
 - On the rebuilt root's 0.30.0-2, with Transformers 5.18.0 and
-  huggingface-hub 2.1.1, all eight checks pass.
+  huggingface-hub 2.1.1, all eight checks pass. They passed again on
+  2026-10-13 with the tool's fix that fails a check whose process exits
+  nonzero after printing a passing record
+  ([Generation-C Build Root](c-build-root.md#what-ran-on-2026-10-11-in-order)).
 - On the 2026-09-25 root's unpatched 0.30.0-1, 0018 to 0024 fail. 0017
   passes there only because the unpatched Pixtral modules still import on
   Transformers 5.16.1.

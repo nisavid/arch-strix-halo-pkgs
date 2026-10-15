@@ -800,6 +800,15 @@ independent review changed two packages after the fresh root existed.
    difference by version or digest), and `verify` there found no violation
    in 610 packages and 4,153 ELF files.
 
+The backport smoke tool in step 6 was the version before
+[#198](https://github.com/nisavid/arch-strix-halo-pkgs/pull/198)'s last
+fix: it accepted a check's passing record even when the check's process
+then exited nonzero. On 2026-10-13 the fixed tool, from that PR's head
+`2208899`, ran again inside the swapped root at the default path, with
+Transformers 5.18.0 and huggingface-hub 2.1.1. All eight checks passed,
+each in its own process with exit status 0. The run took 90 seconds in a
+unit capped at 6 GiB with no swap, and peaked at 2.4 GiB.
+
 Two packages were therefore built twice under one version: tokenizers
 0.23.3-1 (the builds differ in one depend) and vLLM 0.30.0-2 (the builds
 differ in one PKGBUILD comment). Each later build replaced the earlier
