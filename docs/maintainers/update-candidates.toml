@@ -5387,3 +5387,109 @@ next_gate_kind = "github_issue"
 next_gate_issue = 147
 next_gate_label = "Post-closeout stable-diffusion.cpp 1d0a58a source assessment and disposition"
 last_reviewed = "2026-10-13"
+
+[candidates."ctranslate2-4.8.3-aur-4.8.3-1"]
+family = "ctranslate2"
+packages = ["ctranslate2-gfx1151"]
+source_kind = "github_release"
+check_id = "release"
+covered_checks = [{ source_kind = "aur", check_id = "aur", latest = "4.8.3-1" }]
+previous_recorded = "4.7.2 / 4.7.1-1"
+latest = "4.8.3"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "The October 15 metadata sweep observes the already tracked release 4.8.3 with a newly changed independent AUR baseline 4.8.3-1. Issue #147 owns post-closeout source and baseline assessment. The selected 4.8.2 refresh and issue #120 remain unchanged; the October 13 observation is retained. This is not release-content, security, compatibility, patch, or runtime assessment."
+salient_changes = [
+  "Release 4.8.3 is unchanged; AUR now reports 4.8.3-1 after recorded 4.7.1-1",
+  "The ROCm fork scout remains d8536d34e6e606c793b926c6ab773425d11c6b58",
+]
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "Post-closeout CTranslate2 4.8.3 and AUR 4.8.3-1 assessment"
+last_reviewed = "2026-10-15"
+
+[candidates."lemonade-fork-3df36c4-upstream-2026.42.1"]
+family = "lemonade"
+packages = ["lemonade-server", "lemonade-app", "lemonade"]
+source_kind = "git_ref"
+check_id = "fork-main"
+baseline_source_kind = "github_release"
+baseline_latest = "2026.42.1"
+covered_checks = [{ source_kind = "github_release", check_id = "upstream-release", latest = "2026.42.1" }]
+previous_recorded = "b6616eb3b6d31c3d7dbffffdb23e24adda1292a1 / 11.9.0"
+latest = "3df36c4c5da16eedc6dca54c858be3347ccdf6a9"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "The October 15 metadata sweep observes unchanged fork main 3df36c4 beside independent upstream baseline 2026.42.1. Issue #163 retains the owner-deferred calver source and packaging work. The selected fork source, accepted deployed milestone, and earlier 2026.41.1 observation remain unchanged. Reconcile overlapping records after PR #198 lands; no fork/release equivalence or source adoption is established."
+salient_changes = [
+  "Fork main remains 3df36c4c5da16eedc6dca54c858be3347ccdf6a9",
+  "The independently bound upstream release baseline reports 2026.42.1 after recorded 11.9.0 and the earlier 2026.41.1 observation",
+]
+next_gate_kind = "github_issue"
+next_gate_issue = 163
+next_gate_label = "Lemonade deferred calver source assessment and packaging"
+last_reviewed = "2026-10-15"
+
+[candidates."pydantic-core-2.50.1-arch-2.50.1-1"]
+family = "pydantic_core"
+packages = ["python-pydantic-core-gfx1151"]
+source_kind = "arch_package"
+check_id = "arch"
+covered_checks = [{ source_kind = "pypi", check_id = "pypi", latest = "2.50.1" }]
+previous_recorded = "2.46.5-1 / 2.49.0"
+latest = "2.50.1-1"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "The October 15 metadata sweep observes authoritative Arch primary 2.50.1-1 while the independent PyPI baseline remains 2.50.1. Issue #147 owns post-closeout assessment and disposition. The historical adopted pydantic/core pair and earlier PyPI-only observation remain intact. This record selects no ABI pair or source and supplies no compatibility, security, build, or runtime result."
+salient_changes = [
+  "The Arch primary reports 2.50.1-1 after recorded 2.46.5-1",
+  "The independent PyPI baseline remains 2.50.1 after recorded 2.49.0 and is separately bound",
+]
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "Post-closeout pydantic-core Arch 2.50.1-1 and PyPI 2.50.1 assessment"
+last_reviewed = "2026-10-15"
+
+[candidates."rocm-pytorch-release-2.12-9af6bce"]
+family = "rocm_pytorch"
+packages = ["python-pytorch-opt-rocm-gfx1151"]
+source_kind = "git_ref"
+check_id = "release-branch"
+baseline_source_kind = "arch_package"
+baseline_latest = "2.14.1-1"
+covered_checks = [{ source_kind = "arch_package", check_id = "arch", latest = "2.14.1-1" }]
+previous_recorded = "13da08625e0d25586351146b4c444f5263997ef8 / 2.12.0-4"
+latest = "9af6bce78e14cea8a4279db4fd23b26b8c196a7d"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "The October 15 metadata sweep observes release/2.12 head 9af6bce and independent Arch baseline 2.14.1-1. Issue #147 owns post-closeout source assessment and disposition. The selected 13da086 source and issue #109 remain unchanged, as do earlier branch observations. The changed range, security applicability, dependency and patch effects, and derived validation remain unassessed."
+salient_changes = [
+  "The release/2.12 branch reports 9af6bce78e14cea8a4279db4fd23b26b8c196a7d after recorded 13da08625e0d25586351146b4c444f5263997ef8",
+  "Arch remains 2.14.1-1 after recorded 2.12.0-4 and is independently bound",
+]
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "Post-closeout ROCm PyTorch 9af6bce source and baseline assessment"
+last_reviewed = "2026-10-15"
+
+[candidates."stable-diffusion-cpp-120e3e8"]
+family = "stable_diffusion_cpp"
+packages = ["stable-diffusion.cpp-vulkan-gfx1151"]
+source_kind = "git_ref"
+check_id = "master"
+baseline_source_kind = "aur"
+baseline_latest = "r948.228c707-1"
+covered_checks = [{ source_kind = "aur", check_id = "aur-vulkan", latest = "r948.228c707-1" }]
+previous_recorded = "be65ac7511b30379b003626c15224798929e33d4 / r279.49d6570-1"
+latest = "120e3e875c5501c1babb50c0966122cb569d12d4"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "The October 15 metadata sweep observes master 120e3e8 with unchanged independent AUR Vulkan baseline r948.228c707-1. Issue #147 owns post-closeout source assessment and disposition. The selected c92d73c rebuild and issue #121 remain unchanged. Earlier observations, including PR #198's 2988060 record, remain retained for the acknowledged integration. Release contents, security applicability, recursive submodules, patch carry, and runtime relevance remain unassessed."
+salient_changes = [
+  "Master reports 120e3e875c5501c1babb50c0966122cb569d12d4 after recorded be65ac7511b30379b003626c15224798929e33d4",
+  "AUR remains r948.228c707-1 after recorded r279.49d6570-1 and is independently bound",
+]
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "Post-closeout stable-diffusion.cpp 120e3e8 source assessment and disposition"
+last_reviewed = "2026-10-15"

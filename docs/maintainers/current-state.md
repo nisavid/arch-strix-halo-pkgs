@@ -4,6 +4,52 @@ The package, deployment, and live-validation narrative below remains a
 2026-06-15 snapshot. Dated records come first, newest first; older
 reconciliations remain as dated history.
 
+## 2026-10-15 Freshness Dispositions and Confirming Sweep
+
+The daily metadata sweep tracks five newly unmatched observations without
+changing generation C's selected package sources or versions:
+
+- CTranslate2 release `4.8.3` with newly changed AUR baseline `4.8.3-1`,
+  pydantic-core Arch primary `2.50.1-1` with independent PyPI `2.50.1`,
+  ROCm PyTorch release/2.12 head
+  `9af6bce78e14cea8a4279db4fd23b26b8c196a7d` with Arch `2.14.1-1`, and
+  stable-diffusion.cpp master `120e3e875c5501c1babb50c0966122cb569d12d4`
+  with unchanged AUR `r948.228c707-1` at
+  [post-closeout source assessment](https://github.com/nisavid/arch-strix-halo-pkgs/issues/147).
+- Unchanged Lemonade fork
+  `3df36c4c5da16eedc6dca54c858be3347ccdf6a9` with new independent upstream
+  baseline `2026.42.1` at
+  [deferred calver packaging](https://github.com/nisavid/arch-strix-halo-pkgs/issues/163).
+
+The selected CTranslate2 `4.8.2`, ROCm PyTorch `13da086`,
+stable-diffusion.cpp `c92d73c`, Lemonade source, and their existing owner gates
+remain unchanged. Earlier observations and adopted records remain intact;
+this increment terminalizes none of them. The independent primary and
+baseline observations are bound separately in
+`docs/maintainers/update-candidates.toml`.
+
+The initial cache-aware sweep completed at `2026-10-15T10:29:53Z` with five
+unhandled families and no provider failure. The changed ledger invalidated
+the old cache. The confirming cache-aware sweep completed at
+`2026-10-15T10:35:18Z` with `cache.used = false` and exited 0 under
+`--json --fail-on actionable`. Its 51 families comprise 30 stable updates,
+five branch-head movements, four baseline drifts, and 12 current families.
+Effective results are 40 tracked, six rejected, and five current, with no
+action-required result or provider failure. Explicit tracker validation
+exited 0 with all 13 unique active issue gates open. The focused checker
+suite passes 160 tests; this is not a full-suite or installed-runtime result.
+
+These are metadata dispositions, not release-content, security,
+dependency-compatibility, recursive-submodule, patch, or runtime assessments.
+No package source, build, deployment/installation, installed smoke, server,
+GPU, or live-scenario state changed. The next sweep is due 24 hours after
+the confirming completion, or sooner after a relevant policy, package,
+ledger, checker, or source-metadata change. The
+[model-closure PR](https://github.com/nisavid/arch-strix-halo-pkgs/pull/198)
+still precedes this overlapping freshness checkpoint's integration; preserve
+both sets of records and renew affected checks and reviews on the combined
+tree.
+
 ## 2026-10-13 Freshness Dispositions and Confirming Sweep
 
 The daily metadata sweep tracks two newly unmatched observations at
