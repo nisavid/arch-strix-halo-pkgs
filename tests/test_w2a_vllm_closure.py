@@ -141,6 +141,25 @@ def test_the_root_has_ps_for_the_scenario_runner():
     assert "procps-ng" in root_targets()
 
 
+def assembled_targets() -> list[str]:
+    lines = (BUILDROOT / "w2a-assembled.targets").read_text().splitlines()
+    return [line.split("#", 1)[0].strip() for line in lines if line.split("#", 1)[0].strip()]
+
+
+def test_assembled_targets_name_the_builds_no_other_file_names():
+    assembled = assembled_targets()
+    assert len(assembled) == len(set(assembled))
+    for package in assembled:
+        assert (REPO_ROOT / "packages" / package / "PKGBUILD").is_file(), package
+    # A package that another targets file already names would be locked twice
+    # over; this file exists for the ones that enter the root after their builds.
+    other = {target.split(">", 1)[0].split("<", 1)[0].split("=", 1)[0] for target in root_targets()}
+    assert not set(assembled) & other
+    # Every lease-job build lands in the assembled root, so the full lock must
+    # be able to name each of them.
+    assert set(LEASE_JOB_PACKAGES) <= set(assembled)
+
+
 def test_the_sagemaker_standards_lane_is_gone():
     # The 0016 carry makes model_hosting_container_standards optional, so the
     # lane that an earlier W2A lease-job commit in #174 added is not part of

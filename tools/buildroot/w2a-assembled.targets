@@ -1,0 +1,26 @@
+# The W2A builds that enter the root after their own builds and that no other
+# targets file names: the torch-chain extras, vLLM, and the vLLM runtime lanes
+# that no sync DB carries. Resolve this file together with
+# torch-chain.targets, model-closure.targets and vllm-build.targets, once all
+# of them are in ashp-w2a, to lock the whole assembled root:
+#   c_buildroot.py resolve --targets-file tools/buildroot/torch-chain.targets \
+#     --targets-file tools/buildroot/model-closure.targets \
+#     --targets-file tools/buildroot/vllm-build.targets \
+#     --targets-file tools/buildroot/w2a-assembled.targets ...
+# That lock is the dependency proof for these packages too, vLLM's depends
+# included. Leave this file out to resolve a root that can build them.
+python-torchvision-rocm-gfx1151
+python-torchao-rocm-gfx1151
+python-torch-migraphx-gfx1151
+python-flash-attn-rocm-gfx1151
+python-apache-tvm-ffi-gfx1151
+python-xgrammar-gfx1151
+python-einops-gfx1151
+python-httptools-gfx1151
+python-msgspec-gfx1151
+python-openai-harmony-gfx1151
+python-prometheus-fastapi-instrumentator-gfx1151
+python-py-cpuinfo-gfx1151
+python-pybase64-gfx1151
+python-uvloop-gfx1151
+python-vllm-rocm-gfx1151

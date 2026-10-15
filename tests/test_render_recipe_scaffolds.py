@@ -306,7 +306,7 @@ def test_vllm_renderer_defines_source_variables_without_patches() -> None:
     assert "_apply_all_source_patches" not in pkgbuild
 
 
-def _render_vllm_0_30_pkgbuild() -> str:
+def _render_vllm_0_30_pkgbuild(**policy_overrides) -> str:
     return render_recipe_scaffolds.render_pkgbuild(
         "python-vllm-rocm-gfx1151",
         {
@@ -321,6 +321,7 @@ def _render_vllm_0_30_pkgbuild() -> str:
             "sha256sums": ["0" * 64],
             "source_patches": ["0016-rocm-refresh-local-carry-for-vllm-0.30.0.patch"],
             "src_subdir": "vllm-0.30.0",
+            **policy_overrides,
         },
         {
             "repo": "https://github.com/vllm-project/vllm",
@@ -401,6 +402,164 @@ def test_vllm_renderer_checks_the_0_30_carry_sentinels() -> None:
         "speculators/algos.py",
     ):
         assert dropped not in sentinels
+    assert sentinels.count("grep -Fq") == 8
+
+
+def _vllm_sentinel_function(pkgbuild: str) -> str:
+    start = pkgbuild.index("_source_tree_has_all_source_patches() {")
+    return pkgbuild[start : pkgbuild.index("\n}\n", start)]
+
+
+_VLLM_CARRY = "0016-rocm-refresh-local-carry-for-vllm-0.30.0.patch"
+_VLLM_FIRST = "0017-backport-first.patch"
+_VLLM_SECOND = "0018-backport-second.patch"
+_VLLM_THIRD = "0019-backport-third.patch"
+
+
+def _vllm_backport_policy(sentinels: list[dict], patches: list[str] | None = None) -> dict:
+    patches = [_VLLM_FIRST, _VLLM_SECOND] if patches is None else patches
+    return {
+        "source_patches": [_VLLM_CARRY, *patches],
+        "extra_sha256sums": ["SKIP", *(str(index + 1) * 64 for index in range(len(patches)))],
+        "source_patch_sentinels": sentinels,
+    }
+
+
+def test_vllm_renderer_applies_later_patches_in_policy_order() -> None:
+    pkgbuild = _render_vllm_0_30_pkgbuild(
+        **_vllm_backport_policy(
+            [
+                {"patch": _VLLM_FIRST, "text": "def first(", "path": "vllm/first.py"},
+                {"patch": _VLLM_SECOND, "text": "def second(", "path": "vllm/second.py"},
+            ]
+        )
+    )
+    start = pkgbuild.index("_apply_all_source_patches() {")
+    function = pkgbuild[start : pkgbuild.index("\n}\n", start)]
+    applied = [
+        line.strip()
+        for line in function.splitlines()
+        if line.strip().startswith("_apply_patch_if_needed ")
+    ]
+
+    # The local carry follows pkgver; later patches keep their literal names.
+    assert '_vllm_source_patch="0016-rocm-refresh-local-carry-for-vllm-${pkgver}.patch"' in pkgbuild
+    assert applied == [
+        '_apply_patch_if_needed "${_vllm_source_patch}"',
+        f'_apply_patch_if_needed "{_VLLM_FIRST}"',
+        f'_apply_patch_if_needed "{_VLLM_SECOND}"',
+    ]
+    assert (
+        "source=(https://github.com/vllm-project/vllm/archive/refs/tags/v0.30.0.tar.gz "
+        f"{_VLLM_CARRY} {_VLLM_FIRST} {_VLLM_SECOND})"
+    ) in pkgbuild
+    assert f"sha256sums=({'0' * 64} SKIP {'1' * 64} {'2' * 64})" in pkgbuild
+    assert "Later source patches touch files changed by earlier ones" not in pkgbuild
+
+
+def test_vllm_renderer_appends_named_source_patch_sentinels_in_series_order() -> None:
+    # Without a sentinel for a later patch, a reused src/ tree that has only
+    # the carry would pass the check and the later patch would be skipped.
+    # Entries are keyed by patch name, so their order in policy does not matter.
+    pkgbuild = _render_vllm_0_30_pkgbuild(
+        **_vllm_backport_policy(
+            [
+                {"patch": _VLLM_SECOND, "text": "0x[0-9a-fA-F]+>", "path": "vllm/other/module.py"},
+                {"patch": _VLLM_FIRST, "text": "def added_by_a_backport(", "path": "vllm/some/module.py"},
+            ]
+        )
+    )
+    sentinels = _vllm_sentinel_function(pkgbuild)
+
+    assert sentinels.count("grep -Fq") == 10
+    assert sentinels.endswith(
+        "      vllm/third_party/flash_linear_attention/ops/chunk_delta_h.py &&\n"
+        "    grep -Fq 'def added_by_a_backport(' vllm/some/module.py &&\n"
+        "    grep -Fq '0x[0-9a-fA-F]+>' vllm/other/module.py"
+    )
+
+
+def test_vllm_renderer_accepts_an_exemption_guarded_by_a_later_patch() -> None:
+    pkgbuild = _render_vllm_0_30_pkgbuild(
+        **_vllm_backport_policy(
+            [
+                {"patch": _VLLM_FIRST, "text": "def first(", "path": "vllm/first.py"},
+                {
+                    "patch": _VLLM_SECOND,
+                    "guarded_by": [_VLLM_FIRST, _VLLM_THIRD],
+                    "reason": "deletes one line",
+                },
+                {"patch": _VLLM_THIRD, "text": "def third(", "path": "vllm/third.py"},
+            ],
+            patches=[_VLLM_FIRST, _VLLM_SECOND, _VLLM_THIRD],
+        )
+    )
+    sentinels = _vllm_sentinel_function(pkgbuild)
+
+    assert sentinels.count("grep -Fq") == 10
+    assert "second" not in sentinels
+    assert f'_apply_patch_if_needed "{_VLLM_SECOND}"' in pkgbuild
+
+
+def test_vllm_renderer_refuses_a_later_patch_without_sentinel_or_exemption(capsys) -> None:
+    with pytest.raises(SystemExit) as exc:
+        _render_vllm_0_30_pkgbuild(
+            **_vllm_backport_policy(
+                [{"patch": _VLLM_FIRST, "text": "def first(", "path": "vllm/first.py"}]
+            )
+        )
+
+    assert exc.value.code == 2
+    err = capsys.readouterr().err
+    assert "SOURCE_PATCH_SENTINEL_MISSING" in err
+    assert _VLLM_SECOND in err
+
+
+@pytest.mark.parametrize(
+    "sentinels",
+    [
+        # unquotable or incomplete text sentinels
+        [{"patch": _VLLM_FIRST, "text": "it's quoted", "path": "vllm/module.py"}],
+        [{"patch": _VLLM_FIRST, "text": "two\nlines", "path": "vllm/module.py"}],
+        [{"patch": _VLLM_FIRST, "text": "text", "path": " "}],
+        [{"patch": _VLLM_FIRST, "text": "text", "path": "vllm/a module.py"}],
+        [{"patch": _VLLM_FIRST, "text": "", "path": "vllm/module.py"}],
+        # the old positional form
+        [["def first(", "vllm/first.py"]],
+        # an entry for the carry, for an unlisted patch, or a second entry
+        [{"patch": _VLLM_CARRY, "text": "text", "path": "vllm/module.py"}],
+        [{"patch": "0099-backport-unlisted.patch", "text": "text", "path": "vllm/module.py"}],
+        [
+            {"patch": _VLLM_FIRST, "text": "def first(", "path": "vllm/first.py"},
+            {"patch": _VLLM_FIRST, "text": "def again(", "path": "vllm/first.py"},
+        ],
+        # exemptions: no reason, no guard, an unknown guard, a guard that is
+        # itself exempt, and only an earlier guard
+        [{"patch": _VLLM_FIRST, "guarded_by": [_VLLM_SECOND]}],
+        [{"patch": _VLLM_FIRST, "guarded_by": [], "reason": "deletes one line"}],
+        [{"patch": _VLLM_FIRST, "guarded_by": ["0099-backport-unlisted.patch"], "reason": "x"}],
+        [
+            {"patch": _VLLM_FIRST, "guarded_by": [_VLLM_SECOND], "reason": "x"},
+            {"patch": _VLLM_SECOND, "guarded_by": [_VLLM_FIRST], "reason": "x"},
+        ],
+        [
+            {"patch": _VLLM_FIRST, "text": "def first(", "path": "vllm/first.py"},
+            {"patch": _VLLM_SECOND, "guarded_by": [_VLLM_FIRST], "reason": "x"},
+        ],
+    ],
+)
+def test_vllm_renderer_rejects_invalid_source_patch_sentinels(sentinels, capsys) -> None:
+    complete = [
+        {"patch": name, "text": f"def {name[:4]}(", "path": "vllm/module.py"}
+        for name in (_VLLM_FIRST, _VLLM_SECOND)
+        if not any(isinstance(entry, dict) and entry.get("patch") == name for entry in sentinels)
+    ]
+
+    with pytest.raises(SystemExit) as exc:
+        _render_vllm_0_30_pkgbuild(**_vllm_backport_policy([*sentinels, *complete]))
+
+    assert exc.value.code == 2
+    assert "SOURCE_PATCH_SENTINEL_INVALID" in capsys.readouterr().err
 
 
 def test_rust_wheel_renderer_applies_source_patches() -> None:

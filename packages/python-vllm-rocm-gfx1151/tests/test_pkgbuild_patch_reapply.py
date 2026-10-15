@@ -1,3 +1,4 @@
+import json
 import re
 from pathlib import Path
 
@@ -54,4 +55,10 @@ def test_pkgbuild_sentinels_track_the_0_30_carry():
         assert re.search(
             re.escape(f"grep -Fq '{sentinel}'") + r"\s+" + re.escape(path), sentinels
         ), sentinel
-    assert sentinels.count("grep -Fq") == 8
+    # 8 for the 0016 carry, plus one per text sentinel that policy lists for
+    # the upstream backports (tests/test_vllm_source_patch_coverage.py).
+    recipe = json.loads((PKGBUILD.parent / "recipe.json").read_text())
+    backport_sentinels = [
+        entry for entry in recipe["policy"]["source_patch_sentinels"] if "text" in entry
+    ]
+    assert sentinels.count("grep -Fq") == 8 + len(backport_sentinels)

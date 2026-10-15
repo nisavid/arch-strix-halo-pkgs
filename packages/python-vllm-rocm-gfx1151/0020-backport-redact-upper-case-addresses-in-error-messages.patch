@@ -1,0 +1,33 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Strix Halo Packaging <packaging@example.invalid>
+Date: Sat, 10 Oct 2026 00:00:00 +0000
+Subject: [PATCH] Backport: redact upper-case memory addresses in error messages
+
+Upstream: vllm-project/vllm#58832, "[Security] Harden message sanitization",
+merge commit 379e9a1ea8a5995464d9bf775bcd36bb03a0995f (main, 2026-09-26,
+first released in v0.31.0).
+
+sanitize_message() strips " at 0x..." object addresses from error messages
+returned to clients, but matched lower-case hex digits only. Reprs that print
+upper-case digits, such as `<PIL.Image.Image image mode=RGB size=2x2 at
+0x7D52EAF07BF0>`, kept their address.
+
+Carried: the vllm/entrypoints/serve/exception_handling/utils.py hunk,
+unchanged. The upstream test is not carried.
+
+Drop at the first packaged vLLM release that contains 379e9a1e.
+
+---
+diff --git a/vllm/entrypoints/serve/exception_handling/utils.py b/vllm/entrypoints/serve/exception_handling/utils.py
+index 73d9992..6c1dd20 100644
+--- a/vllm/entrypoints/serve/exception_handling/utils.py
++++ b/vllm/entrypoints/serve/exception_handling/utils.py
+@@ -6,7 +6,7 @@ import regex as re
+ 
+ def sanitize_message(message: str) -> str:
+     """Strip memory addresses, tracebacks, and file paths from error messages."""
+-    message = re.sub(r" at 0x[0-9a-f]+>", ">", message)
++    message = re.sub(r" at 0x[0-9a-fA-F]+>", ">", message)
+     message = re.sub(r'\n?\s*File "[^"]+", line \d+, in \S+(\n\s+.*)?', "", message)
+     message = re.sub(
+         r"/(?:home|usr|opt|var|tmp|root|lib|mnt|srv)(?:/[\w.\-]+)+", "<path>", message

@@ -1,0 +1,35 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Strix Halo Packaging <packaging@example.invalid>
+Date: Sat, 10 Oct 2026 00:00:00 +0000
+Subject: [PATCH] Backport: MiniMax-M3 video processor compatibility for Transformers 5.18
+
+Upstream: vllm-project/vllm#59613, "[Bugfix] Fix minimax-m3 multimodal
+processor compatability with Transformers v5.18", merge commit
+b558f160a2c0abcb5902acc3c91a14c38a4af173 (main, 2026-10-02). v0.31.0 carries
+the same one-line change on its release branch.
+
+Transformers 5.18 no longer passes do_convert_rgb to
+BaseVideoProcessor._preprocess, so the required positional parameter in
+MiniMaxM3VLVideoProcessor._preprocess raises TypeError on the first video.
+The parameter was unused; older Transformers still pass it and it now lands
+in **kwargs.
+
+Carried: the whole commit (vllm/transformers_utils/processors/minimax_m3.py),
+unchanged.
+
+Drop at the first packaged vLLM release whose
+MiniMaxM3VLVideoProcessor._preprocess has no do_convert_rgb parameter.
+
+---
+diff --git a/vllm/transformers_utils/processors/minimax_m3.py b/vllm/transformers_utils/processors/minimax_m3.py
+index 60fa7ed..b758c11 100644
+--- a/vllm/transformers_utils/processors/minimax_m3.py
++++ b/vllm/transformers_utils/processors/minimax_m3.py
+@@ -375,7 +375,6 @@ class MiniMaxM3VLVideoProcessor(BaseVideoProcessor):
+     def _preprocess(
+         self,
+         videos: list[torch.Tensor],
+-        do_convert_rgb: bool,
+         do_resize: bool,
+         size: SizeDict,
+         resample: "PILImageResampling | InterpolationMode | int | None",
