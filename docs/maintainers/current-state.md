@@ -4,6 +4,189 @@ The package, deployment, and live-validation narrative below remains a
 2026-06-15 snapshot. Dated records come first, newest first; older
 reconciliations remain as dated history.
 
+## 2026-10-15 Freshness Reconciliation After the Model-Closure Merge
+
+The October 12–15 metadata observations are reconciled with the published
+[model-closure move](https://github.com/nisavid/arch-strix-halo-pkgs/pull/198),
+merged on October 15 at `8f2d752c192eb089b1d6511213b2c20861277ce0`.
+[The closure ticket](https://github.com/nisavid/arch-strix-halo-pkgs/issues/183)
+is closed. Its source, isolated-root build and CPU evidence remain distinct
+from host installation and GPU qualification.
+
+The candidate ledger preserves the closure's Transformers, tokenizers, vLLM
+and aiohttp records, source cursors, and superseded selections. Active
+Transformers and tokenizers obligations point to
+[assembled-C requalification](https://github.com/nisavid/arch-strix-halo-pkgs/issues/194);
+aiohttp's host gates remain with
+[the serving closure](https://github.com/nisavid/arch-strix-halo-pkgs/issues/110).
+The five overlapping aiohttp, NumPy, Arch Python, Lemonade and
+stable-diffusion.cpp observations have one record per candidate identity,
+with distinct upstream and distribution values bound separately. The
+October 11–15 dated sweep sections remain below.
+
+The old-base October 15 branch's final tracker check exited 10 after the
+closure ticket closed. That invalidated its operational closeout; its
+earlier passing check is only dated history. The reconciled tree's forced
+upstream sweep completed at `2026-10-15T11:43:12Z`, with
+`cache.used = false`, and exited 0 under
+`--refresh --json --fail-on actionable`. Across 51 families it reports
+28 stable updates, five branch-head movements, four baseline drifts and
+14 current families. Effective results are 40 tracked, six rejected and
+five current, with no actionable status or provider failure. Explicit
+tracker validation also exited 0 with all 13 active issue gates open.
+The checker tests pass 160 tests, and the model-closure contract tests
+pass 34. These are focused CPU source checks, not a full-suite or runtime
+result.
+
+This integration changes only freshness records and their dated status
+documentation relative to the published closure. It selects no further
+package source and performs no build, deployment/installation,
+installed smoke, server, GPU or live-scenario validation. The next sweep
+is due 24 hours after this completion, or sooner after a relevant policy,
+package, ledger, checker or source-metadata change. The remaining
+qualification and host gates stay open.
+
+## 2026-10-15 Freshness Dispositions and Confirming Sweep
+
+The daily metadata sweep tracks five newly unmatched observations without
+changing generation C's selected package sources or versions:
+
+- CTranslate2 release `4.8.3` with newly changed AUR baseline `4.8.3-1`,
+  pydantic-core Arch primary `2.50.1-1` with independent PyPI `2.50.1`,
+  ROCm PyTorch release/2.12 head
+  `9af6bce78e14cea8a4279db4fd23b26b8c196a7d` with Arch `2.14.1-1`, and
+  stable-diffusion.cpp master `120e3e875c5501c1babb50c0966122cb569d12d4`
+  with unchanged AUR `r948.228c707-1` at
+  [post-closeout source assessment](https://github.com/nisavid/arch-strix-halo-pkgs/issues/147).
+- Unchanged Lemonade fork
+  `3df36c4c5da16eedc6dca54c858be3347ccdf6a9` with new independent upstream
+  baseline `2026.42.1` at
+  [deferred calver packaging](https://github.com/nisavid/arch-strix-halo-pkgs/issues/163).
+
+The selected CTranslate2 `4.8.2`, ROCm PyTorch `13da086`,
+stable-diffusion.cpp `c92d73c`, Lemonade source, and their existing owner gates
+remain unchanged. Earlier observations and adopted records remain intact;
+this increment terminalizes none of them. The independent primary and
+baseline observations are bound separately in
+`docs/maintainers/update-candidates.toml`.
+
+The initial cache-aware sweep completed at `2026-10-15T10:29:53Z` with five
+unhandled families and no provider failure. The changed ledger invalidated
+the old cache. The confirming cache-aware sweep completed at
+`2026-10-15T10:35:18Z` with `cache.used = false` and exited 0 under
+`--json --fail-on actionable`. Its 51 families comprise 30 stable updates,
+five branch-head movements, four baseline drifts, and 12 current families.
+Effective results are 40 tracked, six rejected, and five current, with no
+action-required result or provider failure. Explicit tracker validation
+exited 0 with all 13 unique active issue gates open. The focused checker
+suite passes 160 tests; this is not a full-suite or installed-runtime result.
+
+These are metadata dispositions, not release-content, security,
+dependency-compatibility, recursive-submodule, patch, or runtime assessments.
+No package source, build, deployment/installation, installed smoke, server,
+GPU, or live-scenario state changed. The next sweep is due 24 hours after
+the confirming completion, or sooner after a relevant policy, package,
+ledger, checker, or source-metadata change. The
+[model-closure PR](https://github.com/nisavid/arch-strix-halo-pkgs/pull/198)
+still precedes this overlapping freshness checkpoint's integration; preserve
+both sets of records and renew affected checks and reviews on the combined
+tree.
+
+## 2026-10-13 Freshness Dispositions and Confirming Sweep
+
+The daily metadata sweep tracks two newly unmatched observations at
+[post-closeout source assessment](https://github.com/nisavid/arch-strix-halo-pkgs/issues/147):
+CTranslate2 `4.8.3` and stable-diffusion.cpp master
+`1d0a58a35050d285b1d6fb1bc68a92924d35825e`. The independent
+stable-diffusion.cpp AUR baseline remains `r948.228c707-1` and is bound
+separately in `docs/maintainers/update-candidates.toml`.
+
+Generation C's selected CTranslate2 `4.8.2` security-exception refresh and
+[its existing owner](https://github.com/nisavid/arch-strix-halo-pkgs/issues/120)
+remain unchanged. Its selected stable-diffusion.cpp `c92d73c` rebuild and
+[its existing owner](https://github.com/nisavid/arch-strix-halo-pkgs/issues/121)
+also remain unchanged. The October 12 `d637cfb` observation and
+[the model-closure PR's](https://github.com/nisavid/arch-strix-halo-pkgs/pull/198)
+intervening `2988060` record remain retained for the acknowledged integration;
+this increment terminalizes none of them.
+
+The initial cache-aware sweep completed at `2026-10-13T21:06:27Z` with two
+unhandled families and no provider failure. The changed ledger invalidated
+the old cache. The confirming cache-aware sweep completed at
+`2026-10-13T21:10:03Z` with `cache.used = false` and exited 0 under
+`--json --fail-on actionable`. Its 51 families comprise 29 stable updates,
+five branch-head movements, five baseline drifts, and 12 current families.
+Effective results are 40 tracked, six rejected, and five current, with no
+action-required result or provider failure.
+
+Explicit tracker validation exited 0 with all 13 unique active issue gates
+open. The focused checker suite passes 160 tests, and whitespace checks pass.
+This is not a full-suite or installed-runtime result.
+
+These are metadata dispositions, not release-content, security,
+dependency-compatibility, recursive-submodule, patch, or runtime assessments.
+No package source, selected version, build, deployment/installation, installed
+smoke, server, GPU, or live-scenario state changed. The next sweep is due 24
+hours after the confirming completion, or sooner after a relevant policy,
+package, ledger, checker, or source-metadata change. Integration of the
+model-closure PR remains an invalidating change; its protected merge precedes
+the overlapping freshness checkpoint's integration and renewed checks/review.
+
+## 2026-10-12 Main-Based Freshness Dispositions
+
+The daily metadata sweep handles eight newly unmatched observations without
+changing package sources, freshness cursors, or generation C's selected
+versions. `docs/maintainers/update-candidates.toml` records:
+
+- aiohttp `3.14.5` at the existing
+  [serving-closure integration gate](https://github.com/nisavid/arch-strix-halo-pkgs/issues/110),
+  preserving the owner-selected exception in the
+  [model-closure move](https://github.com/nisavid/arch-strix-halo-pkgs/issues/183).
+- Arch Python `3.14.8-1` and the separate CPython `3.14.8` observation at the
+  [existing admitted-foundation gate](https://github.com/nisavid/arch-strix-halo-pkgs/issues/108).
+- Lemonade fork `3df36c4c5da16eedc6dca54c858be3347ccdf6a9` and independent
+  upstream baseline `2026.41.1` at
+  [deferred calver packaging](https://github.com/nisavid/arch-strix-halo-pkgs/issues/163).
+- AITER `0.1.25`, NumPy `2.5.4` with Arch `2.5.4-1`, pydantic-core's
+  independent PyPI baseline `2.50.1`, llama.cpp's updated ggml-hip baseline
+  `0.26.0-1`, and stable-diffusion.cpp master
+  `d637cfb935feb2254898a8f1524046c958f3df80` with unchanged AUR
+  `r948.228c707-1` at
+  [post-closeout assessment](https://github.com/nisavid/arch-strix-halo-pkgs/issues/147).
+
+Five families overlap the October 11 records in the unmerged
+[model-closure PR](https://github.com/nisavid/arch-strix-halo-pkgs/pull/198)
+at `1cbfc38049785aab774c7af2525d7fddd103f352`: aiohttp, Python, Lemonade,
+NumPy, and stable-diffusion.cpp. Preserve that PR's source/build evidence and
+reconcile overlapping ledger identities before the second landing. The newer
+NumPy Arch baseline and stable-diffusion.cpp master are separate observations,
+not reasons to discard its dated evidence. Existing selected and historical
+records remain intact; this metadata update terminalizes none of them.
+
+The initial main-based discovery completed at `2026-10-12T17:22:12Z` with
+eight unhandled families and no provider failure. The uncached confirming
+sweep against this ledger completed at `2026-10-12T17:34:14Z` and exited 0
+with `--json --fail-on actionable`. Its 51 families comprise 29 stable
+updates, five branch-head movements, five baseline drifts, and 12 current
+families. Effective results are 40 tracked, six rejected, and five current,
+with no action-required result or provider failure. Explicit tracker
+validation exited 0 with all 13 unique active issue gates open.
+
+The focused checker suite passes 160 tests. Bare `pytest` still stops during
+collection because the installed Transformers requires Hugging Face Hub
+`<2.0` beside installed Hub `2.1.1`. A separate offline CPU diagnostic passes
+1,587 tests with two skips after excluding only
+`tests/test_torchao_vllm_smoke.py`; that exclusion is not a full-suite pass or
+a host repair. The model-closure and assembled-C gates remain responsible for
+their own current compatibility evidence.
+
+This sweep supplies metadata dispositions, not new release-content, security,
+dependency-compatibility, patch, or runtime assessment. No package source,
+build, deployment/installation, installed smoke, server, GPU, or live-scenario
+state changed. The next sweep is due 24 hours after the confirming sweep,
+or sooner after a relevant policy, package, ledger, checker, or source-metadata
+change, including integration of the model-closure PR.
+
 ## 2026-10-11 Model Closure Move to Transformers 5.18.0 and Hugging Face Hub 2.x
 
 [The model-closure move](https://github.com/nisavid/arch-strix-halo-pkgs/issues/183) changed the package sources, the build-root
