@@ -1,0 +1,57 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Strix Halo Packaging <packaging@example.invalid>
+Date: Sat, 10 Oct 2026 00:00:00 +0000
+Subject: [PATCH] Backport: fix incremental multimodal block hashing
+
+Upstream: vllm-project/vllm#51694, "[Bugfix][KV Cache] Fix incremental
+multimodal block hashing", merge commit
+e6c07ea5763bada5da789ed437851ee1526fd5a8 (main, 2026-09-24, first released in
+v0.31.0).
+
+When a request's block hashes are extended after generation starts, the
+hasher assumed only the last multimodal input could overlap the new block.
+With several multimodal inputs in one block it dropped the earlier ones from
+the block's extra keys, so the incremental hash differed from the hash of the
+same tokens computed in one pass. It now looks up the features that overlap
+the block.
+
+Carried: the vllm/v1/core/kv_cache_utils.py hunks, unchanged. The upstream
+test is not carried.
+
+Drop at the first packaged vLLM release that contains e6c07ea5.
+
+---
+diff --git a/vllm/v1/core/kv_cache_utils.py b/vllm/v1/core/kv_cache_utils.py
+index 28478b6..43fe082 100644
+--- a/vllm/v1/core/kv_cache_utils.py
++++ b/vllm/v1/core/kv_cache_utils.py
+@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Any, NamedTuple, NewType, TypeAlias, cast, ove
+ from vllm import envs
+ from vllm.config import VllmConfig
+ from vllm.logger import init_logger
++from vllm.multimodal.utils import get_mm_features_in_window
+ from vllm.utils.hashing import xxhash, xxhash_cbor
+ from vllm.utils.math_utils import cdiv, round_up
+ from vllm.utils.mem_utils import format_gib
+@@ -832,12 +833,15 @@ def get_request_block_hasher(
+             return []
+ 
+         curr_mm_idx = 0
+-        if start_token_idx > 0:
+-            # Set curr_mm_idx = -1 to indicate the last mm input.
+-            # Note that since we reach to this branch only when the block is
+-            # completed with generated tokens, we only need to consider the
+-            # last mm input.
+-            curr_mm_idx = -1
++        mm_features = request.mm_features
++        if start_token_idx > 0 and mm_features:
++            last_mm_pos = mm_features[-1].mm_position
++            if last_mm_pos.offset + last_mm_pos.length > start_token_idx:
++                curr_mm_idx, _ = get_mm_features_in_window(
++                    mm_features,
++                    start_token_idx,
++                    start_token_idx + hash_block_size,
++                )
+ 
+         prev_block_hash_value = (
+             request.block_hashes[-1] if request.block_hashes else None

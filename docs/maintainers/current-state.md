@@ -4,6 +4,282 @@ The package, deployment, and live-validation narrative below remains a
 2026-06-15 snapshot. Dated records come first, newest first; older
 reconciliations remain as dated history.
 
+## 2026-10-11 Model Closure Move to Transformers 5.18.0 and Hugging Face Hub 2.x
+
+[The model-closure move](https://github.com/nisavid/arch-strix-halo-pkgs/issues/183) changed the package sources, the build-root
+closure targets, the freshness cursors and the candidate records on
+2026-10-10, and rebuilt the closure into a fresh isolated build root on
+2026-10-11. Nothing was installed on the host, and no GPU ran.
+
+Owner decisions this record follows, as recorded on
+[the issue](https://github.com/nisavid/arch-strix-halo-pkgs/issues/183) and its comments:
+
+- **2026-10-05:** generation C moves to Transformers 5.18.0 and
+  huggingface-hub 2.x, admitted under the build-breakage exception.
+  Transformers 5.16.1 and 5.17.0 require `huggingface-hub<2.0` and fail at
+  import beside Arch's huggingface-hub 2.x.
+- **2026-10-05:** the vLLM 0.30.0 rebuild carries the `pixtral.py` hunk of
+  [vllm#56108](https://github.com/vllm-project/vllm/pull/56108) and six
+  v0.31.0 security and multimodal cache fixes.
+- **2026-10-05:** the host waits for generation C. It keeps Transformers
+  5.8.1, which fails at import beside its huggingface-hub 2.1.1, until C is
+  activated, and gets no interim repair.
+- **2026-10-10:** tokenizers moves to 0.23.3 in the same step.
+- **2026-10-10, phase split:** every GPU rerun under 5.18 and the
+  online-download check moved, unchanged, to
+  [GPU-lane requalification on assembled C](https://github.com/nisavid/arch-strix-halo-pkgs/issues/194). The closure move closes
+  on built packages, the vLLM fixes each with a recorded check, tokenizers
+  0.23.3, and a passing CPU drive in the rebuilt root. No requirement is
+  waived.
+- **2026-10-11:** aiohttp moves to 3.14.5 in the same rebuild, under the
+  security exception
+  ([comment](https://github.com/nisavid/arch-strix-halo-pkgs/issues/183#issuecomment-6106254102)).
+- **2026-10-11:** [vllm#57731](https://github.com/vllm-project/vllm/pull/57731)
+  is not carried, and
+  [vllm#60022](https://github.com/vllm-project/vllm/pull/60022) is tracked,
+  not carried
+  ([comment](https://github.com/nisavid/arch-strix-halo-pkgs/issues/183#issuecomment-6106254102)).
+- **2026-10-11:** tokenizers 0.23.3-1 and vLLM 0.30.0-2, each rebuilt once
+  under an unchanged version, keep those versions; and the rebuilt root is
+  swapped into the default root path
+  ([comment](https://github.com/nisavid/arch-strix-halo-pkgs/issues/183#issuecomment-6111579499)). The earlier builds never left
+  the build repo. The first CPU drive ran on them; the final drive, on the
+  later builds, superseded it.
+
+The states are recorded separately:
+
+- **Source updated:** yes. `python-transformers-gfx1151` 5.18.0-1,
+  `python-tokenizers-gfx1151` 0.23.3-1, `python-aiohttp-gfx1151` 3.14.5-1 and
+  `python-vllm-rocm-gfx1151` 0.30.0-2, each pinned to its published source
+  digest.
+- **Package built:** yes, all four, in isolated generation-C build roots on
+  2026-10-11, and published to the W2A build repo. tokenizers 0.23.3-1 and
+  vLLM 0.30.0-2 were each built twice under one version, because the first
+  review changed them; the accepted builds are the later ones. Each accepted
+  package's `.BUILDINFO` PKGBUILD checksum equals the committed PKGBUILD.
+  [Generation-C Build Root](c-build-root.md#what-ran-on-2026-10-11-in-order)
+  has the order and what differed.
+- **Deployed/installed:** in the rebuilt isolated root only. It was swapped
+  into the default root path at `2026-10-11T17:12:43Z`, and the 2026-09-25
+  root is kept beside it. Not on the host.
+- **Installed-smoked:** in that root only: `verify`, the backport smoke tool
+  and the CPU drive below. Not on the host.
+- **Live-scenario validated:** no. GPU evidence is not part of the closure
+  move.
+
+### The rebuilt root
+
+[Generation-C Build Root](c-build-root.md#w2a-model-closure-move-183) has the
+procedure and what a re-lock moves. The results:
+
+- **Lock.** One lock from the four targets files covers the whole assembled
+  root: 610 packages, with no problem after two files were fetched. The
+  rebuilt root's manifest equals that lock, package for package, by version
+  and digest. Against the 2026-09-25 root it adds httpx2, httpcore2,
+  truststore and tomlkit and changes 107 versions. Six of those are this
+  move (Transformers, tokenizers, aiohttp, vLLM, huggingface-hub 1:1.32.0 to
+  1:2.1.1 and click 8.3.3 to 8.5.0), and the other 101 are sync DB movement.
+- **`verify`.** 610 packages and 4,153 ELF files, with no violation, after
+  the allowlist took VTK 9.7's optional library names. The same held at the
+  default path after the swap, where the manifest again equalled the lock.
+- **CPU drive.** Run without a GPU against the rebuilt root after the last
+  package was added: `RESULT PASS`, 122 of 122 gate checks, finished at
+  `2026-10-11T07:19:35Z`. The drive is the one of the
+  [2026-09-29 validation of record](#2026-09-29-w2a-vllm-0300-validation-of-record),
+  with the same staged tools and scenarios; its harness is session tooling
+  that this repo does not track. The comparison baseline is the report of
+  that validation's rerun on 2026-10-01, kept with the harness and not in
+  this repo. Compared by item name and pass or fail status (159 items), one
+  item differs, and it is informational (next bullet). Six informational
+  items fail where five did; the other five are the known gaps from before
+  (torchaudio, AMD Quark, AITER, a drive check that calls the multimodal
+  hasher with an outdated signature, and the top-level module map). Within
+  the module-map item, the set of imported top-level modules gains `httpx2`,
+  `httpcore2` and `truststore` and loses `httpcore`; the item's status is
+  unchanged. The build-root record has the drive's memory figures.
+- **OpenTelemetry.** The drive's one changed item is informational: vLLM's
+  `is_otel_available()` is false, because Arch `extra` holds a
+  [split OpenTelemetry set](https://github.com/nisavid/arch-strix-halo-pkgs/issues/196). vLLM uses the exporters only when a
+  trace endpoint is configured, and no tracked scenario configures one.
+
+### vLLM 0.30.0-2
+
+The package stays on upstream v0.30.0 and carries eight upstream backports on
+top of the 0016 carry. Each is the source change of one vLLM pull request
+that is in v0.31.0. [Patch Inventory](../patches.md) describes each one.
+
+- 0017 ([#56108](https://github.com/vllm-project/vllm/pull/56108),
+  `pixtral.py` only, so Laguna stays unsupported on Transformers 5.18) and
+  0018 ([#59613](https://github.com/vllm-project/vllm/pull/59613), the
+  MiniMax-M3 video processor) keep vLLM 0.30.0 working on Transformers 5.18.
+- 0019 ([#58830](https://github.com/vllm-project/vllm/pull/58830)) rejects
+  per-request `mm_processor_kwargs` and `media_io_kwargs` with HTTP 400 unless
+  the server sets `--trust-request-mm-kwargs`. This changes default server
+  behavior: a client that sends either field per request needs the server
+  flag.
+- 0020 ([#58832](https://github.com/vllm-project/vllm/pull/58832)), 0021
+  ([#57833](https://github.com/vllm-project/vllm/pull/57833)), 0022
+  ([#57696](https://github.com/vllm-project/vllm/pull/57696)), 0023
+  ([#54283](https://github.com/vllm-project/vllm/pull/54283), adapted to
+  v0.30.0's inline EXIF ImageID lookup) and 0024
+  ([#51694](https://github.com/vllm-project/vllm/pull/51694)) are the other
+  five fixes the owner selected.
+
+These six are the selected fixes, not every security-relevant change in
+v0.31.0. The package notes record the 2026-10-11 assessment of that range
+against v0.30.0's code. In short:
+
+- The security-relevant fixes left out need a served LoRA adapter, a KV
+  connector, Model Runner V1 or the scale-out routes, none of which
+  generation C uses. Model Runner V1 includes vLLM's automatic fallback to
+  it, for some speculative-decoding methods and custom logits processors
+  among others; no tracked scenario triggers that fallback.
+- vllm#57731 fixes GHSA-4xqp-c3mv-qff7: one request with an oversized
+  `min_tokens` hangs the engine while `/health` stays green. On v0.30.0 only
+  `/inference/v1/generate` reaches that path, and `vllm serve` registers that
+  route only with `--enable-scale-out` or `--tokens-only`. By owner decision
+  it arrives with the 0.31.0 move.
+- One ordinary bug fix that is left out is reachable: vllm#56576. On
+  0.30.0-2, as on 0.30.0-1, an image whose EXIF block has an invalid TIFF
+  header fails its own image-chat request with a server error. It arrives
+  with the 0.31.0 move.
+- vllm#60022, which no release contains yet, restricts the Pillow image
+  formats that untrusted media may use. v0.30.0 opens request images with no
+  format allowlist, so an EPS payload on an image-chat request can reach
+  Ghostscript where Ghostscript is installed.
+  [The image-format decision](https://github.com/nisavid/arch-strix-halo-pkgs/issues/195) must be settled before generation C
+  closes. That ticket also owns the other security fixes that no release
+  contains yet, including vllm#61009, which restricts the default CORS
+  origins: v0.30.0 allows every origin unless `--allowed-origins` is set.
+
+Each carried fix has a recorded check on the built package. Run
+`python tools/vllm_backport_smoke.py` inside the build root: it needs no GPU,
+network, model files or pytest, runs one behavior check per patch in its own
+process, and prints one PASS or FAIL line per patch.
+
+- On the rebuilt root's 0.30.0-2, with Transformers 5.18.0 and
+  huggingface-hub 2.1.1, all eight checks pass.
+- On the 2026-09-25 root's unpatched 0.30.0-1, 0018 to 0024 fail. 0017
+  passes there only because the unpatched Pixtral modules still import on
+  Transformers 5.16.1.
+- On that unpatched package with Transformers 5.18.0 and huggingface-hub
+  2.1.1 overlaid, all eight fail: the 11 Pixtral-chain modules raise
+  `ImportError`.
+
+The 0022 check drives the scheduler's encoder-input method on a minimal
+stand-in scheduler with a real encoder cache manager, because a full
+scheduler needs a model.
+
+### Dependency facts
+
+Checked against PyPI's version-specific metadata and the upstream tags:
+
+- Transformers [5.16.1](https://pypi.org/pypi/transformers/5.16.1/json) to
+  [5.18.0](https://pypi.org/pypi/transformers/5.18.0/json): one runtime
+  requirement changes, `huggingface-hub>=1.5.0,<2.0` to
+  `huggingface-hub>=1.31.0,<3.0`. The package declares that range as
+  versioned depends with Arch's epoch, `python-huggingface-hub>=1:1.31.0` and
+  `<1:3`, so pacman refuses a hub outside it.
+- tokenizers [0.23.2](https://pypi.org/pypi/tokenizers/0.23.2/json) to
+  [0.23.3](https://pypi.org/pypi/tokenizers/0.23.3/json): the one
+  requirement, `huggingface-hub>=0.16.4,<2.0`, becomes `<3.0`, and the
+  package declares it the same way. 0.23.3 is not a metadata-only release:
+  it removes the truncation early exit that 0.23.2 carried, which restores
+  every overflowing encoding. The CPU drive is its first measurement here.
+- The tokenizers package now depends on huggingface-hub, because the
+  compiled extension imports it when `Tokenizer.from_pretrained` is called.
+  It depends on `libstdc++`, which the extension links, and no longer on
+  `zlib`, which it does not.
+- huggingface-hub [2.1.1](https://pypi.org/pypi/huggingface-hub/2.1.1/json)
+  requires `httpx2>=2.0.0,<3` where 1.32.0 required `httpx`, and
+  `click>=8.4.2,<9`. httpx2 2.13.0 requires its matching httpcore2,
+  `truststore>=0.10` and `anyio>=4.10`. Arch `python-httpx2` does not depend
+  on `python-anyio`, and Arch `python-huggingface-hub` depends on an
+  unversioned `python-click`, so the targets floor both.
+- aiohttp 3.14.5 requires `yarl>=1.25.1,<2.0` and `multidict>=4.5,<8.0`,
+  which generation C's yarl 1.25.1 and multidict 6.9.1 meet. 3.14.4 is the
+  first release patched for eight advisories of 2026-10-07. By advisory
+  title, three low ones concern the aiohttp client that vLLM uses to fetch
+  request-supplied media; three low ones concern an aiohttp server, which
+  vLLM does not run; the two medium ones were not classified.
+- No other closure package's metadata excludes these versions: Accelerate
+  1.15.0, mistral-common 1.11.7, compressed-tensors 0.17.0, vLLM 0.30.0,
+  xgrammar 0.2.3 and safetensors 0.8.0 were checked.
+
+### Candidate records
+
+- `transformers-5.18.0-pypi`, `tokenizers-0.23.3-pypi` and
+  `aiohttp-3.14.5-pypi` stay tracked, each at the issue that owns its
+  remaining gate: [GPU-lane requalification](https://github.com/nisavid/arch-strix-halo-pkgs/issues/194) for Transformers and
+  tokenizers, and [the W2A closure](https://github.com/nisavid/arch-strix-halo-pkgs/issues/110) for aiohttp's host
+  installation and validation. The closure move holds their build and CPU
+  evidence. `vllm-0.30.0` records the 0.30.0-2 source and build.
+- `transformers-5.16.1-c-line`, `tokenizers-0.23.2-pypi` and
+  `aiohttp-3.14.3-pypi` are superseded by them. The two September selections
+  were retired when the source moved, which is before their successors are
+  adopted in the ledger's sense; every open gate sits on the successors.
+- `transformers-5.19.0-pypi` keeps its route to
+  [post-closeout maintenance](https://github.com/nisavid/arch-strix-halo-pkgs/issues/147) and names the promoted `5.18.0`
+  cursor. `vllm-0.31.0` records what the 0.31.0 move drops and brings.
+
+The source suite passed 1,645 tests with three skips. It excluded
+`tests/test_torchao_vllm_smoke.py`, which fails collection on this host for
+the Transformers and huggingface-hub reason above. The Transformers and
+tokenizers package tests passed nine with one skip. The vLLM package tests
+passed 145 with three skips, with the v0.30.0 source tarball supplied so that
+the series 0016-0024 is applied to real source; they excluded
+`test_torchao_vllm_smoke_tool.py`, whose eight tests fail on this host for
+the same reason.
+
+Open after this move:
+
+- The GPU lanes on assembled C.
+- The image-format decision, with the other unreleased vLLM security fixes.
+- Everything on the host: installation, installed smoke and live validation.
+
+## 2026-10-11 Freshness Dispositions and Confirming Sweep
+
+The sweep that the closure move's ledger changes required found five
+families that had moved upstream since the previous day's confirming sweep.
+Each new record supersedes the family's previous unadopted post-freeze
+observation:
+
+- aiohttp: PyPI `3.14.5`. The owner adopted it into
+  [the closure move](https://github.com/nisavid/arch-strix-halo-pkgs/issues/183) on 2026-10-11, so the selected `3.14.3` record
+  is superseded, and the new record is tracked to
+  [the W2A closure](https://github.com/nisavid/arch-strix-halo-pkgs/issues/110) for its host gates.
+- NumPy: PyPI `2.5.4`, a bug-fix release, is tracked to
+  [post-closeout maintenance](https://github.com/nisavid/arch-strix-halo-pkgs/issues/147).
+- Python: Arch `python` `3.14.8-1` now matches the CPython 3.14.8 baseline
+  and is tracked to [the W1 foundation](https://github.com/nisavid/arch-strix-halo-pkgs/issues/108), which owns the admitted
+  3.14.8 foundation.
+- Lemonade: fork main `3df36c4c5da16eedc6dca54c858be3347ccdf6a9`, one commit
+  past `4bad19a`, is tracked to
+  [calendar-versioned Lemonade packaging](https://github.com/nisavid/arch-strix-halo-pkgs/issues/163).
+- stable-diffusion.cpp: master `2988060a4338a5dcd94721c964a8e87003c1ac8b` is
+  tracked to post-closeout maintenance.
+
+Release contents and security applicability are unassessed for NumPy,
+Lemonade and stable-diffusion.cpp beyond what their records state.
+
+The first sweep finished at `2026-10-11T03:09:17Z` with those five unhandled
+and no provider failure. After disposition and the two review rounds' ledger
+changes, the real-provider confirming sweep completed at
+`2026-10-11T09:42:03Z` and exited 0 with
+`--refresh --json --fail-on actionable`. Across 51 families,
+the report has 27 stable updates, five branch-head movements, five baseline
+drifts and 14 current families. Effective dispositions are 40 tracked, six
+rejected and five current, with no action-required result or provider
+failure. Explicit tracker validation exited 0 with all 13 unique active
+issue gates open.
+
+The checker's GitHub queries need `GITHUB_TOKEN` or `GH_TOKEN` in the
+environment once a session has run a few sweeps: three anonymous sweeps in an
+hour exhausted GitHub's unauthenticated rate limit and failed seven queries.
+
+The next sweep is due 24 hours after the confirming sweep, or sooner after
+relevant policy, package, ledger, checker, or source-metadata changes.
+
 ## 2026-10-10 Freshness Dispositions and Confirming Sweep
 
 The daily metadata sweep tracks three new observations without changing the

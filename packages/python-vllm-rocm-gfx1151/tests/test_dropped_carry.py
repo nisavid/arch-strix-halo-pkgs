@@ -19,8 +19,16 @@ def _patched_files() -> set[str]:
     }
 
 
-def test_patch_is_the_only_carried_patch_file() -> None:
-    assert sorted(path.name for path in PKG_DIR.glob("*.patch")) == [PATCH.name]
+def test_patch_is_the_only_local_carry_patch_file() -> None:
+    # Upstream backports sit beside it as NNNN-backport-*.patch; see
+    # test_upstream_backports.py.
+    local_carry = sorted(
+        path.name
+        for path in PKG_DIR.glob("*.patch")
+        if "-backport-" not in path.name
+    )
+
+    assert local_carry == [PATCH.name]
 
 
 @pytest.mark.parametrize(

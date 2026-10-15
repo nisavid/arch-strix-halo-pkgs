@@ -16,7 +16,7 @@ CORE_STACK = {
     "python-tokenizers-gfx1151": {
         "template": "rust-wheel-pypi",
         "recipe_key": "rust_wheels",
-        "upstream_version": "0.23.2",
+        "upstream_version": "0.23.3",
         "provides": ["python-tokenizers"],
         "consumer_dep": "python-tokenizers-gfx1151",
     },
@@ -82,7 +82,7 @@ SERVICE_STACK = {
     "python-aiohttp-gfx1151": {
         "template": "native-wheel-pypi",
         "recipe_key": "native_wheels",
-        "upstream_version": "3.14.3",
+        "upstream_version": "3.14.5",
         "provides": ["python-aiohttp"],
         "consumer_dep": "python-aiohttp-gfx1151",
     },

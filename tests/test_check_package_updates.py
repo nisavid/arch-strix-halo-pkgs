@@ -2452,7 +2452,7 @@ def test_python_candidate_keeps_independent_ftp_baseline_and_prior_record(
     ledger_text = (REPO_ROOT / "docs/maintainers/update-candidates.toml").read_text(encoding="utf-8")
     records = []
     for candidate_id in (
-        "python-3.14.7-1-arch", "python-3.14.7-1-arch-cpython-3.14.8"
+        "python-3.14.7-1-arch", "python-3.14.8-1-arch"
     ):
         heading = f'[candidates."{candidate_id}"]'
         records.append(heading + ledger_text.split(heading, 1)[1].split("\n[", 1)[0])
@@ -2466,7 +2466,7 @@ def test_python_candidate_keeps_independent_ftp_baseline_and_prior_record(
             (REPO_ROOT / "packages/python-gfx1151" / name).read_bytes()
         )
     clients = updates.FakeClients(
-        arch={"python": {"version": "3.14.7-1"}},
+        arch={"python": {"version": "3.14.8-1"}},
         python_ftp=["3.14.6", "3.14.7", "3.14.8"],
     )
 
@@ -2480,11 +2480,11 @@ def test_python_candidate_keeps_independent_ftp_baseline_and_prior_record(
     assert report["summary"] == {"stable_update_available": 1}
     assert report["effective_summary"] == {"tracked_update_candidate": 1}
     assert [(check["id"], check["role"], check["status"], check["latest"]) for check in family["checks"]] == [
-        ("arch", "primary", "stable_update_available", "3.14.7-1"),
+        ("arch", "primary", "stable_update_available", "3.14.8-1"),
         ("cpython", "baseline", "baseline_drift", "3.14.8"),
     ]
-    assert family["candidate"]["id"] == "python-3.14.7-1-arch-cpython-3.14.8"
-    assert family["candidate"]["latest"] == "3.14.7-1"
+    assert family["candidate"]["id"] == "python-3.14.8-1-arch"
+    assert family["candidate"]["latest"] == "3.14.8-1"
     assert family["candidate"]["covered_checks"] == [
         {"source_kind": "python_ftp", "check_id": "cpython", "latest": "3.14.8"}
     ]
