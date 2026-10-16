@@ -5532,3 +5532,106 @@ next_gate_kind = "github_issue"
 next_gate_issue = 147
 next_gate_label = "Post-closeout stable-diffusion.cpp 120e3e8 source assessment and disposition"
 last_reviewed = "2026-10-15"
+
+[candidates."auto-round-0.16.1-pypi"]
+family = "auto_round"
+packages = ["python-auto-round-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+previous_recorded = "0.13.0"
+latest = "0.16.1"
+discovery_status = "stable_update_available"
+disposition = "rejected"
+disposition_reason = "The October 16 metadata sweep observes AutoRound 0.16.1. The approved end state excludes AutoRound from this convergence line (#135, Out of scope), and it is absent from C's regenerated closure (docs/wayfinder/research/c-line-selection-2026-09-22.md, #105). This observation retains that scope decision, not a judgment about the release's contents. Earlier rejected observations remain intact."
+salient_changes = [
+  "PyPI reports 0.16.1 after recorded 0.13.0 and the rejected 0.16.0 observation",
+]
+next_gate_kind = "none"
+next_gate_label = "Rejected; upstream-scope exclusion for this convergence line"
+last_reviewed = "2026-10-16"
+
+[candidates."llama-cpp-v0.7.0"]
+family = "llama_cpp"
+packages = ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"]
+source_kind = "github_tags"
+check_id = "stable-tag"
+baseline_source_kind = "arch_package"
+baseline_latest = "0.6.0-1"
+covered_checks = [{ source_kind = "arch_package", check_id = "arch", latest = "0.6.0-1" }, { source_kind = "arch_package", check_id = "arch-ggml-hip", latest = "0.26.0-1" }]
+previous_recorded = "0.4.1 / 0.4.1-1 / 0.24.0-2"
+latest = "0.7.0"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "The October 16 metadata sweep observes stable tag 0.7.0, with the independent Arch baselines unchanged. This record selects those three actionable checks. The legacy b-number release check reports v0.7.0 as current and remains informational, not a second equivalent release selector. Issue #147 owns post-closeout source assessment and disposition. C's selected 0.4.1 and its Lemonade coupling remain unchanged. Earlier observations remain intact. This record does not assess release contents, security applicability, patch carry, build-breakage exceptions, or runtime compatibility."
+salient_changes = [
+  "The stable-tag check reports 0.7.0 after recorded 0.4.1; the legacy release check reports v0.7.0 after recorded b9442 and classifies that check as current",
+  "Arch llama-cpp remains 0.6.0-1 after recorded 0.4.1-1; the separate ggml-hip baseline remains 0.26.0-1 after recorded 0.24.0-2",
+]
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "Post-closeout llama.cpp 0.7.0 source and baseline assessment"
+last_reviewed = "2026-10-16"
+
+[candidates."rocm-pytorch-release-2.12-0227fa2"]
+family = "rocm_pytorch"
+packages = ["python-pytorch-opt-rocm-gfx1151"]
+source_kind = "git_ref"
+check_id = "release-branch"
+baseline_source_kind = "arch_package"
+baseline_latest = "2.14.1-1"
+covered_checks = [{ source_kind = "arch_package", check_id = "arch", latest = "2.14.1-1" }]
+previous_recorded = "13da08625e0d25586351146b4c444f5263997ef8 / 2.12.0-4"
+latest = "0227fa244edde8531084b5aa30837d8424a2fcce"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "The October 16 metadata sweep observes release/2.12 head 0227fa2 with unchanged independent Arch baseline 2.14.1-1. Issue #147 owns post-closeout source assessment and disposition. The selected 13da086 source and issue #109 remain unchanged, as do earlier observations. The changed range, security applicability, dependency and patch effects, and derived validation remain unassessed."
+salient_changes = [
+  "The release/2.12 branch reports 0227fa244edde8531084b5aa30837d8424a2fcce after recorded 13da08625e0d25586351146b4c444f5263997ef8",
+  "Arch remains 2.14.1-1 after recorded 2.12.0-4 and is independently bound",
+]
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "Post-closeout ROCm PyTorch 0227fa2 source and baseline assessment"
+last_reviewed = "2026-10-16"
+
+[candidates."stable-diffusion-cpp-8cd731e"]
+family = "stable_diffusion_cpp"
+packages = ["stable-diffusion.cpp-vulkan-gfx1151"]
+source_kind = "git_ref"
+check_id = "master"
+baseline_source_kind = "aur"
+baseline_latest = "r948.228c707-1"
+covered_checks = [{ source_kind = "aur", check_id = "aur-vulkan", latest = "r948.228c707-1" }]
+previous_recorded = "be65ac7511b30379b003626c15224798929e33d4 / r279.49d6570-1"
+latest = "8cd731e7b4667eb8f40a153315b9a7125d09a58d"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "The October 16 metadata sweep observes master 8cd731e with unchanged independent AUR Vulkan baseline r948.228c707-1. Issue #147 owns post-closeout source assessment and disposition. The selected c92d73c rebuild and issue #121 remain unchanged. Earlier observations remain intact. Release contents, security applicability, recursive submodules, patch carry, and runtime relevance remain unassessed."
+salient_changes = [
+  "Master reports 8cd731e7b4667eb8f40a153315b9a7125d09a58d after recorded be65ac7511b30379b003626c15224798929e33d4",
+  "AUR remains r948.228c707-1 after recorded r279.49d6570-1 and is independently bound",
+]
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "Post-closeout stable-diffusion.cpp 8cd731e source assessment and disposition"
+last_reviewed = "2026-10-16"
+
+[candidates."transformers-5.20.0-pypi"]
+family = "transformers"
+packages = ["python-transformers-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+covered_checks = [{ source_kind = "github_tags", check_id = "tag", latest = "5.20.0" }]
+previous_recorded = "5.18.0"
+latest = "5.20.0"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "The October 16 metadata sweep observes matching PyPI and tag releases 5.20.0. Issue #147 owns post-closeout source assessment and disposition. The selected 5.18.0 closure from #183 and its assembled-C requalification gate #194 remain unchanged. Earlier observations remain intact. This record does not assess release contents, security applicability, dependency compatibility, patch carry, or runtime behavior."
+salient_changes = [
+  "Both primary providers report 5.20.0 after recorded 5.18.0 and the earlier 5.19.0 observation",
+  "The tag observation is bound explicitly to 5.20.0",
+]
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "Post-closeout Transformers 5.20.0 source assessment and disposition"
+last_reviewed = "2026-10-16"

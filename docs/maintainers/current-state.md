@@ -4,6 +4,50 @@ The package, deployment, and live-validation narrative below remains a
 2026-06-15 snapshot. Dated records come first, newest first; older
 reconciliations remain as dated history.
 
+## 2026-10-16 Freshness Dispositions and Confirming Sweep
+
+The daily metadata sweep adds five candidate records without changing C's
+selected sources, package versions, or existing validation gates:
+
+- AutoRound `0.16.1` remains rejected under the approved upstream-scope
+  exclusion. This is a scope disposition, not a release-content assessment.
+- llama.cpp stable tag `0.7.0`, ROCm PyTorch release/2.12 head
+  `0227fa244edde8531084b5aa30837d8424a2fcce`, stable-diffusion.cpp master
+  `8cd731e7b4667eb8f40a153315b9a7125d09a58d`, and matching Transformers
+  PyPI/tag release `5.20.0` are tracked at
+  [post-closeout source assessment](https://github.com/nisavid/arch-strix-halo-pkgs/issues/147).
+
+The llama.cpp record binds its stable tag and both independent Arch
+baselines. Its legacy b-number release check reports `v0.7.0` as `current`;
+that observation stays informational rather than becoming a second equivalent
+release selector. The checker requires selected equivalent release providers
+to share one literal latest value. The initial confirming attempt that
+selected both `v0.7.0` and `0.7.0` exited 10; the revised record preserves
+both observations without claiming that the checker normalized them.
+
+Earlier candidate records, C's llama.cpp `0.4.1` and Lemonade coupling,
+ROCm PyTorch `13da086`, stable-diffusion.cpp `c92d73c`, and Transformers
+`5.18.0` remain unchanged. Independent distribution baselines are bound
+separately; this increment terminalizes no earlier record.
+
+The initial daily sweep completed at `2026-10-16T11:44:07Z` with five
+unhandled families and no provider failure. The changed ledger invalidated
+the cache. The final cache-aware sweep completed at
+`2026-10-16T11:53:24Z`, with `cache.used = false`, and exited 0 under
+`--json --fail-on actionable`. Its 51 families comprise 28 stable updates,
+five branch-head movements, four baseline drifts, and 14 current families.
+Effective results are 40 tracked, six rejected, and five current, with no
+action-required result or provider failure. Explicit tracker validation
+exited 0 with all 13 active issue gates open. The focused checker and
+model-closure-move tests pass 170 tests; this is not a full-suite result.
+
+These are metadata dispositions, not release-content, security,
+dependency-compatibility, recursive-submodule, patch, or runtime assessments.
+No package source, build, deployment/installation, installed smoke, server,
+GPU, or live-scenario state changed. The next sweep is due 24 hours after
+the final completion, or sooner after a relevant policy, package, ledger,
+checker, or source-metadata change.
+
 ## 2026-10-15 Freshness Reconciliation After the Model-Closure Merge
 
 The October 12–15 metadata observations are reconciled with the published
