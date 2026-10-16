@@ -130,6 +130,11 @@ Then rerun the smallest smoke test that proves the repaired package behavior.
 
 ## First Cutover From Another ROCm Stack
 
+Before an activation that requires deployed-state rollback, follow
+[Prepare deployed-state rollback](../maintainers/stack-recovery.md) for private
+exact-file retention and a separate-root restore handoff. Tool verification
+does not replace the owner-run restore, health checks, or pre-activation snapshot.
+
 For an initial migration from a monolithic replacement package such as
 `rocm-gfx1151-bin`:
 
