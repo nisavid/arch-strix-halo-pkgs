@@ -110,6 +110,14 @@ should be able to answer, from files alone:
     AUR `llama.cpp-vulkan-bin` package is binary-only and no longer a
     reference.
 
+- `kokoros-gfx1151`
+  - authoritative: `none`
+  - advisory: none
+  - rationale: no Arch, CachyOS, or AUR package builds Kokoros (AUR
+    `python-kokoro` is the unrelated Python implementation), so the package
+    follows the Kokoros release that Lemonade pins and Arch's Rust packaging
+    guidelines.
+
 - `aocl-libm-gfx1151`
   - authoritative: `none`
   - advisory: `aur/aocl`

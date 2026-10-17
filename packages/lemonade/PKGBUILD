@@ -7,11 +7,11 @@
 pkgname=lemonade
 pkgver=11.9.0
 pkgrel=2
-pkgdesc='Meta package for Lemonade and llama.cpp backend packages'
+pkgdesc='Meta package for Lemonade, its llama.cpp backends, and the Kokoros TTS runtime'
 arch=('x86_64')
 url=https://github.com/nisavid/lemonade
 license=(Apache-2.0)
-depends=(lemonade-server=11.9.0-2 lemonade-app=11.9.0-2 llama.cpp-hip-gfx1151=0.4.1 llama.cpp-vulkan-gfx1151=0.4.1)
+depends=(lemonade-server=11.9.0-2 lemonade-app=11.9.0-2 llama.cpp-hip-gfx1151=0.4.1 llama.cpp-vulkan-gfx1151=0.4.1 kokoros-gfx1151=b17)
 makedepends=()
 optdepends=()
 options=()

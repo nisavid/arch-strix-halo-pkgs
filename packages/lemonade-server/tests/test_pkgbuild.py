@@ -54,6 +54,9 @@ SOURCE_TREE = REPO_ROOT / "packages/lemonade-server/src/lemonade"
 
 HIP_SERVER = "/usr/bin/llama-server-hip-gfx1151"
 VULKAN_SERVER = "/usr/bin/llama-server-vulkan-gfx1151"
+# The real koko binary: lemond derives ESPEAK_DATA_PATH and LD_LIBRARY_PATH
+# from its directory, so a /usr/bin wrapper would not work.
+KOKORO_CPU_BIN = "/opt/kokoros-gfx1151/koko"
 BLACKHOLE_ENDPOINT = "http://127.0.0.1:9"
 
 
@@ -133,6 +136,7 @@ def test_pkgbuild_ships_the_llamacpp_backends_as_a_package_env_file():
         ("LEMONADE_LLAMACPP_VULKAN_VERSION", EXPECTED_LLAMACPP_VERSION),
         ("LEMONADE_LLAMACPP_ROCM_RELEASE_URL", EXPECTED_RELEASE_URL),
         ("LEMONADE_LLAMACPP_VULKAN_RELEASE_URL", EXPECTED_RELEASE_URL),
+        ("LEMONADE_KOKORO_CPU_BIN", KOKORO_CPU_BIN),
     ]
 
 
@@ -342,8 +346,16 @@ def test_meta_package_pins_the_coherent_family():
     assert _pkgbuild_value(META_PKGBUILD, "pkgrel") == "2"
     assert _pkgbuild_value(META_PKGBUILD, "depends") == (
         f"(lemonade-server={version} lemonade-app={version} "
-        "llama.cpp-hip-gfx1151=0.4.1 llama.cpp-vulkan-gfx1151=0.4.1)"
+        "llama.cpp-hip-gfx1151=0.4.1 llama.cpp-vulkan-gfx1151=0.4.1 kokoros-gfx1151=b17)"
     )
+
+
+def test_kokoro_runtime_is_an_optional_dependency():
+    optdepends = _pkgbuild_value(PKGBUILD, "optdepends")
+    assert "'kokoros-gfx1151: Kokoro text-to-speech runtime'" in optdepends
+    kokoros = REPO_ROOT / "packages/kokoros-gfx1151/PKGBUILD"
+    assert _pkgbuild_value(kokoros, "pkgver") == "b17"
+    assert 'local _root="$pkgdir/opt/kokoros-gfx1151"' in kokoros.read_text()
 
 
 def test_pkgbuild_packages_the_synced_upstream_version():
@@ -383,6 +395,7 @@ def test_built_package_installs_system_managed_llamacpp_metadata():
     assert f"LEMONADE_LLAMACPP_VULKAN_VERSION={EXPECTED_LLAMACPP_VERSION}" in text
     assert f"LEMONADE_LLAMACPP_ROCM_RELEASE_URL={EXPECTED_RELEASE_URL}" in text
     assert f"LEMONADE_LLAMACPP_VULKAN_RELEASE_URL={EXPECTED_RELEASE_URL}" in text
+    assert f"LEMONADE_KOKORO_CPU_BIN={KOKORO_CPU_BIN}" in text
 
 
 def test_built_package_installs_renamed_lemond_service():

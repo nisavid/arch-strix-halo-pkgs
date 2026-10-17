@@ -6,6 +6,7 @@
 - Optional backends:
   - `llama.cpp-hip-gfx1151`
   - `llama.cpp-vulkan-gfx1151`
+  - `kokoros-gfx1151`
 - Recipe package key: `lemonade`
 - Scaffold template: `meta-package`
 - Recipe build method: `pip`
@@ -35,7 +36,7 @@ Reinstalling at compatible versions resolves conflicts.
 
 ## Scaffold notes
 
-- Meta package for server, app, and both llama.cpp backend packages.
+- Meta package for server, app, both llama.cpp backend packages, and the Kokoros TTS runtime.
 - Keep routing logic out of this package; it is a convenience install only.
 
 ## Intentional Divergences

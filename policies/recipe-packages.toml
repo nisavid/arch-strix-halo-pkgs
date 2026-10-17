@@ -2693,6 +2693,61 @@ scaffold_notes = [
   "Use suffixed wrapper names so this package can coexist with other stable-diffusion.cpp backend variants."
 ]
 
+[packages."kokoros-gfx1151"]
+recipe_key = "lemonade"
+template = "kokoros"
+upstream_version = "b17"
+upstream_revision = "d122b52e0ee0a90df26fd041620af36f99e2248a"
+pkgrel = 1
+pkgdesc = "Kokoros text-to-speech runtime for Lemonade, built from source for Strix Halo gfx1151"
+url = "https://github.com/lemonade-sdk/Kokoros"
+repo = "https://github.com/lemonade-sdk/Kokoros.git"
+# Kokoros (README: Apache), the bundled espeak-ng (GPL-3.0-or-later) and LAME
+# (LGPL-2.0-or-later), and the licences of the linked Rust crates: MIT,
+# Apache-2.0, ISC (audiopus_sys), BSD-3-Clause (ogg, encoding_rs, matchit),
+# LGPL-3.0-only (mp3lame-sys, mp3lame-encoder), and Unicode-3.0 (the ICU4X
+# crates). Crates offered under a choice of licences resolve to MIT or
+# Apache-2.0. onnxruntime, opus, sonic, and openssl are system libraries.
+license = ["Apache-2.0", "GPL-3.0-or-later", "MIT", "ISC", "LGPL-2.0-or-later", "BSD-3-Clause", "LGPL-3.0-only", "Unicode-3.0"]
+arch_reference = []
+authoritative_reference = "none"
+advisory_references = []
+divergence_notes = [
+  "No Arch, CachyOS, or AUR package builds Kokoros; AUR python-kokoro is the unrelated Python implementation, so this package has no reference baseline.",
+  "Builds the lemonade-sdk/Kokoros b17 commit that Lemonade's backend_versions.json pins, from source, instead of installing upstream's kokoros-linux-x86_64.tar.gz release binary.",
+  "Links the system onnxruntime-cpu library dynamically, where upstream's release binary statically links the prebuilt ONNX Runtime 1.23.2 that ort-sys downloads at build time.",
+  "Links the system opus and libsonic, where upstream's build compiles audiopus_sys's bundled opus and clones sonic into espeak-ng's build; espeak-ng and LAME stay bundled because their crates offer no system-library option.",
+  "Installs koko and espeak-ng-data together under /opt/kokoros-gfx1151, the layout lemond expects: it derives ESPEAK_DATA_PATH and LD_LIBRARY_PATH from the binary's directory."
+]
+update_notes = [
+  "Track the Kokoros release that Lemonade's src/cpp/resources/backend_versions.json pins for kokoro.cpu at the packaged Lemonade commit; repin this package together with that Lemonade pin.",
+  "Generation C W2B (#113): adopted lemonade-sdk/Kokoros b17 at d122b52e0ee0a90df26fd041620af36f99e2248a, which Lemonade b6616eb3 pins. Recorded the commit archive sha256 and the Cargo.lock sha256; prepare() runs cargo fetch --locked and build() runs cargo build --frozen --offline. Open gates: not yet built. The ort 2.0.0-rc.11 crate uses ONNX Runtime C API version 23 and links the onnxruntime-cpu 1.29 shared library; that pairing is untested, and the installed smoke test must prove that koko loads a model and synthesizes speech. -C link-arg=-lsonic is in RUSTFLAGS because espeak-rs-sys names only speechPlayer, espeak-ng, and ucd to the linker; whether the link needs it is confirmed only at build time, and if the build proves it unnecessary, remove it then.",
+  "Model and voice files are not part of this package; they belong to #107's model contract. koko embeds fallback download URLs for kokoro-v1.0.onnx and voices-v1.0.bin (thewh1teagle/kokoro-onnx model-files-v1.0), so #107's contract must make sure both files are present at the paths lemond passes with -m and -d. Lemonade's kokoro-v1 catalog entry names Hugging Face mikkoph/kokoro-onnx, whose index.json lists exactly those two files."
+]
+provides = []
+conflicts = []
+depends = ["gcc-libs", "glibc", "libsonic", "onnxruntime-cpu", "openssl", "opus"]
+makedepends = ["cargo", "clang", "cmake", "libsonic", "pkgconf", "rust"]
+src_subdir = "Kokoros-d122b52e0ee0a90df26fd041620af36f99e2248a"
+upstream_name = "Kokoros"
+baseline_kind = "closest-upstream"
+source_refs = ["Kokoros-d122b52e0ee0a90df26fd041620af36f99e2248a.tar.gz::https://github.com/lemonade-sdk/Kokoros/archive/d122b52e0ee0a90df26fd041620af36f99e2248a.tar.gz"]
+sha256sums = ["2bcc95b4b1a7e0ff1f985e7c684d65df52a955ae66dcd601d0c1e3205daae4fd"]
+cargo_lock_sha256 = "d3cd1b8abd00b49cb5fd07f4e6cd415f6d224655e878b738c7cb3a7e2bb938cc"
+recipe_notes_override = """
+Kokoros is the Rust Kokoro text-to-speech server that Lemonade runs for its
+kokoro recipe. The ai-notes recipe has no Kokoros entry; this package is
+repo-local and belongs to the Lemonade family.
+"""
+scaffold_notes = [
+  "Pinned to the GitHub archive of lemonade-sdk/Kokoros commit d122b52e0ee0a90df26fd041620af36f99e2248a (tag b17) with its sha256; prepare() also checks Cargo.lock against cargo_lock_sha256 before cargo fetch --locked, following Arch's Rust packaging guidelines, and build() runs cargo build --frozen --offline.",
+  "The build must not reach the network beyond the locked crates. ort-sys would otherwise download a prebuilt ONNX Runtime: build() sets ORT_LIB_LOCATION=/usr/lib, ORT_PREFER_DYNAMIC_LINK=1, ORT_SKIP_DOWNLOAD=1, and CARGO_NET_OFFLINE=true, and points XDG_CACHE_HOME into $srcdir. The bundled espeak-ng would otherwise clone sonic with CMake FetchContent; libsonic in makedepends lets its find_library succeed. Disabling ort's default features would change Cargo.lock, which --locked and --frozen forbid, so the environment carries the guarantee.",
+  "check() fails the build if ort-sys left a dfbin download directory anywhere under $srcdir, if a _deps/sonic-git* directory appears under the build tree, or if koko's ELF NEEDED entries lack libonnxruntime.so, libopus.so, or libsonic.so.",
+  "Installs /opt/kokoros-gfx1151/koko and /opt/kokoros-gfx1151/espeak-ng-data. lemonade-server's package env file sets LEMONADE_KOKORO_CPU_BIN=/opt/kokoros-gfx1151/koko, so lemond uses this binary instead of downloading a Kokoros release; with offline and no_fetch_executables set, its install step uses the configured binary.",
+  "Installs Kokoros' README (its only licence statement at this commit), the licence files of every crate linked into koko from the fetched crate sources, and LAME's COPYING. Arch's common licences cover the GPL-3.0, LGPL, and Apache-2.0 texts.",
+  "Keeps model and voice files out: they are #107's model contract (see the update notes)."
+]
+
 [packages."lemonade-server"]
 recipe_key = "lemonade"
 template = "lemonade-server"
@@ -2724,7 +2779,7 @@ update_notes = [
   "On 2026-09-23, released 11.7.0-2 with patch 0005, which makes RecipeOptions::inherit tokenize merged *_args without keeping quotes. At 3d5991033 the merge wrapped quoted values in their quote characters and then quoted them again, so llama-server received a literal '{\"preserve_thinking\":true}' for the qwen35 and qwen35moe --chat-template-kwargs architecture default and exited. The distro defaults always set --no-mmap, so every qwen35 and qwen35moe model failed to load. The regression is fork-only: fork commit e3d08ffa6 added quote_custom_arg_value to map_to_args_string, which stacks on upstream's keep_quotes=true merge (lemonade-sdk/lemonade#1920), while upstream v11.6.0, v11.7.0, and v11.9.0 produce the correct argv. The fork fix is nisavid/lemonade#168; drop patch 0005 at the Lemonade repin to a fork commit that contains #168, which is the upstream-synced fork main that the issue 141 (M6) repackage adopts. Upstream #3265 (7b5657d80, first released in v11.8.0) is context only: it moves the merge to recipe_arg_resolver.h, which still keeps quotes, so it does not fix the fork. Issues 139 and 140 track the regression.",
   "On 2026-09-25, repinned the source to the merge commit of the fork's upstream v11.9.0 sync (issue 141, nisavid/lemonade#175) and set the package version to 11.9.0. The sync contains upstream v11.9.0 (bb39eaf) and the fork fix for nisavid/lemonade#168 (2cb1a91, PR 169), so patch 0005 is dropped. Patches 0001-0004 apply unchanged to the new base with line offsets only and no fuzz; the upstream changes in the patched files do not touch the patched hunks.",
   "On 2026-09-25, followed the 11.9 service layout (issue 141): the 30-env-files.conf drop-in keeps /etc/lemonade/conf.d/*.conf loading ahead of upstream's /etc/default/lemond and loads the packaged llama.cpp env file (moved out of conf.d) last; both secrets files are backup files; no install script writes owner config; and the distro defaults gained max_loaded_models -1 and an explicit auto_update_models false. The owner's deploy steps (a sparse config.json with the host binding, and verifying the JSON migration into /var/lib/lemonade) belong to the issue 141 redeploy.",
-  "Generation C W2B (#113): pkgrel 2 rebuilds the same fork pin against foundation F and records the fork source digest (makepkg's checksum of the pinned commit's git archive tar) in place of SKIP. The packaged llama.cpp env file reports v0.4.1 and links the v0.4.1 release, and the distro defaults pass --load-mode none instead of --no-mmap, which llama.cpp v0.4.1 removed; versioned conflicts keep the server and both backends on the same side of that boundary. Patches 0001-0004 apply in order at b6616eb3 with line offsets only and no fuzz. Open gates: the build against F and the server env/defaults checks are still to run, and an owner config.json, recipe_options.json, or per-model llamacpp_args that still passes --no-mmap must be removed before install."
+  "Generation C W2B (#113): pkgrel 2 rebuilds the same fork pin against foundation F and records the fork source digest (makepkg's checksum of the pinned commit's git archive tar) in place of SKIP. The packaged llama.cpp env file reports v0.4.1 and links the v0.4.1 release, and the distro defaults pass --load-mode none instead of --no-mmap, which llama.cpp v0.4.1 removed; versioned conflicts keep the server and both backends on the same side of that boundary. The env file also points LEMONADE_KOKORO_CPU_BIN at the packaged kokoros-gfx1151 runtime. Patches 0001-0004 apply in order at b6616eb3 with line offsets only and no fuzz. Open gates: the build against F and the server env/defaults checks are still to run, and an owner config.json, recipe_options.json, or per-model llamacpp_args that still passes --no-mmap must be removed before install."
 ]
 provides = ["lemonade-server"]
 # The distro defaults pass --load-mode none, which llama.cpp before v0.4.1
@@ -2746,6 +2801,7 @@ depends = [
 ]
 makedepends = ["cmake", "git", "ninja", "nodejs", "npm", "rocm-llvm-gfx1151"]
 optdepends = [
+  "kokoros-gfx1151: Kokoro text-to-speech runtime",
   "llama.cpp-hip-gfx1151: llama.cpp ROCm backend",
   "llama.cpp-vulkan-gfx1151: llama.cpp Vulkan backend"
 ]
@@ -2778,13 +2834,14 @@ source_patches = [
 ]
 patches_dir = "packages/lemonade-server"
 scaffold_notes = [
-  "Server/runtime package; llama.cpp backends are optdepends, not hard deps.",
+  "Server/runtime package; the llama.cpp backends and the Kokoros TTS runtime are optdepends, not hard deps.",
   "Pinned to nisavid/lemonade commit {source_pins.lemonade}, the merge commit of the fork's upstream v11.9.0 sync (nisavid/lemonade#175), whose CMake project version is 11.9.0. The pin is the lemonade entry in the [source_pins] table of policies/recipe-packages.toml, so lemonade-server and lemonade-app always build the same fork commit.",
   "Configures with BUILD_TESTING=OFF; upstream includes CTest, and the distro build does not need its C++ test binaries.",
   "Uses upstream's lemond.service unit name; do not ship the pre-10.3 lemonade-server.service name in this package.",
   "Uses upstream's lemond.service as installed. Since 11.9 it sets StateDirectory=lemonade (the config dir: config.json, user_models.json, recipe_options.json, jobs.json, mcp_servers.json), CacheDirectory=lemonade with mode 0755 (bin/ and aliases.json), a bare ExecStart=/usr/bin/lemond, and EnvironmentFile=-/etc/default/lemond as its only EnvironmentFile= line, and upstream installs no lemond.service.d drop-in. package() fails the build if the unit loses that layout or upstream installs any file under lemond.service.d/ (checked before the package installs its own drop-ins), because a cache-dir argument or a LEMONADE_CACHE_DIR, HOME, or XDG_* override would make the config dir follow the cache dir, and because 30-env-files.conf resets the EnvironmentFile= list and would silently drop any other upstream entry, including one in an upstream drop-in that sorts before it. On first start lemond moves the five JSON files from the legacy /var/lib/lemonade/.cache/lemonade into /var/lib/lemonade without overwriting, and the rest of that tree into /var/cache/lemonade.",
   "Installs /usr/lib/systemd/system/lemond.service.d/30-env-files.conf, which owns the service's whole EnvironmentFile= order. It first resets the list with an empty EnvironmentFile=, because systemd keeps a repeated path at its first position, so listing /etc/default/lemond again without the reset would not move it after conf.d. It then lists -/etc/lemonade/conf.d/*.conf, -/etc/default/lemond, and the required /usr/lib/lemonade/llamacpp-gfx1151.env. systemd reads them in that order and a later file overrides an earlier one, so /etc/default/lemond overrides conf.d, a key set only in conf.d still applies, and the package env file overrides any stale LEMONADE_LLAMACPP_* key in the owner files.",
   "Installs /usr/lib/lemonade/llamacpp-gfx1151.env so the packaged ROCm and Vulkan llama.cpp wrapper binaries are exposed to the service as system-managed backends. lemond reads LEMONADE_LLAMACPP_*_BIN from the environment ahead of config.json on every backend lookup, so the refreshed system-managed backend patch no longer carries the older config-load environment overlay or the CLI backend-table change.",
+  "The same env file sets LEMONADE_KOKORO_CPU_BIN=/opt/kokoros-gfx1151/koko, the kokoros-gfx1151 binary. lemond reads it ahead of config.json's kokoro.cpu_bin and derives ESPEAK_DATA_PATH and LD_LIBRARY_PATH from its directory. lemond requires an absolute *_bin path to exist, so the kokoro recipe works only with kokoros-gfx1151 installed.",
   "Exports the packaged llama.cpp revision and ggml release URL in the same env file so the GUI shows the packaged backend metadata instead of upstream downloader defaults. Through 11.7 these lived in /etc/lemonade/conf.d/10-llamacpp-gfx1151.conf, with the same values; the metadata patch reads them only from the environment. To override a LEMONADE_LLAMACPP_* key, add an owner drop-in under /etc/systemd/system/lemond.service.d/ that sorts after 30-env-files.conf, such as 40-llamacpp-override.conf, with its own EnvironmentFile= line, which systemd reads after the package env file. An Environment= line there does not override the key, because every EnvironmentFile= value overrides Environment=.",
   "The system-managed backend patch probes llama-server --version through Lemonade's argv-based ProcessManager capture path, not a shell.",
   "Marks upstream's /etc/default/lemond (mode 0640, the service's HF_TOKEN, LEMONADE_API_KEY, and LEMONADE_ADMIN_API_KEY file) and /etc/lemonade/conf.d/zz-secrets.conf (mode 0660) as backup files so an upgrade keeps local edits. Upstream 11.9 no longer installs zz-secrets.conf, so the package ships 11.7's placeholder byte for byte: an owner-edited copy stays in place without a .pacnew and keeps loading through the conf.d glob. If the package dropped it, pacman would rename an edited copy to zz-secrets.conf.pacsave, which the glob does not match. The llama.cpp env file stays package-owned so each release refreshes the backend metadata.",
@@ -2864,7 +2921,7 @@ recipe_key = "lemonade"
 template = "meta-package"
 upstream_version = "11.9.0"
 pkgrel = 2
-pkgdesc = "Meta package for Lemonade and llama.cpp backend packages"
+pkgdesc = "Meta package for Lemonade, its llama.cpp backends, and the Kokoros TTS runtime"
 url = "https://github.com/nisavid/lemonade"
 license = ["Apache-2.0"]
 arch_reference = ["aur/lemonade-server", "aur/lemonade-desktop"]
@@ -2880,12 +2937,12 @@ update_notes = [
 ]
 provides = ["lemonade"]
 conflicts = []
-depends = ["lemonade-server=11.9.0-2", "lemonade-app=11.9.0-2", "llama.cpp-hip-gfx1151=0.4.1", "llama.cpp-vulkan-gfx1151=0.4.1"]
+depends = ["lemonade-server=11.9.0-2", "lemonade-app=11.9.0-2", "llama.cpp-hip-gfx1151=0.4.1", "llama.cpp-vulkan-gfx1151=0.4.1", "kokoros-gfx1151=b17"]
 makedepends = []
 src_subdir = "lemonade"
 upstream_name = "lemonade"
 baseline_kind = "meta-aggregate"
 scaffold_notes = [
-  "Meta package for server, app, and both llama.cpp backend packages.",
+  "Meta package for server, app, both llama.cpp backend packages, and the Kokoros TTS runtime.",
   "Keep routing logic out of this package; it is a convenience install only."
 ]

@@ -425,3 +425,10 @@ runtime asset, so a pre-provisioned runtime cannot have its version and digest
 recorded without a fork change. Kokoro TTS and the app's TTS interaction are
 therefore deferred to generation C W2B (#113), and this catalog has no TTS
 scenario.
+
+For generation C, the owner chose a packaged runtime (#113): `kokoros-gfx1151`
+builds Kokoros `b17`, the release Lemonade `b6616eb3` pins, from source with a
+recorded source digest, installs it under `/opt/kokoros-gfx1151`, and
+lemonade-server's package env file points `LEMONADE_KOKORO_CPU_BIN` at its
+`koko`. The model and voice files stay with #107's model contract. A TTS
+scenario still needs the package built, installed, and smoke-tested.

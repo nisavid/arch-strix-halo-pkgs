@@ -408,6 +408,12 @@ def preserved_pkgrel(package_name: str, version: str) -> int:
 
 
 LEMONADE_LLAMACPP_ROCM_BIN = "/usr/bin/llama-server-hip-gfx1151"
+# lemond sets ESPEAK_DATA_PATH and LD_LIBRARY_PATH from the directory of the
+# Kokoro binary, so it must point at the real koko beside espeak-ng-data, not
+# at a /usr/bin wrapper.
+KOKOROS_PACKAGE = "kokoros-gfx1151"
+KOKOROS_INSTALL_ROOT = f"/opt/{KOKOROS_PACKAGE}"
+LEMONADE_KOKORO_CPU_BIN = f"{KOKOROS_INSTALL_ROOT}/koko"
 LEMONADE_LLAMACPP_VULKAN_BIN = "/usr/bin/llama-server-vulkan-gfx1151"
 # Connections to the loopback discard port are refused, so a model registry
 # request sent here fails at once instead of reaching the network.
@@ -477,6 +483,9 @@ def lemonade_llamacpp_env_lines() -> list[str]:
         f"LEMONADE_LLAMACPP_VULKAN_VERSION={vulkan_rev}",
         f"LEMONADE_LLAMACPP_ROCM_RELEASE_URL=https://github.com/ggml-org/llama.cpp/releases/tag/{hip_rev}",
         f"LEMONADE_LLAMACPP_VULKAN_RELEASE_URL=https://github.com/ggml-org/llama.cpp/releases/tag/{vulkan_rev}",
+        "# The packaged Kokoros TTS runtime (kokoros-gfx1151). lemond derives",
+        "# ESPEAK_DATA_PATH and LD_LIBRARY_PATH from this binary's directory.",
+        f"LEMONADE_KOKORO_CPU_BIN={LEMONADE_KOKORO_CPU_BIN}",
     ]
 
 
@@ -1097,6 +1106,110 @@ EOF
   fi
 
   install -Dm644 "$srcdir/{src_subdir}/LICENSE" "$pkgdir/usr/share/licenses/{package_name}/LICENSE"
+}}"""
+    elif template == "kokoros":
+        if package_name != KOKOROS_PACKAGE:
+            print(f"UNSUPPORTED_KOKOROS_PACKAGE: {package_name}", file=sys.stderr)
+            print(f"HINT: the kokoros template installs under {KOKOROS_INSTALL_ROOT}, which lemonade-server's env file names.", file=sys.stderr)
+            raise SystemExit(2)
+        cargo_lock_sha256 = policy_pkg.get("cargo_lock_sha256", "")
+        if not re.fullmatch(r"[0-9a-f]{64}", cargo_lock_sha256):
+            print(f"KOKOROS_CARGO_LOCK: {package_name} needs a cargo_lock_sha256", file=sys.stderr)
+            print("HINT: record the sha256 of the pinned source's Cargo.lock in policies/recipe-packages.toml.", file=sys.stderr)
+            raise SystemExit(2)
+        install_root = KOKOROS_INSTALL_ROOT
+        prepare_lines.extend(
+            [
+                "# The source archive digest already covers Cargo.lock; checking it here",
+                "# ties the fetched crate set to the reviewed lockfile.",
+                f"printf '%s  Cargo.lock\\n' '{cargo_lock_sha256}' | sha256sum --check --quiet -",
+                'export CARGO_HOME="$srcdir/.cargo"',
+                'cargo fetch --locked --target "$(rustc --print host-tuple)"',
+            ]
+        )
+        build_body = f"""\
+build() {{
+  cd "$srcdir/{src_subdir}"
+
+  export HOME="$srcdir/.home"
+  export XDG_CACHE_HOME="$srcdir/.cache"
+  export CARGO_HOME="$srcdir/.cargo"
+  export CARGO_TARGET_DIR="$srcdir/target"
+  mkdir -p "$HOME" "$XDG_CACHE_HOME"
+
+  # ort-sys links the system onnxruntime-cpu library. With ORT_LIB_LOCATION
+  # set, its build script links there and returns before the code that would
+  # download a prebuilt ONNX Runtime; the other two variables also disable
+  # that download.
+  export ORT_LIB_LOCATION=/usr/lib
+  export ORT_PREFER_DYNAMIC_LINK=1
+  export ORT_SKIP_DOWNLOAD=1
+  export CARGO_NET_OFFLINE=true
+  # audiopus_sys finds the system opus through pkg-config; LIBOPUS_LIB_DIR
+  # keeps its fallback on the system library instead of the bundled copy.
+  export LIBOPUS_LIB_DIR=/usr/lib
+  # espeak-ng's CMake uses the system libsonic, so it skips its FetchContent
+  # clone of sonic, but espeak-rs-sys does not name sonic to the linker.
+  export RUSTFLAGS="${{RUSTFLAGS:+${{RUSTFLAGS}} }}-C link-arg=-lsonic --remap-path-prefix=$srcdir=/usr/src/debug/{package_name}"
+
+  cargo build --frozen --offline --release -p koko
+}}
+
+check() {{
+  local _bin="$srcdir/target/release/koko" _needed _lib
+
+  # ort-sys extracts a downloaded ONNX Runtime under <cache>/dfbin.
+  if [[ -n "$(find "$srcdir" -type d -name dfbin -print -quit)" ]]; then
+    echo "KOKOROS_NETWORK_FETCH: ort-sys downloaded a prebuilt ONNX Runtime" >&2
+    return 1
+  fi
+  # espeak-ng's CMake clones sonic into _deps/sonic-git-* when it cannot find
+  # the system libsonic.
+  if [[ -n "$(find "$srcdir/target" -type d -path '*/_deps/sonic-git*' -print -quit)" ]]; then
+    echo "KOKOROS_NETWORK_FETCH: espeak-ng fetched sonic instead of using the system libsonic" >&2
+    return 1
+  fi
+  _needed="$(readelf -d "${{_bin}}" | sed -n 's/.*(NEEDED).*\\[\\(.*\\)\\]/\\1/p')"
+  for _lib in libonnxruntime.so libopus.so libsonic.so; do
+    if ! grep -q "^${{_lib}}" <<<"${{_needed}}"; then
+      echo "KOKOROS_LINKAGE: koko does not link the system ${{_lib}}" >&2
+      return 1
+    fi
+  done
+}}
+
+package() {{
+  cd "$srcdir/{src_subdir}"
+  local _root="$pkgdir{install_root}"
+  local _licenses="$pkgdir/usr/share/licenses/{package_name}"
+
+  install -Dm755 "$srcdir/target/release/koko" "${{_root}}/koko"
+  cp -r --no-preserve=ownership espeak-ng-data "${{_root}}/espeak-ng-data"
+  find "${{_root}}/espeak-ng-data" -type d -exec chmod 755 {{}} +
+  find "${{_root}}/espeak-ng-data" -type f -exec chmod 644 {{}} +
+
+  # Kokoros ships no LICENSE file at this commit; its README carries the
+  # only licence statement.
+  install -Dm644 README.md "${{_licenses}}/README.md"
+
+  # Licence texts of every crate linked into koko, from the fetched sources.
+  export CARGO_HOME="$srcdir/.cargo"
+  local _registry _name _version _crate _file
+  _registry="$(find "$CARGO_HOME/registry/src" -mindepth 1 -maxdepth 1 -type d -print -quit)"
+  while read -r _name _version _; do
+    _crate="${{_registry}}/${{_name}}-${{_version#v}}"
+    [[ -d "${{_crate}}" ]] || continue
+    for _file in "${{_crate}}"/LICENSE* "${{_crate}}"/LICENCE* "${{_crate}}"/COPYING* "${{_crate}}"/NOTICE* "${{_crate}}"/COPYRIGHT*; do
+      [[ -f "${{_file}}" ]] || continue
+      install -Dm644 "${{_file}}" "${{_licenses}}/crates/${{_name}}-${{_version#v}}/${{_file##*/}}"
+    done
+  done < <(cargo tree --frozen --offline --target "$(rustc --print host-tuple)" -e normal --prefix none --format '{{p}}' | sort -u)
+  # mp3lame-sys statically links its bundled LAME, whose licence sits beside it.
+  for _file in "${{_registry}}"/mp3lame-sys-*/lame-*/COPYING; do
+    [[ -f "${{_file}}" ]] || continue
+    _crate="${{_file%/COPYING}}"
+    install -Dm644 "${{_file}}" "${{_licenses}}/crates/${{_crate#"${{_registry}}"/}}-COPYING"
+  done
 }}"""
     elif template == "scons-aocl-libm":
         source_patches = policy_pkg.get("source_patches", [])
@@ -2271,15 +2384,17 @@ def package_role(package_name: str, policy_pkg: dict) -> str | None:
         return "meta-package"
     if template == "llama-cpp":
         return "backend-runtime"
+    if template == "kokoros":
+        return "tts-runtime"
     return None
 
 
 def optional_backends(package_name: str, policy_pkg: dict) -> list[str]:
     template = policy_pkg.get("template")
     if template == "lemonade-server":
-        return ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"]
+        return ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151", KOKOROS_PACKAGE]
     if template == "meta-package" and package_name == "lemonade":
-        return ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"]
+        return ["llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151", KOKOROS_PACKAGE]
     return []
 
 

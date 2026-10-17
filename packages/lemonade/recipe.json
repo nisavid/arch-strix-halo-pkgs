@@ -18,7 +18,8 @@
   "name": "lemonade",
   "optional_backends": [
     "llama.cpp-hip-gfx1151",
-    "llama.cpp-vulkan-gfx1151"
+    "llama.cpp-vulkan-gfx1151",
+    "kokoros-gfx1151"
   ],
   "package_name": "lemonade",
   "pkgver": "11.9.0",
@@ -38,7 +39,8 @@
       "lemonade-server=11.9.0-2",
       "lemonade-app=11.9.0-2",
       "llama.cpp-hip-gfx1151=0.4.1",
-      "llama.cpp-vulkan-gfx1151=0.4.1"
+      "llama.cpp-vulkan-gfx1151=0.4.1",
+      "kokoros-gfx1151=b17"
     ],
     "divergence_notes": [
       "This is a convenience meta package for the full local Lemonade plus packaged llama.cpp backend experience.",
@@ -48,14 +50,14 @@
       "Apache-2.0"
     ],
     "makedepends": [],
-    "pkgdesc": "Meta package for Lemonade and llama.cpp backend packages",
+    "pkgdesc": "Meta package for Lemonade, its llama.cpp backends, and the Kokoros TTS runtime",
     "pkgrel": 2,
     "provides": [
       "lemonade"
     ],
     "recipe_key": "lemonade",
     "scaffold_notes": [
-      "Meta package for server, app, and both llama.cpp backend packages.",
+      "Meta package for server, app, both llama.cpp backend packages, and the Kokoros TTS runtime.",
       "Keep routing logic out of this package; it is a convenience install only."
     ],
     "src_subdir": "lemonade",

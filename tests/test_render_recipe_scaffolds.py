@@ -784,6 +784,56 @@ def test_sibling_release_name_prefers_the_stable_tag(tmp_path: Path, monkeypatch
     assert render_recipe_scaffolds.sibling_package_upstream_revision("llama.cpp-missing") == "unknown"
 
 
+def _kokoros_policy(**overrides) -> dict:
+    policy = {
+        "recipe_key": "lemonade",
+        "template": "kokoros",
+        "upstream_version": "b17",
+        "pkgdesc": "Kokoros",
+        "url": "https://github.com/lemonade-sdk/Kokoros",
+        "license": ["Apache-2.0"],
+        "src_subdir": "Kokoros-abc",
+        "source_refs": ["Kokoros-abc.tar.gz::https://github.com/lemonade-sdk/Kokoros/archive/abc.tar.gz"],
+        "sha256sums": ["a" * 64],
+        "cargo_lock_sha256": "c" * 64,
+    }
+    policy.update(overrides)
+    return policy
+
+
+def test_kokoros_renderer_refuses_a_missing_lockfile_digest(capsys) -> None:
+    with pytest.raises(SystemExit) as excinfo:
+        render_recipe_scaffolds.render_pkgbuild(
+            "kokoros-gfx1151",
+            _kokoros_policy(cargo_lock_sha256=""),
+            LLAMACPP_RECIPE_FIXTURE,
+            "b17",
+            RENDER_DEFAULTS_FIXTURE,
+        )
+
+    assert excinfo.value.code == 2
+    assert "KOKOROS_CARGO_LOCK" in capsys.readouterr().err
+
+
+def test_kokoros_renderer_only_renders_the_package_lemonade_server_names(capsys) -> None:
+    with pytest.raises(SystemExit):
+        render_recipe_scaffolds.render_pkgbuild(
+            "kokoros-other",
+            _kokoros_policy(),
+            LLAMACPP_RECIPE_FIXTURE,
+            "b17",
+            RENDER_DEFAULTS_FIXTURE,
+        )
+
+    assert "UNSUPPORTED_KOKOROS_PACKAGE" in capsys.readouterr().err
+
+
+def test_lemonade_env_file_points_kokoro_at_the_packaged_binary() -> None:
+    lines = render_recipe_scaffolds.lemonade_llamacpp_env_lines()
+
+    assert "LEMONADE_KOKORO_CPU_BIN=/opt/kokoros-gfx1151/koko" in lines
+
+
 def test_stable_diffusion_renderer_keeps_runtime_rpath_to_system_libs() -> None:
     pkgbuild = render_recipe_scaffolds.render_pkgbuild(
         "stable-diffusion.cpp-vulkan-gfx1151",

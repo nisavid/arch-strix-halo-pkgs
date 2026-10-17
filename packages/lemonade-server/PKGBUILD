@@ -13,7 +13,7 @@ url=https://github.com/nisavid/lemonade
 license=(Apache-2.0)
 depends=(brotli curl glibc libcap libdrm libgcc libstdc++ libwebsockets systemd-libs zlib zstd)
 makedepends=(cmake git ninja nodejs npm rocm-llvm-gfx1151)
-optdepends=('llama.cpp-hip-gfx1151: llama.cpp ROCm backend' 'llama.cpp-vulkan-gfx1151: llama.cpp Vulkan backend')
+optdepends=('kokoros-gfx1151: Kokoro text-to-speech runtime' 'llama.cpp-hip-gfx1151: llama.cpp ROCm backend' 'llama.cpp-vulkan-gfx1151: llama.cpp Vulkan backend')
 options=()
 provides=(lemonade-server)
 conflicts=('llama.cpp-hip-gfx1151<0.4.1' 'llama.cpp-vulkan-gfx1151<0.4.1')
@@ -201,6 +201,9 @@ LEMONADE_LLAMACPP_ROCM_VERSION=v0.4.1
 LEMONADE_LLAMACPP_VULKAN_VERSION=v0.4.1
 LEMONADE_LLAMACPP_ROCM_RELEASE_URL=https://github.com/ggml-org/llama.cpp/releases/tag/v0.4.1
 LEMONADE_LLAMACPP_VULKAN_RELEASE_URL=https://github.com/ggml-org/llama.cpp/releases/tag/v0.4.1
+# The packaged Kokoros TTS runtime (kokoros-gfx1151). lemond derives
+# ESPEAK_DATA_PATH and LD_LIBRARY_PATH from this binary's directory.
+LEMONADE_KOKORO_CPU_BIN=/opt/kokoros-gfx1151/koko
 EOF
 
   # Keep shipping 11.7's secrets placeholder as a backup file, so an
