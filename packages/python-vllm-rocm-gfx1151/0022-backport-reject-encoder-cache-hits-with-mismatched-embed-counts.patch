@@ -1,0 +1,211 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Strix Halo Packaging <packaging@example.invalid>
+Date: Sat, 10 Oct 2026 00:00:00 +0000
+Subject: [PATCH] Backport: reject encoder-cache hits with mismatched embedding counts
+
+Upstream: vllm-project/vllm#57696, "[Bugfix][V1] Reject encoder-cache hits
+with mismatched embedding counts", merge commit
+bbc4ddeca9ece9851aad26f03afc4bab37c6e8df (main, 2026-09-24, first released in
+v0.31.0).
+
+The encoder cache is keyed by the multimodal identifier, which a client can
+supply as a UUID. Reusing one identifier for content with a different number
+of encoder embeddings made a later request read a cache entry of the wrong
+size. The cache manager now records the embedding count per identifier, and
+the scheduler fails a request whose count disagrees with the cached or
+same-step entry instead of scheduling it.
+
+Carried: the vllm/v1/core/encoder_cache_manager.py and
+vllm/v1/core/sched/scheduler.py hunks, unchanged. They apply to v0.30.0 with
+line offsets only. The upstream tests are not carried.
+
+Drop at the first packaged vLLM release that contains bbc4ddec.
+
+---
+diff --git a/vllm/v1/core/encoder_cache_manager.py b/vllm/v1/core/encoder_cache_manager.py
+index a3ed0c7..080b0d8 100644
+--- a/vllm/v1/core/encoder_cache_manager.py
++++ b/vllm/v1/core/encoder_cache_manager.py
+@@ -59,6 +59,8 @@ class EncoderCacheManager:
+             reference the cached entry. If the set is empty, the entry exists
+             but is not referenced by any request and is eligible for
+             reclamation.
++        num_embeds_by_hash: Mapping from mm_hash to the number of encoder
++            embeddings stored for that cache entry.
+         freeable: List of tuples (mm_hash, num_encoder_embeds) representing entries
+             whose no current running request is needed and that can be freed to
+             make space when needed.
+@@ -79,6 +81,8 @@ class EncoderCacheManager:
+ 
+         # mm_hash of mm_data => ids of requests that reference the mm_data
+         self.cached: dict[str, set[str]] = {}
++        # mm_hash of mm_data => number of cached encoder embeddings
++        self.num_embeds_by_hash: dict[str, int] = {}
+         # request_id => set of input_ids cached for that request
+         self.request_cached_ids: dict[str, set[int]] = {}
+ 
+@@ -93,6 +97,7 @@ class EncoderCacheManager:
+         Called when model weights are updated to invalidate stale embeddings.
+         """
+         self.cached.clear()
++        self.num_embeds_by_hash.clear()
+         self.request_cached_ids.clear()
+         self.freeable.clear()
+         self.freed.clear()
+@@ -128,6 +133,13 @@ class EncoderCacheManager:
+         self.request_cached_ids.setdefault(request.request_id, set()).add(input_id)
+         return True
+ 
++    def get_cached_num_encoder_embeds(
++        self, request: Request, input_id: int
++    ) -> int | None:
++        """Return the encoder-embedding count stored for a cached input."""
++        mm_hash = request.mm_features[input_id].identifier
++        return self.num_embeds_by_hash.get(mm_hash)
++
+     def can_allocate(
+         self,
+         request: Request,
+@@ -185,6 +197,7 @@ class EncoderCacheManager:
+         while num_embeds > self.num_free_slots:
+             mm_hash, num_free_embeds = self.freeable.popitem(last=False)
+             del self.cached[mm_hash]
++            del self.num_embeds_by_hash[mm_hash]
+             self.freed.append(mm_hash)
+             self.num_free_slots += num_free_embeds
+         return True
+@@ -206,6 +219,12 @@ class EncoderCacheManager:
+             self.cached[mm_hash] = set()
+ 
+         num_encoder_embeds = request.get_num_encoder_embeds(input_id)
++        cached_num_encoder_embeds = self.num_embeds_by_hash.setdefault(
++            mm_hash, num_encoder_embeds
++        )
++        # _try_schedule_encoder_inputs rejects local-hit and same-step
++        # identifier/count mismatches before allocation.
++        assert cached_num_encoder_embeds == num_encoder_embeds
+ 
+         # NOTE: Encoder cache should always have enough space for encoder inputs
+         # that are scheduled since eviction takes place at can_allocate().
+@@ -255,7 +274,7 @@ class EncoderCacheManager:
+             return
+         self.cached[mm_hash].discard(req_id)
+         if not self.cached[mm_hash]:
+-            num_encoder_embeds = request.get_num_encoder_embeds(input_id)
++            num_encoder_embeds = self.num_embeds_by_hash[mm_hash]
+             self.freeable[mm_hash] = num_encoder_embeds
+             self.num_freeable_slots += num_encoder_embeds
+ 
+diff --git a/vllm/v1/core/sched/scheduler.py b/vllm/v1/core/sched/scheduler.py
+index daf2b31..c4d2d1b 100644
+--- a/vllm/v1/core/sched/scheduler.py
++++ b/vllm/v1/core/sched/scheduler.py
+@@ -224,6 +224,7 @@ class Scheduler(SchedulerInterface):
+         # Grammar compilation failures to finish as per-request errors in
+         # update_from_output.
+         self.grammar_compile_error_reqs: set[str] = set()
++        self.encoder_cache_mismatch_reqs: set[str] = set()
+ 
+         # Encoder-related.
+         # Calculate encoder cache size if applicable
+@@ -1669,6 +1670,29 @@ class Scheduler(SchedulerInterface):
+             num_output_tokens=num_output_tokens,
+         )
+ 
++    def _reject_on_encoder_cache_embed_mismatch(
++        self,
++        request: Request,
++        input_id: int,
++        identifier: str,
++        cached_num_encoder_embeds: int,
++        requested_num_encoder_embeds: int,
++    ) -> bool:
++        if cached_num_encoder_embeds == requested_num_encoder_embeds:
++            return False
++        logger.warning(
++            "Encoder cache entry for multimodal identifier %r holds %d "
++            "embeddings, but request %s input %d expects %d. A client-provided "
++            "multimodal UUID may have been reused for different content.",
++            identifier,
++            cached_num_encoder_embeds,
++            request.request_id,
++            input_id,
++            requested_num_encoder_embeds,
++        )
++        self.encoder_cache_mismatch_reqs.add(request.request_id)
++        return True
++
+     def _try_schedule_encoder_inputs(
+         self,
+         request: Request,
+@@ -1708,7 +1732,7 @@ class Scheduler(SchedulerInterface):
+         # NOTE: since scheduler operates on the request level (possibly with
+         # multiple encoder inputs per request), we need to create temporary
+         # trackers for accounting at the encoder input level.
+-        mm_hashes_to_schedule = set()
++        mm_hashes_to_schedule: dict[str, int] = {}
+         num_embeds_to_schedule = 0
+ 
+         encoder_window_end = (
+@@ -1750,10 +1774,35 @@ class Scheduler(SchedulerInterface):
+                 # We are not using the encoder cache for encoder-decoder models,
+                 # yet.
+                 if item_identifier in mm_hashes_to_schedule:
++                    scheduled_num_encoder_embeds = mm_hashes_to_schedule[
++                        item_identifier
++                    ]
++                    if self._reject_on_encoder_cache_embed_mismatch(
++                        request,
++                        i,
++                        item_identifier,
++                        scheduled_num_encoder_embeds,
++                        num_encoder_embeds,
++                    ):
++                        return [], 0, encoder_compute_budget, []
+                     # The same encoder input has already been scheduled in the
+                     # current step.
+                     continue
+ 
++                cached_num_encoder_embeds = (
++                    self.encoder_cache_manager.get_cached_num_encoder_embeds(request, i)
++                )
++                if cached_num_encoder_embeds is not None and (
++                    self._reject_on_encoder_cache_embed_mismatch(
++                        request,
++                        i,
++                        item_identifier,
++                        cached_num_encoder_embeds,
++                        num_encoder_embeds,
++                    )
++                ):
++                    return [], 0, encoder_compute_budget, []
++
+                 if self.encoder_cache_manager.check_and_update_cache(request, i):
+                     # The encoder input is already computed and cached from a
+                     # previous step.
+@@ -1813,14 +1862,14 @@ class Scheduler(SchedulerInterface):
+             if self.ec_connector is not None and self.ec_connector.has_cache_item(
+                 item_identifier
+             ):
+-                mm_hashes_to_schedule.add(item_identifier)
++                mm_hashes_to_schedule[item_identifier] = num_encoder_embeds
+                 external_load_encoder_input.append(i)
+                 num_embeds_to_schedule += num_encoder_embeds
+                 continue
+ 
+             num_embeds_to_schedule += num_encoder_embeds
+             encoder_compute_budget -= num_encoder_embeds
+-            mm_hashes_to_schedule.add(item_identifier)
++            mm_hashes_to_schedule[item_identifier] = num_encoder_embeds
+             encoder_inputs_to_schedule.append(i)
+ 
+         return (
+@@ -2188,6 +2237,8 @@ class Scheduler(SchedulerInterface):
+ 
+         error_req_ids = set(self.grammar_compile_error_reqs)
+         self.grammar_compile_error_reqs.clear()
++        error_req_ids.update(self.encoder_cache_mismatch_reqs)
++        self.encoder_cache_mismatch_reqs.clear()
+         if failed_kv_load_req_ids and not self.recompute_kv_load_failures:
+             error_req_ids.update(failed_kv_load_req_ids)
+         if self.ec_connector is not None:

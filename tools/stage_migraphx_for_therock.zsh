@@ -21,9 +21,15 @@ typeset -ra protobuf_pkgs=(
   "p/protobuf/protobuf-36.1-1-x86_64.pkg.tar.zst 3d63417c8fbe2354bea29b23c338baf3f03c9438e0127c5519d6dddc4825185c"
   "a/abseil-cpp/abseil-cpp-20260817.0-2-x86_64.pkg.tar.zst 4ecd2e4e2cf7096edfad8522df68d0d9adbe41ce7a6689c1915905342ae6a016"
 )
-typeset protobuf_soname=
-typeset utf8_validity_soname=
-typeset absl_soname_suffix=
+# The ABI that migraphx-gfx1151 declares: the rendered libprotobuf.so=36.1.0-64
+# depend and the abseil-cpp 20260817 range in policies/therock-packages.toml.
+# The protobuf prefix must provide exactly these sonames.
+typeset protobuf_soname=libprotobuf.so.36.1.0
+typeset utf8_validity_soname=libutf8_validity.so.36.1.0
+typeset abseil_soversion=2608.0.0
+# migraphx-gfx1151 7.14.1-1 (AMDMIGraphX 2.16.1) ships 13 regular ELF files;
+# the payload gate fails a stage in which it finds fewer.
+typeset migraphx_min_elfs=13
 typeset rocm_cmake_compat=
 typeset clean=0
 typeset deploy=0
@@ -59,7 +65,9 @@ Options:
                      (default: <protobuf-prefix>.pkgs)
   --protobuf-dir PATH
                      use this protobuf CMake config directory instead of the
-                     isolated prefix; it must end with /cmake/protobuf
+                     isolated prefix; it must end with /cmake/protobuf, and
+                     its lib directory must also hold the matching Abseil
+                     libraries and cmake/absl
   -j, --jobs N       parallel build jobs (default: nproc)
   --clean            remove the source checkout and the protobuf prefix before
                      starting; the stage and the package cache are kept
@@ -94,16 +102,20 @@ read_soname() {
   readelf -d $lib | sed -n 's/.*Library soname: \[\([^]]*\)\].*/\1/p'
 }
 
+# Set reply to the DT_NEEDED sonames of one ELF file.
 read_needed() {
   emulate -L zsh
   local lib=$1
-  readelf -d $lib | sed -n 's/.*Shared library: \[\([^]]*\)\].*/\1/p'
+  local dynamic
+  dynamic=$(LC_ALL=C readelf -d $lib) || fail "readelf cannot read $lib"
+  reply=(${(M)${(f)dynamic}:#*Shared library: \[*\]})
+  reply=(${${reply#*Shared library: \[}%\]*})
 }
 
 require_cmds() {
   emulate -L zsh
   local cmd
-  for cmd in git cmake ninja python find readelf curl bsdtar sha256sum; do
+  for cmd in git cmake ninja python readelf curl bsdtar sha256sum; do
     command -v $cmd >/dev/null 2>&1 || fail "missing required command: $cmd"
   done
 }
@@ -187,23 +199,22 @@ prepare_protobuf_prefix() {
   [[ -d $protobuf_dir ]] || fail "protobuf CMake config directory is missing after extraction: $protobuf_dir"
 }
 
-derive_protobuf_sonames() {
+# Fail unless the protobuf prefix provides the pinned protobuf, utf8_validity,
+# and Abseil sonames and the CMake configs the build needs.
+check_protobuf_prefix() {
   emulate -L zsh
   local protobuf_lib_dir=${protobuf_dir%/cmake/protobuf}
+  local absl_dir=$protobuf_lib_dir/cmake/absl
   [[ -d $protobuf_dir ]] || fail "protobuf CMake config directory is missing: $protobuf_dir"
   [[ $protobuf_lib_dir != $protobuf_dir ]] || fail "protobuf CMake config directory must end with /cmake/protobuf: $protobuf_dir"
   [[ -f $protobuf_lib_dir/libprotobuf.so ]] || fail "protobuf library is missing: $protobuf_lib_dir/libprotobuf.so"
   [[ -f $protobuf_lib_dir/libutf8_validity.so ]] || fail "utf8 validity library is missing: $protobuf_lib_dir/libutf8_validity.so"
-  protobuf_soname=$(read_soname $protobuf_lib_dir/libprotobuf.so)
-  utf8_validity_soname=$(read_soname $protobuf_lib_dir/libutf8_validity.so)
-  [[ $protobuf_soname == libprotobuf.so.?* ]] || fail "cannot read the protobuf SONAME from $protobuf_lib_dir/libprotobuf.so"
-  [[ $utf8_validity_soname == libutf8_validity.so.?* ]] || fail "cannot read the utf8 validity SONAME from $protobuf_lib_dir/libutf8_validity.so"
-  if [[ -f $protobuf_lib_dir/libabsl_base.so ]]; then
-    local absl_soname
-    absl_soname=$(read_soname $protobuf_lib_dir/libabsl_base.so)
-    absl_soname_suffix=${absl_soname#libabsl_base.so.}
-  fi
-  status "building against $protobuf_soname, $utf8_validity_soname${absl_soname_suffix:+, Abseil .so.$absl_soname_suffix}"
+  [[ $(read_soname $protobuf_lib_dir/libprotobuf.so) == $protobuf_soname ]] || fail "protobuf SONAME must be $protobuf_soname"
+  [[ $(read_soname $protobuf_lib_dir/libutf8_validity.so) == $utf8_validity_soname ]] || fail "utf8 validity SONAME must be $utf8_validity_soname"
+  [[ -d $absl_dir ]] || fail "Abseil CMake config directory is missing: $absl_dir"
+  [[ -f $protobuf_lib_dir/libabsl_base.so ]] || fail "Abseil library is missing: $protobuf_lib_dir/libabsl_base.so"
+  [[ $(read_soname $protobuf_lib_dir/libabsl_base.so) == libabsl_base.so.$abseil_soversion ]] || fail "Abseil SONAME must be libabsl_base.so.$abseil_soversion"
+  status "building against $protobuf_soname, $utf8_validity_soname, and libabsl_*.so.$abseil_soversion"
 }
 
 clone_or_update_source() {
@@ -324,6 +335,7 @@ build_and_install_migraphx() {
   pybind11_dir=$(python -m pybind11 --cmakedir)
   local protobuf_lib_dir=${protobuf_dir%/cmake/protobuf}
   local protobuf_prefix_root=${protobuf_lib_dir:h}
+  local absl_dir=$protobuf_lib_dir/cmake/absl
   local ck=OFF
   local mlir=OFF
   (( with_composable_kernel )) && ck=ON
@@ -336,6 +348,7 @@ build_and_install_migraphx() {
     -DCMAKE_INSTALL_PREFIX=/opt/rocm
     "-DCMAKE_PREFIX_PATH=$protobuf_prefix_root;$rocm"
     -Dprotobuf_DIR=$protobuf_dir
+    -Dabsl_DIR=$absl_dir
     -Dpybind11_DIR=$pybind11_dir
     -DCMAKE_C_COMPILER=$rocm/lib/llvm/bin/amdclang
     -DCMAKE_CXX_COMPILER=$rocm/lib/llvm/bin/amdclang++
@@ -371,55 +384,97 @@ install_existing_build() {
     cmake --build $src/build --target install -j$jobs
 }
 
+# Print, one per line and relative to the stage, every regular file (not a
+# symlink) under the policy's scan roots that policies/therock-packages.toml
+# assigns to the named split package and that starts with the ELF magic. The
+# render classifies the stage with the same generator and policy, so this is
+# every regular ELF the package will ship, whatever its name.
+list_staged_package_elfs() {
+  emulate -L zsh
+  local package=$1
+  python - $REPO_ROOT $stage $package <<'PY'
+import sys
+from pathlib import Path
+
+repo_root, root, package = Path(sys.argv[1]), Path(sys.argv[2]), sys.argv[3]
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(repo_root / "generators"))
+import therock_split
+
+policy = therock_split.load_policy(repo_root / "policies/therock-packages.toml")
+classifier = therock_split.Classifier(policy)
+for relpath in therock_split.walk_scan_roots(root, policy["repo"]["scan_roots"]):
+    path = root / relpath
+    if path.is_symlink() or not path.is_file():
+        continue
+    if classifier.classify(relpath) != package:
+        continue
+    with path.open("rb") as fh:
+        if fh.read(4) == b"\x7fELF":
+            print(relpath)
+PY
+}
+
 validate_stage() {
   emulate -L zsh
   local protobuf_lib_dir=${protobuf_dir%/cmake/protobuf}
   status "checking staged MIGraphX payload"
-  run find $stage/opt/rocm \( \
-    -name migraphx-driver -o \
-    -name 'libmigraphx*.so*' -o \
-    -name 'migraphx.cpython-*.so' \
-  \) -print
+  # Every regular ELF that migraphx-gfx1151 will ship, chosen by package
+  # ownership and ELF magic rather than by name. The package's symlinks
+  # resolve to these files.
+  local listing
+  listing=$(list_staged_package_elfs migraphx-gfx1151) \
+    || fail "cannot list the staged migraphx-gfx1151 ELF files"
+  local -a payload=(${(f)listing})
+  (( $#payload )) || fail "staged root still has no MIGraphX payload"
+  print -rl -- $payload
+  (( $#payload >= migraphx_min_elfs )) \
+    || fail "staged migraphx-gfx1151 payload has $#payload regular ELF files; expected at least $migraphx_min_elfs"
+  status "checking the DT_NEEDED entries of $#payload staged migraphx-gfx1151 ELF files"
 
-  local found_count
-  found_count=$(find $stage/opt/rocm \( \
-    -name migraphx-driver -o \
-    -name 'libmigraphx*.so*' -o \
-    -name 'migraphx.cpython-*.so' \
-  \) -print | wc -l)
-  (( found_count > 0 )) || fail "staged root still has no MIGraphX payload"
+  # Pacman sees protobuf and Abseil only through the pinned libprotobuf.so
+  # provide and the versioned abseil-cpp range, so every regular ELF the
+  # package ships, not only the parsers, may link only the pinned sonames.
+  local elf
+  local -a unpinned
+  for elf in $payload; do
+    read_needed $stage/$elf
+    unpinned=(
+      ${${(M)reply:#libprotobuf.so*}:#$protobuf_soname}
+      ${${(M)reply:#libutf8_validity.so*}:#$utf8_validity_soname}
+      ${${(M)reply:#libabsl_*}:#*.so.$abseil_soversion}
+    )
+    if (( $#unpinned )); then
+      print -u2 "staged $elf links: ${(j:, :)unpinned}"
+      fail "staged MIGraphX payload links protobuf, utf8_validity, or Abseil other than $protobuf_soname, $utf8_validity_soname, and libabsl_*.so.$abseil_soversion"
+    fi
+  done
 
   local -a parser_libs=(
     $stage/opt/rocm/lib/migraphx/lib/libmigraphx_onnx.so
     $stage/opt/rocm/lib/migraphx/lib/libmigraphx_tf.so
   )
 
-  local -a needed stale
-  local parser_lib dep
+  local -a abseil_needed
+  local parser_lib
   for parser_lib in $parser_libs; do
     [[ -f $parser_lib ]] || fail "missing staged MIGraphX parser library: $parser_lib"
-    needed=("${(@f)$(read_needed $parser_lib)}")
-    stale=()
-    for dep in $needed; do
-      case $dep in
-        libprotobuf.so.*) [[ $dep == $protobuf_soname ]] || stale+=($dep) ;;
-        libutf8_validity.so.*) [[ $dep == $utf8_validity_soname ]] || stale+=($dep) ;;
-        libabsl_*.so.*) [[ -z $absl_soname_suffix || $dep == *.so.$absl_soname_suffix ]] || stale+=($dep) ;;
-      esac
-    done
-    if (( $#stale )); then
-      print -u2 "staged ${parser_lib:t} needs: ${(j:, :)needed}"
-      fail "staged MIGraphX parser library links a protobuf ABI other than the build target: ${(j:, :)stale}"
-    fi
+    read_needed $parser_lib
 
-    if (( ! ${needed[(I)$protobuf_soname]} )); then
-      print -u2 "staged ${parser_lib:t} needs: ${(j:, :)needed}"
+    if (( ! ${reply[(I)$protobuf_soname]} )); then
+      print -u2 "staged ${parser_lib:t} needs: ${(j:, :)reply}"
       fail "staged MIGraphX parser library is not linked against $protobuf_soname"
     fi
 
-    if (( ! ${needed[(I)$utf8_validity_soname]} )); then
-      print -u2 "staged ${parser_lib:t} needs: ${(j:, :)needed}"
+    if (( ! ${reply[(I)$utf8_validity_soname]} )); then
+      print -u2 "staged ${parser_lib:t} needs: ${(j:, :)reply}"
       fail "staged MIGraphX parser library is not linked against $utf8_validity_soname"
+    fi
+
+    abseil_needed=(${(M)reply:#libabsl_*})
+    if (( ! $#abseil_needed )); then
+      print -u2 "staged ${parser_lib:t} needs: ${(j:, :)reply}"
+      fail "staged MIGraphX parser library links no Abseil libraries; expected libabsl_*.so.$abseil_soversion"
     fi
   done
 
@@ -536,7 +591,7 @@ if (( skip_build )); then
 fi
 
 prepare_protobuf_prefix
-derive_protobuf_sonames
+check_protobuf_prefix
 
 if (( skip_build )); then
   install_existing_build

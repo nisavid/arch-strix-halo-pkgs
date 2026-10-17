@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "probe": "rocblas-sgemm",
+  "shape": [
+    2,
+    2
+  ],
+  "layout": "column-major",
+  "encoding": "ieee754-binary32-little-endian-hex",
+  "parameters": {
+    "trans_a": "N",
+    "trans_b": "N",
+    "lda": 2,
+    "ldb": 2,
+    "ldc": 2,
+    "alpha_hex": "0000803f",
+    "beta_hex": "00000000"
+  },
+  "payloads": {
+    "a_hex": "0000803f000040400000004000008040",
+    "b_hex": "0000a0400000e0400000c04000000041",
+    "expected_c_hex": "0000984100002c420000b04100004842"
+  }
+}

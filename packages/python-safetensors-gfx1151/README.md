@@ -6,8 +6,8 @@
 - Scaffold template: `rust-wheel-pypi`
 - Recipe build method: `cargo`
 - Upstream repo: `https://github.com/huggingface/safetensors`
-- Package version: `0.7.0`
-- Recipe revision: `a1d7a68 (20260427, 16 commits touching recipe path)`
+- Package version: `0.8.0`
+- Recipe revision: `3f15f9f (20260508, 17 commits touching recipe path)`
 - Recipe steps: `31`
 - Recipe dependencies: `cpython`
 - Recorded reference packages: `extra/python-safetensors, cachyos-extra-znver4/python-safetensors`
@@ -41,6 +41,7 @@ tensor save/load round trip through the installed local Python lane.
 
 - Check Arch first for release and dependency metadata, then verify Transformers and TorchAO scenario compatibility before updating.
 - After publishing a rebuilt package, verify `import safetensors` and a tiny tensor save/load round trip through the installed local Python lane.
+- On 2026-09-22, update to safetensors 0.8.0 for the generation-C W2A closure (#110), built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7. Transformers 5.16.1 requires safetensors >=0.8.0.
 
 ## Maintainer Starting Points
 

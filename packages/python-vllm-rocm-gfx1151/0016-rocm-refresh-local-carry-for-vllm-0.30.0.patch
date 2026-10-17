@@ -1,0 +1,958 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Strix Halo Packaging <packaging@example.invalid>
+Date: Tue, 22 Sep 2026 00:00:00 +0000
+Subject: [PATCH] ROCm: refresh local carry for vLLM 0.30.0
+
+Re-port of the 0.21.0 carry onto v0.30.0 (ced6857a). Kept sections:
+
+- setup.py: forward CFLAGS/CXXFLAGS/HIPFLAGS into the CMake ROCm lane.
+- csrc/libtorch_stable/cuda_vec_utils.cuh (moved from csrc/): vllm_bfloat16
+  aliases for HIP.
+- CLI: metadata-only `vllm --version`, lazy subcommand loading, and an
+  import-light serve/utils/api_utils.py so plain `vllm --help` stays off
+  arg_utils, chat_utils, transformers and the serve runtime.
+- SageMaker optional in serve/sagemaker/api_router.py (moved) and
+  serve/lora/api_router.py.
+- TorchAO: metadata-only torchao_version_at_least (torchao_utils.py) and
+  lazy TorchAOConfig registration.
+- Qwen3.5/GDN: AMD autotune restriction and float32 gate exponent in
+  third_party/flash_linear_attention/ops (moved from layers/fla/ops).
+- FlashAttention CK/direct varlen interface gate (fa_utils, flash_attn).
+- ROCm Triton unified-attention large-head prefill tile size.
+- ROCm large-vocabulary top-k/top-p PyTorch fallback.
+- Padded EAGLE/MTP drafter valid_count dtype.
+
+Dropped as upstream-equivalent, obsolete with Triton 3.8, or AITER-only:
+hipify byproduct copy, CLI lazy exports, arg_utils/protocol laziness,
+gfx1x AITER enablement, Gemma 4 AITER preference, hybrid AITER exclusion
+and realignment, AITER unified-attention block size, amdsmi warning,
+FA Triton availability, vendored triton_kernels gate, Triton knobs guard.
+
+---
+diff --git a/csrc/libtorch_stable/cuda_vec_utils.cuh b/csrc/libtorch_stable/cuda_vec_utils.cuh
+index ec6e607..77c187c 100644
+--- a/csrc/libtorch_stable/cuda_vec_utils.cuh
++++ b/csrc/libtorch_stable/cuda_vec_utils.cuh
+@@ -16,6 +16,13 @@
+   #include <cuda_fp16.h>
+   #include <cuda_runtime.h>
+ #endif
++#ifdef USE_ROCM
++using vllm_bfloat16 = __hip_bfloat16;
++using vllm_bfloat162 = __hip_bfloat162;
++#else
++using vllm_bfloat16 = __nv_bfloat16;
++using vllm_bfloat162 = __nv_bfloat162;
++#endif
+ 
+ // Device-side: SM100+ architecture with CUDA 12.9+ toolkit, which
+ // together enable 256-bit (v8.u32) PTX load/store instructions.
+@@ -56,7 +63,7 @@ struct VecTraits<false> {
+ };
+ 
+ // PackedTypeConverter — map between CUDA scalar and packed types
+-//   half  <-> half2,  __nv_bfloat16 <-> __nv_bfloat162, etc.
++//   half  <-> half2,  vllm_bfloat16 <-> vllm_bfloat162, etc.
+ template <typename T>
+ struct PackedTypeConverter {
+   static_assert(sizeof(T) == 0,
+@@ -74,13 +81,13 @@ struct PackedTypeConverter<half> {
+ };
+ 
+ template <>
+-struct PackedTypeConverter<__nv_bfloat162> {
+-  using Type = __nv_bfloat16;
++struct PackedTypeConverter<vllm_bfloat162> {
++  using Type = vllm_bfloat16;
+ };
+ 
+ template <>
+-struct PackedTypeConverter<__nv_bfloat16> {
+-  using Type = __nv_bfloat162;
++struct PackedTypeConverter<vllm_bfloat16> {
++  using Type = vllm_bfloat162;
+ };
+ 
+ template <>
+@@ -100,11 +107,11 @@ struct PackedTypeConverter<c10::Half> {
+ 
+ template <>
+ struct PackedTypeConverter<c10::BFloat16> {
+-  using Type = __nv_bfloat162;
++  using Type = vllm_bfloat162;
+ };
+ 
+ // CUDATypeConverter — map PyTorch scalar types to CUDA scalar
+-//   c10::Half -> half,  c10::BFloat16 -> __nv_bfloat16
++//   c10::Half -> half,  c10::BFloat16 -> vllm_bfloat16
+ template <typename T>
+ struct CUDATypeConverter {
+   using Type = T;
+@@ -117,12 +124,12 @@ struct CUDATypeConverter<c10::Half> {
+ 
+ template <>
+ struct CUDATypeConverter<c10::BFloat16> {
+-  using Type = __nv_bfloat16;
++  using Type = vllm_bfloat16;
+ };
+ 
+ // PackedVec — typed vector container for packed element access.
+ //   Derives alignment and element count from VecTraits.
+-//   Type is the CUDA scalar type (e.g. half, __nv_bfloat16).
++//   Type is the CUDA scalar type (e.g. half, vllm_bfloat16).
+ template <class Type, bool use_256b>
+ struct alignas(VecTraits<use_256b>::ARCH_MAX_VEC_SIZE) PackedVec {
+   static constexpr int NUM_ELTS =
+@@ -330,7 +337,7 @@ __host__ __device__ __forceinline__ bool is_32byte_aligned(const void* ptr) {
+ 
+ template <typename packed_t>
+ __device__ __forceinline__ float2 cast_to_float2(const packed_t& val) {
+-  if constexpr (std::is_same_v<packed_t, __nv_bfloat162>) {
++  if constexpr (std::is_same_v<packed_t, vllm_bfloat162>) {
+     return __bfloat1622float2(val);
+   } else if constexpr (std::is_same_v<packed_t, __half2>) {
+     return __half22float2(val);
+@@ -341,7 +348,7 @@ __device__ __forceinline__ float2 cast_to_float2(const packed_t& val) {
+ 
+ template <typename packed_t>
+ __device__ __forceinline__ packed_t cast_to_packed(const float2& val) {
+-  if constexpr (std::is_same_v<packed_t, __nv_bfloat162>) {
++  if constexpr (std::is_same_v<packed_t, vllm_bfloat162>) {
+     return __float22bfloat162_rn(val);
+   } else if constexpr (std::is_same_v<packed_t, __half2>) {
+     return __float22half2_rn(val);
+@@ -353,7 +360,7 @@ __device__ __forceinline__ packed_t cast_to_packed(const float2& val) {
+ template <typename packed_t>
+ __device__ __forceinline__ packed_t packed_mul(const packed_t& x,
+                                                const packed_t& y) {
+-  if constexpr (std::is_same_v<packed_t, __nv_bfloat162> ||
++  if constexpr (std::is_same_v<packed_t, vllm_bfloat162> ||
+                 std::is_same_v<packed_t, __half2>) {
+     return __hmul2(x, y);
+   } else if constexpr (std::is_same_v<packed_t, float2>) {
+diff --git a/setup.py b/setup.py
+index 13692f3..105608f 100644
+--- a/setup.py
++++ b/setup.py
+@@ -316,6 +316,19 @@ class cmake_build_ext(build_ext):
+         elif _is_hip() and ROCM_HOME is not None:
+             cmake_args += [f"-DROCM_PATH={ROCM_HOME}"]
+ 
++        # setuptools environment flags are not forwarded into the ROCm/HIP
++        # CMake lane automatically. Pass them through explicitly so distro
++        # sanitization flags (prefix maps) and host tuning flags reach both the
++        # host C/C++ and HIP extension builds.
++        for env_name, cmake_name in (
++            ("CFLAGS", "CMAKE_C_FLAGS"),
++            ("CXXFLAGS", "CMAKE_CXX_FLAGS"),
++            ("HIPFLAGS", "CMAKE_HIP_FLAGS"),
++        ):
++            env_value = os.environ.get(env_name)
++            if env_value:
++                cmake_args += [f"-D{cmake_name}={env_value}"]
++
+         other_cmake_args = os.environ.get("CMAKE_ARGS")
+         if other_cmake_args:
+             cmake_args += other_cmake_args.split()
+diff --git a/vllm/entrypoints/cli/main.py b/vllm/entrypoints/cli/main.py
+index d173bc3..220565f 100644
+--- a/vllm/entrypoints/cli/main.py
++++ b/vllm/entrypoints/cli/main.py
+@@ -5,6 +5,7 @@
+ Note that all future modules must be lazily loaded within main
+ to avoid certain eager import breakage."""
+ 
++import argparse
+ import importlib.metadata
+ import sys
+ from importlib.util import find_spec
+@@ -14,6 +15,200 @@ from vllm.logger import init_logger
+ logger = init_logger(__name__)
+ 
+ 
++def _print_version_and_exit_if_requested() -> bool:
++    if len(sys.argv) != 2 or sys.argv[1] not in {"-v", "--version"}:
++        return False
++
++    print(importlib.metadata.version("vllm"))
++    return True
++
++
++def _should_load_benchmark_module() -> bool:
++    if len(sys.argv) < 2:
++        return False
++
++    first_arg = sys.argv[1]
++    return first_arg == "bench" or first_arg.startswith("bench=")
++
++
++class _BenchHelpSubcommand:
++    name = "bench"
++    help = "vLLM bench subcommand."
++
++    @staticmethod
++    def cmd(args: argparse.Namespace) -> None:
++        import vllm.entrypoints.cli.benchmark.main
++
++        vllm.entrypoints.cli.benchmark.main.BenchmarkSubcommand.cmd(args)
++
++    def validate(self, args: argparse.Namespace) -> None:
++        return None
++
++    def subparser_init(
++        self, subparsers: argparse._SubParsersAction
++    ) -> argparse.ArgumentParser:
++        bench_parser = subparsers.add_parser(
++            self.name,
++            help=self.help,
++            description=self.help,
++            usage="vllm bench <bench_type> [options]",
++        )
++        bench_parser.set_defaults(dispatch_function=self.cmd)
++        return bench_parser
++
++
++class _BenchHelpModule:
++    @staticmethod
++    def cmd_init():
++        return [_BenchHelpSubcommand()]
++
++
++class _StaticSubcommand:
++    def __init__(
++        self,
++        name: str,
++        help: str,
++        description: str | None = None,
++        usage: str | None = None,
++    ) -> None:
++        self.name = name
++        self.help = help
++        self.description = description or help
++        self.usage = usage
++
++    @staticmethod
++    def cmd(args: argparse.Namespace) -> None:
++        raise RuntimeError("Static help subcommands should never be dispatched")
++
++    def validate(self, args: argparse.Namespace) -> None:
++        return None
++
++    def subparser_init(
++        self, subparsers: argparse._SubParsersAction
++    ) -> argparse.ArgumentParser:
++        return subparsers.add_parser(
++            self.name,
++            help=self.help,
++            description=self.description,
++            usage=self.usage,
++        )
++
++
++class _StaticHelpModule:
++    def __init__(self, *subcommands: _StaticSubcommand):
++        self._subcommands = list(subcommands)
++
++    def cmd_init(self):
++        return self._subcommands
++
++
++def _selected_subcommand() -> str | None:
++    if len(sys.argv) < 2:
++        return None
++
++    first_arg = sys.argv[1]
++    if first_arg in {"-h", "--help"} or first_arg.startswith("--help="):
++        return None
++
++    return first_arg
++
++
++def _load_cmd_modules():
++    selected = _selected_subcommand()
++
++    if selected in {"chat", "complete"}:
++        import vllm.entrypoints.cli.openai
++
++        openai_module = vllm.entrypoints.cli.openai
++    else:
++        openai_module = _StaticHelpModule(
++            _StaticSubcommand(
++                "chat",
++                "Generate chat completions via the running API server.",
++                "Generate chat completions via the running API server.",
++                "vllm chat [options]",
++            ),
++            _StaticSubcommand(
++                "complete",
++                "Generate text completions based on the given prompt via the running API server.",
++                "Generate text completions based on the given prompt via the running API server.",
++                "vllm complete [options]",
++            ),
++        )
++
++    if selected == "serve":
++        import vllm.entrypoints.cli.serve
++
++        serve_module = vllm.entrypoints.cli.serve
++    else:
++        serve_module = _StaticHelpModule(
++            _StaticSubcommand(
++                "serve",
++                "Launch a local OpenAI-compatible API server to serve LLM completions via HTTP.",
++                "Launch a local OpenAI-compatible API server to serve LLM completions via HTTP.",
++                "vllm serve [model_tag] [options]",
++            ),
++        )
++
++    if selected == "launch":
++        import vllm.entrypoints.cli.launch
++
++        launch_module = vllm.entrypoints.cli.launch
++    else:
++        launch_module = _StaticHelpModule(
++            _StaticSubcommand(
++                "launch",
++                "Launch individual vLLM components.",
++                "Launch individual vLLM components.",
++                "vllm launch <component> [options]",
++            ),
++        )
++
++    if _should_load_benchmark_module():
++        import vllm.entrypoints.cli.benchmark.main
++
++        benchmark_module = vllm.entrypoints.cli.benchmark.main
++    else:
++        benchmark_module = _BenchHelpModule()
++
++    if selected == "collect-env":
++        import vllm.entrypoints.cli.collect_env
++
++        collect_env_module = vllm.entrypoints.cli.collect_env
++    else:
++        collect_env_module = _StaticHelpModule(
++            _StaticSubcommand(
++                "collect-env",
++                "Start collecting environment information.",
++                "Start collecting environment information.",
++                "vllm collect-env",
++            ),
++        )
++
++    if selected == "run-batch":
++        import vllm.entrypoints.cli.run_batch
++
++        run_batch_module = vllm.entrypoints.cli.run_batch
++    else:
++        run_batch_module = _StaticHelpModule(
++            _StaticSubcommand(
++                "run-batch",
++                "Run batch prompts and write results to file.",
++                "Run batch prompts using vLLM's OpenAI-compatible API.\nSupports local or HTTP input/output files.",
++                "vllm run-batch -i INPUT.jsonl -o OUTPUT.jsonl --model <model>",
++            ),
++        )
++
++    return [
++        openai_module,
++        serve_module,
++        launch_module,
++        benchmark_module,
++        collect_env_module,
++        run_batch_module,
++    ]
++
++
+ def maybe_run_omni() -> bool:
+     # If `--omni` arg is passed to the CLI, delegate to vLLM Omni's entrypoint handling
+     if "--omni" not in sys.argv:
+@@ -37,33 +232,26 @@ def maybe_run_omni() -> bool:
+ 
+ 
+ def main():
++    if _print_version_and_exit_if_requested():
++        return
++
+     if maybe_run_omni():
+         return
+ 
+-    import vllm.entrypoints.cli.benchmark.main
+-    import vllm.entrypoints.cli.collect_env
+-    import vllm.entrypoints.cli.launch
+-    import vllm.entrypoints.cli.openai
+-    import vllm.entrypoints.cli.run_batch
+-    import vllm.entrypoints.cli.serve
+     from vllm.entrypoints.serve.utils.api_utils import (
+         VLLM_SUBCMD_PARSER_EPILOG,
+         cli_env_setup,
+     )
+     from vllm.utils.argparse_utils import FlexibleArgumentParser
+ 
+-    CMD_MODULES = [
+-        vllm.entrypoints.cli.openai,
+-        vllm.entrypoints.cli.serve,
+-        vllm.entrypoints.cli.launch,
+-        vllm.entrypoints.cli.benchmark.main,
+-        vllm.entrypoints.cli.collect_env,
+-        vllm.entrypoints.cli.run_batch,
+-    ]
++    CMD_MODULES = _load_cmd_modules()
+ 
+     cli_env_setup()
+ 
+-    vllm.entrypoints.cli.benchmark.main.maybe_exec_rust_bench()
++    if _should_load_benchmark_module():
++        import vllm.entrypoints.cli.benchmark.main
++
++        vllm.entrypoints.cli.benchmark.main.maybe_exec_rust_bench()
+ 
+     # For 'vllm bench *': use CPU instead of UnspecifiedPlatform by default
+     if len(sys.argv) > 1 and sys.argv[1] == "bench":
+diff --git a/vllm/entrypoints/serve/lora/api_router.py b/vllm/entrypoints/serve/lora/api_router.py
+index 95dff97..fee5e72 100644
+--- a/vllm/entrypoints/serve/lora/api_router.py
++++ b/vllm/entrypoints/serve/lora/api_router.py
+@@ -1,8 +1,6 @@
+ # SPDX-License-Identifier: Apache-2.0
+ # SPDX-FileCopyrightText: Copyright contributors to the vLLM project
+ 
+-
+-import model_hosting_container_standards.sagemaker as sagemaker_standards
+ from fastapi import APIRouter, Depends, FastAPI, Request
+ from fastapi.responses import JSONResponse, Response
+ 
+@@ -20,11 +18,22 @@ from vllm.logger import init_logger
+ logger = init_logger(__name__)
+ router = APIRouter()
+ 
++try:
++    import model_hosting_container_standards.sagemaker as sagemaker_standards
++except ModuleNotFoundError:
++    sagemaker_standards = None
++
+ 
+ def attach_router(app: FastAPI):
+     if not envs.VLLM_ALLOW_RUNTIME_LORA_UPDATING:
+         """If LoRA dynamic loading & unloading is not enabled, do nothing."""
+         return
++    if sagemaker_standards is None:
++        logger.info(
++            "SageMaker container standards are not installed; skipping "
++            "runtime LoRA update routes."
++        )
++        return
+     logger.warning(
+         "LoRA dynamic loading & unloading is enabled in the API server. "
+         "This should ONLY be used for local development!"
+diff --git a/vllm/entrypoints/serve/sagemaker/api_router.py b/vllm/entrypoints/serve/sagemaker/api_router.py
+index 142256c..7c51d99 100644
+--- a/vllm/entrypoints/serve/sagemaker/api_router.py
++++ b/vllm/entrypoints/serve/sagemaker/api_router.py
+@@ -5,8 +5,12 @@ from collections.abc import Awaitable, Callable
+ from http import HTTPStatus
+ from typing import Any
+ 
+-import model_hosting_container_standards.sagemaker as sagemaker_standards
+ import pydantic
++
++try:
++    import model_hosting_container_standards.sagemaker as sagemaker_standards
++except ModuleNotFoundError:
++    sagemaker_standards = None
+ from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request
+ from fastapi.responses import JSONResponse, Response
+ 
+@@ -18,8 +22,11 @@ from vllm.entrypoints.serve.engine.serving import BaseServing
+ from vllm.entrypoints.serve.instrumentator.basic import base
+ from vllm.entrypoints.serve.instrumentator.health import health
+ from vllm.entrypoints.serve.utils.api_utils import validate_json_request
++from vllm.logger import init_logger
+ from vllm.tasks import SupportedTask
+ 
++logger = init_logger(__name__)
++
+ # TODO: RequestType = TypeForm[BaseModel] when recognized by type checkers
+ # (requires typing_extensions >= 4.13)
+ RequestType = Any
+@@ -32,6 +39,13 @@ def attach_router(
+     supported_tasks: tuple["SupportedTask", ...],
+     model_config: ModelConfig | None = None,
+ ):
++    if sagemaker_standards is None:
++        logger.info(
++            "SageMaker container standards are not installed; skipping "
++            "SageMaker-specific API routes."
++        )
++        return
++
+     router = APIRouter()
+ 
+     # NOTE: Construct the TypeAdapters only once
+@@ -99,4 +113,6 @@ def attach_router(
+ 
+ 
+ def sagemaker_standards_bootstrap(app: FastAPI) -> FastAPI:
++    if sagemaker_standards is None:
++        return app
+     return sagemaker_standards.bootstrap(app)
+diff --git a/vllm/entrypoints/serve/utils/api_utils.py b/vllm/entrypoints/serve/utils/api_utils.py
+index aa089cf..6c8525f 100644
+--- a/vllm/entrypoints/serve/utils/api_utils.py
++++ b/vllm/entrypoints/serve/utils/api_utils.py
+@@ -8,7 +8,7 @@ import os
+ from argparse import Namespace
+ from logging import Logger
+ from string import Template
+-from typing import Any
++from typing import TYPE_CHECKING, Any
+ 
+ from fastapi import Request
+ from fastapi.exceptions import RequestValidationError
+@@ -16,13 +16,17 @@ from fastapi.responses import JSONResponse, StreamingResponse
+ from starlette.background import BackgroundTask, BackgroundTasks
+ 
+ from vllm import envs
+-from vllm.engine.arg_utils import EngineArgs
+-from vllm.entrypoints.generate.base.protocol import StreamOptions
+-from vllm.entrypoints.openai.models.protocol import LoRAModulePath
+ from vllm.logger import current_formatter_type, init_logger
+-from vllm.platforms import current_platform
+ from vllm.utils.argparse_utils import FlexibleArgumentParser
+ 
++# Keep the CLI parser/epilog path import-light: `vllm --help` imports this
++# module for VLLM_SUBCMD_PARSER_EPILOG and cli_env_setup, so the engine,
++# protocol, and platform modules are imported only by the helpers that use them.
++if TYPE_CHECKING:
++    from vllm.engine.arg_utils import EngineArgs
++    from vllm.entrypoints.generate.base.protocol import StreamOptions
++    from vllm.entrypoints.openai.models.protocol import LoRAModulePath
++
+ logger = init_logger(__name__)
+ 
+ VLLM_SUBCMD_PARSER_EPILOG = (
+@@ -186,6 +190,8 @@ def get_max_tokens(
+             f"context length ({max_model_len})."
+         )
+     model_max_tokens = max_model_len - input_length
++    from vllm.platforms import current_platform
++
+     platform_max_tokens = current_platform.get_max_output_tokens(input_length)
+     fallback_max_tokens = (
+         max_tokens
+@@ -205,7 +211,8 @@ def get_max_tokens(
+     )
+ 
+ 
+-def get_non_default_args(args: Namespace | EngineArgs) -> dict[str, Any]:
++def get_non_default_args(args: "Namespace | EngineArgs") -> dict[str, Any]:
++    from vllm.engine.arg_utils import EngineArgs
+     from vllm.entrypoints.launchers.cli_args import make_arg_parser
+ 
+     non_default_args = {}
+@@ -255,7 +262,7 @@ def _jsonify_arg_value(value: Any) -> Any:
+ 
+ 
+ def jsonify_non_default_args(
+-    args: Namespace | EngineArgs,
++    args: "Namespace | EngineArgs",
+     *,
+     exclude: set[str] | None = None,
+ ) -> dict[str, Any]:
+@@ -281,13 +288,13 @@ def redact_sensitive_args(args: dict[str, Any]) -> dict[str, Any]:
+     }
+ 
+ 
+-def log_non_default_args(args: Namespace | EngineArgs):
++def log_non_default_args(args: "Namespace | EngineArgs"):
+     non_default_args = get_non_default_args(args)
+     logger.info("non-default args: %s", redact_sensitive_args(non_default_args))
+ 
+ 
+ def should_include_usage(
+-    stream_options: StreamOptions | None, enable_force_include_usage: bool
++    stream_options: "StreamOptions | None", enable_force_include_usage: bool
+ ) -> tuple[bool, bool]:
+     if enable_force_include_usage:
+         return True, True
+@@ -302,8 +309,8 @@ def should_include_usage(
+ 
+ 
+ def process_lora_modules(
+-    args_lora_modules: list[LoRAModulePath], default_mm_loras: dict[str, str] | None
+-) -> list[LoRAModulePath]:
++    args_lora_modules: "list[LoRAModulePath]", default_mm_loras: dict[str, str] | None
++) -> "list[LoRAModulePath]":
+     from vllm.entrypoints.openai.models.serving import LoRAModulePath
+ 
+     lora_modules = args_lora_modules
+diff --git a/vllm/model_executor/layers/quantization/__init__.py b/vllm/model_executor/layers/quantization/__init__.py
+index 57dc237..dfb2b11 100644
+--- a/vllm/model_executor/layers/quantization/__init__.py
++++ b/vllm/model_executor/layers/quantization/__init__.py
+@@ -150,7 +150,6 @@ def get_quantization_config(quantization: str) -> type[QuantizationConfig]:
+     from .moe_wna16 import MoeWNA16Config
+     from .mxfp4 import GptOssMxfp4Config, Mxfp4Config
+     from .online.base import OnlineQuantizationConfig
+-    from .torchao import TorchAOConfig
+ 
+     method_to_config: dict[str, type[QuantizationConfig]] = {
+         "awq": AutoAWQConfig,
+@@ -170,7 +169,6 @@ def get_quantization_config(quantization: str) -> type[QuantizationConfig]:
+         "experts_int8": ExpertsInt8Config,
+         "quark": QuarkConfig,
+         "moe_wna16": MoeWNA16Config,
+-        "torchao": TorchAOConfig,
+         "inc": INCConfig,
+         "mxfp4": Mxfp4Config,
+         "gpt_oss_mxfp4": GptOssMxfp4Config,
+@@ -182,6 +180,10 @@ def get_quantization_config(quantization: str) -> type[QuantizationConfig]:
+         # below only applies to the `--quantization mxfp8` CLI path.
+         "mxfp8": ModelOptMxFp8Config,
+     }
++    if quantization == "torchao":
++        from .torchao import TorchAOConfig
++
++        method_to_config["torchao"] = TorchAOConfig
+ 
+     # Register online shorthands (e.g. "fp8_per_tensor") as quant methods.
+     # setdefault so a shorthand that is also a checkpoint method (e.g. "mxfp8")
+diff --git a/vllm/model_executor/layers/quantization/torchao.py b/vllm/model_executor/layers/quantization/torchao.py
+index 8862578..6ffd2a5 100644
+--- a/vllm/model_executor/layers/quantization/torchao.py
++++ b/vllm/model_executor/layers/quantization/torchao.py
+@@ -1,15 +1,12 @@
+ # SPDX-License-Identifier: Apache-2.0
+ # SPDX-FileCopyrightText: Copyright contributors to the vLLM project
+-import importlib
+ import json
+ import types
+-from importlib.util import find_spec
+ from typing import Any
+ 
+ import regex as re
+ import torch
+ import torch.nn.functional as F
+-from packaging import version
+ from torch.nn.parameter import Parameter
+ 
+ from vllm.logger import init_logger
+@@ -23,6 +20,9 @@ from vllm.model_executor.layers.quantization.base_config import (
+     QuantizationConfig,
+     QuantizeMethodBase,
+ )
++from vllm.model_executor.layers.quantization.torchao_utils import (
++    torchao_version_at_least,
++)
+ from vllm.model_executor.utils import set_weight_attrs
+ 
+ logger = init_logger(__name__)
+@@ -61,17 +61,6 @@ def _restore_weight_attrs(param, recorded_weight_attr):
+             setattr(param, attr_name, _bond_method_to_cls(attr, param))
+ 
+ 
+-def torchao_version_at_least(torchao_version: str) -> bool:
+-    if find_spec("torchao"):
+-        try:
+-            if version.parse(importlib.metadata.version("torchao")) >= version.parse(
+-                torchao_version
+-            ):
+-                return True
+-        except (ImportError, version.InvalidVersion):
+-            return False
+-    return False
+-
+ 
+ def should_skip(prefix: str, skip_modules: list[str]) -> bool:
+     """
+diff --git a/vllm/model_executor/layers/quantization/torchao_utils.py b/vllm/model_executor/layers/quantization/torchao_utils.py
+new file mode 100644
+index 0000000..0e438fb
+--- /dev/null
++++ b/vllm/model_executor/layers/quantization/torchao_utils.py
+@@ -0,0 +1,19 @@
++# SPDX-License-Identifier: Apache-2.0
++# SPDX-FileCopyrightText: Copyright contributors to the vLLM project
++
++from importlib import metadata
++from importlib.util import find_spec
++
++from packaging import version
++
++
++def torchao_version_at_least(torchao_version: str) -> bool:
++    """Check installed torchao version without importing the torchao package."""
++    if find_spec("torchao"):
++        try:
++            installed_version = metadata.version("torchao")
++            if version.parse(installed_version) >= version.parse(torchao_version):
++                return True
++        except (metadata.PackageNotFoundError, version.InvalidVersion):
++            return False
++    return False
+diff --git a/vllm/model_executor/model_loader/default_loader.py b/vllm/model_executor/model_loader/default_loader.py
+index 039a577..45648ac 100644
+--- a/vllm/model_executor/model_loader/default_loader.py
++++ b/vllm/model_executor/model_loader/default_loader.py
+@@ -14,7 +14,9 @@ from transformers.utils import SAFE_WEIGHTS_INDEX_NAME
+ from vllm.config import ModelConfig
+ from vllm.config.load import LoadConfig
+ from vllm.logger import init_logger
+-from vllm.model_executor.layers.quantization.torchao import torchao_version_at_least
++from vllm.model_executor.layers.quantization.torchao_utils import (
++    torchao_version_at_least,
++)
+ from vllm.model_executor.model_loader.base_loader import BaseModelLoader
+ from vllm.model_executor.model_loader.ep_weight_filter import (
+     compute_local_expert_ids,
+diff --git a/vllm/model_executor/model_loader/weight_utils.py b/vllm/model_executor/model_loader/weight_utils.py
+index abe24fa..094d832 100644
+--- a/vllm/model_executor/model_loader/weight_utils.py
++++ b/vllm/model_executor/model_loader/weight_utils.py
+@@ -60,7 +60,9 @@ except ImportError:
+     fastsafetensors = PlaceholderModule("fastsafetensors")
+     SingleGroup = fastsafetensors.placeholder_attr("SingleGroup")
+ 
+-from vllm.model_executor.layers.quantization.torchao import torchao_version_at_least
++from vllm.model_executor.layers.quantization.torchao_utils import (
++    torchao_version_at_least,
++)
+ 
+ logger = init_logger(__name__)
+ 
+diff --git a/vllm/third_party/flash_linear_attention/ops/chunk_delta_h.py b/vllm/third_party/flash_linear_attention/ops/chunk_delta_h.py
+index eb1c3af..866e401 100644
+--- a/vllm/third_party/flash_linear_attention/ops/chunk_delta_h.py
++++ b/vllm/third_party/flash_linear_attention/ops/chunk_delta_h.py
+@@ -14,7 +14,7 @@ from vllm.triton_utils import tl, triton
+ 
+ from .index import prepare_chunk_indices, prepare_chunk_offsets
+ from .op import exp, exp2
+-from .utils import FLA_CHUNK_SIZE, use_cuda_graph
++from .utils import FLA_CHUNK_SIZE, is_amd, use_cuda_graph
+ 
+ NUM_WARPS = [2, 4, 8, 16]
+ # Triton's AMD backend fails to lower this kernel with num_stages=4.
+@@ -35,8 +35,12 @@ _CHUNK_DELTA_H_NUM_STAGES = [2, 3] if torch.version.hip else [2, 3, 4]
+     configs=[
+         triton.Config({"BV": BV}, num_warps=num_warps, num_stages=num_stages)
+         for num_warps in [2, 4]
+-        for num_stages in _CHUNK_DELTA_H_NUM_STAGES
+-        for BV in [32, 64]
++        # NOTE(gfx1151): On AMD HIP, restrict autotune search to
++        # num_stages=2 and BV=32. Higher stages and BV=64 with K>64
++        # produce code that causes GPU page faults during autotuning on
++        # RDNA 3.5 (wave32).
++        for num_stages in ([2] if is_amd else _CHUNK_DELTA_H_NUM_STAGES)
++        for BV in ([32] if is_amd else [32, 64])
+     ],
+     key=["H", "K", "V", "BT"],
+     use_cuda_graph=use_cuda_graph,
+@@ -213,12 +217,16 @@ def chunk_gated_delta_rule_fwd_kernel_h_blockdim64(
+                 g + bos * H + i_h, (T,), (H,), (i_t * BT,), (BT,), (0,)
+             )
+             b_g = tl.load(p_g, boundary_check=(0,))
++            # NOTE(gfx1151): Triton HIP fails to infer types for
++            # exp(scalar_bf16 - block_ptr_load_bf16). Cast to float32
++            # first, which also improves precision for exp computation.
++            b_g_diff = b_g_last.to(tl.float32) - b_g.to(tl.float32)
+             if USE_EXP2:
+-                b_v = b_v * tl.where(m_t, exp2(b_g_last - b_g), 0)[:, None]
+-                b_g_last = exp2(b_g_last)
++                b_v = b_v * tl.where(m_t, exp2(b_g_diff), 0)[:, None]
++                b_g_last = exp2(b_g_last.to(tl.float32))
+             else:
+-                b_v = b_v * tl.where(m_t, exp(b_g_last - b_g), 0)[:, None]
+-                b_g_last = exp(b_g_last)
++                b_v = b_v * tl.where(m_t, exp(b_g_diff), 0)[:, None]
++                b_g_last = exp(b_g_last.to(tl.float32))
+             b_h1 *= b_g_last
+             if K > 64:
+                 b_h2 *= b_g_last
+diff --git a/vllm/third_party/flash_linear_attention/ops/chunk_o.py b/vllm/third_party/flash_linear_attention/ops/chunk_o.py
+index 0c323b8..b06c57a 100644
+--- a/vllm/third_party/flash_linear_attention/ops/chunk_o.py
++++ b/vllm/third_party/flash_linear_attention/ops/chunk_o.py
+@@ -16,7 +16,7 @@ from vllm.triton_utils import tl, triton
+ 
+ from .index import prepare_chunk_indices
+ from .op import exp
+-from .utils import FLA_CHUNK_SIZE, check_shared_mem, is_nvidia_hopper
++from .utils import FLA_CHUNK_SIZE, check_shared_mem, is_amd, is_nvidia_hopper
+ 
+ BKV_LIST = [64, 128] if check_shared_mem() else [32, 64]
+ NUM_WARPS = [2, 4] if is_nvidia_hopper else [2, 4, 8]
+@@ -31,10 +31,12 @@ NUM_WARPS = [2, 4] if is_nvidia_hopper else [2, 4, 8]
+ @triton.autotune(
+     configs=[
+         triton.Config({"BK": BK, "BV": BV}, num_warps=num_warps, num_stages=num_stages)
+-        for BK in BKV_LIST
+-        for BV in BKV_LIST
++        # NOTE(gfx1151): restrict the AMD autotune search to BK=BV=32 and
++        # num_stages=2; larger tiles page-fault during autotuning on RDNA 3.5.
++        for BK in ([32] if is_amd else BKV_LIST)
++        for BV in ([32] if is_amd else BKV_LIST)
+         for num_warps in NUM_WARPS
+-        for num_stages in [2, 3, 4]
++        for num_stages in ([2] if is_amd else [2, 3, 4])
+     ],
+     key=["H", "K", "V", "BT"],
+ )
+diff --git a/vllm/v1/attention/backends/fa_utils.py b/vllm/v1/attention/backends/fa_utils.py
+index 0de6b85..821e1c5 100644
+--- a/vllm/v1/attention/backends/fa_utils.py
++++ b/vllm/v1/attention/backends/fa_utils.py
+@@ -1,6 +1,8 @@
+ # SPDX-License-Identifier: Apache-2.0
+ # SPDX-FileCopyrightText: Copyright contributors to the vLLM project
+ 
++import inspect
++from functools import cache
+ from typing import Any
+ 
+ import vllm.envs as envs
+@@ -83,8 +85,10 @@ def get_flash_attn_version(
+     if current_platform.is_xpu():
+         return 2
+     if current_platform.is_rocm():
+-        # ROCm doesn't use vllm_flash_attn; return None to skip fa_version arg
+-        return None
++        if not _ROCM_FLASH_ATTN_AVAILABLE:
++            return None
++        # The validated upstream ROCm flash-attn lane in this package is FA2.
++        return 2
+     try:
+         from vllm.vllm_flash_attn.flash_attn_interface import (
+             fa_version_unsupported_reason,
+@@ -279,6 +283,39 @@ def is_fa_version_supported(fa_version: int) -> bool:
+         return False
+ 
+ 
++@cache
++def rocm_flash_attn_supports_vllm_varlen_api() -> bool:
++    if not current_platform.is_rocm():
++        return True
++    if not _ROCM_FLASH_ATTN_AVAILABLE:
++        return False
++
++    try:
++        signature = inspect.signature(flash_attn_varlen_func)
++    except (TypeError, ValueError):
++        return False
++
++    required_keywords = {
++        "out",
++        "seqused_k",
++        "scheduler_metadata",
++        "fa_version",
++        "q_descale",
++        "k_descale",
++        "v_descale",
++        "num_splits",
++        "s_aux",
++        "return_softmax_lse",
++    }
++    parameters = signature.parameters
++    if any(
++        parameter.kind == inspect.Parameter.VAR_KEYWORD
++        for parameter in parameters.values()
++    ):
++        return True
++    return required_keywords.issubset(parameters)
++
++
+ def flash_attn_supports_kv_cache_dtype(
+     kv_cache_dtype: str = "fp8_e4m3",
+     *,
+diff --git a/vllm/v1/attention/backends/flash_attn.py b/vllm/v1/attention/backends/flash_attn.py
+index eb2268c..b713428 100755
+--- a/vllm/v1/attention/backends/flash_attn.py
++++ b/vllm/v1/attention/backends/flash_attn.py
+@@ -31,6 +31,7 @@ from vllm.v1.attention.backends.fa_utils import (
+     get_flash_attn_version,
+     is_fa_version_supported,
+     is_flash_attn_varlen_func_available,
++    rocm_flash_attn_supports_vllm_varlen_api,
+     uses_fa4_hd256_kernel,
+ )
+ from vllm.v1.attention.backends.utils import (
+@@ -419,6 +420,11 @@ class FlashAttentionBackend(AttentionBackend):
+     ) -> str | None:
+         if has_sink and device_capability < DeviceCapability(9, 0):
+             return "sink not supported on compute capability < 9.0"
++        if not rocm_flash_attn_supports_vllm_varlen_api():
++            return (
++                "ROCm flash-attn varlen API is not vLLM-compatible; "
++                "FLASH_ATTN requires vLLM's paged-KV varlen API"
++            )
+         if (
+             kv_cache_dtype is not None
+             and is_quantized_kv_cache(kv_cache_dtype)
+diff --git a/vllm/v1/attention/ops/triton_unified_attention.py b/vllm/v1/attention/ops/triton_unified_attention.py
+index b0231dd..551a9fb 100644
+--- a/vllm/v1/attention/ops/triton_unified_attention.py
++++ b/vllm/v1/attention/ops/triton_unified_attention.py
+@@ -797,6 +797,17 @@ def _get_tile_size(
+         # Gemma3: use 32 for decode (default is 16)
+         return 32
+ 
++    if (
++        current_platform.is_rocm()
++        and is_prefill
++        and element_size >= 2
++        and head_size >= 512
++    ):
++        # ROCm Triton unified attention over-allocates LDS for large-head
++        # prefill at tile size 32 (for example Gemma4 global heads at 512),
++        # exceeding the 64 KiB hardware limit on gfx1151.
++        return 16
++
+     # Default behavior
+     if is_prefill:
+         return 32
+diff --git a/vllm/v1/sample/ops/topk_topp_sampler.py b/vllm/v1/sample/ops/topk_topp_sampler.py
+index aeb82de..e761b55 100644
+--- a/vllm/v1/sample/ops/topk_topp_sampler.py
++++ b/vllm/v1/sample/ops/topk_topp_sampler.py
+@@ -371,6 +371,15 @@ def apply_top_k_top_p(
+     if p is None and k is None:
+         return logits
+ 
++    if current_platform.is_rocm() and logits.shape[-1] > 200000:
++        # Use PyTorch top-k/top-p filtering on large-vocabulary ROCm lanes.
++        # The Triton filter path can fault on gfx1151 for Qwen3.5-family
++        # vocabularies; a standalone reproducer with logits shaped
++        # (32, 248320), top_k enabled, and top_p=0.9 faults in
++        # apply_top_k_top_p_triton, while the existing PyTorch fallback
++        # completes on the same tensor.
++        return apply_top_k_top_p_pytorch(logits, k, p)
++
+     if HAS_TRITON:
+         return apply_top_k_top_p_triton(logits, k, p)
+ 
+diff --git a/vllm/v1/spec_decode/utils.py b/vllm/v1/spec_decode/utils.py
+index fbfe443..8b8178d 100644
+--- a/vllm/v1/spec_decode/utils.py
++++ b/vllm/v1/spec_decode/utils.py
+@@ -286,7 +286,11 @@ def eagle_prepare_next_token_padded_kernel(
+ 
+     if is_discarded:
+         backup_token = tl.load(backup_next_token_ids_ptr + req_idx)
+-        valid_count = tl.full((), 0, dtype=tl.uint32)
++        # Keep valid_count type stable across branches. On ROCm/Triton, the
++        # tl.sum(bool mask) path below can otherwise infer an int1 scalar while
++        # this discarded-request path produces uint32, and Triton rejects the
++        # branch merge before the kernel can compile.
++        valid_count = tl.full((), 0, dtype=tl.int32)
+         tl.store(next_token_ids_ptr + req_idx, backup_token)
+         tl.store(valid_sampled_tokens_count_ptr + req_idx, valid_count)
+     else:
+@@ -299,7 +303,7 @@ def eagle_prepare_next_token_padded_kernel(
+ 
+         # Rejected tokens are -1, valid tokens are in [0, vocab_size)
+         is_valid_mask = (token_ids != -1) & (token_ids < vocab_size) & token_mask
+-        valid_count = tl.sum(is_valid_mask)
++        valid_count = tl.sum(is_valid_mask.to(tl.int32))
+ 
+         if valid_count > 0:
+             # Guaranteed to be well-defined since

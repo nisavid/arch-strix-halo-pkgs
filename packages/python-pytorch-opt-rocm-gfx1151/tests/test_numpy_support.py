@@ -39,14 +39,15 @@ def _needed_entries(path: Path) -> str:
 
 def test_pkgbuild_makes_numpy_available_at_build_time():
     text = PKGBUILD.read_text()
-    assert "pkgrel=4" in text
-    assert "c7badbdf3d33d945a0ed4536aac5303bc933e6ee" in text
+    assert "pkgrel=5" in text
+    assert "13da08625e0d25586351146b4c444f5263997ef8" in text
     assert "python-numpy-gfx1151" in text
     assert "openmp" in text
     assert "openblas" in text
     assert "makedepends=(" in text
     assert "0001-setup-allow-skipping-build-deps.patch" in text
-    assert "0009-match-aotriton-0.12-lazy-tensor-callbacks.patch" in text
+    assert "0009-match-aotriton-0.12-lazy-tensor-callbacks.patch" not in text
+    assert "0010-disable-system-aotriton-install.patch" in text
     assert "export USE_NUMPY=1" in text
     assert 'export BLAS="OpenBLAS"' in text
     assert 'export OpenBLAS_HOME="${OpenBLAS_HOME:-/usr}"' in text
@@ -55,6 +56,8 @@ def test_pkgbuild_makes_numpy_available_at_build_time():
     assert 'export AOTRITON_INSTALLED_PREFIX="/usr"' in text
     assert "export USE_CUDA=0" in text
     assert "export USE_ROCM=1" in text
+    assert "export USE_MAGMA=0" in text
+    assert 'export MAX_JOBS="${MAX_JOBS:-$(_build_jobs)}"' in text
     assert "0006-enable-aten-cuda-api-for-rocm.patch" in text
     assert 'rm -rf build' in text
     assert 'local _ccache_cache="$srcdir/.ccache/cache"' in text

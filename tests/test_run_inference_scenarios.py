@@ -5,6 +5,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 RUNNER = REPO_ROOT / "tools/run_inference_scenarios.py"
@@ -752,7 +754,7 @@ def test_vllm_flash_attn_vit_wrapper_dry_run_resolves_command_and_env():
     assert planned["env"] == {"FLASH_ATTENTION_TRITON_AMD_ENABLE": "TRUE"}
 
 
-def test_flash_attn_engine_selector_includes_ck_and_triton_scenarios():
+def test_flash_attn_engine_selector_keeps_aiter_triton_scenarios_exploratory():
     result = run_runner(
         "--scenario-dir",
         str(REPO_ROOT / "inference/scenarios"),
@@ -769,8 +771,6 @@ def test_flash_attn_engine_selector_includes_ck_and_triton_scenarios():
         "flash-attn.ck.varlen-tiny",
         "flash-attn.ck.varlen-tiny-d256",
         "flash-attn.ck.varlen-paged-kv",
-        "flash-attn.triton-amd.backend-import",
-        "flash-attn.triton-amd.qkvpacked-tiny",
     ]
 
 
@@ -816,7 +816,7 @@ def test_quantized_qwen_text_dry_run_includes_probe_options_and_binding(
         str(run_root),
         "--dry-run",
         "--scenario",
-        "vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors-blocked",
+        "vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors",
         "--model-path",
         "surogate/Qwen3.5-0.8B-FP8=/models/qwen35-fp8",
     )
@@ -824,7 +824,7 @@ def test_quantized_qwen_text_dry_run_includes_probe_options_and_binding(
     assert result.returncode == 0
     payload = json.loads(result.stdout)
     assert payload["selected_ids"] == [
-        "vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors-blocked"
+        "vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors"
     ]
     assert payload["planned"][0]["command"] == [
         sys.executable,
@@ -1018,6 +1018,229 @@ def test_awq_qwen_text_dry_run_uses_native_awq_probe_contract(
             "artifact until live validation passes."
         ),
     }
+
+
+@pytest.mark.parametrize("mode", ["basic", "tool", "structured"])
+def test_granite_dry_run_preserves_pin_and_requires_runtime_joins(
+    tmp_path: Path, mode: str
+):
+    scenario_id = f"vllm.granite3_1.1b-a400m.server.{mode}"
+    model_id = "ibm-granite/granite-3.1-1b-a400m-instruct"
+    revision = "0da7a48b0276d500ce5922fd2b33944091fc6c09"
+    run_root = tmp_path / "run"
+
+    result = run_runner(
+        "--scenario-dir",
+        str(REPO_ROOT / "inference/scenarios"),
+        "--run-root",
+        str(run_root),
+        "--scenario",
+        scenario_id,
+        "--dry-run",
+    )
+
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout)
+    assert payload["selected_ids"] == [scenario_id]
+    assert payload["execution_mode"] == "serial"
+    planned = payload["planned"][0]
+    assert planned["model"] == model_id
+    assert planned["source_url"] == (
+        "https://huggingface.co/ibm-granite/granite-3.1-1b-a400m-instruct/tree/"
+        "0da7a48b0276d500ce5922fd2b33944091fc6c09"
+    )
+    assert planned["model_provenance"] == {
+        "repo_id": model_id,
+        "revision": revision,
+    }
+    assert planned["command"] is None
+    assert planned["server_log_path"] is None
+    assert planned["env"] == {}
+    failure = planned["planning_failure"]
+    assert failure.startswith(
+        f"SCENARIO_PLAN_FAILED: {scenario_id}: GRANITE_RUNTIME_JOIN_REQUIRED:"
+    )
+    assert "reviewed fit/fault-stop method" in failure
+    assert "selected Granite operating envelope" in failure
+    assert "qualifying immutable C subject" in failure
+    assert not run_root.exists()
+
+
+@pytest.mark.parametrize("mode", ["basic", "tool", "structured"])
+def test_granite_run_refuses_execution_until_runtime_joins(
+    tmp_path: Path, mode: str
+):
+    scenario_id = f"vllm.granite3_1.1b-a400m.server.{mode}"
+    run_root = tmp_path / "run"
+    result = run_runner(
+        "--scenario-dir",
+        str(REPO_ROOT / "inference/scenarios"),
+        "--run-root",
+        str(run_root),
+        "--scenario",
+        scenario_id,
+    )
+
+    assert result.returncode == 1, result.stderr
+    summary = json.loads(result.stdout)
+    assert summary["selected_ids"] == [scenario_id]
+    assert summary["passed"] == 0
+    assert summary["failed"] == 1
+
+    scenario_root = run_root / "scenarios" / scenario_id
+    plan = json.loads((scenario_root / "plan.json").read_text(encoding="utf-8"))
+    failure = plan["planning_failure"]
+    assert failure.startswith(
+        f"SCENARIO_PLAN_FAILED: {scenario_id}: GRANITE_RUNTIME_JOIN_REQUIRED:"
+    )
+    assert plan["command"] is None
+    assert plan["server_log_path"] is None
+
+    scenario_result = json.loads(
+        (scenario_root / "result.json").read_text(encoding="utf-8")
+    )
+    assert summary["results"] == [scenario_result]
+    assert scenario_result["ok"] is False
+    assert scenario_result["exit_code"] is None
+    assert scenario_result["server_log_path"] is None
+    assert scenario_result["failures"] == [failure]
+    assert (scenario_root / "stdout.log").read_text(encoding="utf-8") == ""
+    assert (scenario_root / "stderr.log").read_text(encoding="utf-8") == failure + "\n"
+    assert not (scenario_root / "server.log").exists()
+    assert not (scenario_root / "amd-smi-before.json").exists()
+    assert not (scenario_root / "amd-smi-after.json").exists()
+
+
+@pytest.mark.parametrize(
+    ("selection", "expected_returncode"),
+    [
+        (("--engine", "vllm"), 0),
+        (("--model", "ibm-granite/granite-3.1-1b-a400m-instruct"), 2),
+        (("--tag", "granite"), 2),
+    ],
+)
+def test_broad_selection_excludes_granite_validation_window(
+    tmp_path: Path, selection: tuple[str, ...], expected_returncode: int
+):
+    run_root = tmp_path / "run"
+    result = run_runner(
+        "--scenario-dir", str(REPO_ROOT / "inference/scenarios"),
+        "--run-root", str(run_root), "--dry-run", *selection,
+    )
+
+    assert result.returncode == expected_returncode, result.stderr
+    if expected_returncode == 2:
+        assert result.stdout == ""
+        assert "SCENARIO_SELECTION_EMPTY" in result.stderr
+    else:
+        assert {
+            "vllm.granite3_1.1b-a400m.server.basic",
+            "vllm.granite3_1.1b-a400m.server.tool",
+            "vllm.granite3_1.1b-a400m.server.structured",
+        }.isdisjoint(json.loads(result.stdout)["selected_ids"])
+    assert not run_root.exists()
+
+
+@pytest.mark.parametrize(
+    "selection",
+    [
+        (
+            "--model", "ibm-granite/granite-3.1-1b-a400m-instruct",
+            "--include-validation-window",
+        ),
+        (
+            "--model", "ibm-granite/granite-3.1-1b-a400m-instruct",
+            "--tag", "validation-window",
+        ),
+        ("--tag", "granite", "--include-validation-window"),
+    ],
+)
+def test_validation_window_opt_in_selects_granite_without_execution_plans(
+    tmp_path: Path, selection: tuple[str, ...]
+):
+    run_root = tmp_path / "run"
+    result = run_runner(
+        "--scenario-dir", str(REPO_ROOT / "inference/scenarios"),
+        "--run-root", str(run_root), "--dry-run", *selection,
+    )
+
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout)
+    assert payload["selected_ids"] == [
+        "vllm.granite3_1.1b-a400m.server.basic",
+        "vllm.granite3_1.1b-a400m.server.tool",
+        "vllm.granite3_1.1b-a400m.server.structured",
+    ]
+    for planned in payload["planned"]:
+        assert planned["command"] is None
+        assert planned["server_log_path"] is None
+        assert "GRANITE_RUNTIME_JOIN_REQUIRED" in planned["planning_failure"]
+    assert not run_root.exists()
+
+
+@pytest.mark.parametrize("mode", ["basic", "tool", "structured"])
+@pytest.mark.parametrize("bind_model", [False, True])
+@pytest.mark.parametrize(
+    "extra_argv",
+    [[], ["--revision", "unreviewed-pin"], ["--revision=unreviewed-pin"]],
+)
+def test_granite_binding_and_extra_argv_do_not_supply_runtime_joins(
+    tmp_path: Path, mode: str, bind_model: bool, extra_argv: list[str]
+):
+    model_id = "ibm-granite/granite-3.1-1b-a400m-instruct"
+    scenario_id = f"vllm.granite3_1.1b-a400m.server.{mode}"
+    scenario_dir = tmp_path / "scenarios"
+    scenario_dir.mkdir()
+    (scenario_dir / "granite.toml").write_text(
+        f"""
+[[scenario]]
+id = "{scenario_id}"
+summary = "Granite fixture with proposed overrides"
+tags = ["validation-window"]
+source_url = "https://huggingface.co/ibm-granite/granite-3.1-1b-a400m-instruct/tree/0da7a48b0276d500ce5922fd2b33944091fc6c09"
+
+[scenario.model_provenance]
+repo_id = "ibm-granite/granite-3.1-1b-a400m-instruct"
+revision = "0da7a48b0276d500ce5922fd2b33944091fc6c09"
+
+[scenario.given]
+engine = "vllm"
+model = "{model_id}"
+tool = "granite_server_smoke.{mode}"
+
+[scenario.when]
+argv = {json.dumps(extra_argv)}
+""",
+        encoding="utf-8",
+    )
+    local_model = tmp_path / "unverified-checkpoint"
+    binding = ["--model-path", f"{model_id}={local_model}"] if bind_model else []
+    run_root = tmp_path / "run"
+    result = run_runner(
+        "--scenario-dir", str(scenario_dir), "--scenario", scenario_id,
+        "--run-root", str(run_root), "--dry-run", *binding,
+    )
+
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout)
+    assert payload["selected_ids"] == [scenario_id]
+    planned = payload["planned"][0]
+    assert planned["model"] == model_id
+    assert planned["model_provenance"] == {
+        "repo_id": model_id,
+        "revision": "0da7a48b0276d500ce5922fd2b33944091fc6c09",
+    }
+    assert planned["command"] is None
+    assert planned["server_log_path"] is None
+    assert planned["env"] == {}
+    failure = planned["planning_failure"]
+    assert failure.startswith(
+        f"SCENARIO_PLAN_FAILED: {scenario_id}: GRANITE_RUNTIME_JOIN_REQUIRED:"
+    )
+    assert "reviewed fit/fault-stop method" in failure
+    assert "selected Granite operating envelope" in failure
+    assert "qualifying immutable C subject" in failure
+    assert not run_root.exists()
 
 
 def test_dry_run_records_plan_failure_in_planned_entry(tmp_path: Path):
@@ -1454,3 +1677,150 @@ value = "missing marker"
     )
     assert scenario_result["ok"] is False
     assert "stdout.contains" in scenario_result["failures"][0]
+
+
+@pytest.mark.parametrize(
+    ("stdout", "ok"),
+    [("startup ok", True), ("ModuleNotFoundError: No module named 'xgrammar'", False)],
+)
+def test_runner_not_contains_rejects_forbidden_output(
+    tmp_path: Path, stdout: str, ok: bool
+):
+    script = write_fake_command_script(tmp_path)
+    scenario_dir = tmp_path / "inference" / "scenarios"
+    scenario_dir.mkdir(parents=True)
+    run_root = tmp_path / "run"
+    (scenario_dir / "generic.toml").write_text(
+        f"""
+[[scenario]]
+id = "lemonade.fake.forbidden"
+summary = "fake command must not print an import failure"
+
+[scenario.given]
+engine = "lemonade"
+model = "builtin"
+entrypoint = "{sys.executable}"
+
+[scenario.when]
+argv = ["{script}", "--stdout", "{stdout}"]
+
+[[scenario.then.assert]]
+kind = "output.not_contains"
+value = "ModuleNotFoundError"
+""",
+        encoding="utf-8",
+    )
+
+    result = run_runner(
+        "--scenario-dir",
+        str(scenario_dir),
+        "--run-root",
+        str(run_root),
+        "--scenario",
+        "lemonade.fake.forbidden",
+    )
+
+    scenario_result = json.loads(
+        (run_root / "scenarios" / "lemonade.fake.forbidden" / "result.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert scenario_result["ok"] is ok
+    assert result.returncode == (0 if ok else 1)
+    if not ok:
+        assert scenario_result["failures"] == [
+            "output.not_contains: found 'ModuleNotFoundError'"
+        ]
+
+
+def test_dry_run_carries_attention_backend_prediction(tmp_path: Path):
+    scenario_dir = tmp_path / "inference" / "scenarios"
+    scenario_dir.mkdir(parents=True)
+    (scenario_dir / "sample.toml").write_text(
+        """
+[[scenario]]
+id = "vllm.demo.backend"
+summary = "demo backend prediction"
+tags = ["smoke"]
+
+[scenario.given]
+engine = "vllm"
+model = "demo-model"
+tool = "gemma4_text_smoke"
+
+[scenario.attention_backend]
+expected = "TRITON_ATTN"
+evidence = "static-prediction"
+basis = "demo basis"
+
+[[scenario.then.assert]]
+kind = "output.contains"
+value = "Using TRITON_ATTN backend"
+""",
+        encoding="utf-8",
+    )
+
+    result = run_runner(
+        "--scenario-dir",
+        str(scenario_dir),
+        "--run-root",
+        str(tmp_path / "run"),
+        "--dry-run",
+        "--scenario",
+        "vllm.demo.backend",
+    )
+
+    assert result.returncode == 0, result.stderr
+    planned = json.loads(result.stdout)["planned"][0]
+    assert planned["attention_backend"] == {
+        "expected": "TRITON_ATTN",
+        "evidence": "static-prediction",
+        "basis": "demo basis",
+    }
+
+
+def write_validation_window_scenarios(tmp_path: Path) -> Path:
+    scenario_dir = tmp_path / "inference" / "scenarios"
+    scenario_dir.mkdir(parents=True)
+    (scenario_dir / "sample.toml").write_text(
+        """
+[[scenario]]
+id = "lemonade.demo.help"
+summary = "demo help"
+tags = ["smoke"]
+
+[scenario.given]
+engine = "lemonade"
+model = "builtin"
+entrypoint = "lemonade"
+
+[[scenario]]
+id = "lemonade.demo.live"
+summary = "demo live"
+tags = ["validation-window", "mutates-service"]
+
+[scenario.given]
+engine = "lemonade"
+model = "builtin"
+entrypoint = "lemonade"
+""",
+        encoding="utf-8",
+    )
+    return scenario_dir
+
+
+def test_validation_window_scenarios_require_explicit_opt_in(tmp_path: Path):
+    scenario_dir = write_validation_window_scenarios(tmp_path)
+
+    def selected(*args: str) -> list[str]:
+        result = run_runner("--scenario-dir", str(scenario_dir), "--dry-run", *args)
+        assert result.returncode == 0, result.stderr
+        return json.loads(result.stdout)["selected_ids"]
+
+    assert selected("--engine", "lemonade") == ["lemonade.demo.help"]
+    assert selected("--engine", "lemonade", "--include-validation-window") == [
+        "lemonade.demo.help",
+        "lemonade.demo.live",
+    ]
+    assert selected("--tag", "validation-window") == ["lemonade.demo.live"]
+    assert selected("--scenario", "lemonade.demo.live") == ["lemonade.demo.live"]

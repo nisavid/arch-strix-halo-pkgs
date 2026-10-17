@@ -12,7 +12,8 @@
     "update_notes": [
       "Check the current AUR python-openai-harmony package first, then confirm upstream pyproject.toml build-backend and dependency metadata before carrying any build changes forward.",
       "Keep python-pydantic as a hard runtime dependency unless upstream removes it from the published project metadata.",
-      "Treat extra Rust LTO or PGO tuning as opt-in only after verifying the current maturin/cargo lane exposes a maintainable configuration; today the applicable default is explicit znver5 plus opt-level=3."
+      "Treat extra Rust LTO or PGO tuning as opt-in only after verifying the current maturin/cargo lane exposes a maintainable configuration; today the applicable default is explicit znver5 plus opt-level=3.",
+      "On 2026-09-25, bump pkgrel to 2 for the generation-C W2A closure (#110, #111), to be built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7 in the vLLM lease job. The source is unchanged; the rebuild keeps the package out of the previous generation's repo. vLLM imports it while `vllm serve` parses its arguments, so the W2A root needs a generation-C build. The rust-wheel template keeps `CARGO_HOME` under `$srcdir/.cargo`, which overrides the build helper's shared cargo cache, and sets `RUSTUP_AUTO_INSTALL=0`. The cargo fetch runs inside build(), so the build needs `enter --net`."
     ]
   },
   "name": "python-openai-harmony-gfx1151",
@@ -57,6 +58,7 @@
     ],
     "patches_dir": "patches/python-openai-harmony-gfx1151",
     "pkgdesc": "OpenAI Harmony response-format library rebuilt for Strix Halo gfx1151",
+    "pkgrel": 2,
     "provides": [
       "python-openai-harmony"
     ],
@@ -76,7 +78,8 @@
     "update_notes": [
       "Check the current AUR python-openai-harmony package first, then confirm upstream pyproject.toml build-backend and dependency metadata before carrying any build changes forward.",
       "Keep python-pydantic as a hard runtime dependency unless upstream removes it from the published project metadata.",
-      "Treat extra Rust LTO or PGO tuning as opt-in only after verifying the current maturin/cargo lane exposes a maintainable configuration; today the applicable default is explicit znver5 plus opt-level=3."
+      "Treat extra Rust LTO or PGO tuning as opt-in only after verifying the current maturin/cargo lane exposes a maintainable configuration; today the applicable default is explicit znver5 plus opt-level=3.",
+      "On 2026-09-25, bump pkgrel to 2 for the generation-C W2A closure (#110, #111), to be built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7 in the vLLM lease job. The source is unchanged; the rebuild keeps the package out of the previous generation's repo. vLLM imports it while `vllm serve` parses its arguments, so the W2A root needs a generation-C build. The rust-wheel template keeps `CARGO_HOME` under `$srcdir/.cargo`, which overrides the build helper's shared cargo cache, and sets `RUSTUP_AUTO_INSTALL=0`. The cargo fetch runs inside build(), so the build needs `enter --net`."
     ],
     "upstream_version": "0.0.8",
     "url": "https://github.com/openai/harmony"
@@ -84,9 +87,9 @@
   "provenance": {
     "output_root": "packages",
     "recipe_author": "Blackcat Informatics Inc.",
-    "recipe_commit": "a1d7a68",
-    "recipe_date": "20260427",
-    "recipe_history_count": 16,
+    "recipe_commit": "3f15f9f",
+    "recipe_date": "20260508",
+    "recipe_history_count": 17,
     "recipe_repo": "https://github.com/paudley/ai-notes",
     "recipe_subdir": "strix-halo",
     "repo_subpath": "."
@@ -101,7 +104,7 @@
     "patches": [],
     "phase": "H",
     "repo": null,
-    "src_dir": null,
+    "src_dir": "openai_harmony-0.0.8",
     "steps": [
       31
     ]

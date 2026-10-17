@@ -112,6 +112,16 @@ def build_execution_plan(
     model_bindings: dict[str, str],
 ) -> ExecutionPlan:
     tool = str(definition["given"]["tool"])
+    if tool in {
+        "granite_server_smoke.basic",
+        "granite_server_smoke.tool",
+        "granite_server_smoke.structured",
+    }:
+        raise ValueError(
+            "GRANITE_RUNTIME_JOIN_REQUIRED: reviewed fit/fault-stop method, "
+            "selected Granite operating envelope, and qualifying immutable C subject "
+            "are required before an execution plan can be built"
+        )
     model = _resolved_model(definition, model_bindings=model_bindings)
     draft_model_argv = _draft_model_argv(
         definition,

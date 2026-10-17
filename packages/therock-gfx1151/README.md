@@ -39,10 +39,12 @@ C-line foundation F pick (#108). The rendered files in this directory are the
 after MIGraphX 2.16.1 was built into it. Render this directory only from that
 complete stage.
 
-The earlier lane was the upstream `therock-7.13` release. The host runs
-`7.13.0-3`, the MIGraphX rebuild against protobuf 35.1 from the unmerged
-`migraphx-protobuf-35-1-rebuild` branch, whose tooling changes were ported into
-the 7.14.1 staging flow below.
+The earlier lane was the upstream `therock-7.13` release, rendered from a real
+7.13 staged root. Its releases after `7.13.0-2` changed only MIGraphX:
+`7.13.0-3` rebuilt it for protobuf 35.1, and `7.13.0-4` rebuilt it for
+protobuf 36.1 and Abseil 20260817. The tooling from those rebuilds is part of
+the 7.14.1 staging flow below. Build, deploy, and validation status belongs in
+`docs/maintainers/current-state.md`.
 
 ## Staging the 7.14.1 payload
 
@@ -83,10 +85,11 @@ Steps, in order:
    `/opt/rocm` fallback), takes `pybind11_DIR` from
    `python -m pybind11 --cmakedir`, and builds the ONNX and TF parsers against
    an isolated protobuf 36.1 / abseil-cpp 20260817 prefix populated from the
-   sha256-pinned Arch packages. It derives the protobuf and utf8_validity
-   SONAMEs from that prefix, rejects parser libraries that link any other
-   protobuf, utf8_validity, or Abseil ABI, checks the staged Python import, and
-   then renders this directory and previews the amerge plan. The build needs
+   sha256-pinned Arch packages. It checks that prefix against the pinned
+   sonames, runs the payload gate in
+   [MIGraphX protobuf and Abseil rebuilds](#migraphx-protobuf-and-abseil-rebuilds),
+   checks the staged Python import, and then renders this directory and
+   previews the amerge plan. The build needs
    CPython 3.14.7 (`python-gfx1151`) as the active `python` and
    `python3.14-config`. MLIR stays off; see
    [the no-MLIR stubs](../../docs/patches.md#migraphx-therock-stage). The
@@ -99,6 +102,58 @@ parser's `DT_NEEDED` through the policy's `soname_depends`, so the depend
 follows the protobuf that MIGraphX was built against. Moving the host to
 protobuf 36.1 also moves `libphonenumber` and `python-protobuf`, which pin
 protobuf 35.1, so the install transaction must include them.
+
+## MIGraphX protobuf and Abseil rebuilds
+
+`migraphx-gfx1151` is the only package in this family that links protobuf and
+Abseil. Its ONNX and TensorFlow parser libraries link `libprotobuf`,
+`libutf8_validity`, and dozens of `libabsl_*` libraries directly, so an Arch
+protobuf or Abseil soname change needs a pkgrel-only MIGraphX rebuild with
+`tools/stage_migraphx_for_therock.zsh`:
+
+- The script pins AMDMIGraphX to one commit (`--migraphx-ref`), so the rebuild
+  changes only the linked ABI.
+- The isolated prefix comes from the Arch `protobuf` and `abseil-cpp`
+  archives, pinned by sha256. `--protobuf-dir` may name another prefix
+  instead. Either way, the prefix's lib directory must hold both, CMake takes
+  Abseil from its `cmake/absl`, and the script fails before building unless
+  the prefix provides exactly the pinned `protobuf_soname`,
+  `utf8_validity_soname`, and `libabsl_base.so.<abseil_soversion>`.
+- Both parser libraries must link the pinned protobuf and `utf8_validity`
+  sonames and `libabsl_*.so.<abseil_soversion>`. The script classifies the
+  stage with the render's generator and policy, then reads `DT_NEEDED` from
+  every regular file (not symlink) that the policy assigns to
+  `migraphx-gfx1151` and that starts with the ELF magic, whatever its name.
+  In 7.14.1-1 (AMDMIGraphX 2.16.1) those are 13 files: `flatc`,
+  `migraphx-driver`, `migraphx-hiprtc-driver`, `libmigraphx_c`,
+  `libmigraphx_py`, `libmigraphx_py_3.14`, the Python module, and the six
+  `lib/migraphx/lib` libraries. (7.13.0-4 had 14, including
+  `libIREECompiler.so`, which 7.14.1 dropped.) None may link a
+  `libprotobuf.so*`, `libutf8_validity.so*`, or `libabsl_*` soname other than
+  the pinned one; an older or newer one fails the stage, and so does a stage
+  with fewer such ELFs than `migraphx_min_elfs` (13). The gate does not read
+  the other sonames the `protobuf` package ships (`libprotobuf-lite`,
+  `libprotoc`, `libutf8_range`).
+- Pass `-j` explicitly; the script defaults to `nproc`. Package from the stage
+  with `_THEROCK_ROOT=<stage> makepkg -Cf`. Every depend is declared per split
+  package, which makepkg does not check, so the build host need not have the
+  new protobuf or Abseil installed.
+
+The package declares both libraries to pacman:
+
+- `libprotobuf.so=<version>-64` matches the soname that Arch `protobuf`
+  provides. The policy's `soname_depends` renders it from the staged ONNX
+  parser's `DT_NEEDED`.
+- Arch `abseil-cpp` provides no sonames, so the package declares
+  `abseil-cpp>=20260817.0` and `abseil-cpp<20260818`. Abseil keeps one
+  soversion (`2608.0.0` here) across an LTS's patch releases, so the range
+  admits pkgrel rebuilds and `20260817.x` patches and blocks the next LTS.
+  Without it, an Abseil-only update would leave MIGraphX linking libraries
+  that no longer exist; Arch has already rebuilt protobuf against a new Abseil
+  without changing its provides.
+- Change the stage script's sonames and `abseil_soversion` together with the
+  policy depends. `test_migraphx_depends_match_stage_script_sonames` checks
+  that they agree.
 
 ## kpack device-code archives
 

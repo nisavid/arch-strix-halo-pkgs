@@ -9,21 +9,21 @@ CORE_STACK = {
     "python-pydantic-core-gfx1151": {
         "template": "rust-wheel-pypi",
         "recipe_key": "rust_wheels",
-        "upstream_version": "2.46.4",
+        "upstream_version": "2.46.5",
         "provides": ["python-pydantic-core"],
         "consumer_dep": "python-pydantic-core-gfx1151",
     },
     "python-tokenizers-gfx1151": {
         "template": "rust-wheel-pypi",
         "recipe_key": "rust_wheels",
-        "upstream_version": "0.22.2",
+        "upstream_version": "0.23.3",
         "provides": ["python-tokenizers"],
         "consumer_dep": "python-tokenizers-gfx1151",
     },
     "python-safetensors-gfx1151": {
         "template": "rust-wheel-pypi",
         "recipe_key": "rust_wheels",
-        "upstream_version": "0.7.0",
+        "upstream_version": "0.8.0",
         "provides": ["python-safetensors"],
         "consumer_dep": "python-safetensors-gfx1151",
     },
@@ -44,7 +44,7 @@ CORE_STACK = {
     "python-pillow-gfx1151": {
         "template": "native-wheel-pypi",
         "recipe_key": "native_wheels",
-        "upstream_version": "12.2.0",
+        "upstream_version": "12.3.0",
         "provides": ["python-pillow"],
         "consumer_dep": "python-pillow-gfx1151",
     },
@@ -54,7 +54,7 @@ SERVICE_STACK = {
     "python-watchfiles-gfx1151": {
         "template": "rust-wheel-pypi",
         "recipe_key": "rust_wheels",
-        "upstream_version": "1.2.0",
+        "upstream_version": "1.3.0",
         "provides": ["python-watchfiles"],
         "consumer_dep": "python-watchfiles-gfx1151",
     },
@@ -82,21 +82,21 @@ SERVICE_STACK = {
     "python-aiohttp-gfx1151": {
         "template": "native-wheel-pypi",
         "recipe_key": "native_wheels",
-        "upstream_version": "3.13.5",
+        "upstream_version": "3.14.5",
         "provides": ["python-aiohttp"],
         "consumer_dep": "python-aiohttp-gfx1151",
     },
     "python-multidict-gfx1151": {
         "template": "native-wheel-pypi",
         "recipe_key": "native_wheels",
-        "upstream_version": "6.7.1",
+        "upstream_version": "6.9.1",
         "provides": ["python-multidict"],
         "consumer_dep": "python-multidict-gfx1151",
     },
     "python-yarl-gfx1151": {
         "template": "native-wheel-pypi",
         "recipe_key": "native_wheels",
-        "upstream_version": "1.24.2",
+        "upstream_version": "1.25.1",
         "provides": ["python-yarl"],
         "consumer_dep": "python-yarl-gfx1151",
     },
@@ -107,13 +107,41 @@ SERVICE_STACK = {
         "provides": ["python-frozenlist"],
         "consumer_dep": "python-frozenlist-gfx1151",
     },
+    "python-prometheus-fastapi-instrumentator-gfx1151": {
+        "template": "native-wheel-pypi",
+        "recipe_key": "native_wheels",
+        "upstream_version": "8.1.0",
+        "provides": ["python-prometheus-fastapi-instrumentator"],
+        "consumer_dep": "python-prometheus-fastapi-instrumentator-gfx1151",
+    },
+    "python-einops-gfx1151": {
+        "template": "native-wheel-pypi",
+        "recipe_key": "native_wheels",
+        "upstream_version": "0.8.2",
+        "provides": ["python-einops"],
+        "consumer_dep": "python-einops-gfx1151",
+    },
+    "python-py-cpuinfo-gfx1151": {
+        "template": "native-wheel-pypi",
+        "recipe_key": "native_wheels",
+        "upstream_version": "9.0.0",
+        "provides": ["python-py-cpuinfo"],
+        "consumer_dep": "python-py-cpuinfo-gfx1151",
+    },
+    "python-pybase64-gfx1151": {
+        "template": "native-wheel-pypi",
+        "recipe_key": "native_wheels",
+        "upstream_version": "1.5.0",
+        "provides": ["python-pybase64"],
+        "consumer_dep": "python-pybase64-gfx1151",
+    },
 }
 
 TOOLING_STACK = {
     "python-accelerate-gfx1151": {
         "template": "native-wheel-pypi",
         "recipe_key": "native_wheels",
-        "upstream_version": "1.13.0",
+        "upstream_version": "1.15.0",
         "provides": ["python-accelerate"],
         "consumer_dep": "python-accelerate-gfx1151",
     },
@@ -127,7 +155,7 @@ TOOLING_STACK = {
     "python-compressed-tensors-gfx1151": {
         "template": "native-wheel-pypi",
         "recipe_key": "native_wheels",
-        "upstream_version": "0.16.0",
+        "upstream_version": "0.17.0",
         "provides": ["python-compressed-tensors"],
         "consumer_dep": "python-compressed-tensors-gfx1151",
     },
@@ -186,6 +214,33 @@ def test_core_blackcat_wheel_stack_rendered_outputs_exist() -> None:
             assert "Rust-backed Python extension" in readme
             assert "pure Python" not in readme
         assert "Blackcat" in readme
+
+
+def test_pydantic_core_conflicts_with_every_other_arch_pydantic() -> None:
+    # Arch python-pydantic pins pydantic-core exactly but depends on it
+    # unversioned, so pacman must refuse pydantic-core 2.46.5 next to any
+    # pydantic other than 2.13.5, which would make `import pydantic` fail.
+    package_name = "python-pydantic-core-gfx1151"
+    lower_guard = "python-pydantic<2.13.5"
+    upper_guard = "python-pydantic>2.13.5"
+    policy = tomllib.loads((REPO_ROOT / "policies/recipe-packages.toml").read_text())[
+        "packages"
+    ][package_name]
+    package_dir = REPO_ROOT / "packages" / package_name
+    recipe = json.loads((package_dir / "recipe.json").read_text())["policy"]
+    pkgbuild = (package_dir / "PKGBUILD").read_text()
+
+    expected = ["python-pydantic-core", lower_guard, upper_guard]
+    assert policy["conflicts"] == expected
+    assert recipe["conflicts"] == expected
+    assert (
+        f"conflicts=(python-pydantic-core '{lower_guard}' '{upper_guard}')"
+        in pkgbuild
+    )
+    # The 2.46.5-1 archive predates the guard, so the guarded build needs a
+    # new pkgrel rather than a second archive under the same version.
+    assert policy["pkgrel"] == 2
+    assert "pkgrel=2" in pkgbuild
 
 
 def test_consumers_prefer_local_core_stack_packages() -> None:
@@ -256,6 +311,9 @@ def test_blackcat_service_wheel_stack_rendered_outputs_exist() -> None:
         assert "Blackcat" in readme
         if package_name == "python-frozenlist-gfx1151":
             assert recipe["policy"]["patches_dir"] == "patches/python-frozenlist-gfx1151"
+        if package_name == "python-prometheus-fastapi-instrumentator-gfx1151":
+            assert "arch=('any')" in pkgbuild
+            assert "_setup_compiler_env" not in pkgbuild
 
 
 def test_service_consumers_prefer_local_blackcat_packages() -> None:
@@ -271,6 +329,15 @@ def test_service_consumers_prefer_local_blackcat_packages() -> None:
     assert "python-httptools-gfx1151" in vllm_deps
     assert "python-msgspec-gfx1151" in vllm_deps
     assert "python-aiohttp-gfx1151" in vllm_deps
+    assert "python-prometheus-fastapi-instrumentator-gfx1151" in vllm_deps
+    assert "python-prometheus-fastapi-instrumentator" not in vllm_deps
+    for package_name in (
+        "python-einops-gfx1151",
+        "python-py-cpuinfo-gfx1151",
+        "python-pybase64-gfx1151",
+    ):
+        assert SERVICE_STACK[package_name]["consumer_dep"] in vllm_deps
+        assert SERVICE_STACK[package_name]["provides"][0] not in vllm_deps
     assert "python-frozenlist-gfx1151" in aiohttp_deps
     assert "python-multidict-gfx1151" in aiohttp_deps
     assert "python-yarl-gfx1151" in aiohttp_deps

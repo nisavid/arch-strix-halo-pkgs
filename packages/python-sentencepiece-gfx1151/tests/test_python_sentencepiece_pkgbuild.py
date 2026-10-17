@@ -14,7 +14,8 @@ EXTENSION = (
 
 def test_pkgbuild_depends_on_local_sentencepiece_runtime() -> None:
     text = PKGBUILD.read_text()
-    assert "pkgrel=2" in text
+    assert "pkgver=0.2.2" in text
+    assert "0001-bundle-sentencepiece-by-default.patch" not in text
     assert "depends=(gcc-libs glibc python-gfx1151)" in text
 
 

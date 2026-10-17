@@ -1,6 +1,6 @@
 ---
 name: run-local-inference-scenarios
-description: Use when validating repo-owned inference engines or model lanes through tracked TOML scenarios after package changes or host repairs.
+description: Use when validating repo-owned inference engines or model lanes through tracked TOML scenarios after package changes or host repairs, or for Granite fit admission, runtime integration, or fault resume.
 ---
 
 # Run Local Inference Scenarios
@@ -13,6 +13,14 @@ When a scenario comes from ROCm inference optimization, quantization,
 profiling, MIGraphX, Torch-MIGraphX, FlashAttention, AITER, Triton, or
 Composable Kernel references, open
 `docs/maintainers/rocm-inference-reference.md` before creating TOML coverage.
+
+## Granite Method
+
+For Granite fit admission, runtime integration, or fault resume, read
+[the maintained resource method](../../../docs/maintainers/granite-resource-method.md)
+before dependent work. Apply its entry conditions and required current joins,
+record the reviewed revision used, and verify outputs against its completion
+criteria.
 
 ## Default Use
 

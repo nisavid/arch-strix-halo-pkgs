@@ -6,6 +6,32 @@ identity and disposition live in
 `docs/maintainers/update-candidates.toml`; validated and blocked outcomes live
 in `docs/maintainers/current-state.md`.
 
+## Resurrection
+
+The [resurrection map](https://github.com/nisavid/arch-strix-halo-pkgs/issues/135)
+carries this repository through deployment and runtime validation. Its
+execution tickets are:
+
+- [2026-09-22 freshness sweep dispositions](https://github.com/nisavid/arch-strix-halo-pkgs/issues/136)
+- [Lemonade repin to the frozen fork candidate](https://github.com/nisavid/arch-strix-halo-pkgs/issues/137),
+  [Lemonade live-validation scenarios](https://github.com/nisavid/arch-strix-halo-pkgs/issues/138),
+  [Lemonade build, publish, and install handoff](https://github.com/nisavid/arch-strix-halo-pkgs/issues/139), and
+  [installed Lemonade smoke and live validation](https://github.com/nisavid/arch-strix-halo-pkgs/issues/140)
+- [Lemonade upstream-sync repackage](https://github.com/nisavid/arch-strix-halo-pkgs/issues/141)
+- [research branch, draft PR, and worktree reconciliation](https://github.com/nisavid/arch-strix-halo-pkgs/issues/142)
+- [signing and verifiability follow-up](https://github.com/nisavid/arch-strix-halo-pkgs/issues/143)
+- [upstream drift deferred by the generation C version freeze](https://github.com/nisavid/arch-strix-halo-pkgs/issues/147)
+- [OTLP trace exporters that fail to import against Arch's split OpenTelemetry packages](https://github.com/nisavid/arch-strix-halo-pkgs/issues/196)
+- [render freshness, patch sentinel and checker follow-ups from the model-closure review](https://github.com/nisavid/arch-strix-halo-pkgs/issues/197)
+
+Outside the resurrection scope:
+
+- [the signed Lemonade pacman lane](https://github.com/nisavid/arch-strix-halo-pkgs/issues/125),
+  deferred to the signing and verifiability follow-up
+- [the local Qwen MTP runtime for Hindsight](https://github.com/nisavid/arch-strix-halo-pkgs/issues/131)
+- [Lemonade calendar-versioned release packaging](https://github.com/nisavid/arch-strix-halo-pkgs/issues/163),
+  blocked on the fork sync in nisavid/lemonade#176
+
 ## Stack Convergence
 
 The [stack-convergence umbrella](https://github.com/nisavid/arch-strix-halo-pkgs/issues/95)
@@ -30,9 +56,14 @@ owns the dependency-ordered route. Its blocking spine is:
 - W2A: [compiler and PyTorch foundation](https://github.com/nisavid/arch-strix-halo-pkgs/issues/109),
   [model dependency closure](https://github.com/nisavid/arch-strix-halo-pkgs/issues/110), and
   [TorchVision and vLLM consumers](https://github.com/nisavid/arch-strix-halo-pkgs/issues/111)
+  The [Transformers 5.18.0 and huggingface-hub 2.x model-closure move](https://github.com/nisavid/arch-strix-halo-pkgs/issues/183)
+  owns the approved follow-up to the selected inference stack's model dependency selection.
 - W2B: [Lemonade residency and admission](https://github.com/nisavid/arch-strix-halo-pkgs/issues/112) and
   [the coherent Lemonade package family](https://github.com/nisavid/arch-strix-halo-pkgs/issues/113)
 - W3-W6: [candidate assembly](https://github.com/nisavid/arch-strix-halo-pkgs/issues/114),
+  [the small MoE and long-decode vLLM gate lanes](https://github.com/nisavid/arch-strix-halo-pkgs/issues/179),
+  [GPU-lane requalification on assembled C under Transformers 5.18](https://github.com/nisavid/arch-strix-halo-pkgs/issues/194),
+  [the untrusted image-format decision for vLLM's image-chat routes](https://github.com/nisavid/arch-strix-halo-pkgs/issues/195),
   [preactivation and recovery](https://github.com/nisavid/arch-strix-halo-pkgs/issues/115),
   [activation](https://github.com/nisavid/arch-strix-halo-pkgs/issues/116), and
   [acceptance](https://github.com/nisavid/arch-strix-halo-pkgs/issues/117)
@@ -46,6 +77,7 @@ spine:
 - [AITER and FlyDSL experimental closure](https://github.com/nisavid/arch-strix-halo-pkgs/issues/119)
 - [independent CTranslate2 refresh](https://github.com/nisavid/arch-strix-halo-pkgs/issues/120)
 - [independent stable-diffusion.cpp refresh](https://github.com/nisavid/arch-strix-halo-pkgs/issues/121)
+- [the deferred Gemma 4 26B-A4B vLLM lanes](https://github.com/nisavid/arch-strix-halo-pkgs/issues/169)
 - [amd-quark authoring](https://github.com/nisavid/arch-strix-halo-pkgs/issues/77),
   which remains separate and deferred rather than a convergence dependency
 
@@ -72,8 +104,9 @@ spine:
 
 ## Tracker Maintenance
 
-[Issue #74](https://github.com/nisavid/arch-strix-halo-pkgs/issues/74) owns the
-one-time issue-primary cutover. After that cutover, an active ledger record may
-reference only an open issue in this repository. Before closing or repurposing
-an execution issue, transition every referenced candidate to a terminal
-disposition or rehome it to an open successor issue.
+The one-time issue-primary cutover
+([issue #74](https://github.com/nisavid/arch-strix-halo-pkgs/issues/74)) is
+complete. An active ledger record may reference only an open issue in this
+repository. Before closing or repurposing an execution issue, transition every
+referenced candidate to a terminal disposition or rehome it to an open
+successor issue.

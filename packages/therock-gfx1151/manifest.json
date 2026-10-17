@@ -368,6 +368,8 @@
     },
     "migraphx-gfx1151": {
       "depends": [
+        "abseil-cpp>=20260817.0",
+        "abseil-cpp<20260818",
         "gcc-libs",
         "glibc",
         "hip-runtime-amd-gfx1151",

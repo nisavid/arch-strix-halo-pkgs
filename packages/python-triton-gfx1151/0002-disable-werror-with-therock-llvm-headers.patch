@@ -1,24 +1,25 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Strix Halo Packaging <packaging@example.invalid>
-Date: Sat, 25 Apr 2026 00:00:00 +0000
-Subject: [PATCH] Disable Werror with TheRock LLVM headers
+Date: Tue, 22 Sep 2026 00:00:00 +0000
+Subject: [PATCH] Disable Werror for the packaged build
 
-The package uses the ROCm Triton fork with its own compatible LLVM lane, but
-the build still sees warning shapes that should not fail the package build.
+The package builds Triton against the pinned upstream LLVM 5f07f818 build
+with amdclang; new warning shapes should not fail the package build.
+
 ---
  CMakeLists.txt | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 91d9cbf..8fc0f94 100644
+index 3f066ea..2c59ce2 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -97,7 +97,7 @@ function(add_triton_plugin name)
- endfunction()
- 
- # Disable warnings that show up in external code (gtest;pybind11)
--set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wno-covered-switch-default -fvisibility=hidden")
-+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-covered-switch-default -fvisibility=hidden")
- 
- include_directories(".")
- include_directories(${MLIR_INCLUDE_DIRS})
+@@ -282,7 +282,7 @@ if(NOT MSVC)
+     # crash a Triton not compiled with visibility due to missing symbols.
+     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTRITON_EXT_ENABLED=1")
+   endif()
+-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wno-covered-switch-default ")
++  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-covered-switch-default ")
+ else()
+   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4244 /wd4624 /wd4715 /wd4530")
+ endif()

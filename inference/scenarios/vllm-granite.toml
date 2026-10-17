@@ -1,0 +1,44 @@
+[[scenario]]
+id = "vllm.granite3_1.1b-a400m.server.basic"
+summary = "Granite 3.1 1B A400M basic fixture awaiting runtime joins"
+tags = ["smoke", "granite", "moe", "server", "correctness", "validation-window"]
+source_url = "https://huggingface.co/ibm-granite/granite-3.1-1b-a400m-instruct/tree/0da7a48b0276d500ce5922fd2b33944091fc6c09"
+
+[scenario.model_provenance]
+repo_id = "ibm-granite/granite-3.1-1b-a400m-instruct"
+revision = "0da7a48b0276d500ce5922fd2b33944091fc6c09"
+
+[scenario.given]
+engine = "vllm"
+model = "ibm-granite/granite-3.1-1b-a400m-instruct"
+tool = "granite_server_smoke.basic"
+
+[[scenario]]
+id = "vllm.granite3_1.1b-a400m.server.tool"
+summary = "Granite 3.1 1B A400M tool fixture awaiting runtime joins"
+tags = ["smoke", "granite", "moe", "server", "tool", "correctness", "validation-window"]
+source_url = "https://huggingface.co/ibm-granite/granite-3.1-1b-a400m-instruct/tree/0da7a48b0276d500ce5922fd2b33944091fc6c09"
+
+[scenario.model_provenance]
+repo_id = "ibm-granite/granite-3.1-1b-a400m-instruct"
+revision = "0da7a48b0276d500ce5922fd2b33944091fc6c09"
+
+[scenario.given]
+engine = "vllm"
+model = "ibm-granite/granite-3.1-1b-a400m-instruct"
+tool = "granite_server_smoke.tool"
+
+[[scenario]]
+id = "vllm.granite3_1.1b-a400m.server.structured"
+summary = "Granite 3.1 1B A400M structured fixture awaiting runtime joins"
+tags = ["smoke", "granite", "moe", "server", "structured", "correctness", "validation-window"]
+source_url = "https://huggingface.co/ibm-granite/granite-3.1-1b-a400m-instruct/tree/0da7a48b0276d500ce5922fd2b33944091fc6c09"
+
+[scenario.model_provenance]
+repo_id = "ibm-granite/granite-3.1-1b-a400m-instruct"
+revision = "0da7a48b0276d500ce5922fd2b33944091fc6c09"
+
+[scenario.given]
+engine = "vllm"
+model = "ibm-granite/granite-3.1-1b-a400m-instruct"
+tool = "granite_server_smoke.structured"

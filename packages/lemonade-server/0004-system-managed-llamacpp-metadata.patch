@@ -1,19 +1,19 @@
 diff --git a/src/cpp/server/backend_manager.cpp b/src/cpp/server/backend_manager.cpp
-index 37405a9d..537ad5f8 100644
+index a2923b80a..cb2aa5549 100644
 --- a/src/cpp/server/backend_manager.cpp
 +++ b/src/cpp/server/backend_manager.cpp
-@@ -7,6 +7,7 @@
+@@ -10,6 +10,7 @@
  #include "lemon/utils/path_utils.h"
  #include <atomic>
  #include <chrono>
 +#include <cstdlib>
  #include <filesystem>
  #include <fstream>
- #include <iostream>
-@@ -22,6 +23,42 @@ namespace lemon {
-
+ #include <functional>
+@@ -26,6 +27,42 @@ namespace lemon {
+ 
  namespace {
-
+ 
 +bool is_system_managed_external_backend(const std::string& recipe, const std::string& backend) {
 +    if (recipe != "llamacpp") {
 +        return false;
@@ -50,11 +50,11 @@ index 37405a9d..537ad5f8 100644
 +    return (release_env && *release_env) ? release_env : "";
 +}
 +
- std::string get_current_os() {
- #ifdef _WIN32
-     return "windows";
-@@ -647,6 +684,10 @@ void BackendManager::uninstall_backend(const std::string& recipe, const std::str
-
+ std::string normalize_backend_name(const std::string& recipe, const std::string& backend) {
+     if (backends::recipe_has_rocm_channels(recipe) && backend == "rocm") {
+         // Map "rocm" to the appropriate channel based on config
+@@ -786,6 +823,10 @@ void BackendManager::uninstall_backend(const std::string& recipe, const std::str
+ 
  std::string BackendManager::get_latest_version(const std::string& recipe, const std::string& backend) {
      try {
 +        std::string version_override = get_system_managed_backend_version_override(recipe, backend);
@@ -64,8 +64,8 @@ index 37405a9d..537ad5f8 100644
          return get_version_from_config(recipe, normalize_backend_name(recipe, backend));
      } catch (...) {
          return "";
-@@ -689,6 +730,10 @@ json BackendManager::get_all_backends_status() {
-
+@@ -828,6 +869,10 @@ json BackendManager::get_all_backends_status() {
+ 
  std::string BackendManager::get_release_url(const std::string& recipe, const std::string& backend) {
      try {
 +        std::string release_url_override = get_system_managed_backend_release_url_override(recipe, backend);
@@ -75,8 +75,8 @@ index 37405a9d..537ad5f8 100644
          std::string resolved_backend = normalize_backend_name(recipe, backend);
          auto params = get_install_params(recipe, resolved_backend);
          return "https://github.com/" + params.repo + "/releases/tag/" + params.version;
-@@ -699,6 +744,9 @@ std::string BackendManager::get_release_url(const std::string& recipe, const std
-
+@@ -838,6 +883,9 @@ std::string BackendManager::get_release_url(const std::string& recipe, const std
+ 
  std::string BackendManager::get_download_filename(const std::string& recipe, const std::string& backend) {
      try {
 +        if (is_system_managed_external_backend(recipe, backend)) {
@@ -85,7 +85,7 @@ index 37405a9d..537ad5f8 100644
          std::string resolved_backend = normalize_backend_name(recipe, backend);
          auto params = get_install_params(recipe, resolved_backend);
          return params.filename;
-@@ -710,6 +758,14 @@ std::string BackendManager::get_download_filename(const std::string& recipe, con
+@@ -849,6 +897,14 @@ std::string BackendManager::get_download_filename(const std::string& recipe, con
  BackendManager::BackendEnrichment BackendManager::get_backend_enrichment(const std::string& recipe, const std::string& backend) {
      BackendEnrichment result;
      try {
@@ -101,13 +101,13 @@ index 37405a9d..537ad5f8 100644
          // All standard recipes (including ryzenai-llm): one get_install_params() call gives us everything
          auto params = get_install_params(recipe, resolved_backend);
 diff --git a/src/cpp/server/system_info.cpp b/src/cpp/server/system_info.cpp
-index 0372fa36..69934b60 100644
+index b0b031998..e6608bcf5 100644
 --- a/src/cpp/server/system_info.cpp
 +++ b/src/cpp/server/system_info.cpp
-@@ -719,6 +719,19 @@ static std::string find_system_managed_external_backend(const std::string& recip
+@@ -716,6 +716,19 @@ static std::string find_system_managed_external_backend(const std::string& recip
      return BackendUtils::find_external_backend_binary(recipe, backend);
  }
-
+ 
 +static std::string get_system_managed_backend_version_override(const std::string& recipe, const std::string& backend) {
 +    if (recipe != "llamacpp") {
 +        return "";
@@ -124,8 +124,8 @@ index 0372fa36..69934b60 100644
  static std::string get_llamacpp_version_from_executable(const std::string& executable) {
      std::string output;
      try {
-@@ -759,6 +772,10 @@ static std::string get_recipe_version(const std::string& recipe, const std::stri
-     }
+@@ -753,6 +766,10 @@ static std::string get_llamacpp_version_from_executable(const std::string& execu
+ static std::string get_recipe_version(const std::string& recipe, const std::string& backend) {
      std::string external_binary = find_system_managed_external_backend(recipe, backend);
      if (!external_binary.empty()) {
 +        std::string version_override = get_system_managed_backend_version_override(recipe, backend);
@@ -134,4 +134,4 @@ index 0372fa36..69934b60 100644
 +        }
          return get_llamacpp_version_from_executable(external_binary);
      }
-     auto* spec = try_get_spec_for_recipe(recipe);
+     // Read the on-disk version.txt generically, then let the backend's ops

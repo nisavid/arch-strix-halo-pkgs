@@ -15,6 +15,8 @@ import time
 from typing import Any
 from urllib import error, request
 
+from lemonade_api_auth import auth_headers, resolve_admin_api_key, resolve_api_key
+
 
 CAPITAL_FRANCE_QUERY = "capital of France"
 CAPITAL_FRANCE_DOCUMENTS = [
@@ -66,7 +68,8 @@ def _request_json(
     timeout: float,
 ) -> dict[str, Any]:
     data = None
-    headers = {}
+    internal = "/internal/" in url
+    headers = auth_headers(resolve_admin_api_key() if internal else resolve_api_key())
     if payload is not None:
         data = json.dumps(payload).encode("utf-8")
         headers["Content-Type"] = "application/json"

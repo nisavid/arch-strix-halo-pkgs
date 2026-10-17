@@ -17,4 +17,5 @@ def test_pkgbuild_uses_system_scons_without_network_bootstrap():
     assert 'cp -a --no-preserve=ownership include/. "$pkgdir/usr/include/"' in text
     assert 'cp -a include/. "$pkgdir/usr/include/"' not in text
     assert 'cp -r --no-preserve=ownership include/. "$pkgdir/usr/include/"' not in text
-    assert "scons -j\"$(nproc)\"" in text
+    assert 'scons -j"$(_build_jobs)"' in text
+    assert '-j"$(nproc)"' not in text

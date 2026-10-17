@@ -5,7 +5,7 @@
 # Package recipe key: native_wheels
 
 pkgname=python-numpy-gfx1151
-pkgver=2.4.6
+pkgver=2.5.3
 pkgrel=1
 pkgdesc='Scientific tools for Python rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
@@ -18,11 +18,11 @@ options=()
 provides=(python-numpy)
 conflicts=(python-numpy)
 replaces=()
-source=(https://files.pythonhosted.org/packages/source/n/numpy/numpy-2.4.6.tar.gz)
-sha256sums=(f3a3570c4a2a16746ac2c31a7c7c7b0c186b95ce902e33db6f28094ed7387dda)
+source=(https://files.pythonhosted.org/packages/source/n/numpy/numpy-2.5.3.tar.gz)
+sha256sums=(df2d5874ff183595a4ba404edd04f6bd9b5505c1d7708573f6a6c17489a67563)
 
 build() {
-  cd "$srcdir/numpy-2.4.6"
+  cd "$srcdir/numpy-2.5.3"
 
   _setup_compiler_env() {
   local _compiler_root="/opt/rocm/lib/llvm/bin"
@@ -58,15 +58,17 @@ build() {
 
   export CFLAGS="${_base_cflags:+${_base_cflags} }${_wheel_flags}"
   export CXXFLAGS="${_base_cxxflags:+${_base_cxxflags} }${_wheel_flags}"
+  # -famd-opt is a clang driver link flag here; keeping it out of wheel compile
+  # flags avoids compile-only probes treating it as unused.
   export LDFLAGS="${_base_ldflags:+${_base_ldflags} }-famd-opt"
 
-  python -m build --wheel --no-isolation \
+  /usr/bin/python -m build --wheel --no-isolation \
     -Csetup-args=-Dblas=openblas \
     -Csetup-args=-Dlapack=openblas \
     -Csetup-args=-Dallow-noblas=false
 }
 
 package() {
-  cd "$srcdir/numpy-2.4.6"
-  python -m installer --destdir="$pkgdir" dist/*.whl
+  cd "$srcdir/numpy-2.5.3"
+  /usr/bin/python -m installer --destdir="$pkgdir" dist/*.whl
 }

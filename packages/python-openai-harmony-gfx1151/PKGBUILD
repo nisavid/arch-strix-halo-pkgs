@@ -6,7 +6,7 @@
 
 pkgname=python-openai-harmony-gfx1151
 pkgver=0.0.8
-pkgrel=1
+pkgrel=2
 pkgdesc='OpenAI Harmony response-format library rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://github.com/openai/harmony
@@ -50,8 +50,13 @@ build() {
 
   _setup_compiler_env
   local _debug_prefix="/usr/src/debug/python-openai-harmony-gfx1151"
+  export HOME="$srcdir/.home"
+  export XDG_CACHE_HOME="$srcdir/.cache"
+  export XDG_DATA_HOME="$srcdir/.local/share"
   export CARGO_HOME="$srcdir/.cargo"
-  mkdir -p "$CARGO_HOME"
+  mkdir -p "$HOME" "$XDG_CACHE_HOME" "$XDG_DATA_HOME" "$CARGO_HOME"
+  # Use the installed Rust toolchain; a rustup proxy must never download one.
+  export RUSTUP_AUTO_INSTALL=0
   export CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER="$CC"
   export RUSTFLAGS="-C target-cpu=znver5 -C opt-level=3 --remap-path-prefix=$srcdir=${_debug_prefix}"
   unset CFLAGS CXXFLAGS LDFLAGS

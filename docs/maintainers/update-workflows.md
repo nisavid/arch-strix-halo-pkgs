@@ -135,8 +135,38 @@ with `--fail-on actionable`, an action-required result exits `10`.
 When one update candidate covers multiple equivalent checks for the same
 source lane, such as a PyPI release and the matching upstream git tag, record
 the primary `source_kind` and `check_id` and list the additional selectors in
-`covered_checks`. Keep `latest` and `previous_recorded` broad enough to cover
-each selected check.
+`covered_checks`. Each selector may include a nonempty string `latest` that
+binds its exact normalized reported observation. A selector without `latest`
+inherits the candidate's top-level `latest`, preserving homogeneous release
+checks. Keep `previous_recorded` broad enough to include each historical
+selected cursor.
+
+Heterogeneous observations need separate selector values: an upstream version,
+a distribution package version, and a submodule commit are not interchangeable.
+An explicitly selected actionable check must match both its recorded cursor
+and bound latest observation. A mismatch remains actionable and cannot fall
+through to the generic unselected-baseline version-prefix fallback. That
+fallback remains available only for a baseline not explicitly selected by the
+candidate. Blocked-query matching keeps its existing failed-query exception;
+it does not invent an observed latest value.
+
+Current, baseline-drift, and ordinary candidate matching share exact latest
+validation for every selected nonfailed observation. Ordinary matching also
+requires each selected historical recorded cursor. When the family is current
+or only its baseline drifts, a selected current observation may instead bind
+its promoted cursor to the same observed latest value. This preserves an open
+tracked or blocked obligation after policy cursors advance; it does not excuse
+a stale covered value. A stale record does not attach to an all-current family,
+which remains current without a candidate. Genuine complete duplicate matches
+remain invalid.
+
+For release candidates, selected equivalent primary release providers must
+agree on the candidate's single `latest` value, regardless of their individual
+status. Split releases plus a covered baseline drift remain action-required
+even when both release providers report `current`; ordinary mixed or updated
+splits do too. Heterogeneous baseline and ref observations keep separate
+bindings and do not join release-provider agreement. Uncovered actionable
+checks still prevent a whole-family disposition.
 
 ### Validation Gate Derivation
 
@@ -179,6 +209,10 @@ report is younger than `--max-age-hours` (24 by default). The digest includes
 the checker version, freshness policy, recipe-package policy,
 update-candidate ledger, discovered package directories, and any `--only`
 selectors.
+
+Increment the checker's `TOOL_VERSION` when matching semantics change. Verify
+through `run_check` that a report cached under the prior version is not reused,
+then run the forced sweep and disposition its observations before closeout.
 
 Durable closeout notes may point future agents at the freshness gate, but the
 instruction must preserve the gate's termination condition: stop before running
@@ -245,7 +279,7 @@ Current package-lane catalog:
 | Lane | Packages | Scout first |
 | --- | --- | --- |
 | Tagged upstream tarball | `aocl-utils-gfx1151`, `python-gfx1151`, `python-vllm-rocm-gfx1151`, `python-torchvision-rocm-gfx1151` | upstream release notes, tag list, `source_url`, package README |
-| PyPI source/wheel local closure | `python-numpy-gfx1151`, `python-sentencepiece-gfx1151`, `python-zstandard-gfx1151`, `python-asyncpg-gfx1151`, `python-openai-harmony-gfx1151`, `python-orjson-gfx1151`, `python-cryptography-gfx1151`, `python-torchao-rocm-gfx1151`, `python-mistral-common-gfx1151`, `python-transformers-gfx1151` | PyPI metadata, upstream changelog, Arch/AUR baseline |
+| PyPI source/wheel local closure | `python-numpy-gfx1151`, `python-sentencepiece-gfx1151`, `python-zstandard-gfx1151`, `python-asyncpg-gfx1151`, `python-openai-harmony-gfx1151`, `python-orjson-gfx1151`, `python-cryptography-gfx1151`, `python-torchao-rocm-gfx1151`, `python-mistral-common-gfx1151`, `python-transformers-gfx1151`, `python-prometheus-fastapi-instrumentator-gfx1151`, `python-einops-gfx1151`, `python-py-cpuinfo-gfx1151`, `python-pybase64-gfx1151`, `python-apache-tvm-ffi-gfx1151`, `python-xgrammar-gfx1151` | PyPI metadata, upstream changelog, Arch/AUR baseline |
 | ROCm/framework source lane | `python-pytorch-opt-rocm-gfx1151`, `python-triton-gfx1151`, `python-aotriton-gfx1151`, `python-amd-aiter-gfx1151` | upstream branch/tag, candidate or scout branch refs, ROCm compatibility notes, package patches |
 | Monorepo commit/release lane | `llama.cpp-hip-gfx1151`, `llama.cpp-vulkan-gfx1151`, `lemonade-server`, `lemonade-app` | upstream release/tag, recorded source revision, backend/runtime docs |
 | CMake engine source lane | `stable-diffusion.cpp-vulkan-gfx1151` | pinned upstream commit, recursive submodules, AUR backend package, Blackcat recipe notes, package-local source patches, installed wrapper smoke |
@@ -272,7 +306,11 @@ to adopt.
    local patch files, package-local tests, and smoke helpers.
 5. Check whether upstream dependency metadata changed and reconcile it against
    the local pacman dependency closure.
-6. Update the package policy entry in `policies/recipe-packages.toml`.
+6. Update the package policy entry in `policies/recipe-packages.toml`. When
+   several packages build one source revision, as `lemonade-server` and
+   `lemonade-app` do, their `source_refs` and notes refer to a shared entry
+   in the `[source_pins]` table as `{source_pins.<name>}`. Change that entry,
+   not each package.
 7. Re-render the package scaffold.
 8. Apply the carried patch series to a clean new source tree. Refresh patches
    when they apply with fuzz or when nearby upstream context changed.

@@ -5,7 +5,7 @@
 # Package recipe key: native_wheels
 
 pkgname=python-accelerate-gfx1151
-pkgver=1.13.0
+pkgver=1.15.0
 pkgrel=1
 pkgdesc='Hugging Face multi-device training helpers for the Strix Halo Python stack'
 arch=('any')
@@ -18,16 +18,16 @@ options=()
 provides=(python-accelerate)
 conflicts=(python-accelerate)
 replaces=()
-source=(https://files.pythonhosted.org/packages/source/a/accelerate/accelerate-1.13.0.tar.gz)
-sha256sums=(d631b4e0f5b3de4aff2d7e9e6857d164810dfc3237d54d017f075122d057b236)
+source=(https://files.pythonhosted.org/packages/source/a/accelerate/accelerate-1.15.0.tar.gz)
+sha256sums=(5654f8c5eaa0d4fa68b33e287a97765da6849bf6d51dcac874e73fbbddfb6134)
 
 build() {
-  cd "$srcdir/accelerate-1.13.0"
+  cd "$srcdir/accelerate-1.15.0"
 
-  python -m build --wheel --no-isolation --skip-dependency-check
+  /usr/bin/python -m build --wheel --no-isolation --skip-dependency-check
 }
 
 package() {
-  cd "$srcdir/accelerate-1.13.0"
-  python -m installer --destdir="$pkgdir" dist/*.whl
+  cd "$srcdir/accelerate-1.15.0"
+  /usr/bin/python -m installer --destdir="$pkgdir" dist/*.whl
 }

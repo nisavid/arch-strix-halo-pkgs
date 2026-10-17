@@ -1,8 +1,1763 @@
 # Current State
 
 The package, deployment, and live-validation narrative below remains a
-2026-06-15 snapshot. The freshness admission state was reconciled on
-2026-08-12 as follows.
+2026-06-15 snapshot. Dated records come first, newest first; older
+reconciliations remain as dated history.
+
+## 2026-10-16 Freshness Dispositions and Confirming Sweep
+
+The daily metadata sweep adds five candidate records without changing C's
+selected sources, package versions, or existing validation gates:
+
+- AutoRound `0.16.1` remains rejected under the approved upstream-scope
+  exclusion. This is a scope disposition, not a release-content assessment.
+- llama.cpp stable tag `0.7.0`, ROCm PyTorch release/2.12 head
+  `0227fa244edde8531084b5aa30837d8424a2fcce`, stable-diffusion.cpp master
+  `8cd731e7b4667eb8f40a153315b9a7125d09a58d`, and matching Transformers
+  PyPI/tag release `5.20.0` are tracked at
+  [post-closeout source assessment](https://github.com/nisavid/arch-strix-halo-pkgs/issues/147).
+
+The llama.cpp record binds its stable tag and both independent Arch
+baselines. Its legacy b-number release check reports `v0.7.0` as `current`;
+that observation stays informational rather than becoming a second equivalent
+release selector. The checker requires selected equivalent release providers
+to share one literal latest value. The initial confirming attempt that
+selected both `v0.7.0` and `0.7.0` exited 10; the revised record preserves
+both observations without claiming that the checker normalized them.
+
+Earlier candidate records, C's llama.cpp `0.4.1` and Lemonade coupling,
+ROCm PyTorch `13da086`, stable-diffusion.cpp `c92d73c`, and Transformers
+`5.18.0` remain unchanged. Independent distribution baselines are bound
+separately; this increment terminalizes no earlier record.
+
+The initial daily sweep completed at `2026-10-16T11:44:07Z` with five
+unhandled families and no provider failure. The changed ledger invalidated
+the cache. The final cache-aware sweep completed at
+`2026-10-16T11:53:24Z`, with `cache.used = false`, and exited 0 under
+`--json --fail-on actionable`. Its 51 families comprise 28 stable updates,
+five branch-head movements, four baseline drifts, and 14 current families.
+Effective results are 40 tracked, six rejected, and five current, with no
+action-required result or provider failure. Explicit tracker validation
+exited 0 with all 13 active issue gates open. The focused checker and
+model-closure-move tests pass 170 tests; this is not a full-suite result.
+
+These are metadata dispositions, not release-content, security,
+dependency-compatibility, recursive-submodule, patch, or runtime assessments.
+No package source, build, deployment/installation, installed smoke, server,
+GPU, or live-scenario state changed. The next sweep is due 24 hours after
+the final completion, or sooner after a relevant policy, package, ledger,
+checker, or source-metadata change.
+
+## 2026-10-15 Freshness Reconciliation After the Model-Closure Merge
+
+The October 12–15 metadata observations are reconciled with the published
+[model-closure move](https://github.com/nisavid/arch-strix-halo-pkgs/pull/198),
+merged on October 15 at `8f2d752c192eb089b1d6511213b2c20861277ce0`.
+[The closure ticket](https://github.com/nisavid/arch-strix-halo-pkgs/issues/183)
+is closed. Its source, isolated-root build and CPU evidence remain distinct
+from host installation and GPU qualification.
+
+The candidate ledger preserves the closure's Transformers, tokenizers, vLLM
+and aiohttp records, source cursors, and superseded selections. Active
+Transformers and tokenizers obligations point to
+[assembled-C requalification](https://github.com/nisavid/arch-strix-halo-pkgs/issues/194);
+aiohttp's host gates remain with
+[the serving closure](https://github.com/nisavid/arch-strix-halo-pkgs/issues/110).
+The five overlapping aiohttp, NumPy, Arch Python, Lemonade and
+stable-diffusion.cpp observations have one record per candidate identity,
+with distinct upstream and distribution values bound separately. The
+October 11–15 dated sweep sections remain below.
+
+The old-base October 15 branch's final tracker check exited 10 after the
+closure ticket closed. That invalidated its operational closeout; its
+earlier passing check is only dated history. The reconciled tree's forced
+upstream sweep completed at `2026-10-15T11:43:12Z`, with
+`cache.used = false`, and exited 0 under
+`--refresh --json --fail-on actionable`. Across 51 families it reports
+28 stable updates, five branch-head movements, four baseline drifts and
+14 current families. Effective results are 40 tracked, six rejected and
+five current, with no actionable status or provider failure. Explicit
+tracker validation also exited 0 with all 13 active issue gates open.
+The checker tests pass 160 tests, and the model-closure contract tests
+pass 34. These are focused CPU source checks, not a full-suite or runtime
+result.
+
+This integration changes only freshness records and their dated status
+documentation relative to the published closure. It selects no further
+package source and performs no build, deployment/installation,
+installed smoke, server, GPU or live-scenario validation. The next sweep
+is due 24 hours after this completion, or sooner after a relevant policy,
+package, ledger, checker or source-metadata change. The remaining
+qualification and host gates stay open.
+
+## 2026-10-15 Freshness Dispositions and Confirming Sweep
+
+The daily metadata sweep tracks five newly unmatched observations without
+changing generation C's selected package sources or versions:
+
+- CTranslate2 release `4.8.3` with newly changed AUR baseline `4.8.3-1`,
+  pydantic-core Arch primary `2.50.1-1` with independent PyPI `2.50.1`,
+  ROCm PyTorch release/2.12 head
+  `9af6bce78e14cea8a4279db4fd23b26b8c196a7d` with Arch `2.14.1-1`, and
+  stable-diffusion.cpp master `120e3e875c5501c1babb50c0966122cb569d12d4`
+  with unchanged AUR `r948.228c707-1` at
+  [post-closeout source assessment](https://github.com/nisavid/arch-strix-halo-pkgs/issues/147).
+- Unchanged Lemonade fork
+  `3df36c4c5da16eedc6dca54c858be3347ccdf6a9` with new independent upstream
+  baseline `2026.42.1` at
+  [deferred calver packaging](https://github.com/nisavid/arch-strix-halo-pkgs/issues/163).
+
+The selected CTranslate2 `4.8.2`, ROCm PyTorch `13da086`,
+stable-diffusion.cpp `c92d73c`, Lemonade source, and their existing owner gates
+remain unchanged. Earlier observations and adopted records remain intact;
+this increment terminalizes none of them. The independent primary and
+baseline observations are bound separately in
+`docs/maintainers/update-candidates.toml`.
+
+The initial cache-aware sweep completed at `2026-10-15T10:29:53Z` with five
+unhandled families and no provider failure. The changed ledger invalidated
+the old cache. The confirming cache-aware sweep completed at
+`2026-10-15T10:35:18Z` with `cache.used = false` and exited 0 under
+`--json --fail-on actionable`. Its 51 families comprise 30 stable updates,
+five branch-head movements, four baseline drifts, and 12 current families.
+Effective results are 40 tracked, six rejected, and five current, with no
+action-required result or provider failure. Explicit tracker validation
+exited 0 with all 13 unique active issue gates open. The focused checker
+suite passes 160 tests; this is not a full-suite or installed-runtime result.
+
+These are metadata dispositions, not release-content, security,
+dependency-compatibility, recursive-submodule, patch, or runtime assessments.
+No package source, build, deployment/installation, installed smoke, server,
+GPU, or live-scenario state changed. The next sweep is due 24 hours after
+the confirming completion, or sooner after a relevant policy, package,
+ledger, checker, or source-metadata change. The
+[model-closure PR](https://github.com/nisavid/arch-strix-halo-pkgs/pull/198)
+still precedes this overlapping freshness checkpoint's integration; preserve
+both sets of records and renew affected checks and reviews on the combined
+tree.
+
+## 2026-10-13 Freshness Dispositions and Confirming Sweep
+
+The daily metadata sweep tracks two newly unmatched observations at
+[post-closeout source assessment](https://github.com/nisavid/arch-strix-halo-pkgs/issues/147):
+CTranslate2 `4.8.3` and stable-diffusion.cpp master
+`1d0a58a35050d285b1d6fb1bc68a92924d35825e`. The independent
+stable-diffusion.cpp AUR baseline remains `r948.228c707-1` and is bound
+separately in `docs/maintainers/update-candidates.toml`.
+
+Generation C's selected CTranslate2 `4.8.2` security-exception refresh and
+[its existing owner](https://github.com/nisavid/arch-strix-halo-pkgs/issues/120)
+remain unchanged. Its selected stable-diffusion.cpp `c92d73c` rebuild and
+[its existing owner](https://github.com/nisavid/arch-strix-halo-pkgs/issues/121)
+also remain unchanged. The October 12 `d637cfb` observation and
+[the model-closure PR's](https://github.com/nisavid/arch-strix-halo-pkgs/pull/198)
+intervening `2988060` record remain retained for the acknowledged integration;
+this increment terminalizes none of them.
+
+The initial cache-aware sweep completed at `2026-10-13T21:06:27Z` with two
+unhandled families and no provider failure. The changed ledger invalidated
+the old cache. The confirming cache-aware sweep completed at
+`2026-10-13T21:10:03Z` with `cache.used = false` and exited 0 under
+`--json --fail-on actionable`. Its 51 families comprise 29 stable updates,
+five branch-head movements, five baseline drifts, and 12 current families.
+Effective results are 40 tracked, six rejected, and five current, with no
+action-required result or provider failure.
+
+Explicit tracker validation exited 0 with all 13 unique active issue gates
+open. The focused checker suite passes 160 tests, and whitespace checks pass.
+This is not a full-suite or installed-runtime result.
+
+These are metadata dispositions, not release-content, security,
+dependency-compatibility, recursive-submodule, patch, or runtime assessments.
+No package source, selected version, build, deployment/installation, installed
+smoke, server, GPU, or live-scenario state changed. The next sweep is due 24
+hours after the confirming completion, or sooner after a relevant policy,
+package, ledger, checker, or source-metadata change. Integration of the
+model-closure PR remains an invalidating change; its protected merge precedes
+the overlapping freshness checkpoint's integration and renewed checks/review.
+
+## 2026-10-12 Main-Based Freshness Dispositions
+
+The daily metadata sweep handles eight newly unmatched observations without
+changing package sources, freshness cursors, or generation C's selected
+versions. `docs/maintainers/update-candidates.toml` records:
+
+- aiohttp `3.14.5` at the existing
+  [serving-closure integration gate](https://github.com/nisavid/arch-strix-halo-pkgs/issues/110),
+  preserving the owner-selected exception in the
+  [model-closure move](https://github.com/nisavid/arch-strix-halo-pkgs/issues/183).
+- Arch Python `3.14.8-1` and the separate CPython `3.14.8` observation at the
+  [existing admitted-foundation gate](https://github.com/nisavid/arch-strix-halo-pkgs/issues/108).
+- Lemonade fork `3df36c4c5da16eedc6dca54c858be3347ccdf6a9` and independent
+  upstream baseline `2026.41.1` at
+  [deferred calver packaging](https://github.com/nisavid/arch-strix-halo-pkgs/issues/163).
+- AITER `0.1.25`, NumPy `2.5.4` with Arch `2.5.4-1`, pydantic-core's
+  independent PyPI baseline `2.50.1`, llama.cpp's updated ggml-hip baseline
+  `0.26.0-1`, and stable-diffusion.cpp master
+  `d637cfb935feb2254898a8f1524046c958f3df80` with unchanged AUR
+  `r948.228c707-1` at
+  [post-closeout assessment](https://github.com/nisavid/arch-strix-halo-pkgs/issues/147).
+
+Five families overlap the October 11 records in the unmerged
+[model-closure PR](https://github.com/nisavid/arch-strix-halo-pkgs/pull/198)
+at `1cbfc38049785aab774c7af2525d7fddd103f352`: aiohttp, Python, Lemonade,
+NumPy, and stable-diffusion.cpp. Preserve that PR's source/build evidence and
+reconcile overlapping ledger identities before the second landing. The newer
+NumPy Arch baseline and stable-diffusion.cpp master are separate observations,
+not reasons to discard its dated evidence. Existing selected and historical
+records remain intact; this metadata update terminalizes none of them.
+
+The initial main-based discovery completed at `2026-10-12T17:22:12Z` with
+eight unhandled families and no provider failure. The uncached confirming
+sweep against this ledger completed at `2026-10-12T17:34:14Z` and exited 0
+with `--json --fail-on actionable`. Its 51 families comprise 29 stable
+updates, five branch-head movements, five baseline drifts, and 12 current
+families. Effective results are 40 tracked, six rejected, and five current,
+with no action-required result or provider failure. Explicit tracker
+validation exited 0 with all 13 unique active issue gates open.
+
+The focused checker suite passes 160 tests. Bare `pytest` still stops during
+collection because the installed Transformers requires Hugging Face Hub
+`<2.0` beside installed Hub `2.1.1`. A separate offline CPU diagnostic passes
+1,587 tests with two skips after excluding only
+`tests/test_torchao_vllm_smoke.py`; that exclusion is not a full-suite pass or
+a host repair. The model-closure and assembled-C gates remain responsible for
+their own current compatibility evidence.
+
+This sweep supplies metadata dispositions, not new release-content, security,
+dependency-compatibility, patch, or runtime assessment. No package source,
+build, deployment/installation, installed smoke, server, GPU, or live-scenario
+state changed. The next sweep is due 24 hours after the confirming sweep,
+or sooner after a relevant policy, package, ledger, checker, or source-metadata
+change, including integration of the model-closure PR.
+
+## 2026-10-11 Model Closure Move to Transformers 5.18.0 and Hugging Face Hub 2.x
+
+[The model-closure move](https://github.com/nisavid/arch-strix-halo-pkgs/issues/183) changed the package sources, the build-root
+closure targets, the freshness cursors and the candidate records on
+2026-10-10, and rebuilt the closure into a fresh isolated build root on
+2026-10-11. Nothing was installed on the host, and no GPU ran.
+
+Owner decisions this record follows, as recorded on
+[the issue](https://github.com/nisavid/arch-strix-halo-pkgs/issues/183) and its comments:
+
+- **2026-10-05:** generation C moves to Transformers 5.18.0 and
+  huggingface-hub 2.x, admitted under the build-breakage exception.
+  Transformers 5.16.1 and 5.17.0 require `huggingface-hub<2.0` and fail at
+  import beside Arch's huggingface-hub 2.x.
+- **2026-10-05:** the vLLM 0.30.0 rebuild carries the `pixtral.py` hunk of
+  [vllm#56108](https://github.com/vllm-project/vllm/pull/56108) and six
+  v0.31.0 security and multimodal cache fixes.
+- **2026-10-05:** the host waits for generation C. It keeps Transformers
+  5.8.1, which fails at import beside its huggingface-hub 2.1.1, until C is
+  activated, and gets no interim repair.
+- **2026-10-10:** tokenizers moves to 0.23.3 in the same step.
+- **2026-10-10, phase split:** every GPU rerun under 5.18 and the
+  online-download check moved, unchanged, to
+  [GPU-lane requalification on assembled C](https://github.com/nisavid/arch-strix-halo-pkgs/issues/194). The closure move closes
+  on built packages, the vLLM fixes each with a recorded check, tokenizers
+  0.23.3, and a passing CPU drive in the rebuilt root. No requirement is
+  waived.
+- **2026-10-11:** aiohttp moves to 3.14.5 in the same rebuild, under the
+  security exception
+  ([comment](https://github.com/nisavid/arch-strix-halo-pkgs/issues/183#issuecomment-6106254102)).
+- **2026-10-11:** [vllm#57731](https://github.com/vllm-project/vllm/pull/57731)
+  is not carried, and
+  [vllm#60022](https://github.com/vllm-project/vllm/pull/60022) is tracked,
+  not carried
+  ([comment](https://github.com/nisavid/arch-strix-halo-pkgs/issues/183#issuecomment-6106254102)).
+- **2026-10-11:** tokenizers 0.23.3-1 and vLLM 0.30.0-2, each rebuilt once
+  under an unchanged version, keep those versions; and the rebuilt root is
+  swapped into the default root path
+  ([comment](https://github.com/nisavid/arch-strix-halo-pkgs/issues/183#issuecomment-6111579499)). The earlier builds never left
+  the build repo. The first CPU drive ran on them; the final drive, on the
+  later builds, superseded it.
+
+The states are recorded separately:
+
+- **Source updated:** yes. `python-transformers-gfx1151` 5.18.0-1,
+  `python-tokenizers-gfx1151` 0.23.3-1, `python-aiohttp-gfx1151` 3.14.5-1 and
+  `python-vllm-rocm-gfx1151` 0.30.0-2, each pinned to its published source
+  digest.
+- **Package built:** yes, all four, in isolated generation-C build roots on
+  2026-10-11, and published to the W2A build repo. tokenizers 0.23.3-1 and
+  vLLM 0.30.0-2 were each built twice under one version, because the first
+  review changed them; the accepted builds are the later ones. Each accepted
+  package's `.BUILDINFO` PKGBUILD checksum equals the committed PKGBUILD.
+  [Generation-C Build Root](c-build-root.md#what-ran-on-2026-10-11-in-order)
+  has the order and what differed.
+- **Deployed/installed:** in the rebuilt isolated root only. It was swapped
+  into the default root path at `2026-10-11T17:12:43Z`, and the 2026-09-25
+  root is kept beside it. Not on the host.
+- **Installed-smoked:** in that root only: `verify`, the backport smoke tool
+  and the CPU drive below, with the smoke tool rerun after its exit-status
+  fix on 2026-10-13. Not on the host.
+- **Live-scenario validated:** no. GPU evidence is not part of the closure
+  move.
+
+### The rebuilt root
+
+[Generation-C Build Root](c-build-root.md#w2a-model-closure-move-183) has the
+procedure and what a re-lock moves. The results:
+
+- **Lock.** One lock from the four targets files covers the whole assembled
+  root: 610 packages, with no problem after two files were fetched. The
+  rebuilt root's manifest equals that lock, package for package, by version
+  and digest. Against the 2026-09-25 root it adds httpx2, httpcore2,
+  truststore and tomlkit and changes 107 versions. Six of those are this
+  move (Transformers, tokenizers, aiohttp, vLLM, huggingface-hub 1:1.32.0 to
+  1:2.1.1 and click 8.3.3 to 8.5.0), and the other 101 are sync DB movement.
+- **`verify`.** 610 packages and 4,153 ELF files, with no violation, after
+  the allowlist took VTK 9.7's optional library names. The same held at the
+  default path after the swap, where the manifest again equalled the lock.
+- **CPU drive.** Run without a GPU against the rebuilt root after the last
+  package was added: `RESULT PASS`, 122 of 122 gate checks, finished at
+  `2026-10-11T07:19:35Z`. The drive is the one of the
+  [2026-09-29 validation of record](#2026-09-29-w2a-vllm-0300-validation-of-record),
+  with the same staged tools and scenarios; its harness is session tooling
+  that this repo does not track. The comparison baseline is the report of
+  that validation's rerun on 2026-10-01, kept with the harness and not in
+  this repo. Compared by item name and pass or fail status (159 items), one
+  item differs, and it is informational (next bullet). Six informational
+  items fail where five did; the other five are the known gaps from before
+  (torchaudio, AMD Quark, AITER, a drive check that calls the multimodal
+  hasher with an outdated signature, and the top-level module map). Within
+  the module-map item, the set of imported top-level modules gains `httpx2`,
+  `httpcore2` and `truststore` and loses `httpcore`; the item's status is
+  unchanged. The build-root record has the drive's memory figures.
+- **OpenTelemetry.** The drive's one changed item is informational: vLLM's
+  `is_otel_available()` is false, because Arch `extra` holds a
+  [split OpenTelemetry set](https://github.com/nisavid/arch-strix-halo-pkgs/issues/196). vLLM uses the exporters only when a
+  trace endpoint is configured, and no tracked scenario configures one.
+
+### vLLM 0.30.0-2
+
+The package stays on upstream v0.30.0 and carries eight upstream backports on
+top of the 0016 carry. Each is the source change of one vLLM pull request
+that is in v0.31.0. [Patch Inventory](../patches.md) describes each one.
+
+- 0017 ([#56108](https://github.com/vllm-project/vllm/pull/56108),
+  `pixtral.py` only, so Laguna stays unsupported on Transformers 5.18) and
+  0018 ([#59613](https://github.com/vllm-project/vllm/pull/59613), the
+  MiniMax-M3 video processor) keep vLLM 0.30.0 working on Transformers 5.18.
+- 0019 ([#58830](https://github.com/vllm-project/vllm/pull/58830)) rejects
+  per-request `mm_processor_kwargs` and `media_io_kwargs` with HTTP 400 unless
+  the server sets `--trust-request-mm-kwargs`. This changes default server
+  behavior: a client that sends either field per request needs the server
+  flag.
+- 0020 ([#58832](https://github.com/vllm-project/vllm/pull/58832)), 0021
+  ([#57833](https://github.com/vllm-project/vllm/pull/57833)), 0022
+  ([#57696](https://github.com/vllm-project/vllm/pull/57696)), 0023
+  ([#54283](https://github.com/vllm-project/vllm/pull/54283), adapted to
+  v0.30.0's inline EXIF ImageID lookup) and 0024
+  ([#51694](https://github.com/vllm-project/vllm/pull/51694)) are the other
+  five fixes the owner selected.
+
+These six are the selected fixes, not every security-relevant change in
+v0.31.0. The package notes record the 2026-10-11 assessment of that range
+against v0.30.0's code. In short:
+
+- The security-relevant fixes left out need a served LoRA adapter, a KV
+  connector, Model Runner V1 or the scale-out routes, none of which
+  generation C uses. Model Runner V1 includes vLLM's automatic fallback to
+  it, for some speculative-decoding methods and custom logits processors
+  among others; no tracked scenario triggers that fallback.
+- vllm#57731 fixes GHSA-4xqp-c3mv-qff7: one request with an oversized
+  `min_tokens` hangs the engine while `/health` stays green. On v0.30.0 only
+  `/inference/v1/generate` reaches that path, and `vllm serve` registers that
+  route only with `--enable-scale-out` or `--tokens-only`. By owner decision
+  it arrives with the 0.31.0 move.
+- One ordinary bug fix that is left out is reachable: vllm#56576. On
+  0.30.0-2, as on 0.30.0-1, an image whose EXIF block has an invalid TIFF
+  header fails its own image-chat request with a server error. It arrives
+  with the 0.31.0 move.
+- vllm#60022, which no release contains yet, restricts the Pillow image
+  formats that untrusted media may use. v0.30.0 opens request images with no
+  format allowlist, so an EPS payload on an image-chat request can reach
+  Ghostscript where Ghostscript is installed.
+  [The image-format decision](https://github.com/nisavid/arch-strix-halo-pkgs/issues/195) must be settled before generation C
+  closes. That ticket also owns the other security fixes that no release
+  contains yet, including vllm#61009, which restricts the default CORS
+  origins: v0.30.0 allows every origin unless `--allowed-origins` is set.
+
+Each carried fix has a recorded check on the built package. Run
+`python tools/vllm_backport_smoke.py` inside the build root: it needs no GPU,
+network, model files or pytest, runs one behavior check per patch in its own
+process, and prints one PASS or FAIL line per patch.
+
+- On the rebuilt root's 0.30.0-2, with Transformers 5.18.0 and
+  huggingface-hub 2.1.1, all eight checks pass. They passed again on
+  2026-10-13 with the tool's fix that fails a check whose process exits
+  nonzero after printing a passing record
+  ([Generation-C Build Root](c-build-root.md#what-ran-on-2026-10-11-in-order)).
+- On the 2026-09-25 root's unpatched 0.30.0-1, 0018 to 0024 fail. 0017
+  passes there only because the unpatched Pixtral modules still import on
+  Transformers 5.16.1.
+- On that unpatched package with Transformers 5.18.0 and huggingface-hub
+  2.1.1 overlaid, all eight fail: the 11 Pixtral-chain modules raise
+  `ImportError`.
+
+The 0022 check drives the scheduler's encoder-input method on a minimal
+stand-in scheduler with a real encoder cache manager, because a full
+scheduler needs a model.
+
+### Dependency facts
+
+Checked against PyPI's version-specific metadata and the upstream tags:
+
+- Transformers [5.16.1](https://pypi.org/pypi/transformers/5.16.1/json) to
+  [5.18.0](https://pypi.org/pypi/transformers/5.18.0/json): one runtime
+  requirement changes, `huggingface-hub>=1.5.0,<2.0` to
+  `huggingface-hub>=1.31.0,<3.0`. The package declares that range as
+  versioned depends with Arch's epoch, `python-huggingface-hub>=1:1.31.0` and
+  `<1:3`, so pacman refuses a hub outside it.
+- tokenizers [0.23.2](https://pypi.org/pypi/tokenizers/0.23.2/json) to
+  [0.23.3](https://pypi.org/pypi/tokenizers/0.23.3/json): the one
+  requirement, `huggingface-hub>=0.16.4,<2.0`, becomes `<3.0`, and the
+  package declares it the same way. 0.23.3 is not a metadata-only release:
+  it removes the truncation early exit that 0.23.2 carried, which restores
+  every overflowing encoding. The CPU drive is its first measurement here.
+- The tokenizers package now depends on huggingface-hub, because the
+  compiled extension imports it when `Tokenizer.from_pretrained` is called.
+  It depends on `libstdc++`, which the extension links, and no longer on
+  `zlib`, which it does not.
+- huggingface-hub [2.1.1](https://pypi.org/pypi/huggingface-hub/2.1.1/json)
+  requires `httpx2>=2.0.0,<3` where 1.32.0 required `httpx`, and
+  `click>=8.4.2,<9`. httpx2 2.13.0 requires its matching httpcore2,
+  `truststore>=0.10` and `anyio>=4.10`. Arch `python-httpx2` does not depend
+  on `python-anyio`, and Arch `python-huggingface-hub` depends on an
+  unversioned `python-click`, so the targets floor both.
+- aiohttp 3.14.5 requires `yarl>=1.25.1,<2.0` and `multidict>=4.5,<8.0`,
+  which generation C's yarl 1.25.1 and multidict 6.9.1 meet. 3.14.4 is the
+  first release patched for eight advisories of 2026-10-07. By advisory
+  title, three low ones concern the aiohttp client that vLLM uses to fetch
+  request-supplied media; three low ones concern an aiohttp server, which
+  vLLM does not run; the two medium ones were not classified.
+- No other closure package's metadata excludes these versions: Accelerate
+  1.15.0, mistral-common 1.11.7, compressed-tensors 0.17.0, vLLM 0.30.0,
+  xgrammar 0.2.3 and safetensors 0.8.0 were checked.
+
+### Candidate records
+
+- `transformers-5.18.0-pypi`, `tokenizers-0.23.3-pypi` and
+  `aiohttp-3.14.5-pypi` stay tracked, each at the issue that owns its
+  remaining gate: [GPU-lane requalification](https://github.com/nisavid/arch-strix-halo-pkgs/issues/194) for Transformers and
+  tokenizers, and [the W2A closure](https://github.com/nisavid/arch-strix-halo-pkgs/issues/110) for aiohttp's host
+  installation and validation. The closure move holds their build and CPU
+  evidence. `vllm-0.30.0` records the 0.30.0-2 source and build.
+- `transformers-5.16.1-c-line`, `tokenizers-0.23.2-pypi` and
+  `aiohttp-3.14.3-pypi` are superseded by them. The two September selections
+  were retired when the source moved, which is before their successors are
+  adopted in the ledger's sense; every open gate sits on the successors.
+- `transformers-5.19.0-pypi` keeps its route to
+  [post-closeout maintenance](https://github.com/nisavid/arch-strix-halo-pkgs/issues/147) and names the promoted `5.18.0`
+  cursor. `vllm-0.31.0` records what the 0.31.0 move drops and brings.
+
+The source suite passed 1,645 tests with three skips. It excluded
+`tests/test_torchao_vllm_smoke.py`, which fails collection on this host for
+the Transformers and huggingface-hub reason above. The Transformers and
+tokenizers package tests passed nine with one skip. The vLLM package tests
+passed 145 with three skips, with the v0.30.0 source tarball supplied so that
+the series 0016-0024 is applied to real source; they excluded
+`test_torchao_vllm_smoke_tool.py`, whose eight tests fail on this host for
+the same reason.
+
+Open after this move:
+
+- The GPU lanes on assembled C.
+- The image-format decision, with the other unreleased vLLM security fixes.
+- Everything on the host: installation, installed smoke and live validation.
+
+## 2026-10-11 Freshness Dispositions and Confirming Sweep
+
+The sweep that the closure move's ledger changes required found five
+families that had moved upstream since the previous day's confirming sweep.
+Each new record supersedes the family's previous unadopted post-freeze
+observation:
+
+- aiohttp: PyPI `3.14.5`. The owner adopted it into
+  [the closure move](https://github.com/nisavid/arch-strix-halo-pkgs/issues/183) on 2026-10-11, so the selected `3.14.3` record
+  is superseded, and the new record is tracked to
+  [the W2A closure](https://github.com/nisavid/arch-strix-halo-pkgs/issues/110) for its host gates.
+- NumPy: PyPI `2.5.4`, a bug-fix release, is tracked to
+  [post-closeout maintenance](https://github.com/nisavid/arch-strix-halo-pkgs/issues/147).
+- Python: Arch `python` `3.14.8-1` now matches the CPython 3.14.8 baseline
+  and is tracked to [the W1 foundation](https://github.com/nisavid/arch-strix-halo-pkgs/issues/108), which owns the admitted
+  3.14.8 foundation.
+- Lemonade: fork main `3df36c4c5da16eedc6dca54c858be3347ccdf6a9`, one commit
+  past `4bad19a`, is tracked to
+  [calendar-versioned Lemonade packaging](https://github.com/nisavid/arch-strix-halo-pkgs/issues/163).
+- stable-diffusion.cpp: master `2988060a4338a5dcd94721c964a8e87003c1ac8b` is
+  tracked to post-closeout maintenance.
+
+Release contents and security applicability are unassessed for NumPy,
+Lemonade and stable-diffusion.cpp beyond what their records state.
+
+The first sweep finished at `2026-10-11T03:09:17Z` with those five unhandled
+and no provider failure. After disposition and the two review rounds' ledger
+changes, the real-provider confirming sweep completed at
+`2026-10-11T09:42:03Z` and exited 0 with
+`--refresh --json --fail-on actionable`. Across 51 families,
+the report has 27 stable updates, five branch-head movements, five baseline
+drifts and 14 current families. Effective dispositions are 40 tracked, six
+rejected and five current, with no action-required result or provider
+failure. Explicit tracker validation exited 0 with all 13 unique active
+issue gates open.
+
+The checker's GitHub queries need `GITHUB_TOKEN` or `GH_TOKEN` in the
+environment once a session has run a few sweeps: three anonymous sweeps in an
+hour exhausted GitHub's unauthenticated rate limit and failed seven queries.
+
+The next sweep is due 24 hours after the confirming sweep, or sooner after
+relevant policy, package, ledger, checker, or source-metadata changes.
+
+## 2026-10-10 Freshness Dispositions and Confirming Sweep
+
+The daily metadata sweep tracks three new observations without changing the
+selected inference-stack versions or package-source cursors:
+
+- PyPI httptools `0.9.0` follows recorded `0.8.0`.
+- PyPI multidict `7.1.0` follows the selected `6.9.1` line. The unadopted
+  `7.0.0` observation is superseded; the selected closure remains with
+  [its existing owner](https://github.com/nisavid/arch-strix-halo-pkgs/issues/110).
+- stable-diffusion.cpp master
+  `f89d9b13d730eabeede7314ce49dacd18d3c90c2` is newer while the independently
+  bound AUR Vulkan baseline remains `r948.228c707-1`. The unadopted `228c707`
+  observation is superseded; the selected `c92d73c` rebuild remains with
+  [its existing owner](https://github.com/nisavid/arch-strix-halo-pkgs/issues/121).
+
+[Post-closeout maintenance](https://github.com/nisavid/arch-strix-halo-pkgs/issues/147)
+owns source assessment and disposition for all three observations. Historical
+adopted records remain intact. Release contents, security applicability,
+dependency compatibility, patch carry, and build-breakage exceptions remain
+unassessed. Tokenizers `0.23.3` retains its separate route to the
+[Transformers and Hugging Face Hub compatibility decision](https://github.com/nisavid/arch-strix-halo-pkgs/issues/183);
+its declared Hub upper bound is `<3.0`, not proof of runtime compatibility.
+
+The first complete sweep finished at `2026-10-10T13:55:52Z` with these three
+unhandled observations and no provider failure. After disposition, the
+real-provider confirming sweep against the proposed ledger completed at
+`2026-10-10T14:04:03Z` and exited 0 with
+`--refresh --json --fail-on actionable`. Across 51 families, the report has
+28 stable updates, five branch-head movements, five baseline drifts, and
+13 current families. Effective dispositions are 40 tracked, six rejected,
+and five current, with no action-required result or provider failure.
+Explicit tracker validation exited 0 with all 13 unique active issue gates
+open. The integrated candidate records match the confirmed proposal.
+
+The integrated source passed the focused checker suite (160 tests) and the
+complete suite (1,204 tests, two skips, no module exclusions) in the offline
+CPU environment using the existing read-only Hugging Face Hub 1.33.0 overlay.
+These checks do not repair or qualify the normal host's Transformers /
+Hugging Face Hub 2.1.1 collection incompatibility.
+
+No package source, build, installation, installed smoke, GPU, server, or
+live-scenario state changed. The next sweep is due 24 hours after the
+confirming sweep, or sooner after relevant policy, package, ledger, checker,
+or source-metadata changes.
+
+## 2026-10-09 Freshness Dispositions and Confirming Sweep
+
+The daily metadata sweep tracks three new observations without changing the
+selected inference-stack versions or package-source cursors:
+
+- PyPI pydantic-core `2.50.0` is an independent baseline observation; the
+  authoritative Arch primary remains `2.46.5-1`. The historical adopted
+  Arch-compatible pydantic/core pair remains intact. [Post-closeout
+  maintenance](https://github.com/nisavid/arch-strix-halo-pkgs/issues/147)
+  owns assessment and disposition of the newer baseline.
+- stable-diffusion.cpp master
+  `228c707fde018221de74674f1c2f480a9d2b228e` and the independent AUR Vulkan
+  baseline `r948.228c707-1` are tracked with separate exact bindings at
+  [post-closeout maintenance](https://github.com/nisavid/arch-strix-halo-pkgs/issues/147).
+  The older unadopted post-freeze observations `3f8527a` and `a1ded76` are
+  superseded. The selected `c92d73c` rebuild remains with
+  [its existing owner](https://github.com/nisavid/arch-strix-halo-pkgs/issues/121).
+- PyPI tokenizers `0.23.3` is tracked at the [Transformers and Hugging Face
+  Hub compatibility decision](https://github.com/nisavid/arch-strix-halo-pkgs/issues/183).
+  Its [version-specific metadata](https://pypi.org/pypi/tokenizers/0.23.3/json)
+  declares `huggingface-hub<3.0,>=0.16.4`, instead of
+  [0.23.2's](https://pypi.org/pypi/tokenizers/0.23.2/json) `<2.0` upper bound.
+  That removes the metadata-level upper-bound conflict with Hub 2.x; it does
+  not establish runtime compatibility or select adoption. The selected
+  `0.23.2` obligation remains with
+  [its existing owner](https://github.com/nisavid/arch-strix-halo-pkgs/issues/110)
+  until the compatibility decision reconciles it.
+
+The first sweep completed at `2026-10-09T10:58:58Z` with these three
+unhandled observations and no query failure. After their ledger dispositions,
+the real-provider confirming sweep completed at `2026-10-09T11:26:59Z` and
+exited 0 with `--refresh --json --fail-on actionable`. Across 51 families,
+the report has 27 stable updates, five branch-head
+movements, five baseline drifts, and 14 current families. Effective dispositions
+are 39 tracked, six rejected, one adopted, and five current, with no
+action-required result or provider failure. Explicit tracker validation exited
+0 with all 13 unique active issue gates open.
+
+The focused checker suite passed 160 tests. The complete source suite passed
+1,204 tests, with two skips and no module exclusions, in the offline CPU
+environment using the existing read-only Hugging Face Hub 1.33.0 overlay.
+These constructed checks do not repair or qualify the normal host's
+Transformers / Hugging Face Hub 2.1.1 collection incompatibility. No package
+source, build, installation, installed smoke, GPU, server, or live-scenario
+state changed. Release-content, security-applicability, patch, and runtime
+assessment remain with the named owners.
+
+The next sweep is due 24 hours after the confirming sweep, or sooner after
+relevant policy, package, ledger, checker, or source-metadata changes.
+
+
+## 2026-10-08 Shared Candidate Eligibility and Confirming Sweep
+
+Current, baseline-drift, and ordinary candidate matching now validate every
+selected nonfailed observation before attaching a disposition. Each selected
+latest value must match its binding. Current observations on current or
+baseline-only families can retain a promoted policy cursor instead of the
+historical cursor, preserving open tracked and blocked obligations. Release
+candidates also require agreement among selected equivalent primary providers;
+independent package baselines and commit refs keep separate values. Failed-query
+matching retains its separate exception.
+
+Eight public matching regressions reproduced before correction: four
+baseline-only split-release cases incorrectly selected tracked candidates,
+two all-current cases attached stale covered observations, and two stale/correct
+record pairs raised false duplicate errors. The corrected cases pass alongside
+agreeing-release, promoted-cursor, blocked-current, independent Python baseline,
+ref/release, failed-query, and genuine-duplicate controls. An all-current family
+without a matching candidate remains current; the correction does not invent
+drift. Checker version 11 invalidates earlier semantic cache keys. Public
+producer tests construct keys for versions 7, 8, 9, and 10; they do not execute
+those complete historical matcher implementations.
+
+The stricter sweep exposed missing explicit latest values in the existing
+NumPy Arch and pydantic-core PyPI selectors. Their bindings now preserve the
+recorded tracked and adopted dispositions without changing either source
+decision. The independent Arch PyTorch baseline advanced from `2.14.0-1` to
+`2.14.1-1`; the unchanged release/2.12 branch observation retains its routing to
+[post-closeout maintenance](https://github.com/nisavid/arch-strix-halo-pkgs/issues/147).
+That baseline observation is not a source adoption or a release-content/security
+assessment.
+
+The confirming real-provider sweep recorded `2026-10-08T10:53:48Z` and exited 0
+through public `main` with `--refresh --json --fail-on actionable`. Configured
+authenticated GitHub CLI queries supplied public release and tag metadata;
+other providers used ordinary HTTP. The 51 families reported 26 stable updates,
+five branch-head movements, four baseline drifts, and 16 current families.
+Ledger results were 38 tracked, six rejected, two adopted, and five current,
+with no actionable result or provider failure. Separate tracker validation
+exited 0 with all 13 unique active issue gates open.
+
+The focused suite passed 160 tests. The complete source suite passed 1,116
+tests, with two skips and no module exclusions, in the offline CPU environment
+using the existing read-only Hugging Face Hub 1.33.0 overlay. This construction
+does not repair the normal host's Transformers / Hugging Face Hub 2.1.1
+collection incompatibility or qualify the selected model closure. No package
+was built or installed, and no GPU, server, or live scenario ran. The next sweep
+is due 24 hours after this record, or sooner after relevant policy, package,
+ledger, checker, or source-metadata changes.
+
+## 2026-10-08 Equivalent-Release Consensus and Confirming Sweep
+
+Ordinary release-candidate matching now compares every selected equivalent
+primary release provider with the candidate's release value, independently of
+the provider's individual status. Each observation must also satisfy its
+recorded cursor and selector's latest binding. An explicit covered value does
+not permit a mixed updated/current release pair to disagree. Separate package
+baselines and commit refs keep their own bindings; a current release and a
+moving ref can still match a correctly bound ref candidate. Checker version 10
+invalidates reports cached under versions 7, 8, and 9.
+
+Before correction, both public CLI regressions with explicit covered values
+selected a tracked candidate and returned 0 instead of the required 10.
+After correction, both remain action-required and return 10. Agreeing release
+controls and the heterogeneous ref/release control still return 0. The focused
+suite passed 144 tests. The complete source suite passed 1,100 tests, with two
+skips and no module exclusions, in the offline CPU environment using the
+existing read-only Hugging Face Hub 1.33.0 overlay. This constructed environment
+does not repair the normal host's Transformers / Hugging Face Hub 2.1.1
+collection incompatibility or qualify the selected model closure.
+
+The confirming real-provider sweep completed at `2026-10-08T09:18:06Z` and
+exited 0 through the public `main` entrypoint with
+`--refresh --json --fail-on actionable`. Public GitHub release and tag metadata
+used the already configured authenticated GitHub CLI; other providers used
+ordinary HTTP clients. The 51 families reported 26 stable updates, five
+branch-head movements, four baseline drifts, and 16 current families. Ledger
+dispositions were 38 tracked, six rejected, two adopted, and five current,
+with no actionable result or provider failure. Separate tracker validation
+exited 0, with all 13 unique active issue gates open. No candidate record or
+selected package source changed for this correction.
+
+No package was built or installed, and no GPU, server, or live scenario ran.
+The next sweep is due 24 hours after this completion, or sooner when relevant
+policy, package directories, ledger, checker, or source metadata changes.
+
+## 2026-10-08 Mixed-Current Release Binding and Confirming Sweep
+
+Selected primary release providers now retain their recorded-cursor and latest
+bindings even when one provider reports `current`. A mixed updated/current
+pair stays action-required when those bound release observations differ;
+agreeing providers still select the recorded candidate. Heterogeneous package
+baselines and commit refs keep their separate bindings. Checker version 9
+invalidates reports cached under versions 7 and 8. Before correction, both
+mixed-current public checker CLI regressions returned 0 instead of the
+required 10. After correction, both return 10 as required.
+
+The confirming real-provider sweep completed at `2026-10-08T08:37:35Z` and
+exited 0 through the public `main` entrypoint with
+`--refresh --json --fail-on actionable`. It used the already configured
+authenticated GitHub CLI for public release and tag metadata and ordinary
+HTTP clients for the other providers. The 51 families reported 26 stable
+updates, five branch-head movements, four baseline drifts, and 16 current
+families. Ledger dispositions were 38 tracked, six rejected, two adopted,
+and five current, with no actionable result or provider failure. Separate
+tracker validation exited 0, with all 13 unique active issue gates open.
+No candidate record or selected package source changed for this correction.
+
+The focused suite passed 138 tests. The complete source suite passed 1,094
+tests, with two skips and no module exclusions, in an offline CPU environment
+using the existing read-only Hugging Face Hub 1.33.0 overlay. That constructed
+environment does not repair the normal host's Transformers / Hugging Face
+Hub 2.1.1 collection incompatibility or qualify the selected model closure.
+No package was built or installed, and no GPU, server, or live scenario ran.
+The next sweep is due 24 hours after this completion, or sooner when relevant
+policy, package directories, ledger, checker, or source metadata changes.
+
+## 2026-10-08 Covered-Observation Correction and Confirming Sweep
+
+Explicitly covered actionable checks now require both their recorded cursor
+and exact latest observation. Each heterogeneous `covered_checks` selector
+records its own `latest`; homogeneous release selectors can inherit the
+candidate's top-level value. An explicitly selected mismatch stays actionable
+instead of falling through to unselected-baseline matching. Checker version 8
+invalidates version-7 caches. The focused suite observed independently changed
+package-baseline and submodule values becoming actionable and passed 135 tests
+without exclusions.
+
+The stricter sweep exposed seven families requiring reconciliation. Existing
+AOCL-Utils, cryptography, Pillow, SentencePiece, and TorchVision observations
+now have explicit covered values. DuckDB's tracked baseline moved from
+`1.5.5-1` to `1.5.6-1` without adoption. The unchanged Arch Python
+`3.14.7-1` observation now pairs with CPython FTP `3.14.8` in a separate
+record routed to
+[the foundation gate](https://github.com/nisavid/arch-strix-halo-pkgs/issues/108).
+The shared map records the foundation owner's 3.14.8 admission, while the
+published foundation still describes 3.14.7. That owner reconciles source
+publication, rebuilds, and affected downstream evidence; this record does not
+reopen admission or treat it as completed validation. This metadata increment
+changes no selected source, package source, or security-exception decision.
+New baseline observations are not release-content or security assessments.
+
+The confirming sweep completed at `2026-10-08T07:12:54Z` after the final
+ledger edit and exited 0 through `run_check(refresh=True)` with real provider
+clients. The default HTTP route had exhausted GitHub's unauthenticated request
+quota; the confirming run used the already configured authenticated GitHub CLI
+for the same public release, tag, and issue metadata. No credentials were
+extracted, and no constructed provider response was used. It reported
+26 stable updates, five branch-head movements, four baseline drifts, and
+16 current families. The 51-family ledger result was 38 tracked, six rejected,
+two adopted, and five current, with no actionable result or provider failure.
+Separate tracker validation exited 0 with all 13 unique active issue gates
+open. An offline CPU source-test run with a read-only Hugging Face Hub 1.33.0
+overlay passed 1,091 tests, with two skips and no module exclusions. That
+constructed environment does not repair the normal host's Transformers /
+Hugging Face Hub 2.1.1 collection incompatibility or qualify the selected
+inference stack's model closure.
+
+Only checker behavior, tests, and maintenance records changed. No package
+source was promoted, package built or installed, or GPU/server/live scenario
+run. The sweep is due 24 hours after this confirming completion, or sooner
+when package policy, package directories, the candidate ledger, checker
+behavior, or relevant source metadata invalidates it.
+
+## 2026-10-08 Freshness Correction and Confirming Sweep
+
+Ordinary candidate matching now leaves split release-provider observations
+action-required instead of matching both recorded candidates. Agreeing PyPI
+and tag observations still select their recorded candidate. The existing
+duplicate, uncovered baseline/ref, current, query-failure, and tracker behavior
+remains covered by the focused suite. Checker version 7 invalidates reports
+cached under the prior semantics; a constructed `run_check` comparison observed
+the actual version-6 cache being bypassed after the version-7 change.
+
+The forced sweep found two newly unhandled observations: Lemonade's upstream
+baseline moved to `2026.41.1` while fork main remained `4bad19a4`, and orjson
+moved to PyPI `3.13.0` with Arch baseline `3.13.0-1`. The ledger tracks the
+Lemonade pair to
+[deferred calver assessment and packaging](https://github.com/nisavid/arch-strix-halo-pkgs/issues/163)
+and orjson to
+[post-freeze source assessment](https://github.com/nisavid/arch-strix-halo-pkgs/issues/147).
+The inference stack's selected versions and package sources remain unchanged.
+Release contents,
+security applicability, patch carry, and derived build/runtime gates stay with
+those owners; metadata routing does not establish adoption.
+
+The confirming sweep completed at `2026-10-08T05:35:23Z` and exited 0 with
+`--refresh --json --fail-on actionable`: 26 stable updates, five branch-head
+movements, four baseline drifts, and 16 current families. The 51-family ledger
+result was 38 tracked, six rejected, two adopted, and five current, with no
+action-required result or provider query failure. Separate tracker validation
+exited 0 and found all 13 unique active issue gates open. The focused freshness
+suite passed 120 tests without exclusions. Normal wrapped bare `pytest` remains
+collection-blocked because installed Transformers requires huggingface-hub
+below 2.0 while the host has 2.1.1; this is not a full-suite pass or a repaired
+model-closure gate.
+
+Only checker behavior, tests, and maintenance records changed. No package
+source was promoted, package built or installed, or GPU/server/live scenario
+run. The sweep is due 24 hours after the confirming completion, or sooner if
+package policy, package directories, the candidate ledger, checker behavior,
+or relevant source metadata changes invalidate it.
+
+## 2026-10-07 Freshness Sweep
+
+The due metadata sweep found ten families without a complete current
+disposition: aiohttp, asyncpg, Lemonade, llama.cpp, ROCm PyTorch,
+stable-diffusion.cpp, TheRock, Transformers, Triton, and vLLM. The candidate
+ledger now tracks those observations without changing the inference stack's
+selected versions or package sources. Independent baseline values remain explicit review
+inputs; they are not interchangeable source pins. Later drift routes to
+[post-freeze candidate review](https://github.com/nisavid/arch-strix-halo-pkgs/issues/147),
+with Lemonade's calendar-versioned fork and upstream baseline routed to
+[deferred calver packaging](https://github.com/nisavid/arch-strix-halo-pkgs/issues/163).
+This metadata refresh does not assess release contents, security applicability,
+patch carry, or a build-breakage exception. Those assessments and the resulting
+validation gates remain with the owning issues before adoption.
+
+Two existing routes now match their current execution contracts:
+
+- Transformers 5.18.0 remains tracked to
+  [the model-closure move to huggingface-hub 2.x](https://github.com/nisavid/arch-strix-halo-pkgs/issues/183),
+  following the owner's October 5 selection. The later 5.19.0 observation
+  does not change that choice.
+- vLLM 0.30.0 remains tracked to
+  [the required small-MoE and long-decode gates](https://github.com/nisavid/arch-strix-halo-pkgs/issues/179).
+  The deferred Gemma lane is nonblocking, and the later 0.31.0 version move
+  stays separate. Neither this route correction nor the recorded PyTorch/vLLM
+  closure build establishes runtime qualification.
+
+The confirming sweep completed at `2026-10-07T08:11:43Z` and exited 0 with
+`--json --fail-on actionable`. It reported 26 stable updates, five branch-head
+movements, four baseline drifts, and 16 current families across 51 families.
+Applying the ledger yielded 38 tracked, six rejected, two adopted, and five
+current families, with no action-required result or provider query failure.
+The separate `--validate-trackers` run exited 0 and found all 13 unique active
+issue gates open in this repository. The focused freshness tests passed:
+115 tests, with no exclusions.
+
+Only maintenance metadata changed. No package source was updated, no package
+was built or installed, and no installed smoke, server, or live scenario ran.
+The sweep is due again 24 hours after its confirming completion, or sooner
+if package policy, package directories, the candidate ledger, checker behavior,
+or relevant source metadata changes invalidate this evidence.
+
+## 2026-10-05 Freshness Sweep
+
+The MIGraphX rebuild changes package policy, so the sweep ran with
+`--refresh` on that branch. It started at `2026-10-05T02:11:18Z`, completed at
+`2026-10-05T02:11:51Z`, and exited 10 with `--fail-on actionable`. Two
+families had moved upstream after the 2026-10-02 dispositions:
+
+- **AITER 0.1.24.post1** (2026-10-02) is a post release on the v0.1.24 line,
+  with no security fix. `aiter-0.1.24.post1` is tracked to #147 under X7, and
+  it supersedes the `aiter-0.1.24` record. AITER stays experimental and
+  outside C's required path.
+- **pybase64 1.5.1** (2026-10-04) fixes a use-after-release in `get_buffer`
+  ([pybase64#1067](https://github.com/mayeut/pybase64/pull/1067)). The bug
+  is on the error path for buffers that are not single-byte or not 1-D.
+  vLLM is pybase64's only consumer in C: only `python-vllm-rocm-gfx1151`
+  depends on `python-pybase64-gfx1151`. At the v0.30.0 tag, vLLM calls
+  pybase64 at 25 sites in 16 files, and the local carry adds none. Every
+  call passes a `str`, `bytes`, or a 1-D byte buffer from
+  `BytesIO.getbuffer()`, so none reaches that error path. The fix is
+  therefore not reachable in C and does not meet X7's security exception.
+  `pybase64-1.5.1-pypi` is tracked to #147, and C keeps 1.5.0.
+
+The confirming sweep ran after the last ledger edit, whose new policy digest
+forced a network query. It started at `2026-10-05T05:55:01Z`, completed at
+`2026-10-05T05:55:29Z`, and exited 0 with `--fail-on actionable`. It reported
+23 stable updates, four branch-head movements, five baseline drifts, and 19
+current families across 51 families. Applying the ledger yielded 38 tracked,
+six rejected, two adopted, and five current families. The ledger holds 53
+active tracked records and no blocked records. The explicit tracker
+validation found all 12 unique issue gates open in this repository.
+
+Outside the tracked families, Arch `extra` moved `python-huggingface-hub` to
+2.0.0 on 2026-10-02 and to 2.1.1 on 2026-10-04. Transformers 5.8.1 on the
+host and C's selected 5.16.1 both require `huggingface-hub<2.0`, so
+system-Python `import transformers` fails on the host, and C would fail the
+same way after activation. Lemonade and Open WebUI are unaffected. How C
+handles this is an open owner decision.
+
+This sweep changes maintenance metadata only. The freshness evidence is due
+again 24 hours after the confirming sweep completed, or sooner if package
+policy, package directories, the candidate ledger, checker behavior, or
+relevant source metadata changes.
+
+## 2026-10-02 MIGraphX Protobuf 36.1 and Abseil Rebuild
+
+Arch `extra` moved protobuf to 36.1 and abseil-cpp to 20260817.0. In the
+installed `migraphx-gfx1151` 7.13.0-3, both parser libraries link
+`libprotobuf.so.35.1.0` and 78 `libabsl_*.so.2605.0.0` libraries, so the
+pending full upgrade would leave MIGraphX unloadable. This record covers the
+pkgrel-only rebuild to `therock-gfx1151` 7.13.0-4:
+
+- **Source updated:** the branch ports `0ae0d94`, the unmerged 7.13.0-3
+  protobuf 35.1 rebuild, then moves the family to pkgrel 4.
+  `migraphx-gfx1151` now declares `libprotobuf.so=36.1.0-64`,
+  `abseil-cpp>=20260817.0`, and `abseil-cpp<20260818`; the package README
+  explains the range. AMDMIGraphX stays at `b69836e6`. The classifier now
+  ignores the `opt/rocm/bin/rocprof-compute` symlink that
+  `rocprofiler-compute-gfx1151` creates. Before that, a render from a stage
+  copied from the installed `/opt/rocm` also assigned the symlink to
+  `rocprofiler-systems-gfx1151`, so two split packages would own it.
+  After review, `tools/stage_migraphx_for_therock.zsh` reads `DT_NEEDED`
+  from every regular ELF that the policy assigns to `migraphx-gfx1151`,
+  selected by package ownership and ELF magic rather than by name, not only
+  from the parsers. It fails on any `libprotobuf.so*`,
+  `libutf8_validity.so*`, or `libabsl_*` soname other than the pinned ones,
+  and on a stage with fewer than 14 such ELFs. The 7.13.0-4 build ran the
+  earlier parser-only gate; the tightened gate checks all 14 regular ELFs in
+  copies of the installed 7.13.0-4 payload and accepts them.
+- **Package built:** on the host, in `builds.slice`, under the heavy-work
+  lease. The stage copied the installed 7.13.0-3 `/opt/rocm` and compiled
+  MIGraphX against an isolated prefix extracted from Arch `protobuf-36.1-1`
+  and `abseil-cpp-20260817.0-2`, whose sha256 sums matched the `extra` sync
+  DB. At `-j12` the stage job took 12m12s, 11m48s of it compiling and
+  installing. Its `memory.peak` was 10.2 GiB, mostly page cache from the
+  `/opt/rocm` copy; sampled anonymous memory peaked at 2.8 GiB, with no OOM
+  events. `makepkg -Cf` packaged all 66 splits in 5m08s, with a
+  `memory.peak` of 3.7 GiB. The `migraphx-gfx1151-7.13.0-4` archive's sha256
+  is `36897303618edbcb7592f9a249992bdfb21cbb69068665602b899035e481884b`.
+- **Build gates passed:**
+  - Both parser libraries link `libprotobuf.so.36.1.0`,
+    `libutf8_validity.so.36.1.0`, and 79 `libabsl_*.so.2608.0.0` libraries.
+    No ELF in the stage or in the packaged MIGraphX links protobuf 34 or 35
+    or Abseil 2605, and no other ELF links protobuf or Abseil.
+  - MIGraphX RUNPATHs hold only `$ORIGIN` entries, and no ELF names the
+    stage. As in 7.13.0-3, `libmigraphx_onnx` keeps one protobuf-header
+    `__FILE__` string from the build prefix, and 12 ELFs keep AMDMIGraphX
+    source paths. Neither is a load path.
+  - The staged module imports. A tiny ONNX model (Add, Relu, MatMul) parses,
+    compiles for the `ref` target, and matches NumPy. The process maps only
+    protobuf 36.1 and Abseil 2608, and it never opens the GPU.
+  - A render from the stage reproduces the committed `PKGBUILD`, manifest,
+    and filelists. Against 7.13.0-3, they differ only in pkgrel and the
+    MIGraphX depends.
+  - Every 7.13.0-4 `.BUILDINFO` records the committed `PKGBUILD` sha256. The
+    other 65 archives match their published 7.13.0-3 payloads by `.MTREE`
+    digest. `migraphx-gfx1151` changes 12 ELFs, the CMake policy range in its
+    targets file, and its depends.
+  - The repo suite and the package-local tests pass.
+- **Published:** on 2026-10-02, the 66 7.13.0-4 archives were appended to the
+  local repo database without removing the 7.13.0-3 files. A dry-run full
+  upgrade against a scratch database resolved with no dependency breaks.
+- **Deployed/installed:** yes. The owner's full `pacman -Syu` on 2026-10-02
+  installed `migraphx-gfx1151` 7.13.0-4 with protobuf 36.1-1.1 and abseil-cpp
+  20260817.0-2.1. `pacman -Qkk migraphx-gfx1151` reports 650 files and 0
+  altered.
+- **Installed-smoked:** yes, on 2026-10-05 after the reboot into kernel
+  7.2.9:
+  - `migraphx` imports and parses an ONNX `Add` model;
+  - onnxruntime 1.29.0 lists `MIGraphXExecutionProvider`, loads
+    `libonnxruntime_providers_migraphx.so`, and returns the right sum on a
+    CPU run;
+  - faster-whisper, RapidOCR, and Torch-MIGraphX import.
+  A scan of 25,906 executables and libraries under `/usr/lib`, `/usr/bin`,
+  and `/opt` found 7 files still linking protobuf 35.1 or Abseil 2605. All 7
+  belong to the orphaned CachyOS `sentencepiece` 0.2.2-2, which nothing
+  depends on; the repo's `python-sentencepiece-gfx1151` is unaffected.
+- **Live-scenario validated:** no. No GPU inference ran through MIGraphX.
+- **Freshness:** the 2026-10-05 sweep above covers this policy change.
+
+## 2026-10-02 Freshness Sweep
+
+A cache-aware sweep on the W2A closure branch completed at
+`2026-10-02T06:27:29Z` and exited 10 with `--fail-on actionable`. The
+2026-10-01 dispositions still covered every family except two, which moved
+upstream after that sweep:
+
+- **uvloop 0.23.0** reached PyPI at 2026-10-01T03:15Z and carries a security
+  fix, so `uvloop-0.23.0-pypi` falls under X7's security exception: it is
+  tracked to #110, the W2A model/serving closure that owns uvloop's sibling
+  closure records (watchfiles, aiohttp, multidict and yarl), for admission
+  into C. It has no CVE or advisory, and C's 0.22.1-2 built in the W2A root,
+  so it is not a build breakage. It carries
+  [uvloop#740](https://github.com/MagicStack/uvloop/pull/740), which detaches
+  the caller's socket when `create_connection(sock=...)` is cancelled. Before
+  the fix, that socket later closed a reused file descriptor and could corrupt
+  an unrelated transport. Upstream closed
+  [uvloop#645](https://github.com/MagicStack/uvloop/issues/645), a report of
+  uvicorn responses leaking to the wrong requests, with that fix. The path is
+  reachable in C: `vllm serve` runs under uvloop, and vLLM 0.30.0 fetches
+  media URLs through aiohttp 3.14.3 under its request timeout. aiohttp
+  connects with `loop.create_connection(sock=sock)`, so the timeout or a
+  cancelled request can cancel that call. Whether C adopts 0.23.0 in the W2A
+  closure PR or in a follow-up before W4 is an open owner decision.
+- **ROCm PyTorch `release/2.12`** moved one commit past the tracked
+  `d0d63731` to `b97872d5`, a test-only fix to `test_lazy_init` for hosts that
+  expose more than 32 GPUs. `rocm-pytorch-release-2.12-b97872d` is tracked to
+  #147 and supersedes the `d0d6373` record. Arch `python-pytorch-opt-rocm`
+  still reports 2.14.0-1. The new record covers that baseline drift the way
+  the `13da086` and `d0d6373` records did, so it needs no separate record.
+
+`policies/package-freshness.toml` is unchanged. As on 2026-10-01, its
+recorded values stay at C's selections, and the ledger records the drift.
+
+The confirming sweep missed the cache because the ledger changed. It started
+at `2026-10-02T06:33:49Z`, completed at `2026-10-02T06:34:14Z`, and exited 0
+with `--fail-on actionable`. It reported 22 stable updates, four branch-head
+movements, five baseline drifts, and 20 current families across 51 families.
+Applying the ledger yielded 38 tracked, six rejected, two adopted, and five
+current families. The ledger holds 52 active tracked records and no blocked
+records. The explicit tracker validation found all 12 unique issue gates open
+in this repository.
+
+Routing `uvloop-0.23.0-pypi` from #147 to #110 changed the ledger after the
+confirming sweep, so a rerun missed the cache. It completed at
+`2026-10-02T07:41:03Z`, exited 0 with `--fail-on actionable`, and reported
+the same family counts. The tracker validation again found all 12 unique
+issue gates open; #147 now carries 17 candidates and #110 carries 20.
+
+This sweep changes maintenance metadata only. No package source was updated,
+and no package was built, deployed/installed, installed-smoked, or
+live-scenario validated. The freshness evidence is due again 24 hours after
+the rerun completed, or sooner if package policy, package directories, the
+candidate ledger, checker behavior, or relevant source metadata changes.
+
+## 2026-10-01 Freshness Sweep
+
+An uncached sweep on the W2A closure branch started at
+`2026-10-01T00:53:25Z` and stopped with `CANDIDATE_LEDGER_DUPLICATE_MATCH`
+for pydantic-core. Its family reports also showed 15 actionable families
+without a disposition. Four problems came from W2A recording the selected C
+values in `policies/package-freshness.toml` without moving the matching
+baseline or re-keying the ledger:
+
+- **NumPy:** the PyPI value moved to 2.5.3 while the Arch baseline stayed at
+  2.4.6-1, so an earlier run found two NumPy records matching. The baseline
+  now records 2.5.3-1.
+- **pydantic-core:** the Arch primary moved to 2.46.5-1 while the PyPI
+  baseline cursor stayed at 2.47.0. The family dropped to `baseline_drift` on
+  PyPI 2.49.0, which both `pydantic-core-2.48.0-pypi` and the adopted
+  `pydantic-core-2.46.5-1-arch` cover. The cursor now records 2.49.0, the
+  value that adoption reviewed and rejected within the line (it pairs only
+  with pre-release pydantic 2.14.0b2), so the family is current and matches
+  only the adopted record.
+- **compressed-tensors and mistral-common:** the recorded values moved to the
+  selected 0.17.0 and 1.11.7, so the 2026-09-22 rejections of 0.19.0 and
+  1.12.0, keyed to 0.16.0 and 1.11.2, stopped matching. Both rejections are
+  re-observed in place and now cover both recorded values.
+
+The other 13 families had upstream movement after the 2026-09-22 freeze, and
+`origin/main` would report them the same way. Under decision X7 (#147), drift
+that is neither a security fix nor a build breakage for C routes to
+post-closeout maintenance, so 12 are tracked to #147: AITER 0.1.24, AOTriton
+0.14.2b, cryptography 50.0.2, DuckDB 1.5.6, llama.cpp v0.5.0, msgspec 0.22.0,
+multidict 7.0.0, ROCm PyTorch `release/2.12` `d0d63731`, stable-diffusion.cpp
+`3f8527a`, Torch-MIGraphX `e551a861`, TorchVision 0.29.1, and Transformers
+5.18.0. AutoRound 0.16.0 is rejected as an upstream-scope exclusion, like
+0.15.1. The cryptography and DuckDB records supersede the 50.0.1 and 1.5.5
+post-closeout records. None of the new upstream movement is a security fix or
+a build breakage for C:
+
+- cryptography 50.0.2 only rebuilds wheels and updates PyO3, and the
+  2026-09-22 CVE-2026-69247 decision carries forward. The installed 48.0.0
+  is also in the affected range of two X.509 verifier advisories that 49.0.0
+  fixes: CVE-2026-69249 (high) and CVE-2026-69248 (medium). They affect
+  `cryptography.x509.verification` users, not the PKCS#7 path reviewed
+  earlier. [#170](https://github.com/nisavid/arch-strix-halo-pkgs/issues/170)
+  assesses whether they apply, and the owner decides whether that security
+  refresh preempts #147.
+- Torch-MIGraphX `e551a861` upstreams, for Python 3.13 and later, the numpy
+  relaxation that local patch 0003 carries.
+- ROCm `release/2.12` moved its in-tree AOTriton pin to 0.14.50tp, so the
+  post-closeout AOTriton and PyTorch moves go together.
+
+The confirming uncached sweep started at `2026-10-01T01:15:56Z`, completed at
+`2026-10-01T01:16:27Z`, and exited 0 with `--fail-on actionable`. It reported
+21 stable updates, four branch-head movements, five baseline drifts, and 21
+current families across 51 families. Applying the ledger yielded 37 tracked,
+six rejected (AutoRound, llmcompressor, compressed-tensors, mistral-common,
+apache-tvm-ffi, and xgrammar), two adopted (pydantic-core and httptools), and
+six current families. The ledger holds 51 active tracked records and no
+blocked records. The explicit tracker validation found all 12 unique issue
+gates open in this repository; #147 now carries 17 candidates.
+
+This sweep changes maintenance metadata only. No package source was updated,
+and no package was built, deployed/installed, installed-smoked, or
+live-scenario validated. The freshness evidence is due again 24 hours after
+the confirming sweep completed, or sooner if package policy, package
+directories, the candidate ledger, checker behavior, or relevant source
+metadata changes.
+
+## 2026-09-29 W2A vLLM 0.30.0 Validation of Record
+
+This is the validation of record for `python-vllm-rocm-gfx1151` 0.30.0 in W2A
+([issue 111](https://github.com/nisavid/arch-strix-halo-pkgs/issues/111),
+under [issue 98](https://github.com/nisavid/arch-strix-halo-pkgs/issues/98)). It
+ran in the isolated W2A build root described in
+[Generation-C Build Root](c-build-root.md): a rootless bubblewrap root with
+GPU access, where each GPU run checks the kernel log for page faults, ring
+timeouts, and resets, and stops further GPU work when it finds one. Nothing was installed on the host. The
+states are recorded separately:
+
+- **Source updated:** `python-vllm-rocm-gfx1151` 0.30.0-1 at the commit in
+  [#174](https://github.com/nisavid/arch-strix-halo-pkgs/pull/174) that
+  links the HIP modules with ROCm clang (`HIP_CXX_COMPILER=amdclang++`).
+- **Built:** in the W2A root from that commit, and published to the W2A build
+  repo. The `.BUILDINFO` PKGBUILD checksum equals the committed PKGBUILD. All
+  7 shipped `.so` files report AMD clang 23 only. The #168 archive check
+  ([LTO audit](lto-configure-probe-audit.md)) found 0 libbacktrace markers and
+  0 LLVM bitcode sections.
+- **Root prep:** `accelerate` was added to the root for the TorchAO tiny
+  prepare smoke. A #174 commit allowlists the vLLM and xgrammar
+  import-order `NEEDED` entries, so root verification reports 0 violations
+  and 0 stale entries.
+- **Deployed/installed:** no. The package exists only in the W2A root and the
+  W2A build repo; the foundation it links against must not reach the host
+  before W5.
+- **Installed-smoked:** no. The CPU drive and GPU lanes below ran against the
+  package as installed in the W2A root, not on the host.
+- **Live-scenario validated:** in the W2A root only. The W4 vLLM gate for
+  mixture-of-experts kernels and long decode is
+  [#179](https://github.com/nisavid/arch-strix-halo-pkgs/issues/179), which replaced the Gemma 4 26B-A4B lanes on 2026-10-02.
+  The tracked scenarios below ran on the gfx1151 GPU inside the root; host
+  live-scenario validation waits for deployment.
+- **CPU drive:** without a GPU, through a fake-ROCm platform shim:
+  `RESULT PASS`, 122/122 gate items. Five info-only checks failed: the
+  torchaudio and amd-quark gaps tracked in #110, AITER (absent by design), a
+  `MultiModalHasher` API drift in an exploratory check, and new top-level
+  module findings.
+- **GPU windows:** 2026-09-29 11:13-11:31Z, 12:12-12:23Z, and 12:49-12:51Z.
+  The live Lemonade service's pinned models were unloaded for each window with
+  the owner's approval, then restored and verified afterward. The windows had
+  0 GPU page faults and no fault-triggered stops.
+
+| GPU lane (final state) | Result |
+| --- | --- |
+| `vllm.torchao.tiny.prepare`, `vllm.torchao.tiny.generate` | pass |
+| `vllm.qwen3_5.0_8b.text.basic` | pass |
+| `vllm.pooling.zembed-1.embeddings`, `vllm.pooling.zerank-2.rerank` | pass |
+| `vllm.gemma4.e2b.server.basic`, `.reasoning`, `.benchmark-lite`, `.structured`, `.structured-thinking`, `.tool`, `.tool-thinking`, `.full-feature-text-only` | 8/8 pass |
+| Probe `vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors` | pass |
+| Probe `vllm.gemma4.e2b.text.compiled` | pass |
+| `vllm.gemma4.26b-a4b.text.basic`, `vllm.gemma4.26b-a4b.server.basic` | not run |
+
+**Harness and scenario fixes:** the failures in the earlier windows were
+harness and scenario defects, not package defects. They are fixed in
+[#174](https://github.com/nisavid/arch-strix-halo-pkgs/pull/174):
+- Gemma 4 server smoke: the checks now match each mode's request.
+  The `benchmark-lite` mode's 8-token cap and plain structured's 16-token cap were too
+  small for the answer, the tool follow-up was checked with a five-word rule
+  it never asks for, and the tool call must now carry `location` "Tokyo"
+  exactly.
+- zerank-2 rerank: the gate requires both correct answers to score
+  above the distractor. vLLM 0.30 ranks the sentence answer above the bare
+  `4`, which matches the Lemonade zerank smoke.
+- Probe reclassification: the two probes below are reclassified.
+- Gemma 4 full-feature lane: the follow-up turn runs with thinking off, so the
+  structured-output grammar engages.
+
+**Reclassified probes:**
+- `vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors`, renamed from
+  `vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors-blocked`, now asserts a correct
+  generation. The dense block-FP8 path works through vLLM's Triton kernel on
+  gfx1151. The old blocker came from the Qwen3.6-35B-A3B-FP8 MoE fixture and
+  never applied to this dense checkpoint.
+- `vllm.gemma4.e2b.text.compiled` now asserts a correct answer plus the
+  known-answer and long-decode checks at `--max-model-len 1024`, and the E2B
+  compiled path passed them cleanly on `TRITON_ATTN`. The 2026-04-20
+  corrupted output came from the vLLM 0.19 `ROCM_AITER_UNIFIED_ATTN` path,
+  which the 0.30.0 package source no longer enables. The smoke lanes still
+  default to eager.
+
+**vLLM 0.30 limitations:** these are upstream behavior, not package defects;
+[vLLM Recipe Coverage](vllm-recipe-coverage.md#gemma-4) records how the
+full-feature lane avoids them.
+- A `response_format` json_schema on the same turn as Gemma 4 auto tool calls
+  wraps the tool call in the schema and corrupts its arguments.
+- With `enable_thinking` on, the gemma4 reasoner starts the structured-output
+  grammar only after `<channel|>` or `<|tool_call>`. A model that answers
+  without a thought channel, for example right after a tool response, is
+  never constrained. Upstream main still has this; it is not yet reported
+  upstream.
+
+**Not run:** the Gemma 4 26B-A4B lanes `vllm.gemma4.26b-a4b.text.basic`
+and `vllm.gemma4.26b-a4b.server.basic`. They need at least 77.8 GiB of
+`MemAvailable`; even with the live Lemonade service's models unloaded, the
+host reached only 70-76 GiB. The owner deferred them to
+[#169](https://github.com/nisavid/arch-strix-halo-pkgs/issues/169), and they no
+longer gate W2A closeout. On 2026-10-02 their model load peaked at roughly
+twice the checkpoint size, at least 90 GiB, so the owner replaced them as the
+W4 gate with [#179](https://github.com/nisavid/arch-strix-halo-pkgs/issues/179): a
+small mixture-of-experts lane (IBM Granite 3.1 1B-A400M) and a Gemma 4 E2B
+long-decode lane that generates past 1,024 tokens. #169 stays open as optional
+load-path research.
+
+**W4 vLLM gate status (2026-10-08):** neither #179 lane has run. The opt-in
+E2B long-decode scenario requires at least 1,025 observed completion tokens
+(#184). The Granite 3.1 1B-A400M lane has validated pinned CPU fixtures (#185)
+and preparation-only fixture records whose plans stop before any model is
+resolved (#186). It still needs a fit and fault-stop method and an operating
+envelope; the model download and a GPU window are also pending. W4
+qualification of exact C follows those lanes and remains open.
+
+**FlashAttention CK gate:** the post-build gate that the FlashAttention
+verdict on #111 set for `python-flash-attn-rocm-gfx1151` passed on
+2026-10-02, in one guarded GPU run in the isolated W2A root from 07:36:45Z to
+07:37:00Z. The gate runs `flash-attn.ck.backend-import`,
+`flash-attn.ck.varlen-tiny` and `flash-attn.ck.varlen-paged-kv` with
+`FLASH_ATTENTION_TRITON_AMD_ENABLE=FALSE` and AITER absent from the root.
+The staged scenario definitions, runner and smoke script match this branch.
+The states are recorded separately:
+
+- **Source updated:** 2.8.4-16, which adds
+  `0010-init-ck-splitkv-args.patch`.
+- **Built:** 2.8.4-16, built on 2026-09-25 and published to the W2A build
+  repo; the root carries it, and its sha256 matches the published archive. In the root it links
+  `python-pytorch-opt-rocm-gfx1151` 2.12.0-5 and ROCm 7.14.1, and it lists
+  AITER only as an optional dependency.
+- **Deployed/installed and installed-smoked:** no. The package exists only in
+  the W2A root.
+- **Live-scenario validated:** in the W2A root only.
+- **AITER absent:** `python-amd-aiter-gfx1151` is not in the root, no root
+  package ships an `aiter` module, and `find_spec("aiter")` and
+  `find_spec("amd_aiter")` both returned `None` in the run.
+- **Guard:** exited 0 with 0 GPU page faults and no ring timeouts or resets.
+  The gate ran once, with no retry, and brought the guard's FlashAttention GPU
+  budget to 4 of 6 runs used. The Lemonade service was already stopped; the
+  run did not touch it, and its state was the same afterward.
+
+| Gate scenario | Result |
+| --- | --- |
+| `flash-attn.ck.backend-import` | pass: `flash_attn_2_cuda` with `use_triton_rocm False` |
+| `flash-attn.ck.varlen-tiny` | pass: finite `(16, 2, 32)` output |
+| `flash-attn.ck.varlen-paged-kv` | pass: finite `(16, 2, 256)` output |
+
+Because this build carries patch 0010, this paged-KV pass, unlike the
+2.8.4-10 pass, does not depend on an uninitialized `sink_ptr`. It does not
+change the vLLM Qwen CK consumer probe, which stays blocked on the 64-token
+page boundary ([FlashAttention CK Paged-KV
+Boundary](flashattention-ck-paged-kv.md)).
+
+**Remaining before W2A closeout:** the W2A PR
+([#174](https://github.com/nisavid/arch-strix-halo-pkgs/pull/174)), which
+closes #168 with its audit doc and carries the #111 closeout. The #168
+audit-lanes decision in its Before-merge list is resolved: the owner
+ruled the six root-built lanes that the audit tables omit, four
+Rust/maturin lanes and two pure-Python lanes,
+[out of scope](lto-configure-probe-audit.md#out-of-scope), so the #168
+closing reference holds. The FlashAttention CK gate set on #111, the item in
+that list that decided whether the #111 closing reference holds, is
+satisfied: it passed on 2.8.4-16 in the W2A root on 2026-10-02, as recorded
+above, so it no longer blocks that reference. Separately, the owner decides
+whether that PR or a follow-up before W4 adopts the uvloop 0.23.0 security
+fix that the [2026-10-02 sweep](#2026-10-02-freshness-sweep) tracked to
+#110.
+
+## 2026-09-25 Lemonade M6 Redeploy and Revalidation
+
+M6 took the 11.9.0 repackage below through every gate of
+[issue 141](https://github.com/nisavid/arch-strix-halo-pkgs/issues/141). The
+states are recorded separately:
+
+- **Source updated:** main `fce9532`, which contains #165 and #166.
+  - #165 is the 11.9.0 repack. It pins `b6616eb3b`, the merge commit of the
+    fork's upstream v11.9.0 sync (nisavid/lemonade#175). The fork's
+    nisavid/lemonade#173 is deliberately excluded.
+  - #166 makes the package's unit guard errexit-safe.
+  - Patches 0001-0004 and the app's glib patch are carried; patch 0005 is
+    dropped.
+- **Built:** on 2026-09-25 from 11:05:14Z to 11:08:55Z, under the heavy-work
+  lease in the memory-capped `builds.slice`, by unprivileged `makepkg -Cf`
+  (never `-s` or `sudo`). `lemonade-server` took 67 s, `lemonade-app` 153 s,
+  and `lemonade` 1 s. The scope's `memory.peak` was 7.0 GiB, with no OOM
+  events. Each archive's `.BUILDINFO` PKGBUILD checksum equals its PKGBUILD
+  at `fce9532`. The first build attempt, from #165 alone, failed in
+  `package()` on the unit-guard errexit bug that #166 fixed.
+
+  | Archive | sha256 |
+  | --- | --- |
+  | `lemonade-server-11.9.0-1` | `3754d73298b4538023a68bfdb9c8862e3ec5f38b25db671c364b303803c0303d` |
+  | `lemonade-app-11.9.0-1` | `d6d4210dd4bf38323fe374af683a5fd0fba626392d1478845df613ec870b5779` |
+  | `lemonade-11.9.0-1` | `90a63bd98bd22bedc11304caf88aaa45416d2181bfeb704c72fa344945f290d0` |
+
+- **Published:** to both `strix-halo-gfx1151` repo databases by the M3 method:
+  database backups, `cp -n` with a checksum check, and `repo-add` of exactly
+  these three archives without `-R`. In each database exactly three entries
+  changed, and each `%SHA256SUM%` matches its archive.
+- **Seam check before install:** every `NEEDED` soname and every depend of the
+  three archives was satisfied by the current host without `-Syu`
+  (`lemonade-server` 13 sonames, `lemonade-app` 14, `lemonade` 0). The host
+  had pending protobuf, Abseil, gRPC and ONNX upgrades, so the install was
+  `pacman -U` of exactly the three files, never `-Sy` or `-S`. pacman changed
+  exactly those three packages. This check is a new gate in M6.
+- **Deployed/installed:** by the owner in an exclusive window on 2026-09-25,
+  from about 13:58Z to 15:05Z.
+  - The 11.9 layout is live. The package drop-in `30-env-files.conf` owns
+    the `EnvironmentFile=` order: conf.d, then `/etc/default/lemond`, then
+    `/usr/lib/lemonade/llamacpp-gfx1151.env`. `/etc/default/lemond` (0640)
+    and `zz-secrets.conf` (0660) are unmodified backup files, and there are
+    no `.pacnew` or `.pacsave` files.
+  - The first start migrated the legacy JSON state into `/var/lib/lemonade`
+    with identical sha256s. `model_storage.path` is unchanged.
+  - `config.json` was rewritten sparse by a generic computation against
+    `lemond`'s merged defaults: the built-ins at `b6616eb3b` plus the
+    packaged overlay. It keeps every non-default key, including the full
+    live llama.cpp args, and the owner reviewed it in redacted form before
+    the install.
+  - The service environment adds only `CACHE_DIRECTORY`.
+- **Installed-smoked:** the service is active on 11.9.0, and all five owner
+  pins are loaded (`pins_same`, `pins_loaded`). `model_storage_same` holds.
+  All four llama-server processes carry `--no-mmap`. No legacy cache dir
+  remains, and no env keys were removed.
+- **Live-scenario validated:** the M4 set, the root subset, the app
+  checklist, and the Open WebUI seam pass. The runs used main `fce9532`.
+
+| Check | Scope | Result |
+| --- | --- | --- |
+| The M4 unprivileged scenario set: the same 17 scenario ids as the M4 run of record | unprivileged | 17/17 |
+| `lemonade.llamacpp.rocm.qwen3-0.6b-q8-0.completion`, `lemonade.llamacpp.vulkan.qwen3-0.6b-q8-0.completion`, `lemonade.nofetch.preplaced-load-missing-model` | root | 3/3 |
+| `lemonade.app.pin-startup-text` (operator checklist) | owner | pass |
+| Open WebUI request shapes against the 11.9 service | unprivileged | 5/5 |
+| nisavid/lemonade `test/server_env_vars.py` at `b6616eb3b` | unprivileged, free test port | 35/38; the 3 failures are expected |
+
+- **Provenance rerun:** `lemonade.provenance.family-no-fallback` first
+  failed, because it compares the installed versions against the host's
+  local sync database copy. That copy is stale by design: `pacman -U` ran
+  without `-Sy`. Re-run read-only against the published repo database
+  through a private `pacman --dbpath`, it passes with `provenance_ok`. The
+  host's local `strix-halo-gfx1151` sync database copy stays at 11.7 until
+  the next full `-Syu` (W5), which is expected.
+- **App checklist:** the app reported version 11.9.0. Pinning and unpinning
+  were reflected in the live and persisted pins, the chat reply rendered,
+  and the five owner pins stayed intact.
+- **Open WebUI seam:** the five request shapes that Open WebUI sends all
+  passed against the 11.9 service:
+  - embeddings on zembed returned 2 vectors of dimension 2560;
+  - rerank with `top_n` on both `/reranking` and `/rerank` returned results
+    that carry `index` and `relevance_score`, with the correct top index;
+  - `chat/completions` on the pinned chat model passed both non-streaming
+    and SSE streaming. The answer was correct, the reasoning was in
+    `reasoning_content`, and the stream ended in `[DONE]`.
+
+  The full Open WebUI S6 re-smoke (arch-pkgs PR #94 at `2dc97e8`) is blocked
+  by design before the cutover and exits 75, because no arch-pkgs
+  Open WebUI of record is deployed yet. It runs in the M5 trial
+  (arch-pkgs #89). By owner ruling, the owner's Open WebUI UI spot check is
+  N/A: there is no configured consumer, and the request shapes cover the
+  seam.
+- **Fork env-var tests:** `test/server_env_vars.py` ran against the
+  installed `lemond` on a free test port, leaving the live service untouched:
+  the same PID, 0 restarts, and health 200 throughout. The three
+  `TestDefaults` failures are two stale fork assertions, filed as
+  nisavid/lemonade#179 (`ctx_size` 4096 against the fork's 11.9 default of
+  -1, and `global_timeout` 300 against 600), plus `max_loaded_models = -1`,
+  which is the packaged overlay's intended distro setting.
+
+**Host customization.** On the reference host, the service's cache dir stays
+at upstream's `/var/cache/lemonade`, which is bind-mounted from a host data
+volume through `/etc/fstab` (`bind,nofail`). This follows the host's
+existing convention for other `/var` data. `CacheDirectory=` gives `lemond`
+a mount dependency, so the service fails closed if the volume is missing.
+
+**Findings and follow-ups:**
+- [nisavid/lemonade#177](https://github.com/nisavid/lemonade/issues/177):
+  `lemond` does not exit after "Cleanup complete", so systemd kills it with
+  SIGKILL at the host's 10-second stop timeout. It happens on 11.7 and 11.9.
+  The proposed mitigation after M6 is a packaged `TimeoutStopSec=30s`
+  drop-in, which is not done.
+- [nisavid/lemonade#178](https://github.com/nisavid/lemonade/issues/178):
+  rerank ignores `top_n` and returns every result. Open WebUI truncates on
+  the client side, so this is harmless for that consumer.
+- [nisavid/lemonade#179](https://github.com/nisavid/lemonade/issues/179): the
+  stale `TestDefaults` assertions in `test/server_env_vars.py`.
+- **Known condition:** the Lemonade-managed vllm and sd-cpp backends are
+  unused. Their venvs contain absolute paths from their original location,
+  so they need a reinstall if they are ever used; `no_fetch_executables`
+  blocks an automatic fetch.
+
+**Candidate closeout:** `lemonade-upstream-11.9.0` is adopted, because its
+build, publish, install, installed-smoke, and live-validation gates are
+done. `lemonade-upstream-2026.39.1` stays tracked under #163.
+
+**Freshness at closeout:** the cache-aware Lemonade check run for this
+closeout reported fork main at `b33524f52`, one commit past the `b6616eb3b`
+pin. That commit is nisavid/lemonade#173, a build-only CMake change that M6
+deliberately excluded. The new `lemonade-fork-b33524f` candidate tracks it
+under #163, the next Lemonade repin, and also covers the v2026.39.1 baseline
+drift that the same check reports. With it, the Lemonade check exits 0, and
+the explicit tracker validation finds all 11 unique issue gates open.
+
+## 2026-09-25 Lemonade 11.9.0 Repackage (Source Only)
+
+The M6 repackage for
+[issue 141](https://github.com/nisavid/arch-strix-halo-pkgs/issues/141) moves
+the Lemonade family to the fork's upstream v11.9.0 sync. This record covers
+the source update:
+
+- **Source updated:** `lemonade-server`, `lemonade-app`, and `lemonade` are
+  at 11.9.0-1. The pin is `b6616eb3b`, the merge commit of the fork's
+  upstream v11.9.0 sync (nisavid/lemonade#175), in `[source_pins]` and the
+  fork-main freshness cursor. Beyond the sync-branch head `66c7642e8` that the
+  branch first pinned, the merge adds only the pinned-reload eviction fix
+  (`553d923`, a three-line `server.cpp` change). Patch 0005 is dropped, because the sync contains
+  the fork fix for nisavid/lemonade#168. Patches 0001-0004 and the app's glib
+  patch apply unchanged. The package follows the 11.9 service layout: the
+  config and cache dirs are split, and the distro defaults gain
+  `max_loaded_models: -1`. The `30-env-files.conf` drop-in owns the service's
+  `EnvironmentFile=` order: conf.d, then `/etc/default/lemond`, then the
+  packaged llama.cpp env file, which moves out of conf.d. Both
+  `/etc/default/lemond` and `zz-secrets.conf` are backup files, and no install
+  script writes owner config. See the package README and
+  [Lemonade Live Validation](lemonade-live-validation.md#service-configuration-from-119).
+- **Built, published, deployed/installed, installed-smoked, live-scenario
+  validated:** done in M6 from main `fce9532`; see the 2026-09-25 Lemonade
+  M6 Redeploy and Revalidation section above.
+- **Freshness:** a Lemonade-only checker run on 2026-09-25 after the
+  merge-commit repin reported fork-main `current` at `b6616eb3b`. The
+  upstream-release check reports `baseline_drift` to `v2026.39.1`
+  (2026-09-23), the first calendar-versioned release. By owner decision on
+  2026-09-25, the resurrection finishes on v11.9.0, and the calendar-versioned
+  line follows under nisavid/lemonade#176. The
+  `lemonade-upstream-2026.39.1` candidate is tracked under #163, which packages
+  that line after the fork sync.
+
+## 2026-09-24 Lemonade M4 Live Validation
+
+M4 validated the installed Lemonade family against the X4 bar (#140). The
+states are recorded separately:
+
+- **Source updated:** `lemonade-server 11.7.0-2` (patch 0005) from #152, with
+  the job-count fix from #156. The scenario fixes found by the first live runs
+  are #157, #158, #159 and #160.
+- **Built:** from main `66439a6` inside the memory-capped `builds.slice`,
+  with `MAKEFLAGS=-j10` (ninja ran `-j 10`). The build took 2m22s, and the
+  scope's `memory.peak` was 3.0 GiB with no OOM events. The archive's
+  sha256 is
+  `0737c0b208b4580452f9c8d7ae7f032b17e82403d621942f279bcc2de5353ddc`, and its
+  `.BUILDINFO` PKGBUILD checksum equals main's PKGBUILD. Against 11.7.0-1,
+  only `usr/bin/lemond` and `usr/bin/lemonade` differ.
+- **Published:** 2026-09-23 to both `strix-halo-gfx1151` repo databases.
+  In each database exactly one entry changed, and the database checksum
+  matches the archive.
+- **Deployed/installed:** by the owner on 2026-09-23 (#139). `lemond` restarted
+  on 11.7.0-2, which replaced the host's temporary hand edit of
+  `architecture_defaults.json`.
+- **Installed-smoked:** the post-install checks passed.
+  - The family comes from `strix-halo-gfx1151`: repo order beats the
+    `lemonade-server 11.9.0` builds in CachyOS and Arch `extra`.
+  - `pacman -Qkk` is clean apart from the root-only `zz-secrets.conf`.
+  - The no-fetch drop-in and the endpoint blackholes are live.
+  - `offline` and `no_fetch_executables` are true, and `--no-mmap` is in the
+    llama.cpp args.
+  - All five owner pins are loaded.
+  - The four help smokes pass.
+- **Live-scenario validated:** 20 of 20, in two runs of record:
+  - unprivileged run `run-20260924T001234Z` at main `cd1bf6a`: 17/17;
+  - root run `root-run-2` at main `95412d0` on 2026-09-25: 3/3. An identical
+    run at the same commit on 2026-09-24 also passed 3/3, and the 2026-09-25
+    run replaced its artifacts. These three scenarios read the backend's
+    `/proc/<pid>/maps`, the backend cache and `ss -p` owners, which needs
+    root. #160, the only change between the two commits, touches just the
+    backend-library check that these three use.
+
+| X4 behavior | Scenario id | Result |
+| --- | --- | --- |
+| Installed smokes | `lemonade.cli.help`, `lemonade.server.help`, `llama.cpp.hip.help`, `llama.cpp.vulkan.help` | pass |
+| GGUF text, direct, HIP and Vulkan | `llama.cpp.hip.qwen3-0.6b-q8-0.completion`, `llama.cpp.vulkan.qwen3-0.6b-q8-0.completion` | pass (all 29 of 29 layers offloaded) |
+| GGUF text via Lemonade, HIP and Vulkan | `lemonade.llamacpp.rocm.qwen3-0.6b-q8-0.completion`, `lemonade.llamacpp.vulkan.qwen3-0.6b-q8-0.completion` | pass (root) |
+| Start and restart with config preserved; HIP discovery | `lemonade.lifecycle.restart-config-hip-discovery` | pass |
+| Pin persistence and startup restore | `lemonade.pins.persistence-startup-restore` | pass |
+| Budget admit and refuse, with GTT counted | `lemonade.budget.gtt-admit-refuse` | pass (effective capacity 58.08 GB) |
+| Pinned and in-use models never displaced | `lemonade.residency.pinned-busy-not-displaced` | pass |
+| Provenance; no foreign or mixed package | `lemonade.provenance.family-no-fallback` | pass |
+| No silent downloader | `lemonade.nofetch.preplaced-load-missing-model` | pass (root) |
+| Consumer pins on the service | `lemonade.pins.service-consumer-pins` | pass |
+| Pinned qwen35moe chat | `lemonade.chat.pinned-user-model.qwen35moe` | pass |
+| Embeddings (zembed) | `lemonade.pooling.zembed-1-q4-k-m.embeddings` | pass |
+| Rerankers | `lemonade.pooling.bge-reranker-v2-m3.rerank`, `lemonade.reranking.zerank-2.selected-logit` (isolated), `lemonade.reranking.zerank-2.selected-logit.service` | pass |
+| App launch with pin and startup controls, plus one text interaction | `lemonade.app.pin-startup-text` (operator checklist) | pass (owner, 2026-09-25; see below) |
+| Kokoro TTS and the app's TTS interaction | none | deferred to generation C W2B (#113) |
+
+The Open WebUI consumer scenarios for zembed and zerank belong to arch-pkgs
+(M5, arch-pkgs #59). This record is their prerequisite receipt. The seam
+receipt ids are `lemonade.pins.service-consumer-pins`,
+`lemonade.pooling.zembed-1-q4-k-m.embeddings`,
+`lemonade.reranking.zerank-2.selected-logit`,
+`lemonade.reranking.zerank-2.selected-logit.service` and
+`lemonade.pins.persistence-startup-restore`. The confirmed endpoint is
+`http://127.0.0.1:13305/api/v1`, and the bind address and port are
+unchanged.
+
+**No-silent-downloader proof (root).** The host's registered but absent
+`Qwen3.5-0.8B-GGUF` was requested through `/load`, inference auto-load and
+Ollama auto-load:
+- Every path refused it.
+- The model cache and the backend cache were unchanged.
+- No non-loopback outbound connection from `lemond` or its children was
+  observed during the sampled phases. The check excludes client connections
+  accepted on the service's listening port.
+- Each logged, blackholed download attempt was recorded.
+
+The pre-placed test model then loaded on each path with no download logged,
+unchanged caches, and no non-loopback outbound connection observed. The ROCm backend's 26 mapped
+ROCm, HIP and llama.cpp libraries are all owned by `strix-halo-gfx1151`
+packages. None come from lemond's cache.
+
+**App operator checklist** (`lemonade.app.pin-startup-text`): the owner ran it
+in the desktop session on 2026-09-25 against `lemonade-app 11.7.0-1` and
+`lemonade-server 11.7.0-2`. All five steps passed:
+1. The app launched and its About dialog showed version 11.7.0.
+2. Pinning the built-in `Qwen3-0.6B-GGUF` listed it in `/api/v1/pins` as
+   loaded and added it to the persisted `pinned_models`.
+3. Unpinning removed it from both, leaving the five owner pins loaded.
+4. One chat prompt rendered a text reply.
+5. The model was unloaded, and the final pins and persisted `pinned_models`
+   were exactly the five owner pins, all loaded.
+
+The checklist names the registered `user.Qwen3-0.6B-Q8_0-GGUF`. The owner
+used the built-in `Qwen3-0.6B-GGUF` instead, which is the same base model
+under a different registration. The checklist tests the app's pin,
+startup-pin and chat controls, which work the same for any registration,
+so the pass stands with this deviation recorded.
+
+**Owner decisions recorded during M4:**
+- **Slot limit:** `max_loaded_models` changed from 2 to -1 (unlimited) on
+  2026-09-24. With five pins filling both LLM slots, every new LLM load
+  returned 409. The fork's host contract is that pins count toward residency
+  and the host runs -1. The GTT-aware occupancy budget remains the admission
+  bound. The source of the earlier 2 is indeterminate: it predates the
+  retained journal, and no ASHP tool writes service config. The setting
+  survived two later `lemond` restarts. The M6 repackage ships -1 in the
+  packaged `defaults.json` (#141).
+- **Config directory ownership:** `/etc/lemonade` and `conf.d` reset to
+  `root:root`, the ownership the package ships.
+- **Stored custom-arg values:** checked for leftovers of the fork quoting
+  regression; there were none.
+
+**Ledger closeout (2026-09-25):** #139 and #140 closed as completed. The
+first #139 build, from main `d129835`, published `lemonade-app` and
+`lemonade` 11.7.0-1, `python-pydantic-core-gfx1151` 2.46.5-2, and the
+unchanged llama.cpp b9442 backends. The 11.7.0-2 server build above replaced
+only `lemonade-server`.
+- `lemonade-fork-3d59910` is adopted: its build, publish, install, and
+  live-validation gates are done. Kokoro TTS was deferred to #113 by
+  decision and does not gate this candidate.
+- `pydantic-core-2.46.5-1-arch`, installed in the same transaction, is
+  adopted after its installed smoke (see the pydantic-core host hazard
+  below).
+- `lemonade-upstream-11.9.0` stays tracked under the M6 repackage (#141).
+
+The explicit tracker validation then found all 11 unique issue gates open.
+The 24-hour freshness sweep was not rerun for this closeout, and it is due.
+A cache-aware Lemonade check already reports fork main past `3d5991033` and
+a new upstream release. Neither Lemonade record matches that result, so the
+sweep must give it its own disposition.
+
+## 2026-09-23 Lemonade Args-Merge Fix
+
+After the M3 repin, `lemonade-server 11.7.0-1` was built and installed under
+#139. It could not load any qwen35 or qwen35moe model, including the host's
+pinned chat model. `RecipeOptions::inherit` kept the quote characters of the
+architecture default `--chat-template-kwargs '{"preserve_thinking":true}'`
+when it merged that value into the non-empty global `llamacpp.args` (the
+distro defaults always set `--no-mmap`). It then quoted the value again, so
+llama-server rejected a quoted JSON string and exited. `lemonade-server
+11.7.0-2` carries patch 0005, which tokenizes both sides without keeping
+quotes; see [Patch Inventory](../patches.md). The regression is fork-only:
+fork commit `e3d08ffa6` stacked a second quoting layer on upstream's merge,
+and upstream builds produce the correct argv. The fork fix is
+nisavid/lemonade#168, and patch 0005 drops at the Lemonade repin to a fork
+commit that contains it. A standalone C++ check against
+the pinned `custom_args.h` confirms that the merged argv value is exactly
+`{"preserve_thinking":true}`, that `--no-mmap` stays present, and that a value
+with spaces still round-trips. The unpatched merge fails the JSON and
+spaced-value checks. `lemonade.chat.pinned-user-model.qwen35moe` is the live
+guard. This is a source update only: 11.7.0-2 was not built,
+deployed/installed, installed-smoked, or live-scenario validated in this
+change; #139 and #140 own those gates.
+
+## 2026-09-22 Freshness Admission
+
+An uncached sweep started at `2026-09-22T15:56:39-04:00` found 28
+action-required families and one query failure across the 45 configured
+families. The llama.cpp query failure came from an upstream change, not from
+the checker: Arch moved llama.cpp into its official repositories and the AUR
+`llama.cpp-hip` and `llama.cpp-vulkan-bin` baselines were deleted. Separately,
+upstream switched to semantic versioning with v0.2.0 and has published
+b-number builds as GitHub prereleases since then, so the b-number `release`
+check reports only prereleases. The llama.cpp freshness policy now checks the
+upstream `v`-prefixed stable tags (`stable-tag`, recorded 0.4.1) against the
+Arch `llama-cpp` and `ggml-hip` baselines. The b-number `release` check and its
+source contract are unchanged.
+
+Every non-current family now has a disposition in
+`docs/maintainers/update-candidates.toml`. The final uncached sweep completed
+at `2026-09-22T16:35:44-04:00` and exited 0 with `--fail-on actionable`. It
+reported 29 stable updates, five branch-head movements, two baseline drifts,
+one prerelease-only family (llama.cpp), and eight current families. Applying
+the ledger yielded 34 tracked families, two rejected families (AutoRound and
+llmcompressor, which are upstream-scope exclusions for this convergence line),
+one adopted family, and eight current families, including llama.cpp. The
+ledger holds 35 active tracked candidate records and no blocked records; the
+extra record is `llama-cpp-v0.4.1`, which stands as the W2B rebuild target
+without matching a family result. The explicit tracker validation queried
+their nine unique issue gates, and all nine were open issues in this
+repository. The [closeout sweep](#closeout-sweep) below supersedes these
+counts.
+
+This sweep is also the one fresh sweep that freezes the version universe for
+candidate generation C ([issue #105](https://github.com/nisavid/arch-strix-halo-pkgs/issues/105)).
+Issue 105 selects C's coherent PyTorch and vLLM line within this frozen
+universe; the 2026-08-11 line pick is superseded. Lemonade is exempt from the
+freeze and follows the deployed, validated fork commit. Later upstream drift
+routes to post-closeout maintenance unless it is a security fix or a build
+breakage. Until C closes out, later sweeps disposition that drift as tracked to
+[the post-closeout drift issue](https://github.com/nisavid/arch-strix-halo-pkgs/issues/147);
+security fixes and build breakage are tracked to the C work unit that owns
+the family.
+
+The superseded tracked and blocked records were terminalized as rejected.
+The former `lemonade-upstream-11.5.2` blocker was closed as superseded before
+package adoption. The fork candidates `lemonade-fork-187b4a2` and
+`lemonade-fork-586e190` were later superseded by `lemonade-fork-3d59910`, the
+frozen fork main commit `3d5991033e4cb28152ace4013f7f22a52c3bd617` that the
+[Lemonade repin](https://github.com/nisavid/arch-strix-halo-pkgs/issues/137)
+consumes. The upstream 11.9.0 baseline drift routes to the
+[upstream-sync repackage](https://github.com/nisavid/arch-strix-halo-pkgs/issues/141).
+
+### Generation C line selection
+
+Issue 105 selected C's version line within the frozen universe. The dated
+record is
+[`docs/wayfinder/research/c-line-selection-2026-09-22.md`](../wayfinder/research/c-line-selection-2026-09-22.md),
+with the corrections from three adversarial verification passes applied:
+
+- Foundation: CPython 3.14.7, TheRock 7.14.1 (`f51dc6c9`; ai-notes
+  `dbfb70ef`), and MIGraphX 2.16.1 at `2487b688`.
+- PyTorch lane: ROCm PyTorch `release/2.12` `13da0862` (2.12.0), ROCm Triton
+  3.8.0 `669b31ac`, AOTriton 0.13b, and TorchVision 0.27.1.
+- Serving closure: vLLM 0.30.0, Transformers 5.16.1, tokenizers 0.23.2,
+  safetensors 0.8.0, compressed-tensors 0.17.0, mistral-common 1.11.7, NumPy
+  2.5.3 (fallback 2.4.6), and pydantic-core 2.46.5 with Arch pydantic 2.13.5.
+- Divergence: `prometheus-fastapi-instrumentator` stays at the host's 7.0.0
+  behind an OpenAI-serving `/metrics` gate in W6. Superseded on 2026-09-29:
+  vLLM 0.30.0 requires `prometheus-fastapi-instrumentator>=8.0.0`, so W2A
+  packages 8.1.0 instead.
+- W5 removals by default: llmcompressor, AutoRound, and AITER. The owner can
+  override.
+
+The candidate ledger now routes the selection to its execution issues:
+[#108](https://github.com/nisavid/arch-strix-halo-pkgs/issues/108) (W1
+foundation), [#109](https://github.com/nisavid/arch-strix-halo-pkgs/issues/109)
+(PyTorch, Triton, AOTriton),
+[#110](https://github.com/nisavid/arch-strix-halo-pkgs/issues/110) (model and
+runtime dependencies),
+[#111](https://github.com/nisavid/arch-strix-halo-pkgs/issues/111)
+(TorchVision, vLLM), and the nonblocking lanes #118 through #121. Where the
+selection is older than the sweep's latest, the sweep record is rejected as
+outside the selected line and a standing tracked record carries the selected
+version: AOTriton 0.13b, TorchVision 0.27.1, Transformers 5.16.1,
+compressed-tensors 0.17.0, and mistral-common 1.11.7. DuckDB, asyncpg,
+zstandard, cryptography, orjson, AOCL-LibM, and AOCL-Utils are not in C's
+regenerated closure and route to post-closeout maintenance (#147). That
+includes the cryptography security refresh: cryptography 50.0.0 fixes
+CVE-2026-69247 in PKCS#7 decryption, but no installed consumer of the host's
+`python-cryptography-gfx1151` 48.0.0-1 calls the PKCS#7 decryption APIs, and
+the owner has not yet answered whether to admit the refresh earlier. No active
+record points at #105.
+
+The sweep's TheRock `release` check masked the stable `therock-10.0` release
+(published 2026-08-26). `latest_github_release` takes the first stable
+release in GitHub API order, not the PEP 440 maximum, so it reported 7.14.1.
+TheRock 7.14.1 stays: the approved end state names TheRock 7.14.x, and AMD
+publishes no gfx1151 10.0 dist tarball. The checker fix is routed to #147 and
+is not part of this admission.
+
+### pydantic-core host hazard
+
+Closed on 2026-09-23 by the #139 install; see the fix status below. Before
+that install, the host had `python-pydantic` 2.13.4 with
+`python-pydantic-core-gfx1151` 2.46.4. Arch `python-pydantic` 2.13.5 requires
+pydantic-core 2.46.5 exactly but depends on an unversioned
+`python-pydantic-core`. A routine host sync would therefore have installed a
+mismatched pair, and `import pydantic` would have raised `SystemError` for
+vLLM, FastAPI, OpenAI, mistral-common, and huggingface-hub consumers.
+
+Fix status:
+
+- Source updated: `python-pydantic-core-gfx1151` now tracks 2.46.5, rendered
+  through `tools/render_recipe_scaffolds.py`.
+- Package built: `tools/amerge build` plan `2301b532` produced
+  `python-pydantic-core-gfx1151-2.46.5-1-x86_64.pkg.tar.zst`. An
+  extracted-archive smoke imported it with pydantic 2.13.5 and validated a
+  `BaseModel`. That archive predates the exact `python-pydantic` 2.13.5
+  conflicts that the Lemonade repin (#137) added, so it was not published.
+  The guarded source renders as `2.46.5-2`.
+- Published: the #139 build produced `2.46.5-2` and published it to the
+  `strix-halo-gfx1151` repo.
+- Deployed/installed: installed alongside Arch `python-pydantic` 2.13.5 in
+  the Lemonade family transaction
+  ([#139](https://github.com/nisavid/arch-strix-halo-pkgs/issues/139)) on
+  2026-09-23. `python-pydantic` no longer needs to be held.
+- Installed-smoked on 2026-09-25: `pacman -Qkk` is clean for both packages,
+  and the `pydantic_core` module is owned by
+  `python-pydantic-core-gfx1151 2.46.5-2`. Python 3.14.6 imports pydantic
+  2.13.5 with `pydantic_core` 2.46.5, coerces a `BaseModel` field, and
+  raises `ValidationError` on invalid input.
+
+### Closeout sweep
+
+A forced sweep after the selection completed at `2026-09-22T17:19:38-04:00`
+and exited 0 with `--fail-on actionable`. It reported the same 29 stable
+updates, five branch-head movements, two baseline drifts, one prerelease-only
+family, and eight current families. Applying the ledger yielded 29 tracked
+families, seven rejected families (AOTriton, TorchVision, Transformers,
+compressed-tensors, mistral-common, AutoRound, and llmcompressor), one
+adopted family, and eight current families. Lemonade fork main had moved two
+commits past `187b4a25f` to `586e1900f`: a docs refresh and a `serde_with`
+bump in the Tauri app. Those are the additions the Lemonade candidate freeze
+(nisavid/lemonade#155) named. A cache-aware rerun on 2026-09-22 found fork
+main one commit further, at `3d5991033`: a CI and test-target fix for the
+macOS and Fedora package jobs (nisavid/lemonade#160). #155 froze that commit, so
+`lemonade-fork-3d59910` is tracked to the #137 repin and supersedes
+`lemonade-fork-586e190`. The ledger holds 36 active tracked records and no
+blocked records. The explicit tracker validation found all 12 unique issue
+gates open in this repository.
+
+Apart from the pydantic-core source update and build, this admission changes
+maintenance metadata only. No other package source was updated, and no
+package was deployed/installed, installed-smoked, service-smoked, or
+live-scenario validated. The maintained Lemonade package source remains
+10.7.0 at fork commit `e18b9c1e352df8ab5aff2ff353402f1ec77c47f2`. The
+freshness evidence is due again 24 hours after the closeout sweep completed,
+or sooner if package policy, package directories, checker behavior, or
+relevant source metadata changes.
+
+### Lemonade repin source update
+
+The Lemonade repin (#137) moved `lemonade-server` and `lemonade-app` to the
+frozen fork main commit `3d5991033`, whose CMake project version is 11.7.0 and
+which contains upstream v11.7.0, and moved the source-free `lemonade` meta
+package to version 11.7.0 to match. The freshness policy
+now records that commit as the `fork-main` cursor and 11.7.0 as the
+`upstream-release` baseline. `lemonade-fork-3d59910` stays tracked, with its
+gate moved to the
+[Lemonade family build and install handoff](https://github.com/nisavid/arch-strix-halo-pkgs/issues/139).
+The new `lemonade-upstream-11.9.0` record tracks the 11.7.0 to 11.9.0
+baseline drift to #141. The same change adds `python-pydantic<2.13.5` and
+`python-pydantic>2.13.5` conflicts to `python-pydantic-core-gfx1151` and bumps
+it to `2.46.5-2`, so pacman cannot pair pydantic-core 2.46.5 with any Arch
+pydantic other than 2.13.5. The two
+packages are installed together in the #139 transaction.
+
+A refreshed sweep with `--fail-on actionable` exited 0 and reported 29 tracked,
+seven rejected, one adopted, and eight current families. The explicit tracker
+validation found all 12 unique issue gates open. This is a source update only:
+no package was built for M3, deployed/installed, installed-smoked, or
+live-scenario validated.
 
 ## 2026-08-12 Freshness Admission
 
@@ -2243,9 +3998,14 @@ the model's SentenceTransformers last-token pooling metadata, and normalized
 embedding validation. `vllm.pooling.zerank-2.rerank` runs
 `zeroentropy/zerank-2` through vLLM's classification conversion by deriving the
 score head from the `Yes` token with `method=no_post_processing` and
-`logit_sigma=5.0`, matching the model-card arithmetic ranking fixture. Keep
-tracked scenarios on model IDs plus runtime `--model-path` bindings rather
-than committed cache snapshot paths.
+`logit_sigma=5.0`. This gate and `transformers.zeroentropy.zerank-2.rerank`
+print the raw per-document scores and require the two correct arithmetic
+answers (`4` and `Two plus two equals four.`) to score above the distractor.
+They do not fix the order of the two correct answers: the model card only
+compares `4` with a distractor, and engines disagree on that pair. vLLM 0.30
+and the Lemonade/llama.cpp zerank path rank the sentence first. Keep tracked
+scenarios on model IDs plus runtime `--model-path` bindings rather than
+committed cache snapshot paths.
 
 Lemonade has conventional embedding and reranking endpoints for registered
 `llamacpp` models, and the tracked Lemonade pooling scenarios now cover both.
@@ -2265,11 +4025,11 @@ passed on 2026-04-21 with the cached `zeroentropy/zembed-1` model bound at
 runtime by `--model-path`, finite normalized vectors, and a backpropagation
 related-passage ranking fixture. `transformers.zeroentropy.zerank-2.rerank`
 passed on the same host with the cached `zeroentropy/zerank-2` model bound at
-runtime, finite Yes-logit scores, and the model-card arithmetic ranking
-fixture. The helper uses Transformers directly because these model cards
-document `SentenceTransformer` and `CrossEncoder` usage, while Lemonade's
-documented local endpoints require registered `llamacpp` or `flm` recipes for
-embeddings and `llamacpp` for reranking.
+runtime, finite Yes-logit scores, and both correct arithmetic answers above
+the distractor, with `4` ranked first. The helper uses Transformers directly
+because these model cards document `SentenceTransformer` and `CrossEncoder`
+usage, while Lemonade's documented local endpoints require registered
+`llamacpp` or `flm` recipes for embeddings and `llamacpp` for reranking.
 
 The rebuilt installed stack passed the unquantized Qwen3.6 control on
 2026-04-20 with `HF_HOME=<host HF cache root>` and `Qwen/Qwen3.6-35B-A3B`,
@@ -2713,7 +4473,10 @@ The following smoke checks have already passed on the reference host:
     - keep the gfx1x AITER support plus Gemma 4
       `ROCM_AITER_UNIFIED_ATTN` override in
       `python-vllm-rocm-gfx1151/0016-rocm-refresh-local-carry-for-vllm-0.20.0.patch`
-      because the validated lane still depends on that backend selection
+      because the validated lane still depends on that backend selection.
+      Superseded for the 0.30.0 package source: both were dropped at 0.30.0,
+      so Gemma 4 selects upstream `TRITON_ATTN`; see the package README and
+      the [W2A record](#2026-09-29-w2a-vllm-0300-validation-of-record).
     - keep the broader fused-MoE default-policy carry dropped: the
       2026-04-17 reference-host rerun faulted the GPU as soon as that policy
       forced the AITER CK 2-stage fused-MoE path without an explicit runtime
@@ -2858,7 +4621,13 @@ The following smoke checks have already passed on the reference host:
   - with the same shim and CUDAGraph disabled, the E2B compiled path faulted
     the GPU during initialization/warmup
   - do not remove eager mode for `google/gemma-4-E2B-it`; the
-    E2B compiled path still generates invalid text after the Triton repair
+    E2B compiled path still generates invalid text after the Triton repair.
+    Superseded on 2026-09-29: the corruption came from the vLLM 0.19
+    `ROCM_AITER_UNIFIED_ATTN` path, which the 0.30.0 package source no longer enables, and
+    the strengthened `vllm.gemma4.e2b.text.compiled` probe passed on vLLM
+    0.30.0 in the W2A build root, not on the host; see the
+    [W2A record](#2026-09-29-w2a-vllm-0300-validation-of-record). The smoke
+    lanes still default to eager.
   - `vllm.gemma4.31b.text.compiled` passed on 2026-04-20 with fresh cache roots
     against `google/gemma-4-31B-it`
     in `382.161305` seconds with `enforce_eager=False`,
@@ -2961,7 +4730,11 @@ The following smoke checks have already passed on the reference host:
     a non-fatal fallback marker for this lane
   - The earlier Qwen3.6 FP8 MoE blocker remains useful historical evidence, but
     that checkpoint is no longer the retained cache fixture. Use the small FP8
-    safetensors probe for ongoing local FP8 support checks.
+    safetensors probe for ongoing local FP8 support checks. The MoE blocker
+    never applied to that dense probe: on 2026-09-29,
+    `vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors` passed on vLLM 0.30.0 in the
+    W2A build root through the dense block-FP8 Triton kernel; see the
+    [W2A record](#2026-09-29-w2a-vllm-0300-validation-of-record).
   - The 2026-04-20 rebuilt-stack control for `Qwen/Qwen3.6-35B-A3B` passed
     unquantized with AITER disabled, `--max-num-batched-tokens 32`, and
     `--gpu-memory-utilization 0.9`; the tracked scenario completed in
@@ -3008,7 +4781,7 @@ The following smoke checks have already passed on the reference host:
     WMMA adaptor choices for this code path. Treat a gfx11 OPUS FP8 adaptor as
     new kernel feature work unless upstream lands it.
   - Quantization-lane coverage now includes the retained small FP8 safetensors
-    probe `vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors-blocked` and the retained
+    probe `vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors` and the retained
     GPTQ Int4 safetensors probe
     `vllm.qwen3_5.35b-a3b-gptq-int4.text.basic`, plus the Qwen3.6 NVFP4 probe
     `vllm.qwen3_6.35b-a3b-nvfp4.text.unsupported-rocm-gfx1151`.
@@ -3022,7 +4795,7 @@ The following smoke checks have already passed on the reference host:
 - The tracked host-side follow-up helper for OpenAI-compatible server smokes is
   now `tools/gemma4_server_smoke.py`.
   - `--mode basic` launches
-    `python -m vllm.entrypoints.openai.api_server` from the active interpreter
+    `python -m vllm.entrypoints.cli.main serve` from the active interpreter
     and sends a plain `/v1/chat/completions` request, so the smoke does not
     depend on interactive-shell `PATH` setup
   - for the current `google/gemma-4-26B-A4B-it` validation lane, the helper

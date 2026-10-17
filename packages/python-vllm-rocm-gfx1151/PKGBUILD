@@ -5,21 +5,21 @@
 # Package recipe key: vllm
 
 pkgname=python-vllm-rocm-gfx1151
-pkgver=0.21.0
-pkgrel=6
+pkgver=0.30.0
+pkgrel=2
 pkgdesc='High-throughput and memory-efficient inference engine for LLMs with ROCm, rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://github.com/vllm-project/vllm
 license=(Apache-2.0)
-depends=(amdsmi-gfx1151 numactl python-aiohttp-gfx1151 python-blake3 python-cachetools python-cbor2 python-cloudpickle python-diskcache python-einops python-fastapi python-gguf python-gfx1151 python-httptools-gfx1151 python-huggingface-hub python-ijson python-importlib-metadata python-mistral-common-gfx1151 python-msgspec-gfx1151 python-openai python-openai-harmony-gfx1151 python-opencv python-prometheus-fastapi-instrumentator python-psutil-gfx1151 python-py-cpuinfo python-pybase64 python-pydantic python-pytorch-opt-rocm-gfx1151 python-pyzmq python-soundfile python-starlette python-sympy python-torchvision-rocm-gfx1151 python-tqdm python-transformers-gfx1151 python-triton-gfx1151 python-uvloop-gfx1151 python-watchfiles-gfx1151 rocblas-gfx1151 uvicorn)
-makedepends=(cmake ninja python-installer python-pip python-setuptools python-setuptools-scm python-wheel rocm-llvm-gfx1151)
-optdepends=()
+depends=(amdsmi-gfx1151 numactl python-aiohttp-gfx1151 python-blake3 python-cachetools python-cbor2 python-cloudpickle python-compressed-tensors-gfx1151 python-einops-gfx1151 python-fastapi python-gfx1151 python-httptools-gfx1151 python-huggingface-hub python-ijson python-importlib-metadata python-jsonschema python-mistral-common-gfx1151 python-msgspec-gfx1151 python-openai python-openai-harmony-gfx1151 python-opencv python-partial-json-parser python-prometheus-fastapi-instrumentator-gfx1151 python-psutil-gfx1151 python-py-cpuinfo-gfx1151 python-pybase64-gfx1151 python-pydantic python-pytorch-opt-rocm-gfx1151 python-pyzmq python-regex python-safetensors-gfx1151 python-soundfile python-starlette python-sympy python-torchvision-rocm-gfx1151 python-tqdm python-transformers-gfx1151 python-triton-gfx1151 python-uvloop-gfx1151 python-watchfiles-gfx1151 python-xgrammar-gfx1151 rocblas-gfx1151 uvicorn)
+makedepends=(cmake ninja python-installer python-pip python-semantic-version python-setuptools python-setuptools-rust python-setuptools-scm python-wheel rocm-llvm-gfx1151)
+optdepends=('python-gguf: GGUF checkpoints through the out-of-tree vllm-gguf-plugin (vllm[extra-quant]), which is not packaged here' 'python-json-logger: JSON log formatting through a VLLM_LOGGING_CONFIG_PATH logging config' 'python-opentelemetry-api: OpenTelemetry request tracing (--otlp-traces-endpoint)' 'python-opentelemetry-exporter-otlp: OpenTelemetry request tracing (--otlp-traces-endpoint)' 'python-opentelemetry-sdk: OpenTelemetry request tracing (--otlp-traces-endpoint)' 'python-protobuf: slow SentencePiece tokenizer conversion in Transformers for checkpoints without tokenizer.json' 'python-setproctitle: named vLLM engine and worker processes' 'python-tiktoken: the Kimi-Audio tokenizer')
 options=('!lto')
 provides=(python-vllm-rocm python-vllm)
 conflicts=(python-vllm-rocm python-vllm)
 replaces=()
-source=(https://github.com/vllm-project/vllm/archive/refs/tags/v0.21.0.tar.gz 0016-rocm-refresh-local-carry-for-vllm-0.21.0.patch)
-sha256sums=(2d4bc9f472437e29f3d37918eebe7d6cd6d15e076995fb98ee0edbbb6e533959 SKIP)
+source=(https://github.com/vllm-project/vllm/archive/refs/tags/v0.30.0.tar.gz 0016-rocm-refresh-local-carry-for-vllm-0.30.0.patch 0017-backport-pixtral-axial-rope-for-transformers-5.17.patch 0018-backport-minimax-m3-video-processor-for-transformers-5.18.patch 0019-backport-gate-per-request-multimodal-kwargs.patch 0020-backport-redact-upper-case-addresses-in-error-messages.patch 0021-backport-prefer-fresh-multimodal-payloads-over-stale-receiver-cache.patch 0022-backport-reject-encoder-cache-hits-with-mismatched-embed-counts.patch 0023-backport-frame-the-multimodal-hash-digest-input.patch 0024-backport-fix-incremental-multimodal-block-hashing.patch)
+sha256sums=(36888183808c62ea91c4118a807fca26938520b3dfc0f611f3910bef8627dae8 SKIP 6443921260271c6a2b3d01482b58d7ba4cb25b1bd67194cd08b8c24b8c0646ab 195ea85751f6907ad0f3758edf58ee8535f5c7dd846ef6182a32ae0ed0066f78 038b73488420372eb33a74b5912ec72d91e21ef462d02f6c6ecd4deb65d671ed d5312e486f969fb672bb43473f7a9015ed68ad4d4142cf31e7159625edd5c3e9 fa2b8676cf44224a3fdd07c40678a301853b8b9825f283334a2e0a47f5c6770a 36d20fdd43c353df2d39d0f214bffe356c89968c408f4af12d10816deb8d51fc 0c4a0f97e599deeed69d3c0c26dc3d6f5bfbdd53629746da227cb35c6c5fc762 046491adf84589c6e66bb421fab8c9696156125cefa03547b074cb8206d4ab7d)
 
 _vllm_srcdir="vllm-${pkgver}"
 _vllm_tarball="v${pkgver}.tar.gz"
@@ -51,18 +51,19 @@ _source_tree_has_all_source_patches() {
   [[ -f pyproject.toml ]] || return 1
   grep -Fq 'requires-python = ">=3.10,<3.15"' pyproject.toml &&
     grep -Fq 'def _selected_subcommand() -> str | None:' vllm/entrypoints/cli/main.py &&
-    grep -Fq 'using vllm_bfloat16 = __hip_bfloat16;' csrc/cuda_vec_utils.cuh &&
-    grep -Fq 'expected_hipified_path' cmake/hipify.py &&
-    grep -Fq 'return on_mi3xx() or on_gfx1x()' vllm/_aiter_ops.py &&
+    grep -Fq 'using vllm_bfloat16 = __hip_bfloat16;'       csrc/libtorch_stable/cuda_vec_utils.cuh &&
     grep -Fq 'def torchao_version_at_least(torchao_version: str) -> bool:'       vllm/model_executor/layers/quantization/torchao_utils.py &&
-    grep -Fq 'Hybrid models need TRITON_ATTN' vllm/platforms/rocm.py &&
     grep -Fq 'Use PyTorch top-k/top-p filtering on large-vocabulary ROCm'       vllm/v1/sample/ops/topk_topp_sampler.py &&
     grep -Fq 'Keep valid_count type stable across branches'       vllm/v1/spec_decode/utils.py &&
-    grep -Fq 'def _triton_knobs():'       vllm/triton_utils/jit_monitor.py &&
-    grep -Fq 'knobs = _triton_knobs()'       vllm/triton_utils/jit_monitor.py &&
-    grep -Fq 'def update_dflash(config_dict: dict, pre_trained_config: dict) -> None:'       vllm/transformers_utils/configs/speculators/algos.py &&
-    grep -Fq 'def _flash_attn_uses_triton_rocm() -> bool:'       vllm/platforms/rocm.py &&
-    grep -Fq 'def rocm_flash_attn_supports_vllm_varlen_api() -> bool:'       vllm/v1/attention/backends/fa_utils.py
+    grep -Fq 'def rocm_flash_attn_supports_vllm_varlen_api() -> bool:'       vllm/v1/attention/backends/fa_utils.py &&
+    grep -Fq 'NOTE(gfx1151): On AMD HIP, restrict autotune search'       vllm/third_party/flash_linear_attention/ops/chunk_delta_h.py &&
+    grep -Fq 'def position_ids_in_meshgrid(' vllm/model_executor/models/pixtral.py &&
+    grep -Fq 'def validate_request_mm_kwargs(' vllm/entrypoints/generate/base/protocol.py &&
+    grep -Fq '0x[0-9a-fA-F]+>' vllm/entrypoints/serve/exception_handling/utils.py &&
+    grep -Fq 'Never keep a stale cached tensor under this' vllm/multimodal/cache.py &&
+    grep -Fq 'def get_cached_num_encoder_embeds(' vllm/v1/core/encoder_cache_manager.py &&
+    grep -Fq 'def iter_value_to_bytes(' vllm/multimodal/hasher.py &&
+    grep -Fq 'from vllm.multimodal.utils import get_mm_features_in_window' vllm/v1/core/kv_cache_utils.py
 }
 
 _apply_all_source_patches() {
@@ -75,13 +76,21 @@ _apply_all_source_patches() {
     return 0
   fi
 
-  # Later source patches touch files changed by earlier ones, so reverse-dry-run
-  # checks are not reliable on an already-patched tree. Re-extract and apply the
-  # series once on a known-clean source tree whenever any sentinel is missing.
+  # The sentinels are the only record of which patches a reused tree carries.
+  # When any is missing, re-extract the release tarball and apply the whole
+  # series in order on that clean tree instead of patching on top.
   _reset_source_tree
   cd "${srcdir}/${_vllm_srcdir}"
 
   _apply_patch_if_needed "${_vllm_source_patch}"
+  _apply_patch_if_needed "0017-backport-pixtral-axial-rope-for-transformers-5.17.patch"
+  _apply_patch_if_needed "0018-backport-minimax-m3-video-processor-for-transformers-5.18.patch"
+  _apply_patch_if_needed "0019-backport-gate-per-request-multimodal-kwargs.patch"
+  _apply_patch_if_needed "0020-backport-redact-upper-case-addresses-in-error-messages.patch"
+  _apply_patch_if_needed "0021-backport-prefer-fresh-multimodal-payloads-over-stale-receiver-cache.patch"
+  _apply_patch_if_needed "0022-backport-reject-encoder-cache-hits-with-mismatched-embed-counts.patch"
+  _apply_patch_if_needed "0023-backport-frame-the-multimodal-hash-digest-input.patch"
+  _apply_patch_if_needed "0024-backport-fix-incremental-multimodal-block-hashing.patch"
 
 }
 
@@ -156,21 +165,38 @@ build() {
     echo "VLLM_HIP_VERSION_MISSING: hipconfig failed" >&2
     return 1
   fi
-  export CMAKE_ARGS="-DHIP_VERSION=${_hip_version%%-*} ${CMAKE_ARGS:-}"
+  # CXX resolves to the ccache wrapper symlink. Torch's LoadHIP.cmake loads
+  # ROCm's FindHIP.cmake, which takes HIP_CLANG_PATH from the realpath of
+  # HIP_CXX_COMPILER (default CMAKE_CXX_COMPILER), i.e. the ccache binary's
+  # directory, and bakes it into the HIP shared-module link rule. Name the
+  # ROCm LLVM driver so hipcc links _C.abi3.so with ROCm clang.
+  export CMAKE_ARGS="-DHIP_VERSION=${_hip_version%%-*} -DHIP_CXX_COMPILER=/opt/rocm/lib/llvm/bin/amdclang++ ${CMAKE_ARGS:-}"
   export VLLM_VERSION_OVERRIDE="${pkgver}"
-  export VLLM_ROCM_USE_AITER=1
+
+  # The Rust frontend (vllm-rs) and _rust_tool_parser are optional unless
+  # VLLM_REQUIRE_RUST_FRONTEND is set. This package skips them: cargo is
+  # disabled and rustup may not install the rust-toolchain.toml channel, so
+  # setuptools-rust reports them as failed optional extensions.
+  unset VLLM_REQUIRE_RUST_FRONTEND
+  export CARGO=/usr/bin/false
+  export CARGO_NET_OFFLINE=true
+  export RUSTUP_AUTO_INSTALL=0
 
   rm -rf .deps/triton_kernels-*
 
   mkdir -p dist
   rm -f dist/*.whl
 
-  if ! pip wheel . --no-build-isolation --no-deps --wheel-dir dist -v; then
-    unset VLLM_ROCM_USE_AITER
-    python setup.py clean 2>/dev/null || true
-    find . -name "*.so" -path "*/build/*" -delete 2>/dev/null || true
-    pip wheel . --no-build-isolation --no-deps --wheel-dir dist -v
-  fi
+  pip wheel . --no-build-isolation --no-deps --wheel-dir dist -v
+
+  local _wheel _members
+  for _wheel in dist/*.whl; do
+    _members="$(python -c 'import sys, zipfile; print("\n".join(zipfile.ZipFile(sys.argv[1]).namelist()))' "${_wheel}")"
+    if grep -Eq '^vllm/(_rust_[^/]*[.]so|vllm-rs)$' <<<"${_members}"; then
+      echo "VLLM_RUST_ARTIFACT_UNEXPECTED: ${_wheel} contains Rust extensions this package skips" >&2
+      return 1
+    fi
+  done
 }
 
 package() {

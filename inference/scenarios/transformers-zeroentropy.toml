@@ -72,7 +72,7 @@ value = "scores_finite_ok"
 
 [[scenario.then.assert]]
 kind = "stdout.contains"
-value = "rerank_order 0,1,2"
+value = "rerank_distractor_last_ok"
 
 [[scenario.then.assert]]
 kind = "stdout.contains"

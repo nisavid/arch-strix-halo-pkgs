@@ -1,0 +1,82 @@
+{
+  "model_id": "ibm-granite/granite-3.1-1b-a400m-instruct",
+  "revision": "0da7a48b0276d500ce5922fd2b33944091fc6c09",
+  "fixtures": [
+    {
+      "mode": "basic",
+      "request": {
+        "model": "ibm-granite/granite-3.1-1b-a400m-instruct",
+        "stream": false,
+        "temperature": 0,
+        "n": 1,
+        "messages": [
+          {"role": "system", "content": "You are Granite, developed by IBM. Follow the user's output instructions exactly."},
+          {"role": "user", "content": "What is 7 + 5? Reply with only the integer."}
+        ]
+      },
+      "expected": {"finish_reason": "stop", "content": "12"}
+    },
+    {
+      "mode": "tool",
+      "request": {
+        "model": "ibm-granite/granite-3.1-1b-a400m-instruct",
+        "stream": false,
+        "temperature": 0,
+        "n": 1,
+        "messages": [
+          {"role": "system", "content": "You are Granite, developed by IBM. Follow the user's output instructions exactly. When a tool is required, respond with <|tool_call|> followed by a JSON list of tools used."},
+          {"role": "user", "content": "What is the weather in Tokyo? Call get_weather with location Tokyo and unit celsius. Do not answer without the tool."}
+        ],
+        "tools": [{
+          "type": "function",
+          "function": {
+            "name": "get_weather",
+            "description": "Get the weather for a location using the requested unit.",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "location": {"type": "string"},
+                "unit": {"type": "string", "enum": ["celsius"]}
+              },
+              "required": ["location", "unit"],
+              "additionalProperties": false
+            }
+          }
+        }],
+        "tool_choice": "auto"
+      },
+      "expected": {
+        "finish_reason": "tool_calls",
+        "function": "get_weather",
+        "arguments": {"location": "Tokyo", "unit": "celsius"}
+      }
+    },
+    {
+      "mode": "structured",
+      "request": {
+        "model": "ibm-granite/granite-3.1-1b-a400m-instruct",
+        "stream": false,
+        "temperature": 0,
+        "n": 1,
+        "messages": [
+          {"role": "system", "content": "You are Granite, developed by IBM. Follow the user's output instructions exactly."},
+          {"role": "user", "content": "The topic is ocean and the answer is blue. Return only a JSON object with topic and answer fields containing those exact values."}
+        ],
+        "response_format": {
+          "type": "json_schema",
+          "json_schema": {
+            "name": "granite_fixture",
+            "strict": true,
+            "schema": {
+              "type": "object",
+              "properties": {"topic": {"type": "string"}, "answer": {"type": "string"}},
+              "required": ["topic", "answer"],
+              "additionalProperties": false
+            }
+          }
+        }
+      },
+      "expected": {"finish_reason": "stop", "object": {"topic": "ocean", "answer": "blue"}}
+    }
+  ]
+}

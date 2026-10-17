@@ -39,8 +39,11 @@ def test_pkgbuild_patches_extension_rpath_to_torch_lib():
     text = PKGBUILD.read_text()
 
     pkgrel = int(next(line.removeprefix("pkgrel=") for line in text.splitlines() if line.startswith("pkgrel=")))
-    assert "pkgver=0.27.0" in text
-    assert pkgrel == 4
+    assert "pkgver=0.27.1" in text
+    assert pkgrel == 1
+    assert 'cd "$srcdir/vision-0.27.1"' in text
+    assert "v0.27.1.tar.gz" in text
+    assert "python-torchvision=0.27.1" in text
     assert "export FORCE_CUDA=1" in text
     assert "patchelf" in text
     assert 'sysconfig.get_path("platlib"' in text

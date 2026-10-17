@@ -23,6 +23,45 @@ gates passes on the reference host:
 - Upstream FlashAttention or CK lands a paged-KV fix that passes the local
   scenario matrix.
 
+## Root Cause Of The Paged-KV GPU Fault
+
+The GPU fault in the CK paged-KV varlen path was a FlashAttention glue bug,
+not a CK page-geometry limit. In `2.8.4-15` and earlier,
+`get_ck_fmha_varlen_fwd_splitkv_args()` in
+`csrc/flash_attn_ck/mha_varlen_fwd.cpp` declared
+`fmha_fwd_splitkv_args args;` without initializing it. The packaged CK
+submodule (`03ce21dd`) added `sink_ptr`, `sink_size`, and `logits_soft_cap` to
+that struct, and FlashAttention `3f94643f` never sets them. CK's split-KV
+kernel dereferences `kargs.sink_ptr` whenever it is non-null, so leftover host
+stack contents made the kernel read an arbitrary address.
+
+Upstream fixed the sink fields in ROCm/flash-attention `8afc617a` (#2363):
+it sets `sink_ptr` and `sink_size` in both split-KV builders, but still
+declares `args;` uninitialized and leaves `logits_soft_cap` unset.
+`c661198a` sets `logits_soft_cap` in the varlen builder only, and it is not
+an ancestor of `8afc617a`. Local patch 0007 backported only the
+`fmha_fwd_args` part of #2363. `python-flash-attn-rocm-gfx1151 2.8.4-16`
+carries `0010-init-ck-splitkv-args.patch`, which value-initializes the struct
+and sets the three fields in both split-KV builders. That release is built.
+On 2026-10-02, `flash-attn.ck.backend-import`, `flash-attn.ck.varlen-tiny`
+and `flash-attn.ck.varlen-paged-kv` passed on it in one guarded GPU run in
+the isolated W2A root, with AITER absent and 0 GPU page faults
+([current state](current-state.md#2026-09-29-w2a-vllm-0300-validation-of-record)).
+It is not installed on the reference host, so the fix is not yet claimed
+there: that waits for the install and a pass of the direct CK scenarios
+below on that host.
+
+Consequences for the evidence below:
+
+- The `2.8.4-10` `flash-attn.ck.varlen-paged-kv` pass was undefined
+  behaviour. It shows only that the stack held a null `sink_ptr` in that run,
+  not that the paged-KV path was correct.
+- The forced 128-divisible diagnostic faults are consistent with this bug and
+  do not by themselves show a CK page-geometry fault. Rerun them on `2.8.4-16`
+  before drawing conclusions about page geometry.
+- The 64-token page rejection is a separate, still-open boundary: the
+  `page_block_size % 128` guard is unchanged.
+
 ## Local Evidence
 
 The package-level CK surface works for bounded direct tests. With

@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "probe": "migraphx-add-relu",
+  "shape": [
+    2,
+    3
+  ],
+  "layout": "row-major",
+  "encoding": "ieee754-binary32-little-endian-hex",
+  "payloads": {
+    "x_hex": "0000803f000000c000004040000080c00000a0400000c0c0",
+    "y_hex": "0000003f0000803f000080c00000803f0000c0c00000e040",
+    "expected_z_hex": "0000c03f000000000000000000000000000000000000803f"
+  }
+}

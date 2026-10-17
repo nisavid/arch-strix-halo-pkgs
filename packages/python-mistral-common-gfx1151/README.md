@@ -5,7 +5,7 @@
 - Package origin: local closure package
 - Build method: `python -m build`
 - Upstream repo: `https://github.com/mistralai/mistral-common`
-- Upstream version: `1.11.2`
+- Upstream version: `1.11.7`
 - Recorded reference packages: `aur/python-mistral-common`
 - Authoritative reference package: `aur/python-mistral-common`
 - Advisory reference packages: `none`
@@ -17,7 +17,7 @@ The host `python-mistral-common 1.8.6-1` package is too old for the local
 `python-transformers-gfx1151 5.5.4` lane. Transformers now imports
 `ReasoningEffort` from `mistral_common.protocol.instruct.request`, and that
 symbol first appears in the `mistral-common >= 1.10.0` lane. The package now
-tracks the newer PyPI `1.11.2` release while preserving that compatibility
+tracks the newer PyPI `1.11.7` release while preserving that compatibility
 boundary.
 
 Without a local closure package, Gemma 4 safetensors smoke tests in vLLM get
@@ -25,13 +25,16 @@ all the way through model load and then fail during processor initialization.
 
 ## Intentional Divergences
 
-- Tracks upstream `mistral-common 1.11.2` from PyPI instead of the older AUR
+- Tracks upstream `mistral-common 1.11.7` from PyPI instead of the older AUR
   baseline because the older lane does not export `ReasoningEffort`.
 - Keeps the package pure-Python and architecture-independent; there are no
   applicable Strix-specific native optimization flags to carry here.
 - Depends explicitly on `python-gfx1151`, `python-numpy-gfx1151`, and
   `python-pillow-gfx1151` so the local inference stack stays on the
   repo-managed Python and multimodal preprocessing closure.
+- Depends on `python-pycountry` because 1.11.7 requires
+  `pydantic-extra-types[pycountry]`, and Arch `python-pydantic-extra-types`
+  does not pull `pycountry` in.
 
 ## Update Notes
 
@@ -44,3 +47,6 @@ all the way through model load and then fail during processor initialization.
   story intentionally changes.
 - After any update, rerun the Gemma 4 vLLM smoke test on the host rather than
   stopping at `import mistral_common`.
+- 1.11.7 is the generation-C W2A pick (#110). 1.12.0 is rejected: it adds new
+  validation raises for malformed tool calls, a validation mode, and
+  image-loading changes that vLLM 0.30 CI did not test.

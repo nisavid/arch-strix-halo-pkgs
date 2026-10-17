@@ -12,6 +12,7 @@ import textwrap
 import tomllib
 from pathlib import Path
 
+from recipe_policy import load_recipe_policy
 from recipe_repo import RECIPE_ROOT_ENV_VAR, resolve_recipe_dir, resolve_recipe_root
 
 try:
@@ -117,6 +118,71 @@ _setup_compiler_env() {
     )
 
 
+def build_jobs_snippet() -> str:
+    """Shell helper that reads the job cap from makepkg's MAKEFLAGS.
+
+    A host or build-root makepkg.conf caps parallelism there, and an explicit
+    -j or MAX_JOBS in build() overrides every other cap, so builds must not
+    hardcode $(nproc).
+    """
+    return textwrap.dedent(
+        """\
+_build_jobs() {
+  # Like GNU make, accept grouped short options (-kj4) and let the last job
+  # option win; a bare -j (unlimited) or no job option falls back to nproc.
+  local _jobs= _word _flags _i
+  local -a _words
+  read -ra _words <<<"${MAKEFLAGS:-}"
+  for ((_i = 0; _i < ${#_words[@]}; _i++)); do
+    _word=${_words[_i]}
+    case $_word in
+      --) break ;;
+      --jobs=*) _jobs=${_word#--jobs=} ;;
+      --jobs)
+        _jobs=
+        if [[ ${_words[_i + 1]:-} =~ ^[0-9]+$ ]]; then
+          _i=$((_i + 1))
+          _jobs=${_words[_i]}
+        fi
+        ;;
+      --*) ;;
+      -*)
+        _flags=${_word#-}
+        while [[ -n $_flags ]]; do
+          case ${_flags:0:1} in
+            j)
+              _jobs=${_flags:1}
+              if [[ -z $_jobs && ${_words[_i + 1]:-} =~ ^[0-9]+$ ]]; then
+                _i=$((_i + 1))
+                _jobs=${_words[_i]}
+              fi
+              break
+              ;;
+            [CfIoW])
+              # These take an argument, attached or in the next word.
+              if [[ -z ${_flags:1} ]]; then
+                _i=$((_i + 1))
+              fi
+              break
+              ;;
+            [lO]) break ;;
+          esac
+          _flags=${_flags:1}
+        done
+        ;;
+    esac
+  done
+  if [[ $_jobs =~ ^[1-9][0-9]*$ ]]; then
+    printf '%s\\n' "$_jobs"
+  else
+    nproc
+  fi
+}
+
+"""
+    )
+
+
 def render_source_refs(policy_pkg: dict, recipe_pkg: dict) -> tuple[str, str]:
     template = policy_pkg["template"]
     if template == "meta-package":
@@ -162,6 +228,103 @@ def render_source_refs(policy_pkg: dict, recipe_pkg: dict) -> tuple[str, str]:
             print("HINT: add one checksum for the generated source URL in policies/recipe-packages.toml.", file=sys.stderr)
             raise SystemExit(2)
     return bash_array([source_ref] + extra_sources), bash_array(sha256sums + extra_sha256sums)
+
+
+def vllm_source_patch_sentinels(policy_pkg: dict) -> list[tuple[str, str, str]]:
+    """Resolve the policy's sentinels for the vLLM patches after the local carry.
+
+    The vLLM PKGBUILD re-extracts and repatches the source only when a sentinel
+    is missing from the tree, so a patch that no sentinel covers is skipped
+    silently on a reused src/ tree that predates it. Every patch after the
+    first (the local carry, which the template's built-in sentinels cover)
+    therefore needs one `source_patch_sentinels` entry, keyed by patch name:
+
+      {patch = NAME, text = FIXED_STRING, path = FILE}
+          FILE contains FIXED_STRING only once the patch is applied.
+      {patch = NAME, guarded_by = [NAMES], reason = WHY}
+          An explicit exemption for a patch that leaves nothing to grep for,
+          such as one that only deletes lines. The series is applied in order
+          on a clean tree, so a later patch with a text sentinel guards it.
+
+    Returns (patch, text, path) for each text sentinel, in series order.
+    """
+
+    def refuse(code: str, message: str) -> None:
+        print(f"{code}: {message}", file=sys.stderr)
+        print(
+            "HINT: give every source patch after the local carry one "
+            "source_patch_sentinels entry in policies/recipe-packages.toml.",
+            file=sys.stderr,
+        )
+        raise SystemExit(2)
+
+    later_patches = list(policy_pkg.get("source_patches", []))[1:]
+    entries: dict[str, dict] = {}
+    for entry in policy_pkg.get("source_patch_sentinels", []):
+        name = entry.get("patch") if isinstance(entry, dict) else None
+        if not name:
+            refuse("SOURCE_PATCH_SENTINEL_INVALID", f"entry without a patch name: {entry!r}")
+        if name in entries:
+            refuse("SOURCE_PATCH_SENTINEL_INVALID", f"more than one entry for {name}")
+        if name not in later_patches:
+            refuse(
+                "SOURCE_PATCH_SENTINEL_INVALID",
+                f"{name} is not a source patch after the local carry",
+            )
+        entries[name] = entry
+
+    resolved: list[tuple[str, str, str]] = []
+    for name in later_patches:
+        entry = entries.get(name)
+        if entry is None:
+            refuse(
+                "SOURCE_PATCH_SENTINEL_MISSING",
+                f"{name} has neither a sentinel nor an exemption",
+            )
+        if "guarded_by" in entry:
+            if set(entry) != {"patch", "guarded_by", "reason"} or not str(entry["reason"]).strip():
+                refuse(
+                    "SOURCE_PATCH_SENTINEL_INVALID",
+                    f"{name}: an exemption takes guarded_by and a reason, nothing else",
+                )
+            continue
+        sentinel, sentinel_path = entry.get("text", ""), entry.get("path", "")
+        if (
+            set(entry) != {"patch", "text", "path"}
+            or not sentinel
+            or "'" in sentinel
+            or "\n" in sentinel
+            or not sentinel_path.strip()
+            or any(char.isspace() or char == "'" for char in sentinel_path)
+        ):
+            refuse(
+                "SOURCE_PATCH_SENTINEL_INVALID",
+                f"{name}: a sentinel is a single-line fixed string without single "
+                "quotes plus the path of the file that gains it",
+            )
+        resolved.append((name, sentinel, sentinel_path))
+
+    with_text = {name for name, _, _ in resolved}
+    for name in later_patches:
+        entry = entries[name]
+        if "guarded_by" not in entry:
+            continue
+        guards = entry["guarded_by"]
+        if not isinstance(guards, list) or not guards:
+            refuse("SOURCE_PATCH_SENTINEL_INVALID", f"{name}: guarded_by names no patch")
+        unknown = [guard for guard in guards if guard not in with_text]
+        if unknown:
+            refuse(
+                "SOURCE_PATCH_SENTINEL_INVALID",
+                f"{name}: guarded_by names patches without a text sentinel: {unknown}",
+            )
+        if not any(later_patches.index(guard) > later_patches.index(name) for guard in guards):
+            refuse(
+                "SOURCE_PATCH_SENTINEL_INVALID",
+                f"{name}: guarded_by needs a later patch, because only a later "
+                "patch's sentinel is missing from a tree that lacks this one",
+            )
+    return resolved
 
 
 def slugify_step(step: int) -> str:
@@ -232,18 +395,173 @@ def preserved_pkgrel(package_name: str, version: str) -> int:
     return int(pkgrel_match.group(1))
 
 
+LEMONADE_LLAMACPP_ROCM_BIN = "/usr/bin/llama-server-hip-gfx1151"
+LEMONADE_LLAMACPP_VULKAN_BIN = "/usr/bin/llama-server-vulkan-gfx1151"
+# Connections to the loopback discard port are refused, so a model registry
+# request sent here fails at once instead of reaching the network.
+LEMONADE_BLACKHOLE_ENDPOINT = "http://127.0.0.1:9"
+
+
+LEMONADE_LLAMACPP_ENV_FILE = "/usr/lib/lemonade/llamacpp-gfx1151.env"
+
+
 def lemonade_llamacpp_env_lines() -> list[str]:
+    """Return the package env file for the packaged llama.cpp backends.
+
+    lemond reads LEMONADE_LLAMACPP_*_BIN from its environment ahead of
+    config.json on every backend lookup, and the system-managed metadata patch
+    reads the version and release URL only from the environment. The
+    30-env-files.conf drop-in loads this file last.
+    """
     hip_rev = sibling_package_upstream_revision("llama.cpp-hip-gfx1151")
     vulkan_rev = sibling_package_upstream_revision("llama.cpp-vulkan-gfx1151")
     return [
-        "LEMONADE_LLAMACPP_ROCM_BIN=/usr/bin/llama-server-hip-gfx1151",
-        "LEMONADE_LLAMACPP_VULKAN_BIN=/usr/bin/llama-server-vulkan-gfx1151",
+        "# Packaged llama.cpp backends for lemond. lemond.service.d/30-env-files.conf",
+        "# loads this file last. To override a key, add an EnvironmentFile= in a",
+        "# drop-in under /etc/systemd/system/lemond.service.d/ that sorts after it.",
+        f"LEMONADE_LLAMACPP_ROCM_BIN={LEMONADE_LLAMACPP_ROCM_BIN}",
+        f"LEMONADE_LLAMACPP_VULKAN_BIN={LEMONADE_LLAMACPP_VULKAN_BIN}",
         f"LEMONADE_LLAMACPP_ROCM_VERSION={hip_rev}",
         f"LEMONADE_LLAMACPP_VULKAN_VERSION={vulkan_rev}",
         f"LEMONADE_LLAMACPP_ROCM_RELEASE_URL=https://github.com/ggml-org/llama.cpp/releases/tag/{hip_rev}",
         f"LEMONADE_LLAMACPP_VULKAN_RELEASE_URL=https://github.com/ggml-org/llama.cpp/releases/tag/{vulkan_rev}",
-        f"LEMONADE_LLAMACPP_ROCM_LABEL=System llama-server-hip-gfx1151 llama.cpp {hip_rev}",
-        f"LEMONADE_LLAMACPP_VULKAN_LABEL=System llama-server-vulkan-gfx1151 llama.cpp {vulkan_rev}",
+    ]
+
+
+def lemonade_env_files_dropin_lines() -> list[str]:
+    """Return the lemond.service drop-in that owns the EnvironmentFile= order.
+
+    Upstream's 11.9 unit lists only EnvironmentFile=-/etc/default/lemond, and
+    the build check fails if it lists anything else, because the reset here
+    would drop it.
+    """
+    return [
+        "# lemonade-server owns the whole EnvironmentFile= list of lemond.service.",
+        "# systemd reads the files in this order, a later file overrides an earlier",
+        "# one, and any EnvironmentFile= value overrides an Environment= value, such",
+        "# as the 20-no-remote-model-fetch.conf blackholes.",
+        "[Service]",
+        "# Clear the list first. systemd keeps a repeated path at its first position,",
+        "# so listing upstream's /etc/default/lemond again without this reset would",
+        "# not move it after conf.d. The build fails if upstream's unit lists any",
+        "# other EnvironmentFile=, which this reset would drop.",
+        "EnvironmentFile=",
+        "# Optional settings in the pre-11.9 location, including the packaged",
+        "# zz-secrets.conf placeholder, read in glob order.",
+        "EnvironmentFile=-/etc/lemonade/conf.d/*.conf",
+        "# Optional: upstream's env file for HF_TOKEN, LEMONADE_API_KEY, and",
+        "# LEMONADE_ADMIN_API_KEY. It overrides conf.d.",
+        "EnvironmentFile=-/etc/default/lemond",
+        "# Required: the packaged llama.cpp backends, read last so that a stale",
+        "# LEMONADE_LLAMACPP_* key in a file above cannot replace them. To override",
+        "# one, add an EnvironmentFile= in a drop-in under",
+        "# /etc/systemd/system/lemond.service.d/ that sorts after this one; an",
+        "# Environment= line cannot, because every env file overrides it.",
+        f"EnvironmentFile={LEMONADE_LLAMACPP_ENV_FILE}",
+    ]
+
+
+def lemonade_legacy_secrets_placeholder_lines() -> list[str]:
+    """Return upstream's 11.7 zz-secrets.conf placeholder, byte for byte.
+
+    Shipping the same bytes as 11.7 keeps pacman from writing a .pacnew next
+    to an owner-edited copy, which stays in place and keeps loading through
+    the conf.d glob.
+    """
+    return [
+        "# Installed as /etc/lemonade/conf.d/zz-secrets.conf so it loads after other",
+        "# drop-ins and keeps secrets separate from the base config file.",
+        "#LEMONADE_API_KEY=",
+    ]
+
+
+def lemonade_distro_defaults() -> dict:
+    """Return the sparse /usr/share/lemonade/defaults.json overlay.
+
+    lemond deep-merges this file over its built-in defaults on every start,
+    under config.json. It fills keys that config.json lacks, but never
+    overrides a key config.json sets. Since Lemonade 11.9, every config write
+    also prunes config.json keys that equal these merged defaults. It does not
+    set host, port, broadcast, or any API-key setting; those stay with the
+    host.
+    """
+    return {
+        "offline": True,
+        "no_fetch_executables": True,
+        # Upstream's default already; pinned so an upstream flip cannot turn
+        # on implicit model updates.
+        "auto_update_models": False,
+        # Pins count toward residency, so a slot limit would refuse every new
+        # load once the pins fill it; the GTT-aware occupancy budget is the
+        # admission bound instead.
+        "max_loaded_models": -1,
+        "llamacpp": {
+            # --no-mmap in the llama.cpp args stops lemond from adding its
+            # iGPU "--load-mode none" default, a flag the packaged llama.cpp
+            # does not accept.
+            "args": "--no-mmap",
+            "backend": "rocm",
+            "prefer_system": False,
+            "rocm_bin": LEMONADE_LLAMACPP_ROCM_BIN,
+            "vulkan_bin": LEMONADE_LLAMACPP_VULKAN_BIN,
+        },
+    }
+
+
+def lemond_unit_check_snippet() -> str:
+    """Return a shell function that fails unless the unit keeps 11.9's layout.
+
+    lemond's config dir is $STATE_DIRECTORY and its cache dir is
+    $CACHE_DIRECTORY only when ExecStart passes no cache-dir argument and no
+    LEMONADE_CACHE_DIR, HOME, or XDG_* override applies. The unit must also
+    list exactly one EnvironmentFile=, upstream's -/etc/default/lemond,
+    because 30-env-files.conf resets the list and would drop any other.
+    Upstream must install no lemond.service.d drop-in either: the reset would
+    also drop an EnvironmentFile= from one that sorts before 30-env-files.conf.
+    The package runs this check before it installs its own drop-ins.
+    """
+    return """_check_lemond_unit() {
+  local _unit="$1" _line
+  for _line in \\
+    'StateDirectory=lemonade' \\
+    'CacheDirectory=lemonade' \\
+    'CacheDirectoryMode=0755' \\
+    'EnvironmentFile=-/etc/default/lemond' \\
+    'ExecStart=/usr/bin/lemond'; do
+    if ! grep -qxF -- "${_line}" "${_unit}"; then
+      echo "LEMOND_UNIT_LAYOUT: ${_unit} lacks ${_line}" >&2
+      return 1
+    fi
+  done
+  if [[ $(grep -cE '^[[:space:]]*ExecStart[[:space:]]*=' "${_unit}") -ne 1 ]] ||
+    grep -qE '^[[:space:]]*Environment[[:space:]]*=.*(LEMONADE_CACHE_DIR|HOME|XDG_[A-Z_]+)=' "${_unit}"; then
+    echo "LEMOND_UNIT_LAYOUT: ${_unit} overrides lemond's config or cache dir" >&2
+    return 1
+  fi
+  if [[ $(grep -cE '^[[:space:]]*EnvironmentFile[[:space:]]*=' "${_unit}") -ne 1 ]]; then
+    echo "LEMOND_UNIT_LAYOUT: ${_unit} lists an EnvironmentFile= that 30-env-files.conf would drop" >&2
+    return 1
+  fi
+  # makepkg runs package() under errexit with an ERR trap, and find exits
+  # nonzero on a missing directory, so only search a drop-in dir that exists.
+  local _dropin=
+  if [[ -d ${_unit}.d ]]; then
+    _dropin=$(find "${_unit}.d" -mindepth 1 -print -quit)
+  fi
+  if [[ -n ${_dropin} ]]; then
+    echo "LEMOND_UNIT_LAYOUT: upstream installs ${_dropin}; 30-env-files.conf would drop its EnvironmentFile= lines" >&2
+    return 1
+  fi
+}
+"""
+
+
+def lemonade_no_remote_model_fetch_dropin_lines() -> list[str]:
+    return [
+        "[Service]",
+        f"Environment=HF_ENDPOINT={LEMONADE_BLACKHOLE_ENDPOINT}",
+        f"Environment=MODELSCOPE_ENDPOINT={LEMONADE_BLACKHOLE_ENDPOINT}",
+        f"Environment=MODEL_ENDPOINT={LEMONADE_BLACKHOLE_ENDPOINT}",
     ]
 
 
@@ -536,7 +854,7 @@ prepare() {{
 build() {{
   cd "$srcdir/{src_subdir}"
 
-  {compiler_env_snippet(compiler_root)}  _setup_compiler_env
+  {compiler_env_snippet(compiler_root)}  {build_jobs_snippet()}  _setup_compiler_env
   local amdclang="$CC"
   local amdclangxx="$CXX"
   local build_root="$srcdir/build-{package_name}"
@@ -553,9 +871,10 @@ build() {{
     -DCMAKE_C_FLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument" \\
     -DCMAKE_CXX_FLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument" \\
     -DBUILD_ELECTRON_APP=OFF \\
-    -DBUILD_WEB_APP=ON
+    -DBUILD_WEB_APP=ON \\
+    -DBUILD_TESTING=OFF
 
-  cmake --build "${{build_root}}" -j"$(nproc)"
+  cmake --build "${{build_root}}" -j"$(_build_jobs)"
 }}
 
 package() {{
@@ -564,9 +883,12 @@ package() {{
 
   DESTDIR="$pkgdir" cmake --install "${{build_root}}"
 
+  # The web-app MetaInfo names lemonade-web-app.desktop as its launchable.
+  # This package removes that desktop entry, so drop the dangling component.
   rm -rf "$pkgdir/usr/share/applications" \\
          "$pkgdir/usr/share/pixmaps" \\
          "$pkgdir/usr/share/icons" \\
+         "$pkgdir/usr/share/metainfo" \\
          "$pkgdir/usr/share/lemonade-app" \\
          "$pkgdir/usr/bin/lemonade-app"
 
@@ -574,8 +896,42 @@ package() {{
     find "$pkgdir/usr/share" -type f \\( -name '*.desktop' -o -name '*.png' -o -name '*.svg' \\) -delete
   fi
 
-  install -Dm644 /dev/stdin "$pkgdir/etc/lemonade/conf.d/10-llamacpp-gfx1151.conf" <<'EOF'
+  # Upstream's unit splits the config dir (StateDirectory) from the cache
+  # dir (CacheDirectory), lists only /etc/default/lemond as its
+  # EnvironmentFile=, and ships no lemond.service.d drop-in; fail the build
+  # if it stops doing so.
+{textwrap.indent(lemond_unit_check_snippet(), '  ').rstrip()}
+  _check_lemond_unit "$pkgdir/usr/lib/systemd/system/lemond.service"
+
+  install -Dm644 /dev/stdin "$pkgdir{LEMONADE_LLAMACPP_ENV_FILE}" <<'EOF'
 {chr(10).join(lemonade_llamacpp_env_lines())}
+EOF
+
+  # Keep shipping 11.7's secrets placeholder as a backup file, so an
+  # owner-edited copy stays in place and keeps loading through conf.d.
+  install -Dm660 /dev/stdin "$pkgdir/etc/lemonade/conf.d/zz-secrets.conf" <<'EOF'
+{chr(10).join(lemonade_legacy_secrets_placeholder_lines())}
+EOF
+
+  # Replace upstream's full copy of its built-in defaults with a sparse distro
+  # overlay. lemond merges it over the built-in defaults and under config.json.
+  install -Dm644 /dev/stdin "$pkgdir/usr/share/lemonade/defaults.json" <<'EOF'
+{json.dumps(lemonade_distro_defaults(), indent=2, sort_keys=True)}
+EOF
+
+  # Send Hugging Face and ModelScope requests from lemond and its llama-server
+  # children to a refused loopback port, so no model is fetched implicitly.
+  # llama-server reads MODEL_ENDPOINT ahead of HF_ENDPOINT, so set both.
+  # An owner env file can still override these on purpose, because systemd
+  # applies EnvironmentFile= after Environment=.
+  install -Dm644 /dev/stdin "$pkgdir/usr/lib/systemd/system/lemond.service.d/20-no-remote-model-fetch.conf" <<'EOF'
+{chr(10).join(lemonade_no_remote_model_fetch_dropin_lines())}
+EOF
+
+  # Own the whole EnvironmentFile= order: conf.d, then /etc/default/lemond,
+  # then the packaged llama.cpp env file.
+  install -Dm644 /dev/stdin "$pkgdir/usr/lib/systemd/system/lemond.service.d/30-env-files.conf" <<'EOF'
+{chr(10).join(lemonade_env_files_dropin_lines())}
 EOF
 
   install -Dm644 "$srcdir/{src_subdir}/LICENSE" "$pkgdir/usr/share/licenses/{package_name}/LICENSE"
@@ -615,7 +971,7 @@ prepare() {{
 build() {{
   cd "$srcdir/{src_subdir}"
 
-  {compiler_env_snippet(compiler_root)}  _setup_compiler_env
+  {compiler_env_snippet(compiler_root)}  {build_jobs_snippet()}  _setup_compiler_env
   local amdclang="$CC"
   local amdclangxx="$CXX"
   local build_root="$srcdir/build-{package_name}"
@@ -642,7 +998,7 @@ build() {{
     -DBUILD_ELECTRON_APP=OFF \
     -DBUILD_WEB_APP=OFF
 
-  cmake --build "${{build_root}}" --target tauri-app -j"$(nproc)"
+  cmake --build "${{build_root}}" --target tauri-app -j"$(_build_jobs)"
 }}
 
 package() {{
@@ -698,11 +1054,11 @@ EOF
 build() {{
   cd "$srcdir/{src_subdir}"
 
-  {compiler_env_snippet(compiler_root)}  _setup_compiler_env
+  {compiler_env_snippet(compiler_root)}  {build_jobs_snippet()}  _setup_compiler_env
   local amdclang="{compiler_root}/amdclang"
   local amdclangxx="{compiler_root}/amdclang++"
 
-  scons -j"$(nproc)" \\
+  scons -j"$(_build_jobs)" \\
     ALM_CC="${{amdclang}}" \\
     ALM_CXX="${{amdclangxx}}" \\
     --arch_config=avx512 \\
@@ -743,7 +1099,7 @@ prepare() {{
 build() {{
   cd "$srcdir/{src_subdir}"
 
-  {compiler_env_snippet(compiler_root)}  _setup_compiler_env
+  {compiler_env_snippet(compiler_root)}  {build_jobs_snippet()}  _setup_compiler_env
   local amdclang="$CC"
   local amdclangxx="$CXX"
   local _debug_prefix="/usr/src/debug/{package_name}"
@@ -773,7 +1129,7 @@ build() {{
 
   make PROFILE_TASK="-S -m test --pgo --timeout=\\$(TESTTIMEOUT)" \\
     EXTRA_CFLAGS="${{_base_cflags}} -famd-opt -Wno-error=unused-command-line-argument" \\
-    -j"$(nproc)"
+    -j"$(_build_jobs)"
 }}
 
 package() {{
@@ -823,15 +1179,25 @@ _vllm_srcdir="{vllm_srcdir}"
 _vllm_tarball="v${{pkgver}}.tar.gz"
 
 """
+        # The local carry is the first patch and follows pkgver; later patches
+        # (for example upstream backports) keep their literal names.
         vllm_patch_vars = ""
-        vllm_patch_apply_lines = "".join(
-            f'  _apply_patch_if_needed "{patch_name}"\n'
-            for patch_name in source_patches
+        vllm_patch_apply_lines = ""
+        for index, patch_name in enumerate(source_patches):
+            if index == 0:
+                vllm_patch_name = patch_name.replace(upstream_version, "${pkgver}")
+                vllm_patch_vars = f'_vllm_source_patch="{vllm_patch_name}"\n'
+                vllm_patch_apply_lines += '  _apply_patch_if_needed "${_vllm_source_patch}"\n'
+            else:
+                vllm_patch_apply_lines += f'  _apply_patch_if_needed "{patch_name}"\n'
+        # Policy-listed sentinels extend the built-in carry sentinels, so a reused
+        # src/ tree that predates a later patch is re-extracted and repatched.
+        # Rendering stops when a later patch has neither a sentinel nor an
+        # exemption.
+        vllm_extra_sentinels = "".join(
+            f" &&\n    grep -Fq '{sentinel}' {sentinel_path}"
+            for _, sentinel, sentinel_path in vllm_source_patch_sentinels(policy_pkg)
         )
-        if len(source_patches) == 1:
-            vllm_patch_name = source_patches[0].replace(upstream_version, "${pkgver}")
-            vllm_patch_vars = f'_vllm_source_patch="{vllm_patch_name}"\n'
-            vllm_patch_apply_lines = '  _apply_patch_if_needed "${_vllm_source_patch}"\n'
         if source_patches:
             patch_helper = """\
 __PATCH_VARS__
@@ -861,26 +1227,18 @@ _source_tree_has_all_source_patches() {
   [[ -f pyproject.toml ]] || return 1
   grep -Fq 'requires-python = ">=3.10,<3.15"' pyproject.toml &&
     grep -Fq 'def _selected_subcommand() -> str | None:' vllm/entrypoints/cli/main.py &&
-    grep -Fq 'using vllm_bfloat16 = __hip_bfloat16;' csrc/cuda_vec_utils.cuh &&
-    grep -Fq 'expected_hipified_path' cmake/hipify.py &&
-    grep -Fq 'return on_mi3xx() or on_gfx1x()' vllm/_aiter_ops.py &&
+    grep -Fq 'using vllm_bfloat16 = __hip_bfloat16;' \
+      csrc/libtorch_stable/cuda_vec_utils.cuh &&
     grep -Fq 'def torchao_version_at_least(torchao_version: str) -> bool:' \
       vllm/model_executor/layers/quantization/torchao_utils.py &&
-    grep -Fq 'Hybrid models need TRITON_ATTN' vllm/platforms/rocm.py &&
     grep -Fq 'Use PyTorch top-k/top-p filtering on large-vocabulary ROCm' \
       vllm/v1/sample/ops/topk_topp_sampler.py &&
     grep -Fq 'Keep valid_count type stable across branches' \
       vllm/v1/spec_decode/utils.py &&
-    grep -Fq 'def _triton_knobs():' \
-      vllm/triton_utils/jit_monitor.py &&
-    grep -Fq 'knobs = _triton_knobs()' \
-      vllm/triton_utils/jit_monitor.py &&
-    grep -Fq 'def update_dflash(config_dict: dict, pre_trained_config: dict) -> None:' \
-      vllm/transformers_utils/configs/speculators/algos.py &&
-    grep -Fq 'def _flash_attn_uses_triton_rocm() -> bool:' \
-      vllm/platforms/rocm.py &&
     grep -Fq 'def rocm_flash_attn_supports_vllm_varlen_api() -> bool:' \
-      vllm/v1/attention/backends/fa_utils.py
+      vllm/v1/attention/backends/fa_utils.py &&
+    grep -Fq 'NOTE(gfx1151): On AMD HIP, restrict autotune search' \
+      vllm/third_party/flash_linear_attention/ops/chunk_delta_h.py__EXTRA_SENTINELS__
 }
 
 _apply_all_source_patches() {
@@ -893,9 +1251,9 @@ _apply_all_source_patches() {
     return 0
   fi
 
-  # Later source patches touch files changed by earlier ones, so reverse-dry-run
-  # checks are not reliable on an already-patched tree. Re-extract and apply the
-  # series once on a known-clean source tree whenever any sentinel is missing.
+  # The sentinels are the only record of which patches a reused tree carries.
+  # When any is missing, re-extract the release tarball and apply the whole
+  # series in order on that clean tree instead of patching on top.
   _reset_source_tree
   cd "${srcdir}/${_vllm_srcdir}"
 
@@ -905,7 +1263,7 @@ __PATCH_APPLY_LINES__
 """.replace("__PATCH_VARS__", vllm_patch_vars.rstrip()).replace(
                 "__PATCH_APPLY_LINES__",
                 vllm_patch_apply_lines,
-            )
+            ).replace("__EXTRA_SENTINELS__", vllm_extra_sentinels)
             patch_prepare_cmds = "  _apply_all_source_patches\n"
             patch_build_cmds = "_apply_all_source_patches\n"
         build_body = f"""\
@@ -956,21 +1314,38 @@ build() {{
     echo "VLLM_HIP_VERSION_MISSING: hipconfig failed" >&2
     return 1
   fi
-  export CMAKE_ARGS="-DHIP_VERSION=${{_hip_version%%-*}} ${{CMAKE_ARGS:-}}"
+  # CXX resolves to the ccache wrapper symlink. Torch's LoadHIP.cmake loads
+  # ROCm's FindHIP.cmake, which takes HIP_CLANG_PATH from the realpath of
+  # HIP_CXX_COMPILER (default CMAKE_CXX_COMPILER), i.e. the ccache binary's
+  # directory, and bakes it into the HIP shared-module link rule. Name the
+  # ROCm LLVM driver so hipcc links _C.abi3.so with ROCm clang.
+  export CMAKE_ARGS="-DHIP_VERSION=${{_hip_version%%-*}} -DHIP_CXX_COMPILER=/opt/rocm/lib/llvm/bin/amdclang++ ${{CMAKE_ARGS:-}}"
   export VLLM_VERSION_OVERRIDE="${{pkgver}}"
-  export VLLM_ROCM_USE_AITER=1
+
+  # The Rust frontend (vllm-rs) and _rust_tool_parser are optional unless
+  # VLLM_REQUIRE_RUST_FRONTEND is set. This package skips them: cargo is
+  # disabled and rustup may not install the rust-toolchain.toml channel, so
+  # setuptools-rust reports them as failed optional extensions.
+  unset VLLM_REQUIRE_RUST_FRONTEND
+  export CARGO=/usr/bin/false
+  export CARGO_NET_OFFLINE=true
+  export RUSTUP_AUTO_INSTALL=0
 
   rm -rf .deps/triton_kernels-*
 
   mkdir -p dist
   rm -f dist/*.whl
 
-  if ! pip wheel . --no-build-isolation --no-deps --wheel-dir dist -v; then
-    unset VLLM_ROCM_USE_AITER
-    python setup.py clean 2>/dev/null || true
-    find . -name "*.so" -path "*/build/*" -delete 2>/dev/null || true
-    pip wheel . --no-build-isolation --no-deps --wheel-dir dist -v
-  fi
+  pip wheel . --no-build-isolation --no-deps --wheel-dir dist -v
+
+  local _wheel _members
+  for _wheel in dist/*.whl; do
+    _members="$(python -c 'import sys, zipfile; print("\\n".join(zipfile.ZipFile(sys.argv[1]).namelist()))' "${{_wheel}}")"
+    if grep -Eq '^vllm/(_rust_[^/]*[.]so|vllm-rs)$' <<<"${{_members}}"; then
+      echo "VLLM_RUST_ARTIFACT_UNEXPECTED: ${{_wheel}} contains Rust extensions this package skips" >&2
+      return 1
+    fi
+  done
 }}
 
 package() {{
@@ -1035,7 +1410,7 @@ build() {{
     esac
   done < <(env -0)
 
-  {compiler_env_snippet(compiler_root)}  _setup_compiler_env
+  {compiler_env_snippet(compiler_root)}  {build_jobs_snippet()}  _setup_compiler_env
   local _rocm_llvm_bin="{compiler_root}"
   export PATH="${{PATH}}:/opt/rocm/bin"
   # PyTorch also invokes non-CMake compiler probes; keep those on ROCm LLVM.
@@ -1053,7 +1428,11 @@ build() {{
     export CMAKE_CXX_COMPILER_LAUNCHER="$(command -v ccache)"
   fi
   export CFLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument"
-  export CXXFLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument"
+  # GCC 16 libstdc++ <format> (pulled in by <chrono> under C++20) spells
+  # [[__gnu__::__noinline__]], and HIP's host_defines.h defines __noinline__
+  # as a macro in plain C++ sources that include hip_runtime.h. Parse <format>
+  # first so the macro cannot reach it; the include is empty before C++20.
+  export CXXFLAGS="-O3 -march=native -famd-opt -Wno-error=unused-command-line-argument -include format"
   export LDFLAGS="-fuse-ld=lld"
   export PYTORCH_ROCM_ARCH="gfx1151"
   export USE_ROCM=1
@@ -1062,6 +1441,9 @@ build() {{
   export OpenBLAS_HOME="${{OpenBLAS_HOME:-/usr}}"
   export USE_LAPACK=1
   export USE_ROCM_CK_GEMM=1
+  # The generation-C foundation ships no MAGMA; build without it so the result
+  # never depends on whichever MAGMA a build host happens to have.
+  export USE_MAGMA=0
   export AOTRITON_INSTALLED_PREFIX="/usr"
   export USE_CUDA=0
   export USE_NCCL=0
@@ -1074,7 +1456,8 @@ build() {{
   export ROCM_PATH="/opt/rocm"
   export HIP_CLANG_PATH="${{_rocm_llvm_bin}}"
   export CMAKE_PREFIX_PATH="${{OpenBLAS_HOME}}:/opt/rocm"
-  export MAX_JOBS="$(nproc)"
+  # Honor a job cap from makepkg.conf; the build root pins it for memory.
+  export MAX_JOBS="${{MAX_JOBS:-$(_build_jobs)}}"
   export PYTORCH_BUILD_VERSION="{upstream_version}"
   export PYTORCH_BUILD_NUMBER=1
 
@@ -1308,7 +1691,22 @@ PY
   patchelf --set-rpath "${{_rpath}}" "${{_extension}}"
 }}"""
     elif template == "python-project-triton-rocm":
-        python_subdir = f"{src_subdir}/python"
+        # Triton 3.8 keeps pyproject.toml and setup.py at the repo root.
+        python_subdir = src_subdir
+        # The pinned upstream LLVM build Triton's cmake/llvm-info.json names,
+        # staged through source=() so the build never downloads it.
+        llvm_dir = policy_pkg.get("triton_llvm_dir")
+        if not llvm_dir:
+            print(
+                f"TRITON_LLVM_DIR_MISSING: {package_name} needs triton_llvm_dir",
+                file=sys.stderr,
+            )
+            print(
+                "HINT: pin Triton's LLVM tarball in source_refs and name its unpacked "
+                "top-level directory in triton_llvm_dir.",
+                file=sys.stderr,
+            )
+            raise SystemExit(2)
         source_patches = policy_pkg.get("source_patches", [])
         if source_patches:
             prepare_lines.extend(
@@ -1334,7 +1732,14 @@ build() {{
   {compiler_env_snippet(compiler_root)}  _setup_compiler_env
   export ROCM_HOME="/opt/rocm"
   export ROCM_PATH="/opt/rocm"
-  unset LLVM_SYSPATH
+  # Offline build: LLVM comes from the pinned source tarball, nlohmann-json
+  # from the system, and nothing else is downloaded.
+  export TRITON_OFFLINE_BUILD=ON
+  export LLVM_SYSPATH="$srcdir/{llvm_dir}"
+  export JSON_SYSPATH=/usr
+  export TRITON_HOME="$srcdir/.triton-home"
+  # Each libtriton and triton-* tool link pulls in static LLVM and MLIR.
+  export TRITON_PARALLEL_LINK_JOBS="${{TRITON_PARALLEL_LINK_JOBS:-2}}"
   export TRITON_BUILD_PROTON=OFF
   if command -v ccache >/dev/null 2>&1; then
     export TRITON_BUILD_WITH_CCACHE=true
@@ -1368,12 +1773,6 @@ package() {{
                     'git -C "$srcdir/{src_subdir}" submodule update --init --recursive --force'.format(src_subdir=src_subdir),
                 ]
             )
-        prepare_lines.extend(
-            [
-                "# Keep vendored Triton aligned with the standalone Python-3.14 compatibility fix we already apply in python-triton-gfx1151.",
-                'git -C "$srcdir/{src_subdir}/third_party/triton" cherry-pick -n c44b870bdd9e1ea8933fd4057b6b59a5e6e5407b || true'.format(src_subdir=src_subdir),
-            ]
-        )
         for patch_name in policy_pkg.get("source_patches", []):
             prepare_lines.extend(
                 [
@@ -1386,6 +1785,8 @@ package() {{
 build() {{
   {compiler_env_snippet(compiler_root)}  _setup_compiler_env
   export TRITON_HOME="$srcdir/.triton-home"
+  # The nested vendored Triton links libtriton and its tools against static LLVM and MLIR.
+  export TRITON_PARALLEL_LINK_JOBS="${{TRITON_PARALLEL_LINK_JOBS:-2}}"
   export PIP_CACHE_DIR="$srcdir/.pip-cache"
   export PYTHONPYCACHEPREFIX="$srcdir/.python-pycache"
   if [[ -n "${{AOTRITON_REUSE_BUILD:-}}" && -f "$srcdir/build/build.ninja" ]]; then
@@ -1493,7 +1894,9 @@ build() {{
 
   {compiler_env_snippet(compiler_root)}  _setup_compiler_env
   local _debug_prefix="/usr/src/debug/{package_name}"
-{cargo_home_exports}  export CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER="$CC"
+{cargo_home_exports}  # Use the installed Rust toolchain; a rustup proxy must never download one.
+  export RUSTUP_AUTO_INSTALL=0
+  export CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER="$CC"
   export RUSTFLAGS="-C target-cpu=znver5 -C opt-level=3 --remap-path-prefix=$srcdir=${{_debug_prefix}}"
   unset CFLAGS CXXFLAGS LDFLAGS
 
@@ -1626,12 +2029,58 @@ package() {{
   # flags avoids compile-only probes treating it as unused.
   export LDFLAGS="${{_base_ldflags:+${{_base_ldflags}} }}-famd-opt"
 """
+        drop_lto_helper = ""
+        if policy_pkg.get("drop_lto_from_cflags", False):
+            # C compiles only: CXXFLAGS and LDFLAGS keep makepkg's LTO flags.
+            drop_lto_helper = """\
+# Remove LTO flags from CFLAGS only; the divergence notes in README.md say
+# which C compile needs native objects.
+_drop_lto_from_cflags() {
+  local _flag _kept=()
+  for _flag in ${CFLAGS:-}; do
+    case "${_flag}" in
+      -flto|-flto=*|-ffat-lto-objects) ;;
+      *) _kept+=("${_flag}") ;;
+    esac
+  done
+  export CFLAGS="${_kept[*]}"
+}
+
+"""
+            native_wheel_build_preamble += "  _drop_lto_from_cflags\n"
+        package_guard_lines = []
+        required_files = policy_pkg.get("wheel_required_files", [])
+        required_strings = policy_pkg.get("wheel_required_strings", [])
+        if required_files or required_strings:
+            package_guard_lines.append(
+                'local _site="$pkgdir$(/usr/bin/python -c \'import sysconfig; print(sysconfig.get_path("platlib"))\')"'
+            )
+        for rel in required_files:
+            package_guard_lines.extend(
+                [
+                    f'if [[ ! -f "${{_site}}/"{shell_quote(rel)} ]]; then',
+                    f"  printf 'wheel is missing %s\\n' {shell_quote(rel)} >&2",
+                    "  return 1",
+                    "fi",
+                ]
+            )
+        for entry in required_strings:
+            rel, text = entry["path"], entry["text"]
+            package_guard_lines.extend(
+                [
+                    f'if ! grep -aqF -- {shell_quote(text)} "${{_site}}/"{shell_quote(rel)}; then',
+                    f"  printf '%s does not contain %s\\n' {shell_quote(rel)} {shell_quote(text)} >&2",
+                    "  return 1",
+                    "fi",
+                ]
+            )
+        package_guards = "".join(f"\n  {line}" for line in package_guard_lines)
         build_env_section = build_env_exports
         if native_wheel_build_preamble and build_env_section.startswith("\n"):
             build_env_section = build_env_section[1:]
         post_build_env_gap = "\n" if (native_wheel_build_preamble or build_env_section or clean_build_outputs) else ""
         build_body = f"""\
-build() {{
+{drop_lto_helper}build() {{
   cd "$srcdir/{src_subdir}"
 
 {native_wheel_build_preamble}{build_env_section}{clean_build_outputs}{post_build_env_gap}  {build_command}
@@ -1639,7 +2088,7 @@ build() {{
 
 package() {{
   cd "$srcdir/{src_subdir}"
-  {installer_command}
+  {installer_command}{package_guards}
 }}"""
     elif template == "python-project-torch-migraphx":
         for patch_name in policy_pkg.get("source_patches", []):
@@ -1707,6 +2156,8 @@ def render_pkgbuild(package_name: str, policy_pkg: dict, recipe_pkg: dict, versi
     makedepends = policy_pkg.get("makedepends", [])
     optdepends = policy_pkg.get("optdepends", [])
     options = policy_pkg.get("options", [])
+    backup = policy_pkg.get("backup", [])
+    backup_line = f"backup={bash_array(backup)}\n" if backup else ""
     license_items = policy_pkg.get("license", [])
     arch_items = policy_pkg.get("arch", ["x86_64"])
     arch_array = "(" + " ".join(f"'{item}'" for item in arch_items) + ")"
@@ -1740,7 +2191,7 @@ options={bash_array(options)}
 provides={bash_array(provides)}
 conflicts={bash_array(conflicts)}
 replaces={bash_array(replaces)}
-source={source_refs}
+{backup_line}source={source_refs}
 sha256sums={sha256sums}
 
 {prepare_body}{method_body}
@@ -1987,7 +2438,7 @@ def main() -> int:
         print(exc, file=sys.stderr)
         return 2
 
-    policy = load_toml(policy_path)
+    policy = load_recipe_policy(policy_path)
     defaults = dict(policy.get("defaults", {}))
     recipe_manifest = load_recipe_manifest(recipe_dir)
     defaults.update(recipe_revision(recipe_root, args.recipe_subdir))

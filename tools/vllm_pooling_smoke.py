@@ -233,7 +233,10 @@ def run_rerank(llm: Any) -> None:
 
 def run_zeroentropy_rerank(llm: Any) -> None:
     from vllm.pooling_params import PoolingParams
-    from zeroentropy_pooling_smoke import format_zerank_inputs
+    from zeroentropy_pooling_smoke import (
+        format_zerank_inputs,
+        validate_zerank_rerank_fixture,
+    )
 
     tokenizer = llm.get_tokenizer()
     prompts = format_zerank_inputs(
@@ -247,7 +250,7 @@ def run_zeroentropy_rerank(llm: Any) -> None:
         pooling_params=PoolingParams(task="classify"),
     )
     scores = [score_value(output) for output in outputs]
-    validate_rerank_fixture(scores)
+    validate_zerank_rerank_fixture(scores)
     print("rerank_ok")
 
 

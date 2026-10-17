@@ -6,8 +6,8 @@
 - Scaffold template: `rust-wheel-pypi`
 - Recipe build method: `cargo`
 - Upstream repo: `https://github.com/huggingface/tokenizers`
-- Package version: `0.22.2`
-- Recipe revision: `a1d7a68 (20260427, 16 commits touching recipe path)`
+- Package version: `0.23.3`
+- Recipe revision: `3f15f9f (20260508, 17 commits touching recipe path)`
 - Recipe steps: `31`
 - Recipe dependencies: `cpython`
 - Recorded reference packages: `cachyos/python-tokenizers`
@@ -37,12 +37,17 @@ znver5 Rust codegen lane as the rest of the optimized local wheel stack.
 
 - Uses the Blackcat Rust-wheel lane for a local Hugging Face tokenizer hot path instead of relying on the generic CachyOS wheel.
 - There is no current Arch extra python-tokenizers package in the checked package databases as of 2026-05-01, so CachyOS is the practical Arch-family baseline.
+- Declares the huggingface-hub range from the packaged metadata as versioned depends, python-huggingface-hub>=1:0.16.4 and python-huggingface-hub<1:3; the CachyOS baseline declares none. The published metadata makes huggingface-hub a hard requirement, and the compiled extension imports huggingface_hub when Tokenizer.from_pretrained is called, so pacman must keep it installed and inside the declared range. Arch packages huggingface-hub under epoch 1, so both bounds carry the epoch.
 
 ## Update Notes
 
 - Check the current Hugging Face tokenizers release and Cachy package before updating; Transformers metadata can constrain this package.
 - On 2026-05-01, reviewed PyPI tokenizers 0.23.1 but kept the package on 0.22.2 because Transformers 5.7.0 declares tokenizers<=0.23.0,>=0.22.0.
 - After publishing a rebuilt package, verify `import tokenizers` and a tiny tokenizer construction through the installed local Python lane.
+- On 2026-09-22, update to tokenizers 0.23.2 for the generation-C W2A closure (#110), built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7. Transformers 5.16.1 requires tokenizers >=0.23.1,<0.24.
+- On 2026-10-10, update to tokenizers 0.23.3 for generation C's model closure move (#183). Its metadata requires huggingface-hub>=0.16.4,<3.0 where 0.23.2 required <2.0, so it is resolver-consistent with Arch's huggingface-hub 2.x. 0.23.3 also drops the truncation early exit present in 0.23.2, which restores every overflowing encoding. Transformers 5.18.0 requires tokenizers >=0.23.1,<0.24.
+- When the packaged metadata changes its huggingface-hub range, change both versioned depends with it and keep the epoch.
+- The 0.23.3 re-render also brought the scaffold back in step with its policy entry and the shared Rust-wheel template, which the 0.23.2-1 scaffold had fallen behind: `libstdc++` joins depends, because the extension links `libstdc++.so.6`, and `build()` sets `RUSTUP_AUTO_INSTALL=0`, so a rustup proxy can never download a toolchain. The policy entry also listed `zlib`; the built 0.23.3 extension links only libstdc++, libgcc_s, libm and libc, so `zlib` was dropped from depends on 2026-10-11. Re-check the extension's `NEEDED` entries with `readelf -d` when the release changes.
 
 ## Maintainer Starting Points
 

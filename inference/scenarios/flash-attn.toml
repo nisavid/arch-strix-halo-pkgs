@@ -138,7 +138,7 @@ value = "flash_attn_ck_varlen_paged_kv_ok"
 [[scenario]]
 id = "flash-attn.triton-amd.backend-import"
 summary = "FlashAttention backend import smoke on the Triton AMD path"
-tags = ["smoke", "flash-attention", "triton-amd"]
+tags = ["smoke", "flash-attention", "triton-amd", "aiter", "exploratory"]
 
 [scenario.given]
 engine = "flash-attn"
@@ -163,7 +163,7 @@ value = "flash_attn_import_ok"
 [[scenario]]
 id = "flash-attn.triton-amd.qkvpacked-tiny"
 summary = "FlashAttention qkvpacked smoke on the Triton AMD path"
-tags = ["smoke", "flash-attention", "triton-amd", "kernel-probe"]
+tags = ["smoke", "flash-attention", "triton-amd", "kernel-probe", "aiter", "exploratory"]
 
 [scenario.given]
 engine = "flash-attn"
@@ -191,7 +191,7 @@ value = "flash_attn_qkvpacked_ok"
 [[scenario]]
 id = "vllm.flash-attn.triton-amd.vit-wrapper"
 summary = "vLLM ViT FlashAttention wrapper selects the installed Triton AMD FlashAttention package"
-tags = ["smoke", "vllm", "flash-attention", "triton-amd", "kernel-probe"]
+tags = ["smoke", "vllm", "flash-attention", "triton-amd", "kernel-probe", "aiter", "exploratory"]
 
 [scenario.given]
 engine = "vllm"

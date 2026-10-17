@@ -7,7 +7,7 @@
 - Recipe build method: `pip`
 - Upstream repo: `https://github.com/giampaolo/psutil`
 - Package version: `7.2.2`
-- Recipe revision: `a1d7a68 (20260427, 16 commits touching recipe path)`
+- Recipe revision: `3f15f9f (20260508, 17 commits touching recipe path)`
 - Recipe steps: `32`
 - Recipe dependencies: `cpython, pytorch`
 - Recorded reference packages: `extra/python-psutil`
@@ -43,6 +43,7 @@ stack rather than relying on the generic distro wheel.
 
 - Check Arch first for release and dependency metadata before updating.
 - After publishing a rebuilt package, verify `import psutil` and a minimal process or virtual-memory probe through the installed local Python lane.
+- On 2026-09-22, bump pkgrel to 2 for the generation-C W2A closure (#110), built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7. The source is unchanged; the rebuild keeps the package out of the previous generation's repo.
 
 ## Maintainer Starting Points
 

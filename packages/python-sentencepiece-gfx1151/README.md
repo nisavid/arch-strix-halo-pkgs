@@ -6,8 +6,8 @@
 - Scaffold template: `native-wheel-pypi`
 - Recipe build method: `pip`
 - Upstream repo: `https://github.com/google/sentencepiece`
-- Package version: `0.2.1`
-- Recipe revision: `a1d7a68 (20260427, 16 commits touching recipe path)`
+- Package version: `0.2.2`
+- Recipe revision: `3f15f9f (20260508, 17 commits touching recipe path)`
 - Recipe steps: `32`
 - Recipe dependencies: `cpython, pytorch`
 - Recorded reference packages: `cachyos/python-sentencepiece, aur/python-sentencepiece, aur/python-sentencepiece-git`
@@ -32,8 +32,8 @@ probing rejects -mllvm as "unused command line argument".
 -famd-opt moved to LDFLAGS (link-time-only driver flag, no-op at
 compile time -- triggers -Werror=unused in compile-only probes).
 
-The bundled-build patch is effective when the built `_sentencepiece` extension
-has no dynamic dependency on host `libsentencepiece.so.0` or
+Upstream builds the bundled library, so the built `_sentencepiece` extension
+must have no dynamic dependency on host `libsentencepiece.so.0` or
 `libsentencepiece_train.so.0`. Treat the repo-built package lane as current
 only after the installed host extension matches that dependency shape.
 
@@ -42,7 +42,8 @@ only after the installed host extension matches that dependency shape.
 
 - The current CachyOS python-sentencepiece package is the closest maintained baseline, while the AUR python-sentencepiece and python-sentencepiece-git packages remain advisory references for patching and split-package expectations.
 - The original recipe fixes a broken pip-installed cmake wrapper inside the venv. In Arch packaging that should translate to using the system cmake toolchain directly.
-- The bundled-build patch prefers the bundled SentencePiece library by default and only uses the system pkg-config sentencepiece path when SENTENCEPIECE_USE_SYSTEM=1 is explicitly set.
+- Since 0.2.2, upstream setup.py always builds the bundled SentencePiece library and never probes pkg-config for a system one, so the former bundled-build patch is gone.
+- The offline-abseil patch makes the bundled CMake build use the abseil-cpp 20260526.0 tree that the sdist ships, and fetch it only when that tree is absent. Drop it when upstream stops fetching over the shipped tree.
 
 ## Intentional Divergences
 
@@ -54,6 +55,7 @@ only after the installed host extension matches that dependency shape.
 - Re-check against Cachy first, then consult the AUR source and git variants if the maintained package lags a needed upstream change.
 - If the upstream build backend changes, keep the package metadata focused on the system cmake/toolchain story rather than reviving venv-local wrapper assumptions.
 - After publishing a rebuilt package, verify the installed host extension with readelf or ldd before treating the host lane as current.
+- On 2026-09-22, update to sentencepiece 0.2.2 for the generation-C W2A closure (#110), built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7. Drop the bundled-build patch: 0.2.2 setup.py no longer probes pkg-config for a system SentencePiece and always builds the bundled library. Add 0001-use-bundled-abseil-cpp-offline.patch: 0.2.2 CMake runs a FetchContent git clone of abseil-cpp 20260526.0 even though the sdist already ships that tree, which fails in an offline build.
 
 ## Maintainer Starting Points
 

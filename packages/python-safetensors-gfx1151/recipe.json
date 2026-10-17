@@ -11,12 +11,13 @@
     "source_patches": [],
     "update_notes": [
       "Check Arch first for release and dependency metadata, then verify Transformers and TorchAO scenario compatibility before updating.",
-      "After publishing a rebuilt package, verify `import safetensors` and a tiny tensor save/load round trip through the installed local Python lane."
+      "After publishing a rebuilt package, verify `import safetensors` and a tiny tensor save/load round trip through the installed local Python lane.",
+      "On 2026-09-22, update to safetensors 0.8.0 for the generation-C W2A closure (#110), built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7. Transformers 5.16.1 requires safetensors >=0.8.0."
     ]
   },
   "name": "python-safetensors-gfx1151",
   "package_name": "python-safetensors-gfx1151",
-  "pkgver": "0.7.0",
+  "pkgver": "0.8.0",
   "policy": {
     "advisory_references": [
       "cachyos-extra-znver4/python-safetensors"
@@ -69,23 +70,24 @@
       "Use the shared Rust-wheel renderer so linker selection, path remapping, and znver5 codegen stay aligned with orjson and cryptography."
     ],
     "sha256sums": [
-      "07663963b67e8bd9f0b8ad15bb9163606cd27cc5a1b96235a50d8369803b96b0"
+      "fabaf3e0f18a6618d9b36560682562157f77c2b71fcffc7b432be2baed9d753d"
     ],
-    "src_subdir": "safetensors-0.7.0",
+    "src_subdir": "safetensors-0.8.0",
     "template": "rust-wheel-pypi",
     "update_notes": [
       "Check Arch first for release and dependency metadata, then verify Transformers and TorchAO scenario compatibility before updating.",
-      "After publishing a rebuilt package, verify `import safetensors` and a tiny tensor save/load round trip through the installed local Python lane."
+      "After publishing a rebuilt package, verify `import safetensors` and a tiny tensor save/load round trip through the installed local Python lane.",
+      "On 2026-09-22, update to safetensors 0.8.0 for the generation-C W2A closure (#110), built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7. Transformers 5.16.1 requires safetensors >=0.8.0."
     ],
-    "upstream_version": "0.7.0",
+    "upstream_version": "0.8.0",
     "url": "https://github.com/huggingface/safetensors"
   },
   "provenance": {
     "output_root": "packages",
     "recipe_author": "Blackcat Informatics Inc.",
-    "recipe_commit": "a1d7a68",
-    "recipe_date": "20260427",
-    "recipe_history_count": 16,
+    "recipe_commit": "3f15f9f",
+    "recipe_date": "20260508",
+    "recipe_history_count": 17,
     "recipe_repo": "https://github.com/paudley/ai-notes",
     "recipe_subdir": "strix-halo",
     "repo_subpath": "."
@@ -100,7 +102,7 @@
     "patches": [],
     "phase": "H",
     "repo": null,
-    "src_dir": null,
+    "src_dir": "safetensors-0.8.0",
     "steps": [
       31
     ]

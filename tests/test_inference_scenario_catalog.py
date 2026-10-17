@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import json
+import os
 from pathlib import Path
+import subprocess
 import sys
 import tomllib
 
@@ -10,7 +13,114 @@ TOOLS_DIR = REPO_ROOT / "tools"
 if str(TOOLS_DIR) not in sys.path:
     sys.path.insert(0, str(TOOLS_DIR))
 
+from gemma4_smoke_common import (
+    long_decode_max_model_len,
+    validate_basic_chat_text,
+    validate_known_answer_text,
+    validate_long_decode_text,
+)
+from inference.runner import _assertion_failures
 from inference.scenario_loader import load_scenarios
+
+# vLLM 0.30.0 (ced6857a) logs "Using TRITON Unquantized MoE backend out of
+# potential backends: [...]." from fused_moe/oracle/unquantized.py. The
+# backend list varies by platform, so scenarios match the stable prefix.
+TRITON_UNQUANTIZED_MOE_LOG = (
+    "Using TRITON Unquantized MoE backend out of potential backends"
+)
+STALE_UNQUANTIZED_MOE_LOG = "backend for Unquantized MoE"
+
+
+def test_e2b_long_decode_gate_dry_plan_preserves_binding_envelope_and_logs(tmp_path):
+    model_id = "google/gemma-4-E2B-it"
+    scenario_id = "vllm.gemma4.e2b.server.long-decode"
+    local_model = tmp_path / "checkpoint"
+    run_root = tmp_path / "run"
+    result = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "tools/run_inference_scenarios.py"),
+         "--scenario", scenario_id, "--model-path", f"{model_id}={local_model}",
+         "--run-root", str(run_root), "--dry-run"],
+        cwd=REPO_ROOT, capture_output=True, text=True, check=False,
+        env={**os.environ, "PYTHONPYCACHEPREFIX": "/tmp"},
+    )
+
+    assert result.returncode == 0, result.stderr
+    plan = json.loads(result.stdout)
+    assert plan["selected_ids"] == [scenario_id]
+    assert plan["execution_mode"] == "serial"
+    entry = plan["planned"][0]
+    assert entry["model"] == model_id
+    assert entry["command"][2] == str(local_model)
+    log = run_root / "scenarios" / scenario_id / "server.log"
+    assert entry["server_log_path"] == str(log)
+
+    helper = subprocess.run(
+        [*entry["command"], "--dry-run"],
+        cwd=REPO_ROOT, capture_output=True, text=True, check=False,
+        env={**os.environ, "PYTHONPYCACHEPREFIX": "/tmp"},
+    )
+    assert helper.returncode == 0, helper.stderr
+    helper_plan = json.loads(helper.stdout)
+    command = helper_plan["server_command"]
+    assert command[command.index("serve") + 1] == str(local_model)
+    assert command[command.index("--gpu-memory-utilization") + 1] == "0.35"
+    assert command[command.index("--max-model-len") + 1] == "1536"
+    assert helper_plan["served_model_name"] == model_id
+    assert helper_plan["server_log"] == str(log)
+    assert helper_plan["long_decode_validation"]["min_completion_tokens"] == 1025
+    assert helper_plan["long_decode_validation"]["required_finish_reason"] == "stop"
+    request = helper_plan["long_decode_request_payload"]
+    assert request["model"] == model_id
+    assert request["max_tokens"] == 1250
+    assert "count from 1 to 250" in request["messages"][0]["content"]
+    assert "known_answer_request_payload" in helper_plan
+    assert not run_root.exists()
+
+
+def test_e2b_long_decode_gate_requires_explicit_validation_window_selection():
+    def selected_ids(*selection):
+        result = subprocess.run(
+            [sys.executable, str(REPO_ROOT / "tools/run_inference_scenarios.py"),
+             "--engine", "vllm", "--model", "google/gemma-4-E2B-it",
+             *selection, "--dry-run"],
+            cwd=REPO_ROOT, capture_output=True, text=True, check=False,
+            env={**os.environ, "PYTHONPYCACHEPREFIX": "/tmp"},
+        )
+        assert result.returncode == 0, result.stderr
+        return json.loads(result.stdout)["selected_ids"]
+
+    broad = selected_ids()
+    assert "vllm.gemma4.e2b.server.basic" in broad
+    assert "vllm.gemma4.e2b.server.long-decode" not in broad
+    assert "vllm.gemma4.e2b.server.long-decode" in selected_ids("--include-validation-window")
+    assert "vllm.gemma4.e2b.server.long-decode" in selected_ids("--tag", "validation-window")
+
+
+def test_granite_catalog_entries_supply_only_pinned_fixture_inputs():
+    scenarios = load_scenarios(REPO_ROOT / "inference/scenarios")
+    granite = {
+        scenario.id: scenario
+        for scenario in scenarios
+        if scenario.source_path.name == "vllm-granite.toml"
+    }
+    assert set(granite) == {
+        "vllm.granite3_1.1b-a400m.server.basic",
+        "vllm.granite3_1.1b-a400m.server.tool",
+        "vllm.granite3_1.1b-a400m.server.structured",
+    }
+    for mode in ("basic", "tool", "structured"):
+        scenario = granite[f"vllm.granite3_1.1b-a400m.server.{mode}"]
+        assert {"granite", "server", "correctness", "validation-window"} <= set(
+            scenario.tags
+        )
+        assert scenario.definition["given"] == {
+            "engine": "vllm",
+            "model": "ibm-granite/granite-3.1-1b-a400m-instruct",
+            "tool": f"granite_server_smoke.{mode}",
+        }
+        assert set(scenario.definition) == {
+            "id", "summary", "tags", "source_url", "model_provenance", "given"
+        }
 
 
 def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
@@ -74,7 +184,7 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     assert "vllm.pooling.zerank-2.rerank" in ids
     assert "transformers.zeroentropy.zembed-1.embeddings" in ids
     assert "transformers.zeroentropy.zerank-2.rerank" in ids
-    assert "vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors-blocked" in ids
+    assert "vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors" in ids
     assert "vllm.qwen3_5.35b-a3b-gptq-int4.text.basic" in ids
     assert "vllm.qwen3_6.35b-a3b-nvfp4.text.unsupported-rocm-gfx1151" in ids
     assert "llama.cpp.hip.help" in ids
@@ -108,7 +218,8 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     assert "blocked" in tags_by_id[
         "vllm.gemma4.e2b.server.attn-aiter-fa-blocked"
     ]
-    assert "blocked" in tags_by_id["vllm.gemma4.e2b.text.compiled"]
+    assert "compiled-probe" in tags_by_id["vllm.gemma4.e2b.text.compiled"]
+    assert "blocked" not in tags_by_id["vllm.gemma4.e2b.text.compiled"]
     assert "kernel-probe" in tags_by_id["vllm.gemma4.26b-a4b.server.moe-aiter"]
     assert "quantization-probe" in tags_by_id["vllm.gemma4.e2b.torchao.real-model"]
     assert "exploratory" in tags_by_id["vllm.gemma4.e2b.torchao.real-model"]
@@ -127,7 +238,7 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     assert "kernel-probe" in tags_by_id["vllm.qwen3_5.0_8b.text.flash-attn-ck"]
     assert "blocked" in tags_by_id["vllm.qwen3_5.0_8b.text.flash-attn-ck"]
     assert "safetensors" in tags_by_id[
-        "vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors-blocked"
+        "vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors"
     ]
     assert "control" in tags_by_id[
         "vllm.qwen3_6.35b-a3b.text.unquantized-moe-no-aiter-control"
@@ -173,8 +284,16 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
         "triton-amd",
         "kernel-probe",
     }
-    assert "blocked" in tags_by_id[
-        "vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors-blocked"
+    # The CK-built package no longer depends on AITER, so the Triton AMD
+    # scenarios stay out of broad selections and name the AITER requirement.
+    for scenario_id in [
+        "flash-attn.triton-amd.backend-import",
+        "flash-attn.triton-amd.qkvpacked-tiny",
+        "vllm.flash-attn.triton-amd.vit-wrapper",
+    ]:
+        assert tags_by_id[scenario_id] >= {"exploratory", "aiter"}
+    assert "blocked" not in tags_by_id[
+        "vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors"
     ]
     assert "gptq" in tags_by_id["vllm.qwen3_5.35b-a3b-gptq-int4.text.basic"]
     assert "int4" in tags_by_id["vllm.qwen3_5.35b-a3b-gptq-int4.text.basic"]
@@ -196,28 +315,146 @@ def test_tracked_inference_scenarios_cover_vllm_llamacpp_and_lemonade():
     ]
 
 
-def test_gemma4_26b_promoted_scenarios_enable_aiter_attention():
-    scenarios = load_scenarios(REPO_ROOT / "inference/scenarios")
-    by_id = {scenario.id: scenario for scenario in scenarios}
+# vLLM v0.30.0 (ced6857a) Gemma4Config.verify_and_update_config forces
+# TRITON_ATTN for every layer when head sizes differ (256 sliding, 512 full)
+# and FA4 is unavailable, which it always is on ROCm. The ROCm selector then
+# logs the configured backend with its "--attention-backend" wording.
+GEMMA4_FORCED_TRITON_LINE = (
+    "Gemma4 model has heterogeneous head dimensions "
+    "{'sliding_attention': 256, 'full_attention': 512}. "
+    "FA4 not available, forcing TRITON_ATTN backend."
+)
+GEMMA4_TRITON_SELECTED_LINE = (
+    "Using TRITON_ATTN backend (selected via --attention-backend)."
+)
+GEMMA4_PROMOTED_IDS = (
+    "vllm.gemma4.26b-a4b.text.basic",
+    "vllm.gemma4.26b-a4b.server.basic",
+    "vllm.gemma4.e2b.server.basic",
+)
 
-    expected_env = {
-        "VLLM_ROCM_USE_AITER": "1",
-        "VLLM_ROCM_USE_AITER_MOE": "0",
-    }
+
+def _gemma4_scenarios():
+    return [
+        scenario
+        for scenario in load_scenarios(REPO_ROOT / "inference/scenarios")
+        if scenario.source_path.name == "vllm-gemma4.toml"
+    ]
+
+
+def _backend_log_source(scenario) -> str:
+    tool = scenario.definition["given"]["tool"]
+    return "server_log" if tool.startswith("gemma4_server_smoke.") else "output"
+
+
+def _forces_attention_backend(scenario) -> bool:
+    argv = (scenario.definition.get("when") or {}).get("argv") or []
+    return "--attention-backend" in argv
+
+
+def test_gemma4_promoted_scenarios_gate_on_output_correctness_without_aiter():
+    by_id = {scenario.id: scenario for scenario in _gemma4_scenarios()}
+
+    for scenario_id in GEMMA4_PROMOTED_IDS:
+        scenario = by_id[scenario_id]
+        when = scenario.definition.get("when") or {}
+        env = when.get("env") or {}
+        assert not any(key.startswith("VLLM_ROCM_USE_AITER") for key in env), (
+            scenario_id
+        )
+        assert "aiter" not in scenario.tags
+        assert "exploratory" not in scenario.tags
+        assert {"--known-answer", "--long-decode"} <= set(when.get("argv") or [])
+        assertions = scenario.definition["then"]["assert"]
+        for marker in ("basic_ok", "known_answer_ok", "long_decode_ok"):
+            assert {"kind": "stdout.contains", "value": marker} in assertions
+        assert {"kind": "exit_code.equals", "value": 0} in assertions
+
+
+def test_gemma4_26b_long_decode_crosses_the_1024_token_sliding_window():
+    # 26B-A4B slides over 1024 tokens; counting to 250 is 1146 generated
+    # tokens after a 68-token prompt. E2B (512-token window) keeps 150.
+    by_id = {scenario.id: scenario for scenario in _gemma4_scenarios()}
+
+    for scenario_id, count in (
+        ("vllm.gemma4.26b-a4b.text.basic", "250"),
+        ("vllm.gemma4.26b-a4b.server.basic", "250"),
+    ):
+        argv = by_id[scenario_id].definition["when"]["argv"]
+        assert argv[argv.index("--long-decode-count") + 1] == count, scenario_id
+
+    e2b_argv = by_id["vllm.gemma4.e2b.server.basic"].definition["when"]["argv"]
+    assert "--long-decode-count" not in e2b_argv
+
+
+def test_gemma4_26b_scenarios_expect_auto_selected_triton_moe():
+    by_id = {scenario.id: scenario for scenario in _gemma4_scenarios()}
 
     text = by_id["vllm.gemma4.26b-a4b.text.basic"]
     server = by_id["vllm.gemma4.26b-a4b.server.basic"]
 
-    assert text.definition["when"]["env"] == expected_env
-    assert server.definition["when"]["env"] == expected_env
     assert {
-        "kind": "server_log.contains",
-        "value": "ROCM_AITER_UNIFIED_ATTN",
-    } in server.definition["then"]["assert"]
+        "kind": "output.contains",
+        "value": "Using TRITON Unquantized MoE backend",
+    } in text.definition["then"]["assert"]
     assert {
         "kind": "server_log.contains",
         "value": "Using TRITON Unquantized MoE backend",
     } in server.definition["then"]["assert"]
+
+
+def test_gemma4_default_backend_scenarios_assert_predicted_triton_attention():
+    checked = []
+    for scenario in _gemma4_scenarios():
+        tool = scenario.definition["given"]["tool"]
+        if not tool.startswith("gemma4_") or _forces_attention_backend(scenario):
+            continue
+        checked.append(scenario.id)
+        source = _backend_log_source(scenario)
+        assertions = scenario.definition["then"]["assert"]
+        for line in (GEMMA4_FORCED_TRITON_LINE, GEMMA4_TRITON_SELECTED_LINE):
+            assert {"kind": f"{source}.contains", "value": line} in assertions, (
+                scenario.id
+            )
+        prediction = scenario.definition["attention_backend"]
+        assert prediction["expected"] == "TRITON_ATTN"
+        # Static until a live w2a-validate run confirms it; a live run that
+        # shows another backend corrects the assertion with evidence.
+        assert prediction["evidence"] == "static-prediction"
+        assert "ced6857a" in prediction["basis"]
+        assert all(
+            "ROCM_AITER" not in str(assertion.get("value", ""))
+            for assertion in assertions
+        ), scenario.id
+
+    assert set(GEMMA4_PROMOTED_IDS) <= set(checked)
+    assert "vllm.gemma4.e2b.server.attn-triton" not in checked
+
+
+def test_gemma4_scenarios_only_enable_aiter_in_tagged_probes():
+    for scenario in _gemma4_scenarios():
+        env = (scenario.definition.get("when") or {}).get("env") or {}
+        argv = (scenario.definition.get("when") or {}).get("argv") or []
+        wants_aiter = (
+            env.get("VLLM_ROCM_USE_AITER") == "1"
+            or env.get("VLLM_ROCM_USE_AITER_MOE") == "1"
+            or any("AITER" in str(arg).upper() for arg in argv)
+        )
+        if wants_aiter:
+            assert {"aiter", "exploratory"} <= set(scenario.tags), scenario.id
+
+
+def test_gemma4_moe_probes_match_vllm_0_30_backend_log():
+    by_id = {scenario.id: scenario for scenario in _gemma4_scenarios()}
+    expected = {
+        "vllm.gemma4.26b-a4b.server.moe-triton": "Using TRITON Unquantized MoE backend",
+        "vllm.gemma4.26b-a4b.server.moe-auto": "Unquantized MoE backend out of potential backends",
+        "vllm.gemma4.26b-a4b.server.moe-aiter": "Using ROCm AITER Unquantized MoE backend",
+    }
+    for scenario_id, value in expected.items():
+        assert {"kind": "server_log.contains", "value": value} in by_id[
+            scenario_id
+        ].definition["then"]["assert"], scenario_id
 
 
 def test_gemma4_aiter_flash_attention_probe_records_current_blocker():
@@ -395,7 +632,7 @@ def test_qwen_server_scenarios_record_reduced_local_contract():
             {"kind": "stdout.contains", "value": ok_marker},
             {
                 "kind": "server_log.contains",
-                "value": "Using TRITON backend for Unquantized MoE",
+                "value": TRITON_UNQUANTIZED_MOE_LOG,
             },
         ):
             assert expected in assertions
@@ -675,7 +912,7 @@ def test_flash_attn_scenarios_record_ck_contract():
     }
 
 
-def test_gemma4_e2b_compiled_probe_records_current_blocker():
+def test_gemma4_e2b_compiled_probe_records_output_correctness_contract():
     scenarios = load_scenarios(REPO_ROOT / "inference/scenarios")
     by_id = {scenario.id: scenario for scenario in scenarios}
 
@@ -686,36 +923,118 @@ def test_gemma4_e2b_compiled_probe_records_current_blocker():
         "smoke",
         "gemma4",
         "compiled-probe",
-        "blocked",
         "exploratory",
     }
+    assert "blocked" not in probe.tags
     assert probe.definition["given"]["tool"] == "gemma4_text_smoke"
-    assert probe.definition["when"]["argv"] == [
+    argv = probe.definition["when"]["argv"]
+    assert argv == [
         "--execution-mode",
         "compiled",
         "--max-model-len",
-        "512",
+        "1024",
         "--gpu-memory-utilization",
         "0.35",
+        "--known-answer",
+        "--long-decode",
     ]
+    # The explicit context must still fit the default long decode, which
+    # crosses the E2B 512-token sliding window.
+    max_model_len = int(argv[argv.index("--max-model-len") + 1])
+    assert max_model_len >= long_decode_max_model_len()
 
     assertions = probe.definition["then"]["assert"]
     for expected in (
-        {"kind": "exit_code.equals", "value": 1},
+        {"kind": "exit_code.equals", "value": 0},
         {"kind": "stdout.contains", "value": "generation_ok"},
+        {"kind": "stdout.contains", "value": "basic_ok"},
+        {"kind": "stdout.contains", "value": "known_answer_ok"},
+        {"kind": "stdout.contains", "value": "long_decode_ok"},
+        {"kind": "output.not_contains", "value": "unexpected non-ASCII content"},
+        # Eager mode logs neither line, so together they prove the
+        # torch.compile and CUDA graph path ran.
         {
-            "kind": "output.contains",
-            "value": "basic mode response included unexpected non-ASCII content",
+            "kind": "output.regex",
+            "value": r"torch\.compile (took|and initial profiling/warmup run together took)",
         },
+        {"kind": "output.contains", "value": "Graph capturing finished"},
     ):
         assert expected in assertions
+    assert not any(
+        assertion["kind"] != "output.not_contains"
+        and "non-ASCII" in str(assertion.get("value", ""))
+        for assertion in assertions
+    )
+
+    # Every Gemma 4 decode validator reports corruption with the marker the
+    # probe forbids.
+    for validate in (
+        validate_basic_chat_text,
+        validate_known_answer_text,
+        validate_long_decode_text,
+    ):
+        try:
+            validate("docked calcS \u00e9")
+        except RuntimeError as error:
+            assert "unexpected non-ASCII content" in str(error), validate
+        else:
+            raise AssertionError(f"{validate.__name__} accepted non-ASCII text")
+
+
+def _captured_run_failures(scenario, stdout_lines: tuple[str, ...]) -> list[str]:
+    return _assertion_failures(
+        scenario.definition["then"]["assert"],
+        stdout="\n".join(stdout_lines) + "\n",
+        stderr="",
+        exit_code=0,
+        server_log="",
+        duration_seconds=0.0,
+    )
+
+
+# Minimal stdout excerpt of the 2026-09-29 vLLM 0.30 compiled E2B run (fresh
+# caches, before --known-answer and --long-decode joined the probe), with
+# host paths removed.
+GEMMA4_E2B_COMPILED_CAPTURED_STDOUT = (
+    "max_model_len 512",
+    "INFO 09-29 11:28:38 [config.py:252] " + GEMMA4_FORCED_TRITON_LINE,
+    "(EngineCore pid=31) INFO 09-29 11:28:54 [rocm.py:628] "
+    + GEMMA4_TRITON_SELECTED_LINE,
+    "(EngineCore pid=31) INFO 09-29 11:29:33 [backends.py:393] "
+    "Compiling a graph for compile range (1, 8192) takes 30.15 s",
+    "(EngineCore pid=31) INFO 09-29 11:29:35 [monitor.py:53] "
+    "torch.compile took 37.25 s in total",
+    "(EngineCore pid=31) INFO 09-29 11:29:52 [model_runner.py:1066] "
+    "Graph capturing finished in 13 secs, took 0.56 GiB",
+    "llm_init_ok",
+    "generation_ok",
+    "output_0_text: 'The quick brown fox jumps.'",
+    "output_0_finish_reason: 'stop'",
+    "basic_ok",
+)
+
+
+def test_gemma4_e2b_compiled_probe_accepts_captured_vllm_0_30_run():
+    by_id = {scenario.id: scenario for scenario in _gemma4_scenarios()}
+
+    failures = _captured_run_failures(
+        by_id["vllm.gemma4.e2b.text.compiled"],
+        GEMMA4_E2B_COMPILED_CAPTURED_STDOUT,
+    )
+
+    # The captured run predates the known-answer and long-decode checks, so
+    # only their markers are missing until the strengthened probe runs.
+    assert failures == [
+        "stdout.contains: missing 'known_answer_ok'",
+        "stdout.contains: missing 'long_decode_ok'",
+    ]
 
 
 def test_quantization_lane_probes_record_root_cause_contracts():
     scenarios = load_scenarios(REPO_ROOT / "inference/scenarios")
     by_id = {scenario.id: scenario for scenario in scenarios}
 
-    fp8_dense = by_id["vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors-blocked"]
+    fp8_dense = by_id["vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors"]
     assert fp8_dense.model == "surogate/Qwen3.5-0.8B-FP8"
     assert set(fp8_dense.tags) >= {
         "qwen",
@@ -723,21 +1042,42 @@ def test_quantization_lane_probes_record_root_cause_contracts():
         "fp8",
         "safetensors",
         "quantization-probe",
-        "blocked",
         "exploratory",
     }
+    assert "blocked" not in fp8_dense.tags
     assert fp8_dense.definition["given"]["tool"] == "qwen_text_smoke"
     assert fp8_dense.definition["when"]["argv"] == ["--max-model-len", "128"]
     for expected in (
-        {"kind": "exit_code.equals", "value": 1},
+        {"kind": "exit_code.equals", "value": 0},
         {
             "kind": "stdout.contains",
             "value": "config_quantization_config_present true",
         },
         {"kind": "stdout.contains", "value": "config_model_type qwen3_5"},
-        {"kind": "output.contains", "value": "fp8"},
+        # The smoke prints "quantization None"; only vLLM's engine config,
+        # resolved from the checkpoint, names the FP8 method.
+        {"kind": "output.regex", "value": "quantization=fp8"},
+        # vLLM logs the block-FP8 linear kernel choice only after the startup
+        # imports, the engine core and the Fp8LinearMethod layers are up, so
+        # a pass generated through the FP8 path.
+        {
+            "kind": "output.regex",
+            "value": r"Selected \w*Fp8BlockScaledMMKernel for Fp8LinearMethod",
+        },
+        {"kind": "output.not_contains", "value": "ModuleNotFoundError"},
+        {"kind": "stdout.contains", "value": "generation_ok"},
+        {"kind": "stdout.contains", "value": "basic_ok"},
     ):
         assert expected in fp8_dense.definition["then"]["assert"]
+    # The kernel-selection marker already proves the startup imports ran, and a
+    # bare "ImportError" would also match harmless optional-import warnings.
+    assert {"kind": "output.not_contains", "value": "ImportError"} not in (
+        fp8_dense.definition["then"]["assert"]
+    )
+    # A bare "fp8" also matched the config summary printed before LLM().
+    assert {"kind": "output.contains", "value": "fp8"} not in fp8_dense.definition[
+        "then"
+    ]["assert"]
 
     gptq_int4 = by_id["vllm.qwen3_5.35b-a3b-gptq-int4.text.basic"]
     assert gptq_int4.model == "Qwen/Qwen3.5-35B-A3B-GPTQ-Int4"
@@ -930,6 +1270,49 @@ def test_quantization_lane_probes_record_root_cause_contracts():
         },
     ):
         assert expected in nvfp4.definition["then"]["assert"]
+
+
+# Minimal stdout excerpt of the 2026-09-29 vLLM 0.30 dense block-FP8 run,
+# with host paths and most of the engine config elided. The DeepSelect warning
+# stays because the probe must tolerate that optional-import miss.
+QWEN3_5_FP8_DENSE_CAPTURED_STDOUT = (
+    "config_model_type qwen3_5",
+    "config_quantization_config_present true",
+    "quantization None",
+    "WARNING 09-29 11:18:14 [indexer_topk.py:29] Failed to import the "
+    "DeepSelect extension (vllm._deepselect_C): No module named "
+    "'vllm._deepselect_C'",
+    "(EngineCore pid=38) INFO 09-29 11:18:25 [core.py:123] Initializing a V1 "
+    "LLM engine (v0.30.0) with config: ..., disable_custom_all_reduce=True, "
+    "quantization=fp8, quantization_config=None, enforce_eager=True, ...",
+    "(EngineCore pid=38) INFO 09-29 11:18:27 [__init__.py:726] "
+    "Selected TritonFp8BlockScaledMMKernel for Fp8LinearMethod",
+    "llm_init_ok",
+    "generation_ok",
+    "output_0_text: 'ready'",
+    "output_0_finish_reason: 'stop'",
+    "basic_ok",
+)
+
+
+def test_fp8_dense_probe_accepts_captured_vllm_0_30_run():
+    by_id = {
+        scenario.id: scenario
+        for scenario in load_scenarios(REPO_ROOT / "inference/scenarios")
+    }
+    probe = by_id["vllm.qwen3_5.0_8b-fp8.text.fp8-safetensors"]
+
+    assert _captured_run_failures(probe, QWEN3_5_FP8_DENSE_CAPTURED_STDOUT) == []
+    # Without vLLM's resolved engine config, the smoke's own "quantization
+    # None" summary must not satisfy the FP8 method check.
+    without_engine_config = tuple(
+        line
+        for line in QWEN3_5_FP8_DENSE_CAPTURED_STDOUT
+        if "quantization=fp8" not in line
+    )
+    assert _captured_run_failures(probe, without_engine_config) == [
+        "output.regex: pattern 'quantization=fp8' did not match"
+    ]
 
 
 def test_qwen3_5_compiled_probe_records_validation_contract():
@@ -1144,7 +1527,7 @@ def test_qwen3_6_unquantized_moe_control_records_validation_contract():
         {"kind": "stdout.contains", "value": "basic_ok"},
         {
             "kind": "output.contains",
-            "value": "Using TRITON backend for Unquantized MoE",
+            "value": TRITON_UNQUANTIZED_MOE_LOG,
         },
     ):
         assert expected in assertions
@@ -1207,7 +1590,7 @@ def test_qwen3_6_unquantized_moe_compiled_control_records_validation_contract():
         {"kind": "stdout.contains", "value": "basic_ok"},
         {
             "kind": "output.contains",
-            "value": "Using TRITON backend for Unquantized MoE",
+            "value": TRITON_UNQUANTIZED_MOE_LOG,
         },
     ):
         assert expected in assertions
@@ -1253,3 +1636,173 @@ def test_lemonade_help_smokes_assert_current_help_markers():
     assert {"kind": "output.contains", "value": "Lightweight LLM server"} in server_assertions
     assert {"kind": "output.contains", "value": "OPTIONS:"} in cli_assertions
     assert {"kind": "output.contains", "value": "OPTIONS:"} in server_assertions
+
+
+def test_vllm_scenarios_do_not_assert_pre_0_30_moe_log_wording():
+    scenarios = load_scenarios(REPO_ROOT / "inference/scenarios")
+
+    stale = [
+        scenario.id
+        for scenario in scenarios
+        for assertion in scenario.definition.get("then", {}).get("assert", [])
+        if STALE_UNQUANTIZED_MOE_LOG in str(assertion.get("value", ""))
+    ]
+    assert stale == []
+
+
+LEMONADE_LIVE_SCENARIOS = {
+    "llama.cpp.hip.qwen3-0.6b-q8-0.completion",
+    "llama.cpp.vulkan.qwen3-0.6b-q8-0.completion",
+    "lemonade.llamacpp.rocm.qwen3-0.6b-q8-0.completion",
+    "lemonade.llamacpp.vulkan.qwen3-0.6b-q8-0.completion",
+    "lemonade.lifecycle.restart-config-hip-discovery",
+    "lemonade.pins.persistence-startup-restore",
+    "lemonade.budget.gtt-admit-refuse",
+    "lemonade.residency.pinned-busy-not-displaced",
+    "lemonade.provenance.family-no-fallback",
+    "lemonade.nofetch.preplaced-load-missing-model",
+    "lemonade.pins.service-consumer-pins",
+    "lemonade.chat.pinned-user-model.qwen35moe",
+    "lemonade.reranking.zerank-2.selected-logit.service",
+}
+
+
+def test_lemonade_live_validation_scenarios_are_gated_and_share_one_gguf():
+    from inference.scenario_loader import select_scenarios
+
+    scenarios = load_scenarios(REPO_ROOT / "inference/scenarios")
+    by_id = {scenario.id: scenario for scenario in scenarios}
+
+    assert LEMONADE_LIVE_SCENARIOS <= set(by_id)
+    for scenario_id in LEMONADE_LIVE_SCENARIOS:
+        tags = set(by_id[scenario_id].tags)
+        assert {"live-validation", "validation-window"} <= tags
+        assert "smoke" not in tags
+
+    for scenario_id in (
+        "lemonade.llamacpp.rocm.qwen3-0.6b-q8-0.completion",
+        "lemonade.llamacpp.vulkan.qwen3-0.6b-q8-0.completion",
+        "lemonade.nofetch.preplaced-load-missing-model",
+    ):
+        scenario = by_id[scenario_id]
+        assert "mutates-service" in scenario.tags
+        assert scenario.definition["given"]["lemonade_model"] == "user.Qwen3-0.6B-Q8_0-GGUF"
+    for scenario_id in (
+        "lemonade.lifecycle.restart-config-hip-discovery",
+        "lemonade.pins.persistence-startup-restore",
+        "lemonade.budget.gtt-admit-refuse",
+        "lemonade.residency.pinned-busy-not-displaced",
+    ):
+        assert "isolated-lemond" in by_id[scenario_id].tags
+    for scenario_id in ("lemonade.provenance.family-no-fallback", "lemonade.pins.service-consumer-pins"):
+        assert "read-only" in by_id[scenario_id].tags
+        assert "mutates-service" not in by_id[scenario_id].tags
+
+    nofetch = by_id["lemonade.nofetch.preplaced-load-missing-model"].definition
+    markers = {item["value"] for item in nofetch["then"]["assert"] if item["kind"] == "stdout.contains"}
+    # Each implicit auto-pull path runs for the pre-placed and the missing model.
+    for path in ("load", "inference", "ollama"):
+        for phase in (f"preplaced_{path}", f"missing_{path}"):
+            for evidence in ("model_cache_unchanged", "backend_cache_unchanged", "no_remote_connection"):
+                assert f"{phase}_{evidence}_ok" in markers
+        # The missing phases record a logged, blackholed attempt instead of failing on it.
+        assert f"preplaced_{path}_no_fetch_log_ok" in markers
+        assert f"missing_{path}_no_fetch_log_ok" not in markers
+        assert f"missing_{path}_refused_ok" in markers
+    assert {"preplaced_inference_autoload_ok", "preplaced_ollama_autoload_ok"} <= markers
+    assert {
+        "endpoint_blackhole_ok",
+        "network_attribution_ok",
+        "missing_model_registered_ok",
+        "missing_model_absent_ok",
+    } <= markers
+    for scenario_id in (
+        "lemonade.llamacpp.rocm.qwen3-0.6b-q8-0.completion",
+        "lemonade.llamacpp.vulkan.qwen3-0.6b-q8-0.completion",
+        "lemonade.nofetch.preplaced-load-missing-model",
+    ):
+        asserts = by_id[scenario_id].definition["then"]["assert"]
+        assert {"kind": "stdout.contains", "value": "backend_libraries_repo_owned_ok"} in asserts
+    # The missing model is chosen per host at run time (--missing-model or its env override).
+    assert not any(arg.split("=", 1)[0] == "--missing-model" for arg in nofetch["when"]["argv"])
+
+    rerank = by_id["lemonade.reranking.zerank-2.selected-logit.service"]
+    isolated_rerank = by_id["lemonade.reranking.zerank-2.selected-logit"]
+    # The same selected-logit tool and model as the isolated smoke, aimed at the running service.
+    assert rerank.definition["given"]["tool"] == isolated_rerank.definition["given"]["tool"]
+    assert rerank.definition["given"]["model"] == isolated_rerank.definition["given"]["model"] == "zerank-2-GGUF"
+    assert "model_provenance" not in rerank.definition
+    assert rerank.definition["when"]["argv"] == ["--base-url", "http://127.0.0.1:13305/api/v1"]
+    rerank_markers = {
+        item["value"] for item in rerank.definition["then"]["assert"] if item["kind"] == "stdout.contains"
+    }
+    assert {
+        "mode selected-logit",
+        "zerank_adapter_options_ok",
+        "capital_france_order_ok",
+        "arithmetic_order_ok",
+        "health_adapter_options_ok",
+        "zerank_rerank_ok",
+    } <= rerank_markers
+    # A rerank request can load the pinned model on the service, but never unloads it.
+    assert "mutates-service" in rerank.tags
+    assert not {"read-only", "isolated-lemond"} & set(rerank.tags)
+
+    chat = by_id["lemonade.chat.pinned-user-model.qwen35moe"]
+    assert chat.definition["given"]["tool"] == "lemonade_live_smoke.pinned-chat"
+    assert {"lemonade", "chat", "pins", "qwen35moe"} <= set(chat.tags)
+    # The chat request can load the pinned model on the service, but never unloads it.
+    assert "mutates-service" in chat.tags
+    assert not {"read-only", "isolated-lemond"} & set(chat.tags)
+    chat_markers = {
+        item["value"] for item in chat.definition["then"]["assert"] if item["kind"] == "stdout.contains"
+    }
+    assert {
+        "chat_model_pinned_ok",
+        "chat_model_architecture_ok",
+        "chat_completion_ok",
+        "chat_template_kwargs_json_ok",
+        "pinned_chat_model_loaded_ok",
+        "pinned_chat_ok",
+    } <= chat_markers
+    # The model is chosen per host at run time (--chat-model or its env override).
+    assert not any(arg.split("=", 1)[0] == "--chat-model" for arg in chat.definition["when"]["argv"])
+
+    pins_argv = by_id["lemonade.pins.service-consumer-pins"].definition["when"]["argv"]
+    pooling = {s.id: s for s in scenarios}
+    assert f"{pooling['lemonade.pooling.zembed-1-q4-k-m.embeddings'].model}=Q4_K_M" in pins_argv
+    assert f"{pooling['lemonade.reranking.zerank-2.selected-logit'].model}=Q8_0" in pins_argv
+
+    # zerank-2-GGUF names the service's built-in model, not a GGUF file binding.
+    gguf_users = [
+        s for s in scenarios if s.id in LEMONADE_LIVE_SCENARIOS and s.model not in {"builtin", "zerank-2-GGUF"}
+    ]
+    assert len(gguf_users) == 8
+    for scenario in gguf_users:
+        provenance = scenario.definition["model_provenance"]
+        assert scenario.model == "Qwen/Qwen3-0.6B-GGUF"
+        assert provenance["file"] == "Qwen3-0.6B-Q8_0.gguf"
+        assert provenance["revision"] == "23749fefcc72300e3a2ad315e1317431b06b590a"
+        assert provenance["terms_status"] == "accepted"
+
+    broad = select_scenarios(
+        scenarios, engines={"lemonade", "llama.cpp"}, models=set(), scenario_ids=set()
+    )
+    assert not LEMONADE_LIVE_SCENARIOS & {scenario.id for scenario in broad}
+
+
+def test_lemonade_app_operator_checklist_lives_in_the_catalog():
+    document = tomllib.loads(
+        (REPO_ROOT / "inference/scenarios/lemonade-live-validation.toml").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    checklists = {item["id"]: item for item in document["operator_checklist"]}
+    app = checklists["lemonade.app.pin-startup-text"]
+    steps = "\n".join(app["steps"])
+    assert "validation-window" in app["tags"]
+    assert "Pin control" in steps
+    assert "pinned_models" in steps
+    assert "text reply" in steps
+    assert "Restore" in steps

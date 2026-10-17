@@ -191,7 +191,7 @@ def test_run_zeroentropy_embeddings_formats_query_and_documents(capsys):
     assert "embeddings_ok" in output
 
 
-def test_run_zeroentropy_rerank_classifies_formatted_prompts(monkeypatch):
+def _fake_zerank_llm(monkeypatch, scores: list[float]):
     pooling_params = object()
     vllm_module = types.ModuleType("vllm")
     pooling_module = types.ModuleType("vllm.pooling_params")
@@ -203,8 +203,6 @@ def test_run_zeroentropy_rerank_classifies_formatted_prompts(monkeypatch):
         def apply_chat_template(self, messages, **kwargs):
             return f"{messages[0]['content']} -> {messages[1]['content']}"
 
-    output = SimpleNamespace(outputs=SimpleNamespace(probs=[0.875]))
-
     class FakeLLM:
         def __init__(self) -> None:
             self.classify_calls = []
@@ -214,9 +212,21 @@ def test_run_zeroentropy_rerank_classifies_formatted_prompts(monkeypatch):
 
         def classify(self, prompts, **kwargs):
             self.classify_calls.append((prompts, kwargs))
-            return [output, output, output]
+            return [
+                SimpleNamespace(outputs=SimpleNamespace(probs=[score]))
+                for score in scores
+            ]
 
-    llm = FakeLLM()
+    return FakeLLM(), pooling_params
+
+
+# vLLM 0.30 ranked the zerank-2 arithmetic fixture as [1, 0, 2]: both correct
+# answers above the distractor, with the sentence above "4".
+VLLM_0_30_ZERANK_SCORES = [0.71, 0.79, 0.23]
+
+
+def test_run_zeroentropy_rerank_classifies_formatted_prompts(monkeypatch):
+    llm, pooling_params = _fake_zerank_llm(monkeypatch, VLLM_0_30_ZERANK_SCORES)
 
     run_zeroentropy_rerank(llm)
 
@@ -229,6 +239,51 @@ def test_run_zeroentropy_rerank_classifies_formatted_prompts(monkeypatch):
             {"use_tqdm": False, "pooling_params": pooling_params},
         )
     ]
+
+
+@pytest.mark.parametrize(
+    "scores",
+    [VLLM_0_30_ZERANK_SCORES, [0.79, 0.71, 0.23]],
+    ids=["sentence-first", "digit-first"],
+)
+def test_run_zeroentropy_rerank_accepts_either_correct_answer_first(
+    monkeypatch, capsys, scores
+):
+    llm, _ = _fake_zerank_llm(monkeypatch, scores)
+
+    run_zeroentropy_rerank(llm)
+
+    output = capsys.readouterr().out
+    assert f"rerank_scores {','.join(str(score) for score in scores)}" in output
+    # The vllm.pooling.zerank-2.rerank scenario asserts these lines.
+    assert "score_count 3" in output
+    assert "scores_finite_ok" in output
+    assert "rerank_order_ok" in output
+    assert "rerank_ok" in output
+
+
+@pytest.mark.parametrize(
+    "scores",
+    [[0.23, 0.79, 0.71], [0.79, 0.23, 0.71], [0.23, 0.71, 0.79]],
+)
+def test_run_zeroentropy_rerank_rejects_distractor_above_a_correct_answer(
+    monkeypatch, capsys, scores
+):
+    llm, _ = _fake_zerank_llm(monkeypatch, scores)
+
+    with pytest.raises(AssertionError, match="both correct answers above the distractor"):
+        run_zeroentropy_rerank(llm)
+
+    output = capsys.readouterr().out
+    assert f"rerank_scores {','.join(str(score) for score in scores)}" in output
+    assert "rerank_ok" not in output
+
+
+def test_zeroentropy_rerank_documents_match_shared_validator_fixture():
+    import zeroentropy_pooling_smoke
+
+    assert ZEROENTROPY_RERANK_QUERY == zeroentropy_pooling_smoke.RERANK_QUERY
+    assert ZEROENTROPY_RERANK_DOCUMENTS == zeroentropy_pooling_smoke.RERANK_DOCUMENTS
 
 
 def test_validate_embedding_fixture_checks_shape_finite_values_and_ranking(capsys):

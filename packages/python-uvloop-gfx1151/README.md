@@ -7,7 +7,7 @@
 - Recipe build method: `pip`
 - Upstream repo: `https://github.com/MagicStack/uvloop`
 - Package version: `0.22.1`
-- Recipe revision: `a1d7a68 (20260427, 16 commits touching recipe path)`
+- Recipe revision: `3f15f9f (20260508, 17 commits touching recipe path)`
 - Recipe steps: `32`
 - Recipe dependencies: `cpython, pytorch`
 - Recorded reference packages: `extra/python-uvloop, cachyos-extra-znver4/python-uvloop`
@@ -41,6 +41,7 @@ selects system libuv by default.
 - Check Arch first for libuv and Cython build metadata before updating.
 - Keep the package-local system-libuv patch unless upstream changes the build backend to expose a stable PEP 517 config setting for the same choice.
 - After publishing a rebuilt package, verify `import uvloop` and a minimal `uvloop.new_event_loop()` probe through the installed local Python lane.
+- On 2026-09-25, bump pkgrel to 2 for the generation-C W2A closure (#110, #111), to be built in the rootless C build root against TheRock 7.14.1 and python-gfx1151 3.14.7 in the vLLM lease job. The source is unchanged; the rebuild keeps the package out of the previous generation's repo. uvicorn and `vllm serve` use it as the event loop, so the W2A root needs a generation-C build.
 
 ## Maintainer Starting Points
 

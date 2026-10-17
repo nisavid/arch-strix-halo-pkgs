@@ -317,7 +317,7 @@ package_migraphx-gfx1151() {
     pkgdesc='MIGraphX from TheRock for gfx1151'
     provides=('migraphx')
     conflicts=('migraphx' 'rocm-gfx1151-bin')
-    depends=('gcc-libs' 'glibc' 'hip-runtime-amd-gfx1151' 'miopen-hip-gfx1151' 'msgpack-cxx' 'python-gfx1151' 'rocblas-gfx1151' 'rocm-core-gfx1151' 'sqlite' 'libprotobuf.so=36.1.0-64')
+    depends=('abseil-cpp>=20260817.0' 'abseil-cpp<20260818' 'gcc-libs' 'glibc' 'hip-runtime-amd-gfx1151' 'miopen-hip-gfx1151' 'msgpack-cxx' 'python-gfx1151' 'rocblas-gfx1151' 'rocm-core-gfx1151' 'sqlite' 'libprotobuf.so=36.1.0-64')
     _require_therock_root
     _copy_from_filelist 'migraphx-gfx1151'
     _flatbuffers_pc="${pkgdir}/opt/rocm/lib/pkgconfig/flatbuffers.pc"

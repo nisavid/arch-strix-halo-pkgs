@@ -1,14 +1,12 @@
-diff --git a/src/cpp/server/system_info.cpp b/src/cpp/server/system_info.cpp
-index 69af1a94..0372fa36 100644
---- a/src/cpp/server/system_info.cpp
-+++ b/src/cpp/server/system_info.cpp
-@@ -451,9 +451,6 @@ struct RecipeBackendDef {
- // Empty family set {} means "all families of that device type"
- static const std::vector<RecipeBackendDef> RECIPE_DEFS = {
-     // llamacpp with multiple backends (order = preference)
--    {"llamacpp", "system", {"linux"}, {
--        {"cpu", {"x86_64", "arm64"}}, // Placeholder, actual check is PATH-based
--    }},
-     {"llamacpp", "metal", {"macos"},
-     {
-         {"metal", {}},
+diff --git a/src/cpp/include/lemon/backends/llamacpp/llamacpp.h b/src/cpp/include/lemon/backends/llamacpp/llamacpp.h
+index 12a9a506a..c0ef44383 100644
+--- a/src/cpp/include/lemon/backends/llamacpp/llamacpp.h
++++ b/src/cpp/include/lemon/backends/llamacpp/llamacpp.h
+@@ -41,7 +41,6 @@ inline const BackendDescriptor descriptor = {
+          "Logit scale for reranking relevance scores", "Llama.cpp Reranking Options"},
+     },
+     /*support*/ {
+-        {"system", {"linux"}, {{"cpu", {"x86_64", "arm64"}}}, "x86_64/ARM64 CPU, GPU"},
+         {"metal", {"macos"}, {{"metal", {}}}, "Apple Silicon GPU"},
+         {"cuda", {"windows", "linux"},
+          {{"nvidia_gpu", {"sm_75", "sm_80", "sm_86", "sm_89", "sm_90", "sm_100", "sm_120", "sm_121"}}}, "NVIDIA GPUs (Turing or newer)**"},

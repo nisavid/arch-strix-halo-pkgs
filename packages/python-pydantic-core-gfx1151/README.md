@@ -6,7 +6,7 @@
 - Scaffold template: `rust-wheel-pypi`
 - Recipe build method: `cargo`
 - Upstream repo: `https://github.com/pydantic/pydantic-core`
-- Package version: `2.46.4`
+- Package version: `2.46.5`
 - Recipe revision: `3f15f9f (20260508, 17 commits touching recipe path)`
 - Recipe steps: `31`
 - Recipe dependencies: `cpython`
@@ -50,6 +50,7 @@ CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER.
 - Do not adopt a newer pydantic-core release from recipe notes alone; keep pydantic-core aligned with the installed pydantic ABI unless this repo also carries and validates a matching pydantic package.
 - After publishing a rebuilt package, verify `import pydantic_core` and a tiny `pydantic.BaseModel` validation through the installed local Python lane.
 - Record newer PyPI pydantic-core releases as baseline drift while the package follows Arch's pydantic-core ABI for the installed pydantic package.
+- The conflicts pin the one python-pydantic release that requires this pydantic-core version; move both python-pydantic bounds with each pydantic-core update and bump pkgrel whenever they change without a version change.
 
 ## Maintainer Starting Points
 

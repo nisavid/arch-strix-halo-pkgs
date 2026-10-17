@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -18,6 +19,8 @@ assert SPEC and SPEC.loader
 render_recipe_scaffolds = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = render_recipe_scaffolds
 SPEC.loader.exec_module(render_recipe_scaffolds)
+
+import recipe_policy  # noqa: E402
 
 
 def init_recipe_repo(recipe_root: Path) -> None:
@@ -303,6 +306,262 @@ def test_vllm_renderer_defines_source_variables_without_patches() -> None:
     assert "_apply_all_source_patches" not in pkgbuild
 
 
+def _render_vllm_0_30_pkgbuild(**policy_overrides) -> str:
+    return render_recipe_scaffolds.render_pkgbuild(
+        "python-vllm-rocm-gfx1151",
+        {
+            "recipe_key": "vllm",
+            "template": "python-project-vllm",
+            "upstream_version": "0.30.0",
+            "pkgdesc": "vLLM ROCm",
+            "url": "https://github.com/vllm-project/vllm",
+            "license": ["Apache-2.0"],
+            "source_type": "tarball",
+            "source_url": "https://github.com/vllm-project/vllm/archive/refs/tags/v0.30.0.tar.gz",
+            "sha256sums": ["0" * 64],
+            "source_patches": ["0016-rocm-refresh-local-carry-for-vllm-0.30.0.patch"],
+            "src_subdir": "vllm-0.30.0",
+            **policy_overrides,
+        },
+        {
+            "repo": "https://github.com/vllm-project/vllm",
+            "method": "pip",
+            "phase": "package",
+            "steps": [],
+            "depends_on": [],
+            "notes": "",
+        },
+        "0.30.0",
+        {
+            "recipe_repo": "https://github.com/paudley/ai-notes",
+            "recipe_subdir": "strix-halo",
+            "recipe_author": "Blackcat Informatics Inc.",
+        },
+    )
+
+
+def test_vllm_renderer_builds_one_wheel_without_aiter() -> None:
+    pkgbuild = _render_vllm_0_30_pkgbuild()
+
+    assert "VLLM_ROCM_USE_AITER" not in pkgbuild
+    assert "python setup.py clean" not in pkgbuild
+    assert pkgbuild.count("pip wheel . --no-build-isolation --no-deps --wheel-dir dist -v") == 1
+
+
+def test_vllm_renderer_skips_optional_rust_extensions_and_checks_the_wheel() -> None:
+    pkgbuild = _render_vllm_0_30_pkgbuild()
+
+    assert "unset VLLM_REQUIRE_RUST_FRONTEND" in pkgbuild
+    assert "export CARGO=/usr/bin/false" in pkgbuild
+    assert "export CARGO_NET_OFFLINE=true" in pkgbuild
+    assert "export RUSTUP_AUTO_INSTALL=0" in pkgbuild
+    build_env = pkgbuild.index("export CARGO=/usr/bin/false")
+    wheel_build = pkgbuild.index("pip wheel . --no-build-isolation")
+    wheel_check = pkgbuild.index("VLLM_RUST_ARTIFACT_UNEXPECTED")
+    assert build_env < wheel_build < wheel_check
+    assert "grep -Eq '^vllm/(_rust_[^/]*[.]so|vllm-rs)$'" in pkgbuild
+
+
+def test_vllm_renderer_checks_the_0_30_carry_sentinels() -> None:
+    pkgbuild = _render_vllm_0_30_pkgbuild()
+    start = pkgbuild.index("_source_tree_has_all_source_patches() {")
+    end = pkgbuild.index("\n}\n", start)
+    sentinels = pkgbuild[start:end]
+
+    for sentinel, path in (
+        ('requires-python = ">=3.10,<3.15"', "pyproject.toml"),
+        ("def _selected_subcommand() -> str | None:", "vllm/entrypoints/cli/main.py"),
+        ("using vllm_bfloat16 = __hip_bfloat16;", "csrc/libtorch_stable/cuda_vec_utils.cuh"),
+        (
+            "def torchao_version_at_least(torchao_version: str) -> bool:",
+            "vllm/model_executor/layers/quantization/torchao_utils.py",
+        ),
+        (
+            "Use PyTorch top-k/top-p filtering on large-vocabulary ROCm",
+            "vllm/v1/sample/ops/topk_topp_sampler.py",
+        ),
+        ("Keep valid_count type stable across branches", "vllm/v1/spec_decode/utils.py"),
+        (
+            "def rocm_flash_attn_supports_vllm_varlen_api() -> bool:",
+            "vllm/v1/attention/backends/fa_utils.py",
+        ),
+        (
+            "NOTE(gfx1151): On AMD HIP, restrict autotune search",
+            "vllm/third_party/flash_linear_attention/ops/chunk_delta_h.py",
+        ),
+    ):
+        assert f"grep -Fq '{sentinel}'" in sentinels
+        assert path in sentinels
+
+    for dropped in (
+        "csrc/cuda_vec_utils.cuh",
+        "cmake/hipify.py",
+        "vllm/_aiter_ops.py",
+        "vllm/platforms/rocm.py",
+        "vllm/triton_utils/jit_monitor.py",
+        "speculators/algos.py",
+    ):
+        assert dropped not in sentinels
+    assert sentinels.count("grep -Fq") == 8
+
+
+def _vllm_sentinel_function(pkgbuild: str) -> str:
+    start = pkgbuild.index("_source_tree_has_all_source_patches() {")
+    return pkgbuild[start : pkgbuild.index("\n}\n", start)]
+
+
+_VLLM_CARRY = "0016-rocm-refresh-local-carry-for-vllm-0.30.0.patch"
+_VLLM_FIRST = "0017-backport-first.patch"
+_VLLM_SECOND = "0018-backport-second.patch"
+_VLLM_THIRD = "0019-backport-third.patch"
+
+
+def _vllm_backport_policy(sentinels: list[dict], patches: list[str] | None = None) -> dict:
+    patches = [_VLLM_FIRST, _VLLM_SECOND] if patches is None else patches
+    return {
+        "source_patches": [_VLLM_CARRY, *patches],
+        "extra_sha256sums": ["SKIP", *(str(index + 1) * 64 for index in range(len(patches)))],
+        "source_patch_sentinels": sentinels,
+    }
+
+
+def test_vllm_renderer_applies_later_patches_in_policy_order() -> None:
+    pkgbuild = _render_vllm_0_30_pkgbuild(
+        **_vllm_backport_policy(
+            [
+                {"patch": _VLLM_FIRST, "text": "def first(", "path": "vllm/first.py"},
+                {"patch": _VLLM_SECOND, "text": "def second(", "path": "vllm/second.py"},
+            ]
+        )
+    )
+    start = pkgbuild.index("_apply_all_source_patches() {")
+    function = pkgbuild[start : pkgbuild.index("\n}\n", start)]
+    applied = [
+        line.strip()
+        for line in function.splitlines()
+        if line.strip().startswith("_apply_patch_if_needed ")
+    ]
+
+    # The local carry follows pkgver; later patches keep their literal names.
+    assert '_vllm_source_patch="0016-rocm-refresh-local-carry-for-vllm-${pkgver}.patch"' in pkgbuild
+    assert applied == [
+        '_apply_patch_if_needed "${_vllm_source_patch}"',
+        f'_apply_patch_if_needed "{_VLLM_FIRST}"',
+        f'_apply_patch_if_needed "{_VLLM_SECOND}"',
+    ]
+    assert (
+        "source=(https://github.com/vllm-project/vllm/archive/refs/tags/v0.30.0.tar.gz "
+        f"{_VLLM_CARRY} {_VLLM_FIRST} {_VLLM_SECOND})"
+    ) in pkgbuild
+    assert f"sha256sums=({'0' * 64} SKIP {'1' * 64} {'2' * 64})" in pkgbuild
+    assert "Later source patches touch files changed by earlier ones" not in pkgbuild
+
+
+def test_vllm_renderer_appends_named_source_patch_sentinels_in_series_order() -> None:
+    # Without a sentinel for a later patch, a reused src/ tree that has only
+    # the carry would pass the check and the later patch would be skipped.
+    # Entries are keyed by patch name, so their order in policy does not matter.
+    pkgbuild = _render_vllm_0_30_pkgbuild(
+        **_vllm_backport_policy(
+            [
+                {"patch": _VLLM_SECOND, "text": "0x[0-9a-fA-F]+>", "path": "vllm/other/module.py"},
+                {"patch": _VLLM_FIRST, "text": "def added_by_a_backport(", "path": "vllm/some/module.py"},
+            ]
+        )
+    )
+    sentinels = _vllm_sentinel_function(pkgbuild)
+
+    assert sentinels.count("grep -Fq") == 10
+    assert sentinels.endswith(
+        "      vllm/third_party/flash_linear_attention/ops/chunk_delta_h.py &&\n"
+        "    grep -Fq 'def added_by_a_backport(' vllm/some/module.py &&\n"
+        "    grep -Fq '0x[0-9a-fA-F]+>' vllm/other/module.py"
+    )
+
+
+def test_vllm_renderer_accepts_an_exemption_guarded_by_a_later_patch() -> None:
+    pkgbuild = _render_vllm_0_30_pkgbuild(
+        **_vllm_backport_policy(
+            [
+                {"patch": _VLLM_FIRST, "text": "def first(", "path": "vllm/first.py"},
+                {
+                    "patch": _VLLM_SECOND,
+                    "guarded_by": [_VLLM_FIRST, _VLLM_THIRD],
+                    "reason": "deletes one line",
+                },
+                {"patch": _VLLM_THIRD, "text": "def third(", "path": "vllm/third.py"},
+            ],
+            patches=[_VLLM_FIRST, _VLLM_SECOND, _VLLM_THIRD],
+        )
+    )
+    sentinels = _vllm_sentinel_function(pkgbuild)
+
+    assert sentinels.count("grep -Fq") == 10
+    assert "second" not in sentinels
+    assert f'_apply_patch_if_needed "{_VLLM_SECOND}"' in pkgbuild
+
+
+def test_vllm_renderer_refuses_a_later_patch_without_sentinel_or_exemption(capsys) -> None:
+    with pytest.raises(SystemExit) as exc:
+        _render_vllm_0_30_pkgbuild(
+            **_vllm_backport_policy(
+                [{"patch": _VLLM_FIRST, "text": "def first(", "path": "vllm/first.py"}]
+            )
+        )
+
+    assert exc.value.code == 2
+    err = capsys.readouterr().err
+    assert "SOURCE_PATCH_SENTINEL_MISSING" in err
+    assert _VLLM_SECOND in err
+
+
+@pytest.mark.parametrize(
+    "sentinels",
+    [
+        # unquotable or incomplete text sentinels
+        [{"patch": _VLLM_FIRST, "text": "it's quoted", "path": "vllm/module.py"}],
+        [{"patch": _VLLM_FIRST, "text": "two\nlines", "path": "vllm/module.py"}],
+        [{"patch": _VLLM_FIRST, "text": "text", "path": " "}],
+        [{"patch": _VLLM_FIRST, "text": "text", "path": "vllm/a module.py"}],
+        [{"patch": _VLLM_FIRST, "text": "", "path": "vllm/module.py"}],
+        # the old positional form
+        [["def first(", "vllm/first.py"]],
+        # an entry for the carry, for an unlisted patch, or a second entry
+        [{"patch": _VLLM_CARRY, "text": "text", "path": "vllm/module.py"}],
+        [{"patch": "0099-backport-unlisted.patch", "text": "text", "path": "vllm/module.py"}],
+        [
+            {"patch": _VLLM_FIRST, "text": "def first(", "path": "vllm/first.py"},
+            {"patch": _VLLM_FIRST, "text": "def again(", "path": "vllm/first.py"},
+        ],
+        # exemptions: no reason, no guard, an unknown guard, a guard that is
+        # itself exempt, and only an earlier guard
+        [{"patch": _VLLM_FIRST, "guarded_by": [_VLLM_SECOND]}],
+        [{"patch": _VLLM_FIRST, "guarded_by": [], "reason": "deletes one line"}],
+        [{"patch": _VLLM_FIRST, "guarded_by": ["0099-backport-unlisted.patch"], "reason": "x"}],
+        [
+            {"patch": _VLLM_FIRST, "guarded_by": [_VLLM_SECOND], "reason": "x"},
+            {"patch": _VLLM_SECOND, "guarded_by": [_VLLM_FIRST], "reason": "x"},
+        ],
+        [
+            {"patch": _VLLM_FIRST, "text": "def first(", "path": "vllm/first.py"},
+            {"patch": _VLLM_SECOND, "guarded_by": [_VLLM_FIRST], "reason": "x"},
+        ],
+    ],
+)
+def test_vllm_renderer_rejects_invalid_source_patch_sentinels(sentinels, capsys) -> None:
+    complete = [
+        {"patch": name, "text": f"def {name[:4]}(", "path": "vllm/module.py"}
+        for name in (_VLLM_FIRST, _VLLM_SECOND)
+        if not any(isinstance(entry, dict) and entry.get("patch") == name for entry in sentinels)
+    ]
+
+    with pytest.raises(SystemExit) as exc:
+        _render_vllm_0_30_pkgbuild(**_vllm_backport_policy([*sentinels, *complete]))
+
+    assert exc.value.code == 2
+    assert "SOURCE_PATCH_SENTINEL_INVALID" in capsys.readouterr().err
+
+
 def test_rust_wheel_renderer_applies_source_patches() -> None:
     pkgbuild = render_recipe_scaffolds.render_pkgbuild(
         "sample-rust-gfx1151",
@@ -464,26 +723,37 @@ def test_native_wheel_build_env_quotes_values() -> None:
     assert "export SAMPLE_FLAGS='alpha beta'" in pkgbuild
 
 
-def test_triton_rocm_renderer_prefers_source_patches_over_inline_sed() -> None:
-    pkgbuild = render_recipe_scaffolds.render_pkgbuild(
+def _render_triton_rocm(**policy_overrides) -> str:
+    policy = {
+        "recipe_key": "triton",
+        "template": "python-project-triton-rocm",
+        "upstream_version": "3.8.0+git669b31ac",
+        "pkgdesc": "Triton",
+        "url": "https://triton-lang.org/main/index.html",
+        "license": ["MIT"],
+        "src_subdir": "triton",
+        "source_refs": [
+            "triton::git+https://github.com/ROCm/triton.git#commit=669b31acc1dd1b3fd93286afd5db67f65d9f7557",
+            "llvm-5f07f818-ubuntu-x64-1.tar.gz::https://oaitriton.blob.core.windows.net/public/llvm-builds/llvm-5f07f818-ubuntu-x64-1.tar.gz",
+        ],
+        "sha256sums": [
+            "SKIP",
+            "62dd9524eed689360882a7ae06132182b4a724ca5dfdca77667556fcef940022",
+        ],
+        "source_patches": [
+            "0001-python-3.14-and-pybind11-build-system.patch",
+            "0002-disable-werror-with-therock-llvm-headers.patch",
+        ],
+        "triton_llvm_dir": "llvm-5f07f818-ubuntu-x64-1",
+    }
+    for key, value in policy_overrides.items():
+        if value is None:
+            policy.pop(key, None)
+        else:
+            policy[key] = value
+    return render_recipe_scaffolds.render_pkgbuild(
         "python-triton-gfx1151",
-        {
-            "recipe_key": "triton",
-            "template": "python-project-triton-rocm",
-            "upstream_version": "3.0.0+git0ec280cf",
-            "pkgdesc": "Triton",
-            "url": "https://triton-lang.org/main/index.html",
-            "license": ["MIT"],
-            "src_subdir": "triton",
-            "source_refs": [
-                "triton::git+https://github.com/ROCm/triton.git#commit=0ec280cf80dd91e9a86887981a670f2d4541a32b"
-            ],
-            "source_patches": [
-                "0001-python-3.14-and-pybind11-build-system.patch",
-                "0002-disable-werror-with-therock-llvm-headers.patch",
-                "0003-attrs-descriptor-repr-for-inductor.patch",
-            ],
-        },
+        policy,
         {
             "repo": "https://github.com/ROCm/triton.git",
             "method": "pip",
@@ -501,7 +771,7 @@ def test_triton_rocm_renderer_prefers_source_patches_over_inline_sed() -> None:
                 }
             ],
         },
-        "3.0.0+git0ec280cf",
+        policy["upstream_version"],
         {
             "recipe_repo": "https://github.com/paudley/ai-notes",
             "recipe_subdir": "strix-halo",
@@ -509,11 +779,57 @@ def test_triton_rocm_renderer_prefers_source_patches_over_inline_sed() -> None:
         },
     )
 
+
+def test_triton_rocm_renderer_prefers_source_patches_over_inline_sed() -> None:
+    pkgbuild = _render_triton_rocm()
+
     assert 'patch -Np1 -i "$srcdir/0001-python-3.14-and-pybind11-build-system.patch"' in pkgbuild
-    assert 'patch -Np1 -i "$srcdir/0003-attrs-descriptor-repr-for-inductor.patch"' in pkgbuild
+    assert 'patch -Np1 -i "$srcdir/0002-disable-werror-with-therock-llvm-headers.patch"' in pkgbuild
     assert "aten/src/ATen/native/hip/linalg/BatchLinearAlgebra.cpp" not in pkgbuild
     assert "sed -i" not in pkgbuild
     assert "git cherry-pick" not in pkgbuild
+
+
+def test_triton_rocm_renderer_builds_offline_from_the_repo_root() -> None:
+    pkgbuild = _render_triton_rocm()
+
+    assert 'cd "$srcdir/triton/python"' not in pkgbuild
+    assert pkgbuild.count('cd "$srcdir/triton"\n') == 3
+    assert "unset LLVM_SYSPATH" not in pkgbuild
+    assert "export TRITON_OFFLINE_BUILD=ON" in pkgbuild
+    assert 'export LLVM_SYSPATH="$srcdir/llvm-5f07f818-ubuntu-x64-1"' in pkgbuild
+    assert "export JSON_SYSPATH=/usr" in pkgbuild
+    assert 'export TRITON_HOME="$srcdir/.triton-home"' in pkgbuild
+    assert "llvm-5f07f818-ubuntu-x64-1.tar.gz::https://oaitriton.blob.core.windows.net/" in pkgbuild
+    assert "62dd9524eed689360882a7ae06132182b4a724ca5dfdca77667556fcef940022" in pkgbuild
+
+
+def test_triton_rocm_renderer_requires_a_pinned_llvm_dir(capsys) -> None:
+    with pytest.raises(SystemExit):
+        _render_triton_rocm(triton_llvm_dir=None)
+
+    assert "TRITON_LLVM_DIR_MISSING" in capsys.readouterr().err
+
+
+def _pkgbuild_dependency_names(text: str) -> set[str]:
+    names: set[str] = set()
+    for match in re.finditer(r"^\s*(?:make)?depends(?:_x86_64)?\+?=\((.*?)\)", text, re.M | re.S):
+        body = re.sub(r"#[^\n]*", "", match.group(1))
+        for word in re.findall(r"""['"]?([^\s'"()]+)['"]?""", body):
+            names.add(re.split(r"[<>=]", word, maxsplit=1)[0])
+    return names
+
+
+def test_pkgbuilds_that_build_with_rocm_clang_declare_rocm_llvm() -> None:
+    # A clean build root has only what the package declares, so a PKGBUILD
+    # that selects a compiler from ROCm's LLVM must pull in its provider.
+    missing = [
+        path.parent.name
+        for path in sorted(REPO_ROOT.glob("packages/*/PKGBUILD"))
+        if "/opt/rocm/lib/llvm/bin" in (text := path.read_text(encoding="utf-8"))
+        and "rocm-llvm-gfx1151" not in _pkgbuild_dependency_names(text)
+    ]
+    assert missing == []
 
 
 def test_aocl_libm_renderer_prefers_source_patches_over_inline_sed() -> None:
@@ -742,9 +1058,11 @@ def test_aotriton_renderer_stages_pinned_submodule_sources() -> None:
 
     assert 'cp -a "$srcdir/aotriton-aiter" "$srcdir/aotriton/third_party/aiter"' in pkgbuild
     assert "git submodule update --init --recursive" not in pkgbuild
-    assert "cherry-pick -n c44b870bdd9e1ea8933fd4057b6b59a5e6e5407b" in pkgbuild
+    # The old ast.Num cherry-pick is not in the pinned vendored Triton history; it was a masked no-op.
+    assert "cherry-pick" not in pkgbuild
     assert 'patch -Np1 -i "$srcdir/0001-gate-vendored-triton-nvidia-build-artifacts.patch"' in pkgbuild
     assert 'export TRITON_HOME="$srcdir/.triton-home"' in pkgbuild
+    assert 'export TRITON_PARALLEL_LINK_JOBS="${TRITON_PARALLEL_LINK_JOBS:-2}"' in pkgbuild
     assert 'export PIP_CACHE_DIR="$srcdir/.pip-cache"' in pkgbuild
     assert 'export PYTHONPYCACHEPREFIX="$srcdir/.python-pycache"' in pkgbuild
 
@@ -880,6 +1198,10 @@ def test_pytorch_rocm_renderer_uses_source_patches_for_magma_fix() -> None:
     assert 'export ROCM_PATH="/opt/rocm"' in pkgbuild
     assert 'export HIP_CLANG_PATH="${_rocm_llvm_bin}"' in pkgbuild
     assert "NPY_TARGET_VERSION" not in pkgbuild
+    assert "export USE_MAGMA=0" in pkgbuild
+    assert "-Wno-error=unused-command-line-argument -include format\"" in pkgbuild
+    assert 'export MAX_JOBS="${MAX_JOBS:-$(_build_jobs)}"' in pkgbuild
+    assert 'export MAX_JOBS="$(nproc)"' not in pkgbuild
     assert "cmake -P build/torch/headeronly/cmake_install.cmake" in pkgbuild
     assert "cmake -P build/c10/cmake_install.cmake" in pkgbuild
     assert "cmake -P build/caffe2/cmake_install.cmake" in pkgbuild
@@ -1196,3 +1518,388 @@ def test_render_recipe_json_keeps_explicit_extra_source_checksums_in_policy() ->
     assert "source_patch_sha256sums" not in recipe_json["maintenance"]
     assert recipe_json["policy"]["extra_sources"] == ["extra-data.tar.gz"]
     assert recipe_json["policy"]["extra_sha256sums"] == ["abc123"]
+
+
+def _render_native_wheel(**policy_overrides) -> str:
+    policy = {
+        "recipe_key": "sample",
+        "template": "native-wheel-pypi",
+        "upstream_version": "1.2.3",
+        "pkgdesc": "Sample native wheel",
+        "url": "https://example.invalid/sample-native",
+        "license": ["MIT"],
+        "pypi_name": "sample-native",
+        "sha256sums": ["0" * 64],
+        "src_subdir": "sample-native-1.2.3",
+        "single_wheel_install": True,
+    }
+    policy.update(policy_overrides)
+    return render_recipe_scaffolds.render_pkgbuild(
+        "sample-native-gfx1151",
+        policy,
+        {
+            "repo": "",
+            "method": "pip",
+            "phase": "package",
+            "steps": [],
+            "depends_on": [],
+            "notes": "",
+        },
+        "1.2.3",
+        {
+            "recipe_repo": "https://github.com/paudley/ai-notes",
+            "recipe_subdir": "strix-halo",
+            "recipe_author": "Blackcat Informatics Inc.",
+        },
+    )
+
+
+def _run_bash(pkgbuild_path: Path, script: str, **env: str) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        ["bash", "-c", f'source "$1"\n{script}', "bash", str(pkgbuild_path)],
+        capture_output=True,
+        text=True,
+        env={"PATH": "/usr/bin:/bin", **env},
+    )
+
+
+def test_native_wheel_drop_lto_from_cflags_keeps_cxx_lto(tmp_path: Path) -> None:
+    pkgbuild = _render_native_wheel(drop_lto_from_cflags=True)
+    path = tmp_path / "PKGBUILD"
+    path.write_text(pkgbuild, encoding="utf-8")
+
+    result = _run_bash(
+        path,
+        '_drop_lto_from_cflags\nprintf "%s\\n%s\\n" "$CFLAGS" "$CXXFLAGS"',
+        CFLAGS="-O3 -flto=auto -pipe -ffat-lto-objects -Xclang -mllvm -Xclang -enable-gvn-sink -flto",
+        CXXFLAGS="-O3 -flto=auto",
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.splitlines() == [
+        "-O3 -pipe -Xclang -mllvm -Xclang -enable-gvn-sink",
+        "-O3 -flto=auto",
+    ]
+    build = pkgbuild[pkgbuild.index("build() {") :]
+    assert build.index('export CFLAGS="${_base_cflags') < build.index("  _drop_lto_from_cflags\n")
+    assert build.index("  _drop_lto_from_cflags\n") < build.index("/usr/bin/python -m build")
+
+
+def test_native_wheel_without_drop_lto_leaves_cflags_alone() -> None:
+    pkgbuild = _render_native_wheel()
+
+    assert "_drop_lto_from_cflags" not in pkgbuild
+
+
+def _write_fake_wheel(dist: Path, files: dict[str, bytes]) -> None:
+    import zipfile
+
+    dist.mkdir(parents=True)
+    name = "sample_native-1.2.3"
+    records = []
+    with zipfile.ZipFile(dist / f"{name}-py3-none-any.whl", "w") as wheel:
+        payload = {
+            **files,
+            f"{name}.dist-info/METADATA": b"Metadata-Version: 2.1\nName: sample-native\nVersion: 1.2.3\n",
+            f"{name}.dist-info/WHEEL": b"Wheel-Version: 1.0\nGenerator: test\nRoot-Is-Purelib: true\nTag: py3-none-any\n",
+        }
+        for member, data in payload.items():
+            wheel.writestr(member, data)
+            records.append(f"{member},,")
+        wheel.writestr(f"{name}.dist-info/RECORD", "\n".join(records + [f"{name}.dist-info/RECORD,,"]) + "\n")
+
+
+@pytest.mark.parametrize(
+    ("files", "ok", "message"),
+    [
+        (
+            {"sample/_ffi_api.py": b"", "sample/lib/libsample.so": b"\x7fELF..no debug info in ELF executable.."},
+            True,
+            "",
+        ),
+        ({"sample/lib/libsample.so": b"no debug info in ELF executable"}, False, "sample/_ffi_api.py"),
+        ({"sample/_ffi_api.py": b"", "sample/lib/libsample.so": b"\x7fELF"}, False, "no debug info in ELF executable"),
+    ],
+)
+def test_native_wheel_package_guards_required_wheel_contents(
+    tmp_path: Path, files: dict[str, bytes], ok: bool, message: str
+) -> None:
+    pkgbuild = _render_native_wheel(
+        wheel_required_files=["sample/_ffi_api.py"],
+        wheel_required_strings=[
+            {"path": "sample/lib/libsample.so", "text": "no debug info in ELF executable"}
+        ],
+    )
+    path = tmp_path / "PKGBUILD"
+    path.write_text(pkgbuild, encoding="utf-8")
+    srcdir = tmp_path / "src"
+    _write_fake_wheel(srcdir / "sample-native-1.2.3" / "dist", files)
+
+    result = _run_bash(path, "package", srcdir=str(srcdir), pkgdir=str(tmp_path / "pkg"))
+
+    assert (result.returncode == 0) is ok, result.stderr
+    assert message in result.stderr
+
+
+SAMPLE_RECIPE_PKG = {
+    "repo": "https://example.invalid/sample.git",
+    "method": "meta",
+    "phase": "package",
+    "steps": [],
+    "depends_on": [],
+    "notes": "",
+}
+SAMPLE_DEFAULTS = {
+    "recipe_repo": "https://github.com/paudley/ai-notes",
+    "recipe_subdir": "strix-halo",
+    "recipe_author": "Blackcat Informatics Inc.",
+}
+
+
+def test_render_pkgbuild_emits_backup_only_when_policy_sets_it() -> None:
+    policy_pkg = {
+        "recipe_key": "sample",
+        "template": "meta-package",
+        "pkgdesc": "Sample",
+        "url": "https://example.invalid/sample",
+        "license": ["MIT"],
+        "src_subdir": "sample",
+    }
+
+    plain = render_recipe_scaffolds.render_pkgbuild(
+        "sample", policy_pkg, SAMPLE_RECIPE_PKG, "1.2.3", SAMPLE_DEFAULTS
+    )
+    with_backup = render_recipe_scaffolds.render_pkgbuild(
+        "sample",
+        {**policy_pkg, "backup": ["etc/sample/secrets.conf"]},
+        SAMPLE_RECIPE_PKG,
+        "1.2.3",
+        SAMPLE_DEFAULTS,
+    )
+
+    assert "backup=" not in plain
+    assert "replaces=()\nbackup=(etc/sample/secrets.conf)\nsource=()\n" in with_backup
+
+
+def test_render_pkgbuild_ignores_an_install_script_key() -> None:
+    # No package ships a pacman scriptlet; owner config is never rewritten.
+    policy_pkg = {
+        "recipe_key": "sample",
+        "template": "meta-package",
+        "pkgdesc": "Sample",
+        "url": "https://example.invalid/sample",
+        "license": ["MIT"],
+        "src_subdir": "sample",
+        "install": "sample.install",
+    }
+
+    rendered = render_recipe_scaffolds.render_pkgbuild(
+        "sample", policy_pkg, SAMPLE_RECIPE_PKG, "1.2.3", SAMPLE_DEFAULTS
+    )
+
+    assert "install=" not in rendered
+
+
+def test_real_lemonade_server_backs_up_both_secrets_files() -> None:
+    policy = recipe_policy.load_recipe_policy(REPO_ROOT / "policies/recipe-packages.toml")
+    server = policy["packages"]["lemonade-server"]
+
+    assert "install" not in server
+    assert server["backup"] == ["etc/default/lemond", "etc/lemonade/conf.d/zz-secrets.conf"]
+
+
+LEMOND_UNIT_OK = """\
+[Service]
+StateDirectory=lemonade
+CacheDirectory=lemonade
+CacheDirectoryMode=0755
+EnvironmentFile=-/etc/default/lemond
+ExecStart=/usr/bin/lemond
+"""
+
+
+@pytest.mark.parametrize(
+    ("unit", "ok"),
+    [
+        (LEMOND_UNIT_OK, True),
+        (LEMOND_UNIT_OK.replace("CacheDirectory=lemonade\n", ""), False),
+        (LEMOND_UNIT_OK.replace("CacheDirectoryMode=0755", "CacheDirectoryMode=0700"), False),
+        (LEMOND_UNIT_OK.replace("ExecStart=/usr/bin/lemond", "ExecStart=/usr/bin/lemond /var/cache/lemonade"), False),
+        (LEMOND_UNIT_OK.replace("EnvironmentFile=-/etc/default/lemond", "EnvironmentFile=-/etc/lemonade/conf.d/*.conf"), False),
+        # 30-env-files.conf resets the list, so any other upstream entry would be dropped.
+        (LEMOND_UNIT_OK + "EnvironmentFile=-/etc/lemonade/conf.d/*.conf\n", False),
+        (LEMOND_UNIT_OK + "EnvironmentFile=-/etc/default/lemond\n", False),
+        (LEMOND_UNIT_OK + "EnvironmentFile = /etc/lemonade/extra.env\n", False),
+        (LEMOND_UNIT_OK + "  EnvironmentFile=/etc/lemonade/extra.env\n", False),
+        (LEMOND_UNIT_OK + "Environment=LEMONADE_CACHE_DIR=/srv/lemonade\n", False),
+        (LEMOND_UNIT_OK + "Environment=HOME=/srv/lemonade\n", False),
+        (LEMOND_UNIT_OK + "Environment=XDG_CONFIG_HOME=/srv\n", False),
+        # systemd ignores whitespace around "=", so spaced directives count too.
+        (LEMOND_UNIT_OK + "ExecStart = /usr/bin/lemond /var/cache/lemonade\n", False),
+        (LEMOND_UNIT_OK + "  ExecStart=/usr/bin/lemond\n", False),
+        (LEMOND_UNIT_OK + "Environment = HOME=/srv/lemonade\n", False),
+        (LEMOND_UNIT_OK + "  Environment=XDG_CONFIG_HOME=/srv\n", False),
+    ],
+)
+def test_lemond_unit_check_accepts_only_the_split_config_and_cache_layout(
+    tmp_path: Path, unit: str, ok: bool
+) -> None:
+    unit_path = tmp_path / "lemond.service"
+    unit_path.write_text(unit, encoding="utf-8")
+    result = _run_lemond_unit_check(unit_path)
+
+    assert (result.returncode == 0) is ok, result.stderr
+    if not ok:
+        assert "LEMOND_UNIT_LAYOUT" in result.stderr
+
+
+def _run_lemond_unit_check(unit_path: Path) -> subprocess.CompletedProcess[str]:
+    # makepkg runs package() with errexit, errtrace, and an ERR trap.
+    script = (
+        "shopt -o -s errexit errtrace\n"
+        "trap 'exit 4' ERR\n"
+        + render_recipe_scaffolds.lemond_unit_check_snippet()
+        + '_check_lemond_unit "$1"\n'
+    )
+    return subprocess.run(
+        ["bash", "-c", script, "bash", str(unit_path)],
+        env={"PATH": "/usr/bin:/bin"},
+        capture_output=True,
+        text=True,
+    )
+
+
+@pytest.mark.parametrize(
+    "dropin",
+    [
+        # 30-env-files.conf resets EnvironmentFile=, so it would silently drop
+        # an EnvironmentFile= from any upstream drop-in that sorts before it.
+        "10-upstream.conf",
+        # The package's own names must not already be taken by upstream.
+        "20-no-remote-model-fetch.conf",
+        "30-env-files.conf",
+        "99-late.conf",
+    ],
+)
+def test_lemond_unit_check_rejects_upstream_drop_ins(tmp_path: Path, dropin: str) -> None:
+    unit_path = tmp_path / "lemond.service"
+    unit_path.write_text(LEMOND_UNIT_OK, encoding="utf-8")
+    dropin_dir = tmp_path / "lemond.service.d"
+    dropin_dir.mkdir()
+    (dropin_dir / dropin).write_text("[Service]\nEnvironmentFile=-/etc/lemonade/extra.env\n")
+
+    result = _run_lemond_unit_check(unit_path)
+
+    assert result.returncode != 0
+    assert "LEMOND_UNIT_LAYOUT" in result.stderr
+    assert dropin in result.stderr
+
+
+def test_lemond_unit_check_accepts_a_missing_drop_in_dir(tmp_path: Path) -> None:
+    unit_path = tmp_path / "lemond.service"
+    unit_path.write_text(LEMOND_UNIT_OK, encoding="utf-8")
+
+    result = _run_lemond_unit_check(unit_path)
+
+    assert result.returncode == 0, result.stderr
+
+
+def test_lemond_unit_check_accepts_an_empty_drop_in_dir(tmp_path: Path) -> None:
+    unit_path = tmp_path / "lemond.service"
+    unit_path.write_text(LEMOND_UNIT_OK, encoding="utf-8")
+    (tmp_path / "lemond.service.d").mkdir()
+
+    result = _run_lemond_unit_check(unit_path)
+
+    assert result.returncode == 0, result.stderr
+
+
+def test_recipe_policy_expands_source_pins_in_package_values() -> None:
+    resolved = recipe_policy.resolve_recipe_policy(
+        {
+            "source_pins": {"sample": "0123abcd"},
+            "packages": {
+                "sample-a": {
+                    "source_refs": [
+                        "sample::git+https://example.invalid/sample.git#commit={source_pins.sample}"
+                    ],
+                    "scaffold_notes": ["Pinned to {source_pins.sample}."],
+                    "pkgrel": 1,
+                },
+                "sample-b": {"source_refs": ["plain-source"]},
+            },
+        }
+    )
+
+    sample_a = resolved["packages"]["sample-a"]
+    assert sample_a["source_refs"] == [
+        "sample::git+https://example.invalid/sample.git#commit=0123abcd"
+    ]
+    assert sample_a["scaffold_notes"] == ["Pinned to 0123abcd."]
+    assert sample_a["pkgrel"] == 1
+    assert resolved["packages"]["sample-b"]["source_refs"] == ["plain-source"]
+
+
+def test_recipe_policy_rejects_unknown_source_pins() -> None:
+    with pytest.raises(KeyError, match="unknown source pin: missing"):
+        recipe_policy.resolve_recipe_policy(
+            {"packages": {"sample": {"source_refs": ["x#commit={source_pins.missing}"]}}}
+        )
+
+
+def test_real_lemonade_packages_share_one_source_pin() -> None:
+    policy = recipe_policy.load_recipe_policy(REPO_ROOT / "policies/recipe-packages.toml")
+    pin = policy["source_pins"]["lemonade"]
+    expected = f"lemonade::git+https://github.com/nisavid/lemonade.git#commit={pin}"
+
+    for package in ("lemonade-server", "lemonade-app"):
+        assert policy["packages"][package]["source_refs"] == [expected]
+        pkgbuild = (REPO_ROOT / "packages" / package / "PKGBUILD").read_text(encoding="utf-8")
+        assert f"'{expected}'" in pkgbuild
+
+
+@pytest.mark.parametrize(
+    ("makeflags", "expected"),
+    [
+        ("-j12", "12"),
+        ("-j 6 -l8", "6"),
+        ("--output-sync -j20", "20"),
+        ("--jobs=8", "8"),
+        ("-l4 --jobs 3", "3"),
+        ("-kj4", "4"),
+        ("-k -j 5", "5"),
+        ("-j32 -j2", "2"),
+        ("--jobs=16 -j4", "4"),
+        ("-j4 -j", None),
+        ("-C -j9", None),
+        ("-j4 -- -j9", "4"),
+        ("-j", None),
+        ("", None),
+    ],
+)
+def test_build_jobs_helper_reads_the_makeflags_job_cap(makeflags: str, expected: str | None) -> None:
+    script = render_recipe_scaffolds.build_jobs_snippet() + "_build_jobs\n"
+    result = subprocess.run(
+        ["bash", "-c", script],
+        env={"PATH": "/usr/bin:/bin", "MAKEFLAGS": makeflags},
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    nproc = subprocess.run(["nproc"], capture_output=True, text=True, check=True).stdout.strip()
+    assert result.stdout.strip() == (expected or nproc)
+
+
+def test_pkgbuilds_take_parallelism_from_makepkg() -> None:
+    hardcoded = re.compile(r'(-j\s*"?\$\(nproc\)|MAX_JOBS="?\$\(nproc\))')
+    offenders = [
+        str(path.relative_to(REPO_ROOT))
+        for path in sorted((REPO_ROOT / "packages").glob("*/PKGBUILD"))
+        if hardcoded.search(path.read_text(encoding="utf-8"))
+    ]
+    assert offenders == []
+    assert not hardcoded.search(MODULE_PATH.read_text(encoding="utf-8"))
+    pytorch = (REPO_ROOT / "packages/python-pytorch-opt-rocm-gfx1151/PKGBUILD").read_text(encoding="utf-8")
+    assert 'export MAX_JOBS="${MAX_JOBS:-$(_build_jobs)}"' in pytorch
+    for package in ("aocl-libm-gfx1151", "lemonade-app", "lemonade-server", "python-gfx1151"):
+        assert '-j"$(_build_jobs)"' in (REPO_ROOT / "packages" / package / "PKGBUILD").read_text(encoding="utf-8")
