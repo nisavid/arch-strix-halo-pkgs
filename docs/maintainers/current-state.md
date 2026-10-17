@@ -4877,11 +4877,11 @@ The following smoke checks have already passed on the reference host:
     torch.compile and CUDAGraphs for that quantization path, so eager remains
     effectively required unless a lower-level vLLM/TorchAO change removes that
     forced eager behavior.
-- `llama.cpp-hip-gfx1151` uses `aur/llama.cpp-hip` as the authoritative
-  baseline reference.
-- `llama.cpp-vulkan-gfx1151` currently uses `aur/llama.cpp-vulkan-bin` as the
-  closest backend-specific reference until a maintained source-build Vulkan
-  package exists.
+- `llama.cpp-hip-gfx1151` and `llama.cpp-vulkan-gfx1151` use
+  `extra/llama-cpp` as the authoritative baseline reference, with
+  `extra/ggml-hip` or `extra/ggml-vulkan` and `extra/ggml` as advisory
+  references (#113). The AUR `llama.cpp` and `llama.cpp-hip` packages are gone,
+  and `llama.cpp-vulkan-bin` is binary-only.
 - Lemonade is intentionally customized so:
   - `llamacpp:rocm` and `llamacpp:vulkan` are packaged system-managed backends
   - `llamacpp:cpu` remains Lemonade-managed and downloadable

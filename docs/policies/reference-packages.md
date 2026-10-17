@@ -95,17 +95,20 @@ should be able to answer, from files alone:
     recipe patches for the source lane.
 
 - `llama.cpp-hip-gfx1151`
-  - authoritative: `aur/llama.cpp-hip`
-  - advisory: `aur/llama.cpp`
-  - rationale: the backend-specific AUR package is the closest maintained HIP
-    lane; the generic package is still useful for shared conventions.
+  - authoritative: `extra/llama-cpp`
+  - advisory: `extra/ggml-hip`, `extra/ggml`
+  - rationale: Arch moved llama.cpp from the AUR to `extra`, which packages
+    the same upstream stable line. `extra` links a shared `ggml` and loads
+    `ggml-hip` dynamically, so the ggml packages are advisory for the HIP
+    backend flags and runtime dependencies; this package bundles ggml under
+    `/opt`.
 
 - `llama.cpp-vulkan-gfx1151`
-  - authoritative: `aur/llama.cpp-vulkan-bin`
-  - advisory: `aur/llama.cpp`
-  - rationale: the closest Vulkan-specific reference is currently binary-only,
-    so it is authoritative for package expectations but only advisory for
-    source-build mechanics.
+  - authoritative: `extra/llama-cpp`
+  - advisory: `extra/ggml-vulkan`, `extra/ggml`
+  - rationale: as for HIP, with `ggml-vulkan` as the backend reference. The
+    AUR `llama.cpp-vulkan-bin` package is binary-only and no longer a
+    reference.
 
 - `aocl-libm-gfx1151`
   - authoritative: `none`
