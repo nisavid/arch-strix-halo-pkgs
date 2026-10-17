@@ -25,6 +25,8 @@ STRUCTURED_FAILURES = {
     "missing_pkg_meta": "MISSING_PACKAGE_METADATA",
     "kpack_ref_unowned": "KPACK_REF_UNOWNED",
     "soname_depend": "SONAME_DEPEND_UNRESOLVED",
+    "runpath_rewrite": "RUNPATH_REWRITE_INVALID",
+    "foreign_runpath": "FOREIGN_RUNPATH",
 }
 
 IGNORED = "__ignored__"
@@ -253,6 +255,8 @@ ELFDATA2LSB = 1
 SHT_DYNAMIC = 6
 DT_NULL = 0
 DT_NEEDED = 1
+DT_RPATH = 15
+DT_RUNPATH = 29
 
 
 class ElfError(ValueError):
@@ -330,10 +334,10 @@ def read_elf_section(path: Path, name: str) -> bytes | None:
     return None
 
 
-def read_elf_needed(path: Path) -> list[str]:
-    """Return the DT_NEEDED entries of an ELF64 shared object or executable."""
+def read_elf_dynamic_strings(path: Path, wanted: int) -> list[str]:
+    """Return the string values of one dynamic tag of an ELF64 file, in order."""
     sections = read_elf_sections(path)
-    needed: list[str] = []
+    values: list[str] = []
     for section in sections:
         if section["type"] != SHT_DYNAMIC:
             continue
@@ -343,9 +347,52 @@ def read_elf_needed(path: Path) -> list[str]:
             tag, value = struct.unpack_from("<qQ", dynamic, offset)
             if tag == DT_NULL:
                 break
-            if tag == DT_NEEDED:
-                needed.append(c_string(dynstr, value))
-    return needed
+            if tag == wanted:
+                values.append(c_string(dynstr, value))
+    return values
+
+
+def read_elf_needed(path: Path) -> list[str]:
+    """Return the DT_NEEDED entries of an ELF64 shared object or executable."""
+    return read_elf_dynamic_strings(path, DT_NEEDED)
+
+
+def read_elf_search_paths(path: Path) -> list[tuple[str, str]]:
+    """Return the DT_RUNPATH and DT_RPATH values of an ELF64 file as (tag, value) pairs."""
+    return [
+        (name, value)
+        for tag, name in ((DT_RUNPATH, "RUNPATH"), (DT_RPATH, "RPATH"))
+        for value in read_elf_dynamic_strings(path, tag)
+    ]
+
+
+ALLOWED_SEARCH_ROOTS = ("/usr", "/opt/rocm")
+
+
+def foreign_search_path_entries(relpath: str, value: str) -> list[str]:
+    """Return the entries of a RUNPATH/RPATH value that leave /usr and /opt/rocm.
+
+    ``relpath`` is the object's path relative to the root, which is also its
+    installed path. ``$ORIGIN`` resolves against the object's directory and the
+    result is normalized, so ``$ORIGIN/../../..`` cannot climb out of
+    /opt/rocm unnoticed. An empty entry means the current directory, so it is
+    foreign too.
+    """
+    origin = posixpath.dirname("/" + relpath)
+    foreign: list[str] = []
+    for entry in value.split(":"):
+        resolved = entry
+        for token in ("${ORIGIN}", "$ORIGIN"):
+            if resolved == token or resolved.startswith(token + "/"):
+                resolved = origin + resolved[len(token) :]
+                break
+        if not resolved.startswith("/") or "$" in resolved:
+            foreign.append(entry)
+            continue
+        resolved = posixpath.normpath(resolved)
+        if not any(resolved == root or resolved.startswith(root + "/") for root in ALLOWED_SEARCH_ROOTS):
+            foreign.append(entry)
+    return foreign
 
 
 def msgpack_decode(data: bytes) -> object:
@@ -491,6 +538,128 @@ def check_kpack_refs(root: Path, policy: dict, owners: dict[str, str | None], fa
             failures.append(Failure("kpack_ref_unowned", relpath, detail, hint))
 
 
+def resolve_runpath_rewrites(
+    root: Path,
+    policy: dict,
+    package_files: dict[str, list[str]],
+    failures: list[Failure],
+) -> dict[str, list[tuple[str, str]]]:
+    """Expand each package's ``runpath_rewrites`` into (object, runpath) pairs.
+
+    Each entry names an fnmatch pattern for objects the package owns and the
+    complete RUNPATH they get at package time (``patchelf --set-rpath``, which
+    replaces the old value). An entry must match at least one regular ELF the
+    package ships, no object may match two entries, and the new value must
+    itself stay under /usr and /opt/rocm.
+    """
+    rewrites: dict[str, list[tuple[str, str]]] = {}
+    for pkg, meta in sorted(policy["packages"].items()):
+        entries = meta.get("runpath_rewrites", [])
+        if not entries:
+            continue
+        files = package_files.get(pkg, [])
+        claimed: dict[str, str] = {}
+        for entry in entries:
+            pattern = entry["object"]
+            runpath = entry["runpath"]
+            hint = f"Fix [packages.\"{pkg}\"].runpath_rewrites."
+            matched = sorted(
+                relpath
+                for relpath in files
+                if fnmatch.fnmatchcase(relpath, pattern)
+                and not (root / relpath).is_symlink()
+                and is_elf(root / relpath)
+            )
+            if not matched:
+                failures.append(
+                    Failure("runpath_rewrite", pkg, f"{pattern} matches no regular ELF file in the package", hint)
+                )
+                continue
+            if not runpath or "'" in runpath or foreign_search_path_entries(matched[0], runpath):
+                failures.append(
+                    Failure(
+                        "runpath_rewrite",
+                        pkg,
+                        f"{pattern}: new RUNPATH {runpath!r} leaves /usr and /opt/rocm",
+                        hint,
+                    )
+                )
+                continue
+            for relpath in matched:
+                if foreign_search_path_entries(relpath, runpath):
+                    failures.append(
+                        Failure(
+                            "runpath_rewrite",
+                            pkg,
+                            f"{relpath}: new RUNPATH {runpath!r} leaves /usr and /opt/rocm",
+                            hint,
+                        )
+                    )
+                    continue
+                if relpath in claimed:
+                    failures.append(
+                        Failure(
+                            "runpath_rewrite",
+                            pkg,
+                            f"{relpath} matches both {claimed[relpath]} and {pattern}",
+                            hint,
+                        )
+                    )
+                    continue
+                claimed[relpath] = pattern
+                rewrites.setdefault(pkg, []).append((relpath, runpath))
+    for entries in rewrites.values():
+        entries.sort()
+    return rewrites
+
+
+def check_search_paths(
+    root: Path,
+    package_files: dict[str, list[str]],
+    rewrites: dict[str, list[tuple[str, str]]],
+    failures: list[Failure],
+) -> None:
+    """Fail on any packaged ELF whose RUNPATH or RPATH, after rewrites, leaves /usr and /opt/rocm.
+
+    CI build trees such as /__w/rockrel/... and foreign interpreter prefixes do
+    not exist on the host; the loader skips them, so a NEEDED entry they were
+    meant to satisfy silently resolves elsewhere or not at all.
+    """
+    for pkg, files in sorted(package_files.items()):
+        rewritten = dict(rewrites.get(pkg, []))
+        for relpath in files:
+            path = root / relpath
+            if path.is_symlink() or not path.is_file() or not is_elf(path):
+                continue
+            if relpath in rewritten:
+                values = [("RUNPATH", rewritten[relpath])]
+            else:
+                try:
+                    values = read_elf_search_paths(path)
+                except (ElfError, OSError, struct.error) as exc:
+                    failures.append(
+                        Failure(
+                            "foreign_runpath",
+                            relpath,
+                            f"could not read RUNPATH/RPATH: {exc}",
+                            f"Inspect the payload file owned by {pkg}.",
+                        )
+                    )
+                    continue
+            for tag, value in values:
+                foreign = foreign_search_path_entries(relpath, value)
+                if foreign:
+                    failures.append(
+                        Failure(
+                            "foreign_runpath",
+                            relpath,
+                            f"{pkg}: {tag} {value!r} has entries outside /usr and /opt/rocm: "
+                            + ", ".join(repr(entry) for entry in foreign),
+                            f"Add a [packages.\"{pkg}\"].runpath_rewrites entry that sets a RUNPATH under $ORIGIN, /usr, or /opt/rocm.",
+                        )
+                    )
+
+
 def derive_soname_depends(
     root: Path,
     policy: dict,
@@ -586,6 +755,7 @@ def render_pkgbuild(
     output_dir: Path,
     template_path: Path,
     render_meta: dict[str, str],
+    runpath_rewrites: dict[str, list[tuple[str, str]]] | None = None,
 ) -> None:
     template = read_template(template_path)
     pkg_defs = policy["packages"]
@@ -621,12 +791,15 @@ def render_pkgbuild(
             )
             for command in meta.get("post_copy_commands", []):
                 body.append(f"    {command}")
+            for relpath, runpath in (runpath_rewrites or {}).get(pkg, []):
+                body.append(f"    patchelf --set-rpath '{runpath}' \"${{pkgdir}}/{relpath}\"")
             synthetic = policy.get("synthetic_files", {}).get(pkg, [])
             for entry in synthetic:
                 text = entry["text"]
                 body.append(f"    install -Dm644 /dev/stdin \"${{pkgdir}}/{entry['path']}\" <<'EOF'")
                 body.append(text.rstrip("\n"))
                 body.append("EOF")
+            body.append("    _check_search_paths")
         body.append("}")
         package_functions.append("\n".join(body))
 
@@ -761,6 +934,8 @@ def main() -> int:
     for pkg, extra in derived.items():
         meta = policy["packages"][pkg]
         meta["depends"] = [*meta.get("depends", []), *extra]
+    rewrites = resolve_runpath_rewrites(root, policy, classifier.package_files, classifier.failures)
+    check_search_paths(root, classifier.package_files, rewrites, classifier.failures)
 
     if classifier.failures:
         for failure in classifier.failures:
@@ -770,7 +945,7 @@ def main() -> int:
     output_dir.mkdir(parents=True, exist_ok=True)
     write_filelists(classifier.package_files, output_dir)
     write_manifest(policy, classifier.package_files, output_dir, render_meta)
-    render_pkgbuild(policy, classifier.package_files, output_dir, template_path, render_meta)
+    render_pkgbuild(policy, classifier.package_files, output_dir, template_path, render_meta, rewrites)
     print(f"Generated {policy['repo']['pkgbase']} scaffolding in {output_dir}")
     return 0
 

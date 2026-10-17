@@ -1,7 +1,7 @@
 [repo]
 pkgbase = "therock-gfx1151"
 pkgver = "7.14.1"
-pkgrel = 1
+pkgrel = 2
 suffix = "-gfx1151"
 url = "https://github.com/ROCm/TheRock"
 license = ["custom:AMD"]
@@ -164,6 +164,15 @@ depends = ["rocm-core-gfx1151"]
 desc = "ROCm language runtime from TheRock for gfx1151"
 provides = ["rocm-language-runtime"]
 depends = ["rocm-core-gfx1151", "hsa-rocr-gfx1151", "rocm-device-libs-gfx1151", "comgr-gfx1151"]
+# Each RUNPATH keeps its $ORIGIN entries and drops the CI build trees
+# (/__w/rockrel/...) that the payload appends.
+runpath_rewrites = [
+  { object = "opt/rocm/bin/rdc[di]", runpath = "$ORIGIN/../lib:$ORIGIN/../lib/rocm_sysdeps/lib:$ORIGIN/../lib/llvm/lib" },
+  { object = "opt/rocm/lib/librdc.so.1.3", runpath = "$ORIGIN:$ORIGIN/rocm_sysdeps/lib:$ORIGIN/llvm/lib" },
+  { object = "opt/rocm/lib/librdc_bootstrap.so.1.3", runpath = "$ORIGIN:$ORIGIN/rdc" },
+  { object = "opt/rocm/lib/librdc_client.so.1.3", runpath = "$ORIGIN:$ORIGIN/rocm_sysdeps/lib:$ORIGIN/llvm/lib" },
+  { object = "opt/rocm/lib/rdc/librdc_roc[pr].so.1.3", runpath = "$ORIGIN/..:$ORIGIN/../rocm_sysdeps/lib:$ORIGIN/../llvm/lib" },
+]
 
 [packages."rocm-hip-runtime-gfx1151"]
 desc = "Compatibility meta package for ROCm HIP runtime support from TheRock for gfx1151"
@@ -191,6 +200,11 @@ depends = ["rocm-hip-gfx1151"]
 desc = "AMD LLVM toolchain from TheRock for gfx1151"
 provides = ["rocm-llvm"]
 depends = ["rocm-sysdeps-gfx1151"]
+# llvm-omp-kernel-replay NEEDS the bundled zlib and zstd but its RUNPATH does
+# not reach lib/rocm_sysdeps/lib; keep its entries and add that directory.
+runpath_rewrites = [
+  { object = "opt/rocm/lib/llvm/bin/llvm-omp-kernel-replay", runpath = "$ORIGIN:$ORIGIN/../lib:$ORIGIN/../../lib:$ORIGIN/../../../lib:$ORIGIN/../../rocm_sysdeps/lib" },
+]
 
 [packages."hipcc-gfx1151"]
 desc = "hipcc compiler driver from TheRock for gfx1151"
@@ -217,6 +231,11 @@ depends = ["gcc-libs", "glibc", "python-gfx1151", "rocm-core-gfx1151", "hsa-rocr
 desc = "AMD SMI library and tools from TheRock for gfx1151"
 provides = ["amdsmi", "amd-smi-lib"]
 depends = ["gcc-libs", "glibc", "python-gfx1151", "python-yaml", "rocm-core-gfx1151", "rocm-smi-lib-gfx1151", "rocm-sysdeps-gfx1151"]
+# The payload's RUNPATHs name CI build trees (/__w/rockrel/...) that do not
+# exist on the host, so the loader cannot find the bundled libnl and libmnl.
+runpath_rewrites = [
+  { object = "opt/rocm/share/amd_smi/amdsmi/libamd_smi.so", runpath = "$ORIGIN/../../../lib/rocm_sysdeps/lib:$ORIGIN/../../../lib" },
+]
 
 [packages."rocm-opencl-runtime-gfx1151"]
 desc = "ROCm OpenCL runtime from TheRock for gfx1151"
@@ -250,6 +269,11 @@ depends = ["rocm-core-gfx1151", "hip-runtime-amd-gfx1151", "rocm-dbgapi-gfx1151"
 desc = "ROCm GDB from TheRock for gfx1151"
 provides = ["rocm-gdb"]
 depends = ["bash", "expat", "gcc-libs", "glibc", "gmp", "guile", "libelf", "mpfr", "ncurses", "python-gfx1151", "readline", "rocm-dbgapi-gfx1151", "rocm-debug-agent-gfx1151", "xz", "zlib", "zstd"]
+# Each rocgdb-py3.x RUNPATH ends with the CI's /opt/python-shared/cp3xx
+# interpreter prefix; rocgdb-py3.14 finds libpython3.14.so.1.0 in /usr/lib.
+runpath_rewrites = [
+  { object = "opt/rocm/bin/rocgdb-py3.*", runpath = "$ORIGIN:$ORIGIN/../lib/rocm_sysdeps/lib:$ORIGIN/../lib/llvm/lib:$ORIGIN/../lib" },
+]
 
 [packages."rocprofiler-register-gfx1151"]
 desc = "rocprofiler-register from TheRock for gfx1151"
@@ -259,6 +283,10 @@ depends = ["gcc-libs", "glibc", "fmt", "google-glog", "rocm-core-gfx1151"]
 [packages."rocprofiler-sdk-gfx1151"]
 desc = "rocprofiler SDK from TheRock for gfx1151"
 provides = ["rocprofiler-sdk"]
+# The SDK's tool libraries NEED librocprofiler-sdk-rocpd and
+# librocprofiler-sdk-roctx, while neither of those NEEDS librocprofiler-sdk,
+# so the SDK depends on its components and not the other way round.
+depends = ["rocprofiler-sdk-rocpd-gfx1151", "rocprofiler-sdk-roctx-gfx1151"]
 post_copy_commands = [
   "_rocprofiler_sdk_config=\"${pkgdir}/opt/rocm/lib/cmake/rocprofiler-sdk/rocprofiler-sdk-config.cmake\"",
   "perl -0pi -e 's#/__w/rockrel/rockrel/build/dist/rocm#/opt/rocm#g; s#/__w/rockrel/rockrel/build/[^/\\s]+/[^/\\s]+/dist/#/opt/rocm/#g' \"${_rocprofiler_sdk_config}\"",
@@ -268,17 +296,19 @@ post_copy_commands = [
 [packages."rocprofiler-sdk-roctx-gfx1151"]
 desc = "rocprofiler SDK roctx component from TheRock for gfx1151"
 provides = ["rocprofiler-sdk-roctx"]
-depends = ["rocprofiler-sdk-gfx1151"]
 
 [packages."rocprofiler-sdk-rocpd-gfx1151"]
 desc = "rocprofiler SDK rocpd component from TheRock for gfx1151"
 provides = ["rocprofiler-sdk-rocpd"]
-depends = ["rocprofiler-sdk-gfx1151"]
 
 [packages."rocprofiler-systems-gfx1151"]
 desc = "rocprofiler-systems from TheRock for gfx1151"
 provides = ["rocprofiler-systems", "rocprofiler"]
 depends = ["fmt", "google-glog", "hip-runtime-amd-gfx1151", "hsa-amd-aqlprofile-gfx1151", "python-gfx1151", "python-lxml", "rocm-core-gfx1151", "yaml-cpp"]
+# The RUNPATH keeps its $ORIGIN entries and drops the CI zlib tree.
+runpath_rewrites = [
+  { object = "opt/rocm/bin/rocprof-sys-instrument", runpath = "$ORIGIN/../lib:$ORIGIN/../lib/rocprofiler-systems:$ORIGIN/../lib/llvm/lib:$ORIGIN/../lib/rocm_sysdeps/lib" },
+]
 
 [packages."rocprofiler-compute-gfx1151"]
 desc = "rocprofiler-compute from TheRock for gfx1151"
@@ -298,6 +328,10 @@ desc = "HSA AQL profiling runtime from TheRock for gfx1151"
 provides = ["hsa-amd-aqlprofile"]
 replaces = ["hsa-amd-aqlprofile-bin"]
 depends = ["gcc-libs", "glibc", "rocm-core-gfx1151", "hsa-rocr-gfx1151"]
+# The payload RUNPATH is the CI ROCR-Runtime tree plus an empty entry.
+runpath_rewrites = [
+  { object = "opt/rocm/lib/libhsa-amd-aqlprofile64.so", runpath = "$ORIGIN" },
+]
 
 [packages."rocblas-gfx1151"]
 desc = "rocBLAS from TheRock for gfx1151"
@@ -323,6 +357,11 @@ depends = ["gcc-libs", "glibc", "hip-runtime-amd-gfx1151", "hipblas-common-gfx11
 desc = "hipBLASLt from TheRock for gfx1151"
 provides = ["hipblaslt"]
 depends = ["gcc-libs", "glibc", "hip-runtime-amd-gfx1151", "hipblas-gfx1151", "msgpack-cxx", "rocblas-gfx1151", "rocm-core-gfx1151", "rocm-smi-lib-gfx1151", "yaml-cpp", "composable-kernel-gfx1151"]
+# libstinkytofu's RUNPATH is the CI comgr tree plus empty entries; comgr is in
+# opt/rocm/lib.
+runpath_rewrites = [
+  { object = "opt/rocm/share/hipblaslt/tensilelite/rocisa/libstinkytofu.so.0.1.0", runpath = "$ORIGIN/../../../../lib" },
+]
 
 [packages."hiprand-gfx1151"]
 desc = "hipRAND from TheRock for gfx1151"
@@ -333,6 +372,10 @@ depends = ["gcc-libs", "glibc", "hip-runtime-amd-gfx1151", "rocm-core-gfx1151", 
 desc = "rocRAND from TheRock for gfx1151"
 provides = ["rocrand"]
 depends = ["gcc-libs", "glibc", "hip-runtime-amd-gfx1151", "rocm-core-gfx1151"]
+# The RUNPATH keeps its $ORIGIN entries and drops the CI clr tree.
+runpath_rewrites = [
+  { object = "opt/rocm/lib/librocrand.so.1.1", runpath = "$ORIGIN/rocm_sysdeps/lib:$ORIGIN/llvm/lib:$ORIGIN" },
+]
 
 [packages."rocdecode-gfx1151"]
 desc = "rocDecode from TheRock for gfx1151"
@@ -382,6 +425,11 @@ depends = ["gcc-libs", "glibc", "hip-runtime-amd-gfx1151", "rocblas-gfx1151", "r
 desc = "rocSPARSE from TheRock for gfx1151"
 provides = ["rocsparse"]
 depends = ["gcc-libs", "glibc", "hip-runtime-amd-gfx1151", "rocblas-gfx1151", "rocm-core-gfx1151", "rocprim-gfx1151"]
+# The rocsparseio tools' RUNPATH is only the CI clr tree; libamdhip64 is in
+# opt/rocm/lib.
+runpath_rewrites = [
+  { object = "opt/rocm/lib/rocsparse/rocsparseio-*", runpath = "$ORIGIN/.." },
+]
 
 [packages."hipsparse-gfx1151"]
 desc = "hipSPARSE from TheRock for gfx1151"
@@ -431,6 +479,10 @@ depends = ["gcc-libs", "glibc", "hip-runtime-amd-gfx1151", "rocm-core-gfx1151"]
 [packages."rocshmem-gfx1151"]
 desc = "rocSHMEM from TheRock for gfx1151"
 provides = ["rocshmem"]
+# rocshmem_info's RUNPATH is only CI clr and ROCR-Runtime trees.
+runpath_rewrites = [
+  { object = "opt/rocm/bin/rocshmem_info", runpath = "$ORIGIN/../lib" },
+]
 
 [packages."migraphx-gfx1151"]
 desc = "MIGraphX from TheRock for gfx1151"
@@ -466,6 +518,16 @@ depends = ["bzip2", "comgr-gfx1151", "composable-kernel-gfx1151", "gcc-libs", "g
 desc = "MIOpen HIP frontend files from TheRock for gfx1151"
 provides = ["miopen-hip"]
 depends = ["miopen-gfx1151"]
+# Each RUNPATH keeps its $ORIGIN entries and drops the CI build trees
+# (/__w/rockrel/...) that the payload appends.
+runpath_rewrites = [
+  { object = "opt/rocm/bin/hipdnn_list_engines", runpath = "$ORIGIN/../lib/rocm_sysdeps/lib:$ORIGIN/../lib/llvm/lib:$ORIGIN/../lib" },
+  { object = "opt/rocm/lib/hipdnn_frontend_python.abi3.so", runpath = "$ORIGIN" },
+  { object = "opt/rocm/lib/hipdnn_plugins/engines/libhip_kernel_provider.so", runpath = "$ORIGIN/../../rocm_sysdeps/lib:$ORIGIN/../../llvm/lib:$ORIGIN/../.." },
+  { object = "opt/rocm/lib/hipdnn_plugins/engines/libhipblaslt_plugin.so", runpath = "$ORIGIN/../../rocm_sysdeps/lib:$ORIGIN/../../llvm/lib:$ORIGIN/../..:$ORIGIN/../../host-math/lib:$ORIGIN" },
+  { object = "opt/rocm/lib/hipdnn_plugins/engines/libmiopen_plugin.so", runpath = "$ORIGIN/../../rocm_sysdeps/lib:$ORIGIN/../../llvm/lib:$ORIGIN/../..:$ORIGIN/../../host-math/lib" },
+  { object = "opt/rocm/lib/libhipdnn_backend.so", runpath = "$ORIGIN/rocm_sysdeps/lib:$ORIGIN/llvm/lib:$ORIGIN" },
+]
 
 [packages."rocm-host-math-gfx1151"]
 desc = "Bundled host math support libraries from TheRock for gfx1151"
@@ -474,6 +536,11 @@ provides = ["rocm-host-math"]
 [packages."rocm-sysdeps-gfx1151"]
 desc = "Bundled system dependency payload from TheRock for gfx1151"
 provides = ["rocm-sysdeps"]
+# xmlwf's second RUNPATH entry is the CI expat stage; the bundled expat is in
+# ../lib.
+runpath_rewrites = [
+  { object = "opt/rocm/lib/rocm_sysdeps/bin/xmlwf", runpath = "$ORIGIN/../lib" },
+]
 
 [packages."mivisionx-gfx1151"]
 desc = "MIVisionX from TheRock for gfx1151"

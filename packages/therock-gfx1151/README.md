@@ -33,11 +33,20 @@ valid. For a staged install tree, point it at that staging root instead.
 
 ## Source lane
 
-`policies/therock-packages.toml` targets TheRock 7.14.1 (`7.14.1-1`), the
+`policies/therock-packages.toml` targets TheRock 7.14.1 (`7.14.1-2`), the
 C-line foundation F pick (#108). The rendered files in this directory are the
-7.14.1 render (`7.14.1-1`, 68 packages), made from the pinned payload stage
-after MIGraphX 2.16.1 was built into it. Render this directory only from that
-complete stage.
+`7.14.1-2` render (68 packages), made from the pinned payload stage with the
+MIGraphX 2.16.1 payload in it. Render this directory only from that complete
+stage.
+
+`7.14.1-2` repackages `7.14.1-1` without recompiling anything. Its file lists
+equal the `7.14.1-1` lists; it adds the MIGraphX Abseil range, the RUNPATH
+rewrites and checks in [RUNPATH and RPATH](#runpath-and-rpath), and the
+rocprofiler-sdk depends inversion. Its stage is the pinned payload with the
+staged `migraphx-gfx1151-7.14.1-1` archive's `opt` tree extracted over it
+(`bsdtar -xpf <archive> -C <stage> opt`), so `7.14.1-2` ships the same MIGraphX
+build, and the payload gate below passes on it. That stage reproduces the
+`7.14.1-1` render byte for byte from the `7.14.1-1` policy.
 
 The earlier lane was the upstream `therock-7.13` release, rendered from a real
 7.13 staged root. Its releases after `7.13.0-2` changed only MIGraphX:
@@ -89,9 +98,11 @@ Steps, in order:
    sonames, runs the payload gate in
    [MIGraphX protobuf and Abseil rebuilds](#migraphx-protobuf-and-abseil-rebuilds),
    checks the staged Python import, and then renders this directory and
-   previews the amerge plan. The build needs
-   CPython 3.14.7 (`python-gfx1151`) as the active `python` and
-   `python3.14-config`. MLIR stays off; see
+   previews the amerge plan. The build needs CPython 3.14 (`python-gfx1151`)
+   as the active `python` and `python3.14-config`. The 2.16.1 payload in
+   `7.14.1-1` was built against CPython 3.14.7, and `7.14.1-2` reuses it
+   unchanged under CPython 3.14.8, whose patch release keeps the 3.14 ABI and
+   the `libpython3.14.so.1.0` soname. MLIR stays off; see
    [the no-MLIR stubs](../../docs/patches.md#migraphx-therock-stage). The
    same section records the `rocm_add_version_resource` configure shim for
    the staged rocm-cmake 0.14.0.
@@ -99,9 +110,9 @@ Steps, in order:
 
 `migraphx-gfx1151` gets its `libprotobuf.so=<ver>-64` depend from the staged
 parser's `DT_NEEDED` through the policy's `soname_depends`, so the depend
-follows the protobuf that MIGraphX was built against. Moving the host to
-protobuf 36.1 also moves `libphonenumber` and `python-protobuf`, which pin
-protobuf 35.1, so the install transaction must include them.
+follows the protobuf that MIGraphX was built against. The host has carried
+protobuf 36.1 and Abseil 20260817, with the matching `libphonenumber` and
+`python-protobuf`, since its 2026-10-02 full upgrade.
 
 ## MIGraphX protobuf and Abseil rebuilds
 
@@ -279,6 +290,38 @@ isolated yet.
   `hsakmtTargets.cmake`, `nlohmann_json.pc`, and `flatbuffers.pc` are rewritten
   at package time, and each package fails with `CI_PATH_LEAK` if one survives.
   The 7.13 rocm-smi fix-ups matched nothing in 7.14.1 and were removed.
+
+## RUNPATH and RPATH
+
+The 7.14.1 payload has 27 objects whose RUNPATH names directories that do not
+exist on the host: 22 objects in 11 packages carry CI build trees
+(`/__w/rockrel/...`, sometimes with empty entries), and the five
+`rocgdb-py3.10` to `rocgdb-py3.14` binaries carry the CI's
+`/opt/python-shared/cp3xx-cp3xx/lib`. Three objects also miss a library they
+NEED: `libamd_smi.so` (bundled libnl and libmnl) and `xmlwf` (bundled expat)
+reach `lib/rocm_sysdeps/lib` only through CI paths, and
+`llvm-omp-kernel-replay` has a clean RUNPATH that lacks
+`lib/rocm_sysdeps/lib` for the bundled zlib and zstd.
+
+Each affected package's `runpath_rewrites` sets the full RUNPATH with
+`patchelf --set-rpath` at package time: the payload's `$ORIGIN` entries
+without the foreign ones, or, where only CI entries existed, the `$ORIGIN`
+path to the library's directory. `llvm-omp-kernel-replay` keeps its entries
+and gains `$ORIGIN/../../rocm_sysdeps/lib`, which makes 28 rewritten objects.
+`rocgdb-py3.14` then finds `libpython3.14.so.1.0` in `/usr/lib`; the 3.10 to
+3.13 variants still need interpreters this stack does not ship.
+
+The render fails any packaged ELF whose RUNPATH or RPATH, after rewrites,
+leaves `/usr` and `/opt/rocm` (`FOREIGN_RUNPATH`), and every package function
+ends with `_check_search_paths`, which applies the same rule to the packaged
+files. See [the generator](../../docs/architecture/therock-generator.md#runpath-and-rpath).
+
+`librocprofiler-sdk-tool` and `librocprofv3-list-avail` NEED
+`librocprofiler-sdk-rocpd`, and the kokkosp tool library NEEDS
+`librocprofiler-sdk-roctx`; neither component library NEEDS
+`librocprofiler-sdk`. So `rocprofiler-sdk-gfx1151` depends on
+`rocprofiler-sdk-rocpd-gfx1151` and `rocprofiler-sdk-roctx-gfx1151`, and they
+no longer depend on it.
 
 ## 7.14.1 removals and upstream gaps
 

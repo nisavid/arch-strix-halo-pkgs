@@ -2,8 +2,11 @@ import importlib.util
 import json
 import re
 from pathlib import Path
+import shutil
 import subprocess
 import sys
+
+import pytest
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -227,7 +230,7 @@ def test_core_runtime_dependency_policy_tracks_arch_baseline_shape():
 def test_math_and_ml_dependency_policy_tracks_arch_baseline_shape():
     policy = therock_split.load_policy(REPO_ROOT / "policies/therock-packages.toml")
     packages = policy["packages"]
-    assert (policy["repo"]["pkgver"], policy["repo"]["pkgrel"]) == ("7.14.1", 1)
+    assert (policy["repo"]["pkgver"], policy["repo"]["pkgrel"]) == ("7.14.1", 2)
 
     assert packages["rocblas-gfx1151"]["depends"] == [
         "cblas",
@@ -681,22 +684,34 @@ def msgpack(value: object) -> bytes:
     return struct.pack(">BB", 0xD9, len(data)) + data
 
 
-def make_elf(path: Path, *, kpack_ref: bytes | None = None, needed: list[str] | None = None) -> Path:
+def make_elf(
+    path: Path,
+    *,
+    kpack_ref: bytes | None = None,
+    needed: list[str] | None = None,
+    runpath: str | None = None,
+    rpath: str | None = None,
+) -> Path:
     """Write a minimal little-endian ELF64 file with the requested sections."""
     import struct
 
     sections: list[tuple[str, int, bytes, int]] = []
     if kpack_ref is not None:
         sections.append((".rocm_kpack_ref", 1, kpack_ref, 0))
-    if needed is not None:
+    dynamic_strings = [(1, name) for name in needed or []]
+    if runpath is not None:
+        dynamic_strings.append((29, runpath))
+    if rpath is not None:
+        dynamic_strings.append((15, rpath))
+    if needed is not None or dynamic_strings:
         dynstr = b"\0"
-        offsets = []
-        for name in needed:
-            offsets.append(len(dynstr))
-            dynstr += name.encode() + b"\0"
+        entries = []
+        for tag, value in dynamic_strings:
+            entries.append(struct.pack("<qQ", tag, len(dynstr)))
+            dynstr += value.encode() + b"\0"
         sections.append((".dynstr", 3, dynstr, 0))
         dynstr_index = len(sections)
-        dynamic = b"".join(struct.pack("<qQ", 1, offset) for offset in offsets) + struct.pack("<qQ", 0, 0)
+        dynamic = b"".join(entries) + struct.pack("<qQ", 0, 0)
         sections.append((".dynamic", 6, dynamic, dynstr_index))
 
     shstrtab = b"\0"
@@ -927,3 +942,295 @@ def test_generator_render_enforces_kpack_ownership_and_renders_soname_depends(tm
     assert "depends=('glibc' 'libprotobuf.so=36.1.0-64')" in (tmp_path / "out/PKGBUILD").read_text()
     manifest = json.loads((tmp_path / "out/manifest.json").read_text())
     assert manifest["packages"]["rocfoo-gfx1151"]["depends"] == ["glibc", "libprotobuf.so=36.1.0-64"]
+
+
+# --- RUNPATH rewrites and the foreign search-path check (#108) -------------------
+
+
+@pytest.mark.parametrize(
+    ("relpath", "value", "foreign"),
+    [
+        ("opt/rocm/lib/libfoo.so", "$ORIGIN", []),
+        ("opt/rocm/lib/libfoo.so", "${ORIGIN}/rocm_sysdeps/lib:$ORIGIN/llvm/lib", []),
+        ("opt/rocm/share/amd_smi/amdsmi/libamd_smi.so", "$ORIGIN/../../../lib", []),
+        ("opt/rocm/bin/tool", "/usr/lib:/opt/rocm/lib:/usr:/opt/rocm", []),
+        # $ORIGIN resolves against the installed directory, so climbing out of
+        # /opt/rocm is foreign even though the entry text starts with $ORIGIN.
+        ("opt/rocm/lib/libfoo.so", "$ORIGIN/../../..", ["$ORIGIN/../../.."]),
+        ("opt/rocm/lib/libfoo.so", "$ORIGIN/../../../home/ci/lib", ["$ORIGIN/../../../home/ci/lib"]),
+        # Path-boundary counterexamples.
+        ("opt/rocm/lib/libfoo.so", "/usrx/lib:/opt/rocmfoo/lib:/opt/rocm2", ["/usrx/lib", "/opt/rocmfoo/lib", "/opt/rocm2"]),
+        # CI build trees, foreign interpreter prefixes, relative and empty entries.
+        (
+            "opt/rocm/lib/libfoo.so",
+            "$ORIGIN:/__w/rockrel/rockrel/build/core/clr/dist/lib:",
+            ["/__w/rockrel/rockrel/build/core/clr/dist/lib", ""],
+        ),
+        ("opt/rocm/bin/rocgdb-py3.14", "$ORIGIN/../lib:/opt/python-shared/cp314-cp314/lib", ["/opt/python-shared/cp314-cp314/lib"]),
+        ("opt/rocm/lib/libfoo.so", "lib::$LIB/x", ["lib", "", "$LIB/x"]),
+    ],
+)
+def test_foreign_search_path_entries_resolve_origin_and_respect_path_boundaries(relpath, value, foreign):
+    assert therock_split.foreign_search_path_entries(relpath, value) == foreign
+
+
+def runpath_root(tmp_path: Path) -> tuple[Path, dict[str, list[str]]]:
+    root = tmp_path / "root"
+    ci = "/__w/rockrel/rockrel/build"
+    make_elf(root / "opt/rocm/lib/rocsparse/rocsparseio-info", needed=["libamdhip64.so.7"], runpath=f"{ci}/core/clr/dist/lib")
+    make_elf(root / "opt/rocm/lib/rocsparse/rocsparseio-convert", needed=["libamdhip64.so.7"], rpath=f"{ci}/core/clr/dist/lib")
+    make_elf(root / "opt/rocm/lib/librocsparse.so.1.0", needed=["libamdhip64.so.7"], runpath="$ORIGIN")
+    (root / "opt/rocm/lib/rocsparse/rocsparseio-readme").write_text("not an ELF\n")
+    (root / "opt/rocm/lib/rocsparse/rocsparseio-link").symlink_to("rocsparseio-info")
+    files = {
+        "rocsparse-gfx1151": [
+            "opt/rocm/lib/librocsparse.so.1.0",
+            "opt/rocm/lib/rocsparse/rocsparseio-convert",
+            "opt/rocm/lib/rocsparse/rocsparseio-info",
+            "opt/rocm/lib/rocsparse/rocsparseio-link",
+            "opt/rocm/lib/rocsparse/rocsparseio-readme",
+        ]
+    }
+    return root, files
+
+
+def rewrite_policy(*entries: dict) -> dict:
+    return {"packages": {"rocsparse-gfx1151": {"runpath_rewrites": list(entries)}}}
+
+
+def failure_lines(failures: list) -> list[str]:
+    return [failure.render().splitlines()[0] for failure in failures]
+
+
+def test_runpath_rewrites_expand_globs_over_regular_elf_files_the_package_ships(tmp_path: Path):
+    root, files = runpath_root(tmp_path)
+    failures: list = []
+
+    rewrites = therock_split.resolve_runpath_rewrites(
+        root, rewrite_policy({"object": "opt/rocm/lib/rocsparse/rocsparseio-*", "runpath": "$ORIGIN/.."}), files, failures
+    )
+
+    assert failures == []
+    # The symlink and the text file match the glob but are not rewritten.
+    assert rewrites == {
+        "rocsparse-gfx1151": [
+            ("opt/rocm/lib/rocsparse/rocsparseio-convert", "$ORIGIN/.."),
+            ("opt/rocm/lib/rocsparse/rocsparseio-info", "$ORIGIN/.."),
+        ]
+    }
+    therock_split.check_search_paths(root, files, rewrites, failures)
+    assert failures == []
+
+
+@pytest.mark.parametrize(
+    ("entries", "detail"),
+    [
+        ([{"object": "opt/rocm/lib/rocsparse/missing-*", "runpath": "$ORIGIN"}], "matches no regular ELF file"),
+        ([{"object": "opt/rocm/lib/rocsparse/rocsparseio-readme", "runpath": "$ORIGIN"}], "matches no regular ELF file"),
+        ([{"object": "opt/rocm/lib/rocsparse/rocsparseio-info", "runpath": "$ORIGIN/../../../.."}], "leaves /usr and /opt/rocm"),
+        ([{"object": "opt/rocm/lib/rocsparse/rocsparseio-info", "runpath": "/__w/rockrel/x"}], "leaves /usr and /opt/rocm"),
+        ([{"object": "opt/rocm/lib/rocsparse/rocsparseio-info", "runpath": ""}], "leaves /usr and /opt/rocm"),
+        ([{"object": "opt/rocm/lib/rocsparse/rocsparseio-info", "runpath": "$ORIGIN/'x"}], "leaves /usr and /opt/rocm"),
+        (
+            [
+                {"object": "opt/rocm/lib/rocsparse/rocsparseio-*", "runpath": "$ORIGIN/.."},
+                {"object": "opt/rocm/lib/rocsparse/rocsparseio-info", "runpath": "$ORIGIN"},
+            ],
+            "matches both",
+        ),
+    ],
+    ids=["unmatched", "not-elf", "escapes", "foreign", "empty", "quote", "two-entries"],
+)
+def test_runpath_rewrites_fail_the_render_on_invalid_entries(tmp_path: Path, entries, detail):
+    root, files = runpath_root(tmp_path)
+    failures: list = []
+
+    therock_split.resolve_runpath_rewrites(root, rewrite_policy(*entries), files, failures)
+
+    assert failure_lines(failures) == ["RUNPATH_REWRITE_INVALID: rocsparse-gfx1151"]
+    assert detail in failures[0].detail
+
+
+def test_foreign_search_path_check_reads_runpath_and_rpath(tmp_path: Path):
+    root, files = runpath_root(tmp_path)
+    failures: list = []
+
+    therock_split.check_search_paths(root, files, {}, failures)
+
+    assert failure_lines(failures) == [
+        "FOREIGN_RUNPATH: opt/rocm/lib/rocsparse/rocsparseio-convert",
+        "FOREIGN_RUNPATH: opt/rocm/lib/rocsparse/rocsparseio-info",
+    ]
+    assert "RPATH '/__w/rockrel/rockrel/build/core/clr/dist/lib'" in failures[0].detail
+    assert "RUNPATH '/__w/rockrel/rockrel/build/core/clr/dist/lib'" in failures[1].detail
+    assert "runpath_rewrites" in failures[0].hint
+
+
+def test_elf_reader_returns_runpath_and_rpath(tmp_path: Path):
+    elf = make_elf(tmp_path / "libfoo.so", needed=["libc.so.6"], runpath="$ORIGIN", rpath="/usr/lib")
+
+    assert therock_split.read_elf_needed(elf) == ["libc.so.6"]
+    assert therock_split.read_elf_search_paths(elf) == [("RUNPATH", "$ORIGIN"), ("RPATH", "/usr/lib")]
+    assert therock_split.read_elf_search_paths(make_elf(tmp_path / "libbar.so", needed=[])) == []
+
+
+RUNPATH_POLICY = """
+[packages."rocbar-gfx1151"]
+desc = "rocBAR"
+provides = ["rocbar"]
+runpath_rewrites = [{ object = "opt/rocm/bin/rocbar-*", runpath = "$ORIGIN/../lib" }]
+
+[aliases.binary_prefixes]
+"rocbar" = "rocbar-gfx1151"
+"""
+
+
+def test_generator_render_rewrites_runpaths_and_fails_on_foreign_ones(tmp_path: Path):
+    root = tmp_path / "root"
+    make_elf(root / "opt/rocm/lib/librocfoo.so.1", needed=["libprotobuf.so.36.1.0"], runpath="$ORIGIN")
+    make_elf(root / "opt/rocm/bin/rocbar-info", needed=["libamdhip64.so.7"], runpath="/__w/rockrel/rockrel/build/core/clr/dist/lib")
+    make_elf(root / "opt/rocm/bin/rocbar-stat", needed=["libamdhip64.so.7"], rpath="/__w/x:$ORIGIN")
+    policy = tmp_path / "policy.toml"
+    out = tmp_path / "out"
+
+    def render(extra: str) -> subprocess.CompletedProcess[str]:
+        policy.write_text(GENERATOR_POLICY.replace("@IGNORE@", "") + extra)
+        return subprocess.run(
+            [sys.executable, str(MODULE_PATH), "--root", str(root), "--policy", str(policy), "--output", str(out)],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+    failed = render(RUNPATH_POLICY.replace('runpath_rewrites = [{ object = "opt/rocm/bin/rocbar-*", runpath = "$ORIGIN/../lib" }]\n', ""))
+    assert failed.returncode == 2
+    assert "FOREIGN_RUNPATH: opt/rocm/bin/rocbar-info" in failed.stderr
+    assert "FOREIGN_RUNPATH: opt/rocm/bin/rocbar-stat" in failed.stderr
+    assert not out.exists()
+
+    rendered = render(RUNPATH_POLICY)
+    assert rendered.returncode == 0, rendered.stderr
+    text = (out / "PKGBUILD").read_text()
+    function = text[text.index("package_rocbar-gfx1151()") :]
+    function = function[: function.index("\n}\n")]
+    assert function.splitlines()[-3:] == [
+        "    patchelf --set-rpath '$ORIGIN/../lib' \"${pkgdir}/opt/rocm/bin/rocbar-info\"",
+        "    patchelf --set-rpath '$ORIGIN/../lib' \"${pkgdir}/opt/rocm/bin/rocbar-stat\"",
+        "    _check_search_paths",
+    ]
+    # A package without rewrites still runs the check.
+    rocfoo = text[text.index("package_rocfoo-gfx1151()") :]
+    assert "patchelf" not in rocfoo[: rocfoo.index("\n}\n")]
+    assert rocfoo[: rocfoo.index("\n}\n")].endswith("    _check_search_paths")
+
+
+def test_template_declares_patchelf_and_defines_the_package_time_check():
+    template = (REPO_ROOT / "templates/PKGBUILD.in").read_text()
+
+    assert "makedepends=('binutils' 'patchelf')" in template
+    assert "_check_search_paths() {" in template
+    assert template.index("_check_search_paths() {") < template.index("{{package_functions}}")
+
+
+def template_check_function() -> str:
+    template = (REPO_ROOT / "templates/PKGBUILD.in").read_text()
+    start = template.index("_check_search_paths() {")
+    return template[start : template.index("\n}\n", start) + 2]
+
+
+@pytest.mark.skipif(
+    not (shutil.which("patchelf") and shutil.which("readelf") and shutil.which("true")),
+    reason="needs patchelf, readelf, and a real ELF executable",
+)
+@pytest.mark.parametrize(
+    ("relpath", "args", "foreign"),
+    [
+        ("opt/rocm/bin/tool", ["--set-rpath", "$ORIGIN/../lib:/usr/lib:/opt/rocm/lib"], None),
+        ("opt/rocm/bin/tool", ["--set-rpath", "$ORIGIN:/__w/rockrel/rockrel/build/core/clr/dist/lib"], "/__w/rockrel/rockrel/build/core/clr/dist/lib"),
+        ("opt/rocm/bin/tool", ["--force-rpath", "--set-rpath", "/opt/python-shared/cp314-cp314/lib"], "/opt/python-shared/cp314-cp314/lib"),
+        ("opt/rocm/bin/tool", ["--set-rpath", "$ORIGIN/../../.."], "$ORIGIN/../../.."),
+        ("opt/rocm/bin/tool", ["--set-rpath", "/opt/rocmfoo/lib"], "/opt/rocmfoo/lib"),
+        ("opt/rocm/bin/tool", ["--set-rpath", "$ORIGIN:"], ""),
+    ],
+    ids=["allowed", "ci-runpath", "foreign-rpath", "origin-escape", "boundary", "empty"],
+)
+def test_package_time_check_reads_real_elf_search_paths(tmp_path: Path, relpath, args, foreign):
+    pkgdir = tmp_path / "pkg"
+    elf = pkgdir / relpath
+    elf.parent.mkdir(parents=True)
+    shutil.copyfile(Path(shutil.which("true")).resolve(), elf)
+    subprocess.run(["patchelf", *args, str(elf)], check=True)
+    (pkgdir / "opt/rocm/share/doc").mkdir(parents=True)
+    (pkgdir / "opt/rocm/share/doc/README").write_text("/__w/not-an-elf\n")
+
+    result = subprocess.run(
+        ["bash", "-c", f'set -e\n{template_check_function()}\npkgdir="{pkgdir}"\n_check_search_paths'],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    if foreign is None:
+        assert result.returncode == 0, result.stderr
+        assert result.stderr == ""
+    else:
+        assert result.returncode == 1
+        assert f"FOREIGN_RUNPATH: /{relpath}: '{foreign}'" in result.stderr
+
+
+def test_policy_rewrites_every_foreign_runpath_in_the_7_14_1_payload():
+    packages = repo_policy()["packages"]
+    rewrites = {
+        pkg: [entry["object"] for entry in meta.get("runpath_rewrites", [])]
+        for pkg, meta in packages.items()
+        if meta.get("runpath_rewrites")
+    }
+
+    # 22 objects with CI build-tree entries in 11 packages, the five rocgdb
+    # interpreter variants, and llvm-omp-kernel-replay's missing rocm_sysdeps.
+    assert rewrites == {
+        "amdsmi-gfx1151": ["opt/rocm/share/amd_smi/amdsmi/libamd_smi.so"],
+        "hipblaslt-gfx1151": ["opt/rocm/share/hipblaslt/tensilelite/rocisa/libstinkytofu.so.0.1.0"],
+        "hsa-amd-aqlprofile-gfx1151": ["opt/rocm/lib/libhsa-amd-aqlprofile64.so"],
+        "miopen-hip-gfx1151": [
+            "opt/rocm/bin/hipdnn_list_engines",
+            "opt/rocm/lib/hipdnn_frontend_python.abi3.so",
+            "opt/rocm/lib/hipdnn_plugins/engines/libhip_kernel_provider.so",
+            "opt/rocm/lib/hipdnn_plugins/engines/libhipblaslt_plugin.so",
+            "opt/rocm/lib/hipdnn_plugins/engines/libmiopen_plugin.so",
+            "opt/rocm/lib/libhipdnn_backend.so",
+        ],
+        "rocm-gdb-gfx1151": ["opt/rocm/bin/rocgdb-py3.*"],
+        "rocm-language-runtime-gfx1151": [
+            "opt/rocm/bin/rdc[di]",
+            "opt/rocm/lib/librdc.so.1.3",
+            "opt/rocm/lib/librdc_bootstrap.so.1.3",
+            "opt/rocm/lib/librdc_client.so.1.3",
+            "opt/rocm/lib/rdc/librdc_roc[pr].so.1.3",
+        ],
+        "rocm-llvm-gfx1151": ["opt/rocm/lib/llvm/bin/llvm-omp-kernel-replay"],
+        "rocm-sysdeps-gfx1151": ["opt/rocm/lib/rocm_sysdeps/bin/xmlwf"],
+        "rocprofiler-systems-gfx1151": ["opt/rocm/bin/rocprof-sys-instrument"],
+        "rocrand-gfx1151": ["opt/rocm/lib/librocrand.so.1.1"],
+        "rocshmem-gfx1151": ["opt/rocm/bin/rocshmem_info"],
+        "rocsparse-gfx1151": ["opt/rocm/lib/rocsparse/rocsparseio-*"],
+    }
+    for meta in packages.values():
+        for entry in meta.get("runpath_rewrites", []):
+            assert therock_split.foreign_search_path_entries(entry["object"], entry["runpath"]) == []
+    # llvm-omp-kernel-replay keeps its clean entries and adds rocm_sysdeps.
+    replay = packages["rocm-llvm-gfx1151"]["runpath_rewrites"][0]["runpath"]
+    assert replay.endswith(":$ORIGIN/../../rocm_sysdeps/lib")
+
+
+def test_rocprofiler_sdk_depends_on_its_rocpd_and_roctx_components():
+    packages = repo_policy()["packages"]
+
+    # The SDK's tool libraries NEED librocprofiler-sdk-rocpd and -roctx; those
+    # libraries NEED nothing from the SDK, so the depends run one way only.
+    assert packages["rocprofiler-sdk-gfx1151"]["depends"] == [
+        "rocprofiler-sdk-rocpd-gfx1151",
+        "rocprofiler-sdk-roctx-gfx1151",
+    ]
+    assert "rocprofiler-sdk-gfx1151" not in packages["rocprofiler-sdk-rocpd-gfx1151"].get("depends", [])
+    assert "rocprofiler-sdk-gfx1151" not in packages["rocprofiler-sdk-roctx-gfx1151"].get("depends", [])

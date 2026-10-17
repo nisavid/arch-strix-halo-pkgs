@@ -75,11 +75,12 @@ pkgname=(
   'rocwmma-gfx1151'
 )
 pkgver='7.14.1'
-pkgrel=1
+pkgrel=2
 arch=('x86_64')
 license=('custom:AMD')
 url='https://github.com/ROCm/TheRock'
 options=('!strip' 'staticlibs')
+makedepends=('binutils' 'patchelf')
 source=()
 sha256sums=()
 
@@ -111,6 +112,42 @@ _copy_from_filelist() {
     done < "${filelist}"
 }
 
+# Fail when a packaged ELF keeps a RUNPATH or RPATH entry outside /usr and
+# /opt/rocm. $ORIGIN resolves against the object's installed directory, and an
+# empty entry (the current directory) is foreign too. The generator runs the
+# same check against the stage at render time.
+_check_search_paths() {
+    local file magic rel origin value entry resolved status=0
+    local -a entries
+    while IFS= read -r -d '' file; do
+        magic=''
+        IFS= read -r -N 4 magic < "${file}" 2>/dev/null || true
+        [[ "${magic}" == $'\x7fELF' ]] || continue
+        rel="${file#"${pkgdir}"}"
+        origin="$(dirname "${rel}")"
+        while IFS= read -r value; do
+            IFS=':' read -r -a entries <<< "${value}"
+            [[ "${value}" == *: ]] && entries+=('')
+            for entry in "${entries[@]}"; do
+                resolved="${entry}"
+                case "${entry}" in
+                    '$ORIGIN'|'$ORIGIN/'*) resolved="${origin}${entry#'$ORIGIN'}" ;;
+                    '${ORIGIN}'|'${ORIGIN}/'*) resolved="${origin}${entry#'${ORIGIN}'}" ;;
+                esac
+                if [[ "${resolved}" == /* && "${resolved}" != *'$'* ]]; then
+                    resolved="$(realpath -m -s -- "${resolved}")"
+                    case "${resolved}" in
+                        /usr|/usr/*|/opt/rocm|/opt/rocm/*) continue ;;
+                    esac
+                fi
+                echo "FOREIGN_RUNPATH: ${rel}: '${entry}' in '${value}'" >&2
+                status=1
+            done
+        done < <(LC_ALL=C readelf -d "${file}" | sed -n 's/.*(\(RUNPATH\|RPATH\)) *Library r[a-z]*path: \[\(.*\)\]$/\2/p')
+    done < <(find "${pkgdir}" -type f -print0)
+    return "${status}"
+}
+
 package_amdsmi-gfx1151() {
     pkgdesc='AMD SMI library and tools from TheRock for gfx1151'
     provides=('amdsmi' 'amd-smi-lib')
@@ -118,9 +155,11 @@ package_amdsmi-gfx1151() {
     depends=('gcc-libs' 'glibc' 'python-gfx1151' 'python-yaml' 'rocm-core-gfx1151' 'rocm-smi-lib-gfx1151' 'rocm-sysdeps-gfx1151')
     _require_therock_root
     _copy_from_filelist 'amdsmi-gfx1151'
+    patchelf --set-rpath '$ORIGIN/../../../lib/rocm_sysdeps/lib:$ORIGIN/../../../lib' "${pkgdir}/opt/rocm/share/amd_smi/amdsmi/libamd_smi.so"
     install -Dm644 /dev/stdin "${pkgdir}/usr/lib/python3.14/site-packages/amd_smi.pth" <<'EOF'
 /opt/rocm/share/amd_smi
 EOF
+    _check_search_paths
 }
 
 package_comgr-gfx1151() {
@@ -134,6 +173,7 @@ package_comgr-gfx1151() {
     [[ ! -f "${_comgr_stub_targets}" ]] || sed -i -e 's/foreach(_cmake_expected_target IN ITEMS amd_comgr amd_comgr_loader test_amd_comgr_stub)/foreach(_cmake_expected_target IN ITEMS amd_comgr amd_comgr_loader)/' -e '/# Create imported target test_amd_comgr_stub/{N;d;}' -e '/list(APPEND _cmake_import_check_targets test_amd_comgr_stub )/{N;d;}' "${_comgr_stub_targets}"
     _comgr_stub_release="${pkgdir}/opt/rocm/lib/cmake/amd_comgr_stub/amd_comgr-targets-release.cmake"
     [[ ! -f "${_comgr_stub_release}" ]] || sed -i '/# Import target "test_amd_comgr_stub" for configuration "Release"/,/list(APPEND _cmake_import_check_files_for_test_amd_comgr_stub .* )/d' "${_comgr_stub_release}"
+    _check_search_paths
 }
 
 package_composable-kernel-gfx1151() {
@@ -143,6 +183,7 @@ package_composable-kernel-gfx1151() {
     depends=('gcc-libs' 'glibc' 'hip-runtime-amd-gfx1151' 'rocm-core-gfx1151')
     _require_therock_root
     _copy_from_filelist 'composable-kernel-gfx1151'
+    _check_search_paths
 }
 
 package_half-gfx1151() {
@@ -152,6 +193,7 @@ package_half-gfx1151() {
     depends=()
     _require_therock_root
     _copy_from_filelist 'half-gfx1151'
+    _check_search_paths
 }
 
 package_hip-gfx1151() {
@@ -161,6 +203,7 @@ package_hip-gfx1151() {
     depends=('rocm-hip-gfx1151')
     _require_therock_root
     _copy_from_filelist 'hip-gfx1151'
+    _check_search_paths
 }
 
 package_hip-runtime-amd-gfx1151() {
@@ -171,6 +214,7 @@ package_hip-runtime-amd-gfx1151() {
     depends=('bash' 'perl' 'gcc-libs' 'glibc' 'mesa' 'rocm-core-gfx1151' 'hsa-rocr-gfx1151' 'comgr-gfx1151' 'rocminfo-gfx1151' 'rocm-llvm-gfx1151' 'rocm-device-libs-gfx1151' 'rocprofiler-register-gfx1151' 'rocm-sysdeps-gfx1151')
     _require_therock_root
     _copy_from_filelist 'hip-runtime-amd-gfx1151'
+    _check_search_paths
 }
 
 package_hipblas-common-gfx1151() {
@@ -180,6 +224,7 @@ package_hipblas-common-gfx1151() {
     depends=('rocm-core-gfx1151')
     _require_therock_root
     _copy_from_filelist 'hipblas-common-gfx1151'
+    _check_search_paths
 }
 
 package_hipblas-gfx1151() {
@@ -189,6 +234,7 @@ package_hipblas-gfx1151() {
     depends=('gcc-libs' 'glibc' 'hip-runtime-amd-gfx1151' 'hipblas-common-gfx1151' 'rocblas-gfx1151' 'rocm-core-gfx1151' 'rocsolver-gfx1151')
     _require_therock_root
     _copy_from_filelist 'hipblas-gfx1151'
+    _check_search_paths
 }
 
 package_hipblaslt-gfx1151() {
@@ -198,6 +244,8 @@ package_hipblaslt-gfx1151() {
     depends=('gcc-libs' 'glibc' 'hip-runtime-amd-gfx1151' 'hipblas-gfx1151' 'msgpack-cxx' 'rocblas-gfx1151' 'rocm-core-gfx1151' 'rocm-smi-lib-gfx1151' 'yaml-cpp' 'composable-kernel-gfx1151')
     _require_therock_root
     _copy_from_filelist 'hipblaslt-gfx1151'
+    patchelf --set-rpath '$ORIGIN/../../../../lib' "${pkgdir}/opt/rocm/share/hipblaslt/tensilelite/rocisa/libstinkytofu.so.0.1.0"
+    _check_search_paths
 }
 
 package_hipcc-gfx1151() {
@@ -207,6 +255,7 @@ package_hipcc-gfx1151() {
     depends=('rocm-llvm-gfx1151' 'hip-runtime-amd-gfx1151')
     _require_therock_root
     _copy_from_filelist 'hipcc-gfx1151'
+    _check_search_paths
 }
 
 package_hipcub-gfx1151() {
@@ -216,6 +265,7 @@ package_hipcub-gfx1151() {
     depends=('rocm-core-gfx1151' 'hip-runtime-amd-gfx1151' 'rocprim-gfx1151')
     _require_therock_root
     _copy_from_filelist 'hipcub-gfx1151'
+    _check_search_paths
 }
 
 package_hipfft-gfx1151() {
@@ -225,6 +275,7 @@ package_hipfft-gfx1151() {
     depends=('gcc-libs' 'glibc' 'hip-runtime-amd-gfx1151' 'rocfft-gfx1151' 'rocm-core-gfx1151')
     _require_therock_root
     _copy_from_filelist 'hipfft-gfx1151'
+    _check_search_paths
 }
 
 package_hipfile-gfx1151() {
@@ -234,6 +285,7 @@ package_hipfile-gfx1151() {
     depends=('gcc-libs' 'glibc' 'hip-runtime-amd-gfx1151' 'python-gfx1151' 'rocm-core-gfx1151' 'rocm-sysdeps-gfx1151')
     _require_therock_root
     _copy_from_filelist 'hipfile-gfx1151'
+    _check_search_paths
 }
 
 package_hipify-clang-gfx1151() {
@@ -243,6 +295,7 @@ package_hipify-clang-gfx1151() {
     depends=('bash' 'gcc-libs' 'glibc' 'ncurses' 'perl' 'rocm-llvm-gfx1151' 'zlib' 'zstd')
     _require_therock_root
     _copy_from_filelist 'hipify-clang-gfx1151'
+    _check_search_paths
 }
 
 package_hiprand-gfx1151() {
@@ -252,6 +305,7 @@ package_hiprand-gfx1151() {
     depends=('gcc-libs' 'glibc' 'hip-runtime-amd-gfx1151' 'rocm-core-gfx1151' 'rocrand-gfx1151')
     _require_therock_root
     _copy_from_filelist 'hiprand-gfx1151'
+    _check_search_paths
 }
 
 package_hipsolver-gfx1151() {
@@ -261,6 +315,7 @@ package_hipsolver-gfx1151() {
     depends=('gcc-libs' 'glibc' 'hip-runtime-amd-gfx1151' 'rocblas-gfx1151' 'rocm-core-gfx1151' 'rocsolver-gfx1151' 'suitesparse')
     _require_therock_root
     _copy_from_filelist 'hipsolver-gfx1151'
+    _check_search_paths
 }
 
 package_hipsparse-gfx1151() {
@@ -270,6 +325,7 @@ package_hipsparse-gfx1151() {
     depends=('gcc-libs' 'glibc' 'hip-runtime-amd-gfx1151' 'rocm-core-gfx1151' 'rocsparse-gfx1151')
     _require_therock_root
     _copy_from_filelist 'hipsparse-gfx1151'
+    _check_search_paths
 }
 
 package_hipsparselt-gfx1151() {
@@ -279,6 +335,7 @@ package_hipsparselt-gfx1151() {
     depends=('gcc-libs' 'glibc' 'hip-runtime-amd-gfx1151' 'hipsparse-gfx1151' 'lapack' 'msgpack-cxx' 'rocblas-gfx1151' 'rocm-core-gfx1151' 'rocm-smi-lib-gfx1151' 'rocminfo-gfx1151' 'roctracer-gfx1151')
     _require_therock_root
     _copy_from_filelist 'hipsparselt-gfx1151'
+    _check_search_paths
 }
 
 package_hiptensor-gfx1151() {
@@ -288,6 +345,7 @@ package_hiptensor-gfx1151() {
     depends=('rocm-core-gfx1151' 'hip-runtime-amd-gfx1151' 'composable-kernel-gfx1151' 'glibc' 'gcc-libs')
     _require_therock_root
     _copy_from_filelist 'hiptensor-gfx1151'
+    _check_search_paths
 }
 
 package_hsa-amd-aqlprofile-gfx1151() {
@@ -298,6 +356,8 @@ package_hsa-amd-aqlprofile-gfx1151() {
     depends=('gcc-libs' 'glibc' 'rocm-core-gfx1151' 'hsa-rocr-gfx1151')
     _require_therock_root
     _copy_from_filelist 'hsa-amd-aqlprofile-gfx1151'
+    patchelf --set-rpath '$ORIGIN' "${pkgdir}/opt/rocm/lib/libhsa-amd-aqlprofile64.so"
+    _check_search_paths
 }
 
 package_hsa-rocr-gfx1151() {
@@ -311,6 +371,7 @@ package_hsa-rocr-gfx1151() {
     _hsakmt_targets="${pkgdir}/opt/rocm/lib/cmake/hsakmt/hsakmtTargets.cmake"
     perl -0pi -e 's#/__w/rockrel/rockrel/build/third-party/sysdeps/linux/libdrm/build/stage/lib/rocm_sysdeps/lib/pkgconfig/\.\./\.\./lib#\${_IMPORT_PREFIX}/lib/rocm_sysdeps/lib#g' "${_hsakmt_targets}"
     ! grep -n '/__w/' "${_hsakmt_targets}" || { echo "CI_PATH_LEAK: ${_hsakmt_targets}" >&2; return 1; }
+    _check_search_paths
 }
 
 package_migraphx-gfx1151() {
@@ -327,6 +388,7 @@ package_migraphx-gfx1151() {
 import sqlite3
 /opt/rocm/lib
 EOF
+    _check_search_paths
 }
 
 package_miopen-gfx1151() {
@@ -336,6 +398,7 @@ package_miopen-gfx1151() {
     depends=('bzip2' 'comgr-gfx1151' 'composable-kernel-gfx1151' 'gcc-libs' 'glibc' 'hip-runtime-amd-gfx1151' 'hipblas-gfx1151' 'hipblaslt-gfx1151' 'rocblas-gfx1151' 'rocm-core-gfx1151' 'rocrand-gfx1151' 'roctracer-gfx1151' 'sqlite')
     _require_therock_root
     _copy_from_filelist 'miopen-gfx1151'
+    _check_search_paths
 }
 
 package_miopen-hip-gfx1151() {
@@ -345,6 +408,13 @@ package_miopen-hip-gfx1151() {
     depends=('miopen-gfx1151')
     _require_therock_root
     _copy_from_filelist 'miopen-hip-gfx1151'
+    patchelf --set-rpath '$ORIGIN/../lib/rocm_sysdeps/lib:$ORIGIN/../lib/llvm/lib:$ORIGIN/../lib' "${pkgdir}/opt/rocm/bin/hipdnn_list_engines"
+    patchelf --set-rpath '$ORIGIN' "${pkgdir}/opt/rocm/lib/hipdnn_frontend_python.abi3.so"
+    patchelf --set-rpath '$ORIGIN/../../rocm_sysdeps/lib:$ORIGIN/../../llvm/lib:$ORIGIN/../..' "${pkgdir}/opt/rocm/lib/hipdnn_plugins/engines/libhip_kernel_provider.so"
+    patchelf --set-rpath '$ORIGIN/../../rocm_sysdeps/lib:$ORIGIN/../../llvm/lib:$ORIGIN/../..:$ORIGIN/../../host-math/lib:$ORIGIN' "${pkgdir}/opt/rocm/lib/hipdnn_plugins/engines/libhipblaslt_plugin.so"
+    patchelf --set-rpath '$ORIGIN/../../rocm_sysdeps/lib:$ORIGIN/../../llvm/lib:$ORIGIN/../..:$ORIGIN/../../host-math/lib' "${pkgdir}/opt/rocm/lib/hipdnn_plugins/engines/libmiopen_plugin.so"
+    patchelf --set-rpath '$ORIGIN/rocm_sysdeps/lib:$ORIGIN/llvm/lib:$ORIGIN' "${pkgdir}/opt/rocm/lib/libhipdnn_backend.so"
+    _check_search_paths
 }
 
 package_rccl-gfx1151() {
@@ -354,6 +424,7 @@ package_rccl-gfx1151() {
     depends=('gcc-libs' 'glibc' 'hip-runtime-amd-gfx1151' 'rocm-core-gfx1151' 'rocm-smi-lib-gfx1151')
     _require_therock_root
     _copy_from_filelist 'rccl-gfx1151'
+    _check_search_paths
 }
 
 package_rocalution-gfx1151() {
@@ -363,6 +434,7 @@ package_rocalution-gfx1151() {
     depends=('gcc-libs' 'glibc' 'hip-runtime-amd-gfx1151' 'openmp' 'rocblas-gfx1151' 'rocm-core-gfx1151' 'rocprim-gfx1151' 'rocrand-gfx1151' 'rocsolver-gfx1151' 'rocsparse-gfx1151')
     _require_therock_root
     _copy_from_filelist 'rocalution-gfx1151'
+    _check_search_paths
 }
 
 package_rocblas-gfx1151() {
@@ -372,6 +444,7 @@ package_rocblas-gfx1151() {
     depends=('cblas' 'gcc-libs' 'glibc' 'hip-runtime-amd-gfx1151' 'openmp' 'rocm-core-gfx1151' 'roctracer-gfx1151')
     _require_therock_root
     _copy_from_filelist 'rocblas-gfx1151'
+    _check_search_paths
 }
 
 package_rocdecode-gfx1151() {
@@ -381,6 +454,7 @@ package_rocdecode-gfx1151() {
     depends=('ffmpeg' 'gcc-libs' 'glibc' 'hip-runtime-amd-gfx1151' 'libva' 'mesa' 'rocm-core-gfx1151')
     _require_therock_root
     _copy_from_filelist 'rocdecode-gfx1151'
+    _check_search_paths
 }
 
 package_rocfft-gfx1151() {
@@ -390,6 +464,7 @@ package_rocfft-gfx1151() {
     depends=('gcc-libs' 'glibc' 'hip-runtime-amd-gfx1151' 'rocm-core-gfx1151')
     _require_therock_root
     _copy_from_filelist 'rocfft-gfx1151'
+    _check_search_paths
 }
 
 package_rocjpeg-gfx1151() {
@@ -399,6 +474,7 @@ package_rocjpeg-gfx1151() {
     depends=('gcc-libs' 'glibc' 'hip-runtime-amd-gfx1151' 'libva' 'mesa' 'rocm-core-gfx1151' 'rocprofiler-register-gfx1151')
     _require_therock_root
     _copy_from_filelist 'rocjpeg-gfx1151'
+    _check_search_paths
 }
 
 package_rocm-cmake-gfx1151() {
@@ -408,6 +484,7 @@ package_rocm-cmake-gfx1151() {
     depends=('rocm-core-gfx1151' 'cmake')
     _require_therock_root
     _copy_from_filelist 'rocm-cmake-gfx1151'
+    _check_search_paths
 }
 
 package_rocm-core-gfx1151() {
@@ -567,6 +644,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 EOF
+    _check_search_paths
 }
 
 package_rocm-dbgapi-gfx1151() {
@@ -576,6 +654,7 @@ package_rocm-dbgapi-gfx1151() {
     depends=('gcc-libs' 'glibc' 'rocm-core-gfx1151' 'comgr-gfx1151' 'hsa-rocr-gfx1151')
     _require_therock_root
     _copy_from_filelist 'rocm-dbgapi-gfx1151'
+    _check_search_paths
 }
 
 package_rocm-debug-agent-gfx1151() {
@@ -586,6 +665,7 @@ package_rocm-debug-agent-gfx1151() {
     depends=('rocm-core-gfx1151' 'hip-runtime-amd-gfx1151' 'rocm-dbgapi-gfx1151')
     _require_therock_root
     _copy_from_filelist 'rocm-debug-agent-gfx1151'
+    _check_search_paths
 }
 
 package_rocm-developer-tools-gfx1151() {
@@ -603,6 +683,7 @@ package_rocm-device-libs-gfx1151() {
     depends=('rocm-core-gfx1151')
     _require_therock_root
     _copy_from_filelist 'rocm-device-libs-gfx1151'
+    _check_search_paths
 }
 
 package_rocm-gdb-gfx1151() {
@@ -612,6 +693,12 @@ package_rocm-gdb-gfx1151() {
     depends=('bash' 'expat' 'gcc-libs' 'glibc' 'gmp' 'guile' 'libelf' 'mpfr' 'ncurses' 'python-gfx1151' 'readline' 'rocm-dbgapi-gfx1151' 'rocm-debug-agent-gfx1151' 'xz' 'zlib' 'zstd')
     _require_therock_root
     _copy_from_filelist 'rocm-gdb-gfx1151'
+    patchelf --set-rpath '$ORIGIN:$ORIGIN/../lib/rocm_sysdeps/lib:$ORIGIN/../lib/llvm/lib:$ORIGIN/../lib' "${pkgdir}/opt/rocm/bin/rocgdb-py3.10"
+    patchelf --set-rpath '$ORIGIN:$ORIGIN/../lib/rocm_sysdeps/lib:$ORIGIN/../lib/llvm/lib:$ORIGIN/../lib' "${pkgdir}/opt/rocm/bin/rocgdb-py3.11"
+    patchelf --set-rpath '$ORIGIN:$ORIGIN/../lib/rocm_sysdeps/lib:$ORIGIN/../lib/llvm/lib:$ORIGIN/../lib' "${pkgdir}/opt/rocm/bin/rocgdb-py3.12"
+    patchelf --set-rpath '$ORIGIN:$ORIGIN/../lib/rocm_sysdeps/lib:$ORIGIN/../lib/llvm/lib:$ORIGIN/../lib' "${pkgdir}/opt/rocm/bin/rocgdb-py3.13"
+    patchelf --set-rpath '$ORIGIN:$ORIGIN/../lib/rocm_sysdeps/lib:$ORIGIN/../lib/llvm/lib:$ORIGIN/../lib' "${pkgdir}/opt/rocm/bin/rocgdb-py3.14"
+    _check_search_paths
 }
 
 package_rocm-gfx1151() {
@@ -629,6 +716,7 @@ package_rocm-hip-gfx1151() {
     depends=('hip-runtime-amd-gfx1151' 'hipcc-gfx1151')
     _require_therock_root
     _copy_from_filelist 'rocm-hip-gfx1151'
+    _check_search_paths
 }
 
 package_rocm-hip-libraries-gfx1151() {
@@ -662,6 +750,7 @@ package_rocm-host-math-gfx1151() {
     depends=()
     _require_therock_root
     _copy_from_filelist 'rocm-host-math-gfx1151'
+    _check_search_paths
 }
 
 package_rocm-language-runtime-gfx1151() {
@@ -671,6 +760,14 @@ package_rocm-language-runtime-gfx1151() {
     depends=('rocm-core-gfx1151' 'hsa-rocr-gfx1151' 'rocm-device-libs-gfx1151' 'comgr-gfx1151')
     _require_therock_root
     _copy_from_filelist 'rocm-language-runtime-gfx1151'
+    patchelf --set-rpath '$ORIGIN/../lib:$ORIGIN/../lib/rocm_sysdeps/lib:$ORIGIN/../lib/llvm/lib' "${pkgdir}/opt/rocm/bin/rdcd"
+    patchelf --set-rpath '$ORIGIN/../lib:$ORIGIN/../lib/rocm_sysdeps/lib:$ORIGIN/../lib/llvm/lib' "${pkgdir}/opt/rocm/bin/rdci"
+    patchelf --set-rpath '$ORIGIN:$ORIGIN/rocm_sysdeps/lib:$ORIGIN/llvm/lib' "${pkgdir}/opt/rocm/lib/librdc.so.1.3"
+    patchelf --set-rpath '$ORIGIN:$ORIGIN/rdc' "${pkgdir}/opt/rocm/lib/librdc_bootstrap.so.1.3"
+    patchelf --set-rpath '$ORIGIN:$ORIGIN/rocm_sysdeps/lib:$ORIGIN/llvm/lib' "${pkgdir}/opt/rocm/lib/librdc_client.so.1.3"
+    patchelf --set-rpath '$ORIGIN/..:$ORIGIN/../rocm_sysdeps/lib:$ORIGIN/../llvm/lib' "${pkgdir}/opt/rocm/lib/rdc/librdc_rocp.so.1.3"
+    patchelf --set-rpath '$ORIGIN/..:$ORIGIN/../rocm_sysdeps/lib:$ORIGIN/../llvm/lib' "${pkgdir}/opt/rocm/lib/rdc/librdc_rocr.so.1.3"
+    _check_search_paths
 }
 
 package_rocm-llvm-gfx1151() {
@@ -680,6 +777,8 @@ package_rocm-llvm-gfx1151() {
     depends=('rocm-sysdeps-gfx1151')
     _require_therock_root
     _copy_from_filelist 'rocm-llvm-gfx1151'
+    patchelf --set-rpath '$ORIGIN:$ORIGIN/../lib:$ORIGIN/../../lib:$ORIGIN/../../../lib:$ORIGIN/../../rocm_sysdeps/lib' "${pkgdir}/opt/rocm/lib/llvm/bin/llvm-omp-kernel-replay"
+    _check_search_paths
 }
 
 package_rocm-ml-libraries-gfx1151() {
@@ -716,6 +815,7 @@ package_rocm-opencl-runtime-gfx1151() {
     install -Dm644 /dev/stdin "${pkgdir}/etc/OpenCL/vendors/amdocl64.icd" <<'EOF'
 /opt/rocm/lib/libamdocl64.so
 EOF
+    _check_search_paths
 }
 
 package_rocm-opencl-sdk-gfx1151() {
@@ -725,6 +825,7 @@ package_rocm-opencl-sdk-gfx1151() {
     depends=('rocm-core-gfx1151' 'hsa-rocr-gfx1151' 'rocm-opencl-runtime-gfx1151')
     _require_therock_root
     _copy_from_filelist 'rocm-opencl-sdk-gfx1151'
+    _check_search_paths
 }
 
 package_rocm-openmp-gfx1151() {
@@ -742,6 +843,7 @@ package_rocm-smi-lib-gfx1151() {
     depends=('gcc-libs' 'glibc' 'python-gfx1151' 'rocm-core-gfx1151' 'hsa-rocr-gfx1151' 'rocm-sysdeps-gfx1151')
     _require_therock_root
     _copy_from_filelist 'rocm-smi-lib-gfx1151'
+    _check_search_paths
 }
 
 package_rocm-sysdeps-gfx1151() {
@@ -751,6 +853,8 @@ package_rocm-sysdeps-gfx1151() {
     depends=()
     _require_therock_root
     _copy_from_filelist 'rocm-sysdeps-gfx1151'
+    patchelf --set-rpath '$ORIGIN/../lib' "${pkgdir}/opt/rocm/lib/rocm_sysdeps/bin/xmlwf"
+    _check_search_paths
 }
 
 package_rocminfo-gfx1151() {
@@ -760,6 +864,7 @@ package_rocminfo-gfx1151() {
     depends=('gcc-libs' 'glibc' 'python-gfx1151' 'rocm-core-gfx1151' 'hsa-rocr-gfx1151')
     _require_therock_root
     _copy_from_filelist 'rocminfo-gfx1151'
+    _check_search_paths
 }
 
 package_rocprim-gfx1151() {
@@ -769,6 +874,7 @@ package_rocprim-gfx1151() {
     depends=('rocm-core-gfx1151' 'hip-runtime-amd-gfx1151')
     _require_therock_root
     _copy_from_filelist 'rocprim-gfx1151'
+    _check_search_paths
 }
 
 package_rocprofiler-compute-gfx1151() {
@@ -779,6 +885,7 @@ package_rocprofiler-compute-gfx1151() {
     _require_therock_root
     _copy_from_filelist 'rocprofiler-compute-gfx1151'
     sed -i -e '/^dash-bootstrap-components==/d' -e '/^dash-svg==/d' -e '/^dash==/d' -e '/^plotext==/d' -e '/^plotille==/d' -e '/^textual_plotext==/d' "${pkgdir}/opt/rocm/libexec/rocprofiler-compute/requirements.txt"
+    _check_search_paths
 }
 
 package_rocprofiler-register-gfx1151() {
@@ -788,36 +895,40 @@ package_rocprofiler-register-gfx1151() {
     depends=('gcc-libs' 'glibc' 'fmt' 'google-glog' 'rocm-core-gfx1151')
     _require_therock_root
     _copy_from_filelist 'rocprofiler-register-gfx1151'
+    _check_search_paths
 }
 
 package_rocprofiler-sdk-gfx1151() {
     pkgdesc='rocprofiler SDK from TheRock for gfx1151'
     provides=('rocprofiler-sdk')
     conflicts=('rocm-gfx1151-bin' 'rocprofiler-sdk')
-    depends=()
+    depends=('rocprofiler-sdk-rocpd-gfx1151' 'rocprofiler-sdk-roctx-gfx1151')
     _require_therock_root
     _copy_from_filelist 'rocprofiler-sdk-gfx1151'
     _rocprofiler_sdk_config="${pkgdir}/opt/rocm/lib/cmake/rocprofiler-sdk/rocprofiler-sdk-config.cmake"
     perl -0pi -e 's#/__w/rockrel/rockrel/build/dist/rocm#/opt/rocm#g; s#/__w/rockrel/rockrel/build/[^/\s]+/[^/\s]+/dist/#/opt/rocm/#g' "${_rocprofiler_sdk_config}"
     ! grep -n '/__w/' "${_rocprofiler_sdk_config}" || { echo "CI_PATH_LEAK: ${_rocprofiler_sdk_config}" >&2; return 1; }
+    _check_search_paths
 }
 
 package_rocprofiler-sdk-rocpd-gfx1151() {
     pkgdesc='rocprofiler SDK rocpd component from TheRock for gfx1151'
     provides=('rocprofiler-sdk-rocpd')
     conflicts=('rocm-gfx1151-bin' 'rocprofiler-sdk-rocpd')
-    depends=('rocprofiler-sdk-gfx1151')
+    depends=()
     _require_therock_root
     _copy_from_filelist 'rocprofiler-sdk-rocpd-gfx1151'
+    _check_search_paths
 }
 
 package_rocprofiler-sdk-roctx-gfx1151() {
     pkgdesc='rocprofiler SDK roctx component from TheRock for gfx1151'
     provides=('rocprofiler-sdk-roctx')
     conflicts=('rocm-gfx1151-bin' 'rocprofiler-sdk-roctx')
-    depends=('rocprofiler-sdk-gfx1151')
+    depends=()
     _require_therock_root
     _copy_from_filelist 'rocprofiler-sdk-roctx-gfx1151'
+    _check_search_paths
 }
 
 package_rocprofiler-systems-gfx1151() {
@@ -827,6 +938,8 @@ package_rocprofiler-systems-gfx1151() {
     depends=('fmt' 'google-glog' 'hip-runtime-amd-gfx1151' 'hsa-amd-aqlprofile-gfx1151' 'python-gfx1151' 'python-lxml' 'rocm-core-gfx1151' 'yaml-cpp')
     _require_therock_root
     _copy_from_filelist 'rocprofiler-systems-gfx1151'
+    patchelf --set-rpath '$ORIGIN/../lib:$ORIGIN/../lib/rocprofiler-systems:$ORIGIN/../lib/llvm/lib:$ORIGIN/../lib/rocm_sysdeps/lib' "${pkgdir}/opt/rocm/bin/rocprof-sys-instrument"
+    _check_search_paths
 }
 
 package_rocrand-gfx1151() {
@@ -836,6 +949,8 @@ package_rocrand-gfx1151() {
     depends=('gcc-libs' 'glibc' 'hip-runtime-amd-gfx1151' 'rocm-core-gfx1151')
     _require_therock_root
     _copy_from_filelist 'rocrand-gfx1151'
+    patchelf --set-rpath '$ORIGIN/rocm_sysdeps/lib:$ORIGIN/llvm/lib:$ORIGIN' "${pkgdir}/opt/rocm/lib/librocrand.so.1.1"
+    _check_search_paths
 }
 
 package_rocshmem-gfx1151() {
@@ -845,6 +960,8 @@ package_rocshmem-gfx1151() {
     depends=()
     _require_therock_root
     _copy_from_filelist 'rocshmem-gfx1151'
+    patchelf --set-rpath '$ORIGIN/../lib' "${pkgdir}/opt/rocm/bin/rocshmem_info"
+    _check_search_paths
 }
 
 package_rocsolver-gfx1151() {
@@ -854,6 +971,7 @@ package_rocsolver-gfx1151() {
     depends=('gcc-libs' 'glibc' 'hip-runtime-amd-gfx1151' 'rocblas-gfx1151' 'rocm-core-gfx1151' 'rocsparse-gfx1151')
     _require_therock_root
     _copy_from_filelist 'rocsolver-gfx1151'
+    _check_search_paths
 }
 
 package_rocsparse-gfx1151() {
@@ -863,6 +981,9 @@ package_rocsparse-gfx1151() {
     depends=('gcc-libs' 'glibc' 'hip-runtime-amd-gfx1151' 'rocblas-gfx1151' 'rocm-core-gfx1151' 'rocprim-gfx1151')
     _require_therock_root
     _copy_from_filelist 'rocsparse-gfx1151'
+    patchelf --set-rpath '$ORIGIN/..' "${pkgdir}/opt/rocm/lib/rocsparse/rocsparseio-convert"
+    patchelf --set-rpath '$ORIGIN/..' "${pkgdir}/opt/rocm/lib/rocsparse/rocsparseio-info"
+    _check_search_paths
 }
 
 package_rocthrust-gfx1151() {
@@ -872,6 +993,7 @@ package_rocthrust-gfx1151() {
     depends=('rocm-core-gfx1151' 'hip-runtime-amd-gfx1151' 'rocprim-gfx1151')
     _require_therock_root
     _copy_from_filelist 'rocthrust-gfx1151'
+    _check_search_paths
 }
 
 package_roctracer-gfx1151() {
@@ -881,6 +1003,7 @@ package_roctracer-gfx1151() {
     depends=('gcc-libs' 'glibc' 'rocm-core-gfx1151' 'hip-runtime-amd-gfx1151' 'hsa-rocr-gfx1151' 'comgr-gfx1151')
     _require_therock_root
     _copy_from_filelist 'roctracer-gfx1151'
+    _check_search_paths
 }
 
 package_rocwmma-gfx1151() {
@@ -890,4 +1013,5 @@ package_rocwmma-gfx1151() {
     depends=('hip-runtime-amd-gfx1151' 'openmp' 'rocblas-gfx1151' 'rocm-core-gfx1151')
     _require_therock_root
     _copy_from_filelist 'rocwmma-gfx1151'
+    _check_search_paths
 }

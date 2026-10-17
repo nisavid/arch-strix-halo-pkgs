@@ -68,6 +68,30 @@ single `libprotobuf.so.<ver>` entry, and appends `libprotobuf.so=<ver>-64` to
 the package's depends in the `PKGBUILD` and manifest. A rebuild against a
 different protobuf therefore moves the depend without a policy edit.
 
+## RUNPATH and RPATH
+
+Every packaged ELF's `DT_RUNPATH` and `DT_RPATH` entries must stay under
+`/usr` or `/opt/rocm`. An entry that starts with `$ORIGIN` (or `${ORIGIN}`)
+resolves against the object's installed directory and is normalized, so
+`$ORIGIN/../../..` that climbs out of `/opt/rocm` is foreign; so are CI build
+trees such as `/__w/rockrel/...`, other absolute paths, relative entries, and
+empty entries. The render reads the stage and fails such an object as
+`FOREIGN_RUNPATH`; the loader would skip those directories on the host and
+resolve the library elsewhere or not at all.
+
+A package's `runpath_rewrites` entries fix a payload object at package time.
+Each entry is `{ object = "<fnmatch pattern>", runpath = "<new value>" }`. The
+pattern matches the package's own regular ELF files (symlinks and non-ELF files
+are skipped), and the new value replaces the whole RUNPATH through
+`patchelf --set-rpath '<value>'`, which also replaces an `RPATH`. An entry that
+matches nothing, an object matched by two entries, and a new value that is
+empty, contains a single quote, or is itself foreign fail the render as
+`RUNPATH_REWRITE_INVALID`. The rendered package function runs the rewrites
+after `post_copy_commands`, and every package that copies payload ends with
+`_check_search_paths`, the template's package-time version of the same check,
+which reads the packaged files with `readelf -d`. The template therefore
+declares `makedepends=('binutils' 'patchelf')`.
+
 ## kpack device code
 
 TheRock dist tarballs can be kpack-split: a host library carries a
@@ -95,6 +119,8 @@ Structured diagnostics are emitted in this shape:
 - `MISSING_PACKAGE_METADATA: <pkg>`
 - `KPACK_REF_UNOWNED: <library path>`
 - `SONAME_DEPEND_UNRESOLVED: <pkg>`
+- `RUNPATH_REWRITE_INVALID: <pkg>`
+- `FOREIGN_RUNPATH: <object path>`
 
 Each failure also includes a short hint explaining whether the fix belongs in:
 
@@ -104,6 +130,7 @@ Each failure also includes a short hint explaining whether the fix belongs in:
 - meta package dependency definitions
 - kpack archive ownership and direct package depends
 - the staged ELF behind a `soname_depends` entry
+- a `runpath_rewrites` entry for a payload object with a foreign search path
 
 ## Typical update workflow
 

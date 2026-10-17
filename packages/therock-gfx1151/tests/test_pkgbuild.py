@@ -254,3 +254,29 @@ def test_rocm_core_manifest_tracks_cachy_style_runtime_dependencies():
         "python-pyelftools",
         "python-yaml",
     ]
+
+
+def test_rocprofiler_sdk_depends_run_from_the_sdk_to_its_components():
+    text = PKGBUILD.read_text()
+    sdk = text[text.index("package_rocprofiler-sdk-gfx1151()") :]
+    assert "    depends=('rocprofiler-sdk-rocpd-gfx1151' 'rocprofiler-sdk-roctx-gfx1151')" in sdk[: sdk.index("\n}\n")]
+    manifest = json.loads(MANIFEST.read_text())["packages"]
+    assert manifest["rocprofiler-sdk-rocpd-gfx1151"]["depends"] == []
+    assert manifest["rocprofiler-sdk-roctx-gfx1151"]["depends"] == []
+
+
+def test_rendered_packages_rewrite_foreign_runpaths_and_check_every_package():
+    text = PKGBUILD.read_text()
+    assert "makedepends=('binutils' 'patchelf')" in text
+    rewrites = re.findall(r"^    patchelf --set-rpath '([^']+)' \"\$\{pkgdir\}/([^\"]+)\"$", text, re.MULTILINE)
+    objects = sorted(path for _runpath, path in rewrites)
+    assert len(objects) == len(set(objects)) == 28
+    assert "opt/rocm/bin/rocgdb-py3.14" in objects
+    assert "opt/rocm/lib/llvm/bin/llvm-omp-kernel-replay" in objects
+    assert all("/__w/" not in runpath and "/opt/python-shared" not in runpath for runpath, _path in rewrites)
+    for path in objects:
+        owner = [p.stem for p in (REPO_ROOT / "packages/therock-gfx1151/filelists").glob("*.txt") if path in p.read_text().splitlines()]
+        assert len(owner) == 1, path
+    # Every package that copies payload ends by checking its search paths.
+    copying = re.findall(r"^    _copy_from_filelist '([^']+)'$", text, re.MULTILINE)
+    assert text.count("\n    _check_search_paths\n") == len(copying)

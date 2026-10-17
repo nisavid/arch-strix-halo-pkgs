@@ -558,11 +558,13 @@ A fresh vLLM root is `torch-chain.targets`, `model-closure.targets` and
 
 ## F protobuf and Abseil contract (#108)
 
-MIGraphX 2.16.1 (`migraphx-gfx1151` 7.14.1-1 in F) is linked against Arch
-protobuf 36.1 and Abseil 20260817 on purpose. Its package declares
+MIGraphX 2.16.1 (`migraphx-gfx1151` in F) is linked against Arch protobuf
+36.1 and Abseil 20260817 on purpose. The 7.14.1-1 package declared
 `libprotobuf.so=36.1.0-64` and no Abseil dependency, and protobuf depends on
-plain `abseil-cpp`. Abseil has no soname in the package graph, so nothing but
-this contract ties the two versions together.
+plain `abseil-cpp`. Abseil has no soname in the package graph. From 7.14.1-2
+the package also declares `abseil-cpp>=20260817.0` and `abseil-cpp<20260818`,
+the range the 7.13.0-4 package already used, so pacman ties the Abseil LTS to the
+package; the rest of this contract still covers the build roots.
 
 - **Build roots.** `torch-chain.targets` names `protobuf>=36.1` and
   `abseil-cpp>=20260817.0`. The other targets files are always resolved with
@@ -600,8 +602,9 @@ this contract ties the two versions together.
   and Abseil 20260526. Before the torch-migraphx smokes are re-run, re-lock the
   root with the fixed tool and the pinned targets, `fetch` the new files,
   `populate` a fresh root, and `add` the W2A-built packages back into it.
-- **Host at W5.** The host moves to protobuf 36.1 and Abseil 20260817 in the
-  W5 transaction, through a full `pacman -Syu`. Never install F or protobuf
+- **Host at W5.** The host moves to protobuf 36.1 and Abseil 20260817 through
+  a full `pacman -Syu`; it has carried them, with the matching
+  `libphonenumber` and `python-protobuf`, since its 2026-10-02 full upgrade. Never install F or protobuf
   with a partial `pacman -U`: pacman tracks the protobuf soname, but not the
   Abseil version, so a partial update can leave a protobuf 36.1 that needs
   Abseil 20260817 on top of an older Abseil.

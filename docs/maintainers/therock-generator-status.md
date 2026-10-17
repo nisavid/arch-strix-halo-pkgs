@@ -24,12 +24,15 @@ should remain rendered.
 ### TheRock 7.14.1 lane
 
 The policy now targets TheRock 7.14.1 (#108). The committed render in
-`packages/therock-gfx1151/` is the 7.14.1 render (`7.14.1-1`), made from the
-pinned 7.14.1 gfx1151 stage after MIGraphX 2.16.1 was built into it. The
-render is clean (no `UNMAPPED_COMPONENT`, `KPACK_REF_UNOWNED`, or
-`SONAME_DEPEND_UNRESOLVED`) and renders 68 of the 72 policy-defined
-packages. `migraphx-gfx1151` depends on `libprotobuf.so=36.1.0-64`, taken
-from the staged parser's `DT_NEEDED`. Not rendered: `hipfort-gfx1151`, `mivisionx-gfx1151`,
+`packages/therock-gfx1151/` is `7.14.1-2`, made from the pinned 7.14.1
+gfx1151 stage with the staged `migraphx-gfx1151` 7.14.1-1 payload (MIGraphX
+2.16.1) overlaid. `7.14.1-2` recompiles nothing: its file lists equal the
+`7.14.1-1` lists, and it adds the MIGraphX Abseil range, 28 package-time RUNPATH
+rewrites, the RUNPATH checks, and the rocprofiler-sdk depends inversion. The
+render is clean (no `UNMAPPED_COMPONENT`, `KPACK_REF_UNOWNED`,
+`SONAME_DEPEND_UNRESOLVED`, `RUNPATH_REWRITE_INVALID`, or `FOREIGN_RUNPATH`)
+and renders 68 of the 72 policy-defined packages. `migraphx-gfx1151` depends
+on `libprotobuf.so=36.1.0-64`, taken from the staged parser's `DT_NEEDED`. Not rendered: `hipfort-gfx1151`, `mivisionx-gfx1151`,
 `rpp-gfx1151` (no payload, as before) and `magma-gfx1151` (MAGMA left the
 7.14.1 payload). `hiptensor-gfx1151` renders again, and the new
 `rocalution-gfx1151` and `hipfile-gfx1151` render. The payload decisions,
@@ -142,6 +145,9 @@ The generator and policy now handle:
   fails as `KPACK_REF_UNOWNED`
 - soname depends rendered from staged ELF `DT_NEEDED` entries
   (`soname_depends`), used for the MIGraphX protobuf depend
+- RUNPATH and RPATH entries outside `/usr` and `/opt/rocm` fail the render
+  (`FOREIGN_RUNPATH`) and the package (`_check_search_paths`); per-package
+  `runpath_rewrites` replace them with `patchelf` at package time
 
 ## Current caveat
 

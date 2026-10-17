@@ -933,7 +933,10 @@
       "rendered": true
     },
     "rocprofiler-sdk-gfx1151": {
-      "depends": [],
+      "depends": [
+        "rocprofiler-sdk-rocpd-gfx1151",
+        "rocprofiler-sdk-roctx-gfx1151"
+      ],
       "fileless": false,
       "files": 212,
       "provides": [
@@ -942,9 +945,7 @@
       "rendered": true
     },
     "rocprofiler-sdk-rocpd-gfx1151": {
-      "depends": [
-        "rocprofiler-sdk-gfx1151"
-      ],
+      "depends": [],
       "fileless": false,
       "files": 31,
       "provides": [
@@ -953,9 +954,7 @@
       "rendered": true
     },
     "rocprofiler-sdk-roctx-gfx1151": {
-      "depends": [
-        "rocprofiler-sdk-gfx1151"
-      ],
+      "depends": [],
       "fileless": false,
       "files": 13,
       "provides": [

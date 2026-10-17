@@ -13,6 +13,7 @@ arch=('x86_64')
 license=({{license_block}})
 url='{{url}}'
 options=('!strip' 'staticlibs')
+makedepends=('binutils' 'patchelf')
 source=()
 sha256sums=()
 
@@ -42,6 +43,42 @@ _copy_from_filelist() {
         mkdir -p "${pkgdir}/$(dirname "${rel}")"
         (cd "${_therock_root}" && cp --parents -a --no-preserve=ownership "${rel}" "${pkgdir}")
     done < "${filelist}"
+}
+
+# Fail when a packaged ELF keeps a RUNPATH or RPATH entry outside /usr and
+# /opt/rocm. $ORIGIN resolves against the object's installed directory, and an
+# empty entry (the current directory) is foreign too. The generator runs the
+# same check against the stage at render time.
+_check_search_paths() {
+    local file magic rel origin value entry resolved status=0
+    local -a entries
+    while IFS= read -r -d '' file; do
+        magic=''
+        IFS= read -r -N 4 magic < "${file}" 2>/dev/null || true
+        [[ "${magic}" == $'\x7fELF' ]] || continue
+        rel="${file#"${pkgdir}"}"
+        origin="$(dirname "${rel}")"
+        while IFS= read -r value; do
+            IFS=':' read -r -a entries <<< "${value}"
+            [[ "${value}" == *: ]] && entries+=('')
+            for entry in "${entries[@]}"; do
+                resolved="${entry}"
+                case "${entry}" in
+                    '$ORIGIN'|'$ORIGIN/'*) resolved="${origin}${entry#'$ORIGIN'}" ;;
+                    '${ORIGIN}'|'${ORIGIN}/'*) resolved="${origin}${entry#'${ORIGIN}'}" ;;
+                esac
+                if [[ "${resolved}" == /* && "${resolved}" != *'$'* ]]; then
+                    resolved="$(realpath -m -s -- "${resolved}")"
+                    case "${resolved}" in
+                        /usr|/usr/*|/opt/rocm|/opt/rocm/*) continue ;;
+                    esac
+                fi
+                echo "FOREIGN_RUNPATH: ${rel}: '${entry}' in '${value}'" >&2
+                status=1
+            done
+        done < <(LC_ALL=C readelf -d "${file}" | sed -n 's/.*(\(RUNPATH\|RPATH\)) *Library r[a-z]*path: \[\(.*\)\]$/\2/p')
+    done < <(find "${pkgdir}" -type f -print0)
+    return "${status}"
 }
 
 {{package_functions}}
