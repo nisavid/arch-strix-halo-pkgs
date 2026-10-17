@@ -33,9 +33,14 @@ becomes durable, prefer a named patch that another maintainer can review.
 - [Build Python with POSIX 2024](../packages/python-gfx1151/0001-build-python-with-posix-2024.patch)
   - A verbatim copy of upstream cpython `927eb448` (gh-144309). It raises the
     configure feature macros from POSIX 2008 to POSIX 2024.
-  - Carried for parity with Arch `core/python` 3.14.7-1, the authoritative
-    reference, which applies the same commit. Drop it once a CPython 3.14
-    release contains the commit or Arch stops carrying it.
+  - Carried for parity with Arch `core/python` 3.14.8-1, the authoritative
+    reference, which applies the same commit; its patch file is
+    byte-identical to this one. CPython 3.14.8 does not contain the commit.
+    On the 3.14.8 release tarball, `patch -Np1 --dry-run` applies every hunk
+    without fuzz at the same offsets as on 3.14.7 (`configure` -27,
+    `configure.ac` -9, `pyconfig.h.in` -16) and creates the `Misc/NEWS.d`
+    entry. Drop it once a CPython 3.14 release contains the commit or Arch
+    stops carrying it.
 
 ## Lemonade
 

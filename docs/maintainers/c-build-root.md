@@ -1,11 +1,16 @@
 # Generation-C Build Root
 
 Generation C (W2A, #98) builds the PyTorch and vLLM chain against the new
-foundation F: TheRock 7.14.1, MIGraphX 2.16.1 and CPython 3.14.7. The host
+foundation F: TheRock 7.14.1, MIGraphX 2.16.1 and CPython 3.14.8. The host
 still runs the previous generation (ROCm 7.13 under `/opt/rocm`, CPython
 3.14.6, and a torch linked against 7.13). F must not be installed on the host
 before W5, so W2A packages are built in a rootless bubblewrap root that holds F
 at the paths the host will have after W5.
+
+F moved from CPython 3.14.7 to 3.14.8 on 2026-10-16, before any 3.14.8 build.
+Records below that name Python 3.14.7, the 7.14.1-1 TheRock splits, or the
+W2A results built on them describe the 3.14.7 subject and stay labelled that
+way; 3.14.8 evidence is recorded separately as it is produced (#108).
 
 `tools/c_buildroot.py` owns this flow. Its data lives in `tools/buildroot/`:
 

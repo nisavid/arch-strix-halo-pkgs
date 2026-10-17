@@ -6,8 +6,8 @@
 - Scaffold template: `autoconf-python`
 - Recipe build method: `autoconf`
 - Upstream repo: `https://github.com/python/cpython.git`
-- Package version: `3.14.7`
-- Recipe revision: `3f15f9f (20260508, 17 commits touching recipe path)`
+- Package version: `3.14.8`
+- Recipe revision: `dbfb70e (20260606, 18 commits touching recipe path)`
 - Recipe steps: `8`
 - Recipe dependencies: `therock`
 - Recorded reference packages: `core/python, cachyos-znver4/python`

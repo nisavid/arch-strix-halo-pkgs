@@ -2477,11 +2477,15 @@ def test_python_candidate_keeps_independent_ftp_baseline_and_prior_record(
     )
 
     family = report["families"][0]
-    assert report["summary"] == {"stable_update_available": 1}
+    # The 3.14.8 source transition advanced both cursors, so the family is
+    # current; the tracked record still binds through its promoted cursors and
+    # keeps the #108 obligation open until the foundation gates pass. The
+    # superseded 3.14.7 record no longer attaches.
+    assert report["summary"] == {"current": 1}
     assert report["effective_summary"] == {"tracked_update_candidate": 1}
     assert [(check["id"], check["role"], check["status"], check["latest"]) for check in family["checks"]] == [
-        ("arch", "primary", "stable_update_available", "3.14.8-1"),
-        ("cpython", "baseline", "baseline_drift", "3.14.8"),
+        ("arch", "primary", "current", "3.14.8-1"),
+        ("cpython", "baseline", "current", "3.14.8"),
     ]
     assert family["candidate"]["id"] == "python-3.14.8-1-arch"
     assert family["candidate"]["latest"] == "3.14.8-1"
