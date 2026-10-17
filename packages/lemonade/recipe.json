@@ -35,10 +35,10 @@
     "baseline_kind": "meta-aggregate",
     "conflicts": [],
     "depends": [
-      "lemonade-server",
-      "lemonade-app",
-      "llama.cpp-hip-gfx1151",
-      "llama.cpp-vulkan-gfx1151"
+      "lemonade-server=11.9.0-2",
+      "lemonade-app=11.9.0-2",
+      "llama.cpp-hip-gfx1151=0.4.1",
+      "llama.cpp-vulkan-gfx1151=0.4.1"
     ],
     "divergence_notes": [
       "This is a convenience meta package for the full local Lemonade plus packaged llama.cpp backend experience.",
@@ -49,6 +49,7 @@
     ],
     "makedepends": [],
     "pkgdesc": "Meta package for Lemonade and llama.cpp backend packages",
+    "pkgrel": 2,
     "provides": [
       "lemonade"
     ],

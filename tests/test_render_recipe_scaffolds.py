@@ -650,6 +650,140 @@ def test_llamacpp_renderer_applies_source_patches() -> None:
     assert pkgbuild.index("prepare()") < pkgbuild.index("build()")
 
 
+LLAMACPP_RECIPE_FIXTURE = {
+    "repo": "https://github.com/ggml-org/llama.cpp.git",
+    "method": "cmake",
+    "phase": "package",
+    "steps": [],
+    "depends_on": [],
+    "notes": "",
+}
+RENDER_DEFAULTS_FIXTURE = {
+    "recipe_repo": "https://github.com/paudley/ai-notes",
+    "recipe_subdir": "strix-halo",
+    "recipe_author": "Blackcat Informatics Inc.",
+}
+
+
+def _stable_llamacpp_policy(revision: str, **overrides) -> dict:
+    policy = {
+        "recipe_key": "llamacpp",
+        "template": "llama-cpp",
+        "upstream_version": "0.4.1",
+        "upstream_tag": "v0.4.1",
+        "upstream_revision": revision,
+        "upstream_build_number": 10964,
+        "pkgdesc": "llama.cpp",
+        "url": "https://github.com/ggml-org/llama.cpp",
+        "license": ["MIT"],
+        "src_subdir": f"llama.cpp-{revision}",
+        "source_refs": [
+            f"llama.cpp-{revision}.tar.gz::https://github.com/ggml-org/llama.cpp/archive/{revision}.tar.gz"
+        ],
+        "sha256sums": ["a" * 64],
+        "source_patches": ["0001-selected-token-logits.patch"],
+        "extra_sha256sums": ["b" * 64],
+        "depends": ["openssl"],
+        "makedepends": ["cmake", "ninja", "npm"],
+    }
+    policy.update(overrides)
+    return policy
+
+
+@pytest.mark.parametrize(
+    ("package_name", "revision"),
+    [
+        ("llama.cpp-hip-gfx1151", "1" * 40),
+        ("llama.cpp-vulkan-gfx1151", "2" * 40),
+    ],
+)
+def test_llamacpp_renderer_builds_the_web_ui_from_source_before_cmake(package_name, revision) -> None:
+    pkgbuild = render_recipe_scaffolds.render_pkgbuild(
+        package_name,
+        _stable_llamacpp_policy(revision),
+        LLAMACPP_RECIPE_FIXTURE,
+        "0.4.1",
+        RENDER_DEFAULTS_FIXTURE,
+    )
+    build_body = pkgbuild[pkgbuild.index("build() {") : pkgbuild.index("package() {")]
+
+    # The upstream extra/llama-cpp shape: npm in tools/ui from the lockfile,
+    # back to the source root, then CMake with the UI enabled.
+    ui_steps = ["pushd tools/ui", "npm ci --ignore-scripts", "npm run build", "popd"]
+    positions = [build_body.index(f"\n  {step}\n") for step in ui_steps]
+    assert positions == sorted(positions)
+    assert positions[0] > build_body.index(f'cd "$srcdir/llama.cpp-{revision}"')
+    assert positions[-1] < build_body.index('cmake -B "${build_root}"')
+    assert "makedepends=(cmake ninja npm)" in pkgbuild
+    assert "-DLLAMA_BUILD_UI=ON" in build_body
+    assert "-DLLAMA_USE_PREBUILT_UI=OFF" in build_body
+    assert "-DLLAMA_BUILD_UI=OFF" not in pkgbuild
+
+    # Each backend reports its own pinned identity, not the packaging checkout.
+    assert "-DLLAMA_BUILD_NUMBER=10964" in build_body
+    assert f"-DLLAMA_BUILD_COMMIT={revision[:7]}" in build_body
+    assert "-DLLAMA_BUILD_IS_DEV=OFF" in build_body
+    assert f"sha256sums=({'a' * 64} {'b' * 64})" in pkgbuild
+
+
+@pytest.mark.parametrize(
+    ("overrides", "reason"),
+    [
+        ({"upstream_tag": None}, "together"),
+        ({"upstream_build_number": None}, "together"),
+        ({"upstream_tag": "v0.4.2"}, "does not match upstream_version"),
+        ({"upstream_build_number": True}, "positive integer"),
+        ({"upstream_build_number": "10964"}, "positive integer"),
+        ({"upstream_build_number": 0}, "positive integer"),
+        ({"upstream_revision": "b29c606"}, "full 40-hex"),
+        ({"src_subdir": "llama.cpp-" + "f" * 40}, "src_subdir does not unpack"),
+    ],
+)
+def test_llamacpp_build_identity_rejects_incomplete_or_contradictory_tuples(overrides, reason, capsys) -> None:
+    revision = "3" * 40
+    policy = _stable_llamacpp_policy(revision)
+    for key, value in overrides.items():
+        if value is None:
+            policy.pop(key)
+        else:
+            policy[key] = value
+
+    with pytest.raises(SystemExit) as excinfo:
+        render_recipe_scaffolds.llamacpp_build_identity_flags("llama.cpp-hip-gfx1151", policy)
+
+    assert excinfo.value.code == 2
+    err = capsys.readouterr().err
+    assert "LLAMACPP_BUILD_IDENTITY" in err
+    assert reason in err
+
+
+def test_llamacpp_build_identity_is_empty_for_b_number_pins() -> None:
+    policy = {"upstream_version": "b9442", "src_subdir": "llama.cpp-abcdef"}
+
+    assert render_recipe_scaffolds.llamacpp_build_identity_flags("llama.cpp-hip-gfx1151", policy) == []
+
+
+@pytest.mark.parametrize(
+    ("payload", "expected"),
+    [
+        ({"pkgver": "0.4.1", "policy": {"upstream_tag": "v0.4.1"}}, "v0.4.1"),
+        ({"pkgver": "b9442", "policy": {}}, "b9442"),
+        ({"pkgver": "0.4.1", "policy": {}}, "unknown"),
+        ({"pkgver": "", "policy": {}}, "unknown"),
+    ],
+)
+def test_sibling_release_name_prefers_the_stable_tag(tmp_path: Path, monkeypatch, payload, expected) -> None:
+    tools_dir = tmp_path / "tools"
+    tools_dir.mkdir()
+    recipe_dir = tmp_path / "packages" / "llama.cpp-hip-gfx1151"
+    recipe_dir.mkdir(parents=True)
+    (recipe_dir / "recipe.json").write_text(json.dumps(payload), encoding="utf-8")
+    monkeypatch.setattr(render_recipe_scaffolds, "__file__", str(tools_dir / "render_recipe_scaffolds.py"))
+
+    assert render_recipe_scaffolds.sibling_package_upstream_revision("llama.cpp-hip-gfx1151") == expected
+    assert render_recipe_scaffolds.sibling_package_upstream_revision("llama.cpp-missing") == "unknown"
+
+
 def test_stable_diffusion_renderer_keeps_runtime_rpath_to_system_libs() -> None:
     pkgbuild = render_recipe_scaffolds.render_pkgbuild(
         "stable-diffusion.cpp-vulkan-gfx1151",

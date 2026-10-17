@@ -67,7 +67,7 @@ def test_pkgbuild_builds_the_same_pinned_fork_commit_as_the_server():
 def test_pkgbuild_checksums_the_local_patch():
     text = PKGBUILD.read_text()
 
-    assert re.search(r"^sha256sums=\(SKIP [0-9a-f]{64}\)$", text, re.MULTILINE)
+    assert re.search(r"^sha256sums=\([0-9a-f]{64} [0-9a-f]{64}\)$", text, re.MULTILINE)
 
 
 def test_built_package_ships_desktop_launcher_wrapper():

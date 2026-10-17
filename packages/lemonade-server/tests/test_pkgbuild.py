@@ -43,6 +43,11 @@ NO_REMOTE_FETCH_DROPIN = (
 )
 PKGINFO = PKG_ROOT / ".PKGINFO"
 LLAMACPP_HIP_PKGBUILD = REPO_ROOT / "packages/llama.cpp-hip-gfx1151/PKGBUILD"
+LLAMACPP_RECIPES = {
+    "ROCM": REPO_ROOT / "packages/llama.cpp-hip-gfx1151/recipe.json",
+    "VULKAN": REPO_ROOT / "packages/llama.cpp-vulkan-gfx1151/recipe.json",
+}
+META_PKGBUILD = REPO_ROOT / "packages/lemonade/PKGBUILD"
 SERVICE = PKG_ROOT / "usr/lib/systemd/system/lemond.service"
 OLD_SERVICE = PKG_ROOT / "usr/lib/systemd/system/lemonade-server.service"
 SOURCE_TREE = REPO_ROOT / "packages/lemonade-server/src/lemonade"
@@ -79,11 +84,11 @@ def _assignments(text):
     ]
 
 
-EXPECTED_LLAMACPP_VERSION = _pkgbuild_value(LLAMACPP_HIP_PKGBUILD, "pkgver")
-EXPECTED_RELEASE_URL = (
-    "https://github.com/ggml-org/llama.cpp/releases/tag/"
-    f"{EXPECTED_LLAMACPP_VERSION}"
-)
+# Both backends are pinned to the stable v0.4.1 release; Lemonade reports the
+# tag and links its release page. Checked per backend, so a stale Vulkan
+# recipe cannot pass because the HIP one is current.
+EXPECTED_LLAMACPP_VERSION = "v0.4.1"
+EXPECTED_RELEASE_URL = "https://github.com/ggml-org/llama.cpp/releases/tag/v0.4.1"
 LEMONADE_PIN = load_recipe_policy(RECIPE_POLICY)["source_pins"]["lemonade"]
 
 
@@ -218,7 +223,7 @@ def test_pkgbuild_ships_offline_distro_defaults():
         "auto_update_models": False,
         "max_loaded_models": -1,
         "llamacpp": {
-            "args": "--no-mmap",
+            "args": "--load-mode none",
             "backend": "rocm",
             "prefer_system": False,
             "rocm_bin": HIP_SERVER,
@@ -287,7 +292,9 @@ def test_pkgbuild_checksums_every_local_patch():
     sums = _pkgbuild_value(PKGBUILD, "sha256sums").strip("()").split()
     local_patches = sorted(PKGBUILD.parent.glob("*.patch"))
 
-    assert sums[0] == "SKIP"
+    # The fork source is a git source whose makepkg checksum covers the
+    # pinned commit's `git archive` tar, so it must be a real digest.
+    assert re.fullmatch(r"[0-9a-f]{64}", sums[0])
     assert len(sums) == 1 + len(local_patches) == 5
     assert all(re.fullmatch(r"[0-9a-f]{64}", item) for item in sums[1:])
 
@@ -315,9 +322,33 @@ def test_pkgbuild_drops_the_args_merge_stopgap():
     assert DROPPED_ARGS_MERGE_PATCH.name not in PKGBUILD.read_text()
 
 
+@pytest.mark.parametrize("backend", sorted(LLAMACPP_RECIPES))
+def test_env_metadata_comes_from_each_rendered_backend(backend):
+    recipe = json.loads(LLAMACPP_RECIPES[backend].read_text())
+    assert recipe["pkgver"] == "0.4.1"
+    assert recipe["policy"]["upstream_tag"] == EXPECTED_LLAMACPP_VERSION
+    env = dict(_assignments(_heredoc(PKGBUILD.read_text(), LLAMACPP_ENV_TARGET)))
+    assert env[f"LEMONADE_LLAMACPP_{backend}_VERSION"] == recipe["policy"]["upstream_tag"]
+    assert env[f"LEMONADE_LLAMACPP_{backend}_RELEASE_URL"] == EXPECTED_RELEASE_URL
+
+
+def test_pkgbuild_moves_with_the_v0_4_1_backends():
+    text = PKGBUILD.read_text()
+    assert "conflicts=('llama.cpp-hip-gfx1151<0.4.1' 'llama.cpp-vulkan-gfx1151<0.4.1')" in text
+
+
+def test_meta_package_pins_the_coherent_family():
+    version = _current_pkgbuild_version()
+    assert _pkgbuild_value(META_PKGBUILD, "pkgrel") == "2"
+    assert _pkgbuild_value(META_PKGBUILD, "depends") == (
+        f"(lemonade-server={version} lemonade-app={version} "
+        "llama.cpp-hip-gfx1151=0.4.1 llama.cpp-vulkan-gfx1151=0.4.1)"
+    )
+
+
 def test_pkgbuild_packages_the_synced_upstream_version():
     assert _pkgbuild_value(PKGBUILD, "pkgver") == "11.9.0"
-    assert _pkgbuild_value(PKGBUILD, "pkgrel") == "1"
+    assert _pkgbuild_value(PKGBUILD, "pkgrel") == "2"
 
 
 def _current_pkgbuild_version():
@@ -390,7 +421,7 @@ def test_built_package_installs_offline_defaults_and_endpoint_drop_in():
     defaults = json.loads(DISTRO_DEFAULTS.read_text())
     assert defaults["offline"] is True
     assert defaults["no_fetch_executables"] is True
-    assert defaults["llamacpp"]["args"] == "--no-mmap"
+    assert defaults["llamacpp"]["args"] == "--load-mode none"
     assert defaults["max_loaded_models"] == -1
     assert defaults["auto_update_models"] is False
     dropin = NO_REMOTE_FETCH_DROPIN.read_text()

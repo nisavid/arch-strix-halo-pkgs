@@ -51,6 +51,7 @@ Reinstalling at compatible versions resolves conflicts.
 - On 2026-06-15, adopted nisavid/lemonade fork main e18b9c1e352df8ab5aff2ff353402f1ec77c47f2, which syncs upstream Lemonade v10.7.0.
 - On 2026-09-22, repinned the source to nisavid/lemonade fork main at Lemonade 11.7.0, together with lemonade-server through the lemonade entry in [source_pins]; the fork commit contains upstream v11.7.0 (2b6a7d7). The Tauri glib patch applies unchanged. Issue 137 pins the frozen fork commit 3d5991033; issue 139 tracks the build, publish, install, and host validation.
 - On 2026-09-25, repinned the source to the merge commit of the fork's upstream v11.9.0 sync together with lemonade-server (issue 141, nisavid/lemonade#175) and set the package version to 11.9.0. The Tauri Cargo manifest and lockfile are unchanged from the 11.7.0 pin, so the glib patch applies unchanged.
+- Generation C W2B (#113): pkgrel 2 rebuilds the same fork pin as lemonade-server against foundation F and records the same fork source digest in place of SKIP; the glib patch applies unchanged. The build against F is still to run.
 
 ## Maintainer Starting Points
 

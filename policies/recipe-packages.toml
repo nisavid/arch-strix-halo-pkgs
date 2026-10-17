@@ -2441,21 +2441,24 @@ scaffold_notes = [
 [packages."llama.cpp-hip-gfx1151"]
 recipe_key = "llamacpp"
 template = "llama-cpp"
-upstream_version = "b9442"
+upstream_version = "0.4.1"
+upstream_tag = "v0.4.1"
+upstream_revision = "b29c606e28a01b1bc8c1351026a0fa6e616bf6c4"
+upstream_build_number = 10964
 pkgrel = 1
 pkgdesc = "llama.cpp ROCm backend rebuilt for Strix Halo gfx1151"
 url = "https://github.com/ggml-org/llama.cpp"
 license = ["MIT"]
-arch_reference = ["aur/llama.cpp-hip", "aur/llama.cpp"]
-authoritative_reference = "aur/llama.cpp-hip"
-advisory_references = ["aur/llama.cpp"]
+arch_reference = ["extra/llama-cpp", "extra/ggml-hip", "extra/ggml"]
+authoritative_reference = "extra/llama-cpp"
+advisory_references = ["extra/ggml-hip", "extra/ggml"]
 divergence_notes = [
   "Installs into /opt/llama.cpp-hip-gfx1151 with suffixed wrapper binaries instead of taking over the generic /usr/bin names directly.",
   "Uses the recipe's amdclang plus gfx1151-targeted HIP build lane and private-library RPATH handling.",
   "Carries a server-local selected-token logits extension for completion requests so downstream rerank adapters can request raw logits for explicit token IDs without using llama.cpp's native rerank endpoint."
 ]
 update_notes = [
-  "Diff against aur/llama.cpp-hip first during updates, then consult aur/llama.cpp for shared install/dependency conventions outside the ROCm-specific split.",
+  "Diff against extra/llama-cpp first during updates for the source lane, build options, and tool set, then consult extra/ggml-hip and extra/ggml for HIP backend flags and dependency conventions. [extra] builds llama-cpp against a system ggml with dynamically loaded backends; this package keeps ggml bundled and HIP-only under /opt.",
   "On 2026-04-23, adopted upstream llama.cpp b8911 at 5d2b52d80d9f375a6e81d07e212d047d8ee4f76e. The b8892..b8911 range flips HIP graphs on by default, fixes server handling for LFM2-Audio transcriptions, Anthropic prefix caching and chat_template_kwargs forwarding, fixes CVE-2026-21869 negative n_discard handling, and updates ModelOpt mixed-precision GGUF conversion; no local packaging patch carry changed.",
   "On 2026-04-24, reviewed upstream llama.cpp b8925 at 0adede866ddb2e31992b3792eaea31d18ed89acf and AUR llama.cpp-hip b8925-1. The b8911..b8925 range adds parser structured-output fixes, server SWA-full and cache-idle-slots cleanup, Jinja warning fixes, WebGPU FlashAttention work, Metal device logging, and Hexagon/Snapdragon updates. Record it as reviewed without repinning until a runtime rebuild lane is opened.",
   "On 2026-04-25, reviewed upstream llama.cpp b8929 at 9d34231bb89590ee760ae19ba665e7855cd4fd4e. The b8925..b8929 range changes SYCL, WebGPU SSM_SCAN, docs, and llama-quant's default quantization type from Q5_1 to Q8_0; no HIP/Vulkan package-build touchpoint was found. Record it as reviewed without repinning until a runtime rebuild lane is opened.",
@@ -2473,18 +2476,20 @@ update_notes = [
   "On 2026-05-27, updated the package source to upstream llama.cpp b9352 at b4c0549a49be9e6dc59ac9d0a5bc21dbda910774. The b9330..b9352 range includes Vulkan conv2d and coopmat1 work, SYCL pool VMM support, WebGPU MMVQ cleanup, Talkie/Mistral3 model metadata, Hexagon CONCAT/ROPE work, CUDA FWHT sync fixes, and CI workflow refactors; no server patch-carry file changed, but the Vulkan runtime delta and shared model/runtime movement justify refreshing both packaged backends and Lemonade backend metadata.",
   "On 2026-05-28, updated the package source to upstream llama.cpp b9357 at 4d8cc0c56ffba3f8b7fdb0130627fed2a6f71958. The b9352..b9357 range adds MiniCPM5 tokenizer support, fixes the SSL listener log scheme, avoids preferring a dedicated Vulkan transfer queue on AMD UMA devices, and includes CI/docs maintenance. The shared selected-token logits patch still applies cleanly to the unchanged server context/task files.",
   "On 2026-05-31, updated the package source to upstream llama.cpp b9442 at d4c8e2c29ce2fb9a251a0a4a16d6c857b4f70f8c. The b9357..b9442 range includes llama.cpp environment-name cleanup, cpp-httplib 0.46.0, Vulkan REPEAT, cooperative-matrix vector matmul, BF16 KV-cache FlashAttention, iGPU/RPC device-selection fixes relevant to Strix Halo, ggml 0.13.1, DeepSeek V3.2 support, server ETags/SSE/timeout changes, and UI/build maintenance. The shared selected-token logits patch applied during source preparation; package build, deploy/install, wrapper smokes, Lemonade metadata smokes, and the selected-logit live scenario passed at docs/worklog/inference-runs/20260531T-llama-b9442-postdeploy-live.",
+  "Generation C W2B (#113, frozen by the 2026-09-22 sweep in #136): the source moves to upstream stable llama.cpp v0.4.1, which is b10964 at b29c606e28a01b1bc8c1351026a0fa6e616bf6c4 (ggml 0.24.0); the GitHub commit archive sha256 was recorded from the downloaded archive bytes, and makepkg fails closed if GitHub serves different bytes. Arch packages llama.cpp in [extra] as llama-cpp, with ggml, ggml-hip, and ggml-vulkan split out; the AUR llama.cpp and llama.cpp-hip packages are gone and llama.cpp-vulkan-bin is binary-only, so the references point at [extra]. The selected-token logits patch is rebased onto v0.4.1: request parsing moved from server-task.cpp params_from_json_cmpl into the server-schema.cpp field table, the sampling loop moved into iterate() lambdas with slot.stats, and the prompt-final early exit now uses slot.has_budget() and slot.stats.update_prompt_last(). v0.4.1 removed --mmap/--no-mmap in favor of --load-mode, so the lemonade-server distro defaults switch to --load-mode none and the server and both backends conflict across that boundary. The build passes an explicit build number and commit with LLAMA_BUILD_IS_DEV=OFF, so llama-server --version should report 0.4.1 (build 10964, commit b29c606) instead of the packaging checkout's commit count. The embedded web UI is built from source the way extra/llama-cpp builds it (see the scaffold notes). Open gates: the rebased patch and v0.4.1 are not yet compiled against foundation F, and the build, wrapper --version, ELF dependency, and selected-logit scenario checks are still to run.",
   "Keep the backend-specific package split explicit until benchmarking proves a routing wrapper is worth maintaining."
 ]
 provides = ["llama.cpp-hip-gfx1151", "llama.cpp-hip"]
-conflicts = ["llama.cpp-hip"]
-depends = ["gcc-libs", "glibc", "hip-runtime-amd-gfx1151", "rocm-core-gfx1151"]
-makedepends = ["cmake", "ninja", "rocm-llvm-gfx1151"]
-src_subdir = "llama.cpp-d4c8e2c29ce2fb9a251a0a4a16d6c857b4f70f8c"
+conflicts = ["llama.cpp-hip", "lemonade-server<11.9.0-2"]
+depends = ["gcc-libs", "glibc", "hip-runtime-amd-gfx1151", "hipblas-gfx1151", "openmp", "openssl", "rocblas-gfx1151", "rocm-core-gfx1151"]
+makedepends = ["cmake", "ninja", "npm", "rocm-llvm-gfx1151"]
+src_subdir = "llama.cpp-b29c606e28a01b1bc8c1351026a0fa6e616bf6c4"
 upstream_name = "llama.cpp"
 baseline_kind = "closest-upstream"
-source_refs = ["llama.cpp-d4c8e2c29ce2fb9a251a0a4a16d6c857b4f70f8c.tar.gz::https://github.com/ggml-org/llama.cpp/archive/d4c8e2c29ce2fb9a251a0a4a16d6c857b4f70f8c.tar.gz"]
-sha256sums = ["SKIP"]
+source_refs = ["llama.cpp-b29c606e28a01b1bc8c1351026a0fa6e616bf6c4.tar.gz::https://github.com/ggml-org/llama.cpp/archive/b29c606e28a01b1bc8c1351026a0fa6e616bf6c4.tar.gz"]
+sha256sums = ["03fb04316eb32a7b7347004a79a8dd60531c02f5a064d853fed3b53828951723"]
 source_patches = ["0001-server-return-selected-token-logits.patch"]
+extra_sha256sums = ["945d72ed066d2791c01fdd451455a7a510bc5ea6abd4276f4c00cdeb81dfee33"]
 patches_dir = "patches/llama.cpp-common"
 recipe_notes_override = """
 llama.cpp built with TWO backends for Lemonade:
@@ -2510,30 +2515,34 @@ binaries find their shared libraries without LD_LIBRARY_PATH.
 """
 scaffold_notes = [
   "ROCm/hip backend package; backend-specific runtime package, no shared common package in first pass.",
-  "Authoritative base: AUR llama.cpp-hip, because it is the closest maintained ROCm packaging lane for llama.cpp on Arch.",
-  "Advisory reference: generic AUR llama.cpp for shared install/dependency conventions outside the ROCm-specific package split.",
+  "Authoritative base: extra/llama-cpp, the same upstream source and stable version line packaged by Arch since llama.cpp moved out of the AUR.",
+  "Advisory references: extra/ggml-hip and extra/ggml for the HIP backend build flags and runtime dependencies; [extra] loads ggml backends dynamically from a shared ggml, while this package bundles ggml and installs under /opt.",
   "Pinned to a concrete upstream commit tarball so the first-pass metadata stays reproducible without a full Git history clone.",
+  "Builds the embedded llama-server web UI from source the way extra/llama-cpp does: build() runs npm ci --ignore-scripts and npm run build in tools/ui, then configures CMake with LLAMA_BUILD_UI=ON, which embeds the tools/ui/dist assets that npm produced. npm fetches the packages pinned in tools/ui/package-lock.json from registry.npmjs.org during build() and checks each one against the lockfile integrity hash; at v0.4.1 every one of the lockfile's 1214 package entries carries an integrity hash. This is the upstream-matching, integrity-checked fetch, not a silent prebuilt download. The PKGBUILD also passes LLAMA_USE_PREBUILT_UI=OFF, so if the npm-built assets were missing the build would not fall back to downloading a prebuilt UI archive from Hugging Face.",
   "The selected-token logits patch adds a generic `token_logits` completion-request field and returns the requested raw logits in `token_logits`; model-specific token choices belong in downstream service configuration."
 ]
 
 [packages."llama.cpp-vulkan-gfx1151"]
 recipe_key = "llamacpp"
 template = "llama-cpp"
-upstream_version = "b9442"
+upstream_version = "0.4.1"
+upstream_tag = "v0.4.1"
+upstream_revision = "b29c606e28a01b1bc8c1351026a0fa6e616bf6c4"
+upstream_build_number = 10964
 pkgrel = 1
 pkgdesc = "llama.cpp Vulkan backend rebuilt for Strix Halo gfx1151"
 url = "https://github.com/ggml-org/llama.cpp"
 license = ["MIT"]
-arch_reference = ["aur/llama.cpp-vulkan-bin", "aur/llama.cpp"]
-authoritative_reference = "aur/llama.cpp-vulkan-bin"
-advisory_references = ["aur/llama.cpp"]
+arch_reference = ["extra/llama-cpp", "extra/ggml-vulkan", "extra/ggml"]
+authoritative_reference = "extra/llama-cpp"
+advisory_references = ["extra/ggml-vulkan", "extra/ggml"]
 divergence_notes = [
-  "Uses a source-build path even though the closest backend-specific AUR reference is currently a binary package.",
+  "Bundles ggml and builds only the Vulkan backend, where extra/llama-cpp links a shared extra/ggml and loads extra/ggml-vulkan dynamically.",
   "Keeps the recipe's amdclang and ThinLTO lane for consistency with the rest of the stack while using Vulkan rather than HIP.",
   "Carries a server-local selected-token logits extension for completion requests so downstream rerank adapters can request raw logits for explicit token IDs without using llama.cpp's native rerank endpoint."
 ]
 update_notes = [
-  "If a maintained source-built aur/llama.cpp-vulkan package appears, switch to it as the authoritative baseline.",
+  "Diff against extra/llama-cpp first during updates for the source lane, build options, and tool set, then consult extra/ggml-vulkan and extra/ggml for Vulkan backend flags and dependency conventions.",
   "On 2026-04-23, adopted upstream llama.cpp b8911 at 5d2b52d80d9f375a6e81d07e212d047d8ee4f76e. The b8892..b8911 range updates shared server/API handling, fixes CVE-2026-21869 negative n_discard handling, updates ModelOpt mixed-precision GGUF conversion, and adds WebGPU/SYCL/Snapdragon work; no Vulkan-specific build-system change was found, but the server/tool source delta is relevant to the packaged runtime.",
   "On 2026-04-24, reviewed upstream llama.cpp b8925 at 0adede866ddb2e31992b3792eaea31d18ed89acf. The b8911..b8925 range adds parser structured-output fixes, server SWA-full and cache-idle-slots cleanup, Jinja warning fixes, WebGPU FlashAttention work, Metal device logging, and Hexagon/Snapdragon updates. Record it as reviewed without repinning until a runtime rebuild lane is opened.",
   "On 2026-04-25, reviewed upstream llama.cpp b8929 at 9d34231bb89590ee760ae19ba665e7855cd4fd4e. The b8925..b8929 range changes SYCL, WebGPU SSM_SCAN, docs, and llama-quant's default quantization type from Q5_1 to Q8_0; no Vulkan package-build touchpoint was found. Record it as reviewed without repinning until a runtime rebuild lane is opened.",
@@ -2551,18 +2560,20 @@ update_notes = [
   "On 2026-05-27, updated the package source to upstream llama.cpp b9352 at b4c0549a49be9e6dc59ac9d0a5bc21dbda910774. The b9330..b9352 range includes Vulkan conv2d and coopmat1 work, SYCL pool VMM support, WebGPU MMVQ cleanup, Talkie/Mistral3 model metadata, Hexagon CONCAT/ROPE work, CUDA FWHT sync fixes, and CI workflow refactors; no server patch-carry file changed, but the Vulkan runtime delta and shared model/runtime movement justify refreshing both packaged backends and Lemonade backend metadata.",
   "On 2026-05-28, updated the package source to upstream llama.cpp b9357 at 4d8cc0c56ffba3f8b7fdb0130627fed2a6f71958. The b9352..b9357 range adds MiniCPM5 tokenizer support, fixes the SSL listener log scheme, avoids preferring a dedicated Vulkan transfer queue on AMD UMA devices, and includes CI/docs maintenance. The shared selected-token logits patch still applies cleanly to the unchanged server context/task files.",
   "On 2026-05-31, updated the package source to upstream llama.cpp b9442 at d4c8e2c29ce2fb9a251a0a4a16d6c857b4f70f8c. The b9357..b9442 range includes llama.cpp environment-name cleanup, cpp-httplib 0.46.0, Vulkan REPEAT, cooperative-matrix vector matmul, BF16 KV-cache FlashAttention, iGPU/RPC device-selection fixes relevant to Strix Halo, ggml 0.13.1, DeepSeek V3.2 support, server ETags/SSE/timeout changes, and UI/build maintenance. The shared selected-token logits patch applied during source preparation; package build, deploy/install, wrapper smokes, Lemonade metadata smokes, and the selected-logit live scenario passed at docs/worklog/inference-runs/20260531T-llama-b9442-postdeploy-live.",
-  "Until then, compare runtime/package expectations against the -bin package and source-build conventions against aur/llama.cpp."
+  "Generation C W2B (#113, frozen by the 2026-09-22 sweep in #136): the source moves to upstream stable llama.cpp v0.4.1, which is b10964 at b29c606e28a01b1bc8c1351026a0fa6e616bf6c4 (ggml 0.24.0); the GitHub commit archive sha256 was recorded from the downloaded archive bytes, and makepkg fails closed if GitHub serves different bytes. Arch packages llama.cpp in [extra] as llama-cpp, with ggml, ggml-hip, and ggml-vulkan split out; the AUR llama.cpp and llama.cpp-hip packages are gone and llama.cpp-vulkan-bin is binary-only, so the references point at [extra]. The selected-token logits patch is rebased onto v0.4.1: request parsing moved from server-task.cpp params_from_json_cmpl into the server-schema.cpp field table, the sampling loop moved into iterate() lambdas with slot.stats, and the prompt-final early exit now uses slot.has_budget() and slot.stats.update_prompt_last(). v0.4.1 removed --mmap/--no-mmap in favor of --load-mode, so the lemonade-server distro defaults switch to --load-mode none and the server and both backends conflict across that boundary. The build passes an explicit build number and commit with LLAMA_BUILD_IS_DEV=OFF, so llama-server --version should report 0.4.1 (build 10964, commit b29c606) instead of the packaging checkout's commit count. The embedded web UI is built from source the way extra/llama-cpp builds it (see the scaffold notes). Open gates: the rebased patch and v0.4.1 are not yet compiled against foundation F, and the build, wrapper --version, ELF dependency, and selected-logit scenario checks are still to run.",
+  "The AUR llama.cpp-vulkan-bin package remains a binary-only scout and is no longer a reference."
 ]
 provides = ["llama.cpp-vulkan-gfx1151", "llama.cpp-vulkan"]
-conflicts = ["llama.cpp-vulkan"]
-depends = ["gcc-libs", "glibc", "vulkan-icd-loader"]
-makedepends = ["cmake", "ninja", "rocm-llvm-gfx1151", "shaderc", "spirv-headers", "vulkan-headers"]
-src_subdir = "llama.cpp-d4c8e2c29ce2fb9a251a0a4a16d6c857b4f70f8c"
+conflicts = ["llama.cpp-vulkan", "lemonade-server<11.9.0-2"]
+depends = ["gcc-libs", "glibc", "openmp", "openssl", "vulkan-icd-loader"]
+makedepends = ["cmake", "ninja", "npm", "rocm-llvm-gfx1151", "shaderc", "spirv-headers", "vulkan-headers"]
+src_subdir = "llama.cpp-b29c606e28a01b1bc8c1351026a0fa6e616bf6c4"
 upstream_name = "llama.cpp"
 baseline_kind = "closest-upstream"
-source_refs = ["llama.cpp-d4c8e2c29ce2fb9a251a0a4a16d6c857b4f70f8c.tar.gz::https://github.com/ggml-org/llama.cpp/archive/d4c8e2c29ce2fb9a251a0a4a16d6c857b4f70f8c.tar.gz"]
-sha256sums = ["SKIP"]
+source_refs = ["llama.cpp-b29c606e28a01b1bc8c1351026a0fa6e616bf6c4.tar.gz::https://github.com/ggml-org/llama.cpp/archive/b29c606e28a01b1bc8c1351026a0fa6e616bf6c4.tar.gz"]
+sha256sums = ["03fb04316eb32a7b7347004a79a8dd60531c02f5a064d853fed3b53828951723"]
 source_patches = ["0001-server-return-selected-token-logits.patch"]
+extra_sha256sums = ["945d72ed066d2791c01fdd451455a7a510bc5ea6abd4276f4c00cdeb81dfee33"]
 patches_dir = "patches/llama.cpp-common"
 recipe_notes_override = """
 llama.cpp built with TWO backends for Lemonade:
@@ -2588,9 +2599,10 @@ binaries find their shared libraries without LD_LIBRARY_PATH.
 """
 scaffold_notes = [
   "Vulkan backend package; backend-specific runtime package, no shared common package in first pass.",
-  "Closest current Vulkan reference: AUR llama.cpp-vulkan-bin for backend-specific packaging expectations, with generic AUR llama.cpp kept as the source-build advisory baseline.",
+  "Authoritative base: extra/llama-cpp; advisory references: extra/ggml-vulkan and extra/ggml for Vulkan backend flags and runtime dependencies.",
   "Vulkan source builds require spirv-headers in addition to shaderc and vulkan-headers.",
   "Pinned to a concrete upstream commit tarball so the first-pass metadata stays reproducible without a full Git history clone.",
+  "Builds the embedded llama-server web UI from source the way extra/llama-cpp does: build() runs npm ci --ignore-scripts and npm run build in tools/ui, then configures CMake with LLAMA_BUILD_UI=ON, which embeds the tools/ui/dist assets that npm produced. npm fetches the packages pinned in tools/ui/package-lock.json from registry.npmjs.org during build() and checks each one against the lockfile integrity hash; at v0.4.1 every one of the lockfile's 1214 package entries carries an integrity hash. This is the upstream-matching, integrity-checked fetch, not a silent prebuilt download. The PKGBUILD also passes LLAMA_USE_PREBUILT_UI=OFF, so if the npm-built assets were missing the build would not fall back to downloading a prebuilt UI archive from Hugging Face.",
   "This scaffold still uses amdclang from rocm-llvm-gfx1151 for consistency with the recipe toolchain even though the Vulkan build does not use HIP offload.",
   "The selected-token logits patch adds a generic `token_logits` completion-request field and returns the requested raw logits in `token_logits`; model-specific token choices belong in downstream service configuration."
 ]
@@ -2686,7 +2698,7 @@ recipe_key = "lemonade"
 template = "lemonade-server"
 pkgdesc = "Local AI server runtime rebuilt for Strix Halo gfx1151"
 upstream_version = "11.9.0"
-pkgrel = 1
+pkgrel = 2
 url = "https://github.com/nisavid/lemonade"
 repo = "https://github.com/nisavid/lemonade.git"
 license = ["Apache-2.0"]
@@ -2711,10 +2723,14 @@ update_notes = [
   "On 2026-09-22, repinned the source to nisavid/lemonade fork main at Lemonade 11.7.0; the fork commit contains upstream v11.7.0 (2b6a7d7), and the lemonade entry in [source_pins] holds the selected commit. Refreshed patches 0002-0004 for the new base, and added the zz-secrets.conf backup entry, the offline distro defaults, and the model-endpoint drop-in. Issue 137 pins the frozen fork commit 3d5991033; issue 139 tracks the build, publish, install, and host validation.",
   "On 2026-09-23, released 11.7.0-2 with patch 0005, which makes RecipeOptions::inherit tokenize merged *_args without keeping quotes. At 3d5991033 the merge wrapped quoted values in their quote characters and then quoted them again, so llama-server received a literal '{\"preserve_thinking\":true}' for the qwen35 and qwen35moe --chat-template-kwargs architecture default and exited. The distro defaults always set --no-mmap, so every qwen35 and qwen35moe model failed to load. The regression is fork-only: fork commit e3d08ffa6 added quote_custom_arg_value to map_to_args_string, which stacks on upstream's keep_quotes=true merge (lemonade-sdk/lemonade#1920), while upstream v11.6.0, v11.7.0, and v11.9.0 produce the correct argv. The fork fix is nisavid/lemonade#168; drop patch 0005 at the Lemonade repin to a fork commit that contains #168, which is the upstream-synced fork main that the issue 141 (M6) repackage adopts. Upstream #3265 (7b5657d80, first released in v11.8.0) is context only: it moves the merge to recipe_arg_resolver.h, which still keeps quotes, so it does not fix the fork. Issues 139 and 140 track the regression.",
   "On 2026-09-25, repinned the source to the merge commit of the fork's upstream v11.9.0 sync (issue 141, nisavid/lemonade#175) and set the package version to 11.9.0. The sync contains upstream v11.9.0 (bb39eaf) and the fork fix for nisavid/lemonade#168 (2cb1a91, PR 169), so patch 0005 is dropped. Patches 0001-0004 apply unchanged to the new base with line offsets only and no fuzz; the upstream changes in the patched files do not touch the patched hunks.",
-  "On 2026-09-25, followed the 11.9 service layout (issue 141): the 30-env-files.conf drop-in keeps /etc/lemonade/conf.d/*.conf loading ahead of upstream's /etc/default/lemond and loads the packaged llama.cpp env file (moved out of conf.d) last; both secrets files are backup files; no install script writes owner config; and the distro defaults gained max_loaded_models -1 and an explicit auto_update_models false. The owner's deploy steps (a sparse config.json with the host binding, and verifying the JSON migration into /var/lib/lemonade) belong to the issue 141 redeploy."
+  "On 2026-09-25, followed the 11.9 service layout (issue 141): the 30-env-files.conf drop-in keeps /etc/lemonade/conf.d/*.conf loading ahead of upstream's /etc/default/lemond and loads the packaged llama.cpp env file (moved out of conf.d) last; both secrets files are backup files; no install script writes owner config; and the distro defaults gained max_loaded_models -1 and an explicit auto_update_models false. The owner's deploy steps (a sparse config.json with the host binding, and verifying the JSON migration into /var/lib/lemonade) belong to the issue 141 redeploy.",
+  "Generation C W2B (#113): pkgrel 2 rebuilds the same fork pin against foundation F and records the fork source digest (makepkg's checksum of the pinned commit's git archive tar) in place of SKIP. The packaged llama.cpp env file reports v0.4.1 and links the v0.4.1 release, and the distro defaults pass --load-mode none instead of --no-mmap, which llama.cpp v0.4.1 removed; versioned conflicts keep the server and both backends on the same side of that boundary. Patches 0001-0004 apply in order at b6616eb3 with line offsets only and no fuzz. Open gates: the build against F and the server env/defaults checks are still to run, and an owner config.json, recipe_options.json, or per-model llamacpp_args that still passes --no-mmap must be removed before install."
 ]
 provides = ["lemonade-server"]
-conflicts = []
+# The distro defaults pass --load-mode none, which llama.cpp before v0.4.1
+# rejects, and v0.4.1 rejects the --no-mmap that older releases passed, so
+# the server and both backends must move in one transaction.
+conflicts = ["llama.cpp-hip-gfx1151<0.4.1", "llama.cpp-vulkan-gfx1151<0.4.1"]
 depends = [
   "brotli",
   "curl",
@@ -2739,7 +2755,9 @@ upstream_name = "lemonade-server"
 baseline_kind = "closest-upstream"
 source_refs = ["lemonade::git+https://github.com/nisavid/lemonade.git#commit={source_pins.lemonade}"]
 recipe_branch_override = "main"
-sha256sums = ["SKIP"]
+# makepkg checksums a git source as the tar of `git archive` at the pinned
+# commit, so this digest binds the fork tree, not only the commit name.
+sha256sums = ["9c49e4be744a6913c06374c0b61c85e4c386820c678f6197ee0fe89f52c7c3bc"]
 extra_sources = [
   "0001-linux-npu-fallback-to-pci-id-when-accel-open-fails.patch",
   "0002-llamacpp-external-backends-are-system-managed.patch",
@@ -2771,7 +2789,7 @@ scaffold_notes = [
   "The system-managed backend patch probes llama-server --version through Lemonade's argv-based ProcessManager capture path, not a shell.",
   "Marks upstream's /etc/default/lemond (mode 0640, the service's HF_TOKEN, LEMONADE_API_KEY, and LEMONADE_ADMIN_API_KEY file) and /etc/lemonade/conf.d/zz-secrets.conf (mode 0660) as backup files so an upgrade keeps local edits. Upstream 11.9 no longer installs zz-secrets.conf, so the package ships 11.7's placeholder byte for byte: an owner-edited copy stays in place without a .pacnew and keeps loading through the conf.d glob. If the package dropped it, pacman would rename an edited copy to zz-secrets.conf.pacsave, which the glob does not match. The llama.cpp env file stays package-owned so each release refreshes the backend metadata.",
   "No install script writes owner config: nothing is merged into /etc/default/lemond. Moving settings from conf.d into /etc/default/lemond is optional, because conf.d keeps loading. Since 11.9, LEMONADE_* settings in either file only seed a config.json that does not exist yet, so server settings such as the host binding belong in config.json.",
-  "Replaces upstream's full /usr/share/lemonade/defaults.json with a sparse distro overlay: offline, no_fetch_executables, auto_update_models off, max_loaded_models -1 (unlimited), an explicit ROCm llama.cpp backend, prefer_system off, the packaged rocm_bin and vulkan_bin paths, and --no-mmap llama.cpp args. With --no-mmap set, lemond omits its iGPU --load-mode default, which the packaged llama.cpp b9442 does not accept. Pins count toward residency, so a slot limit refuses every new LLM load once the pins fill it; the GTT-aware occupancy budget is the admission bound. lemond merges the overlay over its built-in defaults and under config.json, so keys an existing config.json already sets still win, and since 11.9 every config write prunes config.json keys that equal the merged defaults. The overlay leaves host, port, broadcast, and API-key settings to the host; since 11.9, --host and --port are runtime-only and LEMONADE_* variables only seed a new config.json, so the host binding belongs in config.json.",
+  "Replaces upstream's full /usr/share/lemonade/defaults.json with a sparse distro overlay: offline, no_fetch_executables, auto_update_models off, max_loaded_models -1 (unlimited), an explicit ROCm llama.cpp backend, prefer_system off, the packaged rocm_bin and vulkan_bin paths, and --load-mode none llama.cpp args, which keep model weights out of mmap on the iGPU. llama.cpp v0.4.1 removed --mmap and --no-mmap in favor of --load-mode, so an owner config.json, recipe_options.json, or per-model llamacpp_args that still passes --no-mmap makes llama-server exit at startup. Pins count toward residency, so a slot limit refuses every new LLM load once the pins fill it; the GTT-aware occupancy budget is the admission bound. lemond merges the overlay over its built-in defaults and under config.json, so keys an existing config.json already sets still win, and since 11.9 every config write prunes config.json keys that equal the merged defaults. The overlay leaves host, port, broadcast, and API-key settings to the host; since 11.9, --host and --port are runtime-only and LEMONADE_* variables only seed a new config.json, so the host binding belongs in config.json.",
   "Installs /usr/lib/systemd/system/lemond.service.d/20-no-remote-model-fetch.conf, which sets HF_ENDPOINT, MODELSCOPE_ENDPOINT, and MODEL_ENDPOINT to a refused loopback port. lemond's model registry reads HF_ENDPOINT and MODELSCOPE_ENDPOINT on every request, and llama-server children inherit all three. MODEL_ENDPOINT is required because llama-server reads it ahead of HF_ENDPOINT, so an inherited MODEL_ENDPOINT would otherwise bypass the HF_ENDPOINT blackhole. The drop-in stays Environment=, so an owner env file (conf.d or /etc/default/lemond) that sets one of these keys overrides it, because systemd applies EnvironmentFile after Environment; that override is an explicit owner act, not a silent downloader.",
   "Removes /usr/share/metainfo because the web-app MetaInfo names lemonade-web-app.desktop as its launchable, and this package removes that desktop entry."
 ]
@@ -2781,7 +2799,7 @@ recipe_key = "lemonade"
 template = "lemonade-app"
 upstream_version = "11.9.0"
 pkgdesc = "Lemonade desktop app rebuilt for Strix Halo gfx1151"
-pkgrel = 1
+pkgrel = 2
 url = "https://github.com/nisavid/lemonade"
 repo = "https://github.com/nisavid/lemonade.git"
 license = ["Apache-2.0"]
@@ -2798,7 +2816,8 @@ update_notes = [
   "On 2026-05-26, adopted nisavid/lemonade fork main 13b1af25f84cf08ad5f8bf0ec58980bdfc09c9e7 so base llamacpp model options do not show reranking adapter controls.",
   "On 2026-06-15, adopted nisavid/lemonade fork main e18b9c1e352df8ab5aff2ff353402f1ec77c47f2, which syncs upstream Lemonade v10.7.0.",
   "On 2026-09-22, repinned the source to nisavid/lemonade fork main at Lemonade 11.7.0, together with lemonade-server through the lemonade entry in [source_pins]; the fork commit contains upstream v11.7.0 (2b6a7d7). The Tauri glib patch applies unchanged. Issue 137 pins the frozen fork commit 3d5991033; issue 139 tracks the build, publish, install, and host validation.",
-  "On 2026-09-25, repinned the source to the merge commit of the fork's upstream v11.9.0 sync together with lemonade-server (issue 141, nisavid/lemonade#175) and set the package version to 11.9.0. The Tauri Cargo manifest and lockfile are unchanged from the 11.7.0 pin, so the glib patch applies unchanged."
+  "On 2026-09-25, repinned the source to the merge commit of the fork's upstream v11.9.0 sync together with lemonade-server (issue 141, nisavid/lemonade#175) and set the package version to 11.9.0. The Tauri Cargo manifest and lockfile are unchanged from the 11.7.0 pin, so the glib patch applies unchanged.",
+  "Generation C W2B (#113): pkgrel 2 rebuilds the same fork pin as lemonade-server against foundation F and records the same fork source digest in place of SKIP; the glib patch applies unchanged. The build against F is still to run."
 ]
 provides = ["lemonade-desktop"]
 conflicts = ["lemonade-desktop"]
@@ -2821,7 +2840,9 @@ upstream_name = "lemonade-app"
 baseline_kind = "closest-upstream"
 source_refs = ["lemonade::git+https://github.com/nisavid/lemonade.git#commit={source_pins.lemonade}"]
 recipe_branch_override = "main"
-sha256sums = ["SKIP"]
+# makepkg checksums a git source as the tar of `git archive` at the pinned
+# commit, so this digest binds the fork tree, not only the commit name.
+sha256sums = ["9c49e4be744a6913c06374c0b61c85e4c386820c678f6197ee0fe89f52c7c3bc"]
 extra_sources = [
   "0001-keep-tauri-glib-on-webkit-compatible-series.patch",
 ]
@@ -2842,6 +2863,7 @@ scaffold_notes = [
 recipe_key = "lemonade"
 template = "meta-package"
 upstream_version = "11.9.0"
+pkgrel = 2
 pkgdesc = "Meta package for Lemonade and llama.cpp backend packages"
 url = "https://github.com/nisavid/lemonade"
 license = ["Apache-2.0"]
@@ -2858,7 +2880,7 @@ update_notes = [
 ]
 provides = ["lemonade"]
 conflicts = []
-depends = ["lemonade-server", "lemonade-app", "llama.cpp-hip-gfx1151", "llama.cpp-vulkan-gfx1151"]
+depends = ["lemonade-server=11.9.0-2", "lemonade-app=11.9.0-2", "llama.cpp-hip-gfx1151=0.4.1", "llama.cpp-vulkan-gfx1151=0.4.1"]
 makedepends = []
 src_subdir = "lemonade"
 upstream_name = "lemonade"

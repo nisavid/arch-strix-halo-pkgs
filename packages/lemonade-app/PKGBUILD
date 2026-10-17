@@ -6,7 +6,7 @@
 
 pkgname=lemonade-app
 pkgver=11.9.0
-pkgrel=1
+pkgrel=2
 pkgdesc='Lemonade desktop app rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://github.com/nisavid/lemonade
@@ -19,7 +19,7 @@ provides=(lemonade-desktop)
 conflicts=(lemonade-desktop)
 replaces=(lemonade-desktop)
 source=('lemonade::git+https://github.com/nisavid/lemonade.git#commit=b6616eb3b6d31c3d7dbffffdb23e24adda1292a1' 0001-keep-tauri-glib-on-webkit-compatible-series.patch)
-sha256sums=(SKIP a1206e0fedcdaa87a725719cade8a499aaaa401bce0c9a5442bc57f95e0be177)
+sha256sums=(9c49e4be744a6913c06374c0b61c85e4c386820c678f6197ee0fe89f52c7c3bc a1206e0fedcdaa87a725719cade8a499aaaa401bce0c9a5442bc57f95e0be177)
 
 _apply_patch_if_needed() {
   local _patch="$srcdir/$1"

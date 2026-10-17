@@ -7,13 +7,13 @@
 - Scaffold template: `llama-cpp`
 - Recipe build method: `cmake`
 - Upstream repo: `https://github.com/ggml-org/llama.cpp.git`
-- Package version: `b9442`
+- Package version: `0.4.1`
 - Recipe revision: `3f15f9f (20260508, 17 commits touching recipe path)`
 - Recipe steps: `34`
 - Recipe dependencies: `therock`
-- Recorded reference packages: `aur/llama.cpp-hip, aur/llama.cpp`
-- Authoritative reference package: `aur/llama.cpp-hip`
-- Advisory reference packages: `aur/llama.cpp`
+- Recorded reference packages: `extra/llama-cpp, extra/ggml-hip, extra/ggml`
+- Authoritative reference package: `extra/llama-cpp`
+- Advisory reference packages: `extra/ggml-hip, extra/ggml`
 - Applied source patch files/actions: `1`
 
 ## Recipe notes
@@ -43,9 +43,10 @@ binaries find their shared libraries without LD_LIBRARY_PATH.
 ## Scaffold notes
 
 - ROCm/hip backend package; backend-specific runtime package, no shared common package in first pass.
-- Authoritative base: AUR llama.cpp-hip, because it is the closest maintained ROCm packaging lane for llama.cpp on Arch.
-- Advisory reference: generic AUR llama.cpp for shared install/dependency conventions outside the ROCm-specific package split.
+- Authoritative base: extra/llama-cpp, the same upstream source and stable version line packaged by Arch since llama.cpp moved out of the AUR.
+- Advisory references: extra/ggml-hip and extra/ggml for the HIP backend build flags and runtime dependencies; [extra] loads ggml backends dynamically from a shared ggml, while this package bundles ggml and installs under /opt.
 - Pinned to a concrete upstream commit tarball so the first-pass metadata stays reproducible without a full Git history clone.
+- Builds the embedded llama-server web UI from source the way extra/llama-cpp does: build() runs npm ci --ignore-scripts and npm run build in tools/ui, then configures CMake with LLAMA_BUILD_UI=ON, which embeds the tools/ui/dist assets that npm produced. npm fetches the packages pinned in tools/ui/package-lock.json from registry.npmjs.org during build() and checks each one against the lockfile integrity hash; at v0.4.1 every one of the lockfile's 1214 package entries carries an integrity hash. This is the upstream-matching, integrity-checked fetch, not a silent prebuilt download. The PKGBUILD also passes LLAMA_USE_PREBUILT_UI=OFF, so if the npm-built assets were missing the build would not fall back to downloading a prebuilt UI archive from Hugging Face.
 - The selected-token logits patch adds a generic `token_logits` completion-request field and returns the requested raw logits in `token_logits`; model-specific token choices belong in downstream service configuration.
 
 ## Intentional Divergences
@@ -56,7 +57,7 @@ binaries find their shared libraries without LD_LIBRARY_PATH.
 
 ## Update Notes
 
-- Diff against aur/llama.cpp-hip first during updates, then consult aur/llama.cpp for shared install/dependency conventions outside the ROCm-specific split.
+- Diff against extra/llama-cpp first during updates for the source lane, build options, and tool set, then consult extra/ggml-hip and extra/ggml for HIP backend flags and dependency conventions. [extra] builds llama-cpp against a system ggml with dynamically loaded backends; this package keeps ggml bundled and HIP-only under /opt.
 - On 2026-04-23, adopted upstream llama.cpp b8911 at 5d2b52d80d9f375a6e81d07e212d047d8ee4f76e. The b8892..b8911 range flips HIP graphs on by default, fixes server handling for LFM2-Audio transcriptions, Anthropic prefix caching and chat_template_kwargs forwarding, fixes CVE-2026-21869 negative n_discard handling, and updates ModelOpt mixed-precision GGUF conversion; no local packaging patch carry changed.
 - On 2026-04-24, reviewed upstream llama.cpp b8925 at 0adede866ddb2e31992b3792eaea31d18ed89acf and AUR llama.cpp-hip b8925-1. The b8911..b8925 range adds parser structured-output fixes, server SWA-full and cache-idle-slots cleanup, Jinja warning fixes, WebGPU FlashAttention work, Metal device logging, and Hexagon/Snapdragon updates. Record it as reviewed without repinning until a runtime rebuild lane is opened.
 - On 2026-04-25, reviewed upstream llama.cpp b8929 at 9d34231bb89590ee760ae19ba665e7855cd4fd4e. The b8925..b8929 range changes SYCL, WebGPU SSM_SCAN, docs, and llama-quant's default quantization type from Q5_1 to Q8_0; no HIP/Vulkan package-build touchpoint was found. Record it as reviewed without repinning until a runtime rebuild lane is opened.
@@ -74,6 +75,7 @@ binaries find their shared libraries without LD_LIBRARY_PATH.
 - On 2026-05-27, updated the package source to upstream llama.cpp b9352 at b4c0549a49be9e6dc59ac9d0a5bc21dbda910774. The b9330..b9352 range includes Vulkan conv2d and coopmat1 work, SYCL pool VMM support, WebGPU MMVQ cleanup, Talkie/Mistral3 model metadata, Hexagon CONCAT/ROPE work, CUDA FWHT sync fixes, and CI workflow refactors; no server patch-carry file changed, but the Vulkan runtime delta and shared model/runtime movement justify refreshing both packaged backends and Lemonade backend metadata.
 - On 2026-05-28, updated the package source to upstream llama.cpp b9357 at 4d8cc0c56ffba3f8b7fdb0130627fed2a6f71958. The b9352..b9357 range adds MiniCPM5 tokenizer support, fixes the SSL listener log scheme, avoids preferring a dedicated Vulkan transfer queue on AMD UMA devices, and includes CI/docs maintenance. The shared selected-token logits patch still applies cleanly to the unchanged server context/task files.
 - On 2026-05-31, updated the package source to upstream llama.cpp b9442 at d4c8e2c29ce2fb9a251a0a4a16d6c857b4f70f8c. The b9357..b9442 range includes llama.cpp environment-name cleanup, cpp-httplib 0.46.0, Vulkan REPEAT, cooperative-matrix vector matmul, BF16 KV-cache FlashAttention, iGPU/RPC device-selection fixes relevant to Strix Halo, ggml 0.13.1, DeepSeek V3.2 support, server ETags/SSE/timeout changes, and UI/build maintenance. The shared selected-token logits patch applied during source preparation; package build, deploy/install, wrapper smokes, Lemonade metadata smokes, and the selected-logit live scenario passed at docs/worklog/inference-runs/20260531T-llama-b9442-postdeploy-live.
+- Generation C W2B (#113, frozen by the 2026-09-22 sweep in #136): the source moves to upstream stable llama.cpp v0.4.1, which is b10964 at b29c606e28a01b1bc8c1351026a0fa6e616bf6c4 (ggml 0.24.0); the GitHub commit archive sha256 was recorded from the downloaded archive bytes, and makepkg fails closed if GitHub serves different bytes. Arch packages llama.cpp in [extra] as llama-cpp, with ggml, ggml-hip, and ggml-vulkan split out; the AUR llama.cpp and llama.cpp-hip packages are gone and llama.cpp-vulkan-bin is binary-only, so the references point at [extra]. The selected-token logits patch is rebased onto v0.4.1: request parsing moved from server-task.cpp params_from_json_cmpl into the server-schema.cpp field table, the sampling loop moved into iterate() lambdas with slot.stats, and the prompt-final early exit now uses slot.has_budget() and slot.stats.update_prompt_last(). v0.4.1 removed --mmap/--no-mmap in favor of --load-mode, so the lemonade-server distro defaults switch to --load-mode none and the server and both backends conflict across that boundary. The build passes an explicit build number and commit with LLAMA_BUILD_IS_DEV=OFF, so llama-server --version should report 0.4.1 (build 10964, commit b29c606) instead of the packaging checkout's commit count. The embedded web UI is built from source the way extra/llama-cpp builds it (see the scaffold notes). Open gates: the rebased patch and v0.4.1 are not yet compiled against foundation F, and the build, wrapper --version, ELF dependency, and selected-logit scenario checks are still to run.
 - Keep the backend-specific package split explicit until benchmarking proves a routing wrapper is worth maintaining.
 
 ## Maintainer Starting Points

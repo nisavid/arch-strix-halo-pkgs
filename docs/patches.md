@@ -82,6 +82,14 @@ upstream moved the merge into `recipe_arg_resolver.h`
 
 ## llama.cpp
 
+The shared patch applies to upstream stable llama.cpp v0.4.1 (`b29c606`,
+b10964). Rebasing it from b9442 moved the request field into the
+`server-schema.cpp` field table, because v0.4.1 parses completion requests
+there instead of in `params_from_json_cmpl`, and fitted the prompt-final early
+exit to v0.4.1's `iterate()` sampling loop and `slot.stats`. The response shape
+and the 1024-token cap are unchanged; a rejected request's error text now
+carries the schema's `Field 'token_logits':` prefix.
+
 - [Shared HIP/Vulkan selected-token logits server extension](../patches/llama.cpp-common/0001-server-return-selected-token-logits.patch)
   - Adds a generic `/completion` `token_logits` request field and returns the
     requested raw token logits in the final response as a flat array for the

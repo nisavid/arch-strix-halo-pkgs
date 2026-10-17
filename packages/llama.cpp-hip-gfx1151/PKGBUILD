@@ -5,24 +5,24 @@
 # Package recipe key: llamacpp
 
 pkgname=llama.cpp-hip-gfx1151
-pkgver=b9442
+pkgver=0.4.1
 pkgrel=1
 pkgdesc='llama.cpp ROCm backend rebuilt for Strix Halo gfx1151'
 arch=('x86_64')
 url=https://github.com/ggml-org/llama.cpp
 license=(MIT)
-depends=(gcc-libs glibc hip-runtime-amd-gfx1151 rocm-core-gfx1151)
-makedepends=(cmake ninja rocm-llvm-gfx1151)
+depends=(gcc-libs glibc hip-runtime-amd-gfx1151 hipblas-gfx1151 openmp openssl rocblas-gfx1151 rocm-core-gfx1151)
+makedepends=(cmake ninja npm rocm-llvm-gfx1151)
 optdepends=()
 options=()
 provides=(llama.cpp-hip-gfx1151 llama.cpp-hip)
-conflicts=(llama.cpp-hip)
+conflicts=(llama.cpp-hip 'lemonade-server<11.9.0-2')
 replaces=()
-source=(llama.cpp-d4c8e2c29ce2fb9a251a0a4a16d6c857b4f70f8c.tar.gz::https://github.com/ggml-org/llama.cpp/archive/d4c8e2c29ce2fb9a251a0a4a16d6c857b4f70f8c.tar.gz 0001-server-return-selected-token-logits.patch)
-sha256sums=(SKIP SKIP)
+source=(llama.cpp-b29c606e28a01b1bc8c1351026a0fa6e616bf6c4.tar.gz::https://github.com/ggml-org/llama.cpp/archive/b29c606e28a01b1bc8c1351026a0fa6e616bf6c4.tar.gz 0001-server-return-selected-token-logits.patch)
+sha256sums=(03fb04316eb32a7b7347004a79a8dd60531c02f5a064d853fed3b53828951723 945d72ed066d2791c01fdd451455a7a510bc5ea6abd4276f4c00cdeb81dfee33)
 
 prepare() {
-  cd "$srcdir/llama.cpp-d4c8e2c29ce2fb9a251a0a4a16d6c857b4f70f8c"
+  cd "$srcdir/llama.cpp-b29c606e28a01b1bc8c1351026a0fa6e616bf6c4"
 
   if ! patch --dry-run -R -Np1 -i "$srcdir/0001-server-return-selected-token-logits.patch" >/dev/null 2>&1; then
     patch -Np1 -i "$srcdir/0001-server-return-selected-token-logits.patch"
@@ -30,7 +30,13 @@ prepare() {
 }
 
 build() {
-  cd "$srcdir/llama.cpp-d4c8e2c29ce2fb9a251a0a4a16d6c857b4f70f8c"
+  cd "$srcdir/llama.cpp-b29c606e28a01b1bc8c1351026a0fa6e616bf6c4"
+
+  # Build the embedded web UI from the lockfile, as extra/llama-cpp does.
+  pushd tools/ui
+  npm ci --ignore-scripts
+  npm run build
+  popd
 
   _setup_compiler_env() {
   local _compiler_root="/opt/rocm/lib/llvm/bin"
@@ -100,13 +106,18 @@ build() {
     -DLLAMA_BUILD_SERVER=ON \
     -DLLAMA_BUILD_TOOLS=ON \
     -DLLAMA_BUILD_TESTS=OFF \
-    -DLLAMA_BUILD_EXAMPLES=OFF
+    -DLLAMA_BUILD_EXAMPLES=OFF \
+    -DLLAMA_BUILD_UI=ON \
+    -DLLAMA_USE_PREBUILT_UI=OFF \
+    -DLLAMA_BUILD_NUMBER=10964 \
+    -DLLAMA_BUILD_COMMIT=b29c606 \
+    -DLLAMA_BUILD_IS_DEV=OFF
 
   cmake --build "${build_root}"
 }
 
 package() {
-  cd "$srcdir/llama.cpp-d4c8e2c29ce2fb9a251a0a4a16d6c857b4f70f8c"
+  cd "$srcdir/llama.cpp-b29c606e28a01b1bc8c1351026a0fa6e616bf6c4"
   local build_root="$srcdir/build-hip"
   local install_root="/opt/llama.cpp-hip-gfx1151"
 
@@ -132,5 +143,5 @@ exec /opt/llama.cpp-hip-gfx1151/bin/${_base} "\$@"
 EOF
     done
   fi
-  install -Dm644 "$srcdir/llama.cpp-d4c8e2c29ce2fb9a251a0a4a16d6c857b4f70f8c/LICENSE" "$pkgdir/usr/share/licenses/llama.cpp-hip-gfx1151/LICENSE"
+  install -Dm644 "$srcdir/llama.cpp-b29c606e28a01b1bc8c1351026a0fa6e616bf6c4/LICENSE" "$pkgdir/usr/share/licenses/llama.cpp-hip-gfx1151/LICENSE"
 }

@@ -365,16 +365,28 @@ def render_patch_prepare(recipe_pkg: dict, file_rewrites: dict[str, str] | None 
 
 
 def sibling_package_upstream_revision(package_name: str) -> str:
+    """Return the upstream release name of a rendered sibling package.
+
+    A sibling that records an upstream_tag (llama.cpp stable releases such as
+    v0.4.1) reports that tag. Older b-number packages report their pkgver,
+    which is already the release tag. Render the sibling first: this reads
+    its rendered recipe.json, not the policy.
+    """
     packaging_root = Path(__file__).resolve().parents[1]
     recipe_json = packaging_root / "packages" / package_name / "recipe.json"
     if not recipe_json.exists():
         return "unknown"
     try:
         payload = json.loads(recipe_json.read_text(encoding="utf-8"))
+        tag = str(payload.get("policy", {}).get("upstream_tag", ""))
         pkgver = str(payload.get("pkgver", ""))
     except Exception:
         return "unknown"
-    return pkgver.split(".", 1)[0] if pkgver else "unknown"
+    if tag:
+        return tag
+    if pkgver.startswith("b") and pkgver[1:].isdigit():
+        return pkgver
+    return "unknown"
 
 
 def preserved_pkgrel(package_name: str, version: str) -> int:
@@ -403,6 +415,46 @@ LEMONADE_BLACKHOLE_ENDPOINT = "http://127.0.0.1:9"
 
 
 LEMONADE_LLAMACPP_ENV_FILE = "/usr/lib/lemonade/llamacpp-gfx1151.env"
+
+
+def llamacpp_build_identity_flags(package_name: str, policy_pkg: dict) -> list[str]:
+    """Return the CMake flags that pin a llama.cpp build's reported identity.
+
+    A tarball has no .git, so CMake would otherwise take the build number and
+    commit from whatever checkout encloses $srcdir, and a stable release
+    would report itself as a -dev build. A stable tag needs the whole tuple:
+    upstream_tag (v<upstream_version>), upstream_build_number, and the full
+    upstream_revision that src_subdir unpacks.
+    """
+    tag = policy_pkg.get("upstream_tag")
+    build_number = policy_pkg.get("upstream_build_number")
+    revision = policy_pkg.get("upstream_revision")
+    if tag is None and build_number is None and revision is None:
+        return []
+
+    def fail(reason: str) -> None:
+        print(f"LLAMACPP_BUILD_IDENTITY: {package_name} {reason}", file=sys.stderr)
+        print(
+            "HINT: set upstream_tag, upstream_build_number, and upstream_revision together in policies/recipe-packages.toml.",
+            file=sys.stderr,
+        )
+        raise SystemExit(2)
+
+    if tag is None or build_number is None or revision is None:
+        fail("needs upstream_tag, upstream_build_number, and upstream_revision together")
+    if tag != f"v{policy_pkg['upstream_version']}":
+        fail(f"upstream_tag {tag!r} does not match upstream_version {policy_pkg['upstream_version']!r}")
+    if isinstance(build_number, bool) or not isinstance(build_number, int) or build_number <= 0:
+        fail(f"upstream_build_number {build_number!r} is not a positive integer")
+    if not isinstance(revision, str) or not re.fullmatch(r"[0-9a-f]{40}", revision):
+        fail(f"upstream_revision {revision!r} is not a full 40-hex commit")
+    if revision not in policy_pkg.get("src_subdir", ""):
+        fail(f"src_subdir does not unpack upstream_revision {revision}")
+    return [
+        f"-DLLAMA_BUILD_NUMBER={build_number}",
+        f"-DLLAMA_BUILD_COMMIT={revision[:7]}",
+        "-DLLAMA_BUILD_IS_DEV=OFF",
+    ]
 
 
 def lemonade_llamacpp_env_lines() -> list[str]:
@@ -496,10 +548,9 @@ def lemonade_distro_defaults() -> dict:
         # admission bound instead.
         "max_loaded_models": -1,
         "llamacpp": {
-            # --no-mmap in the llama.cpp args stops lemond from adding its
-            # iGPU "--load-mode none" default, a flag the packaged llama.cpp
-            # does not accept.
-            "args": "--no-mmap",
+            # Keep model weights out of mmap on the iGPU. llama.cpp v0.4.1
+            # removed --mmap and --no-mmap in favor of --load-mode.
+            "args": "--load-mode none",
             "backend": "rocm",
             "prefer_system": False,
             "rocm_bin": LEMONADE_LLAMACPP_ROCM_BIN,
@@ -648,6 +699,15 @@ package() {{
                 "-DLLAMA_BUILD_EXAMPLES=OFF",
             ],
         }[backend]
+        # Embed the web UI that build() compiles with npm, as extra/llama-cpp
+        # does. With tools/ui/dist present, CMake embeds it and skips its own
+        # npm and Hugging Face steps; LLAMA_USE_PREBUILT_UI=OFF keeps a missing
+        # dist from turning into a prebuilt-UI download.
+        backend_specific_flags = backend_specific_flags + [
+            "-DLLAMA_BUILD_UI=ON",
+            "-DLLAMA_USE_PREBUILT_UI=OFF",
+        ]
+        backend_specific_flags.extend(llamacpp_build_identity_flags(package_name, policy_pkg))
         cmake_flag_lines = "\n".join(
             [
                 "    " + flag + (" \\" if idx < len(backend_specific_flags) - 1 else "")
@@ -657,6 +717,12 @@ package() {{
         build_body = f"""\
 build() {{
   cd "$srcdir/{src_subdir}"
+
+  # Build the embedded web UI from the lockfile, as extra/llama-cpp does.
+  pushd tools/ui
+  npm ci --ignore-scripts
+  npm run build
+  popd
 
   {compiler_env_snippet(compiler_root)}  _setup_compiler_env
   local amdclang="$CC"
