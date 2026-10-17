@@ -245,12 +245,16 @@ for about 30 GiB, and `$STAGING` for the directory that holds the
      sonames (torchvision's `image.so`, systemd's `libsystemd-core`);
    - Python's `_tkinter`, whose Tcl/Tk is an optdepend;
    - `/startdir` `RUNPATH` leaks in Arch's boost-libs and sdl3;
-   - real defects, tracked so that they do not block W2A: `torch_shm_manager`
+   - a real defect, tracked so that it does not block W2A: `torch_shm_manager`
      in the W2A PyTorch (#109: a `/build` `RUNPATH` instead of
-     `$ORIGIN/../lib`, so `libc10.so` and `libshm.so` do not resolve), and F's
-     TheRock objects whose `RUNPATH` names the `/__w` CI tree, so that
-     amdsmi, `llvm-omp-kernel-replay`, `xmlwf` and rocprofiler-sdk miss their
-     `rocm_sysdeps` or sibling libraries (#108).
+     `$ORIGIN/../lib`, so `libc10.so` and `libshm.so` do not resolve).
+
+   F's TheRock 7.14.1-1 objects whose `RUNPATH` named the `/__w` CI tree, so
+   that amdsmi, `llvm-omp-kernel-replay`, `xmlwf` and rocprofiler-sdk missed
+   their `rocm_sysdeps` or sibling libraries, had 12 entries under #108.
+   TheRock 7.14.1-2 rewrites those RUNPATHs and inverts the rocprofiler-sdk
+   depends, so the entries are gone. A root that still holds the 7.14.1-1
+   splits fails `verify` on those findings; re-lock it on 7.14.1-2.
 
    A 584-package root has about 4,000 such
    files and checks in under 20 seconds. Then run `c_buildroot.py probe` with the same repo flags and an empty

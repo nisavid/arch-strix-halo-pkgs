@@ -506,37 +506,6 @@ soname = "libtk8.6.so"
 reason = "Python's optional _tkinter extension; Tcl/Tk is an optdepend that no W2A build or smoke uses."
 
 
-# --- needed: F ---
-# Real defects in the F foundation packages (TheRock): objects that miss their own rocm_sysdeps or sibling libraries because their RUNPATH names TheRock's CI build tree. Tracked in the foundation issue so they do not block W2A.
-[[needed]]
-package = "amdsmi-gfx1151"
-object = "/opt/rocm/share/amd_smi/amdsmi/libamd_smi.so"
-soname = "librocm_sysdeps_*"
-reason = "Real defects in the F foundation packages (TheRock): objects that miss their own rocm_sysdeps or sibling libraries because their RUNPATH names TheRock's CI build tree. Tracked in the foundation issue so they do not block W2A."
-issue = 108
-
-[[needed]]
-package = "rocm-llvm-gfx1151"
-object = "/opt/rocm/lib/llvm/bin/llvm-omp-kernel-replay"
-soname = "librocm_sysdeps_*"
-reason = "Real defects in the F foundation packages (TheRock): objects that miss their own rocm_sysdeps or sibling libraries because their RUNPATH names TheRock's CI build tree. Tracked in the foundation issue so they do not block W2A."
-issue = 108
-
-[[needed]]
-package = "rocm-sysdeps-gfx1151"
-object = "/opt/rocm/lib/rocm_sysdeps/bin/xmlwf"
-soname = "librocm_sysdeps_*"
-reason = "Real defects in the F foundation packages (TheRock): objects that miss their own rocm_sysdeps or sibling libraries because their RUNPATH names TheRock's CI build tree. Tracked in the foundation issue so they do not block W2A."
-issue = 108
-
-[[needed]]
-package = "rocprofiler-sdk-gfx1151"
-object = "/opt/rocm/lib/rocprofiler-sdk/*"
-soname = "librocprofiler-sdk-rocpd.so.1"
-reason = "Real defects in the F foundation packages (TheRock): objects that miss their own rocm_sysdeps or sibling libraries because their RUNPATH names TheRock's CI build tree. Tracked in the foundation issue so they do not block W2A."
-issue = 108
-
-
 # --- needed: torch ---
 # Real defect in the W2A PyTorch package: torch_shm_manager's RUNPATH is the PyTorch build tree instead of $ORIGIN/../lib, so it cannot find libc10.so and libshm.so. Tracked in the PyTorch issue.
 [[needed]]
@@ -552,65 +521,6 @@ object = "/usr/lib/python3.14/site-packages/torch/bin/torch_shm_manager"
 soname = "libshm.so"
 reason = "Real defect in the W2A PyTorch package: torch_shm_manager's RUNPATH is the PyTorch build tree instead of $ORIGIN/../lib, so it cannot find libc10.so and libshm.so. Tracked in the PyTorch issue."
 issue = 109
-
-
-# --- runpath: F ---
-# Real defects in the F foundation packages (TheRock): objects that miss their own rocm_sysdeps or sibling libraries because their RUNPATH names TheRock's CI build tree. Tracked in the foundation issue so they do not block W2A.
-[[runpath]]
-package = "amdsmi-gfx1151"
-object = "/opt/rocm/share/amd_smi/amdsmi/libamd_smi.so"
-entry = "/__w/*"
-reason = "Real defects in the F foundation packages (TheRock): objects that miss their own rocm_sysdeps or sibling libraries because their RUNPATH names TheRock's CI build tree. Tracked in the foundation issue so they do not block W2A."
-issue = 108
-
-[[runpath]]
-package = "hipblaslt-gfx1151"
-object = "/opt/rocm/share/hipblaslt/tensilelite/rocisa/libstinkytofu.so.0.1.0"
-entry = "/__w/*"
-reason = "Real defects in the F foundation packages (TheRock): objects that miss their own rocm_sysdeps or sibling libraries because their RUNPATH names TheRock's CI build tree. Tracked in the foundation issue so they do not block W2A."
-issue = 108
-
-[[runpath]]
-package = "hsa-amd-aqlprofile-gfx1151"
-object = "/opt/rocm/lib/libhsa-amd-aqlprofile64.so"
-entry = "/__w/*"
-reason = "Real defects in the F foundation packages (TheRock): objects that miss their own rocm_sysdeps or sibling libraries because their RUNPATH names TheRock's CI build tree. Tracked in the foundation issue so they do not block W2A."
-issue = 108
-
-[[runpath]]
-package = "miopen-hip-gfx1151"
-object = "/opt/rocm/*"
-entry = "/__w/*"
-reason = "Real defects in the F foundation packages (TheRock): objects that miss their own rocm_sysdeps or sibling libraries because their RUNPATH names TheRock's CI build tree. Tracked in the foundation issue so they do not block W2A."
-issue = 108
-
-[[runpath]]
-package = "rocm-language-runtime-gfx1151"
-object = "/opt/rocm/*"
-entry = "/__w/*"
-reason = "Real defects in the F foundation packages (TheRock): objects that miss their own rocm_sysdeps or sibling libraries because their RUNPATH names TheRock's CI build tree. Tracked in the foundation issue so they do not block W2A."
-issue = 108
-
-[[runpath]]
-package = "rocm-sysdeps-gfx1151"
-object = "/opt/rocm/lib/rocm_sysdeps/bin/xmlwf"
-entry = "/__w/*"
-reason = "Real defects in the F foundation packages (TheRock): objects that miss their own rocm_sysdeps or sibling libraries because their RUNPATH names TheRock's CI build tree. Tracked in the foundation issue so they do not block W2A."
-issue = 108
-
-[[runpath]]
-package = "rocrand-gfx1151"
-object = "/opt/rocm/lib/librocrand.so.1.1"
-entry = "/__w/*"
-reason = "Real defects in the F foundation packages (TheRock): objects that miss their own rocm_sysdeps or sibling libraries because their RUNPATH names TheRock's CI build tree. Tracked in the foundation issue so they do not block W2A."
-issue = 108
-
-[[runpath]]
-package = "rocsparse-gfx1151"
-object = "/opt/rocm/lib/rocsparse/*"
-entry = "/__w/*"
-reason = "Real defects in the F foundation packages (TheRock): objects that miss their own rocm_sysdeps or sibling libraries because their RUNPATH names TheRock's CI build tree. Tracked in the foundation issue so they do not block W2A."
-issue = 108
 
 
 # --- runpath: torch ---
