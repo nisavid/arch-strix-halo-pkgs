@@ -69,7 +69,7 @@ def test_migraphx_filelist_contains_runtime_payload():
     assert any(path.startswith("opt/rocm/lib/migraphx.cpython-") for path in paths)
 
 
-def test_migraphx_staging_and_policy_agree_on_the_protobuf_parser():
+def test_migraphx_staging_pins_protobuf_36_1_and_abseil_2608_and_rejects_unpinned_sonames():
     text = STAGE_MIGRAPHX.read_text()
     assert "typeset protobuf_soname=libprotobuf.so.36.1.0" in text
     assert "typeset utf8_validity_soname=libutf8_validity.so.36.1.0" in text
