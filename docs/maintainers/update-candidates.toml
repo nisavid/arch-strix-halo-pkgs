@@ -5635,3 +5635,22 @@ next_gate_kind = "github_issue"
 next_gate_issue = 147
 next_gate_label = "Post-closeout Transformers 5.20.0 source assessment and disposition"
 last_reviewed = "2026-10-16"
+
+[candidates."kokoros-b21"]
+family = "kokoros"
+packages = ["kokoros-gfx1151"]
+source_kind = "github_release"
+check_id = "release"
+previous_recorded = "b17"
+latest = "b21"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "The October 17 metadata sweep observes release b21 after the selected b17 runtime. Issue #147 owns post-closeout source assessment and disposition. The Lemonade family retains its selected b17 commit archive; this record neither adopts b21 nor changes the package, offline fixture, license, dependency, build, or runtime gates. Release contents, security applicability, dependency compatibility, and runtime behavior remain unassessed."
+salient_changes = [
+  "The release check reports b21 after recorded b17",
+  "The selected Kokoro runtime remains b17 at d122b52e0ee0a90df26fd041620af36f99e2248a",
+]
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "Post-closeout Kokoro b21 source assessment and disposition"
+last_reviewed = "2026-10-17"
