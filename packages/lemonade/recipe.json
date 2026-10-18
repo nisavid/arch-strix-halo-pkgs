@@ -12,7 +12,8 @@
     "source_patches": [],
     "update_notes": [
       "Keep this meta package aligned with the intended first-pass user story and revisit its dependency set after benchmarking determines whether both packaged llama.cpp backends remain worth shipping.",
-      "Do not let this meta package obscure the standalone update story for lemonade-server, lemonade-app, or the backend packages."
+      "Do not let this meta package obscure the standalone update story for lemonade-server, lemonade-app, or the backend packages.",
+      "Generation C W2B (#113) pins every sibling exactly, at two granularities. lemonade-server and lemonade-app are pinned to pkgver and pkgrel (=11.9.0-2), the server build that carries the llama.cpp v0.4.1 defaults and LEMONADE_KOKORO_CPU_BIN and that the v0.4.1 backends name in conflicts (lemonade-server<11.9.0-2). The llama.cpp backends (=0.4.1) and kokoros-gfx1151 (=b17) are pinned to the upstream version with any pkgrel, by owner decision on 2026-10-17, so a backend-only rebuild does not need a meta bump. Every sibling repin, and every lemonade-server or lemonade-app pkgrel bump, must update these depends in the same change and bump this package's pkgrel; a missed pin makes the meta package uninstallable."
     ]
   },
   "name": "lemonade",
@@ -64,7 +65,8 @@
     "template": "meta-package",
     "update_notes": [
       "Keep this meta package aligned with the intended first-pass user story and revisit its dependency set after benchmarking determines whether both packaged llama.cpp backends remain worth shipping.",
-      "Do not let this meta package obscure the standalone update story for lemonade-server, lemonade-app, or the backend packages."
+      "Do not let this meta package obscure the standalone update story for lemonade-server, lemonade-app, or the backend packages.",
+      "Generation C W2B (#113) pins every sibling exactly, at two granularities. lemonade-server and lemonade-app are pinned to pkgver and pkgrel (=11.9.0-2), the server build that carries the llama.cpp v0.4.1 defaults and LEMONADE_KOKORO_CPU_BIN and that the v0.4.1 backends name in conflicts (lemonade-server<11.9.0-2). The llama.cpp backends (=0.4.1) and kokoros-gfx1151 (=b17) are pinned to the upstream version with any pkgrel, by owner decision on 2026-10-17, so a backend-only rebuild does not need a meta bump. Every sibling repin, and every lemonade-server or lemonade-app pkgrel bump, must update these depends in the same change and bump this package's pkgrel; a missed pin makes the meta package uninstallable."
     ],
     "upstream_name": "lemonade",
     "upstream_version": "11.9.0",

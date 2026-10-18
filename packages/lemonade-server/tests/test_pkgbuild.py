@@ -350,6 +350,15 @@ def test_meta_package_pins_the_coherent_family():
     )
 
 
+def test_meta_package_records_its_pin_rule():
+    recipe = json.loads((REPO_ROOT / "packages/lemonade/recipe.json").read_text())
+    notes = " ".join(recipe["maintenance"]["update_notes"])
+    # Server and app pin pkgrel; the backends and Kokoros pin only the version.
+    assert "pinned to pkgver and pkgrel (=11.9.0-2)" in notes
+    assert "with any pkgrel, by owner decision on 2026-10-17" in notes
+    assert "must update these depends in the same change" in notes
+
+
 def test_kokoro_runtime_is_an_optional_dependency():
     optdepends = _pkgbuild_value(PKGBUILD, "optdepends")
     assert "'kokoros-gfx1151: Kokoro text-to-speech runtime'" in optdepends
