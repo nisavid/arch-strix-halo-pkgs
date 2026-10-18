@@ -1051,6 +1051,86 @@ def test_runpath_rewrites_fail_the_render_on_invalid_entries(tmp_path: Path, ent
     assert detail in failures[0].detail
 
 
+@pytest.mark.parametrize(
+    ("runpath", "dropped"),
+    [
+        ("$ORIGIN", "'$ORIGIN/extra'"),
+        ("$ORIGIN/extra", "'$ORIGIN'"),
+        ("$ORIGIN:/opt/rocm/lib", "'$ORIGIN/extra'"),
+    ],
+    ids=["drops-extra", "drops-origin", "swaps-extra"],
+)
+def test_runpath_rewrite_that_drops_a_staged_in_tree_entry_fails(tmp_path: Path, runpath, dropped):
+    root, files = runpath_root(tmp_path)
+    make_elf(root / "opt/rocm/lib/rocsparse/rocsparseio-bench", needed=[], runpath="$ORIGIN:$ORIGIN/extra:/__w/x")
+    files["rocsparse-gfx1151"].append("opt/rocm/lib/rocsparse/rocsparseio-bench")
+    failures: list = []
+
+    rewrites = therock_split.resolve_runpath_rewrites(
+        root, rewrite_policy({"object": "opt/rocm/lib/rocsparse/rocsparseio-bench", "runpath": runpath}), files, failures
+    )
+
+    assert failure_lines(failures) == ["RUNPATH_REWRITE_INVALID: rocsparse-gfx1151"]
+    assert f"drops {dropped} from the staged RUNPATH '$ORIGIN:$ORIGIN/extra:/__w/x'" in failures[0].detail
+    assert rewrites == {}
+
+
+@pytest.mark.parametrize(
+    "runpath",
+    ["$ORIGIN:$ORIGIN/extra", "$ORIGIN/extra:${ORIGIN}", "$ORIGIN/../rocsparse:$ORIGIN/extra/:/opt/rocm/lib"],
+    ids=["exact", "reordered-braced", "equivalent-plus-added"],
+)
+def test_runpath_rewrite_that_keeps_every_staged_in_tree_entry_passes(tmp_path: Path, runpath):
+    root, files = runpath_root(tmp_path)
+    make_elf(root / "opt/rocm/lib/rocsparse/rocsparseio-bench", needed=[], runpath="$ORIGIN:$ORIGIN/extra:/__w/x")
+    files["rocsparse-gfx1151"].append("opt/rocm/lib/rocsparse/rocsparseio-bench")
+    failures: list = []
+
+    rewrites = therock_split.resolve_runpath_rewrites(
+        root, rewrite_policy({"object": "opt/rocm/lib/rocsparse/rocsparseio-bench", "runpath": runpath}), files, failures
+    )
+
+    assert failures == []
+    assert rewrites == {"rocsparse-gfx1151": [("opt/rocm/lib/rocsparse/rocsparseio-bench", runpath)]}
+
+
+def test_runpath_rewrite_of_a_clean_staged_runpath_is_stale_unless_marked_additive(tmp_path: Path):
+    root, files = runpath_root(tmp_path)
+    make_elf(root / "opt/rocm/lib/rocsparse/rocsparseio-plain", needed=[])
+    files["rocsparse-gfx1151"].append("opt/rocm/lib/rocsparse/rocsparseio-plain")
+    clean = {"object": "opt/rocm/lib/librocsparse.so.1.0", "runpath": "$ORIGIN:$ORIGIN/rocm_sysdeps/lib"}
+    bare = {"object": "opt/rocm/lib/rocsparse/rocsparseio-plain", "runpath": "$ORIGIN/.."}
+
+    failures: list = []
+    therock_split.resolve_runpath_rewrites(root, rewrite_policy(clean, bare), files, failures)
+
+    assert failure_lines(failures) == ["RUNPATH_REWRITE_INVALID: rocsparse-gfx1151"] * 2
+    assert "staged RUNPATH '$ORIGIN' has no entry outside /usr and /opt/rocm" in failures[0].detail
+    assert "staged no RUNPATH or RPATH has no entry outside" in failures[1].detail
+    assert all("additive = true" in failure.detail for failure in failures)
+
+    failures = []
+    rewrites = therock_split.resolve_runpath_rewrites(
+        root, rewrite_policy({**clean, "additive": True}, {**bare, "additive": True}), files, failures
+    )
+
+    assert failures == []
+    assert rewrites == {
+        "rocsparse-gfx1151": [
+            ("opt/rocm/lib/librocsparse.so.1.0", "$ORIGIN:$ORIGIN/rocm_sysdeps/lib"),
+            ("opt/rocm/lib/rocsparse/rocsparseio-plain", "$ORIGIN/.."),
+        ]
+    }
+
+    # The marker never excuses dropping a staged entry.
+    failures = []
+    therock_split.resolve_runpath_rewrites(
+        root, rewrite_policy({**clean, "runpath": "$ORIGIN/rocm_sysdeps/lib", "additive": True}), files, failures
+    )
+    assert failure_lines(failures) == ["RUNPATH_REWRITE_INVALID: rocsparse-gfx1151"]
+    assert "drops '$ORIGIN'" in failures[0].detail
+
+
 def test_foreign_search_path_check_reads_runpath_and_rpath(tmp_path: Path):
     root, files = runpath_root(tmp_path)
     failures: list = []
@@ -1089,7 +1169,7 @@ def test_generator_render_rewrites_runpaths_and_fails_on_foreign_ones(tmp_path: 
     root = tmp_path / "root"
     make_elf(root / "opt/rocm/lib/librocfoo.so.1", needed=["libprotobuf.so.36.1.0"], runpath="$ORIGIN")
     make_elf(root / "opt/rocm/bin/rocbar-info", needed=["libamdhip64.so.7"], runpath="/__w/rockrel/rockrel/build/core/clr/dist/lib")
-    make_elf(root / "opt/rocm/bin/rocbar-stat", needed=["libamdhip64.so.7"], rpath="/__w/x:$ORIGIN")
+    make_elf(root / "opt/rocm/bin/rocbar-stat", needed=["libamdhip64.so.7"], rpath="/__w/x:$ORIGIN/../lib")
     policy = tmp_path / "policy.toml"
     out = tmp_path / "out"
 
@@ -1218,9 +1298,14 @@ def test_policy_rewrites_every_foreign_runpath_in_the_7_14_1_payload():
     for meta in packages.values():
         for entry in meta.get("runpath_rewrites", []):
             assert therock_split.foreign_search_path_entries(entry["object"], entry["runpath"]) == []
-    # llvm-omp-kernel-replay keeps its clean entries and adds rocm_sysdeps.
-    replay = packages["rocm-llvm-gfx1151"]["runpath_rewrites"][0]["runpath"]
-    assert replay.endswith(":$ORIGIN/../../rocm_sysdeps/lib")
+    # llvm-omp-kernel-replay keeps its clean entries and adds rocm_sysdeps,
+    # the only rewrite of a staged RUNPATH with no foreign entry.
+    replay = packages["rocm-llvm-gfx1151"]["runpath_rewrites"][0]
+    assert replay["runpath"].endswith(":$ORIGIN/../../rocm_sysdeps/lib")
+    assert [
+        entry["object"] for meta in packages.values() for entry in meta.get("runpath_rewrites", []) if "additive" in entry
+    ] == [replay["object"]]
+    assert replay["additive"] is True
 
 
 def test_rocprofiler_sdk_depends_on_its_rocpd_and_roctx_components():

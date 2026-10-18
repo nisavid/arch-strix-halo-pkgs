@@ -378,21 +378,31 @@ def foreign_search_path_entries(relpath: str, value: str) -> list[str]:
     /opt/rocm unnoticed. An empty entry means the current directory, so it is
     foreign too.
     """
-    origin = posixpath.dirname("/" + relpath)
     foreign: list[str] = []
     for entry in value.split(":"):
-        resolved = entry
-        for token in ("${ORIGIN}", "$ORIGIN"):
-            if resolved == token or resolved.startswith(token + "/"):
-                resolved = origin + resolved[len(token) :]
-                break
-        if not resolved.startswith("/") or "$" in resolved:
-            foreign.append(entry)
-            continue
-        resolved = posixpath.normpath(resolved)
-        if not any(resolved == root or resolved.startswith(root + "/") for root in ALLOWED_SEARCH_ROOTS):
+        resolved = resolve_search_path_entry(relpath, entry)
+        if resolved is None or not any(
+            resolved == root or resolved.startswith(root + "/") for root in ALLOWED_SEARCH_ROOTS
+        ):
             foreign.append(entry)
     return foreign
+
+
+def resolve_search_path_entry(relpath: str, entry: str) -> str | None:
+    """Return a RUNPATH/RPATH entry as a normalized absolute path, or None.
+
+    ``$ORIGIN`` and ``${ORIGIN}`` resolve against the directory of ``relpath``,
+    the object's installed path. Relative, empty, and other ``$``-token entries
+    have no fixed location and return None.
+    """
+    resolved = entry
+    for token in ("${ORIGIN}", "$ORIGIN"):
+        if resolved == token or resolved.startswith(token + "/"):
+            resolved = posixpath.dirname("/" + relpath) + resolved[len(token) :]
+            break
+    if not resolved.startswith("/") or "$" in resolved:
+        return None
+    return posixpath.normpath(resolved)
 
 
 def msgpack_decode(data: bytes) -> object:
@@ -551,6 +561,13 @@ def resolve_runpath_rewrites(
     replaces the old value). An entry must match at least one regular ELF the
     package ships, no object may match two entries, and the new value must
     itself stay under /usr and /opt/rocm.
+
+    Each rewrite is also checked against the matched object's staged RUNPATH
+    and RPATH, so a payload bump cannot leave a hand-copied value silently
+    stale: the new value must keep every staged entry that is not foreign
+    (compared after resolving ``$ORIGIN``), and the staged value must have a
+    foreign entry to drop unless the entry sets ``additive = true``, which
+    declares a rewrite that only adds directories to a clean search path.
     """
     rewrites: dict[str, list[tuple[str, str]]] = {}
     for pkg, meta in sorted(policy["packages"].items()):
@@ -607,10 +624,44 @@ def resolve_runpath_rewrites(
                     )
                     continue
                 claimed[relpath] = pattern
+                stale = stale_runpath_rewrite(root, relpath, runpath, additive=entry.get("additive") is True)
+                if stale:
+                    failures.append(Failure("runpath_rewrite", pkg, f"{relpath}: {stale}", hint))
+                    continue
                 rewrites.setdefault(pkg, []).append((relpath, runpath))
     for entries in rewrites.values():
         entries.sort()
     return rewrites
+
+
+def stale_runpath_rewrite(root: Path, relpath: str, runpath: str, *, additive: bool) -> str | None:
+    """Return why a rewrite no longer fits the object's staged search path, or None."""
+    try:
+        staged = read_elf_search_paths(root / relpath)
+    except (ElfError, OSError, struct.error) as exc:
+        return f"could not read the staged RUNPATH/RPATH: {exc}"
+    shown = " and ".join(f"{tag} {value!r}" for tag, value in staged) or "no RUNPATH or RPATH"
+    kept = {resolve_search_path_entry(relpath, entry) for entry in runpath.split(":")}
+    dropped: list[str] = []
+    has_foreign = False
+    for _tag, value in staged:
+        foreign = set(foreign_search_path_entries(relpath, value))
+        has_foreign = has_foreign or bool(foreign)
+        for entry in value.split(":"):
+            if entry not in foreign and entry not in dropped and resolve_search_path_entry(relpath, entry) not in kept:
+                dropped.append(entry)
+    if dropped:
+        return (
+            f"new RUNPATH {runpath!r} drops "
+            + ", ".join(repr(entry) for entry in dropped)
+            + f" from the staged {shown}; re-derive the rewrite from the payload"
+        )
+    if not has_foreign and not additive:
+        return (
+            f"the staged {shown} has no entry outside /usr and /opt/rocm, so the rewrite is stale; "
+            "remove it, or set additive = true if it only adds directories"
+        )
+    return None
 
 
 def check_search_paths(

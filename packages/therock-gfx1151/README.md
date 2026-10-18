@@ -307,7 +307,12 @@ Each affected package's `runpath_rewrites` sets the full RUNPATH with
 `patchelf --set-rpath` at package time: the payload's `$ORIGIN` entries
 without the foreign ones, or, where only CI entries existed, the `$ORIGIN`
 path to the library's directory. `llvm-omp-kernel-replay` keeps its entries
-and gains `$ORIGIN/../../rocm_sysdeps/lib`, which makes 28 rewritten objects.
+and gains `$ORIGIN/../../rocm_sysdeps/lib`, which makes 28 rewritten objects;
+its entry carries `additive = true` because its staged RUNPATH has nothing
+foreign to drop. The render re-checks each rewrite against the staged object,
+so after a payload bump a rewrite that would drop a non-foreign entry, or that
+no longer drops anything, fails as `RUNPATH_REWRITE_INVALID` and must be
+re-derived.
 `rocgdb-py3.14` then finds `libpython3.14.so.1.0` in `/usr/lib`; the 3.10 to
 3.13 variants still need interpreters this stack does not ship.
 

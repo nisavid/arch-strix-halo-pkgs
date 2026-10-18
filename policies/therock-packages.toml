@@ -202,8 +202,9 @@ provides = ["rocm-llvm"]
 depends = ["rocm-sysdeps-gfx1151"]
 # llvm-omp-kernel-replay NEEDS the bundled zlib and zstd but its RUNPATH does
 # not reach lib/rocm_sysdeps/lib; keep its entries and add that directory.
+# Its staged RUNPATH has no foreign entry, so the rewrite is marked additive.
 runpath_rewrites = [
-  { object = "opt/rocm/lib/llvm/bin/llvm-omp-kernel-replay", runpath = "$ORIGIN:$ORIGIN/../lib:$ORIGIN/../../lib:$ORIGIN/../../../lib:$ORIGIN/../../rocm_sysdeps/lib" },
+  { object = "opt/rocm/lib/llvm/bin/llvm-omp-kernel-replay", runpath = "$ORIGIN:$ORIGIN/../lib:$ORIGIN/../../lib:$ORIGIN/../../../lib:$ORIGIN/../../rocm_sysdeps/lib", additive = true },
 ]
 
 [packages."hipcc-gfx1151"]

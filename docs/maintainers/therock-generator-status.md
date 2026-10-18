@@ -147,7 +147,9 @@ The generator and policy now handle:
   (`soname_depends`), used for the MIGraphX protobuf depend
 - RUNPATH and RPATH entries outside `/usr` and `/opt/rocm` fail the render
   (`FOREIGN_RUNPATH`) and the package (`_check_search_paths`); per-package
-  `runpath_rewrites` replace them with `patchelf` at package time
+  `runpath_rewrites` replace them with `patchelf` at package time, and the
+  render fails a rewrite that drops a non-foreign staged entry or has nothing
+  foreign to drop without `additive = true`
 
 ## Current caveat
 

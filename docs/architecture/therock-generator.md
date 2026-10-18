@@ -86,7 +86,17 @@ are skipped), and the new value replaces the whole RUNPATH through
 `patchelf --set-rpath '<value>'`, which also replaces an `RPATH`. An entry that
 matches nothing, an object matched by two entries, and a new value that is
 empty, contains a single quote, or is itself foreign fail the render as
-`RUNPATH_REWRITE_INVALID`. The rendered package function runs the rewrites
+`RUNPATH_REWRITE_INVALID`.
+
+The render also checks every rewrite against the matched object's staged
+RUNPATH and RPATH, because the values are hand-copied from one payload and a
+bump can change the object underneath them. The new value must keep every
+staged entry that is not foreign (compared after resolving `$ORIGIN`, so order
+and spelling may differ), and the staged value must have a foreign entry for
+the rewrite to drop. A rewrite that only adds directories to a clean search
+path, or to an object with none, must say so with `additive = true` in its
+entry; without it, such a rewrite is reported as stale. Either mismatch fails
+as `RUNPATH_REWRITE_INVALID`. The rendered package function runs the rewrites
 after `post_copy_commands`, and every package that copies payload ends with
 `_check_search_paths`, the template's package-time version of the same check,
 which reads the packaged files with `readelf -d`. The template therefore
@@ -142,6 +152,10 @@ Each failure also includes a short hint explaining whether the fix belongs in:
 2. Ensure the repo-local `upstream/ai-notes` submodule is initialized and up to
    date for the recipe change you intend to adopt.
 3. Run `python tools/render_therock_pkgbase.py --therock-root <staged-root>`.
+   The render re-validates every `runpath_rewrites` entry against the new
+   payload's RUNPATH and RPATH; a `RUNPATH_REWRITE_INVALID` that reports a
+   dropped entry or a stale rewrite means the value must be re-derived from
+   the staged object.
 4. If it fails:
    - add aliases for known new component directories or file prefixes
    - add explicit path ownership overrides for outliers
