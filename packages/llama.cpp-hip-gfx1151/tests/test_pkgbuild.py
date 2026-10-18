@@ -125,3 +125,14 @@ def test_selected_token_logits_patch_exposes_generic_completion_contract():
     assert "bool found" not in text
     assert "zeroentropy" not in text.lower()
     assert "9454" not in text
+
+
+def test_recipe_records_the_extra_conflict_check():
+    recipe = json.loads(RECIPE_JSON.read_text())
+    notes = " ".join(recipe["maintenance"]["update_notes"])
+    assert "Conflict check (#113, 2026-10-18)" in notes
+    assert "/opt/llama.cpp-hip-gfx1151" in notes
+    assert "repeat it against the built package's file list" in notes
+    # An AUR package uses this package's exact name.
+    assert "AUR package with this package's exact name, llama.cpp-hip-gfx1151" in notes
+    assert "package-ownership guard" in notes

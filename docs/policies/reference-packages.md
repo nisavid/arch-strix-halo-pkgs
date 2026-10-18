@@ -102,6 +102,12 @@ should be able to answer, from files alone:
     `ggml-hip` dynamically, so the ggml packages are advisory for the HIP
     backend flags and runtime dependencies; this package bundles ggml under
     `/opt`.
+  - name shadow: [#113](https://github.com/nisavid/arch-strix-halo-pkgs/issues/113)
+    records an AUR package named `llama.cpp-hip-gfx1151`, the same name as
+    this repo's package. An AUR helper or a repo ordering mistake could put
+    that package in place of this one, so the package-ownership guard (X3 in
+    #113) must check that the installed `llama.cpp-hip-gfx1151` comes from
+    this repo.
 
 - `llama.cpp-vulkan-gfx1151`
   - authoritative: `extra/llama-cpp`
@@ -109,6 +115,29 @@ should be able to answer, from files alone:
   - rationale: as for HIP, with `ggml-vulkan` as the backend reference. The
     AUR `llama.cpp-vulkan-bin` package is binary-only and no longer a
     reference.
+
+Conflict check for both backends against the `extra` packages
+([#113](https://github.com/nisavid/arch-strix-halo-pkgs/issues/113), checked
+2026-10-18 against the pacman file lists of `extra/llama-cpp` 0.6.0-1 and
+`extra/ggml`, `extra/ggml-hip`, and `extra/ggml-vulkan` 0.26.0-1, and their
+CachyOS rebuilds): no file or package-name conflict.
+
+- Files: each backend installs only under `/opt/llama.cpp-<backend>-gfx1151`,
+  suffixed `/usr/bin/*-hip-gfx1151` or `/usr/bin/*-vulkan-gfx1151` wrappers,
+  and `/usr/share/licenses/<pkgname>`. The `extra` packages install under
+  `/usr/bin`, `/usr/include`, `/usr/lib`, `/usr/lib/ggml`, and
+  `/usr/share/licenses/<pkgname>`, with no path under `/opt` and no
+  `gfx1151` name.
+- Names: `extra/llama-cpp` provides and conflicts only `llama-cpp`, and
+  `extra/ggml` only `ggml` and `ggml-cpu`; `ggml-hip` and `ggml-vulkan`
+  declare none. The backends provide `llama.cpp-<backend>-gfx1151` and
+  `llama.cpp-<backend>` and conflict only `llama.cpp-<backend>` and
+  `lemonade-server<11.9.0-2`.
+
+So the backends can be installed beside `extra/llama-cpp` and `ggml`. The check
+compares the backends' PKGBUILD install layout with the `extra` file lists; it
+is not a comparison of built package file lists, so repeat it against the
+built packages when they exist.
 
 - `kokoros-gfx1151`
   - authoritative: `none`
