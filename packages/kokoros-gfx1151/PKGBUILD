@@ -105,17 +105,31 @@ package() {
   install -Dm644 README.md "${_licenses}/README.md"
 
   # Licence texts of every crate linked into koko, from the fetched sources.
+  # cargo tree runs in its own assignment, so its failure stops package()
+  # instead of leaving the loop below with nothing to read.
   export CARGO_HOME="$srcdir/.cargo"
-  local _registry _name _version _crate _file
+  local _registry _tree _name _version _source _crate _file
   _registry="$(find "$CARGO_HOME/registry/src" -mindepth 1 -maxdepth 1 -type d -print -quit)"
-  while read -r _name _version _; do
+  _tree="$(cargo tree --frozen --offline --target "$(rustc --print host-tuple)" -e normal --prefix none --format '{p}')"
+  if [[ -z "${_tree}" ]]; then
+    echo "KOKOROS_LICENSES: cargo tree listed no crates" >&2
+    return 1
+  fi
+  while read -r _name _version _source _; do
+    # Path crates are Kokoros' own workspace members; its README covers them.
+    if [[ "${_source}" == "(/"* ]]; then
+      continue
+    fi
     _crate="${_registry}/${_name}-${_version#v}"
-    [[ -d "${_crate}" ]] || continue
+    if [[ ! -d "${_crate}" ]]; then
+      echo "KOKOROS_LICENSES: no fetched registry source for ${_name} ${_version} ${_source}" >&2
+      return 1
+    fi
     for _file in "${_crate}"/LICENSE* "${_crate}"/LICENCE* "${_crate}"/COPYING* "${_crate}"/NOTICE* "${_crate}"/COPYRIGHT*; do
       [[ -f "${_file}" ]] || continue
       install -Dm644 "${_file}" "${_licenses}/crates/${_name}-${_version#v}/${_file##*/}"
     done
-  done < <(cargo tree --frozen --offline --target "$(rustc --print host-tuple)" -e normal --prefix none --format '{p}' | sort -u)
+  done < <(sort -u <<<"${_tree}")
   # mp3lame-sys statically links its bundled LAME, whose licence sits beside it.
   for _file in "${_registry}"/mp3lame-sys-*/lame-*/COPYING; do
     [[ -f "${_file}" ]] || continue

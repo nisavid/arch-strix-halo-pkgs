@@ -1,6 +1,7 @@
 import hashlib
 import json
 import re
+import subprocess
 from pathlib import Path
 
 
@@ -128,6 +129,11 @@ def test_package_installs_the_available_licence_texts():
     package = _function(text, "package")
     assert 'install -Dm644 README.md "${_licenses}/README.md"' in package
     assert "cargo tree --frozen --offline" in package
+    # A separate assignment keeps errexit live; local x=$(...) or a process
+    # substitution would hide a cargo tree failure.
+    assert '  _tree="$(cargo tree --frozen --offline' in package
+    assert "< <(cargo tree" not in package
+    assert "KOKOROS_LICENSES: no fetched registry source" in package
     assert "-e normal" in package
     assert "mp3lame-sys-*/lame-*/COPYING" in package
     assert _array(text, "license") == [
@@ -158,3 +164,76 @@ def test_recipe_records_no_reference_and_the_open_runtime_gates():
     readme = README.read_text()
     assert "kokoro-v1.0.onnx and voices-v1.0.bin" in readme
     assert "C API version 23" in readme
+
+
+def _run_package(tmp_path, cargo_tree_script):
+    """Run the rendered package() the way makepkg does, with a fake cargo."""
+    srcdir = tmp_path / "src"
+    pkgdir = tmp_path / "pkg"
+    source = srcdir / f"Kokoros-{EXPECTED_COMMIT}"
+    (source / "espeak-ng-data").mkdir(parents=True)
+    (source / "espeak-ng-data" / "phontab").write_text("data\n")
+    (source / "README.md").write_text("Apache\n")
+    (srcdir / "target/release").mkdir(parents=True)
+    (srcdir / "target/release/koko").write_text("binary\n")
+    registry = srcdir / ".cargo/registry/src/index.crates.io-0000000000000000"
+    (registry / "foo-1.0.0").mkdir(parents=True)
+    (registry / "foo-1.0.0/LICENSE-MIT").write_text("MIT\n")
+    (registry / "mp3lame-sys-0.1.9/lame-3.100").mkdir(parents=True)
+    (registry / "mp3lame-sys-0.1.9/lame-3.100/COPYING").write_text("LGPL\n")
+    fakebin = tmp_path / "bin"
+    fakebin.mkdir()
+    (fakebin / "rustc").write_text("#!/bin/sh\necho x86_64-unknown-linux-gnu\n")
+    (fakebin / "cargo").write_text("#!/bin/sh\n" + cargo_tree_script)
+    for tool in ("rustc", "cargo"):
+        (fakebin / tool).chmod(0o755)
+    function = _function(PKGBUILD.read_text(), "package") + "\n}\n"
+    (tmp_path / "package.sh").write_text(function)
+    script = (
+        "set -o errexit -o errtrace\n"
+        "trap 'exit 1' ERR\n"
+        'source "$1"\n'
+        "package\n"
+        "echo PACKAGE_OK\n"
+    )
+    env = {
+        "PATH": f"{fakebin}:/usr/bin:/bin",
+        "srcdir": str(srcdir),
+        "pkgdir": str(pkgdir),
+    }
+    result = subprocess.run(
+        ["bash", "-c", script, "probe", str(tmp_path / "package.sh")],
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    return result, pkgdir / "usr/share/licenses/kokoros-gfx1151"
+
+
+def test_package_fails_when_cargo_tree_fails(tmp_path):
+    result, _ = _run_package(tmp_path, "exit 101\n")
+    assert result.returncode != 0
+    assert "PACKAGE_OK" not in result.stdout
+
+
+def test_package_fails_on_a_crate_without_a_fetched_registry_source(tmp_path):
+    result, _ = _run_package(
+        tmp_path,
+        "echo 'foo v1.0.0'\necho 'gitdep v0.1.0 (https://github.com/example/gitdep?rev=abc#abc)'\n",
+    )
+    assert result.returncode != 0
+    assert "PACKAGE_OK" not in result.stdout
+    assert "KOKOROS_LICENSES: no fetched registry source for gitdep v0.1.0" in result.stderr
+
+
+def test_package_installs_registry_licences_and_skips_workspace_crates(tmp_path):
+    result, licenses = _run_package(
+        tmp_path,
+        "echo 'koko v0.1.0 (/build/koko)'\necho 'foo v1.0.0'\necho 'foo v1.0.0 (*)'\n",
+    )
+    assert result.returncode == 0, result.stderr
+    assert "PACKAGE_OK" in result.stdout
+    assert (licenses / "crates/foo-1.0.0/LICENSE-MIT").read_text() == "MIT\n"
+    assert (licenses / "crates/mp3lame-sys-0.1.9/lame-3.100-COPYING").is_file()
+    assert (licenses / "README.md").is_file()
