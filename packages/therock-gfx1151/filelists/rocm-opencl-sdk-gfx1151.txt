@@ -12,3 +12,5 @@ opt/rocm/include/CL/cl_platform.h
 opt/rocm/include/CL/cl_va_api_media_sharing_intel.h
 opt/rocm/include/CL/cl_version.h
 opt/rocm/include/CL/opencl.h
+opt/rocm/share/opencl/ocltst/liboclperf.so
+opt/rocm/share/opencl/ocltst/liboclruntime.so

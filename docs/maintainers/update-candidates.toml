@@ -3323,19 +3323,18 @@ covered_checks = [{ source_kind = "python_ftp", check_id = "cpython", latest = "
 previous_recorded = "3.14.5-1 / 3.14.6"
 latest = "3.14.7-1"
 discovery_status = "stable_update_available"
-disposition = "tracked"
-disposition_reason = "Tracked from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep. #105 selects C's version line (docs/wayfinder/research/c-line-selection-2026-09-22.md). W1 foundation F (#108) establishes CPython 3.14.7 before TheRock and downstream runtime work."
+disposition = "rejected"
+disposition_reason = "Superseded before host adoption by python-3.14.8-1-arch. Tracked from the 2026-09-22 freshness sweep (#136), which is also the #105 freeze sweep; #105 selected C's version line (docs/wayfinder/research/c-line-selection-2026-09-22.md), and W1 foundation F (#108) built CPython 3.14.7 on draft PR #149. The owner admitted CPython 3.14.8 on 2026-10-02, and the 2026-10-16 source transition moves python-gfx1151 to 3.14.8-1. The 3.14.7 F builds, staging, and W2A results remain 3.14.7 records and are not evidence for 3.14.8."
 salient_changes = [
   "Arch core/python reports 3.14.7-1 after the recorded 3.14.5-1 baseline",
   "CPython reports 3.14.7 after the local 3.14.6 source lane",
 ]
 patch_carry_overlap = true
-package_source_update_needed = true
-host_validation_needed = true
-next_gate_kind = "github_issue"
-next_gate_issue = 108
-next_gate_label = "CPython 3.14.7 W1 foundation"
-last_reviewed = "2026-09-22"
+package_source_update_needed = false
+host_validation_needed = false
+next_gate_kind = "none"
+next_gate_label = "Superseded by python-3.14.8-1-arch; 3.14.7 F evidence retained as 3.14.7 records"
+last_reviewed = "2026-10-16"
 
 [candidates."rocm-pytorch-release-2.12-13da086"]
 family = "rocm_pytorch"
@@ -5257,12 +5256,14 @@ check_id = "arch"
 baseline_source_kind = "python_ftp"
 baseline_latest = "3.14.8"
 covered_checks = [{ source_kind = "python_ftp", check_id = "cpython", latest = "3.14.8" }]
-previous_recorded = "3.14.5-1 / 3.14.6"
+previous_recorded = "3.14.5-1 / 3.14.6 / 3.14.7"
 latest = "3.14.8-1"
 discovery_status = "stable_update_available"
 disposition = "tracked"
-disposition_reason = "The 2026-10-11 freshness sweep observes Arch core/python at 3.14.8-1, which now matches the CPython 3.14.8 FTP baseline that the superseded 2026-10-08 record observed beside Arch 3.14.7-1. Issue #108 owns source review, publication, rebuilds, and fresh downstream evidence for the admitted 3.14.8 foundation. This record changes no foundation source and establishes no build or validation; python-3.14.7-1-arch remains the selected-line tracking record until its owner reconciles the source transition."
+disposition_reason = "The 2026-10-11 freshness sweep observes Arch core/python at 3.14.8-1, which now matches the CPython 3.14.8 FTP baseline that the superseded 2026-10-08 record observed beside Arch 3.14.7-1. Issue #108 owns source review, publication, rebuilds, and fresh downstream evidence for the admitted 3.14.8 foundation. The 2026-10-16 source transition on the foundation branch makes this the selected-line record and terminalizes python-3.14.7-1-arch; it establishes no build or validation."
 salient_changes = [
+  "On 2026-10-16 the foundation branch moved python-gfx1151 source to the CPython 3.14.8 python.org tarball (sha256 c2215904…0ce73, sha512 equal to Arch core/python 3.14.8-1) with the unchanged POSIX-2024 patch, which applies to the 3.14.8 tarball at the same offsets as on 3.14.7; the arch and cpython cursors now record the reviewed 3.14.8-1 and 3.14.8. Nothing is built, published, installed, or validated for 3.14.8 yet",
+  "The 3.14.8 release tarball's Misc/NEWS lists gh-155999, the tarfile extraction-filter fix tracked as CVE-2026-19672, under Security; that is the source evidence that 3.14.8 carries the fix",
   "The October 12 sweep re-observed Arch 3.14.8-1 beside CPython 3.14.8; issue #108 retains the admitted source, rebuild, and downstream gates",
   "Arch core/python reports 3.14.8-1 after the recorded 3.14.5-1 baseline",
   "CPython FTP reports 3.14.8 after the recorded 3.14.6",
@@ -5274,7 +5275,7 @@ host_validation_needed = true
 next_gate_kind = "github_issue"
 next_gate_issue = 108
 next_gate_label = "Admitted CPython 3.14.8 foundation source, rebuild, and downstream validation"
-last_reviewed = "2026-10-15"
+last_reviewed = "2026-10-16"
 
 [candidates."lemonade-fork-3df36c4"]
 family = "lemonade"

@@ -6,7 +6,9 @@ import argparse
 import fnmatch
 import json
 import os
+import posixpath
 import re
+import struct
 import sys
 import textwrap
 import tomllib
@@ -21,7 +23,15 @@ STRUCTURED_FAILURES = {
     "ambiguous": "AMBIGUOUS_OWNERSHIP",
     "new_class": "NEW_THEROCK_PACKAGE_CLASS",
     "missing_pkg_meta": "MISSING_PACKAGE_METADATA",
+    "kpack_ref_unowned": "KPACK_REF_UNOWNED",
+    "soname_depend": "SONAME_DEPEND_UNRESOLVED",
+    "runpath_rewrite": "RUNPATH_REWRITE_INVALID",
+    "foreign_runpath": "FOREIGN_RUNPATH",
 }
+
+IGNORED = "__ignored__"
+KPACK_REF_SECTION = ".rocm_kpack_ref"
+GFXARCH_TOKEN = "@GFXARCH@"
 
 
 @dataclass
@@ -82,7 +92,7 @@ class Classifier:
 
     def classify(self, relpath: str) -> str | None:
         if self.is_ignored(relpath):
-            return "__ignored__"
+            return IGNORED
         if relpath in self.path_owners:
             return self.path_owners[relpath]
 
@@ -110,7 +120,7 @@ class Classifier:
         elif top == "bin" and len(inner) > 1:
             name = inner[1]
             if self._is_bin_noise(inner):
-                return "__ignored__"
+                return IGNORED
             candidates.update(self._match_prefix(name, self.binary_prefixes))
         elif top == "lib" and len(inner) > 1:
             if inner[1] == "cmake" and len(inner) > 2:
@@ -239,6 +249,524 @@ class Classifier:
         return self._lookup_component(stem, f"include/{filename}")
 
 
+ELF_MAGIC = b"\x7fELF"
+ELFCLASS64 = 2
+ELFDATA2LSB = 1
+SHT_DYNAMIC = 6
+DT_NULL = 0
+DT_NEEDED = 1
+DT_RPATH = 15
+DT_RUNPATH = 29
+
+
+class ElfError(ValueError):
+    pass
+
+
+def is_elf(path: Path) -> bool:
+    try:
+        with path.open("rb") as fh:
+            return fh.read(4) == ELF_MAGIC
+    except OSError:
+        return False
+
+
+def read_elf_sections(path: Path) -> list[dict]:
+    """Return the section headers of a little-endian ELF64 file.
+
+    Only the headers and the section-name string table are read, so this stays
+    cheap on multi-GiB payload files.
+    """
+    with path.open("rb") as fh:
+        ident = fh.read(16)
+        if ident[:4] != ELF_MAGIC:
+            raise ElfError(f"{path} is not an ELF file")
+        if ident[4] != ELFCLASS64 or ident[5] != ELFDATA2LSB:
+            raise ElfError(f"{path} is not a little-endian ELF64 file")
+        header = fh.read(48)
+        if len(header) < 48:
+            raise ElfError(f"{path} has a truncated ELF header")
+        (e_shoff,) = struct.unpack_from("<Q", header, 0x28 - 16)
+        e_shentsize, e_shnum, e_shstrndx = struct.unpack_from("<HHH", header, 0x3A - 16)
+        if e_shoff == 0:
+            return []
+
+        def section_header(index: int) -> dict:
+            fh.seek(e_shoff + index * e_shentsize)
+            raw = fh.read(64)
+            if len(raw) < 64:
+                raise ElfError(f"{path} has a truncated section header table")
+            name, sh_type, _flags, _addr, offset, size, link, _info, _align, _entsize = struct.unpack(
+                "<IIQQQQIIQQ", raw
+            )
+            return {"name_offset": name, "type": sh_type, "offset": offset, "size": size, "link": link}
+
+        if e_shnum == 0:
+            e_shnum = section_header(0)["size"]
+        if e_shstrndx == 0xFFFF:
+            e_shstrndx = section_header(0)["link"]
+        sections = [section_header(index) for index in range(e_shnum)]
+        if e_shstrndx >= len(sections):
+            raise ElfError(f"{path} has no usable section-name string table")
+        strtab = sections[e_shstrndx]
+        fh.seek(strtab["offset"])
+        names = fh.read(strtab["size"])
+    for section in sections:
+        section["name"] = c_string(names, section["name_offset"])
+    return sections
+
+
+def c_string(table: bytes, offset: int) -> str:
+    end = table.find(b"\0", offset)
+    return table[offset : end if end >= 0 else None].decode("utf-8", "replace")
+
+
+def read_section_bytes(path: Path, section: dict) -> bytes:
+    with path.open("rb") as fh:
+        fh.seek(section["offset"])
+        return fh.read(section["size"])
+
+
+def read_elf_section(path: Path, name: str) -> bytes | None:
+    for section in read_elf_sections(path):
+        if section["name"] == name:
+            return read_section_bytes(path, section)
+    return None
+
+
+def read_elf_dynamic_strings(path: Path, wanted: int) -> list[str]:
+    """Return the string values of one dynamic tag of an ELF64 file, in order."""
+    sections = read_elf_sections(path)
+    values: list[str] = []
+    for section in sections:
+        if section["type"] != SHT_DYNAMIC:
+            continue
+        dynamic = read_section_bytes(path, section)
+        dynstr = read_section_bytes(path, sections[section["link"]])
+        for offset in range(0, len(dynamic) - 15, 16):
+            tag, value = struct.unpack_from("<qQ", dynamic, offset)
+            if tag == DT_NULL:
+                break
+            if tag == wanted:
+                values.append(c_string(dynstr, value))
+    return values
+
+
+def read_elf_needed(path: Path) -> list[str]:
+    """Return the DT_NEEDED entries of an ELF64 shared object or executable."""
+    return read_elf_dynamic_strings(path, DT_NEEDED)
+
+
+def read_elf_search_paths(path: Path) -> list[tuple[str, str]]:
+    """Return the DT_RUNPATH and DT_RPATH values of an ELF64 file as (tag, value) pairs."""
+    return [
+        (name, value)
+        for tag, name in ((DT_RUNPATH, "RUNPATH"), (DT_RPATH, "RPATH"))
+        for value in read_elf_dynamic_strings(path, tag)
+    ]
+
+
+ALLOWED_SEARCH_ROOTS = ("/usr", "/opt/rocm")
+
+
+def foreign_search_path_entries(relpath: str, value: str) -> list[str]:
+    """Return the entries of a RUNPATH/RPATH value that leave /usr and /opt/rocm.
+
+    ``relpath`` is the object's path relative to the root, which is also its
+    installed path. ``$ORIGIN`` resolves against the object's directory and the
+    result is normalized, so ``$ORIGIN/../../..`` cannot climb out of
+    /opt/rocm unnoticed. An empty entry means the current directory, so it is
+    foreign too.
+    """
+    foreign: list[str] = []
+    for entry in value.split(":"):
+        resolved = resolve_search_path_entry(relpath, entry)
+        if resolved is None or not any(
+            resolved == root or resolved.startswith(root + "/") for root in ALLOWED_SEARCH_ROOTS
+        ):
+            foreign.append(entry)
+    return foreign
+
+
+def resolve_search_path_entry(relpath: str, entry: str) -> str | None:
+    """Return a RUNPATH/RPATH entry as a normalized absolute path, or None.
+
+    ``$ORIGIN`` and ``${ORIGIN}`` resolve against the directory of ``relpath``,
+    the object's installed path. Relative, empty, and other ``$``-token entries
+    have no fixed location and return None.
+    """
+    resolved = entry
+    for token in ("${ORIGIN}", "$ORIGIN"):
+        if resolved == token or resolved.startswith(token + "/"):
+            resolved = posixpath.dirname("/" + relpath) + resolved[len(token) :]
+            break
+    if not resolved.startswith("/") or "$" in resolved:
+        return None
+    return posixpath.normpath(resolved)
+
+
+def msgpack_decode(data: bytes) -> object:
+    """Decode the msgpack subset that TheRock writes into .rocm_kpack_ref markers."""
+
+    def take(pos: int, count: int) -> tuple[bytes, int]:
+        if pos + count > len(data):
+            raise ValueError("truncated msgpack data")
+        return data[pos : pos + count], pos + count
+
+    def unpack(fmt: str, pos: int) -> tuple[int, int]:
+        raw, pos = take(pos, struct.calcsize(fmt))
+        return struct.unpack(fmt, raw)[0], pos
+
+    def decode_str(pos: int, length: int) -> tuple[str, int]:
+        raw, pos = take(pos, length)
+        return raw.decode("utf-8"), pos
+
+    def decode_array(pos: int, length: int) -> tuple[list, int]:
+        items = []
+        for _ in range(length):
+            item, pos = decode(pos)
+            items.append(item)
+        return items, pos
+
+    def decode_map(pos: int, length: int) -> tuple[dict, int]:
+        items = {}
+        for _ in range(length):
+            key, pos = decode(pos)
+            value, pos = decode(pos)
+            items[key] = value
+        return items, pos
+
+    lengths = {0xC4: ">B", 0xC5: ">H", 0xC6: ">I", 0xD9: ">B", 0xDA: ">H", 0xDB: ">I", 0xDC: ">H", 0xDD: ">I", 0xDE: ">H", 0xDF: ">I"}
+    ints = {0xCC: ">B", 0xCD: ">H", 0xCE: ">I", 0xCF: ">Q", 0xD0: ">b", 0xD1: ">h", 0xD2: ">i", 0xD3: ">q"}
+
+    def decode(pos: int) -> tuple[object, int]:
+        raw, pos = take(pos, 1)
+        byte = raw[0]
+        if byte <= 0x7F:
+            return byte, pos
+        if byte >= 0xE0:
+            return byte - 0x100, pos
+        if byte <= 0x8F:
+            return decode_map(pos, byte & 0x0F)
+        if byte <= 0x9F:
+            return decode_array(pos, byte & 0x0F)
+        if byte <= 0xBF:
+            return decode_str(pos, byte & 0x1F)
+        if byte == 0xC0:
+            return None, pos
+        if byte in (0xC2, 0xC3):
+            return byte == 0xC3, pos
+        if byte in ints:
+            return unpack(ints[byte], pos)
+        if byte in lengths:
+            length, pos = unpack(lengths[byte], pos)
+            if byte <= 0xC6:
+                return take(pos, length)
+            if byte <= 0xDB:
+                return decode_str(pos, length)
+            if byte <= 0xDD:
+                return decode_array(pos, length)
+            return decode_map(pos, length)
+        raise ValueError(f"unsupported msgpack type byte 0x{byte:02x}")
+
+    value, _pos = decode(0)
+    return value
+
+
+def gfx_arch(policy: dict) -> str:
+    return policy.get("payload", {}).get("gfx_arch") or policy["repo"].get("suffix", "").lstrip("-")
+
+
+def resolve_kpack_search_path(elf_relpath: str, search_path: str, arch: str) -> str:
+    search_path = search_path.replace(GFXARCH_TOKEN, arch)
+    if search_path.startswith("/"):
+        return posixpath.normpath(search_path.lstrip("/"))
+    return posixpath.normpath(posixpath.join(posixpath.dirname(elf_relpath), search_path))
+
+
+def check_kpack_refs(root: Path, policy: dict, owners: dict[str, str | None], failures: list[Failure]) -> None:
+    """Fail when a kpack-split ELF cannot reach its device-code archive.
+
+    TheRock kpack-split libraries carry no device code on disk. The HIP runtime
+    loads their kernels from the archives named in the .rocm_kpack_ref marker,
+    which resolve relative to the library directory. An archive that is
+    missing, ignored, or owned by a package that the library's package does not
+    depend on directly would render and build cleanly and then fail at the
+    first kernel launch.
+    """
+    arch = gfx_arch(policy)
+    packages = policy["packages"]
+    hint = (
+        "Own the archive with an exact [overrides.path_owners] entry, keep it out of "
+        "[filters].ignore_globs, and make the library's package depend directly on the archive's owner."
+    )
+    for relpath, owner in sorted(owners.items()):
+        if owner is None or owner == IGNORED:
+            continue
+        path = root / relpath
+        if path.is_symlink() or not path.is_file() or not is_elf(path):
+            continue
+        try:
+            marker = read_elf_section(path, KPACK_REF_SECTION)
+        except (ElfError, OSError, struct.error) as exc:
+            failures.append(Failure("kpack_ref_unowned", relpath, f"could not read ELF sections: {exc}", hint))
+            continue
+        if marker is None:
+            continue
+        try:
+            decoded = msgpack_decode(marker)
+            search_paths = decoded.get("kpack_search_paths") if isinstance(decoded, dict) else None
+            if not search_paths or not isinstance(search_paths, list) or not all(isinstance(p, str) for p in search_paths):
+                raise ValueError("kpack_search_paths is missing or is not a list of strings")
+        except (ValueError, UnicodeDecodeError) as exc:
+            failures.append(Failure("kpack_ref_unowned", relpath, f"unreadable {KPACK_REF_SECTION} marker: {exc}", hint))
+            continue
+
+        archives = [resolve_kpack_search_path(relpath, item, arch) for item in search_paths]
+        present = [archive for archive in archives if archive in owners]
+        if not present:
+            failures.append(
+                Failure(
+                    "kpack_ref_unowned",
+                    relpath,
+                    f"{owner} ships no device code on disk, and no kpack archive from {', '.join(archives)} is in the scanned payload",
+                    hint,
+                )
+            )
+            continue
+        allowed = {owner, *packages.get(owner, {}).get("depends", [])}
+        for archive in present:
+            archive_owner = owners[archive]
+            if archive_owner is None:
+                continue  # already reported as UNMAPPED_COMPONENT
+            if archive_owner == IGNORED:
+                detail = f"kpack archive {archive} is ignored by policy filters, so {owner} would ship no device code"
+            elif archive_owner not in allowed:
+                detail = f"kpack archive {archive} is owned by {archive_owner}, which {owner} does not depend on"
+            else:
+                continue
+            failures.append(Failure("kpack_ref_unowned", relpath, detail, hint))
+
+
+def resolve_runpath_rewrites(
+    root: Path,
+    policy: dict,
+    package_files: dict[str, list[str]],
+    failures: list[Failure],
+) -> dict[str, list[tuple[str, str]]]:
+    """Expand each package's ``runpath_rewrites`` into (object, runpath) pairs.
+
+    Each entry names an fnmatch pattern for objects the package owns and the
+    complete RUNPATH they get at package time (``patchelf --set-rpath``, which
+    replaces the old value). An entry must match at least one regular ELF the
+    package ships, no object may match two entries, and the new value must
+    itself stay under /usr and /opt/rocm.
+
+    Each rewrite is also checked against the matched object's staged RUNPATH
+    and RPATH, so a payload bump cannot leave a hand-copied value silently
+    stale: the new value must keep every staged entry that is not foreign
+    (compared after resolving ``$ORIGIN``), and the staged value must have a
+    foreign entry to drop unless the entry sets ``additive = true``, which
+    declares a rewrite that only adds directories to a clean search path.
+    """
+    rewrites: dict[str, list[tuple[str, str]]] = {}
+    for pkg, meta in sorted(policy["packages"].items()):
+        entries = meta.get("runpath_rewrites", [])
+        if not entries:
+            continue
+        files = package_files.get(pkg, [])
+        claimed: dict[str, str] = {}
+        for entry in entries:
+            pattern = entry["object"]
+            runpath = entry["runpath"]
+            hint = f"Fix [packages.\"{pkg}\"].runpath_rewrites."
+            matched = sorted(
+                relpath
+                for relpath in files
+                if fnmatch.fnmatchcase(relpath, pattern)
+                and not (root / relpath).is_symlink()
+                and is_elf(root / relpath)
+            )
+            if not matched:
+                failures.append(
+                    Failure("runpath_rewrite", pkg, f"{pattern} matches no regular ELF file in the package", hint)
+                )
+                continue
+            if not runpath or "'" in runpath or foreign_search_path_entries(matched[0], runpath):
+                failures.append(
+                    Failure(
+                        "runpath_rewrite",
+                        pkg,
+                        f"{pattern}: new RUNPATH {runpath!r} leaves /usr and /opt/rocm",
+                        hint,
+                    )
+                )
+                continue
+            for relpath in matched:
+                if foreign_search_path_entries(relpath, runpath):
+                    failures.append(
+                        Failure(
+                            "runpath_rewrite",
+                            pkg,
+                            f"{relpath}: new RUNPATH {runpath!r} leaves /usr and /opt/rocm",
+                            hint,
+                        )
+                    )
+                    continue
+                if relpath in claimed:
+                    failures.append(
+                        Failure(
+                            "runpath_rewrite",
+                            pkg,
+                            f"{relpath} matches both {claimed[relpath]} and {pattern}",
+                            hint,
+                        )
+                    )
+                    continue
+                claimed[relpath] = pattern
+                stale = stale_runpath_rewrite(root, relpath, runpath, additive=entry.get("additive") is True)
+                if stale:
+                    failures.append(Failure("runpath_rewrite", pkg, f"{relpath}: {stale}", hint))
+                    continue
+                rewrites.setdefault(pkg, []).append((relpath, runpath))
+    for entries in rewrites.values():
+        entries.sort()
+    return rewrites
+
+
+def stale_runpath_rewrite(root: Path, relpath: str, runpath: str, *, additive: bool) -> str | None:
+    """Return why a rewrite no longer fits the object's staged search path, or None."""
+    try:
+        staged = read_elf_search_paths(root / relpath)
+    except (ElfError, OSError, struct.error) as exc:
+        return f"could not read the staged RUNPATH/RPATH: {exc}"
+    shown = " and ".join(f"{tag} {value!r}" for tag, value in staged) or "no RUNPATH or RPATH"
+    kept = {resolve_search_path_entry(relpath, entry) for entry in runpath.split(":")}
+    dropped: list[str] = []
+    has_foreign = False
+    for _tag, value in staged:
+        foreign = set(foreign_search_path_entries(relpath, value))
+        has_foreign = has_foreign or bool(foreign)
+        for entry in value.split(":"):
+            if entry not in foreign and entry not in dropped and resolve_search_path_entry(relpath, entry) not in kept:
+                dropped.append(entry)
+    if dropped:
+        return (
+            f"new RUNPATH {runpath!r} drops "
+            + ", ".join(repr(entry) for entry in dropped)
+            + f" from the staged {shown}; re-derive the rewrite from the payload"
+        )
+    if not has_foreign and not additive:
+        return (
+            f"the staged {shown} has no entry outside /usr and /opt/rocm, so the rewrite is stale; "
+            "remove it, or set additive = true if it only adds directories"
+        )
+    return None
+
+
+def check_search_paths(
+    root: Path,
+    package_files: dict[str, list[str]],
+    rewrites: dict[str, list[tuple[str, str]]],
+    failures: list[Failure],
+) -> None:
+    """Fail on any packaged ELF whose RUNPATH or RPATH, after rewrites, leaves /usr and /opt/rocm.
+
+    CI build trees such as /__w/rockrel/... and foreign interpreter prefixes do
+    not exist on the host; the loader skips them, so a NEEDED entry they were
+    meant to satisfy silently resolves elsewhere or not at all.
+    """
+    for pkg, files in sorted(package_files.items()):
+        rewritten = dict(rewrites.get(pkg, []))
+        for relpath in files:
+            path = root / relpath
+            if path.is_symlink() or not path.is_file() or not is_elf(path):
+                continue
+            if relpath in rewritten:
+                values = [("RUNPATH", rewritten[relpath])]
+            else:
+                try:
+                    values = read_elf_search_paths(path)
+                except (ElfError, OSError, struct.error) as exc:
+                    failures.append(
+                        Failure(
+                            "foreign_runpath",
+                            relpath,
+                            f"could not read RUNPATH/RPATH: {exc}",
+                            f"Inspect the payload file owned by {pkg}.",
+                        )
+                    )
+                    continue
+            for tag, value in values:
+                foreign = foreign_search_path_entries(relpath, value)
+                if foreign:
+                    failures.append(
+                        Failure(
+                            "foreign_runpath",
+                            relpath,
+                            f"{pkg}: {tag} {value!r} has entries outside /usr and /opt/rocm: "
+                            + ", ".join(repr(entry) for entry in foreign),
+                            f"Add a [packages.\"{pkg}\"].runpath_rewrites entry that sets a RUNPATH under $ORIGIN, /usr, or /opt/rocm.",
+                        )
+                    )
+
+
+def derive_soname_depends(
+    root: Path,
+    policy: dict,
+    package_files: dict[str, list[str]],
+    failures: list[Failure],
+    *,
+    skip_missing: bool = False,
+) -> dict[str, list[str]]:
+    """Render pacman soname depends such as ``libprotobuf.so=36.1.0-64`` from staged ELF files.
+
+    Each ``soname_depends`` entry names a staged ELF and a library stem. The
+    rendered depend takes its version from that ELF's DT_NEEDED entry, so a
+    rebuild against a different protobuf moves the depend without a policy
+    edit. Packages with no payload in the staged root are skipped.
+
+    ``skip_missing`` turns a missing staged ELF into a warning and omits that
+    depend. It exists only for a dry render taken before the ELF is built (the
+    MIGraphX parsers are added to the stage after the TheRock payload), and
+    output rendered with it must not be committed.
+    """
+    derived: dict[str, list[str]] = {}
+    for pkg, meta in sorted(policy["packages"].items()):
+        entries = meta.get("soname_depends", [])
+        if not entries or not package_files.get(pkg):
+            continue
+        for entry in entries:
+            library = entry["library"]
+            stem = entry["needed"]
+            hint = f"Rebuild {library} against the intended {stem}, or fix [packages.\"{pkg}\"].soname_depends."
+            path = root / library
+            if not path.is_file():
+                if skip_missing:
+                    print(f"SONAME_DEPEND_SKIPPED: {pkg}: staged ELF {library} is missing", file=sys.stderr)
+                    continue
+                failures.append(Failure("soname_depend", pkg, f"staged ELF {library} is missing", hint))
+                continue
+            try:
+                needed = read_elf_needed(path)
+            except (ElfError, OSError, struct.error) as exc:
+                failures.append(Failure("soname_depend", pkg, f"could not read DT_NEEDED from {library}: {exc}", hint))
+                continue
+            versions = sorted({name.removeprefix(f"{stem}.") for name in needed if name.startswith(f"{stem}.")})
+            if len(versions) != 1:
+                failures.append(
+                    Failure(
+                        "soname_depend",
+                        pkg,
+                        f"{library} needs {len(versions)} {stem} SONAMEs; DT_NEEDED: {', '.join(needed) or '(none)'}",
+                        hint,
+                    )
+                )
+                continue
+            derived.setdefault(pkg, []).append(f"{stem}={versions[0]}-64")
+    return derived
+
+
 def walk_scan_roots(root: Path, scan_roots: list[str]) -> list[str]:
     relpaths: list[str] = []
     for scan_root in scan_roots:
@@ -278,6 +806,7 @@ def render_pkgbuild(
     output_dir: Path,
     template_path: Path,
     render_meta: dict[str, str],
+    runpath_rewrites: dict[str, list[tuple[str, str]]] | None = None,
 ) -> None:
     template = read_template(template_path)
     pkg_defs = policy["packages"]
@@ -313,12 +842,15 @@ def render_pkgbuild(
             )
             for command in meta.get("post_copy_commands", []):
                 body.append(f"    {command}")
+            for relpath, runpath in (runpath_rewrites or {}).get(pkg, []):
+                body.append(f"    patchelf --set-rpath '{runpath}' \"${{pkgdir}}/{relpath}\"")
             synthetic = policy.get("synthetic_files", {}).get(pkg, [])
             for entry in synthetic:
                 text = entry["text"]
                 body.append(f"    install -Dm644 /dev/stdin \"${{pkgdir}}/{entry['path']}\" <<'EOF'")
                 body.append(text.rstrip("\n"))
                 body.append("EOF")
+            body.append("    _check_search_paths")
         body.append("}")
         package_functions.append("\n".join(body))
 
@@ -406,6 +938,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--recipe-author", default="", help="recipe author attribution string")
     parser.add_argument("--recipe-commit", default="", help="recipe commit used for this render")
     parser.add_argument("--recipe-date", default="", help="recipe commit date in YYYYMMDD form")
+    parser.add_argument(
+        "--skip-missing-soname-depends",
+        action="store_true",
+        help="warn instead of failing when a soname_depends ELF is not staged yet (dry renders only)",
+    )
     return parser.parse_args()
 
 
@@ -429,12 +966,27 @@ def main() -> int:
     classifier = Classifier(policy)
     relpaths = walk_scan_roots(root, policy["repo"]["scan_roots"])
 
+    owners: dict[str, str | None] = {}
     for relpath in relpaths:
         owner = classifier.classify(relpath)
-        if owner and owner != "__ignored__":
+        owners[relpath] = owner
+        if owner and owner != IGNORED:
             classifier.package_files[owner].append(relpath)
 
     ensure_package_metadata(policy["packages"], set(classifier.package_files), classifier.failures)
+    check_kpack_refs(root, policy, owners, classifier.failures)
+    derived = derive_soname_depends(
+        root,
+        policy,
+        classifier.package_files,
+        classifier.failures,
+        skip_missing=args.skip_missing_soname_depends,
+    )
+    for pkg, extra in derived.items():
+        meta = policy["packages"][pkg]
+        meta["depends"] = [*meta.get("depends", []), *extra]
+    rewrites = resolve_runpath_rewrites(root, policy, classifier.package_files, classifier.failures)
+    check_search_paths(root, classifier.package_files, rewrites, classifier.failures)
 
     if classifier.failures:
         for failure in classifier.failures:
@@ -444,7 +996,7 @@ def main() -> int:
     output_dir.mkdir(parents=True, exist_ok=True)
     write_filelists(classifier.package_files, output_dir)
     write_manifest(policy, classifier.package_files, output_dir, render_meta)
-    render_pkgbuild(policy, classifier.package_files, output_dir, template_path, render_meta)
+    render_pkgbuild(policy, classifier.package_files, output_dir, template_path, render_meta, rewrites)
     print(f"Generated {policy['repo']['pkgbase']} scaffolding in {output_dir}")
     return 0
 

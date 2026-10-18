@@ -1,3 +1,4 @@
+opt/rocm/bin/rocsparse_mtx2csr
 opt/rocm/include/rocsparse/internal/conversion/rocsparse_bsr2csr.h
 opt/rocm/include/rocsparse/internal/conversion/rocsparse_bsrpad_value.h
 opt/rocm/include/rocsparse/internal/conversion/rocsparse_coo2csr.h
@@ -29,6 +30,7 @@ opt/rocm/include/rocsparse/internal/conversion/rocsparse_prune_csr2csr.h
 opt/rocm/include/rocsparse/internal/conversion/rocsparse_prune_csr2csr_by_percentage.h
 opt/rocm/include/rocsparse/internal/conversion/rocsparse_prune_dense2csr.h
 opt/rocm/include/rocsparse/internal/conversion/rocsparse_prune_dense2csr_by_percentage.h
+opt/rocm/include/rocsparse/internal/debugging/rocsparse_hip_debug.h
 opt/rocm/include/rocsparse/internal/extra/rocsparse_bsrgeam.h
 opt/rocm/include/rocsparse/internal/extra/rocsparse_bsrgemm.h
 opt/rocm/include/rocsparse/internal/extra/rocsparse_csrgeam.h
@@ -46,6 +48,7 @@ opt/rocm/include/rocsparse/internal/generic/rocsparse_sparse_to_sparse.h
 opt/rocm/include/rocsparse/internal/generic/rocsparse_spgeam.h
 opt/rocm/include/rocsparse/internal/generic/rocsparse_spgemm.h
 opt/rocm/include/rocsparse/internal/generic/rocsparse_spic0.h
+opt/rocm/include/rocsparse/internal/generic/rocsparse_spildlt0.h
 opt/rocm/include/rocsparse/internal/generic/rocsparse_spilu0.h
 opt/rocm/include/rocsparse/internal/generic/rocsparse_spitsv.h
 opt/rocm/include/rocsparse/internal/generic/rocsparse_spmm.h
@@ -123,3 +126,5 @@ opt/rocm/lib/cmake/rocsparse/rocsparse-targets.cmake
 opt/rocm/lib/librocsparse.so
 opt/rocm/lib/librocsparse.so.1
 opt/rocm/lib/librocsparse.so.1.0
+opt/rocm/lib/rocsparse/rocsparseio-convert
+opt/rocm/lib/rocsparse/rocsparseio-info

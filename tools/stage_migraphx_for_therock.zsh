@@ -4,19 +4,33 @@ emulate -R zsh
 setopt err_exit pipe_fail no_unset
 
 typeset -r REPO_ROOT=${0:A:h:h}
-typeset stage=/tmp/therock-migraphx-stage
+typeset stage=${THEROCK_STAGE_ROOT-}
 typeset src=/tmp/AMDMIGraphX
-typeset rocm_root=/opt/rocm
 typeset jobs=${$(nproc 2>/dev/null):-1}
 typeset targets=gfx1151
-typeset migraphx_ref=b69836e6c97de179a80d764d24574edba7ba1b1b
-typeset protobuf_dir=/usr/lib/cmake/protobuf
+# AMDMIGraphX 2.16.1: release/rocm-rel-7.14 head, the MIGraphX release for ROCm 7.14.1.
+typeset migraphx_ref=2487b688c453b9007ac69ff1d79ad6cf9b509901
+# Isolated protobuf/Abseil prefix for the ONNX and TF parsers. The pins are the
+# Arch extra packages that the host upgrades to in the same transaction as the
+# rebuilt migraphx-gfx1151; the sha256 values come from the Arch sync database.
+typeset protobuf_prefix=/tmp/migraphx-protobuf-prefix
+typeset protobuf_pkg_dir=
+typeset protobuf_dir=
+typeset -r arch_archive=https://archive.archlinux.org/packages
+typeset -ra protobuf_pkgs=(
+  "p/protobuf/protobuf-36.1-1-x86_64.pkg.tar.zst 3d63417c8fbe2354bea29b23c338baf3f03c9438e0127c5519d6dddc4825185c"
+  "a/abseil-cpp/abseil-cpp-20260817.0-2-x86_64.pkg.tar.zst 4ecd2e4e2cf7096edfad8522df68d0d9adbe41ce7a6689c1915905342ae6a016"
+)
+# The ABI that migraphx-gfx1151 declares: the rendered libprotobuf.so=36.1.0-64
+# depend and the abseil-cpp 20260817 range in policies/therock-packages.toml.
+# The protobuf prefix must provide exactly these sonames.
 typeset protobuf_soname=libprotobuf.so.36.1.0
 typeset utf8_validity_soname=libutf8_validity.so.36.1.0
 typeset abseil_soversion=2608.0.0
-# migraphx-gfx1151 7.13.0-4 ships 14 regular ELF files; the payload gate
-# fails a stage in which it finds fewer.
-typeset migraphx_min_elfs=14
+# migraphx-gfx1151 7.14.1-1 (AMDMIGraphX 2.16.1) ships 13 regular ELF files;
+# the payload gate fails a stage in which it finds fewer.
+typeset migraphx_min_elfs=13
+typeset rocm_cmake_compat=
 typeset clean=0
 typeset deploy=0
 typeset skip_build=0
@@ -27,24 +41,36 @@ usage() {
   cat <<'EOF'
 usage: tools/stage_migraphx_for_therock.zsh [options]
 
-Build AMDMIGraphX into a staged /opt/rocm root, render therock-gfx1151 from it,
+Build AMDMIGraphX into a staged TheRock root, render therock-gfx1151 from it,
 preview the amerge plan, and optionally deploy the refreshed package family.
 
+The stage must already hold the TheRock payload: run
+tools/stage_therock_payload.py --stage PATH first. MIGraphX is configured
+against that stage only, with the stage's own amdclang and no host /opt/rocm
+fallback, and installed into it with DESTDIR.
+
 Options:
-  --stage PATH       staged filesystem root (default: /tmp/therock-migraphx-stage)
+  --stage PATH       staged filesystem root holding opt/rocm
+                     (default: $THEROCK_STAGE_ROOT)
   --src PATH         AMDMIGraphX checkout path (default: /tmp/AMDMIGraphX)
-  --rocm-root PATH   installed ROCm tree that seeds the stage and provides
-                     the compilers (default: /opt/rocm)
   --targets VALUE    GPU target list passed as -DGPU_TARGETS (default: gfx1151)
-  --migraphx-ref REF AMDMIGraphX commit to build
-                     (default: b69836e6c97de179a80d764d24574edba7ba1b1b)
+  --migraphx-ref REF AMDMIGraphX commit to fetch and build
+                     (default: 2487b688c453b9007ac69ff1d79ad6cf9b509901, 2.16.1)
+  --protobuf-prefix PATH
+                     isolated protobuf 36.1 / abseil-cpp 20260817 prefix,
+                     populated from the pinned Arch packages when empty
+                     (default: /tmp/migraphx-protobuf-prefix)
+  --protobuf-pkg-dir PATH
+                     download cache for the pinned Arch packages
+                     (default: <protobuf-prefix>.pkgs)
   --protobuf-dir PATH
-                     protobuf CMake config directory used for AMDMIGraphX
-                     ONNX parsing; its lib directory must also hold the
-                     matching Abseil libraries and cmake/absl
-                     (default: /usr/lib/cmake/protobuf)
+                     use this protobuf CMake config directory instead of the
+                     isolated prefix; it must end with /cmake/protobuf, and
+                     its lib directory must also hold the matching Abseil
+                     libraries and cmake/absl
   -j, --jobs N       parallel build jobs (default: nproc)
-  --clean            remove the stage and source dirs before starting
+  --clean            remove the source checkout and the protobuf prefix before
+                     starting; the stage and the package cache are kept
   --skip-build       reuse an existing source build and only install/render/deploy
   --with-ck          enable AMDMIGraphX Composable Kernel integration
   --with-mlir        enable AMDMIGraphX rocMLIR integration
@@ -52,7 +78,7 @@ Options:
   -h, --help         show this help
 
 Typical:
-  tools/stage_migraphx_for_therock.zsh --clean
+  tools/stage_migraphx_for_therock.zsh --stage <stage> --clean
 EOF
 }
 
@@ -89,17 +115,29 @@ read_needed() {
 require_cmds() {
   emulate -L zsh
   local cmd
-  for cmd in git rsync cmake ninja python readelf; do
+  for cmd in git cmake ninja python readelf curl bsdtar sha256sum; do
     command -v $cmd >/dev/null 2>&1 || fail "missing required command: $cmd"
   done
 }
 
 clean_path() {
   emulate -L zsh
-  local target_path=$1
-  [[ -n $target_path ]] || fail "refusing to remove empty path"
-  [[ $target_path == /tmp/* ]] || fail "refusing to clean non-/tmp path: $target_path"
+  local target_path=${1:A}
+  [[ -n $1 ]] || fail "refusing to remove empty path"
+  [[ $target_path == /?*/?* ]] || fail "refusing to clean a top-level path: $target_path"
+  [[ $target_path != ${HOME:A} && $target_path != ${stage:A} ]] || fail "refusing to clean: $target_path"
+  [[ $target_path != ${REPO_ROOT:A} && $target_path != ${REPO_ROOT:A}/* ]] || fail "refusing to clean inside the repo: $target_path"
   run rm -rf -- $target_path
+}
+
+require_stage() {
+  emulate -L zsh
+  [[ -n $stage ]] || fail "pass --stage or set THEROCK_STAGE_ROOT"
+  stage=${stage:A}
+  local rocm=$stage/opt/rocm
+  [[ -f $rocm/.info/version ]] || fail "no staged TheRock payload at $rocm; run tools/stage_therock_payload.py --stage $stage"
+  [[ -x $rocm/lib/llvm/bin/amdclang++ ]] || fail "staged TheRock compiler is missing: $rocm/lib/llvm/bin/amdclang++"
+  status "using staged TheRock $(<$rocm/.info/version) at $rocm"
 }
 
 python_disable_versions() {
@@ -117,6 +155,66 @@ PY
     [[ $version == $current ]] || disabled+=($version)
   done
   print -r -- ${(j:;:)disabled}
+}
+
+prepare_protobuf_prefix() {
+  emulate -L zsh
+  if [[ -n $protobuf_dir ]]; then
+    status "using protobuf CMake config at $protobuf_dir"
+    return
+  fi
+  protobuf_prefix=${protobuf_prefix:A}
+  protobuf_dir=$protobuf_prefix/usr/lib/cmake/protobuf
+  if [[ -d $protobuf_dir ]]; then
+    status "reusing isolated protobuf prefix at $protobuf_prefix"
+    return
+  fi
+
+  local pkg_dir=${protobuf_pkg_dir:-$protobuf_prefix.pkgs}
+  run mkdir -p $pkg_dir
+  local entry rel sha file actual
+  local -a pkg_files=()
+  for entry in $protobuf_pkgs; do
+    rel=${entry%% *}
+    sha=${entry##* }
+    file=$pkg_dir/${rel:t}
+    if [[ ! -f $file ]]; then
+      status "downloading ${rel:t}"
+      run curl -fL --retry 3 -o $file.part $arch_archive/$rel
+      run mv -- $file.part $file
+    fi
+    actual=$(sha256sum $file)
+    actual=${actual%% *}
+    [[ $actual == $sha ]] || fail "sha256 mismatch for $file: got $actual, pinned $sha"
+    pkg_files+=($file)
+  done
+
+  status "populating isolated protobuf prefix at $protobuf_prefix"
+  run mkdir -p $protobuf_prefix
+  local pkg
+  for pkg in $pkg_files; do
+    run bsdtar -xf $pkg -C $protobuf_prefix \
+      --exclude .PKGINFO --exclude .BUILDINFO --exclude .MTREE --exclude .INSTALL
+  done
+  [[ -d $protobuf_dir ]] || fail "protobuf CMake config directory is missing after extraction: $protobuf_dir"
+}
+
+# Fail unless the protobuf prefix provides the pinned protobuf, utf8_validity,
+# and Abseil sonames and the CMake configs the build needs.
+check_protobuf_prefix() {
+  emulate -L zsh
+  local protobuf_lib_dir=${protobuf_dir%/cmake/protobuf}
+  local absl_dir=$protobuf_lib_dir/cmake/absl
+  [[ -d $protobuf_dir ]] || fail "protobuf CMake config directory is missing: $protobuf_dir"
+  [[ $protobuf_lib_dir != $protobuf_dir ]] || fail "protobuf CMake config directory must end with /cmake/protobuf: $protobuf_dir"
+  [[ -f $protobuf_lib_dir/libprotobuf.so ]] || fail "protobuf library is missing: $protobuf_lib_dir/libprotobuf.so"
+  [[ -f $protobuf_lib_dir/libutf8_validity.so ]] || fail "utf8 validity library is missing: $protobuf_lib_dir/libutf8_validity.so"
+  [[ $(read_soname $protobuf_lib_dir/libprotobuf.so) == $protobuf_soname ]] || fail "protobuf SONAME must be $protobuf_soname"
+  [[ $(read_soname $protobuf_lib_dir/libutf8_validity.so) == $utf8_validity_soname ]] || fail "utf8 validity SONAME must be $utf8_validity_soname"
+  [[ -d $absl_dir ]] || fail "Abseil CMake config directory is missing: $absl_dir"
+  [[ -f $protobuf_lib_dir/libabsl_base.so ]] || fail "Abseil library is missing: $protobuf_lib_dir/libabsl_base.so"
+  [[ $(read_soname $protobuf_lib_dir/libabsl_base.so) == libabsl_base.so.$abseil_soversion ]] || fail "Abseil SONAME must be libabsl_base.so.$abseil_soversion"
+  status "building against $protobuf_soname, $utf8_validity_soname, and libabsl_*.so.$abseil_soversion"
 }
 
 clone_or_update_source() {
@@ -139,7 +237,10 @@ patch_migraphx_source_for_staged_root() {
   local mlir_cpp=$src/src/targets/gpu/mlir.cpp
   [[ -f $mlir_cpp ]] || fail "missing AMDMIGraphX source file: $mlir_cpp"
 
-  status "patching AMDMIGraphX no-MLIR build stubs for the staged root"
+  # AMDMIGraphX 2.16 already guards the rocMLIR RockEnums.h include with
+  # MIGRAPHX_MLIR (upstream #4962), but its no-MLIR branch still lacks
+  # definitions for four functions that mlir.hpp exports unconditionally.
+  status "adding AMDMIGraphX no-MLIR build stubs"
   run python - $mlir_cpp <<'PY'
 from pathlib import Path
 import sys
@@ -154,16 +255,6 @@ def replace_once(old: str, new: str) -> None:
     if old not in text:
         raise SystemExit(f"expected MLIR source block not found in {path}")
     text = text.replace(old, new, 1)
-
-replace_once("""#include <migraphx/gpu/prepare_mlir.hpp>
-#include <mlir-c/Dialect/RockEnums.h>
-#include <numeric>
-""", """#include <migraphx/gpu/prepare_mlir.hpp>
-#ifdef MIGRAPHX_MLIR
-#include <mlir-c/Dialect/RockEnums.h>
-#endif
-#include <numeric>
-""")
 
 replace_once("""std::string dump_mlir(module m, const std::vector<shape>& inputs)
 {
@@ -215,48 +306,52 @@ path.write_text(text)
 PY
 }
 
-copy_current_rocm_into_stage() {
+write_rocm_cmake_compat() {
   emulate -L zsh
-  [[ -d $rocm_root ]] || fail "ROCm root is missing: $rocm_root"
-  status "copying current $rocm_root into $stage"
-  run mkdir -p $stage/opt
-  run rsync -aH --no-owner --no-group --delete $rocm_root/ $stage/opt/rocm/
+  local rocm_cmake_dir=$stage/opt/rocm/share/rocmcmakebuildtools/cmake
+  rocm_cmake_compat=
+  [[ -d $rocm_cmake_dir ]] || fail "staged rocm-cmake modules are missing: $rocm_cmake_dir"
+  grep -q 'function(rocm_add_version_resource' $rocm_cmake_dir/*.cmake && return
+
+  # AMDMIGraphX 2.16 calls rocm_add_version_resource, which its pinned
+  # rocm-cmake (1d4652ae) defines, but the rocm-cmake 0.14.0 that TheRock
+  # 7.14.1 ships predates it. The upstream function only writes a Windows .rc
+  # version resource under if(WIN32), so it is a no-op on Linux. Define that
+  # no-op before project() modules load; a stage rocm-cmake that defines the
+  # function would replace it on include.
+  rocm_cmake_compat=$src/.ashp/rocm-cmake-compat.cmake
+  status "adding the Linux no-op rocm_add_version_resource that the staged rocm-cmake lacks"
+  run mkdir -p ${rocm_cmake_compat:h}
+  print -r -- 'function(rocm_add_version_resource TARGET NAME DESCRIPTION)
+endfunction()' >| $rocm_cmake_compat
 }
 
 build_and_install_migraphx() {
   emulate -L zsh
+  local rocm=$stage/opt/rocm
   local disable_versions
   disable_versions=$(python_disable_versions)
   local pybind11_dir
   pybind11_dir=$(python -m pybind11 --cmakedir)
   local protobuf_lib_dir=${protobuf_dir%/cmake/protobuf}
-  local protobuf_prefix=${protobuf_lib_dir:h}
+  local protobuf_prefix_root=${protobuf_lib_dir:h}
   local absl_dir=$protobuf_lib_dir/cmake/absl
   local ck=OFF
   local mlir=OFF
   (( with_composable_kernel )) && ck=ON
   (( with_mlir )) && mlir=ON
-  [[ -d $protobuf_dir ]] || fail "protobuf CMake config directory is missing: $protobuf_dir"
-  [[ $protobuf_lib_dir != $protobuf_dir ]] || fail "protobuf CMake config directory must end with /cmake/protobuf: $protobuf_dir"
-  [[ -f $protobuf_lib_dir/libprotobuf.so ]] || fail "protobuf library is missing: $protobuf_lib_dir/libprotobuf.so"
-  [[ -f $protobuf_lib_dir/libutf8_validity.so ]] || fail "utf8 validity library is missing: $protobuf_lib_dir/libutf8_validity.so"
-  [[ $(read_soname $protobuf_lib_dir/libprotobuf.so) == $protobuf_soname ]] || fail "protobuf SONAME must be $protobuf_soname"
-  [[ $(read_soname $protobuf_lib_dir/libutf8_validity.so) == $utf8_validity_soname ]] || fail "utf8 validity SONAME must be $utf8_validity_soname"
-  [[ -d $absl_dir ]] || fail "Abseil CMake config directory is missing: $absl_dir"
-  [[ -f $protobuf_lib_dir/libabsl_base.so ]] || fail "Abseil library is missing: $protobuf_lib_dir/libabsl_base.so"
-  [[ $(read_soname $protobuf_lib_dir/libabsl_base.so) == libabsl_base.so.$abseil_soversion ]] || fail "Abseil SONAME must be libabsl_base.so.$abseil_soversion"
   local -a configure_args=(
     -S $src
     -B $src/build
     -G Ninja
     -DCMAKE_BUILD_TYPE=Release
     -DCMAKE_INSTALL_PREFIX=/opt/rocm
-    "-DCMAKE_PREFIX_PATH=$protobuf_prefix;$stage/opt/rocm;$rocm_root"
+    "-DCMAKE_PREFIX_PATH=$protobuf_prefix_root;$rocm"
     -Dprotobuf_DIR=$protobuf_dir
     -Dabsl_DIR=$absl_dir
     -Dpybind11_DIR=$pybind11_dir
-    -DCMAKE_C_COMPILER=$rocm_root/lib/llvm/bin/amdclang
-    -DCMAKE_CXX_COMPILER=$rocm_root/lib/llvm/bin/amdclang++
+    -DCMAKE_C_COMPILER=$rocm/lib/llvm/bin/amdclang
+    -DCMAKE_CXX_COMPILER=$rocm/lib/llvm/bin/amdclang++
     -DGPU_TARGETS=$targets
     -DMIGRAPHX_ENABLE_PYTHON=ON
     -DMIGRAPHX_USE_COMPOSABLEKERNEL=$ck
@@ -264,12 +359,27 @@ build_and_install_migraphx() {
     -DROCM_ENABLE_CLANG_TIDY=OFF
     -DPYTHON_DISABLE_VERSIONS=$disable_versions
   )
+  [[ -z $rocm_cmake_compat ]] || configure_args+=(-DCMAKE_PROJECT_INCLUDE=$rocm_cmake_compat)
+  local -a build_env=(
+    ROCM_PATH=$rocm
+    HIP_PATH=$rocm
+    LD_LIBRARY_PATH=$protobuf_lib_dir:${LD_LIBRARY_PATH-}
+  )
 
-  status "configuring AMDMIGraphX for $targets"
-  run cmake $configure_args
+  status "configuring AMDMIGraphX $migraphx_ref for $targets against $rocm"
+  run env $build_env cmake $configure_args
 
   status "building and installing AMDMIGraphX into $stage"
-  run env LD_LIBRARY_PATH=$protobuf_lib_dir:${LD_LIBRARY_PATH-} \
+  run env $build_env DESTDIR=$stage cmake --build $src/build --target install -j$jobs
+}
+
+install_existing_build() {
+  emulate -L zsh
+  local rocm=$stage/opt/rocm
+  local protobuf_lib_dir=${protobuf_dir%/cmake/protobuf}
+  status "installing existing AMDMIGraphX build into $stage"
+  run env ROCM_PATH=$rocm HIP_PATH=$rocm \
+    LD_LIBRARY_PATH=$protobuf_lib_dir:${LD_LIBRARY_PATH-} \
     DESTDIR=$stage \
     cmake --build $src/build --target install -j$jobs
 }
@@ -411,11 +521,6 @@ while (( $# )); do
       (( $# )) || fail "--src needs a path"
       src=$1
       ;;
-    --rocm-root)
-      shift
-      (( $# )) || fail "--rocm-root needs a path"
-      rocm_root=$1
-      ;;
     --targets)
       shift
       (( $# )) || fail "--targets needs a value"
@@ -425,6 +530,16 @@ while (( $# )); do
       shift
       (( $# )) || fail "--migraphx-ref needs a value"
       migraphx_ref=$1
+      ;;
+    --protobuf-prefix)
+      shift
+      (( $# )) || fail "--protobuf-prefix needs a path"
+      protobuf_prefix=$1
+      ;;
+    --protobuf-pkg-dir)
+      shift
+      (( $# )) || fail "--protobuf-pkg-dir needs a path"
+      protobuf_pkg_dir=$1
       ;;
     --protobuf-dir)
       shift
@@ -464,23 +579,26 @@ done
 
 require_cmds
 cd $REPO_ROOT
+require_stage
 
 if (( clean )); then
-  clean_path $stage
   clean_path $src
+  [[ -n $protobuf_dir ]] || clean_path $protobuf_prefix
 fi
 
 if (( skip_build )); then
   [[ -d $src/build ]] || fail "--skip-build needs an existing build dir: $src/build"
-  copy_current_rocm_into_stage
-  status "installing existing AMDMIGraphX build into $stage"
-  run env LD_LIBRARY_PATH=${protobuf_dir%/cmake/protobuf}:${LD_LIBRARY_PATH-} \
-    DESTDIR=$stage \
-    cmake --build $src/build --target install -j$jobs
+fi
+
+prepare_protobuf_prefix
+check_protobuf_prefix
+
+if (( skip_build )); then
+  install_existing_build
 else
-  copy_current_rocm_into_stage
   clone_or_update_source
   patch_migraphx_source_for_staged_root
+  write_rocm_cmake_compat
   build_and_install_migraphx
 fi
 

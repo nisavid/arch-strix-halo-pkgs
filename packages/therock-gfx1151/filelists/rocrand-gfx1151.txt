@@ -1,3 +1,4 @@
+opt/rocm/.kpack/rand_lib_gfx1151.kpack
 opt/rocm/include/rocrand/rocrand.h
 opt/rocm/include/rocrand/rocrand.hpp
 opt/rocm/include/rocrand/rocrand_common.h

@@ -1,11 +1,16 @@
 # Generation-C Build Root
 
 Generation C (W2A, #98) builds the PyTorch and vLLM chain against the new
-foundation F: TheRock 7.14.1, MIGraphX 2.16.1 and CPython 3.14.7. The host
+foundation F: TheRock 7.14.1, MIGraphX 2.16.1 and CPython 3.14.8. The host
 still runs the previous generation (ROCm 7.13 under `/opt/rocm`, CPython
 3.14.6, and a torch linked against 7.13). F must not be installed on the host
 before W5, so W2A packages are built in a rootless bubblewrap root that holds F
 at the paths the host will have after W5.
+
+F moved from CPython 3.14.7 to 3.14.8 on 2026-10-16, before any 3.14.8 build.
+Records below that name Python 3.14.7, the 7.14.1-1 TheRock splits, or the
+W2A results built on them describe the 3.14.7 subject and stay labelled that
+way; 3.14.8 evidence is recorded separately as it is produced (#108).
 
 `tools/c_buildroot.py` owns this flow. Its data lives in `tools/buildroot/`:
 
@@ -240,12 +245,16 @@ for about 30 GiB, and `$STAGING` for the directory that holds the
      sonames (torchvision's `image.so`, systemd's `libsystemd-core`);
    - Python's `_tkinter`, whose Tcl/Tk is an optdepend;
    - `/startdir` `RUNPATH` leaks in Arch's boost-libs and sdl3;
-   - real defects, tracked so that they do not block W2A: `torch_shm_manager`
+   - a real defect, tracked so that it does not block W2A: `torch_shm_manager`
      in the W2A PyTorch (#109: a `/build` `RUNPATH` instead of
-     `$ORIGIN/../lib`, so `libc10.so` and `libshm.so` do not resolve), and F's
-     TheRock objects whose `RUNPATH` names the `/__w` CI tree, so that
-     amdsmi, `llvm-omp-kernel-replay`, `xmlwf` and rocprofiler-sdk miss their
-     `rocm_sysdeps` or sibling libraries (#108).
+     `$ORIGIN/../lib`, so `libc10.so` and `libshm.so` do not resolve).
+
+   F's TheRock 7.14.1-1 objects whose `RUNPATH` named the `/__w` CI tree, so
+   that amdsmi, `llvm-omp-kernel-replay`, `xmlwf` and rocprofiler-sdk missed
+   their `rocm_sysdeps` or sibling libraries, had 12 entries under #108.
+   TheRock 7.14.1-2 rewrites those RUNPATHs and inverts the rocprofiler-sdk
+   depends, so the entries are gone. A root that still holds the 7.14.1-1
+   splits fails `verify` on those findings; re-lock it on 7.14.1-2.
 
    A 584-package root has about 4,000 such
    files and checks in under 20 seconds. Then run `c_buildroot.py probe` with the same repo flags and an empty
@@ -553,11 +562,13 @@ A fresh vLLM root is `torch-chain.targets`, `model-closure.targets` and
 
 ## F protobuf and Abseil contract (#108)
 
-MIGraphX 2.16.1 (`migraphx-gfx1151` 7.14.1-1 in F) is linked against Arch
-protobuf 36.1 and Abseil 20260817 on purpose. Its package declares
+MIGraphX 2.16.1 (`migraphx-gfx1151` in F) is linked against Arch protobuf
+36.1 and Abseil 20260817 on purpose. The 7.14.1-1 package declared
 `libprotobuf.so=36.1.0-64` and no Abseil dependency, and protobuf depends on
-plain `abseil-cpp`. Abseil has no soname in the package graph, so nothing but
-this contract ties the two versions together.
+plain `abseil-cpp`. Abseil has no soname in the package graph. From 7.14.1-2
+the package also declares `abseil-cpp>=20260817.0` and `abseil-cpp<20260818`,
+the range the 7.13.0-4 package already used, so pacman ties the Abseil LTS to the
+package; the rest of this contract still covers the build roots.
 
 - **Build roots.** `torch-chain.targets` names `protobuf>=36.1` and
   `abseil-cpp>=20260817.0`. The other targets files are always resolved with
@@ -595,8 +606,9 @@ this contract ties the two versions together.
   and Abseil 20260526. Before the torch-migraphx smokes are re-run, re-lock the
   root with the fixed tool and the pinned targets, `fetch` the new files,
   `populate` a fresh root, and `add` the W2A-built packages back into it.
-- **Host at W5.** The host moves to protobuf 36.1 and Abseil 20260817 in the
-  W5 transaction, through a full `pacman -Syu`. Never install F or protobuf
+- **Host at W5.** The host moves to protobuf 36.1 and Abseil 20260817 through
+  a full `pacman -Syu`; it has carried them, with the matching
+  `libphonenumber` and `python-protobuf`, since its 2026-10-02 full upgrade. Never install F or protobuf
   with a partial `pacman -U`: pacman tracks the protobuf soname, but not the
   Abseil version, so a partial update can leave a protobuf 36.1 that needs
   Abseil 20260817 on top of an older Abseil.

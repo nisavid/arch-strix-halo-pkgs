@@ -52,7 +52,7 @@ owns the dependency-ordered route. Its blocking spine is:
   [source and dynamic dependency closure](https://github.com/nisavid/arch-strix-halo-pkgs/issues/105),
   [exact B0 capture](https://github.com/nisavid/arch-strix-halo-pkgs/issues/106), and
   [fixtures, probes, Kokoro, and operating bounds](https://github.com/nisavid/arch-strix-halo-pkgs/issues/107)
-- W1: [CPython 3.14.7 and TheRock 7.14 foundation](https://github.com/nisavid/arch-strix-halo-pkgs/issues/108)
+- W1: [CPython 3.14.8 and TheRock 7.14 foundation](https://github.com/nisavid/arch-strix-halo-pkgs/issues/108)
 - W2A: [compiler and PyTorch foundation](https://github.com/nisavid/arch-strix-halo-pkgs/issues/109),
   [model dependency closure](https://github.com/nisavid/arch-strix-halo-pkgs/issues/110), and
   [TorchVision and vLLM consumers](https://github.com/nisavid/arch-strix-halo-pkgs/issues/111)

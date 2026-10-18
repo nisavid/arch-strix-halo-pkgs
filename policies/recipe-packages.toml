@@ -103,7 +103,7 @@ scaffold_notes = [
 [packages.python-gfx1151]
 recipe_key = "cpython"
 template = "autoconf-python"
-upstream_version = "3.14.6"
+upstream_version = "3.14.8"
 pkgdesc = "The Python programming language rebuilt with amdclang for Strix Halo gfx1151"
 url = "https://www.python.org/"
 license = ["PSF-2.0"]
@@ -112,13 +112,15 @@ authoritative_reference = "core/python"
 advisory_references = ["cachyos-znver4/python"]
 divergence_notes = [
   "Uses the Arch system-Python package shape as the integration baseline while layering in the recipe's amdclang plus PGO/LTO approach.",
-  "Intentionally keeps pip/setuptools split out of the base interpreter package and preserves Arch's externally managed environment behavior."
+  "Intentionally keeps pip/setuptools split out of the base interpreter package and preserves Arch's externally managed environment behavior.",
+  "Carries Arch core/python's POSIX-2024 build backport (cpython 927eb448, gh-144309) as a verbatim upstream patch file so the configure feature macros match the Arch integration baseline."
 ]
 update_notes = [
   "Always diff against the current Arch python PKGBUILD first, then inspect CachyOS for any CPU-tuning or toolchain deltas worth carrying.",
   "Treat system-Python replacement as gated on a fresh torch/vLLM smoke run after any major Python, ROCm, or recipe change.",
   "Adopt CPython 3.14 patch releases after source review without waiting for Arch or CachyOS to move; keep those packages as integration references.",
-  "Treat patch-release source bumps as coordinated interpreter rebuild lanes until package build, deploy/install, installed smoke, and affected runtime smokes pass."
+  "Treat patch-release source bumps as coordinated interpreter rebuild lanes until package build, deploy/install, installed smoke, and affected runtime smokes pass.",
+  "Drop 0001-build-python-with-posix-2024.patch once the CPython 3.14 release branch contains cpython 927eb448 or Arch core/python stops carrying it."
 ]
 recipe_notes_override = """
 Python 3.14.x built with PGO + LTO + amdclang for Zen 5.
@@ -133,7 +135,7 @@ LDFLAGS, causing AOCL-LibM to be linked, which breaks PGO training
 (test_math fails on signed zero and subnormal number handling).
 
 vllm-env.sh is re-sourced after build to restore flags."""
-provides = ["python=3.14.6", "python3", "python-externally-managed"]
+provides = ["python=3.14.8", "python3", "python-externally-managed"]
 conflicts = ["python"]
 replaces = ["python", "python3", "python-externally-managed"]
 depends = ["bzip2", "expat", "gdbm", "libffi", "libnsl", "libxcrypt", "mpdecimal", "openssl", "tzdata", "zlib", "zstd"]
@@ -148,11 +150,13 @@ optdepends = [
 ]
 compiler_dep = "rocm-llvm-gfx1151"
 source_type = "tarball"
-source_url = "https://www.python.org/ftp/python/3.14.6/Python-3.14.6.tar.xz"
-sha256sums = ["143b1dddefaec3bd2e21e3b839b34a2b7fb9842272883c576420d605e9f30c63"]
-src_subdir = "Python-3.14.6"
+source_url = "https://www.python.org/ftp/python/3.14.8/Python-3.14.8.tar.xz"
+sha256sums = ["c2215904f02b175596dc49351585104f4bc20341e1c47378b26a2c274360ce73"]
+source_patches = ["0001-build-python-with-posix-2024.patch"]
+extra_sha256sums = ["76d1307b5f73ed9eb5e46b672c8f55bd93474173f4ca834a54d0ee7536fa0a7f"]
+src_subdir = "Python-3.14.8"
 install_prefix = "/usr"
-patches_dir = "patches/python-gfx1151"
+patches_dir = "packages/python-gfx1151"
 scaffold_notes = [
   "This scaffold is intentionally rebased onto current Arch/Cachy Python 3.14.x instead of the recipe's older CPython 3.13.12 pin.",
   "The scaffold preserves the recipe's rule that all vllm-env.sh compiler flags must be unset before configure so AOCL-LibM does not contaminate the PGO training run.",
@@ -408,7 +412,7 @@ update_notes = [
   "On 2026-06-15, adopt ROCm/pytorch release/2.12 at c7badbdf3d33d945a0ed4536aac5303bc933e6ee as the canonical runtime-base source lane. The f8efdb..c7badbdf range changes test coverage and NCCL symmetric-memory device-support gating without touching the local patch paths; use pkgrel 4 to align with Arch python-pytorch-opt-rocm 2.12.0-4 and to supersede the unmerged ab32a1f/pkgrel-3 host drift.",
   "On 2026-09-23, adopted ROCm/pytorch release/2.12 at 13da08625e0d25586351146b4c444f5263997ef8 for the generation-C line (#109), built against TheRock 7.14.1, python-triton-gfx1151 3.8.0 and python-aotriton-gfx1151 0.13b. The c7badbdf..13da0862 range moves the in-tree AOTriton pin to 0.13, drops gfx90a from the CK GEMM list, bumps composable_kernel and carries CUDAGraph pool-release, hipify and Inductor Triton runtime fixes. Patch 0005 was refreshed for the new CK list, 0009 was dropped because upstream LazyTensorFunctions now handles AOTriton 0.12+ callbacks, and 0010 was adopted from Arch's aotriton_disable_install.patch.",
   "Build with USE_MAGMA=0: the generation-C foundation (TheRock 7.14.1) ships no MAGMA and magma-gfx1151 leaves the stack, so torch.cuda.has_magma is False. Patch 0002 still applies to the canonical linalg source and stays harmless without MAGMA.",
-  "Depend on rocprofiler-sdk-gfx1151: kineto finds librocprofiler-sdk.so at configure time (ROCm 6.4+ path) and libtorch_cpu.so links librocprofiler-sdk.so.1. The earlier package got it only because the host had it installed; the generation-C build root exposed the missing dependency as a ROCPROF_LIBRARY-NOTFOUND configure failure. Kineto's ROCm sources also include rocprofiler-sdk/marker/api_args.h, which includes rocprofiler-sdk-roctx headers that rocprofiler-sdk-gfx1151 does not pull in, so rocprofiler-sdk-roctx-gfx1151 is a makedepend.",
+  "Depend on rocprofiler-sdk-gfx1151: kineto finds librocprofiler-sdk.so at configure time (ROCm 6.4+ path) and libtorch_cpu.so links librocprofiler-sdk.so.1. The earlier package got it only because the host had it installed; the generation-C build root exposed the missing dependency as a ROCPROF_LIBRARY-NOTFOUND configure failure. Kineto's ROCm sources also include rocprofiler-sdk/marker/api_args.h, which includes rocprofiler-sdk-roctx headers, so rocprofiler-sdk-roctx-gfx1151 is a makedepend. Keep it explicit: from therock-gfx1151 7.14.1-2, rocprofiler-sdk-gfx1151 also depends on it, but earlier releases did not pull it in.",
   "Patch 0010 removes the aotriton.cmake install(DIRECTORY) rule that mirrors the system AOTRITON_INSTALLED_PREFIX (/usr/lib and /usr/include) into torch/. That rule is the likely cause of the tolerated _sysconfigdata install-target failure; keep the tolerant wrapper until a build proves the install target succeeds.",
   "Keep the package version aligned with the built wheel version; do not repeat the earlier mismatch where the package claimed 2.11.0 but the built wheel came from develop.",
   "Keep openblas explicit in both depends and makedepends so the build does not drift back to generic host BLAS auto-detection.",

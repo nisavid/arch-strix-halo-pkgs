@@ -62,7 +62,7 @@ family build because those source and package gates are coupled.
 | Layer | Package examples | 2026-08 candidate line |
 | --- | --- | --- |
 | ROCm foundation | `therock-gfx1151`, `rocm-gfx1151`, split ROCm libraries | TheRock `7.14` in [W1](https://github.com/nisavid/arch-strix-halo-pkgs/issues/108) |
-| Host math and Python | `aocl-utils-gfx1151`, `aocl-libm-gfx1151`, `python-gfx1151` | CPython `3.14.7` in [W1](https://github.com/nisavid/arch-strix-halo-pkgs/issues/108); AOCL remains governed by current package evidence |
+| Host math and Python | `aocl-utils-gfx1151`, `aocl-libm-gfx1151`, `python-gfx1151` | CPython `3.14.8` in [W1](https://github.com/nisavid/arch-strix-halo-pkgs/issues/108); AOCL remains governed by current package evidence |
 | ML runtime | `python-pytorch-opt-rocm-gfx1151`, `python-triton-gfx1151`, `python-aotriton-gfx1151` | ROCm PyTorch `2.13`, exact ROCm Triton `3.8`, and AOTriton `0.13b` in [W2A](https://github.com/nisavid/arch-strix-halo-pkgs/issues/109) |
 | Inference engines | `python-vllm-rocm-gfx1151`, `python-amd-aiter-gfx1151`, `python-flash-attn-rocm-gfx1151` | TorchVision `0.28` and vLLM `0.27.1` in [W2A](https://github.com/nisavid/arch-strix-halo-pkgs/issues/111); AITER `0.1.19.post2` stays [experimental](https://github.com/nisavid/arch-strix-halo-pkgs/issues/119) |
 | Graph and quantization experiments | `python-torchao-rocm-gfx1151`, `python-torch-migraphx-gfx1151` | TorchAO `0.18.0` and Torch-MIGraphX `ef3f901` remain [nonblocking extensions](https://github.com/nisavid/arch-strix-halo-pkgs/issues/118) |
@@ -101,7 +101,7 @@ candidate records point to their repo-local GitHub issues, with
 [docs/backlog.md](docs/backlog.md) providing a compact discovery index.
 
 The 2026-08 convergence route is issue-primary. Its blocking candidate line is
-CPython `3.14.7`, TheRock `7.14`, ROCm PyTorch `2.13` with exact ROCm Triton
+CPython `3.14.8`, TheRock `7.14`, ROCm PyTorch `2.13` with exact ROCm Triton
 `3.8` and AOTriton `0.13b`, the selected Transformers `5.15` dependency
 closure, TorchVision `0.28`, vLLM `0.27.1`, llama.cpp `b10369` for both HIP and
 Vulkan, and the reviewed Lemonade fork selected after W0. These are candidates,

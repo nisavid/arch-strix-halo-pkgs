@@ -857,7 +857,9 @@ def test_committed_allowlist_is_valid_and_every_entry_is_explained():
     # Known real defects stay tracked by an issue rather than silently allowed.
     tracked = {e.package: e.issue for e in allow.needed + allow.runpath if e.issue}
     assert tracked["python-pytorch-opt-rocm-gfx1151"] == 109
-    assert tracked["amdsmi-gfx1151"] == 108
+    # TheRock 7.14.1-2 cured the F RUNPATH and NEEDED findings (#108), so no
+    # foundation entry may linger: verify would fail on it as stale.
+    assert not any(e.package.endswith("-gfx1151") and e.issue == 108 for e in allow.needed + allow.runpath)
 
 
 def test_verify_cli_uses_the_committed_allowlist_by_default():

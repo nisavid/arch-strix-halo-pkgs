@@ -1,6 +1,7 @@
 import json
-import re
 from pathlib import Path
+import re
+import tomllib
 
 import pytest
 
@@ -9,6 +10,7 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 REPO_PACKAGES = REPO_ROOT / "packages"
 PKGBUILD = REPO_ROOT / "packages/therock-gfx1151/PKGBUILD"
 MANIFEST = REPO_ROOT / "packages/therock-gfx1151/manifest.json"
+POLICY = REPO_ROOT / "policies/therock-packages.toml"
 MIGRAPHX_FILELIST = REPO_ROOT / "packages/therock-gfx1151/filelists/migraphx-gfx1151.txt"
 STAGE_MIGRAPHX = REPO_ROOT / "tools/stage_migraphx_for_therock.zsh"
 AMDSMI_PKGDIR = REPO_ROOT / "packages/therock-gfx1151/pkg/amdsmi-gfx1151"
@@ -17,30 +19,47 @@ MIGRAPHX_PKGDIR = REPO_ROOT / "packages/therock-gfx1151/pkg/migraphx-gfx1151"
 MIGRAPHX_PTH = MIGRAPHX_PKGDIR / "usr/lib/python3.14/site-packages/migraphx.pth"
 
 
+def load_policy() -> dict:
+    with POLICY.open("rb") as fh:
+        return tomllib.load(fh)
+
+
+def migraphx_policy() -> dict:
+    return load_policy()["packages"]["migraphx-gfx1151"]
+
+
+def split_protobuf_depend(depends: list[str]) -> tuple[list[str], list[str]]:
+    protobuf = [dep for dep in depends if re.fullmatch(r"libprotobuf\.so=\d+(\.\d+)*-64", dep)]
+    return [dep for dep in depends if dep not in protobuf], protobuf
+
+
 def test_migraphx_package_exports_python_import_hook():
     text = PKGBUILD.read_text()
-    assert "pkgrel=4" in text
+    repo = load_policy()["repo"]
+    assert f"pkgver='{repo['pkgver']}'\n" in text
+    assert f"pkgrel={repo['pkgrel']}\n" in text
     assert "package_migraphx-gfx1151()" in text
-    assert "depends=('abseil-cpp>=20260817.0' 'abseil-cpp<20260818' 'gcc-libs' 'glibc' 'hip-runtime-amd-gfx1151' 'miopen-hip-gfx1151' 'msgpack-cxx' 'libprotobuf.so=36.1.0-64' 'python-gfx1151' 'rocblas-gfx1151' 'rocm-core-gfx1151' 'sqlite')" in text
     assert "migraphx.pth" in text
     assert "import sqlite3" in text
     assert "/opt/rocm/lib" in text
 
+    # The protobuf soname depend is rendered from the staged ONNX parser, so
+    # its version follows the protobuf that MIGraphX was built against.
+    policy_depends = migraphx_policy()["depends"]
+    function = text[text.index("package_migraphx-gfx1151()") :]
+    rendered = re.search(r"^    depends=\((.*)\)$", function, re.MULTILINE).group(1)
+    rendered_rest, rendered_protobuf = split_protobuf_depend(re.findall(r"'([^']+)'", rendered))
+    assert sorted(rendered_rest) == sorted(policy_depends)
+    assert len(rendered_protobuf) == 1
+
     manifest = json.loads(MANIFEST.read_text())
-    assert manifest["packages"]["migraphx-gfx1151"]["depends"] == [
-        "abseil-cpp>=20260817.0",
-        "abseil-cpp<20260818",
-        "gcc-libs",
-        "glibc",
-        "hip-runtime-amd-gfx1151",
-        "miopen-hip-gfx1151",
-        "msgpack-cxx",
-        "libprotobuf.so=36.1.0-64",
-        "python-gfx1151",
-        "rocblas-gfx1151",
-        "rocm-core-gfx1151",
-        "sqlite",
-    ]
+    manifest_rest, manifest_protobuf = split_protobuf_depend(manifest["packages"]["migraphx-gfx1151"]["depends"])
+    assert sorted(manifest_rest) == sorted(policy_depends)
+    assert manifest_protobuf == rendered_protobuf
+    # The staged parsers link protobuf 36.1.0 and Abseil 2608.0.0; the package
+    # declares both.
+    assert rendered_protobuf == ["libprotobuf.so=36.1.0-64"]
+    assert {"abseil-cpp>=20260817.0", "abseil-cpp<20260818"} <= set(rendered_rest)
 
 
 def test_migraphx_filelist_contains_runtime_payload():
@@ -52,16 +71,11 @@ def test_migraphx_filelist_contains_runtime_payload():
 
 def test_migraphx_staging_pins_protobuf_36_1_and_abseil_2608_and_rejects_unpinned_sonames():
     text = STAGE_MIGRAPHX.read_text()
-    assert "typeset protobuf_dir=/usr/lib/cmake/protobuf" in text
     assert "typeset protobuf_soname=libprotobuf.so.36.1.0" in text
     assert "typeset utf8_validity_soname=libutf8_validity.so.36.1.0" in text
     assert "typeset abseil_soversion=2608.0.0" in text
     assert "-Dprotobuf_DIR=$protobuf_dir" in text
     assert "-Dabsl_DIR=$absl_dir" in text
-    assert 'local protobuf_lib_dir=${protobuf_dir%/cmake/protobuf}' in text
-    assert "read_soname $protobuf_lib_dir/libprotobuf.so" in text
-    assert "read_soname $protobuf_lib_dir/libutf8_validity.so" in text
-    assert "read_soname $protobuf_lib_dir/libabsl_base.so" in text
     # Every regular ELF the policy assigns to migraphx-gfx1151, not only the
     # parsers, may link only the pins.
     for unpinned in (
@@ -74,7 +88,6 @@ def test_migraphx_staging_pins_protobuf_36_1_and_abseil_2608_and_rejects_unpinne
     assert "classifier.classify(relpath) != package" in text
     assert 'fh.read(4) == b"\\x7fELF"' in text
     assert "(( $#payload >= migraphx_min_elfs ))" in text
-    assert "-name migraphx-driver" not in text
     assert "libmigraphx_onnx.so" in text
     assert "libmigraphx_tf.so" in text
     unpinned_check = text.index("staged MIGraphX payload links protobuf, utf8_validity, or Abseil other than")
@@ -100,13 +113,22 @@ def test_migraphx_depends_match_stage_script_sonames():
     assert abseil_soversion == f"{lts_date[2:6]}.0.0"
     assert ceiling == f"abseil-cpp<{int(lts_date) + 1}"
 
+    soname_depends = migraphx_policy()["soname_depends"]
+    assert soname_depends == [{"library": "opt/rocm/lib/migraphx/lib/libmigraphx_onnx.so", "needed": "libprotobuf.so"}]
+    assert "$stage/" + soname_depends[0]["library"] in text
+
 
 def test_rocprofiler_compute_manifest_tracks_runtime_dependencies():
     text = PKGBUILD.read_text()
     assert "package_rocprofiler-compute-gfx1151()" in text
     assert "depends=('gcc-libs' 'glibc' 'python-gfx1151' 'python-astunparse' 'python-numpy-gfx1151' 'python-pandas' 'python-pyyaml-gfx1151' 'python-sqlalchemy' 'python-tabulate' 'python-textual' 'rocprofiler-sdk-gfx1151' 'rocprofiler-systems-gfx1151')" in text
     assert "sed -i -e '/^dash-bootstrap-components==/d' -e '/^dash-svg==/d' -e '/^dash==/d' -e '/^plotext==/d' -e '/^plotille==/d' -e '/^textual_plotext==/d'" in text
-    assert 'ln -s ../libexec/rocprofiler-compute/rocprof-compute "${pkgdir}/opt/rocm/bin/rocprof-compute"' in text
+    # 7.14.1 ships its own bin/rocprof-compute launcher in the payload, so the
+    # package copies it and no longer synthesizes a symlink at that path.
+    assert "bin/rocprof-compute\"" not in text
+    filelists = REPO_ROOT / "packages/therock-gfx1151/filelists"
+    owners = [path.stem for path in filelists.glob("*.txt") if "opt/rocm/bin/rocprof-compute" in path.read_text().splitlines()]
+    assert owners == ["rocprofiler-compute-gfx1151"]
 
     manifest = json.loads(MANIFEST.read_text())
     assert manifest["packages"]["rocprofiler-compute-gfx1151"]["depends"] == [
@@ -232,3 +254,29 @@ def test_rocm_core_manifest_tracks_cachy_style_runtime_dependencies():
         "python-pyelftools",
         "python-yaml",
     ]
+
+
+def test_rocprofiler_sdk_depends_run_from_the_sdk_to_its_components():
+    text = PKGBUILD.read_text()
+    sdk = text[text.index("package_rocprofiler-sdk-gfx1151()") :]
+    assert "    depends=('rocprofiler-sdk-rocpd-gfx1151' 'rocprofiler-sdk-roctx-gfx1151')" in sdk[: sdk.index("\n}\n")]
+    manifest = json.loads(MANIFEST.read_text())["packages"]
+    assert manifest["rocprofiler-sdk-rocpd-gfx1151"]["depends"] == []
+    assert manifest["rocprofiler-sdk-roctx-gfx1151"]["depends"] == []
+
+
+def test_rendered_packages_rewrite_foreign_runpaths_and_check_every_package():
+    text = PKGBUILD.read_text()
+    assert "makedepends=('binutils' 'patchelf')" in text
+    rewrites = re.findall(r"^    patchelf --set-rpath '([^']+)' \"\$\{pkgdir\}/([^\"]+)\"$", text, re.MULTILINE)
+    objects = sorted(path for _runpath, path in rewrites)
+    assert len(objects) == len(set(objects)) == 28
+    assert "opt/rocm/bin/rocgdb-py3.14" in objects
+    assert "opt/rocm/lib/llvm/bin/llvm-omp-kernel-replay" in objects
+    assert all("/__w/" not in runpath and "/opt/python-shared" not in runpath for runpath, _path in rewrites)
+    for path in objects:
+        owner = [p.stem for p in (REPO_ROOT / "packages/therock-gfx1151/filelists").glob("*.txt") if path in p.read_text().splitlines()]
+        assert len(owner) == 1, path
+    # Every package that copies payload ends by checking its search paths.
+    copying = re.findall(r"^    _copy_from_filelist '([^']+)'$", text, re.MULTILINE)
+    assert text.count("\n    _check_search_paths\n") == len(copying)
