@@ -414,6 +414,9 @@ LEMONADE_LLAMACPP_ROCM_BIN = "/usr/bin/llama-server-hip-gfx1151"
 KOKOROS_PACKAGE = "kokoros-gfx1151"
 KOKOROS_INSTALL_ROOT = f"/opt/{KOKOROS_PACKAGE}"
 LEMONADE_KOKORO_CPU_BIN = f"{KOKOROS_INSTALL_ROOT}/koko"
+# koko downloads kokoro-v1.0.onnx and voices-v1.0.bin when they are missing.
+# This patch turns that into an error, so the kokoros template requires it.
+KOKOROS_FAIL_CLOSED_PATCH = "0001-koko-fail-closed-on-missing-model-files.patch"
 LEMONADE_LLAMACPP_VULKAN_BIN = "/usr/bin/llama-server-vulkan-gfx1151"
 # Connections to the loopback discard port are refused, so a model registry
 # request sent here fails at once instead of reaching the network.
@@ -1117,11 +1120,30 @@ EOF
             print(f"KOKOROS_CARGO_LOCK: {package_name} needs a cargo_lock_sha256", file=sys.stderr)
             print("HINT: record the sha256 of the pinned source's Cargo.lock in policies/recipe-packages.toml.", file=sys.stderr)
             raise SystemExit(2)
+        source_patches = policy_pkg.get("source_patches", [])
+        if KOKOROS_FAIL_CLOSED_PATCH not in source_patches:
+            print(f"KOKOROS_MODEL_FETCH: {package_name} must carry {KOKOROS_FAIL_CLOSED_PATCH}", file=sys.stderr)
+            print("HINT: the patch stops koko from downloading missing model and voice files; list it in source_patches.", file=sys.stderr)
+            raise SystemExit(2)
         install_root = KOKOROS_INSTALL_ROOT
+        for patch_name in source_patches:
+            prepare_lines.extend(
+                [
+                    f'if ! patch --dry-run -R -Np1 -i "$srcdir/{patch_name}" >/dev/null 2>&1; then',
+                    f'  patch -Np1 -i "$srcdir/{patch_name}"',
+                    "fi",
+                ]
+            )
         prepare_lines.extend(
             [
-                "# The source archive digest already covers Cargo.lock; checking it here",
-                "# ties the fetched crate set to the reviewed lockfile.",
+                "# Fail closed if koko can still download a missing model or voices file.",
+                "if grep -q download_file_from_url kokoros/src/tts/koko.rs; then",
+                '  echo "KOKOROS_MODEL_FETCH: koko still downloads missing model or voices files" >&2',
+                "  return 1",
+                "fi",
+                "# The source archive digest already covers Cargo.lock; checking it after",
+                "# the patches ties the fetched crate set to the reviewed lockfile and shows",
+                "# that the patches left it alone.",
                 f"printf '%s  Cargo.lock\\n' '{cargo_lock_sha256}' | sha256sum --check --quiet -",
                 'export CARGO_HOME="$srcdir/.cargo"',
                 'cargo fetch --locked --target "$(rustc --print host-tuple)"',

@@ -102,6 +102,26 @@ carries the schema's `Field 'token_logits':` prefix.
   - Keeps model-specific token selection in downstream service configuration
     instead of encoding a rerank model assumption in the backend packages.
 
+## Kokoros
+
+The patch applies to lemonade-sdk/Kokoros b17 (`d122b52`), the `kokoro.cpu`
+release that Lemonade pins.
+
+- [Fail closed when a model or voices file is missing](../packages/kokoros-gfx1151/0001-koko-fail-closed-on-missing-model-files.patch)
+  - Upstream koko downloads `kokoro-v1.0.onnx` and `voices-v1.0.bin` from
+    the thewh1teagle/kokoro-onnx GitHub release when the paths it is given do
+    not exist. The patch turns both downloads, in `TTSKoko` and
+    `TTSKokoParallel`, into a panic that names the missing file, so a missing
+    file is an error and never a network fetch (owner decision, 2026-10-18).
+  - It changes only `kokoros/src/tts/koko.rs`. The download helper and the
+    `reqwest` dependency stay, so `Cargo.toml` and `Cargo.lock` are unchanged
+    and `cargo fetch --locked` and `cargo build --frozen` still hold.
+  - The renderer refuses to render `kokoros-gfx1151` without the patch, and
+    `prepare()` fails if `koko.rs` still calls `download_file_from_url` after
+    patching. [#107](https://github.com/nisavid/arch-strix-halo-pkgs/issues/107)
+    still has to prove on the installed stack that absent files fail without
+    network egress.
+
 ## vLLM
 
 - [ROCm local carry re-ported for vLLM 0.30.0](../packages/python-vllm-rocm-gfx1151/0016-rocm-refresh-local-carry-for-vllm-0.30.0.patch)

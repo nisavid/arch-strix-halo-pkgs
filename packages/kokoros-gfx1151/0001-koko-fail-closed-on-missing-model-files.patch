@@ -1,0 +1,79 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Strix Halo Packaging <packaging@example.invalid>
+Date: Sun, 18 Oct 2026 00:00:00 +0000
+Subject: [PATCH] koko: fail closed when a model or voices file is missing
+
+TTSKoko::from_config and TTSKokoParallel::from_config_with_instances
+download kokoro-v1.0.onnx and voices-v1.0.bin from the kokoro-onnx GitHub
+release when the path they are given does not exist. kokoros-gfx1151 keeps
+model and voice files out of the package and never fetches them at run time,
+so turn both fallbacks into a panic that names the missing file. The download
+helper and the reqwest dependency stay in place, so Cargo.toml and Cargo.lock
+do not change.
+---
+ kokoros/src/tts/koko.rs | 31 ++++++++++++++++++-------------
+ 1 file changed, 18 insertions(+), 13 deletions(-)
+
+diff --git a/kokoros/src/tts/koko.rs b/kokoros/src/tts/koko.rs
+index 701d975..d127d57 100644
+--- a/kokoros/src/tts/koko.rs
++++ b/kokoros/src/tts/koko.rs
+@@ -1,6 +1,5 @@
+ use crate::onn::ort_koko::{self, ModelStrategy};
+ use crate::tts::tokenize::tokenize;
+-use crate::utils;
+ use crate::utils::debug::format_debug_prefix;
+ use lazy_static::lazy_static;
+ use ndarray::Array3;
+@@ -107,16 +106,19 @@
+     }
+ 
+     pub async fn from_config(model_path: &str, voices_path: &str, cfg: InitConfig) -> Self {
++        // kokoros-gfx1151: a missing model or voices file is an error, never a download.
+         if !Path::new(model_path).exists() {
+-            utils::fileio::download_file_from_url(cfg.model_url.as_str(), model_path)
+-                .await
+-                .expect("download model failed.");
++            panic!(
++                "model file {model_path} is missing; this build never downloads it (upstream fallback: {})",
++                cfg.model_url
++            );
+         }
+ 
+         if !Path::new(voices_path).exists() {
+-            utils::fileio::download_file_from_url(cfg.voices_url.as_str(), voices_path)
+-                .await
+-                .expect("download voices data file failed.");
++            panic!(
++                "voices file {voices_path} is missing; this build never downloads it (upstream fallback: {})",
++                cfg.voices_url
++            );
+         }
+ 
+         let model = Arc::new(Mutex::new(
+@@ -1071,16 +1073,19 @@
+         cfg: InitConfig,
+         num_instances: usize,
+     ) -> Self {
++        // kokoros-gfx1151: a missing model or voices file is an error, never a download.
+         if !Path::new(model_path).exists() {
+-            utils::fileio::download_file_from_url(cfg.model_url.as_str(), model_path)
+-                .await
+-                .expect("download model failed.");
++            panic!(
++                "model file {model_path} is missing; this build never downloads it (upstream fallback: {})",
++                cfg.model_url
++            );
+         }
+ 
+         if !Path::new(voices_path).exists() {
+-            utils::fileio::download_file_from_url(cfg.voices_url.as_str(), voices_path)
+-                .await
+-                .expect("download voices data file failed.");
++            panic!(
++                "voices file {voices_path} is missing; this build never downloads it (upstream fallback: {})",
++                cfg.voices_url
++            );
+         }
+ 
+         // Create multiple ONNX model instances

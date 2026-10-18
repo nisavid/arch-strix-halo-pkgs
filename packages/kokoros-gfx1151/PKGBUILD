@@ -18,14 +18,23 @@ options=()
 provides=()
 conflicts=()
 replaces=()
-source=(Kokoros-d122b52e0ee0a90df26fd041620af36f99e2248a.tar.gz::https://github.com/lemonade-sdk/Kokoros/archive/d122b52e0ee0a90df26fd041620af36f99e2248a.tar.gz)
-sha256sums=(2bcc95b4b1a7e0ff1f985e7c684d65df52a955ae66dcd601d0c1e3205daae4fd)
+source=(Kokoros-d122b52e0ee0a90df26fd041620af36f99e2248a.tar.gz::https://github.com/lemonade-sdk/Kokoros/archive/d122b52e0ee0a90df26fd041620af36f99e2248a.tar.gz 0001-koko-fail-closed-on-missing-model-files.patch)
+sha256sums=(2bcc95b4b1a7e0ff1f985e7c684d65df52a955ae66dcd601d0c1e3205daae4fd fadf78d1ada022d50fbe218da9069b2a57d0bb804b3c7f9fcbbef298dcb7b2d3)
 
 prepare() {
   cd "$srcdir/Kokoros-d122b52e0ee0a90df26fd041620af36f99e2248a"
 
-  # The source archive digest already covers Cargo.lock; checking it here
-  # ties the fetched crate set to the reviewed lockfile.
+  if ! patch --dry-run -R -Np1 -i "$srcdir/0001-koko-fail-closed-on-missing-model-files.patch" >/dev/null 2>&1; then
+    patch -Np1 -i "$srcdir/0001-koko-fail-closed-on-missing-model-files.patch"
+  fi
+  # Fail closed if koko can still download a missing model or voices file.
+  if grep -q download_file_from_url kokoros/src/tts/koko.rs; then
+    echo "KOKOROS_MODEL_FETCH: koko still downloads missing model or voices files" >&2
+    return 1
+  fi
+  # The source archive digest already covers Cargo.lock; checking it after
+  # the patches ties the fetched crate set to the reviewed lockfile and shows
+  # that the patches left it alone.
   printf '%s  Cargo.lock\n' 'd3cd1b8abd00b49cb5fd07f4e6cd415f6d224655e878b738c7cb3a7e2bb938cc' | sha256sum --check --quiet -
   export CARGO_HOME="$srcdir/.cargo"
   cargo fetch --locked --target "$(rustc --print host-tuple)"

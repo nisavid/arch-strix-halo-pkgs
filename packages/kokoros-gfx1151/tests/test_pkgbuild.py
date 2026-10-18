@@ -1,3 +1,4 @@
+import hashlib
 import json
 import re
 from pathlib import Path
@@ -15,6 +16,7 @@ EXPECTED_COMMIT = "d122b52e0ee0a90df26fd041620af36f99e2248a"
 EXPECTED_ARCHIVE_SHA256 = "2bcc95b4b1a7e0ff1f985e7c684d65df52a955ae66dcd601d0c1e3205daae4fd"
 EXPECTED_CARGO_LOCK_SHA256 = "d3cd1b8abd00b49cb5fd07f4e6cd415f6d224655e878b738c7cb3a7e2bb938cc"
 INSTALL_ROOT = "/opt/kokoros-gfx1151"
+FAIL_CLOSED_PATCH = "0001-koko-fail-closed-on-missing-model-files.patch"
 
 
 def _array(text, key):
@@ -32,14 +34,50 @@ def _function(text, name):
 def test_pkgbuild_pins_the_kokoros_source_archive_and_lockfile():
     text = PKGBUILD.read_text()
     assert re.search(rf"^pkgver={EXPECTED_VERSION}$", text, re.MULTILINE)
-    assert _array(text, "source") == [
+    assert _array(text, "source")[0] == (
         f"Kokoros-{EXPECTED_COMMIT}.tar.gz::https://github.com/lemonade-sdk/Kokoros/archive/{EXPECTED_COMMIT}.tar.gz"
-    ]
-    assert _array(text, "sha256sums") == [EXPECTED_ARCHIVE_SHA256]
+    )
+    assert _array(text, "sha256sums")[0] == EXPECTED_ARCHIVE_SHA256
     prepare = _function(text, "prepare")
     assert f"'{EXPECTED_CARGO_LOCK_SHA256}' | sha256sum --check --quiet -" in prepare
     assert prepare.index("sha256sum --check") < prepare.index("cargo fetch --locked")
     assert 'cargo fetch --locked --target "$(rustc --print host-tuple)"' in prepare
+
+
+def test_fail_closed_model_patch_is_listed_checksummed_and_applied():
+    text = PKGBUILD.read_text()
+    patch_path = PACKAGE_DIR / FAIL_CLOSED_PATCH
+    assert _array(text, "source") == [_array(text, "source")[0], FAIL_CLOSED_PATCH]
+    assert _array(text, "sha256sums") == [
+        EXPECTED_ARCHIVE_SHA256,
+        hashlib.sha256(patch_path.read_bytes()).hexdigest(),
+    ]
+    recipe = json.loads(RECIPE_JSON.read_text())
+    assert recipe["maintenance"]["source_patches"] == [FAIL_CLOSED_PATCH]
+    prepare = _function(text, "prepare")
+    apply = f'  patch -Np1 -i "$srcdir/{FAIL_CLOSED_PATCH}"'
+    assert apply in prepare
+    # The patch lands before the lockfile check and the crate fetch, and
+    # prepare() refuses a tree where koko can still download.
+    sentinel = "if grep -q download_file_from_url kokoros/src/tts/koko.rs; then"
+    assert prepare.index(apply) < prepare.index(sentinel) < prepare.index("sha256sum --check")
+    assert prepare.index("sha256sum --check") < prepare.index("cargo fetch --locked")
+    assert "KOKOROS_MODEL_FETCH" in prepare
+    assert "return 1" in prepare[prepare.index(sentinel):]
+
+
+def test_fail_closed_model_patch_replaces_every_download_with_an_error():
+    patch = (PACKAGE_DIR / FAIL_CLOSED_PATCH).read_text()
+    targets = re.findall(r"^diff --git a/(\S+) b/", patch, re.MULTILINE)
+    # Only koko.rs changes; Cargo.toml and Cargo.lock stay untouched, so
+    # cargo fetch --locked and cargo build --frozen still hold.
+    assert targets == ["kokoros/src/tts/koko.rs"]
+    removed = [line for line in patch.splitlines() if line.startswith("-") and not line.startswith("---")]
+    added = [line for line in patch.splitlines() if line.startswith("+") and not line.startswith("+++")]
+    assert sum("download_file_from_url" in line for line in removed) == 4
+    assert not any("download_file_from_url" in line or "reqwest" in line for line in added)
+    assert sum("panic!(" in line for line in added) == 4
+    assert sum("is missing; this build never downloads it" in line for line in added) == 4
 
 
 def test_build_is_frozen_offline_and_never_downloads_onnxruntime_or_sonic():
@@ -115,6 +153,8 @@ def test_recipe_records_no_reference_and_the_open_runtime_gates():
     assert "untested" in notes and "installed smoke test must prove" in notes
     assert "confirmed only at build time" in notes
     assert "kokoro-v1.0.onnx" in notes and "voices-v1.0.bin" in notes and "#107" in notes
+    assert f"{FAIL_CLOSED_PATCH} removes that fallback" in notes
+    assert "absent files fail without egress" in notes
     readme = README.read_text()
     assert "kokoro-v1.0.onnx and voices-v1.0.bin" in readme
     assert "C API version 23" in readme

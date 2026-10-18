@@ -796,9 +796,42 @@ def _kokoros_policy(**overrides) -> dict:
         "source_refs": ["Kokoros-abc.tar.gz::https://github.com/lemonade-sdk/Kokoros/archive/abc.tar.gz"],
         "sha256sums": ["a" * 64],
         "cargo_lock_sha256": "c" * 64,
+        "source_patches": [render_recipe_scaffolds.KOKOROS_FAIL_CLOSED_PATCH],
+        "extra_sha256sums": ["d" * 64],
     }
     policy.update(overrides)
     return policy
+
+
+def test_kokoros_renderer_refuses_to_drop_the_fail_closed_model_patch(capsys) -> None:
+    with pytest.raises(SystemExit) as excinfo:
+        render_recipe_scaffolds.render_pkgbuild(
+            "kokoros-gfx1151",
+            _kokoros_policy(source_patches=[], extra_sha256sums=[]),
+            LLAMACPP_RECIPE_FIXTURE,
+            "b17",
+            RENDER_DEFAULTS_FIXTURE,
+        )
+
+    assert excinfo.value.code == 2
+    assert "KOKOROS_MODEL_FETCH" in capsys.readouterr().err
+
+
+def test_kokoros_renderer_applies_the_fail_closed_patch_before_fetching_crates() -> None:
+    pkgbuild = render_recipe_scaffolds.render_pkgbuild(
+        "kokoros-gfx1151",
+        _kokoros_policy(),
+        LLAMACPP_RECIPE_FIXTURE,
+        "b17",
+        RENDER_DEFAULTS_FIXTURE,
+    )
+    patch = render_recipe_scaffolds.KOKOROS_FAIL_CLOSED_PATCH
+
+    assert f"source=(Kokoros-abc.tar.gz::https://github.com/lemonade-sdk/Kokoros/archive/abc.tar.gz {patch})" in pkgbuild
+    assert f"sha256sums=({'a' * 64} {'d' * 64})" in pkgbuild
+    apply = pkgbuild.index(f'patch -Np1 -i "$srcdir/{patch}"')
+    sentinel = pkgbuild.index("if grep -q download_file_from_url kokoros/src/tts/koko.rs; then")
+    assert apply < sentinel < pkgbuild.index("sha256sum --check") < pkgbuild.index("cargo fetch --locked")
 
 
 def test_kokoros_renderer_refuses_a_missing_lockfile_digest(capsys) -> None:
