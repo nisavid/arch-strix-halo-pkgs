@@ -4,6 +4,32 @@ The package, deployment, and live-validation narrative below remains a
 2026-06-15 snapshot. Dated records come first, newest first; older
 reconciliations remain as dated history.
 
+## 2026-10-17 Freshness Disposition Preparation
+
+Four new observations are tracked at
+[post-closeout source assessment](https://github.com/nisavid/arch-strix-halo-pkgs/issues/147):
+Pillow `13.0.0`, ROCm PyTorch release/2.12 head
+`69ea9a324c7afde337d5667069ab2d1e1fd688f5`, stable-diffusion.cpp master
+`f0aac524d3f29140e60ba78f3cfb16d6acea87db`, and matching Transformers
+PyPI/tag release `5.20.1`. The independent Pillow and PyTorch Arch
+baselines and stable-diffusion.cpp AUR baseline are bound separately.
+Earlier records and C's selected sources and validation gates remain unchanged.
+
+The read-only discovery sweep completed at `2026-10-18T01:37:57Z`
+(October 17 locally) against committed assessment revision `795db6f`.
+It included the pending Kokoro runtime family and reported 52 families:
+36 tracked, six rejected, five current, and five requiring disposition,
+with no provider failure. These four records belong to existing families;
+the separate Kokoro `b21` observation belongs with the change introducing
+that family, not this metadata increment.
+
+The confirming sweep and final joined tracker validation remain open until
+the canonical-family ledger and Kokoro record are integrated. This is not
+a completed freshness gate. No package source, version, build,
+deployment/installation, installed smoke, server, GPU, or live-scenario
+state changed. Release contents, security applicability, dependency and
+patch effects, and runtime behavior remain unassessed.
+
 ## 2026-10-16 Freshness Dispositions and Confirming Sweep
 
 The daily metadata sweep adds five candidate records without changing C's
