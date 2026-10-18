@@ -283,6 +283,7 @@ Current package-lane catalog:
 | ROCm/framework source lane | `python-pytorch-opt-rocm-gfx1151`, `python-triton-gfx1151`, `python-aotriton-gfx1151`, `python-amd-aiter-gfx1151` | upstream branch/tag, candidate or scout branch refs, ROCm compatibility notes, package patches |
 | Monorepo commit/release lane | `llama.cpp-hip-gfx1151`, `llama.cpp-vulkan-gfx1151`, `lemonade-server`, `lemonade-app` | upstream release/tag, recorded source revision, backend/runtime docs |
 | CMake engine source lane | `stable-diffusion.cpp-vulkan-gfx1151` | pinned upstream commit, recursive submodules, AUR backend package, Blackcat recipe notes, package-local source patches, installed wrapper smoke |
+| Cargo-locked Rust source lane | `kokoros-gfx1151` | the `kokoro.cpu` pin in Lemonade's `backend_versions.json` at the packaged Lemonade commit, archive sha256 and `cargo_lock_sha256`, the fail-closed model-download patch, build-time network fetches (ort-sys, sonic), crate and bundled-component licence audit, package README |
 | Recipe-first or meta lane | `aocl-libm-gfx1151`, `lemonade` | Blackcat Informatics recipe input, local package closure, generated metadata |
 
 Keep this table open-ended. When a new package class appears, add the lane
