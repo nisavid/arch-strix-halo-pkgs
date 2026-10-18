@@ -537,10 +537,10 @@ provides = ["rocm-host-math"]
 [packages."rocm-sysdeps-gfx1151"]
 desc = "Bundled system dependency payload from TheRock for gfx1151"
 provides = ["rocm-sysdeps"]
-# xmlwf's second RUNPATH entry is the CI expat stage; the bundled expat is in
-# ../lib.
+# xmlwf's RUNPATH is $ORIGIN plus the CI expat stage; keep $ORIGIN and add
+# ../lib, where the bundled expat is.
 runpath_rewrites = [
-  { object = "opt/rocm/lib/rocm_sysdeps/bin/xmlwf", runpath = "$ORIGIN/../lib" },
+  { object = "opt/rocm/lib/rocm_sysdeps/bin/xmlwf", runpath = "$ORIGIN:$ORIGIN/../lib" },
 ]
 
 [packages."mivisionx-gfx1151"]

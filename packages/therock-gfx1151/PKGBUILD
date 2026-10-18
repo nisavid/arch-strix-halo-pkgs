@@ -853,7 +853,7 @@ package_rocm-sysdeps-gfx1151() {
     depends=()
     _require_therock_root
     _copy_from_filelist 'rocm-sysdeps-gfx1151'
-    patchelf --set-rpath '$ORIGIN/../lib' "${pkgdir}/opt/rocm/lib/rocm_sysdeps/bin/xmlwf"
+    patchelf --set-rpath '$ORIGIN:$ORIGIN/../lib' "${pkgdir}/opt/rocm/lib/rocm_sysdeps/bin/xmlwf"
     _check_search_paths
 }
 
