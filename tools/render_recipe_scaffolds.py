@@ -2260,7 +2260,7 @@ def render_recipe_json(package_name: str, policy_pkg: dict, recipe_pkg: dict, ve
         "pkgver": version,
         "policy": rendered_policy,
         "recipe": {
-            "repo": recipe_pkg.get("repo"),
+            "repo": policy_pkg.get("repo") or recipe_pkg.get("repo"),
             "branch": recipe_branch,
             "src_dir": rendered_src_dir,
             "method": recipe_pkg.get("method"),

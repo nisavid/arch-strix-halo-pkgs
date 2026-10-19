@@ -22,6 +22,15 @@ resolve the recipe root in this order:
 Use an override only when you are intentionally comparing against a different
 recipe checkout.
 
+## Effective Package Source Metadata
+
+Generated `recipe.json` uses the package policy's nonempty `repo` when supplied
+and the input recipe's repository otherwise, matching the package README. An explicit
+`recipe_branch_override` describes the effective source lane at that origin;
+keep the origin and branch coherent when consuming a fork. The immutable build
+selection remains in `policy.source_refs`. The separate `provenance` fields
+identify the recipe-input repository and revision, not the selected build source.
+
 ## When To Update The Submodule
 
 Update `upstream/ai-notes` when:

@@ -115,6 +115,7 @@ src_subdir = "sample"
     assert "pkgver=1.2.3\n" in pkgbuild
     assert ".r1." not in pkgbuild
     assert recipe_json["pkgver"] == "1.2.3"
+    assert recipe_json["recipe"]["repo"] == "https://example.invalid/sample.git"
     assert recipe_json["provenance"]["recipe_commit"] == recipe_commit
     assert recipe_json["provenance"]["recipe_history_count"] == 1
     assert "- Package version: `1.2.3`" in readme
@@ -1849,6 +1850,12 @@ def test_cli_renders_the_delivered_binding_source_for_server_and_app(tmp_path: P
         assert f"'{source}'" in pkgbuild
         assert "pkgver=11.9.0\n" in pkgbuild
         assert "pkgrel=3\n" in pkgbuild
+        recipe_json = json.loads(
+            (output_root / package / "recipe.json").read_text(encoding="utf-8")
+        )
+        assert recipe_json["recipe"]["repo"] == "https://github.com/nisavid/lemonade.git"
+        assert recipe_json["recipe"]["branch"] == "nisavid/v11.9.0-backports"
+        assert recipe_json["policy"]["source_refs"] == [source]
 
 
 def test_cli_keeps_packaged_engines_without_household_defaults(tmp_path: Path) -> None:

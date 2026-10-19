@@ -170,7 +170,7 @@
     "notes": "Lemonade is a unified inference server wrapping llama.cpp (GPU/CPU),\nFLM (NPU), and ONNX backends behind an OpenAI-compatible API.\n\nThe project split in v10: the git repo (v10.0.0) is a C++ server,\nwhile the Python SDK is published separately as lemonade-sdk on PyPI\n(v9.1.4). The SDK handles llama-server process management, model\ndownloads, .env loading, and hardware detection.\n\nVersion pin fixes: lemonade-sdk pins huggingface-hub==0.33.0,\nonnx==1.18.0, transformers<=4.53.2 which conflict with vLLM.\nReinstalling at compatible versions resolves conflicts.",
     "patches": [],
     "phase": "I",
-    "repo": "https://github.com/lemonade-sdk/lemonade.git",
+    "repo": "https://github.com/nisavid/lemonade.git",
     "src_dir": "lemonade",
     "steps": [
       34,
