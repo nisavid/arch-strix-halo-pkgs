@@ -355,7 +355,8 @@ def test_meta_package_records_its_pin_rule():
     notes = " ".join(recipe["maintenance"]["update_notes"])
     # Server and app pin pkgrel; the backends and Kokoros pin only the version.
     assert "pinned to pkgver and pkgrel (=11.9.0-2)" in notes
-    assert "with any pkgrel, by owner decision on 2026-10-17" in notes
+    assert "(=0.4.1) are pinned to the upstream version with any pkgrel by owner decision on 2026-10-17" in notes
+    assert "kokoros-gfx1151 (=b17) follows the same rule by owner decision on 2026-10-19" in notes
     assert "must update these depends in the same change" in notes
 
 
