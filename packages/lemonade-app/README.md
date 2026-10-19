@@ -11,9 +11,9 @@
 - Recipe revision: `3f15f9f (20260508, 17 commits touching recipe path)`
 - Recipe steps: `34, 35, 36`
 - Recipe dependencies: `therock, llamacpp`
-- Recorded reference packages: `aur/lemonade-desktop, aur/lemonade-server`
-- Authoritative reference package: `aur/lemonade-desktop`
-- Advisory reference packages: `aur/lemonade-server`
+- Recorded reference packages: `extra/lemonade-desktop, extra/lemonade-server`
+- Authoritative reference package: `extra/lemonade-desktop`
+- Advisory reference packages: `extra/lemonade-server`
 - Applied source patch files/actions: `1`
 
 ## Recipe notes
@@ -46,7 +46,7 @@ Reinstalling at compatible versions resolves conflicts.
 ## Update Notes
 
 - Keep the selected v11.9.0 binding-backport source coupled with lemonade-server; use the closest desktop/app packages as packaging comparisons, not automatic source selections.
-- Keep the provides/conflicts story accurate while Arch/AUR naming remains in transition.
+- Keep lemonade-desktop compatibility aligned with Arch's official split package while the local payload remains lemonade-app.
 - On 2026-05-26, adopted nisavid/lemonade fork main 13b1af25f84cf08ad5f8bf0ec58980bdfc09c9e7 so base llamacpp model options do not show reranking adapter controls.
 - On 2026-06-15, adopted nisavid/lemonade fork main e18b9c1e352df8ab5aff2ff353402f1ec77c47f2, which syncs upstream Lemonade v10.7.0.
 - On 2026-09-22, repinned the source to nisavid/lemonade fork main at Lemonade 11.7.0, together with lemonade-server through the lemonade entry in [source_pins]; the fork commit contains upstream v11.7.0 (2b6a7d7). The Tauri glib patch applies unchanged. Issue 137 pins the frozen fork commit 3d5991033; issue 139 tracks the build, publish, install, and host validation.

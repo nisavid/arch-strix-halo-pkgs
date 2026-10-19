@@ -397,11 +397,6 @@ def preserved_pkgrel(package_name: str, version: str) -> int:
 
 LEMONADE_LLAMACPP_ROCM_BIN = "/usr/bin/llama-server-hip-gfx1151"
 LEMONADE_LLAMACPP_VULKAN_BIN = "/usr/bin/llama-server-vulkan-gfx1151"
-# Connections to the loopback discard port are refused, so a model registry
-# request sent here fails at once instead of reaching the network.
-LEMONADE_BLACKHOLE_ENDPOINT = "http://127.0.0.1:9"
-
-
 LEMONADE_LLAMACPP_ENV_FILE = "/usr/lib/lemonade/llamacpp-gfx1151.env"
 
 
@@ -438,8 +433,7 @@ def lemonade_env_files_dropin_lines() -> list[str]:
     return [
         "# lemonade-server owns the whole EnvironmentFile= list of lemond.service.",
         "# systemd reads the files in this order, a later file overrides an earlier",
-        "# one, and any EnvironmentFile= value overrides an Environment= value, such",
-        "# as the 20-no-remote-model-fetch.conf blackholes.",
+        "# one. EnvironmentFile= values also override Environment= values.",
         "[Service]",
         "# Clear the list first. systemd keeps a repeated path at its first position,",
         "# so listing upstream's /etc/default/lemond again without this reset would",
@@ -486,20 +480,8 @@ def lemonade_distro_defaults() -> dict:
     host.
     """
     return {
-        "offline": True,
         "no_fetch_executables": True,
-        # Upstream's default already; pinned so an upstream flip cannot turn
-        # on implicit model updates.
-        "auto_update_models": False,
-        # Pins count toward residency, so a slot limit would refuse every new
-        # load once the pins fill it; the GTT-aware occupancy budget is the
-        # admission bound instead.
-        "max_loaded_models": -1,
         "llamacpp": {
-            # --no-mmap in the llama.cpp args stops lemond from adding its
-            # iGPU "--load-mode none" default, a flag the packaged llama.cpp
-            # does not accept.
-            "args": "--no-mmap",
             "backend": "rocm",
             "prefer_system": False,
             "rocm_bin": LEMONADE_LLAMACPP_ROCM_BIN,
@@ -554,15 +536,6 @@ def lemond_unit_check_snippet() -> str:
   fi
 }
 """
-
-
-def lemonade_no_remote_model_fetch_dropin_lines() -> list[str]:
-    return [
-        "[Service]",
-        f"Environment=HF_ENDPOINT={LEMONADE_BLACKHOLE_ENDPOINT}",
-        f"Environment=MODELSCOPE_ENDPOINT={LEMONADE_BLACKHOLE_ENDPOINT}",
-        f"Environment=MODEL_ENDPOINT={LEMONADE_BLACKHOLE_ENDPOINT}",
-    ]
 
 
 def render_method_body(package_name: str, policy_pkg: dict, recipe_pkg: dict) -> tuple[str, str, str]:
@@ -917,15 +890,6 @@ EOF
   # overlay. lemond merges it over the built-in defaults and under config.json.
   install -Dm644 /dev/stdin "$pkgdir/usr/share/lemonade/defaults.json" <<'EOF'
 {json.dumps(lemonade_distro_defaults(), indent=2, sort_keys=True)}
-EOF
-
-  # Send Hugging Face and ModelScope requests from lemond and its llama-server
-  # children to a refused loopback port, so no model is fetched implicitly.
-  # llama-server reads MODEL_ENDPOINT ahead of HF_ENDPOINT, so set both.
-  # An owner env file can still override these on purpose, because systemd
-  # applies EnvironmentFile= after Environment=.
-  install -Dm644 /dev/stdin "$pkgdir/usr/lib/systemd/system/lemond.service.d/20-no-remote-model-fetch.conf" <<'EOF'
-{chr(10).join(lemonade_no_remote_model_fetch_dropin_lines())}
 EOF
 
   # Own the whole EnvironmentFile= order: conf.d, then /etc/default/lemond,

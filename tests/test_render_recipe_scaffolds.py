@@ -1851,6 +1851,41 @@ def test_cli_renders_the_delivered_binding_source_for_server_and_app(tmp_path: P
         assert "pkgrel=3\n" in pkgbuild
 
 
+def test_cli_keeps_packaged_engines_without_household_defaults(tmp_path: Path) -> None:
+    recipe_root = tmp_path / "recipes"
+    init_recipe_repo(recipe_root, package_key="lemonade")
+    output_root = tmp_path / "packages"
+    result = subprocess.run(
+        [sys.executable, str(MODULE_PATH), "--recipe-root", str(recipe_root),
+         "--output-root", str(output_root), "--only", "lemonade-server"],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+    assert result.returncode == 0, result.stderr
+    pkgbuild = (output_root / "lemonade-server/PKGBUILD").read_text(encoding="utf-8")
+    defaults = re.search(
+        r'/usr/share/lemonade/defaults\.json" <<\'EOF\'\n(.*?)\nEOF\n',
+        pkgbuild,
+        re.DOTALL,
+    )
+    assert defaults is not None
+    assert json.loads(defaults.group(1)) == {
+        "no_fetch_executables": True,
+        "llamacpp": {
+            "backend": "rocm",
+            "prefer_system": False,
+            "rocm_bin": "/usr/bin/llama-server-hip-gfx1151",
+            "vulkan_bin": "/usr/bin/llama-server-vulkan-gfx1151",
+        },
+    }
+    assert "20-no-remote-model-fetch.conf" not in pkgbuild
+    for endpoint in ("HF_ENDPOINT", "MODELSCOPE_ENDPOINT", "MODEL_ENDPOINT"):
+        assert f"Environment={endpoint}=" not in pkgbuild
+
+
 @pytest.mark.parametrize(
     ("makeflags", "expected"),
     [

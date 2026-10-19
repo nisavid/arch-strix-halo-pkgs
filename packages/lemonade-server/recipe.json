@@ -1,14 +1,14 @@
 {
   "maintenance": {
     "advisory_references": [
-      "aur/lemonade-desktop"
+      "extra/lemonade-desktop"
     ],
-    "authoritative_reference": "aur/lemonade-server",
+    "authoritative_reference": "extra/lemonade-server",
     "divergence_notes": [
       "This custom build treats the ROCm and Vulkan llama.cpp backends as packaged system-managed backends rather than Lemonade-managed runtime downloads.",
       "Carries local patches for Linux XDNA2 detection and the system-managed llama.cpp backend story that are specific to this Strix Halo packaging lane.",
       "Builds from the nisavid/lemonade fork so this package can consume local upstream fixes before they are available from the canonical Lemonade repository.",
-      "Ships offline, no-fetch distro defaults and a systemd drop-in that points the Hugging Face, ModelScope, and llama.cpp model endpoints (HF_ENDPOINT, MODELSCOPE_ENDPOINT, and MODEL_ENDPOINT) at a refused loopback port, so lemond does not download models or backend executables on its own."
+      "Keeps upstream defaults except for packaged engine paths, backend selection, and no_fetch_executables=true. Model downloads, update preferences, loaded-model limits, and loading arguments remain upstream or owner configuration."
     ],
     "source_patches": [
       "0001-linux-npu-fallback-to-pci-id-when-accel-open-fails.patch",
@@ -40,13 +40,13 @@
   "pkgver": "11.9.0",
   "policy": {
     "advisory_references": [
-      "aur/lemonade-desktop"
+      "extra/lemonade-desktop"
     ],
     "arch_reference": [
-      "aur/lemonade-server",
-      "aur/lemonade-desktop"
+      "extra/lemonade-server",
+      "extra/lemonade-desktop"
     ],
-    "authoritative_reference": "aur/lemonade-server",
+    "authoritative_reference": "extra/lemonade-server",
     "backup": [
       "etc/default/lemond",
       "etc/lemonade/conf.d/zz-secrets.conf"
@@ -70,7 +70,7 @@
       "This custom build treats the ROCm and Vulkan llama.cpp backends as packaged system-managed backends rather than Lemonade-managed runtime downloads.",
       "Carries local patches for Linux XDNA2 detection and the system-managed llama.cpp backend story that are specific to this Strix Halo packaging lane.",
       "Builds from the nisavid/lemonade fork so this package can consume local upstream fixes before they are available from the canonical Lemonade repository.",
-      "Ships offline, no-fetch distro defaults and a systemd drop-in that points the Hugging Face, ModelScope, and llama.cpp model endpoints (HF_ENDPOINT, MODELSCOPE_ENDPOINT, and MODEL_ENDPOINT) at a refused loopback port, so lemond does not download models or backend executables on its own."
+      "Keeps upstream defaults except for packaged engine paths, backend selection, and no_fetch_executables=true. Model downloads, update preferences, loaded-model limits, and loading arguments remain upstream or owner configuration."
     ],
     "extra_sha256sums": [
       "84149e7e765b80de94b0058edf930ee61ca39ceee534bff4e01fdd7e050cfb27",
@@ -119,8 +119,9 @@
       "The system-managed backend patch probes llama-server --version through Lemonade's argv-based ProcessManager capture path, not a shell.",
       "Marks upstream's /etc/default/lemond (mode 0640, the service's HF_TOKEN, LEMONADE_API_KEY, and LEMONADE_ADMIN_API_KEY file) and /etc/lemonade/conf.d/zz-secrets.conf (mode 0660) as backup files so an upgrade keeps local edits. Upstream 11.9 no longer installs zz-secrets.conf, so the package ships 11.7's placeholder byte for byte: an owner-edited copy stays in place without a .pacnew and keeps loading through the conf.d glob. If the package dropped it, pacman would rename an edited copy to zz-secrets.conf.pacsave, which the glob does not match. The llama.cpp env file stays package-owned so each release refreshes the backend metadata.",
       "No install script writes owner config: nothing is merged into /etc/default/lemond. Moving settings from conf.d into /etc/default/lemond is optional, because conf.d keeps loading. Since 11.9, LEMONADE_* settings in either file only seed a config.json that does not exist yet, so server settings such as the host binding belong in config.json.",
-      "Replaces upstream's full /usr/share/lemonade/defaults.json with a sparse distro overlay: offline, no_fetch_executables, auto_update_models off, max_loaded_models -1 (unlimited), an explicit ROCm llama.cpp backend, prefer_system off, the packaged rocm_bin and vulkan_bin paths, and --no-mmap llama.cpp args. With --no-mmap set, lemond omits its iGPU --load-mode default, which the packaged llama.cpp b9442 does not accept. Pins count toward residency, so a slot limit refuses every new LLM load once the pins fill it; the GTT-aware occupancy budget is the admission bound. lemond merges the overlay over its built-in defaults and under config.json, so keys an existing config.json already sets still win, and since 11.9 every config write prunes config.json keys that equal the merged defaults. The overlay leaves host, port, broadcast, and API-key settings to the host; since 11.9, --host and --port are runtime-only and LEMONADE_* variables only seed a new config.json, so the host binding belongs in config.json.",
-      "Installs /usr/lib/systemd/system/lemond.service.d/20-no-remote-model-fetch.conf, which sets HF_ENDPOINT, MODELSCOPE_ENDPOINT, and MODEL_ENDPOINT to a refused loopback port. lemond's model registry reads HF_ENDPOINT and MODELSCOPE_ENDPOINT on every request, and llama-server children inherit all three. MODEL_ENDPOINT is required because llama-server reads it ahead of HF_ENDPOINT, so an inherited MODEL_ENDPOINT would otherwise bypass the HF_ENDPOINT blackhole. The drop-in stays Environment=, so an owner env file (conf.d or /etc/default/lemond) that sets one of these keys overrides it, because systemd applies EnvironmentFile after Environment; that override is an explicit owner act, not a silent downloader.",
+      "Installs a sparse /usr/share/lemonade/defaults.json with only no_fetch_executables=true and the packaged llama.cpp backend, prefer_system, rocm_bin, and vulkan_bin settings. lemond merges it over built-in descriptor/resource defaults and under config.json; an optional LEMONADE_DEFAULTS_PATH is another defaults layer. Owner configuration retains precedence, and matching values are pruned on config writes. The package does not set offline, auto_update_models, max_loaded_models, or llama.cpp loading arguments. At the selected fork's source defaults, auto_update_models remains false and max_loaded_models is 1; these are inherited source values, not new household settings. Host binding, residency policy, and actual backend compatibility retain their installation/qualification checks.",
+      "Leaves model-download endpoints unmodified and ships no 20-no-remote-model-fetch.conf. Validation must prove the selected packaged engine and intended model supplied the result; an unintended downloaded engine or fallback cannot satisfy a gate. No install script writes household configuration.",
+      "Uses Arch's official lemonade pkgbase as the packaging comparison: 11.9.0-2 at 62c9d8dcdd819f3ecf2fd2eb0d05ab124dd888fa (https://gitlab.archlinux.org/archlinux/packaging/packages/lemonade/-/blob/62c9d8dcdd819f3ecf2fd2eb0d05ab124dd888fa/PKGBUILD). The newer 2026.42.1-1 comparison at 95f6e76558a7c0f21c2fccd8c05d76b224c0a426 does not select a new fork source. Neither recipe adds a defaults overlay or model-endpoint block; its two patches concern sysusers and web-app icons. This comparison supplies no runtime compatibility result.",
       "Removes /usr/share/metainfo because the web-app MetaInfo names lemonade-web-app.desktop as its launchable, and this package removes that desktop entry."
     ],
     "sha256sums": [

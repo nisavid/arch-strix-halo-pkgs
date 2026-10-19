@@ -1,8 +1,8 @@
 {
   "maintenance": {
     "advisory_references": [
-      "aur/lemonade-server",
-      "aur/lemonade-desktop"
+      "extra/lemonade-server",
+      "extra/lemonade-desktop"
     ],
     "authoritative_reference": "none",
     "divergence_notes": [
@@ -24,12 +24,12 @@
   "pkgver": "11.9.0",
   "policy": {
     "advisory_references": [
-      "aur/lemonade-server",
-      "aur/lemonade-desktop"
+      "extra/lemonade-server",
+      "extra/lemonade-desktop"
     ],
     "arch_reference": [
-      "aur/lemonade-server",
-      "aur/lemonade-desktop"
+      "extra/lemonade-server",
+      "extra/lemonade-desktop"
     ],
     "authoritative_reference": "none",
     "baseline_kind": "meta-aggregate",

@@ -14,9 +14,9 @@
 - Recipe revision: `3f15f9f (20260508, 17 commits touching recipe path)`
 - Recipe steps: `34, 35, 36`
 - Recipe dependencies: `therock, llamacpp`
-- Recorded reference packages: `aur/lemonade-server, aur/lemonade-desktop`
+- Recorded reference packages: `extra/lemonade-server, extra/lemonade-desktop`
 - Authoritative reference package: `none`
-- Advisory reference packages: `aur/lemonade-server, aur/lemonade-desktop`
+- Advisory reference packages: `extra/lemonade-server, extra/lemonade-desktop`
 - Applied source patch files/actions: `0`
 
 ## Recipe notes
