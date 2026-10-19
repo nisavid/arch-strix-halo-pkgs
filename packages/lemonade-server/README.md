@@ -36,7 +36,7 @@ Reinstalling at compatible versions resolves conflicts.
 ## Scaffold notes
 
 - Server/runtime package; llama.cpp backends are optdepends, not hard deps.
-- Pinned to nisavid/lemonade commit b6616eb3b6d31c3d7dbffffdb23e24adda1292a1, the merge commit of the fork's upstream v11.9.0 sync (nisavid/lemonade#175), whose CMake project version is 11.9.0. The pin is the lemonade entry in the [source_pins] table of policies/recipe-packages.toml, so lemonade-server and lemonade-app always build the same fork commit.
+- Builds the delivered v11.9.0 per-model executable-binding backport, nisavid/lemonade commit 0101b6938c0e77ffaf73687165518a2f8fd672b0 (nisavid/lemonade#208), whose CMake project version remains 11.9.0. The shared lemonade source pin keeps server and app coupled. The independent fork-main and upstream-release observations remain freshness inputs, not source selections.
 - Configures with BUILD_TESTING=OFF; upstream includes CTest, and the distro build does not need its C++ test binaries.
 - Uses upstream's lemond.service unit name; do not ship the pre-10.3 lemonade-server.service name in this package.
 - Uses upstream's lemond.service as installed. Since 11.9 it sets StateDirectory=lemonade (the config dir: config.json, user_models.json, recipe_options.json, jobs.json, mcp_servers.json), CacheDirectory=lemonade with mode 0755 (bin/ and aliases.json), a bare ExecStart=/usr/bin/lemond, and EnvironmentFile=-/etc/default/lemond as its only EnvironmentFile= line, and upstream installs no lemond.service.d drop-in. package() fails the build if the unit loses that layout or upstream installs any file under lemond.service.d/ (checked before the package installs its own drop-ins), because a cache-dir argument or a LEMONADE_CACHE_DIR, HOME, or XDG_* override would make the config dir follow the cache dir, and because 30-env-files.conf resets the EnvironmentFile= list and would silently drop any other upstream entry, including one in an upstream drop-in that sorts before it. On first start lemond moves the five JSON files from the legacy /var/lib/lemonade/.cache/lemonade into /var/lib/lemonade without overwriting, and the rest of that tree into /var/cache/lemonade.
@@ -59,7 +59,7 @@ Reinstalling at compatible versions resolves conflicts.
 
 ## Update Notes
 
-- Track the nisavid/lemonade fork's main branch as the package source lane; use canonical upstream releases and AUR packages as baselines for compatibility review.
+- Keep the selected v11.9.0 binding-backport source coupled with lemonade-app. Monitor fork main and canonical upstream releases independently; neither observation automatically replaces the selected backport.
 - Keep packaging and app/server split aligned with upstream naming changes; do not drift back toward the old lemonade-desktop era naming model.
 - Re-test that the LEMONADE_LLAMACPP_*_BIN service overrides from the packaged llama.cpp env file still apply even when /var/lib/lemonade/config.json already exists.
 - On 2026-05-26, adopted nisavid/lemonade fork main 13b1af25f84cf08ad5f8bf0ec58980bdfc09c9e7 so the server and app packages stay pinned to the same fork source while the app hides adapter controls for base llamacpp models.

@@ -315,9 +315,9 @@ def test_pkgbuild_drops_the_args_merge_stopgap():
     assert DROPPED_ARGS_MERGE_PATCH.name not in PKGBUILD.read_text()
 
 
-def test_pkgbuild_packages_the_synced_upstream_version():
+def test_pkgbuild_packages_the_standalone_binding_backport_version():
     assert _pkgbuild_value(PKGBUILD, "pkgver") == "11.9.0"
-    assert _pkgbuild_value(PKGBUILD, "pkgrel") == "1"
+    assert _pkgbuild_value(PKGBUILD, "pkgrel") == "3"
 
 
 def _current_pkgbuild_version():

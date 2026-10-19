@@ -23,13 +23,13 @@ SPEC.loader.exec_module(render_recipe_scaffolds)
 import recipe_policy  # noqa: E402
 
 
-def init_recipe_repo(recipe_root: Path) -> None:
+def init_recipe_repo(recipe_root: Path, *, package_key: str = "sample") -> None:
     recipe_dir = recipe_root / "strix-halo"
     recipe_dir.mkdir(parents=True)
     (recipe_dir / "vllm-packages.yaml").write_text(
-        """
+        f"""
 packages:
-  sample:
+  {package_key}:
     repo: https://example.invalid/sample.git
     method: meta
     phase: package
@@ -1813,6 +1813,42 @@ def test_real_lemonade_packages_share_one_source_pin() -> None:
         assert policy["packages"][package]["source_refs"] == [expected]
         pkgbuild = (REPO_ROOT / "packages" / package / "PKGBUILD").read_text(encoding="utf-8")
         assert f"'{expected}'" in pkgbuild
+
+
+def test_cli_renders_the_delivered_binding_source_for_server_and_app(tmp_path: Path) -> None:
+    recipe_root = tmp_path / "recipes"
+    init_recipe_repo(recipe_root, package_key="lemonade")
+    output_root = tmp_path / "packages"
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(MODULE_PATH),
+            "--recipe-root",
+            str(recipe_root),
+            "--output-root",
+            str(output_root),
+            "--only",
+            "lemonade-server",
+            "--only",
+            "lemonade-app",
+        ],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+    assert result.returncode == 0, result.stderr
+    source = (
+        "lemonade::git+https://github.com/nisavid/lemonade.git"
+        "#commit=0101b6938c0e77ffaf73687165518a2f8fd672b0"
+    )
+    for package in ("lemonade-server", "lemonade-app"):
+        pkgbuild = (output_root / package / "PKGBUILD").read_text(encoding="utf-8")
+        assert f"'{source}'" in pkgbuild
+        assert "pkgver=11.9.0\n" in pkgbuild
+        assert "pkgrel=3\n" in pkgbuild
 
 
 @pytest.mark.parametrize(

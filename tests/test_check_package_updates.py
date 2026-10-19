@@ -4283,42 +4283,63 @@ def test_real_freshness_policy_covers_every_pkgbuild_dir():
     assert report["summary"].get("metadata_mismatch", 0) == 0
 
 
-def test_real_lemonade_freshness_tracks_fork_main_source_commit():
-    repo = Path(__file__).resolve().parents[1]
-    families = updates.policy_families(repo)
-    lemonade = families["lemonade"]
-    checks = {check["id"]: check for check in lemonade["checks"]}
-    fork_main = checks["fork-main"]
-
-    assert fork_main["role"] == "primary"
-    assert fork_main["kind"] == "git_ref"
-    assert fork_main["repo"] == "https://github.com/nisavid/lemonade.git"
-    assert fork_main["ref"] == "refs/heads/main"
-    assert fork_main["comparison"] == "sha"
-    for check_id, check in checks.items():
-        if check_id == "fork-main":
-            continue
-        assert check["role"] == "baseline", check_id
-
-    recipe_policy = updates.resolve_recipe_policy(
-        tomllib.loads((repo / "policies/recipe-packages.toml").read_text(encoding="utf-8"))
+@pytest.mark.parametrize(
+    ("backport_tip", "expected_status", "expected_effective_status"),
+    [
+        ("0101b6938c0e77ffaf73687165518a2f8fd672b0", "current", "tracked_update_candidate"),
+        ("1111111111111111111111111111111111111111", "branch_head_ahead", "action_required"),
+    ],
+)
+def test_real_lemonade_backport_contract_keeps_later_heads_actionable(
+    tmp_path, backport_tip, expected_status, expected_effective_status
+):
+    for package in ("lemonade-server", "lemonade-app", "lemonade"):
+        write_pkg(tmp_path, package)
+    write_recipe_policy(
+        tmp_path,
+        (REPO_ROOT / "policies/recipe-packages.toml").read_text(encoding="utf-8"),
     )
-    package_entries = recipe_policy["packages"]
-    source_commits = set()
-    for package in ("lemonade-server", "lemonade-app"):
-        refs = package_entries[package]["source_refs"]
-        matches = [
-            re.fullmatch(
-                r"lemonade::git\+https://github\.com/nisavid/lemonade\.git#commit=([0-9a-f]{40})",
-                ref,
-            )
-            for ref in refs
-        ]
-        commits = {match.group(1) for match in matches if match}
-        assert commits, package
-        source_commits.update(commits)
+    policy = (REPO_ROOT / "policies/package-freshness.toml").read_text(encoding="utf-8")
+    lemonade = policy.split("[families.lemonade]\n", 1)[1].split("\n[families.", 1)[0]
+    write_policy(tmp_path, "[families.lemonade]\n" + lemonade)
+    write_candidate_ledger(
+        tmp_path,
+        """
+        [candidates.binding-source]
+        family = "lemonade"
+        packages = ["lemonade-server", "lemonade-app"]
+        source_kind = "git_ref"
+        check_id = "binding-backport"
+        previous_recorded = "0101b6938c0e77ffaf73687165518a2f8fd672b0"
+        latest = "0101b6938c0e77ffaf73687165518a2f8fd672b0"
+        discovery_status = "current"
+        disposition = "tracked"
+        next_gate_kind = "github_issue"
+        next_gate_issue = 173
+        next_gate_label = "Binding package checks and build"
+        """,
+    )
+    clients = updates.FakeClients(
+        git_refs={
+            "https://github.com/nisavid/lemonade.git:refs/heads/main":
+                "b6616eb3b6d31c3d7dbffffdb23e24adda1292a1",
+            "https://github.com/nisavid/lemonade.git:refs/heads/nisavid/v11.9.0-backports":
+                backport_tip,
+        },
+        github_releases={"lemonade-sdk/lemonade": [{"tag_name": "v11.9.0"}]},
+    )
 
-    assert source_commits == {fork_main["recorded"]}
+    report = updates.run_check(tmp_path, refresh=True, clients=clients)
+
+    family = report["families"][0]
+    assert family["status"] == expected_status
+    assert family["effective_status"] == expected_effective_status
+    checks = {check["id"]: check for check in family["checks"]}
+    assert checks["fork-main"]["recorded"] == "b6616eb3b6d31c3d7dbffffdb23e24adda1292a1"
+    assert checks["upstream-release"]["recorded"] == "11.9.0"
+    assert checks["binding-backport"]["recorded"] == "0101b6938c0e77ffaf73687165518a2f8fd672b0"
+    recipe = tomllib.loads((tmp_path / "policies/recipe-packages.toml").read_text())
+    assert recipe["source_pins"]["lemonade"] == "0101b6938c0e77ffaf73687165518a2f8fd672b0"
 
 
 def test_real_lemonade_upstream_baseline_is_the_packaged_upstream_release():

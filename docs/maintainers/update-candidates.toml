@@ -5860,3 +5860,19 @@ next_gate_issue = 147
 next_gate_label = "Post-closeout vLLM 0.32.0 source assessment"
 last_reviewed = "2026-10-19"
 
+[candidates."lemonade-binding-backport-0101b693"]
+family = "lemonade"
+packages = ["lemonade-server", "lemonade-app"]
+source_kind = "git_ref"
+check_id = "binding-backport"
+previous_recorded = "0101b6938c0e77ffaf73687165518a2f8fd672b0"
+latest = "0101b6938c0e77ffaf73687165518a2f8fd672b0"
+discovery_status = "current"
+disposition = "tracked"
+disposition_reason = "The delivered v11.9.0 binding backport is selected for the source-coupled server and app. Its branch observation equals the reviewed source cursor. Issue #173 owns package checks, builds, local-repository publication, and the later owner installation/qualification join. This remains tracked rather than adopted while those gates are open; fork-main/calver observations retain their separate disposition."
+salient_changes = ["Both source consumers select the delivered binding commit 0101b693", "The package change and later runtime evidence remain open"]
+next_gate_kind = "github_issue"
+next_gate_issue = 173
+next_gate_label = "Binding package checks, build, publication, and owner handoff"
+last_reviewed = "2026-10-19"
+
