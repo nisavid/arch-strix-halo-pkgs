@@ -5875,4 +5875,3 @@ next_gate_kind = "github_issue"
 next_gate_issue = 173
 next_gate_label = "Binding package checks, build, publication, and owner handoff"
 last_reviewed = "2026-10-19"
-
