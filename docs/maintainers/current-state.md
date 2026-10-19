@@ -4,6 +4,29 @@ The package, deployment, and live-validation narrative below remains a
 2026-06-15 snapshot. Dated records come first, newest first; older
 reconciliations remain as dated history.
 
+## 2026-10-19 Freshness Dispositions
+
+The cache-aware metadata sweep completed at `2026-10-19T21:45:03Z` after
+integrating the preserved October 17 disposition checkpoint and adding eight
+records for newer observations. It exited 0 under `--json --fail-on actionable`
+with 41 tracked families, five rejected candidates, five current families, and
+no unhandled provider failure. The preceding discovery found nine actionable
+families; the preserved ROCm PyTorch record covers one, and the eight new
+records cover AITER, apache-tvm-ffi, Lemonade fork main, Pillow's independent
+Arch baseline, stable-diffusion.cpp, Transformers, Triton, and vLLM.
+
+Explicit tracker validation exited 0 with all 13 active issue gates open.
+These checks cover the 51 configured families on published main; the pending
+Kokoro family is not introduced or cleared by this increment. Ordinary upstream
+observations remain with post-closeout assessment, and Lemonade's calver
+observations retain their deferred packaging gate. Earlier observations remain
+recorded. These are metadata dispositions, not release-content, security,
+dependency, patch, build, deployment, or runtime assessments. They change none
+of generation C's selected versions or source/runtime gates.
+
+This sweep predates the standalone binding/defaults source change. That change
+must renew the affected freshness and tracker checks before publication.
+
 ## 2026-10-17 Freshness Disposition Preparation
 
 Four new observations are tracked at
