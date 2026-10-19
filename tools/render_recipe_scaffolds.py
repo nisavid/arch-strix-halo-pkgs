@@ -417,6 +417,9 @@ LEMONADE_KOKORO_CPU_BIN = f"{KOKOROS_INSTALL_ROOT}/koko"
 # koko downloads kokoro-v1.0.onnx and voices-v1.0.bin when they are missing.
 # This patch turns that into an error, so the kokoros template requires it.
 KOKOROS_FAIL_CLOSED_PATCH = "0001-koko-fail-closed-on-missing-model-files.patch"
+# The source file that patch changes; prepare() fails unless it exists and no
+# longer calls the download helper.
+KOKOROS_MODEL_FETCH_SOURCE = "kokoros/src/tts/koko.rs"
 LEMONADE_LLAMACPP_VULKAN_BIN = "/usr/bin/llama-server-vulkan-gfx1151"
 # Connections to the loopback discard port are refused, so a model registry
 # request sent here fails at once instead of reaching the network.
@@ -1129,16 +1132,17 @@ EOF
         for patch_name in source_patches:
             prepare_lines.extend(
                 [
-                    f'if ! patch --dry-run -R -Np1 -i "$srcdir/{patch_name}" >/dev/null 2>&1; then',
+                    f'if ! patch --dry-run --batch -R -Np1 -i "$srcdir/{patch_name}" >/dev/null 2>&1; then',
                     f'  patch -Np1 -i "$srcdir/{patch_name}"',
                     "fi",
                 ]
             )
         prepare_lines.extend(
             [
-                "# Fail closed if koko can still download a missing model or voices file.",
-                "if grep -q download_file_from_url kokoros/src/tts/koko.rs; then",
-                '  echo "KOKOROS_MODEL_FETCH: koko still downloads missing model or voices files" >&2',
+                "# Fail closed if koko's model-loading source is missing or can still",
+                "# download a missing model or voices file.",
+                f"if [[ ! -f {KOKOROS_MODEL_FETCH_SOURCE} ]] || grep -q download_file_from_url {KOKOROS_MODEL_FETCH_SOURCE}; then",
+                f'  echo "KOKOROS_MODEL_FETCH: {KOKOROS_MODEL_FETCH_SOURCE} is missing or still calls download_file_from_url" >&2',
                 "  return 1",
                 "fi",
                 "# The source archive digest already covers Cargo.lock; checking it after",

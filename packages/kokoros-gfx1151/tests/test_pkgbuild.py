@@ -1,7 +1,9 @@
 import hashlib
+import importlib.util
 import json
 import re
 import subprocess
+import sys
 from pathlib import Path
 
 
@@ -18,6 +20,20 @@ EXPECTED_ARCHIVE_SHA256 = "2bcc95b4b1a7e0ff1f985e7c684d65df52a955ae66dcd601d0c1e
 EXPECTED_CARGO_LOCK_SHA256 = "d3cd1b8abd00b49cb5fd07f4e6cd415f6d224655e878b738c7cb3a7e2bb938cc"
 INSTALL_ROOT = "/opt/kokoros-gfx1151"
 FAIL_CLOSED_PATCH = "0001-koko-fail-closed-on-missing-model-files.patch"
+
+
+def _load_renderer():
+    tools = REPO_ROOT / "tools"
+    if str(tools) not in sys.path:
+        sys.path.insert(0, str(tools))
+    spec = importlib.util.spec_from_file_location("kokoros_test_renderer", tools / "render_recipe_scaffolds.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+# prepare()'s guard and the patch target come from the same renderer constant.
+MODEL_FETCH_SOURCE = _load_renderer().KOKOROS_MODEL_FETCH_SOURCE
 
 
 def _array(text, key):
@@ -60,7 +76,10 @@ def test_fail_closed_model_patch_is_listed_checksummed_and_applied():
     assert apply in prepare
     # The patch lands before the lockfile check and the crate fetch, and
     # prepare() refuses a tree where koko can still download.
-    sentinel = "if grep -q download_file_from_url kokoros/src/tts/koko.rs; then"
+    sentinel = (
+        f"if [[ ! -f {MODEL_FETCH_SOURCE} ]] || grep -q download_file_from_url {MODEL_FETCH_SOURCE}; then"
+    )
+    assert f'patch --dry-run --batch -R -Np1 -i "$srcdir/{FAIL_CLOSED_PATCH}"' in prepare
     assert prepare.index(apply) < prepare.index(sentinel) < prepare.index("sha256sum --check")
     assert prepare.index("sha256sum --check") < prepare.index("cargo fetch --locked")
     assert "KOKOROS_MODEL_FETCH" in prepare
@@ -72,7 +91,7 @@ def test_fail_closed_model_patch_replaces_every_download_with_an_error():
     targets = re.findall(r"^diff --git a/(\S+) b/", patch, re.MULTILINE)
     # Only koko.rs changes; Cargo.toml and Cargo.lock stay untouched, so
     # cargo fetch --locked and cargo build --frozen still hold.
-    assert targets == ["kokoros/src/tts/koko.rs"]
+    assert targets == [MODEL_FETCH_SOURCE]
     removed = [line for line in patch.splitlines() if line.startswith("-") and not line.startswith("---")]
     added = [line for line in patch.splitlines() if line.startswith("+") and not line.startswith("+++")]
     assert sum("download_file_from_url" in line for line in removed) == 4
@@ -237,3 +256,78 @@ def test_package_installs_registry_licences_and_skips_workspace_crates(tmp_path)
     assert (licenses / "crates/foo-1.0.0/LICENSE-MIT").read_text() == "MIT\n"
     assert (licenses / "crates/mp3lame-sys-0.1.9/lame-3.100-COPYING").is_file()
     assert (licenses / "README.md").is_file()
+
+
+def _run_prepare(tmp_path, koko_rs):
+    """Run the rendered prepare() the way makepkg does, with fake tools.
+
+    koko_rs is the text of kokoros/src/tts/koko.rs after patching, or None
+    when the file is absent. The fake patch changes nothing, so the guard
+    sees exactly that text.
+    """
+    srcdir = tmp_path / "src"
+    source = srcdir / f"Kokoros-{EXPECTED_COMMIT}"
+    source.mkdir(parents=True)
+    if koko_rs is not None:
+        (source / MODEL_FETCH_SOURCE).parent.mkdir(parents=True)
+        (source / MODEL_FETCH_SOURCE).write_text(koko_rs)
+    log = tmp_path / "calls.log"
+    fakebin = tmp_path / "bin"
+    fakebin.mkdir()
+    fakes = {
+        # The reverse dry-run fails, so prepare() applies the patch.
+        "patch": f'echo "patch $*" >> "{log}"\ncase " $* " in *" --dry-run "*) exit 1;; esac\nexit 0\n',
+        "sha256sum": f'echo "sha256sum $*" >> "{log}"\ncat >/dev/null\nexit 0\n',
+        "cargo": f'echo "cargo $*" >> "{log}"\nexit 0\n',
+        "rustc": "echo x86_64-unknown-linux-gnu\n",
+    }
+    for name, body in fakes.items():
+        (fakebin / name).write_text("#!/bin/sh\n" + body)
+        (fakebin / name).chmod(0o755)
+    function = _function(PKGBUILD.read_text(), "prepare") + "\n}\n"
+    (tmp_path / "prepare.sh").write_text(function)
+    script = (
+        "set -o errexit -o errtrace\n"
+        "trap 'exit 1' ERR\n"
+        'source "$1"\n'
+        "prepare\n"
+        "echo PREPARE_OK\n"
+    )
+    result = subprocess.run(
+        ["bash", "-c", script, "probe", str(tmp_path / "prepare.sh")],
+        env={"PATH": f"{fakebin}:/usr/bin:/bin", "srcdir": str(srcdir)},
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    calls = log.read_text() if log.exists() else ""
+    return result, calls
+
+
+def test_prepare_fails_when_koko_still_calls_the_download_helper(tmp_path):
+    result, calls = _run_prepare(
+        tmp_path, "utils::fileio::download_file_from_url(cfg.model_url.as_str(), model_path)\n"
+    )
+    assert result.returncode != 0
+    assert "PREPARE_OK" not in result.stdout
+    assert "KOKOROS_MODEL_FETCH" in result.stderr
+    assert "cargo fetch" not in calls
+
+
+def test_prepare_fails_when_koko_source_is_missing(tmp_path):
+    result, calls = _run_prepare(tmp_path, None)
+    assert result.returncode != 0
+    assert "PREPARE_OK" not in result.stdout
+    assert "KOKOROS_MODEL_FETCH" in result.stderr
+    assert "cargo fetch" not in calls
+
+
+def test_prepare_applies_the_patch_and_fetches_locked_crates(tmp_path):
+    result, calls = _run_prepare(tmp_path, 'panic!("model file is missing; this build never downloads it")\n')
+    assert result.returncode == 0, result.stderr
+    assert "PREPARE_OK" in result.stdout
+    lines = calls.splitlines()
+    assert lines[0].startswith("patch --dry-run --batch -R -Np1 -i ")
+    assert lines[1] == f"patch -Np1 -i {tmp_path}/src/{FAIL_CLOSED_PATCH}"
+    assert lines[2] == "sha256sum --check --quiet -"
+    assert lines[3] == "cargo fetch --locked --target x86_64-unknown-linux-gnu"

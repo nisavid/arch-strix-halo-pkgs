@@ -830,7 +830,8 @@ def test_kokoros_renderer_applies_the_fail_closed_patch_before_fetching_crates()
     assert f"source=(Kokoros-abc.tar.gz::https://github.com/lemonade-sdk/Kokoros/archive/abc.tar.gz {patch})" in pkgbuild
     assert f"sha256sums=({'a' * 64} {'d' * 64})" in pkgbuild
     apply = pkgbuild.index(f'patch -Np1 -i "$srcdir/{patch}"')
-    sentinel = pkgbuild.index("if grep -q download_file_from_url kokoros/src/tts/koko.rs; then")
+    source = render_recipe_scaffolds.KOKOROS_MODEL_FETCH_SOURCE
+    sentinel = pkgbuild.index(f"if [[ ! -f {source} ]] || grep -q download_file_from_url {source}; then")
     assert apply < sentinel < pkgbuild.index("sha256sum --check") < pkgbuild.index("cargo fetch --locked")
 
 

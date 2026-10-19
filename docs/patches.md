@@ -117,10 +117,11 @@ release that Lemonade pins.
     `reqwest` dependency stay, so `Cargo.toml` and `Cargo.lock` are unchanged
     and `cargo fetch --locked` and `cargo build --frozen` still hold.
   - The renderer refuses to render `kokoros-gfx1151` without the patch, and
-    `prepare()` fails if `koko.rs` still calls `download_file_from_url` after
-    patching. [#107](https://github.com/nisavid/arch-strix-halo-pkgs/issues/107)
-    still has to prove on the installed stack that absent files fail without
-    network egress.
+    `prepare()` fails if `koko.rs` is missing or still calls
+    `download_file_from_url` after patching.
+    [#107](https://github.com/nisavid/arch-strix-halo-pkgs/issues/107) still
+    has to prove on the installed stack that absent files fail without network
+    egress.
 
 ## vLLM
 

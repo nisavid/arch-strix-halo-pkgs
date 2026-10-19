@@ -24,12 +24,13 @@ sha256sums=(2bcc95b4b1a7e0ff1f985e7c684d65df52a955ae66dcd601d0c1e3205daae4fd fad
 prepare() {
   cd "$srcdir/Kokoros-d122b52e0ee0a90df26fd041620af36f99e2248a"
 
-  if ! patch --dry-run -R -Np1 -i "$srcdir/0001-koko-fail-closed-on-missing-model-files.patch" >/dev/null 2>&1; then
+  if ! patch --dry-run --batch -R -Np1 -i "$srcdir/0001-koko-fail-closed-on-missing-model-files.patch" >/dev/null 2>&1; then
     patch -Np1 -i "$srcdir/0001-koko-fail-closed-on-missing-model-files.patch"
   fi
-  # Fail closed if koko can still download a missing model or voices file.
-  if grep -q download_file_from_url kokoros/src/tts/koko.rs; then
-    echo "KOKOROS_MODEL_FETCH: koko still downloads missing model or voices files" >&2
+  # Fail closed if koko's model-loading source is missing or can still
+  # download a missing model or voices file.
+  if [[ ! -f kokoros/src/tts/koko.rs ]] || grep -q download_file_from_url kokoros/src/tts/koko.rs; then
+    echo "KOKOROS_MODEL_FETCH: kokoros/src/tts/koko.rs is missing or still calls download_file_from_url" >&2
     return 1
   fi
   # The source archive digest already covers Cargo.lock; checking it after
