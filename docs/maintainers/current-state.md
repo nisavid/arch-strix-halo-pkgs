@@ -4,6 +4,55 @@ The package, deployment, and live-validation narrative below remains a
 2026-06-15 snapshot. Dated records come first, newest first; older
 reconciliations remain as dated history.
 
+## 2026-10-19 Freshness Dispositions
+
+The cache-aware metadata sweep completed at `2026-10-19T21:45:03Z` after
+integrating the preserved October 17 disposition checkpoint and adding eight
+records for newer observations. It exited 0 under `--json --fail-on actionable`
+with 41 tracked families, five rejected candidates, five current families, and
+no unhandled provider failure. The preceding discovery found nine actionable
+families; the preserved ROCm PyTorch record covers one, and the eight new
+records cover AITER, apache-tvm-ffi, Lemonade fork main, Pillow's independent
+Arch baseline, stable-diffusion.cpp, Transformers, Triton, and vLLM.
+
+Explicit tracker validation exited 0 with all 13 active issue gates open.
+These checks cover the 51 configured families on published main; the pending
+Kokoro family is not introduced or cleared by this increment. Ordinary upstream
+observations remain with post-closeout assessment, and Lemonade's calver
+observations retain their deferred packaging gate. Earlier observations remain
+recorded. These are metadata dispositions, not release-content, security,
+dependency, patch, build, deployment, or runtime assessments. They change none
+of generation C's selected versions or source/runtime gates.
+
+This sweep predates the standalone binding/defaults source change. That change
+must renew the affected freshness and tracker checks before publication.
+
+## 2026-10-17 Freshness Disposition Preparation
+
+Four new observations are tracked at
+[post-closeout source assessment](https://github.com/nisavid/arch-strix-halo-pkgs/issues/147):
+Pillow `13.0.0`, ROCm PyTorch release/2.12 head
+`69ea9a324c7afde337d5667069ab2d1e1fd688f5`, stable-diffusion.cpp master
+`f0aac524d3f29140e60ba78f3cfb16d6acea87db`, and matching Transformers
+PyPI/tag release `5.20.1`. The independent Pillow and PyTorch Arch
+baselines and stable-diffusion.cpp AUR baseline are bound separately.
+Earlier records and C's selected sources and validation gates remain unchanged.
+
+The read-only discovery sweep completed at `2026-10-18T01:37:57Z`
+(October 17 locally) against committed assessment revision `795db6f`.
+It included the pending Kokoro runtime family and reported 52 families:
+36 tracked, six rejected, five current, and five requiring disposition,
+with no provider failure. These four records belong to existing families;
+the separate Kokoro `b21` observation belongs with the change introducing
+that family, not this metadata increment.
+
+The confirming sweep and final joined tracker validation remain open until
+the canonical-family ledger and Kokoro record are integrated. This is not
+a completed freshness gate. No package source, version, build,
+deployment/installation, installed smoke, server, GPU, or live-scenario
+state changed. Release contents, security applicability, dependency and
+patch effects, and runtime behavior remain unassessed.
+
 ## 2026-10-16 Freshness Dispositions and Confirming Sweep
 
 The daily metadata sweep adds five candidate records without changing C's

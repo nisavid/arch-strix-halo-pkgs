@@ -5635,3 +5635,243 @@ next_gate_kind = "github_issue"
 next_gate_issue = 147
 next_gate_label = "Post-closeout Transformers 5.20.0 source assessment and disposition"
 last_reviewed = "2026-10-16"
+
+[candidates."pillow-13.0.0-pypi"]
+family = "pillow"
+packages = ["python-pillow-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+baseline_source_kind = "arch_package"
+baseline_latest = "12.3.0-1"
+covered_checks = [{ source_kind = "arch_package", check_id = "arch", latest = "12.3.0-1" }]
+previous_recorded = "12.3.0 / 12.2.0-1"
+latest = "13.0.0"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "The October 17 metadata sweep observes PyPI 13.0.0 and independent Arch baseline 12.3.0-1. Issue #147 owns post-closeout source assessment and disposition. The selected Pillow 12.3.0 closure and issue #110 remain unchanged. Release contents, security applicability, dependency compatibility, patch effects, and runtime behavior remain unassessed."
+salient_changes = [
+  "PyPI reports 13.0.0 after recorded 12.3.0",
+  "Arch reports 12.3.0-1 after recorded 12.2.0-1 and is independently bound",
+]
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "Post-closeout Pillow 13.0.0 source and baseline assessment"
+last_reviewed = "2026-10-17"
+
+[candidates."rocm-pytorch-release-2.12-69ea9a3"]
+family = "rocm_pytorch"
+packages = ["python-pytorch-opt-rocm-gfx1151"]
+source_kind = "git_ref"
+check_id = "release-branch"
+baseline_source_kind = "arch_package"
+baseline_latest = "2.14.1-1"
+covered_checks = [{ source_kind = "arch_package", check_id = "arch", latest = "2.14.1-1" }]
+previous_recorded = "13da08625e0d25586351146b4c444f5263997ef8 / 2.12.0-4"
+latest = "69ea9a324c7afde337d5667069ab2d1e1fd688f5"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "The October 17 metadata sweep observes release/2.12 head 69ea9a3 with unchanged independent Arch baseline 2.14.1-1. Issue #147 owns post-closeout source assessment and disposition. The selected 13da086 source and issue #109 remain unchanged, as do earlier observations. The changed range, security applicability, dependency and patch effects, and derived validation remain unassessed."
+salient_changes = [
+  "The release/2.12 branch reports 69ea9a324c7afde337d5667069ab2d1e1fd688f5 after recorded 13da08625e0d25586351146b4c444f5263997ef8",
+  "Arch remains 2.14.1-1 after recorded 2.12.0-4 and is independently bound",
+]
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "Post-closeout ROCm PyTorch 69ea9a3 source and baseline assessment"
+last_reviewed = "2026-10-17"
+
+[candidates."stable-diffusion-cpp-f0aac52"]
+family = "stable_diffusion_cpp"
+packages = ["stable-diffusion.cpp-vulkan-gfx1151"]
+source_kind = "git_ref"
+check_id = "master"
+baseline_source_kind = "aur"
+baseline_latest = "r972.68285df-1"
+covered_checks = [{ source_kind = "aur", check_id = "aur-vulkan", latest = "r972.68285df-1" }]
+previous_recorded = "be65ac7511b30379b003626c15224798929e33d4 / r279.49d6570-1"
+latest = "f0aac524d3f29140e60ba78f3cfb16d6acea87db"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "The October 17 metadata sweep observes master f0aac52 and independent AUR Vulkan baseline r972.68285df-1. Issue #147 owns post-closeout source assessment and disposition. The selected c92d73c rebuild and issue #121 remain unchanged. Earlier observations remain intact. Release contents, security applicability, recursive submodules, patch carry, and runtime relevance remain unassessed."
+salient_changes = [
+  "Master reports f0aac524d3f29140e60ba78f3cfb16d6acea87db after recorded be65ac7511b30379b003626c15224798929e33d4",
+  "AUR reports r972.68285df-1 after recorded r279.49d6570-1 and is independently bound",
+]
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "Post-closeout stable-diffusion.cpp f0aac52 source and baseline assessment"
+last_reviewed = "2026-10-17"
+
+[candidates."transformers-5.20.1-pypi"]
+family = "transformers"
+packages = ["python-transformers-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+covered_checks = [{ source_kind = "github_tags", check_id = "tag", latest = "5.20.1" }]
+previous_recorded = "5.18.0"
+latest = "5.20.1"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "The October 17 metadata sweep observes matching PyPI and tag releases 5.20.1. Issue #147 owns post-closeout source assessment and disposition. The selected 5.18.0 closure from #183 and its assembled-C requalification gate #194 remain unchanged. Earlier observations remain intact. This record does not assess release contents, security applicability, dependency compatibility, patch carry, or runtime behavior."
+salient_changes = [
+  "Both primary providers report 5.20.1 after recorded 5.18.0 and the earlier 5.20.0 observation",
+  "The tag observation is bound explicitly to 5.20.1",
+]
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "Post-closeout Transformers 5.20.1 source assessment and disposition"
+last_reviewed = "2026-10-17"
+
+[candidates."aiter-0.1.26-release"]
+family = "aiter"
+packages = ["python-amd-aiter-gfx1151"]
+source_kind = "github_release"
+check_id = "release"
+previous_recorded = "0.1.14"
+latest = "0.1.26"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "The October 19 metadata sweep observes release 0.1.26. Issue #147 owns post-closeout source assessment; the selected generation C source and validation gates remain unchanged. Release contents, dependency compatibility, patch effects, security applicability, and runtime behavior are not assessed by this record."
+salient_changes = ["The release provider reports 0.1.26 after recorded 0.1.14"]
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "Post-closeout AITER 0.1.26 source assessment"
+last_reviewed = "2026-10-19"
+
+[candidates."apache-tvm-ffi-0.1.15-pypi"]
+family = "apache_tvm_ffi"
+packages = ["python-apache-tvm-ffi-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+previous_recorded = "0.1.10"
+latest = "0.1.15"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "The October 19 metadata sweep observes PyPI 0.1.15; the independent AUR baseline remains current at 0.1.14.post1-1. Issue #147 owns post-closeout source assessment. No selected package source, version, dependency contract, or validation gate changes. Release contents and applicability remain unassessed."
+salient_changes = ["PyPI reports 0.1.15 after recorded 0.1.10", "The AUR baseline remains 0.1.14.post1-1"]
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "Post-closeout apache-tvm-ffi 0.1.15 source assessment"
+last_reviewed = "2026-10-19"
+
+[candidates."lemonade-fork-487cafc-upstream-2026.42.1"]
+family = "lemonade"
+packages = ["lemonade-server", "lemonade-app", "lemonade"]
+source_kind = "git_ref"
+check_id = "fork-main"
+baseline_source_kind = "github_release"
+baseline_latest = "2026.42.1"
+covered_checks = [{ source_kind = "github_release", check_id = "upstream-release", latest = "2026.42.1" }]
+previous_recorded = "b6616eb3b6d31c3d7dbffffdb23e24adda1292a1 / 11.9.0"
+latest = "487cafcbda5063fed0104abbfc437ed9ad4fef1a"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "The October 19 metadata sweep observes fork main 487cafc beside independent upstream baseline 2026.42.1. Issue #163 owns the deferred calver source and packaging work. This record selects neither that source nor a new generation C pin, and does not replace the separately delivered 11.9.0 binding backport. Source contents, compatibility, and derived validation remain unassessed."
+salient_changes = ["Fork main reports 487cafcbda5063fed0104abbfc437ed9ad4fef1a after recorded b6616eb3", "The independent upstream baseline remains 2026.42.1"]
+next_gate_kind = "github_issue"
+next_gate_issue = 163
+next_gate_label = "Lemonade deferred calver source assessment and packaging"
+last_reviewed = "2026-10-19"
+
+[candidates."pillow-13.0.0-arch-13.0.0-1"]
+family = "pillow"
+packages = ["python-pillow-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+baseline_source_kind = "arch_package"
+baseline_latest = "13.0.0-1"
+covered_checks = [{ source_kind = "arch_package", check_id = "arch", latest = "13.0.0-1" }]
+previous_recorded = "12.3.0 / 12.2.0-1"
+latest = "13.0.0"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "The October 19 metadata sweep observes PyPI 13.0.0 and a changed independent Arch baseline 13.0.0-1. The October 17 record with Arch 12.3.0-1 remains historical input; it does not cover this baseline movement. Issue #147 owns post-closeout assessment. The selected Pillow closure and all source, dependency, security, build, and runtime gates remain unchanged."
+salient_changes = ["PyPI remains 13.0.0 after recorded 12.3.0", "Arch reports 13.0.0-1 after recorded 12.2.0-1 and the earlier 12.3.0-1 observation"]
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "Post-closeout Pillow 13.0.0 and Arch 13.0.0-1 assessment"
+last_reviewed = "2026-10-19"
+
+[candidates."stable-diffusion-cpp-b13a482"]
+family = "stable_diffusion_cpp"
+packages = ["stable-diffusion.cpp-vulkan-gfx1151"]
+source_kind = "git_ref"
+check_id = "master"
+baseline_source_kind = "aur"
+baseline_latest = "r972.68285df-1"
+covered_checks = [{ source_kind = "aur", check_id = "aur-vulkan", latest = "r972.68285df-1" }]
+previous_recorded = "be65ac7511b30379b003626c15224798929e33d4 / r279.49d6570-1"
+latest = "b13a48219d5cdf408edcb93da6cd69b612ed03d3"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "The October 19 metadata sweep observes master b13a482 with independent AUR Vulkan baseline r972.68285df-1. Issue #147 owns post-closeout source assessment. The selected c92d73c rebuild and earlier observations remain unchanged. This metadata record supplies no source-content, submodule, patch, security, or runtime assessment."
+salient_changes = ["Master reports b13a48219d5cdf408edcb93da6cd69b612ed03d3 after recorded be65ac75 and the earlier f0aac524 observation", "AUR remains r972.68285df-1"]
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "Post-closeout stable-diffusion.cpp b13a482 source assessment"
+last_reviewed = "2026-10-19"
+
+[candidates."transformers-5.20.2-pypi"]
+family = "transformers"
+packages = ["python-transformers-gfx1151"]
+source_kind = "pypi"
+check_id = "pypi"
+covered_checks = [{ source_kind = "github_tags", check_id = "tag", latest = "5.20.2" }]
+previous_recorded = "5.18.0"
+latest = "5.20.2"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "The October 19 metadata sweep observes matching PyPI and tag releases 5.20.2. Issue #147 owns post-closeout assessment. The selected 5.18.0 closure and assembled-C requalification remain unchanged. Release contents, security applicability, dependency compatibility, patch carry, and runtime behavior remain unassessed."
+salient_changes = ["Both primary providers report 5.20.2 after recorded 5.18.0 and the earlier 5.20.1 observation"]
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "Post-closeout Transformers 5.20.2 source assessment"
+last_reviewed = "2026-10-19"
+
+[candidates."triton-release-ea2482d"]
+family = "triton"
+packages = ["python-triton-gfx1151"]
+source_kind = "git_ref"
+check_id = "release-branch"
+previous_recorded = "669b31acc1dd1b3fd93286afd5db67f65d9f7557"
+latest = "ea2482df04a608156c5778db4adfd0942c66df1e"
+discovery_status = "branch_head_ahead"
+disposition = "tracked"
+disposition_reason = "The October 19 metadata sweep observes release-branch head ea2482d; the independent Arch baseline remains current at 3.5.1-4. Issue #147 owns post-closeout source assessment. No selected source, package version, dependency contract, or validation gate changes. The source range and applicability remain unassessed."
+salient_changes = ["The release branch reports ea2482df04a608156c5778db4adfd0942c66df1e after recorded 669b31ac", "Arch remains 3.5.1-4"]
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "Post-closeout Triton ea2482d source assessment"
+last_reviewed = "2026-10-19"
+
+[candidates."vllm-0.32.0-release"]
+family = "vllm"
+packages = ["python-vllm-rocm-gfx1151"]
+source_kind = "github_release"
+check_id = "release"
+previous_recorded = "0.30.0"
+latest = "0.32.0"
+discovery_status = "stable_update_available"
+disposition = "tracked"
+disposition_reason = "The October 19 metadata sweep observes release 0.32.0; the independent AUR baseline remains current at 0.12.0-1. Issue #147 owns post-closeout source assessment. The selected 0.30.0 closure, image/CORS remedy work, and all source, dependency, security, build, and runtime gates remain unchanged. No release-content assessment or source promotion is supplied here."
+salient_changes = ["The release provider reports 0.32.0 after recorded 0.30.0", "AUR remains 0.12.0-1"]
+next_gate_kind = "github_issue"
+next_gate_issue = 147
+next_gate_label = "Post-closeout vLLM 0.32.0 source assessment"
+last_reviewed = "2026-10-19"
+
+[candidates."lemonade-binding-backport-0101b693"]
+family = "lemonade"
+packages = ["lemonade-server", "lemonade-app"]
+source_kind = "git_ref"
+check_id = "binding-backport"
+previous_recorded = "0101b6938c0e77ffaf73687165518a2f8fd672b0"
+latest = "0101b6938c0e77ffaf73687165518a2f8fd672b0"
+discovery_status = "current"
+disposition = "tracked"
+disposition_reason = "The delivered v11.9.0 binding backport is selected for the source-coupled server and app. Its branch observation equals the reviewed source cursor. Issue #173 owns package checks, builds, local-repository publication, and the later owner installation/qualification join. This remains tracked rather than adopted while those gates are open; fork-main/calver observations retain their separate disposition."
+salient_changes = ["Both source consumers select the delivered binding commit 0101b693", "The package change and later runtime evidence remain open"]
+next_gate_kind = "github_issue"
+next_gate_issue = 173
+next_gate_label = "Binding package checks, build, publication, and owner handoff"
+last_reviewed = "2026-10-19"

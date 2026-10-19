@@ -29,6 +29,8 @@ Outside the resurrection scope:
 - [the signed Lemonade pacman lane](https://github.com/nisavid/arch-strix-halo-pkgs/issues/125),
   deferred to the signing and verifiability follow-up
 - [the local Qwen MTP runtime for Hindsight](https://github.com/nisavid/arch-strix-halo-pkgs/issues/131)
+- [the standalone Lemonade executable-binding package](https://github.com/nisavid/arch-strix-halo-pkgs/issues/173),
+  joining Hindsight's dedicated-runtime and owner qualification work
 - [Lemonade calendar-versioned release packaging](https://github.com/nisavid/arch-strix-halo-pkgs/issues/163),
   blocked on the fork sync in nisavid/lemonade#176
 

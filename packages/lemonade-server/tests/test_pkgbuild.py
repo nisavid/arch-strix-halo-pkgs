@@ -49,7 +49,6 @@ SOURCE_TREE = REPO_ROOT / "packages/lemonade-server/src/lemonade"
 
 HIP_SERVER = "/usr/bin/llama-server-hip-gfx1151"
 VULKAN_SERVER = "/usr/bin/llama-server-vulkan-gfx1151"
-BLACKHOLE_ENDPOINT = "http://127.0.0.1:9"
 
 
 def _pkgbuild_value(path, key):
@@ -90,8 +89,7 @@ LEMONADE_PIN = load_recipe_policy(RECIPE_POLICY)["source_pins"]["lemonade"]
 EXPECTED_ENV_FILES_DROPIN = """\
 # lemonade-server owns the whole EnvironmentFile= list of lemond.service.
 # systemd reads the files in this order, a later file overrides an earlier
-# one, and any EnvironmentFile= value overrides an Environment= value, such
-# as the 20-no-remote-model-fetch.conf blackholes.
+# one. EnvironmentFile= values also override Environment= values.
 [Service]
 # Clear the list first. systemd keeps a repeated path at its first position,
 # so listing upstream's /etc/default/lemond again without this reset would
@@ -131,10 +129,9 @@ def test_pkgbuild_ships_the_llamacpp_backends_as_a_package_env_file():
     ]
 
 
-def test_pkgbuild_ships_only_the_env_files_and_blackhole_drop_ins():
+def test_pkgbuild_ships_only_the_environment_file_drop_in():
     text = PKGBUILD.read_text()
     assert re.findall(r'"\$pkgdir/usr/lib/systemd/system/lemond\.service\.d/([^"]+)"', text) == [
-        "20-no-remote-model-fetch.conf",
         "30-env-files.conf",
     ]
     assert "10-llamacpp-gfx1151.conf" not in text
@@ -158,7 +155,6 @@ def test_pkgbuild_drop_ins_keep_the_config_and_cache_split():
     for target in (
         LLAMACPP_ENV_TARGET,
         ENV_FILES_DROPIN_TARGET,
-        "/usr/lib/systemd/system/lemond.service.d/20-no-remote-model-fetch.conf",
     ):
         dropin = _heredoc(text, target)
         assert "ExecStart" not in dropin
@@ -209,16 +205,12 @@ def test_pkgbuild_drops_web_app_metainfo_with_its_desktop_entry():
     assert '"$pkgdir/usr/share/metainfo"' in text
 
 
-def test_pkgbuild_ships_offline_distro_defaults():
+def test_pkgbuild_limits_distro_defaults_to_packaged_engine_wiring():
     defaults = json.loads(_heredoc(PKGBUILD.read_text(), "/usr/share/lemonade/defaults.json"))
 
     assert defaults == {
-        "offline": True,
         "no_fetch_executables": True,
-        "auto_update_models": False,
-        "max_loaded_models": -1,
         "llamacpp": {
-            "args": "--no-mmap",
             "backend": "rocm",
             "prefer_system": False,
             "rocm_bin": HIP_SERVER,
@@ -235,18 +227,11 @@ def test_distro_defaults_leave_host_binding_and_auth_to_the_host():
     assert not any("key" in key.lower() for key in defaults)
 
 
-def test_pkgbuild_blackholes_remote_model_endpoints_for_lemond():
-    text = _heredoc(
-        PKGBUILD.read_text(),
-        "/usr/lib/systemd/system/lemond.service.d/20-no-remote-model-fetch.conf",
-    )
-
-    assert text.splitlines() == [
-        "[Service]",
-        f"Environment=HF_ENDPOINT={BLACKHOLE_ENDPOINT}",
-        f"Environment=MODELSCOPE_ENDPOINT={BLACKHOLE_ENDPOINT}",
-        f"Environment=MODEL_ENDPOINT={BLACKHOLE_ENDPOINT}",
-    ]
+def test_pkgbuild_does_not_override_model_download_endpoints():
+    text = PKGBUILD.read_text()
+    assert "20-no-remote-model-fetch.conf" not in text
+    for key in ("HF_ENDPOINT", "MODELSCOPE_ENDPOINT", "MODEL_ENDPOINT"):
+        assert f"Environment={key}=" not in text
 
 
 def test_system_backend_patch_reuses_external_backend_lookup():
@@ -315,9 +300,9 @@ def test_pkgbuild_drops_the_args_merge_stopgap():
     assert DROPPED_ARGS_MERGE_PATCH.name not in PKGBUILD.read_text()
 
 
-def test_pkgbuild_packages_the_synced_upstream_version():
+def test_pkgbuild_packages_the_standalone_binding_backport_version():
     assert _pkgbuild_value(PKGBUILD, "pkgver") == "11.9.0"
-    assert _pkgbuild_value(PKGBUILD, "pkgrel") == "1"
+    assert _pkgbuild_value(PKGBUILD, "pkgrel") == "3"
 
 
 def _current_pkgbuild_version():
@@ -384,18 +369,19 @@ def test_built_package_ships_the_secrets_env_file_private():
     assert "backup = etc/lemonade/conf.d/zz-secrets.conf" in pkginfo
 
 
-def test_built_package_installs_offline_defaults_and_endpoint_drop_in():
+def test_built_package_installs_only_packaged_engine_defaults():
     _require_current_package_image()
 
     defaults = json.loads(DISTRO_DEFAULTS.read_text())
-    assert defaults["offline"] is True
     assert defaults["no_fetch_executables"] is True
-    assert defaults["llamacpp"]["args"] == "--no-mmap"
-    assert defaults["max_loaded_models"] == -1
-    assert defaults["auto_update_models"] is False
-    dropin = NO_REMOTE_FETCH_DROPIN.read_text()
-    assert f"Environment=HF_ENDPOINT={BLACKHOLE_ENDPOINT}" in dropin
-    assert f"Environment=MODEL_ENDPOINT={BLACKHOLE_ENDPOINT}" in dropin
+    assert set(defaults) == {"no_fetch_executables", "llamacpp"}
+    assert defaults["llamacpp"] == {
+        "backend": "rocm",
+        "prefer_system": False,
+        "rocm_bin": HIP_SERVER,
+        "vulkan_bin": VULKAN_SERVER,
+    }
+    assert not NO_REMOTE_FETCH_DROPIN.exists()
     assert not (PKG_ROOT / "usr/share/metainfo").exists()
 
 

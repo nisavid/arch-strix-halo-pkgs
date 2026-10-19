@@ -499,4 +499,8 @@ workflow = "upstream_source_update"
 checks = [
   { id = "fork-main", role = "primary", kind = "git_ref", repo = "https://github.com/nisavid/lemonade.git", ref = "refs/heads/main", recorded = "b6616eb3b6d31c3d7dbffffdb23e24adda1292a1", comparison = "sha" },
   { id = "upstream-release", role = "baseline", kind = "github_release", repo = "lemonade-sdk/lemonade", recorded = "11.9.0", tag_prefix = "v", comparison = "pep440" },
+  { id = "binding-backport", role = "primary", kind = "git_ref", repo = "https://github.com/nisavid/lemonade.git", ref = "refs/heads/nisavid/v11.9.0-backports", recorded = "0101b6938c0e77ffaf73687165518a2f8fd672b0", comparison = "sha" },
+]
+source_contracts = [
+  { id = "standalone-binding-source", packages = ["lemonade-server", "lemonade-app"], check_id = "binding-backport", source_name = "lemonade", source_kind = "git_commit", origin = "https://github.com/nisavid/lemonade.git", value_policy = "matches_reviewed" },
 ]

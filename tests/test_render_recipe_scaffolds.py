@@ -23,13 +23,13 @@ SPEC.loader.exec_module(render_recipe_scaffolds)
 import recipe_policy  # noqa: E402
 
 
-def init_recipe_repo(recipe_root: Path) -> None:
+def init_recipe_repo(recipe_root: Path, *, package_key: str = "sample") -> None:
     recipe_dir = recipe_root / "strix-halo"
     recipe_dir.mkdir(parents=True)
     (recipe_dir / "vllm-packages.yaml").write_text(
-        """
+        f"""
 packages:
-  sample:
+  {package_key}:
     repo: https://example.invalid/sample.git
     method: meta
     phase: package
@@ -115,6 +115,7 @@ src_subdir = "sample"
     assert "pkgver=1.2.3\n" in pkgbuild
     assert ".r1." not in pkgbuild
     assert recipe_json["pkgver"] == "1.2.3"
+    assert recipe_json["recipe"]["repo"] == "https://example.invalid/sample.git"
     assert recipe_json["provenance"]["recipe_commit"] == recipe_commit
     assert recipe_json["provenance"]["recipe_history_count"] == 1
     assert "- Package version: `1.2.3`" in readme
@@ -1813,6 +1814,83 @@ def test_real_lemonade_packages_share_one_source_pin() -> None:
         assert policy["packages"][package]["source_refs"] == [expected]
         pkgbuild = (REPO_ROOT / "packages" / package / "PKGBUILD").read_text(encoding="utf-8")
         assert f"'{expected}'" in pkgbuild
+
+
+def test_cli_renders_the_delivered_binding_source_for_server_and_app(tmp_path: Path) -> None:
+    recipe_root = tmp_path / "recipes"
+    init_recipe_repo(recipe_root, package_key="lemonade")
+    output_root = tmp_path / "packages"
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(MODULE_PATH),
+            "--recipe-root",
+            str(recipe_root),
+            "--output-root",
+            str(output_root),
+            "--only",
+            "lemonade-server",
+            "--only",
+            "lemonade-app",
+        ],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+    assert result.returncode == 0, result.stderr
+    source = (
+        "lemonade::git+https://github.com/nisavid/lemonade.git"
+        "#commit=0101b6938c0e77ffaf73687165518a2f8fd672b0"
+    )
+    for package in ("lemonade-server", "lemonade-app"):
+        pkgbuild = (output_root / package / "PKGBUILD").read_text(encoding="utf-8")
+        assert f"'{source}'" in pkgbuild
+        assert "pkgver=11.9.0\n" in pkgbuild
+        assert "pkgrel=3\n" in pkgbuild
+        recipe_json = json.loads(
+            (output_root / package / "recipe.json").read_text(encoding="utf-8")
+        )
+        assert recipe_json["recipe"]["repo"] == "https://github.com/nisavid/lemonade.git"
+        assert recipe_json["recipe"]["branch"] == "nisavid/v11.9.0-backports"
+        assert recipe_json["policy"]["source_refs"] == [source]
+
+
+def test_cli_keeps_packaged_engines_without_household_defaults(tmp_path: Path) -> None:
+    recipe_root = tmp_path / "recipes"
+    init_recipe_repo(recipe_root, package_key="lemonade")
+    output_root = tmp_path / "packages"
+    result = subprocess.run(
+        [sys.executable, str(MODULE_PATH), "--recipe-root", str(recipe_root),
+         "--output-root", str(output_root), "--only", "lemonade-server"],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+    assert result.returncode == 0, result.stderr
+    pkgbuild = (output_root / "lemonade-server/PKGBUILD").read_text(encoding="utf-8")
+    defaults = re.search(
+        r'/usr/share/lemonade/defaults\.json" <<\'EOF\'\n(.*?)\nEOF\n',
+        pkgbuild,
+        re.DOTALL,
+    )
+    assert defaults is not None
+    assert json.loads(defaults.group(1)) == {
+        "no_fetch_executables": True,
+        "llamacpp": {
+            "backend": "rocm",
+            "prefer_system": False,
+            "rocm_bin": "/usr/bin/llama-server-hip-gfx1151",
+            "vulkan_bin": "/usr/bin/llama-server-vulkan-gfx1151",
+        },
+    }
+    assert "20-no-remote-model-fetch.conf" not in pkgbuild
+    for endpoint in ("HF_ENDPOINT", "MODELSCOPE_ENDPOINT", "MODEL_ENDPOINT"):
+        assert f"Environment={endpoint}=" not in pkgbuild
 
 
 @pytest.mark.parametrize(
