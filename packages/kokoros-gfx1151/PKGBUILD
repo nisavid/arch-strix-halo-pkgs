@@ -25,7 +25,7 @@ prepare() {
   cd "$srcdir/Kokoros-d122b52e0ee0a90df26fd041620af36f99e2248a"
 
   if ! patch --dry-run --batch -R -Np1 -i "$srcdir/0001-koko-fail-closed-on-missing-model-files.patch" >/dev/null 2>&1; then
-    patch -Np1 -i "$srcdir/0001-koko-fail-closed-on-missing-model-files.patch"
+    patch --batch -Np1 -i "$srcdir/0001-koko-fail-closed-on-missing-model-files.patch"
   fi
   # Fail closed if koko's model-loading source is missing or can still
   # download a missing model or voices file.

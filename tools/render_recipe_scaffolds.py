@@ -1133,7 +1133,7 @@ EOF
             prepare_lines.extend(
                 [
                     f'if ! patch --dry-run --batch -R -Np1 -i "$srcdir/{patch_name}" >/dev/null 2>&1; then',
-                    f'  patch -Np1 -i "$srcdir/{patch_name}"',
+                    f'  patch --batch -Np1 -i "$srcdir/{patch_name}"',
                     "fi",
                 ]
             )

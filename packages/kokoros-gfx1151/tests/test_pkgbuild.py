@@ -2,9 +2,12 @@ import hashlib
 import importlib.util
 import json
 import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
+
+import pytest
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -72,7 +75,7 @@ def test_fail_closed_model_patch_is_listed_checksummed_and_applied():
     recipe = json.loads(RECIPE_JSON.read_text())
     assert recipe["maintenance"]["source_patches"] == [FAIL_CLOSED_PATCH]
     prepare = _function(text, "prepare")
-    apply = f'  patch -Np1 -i "$srcdir/{FAIL_CLOSED_PATCH}"'
+    apply = f'  patch --batch -Np1 -i "$srcdir/{FAIL_CLOSED_PATCH}"'
     assert apply in prepare
     # The patch lands before the lockfile check and the crate fetch, and
     # prepare() refuses a tree where koko can still download.
@@ -258,12 +261,13 @@ def test_package_installs_registry_licences_and_skips_workspace_crates(tmp_path)
     assert (licenses / "README.md").is_file()
 
 
-def _run_prepare(tmp_path, koko_rs):
+def _run_prepare(tmp_path, koko_rs, real_patch=False):
     """Run the rendered prepare() the way makepkg does, with fake tools.
 
     koko_rs is the text of kokoros/src/tts/koko.rs after patching, or None
     when the file is absent. The fake patch changes nothing, so the guard
-    sees exactly that text.
+    sees exactly that text. With real_patch, the system patch applies the
+    package's patch file instead, with stdin closed.
     """
     srcdir = tmp_path / "src"
     source = srcdir / f"Kokoros-{EXPECTED_COMMIT}"
@@ -274,6 +278,8 @@ def _run_prepare(tmp_path, koko_rs):
     log = tmp_path / "calls.log"
     fakebin = tmp_path / "bin"
     fakebin.mkdir()
+    if real_patch:
+        shutil.copy(PACKAGE_DIR / FAIL_CLOSED_PATCH, srcdir / FAIL_CLOSED_PATCH)
     fakes = {
         # The reverse dry-run fails, so prepare() applies the patch.
         "patch": f'echo "patch $*" >> "{log}"\ncase " $* " in *" --dry-run "*) exit 1;; esac\nexit 0\n',
@@ -281,6 +287,8 @@ def _run_prepare(tmp_path, koko_rs):
         "cargo": f'echo "cargo $*" >> "{log}"\nexit 0\n',
         "rustc": "echo x86_64-unknown-linux-gnu\n",
     }
+    if real_patch:
+        del fakes["patch"]
     for name, body in fakes.items():
         (fakebin / name).write_text("#!/bin/sh\n" + body)
         (fakebin / name).chmod(0o755)
@@ -296,6 +304,7 @@ def _run_prepare(tmp_path, koko_rs):
     result = subprocess.run(
         ["bash", "-c", script, "probe", str(tmp_path / "prepare.sh")],
         env={"PATH": f"{fakebin}:/usr/bin:/bin", "srcdir": str(srcdir)},
+        stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
         timeout=60,
@@ -328,6 +337,17 @@ def test_prepare_applies_the_patch_and_fetches_locked_crates(tmp_path):
     assert "PREPARE_OK" in result.stdout
     lines = calls.splitlines()
     assert lines[0].startswith("patch --dry-run --batch -R -Np1 -i ")
-    assert lines[1] == f"patch -Np1 -i {tmp_path}/src/{FAIL_CLOSED_PATCH}"
+    assert lines[1] == f"patch --batch -Np1 -i {tmp_path}/src/{FAIL_CLOSED_PATCH}"
     assert lines[2] == "sha256sum --check --quiet -"
     assert lines[3] == "cargo fetch --locked --target x86_64-unknown-linux-gnu"
+
+
+@pytest.mark.skipif(shutil.which("patch") is None, reason="needs the system patch")
+def test_prepare_never_prompts_when_a_repin_drops_koko_rs(tmp_path):
+    # Both patch calls pass --batch, so a missing target is skipped instead
+    # of prompting for a file name, and prepare() still fails closed.
+    result, calls = _run_prepare(tmp_path, None, real_patch=True)
+    assert result.returncode != 0
+    assert "PREPARE_OK" not in result.stdout
+    assert "File to patch:" not in result.stdout + result.stderr
+    assert "cargo fetch" not in calls
